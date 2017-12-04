@@ -74,11 +74,11 @@ pragma solidity ^0.4.19
 
     START_DATE:
     Date after which the token sale will be live.
+    `node> + new Date('1 February 2018 GMT+0')/1000`
 
     MAX_FUNDING_PERIOD:
     Period of time the tokensale will be live. Note that the owner
     can finalise the contract early.
-    
 
 */
 
@@ -89,36 +89,132 @@ contract HavvenConfig {
     address public       owner              = msg.sender;
     address public       FUND_WALLET        = 0x0;
     uint public constant MAX_TOKENS         = 150000000;
-    uint public constant START_DATE         = 1502668800;
+    uint public constant START_DATE         = 1517443200;
     uint public constant MAX_FUNDING_PERIOD = 60 days;
 }
 
 library SafeMath {
 
     // a add to b
-    function add(uint a, uint b) internal returns (uint c) {
+    function add(uint a, uint b) internal pure returns (uint c) {
         c = a + b;
         assert(c >= a);
     }
-    
+
     // a subtract b
-    function sub(uint a, uint b) internal returns (uint c) {
+    function sub(uint a, uint b) internal pure returns (uint c) {
         c = a - b;
         assert(c <= a);
     }
-    
+
     // a multiplied by b
-    function mul(uint a, uint b) internal returns (uint c) {
+    function mul(uint a, uint b) internal pure returns (uint c) {
         c = a * b;
         assert(a == 0 || c / a == b);
     }
-    
+
     // a divided by b
-    function div(uint a, uint b) internal returns (uint c) {
+    function div(uint a, uint b) internal pure returns (uint c) {
+        assert(b != 0);
         c = a / b;
-        // No assert required as no overflows are posible.
+    }
+}
+
+
+contract ERC20Token {
+
+    using SafeMath for uint;
+
+    /* State variables */
+
+    uint public totalSupply;
+    mapping (address => uint) balances;
+    mapping (address => mapping (address => uint)) allowed;
+
+    
+    
+    /* Events */
+
+    event Transfer(
+        address indexed _from,
+        address indexed _to,
+        uint256 _amount
+    );
+
+    event Approval(
+        address indexed _owner,
+        address indexed _spender,
+        uint256 _amount
+    );
+
+
+
+    /* Functions */
+
+    // Using an explicit getter allows for function overloading
+    function balanceOf(address _addr)
+        public
+        view
+        returns (uint)
+    {
+        return balances[_addr];
     }
 
+    // Using an explicit getter allows for function overloading
+    function allowance(address _owner, address _spender)
+        public
+        constant
+        returns (uint)
+    {
+        return allowed[_owner][_spender];
+    }
+
+    // Send _value amount of tokens to address _to
+    function transfer(address _to, uint256 _amount)
+        public
+        returns (bool)
+    {
+        return xfer(msg.sender, _to, _amount);
+    }
+
+    // Send _value amount of tokens from address _from to address _to
+    function transferFrom(address _from, address _to, uint256 _amount)
+        public
+        returns (bool)
+    {
+        require(_amount <= allowed[_from][msg.sender]);
+
+        allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_amount);
+        return xfer(_from, _to, _amount);
+    }
+
+    // Process a transfer internally.
+    function xfer(address _from, address _to, uint _amount)
+        internal
+        returns (bool)
+    {
+        require(_amount <= balances[_from]);
+
+        Transfer(_from, _to, _amount);
+
+        // avoid wasting gas on 0 token transfers
+        if(_amount == 0) return true;
+
+        balances[_from] = balances[_from].sub(_amount);
+        balances[_to]   = balances[_to].add(_amount);
+
+        return true;
+    }
+
+    // Approves a third-party spender
+    function approve(address _spender, uint256 _amount)
+        public
+        returns (bool)
+    {
+        allowed[msg.sender][_spender] = _amount;
+        Approval(msg.sender, _spender, _amount);
+        return true;
+    }
 }
 
 contract Havven {
