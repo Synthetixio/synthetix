@@ -52,7 +52,7 @@ contracts holding core Havven (alpha version) functionality.
 
 
 -----------------------------------------------------------------
-Block8 Technologies are accellerating blockchain technology
+Block8 Technologies are accelerating blockchain technology
 through incubating meaningful, next-generation businesses.
 Find out more at block8.io
 -----------------------------------------------------------------
