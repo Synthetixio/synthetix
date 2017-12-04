@@ -52,10 +52,77 @@ contracts holding core Havven (alpha version) functionality.
 
 
 -----------------------------------------------------------------
-Block8 Technologies are accellerating blockchain technology
+Block8 Technologies are accelerating blockchain technology
 through incubating meaningful, next-generation businesses.
 Find out more at block8.io
 -----------------------------------------------------------------
 
 */
 
+
+pragma solidity ^0.4.19
+
+/*  Configuration parameters for Havven token sale contract 
+
+    Owner:
+    Has power to abort, discount addresses, sweep funds,
+    change owner, sweep alien tokens.
+
+
+    FUND_WALLET:
+    Owning address of the raised funds. Must be checksummed address.
+
+    START_DATE:
+    Date after which the token sale will be live.
+
+    MAX_FUNDING_PERIOD:
+    Period of time the tokensale will be live. Note that the owner
+    can finalise the contract early.
+    
+
+*/
+
+contract HavvenConfig {
+
+    string public        name               = "Havven";
+    string public        symbol             = "HVN";
+    address public       owner              = msg.sender;
+    address public       FUND_WALLET        = 0x0;
+    uint public constant MAX_TOKENS         = 150000000;
+    uint public constant START_DATE         = 1502668800;
+    uint public constant MAX_FUNDING_PERIOD = 60 days;
+}
+
+library SafeMath {
+
+    // a add to b
+    function add(uint a, uint b) internal returns (uint c) {
+        c = a + b;
+        assert(c >= a);
+    }
+    
+    // a subtract b
+    function sub(uint a, uint b) internal returns (uint c) {
+        c = a - b;
+        assert(c <= a);
+    }
+    
+    // a multiplied by b
+    function mul(uint a, uint b) internal returns (uint c) {
+        c = a * b;
+        assert(a == 0 || c / a == b);
+    }
+    
+    // a divided by b
+    function div(uint a, uint b) internal returns (uint c) {
+        c = a / b;
+        // No assert required as no overflows are posible.
+    }
+
+}
+
+contract Havven {
+
+    
+
+}
