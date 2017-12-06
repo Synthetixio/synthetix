@@ -58,6 +58,19 @@ Find out more at block8.io
 
 */
 
+/* TODO:
+ *     * Finish nomin-specific functions
+ *     * Finish ERC20 interface functions
+ *     * Ensure function modifiers are all correct
+ *     * Event logging
+ *     * A notion of stale prices
+ *     * Make contract pausable in case of bug
+ *     * Make contract upgradeable in case of bug
+ *     * Rate limiting?
+ *     * Test suite
+ *     * Bug bounties?
+ */
+
 contract ERC20Token {
     // Get the total token supply
     function totalSupply() constant returns (uint totalSupply);
@@ -148,12 +161,18 @@ contract CollateralisedNomin is ERC20Token, SafeFixedMath {
 
     // The oracle provides price information to this contract.
     address oracle;
+
+    // Foundation wallet for funds to go to post self-destruct.
+    address beneficiary;
     
     // ERC20 information
     string public constant name = "Collateralised Nomin";
     string public constant symbol = "CNOM"
     uint public constant decimals = precision;
     
+    // Nomin balances for each address
+    mapping(address => uint) balances;
+
     // Total nomins in the pool or in circulation.
     // Supply is initially zero, but may be increased by the Havven foundation.
     uint supply = 0;
@@ -161,9 +180,11 @@ contract CollateralisedNomin is ERC20Token, SafeFixedMath {
     // Nomins in the pool ready to be sold.
     uint pool = 0;
     
-    // Ether price from oracle, and the time it was read.
+    // Impose a 10 basis-point fee for buying and selling.
+    uint fee = unit / 1000;
+    
+    // Ether price from oracle ($/nom), and the time it was read.
     uint lastEtherPrice;
-    uint lastPriceUpdateBlock;
     
     // The time that must pass before the liquidation period is
     // complete
@@ -174,9 +195,14 @@ contract CollateralisedNomin is ERC20Token, SafeFixedMath {
     // liquidation timestamp is in the past.
     uint private liquidationTimestamp = ~uint(0);
     
-    function CollateralisedNomin(address oracleContract) {
-        oracle = oracle;
-        oracleContract.setTarget(address(this));
+    function CollateralisedNomin(address _owner, address _oracle,
+                                 address _beneficiary) {
+        owner = _owner;
+        beneficiary = _beneficiary;
+        oracle = _oracle;
+        // Set this contract to be the oracle's target, and update
+        // the current prices.
+        _oracle.setTarget(address(this));
     }
 
     modifier onlyOwner {
@@ -193,17 +219,24 @@ contract CollateralisedNomin is ERC20Token, SafeFixedMath {
         require(!isLiquidating());
         _;
     }
-    
+ 
+    function setOwner(address newOwner) onlyOwner {
+        owner = newOwner;
+    }   
     function setOracle(address newOracle) onlyOwner {
         oracle = newOracle;
     }
 
-    function setOwner(address newOwner) onlyOwner {
-        owner = newOwner;
+    function setBeneficiary(address newBeneficiary) onlyOwner {
+        beneficiary = newBeneficiary;
     }
 
-    function getUSDBalance() returns (uint) {
-        // FILL ME
+    function getUSDValue(uint eth) view returns (uint) {
+        return div(eth, lastEtherPrice);
+    }
+
+    function getUSDBalance() view returns (uint) {
+        return getUSDValue(this.balance);
     }
 
     /* Issues n nomins into the pool available to be bought by users.
@@ -215,7 +248,9 @@ contract CollateralisedNomin is ERC20Token, SafeFixedMath {
      *     n below some minimum;
      *     contract in liquidation. */
     function issue(uint n) onlyOwner, notLiquidating {
-        // FILL ME
+        require(getUSDValue(msg.value) >= n);
+        supply = add(supply, n);
+        pool = add(supply, n);
     }
     
     /* Sends n nomins to the sender from the pool, in exchange for
@@ -227,7 +262,11 @@ contract CollateralisedNomin is ERC20Token, SafeFixedMath {
      *     n below some minimum;
      *     contract in liquidation; */
     function buy(uint n) notLiquidating {
-        // FILL ME
+        uint usdval = getUSDValue(msg.value);
+        require(usdval >= mul(n, add(unit, fee)));
+        // sub requires that pool >= n
+        pool = sub(pool, n);
+        balances[msg.sender] = balances[msg.sender] + n
     }
 
     /* Sends n nomins to the pool from the sender, in exchange for
@@ -239,14 +278,18 @@ contract CollateralisedNomin is ERC20Token, SafeFixedMath {
      *     n below some minimum;
      *     contract in liquidation; */
     function sell(uint n) {
-        // FILL ME
+        proceeds = mul(n, sub(unit, fee));
+        require(getUSDBalance() >= proceeds);
+        // sub requires that the balance is greater than n
+        balances[msg.sender] = sub(balances[msg.sender], n);
+        pool = add(pool, n);
+        msg.sender.transfer(proceeds);
     }
 
     /* Update the current eth price and update the last updated time;
        only usable by the oracle. */
     function updatePrice(uint price) onlyOracle {
         lastEtherPrice = price;
-        lastPriceUpdateBlock = now;
     }
     
     /* True iff the liquidation block is earlier than the current block.*/
@@ -263,7 +306,7 @@ contract CollateralisedNomin is ERC20Token, SafeFixedMath {
      *     contract already in liquidation;
      */
     function liquidate() onlyOwner, notLiquidating {
-        // FILL ME
+        liquidationTimestamp = now;
     }
     
     /* Destroy this contract, returning all funds back to the Havven
@@ -275,6 +318,7 @@ contract CollateralisedNomin is ERC20Token, SafeFixedMath {
      *     Not called by contract owner;
      */
     function selfDestruct() onlyOwner {
-       // FILL ME
+        require(liquidationTimestamp + liquidationPeriod < now);
+        selfdestruct(beneficiary);
     }
 }
