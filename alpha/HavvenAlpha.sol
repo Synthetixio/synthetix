@@ -86,12 +86,48 @@ contract ERC20Token {
     event Approval(address indexed _owner, address indexed _spender, uint _value);
 }
 
-contract FixedMath {
+/* Safely manipulate fixed-point decimals at a given precision level. */
+contract SafeFixedMath {
     uint public constant precision = 18;
     uint public constant unit = 10 ** decimals;
+    
+    function addSafe(uint x, uint y) pure internal returns (bool) {
+        return x + y >= y;
+    }
 
-    function add(uint x, uint y) pure internal {
+    function add(uint x, uint y) pure internal returns (uint) {
+        assert(addSafe(x, y));
+        return x + y;
+    }
+    
+    function subSafe(uint x, uint y) pure internal returns (bool) {
+        return y <= x;
+    }
 
+    function sub(uint x, uint y) pure internal returns (uint) {
+        assert(subSafe(x, y));
+        return x - y;
+    }
+    
+    function mulSafe(uint x, uint y) pure internal returns (bool) {
+        if (x == 0) {
+            return true;
+        }
+        uint r = x * y;
+        return r / x == y;
+    }
+
+    function mul(uint x, uint y) pure internal returns (uint) {
+        assert(mulSafe(x, y));
+        return (x * y) / unit;
+    }
+    
+    function divSafe(uint x, uint y) pure internal returns (bool) {
+        return y != 0;
+    }
+
+    function div(uint x, uint y) pure internal returns (uint) {
+        return mul(x, unit) / y;
     }
 }
 
@@ -106,7 +142,7 @@ contract FixedMath {
  * if they provide enough backing collateral to maintain the ratio.
  *  The contract owner may issue nomins, initiate contract liquidation
  */
-contract CollateralisedNomin is ERC20Token, FixedMath {
+contract CollateralisedNomin is ERC20Token, SafeFixedMath {
     // The contract's owner (the Havven foundation multisig command contract).
     address owner;
 
@@ -164,6 +200,10 @@ contract CollateralisedNomin is ERC20Token, FixedMath {
 
     function setOwner(address newOwner) onlyOwner {
         owner = newOwner;
+    }
+
+    function getUSDBalance() returns (uint) {
+        // FILL ME
     }
 
     /* Issues n nomins into the pool available to be bought by users.
