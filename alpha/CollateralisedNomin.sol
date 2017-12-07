@@ -71,34 +71,6 @@ Find out more at block8.io
  *     * Bug bounties?
  */
 
-contract ERC20Token {
-    // Get the total token supply
-    function totalSupply() constant returns (uint totalSupply);
- 
-    // Get the account balance of another account with address _owner
-    function balanceOf(address _owner) constant returns (uint balance);
- 
-    // Send _value amount of tokens to address _to
-    function transfer(address _to, uint _value) returns (bool success);
- 
-    // Send _value amount of tokens from address _from to address _to
-    function transferFrom(address _from, address _to, uint _value) returns (bool success);
-  
-    // Allow _spender to withdraw from your account, multiple times, up to the _value amount.
-    // If this function is called again it overwrites the current allowance with _value.
-    // this function is required for some DEX functionality
-    function approve(address _spender, uint _value) returns (bool success);
- 
-    // Returns the amount which _spender is still allowed to withdraw from _owner
-    function allowance(address _owner, address _spender) constant returns (uint remaining);
- 
-    // Triggered when tokens are transferred.
-    event Transfer(address indexed _from, address indexed _to, uint _value);
- 
-    // Triggered whenever approve(address _spender, uint _value) is called.
-    event Approval(address indexed _owner, address indexed _spender, uint _value);
-}
-
 /* Safely manipulate fixed-point decimals at a given precision level. */
 contract SafeFixedMath {
     uint public constant precision = 18;
@@ -145,6 +117,73 @@ contract SafeFixedMath {
 }
 
 
+contract ERC20Token is SafeFixedMath {
+    // Total nomins in the pool or in circulation.
+    // Supply is initially zero, but may be increased by the Havven foundation.
+    uint supply = 0;
+ 
+    // Nomin balances for each address.
+    mapping(address => uint) balances;
+
+    // Nomin proxy transfer allowances.
+    mapping(address => mapping (address => uint256)) allowances;
+   
+    // Get the total token supply
+    function totalSupply() constant returns (uint) {
+        return supply;
+    }
+ 
+    // Get the account balance of another account with address _account
+    function balanceOf(address _account) constant returns (uint) {
+        return balances[_account];
+    }
+ 
+    // Send _value amount of tokens to address _to
+    function transfer(address _to, uint _value) returns (bool) {
+        if (subSafe(balances[msg.sender], _value) && addSafe(balances[_to], _value) {
+            balances[msg.sender] = sub(balances[msg.sender], _value);
+            balances[_to] = add(balances[_to], _value);
+            Transfer(msg.sender, _to, _value);
+            return true;
+        }
+        return false;
+    }
+ 
+    // Send _value amount of tokens from address _from to address _to
+    function transferFrom(address _from, address _to, uint _value) returns (bool) {
+        if (subSafe(balances[_from], _value) &&
+            subSafe(allowances[_from][msg.sender], _value) &&
+            addSafe(balances[_to], _value) {
+                balances[_from] = sub(balances[_from], _value);
+                allowances[_from][msg.sender] = sub(allowances[_from][msg.sender], _value);
+                balances[_to] = add(balances[_to], _value);
+                Transfer(_from, _to, _value);
+                return true;
+        }
+        return false;
+    }
+  
+    // Allow _spender to withdraw from your account, multiple times, up to the _value amount.
+    // If this function is called again it overwrites the current allowance with _value.
+    // this function is required for some DEX functionality
+    function approve(address _spender, uint _value) returns (bool) {
+        allowances[msg.sender][_spender] = _value;
+        Approval(msg.sender, _spender, _value);
+        return true;
+    }
+ 
+    // Returns the amount which _spender is still allowed to withdraw from _owner
+    function allowance(address _owner, address _spender) constant returns (uint) {
+        return allowances[_owner][_spender];
+    }
+ 
+    // Triggered when tokens are transferred.
+    event Transfer(address indexed _from, address indexed _to, uint _value);
+ 
+    // Triggered whenever approve(address _spender, uint _value) is called.
+    event Approval(address indexed _owner, address indexed _spender, uint _value);
+}
+
 /* Issues nomins, which are tokens worth 1 USD each. They are backed
  * by a pool of eth collateral, so that if a user has nomins, they may
  * redeem them for eth from the pool, or if they want to obtain nomins,
@@ -155,7 +194,7 @@ contract SafeFixedMath {
  * if they provide enough backing collateral to maintain the ratio.
  *  The contract owner may issue nomins, initiate contract liquidation
  */
-contract CollateralisedNomin is ERC20Token, SafeFixedMath {
+contract CollateralisedNomin is ERC20Token {
     // The contract's owner (the Havven foundation multisig command contract).
     address owner;
 
@@ -169,14 +208,7 @@ contract CollateralisedNomin is ERC20Token, SafeFixedMath {
     string public constant name = "Collateralised Nomin";
     string public constant symbol = "CNOM"
     uint public constant decimals = precision;
-    
-    // Nomin balances for each address
-    mapping(address => uint) balances;
 
-    // Total nomins in the pool or in circulation.
-    // Supply is initially zero, but may be increased by the Havven foundation.
-    uint supply = 0;
-    
     // Nomins in the pool ready to be sold.
     uint pool = 0;
     
