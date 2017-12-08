@@ -1,8 +1,6 @@
 import requests
 import json
 
-feed_frequency = 60
-
 class PriceFeed:
     def __init__(self,query_string, frequency=feed_frequency):
         self.query_string = query_string
@@ -82,33 +80,6 @@ class QuoineFeed(PriceFeed):
     def price(self):
         return float(json.loads(self.query())["last_traded_price"])
 
-
-k = KrakenFeed()
-print(f"Kraken: {k.price()}")
-
-h = HitBTCFeed()
-print(f"HitBTC: {h.price()}")
-
-b = BitstampFeed()
-print(f"Bitstamp: {b.price()}")
-
-g = GeminiFeed()
-print(f"Gemini: {g.price()}")
-
-f = BitfinexFeed()
-print(f"Bitfinex: {f.price()}")
-
-x = GDAXFeed()
-print(f"GDAX: {x.price()}")
-
-c = CoinbaseFeed()
-print(f"Coinbase: {c.price()}")
-
-e = CEXFeed()
-print(f"CEX: {e.price()}")
-
-w = WEXFeed()
-print(f"WEX: {w.price()}")
-
-q = QuoineFeed()
-print(f"Quoine: {q.price()}")
+FEEDS = [KrakenFeed(), HitBTCFeed(), BitstampFeed(),
+         GeminiFeed(), BitfinexFeed(), GDAXFeed(),
+         CoinbaseFeed(), CEXFeed(), WEXFeed(), QuoineFeed()]
