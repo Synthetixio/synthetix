@@ -61,9 +61,12 @@ Find out more at block8.io
 /* TODO:
  *     * Finish nomin-specific functions
  *     * Finish ERC20 interface functions
+ *     * Fix all compiler warnings
  *     * Ensure function modifiers are all correct
  *     * Event logging
  *     * A notion of stale prices
+ *     * Consensys best practice compliance
+ *     * Solium lint
  *     * Make contract pausable in case of bug
  *     * Make contract upgradeable in case of bug
  *     * Rate limiting?
@@ -140,7 +143,7 @@ contract ERC20Token is SafeFixedMath {
  
     // Send _value amount of tokens to address _to
     function transfer(address _to, uint _value) returns (bool) {
-        if (subSafe(balances[msg.sender], _value) && addSafe(balances[_to], _value) {
+        if (subSafe(balances[msg.sender], _value) && addSafe(balances[_to], _value)) {
             balances[msg.sender] = sub(balances[msg.sender], _value);
             balances[_to] = add(balances[_to], _value);
             Transfer(msg.sender, _to, _value);
@@ -153,7 +156,7 @@ contract ERC20Token is SafeFixedMath {
     function transferFrom(address _from, address _to, uint _value) returns (bool) {
         if (subSafe(balances[_from], _value) &&
             subSafe(allowances[_from][msg.sender], _value) &&
-            addSafe(balances[_to], _value) {
+            addSafe(balances[_to], _value)) {
                 balances[_from] = sub(balances[_from], _value);
                 allowances[_from][msg.sender] = sub(allowances[_from][msg.sender], _value);
                 balances[_to] = add(balances[_to], _value);
@@ -206,7 +209,7 @@ contract CollateralisedNomin is ERC20Token {
     
     // ERC20 information
     string public constant name = "Collateralised Nomin";
-    string public constant symbol = "CNOM"
+    string public constant symbol = "CNOM";
     uint public constant decimals = precision;
 
     // Nomins in the pool ready to be sold.
@@ -247,7 +250,7 @@ contract CollateralisedNomin is ERC20Token {
         _;
     }
 
-    modified notLiquidating {
+    modifier notLiquidating {
         require(!isLiquidating());
         _;
     }
@@ -279,7 +282,7 @@ contract CollateralisedNomin is ERC20Token {
      *     Unavailable or stale price data; 
      *     n below some minimum;
      *     contract in liquidation. */
-    function issue(uint n) onlyOwner, notLiquidating {
+    function issue(uint n) onlyOwner notLiquidating {
         require(getUSDValue(msg.value) >= n);
         supply = add(supply, n);
         pool = add(supply, n);
@@ -298,7 +301,7 @@ contract CollateralisedNomin is ERC20Token {
         require(usdval >= mul(n, add(unit, fee)));
         // sub requires that pool >= n
         pool = sub(pool, n);
-        balances[msg.sender] = balances[msg.sender] + n
+        balances[msg.sender] = balances[msg.sender] + n;
     }
 
     /* Sends n nomins to the pool from the sender, in exchange for
@@ -337,7 +340,7 @@ contract CollateralisedNomin is ERC20Token {
      *     Not called by contract owner;
      *     contract already in liquidation;
      */
-    function liquidate() onlyOwner, notLiquidating {
+    function liquidate() onlyOwner notLiquidating {
         liquidationTimestamp = now;
     }
     
