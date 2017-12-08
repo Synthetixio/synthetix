@@ -64,16 +64,16 @@ import json
 import asyncio
 
 class PriceFeed:
-    def __init__(self, name, query_string, query_func):
+    def __init__(self, name, query_string, access_func):
         self.name = name
         self.query_string = query_string
-        self.query_func = query_func
+        self.access_func = access_func
 
     def query(self):
         return requests.get(self.query_string).text
     
     def price(self):
-        return float(self.query_func(json.loads(self.query())))
+        return float(self.access_func(json.loads(self.query())))
 
 
 FEEDS = [PriceFeed("Kraken",

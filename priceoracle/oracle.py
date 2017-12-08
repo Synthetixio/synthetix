@@ -59,6 +59,43 @@ Find out more at block8.io
 
 """
 
+from concurrent.futures import ThreadPoolExecutor
+from markets import FEEDS, PriceFeed
 
+class PriceList:
+    def __init__(self):
+        self.prices = {feed.name: 0 for feed in FEEDS}
+        if len(self.prices) == 0:
+            raise ValueError("FATAL: Price feed list is empty!")
+        self.last_median = None
 
+    def update_price(self, feed):
+        try:
+            self.prices[feed.name] = feed.price()
+            print(f"Updated {feed.name} to {self.prices[feed.name]}.")
+            return self.prices[feed.name]
+        except:
+            self.prices[feed.name] = None
+            return None
 
+    def median_price(self):
+        print(self.prices)
+        s_prices = sorted([v for v in self.prices.values() if v is not None])
+        p_len = len(s_prices)
+        
+        if p_len != 0:
+            # Update the current median price if any prices were reported.
+            mid = p_len // 2
+            if p_len % 2:
+                self.last_median = s_prices[mid]
+            else:
+                self.last_median = (s_prices[mid] + s_prices[mid - 1]) / 2
+
+        return self.last_median
+
+plist = PriceList()
+with ThreadPoolExecutor() as executor:
+    futures = executor.map(plist.update_price, FEEDS, timeout=10)
+    print(list(futures))
+
+print(plist.median_price())
