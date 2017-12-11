@@ -331,6 +331,13 @@ contract CollateralisedNomin is ERC20Token {
     // Ether price from oracle (USD per eth).
     uint public etherPrice;
     
+    // Last time the price was updated.
+    uint public lastPriceUpdate;
+
+    // The period it takes for the price to be considered stale.
+    // If the price is stale, issuance and redemption functions are disabled.
+    uint public stalePeriod = 1 day;
+
     // The time that must pass before the liquidation period is
     // complete
     uint public liquidationPeriod = 1 years;
@@ -351,6 +358,7 @@ contract CollateralisedNomin is ERC20Token {
         oracle = _oracle;
         beneficiary = _beneficiary;
         etherPrice = initialEtherPrice;
+        lastPriceUpdate = now;
     }
 
     // Throw an exception if the caller is not the contract's owner.
@@ -371,6 +379,12 @@ contract CollateralisedNomin is ERC20Token {
     modifier notLiquidating
     {
         require(!isLiquidating());
+        _;
+    }
+
+    modifier notStale
+    {
+        require(!priceIsStale());
         _;
     }
     
@@ -523,13 +537,31 @@ contract CollateralisedNomin is ERC20Token {
     }
 
     /* Update the current ether price and update the last updated time;
-       only usable by the oracle. */
+     * only usable by the oracle. */
     function setPrice(uint price)
         public
         onlyOracle
     {
         etherPrice = price;
         PriceUpdate(price);
+    }
+
+    /* Update the current stale period. */
+    function setStalePeriod(uint period)
+        public
+        onlyOwner
+    {
+        stalePeriod = period;
+        StalePeriodUpdate(price);
+    }
+
+    /* True iff the current block timestamp is later than the time
+     * the price was last updated, plus the stale period. */
+    function priceIsStale()
+        public
+        returns (bool)
+    {
+        return lastPriceUpdate + stalePeriod < now;
     }
 
     /* Lock nomin purchase function in preparation for destroying the contract.
@@ -601,6 +633,9 @@ contract CollateralisedNomin is ERC20Token {
 
     /* Emitted whenever setPrice() is called by the oracle to update the price. */
     event PriceUpdate(uint newPrice);
+
+    /* Emitted whenever setStalePeriod() is called by the owner. */
+    event StalePeriodUpdate(uint newPeriod);
 
     /* Emitted whenever liquidation is initiated. */
     event Liquidation();
