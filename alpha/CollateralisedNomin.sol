@@ -60,6 +60,7 @@ Find out more at block8.io
 /* TODO:
  *     * Decide what to do if the eth backing is exhausted.
  *     * Decide whether the beneficiary address should be modifiable during liquidation.
+ *     * Break contract config out into its own contract to inherit from.
  *     * Provide a pool-shrinking function.
  *     * Consider if people emptying the collateral by hedging is a problem:
  *         Having no fee is effectively offering a short position for free. But if the volatility of nomins is ~10% a day or so
@@ -86,29 +87,49 @@ contract SafeFixedMath {
     uint public constant unit = 10 ** decimals;
     
     /* True iff adding x and y will not overflow. */
-    function addSafe(uint x, uint y) pure internal returns (bool) {
+    function addSafe(uint x, uint y) 
+        pure
+        internal
+        returns (bool)
+    {
         return x + y >= y;
     }
 
     /* Return the result of adding x and y, throwing an exception in case of overflow. */
-    function add(uint x, uint y) pure internal returns (uint) {
+    function add(uint x, uint y)
+        pure
+        internal
+        returns (uint)
+    {
         assert(addSafe(x, y));
         return x + y;
     }
     
     /* True iff subtracting y from x will not overflow in the negative direction. */
-    function subSafe(uint x, uint y) pure internal returns (bool) {
+    function subSafe(uint x, uint y)
+        pure
+        internal
+        returns (bool)
+    {
         return y <= x;
     }
 
     /* Return the result of subtracting y from x, throwing an exception in case of overflow. */
-    function sub(uint x, uint y) pure internal returns (uint) {
+    function sub(uint x, uint y)
+        pure
+        internal
+        returns (uint)
+    {
         assert(subSafe(x, y));
         return x - y;
     }
     
     /* True iff multiplying x and y would not overflow. */
-    function mulSafe(uint x, uint y) pure internal returns (bool) {
+    function mulSafe(uint x, uint y)
+        pure
+        internal
+        returns (bool) 
+    {
         if (x == 0) {
             return true;
         }
@@ -117,22 +138,32 @@ contract SafeFixedMath {
     }
 
     /* Return the result of multiplying x and y, throwing an exception in case of overflow. */
-    function mul(uint x, uint y) pure internal returns (uint) {
+    function mul(uint x, uint y)
+        pure 
+        internal 
+        returns (uint)
+    {
         assert(mulSafe(x, y));
-
         // Divide by unit to remove the extra factor introduced by the product.
         return (x * y) / unit;
     }
     
     /* True iff the denominator of x/y is nonzero. */
-    function divSafe(uint x, uint y) pure internal returns (bool) {
+    function divSafe(uint x, uint y)
+        pure 
+        internal
+        returns (bool)
+    {
         return y != 0;
     }
 
     /* Return the result of dividing x by y, throwing an exception in case of overflow or zero divisor. */
-    function div(uint x, uint y) pure internal returns (uint) {
+    function div(uint x, uint y)
+        pure
+        internal
+        returns (uint)
+    {
         assert(mulSafe(x, unit)); // No need to use divSafe() here, as a 0 denominator already throws.
-
         // Reintroduce the unit factor that will be divided out.
         return (x * unit) / y;
     }
@@ -151,17 +182,28 @@ contract ERC20Token is SafeFixedMath {
     mapping(address => mapping (address => uint256)) allowances;
    
     // Get the total token supply
-    function totalSupply() public constant returns (uint) {
+    function totalSupply()
+        public
+        constant
+        returns (uint)
+    {
         return supply;
     }
  
     // Get the account balance of another account with address _account
-    function balanceOf(address _account) public constant returns (uint) {
+    function balanceOf(address _account)
+        public
+        constant
+        returns (uint)
+    {
         return balances[_account];
     }
  
     // Send _value amount of tokens to address _to
-    function transfer(address _to, uint _value) public returns (bool) {
+    function transfer(address _to, uint _value)
+        public
+        returns (bool)
+    {
         if (subSafe(balances[msg.sender], _value) && addSafe(balances[_to], _value)) {
             balances[msg.sender] = sub(balances[msg.sender], _value);
             balances[_to] = add(balances[_to], _value);
@@ -172,7 +214,10 @@ contract ERC20Token is SafeFixedMath {
     }
  
     // Send _value amount of tokens from address _from to address _to
-    function transferFrom(address _from, address _to, uint _value) public returns (bool) {
+    function transferFrom(address _from, address _to, uint _value)
+        public
+        returns (bool)
+    {
         if (subSafe(balances[_from], _value) &&
             subSafe(allowances[_from][msg.sender], _value) &&
             addSafe(balances[_to], _value)) {
@@ -188,14 +233,21 @@ contract ERC20Token is SafeFixedMath {
     // Allow _spender to withdraw from your account, multiple times, up to the _value amount.
     // If this function is called again it overwrites the current allowance with _value.
     // this function is required for some DEX functionality.
-    function approve(address _spender, uint _value) public returns (bool) {
+    function approve(address _spender, uint _value)
+        public
+        returns (bool)
+    {
         allowances[msg.sender][_spender] = _value;
         Approval(msg.sender, _spender, _value);
         return true;
     }
  
     // Returns the amount which _spender is still allowed to withdraw from _owner
-    function allowance(address _owner, address _spender) public constant returns (uint) {
+    function allowance(address _owner, address _spender)
+        public
+        constant
+        returns (uint)
+    {
         return allowances[_owner][_spender];
     }
  
@@ -268,53 +320,79 @@ contract CollateralisedNomin is ERC20Token {
     uint public liquidationTimestamp = ~uint(0);
     
     function CollateralisedNomin(address _owner, address _oracle,
-                                 address _beneficiary, uint initialEtherPrice) {
+                                 address _beneficiary, uint initialEtherPrice)
+    {
         owner = _owner;
         oracle = _oracle;
         beneficiary = _beneficiary;
         etherPrice = initialEtherPrice;
     }
 
-    modifier onlyOwner {
+    modifier onlyOwner
+    {
         require(msg.sender == owner);
         _;
     }
 
-    modifier onlyOracle {
+    modifier onlyOracle
+    {
         require(msg.sender == oracle);
         _;
     }
 
-    modifier notLiquidating {
+    modifier notLiquidating
+    {
         require(!isLiquidating());
         _;
     }
  
-    function setOwner(address newOwner) public onlyOwner {
+    function setOwner(address newOwner)
+        public
+        onlyOwner
+    {
         owner = newOwner;
     }   
-    function setOracle(address newOracle) public onlyOwner {
+    
+    function setOracle(address newOracle)
+        public
+        onlyOwner
+    {
         oracle = newOracle;
     }
     
-    function setBeneficiary(address newBeneficiary) public onlyOwner {
+    function setBeneficiary(address newBeneficiary)
+        public
+        onlyOwner
+    {
         beneficiary = newBeneficiary;
     }
     
     /* Return the equivalent usd value of the given quantity
      * of ether at the current price. */
-    function usdValue(uint ether) public view returns (uint) {
+    function usdValue(uint ether)
+        public
+        view
+        returns (uint)
+    {
         return mul(ether, etherPrice);
     }
     
     /* Return the current USD value of the contract's balance. */
-    function usdBalance() public view returns (uint) {
+    function usdBalance()
+        public
+        view
+        returns (uint)
+    {
         return usdValue(this.balance);
     }
     
     /* Return the equivalent ether value of the given quantity
      * of usd at the current price. */
-    function etherValue(uint usd) public view returns (uint) {
+    function etherValue(uint usd)
+        public
+        view
+        returns (uint)
+    {
         return div(usd, etherPrice);
     }
 
@@ -326,7 +404,12 @@ contract CollateralisedNomin is ERC20Token {
      *     Unavailable or stale price data; 
      *     n below some minimum;
      *     contract in liquidation. */
-    function issue(uint n) public onlyOwner notLiquidating payable {
+    function issue(uint n)
+        public
+        onlyOwner
+        notLiquidating
+        payable
+    {
         require(usdValue(msg.value) >= n);
         supply = add(supply, n);
         pool = add(pool, n);
@@ -340,7 +423,11 @@ contract CollateralisedNomin is ERC20Token {
      *     Unavailable or stale price data;
      *     n below the purchase minimum (1 cent);
      *     contract in liquidation; */
-    function buy(uint n) public notLiquidating payable {
+    function buy(uint n)
+        public
+        notLiquidating
+        payable
+    {
         require(n >= purchaseMininum &&
                 usdValue(msg.value) >= mul(n, add(unit, fee)));
         // sub requires that pool >= n
@@ -350,7 +437,11 @@ contract CollateralisedNomin is ERC20Token {
     
     /* Return the ether cost (including fee) of purchasing n
      * nomins. */
-    function purchaseCostEther(uint n) public view returns (uint) {
+    function purchaseCostEther(uint n)
+        public
+        view
+        returns (uint)
+    {
         return etherValue(mul(n, add(unit, fee)));
     }
 
@@ -361,7 +452,9 @@ contract CollateralisedNomin is ERC20Token {
      *     Insufficient funds in the pool to pay sender // TODO: work out a discounted rate?;
      *     Unavailable or stale price data;
      *     contract in liquidation; */
-    function sell(uint n) public {
+    function sell(uint n)
+        public
+    {
         uint proceeds = mul(n, sub(unit, fee));
         require(usdBalance() >= proceeds);
         // sub requires that the balance is greater than n
@@ -372,25 +465,39 @@ contract CollateralisedNomin is ERC20Token {
     
     /* Return the ether proceeds (less the fee) of selling n
      * nomins. */
-    function saleProceedsEther(uint n) public view returns (uint) {
+    function saleProceedsEther(uint n)
+        public
+        view
+        returns (uint)
+    {
         return etherValue(mul(n, sub(unit, fee)));
     }
 
     /* Update the current ether price and update the last updated time;
        only usable by the oracle. */
-    function setPrice(uint price) public onlyOracle {
+    function setPrice(uint price)
+        public
+        onlyOracle
+    {
         etherPrice = price;
     }
     
     /* Extend the liquidation period. It may only get longer,
      * not shorter, and it may not be extended past the liquidation max. */
-    function extendLiquidationPeriod(uint extension) public onlyOwner {
+    function extendLiquidationPeriod(uint extension)
+        public
+        onlyOwner
+    {
         require(liquidationPeriod + extension <= maxLiquidationPeriod);
         liquidationPeriod += extension;
     }
     
     /* True iff the liquidation block is earlier than the current block.*/
-    function isLiquidating() public view returns (bool) {
+    function isLiquidating()
+        public
+        view
+        returns (bool)
+    {
         return liquidationTimestamp <= now;
     }
 
@@ -402,7 +509,11 @@ contract CollateralisedNomin is ERC20Token {
      *     Not called by contract owner;
      *     contract already in liquidation;
      */
-    function liquidate() public onlyOwner notLiquidating {
+    function liquidate()
+        public
+        onlyOwner
+        notLiquidating
+    {
         liquidationTimestamp = now;
     }
     
@@ -414,7 +525,10 @@ contract CollateralisedNomin is ERC20Token {
      *     Contract has not been in liquidation for at least liquidationPeriod;
      *     Not called by contract owner;
      */
-    function selfDestruct() public onlyOwner {
+    function selfDestruct()
+        public
+        onlyOwner
+    {
         require(liquidationTimestamp + liquidationPeriod < now);
         selfdestruct(beneficiary);
     }
