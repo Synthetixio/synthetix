@@ -7,7 +7,6 @@ version:    0.1
 author:     Block8 Technologies, in partnership with Havven
 
             Anton Jurisevic
-            Samuel Brooks
 
 date:       2017-12-4
 
@@ -59,15 +58,13 @@ Find out more at block8.io
 */
 
 /* TODO:
+ *     * Ensure satisfies all nomin contract features.
+ *     * Ensure ERC20-compliant.
  *     * Ensure function modifiers are all correct
- *     * Event logging
- *     * Consensys best practice compliance
+ *     * Event logging for nomin functions.
+ *     * Consensys best practices compliance
  *     * Solium lint
- *     * Make contract pausable in case of bug
- *     * Make contract upgradeable in case of bug
- *     * Rate limiting?
  *     * Test suite
- *     * Bug bounties?
  */
 pragma solidity ^0.4.19;
 
