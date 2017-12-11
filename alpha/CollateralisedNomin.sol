@@ -77,8 +77,8 @@ pragma solidity ^0.4.19;
 
 /* Safely manipulate fixed-point decimals at a given precision level. */
 contract SafeFixedMath {
-    uint public constant precision = 18;
-    uint public constant unit = 10 ** precision;
+    uint public constant decimals = 18;
+    uint public constant unit = 10 ** decimals;
     
     function addSafe(uint x, uint y) pure internal returns (bool) {
         return x + y >= y;
@@ -116,7 +116,8 @@ contract SafeFixedMath {
     }
 
     function div(uint x, uint y) pure internal returns (uint) {
-        return mul(x, unit) / y;
+        assert(mulSafe(x, unit)); // No need to use divSafe() here, as a 0 denominator already throws.
+        return (x * unit) / y;
     }
 }
 
@@ -211,16 +212,15 @@ contract CollateralisedNomin is ERC20Token {
     // ERC20 information
     string public constant name = "Collateralised Nomin";
     string public constant symbol = "CNOM";
-    uint public constant decimals = precision;
 
     // Nomins in the pool ready to be sold.
-    uint pool = 0;
+    uint public pool = 0;
     
     // Impose a 10 basis-point fee for buying and selling.
-    uint fee = unit / 1000;
+    uint public fee = unit / 1000;
     
     // Ether price from oracle ($/nom), and the time it was read.
-    uint lastEtherPrice;
+    uint public lastEtherPrice;
     
     // The time that must pass before the liquidation period is
     // complete
@@ -232,10 +232,11 @@ contract CollateralisedNomin is ERC20Token {
     uint private liquidationTimestamp = ~uint(0);
     
     function CollateralisedNomin(address _owner, address _oracle,
-                                 address _beneficiary) {
+                                 address _beneficiary, uint initialEtherPrice) {
         owner = _owner;
-        beneficiary = _beneficiary;
         oracle = _oracle;
+        beneficiary = _beneficiary;
+        lastEtherPrice = initialEtherPrice;
     }
 
     modifier onlyOwner {
@@ -265,11 +266,15 @@ contract CollateralisedNomin is ERC20Token {
     }
 
     function getUSDValue(uint eth) public view returns (uint) {
-        return div(eth, lastEtherPrice);
+        return mul(eth, lastEtherPrice);
     }
 
     function getUSDBalance() public view returns (uint) {
         return getUSDValue(this.balance);
+    }
+    
+    function getEthValue(uint usd) public view returns (uint) {
+        return div(usd, lastEtherPrice);
     }
 
     /* Issues n nomins into the pool available to be bought by users.
@@ -283,11 +288,11 @@ contract CollateralisedNomin is ERC20Token {
     function issue(uint n) public onlyOwner notLiquidating payable {
         require(getUSDValue(msg.value) >= n);
         supply = add(supply, n);
-        pool = add(supply, n);
+        pool = add(pool, n);
     }
     
     /* Sends n nomins to the sender from the pool, in exchange for
-     * $n worth of eth.
+     * $n plus the fee worth of eth.
      * Exceptional conditions:
      *     Insufficient funds provided;
      *     More nomins requested than are in the pool;
@@ -302,7 +307,7 @@ contract CollateralisedNomin is ERC20Token {
     }
 
     /* Sends n nomins to the pool from the sender, in exchange for
-     * $n worth of eth.
+     * $n minus the fee worth of eth.
      * Exceptional conditions:
      *     Insufficient nomins in sender's wallet;
      *     Insufficient funds in the pool to pay sender // TODO: work out a discounted rate?;
