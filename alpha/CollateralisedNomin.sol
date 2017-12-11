@@ -220,7 +220,7 @@ contract CollateralisedNomin is ERC20Token {
     uint public fee = unit / 1000;
     
     // Minimum quantity of nomins purchasable: 1 cent by default.
-    uint purchaseMininum = unit / 100;
+    uint public purchaseMininum = unit / 100;
     
     // Ether price from oracle ($/nom), and the time it was read.
     uint public etherPrice;
