@@ -206,7 +206,7 @@ contract CollateralisedNomin is ERC20Token {
     // The oracle provides price information to this contract.
     address oracle;
 
-    // Foundation wallet for funds to go to post self-destruct.
+    // Foundation wallet for funds to go to post liquidation.
     address beneficiary;
     
     // ERC20 information
@@ -218,6 +218,9 @@ contract CollateralisedNomin is ERC20Token {
     
     // Impose a 10 basis-point fee for buying and selling.
     uint public fee = unit / 1000;
+    
+    // Minimum quantity of nomins purchasable: 1 cent by default.
+    uint purchaseMininum = unit / 100;
     
     // Ether price from oracle ($/nom), and the time it was read.
     uint public etherPrice;
@@ -263,19 +266,24 @@ contract CollateralisedNomin is ERC20Token {
     function setOracle(address newOracle) public onlyOwner {
         oracle = newOracle;
     }
-
+    
     function setBeneficiary(address newBeneficiary) public onlyOwner {
         beneficiary = newBeneficiary;
     }
-
+    
+    /* Return the equivalent usd value of the given quantity
+     * of ether at the current price. */
     function usdValue(uint eth) public view returns (uint) {
         return mul(eth, etherPrice);
     }
-
+    
+    /* Return the current USD value of the contract's balance. */
     function usdBalance() public view returns (uint) {
         return usdValue(this.balance);
     }
     
+    /* Return the equivalent ether value of the given quantity
+     * of usd at the current price. */
     function etherValue(uint usd) public view returns (uint) {
         return div(usd, etherPrice);
     }
@@ -300,10 +308,11 @@ contract CollateralisedNomin is ERC20Token {
      *     Insufficient funds provided;
      *     More nomins requested than are in the pool;
      *     Unavailable or stale price data;
-     *     n below some minimum;
+     *     n below the purchase minimum (1 cent);
      *     contract in liquidation; */
     function buy(uint n) public notLiquidating payable {
-        require(usdValue(msg.value) >= mul(n, add(unit, fee)));
+        require(n >= purchaseMininum &&
+                usdValue(msg.value) >= mul(n, add(unit, fee)));
         // sub requires that pool >= n
         pool = sub(pool, n);
         balances[msg.sender] = balances[msg.sender] + n;
@@ -321,7 +330,6 @@ contract CollateralisedNomin is ERC20Token {
      *     Insufficient nomins in sender's wallet;
      *     Insufficient funds in the pool to pay sender // TODO: work out a discounted rate?;
      *     Unavailable or stale price data;
-     *     n below some minimum;
      *     contract in liquidation; */
     function sell(uint n) public {
         uint proceeds = mul(n, sub(unit, fee));
