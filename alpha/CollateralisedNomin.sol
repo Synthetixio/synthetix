@@ -59,12 +59,8 @@ Find out more at block8.io
 */
 
 /* TODO:
- *     * Finish nomin-specific functions
- *     * Finish ERC20 interface functions
- *     * Fix all compiler warnings
  *     * Ensure function modifiers are all correct
  *     * Event logging
- *     * A notion of stale prices
  *     * Consensys best practice compliance
  *     * Solium lint
  *     * Make contract pausable in case of bug
@@ -77,27 +73,36 @@ pragma solidity ^0.4.19;
 
 /* Safely manipulate fixed-point decimals at a given precision level. */
 contract SafeFixedMath {
+    
+    // Number of decimal places in the representation.
     uint public constant decimals = 18;
+
+    // The number representing 1.0.
     uint public constant unit = 10 ** decimals;
     
+    /* True iff adding x and y will not overflow. */
     function addSafe(uint x, uint y) pure internal returns (bool) {
         return x + y >= y;
     }
 
+    /* Return the result of adding x and y, throwing an exception in case of overflow. */
     function add(uint x, uint y) pure internal returns (uint) {
         assert(addSafe(x, y));
         return x + y;
     }
     
+    /* True iff subtracting y from x will not overflow in the negative direction. */
     function subSafe(uint x, uint y) pure internal returns (bool) {
         return y <= x;
     }
 
+    /* Return the result of subtracting y from x, throwing an exception in case of overflow. */
     function sub(uint x, uint y) pure internal returns (uint) {
         assert(subSafe(x, y));
         return x - y;
     }
     
+    /* True iff multiplying x and y would not overflow. */
     function mulSafe(uint x, uint y) pure internal returns (bool) {
         if (x == 0) {
             return true;
@@ -106,17 +111,24 @@ contract SafeFixedMath {
         return r / x == y;
     }
 
+    /* Return the result of multiplying x and y, throwing an exception in case of overflow. */
     function mul(uint x, uint y) pure internal returns (uint) {
         assert(mulSafe(x, y));
+
+        // Divide by unit to remove the extra factor introduced by the product.
         return (x * y) / unit;
     }
     
+    /* True iff the denominator of x/y is nonzero. */
     function divSafe(uint x, uint y) pure internal returns (bool) {
         return y != 0;
     }
 
+    /* Return the result of dividing x by y, throwing an exception in case of overflow or zero divisor. */
     function div(uint x, uint y) pure internal returns (uint) {
         assert(mulSafe(x, unit)); // No need to use divSafe() here, as a 0 denominator already throws.
+
+        // Reintroduce the unit factor that will be divided out.
         return (x * unit) / y;
     }
 }
