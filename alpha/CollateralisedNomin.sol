@@ -61,18 +61,15 @@ Find out more at block8.io
  *     * Decide what to do if the ether backing is exhausted. For example:
  *         - discount nomins once backing is too low: e.g. if $900k ether backs 1m nom, each nom is worth 90c
  *         - automatically liquidate system once backing is low
- *     * Provide a pool-shrinking function.
- *     * Consider adding a notion of price staleness.
+ *     * Consider adding a notion of price staleness (refuse to function if the price was not updated recently enough).
  *     * Consider whether people emptying the collateral by hedging is a problem:
  *         Having no fee is effectively offering a short position for free. But if the volatility of ether is ~10% a day or so
  *         then a 10% fee required to make betting on it is probably too high to get people to actually buy these things.
  *         Probably can add a time lock for selling nomins back to the system, but it's awkward, and just makes the futures contract
  *         slightly longer term.
  *     * Ensure satisfies all nomin contract features.
- *     * Ensure ERC20-compliant.
  *     * Do we disallow people from paying too much for nomins?
  *     * Ensure function modifiers are all correct.
- *     * Event logging for nomin functions.
  *     * Consensys best practices compliance.
  *     * Solium lint.
  *     * Test suite.
@@ -89,7 +86,7 @@ contract SafeFixedMath {
     uint public constant unit = 10 ** decimals;
     
     /* True iff adding x and y will not overflow. */
-    function addSafe(uint x, uint y) 
+    function addIsSafe(uint x, uint y) 
         pure
         internal
         returns (bool)
@@ -103,12 +100,12 @@ contract SafeFixedMath {
         internal
         returns (uint)
     {
-        assert(addSafe(x, y));
+        assert(addIsSafe(x, y));
         return x + y;
     }
     
     /* True iff subtracting y from x will not overflow in the negative direction. */
-    function subSafe(uint x, uint y)
+    function subIsSafe(uint x, uint y)
         pure
         internal
         returns (bool)
@@ -122,12 +119,12 @@ contract SafeFixedMath {
         internal
         returns (uint)
     {
-        assert(subSafe(x, y));
+        assert(subIsSafe(x, y));
         return x - y;
     }
     
     /* True iff multiplying x and y would not overflow. */
-    function mulSafe(uint x, uint y)
+    function mulIsSafe(uint x, uint y)
         pure
         internal
         returns (bool) 
@@ -145,13 +142,13 @@ contract SafeFixedMath {
         internal 
         returns (uint)
     {
-        assert(mulSafe(x, y));
+        assert(mulIsSafe(x, y));
         // Divide by unit to remove the extra factor introduced by the product.
         return (x * y) / unit;
     }
     
     /* True iff the denominator of x/y is nonzero. */
-    function divSafe(uint x, uint y)
+    function divIsSafe(uint x, uint y)
         pure 
         internal
         returns (bool)
@@ -165,7 +162,7 @@ contract SafeFixedMath {
         internal
         returns (uint)
     {
-        assert(mulSafe(x, unit)); // No need to use divSafe() here, as a 0 denominator already throws.
+        assert(mulIsSafe(x, unit)); // No need to use divIsSafe() here, as a 0 denominator already throws an exception.
         // Reintroduce the unit factor that will be divided out.
         return (x * unit) / y;
     }
@@ -206,8 +203,8 @@ contract ERC20Token is SafeFixedMath {
         public
         returns (bool)
     {
-        if (subSafe(balances[msg.sender], _value) &&
-            addSafe(balances[_to], _value)) {
+        if (subIsSafe(balances[msg.sender], _value) &&
+            addIsSafe(balances[_to], _value)) {
             Transfer(msg.sender, _to, _value);
             if (_value == 0) return true; // Don't spend gas updating state if unnecessary.
             balances[msg.sender] = sub(balances[msg.sender], _value);
@@ -222,9 +219,9 @@ contract ERC20Token is SafeFixedMath {
         public
         returns (bool)
     {
-        if (subSafe(balances[_from], _value) &&
-            subSafe(allowances[_from][msg.sender], _value) &&
-            addSafe(balances[_to], _value)) {
+        if (subIsSafe(balances[_from], _value) &&
+            subIsSafe(allowances[_from][msg.sender], _value) &&
+            addIsSafe(balances[_to], _value)) {
                 Transfer(_from, _to, _value);
                 if (_value == 0) return true; // Don't spend gas updating state if unnecessary.
                 balances[_from] = sub(balances[_from], _value);
@@ -272,7 +269,8 @@ contract ERC20Token is SafeFixedMath {
  * The contract owner may increase this quantity, but only if they provide
  * ether to back it. The backing they provide must be at least 1-to-1
  * nomin to USD value of the ether collateral. In this way each nomin is
- * at least 2x overcollateralised.
+ * at least 2x overcollateralised. The owner may also destroy nomins
+ * in the pool, but they must respect the collateralisation requirement.
  *
  * Ether price is continually updated by an external oracle, and the value
  * of the backing is computed on this basis.
@@ -294,7 +292,8 @@ contract CollateralisedNomin is ERC20Token {
      *   - Setting the owner;
      *   - Setting the oracle;
      *   - Setting the beneficiary;
-     *   - Issuing new nomins into the pool; 
+     *   - Issuing new nomins into the pool;
+     *   - Burning nomins in the pool;
      *   - Initiating and extending liquidation;
      *   - Selfdestructing the contract*/
     address owner;
@@ -416,14 +415,12 @@ contract CollateralisedNomin is ERC20Token {
      * Must be accompanied by $n worth of ether.
      * Exceptional conditions:
      *     Not called by contract owner;
-     *     Insufficient backing funds provided;
+     *     Insufficient backing funds provided (less than US$n worth of ether);
      *     Unavailable or stale price data; 
-     *     n below some minimum;
-     *     contract in liquidation. */
+     *     n below some minimum; */
     function issue(uint n)
         public
         onlyOwner
-        notLiquidating
         payable
     {
         require(usdValue(msg.value) >= n);
@@ -431,7 +428,26 @@ contract CollateralisedNomin is ERC20Token {
         pool = add(pool, n);
         Issuance(n, msg.value);
     }
-    
+
+    /* Burns n nomins from the pool, and withdraws the specified
+     * quantity of ether, sending it to the beneficiary address.
+     * Exceptional conditions:
+     *     Not called by contract owner.
+     *     There are at least n nomins in the pool.
+     *     Remaining collateral is less than 2*(supply - pool) USD worth of ether;
+     *       each nomin in circulation is overcollateralised at least 2x. */
+     function burn(uint n, uint eth)
+        public
+        onlyOwner
+    {
+        require(pool >= n &&
+                usdValue(sub(this.balance, eth)) >= 2*(supply - pool);
+        pool = sub(pool, n);
+        supply = sub(supply, n);
+        beneficiary.transfer(usdValue(eth));
+        Burning(n, eth);
+    }
+
     /* Sends n nomins to the sender from the pool, in exchange for
      * $n plus the fee worth of ether.
      * Exceptional conditions:
@@ -466,10 +482,8 @@ contract CollateralisedNomin is ERC20Token {
     /* Sends n nomins to the pool from the sender, in exchange for
      * $n minus the fee worth of ether.
      * Exceptional conditions:
-     *     Insufficient nomins in sender's wallet;
-     *     Insufficient funds in the pool to pay sender
-     *     Unavailable or stale price data;
-     *     contract in liquidation; */
+     *     Insufficient nomins in sender's wallet.
+     *     Insufficient funds in the pool to pay sender. */
     function sell(uint n)
         public
     {
@@ -502,10 +516,10 @@ contract CollateralisedNomin is ERC20Token {
         PriceUpdate(price);
     }
 
-    /* Lock nomin purchase and issuance functions in preparation for destroying the contract.
+    /* Lock nomin purchase function in preparation for destroying the contract.
      * While the contract is under liquidation, users may sell nomins back to the system.
      * After liquidation period has terminated, the contract may be self-destructed,
-     * returning all remaining ether to the Havven foundation.
+     * returning all remaining ether to the beneficiary address.
      * Exceptional cases:
      *     Not called by contract owner;
      *     contract already in liquidation;
@@ -539,25 +553,30 @@ contract CollateralisedNomin is ERC20Token {
         return liquidationTimestamp <= now;
     }
     
-    /* Destroy this contract, returning all funds back to the Havven
-     * foundation, may only be called after the contract has been in
-     * liquidation for at least liquidationPeriod blocks.
+    /* Destroy this contract, returning all funds back to the beneficiary
+     * wallet, may only be called after the contract has been in
+     * liquidation for at least liquidationPeriod blocks, or there 
      * Exceptional cases:
-     *     Contract is not in liquidation;
-     *     Contract has not been in liquidation for at least liquidationPeriod;
-     *     Not called by contract owner;
+     *     Not called by contract owner.
+     *     Contract is not in liquidation.
+     *     Contract has not been in liquidation for at least liquidationPeriod.
      */
     function selfDestruct()
         public
         onlyOwner
     {
-        require(liquidationTimestamp + liquidationPeriod < now);
+        require(isLiquidating() &&
+                liquidationTimestamp + liquidationPeriod < now);
         SelfDestructed();
         selfdestruct(beneficiary);
     }
 
+
     /* Emitted whenever new nomins are issued into the pool. */
-    event Issuance(uint newNomins, uint collateral);
+    event Issuance(uint nominsIssued, uint collateralDeposited);
+
+    /* Emitted whenever nomins in the pool are destroyed. */
+    event Burning(uint nominsBurned, uint collateralWithdrawn);
 
     /* Emitted whenever a purchase of nomins is made, and how many eth were provided to buy them. */
     event Purchase(address buyer, uint nomins, uint eth);
