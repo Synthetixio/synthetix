@@ -76,6 +76,7 @@ Find out more at block8.io
  */
 pragma solidity ^0.4.19;
 
+
 /* Safely manipulate fixed-point decimals at a given precision level. */
 contract SafeFixedMath {
     
@@ -83,7 +84,7 @@ contract SafeFixedMath {
     uint public constant decimals = 18;
 
     // The number representing 1.0.
-    uint public constant unit = 10 ** decimals;
+    uint public constant UNIT = 10 ** decimals;
     
     /* True iff adding x and y will not overflow. */
     function addIsSafe(uint x, uint y) 
@@ -143,8 +144,8 @@ contract SafeFixedMath {
         returns (uint)
     {
         assert(mulIsSafe(x, y));
-        // Divide by unit to remove the extra factor introduced by the product.
-        return (x * y) / unit;
+        // Divide by UNIT to remove the extra factor introduced by the product.
+        return (x * y) / UNIT;
     }
     
     /* True iff the denominator of x/y is nonzero. */
@@ -162,9 +163,9 @@ contract SafeFixedMath {
         internal
         returns (uint)
     {
-        assert(mulIsSafe(x, unit)); // No need to use divIsSafe() here, as a 0 denominator already throws an exception.
-        // Reintroduce the unit factor that will be divided out.
-        return (x * unit) / y;
+        assert(mulIsSafe(x, UNIT)); // No need to use divIsSafe() here, as a 0 denominator already throws an exception.
+        // Reintroduce the UNIT factor that will be divided out.
+        return (x * UNIT) / y;
     }
 }
 
@@ -260,6 +261,7 @@ contract ERC20Token is SafeFixedMath {
     event Approval(address indexed _owner, address indexed _spender, uint _value);
 }
 
+
 /* Issues nomins, which are tokens worth 1 USD each. They are backed
  * by a pool of ether collateral, so that if a user has nomins, they may
  * redeem them for ether from the pool, or if they want to obtain nomins,
@@ -313,10 +315,10 @@ contract CollateralisedNomin is ERC20Token {
     uint public pool = 0;
     
     // Impose a 50 basis-point fee for buying and selling.
-    uint public fee = unit / 200;
+    uint public fee = UNIT / 200;
     
     // Minimum quantity of nomins purchasable: 1 cent by default.
-    uint public purchaseMininum = unit / 100;
+    uint public purchaseMininum = UNIT / 100;
     
     // Ether price from oracle (USD per eth).
     uint public etherPrice;
@@ -462,7 +464,7 @@ contract CollateralisedNomin is ERC20Token {
         payable
     {
         require(n >= purchaseMininum &&
-                usdValue(msg.value) >= mul(n, add(unit, fee)));
+                usdValue(msg.value) >= mul(n, add(UNIT, fee)));
         // sub requires that pool >= n
         pool = sub(pool, n);
         balances[msg.sender] = balances[msg.sender] + n;
@@ -476,7 +478,7 @@ contract CollateralisedNomin is ERC20Token {
         view
         returns (uint)
     {
-        return etherValue(mul(n, add(unit, fee)));
+        return etherValue(mul(n, add(UNIT, fee)));
     }
 
     /* Sends n nomins to the pool from the sender, in exchange for
@@ -487,7 +489,7 @@ contract CollateralisedNomin is ERC20Token {
     function sell(uint n)
         public
     {
-        uint proceeds = mul(n, sub(unit, fee));
+        uint proceeds = mul(n, sub(UNIT, fee));
         require(usdBalance() >= proceeds);
         // sub requires that the balance is greater than n
         balances[msg.sender] = sub(balances[msg.sender], n);
@@ -503,7 +505,7 @@ contract CollateralisedNomin is ERC20Token {
         view
         returns (uint)
     {
-        return etherValue(mul(n, sub(unit, fee)));
+        return etherValue(mul(n, sub(UNIT, fee)));
     }
 
     /* Update the current ether price and update the last updated time;
