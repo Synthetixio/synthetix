@@ -224,12 +224,15 @@ contract CollateralisedNomin is ERC20Token {
     
     // The time that must pass before the liquidation period is
     // complete
-    uint private liquidationPeriod = 1 years;
+    uint public liquidationPeriod = 1 years;
+    
+    // The liquidation period can be extended up to this duration.
+    uint public maxLiquidationPeriod = 2 years;
 
     // The timestamp when liquidation was activated. We initialise this to
     // uint max, so that we know that we are under liquidation if the 
     // liquidation timestamp is in the past.
-    uint private liquidationTimestamp = ~uint(0);
+    uint public liquidationTimestamp = ~uint(0);
     
     function CollateralisedNomin(address _owner, address _oracle,
                                  address _beneficiary, uint initialEtherPrice) {
@@ -339,6 +342,13 @@ contract CollateralisedNomin is ERC20Token {
        only usable by the oracle. */
     function setPrice(uint price) public onlyOracle {
         etherPrice = price;
+    }
+    
+    /* Extend the liquidation period. It may only get longer,
+     * not shorter, and it may not be extended past the liquidation max. */
+    function extendLiquidationPeriod(uint extension) public onlyOwner {
+        require(liquidationPeriod + extension <= maxLiquidationPeriod);
+        liquidationPeriod += extension;
     }
     
     /* True iff the liquidation block is earlier than the current block.*/
