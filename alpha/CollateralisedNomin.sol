@@ -2,7 +2,7 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
-file:       HavvenAlpha.sol
+file:       CollateralisedNomin.sol
 version:    0.1
 author:     Block8 Technologies, in partnership with Havven
 
@@ -16,7 +16,7 @@ approved:   -
 -----------------------------------------------------------------
 MODULE DESCRIPTION
 -----------------------------------------------------------------
-Alpha ether-backed alpha nomin stablecoin contract.
+Ether-backed nomin stablecoin contract.
 
 
 -----------------------------------------------------------------
