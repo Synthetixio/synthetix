@@ -207,7 +207,10 @@ contract ERC20Token is SafeFixedMath {
         if (subIsSafe(balances[msg.sender], _value) &&
             addIsSafe(balances[_to], _value)) {
             Transfer(msg.sender, _to, _value);
-            if (_value == 0) return true; // Don't spend gas updating state if unnecessary.
+            // Don't spend gas updating state if unnecessary.
+            if (_value == 0) {
+                return true;
+            }
             balances[msg.sender] = sub(balances[msg.sender], _value);
             balances[_to] = add(balances[_to], _value);
             return true;
@@ -220,11 +223,14 @@ contract ERC20Token is SafeFixedMath {
         public
         returns (bool)
     {
-        if (subIsSafe(balances[_from], _value) &&
-            subIsSafe(allowances[_from][msg.sender], _value) &&
+        if (subIsSafe(balances[_from], _value) && 
+            subIsSafe(allowances[_from][msg.sender], _value) && 
             addIsSafe(balances[_to], _value)) {
                 Transfer(_from, _to, _value);
-                if (_value == 0) return true; // Don't spend gas updating state if unnecessary.
+                // Don't spend gas updating state if unnecessary.
+                if (_value == 0) {
+                    return true;
+                }
                 balances[_from] = sub(balances[_from], _value);
                 allowances[_from][msg.sender] = sub(allowances[_from][msg.sender], _value);
                 balances[_to] = add(balances[_to], _value);
@@ -335,9 +341,9 @@ contract CollateralisedNomin is ERC20Token {
     // liquidation timestamp is in the past.
     uint public liquidationTimestamp = ~uint(0);
 
-
+    // Constructor
     function CollateralisedNomin(address _owner, address _oracle,
-                                 address _beneficiary, uint initialEtherPrice)
+                                 address _beneficiary, uint initialEtherPrice) public
     {
         owner = _owner;
         oracle = _oracle;
@@ -345,24 +351,28 @@ contract CollateralisedNomin is ERC20Token {
         etherPrice = initialEtherPrice;
     }
 
+    // Throw an exception if the caller is not the contract's owner.
     modifier onlyOwner
     {
         require(msg.sender == owner);
         _;
     }
 
+    // Throw an exception if the caller is not the contract's designated price oracle.
     modifier onlyOracle
     {
         require(msg.sender == oracle);
         _;
     }
 
+    // Throw an exception if the contract is not currently undertaking liquidation.
     modifier notLiquidating
     {
         require(!isLiquidating());
         _;
     }
- 
+    
+    // Set the owner of this contract. Only the contract owner should be able to call this.
     function setOwner(address newOwner)
         public
         onlyOwner
@@ -370,6 +380,7 @@ contract CollateralisedNomin is ERC20Token {
         owner = newOwner;
     }   
     
+    // Set the price oracle of this contract. Only the contract owner should be able to call this.
     function setOracle(address newOracle)
         public
         onlyOwner
@@ -377,6 +388,7 @@ contract CollateralisedNomin is ERC20Token {
         oracle = newOracle;
     }
     
+    // Set the beneficiary of this contract. Only the contract owner should be able to call this.
     function setBeneficiary(address newBeneficiary)
         public
         onlyOwner
@@ -438,7 +450,7 @@ contract CollateralisedNomin is ERC20Token {
      *     There are at least n nomins in the pool.
      *     Remaining collateral is less than 2*(supply - pool) USD worth of ether;
      *       each nomin in circulation is overcollateralised at least 2x. */
-     function burn(uint n, uint eth)
+    function burn(uint n, uint eth)
         public
         onlyOwner
     {
@@ -572,7 +584,6 @@ contract CollateralisedNomin is ERC20Token {
         SelfDestructed();
         selfdestruct(beneficiary);
     }
-
 
     /* Emitted whenever new nomins are issued into the pool. */
     event Issuance(uint nominsIssued, uint collateralDeposited);
