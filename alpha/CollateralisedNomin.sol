@@ -204,10 +204,12 @@ contract ERC20Token is SafeFixedMath {
         public
         returns (bool)
     {
-        if (subSafe(balances[msg.sender], _value) && addSafe(balances[_to], _value)) {
+        if (subSafe(balances[msg.sender], _value) &&
+            addSafe(balances[_to], _value)) {
+            Transfer(msg.sender, _to, _value);
+            if (_value == 0) return true; // Don't spend gas updating state if unnecessary.
             balances[msg.sender] = sub(balances[msg.sender], _value);
             balances[_to] = add(balances[_to], _value);
-            Transfer(msg.sender, _to, _value);
             return true;
         }
         return false;
@@ -221,10 +223,11 @@ contract ERC20Token is SafeFixedMath {
         if (subSafe(balances[_from], _value) &&
             subSafe(allowances[_from][msg.sender], _value) &&
             addSafe(balances[_to], _value)) {
+                Transfer(_from, _to, _value);
+                if (_value == 0) return true; // Don't spend gas updating state if unnecessary.
                 balances[_from] = sub(balances[_from], _value);
                 allowances[_from][msg.sender] = sub(allowances[_from][msg.sender], _value);
                 balances[_to] = add(balances[_to], _value);
-                Transfer(_from, _to, _value);
                 return true;
         }
         return false;
