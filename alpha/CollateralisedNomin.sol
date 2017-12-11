@@ -77,7 +77,10 @@ Find out more at block8.io
 pragma solidity ^0.4.19;
 
 
-/* Safely manipulate fixed-point decimals at a given precision level. */
+/* Safely manipulate fixed-point decimals at a given precision level. 
+ * All functions accepting uints in this contract and derived contracts
+ * are taken to be such fixed point decimals (including usd, ether, and
+ * nomin quantities). */
 contract SafeFixedMath {
     
     // Number of decimal places in the representation.
@@ -223,8 +226,8 @@ contract ERC20Token is SafeFixedMath {
         public
         returns (bool)
     {
-        if (subIsSafe(balances[_from], _value) && 
-            subIsSafe(allowances[_from][msg.sender], _value) && 
+        if (subIsSafe(balances[_from], _value) &&
+            subIsSafe(allowances[_from][msg.sender], _value) &&
             addIsSafe(balances[_to], _value)) {
                 Transfer(_from, _to, _value);
                 // Don't spend gas updating state if unnecessary.
@@ -400,7 +403,7 @@ contract CollateralisedNomin is ERC20Token {
      * of ether at the current price. */
     function usdValue(uint eth)
         public
-        view
+        constant
         returns (uint)
     {
         return mul(eth, etherPrice);
@@ -409,7 +412,7 @@ contract CollateralisedNomin is ERC20Token {
     /* Return the current USD value of the contract's balance. */
     function usdBalance()
         public
-        view
+        constant
         returns (uint)
     {
         return usdValue(this.balance);
@@ -419,7 +422,7 @@ contract CollateralisedNomin is ERC20Token {
      * of usd at the current price. */
     function etherValue(uint usd)
         public
-        view
+        constant
         returns (uint)
     {
         return div(usd, etherPrice);
@@ -487,7 +490,7 @@ contract CollateralisedNomin is ERC20Token {
      * nomins. */
     function purchaseCostEther(uint n)
         public
-        view
+        constant
         returns (uint)
     {
         return etherValue(mul(n, add(UNIT, fee)));
@@ -514,7 +517,7 @@ contract CollateralisedNomin is ERC20Token {
      * nomins. */
     function saleProceedsEther(uint n)
         public
-        view
+        constant
         returns (uint)
     {
         return etherValue(mul(n, sub(UNIT, fee)));
@@ -561,7 +564,7 @@ contract CollateralisedNomin is ERC20Token {
     /* True iff the liquidation block is earlier than the current block.*/
     function isLiquidating()
         public
-        view
+        constant
         returns (bool)
     {
         return liquidationTimestamp <= now;
