@@ -67,6 +67,7 @@ Find out more at block8.io
  *         then a 10% fee is probably too high to get people to actually buy these things.
  *         Probably can add a time lock for selling nomins back to the system, but it's awkward, and just makes the futures contract
  *         slightly longer term.
+ *     * Consider whether to break configuration out into its own contract.
  *     * Ensure satisfies all nomin contract features.
  *     * Ensure ERC20-compliant.
  *     * Ensure function modifiers are all correct.
@@ -504,9 +505,9 @@ contract CollateralisedNomin is ERC20Token {
         return liquidationTimestamp <= now;
     }
 
-    /* Lock all functions except sell(). While the contract is under
-     * liquidation, users may sell nomins back to the system. After
-     * liquidation period has terminated, the contract may be self-destructed,
+    /* Lock nomin purchase and issuance functions in preparation for destroying the contract.
+     * While the contract is under liquidation, users may sell nomins back to the system.
+     * After liquidation period has terminated, the contract may be self-destructed,
      * returning all remaining ether to the Havven foundation.
      * Exceptional cases:
      *     Not called by contract owner;
