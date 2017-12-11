@@ -58,13 +58,21 @@ Find out more at block8.io
 */
 
 /* TODO:
+ *     * Decide what to do if the eth backing is exhausted.
+ *     * Decide whether the beneficiary address should be modifiable during liquidation.
+ *     * Provide a pool-shrinking function.
+ *     * Consider if people emptying the collateral by hedging is a problem:
+ *         Having no fee is effectively offering a short position for free. But if the volatility of nomins is ~10% a day or so
+ *         then a 10% fee is probably too high to get people to actually buy these things.
+ *         Probably can add a time lock for selling nomins back to the system, but it's awkward, and just makes the futures contract
+ *         slightly longer term.
  *     * Ensure satisfies all nomin contract features.
  *     * Ensure ERC20-compliant.
- *     * Ensure function modifiers are all correct
+ *     * Ensure function modifiers are all correct.
  *     * Event logging for nomin functions.
- *     * Consensys best practices compliance
- *     * Solium lint
- *     * Test suite
+ *     * Consensys best practices compliance.
+ *     * Solium lint.
+ *     * Test suite.
  */
 pragma solidity ^0.4.19;
 
@@ -179,7 +187,7 @@ contract ERC20Token is SafeFixedMath {
   
     // Allow _spender to withdraw from your account, multiple times, up to the _value amount.
     // If this function is called again it overwrites the current allowance with _value.
-    // this function is required for some DEX functionality
+    // this function is required for some DEX functionality.
     function approve(address _spender, uint _value) public returns (bool) {
         allowances[msg.sender][_spender] = _value;
         Approval(msg.sender, _spender, _value);
@@ -199,14 +207,27 @@ contract ERC20Token is SafeFixedMath {
 }
 
 /* Issues nomins, which are tokens worth 1 USD each. They are backed
- * by a pool of eth collateral, so that if a user has nomins, they may
- * redeem them for eth from the pool, or if they want to obtain nomins,
- * they may pay eth into the pool in order to do so.
+ * by a pool of ether collateral, so that if a user has nomins, they may
+ * redeem them for ether from the pool, or if they want to obtain nomins,
+ * they may pay ether into the pool in order to do so. 
  * 
- * There is a limited pool of nomins that may be in circulation at any
- * time, and the contract owner may increase this pool, but only
- * if they provide enough backing collateral to maintain the ratio.
- *  The contract owner may issue nomins, initiate contract liquidation
+ * The supply of nomins that may be in circulation at any time is limited.
+ * The contract owner may increase this quantity, but only if they provide
+ * ether to back it. The backing they provide must be at least 1-to-1
+ * nomin to USD value of the ether collateral. In this way each nomin is
+ * at least 2x overcollateralised.
+ *
+ * Ether price is continually updated by an external oracle, and the value
+ * of the backing is computed on this basis.
+ *
+ * The contract owner may at any time initiate contract liquidation.
+ * During the liquidation period, most contract functions will be deactivated.
+ * No new nomins may be issued or bought, but users may sell nomins back
+ * to the system.
+ * After the liquidation period has elapsed, which is initially a year,
+ * the owner may destroy the contract, transferring any remaining collateral
+ * to a nominated beneficiary address.
+ * This liquidation period may be extended up to a maximum of two years.
  */
 contract CollateralisedNomin is ERC20Token {
     // The contract's owner (the Havven foundation multisig command contract).
@@ -225,8 +246,8 @@ contract CollateralisedNomin is ERC20Token {
     // Nomins in the pool ready to be sold.
     uint public pool = 0;
     
-    // Impose a 10 basis-point fee for buying and selling.
-    uint public fee = unit / 1000;
+    // Impose a 50 basis-point fee for buying and selling.
+    uint public fee = unit / 200;
     
     // Minimum quantity of nomins purchasable: 1 cent by default.
     uint public purchaseMininum = unit / 100;
@@ -282,8 +303,8 @@ contract CollateralisedNomin is ERC20Token {
     
     /* Return the equivalent usd value of the given quantity
      * of ether at the current price. */
-    function usdValue(uint eth) public view returns (uint) {
-        return mul(eth, etherPrice);
+    function usdValue(uint ether) public view returns (uint) {
+        return mul(ether, etherPrice);
     }
     
     /* Return the current USD value of the contract's balance. */
@@ -298,7 +319,7 @@ contract CollateralisedNomin is ERC20Token {
     }
 
     /* Issues n nomins into the pool available to be bought by users.
-     * Must be accompanied by $n worth of eth.
+     * Must be accompanied by $n worth of ether.
      * Exceptional conditions:
      *     Not called by contract owner;
      *     Insufficient backing funds provided;
@@ -312,7 +333,7 @@ contract CollateralisedNomin is ERC20Token {
     }
     
     /* Sends n nomins to the sender from the pool, in exchange for
-     * $n plus the fee worth of eth.
+     * $n plus the fee worth of ether.
      * Exceptional conditions:
      *     Insufficient funds provided;
      *     More nomins requested than are in the pool;
@@ -334,7 +355,7 @@ contract CollateralisedNomin is ERC20Token {
     }
 
     /* Sends n nomins to the pool from the sender, in exchange for
-     * $n minus the fee worth of eth.
+     * $n minus the fee worth of ether.
      * Exceptional conditions:
      *     Insufficient nomins in sender's wallet;
      *     Insufficient funds in the pool to pay sender // TODO: work out a discounted rate?;
@@ -355,7 +376,7 @@ contract CollateralisedNomin is ERC20Token {
         return etherValue(mul(n, sub(unit, fee)));
     }
 
-    /* Update the current eth price and update the last updated time;
+    /* Update the current ether price and update the last updated time;
        only usable by the oracle. */
     function setPrice(uint price) public onlyOracle {
         etherPrice = price;
@@ -376,7 +397,7 @@ contract CollateralisedNomin is ERC20Token {
     /* Lock all functions except sell(). While the contract is under
      * liquidation, users may sell nomins back to the system. After
      * liquidation period has terminated, the contract may be self-destructed,
-     * returning all remaining eth to the Havven foundation.
+     * returning all remaining ether to the Havven foundation.
      * Exceptional cases:
      *     Not called by contract owner;
      *     contract already in liquidation;
