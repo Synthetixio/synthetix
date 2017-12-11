@@ -220,7 +220,7 @@ contract CollateralisedNomin is ERC20Token {
     uint public fee = unit / 1000;
     
     // Ether price from oracle ($/nom), and the time it was read.
-    uint public lastEtherPrice;
+    uint public etherPrice;
     
     // The time that must pass before the liquidation period is
     // complete
@@ -236,7 +236,7 @@ contract CollateralisedNomin is ERC20Token {
         owner = _owner;
         oracle = _oracle;
         beneficiary = _beneficiary;
-        lastEtherPrice = initialEtherPrice;
+        etherPrice = initialEtherPrice;
     }
 
     modifier onlyOwner {
@@ -266,7 +266,7 @@ contract CollateralisedNomin is ERC20Token {
     }
 
     function usdValue(uint eth) public view returns (uint) {
-        return mul(eth, lastEtherPrice);
+        return mul(eth, etherPrice);
     }
 
     function usdBalance() public view returns (uint) {
@@ -274,7 +274,7 @@ contract CollateralisedNomin is ERC20Token {
     }
     
     function etherValue(uint usd) public view returns (uint) {
-        return div(usd, lastEtherPrice);
+        return div(usd, etherPrice);
     }
 
     /* Issues n nomins into the pool available to be bought by users.
@@ -331,14 +331,14 @@ contract CollateralisedNomin is ERC20Token {
     
     /* Return the ether proceeds (less the fee) of selling n
      * nomins. */
-    function sellProceedsEther(uint n) public view returns (uint) {
+    function saleProceedsEther(uint n) public view returns (uint) {
         return etherValue(mul(n, sub(unit, fee)));
     }
 
     /* Update the current eth price and update the last updated time;
        only usable by the oracle. */
-    function updatePrice(uint price) public onlyOracle {
-        lastEtherPrice = price;
+    function setPrice(uint price) public onlyOracle {
+        etherPrice = price;
     }
     
     /* True iff the liquidation block is earlier than the current block.*/
