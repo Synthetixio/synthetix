@@ -265,15 +265,15 @@ contract CollateralisedNomin is ERC20Token {
         beneficiary = newBeneficiary;
     }
 
-    function getUSDValue(uint eth) public view returns (uint) {
+    function usdValue(uint eth) public view returns (uint) {
         return mul(eth, lastEtherPrice);
     }
 
-    function getUSDBalance() public view returns (uint) {
-        return getUSDValue(this.balance);
+    function usdBalance() public view returns (uint) {
+        return usdValue(this.balance);
     }
     
-    function getEthValue(uint usd) public view returns (uint) {
+    function etherValue(uint usd) public view returns (uint) {
         return div(usd, lastEtherPrice);
     }
 
@@ -286,7 +286,7 @@ contract CollateralisedNomin is ERC20Token {
      *     n below some minimum;
      *     contract in liquidation. */
     function issue(uint n) public onlyOwner notLiquidating payable {
-        require(getUSDValue(msg.value) >= n);
+        require(usdValue(msg.value) >= n);
         supply = add(supply, n);
         pool = add(pool, n);
     }
@@ -300,10 +300,16 @@ contract CollateralisedNomin is ERC20Token {
      *     n below some minimum;
      *     contract in liquidation; */
     function buy(uint n) public notLiquidating payable {
-        require(getUSDValue(msg.value) >= mul(n, add(unit, fee)));
+        require(usdValue(msg.value) >= mul(n, add(unit, fee)));
         // sub requires that pool >= n
         pool = sub(pool, n);
         balances[msg.sender] = balances[msg.sender] + n;
+    }
+    
+    /* Return the ether cost (including fee) of purchasing n
+     * nomins. */
+    function purchaseCostEther(uint n) public view returns (uint) {
+        return etherValue(mul(n, add(unit, fee)));
     }
 
     /* Sends n nomins to the pool from the sender, in exchange for
@@ -316,11 +322,17 @@ contract CollateralisedNomin is ERC20Token {
      *     contract in liquidation; */
     function sell(uint n) public {
         uint proceeds = mul(n, sub(unit, fee));
-        require(getUSDBalance() >= proceeds);
+        require(usdBalance() >= proceeds);
         // sub requires that the balance is greater than n
         balances[msg.sender] = sub(balances[msg.sender], n);
         pool = add(pool, n);
         msg.sender.transfer(proceeds);
+    }
+    
+    /* Return the ether proceeds (less the fee) of selling n
+     * nomins. */
+    function sellProceedsEther(uint n) public view returns (uint) {
+        return etherValue(mul(n, sub(unit, fee)));
     }
 
     /* Update the current eth price and update the last updated time;
