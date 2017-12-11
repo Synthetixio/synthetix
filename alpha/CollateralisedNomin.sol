@@ -58,8 +58,8 @@ Find out more at block8.io
 */
 
 /* TODO:
- *     * Decide what to do if the eth backing is exhausted. For example:
- *         - discount nomins once backing is too low: e.g. if $900k eth backs 1m nom, each nom is worth 90c
+ *     * Decide what to do if the ether backing is exhausted. For example:
+ *         - discount nomins once backing is too low: e.g. if $900k ether backs 1m nom, each nom is worth 90c
  *         - automatically liquidate system once backing is low
  *     * Break contract config out into its own contract to inherit from.
  *     * Provide a pool-shrinking function.
@@ -264,8 +264,31 @@ contract ERC20Token is SafeFixedMath {
     event Approval(address indexed _owner, address indexed _spender, uint _value);
 }
 
+/* Issues nomins, which are tokens worth 1 USD each. They are backed
+ * by a pool of ether collateral, so that if a user has nomins, they may
+ * redeem them for ether from the pool, or if they want to obtain nomins,
+ * they may pay ether into the pool in order to do so. 
+ * 
+ * The supply of nomins that may be in circulation at any time is limited.
+ * The contract owner may increase this quantity, but only if they provide
+ * ether to back it. The backing they provide must be at least 1-to-1
+ * nomin to USD value of the ether collateral. In this way each nomin is
+ * at least 2x overcollateralised.
+ *
+ * Ether price is continually updated by an external oracle, and the value
+ * of the backing is computed on this basis.
+ *
+ * The contract owner may at any time initiate contract liquidation.
+ * During the liquidation period, most contract functions will be deactivated.
+ * No new nomins may be issued or bought, but users may sell nomins back
+ * to the system.
+ * After the liquidation period has elapsed, which is initially a year,
+ * the owner may destroy the contract, transferring any remaining collateral
+ * to a nominated beneficiary address.
+ * This liquidation period may be extended up to a maximum of two years.
+ */
+contract CollateralisedNomin is ERC20Token {
 
-contract CNConfiguration {
     /* The contract's owner.
      * This should point to the Havven foundation multisig command contract.
      * Only the owner may perform the following:
@@ -311,33 +334,8 @@ contract CNConfiguration {
     // uint max, so that we know that we are under liquidation if the 
     // liquidation timestamp is in the past.
     uint public liquidationTimestamp = ~uint(0);
-}
 
-/* Issues nomins, which are tokens worth 1 USD each. They are backed
- * by a pool of ether collateral, so that if a user has nomins, they may
- * redeem them for ether from the pool, or if they want to obtain nomins,
- * they may pay ether into the pool in order to do so. 
- * 
- * The supply of nomins that may be in circulation at any time is limited.
- * The contract owner may increase this quantity, but only if they provide
- * ether to back it. The backing they provide must be at least 1-to-1
- * nomin to USD value of the ether collateral. In this way each nomin is
- * at least 2x overcollateralised.
- *
- * Ether price is continually updated by an external oracle, and the value
- * of the backing is computed on this basis.
- *
- * The contract owner may at any time initiate contract liquidation.
- * During the liquidation period, most contract functions will be deactivated.
- * No new nomins may be issued or bought, but users may sell nomins back
- * to the system.
- * After the liquidation period has elapsed, which is initially a year,
- * the owner may destroy the contract, transferring any remaining collateral
- * to a nominated beneficiary address.
- * This liquidation period may be extended up to a maximum of two years.
- */
-contract CollateralisedNomin is ERC20Token {
-    
+
     function CollateralisedNomin(address _owner, address _oracle,
                                  address _beneficiary, uint initialEtherPrice)
     {
@@ -388,12 +386,12 @@ contract CollateralisedNomin is ERC20Token {
     
     /* Return the equivalent usd value of the given quantity
      * of ether at the current price. */
-    function usdValue(uint ether)
+    function usdValue(uint eth)
         public
         view
         returns (uint)
     {
-        return mul(ether, etherPrice);
+        return mul(eth, etherPrice);
     }
     
     /* Return the current USD value of the contract's balance. */
