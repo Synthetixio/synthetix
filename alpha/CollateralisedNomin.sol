@@ -58,17 +58,16 @@ Find out more at block8.io
 */
 
 /* TODO:
- *     * Decide what to do if the ether backing is exhausted. For example:
- *         - discount nomins once backing is too low: e.g. if $900k ether backs 1m nom, each nom is worth 90c
- *         - automatically liquidate system once backing is low
+ *     * When the ether backing is exhausted, discount nomins: e.g. if $900k ether backs 1m nom, each nom is worth 90c
  *     * Consider adding a notion of price staleness (refuse to function if the price was not updated recently enough).
  *     * Consider whether people emptying the collateral by hedging is a problem:
  *         Having no fee is effectively offering a short position for free. But if the volatility of ether is ~10% a day or so
  *         then a 10% fee required to make betting on it unprofitable is probably too high to get people to actually buy these things for their intended purpose.
  *         Probably can add a time lock for selling nomins back to the system, but it's awkward, and just makes the futures contract
  *         slightly longer term.
- *     * Ensure satisfies all nomin contract features.
- *     * Do we disallow people from paying too much for nomins?
+ *     * Consolidate fee payout into functions to stop code reproduction/desync
+ *     * People must pay exactly the right quantity when buying to prevent overpaying
+ *     * Factor out functionality into proxy contract for upgrades.
  *     * Ensure function modifiers are all correct.
  *     * Consensys best practices compliance.
  *     * Solium lint.
