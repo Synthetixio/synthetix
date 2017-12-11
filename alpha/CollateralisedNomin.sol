@@ -58,16 +58,18 @@ Find out more at block8.io
 */
 
 /* TODO:
- *     * Decide what to do if the eth backing is exhausted.
- *     * Decide whether the beneficiary address should be modifiable during liquidation.
+ *     * Decide what to do if the eth backing is exhausted. For example:
+ *         - discount nomins once backing is too low: e.g. if $900k eth backs 1m nom, each nom is worth 90c
+ *         - automatically liquidate system once backing is low
  *     * Break contract config out into its own contract to inherit from.
  *     * Provide a pool-shrinking function.
+ *     * Consider adding a notion of price staleness.
  *     * Consider if people emptying the collateral by hedging is a problem:
- *         Having no fee is effectively offering a short position for free. But if the volatility of nomins is ~10% a day or so
- *         then a 10% fee is probably too high to get people to actually buy these things.
+ *         Having no fee is effectively offering a short position for free. But if the volatility of ether is ~10% a day or so
+ *         then a 10% fee required to make betting on it is probably too high to get people to actually buy these things.
  *         Probably can add a time lock for selling nomins back to the system, but it's awkward, and just makes the futures contract
  *         slightly longer term.
- *     * Consider whether to break configuration out into its own contract.
+ *     * Consider whether to break configuration out into its own contract to inherit from.
  *     * Ensure satisfies all nomin contract features.
  *     * Ensure ERC20-compliant.
  *     * Ensure function modifiers are all correct.
@@ -262,6 +264,55 @@ contract ERC20Token is SafeFixedMath {
     event Approval(address indexed _owner, address indexed _spender, uint _value);
 }
 
+
+contract CNConfiguration {
+    /* The contract's owner.
+     * This should point to the Havven foundation multisig command contract.
+     * Only the owner may perform the following:
+     *   - Setting the owner;
+     *   - Setting the oracle;
+     *   - Setting the beneficiary;
+     *   - Issuing new nomins into the pool; 
+     *   - Initiating and extending liquidation;
+     *   - Selfdestructing the contract*/
+    address owner;
+
+    // The oracle provides price information to this contract.
+    // It may only call the setPrice() function.
+    address oracle;
+
+    // Foundation wallet for funds to go to post liquidation.
+    address beneficiary;
+    
+    // ERC20 token information.
+    string public constant name = "Collateralised Nomin";
+    string public constant symbol = "CNOM";
+
+    // Nomins in the pool ready to be sold.
+    uint public pool = 0;
+    
+    // Impose a 50 basis-point fee for buying and selling.
+    uint public fee = unit / 200;
+    
+    // Minimum quantity of nomins purchasable: 1 cent by default.
+    uint public purchaseMininum = unit / 100;
+    
+    // Ether price from oracle (USD per eth).
+    uint public etherPrice;
+    
+    // The time that must pass before the liquidation period is
+    // complete
+    uint public liquidationPeriod = 1 years;
+    
+    // The liquidation period can be extended up to this duration.
+    uint public maxLiquidationPeriod = 2 years;
+
+    // The timestamp when liquidation was activated. We initialise this to
+    // uint max, so that we know that we are under liquidation if the 
+    // liquidation timestamp is in the past.
+    uint public liquidationTimestamp = ~uint(0);
+}
+
 /* Issues nomins, which are tokens worth 1 USD each. They are backed
  * by a pool of ether collateral, so that if a user has nomins, they may
  * redeem them for ether from the pool, or if they want to obtain nomins,
@@ -286,42 +337,6 @@ contract ERC20Token is SafeFixedMath {
  * This liquidation period may be extended up to a maximum of two years.
  */
 contract CollateralisedNomin is ERC20Token {
-    // The contract's owner (the Havven foundation multisig command contract).
-    address owner;
-
-    // The oracle provides price information to this contract.
-    address oracle;
-
-    // Foundation wallet for funds to go to post liquidation.
-    address beneficiary;
-    
-    // ERC20 information
-    string public constant name = "Collateralised Nomin";
-    string public constant symbol = "CNOM";
-
-    // Nomins in the pool ready to be sold.
-    uint public pool = 0;
-    
-    // Impose a 50 basis-point fee for buying and selling.
-    uint public fee = unit / 200;
-    
-    // Minimum quantity of nomins purchasable: 1 cent by default.
-    uint public purchaseMininum = unit / 100;
-    
-    // Ether price from oracle ($/nom), and the time it was read.
-    uint public etherPrice;
-    
-    // The time that must pass before the liquidation period is
-    // complete
-    uint public liquidationPeriod = 1 years;
-    
-    // The liquidation period can be extended up to this duration.
-    uint public maxLiquidationPeriod = 2 years;
-
-    // The timestamp when liquidation was activated. We initialise this to
-    // uint max, so that we know that we are under liquidation if the 
-    // liquidation timestamp is in the past.
-    uint public liquidationTimestamp = ~uint(0);
     
     function CollateralisedNomin(address _owner, address _oracle,
                                  address _beneficiary, uint initialEtherPrice)
@@ -453,7 +468,7 @@ contract CollateralisedNomin is ERC20Token {
      * $n minus the fee worth of ether.
      * Exceptional conditions:
      *     Insufficient nomins in sender's wallet;
-     *     Insufficient funds in the pool to pay sender // TODO: work out a discounted rate?;
+     *     Insufficient funds in the pool to pay sender
      *     Unavailable or stale price data;
      *     contract in liquidation; */
     function sell(uint n)
@@ -485,7 +500,23 @@ contract CollateralisedNomin is ERC20Token {
     {
         etherPrice = price;
     }
-    
+
+    /* Lock nomin purchase and issuance functions in preparation for destroying the contract.
+     * While the contract is under liquidation, users may sell nomins back to the system.
+     * After liquidation period has terminated, the contract may be self-destructed,
+     * returning all remaining ether to the Havven foundation.
+     * Exceptional cases:
+     *     Not called by contract owner;
+     *     contract already in liquidation;
+     */
+    function liquidate()
+        public
+        onlyOwner
+        notLiquidating
+    {
+        liquidationTimestamp = now;
+    }
+
     /* Extend the liquidation period. It may only get longer,
      * not shorter, and it may not be extended past the liquidation max. */
     function extendLiquidationPeriod(uint extension)
@@ -503,22 +534,6 @@ contract CollateralisedNomin is ERC20Token {
         returns (bool)
     {
         return liquidationTimestamp <= now;
-    }
-
-    /* Lock nomin purchase and issuance functions in preparation for destroying the contract.
-     * While the contract is under liquidation, users may sell nomins back to the system.
-     * After liquidation period has terminated, the contract may be self-destructed,
-     * returning all remaining ether to the Havven foundation.
-     * Exceptional cases:
-     *     Not called by contract owner;
-     *     contract already in liquidation;
-     */
-    function liquidate()
-        public
-        onlyOwner
-        notLiquidating
-    {
-        liquidationTimestamp = now;
     }
     
     /* Destroy this contract, returning all funds back to the Havven
