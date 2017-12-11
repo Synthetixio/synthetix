@@ -61,17 +61,16 @@ Find out more at block8.io
  *     * Decide what to do if the ether backing is exhausted. For example:
  *         - discount nomins once backing is too low: e.g. if $900k ether backs 1m nom, each nom is worth 90c
  *         - automatically liquidate system once backing is low
- *     * Break contract config out into its own contract to inherit from.
  *     * Provide a pool-shrinking function.
  *     * Consider adding a notion of price staleness.
- *     * Consider if people emptying the collateral by hedging is a problem:
+ *     * Consider whether people emptying the collateral by hedging is a problem:
  *         Having no fee is effectively offering a short position for free. But if the volatility of ether is ~10% a day or so
  *         then a 10% fee required to make betting on it is probably too high to get people to actually buy these things.
  *         Probably can add a time lock for selling nomins back to the system, but it's awkward, and just makes the futures contract
  *         slightly longer term.
- *     * Consider whether to break configuration out into its own contract to inherit from.
  *     * Ensure satisfies all nomin contract features.
  *     * Ensure ERC20-compliant.
+ *     * Do we disallow people from paying too much for nomins?
  *     * Ensure function modifiers are all correct.
  *     * Event logging for nomin functions.
  *     * Consensys best practices compliance.
@@ -430,6 +429,7 @@ contract CollateralisedNomin is ERC20Token {
         require(usdValue(msg.value) >= n);
         supply = add(supply, n);
         pool = add(pool, n);
+        Issuance(n, msg.value);
     }
     
     /* Sends n nomins to the sender from the pool, in exchange for
@@ -450,6 +450,7 @@ contract CollateralisedNomin is ERC20Token {
         // sub requires that pool >= n
         pool = sub(pool, n);
         balances[msg.sender] = balances[msg.sender] + n;
+        Purchase(msg.sender, n, msg.value);
     }
     
     /* Return the ether cost (including fee) of purchasing n
@@ -478,6 +479,7 @@ contract CollateralisedNomin is ERC20Token {
         balances[msg.sender] = sub(balances[msg.sender], n);
         pool = add(pool, n);
         msg.sender.transfer(proceeds);
+        Sale(msg.sender, n, proceeds);
     }
     
     /* Return the ether proceeds (less the fee) of selling n
@@ -497,6 +499,7 @@ contract CollateralisedNomin is ERC20Token {
         onlyOracle
     {
         etherPrice = price;
+        PriceUpdate(price);
     }
 
     /* Lock nomin purchase and issuance functions in preparation for destroying the contract.
@@ -513,6 +516,7 @@ contract CollateralisedNomin is ERC20Token {
         notLiquidating
     {
         liquidationTimestamp = now;
+        Liquidation();
     }
 
     /* Extend the liquidation period. It may only get longer,
@@ -523,6 +527,7 @@ contract CollateralisedNomin is ERC20Token {
     {
         require(liquidationPeriod + extension <= maxLiquidationPeriod);
         liquidationPeriod += extension;
+        LiquidationExtended(extension);
     }
     
     /* True iff the liquidation block is earlier than the current block.*/
@@ -547,6 +552,28 @@ contract CollateralisedNomin is ERC20Token {
         onlyOwner
     {
         require(liquidationTimestamp + liquidationPeriod < now);
+        SelfDestructed();
         selfdestruct(beneficiary);
     }
+
+    /* Emitted whenever new nomins are issued into the pool. */
+    event Issuance(uint newNomins, uint collateral);
+
+    /* Emitted whenever a purchase of nomins is made, and how many eth were provided to buy them. */
+    event Purchase(address buyer, uint nomins, uint eth);
+
+    /* Emitted whenever a sale of nomins is made, and how many eth they were sold for. */
+    event Sale(address seller, uint nomins, uint eth);
+
+    /* Emitted whenever setPrice() is called by the oracle to update the price. */
+    event PriceUpdate(uint newPrice);
+
+    /* Emitted whenever liquidation is initiated. */
+    event Liquidation();
+
+    /* Emitted whenever liquidation is extended. */
+    event LiquidationExtended(uint extension);
+
+    /* Emitted when the contract self-destructs. */
+    event SelfDestructed();
 }
