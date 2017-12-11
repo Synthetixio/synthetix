@@ -64,7 +64,7 @@ Find out more at block8.io
  *     * Consider adding a notion of price staleness (refuse to function if the price was not updated recently enough).
  *     * Consider whether people emptying the collateral by hedging is a problem:
  *         Having no fee is effectively offering a short position for free. But if the volatility of ether is ~10% a day or so
- *         then a 10% fee required to make betting on it is probably too high to get people to actually buy these things.
+ *         then a 10% fee required to make betting on it unprofitable is probably too high to get people to actually buy these things for their intended purpose.
  *         Probably can add a time lock for selling nomins back to the system, but it's awkward, and just makes the futures contract
  *         slightly longer term.
  *     * Ensure satisfies all nomin contract features.
@@ -441,7 +441,7 @@ contract CollateralisedNomin is ERC20Token {
         onlyOwner
     {
         require(pool >= n &&
-                usdValue(sub(this.balance, eth)) >= 2*(supply - pool);
+                usdValue(sub(this.balance, eth)) >= 2*(supply - pool));
         pool = sub(pool, n);
         supply = sub(supply, n);
         beneficiary.transfer(usdValue(eth));
