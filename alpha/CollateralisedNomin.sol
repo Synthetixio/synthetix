@@ -59,7 +59,10 @@ Find out more at block8.io
 
 /* TODO:
  *     * When the ether backing is exhausted, discount nomins: e.g. if $900k ether backs 1m nom, each nom is worth 90c
- *     * Consider adding a notion of price staleness (refuse to function if the price was not updated recently enough).
+ *     * Staleness adjustments:
+ *           - solve the trust problem of just setting low stale period and then liquidating
+ *           - perhaps staleness protection for sell() is deactivated during the liquidation period
+ *           - additionally make staleness predictable by emitting an event on update, and then requiring the current period to elapse before the stale period is actually changed.
  *     * Consider whether people emptying the collateral by hedging is a problem:
  *         Having no fee is effectively offering a short position for free. But if the volatility of ether is ~10% a day or so
  *         then a 10% fee required to make betting on it unprofitable is probably too high to get people to actually buy these things for their intended purpose.
@@ -283,7 +286,10 @@ contract ERC20Token is SafeFixedMath {
  * in the pool, but they must respect the collateralisation requirement.
  *
  * Ether price is continually updated by an external oracle, and the value
- * of the backing is computed on this basis.
+ * of the backing is computed on this basis. To ensure the integrity of
+ * this system, if the contract's price has not been updated recently enough,
+ * it will temporarily disable itself until it receives more price information.
+ * 
  *
  * The contract owner may at any time initiate contract liquidation.
  * During the liquidation period, most contract functions will be deactivated.
@@ -335,7 +341,7 @@ contract CollateralisedNomin is ERC20Token {
     uint public lastPriceUpdate;
 
     // The period it takes for the price to be considered stale.
-    // If the price is stale, issuance and redemption functions are disabled.
+    // If the price is stale, functions that require the price are disabled.
     uint public stalePeriod = 1 day;
 
     // The time that must pass before the liquidation period is
@@ -382,7 +388,7 @@ contract CollateralisedNomin is ERC20Token {
         _;
     }
 
-    modifier notStale
+    modifier priceNotStale
     {
         require(!priceIsStale());
         _;
@@ -413,29 +419,38 @@ contract CollateralisedNomin is ERC20Token {
     }
     
     /* Return the equivalent usd value of the given quantity
-     * of ether at the current price. */
+     * of ether at the current price.
+     * Exceptional conditions:
+     *     Price is stale. */
     function usdValue(uint eth)
         public
         constant
+        priceNotStale
         returns (uint)
     {
         return mul(eth, etherPrice);
     }
     
-    /* Return the current USD value of the contract's balance. */
+    /* Return the current USD value of the contract's balance. 
+     * Exceptional conditions:
+     *     Price is stale. */
     function usdBalance()
         public
         constant
         returns (uint)
     {
+        // Price staleness check occurs inside the call to usdValue.
         return usdValue(this.balance);
     }
     
     /* Return the equivalent ether value of the given quantity
-     * of usd at the current price. */
+     * of usd at the current price.
+     * Exceptional conditions:
+     *     Price is stale. */
     function etherValue(uint usd)
         public
         constant
+        priceNotStale
         returns (uint)
     {
         return div(usd, etherPrice);
@@ -444,15 +459,16 @@ contract CollateralisedNomin is ERC20Token {
     /* Issues n nomins into the pool available to be bought by users.
      * Must be accompanied by $n worth of ether.
      * Exceptional conditions:
-     *     Not called by contract owner;
-     *     Insufficient backing funds provided (less than US$n worth of ether);
-     *     Unavailable or stale price data; 
-     *     n below some minimum; */
+     *     Not called by contract owner.
+     *     Insufficient backing funds provided (less than US$n worth of ether).
+     *     n below minimum purchase quantity (1 cent).
+     *     Price is stale. */
     function issue(uint n)
         public
         onlyOwner
         payable
     {
+        // Price staleness check occurs inside the call to usdValue.
         require(usdValue(msg.value) >= n);
         supply = add(supply, n);
         pool = add(pool, n);
@@ -465,11 +481,13 @@ contract CollateralisedNomin is ERC20Token {
      *     Not called by contract owner.
      *     There are at least n nomins in the pool.
      *     Remaining collateral is less than 2*(supply - pool) USD worth of ether;
-     *       each nomin in circulation is overcollateralised at least 2x. */
+     *       each nomin in circulation is overcollateralised at least 2x.
+     *     Price is stale. */
     function burn(uint n, uint eth)
         public
         onlyOwner
     {
+        // Price staleness check occurs inside the call to usdValue.
         require(pool >= n &&
                 usdValue(sub(this.balance, eth)) >= 2*(supply - pool));
         pool = sub(pool, n);
@@ -481,16 +499,17 @@ contract CollateralisedNomin is ERC20Token {
     /* Sends n nomins to the sender from the pool, in exchange for
      * $n plus the fee worth of ether.
      * Exceptional conditions:
-     *     Insufficient funds provided;
-     *     More nomins requested than are in the pool;
-     *     Unavailable or stale price data;
-     *     n below the purchase minimum (1 cent);
-     *     contract in liquidation; */
+     *     Insufficient funds provided.
+     *     More nomins requested than are in the pool.
+     *     n below the purchase minimum (1 cent).
+     *     contract in liquidation.
+     *     Price is stale. */
     function buy(uint n)
         public
         notLiquidating
         payable
     {
+        // Price staleness check occurs inside the call to usdValue.
         require(n >= purchaseMininum &&
                 usdValue(msg.value) >= mul(n, add(UNIT, fee)));
         // sub requires that pool >= n
@@ -500,12 +519,15 @@ contract CollateralisedNomin is ERC20Token {
     }
     
     /* Return the ether cost (including fee) of purchasing n
-     * nomins. */
+     * nomins.
+     * Exceptional conditions:
+     *     Price is stale. */
     function purchaseCostEther(uint n)
         public
         constant
         returns (uint)
     {
+        // Price staleness check occurs inside the call to etherValue.
         return etherValue(mul(n, add(UNIT, fee)));
     }
 
@@ -513,11 +535,14 @@ contract CollateralisedNomin is ERC20Token {
      * $n minus the fee worth of ether.
      * Exceptional conditions:
      *     Insufficient nomins in sender's wallet.
-     *     Insufficient funds in the pool to pay sender. */
+     *     Insufficient funds in the pool to pay sender.
+     *     Price is stale. */
     function sell(uint n)
         public
     {
         uint proceeds = mul(n, sub(UNIT, fee));
+        // Price staleness check occurs inside the call to usdValue,
+        // inside the call to usdBalance.
         require(usdBalance() >= proceeds);
         // sub requires that the balance is greater than n
         balances[msg.sender] = sub(balances[msg.sender], n);
@@ -527,26 +552,34 @@ contract CollateralisedNomin is ERC20Token {
     }
     
     /* Return the ether proceeds (less the fee) of selling n
-     * nomins. */
+     * nomins.
+     * Exceptional conditions:
+     *     Price is stale. */
     function saleProceedsEther(uint n)
         public
         constant
         returns (uint)
     {
+        // Price staleness check occurs inside the call to etherValue.
         return etherValue(mul(n, sub(UNIT, fee)));
     }
 
-    /* Update the current ether price and update the last updated time;
-     * only usable by the oracle. */
+    /* Update the current ether price and update the last updated time,
+     * refreshing the price staleness.
+     * Exceptional conditions:
+     *     Not called by the oracle. */
     function setPrice(uint price)
         public
         onlyOracle
     {
         etherPrice = price;
+        lastPriceUpdate = now;
         PriceUpdate(price);
     }
 
-    /* Update the current stale period. */
+    /* Update the period after which the price will be considered stale.
+     * Exceptional conditions:
+     *     Not called by the owner. */
     function setStalePeriod(uint period)
         public
         onlyOwner
