@@ -340,7 +340,7 @@ contract CollateralisedNomin is ERC20Token {
 
     // The period it takes for the price to be considered stale.
     // If the price is stale, functions that require the price are disabled.
-    uint public stalePeriod = 1 day;
+    uint public stalePeriod = 3 days;
 
     // The time that must pass before the liquidation period is
     // complete
@@ -493,6 +493,27 @@ contract CollateralisedNomin is ERC20Token {
         Burning(n, eth);
     }
 
+    /* Return the USD cost (including fee) of purchasing n nomins */
+    function purchaseCostUSD(uint n)
+        public
+        constant
+        returns (uint)
+    {
+        return mul(n, add(UNIT, fee))
+    }
+
+    /* Return the ether cost (including fee) of purchasing n nomins.
+     * Exceptional conditions:
+     *     Price is stale. */
+    function purchaseCostEther(uint n)
+        public
+        constant
+        returns (uint)
+    {
+        // Price staleness check occurs inside the call to etherValue.
+        return etherValue(purchaseCostUSD(n));
+    }
+
     /* Sends n nomins to the sender from the pool, in exchange for
      * $n plus the fee worth of ether.
      * Exceptional conditions:
@@ -515,46 +536,6 @@ contract CollateralisedNomin is ERC20Token {
         Purchase(msg.sender, n, msg.value);
     }
     
-    /* Return the USD cost (including fee) of purchasing n nomins */
-    function purchaseCostUSD(uint n)
-        public
-        constant
-        returns (uint)
-    {
-        return mul(n, add(UNIT, fee))
-    }
-
-    /* Return the ether cost (including fee) of purchasing n nomins.
-     * Exceptional conditions:
-     *     Price is stale. */
-    function purchaseCostEther(uint n)
-        public
-        constant
-        returns (uint)
-    {
-        // Price staleness check occurs inside the call to etherValue.
-        return etherValue(purchaseCostUSD(n));
-    }
-
-    /* Sends n nomins to the pool from the sender, in exchange for
-     * $n minus the fee worth of ether.
-     * Exceptional conditions:
-     *     Insufficient nomins in sender's wallet.
-     *     Insufficient funds in the pool to pay sender.
-     *     Price is stale. */
-    function sell(uint n)
-        public
-    {
-        uint proceeds = saleProceedsUSD(n);
-        // Price staleness check occurs inside the call to usdBalance
-        require(usdBalance() >= proceeds);
-        // sub requires that the balance is greater than n
-        balances[msg.sender] = sub(balances[msg.sender], n);
-        pool = add(pool, n);
-        msg.sender.transfer(proceeds);
-        Sale(msg.sender, n, proceeds);
-    }
-    
     /* Return the USD proceeds (less the fee) of selling n nomins.*/
     function saleProceedsUSD(uint n)
         public
@@ -575,6 +556,25 @@ contract CollateralisedNomin is ERC20Token {
     {
         // Price staleness check occurs inside the call to etherValue.
         return etherValue(saleProceedsUSD(n));
+    }
+
+    /* Sends n nomins to the pool from the sender, in exchange for
+     * $n minus the fee worth of ether.
+     * Exceptional conditions:
+     *     Insufficient nomins in sender's wallet.
+     *     Insufficient funds in the pool to pay sender.
+     *     Price is stale. */
+    function sell(uint n)
+        public
+    {
+        uint proceeds = saleProceedsUSD(n);
+        // Price staleness check occurs inside the call to usdBalance
+        require(usdBalance() >= proceeds);
+        // sub requires that the balance is greater than n
+        balances[msg.sender] = sub(balances[msg.sender], n);
+        pool = add(pool, n);
+        msg.sender.transfer(proceeds);
+        Sale(msg.sender, n, proceeds);
     }
 
     /* Update the current ether price and update the last updated time,
