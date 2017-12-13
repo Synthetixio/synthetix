@@ -68,7 +68,6 @@ Find out more at block8.io
  *         then a 10% fee required to make betting on it unprofitable is probably too high to get people to actually buy these things for their intended purpose.
  *         Probably can add a time lock for selling nomins back to the system, but it's awkward, and just makes the futures contract
  *         slightly longer term.
- *     * People must pay exactly the right quantity when buying to prevent overpaying
  *     * Factor out functionality into proxy contract for upgrades.
  *     * Consensys best practices compliance.
  *     * Solium lint.
@@ -493,13 +492,22 @@ contract CollateralisedNomin is ERC20Token {
         Burning(n, eth);
     }
 
+    /* Return the fee charged on a purchase or sale of n nomins. */
+    function purchaseSaleFee(uint n)
+        public
+        constant
+        returns (uint)
+    {
+        return mul(n, fee)
+    }
+
     /* Return the USD cost (including fee) of purchasing n nomins */
     function purchaseCostUSD(uint n)
         public
         constant
         returns (uint)
     {
-        return mul(n, add(UNIT, fee))
+        return add(n, purchaseSaleFee(n));
     }
 
     /* Return the ether cost (including fee) of purchasing n nomins.
@@ -517,7 +525,7 @@ contract CollateralisedNomin is ERC20Token {
     /* Sends n nomins to the sender from the pool, in exchange for
      * $n plus the fee worth of ether.
      * Exceptional conditions:
-     *     Insufficient funds provided.
+     *     Insufficient or too many funds provided.
      *     More nomins requested than are in the pool.
      *     n below the purchase minimum (1 cent).
      *     contract in liquidation.
@@ -529,7 +537,7 @@ contract CollateralisedNomin is ERC20Token {
     {
         // Price staleness check occurs inside the call to purchaseEtherCost.
         require(n >= purchaseMininum &&
-                msg.value >= purchaseCostEther(n);
+                msg.value == purchaseCostEther(n);
         // sub requires that pool >= n
         pool = sub(pool, n);
         balances[msg.sender] = balances[msg.sender] + n;
@@ -542,7 +550,7 @@ contract CollateralisedNomin is ERC20Token {
         constant
         returns (uint)
     {
-        return mul(n, sub(UNIT, fee));
+        return sub(n, purchaseSaleFee(n));
     }
 
     /* Return the ether proceeds (less the fee) of selling n
