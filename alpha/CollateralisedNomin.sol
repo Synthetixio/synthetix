@@ -498,7 +498,7 @@ contract CollateralisedNomin is ERC20Token {
         constant
         returns (uint)
     {
-        return mul(n, fee)
+        return mul(n, fee);
     }
 
     /* Return the USD cost (including fee) of purchasing n nomins */
@@ -537,7 +537,7 @@ contract CollateralisedNomin is ERC20Token {
     {
         // Price staleness check occurs inside the call to purchaseEtherCost.
         require(n >= purchaseMininum &&
-                msg.value == purchaseCostEther(n);
+                msg.value == purchaseCostEther(n));
         // sub requires that pool >= n
         pool = sub(pool, n);
         balances[msg.sender] = balances[msg.sender] + n;
