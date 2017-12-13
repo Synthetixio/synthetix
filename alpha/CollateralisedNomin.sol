@@ -68,10 +68,8 @@ Find out more at block8.io
  *         then a 10% fee required to make betting on it unprofitable is probably too high to get people to actually buy these things for their intended purpose.
  *         Probably can add a time lock for selling nomins back to the system, but it's awkward, and just makes the futures contract
  *         slightly longer term.
- *     * Consolidate fee payout into functions to stop code reproduction/desync
  *     * People must pay exactly the right quantity when buying to prevent overpaying
  *     * Factor out functionality into proxy contract for upgrades.
- *     * Ensure function modifiers are all correct.
  *     * Consensys best practices compliance.
  *     * Solium lint.
  *     * Test suite.
@@ -461,7 +459,6 @@ contract CollateralisedNomin is ERC20Token {
      * Exceptional conditions:
      *     Not called by contract owner.
      *     Insufficient backing funds provided (less than US$n worth of ether).
-     *     n below minimum purchase quantity (1 cent).
      *     Price is stale. */
     function issue(uint n)
         public
@@ -509,17 +506,25 @@ contract CollateralisedNomin is ERC20Token {
         notLiquidating
         payable
     {
-        // Price staleness check occurs inside the call to usdValue.
+        // Price staleness check occurs inside the call to purchaseEtherCost.
         require(n >= purchaseMininum &&
-                usdValue(msg.value) >= mul(n, add(UNIT, fee)));
+                msg.value >= purchaseCostEther(n);
         // sub requires that pool >= n
         pool = sub(pool, n);
         balances[msg.sender] = balances[msg.sender] + n;
         Purchase(msg.sender, n, msg.value);
     }
     
-    /* Return the ether cost (including fee) of purchasing n
-     * nomins.
+    /* Return the USD cost (including fee) of purchasing n nomins */
+    function purchaseCostUSD(uint n)
+        public
+        constant
+        returns (uint)
+    {
+        return mul(n, add(UNIT, fee))
+    }
+
+    /* Return the ether cost (including fee) of purchasing n nomins.
      * Exceptional conditions:
      *     Price is stale. */
     function purchaseCostEther(uint n)
@@ -528,7 +533,7 @@ contract CollateralisedNomin is ERC20Token {
         returns (uint)
     {
         // Price staleness check occurs inside the call to etherValue.
-        return etherValue(mul(n, add(UNIT, fee)));
+        return etherValue(purchaseCostUSD(n));
     }
 
     /* Sends n nomins to the pool from the sender, in exchange for
@@ -540,9 +545,8 @@ contract CollateralisedNomin is ERC20Token {
     function sell(uint n)
         public
     {
-        uint proceeds = mul(n, sub(UNIT, fee));
-        // Price staleness check occurs inside the call to usdValue,
-        // inside the call to usdBalance.
+        uint proceeds = saleProceedsUSD(n);
+        // Price staleness check occurs inside the call to usdBalance
         require(usdBalance() >= proceeds);
         // sub requires that the balance is greater than n
         balances[msg.sender] = sub(balances[msg.sender], n);
@@ -551,6 +555,15 @@ contract CollateralisedNomin is ERC20Token {
         Sale(msg.sender, n, proceeds);
     }
     
+    /* Return the USD proceeds (less the fee) of selling n nomins.*/
+    function saleProceedsUSD(uint n)
+        public
+        constant
+        returns (uint)
+    {
+        return mul(n, sub(UNIT, fee));
+    }
+
     /* Return the ether proceeds (less the fee) of selling n
      * nomins.
      * Exceptional conditions:
@@ -561,7 +574,7 @@ contract CollateralisedNomin is ERC20Token {
         returns (uint)
     {
         // Price staleness check occurs inside the call to etherValue.
-        return etherValue(mul(n, sub(UNIT, fee)));
+        return etherValue(saleProceedsUSD(n));
     }
 
     /* Update the current ether price and update the last updated time,
