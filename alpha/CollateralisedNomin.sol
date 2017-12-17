@@ -58,11 +58,14 @@ Find out more at block8.io
 */
 
 /* TODO:
+ *     * Add Havven contract
  *     * When the ether backing is exhausted, discount nomins: e.g. if $900k ether backs 1m nom, each nom is worth 90c
+ *     * Update fee function to include transfer fees, split fees for purchase versus sale
  *     * Staleness adjustments:
  *           - solve the trust problem of just setting low stale period and then liquidating
  *           - perhaps staleness protection for sell() is deactivated during the liquidation period
  *           - additionally make staleness predictable by emitting an event on update, and then requiring the current period to elapse before the stale period is actually changed.
+ *           - rate limiting?
  *     * Consider whether people emptying the collateral by hedging is a problem:
  *         Having no fee is effectively offering a short position for free. But if the volatility of ether is ~10% a day or so
  *         then a 10% fee required to make betting on it unprofitable is probably too high to get people to actually buy these things for their intended purpose.
@@ -98,7 +101,7 @@ contract SafeFixedMath {
     }
 
     /* Return the result of adding x and y, throwing an exception in case of overflow. */
-    function add(uint x, uint y)
+    function safeAdd(uint x, uint y)
         pure
         internal
         returns (uint)
@@ -117,7 +120,7 @@ contract SafeFixedMath {
     }
 
     /* Return the result of subtracting y from x, throwing an exception in case of overflow. */
-    function sub(uint x, uint y)
+    function safeSub(uint x, uint y)
         pure
         internal
         returns (uint)
@@ -140,7 +143,7 @@ contract SafeFixedMath {
     }
 
     /* Return the result of multiplying x and y, throwing an exception in case of overflow. */
-    function mul(uint x, uint y)
+    function safeMul(uint x, uint y)
         pure 
         internal 
         returns (uint)
@@ -160,7 +163,7 @@ contract SafeFixedMath {
     }
 
     /* Return the result of dividing x by y, throwing an exception in case of overflow or zero divisor. */
-    function div(uint x, uint y)
+    function safeDiv(uint x, uint y)
         pure
         internal
         returns (uint)
@@ -213,8 +216,8 @@ contract ERC20Token is SafeFixedMath {
             if (_value == 0) {
                 return true;
             }
-            balances[msg.sender] = sub(balances[msg.sender], _value);
-            balances[_to] = add(balances[_to], _value);
+            balances[msg.sender] = safeSub(balances[msg.sender], _value);
+            balances[_to] = safeAdd(balances[_to], _value);
             return true;
         }
         return false;
@@ -233,9 +236,9 @@ contract ERC20Token is SafeFixedMath {
                 if (_value == 0) {
                     return true;
                 }
-                balances[_from] = sub(balances[_from], _value);
-                allowances[_from][msg.sender] = sub(allowances[_from][msg.sender], _value);
-                balances[_to] = add(balances[_to], _value);
+                balances[_from] = safeSub(balances[_from], _value);
+                allowances[_from][msg.sender] = safeSub(allowances[_from][msg.sender], _value);
+                balances[_to] = safeAdd(balances[_to], _value);
                 return true;
         }
         return false;
@@ -425,7 +428,7 @@ contract CollateralisedNomin is ERC20Token {
         priceNotStale
         returns (uint)
     {
-        return mul(eth, etherPrice);
+        return safeMul(eth, etherPrice);
     }
     
     /* Return the current USD value of the contract's balance. 
@@ -450,7 +453,7 @@ contract CollateralisedNomin is ERC20Token {
         priceNotStale
         returns (uint)
     {
-        return div(usd, etherPrice);
+        return safeDiv(usd, etherPrice);
     }
 
     /* Issues n nomins into the pool available to be bought by users.
@@ -466,8 +469,8 @@ contract CollateralisedNomin is ERC20Token {
     {
         // Price staleness check occurs inside the call to usdValue.
         require(usdValue(msg.value) >= n);
-        supply = add(supply, n);
-        pool = add(pool, n);
+        supply = safeAdd(supply, n);
+        pool = safeAdd(pool, n);
         Issuance(n, msg.value);
     }
 
@@ -485,9 +488,9 @@ contract CollateralisedNomin is ERC20Token {
     {
         // Price staleness check occurs inside the call to usdValue.
         require(pool >= n &&
-                usdValue(sub(this.balance, eth)) >= 2*(supply - pool));
-        pool = sub(pool, n);
-        supply = sub(supply, n);
+                usdValue(safeSub(this.balance, eth)) >= 2*(supply - pool));
+        pool = safeSub(pool, n);
+        supply = safeSub(supply, n);
         beneficiary.transfer(usdValue(eth));
         Burning(n, eth);
     }
@@ -498,7 +501,7 @@ contract CollateralisedNomin is ERC20Token {
         constant
         returns (uint)
     {
-        return mul(n, fee);
+        return safeMul(n, fee);
     }
 
     /* Return the USD cost (including fee) of purchasing n nomins */
@@ -507,7 +510,7 @@ contract CollateralisedNomin is ERC20Token {
         constant
         returns (uint)
     {
-        return add(n, purchaseSaleFee(n));
+        return safeAdd(n, purchaseSaleFee(n));
     }
 
     /* Return the ether cost (including fee) of purchasing n nomins.
@@ -539,7 +542,7 @@ contract CollateralisedNomin is ERC20Token {
         require(n >= purchaseMininum &&
                 msg.value == purchaseCostEther(n));
         // sub requires that pool >= n
-        pool = sub(pool, n);
+        pool = safeSub(pool, n);
         balances[msg.sender] = balances[msg.sender] + n;
         Purchase(msg.sender, n, msg.value);
     }
@@ -550,7 +553,7 @@ contract CollateralisedNomin is ERC20Token {
         constant
         returns (uint)
     {
-        return sub(n, purchaseSaleFee(n));
+        return safeSub(n, purchaseSaleFee(n));
     }
 
     /* Return the ether proceeds (less the fee) of selling n
@@ -579,8 +582,8 @@ contract CollateralisedNomin is ERC20Token {
         // Price staleness check occurs inside the call to usdBalance
         require(usdBalance() >= proceeds);
         // sub requires that the balance is greater than n
-        balances[msg.sender] = sub(balances[msg.sender], n);
-        pool = add(pool, n);
+        balances[msg.sender] = safeSub(balances[msg.sender], n);
+        pool = safeAdd(pool, n);
         msg.sender.transfer(proceeds);
         Sale(msg.sender, n, proceeds);
     }
