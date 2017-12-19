@@ -3,7 +3,7 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       CollateralisedNomin.sol
-version:    0.1
+version:    0.2
 author:     Block8 Technologies, in partnership with Havven
 
             Anton Jurisevic
@@ -75,6 +75,7 @@ Find out more at block8.io
  *     * Consensys best practices compliance.
  *     * Solium lint.
  *     * Test suite.
+ *     * Wrapping protection.
  */
 pragma solidity ^0.4.19;
 
@@ -543,7 +544,7 @@ contract CollateralisedNomin is ERC20Token {
                 msg.value == purchaseCostEther(n));
         // sub requires that pool >= n
         pool = safeSub(pool, n);
-        balances[msg.sender] = balances[msg.sender] + n;
+        balances[msg.sender] = safeAdd(balances[msg.sender], n);
         Purchase(msg.sender, n, msg.value);
     }
     
