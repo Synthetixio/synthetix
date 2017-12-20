@@ -75,6 +75,7 @@ Find out more at block8.io
  *     * Consensys best practices compliance.
  *     * Solium lint.
  *     * Test suite.
+ *     * Nomin transaction fees.
  *     * Wrapping protection.
  */
 pragma solidity ^0.4.19;
@@ -272,6 +273,9 @@ contract ERC20Token is SafeFixedMath {
     // Triggered whenever approve(address _spender, uint _value) is called.
     event Approval(address indexed _owner, address indexed _spender, uint _value);
 }
+
+
+contract Havven is ERC20TOken {}
 
 
 /* Issues nomins, which are tokens worth 1 USD each. They are backed
