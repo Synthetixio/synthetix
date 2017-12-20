@@ -190,7 +190,7 @@ contract ERC20Token is SafeFixedMath {
     // Get the total token supply
     function totalSupply()
         public
-        constant
+        view
         returns (uint)
     {
         return supply;
@@ -199,7 +199,7 @@ contract ERC20Token is SafeFixedMath {
     // Get the account balance of another account with address _account
     function balanceOf(address _account)
         public
-        constant
+        view
         returns (uint)
     {
         return balances[_account];
@@ -260,7 +260,7 @@ contract ERC20Token is SafeFixedMath {
     // Returns the amount which _spender is still allowed to withdraw from _owner
     function allowance(address _owner, address _spender)
         public
-        constant
+        view
         returns (uint)
     {
         return allowances[_owner][_spender];
@@ -425,7 +425,7 @@ contract CollateralisedNomin is ERC20Token {
      *     Price is stale. */
     function usdValue(uint eth)
         public
-        constant
+        view
         priceNotStale
         returns (uint)
     {
@@ -437,7 +437,7 @@ contract CollateralisedNomin is ERC20Token {
      *     Price is stale. */
     function usdBalance()
         public
-        constant
+        view
         returns (uint)
     {
         // Price staleness check occurs inside the call to usdValue.
@@ -450,7 +450,7 @@ contract CollateralisedNomin is ERC20Token {
      *     Price is stale. */
     function etherValue(uint usd)
         public
-        constant
+        view
         priceNotStale
         returns (uint)
     {
@@ -499,7 +499,7 @@ contract CollateralisedNomin is ERC20Token {
     /* Return the fee charged on a purchase or sale of n nomins. */
     function purchaseSaleFee(uint n)
         public
-        constant
+        view
         returns (uint)
     {
         return safeMul(n, fee);
@@ -508,7 +508,7 @@ contract CollateralisedNomin is ERC20Token {
     /* Return the USD cost (including fee) of purchasing n nomins */
     function purchaseCostUSD(uint n)
         public
-        constant
+        view
         returns (uint)
     {
         return safeAdd(n, purchaseSaleFee(n));
@@ -519,7 +519,7 @@ contract CollateralisedNomin is ERC20Token {
      *     Price is stale. */
     function purchaseCostEther(uint n)
         public
-        constant
+        view
         returns (uint)
     {
         // Price staleness check occurs inside the call to etherValue.
@@ -551,7 +551,7 @@ contract CollateralisedNomin is ERC20Token {
     /* Return the USD proceeds (less the fee) of selling n nomins.*/
     function saleProceedsUSD(uint n)
         public
-        constant
+        view
         returns (uint)
     {
         return safeSub(n, purchaseSaleFee(n));
@@ -563,7 +563,7 @@ contract CollateralisedNomin is ERC20Token {
      *     Price is stale. */
     function saleProceedsEther(uint n)
         public
-        constant
+        view
         returns (uint)
     {
         // Price staleness check occurs inside the call to etherValue.
@@ -654,7 +654,7 @@ contract CollateralisedNomin is ERC20Token {
     /* True iff the liquidation block is earlier than the current block.*/
     function isLiquidating()
         public
-        constant
+        view
         returns (bool)
     {
         return liquidationTimestamp <= now;
