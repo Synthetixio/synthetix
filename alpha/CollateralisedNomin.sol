@@ -75,8 +75,9 @@ Find out more at block8.io
  *     * Consensys best practices compliance.
  *     * Solium lint.
  *     * Test suite.
- *     * Nomin transaction fees.
- *     * Wrapping protection.
+ *     * Nomin transfer fees.
+ *          - Fee setter methods
+ *     * Wrapping protection. (with veto)
  */
 pragma solidity ^0.4.19;
 
@@ -177,7 +178,7 @@ contract SafeFixedMath {
 }
 
 
-contract ERC20Token is SafeFixedMath {
+contract ERC20FeeToken is SafeFixedMath {
     // Total nomins in the pool or in circulation.
     // Supply is initially zero, but may be increased by the Havven foundation.
     uint supply = 0;
@@ -187,6 +188,10 @@ contract ERC20Token is SafeFixedMath {
 
     // Nomin proxy transfer allowances.
     mapping(address => mapping (address => uint256)) allowances;
+
+    // A percentage fee charged on each transfer.
+    // Zero by default, but may be set in derived contracts.
+    uint public transferFee = 0;
    
     // Get the total token supply
     function totalSupply()
@@ -275,7 +280,7 @@ contract ERC20Token is SafeFixedMath {
 }
 
 
-contract Havven is ERC20TOken {}
+contract Havven is ERC20FeeToken {}
 
 
 /* Issues nomins, which are tokens worth 1 USD each. They are backed
@@ -294,7 +299,6 @@ contract Havven is ERC20TOken {}
  * of the backing is computed on this basis. To ensure the integrity of
  * this system, if the contract's price has not been updated recently enough,
  * it will temporarily disable itself until it receives more price information.
- * 
  *
  * The contract owner may at any time initiate contract liquidation.
  * During the liquidation period, most contract functions will be deactivated.
@@ -305,7 +309,7 @@ contract Havven is ERC20TOken {}
  * to a nominated beneficiary address.
  * This liquidation period may be extended up to a maximum of two years.
  */
-contract CollateralisedNomin is ERC20Token {
+contract CollateralisedNomin is ERC20FeeToken {
 
     /* The contract's owner.
      * This should point to the Havven foundation multisig command contract.
@@ -333,24 +337,11 @@ contract CollateralisedNomin is ERC20Token {
     // Nomins in the pool ready to be sold.
     uint public pool = 0;
     
-    // Impose a 50 basis-point fee for buying and selling.
-    uint public purchaseSaleFee = UNIT / 200;
+    // Impose a 50 basis-point fee for buying from and selling to the nomin pool.
+    uint public poolFee = UNIT / 200;
     
     // Minimum quantity of nomins purchasable: 1 cent by default.
     uint public purchaseMininum = UNIT / 100;
-
-    // Each transfer of nomins incurs a 10 basis point fee.
-    uint public transferFee = UNIT / 1000;
-    
-    // Ether price from oracle (USD per eth).
-    uint public etherPrice;
-    
-    // Last time the price was updated.
-    uint public lastPriceUpdate;
-
-    // The period it takes for the price to be considered stale.
-    // If the price is stale, functions that require the price are disabled.
-    uint public stalePeriod = 3 days;
 
     // The time that must pass before the liquidation period is
     // complete
@@ -363,6 +354,16 @@ contract CollateralisedNomin is ERC20Token {
     // uint max, so that we know that we are under liquidation if the 
     // liquidation timestamp is in the past.
     uint public liquidationTimestamp = ~uint(0);
+    
+    // Ether price from oracle (USD per eth).
+    uint public etherPrice;
+    
+    // Last time the price was updated.
+    uint public lastPriceUpdate;
+
+    // The period it takes for the price to be considered stale.
+    // If the price is stale, functions that require the price are disabled.
+    uint public stalePeriod = 3 days;
 
     // Constructor
     function CollateralisedNomin(address _owner, address _oracle,
@@ -373,6 +374,9 @@ contract CollateralisedNomin is ERC20Token {
         beneficiary = _beneficiary;
         etherPrice = initialEtherPrice;
         lastPriceUpdate = now;
+
+        // Each transfer of nomins incurs a 10 basis point fee by default.
+        transferFee = UNIT / 1000; 
     }
 
     // Throw an exception if the caller is not the contract's owner.
@@ -464,6 +468,15 @@ contract CollateralisedNomin is ERC20Token {
         return safeDiv(usd, etherPrice);
     }
 
+    /* Return the fee charged on a transfer of n nomins. */
+    function transferFeeIncurred(uint n)
+        public
+        view
+        returns (uint)
+    {
+        return safeMul(n, transferFee);
+    }
+
     /* Issues n nomins into the pool available to be bought by users.
      * Must be accompanied by $n worth of ether.
      * Exceptional conditions:
@@ -503,22 +516,13 @@ contract CollateralisedNomin is ERC20Token {
         Burning(n, eth);
     }
 
-    /* Return the fee charged on a transfer of n nomins. */
-    function transferFeeIncurred(uint n)
-        public
-        view
-        returns (uint)
-    {
-        return safeMul(n, transferFee);
-    }
-
     /* Return the fee charged on a purchase or sale of n nomins. */
-    function purchaseSaleFeeIncurred(uint n)
+    function poolFeeIncurred(uint n)
         public
         view
         returns (uint)
     {
-        return safeMul(n, purchaseSaleFee);
+        return safeMul(n, poolFee);
     }
 
     /* Return the USD cost (including fee) of purchasing n nomins */
@@ -527,7 +531,7 @@ contract CollateralisedNomin is ERC20Token {
         view
         returns (uint)
     {
-        return safeAdd(n, purchaseSaleFeeIncurred(n));
+        return safeAdd(n, poolFeeIncurred(n));
     }
 
     /* Return the ether cost (including fee) of purchasing n nomins.
@@ -570,7 +574,7 @@ contract CollateralisedNomin is ERC20Token {
         view
         returns (uint)
     {
-        return safeSub(n, purchaseSaleFeeIncurred(n));
+        return safeSub(n, poolFeeIncurred(n));
     }
 
     /* Return the ether proceeds (less the fee) of selling n
@@ -694,30 +698,30 @@ contract CollateralisedNomin is ERC20Token {
         selfdestruct(beneficiary);
     }
 
-    /* Emitted whenever new nomins are issued into the pool. */
+    /* New nomins were issued into the pool. */
     event Issuance(uint nominsIssued, uint collateralDeposited);
 
-    /* Emitted whenever nomins in the pool are destroyed. */
+    /* Nomins in the pool were destroyed. */
     event Burning(uint nominsBurned, uint collateralWithdrawn);
 
-    /* Emitted whenever a purchase of nomins is made, and how many eth were provided to buy them. */
+    /* A purchase of nomins was made, and how many eth were provided to buy them. */
     event Purchase(address buyer, uint nomins, uint eth);
 
-    /* Emitted whenever a sale of nomins is made, and how many eth they were sold for. */
+    /* A sale of nomins was made, and how many eth they were sold for. */
     event Sale(address seller, uint nomins, uint eth);
 
-    /* Emitted whenever setPrice() is called by the oracle to update the price. */
+    /* setPrice() was called by the oracle to update the price. */
     event PriceUpdate(uint newPrice);
 
-    /* Emitted whenever setStalePeriod() is called by the owner. */
+    /* setStalePeriod() was called by the owner. */
     event StalePeriodUpdate(uint newPeriod);
 
-    /* Emitted whenever liquidation is initiated. */
+    /* Liquidation was initiated. */
     event Liquidation();
 
-    /* Emitted whenever liquidation is extended. */
+    /* Liquidation was extended. */
     event LiquidationExtended(uint extension);
 
-    /* Emitted when the contract self-destructs. */
+    /* The contract has self-destructed. */
     event SelfDestructed();
 }
