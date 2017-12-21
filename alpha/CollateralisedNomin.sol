@@ -334,10 +334,13 @@ contract CollateralisedNomin is ERC20Token {
     uint public pool = 0;
     
     // Impose a 50 basis-point fee for buying and selling.
-    uint public fee = UNIT / 200;
+    uint public purchaseSaleFee = UNIT / 200;
     
     // Minimum quantity of nomins purchasable: 1 cent by default.
     uint public purchaseMininum = UNIT / 100;
+
+    // Each transfer of nomins incurs a 10 basis point fee.
+    uint public transferFee = UNIT / 1000;
     
     // Ether price from oracle (USD per eth).
     uint public etherPrice;
@@ -500,13 +503,22 @@ contract CollateralisedNomin is ERC20Token {
         Burning(n, eth);
     }
 
-    /* Return the fee charged on a purchase or sale of n nomins. */
-    function purchaseSaleFee(uint n)
+    /* Return the fee charged on a transfer of n nomins. */
+    function transferFeeIncurred(uint n)
         public
         view
         returns (uint)
     {
-        return safeMul(n, fee);
+        return safeMul(n, transferFee);
+    }
+
+    /* Return the fee charged on a purchase or sale of n nomins. */
+    function purchaseSaleFeeIncurred(uint n)
+        public
+        view
+        returns (uint)
+    {
+        return safeMul(n, purchaseSaleFee);
     }
 
     /* Return the USD cost (including fee) of purchasing n nomins */
@@ -515,7 +527,7 @@ contract CollateralisedNomin is ERC20Token {
         view
         returns (uint)
     {
-        return safeAdd(n, purchaseSaleFee(n));
+        return safeAdd(n, purchaseSaleFeeIncurred(n));
     }
 
     /* Return the ether cost (including fee) of purchasing n nomins.
@@ -558,7 +570,7 @@ contract CollateralisedNomin is ERC20Token {
         view
         returns (uint)
     {
-        return safeSub(n, purchaseSaleFee(n));
+        return safeSub(n, purchaseSaleFeeIncurred(n));
     }
 
     /* Return the ether proceeds (less the fee) of selling n
