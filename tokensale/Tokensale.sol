@@ -86,11 +86,20 @@ contract HavvenConfig {
 
     string public        name               = "Havven";
     string public        symbol             = "HVN";
+
     address public       owner              = msg.sender;
     address public       FUND_WALLET        = 0x0;
+
     uint public constant MAX_TOKENS         = 150000000;
     uint public constant START_DATE         = 1517443200;
     uint public constant MAX_FUNDING_PERIOD = 60 days;
+
+    /// @dev The Hut34 vesting 'psudo-address' for transferring and releasing
+    /// vested tokens to the Hut34 Wallet. The address is UTF8 encoding of the
+    /// string and can only be accessed by the 'releaseVested()' function.
+    /// @return `0x48757433342056657374696e6700000000000000`
+ //   address public constant HUT34_VEST_ADDR = address(bytes20("Hut34 Vesting"));
+
 }
 
 library SafeMath {
@@ -125,16 +134,17 @@ contract ERC20Token {
 
     using SafeMath for uint;
 
-    /* State variables */
+
+//  -----------------------------------------------------------------
+//  STATE VARIABLES
 
     uint public totalSupply;
     mapping (address => uint) balances;
     mapping (address => mapping (address => uint)) allowed;
-
-    
-    
-    /* Events */
-
+ 
+//  -----------------------------------------------------------------
+//  EVENTS
+ 
     event Transfer(
         address indexed _from,
         address indexed _to,
@@ -147,9 +157,8 @@ contract ERC20Token {
         uint256 _amount
     );
 
-
-
-    /* Functions */
+//  -----------------------------------------------------------------
+//  FUNCTIONS
 
     // Using an explicit getter allows for function overloading
     function balanceOf(address _addr)
@@ -217,8 +226,137 @@ contract ERC20Token {
     }
 }
 
-contract Havven {
+contract HavvenTokenSaleAbstract {
 
+//  -----------------------------------------------------------------
+//  EVENTS
+
+    event Deposit(address indexed _from, uint _value);
+    event Withdrawal(address indexed _from, address indexed _to, uint _value);
+    event OwnerChangeComplete(address indexed _from, address indexed _to);
+    event OwnerChangeInit(address indexed _to); // initiates contract owner change
+    event ContractAborted();
     
+    /// @dev Logged when a funder exceeds the KYC limit
+    /// @param _addr Address to set or clear KYC flag
+    /// @param _kyc A boolean flag
+    // event KycExceeded(address indexed _addr, bool _kyc);
+
+    /// @dev Logged when vested tokens are released back to HUT32_WALLET
+    /// @param _releaseDate The official release date (even if released at
+    /// later date)
+    // event VestingReleased(uint _releaseDate);
+
+
+//  -----------------------------------------------------------------
+//  STATE VARIABLES
+
+    /// @dev This fuse blows upon calling abort() which forces a fail state
+    /// @return the abort state. true == not aborted
+    bool public __abortFuse = true;
+
+    /// @dev Sets to true after the fund is swept to the fund wallet, allows
+    /// token transfers and prevents abort()
+    /// @return final success state of TS
+    bool public tsSucceeded;
+
+    /// @dev An address permissioned to enact owner restricted functions
+    /// @return owner
+    address public owner;
+
+    /// @dev An address permissioned to take ownership of the contract
+    /// @return new owner address
+    address public newOwner;
+
+    /// @dev A tally of total ether raised during the funding period
+    /// @return Total ether raised during funding
+    uint public etherRaised;
+
+    /// @return Wholesale tokens available for sale
+    uint public wholesaleLeft;
+
+    /// @return Total ether refunded. Used to permision call to `destroy()`
+    uint public refunded;
+
+    /// @returns Date of next vesting release
+    uint public nextReleaseDate;
+
+    /// @return Ether paid by an address
+    mapping (address => uint) public etherContributed;
+
+    /// @returns KYC flag for an address
+    mapping (address => bool) public mustKyc;
+
+//  -----------------------------------------------------------------
+//  MODIFIERS
+
+    modifier onlyOwner() {
+        require(msg.sender == owner);
+        _;
+    }
+
+//  -----------------------------------------------------------------
+//  FUNCTION ABSTRACTS
+
+    /// @return `true` if MIN_FUNDS were raised
+    function fundRaised() public view returns (bool);
+
+    /// @return `true` if MIN_FUNDS were not raised before END_DATE or contract
+    /// has been aborted
+    function fundFailed() public view returns (bool);
+
+    /// @return The current retail rate for token purchase
+    function currentRate() public view returns (uint);
+
+    /// @param _wei A value of ether in units of wei
+    /// @return allTokens_ returnable tokens for the funding amount
+    /// @return wholesaleToken_ Number of tokens purchased at wholesale rate
+    function ethToTokens(uint _wei)
+        public view returns (uint allTokens_, uint wholesaleTokens_);
+
+    /// @notice Processes a token purchase for `_addr`
+    /// @param _addr An address to purchase tokens
+    /// @return Boolean success value
+    /// @dev Requires <150,000 gas
+    function proxyPurchase(address _addr) public payable returns (bool);
+
+    /// @notice Finalize the TS and transfer funds
+    /// @return Boolean success value
+    function finalizeTS() public returns (bool);
+
+    /// @notice Clear the KYC flags for an array of addresses to allow tokens
+    /// transfers
+    function clearKyc(address[] _addrs) public returns (bool);
+
+    /// @notice Make bulk transfer of tokens to many addresses
+    /// @param _addrs An array of recipient addresses
+    /// @param _amounts An array of amounts to transfer to respective addresses
+    /// @return Boolean success value
+    function transferToMany(address[] _addrs, uint[] _amounts)
+        public returns (bool);
+
+    /// @notice Release vested tokens after a maturity date
+    /// @return Boolean success value
+    function releaseVested() public returns (bool);
+
+    /// @notice Claim refund on failed TS
+    /// @return Boolean success value
+    function refund() public returns (bool);
+
+    /// @notice Push refund for `_addr` from failed TS
+    /// @param _addrs An array of address to refund
+    /// @return Boolean success value
+    function refundFor(address[] _addrs) public returns (bool);
+
+    /// @notice Abort the token sale prior to finalizeTS()
+    function abort() public returns (bool);
+
+    /// @notice Salvage `_amount` tokens at `_kaddr` and send them to `_to`
+    /// @param _kAddr An ERC20 contract address
+    /// @param _to and address to send tokens
+    /// @param _amount The number of tokens to transfer
+    /// @return Boolean success value
+    function transferExternalToken(address _kAddr, address _to, uint _amount)
+        public returns (bool);
 
 }
