@@ -54,32 +54,8 @@ Block8 Technologies is accelerating blockchain technology
 by incubating meaningful next-generation businesses.
 Find out more at https://www.block8.io/
 -----------------------------------------------------------------
-
 */
 
-/* TODO:
- *     * When the ether backing is exhausted, discount nomins: e.g. if $900k ether backs 1m nom, each nom is worth 90c ?
- *     * Split fees for purchase versus sale?
- *     * Staleness adjustments:
- *           - solve the trust problem of just setting low stale period and then liquidating
- *           - perhaps staleness protection for sell() is deactivated during the liquidation period
- *           - additionally make staleness predictable by emitting an event on update, and then requiring the current period to elapse before the stale period is actually changed.
- *           - rate limiting?
- *     * Consider whether people emptying the collateral by hedging is a problem:
- *         Having no fee is effectively offering a short position for free. But if the volatility of ether is ~10% a day or so
- *         then a 10% fee required to make betting on it unprofitable is probably too high to get people to actually buy these things for their intended purpose.
- *         Probably can add a time lock for selling nomins back to the system, but it's awkward, and just makes the futures contract
- *         slightly longer term.
- *     * Re-verify that ERC20 compliant as per https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20-token-standard.md
- *     * Compare with linked token implementations (zeppelin, consensys, minime).
- *     * Modularisation
- *     * Factor out functionality into proxy contract for upgrades.
- *     * Fee distribution
- *     * Consensys best practices compliance.
- *     * Solium lint.
- *     * Test suite.
- *     * Wrapping protection. (with veto)
- */
 pragma solidity ^0.4.19;
 
 import "ERC20FeeToken.sol";
