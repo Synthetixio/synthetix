@@ -82,6 +82,7 @@ Find out more at https://www.block8.io/
  */
 pragma solidity ^0.4.19;
 
+import "ERC20FeeToken.sol";
 
 /* Issues nomins, which are tokens worth 1 USD each. They are backed
  * by a pool of ether collateral, so that if a user has nomins, they may
