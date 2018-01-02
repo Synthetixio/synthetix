@@ -70,6 +70,8 @@ Find out more at https://www.block8.io/
  *         then a 10% fee required to make betting on it unprofitable is probably too high to get people to actually buy these things for their intended purpose.
  *         Probably can add a time lock for selling nomins back to the system, but it's awkward, and just makes the futures contract
  *         slightly longer term.
+ *     * Re-verify that ERC20 compliant as per https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20-token-standard.md
+ *     * Compare with linked token implementations (zeppelin, consensys, minime).
  *     * Modularisation
  *     * Factor out functionality into proxy contract for upgrades.
  *     * Fee distribution
@@ -211,20 +213,32 @@ contract ERC20FeeToken is SafeFixedMath {
     {
         return balances[_account];
     }
+
+    // Return the fee charged on top in order to transfer _value worth of tokens.
+    function feeCharged(uint _value) 
+        public
+        view
+        returns (uint)
+    {
+        return safeMul(_value, transferFee);
+    }
  
     // Send _value amount of tokens to address _to
     function transfer(address _to, uint _value)
         public
         returns (bool)
     {
-        if (subIsSafe(balances[msg.sender], _value) &&
+        // The fee is deducted from the sender's balance.
+        uint totalCharge = safeAdd(_value, feeCharged(_value));
+        if (subIsSafe(balances[msg.sender], totalCharge) &&
             addIsSafe(balances[_to], _value)) {
             Transfer(msg.sender, _to, _value);
-            // Don't spend gas updating state if unnecessary.
+            // Zero-value transfers must fire the transfer event,
+            // but don't spend gas updating state if unnecessary.
             if (_value == 0) {
                 return true;
             }
-            balances[msg.sender] = safeSub(balances[msg.sender], _value);
+            balances[msg.sender] = safeSub(balances[msg.sender], totalCharge);
             balances[_to] = safeAdd(balances[_to], _value);
             return true;
         }
@@ -236,16 +250,19 @@ contract ERC20FeeToken is SafeFixedMath {
         public
         returns (bool)
     {
-        if (subIsSafe(balances[_from], _value) &&
-            subIsSafe(allowances[_from][msg.sender], _value) &&
+        // The fee is deducted from the sender's balance.
+        uint totalCharge = safeAdd(_value, feeCharged(_value));
+        if (subIsSafe(balances[_from], totalCharge) &&
+            subIsSafe(allowances[_from][msg.sender], totalCharge) &&
             addIsSafe(balances[_to], _value)) {
                 Transfer(_from, _to, _value);
-                // Don't spend gas updating state if unnecessary.
+                // Zero-value transfers must fire the transfer event,
+                // but don't spend gas updating state if unnecessary.
                 if (_value == 0) {
                     return true;
                 }
-                balances[_from] = safeSub(balances[_from], _value);
-                allowances[_from][msg.sender] = safeSub(allowances[_from][msg.sender], _value);
+                balances[_from] = safeSub(balances[_from], totalCharge);
+                allowances[_from][msg.sender] = safeSub(allowances[_from][msg.sender], totalCharge);
                 balances[_to] = safeAdd(balances[_to], _value);
                 return true;
         }
