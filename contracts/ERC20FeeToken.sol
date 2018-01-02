@@ -1,5 +1,7 @@
 pragma solidity ^0.4.19;
 
+import "SafeFixedMath.sol";
+
 contract ERC20FeeToken is SafeFixedMath {
     // Total nomins in the pool or in circulation.
     // Supply is initially zero, but may be increased by the Havven foundation.
