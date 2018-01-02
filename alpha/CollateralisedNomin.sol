@@ -58,8 +58,8 @@ Find out more at https://www.block8.io/
 */
 
 /* TODO:
- *     * When the ether backing is exhausted, discount nomins: e.g. if $900k ether backs 1m nom, each nom is worth 90c
- *     * Update fee function to include transfer fees, split fees for purchase versus sale
+ *     * When the ether backing is exhausted, discount nomins: e.g. if $900k ether backs 1m nom, each nom is worth 90c ?
+ *     * Split fees for purchase versus sale?
  *     * Staleness adjustments:
  *           - solve the trust problem of just setting low stale period and then liquidating
  *           - perhaps staleness protection for sell() is deactivated during the liquidation period
@@ -78,8 +78,6 @@ Find out more at https://www.block8.io/
  *     * Consensys best practices compliance.
  *     * Solium lint.
  *     * Test suite.
- *     * Nomin transfer fees.
- *          - Fee setter methods
  *     * Wrapping protection. (with veto)
  */
 pragma solidity ^0.4.19;
@@ -222,6 +220,15 @@ contract ERC20FeeToken is SafeFixedMath {
     {
         return safeMul(_value, transferFee);
     }
+
+    function setTransferFee(uint newFee)
+        public
+        onlyOwner
+    {
+        require(newFee <= UNIT);
+        transferFee = newFee;
+        TransferFeeUpdated(newFee);
+    }
  
     // Send _value amount of tokens to address _to
     function transfer(address _to, uint _value)
@@ -290,11 +297,14 @@ contract ERC20FeeToken is SafeFixedMath {
         return allowances[_owner][_spender];
     }
  
-    // Triggered when tokens are transferred.
+    // Tokens were transferred.
     event Transfer(address indexed _from, address indexed _to, uint _value);
  
-    // Triggered whenever approve(address _spender, uint _value) is called.
+    // approve(address _spender, uint _value) was called.
     event Approval(address indexed _owner, address indexed _spender, uint _value);
+
+    // The transfer fee was updated.
+    event TransferFeeUpdated(uint newFee);
 }
 
 
@@ -413,7 +423,7 @@ contract CollateralisedNomin is ERC20FeeToken {
         _;
     }
 
-    // Throw an exception if the contract is not currently undertaking liquidation.
+    // Throw an exception if the contract is currently undergoing liquidation.
     modifier notLiquidating
     {
         require(!isLiquidating());
