@@ -3,12 +3,12 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       CollateralisedNomin.sol
-version:    0.2
+version:    0.3
 author:     Block8 Technologies, in partnership with Havven
 
             Anton Jurisevic
 
-date:       2017-12-4
+date:       2018-1-3
 
 checked:    -
 approved:   -
@@ -16,8 +16,8 @@ approved:   -
 -----------------------------------------------------------------
 MODULE DESCRIPTION
 -----------------------------------------------------------------
-Ether-backed nomin stablecoin contract.
 
+Ether-backed nomin stablecoin contract.
 
 -----------------------------------------------------------------
 LICENCE INFORMATION
@@ -46,7 +46,8 @@ SOFTWARE.
 -----------------------------------------------------------------
 RELEASE NOTES
 -----------------------------------------------------------------
-- Initial scaffolding of nomin alpha contract. It will require
+
+Initial scaffolding of nomin alpha contract. It will require
 a price oracle to run externally.
 
 -----------------------------------------------------------------
