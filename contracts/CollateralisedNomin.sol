@@ -85,21 +85,18 @@ import "ERC20FeeToken.sol";
  * the owner may destroy the contract, transferring any remaining collateral
  * to a nominated beneficiary address.
  * This liquidation period may be extended up to a maximum of 180 days.
+ *
+ * The contract's owner should be the Havven foundation multisig command contract.
+ * Only the owner may perform the following actions:
+ *   - Setting the owner;
+ *   - Setting the oracle;
+ *   - Setting the beneficiary;
+ *   - Issuing new nomins into the pool;
+ *   - Burning nomins in the pool;
+ *   - Initiating and extending liquidation;
+ *   - Selfdestructing the contract
  */
 contract CollateralisedNomin is ERC20FeeToken {
-
-    /* The contract's owner.
-     * This should point to the Havven foundation multisig command contract.
-     * Only the owner may perform the following:
-     *   - Setting the owner;
-     *   - Setting the oracle;
-     *   - Setting the beneficiary;
-     *   - Issuing new nomins into the pool;
-     *   - Burning nomins in the pool;
-     *   - Initiating and extending liquidation;
-     *   - Selfdestructing the contract*/
-    address owner;
-
     // The oracle provides price information to this contract.
     // It may only call the setPrice() function.
     address oracle;
@@ -146,9 +143,10 @@ contract CollateralisedNomin is ERC20FeeToken {
 
     // Constructor
     function CollateralisedNomin(address _owner, address _oracle,
-                                 address _beneficiary, uint initialEtherPrice) public
+                                 address _beneficiary, uint initialEtherPrice)
+        ERC20FeeToken(_owner)
+        public
     {
-        owner = _owner;
         oracle = _oracle;
         beneficiary = _beneficiary;
         etherPrice = initialEtherPrice;
@@ -156,13 +154,6 @@ contract CollateralisedNomin is ERC20FeeToken {
 
         // Each transfer of nomins incurs a 10 basis point fee by default.
         transferFee = UNIT / 1000; 
-    }
-
-    // Throw an exception if the caller is not the contract's owner.
-    modifier onlyOwner
-    {
-        require(msg.sender == owner);
-        _;
     }
 
     // Throw an exception if the caller is not the contract's designated price oracle.
@@ -183,15 +174,7 @@ contract CollateralisedNomin is ERC20FeeToken {
     {
         require(!priceIsStale());
         _;
-    }
-    
-    // Set the owner of this contract. Only the contract owner should be able to call this.
-    function setOwner(address newOwner)
-        public
-        onlyOwner
-    {
-        owner = newOwner;
-    }   
+    }  
     
     // Set the price oracle of this contract. Only the contract owner should be able to call this.
     function setOracle(address newOracle)
@@ -270,7 +253,7 @@ contract CollateralisedNomin is ERC20FeeToken {
         // Price staleness check occurs inside the call to fiatValue.
         // Safe additions are unnecessary here, as either the addition is checked on the following line
         // or the overflow would cause the requirement not to be satisfied.
-        require(fiatValue(msg.value) + fiatBalance() >= safeMul(this.supply + n, collatRatioMinimum));
+        require(fiatValue(msg.value) + fiatBalance() >= safeMul(supply + n, collatRatioMinimum));
         supply = safeAdd(supply, n);
         pool = safeAdd(pool, n);
         Issuance(n, msg.value);
@@ -291,7 +274,6 @@ contract CollateralisedNomin is ERC20FeeToken {
         supply = safeSub(supply, n);
         Burning(n);
     }
-    */
 
     /* Return the fee charged on a purchase or sale of n nomins. */
     function poolFeeIncurred(uint n)
