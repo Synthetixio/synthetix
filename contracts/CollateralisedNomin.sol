@@ -3,12 +3,12 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       CollateralisedNomin.sol
-version:    0.2
+version:    0.3
 author:     Block8 Technologies, in partnership with Havven
 
             Anton Jurisevic
 
-date:       2017-12-4
+date:       2018-1-3
 
 checked:    -
 approved:   -
@@ -16,8 +16,8 @@ approved:   -
 -----------------------------------------------------------------
 MODULE DESCRIPTION
 -----------------------------------------------------------------
-Ether-backed nomin stablecoin contract.
 
+Ether-backed nomin stablecoin contract.
 
 -----------------------------------------------------------------
 LICENCE INFORMATION
@@ -46,7 +46,8 @@ SOFTWARE.
 -----------------------------------------------------------------
 RELEASE NOTES
 -----------------------------------------------------------------
-- Initial scaffolding of nomin alpha contract. It will require
+
+Initial scaffolding of nomin alpha contract. It will require
 a price oracle to run externally.
 
 -----------------------------------------------------------------
@@ -54,262 +55,11 @@ Block8 Technologies is accelerating blockchain technology
 by incubating meaningful next-generation businesses.
 Find out more at https://www.block8.io/
 -----------------------------------------------------------------
-
 */
 
-/* TODO:
- *     * When the ether backing is exhausted, discount nomins: e.g. if $900k ether backs 1m nom, each nom is worth 90c ?
- *     * Split fees for purchase versus sale?
- *     * Staleness adjustments:
- *           - solve the trust problem of just setting low stale period and then liquidating
- *           - perhaps staleness protection for sell() is deactivated during the liquidation period
- *           - additionally make staleness predictable by emitting an event on update, and then requiring the current period to elapse before the stale period is actually changed.
- *           - rate limiting?
- *     * Consider whether people emptying the collateral by hedging is a problem:
- *         Having no fee is effectively offering a short position for free. But if the volatility of ether is ~10% a day or so
- *         then a 10% fee required to make betting on it unprofitable is probably too high to get people to actually buy these things for their intended purpose.
- *         Probably can add a time lock for selling nomins back to the system, but it's awkward, and just makes the futures contract
- *         slightly longer term.
- *     * Re-verify that ERC20 compliant as per https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20-token-standard.md
- *     * Compare with linked token implementations (zeppelin, consensys, minime).
- *     * Modularisation
- *     * Factor out functionality into proxy contract for upgrades.
- *     * Fee distribution
- *     * Consensys best practices compliance.
- *     * Solium lint.
- *     * Test suite.
- *     * Wrapping protection. (with veto)
- */
 pragma solidity ^0.4.19;
 
-
-/* Safely manipulate fixed-point decimals at a given precision level. 
- * All functions accepting uints in this contract and derived contracts
- * are taken to be such fixed point decimals (including fiat, ether, and
- * nomin quantities). */
-contract SafeFixedMath {
-    
-    // Number of decimal places in the representation.
-    uint public constant decimals = 18;
-
-    // The number representing 1.0.
-    uint public constant UNIT = 10 ** decimals;
-    
-    /* True iff adding x and y will not overflow. */
-    function addIsSafe(uint x, uint y) 
-        pure
-        internal
-        returns (bool)
-    {
-        return x + y >= y;
-    }
-
-    /* Return the result of adding x and y, throwing an exception in case of overflow. */
-    function safeAdd(uint x, uint y)
-        pure
-        internal
-        returns (uint)
-    {
-        assert(addIsSafe(x, y));
-        return x + y;
-    }
-    
-    /* True iff subtracting y from x will not overflow in the negative direction. */
-    function subIsSafe(uint x, uint y)
-        pure
-        internal
-        returns (bool)
-    {
-        return y <= x;
-    }
-
-    /* Return the result of subtracting y from x, throwing an exception in case of overflow. */
-    function safeSub(uint x, uint y)
-        pure
-        internal
-        returns (uint)
-    {
-        assert(subIsSafe(x, y));
-        return x - y;
-    }
-    
-    /* True iff multiplying x and y would not overflow. */
-    function mulIsSafe(uint x, uint y)
-        pure
-        internal
-        returns (bool) 
-    {
-        if (x == 0) {
-            return true;
-        }
-        uint r = x * y;
-        return r / x == y;
-    }
-
-    /* Return the result of multiplying x and y, throwing an exception in case of overflow. */
-    function safeMul(uint x, uint y)
-        pure 
-        internal 
-        returns (uint)
-    {
-        assert(mulIsSafe(x, y));
-        // Divide by UNIT to remove the extra factor introduced by the product.
-        return (x * y) / UNIT;
-    }
-    
-    /* True iff the denominator of x/y is nonzero. */
-    function divIsSafe(uint x, uint y)
-        pure 
-        internal
-        returns (bool)
-    {
-        return y != 0;
-    }
-
-    /* Return the result of dividing x by y, throwing an exception in case of overflow or zero divisor. */
-    function safeDiv(uint x, uint y)
-        pure
-        internal
-        returns (uint)
-    {
-        assert(mulIsSafe(x, UNIT)); // No need to use divIsSafe() here, as a 0 denominator already throws an exception.
-        // Reintroduce the UNIT factor that will be divided out.
-        return (x * UNIT) / y;
-    }
-}
-
-
-contract ERC20FeeToken is SafeFixedMath {
-    // Total nomins in the pool or in circulation.
-    // Supply is initially zero, but may be increased by the Havven foundation.
-    uint supply = 0;
- 
-    // Nomin balances for each address.
-    mapping(address => uint) balances;
-
-    // Nomin proxy transfer allowances.
-    mapping(address => mapping (address => uint256)) allowances;
-
-    // A percentage fee charged on each transfer.
-    // Zero by default, but may be set in derived contracts.
-    uint public transferFee = 0;
-   
-    // Get the total token supply
-    function totalSupply()
-        public
-        view
-        returns (uint)
-    {
-        return supply;
-    }
- 
-    // Get the account balance of another account with address _account
-    function balanceOf(address _account)
-        public
-        view
-        returns (uint)
-    {
-        return balances[_account];
-    }
-
-    // Return the fee charged on top in order to transfer _value worth of tokens.
-    function feeCharged(uint _value) 
-        public
-        view
-        returns (uint)
-    {
-        return safeMul(_value, transferFee);
-    }
-
-    function setTransferFee(uint newFee)
-        public
-        onlyOwner
-    {
-        require(newFee <= UNIT);
-        transferFee = newFee;
-        TransferFeeUpdated(newFee);
-    }
- 
-    // Send _value amount of tokens to address _to
-    function transfer(address _to, uint _value)
-        public
-        returns (bool)
-    {
-        // The fee is deducted from the sender's balance.
-        uint totalCharge = safeAdd(_value, feeCharged(_value));
-        if (subIsSafe(balances[msg.sender], totalCharge) &&
-            addIsSafe(balances[_to], _value)) {
-            Transfer(msg.sender, _to, _value);
-            // Zero-value transfers must fire the transfer event,
-            // but don't spend gas updating state if unnecessary.
-            if (_value == 0) {
-                return true;
-            }
-            balances[msg.sender] = safeSub(balances[msg.sender], totalCharge);
-            balances[_to] = safeAdd(balances[_to], _value);
-            return true;
-        }
-        return false;
-    }
- 
-    // Send _value amount of tokens from address _from to address _to
-    function transferFrom(address _from, address _to, uint _value)
-        public
-        returns (bool)
-    {
-        // The fee is deducted from the sender's balance.
-        uint totalCharge = safeAdd(_value, feeCharged(_value));
-        if (subIsSafe(balances[_from], totalCharge) &&
-            subIsSafe(allowances[_from][msg.sender], totalCharge) &&
-            addIsSafe(balances[_to], _value)) {
-                Transfer(_from, _to, _value);
-                // Zero-value transfers must fire the transfer event,
-                // but don't spend gas updating state if unnecessary.
-                if (_value == 0) {
-                    return true;
-                }
-                balances[_from] = safeSub(balances[_from], totalCharge);
-                allowances[_from][msg.sender] = safeSub(allowances[_from][msg.sender], totalCharge);
-                balances[_to] = safeAdd(balances[_to], _value);
-                return true;
-        }
-        return false;
-    }
-  
-    // Allow _spender to withdraw from your account, multiple times, up to the _value amount.
-    // If this function is called again it overwrites the current allowance with _value.
-    // this function is required for some DEX functionality.
-    function approve(address _spender, uint _value)
-        public
-        returns (bool)
-    {
-        allowances[msg.sender][_spender] = _value;
-        Approval(msg.sender, _spender, _value);
-        return true;
-    }
- 
-    // Returns the amount which _spender is still allowed to withdraw from _owner
-    function allowance(address _owner, address _spender)
-        public
-        view
-        returns (uint)
-    {
-        return allowances[_owner][_spender];
-    }
- 
-    // Tokens were transferred.
-    event Transfer(address indexed _from, address indexed _to, uint _value);
- 
-    // approve(address _spender, uint _value) was called.
-    event Approval(address indexed _owner, address indexed _spender, uint _value);
-
-    // The transfer fee was updated.
-    event TransferFeeUpdated(uint newFee);
-}
-
-
-contract Havven is ERC20FeeToken {}
-
+import "ERC20FeeToken.sol";
 
 /* Issues nomins, which are tokens worth 1 USD each. They are backed
  * by a pool of ether collateral, so that if a user has nomins, they may
@@ -336,21 +86,18 @@ contract Havven is ERC20FeeToken {}
  * the owner may destroy the contract, transferring any remaining collateral
  * to a nominated beneficiary address.
  * This liquidation period may be extended up to a maximum of 180 days.
+ *
+ * The contract's owner should be the Havven foundation multisig command contract.
+ * Only the owner may perform the following actions:
+ *   - Setting the owner;
+ *   - Setting the oracle;
+ *   - Setting the beneficiary;
+ *   - Issuing new nomins into the pool;
+ *   - Burning nomins in the pool;
+ *   - Initiating and extending liquidation;
+ *   - Selfdestructing the contract
  */
 contract CollateralisedNomin is ERC20FeeToken {
-
-    /* The contract's owner.
-     * This should point to the Havven foundation multisig command contract.
-     * Only the owner may perform the following:
-     *   - Setting the owner;
-     *   - Setting the oracle;
-     *   - Setting the beneficiary;
-     *   - Issuing new nomins into the pool;
-     *   - Burning nomins in the pool;
-     *   - Initiating and extending liquidation;
-     *   - Selfdestructing the contract*/
-    address owner;
-
     // The oracle provides price information to this contract.
     // It may only call the setPrice() function.
     address oracle;
@@ -397,9 +144,10 @@ contract CollateralisedNomin is ERC20FeeToken {
 
     // Constructor
     function CollateralisedNomin(address _owner, address _oracle,
-                                 address _beneficiary, uint initialEtherPrice) public
+                                 address _beneficiary, uint initialEtherPrice)
+        ERC20FeeToken(_owner)
+        public
     {
-        owner = _owner;
         oracle = _oracle;
         beneficiary = _beneficiary;
         etherPrice = initialEtherPrice;
@@ -407,13 +155,6 @@ contract CollateralisedNomin is ERC20FeeToken {
 
         // Each transfer of nomins incurs a 10 basis point fee by default.
         transferFee = UNIT / 1000; 
-    }
-
-    // Throw an exception if the caller is not the contract's owner.
-    modifier onlyOwner
-    {
-        require(msg.sender == owner);
-        _;
     }
 
     // Throw an exception if the caller is not the contract's designated price oracle.
@@ -434,15 +175,7 @@ contract CollateralisedNomin is ERC20FeeToken {
     {
         require(!priceIsStale());
         _;
-    }
-    
-    // Set the owner of this contract. Only the contract owner should be able to call this.
-    function setOwner(address newOwner)
-        public
-        onlyOwner
-    {
-        owner = newOwner;
-    }   
+    }  
     
     // Set the price oracle of this contract. Only the contract owner should be able to call this.
     function setOracle(address newOracle)
@@ -521,7 +254,7 @@ contract CollateralisedNomin is ERC20FeeToken {
         // Price staleness check occurs inside the call to fiatValue.
         // Safe additions are unnecessary here, as either the addition is checked on the following line
         // or the overflow would cause the requirement not to be satisfied.
-        require(fiatValue(msg.value) + fiatBalance() >= safeMul(this.supply + n, collatRatioMinimum));
+        require(fiatValue(msg.value) + fiatBalance() >= safeMul(supply + n, collatRatioMinimum));
         supply = safeAdd(supply, n);
         pool = safeAdd(pool, n);
         Issuance(n, msg.value);
@@ -542,7 +275,6 @@ contract CollateralisedNomin is ERC20FeeToken {
         supply = safeSub(supply, n);
         Burning(n);
     }
-    */
 
     /* Return the fee charged on a purchase or sale of n nomins. */
     function poolFeeIncurred(uint n)
