@@ -1,8 +1,9 @@
 pragma solidity ^0.4.19;
 
 import "SafeFixedMath.sol";
+import "Owned.sol";
 
-contract ERC20FeeToken is SafeFixedMath {
+contract ERC20FeeToken is Owned, SafeFixedMath {
     // Total nomins in the pool or in circulation.
     // Supply is initially zero, but may be increased by the Havven foundation.
     uint supply = 0;
@@ -16,6 +17,9 @@ contract ERC20FeeToken is SafeFixedMath {
     // A percentage fee charged on each transfer.
     // Zero by default, but may be set in derived contracts.
     uint public transferFee = 0;
+
+    // Constructor
+    function ERC20FeeToken(address _owner) Owned(_owner) public { }
    
     // Get the total token supply
     function totalSupply()
