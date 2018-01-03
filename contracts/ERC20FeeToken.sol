@@ -10,8 +10,8 @@ author:     Block8 Technologies, in partnership with Havven
 
 date:       2018-1-3
 
-checked:    -
-approved:   -
+checked:    Samuel Brooks
+approved:   Samuel Brooks
 
 -----------------------------------------------------------------
 MODULE DESCRIPTION
