@@ -1,0 +1,5 @@
+ - Robustness to failure
+ - heartbeat update to the contract every x minutes
+ - record last price sent to contract, and send again if price moves by more than some percentage (no more rapid than some speed)
+ - volume-weighted median computation
+ - graceful handling if it can't get the price from some one of it's sources
