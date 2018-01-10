@@ -91,13 +91,16 @@ PRICE_REFRESH_TIMEOUT = 2
 SIMPLE_MOVING_AVERAGE_STEPS = 1
 'Price is a simple moving average that takes x steps into consideration'
 
+OUTLIER_CUTOFF = 0.03
+'What percentage off the median to cut off before getting average'
+
 
 class PriceList:
     def __init__(self):
         self.prices = {feed.name: 0 for feed in FEEDS}
         if len(self.prices) == 0:
             raise ValueError("FATAL: Price feed list is empty!")
-        self.last_median = None
+        self.last_average = None
         self.last_update_time = 0
         self.last_displayed_price = 0
         self.last_display_time = 0
@@ -154,26 +157,40 @@ class PriceList:
 
     def median_price(self):
         """
-        Get the volume weighted median price
+        Get the volume weighted average, cutting outliers out
         if VOLUME_WEIGHTED is false, all volumes will be 1,
         if volume is missing, volume will also be 1.
         """
 
         # filter out prices that failed to be retrieved
         s_prices = sorted([v for v in self.prices.values() if v is not None])
-        total_weight = sum([i[1] for i in s_prices])
+
+        if len(s_prices) == 0:
+            # TODO: count this as a failure somewhere?
+            return self.last_average
+
         current_weight = 0
+        total_weight = sum([i[1] for i in s_prices])
+        median = None
         for n, i in enumerate(s_prices):
             current_weight += i[1]
             if current_weight > total_weight / 2:
-                self.last_median = i[0]
+                median = i[0]
                 break
             elif current_weight == total_weight / 2:
                 # should be safe to assume n+1 exists in this case, as weights should be at least 1
                 # i.e. one element exists, its weight would be 1 > 0.5(total/2)
-                self.last_median = (i[0] + s_prices[n + 1][0]) / 2
+                median = (i[0] + s_prices[n + 1][0]) / 2
                 break
-        return self.last_median
+        if median:
+            s_prices = [
+                i for i in s_prices if
+                median * (1-OUTLIER_CUTOFF) < i[0] < median * (1+OUTLIER_CUTOFF)
+            ]
+
+        total_weight = sum([i[1] for i in s_prices])
+        self.last_average = sum([i[0] * i[1] for i in s_prices]) / total_weight
+        return self.last_average
 
 
 if __name__ == '__main__':
