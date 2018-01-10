@@ -3,12 +3,12 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       markets.py
-version:    0.1
+version:    0.2
 author:     Block8 Technologies, in partnership with Havven
 
             Anton Jurisevic, Dominic Romanowski
 
-date:       2017-12-08
+date:       2018-01-10
 
 checked:    -
 approved:   -
@@ -24,7 +24,7 @@ periodically pushing the median price to a target smart contract.
 LICENCE INFORMATION
 -----------------------------------------------------------------
 
-Copyright (c) 2017 Havven.io
+Copyright (c) 2018 Havven.io
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

@@ -3,12 +3,12 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       oracle.py
-version:    0.1
+version:    0.2
 author:     Block8 Technologies, in partnership with Havven
 
             Anton Jurisevic, Dominic Romanowski
 
-date:       2017-12-08
+date:       2018-01-10
 
 checked:    -
 approved:   -
@@ -24,7 +24,7 @@ periodically pushing the median price to a target smart contract.
 LICENCE INFORMATION
 -----------------------------------------------------------------
 
-Copyright (c) 2017 Havven.io
+Copyright (c) 2018 Havven.io
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -88,7 +88,7 @@ as long as previous updates can be changed before they go to the blockchain
 PRICE_REFRESH_TIMEOUT = 2
 'How long should each individual price feed wait for a response'
 
-SIMPLE_MOVING_AVERAGE_STEPS = 5
+SIMPLE_MOVING_AVERAGE_STEPS = 1
 'Price is a simple moving average that takes x steps into consideration'
 
 
@@ -102,11 +102,11 @@ class PriceList:
         self.last_displayed_price = 0
         self.last_display_time = 0
         self.historical_prices = []
+        'A list of prices of length up to SIMPLE_MOVING_AVERAGE_STEPS'
 
     def update_single_price(self, feed):
         try:
             self.prices[feed.name] = feed.price(VOLUME_WEIGHTED)
-            # print(f"Updated {feed.name} to {self.prices[feed.name]}.")
             return self.prices[feed.name]
         except:
             self.prices[feed.name] = None
@@ -118,6 +118,7 @@ class PriceList:
 
         self.historical_prices.append(self.median_price())
         if len(self.historical_prices) > SIMPLE_MOVING_AVERAGE_STEPS:
+            # clear old prices
             self.historical_prices.pop(0)
 
     def run(self):
@@ -131,9 +132,11 @@ class PriceList:
 
             price = sum(self.historical_prices) / len(self.historical_prices)
             print(f"price history now: {self.historical_prices}")
+
             # if its time to present a new price
             if time.time() - self.last_display_time >= PRICE_DISPLAY_TIME:
                 self.send_price(price)
+            # or the price has moved more than FORCE_PRICE_UPDATE_SHOCK
             elif abs((self.last_displayed_price - price) / self.last_displayed_price) > FORCE_PRICE_UPDATE_SHOCK:
                 print(f"PRICE SHOCK! {(self.last_displayed_price-price)/self.last_displayed_price}%")
                 self.send_price(price)
@@ -156,6 +159,7 @@ class PriceList:
         if volume is missing, volume will also be 1.
         """
 
+        # filter out prices that failed to be retrieved
         s_prices = sorted([v for v in self.prices.values() if v is not None])
         total_weight = sum([i[1] for i in s_prices])
         current_weight = 0
@@ -173,13 +177,13 @@ class PriceList:
 
 
 if __name__ == '__main__':
-    plist = PriceList()
     while True:
-        # NEVER DIE
+        plist = PriceList()
         try:
             plist.run()
         except KeyboardInterrupt:
             break
-        except Exception:
+        except Exception as e:
+            print("Fatal error:", e, "restarting PriceList...")
             continue
     pass
