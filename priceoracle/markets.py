@@ -6,7 +6,7 @@ file:       markets.py
 version:    0.1
 author:     Block8 Technologies, in partnership with Havven
 
-            Anton Jurisevic
+            Anton Jurisevic, Dominic Romanowski
 
 date:       2017-12-08
 
@@ -58,11 +58,9 @@ Find out more at block8.io
 
 """
 
-
 import requests
 import requests.exceptions
 import json
-import asyncio
 
 
 class PriceFeed:
@@ -74,17 +72,22 @@ class PriceFeed:
 
     def query(self):
         return requests.get(self.query_string).text
-    
+
     def price(self, get_volume=False):
         try:
             result = json.loads(self.query())
+            price = float(self.price_func(result))
+
             if get_volume and self.vol_func:
-                return float(self.price_func(result)), float(self.vol_func(result))
+                volume = float(self.vol_func(result))
+                return price, volume
             else:
-                return float(self.price_func(result)), 1
+                return price, 1
+
         except requests.exceptions.Timeout:
             print("Timeout for:", self.name)
             return None
+
         except Exception as e:
             print("Error", e, "for:", self.name)
             return None
@@ -130,4 +133,3 @@ FEEDS = [PriceFeed("Kraken",
                    "https://api.quoine.com/products/27",
                    lambda j: j["last_traded_price"],
                    lambda j: j["volume_24h"])]
-

@@ -6,7 +6,7 @@ file:       oracle.py
 version:    0.1
 author:     Block8 Technologies, in partnership with Havven
 
-            Anton Jurisevic
+            Anton Jurisevic, Dominic Romanowski
 
 date:       2017-12-08
 
@@ -62,7 +62,6 @@ Find out more at block8.io
 from concurrent.futures import ThreadPoolExecutor
 from markets import FEEDS, PriceFeed
 import time
-
 
 PRICE_REFRESH_TIME = 5
 'Refresh the price every x seconds'
@@ -135,7 +134,7 @@ class PriceList:
             # if its time to present a new price
             if time.time() - self.last_display_time >= PRICE_DISPLAY_TIME:
                 self.send_price(price)
-            elif abs((self.last_displayed_price-price)/self.last_displayed_price) > FORCE_PRICE_UPDATE_SHOCK:
+            elif abs((self.last_displayed_price - price) / self.last_displayed_price) > FORCE_PRICE_UPDATE_SHOCK:
                 print(f"PRICE SHOCK! {(self.last_displayed_price-price)/self.last_displayed_price}%")
                 self.send_price(price)
 
@@ -162,13 +161,13 @@ class PriceList:
         current_weight = 0
         for n, i in enumerate(s_prices):
             current_weight += i[1]
-            if current_weight > total_weight/2:
+            if current_weight > total_weight / 2:
                 self.last_median = i[0]
                 break
-            elif current_weight == total_weight/2:
+            elif current_weight == total_weight / 2:
                 # should be safe to assume n+1 exists in this case, as weights should be at least 1
                 # i.e. one element exists, its weight would be 1 > 0.5(total/2)
-                self.last_median = (i[0] + s_prices[n+1][0])/2
+                self.last_median = (i[0] + s_prices[n + 1][0]) / 2
                 break
         return self.last_median
 
@@ -184,4 +183,3 @@ if __name__ == '__main__':
         except Exception:
             continue
     pass
-
