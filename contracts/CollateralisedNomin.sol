@@ -10,8 +10,8 @@ author:     Block8 Technologies, in partnership with Havven
 
 date:       2018-1-3
 
-checked:    Samuel Brooks
-approved:   Samuel Brooks
+checked:    -
+approved:   -
 
 -----------------------------------------------------------------
 MODULE DESCRIPTION
@@ -60,6 +60,7 @@ Find out more at https://www.block8.io/
 pragma solidity ^0.4.19;
 
 import "ERC20FeeToken.sol";
+import "ConfiscationCourt.sol";
 
 /* Issues nomins, which are tokens worth 1 USD each. They are backed
  * by a pool of ether collateral, so that if a user has nomins, they may
@@ -100,11 +101,18 @@ import "ERC20FeeToken.sol";
 contract CollateralisedNomin is ERC20FeeToken {
     // The oracle provides price information to this contract.
     // It may only call the setPrice() function.
-    address oracle;
+    address public oracle;
+
+    // The address of the havven contract that this contract
+    // is paired with.
+    address public havven;
+
+    // The address of the contract which manages confiscation votes.
+    address public confiscationCourt;
 
     // Foundation wallet for funds to go to post liquidation.
-    address beneficiary;
-    
+    address public beneficiary;
+
     // ERC20 token information.
     string public constant name = "Collateralised Nomin";
     string public constant symbol = "CNOM";
@@ -113,7 +121,7 @@ contract CollateralisedNomin is ERC20FeeToken {
     uint public pool = 0;
     
     // Impose a 50 basis-point fee for buying from and selling to the nomin pool.
-    uint public poolFee = UNIT / 200;
+    uint public poolFeeRate = UNIT / 200;
     
     // Minimum quantity of nomins purchasable: 1 cent by default.
     uint public purchaseMininum = UNIT / 100;
@@ -143,18 +151,22 @@ contract CollateralisedNomin is ERC20FeeToken {
     uint public stalePeriod = 3 days;
 
     // Constructor
-    function CollateralisedNomin(address _owner, address _oracle,
-                                 address _beneficiary, uint initialEtherPrice)
-        ERC20FeeToken(_owner)
+    function CollateralisedNomin(address _owner, address _havven,
+                                 address _oracle, address _beneficiary,
+                                 uint initialEtherPrice)
+        ERC20FeeToken(_owner, _havven)
         public
     {
         oracle = _oracle;
+        havven = _havven;
         beneficiary = _beneficiary;
         etherPrice = initialEtherPrice;
         lastPriceUpdate = now;
 
         // Each transfer of nomins incurs a 10 basis point fee by default.
-        transferFee = UNIT / 1000; 
+        setTransferFeeRate(UNIT / 1000);
+
+        confiscationCourt = new ConfiscationCourt(_havven, this);
     }
 
     // Throw an exception if the caller is not the contract's designated price oracle.
@@ -282,7 +294,16 @@ contract CollateralisedNomin is ERC20FeeToken {
         view
         returns (uint)
     {
-        return safeMul(n, poolFee);
+        return safeMul(n, poolFeeRate);
+    }
+
+    function setPoolFeeRate(uint newFeeRate)
+        public
+        onlyOwner
+    {
+        require(newFeeRate <= UNIT);
+        poolFeeRate = newFeeRate;
+        PoolFeeRateUpdated(newFeeRate);
     }
 
     /* Return the fiat cost (including fee) of purchasing n nomins */
@@ -481,6 +502,9 @@ contract CollateralisedNomin is ERC20FeeToken {
 
     /* Liquidation was extended. */
     event LiquidationExtended(uint extension);
+
+    // The pool fee rate was updated.
+    event PoolFeeRateUpdated(uint newFeeRate);
 
     /* The contract has self-destructed. */
     event SelfDestructed();

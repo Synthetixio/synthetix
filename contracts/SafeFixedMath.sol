@@ -61,7 +61,7 @@ Find out more at https://www.block8.io/
 
 pragma solidity ^0.4.19;
 
-/* Safely manipulate fixed-point decimals at a given precision level. 
+/* Safely manipulate unsigned fixed-point decimals at a given precision level. 
  * All functions accepting uints in this contract and derived contracts
  * are taken to be such fixed point decimals (including fiat, ether, and
  * nomin quantities). */
@@ -88,7 +88,7 @@ contract SafeFixedMath {
         internal
         returns (uint)
     {
-        assert(addIsSafe(x, y));
+        require(addIsSafe(x, y));
         return x + y;
     }
     
@@ -107,7 +107,7 @@ contract SafeFixedMath {
         internal
         returns (uint)
     {
-        assert(subIsSafe(x, y));
+        require(subIsSafe(x, y));
         return x - y;
     }
     
@@ -130,7 +130,7 @@ contract SafeFixedMath {
         internal 
         returns (uint)
     {
-        assert(mulIsSafe(x, y));
+        require(mulIsSafe(x, y));
         // Divide by UNIT to remove the extra factor introduced by the product.
         return (x * y) / UNIT;
     }
@@ -150,9 +150,17 @@ contract SafeFixedMath {
         internal
         returns (uint)
     {
-        assert(mulIsSafe(x, UNIT)); // No need to use divIsSafe() here, as a 0 denominator already throws an exception.
+        require(mulIsSafe(x, UNIT)); // No need to use divIsSafe() here, as a 0 denominator already throws an exception.
         // Reintroduce the UNIT factor that will be divided out.
         return (x * UNIT) / y;
+    }
+
+    function intToDecimal(uint i)
+        pure
+        internal
+        returns (uint)
+    {
+        return safeMul(i, UNIT);
     }
 }
 
