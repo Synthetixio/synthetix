@@ -73,10 +73,27 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
 
     // A percentage fee charged on each transfer.
     // Zero by default, but may be set in derived contracts.
-    uint public transferFee = 0;
+    uint public transferFeeRate = 0;
+
+    // Collected fees sit here until they are distributed.
+    uint public feePool = 0;
+
+    // The address with the authority to distribute fees.
+    address public feeAuthority;
 
     // Constructor
-    function ERC20FeeToken(address _owner) Owned(_owner) public { }
+    function ERC20FeeToken(address _owner, address _feeAuthority)
+        Owned(_owner)
+        public
+    {
+        feeAuthority = _feeAuthority;
+    }
+
+    modifier onlyFeeAuthority
+    {
+        require(msg.sender == feeAuthority);
+        _;
+    }
    
     // Get the total token supply
     function totalSupply()
@@ -97,21 +114,38 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
     }
 
     // Return the fee charged on top in order to transfer _value worth of tokens.
-    function feeCharged(uint _value) 
+    function transferFeeIncurred(uint _value) 
         public
         view
         returns (uint)
     {
-        return safeMul(_value, transferFee);
+        return safeMul(_value, transferFeeRate);
+        // Transfers less than the reciprocal of transferFeeRate should be completely eaten up by fees.
+        // This is on the basis that transfers less than this value will result in a nil fee.
+        // Probably too insignificant to worry about, but the following code will achieve it.
+        //      if (fee == 0 && transferFeeRate != 0) {
+        //          return _value;
+        //      }
+        //      return fee;
     }
 
-    function setTransferFee(uint newFee)
+    function setTransferFeeRate(uint newFeeRate)
         public
         onlyOwner
     {
         require(newFee <= UNIT);
-        transferFee = newFee;
-        TransferFeeUpdated(newFee);
+        transferFeeRate = newFeeRate;
+        TransferFeeRateUpdate(newFeeRate);
+    }
+
+    function withdrawFee(address account, uint value)
+        public
+        onlyFeeAuthority
+    {
+        // Exception thrown if insufficient balance due to safe subtraction operation
+        feePool = safeSub(feePool, value);
+        balances[account] = safeAdd(balances[account], value);
+        FeeWithdrawal(account, value);
     }
  
     // Send _value amount of tokens to address _to
@@ -119,21 +153,26 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
         public
         returns (bool)
     {
-        // The fee is deducted from the sender's balance.
-        uint totalCharge = safeAdd(_value, feeCharged(_value));
-        if (subIsSafe(balances[msg.sender], totalCharge) &&
-            addIsSafe(balances[_to], _value)) {
-            Transfer(msg.sender, _to, _value);
-            // Zero-value transfers must fire the transfer event,
-            // but don't spend gas updating state if unnecessary.
-            if (_value == 0) {
-                return true;
-            }
-            balances[msg.sender] = safeSub(balances[msg.sender], totalCharge);
-            balances[_to] = safeAdd(balances[_to], _value);
+        // The fee is deducted from the sender's balance, in addition to
+        // the transferred quantity.
+        uint fee = transferFeeIncurred(_value);
+        uint totalCharge = safeAdd(_value, fee);
+
+        // Zero-value transfers must fire the transfer event...
+        Transfer(msg.sender, _to, _value);
+        TransferFeePaid(msg.sender, fee);
+
+        // ...but don't spend gas updating state if unnecessary.
+        if (_value == 0) {
             return true;
         }
-        return false;
+
+        // Insufficient balance will be handled by the safe subtraction.
+        balances[msg.sender] = safeSub(balances[msg.sender], totalCharge);
+        balances[_to] = safeAdd(balances[_to], _value);
+        feePool = safeAdd(feePool, fee);
+
+        return true;
     }
  
     // Send _value amount of tokens from address _from to address _to
@@ -141,23 +180,27 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
         public
         returns (bool)
     {
-        // The fee is deducted from the sender's balance.
-        uint totalCharge = safeAdd(_value, feeCharged(_value));
-        if (subIsSafe(balances[_from], totalCharge) &&
-            subIsSafe(allowances[_from][msg.sender], totalCharge) &&
-            addIsSafe(balances[_to], _value)) {
-                Transfer(_from, _to, _value);
-                // Zero-value transfers must fire the transfer event,
-                // but don't spend gas updating state if unnecessary.
-                if (_value == 0) {
-                    return true;
-                }
-                balances[_from] = safeSub(balances[_from], totalCharge);
-                allowances[_from][msg.sender] = safeSub(allowances[_from][msg.sender], totalCharge);
-                balances[_to] = safeAdd(balances[_to], _value);
-                return true;
+        // The fee is deducted from the sender's balance, in addition to
+        // the transferred quantity.
+        uint fee = transferFeeIncurred(_value);
+        uint totalCharge = safeAdd(_value, fee);
+
+        // Zero-value transfers must fire the transfer event...
+        Transfer(_from, _to, _value);
+        TransferFeePaid(msg.sender, fee);
+
+        // ...but don't spend gas updating state if unnecessary.
+        if (_value == 0) {
+            return true;
         }
-        return false;
+
+        // Insufficient balance will be handled by the safe subtraction.
+        balances[_from] = safeSub(balances[_from], totalCharge);
+        allowances[_from][msg.sender] = safeSub(allowances[_from][msg.sender], totalCharge);
+        balances[_to] = safeAdd(balances[_to], _value);
+        feePool = safeAdd(feePool, fee);
+        
+        return true;
     }
   
     // Allow _spender to withdraw from your account, multiple times, up to the _value amount.
@@ -183,11 +226,17 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
  
     // Tokens were transferred.
     event Transfer(address indexed _from, address indexed _to, uint _value);
+
+    // A transfer occurred, and a fee was paid on it.
+    event TransferFeePaid(address account, uint value);
  
     // approve(address _spender, uint _value) was called.
     event Approval(address indexed _owner, address indexed _spender, uint _value);
 
-    // The transfer fee was updated.
-    event TransferFeeUpdated(uint newFee);
+    // The transfer fee rate was updated.
+    event TransferFeeRateUpdate(uint newFeeRate);
+
+    // A quantity of fees was withdrawn from the pool and sent to the given account.
+    event FeeWithdrawal(address account, uint value);
 }
 
