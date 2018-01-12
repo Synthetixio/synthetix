@@ -70,8 +70,9 @@ contract Havven is ERC20FeeToken {
     mapping(address => uint) lastTransferTimestamps; // range: naturals
 
     // Whether a given account is participating in a confiscation vote.
-    // If true, user may not transfer funds.
-    mapping(address => bool) isVoting; 
+    // 1 <=> a vote for; -1 <=> a vote against.
+    // If nonzero, user may not transfer funds.
+    mapping(address => int) vote; 
 
     uint feePeriodStartTime;
     uint feePeriodDuration = 1 weeks;
@@ -219,25 +220,39 @@ contract Havven is ERC20FeeToken {
         lastPeriodFeeRights[msg.sender] = 0;
     }
 
-    function setVoted(address account)
+    function setVotedFor(address account)
         public
         onlyNominContract
     {
-        isVoting[account] = true;
+        vote[account] = 1;
     }
 
-    function unsetVoted(address account)
+    function setVotedAgainst(address account)
         public
         onlyNominContract
     {
-        isVoting[account] = false;
+        vote[account] = -1;
+    }
+
+    function cancelVote(address account)
+        public
+        onlyNominContract
+    {
+        vote[account] = 0;
+    }
+
+    function getVote(address account)
+        public
+        returns (int)
+    {
+        return vote[account];
     }
 
     function hasVoted(address account)
         public
         returns (bool)
     {
-        return isVoting[account];
+        return vote[account] != 0;
     }
 
 }
