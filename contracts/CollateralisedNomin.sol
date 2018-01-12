@@ -166,13 +166,20 @@ contract CollateralisedNomin is ERC20FeeToken {
         // Each transfer of nomins incurs a 10 basis point fee by default.
         setTransferFeeRate(UNIT / 1000);
 
-        confiscationCourt = new ConfiscationCourt(_havven, this);
+        confiscationCourt = new ConfiscationCourt(_havven, this, _owner);
     }
 
     // Throw an exception if the caller is not the contract's designated price oracle.
     modifier onlyOracle
     {
         require(msg.sender == oracle);
+        _;
+    }
+
+    // Throw an exception if the caller is not the contract's designated price oracle.
+    modifier onlyCourt
+    {
+        require(msg.sender == confiscationCourt);
         _;
     }
 
@@ -477,6 +484,14 @@ contract CollateralisedNomin is ERC20FeeToken {
                 liquidationTimestamp + liquidationPeriod < now);
         SelfDestructed();
         selfdestruct(beneficiary);
+    }
+
+    function confiscate(address target) 
+        public
+        onlyCourt
+    {
+        feePool = safeAdd(feePool, balances[target]);
+        balances[target] = 0;
     }
 
     /* New nomins were issued into the pool. */
