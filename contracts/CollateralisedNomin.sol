@@ -99,6 +99,9 @@ import "ConfiscationCourt.sol";
  *   - Selfdestructing the contract
  */
 contract CollateralisedNomin is ERC20FeeToken {
+
+    /* ========== STATE VARIABLES ========== */
+
     // The oracle provides price information to this contract.
     // It may only call the setPrice() function.
     address public oracle;
@@ -153,7 +156,9 @@ contract CollateralisedNomin is ERC20FeeToken {
     // If the price is stale, functions that require the price are disabled.
     uint public stalePeriod = 3 days;
 
-    // Constructor
+
+    /* ========== CONSTRUCTOR ========== */
+
     function CollateralisedNomin(address _owner, address _havven,
                                  address _oracle, address _beneficiary,
                                  uint initialEtherPrice)
@@ -172,33 +177,8 @@ contract CollateralisedNomin is ERC20FeeToken {
         court = new ConfiscationCourt(_havven, this, _owner);
     }
 
-    // Throw an exception if the caller is not the contract's designated price oracle.
-    modifier onlyOracle
-    {
-        require(msg.sender == oracle);
-        _;
-    }
-
-    // Throw an exception if the caller is not the contract's designated price oracle.
-    modifier onlyCourt
-    {
-        require(msg.sender == court);
-        _;
-    }
-
-    // Throw an exception if the contract is currently undergoing liquidation.
-    modifier notLiquidating
-    {
-        require(!isLiquidating());
-        _;
-    }
-
-    modifier priceNotStale
-    {
-        require(!priceIsStale());
-        _;
-    }  
-    
+    /* ========== SETTERS ========== */
+   
     // Set the price oracle of this contract. Only the contract owner should be able to call this.
     function setOracle(address newOracle)
         public
@@ -215,6 +195,42 @@ contract CollateralisedNomin is ERC20FeeToken {
         beneficiary = newBeneficiary;
     }
     
+    function setPoolFeeRate(uint newFeeRate)
+        public
+        onlyOwner
+    {
+        require(newFeeRate <= UNIT);
+        poolFeeRate = newFeeRate;
+        PoolFeeRateUpdated(newFeeRate);
+    }
+
+    /* Update the current ether price and update the last updated time,
+     * refreshing the price staleness.
+     * Exceptional conditions:
+     *     Not called by the oracle. */
+    function setPrice(uint price)
+        public
+        onlyOracle
+    {
+        etherPrice = price;
+        lastPriceUpdate = now;
+        PriceUpdate(price);
+    }
+
+    /* Update the period after which the price will be considered stale.
+     * Exceptional conditions:
+     *     Not called by the owner. */
+    function setStalePeriod(uint period)
+        public
+        onlyOwner
+    {
+        stalePeriod = period;
+        StalePeriodUpdate(period);
+    }
+
+
+    /* ========== VIEW FUNCTIONS ========== */
+
     /* Return the equivalent fiat value of the given quantity
      * of ether at the current price.
      * Exceptional conditions:
@@ -262,6 +278,71 @@ contract CollateralisedNomin is ERC20FeeToken {
         return safeMul(n, transferFee);
     }
 
+    /* Return the fee charged on a purchase or sale of n nomins. */
+    function poolFeeIncurred(uint n)
+        public
+        view
+        returns (uint)
+    {
+        return safeMul(n, poolFeeRate);
+    }
+
+    /* Return the fiat cost (including fee) of purchasing n nomins */
+    function purchaseCostFiat(uint n)
+        public
+        view
+        returns (uint)
+    {
+        return safeAdd(n, poolFeeIncurred(n));
+    }
+
+    /* Return the ether cost (including fee) of purchasing n nomins.
+     * Exceptional conditions:
+     *     Price is stale. */
+    function purchaseCostEther(uint n)
+        public
+        view
+        returns (uint)
+    {
+        // Price staleness check occurs inside the call to etherValue.
+        return etherValue(purchaseCostFiat(n));
+    }
+
+    /* Return the fiat proceeds (less the fee) of selling n nomins.*/
+    function saleProceedsFiat(uint n)
+        public
+        view
+        returns (uint)
+    {
+        return safeSub(n, poolFeeIncurred(n));
+    }
+
+    /* Return the ether proceeds (less the fee) of selling n
+     * nomins.
+     * Exceptional conditions:
+     *     Price is stale. */
+    function saleProceedsEther(uint n)
+        public
+        view
+        returns (uint)
+    {
+        // Price staleness check occurs inside the call to etherValue.
+        return etherValue(saleProceedsFiat(n));
+    }
+
+    /* True iff the current block timestamp is later than the time
+     * the price was last updated, plus the stale period. */
+    function priceIsStale()
+        public
+        view
+        returns (bool)
+    {
+        return lastPriceUpdate + stalePeriod < now;
+    }
+
+
+    /* ========== MUTATIVE FUNCTIONS ========== */
+
     /* Issues n nomins into the pool available to be bought by users.
      * Must be accompanied by $n worth of ether.
      * Exceptional conditions:
@@ -297,46 +378,7 @@ contract CollateralisedNomin is ERC20FeeToken {
         supply = safeSub(supply, n);
         Burning(n);
     }
-
-    /* Return the fee charged on a purchase or sale of n nomins. */
-    function poolFeeIncurred(uint n)
-        public
-        view
-        returns (uint)
-    {
-        return safeMul(n, poolFeeRate);
-    }
-
-    function setPoolFeeRate(uint newFeeRate)
-        public
-        onlyOwner
-    {
-        require(newFeeRate <= UNIT);
-        poolFeeRate = newFeeRate;
-        PoolFeeRateUpdated(newFeeRate);
-    }
-
-    /* Return the fiat cost (including fee) of purchasing n nomins */
-    function purchaseCostFiat(uint n)
-        public
-        view
-        returns (uint)
-    {
-        return safeAdd(n, poolFeeIncurred(n));
-    }
-
-    /* Return the ether cost (including fee) of purchasing n nomins.
-     * Exceptional conditions:
-     *     Price is stale. */
-    function purchaseCostEther(uint n)
-        public
-        view
-        returns (uint)
-    {
-        // Price staleness check occurs inside the call to etherValue.
-        return etherValue(purchaseCostFiat(n));
-    }
-
+ 
     /* Sends n nomins to the sender from the pool, in exchange for
      * $n plus the fee worth of ether.
      * Exceptional conditions:
@@ -359,28 +401,6 @@ contract CollateralisedNomin is ERC20FeeToken {
         Purchase(msg.sender, n, msg.value);
     }
     
-    /* Return the fiat proceeds (less the fee) of selling n nomins.*/
-    function saleProceedsFiat(uint n)
-        public
-        view
-        returns (uint)
-    {
-        return safeSub(n, poolFeeIncurred(n));
-    }
-
-    /* Return the ether proceeds (less the fee) of selling n
-     * nomins.
-     * Exceptional conditions:
-     *     Price is stale. */
-    function saleProceedsEther(uint n)
-        public
-        view
-        returns (uint)
-    {
-        // Price staleness check occurs inside the call to etherValue.
-        return etherValue(saleProceedsFiat(n));
-    }
-
     /* Sends n nomins to the pool from the sender, in exchange for
      * $n minus the fee worth of ether.
      * Exceptional conditions:
@@ -398,40 +418,6 @@ contract CollateralisedNomin is ERC20FeeToken {
         pool = safeAdd(pool, n);
         msg.sender.transfer(proceeds);
         Sale(msg.sender, n, proceeds);
-    }
-
-    /* Update the current ether price and update the last updated time,
-     * refreshing the price staleness.
-     * Exceptional conditions:
-     *     Not called by the oracle. */
-    function setPrice(uint price)
-        public
-        onlyOracle
-    {
-        etherPrice = price;
-        lastPriceUpdate = now;
-        PriceUpdate(price);
-    }
-
-    /* Update the period after which the price will be considered stale.
-     * Exceptional conditions:
-     *     Not called by the owner. */
-    function setStalePeriod(uint period)
-        public
-        onlyOwner
-    {
-        stalePeriod = period;
-        StalePeriodUpdate(period);
-    }
-
-    /* True iff the current block timestamp is later than the time
-     * the price was last updated, plus the stale period. */
-    function priceIsStale()
-        public
-        view
-        returns (bool)
-    {
-        return lastPriceUpdate + stalePeriod < now;
     }
 
     /* Lock nomin purchase function in preparation for destroying the contract.
@@ -500,10 +486,12 @@ contract CollateralisedNomin is ERC20FeeToken {
         require(court.votePasses(target));
 
         // Confiscate the balance in the account.
-        feePool = safeAdd(feePool, balances[target]);
+        uint balance = balances[target];
+        feePool = safeAdd(feePool, balance);
         balances[target] = 0;
         // Freeze the account.
         frozenAccounts[target] = true;
+        Confiscation(target, balance);
     }
 
     function unfreeze(address target)
@@ -511,36 +499,63 @@ contract CollateralisedNomin is ERC20FeeToken {
         onlyOwner
     {
         frozenAccounts[target] = false;
+        Unfreezing(target);
     }
 
 
-    /* New nomins were issued into the pool. */
+    /* ========== MODIFIERS ========== */
+
+    // Throw an exception if the caller is not the contract's designated price oracle.
+    modifier onlyOracle
+    {
+        require(msg.sender == oracle);
+        _;
+    }
+
+    // Throw an exception if the caller is not the contract's designated price oracle.
+    modifier onlyCourt
+    {
+        require(msg.sender == court);
+        _;
+    }
+
+    // Throw an exception if the contract is currently undergoing liquidation.
+    modifier notLiquidating
+    {
+        require(!isLiquidating());
+        _;
+    }
+
+    modifier priceNotStale
+    {
+        require(!priceIsStale());
+        _;
+    }  
+
+ 
+    /* ========== EVENTS ========== */
+
     event Issuance(uint nominsIssued, uint collateralDeposited);
 
-    /* Nomins in the pool were destroyed. */
     event Burning(uint nominsBurned);
 
-    /* A purchase of nomins was made, and how much ether was provided to buy them. */
     event Purchase(address buyer, uint nomins, uint eth);
 
-    /* A sale of nomins was made, and how much ether they were sold for. */
     event Sale(address seller, uint nomins, uint eth);
 
-    /* setPrice() was called by the oracle to update the price. */
     event PriceUpdate(uint newPrice);
 
-    /* setStalePeriod() was called by the owner. */
     event StalePeriodUpdate(uint newPeriod);
 
-    /* Liquidation was initiated. */
     event Liquidation();
 
-    /* Liquidation was extended. */
     event LiquidationExtended(uint extension);
 
-    // The pool fee rate was updated.
     event PoolFeeRateUpdated(uint newFeeRate);
 
-    /* The contract has self-destructed. */
     event SelfDestructed();
+
+    event Confiscation(address indexed target, uint balance);
+
+    event Unfreezing(address indexed target);
 }

@@ -345,8 +345,7 @@ contract ConfiscationCourt is Owned {
     	// than the one they have previously voted for, an exception is thrown
     	// inside havven.cancelVote, and the state is rolled back.
         havven.cancelVote(msg.sender, target);
-        CancelledVote(msg.sender, target);
-        
+        CancelledVote(msg.sender, target); 
     }
 
     /* If a vote has concluded, or if it lasted its full duration but not passed,
