@@ -408,7 +408,6 @@ contract CollateralisedNomin is ERC20FeeToken {
     function burn(uint n)
         public
         onlyOwner
-        postchecksCollateralisation
     {
         // Require that there are enough nomins in the accessible pool to burn; and
         require(pool >= n);
@@ -429,7 +428,6 @@ contract CollateralisedNomin is ERC20FeeToken {
         public
         notLiquidating
         payable
-        postchecksCollateralisation
     {
         // Price staleness check occurs inside the call to purchaseEtherCost.
         require(n >= purchaseMininum &&
@@ -448,7 +446,6 @@ contract CollateralisedNomin is ERC20FeeToken {
      *     Price is stale. */
     function sell(uint n)
         public
-        postchecksCollateralisation
     {
         uint proceeds = saleProceedsFiat(n);
         // Price staleness check occurs inside the call to fiatBalance
@@ -581,7 +578,7 @@ contract CollateralisedNomin is ERC20FeeToken {
     /* Any function modified by this will automatically liquidate
      * the system if the collateral levels are too low
      */
-    modifier postchecksCollateralisation
+    modifier postChecksCollateralisation
     {
         _;
         if (collateralisationRatio() < autoLiquidationRatio) {
