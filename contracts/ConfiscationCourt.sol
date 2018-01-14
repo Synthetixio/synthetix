@@ -90,7 +90,7 @@ contract ConfiscationCourt is Owned {
 
     /* ========== STATE VARIABLES ========== */
 
-	// The minimum havven balance required to be considered to have standing
+    // The minimum havven balance required to be considered to have standing
     // to begin confiscation proceedings.
     uint public minStandingBalance = 100 * UNIT;
 
@@ -141,56 +141,56 @@ contract ConfiscationCourt is Owned {
     /* ========== CONSTRUCTOR ========== */
 
     function ConfiscationCourt(address _havven, address _nomin, address _owner)
-    	Owned(_owner)
-    	public
+        Owned(_owner)
+        public
     {
-    	havven = _havven;    	
-    	nomin = _nomin;
+        havven = _havven;       
+        nomin = _nomin;
     }
 
 
     /* ========== SETTERS ========== */
 
     function setMinStandingBalance(uint balance) 
-    	public
-    	onlyOwner
+        public
+        onlyOwner
     {
-    	minStandingBalance = balance;
+        minStandingBalance = balance;
     }
 
 
     function setVotingPeriod(uint duration)
-    	public
-    	onlyOwner
+        public
+        onlyOwner
     {
-    	require(minVotingPeriod <= duration &&
-    			duration <= maxVotingPeriod);
-    	votingPeriod = duration;
+        require(minVotingPeriod <= duration &&
+                duration <= maxVotingPeriod);
+        votingPeriod = duration;
     }
 
     function setConfirmationPeriod(uint duration)
-    	public
-    	onlyOwner
+        public
+        onlyOwner
     {
-    	require(minConfirmationPeriod <= duration &&
-    			duration <= maxConfirmationPeriod);
-    	votingPeriod = duration;
+        require(minConfirmationPeriod <= duration &&
+                duration <= maxConfirmationPeriod);
+        votingPeriod = duration;
     }
 
     function setRequiredParticipation(uint fraction)
-    	public
-    	onlyOwner
+        public
+        onlyOwner
     {
-    	require(minRequiredParticipation <= fraction);
-    	requiredParticipation = fraction;
+        require(minRequiredParticipation <= fraction);
+        requiredParticipation = fraction;
     }
 
     function setRequiredMajority(uint fraction)
-    	public
-    	onlyOwner
+        public
+        onlyOwner
     {
-    	require(minRequiredMajority <= fraction);
-    	requiredMajority = fraction;
+        require(minRequiredMajority <= fraction);
+        requiredMajority = fraction;
     }
 
 
@@ -212,44 +212,44 @@ contract ConfiscationCourt is Owned {
      * has not yet been approved, vetoed, or closed.
      */
     function confirming(address target)
-    	public
-    	view
+        public
+        view
     {
-    	uint startTime = voteStartTimes[target];
-    	return startTime + votingPeriod <= now &&
+        uint startTime = voteStartTimes[target];
+        return startTime + votingPeriod <= now &&
                now < startTime + votingPeriod + confirmationPeriod;
     }
 
     /* A vote has either not begun, or it has completely terminated. */
     function waiting(address target)
-    	public
-    	view
+        public
+        view
     {
-    	return voteStartTimes[target] + votingPeriod + confirmationPeriod <= now;
+        return voteStartTimes[target] + votingPeriod + confirmationPeriod <= now;
     }
 
     /* If the vote was to terminate at this instant, it would pass.
      * That is: there was sufficient participation and a sizeable enough majority.
      */
     function votePasses(address target) 
-    	public
-    	view
+        public
+        view
     {
-    	uint yeas = votesFor[target];
-    	uint nays = votesAgainst[target];
-		uint totalVotes = yeas + nays;
+        uint yeas = votesFor[target];
+        uint nays = votesAgainst[target];
+        uint totalVotes = yeas + nays;
 
-		if (totalVotes == 0) {
-			return false;
-		}
+        if (totalVotes == 0) {
+            return false;
+        }
 
-    	uint participation = safeDiv(totalVotes, havven.totalSuppy());
-    	uint fractionInFavour = safeDiv(yeas, totalVotes);
+        uint participation = safeDiv(totalVotes, havven.totalSuppy());
+        uint fractionInFavour = safeDiv(yeas, totalVotes);
 
-    	// We require the result to be strictly greater than the requirement
-    	// to enforce a majority being "50% + 1", and so on.
-    	return participation > requiredParticipation &&
-    		   fractionInFavour > requiredMajority;
+        // We require the result to be strictly greater than the requirement
+        // to enforce a majority being "50% + 1", and so on.
+        return participation > requiredParticipation &&
+               fractionInFavour > requiredMajority;
     }
     
 
@@ -275,7 +275,7 @@ contract ConfiscationCourt is Owned {
         voteStartTimes[target] = now;
         votesFor[target] = 0;
         votesAgainst[target] = 0;
-   		ConfiscationVote(msg.sender, target);
+        ConfiscationVote(msg.sender, target);
     }
 
     /* The sender casts a vote in favour of confiscation of the
@@ -283,8 +283,8 @@ contract ConfiscationCourt is Owned {
     function voteFor(address target)
         public
     {
-    	// There must be an active vote for this target running.
-    	// Vote totals must only change during the voting phase.
+        // There must be an active vote for this target running.
+        // Vote totals must only change during the voting phase.
         require(voting(target));
 
         // This user can't already have voted in anything.
@@ -303,8 +303,8 @@ contract ConfiscationCourt is Owned {
     function voteAgainst(address target)
         public
     {
-    	// There must be an active vote for this target running.
-    	// Vote totals must only change during the voting phase.
+        // There must be an active vote for this target running.
+        // Vote totals must only change during the voting phase.
         require(voting(target));
 
         // This user can't already have voted in anything.
@@ -323,27 +323,27 @@ contract ConfiscationCourt is Owned {
     function cancelVote(address target) 
         public
     {
-    	// An account may cancel its vote either before the confirmation phase
-    	// when the vote is still open, or after the confirmation phase,
-   		// when the vote has concluded.
-   		// But the totals must not change during the confirmation phase itself.
-    	require(!confirming(target));
+        // An account may cancel its vote either before the confirmation phase
+        // when the vote is still open, or after the confirmation phase,
+        // when the vote has concluded.
+        // But the totals must not change during the confirmation phase itself.
+        require(!confirming(target));
 
-    	// If we are not voting, there is no reason to update the vote totals.
+        // If we are not voting, there is no reason to update the vote totals.
         if (voting(target)) {
-    		// This call to getVote() must come before the later call to cancelVote(), obviously.
-	        int vote = havven.getVote(msg.sender);
-	        if (vote == 1) {
-	        	votesFor[msg.sender] -= havven.balanceOf(msg.sender);
-	        }
-	        else if (vote == -1) {
-	        	votesAgainst[msg.sender] -= havven.balanceOf(msg.sender);
-	        }
-    	}
+            // This call to getVote() must come before the later call to cancelVote(), obviously.
+            int vote = havven.getVote(msg.sender);
+            if (vote == 1) {
+                votesFor[msg.sender] -= havven.balanceOf(msg.sender);
+            }
+            else if (vote == -1) {
+                votesAgainst[msg.sender] -= havven.balanceOf(msg.sender);
+            }
+        }
 
-    	// If the user is trying to cancel a vote for a different target
-    	// than the one they have previously voted for, an exception is thrown
-    	// inside havven.cancelVote, and the state is rolled back.
+        // If the user is trying to cancel a vote for a different target
+        // than the one they have previously voted for, an exception is thrown
+        // inside havven.cancelVote, and the state is rolled back.
         havven.cancelVote(msg.sender, target);
         CancelledVote(msg.sender, target); 
     }
@@ -352,11 +352,11 @@ contract ConfiscationCourt is Owned {
      * then anyone may close it (for example in order to unlock their havven account).
      */
     function closeVote(address target) 
-    	public
+        public
     {
-    	require((confirming(target) && !votePasses(target)) ||
-    			waiting(target));
-    	voteStartTimes[target] = 0;
+        require((confirming(target) && !votePasses(target)) ||
+                waiting(target));
+        voteStartTimes[target] = 0;
         votesFor[target] = 0;
         votesAgainst[target] = 0;
         VoteClosed(target);
@@ -366,39 +366,39 @@ contract ConfiscationCourt is Owned {
      * period after a vote has passed.
      */
     function approve(address target)
-    	public
-    	onlyOwner
+        public
+        onlyOwner
     {
 
-    	require(confirming(target));
-    	require(votePasses(target));
+        require(confirming(target));
+        require(votePasses(target));
 
-    	nomin.confiscateBalance(target);
-    	voteStartTimes[target] = 0;
+        nomin.confiscateBalance(target);
+        voteStartTimes[target] = 0;
         votesFor[target] = 0;
         votesAgainst[target] = 0;
-    	ConfiscationApproval(target);
+        ConfiscationApproval(target);
     }
 
     /* The foundation may veto an action at any time. */
     function veto(address target) 
-    	public
-    	onlyOwner
+        public
+        onlyOwner
     {
-    	voteStartTimes[target] = 0;
+        voteStartTimes[target] = 0;
         votesFor[target] = 0;
         votesAgainst[target] = 0;
-    	Veto(target);
+        Veto(target);
     }
 
 
     /* ========== EVENTS ========== */
 
-   	event ConfiscationVote(address indexed initiator, address target);
+    event ConfiscationVote(address indexed initiator, address target);
 
-   	event VoteFor(address indexed account, address indexed target, uint balance);
+    event VoteFor(address indexed account, address indexed target, uint balance);
 
-   	event VoteAgainst(address indexed account, address indexed target, uint balance);
+    event VoteAgainst(address indexed account, address indexed target, uint balance);
 
     event CancelledVote(address indexed account, address indexed target);
 
