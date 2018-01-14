@@ -54,6 +54,7 @@ VALIDATION
 * Consensys best practices compliance.
 * Solium lint.
 * Invariants produced for every function
+* Exceptional conditions for function descriptions
 * mystake security suggestions
 * etherscan.io bugs
 * Compare with linked token implementations (zeppelin, consensys, minime).

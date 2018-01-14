@@ -64,9 +64,9 @@ contract Owned {
 
     // Constructor
     function Owned(address _owner)
-    	public
+        public
     {
-    	owner = _owner;
+        owner = _owner;
     }
 
     function setOwner(address newOwner)
@@ -74,7 +74,7 @@ contract Owned {
         onlyOwner
     {
         owner = newOwner;
-    	OwnerChanged(address oldOwner, address newOwner);
+        OwnerChanged(address oldOwner, address newOwner);
     }
 
     modifier onlyOwner

@@ -135,6 +135,10 @@ contract CollateralisedNomin is ERC20FeeToken {
     // When issuing, nomins must be overcollateralised by this ratio.
     uint public collatRatioMinimum =  2 * UNIT;
 
+    // If the collateralisation ratio of the contract falls below this level,
+    // immediately begin liquidation.
+    uint public autoLiquidationRatio = UNIT;
+
     // The time that must pass before the liquidation period is complete.
     uint public liquidationPeriod = 90 days;
     
@@ -255,6 +259,15 @@ contract CollateralisedNomin is ERC20FeeToken {
         // Price staleness check occurs inside the call to fiatValue.
         return fiatValue(this.balance);
     }
+
+    /* Return the units of fiat per nomin in the supply.*/
+    function collateralisationRatio()
+        public
+        view
+        returns (uint)
+    {
+        return safeDiv(fiatBalance(), supply);
+    }
     
     /* Return the equivalent ether value of the given quantity
      * of fiat at the current price.
@@ -370,7 +383,7 @@ contract CollateralisedNomin is ERC20FeeToken {
      * Must be accompanied by $n worth of ether.
      * Exceptional conditions:
      *     Not called by contract owner.
-     *     Insufficient backing funds provided (less than $n worth of ether).
+     *     Insufficient backing funds provided (post-issuance collateralisation below minimum requirement).
      *     Price is stale. */
     function issue(uint n)
         public
@@ -394,6 +407,7 @@ contract CollateralisedNomin is ERC20FeeToken {
     function burn(uint n)
         public
         onlyOwner
+        postchecksCollateralisation
     {
         // Require that there are enough nomins in the accessible pool to burn; and
         require(pool >= n);
@@ -414,6 +428,7 @@ contract CollateralisedNomin is ERC20FeeToken {
         public
         notLiquidating
         payable
+        postchecksCollateralisation
     {
         // Price staleness check occurs inside the call to purchaseEtherCost.
         require(n >= purchaseMininum &&
@@ -432,6 +447,7 @@ contract CollateralisedNomin is ERC20FeeToken {
      *     Price is stale. */
     function sell(uint n)
         public
+        postchecksCollateralisation
     {
         uint proceeds = saleProceedsFiat(n);
         // Price staleness check occurs inside the call to fiatBalance
@@ -454,6 +470,12 @@ contract CollateralisedNomin is ERC20FeeToken {
     function liquidate()
         public
         onlyOwner
+    {
+        beginLiquidation();
+    }
+
+    function beginLiquidation() 
+        internal
         notLiquidating
     {
         liquidationTimestamp = now;
@@ -553,7 +575,18 @@ contract CollateralisedNomin is ERC20FeeToken {
     {
         require(!priceIsStale());
         _;
-    }  
+    }
+
+    /* Any function modified by this will automatically liquidate
+     * the system if the collateral levels are too low
+     */
+    modifier postchecksCollateralisation
+    {
+        _;
+        if (collateralisationRatio() < autoLiquidationRatio) {
+            beginLiquidation();
+        }
+    }
 
  
     /* ========== EVENTS ========== */
