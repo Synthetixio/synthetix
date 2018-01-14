@@ -3,12 +3,12 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       Havven.sol
-version:    0.1
+version:    0.2
 author:     Block8 Technologies, in partnership with Havven
 
             Anton Jurisevic
 
-date:       2018-1-3
+date:       2018-1-15
 
 checked:    Samuel Brooks
 approved:   Samuel Brooks
@@ -57,6 +57,63 @@ by incubating meaningful next-generation businesses.
 Find out more at https://www.block8.io/
 -----------------------------------------------------------------
 */
+/* The fee entitlement of a havven holder is their average havven balance over
+ * the last fee period. This is computed by measuring the area under the graph of
+ * a user's balance over time, and then when fees are distributed,
+ * dividing through by the duration of the fee period.
+ * 
+ * We need only update fee entitlement on transfer when the havven balances of the sender
+ * and recipient are modified. This is for efficiency, and adds an implicit friction to
+ * trading in the havven market. A havven holder pays for his own recomputation whenever
+ * he wants to change his position, which saves the foundation having to maintain a pot
+ * dedicated to resourcing this.
+ *
+ * A hypothetical user's balance history over one fee period, pictorially:
+ *
+ * s ___
+ *  |   |
+ *  |   |___ p
+ *  |___|___|___ __ _  _ 
+ *  f   t   n
+ *
+ * Here, the balance was s between times f and t, at which time a transfer
+ * occurred, updating the balance to p, until n, when the present transfer occurs.
+ *
+ * When a new transfer occurs, at time n, when the balance was at p,
+ * we must:
+ *   - Add the area p * (n - t) to the total area recorded so far
+ *   - Update the last transfer time to p
+ * So in the case that this graph represents the entire current fee period,
+ * the average havvens held so far is ((t-f)*s + (n-t)*p) / (n-f).
+ * The complementary computations must be performed for both sender and
+ * recipient.
+ * 
+ * Note that, fees extracted notwithstanding, a transfer keeps global supply
+ * of havvens invariant. The sum of all balances is constant, and unmodified
+ * by a transfer. So the sum of all balances multiplied by the duration of
+ * a fee period is also constant, and this is equivalent to the sum of 
+ * the area of every user's time/balance graph. Dividing through by that duration
+ * yields back the total havven supply. So, at the end of a fee period, we really
+ * do yield a user's average share in the havven supply over that period.
+ *
+ * A slight wrinkle is introduced if we consider the time r when the fee period
+ * rolls over. If the last transfer was before r, but the current transfer is afterwards:
+ *  
+ * s __|_
+ *  |    |
+ *  |  | |____ p
+ *  |____|____|___ __ _  _
+ *     |      
+ *  f  r t    n
+ * 
+ * In this situation the area (r-f)*s contributes to the previous fee period, while
+ * the area (t-r)*s contributes to the current one. We will implicitly consider a
+ * zero-value transfer to have occurred at time r. Their fee entitlement for the
+ * previous period will be finalised at the time of their first transfer during the
+ * current fee period, or when they query or withdraw their fee entitlement.
+ */
+
+
 
 pragma solidity ^0.4.19;
 
@@ -65,6 +122,8 @@ import "CollateralisedNomin.sol";
 
 contract Havven is ERC20FeeToken {
 
+    /* ========== STATE VARIABLES ========== */
+
     mapping(address => uint) feeRights; // range: decimals; units: havven-seconds
     mapping(address => uint) lastPeriodFeeRights; // range: decimals; units: havvens (i.e. feeRights divided through by duration)
     mapping(address => uint) lastTransferTimestamps; // range: naturals
@@ -72,13 +131,18 @@ contract Havven is ERC20FeeToken {
     // Whether a given account is participating in a confiscation vote.
     // 1 <=> a vote for; -1 <=> a vote against.
     // If nonzero, user may not transfer funds.
-    mapping(address => int) vote; 
+    mapping(address => int) public vote; 
+    // The vote a user last participated in.
+    mapping(address => address) public voteTarget;
 
-    uint feePeriodStartTime;
-    uint feePeriodDuration = 1 weeks;
-    uint lastFeesCollected;
+    uint public feePeriodStartTime;
+    uint public feePeriodDuration = 1 weeks;
+    uint public lastFeesCollected;
 
     CollateralisedNomin public nomin;
+
+
+    /* ========== CONSTRUCTOR ========== */
 
     function Havven(address _owner, address _oracle,
                     address _beneficiary, uint _initialEtherPrice)
@@ -88,13 +152,22 @@ contract Havven is ERC20FeeToken {
         nomin = CollateralisedNomin(_owner, this, _oracle, _beneficiary, _initialEtherPrice);
     }
 
-    modifier onlyNominContract
+    /* ========== VIEW FUNCTIONS ========== */
+    
+    function hasVoted(address account)
+        public
+        view
+        returns (bool)
     {
-        require(msg.sender == nomin);
-        _;
+        return vote[account] != 0;
     }
 
-    // Send _value amount of tokens to address _to
+
+    /* ========== MUTATIVE FUNCTIONS ========== */
+
+    /* Override ERC20 transfer function in order to perform 
+     * fee entitlement recomputation whenever balances are updated.
+     */
     function transfer(address _to, uint _value)
         public
         returns (bool)
@@ -102,8 +175,9 @@ contract Havven is ERC20FeeToken {
         uint senderPreBalance = balances[msg.sender];
         uint recipientPreBalance = balances[_to];
 
-        // Perform the transfer, and fail early if there was a problem, in order to save gas.
-        require(super.transfer(_to, _value));
+        // Perform the transfer: if there is a problem,
+        // an exception will be thrown in super.transfer().
+        super.transfer(_to, _value);
 
         // If there was no balance update, no need to update any fee entitlement information.
         if (_value == 0) {
@@ -116,65 +190,38 @@ contract Havven is ERC20FeeToken {
         return true;
     }
 
+    /* Override ERC20 transferFrom function in order to perform 
+     * fee entitlement recomputation whenever balances are updated.
+     */
+    function transferFrom(address _from, address _to, uint _value)
+        public
+        returns (bool)
+    {
+        uint senderPreBalance = balances[_from];
+        uint recipientPreBalance = balances[_to];
+
+        // Perform the transfer: if there is a problem,
+        // an exception will be thrown in super.transferFrom().
+        super.transferFrom(_from, _to, _value);
+
+        // If there was no balance update, no need to update any fee entitlement information.
+        if (_value == 0) {
+            return true;
+        }
+
+        adjustFeeEntitlement(_from, senderPreBalance));
+        adjustFeeEntitlement(_to, recipientPreBalance));
+
+        return true;
+    }
+
+    /* Update the fee entitlement since the last transfer or entitlement
+     * adjustment. Since this updates the last transfer timestamp, if invoked
+     * consecutively, this function will do nothing after the first call.
+     */
     function adjustFeeEntitlement(address account, uint finalBalance)
         internal
     {
-        /* The fee entitlement of a havven holder is their average havven balance over
-         * the last fee period. This is computed by measuring the area under the graph of
-         * a user's balance over time, and then when fees are distributed,
-         * dividing through by the duration of the fee period.
-         * 
-         * We need only update fee entitlement on transfer when the havven balances of the sender
-         * and recipient are modified. This is for efficiency, and adds an implicit friction to
-         * trading in the havven market. A havven holder pays for his own recomputation whenever
-         * he wants to change his position, which saves the foundation having to maintain a pot
-         * dedicated to resourcing this.
-         *
-         * A hypothetical user's balance history over one fee period, pictorially:
-         *
-         * s ___
-         *  |   |
-         *  |   |___ p
-         *  |___|___|___ __ _  _ 
-         *  f   t   n
-         *
-         * Here, the balance was s between times f and t, at which time a transfer
-         * occurred, updating the balance to p, until n, when the present transfer occurs.
-         *
-         * When a new transfer occurs, at time n, when the balance was at p,
-         * we must:
-         *   - Add the area p * (n - t) to the total area recorded so far
-         *   - Update the last transfer time to p
-         * So in the case that this graph represents the entire current fee period,
-         * the average havvens held so far is ((t-f)*s + (n-t)*p) / (n-f).
-         * The complementary computations must be performed for both sender and
-         * recipient.
-         * 
-         * Note that, fees extracted notwithstanding, a transfer keeps global supply
-         * of havvens invariant. The sum of all balances is constant, and unmodified
-         * by a transfer. So the sum of all balances multiplied by the duration of
-         * a fee period is also constant, and this is equivalent to the sum of 
-         * the area of every user's time/balance graph. Dividing through by that duration
-         * yields back the total havven supply. So, at the end of a fee period, we really
-         * do yield a user's average share in the havven supply over that period.
-         *
-         * A slight wrinkle is introduced if we consider the time r when the fee period
-         * rolls over. If the last transfer was before r, but the current transfer is afterwards:
-         *  
-         * s __|_
-         *  |    |
-         *  |  | |____ p
-         *  |____|____|___ __ _  _
-         *     |      
-         *  f  r t    n
-         * 
-         * In this situation the area (r-f)*s contributes to the previous fee period, while
-         * the area (t-r)*s contributes to the current one. We will implicitly consider a
-         * zero-value transfer to have occurred at time r. Their fee entitlement for the
-         * previous period will be finalised at the time of their first transfer during the
-         * current fee period, or when they query or withdraw their fee entitlement.
-         */
-
         uint lastTransferTime = lastTransferTimestamps[account];
 
         // The time since the last transfer clamps at the last fee rollover time if the last transfer
@@ -186,15 +233,15 @@ contract Havven is ERC20FeeToken {
         lastTransferTimestamps[account] = now;
     }
 
+    /* Update the given account's previous period fee entitlement value.
+     * Do nothing if the last transfer occurred since the fee period rolled over.
+     * If the entitlement was updated, also update the last transfer time to be
+     * at the timestamp of the rollover, so if this should do nothing if called more
+     * than once during a given period.
+     */
     function rolloverFee(address account, uint lastTransferTime, uint finalBalance) 
         internal
     {
-        /* Update the given account's previous period fee entitlement value.
-         * Do nothing if the last transfer occurred since the fee period rolled over.
-         * If the entitlement was updated, also update the last transfer time to be
-         * at the timestamp of the rollover, so if this should do nothing if called more
-         * than once during a given period.
-         */
         if (lastTransferTime < feePeriodStartTime) {
             uint timeToRollover = intToDecimal(feePeriodStartTime - lastTransferTime);
 
@@ -211,6 +258,9 @@ contract Havven is ERC20FeeToken {
         }
     }
 
+    /* Compute the last period's fee entitlement for the message sender
+     * and then deposit it into their nomin account.
+     */
     function withdrawFeeEntitlement()
         public
     {
@@ -220,39 +270,59 @@ contract Havven is ERC20FeeToken {
         lastPeriodFeeRights[msg.sender] = 0;
     }
 
-    function setVotedFor(address account)
+    /* Indicate that the given account voted yea in a confiscation
+     * action on the target account.
+     * The account must not have an active vote in any action.
+     */
+    function setVotedFor(address account, address target)
         public
         onlyNominContract
     {
+        require(voteTarget[account] == 0);
         vote[account] = 1;
+        voteTarget[account] = target;
     }
 
-    function setVotedAgainst(address account)
+    /* Indicate that the given account voted nay in a confiscation
+     * action on the target account.
+     * The account must not have an active vote in any action.
+     */
+    function setVotedAgainst(address account, address target)
         public
         onlyNominContract
     {
+        require(voteTarget[account] == 0);
         vote[account] = -1;
+        voteTarget[account] = target;
     }
 
-    function cancelVote(address account)
+    /* Cancel a previous vote by a given account on a target.
+     * The target of the cancelled vote must be the same
+     * as the target the account voted upon previously,
+     * otherwise throw an exception.
+     * This is in order to enforce that a user may only
+     * vote upon a single action at a time.
+     */
+    function cancelVote(address account, address target)
         public
         onlyNominContract
     {
+        require(voteTarget[account] == target);
+        voteTarget[account] = 0;
         vote[account] = 0;
     }
 
-    function getVote(address account)
-        public
-        returns (int)
+
+    /* ========== MODIFIERS ========== */
+
+    modifier onlyNominContract
     {
-        return vote[account];
+        require(msg.sender == nomin);
+        _;
     }
 
-    function hasVoted(address account)
-        public
-        returns (bool)
-    {
-        return vote[account] != 0;
-    }
+
+    /* ========== EVENTS ========== */
+
 
 }
