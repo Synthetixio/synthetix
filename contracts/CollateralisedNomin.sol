@@ -108,7 +108,10 @@ contract CollateralisedNomin is ERC20FeeToken {
     address public havven;
 
     // The address of the contract which manages confiscation votes.
-    address public confiscationCourt;
+    address public court;
+
+    // The set of addresses that have been frozen by confiscation.
+    mapping(address => bool) public isFrozen;
 
     // Foundation wallet for funds to go to post liquidation.
     address public beneficiary;
@@ -166,7 +169,7 @@ contract CollateralisedNomin is ERC20FeeToken {
         // Each transfer of nomins incurs a 10 basis point fee by default.
         setTransferFeeRate(UNIT / 1000);
 
-        confiscationCourt = new ConfiscationCourt(_havven, this, _owner);
+        court = new ConfiscationCourt(_havven, this, _owner);
     }
 
     // Throw an exception if the caller is not the contract's designated price oracle.
@@ -179,7 +182,7 @@ contract CollateralisedNomin is ERC20FeeToken {
     // Throw an exception if the caller is not the contract's designated price oracle.
     modifier onlyCourt
     {
-        require(msg.sender == confiscationCourt);
+        require(msg.sender == court);
         _;
     }
 
@@ -484,15 +487,32 @@ contract CollateralisedNomin is ERC20FeeToken {
                 liquidationTimestamp + liquidationPeriod < now);
         SelfDestructed();
         selfdestruct(beneficiary);
-    }
+    } 
 
-    function confiscate(address target) 
+    function confiscateBalance(address target) 
         public
         onlyCourt
     {
+        // These checks are strictly unnecessary,
+        // since they are already checked in the court contract itself.
+        // I leave them in only out of paranoia.
+        require(court.inConfirmationPeriod(target));
+        require(court.votePasses(target));
+
+        // Confiscate the balance in the account.
         feePool = safeAdd(feePool, balances[target]);
         balances[target] = 0;
+        // Freeze the account.
+        frozenAccounts[target] = true;
     }
+
+    function unfreeze(address target)
+        public
+        onlyOwner
+    {
+        frozenAccounts[target] = false;
+    }
+
 
     /* New nomins were issued into the pool. */
     event Issuance(uint nominsIssued, uint collateralDeposited);
