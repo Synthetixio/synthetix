@@ -2,7 +2,8 @@ FEATURES
 ========
 * Automatically liquidate if collateralisation is below 1:1 (apply postchecksCollateralisation modifier)
 * Update fee rollover period time on state-modifying updates to nomin and havven contracts.
-* Determine what should occur when fee period duration is changed.
+* Implement logic for when fee period duration is changed.
+* Ability to halt liquidation if contract is recollateralised.
 * Events for everything
 * Factor out functionality into proxy contract for upgrades.
 
