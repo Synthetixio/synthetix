@@ -1,6 +1,5 @@
 FEATURES
 ========
-* Automatically liquidate if collateralisation is below 1:1 (apply postchecksCollateralisation modifier)
 * Update fee rollover period time on state-modifying updates to nomin and havven contracts.
 * Implement logic for when fee period duration is changed.
 * Ability to halt liquidation if contract is recollateralised.
@@ -11,6 +10,7 @@ FEATURES
 CLEANUP
 =======
 * Better contract and function nomenclature.
+* Decide whether to apply postchecksCollateralisation modifier on nomin pool interactions
 * rename "CollateralisedNomin", description, ticker symbol? (subject to Kain's approval)
 * Convert ints to a shared enum type in the court.
 * Fix licence headers

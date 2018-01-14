@@ -465,16 +465,25 @@ contract CollateralisedNomin is ERC20FeeToken {
      *     Not called by contract owner;
      *     contract already in liquidation;
      */
-    function liquidate()
+    function forceLiquidation()
         public
         onlyOwner
+        notLiquidating
     {
         beginLiquidation();
     }
 
+    /* Anyone may query the current collateralisation levels, and force liquidation
+     * if they are too low.
+     */
+    function liquidate()
+        public
+        notLiquidating
+        postChecksCollateralisation
+    {}
+
     function beginLiquidation() 
         internal
-        notLiquidating
     {
         liquidationTimestamp = now;
         Liquidation();
@@ -576,7 +585,7 @@ contract CollateralisedNomin is ERC20FeeToken {
     }
 
     /* Any function modified by this will automatically liquidate
-     * the system if the collateral levels are too low
+     * the system if the collateral levels are too low.
      */
     modifier postChecksCollateralisation
     {
