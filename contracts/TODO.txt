@@ -1,26 +1,14 @@
-* Staleness adjustments:
-	- solve the trust problem of just setting low stale period and then liquidating
-    - perhaps staleness protection for sell() is deactivated during the liquidation period
-    - additionally make staleness predictable by emitting an event on update, and then requiring the current period to elapse before the stale period is actually changed.
-    - rate limiting?
-
-* Consider whether people emptying the collateral by hedging is a problem:
-    Having no fee is effectively offering a short position for free. But if the volatility of ether is ~10% a day or so
-    then a 10% fee required to make betting on it unprofitable is probably too high to get people to actually buy these things for their intended purpose.
-    Probably can add a time lock for selling nomins back to the system, but it's awkward, and just makes the futures contract
-    slightly longer term.
-
 FEATURES
 ========
-* Automatically liquidate if collateralisation is below 1:1
+* Automatically liquidate if collateralisation is below 1:1 (apply postchecksCollateralisation modifier)
 * Update fee rollover period time on state-modifying updates to nomin and havven contracts.
-* get it compiling
+* Determine what should occur when fee period duration is changed.
 * Events for everything
 * Factor out functionality into proxy contract for upgrades.
-* Determine what should occur when fee period duration is changed.
 
 CLEANUP
 =======
+* Desk check all functions.
 * Convert ints to a shared enum type in the vote stuff.
 * Gas optimisation
 * rename "CollateralisedNomin"? (subject to Kain's approval)
@@ -61,3 +49,17 @@ VALIDATION
 * Compare with linked token implementations (zeppelin, consensys, minime).
 * http://populus.readthedocs.io/en/latest/gotchas.html
 * Re-verify that ERC20 compliant as per https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20-token-standard.md
+
+MISC
+====
+* Staleness adjustments:
+    - solve the trust problem of just setting low stale period and then liquidating
+    - perhaps staleness protection for sell() is deactivated during the liquidation period
+    - additionally make staleness predictable by emitting an event on update, and then requiring the current period to elapse before the stale period is actually changed.
+    - rate limiting?
+* Consider whether people emptying the collateral by hedging is a problem:
+    Having no fee is effectively offering a short position for free. But if the volatility of ether is ~10% a day or so
+    then a 10% fee required to make betting on it unprofitable is probably too high to get people to actually buy these things for their intended purpose.
+    Probably can add a time lock for selling nomins back to the system, but it's awkward, and just makes the futures contract
+    slightly longer term.
+
