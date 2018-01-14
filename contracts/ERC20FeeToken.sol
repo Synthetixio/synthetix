@@ -234,12 +234,12 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
 
     event Transfer(address indexed _from, address indexed _to, uint _value);
 
-    event TransferFeePaid(address account, uint value);
+    event TransferFeePaid(address indexed account, uint value);
  
     event Approval(address indexed _owner, address indexed _spender, uint _value);
 
     event TransferFeeRateUpdate(uint newFeeRate);
 
-    event FeeWithdrawal(address account, uint value);
+    event FeeWithdrawal(address indexed account, uint value);
 }
 
