@@ -19,7 +19,8 @@ MODULE DESCRIPTION
 
 An ownable contract, to be inherited by other contracts.
 Requires its owner to be explicitly set in the constuctor,
-provides onlyOwner access modifier and setOwner function.
+provides onlyOwner access modifier and setOwner function,
+which itself must only be callable by the current owner.
 
 -----------------------------------------------------------------
 LICENCE INFORMATION
@@ -61,7 +62,6 @@ pragma solidity ^0.4.19;
 contract Owned {
     address owner;
 
-	// Throw an exception if the caller is not the contract's owner.
     modifier onlyOwner
     {
         require(msg.sender == owner);
@@ -75,7 +75,6 @@ contract Owned {
     	owner = _owner;
     }
 
-    // Set the owner of this contract. Only the contract owner should be able to call this.
     function setOwner(address newOwner)
         public
         onlyOwner
