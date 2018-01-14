@@ -3,12 +3,12 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       ERC20FeeToken.sol
-version:    0.1
+version:    0.2
 author:     Block8 Technologies, in partnership with Havven
 
             Anton Jurisevic
 
-date:       2018-1-3
+date:       2018-1-14
 
 checked:    Samuel Brooks
 approved:   Samuel Brooks
@@ -61,14 +61,12 @@ import "SafeFixedMath.sol";
 import "Owned.sol";
 
 contract ERC20FeeToken is Owned, SafeFixedMath {
-    // Total nomins in the pool or in circulation.
-    // Supply is initially zero, but may be increased by the Havven foundation.
-    uint supply = 0;
- 
-    // Nomin balances for each address.
-    mapping(address => uint) balances;
 
-    // Nomin proxy transfer allowances.
+    /* ========== STATE VARIABLES ========== */
+
+    // ERC20 token data: total supply, balances, proxy allowances.
+    uint supply = 0;
+    mapping(address => uint) balances;
     mapping(address => mapping (address => uint256)) allowances;
 
     // A percentage fee charged on each transfer.
@@ -81,7 +79,9 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
     // The address with the authority to distribute fees.
     address public feeAuthority;
 
-    // Constructor
+
+    /* ========== CONSTRUCTOR ========== */
+
     function ERC20FeeToken(address _owner, address _feeAuthority)
         Owned(_owner)
         public
@@ -89,13 +89,21 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
         feeAuthority = _feeAuthority;
     }
 
-    modifier onlyFeeAuthority
+
+    /* ========== SETTERS ========== */
+
+    function setTransferFeeRate(uint newFeeRate)
+        public
+        onlyOwner
     {
-        require(msg.sender == feeAuthority);
-        _;
+        require(newFee <= UNIT);
+        transferFeeRate = newFeeRate;
+        TransferFeeRateUpdate(newFeeRate);
     }
+
+
+    /* ========== VIEW FUNCTIONS ========== */
    
-    // Get the total token supply
     function totalSupply()
         public
         view
@@ -104,7 +112,6 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
         return supply;
     }
  
-    // Get the account balance of another account with address _account
     function balanceOf(address _account)
         public
         view
@@ -129,26 +136,17 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
         //      return fee;
     }
 
-    function setTransferFeeRate(uint newFeeRate)
+    function allowance(address _owner, address _spender)
         public
-        onlyOwner
+        view
+        returns (uint)
     {
-        require(newFee <= UNIT);
-        transferFeeRate = newFeeRate;
-        TransferFeeRateUpdate(newFeeRate);
+        return allowances[_owner][_spender];
     }
 
-    function withdrawFee(address account, uint value)
-        public
-        onlyFeeAuthority
-    {
-        // Exception thrown if insufficient balance due to safe subtraction operation
-        feePool = safeSub(feePool, value);
-        balances[account] = safeAdd(balances[account], value);
-        FeeWithdrawal(account, value);
-    }
- 
-    // Send _value amount of tokens to address _to
+
+    /* ========== MUTATIVE FUNCTIONS ========== */
+
     function transfer(address _to, uint _value)
         public
         returns (bool)
@@ -162,7 +160,7 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
         Transfer(msg.sender, _to, _value);
         TransferFeePaid(msg.sender, fee);
 
-        // ...but don't spend gas updating state if unnecessary.
+        // ...but don't spend gas updating state unnecessarily.
         if (_value == 0) {
             return true;
         }
@@ -175,7 +173,6 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
         return true;
     }
  
-    // Send _value amount of tokens from address _from to address _to
     function transferFrom(address _from, address _to, uint _value)
         public
         returns (bool)
@@ -189,7 +186,7 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
         Transfer(_from, _to, _value);
         TransferFeePaid(msg.sender, fee);
 
-        // ...but don't spend gas updating state if unnecessary.
+        // ...but don't spend gas updating state unnecessarily.
         if (_value == 0) {
             return true;
         }
@@ -203,9 +200,6 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
         return true;
     }
   
-    // Allow _spender to withdraw from your account, multiple times, up to the _value amount.
-    // If this function is called again it overwrites the current allowance with _value.
-    // this function is required for some DEX functionality.
     function approve(address _spender, uint _value)
         public
         returns (bool)
@@ -214,29 +208,38 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
         Approval(msg.sender, _spender, _value);
         return true;
     }
- 
-    // Returns the amount which _spender is still allowed to withdraw from _owner
-    function allowance(address _owner, address _spender)
+
+    /* Withdraw tokens from the fee pool into a given account. */
+    function withdrawFee(address account, uint value)
         public
-        view
-        returns (uint)
+        onlyFeeAuthority
     {
-        return allowances[_owner][_spender];
+        // Safe subtraction ensures an exception is thrown if the balance is insufficient.
+        feePool = safeSub(feePool, value);
+        balances[account] = safeAdd(balances[account], value);
+        FeeWithdrawal(account, value);
+    }
+
+
+    /* ========== MODIFIERS ========== */
+ 
+    modifier onlyFeeAuthority
+    {
+        require(msg.sender == feeAuthority);
+        _;
     }
  
-    // Tokens were transferred.
+
+    /* ========== EVENTS ========== */
+
     event Transfer(address indexed _from, address indexed _to, uint _value);
 
-    // A transfer occurred, and a fee was paid on it.
     event TransferFeePaid(address account, uint value);
  
-    // approve(address _spender, uint _value) was called.
     event Approval(address indexed _owner, address indexed _spender, uint _value);
 
-    // The transfer fee rate was updated.
     event TransferFeeRateUpdate(uint newFeeRate);
 
-    // A quantity of fees was withdrawn from the pool and sent to the given account.
     event FeeWithdrawal(address account, uint value);
 }
 
