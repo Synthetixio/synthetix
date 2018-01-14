@@ -343,6 +343,29 @@ contract CollateralisedNomin is ERC20FeeToken {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
+
+    /* Override ERC20 transfer function in order to check
+     * whether the sender or recipient account is frozen.
+     */
+    function transfer(address _to, uint _value)
+        public
+        returns (bool)
+    {
+        require(!(isFrozen[msg.sender] || isFrozen[_to]));
+        return super.transfer(_to, _value);
+    }
+
+    /* Override ERC20 transferFrom function in order to check
+     * whether the sender or recipient account is frozen.
+     */
+    function transferFrom(address _from, address _to, uint _value)
+        public
+        returns (bool)
+    {
+        require(!(isFrozen[_from] || isFrozen[_to]));
+        return super.transferFrom(_from, _to, _value);
+    }
+
     /* Issues n nomins into the pool available to be bought by users.
      * Must be accompanied by $n worth of ether.
      * Exceptional conditions:
