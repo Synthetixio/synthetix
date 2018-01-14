@@ -44,6 +44,7 @@ CLEANUP
 * tabs to spaces
 * Work out if we can add a fee field to Transfer events and still be ERC20 compliant
 * ERC777 (if backwards compatible with ERC20)
+* SafeFixedMath to a library?
 
 VALIDATION
 ==========

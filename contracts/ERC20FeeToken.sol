@@ -96,7 +96,7 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
         public
         onlyOwner
     {
-        require(newFee <= UNIT);
+        require(newFeeRate <= UNIT);
         transferFeeRate = newFeeRate;
         TransferFeeRateUpdate(newFeeRate);
     }

@@ -60,6 +60,7 @@ Find out more at https://www.block8.io/
 pragma solidity ^0.4.19;
 
 import "ERC20FeeToken.sol";
+import "Havven.sol";
 import "ConfiscationCourt.sol";
 
 /* Issues nomins, which are tokens worth 1 USD each. They are backed
@@ -108,10 +109,10 @@ contract CollateralisedNomin is ERC20FeeToken {
 
     // The address of the havven contract that this contract
     // is paired with.
-    address public havven;
+    Havven public havven;
 
     // The address of the contract which manages confiscation votes.
-    address public court;
+    ConfiscationCourt public court;
 
     // The set of addresses that have been frozen by confiscation.
     mapping(address => bool) public isFrozen;
@@ -163,10 +164,10 @@ contract CollateralisedNomin is ERC20FeeToken {
 
     /* ========== CONSTRUCTOR ========== */
 
-    function CollateralisedNomin(address _owner, address _havven,
+    function CollateralisedNomin(address _owner, Havven _havven,
                                  address _oracle, address _beneficiary,
                                  uint initialEtherPrice)
-        ERC20FeeToken(_owner, _havven)
+        ERC20FeeToken(_owner, address(_havven))
         public
     {
         oracle = _oracle;
@@ -288,7 +289,7 @@ contract CollateralisedNomin is ERC20FeeToken {
         view
         returns (uint)
     {
-        return safeMul(n, transferFee);
+        return safeMul(n, transferFeeRate);
     }
 
     /* Return the fee charged on a purchase or sale of n nomins. */
@@ -527,7 +528,7 @@ contract CollateralisedNomin is ERC20FeeToken {
         // These checks are strictly unnecessary,
         // since they are already checked in the court contract itself.
         // I leave them in only out of paranoia.
-        require(court.inConfirmationPeriod(target));
+        require(court.confirming(target));
         require(court.votePasses(target));
 
         // Confiscate the balance in the account.
@@ -535,7 +536,7 @@ contract CollateralisedNomin is ERC20FeeToken {
         feePool = safeAdd(feePool, balance);
         balances[target] = 0;
         // Freeze the account.
-        frozenAccounts[target] = true;
+        isFrozen[target] = true;
         Confiscation(target, balance);
     }
 
@@ -543,7 +544,7 @@ contract CollateralisedNomin is ERC20FeeToken {
         public
         onlyOwner
     {
-        frozenAccounts[target] = false;
+        isFrozen[target] = false;
         Unfreezing(target);
     }
 
@@ -560,7 +561,7 @@ contract CollateralisedNomin is ERC20FeeToken {
     // Throw an exception if the caller is not the contract's designated price oracle.
     modifier onlyCourt
     {
-        require(msg.sender == court);
+        require(msg.sender == address(court));
         _;
     }
 
