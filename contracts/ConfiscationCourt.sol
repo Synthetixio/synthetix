@@ -83,10 +83,14 @@
  * 
  * We might consider updating the contract with any of these features at a later date if necessary.
  */
+pragma solidity ^0.4.19;
 
 import "Owned.sol";
+import "SafeFixedMath.sol";
+import "CollateralisedNomin.sol";
+import "Havven.sol";
 
-contract ConfiscationCourt is Owned {
+contract ConfiscationCourt is Owned, SafeFixedMath {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -98,7 +102,7 @@ contract ConfiscationCourt is Owned {
     // and if set, must fall within the given bounds.
     uint public votingPeriod = 1 weeks;
     uint public constant minVotingPeriod = 3 days;
-    uint public constant maxVotingPeriod = 1 months;
+    uint public constant maxVotingPeriod = 4 weeks;
 
     // Duration of the period during which the foundation may confirm
     // or veto a vote that has concluded.
@@ -134,13 +138,13 @@ contract ConfiscationCourt is Owned {
     mapping(address => uint) public votesAgainst;
 
     // The addresses of the havven and nomin contracts.
-    address public havven;
-    address public nomin;
+    Havven public havven;
+    CollateralisedNomin public nomin;
 
 
     /* ========== CONSTRUCTOR ========== */
 
-    function ConfiscationCourt(address _havven, address _nomin, address _owner)
+    function ConfiscationCourt(Havven _havven, CollateralisedNomin _nomin, address _owner)
         Owned(_owner)
         public
     {
@@ -202,6 +206,7 @@ contract ConfiscationCourt is Owned {
     function voting(address target)
         public
         view
+        returns (bool)
     {
         // No need to check (startTime < now) as there is no way
         // to set future start times for votes.
@@ -214,6 +219,7 @@ contract ConfiscationCourt is Owned {
     function confirming(address target)
         public
         view
+        returns (bool)
     {
         uint startTime = voteStartTimes[target];
         return startTime + votingPeriod <= now &&
@@ -224,6 +230,7 @@ contract ConfiscationCourt is Owned {
     function waiting(address target)
         public
         view
+        returns (bool)
     {
         return voteStartTimes[target] + votingPeriod + confirmationPeriod <= now;
     }
@@ -234,6 +241,7 @@ contract ConfiscationCourt is Owned {
     function votePasses(address target) 
         public
         view
+        returns (bool)
     {
         uint yeas = votesFor[target];
         uint nays = votesAgainst[target];
@@ -243,7 +251,7 @@ contract ConfiscationCourt is Owned {
             return false;
         }
 
-        uint participation = safeDiv(totalVotes, havven.totalSuppy());
+        uint participation = safeDiv(totalVotes, havven.totalSupply());
         uint fractionInFavour = safeDiv(yeas, totalVotes);
 
         // We require the result to be strictly greater than the requirement
@@ -270,7 +278,7 @@ contract ConfiscationCourt is Owned {
         require(!voting(target));
 
         // Disallow votes on accounts that have previously been frozen.
-        require(!nomin.frozenAccounts[target]);
+        require(!nomin.isFrozen(target));
 
         voteStartTimes[target] = now;
         votesFor[target] = 0;
@@ -332,7 +340,7 @@ contract ConfiscationCourt is Owned {
         // If we are not voting, there is no reason to update the vote totals.
         if (voting(target)) {
             // This call to getVote() must come before the later call to cancelVote(), obviously.
-            int vote = havven.getVote(msg.sender);
+            int vote = havven.votes(msg.sender);
             if (vote == 1) {
                 votesFor[msg.sender] -= havven.balanceOf(msg.sender);
             }

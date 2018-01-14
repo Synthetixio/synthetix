@@ -74,7 +74,7 @@ contract Owned {
         onlyOwner
     {
         owner = newOwner;
-        OwnerChanged(address oldOwner, address newOwner);
+        OwnerChanged(owner, newOwner);
     }
 
     modifier onlyOwner

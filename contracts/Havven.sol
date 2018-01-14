@@ -130,9 +130,9 @@ contract Havven is ERC20FeeToken {
     // Whether a given account is participating in a confiscation vote.
     // 1 <=> a vote for; -1 <=> a vote against.
     // If nonzero, user may not transfer funds.
-    mapping(address => int) public vote; 
+    mapping(address => int) public votes; 
     // The vote a user last participated in.
-    mapping(address => address) public voteTarget;
+    mapping(address => address) public voteTargets;
 
     uint public feePeriodStartTime;
     uint public feePeriodDuration = 1 weeks;
@@ -148,7 +148,7 @@ contract Havven is ERC20FeeToken {
         ERC20FeeToken(_owner, _owner)
         public
     {
-        nomin = CollateralisedNomin(_owner, this, _oracle, _beneficiary, _initialEtherPrice);
+        nomin = new CollateralisedNomin(_owner, this, _oracle, _beneficiary, _initialEtherPrice);
     }
 
     /* ========== VIEW FUNCTIONS ========== */
@@ -158,7 +158,7 @@ contract Havven is ERC20FeeToken {
         view
         returns (bool)
     {
-        return vote[account] != 0;
+        return votes[account] != 0;
     }
 
 
@@ -186,8 +186,8 @@ contract Havven is ERC20FeeToken {
             return true;
         }
 
-        adjustFeeEntitlement(msg.sender, senderPreBalance));
-        adjustFeeEntitlement(_to, recipientPreBalance));
+        adjustFeeEntitlement(msg.sender, senderPreBalance);
+        adjustFeeEntitlement(_to, recipientPreBalance);
 
         return true;
     }
@@ -214,8 +214,8 @@ contract Havven is ERC20FeeToken {
             return true;
         }
 
-        adjustFeeEntitlement(_from, senderPreBalance));
-        adjustFeeEntitlement(_to, recipientPreBalance));
+        adjustFeeEntitlement(_from, senderPreBalance);
+        adjustFeeEntitlement(_to, recipientPreBalance);
 
         return true;
     }
@@ -232,7 +232,7 @@ contract Havven is ERC20FeeToken {
         // The time since the last transfer clamps at the last fee rollover time if the last transfer
         // was earlier than that.
         rolloverFee(account, lastTransferTime, finalBalance);
-        feeRights[account] = safeAdd(feeRights[account], safeMul(finalBalance, intToDecimal(now - lastTransferTime)))
+        feeRights[account] = safeAdd(feeRights[account], safeMul(finalBalance, intToDecimal(now - lastTransferTime)));
 
         // Update the last time this user's balance changed.
         lastTransferTimestamps[account] = now;
@@ -270,8 +270,8 @@ contract Havven is ERC20FeeToken {
         public
     {
         // Do not deposit fees into frozen accounts.
-        require(!nomin.isFrozen[msg.sender]);
-        
+        require(!nomin.isFrozen(msg.sender));
+
         rolloverFee(msg.sender, lastTransferTimestamps[msg.sender], balances[msg.sender]);
         uint feesOwed = safeDiv(safeMul(lastPeriodFeeRights[msg.sender], lastFeesCollected), supply);
         nomin.withdrawFee(msg.sender, feesOwed);
@@ -286,9 +286,9 @@ contract Havven is ERC20FeeToken {
         public
         onlyNominContract
     {
-        require(voteTarget[account] == 0);
-        vote[account] = 1;
-        voteTarget[account] = target;
+        require(voteTargets[account] == 0);
+        votes[account] = 1;
+        voteTargets[account] = target;
     }
 
     /* Indicate that the given account voted nay in a confiscation
@@ -299,9 +299,9 @@ contract Havven is ERC20FeeToken {
         public
         onlyNominContract
     {
-        require(voteTarget[account] == 0);
-        vote[account] = -1;
-        voteTarget[account] = target;
+        require(voteTargets[account] == 0);
+        votes[account] = -1;
+        voteTargets[account] = target;
     }
 
     /* Cancel a previous vote by a given account on a target.
@@ -315,9 +315,9 @@ contract Havven is ERC20FeeToken {
         public
         onlyNominContract
     {
-        require(voteTarget[account] == target);
-        voteTarget[account] = 0;
-        vote[account] = 0;
+        require(voteTargets[account] == target);
+        voteTargets[account] = 0;
+        votes[account] = 0;
     }
 
 
@@ -325,7 +325,7 @@ contract Havven is ERC20FeeToken {
 
     modifier onlyNominContract
     {
-        require(msg.sender == nomin);
+        require(msg.sender == address(nomin));
         _;
     }
 
