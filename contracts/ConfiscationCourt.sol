@@ -74,6 +74,7 @@
  * There are some things that can be added to enhance the functionality
  * at the expense of simplicity and efficiency:
  * 
+ *   - Unique action IDs for clearer logging if multiple actions are mooted for a given account;
  *   - Democratic unfreezing of nomin accounts (induces multiple categories of vote)
  *   - Configurable per-vote durations;
  *   - Vote standing denominated in a fiat quantity rather than a quantity of havvens;
@@ -124,7 +125,7 @@ contract ConfiscationCourt is Owned {
     // A vote runs from its start time t until (t + votingPeriod),
     // and then the confirmation period terminates no later than
     // (t + votingPeriod + confirmationPeriod).
-    mapping(address => uint) public voteStartTime;
+    mapping(address => uint) public voteStartTimes;
 
     // The tallies for and against confiscation of a given balance.
     // These are set to zero at the start of a vote, and also on conclusion,
@@ -204,7 +205,7 @@ contract ConfiscationCourt is Owned {
     {
         // No need to check (startTime < now) as there is no way
         // to set future start times for votes.
-        return now < voteStartTime[target] + votingPeriod;
+        return now < voteStartTimes[target] + votingPeriod;
     }
 
     /* A vote on the target account has concluded, but the action
@@ -214,7 +215,7 @@ contract ConfiscationCourt is Owned {
     	public
     	view
     {
-    	uint startTime = voteStartTime[target];
+    	uint startTime = voteStartTimes[target];
     	return startTime + votingPeriod <= now &&
                now < startTime + votingPeriod + confirmationPeriod;
     }
@@ -224,7 +225,7 @@ contract ConfiscationCourt is Owned {
     	public
     	view
     {
-    	return voteStartTime[target] + votingPeriod + confirmationPeriod <= now;
+    	return voteStartTimes[target] + votingPeriod + confirmationPeriod <= now;
     }
 
     /* If the vote was to terminate at this instant, it would pass.
@@ -271,9 +272,10 @@ contract ConfiscationCourt is Owned {
         // Disallow votes on accounts that have previously been frozen.
         require(!nomin.frozenAccounts[target]);
 
-        voteStartTime[target] = now;
+        voteStartTimes[target] = now;
         votesFor[target] = 0;
         votesAgainst[target] = 0;
+   		ConfiscationVote(msg.sender, target);
     }
 
     /* The sender casts a vote in favour of confiscation of the
@@ -291,7 +293,9 @@ contract ConfiscationCourt is Owned {
         // The user should not have voted previously without cancelling
         // that vote; the check inside havven.setVotedFor() ensures this.
         havven.setVotedFor(msg.sender, target);
-        votesFor[msg.sender] += havven.balanceOf(msg.sender);
+        uint balance = havven.balanceOf(msg.sender);
+        votesFor[msg.sender] += balance;
+        VoteFor(msg.sender, target, balance);
     }
 
     /* The sender casts a vote against confiscation of the
@@ -309,7 +313,9 @@ contract ConfiscationCourt is Owned {
         // The user should not have voted previously without cancelling
         // that vote; the check inside havven.setVotedAgainst() ensures this.
         havven.setVotedAgainst(msg.sender, target);
-        votesAgainst[msg.sender] += havven.balanceOf(msg.sender);
+        uint balance = havven.balanceOf(msg.sender);
+        votesAgainst[msg.sender] += balance;
+        VoteAgainst(msg.sender, target, balance);
     }
 
     /* Cancel an existing vote by the sender on an action
@@ -339,26 +345,28 @@ contract ConfiscationCourt is Owned {
     	// than the one they have previously voted for, an exception is thrown
     	// inside havven.cancelVote, and the state is rolled back.
         havven.cancelVote(msg.sender, target);
+        CancelledVote(msg.sender, target);
         
     }
 
     /* If a vote has concluded, or if it lasted its full duration but not passed,
-     * then anyone may reinitialise it.
+     * then anyone may close it (for example in order to unlock their havven account).
      */
     function closeVote(address target) 
     	public
     {
     	require((confirming(target) && !votePasses(target)) ||
     			waiting(target));
-    	voteStartTime[target] = 0;
+    	voteStartTimes[target] = 0;
         votesFor[target] = 0;
         votesAgainst[target] = 0;
+        VoteClosed(target);
     }
 
     /* The foundation may only confiscate a balance during the confirmation
      * period after a vote has passed.
      */
-    function confiscate(address target)
+    function approve(address target)
     	public
     	onlyOwner
     {
@@ -367,9 +375,10 @@ contract ConfiscationCourt is Owned {
     	require(votePasses(target));
 
     	nomin.confiscateBalance(target);
-    	voteStartTime[target] = 0;
+    	voteStartTimes[target] = 0;
         votesFor[target] = 0;
         votesAgainst[target] = 0;
+    	ConfiscationApproval(target);
     }
 
     /* The foundation may veto an action at any time. */
@@ -377,10 +386,29 @@ contract ConfiscationCourt is Owned {
     	public
     	onlyOwner
     {
-    	voteStartTime[target] = 0;
+    	voteStartTimes[target] = 0;
         votesFor[target] = 0;
         votesAgainst[target] = 0;
+    	Veto(target);
     }
+
+
+    /* ========== EVENTS ========== */
+
+   	event ConfiscationVote(address indexed initiator, address target);
+
+   	event VoteFor(address indexed account, address indexed target, uint balance);
+
+   	event VoteAgainst(address indexed account, address indexed target, uint balance);
+
+    event CancelledVote(address indexed account, address indexed target);
+
+    event VoteClosed(address indexed target);
+
+    event Veto(address indexed target);
+
+    event ConfiscationApproval(address indexed target);
+
 
 
 }
