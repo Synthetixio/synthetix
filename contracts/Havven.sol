@@ -269,6 +269,9 @@ contract Havven is ERC20FeeToken {
     function withdrawFeeEntitlement()
         public
     {
+        // Do not deposit fees into frozen accounts.
+        require(!nomin.isFrozen[msg.sender]);
+        
         rolloverFee(msg.sender, lastTransferTimestamps[msg.sender], balances[msg.sender]);
         uint feesOwed = safeDiv(safeMul(lastPeriodFeeRights[msg.sender], lastFeesCollected), supply);
         nomin.withdrawFee(msg.sender, feesOwed);
