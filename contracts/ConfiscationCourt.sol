@@ -16,6 +16,17 @@
  *                    Cancel Vote
  *                      Parameters: target address
  *         Triggers: End Vote
+ *
+ * For the sake of complexity, this is designed to be relatively simple.
+ * There are some things that can be added to enhance the functionality
+ * at the expense of simplicity and efficiency:
+ * 
+ *   - Configurable per-vote durations;
+ *   - Vote standing denominated in a fiat quantity rather than a quantity of havvens;
+ *   - Confiscate from multiple addresses in a single vote;
+ *   - Allow users to vote in multiple actions at once (up to a limit).
+ * 
+ * We will consider updating the contract with these features at a later date if it is deemed necessary.
  */
  import "Owned.sol";
 
@@ -69,6 +80,12 @@ contract ConfiscationCourt is Owned {
     	return startTime + confiscationPeriod <= now && now < startTime + confiscationPeriod + confirmationPeriod;
     }
 
+    function voteHasTerminated(address target)
+    	public
+    {
+    	return confiscationStartTime[target] + confiscationPeriod + confirmationPeriod <= now;
+    }
+
     /* Begin a vote to confiscate the funds in a given nomin account.
      * Only people with sufficient havven balances may elect to start such a vote.
      */
@@ -110,6 +127,7 @@ contract ConfiscationCourt is Owned {
     function cancelVote(address target) 
         public
     {
+    	require(!inConfirmationPeriod(target));
         if (voteIsRunning(target)) {
 	        int vote = havven.getVote(msg.sender);
 	        if (vote == 1) {
@@ -122,6 +140,7 @@ contract ConfiscationCourt is Owned {
         havven.cancelVote(msg.sender);
     }
 
+    /* If the vote was to terminate at this instant, would it pass? */
     function votePasses(address target) 
     	public
     {
@@ -130,27 +149,35 @@ contract ConfiscationCourt is Owned {
 		uint totalVotes = yeas + nays;
     	uint participation = safeDiv(totalVotes, havven.totalSuppy());
     	uint fractionInFavour = safeDiv(yeas, totalVotes);
+    	return participation > minConfiscationParticipationFraction && fractionInFavour > confiscationVoteThreshold;
     }
 
+    /* If a vote has lasted its full duration, but has not passed,
+     * then anyone may cancel it.
+     */
     function closeVote(address target) 
     	public
     {
     	require(!voteIsRunning(target));
-
+    	require(!votePasses(target));
+    	confiscationStartTime[target] = 0;
     }
 
     function confiscate(address target)
     	public
-
+    	onlyOwner
     {
     	require(inConfirmationPeriod(target));
-    	uint totalVotes = votesForConfiscation[target] + votesAgainstConfiscation[target];
-    	uint participation = safeDiv(totalVotes, havven.totalSuppy());	
-
+    	nomin.confiscate(target);
+    	confiscationStartTime[target] = 0;
     }
 
-    function veto(address target) {
-
+    function veto(address target) 
+    	public
+    	onlyOwner
+    {
+    	require(inConfirmationPeriod(target));
+    	confiscationStartTime[target] = 0;
     }
 
 

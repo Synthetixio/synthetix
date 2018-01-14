@@ -22,14 +22,18 @@
 * Solium lint.
 * Invariants produced for every function
 * Test suite.
+
 * Wrapping protection
 	- 30% participation required
 	- 70% quorum required
 	- minimum three days
 	- subject to veto (lifted in later versions)
+    
 * Gas optimisation
 
 * make sure the buy/sell fee is settable.
+* make sure everything that should be settable has a setter
+* make sure everything that should be SDable is SDable
 
 * Work out if we can add a fee field to Transfer events and still be ERC20 compliant
 
@@ -39,3 +43,8 @@
 * Update fee rollover period time thingo
 * Havven events
 * Work out whether events should have indexed parameters.
+
+* Confiscation contract work for lists of addresses at once.
+* Nomenclature.
+
+* Events for everything
