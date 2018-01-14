@@ -22,7 +22,6 @@ FEATURES
 * Factor out functionality into proxy contract for upgrades.
 * ERC777 (if backwards compatible with ERC20)
 * Events for everything
-* Work out whether events should have indexed parameters.
 * Check unchecked sends and so on
 * Determine what should occur when fee period duration is changed.
 
@@ -34,6 +33,7 @@ CLEANUP
 * make sure everything that should be settable has a setter
 * make sure everything that should be SDable is SDable
 * make sure everything that needs an event has one
+* Work out whether events should have indexed parameters or not.
 * Remove bool returns and just throw inside ERC20FeeToken.sol
 * "Using for" statements where they make sense
 * Fix licence headers
