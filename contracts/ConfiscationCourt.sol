@@ -408,7 +408,4 @@ contract ConfiscationCourt is Owned {
     event Veto(address indexed target);
 
     event ConfiscationApproval(address indexed target);
-
-
-
 }
