@@ -5,40 +5,41 @@ FEATURES
 * Implement logic for when fee period duration is changed.
 * Ability to halt liquidation if contract is recollateralised.
 * Events for everything
-* Factor out functionality into proxy contract for upgrades.
+* Factor out functionality from state, into proxy contract, for upgrades.
+* Determine how to get tokens into contract and working with vesting schedules that still accrue fees.
 
 CLEANUP
 =======
+* Better contract and function nomenclature.
+* rename "CollateralisedNomin", description, ticker symbol? (subject to Kain's approval)
+* Convert ints to a shared enum type in the court.
+* Fix licence headers
 * Desk check all functions.
-* Convert ints to a shared enum type in the vote stuff.
-* Gas optimisation
-* rename "CollateralisedNomin"? (subject to Kain's approval)
 * Check unchecked sends and so on
 * Split fees for purchase versus sale?
-* ERC20 non-fee version for havvens to inherit from
+* ERC20 non-fee version for havvens (and perhaps FeeRC20 as well) to inherit from
 * make sure everything that should be settable has a setter
 * make sure everything that should be SDable is SDable
 * make sure everything that needs an event has one
-* Work out whether events should have indexed parameters or not.
+* Work out which event parameters should be indexed.
 * "Using for" statements where they make sense
-* Fix licence headers
 * Structs where they make sense
 * Check that all calls out to other contracts are checked and handled in case of failure.
 * Ensure that denominators can never be zero.
-* Nomenclature.
 * Documentation on members
 * Documentation on functions
 * Documentation on files
 * Add units where it makes sense
-* tabs to spaces
 * Work out if we can add a fee field to Transfer events and still be ERC20 compliant
 * ERC777 (if backwards compatible with ERC20)
 * SafeFixedMath to a library?
+* tabs to spaces
+* Gas optimisation
 
 VALIDATION
 ==========
 * Test suite.
-* Ensure that timestamp dependency is not a problem, but if it is, switch to block numbers.
+* Ensure that timestamp dependency is not a problem at our time scales; but if it is, switch to block numbers.
 * Ensure functions correspond to correct state transitions in confiscation court
 * Fee distribution
 * Consensys best practices compliance.
@@ -50,6 +51,7 @@ VALIDATION
 * Compare with linked token implementations (zeppelin, consensys, minime).
 * http://populus.readthedocs.io/en/latest/gotchas.html
 * Re-verify that ERC20 compliant as per https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20-token-standard.md
+* Joel + Mike + Dom + Sam + Matt contract read-through
 
 MISC
 ====
