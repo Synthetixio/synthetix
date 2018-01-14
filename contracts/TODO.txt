@@ -33,6 +33,7 @@ CLEANUP
 * ERC20 non-fee version for havvens to inherit from
 * make sure everything that should be settable has a setter
 * make sure everything that should be SDable is SDable
+* make sure everything that needs an event has one
 * Remove bool returns and just throw inside ERC20FeeToken.sol
 * "Using for" statements where they make sense
 * Fix licence headers
