@@ -24,6 +24,7 @@ FEATURES
 * Events for everything
 * Work out whether events should have indexed parameters.
 * Check unchecked sends and so on
+* Determine what should occur when fee period duration is changed.
 
 CLEANUP
 =======
@@ -49,6 +50,7 @@ CLEANUP
 VALIDATION
 ==========
 * Test suite.
+* Ensure that timestamp dependency is not a problem, but if it is, switch to block numbers.
 * Ensure functions correspond to correct state transitions in confiscation court
 * Fee distribution
 * Consensys best practices compliance.

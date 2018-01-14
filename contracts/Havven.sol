@@ -114,7 +114,6 @@ Find out more at https://www.block8.io/
  */
 
 
-
 pragma solidity ^0.4.19;
 
 import "ERC20FeeToken.sol";
