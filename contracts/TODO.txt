@@ -1,6 +1,3 @@
-* Automatically liquidate if collateralisation is below 1:1
-* Split fees for purchase versus sale?
-
 * Staleness adjustments:
 	- solve the trust problem of just setting low stale period and then liquidating
     - perhaps staleness protection for sell() is deactivated during the liquidation period
@@ -13,38 +10,35 @@
     Probably can add a time lock for selling nomins back to the system, but it's awkward, and just makes the futures contract
     slightly longer term.
 
+* Actually freeze nomin balances (override transfer function)
+* Update fee rollover period time thingo
+* Automatically liquidate if collateralisation is below 1:1
+* Fee distribution
+* Split fees for purchase versus sale?
+* ERC20 non-fee version for havvens to inherit from
+* Confiscation locks the target address balance
+* tabs to spaces
+* make sure everything that should be settable has a setter
+* make sure everything that should be SDable is SDable
+* Remove bool returns and just throw inside ERC20FeeToken.sol
+* Check that all calls out to other contracts are checked and handled in case of failure.
+* Ensure that denominators can never be zero.
+* Nomenclature.
+* Events for everything
+* Work out whether events should have indexed parameters.
+* Documentation on members
+* Documentation on functions
+* Documentation on files
+* ERC777 (if backwards compatible with ERC20)
+* Work out if we can add a fee field to Transfer events and still be ERC20 compliant
+* Gas optimisation
 * Re-verify that ERC20 compliant as per https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20-token-standard.md
 * Compare with linked token implementations (zeppelin, consensys, minime).
 * http://populus.readthedocs.io/en/latest/gotchas.html
 * Factor out functionality into proxy contract for upgrades.
-* Fee distribution
 * Consensys best practices compliance.
 * Solium lint.
 * Invariants produced for every function
 * Test suite.
+* Check unchecked sends and so on
 
-* Wrapping protection
-	- 30% participation required
-	- 70% quorum required
-	- minimum three days
-	- subject to veto (lifted in later versions)
-    
-* Gas optimisation
-
-* make sure the buy/sell fee is settable.
-* make sure everything that should be settable has a setter
-* make sure everything that should be SDable is SDable
-
-* Work out if we can add a fee field to Transfer events and still be ERC20 compliant
-
-* Ensure that denominators can never be zero.
-* Remove bool returns and just throw inside ERC20FeeToken.sol
-* ERC777
-* Update fee rollover period time thingo
-* Havven events
-* Work out whether events should have indexed parameters.
-
-* Confiscation contract work for lists of addresses at once.
-* Nomenclature.
-
-* Events for everything
