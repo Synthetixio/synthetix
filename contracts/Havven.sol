@@ -171,6 +171,9 @@ contract Havven is ERC20FeeToken {
         public
         returns (bool)
     {
+        // Disallow transfers by accounts with an active vote.
+        require(!hasVoted(msg.sender));
+
         uint senderPreBalance = balances[msg.sender];
         uint recipientPreBalance = balances[_to];
 
@@ -196,6 +199,9 @@ contract Havven is ERC20FeeToken {
         public
         returns (bool)
     {
+        // Disallow transfers by accounts with an active vote.
+        require(!hasVoted(_from));
+
         uint senderPreBalance = balances[_from];
         uint recipientPreBalance = balances[_to];
 

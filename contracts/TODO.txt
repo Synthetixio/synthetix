@@ -12,29 +12,26 @@
 
 FEATURES
 ========
-* Convert ints to a shared enum type in the vote stuff.
 * Actually freeze nomin balances (override transfer function)
 * Automatically liquidate if collateralisation is below 1:1
 * Update fee rollover period time thingo
-* Confiscation locks the target address balance
-* Actually lock havven transfers if they have voted in something
-* Gas optimisation
-* Factor out functionality into proxy contract for upgrades.
-* ERC777 (if backwards compatible with ERC20)
+* get it compiling
 * Events for everything
-* Check unchecked sends and so on
+* Factor out functionality into proxy contract for upgrades.
 * Determine what should occur when fee period duration is changed.
 
 CLEANUP
 =======
+* Convert ints to a shared enum type in the vote stuff.
+* Gas optimisation
 * rename "CollateralisedNomin"? (subject to Kain's approval)
+* Check unchecked sends and so on
 * Split fees for purchase versus sale?
 * ERC20 non-fee version for havvens to inherit from
 * make sure everything that should be settable has a setter
 * make sure everything that should be SDable is SDable
 * make sure everything that needs an event has one
 * Work out whether events should have indexed parameters or not.
-* Remove bool returns and just throw inside ERC20FeeToken.sol
 * "Using for" statements where they make sense
 * Fix licence headers
 * Structs where they make sense
@@ -47,6 +44,7 @@ CLEANUP
 * Add units where it makes sense
 * tabs to spaces
 * Work out if we can add a fee field to Transfer events and still be ERC20 compliant
+* ERC777 (if backwards compatible with ERC20)
 
 VALIDATION
 ==========
