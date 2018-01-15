@@ -173,6 +173,7 @@ contract Havven is ERC20FeeToken {
     {
         require(duration >= minFeePeriodDuration);
         targetFeePeriodDuration = duration;
+        FeePeriodDurationUpdated(uint duration);
     }
 
 
@@ -304,6 +305,7 @@ contract Havven is ERC20FeeToken {
         uint feesOwed = safeDiv(safeMul(lastPeriodFeeRights[msg.sender], lastFeesCollected), supply);
         nomin.withdrawFee(msg.sender, feesOwed);
         lastPeriodFeeRights[msg.sender] = 0;
+        FeesWithdrawn(msg.sender, feesOwed);
     }
 
     /* Indicate that the given account voted yea in a confiscation
@@ -380,5 +382,8 @@ contract Havven is ERC20FeeToken {
 
     /* ========== EVENTS ========== */
 
+    event FeePeriodDurationUpdated(uint duration);
+
+    event FeesWithdrawn(address indexed account, uint fees);
 
 }

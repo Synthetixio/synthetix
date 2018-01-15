@@ -160,6 +160,7 @@ contract ConfiscationCourt is Owned, SafeFixedMath {
         onlyOwner
     {
         minStandingBalance = balance;
+        MinStandingBalanceUpdated(balance);
     }
 
 
@@ -170,6 +171,7 @@ contract ConfiscationCourt is Owned, SafeFixedMath {
         require(minVotingPeriod <= duration &&
                 duration <= maxVotingPeriod);
         votingPeriod = duration;
+        VotingPeriodUpdated(duration);
     }
 
     function setConfirmationPeriod(uint duration)
@@ -178,7 +180,8 @@ contract ConfiscationCourt is Owned, SafeFixedMath {
     {
         require(minConfirmationPeriod <= duration &&
                 duration <= maxConfirmationPeriod);
-        votingPeriod = duration;
+        confirmationPeriod = duration;
+        ConfirmationPeriodUpdated(duration);
     }
 
     function setRequiredParticipation(uint fraction)
@@ -187,6 +190,7 @@ contract ConfiscationCourt is Owned, SafeFixedMath {
     {
         require(minRequiredParticipation <= fraction);
         requiredParticipation = fraction;
+        RequiredParticipationUpdated(fraction);
     }
 
     function setRequiredMajority(uint fraction)
@@ -195,6 +199,7 @@ contract ConfiscationCourt is Owned, SafeFixedMath {
     {
         require(minRequiredMajority <= fraction);
         requiredMajority = fraction;
+        RequiredMajorityUpdated(fraction);
     }
 
 
@@ -401,6 +406,16 @@ contract ConfiscationCourt is Owned, SafeFixedMath {
 
 
     /* ========== EVENTS ========== */
+
+    event MinStandingBalanceUpdated(uint balance);
+
+    event VotingPeriodUpdated(uint duration);
+
+    event ConfirmationPeriodUpdated(uint duration);
+
+    event RequiredParticipationUpdated(uint fraction);
+
+    event RequiredMajorityUpdated(uint fraction);
 
     event ConfiscationVote(address indexed initiator, address target);
 

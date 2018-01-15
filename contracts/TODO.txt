@@ -1,11 +1,13 @@
 FEATURES
 ========
-* Events for everything
 * Factor out functionality from state, into proxy contract, for upgrades.
 * Determine how to get tokens into contract and working with vesting schedules that still accrue fees.
 
 CLEANUP
 =======
+* Decide what to do about fallback functions
+* Proper docstring/javadoc style comments, parameter descriptions
+* http://solidity.readthedocs.io/en/latest/style-guide.html
 * check access modifiers are correct
 * check that all state-updating modifiers post-update.
 * ensure everything that should be constant is constant.
