@@ -583,7 +583,7 @@ contract CollateralisedNomin is ERC20FeeToken {
     // Throw an exception if the caller is not the contract's designated price oracle.
     modifier onlyCourt
     {
-        require(msg.sender == address(court));
+        require(ConfiscationCourt(msg.sender) == court);
         _;
     }
 
