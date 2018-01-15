@@ -3,12 +3,12 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       Owned.sol
-version:    0.1
+version:    0.2
 author:     Block8 Technologies, in partnership with Havven
 
             Anton Jurisevic
 
-date:       2018-1-3
+date:       2018-1-16
 
 checked:    -
 approved:   -
@@ -62,7 +62,6 @@ pragma solidity ^0.4.19;
 contract Owned {
     address owner;
 
-    // Constructor
     function Owned(address _owner)
         public
     {
