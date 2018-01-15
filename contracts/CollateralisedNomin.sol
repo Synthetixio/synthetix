@@ -140,11 +140,11 @@ contract CollateralisedNomin is ERC20FeeToken {
     // immediately begin liquidation.
     uint public autoLiquidationRatio = UNIT;
 
-    // The time that must pass before the liquidation period is complete.
-    uint public liquidationPeriod = 90 days;
-    
-    // The liquidation period can be extended up to this duration.
-    uint public maxLiquidationPeriod = 180 days;
+    // The liquidation period is the duration that must pass before the liquidation period is complete.
+    // It can be extended up to a given duration.
+    uint public constant defaultLiquidationPeriod = 90 days;
+    uint public constant maxLiquidationPeriod = 180 days;
+    uint public liquidationPeriod = defaultLiquidationPeriod;
 
     // The timestamp when liquidation was activated. We initialise this to
     // uint max, so that we know that we are under liquidation if the 
@@ -394,7 +394,7 @@ contract CollateralisedNomin is ERC20FeeToken {
         // Price staleness check occurs inside the call to fiatValue.
         // Safe additions are unnecessary here, as either the addition is checked on the following line
         // or the overflow would cause the requirement not to be satisfied.
-        require(fiatValue(msg.value) + fiatBalance() >= safeMul(supply + n, collatRatioMinimum));
+        require(fiatBalance() >= safeMul(supply + n, collatRatioMinimum));
         supply = safeAdd(supply, n);
         pool = safeAdd(pool, n);
         Issuance(n, msg.value);
@@ -489,6 +489,21 @@ contract CollateralisedNomin is ERC20FeeToken {
         Liquidation();
     }
 
+    /* If the collateralisation ratio of this contract has recovered above
+     * the automatic liquidation threshold, for example by including enough
+     * ether in this transaction.
+     */
+    function terminateLiquidation()
+        public
+        onlyOwner
+        payable
+    {
+        require(collateralisationRatio() > autoLiquidationRatio);
+        liquidationTimestamp = ~uint(0);
+        liquidationPeriod = defaultLiquidationPeriod;
+        LiquidationTerminated();
+    }
+
     /* Extend the liquidation period. It may only get longer,
      * not shorter, and it may not be extended past the liquidation max. */
     function extendLiquidationPeriod(uint extension)
@@ -546,12 +561,12 @@ contract CollateralisedNomin is ERC20FeeToken {
         Confiscation(target, balance);
     }
 
-    function unfreeze(address target)
+    function unfreezeAccount(address target)
         public
         onlyOwner
     {
         isFrozen[target] = false;
-        Unfreezing(target);
+        Unfrozen(target);
     }
 
 
@@ -612,6 +627,8 @@ contract CollateralisedNomin is ERC20FeeToken {
 
     event Liquidation();
 
+    event LiquidationTerminated();
+
     event LiquidationExtended(uint extension);
 
     event PoolFeeRateUpdated(uint newFeeRate);
@@ -620,5 +637,5 @@ contract CollateralisedNomin is ERC20FeeToken {
 
     event Confiscation(address indexed target, uint balance);
 
-    event Unfreezing(address indexed target);
+    event Unfrozen(address indexed target);
 }
