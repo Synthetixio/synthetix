@@ -145,7 +145,7 @@ contract Havven is ERC20FeeToken {
     // And may not be set to be shorter than 1 day.
     uint public constant minFeePeriodDuration = 1 days;
     // The actual measured duration of the last fee period.
-    uing public lastFeePeriodDuration;
+    uint public lastFeePeriodDuration;
 
     // The quantity of nomins that were in the fee pot at the time
     // of the last fee rollover (feePeriodStartTime).
@@ -173,7 +173,7 @@ contract Havven is ERC20FeeToken {
     {
         require(duration >= minFeePeriodDuration);
         targetFeePeriodDuration = duration;
-        FeePeriodDurationUpdated(uint duration);
+        FeePeriodDurationUpdated(duration);
     }
 
 
@@ -373,7 +373,7 @@ contract Havven is ERC20FeeToken {
         _;
         uint duration = now - feePeriodStartTime;
         if (targetFeePeriodDuration <= duration) {
-            lastFeesCollected = nomin.feePool;
+            lastFeesCollected = nomin.feePool();
             lastFeePeriodDuration = duration;
             feePeriodStartTime = now;
         }
