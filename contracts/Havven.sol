@@ -111,6 +111,10 @@ Find out more at https://www.block8.io/
  * zero-value transfer to have occurred at time r. Their fee entitlement for the
  * previous period will be finalised at the time of their first transfer during the
  * current fee period, or when they query or withdraw their fee entitlement.
+ *
+ * In the implementation, the duration of different fee periods may be slightly irregular,
+ * as the check that they have rolled over occurs only when state-changing havven
+ * operations are performed.
  */
 
 
@@ -134,8 +138,15 @@ contract Havven is ERC20FeeToken {
     // The vote a user last participated in.
     mapping(address => address) public voteTargets;
 
+    // The time the current fee period began.
     uint public feePeriodStartTime;
-    uint public feePeriodDuration = 1 weeks;
+    // Fee periods will roll over in no shorter a time than this.
+    uint public minFeePeriodDuration = 1 weeks;
+    // The actual measured duration of the last fee period.
+    uing public lastFeePeriodDuration;
+
+    // The quantity of nomins that were in the fee pot at the time
+    // of the last fee rollover (feePeriodStartTime).
     uint public lastFeesCollected;
 
     CollateralisedNomin public nomin;
@@ -169,6 +180,7 @@ contract Havven is ERC20FeeToken {
      */
     function transfer(address _to, uint _value)
         public
+        postCheckFeePeriodRollover
         returns (bool)
     {
         // Disallow transfers by accounts with an active vote.
@@ -197,6 +209,7 @@ contract Havven is ERC20FeeToken {
      */
     function transferFrom(address _from, address _to, uint _value)
         public
+        postCheckFeePeriodRollover
         returns (bool)
     {
         // Disallow transfers by accounts with an active vote.
@@ -251,10 +264,10 @@ contract Havven is ERC20FeeToken {
             uint timeToRollover = intToDecimal(feePeriodStartTime - lastTransferTime);
 
             // If the user did not transfer at all in the last fee period, their average allocation is just their balance.
-            if (timeToRollover >= feePeriodDuration) {
+            if (timeToRollover >= lastFeePeriodDuration) {
                 lastPeriodFeeRights[account] = finalBalance;
             } else {
-                lastPeriodFeeRights[account] = safeDiv(safeAdd(feeRights[account], safeMul(balances[account], timeToRollover)), feePeriodDuration);
+                lastPeriodFeeRights[account] = safeDiv(safeAdd(feeRights[account], safeMul(balances[account], timeToRollover)), lastFeePeriodDuration);
             }
 
             // Update current period fee entitlement total and reset the timestamp.
@@ -268,6 +281,7 @@ contract Havven is ERC20FeeToken {
      */
     function withdrawFeeEntitlement()
         public
+        postCheckFeePeriodRollover
     {
         // Do not deposit fees into frozen accounts.
         require(!nomin.isFrozen(msg.sender));
@@ -327,6 +341,22 @@ contract Havven is ERC20FeeToken {
     {
         require(msg.sender == address(nomin));
         _;
+    }
+
+    /* If the fee period has rolled over, then
+     * save the duration of the last period and
+     * the fees that were collected within it,
+     * and start the new period.
+     */
+    modifier postCheckFeePeriodRollover
+    {
+        _;
+        uint duration = now - feePeriodStartTime;
+        if (minFeePeriodDuration <= duration) {
+            lastFeesCollected = nomin.feePool;
+            lastFeePeriodDuration = duration;
+            feePeriodStartTime = now;
+        }
     }
 
 

@@ -1,8 +1,6 @@
 FEATURES
 ========
-* Update fee rollover period time on state-modifying updates to nomin and havven contracts.
 * Implement logic for when fee period duration is changed.
-* Ability to halt liquidation if contract is recollateralised.
 * Events for everything
 * Factor out functionality from state, into proxy contract, for upgrades.
 * Determine how to get tokens into contract and working with vesting schedules that still accrue fees.
@@ -14,7 +12,6 @@ CLEANUP
 * rename "CollateralisedNomin", description, ticker symbol? (subject to Kain's approval)
 * Convert ints to a shared enum type in the court.
 * Fix licence headers
-* Desk check all functions.
 * Check unchecked sends and so on
 * Split fees for purchase versus sale?
 * ERC20 non-fee version for havvens (and perhaps FeeRC20 as well) to inherit from
@@ -39,6 +36,7 @@ CLEANUP
 VALIDATION
 ==========
 * Test suite.
+* Desk check all functions.
 * Ensure that timestamp dependency is not a problem at our time scales; but if it is, switch to block numbers.
 * Ensure functions correspond to correct state transitions in confiscation court
 * Fee distribution
