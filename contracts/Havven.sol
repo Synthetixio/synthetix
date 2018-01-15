@@ -141,7 +141,9 @@ contract Havven is ERC20FeeToken {
     // The time the current fee period began.
     uint public feePeriodStartTime;
     // Fee periods will roll over in no shorter a time than this.
-    uint public minFeePeriodDuration = 1 weeks;
+    uint public targetFeePeriodDuration = 1 weeks;
+    // And may not be set to be shorter than 1 day.
+    uint public constant minFeePeriodDuration = 1 days;
     // The actual measured duration of the last fee period.
     uing public lastFeePeriodDuration;
 
@@ -161,6 +163,18 @@ contract Havven is ERC20FeeToken {
     {
         nomin = new CollateralisedNomin(_owner, this, _oracle, _beneficiary, _initialEtherPrice);
     }
+
+
+    /* ========== SETTERS ========== */
+
+    function setTargetFeePeriodDuration(uint duration) 
+        public
+        postCheckFeePeriodRollover
+    {
+        require(duration >= minFeePeriodDuration);
+        targetFeePeriodDuration = duration;
+    }
+
 
     /* ========== VIEW FUNCTIONS ========== */
     
@@ -347,12 +361,16 @@ contract Havven is ERC20FeeToken {
      * save the duration of the last period and
      * the fees that were collected within it,
      * and start the new period.
+     * Check after the modified function has executed
+     * so that the contract state the caller saw before
+     * calling the function is the actual one they
+     * interact with.
      */
     modifier postCheckFeePeriodRollover
     {
         _;
         uint duration = now - feePeriodStartTime;
-        if (minFeePeriodDuration <= duration) {
+        if (targetFeePeriodDuration <= duration) {
             lastFeesCollected = nomin.feePool;
             lastFeePeriodDuration = duration;
             feePeriodStartTime = now;

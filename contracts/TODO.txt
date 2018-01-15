@@ -1,12 +1,16 @@
 FEATURES
 ========
-* Implement logic for when fee period duration is changed.
 * Events for everything
 * Factor out functionality from state, into proxy contract, for upgrades.
 * Determine how to get tokens into contract and working with vesting schedules that still accrue fees.
 
 CLEANUP
 =======
+* check access modifiers are correct
+* check that all state-updating modifiers post-update.
+* ensure everything that should be constant is constant.
+* Version numbers
+* Update readme
 * Better contract and function nomenclature.
 * Decide whether to apply postchecksCollateralisation modifier on nomin pool interactions
 * rename "CollateralisedNomin", description, ticker symbol? (subject to Kain's approval)
@@ -35,8 +39,8 @@ CLEANUP
 
 VALIDATION
 ==========
-* Test suite.
 * Desk check all functions.
+* Test suite.
 * Ensure that timestamp dependency is not a problem at our time scales; but if it is, switch to block numbers.
 * Ensure functions correspond to correct state transitions in confiscation court
 * Fee distribution
