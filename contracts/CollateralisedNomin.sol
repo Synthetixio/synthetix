@@ -177,7 +177,7 @@ contract CollateralisedNomin is ERC20FeeToken {
         lastPriceUpdate = now;
 
         // Each transfer of nomins incurs a 10 basis point fee by default.
-        setTransferFeeRate(UNIT / 1000);
+        transferFeeRate = UNIT / 1000;
 
         court = new ConfiscationCourt(_havven, this, _owner);
     }

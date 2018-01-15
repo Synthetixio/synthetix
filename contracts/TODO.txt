@@ -5,6 +5,7 @@ FEATURES
 
 CLEANUP
 =======
+* Reentrancy checks
 * Decide what to do about fallback functions
 * Proper docstring/javadoc style comments, parameter descriptions
 * http://solidity.readthedocs.io/en/latest/style-guide.html
