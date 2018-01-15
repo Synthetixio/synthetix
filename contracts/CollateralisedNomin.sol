@@ -498,6 +498,7 @@ contract CollateralisedNomin is ERC20FeeToken {
         onlyOwner
         payable
     {
+        require(isLiquidating());
         require(collateralisationRatio() > autoLiquidationRatio);
         liquidationTimestamp = ~uint(0);
         liquidationPeriod = defaultLiquidationPeriod;
