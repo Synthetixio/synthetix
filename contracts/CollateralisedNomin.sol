@@ -190,6 +190,7 @@ contract CollateralisedNomin is ERC20FeeToken {
         onlyOwner
     {
         oracle = newOracle;
+        OracleUpdated(newOracle);
     }
     
     // Set the beneficiary of this contract. Only the contract owner should be able to call this.
@@ -198,6 +199,7 @@ contract CollateralisedNomin is ERC20FeeToken {
         onlyOwner
     {
         beneficiary = newBeneficiary;
+        BeneficiaryUpdated(newBeneficiary);
     }
     
     function setPoolFeeRate(uint newFeeRate)
@@ -219,7 +221,7 @@ contract CollateralisedNomin is ERC20FeeToken {
     {
         etherPrice = price;
         lastPriceUpdate = now;
-        PriceUpdate(price);
+        PriceUpdated(price);
     }
 
     /* Update the period after which the price will be considered stale.
@@ -230,7 +232,7 @@ contract CollateralisedNomin is ERC20FeeToken {
         onlyOwner
     {
         stalePeriod = period;
-        StalePeriodUpdate(period);
+        StalePeriodUpdated(period);
     }
 
 
@@ -354,9 +356,16 @@ contract CollateralisedNomin is ERC20FeeToken {
         return lastPriceUpdate + stalePeriod < now;
     }
 
+    function isLiquidating()
+        public
+        view
+        returns (bool)
+    {
+        return liquidationTimestamp <= now;
+    }
+
 
     /* ========== MUTATIVE FUNCTIONS ========== */
-
 
     /* Override ERC20 transfer function in order to check
      * whether the sender or recipient account is frozen.
@@ -514,16 +523,7 @@ contract CollateralisedNomin is ERC20FeeToken {
         require(liquidationPeriod + extension <= maxLiquidationPeriod);
         liquidationPeriod += extension;
         LiquidationExtended(extension);
-    }
-    
-    /* True iff the liquidation block is earlier than the current block.*/
-    function isLiquidating()
-        public
-        view
-        returns (bool)
-    {
-        return liquidationTimestamp <= now;
-    }
+    } 
     
     /* Destroy this contract, returning all funds back to the beneficiary
      * wallet, may only be called after the contract has been in
@@ -567,7 +567,7 @@ contract CollateralisedNomin is ERC20FeeToken {
         onlyOwner
     {
         isFrozen[target] = false;
-        Unfrozen(target);
+        AccountUnfrozen(target);
     }
 
 
@@ -622,9 +622,13 @@ contract CollateralisedNomin is ERC20FeeToken {
 
     event Sale(address seller, uint nomins, uint eth);
 
-    event PriceUpdate(uint newPrice);
+    event PriceUpdated(uint newPrice);
 
-    event StalePeriodUpdate(uint newPeriod);
+    event StalePeriodUpdated(uint newPeriod);
+
+    event OracleUpdated(address newOracle);
+
+    event BeneficiaryUpdated(address newBeneficiary);
 
     event Liquidation();
 
@@ -638,5 +642,5 @@ contract CollateralisedNomin is ERC20FeeToken {
 
     event Confiscation(address indexed target, uint balance);
 
-    event Unfrozen(address indexed target);
+    event AccountUnfrozen(address indexed target);
 }
