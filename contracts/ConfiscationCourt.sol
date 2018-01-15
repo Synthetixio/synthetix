@@ -1,94 +1,155 @@
-/* This contract provides the nomin contract with a confiscation
- * facility, if enough havven owners vote to confiscate a target
- * account's nomins.
- * 
- * This is designed to provide a mechanism to respond to abusive
- * contracts such as nomin wrappers, which would allow users to
- * trade wrapped nomins without accruing fees on those transactions.
- * 
- * In order to prevent tyranny, an account may only be frozen if
- * users controlling at least 30% of the value of havvens participate,
- * and a two thirds majority is attained in that vote.
- * In order to prevent tyranny of the majority or mob justice,
- * confiscation actions are only approved if the havven foundation
- * approves the result.
- * This latter requirement may be lifted in future versions.
- * 
- * The foundation, or any user with a sufficient havven balance may bring a
- * confiscation action.
- * A vote lasts for a default period of one week, with a further confirmation
- * period in which the foundation approves the result.
- * The latter period may conclude early upon the foundation's decision to either
- * veto or approve the mooted confiscation action.
- * If the confirmation period elapses without the foundation making a decision,
- * the action fails.
- *
- * In order to vote, a havven holder must lock their havvens. They may cast
- * a vote for only one action at a time, but may cancel their vote
- * at any time except during the confirmation period, in order to unlock
- * their havven balance.
- * The weight of their vote will be proportional with their locked balance.
- *
- * Hence an action to confiscate the balance of a given address composes
- * a state machine built of the following states:
- *
- *
- * Waiting:
- *   - A user with standing brings a vote:
- *     If the target address is not frozen;
- *     initialise vote tallies to 0;
- *     transition to the Voting state.
- *
- * Voting:
- *   - The foundation vetoes the in-progress vote:
- *     transition to the Waiting state.
- * 
- *   - The voting period elapses:
- *     transition to the Confirmation state.
- *
- *   - An account votes (for or against the motion):
- *     the account is locked, its balance is added to the appropriate tally;
- *     remain in the Voting state.
- * 
- *   - An account cancels its previous vote: 
- *     the account is unlocked, its balance is deducted from the appropriate tally (if any);
- *     remain in the Voting state.
- *
- * Confirmation:
- *   - The foundation vetoes the completed vote:
- *     transition to the Waiting state.
- *
- *   - The foundation approves confiscation of the target account:
- *     freeze the target account, transfer its balance to the nomin fee pool;
- *     transition to the Waiting state.
- *
- *   - The confirmation period elapses:
- *     transition to the Waiting state.
- *
- *
- * User votes are not automatically cancelled upon the conclusion of a vote.
- * Therefore, after a vote comes to a conclusion, if a user wishes to free
- * their havven balance, they must manually cancel their vote in order to do so.
- * 
- * This procedure is designed to be relatively simple.
- * There are some things that can be added to enhance the functionality
- * at the expense of simplicity and efficiency:
- * 
- *   - Unique action IDs for clearer logging if multiple actions are mooted for a given account;
- *   - Democratic unfreezing of nomin accounts (induces multiple categories of vote)
- *   - Configurable per-vote durations;
- *   - Vote standing denominated in a fiat quantity rather than a quantity of havvens;
- *   - Confiscate from multiple addresses in a single vote;
- *   - Allow users to vote in multiple actions at once (up to a limit).
- * 
- * We might consider updating the contract with any of these features at a later date if necessary.
- */
+/*
+-----------------------------------------------------------------
+FILE INFORMATION
+-----------------------------------------------------------------
+file:       ConfiscationCourt.sol
+version:    0.2
+author:     Block8 Technologies, in partnership with Havven
+
+            Anton Jurisevic
+
+date:       2018-1-16
+
+checked:    -
+approved:   -
+
+-----------------------------------------------------------------
+MODULE DESCRIPTION
+-----------------------------------------------------------------
+
+
+This provides the nomin contract with a confiscation
+facility, if enough havven owners vote to confiscate a target
+account's nomins.
+
+This is designed to provide a mechanism to respond to abusive
+contracts such as nomin wrappers, which would allow users to
+trade wrapped nomins without accruing fees on those transactions.
+
+In order to prevent tyranny, an account may only be frozen if
+users controlling at least 30% of the value of havvens participate,
+and a two thirds majority is attained in that vote.
+In order to prevent tyranny of the majority or mob justice,
+confiscation actions are only approved if the havven foundation
+approves the result.
+This latter requirement may be lifted in future versions.
+
+The foundation, or any user with a sufficient havven balance may bring a
+confiscation action.
+A vote lasts for a default period of one week, with a further confirmation
+period in which the foundation approves the result.
+The latter period may conclude early upon the foundation's decision to either
+veto or approve the mooted confiscation action.
+If the confirmation period elapses without the foundation making a decision,
+the action fails.
+
+In order to vote, a havven holder must lock their havvens. They may cast
+a vote for only one action at a time, but may cancel their vote
+at any time except during the confirmation period, in order to unlock
+their havven balance.
+The weight of their vote will be proportional with their locked balance.
+
+Hence an action to confiscate the balance of a given address composes
+a state machine built of the following states:
+
+
+Waiting:
+  - A user with standing brings a vote:
+    If the target address is not frozen;
+    initialise vote tallies to 0;
+    transition to the Voting state.
+
+Voting:
+  - The foundation vetoes the in-progress vote:
+    transition to the Waiting state.
+
+  - The voting period elapses:
+    transition to the Confirmation state.
+
+  - An account votes (for or against the motion):
+    the account is locked, its balance is added to the appropriate tally;
+    remain in the Voting state.
+
+  - An account cancels its previous vote: 
+    the account is unlocked, its balance is deducted from the appropriate tally (if any);
+    remain in the Voting state.
+
+Confirmation:
+  - The foundation vetoes the completed vote:
+    transition to the Waiting state.
+
+  - The foundation approves confiscation of the target account:
+    freeze the target account, transfer its balance to the nomin fee pool;
+    transition to the Waiting state.
+
+  - The confirmation period elapses:
+    transition to the Waiting state.
+
+
+User votes are not automatically cancelled upon the conclusion of a vote.
+Therefore, after a vote comes to a conclusion, if a user wishes to free
+their havven balance, they must manually cancel their vote in order to do so.
+
+This procedure is designed to be relatively simple.
+There are some things that can be added to enhance the functionality
+at the expense of simplicity and efficiency:
+
+  - Unique action IDs for clearer logging if multiple actions are mooted for a given account;
+  - Democratic unfreezing of nomin accounts (induces multiple categories of vote)
+  - Configurable per-vote durations;
+  - Vote standing denominated in a fiat quantity rather than a quantity of havvens;
+  - Confiscate from multiple addresses in a single vote;
+  - Allow users to vote in multiple actions at once (up to a limit).
+
+We might consider updating the contract with any of these features at a later date if necessary.
+
+
+-----------------------------------------------------------------
+LICENCE INFORMATION
+-----------------------------------------------------------------
+
+Copyright (c) 2017 Havven.io
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+    
+-----------------------------------------------------------------
+RELEASE NOTES
+-----------------------------------------------------------------
+
+Initial scaffolding of nomin alpha contract. It will require
+a price oracle to run externally.
+
+-----------------------------------------------------------------
+Block8 Technologies is accelerating blockchain technology
+by incubating meaningful next-generation businesses.
+Find out more at https://www.block8.io/
+-----------------------------------------------------------------
+*/
+
 pragma solidity ^0.4.19;
+
 
 import "Owned.sol";
 import "SafeFixedMath.sol";
 import "CollateralisedNomin.sol";
 import "Havven.sol";
+
 
 contract ConfiscationCourt is Owned, SafeFixedMath {
 
@@ -162,7 +223,6 @@ contract ConfiscationCourt is Owned, SafeFixedMath {
         minStandingBalance = balance;
         MinStandingBalanceUpdated(balance);
     }
-
 
     function setVotingPeriod(uint duration)
         public
