@@ -382,7 +382,6 @@ contract ConfiscationCourt is Owned, SafeFixedMath {
         public
         onlyOwner
     {
-
         require(confirming(target));
         require(votePasses(target));
 

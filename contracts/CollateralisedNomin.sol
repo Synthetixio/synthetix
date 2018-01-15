@@ -8,7 +8,7 @@ author:     Block8 Technologies, in partnership with Havven
 
             Anton Jurisevic
 
-date:       2018-1-3
+date:       2018-1-16
 
 checked:    -
 approved:   -
@@ -18,6 +18,37 @@ MODULE DESCRIPTION
 -----------------------------------------------------------------
 
 Ether-backed nomin stablecoin contract.
+
+Issues nomins, which are tokens worth 1 USD each. They are backed
+by a pool of ether collateral, so that if a user has nomins, they may
+redeem them for ether from the pool, or if they want to obtain nomins,
+they may pay ether into the pool in order to do so. 
+ 
+The supply of nomins that may be in circulation at any time is limited.
+The contract owner may increase this quantity, but only if they provide
+ether to back it. The backing the owner provides at issuance must 
+keep each nomin at least 2x overcollateralised.
+The owner may also destroy nomins in the pool, which is potential avenue
+by which to maintain healthy collateralisation levels, as it reduces
+supply without withdrawing ether collateral.
+
+Ether price is continually updated by an external oracle, and the value
+of the backing is computed on this basis. To ensure the integrity of
+this system, if the contract's price has not been updated recently enough,
+it will temporarily disable itself until it receives more price information.
+
+The contract owner may at any time initiate contract liquidation.
+During the liquidation period, most contract functions will be deactivated.
+No new nomins may be issued or bought, but users may sell nomins back
+to the system.
+If the system's collateral falls below a specified level, then anyone
+may initiate liquidation.
+
+After the liquidation period has elapsed, which is initially 90 days,
+the owner may destroy the contract, transferring any remaining collateral
+to a nominated beneficiary address.
+This liquidation period may be extended up to a maximum of 180 days.
+If the contract is recollateralised, the owner may terminate liquidation.
 
 -----------------------------------------------------------------
 LICENCE INFORMATION
@@ -59,46 +90,12 @@ Find out more at https://www.block8.io/
 
 pragma solidity ^0.4.19;
 
+
 import "ERC20FeeToken.sol";
 import "Havven.sol";
 import "ConfiscationCourt.sol";
 
-/* Issues nomins, which are tokens worth 1 USD each. They are backed
- * by a pool of ether collateral, so that if a user has nomins, they may
- * redeem them for ether from the pool, or if they want to obtain nomins,
- * they may pay ether into the pool in order to do so. 
- * 
- * The supply of nomins that may be in circulation at any time is limited.
- * The contract owner may increase this quantity, but only if they provide
- * ether to back it. The backing they provide must be at least 1-to-1
- * nomin to fiat value of the ether collateral. In this way each nomin is
- * at least 2x overcollateralised. The owner may also destroy nomins
- * in the pool, but they must respect the collateralisation requirement.
- *
- * Ether price is continually updated by an external oracle, and the value
- * of the backing is computed on this basis. To ensure the integrity of
- * this system, if the contract's price has not been updated recently enough,
- * it will temporarily disable itself until it receives more price information.
- *
- * The contract owner may at any time initiate contract liquidation.
- * During the liquidation period, most contract functions will be deactivated.
- * No new nomins may be issued or bought, but users may sell nomins back
- * to the system.
- * After the liquidation period has elapsed, which is initially 90 days,
- * the owner may destroy the contract, transferring any remaining collateral
- * to a nominated beneficiary address.
- * This liquidation period may be extended up to a maximum of 180 days.
- *
- * The contract's owner should be the Havven foundation multisig command contract.
- * Only the owner may perform the following actions:
- *   - Setting the owner;
- *   - Setting the oracle;
- *   - Setting the beneficiary;
- *   - Issuing new nomins into the pool;
- *   - Burning nomins in the pool;
- *   - Initiating and extending liquidation;
- *   - Selfdestructing the contract
- */
+
 contract CollateralisedNomin is ERC20FeeToken {
 
     /* ========== STATE VARIABLES ========== */
@@ -181,6 +178,7 @@ contract CollateralisedNomin is ERC20FeeToken {
 
         court = new ConfiscationCourt(_havven, this, _owner);
     }
+
 
     /* ========== SETTERS ========== */
    
@@ -573,21 +571,18 @@ contract CollateralisedNomin is ERC20FeeToken {
 
     /* ========== MODIFIERS ========== */
 
-    // Throw an exception if the caller is not the contract's designated price oracle.
     modifier onlyOracle
     {
         require(msg.sender == oracle);
         _;
     }
 
-    // Throw an exception if the caller is not the contract's designated price oracle.
     modifier onlyCourt
     {
         require(ConfiscationCourt(msg.sender) == court);
         _;
     }
 
-    // Throw an exception if the contract is currently undergoing liquidation.
     modifier notLiquidating
     {
         require(!isLiquidating());
