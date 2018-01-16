@@ -13,7 +13,7 @@ CLEANUP
 * Proper docstring/javadoc style comments, parameter descriptions
 * http://solidity.readthedocs.io/en/latest/style-guide.html
 * check access modifiers are correct
-* check that all state-updating modifiers post-update.
+* check that all state-updating modifiers operate post-function-call.
 * ensure everything that should be constant is constant.
 * Version numbers
 * Update readme
@@ -21,10 +21,8 @@ CLEANUP
 * Decide whether to apply postchecksCollateralisation modifier on nomin pool interactions
 * rename "CollateralisedNomin", description, ticker symbol? (subject to Kain's approval)
 * Convert ints to a shared enum type in the court.
-* Fix licence headers
 * Check unchecked sends and so on
 * Split fees for purchase versus sale?
-* ERC20 non-fee version for havvens (and perhaps FeeRC20 as well) to inherit from
 * make sure everything that should be settable has a setter
 * make sure everything that should be SDable is SDable
 * make sure everything that needs an event has one
