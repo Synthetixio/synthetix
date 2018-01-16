@@ -8,17 +8,17 @@ author:     Block8 Technologies, in partnership with Havven
 
             Anton Jurisevic
 
-date:       2018-1-14
+date:       2018-1-16
 
-checked:    Samuel Brooks
-approved:   Samuel Brooks
+checked:    -
+approved:   -
 
 -----------------------------------------------------------------
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
 An ERC20-compliant token which also has a configurable fee rate
-that charged on its transfers.
+charged on its transfers.
 
 -----------------------------------------------------------------
 LICENCE INFORMATION
