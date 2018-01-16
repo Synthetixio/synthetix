@@ -32,6 +32,10 @@ The owner may also destroy nomins in the pool, which is potential avenue
 by which to maintain healthy collateralisation levels, as it reduces
 supply without withdrawing ether collateral.
 
+A fee of 10 basis points is charged on nomin transfers and transferred
+into a common pot, which havven holders may withdraw from once per
+fee period.
+
 Ether price is continually updated by an external oracle, and the value
 of the backing is computed on this basis. To ensure the integrity of
 this system, if the contract's price has not been updated recently enough,
