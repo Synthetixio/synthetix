@@ -441,7 +441,7 @@ contract CollateralisedNomin is ERC20FeeToken {
                 msg.value == purchaseCostEther(n));
         // sub requires that nominPool >= n
         nominPool = safeSub(nominPool, n);
-        balances[msg.sender] = safeAdd(balances[msg.sender], n);
+        balanceOf[msg.sender] = safeAdd(balanceOf[msg.sender], n);
         Purchase(msg.sender, n, msg.value);
     }
     
@@ -458,7 +458,7 @@ contract CollateralisedNomin is ERC20FeeToken {
         // Price staleness check occurs inside the call to fiatBalance
         require(fiatBalance() >= proceeds);
         // sub requires that the balance is greater than n
-        balances[msg.sender] = safeSub(balances[msg.sender], n);
+        balanceOf[msg.sender] = safeSub(balanceOf[msg.sender], n);
         nominPool = safeAdd(nominPool, n);
         msg.sender.transfer(proceeds);
         Sale(msg.sender, n, proceeds);
@@ -552,9 +552,9 @@ contract CollateralisedNomin is ERC20FeeToken {
         require(court.votePasses(target));
 
         // Confiscate the balance in the account.
-        uint balance = balances[target];
+        uint balance = balanceOf[target];
         feePool = safeAdd(feePool, balance);
-        balances[target] = 0;
+        balanceOf[target] = 0;
         // Freeze the account.
         isFrozen[target] = true;
         Confiscation(target, balance);

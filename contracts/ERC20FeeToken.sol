@@ -70,7 +70,7 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
     uint public totalSupply;
     string public name;
     string public symbol;
-    mapping(address => uint) balances;
+    mapping(address => uint) balanceOf;
     mapping(address => mapping (address => uint256)) allowances;
 
     // A percentage fee charged on each transfer.
@@ -96,7 +96,7 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
         name = _name;
         symbol = _symbol;
         totalSupply = initialSupply;
-        balances[initialBeneficiary] = initialSupply;
+        balanceOf[initialBeneficiary] = initialSupply;
         feeAuthority = _feeAuthority;
     }
 
@@ -114,14 +114,6 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
 
 
     /* ========== VIEW FUNCTIONS ========== */
-
-    function balanceOf(address _account)
-        public
-        view
-        returns (uint)
-    {
-        return balances[_account];
-    }
 
     // Return the fee charged on top in order to transfer _value worth of tokens.
     function transferFeeIncurred(uint _value) 
@@ -169,8 +161,8 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
         }
 
         // Insufficient balance will be handled by the safe subtraction.
-        balances[msg.sender] = safeSub(balances[msg.sender], totalCharge);
-        balances[_to] = safeAdd(balances[_to], _value);
+        balanceOf[msg.sender] = safeSub(balanceOf[msg.sender], totalCharge);
+        balanceOf[_to] = safeAdd(balanceOf[_to], _value);
         feePool = safeAdd(feePool, fee);
 
         return true;
@@ -195,9 +187,9 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
         }
 
         // Insufficient balance will be handled by the safe subtraction.
-        balances[_from] = safeSub(balances[_from], totalCharge);
+        balanceOf[_from] = safeSub(balanceOf[_from], totalCharge);
         allowances[_from][msg.sender] = safeSub(allowances[_from][msg.sender], totalCharge);
-        balances[_to] = safeAdd(balances[_to], _value);
+        balanceOf[_to] = safeAdd(balanceOf[_to], _value);
         feePool = safeAdd(feePool, fee);
         
         return true;
@@ -219,7 +211,7 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
         require(msg.sender == feeAuthority);
         // Safe subtraction ensures an exception is thrown if the balance is insufficient.
         feePool = safeSub(feePool, value);
-        balances[account] = safeAdd(balances[account], value);
+        balanceOf[account] = safeAdd(balanceOf[account], value);
         FeeWithdrawal(account, value);
     }
 
