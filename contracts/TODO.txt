@@ -6,6 +6,8 @@ FEATURES
 
 CLEANUP
 =======
+* Check if can avoid ERC20 inheriting from SafeFixedMath due to inlined UNIT, and they only use addition and subtraction. (Maybe "Using For" or libs)
+* Explicitly label pre- and post-condition checkers
 * Check that safemath library separate checks are necessary (or maybe not?)
 * What happens with fee computations when multiple transactions occur in one block (zero time difference)
 * Reentrancy checks
@@ -40,11 +42,14 @@ CLEANUP
 * SafeFixedMath to a library?
 * tabs to spaces
 * Gas optimisation
+* Add parameter names in contract ABIs for solidity-generated functions.
+* check if modifiers are less efficient than inline conditions, reintroduce them if they aren't, maybe even factor all preconditions out into modifiers.
 
 VALIDATION
 ==========
 * Desk check all functions.
 * Test suite.
+* Specify pre- and post-conditions for test suites (probably can't validate these at runtime due to cost.)
 * Ensure that timestamp dependency is not a problem at our time scales; but if it is, switch to block numbers.
 * Ensure functions correspond to correct state transitions in confiscation court
 * Fee distribution

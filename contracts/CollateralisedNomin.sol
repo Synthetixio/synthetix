@@ -215,8 +215,10 @@ contract CollateralisedNomin is ERC20FeeToken {
      *     Not called by the oracle. */
     function setPrice(uint price)
         public
-        onlyOracle
     {
+        // Should be callable only by the oracle.
+        require(msg.sender == oracle);
+
         etherPrice = price;
         lastPriceUpdate = now;
         PriceUpdated(price);
@@ -543,8 +545,10 @@ contract CollateralisedNomin is ERC20FeeToken {
 
     function confiscateBalance(address target) 
         public
-        onlyCourt
     {
+        // Should be callable only by the confiscation court.
+        require(ConfiscationCourt(msg.sender) == court);
+
         // These checks are strictly unnecessary,
         // since they are already checked in the court contract itself.
         // I leave them in only out of paranoia.
@@ -570,18 +574,6 @@ contract CollateralisedNomin is ERC20FeeToken {
 
 
     /* ========== MODIFIERS ========== */
-
-    modifier onlyOracle
-    {
-        require(msg.sender == oracle);
-        _;
-    }
-
-    modifier onlyCourt
-    {
-        require(ConfiscationCourt(msg.sender) == court);
-        _;
-    }
 
     modifier notLiquidating
     {
