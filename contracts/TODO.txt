@@ -1,5 +1,6 @@
 FEATURES
 ========
+* Modify liquidation sell to return a fraction of remaining eth if not enough USD in the system. (maybe autoliquidate on burn/issue/buy/sell now actually)
 * Factor out functionality from state, into proxy contract, for upgrades.
 * Determine how to get tokens into contract and working with vesting schedules that still accrue fees.
 * Confirm with Kain final values for all contract parameters.
@@ -22,7 +23,7 @@ CLEANUP
 * Update readme
 * Better contract and function nomenclature.
 * Decide whether to apply postchecksCollateralisation modifier on nomin pool interactions
-* rename "CollateralisedNomin", description, ticker symbol? (subject to Kain's approval)
+* rename "EtherNomin", description, ticker symbol? (subject to Kain's approval)
 * Check relative performance of enums vs ints in the court.
 * Check unchecked sends and so on
 * Split fees for purchase versus sale?
