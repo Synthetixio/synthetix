@@ -3,7 +3,7 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       CollateralisedNomin.sol
-version:    0.3
+version:    0.2
 author:     Block8 Technologies, in partnership with Havven
 
             Anton Jurisevic
@@ -77,9 +77,6 @@ SOFTWARE.
 -----------------------------------------------------------------
 RELEASE NOTES
 -----------------------------------------------------------------
-
-Initial scaffolding of nomin alpha contract. It will require
-a price oracle to run externally.
 
 -----------------------------------------------------------------
 Block8 Technologies is accelerating blockchain technology

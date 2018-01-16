@@ -17,7 +17,6 @@ approved:   -
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
-
 This provides the nomin contract with a confiscation
 facility, if enough havven owners vote to confiscate a target
 account's nomins.
@@ -103,7 +102,6 @@ at the expense of simplicity and efficiency:
 
 We might consider updating the contract with any of these features at a later date if necessary.
 
-
 -----------------------------------------------------------------
 LICENCE INFORMATION
 -----------------------------------------------------------------
@@ -131,9 +129,6 @@ SOFTWARE.
 -----------------------------------------------------------------
 RELEASE NOTES
 -----------------------------------------------------------------
-
-Initial scaffolding of nomin alpha contract. It will require
-a price oracle to run externally.
 
 -----------------------------------------------------------------
 Block8 Technologies is accelerating blockchain technology
