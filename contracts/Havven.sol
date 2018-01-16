@@ -126,11 +126,12 @@ Find out more at https://www.block8.io/
 pragma solidity ^0.4.19;
 
 
-import "ERC20FeeToken.sol";
+import "ERC20Token.sol";
+import "Owned.sol";
 import "CollateralisedNomin.sol";
 
 
-contract Havven is ERC20FeeToken {
+contract Havven is ERC20Token, Owned {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -165,11 +166,10 @@ contract Havven is ERC20FeeToken {
 
     function Havven(address _oracle, address _beneficiary,
                     uint _initialEtherPrice, address _owner)
-        ERC20FeeToken("Havven", "HAV",
-                      100000000 * UNIT, // initial supply is one hundred million tokens
-                      this,
-                      0,
-                      _owner, _owner)
+        ERC20Token("Havven", "HAV",
+                   100000000 * UNIT, // initial supply is one hundred million tokens
+                   this)
+        Owned(_owner)
         public
     {
         feePeriodStartTime = now;
@@ -216,8 +216,8 @@ contract Havven is ERC20FeeToken {
         // Disallow transfers by accounts with an active vote.
         require(!hasVoted(msg.sender));
 
-        uint senderPreBalance = balances[msg.sender];
-        uint recipientPreBalance = balances[_to];
+        uint senderPreBalance = balanceOf[msg.sender];
+        uint recipientPreBalance = balanceOf[_to];
 
         // Perform the transfer: if there is a problem,
         // an exception will be thrown in super.transfer().
@@ -245,8 +245,8 @@ contract Havven is ERC20FeeToken {
         // Disallow transfers by accounts with an active vote.
         require(!hasVoted(_from));
 
-        uint senderPreBalance = balances[_from];
-        uint recipientPreBalance = balances[_to];
+        uint senderPreBalance = balanceOf[_from];
+        uint recipientPreBalance = balanceOf[_to];
 
         // Perform the transfer: if there is a problem,
         // an exception will be thrown in super.transferFrom().
@@ -307,7 +307,7 @@ contract Havven is ERC20FeeToken {
             if (timeToRollover >= lastFeePeriodDuration) {
                 lastPeriodFeeRights[account] = finalBalance;
             } else {
-                lastPeriodFeeRights[account] = safeDiv(safeAdd(feeRights[account], safeMul(balances[account], timeToRollover)), lastFeePeriodDuration);
+                lastPeriodFeeRights[account] = safeDiv(safeAdd(feeRights[account], safeMul(balanceOf[account], timeToRollover)), lastFeePeriodDuration);
             }
 
             // Update current period fee entitlement total and reset the timestamp.
@@ -326,7 +326,7 @@ contract Havven is ERC20FeeToken {
         // Do not deposit fees into frozen accounts.
         require(!nomin.isFrozen(msg.sender));
 
-        rolloverFee(msg.sender, lastTransferTimestamps[msg.sender], balances[msg.sender]);
+        rolloverFee(msg.sender, lastTransferTimestamps[msg.sender], balanceOf[msg.sender]);
         uint feesOwed = safeDiv(safeMul(lastPeriodFeeRights[msg.sender], lastFeesCollected), totalSupply);
         nomin.withdrawFee(msg.sender, feesOwed);
         lastPeriodFeeRights[msg.sender] = 0;

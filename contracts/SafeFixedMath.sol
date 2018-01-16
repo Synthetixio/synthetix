@@ -61,6 +61,7 @@ Find out more at https://www.block8.io/
 
 pragma solidity ^0.4.19;
 
+
 /* Safely manipulate unsigned fixed-point decimals at a given precision level. 
  * All functions accepting uints in this contract and derived contracts
  * are taken to be such fixed point decimals (including fiat, ether, and
