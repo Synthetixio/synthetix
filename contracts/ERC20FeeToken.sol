@@ -64,14 +64,16 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
 
     /* ========== STATE VARIABLES ========== */
 
-    // ERC20 token data: total supply, balances, proxy allowances.
-    uint supply = 0;
+    // ERC20 token data
+    uint public totalSupply;
     mapping(address => uint) balances;
     mapping(address => mapping (address => uint256)) allowances;
+    string public name;
+    string public symbol;
 
     // A percentage fee charged on each transfer.
     // Zero by default, but may be set in derived contracts.
-    uint public transferFeeRate = 0;
+    uint public transferFeeRate;
 
     // Collected fees sit here until they are distributed.
     uint public feePool = 0;
@@ -82,11 +84,14 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
 
     /* ========== CONSTRUCTOR ========== */
 
-    function ERC20FeeToken(address _owner, address _feeAuthority)
+    function ERC20FeeToken(address _owner, address _feeAuthority,
+                           string _name, string _symbol)
         Owned(_owner)
         public
     {
         feeAuthority = _feeAuthority;
+        name = _name;
+        symbol = _symbol;
     }
 
 
@@ -103,15 +108,7 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
 
 
     /* ========== VIEW FUNCTIONS ========== */
-   
-    function totalSupply()
-        public
-        view
-        returns (uint)
-    {
-        return supply;
-    }
- 
+
     function balanceOf(address _account)
         public
         view

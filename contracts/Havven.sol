@@ -165,7 +165,8 @@ contract Havven is ERC20FeeToken {
 
     function Havven(address _owner, address _oracle,
                     address _beneficiary, uint _initialEtherPrice)
-        ERC20FeeToken(_owner, _owner)
+        ERC20FeeToken(_owner, _owner,
+                      0, "Havven", "HAV")
         public
     {
         feePeriodStartTime = now;
