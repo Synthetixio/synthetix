@@ -150,6 +150,10 @@ contract ConfiscationCourt is Owned, SafeFixedMath {
 
     /* ========== STATE VARIABLES ========== */
 
+    // The addresses of the token contracts this confiscation court interacts with.
+    Havven public havven;
+    CollateralisedNomin public nomin;
+
     // The minimum havven balance required to be considered to have standing
     // to begin confiscation proceedings.
     uint public minStandingBalance = 100 * UNIT;
@@ -193,9 +197,11 @@ contract ConfiscationCourt is Owned, SafeFixedMath {
     mapping(address => uint) public votesFor;
     mapping(address => uint) public votesAgainst;
 
-    // The addresses of the havven and nomin contracts.
-    Havven public havven;
-    CollateralisedNomin public nomin;
+    // The possible vote types.
+    // Absention: not participating in a vote; This is the default value.
+    // Yea: voting in favour of an action.
+    // Nay: voting against an action.
+    enum Vote {Abstention, Yea, Nay}
 
 
     /* ========== CONSTRUCTOR ========== */
@@ -362,8 +368,9 @@ contract ConfiscationCourt is Owned, SafeFixedMath {
         require(!havven.hasVoted(msg.sender));
 
         // The user should not have voted previously without cancelling
-        // that vote; the check inside havven.setVotedFor() ensures this.
-        havven.setVotedFor(msg.sender, target);
+        // that vote; the previous check ensures this, along with
+        // the one inside havven.setVotedYea().
+        havven.setVotedYea(msg.sender, target);
         uint balance = havven.balanceOf(msg.sender);
         votesFor[msg.sender] += balance;
         VoteFor(msg.sender, target, balance);
@@ -382,8 +389,9 @@ contract ConfiscationCourt is Owned, SafeFixedMath {
         require(!havven.hasVoted(msg.sender));
 
         // The user should not have voted previously without cancelling
-        // that vote; the check inside havven.setVotedAgainst() ensures this.
-        havven.setVotedAgainst(msg.sender, target);
+        // that vote; the previous check ensures this, along with
+        // the one inside havven.setVotedNay().
+        havven.setVotedNay(msg.sender, target);
         uint balance = havven.balanceOf(msg.sender);
         votesAgainst[msg.sender] += balance;
         VoteAgainst(msg.sender, target, balance);
@@ -403,11 +411,11 @@ contract ConfiscationCourt is Owned, SafeFixedMath {
         // If we are not voting, there is no reason to update the vote totals.
         if (voting(target)) {
             // This call to getVote() must come before the later call to cancelVote(), obviously.
-            int vote = havven.votes(msg.sender);
-            if (vote == 1) {
+            Vote vote = havven.votes(msg.sender);
+            if (vote == Vote.Yea) {
                 votesFor[msg.sender] -= havven.balanceOf(msg.sender);
             }
-            else if (vote == -1) {
+            else if (vote == Vote.Nay) {
                 votesAgainst[msg.sender] -= havven.balanceOf(msg.sender);
             }
         }

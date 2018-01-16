@@ -23,7 +23,7 @@ CLEANUP
 * Better contract and function nomenclature.
 * Decide whether to apply postchecksCollateralisation modifier on nomin pool interactions
 * rename "CollateralisedNomin", description, ticker symbol? (subject to Kain's approval)
-* Convert ints to a shared enum type in the court.
+* Check relative performance of enums vs ints in the court.
 * Check unchecked sends and so on
 * Split fees for purchase versus sale?
 * make sure everything that should be settable has a setter
@@ -42,6 +42,7 @@ CLEANUP
 * ERC777 (if backwards compatible with ERC20)
 * SafeFixedMath to a library?
 * tabs to spaces
+* Eliminate overwide lines
 * Gas optimisation
 * Add parameter names in contract ABIs for solidity-generated functions.
 * check if modifiers are less efficient than inline conditions, reintroduce them if they aren't, maybe even factor all preconditions out into modifiers.
