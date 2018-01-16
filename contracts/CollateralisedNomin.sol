@@ -118,12 +118,8 @@ contract CollateralisedNomin is ERC20FeeToken {
     // Foundation wallet for funds to go to post liquidation.
     address public beneficiary;
 
-    // ERC20 token information.
-    string public constant name = "Collateralised Nomin";
-    string public constant symbol = "CNOM";
-
     // Nomins in the pool ready to be sold.
-    uint public pool = 0;
+    uint public nominPool = 0;
     
     // Impose a 50 basis-point fee for buying from and selling to the nomin pool.
     uint public poolFeeRate = UNIT / 200;
@@ -165,7 +161,9 @@ contract CollateralisedNomin is ERC20FeeToken {
     function CollateralisedNomin(address _owner, Havven _havven,
                                  address _oracle, address _beneficiary,
                                  uint initialEtherPrice)
-        ERC20FeeToken(_owner, address(_havven))
+        ERC20FeeToken(_owner, address(_havven),
+                      UNIT / 1000, // nomin transfers incur a 10 bp fee
+                      "Nomin", "NOM")
         public
     {
         oracle = _oracle;
@@ -173,9 +171,6 @@ contract CollateralisedNomin is ERC20FeeToken {
         beneficiary = _beneficiary;
         etherPrice = initialEtherPrice;
         lastPriceUpdate = now;
-
-        // Each transfer of nomins incurs a 10 basis point fee by default.
-        transferFeeRate = UNIT / 1000;
 
         court = new ConfiscationCourt(_havven, this, _owner);
     }
@@ -404,7 +399,7 @@ contract CollateralisedNomin is ERC20FeeToken {
         // or the overflow would cause the requirement not to be satisfied.
         require(fiatBalance() >= safeMul(supply + n, collatRatioMinimum));
         supply = safeAdd(supply, n);
-        pool = safeAdd(pool, n);
+        nominPool = safeAdd(nominPool, n);
         Issuance(n, msg.value);
     }
 
@@ -418,8 +413,8 @@ contract CollateralisedNomin is ERC20FeeToken {
         onlyOwner
     {
         // Require that there are enough nomins in the accessible pool to burn; and
-        require(pool >= n);
-        pool = safeSub(pool, n);
+        require(nominPool >= n);
+        nominPool = safeSub(nominPool, n);
         supply = safeSub(supply, n);
         Burning(n);
     }
@@ -440,8 +435,8 @@ contract CollateralisedNomin is ERC20FeeToken {
         // Price staleness check occurs inside the call to purchaseEtherCost.
         require(n >= purchaseMininum &&
                 msg.value == purchaseCostEther(n));
-        // sub requires that pool >= n
-        pool = safeSub(pool, n);
+        // sub requires that nominPool >= n
+        nominPool = safeSub(nominPool, n);
         balances[msg.sender] = safeAdd(balances[msg.sender], n);
         Purchase(msg.sender, n, msg.value);
     }
@@ -460,7 +455,7 @@ contract CollateralisedNomin is ERC20FeeToken {
         require(fiatBalance() >= proceeds);
         // sub requires that the balance is greater than n
         balances[msg.sender] = safeSub(balances[msg.sender], n);
-        pool = safeAdd(pool, n);
+        nominPool = safeAdd(nominPool, n);
         msg.sender.transfer(proceeds);
         Sale(msg.sender, n, proceeds);
     }
