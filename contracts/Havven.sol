@@ -167,7 +167,7 @@ contract Havven is ERC20Token, Owned {
     function Havven(address _oracle, address _beneficiary,
                     uint _initialEtherPrice, address _owner)
         ERC20Token("Havven", "HAV",
-                   100000000 * UNIT, // initial supply is one hundred million tokens
+                   1e8 * UNIT, // initial supply is one hundred million tokens
                    this)
         Owned(_owner)
         public
