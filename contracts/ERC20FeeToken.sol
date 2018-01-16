@@ -98,6 +98,7 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
         symbol = _symbol;
         totalSupply = initialSupply;
         balanceOf[initialBeneficiary] = initialSupply;
+        transferFeeRate = _feeRate;
         feeAuthority = _feeAuthority;
     }
 
