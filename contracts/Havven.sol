@@ -128,7 +128,7 @@ pragma solidity ^0.4.19;
 
 import "ERC20Token.sol";
 import "Owned.sol";
-import "CollateralisedNomin.sol";
+import "EtherNomin.sol";
 import "ConfiscationCourt.sol";
 
 
@@ -160,7 +160,7 @@ contract Havven is ERC20Token, Owned {
     // of the last fee rollover (feePeriodStartTime).
     uint public lastFeesCollected;
 
-    CollateralisedNomin public nomin;
+    EtherNomin public nomin;
 
 
     /* ========== CONSTRUCTOR ========== */
@@ -174,10 +174,10 @@ contract Havven is ERC20Token, Owned {
         public
     {
         feePeriodStartTime = now;
-        nomin = new CollateralisedNomin(this, _oracle,
-                                        _beneficiary,
-                                        _initialEtherPrice,
-                                        _owner);
+        nomin = new EtherNomin(this, _oracle,
+                               _beneficiary,
+                               _initialEtherPrice,
+                               _owner);
     }
 
 
@@ -381,7 +381,7 @@ contract Havven is ERC20Token, Owned {
 
     modifier onlyNominContract
     {
-        require(CollateralisedNomin(msg.sender) == nomin);
+        require(EtherNomin(msg.sender) == nomin);
         _;
     }
 
