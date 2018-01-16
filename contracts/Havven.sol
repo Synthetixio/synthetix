@@ -23,6 +23,12 @@ An owner of havvens is entitled to a share in the fees levied on
 nomin transactions, and additionally may participate in nomin
 confiscation votes.
 
+After a period terminates, the duration and fee take for that 
+period are computed and saved, and the next period begins.
+Thus an account may only withdraw the fees owed to them for the previous
+period, and may only do so once per period.
+Any unclaimed fees roll over into the common pot in the next period.
+
 The fee entitlement of a havven holder is their average havven balance over
 the last fee period. This is computed by measuring the area under the graph of
 a user's balance over time, and then when fees are distributed,
