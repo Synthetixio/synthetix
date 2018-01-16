@@ -27,7 +27,7 @@ they may pay ether into the pool in order to do so.
 The supply of nomins that may be in circulation at any time is limited.
 The contract owner may increase this quantity, but only if they provide
 ether to back it. The backing the owner provides at issuance must 
-keep each nomin at least 2x overcollateralised.
+keep each nomin at least twice overcollateralised.
 The owner may also destroy nomins in the pool, which is potential avenue
 by which to maintain healthy collateralisation levels, as it reduces
 supply without withdrawing ether collateral.
@@ -543,6 +543,9 @@ contract CollateralisedNomin is ERC20FeeToken {
         selfdestruct(beneficiary);
     } 
 
+    /* Transfer the target account's balance to the fee pool
+     * and freeze its participation in further transactions.
+     */
     function confiscateBalance(address target) 
         public
     {
@@ -551,7 +554,7 @@ contract CollateralisedNomin is ERC20FeeToken {
 
         // These checks are strictly unnecessary,
         // since they are already checked in the court contract itself.
-        // I leave them in only out of paranoia.
+        // I leave them in out of paranoia.
         require(court.confirming(target));
         require(court.votePasses(target));
 

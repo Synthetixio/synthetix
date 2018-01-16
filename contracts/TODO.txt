@@ -6,6 +6,7 @@ FEATURES
 
 CLEANUP
 =======
+* Merge double CALLs in CollateralisedNomin.confiscateBalance and similar elsewhere
 * Check if can avoid ERC20 inheriting from SafeFixedMath due to inlined UNIT, and they only use addition and subtraction. (Maybe "Using For" or libs)
 * Explicitly label pre- and post-condition checkers
 * Check that safemath library separate checks are necessary (or maybe not?)
