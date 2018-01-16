@@ -84,7 +84,9 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
 
     /* ========== CONSTRUCTOR ========== */
 
-    function ERC20FeeToken(address _owner, address _feeAuthority,
+    function ERC20FeeToken(address _owner,
+                           address _feeAuthority,
+                           uint _feeRate,
                            string _name, string _symbol)
         Owned(_owner)
         public
