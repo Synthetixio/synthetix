@@ -129,6 +129,7 @@ pragma solidity ^0.4.19;
 import "ERC20Token.sol";
 import "Owned.sol";
 import "CollateralisedNomin.sol";
+import "ConfiscationCourt.sol";
 
 
 contract Havven is ERC20Token, Owned {
@@ -139,10 +140,10 @@ contract Havven is ERC20Token, Owned {
     mapping(address => uint) lastPeriodFeeRights; // range: decimals; units: havvens (i.e. feeRights divided through by duration)
     mapping(address => uint) lastTransferTimestamps; // range: naturals
 
-    // Whether a given account is participating in a confiscation vote.
-    // 1 <=> a vote for; -1 <=> a vote against.
-    // If nonzero, user may not transfer funds.
-    mapping(address => int) public votes; 
+    // A given account's vote in some confiscation action.
+    // This requires the default value of the Vote enum to correspond to an abstention.
+    // If an account's vote is not an abstention, it may not transfer funds.
+    mapping(address => ConfiscationCourt.Vote) public votes; 
     // The vote a user last participated in.
     mapping(address => address) public voteTargets;
 
@@ -199,7 +200,7 @@ contract Havven is ERC20Token, Owned {
         view
         returns (bool)
     {
-        return votes[account] != 0;
+        return votes[account] != ConfiscationCourt.Vote.Abstention;
     }
 
 
@@ -337,12 +338,12 @@ contract Havven is ERC20Token, Owned {
      * action on the target account.
      * The account must not have an active vote in any action.
      */
-    function setVotedFor(address account, address target)
+    function setVotedYea(address account, address target)
         public
         onlyNominContract
     {
         require(voteTargets[account] == 0);
-        votes[account] = 1;
+        votes[account] = ConfiscationCourt.Vote.Yea;
         voteTargets[account] = target;
     }
 
@@ -350,12 +351,12 @@ contract Havven is ERC20Token, Owned {
      * action on the target account.
      * The account must not have an active vote in any action.
      */
-    function setVotedAgainst(address account, address target)
+    function setVotedNay(address account, address target)
         public
         onlyNominContract
     {
         require(voteTargets[account] == 0);
-        votes[account] = -1;
+        votes[account] = ConfiscationCourt.Vote.Nay;
         voteTargets[account] = target;
     }
 
@@ -371,8 +372,8 @@ contract Havven is ERC20Token, Owned {
         onlyNominContract
     {
         require(voteTargets[account] == target);
+        votes[account] = ConfiscationCourt.Vote.Abstention;
         voteTargets[account] = 0;
-        votes[account] = 0;
     }
 
 
