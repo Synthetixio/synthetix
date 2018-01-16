@@ -47,7 +47,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-    
+
 -----------------------------------------------------------------
 RELEASE NOTES
 -----------------------------------------------------------------
@@ -67,13 +67,13 @@ pragma solidity ^0.4.19;
  * are taken to be such fixed point decimals (including fiat, ether, and
  * nomin quantities). */
 contract SafeFixedMath {
-    
+
     // Number of decimal places in the representation.
     uint public constant decimals = 18;
 
     // The number representing 1.0.
     uint public constant UNIT = 10 ** decimals;
-    
+
     /* True iff adding x and y will not overflow. */
     function addIsSafe(uint x, uint y) 
         pure
@@ -92,7 +92,7 @@ contract SafeFixedMath {
         require(addIsSafe(x, y));
         return x + y;
     }
-    
+
     /* True iff subtracting y from x will not overflow in the negative direction. */
     function subIsSafe(uint x, uint y)
         pure
@@ -111,7 +111,7 @@ contract SafeFixedMath {
         require(subIsSafe(x, y));
         return x - y;
     }
-    
+
     /* True iff multiplying x and y would not overflow. */
     function mulIsSafe(uint x, uint y)
         pure
@@ -135,7 +135,7 @@ contract SafeFixedMath {
         // Divide by UNIT to remove the extra factor introduced by the product.
         return (x * y) / UNIT;
     }
-    
+
     /* True iff the denominator of x/y is nonzero. */
     function divIsSafe(uint x, uint y)
         pure 
@@ -164,4 +164,3 @@ contract SafeFixedMath {
         return safeMul(i, UNIT);
     }
 }
-
