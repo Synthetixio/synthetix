@@ -215,6 +215,9 @@ contract ConfiscationCourt is Owned, SafeFixedMath {
         public
         onlyOwner
     {
+        // No requirement on the standing threshold here;
+        // the foundation can set this value such that
+        // anyone or noone can actually start an action.
         minStandingBalance = balance;
         MinStandingBalanceUpdated(balance);
     }

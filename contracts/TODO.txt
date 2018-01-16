@@ -2,9 +2,12 @@ FEATURES
 ========
 * Factor out functionality from state, into proxy contract, for upgrades.
 * Determine how to get tokens into contract and working with vesting schedules that still accrue fees.
+* Confirm with Kain final values for all contract parameters.
 
 CLEANUP
 =======
+* Check that safemath library separate checks are necessary (or maybe not?)
+* What happens with fee computations when multiple transactions occur in one block (zero time difference)
 * Reentrancy checks
 * Decide what to do about fallback functions
 * Proper docstring/javadoc style comments, parameter descriptions

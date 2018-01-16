@@ -158,17 +158,21 @@ contract CollateralisedNomin is ERC20FeeToken {
 
     /* ========== CONSTRUCTOR ========== */
 
-    function CollateralisedNomin(address _owner, Havven _havven,
-                                 address _oracle, address _beneficiary,
-                                 uint initialEtherPrice)
-        ERC20FeeToken(_owner, address(_havven),
+    function CollateralisedNomin(Havven _havven, address _oracle,
+                                 address _beneficiary,
+                                 uint initialEtherPrice,
+                                 address _owner)
+        ERC20FeeToken("Nomin", "NOM",
+                      0, _owner,
                       UNIT / 1000, // nomin transfers incur a 10 bp fee
-                      "Nomin", "NOM")
+                      address(_havven),
+                      _owner)
         public
     {
-        oracle = _oracle;
         havven = _havven;
+        oracle = _oracle;
         beneficiary = _beneficiary;
+
         etherPrice = initialEtherPrice;
         lastPriceUpdate = now;
 
@@ -263,7 +267,7 @@ contract CollateralisedNomin is ERC20FeeToken {
         view
         returns (uint)
     {
-        return safeDiv(fiatBalance(), supply);
+        return safeDiv(fiatBalance(), totalSupply);
     }
     
     /* Return the equivalent ether value of the given quantity
@@ -397,8 +401,8 @@ contract CollateralisedNomin is ERC20FeeToken {
         // Price staleness check occurs inside the call to fiatValue.
         // Safe additions are unnecessary here, as either the addition is checked on the following line
         // or the overflow would cause the requirement not to be satisfied.
-        require(fiatBalance() >= safeMul(supply + n, collatRatioMinimum));
-        supply = safeAdd(supply, n);
+        require(fiatBalance() >= safeMul(totalSupply + n, collatRatioMinimum));
+        totalSupply = safeAdd(totalSupply, n);
         nominPool = safeAdd(nominPool, n);
         Issuance(n, msg.value);
     }
@@ -415,7 +419,7 @@ contract CollateralisedNomin is ERC20FeeToken {
         // Require that there are enough nomins in the accessible pool to burn; and
         require(nominPool >= n);
         nominPool = safeSub(nominPool, n);
-        supply = safeSub(supply, n);
+        totalSupply = safeSub(totalSupply, n);
         Burning(n);
     }
  
