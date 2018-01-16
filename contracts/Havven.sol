@@ -163,18 +163,20 @@ contract Havven is ERC20FeeToken {
 
     /* ========== CONSTRUCTOR ========== */
 
-    function Havven(address _owner, address _oracle,
-                    address _beneficiary, uint _initialEtherPrice)
-        ERC20FeeToken(_owner, _owner,
-                      0, "Havven", "HAV")
+    function Havven(address _oracle, address _beneficiary,
+                    uint _initialEtherPrice, address _owner)
+        ERC20FeeToken("Havven", "HAV",
+                      100000000 * UNIT, // initial supply is one hundred million tokens
+                      this,
+                      0,
+                      _owner, _owner)
         public
     {
         feePeriodStartTime = now;
-        nomin = new CollateralisedNomin(_owner, this, _oracle, _beneficiary, _initialEtherPrice);
-
-        // Initial supply of tokens is one hundred million tokens.
-        supply = 100000000 * UNIT;
-        balances[this] = supply;
+        nomin = new CollateralisedNomin(this, _oracle,
+                                        _beneficiary,
+                                        _initialEtherPrice,
+                                        _owner);
     }
 
 
@@ -325,7 +327,7 @@ contract Havven is ERC20FeeToken {
         require(!nomin.isFrozen(msg.sender));
 
         rolloverFee(msg.sender, lastTransferTimestamps[msg.sender], balances[msg.sender]);
-        uint feesOwed = safeDiv(safeMul(lastPeriodFeeRights[msg.sender], lastFeesCollected), supply);
+        uint feesOwed = safeDiv(safeMul(lastPeriodFeeRights[msg.sender], lastFeesCollected), totalSupply);
         nomin.withdrawFee(msg.sender, feesOwed);
         lastPeriodFeeRights[msg.sender] = 0;
         FeesWithdrawn(msg.sender, feesOwed);

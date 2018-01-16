@@ -66,10 +66,10 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
 
     // ERC20 token data
     uint public totalSupply;
-    mapping(address => uint) balances;
-    mapping(address => mapping (address => uint256)) allowances;
     string public name;
     string public symbol;
+    mapping(address => uint) balances;
+    mapping(address => mapping (address => uint256)) allowances;
 
     // A percentage fee charged on each transfer.
     // Zero by default, but may be set in derived contracts.
@@ -84,16 +84,18 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
 
     /* ========== CONSTRUCTOR ========== */
 
-    function ERC20FeeToken(address _owner,
-                           address _feeAuthority,
-                           uint _feeRate,
-                           string _name, string _symbol)
+    function ERC20FeeToken(string _name, string _symbol,
+                           uint initialSupply, address initialBeneficiary,
+                           uint _feeRate, address _feeAuthority,
+                           address _owner)
         Owned(_owner)
         public
     {
-        feeAuthority = _feeAuthority;
         name = _name;
         symbol = _symbol;
+        totalSupply = initialSupply;
+        balances[initialBeneficiary] = initialSupply;
+        feeAuthority = _feeAuthority;
     }
 
 
@@ -211,23 +213,14 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
     /* Withdraw tokens from the fee pool into a given account. */
     function withdrawFee(address account, uint value)
         public
-        onlyFeeAuthority
     {
+        require(msg.sender == feeAuthority);
         // Safe subtraction ensures an exception is thrown if the balance is insufficient.
         feePool = safeSub(feePool, value);
         balances[account] = safeAdd(balances[account], value);
         FeeWithdrawal(account, value);
     }
 
-
-    /* ========== MODIFIERS ========== */
- 
-    modifier onlyFeeAuthority
-    {
-        require(msg.sender == feeAuthority);
-        _;
-    }
- 
 
     /* ========== EVENTS ========== */
 
