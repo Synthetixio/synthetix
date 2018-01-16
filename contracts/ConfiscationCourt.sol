@@ -142,7 +142,7 @@ pragma solidity ^0.4.19;
 
 import "Owned.sol";
 import "SafeFixedMath.sol";
-import "CollateralisedNomin.sol";
+import "EtherNomin.sol";
 import "Havven.sol";
 
 
@@ -152,7 +152,7 @@ contract ConfiscationCourt is Owned, SafeFixedMath {
 
     // The addresses of the token contracts this confiscation court interacts with.
     Havven public havven;
-    CollateralisedNomin public nomin;
+    EtherNomin public nomin;
 
     // The minimum havven balance required to be considered to have standing
     // to begin confiscation proceedings.
@@ -206,7 +206,7 @@ contract ConfiscationCourt is Owned, SafeFixedMath {
 
     /* ========== CONSTRUCTOR ========== */
 
-    function ConfiscationCourt(Havven _havven, CollateralisedNomin _nomin, address _owner)
+    function ConfiscationCourt(Havven _havven, EtherNomin _nomin, address _owner)
         Owned(_owner)
         public
     {
