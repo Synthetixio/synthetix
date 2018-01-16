@@ -170,6 +170,10 @@ contract Havven is ERC20FeeToken {
     {
         feePeriodStartTime = now;
         nomin = new CollateralisedNomin(_owner, this, _oracle, _beneficiary, _initialEtherPrice);
+
+        // Initial supply of tokens is one hundred million tokens.
+        supply = 100000000 * UNIT;
+        balances[this] = supply;
     }
 
 
@@ -254,6 +258,16 @@ contract Havven is ERC20FeeToken {
         adjustFeeEntitlement(_to, recipientPreBalance);
 
         return true;
+    }
+
+    /* Allow the owner of this contract to endow any address with havvens
+     * from the initial supply. */
+    function endow(address account, uint value)
+        public
+        onlyOwner
+        returns (bool)
+    {
+        return this.transfer(account, value);
     }
 
     /* Update the fee entitlement since the last transfer or entitlement
