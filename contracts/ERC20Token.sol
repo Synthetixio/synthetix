@@ -65,11 +65,12 @@ contract ERC20Token is SafeFixedMath {
     /* ========== STATE VARIABLES ========== */
 
     // ERC20 token data
+    // Allowance mapping domain: (owner, spender)
     uint public totalSupply;
     string public name;
     string public symbol;
     mapping(address => uint) public balanceOf;
-    mapping(address => mapping (address => uint256)) allowances;
+    mapping(address => mapping (address => uint256)) public allowance;
 
 
     /* ========== CONSTRUCTOR ========== */
@@ -82,17 +83,6 @@ contract ERC20Token is SafeFixedMath {
         symbol = _symbol;
         totalSupply = initialSupply;
         balanceOf[initialBeneficiary] = initialSupply;
-    }
-
-
-    /* ========== VIEW FUNCTIONS ========== */
-
-    function allowance(address _owner, address _spender)
-        public
-        view
-        returns (uint)
-    {
-        return allowances[_owner][_spender];
     }
 
 
@@ -131,7 +121,7 @@ contract ERC20Token is SafeFixedMath {
 
         // Insufficient balance will be handled by the safe subtraction.
         balanceOf[_from] = safeSub(balanceOf[_from], _value);
-        allowances[_from][msg.sender] = safeSub(allowances[_from][msg.sender], _value);
+        allowance[_from][msg.sender] = safeSub(allowance[_from][msg.sender], _value);
         balanceOf[_to] = safeAdd(balanceOf[_to], _value);
         
         return true;
@@ -141,7 +131,7 @@ contract ERC20Token is SafeFixedMath {
         public
         returns (bool)
     {
-        allowances[msg.sender][_spender] = _value;
+        allowance[msg.sender][_spender] = _value;
         Approval(msg.sender, _spender, _value);
         return true;
     }

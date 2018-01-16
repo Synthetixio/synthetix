@@ -67,11 +67,12 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
     /* ========== STATE VARIABLES ========== */
 
     // ERC20 token data
+    // Allowance mapping domain: (owner, spender)
     uint public totalSupply;
     string public name;
     string public symbol;
-    mapping(address => uint) balanceOf;
-    mapping(address => mapping (address => uint256)) allowances;
+    mapping(address => uint) public balanceOf;
+    mapping(address => mapping (address => uint256)) public allowance;
 
     // A percentage fee charged on each transfer.
     // Zero by default, but may be set in derived contracts.
@@ -131,14 +132,6 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
         //      return fee;
     }
 
-    function allowance(address _owner, address _spender)
-        public
-        view
-        returns (uint)
-    {
-        return allowances[_owner][_spender];
-    }
-
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
@@ -188,7 +181,7 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
 
         // Insufficient balance will be handled by the safe subtraction.
         balanceOf[_from] = safeSub(balanceOf[_from], totalCharge);
-        allowances[_from][msg.sender] = safeSub(allowances[_from][msg.sender], totalCharge);
+        allowance[_from][msg.sender] = safeSub(allowance[_from][msg.sender], totalCharge);
         balanceOf[_to] = safeAdd(balanceOf[_to], _value);
         feePool = safeAdd(feePool, fee);
         
@@ -199,7 +192,7 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
         public
         returns (bool)
     {
-        allowances[msg.sender][_spender] = _value;
+        allowance[msg.sender][_spender] = _value;
         Approval(msg.sender, _spender, _value);
         return true;
     }
