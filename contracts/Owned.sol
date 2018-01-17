@@ -60,7 +60,7 @@ Find out more at https://www.block8.io/
 pragma solidity ^0.4.19;
 
 contract Owned {
-    address owner;
+    address public owner;
 
     function Owned(address _owner)
         public
