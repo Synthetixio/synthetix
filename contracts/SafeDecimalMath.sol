@@ -2,7 +2,7 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
-file:       SafeFixedMath.sol
+file:       SafeDecimalMath.sol
 version:    0.1
 author:     Block8 Technologies, in partnership with Havven
 
@@ -66,7 +66,7 @@ pragma solidity ^0.4.19;
  * All functions accepting uints in this contract and derived contracts
  * are taken to be such fixed point decimals (including fiat, ether, and
  * nomin quantities). */
-contract SafeFixedMath {
+contract SafeDecimalMath {
 
     // Number of decimal places in the representation.
     uint public constant decimals = 18;
@@ -126,7 +126,7 @@ contract SafeFixedMath {
     }
 
     /* Return the result of multiplying x and y, throwing an exception in case of overflow. */
-    function safeMul(uint x, uint y)
+    function safeDecMul(uint x, uint y)
         pure
         internal
         returns (uint)
@@ -146,7 +146,7 @@ contract SafeFixedMath {
     }
 
     /* Return the result of dividing x by y, throwing an exception in case of overflow or zero divisor. */
-    function safeDiv(uint x, uint y)
+    function safeDecDiv(uint x, uint y)
         pure
         internal
         returns (uint)
@@ -156,7 +156,8 @@ contract SafeFixedMath {
         return (x * UNIT) / y;
     }
 
-    function intToDecimal(uint i)
+    /* Convert an unsigned integer to a unsigned fixed-point decimal.*/
+    function intToDec(uint i)
         pure
         internal
         returns (uint)
