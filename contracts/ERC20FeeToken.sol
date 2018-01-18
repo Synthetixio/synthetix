@@ -24,7 +24,7 @@ charged on its transfers.
 LICENCE INFORMATION
 -----------------------------------------------------------------
 
-Copyright (c) 2017 Havven.io
+Copyright (c) 2018 Havven.io
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -43,7 +43,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-    
+
 -----------------------------------------------------------------
 RELEASE NOTES
 -----------------------------------------------------------------
@@ -77,6 +77,8 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
     // A percentage fee charged on each transfer.
     // Zero by default, but may be set in derived contracts.
     uint public transferFeeRate;
+    // Fee may not exceed 10%.
+    uint public constant maxTransferFeeRate = UNIT / 10;
 
     // Collected fees sit here until they are distributed.
     uint public feePool = 0;
@@ -109,7 +111,7 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
         public
         onlyOwner
     {
-        require(newFeeRate <= UNIT);
+        require(newFeeRate <= maxTransferFeeRate);
         transferFeeRate = newFeeRate;
         TransferFeeRateUpdate(newFeeRate);
     }
@@ -118,7 +120,7 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
     /* ========== VIEW FUNCTIONS ========== */
 
     // Return the fee charged on top in order to transfer _value worth of tokens.
-    function transferFeeIncurred(uint _value) 
+    function transferFeeIncurred(uint _value)
         public
         view
         returns (uint)
@@ -131,6 +133,16 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
         //          return _value;
         //      }
         //      return fee;
+    }
+
+    // The value that you would need to send so that the recipient receives
+    // a specified value.
+    function transferPlusFee(uint _value)
+        public
+        view
+        returns (uint)
+    {
+        return safeAdd(_value, safeMul(_value, transferFeeRate));
     }
 
 
@@ -161,7 +173,7 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
 
         return true;
     }
- 
+
     function transferFrom(address _from, address _to, uint _value)
         public
         returns (bool)
@@ -185,10 +197,10 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
         allowance[_from][msg.sender] = safeSub(allowance[_from][msg.sender], totalCharge);
         balanceOf[_to] = safeAdd(balanceOf[_to], _value);
         feePool = safeAdd(feePool, fee);
-        
+
         return true;
     }
-  
+
     function approve(address _spender, uint _value)
         public
         returns (bool)
@@ -215,7 +227,7 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
     event Transfer(address indexed _from, address indexed _to, uint _value);
 
     event TransferFeePaid(address indexed account, uint value);
- 
+
     event Approval(address indexed _owner, address indexed _spender, uint _value);
 
     event TransferFeeRateUpdate(uint newFeeRate);

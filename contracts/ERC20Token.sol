@@ -23,7 +23,7 @@ An ERC20-compliant token.
 LICENCE INFORMATION
 -----------------------------------------------------------------
 
-Copyright (c) 2017 Havven.io
+Copyright (c) 2018 Havven.io
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -42,7 +42,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-    
+
 -----------------------------------------------------------------
 RELEASE NOTES
 -----------------------------------------------------------------
@@ -106,7 +106,7 @@ contract ERC20Token is SafeFixedMath {
 
         return true;
     }
- 
+
     function transferFrom(address _from, address _to, uint _value)
         public
         returns (bool)
@@ -123,10 +123,10 @@ contract ERC20Token is SafeFixedMath {
         balanceOf[_from] = safeSub(balanceOf[_from], _value);
         allowance[_from][msg.sender] = safeSub(allowance[_from][msg.sender], _value);
         balanceOf[_to] = safeAdd(balanceOf[_to], _value);
-        
+
         return true;
     }
-  
+
     function approve(address _spender, uint _value)
         public
         returns (bool)
@@ -144,4 +144,3 @@ contract ERC20Token is SafeFixedMath {
     event Approval(address indexed _owner, address indexed _spender, uint _value);
 
 }
-
