@@ -58,6 +58,10 @@ Waiting:
     initialise vote tallies to 0;
     transition to the Voting state.
 
+  - An account cancels a previous vote:
+    the account is unlocked,
+    remain in the Waiting state.
+
 Voting:
   - The foundation vetoes the in-progress vote:
     transition to the Waiting state.
@@ -69,7 +73,7 @@ Voting:
     the account is locked, its balance is added to the appropriate tally;
     remain in the Voting state.
 
-  - An account cancels its previous vote: 
+  - An account cancels its previous vote:
     the account is unlocked, its balance is deducted from the appropriate tally (if any);
     remain in the Voting state.
 
@@ -78,7 +82,7 @@ Confirmation:
     transition to the Waiting state.
 
   - The foundation approves confiscation of the target account:
-    freeze the target account, transfer its balance to the nomin fee pool;
+    freeze the target account, transfer its nomin balance to the fee pool;
     transition to the Waiting state.
 
   - The confirmation period elapses:
@@ -106,7 +110,7 @@ We might consider updating the contract with any of these features at a later da
 LICENCE INFORMATION
 -----------------------------------------------------------------
 
-Copyright (c) 2017 Havven.io
+Copyright (c) 2018 Havven.io
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -175,7 +179,7 @@ contract ConfiscationCourt is Owned, SafeFixedMath {
     // in order for a quorum to be reached.
     // The participation fraction required may be set no lower than 20%.
     uint public requiredParticipation = 3 * UNIT / 10;
-    uint public constant minRequiredParticipation = 2 * UNIT / 10;
+    uint public constant minRequiredParticipation = UNIT / 10;
 
     // At least this fraction of participating votes must be in favour of
     // confiscation for the proposal to pass.
@@ -210,14 +214,14 @@ contract ConfiscationCourt is Owned, SafeFixedMath {
         Owned(_owner)
         public
     {
-        havven = _havven;       
+        havven = _havven;
         nomin = _nomin;
     }
 
 
     /* ========== SETTERS ========== */
 
-    function setMinStandingBalance(uint balance) 
+    function setMinStandingBalance(uint balance)
         public
         onlyOwner
     {
@@ -307,7 +311,7 @@ contract ConfiscationCourt is Owned, SafeFixedMath {
     /* If the vote was to terminate at this instant, it would pass.
      * That is: there was sufficient participation and a sizeable enough majority.
      */
-    function votePasses(address target) 
+    function votePasses(address target)
         public
         view
         returns (bool)
@@ -340,11 +344,11 @@ contract ConfiscationCourt is Owned, SafeFixedMath {
         public
     {
         // A confiscation action must be mooted by someone with standing.
-        require((havven.balanceOf(msg.sender) > minStandingBalance) || 
+        require((havven.balanceOf(msg.sender) > minStandingBalance) ||
                 msg.sender == owner);
 
         // There must be no confiscation vote already running for this account.
-        require(!voting(target));
+        require(waiting(target));
 
         // Disallow votes on accounts that have previously been frozen.
         require(!nomin.isFrozen(target));
@@ -356,7 +360,8 @@ contract ConfiscationCourt is Owned, SafeFixedMath {
     }
 
     /* The sender casts a vote in favour of confiscation of the
-     * target account's nomin balance. */
+     * target account's nomin balance.
+     */
     function voteFor(address target)
         public
     {
@@ -398,8 +403,9 @@ contract ConfiscationCourt is Owned, SafeFixedMath {
     }
 
     /* Cancel an existing vote by the sender on an action
-     * to confiscate the target balance. */
-    function cancelVote(address target) 
+     * to confiscate the target balance.
+     */
+    function cancelVote(address target)
         public
     {
         // An account may cancel its vote either before the confirmation phase
@@ -411,30 +417,35 @@ contract ConfiscationCourt is Owned, SafeFixedMath {
         // If we are not voting, there is no reason to update the vote totals.
         if (voting(target)) {
             // This call to getVote() must come before the later call to cancelVote(), obviously.
-            Vote vote = havven.votes(msg.sender);
+            Vote vote = havven.vote(msg.sender);
             if (vote == Vote.Yea) {
                 votesFor[msg.sender] -= havven.balanceOf(msg.sender);
             }
             else if (vote == Vote.Nay) {
                 votesAgainst[msg.sender] -= havven.balanceOf(msg.sender);
+            } else {
+                // The sender has not voted.
+                return;
             }
+
+            // A cancelled vote is only meaningful if a vote is running
+            CancelledVote(msg.sender, target);
         }
 
         // If the user is trying to cancel a vote for a different target
         // than the one they have previously voted for, an exception is thrown
         // inside havven.cancelVote, and the state is rolled back.
         havven.cancelVote(msg.sender, target);
-        CancelledVote(msg.sender, target); 
     }
 
     /* If a vote has concluded, or if it lasted its full duration but not passed,
      * then anyone may close it (for example in order to unlock their havven account).
      */
-    function closeVote(address target) 
+    function closeVote(address target)
         public
     {
-        require((confirming(target) && !votePasses(target)) ||
-                waiting(target));
+        require((confirming(target) && !votePasses(target)) || waiting(target));
+
         voteStartTimes[target] = 0;
         votesFor[target] = 0;
         votesAgainst[target] = 0;
@@ -455,17 +466,20 @@ contract ConfiscationCourt is Owned, SafeFixedMath {
         voteStartTimes[target] = 0;
         votesFor[target] = 0;
         votesAgainst[target] = 0;
+        VoteClosed(target);
         ConfiscationApproval(target);
     }
 
     /* The foundation may veto an action at any time. */
-    function veto(address target) 
+    function veto(address target)
         public
         onlyOwner
     {
+        require(!waiting(target));
         voteStartTimes[target] = 0;
         votesFor[target] = 0;
         votesAgainst[target] = 0;
+        VoteClosed(target);
         Veto(target);
     }
 
@@ -482,7 +496,7 @@ contract ConfiscationCourt is Owned, SafeFixedMath {
 
     event RequiredMajorityUpdated(uint fraction);
 
-    event ConfiscationVote(address indexed initiator, address target);
+    event ConfiscationVote(address indexed initiator, address indexed target);
 
     event VoteFor(address indexed account, address indexed target, uint balance);
 
