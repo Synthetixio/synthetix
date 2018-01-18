@@ -249,7 +249,7 @@ contract EtherNomin is ERC20FeeToken {
         priceNotStale
         returns (uint)
     {
-        return safeMul(eth, etherPrice);
+        return safeDecMul(eth, etherPrice);
     }
 
     /* Return the current fiat value of the contract's balance.
@@ -270,7 +270,7 @@ contract EtherNomin is ERC20FeeToken {
         view
         returns (uint)
     {
-        return safeDiv(fiatBalance(), totalSupply);
+        return safeDecDiv(fiatBalance(), totalSupply);
     }
 
     /* Return the equivalent ether value of the given quantity
@@ -283,7 +283,7 @@ contract EtherNomin is ERC20FeeToken {
         priceNotStale
         returns (uint)
     {
-        return safeDiv(fiat, etherPrice);
+        return safeDecDiv(fiat, etherPrice);
     }
 
     /* Return the fee charged on a purchase or sale of n nomins. */
@@ -292,7 +292,7 @@ contract EtherNomin is ERC20FeeToken {
         view
         returns (uint)
     {
-        return safeMul(n, poolFeeRate);
+        return safeDecMul(n, poolFeeRate);
     }
 
     /* Return the fiat cost (including fee) of purchasing n nomins */
@@ -395,7 +395,7 @@ contract EtherNomin is ERC20FeeToken {
         // Price staleness check occurs inside the call to fiatValue.
         // Safe additions are unnecessary here, as either the addition is checked on the following line
         // or the overflow would cause the requirement not to be satisfied.
-        require(fiatBalance() >= safeMul(totalSupply + n, collatRatioMinimum));
+        require(fiatBalance() >= safeDecMul(totalSupply + n, collatRatioMinimum));
         totalSupply = safeAdd(totalSupply, n);
         nominPool = safeAdd(nominPool, n);
         Issuance(n, msg.value);

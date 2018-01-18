@@ -150,7 +150,7 @@ import "EtherNomin.sol";
 import "Havven.sol";
 
 
-contract ConfiscationCourt is Owned, SafeFixedMath {
+contract ConfiscationCourt is Owned, SafeDecimalMath {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -324,8 +324,8 @@ contract ConfiscationCourt is Owned, SafeFixedMath {
             return false;
         }
 
-        uint participation = safeDiv(totalVotes, havven.totalSupply());
-        uint fractionInFavour = safeDiv(yeas, totalVotes);
+        uint participation = safeDecDiv(totalVotes, havven.totalSupply());
+        uint fractionInFavour = safeDecDiv(yeas, totalVotes);
 
         // We require the result to be strictly greater than the requirement
         // to enforce a majority being "50% + 1", and so on.

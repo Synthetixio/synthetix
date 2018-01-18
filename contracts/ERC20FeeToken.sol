@@ -125,7 +125,7 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
         view
         returns (uint)
     {
-        return safeMul(_value, transferFeeRate);
+        return safeDecMul(_value, transferFeeRate);
         // Transfers less than the reciprocal of transferFeeRate should be completely eaten up by fees.
         // This is on the basis that transfers less than this value will result in a nil fee.
         // Probably too insignificant to worry about, but the following code will achieve it.
@@ -142,7 +142,7 @@ contract ERC20FeeToken is Owned, SafeFixedMath {
         view
         returns (uint)
     {
-        return safeAdd(_value, safeMul(_value, transferFeeRate));
+        return safeAdd(_value, safeDecMul(_value, transferFeeRate));
     }
 
 

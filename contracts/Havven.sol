@@ -302,8 +302,8 @@ contract Havven is ERC20Token, Owned {
         // was earlier than that.
         rolloverFee(account, lastTransferTime, preBalance);
         currentBalanceSum[account] = safeAdd(currentBalanceSum[account],
-                                             safeMul(preBalance,
-                                                     intToDecimal(now - lastTransferTime)));
+                                             safeDecMul(preBalance,
+                                                        intToDec(now - lastTransferTime)));
 
         // Update the last time this user's balance changed.
         lastTransferTimestamp[account] = now;
@@ -319,15 +319,15 @@ contract Havven is ERC20Token, Owned {
         internal
     {
         if (lastTransferTime < feePeriodStartTime) {
-            uint timeToRollover = intToDecimal(feePeriodStartTime - lastTransferTime);
+            uint timeToRollover = intToDec(feePeriodStartTime - lastTransferTime);
 
             // If the user did not transfer at all in the last fee period, their average allocation is just their balance.
             if (timeToRollover >= lastFeePeriodDuration) {
                 lastAverageBalance[account] = preBalance;
             } else {
-                lastAverageBalance[account] = safeDiv(safeAdd(currentBalanceSum[account],
-                                                              safeMul(preBalance, timeToRollover)),
-                                                      lastFeePeriodDuration);
+                lastAverageBalance[account] = safeDecMul(safeAdd(currentBalanceSum[account],
+                                                                 safeDecMul(preBalance, timeToRollover)),
+                                                         lastFeePeriodDuration);
             }
 
             // Update current period fee entitlement total and reset the timestamp.
@@ -347,9 +347,9 @@ contract Havven is ERC20Token, Owned {
         require(!nomin.isFrozen(msg.sender));
 
         rolloverFee(msg.sender, lastTransferTimestamp[msg.sender], balanceOf[msg.sender]);
-        uint feesOwed = safeDiv(safeMul(lastAverageBalance[msg.sender],
-                                        lastFeesCollected),
-                                totalSupply);
+        uint feesOwed = safeDecMul(safeDecMul(lastAverageBalance[msg.sender],
+                                              lastFeesCollected),
+                                   totalSupply);
         nomin.withdrawFee(msg.sender, feesOwed);
         lastAverageBalance[msg.sender] = 0;
         FeesWithdrawn(msg.sender, feesOwed);
