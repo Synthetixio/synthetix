@@ -379,7 +379,12 @@ contract ConfiscationCourt is Owned, SafeDecimalMath {
         // This user can't already have voted in anything.
         require(!havven.hasVoted(msg.sender));
 
-        uint weight = havven.penultimateAverageBalance(msg.sender);
+        if (voteStartTimes[target] < havven.feePeriodStartTime) {
+            uint weight = havven.penultimateAverageBalance(msg.sender);
+        } else {
+            uint weight = havven.lastAverageBalance(msg.sender);
+        }
+
         // Users must have a nonzero voting weight to vote.
         require(weight > 0);
 
@@ -404,7 +409,11 @@ contract ConfiscationCourt is Owned, SafeDecimalMath {
         // This user can't already have voted in anything.
         require(!havven.hasVoted(msg.sender));
 
-        uint weight = havven.penultimateAverageBalance(msg.sender);
+        if (voteStartTimes[target] < havven.feePeriodStartTime) {
+            uint weight = havven.penultimateAverageBalance(msg.sender);
+        } else {
+            uint weight = havven.lastAverageBalance(msg.sender);
+        }
 
         // Users must have a nonzero voting weight to vote.
         require(weight > 0);
