@@ -201,11 +201,12 @@ contract ConfiscationCourt is Owned, SafeDecimalMath {
     mapping(address => uint) public votesFor;
     mapping(address => uint) public votesAgainst;
 
-    // The balance of a user at the time they voted.
+    // The penultimate average balance of a user at the time they voted.
     // If we did not save this information then we would have to
     // disallow transfers into an account lest it cancel a vote
-    // with greater weight than that with which it originally voted.
-    mapping(address => uint) voteBalance;
+    // with greater weight than that with which it originally voted,
+    // and the fee period rolled over in between.
+    mapping(address => uint) voteWeight;
 
     // The possible vote types.
     // Absention: not participating in a vote; This is the default value.
@@ -378,17 +379,17 @@ contract ConfiscationCourt is Owned, SafeDecimalMath {
         // This user can't already have voted in anything.
         require(!havven.hasVoted(msg.sender));
 
-        // Users must have a nonzero havven balance to vote.
-        require(havven.balanceOf(msg.sender) > 0);
+        uint weight = havven.penultimateAverageBalance(msg.sender);
+        // Users must have a nonzero voting weight to vote.
+        require(weight > 0);
 
         // The user should not have voted previously without cancelling
         // that vote; the previous check ensures this, along with
         // the one inside havven.setVotedYea().
         havven.setVotedYea(msg.sender, target);
-        uint balance = havven.balanceOf(msg.sender);
-        voteBalance[msg.sender] = balance;
-        votesFor[msg.sender] += balance;
-        VoteFor(msg.sender, target, balance);
+        voteWeight[msg.sender] = weight;
+        votesFor[msg.sender] += weight;
+        VoteFor(msg.sender, target, weight);
     }
 
     /* The sender casts a vote against confiscation of the
@@ -403,17 +404,18 @@ contract ConfiscationCourt is Owned, SafeDecimalMath {
         // This user can't already have voted in anything.
         require(!havven.hasVoted(msg.sender));
 
-        // Users must have a nonzero havven balance to vote.
-        require(havven.balanceOf(msg.sender) > 0);
+        uint weight = havven.penultimateAverageBalance(msg.sender);
+
+        // Users must have a nonzero voting weight to vote.
+        require(weight > 0);
 
         // The user should not have voted previously without cancelling
         // that vote; the previous check ensures this, along with
         // the one inside havven.setVotedNay().
         havven.setVotedNay(msg.sender, target);
-        uint balance = havven.balanceOf(msg.sender);
-        voteBalance[msg.sender] = balance;
-        votesAgainst[msg.sender] += balance;
-        VoteAgainst(msg.sender, target, balance);
+        voteWeight[msg.sender] = weight;
+        votesAgainst[msg.sender] += weight;
+        VoteAgainst(msg.sender, target, weight);
     }
 
     /* Cancel an existing vote by the sender on an action
@@ -434,10 +436,10 @@ contract ConfiscationCourt is Owned, SafeDecimalMath {
             Vote vote = havven.vote(msg.sender);
 
             if (vote == Vote.Yea) {
-                votesFor[msg.sender] -= voteBalance[msg.sender];
+                votesFor[msg.sender] -= voteWeight[msg.sender];
             }
             else if (vote == Vote.Nay) {
-                votesAgainst[msg.sender] -= voteBalance[msg.sender];
+                votesAgainst[msg.sender] -= voteWeight[msg.sender];
             } else {
                 // The sender has not voted.
                 return;
