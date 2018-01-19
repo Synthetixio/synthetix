@@ -178,7 +178,6 @@ contract Havven is ERC20Token, Owned {
     ConfiscationCourt public court;
 
 
-
     /* ========== CONSTRUCTOR ========== */
 
     function Havven(address _oracle, address _beneficiary,
@@ -421,6 +420,12 @@ contract Havven is ERC20Token, Owned {
             lastFeePeriodDuration = duration;
             feePeriodStartTime = now;
         }
+    }
+
+    modifier onlyCourt
+    {
+        require(msg.sender == court);
+        _;
     }
 
 
