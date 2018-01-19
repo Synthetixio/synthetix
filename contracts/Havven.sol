@@ -250,9 +250,6 @@ contract Havven is ERC20Token, Owned {
         postCheckFeePeriodRollover
         returns (bool)
     {
-        // Disallow transfers by accounts with an active vote.
-        require(!hasVoted(msg.sender));
-
         uint senderPreBalance = balanceOf[msg.sender];
         uint recipientPreBalance = balanceOf[_to];
 
@@ -279,9 +276,6 @@ contract Havven is ERC20Token, Owned {
         postCheckFeePeriodRollover
         returns (bool)
     {
-        // Disallow transfers by accounts with an active vote.
-        require(!hasVoted(_from));
-
         uint senderPreBalance = balanceOf[_from];
         uint recipientPreBalance = balanceOf[_to];
 
