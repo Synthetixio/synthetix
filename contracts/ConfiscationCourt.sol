@@ -372,6 +372,9 @@ contract ConfiscationCourt is Owned, SafeDecimalMath {
         // This user can't already have voted in anything.
         require(!havven.hasVoted(msg.sender));
 
+        // Users must have a nonzero havven balance to vote.
+        require(havven.balanceOf(msg.sender) > 0);
+
         // The user should not have voted previously without cancelling
         // that vote; the previous check ensures this, along with
         // the one inside havven.setVotedYea().
@@ -393,6 +396,9 @@ contract ConfiscationCourt is Owned, SafeDecimalMath {
         // This user can't already have voted in anything.
         require(!havven.hasVoted(msg.sender));
 
+        // Users must have a nonzero havven balance to vote.
+        require(havven.balanceOf(msg.sender) > 0);
+        
         // The user should not have voted previously without cancelling
         // that vote; the previous check ensures this, along with
         // the one inside havven.setVotedNay().
