@@ -8,7 +8,6 @@ FEATURES
 * Allow to sell in liquidation even if the price is stale
 * Diagram with shaded half of diagram?
 * Require when setting things that a voting period is no longer than a fee period
-* Unfreeze havvens 
 
 CLEANUP
 =======
