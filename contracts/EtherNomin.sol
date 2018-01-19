@@ -172,11 +172,10 @@ contract EtherNomin is ERC20FeeToken {
         havven = _havven;
         oracle = _oracle;
         beneficiary = _beneficiary;
+        court = _havven.court();
 
         etherPrice = initialEtherPrice;
         lastPriceUpdate = now;
-
-        court = new ConfiscationCourt(_havven, this, _owner);
     }
 
 
