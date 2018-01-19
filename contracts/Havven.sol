@@ -144,22 +144,24 @@ contract Havven is ERC20Token, Owned {
     // range: decimals; units: havven-seconds
     mapping(address => uint) currentBalanceSum;
 
-    // Average account balances in the last fee period. This is proportional
+    // Average account balances in the last completed fee period. This is proportional
     // to that account's last period fee entitlement.
     // (i.e. currentBalanceSum for the previous period divided through by duration)
     // range: decimals; units: havvens
     mapping(address => uint) lastAverageBalance;
 
+    // The average account balances in the period before the last completed fee period.
+    // This is used as a person's weight in a confiscation vote, so it implies that
+    // the vote duration must be no longer than the fee period in order to guarantee that 
+    // no portion of a fee period used for determining vote weights falls within the
+    // duration of a vote it contributes to.
+    mapping(address => uint) penultimateAverageBalance;
+
     // The time an account last made a transfer.
     // range: naturals
     mapping(address => uint) lastTransferTimestamp;
 
-    // A given account's vote in some confiscation action.
-    // This requires the default value of the Vote enum to correspond to an abstention.
-    // If an account's vote is not an abstention, it may not transfer funds.
-    mapping(address => ConfiscationCourt.Vote) public vote;
-    // The vote a user last participated in.
-    mapping(address => address) public voteTarget;
+    mapping(address => bool) hasWithdrawnLastPeriodFees;
 
     // The time the current fee period began.
     uint public feePeriodStartTime;
@@ -173,6 +175,13 @@ contract Havven is ERC20Token, Owned {
     // The quantity of nomins that were in the fee pot at the time
     // of the last fee rollover (feePeriodStartTime).
     uint public lastFeesCollected;
+
+    // A given account's vote in some confiscation action.
+    // This requires the default value of the Vote enum to correspond to an abstention.
+    // If an account's vote is not an abstention, it may not transfer funds.
+    mapping(address => ConfiscationCourt.Vote) public vote;
+    // The vote a user last participated in.
+    mapping(address => address) public voteTarget;
 
     EtherNomin public nomin;
     ConfiscationCourt public court;
@@ -322,6 +331,7 @@ contract Havven is ERC20Token, Owned {
     {
         if (lastTransferTime < feePeriodStartTime) {
             uint timeToRollover = intToDec(feePeriodStartTime - lastTransferTime);
+            penultimateAverageBalance[account] = lastAverageBalance[account];
 
             // If the user did not transfer at all in the last fee period, their average allocation is just their balance.
             if (timeToRollover >= lastFeePeriodDuration) {
@@ -332,8 +342,9 @@ contract Havven is ERC20Token, Owned {
                                                          lastFeePeriodDuration);
             }
 
-            // Update current period fee entitlement total and reset the timestamp.
+            // Roll over to the next fee period.
             currentBalanceSum[account] = 0;
+            hasWithdrawnLastPeriodFees[account] = false;
             lastTransferTimestamp[account] = feePeriodStartTime;
         }
     }
@@ -348,12 +359,15 @@ contract Havven is ERC20Token, Owned {
         // Do not deposit fees into frozen accounts.
         require(!nomin.isFrozen(msg.sender));
 
+        // Only allow accounts to withdraw fees once per period.
+        require(!hasWithdrawnLastPeriodFees[msg.sender]);
+
         rolloverFee(msg.sender, lastTransferTimestamp[msg.sender], balanceOf[msg.sender]);
         uint feesOwed = safeDecMul(safeDecMul(lastAverageBalance[msg.sender],
                                               lastFeesCollected),
                                    totalSupply);
         nomin.withdrawFee(msg.sender, feesOwed);
-        lastAverageBalance[msg.sender] = 0;
+        hasWithdrawnLastPeriodFees[msg.sender] = true;
         FeesWithdrawn(msg.sender, feesOwed);
     }
 
