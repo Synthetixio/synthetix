@@ -175,6 +175,8 @@ contract Havven is ERC20Token, Owned {
     uint public lastFeesCollected;
 
     EtherNomin public nomin;
+    ConfiscationCourt public court;
+
 
 
     /* ========== CONSTRUCTOR ========== */
@@ -192,6 +194,7 @@ contract Havven is ERC20Token, Owned {
                                _beneficiary,
                                _initialEtherPrice,
                                _owner);
+        court = new ConfiscationCourt(this, nomin, _owner);
     }
 
 
