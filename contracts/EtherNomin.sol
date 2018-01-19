@@ -32,7 +32,7 @@ The owner may also destroy nomins in the pool, which is potential avenue
 by which to maintain healthy collateralisation levels, as it reduces
 supply without withdrawing ether collateral.
 
-A configurable is charged on nomin transfers and deposited
+A configurable fee is charged on nomin transfers and deposited
 into a common pot, which havven holders may withdraw from once per
 fee period.
 

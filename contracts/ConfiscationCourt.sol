@@ -177,7 +177,7 @@ contract ConfiscationCourt is Owned, SafeDecimalMath {
 
     // No fewer than this fraction of havvens must participate in the vote
     // in order for a quorum to be reached.
-    // The participation fraction required may be set no lower than 20%.
+    // The participation fraction required may be set no lower than 10%.
     uint public requiredParticipation = 3 * UNIT / 10;
     uint public constant minRequiredParticipation = UNIT / 10;
 
