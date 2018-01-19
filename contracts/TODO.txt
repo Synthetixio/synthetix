@@ -7,6 +7,8 @@ FEATURES
     Note that this would require dividing by the fees taken in the previous-previous period in order to compute participation, so this must be saved as well.
 * Allow to sell in liquidation even if the price is stale
 * Diagram with shaded half of diagram?
+* Require when setting things that a voting period is no longer than a fee period
+* Unfreeze havvens 
 
 CLEANUP
 =======
