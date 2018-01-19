@@ -568,6 +568,10 @@ contract EtherNomin is ERC20FeeToken {
         AccountUnfrozen(target);
     }
 
+    /* Fallback function allows convenient collateralisation of the contract,
+     * including by non-foundation parties. */
+    function() public payable {}
+
 
     /* ========== MODIFIERS ========== */
 
