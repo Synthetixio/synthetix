@@ -4,7 +4,6 @@ FEATURES
 * Determine how to get tokens into contract and working with vesting schedules that still accrue fees.
 * Confirm with Kain final values for all contract parameters.
 * Determine if intToDec calls are necessary.
-* setVotedYea, Nay, CancelVote update from onlyNomin to onlyCourt
 * Ensure that no transfers TO havven accounts that have voted is allowed
 * Consider fee-based voting weights (augment fee info into pairs, so we use the previous-previous completed fee entitlement).
     Note that this would require dividing by the fees taken in the previous-previous period in order to compute participation, so this must be saved as well.
