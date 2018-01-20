@@ -7,6 +7,8 @@ FEATURES
 
 CLEANUP
 =======
+* check if modifiers are less efficient than inline conditions, reintroduce them if they aren't, maybe even factor all preconditions out into modifiers.
+* Ensure documentation is up to date with functionality since changes.
 * Merge double CALLs in CollateralisedNomin.confiscateBalance and similar elsewhere
 * Check if can avoid ERC20 inheriting from SafeFixedMath due to inlined UNIT, and they only use addition and subtraction. (Maybe "Using For" or libs)
 * Explicitly label pre- and post-condition checkers
@@ -46,7 +48,6 @@ CLEANUP
 * Eliminate overwide lines
 * Gas optimisation
 * Add parameter names in contract ABIs for solidity-generated functions.
-* check if modifiers are less efficient than inline conditions, reintroduce them if they aren't, maybe even factor all preconditions out into modifiers.
 
 VALIDATION
 ==========
