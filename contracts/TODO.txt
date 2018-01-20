@@ -3,11 +3,8 @@ FEATURES
 * Factor out functionality from state, into proxy contract, for upgrades.
 * Determine how to get tokens into contract and working with vesting schedules that still accrue fees.
 * Confirm with Kain final values for all contract parameters.
-* Consider fee-based voting weights (augment fee info into pairs, so we use the previous-previous completed fee entitlement).
-    Note that this would require dividing by the fees taken in the previous-previous period in order to compute participation, so this must be saved as well.
 * Allow to sell in liquidation even if the price is stale
 * Diagram with shaded half of diagram?
-* Require when setting things that a voting period is no longer than a fee period
 
 CLEANUP
 =======

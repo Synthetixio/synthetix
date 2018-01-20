@@ -245,6 +245,9 @@ contract ConfiscationCourt is Owned, SafeDecimalMath {
     {
         require(minVotingPeriod <= duration &&
                 duration <= maxVotingPeriod);
+        // Require that the voting period is longer than a single fee period,
+        // So that a single vote can span at most two fee periods.
+        require(duration <= havven.targetFeePeriodDurationSeconds);
         votingPeriod = duration;
         VotingPeriodUpdated(duration);
     }
@@ -354,6 +357,10 @@ contract ConfiscationCourt is Owned, SafeDecimalMath {
         require((havven.balanceOf(msg.sender) > minStandingBalance) ||
                 msg.sender == owner);
 
+        // Require that the voting period is longer than a single fee period,
+        // So that a single vote can span at most two fee periods.
+        require(duration <= havven.targetFeePeriodDurationSeconds);
+
         // There must be no confiscation vote already running for this account.
         require(waiting(target));
 
@@ -379,6 +386,9 @@ contract ConfiscationCourt is Owned, SafeDecimalMath {
         // This user can't already have voted in anything.
         require(!havven.hasVoted(msg.sender));
 
+        // We use a fee period guaranteed to have terminated before
+        // the start of the vote. Select the right period if
+        // a fee period rolls over in the middle of the vote.
         if (voteStartTimes[target] < havven.feePeriodStartTime) {
             uint weight = havven.penultimateAverageBalance(msg.sender);
         } else {
@@ -409,6 +419,9 @@ contract ConfiscationCourt is Owned, SafeDecimalMath {
         // This user can't already have voted in anything.
         require(!havven.hasVoted(msg.sender));
 
+        // We use a fee period guaranteed to have terminated before
+        // the start of the vote. Select the right period if
+        // a fee period rolls over in the middle of the vote.
         if (voteStartTimes[target] < havven.feePeriodStartTime) {
             uint weight = havven.penultimateAverageBalance(msg.sender);
         } else {
