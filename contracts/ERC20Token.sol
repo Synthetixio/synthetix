@@ -57,10 +57,10 @@ Find out more at https://www.block8.io/
 pragma solidity ^0.4.19;
 
 
-import "SafeFixedMath.sol";
+import "SafeDecimalMath.sol";
 
 
-contract ERC20Token is SafeFixedMath {
+contract ERC20Token is SafeDecimalMath {
 
     /* ========== STATE VARIABLES ========== */
 

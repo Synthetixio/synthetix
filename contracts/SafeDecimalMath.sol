@@ -162,6 +162,6 @@ contract SafeDecimalMath {
         internal
         returns (uint)
     {
-        return safeMul(i, UNIT);
+        return safeDecMul(i, UNIT);
     }
 }
