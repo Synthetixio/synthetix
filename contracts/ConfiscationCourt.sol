@@ -145,7 +145,7 @@ pragma solidity ^0.4.19;
 
 
 import "Owned.sol";
-import "SafeFixedMath.sol";
+import "SafeDecimalMath.sol";
 import "EtherNomin.sol";
 import "Havven.sol";
 
@@ -247,7 +247,7 @@ contract ConfiscationCourt is Owned, SafeDecimalMath {
                 duration <= maxVotingPeriod);
         // Require that the voting period is longer than a single fee period,
         // So that a single vote can span at most two fee periods.
-        require(duration <= havven.targetFeePeriodDurationSeconds);
+        require(duration <= havven.targetFeePeriodDurationSeconds());
         votingPeriod = duration;
         VotingPeriodUpdated(duration);
     }
@@ -359,7 +359,7 @@ contract ConfiscationCourt is Owned, SafeDecimalMath {
 
         // Require that the voting period is longer than a single fee period,
         // So that a single vote can span at most two fee periods.
-        require(duration <= havven.targetFeePeriodDurationSeconds);
+        require(votingPeriod <= havven.targetFeePeriodDurationSeconds());
 
         // There must be no confiscation vote already running for this account.
         require(waiting(target));
@@ -386,13 +386,14 @@ contract ConfiscationCourt is Owned, SafeDecimalMath {
         // This user can't already have voted in anything.
         require(!havven.hasVoted(msg.sender));
 
+        uint weight;
         // We use a fee period guaranteed to have terminated before
         // the start of the vote. Select the right period if
         // a fee period rolls over in the middle of the vote.
-        if (voteStartTimes[target] < havven.feePeriodStartTime) {
-            uint weight = havven.penultimateAverageBalance(msg.sender);
+        if (voteStartTimes[target] < havven.feePeriodStartTime()) {
+            weight = havven.penultimateAverageBalance(msg.sender);
         } else {
-            uint weight = havven.lastAverageBalance(msg.sender);
+            weight = havven.lastAverageBalance(msg.sender);
         }
 
         // Users must have a nonzero voting weight to vote.
@@ -419,13 +420,14 @@ contract ConfiscationCourt is Owned, SafeDecimalMath {
         // This user can't already have voted in anything.
         require(!havven.hasVoted(msg.sender));
 
+        uint weight;
         // We use a fee period guaranteed to have terminated before
         // the start of the vote. Select the right period if
         // a fee period rolls over in the middle of the vote.
-        if (voteStartTimes[target] < havven.feePeriodStartTime) {
-            uint weight = havven.penultimateAverageBalance(msg.sender);
+        if (voteStartTimes[target] < havven.feePeriodStartTime()) {
+            weight = havven.penultimateAverageBalance(msg.sender);
         } else {
-            uint weight = havven.lastAverageBalance(msg.sender);
+            weight = havven.lastAverageBalance(msg.sender);
         }
 
         // Users must have a nonzero voting weight to vote.
@@ -468,7 +470,7 @@ contract ConfiscationCourt is Owned, SafeDecimalMath {
             }
 
             // A cancelled vote is only meaningful if a vote is running
-            voteBalance[msg.sender] = 0;
+            voteWeight[msg.sender] = 0;
             CancelledVote(msg.sender, target);
         }
 

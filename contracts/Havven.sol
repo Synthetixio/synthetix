@@ -143,26 +143,26 @@ contract Havven is ERC20Token, Owned {
 
     // Sums of balances*duration in the current fee period.
     // range: decimals; units: havven-seconds
-    mapping(address => uint) currentBalanceSum;
+    mapping(address => uint) public currentBalanceSum;
 
     // Average account balances in the last completed fee period. This is proportional
     // to that account's last period fee entitlement.
     // (i.e. currentBalanceSum for the previous period divided through by duration)
     // range: decimals; units: havvens
-    mapping(address => uint) lastAverageBalance;
+    mapping(address => uint) public lastAverageBalance;
 
     // The average account balances in the period before the last completed fee period.
     // This is used as a person's weight in a confiscation vote, so it implies that
     // the vote duration must be no longer than the fee period in order to guarantee that 
     // no portion of a fee period used for determining vote weights falls within the
     // duration of a vote it contributes to.
-    mapping(address => uint) penultimateAverageBalance;
+    mapping(address => uint) public penultimateAverageBalance;
 
     // The time an account last made a transfer.
     // range: naturals
-    mapping(address => uint) lastTransferTimestamp;
+    mapping(address => uint) public lastTransferTimestamp;
 
-    mapping(address => bool) hasWithdrawnLastPeriodFees;
+    mapping(address => bool) public hasWithdrawnLastPeriodFees;
 
     // The time the current fee period began.
     uint public feePeriodStartTime;
@@ -447,7 +447,7 @@ contract Havven is ERC20Token, Owned {
 
     modifier onlyCourt
     {
-        require(msg.sender == court);
+        require(ConfiscationCourt(msg.sender) == court);
         _;
     }
 
