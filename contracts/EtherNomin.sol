@@ -19,20 +19,20 @@ MODULE DESCRIPTION
 
 Ether-backed nomin stablecoin contract.
 
-Issues nomins, which are tokens worth 1 USD each. They are backed
+This contract issues nomins, which are tokens worth 1 USD each. They are backed
 by a pool of ether collateral, so that if a user has nomins, they may
 redeem them for ether from the pool, or if they want to obtain nomins,
-they may pay ether into the pool in order to do so. 
- 
+they may pay ether into the pool in order to do so.
+
 The supply of nomins that may be in circulation at any time is limited.
 The contract owner may increase this quantity, but only if they provide
-ether to back it. The backing the owner provides at issuance must 
+ether to back it. The backing the owner provides at issuance must
 keep each nomin at least twice overcollateralised.
 The owner may also destroy nomins in the pool, which is potential avenue
 by which to maintain healthy collateralisation levels, as it reduces
 supply without withdrawing ether collateral.
 
-A fee of 10 basis points is charged on nomin transfers and transferred
+A configurable fee is charged on nomin transfers and deposited
 into a common pot, which havven holders may withdraw from once per
 fee period.
 
@@ -58,7 +58,7 @@ If the contract is recollateralised, the owner may terminate liquidation.
 LICENCE INFORMATION
 -----------------------------------------------------------------
 
-Copyright (c) 2017 Havven.io
+Copyright (c) 2018 Havven.io
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -77,7 +77,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-    
+
 -----------------------------------------------------------------
 RELEASE NOTES
 -----------------------------------------------------------------
@@ -112,18 +112,15 @@ contract EtherNomin is ERC20FeeToken {
     // The address of the contract which manages confiscation votes.
     ConfiscationCourt public court;
 
-    // The set of addresses that have been frozen by confiscation.
-    mapping(address => bool) public isFrozen;
-
     // Foundation wallet for funds to go to post liquidation.
     address public beneficiary;
 
     // Nomins in the pool ready to be sold.
     uint public nominPool = 0;
-    
+
     // Impose a 50 basis-point fee for buying from and selling to the nomin pool.
     uint public poolFeeRate = UNIT / 200;
-    
+
     // Minimum quantity of nomins purchasable: 1 cent by default.
     uint public purchaseMininum = UNIT / 100;
 
@@ -141,19 +138,22 @@ contract EtherNomin is ERC20FeeToken {
     uint public liquidationPeriod = defaultLiquidationPeriod;
 
     // The timestamp when liquidation was activated. We initialise this to
-    // uint max, so that we know that we are under liquidation if the 
+    // uint max, so that we know that we are under liquidation if the
     // liquidation timestamp is in the past.
     uint public liquidationTimestamp = ~uint(0);
-    
+
     // Ether price from oracle (fiat per ether).
     uint public etherPrice;
-    
+
     // Last time the price was updated.
     uint public lastPriceUpdate;
 
     // The period it takes for the price to be considered stale.
     // If the price is stale, functions that require the price are disabled.
-    uint public stalePeriod = 3 days;
+    uint public stalePeriod = 2 days;
+
+    // The set of addresses that have been frozen by confiscation.
+    mapping(address => bool) public isFrozen;
 
 
     /* ========== CONSTRUCTOR ========== */
@@ -172,16 +172,15 @@ contract EtherNomin is ERC20FeeToken {
         havven = _havven;
         oracle = _oracle;
         beneficiary = _beneficiary;
+        court = _havven.court();
 
         etherPrice = initialEtherPrice;
         lastPriceUpdate = now;
-
-        court = new ConfiscationCourt(_havven, this, _owner);
     }
 
 
     /* ========== SETTERS ========== */
-   
+
     // Set the price oracle of this contract. Only the contract owner should be able to call this.
     function setOracle(address newOracle)
         public
@@ -190,7 +189,7 @@ contract EtherNomin is ERC20FeeToken {
         oracle = newOracle;
         OracleUpdated(newOracle);
     }
-    
+
     // Set the beneficiary of this contract. Only the contract owner should be able to call this.
     function setBeneficiary(address newBeneficiary)
         public
@@ -199,7 +198,7 @@ contract EtherNomin is ERC20FeeToken {
         beneficiary = newBeneficiary;
         BeneficiaryUpdated(newBeneficiary);
     }
-    
+
     function setPoolFeeRate(uint newFeeRate)
         public
         onlyOwner
@@ -215,6 +214,7 @@ contract EtherNomin is ERC20FeeToken {
      *     Not called by the oracle. */
     function setPrice(uint price)
         public
+        postCheckAutoLiquidate
     {
         // Should be callable only by the oracle.
         require(msg.sender == oracle);
@@ -248,10 +248,10 @@ contract EtherNomin is ERC20FeeToken {
         priceNotStale
         returns (uint)
     {
-        return safeMul(eth, etherPrice);
+        return safeDecMul(eth, etherPrice);
     }
-    
-    /* Return the current fiat value of the contract's balance. 
+
+    /* Return the current fiat value of the contract's balance.
      * Exceptional conditions:
      *     Price is stale. */
     function fiatBalance()
@@ -269,9 +269,9 @@ contract EtherNomin is ERC20FeeToken {
         view
         returns (uint)
     {
-        return safeDiv(fiatBalance(), totalSupply);
+        return safeDecDiv(fiatBalance(), totalSupply);
     }
-    
+
     /* Return the equivalent ether value of the given quantity
      * of fiat at the current price.
      * Exceptional conditions:
@@ -282,16 +282,7 @@ contract EtherNomin is ERC20FeeToken {
         priceNotStale
         returns (uint)
     {
-        return safeDiv(fiat, etherPrice);
-    }
-
-    /* Return the fee charged on a transfer of n nomins. */
-    function transferFeeIncurred(uint n)
-        public
-        view
-        returns (uint)
-    {
-        return safeMul(n, transferFeeRate);
+        return safeDecDiv(fiat, etherPrice);
     }
 
     /* Return the fee charged on a purchase or sale of n nomins. */
@@ -300,7 +291,7 @@ contract EtherNomin is ERC20FeeToken {
         view
         returns (uint)
     {
-        return safeMul(n, poolFeeRate);
+        return safeDecMul(n, poolFeeRate);
     }
 
     /* Return the fiat cost (including fee) of purchasing n nomins */
@@ -403,7 +394,7 @@ contract EtherNomin is ERC20FeeToken {
         // Price staleness check occurs inside the call to fiatValue.
         // Safe additions are unnecessary here, as either the addition is checked on the following line
         // or the overflow would cause the requirement not to be satisfied.
-        require(fiatBalance() >= safeMul(totalSupply + n, collatRatioMinimum));
+        require(fiatBalance() >= safeDecMul(totalSupply + n, collatRatioMinimum));
         totalSupply = safeAdd(totalSupply, n);
         nominPool = safeAdd(nominPool, n);
         Issuance(n, msg.value);
@@ -424,7 +415,7 @@ contract EtherNomin is ERC20FeeToken {
         totalSupply = safeSub(totalSupply, n);
         Burning(n);
     }
- 
+
     /* Sends n nomins to the sender from the pool, in exchange for
      * $n plus the fee worth of ether.
      * Exceptional conditions:
@@ -446,7 +437,7 @@ contract EtherNomin is ERC20FeeToken {
         balanceOf[msg.sender] = safeAdd(balanceOf[msg.sender], n);
         Purchase(msg.sender, n, msg.value);
     }
-    
+
     /* Sends n nomins to the pool from the sender, in exchange for
      * $n minus the fee worth of ether.
      * Exceptional conditions:
@@ -462,8 +453,8 @@ contract EtherNomin is ERC20FeeToken {
         // sub requires that the balance is greater than n
         balanceOf[msg.sender] = safeSub(balanceOf[msg.sender], n);
         nominPool = safeAdd(nominPool, n);
-        msg.sender.transfer(proceeds);
         Sale(msg.sender, n, proceeds);
+        msg.sender.transfer(proceeds);
     }
 
     /* Lock nomin purchase function in preparation for destroying the contract.
@@ -488,10 +479,10 @@ contract EtherNomin is ERC20FeeToken {
     function liquidate()
         public
         notLiquidating
-        postChecksCollateralisation
+        postCheckAutoLiquidate
     {}
 
-    function beginLiquidation() 
+    function beginLiquidation()
         internal
     {
         liquidationTimestamp = now;
@@ -505,6 +496,7 @@ contract EtherNomin is ERC20FeeToken {
     function terminateLiquidation()
         public
         onlyOwner
+        priceNotStale
         payable
     {
         require(isLiquidating());
@@ -523,8 +515,8 @@ contract EtherNomin is ERC20FeeToken {
         require(liquidationPeriod + extension <= maxLiquidationPeriod);
         liquidationPeriod += extension;
         LiquidationExtended(extension);
-    } 
-    
+    }
+
     /* Destroy this contract, returning all funds back to the beneficiary
      * wallet, may only be called after the contract has been in
      * liquidation for at least liquidationPeriod.
@@ -541,12 +533,12 @@ contract EtherNomin is ERC20FeeToken {
                 liquidationTimestamp + liquidationPeriod < now);
         SelfDestructed();
         selfdestruct(beneficiary);
-    } 
+    }
 
     /* Transfer the target account's balance to the fee pool
      * and freeze its participation in further transactions.
      */
-    function confiscateBalance(address target) 
+    function confiscateBalance(address target)
         public
     {
         // Should be callable only by the confiscation court.
@@ -575,6 +567,10 @@ contract EtherNomin is ERC20FeeToken {
         AccountUnfrozen(target);
     }
 
+    /* Fallback function allows convenient collateralisation of the contract,
+     * including by non-foundation parties. */
+    function() public payable {}
+
 
     /* ========== MODIFIERS ========== */
 
@@ -593,7 +589,7 @@ contract EtherNomin is ERC20FeeToken {
     /* Any function modified by this will automatically liquidate
      * the system if the collateral levels are too low.
      */
-    modifier postChecksCollateralisation
+    modifier postCheckAutoLiquidate
     {
         _;
         if (collateralisationRatio() < autoLiquidationRatio) {
@@ -601,7 +597,7 @@ contract EtherNomin is ERC20FeeToken {
         }
     }
 
- 
+
     /* ========== EVENTS ========== */
 
     event Issuance(uint nominsIssued, uint collateralDeposited);
