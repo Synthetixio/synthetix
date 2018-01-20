@@ -82,6 +82,7 @@ k-1       |        k
           |
        f  | t    n
           r
+
 In this situation the area (r-f)*s contributes to fee period k-1, while
 the area (t-r)*s contributes to fee period k. We will implicitly consider a
 zero-value transfer to have occurred at time r. Their fee entitlement for the
@@ -319,6 +320,20 @@ contract Havven is ERC20Token, Owned {
      * If the entitlement was updated, also update the last transfer time to be
      * at the timestamp of the rollover, so if this should do nothing if called more
      * than once during a given period.
+     *
+     * Consider the case where the entitlement is updated. If the last transfer
+     * occurred at time t, then the starred region is added to the entitlement,
+     * the last transfer timestamp is moved to r, and the fee period is
+     * rolled over from k-1 to k so that the new fee period start time is at time r.
+     * 
+     *   k-1       |        k
+     *         s __|
+     *          |**|
+     *          |**|
+     *          |**|___ __ _  _
+     *             |
+     *          t  |
+     *             r
      */
     function rolloverFee(address account, uint lastTransferTime, uint preBalance)
         internal
