@@ -193,13 +193,13 @@ contract Court is Owned, SafeDecimalMath {
     // A vote runs from its start time t until (t + votingPeriod),
     // and then the confirmation period terminates no later than
     // (t + votingPeriod + confirmationPeriod).
-    mapping(address => uint) voteStartTimes;
+    mapping(address => uint) public voteStartTimes;
 
     // The tallies for and against confiscation of a given balance.
     // These are set to zero at the start of a vote, and also on conclusion,
     // just to keep the blockchain clean.
-    mapping(address => uint) votesFor;
-    mapping(address => uint) votesAgainst;
+    mapping(address => uint) public votesFor;
+    mapping(address => uint) public votesAgainst;
 
     // The penultimate average balance of a user at the time they voted.
     // If we did not save this information then we would have to
