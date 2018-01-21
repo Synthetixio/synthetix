@@ -134,7 +134,7 @@ pragma solidity ^0.4.19;
 import "ERC20Token.sol";
 import "Owned.sol";
 import "EtherNomin.sol";
-import "ConfiscationCourt.sol";
+import "Court.sol";
 
 
 contract Havven is ERC20Token, Owned {
@@ -180,12 +180,12 @@ contract Havven is ERC20Token, Owned {
     // A given account's vote in some confiscation action.
     // This requires the default value of the Vote enum to correspond to an abstention.
     // If an account's vote is not an abstention, it may not transfer funds.
-    mapping(address => ConfiscationCourt.Vote) public vote;
+    mapping(address => Court.Vote) public vote;
     // The vote a user last participated in.
     mapping(address => address) public voteTarget;
 
     EtherNomin nomin;
-    ConfiscationCourt public court;
+    Court public court;
 
 
     /* ========== CONSTRUCTOR ========== */
@@ -203,7 +203,7 @@ contract Havven is ERC20Token, Owned {
                                _beneficiary,
                                _initialEtherPrice,
                                _owner);
-        court = new ConfiscationCourt(this, nomin, _owner);
+        court = new Court(this, nomin, _owner);
     }
 
 
@@ -227,7 +227,7 @@ contract Havven is ERC20Token, Owned {
         view
         returns (bool)
     {
-        return vote[account] != ConfiscationCourt.Vote.Abstention;
+        return vote[account] != Court.Vote.Abstention;
     }
 
 
@@ -388,8 +388,8 @@ contract Havven is ERC20Token, Owned {
         public
         onlyCourt
     {
-        require(vote[account] == ConfiscationCourt.Vote.Abstention);
-        vote[account] = ConfiscationCourt.Vote.Yea;
+        require(vote[account] == Court.Vote.Abstention);
+        vote[account] = Court.Vote.Yea;
         voteTarget[account] = target;
     }
 
@@ -401,8 +401,8 @@ contract Havven is ERC20Token, Owned {
         public
         onlyCourt
     {
-        require(vote[account] == ConfiscationCourt.Vote.Abstention);
-        vote[account] = ConfiscationCourt.Vote.Nay;
+        require(vote[account] == Court.Vote.Abstention);
+        vote[account] = Court.Vote.Nay;
         voteTarget[account] = target;
     }
 
@@ -418,7 +418,7 @@ contract Havven is ERC20Token, Owned {
         onlyCourt
     {
         require(voteTarget[account] == target);
-        vote[account] = ConfiscationCourt.Vote.Abstention;
+        vote[account] = Court.Vote.Abstention;
         voteTarget[account] = 0;
     }
 
@@ -447,7 +447,7 @@ contract Havven is ERC20Token, Owned {
 
     modifier onlyCourt
     {
-        require(ConfiscationCourt(msg.sender) == court);
+        require(Court(msg.sender) == court);
         _;
     }
 

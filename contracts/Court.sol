@@ -2,7 +2,7 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
-file:       ConfiscationCourt.sol
+file:       Court.sol
 version:    0.2
 author:     Block8 Technologies, in partnership with Havven
 
@@ -150,7 +150,7 @@ import "EtherNomin.sol";
 import "Havven.sol";
 
 
-contract ConfiscationCourt is Owned, SafeDecimalMath {
+contract Court is Owned, SafeDecimalMath {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -217,7 +217,7 @@ contract ConfiscationCourt is Owned, SafeDecimalMath {
 
     /* ========== CONSTRUCTOR ========== */
 
-    function ConfiscationCourt(Havven _havven, EtherNomin _nomin, address _owner)
+    function Court(Havven _havven, EtherNomin _nomin, address _owner)
         Owned(_owner)
         public
     {
