@@ -155,37 +155,37 @@ contract ConfiscationCourt is Owned, SafeDecimalMath {
     /* ========== STATE VARIABLES ========== */
 
     // The addresses of the token contracts this confiscation court interacts with.
-    Havven public havven;
-    EtherNomin public nomin;
+    Havven havven;
+    EtherNomin nomin;
 
     // The minimum havven balance required to be considered to have standing
     // to begin confiscation proceedings.
-    uint public minStandingBalance = 100 * UNIT;
+    uint minStandingBalance = 100 * UNIT;
 
     // The voting period lasts for this duration,
     // and if set, must fall within the given bounds.
-    uint public votingPeriod = 1 weeks;
-    uint public constant minVotingPeriod = 3 days;
-    uint public constant maxVotingPeriod = 4 weeks;
+    uint votingPeriod = 1 weeks;
+    uint constant minVotingPeriod = 3 days;
+    uint constant maxVotingPeriod = 4 weeks;
 
     // Duration of the period during which the foundation may confirm
     // or veto a vote that has concluded.
     // If set, the confirmation duration must fall within the given bounds.
-    uint public confirmationPeriod = 1 weeks;
-    uint public constant minConfirmationPeriod = 1 days;
-    uint public constant maxConfirmationPeriod = 2 weeks;
+    uint confirmationPeriod = 1 weeks;
+    uint constant minConfirmationPeriod = 1 days;
+    uint constant maxConfirmationPeriod = 2 weeks;
 
     // No fewer than this fraction of havvens must participate in the vote
     // in order for a quorum to be reached.
     // The participation fraction required may be set no lower than 10%.
-    uint public requiredParticipation = 3 * UNIT / 10;
-    uint public constant minRequiredParticipation = UNIT / 10;
+    uint requiredParticipation = 3 * UNIT / 10;
+    uint constant minRequiredParticipation = UNIT / 10;
 
     // At least this fraction of participating votes must be in favour of
     // confiscation for the proposal to pass.
     // The required majority may be no lower than 50%.
-    uint public requiredMajority = (2 * UNIT) / 3;
-    uint public constant minRequiredMajority = UNIT / 2;
+    uint requiredMajority = (2 * UNIT) / 3;
+    uint constant minRequiredMajority = UNIT / 2;
 
     // The timestamp at which a vote began. This is used to determine
     // Whether a vote is running, is in the confirmation period,
@@ -193,13 +193,13 @@ contract ConfiscationCourt is Owned, SafeDecimalMath {
     // A vote runs from its start time t until (t + votingPeriod),
     // and then the confirmation period terminates no later than
     // (t + votingPeriod + confirmationPeriod).
-    mapping(address => uint) public voteStartTimes;
+    mapping(address => uint) voteStartTimes;
 
     // The tallies for and against confiscation of a given balance.
     // These are set to zero at the start of a vote, and also on conclusion,
     // just to keep the blockchain clean.
-    mapping(address => uint) public votesFor;
-    mapping(address => uint) public votesAgainst;
+    mapping(address => uint) votesFor;
+    mapping(address => uint) votesAgainst;
 
     // The penultimate average balance of a user at the time they voted.
     // If we did not save this information then we would have to

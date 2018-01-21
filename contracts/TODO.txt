@@ -7,12 +7,18 @@ FEATURES
 
 CLEANUP
 =======
+* make sure everything that should be settable has a setter
+* make sure everything that should not be settable does not have a setter
+* make sure everything that should be SDable is SDable
+* make sure everything that needs an event has one
+* Ensure function and member variable ordering is correct and consistent.
+* Consider not disbursing fees to the havven contract itself while it possesses havvens which it has not endowed anyone with.
 * check if modifiers are less efficient than inline conditions, reintroduce them if they aren't, maybe even factor all preconditions out into modifiers.
 * Ensure documentation is up to date with functionality since changes.
 * Merge double CALLs in CollateralisedNomin.confiscateBalance and similar elsewhere
 * Check if can avoid ERC20 inheriting from SafeFixedMath due to inlined UNIT, and they only use addition and subtraction. (Maybe "Using For" or libs)
 * Explicitly label pre- and post-condition checkers
-* Check that safemath library separate checks are necessary (or maybe not?)
+* Determine whether SafeFixedMath library separate checks are necessary
 * What happens with fee computations when multiple transactions occur in one block (zero time difference)
 * Reentrancy checks
 * Decide what to do about fallback functions
@@ -21,33 +27,29 @@ CLEANUP
 * check access modifiers are correct
 * check that all state-updating modifiers operate post-function-call.
 * ensure everything that should be constant is constant.
-* Version numbers
 * Update readme
-* Better contract and function nomenclature.
+* Update version numbers
+* Better nomenclature for contracts, variables, and functions.
 * Decide whether to apply postchecksCollateralisation modifier on nomin pool interactions
 * rename "EtherNomin", description, ticker symbol? (subject to Kain's approval)
 * Check relative performance of enums vs ints in the court.
 * Check unchecked sends and so on
 * Split fees for purchase versus sale?
-* make sure everything that should be settable has a setter
-* make sure everything that should be SDable is SDable
-* make sure everything that needs an event has one
 * Work out which event parameters should be indexed (whether to add secondary fields to store actual value.).
-* "Using for" statements where they make sense
-* Structs where they make sense
+* "Using for" statements where they make sense (if anywhere)
+* Structs if and where they make sense
 * Check that all calls out to other contracts are checked and handled in case of failure.
-* Ensure that denominators can never be zero.
 * Documentation on members
 * Documentation on functions
 * Documentation on files
-* Add units where it makes sense
+* Add documented units where it makes sense
 * Work out if we can add a fee field to Transfer events and still be ERC20 compliant
-* ERC777 (if backwards compatible with ERC20)
+* ERC777? (if backwards compatible with ERC20)
 * SafeFixedMath to a library?
 * tabs to spaces
 * Eliminate overwide lines
 * Gas optimisation
-* Add parameter names in contract ABIs for solidity-generated functions.
+* Add parameter names in contract ABIs for solidity-generated public functions.
 
 VALIDATION
 ==========
@@ -68,6 +70,7 @@ VALIDATION
 * Re-verify that ERC20 compliant as per https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20-token-standard.md
 * Joel + Mike + Dom + Sam + Matt contract read-through
 * withdrawFeeEntitlement - test limits of multiplicaiton
+* Ensure that denominators can never be zero.
 
 MISC
 ====
