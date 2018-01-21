@@ -94,7 +94,7 @@ pragma solidity ^0.4.19;
 
 import "ERC20FeeToken.sol";
 import "Havven.sol";
-import "ConfiscationCourt.sol";
+import "Court.sol";
 
 
 contract EtherNomin is ERC20FeeToken {
@@ -110,7 +110,7 @@ contract EtherNomin is ERC20FeeToken {
     Havven havven;
 
     // The address of the contract which manages confiscation votes.
-    ConfiscationCourt court;
+    Court court;
 
     // Foundation wallet for funds to go to post liquidation.
     address beneficiary;
@@ -202,7 +202,7 @@ contract EtherNomin is ERC20FeeToken {
         public
         onlyOwner
     {
-        court = ConfiscationCourt(newCourt);
+        court = Court(newCourt);
         CourtUpdated(newCourt);
     }
 
@@ -582,7 +582,7 @@ contract EtherNomin is ERC20FeeToken {
         public
     {
         // Should be callable only by the confiscation court.
-        require(ConfiscationCourt(msg.sender) == court);
+        require(Court(msg.sender) == court);
 
         // These checks are strictly unnecessary,
         // since they are already checked in the court contract itself.
