@@ -279,6 +279,24 @@ contract EtherNomin is ERC20FeeToken {
         return fiatValue(this.balance);
     }
 
+    /* The same as fiatValue(), but without the stale price check. */
+    function fiatValueAllowStale(uint eth) 
+        internal
+        view
+        returns (uint)
+    {
+        return safeDecMul(eth, etherPrice);
+    }
+
+    /* The same as fiatBalance(), but without the stale price check. */
+    function fiatBalanceAllowStale()
+        internal
+        view
+        returns (uint)
+    {
+        return fiatValueAllowStale(this.balance);
+    }
+
     /* Return the units of fiat per nomin in the supply.*/
     function collateralisationRatio()
         public
@@ -464,8 +482,14 @@ contract EtherNomin is ERC20FeeToken {
         public
     {
         uint proceeds = saleProceedsFiat(n);
-        // Price staleness check occurs inside the call to fiatBalance
-        require(fiatBalance() >= proceeds);
+        // Price staleness check occurs inside the call to fiatBalance,
+        // but allow people to sell their nomins back to the system regardless
+        // if we're in liquidation.
+        if (isLiquidating()) {
+            require(fiatBalanceAllowStale() >= proceeds);
+        } else {
+            require(fiatBalance() >= proceeds);
+        }
         // sub requires that the balance is greater than n
         balanceOf[msg.sender] = safeSub(balanceOf[msg.sender], n);
         nominPool = safeAdd(nominPool, n);
