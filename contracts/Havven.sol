@@ -143,7 +143,7 @@ contract Havven is ERC20Token, Owned {
 
     // Sums of balances*duration in the current fee period.
     // range: decimals; units: havven-seconds
-    mapping(address => uint) public currentBalanceSum;
+    mapping(address => uint) currentBalanceSum;
 
     // Average account balances in the last completed fee period. This is proportional
     // to that account's last period fee entitlement.
@@ -160,18 +160,18 @@ contract Havven is ERC20Token, Owned {
 
     // The time an account last made a transfer.
     // range: naturals
-    mapping(address => uint) public lastTransferTimestamp;
+    mapping(address => uint) lastTransferTimestamp;
 
-    mapping(address => bool) public hasWithdrawnLastPeriodFees;
+    mapping(address => bool) hasWithdrawnLastPeriodFees;
 
     // The time the current fee period began.
     uint public feePeriodStartTime;
     // Fee periods will roll over in no shorter a time than this.
     uint public targetFeePeriodDurationSeconds = 1 weeks;
     // And may not be set to be shorter than 1 day.
-    uint public constant minFeePeriodDurationSeconds = 1 days;
+    uint constant minFeePeriodDurationSeconds = 1 days;
     // The actual measured duration of the last fee period (decimal seconds).
-    uint public lastFeePeriodDuration = 1;
+    uint lastFeePeriodDuration = 1;
 
     // The quantity of nomins that were in the fee pot at the time
     // of the last fee rollover (feePeriodStartTime).
@@ -184,7 +184,7 @@ contract Havven is ERC20Token, Owned {
     // The vote a user last participated in.
     mapping(address => address) public voteTarget;
 
-    EtherNomin public nomin;
+    EtherNomin nomin;
     ConfiscationCourt public court;
 
 

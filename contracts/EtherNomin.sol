@@ -103,17 +103,17 @@ contract EtherNomin is ERC20FeeToken {
 
     // The oracle provides price information to this contract.
     // It may only call the setPrice() function.
-    address public oracle;
+    address oracle;
 
     // The address of the havven contract that this contract
     // is paired with.
-    Havven public havven;
+    Havven havven;
 
     // The address of the contract which manages confiscation votes.
-    ConfiscationCourt public court;
+    ConfiscationCourt court;
 
     // Foundation wallet for funds to go to post liquidation.
-    address public beneficiary;
+    address beneficiary;
 
     // Nomins in the pool ready to be sold.
     uint public nominPool = 0;
@@ -121,36 +121,36 @@ contract EtherNomin is ERC20FeeToken {
     // Impose a 50 basis-point fee for buying from and selling to the nomin pool.
     uint public poolFeeRate = UNIT / 200;
 
-    // Minimum quantity of nomins purchasable: 1 cent by default.
-    uint public purchaseMininum = UNIT / 100;
+    // The minimum purchasable quantity of nomins is 1 cent.
+    uint constant purchaseMininum = UNIT / 100;
 
     // When issuing, nomins must be overcollateralised by this ratio.
-    uint public collatRatioMinimum =  2 * UNIT;
+    uint collatRatioMinimum =  2 * UNIT;
 
     // If the collateralisation ratio of the contract falls below this level,
     // immediately begin liquidation.
-    uint public autoLiquidationRatio = UNIT;
+    uint constant autoLiquidationRatio = UNIT;
 
     // The liquidation period is the duration that must pass before the liquidation period is complete.
     // It can be extended up to a given duration.
-    uint public constant defaultLiquidationPeriod = 90 days;
-    uint public constant maxLiquidationPeriod = 180 days;
-    uint public liquidationPeriod = defaultLiquidationPeriod;
+    uint constant defaultLiquidationPeriod = 90 days;
+    uint constant maxLiquidationPeriod = 180 days;
+    uint liquidationPeriod = defaultLiquidationPeriod;
 
     // The timestamp when liquidation was activated. We initialise this to
     // uint max, so that we know that we are under liquidation if the
     // liquidation timestamp is in the past.
-    uint public liquidationTimestamp = ~uint(0);
+    uint liquidationTimestamp = ~uint(0);
 
     // Ether price from oracle (fiat per ether).
     uint public etherPrice;
 
     // Last time the price was updated.
-    uint public lastPriceUpdate;
+    uint lastPriceUpdate;
 
     // The period it takes for the price to be considered stale.
     // If the price is stale, functions that require the price are disabled.
-    uint public stalePeriod = 2 days;
+    uint stalePeriod = 2 days;
 
     // The set of addresses that have been frozen by confiscation.
     mapping(address => bool) public isFrozen;
@@ -188,6 +188,22 @@ contract EtherNomin is ERC20FeeToken {
     {
         oracle = newOracle;
         OracleUpdated(newOracle);
+    }
+
+    function setHavven(address newHavven)
+        public
+        onlyOwner
+    {
+        havven = Havven(newHavven);
+        HavvenUpdated(newHavven);
+    }
+
+    function setCourt(address newCourt)
+        public
+        onlyOwner
+    {
+        court = ConfiscationCourt(newCourt);
+        CourtUpdated(newCourt);
     }
 
     // Set the beneficiary of this contract. Only the contract owner should be able to call this.
@@ -486,7 +502,18 @@ contract EtherNomin is ERC20FeeToken {
         internal
     {
         liquidationTimestamp = now;
-        Liquidation();
+        Liquidation(liquidationPeriod);
+    }
+
+    /* Extend the liquidation period. It may only get longer,
+     * not shorter, and it may not be extended past the liquidation max. */
+    function extendLiquidationPeriod(uint extension)
+        public
+        onlyOwner
+    {
+        require(liquidationPeriod + extension <= maxLiquidationPeriod);
+        liquidationPeriod += extension;
+        LiquidationExtended(extension);
     }
 
     /* If the collateralisation ratio of this contract has recovered above
@@ -504,17 +531,6 @@ contract EtherNomin is ERC20FeeToken {
         liquidationTimestamp = ~uint(0);
         liquidationPeriod = defaultLiquidationPeriod;
         LiquidationTerminated();
-    }
-
-    /* Extend the liquidation period. It may only get longer,
-     * not shorter, and it may not be extended past the liquidation max. */
-    function extendLiquidationPeriod(uint extension)
-        public
-        onlyOwner
-    {
-        require(liquidationPeriod + extension <= maxLiquidationPeriod);
-        liquidationPeriod += extension;
-        LiquidationExtended(extension);
     }
 
     /* Destroy this contract, returning all funds back to the beneficiary
@@ -614,9 +630,13 @@ contract EtherNomin is ERC20FeeToken {
 
     event OracleUpdated(address newOracle);
 
+    event HavvenUpdated(address newHavven);
+
+    event CourtUpdated(address newCourt);
+
     event BeneficiaryUpdated(address newBeneficiary);
 
-    event Liquidation();
+    event Liquidation(uint duration);
 
     event LiquidationTerminated();
 
