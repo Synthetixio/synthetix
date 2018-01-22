@@ -2,7 +2,7 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
-file:       SafeFixedMath.sol
+file:       SafeDecimalMath.sol
 version:    0.1
 author:     Block8 Technologies, in partnership with Havven
 
@@ -28,7 +28,7 @@ occur.
 LICENCE INFORMATION
 -----------------------------------------------------------------
 
-Copyright (c) 2017 Havven.io
+Copyright (c) 2018 Havven.io
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -47,7 +47,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-    
+
 -----------------------------------------------------------------
 RELEASE NOTES
 -----------------------------------------------------------------
@@ -61,20 +61,21 @@ Find out more at https://www.block8.io/
 
 pragma solidity ^0.4.19;
 
-/* Safely manipulate fixed-point decimals at a given precision level. 
+
+/* Safely manipulate unsigned fixed-point decimals at a given precision level.
  * All functions accepting uints in this contract and derived contracts
  * are taken to be such fixed point decimals (including fiat, ether, and
  * nomin quantities). */
-contract SafeFixedMath {
-    
+contract SafeDecimalMath {
+
     // Number of decimal places in the representation.
     uint public constant decimals = 18;
 
     // The number representing 1.0.
     uint public constant UNIT = 10 ** decimals;
-    
+
     /* True iff adding x and y will not overflow. */
-    function addIsSafe(uint x, uint y) 
+    function addIsSafe(uint x, uint y)
         pure
         internal
         returns (bool)
@@ -88,10 +89,10 @@ contract SafeFixedMath {
         internal
         returns (uint)
     {
-        assert(addIsSafe(x, y));
+        require(addIsSafe(x, y));
         return x + y;
     }
-    
+
     /* True iff subtracting y from x will not overflow in the negative direction. */
     function subIsSafe(uint x, uint y)
         pure
@@ -107,15 +108,15 @@ contract SafeFixedMath {
         internal
         returns (uint)
     {
-        assert(subIsSafe(x, y));
+        require(subIsSafe(x, y));
         return x - y;
     }
-    
+
     /* True iff multiplying x and y would not overflow. */
     function mulIsSafe(uint x, uint y)
         pure
         internal
-        returns (bool) 
+        returns (bool)
     {
         if (x == 0) {
             return true;
@@ -125,19 +126,19 @@ contract SafeFixedMath {
     }
 
     /* Return the result of multiplying x and y, throwing an exception in case of overflow. */
-    function safeMul(uint x, uint y)
-        pure 
-        internal 
+    function safeDecMul(uint x, uint y)
+        pure
+        internal
         returns (uint)
     {
-        assert(mulIsSafe(x, y));
+        require(mulIsSafe(x, y));
         // Divide by UNIT to remove the extra factor introduced by the product.
         return (x * y) / UNIT;
     }
-    
+
     /* True iff the denominator of x/y is nonzero. */
     function divIsSafe(uint x, uint y)
-        pure 
+        pure
         internal
         returns (bool)
     {
@@ -145,14 +146,22 @@ contract SafeFixedMath {
     }
 
     /* Return the result of dividing x by y, throwing an exception in case of overflow or zero divisor. */
-    function safeDiv(uint x, uint y)
+    function safeDecDiv(uint x, uint y)
         pure
         internal
         returns (uint)
     {
-        assert(mulIsSafe(x, UNIT)); // No need to use divIsSafe() here, as a 0 denominator already throws an exception.
+        require(mulIsSafe(x, UNIT)); // No need to use divIsSafe() here, as a 0 denominator already throws an exception.
         // Reintroduce the UNIT factor that will be divided out.
         return (x * UNIT) / y;
     }
-}
 
+    /* Convert an unsigned integer to a unsigned fixed-point decimal.*/
+    function intToDec(uint i)
+        pure
+        internal
+        returns (uint)
+    {
+        return safeDecMul(i, UNIT);
+    }
+}
