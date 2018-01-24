@@ -6,6 +6,7 @@ FEATURES
 
 CLEANUP
 =======
+* NatSpec doc https://github.com/ethereum/wiki/wiki/Ethereum-Natural-Specification-Format https://github.com/ethereum/wiki/wiki/Natspec-Example
 * make sure everything that should be settable has a setter
 * make sure everything that should not be settable does not have a setter
 * make sure everything that should be SDable is SDable
