@@ -24,6 +24,8 @@ MASTER = W3.eth.accounts[0]
 
 SOLIDITY_SOURCES = ["contracts/Havven.sol", "contracts/EtherNomin.sol",
                     "contracts/Court.sol", "contracts/Owned.sol"]
+                    #,
+                    #"tests/PublicMath.sol"]
 
 UNIT = 10**18
 
@@ -105,15 +107,10 @@ def mine_txs(tx_hashes):
 def deploy_contract(compiled_sol, contract_name, deploy_account, constructor_args=[], gas=5000000):
     contract_interface = compiled_sol[contract_name]
     contract = W3.eth.contract(abi=contract_interface['abi'], bytecode=contract_interface['bin'])
-
     tx_hash = contract.deploy(transaction={'from': deploy_account, 'gas': gas},
                               args=constructor_args)
-
     tx_receipt = mine_tx(tx_hash)
-
-    contract_address = tx_receipt['contractAddress']
-    contract_instance = W3.eth.contract(contract_interface['abi'], contract_address)
-
+    contract_instance = W3.eth.contract(address=tx_receipt['contractAddress'], abi=contract_interface['abi'])
     return contract_instance
 
 def attempt_deploy(compiled_sol, contract_name, deploy_account, constructor_args):
@@ -141,22 +138,22 @@ court_contract = attempt_deploy(compiled, 'Court',
 owned_contract = attempt_deploy(compiled, 'Owned', MASTER, [MASTER])
 
 # Hook up each of those contracts to each other
-txs = [havven_contract.transact({'from': MASTER}).setNomin(nomin_contract.address),
-       havven_contract.transact({'from': MASTER}).setCourt(court_contract.address),
-       nomin_contract.transact({'from': MASTER}).setCourt(court_contract.address)]
+txs = [havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
+       havven_contract.functions.setCourt(court_contract.address).transact({'from': MASTER}),
+       nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER})]
 attempt(mine_txs, [txs], "Linking contracts... ")
 
 print("\nDeployment complete.\n")
 
 # Test out state updates
 """
-print(havven_contract.call().balanceOf(havven_contract.address))
-print(havven_contract.call().balanceOf(MASTER))
+print(havven_contract.functions.balanceOf(havven_contract.address).call())
+print(havven_contract.functions.balanceOf(MASTER).call())
 
 print("Endowing master account with 1000 havvens...")
-mine_tx(havven_contract.transact({'from': MASTER}).endow(MASTER, 1000*UNIT))
+mine_tx(havven_contract.functions.endow(MASTER, 1000*UNIT).transact({'from': MASTER}))
 
-print(havven_contract.call().balanceOf(havven_contract.address))
-print(havven_contract.call().balanceOf(account))
-print(havven_contract.call().balanceOf(MASTER))
+print(havven_contract.functions.balanceOf(havven_contract.address).call())
+print(havven_contract.functions.balanceOf(account).call())
+print(havven_contract.functions.balanceOf(MASTER).call())
 """
