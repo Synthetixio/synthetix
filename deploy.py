@@ -23,9 +23,7 @@ W3 = Web3(HTTPProvider(BLOCKCHAIN_ADDRESS))
 MASTER = W3.eth.accounts[0]
 
 SOLIDITY_SOURCES = ["contracts/Havven.sol", "contracts/EtherNomin.sol",
-                    "contracts/Court.sol", "contracts/Owned.sol"]
-                    #,
-                    #"tests/PublicMath.sol"]
+                    "contracts/Court.sol"]
 
 UNIT = 10**18
 
@@ -39,8 +37,7 @@ class TERMCOLORS:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
-def compile_contracts():
-    files = SOLIDITY_SOURCES
+def compile_contracts(files):
     contract_interfaces = {}
 
     try:
@@ -121,7 +118,7 @@ def attempt_deploy(compiled_sol, contract_name, deploy_account, constructor_args
 
 print("Deployment initiated.\n")
 
-compiled = attempt(compile_contracts, [], "Compiling contracts... ")
+compiled = attempt(compile_contracts, [SOLIDITY_SOURCES], "Compiling contracts... ")
 
 # Deploy contracts
 havven_contract = attempt_deploy(compiled, 'Havven',
@@ -135,7 +132,7 @@ court_contract = attempt_deploy(compiled, 'Court',
                                 [havven_contract.address, nomin_contract.address,
                                  MASTER])
 
-owned_contract = attempt_deploy(compiled, 'Owned', MASTER, [MASTER])
+#owned_contract = attempt_deploy(compiled, 'Owned', MASTER, [MASTER])
 
 # Hook up each of those contracts to each other
 txs = [havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
