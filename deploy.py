@@ -8,6 +8,9 @@ from web3.contract import ConciseContract
 import time
 
 POLLING_INTERVAL = 2
+
+STATUS_ALIGN_SPACING = 6
+
 # Our private chain
 #BLOCKCHAIN_ADDRESS = "http://13.211.41.240:8545"
 # Ganache
@@ -63,14 +66,16 @@ def attempt(function, func_args, init_string, print_status=True, print_exception
     if print_status:
         print(init_string, end="", flush=True)
 
+    pad = (STATUS_ALIGN_SPACING - len(init_string)) % STATUS_ALIGN_SPACING
+
     try:
         result = function(*func_args)
         if print_status:
-            print(TERMCOLORS.OKGREEN + "Done!" + TERMCOLORS.ENDC)
+            print(TERMCOLORS.OKGREEN + " "*pad + "Done!" + TERMCOLORS.ENDC)
         return result
     except Exception as e:
         if print_status:
-            print(TERMCOLORS.FAIL + "Failed." + TERMCOLORS.ENDC)
+            print(TERMCOLORS.FAIL + " "*pad + "Failed." + TERMCOLORS.ENDC)
         if print_exception:
             print(e)
         return None
@@ -117,9 +122,9 @@ def attempt_deploy(compiled_sol, contract_name, deploy_account, constructor_args
                    f"Deploying {contract_name}... ")
 
 
-#
+print("Deployment initiated.\n")
 
-compiled = compile_contracts()
+compiled = attempt(compile_contracts, [], "Compiling contracts... ")
 
 # Deploy contracts
 havven_contract = attempt_deploy(compiled, 'Havven',
@@ -140,6 +145,8 @@ txs = [havven_contract.transact({'from': MASTER}).setNomin(nomin_contract.addres
        havven_contract.transact({'from': MASTER}).setCourt(court_contract.address),
        nomin_contract.transact({'from': MASTER}).setCourt(court_contract.address)]
 attempt(mine_txs, [txs], "Linking contracts... ")
+
+print("\nDeployment complete.\n")
 
 # Test out state updates
 """

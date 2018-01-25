@@ -2,8 +2,7 @@ import unittest
 import deploy
 from deploy import owned_contract, MASTER
 
-class TestStringMethods(unittest.TestCase):
-
+class TestOwned(unittest.TestCase):
     def test_owner_is_master(self):
         self.assertEqual(owned_contract.call().owner(), MASTER)
 
