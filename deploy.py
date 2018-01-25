@@ -37,11 +37,11 @@ class TERMCOLORS:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
-def compile_contracts(files):
+def compile_contracts(files, remappings=[]):
     contract_interfaces = {}
 
     try:
-        compiled = compile_files(files, optimize=True)
+        compiled = compile_files(files, import_remappings=remappings)
         for i in files:
             name = i.split("/")[1].split(".")[0]
             contract_interfaces[name] = compiled[i+":"+name]
@@ -110,10 +110,11 @@ def deploy_contract(compiled_sol, contract_name, deploy_account, constructor_arg
     contract_instance = W3.eth.contract(address=tx_receipt['contractAddress'], abi=contract_interface['abi'])
     return contract_instance
 
-def attempt_deploy(compiled_sol, contract_name, deploy_account, constructor_args):
+def attempt_deploy(compiled_sol, contract_name, deploy_account, constructor_args, print_status=True, print_exception=False):
     return attempt(deploy_contract,
                    [compiled_sol, contract_name, deploy_account, constructor_args],
-                   f"Deploying {contract_name}... ")
+                   f"Deploying {contract_name}... ",
+                   print_status=print_status, print_exception=print_exception)
 
 
 print("Deployment initiated.\n")
