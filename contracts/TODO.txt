@@ -9,6 +9,7 @@ FEATURES
 
 CLEANUP
 =======
+* Test events
 * Switch to concise contract in testing suite if possible
 * Ensure the deploy script actually optimises the files when compiling.
 * NatSpec doc https://github.com/ethereum/wiki/wiki/Ethereum-Natural-Specification-Format https://github.com/ethereum/wiki/wiki/Natspec-Example
