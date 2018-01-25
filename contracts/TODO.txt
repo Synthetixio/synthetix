@@ -3,9 +3,12 @@ FEATURES
 * Factor out functionality from state, into proxy contract, for upgrades.
 * Determine how to get tokens into contract and working with vesting schedules that still accrue fees.
 * Confirm with Kain final values for all contract parameters.
+* Switch fee to 20 basis points
+* Increase duration of fee period to 1 month.
 
 CLEANUP
 =======
+* NatSpec doc https://github.com/ethereum/wiki/wiki/Ethereum-Natural-Specification-Format https://github.com/ethereum/wiki/wiki/Natspec-Example
 * make sure everything that should be settable has a setter
 * make sure everything that should not be settable does not have a setter
 * make sure everything that should be SDable is SDable
