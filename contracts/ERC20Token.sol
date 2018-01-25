@@ -57,7 +57,7 @@ Find out more at https://www.block8.io/
 pragma solidity ^0.4.19;
 
 
-import "SafeDecimalMath.sol";
+import "contracts/SafeDecimalMath.sol";
 
 
 contract ERC20Token is SafeDecimalMath {

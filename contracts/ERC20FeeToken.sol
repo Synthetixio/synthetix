@@ -58,8 +58,8 @@ Find out more at https://www.block8.io/
 pragma solidity ^0.4.19;
 
 
-import "SafeDecimalMath.sol";
-import "Owned.sol";
+import "contracts/SafeDecimalMath.sol";
+import "contracts/Owned.sol";
 
 
 contract ERC20FeeToken is Owned, SafeDecimalMath {

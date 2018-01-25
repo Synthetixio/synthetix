@@ -92,9 +92,9 @@ Find out more at https://www.block8.io/
 pragma solidity ^0.4.19;
 
 
-import "ERC20FeeToken.sol";
-import "Havven.sol";
-import "Court.sol";
+import "contracts/ERC20FeeToken.sol";
+import "contracts/Havven.sol";
+import "contracts/Court.sol";
 
 
 contract EtherNomin is ERC20FeeToken {
@@ -172,7 +172,6 @@ contract EtherNomin is ERC20FeeToken {
         havven = _havven;
         oracle = _oracle;
         beneficiary = _beneficiary;
-        court = _havven.court();
 
         etherPrice = initialEtherPrice;
         lastPriceUpdate = now;

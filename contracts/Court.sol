@@ -144,10 +144,10 @@ Find out more at https://www.block8.io/
 pragma solidity ^0.4.19;
 
 
-import "Owned.sol";
-import "SafeDecimalMath.sol";
-import "EtherNomin.sol";
-import "Havven.sol";
+import "contracts/Owned.sol";
+import "contracts/SafeDecimalMath.sol";
+import "contracts/EtherNomin.sol";
+import "contracts/Havven.sol";
 
 
 contract Court is Owned, SafeDecimalMath {
