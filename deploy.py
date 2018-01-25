@@ -118,8 +118,10 @@ def attempt_deploy(compiled_sol, contract_name, deploy_account, constructor_args
                    [compiled_sol, contract_name, deploy_account, constructor_args],
                    f"Deploying {contract_name}... ")
 
-compiled = compile_contracts()
 
+# 
+
+compiled = compile_contracts()
 
 # Deploy contracts
 havven_contract = attempt_deploy(compiled, 'Havven',
@@ -140,6 +142,7 @@ txs = [havven_contract.transact({'from': MASTER}).setNomin(nomin_contract.addres
 attempt(mine_txs, [txs], "Linking contracts... ")
 
 # Test out state updates
+"""
 print(havven_contract.call().balanceOf(havven_contract.address))
 print(havven_contract.call().balanceOf(MASTER))
 
@@ -148,3 +151,4 @@ mine_tx(havven_contract.transact({'from': MASTER}).endow(MASTER, 1000*UNIT))
 
 print(havven_contract.call().balanceOf(havven_contract.address))
 print(havven_contract.call().balanceOf(MASTER))
+"""
