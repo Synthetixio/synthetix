@@ -43,21 +43,19 @@ def compile_contracts():
         for i in files:
             name = i.split("/")[1].split(".")[0]
             contract_interfaces[name] = compiled[i+":"+name]
-    except PermissionError:
+    except:
         # fix for permission errors in py-solc
         # requires solcjs to be installed globally
         # > npm install -g solcjs
         import subprocess
-        subprocess.call("solcjs_compile.sh")
-
+        subprocess.call("./solcjs_compile.sh")
         for i in files:
             name = i.split("/")[1].split(".")[0]
-            base_name = f"contracts/compiled/{name}_sol_{name}"
+            base_name = f"contracts/compiled/contracts_{name}_sol_{name}"
             contract_interfaces[name] = {
                 "abi": json.loads(open(base_name+".abi", 'r').read()),
                 "bin": open(base_name+".bin", 'rb').read()
             }
-    
     return contract_interfaces
 
 
@@ -99,7 +97,7 @@ def mine_txs(tx_hashes):
         time.sleep(POLLING_INTERVAL)
     return tx_receipts
 
-def deploy_contract(compiled_sol, contract_name, deploy_account, constructor_args=[], gas=3000000):
+def deploy_contract(compiled_sol, contract_name, deploy_account, constructor_args=[], gas=5000000):
     contract_interface = compiled_sol[contract_name]
     contract = W3.eth.contract(abi=contract_interface['abi'], bytecode=contract_interface['bin'])
 
@@ -119,7 +117,7 @@ def attempt_deploy(compiled_sol, contract_name, deploy_account, constructor_args
                    f"Deploying {contract_name}... ")
 
 
-# 
+#
 
 compiled = compile_contracts()
 
@@ -150,5 +148,6 @@ print("Endowing master account with 1000 havvens...")
 mine_tx(havven_contract.transact({'from': MASTER}).endow(MASTER, 1000*UNIT))
 
 print(havven_contract.call().balanceOf(havven_contract.address))
+print(havven_contract.call().balanceOf(account))
 print(havven_contract.call().balanceOf(MASTER))
 """
