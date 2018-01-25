@@ -20,7 +20,7 @@ W3 = Web3(HTTPProvider(BLOCKCHAIN_ADDRESS))
 MASTER = W3.eth.accounts[0]
 
 SOLIDITY_SOURCES = ["contracts/Havven.sol", "contracts/EtherNomin.sol",
-                    "contracts/Court.sol"]
+                    "contracts/Court.sol", "contracts/Owned.sol"]
 
 UNIT = 10**18
 
@@ -132,6 +132,8 @@ court_contract = attempt_deploy(compiled, 'Court',
                                 MASTER,
                                 [havven_contract.address, nomin_contract.address,
                                  MASTER])
+
+owned_contract = attempt_deploy(compiled, 'Owned', MASTER, [MASTER])
 
 # Hook up each of those contracts to each other
 txs = [havven_contract.transact({'from': MASTER}).setNomin(nomin_contract.address),
