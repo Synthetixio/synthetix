@@ -49,7 +49,7 @@ def compile_contracts(files, remappings=[]):
     try:
         compiled = compile_files(files, import_remappings=remappings)
         for i in files:
-            name = i.split("/")[1].split(".")[0]
+            name = i.rsplit('/', 1)[-1].rsplit('.')[0]
             contract_interfaces[name] = compiled[i+":"+name]
     except:
         # fix for permission errors in py-solc
@@ -58,7 +58,7 @@ def compile_contracts(files, remappings=[]):
         import subprocess
         subprocess.call("./solcjs_compile.sh")
         for i in files:
-            name = i.split("/")[1].split(".")[0]
+            name = i.rsplit('/', 1)[-1].rsplit('.')[0]
             base_name = f"contracts/compiled/contracts_{name}_sol_{name}"
             contract_interfaces[name] = {
                 "abi": json.loads(open(base_name+".abi", 'r').read()),
