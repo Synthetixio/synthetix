@@ -9,6 +9,8 @@ FEATURES
 
 CLEANUP
 =======
+* Check if any multiplications/divisions can use the new safeMul, safeDiv functions
+* Move test contracts into a contracts folder within test directory.
 * Test events
 * Switch to concise contract in testing suite if possible
 * Ensure the deploy script actually optimises the files when compiling.
