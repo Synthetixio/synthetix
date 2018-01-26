@@ -4,7 +4,6 @@ FEATURES
 * Determine how to get tokens into contract and working with vesting schedules that still accrue fees.
 * Confirm with Kain final values for all contract parameters.
 * Switch fee to 20 basis points
-* Increase duration of fee period to 1 month.
 * name of nomins to ethernomins
 
 CLEANUP

@@ -167,7 +167,7 @@ contract Havven is ERC20Token, Owned {
     // The time the current fee period began.
     uint public feePeriodStartTime;
     // Fee periods will roll over in no shorter a time than this.
-    uint public targetFeePeriodDurationSeconds = 1 weeks;
+    uint public targetFeePeriodDurationSeconds = 4 weeks;
     // And may not be set to be shorter than 1 day.
     uint constant minFeePeriodDurationSeconds = 1 days;
     // The actual measured duration of the last fee period (decimal seconds).
