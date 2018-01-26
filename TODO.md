@@ -7,6 +7,7 @@ FEATURES
 
 CLEANUP
 =======
+* Remove the bullshit solcjs compilation logic. If it's needed use legit solc.
 * Check if any multiplications/divisions can use the new safeMul, safeDiv functions
 * Move test contracts into a contracts folder within test directory.
 * Test events
