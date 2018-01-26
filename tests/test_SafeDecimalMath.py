@@ -1,7 +1,7 @@
 import unittest
 from deploy import UNIT, MASTER
-from deploy_utils import compile_contracts, attempt_deploy
-from test_utils import assertCallReverts
+from deployutils import compile_contracts, attempt_deploy
+from testutils import assertCallReverts
 
 MATH_MODULE_SOURCE = "tests/PublicMath.sol"
 
@@ -31,7 +31,7 @@ class TestSafeDecimalMath(unittest.TestCase):
         cls.safeDecDiv = lambda self, x, y: cls.math.functions.pubSafeDecDiv(x, y)
         cls.intToDec = lambda self, i: cls.math.functions.pubIntToDec(i)
 
-    # Test addIsSafe
+    # Test addIsSafe function
 
     def test_addIsSafe(self):
         self.assertTrue(self.addIsSafe(1, 1).call())
@@ -46,7 +46,7 @@ class TestSafeDecimalMath(unittest.TestCase):
         self.assertFalse(self.addIsSafe(2**255, 2**255).call())
         self.assertFalse(self.addIsSafe(2**256 - 1, 2**256 - 1).call())
 
-    # Test safeAdd
+    # Test safeAdd function
 
     def test_addSafe(self):
         self.assertEqual(self.safeAdd(1, 1).call(), 2)
@@ -73,7 +73,7 @@ class TestSafeDecimalMath(unittest.TestCase):
         assertCallReverts(self, self.safeAdd(((2**256) - 1), 1))
         assertCallReverts(self, self.safeAdd(((2**256) - 100), 1000))
 
-    # Test subIsSafe
+    # Test subIsSafe function
 
     def test_subIsSafe(self):
         self.assertTrue(self.subIsSafe(1, 1).call())
@@ -91,7 +91,7 @@ class TestSafeDecimalMath(unittest.TestCase):
         self.assertFalse(self.subIsSafe(2**255, 2**256-1).call())
         self.assertFalse(self.subIsSafe(2**255, 2**255+1).call())
 
-    # Test safeSub
+    # Test safeSub function
 
     def test_safeSub(self):
         self.assertEqual(self.safeSub(10, 9).call(), 1)
@@ -123,7 +123,7 @@ class TestSafeDecimalMath(unittest.TestCase):
         # min - max
         assertCallReverts(self, self.safeSub(0, 2**256 - 1))
 
-    # Test mulIsSafe
+    # Test mulIsSafe function
 
     def test_mulIsSafe(self):
         self.assertTrue(self.mulIsSafe(1, 0).call())
@@ -141,7 +141,7 @@ class TestSafeDecimalMath(unittest.TestCase):
         self.assertFalse(self.mulIsSafe(2**128, 3**100).call())
         self.assertFalse(self.mulIsSafe(7**50, 2**200).call())
 
-    # Test safeMul
+    # Test safeMul function
 
     def test_safeMul(self):
         self.assertEqual(self.safeMul(99999, 777777).call(), 99999 * 777777)
@@ -167,11 +167,11 @@ class TestSafeDecimalMath(unittest.TestCase):
     #def test_unsafeMul(self):
     #    self.assertTrue(False)
 
-    # Test safeDecMul
-    # Test divIsSafe
-    # Test safeDiv
-    # Test safeDecDiv
-    # Test intToDec
+    # Test safeDecMul function
+    # Test divIsSafe function
+    # Test safeDiv function
+    # Test safeDecDiv function
+    # Test intToDec function
 
 if __name__ == '__main__':
     unittest.main()

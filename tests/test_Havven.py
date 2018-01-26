@@ -1,5 +1,4 @@
 import unittest
-import deploy
 
 class TestHavven(unittest.TestCase):
     pass
