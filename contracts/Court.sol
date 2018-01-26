@@ -245,7 +245,7 @@ contract Court is Owned, SafeDecimalMath {
     {
         require(minVotingPeriod <= duration &&
                 duration <= maxVotingPeriod);
-        // Require that the voting period is longer than a single fee period,
+        // Require that the voting period is no longer than a single fee period,
         // So that a single vote can span at most two fee periods.
         require(duration <= havven.targetFeePeriodDurationSeconds());
         votingPeriod = duration;
