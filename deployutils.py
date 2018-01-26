@@ -45,12 +45,11 @@ def attempt(function, func_args, init_string, print_status=True, print_exception
 
 def compile_contracts(files, remappings=[]):
     contract_interfaces = {}
-
     try:
         compiled = compile_files(files, import_remappings=remappings)
-        for i in files:
-            name = i.rsplit('/', 1)[-1].rsplit('.')[0]
-            contract_interfaces[name] = compiled[i+":"+name]
+        for key in compiled:
+            name = key.split(':')[-1]
+            contract_interfaces[name] = compiled[key]
     except:
         # fix for permission errors in py-solc
         # requires solcjs to be installed globally
