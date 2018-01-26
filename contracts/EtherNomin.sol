@@ -164,7 +164,7 @@ contract EtherNomin is ERC20FeeToken {
                         address _owner)
         ERC20FeeToken("Nomin", "NOM",
                       0, _owner,
-                      UNIT / 1000, // nomin transfers incur a 10 bp fee
+                      UNIT / 500, // nomin transfers incur a 20 bp fee
                       address(_havven),
                       _owner)
         public
