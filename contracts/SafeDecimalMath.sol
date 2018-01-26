@@ -125,7 +125,20 @@ contract SafeDecimalMath {
         return r / x == y;
     }
 
-    /* Return the result of multiplying x and y, throwing an exception in case of overflow. */
+    /* Return the result of multiplying x and y, throwing an exception in case of overflow.*/
+    function safeMul(uint x, uint y)
+        pure
+        internal
+        returns (uint)
+    {
+        require(mulIsSafe(x, y));
+        return x * y;
+    }
+
+    /* Return the result of multiplying x and y, throwing an exception in case of overflow.
+     * A factor of the units is divided out AFTER the product of x and y is evaluated,
+     * so that product must be less than 2**256.
+     */
     function safeDecMul(uint x, uint y)
         pure
         internal
@@ -133,6 +146,7 @@ contract SafeDecimalMath {
     {
         require(mulIsSafe(x, y));
         // Divide by UNIT to remove the extra factor introduced by the product.
+        // UNIT can't actually be 0.
         return (x * y) / UNIT;
     }
 
@@ -145,15 +159,25 @@ contract SafeDecimalMath {
         return y != 0;
     }
 
-    /* Return the result of dividing x by y, throwing an exception in case of overflow or zero divisor. */
+    /* Return the result of dividing x by y, throwing an exception if the divisor is zero. */
+    function safeDiv(uint x, uint y)
+        pure
+        internal
+        returns (uint)
+    {
+        // No need to use divIsSafe() here, as a 0 denominator already throws an exception.
+        return x / y;
+    }
+
+    /* Return the result of dividing x by y, throwing an exception in case of overflow or zero divisor.
+     * x must be less than 2^256 / UNIT. */
     function safeDecDiv(uint x, uint y)
         pure
         internal
         returns (uint)
     {
-        require(mulIsSafe(x, UNIT)); // No need to use divIsSafe() here, as a 0 denominator already throws an exception.
-        // Reintroduce the UNIT factor that will be divided out.
-        return (x * UNIT) / y;
+        // Reintroduce the UNIT factor that will be divided out by y.
+        return safeDiv(safeMul(x, UNIT), y);
     }
 
     /* Convert an unsigned integer to a unsigned fixed-point decimal.*/
