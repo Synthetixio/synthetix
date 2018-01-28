@@ -10,7 +10,6 @@ TESTS
 =====
 Owned
 Deploy
-SafeDecimalMath
 Havven
 EtherNomin
 Court
