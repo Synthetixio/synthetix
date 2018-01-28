@@ -121,7 +121,7 @@ contract EtherNomin is ERC20FeeToken {
     uint constant purchaseMininum = UNIT / 100;
 
     // When issuing, nomins must be overcollateralised by this ratio.
-    uint collatRatioMinimum =  2 * UNIT;
+    uint constant collatRatioMinimum =  2 * UNIT;
 
     // If the collateralisation ratio of the contract falls below this level,
     // immediately begin liquidation.
@@ -639,8 +639,6 @@ contract EtherNomin is ERC20FeeToken {
     event StalePeriodUpdated(uint newPeriod);
 
     event OracleUpdated(address newOracle);
-
-    event HavvenUpdated(address newHavven);
 
     event CourtUpdated(address newCourt);
 
