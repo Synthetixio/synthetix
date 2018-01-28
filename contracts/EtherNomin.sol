@@ -103,13 +103,13 @@ contract EtherNomin is ERC20FeeToken {
 
     // The oracle provides price information to this contract.
     // It may only call the setPrice() function.
-    address oracle;
+    address public oracle;
 
     // The address of the contract which manages confiscation votes.
-    Court court;
+    Court public court;
 
     // Foundation wallet for funds to go to post liquidation.
-    address beneficiary;
+    address public beneficiary;
 
     // Nomins in the pool ready to be sold.
     uint public nominPool = 0;
@@ -158,7 +158,7 @@ contract EtherNomin is ERC20FeeToken {
                         address _beneficiary,
                         uint initialEtherPrice,
                         address _owner)
-        ERC20FeeToken("Nomin", "NOM",
+        ERC20FeeToken("Ether-Backed USD Nomins", "eUSD",
                       0, _owner,
                       UNIT / 500, // nomin transfers incur a 20 bp fee
                       address(_havven), // havven contract is the fee authority
