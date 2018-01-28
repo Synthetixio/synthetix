@@ -4,6 +4,19 @@ FEATURES
 * Determine how to get tokens into contract and working with vesting schedules that still accrue fees.
 * Confirm with Kain final values for all contract parameters.
 * name of nomins to ethernomins
+* rename "EtherNomin", description, ticker symbol? (subject to Kain's approval)
+
+TESTS
+=====
+Owned
+Deploy
+SafeDecimalMath
+Havven
+EtherNomin
+Court
+ERC20Token
+ERC20FeeToken
+
 
 CLEANUP
 =======
@@ -38,7 +51,6 @@ CLEANUP
 * Update version numbers
 * Better nomenclature for contracts, variables, and functions.
 * Decide whether to apply postchecksCollateralisation modifier on nomin pool interactions
-* rename "EtherNomin", description, ticker symbol? (subject to Kain's approval)
 * Check relative performance of enums vs ints in the court.
 * Check unchecked sends and so on
 * Split fees for purchase versus sale?
