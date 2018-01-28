@@ -24,7 +24,7 @@ class TERMCOLORS:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
-def attempt(function, func_args, init_string, print_status=True, print_exception=False):
+def attempt(function, func_args, init_string, print_status=True, print_exception=True):
     if print_status:
         print(init_string, end="", flush=True)
 
@@ -39,30 +39,16 @@ def attempt(function, func_args, init_string, print_status=True, print_exception
         if print_status:
             print(TERMCOLORS.FAIL + " "*pad + "Failed." + TERMCOLORS.ENDC)
         if print_exception:
-            print(e)
+            print(f"{TERMCOLORS.WARNING}{TERMCOLORS.BOLD}ERROR:{TERMCOLORS.ENDC} {TERMCOLORS.BOLD}{e}{TERMCOLORS.ENDC}")
         return None
 
 
 def compile_contracts(files, remappings=[]):
     contract_interfaces = {}
-    try:
-        compiled = compile_files(files, import_remappings=remappings)
-        for key in compiled:
-            name = key.split(':')[-1]
-            contract_interfaces[name] = compiled[key]
-    except:
-        # fix for permission errors in py-solc
-        # requires solcjs to be installed globally
-        # > npm install -g solcjs
-        import subprocess
-        subprocess.call("./solcjs_compile.sh")
-        for i in files:
-            name = i.rsplit('/', 1)[-1].rsplit('.')[0]
-            base_name = f"contracts/compiled/contracts_{name}_sol_{name}"
-            contract_interfaces[name] = {
-                "abi": json.loads(open(base_name+".abi", 'r').read()),
-                "bin": open(base_name+".bin", 'rb').read()
-            }
+    compiled = compile_files(files, import_remappings=remappings)
+    for key in compiled:
+        name = key.split(':')[-1]
+        contract_interfaces[name] = compiled[key]
     return contract_interfaces
 
 def mine_tx(tx_hash):
@@ -74,13 +60,13 @@ def mine_tx(tx_hash):
 
 def mine_txs(tx_hashes):
     hashes = list(tx_hashes)
-    tx_receipts = []
+    tx_receipts = {}
     while hashes:
         to_remove = []
         for tx_hash in hashes:
             tx_receipt = W3.eth.getTransactionReceipt(tx_hash)
             if tx_receipt is not None:
-                tx_receipts.append(tx_receipt)
+                tx_receipts[tx_hash] = tx_receipt
                 to_remove.append(tx_hash)
         for item in to_remove:
             hashes.remove(item)
@@ -96,7 +82,7 @@ def deploy_contract(compiled_sol, contract_name, deploy_account, constructor_arg
     contract_instance = W3.eth.contract(address=tx_receipt['contractAddress'], abi=contract_interface['abi'])
     return contract_instance
 
-def attempt_deploy(compiled_sol, contract_name, deploy_account, constructor_args, print_status=True, print_exception=False):
+def attempt_deploy(compiled_sol, contract_name, deploy_account, constructor_args, print_status=True, print_exception=True):
     return attempt(deploy_contract,
                    [compiled_sol, contract_name, deploy_account, constructor_args],
                    f"Deploying {contract_name}... ",
