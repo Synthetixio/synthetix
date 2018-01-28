@@ -131,12 +131,12 @@ contract EtherNomin is ERC20FeeToken {
     // It can be extended up to a given duration.
     uint constant defaultLiquidationPeriod = 90 days;
     uint constant maxLiquidationPeriod = 180 days;
-    uint liquidationPeriod = defaultLiquidationPeriod;
+    uint public liquidationPeriod = defaultLiquidationPeriod;
 
     // The timestamp when liquidation was activated. We initialise this to
     // uint max, so that we know that we are under liquidation if the
     // liquidation timestamp is in the past.
-    uint liquidationTimestamp = ~uint(0);
+    uint public liquidationTimestamp = ~uint(0);
 
     // Ether price from oracle (fiat per ether).
     uint public etherPrice;
