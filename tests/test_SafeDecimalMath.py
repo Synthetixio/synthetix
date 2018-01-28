@@ -281,12 +281,18 @@ class TestSafeDecimalMath(unittest.TestCase):
         # Both
         assertCallReverts(self, self.safeDecDiv(2**256 - 1, 0))
 
-    """
     # Test intToDec function
 
     def testIntToDec(self):
-        self.assertTrue(False)
+        self.assertEqual(self.intToDec(1).call(), UNIT)
+        self.assertEqual(self.intToDec(100).call(), 100*UNIT)
+        self.assertEqual(self.intToDec(UNIT).call(), UNIT * UNIT)
+        self.assertEqual(self.intToDec(2**256 // UNIT).call(), (2**256 // UNIT) * UNIT)
+        
+        # Test out of range
+        assertCallReverts(self, self.intToDec(2**256 // UNIT + 1))
 
+    """
     # Test combined arithmetic
 
     def testArithmeticExpressions(self):
