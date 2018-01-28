@@ -165,7 +165,10 @@ contract SafeDecimalMath {
         internal
         returns (uint)
     {
-        // No need to use divIsSafe() here, as a 0 denominator already throws an exception.
+        // Although a 0 denominator already throws an exception,
+        // it is equivalent to a THROW operation, which consumes all gas.
+        // A require statement emits REVERT instead, which remits remaining gas.
+        require(divIsSafe(x, y));
         return x / y;
     }
 
