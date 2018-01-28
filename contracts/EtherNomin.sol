@@ -105,10 +105,6 @@ contract EtherNomin is ERC20FeeToken {
     // It may only call the setPrice() function.
     address oracle;
 
-    // The address of the havven contract that this contract
-    // is paired with.
-    Havven havven;
-
     // The address of the contract which manages confiscation votes.
     Court court;
 
@@ -165,11 +161,10 @@ contract EtherNomin is ERC20FeeToken {
         ERC20FeeToken("Nomin", "NOM",
                       0, _owner,
                       UNIT / 500, // nomin transfers incur a 20 bp fee
-                      address(_havven),
+                      address(_havven), // havven contract is the fee authority
                       _owner)
         public
     {
-        havven = _havven;
         oracle = _oracle;
         beneficiary = _beneficiary;
 
@@ -187,14 +182,6 @@ contract EtherNomin is ERC20FeeToken {
     {
         oracle = newOracle;
         OracleUpdated(newOracle);
-    }
-
-    function setHavven(address newHavven)
-        public
-        onlyOwner
-    {
-        havven = Havven(newHavven);
-        HavvenUpdated(newHavven);
     }
 
     function setCourt(address newCourt)
