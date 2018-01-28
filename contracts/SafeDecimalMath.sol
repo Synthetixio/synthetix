@@ -190,12 +190,13 @@ contract SafeDecimalMath {
         return safeDiv(safeMul(x, UNIT), y);
     }
 
-    /* Convert an unsigned integer to a unsigned fixed-point decimal.*/
+    /* Convert an unsigned integer to a unsigned fixed-point decimal.
+     * Throw an exception if the result would be out of range. */
     function intToDec(uint i)
         pure
         internal
         returns (uint)
     {
-        return safeDecMul(i, UNIT);
+        return safeMul(i, UNIT);
     }
 }
