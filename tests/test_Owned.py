@@ -15,7 +15,6 @@ def tearDownModule():
 class TestOwned(unittest.TestCase):
     """
     Test the ownership contract
-    TODO: check recent golem exploit involving addresses with trailing 0s?
     """
     @classmethod
     def setUpClass(cls):

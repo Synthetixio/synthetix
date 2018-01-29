@@ -5,11 +5,14 @@ from testutils import assertCallReverts
 
 MATH_MODULE_SOURCE = "tests/contracts/PublicMath.sol"
 
+
 def setUpModule():
     print("Testing SafeDecimalMath...")
 
+
 def tearDownModule():
     print()
+
 
 class TestSafeDecimalMath(unittest.TestCase):
     @classmethod
@@ -172,6 +175,7 @@ class TestSafeDecimalMath(unittest.TestCase):
     # Test safeDiv function
     # Test safeDecDiv function
     # Test intToDec function
+
 
 if __name__ == '__main__':
     unittest.main()
