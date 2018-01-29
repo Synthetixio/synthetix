@@ -13,6 +13,9 @@ def tearDownModule():
     print()
 
 class TestOwned(unittest.TestCase):
+    """
+    Test the ownership contract
+    """
     @classmethod
     def setUpClass(cls):
         compiled = compile_contracts([OWNED_SOURCE])

@@ -11,6 +11,7 @@ BLOCKCHAIN_ADDRESS = "http://localhost:8545"
 # Web3 instance
 W3 = Web3(HTTPProvider(BLOCKCHAIN_ADDRESS))
 
+
 class TERMCOLORS:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -20,6 +21,7 @@ class TERMCOLORS:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+
 
 def attempt(function, func_args, init_string, print_status=True, print_exception=True):
     if print_status:
@@ -48,12 +50,14 @@ def compile_contracts(files, remappings=[]):
         contract_interfaces[name] = compiled[key]
     return contract_interfaces
 
+
 def mine_tx(tx_hash):
     tx_receipt = None
     while tx_receipt is None:
         tx_receipt = W3.eth.getTransactionReceipt(tx_hash)
         time.sleep(POLLING_INTERVAL)
     return tx_receipt
+
 
 def mine_txs(tx_hashes):
     hashes = list(tx_hashes)
@@ -70,6 +74,7 @@ def mine_txs(tx_hashes):
         time.sleep(POLLING_INTERVAL)
     return tx_receipts
 
+
 def deploy_contract(compiled_sol, contract_name, deploy_account, constructor_args=[], gas=5000000):
     contract_interface = compiled_sol[contract_name]
     contract = W3.eth.contract(abi=contract_interface['abi'], bytecode=contract_interface['bin'])
@@ -78,6 +83,7 @@ def deploy_contract(compiled_sol, contract_name, deploy_account, constructor_arg
     tx_receipt = mine_tx(tx_hash)
     contract_instance = W3.eth.contract(address=tx_receipt['contractAddress'], abi=contract_interface['abi'])
     return contract_instance
+
 
 def attempt_deploy(compiled_sol, contract_name, deploy_account, constructor_args, print_status=True, print_exception=True):
     return attempt(deploy_contract,
