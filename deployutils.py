@@ -6,9 +6,6 @@ from solc import compile_files
 POLLING_INTERVAL = 2
 STATUS_ALIGN_SPACING = 6
 
-# Our private chain
-#BLOCKCHAIN_ADDRESS = "http://13.211.41.240:8545"
-# Ganache
 BLOCKCHAIN_ADDRESS = "http://localhost:8545"
 
 # Web3 instance
@@ -33,11 +30,11 @@ def attempt(function, func_args, init_string, print_status=True, print_exception
     try:
         result = function(*func_args)
         if print_status:
-            print(TERMCOLORS.OKGREEN + " "*pad + "Done!" + TERMCOLORS.ENDC)
+            print(f"{TERMCOLORS.OKGREEN}{' '*pad}Done!{TERMCOLORS.ENDC}")
         return result
     except Exception as e:
         if print_status:
-            print(TERMCOLORS.FAIL + " "*pad + "Failed." + TERMCOLORS.ENDC)
+            print(f"{TERMCOLORS.FAIL}{' '*pad}Failed.{TERMCOLORS.ENDC}")
         if print_exception:
             print(f"{TERMCOLORS.WARNING}{TERMCOLORS.BOLD}ERROR:{TERMCOLORS.ENDC} {TERMCOLORS.BOLD}{e}{TERMCOLORS.ENDC}")
         return None
