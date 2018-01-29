@@ -4,7 +4,7 @@ from web3 import Web3, HTTPProvider
 from solc import compile_files
 
 
-POLLING_INTERVAL = 2
+POLLING_INTERVAL = 0.1
 STATUS_ALIGN_SPACING = 6
 BLOCKCHAIN_ADDRESS = "http://localhost:8545"
 W3 = Web3(HTTPProvider(BLOCKCHAIN_ADDRESS))
@@ -58,11 +58,29 @@ def compile_contracts(files, remappings=[]):
     return contract_interfaces
 
 
+def force_mine_block():
+    W3.providers[0].make_request("evm_mine", [])
+
+
+def fast_forward(seconds=0, minutes=0, hours=0, days=0, weeks=0):
+    total_time = seconds
+    mult = 60
+    total_time += minutes*mult
+    mult *= 60
+    total_time += hours*mult
+    mult *= 24
+    total_time += days*mult
+    mult *= 7
+    total_time += weeks*mult
+    W3.providers[0].make_request("evm_increaseTime", [total_time])
+    force_mine_block()
+
+
 def mine_tx(tx_hash):
-    tx_receipt = None
+    tx_receipt = W3.eth.getTransactionReceipt(tx_hash)
     while tx_receipt is None:
-        tx_receipt = W3.eth.getTransactionReceipt(tx_hash)
         time.sleep(POLLING_INTERVAL)
+        tx_receipt = W3.eth.getTransactionReceipt(tx_hash)
     return tx_receipt
 
 
