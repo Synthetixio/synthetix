@@ -1,6 +1,8 @@
 from unittest import TestSuite, TestLoader, TextTestRunner
 from tests import *
 
+TEST_SETTINGS_FILE = "test_settings.py"
+
 run_test = {
     'Court': True,
     'Deploy': True,
@@ -15,15 +17,14 @@ run_test = {
 
 
 def refresh_test_settings():
-    with open("utils/test_settings.py", 'w') as f:
+    with open(TEST_SETTINGS_FILE, 'w') as f:
         f.write("run_test = {\n")
         for test_name in run_test:
             f.write(f"    '{test_name}': True,\n")
         f.write('}\n')
 
-
 try:
-    from utils.test_settings import run_test as r
+    from test_settings import run_test as r
     for item in run_test:
         if item not in r:
             raise ImportError
