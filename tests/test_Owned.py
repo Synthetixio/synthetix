@@ -1,6 +1,6 @@
 import unittest
-from deploy import MASTER
-from utils.deployutils import W3, compile_contracts, attempt_deploy, mine_tx
+
+from utils.deployutils import W3, compile_contracts, attempt_deploy, mine_tx, MASTER
 from utils.testutils import assertTransactionReverts
 
 OWNED_SOURCE = "contracts/Owned.sol"
