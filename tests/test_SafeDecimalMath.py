@@ -41,6 +41,7 @@ class TestSafeDecimalMath(unittest.TestCase):
 
     def test_addIsUnsafe(self):
         # These should all overflow: max representable is 2^256 - 1
+        self.assertFalse(self.addIsSafe(1, 2**256 - 1).call())
         self.assertFalse(self.addIsSafe(2**256 - 1, 1).call())
         self.assertFalse(self.addIsSafe(2**255, 2**255).call())
         self.assertFalse(self.addIsSafe(2**256 - 1, 2**256 - 1).call())
