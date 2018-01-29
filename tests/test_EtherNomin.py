@@ -1,6 +1,6 @@
 import unittest
 
-from utils.deployutils import W3, compile_contracts, attempt_deploy, mine_tx, UNIT, MASTER
+from utils.deployutils import W3, compile_contracts, attempt_deploy, mine_tx, UNIT, MASTER, ETHER
 from utils.testutils import assertCallReverts, assertTransactionReverts
 
 
@@ -77,6 +77,7 @@ class TestEtherNomin(unittest.TestCase):
         cls.feePool = lambda self: cls.nomin.functions.feePool()
         cls.feeAuthority = lambda self: cls.nomin.functions.feeAuthority()
 
+        cls.debugWithdrawAllEther = lambda self, recipient: cls.nomin.functions.debugWithdrawAllEther(recipient)
 
     def test_Constructor(self):
         # Nomin-specific members
@@ -174,6 +175,7 @@ class TestEtherNomin(unittest.TestCase):
         owner = self.owner().call()
         pre_price = self.etherPrice().call()
         new_price = 100 * UNIT
+        new_price2 = UNIT
         pre_oracle = self.oracle().call()
         new_oracle = W3.eth.accounts[1]
 
@@ -190,20 +192,29 @@ class TestEtherNomin(unittest.TestCase):
 
         assertTransactionReverts(self, self.setPrice(pre_price), pre_oracle)
 
-        tx_receipt = mine_tx(self.setPrice(pre_price).transact({'from': new_oracle}))
+        tx_receipt = mine_tx(self.setPrice(new_price2).transact({'from': new_oracle}))
         tx_time = W3.eth.getBlock(tx_receipt.blockNumber)['timestamp']
         self.assertEqual(self.lastPriceUpdate().call(), tx_time)
-        self.assertEqual(self.etherPrice().call(), pre_price)
+        self.assertEqual(self.etherPrice().call(), new_price2)
 
         mine_tx(self.setOracle(pre_oracle).transact({'from': owner}))
 
         # Check if everything works with something in the pool.
-        #mine_tx(self.issue(1))
+        backing = self.etherValue(10 * UNIT).call()
+        mine_tx(self.issue(UNIT).transact({'from': owner, 'value': backing}))
 
-        self.assertTrue(False)
+        tx_receipt = mine_tx(self.setPrice(pre_price).transact({'from': pre_oracle}))
+        tx_time = W3.eth.getBlock(tx_receipt.blockNumber)['timestamp']
+        self.assertEqual(self.lastPriceUpdate().call(), tx_time)
+        self.assertEqual(self.etherPrice().call(), pre_price)
 
+        # Burn pooled nomins and return all issued ether.
+        mine_tx(self.burn(UNIT).transact({'from':owner}))
+        mine_tx(self.debugWithdrawAllEther(owner).transact({'from': owner}))
+        self.assertEqual(W3.eth.getBalance(self.nomin.address), 0)
+        self.assertEqual(self.totalSupply().call(), 0)
+        self.assertEqual(self.nominPool().call(), 0)
 
-    # setPrice
     # fiatValue
     # fiatBalance
     # collateralisationRatio

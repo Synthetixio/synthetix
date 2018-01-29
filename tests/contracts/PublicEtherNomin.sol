@@ -29,4 +29,10 @@ contract PublicEtherNomin is EtherNomin {
 	{
     	return stalePeriod;
 	}
+
+	function debugWithdrawAllEther(address recipient)
+		public
+	{
+		recipient.send(this.balance);
+	}
 }
