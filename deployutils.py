@@ -6,13 +6,11 @@ from solc import compile_files
 POLLING_INTERVAL = 2
 STATUS_ALIGN_SPACING = 6
 
-# Our private chain
-#BLOCKCHAIN_ADDRESS = "http://13.211.41.240:8545"
-# Ganache
 BLOCKCHAIN_ADDRESS = "http://localhost:8545"
 
 # Web3 instance
 W3 = Web3(HTTPProvider(BLOCKCHAIN_ADDRESS))
+
 
 class TERMCOLORS:
     HEADER = '\033[95m'
@@ -25,7 +23,7 @@ class TERMCOLORS:
     UNDERLINE = '\033[4m'
 
 
-def attempt(function, func_args, init_string, print_status=True, print_exception=False):
+def attempt(function, func_args, init_string, print_status=True, print_exception=True):
     if print_status:
         print(init_string, end="", flush=True)
 
@@ -34,36 +32,22 @@ def attempt(function, func_args, init_string, print_status=True, print_exception
     try:
         result = function(*func_args)
         if print_status:
-            print(TERMCOLORS.OKGREEN + " "*pad + "Done!" + TERMCOLORS.ENDC)
+            print(f"{TERMCOLORS.OKGREEN}{' '*pad}Done!{TERMCOLORS.ENDC}")
         return result
     except Exception as e:
         if print_status:
-            print(TERMCOLORS.FAIL + " "*pad + "Failed." + TERMCOLORS.ENDC)
+            print(f"{TERMCOLORS.FAIL}{' '*pad}Failed.{TERMCOLORS.ENDC}")
         if print_exception:
-            print(e)
+            print(f"{TERMCOLORS.WARNING}{TERMCOLORS.BOLD}ERROR:{TERMCOLORS.ENDC} {TERMCOLORS.BOLD}{e}{TERMCOLORS.ENDC}")
         return None
 
 
 def compile_contracts(files, remappings=[]):
     contract_interfaces = {}
-    try:
-        compiled = compile_files(files, import_remappings=remappings)
-        for key in compiled:
-            name = key.split(':')[-1]
-            contract_interfaces[name] = compiled[key]
-    except:
-        # fix for permission errors in py-solc
-        # requires solcjs to be installed globally
-        # > npm install -g solcjs
-        import subprocess
-        subprocess.call("./solcjs_compile.sh")
-        for i in files:
-            name = i.rsplit('/', 1)[-1].rsplit('.')[0]
-            base_name = f"contracts/compiled/contracts_{name}_sol_{name}"
-            contract_interfaces[name] = {
-                "abi": json.loads(open(base_name+".abi", 'r').read()),
-                "bin": open(base_name+".bin", 'rb').read()
-            }
+    compiled = compile_files(files, import_remappings=remappings)
+    for key in compiled:
+        name = key.split(':')[-1]
+        contract_interfaces[name] = compiled[key]
     return contract_interfaces
 
 
@@ -77,13 +61,13 @@ def mine_tx(tx_hash):
 
 def mine_txs(tx_hashes):
     hashes = list(tx_hashes)
-    tx_receipts = []
+    tx_receipts = {}
     while hashes:
         to_remove = []
         for tx_hash in hashes:
             tx_receipt = W3.eth.getTransactionReceipt(tx_hash)
             if tx_receipt is not None:
-                tx_receipts.append(tx_receipt)
+                tx_receipts[tx_hash] = tx_receipt
                 to_remove.append(tx_hash)
         for item in to_remove:
             hashes.remove(item)
