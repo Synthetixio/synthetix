@@ -10,6 +10,7 @@ MASTER = W3.eth.accounts[0]
 SOLIDITY_SOURCES = ["contracts/Havven.sol", "contracts/EtherNomin.sol",
                     "contracts/Court.sol"]
 
+
 def deploy_havven():
     print("Deployment initiated.\n")
 
@@ -34,6 +35,8 @@ def deploy_havven():
     attempt(mine_txs, [txs], "Linking contracts... ")
 
     print("\nDeployment complete.\n")
+    return havven_contract, nomin_contract, court_contract
+
 
 if __name__ == "__main__":
     deploy_havven()
