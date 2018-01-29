@@ -1,13 +1,13 @@
 # Havven
 
 Havven is a decentralised payment network and stablecoin.
-It is critical to the system's viability that functionality is phased in over time. The initial release will provide a functional stablecoin and the opportunity to collect significant data on the market response. This will ultimately protect the system and those who back as the network scales.
+It is critical to the system's viability that functionality is phased in over time. The initial release will provide a functional stablecoin and the opportunity to collect significant data on the market response. This will ultimately protect the system and those who back it as the network scales.
 
-The initial release of Havven will possess most of the important features of the system.
+The initial release of Havven will possess most of the key features of the system.
 
 * A two token system composed of a stablecoin (nomins) and collateral token (havvens).
 * Nomins are backed with a pool of value with which it is convertible.
-* The funds to stake nomins are provided by the owners of the backing token through the token sale.
+* The funds (ether) to stake nomins are provided by the owners of the backing token through the token sale.
 * Those staking the system, by owning havvens, are rewarded with fees charged on nomin transactions;
 
 However it purposely omits others:
@@ -17,9 +17,8 @@ However it purposely omits others:
 * The backing capital cannot be expanded by the market, and so the currency’s ultimate total supply is constrained;
 
 In the version 1.0 system, the nomin contract owner can only expand the supply of nomins if it can provide adequate backing.
-Users can buy and sell nomins into the pool for $1 worth of ether. The ether price is
-obtained from a trusted oracle. Fees charged on nomins are paid to owners of the havven token
-in proportion with the the number of havvens they hold.
+Users can buy and sell nomins into the pool for $1 USD worth of ether. The ether price is
+obtained from a trusted oracle. Fees charged on nomins are paid to owners of the havven token in proportion with the the number of havvens they hold.
 
 
 ## Usage and requirements
