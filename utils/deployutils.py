@@ -85,4 +85,3 @@ def attempt_deploy(compiled_sol, contract_name, deploy_account, constructor_args
                    f"Deploying {contract_name}... ",
                    print_status=print_status, print_exception=print_exception)
 
-
