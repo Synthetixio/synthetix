@@ -220,19 +220,51 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.totalSupply().call(), 0)
         self.assertEqual(self.nominPool().call(), 0)
 
-    # fiatValue
-    """
     def test_fiatValue(self):
         owner = self.owner().call()
+        oracle = self.oracle().call()
         pre_price = self.etherPrice().call()
 
-        fiatValue()
+        mine_tx(self.setPrice(UNIT).transact({'from': oracle}))
+        self.assertEqual(self.fiatValue(ETHER).call(), ETHER)
+        self.assertEqual(self.fiatValue(777 * ETHER).call(), 777 * ETHER)
+        self.assertEqual(self.fiatValue(ETHER // 777).call(), ETHER // 777)
+        self.assertEqual(self.fiatValue(10**8 * ETHER).call(), 10**8 * ETHER)
+        self.assertEqual(self.fiatValue(ETHER // 10**12).call(), ETHER // 10**12)
 
-        # Check limits
-    """
+        mine_tx(self.setPrice(10**8 * UNIT).transact({'from': oracle}))
+        self.assertEqual(self.fiatValue(ETHER).call(), 10**8 * ETHER)
+        self.assertEqual(self.fiatValue(317 * ETHER).call(), 317 * 10**8 * ETHER)
+        self.assertEqual(self.fiatValue(ETHER // 317).call(), 10**8 * (ETHER // 317))
+        self.assertEqual(self.fiatValue(10**8 * ETHER).call(), 10**16 * ETHER)
+        self.assertEqual(self.fiatValue(ETHER // 10**12).call(), ETHER // 10**4)
 
-    # fiatBalance
-    # collateralisationRatio
+        mine_tx(self.setPrice(UNIT // 10**12).transact({'from': oracle}))
+        self.assertEqual(self.fiatValue(ETHER).call(), ETHER // 10**12)
+        self.assertEqual(self.fiatValue(10**15 * ETHER).call(), 10**3 * ETHER)
+        self.assertEqual(self.fiatValue((7 * ETHER) // 3).call(), ((7 * ETHER) // 3) // 10**12)
+
+        mine_tx(self.setPrice(pre_price).transact({'from': oracle}))
+
+    def test_fiatBalance(self):
+        owner = self.owner().call()
+        oracle = self.oracle().call()
+        pre_price = self.etherPrice().call()
+
+        mine_tx(W3.eth.sendTransaction({'from': owner, 'to': self.nomin.address, 'value': ETHER}))
+        self.assertEqual(self.fiatBalance().call(), pre_price)
+        mine_tx(self.setPrice(UNIT // 10**12).transact({'from': oracle}))
+        self.assertEqual(self.fiatBalance().call(), UNIT // 10**12)
+        mine_tx(self.setPrice(300 * UNIT).transact({'from': oracle}))
+        self.assertEqual(self.fiatBalance().call(), 300 * UNIT)
+        mine_tx(W3.eth.sendTransaction({'from': owner, 'to': self.nomin.address, 'value': ETHER}))
+        self.assertEqual(self.fiatBalance().call(), 600 * UNIT)
+        mine_tx(self.setPrice(pre_price).transact({'from': oracle}))
+        mine_tx(self.debugWithdrawAllEther(owner).transact({'from': owner}))
+        self.assertEqual(W3.eth.getBalance(self.nomin.address), 0)
+
+    #def test_collateralisationRatio(self):
+
     # etherValue
     # poolFeeIncurred
     # purchaseCostFiat
