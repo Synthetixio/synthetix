@@ -16,7 +16,7 @@ class TestOwned(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         compiled = compile_contracts([OWNED_SOURCE])
-        cls.owned = attempt_deploy(compiled, 'Owned', MASTER, [MASTER])
+        cls.owned, txr = attempt_deploy(compiled, 'Owned', MASTER, [MASTER])
 
     def test_owner_is_master(self):
         self.assertEqual(self.owned.functions.owner().call(), MASTER)

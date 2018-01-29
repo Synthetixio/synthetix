@@ -16,7 +16,7 @@ class TestSafeDecimalMath(unittest.TestCase):
     def setUpClass(cls):
         compiled = compile_contracts([MATH_MODULE_SOURCE],
                                      remappings=['""=contracts'])
-        cls.math = attempt_deploy(compiled, 'PublicMath', MASTER, [])
+        cls.math, tx_receipt = attempt_deploy(compiled, 'PublicMath', MASTER, [])
 
         cls.addIsSafe = lambda self, x, y: cls.math.functions.pubAddIsSafe(x, y)
         cls.safeAdd = lambda self, x, y: cls.math.functions.pubSafeAdd(x, y)

@@ -15,6 +15,7 @@ ERC20Token
 ERC20FeeToken
 Test inherited contracts (ERC20, Fee, Owned) in their inherited contexts
 Account creation/unlocking logic for use in tests
+Open new accounts per test instead of using web3.eth.accounts[1] etc.
 
 
 CLEANUP

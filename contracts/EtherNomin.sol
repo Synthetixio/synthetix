@@ -537,7 +537,7 @@ contract EtherNomin is ERC20FeeToken {
         payable
     {
         require(isLiquidating());
-        require(collateralisationRatio() > autoLiquidationRatio);
+        require(totalSupply == 0 || collateralisationRatio() > autoLiquidationRatio);
         liquidationTimestamp = ~uint(0);
         liquidationPeriod = defaultLiquidationPeriod;
         LiquidationTerminated();
@@ -618,7 +618,7 @@ contract EtherNomin is ERC20FeeToken {
     modifier postCheckAutoLiquidate
     {
         _;
-        if (collateralisationRatio() < autoLiquidationRatio) {
+        if (totalSupply != 0 && collateralisationRatio() < autoLiquidationRatio) {
             beginLiquidation();
         }
     }

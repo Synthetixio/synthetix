@@ -77,7 +77,7 @@ def deploy_contract(compiled_sol, contract_name, deploy_account, constructor_arg
                               args=constructor_args)
     tx_receipt = mine_tx(tx_hash)
     contract_instance = W3.eth.contract(address=tx_receipt['contractAddress'], abi=contract_interface['abi'])
-    return contract_instance
+    return contract_instance, tx_receipt
 
 def attempt_deploy(compiled_sol, contract_name, deploy_account, constructor_args, print_status=True, print_exception=True):
     return attempt(deploy_contract,
