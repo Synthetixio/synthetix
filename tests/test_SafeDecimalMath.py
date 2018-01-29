@@ -1,6 +1,6 @@
 import unittest
-from deploy import UNIT, MASTER
-from utils.deployutils import compile_contracts, attempt_deploy
+
+from utils.deployutils import compile_contracts, attempt_deploy, UNIT, MASTER 
 from utils.testutils import assertCallReverts
 
 MATH_MODULE_SOURCE = "tests/contracts/PublicMath.sol"
