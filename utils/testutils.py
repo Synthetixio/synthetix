@@ -1,5 +1,4 @@
-import unittest
-from deployutils import mine_tx
+from utils.deployutils import mine_tx
 
 def assertCallReverts(testcase, function):
     with testcase.assertRaises(ValueError) as error:
