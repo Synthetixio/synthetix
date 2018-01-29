@@ -3,7 +3,7 @@ from deploy import UNIT, MASTER
 from deployutils import compile_contracts, attempt_deploy
 from testutils import assertCallReverts
 
-ETHERNOMIN_SOURCE = "tests/contracts/EtherNomin.sol"
+ETHERNOMIN_SOURCE = "contracts/EtherNomin.sol"
 
 def setUpModule():
     print("Testing EtherNomin...")
@@ -36,7 +36,6 @@ class TestEtherNomin(unittest.TestCase):
         cls.setPrice = lambda self, price: cls.nomin.functions.setPrice(price)
         cls.setStalePeriod = lambda self, period: cls.nomin.functions.setStalePeriod(period)
 
-
         cls.fiatValue = lambda self, eth: cls.nomin.functions.fiatValue(eth)
         cls.fiatBalance = lambda self: cls.nomin.functions.fiatBalance()
         cls.collateralisationRatio = lambda self: cls.nomin.functions.collateralisationRatio()
@@ -65,5 +64,26 @@ class TestEtherNomin(unittest.TestCase):
         cls.confiscateBalance = lambda self, target: cls.nomin.functions.confiscateBalance(target)
         cls.unFreezeAccount = lambda self, target: cls.nomin.functions.unFreezeAccount(target)
 
+        cls.name = lambda self: cls.nomin.functions.name()
+        cls.symbol = lambda self: cls.nomin.functions.symbol()
+        cls.totalSupply = lambda self: cls.nomin.functions.totalSupply()
+        cls.balanceOf = lambda self, account: cls.nomin.functions.balanceOf(account)
+        cls.transferFeeRate = lambda self: cls.nomin.functions.transferFeeRate()
+        cls.feePool = lambda self: cls.nomin.functions.feePool()
+        cls.feeAuthority = lambda self: cls.nomin.functions.feeAuthority()
 
+
+    def test_Constructor(self):
+    	# Nomin-specific members
+    	self.assertEqual(self.oracle().call(), MASTER)
+    	self.assertEqual(self.beneficiary().call(), MASTER)
+    	self.assertEqual(self.etherPrice().call(), 1000 * UNIT)
+
+    	# ERC20FeeToken members
+    	self.assertEqual(self.name().call(), "Ether-Backed USD Nomins")
+    	self.assertEqual(self.symbol().call(), "eUSD")
+    	self.assertEqual(self.totalSupply().call(), 0)
+    	self.assertEqual(self.balanceOf(MASTER).call(), 0)
+    	self.assertEqual(self.transferFeeRate().call(), 2 * UNIT // 1000)
+    	self.assertEqual(self.feeAuthority().call(), MASTER)
 
