@@ -1,10 +1,4 @@
-from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mine_txs
-
-# The number representing 1 in our contracts.
-UNIT = 10**18
-
-# Master test account
-MASTER = W3.eth.accounts[0]
+from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mine_txs, UNIT, MASTER
 
 # Source files to compile from
 SOLIDITY_SOURCES = ["contracts/Havven.sol", "contracts/EtherNomin.sol",

@@ -1,7 +1,6 @@
 import unittest
-from deploy import UNIT, MASTER
 
-from utils.deployutils import W3, compile_contracts, attempt_deploy, mine_tx
+from utils.deployutils import W3, compile_contracts, attempt_deploy, mine_tx, UNIT, MASTER
 from utils.testutils import assertCallReverts, assertTransactionReverts
 
 
@@ -199,6 +198,8 @@ class TestEtherNomin(unittest.TestCase):
         mine_tx(self.setOracle(pre_oracle).transact({'from': owner}))
 
         # Check if everything works with something in the pool.
+        #mine_tx(self.issue(1))
+
         self.assertTrue(False)
 
 

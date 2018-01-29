@@ -9,6 +9,15 @@ STATUS_ALIGN_SPACING = 6
 BLOCKCHAIN_ADDRESS = "http://localhost:8545"
 W3 = Web3(HTTPProvider(BLOCKCHAIN_ADDRESS))
 
+# The number representing 1 in our contracts.
+UNIT = 10**18
+
+# The number of wei per ether.
+ETHER = 10**18
+
+# Master test account
+MASTER = W3.eth.accounts[0]
+
 
 class TERMCOLORS:
     HEADER = '\033[95m'
