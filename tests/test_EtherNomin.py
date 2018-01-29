@@ -139,15 +139,14 @@ class TestEtherNomin(unittest.TestCase):
         mine_tx(self.setPoolFeeRate(new_rate).transact({'from': MASTER}))
         self.assertEqual(self.poolFeeRate().call(), new_rate)
         mine_tx(self.setPoolFeeRate(pre_rate).transact({'from': MASTER}))
-"""
+
     def test_getSetStalePeriod(self):
         pre_period = self.stalePeriod().call()
         new_period = UNIT // 10
 
         # Only the owner must be able to set the pool fee rate.
-        assertTransactionReverts(self, self.setPoolFeeRate(new_rate), W3.eth.accounts[1])
+        assertTransactionReverts(self, self.setStalePeriod(new_period), W3.eth.accounts[1])
 
-        mine_tx(self.setPoolFeeRate(new_rate).transact({'from': MASTER}))
-        self.assertEqual(self.poolFeeRate().call(), new_rate)
-        mine_tx(self.setPoolFeeRate(pre_rate).transact({'from': MASTER}))
-"""
+        mine_tx(self.setStalePeriod(new_period).transact({'from': MASTER}))
+        self.assertEqual(self.stalePeriod().call(), new_period)
+        mine_tx(self.setStalePeriod(pre_period).transact({'from': MASTER}))
