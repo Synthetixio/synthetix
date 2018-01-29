@@ -92,9 +92,9 @@ Find out more at https://www.block8.io/
 pragma solidity ^0.4.19;
 
 
-import "ERC20FeeToken.sol";
-import "Havven.sol";
-import "Court.sol";
+import "contracts/ERC20FeeToken.sol";
+import "contracts/Havven.sol";
+import "contracts/Court.sol";
 
 
 contract EtherNomin is ERC20FeeToken {
@@ -103,17 +103,13 @@ contract EtherNomin is ERC20FeeToken {
 
     // The oracle provides price information to this contract.
     // It may only call the setPrice() function.
-    address oracle;
-
-    // The address of the havven contract that this contract
-    // is paired with.
-    Havven havven;
+    address public oracle;
 
     // The address of the contract which manages confiscation votes.
-    Court court;
+    Court public court;
 
     // Foundation wallet for funds to go to post liquidation.
-    address beneficiary;
+    address public beneficiary;
 
     // Nomins in the pool ready to be sold.
     uint public nominPool = 0;
@@ -125,7 +121,7 @@ contract EtherNomin is ERC20FeeToken {
     uint constant purchaseMininum = UNIT / 100;
 
     // When issuing, nomins must be overcollateralised by this ratio.
-    uint collatRatioMinimum =  2 * UNIT;
+    uint constant collatRatioMinimum =  2 * UNIT;
 
     // If the collateralisation ratio of the contract falls below this level,
     // immediately begin liquidation.
@@ -135,12 +131,12 @@ contract EtherNomin is ERC20FeeToken {
     // It can be extended up to a given duration.
     uint constant defaultLiquidationPeriod = 90 days;
     uint constant maxLiquidationPeriod = 180 days;
-    uint liquidationPeriod = defaultLiquidationPeriod;
+    uint public liquidationPeriod = defaultLiquidationPeriod;
 
     // The timestamp when liquidation was activated. We initialise this to
     // uint max, so that we know that we are under liquidation if the
     // liquidation timestamp is in the past.
-    uint liquidationTimestamp = ~uint(0);
+    uint public liquidationTimestamp = ~uint(0);
 
     // Ether price from oracle (fiat per ether).
     uint public etherPrice;
@@ -162,17 +158,15 @@ contract EtherNomin is ERC20FeeToken {
                         address _beneficiary,
                         uint initialEtherPrice,
                         address _owner)
-        ERC20FeeToken("Nomin", "NOM",
+        ERC20FeeToken("Ether-Backed USD Nomins", "eUSD",
                       0, _owner,
-                      UNIT / 1000, // nomin transfers incur a 10 bp fee
-                      address(_havven),
+                      UNIT / 500, // nomin transfers incur a 20 bp fee
+                      address(_havven), // havven contract is the fee authority
                       _owner)
         public
     {
-        havven = _havven;
         oracle = _oracle;
         beneficiary = _beneficiary;
-        court = _havven.court();
 
         etherPrice = initialEtherPrice;
         lastPriceUpdate = now;
@@ -188,14 +182,6 @@ contract EtherNomin is ERC20FeeToken {
     {
         oracle = newOracle;
         OracleUpdated(newOracle);
-    }
-
-    function setHavven(address newHavven)
-        public
-        onlyOwner
-    {
-        havven = Havven(newHavven);
-        HavvenUpdated(newHavven);
     }
 
     function setCourt(address newCourt)
@@ -224,6 +210,17 @@ contract EtherNomin is ERC20FeeToken {
         PoolFeeRateUpdated(newFeeRate);
     }
 
+    /* Update the period after which the price will be considered stale.
+     * Exceptional conditions:
+     *     Not called by the owner. */
+    function setStalePeriod(uint period)
+        public
+        onlyOwner
+    {
+        stalePeriod = period;
+        StalePeriodUpdated(period);
+    }
+
     /* Update the current ether price and update the last updated time,
      * refreshing the price staleness.
      * Exceptional conditions:
@@ -238,17 +235,6 @@ contract EtherNomin is ERC20FeeToken {
         etherPrice = price;
         lastPriceUpdate = now;
         PriceUpdated(price);
-    }
-
-    /* Update the period after which the price will be considered stale.
-     * Exceptional conditions:
-     *     Not called by the owner. */
-    function setStalePeriod(uint period)
-        public
-        onlyOwner
-    {
-        stalePeriod = period;
-        StalePeriodUpdated(period);
     }
 
 
@@ -551,7 +537,7 @@ contract EtherNomin is ERC20FeeToken {
         payable
     {
         require(isLiquidating());
-        require(collateralisationRatio() > autoLiquidationRatio);
+        require(totalSupply == 0 || collateralisationRatio() > autoLiquidationRatio);
         liquidationTimestamp = ~uint(0);
         liquidationPeriod = defaultLiquidationPeriod;
         LiquidationTerminated();
@@ -632,7 +618,7 @@ contract EtherNomin is ERC20FeeToken {
     modifier postCheckAutoLiquidate
     {
         _;
-        if (collateralisationRatio() < autoLiquidationRatio) {
+        if (totalSupply != 0 && collateralisationRatio() < autoLiquidationRatio) {
             beginLiquidation();
         }
     }
@@ -653,8 +639,6 @@ contract EtherNomin is ERC20FeeToken {
     event StalePeriodUpdated(uint newPeriod);
 
     event OracleUpdated(address newOracle);
-
-    event HavvenUpdated(address newHavven);
 
     event CourtUpdated(address newCourt);
 

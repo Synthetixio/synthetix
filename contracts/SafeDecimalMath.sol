@@ -125,15 +125,35 @@ contract SafeDecimalMath {
         return r / x == y;
     }
 
-    /* Return the result of multiplying x and y, throwing an exception in case of overflow. */
-    function safeDecMul(uint x, uint y)
+    /* Return the result of multiplying x and y, throwing an exception in case of overflow.*/
+    function safeMul(uint x, uint y)
         pure
         internal
         returns (uint)
     {
         require(mulIsSafe(x, y));
+        return x * y;
+    }
+
+    /* Return the result of multiplying x and y, interpreting the operands as fixed-point
+     * demicimals. Throws an exception in case of overflow. A unit factor is divided out
+     * after the product of x and y is evaluated, so that product must be less than 2**256.
+     * 
+     * Incidentally, the internal division always rounds down: we could have rounded to the nearest integer,
+     * but then we would be spending a significant fraction of a cent (of order a microether
+     * at present gas prices) in order to save less than one part in 0.5 * 10^18 per operation, if the operands
+     * contain small enough fractional components. It would also marginally diminish the 
+     * domain this function is defined upon. 
+     */
+    function safeDecMul(uint x, uint y)
+        pure
+        internal
+        returns (uint)
+    {
         // Divide by UNIT to remove the extra factor introduced by the product.
-        return (x * y) / UNIT;
+        // UNIT be 0.
+        return safeMul(x, y) / UNIT;
+
     }
 
     /* True iff the denominator of x/y is nonzero. */
@@ -145,23 +165,38 @@ contract SafeDecimalMath {
         return y != 0;
     }
 
-    /* Return the result of dividing x by y, throwing an exception in case of overflow or zero divisor. */
+    /* Return the result of dividing x by y, throwing an exception if the divisor is zero. */
+    function safeDiv(uint x, uint y)
+        pure
+        internal
+        returns (uint)
+    {
+        // Although a 0 denominator already throws an exception,
+        // it is equivalent to a THROW operation, which consumes all gas.
+        // A require statement emits REVERT instead, which remits remaining gas.
+        require(divIsSafe(x, y));
+        return x / y;
+    }
+
+    /* Return the result of dividing x by y, interpreting the operands as fixed point decimal numbers.
+     * Throws an exception in case of overflow or zero divisor; x must be less than 2^256 / UNIT.
+     * Internal rounding is downward: a similar caveat holds as with safeDecMul().*/
     function safeDecDiv(uint x, uint y)
         pure
         internal
         returns (uint)
     {
-        require(mulIsSafe(x, UNIT)); // No need to use divIsSafe() here, as a 0 denominator already throws an exception.
-        // Reintroduce the UNIT factor that will be divided out.
-        return (x * UNIT) / y;
+        // Reintroduce the UNIT factor that will be divided out by y.
+        return safeDiv(safeMul(x, UNIT), y);
     }
 
-    /* Convert an unsigned integer to a unsigned fixed-point decimal.*/
+    /* Convert an unsigned integer to a unsigned fixed-point decimal.
+     * Throw an exception if the result would be out of range. */
     function intToDec(uint i)
         pure
         internal
         returns (uint)
     {
-        return safeDecMul(i, UNIT);
+        return safeMul(i, UNIT);
     }
 }
