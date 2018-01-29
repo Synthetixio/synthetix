@@ -4,10 +4,10 @@ from web3 import Web3, HTTPProvider
 from solc import compile_files
 
 
-POLLING_INTERVAL = 0.1
-STATUS_ALIGN_SPACING = 6
 BLOCKCHAIN_ADDRESS = "http://localhost:8545"
 W3 = Web3(HTTPProvider(BLOCKCHAIN_ADDRESS))
+POLLING_INTERVAL = 0.1
+STATUS_ALIGN_SPACING = 6
 
 # The number representing 1 in our contracts.
 UNIT = 10**18
