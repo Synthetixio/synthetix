@@ -20,6 +20,9 @@ In the version 1.0 system, the nomin contract owner can only expand the supply o
 Users can buy and sell nomins into the pool for $1 USD worth of ether. The ether price is
 obtained from a trusted oracle. Fees charged on nomins are paid to owners of the havven token in proportion with the the number of havvens they hold.
 
+Please not that this repository is under continual development.
+The code here will likely be under continual audit and
+improvement up until release of the completed system.
 
 ## Usage and requirements
 
