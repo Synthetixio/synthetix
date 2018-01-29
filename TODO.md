@@ -13,6 +13,8 @@ EtherNomin
 Court
 ERC20Token
 ERC20FeeToken
+Test inherited contracts (ERC20, Fee, Owned) in their inherited contexts
+Account creation/unlocking logic for use in tests
 
 
 CLEANUP
