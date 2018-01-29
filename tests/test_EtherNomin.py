@@ -150,3 +150,32 @@ class TestEtherNomin(unittest.TestCase):
         mine_tx(self.setStalePeriod(new_period).transact({'from': MASTER}))
         self.assertEqual(self.stalePeriod().call(), new_period)
         mine_tx(self.setStalePeriod(pre_period).transact({'from': MASTER}))
+
+    # setPrice
+    # fiatValue
+    # fiatBalance
+    # collateralisationRatio
+    # etherValue
+    # poolFeeIncurred
+    # purchaseCostFiat
+    # purchaseCostEther
+    # saleProceedsEther
+    # priceIsStale
+    # general staleness checks
+    # transfer
+    # transferFrom
+    # issue
+    # burn
+    # buy
+    # sell
+    # forceLiquidation
+    # liquidate
+    # Auto liquidation check
+    # extend liquidation period
+    # terminate liquidation
+    # self destruct
+    # confiscateBalance
+    # unfreezeAccount
+    # fallback function
+    # Events
+
