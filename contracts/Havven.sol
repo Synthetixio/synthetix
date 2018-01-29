@@ -131,10 +131,10 @@ Find out more at https://www.block8.io/
 pragma solidity ^0.4.19;
 
 
-import "ERC20Token.sol";
-import "Owned.sol";
-import "EtherNomin.sol";
-import "Court.sol";
+import "contracts/ERC20Token.sol";
+import "contracts/Owned.sol";
+import "contracts/EtherNomin.sol";
+import "contracts/Court.sol";
 
 
 contract Havven is ERC20Token, Owned {
@@ -167,7 +167,7 @@ contract Havven is ERC20Token, Owned {
     // The time the current fee period began.
     uint public feePeriodStartTime;
     // Fee periods will roll over in no shorter a time than this.
-    uint public targetFeePeriodDurationSeconds = 1 weeks;
+    uint public targetFeePeriodDurationSeconds = 4 weeks;
     // And may not be set to be shorter than 1 day.
     uint constant minFeePeriodDurationSeconds = 1 days;
     // The actual measured duration of the last fee period (decimal seconds).
@@ -184,14 +184,13 @@ contract Havven is ERC20Token, Owned {
     // The vote a user last participated in.
     mapping(address => address) public voteTarget;
 
-    EtherNomin nomin;
+    EtherNomin public nomin;
     Court public court;
 
 
     /* ========== CONSTRUCTOR ========== */
 
-    function Havven(address _oracle, address _beneficiary,
-                    uint _initialEtherPrice, address _owner)
+    function Havven(address _owner)
         ERC20Token("Havven", "HAV",
                    1e8 * UNIT, // initial supply is one hundred million tokens
                    this)
@@ -199,15 +198,24 @@ contract Havven is ERC20Token, Owned {
         public
     {
         feePeriodStartTime = now;
-        nomin = new EtherNomin(this, _oracle,
-                               _beneficiary,
-                               _initialEtherPrice,
-                               _owner);
-        court = new Court(this, nomin, _owner);
     }
 
 
     /* ========== SETTERS ========== */
+
+    function setNomin(EtherNomin _nomin) 
+        public
+        onlyOwner
+    {
+        nomin = _nomin;
+    }
+
+    function setCourt(Court _court) 
+        public
+        onlyOwner
+    {
+        court = _court;
+    }
 
     function setTargetFeePeriodDuration(uint duration)
         public
