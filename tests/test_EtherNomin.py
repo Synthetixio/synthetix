@@ -1,7 +1,6 @@
 import unittest
 from deploy import UNIT, MASTER
-from deployutils import compile_contracts, attempt_deploy
-from testutils import assertCallReverts
+from utils.deployutils import compile_contracts, attempt_deploy
 
 ETHERNOMIN_SOURCE = "contracts/EtherNomin.sol"
 
