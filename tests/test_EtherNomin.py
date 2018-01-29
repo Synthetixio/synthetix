@@ -1,7 +1,9 @@
 import unittest
 from deploy import UNIT, MASTER
-from deployutils import W3, compile_contracts, attempt_deploy, mine_tx
-from testutils import assertCallReverts, assertTransactionReverts
+
+from utils.deployutils import W3, compile_contracts, attempt_deploy, mine_tx
+from utils.testutils import assertCallReverts, assertTransactionReverts
+
 
 ETHERNOMIN_SOURCE = "tests/contracts/PublicEtherNomin.sol"
 
@@ -197,7 +199,7 @@ class TestEtherNomin(unittest.TestCase):
         mine_tx(self.setOracle(pre_oracle).transact({'from': owner}))
 
         # Check if everything works with something in the pool.
-        self.asserTrue(False)
+        self.assertTrue(False)
 
 
     # setPrice
