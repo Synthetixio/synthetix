@@ -210,6 +210,17 @@ contract EtherNomin is ERC20FeeToken {
         PoolFeeRateUpdated(newFeeRate);
     }
 
+    /* Update the period after which the price will be considered stale.
+     * Exceptional conditions:
+     *     Not called by the owner. */
+    function setStalePeriod(uint period)
+        public
+        onlyOwner
+    {
+        stalePeriod = period;
+        StalePeriodUpdated(period);
+    }
+
     /* Update the current ether price and update the last updated time,
      * refreshing the price staleness.
      * Exceptional conditions:
@@ -224,17 +235,6 @@ contract EtherNomin is ERC20FeeToken {
         etherPrice = price;
         lastPriceUpdate = now;
         PriceUpdated(price);
-    }
-
-    /* Update the period after which the price will be considered stale.
-     * Exceptional conditions:
-     *     Not called by the owner. */
-    function setStalePeriod(uint period)
-        public
-        onlyOwner
-    {
-        stalePeriod = period;
-        StalePeriodUpdated(period);
     }
 
 

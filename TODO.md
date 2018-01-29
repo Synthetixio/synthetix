@@ -3,8 +3,6 @@ FEATURES
 * Factor out functionality from state, into proxy contract, for upgrades.
 * Determine how to get tokens into contract and working with vesting schedules that still accrue fees.
 * Confirm with Kain final values for all contract parameters.
-* name of nomins to ethernomins
-* rename "EtherNomin", description, ticker symbol? (subject to Kain's approval)
 
 TESTS
 =====
@@ -15,6 +13,8 @@ EtherNomin
 Court
 ERC20Token
 ERC20FeeToken
+Test inherited contracts (ERC20, Fee, Owned) in their inherited contexts
+Account creation/unlocking logic for use in tests
 
 
 CLEANUP
