@@ -45,13 +45,14 @@ Similarly, the test suite is run with
 
 ## Files
 
-The following files should be sufficient for deplyoing version 1.0 of the havven
-system. We have leant heavily towards simplicity and explicitness where possible, 
-and towards verbosity and descriptiveness even to the point of excess.
-Some consideration has been given to efficiency, but typically in determining how
-to allow operations to pay for themselves as they go. We have mostly forgone local
-and machine optimisations whenever they would come at the expense of
-clarity or simplicity.
+The following files should be sufficient for deploying and testing version 1.0
+of the havven system. We have leant heavily towards logical simplicity and
+explicitness where possible; while in documentation and naming conventions,
+verbosity and descriptiveness even to the point of excess.
+Some consideration has been given to efficiency, but typically architecturally,
+in determining how to allow operations to pay for themselves as they go.
+We have mostly forgone local and machine optimisations whenever they would
+come at the expense of clarity or simplicity.
 
 * `deploy.py` for deploying Havven contracts to the blockchain.
 * `run_tests.py` runs the test suite.
