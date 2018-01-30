@@ -405,12 +405,6 @@ class TestEtherNomin(unittest.TestCase):
 
         mine_tx(self.setPrice(pre_price).transact({'from': owner}))
 
-    def test_saleProceedsEther(self):
-        pass
-
-    def test_saleProceedsEther(self):
-        pass
-
     def test_priceIsStale(self):
         pass
 
