@@ -162,6 +162,7 @@ class TestEtherNomin(unittest.TestCase):
         assertTransactionReverts(self, self.setPoolFeeRate(new_rate), W3.eth.accounts[1])
         # Pool fee rate must be no greater than UNIT.
         assertTransactionReverts(self, self.setPoolFeeRate(UNIT + 1), owner)
+        assertTransactionReverts(self, self.setPoolFeeRate(2**256 - 1), owner)
 
         mine_tx(self.setPoolFeeRate(new_rate).transact({'from': owner}))
         self.assertEqual(self.poolFeeRate().call(), new_rate)
@@ -320,7 +321,18 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(W3.eth.getBalance(self.nomin.address), 0)
 
     def test_poolFeeIncurred(self):
-        pass
+        owner = self.owner().call()
+        poolFeeRate = self.poolFeeRate().call()
+
+        self.assertEqual(self.poolFeeIncurred(0).call(), 0)
+
+        self.assertEqual(self.poolFeeIncurred(UNIT).call(), poolFeeRate)
+        self.assertEqual(self.poolFeeIncurred(10 * UNIT).call(), 10 * poolFeeRate)
+        self.assertEqual(self.poolFeeIncurred(UNIT // 2).call(), poolFeeRate // 2)
+        mine_tx(self.setPoolFeeRate(UNIT // 10**7).transact({'from': owner}))
+        self.assertEqual(self.poolFeeIncurred(UNIT).call(), UNIT // 10**7)
+        self.assertEqual(self.poolFeeIncurred(100 * UNIT).call(), UNIT // 10**5)
+        self.assertEqual(self.poolFeeIncurred(UNIT // 2).call(), UNIT // (2 * 10**7))
 
     def test_purchaseCostFiat(self):
         pass
