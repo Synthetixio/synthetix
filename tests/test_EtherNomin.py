@@ -380,6 +380,11 @@ class TestEtherNomin(unittest.TestCase):
         pass
 
     def test_fallback(self):
-        pass
+        # Fallback function should be payable.
+        owner = self.owner().call()
+        mine_tx(W3.eth.sendTransaction({'from': owner, 'to': self.nomin.address, 'value': ETHER}))
+        self.assertEqual(W3.eth.getBalance(self.nomin.address), ETHER)
+        mine_tx(self.debugWithdrawAllEther(owner).transact({'from': owner}))
+        self.assertEqual(W3.eth.getBalance(self.nomin.address), 0)
 
     # Events
