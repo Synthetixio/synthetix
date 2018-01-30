@@ -325,7 +325,6 @@ class TestEtherNomin(unittest.TestCase):
         poolFeeRate = self.poolFeeRate().call()
 
         self.assertEqual(self.poolFeeIncurred(0).call(), 0)
-
         self.assertEqual(self.poolFeeIncurred(UNIT).call(), poolFeeRate)
         self.assertEqual(self.poolFeeIncurred(10 * UNIT).call(), 10 * poolFeeRate)
         self.assertEqual(self.poolFeeIncurred(UNIT // 2).call(), poolFeeRate // 2)
@@ -335,10 +334,40 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.poolFeeIncurred(UNIT // 2).call(), UNIT // (2 * 10**7))
 
     def test_purchaseCostFiat(self):
-        pass
+        owner = self.owner().call()
+        poolFeeRate = self.poolFeeRate().call()
+
+        self.assertEqual(self.purchaseCostFiat(0).call(), 0)
+        self.assertEqual(self.purchaseCostFiat(UNIT).call(), UNIT + poolFeeRate)
+        self.assertEqual(self.purchaseCostFiat(10 * UNIT).call(), 10 * (UNIT + poolFeeRate))
+        self.assertEqual(self.purchaseCostFiat(UNIT // 2).call(), (UNIT + poolFeeRate) // 2)
+        mine_tx(self.setPoolFeeRate(UNIT // 10**7).transact({'from': owner}))
+        self.assertEqual(self.purchaseCostFiat(UNIT).call(), (UNIT + UNIT // 10**7))
+        self.assertEqual(self.purchaseCostFiat(100 * UNIT).call(), 100 * (UNIT + UNIT // 10**7))
+        self.assertEqual(self.purchaseCostFiat(UNIT // 2).call(), (UNIT + UNIT // 10**7) // 2)
+        mine_tx(self.setPoolFeeRate(poolFeeRate).transact({'from': owner}))
 
     def test_purchaseCostEther(self):
-        pass
+        owner = self.owner().call()
+        oracle = self.oracle().call()
+        pre_price = self.etherPrice().call()
+        poolFeeRate = self.poolFeeRate().call()
+
+        self.assertEqual(self.purchaseCostEther(0).call(), 0)
+
+        mine_tx(self.setPrice(UNIT).transact({'from': owner}))
+        self.assertEqual(self.purchaseCostEther(UNIT).call(), UNIT + poolFeeRate)
+        self.assertEqual(self.purchaseCostEther(UNIT // 2).call(), (UNIT + poolFeeRate) // 2)
+        mine_tx(self.setPoolFeeRate(UNIT // 10**7).transact({'from': owner}))
+        self.assertEqual(self.purchaseCostEther(UNIT).call(), (UNIT + UNIT // 10**7))
+        self.assertEqual(self.purchaseCostEther(100 * UNIT).call(), 100 * (UNIT + UNIT // 10**7))
+
+        mine_tx(self.setPoolFeeRate(poolFeeRate).transact({'from': owner}))
+        mine_tx(self.setPrice(UNIT // 2).transact({'from': owner}))
+        self.assertEqual(self.purchaseCostEther(UNIT // 2).call(), UNIT + poolFeeRate)
+        self.assertEqual(self.purchaseCostEther(3 * UNIT).call(), 6 * (UNIT + poolFeeRate))
+
+        mine_tx(self.setPrice(pre_price).transact({'from': owner}))
 
     def test_saleProceedsEther(self):
         pass
