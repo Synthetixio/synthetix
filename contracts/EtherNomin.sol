@@ -283,15 +283,6 @@ contract EtherNomin is ERC20FeeToken {
         return fiatValueAllowStale(this.balance);
     }
 
-    /* Return the units of fiat per nomin in the supply.*/
-    function collateralisationRatio()
-        public
-        view
-        returns (uint)
-    {
-        return safeDecDiv(fiatBalance(), totalSupply);
-    }
-
     /* Return the equivalent ether value of the given quantity
      * of fiat at the current price.
      * Exceptional conditions:
@@ -303,6 +294,15 @@ contract EtherNomin is ERC20FeeToken {
         returns (uint)
     {
         return safeDecDiv(fiat, etherPrice);
+    }
+
+    /* Return the units of fiat per nomin in the supply.*/
+    function collateralisationRatio()
+        public
+        view
+        returns (uint)
+    {
+        return safeDecDiv(fiatBalance(), totalSupply);
     }
 
     /* Return the fee charged on a purchase or sale of n nomins. */
