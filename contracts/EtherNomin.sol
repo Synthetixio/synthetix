@@ -589,8 +589,10 @@ contract EtherNomin is ERC20FeeToken {
         public
         onlyOwner
     {
-        isFrozen[target] = false;
-        AccountUnfrozen(target);
+        if (isFrozen[target]) {
+            isFrozen[target] = false;
+            AccountUnfrozen(target);
+        }
     }
 
     /* Fallback function allows convenient collateralisation of the contract,
