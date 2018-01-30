@@ -303,6 +303,28 @@ contract Havven is ERC20Token, Owned {
         return true;
     }
 
+    /* Compute the last period's fee entitlement for the message sender
+     * and then deposit it into their nomin account.
+     */
+    function withdrawFeeEntitlement()
+        public
+        postCheckFeePeriodRollover
+    {
+        // Do not deposit fees into frozen accounts.
+        require(!nomin.isFrozen(msg.sender));
+
+        // Only allow accounts to withdraw fees once per period.
+        require(!hasWithdrawnLastPeriodFees[msg.sender]);
+
+        rolloverFee(msg.sender, lastTransferTimestamp[msg.sender], balanceOf[msg.sender]);
+        uint feesOwed = safeDecMul(safeDecMul(lastAverageBalance[msg.sender],
+                                              lastFeesCollected),
+                                   totalSupply);
+        nomin.withdrawFee(msg.sender, feesOwed);
+        hasWithdrawnLastPeriodFees[msg.sender] = true;
+        FeesWithdrawn(msg.sender, feesOwed);
+    }
+
     /* Update the fee entitlement since the last transfer or entitlement
      * adjustment. Since this updates the last transfer timestamp, if invoked
      * consecutively, this function will do nothing after the first call.
@@ -315,9 +337,10 @@ contract Havven is ERC20Token, Owned {
         // The time since the last transfer clamps at the last fee rollover time if the last transfer
         // was earlier than that.
         rolloverFee(account, lastTransferTime, preBalance);
-        currentBalanceSum[account] = safeAdd(currentBalanceSum[account],
-                                             safeDecMul(preBalance,
-                                                        intToDec(now - lastTransferTime)));
+        currentBalanceSum[account] = safeAdd(
+            currentBalanceSum[account],
+            safeDecMul(preBalance, intToDec(now - lastTransferTime))
+        );
 
         // Update the last time this user's balance changed.
         lastTransferTimestamp[account] = now;
@@ -364,28 +387,6 @@ contract Havven is ERC20Token, Owned {
             hasWithdrawnLastPeriodFees[account] = false;
             lastTransferTimestamp[account] = feePeriodStartTime;
         }
-    }
-
-    /* Compute the last period's fee entitlement for the message sender
-     * and then deposit it into their nomin account.
-     */
-    function withdrawFeeEntitlement()
-        public
-        postCheckFeePeriodRollover
-    {
-        // Do not deposit fees into frozen accounts.
-        require(!nomin.isFrozen(msg.sender));
-
-        // Only allow accounts to withdraw fees once per period.
-        require(!hasWithdrawnLastPeriodFees[msg.sender]);
-
-        rolloverFee(msg.sender, lastTransferTimestamp[msg.sender], balanceOf[msg.sender]);
-        uint feesOwed = safeDecMul(safeDecMul(lastAverageBalance[msg.sender],
-                                              lastFeesCollected),
-                                   totalSupply);
-        nomin.withdrawFee(msg.sender, feesOwed);
-        hasWithdrawnLastPeriodFees[msg.sender] = true;
-        FeesWithdrawn(msg.sender, feesOwed);
     }
 
     /* Indicate that the given account voted yea in a confiscation
