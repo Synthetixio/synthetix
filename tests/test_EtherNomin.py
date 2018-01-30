@@ -264,6 +264,22 @@ class TestEtherNomin(unittest.TestCase):
         mine_tx(self.debugWithdrawAllEther(owner).transact({'from': owner}))
         self.assertEqual(W3.eth.getBalance(self.nomin.address), 0)
 
+    def test_etherValue(self):
+        owner = self.owner().call()
+        oracle = self.oracle().call()
+        pre_price = self.etherPrice().call()
+
+        mine_tx(self.setPrice(UNIT).transact({'from': oracle}))
+        self.assertEqual(self.etherValue(UNIT).call(), ETHER)
+        self.assertEqual(self.etherValue(777 * UNIT).call(), 777 * ETHER)
+        self.assertEqual(self.etherValue(UNIT // 777).call(), ETHER // 777)
+        self.assertEqual(self.etherValue(10**8 * UNIT).call(), 10**8 * ETHER)
+        self.assertEqual(self.etherValue(UNIT // 10**12).call(), ETHER // 10**12)
+
+        mine_tx(self.setPrice(10 * UNIT).transact({'from': oracle}))
+        self.assertEqual(self.etherValue(UNIT).call(), ETHER // 10)
+        self.assertEqual(self.etherValue(2 * UNIT).call(), ETHER // 5)
+
     def test_collateralisationRatio(self):
         owner = self.owner().call()
         oracle = self.oracle().call()
@@ -297,7 +313,6 @@ class TestEtherNomin(unittest.TestCase):
         mine_tx(self.debugWithdrawAllEther(owner).transact({'from': owner}))
         self.assertEqual(W3.eth.getBalance(self.nomin.address), 0)
 
-    # etherValue
     # poolFeeIncurred
     # purchaseCostFiat
     # purchaseCostEther
