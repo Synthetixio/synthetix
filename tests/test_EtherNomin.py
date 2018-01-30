@@ -58,6 +58,7 @@ class TestEtherNomin(unittest.TestCase):
         cls.priceIsStale = lambda self: cls.nomin.functions.priceIsStale()
         cls.isLiquidating = lambda self: cls.nomin.functions.isLiquidating()
 
+        cls.transferPlusFee = lambda self, value: cls.nomin.functions.transferPlusFee(value)
         cls.transfer = lambda self, to, value: cls.nomin.functions.transfer(to, value)
         cls.transferFrom = lambda self, fromAccount, to, value: cls.nomin.functions.transfer(fromAccount, to, value)
         cls.issue = lambda self, n: cls.nomin.functions.issue(n)
@@ -412,7 +413,41 @@ class TestEtherNomin(unittest.TestCase):
         pass
 
     def test_transfer(self):
-        pass
+        owner = self.owner().call()
+        oracle = self.owner().call()
+        pre_price = self.etherPrice().call()
+        target = W3.eth.accounts[1]
+
+        mine_tx(self.setPrice(UNIT).transact({'from': oracle}))
+        mine_tx(self.issue(10 * UNIT).transact({'from': owner, 'value': 20 * ETHER}))
+        ethercost = self.purchaseCostEther(10 * UNIT).call()
+        mine_tx(self.buy(10 * UNIT).transact({'from': owner, 'value': ethercost}))
+
+        self.assertEqual(self.balanceOf(owner).call(), 10 * UNIT)
+        self.assertEqual(self.balanceOf(target).call(), 0)
+
+        mine_tx(self.transfer(target, 5 * UNIT).transact({'from': owner}))
+        remainder = 10 * UNIT - self.transferPlusFee(5 * UNIT).call()
+        self.assertEqual(self.balanceOf(owner).call(), remainder)
+        self.assertEqual(self.balanceOf(target).call(), 5 * UNIT)
+
+        mine_tx(self.debugFreezeAccount(target).transact({'from': owner}))
+
+        assertTransactionReverts(self, self.transfer(target, UNIT), owner)
+        assertTransactionReverts(self, self.transfer(owner, UNIT), target)
+
+        mine_tx(self.unfreezeAccount(target).transact({'from': owner}))
+
+        qty = (5 * UNIT * UNIT) // self.transferPlusFee(UNIT).call() + 1
+        mine_tx(self.transfer(owner, qty).transact({'from': target}))
+
+        self.assertEqual(self.balanceOf(owner).call(), remainder + qty)
+        self.assertEqual(self.balanceOf(target).call(), 0)
+
+        mine_tx(self.sell(self.balanceOf(owner).call()).transact({'from': owner}))
+        mine_tx(self.burn(self.nominPool().call()).transact({'from': owner}))
+        mine_tx(self.setPrice(pre_price).transact({'from': oracle}))
+        mine_tx(self.debugWithdrawAllEther(owner).transact({'from': owner}))
 
     def test_transferFrom(self):
         pass
@@ -427,6 +462,9 @@ class TestEtherNomin(unittest.TestCase):
         pass
 
     def test_sell(self):
+        pass
+
+    def test_isLiquidating(self):
         pass
 
     def test_forceLiquidation(self):
