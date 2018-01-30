@@ -307,7 +307,8 @@ contract EtherNomin is ERC20FeeToken {
         return safeDecMul(n, poolFeeRate);
     }
 
-    /* Return the fiat cost (including fee) of purchasing n nomins */
+    /* Return the fiat cost (including fee) of purchasing n nomins.
+     * Nomins are purchased for $1, plus the fee. */
     function purchaseCostFiat(uint n)
         public
         view
