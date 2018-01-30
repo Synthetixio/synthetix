@@ -20,8 +20,8 @@ In the version 1.0 system, the nomin contract owner can only expand the supply o
 Users can buy and sell nomins into the pool for $1 USD worth of ether. The ether price is
 obtained from a trusted oracle. Fees charged on nomins are paid to owners of the havven token in proportion with the the number of havvens they hold.
 
-Please not that this repository is under continual development.
-The code here will likely be under continual audit and
+Please note that this repository is under development.
+The code here will be under continual audit and
 improvement up until release of the completed system.
 
 ## Usage and requirements
@@ -45,8 +45,6 @@ Similarly, the test suite is run with
 
 * `deploy.py` the script for deploying Havven contracts to the blockchain.
 * `run_tests.py` runs the test suite.
-* `utils/deployutils.py` deployment helper functions.
-* `utils/testutils.py` testing helper functions.
 * `contracts/` contains the smart contracts that will actually be deployed.
 * `contracts/Court.sol` the logic for a court of arbitration to enable the balance of malicious contracts to be democratically confiscated.
 * `contracts/ERC20Token.sol` an interface for a generic ERC20 token.
@@ -57,3 +55,5 @@ Similarly, the test suite is run with
 * `contracts/SafeDecimalMath.sol` a math library for unsigned fixed point decimal arithmetic, with built-in safety checking.
 * `tests/` Test cases.
 * `tests/contracts` Contracts used by the test suite.
+* `utils/deployutils.py` deployment helper functions.
+* `utils/testutils.py` testing helper functions.
