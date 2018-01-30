@@ -259,11 +259,43 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.fiatBalance().call(), 300 * UNIT)
         mine_tx(W3.eth.sendTransaction({'from': owner, 'to': self.nomin.address, 'value': ETHER}))
         self.assertEqual(self.fiatBalance().call(), 600 * UNIT)
+
         mine_tx(self.setPrice(pre_price).transact({'from': oracle}))
         mine_tx(self.debugWithdrawAllEther(owner).transact({'from': owner}))
         self.assertEqual(W3.eth.getBalance(self.nomin.address), 0)
 
-    #def test_collateralisationRatio(self):
+    def test_collateralisationRatio(self):
+        owner = self.owner().call()
+        oracle = self.oracle().call()
+        pre_price = self.etherPrice().call()
+
+        # When there are no nomins in the contract, a zero denominator causes reversion.
+        assertTransactionReverts(self, self.collateralisationRatio(), owner)
+
+        # Set the ether price to $1, and issue one nomin against 2 ether.
+        mine_tx(self.setPrice(UNIT).transact({'from': oracle}))
+        mine_tx(self.issue(UNIT).transact({'from': owner, 'value': 2 * ETHER}))
+        self.assertEqual(self.collateralisationRatio().call(), 2 * UNIT)
+
+        # Set the ether price to $2, now the collateralisation ratio should double to 4.
+        mine_tx(self.setPrice(2 * UNIT).transact({'from': oracle}))
+        self.assertEqual(self.collateralisationRatio().call(), 4 * UNIT)
+
+        # Now set the ether price to 50 cents, so that the collateralisation is exactly 1
+        mine_tx(self.setPrice(UNIT // 2).transact({'from': oracle}))
+        # (this should not trigger liquidation)
+        self.assertFalse(self.isLiquidating().call())
+        self.assertEqual(self.collateralisationRatio().call(), UNIT)
+
+        # Now double the ether in the contract to 2.
+        mine_tx(W3.eth.sendTransaction({'from': owner, 'to': self.nomin.address, 'value': 2 * ETHER}))
+        self.assertEqual(self.collateralisationRatio().call(), 2 * UNIT)
+
+        # Restore status quo ante testum
+        mine_tx(self.burn(UNIT).transact({'from': owner}))
+        mine_tx(self.setPrice(pre_price).transact({'from': oracle}))
+        mine_tx(self.debugWithdrawAllEther(owner).transact({'from': owner}))
+        self.assertEqual(W3.eth.getBalance(self.nomin.address), 0)
 
     # etherValue
     # poolFeeIncurred
