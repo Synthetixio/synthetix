@@ -313,26 +313,73 @@ class TestEtherNomin(unittest.TestCase):
         mine_tx(self.debugWithdrawAllEther(owner).transact({'from': owner}))
         self.assertEqual(W3.eth.getBalance(self.nomin.address), 0)
 
-    # poolFeeIncurred
-    # purchaseCostFiat
-    # purchaseCostEther
-    # saleProceedsEther
-    # priceIsStale
-    # general staleness checks
-    # transfer
-    # transferFrom
-    # issue
-    # burn
-    # buy
-    # sell
-    # forceLiquidation
-    # liquidate
-    # Auto liquidation check
-    # extend liquidation period
-    # terminate liquidation
-    # self destruct
-    # confiscateBalance
-    # unfreezeAccount
-    # fallback function
-    # Events
+    def test_poolFeeIncurred(self):
+        pass
 
+    def test_purchaseCostFiat(self):
+        pass
+
+    def test_purchaseCostEther(self):
+        pass
+
+    def test_saleProceedsEther(self):
+        pass
+
+    def test_saleProceedsEther(self):
+        pass
+
+    def test_priceIsStale(self):
+        pass
+
+    def test_staleness(self):
+        pass
+
+    def test_transfer(self):
+        pass
+
+    def test_transferFrom(self):
+        pass
+
+    def test_issue(self):
+        pass
+
+    def test_burn(self):
+        pass
+
+    def test_buy(self):
+        pass
+
+    def test_sell(self):
+        pass
+
+    def test_forceLiquidation(self):
+        pass
+
+    def test_liquidate(self):
+        pass
+
+    def test_liquidation(self):
+        pass
+
+    def test_autoLiquidation(self):
+        pass
+
+    def test_extendLiquidationPeriod(self):
+        pass
+
+    def test_terminateLiquidation(self):
+        pass
+
+    def test_selfDestruct(self):
+        pass
+
+    def test_confiscateBalance(self):
+        pass
+
+    def test_unfreezeAccount(self):
+        pass
+
+    def test_fallback(self):
+        pass
+
+    # Events
