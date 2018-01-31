@@ -27,13 +27,20 @@ last_accessed_account = 1
 
 
 def fresh_account():
-    global last_accessed_account
-    last_accessed_account += 1
+    """Return first account after DUMMY"""
     try:
-        return W3.eth.accounts[last_accessed_account]
+        return W3.eth.accounts[last_accessed_account+1]
     except KeyError:
         raise Exception("""W3.eth.accounts doesn't contain enough accounts,
         restart ganache with more accounts (i.e. ganache-cli -a 500)""")
+
+
+def fresh_accounts(num_accs):
+    accs = W3.eth.accounts[last_accessed_account + 1:]
+    if len(accs) < num_accs:
+        raise Exception("""W3.eth.accounts doesn't contain enough accounts,
+                        restart ganache with more accounts (i.e. ganache-cli -a 500)""")
+    return accs[:num_accs]
 
 
 class TERMCOLORS:
@@ -97,6 +104,17 @@ def force_mine_block():
 def fast_forward(seconds=0, minutes=0, hours=0, days=0, weeks=0):
     total_time = to_seconds(seconds, minutes, hours, days, weeks)
     W3.providers[0].make_request("evm_increaseTime", [total_time])
+    force_mine_block()
+
+
+def take_snapshot():
+    x = W3.providers[0].make_request("evm_snapshot", [])
+    force_mine_block()
+    return x
+
+
+def restore_snapshot(snapshot):
+    W3.providers[0].make_request("evm_revert", [snapshot['result']])
     force_mine_block()
 
 
