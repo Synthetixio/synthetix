@@ -158,13 +158,13 @@ contract Havven is ERC20Token, Owned {
     mapping(address => bool) hasWithdrawnLastPeriodFees;
 
     // The time the current fee period began.
-    uint public feePeriodStartTime;
+    uint public feePeriodStartTime = 3;
     // Fee periods will roll over in no shorter a time than this.
     uint public targetFeePeriodDurationSeconds = 4 weeks;
     // And may not be set to be shorter than 1 day.
     uint constant minFeePeriodDurationSeconds = 1 days;
     // The actual start of the last fee period (seconds).
-    uint lastFeePeriodStartTime = 1;
+    uint lastFeePeriodStartTime = 2;
     // The actual start of the penultimate fee period (seconds).
     uint penultimateFeePeriodStartTime = 1;
 
@@ -193,6 +193,8 @@ contract Havven is ERC20Token, Owned {
         public
     {
         feePeriodStartTime = now;
+        lastFeePeriodStartTime = now-1;
+        penultimateFeePeriodStartTime = now-2;
     }
 
 
@@ -374,7 +376,7 @@ contract Havven is ERC20Token, Owned {
                 } else {
                     // transfer is between penultimate start and last period start
                     penultimateAverageBalance[account] = safeDiv(
-                        safeAdd(currentBalanceSum[account], safeMul(preBalance, (lastTransferTime - penultimateFeePeriodStartTime))),
+                        safeAdd(currentBalanceSum[account], safeMul(preBalance, (lastFeePeriodStartTime - lastTransferTime))),
                         (lastFeePeriodStartTime - penultimateFeePeriodStartTime)
                     );
                 }
@@ -383,10 +385,10 @@ contract Havven is ERC20Token, Owned {
                 // their average allocation is just their balance.
                 lastAverageBalance[account] = preBalance;
             } else {
+                // If the user did transfer in the last period, the penultimate just rolls over from the lastAverageBalance
                 penultimateAverageBalance[account] = lastAverageBalance[account];
-                // lastBal =
                 lastAverageBalance[account] = safeDiv(
-                    safeAdd(currentBalanceSum[account], safeMul(preBalance, (lastTransferTime - lastFeePeriodStartTime))),
+                    safeAdd(currentBalanceSum[account], safeMul(preBalance, (feePeriodStartTime - lastTransferTime))),
                     (feePeriodStartTime - lastFeePeriodStartTime)
                 );
             }
@@ -455,10 +457,11 @@ contract Havven is ERC20Token, Owned {
     modifier postCheckFeePeriodRollover
     {
         _;
-        // If the fee period has rolled over
+        // If the fee period has rolled over...
         if (feePeriodStartTime + targetFeePeriodDurationSeconds <= now) {
             lastFeesCollected = nomin.feePool();
 
+            // Shift the three period start times back one place
             penultimateFeePeriodStartTime = lastFeePeriodStartTime;
             lastFeePeriodStartTime = feePeriodStartTime;
             feePeriodStartTime = now;
