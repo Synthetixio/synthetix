@@ -602,7 +602,7 @@ class TestEtherNomin(unittest.TestCase):
         mine_tx(self.sell(seller, 2 * UNIT))
         # This assertAlmostEqual hack is only because ganache refuses to be sensible about gas prices.
         # The receipt refuses to include the gas price and the values appear are inconsistent anyway.
-        self.assertAlmostEqual(self.saleProceedsFiat(2 * UNIT) / UNIT, (W3.eth.getBalance(seller) - pre_balance) / UNIT)
+        self.assertAlmostEqual(self.saleProceedsEther(2 * UNIT) / UNIT, (W3.eth.getBalance(seller) - pre_balance) / UNIT)
         self.assertEqual(self.totalSupply(), 5 * UNIT)
         self.assertEqual(self.nominPool(), 2 * UNIT)
         self.assertEqual(self.balanceOf(seller), 3 * UNIT)

@@ -462,17 +462,17 @@ contract EtherNomin is ERC20FeeToken {
     function sell(uint n)
         public
     {
-        uint proceeds = saleProceedsFiat(n);
+        uint proceeds = saleProceedsEther(n);
         // Price staleness check occurs inside the call to fiatBalance,
         // but allow people to sell their nomins back to the system regardless
         // if we're in liquidation.
+        // The balance requirement should be enforced in any case,
+        // since failure should entail transferring more ether than
+        // is in the contract, but in addition to staleness checking,
+        // REVERT is more generous than THROW.
         if (isLiquidating()) {
             require(fiatBalanceAllowStale() >= proceeds);
         } else {
-            // This should be enforced in any case, since its failure should
-            // entail withdrawing more ether than is in the contract, but
-            // the staleness check is performed here, and REVERT is more
-            // generous than THROW
             require(fiatBalance() >= proceeds);
         }
         // sub requires that the balance is greater than n
