@@ -373,8 +373,8 @@ contract Havven is ERC20Token, Owned {
                     penultimateAverageBalance[account] = preBalance;
                 } else {
                     // transfer is between penultimate start and last period start
-                    penultimateAverageBalance[account] = safeDecDiv(
-                        safeAdd(currentBalanceSum[account], safeDecMul(preBalance, (lastTransferTime - penultimateFeePeriodStartTime))),
+                    penultimateAverageBalance[account] = safeDiv(
+                        safeAdd(currentBalanceSum[account], safeMul(preBalance, (lastTransferTime - penultimateFeePeriodStartTime))),
                         (lastFeePeriodStartTime - penultimateFeePeriodStartTime)
                     );
                 }
@@ -385,8 +385,8 @@ contract Havven is ERC20Token, Owned {
             } else {
                 penultimateAverageBalance[account] = lastAverageBalance[account];
                 // lastBal =
-                lastAverageBalance[account] = safeDecDiv(
-                    safeAdd(currentBalanceSum[account], safeDecMul(preBalance, (lastTransferTime - lastFeePeriodStartTime))),
+                lastAverageBalance[account] = safeDiv(
+                    safeAdd(currentBalanceSum[account], safeMul(preBalance, (lastTransferTime - lastFeePeriodStartTime))),
                     (feePeriodStartTime - lastFeePeriodStartTime)
                 );
             }
@@ -444,7 +444,9 @@ contract Havven is ERC20Token, Owned {
     /* ========== MODIFIERS ========== */
 
     /* If the fee period has rolled over, then
-     * save the start
+     * save the start times of the last fee period,
+     * as well as the penultimate fee period.
+     *
      * Check after the modified function has executed
      * so that the contract state the caller saw before
      * calling the function is the actual one they
