@@ -120,9 +120,9 @@ class TestHavven(unittest.TestCase):
         #
         # INTERNAL
         # adjustFeeEntitlement (p_bal -> preBalance)
-        cls.adjustFeeEntitlement = lambda self, sender, acc, p_bal: mine_tx(self.havven.functions.publicAdjustFeeEntitlement(acc, p_bal).transact({'from': sender}))
+        cls.adjustFeeEntitlement = lambda self, sender, acc, p_bal: mine_tx(self.havven.functions._adjustFeeEntitlement(acc, p_bal).transact({'from': sender}))
         # rolloverFee (ltt->last_transfer_time)
-        cls.rolloverFee = lambda self, sender, acc, ltt, p_bal: mine_tx(self.havven.functions.publicRolloverFee(acc, ltt, p_bal).transact({'from': sender}))
+        cls.rolloverFee = lambda self, sender, acc, ltt, p_bal: mine_tx(self.havven.functions._rolloverFee(acc, ltt, p_bal).transact({'from': sender}))
 
         # withdrawFeeEntitlement
         cls.withdrawFeeEntitlement = lambda self, sender: mine_tx(self.havven.functions.withdrawFeeEntitlement(sender).transact({'from': sender}))
