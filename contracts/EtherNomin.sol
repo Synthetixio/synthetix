@@ -501,15 +501,6 @@ contract EtherNomin is ERC20FeeToken {
         beginLiquidation();
     }
 
-    /* Anyone may query the current collateralisation levels, and force liquidation
-     * if they are too low.
-     */
-    function liquidate()
-        public
-        notLiquidating
-        postCheckAutoLiquidate
-    {}
-
     function beginLiquidation()
         internal
     {
