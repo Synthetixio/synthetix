@@ -429,7 +429,7 @@ class TestEtherNomin(unittest.TestCase):
         # Unauthorized transfers should not work
         assertReverts(self, self.transferFrom, [proxy, owner, target, UNIT])
 
-        # Also too-large transfers
+        # Neither should transfers that are too large for the allowance.
         mine_tx(self.approve(owner, proxy, UNIT))
         assertReverts(self, self.transferFrom, [proxy, owner, target, 2 * UNIT])
 
@@ -462,7 +462,50 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.balanceOf(target), 0)
 
     def test_issue(self):
-        pass
+        owner = self.owner()
+        oracle = self.oracle()
+
+        # Only the contract owner should be able to issue new nomins.
+        not_owner = W3.eth.accounts[4]
+        self.setPrice(oracle, UNIT)
+        assertReverts(self, self.issue, [not_owner, UNIT, 2 * ETHER])
+
+        self.assertEqual(self.totalSupply(), 0)
+        self.assertEqual(self.nominPool(), 0)
+
+        # Revert if less than 2x collateral is provided 
+        assertReverts(self, self.issue, [owner, UNIT, 2 * ETHER - 1])
+
+        # Issue a nomin into the pool
+        mine_tx(self.issue(owner, UNIT, 2 * ETHER))
+        self.assertEqual(self.totalSupply(), UNIT)
+        self.assertEqual(self.nominPool(), UNIT)
+        self.assertEqual(W3.eth.getBalance(self.nomin.address), 2 * ETHER)
+
+        # Issuing more nomins should stack with existing supply
+        mine_tx(self.issue(owner, UNIT, 2 * ETHER))
+        self.assertEqual(self.totalSupply(), 2 * UNIT)
+        self.assertEqual(self.nominPool(), 2 * UNIT)
+        self.assertEqual(W3.eth.getBalance(self.nomin.address), 4 * ETHER)
+
+        # Issue more into the pool for free if price goes up
+        self.setPrice(oracle, 2 * UNIT)
+        self.assertFalse(self.isLiquidating())
+        assertReverts(self, self.issue, [owner, 2 * UNIT + 1, 0])
+        mine_tx(self.issue(owner, 2 * UNIT, 0))
+        self.assertEqual(self.totalSupply(), 4 * UNIT)
+        self.assertEqual(self.nominPool(), 4 * UNIT)
+        self.assertEqual(W3.eth.getBalance(self.nomin.address), 4 * ETHER)
+
+        # provide more than 2x collateral for new issuance if price drops
+        self.setPrice(oracle, UNIT)
+        self.assertFalse(self.isLiquidating())
+        assertReverts(self, self.issue, [owner, UNIT, 2 * ETHER])
+        assertReverts(self, self.issue, [owner, UNIT, 6 * ETHER - 1])
+        mine_tx(self.issue(owner, UNIT, 6 * ETHER))
+        self.assertEqual(self.totalSupply(), 5 * UNIT)
+        self.assertEqual(self.nominPool(), 5 * UNIT)
+        self.assertEqual(W3.eth.getBalance(self.nomin.address), 10 * ETHER)
 
     def test_burn(self):
         pass
@@ -566,5 +609,8 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(W3.eth.getBalance(self.nomin.address), 0)
         mine_tx(W3.eth.sendTransaction({'from': owner, 'to': self.nomin.address, 'value': ETHER}))
         self.assertEqual(W3.eth.getBalance(self.nomin.address), ETHER)
+
+    def test_scenario(self):
+        pass
 
     # Events
