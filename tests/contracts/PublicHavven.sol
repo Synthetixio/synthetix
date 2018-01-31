@@ -136,6 +136,11 @@ import "contracts/Havven.sol";
 
 
 contract PublicHavven is Havven {
+    // Public getters for all items in the Havven contract, used for debugging/testing
+    function PublicHavven(address _owner)
+        Havven(_owner)
+        public
+    {}
 
     function _currentBalanceSum(address account)
         public
@@ -177,13 +182,6 @@ contract PublicHavven is Havven {
         return minFeePeriodDurationSeconds;
     }
 
-    function PublicHavven(address _owner)
-        Havven(_owner)
-        public
-    {
-    }
-
-
     function _adjustFeeEntitlement(address account, uint preBalance)
         public
     {
@@ -199,12 +197,10 @@ contract PublicHavven is Havven {
     function _postCheckFeePeriodRollover()
         postCheckFeePeriodRollover
         public
-    {
-    }
+    {}
 
     function _onlyCourt()
         onlyCourt
         public
-    {
-    }
+    {}
 }
