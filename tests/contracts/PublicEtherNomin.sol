@@ -41,4 +41,10 @@ contract PublicEtherNomin is EtherNomin {
 	{
 		isFrozen[target] = true;
 	}
+
+	function debugEmptyFeePool()
+		public
+	{
+		feePool = 0;
+	}
 }
