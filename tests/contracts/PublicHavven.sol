@@ -166,12 +166,12 @@ contract PublicHavven is Havven {
         return hasWithdrawnLastPeriodFees[account];
     }
 
-    function _lastFeePeriodDuration()
+    function _lastFeePeriodStartTime()
         public
         view
         returns (uint)
     {
-        return lastFeePeriodDuration;
+        return lastFeePeriodStartTime;
     }
 
     function _minFeePeriodDurationSeconds()
