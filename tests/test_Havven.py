@@ -207,6 +207,11 @@ class TestHavven(unittest.TestCase):
     ###
     # currentBalanceSum
     def test_currentBalanceSum(self):
+        """
+        Testing the value of currentBalanceSum works as intended,
+        Further testing involving this and fee collection will be done
+        in scenario testing
+        """
         fee_period = self.targetFeePeriodDurationSeconds()
         transfer_period = int(fee_period/10)
         alice = W3.eth.accounts[1]
@@ -227,6 +232,7 @@ class TestHavven(unittest.TestCase):
         )
 
     # lastAverageBalance
+
     # penultimateAverageBalancef
     # lastTransferTimestamp
     # hasWithdrawnLastPeriodFees
