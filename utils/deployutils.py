@@ -30,6 +30,19 @@ class TERMCOLORS:
     UNDERLINE = '\033[4m'
 
 
+def to_seconds(seconds=0, minutes=0, hours=0, days=0, weeks=0):
+    total_time = seconds
+    mult = 60
+    total_time += minutes*mult
+    mult *= 60
+    total_time += hours*mult
+    mult *= 24
+    total_time += days*mult
+    mult *= 7
+    total_time += weeks*mult
+    return total_time
+
+
 def attempt(function, func_args, init_string, print_status=True, print_exception=True):
     if print_status:
         print(init_string, end="", flush=True)
@@ -63,15 +76,7 @@ def force_mine_block():
 
 
 def fast_forward(seconds=0, minutes=0, hours=0, days=0, weeks=0):
-    total_time = seconds
-    mult = 60
-    total_time += minutes*mult
-    mult *= 60
-    total_time += hours*mult
-    mult *= 24
-    total_time += days*mult
-    mult *= 7
-    total_time += weeks*mult
+    total_time = to_seconds(seconds, minutes, hours, days, weeks)
     W3.providers[0].make_request("evm_increaseTime", [total_time])
     force_mine_block()
 
