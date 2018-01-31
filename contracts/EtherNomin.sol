@@ -95,7 +95,7 @@ contract EtherNomin is ERC20FeeToken {
     /* ========== STATE VARIABLES ========== */
 
     // The oracle provides price information to this contract.
-    // It may only call the setPrice() function.
+    // It may only call the updatePrice() function.
     address public oracle;
 
     // The address of the contract which manages confiscation votes.
@@ -213,23 +213,6 @@ contract EtherNomin is ERC20FeeToken {
         stalePeriod = period;
         StalePeriodUpdated(period);
     }
-
-    /* Update the current ether price and update the last updated time,
-     * refreshing the price staleness.
-     * Exceptional conditions:
-     *     Not called by the oracle. */
-    function setPrice(uint price)
-        public
-        postCheckAutoLiquidate
-    {
-        // Should be callable only by the oracle.
-        require(msg.sender == oracle);
-
-        etherPrice = price;
-        lastPriceUpdate = now;
-        PriceUpdated(price);
-    }
-
 
     /* ========== VIEW FUNCTIONS ========== */
 
@@ -395,6 +378,22 @@ contract EtherNomin is ERC20FeeToken {
         return super.transferFrom(_from, _to, _value);
     }
 
+    /* Update the current ether price and update the last updated time,
+     * refreshing the price staleness.
+     * Exceptional conditions:
+     *     Not called by the oracle. */
+    function updatePrice(uint price)
+        public
+        postCheckAutoLiquidate
+    {
+        // Should be callable only by the oracle.
+        require(msg.sender == oracle);
+
+        etherPrice = price;
+        lastPriceUpdate = now;
+        PriceUpdated(price);
+    }
+
     /* Issues n nomins into the pool available to be bought by users.
      * Must be accompanied by $n worth of ether.
      * Exceptional conditions:
@@ -405,6 +404,7 @@ contract EtherNomin is ERC20FeeToken {
         public
         onlyOwner
         payable
+        postCheckAutoLiquidate
     {
         // Price staleness check occurs inside the call to fiatValue.
         // Safe additions are unnecessary here, as either the addition is checked on the following line
@@ -423,6 +423,7 @@ contract EtherNomin is ERC20FeeToken {
     function burn(uint n)
         public
         onlyOwner
+        postCheckAutoLiquidate
     {
         // Require that there are enough nomins in the accessible pool to burn
         require(nominPool >= n);
@@ -443,6 +444,7 @@ contract EtherNomin is ERC20FeeToken {
         public
         notLiquidating
         payable
+        postCheckAutoLiquidate
     {
         // Price staleness check occurs inside the call to purchaseEtherCost.
         require(n >= purchaseMininum &&
@@ -461,6 +463,7 @@ contract EtherNomin is ERC20FeeToken {
      *     Price is stale. */
     function sell(uint n)
         public
+        postCheckAutoLiquidate
     {
         uint proceeds = saleProceedsEther(n);
         // Price staleness check occurs inside the call to fiatBalance,
