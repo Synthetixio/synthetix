@@ -1,6 +1,4 @@
 from utils.deployutils import mine_tx
-import traceback
-from unittest.case import _AssertRaisesContext
 
 
 def assertCallReverts(testcase, function):

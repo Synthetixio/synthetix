@@ -139,16 +139,56 @@ contract PublicHavven is Havven {
 
     /* ========== STATE VARIABLES ========== */
 
-    mapping(address => uint) public currentBalanceSum;
+    //mapping(address => uint) public currentBalanceSum;
 
-    mapping(address => uint) public lastTransferTimestamp;
+    //mapping(address => uint) public lastTransferTimestamp;
 
-    mapping(address => bool) public hasWithdrawnLastPeriodFees;
+    //mapping(address => bool) public hasWithdrawnLastPeriodFees;
+
+    function _currentBalanceSum(address account)
+        public
+        view
+        returns (uint)
+    {
+        return currentBalanceSum[account];
+    }
+
+    function _lastTransferTimestamp(address account)
+        public
+        view
+        returns (uint)
+    {
+        return lastTransferTimestamp[account];
+    }
+
+    function _hasWithdrawnLastPeriodFees(address account)
+        public
+        view
+        returns (bool)
+    {
+        return hasWithdrawnLastPeriodFees[account];
+    }
 
     // The time the current fee period began.
-    uint public constant minFeePeriodDurationSeconds = 1 days;
+    //uint public constant minFeePeriodDurationSeconds = 1 days;
     // The actual measured duration of the last fee period (decimal seconds).
-    uint public lastFeePeriodDuration = 1;
+    //uint public lastFeePeriodDuration = 1;
+
+    function _lastFeePeriodDuration()
+        public
+        view
+        returns (uint)
+    {
+        return lastFeePeriodDuration;
+    }
+
+    function _minFeePeriodDurationSeconds()
+        public
+        view
+        returns (uint)
+    {
+        return minFeePeriodDurationSeconds;
+    }
 
     function PublicHavven(address _owner)
         Havven(_owner)

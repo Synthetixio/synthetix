@@ -1,5 +1,7 @@
 import unittest
-from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mine_txs, mine_tx, UNIT, MASTER
+import time
+from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mine_txs, mine_tx, \
+    UNIT, MASTER, to_seconds, fast_forward, force_mine_block
 from utils.testutils import assertFunctionReverts
 
 SOLIDITY_SOURCES = ["tests/contracts/PublicHavven.sol", "contracts/EtherNomin.sol",
@@ -63,29 +65,29 @@ class TestHavven(unittest.TestCase):
         # HAVVEN
         # GETTERS
         # currentBalanceSum
-        cls.currentBalanceSum = lambda self, addr: self.havven.functions.currentBalanceSum(addr).call()
+        cls.currentBalanceSum = lambda self, addr: self.havven.functions._currentBalanceSum(addr).call()
         # lastAverageBalance
-        cls.currentBalanceSum = lambda self, addr: self.havven.functions.lastAverageBalance(addr).call()
+        cls.lastAverageBalance = lambda self, addr: self.havven.functions.lastAverageBalance(addr).call()
         # penultimateAverageBalance
         cls.penultimateAverageBalance = lambda self, addr: self.havven.functions.penultimateAverageBalance(addr).call()
         # lastTransferTimestamp
-        cls.lastTransferTimestamp = lambda self, addr: self.havven.functions.lastTransferTimestamp(addr).call()
+        cls.lastTransferTimestamp = lambda self, addr: self.havven.functions._lastTransferTimestamp(addr).call()
         # hasWithdrawnLastPeriodFees
-        cls.hasWithdrawnLastPeriodFees = lambda self, addr: self.havven.functions.hasWithdrawnLastPeriodFees(addr).call()
+        cls.hasWithdrawnLastPeriodFees = lambda self, addr: self.havven.functions._hasWithdrawnLastPeriodFees(addr).call()
 
         # feePeriodStartTime
         cls.feePeriodStartTime = lambda self: self.havven.functions.feePeriodStartTime().call()
         # targetFeePeriodDurationSeconds
         cls.targetFeePeriodDurationSeconds = lambda self: self.havven.functions.targetFeePeriodDurationSeconds().call()
         # minFeePeriodDurationSeconds
-        cls.minFeePeriodDurationSeconds = lambda self: self.havven.functions.minFeePeriodDurationSeconds().call()
+        cls.minFeePeriodDurationSeconds = lambda self: self.havven.functions._minFeePeriodDurationSeconds().call()
         # lastFeePeriodDuration
-        cls.lastFeePeriodDuration = lambda self: self.havven.functions.lastFeePeriodDuration().call()
+        cls.lastFeePeriodDuration = lambda self: self.havven.functions._lastFeePeriodDuration().call()
         # lastFeesCollected
         cls.lastFeesCollected = lambda self: self.havven.functions.lastFeesCollected().call()
 
-        cls.get_hvn_nomin = lambda self: self.havven.functions.nomin().call()
-        cls.get_hvn_court = lambda self: self.havven.functions.court().call()
+        cls.get_nomin = lambda self: self.havven.functions.nomin().call()
+        cls.get_court = lambda self: self.havven.functions.court().call()
 
         # vote
         cls.vote = lambda self, addr: self.havven.functions.vote(addr).call()
@@ -139,7 +141,6 @@ class TestHavven(unittest.TestCase):
         # onlyCourt
         cls._onlyCourt = lambda self, sender: mine_tx(self.havven.functions._onlyCourt().transact({'from': sender}))
 
-
     ###
     # Test Ownership
     ###
@@ -186,24 +187,47 @@ class TestHavven(unittest.TestCase):
     ###
     # Test Havven
     ###
-    ##
-    #
     ###
     # Constructor
     ###
-    def test_feePeriodStartTime(self):
+    def test_constructor(self):
         self.assertEquals(
             W3.eth.getBlock(self.construction_block)['timestamp'],
             self.feePeriodStartTime()
         )
-
+        self.assertEquals(self.targetFeePeriodDurationSeconds(), to_seconds(weeks=4))
+        self.assertEquals(self.minFeePeriodDurationSeconds(), to_seconds(days=1))
+        self.assertEquals(self.lastFeesCollected(), 0)
+        self.assertEquals(self.lastFeePeriodDuration(), 1)
+        self.assertEquals(self.get_nomin(), self.nomin.address)
+        self.assertEquals(self.get_court(), self.court.address)
 
     ###
     # Mappings
     ###
     # currentBalanceSum
+    def test_currentBalanceSum(self):
+        fee_period = self.targetFeePeriodDurationSeconds()
+        transfer_period = int(fee_period/10)
+        alice = W3.eth.accounts[1]
+        self.assertEquals(self.balanceOf(alice), 0)
+
+        start_amt = UNIT * 50
+        self.endow(MASTER, alice, start_amt)
+        self.assertEquals(self.balanceOf(alice), start_amt)
+        self.assertEquals(self.currentBalanceSum(alice), 0)
+        start_time = W3.eth.getBlock(W3.eth.blockNumber)['timestamp']
+        fast_forward(transfer_period)
+        end_time = W3.eth.getBlock(W3.eth.blockNumber)['timestamp']
+        self.transfer(alice, alice, 1)
+        self.assertAlmostEquals(
+            self.currentBalanceSum(alice),
+            (end_time-start_time)*start_amt,
+            places=7
+        )
+
     # lastAverageBalance
-    # penultimateAverageBalance
+    # penultimateAverageBalancef
     # lastTransferTimestamp
     # hasWithdrawnLastPeriodFees
 
