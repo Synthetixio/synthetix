@@ -611,7 +611,16 @@ class TestEtherNomin(unittest.TestCase):
         pass
 
     def test_forceLiquidation(self):
-        pass
+        # non-owners should not be able to force liquidation.
+        assertReverts(self, self.forceLiquidation, [W3.eth.accounts[5]])
+
+        owner = self.owner()
+        self.assertFalse(self.isLiquidating())
+        mine_tx(self.forceLiquidation(owner))
+        self.assertTrue(self.isLiquidating())
+
+        # This call should not work if liquidation has begun.
+        assertReverts(self, self.forceLiquidation, [owner])
 
     def test_liquidate(self):
         pass
