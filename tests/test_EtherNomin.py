@@ -80,7 +80,8 @@ class TestEtherNomin(unittest.TestCase):
 
         cls.transferPlusFee = lambda self, value: cls.nomin.functions.transferPlusFee(value).call()
         cls.transfer = lambda self, sender, recipient, value: cls.nomin.functions.transfer(recipient, value).transact({'from': sender})
-        cls.transferFrom = lambda self, sender, fromAccount, to, value: cls.nomin.functions.transfer(fromAccount, to, value).transact({'from': sender})
+        cls.transferFrom = lambda self, sender, fromAccount, to, value: cls.nomin.functions.transferFrom(fromAccount, to, value).transact({'from': sender})
+        cls.approve = lambda self, sender, spender, value: cls.nomin.functions.approve(spender, value).transact({'from': sender})
         cls.issue = lambda self, sender, n, value: cls.nomin.functions.issue(n).transact({'from': sender, 'value': value})
         cls.burn = lambda self, sender, n: cls.nomin.functions.burn(n).transact({'from': sender})
         cls.buy = lambda self, sender, n, value: cls.nomin.functions.buy(n).transact({'from': sender, 'value': value})
@@ -420,7 +421,45 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.balanceOf(target), 0)
 
     def test_transferFrom(self):
-        pass
+        owner = self.owner()
+        oracle = self.oracle()
+        target = W3.eth.accounts[1]
+        proxy = W3.eth.accounts[2]
+
+        # Unauthorized transfers should not work
+        assertReverts(self, self.transferFrom, [proxy, owner, target, UNIT])
+
+        # Also too-large transfers
+        mine_tx(self.approve(owner, proxy, UNIT))
+        assertReverts(self, self.transferFrom, [proxy, owner, target, 2 * UNIT])
+
+        mine_tx(self.approve(owner, proxy, 10000 * UNIT))
+
+        mine_tx(self.setPrice(oracle, UNIT))
+        mine_tx(self.issue(owner, 10 * UNIT, 20 * ETHER))
+        ethercost = self.purchaseCostEther(10 * UNIT)
+        mine_tx(self.buy(owner, 10 * UNIT, ethercost))
+
+        self.assertEqual(self.balanceOf(owner), 10 * UNIT)
+        self.assertEqual(self.balanceOf(target), 0)
+
+        mine_tx(self.transferFrom(proxy, owner, target, 5 * UNIT))
+        remainder = 10 * UNIT - self.transferPlusFee(5 * UNIT)
+        self.assertEqual(self.balanceOf(owner), remainder)
+        self.assertEqual(self.balanceOf(target), 5 * UNIT)
+
+        mine_tx(self.debugFreezeAccount(owner, target))
+
+        assertReverts(self, self.transferFrom, [proxy, owner, target, UNIT])
+        assertReverts(self, self.transferFrom, [proxy, target, owner, UNIT])
+
+        mine_tx(self.unfreezeAccount(owner, target))
+
+        qty = (5 * UNIT * UNIT) // self.transferPlusFee(UNIT) + 1
+        mine_tx(self.transfer(target, owner, qty))
+
+        self.assertEqual(self.balanceOf(owner), remainder + qty)
+        self.assertEqual(self.balanceOf(target), 0)
 
     def test_issue(self):
         pass
