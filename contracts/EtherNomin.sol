@@ -469,6 +469,10 @@ contract EtherNomin is ERC20FeeToken {
         if (isLiquidating()) {
             require(fiatBalanceAllowStale() >= proceeds);
         } else {
+            // This should be enforced in any case, since its failure should
+            // entail withdrawing more ether than is in the contract, but
+            // the staleness check is performed here, and REVERT is more
+            // generous than THROW
             require(fiatBalance() >= proceeds);
         }
         // sub requires that the balance is greater than n
