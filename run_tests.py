@@ -6,8 +6,7 @@ TEST_SETTINGS_FILE = "test_settings.py"
 run_test = {
     'Court': True,
     'Deploy': True,
-    'ERC20FeeToken': True,
-    'ERC20Token': True,
+    'ERC20': True,
     'EtherNomin': True,
     'Havven': True,
     'Owned': True,
@@ -40,10 +39,8 @@ if __name__ == '__main__':
         test_suite.addTests(loader.loadTestsFromModule(tests.test_Court))
     if run_test['Deploy']:
         test_suite.addTests(loader.loadTestsFromModule(tests.test_Deploy))
-    if run_test['ERC20FeeToken']:
-        test_suite.addTests(loader.loadTestsFromModule(tests.test_ERC20FeeToken))
-    if run_test['ERC20Token']:
-        test_suite.addTests(loader.loadTestsFromModule(tests.test_ERC20Token))
+    if run_test['ERC20']:
+        test_suite.addTests(loader.loadTestsFromModule(tests.test_ERC20))
     if run_test['EtherNomin']:
         test_suite.addTests(loader.loadTestsFromModule(tests.test_EtherNomin))
     if run_test['Havven']:
