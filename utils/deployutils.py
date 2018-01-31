@@ -4,10 +4,11 @@ from web3 import Web3, HTTPProvider
 from solc import compile_files
 
 
-POLLING_INTERVAL = 2
-STATUS_ALIGN_SPACING = 6
 BLOCKCHAIN_ADDRESS = "http://localhost:8545"
 W3 = Web3(HTTPProvider(BLOCKCHAIN_ADDRESS))
+POLLING_INTERVAL = 0.1
+STATUS_ALIGN_SPACING = 6
+
 
 # The number representing 1 in our contracts.
 UNIT = 10**18
@@ -17,6 +18,22 @@ ETHER = 10**18
 
 # Master test account
 MASTER = W3.eth.accounts[0]
+
+# Dummy account for certain tests (i.e. changing ownership)
+DUMMY = W3.eth.accounts[1]
+
+# what account was last accessed, assumes ganache-cli was started with enough actors
+last_accessed_account = 1
+
+
+def fresh_account():
+    global last_accessed_account
+    last_accessed_account += 1
+    try:
+        return W3.eth.accounts[last_accessed_account]
+    except KeyError:
+        raise Exception("""W3.eth.accounts doesn't contain enough accounts,
+        restart ganache with more accounts (i.e. ganache-cli -a 500)""")
 
 
 class TERMCOLORS:
@@ -49,7 +66,9 @@ def attempt(function, func_args, init_string, print_status=True, print_exception
         return None
 
 
-def compile_contracts(files, remappings=[]):
+def compile_contracts(files, remappings=None):
+    if remappings is None:
+        remappings = []
     contract_interfaces = {}
     compiled = compile_files(files, import_remappings=remappings)
     for key in compiled:
@@ -58,11 +77,29 @@ def compile_contracts(files, remappings=[]):
     return contract_interfaces
 
 
+def force_mine_block():
+    W3.providers[0].make_request("evm_mine", [])
+
+
+def fast_forward(seconds=0, minutes=0, hours=0, days=0, weeks=0):
+    total_time = seconds
+    mult = 60
+    total_time += minutes*mult
+    mult *= 60
+    total_time += hours*mult
+    mult *= 24
+    total_time += days*mult
+    mult *= 7
+    total_time += weeks*mult
+    W3.providers[0].make_request("evm_increaseTime", [total_time])
+    force_mine_block()
+
+
 def mine_tx(tx_hash):
-    tx_receipt = None
+    tx_receipt = W3.eth.getTransactionReceipt(tx_hash)
     while tx_receipt is None:
-        tx_receipt = W3.eth.getTransactionReceipt(tx_hash)
         time.sleep(POLLING_INTERVAL)
+        tx_receipt = W3.eth.getTransactionReceipt(tx_hash)
     return tx_receipt
 
 
@@ -82,7 +119,9 @@ def mine_txs(tx_hashes):
     return tx_receipts
 
 
-def deploy_contract(compiled_sol, contract_name, deploy_account, constructor_args=[], gas=5000000):
+def deploy_contract(compiled_sol, contract_name, deploy_account, constructor_args=None, gas=5000000):
+    if constructor_args is None:
+        constructor_args = []
     contract_interface = compiled_sol[contract_name]
     contract = W3.eth.contract(abi=contract_interface['abi'], bytecode=contract_interface['bin'])
     tx_hash = contract.deploy(transaction={'from': deploy_account, 'gas': gas},
