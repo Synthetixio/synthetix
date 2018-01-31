@@ -1,4 +1,10 @@
-from utils.deployutils import mine_tx
+from utils.deployutils import mine_tx, W3
+
+
+def current_block_time(block_num=None):
+    if block_num is None:
+        block_num = W3.eth.blockNumber
+    return W3.eth.getBlock(block_num)['timestamp']
 
 
 def assertCallReverts(testcase, function):

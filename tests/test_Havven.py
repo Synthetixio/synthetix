@@ -1,8 +1,8 @@
 import unittest
 import time
 from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mine_txs, mine_tx, \
-    UNIT, MASTER, to_seconds, fast_forward, force_mine_block
-from utils.testutils import assertFunctionReverts
+    UNIT, MASTER, DUMMY, to_seconds, fast_forward, fresh_account, take_snapshot, restore_snapshot
+from utils.testutils import assertFunctionReverts, current_block_time
 
 SOLIDITY_SOURCES = ["tests/contracts/PublicHavven.sol", "contracts/EtherNomin.sol",
                     "contracts/Court.sol"]
@@ -37,6 +37,12 @@ def deploy_public_havven():
 
 
 class TestHavven(unittest.TestCase):
+    def setUp(self):
+        self.snapshot = take_snapshot()
+
+    def tearDown(self):
+        restore_snapshot(self.snapshot)
+
     @classmethod
     def setUpClass(cls):
         cls.havven, cls.nomin, cls.court, cls.construction_block = deploy_public_havven()
@@ -142,14 +148,14 @@ class TestHavven(unittest.TestCase):
         cls._onlyCourt = lambda self, sender: mine_tx(self.havven.functions._onlyCourt().transact({'from': sender}))
 
     ###
-    # Test Ownership
+    # Test inherited Owned - Should be the same test_Owned.py
     ###
     def test_owner_is_master(self):
         self.assertEqual(self.havven.functions.owner().call(), MASTER)
 
     def test_change_owner(self):
         old_owner = self.havven.functions.owner().call()
-        new_owner = W3.eth.accounts[1]
+        new_owner = DUMMY
 
         self.setOwner(old_owner, new_owner)
         self.assertEqual(self.owner(), new_owner)
@@ -159,11 +165,11 @@ class TestHavven(unittest.TestCase):
         self.assertEqual(self.owner(), old_owner)
 
     def test_change_invalid_owner(self):
-        invalid_account = W3.eth.accounts[1]
+        invalid_account = DUMMY
         assertFunctionReverts(self, self.setOwner, invalid_account, invalid_account)
 
     ###
-    # Test ERC20Token
+    # Test inherited ERC20Token
     ###
     # Constuctor
     def test_ERC20Token_constructor(self):
@@ -175,8 +181,8 @@ class TestHavven(unittest.TestCase):
 
     # Approval
     def test_approve(self):
-        owner = W3.eth.accounts[0]
-        spender = W3.eth.accounts[1]
+        owner = MASTER
+        spender = DUMMY
         self.approve(owner, spender, UNIT)
         self.assertEquals(self.allowance(owner, spender), UNIT)
         self.approve(owner, spender, 0)
@@ -192,7 +198,7 @@ class TestHavven(unittest.TestCase):
     ###
     def test_constructor(self):
         self.assertEquals(
-            W3.eth.getBlock(self.construction_block)['timestamp'],
+            current_block_time(self.construction_block),
             self.feePeriodStartTime()
         )
         self.assertEquals(self.targetFeePeriodDurationSeconds(), to_seconds(weeks=4))
@@ -213,27 +219,71 @@ class TestHavven(unittest.TestCase):
         in scenario testing
         """
         fee_period = self.targetFeePeriodDurationSeconds()
-        transfer_period = int(fee_period/10)
-        alice = W3.eth.accounts[1]
+        delay = int(fee_period/10)
+        alice = fresh_account()
         self.assertEquals(self.balanceOf(alice), 0)
 
         start_amt = UNIT * 50
         self.endow(MASTER, alice, start_amt)
         self.assertEquals(self.balanceOf(alice), start_amt)
         self.assertEquals(self.currentBalanceSum(alice), 0)
-        start_time = W3.eth.getBlock(W3.eth.blockNumber)['timestamp']
-        fast_forward(transfer_period)
-        end_time = W3.eth.getBlock(W3.eth.blockNumber)['timestamp']
-        self.transfer(alice, alice, 1)
-        self.assertAlmostEquals(
+        start_time = current_block_time()
+        fast_forward(delay)
+        self.adjustFeeEntitlement(alice, alice, self.balanceOf(alice))
+        end_time = current_block_time()
+        balance_sum = (end_time - start_time)*start_amt
+        self.assertEquals(
             self.currentBalanceSum(alice),
-            (end_time-start_time)*start_amt,
-            places=7
+            balance_sum
+        )
+        self.transfer(alice, self.havven.address, start_amt)
+        self.assertEquals(self.balanceOf(alice), 0)
+        fast_forward(delay)
+        self.adjustFeeEntitlement(alice, alice, self.balanceOf(alice))
+        self.assertEquals(
+            self.currentBalanceSum(alice),
+            balance_sum
         )
 
     # lastAverageBalance
+    def test_lastAverageBalance(self):
+        # set the block time to be at least 30seconds away from the end of the fee_period
+        fee_period = self.targetFeePeriodDurationSeconds()
+        time_remaining = current_block_time() - self.feePeriodStartTime()
+        if time_remaining < 30:
+            fast_forward(50)
+            time_remaining = current_block_time() - self.feePeriodStartTime()
 
-    # penultimateAverageBalancef
+        # fast forward to halfway through the next block
+        delay = time_remaining + int(fee_period/2)
+        alice = fresh_account()
+        self.assertEquals(self.balanceOf(alice), 0)
+
+        start_amt = UNIT * 50
+        self.endow(MASTER, alice, start_amt)
+        self.assertEquals(self.balanceOf(alice), start_amt)
+        self.assertEquals(self.currentBalanceSum(alice), 0)
+        self.assertEquals(self.lastAverageBalance(alice), 0)
+        start_time = current_block_time()
+        fast_forward(delay)
+        self.adjustFeeEntitlement(alice, alice, self.balanceOf(alice))
+        end_time = current_block_time()
+        last_duration = self.lastFeePeriodDuration()
+        balance_sum = (end_time-last_duration-start_time)*start_amt
+        self.assertAlmostEqual(
+            balance_sum/self.currentBalanceSum(alice),
+            1,
+            places=3
+        )
+
+        self.assertAlmostEqual(
+            time_remaining*start_amt,
+            self.lastAverageBalance(alice),
+            places=4
+        )
+
+    # penultimateAverageBalance
+
     # lastTransferTimestamp
     # hasWithdrawnLastPeriodFees
 
@@ -275,6 +325,7 @@ class TestHavven(unittest.TestCase):
     ###
     # postCheckFeePeriodRollover
     # onlyCourt
+
 
 if __name__ == '__main__':
     unittest.main()
