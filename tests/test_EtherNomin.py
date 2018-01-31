@@ -466,9 +466,8 @@ class TestEtherNomin(unittest.TestCase):
         oracle = self.oracle()
 
         # Only the contract owner should be able to issue new nomins.
-        not_owner = W3.eth.accounts[4]
         self.setPrice(oracle, UNIT)
-        assertReverts(self, self.issue, [not_owner, UNIT, 2 * ETHER])
+        assertReverts(self, self.issue, [W3.eth.accounts[4], UNIT, 2 * ETHER])
 
         self.assertEqual(self.totalSupply(), 0)
         self.assertEqual(self.nominPool(), 0)
@@ -508,7 +507,30 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(W3.eth.getBalance(self.nomin.address), 10 * ETHER)
 
     def test_burn(self):
-        pass
+        owner = self.owner()
+        oracle = self.oracle()
+
+        # issue some nomins to be burned
+        self.setPrice(oracle, UNIT)
+        mine_tx(self.issue(owner, 10 * UNIT, 20 * ETHER))
+
+        # Only the contract owner should be able to burn nomins.
+        assertReverts(self, self.burn, [W3.eth.accounts[4], UNIT])
+
+        # It should not be possible to burn more nomins than are in the pool.
+        assertReverts(self, self.burn, [owner, 11 * UNIT])
+
+        # Burn part of the pool
+        self.assertEqual(self.totalSupply(), 10 * UNIT)
+        self.assertEqual(self.nominPool(), 10 * UNIT)
+        mine_tx(self.burn(owner, UNIT))
+        self.assertEqual(self.totalSupply(), 9 * UNIT)
+        self.assertEqual(self.nominPool(), 9 * UNIT)
+
+        # Burn the remainder of the pool
+        mine_tx(self.burn(owner, self.nominPool()))
+        self.assertEqual(self.totalSupply(), 0)
+        self.assertEqual(self.nominPool(), 0)
 
     def test_buy(self):
         pass
