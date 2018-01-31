@@ -622,9 +622,6 @@ class TestEtherNomin(unittest.TestCase):
         # This call should not work if liquidation has begun.
         assertReverts(self, self.forceLiquidation, [owner])
 
-    def test_liquidate(self):
-        pass
-
     def test_liquidation(self):
         pass
 
