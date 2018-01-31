@@ -3,7 +3,7 @@ import unittest
 from utils.deployutils import W3, UNIT, MASTER, ETHER
 from utils.deployutils import compile_contracts, attempt_deploy, mine_tx
 from utils.deployutils import take_snapshot, restore_snapshot
-from utils.testutils import assertReverts
+from utils.testutils import assertReverts, block_time
 
 
 ETHERNOMIN_SOURCE = "tests/contracts/PublicEtherNomin.sol"
@@ -118,7 +118,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.liquidationPeriod(), 90 * 24 * 60 * 60) # default ninety days
         self.assertEqual(self.poolFeeRate(), UNIT / 200) # default 50 basis points
         self.assertEqual(self.nominPool(), 0)
-        construct_time = W3.eth.getBlock(self.construction_txr.blockNumber)['timestamp']
+        construct_time = block_time(self.construction_txr.blockNumber)
         self.assertEqual(self.lastPriceUpdate(), construct_time)
 
         # ERC20FeeToken members
