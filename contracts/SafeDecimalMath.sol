@@ -4,13 +4,11 @@ FILE INFORMATION
 -----------------------------------------------------------------
 file:       SafeDecimalMath.sol
 version:    0.1
-author:     Block8 Technologies, in partnership with Havven
-
-            Anton Jurisevic
+author:     Anton Jurisevic
 
 date:       2018-1-3
 
-checked:    Samuel Brooks
+checked:    Mike Spain
 approved:   Samuel Brooks
 
 -----------------------------------------------------------------
@@ -52,11 +50,6 @@ SOFTWARE.
 RELEASE NOTES
 -----------------------------------------------------------------
 
------------------------------------------------------------------
-Block8 Technologies is accelerating blockchain technology
-by incubating meaningful next-generation businesses.
-Find out more at https://www.block8.io/
------------------------------------------------------------------
 */
 
 pragma solidity ^0.4.19;
