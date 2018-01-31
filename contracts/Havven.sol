@@ -163,8 +163,10 @@ contract Havven is ERC20Token, Owned {
     uint public targetFeePeriodDurationSeconds = 4 weeks;
     // And may not be set to be shorter than 1 day.
     uint constant minFeePeriodDurationSeconds = 1 days;
-    // The actual measured duration of the last fee period (decimal seconds).
-    uint lastFeePeriodDuration = 1;
+    // The actual start of the last fee period (seconds).
+    uint lastFeePeriodStartTime = 1;
+    // The actual start of the penultimate fee period (seconds).
+    uint penultimateFeePeriodStartTime = 1;
 
     // The quantity of nomins that were in the fee pot at the time
     // of the last fee rollover (feePeriodStartTime).
@@ -306,11 +308,13 @@ contract Havven is ERC20Token, Owned {
         // Do not deposit fees into frozen accounts.
         require(!nomin.isFrozen(msg.sender));
 
+        // check the period has rolled over first
+        rolloverFee(msg.sender, lastTransferTimestamp[msg.sender], balanceOf[msg.sender]);
+
         // Only allow accounts to withdraw fees once per period.
         require(!hasWithdrawnLastPeriodFees[msg.sender]);
 
-        rolloverFee(msg.sender, lastTransferTimestamp[msg.sender], balanceOf[msg.sender]);
-        uint feesOwed = safeDecMul(safeDecMul(lastAverageBalance[msg.sender],
+        uint feesOwed = safeDecDiv(safeDecMul(lastAverageBalance[msg.sender],
                                               lastFeesCollected),
                                    totalSupply);
         nomin.withdrawFee(msg.sender, feesOwed);
@@ -332,7 +336,7 @@ contract Havven is ERC20Token, Owned {
         rolloverFee(account, lastTransferTime, preBalance);
         currentBalanceSum[account] = safeAdd(
             currentBalanceSum[account],
-            safeDecMul(preBalance, intToDec(now - lastTransferTime))
+            safeMul(preBalance, now - lastTransferTime)
         );
 
         // Update the last time this user's balance changed.
@@ -362,17 +366,29 @@ contract Havven is ERC20Token, Owned {
     function rolloverFee(address account, uint lastTransferTime, uint preBalance)
         internal
     {
-        if (lastTransferTime < feePeriodStartTime) {
-            uint timeToRollover = intToDec(feePeriodStartTime - lastTransferTime);
-            penultimateAverageBalance[account] = lastAverageBalance[account];
+        if (lastTransferTime <= feePeriodStartTime) {
+            if (lastTransferTime <= lastFeePeriodStartTime) {
+                if (lastTransferTime <= penultimateFeePeriodStartTime) {
+                    // transfer was before penultimate period
+                    penultimateAverageBalance[account] = preBalance;
+                } else {
+                    // transfer is between penultimate start and last period start
+                    penultimateAverageBalance[account] = safeDecDiv(
+                        safeAdd(currentBalanceSum[account], safeDecMul(preBalance, (lastTransferTime - penultimateFeePeriodStartTime))),
+                        (lastFeePeriodStartTime - penultimateFeePeriodStartTime)
+                    );
+                }
 
-            // If the user did not transfer at all in the last fee period, their average allocation is just their balance.
-            if (timeToRollover >= lastFeePeriodDuration) {
+                // If the user did not transfer/withdraw in the last fee period
+                // their average allocation is just their balance.
                 lastAverageBalance[account] = preBalance;
             } else {
-                lastAverageBalance[account] = safeDecMul(safeAdd(currentBalanceSum[account],
-                                                                 safeDecMul(preBalance, timeToRollover)),
-                                                         lastFeePeriodDuration);
+                penultimateAverageBalance[account] = lastAverageBalance[account];
+                // lastBal =
+                lastAverageBalance[account] = safeDecDiv(
+                    safeAdd(currentBalanceSum[account], safeDecMul(preBalance, (lastTransferTime - lastFeePeriodStartTime))),
+                    (feePeriodStartTime - lastFeePeriodStartTime)
+                );
             }
 
             // Roll over to the next fee period.
@@ -428,9 +444,7 @@ contract Havven is ERC20Token, Owned {
     /* ========== MODIFIERS ========== */
 
     /* If the fee period has rolled over, then
-     * save the duration of the last period and
-     * the fees that were collected within it,
-     * and start the new period.
+     * save the start
      * Check after the modified function has executed
      * so that the contract state the caller saw before
      * calling the function is the actual one they
@@ -439,10 +453,12 @@ contract Havven is ERC20Token, Owned {
     modifier postCheckFeePeriodRollover
     {
         _;
-        uint duration = now - feePeriodStartTime;
-        if (targetFeePeriodDurationSeconds <= duration) {
+        // If the fee period has rolled over
+        if (feePeriodStartTime + targetFeePeriodDurationSeconds <= now) {
             lastFeesCollected = nomin.feePool();
-            lastFeePeriodDuration = intToDec(duration);
+
+            penultimateFeePeriodStartTime = lastFeePeriodStartTime;
+            lastFeePeriodStartTime = feePeriodStartTime;
             feePeriodStartTime = now;
         }
     }
