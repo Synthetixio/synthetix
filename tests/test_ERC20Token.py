@@ -53,7 +53,7 @@ class TestERC20Token(unittest.TestCase):
     def test_getTotalSupply(self):
         self.assertEqual(self.totalSupply().call(), 1000 * UNIT)
 
-    # Transfer 10 token from sender to receiver, then send 1 back.
+    # Transfer 10 token from sender to receiver, then send 1 back - accounts[1]
     def test_transfer(self):
         sender = MASTER
         sender_balance = self.balanceOf(sender).call()
@@ -61,13 +61,13 @@ class TestERC20Token(unittest.TestCase):
         receiver = W3.eth.accounts[1]
         receiver_balance = self.balanceOf(receiver).call()
 
-        transfer_amount = 10 * UNIT
+        value = 10 * UNIT
         total_supply = self.totalSupply().call()
 
-        mine_tx(self.transfer(receiver, transfer_amount).transact({'from': sender}))
+        mine_tx(self.transfer(receiver, value).transact({'from': sender}))
 
-        self.assertEquals(self.balanceOf(receiver).call(), receiver_balance+transfer_amount)
-        self.assertEquals(self.balanceOf(sender).call(), sender_balance-transfer_amount)
+        self.assertEquals(self.balanceOf(receiver).call(), receiver_balance+value)
+        self.assertEquals(self.balanceOf(sender).call(), sender_balance-value)
         self.assertEquals(self.totalSupply().call(), total_supply)
 
         sender = W3.eth.accounts[1]
@@ -76,77 +76,77 @@ class TestERC20Token(unittest.TestCase):
         receiver = MASTER
         receiver_balance = self.balanceOf(receiver).call()
 
-        transfer_amount = 1 * UNIT
+        value = 1 * UNIT
         total_supply = self.totalSupply().call()
 
-        mine_tx(self.transfer(receiver, transfer_amount).transact({'from': sender}))
+        mine_tx(self.transfer(receiver, value).transact({'from': sender}))
 
-        self.assertEquals(self.balanceOf(receiver).call(), receiver_balance+transfer_amount)
-        self.assertEquals(self.balanceOf(sender).call(), sender_balance-transfer_amount)
+        self.assertEquals(self.balanceOf(receiver).call(), receiver_balance+value)
+        self.assertEquals(self.balanceOf(sender).call(), sender_balance-value)
         self.assertEquals(self.totalSupply().call(), total_supply)
 
-    # Attempt transfers from accounts where balance < amount
+    # Attempt transfers from accounts where balance < value - accounts[2]
     def test_fail_transfer(self):
-        sender = W3.eth.accounts[3]
+        sender = W3.eth.accounts[2]
         sender_balance = self.balanceOf(sender).call()
 
         receiver = MASTER
         receiver_balance = self.balanceOf(receiver).call()
 
-        transfer_amount = 1 * UNIT
+        value = 1 * UNIT
 
-        assertTransactionReverts(self, self.transfer(receiver, transfer_amount), sender)
+        assertTransactionReverts(self, self.transfer(receiver, value), sender)
 
         self.assertEquals(self.balanceOf(sender).call(), sender_balance)
         self.assertEquals(self.balanceOf(receiver).call(), receiver_balance)
 
+        sender = MASTER
+        sender_balance = self.balanceOf(sender).call()
+
+        receiver = W3.eth.accounts[2]
+        receiver_balance = self.balanceOf(receiver).call()
+        #value > total_supply
+        value = 1001 * UNIT
+
+        assertTransactionReverts(self, self.transfer(receiver, value), sender)
+
+        self.assertEquals(self.balanceOf(sender).call(), sender_balance)
+        self.assertEquals(self.balanceOf(receiver).call(), receiver_balance)
+
+    # Transfer 0 value from sender to receiver. No fee should be charged - accounts[3]
+    def test_succeed_transfer_0_value(self):
         sender = MASTER
         sender_balance = self.balanceOf(sender).call()
 
         receiver = W3.eth.accounts[3]
         receiver_balance = self.balanceOf(receiver).call()
-        #transfer_amount > total_supply
-        transfer_amount = 1001 * UNIT
 
-        assertTransactionReverts(self, self.transfer(receiver, transfer_amount), sender)
+        value = 0
 
-        self.assertEquals(self.balanceOf(sender).call(), sender_balance)
-        self.assertEquals(self.balanceOf(receiver).call(), receiver_balance)
+        mine_tx(self.transfer(receiver, value).transact({'from': sender}))
 
-    # Transfer 0 value from sender to receiver. No fee should be charged
-    def test_succeed_transfer_0_value(self):
-        sender = MASTER
-        sender_balance = self.balanceOf(sender).call()
+        self.assertEquals(self.balanceOf(receiver).call(), receiver_balance+value)
+        self.assertEquals(self.balanceOf(sender).call(), sender_balance-value)
 
-        receiver = W3.eth.accounts[4]
-        receiver_balance = self.balanceOf(receiver).call()
-
-        transfer_amount = 0
-
-        mine_tx(self.transfer(receiver, transfer_amount).transact({'from': sender}))
-
-        self.assertEquals(self.balanceOf(receiver).call(), receiver_balance+transfer_amount)
-        self.assertEquals(self.balanceOf(sender).call(), sender_balance-transfer_amount)
-
-    # Transfer 0 value from sender to receiver with 0 balance. No fee is charged.
+    # Transfer 0 value from sender to receiver with 0 balance. No fee should be charged - accounts[4]
     def test_succeed_transfer_0_balance(self):
-        sender = W3.eth.accounts[5]
+        sender = W3.eth.accounts[4]
         sender_balance = self.balanceOf(sender).call()
 
         receiver = MASTER
         receiver_balance = self.balanceOf(receiver).call()
 
-        transfer_amount = 0
+        value = 0
 
-        mine_tx(self.transfer(receiver, transfer_amount).transact({'from': sender}))
+        mine_tx(self.transfer(receiver, value).transact({'from': sender}))
 
         self.assertEquals(self.balanceOf(sender).call(), sender_balance)
         self.assertEquals(self.balanceOf(receiver).call(), receiver_balance)  
 
-    # Approval can be greater than totalSupply
+    # Approval can be greater than totalSupply - accounts[5]
     def test_approve(self):
         approver = MASTER
-        spender = W3.eth.accounts[6]
+        spender = W3.eth.accounts[5]
         approval_amount = 1 * UNIT
         total_supply = self.totalSupply().call()
 
@@ -160,32 +160,32 @@ class TestERC20Token(unittest.TestCase):
 
         self.assertEqual(self.allowance(approver, spender).call(), approval_amount)
 
-    # Transfer 10 tokens from spender to receiver on behalf of approver then send 1 back.
+    # Transfer 10 tokens from spender to receiver on behalf of approver then send 1 back - accounts[6,7]
     def test_transferFrom(self):
         approver = MASTER
-        spender = W3.eth.accounts[7]
-        receiver = W3.eth.accounts[8]
+        spender = W3.eth.accounts[6]
+        receiver = W3.eth.accounts[7]
 
         approver_balance = self.balanceOf(approver).call()
         spender_balance = self.balanceOf(spender).call()
         receiver_balance = self.balanceOf(receiver).call()
         total_supply = self.totalSupply().call()
 
-        transfer_amount = 10 * UNIT
+        value = 10 * UNIT
 
-        mine_tx(self.approve(spender, transfer_amount).transact({'from': approver}))
+        mine_tx(self.approve(spender, value).transact({'from': approver}))
 
-        self.assertEqual(self.allowance(approver, spender).call(), transfer_amount)
+        self.assertEqual(self.allowance(approver, spender).call(), value)
 
-        mine_tx(self.transferFrom(approver, receiver, transfer_amount).transact({'from' : spender}))
+        mine_tx(self.transferFrom(approver, receiver, value).transact({'from' : spender}))
 
-        self.assertEqual(self.balanceOf(approver).call(), approver_balance - transfer_amount)
+        self.assertEqual(self.balanceOf(approver).call(), approver_balance - value)
         self.assertEqual(self.balanceOf(spender).call(), spender_balance)
-        self.assertEqual(self.balanceOf(receiver).call(), receiver_balance + transfer_amount)
+        self.assertEqual(self.balanceOf(receiver).call(), receiver_balance + value)
         self.assertEqual(self.totalSupply().call(), total_supply)
 
-        approver = W3.eth.accounts[8]
-        spender = W3.eth.accounts[7]
+        approver = W3.eth.accounts[7]
+        spender = W3.eth.accounts[6]
         receiver = MASTER
 
         approver_balance = self.balanceOf(approver).call()
@@ -193,52 +193,52 @@ class TestERC20Token(unittest.TestCase):
         receiver_balance = self.balanceOf(receiver).call()
         total_supply = self.totalSupply().call()
 
-        transfer_amount = 1 * UNIT
+        value = 1 * UNIT
 
-        mine_tx(self.approve(spender, transfer_amount).transact({'from': approver}))
+        mine_tx(self.approve(spender, value).transact({'from': approver}))
 
-        self.assertEqual(self.allowance(approver, spender).call(), transfer_amount)
+        self.assertEqual(self.allowance(approver, spender).call(), value)
 
-        mine_tx(self.transferFrom(approver, receiver, transfer_amount).transact({'from' : spender}))
+        mine_tx(self.transferFrom(approver, receiver, value).transact({'from' : spender}))
 
-        self.assertEqual(self.balanceOf(approver).call(), approver_balance - transfer_amount)
+        self.assertEqual(self.balanceOf(approver).call(), approver_balance - value)
         self.assertEqual(self.balanceOf(spender).call(), spender_balance)
-        self.assertEqual(self.balanceOf(receiver).call(), receiver_balance + transfer_amount)
+        self.assertEqual(self.balanceOf(receiver).call(), receiver_balance + value)
         self.assertEqual(self.totalSupply().call(), total_supply)
 
-    # Attempt to transfer 10 token from spender to receiver on behalf of approver with insufficient funds.
+    # Attempt to transfer 10 token from spender to receiver on behalf of approver with insufficient funds - accounts[8,9,10]
     def test_transferFrom_invalid(self):
-        approver = W3.eth.accounts[4]
-        spender = W3.eth.accounts[5]
-        receiver = W3.eth.accounts[6]
+        approver = W3.eth.accounts[8]
+        spender = W3.eth.accounts[9]
+        receiver = W3.eth.accounts[10]
 
         approver_balance = self.balanceOf(approver).call()
         spender_balance = self.balanceOf(spender).call()
         receiver_balance = self.balanceOf(receiver).call()
 
-        transfer_amount = 10 * UNIT
+        value = 10 * UNIT
 
-        mine_tx(self.approve(spender, transfer_amount).transact({'from': approver}))
+        mine_tx(self.approve(spender, value).transact({'from': approver}))
 
-        assertTransactionReverts(self, self.transferFrom(approver, receiver, transfer_amount), spender)
+        assertTransactionReverts(self, self.transferFrom(approver, receiver, value), spender)
 
         self.assertEqual(self.balanceOf(approver).call(), approver_balance)
         self.assertEqual(self.balanceOf(spender).call(), spender_balance)
         self.assertEqual(self.balanceOf(receiver).call(), receiver_balance)
 
-        approver = W3.eth.accounts[6]
-        spender = W3.eth.accounts[5]
-        receiver = W3.eth.accounts[4]
+        approver = W3.eth.accounts[10]
+        spender = W3.eth.accounts[9]
+        receiver = W3.eth.accounts[8]
 
         approver_balance = self.balanceOf(approver).call()
         spender_balance = self.balanceOf(spender).call()
         receiver_balance = self.balanceOf(receiver).call()
         
-        transfer_amount = 10 * UNIT
+        value = 10 * UNIT
 
-        mine_tx(self.approve(spender, transfer_amount).transact({'from': approver}))
+        mine_tx(self.approve(spender, value).transact({'from': approver}))
 
-        assertTransactionReverts(self, self.transferFrom(approver, receiver, transfer_amount), spender)
+        assertTransactionReverts(self, self.transferFrom(approver, receiver, value), spender)
 
         self.assertEqual(self.balanceOf(approver).call(), approver_balance)
         self.assertEqual(self.balanceOf(spender).call(), spender_balance)
