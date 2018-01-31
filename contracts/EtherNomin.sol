@@ -424,7 +424,7 @@ contract EtherNomin is ERC20FeeToken {
         public
         onlyOwner
     {
-        // Require that there are enough nomins in the accessible pool to burn; and
+        // Require that there are enough nomins in the accessible pool to burn
         require(nominPool >= n);
         nominPool = safeSub(nominPool, n);
         totalSupply = safeSub(totalSupply, n);
@@ -532,7 +532,7 @@ contract EtherNomin is ERC20FeeToken {
         payable
     {
         require(isLiquidating());
-        require(totalSupply == 0 || collateralisationRatio() > autoLiquidationRatio);
+        require(totalSupply == 0 || collateralisationRatio() >= autoLiquidationRatio);
         liquidationTimestamp = ~uint(0);
         liquidationPeriod = defaultLiquidationPeriod;
         LiquidationTerminated();
