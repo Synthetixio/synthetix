@@ -1,6 +1,8 @@
 import unittest
 
-from utils.deployutils import W3, compile_contracts, attempt_deploy, mine_tx, UNIT, MASTER, ETHER
+from utils.deployutils import W3, UNIT, MASTER, ETHER
+from utils.deployutils import compile_contracts, attempt_deploy, mine_tx
+from utils.deployutils import snapshot, restore_snapshot
 from utils.testutils import assertReverts
 
 
@@ -15,6 +17,12 @@ def tearDownModule():
     print()
 
 class TestEtherNomin(unittest.TestCase):
+    def setUp(self):
+        self.snapshot = snapshot()
+
+    def tearDown(self):
+        restore_snapshot(self.snapshot)
+
     @classmethod
     def setUpClass(cls):
         compiled = compile_contracts([ETHERNOMIN_SOURCE, FAKECOURT_SOURCE],
@@ -23,7 +31,13 @@ class TestEtherNomin(unittest.TestCase):
         cls.nomin, cls.construction_txr = attempt_deploy(compiled, 'PublicEtherNomin', MASTER,
                                                          [MASTER, MASTER, MASTER,
                                                           1000 * UNIT, MASTER])
+
         cls.fake_court, _ = attempt_deploy(compiled, 'FakeCourt', MASTER, [])
+        cls.fake_court.setNomin = lambda sender, new_nomin: cls.fake_court.functions.setNomin(new_nomin).transact({'from': sender})
+        cls.fake_court.setConfirming = lambda sender, target, status: cls.fake_court.functions.setConfirming(target, status).transact({'from': sender})
+        cls.fake_court.setVotePasses = lambda sender, target, status: cls.fake_court.functions.setVotePasses(target, status).transact({'from': sender})
+        cls.fake_court.confiscateBalance = lambda sender, target: cls.fake_court.functions.confiscateBalance(target).transact({'from': sender})
+        mine_tx(cls.fake_court.setNomin(W3.eth.accounts[0], cls.nomin.address))
 
         cls.owner = lambda self: cls.nomin.functions.owner().call()
         cls.oracle = lambda self: cls.nomin.functions.oracle().call()
@@ -84,6 +98,7 @@ class TestEtherNomin(unittest.TestCase):
         cls.feeAuthority = lambda self: cls.nomin.functions.feeAuthority().call()
 
         cls.debugWithdrawAllEther = lambda self, sender, recipient: cls.nomin.functions.debugWithdrawAllEther(recipient).transact({'from': sender})
+        cls.debugEmptyFeePool = lambda self, sender: cls.nomin.functions.debugEmptyFeePool().transact({'from': sender})
         cls.debugFreezeAccount = lambda self, sender, target: cls.nomin.functions.debugFreezeAccount(target).transact({'from': sender})
 
     def test_Constructor(self):
@@ -224,6 +239,7 @@ class TestEtherNomin(unittest.TestCase):
         # Burn pooled nomins and return all issued ether.
         mine_tx(self.burn(owner, UNIT))
         mine_tx(self.debugWithdrawAllEther(owner, owner))
+        mine_tx(self.debugEmptyFeePool(owner))
         self.assertEqual(W3.eth.getBalance(self.nomin.address), 0)
         self.assertEqual(self.totalSupply(), 0)
         self.assertEqual(self.nominPool(), 0)
@@ -270,6 +286,7 @@ class TestEtherNomin(unittest.TestCase):
 
         mine_tx(self.setPrice(oracle, pre_price))
         mine_tx(self.debugWithdrawAllEther(owner, owner))
+        mine_tx(self.debugEmptyFeePool(owner))
         self.assertEqual(W3.eth.getBalance(self.nomin.address), 0)
 
     def test_etherValue(self):
@@ -319,6 +336,7 @@ class TestEtherNomin(unittest.TestCase):
         mine_tx(self.burn(owner, UNIT))
         mine_tx(self.setPrice(oracle, pre_price))
         mine_tx(self.debugWithdrawAllEther(owner, owner))
+        mine_tx(self.debugEmptyFeePool(owner))
         self.assertEqual(W3.eth.getBalance(self.nomin.address), 0)
 
     def test_poolFeeIncurred(self):
@@ -448,9 +466,49 @@ class TestEtherNomin(unittest.TestCase):
         mine_tx(self.burn(owner, self.nominPool()))
         mine_tx(self.setPrice(oracle, pre_price))
         mine_tx(self.debugWithdrawAllEther(owner, owner))
+        mine_tx(self.debugEmptyFeePool(owner))
 
     def test_transferFrom(self):
         pass
+        """
+        owner = self.owner()
+        oracle = self.owner()
+        pre_price = self.etherPrice()
+        target = W3.eth.accounts[1]
+        proxy = W3.eth.accounts[2]
+
+        mine_tx(self.setPrice(oracle, UNIT))
+        mine_tx(self.issue(owner, 10 * UNIT, 20 * ETHER))
+        ethercost = self.purchaseCostEther(10 * UNIT)
+        mine_tx(self.buy(owner, 10 * UNIT, ethercost))
+
+        self.assertEqual(self.balanceOf(owner), 10 * UNIT)
+        self.assertEqual(self.balanceOf(target), 0)
+
+        mine_tx(self.transfer(owner, target, 5 * UNIT))
+        remainder = 10 * UNIT - self.transferPlusFee(5 * UNIT)
+        self.assertEqual(self.balanceOf(owner), remainder)
+        self.assertEqual(self.balanceOf(target), 5 * UNIT)
+
+        mine_tx(self.debugFreezeAccount(owner, target))
+
+        assertReverts(self, self.transfer, [owner, target, UNIT])
+        assertReverts(self, self.transfer, [target, owner, UNIT])
+
+        mine_tx(self.unfreezeAccount(owner, target))
+
+        qty = (5 * UNIT * UNIT) // self.transferPlusFee(UNIT) + 1
+        mine_tx(self.transfer(target, owner, qty))
+
+        self.assertEqual(self.balanceOf(owner), remainder + qty)
+        self.assertEqual(self.balanceOf(target), 0)
+
+        mine_tx(self.sell(owner, self.balanceOf(owner)))
+        mine_tx(self.burn(owner, self.nominPool()))
+        mine_tx(self.setPrice(oracle, pre_price))
+        mine_tx(self.debugWithdrawAllEther(owner, owner))
+        mine_tx(self.debugEmptyFeePool(owner))
+        """
 
     def test_issue(self):
         pass
@@ -489,9 +547,6 @@ class TestEtherNomin(unittest.TestCase):
         pass
 
     def test_confiscateBalance(self):
-        pass
-        # Not sure why this fails. Commented out for now.
-        """
         owner = self.owner()
         oracle = self.owner()
         pre_court = self.court()
@@ -509,22 +564,21 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.balanceOf(target), 10 * UNIT)
 
         # Attempt to confiscate even though the conditions are not met.
-        mine_tx(self.fake_court.functions.setConfirming(target, False).transact({'from': owner}))
-        mine_tx(self.fake_court.functions.setVotePasses(target, False).transact({'from': owner}))
-        assertReverts(self, self.confiscateBalance, [self.fake_court.address, target])
-        mine_tx(self.confiscateBalance(target).transact({'from': self.fake_court.address}))
+        mine_tx(self.fake_court.setConfirming(owner, target, False))
+        mine_tx(self.fake_court.setVotePasses(owner, target, False))
+        assertReverts(self, self.fake_court.confiscateBalance, [owner, target])
 
-        mine_tx(self.fake_court.functions.setConfirming(target, True).transact({'from': owner}))
-        mine_tx(self.fake_court.functions.setVotePasses(target, False).transact({'from': owner}))
-        assertReverts(self, self.confiscateBalance, [self.fake_court.address, target])
+        mine_tx(self.fake_court.setConfirming(owner, target, True))
+        mine_tx(self.fake_court.setVotePasses(owner, target, False))
+        assertReverts(self, self.fake_court.confiscateBalance, [owner, target])
 
-        mine_tx(self.fake_court.functions.setConfirming(target, False).transact({'from': owner}))
-        mine_tx(self.fake_court.functions.setVotePasses(target, True).transact({'from': owner}))
-        assertReverts(self, self.confiscateBalance, [self.fake_court.address, target])
+        mine_tx(self.fake_court.setConfirming(owner, target, False))
+        mine_tx(self.fake_court.setVotePasses(owner, target, True))
+        assertReverts(self, self.fake_court.confiscateBalance, [owner, target])
 
         # Set up the target balance to be confiscatable.
-        mine_tx(self.fake_court.functions.setConfirming(target, True).transact({'from': owner}))
-        mine_tx(self.fake_court.functions.setVotePasses(target, True).transact({'from': owner}))
+        mine_tx(self.fake_court.setConfirming(owner, target, True))
+        mine_tx(self.fake_court.setVotePasses(owner, target, True))
 
         # Only the court should be able to confiscate balances.
         assertReverts(self, self.confiscateBalance, [owner, target])
@@ -532,21 +586,21 @@ class TestEtherNomin(unittest.TestCase):
         # Actually confiscate the balance.
         pre_feePool = self.feePool()
         pre_balance = self.balanceOf(target)
-        mine_tx(self.confiscateBalance(self.fake_court.address, target))
+        mine_tx(self.fake_court.confiscateBalance(owner, target))
         self.assertEqual(self.balanceOf(target), 0)
         self.assertEqual(self.feePool(), pre_feePool + pre_balance)
         self.assertTrue(self.isFrozen(target))
 
         # Restore status quo
-        self.unFreezeAccount(owner, target)
-        mine_tx(self.fake_court.functions.setConfirming(target, False).transact({'from': owner}))
-        mine_tx(self.fake_court.functions.setVotePasses(target, False).transact({'from': owner}))
-        mine_tx(self.sell(target, 10 * UNIT))
-        mine_tx(self.burn(owner, 10 * UNIT))
+        self.unfreezeAccount(owner, target)
+        mine_tx(self.fake_court.setConfirming(owner, target, False))
+        mine_tx(self.fake_court.setVotePasses(owner, target, False))
+        mine_tx(self.sell(target, self.balanceOf(target)))
+        mine_tx(self.burn(owner, self.nominPool()))
         mine_tx(self.setPrice(oracle, pre_price))
         mine_tx(self.debugWithdrawAllEther(owner, owner))
+        mine_tx(self.debugEmptyFeePool(owner))
         mine_tx(self.setCourt(owner, pre_court))
-        """
 
     def test_unfreezeAccount(self):
         owner = self.owner()
@@ -571,9 +625,11 @@ class TestEtherNomin(unittest.TestCase):
         # Fallback function should be payable.
         owner = self.owner()
         mine_tx(self.debugWithdrawAllEther(owner, owner))
+        mine_tx(self.debugEmptyFeePool(owner))
         mine_tx(W3.eth.sendTransaction({'from': owner, 'to': self.nomin.address, 'value': ETHER}))
         self.assertEqual(W3.eth.getBalance(self.nomin.address), ETHER)
         mine_tx(self.debugWithdrawAllEther(owner, owner))
+        mine_tx(self.debugEmptyFeePool(owner))
         self.assertEqual(W3.eth.getBalance(self.nomin.address), 0)
 
     # Events

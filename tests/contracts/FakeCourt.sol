@@ -1,8 +1,18 @@
 pragma solidity ^0.4.19;
 
+import "contracts/EtherNomin.sol";
+
 contract FakeCourt {
+		EtherNomin public nomin;
+
 		mapping(address => bool) public confirming;
 		mapping(address => bool) public votePasses;
+
+		function setNomin(EtherNomin newNomin)
+			public
+		{
+			nomin = newNomin;
+		}
 
 		function setConfirming(address target, bool status)
 			public
@@ -14,5 +24,11 @@ contract FakeCourt {
 			public
 		{
 			votePasses[target] = status;
+		}
+
+		function confiscateBalance(address target)
+			public
+		{
+			nomin.confiscateBalance(target);
 		}
 }
