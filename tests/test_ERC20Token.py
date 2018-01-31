@@ -83,7 +83,6 @@ class TestERC20Token(unittest.TestCase):
         no_tokens = W3.eth.accounts[2]
         mine_tx(self.transfer(no_tokens, receiver, value))
 
-    # Any positive approval amount is valid, even greater than total_supply.
     def test_approve(self):
         approver = MASTER
         spender = W3.eth.accounts[1]
@@ -92,6 +91,7 @@ class TestERC20Token(unittest.TestCase):
         mine_tx(self.approve(approver, spender, approval_amount))
         self.assertEqual(self.allowance(approver, spender), approval_amount)
 
+        # Any positive approval amount is valid, even greater than total_supply.
         approval_amount = self.totalSupply() * 100
         mine_tx(self.approve(approver, spender, approval_amount))
         self.assertEqual(self.allowance(approver, spender), approval_amount)
@@ -104,9 +104,9 @@ class TestERC20Token(unittest.TestCase):
         approver_balance = self.balanceOf(approver)
         spender_balance = self.balanceOf(spender)
         receiver_balance = self.balanceOf(receiver) 
-        total_supply = self.totalSupply()
 
         value = 10 * UNIT
+        total_supply = self.totalSupply()
 
         # This fails because there has been no approval yet
         assertReverts(self, self.transferFrom, [spender, approver, receiver, value])
@@ -126,9 +126,9 @@ class TestERC20Token(unittest.TestCase):
         self.assertEqual(approver_balance, 0)
 
         mine_tx(self.approve(approver, spender, value))
-
         self.assertEqual(self.allowance(approver, spender), value)
 
+        # This should fail because the approver has no tokens.
         assertReverts(self, self.transferFrom, [spender, approver, receiver, value])
 
 if __name__ == '__main__':
