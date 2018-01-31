@@ -85,7 +85,7 @@ class TestEtherNomin(unittest.TestCase):
         cls.issue = lambda self, sender, n, value: cls.nomin.functions.issue(n).transact({'from': sender, 'value': value})
         cls.burn = lambda self, sender, n: cls.nomin.functions.burn(n).transact({'from': sender})
         cls.buy = lambda self, sender, n, value: cls.nomin.functions.buy(n).transact({'from': sender, 'value': value})
-        cls.sell = lambda self, sender, n: cls.nomin.functions.sell(n).transact({'from': sender})
+        cls.sell = lambda self, sender, n: cls.nomin.functions.sell(n).transact({'from': sender, 'gasPrice': 10})
 
         cls.forceLiquidation = lambda self, sender: cls.nomin.functions.forceLiquidation().transact({'from': sender})
         cls.liquidate = lambda self, sender: cls.nomin.functions.liquidate().transact({'from': sender})
@@ -466,7 +466,7 @@ class TestEtherNomin(unittest.TestCase):
         oracle = self.oracle()
 
         # Only the contract owner should be able to issue new nomins.
-        self.setPrice(oracle, UNIT)
+        mine_tx(self.setPrice(oracle, UNIT))
         assertReverts(self, self.issue, [W3.eth.accounts[4], UNIT, 2 * ETHER])
 
         self.assertEqual(self.totalSupply(), 0)
@@ -533,18 +533,15 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.nominPool(), 0)
 
     def test_buy(self):
-        owner = self.owner()
-        oracle = self.oracle()
+        self.setPrice(self.oracle(), UNIT)
         buyer = W3.eth.accounts[4]
-
-        self.setPrice(oracle, UNIT)
 
         # Should not be possible to buy when there's no supply
         cost = self.purchaseCostEther(UNIT)
         assertReverts(self, self.buy, [buyer, UNIT, cost])
 
         # issue some nomins to be burned
-        mine_tx(self.issue(owner, 5 * UNIT, 10 * ETHER))
+        mine_tx(self.issue(self.owner(), 5 * UNIT, 10 * ETHER))
         self.assertEqual(self.totalSupply(), 5 * UNIT)
         self.assertEqual(self.nominPool(), 5 * UNIT)
 
@@ -552,30 +549,63 @@ class TestEtherNomin(unittest.TestCase):
         assertReverts(self, self.buy, [buyer, UNIT, cost + 1])
         assertReverts(self, self.buy, [buyer, UNIT, cost - 1])
 
-        self.buy(buyer, UNIT, cost)
+        self.assertEqual(self.balanceOf(buyer), 0)
+        mine_tx(self.buy(buyer, UNIT, cost))
         self.assertEqual(self.totalSupply(), 5 * UNIT)
         self.assertEqual(self.nominPool(), 4 * UNIT)
+        self.assertEqual(self.balanceOf(buyer), UNIT)
 
         # It should not be possible to buy fewer nomins than the purchase minimum
         purchaseMin = UNIT // 100
         assertReverts(self, self.buy, [buyer, purchaseMin - 1, self.purchaseCostEther(purchaseMin - 1)])
 
         # But it should be possible to buy exactly that quantity
-        self.buy(buyer, purchaseMin, self.purchaseCostEther(purchaseMin))
+        mine_tx(self.buy(buyer, purchaseMin, self.purchaseCostEther(purchaseMin)))
+        self.assertEqual(self.totalSupply(), 5 * UNIT)
+        self.assertEqual(self.nominPool(), 4 * UNIT - (UNIT // 100))
+        self.assertEqual(self.balanceOf(buyer), UNIT + UNIT // 100)
 
         # It should not be possible to buy more tokens than are in the pool
         total = self.nominPool()
         assertReverts(self, self.buy, [buyer, total + 1, self.purchaseCostEther(total + 1)])
 
-        self.buy(buyer, total, self.purchaseCostEther(total))
+        mine_tx(self.buy(buyer, total, self.purchaseCostEther(total)))
         self.assertEqual(self.totalSupply(), 5 * UNIT)
         self.assertEqual(self.nominPool(), 0)
+        self.assertEqual(self.balanceOf(buyer), 5 * UNIT)
 
         # Should not be possible to buy when there's nothing in the pool
         assertReverts(self, self.buy, [buyer, UNIT, self.purchaseCostEther(UNIT)])
 
     def test_sell(self):
-        pass
+        # Prepare a seller who owns some nomins.
+        self.setPrice(self.oracle(), UNIT)
+        seller = W3.eth.accounts[4]
+        mine_tx(self.issue(self.owner(), 5 * UNIT, 10 * ETHER))
+        self.assertEqual(self.totalSupply(), 5 * UNIT)
+        self.assertEqual(self.nominPool(), 5 * UNIT)
+        self.assertEqual(self.balanceOf(seller), 0)
+
+        # It should not be possible to sell nomins if you have none.
+        assertReverts(self, self.sell, [seller, UNIT])
+
+        mine_tx(self.buy(seller, 5 * UNIT, self.purchaseCostEther(5 * UNIT)))
+        self.assertEqual(self.totalSupply(), 5 * UNIT)
+        self.assertEqual(self.nominPool(), 0)
+        self.assertEqual(self.balanceOf(seller), 5 * UNIT)
+
+        # It should not be possible to sell more nomins than you possess.
+        assertReverts(self, self.sell, [seller, 5 * UNIT + 1])
+
+        # Selling nomins should yield back the right amount of ether.
+        pre_balance = W3.eth.getBalance(seller)
+        mine_tx(self.sell(seller, 2 * UNIT))
+        # This assertAlmostEqual hack is only because ganache refuses to be sensible about gas prices.
+        # The receipt refuses to include the gas price and the values appear are inconsistent anyway.
+        self.assertAlmostEqual(self.saleProceedsFiat(2 * UNIT) / UNIT, (W3.eth.getBalance(seller) - pre_balance) / UNIT)
+        self.assertEqual(self.totalSupply(), 5 * UNIT)
+        self.assertEqual(self.nominPool(), 2 * UNIT)
+        self.assertEqual(self.balanceOf(seller), 3 * UNIT)
 
     def test_isLiquidating(self):
         pass
