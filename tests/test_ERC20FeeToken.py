@@ -57,18 +57,6 @@ class TestERC20FeeToken(unittest.TestCase):
         self.assertEqual(self.transferFeeRate(), UNIT//20)
         self.assertEqual(self.feeAuthority(), MASTER)
 
-    def test_getName(self):
-        self.assertEqual(self.name(), "Test Fee Token")
-
-    def test_getSymbol(self):
-        self.assertEqual(self.symbol(), "FEE")
-
-    def test_getTotalSupply(self):
-        self.assertEqual(self.totalSupply(), 1000 * UNIT)
-
-    def test_getFeeAuthority(self):
-        self.assertEqual(self.feeAuthority(), MASTER)
-
     def test_getSetOwner(self):
         owner = self.owner()
         new_owner = W3.eth.accounts[1]
@@ -96,7 +84,7 @@ class TestERC20FeeToken(unittest.TestCase):
         assertReverts(self, self.setTransferFeeRate, [owner, bad_transfer_fee_rate])
         self.assertEqual(self.transferFeeRate(), new_transfer_fee_rate)
 
-    def test_transferFeeIncurred(self):
+    def test_getTransferFeeIncurred(self):
         value = 10 * UNIT
         fee = value * self.transferFeeRate() / UNIT
         self.assertEqual(self.transferFeeIncurred(value), fee)
@@ -105,7 +93,7 @@ class TestERC20FeeToken(unittest.TestCase):
         fee = value * self.transferFeeRate() / UNIT
         self.assertEqual(self.transferFeeIncurred(value), fee)
 
-    def test_transferPlusFee(self):
+    def test_getTransferPlusFee(self):
         value = 10 * UNIT
         fee = value * self.transferFeeRate() / UNIT
         total = value + fee
@@ -205,9 +193,7 @@ class TestERC20FeeToken(unittest.TestCase):
 
         # Approve total amount inclusive of fee
         mine_tx(self.approve(approver, spender, total_value))
-
         self.assertEqual(self.allowance(approver, spender), total_value)
-
         mine_tx(self.transferFrom(spender, approver, receiver, value))
 
         self.assertEqual(self.balanceOf(approver), approver_balance - total_value)
@@ -222,6 +208,7 @@ class TestERC20FeeToken(unittest.TestCase):
         self.assertEqual(approver_balance, 0)
 
         mine_tx(self.approve(approver, spender, total_value))
+        self.assertEqual(self.allowance(approver, spender), value)
 
         # This should fail because the approver has no tokens.
         assertReverts(self, self.transferFrom, [spender, approver, receiver, value])
