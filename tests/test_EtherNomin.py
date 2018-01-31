@@ -2,7 +2,7 @@ import unittest
 
 from utils.deployutils import W3, UNIT, MASTER, ETHER
 from utils.deployutils import compile_contracts, attempt_deploy, mine_tx
-from utils.deployutils import snapshot, restore_snapshot
+from utils.deployutils import take_snapshot, restore_snapshot
 from utils.testutils import assertReverts
 
 
@@ -18,7 +18,7 @@ def tearDownModule():
 
 class TestEtherNomin(unittest.TestCase):
     def setUp(self):
-        self.snapshot = snapshot()
+        self.snapshot = take_snapshot()
 
     def tearDown(self):
         restore_snapshot(self.snapshot)
@@ -28,9 +28,15 @@ class TestEtherNomin(unittest.TestCase):
         compiled = compile_contracts([ETHERNOMIN_SOURCE, FAKECOURT_SOURCE],
                                      remappings=['""=contracts'])
         cls.nomin_abi = compiled['PublicEtherNomin']['abi']
+
+        cls.nomin_havven = W3.eth.accounts[1]
+        cls.nomin_oracle = W3.eth.accounts[2]
+        cls.nomin_beneficiary = W3.eth.accounts[3]
+        cls.nomin_owner = W3.eth.accounts[0]
+
         cls.nomin, cls.construction_txr = attempt_deploy(compiled, 'PublicEtherNomin', MASTER,
-                                                         [MASTER, MASTER, MASTER,
-                                                          1000 * UNIT, MASTER])
+                                                         [cls.nomin_havven, cls.nomin_oracle, cls.nomin_beneficiary,
+                                                          1000 * UNIT, cls.nomin_owner])
 
         cls.fake_court, _ = attempt_deploy(compiled, 'FakeCourt', MASTER, [])
         cls.fake_court.setNomin = lambda sender, new_nomin: cls.fake_court.functions.setNomin(new_nomin).transact({'from': sender})
@@ -101,10 +107,11 @@ class TestEtherNomin(unittest.TestCase):
         cls.debugEmptyFeePool = lambda self, sender: cls.nomin.functions.debugEmptyFeePool().transact({'from': sender})
         cls.debugFreezeAccount = lambda self, sender, target: cls.nomin.functions.debugFreezeAccount(target).transact({'from': sender})
 
-    def test_Constructor(self):
+    def test_constructor(self):
         # Nomin-specific members
-        self.assertEqual(self.oracle(), MASTER)
-        self.assertEqual(self.beneficiary(), MASTER)
+        self.assertEqual(self.owner(), self.nomin_owner)
+        self.assertEqual(self.oracle(), self.nomin_oracle)
+        self.assertEqual(self.beneficiary(), self.nomin_beneficiary)
         self.assertEqual(self.etherPrice(), 1000 * UNIT)
         self.assertEqual(self.stalePeriod(), 2 * 24 * 60 * 60) # default two days
         self.assertEqual(self.liquidationTimestamp(), 2**256 - 1)
@@ -120,7 +127,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.totalSupply(), 0)
         self.assertEqual(self.balanceOf(MASTER), 0)
         self.assertEqual(self.transferFeeRate(), 2 * UNIT // 1000)
-        self.assertEqual(self.feeAuthority(), MASTER)
+        self.assertEqual(self.feeAuthority(), self.nomin_havven)
 
     def test_getSetOwner(self):
         pre_owner = self.owner()
@@ -131,47 +138,37 @@ class TestEtherNomin(unittest.TestCase):
 
         mine_tx(self.setOwner(pre_owner, new_owner))
         self.assertEqual(self.owner(), new_owner)
-        mine_tx(self.setOwner(new_owner, pre_owner))
 
     def test_getSetOracle(self):
-        owner = self.owner()
         pre_oracle = self.oracle()
         new_oracle = W3.eth.accounts[1]
 
         # Only the owner must be able to set the oracle.
         assertReverts(self, self.setOracle, [new_oracle, new_oracle])
 
-        mine_tx(self.setOracle(owner, new_oracle))
+        mine_tx(self.setOracle(self.owner(), new_oracle))
         self.assertEqual(self.oracle(), new_oracle)
-        mine_tx(self.setOracle(owner, pre_oracle))
 
     def test_getSetCourt(self):
-        owner = self.owner()
-        pre_court = self.court()
         new_court = W3.eth.accounts[1]
 
         # Only the owner must be able to set the court.
         assertReverts(self, self.setOracle, [new_court, new_court])
 
-        mine_tx(self.setCourt(owner, new_court))
+        mine_tx(self.setCourt(self.owner(), new_court))
         self.assertEqual(self.court(), new_court)
-        mine_tx(self.setCourt(owner, pre_court))
 
     def test_getSetBeneficiary(self):
-        owner = self.owner()
-        pre_beneficiary = self.beneficiary()
         new_beneficiary = W3.eth.accounts[1]
 
         # Only the owner must be able to set the beneficiary.
         assertReverts(self, self.setBeneficiary, [new_beneficiary, new_beneficiary])
 
-        mine_tx(self.setBeneficiary(owner, new_beneficiary))
+        mine_tx(self.setBeneficiary(self.owner(), new_beneficiary))
         self.assertEqual(self.beneficiary(), new_beneficiary)
-        mine_tx(self.setBeneficiary(owner, pre_beneficiary))
 
     def test_getSetPoolFeeRate(self):
         owner = self.owner()
-        pre_rate = self.poolFeeRate()
         new_rate = UNIT // 10
 
         # Only the owner must be able to set the pool fee rate.
@@ -179,24 +176,21 @@ class TestEtherNomin(unittest.TestCase):
         # Pool fee rate must be no greater than UNIT.
         assertReverts(self, self.setPoolFeeRate, [owner, UNIT + 1])
         assertReverts(self, self.setPoolFeeRate, [owner, 2**256 - 1])
+        mine_tx(self.setPoolFeeRate(owner, UNIT))
+        self.assertEqual(self.poolFeeRate(), UNIT)
 
         mine_tx(self.setPoolFeeRate(owner, new_rate))
         self.assertEqual(self.poolFeeRate(), new_rate)
-        mine_tx(self.setPoolFeeRate(owner, UNIT))
-        self.assertEqual(self.poolFeeRate(), UNIT)
-        mine_tx(self.setPoolFeeRate(owner, pre_rate))
 
     def test_getSetStalePeriod(self):
         owner = self.owner()
-        pre_period = self.stalePeriod()
         new_period = 52 * 7 * 24 * 60 * 60
 
-        # Only the owner must be able to set the pool fee rate.
+        # Only the owner should be able to set the pool fee rate.
         assertReverts(self, self.setStalePeriod, [W3.eth.accounts[1], new_period])
 
         mine_tx(self.setStalePeriod(owner, new_period))
         self.assertEqual(self.stalePeriod(), new_period)
-        mine_tx(self.setStalePeriod(owner, pre_period))
 
     def test_setPrice(self):
         owner = self.owner()
@@ -224,30 +218,18 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.lastPriceUpdate(), tx_time)
         self.assertEqual(self.etherPrice(), new_price2)
 
-        mine_tx(self.setOracle(owner, pre_oracle))
-        mine_tx(self.setPrice(pre_oracle, UNIT))
-
         # Check if everything works with something in the pool.
+        mine_tx(self.setPrice(new_oracle, UNIT))
         backing = self.etherValue(10 * UNIT)
         mine_tx(self.issue(owner, UNIT, backing))
 
-        tx_receipt = mine_tx(self.setPrice(pre_oracle, pre_price))
+        tx_receipt = mine_tx(self.setPrice(new_oracle, pre_price))
         tx_time = W3.eth.getBlock(tx_receipt.blockNumber)['timestamp']
         self.assertEqual(self.lastPriceUpdate(), tx_time)
         self.assertEqual(self.etherPrice(), pre_price)
 
-        # Burn pooled nomins and return all issued ether.
-        mine_tx(self.burn(owner, UNIT))
-        mine_tx(self.debugWithdrawAllEther(owner, owner))
-        mine_tx(self.debugEmptyFeePool(owner))
-        self.assertEqual(W3.eth.getBalance(self.nomin.address), 0)
-        self.assertEqual(self.totalSupply(), 0)
-        self.assertEqual(self.nominPool(), 0)
-
     def test_fiatValue(self):
-        owner = self.owner()
         oracle = self.oracle()
-        pre_price = self.etherPrice()
 
         mine_tx(self.setPrice(oracle, UNIT))
         self.assertEqual(self.fiatValue(ETHER), ETHER)
@@ -268,8 +250,6 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.fiatValue(10**15 * ETHER), 10**3 * ETHER)
         self.assertEqual(self.fiatValue((7 * ETHER) // 3), ((7 * ETHER) // 3) // 10**12)
 
-        mine_tx(self.setPrice(oracle, pre_price))
-
     def test_fiatBalance(self):
         owner = self.owner()
         oracle = self.oracle()
@@ -284,15 +264,8 @@ class TestEtherNomin(unittest.TestCase):
         mine_tx(W3.eth.sendTransaction({'from': owner, 'to': self.nomin.address, 'value': ETHER}))
         self.assertEqual(self.fiatBalance(), 600 * UNIT)
 
-        mine_tx(self.setPrice(oracle, pre_price))
-        mine_tx(self.debugWithdrawAllEther(owner, owner))
-        mine_tx(self.debugEmptyFeePool(owner))
-        self.assertEqual(W3.eth.getBalance(self.nomin.address), 0)
-
     def test_etherValue(self):
-        owner = self.owner()
         oracle = self.oracle()
-        pre_price = self.etherPrice()
 
         mine_tx(self.setPrice(oracle, UNIT))
         self.assertEqual(self.etherValue(UNIT), ETHER)
@@ -308,7 +281,6 @@ class TestEtherNomin(unittest.TestCase):
     def test_collateralisationRatio(self):
         owner = self.owner()
         oracle = self.oracle()
-        pre_price = self.etherPrice()
 
         # When there are no nomins in the contract, a zero denominator causes reversion.
         assertReverts(self, self.collateralisationRatio)
@@ -332,22 +304,14 @@ class TestEtherNomin(unittest.TestCase):
         mine_tx(W3.eth.sendTransaction({'from': owner, 'to': self.nomin.address, 'value': 2 * ETHER}))
         self.assertEqual(self.collateralisationRatio(), 2 * UNIT)
 
-        # Restore status quo ante testum
-        mine_tx(self.burn(owner, UNIT))
-        mine_tx(self.setPrice(oracle, pre_price))
-        mine_tx(self.debugWithdrawAllEther(owner, owner))
-        mine_tx(self.debugEmptyFeePool(owner))
-        self.assertEqual(W3.eth.getBalance(self.nomin.address), 0)
-
     def test_poolFeeIncurred(self):
-        owner = self.owner()
         poolFeeRate = self.poolFeeRate()
 
         self.assertEqual(self.poolFeeIncurred(0), 0)
         self.assertEqual(self.poolFeeIncurred(UNIT), poolFeeRate)
         self.assertEqual(self.poolFeeIncurred(10 * UNIT), 10 * poolFeeRate)
         self.assertEqual(self.poolFeeIncurred(UNIT // 2), poolFeeRate // 2)
-        mine_tx(self.setPoolFeeRate(owner, UNIT // 10**7))
+        mine_tx(self.setPoolFeeRate(self.owner(), UNIT // 10**7))
         self.assertEqual(self.poolFeeIncurred(UNIT), UNIT // 10**7)
         self.assertEqual(self.poolFeeIncurred(100 * UNIT), UNIT // 10**5)
         self.assertEqual(self.poolFeeIncurred(UNIT // 2), UNIT // (2 * 10**7))
@@ -369,12 +333,11 @@ class TestEtherNomin(unittest.TestCase):
     def test_purchaseCostEther(self):
         owner = self.owner()
         oracle = self.oracle()
-        pre_price = self.etherPrice()
         poolFeeRate = self.poolFeeRate()
 
         self.assertEqual(self.purchaseCostEther(0), 0)
 
-        mine_tx(self.setPrice(owner, UNIT))
+        mine_tx(self.setPrice(oracle, UNIT))
         self.assertEqual(self.purchaseCostEther(UNIT), UNIT + poolFeeRate)
         self.assertEqual(self.purchaseCostEther(UNIT // 2), (UNIT + poolFeeRate) // 2)
         mine_tx(self.setPoolFeeRate(owner, UNIT // 10**7))
@@ -382,11 +345,9 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.purchaseCostEther(100 * UNIT), 100 * (UNIT + UNIT // 10**7))
 
         mine_tx(self.setPoolFeeRate(owner, poolFeeRate))
-        mine_tx(self.setPrice(owner, UNIT // 2))
+        mine_tx(self.setPrice(oracle, UNIT // 2))
         self.assertEqual(self.purchaseCostEther(UNIT // 2), UNIT + poolFeeRate)
         self.assertEqual(self.purchaseCostEther(3 * UNIT), 6 * (UNIT + poolFeeRate))
-
-        mine_tx(self.setPrice(owner, pre_price))
 
     def test_saleProceedsFiat(self):
         owner = self.owner()
@@ -405,12 +366,11 @@ class TestEtherNomin(unittest.TestCase):
     def test_saleProceedsEther(self):
         owner = self.owner()
         oracle = self.oracle()
-        pre_price = self.etherPrice()
         poolFeeRate = self.poolFeeRate()
 
         self.assertEqual(self.saleProceedsEther(0), 0)
 
-        mine_tx(self.setPrice(owner, UNIT))
+        mine_tx(self.setPrice(oracle, UNIT))
         self.assertEqual(self.saleProceedsEther(UNIT), UNIT - poolFeeRate)
         self.assertEqual(self.saleProceedsEther(UNIT // 2), (UNIT - poolFeeRate) // 2)
         mine_tx(self.setPoolFeeRate(owner, UNIT // 10**7))
@@ -418,11 +378,9 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.saleProceedsEther(100 * UNIT), 100 * (UNIT - UNIT // 10**7))
 
         mine_tx(self.setPoolFeeRate(owner, poolFeeRate))
-        mine_tx(self.setPrice(owner, UNIT // 2))
+        mine_tx(self.setPrice(oracle, UNIT // 2))
         self.assertEqual(self.saleProceedsEther(UNIT // 2), UNIT - poolFeeRate)
         self.assertEqual(self.saleProceedsEther(3 * UNIT), 6 * (UNIT - poolFeeRate))
-
-        mine_tx(self.setPrice(owner, pre_price))
 
     def test_priceIsStale(self):
         pass
@@ -432,8 +390,7 @@ class TestEtherNomin(unittest.TestCase):
 
     def test_transfer(self):
         owner = self.owner()
-        oracle = self.owner()
-        pre_price = self.etherPrice()
+        oracle = self.oracle()
         target = W3.eth.accounts[1]
 
         mine_tx(self.setPrice(oracle, UNIT))
@@ -461,54 +418,9 @@ class TestEtherNomin(unittest.TestCase):
 
         self.assertEqual(self.balanceOf(owner), remainder + qty)
         self.assertEqual(self.balanceOf(target), 0)
-
-        mine_tx(self.sell(owner, self.balanceOf(owner)))
-        mine_tx(self.burn(owner, self.nominPool()))
-        mine_tx(self.setPrice(oracle, pre_price))
-        mine_tx(self.debugWithdrawAllEther(owner, owner))
-        mine_tx(self.debugEmptyFeePool(owner))
 
     def test_transferFrom(self):
         pass
-        """
-        owner = self.owner()
-        oracle = self.owner()
-        pre_price = self.etherPrice()
-        target = W3.eth.accounts[1]
-        proxy = W3.eth.accounts[2]
-
-        mine_tx(self.setPrice(oracle, UNIT))
-        mine_tx(self.issue(owner, 10 * UNIT, 20 * ETHER))
-        ethercost = self.purchaseCostEther(10 * UNIT)
-        mine_tx(self.buy(owner, 10 * UNIT, ethercost))
-
-        self.assertEqual(self.balanceOf(owner), 10 * UNIT)
-        self.assertEqual(self.balanceOf(target), 0)
-
-        mine_tx(self.transfer(owner, target, 5 * UNIT))
-        remainder = 10 * UNIT - self.transferPlusFee(5 * UNIT)
-        self.assertEqual(self.balanceOf(owner), remainder)
-        self.assertEqual(self.balanceOf(target), 5 * UNIT)
-
-        mine_tx(self.debugFreezeAccount(owner, target))
-
-        assertReverts(self, self.transfer, [owner, target, UNIT])
-        assertReverts(self, self.transfer, [target, owner, UNIT])
-
-        mine_tx(self.unfreezeAccount(owner, target))
-
-        qty = (5 * UNIT * UNIT) // self.transferPlusFee(UNIT) + 1
-        mine_tx(self.transfer(target, owner, qty))
-
-        self.assertEqual(self.balanceOf(owner), remainder + qty)
-        self.assertEqual(self.balanceOf(target), 0)
-
-        mine_tx(self.sell(owner, self.balanceOf(owner)))
-        mine_tx(self.burn(owner, self.nominPool()))
-        mine_tx(self.setPrice(oracle, pre_price))
-        mine_tx(self.debugWithdrawAllEther(owner, owner))
-        mine_tx(self.debugEmptyFeePool(owner))
-        """
 
     def test_issue(self):
         pass
@@ -548,15 +460,12 @@ class TestEtherNomin(unittest.TestCase):
 
     def test_confiscateBalance(self):
         owner = self.owner()
-        oracle = self.owner()
-        pre_court = self.court()
-        pre_price = self.etherPrice()
         target = W3.eth.accounts[2]
 
         mine_tx(self.setCourt(owner, self.fake_court.address))
 
         # The target must have some nomins. We will issue 10 for him to buy
-        mine_tx(self.setPrice(oracle, UNIT))
+        mine_tx(self.setPrice(self.oracle(), UNIT))
         mine_tx(self.issue(owner, 10 * UNIT, 20 * ETHER))
         ethercost = self.purchaseCostEther(10 * UNIT)
         mine_tx(W3.eth.sendTransaction({'from': owner, 'to': target, 'value': ethercost}))
@@ -591,17 +500,6 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.feePool(), pre_feePool + pre_balance)
         self.assertTrue(self.isFrozen(target))
 
-        # Restore status quo
-        self.unfreezeAccount(owner, target)
-        mine_tx(self.fake_court.setConfirming(owner, target, False))
-        mine_tx(self.fake_court.setVotePasses(owner, target, False))
-        mine_tx(self.sell(target, self.balanceOf(target)))
-        mine_tx(self.burn(owner, self.nominPool()))
-        mine_tx(self.setPrice(oracle, pre_price))
-        mine_tx(self.debugWithdrawAllEther(owner, owner))
-        mine_tx(self.debugEmptyFeePool(owner))
-        mine_tx(self.setCourt(owner, pre_court))
-
     def test_unfreezeAccount(self):
         owner = self.owner()
         target = W3.eth.accounts[1]
@@ -626,10 +524,8 @@ class TestEtherNomin(unittest.TestCase):
         owner = self.owner()
         mine_tx(self.debugWithdrawAllEther(owner, owner))
         mine_tx(self.debugEmptyFeePool(owner))
+        self.assertEqual(W3.eth.getBalance(self.nomin.address), 0)
         mine_tx(W3.eth.sendTransaction({'from': owner, 'to': self.nomin.address, 'value': ETHER}))
         self.assertEqual(W3.eth.getBalance(self.nomin.address), ETHER)
-        mine_tx(self.debugWithdrawAllEther(owner, owner))
-        mine_tx(self.debugEmptyFeePool(owner))
-        self.assertEqual(W3.eth.getBalance(self.nomin.address), 0)
 
     # Events

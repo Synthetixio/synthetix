@@ -115,7 +115,7 @@ def attempt_deploy(compiled_sol, contract_name, deploy_account, constructor_args
                    print_status=print_status, print_exception=print_exception)
 
 
-def snapshot():
+def take_snapshot():
     x = W3.providers[0].make_request("evm_snapshot", [])
     force_mine_block()
     return x
