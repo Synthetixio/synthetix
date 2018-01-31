@@ -1,6 +1,6 @@
 import unittest
 
-from utils.deployutils import W3, compile_contracts, attempt_deploy, mine_tx, UNIT, MASTER, ETHER
+from utils.deployutils import W3, compile_contracts, attempt_deploy, mine_tx, UNIT, MASTER, DUMMY, fresh_account
 from utils.testutils import assertCallReverts, assertTransactionReverts
 
 
@@ -102,7 +102,7 @@ class TestEtherNomin(unittest.TestCase):
 
     def test_getSetOwner(self):
         pre_owner = self.owner().call()
-        new_owner = W3.eth.accounts[1]
+        new_owner = DUMMY
 
         # Only the owner must be able to set the oracle.
         assertTransactionReverts(self, self.setOwner(new_owner), new_owner)
@@ -114,7 +114,7 @@ class TestEtherNomin(unittest.TestCase):
     def test_getSetOracle(self):
         owner = self.owner().call()
         pre_oracle = self.oracle().call()
-        new_oracle = W3.eth.accounts[1]
+        new_oracle = DUMMY
 
         # Only the owner must be able to set the oracle.
         assertTransactionReverts(self, self.setOracle(new_oracle), new_oracle)
@@ -126,7 +126,7 @@ class TestEtherNomin(unittest.TestCase):
     def test_getSetCourt(self):
         owner = self.owner().call()
         pre_court = self.court().call()
-        new_court = W3.eth.accounts[1]
+        new_court = DUMMY
 
         # Only the owner must be able to set the court.
         assertTransactionReverts(self, self.setOracle(new_court), new_court)
@@ -138,7 +138,7 @@ class TestEtherNomin(unittest.TestCase):
     def test_getSetBeneficiary(self):
         owner = self.owner().call()
         pre_beneficiary = self.beneficiary().call()
-        new_beneficiary = W3.eth.accounts[1]
+        new_beneficiary = DUMMY
 
         # Only the owner must be able to set the beneficiary.
         assertTransactionReverts(self, self.setBeneficiary(new_beneficiary), new_beneficiary)
@@ -153,19 +153,23 @@ class TestEtherNomin(unittest.TestCase):
         new_rate = UNIT // 10
 
         # Only the owner must be able to set the pool fee rate.
-        assertTransactionReverts(self, self.setPoolFeeRate(new_rate), W3.eth.accounts[1])
+        assertTransactionReverts(self, self.setPoolFeeRate(new_rate), DUMMY)
+        # Pool fee rate must be no greater than UNIT.
+        assertTransactionReverts(self, self.setPoolFeeRate(UNIT + 1), owner)
 
         mine_tx(self.setPoolFeeRate(new_rate).transact({'from': owner}))
         self.assertEqual(self.poolFeeRate().call(), new_rate)
+        mine_tx(self.setPoolFeeRate(UNIT).transact({'from': owner}))
+        self.assertEqual(self.poolFeeRate().call(), UNIT)
         mine_tx(self.setPoolFeeRate(pre_rate).transact({'from': owner}))
 
     def test_getSetStalePeriod(self):
         owner = self.owner().call()
         pre_period = self.stalePeriod().call()
-        new_period = UNIT // 10
+        new_period = 52 * 7 * 24 * 60 * 60
 
         # Only the owner must be able to set the pool fee rate.
-        assertTransactionReverts(self, self.setStalePeriod(new_period), W3.eth.accounts[1])
+        assertTransactionReverts(self, self.setStalePeriod(new_period), DUMMY)
 
         mine_tx(self.setStalePeriod(new_period).transact({'from': owner}))
         self.assertEqual(self.stalePeriod().call(), new_period)
@@ -174,10 +178,10 @@ class TestEtherNomin(unittest.TestCase):
     def test_setPrice(self):
         owner = self.owner().call()
         pre_price = self.etherPrice().call()
-        new_price = 100 * UNIT
-        new_price2 = UNIT
+        new_price = 10**8 * UNIT # one hundred million dollar ethers $$$$$$
+        new_price2 = UNIT // 10**6 # one ten thousandth of a cent ethers :(
         pre_oracle = self.oracle().call()
-        new_oracle = W3.eth.accounts[1]
+        new_oracle = DUMMY
 
         # Only the oracle must be able to set the current price.
         assertTransactionReverts(self, self.setPrice(new_price), new_oracle)
@@ -198,6 +202,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.etherPrice().call(), new_price2)
 
         mine_tx(self.setOracle(pre_oracle).transact({'from': owner}))
+        mine_tx(self.setPrice(UNIT).transact({'from': pre_oracle}))
 
         # Check if everything works with something in the pool.
         backing = self.etherValue(10 * UNIT).call()
@@ -216,6 +221,16 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.nominPool().call(), 0)
 
     # fiatValue
+    """
+    def test_fiatValue(self):
+        owner = self.owner().call()
+        pre_price = self.etherPrice().call()
+
+        fiatValue()
+
+        # Check limits
+    """
+
     # fiatBalance
     # collateralisationRatio
     # etherValue
