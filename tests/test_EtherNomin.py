@@ -533,7 +533,46 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.nominPool(), 0)
 
     def test_buy(self):
-        pass
+        owner = self.owner()
+        oracle = self.oracle()
+        buyer = W3.eth.accounts[4]
+
+        self.setPrice(oracle, UNIT)
+
+        # Should not be possible to buy when there's no supply
+        cost = self.purchaseCostEther(UNIT)
+        assertReverts(self, self.buy, [buyer, UNIT, cost])
+
+        # issue some nomins to be burned
+        mine_tx(self.issue(owner, 5 * UNIT, 10 * ETHER))
+        self.assertEqual(self.totalSupply(), 5 * UNIT)
+        self.assertEqual(self.nominPool(), 5 * UNIT)
+
+        # Should not be able to purchase with the wrong quantity of ether.
+        assertReverts(self, self.buy, [buyer, UNIT, cost + 1])
+        assertReverts(self, self.buy, [buyer, UNIT, cost - 1])
+
+        self.buy(buyer, UNIT, cost)
+        self.assertEqual(self.totalSupply(), 5 * UNIT)
+        self.assertEqual(self.nominPool(), 4 * UNIT)
+
+        # It should not be possible to buy fewer nomins than the purchase minimum
+        purchaseMin = UNIT // 100
+        assertReverts(self, self.buy, [buyer, purchaseMin - 1, self.purchaseCostEther(purchaseMin - 1)])
+
+        # But it should be possible to buy exactly that quantity
+        self.buy(buyer, purchaseMin, self.purchaseCostEther(purchaseMin))
+
+        # It should not be possible to buy more tokens than are in the pool
+        total = self.nominPool()
+        assertReverts(self, self.buy, [buyer, total + 1, self.purchaseCostEther(total + 1)])
+
+        self.buy(buyer, total, self.purchaseCostEther(total))
+        self.assertEqual(self.totalSupply(), 5 * UNIT)
+        self.assertEqual(self.nominPool(), 0)
+
+        # Should not be possible to buy when there's nothing in the pool
+        assertReverts(self, self.buy, [buyer, UNIT, self.purchaseCostEther(UNIT)])
 
     def test_sell(self):
         pass
