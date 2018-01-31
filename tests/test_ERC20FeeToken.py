@@ -71,8 +71,6 @@ class TestERC20FeeToken(unittest.TestCase):
 
     def test_getSetOwner(self):
         owner = self.owner()
-        # Owner should be MASTER to begin with.
-        self.assertEqual(owner, MASTER)
         new_owner = W3.eth.accounts[1]
 
         # Only the owner must be able to change the new owner.
@@ -90,15 +88,12 @@ class TestERC20FeeToken(unittest.TestCase):
 
         # Only the owner is able to set the Transfer Fee Rate
         assertReverts(self, self.setTransferFeeRate, [fake_owner, new_transfer_fee_rate])
-
         mine_tx(self.setTransferFeeRate(owner, new_transfer_fee_rate))
-
         self.assertEqual(self.transferFeeRate(), new_transfer_fee_rate)
 
         # Maximum fee rate is UNIT /10
         bad_transfer_fee_rate = UNIT
         assertReverts(self, self.setTransferFeeRate, [owner, bad_transfer_fee_rate])
-
         self.assertEqual(self.transferFeeRate(), new_transfer_fee_rate)
 
     def test_transferFeeIncurred(self):
@@ -121,10 +116,10 @@ class TestERC20FeeToken(unittest.TestCase):
         total = value + fee
         self.assertEqual(self.transferPlusFee(value), total)
 
-    # Send 10 tokens from sender to reciver, then send 1 back.
     def test_transfer(self):
         sender = MASTER
         sender_balance = self.balanceOf(sender)
+
         receiver = W3.eth.accounts[1]
         receiver_balance = self.balanceOf(receiver)
 
@@ -134,23 +129,9 @@ class TestERC20FeeToken(unittest.TestCase):
         total_supply = self.totalSupply()
         fee_pool = self.feePool()
 
-        mine_tx(self.transfer(sender, receiver, value))
-
-        self.assertEquals(self.balanceOf(receiver), receiver_balance + value)
-        self.assertEquals(self.balanceOf(sender), sender_balance - total_value)
-        self.assertEquals(self.totalSupply(), total_supply)
-        self.assertEquals(self.feePool(), fee_pool + fee)
-
-        sender = W3.eth.accounts[1]
-        sender_balance = self.balanceOf(sender)
-        receiver = MASTER
-        receiver_balance = self.balanceOf(receiver)
-
-        value = 1 * UNIT
-        fee = self.transferFeeIncurred(value)
-        total_value = self.transferPlusFee(value)
-        total_supply = self.totalSupply()
-        fee_pool = self.feePool()
+        # This should fail becasue receiver has no tokens
+        assertReverts(self, self.transfer, [receiver, sender, value])
+        self.assertEqual(receiver_balance, 0)
 
         mine_tx(self.transfer(sender, receiver, value))
 
@@ -159,57 +140,16 @@ class TestERC20FeeToken(unittest.TestCase):
         self.assertEquals(self.totalSupply(), total_supply)
         self.assertEquals(self.feePool(), fee_pool + fee)
 
-    # Attempt transfers from accounts where balance < amount.
-    def test_fail_transfer(self):
-        sender = W3.eth.accounts[1]
-        sender_balance = self.balanceOf(sender)
-        self.assertEqual(sender_balance, 0)
-
-        receiver = MASTER
-        receiver_balance = self.balanceOf(receiver)
-
-        value = 1 * UNIT
-        fee = self.transferFeeIncurred(value)
-        total_value = self.transferPlusFee(value)
-        total_supply = self.totalSupply()
-        fee_pool = self.feePool()
-        
-        # This should fail because sender has no tokens
-        assertReverts(self, self.transfer, [sender, receiver, value])
-
-        self.assertEquals(self.balanceOf(sender), sender_balance)
-        self.assertEquals(self.balanceOf(receiver), receiver_balance)
-        self.assertEquals(self.totalSupply(), total_supply)
-        self.assertEquals(self.feePool(), fee_pool)
-
-        sender = MASTER
-        sender_balance = self.balanceOf(sender)
-
-        receiver = W3.eth.accounts[1]
-        receiver_balance = self.balanceOf(receiver)
-
-        # This should fail because trying to send more than total_supply
         value = 1001 * UNIT
         fee = self.transferFeeIncurred(value)
         total_value = self.transferPlusFee(value)
         total_supply = self.totalSupply()
         fee_pool = self.feePool()
 
+        # This should fail because balance < value
         assertReverts(self, self.transfer, [sender, receiver, value])
 
-        self.assertEquals(self.balanceOf(sender), sender_balance)
-        self.assertEquals(self.balanceOf(receiver), receiver_balance)
-        self.assertEquals(self.totalSupply(), total_supply)
-        self.assertEquals(self.feePool(), fee_pool)
-
-    # Transfer 0 value from sender to receiver. No fee should be charged.
-    def test_succeed_transfer_0_value(self):
-        sender = MASTER
-        sender_balance = self.balanceOf(sender)
-
-        receiver = W3.eth.accounts[1]
-        receiver_balance = self.balanceOf(receiver)
-
+        # 0 Value transfers are allowed and incur no fee.
         value = 0
         fee = self.transferFeeIncurred(value)
         total_supply = self.totalSupply()
@@ -217,45 +157,34 @@ class TestERC20FeeToken(unittest.TestCase):
 
         mine_tx(self.transfer(sender, receiver, value))
 
-        self.assertEquals(self.balanceOf(sender), sender_balance)
-        self.assertEquals(self.balanceOf(receiver), receiver_balance)
         self.assertEquals(self.totalSupply(), total_supply)
         self.assertEquals(self.feePool(), fee_pool)
 
-    # Transfer 0 value from sender to receiver with 0 balance. No fee is charged.
-    def test_succeed_transfer_0_balance(self):
-        sender = W3.eth.accounts[1]
-        sender_balance = self.balanceOf(sender)
-
-        receiver = MASTER
-        receiver_balance = self.balanceOf(receiver)
-
+        # It is also possible to send 0 value transfer from an account with 0 balance
         value = 0
+        no_tokens = W3.eth.accounts[2]
+        fee = self.transferFeeIncurred(value)
+        total_supply = self.totalSupply()
+        fee_pool = self.feePool()
 
-        mine_tx(self.transfer(sender, receiver, value))
+        mine_tx(self.transfer(no_tokens, receiver, value))
 
-        self.assertEquals(self.balanceOf(sender), sender_balance)
-        self.assertEquals(self.balanceOf(receiver), receiver_balance)  
+        self.assertEquals(self.totalSupply(), total_supply)
+        self.assertEquals(self.feePool(), fee_pool)
 
-    # Any positive approval amount is valid, even greater than total_supply.
     def test_approve(self):
         approver = MASTER
         spender = W3.eth.accounts[1]
-
         approval_amount = 1 * UNIT
-        total_supply = self.totalSupply()
 
         mine_tx(self.approve(approver, spender, approval_amount))
-
         self.assertEqual(self.allowance(approver, spender), approval_amount)
 
-        approval_amount = total_supply * 100
-
+        # Any positive approval amount is valid, even greater than total_supply.
+        approval_amount = self.totalSupply() * 100
         mine_tx(self.approve(approver, spender, approval_amount))
-
         self.assertEqual(self.allowance(approver, spender), approval_amount)
 
-    # Transfer 10 tokens from spender to receiver on behalf of approver, then send 1 back.
     def test_transferFrom(self):
         approver = MASTER
         spender = W3.eth.accounts[1]
@@ -271,6 +200,9 @@ class TestERC20FeeToken(unittest.TestCase):
         total_supply = self.totalSupply()
         fee_pool = self.feePool()
 
+        # This fails because there has been no approval yet
+        assertReverts(self, self.transferFrom, [spender, approver, receiver, value])
+
         # Approve total amount inclusive of fee
         mine_tx(self.approve(approver, spender, total_value))
 
@@ -284,59 +216,16 @@ class TestERC20FeeToken(unittest.TestCase):
         self.assertEqual(self.totalSupply(), total_supply)
         self.assertEqual(self.feePool(), fee_pool + fee)
 
-        approver = W3.eth.accounts[2]
-        spender = W3.eth.accounts[1]
-        receiver = MASTER
-
-        approver_balance = self.balanceOf(approver)
-        spender_balance = self.balanceOf(spender)
-        receiver_balance = self.balanceOf(receiver)
-
-        value = 1 * UNIT
-        fee = self.transferFeeIncurred(value)
-        total_value = self.transferPlusFee(value)
-        total_supply = self.totalSupply()
-        fee_pool = self.feePool()
+        approver = W3.eth.accounts[4]
+        # This account has no tokens
+        approver_balance = self.balanceOf(approver) 
+        self.assertEqual(approver_balance, 0)
 
         mine_tx(self.approve(approver, spender, total_value))
 
-        self.assertEqual(self.allowance(approver, spender), total_value)
-
-        mine_tx(self.transferFrom(spender, approver, receiver, value))
-
-        self.assertEqual(self.balanceOf(approver), approver_balance - total_value)
-        self.assertEqual(self.balanceOf(spender), spender_balance)
-        self.assertEqual(self.balanceOf(receiver), receiver_balance + value)
-        self.assertEqual(self.totalSupply(), total_supply)
-        self.assertEquals(self.feePool(), fee_pool + fee)
-
-    # Attempt to transfer 10 token from spender to receiver on behalf of approver with insufficient funds.
-    def test_transferFrom_invalid(self):
-        approver = W3.eth.accounts[1]
-        spender = W3.eth.accounts[2]
-        receiver = W3.eth.accounts[3]
-
-        approver_balance = self.balanceOf(approver)
-        spender_balance = self.balanceOf(spender)
-        receiver_balance = self.balanceOf(receiver)
-
-        value = 10 * UNIT
-        fee = self.transferFeeIncurred(value)
-        total_value = self.transferPlusFee(value)
-        total_supply = self.totalSupply()
-        fee_pool = self.feePool()
-
-        mine_tx(self.approve(approver, spender, total_value))
-
+        # This should fail because the approver has no tokens.
         assertReverts(self, self.transferFrom, [spender, approver, receiver, value])
 
-        self.assertEqual(self.balanceOf(approver), approver_balance)
-        self.assertEqual(self.balanceOf(spender), spender_balance)
-        self.assertEqual(self.balanceOf(receiver), receiver_balance)
-        self.assertEqual(self.totalSupply(), total_supply)
-        self.assertEquals(self.feePool(), fee_pool)
-
-    # Attempt to withdraw fees from wrong account then from fee authority.
     def test_withdrawFee(self): 
         fee_authority = MASTER
         receiver = W3.eth.accounts[1]
@@ -362,14 +251,14 @@ class TestERC20FeeToken(unittest.TestCase):
 
         fee_pool = self.feePool()
 
-        # Only the Fee Authority can withdraw fees
+        # This should fail because only the Fee Authority can withdraw fees
         assertReverts(self, self.withdrawFee, [not_fee_authority, not_fee_authority, fee_pool])
 
         mine_tx(self.withdrawFee(fee_authority, fee_receiver, fee_pool))
 
-        self.assertEquals(self.feePool(), 0)
         self.assertEquals(self.balanceOf(fee_receiver), fee_receiver_balance + fee_pool)
         self.assertEqual(self.totalSupply(), total_supply)
+        self.assertEquals(self.feePool(), 0)
 
 if __name__ == '__main__':
     unittest.main()
