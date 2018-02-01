@@ -324,6 +324,9 @@ class TestEtherNomin(unittest.TestCase):
         owner = self.owner()
         poolFeeRate = self.poolFeeRate()
 
+        self.assertGreater(self.purchaseCostFiat(UNIT), UNIT)
+        self.assertGreater(self.purchaseCostFiat(UNIT), self.saleProceedsFiat(UNIT))
+
         self.assertEqual(self.purchaseCostFiat(0), 0)
         self.assertEqual(self.purchaseCostFiat(UNIT), UNIT + poolFeeRate)
         self.assertEqual(self.purchaseCostFiat(10 * UNIT), 10 * (UNIT + poolFeeRate))
@@ -338,6 +341,9 @@ class TestEtherNomin(unittest.TestCase):
         owner = self.owner()
         oracle = self.oracle()
         poolFeeRate = self.poolFeeRate()
+
+        self.assertGreater(self.purchaseCostEther(UNIT), self.etherValue(UNIT))
+        self.assertGreater(self.purchaseCostEther(UNIT), self.saleProceedsEther(UNIT))
 
         self.assertEqual(self.purchaseCostEther(0), 0)
 
@@ -361,17 +367,31 @@ class TestEtherNomin(unittest.TestCase):
         price_multiples = [12398, 1.2384889, 7748.22, 0.238838, 0.00049944, 5.7484, 87.2211111]
         qty_multiples = [2.3, 84.4828, 284.10002, 0.4992, 105.289299991, 7.651948, 0.01, 100000]
 
+        total_qty = 0
+        total_cost = 0
+        pre_balance = W3.eth.getBalance(owner)
+
         for price_mult in price_multiples:
             for qty_mult in qty_multiples:
                 price = int(price_mult * UNIT)
                 qty = int(qty_mult * UNIT)
+                total_qty += qty
                 mine_tx(self.updatePrice(oracle, price))
-                mine_tx(self.buy(owner, qty, self.purchaseCostEther(qty)))
+                cost = self.purchaseCostEther(qty)
+                total_cost += cost
+                mine_tx(self.buy(owner, qty, cost))
 
+        self.assertEqual(self.balanceOf(owner), total_qty)
+
+        # We assert only almost equal because we're ignoring gas costs.
+        self.assertAlmostEqual((pre_balance - W3.eth.getBalance(owner)) / UNIT, total_cost / UNIT)
 
     def test_saleProceedsFiat(self):
         owner = self.owner()
         poolFeeRate = self.poolFeeRate()
+
+        self.assertLess(self.saleProceedsFiat(UNIT), UNIT)
+        self.assertLess(self.saleProceedsFiat(UNIT), self.purchaseCostFiat(UNIT))
 
         self.assertEqual(self.saleProceedsFiat(0), 0)
         self.assertEqual(self.saleProceedsFiat(UNIT), UNIT - poolFeeRate)
@@ -388,6 +408,9 @@ class TestEtherNomin(unittest.TestCase):
         oracle = self.oracle()
         poolFeeRate = self.poolFeeRate()
 
+        self.assertLess(self.saleProceedsEther(UNIT), self.etherValue(UNIT))
+        self.assertLess(self.saleProceedsEther(UNIT), self.purchaseCostEther(UNIT))
+
         self.assertEqual(self.saleProceedsEther(0), 0)
 
         mine_tx(self.updatePrice(oracle, UNIT))
@@ -401,6 +424,39 @@ class TestEtherNomin(unittest.TestCase):
         mine_tx(self.updatePrice(oracle, UNIT // 2))
         self.assertEqual(self.saleProceedsEther(UNIT // 2), UNIT - poolFeeRate)
         self.assertEqual(self.saleProceedsEther(3 * UNIT), 6 * (UNIT - poolFeeRate))
+
+    def test_saleProceedsEtherBearMarket(self):
+        owner = self.owner()
+        oracle = self.oracle()
+
+        initial_qty = 800000 * UNIT
+        mine_tx(self.issue(owner, initial_qty, 8 * 10**9 * UNIT))
+        mine_tx(self.buy(owner, initial_qty, self.purchaseCostEther(initial_qty)))
+
+        price_multiples = [12398, 1.2384889, 7748.22, 0.238838, 0.00049944, 5.7484, 87.2211111]
+        qty_multiples = [2.3, 84.4828, 284.10002, 0.4992, 105.289299991, 7.651948, 0.01, 100000]
+
+        total_qty = 0
+        total_proceeds = 0
+        pre_balance = W3.eth.getBalance(owner)
+
+        for price_mult in price_multiples:
+            for qty_mult in qty_multiples:
+                price = int(price_mult * UNIT)
+                qty = int(qty_mult * UNIT)
+                total_qty += qty
+                mine_tx(self.updatePrice(oracle, price))
+                proceeds = self.saleProceedsEther(qty)
+                total_proceeds += proceeds
+                print(price, qty, proceeds, self.balanceOf(owner), W3.eth.getBalance(self.nomin.address))
+                mine_tx(self.sell(owner, qty))
+
+
+        self.assertEqual(initial_qty - self.balanceOf(owner), total_qty)
+
+        # We assert only almost equal because we're ignoring gas costs.
+        self.assertAlmostEqual((W3.eth.getBalance(owner) - pre_balance) / UNIT, total_proceeds / UNIT)
+
 
     def test_priceIsStale(self):
         oracle = self.oracle()
