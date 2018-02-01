@@ -117,19 +117,26 @@ class TestERC20Token(unittest.TestCase):
         # This fails because there has been no approval yet
         assertReverts(self, self.transferFrom, [spender, approver, receiver, value])
 
-        mine_tx(self.approve(approver, spender, value))
-        self.assertEqual(self.allowance(approver, spender), value)
+        mine_tx(self.approve(approver, spender, 2 * value))
+        self.assertEqual(self.allowance(approver, spender), 2 * value)
+
+        assertReverts(self, self.transferFrom, [spender, approver, receiver, 2 * value + 1])
         mine_tx(self.transferFrom(spender, approver, receiver, value))
 
         self.assertEqual(self.balanceOf(approver), approver_balance - value)
         self.assertEqual(self.balanceOf(spender), spender_balance)
         self.assertEqual(self.balanceOf(receiver), receiver_balance + value)
+        self.assertEqual(self.allowance(approver, spender), value)
         self.assertEqual(self.totalSupply(), total_supply)
+
+        # Empty the account
+        mine_tx(self.transferFrom(spender, approver, receiver, value))
 
         approver = W3.eth.accounts[4]
         # This account has no tokens
         approver_balance = self.balanceOf(approver) 
         self.assertEqual(approver_balance, 0)
+        self.assertEqual(self.allowance(approver, spender), 0)
 
         mine_tx(self.approve(approver, spender, value))
         self.assertEqual(self.allowance(approver, spender), value)
