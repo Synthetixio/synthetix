@@ -28,7 +28,6 @@ def deploy_public_havven():
 
     # Hook up each of those contracts to each other
     txs = [havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
-           havven_contract.functions.setCourt(court_contract.address).transact({'from': MASTER}),
            nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER})]
     attempt(mine_txs, [txs], "Linking contracts... ")
 
@@ -100,7 +99,6 @@ class TestHavven(unittest.TestCase):
         cls.lastFeesCollected = lambda self: self.havven.functions.lastFeesCollected().call()
 
         cls.get_nomin = lambda self: self.havven.functions.nomin().call()
-        cls.get_court = lambda self: self.havven.functions.court().call()
 
         # vote
         cls.vote = lambda self, addr: self.havven.functions.vote(addr).call()
@@ -111,8 +109,6 @@ class TestHavven(unittest.TestCase):
         # SETTERS
         # setNomin
         cls.setNomin = lambda self, sender, addr: mine_tx(self.havven.functions.setNomin(addr).transact({'from': sender}))
-        # setCourt
-        cls.setCourt = lambda self, sender, addr: mine_tx(self.havven.functions.setCourt(addr).transact({'from': sender}))
         # setTargetFeePeriod
         cls.setTargetFeePeriodDuration = lambda self, sender, dur: mine_tx(self.havven.functions.setTargetFeePeriodDuration(dur).transact({'from': sender}))
 
@@ -151,8 +147,6 @@ class TestHavven(unittest.TestCase):
         # MODIFIERS
         # postCheckFeePeriodRollover
         cls._postCheckFeePeriodRollover = lambda self, sender: mine_tx(self.havven.functions._postCheckFeePeriodRollover().transact({'from': sender}))
-        # onlyCourt
-        cls._onlyCourt = lambda self, sender: mine_tx(self.havven.functions._onlyCourt().transact({'from': sender}))
 
     ###
     # Test inherited Owned - Should be the same test_Owned.py
@@ -214,7 +208,6 @@ class TestHavven(unittest.TestCase):
         self.assertEquals(self.lastFeePeriodStartTime(), 2)
         self.assertEquals(self.penultimateFeePeriodStartTime(), 1)
         self.assertEquals(self.get_nomin(), self.nomin.address)
-        self.assertEquals(self.get_court(), self.court.address)
 
     ###
     # Mappings
@@ -382,16 +375,6 @@ class TestHavven(unittest.TestCase):
         alice = fresh_account()
         assertFunctionReverts(self, self.setNomin, alice, alice)
 
-    # setCourt
-    def test_SetCourt(self):
-        alice = fresh_account()
-        self.setCourt(MASTER, alice)
-        self.assertEqual(self.get_court(), alice)
-
-    def test_invalidSetCourt(self):
-        alice = fresh_account()
-        assertFunctionReverts(self, self.setCourt, alice, alice)
-
     # setTargetFeePeriod
     def test_setTargetFeePeriod(self):
         self.setTargetFeePeriodDuration(MASTER, to_seconds(weeks=100))
@@ -436,7 +419,6 @@ class TestHavven(unittest.TestCase):
     # Modifiers
     ###
     # postCheckFeePeriodRollover
-    # onlyCourt
 
 
 if __name__ == '__main__':
