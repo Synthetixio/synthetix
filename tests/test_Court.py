@@ -71,10 +71,10 @@ class TestCourt(unittest.TestCase):
 		cls.setRequiredParticipation = lambda self, sender, fraction: self.court.functions.setRequiredParticipation(fraction).transact({'from' : sender})
 		cls.setRequiredMajority = lambda self, sender, fraction: self.court.functions.setRequiredMajority(fraction).transact({'from' : sender})
 
-		cls.voting = lambda self, sender, target: self.court.functions.voting(target).transact({'from': sender})
-		cls.confirming = lambda self, sender, target: self.court.functions.confirming(target).transact({'from' : sender})
-		cls.waiting = lambda self, sender, target: self.court.functions.waiting(target).transact({'from' : sender})
-		cls.votePasses = lambda self, sender, target: self.court.functions.votePasses(target).transact({'from' : sender})
+		cls.voting = lambda self, target: self.court.functions.voting(target).call()
+		cls.confirming = lambda self, target: self.court.functions.confirming(target).call()
+		cls.waiting = lambda self, target: self.court.functions.waiting(target).call()
+		cls.votePasses = lambda self, target: self.court.functions.votePasses(target).call()
 
 		cls.beginConfiscationAction = lambda self, sender, target: self.court.functions.beginConfiscationAction(target).transact({'from' : sender})
 		cls.voteFor = lambda self, sender, target: self.court.functions.voteFor(target).transact({'from' : sender})
@@ -98,12 +98,12 @@ class TestCourt(unittest.TestCase):
 		self.assertEqual(self.maxConfirmationPeriod(), 2 * self.weeks)
 		self.assertEqual(self.requiredParticipation(), 3 * UNIT / 10)
 		self.assertEqual(self.minRequiredParticipation(), UNIT / 10)
-		#self.assertEqual(self.requiredMajority(), (2 * UNIT) / 3)
+		self.assertEqual(self.requiredMajority(), (2 * UNIT) // 3)
 		self.assertEqual(self.minRequiredMajority(), UNIT / 2)
 
 	def test_getSetOwner(self):
 		owner = self.owner()
-		# Only the OWNER can setOwner
+		# Only owner can setOwner
 		assertReverts(self, self.setOwner, [DUMMY, DUMMY])
 
 		mine_tx(self.setOwner(owner, DUMMY))
@@ -112,7 +112,7 @@ class TestCourt(unittest.TestCase):
 	def test_getSetMinStandingBalance(self):
 		owner = self.owner()
 		new_min_standing_balance = 200 * UNIT
-		# Only the owner can set minStandingBalance
+		# Only owner can set minStandingBalance
 		assertReverts(self, self.setMinStandingBalance, [DUMMY, new_min_standing_balance])
 
 		mine_tx(self.setMinStandingBalance(owner, new_min_standing_balance))
@@ -121,7 +121,7 @@ class TestCourt(unittest.TestCase):
 	def test_getSetVotingPeriod(self):
 		owner = self.owner()
 		new_voting_period = 2 * self.weeks
-		# Only the owner can set votingPeriod
+		# Only owner can set votingPeriod
 		assertReverts(self, self.setVotingPeriod, [DUMMY, new_voting_period])
 
 		mine_tx(self.setVotingPeriod(owner, new_voting_period))
@@ -155,7 +155,7 @@ class TestCourt(unittest.TestCase):
 	def test_getSetRequiredParticipation(self):
 		owner = self.owner()
 		new_required_participation = 5 * UNIT // 10
-		# Only the owner can set requiredParticipation
+		# Only owner can set requiredParticipation
 		assertReverts(self, self.setRequiredParticipation, [DUMMY, new_required_participation])
 
 		mine_tx(self.setRequiredParticipation(owner, new_required_participation))
@@ -168,7 +168,7 @@ class TestCourt(unittest.TestCase):
 	def test_getSetRequiredMajority(self):
 		owner = self.owner()
 		new_required_majority = (3 * UNIT) // 4 
-		# Only the owner can set requiredMajority
+		# Only owner can set requiredMajority
 		assertReverts(self, self.setRequiredMajority, [DUMMY, new_required_majority])
 
 		mine_tx(self.setRequiredMajority(owner, new_required_majority))
@@ -180,23 +180,64 @@ class TestCourt(unittest.TestCase):
 
 	def test_voting(self):
 		owner = self.owner()
+		suspect = W3.eth.accounts[2]
+		voting_period = self.votingPeriod()
 
-		mine_tx(self.beginConfiscationAction(owner, DUMMY))
-		self.assertTrue(self.voting(owner, DUMMY))
+		self.assertFalse(self.voting(suspect))
 
-	# def test_confirming(self):
+		# Start a confiscation action against the suspect 
+		mine_tx(self.beginConfiscationAction(owner, suspect))
+		self.assertTrue(self.voting(suspect))
 
-	# def test_waiting(self):
+		# Voting period is still underway
+		fast_forward(voting_period / 2)
+		self.assertTrue(self.voting(suspect))
 
-	# def test_votePasses(self):
+		# When the voting period finishes, should move to confirming
+		fast_forward(voting_period / 2)
+		self.assertFalse(self.voting(suspect))
+		self.assertTrue(self.confirming(suspect))
+
+	def test_confirming(self):
+		owner = self.owner()
+		suspect = W3.eth.accounts[2]
+		voting_period = self.votingPeriod()
+
+		# Bring a confiscation action against the suspect from a member with standing 
+		mine_tx(self.beginConfiscationAction(owner, suspect))
+		self.assertTrue(self.voting(suspect))
+
+		# Voting period is still underway
+		fast_forward(voting_period / 2)
+		self.assertFalse(self.confirming(suspect))
+
+		# When the voting period finishes, should move to confirming
+		fast_forward(voting_period / 2)
+		self.assertTrue(self.confirming(suspect))
+
+	def test_waiting(self):
+		innocent = W3.eth.accounts[1]
+		# If no action has begun, should be in the waiting state.
+		self.assertTrue(self.waiting(innocent))
+
+	def test_votePasses(self):
+		owner = self.owner()
+		suspect = W3.eth.accounts[2]
+
+		mine_tx(self.beginConfiscationAction(owner, suspect))
 
 	def test_beginConfiscationAction(self):
 		owner = self.owner()
+		no_standing = W3.eth.accounts[2]
+		suspect = W3.eth.accounts[3]		
 		# Must have standing to vote
-		assertReverts(self, self.beginConfiscationAction, [DUMMY, owner])
+		assertReverts(self, self.beginConfiscationAction, [no_standing, suspect])
 
-		mine_tx(self.beginConfiscationAction(owner, DUMMY))
-		self.assertTrue(self.voting(owner, DUMMY))
+		mine_tx(self.beginConfiscationAction(owner, suspect))
+		self.assertTrue(self.voting(suspect))
+
+		# After opening a vote on suspect, we cannot open another one.
+		assertReverts(self, self.beginConfiscationAction, [owner, suspect])
 
 	# def test_voteFor(self):
 
@@ -208,8 +249,18 @@ class TestCourt(unittest.TestCase):
 
 	# def test_approve(self):
 
-	# def test_veto(self):
+	def test_veto(self):
+		owner = self.owner()
+		not_authorised = W3.eth.accounts[1]
+		suspect = W3.eth.accounts[3]	
 
+		# Cannot veto when there is no vote in progress
+		assertReverts(self, self.veto, [owner, suspect])
 
+		mine_tx(self.beginConfiscationAction(owner, suspect))
+		# Cannot veto unless you are the owner
+		assertReverts(self, self.veto, [not_authorised, suspect])
 
-
+		mine_tx(self.veto(owner, suspect))
+		# Suspect should be back in the waiting stage
+		self.assertTrue(self.waiting(suspect))
