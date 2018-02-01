@@ -412,7 +412,7 @@ contract Court is Owned, SafeDecimalMath {
         // the one inside setVotedYea().
         setVotedYea(msg.sender, target);
         voteWeight[msg.sender] = weight;
-        votesFor[msg.sender] += weight;
+        votesFor[target] += weight;
         VoteFor(msg.sender, target, weight);
     }
 
@@ -446,7 +446,7 @@ contract Court is Owned, SafeDecimalMath {
         // the one inside setVotedNay().
         setVotedNay(msg.sender, target);
         voteWeight[msg.sender] = weight;
-        votesAgainst[msg.sender] += weight;
+        votesAgainst[target] += weight;
         VoteAgainst(msg.sender, target, weight);
     }
 
