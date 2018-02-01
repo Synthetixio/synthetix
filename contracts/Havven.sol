@@ -177,16 +177,7 @@ contract Havven is ERC20Token, Owned {
     // of the last fee rollover (feePeriodStartTime).
     uint public lastFeesCollected;
 
-    // A given account's vote in some confiscation action.
-    // This requires the default value of the Vote enum to correspond to an abstention.
-    // If an account's vote is not an abstention, it may not transfer funds.
-    mapping(address => Court.Vote) public vote;
-    // The vote a user last participated in.
-    mapping(address => address) public voteTarget;
-
     EtherNomin public nomin;
-    Court public court;
-
 
     uint public debug;
 
@@ -213,13 +204,6 @@ contract Havven is ERC20Token, Owned {
         nomin = _nomin;
     }
 
-    function setCourt(Court _court) 
-        public
-        onlyOwner
-    {
-        court = _court;
-    }
-
     function setTargetFeePeriodDuration(uint duration)
         public
         postCheckFeePeriodRollover
@@ -228,17 +212,6 @@ contract Havven is ERC20Token, Owned {
         require(duration >= minFeePeriodDurationSeconds);
         targetFeePeriodDurationSeconds = duration;
         FeePeriodDurationUpdated(duration);
-    }
-
-
-    /* ========== VIEW FUNCTIONS ========== */
-
-    function hasVoted(address account)
-        public
-        view
-        returns (bool)
-    {
-        return vote[account] != Court.Vote.Abstention;
     }
 
 
@@ -408,48 +381,6 @@ contract Havven is ERC20Token, Owned {
         }
     }
 
-    /* Indicate that the given account voted yea in a confiscation
-     * action on the target account.
-     * The account must not have an active vote in any action.
-     */
-    function setVotedYea(address account, address target)
-        public
-        onlyCourt
-    {
-        require(vote[account] == Court.Vote.Abstention);
-        vote[account] = Court.Vote.Yea;
-        voteTarget[account] = target;
-    }
-
-    /* Indicate that the given account voted nay in a confiscation
-     * action on the target account.
-     * The account must not have an active vote in any action.
-     */
-    function setVotedNay(address account, address target)
-        public
-        onlyCourt
-    {
-        require(vote[account] == Court.Vote.Abstention);
-        vote[account] = Court.Vote.Nay;
-        voteTarget[account] = target;
-    }
-
-    /* Cancel a previous vote by a given account on a target.
-     * The target of the cancelled vote must be the same
-     * as the target the account voted upon previously,
-     * otherwise throw an exception.
-     * This is in order to enforce that a user may only
-     * vote upon a single action at a time.
-     */
-    function cancelVote(address account, address target)
-        public
-        onlyCourt
-    {
-        require(voteTarget[account] == target);
-        vote[account] = Court.Vote.Abstention;
-        voteTarget[account] = 0;
-    }
-
 
     /* ========== MODIFIERS ========== */
 
@@ -475,13 +406,6 @@ contract Havven is ERC20Token, Owned {
             feePeriodStartTime = now;
         }
     }
-
-    modifier onlyCourt
-    {
-        require(Court(msg.sender) == court);
-        _;
-    }
-
 
     /* ========== EVENTS ========== */
 
