@@ -27,13 +27,20 @@ last_accessed_account = 1
 
 
 def fresh_account():
-    global last_accessed_account
-    last_accessed_account += 1
+    """Return first account after DUMMY"""
     try:
-        return W3.eth.accounts[last_accessed_account]
+        return W3.eth.accounts[last_accessed_account+1]
     except KeyError:
         raise Exception("""W3.eth.accounts doesn't contain enough accounts,
         restart ganache with more accounts (i.e. ganache-cli -a 500)""")
+
+
+def fresh_accounts(num_accs):
+    accs = W3.eth.accounts[last_accessed_account + 1:]
+    if len(accs) < num_accs:
+        raise Exception("""W3.eth.accounts doesn't contain enough accounts,
+                        restart ganache with more accounts (i.e. ganache-cli -a 500)""")
+    return accs[:num_accs]
 
 
 class TERMCOLORS:
@@ -45,6 +52,19 @@ class TERMCOLORS:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+
+
+def to_seconds(seconds=0, minutes=0, hours=0, days=0, weeks=0):
+    total_time = seconds
+    mult = 60
+    total_time += minutes*mult
+    mult *= 60
+    total_time += hours*mult
+    mult *= 24
+    total_time += days*mult
+    mult *= 7
+    total_time += weeks*mult
+    return total_time
 
 
 def attempt(function, func_args, init_string, print_status=True, print_exception=True):
@@ -82,15 +102,7 @@ def force_mine_block():
 
 
 def fast_forward(seconds=0, minutes=0, hours=0, days=0, weeks=0):
-    total_time = seconds
-    mult = 60
-    total_time += minutes*mult
-    mult *= 60
-    total_time += hours*mult
-    mult *= 24
-    total_time += days*mult
-    mult *= 7
-    total_time += weeks*mult
+    total_time = to_seconds(seconds, minutes, hours, days, weeks)
     W3.providers[0].make_request("evm_increaseTime", [total_time])
     force_mine_block()
 
@@ -102,6 +114,17 @@ def take_snapshot():
 def restore_snapshot(snapshot):
     W3.providers[0].make_request("evm_revert", [snapshot['result']])
     force_mine_block()
+
+def take_snapshot():
+    x = W3.providers[0].make_request("evm_snapshot", [])
+    force_mine_block()
+    return x
+
+
+def restore_snapshot(snapshot):
+    W3.providers[0].make_request("evm_revert", [snapshot['result']])
+    force_mine_block()
+
 
 def mine_tx(tx_hash):
     tx_receipt = W3.eth.getTransactionReceipt(tx_hash)
