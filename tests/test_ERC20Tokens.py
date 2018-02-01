@@ -18,16 +18,7 @@ class TestERC20Token(unittest.TestCase):
 
     def tearDown(self):
         restore_snapshot(self.snapshot)
-    """
-    Test the basic ERC20 Token contract
-    TODO: Add more edge case tests. Comment more. Still in progress.
-      - check recent golem exploit involving addresses with trailing 0s?
-      - http://vessenes.com/the-erc20-short-address-attack-explained/
-      - Seems to be first account gives an allowance -> address with trailing 0s
-      - That address then sends a transfer to himself/some other wallet (excluding his trailing 0s)
-      - As long as there is enough balance in the first account (one that gave allowance) more than
-        the allowance can be transferred
-    """
+
     @classmethod
     def setUpClass(cls):
         compiled = compile_contracts([ERC20Token_SOURCE])
@@ -150,9 +141,7 @@ class TestERC20FeeToken(unittest.TestCase):
 
     def tearDown(self):
         restore_snapshot(self.snapshot)
-    """
-    Test the basic ERC20 Fee Token contract
-    """
+    
     @classmethod
     def setUpClass(cls):
         compiled = compile_contracts([ERC20FeeToken_SOURCE])
