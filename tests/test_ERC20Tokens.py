@@ -328,8 +328,19 @@ class TestERC20FeeToken(unittest.TestCase):
         # Approve total amount inclusive of fee
         mine_tx(self.approve(approver, spender, total_value))
         self.assertEqual(self.allowance(approver, spender), total_value)
-        mine_tx(self.transferFrom(spender, approver, receiver, value))
 
+        mine_tx(self.transferFrom(spender, approver, receiver, value // 10))
+        self.assertEqual(self.allowance(approver, spender), 9 * total_value // 10)
+
+        self.assertEqual(self.balanceOf(approver), approver_balance - total_value // 10)
+        self.assertEqual(self.balanceOf(spender), spender_balance)
+        self.assertEqual(self.balanceOf(receiver), receiver_balance + value // 10)
+        self.assertEqual(self.totalSupply(), total_supply)
+        self.assertEqual(self.feePool(), fee_pool + fee // 10)
+
+        mine_tx(self.transferFrom(spender, approver, receiver, 9 * value // 10))
+
+        self.assertEqual(self.allowance(approver, spender), 0)
         self.assertEqual(self.balanceOf(approver), approver_balance - total_value)
         self.assertEqual(self.balanceOf(spender), spender_balance)
         self.assertEqual(self.balanceOf(receiver), receiver_balance + value)
@@ -347,31 +358,31 @@ class TestERC20FeeToken(unittest.TestCase):
         assertReverts(self, self.transferFrom, [spender, approver, receiver, value])
 
     def test_withdrawFee(self): 
-        fee_authority = self.fee_authority
         receiver = W3.eth.accounts[1]
         fee_receiver = W3.eth.accounts[2]
         not_fee_authority = W3.eth.accounts[4]
-        self.assertNotEqual(fee_authority, not_fee_authority)
-        self.assertNotEqual(fee_authority, receiver)
-        self.assertNotEqual(fee_authority, fee_receiver)
+        self.assertNotEqual(self.fee_authority, not_fee_authority)
+        self.assertNotEqual(self.fee_authority, receiver)
+        self.assertNotEqual(self.fee_authority, fee_receiver)
 
-        fee_authority_balance = self.balanceOf(fee_authority)
-        receiver_balance = self.balanceOf(receiver)
-        fee_receiver_balance = self.balanceOf(fee_receiver)
 
         value = 500 * UNIT
-        mine_tx(self.transfer(self.initial_beneficiary, fee_authority, value))
-        self.assertEqual(self.balanceOf(fee_authority), 500 * UNIT)
+        total_value = self.transferPlusFee(value)
+        mine_tx(self.transfer(self.initial_beneficiary, self.fee_authority, total_value))
+        self.assertEqual(self.balanceOf(self.fee_authority), total_value)
 
         fee = self.transferFeeIncurred(value)
-        total_value = self.transferPlusFee(value)
         total_supply = self.totalSupply()
         fee_pool = self.feePool()
 
-        mine_tx(self.transfer(fee_authority, receiver, value))
+        fee_authority_balance = self.balanceOf(self.fee_authority)
+        receiver_balance = self.balanceOf(receiver)
+        fee_receiver_balance = self.balanceOf(fee_receiver)
+
+        mine_tx(self.transfer(self.fee_authority, receiver, value))
 
         self.assertEqual(self.balanceOf(receiver), receiver_balance + value)
-        self.assertEqual(self.balanceOf(fee_authority), fee_authority_balance - total_value)
+        self.assertEqual(self.balanceOf(self.fee_authority), fee_authority_balance - total_value)
         self.assertEqual(self.totalSupply(), total_supply)
         self.assertEqual(self.feePool(), fee_pool + fee)
 
@@ -380,7 +391,16 @@ class TestERC20FeeToken(unittest.TestCase):
         # This should fail because only the Fee Authority can withdraw fees
         assertReverts(self, self.withdrawFee, [not_fee_authority, not_fee_authority, fee_pool])
 
-        mine_tx(self.withdrawFee(fee_authority, fee_receiver, fee_pool))
+        # Failure due to too-large a withdrawal.
+        assertReverts(self, self.withdrawFee, [self.fee_authority, fee_receiver, fee_pool + 1])
+
+        # Partial withdrawal leaves stuff in the pool
+        mine_tx(self.withdrawFee(self.fee_authority, fee_receiver, fee_pool // 4))
+        self.assertEqual(3 * fee_pool // 4, self.feePool())
+        self.assertEqual(self.balanceOf(fee_receiver), fee_receiver_balance + fee_pool // 4)
+
+        # Withdraw the rest
+        mine_tx(self.withdrawFee(self.fee_authority, fee_receiver, 3 * fee_pool // 4))
 
         self.assertEqual(self.balanceOf(fee_receiver), fee_receiver_balance + fee_pool)
         self.assertEqual(self.totalSupply(), total_supply)
