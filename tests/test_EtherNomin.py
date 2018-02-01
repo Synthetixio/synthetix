@@ -388,24 +388,86 @@ class TestEtherNomin(unittest.TestCase):
 
     def test_priceIsStale(self):
         oracle = self.oracle()
+        owner = self.owner()
+        stale_period = self.stalePeriod()
 
         mine_tx(self.updatePrice(oracle, UNIT))
+        # Price is not stale immediately following an update.
         self.assertFalse(self.priceIsStale())
-        fast_forward(seconds=self.stalePeriod() // 2)
+
+        # Price is not stale after part of the period has elapsed.
+        fast_forward(seconds=stale_period // 2)
         self.assertFalse(self.priceIsStale())
-        fast_forward(seconds=self.stalePeriod() // 2 - 10)
+
+        # Price is not stale right up to just before the period has elapsed.
+        fast_forward(seconds=stale_period // 2 - 10)
         self.assertFalse(self.priceIsStale())
+
+        # Price becomes stale immediately after the period has elapsed.
         fast_forward(seconds=11)
         self.assertTrue(self.priceIsStale())
-        fast_forward(seconds=10 * self.stalePeriod())
+
+        # Price stays stale for ages.
+        fast_forward(seconds=100 * stale_period)
         self.assertTrue(self.priceIsStale())
 
-        # Update the price since ganache snapshots don't respect timestamps.
         mine_tx(self.updatePrice(oracle, UNIT))
+        self.assertFalse(self.priceIsStale()) 
+
+        # Lengthening stale periods should not trigger staleness.
+        mine_tx(self.setStalePeriod(owner, 2 * stale_period))
+        self.assertFalse(self.priceIsStale()) 
+
+        # Shortening them to longer than the current elapsed period should not trigger staleness.
+        mine_tx(self.setStalePeriod(owner, stale_period))
         self.assertFalse(self.priceIsStale())
+
+        # Shortening to shorter than the current elapsed period should trigger staleness.
+        fast_forward(seconds= 3 * stale_period // 4)
+        mine_tx(self.setStalePeriod(owner, stale_period // 2))
+        self.assertTrue(self.priceIsStale())
+
+        # Yet if we are able to update the stale period while the price is stale,
+        # we should be able to turn off staleness by extending the period.
+        # It's an interesting question of trust as to whether we should be able to do this, say if we
+        # do not have access to the oracle to send a price update. But as an owner, we could just
+        # reset the oracle address anyway, so we allow this.
+        mine_tx(self.setStalePeriod(owner, stale_period))
+        self.assertFalse(self.priceIsStale())
+
 
     def test_staleness(self):
         pass
+        # Assert all those calls work when not stale.
+        # Assert things that should work when stale do work.
+        """
+        fast_forward(seconds=10*self.stalePeriod())
+        self.assertTrue(self.priceIsStale())
+
+        # These calls should work.
+        self.nominPool()
+        self.poolFeeRate()
+        self.liquidationPeriod()
+        self.liquidationTimestamp()
+        self.etherPrice()
+        self.lastPriceUpdate()
+        self.stalePeriod()
+        self.isFrozen(self.nomin.address)
+        self.setOracle(self.owner(), self.oracle())
+        self.setCourt(self.owner(), self.court())
+        self.setBeneficiary(self.owner(), self.beneficiary())
+        self.setPoolFeeRate(self.owner(), self.poolFeeRate())
+
+        assertReverts(self, self.fiatValue, [UNIT])
+        assertReverts(self, self.fiatBalance, [])
+        assertReverts(self, self.etherValue, [UNIT])
+        assertReverts(self, self.collateralisationRatio, [])
+        assertReverts(self, self.purchaseCostEther, [UNIT])
+        assertReverts(self, self.saleProceedsEther, [UNIT])
+
+
+        # Confirm that sell works regardless of staleness when in liquidation
+        """
 
     def test_transfer(self):
         owner = self.owner()
