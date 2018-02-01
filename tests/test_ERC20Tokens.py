@@ -157,7 +157,7 @@ class TestERC20FeeToken(unittest.TestCase):
         compiled = compile_contracts([ERC20FeeToken_SOURCE])
         cls.erc20feetoken, cls.construction_txr = attempt_deploy(compiled, "ERC20FeeToken", MASTER, 
                                                                  ["Test Fee Token", "FEE", 1000 * UNIT, 
-                                                                  cls.initial_beneficiary, UNIT//20,
+                                                                  cls.initial_beneficiary, UNIT // 20,
                                                                   cls.fee_authority, cls.token_owner])
 
         cls.owner = lambda self: cls.erc20feetoken.functions.owner().call()
@@ -187,7 +187,7 @@ class TestERC20FeeToken(unittest.TestCase):
         self.assertEqual(self.symbol(), "FEE")
         self.assertEqual(self.totalSupply(), 1000 * UNIT)
         self.assertEqual(self.balanceOf(self.initial_beneficiary), 1000 * UNIT)
-        self.assertEqual(self.transferFeeRate(), UNIT//20)
+        self.assertEqual(self.transferFeeRate(), UNIT // 20)
         self.assertEqual(self.feeAuthority(), self.fee_authority)
 
     def test_getSetOwner(self):
@@ -204,7 +204,7 @@ class TestERC20FeeToken(unittest.TestCase):
 
     def test_getSetTransferFeeRate(self):
         transfer_fee_rate = self.transferFeeRate()
-        new_transfer_fee_rate = transfer_fee_rate + UNIT//20
+        new_transfer_fee_rate = transfer_fee_rate + UNIT // 20
         owner = self.owner()
         fake_owner = W3.eth.accounts[1]
         self.assertNotEqual(owner, fake_owner)
@@ -221,23 +221,18 @@ class TestERC20FeeToken(unittest.TestCase):
 
     def test_getTransferFeeIncurred(self):
         value = 10 * UNIT
-        fee = value * self.transferFeeRate() / UNIT
+        fee = value * self.transferFeeRate() // UNIT
         self.assertEqual(self.transferFeeIncurred(value), fee)
 
-        value = 0 
-        fee = value * self.transferFeeRate() / UNIT
-        self.assertEqual(self.transferFeeIncurred(value), fee)
+        self.assertEqual(self.transferFeeIncurred(0), 0)
 
     def test_getTransferPlusFee(self):
         value = 10 * UNIT
-        fee = value * self.transferFeeRate() / UNIT
+        fee = value * self.transferFeeRate() // UNIT
         total = value + fee
         self.assertEqual(self.transferPlusFee(value), total)
 
-        value = 0
-        fee = value * self.transferFeeRate() / UNIT
-        total = value + fee
-        self.assertEqual(self.transferPlusFee(value), total)
+        self.assertEqual(self.transferPlusFee(0), 0)
 
     def test_transfer(self):
         sender = self.initial_beneficiary
@@ -245,6 +240,7 @@ class TestERC20FeeToken(unittest.TestCase):
 
         receiver = W3.eth.accounts[1]
         receiver_balance = self.balanceOf(receiver)
+        self.assertEqual(receiver_balance, 0)
 
         value = 10 * UNIT
         fee = self.transferFeeIncurred(value)
@@ -252,9 +248,8 @@ class TestERC20FeeToken(unittest.TestCase):
         total_supply = self.totalSupply()
         fee_pool = self.feePool()
 
-        # This should fail becasue receiver has no tokens
+        # This should fail because receiver has no tokens
         assertReverts(self, self.transfer, [receiver, sender, value])
-        self.assertEqual(receiver_balance, 0)
 
         mine_tx(self.transfer(sender, receiver, value))
 
@@ -285,13 +280,15 @@ class TestERC20FeeToken(unittest.TestCase):
 
         # It is also possible to send 0 value transfer from an account with 0 balance
         value = 0
-        no_tokens = W3.eth.accounts[2]
+        no_tokens = W3.eth.accounts[4]
+        self.assertEqual(self.balanceOf(no_tokens), 0)
         fee = self.transferFeeIncurred(value)
         total_supply = self.totalSupply()
         fee_pool = self.feePool()
 
         mine_tx(self.transfer(no_tokens, receiver, value))
 
+        self.assertEqual(self.balanceOf(no_tokens), 0)
         self.assertEqual(self.totalSupply(), total_supply)
         self.assertEqual(self.feePool(), fee_pool)
 
