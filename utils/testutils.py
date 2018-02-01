@@ -1,4 +1,11 @@
-from utils.deployutils import mine_tx
+from utils.deployutils import mine_tx, W3
+
+
+def current_block_time(block_num=None):
+    if block_num is None:
+        block_num = W3.eth.blockNumber
+    return W3.eth.getBlock(block_num)['timestamp']
+
 
 def assertCallReverts(testcase, function):
     with testcase.assertRaises(ValueError) as error:
@@ -6,11 +13,13 @@ def assertCallReverts(testcase, function):
     testcase.assertTrue("revert" in error.exception.args[0]['message'])
     testcase.assertEqual(-32000, error.exception.args[0]['code'])
 
+
 def assertTransactionReverts(testcase, function, caller, gas=5000000):
     with testcase.assertRaises(ValueError) as error:
         mine_tx(function.transact({'from': caller, 'gas': gas}))
     testcase.assertTrue("revert" in error.exception.args[0]['message'])
     testcase.assertEqual(-32000, error.exception.args[0]['code'])
+
 
 def assertReverts(testcase, function, args=[]):
 	with testcase.assertRaises(ValueError) as error:
