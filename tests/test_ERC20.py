@@ -56,33 +56,38 @@ class TestERC20Token(unittest.TestCase):
 
         receiver = W3.eth.accounts[1]
         receiver_balance = self.balanceOf(receiver)
+        self.assertEqual(receiver_balance, 0)
 
         value = 10 * UNIT
         total_supply = self.totalSupply()
 
         # This should fail because receiver has no tokens
         assertReverts(self, self.transfer, [receiver, sender, value])
-        self.assertEqual(receiver_balance, 0)
 
         mine_tx(self.transfer(sender, receiver, value))
-
         self.assertEquals(self.balanceOf(receiver), receiver_balance+value)
         self.assertEquals(self.balanceOf(sender), sender_balance-value)
+
+        # transfers should leave the supply unchanged
         self.assertEquals(self.totalSupply(), total_supply)
 
         value = 1001 * UNIT
-        total_supply = self.totalSupply()
-
         # This should fail because balance < value and balance > totalSupply
         assertReverts(self, self.transfer, [sender, receiver, value])
 
         # 0 value transfers are allowed.
         value = 0
+        pre_sender_balance = self.balanceOf(sender)
+        pre_receiver_balance = self.balanceOf(receiver)
         mine_tx(self.transfer(sender, receiver, value))
+        self.assertEquals(self.balanceOf(receiver), pre_receiver_balance)
+        self.assertEquals(self.balanceOf(sender), pre_sender_balance)
 
         # It is also possible to send 0 value transfer from an account with 0 balance.
         no_tokens = W3.eth.accounts[2]
+        self.assertEquals(self.balanceOf(no_tokens), 0)
         mine_tx(self.transfer(no_tokens, receiver, value))
+        self.assertEquals(self.balanceOf(no_tokens), 0)
 
     def test_approve(self):
         approver = MASTER
