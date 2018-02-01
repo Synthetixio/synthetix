@@ -2,7 +2,7 @@ import unittest
 
 from utils.deployutils import W3, UNIT, MASTER, ETHER
 from utils.deployutils import compile_contracts, attempt_deploy, mine_tx
-from utils.deployutils import take_snapshot, restore_snapshot
+from utils.deployutils import take_snapshot, restore_snapshot, fast_forward
 from utils.testutils import assertReverts, block_time
 
 
@@ -19,6 +19,8 @@ def tearDownModule():
 class TestEtherNomin(unittest.TestCase):
     def setUp(self):
         self.snapshot = take_snapshot()
+        # Reset the price at the start of tests so that it's never stale.
+        mine_tx(self.updatePrice(self.oracle(), self.etherPrice()))
 
     def tearDown(self):
         restore_snapshot(self.snapshot)
@@ -37,6 +39,7 @@ class TestEtherNomin(unittest.TestCase):
         cls.nomin, cls.construction_txr = attempt_deploy(compiled, 'PublicEtherNomin', MASTER,
                                                          [cls.nomin_havven, cls.nomin_oracle, cls.nomin_beneficiary,
                                                           1000 * UNIT, cls.nomin_owner])
+        cls.construction_price_time = cls.nomin.functions.lastPriceUpdate().call()
 
         cls.fake_court, _ = attempt_deploy(compiled, 'FakeCourt', MASTER, [])
         cls.fake_court.setNomin = lambda sender, new_nomin: cls.fake_court.functions.setNomin(new_nomin).transact({'from': sender})
@@ -55,8 +58,8 @@ class TestEtherNomin(unittest.TestCase):
         cls.liquidationTimestamp = lambda self: cls.nomin.functions.liquidationTimestamp().call()
         cls.etherPrice = lambda self: cls.nomin.functions.etherPrice().call()
         cls.isFrozen = lambda self, address: cls.nomin.functions.isFrozen(address).call()
-        cls.lastPriceUpdate = lambda self: cls.nomin.functions.publicLastPriceUpdate().call()
-        cls.stalePeriod = lambda self: cls.nomin.functions.publicStalePeriod().call()
+        cls.lastPriceUpdate = lambda self: cls.nomin.functions.lastPriceUpdate().call()
+        cls.stalePeriod = lambda self: cls.nomin.functions.stalePeriod().call()
 
         cls.setOwner = lambda self, sender, address: cls.nomin.functions.setOwner(address).transact({'from': sender})
         cls.setOracle = lambda self, sender, address: cls.nomin.functions.setOracle(address).transact({'from': sender})
@@ -117,10 +120,10 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.stalePeriod(), 2 * 24 * 60 * 60) # default two days
         self.assertEqual(self.liquidationTimestamp(), 2**256 - 1)
         self.assertEqual(self.liquidationPeriod(), 90 * 24 * 60 * 60) # default ninety days
-        self.assertEqual(self.poolFeeRate(), UNIT / 200) # default 50 basis points
+        self.assertEqual(self.poolFeeRate(), UNIT / 200) # default fifty basis points
         self.assertEqual(self.nominPool(), 0)
         construct_time = block_time(self.construction_txr.blockNumber)
-        self.assertEqual(self.lastPriceUpdate(), construct_time)
+        self.assertEqual(construct_time, self.construction_price_time)
 
         # ERC20FeeToken members
         self.assertEqual(self.name(), "Ether-Backed USD Nomins")
@@ -384,7 +387,22 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.saleProceedsEther(3 * UNIT), 6 * (UNIT - poolFeeRate))
 
     def test_priceIsStale(self):
-        pass
+        oracle = self.oracle()
+
+        mine_tx(self.updatePrice(oracle, UNIT))
+        self.assertFalse(self.priceIsStale())
+        fast_forward(seconds=self.stalePeriod() // 2)
+        self.assertFalse(self.priceIsStale())
+        fast_forward(seconds=self.stalePeriod() // 2 - 10)
+        self.assertFalse(self.priceIsStale())
+        fast_forward(seconds=11)
+        self.assertTrue(self.priceIsStale())
+        fast_forward(seconds=10 * self.stalePeriod())
+        self.assertTrue(self.priceIsStale())
+
+        # Update the price since ganache snapshots don't respect timestamps.
+        mine_tx(self.updatePrice(oracle, UNIT))
+        self.assertFalse(self.priceIsStale())
 
     def test_staleness(self):
         pass

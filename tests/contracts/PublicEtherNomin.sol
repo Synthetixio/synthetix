@@ -13,22 +13,6 @@ contract PublicEtherNomin is EtherNomin {
                               address _owner)
 		EtherNomin(_havven, _oracle, _beneficiary, initialEtherPrice, _owner)
 		public {}
-     
-	function publicLastPriceUpdate()
-		view
-		public
-		returns (uint)
-	{
-		return lastPriceUpdate;
-	}
-
-	function publicStalePeriod()
-		view
-		public
-		returns (uint)
-	{
-    	return stalePeriod;
-	}
 
 	function debugWithdrawAllEther(address recipient)
 		public
