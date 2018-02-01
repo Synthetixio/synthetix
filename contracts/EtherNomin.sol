@@ -135,11 +135,11 @@ contract EtherNomin is ERC20FeeToken {
     uint public etherPrice;
 
     // Last time the price was updated.
-    uint lastPriceUpdate;
+    uint public lastPriceUpdate;
 
     // The period it takes for the price to be considered stale.
     // If the price is stale, functions that require the price are disabled.
-    uint stalePeriod = 2 days;
+    uint public stalePeriod = 2 days;
 
     // The set of addresses that have been frozen by confiscation.
     mapping(address => bool) public isFrozen;
@@ -163,6 +163,7 @@ contract EtherNomin is ERC20FeeToken {
 
         etherPrice = initialEtherPrice;
         lastPriceUpdate = now;
+        PriceUpdated(etherPrice);
     }
 
 
