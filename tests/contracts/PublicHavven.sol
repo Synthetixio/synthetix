@@ -174,6 +174,14 @@ contract PublicHavven is Havven {
         return lastFeePeriodStartTime;
     }
 
+    function _penultimateFeePeriodStartTime()
+        public
+        view
+        returns (uint)
+    {
+        return penultimateFeePeriodStartTime;
+    }
+
     function _minFeePeriodDurationSeconds()
         public
         view

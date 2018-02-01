@@ -2,7 +2,7 @@ import unittest
 import time
 from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mine_txs, mine_tx, \
     UNIT, MASTER, DUMMY, to_seconds, fast_forward, fresh_account, take_snapshot, restore_snapshot
-from utils.testutils import assertFunctionReverts, current_block_time
+from utils.testutils import assertFunctionReverts, current_block_time, assertClose
 
 SOLIDITY_SOURCES = ["tests/contracts/PublicHavven.sol", "contracts/EtherNomin.sol",
                     "contracts/Court.sol"]
@@ -45,6 +45,11 @@ class TestHavven(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+
+        cls.assertClose = assertClose
+        cls.assertFunctionReverts = assertFunctionReverts
+
+
         cls.havven, cls.nomin, cls.court, cls.construction_block = deploy_public_havven()
 
         # INHERITED
@@ -83,12 +88,14 @@ class TestHavven(unittest.TestCase):
 
         # feePeriodStartTime
         cls.feePeriodStartTime = lambda self: self.havven.functions.feePeriodStartTime().call()
+        # lastFeePeriodDuration
+        cls.lastFeePeriodStartTime = lambda self: self.havven.functions._lastFeePeriodStartTime().call()
+        # penultimateFeePeriodStartTime
+        cls.penultimateFeePeriodStartTime = lambda self: self.havven.functions._penultimateFeePeriodStartTime().call()
         # targetFeePeriodDurationSeconds
         cls.targetFeePeriodDurationSeconds = lambda self: self.havven.functions.targetFeePeriodDurationSeconds().call()
         # minFeePeriodDurationSeconds
         cls.minFeePeriodDurationSeconds = lambda self: self.havven.functions._minFeePeriodDurationSeconds().call()
-        # lastFeePeriodDuration
-        cls.lastFeePeriodDuration = lambda self: self.havven.functions._lastFeePeriodDuration().call()
         # lastFeesCollected
         cls.lastFeesCollected = lambda self: self.havven.functions.lastFeesCollected().call()
 
@@ -107,7 +114,7 @@ class TestHavven(unittest.TestCase):
         # setCourt
         cls.setCourt = lambda self, sender, addr: mine_tx(self.havven.functions.setCourt(addr).transact({'from': sender}))
         # setTargetFeePeriod
-        cls.setTargetFeePeriod = lambda self, sender, dur: mine_tx(self.havven.functions.setTargetFeePeriod(dur).transact({'from': sender}))
+        cls.setTargetFeePeriodDuration = lambda self, sender, dur: mine_tx(self.havven.functions.setTargetFeePeriodDuration(dur).transact({'from': sender}))
 
         #
         # VIEWS
@@ -166,7 +173,7 @@ class TestHavven(unittest.TestCase):
 
     def test_change_invalid_owner(self):
         invalid_account = DUMMY
-        assertFunctionReverts(self, self.setOwner, invalid_account, invalid_account)
+        self.assertFunctionReverts(self.setOwner, invalid_account, invalid_account)
 
     ###
     # Test inherited ERC20Token
@@ -204,7 +211,8 @@ class TestHavven(unittest.TestCase):
         self.assertEquals(self.targetFeePeriodDurationSeconds(), to_seconds(weeks=4))
         self.assertEquals(self.minFeePeriodDurationSeconds(), to_seconds(days=1))
         self.assertEquals(self.lastFeesCollected(), 0)
-        self.assertEquals(self.lastFeePeriodDuration(), 1)
+        self.assertEquals(self.lastFeePeriodStartTime(), 2)
+        self.assertEquals(self.penultimateFeePeriodStartTime(), 1)
         self.assertEquals(self.get_nomin(), self.nomin.address)
         self.assertEquals(self.get_court(), self.court.address)
 
@@ -240,77 +248,181 @@ class TestHavven(unittest.TestCase):
         self.assertEquals(self.balanceOf(alice), 0)
         fast_forward(delay)
         self.adjustFeeEntitlement(alice, alice, self.balanceOf(alice))
-        self.assertEquals(
-            self.currentBalanceSum(alice),
-            balance_sum
+        self.assertClose(
+            self.currentBalanceSum(alice),balance_sum
         )
 
     # lastAverageBalance
     def test_lastAverageBalance(self):
         # set the block time to be at least 30seconds away from the end of the fee_period
         fee_period = self.targetFeePeriodDurationSeconds()
-        time_remaining = current_block_time() - self.feePeriodStartTime()
+        time_remaining = self.targetFeePeriodDurationSeconds() - current_block_time() + self.feePeriodStartTime()
         if time_remaining < 30:
             fast_forward(50)
-            time_remaining = current_block_time() - self.feePeriodStartTime()
+            time_remaining = self.targetFeePeriodDurationSeconds() - current_block_time() + self.feePeriodStartTime()
 
-        # fast forward to halfway through the next block
-        delay = time_remaining + int(fee_period/2)
+        # fast forward next block with some extra padding
+        delay = time_remaining + 100
         alice = fresh_account()
         self.assertEquals(self.balanceOf(alice), 0)
 
         start_amt = UNIT * 50
+
         self.endow(MASTER, alice, start_amt)
         self.assertEquals(self.balanceOf(alice), start_amt)
         self.assertEquals(self.currentBalanceSum(alice), 0)
         self.assertEquals(self.lastAverageBalance(alice), 0)
-        start_time = current_block_time()
         fast_forward(delay)
+        self._postCheckFeePeriodRollover(DUMMY)
+        fast_forward(fee_period//2)
+
         self.adjustFeeEntitlement(alice, alice, self.balanceOf(alice))
-        end_time = current_block_time()
-        last_duration = self.lastFeePeriodDuration()
-        balance_sum = (end_time-last_duration-start_time)*start_amt
-        self.assertAlmostEqual(
-            balance_sum/self.currentBalanceSum(alice),
-            1,
-            places=3
+
+        duration_since_rollover = current_block_time() - self.feePeriodStartTime()
+        balance_sum = duration_since_rollover*start_amt
+
+        actual = self.currentBalanceSum(alice)
+        expected = balance_sum
+        self.assertClose(
+            actual, expected
         )
 
-        self.assertAlmostEqual(
-            time_remaining*start_amt,
-            self.lastAverageBalance(alice),
-            places=4
+        actual = self.lastAverageBalance(alice)
+        expected = (start_amt*delay)//(self.feePeriodStartTime() - self.lastFeePeriodStartTime())
+        self.assertClose(
+            actual, expected
         )
 
     # penultimateAverageBalance
+    def test_penultimateAverageBalance(self):
+        # start a new fee period
+        alice = fresh_account()
+        fee_period = self.targetFeePeriodDurationSeconds()
+        fast_forward(fee_period*2)
+        self._postCheckFeePeriodRollover(DUMMY)
 
-    # lastTransferTimestamp
-    # hasWithdrawnLastPeriodFees
+        # skip to halfway through it
+        delay = fee_period//2
+        fast_forward(delay)
+
+        self.assertEquals(self.balanceOf(alice), 0)
+
+        start_amt = UNIT * 50
+
+        self.endow(MASTER, alice, start_amt)
+        inital_transfer_time = self.lastTransferTimestamp(alice)
+        self.assertEquals(self.balanceOf(alice), start_amt)
+        self.assertEquals(self.currentBalanceSum(alice), 0)
+        self.assertEquals(self.lastAverageBalance(alice), 0)
+
+        # rollover two fee periods without alice doing anything
+        fast_forward(fee_period*2)
+        self._postCheckFeePeriodRollover(DUMMY)
+
+        fast_forward(fee_period*2)
+        self._postCheckFeePeriodRollover(DUMMY)
+
+        # adjust alice's fee entitlement
+        self.adjustFeeEntitlement(alice, alice, self.balanceOf(alice))
+
+        # expected currentBalance sum is balance*(time since start of period)
+        actual = self.currentBalanceSum(alice)
+        expected = (current_block_time() - self.feePeriodStartTime())*start_amt
+        self.assertClose(
+            actual, expected
+        )
+
+        last_period_delay = (self.feePeriodStartTime() - self.lastFeePeriodStartTime())
+
+        actual = self.lastAverageBalance(alice)
+        expected = (start_amt*last_period_delay)//last_period_delay
+        self.assertClose(
+            actual, expected,
+            msg='last:'
+        )
+
+        delay_from_transfer = self.lastFeePeriodStartTime() - inital_transfer_time
+        penultimate_period_duration = self.lastFeePeriodStartTime() - self.penultimateFeePeriodStartTime()
+
+        actual = self.penultimateAverageBalance(alice)
+        expected = (start_amt*delay_from_transfer)//penultimate_period_duration
+        self.assertClose(
+            actual, expected,
+            msg='penultimate:'
+        )
+
+    # lastTransferTimestamp - tested above
+    # hasWithdrawnLastPeriodFees TODO
 
     ###
     # Contract variables
     ###
-    # feePeriodStartTime
-    # targetFeePeriodDurationSeconds
-    # minFeePeriodDurationSeconds
-    # lastFeePeriodDuration
-    # lastFeesCollected
+    # feePeriodStartTime - tested above
+    # targetFeePeriodDurationSeconds - tested above
+    # minFeePeriodDurationSeconds - constant, checked in constructor test
+    # lastFeesCollected TODO
 
     ###
     # Vote Mappings
     ###
-    # vote
-    # voteTarget
+    # vote TODO
+    # voteTarget TODO
 
     ###
     # Functions
     ###
 
     # setNomin
+    def test_SetNomin(self):
+        alice = fresh_account()
+        self.setNomin(MASTER, alice)
+        self.assertEqual(self.get_nomin(), alice)
+
+    def test_invalidSetNomin(self):
+        alice = fresh_account()
+        assertFunctionReverts(self, self.setNomin, alice, alice)
+
     # setCourt
+    def test_SetCourt(self):
+        alice = fresh_account()
+        self.setCourt(MASTER, alice)
+        self.assertEqual(self.get_court(), alice)
+
+    def test_invalidSetCourt(self):
+        alice = fresh_account()
+        assertFunctionReverts(self, self.setCourt, alice, alice)
+
     # setTargetFeePeriod
-    # hasVoted
+    def test_setTargetFeePeriod(self):
+        self.setTargetFeePeriodDuration(MASTER, to_seconds(weeks=100))
+        self.assertEqual(
+            self.targetFeePeriodDurationSeconds(),
+            to_seconds(weeks=100)
+        )
+
+    def test_setTargetFeePeriod_max(self):
+        self.setTargetFeePeriodDuration(MASTER, 2**256 - 1)
+        self.assertEqual(
+            self.targetFeePeriodDurationSeconds(),
+            2 ** 256 - 1
+        )
+
+    def test_setTargetFeePeriod_minimal(self):
+        self.setTargetFeePeriodDuration(MASTER, self.minFeePeriodDurationSeconds())
+        self.assertEqual(
+            self.targetFeePeriodDurationSeconds(),
+            self.minFeePeriodDurationSeconds()
+        )
+
+    def test_setTargetFeePeriod_invalid_below_min(self):
+        assertFunctionReverts(self, self.setTargetFeePeriodDuration, MASTER, self.minFeePeriodDurationSeconds()-1)
+
+    def test_setTargetFeePeriod_invalid_0(self):
+        assertFunctionReverts(self, self.setTargetFeePeriodDuration, MASTER, self.minFeePeriodDurationSeconds()-1)
+
+    # hasVoted TODO
     # endow
+
     # transfer
     # transferFrom
     # adjustFeeEntitlement
