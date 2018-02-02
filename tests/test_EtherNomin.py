@@ -831,14 +831,16 @@ class TestEtherNomin(unittest.TestCase):
 
     def test_isLiquidating(self):
         self.assertFalse(self.isLiquidating())
-        mine_tx(self.forceLiquidation(owner))
+        mine_tx(self.forceLiquidation(self.owner()))
         self.assertTrue(self.isLiquidating())
 
     def test_forceLiquidation(self):
-        # non-owners should not be able to force liquidation.
-        self.assertReverts(self.forceLiquidation, W3.eth.accounts[5])
-
         owner = self.owner()
+        # non-owners should not be able to force liquidation.
+        non_owner = W3.eth.accounts[6]
+        self.assertNotEqual(owner, non_owner)
+        self.assertReverts(self.forceLiquidation, non_owner)
+
         self.assertFalse(self.isLiquidating())
         mine_tx(self.forceLiquidation(owner))
         self.assertTrue(self.isLiquidating())
@@ -846,14 +848,31 @@ class TestEtherNomin(unittest.TestCase):
         # This call should not work if liquidation has begun.
         self.assertReverts(self.forceLiquidation, owner)
 
-    def test_liquidation(self):
-        pass
-
     def test_autoLiquidation(self):
         pass
 
     def test_extendLiquidationPeriod(self):
-        pass
+        owner = self.owner()
+
+        # Only owner should be able to call this.
+        non_owner = W3.eth.accounts[6]
+        self.assertNotEqual(owner, non_owner)
+        self.assertReverts(self.forceLiquidation, non_owner)
+
+        ninetyDays = 90 * 24 * 60 * 60
+        oneEightyDays = 180 * 24 * 60 * 60
+
+        mine_tx(self.forceLiquidation(owner))
+        self.assertEqual(self.liquidationPeriod(), ninetyDays) # Default 90 days.
+        self.assertReverts(self.extendLiquidationPeriod, owner, 12309198139871)
+        mine_tx(self.extendLiquidationPeriod(owner, 1))
+        self.assertEqual(self.liquidationPeriod(), ninetyDays + 1)
+        mine_tx(self.extendLiquidationPeriod(owner, 12345))
+        self.assertEqual(self.liquidationPeriod(), ninetyDays + 12346)
+        mine_tx(self.extendLiquidationPeriod(owner, ninetyDays - 12346))
+        self.assertEqual(self.liquidationPeriod(), oneEightyDays)
+        self.assertReverts(self.extendLiquidationPeriod, owner, 1)
+        self.assertReverts(self.extendLiquidationPeriod, owner, 12309198139871)
 
     def test_terminateLiquidation(self):
         pass
