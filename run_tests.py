@@ -8,10 +8,11 @@ run_test = {
     'Deploy': True,
     'ERC20Tokens': True,
     'EtherNomin': True,
+    'FeeCollection': True,
     'Havven': True,
     'Owned': True,
     'SafeDecimalMath': True,
-    'Upgrade': True
+    'Upgrade': True,
 }
 
 
@@ -21,6 +22,7 @@ def refresh_test_settings():
         for test_name in run_test:
             f.write(f"    '{test_name}': True,\n")
         f.write('}\n')
+
 
 try:
     from test_settings import run_test as r
@@ -45,6 +47,8 @@ if __name__ == '__main__':
         test_suite.addTests(loader.loadTestsFromModule(tests.test_EtherNomin))
     if run_test['Havven']:
         test_suite.addTests(loader.loadTestsFromModule(tests.test_Havven))
+    if run_test['FeeCollection']:
+        test_suite.addTests(loader.loadTestsFromModule(tests.test_FeeCollection))
     if run_test['Owned']:
         test_suite.addTests(loader.loadTestsFromModule(tests.test_Owned))
     if run_test['SafeDecimalMath']:

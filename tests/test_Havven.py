@@ -327,7 +327,8 @@ class TestHavven(unittest.TestCase):
         )
 
     # lastTransferTimestamp - tested above
-    # hasWithdrawnLastPeriodFees TODO
+    # hasWithdrawnLastPeriodFees - tested in test_FeeCollection.py
+    # lastFeesCollected - tested in test_FeeCollection.py
 
     ###
     # Contract variables
@@ -335,7 +336,6 @@ class TestHavven(unittest.TestCase):
     # feePeriodStartTime - tested above
     # targetFeePeriodDurationSeconds - tested above
     # minFeePeriodDurationSeconds - constant, checked in constructor test
-    # lastFeesCollected TODO
 
     ###
     # Functions
@@ -427,10 +427,10 @@ class TestHavven(unittest.TestCase):
 
     # transfer - same as test_ERC20
     def test_transfer(self):
-        sender = MASTER
+        sender, receiver, no_tokens = fresh_accounts(3)
+        self.endow(MASTER, sender, 50 * UNIT)
         sender_balance = self.balanceOf(sender)
 
-        receiver = W3.eth.accounts[1]
         receiver_balance = self.balanceOf(receiver)
         self.assertEqual(receiver_balance, 0)
 
@@ -440,7 +440,7 @@ class TestHavven(unittest.TestCase):
         # This should fail because receiver has no tokens
         self.assertReverts(self.transfer, receiver, sender, value)
 
-        mine_tx(self.transfer(sender, receiver, value))
+        self.transfer(sender, receiver, value)
         self.assertEqual(self.balanceOf(receiver), receiver_balance+value)
         self.assertEqual(self.balanceOf(sender), sender_balance-value)
 
@@ -455,25 +455,67 @@ class TestHavven(unittest.TestCase):
         value = 0
         pre_sender_balance = self.balanceOf(sender)
         pre_receiver_balance = self.balanceOf(receiver)
-        mine_tx(self.transfer(sender, receiver, value))
+        self.transfer(sender, receiver, value)
         self.assertEqual(self.balanceOf(receiver), pre_receiver_balance)
         self.assertEqual(self.balanceOf(sender), pre_sender_balance)
 
         # It is also possible to send 0 value transfer from an account with 0 balance.
-        no_tokens = W3.eth.accounts[2]
         self.assertEqual(self.balanceOf(no_tokens), 0)
-        mine_tx(self.transfer(no_tokens, receiver, value))
+        self.transfer(no_tokens, receiver, value)
         self.assertEqual(self.balanceOf(no_tokens), 0)
-        
+
     # transferFrom
-    # adjustFeeEntitlement
-    # rolloverFee
-    # withdrawFeeEntitlement
+
+    def test_transferFrom(self):
+        approver, spender, receiver, no_tokens = fresh_accounts(4)
+
+        self.endow(MASTER, approver, 50 * UNIT)
+
+        approver_balance = self.balanceOf(approver)
+        spender_balance = self.balanceOf(spender)
+        receiver_balance = self.balanceOf(receiver)
+
+        value = 10 * UNIT
+        total_supply = self.totalSupply()
+
+        # This fails because there has been no approval yet
+        self.assertReverts(self.transferFrom, spender, approver, receiver, value)
+
+        self.approve(approver, spender, 2 * value)
+        self.assertEqual(self.allowance(approver, spender), 2 * value)
+
+        self.assertReverts(self.transferFrom, spender, approver, receiver, 2 * value + 1)
+        self.transferFrom(spender, approver, receiver, value)
+
+        self.assertEqual(self.balanceOf(approver), approver_balance - value)
+        self.assertEqual(self.balanceOf(spender), spender_balance)
+        self.assertEqual(self.balanceOf(receiver), receiver_balance + value)
+        self.assertEqual(self.allowance(approver, spender), value)
+        self.assertEqual(self.totalSupply(), total_supply)
+
+        # Empty the account
+        self.transferFrom(spender, approver, receiver, value)
+
+        # This account has no tokens
+        approver_balance = self.balanceOf(no_tokens)
+        self.assertEqual(approver_balance, 0)
+        self.assertEqual(self.allowance(no_tokens, spender), 0)
+
+        self.approve(no_tokens, spender, value)
+        self.assertEqual(self.allowance(no_tokens, spender), value)
+
+        # This should fail because the approver has no tokens.
+        self.assertReverts(self.transferFrom, spender, no_tokens, receiver, value)
+
+    # adjustFeeEntitlement - tested above
+    # rolloverFee - tested above, indirectly
+
+    # withdrawFeeEntitlement - tested in test_FeeCollection.py
 
     ###
     # Modifiers
     ###
-    # postCheckFeePeriodRollover -
+    # postCheckFeePeriodRollover - tested above
 
 
 if __name__ == '__main__':
