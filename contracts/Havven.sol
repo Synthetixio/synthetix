@@ -155,12 +155,10 @@ contract Havven is ERC20Token, Owned {
     // range: naturals
     mapping(address => uint) lastTransferTimestamp;
 
-    mapping(address => bool) hasWithdrawnLastPeriodFees;
-
     // The time the current fee period began.
     uint public feePeriodStartTime = 3;
     // The actual start of the last fee period (seconds).
-    // This, and the penultimate fee period can be set to any value
+    // This, and the penultimate fee period can be initially set to any value
     //   0 < val < now, as everyone's individual lastTransferTime will be 0
     //   and as such, their lastAvgBal/penultimateAvgBal will be set to that value
     //   apart from the contract, which will have totalSupply
@@ -176,6 +174,8 @@ contract Havven is ERC20Token, Owned {
     // The quantity of nomins that were in the fee pot at the time
     // of the last fee rollover (feePeriodStartTime).
     uint public lastFeesCollected;
+
+    mapping(address => bool) hasWithdrawnLastPeriodFees;
 
     EtherNomin public nomin;
 
