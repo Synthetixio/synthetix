@@ -37,6 +37,9 @@ class TestCourt(unittest.TestCase):
 	"""
 	@classmethod
 	def setUpClass(cls):
+        cls.assertClose = assertClose
+        cls.assertReverts = assertReverts
+
 		cls.havven, cls.nomin, cls.court = deploy_public_court()
 
 		# Inherited
@@ -126,7 +129,7 @@ class TestCourt(unittest.TestCase):
 	def test_getSetOwner(self):
 		owner = MASTER
 		# Only owner can setOwner
-		assertReverts(self, self.setOwner, [DUMMY, DUMMY])
+		self.assertReverts(self.setOwner, DUMMY, DUMMY)
 
 		mine_tx(self.setOwner(owner, DUMMY))
 		self.assertEqual(self.owner(), DUMMY)
@@ -135,7 +138,7 @@ class TestCourt(unittest.TestCase):
 		owner = MASTER
 		new_min_standing_balance = 200 * UNIT
 		# Only owner can set minStandingBalance
-		assertReverts(self, self.setMinStandingBalance, [DUMMY, new_min_standing_balance])
+		self.assertReverts(self.setMinStandingBalance, DUMMY, new_min_standing_balance)
 
 		mine_tx(self.setMinStandingBalance(owner, new_min_standing_balance))
 		self.assertEqual(self.minStandingBalance(), new_min_standing_balance)
@@ -144,18 +147,18 @@ class TestCourt(unittest.TestCase):
 		owner = MASTER
 		new_voting_period = 2 * self.weeks
 		# Only owner can set votingPeriod
-		assertReverts(self, self.setVotingPeriod, [DUMMY, new_voting_period])
+		self.assertReverts(self.setVotingPeriod, DUMMY, new_voting_period)
 
 		mine_tx(self.setVotingPeriod(owner, new_voting_period))
 		self.assertEqual(self.votingPeriod(), new_voting_period)
 
 		# Voting period must be > than minVotingPeriod (~ currently 3 days)
 		bad_voting_period = 3 * self.days - 1
-		assertReverts(self, self.setVotingPeriod, [owner, bad_voting_period])
+		self.assertReverts(self.setVotingPeriod, owner, bad_voting_period)
 
 		# Voting period must be < than maxVotingPeriod (~ currently 4 weeks)
 		bad_voting_period = 4 * self.weeks + 1
-		assertReverts(self, self.setVotingPeriod, [owner, bad_voting_period])
+		self.assertReverts(self.setVotingPeriod, owner, bad_voting_period)
 
 		# Voting period must be <= the havven target fee period duration
 		fee_period_duration = 2 * self.weeks
@@ -164,50 +167,50 @@ class TestCourt(unittest.TestCase):
 
 		# This should fail because even though it is within min and max voting periods, it is greater than the fee period duration.
 		bad_voting_period = 2 * self.weeks + 1
-		assertReverts(self, self.setVotingPeriod, [owner, bad_voting_period])
+		self.assertReverts(self.setVotingPeriod, owner, bad_voting_period)
 
 	def test_getSetConfirmationPeriod(self):
 		owner = MASTER
 		new_confirmation_period = 2 * self.weeks
 		# Only the owner can set confirmationPeriod
-		assertReverts(self, self.setConfirmationPeriod, [DUMMY, new_confirmation_period])
+		self.assertReverts(self.setConfirmationPeriod, DUMMY, new_confirmation_period)
 
 		mine_tx(self.setConfirmationPeriod(owner, new_confirmation_period))
 		self.assertEqual(self.confirmationPeriod(), new_confirmation_period)
 
 		# Confirmation period must be greater than 1 day
 		bad_confirmation_period = 1 * self.days - 1
-		assertReverts(self, self.setConfirmationPeriod, [owner, bad_confirmation_period])
+		self.assertReverts(self.setConfirmationPeriod, owner, bad_confirmation_period)
 
 		# Confirmation period must be less than 2 weeks
 		bad_confirmation_period = 3 * self.weeks + 1
-		assertReverts(self, self.setConfirmationPeriod, [owner, bad_confirmation_period])
+		self.assertReverts(self.setConfirmationPeriod, owner, bad_confirmation_period)
 
 	def test_getSetRequiredParticipation(self):
 		owner = MASTER
 		new_required_participation = 5 * UNIT // 10
 		# Only owner can set requiredParticipation
-		assertReverts(self, self.setRequiredParticipation, [DUMMY, new_required_participation])
+		self.assertReverts(self.setRequiredParticipation, DUMMY, new_required_participation)
 
 		mine_tx(self.setRequiredParticipation(owner, new_required_participation))
 		self.assertEqual(self.requiredParticipation(), new_required_participation)
 
 		# Required participation must not be lower than 10%
 		bad_required_participation = UNIT // 10 - 1
-		assertReverts(self, self.setRequiredParticipation, [owner, bad_required_participation])
+		self.assertReverts(self.setRequiredParticipation, owner, bad_required_participation)
 
 	def test_getSetRequiredMajority(self):
 		owner = MASTER
 		new_required_majority = (3 * UNIT) // 4 
 		# Only owner can set requiredMajority
-		assertReverts(self, self.setRequiredMajority, [DUMMY, new_required_majority])
+		self.assertReverts(self.setRequiredMajority, DUMMY, new_required_majority)
 
 		mine_tx(self.setRequiredMajority(owner, new_required_majority))
 		self.assertEqual(self.requiredMajority(), new_required_majority)
 
 		# Required majority must be no lower than 50%
 		bad_required_majority = UNIT // 2 - 1
-		assertReverts(self, self.setRequiredMajority, [owner, bad_required_majority])
+		self.assertReverts(self.setRequiredMajority, owner, bad_required_majority)
 
 	def test_hasVoted(self):
 		owner = MASTER
@@ -284,14 +287,14 @@ class TestCourt(unittest.TestCase):
 		self.havvenEndow(owner, sufficient_standing, 100 * UNIT)
 
 		# Must have at least 100 havvens to begin a confiscsation action
-		assertReverts(self, self.beginConfiscationAction, [insufficient_standing, suspect])
+		self.assertReverts(self.beginConfiscationAction, insufficient_standing, suspect)
 
 		mine_tx(self.beginConfiscationAction(sufficient_standing, suspect))
 
 		self.assertTrue(self.voting(suspect))
 
 		# Cannot open multiple confiscation actions on one suspect.
-		assertReverts(self, self.beginConfiscationAction, [owner, suspect])
+		self.assertReverts(self.beginConfiscationAction, owner, suspect)
 
 		# Cannot open a vote on an account that has already been frozen.
 		# TODO
@@ -309,7 +312,7 @@ class TestCourt(unittest.TestCase):
 		self.assertEqual(self.havvenBalance(voter), 1000)
 
 		# Cannot vote unless there is a confiscation action
-		assertReverts(self, self.voteFor, [voter, suspect])
+		self.assertReverts(self.voteFor, voter, suspect)
 
 		# Begin a confiscation action against the suspect
 		mine_tx(self.beginConfiscationAction(owner, suspect))
@@ -328,7 +331,7 @@ class TestCourt(unittest.TestCase):
 
 		# Another confiscation action is opened, our voter should not be able to vote in more than one action at a time.
 		mine_tx(self.beginConfiscationAction(owner, other_suspect))
-		assertReverts(self, self.voteFor, [voter, other_suspect])
+		self.assertReverts(self.voteFor, voter, other_suspect)
 
 	def test_voteAgainst(self):
 		owner = MASTER
@@ -343,7 +346,7 @@ class TestCourt(unittest.TestCase):
 		self.assertEqual(self.havvenBalance(voter), 1000)
 
 		# Cannot vote unless there is a confiscation action
-		assertReverts(self, self.voteAgainst, [voter, suspect])
+		self.assertReverts(self.voteAgainst, voter, suspect)
 
 		# Begin a confiscation action against the suspect
 		mine_tx(self.beginConfiscationAction(owner, suspect))
@@ -362,7 +365,7 @@ class TestCourt(unittest.TestCase):
 
 		# Another confiscation action is opened, our voter should not be able to vote in more than one action at a time.
 		mine_tx(self.beginConfiscationAction(owner, other_suspect))
-		assertReverts(self, self.voteAgainst, [voter, other_suspect])
+		self.assertReverts(self.voteAgainst, voter, other_suspect)
 
 	def test_cancelVote(self):
 		owner = MASTER
@@ -383,7 +386,7 @@ class TestCourt(unittest.TestCase):
 		self.assertEqual(self.havvenBalance(voter), 1000)
 
 		# Cannot vote unless there is a confiscation action
-		assertReverts(self, self.voteFor, [voter, suspect])
+		self.assertReverts(self.voteFor, voter, suspect)
 
 		# Begin a confiscation action against the suspect
 		mine_tx(self.beginConfiscationAction(owner, suspect))
@@ -407,11 +410,11 @@ class TestCourt(unittest.TestCase):
 		acquitted = W3.eth.accounts[3]	
 
 		# Cannot veto when there is no vote in progress
-		assertReverts(self, self.veto, [owner, acquitted])
+		self.assertReverts(self.veto, owner, acquitted)
 
 		mine_tx(self.beginConfiscationAction(owner, acquitted))
 		# Cannot veto unless you are the owner
-		assertReverts(self, self.veto, [not_authorised, acquitted])
+		self.assertReverts(self.veto, not_authorised, acquitted)
 
 		mine_tx(self.veto(owner, acquitted))
 		# Suspect should be back in the waiting stage
