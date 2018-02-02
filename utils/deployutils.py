@@ -28,6 +28,8 @@ last_accessed_account = 1
 def fresh_account():
     """Return first account after DUMMY"""
     try:
+        global last_accessed_account 
+        last_accessed_account += 1
         return W3.eth.accounts[last_accessed_account+1]
     except KeyError:
         raise Exception("""W3.eth.accounts doesn't contain enough accounts,
