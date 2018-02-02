@@ -242,24 +242,6 @@ contract EtherNomin is ERC20FeeToken {
         return fiatValue(this.balance);
     }
 
-    /* The same as fiatValue(), but without the stale price check. */
-    function fiatValueAllowStale(uint eth) 
-        internal
-        view
-        returns (uint)
-    {
-        return safeDecMul(eth, etherPrice);
-    }
-
-    /* The same as fiatBalance(), but without the stale price check. */
-    function fiatBalanceAllowStale()
-        internal
-        view
-        returns (uint)
-    {
-        return fiatValueAllowStale(this.balance);
-    }
-
     /* Return the equivalent ether value of the given quantity
      * of fiat at the current price.
      * Exceptional conditions:
@@ -268,6 +250,15 @@ contract EtherNomin is ERC20FeeToken {
         public
         view
         priceNotStale
+        returns (uint)
+    {
+        return safeDecDiv(fiat, etherPrice);
+    }
+
+    /* The same as etherValue(), but without the stale price check. */
+    function etherValueAllowStale(uint fiat) 
+        internal
+        view
         returns (uint)
     {
         return safeDecDiv(fiat, etherPrice);
@@ -334,6 +325,15 @@ contract EtherNomin is ERC20FeeToken {
     {
         // Price staleness check occurs inside the call to etherValue.
         return etherValue(saleProceedsFiat(n));
+    }
+
+    /* The same as saleProceedsEther(), but without the stale price check. */
+    function saleProceedsEtherAllowStale(uint n)
+        internal
+        view
+        returns (uint)
+    {
+        return etherValueAllowStale(saleProceedsFiat(n));
     }
 
     /* True iff the current block timestamp is later than the time
@@ -466,19 +466,19 @@ contract EtherNomin is ERC20FeeToken {
         public
         postCheckAutoLiquidate
     {
-        uint proceeds = saleProceedsEther(n);
-        // Price staleness check occurs inside the call to fiatBalance,
-        // but allow people to sell their nomins back to the system regardless
-        // if we're in liquidation.
-        // The balance requirement should be enforced in any case,
-        // since failure should entail transferring more ether than
-        // is in the contract, but in addition to staleness checking,
-        // REVERT is more generous than THROW.
+
+        // Price staleness check occurs inside the call to saleProceedsEther,
+        // but we allow people to sell their nomins back to the system
+        // if we're in liquidation, regardless.
+        uint proceeds;
         if (isLiquidating()) {
-            require(fiatBalanceAllowStale() >= proceeds);
+            proceeds = saleProceedsEtherAllowStale(n);
         } else {
-            require(fiatBalance() >= proceeds);
+            proceeds = saleProceedsEther(n);
         }
+
+        require(this.balance >= proceeds);
+
         // sub requires that the balance is greater than n
         balanceOf[msg.sender] = safeSub(balanceOf[msg.sender], n);
         nominPool = safeAdd(nominPool, n);
