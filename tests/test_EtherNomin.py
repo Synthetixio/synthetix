@@ -3,7 +3,7 @@ import unittest
 from utils.deployutils import W3, UNIT, MASTER, ETHER
 from utils.deployutils import compile_contracts, attempt_deploy, mine_tx
 from utils.deployutils import take_snapshot, restore_snapshot, fast_forward
-from utils.testutils import assertReverts, block_time
+from utils.testutils import assertReverts, block_time, send_value
 
 
 ETHERNOMIN_SOURCE = "tests/contracts/PublicEtherNomin.sol"
@@ -28,8 +28,6 @@ class TestEtherNomin(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.assertReverts = assertReverts
-
-        cls.sendValue = lambda self, sender, recipient, value: mine_tx(W3.eth.sendTransaction({'from': sender, 'to': recipient, 'value': value}))
 
         compiled = compile_contracts([ETHERNOMIN_SOURCE, FAKECOURT_SOURCE],
                                      remappings=['""=contracts'])
@@ -267,13 +265,13 @@ class TestEtherNomin(unittest.TestCase):
         oracle = self.oracle()
         pre_price = self.etherPrice()
 
-        self.sendValue(owner, self.nomin.address, ETHER)
+        send_value(owner, self.nomin.address, ETHER)
         self.assertEqual(self.fiatBalance(), pre_price)
         self.updatePrice(oracle, UNIT // 10**12)
         self.assertEqual(self.fiatBalance(), UNIT // 10**12)
         self.updatePrice(oracle, 300 * UNIT)
         self.assertEqual(self.fiatBalance(), 300 * UNIT)
-        self.sendValue(owner, self.nomin.address, ETHER)
+        send_value(owner, self.nomin.address, ETHER)
         self.assertEqual(self.fiatBalance(), 600 * UNIT)
 
     def test_etherValue(self):
@@ -317,7 +315,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.collateralisationRatio(), UNIT)
 
         # Now double the ether in the contract to 2.
-        self.sendValue(owner, self.nomin.address, 2 * ETHER)
+        send_value(owner, self.nomin.address, 2 * ETHER)
         self.assertEqual(self.collateralisationRatio(), 2 * UNIT)
 
     def test_poolFeeIncurred(self):
@@ -895,7 +893,7 @@ class TestEtherNomin(unittest.TestCase):
         self.updatePrice(self.oracle(), UNIT)
         self.issue(owner, 10 * UNIT, 20 * ETHER)
         ethercost = self.purchaseCostEther(10 * UNIT)
-        self.sendValue(owner, target, ethercost)
+        send_value(owner, target, ethercost)
         self.buy(target, 10 * UNIT, ethercost)
         self.assertEqual(self.balanceOf(target), 10 * UNIT)
 
@@ -952,7 +950,7 @@ class TestEtherNomin(unittest.TestCase):
         self.debugWithdrawAllEther(owner, owner)
         self.debugEmptyFeePool(owner)
         self.assertEqual(W3.eth.getBalance(self.nomin.address), 0)
-        self.sendValue(owner, self.nomin.address, ETHER)
+        send_value(owner, self.nomin.address, ETHER)
         self.assertEqual(W3.eth.getBalance(self.nomin.address), ETHER)
 
     def test_scenario(self):
