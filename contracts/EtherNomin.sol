@@ -354,6 +354,20 @@ contract EtherNomin is ERC20FeeToken {
         return liquidationTimestamp <= now;
     }
 
+    /* True if the contract is self-destructible. Since the
+     * contract is only destructible after the liquidationPeriod
+     * has elapsed, a fortiori canSelfDestruct() implies isLiquidating().
+     */
+    function canSelfDestruct()
+        public
+        view
+        returns (bool)
+    {
+        // Not being in liquidation implies the timestamp is uint max, so it would roll over.
+        // We need to check whether we're in liquidation first.
+        return isLiquidating() && (liquidationTimestamp + liquidationPeriod < now);
+    }
+
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
@@ -547,8 +561,7 @@ contract EtherNomin is ERC20FeeToken {
         public
         onlyOwner
     {
-        require(isLiquidating() &&
-                liquidationTimestamp + liquidationPeriod < now);
+        require(canSelfDestruct());
         SelfDestructed();
         selfdestruct(beneficiary);
     }
