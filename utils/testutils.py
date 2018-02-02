@@ -17,3 +17,6 @@ def block_time(block_num=None):
 
 def send_value(sender, recipient, value):
     return mine_tx(W3.eth.sendTransaction({'from': sender, 'to': recipient, 'value': value}))
+
+def get_eth_balance(account):
+    return W3.eth.getBalance(account)
