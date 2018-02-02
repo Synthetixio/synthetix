@@ -405,7 +405,7 @@ contract EtherNomin is ERC20FeeToken {
         public
         onlyOwner
         payable
-        postCheckAutoLiquidate
+        notLiquidating
     {
         // Price staleness check occurs inside the call to fiatValue.
         // Safe additions are unnecessary here, as either the addition is checked on the following line
@@ -424,7 +424,6 @@ contract EtherNomin is ERC20FeeToken {
     function burn(uint n)
         public
         onlyOwner
-        postCheckAutoLiquidate
     {
         // Require that there are enough nomins in the accessible pool to burn
         require(nominPool >= n);
@@ -445,7 +444,6 @@ contract EtherNomin is ERC20FeeToken {
         public
         notLiquidating
         payable
-        postCheckAutoLiquidate
     {
         // Price staleness check occurs inside the call to purchaseEtherCost.
         require(n >= purchaseMininum &&
@@ -464,7 +462,6 @@ contract EtherNomin is ERC20FeeToken {
      *     Price is stale if not in liquidation. */
     function sell(uint n)
         public
-        postCheckAutoLiquidate
     {
 
         // Price staleness check occurs inside the call to saleProceedsEther,
@@ -610,6 +607,13 @@ contract EtherNomin is ERC20FeeToken {
 
     /* Any function modified by this will automatically liquidate
      * the system if the collateral levels are too low.
+     * This is called on collateral-value/nomin-supply modifying functions that can
+     * actually move the contract into liquidation. This is really only
+     * the price update, since issuance requires that the contract is overcollateralised,
+     * burning can only destroy tokens without withdrawing backing, buying from the pool can only
+     * asymptote to a collateralisation level of unity, while selling into the pool can only 
+     * increase the collateralisation ratio.
+     * Additionally, price update checks should occur frequently.
      */
     modifier postCheckAutoLiquidate
     {
