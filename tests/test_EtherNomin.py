@@ -49,6 +49,7 @@ class TestEtherNomin(unittest.TestCase):
         cls.fake_court.setVotePasses = lambda sender, target, status: cls.fake_court.functions.setVotePasses(target, status).transact({'from': sender})
         cls.fake_court.confiscateBalance = lambda sender, target: cls.fake_court.functions.confiscateBalance(target).transact({'from': sender})
         mine_tx(cls.fake_court.setNomin(W3.eth.accounts[0], cls.nomin.address))
+        mine_tx(cls.nomin.functions.setCourt(cls.fake_court.address).transact({'from': cls.nomin_owner}))
 
         cls.owner = lambda self: cls.nomin.functions.owner().call()
         cls.oracle = lambda self: cls.nomin.functions.oracle().call()
@@ -518,11 +519,16 @@ class TestEtherNomin(unittest.TestCase):
         self.assertFalse(self.priceIsStale())
 
     def test_staleness(self):
-        # Assert all those calls work when not stale.
-        # Assert things that should work when stale do work.
         owner = self.owner()
         oracle = self.oracle()
+        target = W3.eth.accounts[5]
 
+        # Set up target balance to be confiscatable for later testing.
+        self.assertEqual(self.court(), self.fake_court.address)
+        mine_tx(self.fake_court.setConfirming(owner, target, True))
+        mine_tx(self.fake_court.setVotePasses(owner, target, True))
+
+        # Create some nomins and set a convenient price.
         mine_tx(self.updatePrice(oracle, UNIT))
         pce = self.purchaseCostEther(UNIT)
         mine_tx(self.issue(owner, 2 * UNIT, 5 * UNIT))
@@ -559,8 +565,11 @@ class TestEtherNomin(unittest.TestCase):
         self.assertFalse(self.isFrozen(MASTER))
         mine_tx(self.transfer(MASTER, MASTER, 0))
         mine_tx(self.transferFrom(MASTER, MASTER, MASTER, 0))
+        mine_tx(self.fake_court.confiscateBalance(owner, target))
+        mine_tx(self.unfreezeAccount(owner, target))
 
         # These calls should not work when the price is stale.
+        # That they work when not stale is guaranteed by other tests, hopefully.
         self.assertReverts(self.fiatValue, UNIT)
         self.assertReverts(self.fiatBalance)
         self.assertReverts(self.etherValue, UNIT)
@@ -577,6 +586,7 @@ class TestEtherNomin(unittest.TestCase):
 
         # Liquidation things should work while stale...
         mine_tx(self.forceLiquidation(owner))
+        self.assertTrue(self.isLiquidating())
         mine_tx(self.extendLiquidationPeriod(owner, 1))
 
         # ...except that we can't terminate liquidation unless the price is fresh.
@@ -592,7 +602,14 @@ class TestEtherNomin(unittest.TestCase):
         self.assertFalse(self.priceIsStale())
         mine_tx(self.terminateLiquidation(owner))
 
-        # TODO: test confiscation, unfreezing, self-destruction during stale
+        # And that self-destruction works during stale period.
+        mine_tx(self.forceLiquidation(owner))
+        fast_forward(seconds=self.stalePeriod() + self.liquidationPeriod())
+        self.assertTrue(self.isLiquidating())
+        self.assertTrue(self.priceIsStale())
+        mine_tx(self.selfDestruct(owner))
+        with self.assertRaises(Exception):
+            self.etherPrice()
 
     def test_transfer(self):
         owner = self.owner()
@@ -847,7 +864,7 @@ class TestEtherNomin(unittest.TestCase):
         owner = self.owner()
         target = W3.eth.accounts[2]
 
-        mine_tx(self.setCourt(owner, self.fake_court.address))
+        self.assertEqual(self.court(), self.fake_court.address)
 
         # The target must have some nomins. We will issue 10 for him to buy
         mine_tx(self.updatePrice(self.oracle(), UNIT))

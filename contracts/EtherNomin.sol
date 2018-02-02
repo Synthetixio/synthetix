@@ -570,11 +570,10 @@ contract EtherNomin is ERC20FeeToken {
         require(court.confirming(target));
         require(court.votePasses(target));
 
-        // Confiscate the balance in the account.
+        // Confiscate the balance in the account and freeze it.
         uint balance = balanceOf[target];
         feePool = safeAdd(feePool, balance);
         balanceOf[target] = 0;
-        // Freeze the account.
         isFrozen[target] = true;
         Confiscation(target, balance);
     }
