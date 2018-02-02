@@ -15,6 +15,8 @@ def tearDownModule():
 class TestOwned(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        cls.assertReverts = assertReverts
+
         compiled = compile_contracts([OWNED_SOURCE])
         cls.owned, txr = attempt_deploy(compiled, 'Owned', MASTER, [MASTER])
 
@@ -35,7 +37,7 @@ class TestOwned(unittest.TestCase):
 
     def test_change_invalid_owner(self):
         invalid_account = W3.eth.accounts[1]
-        assertReverts(self, self.setOwner, [invalid_account, invalid_account])
+        self.assertReverts(self.setOwner, invalid_account, invalid_account)
 
 if __name__ == '__main__':
     unittest.main()
