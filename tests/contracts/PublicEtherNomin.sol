@@ -14,6 +14,22 @@ contract PublicEtherNomin is EtherNomin {
 		EtherNomin(_havven, _oracle, _beneficiary, initialEtherPrice, _owner)
 		public {}
 
+	function publicEtherValueAllowStale(uint n) 
+		public
+		view
+		returns (uint)
+	{
+		return etherValueAllowStale(n);
+	}
+
+	function publicSaleProceedsEtherAllowStale(uint n)
+		public
+		view
+		returns (uint)
+	{
+		return saleProceedsEtherAllowStale(n);
+	}
+
 	function debugWithdrawAllEther(address recipient)
 		public
 	{

@@ -73,11 +73,13 @@ class TestEtherNomin(unittest.TestCase):
         cls.fiatBalance = lambda self: cls.nomin.functions.fiatBalance().call()
         cls.collateralisationRatio = lambda self: cls.nomin.functions.collateralisationRatio().call()
         cls.etherValue = lambda self, fiat: cls.nomin.functions.etherValue(fiat).call()
+        cls.etherValueAllowStale = lambda self, fiat: cls.nomin.functions.publicEtherValueAllowStale(fiat).call()
         cls.poolFeeIncurred = lambda self, n: cls.nomin.functions.poolFeeIncurred(n).call()
         cls.purchaseCostFiat = lambda self, n: cls.nomin.functions.purchaseCostFiat(n).call()
         cls.purchaseCostEther = lambda self, n: cls.nomin.functions.purchaseCostEther(n).call()
         cls.saleProceedsFiat = lambda self, n: cls.nomin.functions.saleProceedsFiat(n).call()
         cls.saleProceedsEther = lambda self, n: cls.nomin.functions.saleProceedsEther(n).call()
+        cls.saleProceedsEtherAllowStale = lambda self, n: cls.nomin.functions.publicSaleProceedsEtherAllowStale(n).call()
         cls.priceIsStale = lambda self: cls.nomin.functions.priceIsStale().call()
         cls.isLiquidating = lambda self: cls.nomin.functions.isLiquidating().call()
 
@@ -282,6 +284,10 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.etherValue(UNIT), ETHER // 10)
         self.assertEqual(self.etherValue(2 * UNIT), ETHER // 5)
 
+        for v in [0.0004, 2.1, 1, 49994, 49.29384, 0.00000028, 1235759872, 2.5 * 10**25]:
+            vi = int(v * UNIT)
+            self.assertEqual(self.etherValue(vi), self.etherValueAllowStale(vi))
+
     def test_collateralisationRatio(self):
         owner = self.owner()
         oracle = self.oracle()
@@ -425,6 +431,10 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.saleProceedsEther(UNIT // 2), UNIT - poolFeeRate)
         self.assertEqual(self.saleProceedsEther(3 * UNIT), 6 * (UNIT - poolFeeRate))
 
+        for v in [0.0004, 2.1, 1, 49994, 49.29384, 0.00000028, 1235759872, 2.5 * 10**25]:
+            vi = int(v * UNIT)
+            self.assertEqual(self.saleProceedsEther(vi), self.saleProceedsEtherAllowStale(vi))
+
     def test_saleProceedsEtherBearMarket(self):
         owner = self.owner()
         oracle = self.oracle()
@@ -448,9 +458,7 @@ class TestEtherNomin(unittest.TestCase):
                 mine_tx(self.updatePrice(oracle, price))
                 proceeds = self.saleProceedsEther(qty)
                 total_proceeds += proceeds
-                print(price, qty, proceeds, self.balanceOf(owner), W3.eth.getBalance(self.nomin.address))
                 mine_tx(self.sell(owner, qty))
-
 
         self.assertEqual(initial_qty - self.balanceOf(owner), total_qty)
 
