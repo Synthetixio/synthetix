@@ -1,8 +1,8 @@
 import unittest
 import time
 from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mine_txs, mine_tx, \
-    UNIT, MASTER, DUMMY, to_seconds, fast_forward, fresh_account, take_snapshot, restore_snapshot
-from utils.testutils import assertFunctionReverts, current_block_time, assertClose
+    UNIT, MASTER, DUMMY, to_seconds, fast_forward, fresh_account, fresh_accounts, take_snapshot, restore_snapshot
+from utils.testutils import assertReverts, current_block_time, assertClose
 
 SOLIDITY_SOURCES = ["tests/contracts/PublicHavven.sol", "contracts/EtherNomin.sol",
                     "contracts/Court.sol"]
@@ -46,7 +46,7 @@ class TestHavven(unittest.TestCase):
     def setUpClass(cls):
 
         cls.assertClose = assertClose
-        cls.assertFunctionReverts = assertFunctionReverts
+        cls.assertReverts = assertReverts
 
 
         cls.havven, cls.nomin, cls.court, cls.construction_block = deploy_public_havven()
@@ -100,22 +100,12 @@ class TestHavven(unittest.TestCase):
 
         cls.get_nomin = lambda self: self.havven.functions.nomin().call()
 
-        # vote
-        cls.vote = lambda self, addr: self.havven.functions.vote(addr).call()
-        # voteTarget
-        cls.voteTarget = lambda self, addr: self.havven.functions.voteTarget(addr).call()
-
         #
         # SETTERS
         # setNomin
         cls.setNomin = lambda self, sender, addr: mine_tx(self.havven.functions.setNomin(addr).transact({'from': sender}))
         # setTargetFeePeriod
         cls.setTargetFeePeriodDuration = lambda self, sender, dur: mine_tx(self.havven.functions.setTargetFeePeriodDuration(dur).transact({'from': sender}))
-
-        #
-        # VIEWS
-        # hasVoted
-        cls.hasVoted = lambda self, addr: self.havven.functions.hasVoted(addr).call()
 
         #
         # FUNCTIONS
@@ -135,13 +125,6 @@ class TestHavven(unittest.TestCase):
 
         # withdrawFeeEntitlement
         cls.withdrawFeeEntitlement = lambda self, sender: mine_tx(self.havven.functions.withdrawFeeEntitlement(sender).transact({'from': sender}))
-
-        # setVotedYea
-        cls.setVotedYea = lambda self, sender, acc, target: mine_tx(self.havven.functions.setVotedYea(acc, target).transact({'from': sender}))
-        # setVotedNay
-        cls.setVotedNay = lambda self, sender, acc, target: mine_tx(self.havven.functions.setVotedNay(acc, target).transact({'from': sender}))
-        # cancelVote
-        cls.cancelVote = lambda self, sender, acc, target: mine_tx(self.havven.functions.cancelVote(acc, target).transact({'from': sender}))
 
         #
         # MODIFIERS
@@ -167,7 +150,7 @@ class TestHavven(unittest.TestCase):
 
     def test_change_invalid_owner(self):
         invalid_account = DUMMY
-        self.assertFunctionReverts(self.setOwner, invalid_account, invalid_account)
+        self.assertReverts(self.setOwner, invalid_account, invalid_account)
 
     ###
     # Test inherited ERC20Token
@@ -356,12 +339,6 @@ class TestHavven(unittest.TestCase):
     # lastFeesCollected TODO
 
     ###
-    # Vote Mappings
-    ###
-    # vote TODO
-    # voteTarget TODO
-
-    ###
     # Functions
     ###
 
@@ -373,7 +350,7 @@ class TestHavven(unittest.TestCase):
 
     def test_invalidSetNomin(self):
         alice = fresh_account()
-        assertFunctionReverts(self, self.setNomin, alice, alice)
+        self.assertReverts(self.setNomin, alice, alice)
 
     # setTargetFeePeriod
     def test_setTargetFeePeriod(self):
@@ -398,22 +375,73 @@ class TestHavven(unittest.TestCase):
         )
 
     def test_setTargetFeePeriod_invalid_below_min(self):
-        assertFunctionReverts(self, self.setTargetFeePeriodDuration, MASTER, self.minFeePeriodDurationSeconds()-1)
+        self.assertReverts(self.setTargetFeePeriodDuration, MASTER, self.minFeePeriodDurationSeconds()-1)
 
     def test_setTargetFeePeriod_invalid_0(self):
-        assertFunctionReverts(self, self.setTargetFeePeriodDuration, MASTER, self.minFeePeriodDurationSeconds()-1)
+        self.assertReverts(self.setTargetFeePeriodDuration, MASTER, self.minFeePeriodDurationSeconds()-1)
 
-    # hasVoted TODO
     # endow
+    def test_endow_valid(self):
+        amount = 50 * UNIT
+        alice = fresh_account()
+        self.assertEquals(self.balanceOf(alice), 0)
+        self.endow(MASTER, alice, amount)
+        self.assertEquals(self.balanceOf(alice), amount)
+
+    def test_endow_0(self):
+        amount = 0
+        alice = fresh_account()
+        self.assertEquals(self.balanceOf(alice), 0)
+        self.endow(MASTER, alice, amount)
+        self.assertEquals(self.balanceOf(alice), amount)
+
+    def test_endow_supply(self):
+        amount = self.totalSupply()
+        alice = fresh_account()
+        self.assertEquals(self.balanceOf(alice), 0)
+        self.endow(MASTER, alice, amount)
+        self.assertEquals(self.balanceOf(alice), amount)
+
+    def test_endow_more_than_supply(self):
+        amount = self.totalSupply() * 2
+        alice = fresh_account()
+        self.assertReverts(self.endow, MASTER, alice, amount)
+        self.assertEquals(self.balanceOf(alice), 0)
+
+    def test_endow_invalid_sender(self):
+        amount = 50 * UNIT
+        alice = fresh_account()
+        self.assertReverts(self.endow, alice, alice, amount)
+        self.assertEquals(self.balanceOf(alice), 0)
+
+    def test_endow_contract_sender(self):
+        amount = 50 * UNIT
+        alice = fresh_account()
+        self.assertReverts(self.endow, self.havven.address, alice, amount)
+        self.assertEquals(self.balanceOf(alice), 0)
+
+    def test_endow_to_contract(self):
+        amount = 50 * UNIT
+        self.assertEqual(self.balanceOf(self.havven.address), self.totalSupply())
+        self.endow(MASTER, self.havven.address, amount)
+        self.assertEqual(self.balanceOf(self.havven.address), self.totalSupply())
 
     # transfer
+    def test_transfer(self):
+        amount = 50 * UNIT
+        alice, bob = fresh_accounts(2)
+        self.endow(MASTER, alice, amount)
+        self.endow(MASTER, bob, amount)
+        self.assertEqual(self.balanceOf(alice), amount)
+        self.assertEqual(self.balanceOf(bob), amount)
+
+        self.transfer(alice, bob, amount)
+        self.assertEquals(self.balanceOf(bob), amount * 2)
+
     # transferFrom
     # adjustFeeEntitlement
     # rolloverFee
     # withdrawFeeEntitlement
-    # setVotedYea
-    # setVotedNay
-    # cancelVote
 
     ###
     # Modifiers

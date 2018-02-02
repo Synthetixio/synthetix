@@ -3,7 +3,6 @@ import time
 from web3 import Web3, HTTPProvider
 from solc import compile_files
 
-
 BLOCKCHAIN_ADDRESS = "http://localhost:8545"
 W3 = Web3(HTTPProvider(BLOCKCHAIN_ADDRESS))
 POLLING_INTERVAL = 0.1
@@ -106,6 +105,14 @@ def fast_forward(seconds=0, minutes=0, hours=0, days=0, weeks=0):
     W3.providers[0].make_request("evm_increaseTime", [total_time])
     force_mine_block()
 
+def take_snapshot():
+    x = W3.providers[0].make_request("evm_snapshot", [])
+    force_mine_block()
+    return x
+
+def restore_snapshot(snapshot):
+    W3.providers[0].make_request("evm_revert", [snapshot['result']])
+    force_mine_block()
 
 def take_snapshot():
     x = W3.providers[0].make_request("evm_snapshot", [])
