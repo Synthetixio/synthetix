@@ -27,6 +27,8 @@ class TestEtherNomin(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls.assertReverts = assertReverts
+
         compiled = compile_contracts([ETHERNOMIN_SOURCE, FAKECOURT_SOURCE],
                                      remappings=['""=contracts'])
         cls.nomin_abi = compiled['PublicEtherNomin']['abi']
@@ -140,7 +142,7 @@ class TestEtherNomin(unittest.TestCase):
         new_owner = W3.eth.accounts[1]
 
         # Only the owner must be able to set the oracle.
-        assertReverts(self, self.setOwner, [new_owner, new_owner])
+        self.assertReverts(self.setOwner, [new_owner, new_owner])
 
         mine_tx(self.setOwner(pre_owner, new_owner))
         self.assertEqual(self.owner(), new_owner)
@@ -150,7 +152,7 @@ class TestEtherNomin(unittest.TestCase):
         new_oracle = W3.eth.accounts[1]
 
         # Only the owner must be able to set the oracle.
-        assertReverts(self, self.setOracle, [new_oracle, new_oracle])
+        self.assertReverts(self.setOracle, [new_oracle, new_oracle])
 
         mine_tx(self.setOracle(self.owner(), new_oracle))
         self.assertEqual(self.oracle(), new_oracle)
@@ -159,7 +161,7 @@ class TestEtherNomin(unittest.TestCase):
         new_court = W3.eth.accounts[1]
 
         # Only the owner must be able to set the court.
-        assertReverts(self, self.setOracle, [new_court, new_court])
+        self.assertReverts(self.setOracle, [new_court, new_court])
 
         mine_tx(self.setCourt(self.owner(), new_court))
         self.assertEqual(self.court(), new_court)
@@ -168,7 +170,7 @@ class TestEtherNomin(unittest.TestCase):
         new_beneficiary = W3.eth.accounts[1]
 
         # Only the owner must be able to set the beneficiary.
-        assertReverts(self, self.setBeneficiary, [new_beneficiary, new_beneficiary])
+        self.assertReverts(self.setBeneficiary, [new_beneficiary, new_beneficiary])
 
         mine_tx(self.setBeneficiary(self.owner(), new_beneficiary))
         self.assertEqual(self.beneficiary(), new_beneficiary)
@@ -178,10 +180,10 @@ class TestEtherNomin(unittest.TestCase):
         new_rate = UNIT // 10
 
         # Only the owner must be able to set the pool fee rate.
-        assertReverts(self, self.setPoolFeeRate, [W3.eth.accounts[1], new_rate])
+        self.assertReverts(self.setPoolFeeRate, [W3.eth.accounts[1], new_rate])
         # Pool fee rate must be no greater than UNIT.
-        assertReverts(self, self.setPoolFeeRate, [owner, UNIT + 1])
-        assertReverts(self, self.setPoolFeeRate, [owner, 2**256 - 1])
+        self.assertReverts(self.setPoolFeeRate, [owner, UNIT + 1])
+        self.assertReverts(self.setPoolFeeRate, [owner, 2**256 - 1])
         mine_tx(self.setPoolFeeRate(owner, UNIT))
         self.assertEqual(self.poolFeeRate(), UNIT)
 
@@ -193,7 +195,7 @@ class TestEtherNomin(unittest.TestCase):
         new_period = 52 * 7 * 24 * 60 * 60
 
         # Only the owner should be able to set the pool fee rate.
-        assertReverts(self, self.setStalePeriod, [W3.eth.accounts[1], new_period])
+        self.assertReverts(self.setStalePeriod, [W3.eth.accounts[1], new_period])
 
         mine_tx(self.setStalePeriod(owner, new_period))
         self.assertEqual(self.stalePeriod(), new_period)
@@ -207,7 +209,7 @@ class TestEtherNomin(unittest.TestCase):
         new_oracle = W3.eth.accounts[1]
 
         # Only the oracle must be able to set the current price.
-        assertReverts(self, self.updatePrice, [new_oracle, new_price])
+        self.assertReverts(self.updatePrice, [new_oracle, new_price])
 
         # Check if everything works with nothing in the pool.
         tx_receipt = mine_tx(self.updatePrice(pre_oracle, new_price))
@@ -217,7 +219,7 @@ class TestEtherNomin(unittest.TestCase):
 
         mine_tx(self.setOracle(owner, new_oracle))
 
-        assertReverts(self, self.updatePrice, [pre_oracle, pre_price])
+        self.assertReverts(self.updatePrice, [pre_oracle, pre_price])
 
         tx_receipt = mine_tx(self.updatePrice(new_oracle, new_price2))
         tx_time = W3.eth.getBlock(tx_receipt.blockNumber)['timestamp']
@@ -293,7 +295,7 @@ class TestEtherNomin(unittest.TestCase):
         oracle = self.oracle()
 
         # When there are no nomins in the contract, a zero denominator causes reversion.
-        assertReverts(self, self.collateralisationRatio)
+        self.assertReverts(self.collateralisationRatio)
 
         # Set the ether price to $1, and issue one nomin against 2 ether.
         mine_tx(self.updatePrice(oracle, UNIT))
@@ -555,15 +557,15 @@ class TestEtherNomin(unittest.TestCase):
 
         mine_tx(self.burn(owner, UNIT))
 
-        assertReverts(self, self.fiatValue, [UNIT])
-        assertReverts(self, self.fiatBalance, [])
-        assertReverts(self, self.etherValue, [UNIT])
-        assertReverts(self, self.collateralisationRatio, [])
-        assertReverts(self, self.purchaseCostEther, [UNIT])
-        assertReverts(self, self.saleProceedsEther, [UNIT])
-        assertReverts(self, self.issue, [owner, UNIT, 5 * UNIT])
-        assertReverts(self, self.buy, [owner, UNIT, pce])
-        assertReverts(self, self.sell, [owner, UNIT])
+        self.assertReverts(self.fiatValue, [UNIT])
+        self.assertReverts(self.fiatBalance, [])
+        self.assertReverts(self.etherValue, [UNIT])
+        self.assertReverts(self.collateralisationRatio, [])
+        self.assertReverts(self.purchaseCostEther, [UNIT])
+        self.assertReverts(self.saleProceedsEther, [UNIT])
+        self.assertReverts(self.issue, [owner, UNIT, 5 * UNIT])
+        self.assertReverts(self.buy, [owner, UNIT, pce])
+        self.assertReverts(self.sell, [owner, UNIT])
 
 
         # Confirm that sell works regardless of staleness when in liquidation
@@ -592,8 +594,8 @@ class TestEtherNomin(unittest.TestCase):
 
         mine_tx(self.debugFreezeAccount(owner, target))
 
-        assertReverts(self, self.transfer, [owner, target, UNIT])
-        assertReverts(self, self.transfer, [target, owner, UNIT])
+        self.assertReverts(self.transfer, [owner, target, UNIT])
+        self.assertReverts(self.transfer, [target, owner, UNIT])
 
         mine_tx(self.unfreezeAccount(owner, target))
 
@@ -610,11 +612,11 @@ class TestEtherNomin(unittest.TestCase):
         proxy = W3.eth.accounts[2]
 
         # Unauthorized transfers should not work
-        assertReverts(self, self.transferFrom, [proxy, owner, target, UNIT])
+        self.assertReverts(self.transferFrom, [proxy, owner, target, UNIT])
 
         # Neither should transfers that are too large for the allowance.
         mine_tx(self.approve(owner, proxy, UNIT))
-        assertReverts(self, self.transferFrom, [proxy, owner, target, 2 * UNIT])
+        self.assertReverts(self.transferFrom, [proxy, owner, target, 2 * UNIT])
 
         mine_tx(self.approve(owner, proxy, 10000 * UNIT))
 
@@ -633,8 +635,8 @@ class TestEtherNomin(unittest.TestCase):
 
         mine_tx(self.debugFreezeAccount(owner, target))
 
-        assertReverts(self, self.transferFrom, [proxy, owner, target, UNIT])
-        assertReverts(self, self.transferFrom, [proxy, target, owner, UNIT])
+        self.assertReverts(self.transferFrom, [proxy, owner, target, UNIT])
+        self.assertReverts(self.transferFrom, [proxy, target, owner, UNIT])
 
         mine_tx(self.unfreezeAccount(owner, target))
 
@@ -650,13 +652,13 @@ class TestEtherNomin(unittest.TestCase):
 
         # Only the contract owner should be able to issue new nomins.
         mine_tx(self.updatePrice(oracle, UNIT))
-        assertReverts(self, self.issue, [W3.eth.accounts[4], UNIT, 2 * ETHER])
+        self.assertReverts(self.issue, [W3.eth.accounts[4], UNIT, 2 * ETHER])
 
         self.assertEqual(self.totalSupply(), 0)
         self.assertEqual(self.nominPool(), 0)
 
         # Revert if less than 2x collateral is provided 
-        assertReverts(self, self.issue, [owner, UNIT, 2 * ETHER - 1])
+        self.assertReverts(self.issue, [owner, UNIT, 2 * ETHER - 1])
 
         # Issue a nomin into the pool
         mine_tx(self.issue(owner, UNIT, 2 * ETHER))
@@ -673,7 +675,7 @@ class TestEtherNomin(unittest.TestCase):
         # Issue more into the pool for free if price goes up
         self.updatePrice(oracle, 2 * UNIT)
         self.assertFalse(self.isLiquidating())
-        assertReverts(self, self.issue, [owner, 2 * UNIT + 1, 0])
+        self.assertReverts(self.issue, [owner, 2 * UNIT + 1, 0])
         mine_tx(self.issue(owner, 2 * UNIT, 0))
         self.assertEqual(self.totalSupply(), 4 * UNIT)
         self.assertEqual(self.nominPool(), 4 * UNIT)
@@ -682,8 +684,8 @@ class TestEtherNomin(unittest.TestCase):
         # provide more than 2x collateral for new issuance if price drops
         self.updatePrice(oracle, UNIT)
         self.assertFalse(self.isLiquidating())
-        assertReverts(self, self.issue, [owner, UNIT, 2 * ETHER])
-        assertReverts(self, self.issue, [owner, UNIT, 6 * ETHER - 1])
+        self.assertReverts(self.issue, [owner, UNIT, 2 * ETHER])
+        self.assertReverts(self.issue, [owner, UNIT, 6 * ETHER - 1])
         mine_tx(self.issue(owner, UNIT, 6 * ETHER))
         self.assertEqual(self.totalSupply(), 5 * UNIT)
         self.assertEqual(self.nominPool(), 5 * UNIT)
@@ -698,10 +700,10 @@ class TestEtherNomin(unittest.TestCase):
         mine_tx(self.issue(owner, 10 * UNIT, 20 * ETHER))
 
         # Only the contract owner should be able to burn nomins.
-        assertReverts(self, self.burn, [W3.eth.accounts[4], UNIT])
+        self.assertReverts(self.burn, [W3.eth.accounts[4], UNIT])
 
         # It should not be possible to burn more nomins than are in the pool.
-        assertReverts(self, self.burn, [owner, 11 * UNIT])
+        self.assertReverts(self.burn, [owner, 11 * UNIT])
 
         # Burn part of the pool
         self.assertEqual(self.totalSupply(), 10 * UNIT)
@@ -721,7 +723,7 @@ class TestEtherNomin(unittest.TestCase):
 
         # Should not be possible to buy when there's no supply
         cost = self.purchaseCostEther(UNIT)
-        assertReverts(self, self.buy, [buyer, UNIT, cost])
+        self.assertReverts(self.buy, [buyer, UNIT, cost])
 
         # issue some nomins to be burned
         mine_tx(self.issue(self.owner(), 5 * UNIT, 10 * ETHER))
@@ -729,8 +731,8 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.nominPool(), 5 * UNIT)
 
         # Should not be able to purchase with the wrong quantity of ether.
-        assertReverts(self, self.buy, [buyer, UNIT, cost + 1])
-        assertReverts(self, self.buy, [buyer, UNIT, cost - 1])
+        self.assertReverts(self.buy, [buyer, UNIT, cost + 1])
+        self.assertReverts(self.buy, [buyer, UNIT, cost - 1])
 
         self.assertEqual(self.balanceOf(buyer), 0)
         mine_tx(self.buy(buyer, UNIT, cost))
@@ -740,7 +742,7 @@ class TestEtherNomin(unittest.TestCase):
 
         # It should not be possible to buy fewer nomins than the purchase minimum
         purchaseMin = UNIT // 100
-        assertReverts(self, self.buy, [buyer, purchaseMin - 1, self.purchaseCostEther(purchaseMin - 1)])
+        self.assertReverts(self.buy, [buyer, purchaseMin - 1, self.purchaseCostEther(purchaseMin - 1)])
 
         # But it should be possible to buy exactly that quantity
         mine_tx(self.buy(buyer, purchaseMin, self.purchaseCostEther(purchaseMin)))
@@ -750,7 +752,7 @@ class TestEtherNomin(unittest.TestCase):
 
         # It should not be possible to buy more tokens than are in the pool
         total = self.nominPool()
-        assertReverts(self, self.buy, [buyer, total + 1, self.purchaseCostEther(total + 1)])
+        self.assertReverts(self.buy, [buyer, total + 1, self.purchaseCostEther(total + 1)])
 
         mine_tx(self.buy(buyer, total, self.purchaseCostEther(total)))
         self.assertEqual(self.totalSupply(), 5 * UNIT)
@@ -758,7 +760,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.balanceOf(buyer), 5 * UNIT)
 
         # Should not be possible to buy when there's nothing in the pool
-        assertReverts(self, self.buy, [buyer, UNIT, self.purchaseCostEther(UNIT)])
+        self.assertReverts(self.buy, [buyer, UNIT, self.purchaseCostEther(UNIT)])
 
     def test_sell(self):
         # Prepare a seller who owns some nomins.
@@ -770,7 +772,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.balanceOf(seller), 0)
 
         # It should not be possible to sell nomins if you have none.
-        assertReverts(self, self.sell, [seller, UNIT])
+        self.assertReverts(self.sell, [seller, UNIT])
 
         mine_tx(self.buy(seller, 5 * UNIT, self.purchaseCostEther(5 * UNIT)))
         self.assertEqual(self.totalSupply(), 5 * UNIT)
@@ -778,7 +780,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.balanceOf(seller), 5 * UNIT)
 
         # It should not be possible to sell more nomins than you possess.
-        assertReverts(self, self.sell, [seller, 5 * UNIT + 1])
+        self.assertReverts(self.sell, [seller, 5 * UNIT + 1])
 
         # Selling nomins should yield back the right amount of ether.
         pre_balance = W3.eth.getBalance(seller)
@@ -795,7 +797,7 @@ class TestEtherNomin(unittest.TestCase):
 
     def test_forceLiquidation(self):
         # non-owners should not be able to force liquidation.
-        assertReverts(self, self.forceLiquidation, [W3.eth.accounts[5]])
+        self.assertReverts(self.forceLiquidation, [W3.eth.accounts[5]])
 
         owner = self.owner()
         self.assertFalse(self.isLiquidating())
@@ -803,7 +805,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertTrue(self.isLiquidating())
 
         # This call should not work if liquidation has begun.
-        assertReverts(self, self.forceLiquidation, [owner])
+        self.assertReverts(self.forceLiquidation, [owner])
 
     def test_liquidation(self):
         pass
@@ -837,22 +839,22 @@ class TestEtherNomin(unittest.TestCase):
         # Attempt to confiscate even though the conditions are not met.
         mine_tx(self.fake_court.setConfirming(owner, target, False))
         mine_tx(self.fake_court.setVotePasses(owner, target, False))
-        assertReverts(self, self.fake_court.confiscateBalance, [owner, target])
+        self.assertReverts(self.fake_court.confiscateBalance, [owner, target])
 
         mine_tx(self.fake_court.setConfirming(owner, target, True))
         mine_tx(self.fake_court.setVotePasses(owner, target, False))
-        assertReverts(self, self.fake_court.confiscateBalance, [owner, target])
+        self.assertReverts(self.fake_court.confiscateBalance, [owner, target])
 
         mine_tx(self.fake_court.setConfirming(owner, target, False))
         mine_tx(self.fake_court.setVotePasses(owner, target, True))
-        assertReverts(self, self.fake_court.confiscateBalance, [owner, target])
+        self.assertReverts(self.fake_court.confiscateBalance, [owner, target])
 
         # Set up the target balance to be confiscatable.
         mine_tx(self.fake_court.setConfirming(owner, target, True))
         mine_tx(self.fake_court.setVotePasses(owner, target, True))
 
         # Only the court should be able to confiscate balances.
-        assertReverts(self, self.confiscateBalance, [owner, target])
+        self.assertReverts(self.confiscateBalance, [owner, target])
 
         # Actually confiscate the balance.
         pre_feePool = self.feePool()
@@ -874,7 +876,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertTrue(self.isFrozen(target))
 
         # Only the owner should be able to unfreeze an account.
-        assertReverts(self, self.unfreezeAccount, [target, target])
+        self.assertReverts(self.unfreezeAccount, [target, target])
 
         # Unfreeze
         mine_tx(self.unfreezeAccount(owner, target))
