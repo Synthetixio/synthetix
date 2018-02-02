@@ -70,10 +70,10 @@ class TestSafeDecimalMath(unittest.TestCase):
 
     def test_addUnsafe(self):
         # These should all overflow: max representable is 2^256 - 1
-        assertReverts(self, self.safeAdd, 2**256 - 1, 2**256 - 1)
-        assertReverts(self, self.safeAdd, 2**255, 2**255)
-        assertReverts(self, self.safeAdd, 2**256 - 1, 1)
-        assertReverts(self, self.safeAdd, 2**256 - 100, 1000)
+        self.assertReverts(self.safeAdd, 2**256 - 1, 2**256 - 1)
+        self.assertReverts(self.safeAdd, 2**255, 2**255)
+        self.assertReverts(self.safeAdd, 2**256 - 1, 1)
+        self.assertReverts(self.safeAdd, 2**256 - 100, 1000)
 
     # Test subIsSafe function
 
@@ -115,12 +115,12 @@ class TestSafeDecimalMath(unittest.TestCase):
         self.assertEqual(self.safeSub(2**256-1, 2**256-1), 0)
 
     def test_unsafeSub(self):
-        assertReverts(self, self.safeSub, 0, 1)
-        assertReverts(self, self.safeSub, 10, 11)
-        assertReverts(self, self.safeSub, 100, 100000)
-        assertReverts(self, self.safeSub, 2**255, 2**256 - 11)
-        assertReverts(self, self.safeSub, 2**256 - 11, 2**256 - 10)
-        assertReverts(self, self.safeSub, 0, 2**256 - 1)
+        self.assertReverts(self.safeSub, 0, 1)
+        self.assertReverts(self.safeSub, 10, 11)
+        self.assertReverts(self.safeSub, 100, 100000)
+        self.assertReverts(self.safeSub, 2**255, 2**256 - 11)
+        self.assertReverts(self.safeSub, 2**256 - 11, 2**256 - 10)
+        self.assertReverts(self.safeSub, 0, 2**256 - 1)
 
     # Test mulIsSafe function
 
@@ -165,11 +165,11 @@ class TestSafeDecimalMath(unittest.TestCase):
         self.assertEqual(self.safeMul(10114, 17998), self.safeMul(17998, 10114))
 
     def test_unsafeMul(self):
-        assertReverts(self, self.safeMul, 2**128, 2**128)
-        assertReverts(self, self.safeMul, 2**256 - 1, 2**256 - 1)
-        assertReverts(self, self.safeMul, 2**255, 2)
-        assertReverts(self, self.safeMul, 2**200, 3**100)
-        assertReverts(self, self.safeMul, 2**254, 5)
+        self.assertReverts(self.safeMul, 2**128, 2**128)
+        self.assertReverts(self.safeMul, 2**256 - 1, 2**256 - 1)
+        self.assertReverts(self.safeMul, 2**255, 2)
+        self.assertReverts(self.safeMul, 2**200, 3**100)
+        self.assertReverts(self.safeMul, 2**254, 5)
 
     # Test safeDecMul function
 
@@ -201,9 +201,9 @@ class TestSafeDecimalMath(unittest.TestCase):
         self.assertEqual(self.safeDecMul(UNIT + 1, UNIT - 1), UNIT-1)
 
     def testUnsafeDecMul(self):
-        assertReverts(self, self.safeMul, 2**255, 2)
-        assertReverts(self, self.safeMul, 2**200, 2**56)
-        assertReverts(self, self.safeMul, 2**200, 3**40)
+        self.assertReverts(self.safeMul, 2**255, 2)
+        self.assertReverts(self.safeMul, 2**200, 2**56)
+        self.assertReverts(self.safeMul, 2**200, 3**40)
 
     # Test divIsSafe function
 
@@ -229,9 +229,9 @@ class TestSafeDecimalMath(unittest.TestCase):
         self.assertEqual(self.safeDiv(1000, 7), 142)
 
     def testUnsafeDiv(self):
-        assertReverts(self, self.safeDiv, 0, 0)
-        assertReverts(self, self.safeDiv, 1, 0)
-        assertReverts(self, self.safeDiv, 2**256 - 1, 0)
+        self.assertReverts(self.safeDiv, 0, 0)
+        self.assertReverts(self.safeDiv, 1, 0)
+        self.assertReverts(self.safeDiv, 2**256 - 1, 0)
 
     # Test safeDecDiv function
 
@@ -270,18 +270,18 @@ class TestSafeDecimalMath(unittest.TestCase):
 
     def testUnsafeDecDiv(self):
         # Numerator overflows
-        assertReverts(self, self.safeDecDiv, 2**256 - 1, 1)
-        assertReverts(self, self.safeDecDiv, (2**256 // UNIT) + 1, 1)
-        assertReverts(self, self.safeDecDiv, 10**42 * UNIT, 1)
-        assertReverts(self, self.safeDecDiv, 2**197, 1)
+        self.assertReverts(self.safeDecDiv, 2**256 - 1, 1)
+        self.assertReverts(self.safeDecDiv, (2**256 // UNIT) + 1, 1)
+        self.assertReverts(self.safeDecDiv, 10**42 * UNIT, 1)
+        self.assertReverts(self.safeDecDiv, 2**197, 1)
 
         # Zero denominator overflows
-        assertReverts(self, self.safeDecDiv, 0, 0)
-        assertReverts(self, self.safeDecDiv, 1, 0)
-        assertReverts(self, self.safeDecDiv, 2**256 // UNIT, 0)
+        self.assertReverts(self.safeDecDiv, 0, 0)
+        self.assertReverts(self.safeDecDiv, 1, 0)
+        self.assertReverts(self.safeDecDiv, 2**256 // UNIT, 0)
 
         # Both
-        assertReverts(self, self.safeDecDiv, 2**256 - 1, 0)
+        self.assertReverts(self.safeDecDiv, 2**256 - 1, 0)
 
     # Test intToDec function
 
@@ -292,7 +292,7 @@ class TestSafeDecimalMath(unittest.TestCase):
         self.assertEqual(self.intToDec(2**256 // UNIT), (2**256 // UNIT) * UNIT)
 
         # Test out of range
-        assertReverts(self, self.intToDec, 2**256 // UNIT + 1)
+        self.assertReverts(self.intToDec, 2**256 // UNIT + 1)
 
     # Test combined arithmetic
 
