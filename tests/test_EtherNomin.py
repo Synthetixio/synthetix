@@ -523,29 +523,34 @@ class TestEtherNomin(unittest.TestCase):
         owner = self.owner()
         oracle = self.oracle()
 
-        pce = self.purchaseCostEther(UNIT)
         mine_tx(self.updatePrice(oracle, UNIT))
+        pce = self.purchaseCostEther(UNIT)
         mine_tx(self.issue(owner, 2 * UNIT, 5 * UNIT))
         mine_tx(self.buy(owner, UNIT, pce))
 
-
+        # Enter stale period.
         fast_forward(seconds=10*self.stalePeriod())
         self.assertTrue(self.priceIsStale())
 
-        # These calls should work.
+        # These calls should work if the price is stale.
+        oracle = self.oracle()
+        court = self.court()
+        beneficiary = self.beneficiary()
+        poolFeeRate = self.poolFeeRate()
+        stalePeriod = self.stalePeriod()
         self.nominPool()
-        self.poolFeeRate()
         self.liquidationPeriod()
         self.liquidationTimestamp()
         self.etherPrice()
         self.lastPriceUpdate()
-        self.stalePeriod()
         self.isFrozen(self.nomin.address)
         mine_tx(self.setOracle(owner, oracle))
-        mine_tx(self.setCourt(owner, self.court()))
-        mine_tx(self.setBeneficiary(owner, self.beneficiary()))
-        mine_tx(self.setPoolFeeRate(owner, self.poolFeeRate()))
-        mine_tx(self.setStalePeriod(owner, self.stalePeriod()))
+        mine_tx(self.setCourt(owner, court))
+        mine_tx(self.setBeneficiary(owner, beneficiary))
+        mine_tx(self.setPoolFeeRate(owner, poolFeeRate))
+        mine_tx(self.setStalePeriod(owner, stalePeriod))
+        self.etherValueAllowStale(UNIT)
+        self.saleProceedsEtherAllowStale(UNIT)
         self.poolFeeIncurred(UNIT)
         self.purchaseCostFiat(UNIT)
         self.saleProceedsFiat(UNIT)
@@ -555,24 +560,39 @@ class TestEtherNomin(unittest.TestCase):
         mine_tx(self.transfer(MASTER, MASTER, 0))
         mine_tx(self.transferFrom(MASTER, MASTER, MASTER, 0))
 
-        mine_tx(self.burn(owner, UNIT))
-
+        # These calls should not work when the price is stale.
         self.assertReverts(self.fiatValue, UNIT)
         self.assertReverts(self.fiatBalance)
         self.assertReverts(self.etherValue, UNIT)
         self.assertReverts(self.collateralisationRatio)
         self.assertReverts(self.purchaseCostEther, UNIT)
         self.assertReverts(self.saleProceedsEther, UNIT)
+        self.assertGreater(W3.eth.getBalance(owner), 5 * UNIT)
+        self.assertEqual(self.nominPool(), UNIT)
+        self.assertEqual(self.balanceOf(owner), UNIT)
         self.assertReverts(self.issue, owner, UNIT, 5 * UNIT)
         self.assertReverts(self.buy, owner, UNIT, pce)
         self.assertReverts(self.sell, owner, UNIT)
+        self.assertReverts(self.burn, owner, UNIT)
 
+        # Liquidation things should work while stale...
+        mine_tx(self.forceLiquidation(owner))
+        mine_tx(self.extendLiquidationPeriod(owner, 1))
+
+        # ...except that we can't terminate liquidation unless the price is fresh.
+        self.assertReverts(self.terminateLiquidation, owner)
 
         # Confirm that sell works regardless of staleness when in liquidation
+        self.sell(owner, UNIT)
+        # We can also burn under these conditions.
+        mine_tx(self.burn(owner, UNIT))
 
-        # Finally that updating the price gets us out of liquidation
+        # Finally that updating the price gets us out of the stale period
         mine_tx(self.updatePrice(oracle, UNIT))
         self.assertFalse(self.priceIsStale())
+        mine_tx(self.terminateLiquidation(owner))
+
+        # TODO: test confiscation, unfreezing, self-destruction during stale
 
     def test_transfer(self):
         owner = self.owner()
@@ -820,6 +840,7 @@ class TestEtherNomin(unittest.TestCase):
         pass
 
     def test_selfDestruct(self):
+        # and test when price is stale.
         pass
 
     def test_confiscateBalance(self):
