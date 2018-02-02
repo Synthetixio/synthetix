@@ -48,7 +48,6 @@ class TestHavven(unittest.TestCase):
         cls.assertClose = assertClose
         cls.assertReverts = assertReverts
 
-
         cls.havven, cls.nomin, cls.court, cls.construction_block = deploy_public_havven()
 
         # INHERITED
@@ -426,18 +425,46 @@ class TestHavven(unittest.TestCase):
         self.endow(MASTER, self.havven.address, amount)
         self.assertEqual(self.balanceOf(self.havven.address), self.totalSupply())
 
-    # transfer
+    # transfer - same as test_ERC20
     def test_transfer(self):
-        amount = 50 * UNIT
-        alice, bob = fresh_accounts(2)
-        self.endow(MASTER, alice, amount)
-        self.endow(MASTER, bob, amount)
-        self.assertEqual(self.balanceOf(alice), amount)
-        self.assertEqual(self.balanceOf(bob), amount)
+        sender = MASTER
+        sender_balance = self.balanceOf(sender)
 
-        self.transfer(alice, bob, amount)
-        self.assertEquals(self.balanceOf(bob), amount * 2)
+        receiver = W3.eth.accounts[1]
+        receiver_balance = self.balanceOf(receiver)
+        self.assertEqual(receiver_balance, 0)
 
+        value = 10 * UNIT
+        total_supply = self.totalSupply()
+
+        # This should fail because receiver has no tokens
+        self.assertReverts(self.transfer, receiver, sender, value)
+
+        mine_tx(self.transfer(sender, receiver, value))
+        self.assertEqual(self.balanceOf(receiver), receiver_balance+value)
+        self.assertEqual(self.balanceOf(sender), sender_balance-value)
+
+        # transfers should leave the supply unchanged
+        self.assertEqual(self.totalSupply(), total_supply)
+
+        value = 1001 * UNIT
+        # This should fail because balance < value and balance > totalSupply
+        self.assertReverts(self.transfer, sender, receiver, value)
+
+        # 0 value transfers are allowed.
+        value = 0
+        pre_sender_balance = self.balanceOf(sender)
+        pre_receiver_balance = self.balanceOf(receiver)
+        mine_tx(self.transfer(sender, receiver, value))
+        self.assertEqual(self.balanceOf(receiver), pre_receiver_balance)
+        self.assertEqual(self.balanceOf(sender), pre_sender_balance)
+
+        # It is also possible to send 0 value transfer from an account with 0 balance.
+        no_tokens = W3.eth.accounts[2]
+        self.assertEqual(self.balanceOf(no_tokens), 0)
+        mine_tx(self.transfer(no_tokens, receiver, value))
+        self.assertEqual(self.balanceOf(no_tokens), 0)
+        
     # transferFrom
     # adjustFeeEntitlement
     # rolloverFee
@@ -446,7 +473,7 @@ class TestHavven(unittest.TestCase):
     ###
     # Modifiers
     ###
-    # postCheckFeePeriodRollover
+    # postCheckFeePeriodRollover -
 
 
 if __name__ == '__main__':
