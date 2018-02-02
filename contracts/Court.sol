@@ -209,7 +209,6 @@ contract Court is Owned, SafeDecimalMath {
 
     // A given account's vote in some confiscation action.
     // This requires the default value of the Vote enum to correspond to an abstention.
-    // If an account's vote is not an abstention, it may not transfer funds.
     mapping(address => Vote) public userVote;
     // The vote a user last participated in.
     mapping(address => address) public voteTarget;
@@ -362,7 +361,7 @@ contract Court is Owned, SafeDecimalMath {
         public
     {
         // A confiscation action must be mooted by someone with standing.
-        require((havven.balanceOf(msg.sender) > minStandingBalance) ||
+        require((havven.balanceOf(msg.sender) >= minStandingBalance) ||
                 msg.sender == owner);
 
         // Require that the voting period is longer than a single fee period,
@@ -485,7 +484,9 @@ contract Court is Owned, SafeDecimalMath {
         // If the user is trying to cancel a vote for a different target
         // than the one they have previously voted for, an exception is thrown
         // inside cancelVote, and the state is rolled back.
-        cancelVote(msg.sender, target);
+        require(voteTarget[msg.sender] == target);
+        userVote[msg.sender] = Court.Vote.Abstention;
+        voteTarget[msg.sender] = 0;
     }
 
     /* If a vote has concluded, or if it lasted its full duration but not passed,
@@ -557,21 +558,6 @@ contract Court is Owned, SafeDecimalMath {
         require(userVote[account] == Court.Vote.Abstention);
         userVote[account] = Court.Vote.Nay;
         voteTarget[account] = target;
-    }
-
-    /* Cancel a previous vote by a given account on a target.
-     * The target of the cancelled vote must be the same
-     * as the target the account voted upon previously,
-     * otherwise throw an exception.
-     * This is in order to enforce that a user may only
-     * vote upon a single action at a time.
-     */
-    function cancelVote(address account, address target)
-        internal
-    {
-        require(voteTarget[account] == target);
-        userVote[account] = Court.Vote.Abstention;
-        voteTarget[account] = 0;
     }
 
     /* ========== EVENTS ========== */
