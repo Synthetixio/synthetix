@@ -2,7 +2,7 @@ import unittest
 import time
 from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mine_txs, mine_tx, \
     UNIT, MASTER, DUMMY, to_seconds, fast_forward, fresh_account, take_snapshot, restore_snapshot
-from utils.testutils import assertFunctionReverts, current_block_time, assertClose
+from utils.testutils import assertReverts, current_block_time, assertClose
 
 SOLIDITY_SOURCES = ["tests/contracts/PublicHavven.sol", "contracts/EtherNomin.sol",
                     "contracts/Court.sol"]
@@ -46,7 +46,7 @@ class TestHavven(unittest.TestCase):
     def setUpClass(cls):
 
         cls.assertClose = assertClose
-        cls.assertFunctionReverts = assertFunctionReverts
+        cls.assertFunctionReverts = assertReverts
 
 
         cls.havven, cls.nomin, cls.court, cls.construction_block = deploy_public_havven()
