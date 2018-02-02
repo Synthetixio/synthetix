@@ -461,7 +461,7 @@ contract EtherNomin is ERC20FeeToken {
      * Exceptional conditions:
      *     Insufficient nomins in sender's wallet.
      *     Insufficient funds in the pool to pay sender.
-     *     Price is stale. */
+     *     Price is stale if not in liquidation. */
     function sell(uint n)
         public
         postCheckAutoLiquidate
@@ -614,7 +614,7 @@ contract EtherNomin is ERC20FeeToken {
     modifier postCheckAutoLiquidate
     {
         _;
-        if (totalSupply != 0 && collateralisationRatio() < autoLiquidationRatio) {
+        if (!isLiquidating() && totalSupply != 0 && collateralisationRatio() < autoLiquidationRatio) {
             beginLiquidation();
         }
     }
