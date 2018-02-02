@@ -515,6 +515,7 @@ contract EtherNomin is ERC20FeeToken {
         public
         onlyOwner
     {
+        require(isLiquidating());
         require(liquidationPeriod + extension <= maxLiquidationPeriod);
         liquidationPeriod += extension;
         LiquidationExtended(extension);
