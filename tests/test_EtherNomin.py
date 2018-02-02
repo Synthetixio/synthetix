@@ -531,7 +531,7 @@ class TestEtherNomin(unittest.TestCase):
         # Create some nomins and set a convenient price.
         mine_tx(self.updatePrice(oracle, UNIT))
         pce = self.purchaseCostEther(UNIT)
-        mine_tx(self.issue(owner, 2 * UNIT, 5 * UNIT))
+        mine_tx(self.issue(owner, 3 * UNIT, 7 * UNIT))
         mine_tx(self.buy(owner, UNIT, pce))
 
         # Enter stale period.
@@ -567,6 +567,7 @@ class TestEtherNomin(unittest.TestCase):
         mine_tx(self.transferFrom(MASTER, MASTER, MASTER, 0))
         mine_tx(self.fake_court.confiscateBalance(owner, target))
         mine_tx(self.unfreezeAccount(owner, target))
+        mine_tx(self.burn(owner, UNIT))
 
         # These calls should not work when the price is stale.
         # That they work when not stale is guaranteed by other tests, hopefully.
@@ -576,13 +577,12 @@ class TestEtherNomin(unittest.TestCase):
         self.assertReverts(self.collateralisationRatio)
         self.assertReverts(self.purchaseCostEther, UNIT)
         self.assertReverts(self.saleProceedsEther, UNIT)
-        self.assertGreater(W3.eth.getBalance(owner), 5 * UNIT)
+        self.assertGreater(W3.eth.getBalance(owner), 7 * UNIT)
         self.assertEqual(self.nominPool(), UNIT)
         self.assertEqual(self.balanceOf(owner), UNIT)
         self.assertReverts(self.issue, owner, UNIT, 5 * UNIT)
         self.assertReverts(self.buy, owner, UNIT, pce)
         self.assertReverts(self.sell, owner, UNIT)
-        self.assertReverts(self.burn, owner, UNIT)
 
         # Liquidation things should work while stale...
         mine_tx(self.forceLiquidation(owner))
@@ -849,6 +849,8 @@ class TestEtherNomin(unittest.TestCase):
         self.assertReverts(self.forceLiquidation, owner)
 
     def test_autoLiquidation(self):
+        # Check autoliquidation does nothing when already liquidating
+
         pass
 
     def test_extendLiquidationPeriod(self):
