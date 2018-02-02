@@ -830,7 +830,9 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.balanceOf(seller), 3 * UNIT)
 
     def test_isLiquidating(self):
-        pass
+        self.assertFalse(self.isLiquidating())
+        mine_tx(self.forceLiquidation(owner))
+        self.assertTrue(self.isLiquidating())
 
     def test_forceLiquidation(self):
         # non-owners should not be able to force liquidation.
@@ -857,7 +859,6 @@ class TestEtherNomin(unittest.TestCase):
         pass
 
     def test_selfDestruct(self):
-        # and test when price is stale.
         pass
 
     def test_confiscateBalance(self):
