@@ -1,7 +1,8 @@
 import unittest
 
-from utils.deployutils import W3, compile_contracts, attempt_deploy, mine_tx, MASTER
+from utils.deployutils import compile_contracts, attempt_deploy, mine_tx, MASTER, DUMMY
 from utils.testutils import assertReverts
+
 
 OWNED_SOURCE = "contracts/Owned.sol"
 
@@ -9,8 +10,10 @@ OWNED_SOURCE = "contracts/Owned.sol"
 def setUpModule():
     print("Testing Owned...")
 
+
 def tearDownModule():
     print()
+
 
 class TestOwned(unittest.TestCase):
     @classmethod
@@ -28,7 +31,7 @@ class TestOwned(unittest.TestCase):
 
     def test_change_owner(self):
         old_owner = self.owner()
-        new_owner = W3.eth.accounts[1]
+        new_owner = DUMMY
 
         mine_tx(self.setOwner(new_owner, MASTER))
         self.assertEqual(self.owner(), new_owner)
@@ -36,8 +39,9 @@ class TestOwned(unittest.TestCase):
         mine_tx(self.setOwner(old_owner, new_owner))
 
     def test_change_invalid_owner(self):
-        invalid_account = W3.eth.accounts[1]
+        invalid_account = DUMMY
         self.assertReverts(self.setOwner, invalid_account, invalid_account)
+
 
 if __name__ == '__main__':
     unittest.main()

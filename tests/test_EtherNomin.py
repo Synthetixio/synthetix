@@ -1,10 +1,11 @@
 import unittest
 
-from utils.deployutils import W3, UNIT, MASTER, ETHER
+from utils.deployutils import W3, UNIT, MASTER, DUMMY, ETHER
 from utils.deployutils import compile_contracts, attempt_deploy, mine_tx
 from utils.deployutils import take_snapshot, restore_snapshot, fast_forward
 from utils.testutils import assertReverts, block_time, send_value, get_eth_balance
 from utils.testutils import generate_topic_event_map, get_event_data_from_log
+
 
 ETHERNOMIN_SOURCE = "tests/contracts/PublicEtherNomin.sol"
 FAKECOURT_SOURCE = "tests/contracts/FakeCourt.sol"
@@ -148,7 +149,7 @@ class TestEtherNomin(unittest.TestCase):
 
     def test_getSetOwner(self):
         pre_owner = self.owner()
-        new_owner = W3.eth.accounts[1]
+        new_owner = DUMMY
 
         # Only the owner must be able to set the oracle.
         self.assertReverts(self.setOwner, new_owner, new_owner)
@@ -158,7 +159,7 @@ class TestEtherNomin(unittest.TestCase):
 
     def test_getSetOracle(self):
         pre_oracle = self.oracle()
-        new_oracle = W3.eth.accounts[1]
+        new_oracle = DUMMY
 
         # Only the owner must be able to set the oracle.
         self.assertReverts(self.setOracle, new_oracle, new_oracle)
@@ -167,7 +168,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.oracle(), new_oracle)
 
     def test_getSetCourt(self):
-        new_court = W3.eth.accounts[1]
+        new_court = DUMMY
 
         # Only the owner must be able to set the court.
         self.assertReverts(self.setOracle, new_court, new_court)
@@ -176,7 +177,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.court(), new_court)
 
     def test_getSetBeneficiary(self):
-        new_beneficiary = W3.eth.accounts[1]
+        new_beneficiary = DUMMY
 
         # Only the owner must be able to set the beneficiary.
         self.assertReverts(self.setBeneficiary, new_beneficiary, new_beneficiary)
@@ -189,7 +190,8 @@ class TestEtherNomin(unittest.TestCase):
         new_rate = UNIT // 10
 
         # Only the owner must be able to set the pool fee rate.
-        self.assertReverts(self.setPoolFeeRate, W3.eth.accounts[1], new_rate)
+        self.assertReverts(self.setPoolFeeRate, DUMMY, new_rate)
+
         # Pool fee rate must be no greater than UNIT.
         self.assertReverts(self.setPoolFeeRate, owner, UNIT + 1)
         self.assertReverts(self.setPoolFeeRate, owner, 2**256 - 1)
@@ -204,7 +206,7 @@ class TestEtherNomin(unittest.TestCase):
         new_period = 52 * 7 * 24 * 60 * 60
 
         # Only the owner should be able to set the pool fee rate.
-        self.assertReverts(self.setStalePeriod, W3.eth.accounts[1], new_period)
+        self.assertReverts(self.setStalePeriod, DUMMY, new_period)
 
         self.setStalePeriod(owner, new_period)
         self.assertEqual(self.stalePeriod(), new_period)
@@ -215,7 +217,7 @@ class TestEtherNomin(unittest.TestCase):
         new_price = 10**8 * UNIT # one hundred million dollar ethers $$$$$$
         new_price2 = UNIT // 10**6 # one ten thousandth of a cent ethers :(
         pre_oracle = self.oracle()
-        new_oracle = W3.eth.accounts[1]
+        new_oracle = DUMMY
 
         # Only the oracle must be able to set the current price.
         self.assertReverts(self.updatePrice, new_oracle, new_price)
