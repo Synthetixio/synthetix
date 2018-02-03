@@ -95,6 +95,8 @@ class TestHavven(unittest.TestCase):
         cls.targetFeePeriodDurationSeconds = lambda self: self.havven.functions.targetFeePeriodDurationSeconds().call()
         # minFeePeriodDurationSeconds
         cls.minFeePeriodDurationSeconds = lambda self: self.havven.functions._minFeePeriodDurationSeconds().call()
+        # maxFeePeriodDurationSeconds
+        cls.maxFeePeriodDurationSeconds = lambda self: self.havven.functions._maxFeePeriodDurationSeconds().call()
         # lastFeesCollected
         cls.lastFeesCollected = lambda self: self.havven.functions.lastFeesCollected().call()
 
@@ -144,10 +146,10 @@ class TestHavven(unittest.TestCase):
     # Test inherited Owned - Should be the same test_Owned.py
     ###
     def test_owner_is_master(self):
-        self.assertEqual(self.havven.functions.owner().call(), MASTER)
+        self.assertEqual(self.owner(), MASTER)
 
     def test_change_owner(self):
-        old_owner = self.havven.functions.owner().call()
+        old_owner = self.owner()
         new_owner = DUMMY
 
         self.setOwner(old_owner, new_owner)
@@ -196,6 +198,7 @@ class TestHavven(unittest.TestCase):
         )
         self.assertEquals(self.targetFeePeriodDurationSeconds(), to_seconds(weeks=4))
         self.assertEquals(self.minFeePeriodDurationSeconds(), to_seconds(days=1))
+        self.assertEquals(self.maxFeePeriodDurationSeconds(), to_seconds(weeks=26))
         self.assertEquals(self.lastFeesCollected(), 0)
         self.assertEquals(self.lastFeePeriodStartTime(), 2)
         self.assertEquals(self.penultimateFeePeriodStartTime(), 1)
