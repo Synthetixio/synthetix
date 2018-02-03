@@ -1,2 +1,3 @@
 web3>=4.0.0b
 py-solc>=2.1.0
+eth-utils

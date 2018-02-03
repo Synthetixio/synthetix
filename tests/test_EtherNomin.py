@@ -4,7 +4,7 @@ from utils.deployutils import W3, UNIT, MASTER, ETHER
 from utils.deployutils import compile_contracts, attempt_deploy, mine_tx
 from utils.deployutils import take_snapshot, restore_snapshot, fast_forward
 from utils.testutils import assertReverts, block_time, send_value, get_eth_balance
-
+from utils.testutils import generate_topic_event_map, get_event_data_from_log
 
 ETHERNOMIN_SOURCE = "tests/contracts/PublicEtherNomin.sol"
 FAKECOURT_SOURCE = "tests/contracts/FakeCourt.sol"
@@ -36,6 +36,8 @@ class TestEtherNomin(unittest.TestCase):
         compiled = compile_contracts([ETHERNOMIN_SOURCE, FAKECOURT_SOURCE],
                                      remappings=['""=contracts'])
         cls.nomin_abi = compiled['PublicEtherNomin']['abi']
+        cls.nomin_event_dict = generate_topic_event_map(cls.nomin_abi)
+
 
         cls.nomin_havven = W3.eth.accounts[1]
         cls.nomin_oracle = W3.eth.accounts[2]
@@ -122,6 +124,7 @@ class TestEtherNomin(unittest.TestCase):
         cls.debugEmptyFeePool = lambda self, sender: mine_tx(cls.nomin.functions.debugEmptyFeePool().transact({'from': sender}))
         cls.debugFreezeAccount = lambda self, sender, target: mine_tx(cls.nomin.functions.debugFreezeAccount(target).transact({'from': sender}))
 
+    """
     def test_constructor(self):
         # Nomin-specific members
         self.assertEqual(self.owner(), self.nomin_owner)
@@ -856,11 +859,22 @@ class TestEtherNomin(unittest.TestCase):
 
         # This call should not work if liquidation has begun.
         self.assertReverts(self.forceLiquidation, owner)
-
+    """
     def test_autoLiquidation(self):
-        # Check autoliquidation does nothing when already liquidating
+        owner = self.owner()
+        oracle = self.oracle()
+        self.updatePrice(oracle, UNIT)
 
-        pass
+        self.issue(owner, UNIT, 2 * UNIT)
+
+        tx_receipt = self.updatePrice(oracle, UNIT // 2 - 1)
+        for log in tx_receipt.logs:
+            print(get_event_data_from_log(self.nomin_event_dict, log))
+
+        # Check autoliquidation does nothing when already liquidating
+        tx_receipt = self.updatePrice(oracle, UNIT // 3 - 1)
+        for log in tx_receipt.logs:
+            print(get_event_data_from_log(self.nomin_event_dict, log))
 
     def test_extendLiquidationPeriod(self):
         owner = self.owner()
