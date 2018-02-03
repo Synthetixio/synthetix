@@ -228,6 +228,7 @@ contract Havven is ERC20Token, Owned {
         onlyOwner
         returns (bool)
     {
+        // Use "this" in order that the havven account is the sender.
         return this.transfer(account, value);
     }
 
@@ -246,11 +247,8 @@ contract Havven is ERC20Token, Owned {
         // an exception will be thrown in super.transfer().
         super.transfer(_to, _value);
 
-        // If there was no balance update, no need to update any fee entitlement information.
-        if (_value == 0) {
-            return true;
-        }
-
+        // Zero-value transfers still update fee entitlement information,
+        // and may roll over the fee period.
         adjustFeeEntitlement(msg.sender, senderPreBalance);
         adjustFeeEntitlement(_to, recipientPreBalance);
 
@@ -272,11 +270,8 @@ contract Havven is ERC20Token, Owned {
         // an exception will be thrown in super.transferFrom().
         super.transferFrom(_from, _to, _value);
 
-        // If there was no balance update, no need to update any fee entitlement information.
-        if (_value == 0) {
-            return true;
-        }
-
+        // Zero-value transfers still update fee entitlement information,
+        // and may roll over the fee period.
         adjustFeeEntitlement(_from, senderPreBalance);
         adjustFeeEntitlement(_to, recipientPreBalance);
 
