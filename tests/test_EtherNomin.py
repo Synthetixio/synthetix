@@ -952,7 +952,29 @@ class TestEtherNomin(unittest.TestCase):
         self.assertReverts(self.terminateLiquidation, owner)
 
     def test_canSelfDestruct(self):
-        pass
+        owner = self.owner()
+        oracle = self.oracle()
+
+        self.updatePrice(oracle, UNIT)
+        self.issue(owner, 2 * UNIT, 4 * UNIT)
+        self.buy(owner, UNIT, self.purchaseCostEther(UNIT))
+
+        self.assertFalse(self.canSelfDestruct())
+        self.forceLiquidation(owner)
+
+        # Not enough time elapsed.
+        self.assertFalse(self.canSelfDestruct())
+        fast_forward(seconds=self.liquidationPeriod() + 10)
+        self.assertTrue(self.canSelfDestruct()) 
+        self.updatePrice(oracle, UNIT)
+
+        self.terminateLiquidation(owner)
+        self.sell(owner, UNIT)
+        self.forceLiquidation(owner)
+
+        self.assertFalse(self.canSelfDestruct())
+        fast_forward(weeks=3)
+        self.assertTrue(self.canSelfDestruct())
 
     def test_selfDestruct(self):
         owner = self.owner()
