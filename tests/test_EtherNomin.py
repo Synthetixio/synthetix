@@ -124,7 +124,6 @@ class TestEtherNomin(unittest.TestCase):
         cls.debugEmptyFeePool = lambda self, sender: mine_tx(cls.nomin.functions.debugEmptyFeePool().transact({'from': sender}))
         cls.debugFreezeAccount = lambda self, sender, target: mine_tx(cls.nomin.functions.debugFreezeAccount(target).transact({'from': sender}))
 
-    """
     def test_constructor(self):
         # Nomin-specific members
         self.assertEqual(self.owner(), self.nomin_owner)
@@ -859,22 +858,38 @@ class TestEtherNomin(unittest.TestCase):
 
         # This call should not work if liquidation has begun.
         self.assertReverts(self.forceLiquidation, owner)
-    """
+
     def test_autoLiquidation(self):
         owner = self.owner()
         oracle = self.oracle()
-        self.updatePrice(oracle, UNIT)
 
+        # Do not liquidate if there's nothing in the pool.
+        self.updatePrice(oracle, UNIT // 10)
+        self.assertFalse(self.isLiquidating())
+
+        # Issue something so that we can liquidate.
+        self.updatePrice(oracle, UNIT)
         self.issue(owner, UNIT, 2 * UNIT)
 
-        tx_receipt = self.updatePrice(oracle, UNIT // 2 - 1)
-        for log in tx_receipt.logs:
-            print(get_event_data_from_log(self.nomin_event_dict, log))
+        # Ordinary price updates don't cause liquidation.
+        self.updatePrice(oracle, UNIT // 2)
+        self.assertFalse(self.isLiquidating())
 
-        # Check autoliquidation does nothing when already liquidating
+        # Price updates inducing sub-unity collateralisation ratios cause liquidation.
+        tx_receipt = self.updatePrice(oracle, UNIT // 2 - 1)
+        self.assertTrue(self.isLiquidating())
+        self.assertEqual(len(tx_receipt.logs), 2)
+        price_update_log = get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[0])
+        liquidation_log = get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[1])
+        self.assertEqual(price_update_log['event'], 'PriceUpdated')
+        self.assertEqual(liquidation_log['event'], 'Liquidation')
+
+        # The auto liquidation check should do nothing when already under liquidation.
         tx_receipt = self.updatePrice(oracle, UNIT // 3 - 1)
-        for log in tx_receipt.logs:
-            print(get_event_data_from_log(self.nomin_event_dict, log))
+        self.assertEqual(len(tx_receipt.logs), 1)
+        price_update_log = get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[0])
+        self.assertEqual(price_update_log['event'], 'PriceUpdated')
+        self.assertTrue(self.isLiquidating())
 
     def test_extendLiquidationPeriod(self):
         owner = self.owner()
