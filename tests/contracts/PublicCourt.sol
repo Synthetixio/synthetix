@@ -120,4 +120,16 @@ contract PublicCourt is Court {
 	{
 		return voteWeight[account];
 	}
+
+	function _setVotedYea(address account, address target)
+		public
+	{
+		setVotedYea(account, target);
+	}
+
+	function _setVotedNay(address account, address target)
+		public
+	{
+		setVotedNay(account, target);
+	}
 }
