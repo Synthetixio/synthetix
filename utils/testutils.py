@@ -1,7 +1,11 @@
+from utils.deployutils import mine_tx, W3
 from web3.utils.events import get_event_data
 from eth_utils import event_abi_to_log_topic
 
-from utils.deployutils import mine_tx
+def current_block_time(block_num=None):
+    if block_num is None:
+        block_num = W3.eth.blockNumber
+    return W3.eth.getBlock(block_num)['timestamp']
 
 def assertCallReverts(testcase, function):
     with testcase.assertRaises(ValueError) as error:
@@ -22,6 +26,26 @@ def assertReverts(testcase, function, *args):
 		function(*args)
 	testcase.assertTrue("revert" in error.exception.args[0]['message'])
 	testcase.assertEqual(-32000, error.exception.args[0]['code'])
+
+def assertClose(testcase, actual, expected, precision=5, msg=''):
+    if expected == 0:
+        if actual == 0:
+            # this should always pass
+            testcase.assertEqual(actual, expected)
+        else:
+            testcase.assertAlmostEqual(
+                expected/actual,
+                1,
+                places=precision,
+                msg=msg+f'\n{actual} ≉ {expected}'
+            )
+    else:
+        testcase.assertAlmostEqual(
+            actual/expected,
+            1,
+            places=precision,
+            msg=msg+f'\n{actual} ≉ {expected}'
+        )
 
 def generate_topic_event_map(abi):
     events = {}

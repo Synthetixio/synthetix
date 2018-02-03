@@ -29,6 +29,7 @@ def tearDownModule():
 class TestCourt(unittest.TestCase):
 	def setUp(self):
 		self.snapshot = take_snapshot()
+		owner = self.owner()
 
 	def tearDown(self):
 		restore_snapshot(self.snapshot)
@@ -62,6 +63,8 @@ class TestCourt(unittest.TestCase):
 		cls.voteStartTimes = lambda self: self.court.functions.voteStartTimes().call()
 		cls.votesFor = lambda self, account: self.court.functions.votesFor(account).call()
 		cls.votesAgainst = lambda self, account: self.court.functions.votesAgainst(account).call()
+		cls.userVote = lambda self, account: self.court.functions.userVote(account).call()
+		cls.voteTarget = lambda self, account: self.court.functions.voteTarget(account).call()
 
 		# Inherited setter
 		cls.setOwner = lambda self, sender, address: mine_tx(self.court.functions.setOwner(address).transact({'from': sender}))
@@ -260,11 +263,11 @@ class TestCourt(unittest.TestCase):
 		required_participation = self.requiredParticipation()
 		required_majority = self.requiredMajority()
 		fee_period = self.havvenTargetFeePeriodDurationSeconds()
-		share = self.havvenSupply() // 20
-		# Give a controlling share of havven tokens to our voter
+		tokens = self.havvenSupply() // 20
+		# Give tokens to our voters
 		for voter in voters:
-			self.havvenEndow(owner, voter, share)
-			self.assertEqual(self.havvenBalance(voter), share)
+			self.havvenEndow(owner, voter, tokens)
+			self.assertEqual(self.havvenBalance(voter), tokens)
 		# Fast forward to update the vote weights
 		fast_forward(fee_period + 1)
 		self.havvenPostCheckFeePeriodRollover(DUMMY)
@@ -275,16 +278,38 @@ class TestCourt(unittest.TestCase):
 		self.assertFalse(self.votePasses(suspect))
 		self.assertTrue(self.voting(suspect))
 		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		# All vote in favour of confiscation
 		for voter in voters:
 			self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 			self.voteFor(voter, suspect)
 		self.assertTrue(self.votePasses(suspect))
-		# for voter in voters:
-		# 	self.cancelVote(voter, suspect)
-		# # self.assertTrue(self.votePasses(suspect))
-		# #self.assertFalse(self.votePasses(suspect))
-		# TODO - Check false case
-
+		# Cancel votes
+		for voter in voters:
+			self.cancelVote(voter, suspect)
+		self.assertFalse(self.votePasses(suspect))
+		# All vote against confiscation
+		for voter in voters:
+			self.voteAgainst(voter, suspect)
+		self.assertFalse(self.votePasses(suspect))
+		# Cancel votes
+		for voter in voters:
+			self.cancelVote(voter, suspect)
+		# 30% of havven tokens vote for confiscation
+		for voter in voters[:6]:
+			self.voteFor(voter, suspect)
+		# Required participation must be > than 30%
+		self.assertFalse(self.votePasses(suspect))
+		# But if another user votes, participation = 35% which is sufficient.
+		self.voteFor(voters[7], suspect)
+		self.assertTrue(self.votePasses(suspect))
+		# The last 3 vote against, 70% for vs 30% against (required majority is 2/3)
+		for voter in voters[8:]:
+			self.voteAgainst(voter, suspect)
+		self.assertTrue(self.votePasses(suspect))
+		# If one changes their vote for to against, should not pass since it will be 60 vs 40
+		self.cancelVote(voters[7], suspect)
+		self.voteAgainst(voters[7], suspect)
+		self.assertFalse(self.votePasses(suspect))
 
 	def test_beginConfiscationAction(self):
 		owner = MASTER
@@ -381,7 +406,7 @@ class TestCourt(unittest.TestCase):
 		self.voteFor(voter, suspect)
 		self.assertEqual(self.votesFor(suspect), 1000)
 		self.cancelVote(voter, suspect)
-		self.assertEqual(self.votesFor(suspect), 1000)
+		self.assertEqual(self.votesFor(suspect), 0)
 
 
 	# def test_closeVote(self):
