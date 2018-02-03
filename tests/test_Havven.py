@@ -440,6 +440,8 @@ class TestHavven(unittest.TestCase):
         self.assertEqual(self.balanceOf(self.havven.address), self.totalSupply())
         self.endow(MASTER, self.havven.address, amount)
         self.assertEqual(self.balanceOf(self.havven.address), self.totalSupply())
+        # Balance is not lost (still distributable) if sent to the contract.
+        self.endow(MASTER, self.havven.address, amount)
 
     # transfer - same as test_ERC20
     def test_transfer(self):
