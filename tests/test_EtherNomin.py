@@ -1048,9 +1048,10 @@ class TestEtherNomin(unittest.TestCase):
         owner = self.owner()
         target = W3.eth.accounts[1]
 
+        # Unfreezing non-frozen accounts should not do anything.
         self.assertFalse(self.isFrozen(target))
-        # TODO: Unfreezing a not yet frozen account should not emit an unfreeze event.
-        # self.unfreezeAccount(owner, target)
+        tx_receipt = self.unfreezeAccount(owner, target)
+        self.assertEqual(len(tx_receipt.logs), 0)
 
         self.debugFreezeAccount(owner, target)
         self.assertTrue(self.isFrozen(target))
@@ -1058,10 +1059,12 @@ class TestEtherNomin(unittest.TestCase):
         # Only the owner should be able to unfreeze an account.
         self.assertReverts(self.unfreezeAccount, target, target)
 
-        # Unfreeze
-        self.unfreezeAccount(owner, target)
+        tx_receipt = self.unfreezeAccount(owner, target)
         self.assertFalse(self.isFrozen(target))
 
+        # Unfreezing should emit the appropriate log.
+        log = get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[0])
+        self.assertEqual(log['event'], 'AccountUnfrozen')
 
     def test_fallback(self):
         # Fallback function should be payable.
