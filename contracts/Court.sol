@@ -467,10 +467,10 @@ contract Court is Owned, SafeDecimalMath {
             Vote vote = userVote[msg.sender];
 
             if (vote == Vote.Yea) {
-                votesFor[msg.sender] -= voteWeight[msg.sender];
+                votesFor[target] -= voteWeight[msg.sender];
             }
             else if (vote == Vote.Nay) {
-                votesAgainst[msg.sender] -= voteWeight[msg.sender];
+                votesAgainst[target] -= voteWeight[msg.sender];
             } else {
                 // The sender has not voted.
                 return;
