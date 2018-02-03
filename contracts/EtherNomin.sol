@@ -354,9 +354,12 @@ contract EtherNomin is ERC20FeeToken {
         return liquidationTimestamp <= now;
     }
 
-    /* True if the contract is self-destructible. Since the
-     * contract is only destructible after the liquidationPeriod
-     * has elapsed, a fortiori canSelfDestruct() implies isLiquidating().
+    /* True if the contract is self-destructible. 
+     * This is true if either the complete liquidation period has elapsed,
+     * or if all tokens have been returned to the contract and it has been
+     * in liquidation for at least a week.
+     * Since the contract is only destructible after the liquidationTimestamp,
+     * a fortiori canSelfDestruct() implies isLiquidating().
      */
     function canSelfDestruct()
         public
@@ -365,7 +368,12 @@ contract EtherNomin is ERC20FeeToken {
     {
         // Not being in liquidation implies the timestamp is uint max, so it would roll over.
         // We need to check whether we're in liquidation first.
-        return isLiquidating() && (liquidationTimestamp + liquidationPeriod < now);
+        if (isLiquidating()) {
+            bool totalPeriodElapsed = liquidationTimestamp + liquidationPeriod < now;
+            bool allTokensReturned = (liquidationTimestamp + 1 weeks < now) && (nominPool == totalSupply);
+            return totalPeriodElapsed || allTokensReturned;
+        }
+        return false;
     }
 
 
@@ -551,7 +559,8 @@ contract EtherNomin is ERC20FeeToken {
 
     /* Destroy this contract, returning all funds back to the beneficiary
      * wallet, may only be called after the contract has been in
-     * liquidation for at least liquidationPeriod.
+     * liquidation for at least liquidationPeriod, or all circulating
+     * nomins have been sold back into the pool.
      * Exceptional cases:
      *     Not called by contract owner.
      *     Contract is not in liquidation.

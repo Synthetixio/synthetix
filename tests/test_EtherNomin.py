@@ -916,11 +916,25 @@ class TestEtherNomin(unittest.TestCase):
 
     def test_terminateLiquidation(self):
         pass
+        """
+        owner = self.owner()
+
+        # Terminating liquidation should not work when not liquidating.
+        self.assertReverts(self.terminateLiquidation)
+
+        self.forceLiquidation()
+        """
 
     def test_selfDestruct(self):
         owner = self.owner()
+        oracle = self.oracle()
         not_owner = W3.eth.accounts[5]
         self.assertNotEqual(not_owner, owner)
+
+        # Buy some nomins so that we can't short circuit self-destruction.
+        self.updatePrice(oracle, UNIT)
+        self.issue(owner, UNIT, 2 * UNIT)
+        self.buy(owner, UNIT, self.purchaseCostEther(UNIT))
 
         self.assertFalse(self.isLiquidating())
         self.assertFalse(self.canSelfDestruct())
@@ -954,13 +968,39 @@ class TestEtherNomin(unittest.TestCase):
         # Check that the beneficiary receives the entire balance of the smart contract.
         self.forceLiquidation(owner)
         fast_forward(seconds=self.liquidationPeriod() + 1)
-        value = 15 * ETHER
-        send_value(MASTER, self.nomin.address, value)
+        value = get_eth_balance(self.nomin.address)
         beneficiary = self.beneficiary()
         pre_balance = get_eth_balance(beneficiary)
-        self.assertEqual(get_eth_balance(self.nomin.address), value)
         self.selfDestruct(owner)
         self.assertEqual(get_eth_balance(beneficiary) - pre_balance, value)
+
+    def test_selfDestructShortCircuit(self):
+        owner = self.owner()
+        oracle = self.oracle()
+        not_owner = W3.eth.accounts[5]
+        self.assertNotEqual(not_owner, owner)
+
+        # Buy some nomins so that we can't immediately short circuit self-destruction.
+        self.updatePrice(oracle, UNIT)
+        self.issue(owner, UNIT, 2 * UNIT)
+        self.buy(owner, UNIT // 2, self.purchaseCostEther(UNIT // 2))
+
+        self.forceLiquidation(owner)
+
+        # Should not be able to self-destruct, as one week has not yet elapsed.
+        self.assertReverts(self.selfDestruct, owner)
+        
+        fast_forward(weeks=2)
+
+        # Should not be able to self-destruct as there are still some nomins in circulation.
+        self.assertReverts(self.selfDestruct, owner)
+
+        # Sell all nomins back, we should be able to selfdestruct.
+        self.sell(owner, UNIT // 2)
+        tx_receipt = self.selfDestruct(owner)
+        self.assertEqual(len(tx_receipt.logs), 1)
+        log = get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[0])
+        self.assertEqual(log['event'], "SelfDestructed")
 
     def test_confiscateBalance(self):
         owner = self.owner()
