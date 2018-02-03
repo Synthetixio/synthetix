@@ -363,17 +363,20 @@ class TestHavven(unittest.TestCase):
 
     # setTargetFeePeriod
     def test_setTargetFeePeriod(self):
-        self.setTargetFeePeriodDuration(MASTER, to_seconds(weeks=100))
+        self.setTargetFeePeriodDuration(MASTER, to_seconds(weeks=10))
         self.assertEqual(
             self.targetFeePeriodDurationSeconds(),
-            to_seconds(weeks=100)
+            to_seconds(weeks=10)
         )
 
     def test_setTargetFeePeriod_max(self):
-        self.setTargetFeePeriodDuration(MASTER, 2 ** 256 - 1)
+        sixmonths = 26 * 7 * 24 * 60 * 60
+        self.assertReverts(self.setTargetFeePeriodDuration, MASTER, 2**256 - 1)
+        self.assertReverts(self.setTargetFeePeriodDuration, MASTER, sixmonths + 1)
+        self.setTargetFeePeriodDuration(MASTER, sixmonths)
         self.assertEqual(
             self.targetFeePeriodDurationSeconds(),
-            2 ** 256 - 1
+            sixmonths
         )
 
     def test_setTargetFeePeriod_minimal(self):
