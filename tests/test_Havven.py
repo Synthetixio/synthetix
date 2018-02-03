@@ -398,24 +398,31 @@ class TestHavven(unittest.TestCase):
     # endow
     def test_endow_valid(self):
         amount = 50 * UNIT
+        havven_balance = self.balanceOf(self.havven.address)
         alice = fresh_account()
         self.assertEquals(self.balanceOf(alice), 0)
         self.endow(MASTER, alice, amount)
         self.assertEquals(self.balanceOf(alice), amount)
+        self.assertEquals(havven_balance - self.balanceOf(self.havven.address), amount)
 
     def test_endow_0(self):
         amount = 0
+        havven_balance = self.balanceOf(self.havven.address)
         alice = fresh_account()
         self.assertEquals(self.balanceOf(alice), 0)
         self.endow(MASTER, alice, amount)
         self.assertEquals(self.balanceOf(alice), amount)
+        self.assertEquals(havven_balance - self.balanceOf(self.havven.address), amount)
+
 
     def test_endow_supply(self):
         amount = self.totalSupply()
+        havven_balance = self.balanceOf(self.havven.address)
         alice = fresh_account()
         self.assertEquals(self.balanceOf(alice), 0)
         self.endow(MASTER, alice, amount)
         self.assertEquals(self.balanceOf(alice), amount)
+        self.assertEquals(havven_balance - self.balanceOf(self.havven.address), amount)
 
     def test_endow_more_than_supply(self):
         amount = self.totalSupply() * 2
@@ -442,6 +449,15 @@ class TestHavven(unittest.TestCase):
         self.assertEqual(self.balanceOf(self.havven.address), self.totalSupply())
         # Balance is not lost (still distributable) if sent to the contract.
         self.endow(MASTER, self.havven.address, amount)
+
+    def test_endow_currentBalanceSum(self):
+        amount = 50 * UNIT
+        havven_balance = self.balanceOf(self.havven.address)
+        alice = fresh_account()
+        self.assertEquals(self.balanceOf(alice), 0)
+        self.endow(MASTER, alice, amount)
+        self.assertEquals(self.balanceOf(alice), amount)
+        self.assertEquals(havven_balance - self.balanceOf(self.havven.address), amount)
 
     # transfer - same as test_ERC20
     def test_transfer(self):
