@@ -1,7 +1,7 @@
 import unittest
 from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mine_txs, mine_tx, \
     UNIT, MASTER, DUMMY, to_seconds, fast_forward, fresh_account, fresh_accounts, take_snapshot, restore_snapshot
-from utils.testutils import assertReverts, current_block_time, assertClose
+from utils.testutils import assertReverts, block_time, assertClose
 
 SOLIDITY_SOURCES = ["tests/contracts/PublicHavven.sol", "contracts/EtherNomin.sol",
                     "contracts/Court.sol"]
@@ -191,7 +191,7 @@ class TestHavven(unittest.TestCase):
     ###
     def test_constructor(self):
         self.assertEquals(
-            current_block_time(self.construction_block),
+            block_time(self.construction_block),
             self.feePeriodStartTime()
         )
         self.assertEquals(self.targetFeePeriodDurationSeconds(), to_seconds(weeks=4))
@@ -220,10 +220,10 @@ class TestHavven(unittest.TestCase):
         self.endow(MASTER, alice, start_amt)
         self.assertEquals(self.balanceOf(alice), start_amt)
         self.assertEquals(self.currentBalanceSum(alice), 0)
-        start_time = current_block_time()
+        start_time = block_time()
         fast_forward(delay)
         self.adjustFeeEntitlement(alice, alice, self.balanceOf(alice))
-        end_time = current_block_time()
+        end_time = block_time()
         balance_sum = (end_time - start_time) * start_amt
         self.assertEquals(
             self.currentBalanceSum(alice),
@@ -241,10 +241,10 @@ class TestHavven(unittest.TestCase):
     def test_lastAverageBalance(self):
         # set the block time to be at least 30seconds away from the end of the fee_period
         fee_period = self.targetFeePeriodDurationSeconds()
-        time_remaining = self.targetFeePeriodDurationSeconds() - current_block_time() + self.feePeriodStartTime()
+        time_remaining = self.targetFeePeriodDurationSeconds() - block_time() + self.feePeriodStartTime()
         if time_remaining < 30:
             fast_forward(50)
-            time_remaining = self.targetFeePeriodDurationSeconds() - current_block_time() + self.feePeriodStartTime()
+            time_remaining = self.targetFeePeriodDurationSeconds() - block_time() + self.feePeriodStartTime()
 
         # fast forward next block with some extra padding
         delay = time_remaining + 100
@@ -263,7 +263,7 @@ class TestHavven(unittest.TestCase):
 
         self.adjustFeeEntitlement(alice, alice, self.balanceOf(alice))
 
-        duration_since_rollover = current_block_time() - self.feePeriodStartTime()
+        duration_since_rollover = block_time() - self.feePeriodStartTime()
         balance_sum = duration_since_rollover * start_amt
 
         actual = self.currentBalanceSum(alice)
@@ -312,7 +312,7 @@ class TestHavven(unittest.TestCase):
 
         # expected currentBalance sum is balance*(time since start of period)
         actual = self.currentBalanceSum(alice)
-        expected = (current_block_time() - self.feePeriodStartTime()) * start_amt
+        expected = (block_time() - self.feePeriodStartTime()) * start_amt
         self.assertClose(
             actual, expected
         )

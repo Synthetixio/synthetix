@@ -43,14 +43,12 @@ def fresh_accounts(num_accs):
 
 
 class TERMCOLORS:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
+    BLUE = '\033[94m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
     BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+    RESET = '\033[0m'
 
 
 def to_seconds(seconds=0, minutes=0, hours=0, days=0, weeks=0):
@@ -75,13 +73,13 @@ def attempt(function, func_args, init_string, print_status=True, print_exception
     try:
         result = function(*func_args)
         if print_status:
-            print(f"{TERMCOLORS.OKGREEN}{' '*pad}Done!{TERMCOLORS.ENDC}")
+            print(f"{TERMCOLORS.GREEN}{' '*pad}Done!{TERMCOLORS.RESET}")
         return result
     except Exception as e:
         if print_status:
-            print(f"{TERMCOLORS.FAIL}{' '*pad}Failed.{TERMCOLORS.ENDC}")
+            print(f"{TERMCOLORS.RED}{' '*pad}Failed.{TERMCOLORS.RESET}")
         if print_exception:
-            print(f"{TERMCOLORS.WARNING}{TERMCOLORS.BOLD}ERROR:{TERMCOLORS.ENDC} {TERMCOLORS.BOLD}{e}{TERMCOLORS.ENDC}")
+            print(f"{TERMCOLORS.YELLOW}{TERMCOLORS.BOLD}ERROR:{TERMCOLORS.RESET} {TERMCOLORS.BOLD}{e}{TERMCOLORS.RESET}")
         return None
 
 
