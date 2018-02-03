@@ -136,7 +136,7 @@ contract Havven is ERC20Token, Owned {
 
     // Sums of balances*duration in the current fee period.
     // range: decimals; units: havven-seconds
-    mapping(address => uint) currentBalanceSum;
+    mapping(address => uint) public currentBalanceSum;
 
     // Average account balances in the last completed fee period. This is proportional
     // to that account's last period fee entitlement.
@@ -153,7 +153,7 @@ contract Havven is ERC20Token, Owned {
 
     // The time an account last made a transfer.
     // range: naturals
-    mapping(address => uint) lastTransferTimestamp;
+    mapping(address => uint) public lastTransferTimestamp;
 
     // The time the current fee period began.
     uint public feePeriodStartTime = 3;
@@ -177,11 +177,9 @@ contract Havven is ERC20Token, Owned {
     // of the last fee rollover (feePeriodStartTime).
     uint public lastFeesCollected;
 
-    mapping(address => bool) hasWithdrawnLastPeriodFees;
+    mapping(address => bool) public hasWithdrawnLastPeriodFees;
 
     EtherNomin public nomin;
-
-    uint public debug;
 
 
     /* ========== CONSTRUCTOR ========== */
@@ -354,14 +352,12 @@ contract Havven is ERC20Token, Owned {
                 if (lastTransferTime <= penultimateFeePeriodStartTime) {
                     // transfer was before penultimate period
                     penultimateAverageBalance[account] = preBalance;
-                    debug = 1;
                 } else {
 
                     penultimateAverageBalance[account] = safeDiv(
                         safeAdd(currentBalanceSum[account], safeMul(preBalance, (lastFeePeriodStartTime - lastTransferTime))),
                         (lastFeePeriodStartTime - penultimateFeePeriodStartTime)
                     );
-                    debug = currentBalanceSum[account];
                 }
 
                 // If the user did not transfer/withdraw in the last fee period
@@ -374,7 +370,6 @@ contract Havven is ERC20Token, Owned {
                     safeAdd(currentBalanceSum[account], safeMul(preBalance, (feePeriodStartTime - lastTransferTime))),
                     (feePeriodStartTime - lastFeePeriodStartTime)
                 );
-                debug = 3;
             }
 
             // Roll over to the next fee period.
@@ -407,10 +402,14 @@ contract Havven is ERC20Token, Owned {
             penultimateFeePeriodStartTime = lastFeePeriodStartTime;
             lastFeePeriodStartTime = feePeriodStartTime;
             feePeriodStartTime = now;
+            
+            FeePeriodRollover(now);
         }
     }
 
     /* ========== EVENTS ========== */
+
+    event FeePeriodRollover(uint timestamp);
 
     event FeePeriodDurationUpdated(uint duration);
 
