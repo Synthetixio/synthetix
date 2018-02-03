@@ -138,6 +138,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.nominPool(), 0)
         construct_time = block_time(self.construction_txr.blockNumber)
         self.assertEqual(construct_time, self.construction_price_time)
+        self.assertTrue(self.isFrozen(self.nomin.address))
 
         # ERC20FeeToken members
         self.assertEqual(self.name(), "Ether-Backed USD Nomins")
@@ -634,6 +635,9 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.balanceOf(owner), 10 * UNIT)
         self.assertEqual(self.balanceOf(target), 0)
 
+        # Should be impossible to transfer to the nomin contract itself.
+        self.assertReverts(self.transfer, owner, self.nomin.address, UNIT)
+
         self.transfer(owner, target, 5 * UNIT)
         remainder = 10 * UNIT - self.transferPlusFee(5 * UNIT)
         self.assertEqual(self.balanceOf(owner), remainder)
@@ -674,6 +678,9 @@ class TestEtherNomin(unittest.TestCase):
 
         self.assertEqual(self.balanceOf(owner), 10 * UNIT)
         self.assertEqual(self.balanceOf(target), 0)
+
+        # Should be impossible to transfer to the nomin contract itself.
+        self.assertReverts(self.transferFrom, proxy, owner, self.nomin.address, UNIT)
 
         self.transferFrom(proxy, owner, target, 5 * UNIT)
         remainder = 10 * UNIT - self.transferPlusFee(5 * UNIT)
@@ -1101,9 +1108,15 @@ class TestEtherNomin(unittest.TestCase):
         owner = self.owner()
         target = W3.eth.accounts[1]
 
+        # The nomin contract itself should not be unfreezable.
+        tx_receipt = self.unfreezeAccount(owner, self.nomin.address)
+        self.assertTrue(self.isFrozen(self.nomin.address))
+        self.assertEqual(len(tx_receipt.logs), 0)
+
         # Unfreezing non-frozen accounts should not do anything.
         self.assertFalse(self.isFrozen(target))
         tx_receipt = self.unfreezeAccount(owner, target)
+        self.assertFalse(self.isFrozen(target))
         self.assertEqual(len(tx_receipt.logs), 0)
 
         self.debugFreezeAccount(owner, target)
