@@ -1,7 +1,7 @@
 import unittest
 
 from utils.deployutils import W3, compile_contracts, attempt_deploy, mine_tx, UNIT, MASTER, ETHER, take_snapshot, restore_snapshot
-from utils.testutils import assertReverts, assertCallReverts
+from utils.testutils import assertReverts
 
 
 ERC20Token_SOURCE = "contracts/ERC20Token.sol"
