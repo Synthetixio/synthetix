@@ -842,9 +842,6 @@ class TestEtherNomin(unittest.TestCase):
         self.forceLiquidation(self.owner())
         self.assertTrue(self.isLiquidating())
 
-    def test_canSelfDestruct(self):
-        pass
-
     def test_forceLiquidation(self):
         owner = self.owner()
         # non-owners should not be able to force liquidation.
@@ -853,11 +850,14 @@ class TestEtherNomin(unittest.TestCase):
         self.assertReverts(self.forceLiquidation, non_owner)
 
         self.assertFalse(self.isLiquidating())
-        self.forceLiquidation(owner)
+        tx_receipt = self.forceLiquidation(owner)
         self.assertTrue(self.isLiquidating())
+        self.assertEqual(block_time(tx_receipt.blockNumber), self.liquidationTimestamp())
+        self.assertEqual(len(tx_receipt.logs), 1)
+        self.assertEqual(get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[0])['event'], "Liquidation")
 
         # This call should not work if liquidation has begun.
-        self.assertReverts(self.forceLiquidation, owner)
+        self.assertReverts(self.forceLiquidation, owner) 
 
     def test_autoLiquidation(self):
         owner = self.owner()
@@ -915,15 +915,44 @@ class TestEtherNomin(unittest.TestCase):
         self.assertReverts(self.extendLiquidationPeriod, owner, 12309198139871)
 
     def test_terminateLiquidation(self):
-        pass
-        """
         owner = self.owner()
+        oracle = self.oracle()
 
         # Terminating liquidation should not work when not liquidating.
-        self.assertReverts(self.terminateLiquidation)
+        self.assertReverts(self.terminateLiquidation, owner)
 
-        self.forceLiquidation()
-        """
+        self.forceLiquidation(owner)
+
+        # Only the owner should be able to terminate liquidation.
+        self.assertReverts(self.terminateLiquidation, oracle)
+
+        # Should be able to terminate liquidation if there is no supply.
+        tx_receipt = self.terminateLiquidation(owner)
+        self.assertEqual(self.liquidationTimestamp(), 2**256 - 1)
+        self.assertEqual(self.liquidationPeriod(), 90 * 24 * 60 * 60)
+        self.assertEqual(len(tx_receipt.logs), 1)
+        self.assertEqual(get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[0])['event'], "LiquidationTerminated")
+
+        # Should not be able to terminate liquidation if the supply is undercollateralised.
+        self.updatePrice(oracle, 2 * UNIT)
+        self.issue(owner, UNIT, UNIT)
+        self.updatePrice(oracle, UNIT - 1) 
+        self.assertTrue(self.isLiquidating()) # Price update triggers liquidation.
+        self.assertReverts(self.terminateLiquidation, owner)
+
+        # But if the price recovers we should be fine to terminate.
+        self.updatePrice(oracle, UNIT)
+        self.terminateLiquidation(owner)
+        self.assertFalse(self.isLiquidating())
+
+        # And we should not be able to terminate liquidation if the price is stale.
+        self.forceLiquidation(owner)
+        fast_forward(seconds=2 * self.stalePeriod())
+        self.assertTrue(self.priceIsStale())
+        self.assertReverts(self.terminateLiquidation, owner)
+
+    def test_canSelfDestruct(self):
+        pass
 
     def test_selfDestruct(self):
         owner = self.owner()
@@ -1074,8 +1103,3 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(get_eth_balance(self.nomin.address), 0)
         send_value(owner, self.nomin.address, ETHER)
         self.assertEqual(get_eth_balance(self.nomin.address), ETHER)
-
-    def test_scenario(self):
-        pass
-
-    # Events
