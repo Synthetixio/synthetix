@@ -267,7 +267,7 @@ class TestCourt(unittest.TestCase):
 		required_majority = self.requiredMajority()
 		fee_period = self.havvenTargetFeePeriodDurationSeconds()
 		tokens = self.havvenSupply() // 20
-		# Give tokens to our voters
+		# Give 1/20th of the token supply to each of our 10 voters. In total 50% of tokens distributed.
 		for voter in voters:
 			self.havvenEndow(owner, voter, tokens)
 			self.assertEqual(self.havvenBalance(voter), tokens)
@@ -281,22 +281,26 @@ class TestCourt(unittest.TestCase):
 		self.assertFalse(self.votePasses(suspect))
 		self.assertTrue(self.voting(suspect))
 		self.havvenPostCheckFeePeriodRollover(DUMMY)
-		# All vote in favour of confiscation
+		# All vote in favour of confiscation, 50% in favour
 		for voter in voters:
 			self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 			self.voteFor(voter, suspect)
 		self.assertTrue(self.votePasses(suspect))
-		# Cancel votes
+		self.assertEqual(self.votesFor(suspect), self.havvenSupply() // 2)
+		# All cancel votes
 		for voter in voters:
 			self.cancelVote(voter, suspect)
 		self.assertFalse(self.votePasses(suspect))
+		self.assertEqual(self.votesFor(suspect), 0)
 		# All vote against confiscation
 		for voter in voters:
 			self.voteAgainst(voter, suspect)
 		self.assertFalse(self.votePasses(suspect))
-		# Cancel votes
+		self.assertEqual(self.votesAgainst(suspect), self.havvenSupply() // 2)
+		# All cancel votes
 		for voter in voters:
 			self.cancelVote(voter, suspect)
+		self.assertEqual(self.votesAgainst(suspect), 0)
 		# 30% vote for confiscation
 		for voter in voters[:6]:
 			self.voteFor(voter, suspect)
@@ -323,7 +327,7 @@ class TestCourt(unittest.TestCase):
 		voting_period = self.votingPeriod()
 		fee_period = self.havvenTargetFeePeriodDurationSeconds()
 		controlling_share = self.havvenSupply() // 2
-		# Give some havven tokens to our voter
+		# Give 50% of havven tokens to voter.
 		self.havvenEndow(owner, voter, controlling_share)
 		self.assertEqual(self.havvenBalance(voter), controlling_share)
 		# Cannot vote unless there is a confiscation action
