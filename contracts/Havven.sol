@@ -219,7 +219,10 @@ contract Havven is ERC20Token, Owned {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /* Allow the owner of this contract to endow any address with havvens
-     * from the initial supply. */
+     * from the initial supply. Since the entire initial supply resides
+     * in the havven contract, this disallows the foundation from withdrawing
+     * fees on undistributed balances. This function can also be used
+     * to retrieve any havvens sent to the Havven contract itself. */
     function endow(address account, uint value)
         public
         onlyOwner
