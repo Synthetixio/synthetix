@@ -191,6 +191,7 @@ contract Havven is ERC20Token, Owned {
         Owned(_owner)
         public
     {
+        lastTransferTimestamp[this] = now;
         feePeriodStartTime = now;
     }
 
@@ -229,6 +230,7 @@ contract Havven is ERC20Token, Owned {
         returns (bool)
     {
         // Use "this" in order that the havven account is the sender.
+        // That this is an explicit transfer also initialises fee entitlement information.
         return this.transfer(account, value);
     }
 

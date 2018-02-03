@@ -192,9 +192,14 @@ class TestHavven(unittest.TestCase):
     # Constructor
     ###
     def test_constructor(self):
+        construction_time = block_time(self.construction_block)
         self.assertEquals(
-            block_time(self.construction_block),
+            construction_time,
             self.feePeriodStartTime()
+        )
+        self.assertEquals(
+            construction_time,
+            self.lastTransferTimestamp(self.havven.address)
         )
         self.assertEquals(self.targetFeePeriodDurationSeconds(), to_seconds(weeks=4))
         self.assertEquals(self.minFeePeriodDurationSeconds(), to_seconds(days=1))
@@ -414,7 +419,6 @@ class TestHavven(unittest.TestCase):
         self.assertEquals(self.balanceOf(alice), amount)
         self.assertEquals(havven_balance - self.balanceOf(self.havven.address), amount)
 
-
     def test_endow_supply(self):
         amount = self.totalSupply()
         havven_balance = self.balanceOf(self.havven.address)
@@ -452,12 +456,10 @@ class TestHavven(unittest.TestCase):
 
     def test_endow_currentBalanceSum(self):
         amount = 50 * UNIT
-        havven_balance = self.balanceOf(self.havven.address)
+        havven_balanceSum = self.currentBalanceSum(self.havven.address)
         alice = fresh_account()
-        self.assertEquals(self.balanceOf(alice), 0)
         self.endow(MASTER, alice, amount)
-        self.assertEquals(self.balanceOf(alice), amount)
-        self.assertEquals(havven_balance - self.balanceOf(self.havven.address), amount)
+        self.assertGreater(self.currentBalanceSum(self.havven.address), havven_balanceSum)
 
     # transfer - same as test_ERC20
     def test_transfer(self):
