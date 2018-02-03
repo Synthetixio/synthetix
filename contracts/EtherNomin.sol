@@ -95,7 +95,7 @@ contract EtherNomin is ERC20FeeToken {
     /* ========== STATE VARIABLES ========== */
 
     // The oracle provides price information to this contract.
-    // It may only call the setPrice() function.
+    // It may only call the updatePrice() function.
     address public oracle;
 
     // The address of the contract which manages confiscation votes.
@@ -135,11 +135,11 @@ contract EtherNomin is ERC20FeeToken {
     uint public etherPrice;
 
     // Last time the price was updated.
-    uint lastPriceUpdate;
+    uint public lastPriceUpdate;
 
     // The period it takes for the price to be considered stale.
     // If the price is stale, functions that require the price are disabled.
-    uint stalePeriod = 2 days;
+    uint public stalePeriod = 2 days;
 
     // The set of addresses that have been frozen by confiscation.
     mapping(address => bool) public isFrozen;
@@ -163,6 +163,7 @@ contract EtherNomin is ERC20FeeToken {
 
         etherPrice = initialEtherPrice;
         lastPriceUpdate = now;
+        PriceUpdated(etherPrice);
     }
 
 
@@ -214,23 +215,6 @@ contract EtherNomin is ERC20FeeToken {
         StalePeriodUpdated(period);
     }
 
-    /* Update the current ether price and update the last updated time,
-     * refreshing the price staleness.
-     * Exceptional conditions:
-     *     Not called by the oracle. */
-    function setPrice(uint price)
-        public
-        postCheckAutoLiquidate
-    {
-        // Should be callable only by the oracle.
-        require(msg.sender == oracle);
-
-        etherPrice = price;
-        lastPriceUpdate = now;
-        PriceUpdated(price);
-    }
-
-
     /* ========== VIEW FUNCTIONS ========== */
 
     /* Return the equivalent fiat value of the given quantity
@@ -258,33 +242,6 @@ contract EtherNomin is ERC20FeeToken {
         return fiatValue(this.balance);
     }
 
-    /* The same as fiatValue(), but without the stale price check. */
-    function fiatValueAllowStale(uint eth) 
-        internal
-        view
-        returns (uint)
-    {
-        return safeDecMul(eth, etherPrice);
-    }
-
-    /* The same as fiatBalance(), but without the stale price check. */
-    function fiatBalanceAllowStale()
-        internal
-        view
-        returns (uint)
-    {
-        return fiatValueAllowStale(this.balance);
-    }
-
-    /* Return the units of fiat per nomin in the supply.*/
-    function collateralisationRatio()
-        public
-        view
-        returns (uint)
-    {
-        return safeDecDiv(fiatBalance(), totalSupply);
-    }
-
     /* Return the equivalent ether value of the given quantity
      * of fiat at the current price.
      * Exceptional conditions:
@@ -298,6 +255,24 @@ contract EtherNomin is ERC20FeeToken {
         return safeDecDiv(fiat, etherPrice);
     }
 
+    /* The same as etherValue(), but without the stale price check. */
+    function etherValueAllowStale(uint fiat) 
+        internal
+        view
+        returns (uint)
+    {
+        return safeDecDiv(fiat, etherPrice);
+    }
+
+    /* Return the units of fiat per nomin in the supply.*/
+    function collateralisationRatio()
+        public
+        view
+        returns (uint)
+    {
+        return safeDecDiv(fiatBalance(), totalSupply);
+    }
+
     /* Return the fee charged on a purchase or sale of n nomins. */
     function poolFeeIncurred(uint n)
         public
@@ -307,7 +282,8 @@ contract EtherNomin is ERC20FeeToken {
         return safeDecMul(n, poolFeeRate);
     }
 
-    /* Return the fiat cost (including fee) of purchasing n nomins */
+    /* Return the fiat cost (including fee) of purchasing n nomins.
+     * Nomins are purchased for $1, plus the fee. */
     function purchaseCostFiat(uint n)
         public
         view
@@ -328,7 +304,8 @@ contract EtherNomin is ERC20FeeToken {
         return etherValue(purchaseCostFiat(n));
     }
 
-    /* Return the fiat proceeds (less the fee) of selling n nomins.*/
+    /* Return the fiat proceeds (less the fee) of selling n nomins.
+     * Nomins are sold for $1, minus the fee. */
     function saleProceedsFiat(uint n)
         public
         view
@@ -350,6 +327,15 @@ contract EtherNomin is ERC20FeeToken {
         return etherValue(saleProceedsFiat(n));
     }
 
+    /* The same as saleProceedsEther(), but without the stale price check. */
+    function saleProceedsEtherAllowStale(uint n)
+        internal
+        view
+        returns (uint)
+    {
+        return etherValueAllowStale(saleProceedsFiat(n));
+    }
+
     /* True iff the current block timestamp is later than the time
      * the price was last updated, plus the stale period. */
     function priceIsStale()
@@ -366,6 +352,28 @@ contract EtherNomin is ERC20FeeToken {
         returns (bool)
     {
         return liquidationTimestamp <= now;
+    }
+
+    /* True if the contract is self-destructible. 
+     * This is true if either the complete liquidation period has elapsed,
+     * or if all tokens have been returned to the contract and it has been
+     * in liquidation for at least a week.
+     * Since the contract is only destructible after the liquidationTimestamp,
+     * a fortiori canSelfDestruct() implies isLiquidating().
+     */
+    function canSelfDestruct()
+        public
+        view
+        returns (bool)
+    {
+        // Not being in liquidation implies the timestamp is uint max, so it would roll over.
+        // We need to check whether we're in liquidation first.
+        if (isLiquidating()) {
+            bool totalPeriodElapsed = liquidationTimestamp + liquidationPeriod < now;
+            bool allTokensReturned = (liquidationTimestamp + 1 weeks < now) && (nominPool == totalSupply);
+            return totalPeriodElapsed || allTokensReturned;
+        }
+        return false;
     }
 
 
@@ -393,6 +401,22 @@ contract EtherNomin is ERC20FeeToken {
         return super.transferFrom(_from, _to, _value);
     }
 
+    /* Update the current ether price and update the last updated time,
+     * refreshing the price staleness.
+     * Exceptional conditions:
+     *     Not called by the oracle. */
+    function updatePrice(uint price)
+        public
+        postCheckAutoLiquidate
+    {
+        // Should be callable only by the oracle.
+        require(msg.sender == oracle);
+
+        etherPrice = price;
+        lastPriceUpdate = now;
+        PriceUpdated(price);
+    }
+
     /* Issues n nomins into the pool available to be bought by users.
      * Must be accompanied by $n worth of ether.
      * Exceptional conditions:
@@ -403,6 +427,7 @@ contract EtherNomin is ERC20FeeToken {
         public
         onlyOwner
         payable
+        notLiquidating
     {
         // Price staleness check occurs inside the call to fiatValue.
         // Safe additions are unnecessary here, as either the addition is checked on the following line
@@ -422,7 +447,7 @@ contract EtherNomin is ERC20FeeToken {
         public
         onlyOwner
     {
-        // Require that there are enough nomins in the accessible pool to burn; and
+        // Require that there are enough nomins in the accessible pool to burn
         require(nominPool >= n);
         nominPool = safeSub(nominPool, n);
         totalSupply = safeSub(totalSupply, n);
@@ -456,19 +481,23 @@ contract EtherNomin is ERC20FeeToken {
      * Exceptional conditions:
      *     Insufficient nomins in sender's wallet.
      *     Insufficient funds in the pool to pay sender.
-     *     Price is stale. */
+     *     Price is stale if not in liquidation. */
     function sell(uint n)
         public
     {
-        uint proceeds = saleProceedsFiat(n);
-        // Price staleness check occurs inside the call to fiatBalance,
-        // but allow people to sell their nomins back to the system regardless
-        // if we're in liquidation.
+
+        // Price staleness check occurs inside the call to saleProceedsEther,
+        // but we allow people to sell their nomins back to the system
+        // if we're in liquidation, regardless.
+        uint proceeds;
         if (isLiquidating()) {
-            require(fiatBalanceAllowStale() >= proceeds);
+            proceeds = saleProceedsEtherAllowStale(n);
         } else {
-            require(fiatBalance() >= proceeds);
+            proceeds = saleProceedsEther(n);
         }
+
+        require(this.balance >= proceeds);
+
         // sub requires that the balance is greater than n
         balanceOf[msg.sender] = safeSub(balanceOf[msg.sender], n);
         nominPool = safeAdd(nominPool, n);
@@ -492,15 +521,6 @@ contract EtherNomin is ERC20FeeToken {
         beginLiquidation();
     }
 
-    /* Anyone may query the current collateralisation levels, and force liquidation
-     * if they are too low.
-     */
-    function liquidate()
-        public
-        notLiquidating
-        postCheckAutoLiquidate
-    {}
-
     function beginLiquidation()
         internal
     {
@@ -514,6 +534,7 @@ contract EtherNomin is ERC20FeeToken {
         public
         onlyOwner
     {
+        require(isLiquidating());
         require(liquidationPeriod + extension <= maxLiquidationPeriod);
         liquidationPeriod += extension;
         LiquidationExtended(extension);
@@ -530,7 +551,7 @@ contract EtherNomin is ERC20FeeToken {
         payable
     {
         require(isLiquidating());
-        require(totalSupply == 0 || collateralisationRatio() > autoLiquidationRatio);
+        require(totalSupply == 0 || collateralisationRatio() >= autoLiquidationRatio);
         liquidationTimestamp = ~uint(0);
         liquidationPeriod = defaultLiquidationPeriod;
         LiquidationTerminated();
@@ -538,7 +559,8 @@ contract EtherNomin is ERC20FeeToken {
 
     /* Destroy this contract, returning all funds back to the beneficiary
      * wallet, may only be called after the contract has been in
-     * liquidation for at least liquidationPeriod.
+     * liquidation for at least liquidationPeriod, or all circulating
+     * nomins have been sold back into the pool.
      * Exceptional cases:
      *     Not called by contract owner.
      *     Contract is not in liquidation.
@@ -548,8 +570,7 @@ contract EtherNomin is ERC20FeeToken {
         public
         onlyOwner
     {
-        require(isLiquidating() &&
-                liquidationTimestamp + liquidationPeriod < now);
+        require(canSelfDestruct());
         SelfDestructed();
         selfdestruct(beneficiary);
     }
@@ -569,11 +590,10 @@ contract EtherNomin is ERC20FeeToken {
         require(court.confirming(target));
         require(court.votePasses(target));
 
-        // Confiscate the balance in the account.
+        // Confiscate the balance in the account and freeze it.
         uint balance = balanceOf[target];
         feePool = safeAdd(feePool, balance);
         balanceOf[target] = 0;
-        // Freeze the account.
         isFrozen[target] = true;
         Confiscation(target, balance);
     }
@@ -582,8 +602,10 @@ contract EtherNomin is ERC20FeeToken {
         public
         onlyOwner
     {
-        isFrozen[target] = false;
-        AccountUnfrozen(target);
+        if (isFrozen[target]) {
+            isFrozen[target] = false;
+            AccountUnfrozen(target);
+        }
     }
 
     /* Fallback function allows convenient collateralisation of the contract,
@@ -607,11 +629,18 @@ contract EtherNomin is ERC20FeeToken {
 
     /* Any function modified by this will automatically liquidate
      * the system if the collateral levels are too low.
+     * This is called on collateral-value/nomin-supply modifying functions that can
+     * actually move the contract into liquidation. This is really only
+     * the price update, since issuance requires that the contract is overcollateralised,
+     * burning can only destroy tokens without withdrawing backing, buying from the pool can only
+     * asymptote to a collateralisation level of unity, while selling into the pool can only 
+     * increase the collateralisation ratio.
+     * Additionally, price update checks should occur frequently.
      */
     modifier postCheckAutoLiquidate
     {
         _;
-        if (totalSupply != 0 && collateralisationRatio() < autoLiquidationRatio) {
+        if (!isLiquidating() && totalSupply != 0 && collateralisationRatio() < autoLiquidationRatio) {
             beginLiquidation();
         }
     }

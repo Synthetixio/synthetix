@@ -3,6 +3,7 @@ import unittest
 from utils.deployutils import compile_contracts, attempt_deploy, mine_tx, MASTER, DUMMY
 from utils.testutils import assertReverts
 
+
 OWNED_SOURCE = "contracts/Owned.sol"
 
 
