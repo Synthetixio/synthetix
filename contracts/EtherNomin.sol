@@ -164,6 +164,8 @@ contract EtherNomin is ERC20FeeToken {
         etherPrice = initialEtherPrice;
         lastPriceUpdate = now;
         PriceUpdated(etherPrice);
+
+        isFrozen[this] = true;
     }
 
 
@@ -602,7 +604,7 @@ contract EtherNomin is ERC20FeeToken {
         public
         onlyOwner
     {
-        if (isFrozen[target]) {
+        if (isFrozen[target] && EtherNomin(target) != this) {
             isFrozen[target] = false;
             AccountUnfrozen(target);
         }
