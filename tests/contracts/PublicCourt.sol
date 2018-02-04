@@ -124,12 +124,12 @@ contract PublicCourt is Court {
 	function publicSetVotedYea(address account, address target)
 		public
 	{
-		return setVotedYea(account, target);
+		setVotedYea(account, target);
 	}
 
 	function publicSetVotedNay(address account, address target)
 		public
 	{
-		return setVotedNay(account, target);
+		setVotedNay(account, target);
 	}
 }
