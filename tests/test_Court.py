@@ -2,6 +2,7 @@ import unittest
 
 from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mine_txs, mine_tx, UNIT, MASTER, fast_forward, force_mine_block, DUMMY, take_snapshot, restore_snapshot, fresh_account, fresh_accounts
 from utils.testutils import assertReverts
+from utils.testutils import generate_topic_event_map, get_event_data_from_log
 
 SOLIDITY_SOURCES =  ["tests/contracts/PublicCourt.sol", "contracts/EtherNomin.sol", "tests/contracts/PublicHavven.sol"]
 
@@ -9,6 +10,7 @@ def deploy_public_court():
 	print("Deployment Initiated. \n")
 
 	compiled = attempt(compile_contracts, [SOLIDITY_SOURCES], "Compiling contracts...")
+	court_abi = compiled['PublicCourt']['abi']
 
 	havven_contract, havven_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [MASTER])
 	nomin_contract, nomin_txr = attempt_deploy(compiled, 'EtherNomin', MASTER, [havven_contract.address, MASTER, MASTER, 1000*UNIT, MASTER])
@@ -18,7 +20,7 @@ def deploy_public_court():
 	attempt(mine_txs, [txs], "Linking contracts... ")
 
 	print("\nDeployment complete.\n")
-	return havven_contract, nomin_contract, court_contract
+	return havven_contract, nomin_contract, court_contract, court_abi
 
 def setUpModule():
     print("Testing Court...")
@@ -39,12 +41,17 @@ class TestCourt(unittest.TestCase):
 	def setUpClass(cls):
 		cls.assertReverts = assertReverts
 
-		cls.havven, cls.nomin, cls.court = deploy_public_court()
+		cls.havven, cls.nomin, cls.court, cls.court_abi = deploy_public_court()
+
+		# Event stuff
+		cls.court_event_dict = generate_topic_event_map(cls.court_abi)
 
 		# Inherited
 		cls.owner = lambda self: self.court.functions.owner().call()
 
 		# Non-public variables
+		cls.getHavven = lambda self: self.court.functions._havven().call()
+		cls.getNomin = lambda self: self.court.functions._nomin().call()
 		cls.minStandingBalance = lambda self: self.court.functions._minStandingBalance().call()
 		cls.votingPeriod = lambda self: self.court.functions._votingPeriod().call()
 		cls.minVotingPeriod = lambda self: self.court.functions._minVotingPeriod().call()
@@ -90,8 +97,8 @@ class TestCourt(unittest.TestCase):
 		cls.closeVote = lambda self, sender, target: mine_tx(self.court.functions.closeVote(target).transact({'from' : sender}))
 
 		# Internal
-		cls.setVotedYea = lambda self, account, target: self.court.functions.publicSetVotedYea(account, target).call()
-		cls.setVotedNay = lambda self, account, target: self.court.functions.publicSetVotedNay(account, target).call()
+		cls.setVotedYea = lambda self, sender, account, target: self.court.functions.publicSetVotedYea(account, target).transact({'from' : sender})
+		cls.setVotedNay = lambda self, sender, account, target: self.court.functions.publicSetVotedNay(account, target).transact({'from' : sender})
 
 		# Owner only
 		cls.approve = lambda self, sender, target: mine_tx(self.court.functions.approve(target).transact({'from' : sender}))
@@ -105,14 +112,14 @@ class TestCourt(unittest.TestCase):
 		cls.havvenPenultimateAverageBalance = lambda self, addr: self.havven.functions.penultimateAverageBalance(addr).call()
 		cls.havvenLastAverageBalance = lambda self, addr: self.havven.functions.lastAverageBalance(addr).call()
 
-		# Havven txs
+		# Havven mutators
 		cls.havvenEndow = lambda self, sender, account, value: mine_tx(self.havven.functions.endow(account, value).transact({'from' : sender}))
 		cls.havvenTransfer = lambda self, sender, to, value: mine_tx(self.havven.functions.transfer(to, value).transact({'from' : sender}))
 		cls.havvenPostCheckFeePeriodRollover = lambda self, sender: mine_tx(self.havven.functions._postCheckFeePeriodRollover().transact({'from': sender}))
 		cls.havvenAdjustFeeEntitlement = lambda self, sender, acc, p_bal: mine_tx(self.havven.functions._adjustFeeEntitlement(acc, p_bal).transact({'from': sender}))
 		cls.havvenSetTargetFeePeriodDuration = lambda self, sender, duration: mine_tx(self.havven.functions.setTargetFeePeriodDuration(duration).transact({'from' : sender}))
 
-		# Nomin methods
+		# Nomin getter
 		cls.nominIsFrozen = lambda self, account: self.nomin.functions.isFrozen(account).call()
 
 		# Solidity convenience
@@ -122,6 +129,9 @@ class TestCourt(unittest.TestCase):
 
 
 	def test_constructor(self):
+		self.assertEqual(self.owner(), MASTER)
+		self.assertEqual(self.havven.address, self.getHavven())
+		self.assertEqual(self.nomin.address, self.getNomin())
 		self.assertEqual(self.minStandingBalance(), 100 * UNIT)
 		self.assertEqual(self.votingPeriod(), 1 * self.weeks)
 		self.assertEqual(self.minVotingPeriod(), 3 * self.days)
@@ -148,7 +158,8 @@ class TestCourt(unittest.TestCase):
 		new_min_standing_balance = 200 * UNIT
 		# Only owner can set minStandingBalance.
 		self.assertReverts(self.setMinStandingBalance, DUMMY, new_min_standing_balance)
-		self.setMinStandingBalance(owner, new_min_standing_balance)
+		tx_receipt = self.setMinStandingBalance(owner, new_min_standing_balance)
+		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "MinStandingBalanceUpdated")
 		self.assertEqual(self.minStandingBalance(), new_min_standing_balance)
 
 
@@ -157,7 +168,8 @@ class TestCourt(unittest.TestCase):
 		new_voting_period = 2 * self.weeks
 		# Only owner can set votingPeriod.
 		self.assertReverts(self.setVotingPeriod, DUMMY, new_voting_period)
-		self.setVotingPeriod(owner, new_voting_period)
+		tx_receipt = self.setVotingPeriod(owner, new_voting_period)
+		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "VotingPeriodUpdated")
 		self.assertEqual(self.votingPeriod(), new_voting_period)
 		# Voting period must be > than minVotingPeriod (~ currently 3 days).
 		bad_voting_period = 3 * self.days - 1
@@ -179,7 +191,9 @@ class TestCourt(unittest.TestCase):
 		new_confirmation_period = 2 * self.weeks
 		# Only owner can set confirmationPeriod.
 		self.assertReverts(self.setConfirmationPeriod, DUMMY, new_confirmation_period)
-		self.setConfirmationPeriod(owner, new_confirmation_period)
+		tx_receipt = self.setConfirmationPeriod(owner, new_confirmation_period)
+		# Check that event is emitted properly.
+		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "ConfirmationPeriodUpdated")
 		self.assertEqual(self.confirmationPeriod(), new_confirmation_period)
 		# Confirmation period must be > than minConfirmationPeriod (~ currently 1 days).
 		bad_confirmation_period = 1 * self.days - 1
@@ -194,7 +208,9 @@ class TestCourt(unittest.TestCase):
 		new_required_participation = 5 * UNIT // 10
 		# Only owner can set requiredParticipation.
 		self.assertReverts(self.setRequiredParticipation, DUMMY, new_required_participation)
-		self.setRequiredParticipation(owner, new_required_participation)
+		tx_receipt = self.setRequiredParticipation(owner, new_required_participation)
+		# Check that event is emitted properly.
+		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "RequiredParticipationUpdated")
 		self.assertEqual(self.requiredParticipation(), new_required_participation)
 		# Required participation must be >= than 10%.
 		bad_required_participation = UNIT // 10 - 1
@@ -206,7 +222,9 @@ class TestCourt(unittest.TestCase):
 		new_required_majority = (3 * UNIT) // 4 
 		# Only owner can set requiredMajority.
 		self.assertReverts(self.setRequiredMajority, DUMMY, new_required_majority)
-		self.setRequiredMajority(owner, new_required_majority)
+		tx_receipt = self.setRequiredMajority(owner, new_required_majority)
+		# Check that event is emitted properly.
+		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "RequiredMajorityUpdated")
 		self.assertEqual(self.requiredMajority(), new_required_majority)
 		# Required majority must be >= than 50%.
 		bad_required_majority = UNIT // 2 - 1
@@ -341,11 +359,14 @@ class TestCourt(unittest.TestCase):
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 		self.havvenEndow(owner, insufficient_standing, 99 * UNIT)
 		self.havvenEndow(owner, sufficient_standing, 100 * UNIT)
-		# Must have at least 100 havvens to begin a confiscsation action...
+		# Must have at least 100 havvens to begin a confiscsation action.
 		self.assertReverts(self.beginConfiscationAction, insufficient_standing, suspects[0])
-		self.beginConfiscationAction(sufficient_standing, suspects[0])
+		tx_receipt = self.beginConfiscationAction(sufficient_standing, suspects[0])
+		print(type(tx_receipt))
+		# Check that event is emitted properly.
+		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "ConfiscationVote")
 		self.assertTrue(self.voting(suspects[0]))
-		# Or be the contract owner.
+		# The contract owner can also begin an action.
 		self.beginConfiscationAction(owner, suspects[1])
 		self.assertTrue(self.voting(suspects[1]))
 		# Cannot open multiple confiscation actions on one suspect.
@@ -380,7 +401,9 @@ class TestCourt(unittest.TestCase):
 		self.beginConfiscationAction(owner, suspects[0])
 		self.assertTrue(self.voting(suspects[0]))
 		# Cast a vote in favour of confiscation.
-		self.voteFor(voter, suspects[0])
+		tx_receipt = self.voteFor(voter, suspects[0])
+		# Check that event is emitted properly.
+		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "VoteFor")
 		self.assertEqual(self.votesFor(suspects[0]), 1000)
 		# Our voter should not be able to vote in more than one action at a time.
 		self.beginConfiscationAction(owner, suspects[1])
@@ -411,7 +434,9 @@ class TestCourt(unittest.TestCase):
 		self.beginConfiscationAction(owner, suspects[0])
 		self.assertTrue(self.voting(suspects[0]))
 		# Cast a vote against confiscation.
-		self.voteAgainst(voter, suspects[0])
+		tx_receipt = self.voteAgainst(voter, suspects[0])
+		# Check that event is emitted properly.
+		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "VoteAgainst")
 		self.assertEqual(self.votesAgainst(suspects[0]), 1000)
 		# Another confiscation action is opened, our voter should not be able to vote in more than one action at a time.
 		self.beginConfiscationAction(owner, suspects[1])
@@ -438,7 +463,9 @@ class TestCourt(unittest.TestCase):
 		# Cast a vote in favour of confiscation.
 		self.voteFor(voter, suspect)
 		self.assertEqual(self.votesFor(suspect), 1000)
-		self.cancelVote(voter, suspect)
+		tx_receipt  = self.cancelVote(voter, suspect)
+		# Check that event is emitted properly.
+		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "CancelledVote")
 		self.assertEqual(self.votesFor(suspect), 0)
 		# Cast a vote against confiscation.
 		self.voteAgainst(voter, suspect)
@@ -465,7 +492,9 @@ class TestCourt(unittest.TestCase):
 		self.beginConfiscationAction(owner, suspect)
 		fast_forward(voting_period)
 		self.assertTrue(self.confirming(suspect))
-		self.closeVote(voter, suspect)
+		tx_receipt = self.closeVote(voter, suspect)
+		# Check that event is emitted properly.
+		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "VoteClosed")
 		# After the vote closes, voteStarTimes and votesFor and votesAgainst should be 0.
 		self.assertTrue(self.waiting(suspect))
 		self.assertEqual(self.votesFor(suspect), 0)
@@ -496,7 +525,13 @@ class TestCourt(unittest.TestCase):
 		self.assertTrue(self.confirming(guilty))
 		# Only the owner can approve the confiscation of a balance.
 		self.assertReverts(self.approve, voter, guilty)
-		self.approve(owner, guilty)
+		tx_receipt = self.approve(owner, guilty)
+		# Check that event is emitted properly.
+		# self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "VoteClosed")
+		# self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[1])['event'], "ConfiscationApproval")
+		self.assertEqual(self.voteStartTimes(guilty), 0)
+		self.assertEqual(self.votesFor(guilty), 0)
+		self.assertEqual(self.votesAgainst(guilty), 0)
 		# After confiscation, their nomin balance should be frozen.
 		self.assertTrue(self.nominIsFrozen(guilty))
 
@@ -529,7 +564,10 @@ class TestCourt(unittest.TestCase):
 		fast_forward(voting_period)
 		self.assertTrue(self.confirming(acquitted))
 		# Once a vote has been passed, the owner can veto it.
-		self.veto(owner, acquitted)
+		tx_receipt = self.veto(owner, acquitted)
+		# Check that event is emitted properly.
+		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "VoteClosed")
+		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[1])['event'], "Veto")
 		# After veto action, suspect should be back in the waiting stage.
 		self.assertTrue(self.waiting(acquitted))
 		# Votes should be reset.
@@ -537,21 +575,27 @@ class TestCourt(unittest.TestCase):
 		self.assertTrue(self.waiting(acquitted))
 
 
-	# def test_setVotedYea():
-	# 	owner = self.owner()
-	# 	voter = fresh_account()
-	# 	suspect = fresh_account()
-	# 	self.beginConfiscationAction(owner, suspect)
-	# 	self.publicSetVotedYea(voter, suspect)
-	# 	self.assertEqual(self.userVote[voter], 1)
-	# 	self.assertEqual(self.voteTarget[voter], suspect)
+	def test_setVotedYea(self):
+		owner = self.owner()
+		voter = fresh_account()
+		suspect = fresh_account()
+		self.beginConfiscationAction(owner, suspect)
+		# Test that internal function properly updates state
+		self.setVotedYea(voter, voter, suspect)
+		self.assertEqual(self.userVote(voter), 1)
+		self.assertEqual(self.voteTarget(voter), suspect)
+		# If already voted, cannot set again
+		self.assertReverts(self.setVotedYea, voter, voter, suspect)
 
 
-	# def test_setVotedNay():
-	# 	owner = self.owner()
-	# 	voter = fresh_account()
-	# 	suspect = fresh_account()
-	# 	self.beginConfiscationAction(owner, suspect)
-	# 	self.setVotedNay(voter, suspect)
-	# 	self.assertEqual(self.userVote[voter], 2)
-	# 	self.assertEqual(self.voteTarget[voter], suspect)
+	def test_setVotedNay(self):
+		owner = self.owner()
+		voter = fresh_account()
+		suspect = fresh_account()
+		self.beginConfiscationAction(owner, suspect)
+		self.setVotedNay(voter, voter, suspect)
+		self.assertEqual(self.userVote(voter), 2)
+		self.assertEqual(self.voteTarget(voter), suspect)
+		# If already voted, cannot set again
+		self.assertReverts(self.setVotedNay, voter, voter, suspect)
+		
