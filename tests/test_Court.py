@@ -90,8 +90,8 @@ class TestCourt(unittest.TestCase):
 		cls.closeVote = lambda self, sender, target: mine_tx(self.court.functions.closeVote(target).transact({'from' : sender}))
 
 		# Internal
-		cls.setVotedYea = lambda self, account, target: self.court.functions._setVotedYea(account, target).call()
-		cls.setVotedNay = lambda self, account, target: self.court.functions._setVotedNay(account, target).call()
+		cls.setVotedYea = lambda self, account, target: self.court.functions.publicSetVotedYea(account, target).call()
+		cls.setVotedNay = lambda self, account, target: self.court.functions.publicSetVotedNay(account, target).call()
 
 		# Owner only
 		cls.approve = lambda self, sender, target: mine_tx(self.court.functions.approve(target).transact({'from' : sender}))
@@ -137,7 +137,7 @@ class TestCourt(unittest.TestCase):
 
 	def test_setOwner(self):
 		owner = self.owner()
-		# Only owner can setOwner
+		# Only owner can setOwner.
 		self.assertReverts(self.setOwner, DUMMY, DUMMY)
 		self.setOwner(owner, DUMMY)
 		self.assertEqual(self.owner(), DUMMY)
@@ -146,7 +146,7 @@ class TestCourt(unittest.TestCase):
 	def test_setMinStandingBalance(self):
 		owner = self.owner()
 		new_min_standing_balance = 200 * UNIT
-		# Only owner can set minStandingBalance
+		# Only owner can set minStandingBalance.
 		self.assertReverts(self.setMinStandingBalance, DUMMY, new_min_standing_balance)
 		self.setMinStandingBalance(owner, new_min_standing_balance)
 		self.assertEqual(self.minStandingBalance(), new_min_standing_balance)
@@ -155,21 +155,21 @@ class TestCourt(unittest.TestCase):
 	def test_setVotingPeriod(self):
 		owner = self.owner()
 		new_voting_period = 2 * self.weeks
-		# Only owner can set votingPeriod
+		# Only owner can set votingPeriod.
 		self.assertReverts(self.setVotingPeriod, DUMMY, new_voting_period)
 		self.setVotingPeriod(owner, new_voting_period)
 		self.assertEqual(self.votingPeriod(), new_voting_period)
-		# Voting period must be > than minVotingPeriod (~ currently 3 days)
+		# Voting period must be > than minVotingPeriod (~ currently 3 days).
 		bad_voting_period = 3 * self.days - 1
 		self.assertReverts(self.setVotingPeriod, owner, bad_voting_period)
-		# Voting period must be < than maxVotingPeriod (~ currently 4 weeks)
+		# Voting period must be < than maxVotingPeriod (~ currently 4 weeks).
 		bad_voting_period = 4 * self.weeks + 1
 		self.assertReverts(self.setVotingPeriod, owner, bad_voting_period)
-		# Voting period must be <= the havven target fee period duration
+		# Voting period must be <= the havven target fee period duration.
 		fee_period_duration = 2 * self.weeks
 		self.havvenSetTargetFeePeriodDuration(owner, fee_period_duration)
 		self.assertEqual(self.havvenTargetFeePeriodDurationSeconds(), fee_period_duration)
-		# Voting period must be < fee period duration.
+		# Voting period must be <= fee period duration.
 		bad_voting_period = 2 * self.weeks + 1
 		self.assertReverts(self.setVotingPeriod, owner, bad_voting_period)
 
@@ -177,14 +177,14 @@ class TestCourt(unittest.TestCase):
 	def test_setConfirmationPeriod(self):
 		owner = self.owner()
 		new_confirmation_period = 2 * self.weeks
-		# Only owner can set confirmationPeriod
+		# Only owner can set confirmationPeriod.
 		self.assertReverts(self.setConfirmationPeriod, DUMMY, new_confirmation_period)
 		self.setConfirmationPeriod(owner, new_confirmation_period)
 		self.assertEqual(self.confirmationPeriod(), new_confirmation_period)
-		# Confirmation period must be > than minConfirmationPeriod (~ currently 1 days)
+		# Confirmation period must be > than minConfirmationPeriod (~ currently 1 days).
 		bad_confirmation_period = 1 * self.days - 1
 		self.assertReverts(self.setConfirmationPeriod, owner, bad_confirmation_period)
-		# Confirmation period must be < than maxConfirmationPeriod (~ 3 weeks)
+		# Confirmation period must be < than maxConfirmationPeriod (~ 3 weeks).
 		bad_confirmation_period = 3 * self.weeks + 1
 		self.assertReverts(self.setConfirmationPeriod, owner, bad_confirmation_period)
 
@@ -192,11 +192,11 @@ class TestCourt(unittest.TestCase):
 	def test_setRequiredParticipation(self):
 		owner = self.owner()
 		new_required_participation = 5 * UNIT // 10
-		# Only owner can set requiredParticipation
+		# Only owner can set requiredParticipation.
 		self.assertReverts(self.setRequiredParticipation, DUMMY, new_required_participation)
 		self.setRequiredParticipation(owner, new_required_participation)
 		self.assertEqual(self.requiredParticipation(), new_required_participation)
-		# Required participation must be >= than 10%
+		# Required participation must be >= than 10%.
 		bad_required_participation = UNIT // 10 - 1
 		self.assertReverts(self.setRequiredParticipation, owner, bad_required_participation)
 
@@ -204,11 +204,11 @@ class TestCourt(unittest.TestCase):
 	def test_setRequiredMajority(self):
 		owner = self.owner()
 		new_required_majority = (3 * UNIT) // 4 
-		# Only owner can set requiredMajority
+		# Only owner can set requiredMajority.
 		self.assertReverts(self.setRequiredMajority, DUMMY, new_required_majority)
 		self.setRequiredMajority(owner, new_required_majority)
 		self.assertEqual(self.requiredMajority(), new_required_majority)
-		# Required majority must be >= than 50%
+		# Required majority must be >= than 50%.
 		bad_required_majority = UNIT // 2 - 1
 		self.assertReverts(self.setRequiredMajority, owner, bad_required_majority)
 
@@ -218,19 +218,20 @@ class TestCourt(unittest.TestCase):
 		voter = fresh_account()
 		suspect = fresh_account()
 		fee_period = self.havvenTargetFeePeriodDurationSeconds()
-		# Give some havven tokens to our voter
+		# Give some havven tokens to our voter.
 		self.havvenEndow(owner, voter, 1000)
 		self.assertEqual(self.havvenBalance(voter), 1000)
-		# Fast forward to update the vote weight
+		# Fast forward to update the vote weight.
 		fast_forward(fee_period + 1)
 		self.havvenPostCheckFeePeriodRollover(DUMMY)
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 		# This should fail because no confiscation action has begun.
 		self.assertFalse(self.hasVoted(voter))
 		self.beginConfiscationAction(owner, suspect)
-		# This should fail because the voter has not voted yet
+		# This should return false because the voter has not voted yet.
 		self.assertFalse(self.hasVoted(voter))
 		self.voteFor(voter, suspect)	
+		# This should return true because the voter has voted.
 		self.assertTrue(self.hasVoted(voter))
 
 
@@ -271,7 +272,7 @@ class TestCourt(unittest.TestCase):
 		for voter in voters:
 			self.havvenEndow(owner, voter, tokens)
 			self.assertEqual(self.havvenBalance(voter), tokens)
-		# Fast forward to update the vote weights
+		# Fast forward to update the vote weights.
 		fast_forward(fee_period + 1)
 		self.havvenPostCheckFeePeriodRollover(DUMMY)
 		fast_forward(fee_period + 1)
@@ -281,39 +282,39 @@ class TestCourt(unittest.TestCase):
 		self.assertFalse(self.votePasses(suspect))
 		self.assertTrue(self.voting(suspect))
 		self.havvenPostCheckFeePeriodRollover(DUMMY)
-		# All vote in favour of confiscation, 50% in favour
+		# All vote in favour of confiscation, 50% of tokens in favour and 0% against.
 		for voter in voters:
 			self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 			self.voteFor(voter, suspect)
 		self.assertTrue(self.votePasses(suspect))
 		self.assertEqual(self.votesFor(suspect), self.havvenSupply() // 2)
-		# All cancel votes
+		# All cancel votes.
 		for voter in voters:
 			self.cancelVote(voter, suspect)
 		self.assertFalse(self.votePasses(suspect))
 		self.assertEqual(self.votesFor(suspect), 0)
-		# All vote against confiscation
+		# All vote against confiscation, 50% of tokens against and 0% in favour.
 		for voter in voters:
 			self.voteAgainst(voter, suspect)
 		self.assertFalse(self.votePasses(suspect))
 		self.assertEqual(self.votesAgainst(suspect), self.havvenSupply() // 2)
-		# All cancel votes
+		# All cancel votes.
 		for voter in voters:
 			self.cancelVote(voter, suspect)
 		self.assertEqual(self.votesAgainst(suspect), 0)
-		# 30% vote for confiscation
+		# 30% vote for confiscation, 30% of tokens in favour and 0% against.
 		for voter in voters[:6]:
 			self.voteFor(voter, suspect)
-		# Required participation must be > than 30%
+		# Required participation must be > than 30%.
 		self.assertFalse(self.votePasses(suspect))
-		# But if another user votes, participation = 35% which is sufficient.
+		# But if another user votes in favour, participation = 35% which is sufficient.
 		self.voteFor(voters[7], suspect)
 		self.assertTrue(self.votePasses(suspect))
-		# The last 3 vote against, 70% for vs 30% against (required majority is 2/3)
+		# The last 3 vote against, 70% for vs 30% against (required majority is 2/3).
 		for voter in voters[8:]:
 			self.voteAgainst(voter, suspect)
 		self.assertTrue(self.votePasses(suspect))
-		# If one changes their vote for to against, should not pass since the ratio is now 60/40 (less than 2/3)
+		# If one changes their vote for to against, should not pass since the ratio is now 60/40 (less than the min required majority of 2/3).
 		self.cancelVote(voters[7], suspect)
 		self.voteAgainst(voters[7], suspect)
 		self.assertFalse(self.votePasses(suspect))
@@ -327,12 +328,12 @@ class TestCourt(unittest.TestCase):
 		voting_period = self.votingPeriod()
 		fee_period = self.havvenTargetFeePeriodDurationSeconds()
 		controlling_share = self.havvenSupply() // 2
-		# Give 50% of havven tokens to voter.
+		# Give 50% of the havven tokens to voter, enough to pass a vote on their own.
 		self.havvenEndow(owner, voter, controlling_share)
 		self.assertEqual(self.havvenBalance(voter), controlling_share)
-		# Cannot vote unless there is a confiscation action
+		# Cannot vote unless there is a confiscation action.
 		self.assertReverts(self.voteFor, voter, suspects[0])
-		# Fast forward to update the voter's weight
+		# Fast forward to update the voter's weight.
 		fast_forward(fee_period + 1)
 		self.havvenPostCheckFeePeriodRollover(DUMMY)
 		fast_forward(fee_period + 1)
@@ -344,7 +345,7 @@ class TestCourt(unittest.TestCase):
 		self.assertReverts(self.beginConfiscationAction, insufficient_standing, suspects[0])
 		self.beginConfiscationAction(sufficient_standing, suspects[0])
 		self.assertTrue(self.voting(suspects[0]))
-		# Or be the contract owner
+		# Or be the contract owner.
 		self.beginConfiscationAction(owner, suspects[1])
 		self.assertTrue(self.voting(suspects[1]))
 		# Cannot open multiple confiscation actions on one suspect.
@@ -360,57 +361,63 @@ class TestCourt(unittest.TestCase):
 	def test_voteFor(self):
 		owner = self.owner()
 		voter = fresh_account()
+		no_tokens = fresh_account()
 		suspects = fresh_accounts(2)
 		voting_period = self.votingPeriod()
 		fee_period = self.havvenTargetFeePeriodDurationSeconds()
-		# Give some havven tokens to our voter
+		# Give some havven tokens to our voter.
 		self.havvenEndow(owner, voter, 1000)
 		self.assertEqual(self.havvenBalance(voter), 1000)
-		# Cannot vote unless there is a confiscation action
+		# Cannot vote unless there is a confiscation action.
 		self.assertReverts(self.voteFor, voter, suspects[0])
-		# Fast forward to update the voter's weight
+		# Fast forward to update the voter's weight.
 		fast_forward(fee_period + 1)
 		self.havvenPostCheckFeePeriodRollover(DUMMY)
 		fast_forward(fee_period + 1)
 		self.havvenPostCheckFeePeriodRollover(DUMMY)
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
-		# Begin a confiscation action against the suspect
+		# Begin a confiscation action against the suspect.
 		self.beginConfiscationAction(owner, suspects[0])
 		self.assertTrue(self.voting(suspects[0]))
-		# Cast a vote in favour of confiscation
+		# Cast a vote in favour of confiscation.
 		self.voteFor(voter, suspects[0])
 		self.assertEqual(self.votesFor(suspects[0]), 1000)
-		# Another confiscation action is opened, our voter should not be able to vote in more than one action at a time.
+		# Our voter should not be able to vote in more than one action at a time.
 		self.beginConfiscationAction(owner, suspects[1])
 		self.assertReverts(self.voteFor, voter, suspects[1])
+		# It should not be possible to vote without any tokens.
+		self.assertReverts(self.voteFor, no_tokens, suspects[0])
 
 
 	def test_voteAgainst(self):
 		owner = self.owner()
 		voter = fresh_account()
+		no_tokens = fresh_account()
 		suspects = fresh_accounts(2)
 		voting_period = self.votingPeriod()
 		fee_period = self.havvenTargetFeePeriodDurationSeconds()
-		# Give some havven tokens to our voter
+		# Give some havven tokens to our voter.
 		self.havvenEndow(owner, voter, 1000)
 		self.assertEqual(self.havvenBalance(voter), 1000)
-		# Cannot vote unless there is a confiscation action
+		# Cannot vote unless there is a confiscation action.
 		self.assertReverts(self.voteAgainst, voter, suspects[0])
-		# Fast forward two fee periods to update the voter's weight
+		# Fast forward two fee periods to update the voter's weight.
 		fast_forward(fee_period + 1)
 		self.havvenPostCheckFeePeriodRollover(DUMMY)
 		fast_forward(fee_period + 1)
 		self.havvenPostCheckFeePeriodRollover(DUMMY)
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
-		# Begin a confiscation action against the suspect
+		# Begin a confiscation action against the suspect.
 		self.beginConfiscationAction(owner, suspects[0])
 		self.assertTrue(self.voting(suspects[0]))
-		# Cast a vote against confiscation
+		# Cast a vote against confiscation.
 		self.voteAgainst(voter, suspects[0])
 		self.assertEqual(self.votesAgainst(suspects[0]), 1000)
 		# Another confiscation action is opened, our voter should not be able to vote in more than one action at a time.
 		self.beginConfiscationAction(owner, suspects[1])
 		self.assertReverts(self.voteAgainst, voter, suspects[1])
+		# It should not be possible to vote without any tokens.
+		self.assertReverts(self.voteAgainst, no_tokens, suspects[0])
 
 
 	def test_cancelVote(self):
@@ -419,20 +426,25 @@ class TestCourt(unittest.TestCase):
 		suspect = fresh_account()
 		voting_period = self.votingPeriod()
 		fee_period = self.havvenTargetFeePeriodDurationSeconds()
-		# Give some havven tokens to our voter
+		# Give some havven tokens to our voter.
 		self.havvenEndow(owner, voter, 1000)
 		self.assertEqual(self.havvenBalance(voter), 1000)
 		fast_forward(fee_period + 1)
 		fast_forward(fee_period + 1)
 		self.havvenPostCheckFeePeriodRollover(DUMMY)
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
-		# Begin a confiscation action against the suspect
+		# Begin a confiscation action against the suspect.
 		self.beginConfiscationAction(owner, suspect)
-		# Cast a vote in favour of confiscation
+		# Cast a vote in favour of confiscation.
 		self.voteFor(voter, suspect)
 		self.assertEqual(self.votesFor(suspect), 1000)
 		self.cancelVote(voter, suspect)
 		self.assertEqual(self.votesFor(suspect), 0)
+		# Cast a vote against confiscation.
+		self.voteAgainst(voter, suspect)
+		self.assertEqual(self.votesAgainst(suspect), 1000)
+		self.cancelVote(voter, suspect)
+		self.assertEqual(self.votesAgainst(suspect), 0)
 
 
 	def test_closeVote(self):
@@ -442,9 +454,9 @@ class TestCourt(unittest.TestCase):
 		voting_period = self.votingPeriod()
 		fee_period = self.havvenTargetFeePeriodDurationSeconds()
 		share = 500
-		# Give tokens to our voter
+		# Give some havven tokens to our voter.
 		self.havvenEndow(owner, voter, share)
-		# Fast forward two fee periods to update the voter's weight
+		# Fast forward two fee periods to update the voter's weight.
 		fast_forward(fee_period + 1)
 		self.havvenPostCheckFeePeriodRollover(DUMMY)
 		fast_forward(fee_period + 1)
@@ -454,6 +466,7 @@ class TestCourt(unittest.TestCase):
 		fast_forward(voting_period)
 		self.assertTrue(self.confirming(suspect))
 		self.closeVote(voter, suspect)
+		# After the vote closes, voteStarTimes and votesFor and votesAgainst should be 0.
 		self.assertTrue(self.waiting(suspect))
 		self.assertEqual(self.votesFor(suspect), 0)
 		self.assertEqual(self.voteStartTimes(suspect), 0)
@@ -466,9 +479,9 @@ class TestCourt(unittest.TestCase):
 		voting_period = self.votingPeriod()
 		fee_period = self.havvenTargetFeePeriodDurationSeconds()
 		controlling_share = self.havvenSupply() // 2
-		# Give enough tokens to our voter
+		# Give 50% of havven tokens to our voter.
 		self.havvenEndow(owner, voter, controlling_share)
-		# Fast forward two fee periods to update the voter's weight
+		# Fast forward two fee periods to update the voter's weight.
 		fast_forward(fee_period + 1)
 		self.havvenPostCheckFeePeriodRollover(DUMMY)
 		fast_forward(fee_period + 1)
@@ -476,13 +489,15 @@ class TestCourt(unittest.TestCase):
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 		self.beginConfiscationAction(owner, guilty)
 		self.assertTrue(self.voting(guilty))
-		# Cast a vote in favour of confiscation
+		# Cast a vote in favour of confiscation.
 		self.voteFor(voter, guilty)
 		self.assertEqual(self.votesFor(guilty), controlling_share)
 		fast_forward(voting_period)
 		self.assertTrue(self.confirming(guilty))
+		# Only the owner can approve the confiscation of a balance.
 		self.assertReverts(self.approve, voter, guilty)
 		self.approve(owner, guilty)
+		# After confiscation, their nomin balance should be frozen.
 		self.assertTrue(self.nominIsFrozen(guilty))
 
 
@@ -494,19 +509,19 @@ class TestCourt(unittest.TestCase):
 		fee_period = self.havvenTargetFeePeriodDurationSeconds()
 		controlling_share = self.havvenSupply() // 2
 		self.havvenEndow(owner, voter, controlling_share)
-		# Fast forward two fee periods to update the voter's weight
+		# Fast forward two fee periods to update the voter's weight.
 		fast_forward(fee_period + 1)
 		self.havvenPostCheckFeePeriodRollover(DUMMY)
 		fast_forward(fee_period + 1)
 		self.havvenPostCheckFeePeriodRollover(DUMMY)
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
-		# Cannot veto when there is no vote in progress
+		# Cannot veto when there is no vote in progress.
 		self.assertReverts(self.veto, owner, acquitted)
 		self.beginConfiscationAction(owner, acquitted)
-		# Only owner can veto
+		# Only owner can veto.
 		self.assertReverts(self.veto, DUMMY, acquitted)
 		self.veto(owner, acquitted)
-		# After veto action, suspect should be back in the waiting stage
+		# After veto action, suspect should be back in the waiting stage.
 		self.assertTrue(self.waiting(acquitted))
 		self.beginConfiscationAction(owner, acquitted)
 		self.voteFor(voter, acquitted)
@@ -515,7 +530,7 @@ class TestCourt(unittest.TestCase):
 		self.assertTrue(self.confirming(acquitted))
 		# Once a vote has been passed, the owner can veto it.
 		self.veto(owner, acquitted)
-		# After veto action, suspect should be back in the waiting stage
+		# After veto action, suspect should be back in the waiting stage.
 		self.assertTrue(self.waiting(acquitted))
 		# Votes should be reset.
 		self.assertEqual(self.votesFor(acquitted), 0)
@@ -527,7 +542,7 @@ class TestCourt(unittest.TestCase):
 	# 	voter = fresh_account()
 	# 	suspect = fresh_account()
 	# 	self.beginConfiscationAction(owner, suspect)
-	# 	self.setVotedYea(voter, suspect)
+	# 	self.publicSetVotedYea(voter, suspect)
 	# 	self.assertEqual(self.userVote[voter], 1)
 	# 	self.assertEqual(self.voteTarget[voter], suspect)
 
