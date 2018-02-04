@@ -1,7 +1,9 @@
 import unittest
 
-from utils.deployutils import W3, compile_contracts, attempt_deploy, mine_tx, UNIT, MASTER, ETHER, take_snapshot, restore_snapshot
-from utils.testutils import assertReverts, assertCallReverts
+from utils.deployutils import W3, UNIT, MASTER, ETHER
+from utils.deployutils import compile_contracts, attempt_deploy, mine_tx
+from utils.deployutils import take_snapshot, restore_snapshot
+from utils.testutils import assertReverts
 
 
 ERC20Token_SOURCE = "contracts/ERC20Token.sol"
@@ -9,7 +11,7 @@ ERC20FeeToken_SOURCE = "contracts/ERC20FeeToken.sol"
 
 
 def setUpModule():
-    print("Testing ERC20...")
+    print("Testing ERC20Tokens...")
 
 
 def tearDownModule():
@@ -118,6 +120,7 @@ class TestERC20Token(unittest.TestCase):
         self.assertEqual(self.allowance(approver, spender), 2 * value)
 
         self.assertReverts(self.transferFrom, spender, approver, receiver, 2 * value + 1)
+
         mine_tx(self.transferFrom(spender, approver, receiver, value))
 
         self.assertEqual(self.balanceOf(approver), approver_balance - value)
@@ -213,12 +216,14 @@ class TestERC20FeeToken(unittest.TestCase):
 
         # Only the owner is able to set the Transfer Fee Rate
         self.assertReverts(self.setTransferFeeRate, fake_owner, new_transfer_fee_rate)
+
         mine_tx(self.setTransferFeeRate(owner, new_transfer_fee_rate))
         self.assertEqual(self.transferFeeRate(), new_transfer_fee_rate)
 
         # Maximum fee rate is UNIT /10
         bad_transfer_fee_rate = UNIT
         self.assertReverts(self.setTransferFeeRate, owner, bad_transfer_fee_rate)
+
         self.assertEqual(self.transferFeeRate(), new_transfer_fee_rate)
 
     def test_getTransferFeeIncurred(self):

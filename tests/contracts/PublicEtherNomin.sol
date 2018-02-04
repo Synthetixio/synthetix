@@ -13,26 +13,38 @@ contract PublicEtherNomin is EtherNomin {
                               address _owner)
 		EtherNomin(_havven, _oracle, _beneficiary, initialEtherPrice, _owner)
 		public {}
-     
-	function publicLastPriceUpdate()
-		view
+
+	function publicEtherValueAllowStale(uint n) 
 		public
+		view
 		returns (uint)
 	{
-		return lastPriceUpdate;
+		return etherValueAllowStale(n);
 	}
 
-	function publicStalePeriod()
-		view
+	function publicSaleProceedsEtherAllowStale(uint n)
 		public
+		view
 		returns (uint)
 	{
-    	return stalePeriod;
+		return saleProceedsEtherAllowStale(n);
 	}
 
 	function debugWithdrawAllEther(address recipient)
 		public
 	{
 		recipient.send(this.balance);
+	}
+	
+	function debugEmptyFeePool()
+		public
+	{
+		feePool = 0;
+	}
+
+	function debugFreezeAccount(address target)
+		public
+	{
+		isFrozen[target] = true;
 	}
 }
