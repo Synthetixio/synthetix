@@ -125,8 +125,6 @@ class TestHavven(unittest.TestCase):
 
         #
         # FUNCTIONS
-        cls.recomputeLastAverageBalance = lambda self, sender: mine_tx(
-            self.havven.functions.recomputeLastAverageBalance().transact({'from': sender}))
         # endow
         cls.endow = lambda self, sender, addr, amt: mine_tx(
             self.havven.functions.endow(addr, amt).transact({'from': sender}))
@@ -136,6 +134,10 @@ class TestHavven(unittest.TestCase):
         # transferFrom
         cls.transferFrom = lambda self, sender, frm, to, amt: mine_tx(
             self.havven.functions.transferFrom(frm, to, amt).transact({'from': sender}))
+        cls.recomputeLastAverageBalance = lambda self, sender: mine_tx(
+            self.havven.functions.recomputeLastAverageBalance().transact({'from': sender}))
+        cls.rolloverFeePeriod = lambda self, sender: mine_tx(
+            self.havven.functions.rolloverFeePeriod().transact({'from': sender}))
 
         #
         # INTERNAL
@@ -148,7 +150,7 @@ class TestHavven(unittest.TestCase):
 
         # withdrawFeeEntitlement
         cls.withdrawFeeEntitlement = lambda self, sender: mine_tx(
-            self.havven.functions.withdrawFeeEntitlement(sender).transact({'from': sender}))
+            self.havven.functions.withdrawFeeEntitlement().transact({'from': sender}))
 
         #
         # MODIFIERS
@@ -682,16 +684,15 @@ class TestHavven(unittest.TestCase):
 
     def test_double_collect(self):
         alice = fresh_account()
-        self.h_withdrawFeeEntitlement(alice)
-        self.assertReverts(self.h_withdrawFeeEntitlement, alice)
+        self.withdrawFeeEntitlement(alice)
+        self.assertReverts(self.withdrawFeeEntitlement, alice)
 
     def test_withdraw_multiple_periods(self):
         alice = fresh_account()
-        self.h_withdrawFeeEntitlement(alice)
-        fast_forward(self.h_minFeePeriodDurationSeconds()*2)
-        self.h_postCheckFeePeriodRollover(DUMMY)
-        fast_forward(10)
-        self.h_withdrawFeeEntitlement(alice)
+        self.withdrawFeeEntitlement(alice)
+        fast_forward(self.targetFeePeriodDurationSeconds()*2)
+        self.rolloverFeePeriod(DUMMY)
+        self.withdrawFeeEntitlement(alice)
 
     # adjustFeeEntitlement - tested above
     # rolloverFee - tested above, indirectly

@@ -220,18 +220,6 @@ contract Havven is ERC20Token, Owned {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    /* Recompute and return the sender's average balance information.
-     * This also rolls over the fee period if necessary, and brings
-     * the account's current balance sum up to date. */
-    function recomputeLastAverageBalance()
-        public
-        preCheckFeePeriodRollover
-        returns (uint)
-    {
-        adjustFeeEntitlement(msg.sender, balanceOf[msg.sender]);
-        return lastAverageBalance[msg.sender];
-    }
-
     /* Allow the owner of this contract to endow any address with havvens
      * from the initial supply. Since the entire initial supply resides
      * in the havven contract, this disallows the foundation from withdrawing
@@ -397,6 +385,24 @@ contract Havven is ERC20Token, Owned {
             hasWithdrawnLastPeriodFees[account] = false;
             lastTransferTimestamp[account] = feePeriodStartTime;
         }
+    }
+
+    /* Recompute and return the sender's average balance information.
+     * This also rolls over the fee period if necessary, and brings
+     * the account's current balance sum up to date. */
+    function recomputeLastAverageBalance()
+        public
+        preCheckFeePeriodRollover
+        returns (uint)
+    {
+        adjustFeeEntitlement(msg.sender, balanceOf[msg.sender]);
+        return lastAverageBalance[msg.sender];
+    }
+
+    function rolloverFeePeriod()
+        public
+    {
+        checkFeePeriodRollover();
     }
 
     /* ========== MODIFIERS ========== */
