@@ -680,6 +680,19 @@ class TestHavven(unittest.TestCase):
         # This should fail because the approver has no tokens.
         self.assertReverts(self.transferFrom, spender, no_tokens, receiver, value)
 
+    def test_double_collect(self):
+        alice = fresh_account()
+        self.h_withdrawFeeEntitlement(alice)
+        self.assertReverts(self.h_withdrawFeeEntitlement, alice)
+
+    def test_withdraw_multiple_periods(self):
+        alice = fresh_account()
+        self.h_withdrawFeeEntitlement(alice)
+        fast_forward(self.h_minFeePeriodDurationSeconds()*2)
+        self.h_postCheckFeePeriodRollover(DUMMY)
+        fast_forward(10)
+        self.h_withdrawFeeEntitlement(alice)
+
     # adjustFeeEntitlement - tested above
     # rolloverFee - tested above, indirectly
 
