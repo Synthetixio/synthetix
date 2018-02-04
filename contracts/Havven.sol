@@ -197,16 +197,6 @@ contract Havven is ERC20Token, Owned {
         penultimateFeePeriodStartTime = now - 2*targetFeePeriodDurationSeconds;
     }
 
-    /* ========== VIEW FUNCTIONS ========== */
-
-    function lastAverageBalanceNeedsRecomputation(address account)
-        public
-        view
-        returns (bool)
-    {
-        return lastTransferTimestamp[account] < feePeriodStartTime;
-    }
-
     /* ========== SETTERS ========== */
 
     function setNomin(EtherNomin _nomin) 
