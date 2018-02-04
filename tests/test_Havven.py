@@ -1,7 +1,7 @@
 import unittest
 from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mine_txs, mine_tx, \
     UNIT, MASTER, DUMMY, to_seconds, fast_forward, fresh_account, fresh_accounts, take_snapshot, restore_snapshot
-from utils.testutils import assertReverts, block_time, assertClose
+from utils.testutils import assertReverts, block_time, assertClose, generate_topic_event_map, get_event_data_from_log
 
 SOLIDITY_SOURCES = ["tests/contracts/PublicHavven.sol", "contracts/EtherNomin.sol",
                     "contracts/Court.sol"]
@@ -30,8 +30,10 @@ def deploy_public_havven():
            nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER})]
     attempt(mine_txs, [txs], "Linking contracts... ")
 
+    havven_event_dict = generate_topic_event_map(compiled['PublicHavven']['abi'])
+
     print("\nDeployment complete.\n")
-    return havven_contract, nomin_contract, court_contract, hvn_block
+    return havven_contract, nomin_contract, court_contract, hvn_block, havven_event_dict
 
 
 class TestHavven(unittest.TestCase):
@@ -46,7 +48,7 @@ class TestHavven(unittest.TestCase):
         cls.assertClose = assertClose
         cls.assertReverts = assertReverts
 
-        cls.havven, cls.nomin, cls.court, cls.construction_block = deploy_public_havven()
+        cls.havven, cls.nomin, cls.court, cls.construction_block, cls.havven_event_dict = deploy_public_havven()
 
         # INHERITED
         # OWNED
@@ -249,10 +251,10 @@ class TestHavven(unittest.TestCase):
     def test_lastAverageBalance(self):
         # set the block time to be at least 30seconds away from the end of the fee_period
         fee_period = self.targetFeePeriodDurationSeconds()
-        time_remaining = self.targetFeePeriodDurationSeconds() - block_time() + self.feePeriodStartTime()
-        if time_remaining < 30:
-            fast_forward(50)
-            time_remaining = self.targetFeePeriodDurationSeconds() - block_time() + self.feePeriodStartTime()
+        time_remaining = self.targetFeePeriodDurationSeconds() + self.feePeriodStartTime() - block_time() 
+        if time_remaining > 30:
+            fast_forward(time_remaining - 30)
+            time_remaining = self.targetFeePeriodDurationSeconds() + self.feePeriodStartTime() - block_time() 
 
         # fast forward next block with some extra padding
         delay = time_remaining + 100
@@ -460,6 +462,12 @@ class TestHavven(unittest.TestCase):
         alice = fresh_account()
         self.endow(MASTER, alice, amount)
         self.assertGreater(self.currentBalanceSum(self.havven.address), havven_balanceSum)
+
+    def test_endow_transfers(self):
+        alice = fresh_account()
+        tx_receipt = self.endow(MASTER, alice, 50 * UNIT)
+        event = get_event_data_from_log(self.havven_event_dict, tx_receipt.logs[0])
+        self.assertEqual(event['event'], 'Transfer')
 
     # transfer - same as test_ERC20
     def test_transfer(self):
