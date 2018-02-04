@@ -151,6 +151,11 @@ class TestHavven(unittest.TestCase):
         cls._postCheckFeePeriodRollover = lambda self, sender: mine_tx(
             self.havven.functions._postCheckFeePeriodRollover().transact({'from': sender}))
 
+    def start_new_fee_period(self):
+        time_remaining = self.targetFeePeriodDurationSeconds() + self.feePeriodStartTime() - block_time()
+        fast_forward(time_remaining + 1)
+        self._postCheckFeePeriodRollover(MASTER)
+
     ###
     # Test inherited Owned - Should be the same test_Owned.py
     ###
@@ -347,7 +352,38 @@ class TestHavven(unittest.TestCase):
         self.recomputeLastAverageBalance(alice)
         self.assertClose(self.lastAverageBalance(alice), n*(n-1) * UNIT // (2*n))
 
+    def test_averageBalanceSum(self):
+        alice, bob, carol = fresh_accounts(3)
+        fee_period = self.targetFeePeriodDurationSeconds()
 
+        self.endow(MASTER, alice, UNIT)
+
+        self.start_new_fee_period()
+
+        self.transfer(alice, bob, UNIT // 4)
+        self.transfer(alice, carol, UNIT // 4)
+        fast_forward(fee_period // 10)
+        self.transfer(bob, carol, UNIT // 4)
+        fast_forward(fee_period // 10)
+        self.transfer(carol, bob, UNIT // 2)
+        fast_forward(fee_period // 10)
+        self.transfer(bob, alice, UNIT // 4)
+        fast_forward(2 * fee_period // 10)
+        self.transfer(alice, bob, UNIT // 3)
+        self.transfer(alice, carol, UNIT // 3)
+        fast_forward(3 * fee_period // 10)
+        self.transfer(carol, bob, UNIT // 3)
+        fast_forward(3 * fee_period // 10)
+
+        self.recomputeLastAverageBalance(alice)
+        self.recomputeLastAverageBalance(bob)
+        self.recomputeLastAverageBalance(carol)
+
+        total_average = self.lastAverageBalance(alice) + \
+                        self.lastAverageBalance(bob) + \
+                        self.lastAverageBalance(carol)
+
+        self.assertClose(UNIT, total_average)
 
     # penultimateAverageBalance
     def test_penultimateAverageBalance(self):
