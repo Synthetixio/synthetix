@@ -469,7 +469,19 @@ class TestHavven(unittest.TestCase):
         event = get_event_data_from_log(self.havven_event_dict, tx_receipt.logs[0])
         self.assertEqual(event['event'], 'Transfer')
 
-    # transfer - same as test_ERC20
+
+    # transfer
+
+    def test_transferRollsOver(self):
+        alice = fresh_account()
+        self.endow(MASTER, alice, 50 * UNIT)
+        fast_forward(seconds=self.targetFeePeriodDurationSeconds() + 100)
+        tx_receipt = self.transfer(alice, MASTER, 25 * UNIT)
+        event = get_event_data_from_log(self.havven_event_dict, tx_receipt.logs[1])
+        self.assertEqual(event['event'], 'FeePeriodRollover')
+
+
+    # same as test_ERC20
     def test_transfer(self):
         sender, receiver, no_tokens = fresh_accounts(3)
         self.endow(MASTER, sender, 50 * UNIT)
@@ -509,6 +521,17 @@ class TestHavven(unittest.TestCase):
         self.assertEqual(self.balanceOf(no_tokens), 0)
 
     # transferFrom
+
+
+    def test_transferFromRollsOver(self):
+        alice = fresh_account()
+        self.endow(MASTER, alice, 50 * UNIT)
+        self.approve(alice, MASTER, 25 * UNIT)
+        fast_forward(seconds=self.targetFeePeriodDurationSeconds() + 100)
+        tx_receipt = self.transferFrom(MASTER, alice, MASTER, 25 * UNIT)
+        event = get_event_data_from_log(self.havven_event_dict, tx_receipt.logs[1])
+        self.assertEqual(event['event'], 'FeePeriodRollover')
+
 
     def test_transferFrom(self):
         approver, spender, receiver, no_tokens = fresh_accounts(4)
