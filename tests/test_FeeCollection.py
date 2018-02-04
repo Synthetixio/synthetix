@@ -8,6 +8,13 @@ SOLIDITY_SOURCES = ["tests/contracts/PublicHavven.sol", "tests/contracts/PublicE
                     "contracts/Court.sol"]
 
 
+def setUpModule():
+    print("Testing Havven Fees...")
+
+def tearDownModule():
+    print()
+
+
 def deploy_public_havven():
     print("Deployment initiated.\n")
 
