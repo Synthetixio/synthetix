@@ -8,7 +8,6 @@ run_test = {
     'Deploy': True,
     'ERC20Tokens': True,
     'EtherNomin': True,
-    'FeeCollection': True,
     'Havven': True,
     'Owned': True,
     'SafeDecimalMath': True,
@@ -47,8 +46,6 @@ if __name__ == '__main__':
         test_suite.addTests(loader.loadTestsFromModule(tests.test_EtherNomin))
     if run_test['Havven']:
         test_suite.addTests(loader.loadTestsFromModule(tests.test_Havven))
-    if run_test['FeeCollection']:
-        test_suite.addTests(loader.loadTestsFromModule(tests.test_FeeCollection))
     if run_test['Owned']:
         test_suite.addTests(loader.loadTestsFromModule(tests.test_Owned))
     if run_test['SafeDecimalMath']:
