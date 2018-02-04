@@ -9,20 +9,15 @@ def assertClose(testcase, actual, expected, precision=5, msg=''):
         if actual == 0:
             # this should always pass
             testcase.assertEqual(actual, expected)
-        else:
-            testcase.assertAlmostEqual(
-                expected/actual,
-                1,
-                places=precision,
-                msg=msg+f'\n{actual} ≉ {expected}'
-            )
-    else:
-        testcase.assertAlmostEqual(
-            actual/expected,
-            1,
-            places=precision,
-            msg=msg+f'\n{actual} ≉ {expected}'
-        )
+            return
+        expected, actual = actual, expected
+
+    testcase.assertAlmostEqual(
+        actual/expected,
+        1,
+        places=precision,
+        msg=msg+f'\n{actual} ≉ {expected}'
+    )
 
 
 def assertReverts(testcase, function, *args):
