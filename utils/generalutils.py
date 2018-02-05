@@ -63,6 +63,7 @@ def load_test_settings():
     try:
         from test_settings import run_test as r
         for item in default_test_settings:
+            print(item)
             if item not in r:
                 raise ImportError
         return r
