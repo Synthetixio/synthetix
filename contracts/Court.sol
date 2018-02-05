@@ -4,7 +4,7 @@ FILE INFORMATION
 -----------------------------------------------------------------
 file:       Court.sol
 version:    0.2
-author:     Anton Jurisevic
+author:     Anton Jurisevic, Mike Spain
 
 date:       2018-1-16
 
