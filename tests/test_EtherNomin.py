@@ -3,7 +3,7 @@ import unittest
 from utils.deployutils import W3, UNIT, MASTER, DUMMY, ETHER
 from utils.deployutils import compile_contracts, attempt_deploy, mine_tx
 from utils.deployutils import take_snapshot, restore_snapshot, fast_forward
-from utils.testutils import assertReverts, current_block_time, send_value, get_eth_balance
+from utils.testutils import assertReverts, block_time, send_value, get_eth_balance
 from utils.testutils import generate_topic_event_map, get_event_data_from_log
 
 
@@ -138,7 +138,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.liquidationPeriod(), 90 * 24 * 60 * 60) # default ninety days
         self.assertEqual(self.poolFeeRate(), UNIT / 200) # default fifty basis points
         self.assertEqual(self.nominPool(), 0)
-        construct_time = current_block_time(self.construction_txr.blockNumber)
+        construct_time = block_time(self.construction_txr.blockNumber)
         self.assertEqual(construct_time, self.construction_price_time)
         self.assertTrue(self.isFrozen(self.nomin.address))
 
@@ -863,7 +863,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertFalse(self.isLiquidating())
         tx_receipt = self.forceLiquidation(owner)
         self.assertTrue(self.isLiquidating())
-        self.assertEqual(current_block_time(tx_receipt.blockNumber), self.liquidationTimestamp())
+        self.assertEqual(block_time(tx_receipt.blockNumber), self.liquidationTimestamp())
         self.assertEqual(len(tx_receipt.logs), 1)
         self.assertEqual(get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[0])['event'], "Liquidation")
 
