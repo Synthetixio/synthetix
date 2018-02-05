@@ -25,11 +25,12 @@ DUMMY = W3.eth.accounts[1]
 # what account was last accessed, assumes ganache-cli was started with enough actors
 last_accessed_account = 1
 
-
 def fresh_account():
     """Return first account after DUMMY"""
     try:
-        return W3.eth.accounts[last_accessed_account+1]
+        global last_accessed_account 
+        last_accessed_account += 1
+        return W3.eth.accounts[last_accessed_account]
     except KeyError:
         raise Exception("""W3.eth.accounts doesn't contain enough accounts,
         restart ganache with more accounts (i.e. ganache-cli -a 500)""")
