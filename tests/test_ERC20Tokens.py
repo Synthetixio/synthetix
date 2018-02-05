@@ -1,6 +1,6 @@
 import unittest
 
-from utils.deployutils import W3, UNIT, MASTER, ETHER
+from utils.deployutils import W3, UNIT, MASTER
 from utils.deployutils import compile_contracts, attempt_deploy, mine_tx
 from utils.deployutils import take_snapshot, restore_snapshot
 from utils.testutils import assertReverts

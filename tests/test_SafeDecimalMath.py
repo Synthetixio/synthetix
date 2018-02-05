@@ -5,11 +5,14 @@ from utils.testutils import assertReverts
 
 MATH_MODULE_SOURCE = "tests/contracts/PublicMath.sol"
 
+
 def setUpModule():
     print("Testing SafeDecimalMath...")
 
+
 def tearDownModule():
     print()
+
 
 class TestSafeDecimalMath(unittest.TestCase):
     @classmethod
