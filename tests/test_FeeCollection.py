@@ -1,10 +1,10 @@
 import unittest
 from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mine_txs, mine_tx, \
-    UNIT, MASTER, DUMMY, to_seconds, fast_forward, fresh_account, fresh_accounts, take_snapshot, restore_snapshot
+    UNIT, MASTER, DUMMY, to_seconds, fast_forward, fresh_account, fresh_accounts, take_snapshot, restore_snapshot, ETHER
 from utils.testutils import assertReverts, block_time, assertClose, generate_topic_event_map, get_event_data_from_log
 
 SOLIDITY_SOURCES = ["tests/contracts/PublicHavven.sol", "tests/contracts/PublicEtherNomin.sol",
-                    "tests/contracts/FakeCourt.sol"]
+                    "tests/contracts/FakeCourt.sol", "contracts/Havven.sol"]
 
 
 def deploy_public_contracts():
@@ -15,7 +15,6 @@ def deploy_public_contracts():
     # Deploy contracts
     havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven',
                                               MASTER, [MASTER])
-    hvn_block = W3.eth.blockNumber
     nomin_contract, nom_txr = attempt_deploy(compiled, 'PublicEtherNomin',
                                              MASTER,
                                              [havven_contract.address, MASTER, MASTER,
@@ -30,14 +29,12 @@ def deploy_public_contracts():
            nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER})]
     attempt(mine_txs, [txs], "Linking contracts... ")
 
-    havven_event_dict = generate_topic_event_map(compiled['PublicHavven']['abi'])
-
     print("\nDeployment complete.\n")
-    return havven_contract, nomin_contract, court_contract, hvn_block, havven_event_dict
+    return havven_contract, nomin_contract, court_contract
 
 
 def setUpModule():
-    print("Testing Havven...")
+    print("Testing FeeCollection...")
 
 
 def tearDownModule():
@@ -47,20 +44,27 @@ def tearDownModule():
 class TestHavven(unittest.TestCase):
     def setUp(self):
         self.snapshot = take_snapshot()
-        time_remaining = self.targetFeePeriodDurationSeconds() + self.feePeriodStartTime() - block_time()
+        time_remaining = self.h_targetFeePeriodDurationSeconds() + self.h_feePeriodStartTime() - block_time()
         fast_forward(time_remaining + 1)
-        self.recomputeLastAverageBalance(MASTER)
+        self.h_recomputeLastAverageBalance(MASTER)
+
+        # Reset the price at the start of tests so that it's never stale.
+        self.n_updatePrice(self.n_oracle(), self.n_etherPrice())
+        # Reset the liquidation timestamp so that it's never active.
+        owner = self.n_owner()
+        self.n_forceLiquidation(owner)
+        self.n_terminateLiquidation(owner)
 
     def tearDown(self):
         restore_snapshot(self.snapshot)
 
     @classmethod
     def setUpClass(cls):
+        cls.havven, cls.nomin, cls.fake_court = deploy_public_contracts()
+
         cls.assertClose = assertClose
         cls.assertReverts = assertReverts
         fast_forward(weeks=102)
-
-        cls.havven, cls.nomin, cls.court, cls.construction_block, cls.havven_event_dict = deploy_public_havven()
 
         # INHERITED
         # OWNED
@@ -135,14 +139,152 @@ class TestHavven(unittest.TestCase):
         #
         # MODIFIERS
         # postCheckFeePeriodRollover
-        cls.h_postCheckFeePeriodRollover = lambda self, sender: mine_tx(
-            self.havven.functions._postCheckFeePeriodRollover().transact({'from': sender}))
+        cls.h_checkFeePeriodRollover = lambda self, sender: mine_tx(
+            self.havven.functions._checkFeePeriodRollover().transact({'from': sender}))
+
+        cls.fake_court_setNomin = lambda sender, new_nomin: mine_tx(cls.fake_court.functions.setNomin(new_nomin).transact({'from': sender}))
+        cls.fake_court_setConfirming = lambda sender, target, status: mine_tx(cls.fake_court.functions.setConfirming(target, status).transact({'from': sender}))
+        cls.fake_court_setVotePasses = lambda sender, target, status: mine_tx(cls.fake_court.functions.setVotePasses(target, status).transact({'from': sender}))
+        cls.fake_court_confiscateBalance = lambda sender, target: mine_tx(cls.fake_court.functions.confiscateBalance(target).transact({'from': sender}))
+        cls.fake_court_setNomin(W3.eth.accounts[0], cls.nomin.address)
+
+        cls.n_owner = lambda self: cls.nomin.functions.owner().call()
+        cls.n_oracle = lambda self: cls.nomin.functions.oracle().call()
+        cls.n_court = lambda self: cls.nomin.functions.court().call()
+        cls.n_beneficiary = lambda self: cls.nomin.functions.beneficiary().call()
+        cls.n_nominPool = lambda self: cls.nomin.functions.nominPool().call()
+        cls.n_poolFeeRate = lambda self: cls.nomin.functions.poolFeeRate().call()
+        cls.n_liquidationPeriod = lambda self: cls.nomin.functions.liquidationPeriod().call()
+        cls.n_liquidationTimestamp = lambda self: cls.nomin.functions.liquidationTimestamp().call()
+        cls.n_etherPrice = lambda self: cls.nomin.functions.etherPrice().call()
+        cls.n_isFrozen = lambda self, address: cls.nomin.functions.isFrozen(address).call()
+        cls.n_lastPriceUpdate = lambda self: cls.nomin.functions.lastPriceUpdate().call()
+        cls.n_stalePeriod = lambda self: cls.nomin.functions.stalePeriod().call()
+
+        cls.n_setOwner = lambda self, sender, address: mine_tx(cls.nomin.functions.setOwner(address).transact({'from': sender}))
+        cls.n_setOracle = lambda self, sender, address: mine_tx(cls.nomin.functions.setOracle(address).transact({'from': sender}))
+        cls.n_setCourt = lambda self, sender, address: mine_tx(cls.nomin.functions.setCourt(address).transact({'from': sender}))
+        cls.n_setBeneficiary = lambda self, sender, address: mine_tx(cls.nomin.functions.setBeneficiary(address).transact({'from': sender}))
+        cls.n_setPoolFeeRate = lambda self, sender, rate: mine_tx(cls.nomin.functions.setPoolFeeRate(rate).transact({'from': sender}))
+        cls.n_updatePrice = lambda self, sender, price: mine_tx(cls.nomin.functions.updatePrice(price).transact({'from': sender}))
+        cls.n_setStalePeriod = lambda self, sender, period: mine_tx(cls.nomin.functions.setStalePeriod(period).transact({'from': sender}))
+
+        cls.n_fiatValue = lambda self, eth: cls.nomin.functions.fiatValue(eth).call()
+        cls.n_fiatBalance = lambda self: cls.nomin.functions.fiatBalance().call()
+        cls.n_collateralisationRatio = lambda self: cls.nomin.functions.collateralisationRatio().call()
+        cls.n_etherValue = lambda self, fiat: cls.nomin.functions.etherValue(fiat).call()
+        cls.n_etherValueAllowStale = lambda self, fiat: cls.nomin.functions.publicEtherValueAllowStale(fiat).call()
+        cls.n_poolFeeIncurred = lambda self, n: cls.nomin.functions.poolFeeIncurred(n).call()
+        cls.n_purchaseCostFiat = lambda self, n: cls.nomin.functions.purchaseCostFiat(n).call()
+        cls.n_purchaseCostEther = lambda self, n: cls.nomin.functions.purchaseCostEther(n).call()
+        cls.n_saleProceedsFiat = lambda self, n: cls.nomin.functions.saleProceedsFiat(n).call()
+        cls.n_saleProceedsEther = lambda self, n: cls.nomin.functions.saleProceedsEther(n).call()
+        cls.n_saleProceedsEtherAllowStale = lambda self, n: cls.nomin.functions.publicSaleProceedsEtherAllowStale(n).call()
+        cls.n_priceIsStale = lambda self: cls.nomin.functions.priceIsStale().call()
+        cls.n_isLiquidating = lambda self: cls.nomin.functions.isLiquidating().call()
+        cls.n_canSelfDestruct = lambda self: cls.nomin.functions.canSelfDestruct().call()
+
+        cls.n_transferPlusFee = lambda self, value: cls.nomin.functions.transferPlusFee(value).call()
+        cls.n_transfer = lambda self, sender, recipient, value: mine_tx(cls.nomin.functions.transfer(recipient, value).transact({'from': sender}))
+        cls.n_transferFrom = lambda self, sender, fromAccount, to, value: mine_tx(cls.nomin.functions.transferFrom(fromAccount, to, value).transact({'from': sender}))
+        cls.n_approve = lambda self, sender, spender, value: mine_tx(cls.nomin.functions.approve(spender, value).transact({'from': sender}))
+        cls.n_issue = lambda self, sender, n, value: mine_tx(cls.nomin.functions.issue(n).transact({'from': sender, 'value': value}))
+        cls.n_burn = lambda self, sender, n: mine_tx(cls.nomin.functions.burn(n).transact({'from': sender}))
+        cls.n_buy = lambda self, sender, n, value: mine_tx(cls.nomin.functions.buy(n).transact({'from': sender, 'value': value}))
+        cls.n_sell = lambda self, sender, n: mine_tx(cls.nomin.functions.sell(n).transact({'from': sender, 'gasPrice': 10}))
+
+        cls.n_forceLiquidation = lambda self, sender: mine_tx(cls.nomin.functions.forceLiquidation().transact({'from': sender}))
+        cls.n_liquidate = lambda self, sender: mine_tx(cls.nomin.functions.liquidate().transact({'from': sender}))
+        cls.n_extendLiquidationPeriod = lambda self, sender, extension: mine_tx(cls.nomin.functions.extendLiquidationPeriod(extension).transact({'from': sender}))
+        cls.n_terminateLiquidation = lambda self, sender: mine_tx(cls.nomin.functions.terminateLiquidation().transact({'from': sender}))
+        cls.n_selfDestruct = lambda self, sender: mine_tx(cls.nomin.functions.selfDestruct().transact({'from': sender}))
+
+        cls.n_confiscateBalance = lambda self, sender, target: mine_tx(cls.nomin.functions.confiscateBalance(target).transact({'from': sender}))
+        cls.n_unfreezeAccount = lambda self, sender, target: mine_tx(cls.nomin.functions.unfreezeAccount(target).transact({'from': sender}))
+
+        cls.n_name = lambda self: cls.nomin.functions.name().call()
+        cls.n_symbol = lambda self: cls.nomin.functions.symbol().call()
+        cls.n_totalSupply = lambda self: cls.nomin.functions.totalSupply().call()
+        cls.n_balanceOf = lambda self, account: cls.nomin.functions.balanceOf(account).call()
+        cls.n_transferFeeRate = lambda self: cls.nomin.functions.transferFeeRate().call()
+        cls.n_feePool = lambda self: cls.nomin.functions.feePool().call()
+        cls.n_feeAuthority = lambda self: cls.nomin.functions.feeAuthority().call()
+
+        cls.n_debugWithdrawAllEther = lambda self, sender, recipient: mine_tx(cls.nomin.functions.debugWithdrawAllEther(recipient).transact({'from': sender}))
+        cls.n_debugEmptyFeePool = lambda self, sender: mine_tx(cls.nomin.functions.debugEmptyFeePool().transact({'from': sender}))
+        cls.n_debugFreezeAccount = lambda self, sender, target: mine_tx(cls.nomin.functions.debugFreezeAccount(target).transact({'from': sender}))
+
+    def give_master_nomins(self, amt):
+        self.n_updatePrice(MASTER, UNIT)
+        self.n_issue(MASTER, amt * UNIT, 2 * amt * ETHER)
+        ethercost = self.n_purchaseCostEther(amt * UNIT)
+        self.n_buy(MASTER, amt * UNIT, ethercost)
 
     # Scenarios to test
     # Basic:
     # people transferring nomins, other people collecting
-    # - All collected
-    # - % withdrawn per period (fees rolling over)
+
+    def basic_check_fees_collected(self, percentage_havvens, hav_holders, nom_users):
+        addresses = fresh_accounts(len(hav_holders) + len(nom_users) + 1)
+
+        sum_vals = sum(hav_holders)
+        hav_holders = [((i/sum_vals)*percentage_havvens) for i in hav_holders]
+
+        h_total_supply = self.h_totalSupply()
+        hav_addr = addresses[:len(hav_holders)]
+        for i in range(len(hav_holders)):
+            self.h_endow(MASTER, hav_addr[i], int(100*hav_holders[i])*h_total_supply//100)
+            self.assertClose(self.h_balanceOf(hav_addr[i]), h_total_supply*hav_holders[i], precision=5)
+
+        self.assertClose(sum([self.h_balanceOf(addr) for addr in hav_addr]), int(h_total_supply*percentage_havvens), precision=5)
+
+        nom_addr = addresses[len(hav_holders):-1]
+        self.give_master_nomins(sum(nom_users)*2)
+
+        for i in range(len(nom_users)):
+            self.n_transfer(MASTER, nom_addr[i], nom_users[i]*UNIT)
+            self.assertEqual(self.n_balanceOf(nom_addr[i]), nom_users[i]*UNIT)
+
+        # will receive and send back nomins
+        receiver = addresses[-1]
+
+        # generate some fees
+        for addr in nom_addr:
+            self.n_transfer(addr, receiver, int(((self.n_balanceOf(addr) * UNIT) // (self.n_transferFeeRate() + UNIT))))
+            self.n_transfer(receiver, addr, int(((self.n_balanceOf(receiver) * UNIT) // (self.n_transferFeeRate() + UNIT))))
+
+        for addr in hav_addr:
+            self.h_withdrawFeeEntitlement(addr)
+            self.assertEqual(self.n_balanceOf(addr), 0)
+
+        # fast forward to next period
+        fast_forward(2*self.h_targetFeePeriodDurationSeconds())
+        self.h_checkFeePeriodRollover(DUMMY)
+        inital_pool = self.n_feePool()
+        total_fees_collected = 0
+        for addr in hav_addr:
+            self.h_withdrawFeeEntitlement(addr)
+            if percentage_havvens == 0:
+                self.assertEquals(self.n_balanceOf(addr), 0)
+            else:
+                self.assertNotEqual(self.n_balanceOf(addr), 0)
+            total_fees_collected += self.n_balanceOf(addr)
+
+        self.assertClose(self.n_feePool() + total_fees_collected, inital_pool, precision=1)
+
+        self.assertClose(inital_pool * percentage_havvens, total_fees_collected)
+
+    def test_100_percent_withdrawal(self):
+        self.basic_check_fees_collected(1, [10, 20, 30, 40], [100, 200, 200, 300, 300])
+
+    def test_50_percent_withdrawal(self):
+        self.basic_check_fees_collected(.5, [10, 20, 30, 40], [100, 200, 200, 300, 300])
+
+    def test_0_percent_withdrawal(self):
+        self.basic_check_fees_collected(0, [10, 20, 30, 40], [100, 200, 200, 300, 300])
+
+    # - fees rolling over
+    
 
     # Others:
     # Collecting after transferring havvens

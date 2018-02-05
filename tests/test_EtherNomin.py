@@ -41,7 +41,6 @@ class TestEtherNomin(unittest.TestCase):
         cls.nomin_abi = compiled['PublicEtherNomin']['abi']
         cls.nomin_event_dict = generate_topic_event_map(cls.nomin_abi)
 
-
         cls.nomin_havven = W3.eth.accounts[1]
         cls.nomin_oracle = W3.eth.accounts[2]
         cls.nomin_beneficiary = W3.eth.accounts[3]
@@ -480,7 +479,6 @@ class TestEtherNomin(unittest.TestCase):
 
         # We assert only almost equal because we're ignoring gas costs.
         self.assertAlmostEqual((get_eth_balance(owner) - pre_balance) / UNIT, total_proceeds / UNIT)
-
 
     def test_priceIsStale(self):
         oracle = self.oracle()
