@@ -656,7 +656,7 @@ contract EtherNomin is ERC20FeeToken {
 
     event Purchase(address buyer, address indexed buyerIndex, uint nomins, uint eth);
 
-    event Sale(address seller, address indexed sellerIndexed, uint nomins, uint eth);
+    event Sale(address seller, address indexed sellerIndex, uint nomins, uint eth);
 
     event PriceUpdated(uint newPrice);
 
