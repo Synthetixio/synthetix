@@ -41,6 +41,13 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
 		return nomin.balanceOf(this);
 	}
 
+	function sweepFees()
+		public
+		onlyOwner
+	{
+		nomin.transfer(owner, feePool());
+	}
+
 	function withdrawContractFees()
 		public
 	{
