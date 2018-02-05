@@ -3,7 +3,7 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       EtherNomin.sol
-version:    0.2
+version:    0.3
 author:     Anton Jurisevic
 
 date:       2018-1-16
@@ -53,33 +53,6 @@ This liquidation period may be extended up to a maximum of 180 days.
 If the contract is recollateralised, the owner may terminate liquidation.
 
 -----------------------------------------------------------------
-LICENCE INFORMATION
------------------------------------------------------------------
-
-Copyright (c) 2018 Havven.io
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
------------------------------------------------------------------
-RELEASE NOTES
------------------------------------------------------------------
-
 */
 
 pragma solidity ^0.4.19;
@@ -171,7 +144,6 @@ contract EtherNomin is ERC20FeeToken {
 
     /* ========== SETTERS ========== */
 
-    // Set the price oracle of this contract. Only the contract owner should be able to call this.
     function setOracle(address newOracle)
         public
         onlyOwner
@@ -188,7 +160,6 @@ contract EtherNomin is ERC20FeeToken {
         CourtUpdated(newCourt);
     }
 
-    // Set the beneficiary of this contract. Only the contract owner should be able to call this.
     function setBeneficiary(address newBeneficiary)
         public
         onlyOwner
@@ -206,9 +177,6 @@ contract EtherNomin is ERC20FeeToken {
         PoolFeeRateUpdated(newFeeRate);
     }
 
-    /* Update the period after which the price will be considered stale.
-     * Exceptional conditions:
-     *     Not called by the owner. */
     function setStalePeriod(uint period)
         public
         onlyOwner
@@ -221,8 +189,7 @@ contract EtherNomin is ERC20FeeToken {
 
     /* Return the equivalent fiat value of the given quantity
      * of ether at the current price.
-     * Exceptional conditions:
-     *     Price is stale. */
+     * Reverts if the price is stale. */
     function fiatValue(uint eth)
         public
         view
@@ -233,8 +200,7 @@ contract EtherNomin is ERC20FeeToken {
     }
 
     /* Return the current fiat value of the contract's balance.
-     * Exceptional conditions:
-     *     Price is stale. */
+     * Reverts if the price is stale. */
     function fiatBalance()
         public
         view
@@ -246,8 +212,7 @@ contract EtherNomin is ERC20FeeToken {
 
     /* Return the equivalent ether value of the given quantity
      * of fiat at the current price.
-     * Exceptional conditions:
-     *     Price is stale. */
+     * Reverts if the price is stale. */
     function etherValue(uint fiat)
         public
         view
@@ -266,7 +231,8 @@ contract EtherNomin is ERC20FeeToken {
         return safeDecDiv(fiat, etherPrice);
     }
 
-    /* Return the units of fiat per nomin in the supply.*/
+    /* Return the units of fiat per nomin in the supply.
+     * Reverts if the price is stale. */
     function collateralisationRatio()
         public
         view
@@ -295,8 +261,7 @@ contract EtherNomin is ERC20FeeToken {
     }
 
     /* Return the ether cost (including fee) of purchasing n nomins.
-     * Exceptional conditions:
-     *     Price is stale. */
+     * Reverts if the price is stale. */
     function purchaseCostEther(uint n)
         public
         view
@@ -318,8 +283,7 @@ contract EtherNomin is ERC20FeeToken {
 
     /* Return the ether proceeds (less the fee) of selling n
      * nomins.
-     * Exceptional conditions:
-     *     Price is stale. */
+     * Reverts if the price is stale. */
     function saleProceedsEther(uint n)
         public
         view
@@ -361,8 +325,7 @@ contract EtherNomin is ERC20FeeToken {
      * or if all tokens have been returned to the contract and it has been
      * in liquidation for at least a week.
      * Since the contract is only destructible after the liquidationTimestamp,
-     * a fortiori canSelfDestruct() implies isLiquidating().
-     */
+     * a fortiori canSelfDestruct() implies isLiquidating(). */
     function canSelfDestruct()
         public
         view
@@ -382,8 +345,7 @@ contract EtherNomin is ERC20FeeToken {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /* Override ERC20 transfer function in order to check
-     * whether the sender or recipient account is frozen.
-     */
+     * whether the sender or recipient account is frozen. */
     function transfer(address _to, uint _value)
         public
         returns (bool)
@@ -393,8 +355,7 @@ contract EtherNomin is ERC20FeeToken {
     }
 
     /* Override ERC20 transferFrom function in order to check
-     * whether the sender or recipient account is frozen.
-     */
+     * whether the sender or recipient account is frozen. */
     function transferFrom(address _from, address _to, uint _value)
         public
         returns (bool)
@@ -405,6 +366,8 @@ contract EtherNomin is ERC20FeeToken {
 
     /* Update the current ether price and update the last updated time,
      * refreshing the price staleness.
+     * Also checks whether the contract's collateral levels have fallen to low,
+     * and initiates liquidation if that is the case.
      * Exceptional conditions:
      *     Not called by the oracle. */
     function updatePrice(uint price)
@@ -443,8 +406,7 @@ contract EtherNomin is ERC20FeeToken {
     /* Burns n nomins from the pool.
      * Exceptional conditions:
      *     Not called by contract owner.
-     *     There are fewer than n nomins in the pool.
-     */
+     *     There are fewer than n nomins in the pool. */
     function burn(uint n)
         public
         onlyOwner
@@ -513,8 +475,7 @@ contract EtherNomin is ERC20FeeToken {
      * returning all remaining ether to the beneficiary address.
      * Exceptional cases:
      *     Not called by contract owner;
-     *     contract already in liquidation;
-     */
+     *     contract already in liquidation; */
     function forceLiquidation()
         public
         onlyOwner
@@ -530,8 +491,9 @@ contract EtherNomin is ERC20FeeToken {
         Liquidation(liquidationPeriod);
     }
 
-    /* Extend the liquidation period. It may only get longer,
-     * not shorter, and it may not be extended past the liquidation max. */
+    /* If the contract is liquidating, the owner may xxtend the liquidation period.
+     * It may only get longer, not shorter, and it may not be extended past
+     * the liquidation max. */
     function extendLiquidationPeriod(uint extension)
         public
         onlyOwner
@@ -542,10 +504,10 @@ contract EtherNomin is ERC20FeeToken {
         LiquidationExtended(extension);
     }
 
-    /* If the collateralisation ratio of this contract has recovered above
-     * the automatic liquidation threshold, for example by including enough
-     * ether in this transaction.
-     */
+    /* Liquidation can only be stopped if the collateralisation ratio
+     * of this contract has recovered above the automatic liquidation
+     * threshold, for example if the ether price has increased,
+     * or by including enough ether in this transaction. */
     function terminateLiquidation()
         public
         onlyOwner
@@ -559,15 +521,10 @@ contract EtherNomin is ERC20FeeToken {
         LiquidationTerminated();
     }
 
-    /* Destroy this contract, returning all funds back to the beneficiary
+    /* The owner may destroy this contract, returning all funds back to the beneficiary
      * wallet, may only be called after the contract has been in
      * liquidation for at least liquidationPeriod, or all circulating
-     * nomins have been sold back into the pool.
-     * Exceptional cases:
-     *     Not called by contract owner.
-     *     Contract is not in liquidation.
-     *     Contract has not been in liquidation for at least liquidationPeriod.
-     */
+     * nomins have been sold back into the pool. */
     function selfDestruct()
         public
         onlyOwner
@@ -577,9 +534,9 @@ contract EtherNomin is ERC20FeeToken {
         selfdestruct(beneficiary);
     }
 
-    /* Transfer the target account's balance to the fee pool
-     * and freeze its participation in further transactions.
-     */
+    /* If a confiscation court vote has passed and reached the confirmation
+     * state, the court may transfer the target account's balance to the fee pool
+     * and freeze its participation in further transactions. */
     function confiscateBalance(address target)
         public
     {
@@ -600,6 +557,8 @@ contract EtherNomin is ERC20FeeToken {
         Confiscation(target, target, balance);
     }
 
+    /* The owner may allow a previously-frozen contract to once
+     * again accept and transfer nomins. */
     function unfreezeAccount(address target)
         public
         onlyOwner
@@ -637,8 +596,7 @@ contract EtherNomin is ERC20FeeToken {
      * burning can only destroy tokens without withdrawing backing, buying from the pool can only
      * asymptote to a collateralisation level of unity, while selling into the pool can only 
      * increase the collateralisation ratio.
-     * Additionally, price update checks should occur frequently.
-     */
+     * Additionally, price update checks should/will occur frequently. */
     modifier postCheckAutoLiquidate
     {
         _;

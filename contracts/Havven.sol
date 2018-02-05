@@ -3,7 +3,7 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       Havven.sol
-version:    0.2
+version:    0.3
 author:     Anton Jurisevic
             Dominic Romanowski
 
@@ -92,32 +92,9 @@ In the implementation, the duration of different fee periods may be slightly irr
 as the check that they have rolled over occurs only when state-changing havven
 operations are performed.
 
------------------------------------------------------------------
-LICENCE INFORMATION
------------------------------------------------------------------
+Additionally, we keep track also of the penultimate and not just the last
+average balance, in order to support the voting functionality detailed in Court.sol.
 
-Copyright (c) 2018 Havven.io
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
------------------------------------------------------------------
-RELEASE NOTES
 -----------------------------------------------------------------
 
 */
@@ -163,9 +140,9 @@ contract Havven is ERC20Token, Owned {
     //   0 < val < now, as everyone's individual lastTransferTime will be 0
     //   and as such, their lastAvgBal/penultimateAvgBal will be set to that value
     //   apart from the contract, which will have totalSupply
-    uint lastFeePeriodStartTime = 2;
+    uint public lastFeePeriodStartTime = 2;
     // The actual start of the penultimate fee period (seconds).
-    uint penultimateFeePeriodStartTime = 1;
+    uint public penultimateFeePeriodStartTime = 1;
 
     // Fee periods will roll over in no shorter a time than this.
     uint public targetFeePeriodDurationSeconds = 4 weeks;
@@ -209,7 +186,7 @@ contract Havven is ERC20Token, Owned {
 
     function setTargetFeePeriodDuration(uint duration)
         public
-        preCheckFeePeriodRollover
+        postCheckFeePeriodRollover
         onlyOwner
     {
         require(minFeePeriodDurationSeconds <= duration &&
@@ -237,8 +214,7 @@ contract Havven is ERC20Token, Owned {
     }
 
     /* Override ERC20 transfer function in order to perform
-     * fee entitlement recomputation whenever balances are updated.
-     */
+     * fee entitlement recomputation whenever balances are updated. */
     function transfer(address _to, uint _value)
         public
         preCheckFeePeriodRollover
@@ -260,8 +236,7 @@ contract Havven is ERC20Token, Owned {
     }
 
     /* Override ERC20 transferFrom function in order to perform
-     * fee entitlement recomputation whenever balances are updated.
-     */
+     * fee entitlement recomputation whenever balances are updated. */
     function transferFrom(address _from, address _to, uint _value)
         public
         preCheckFeePeriodRollover
@@ -283,8 +258,7 @@ contract Havven is ERC20Token, Owned {
     }
 
     /* Compute the last period's fee entitlement for the message sender
-     * and then deposit it into their nomin account.
-     */
+     * and then deposit it into their nomin account. */
     function withdrawFeeEntitlement()
         public
         preCheckFeePeriodRollover
@@ -308,8 +282,7 @@ contract Havven is ERC20Token, Owned {
 
     /* Update the fee entitlement since the last transfer or entitlement
      * adjustment. Since this updates the last transfer timestamp, if invoked
-     * consecutively, this function will do nothing after the first call.
-     */
+     * consecutively, this function will do nothing after the first call. */
     function adjustFeeEntitlement(address account, uint preBalance)
         internal
     {
@@ -333,18 +306,21 @@ contract Havven is ERC20Token, Owned {
      * than once during a given period.
      *
      * Consider the case where the entitlement is updated. If the last transfer
-     * occurred at time t, then the starred region is added to the entitlement,
-     * the last transfer timestamp is moved to r, and the fee period is
+     * occurred at time t in the last period, then the starred region is added to the
+     * entitlement, the last transfer timestamp is moved to r, and the fee period is
      * rolled over from k-1 to k so that the new fee period start time is at time r.
      * 
      *   k-1       |        k
      *         s __|
+     *  _  _ ___|**|
      *          |**|
-     *          |**|
-     *          |**|___ __ _  _
+     *  _  _ ___|**|___ __ _  _
      *             |
      *          t  |
      *             r
+     * 
+     * Similar computations are performed according to the fee period in which the
+     * last transfer occurred.
      */
     function rolloverFee(address account, uint lastTransferTime, uint preBalance)
         internal
@@ -411,24 +387,7 @@ contract Havven is ERC20Token, Owned {
     /* If the fee period has rolled over, then
      * save the start times of the last fee period,
      * as well as the penultimate fee period.
-     *
-     * Check after the modified function has executed
-     * so that the contract state the caller saw before
-     * calling the function is the actual one they
-     * interact with.
      */
-    modifier postCheckFeePeriodRollover
-    {
-        _;
-        checkFeePeriodRollover();
-    }
-
-    modifier preCheckFeePeriodRollover
-    {
-        checkFeePeriodRollover();
-        _;
-    }
-
     function checkFeePeriodRollover()
         internal
     {
@@ -445,6 +404,18 @@ contract Havven is ERC20Token, Owned {
         }
     }
 
+    modifier postCheckFeePeriodRollover
+    {
+        _;
+        checkFeePeriodRollover();
+    }
+
+    modifier preCheckFeePeriodRollover
+    {
+        checkFeePeriodRollover();
+        _;
+    }
+    
     /* ========== EVENTS ========== */
 
     event FeePeriodRollover(uint timestamp);
