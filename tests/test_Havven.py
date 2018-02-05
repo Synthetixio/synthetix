@@ -58,6 +58,7 @@ class TestHavven(unittest.TestCase):
     def setUpClass(cls):
         cls.assertClose = assertClose
         cls.assertReverts = assertReverts
+        # to avoid overflowing in the negative direction (now - targetFeePeriodDuration * 2)
         fast_forward(weeks=102)
 
         cls.havven, cls.nomin, cls.court, cls.construction_block, cls.havven_event_dict = deploy_public_havven()
@@ -135,13 +136,13 @@ class TestHavven(unittest.TestCase):
         #
         # MODIFIERS
         # postCheckFeePeriodRollover
-        cls._postCheckFeePeriodRollover = lambda self, sender: mine_tx(
-            self.havven.functions._postCheckFeePeriodRollover().transact({'from': sender}))
+        cls._checkFeePeriodRollover = lambda self, sender: mine_tx(
+            self.havven.functions._checkFeePeriodRollover().transact({'from': sender}))
 
     def start_new_fee_period(self):
         time_remaining = self.targetFeePeriodDurationSeconds() + self.feePeriodStartTime() - block_time()
         fast_forward(time_remaining + 1)
-        self._postCheckFeePeriodRollover(MASTER)
+        self._checkFeePeriodRollover(MASTER)
 
     ###
     # Test inherited Owned - Should be the same test_Owned.py
@@ -259,7 +260,7 @@ class TestHavven(unittest.TestCase):
         self.assertEquals(self.lastAverageBalance(alice), 0)
         self.assertEquals(self.lastTransferTimestamp(alice), block_time(tx_receipt['blockNumber']))
         fast_forward(delay)
-        self._postCheckFeePeriodRollover(DUMMY)
+        self._checkFeePeriodRollover(DUMMY)
         fast_forward(fee_period // 2)
 
         tx_receipt = self.adjustFeeEntitlement(alice, alice, self.balanceOf(alice))
@@ -377,7 +378,7 @@ class TestHavven(unittest.TestCase):
         alice = fresh_account()
         fee_period = self.targetFeePeriodDurationSeconds()
         fast_forward(fee_period * 2)
-        self._postCheckFeePeriodRollover(DUMMY)
+        self._checkFeePeriodRollover(DUMMY)
 
         # skip to halfway through it
         delay = fee_period // 2
@@ -395,10 +396,10 @@ class TestHavven(unittest.TestCase):
 
         # rollover two fee periods without alice doing anything
         fast_forward(fee_period * 2)
-        self._postCheckFeePeriodRollover(DUMMY)
+        self._checkFeePeriodRollover(DUMMY)
 
         fast_forward(fee_period * 2)
-        self._postCheckFeePeriodRollover(DUMMY)
+        self._checkFeePeriodRollover(DUMMY)
 
         # adjust alice's fee entitlement
         self.adjustFeeEntitlement(alice, alice, self.balanceOf(alice))
