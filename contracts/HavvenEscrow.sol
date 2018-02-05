@@ -7,8 +7,8 @@ pragma solidity ^0.4.19;
 
 contract HavvenEscrow is Owned, SafeDecimalMath {	
 	// The corresponding Havven contract.
-	Havven havven;
-	EtherNomin nomin;
+	Havven public havven;
+	EtherNomin public nomin;
 
 	// Lists of vesting dates per account, in sorted order.
 	mapping(address => uint[]) public vestingTimes;
@@ -50,6 +50,11 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
 	function withdrawFees()
 		public
 	{
+    	// If fees need to be withdrawn into this contract, then withdraw them.
+		if (!havven.hasWithdrawnLastPeriodFees(this)) {
+			withdrawContractFees()
+		}
+
 		uint entitlement = safeDecMul(feePool(), safeDecDiv(totalVestedAccountBalance[msg.sender], totalVestedBalance));
 		nomin.transfer(msg.sender, entitlement);
 	}
