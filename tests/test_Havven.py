@@ -73,68 +73,46 @@ class TestHavven(unittest.TestCase):
         # ERC20TOKEN (transfer/transferFrom are overwritten)
         # totalSupply
         cls.totalSupply = lambda self: self.havven.functions.totalSupply().call()
-        # name
         cls.name = lambda self: self.havven.functions.name().call()
-        # symbol
         cls.symbol = lambda self: self.havven.functions.symbol().call()
-        # balanceOf
         cls.balanceOf = lambda self, a: self.havven.functions.balanceOf(a).call()
-        # allowance
         cls.allowance = lambda self, owner, spender: self.havven.functions.allowance(owner, spender).call()
-        # approve
         cls.approve = lambda self, sender, spender, val: mine_tx(
             self.havven.functions.approve(spender, val).transact({"from": sender}))
 
         # HAVVEN
         # GETTERS
-        # currentBalanceSum
         cls.currentBalanceSum = lambda self, addr: self.havven.functions._currentBalanceSum(addr).call()
-        # lastAverageBalance
         cls.lastAverageBalance = lambda self, addr: self.havven.functions.lastAverageBalance(addr).call()
-        # penultimateAverageBalance
         cls.penultimateAverageBalance = lambda self, addr: self.havven.functions.penultimateAverageBalance(addr).call()
-        # lastTransferTimestamp
         cls.lastTransferTimestamp = lambda self, addr: self.havven.functions._lastTransferTimestamp(addr).call()
-        # hasWithdrawnLastPeriodFees
         cls.hasWithdrawnLastPeriodFees = lambda self, addr: self.havven.functions._hasWithdrawnLastPeriodFees(
             addr).call()
         cls.lastAverageBalanceNeedsRecomputation = lambda self, addr: self.havven.functions.lastAverageBalanceNeedsRecomputation(addr).call()
 
-        # feePeriodStartTime
         cls.feePeriodStartTime = lambda self: self.havven.functions.feePeriodStartTime().call()
-        # lastFeePeriodDuration
         cls.lastFeePeriodStartTime = lambda self: self.havven.functions._lastFeePeriodStartTime().call()
-        # penultimateFeePeriodStartTime
         cls.penultimateFeePeriodStartTime = lambda self: self.havven.functions._penultimateFeePeriodStartTime().call()
-        # targetFeePeriodDurationSeconds
         cls.targetFeePeriodDurationSeconds = lambda self: self.havven.functions.targetFeePeriodDurationSeconds().call()
-        # minFeePeriodDurationSeconds
         cls.minFeePeriodDurationSeconds = lambda self: self.havven.functions._minFeePeriodDurationSeconds().call()
-        # maxFeePeriodDurationSeconds
         cls.maxFeePeriodDurationSeconds = lambda self: self.havven.functions._maxFeePeriodDurationSeconds().call()
-        # lastFeesCollected
         cls.lastFeesCollected = lambda self: self.havven.functions.lastFeesCollected().call()
 
         cls.get_nomin = lambda self: self.havven.functions.nomin().call()
 
         #
         # SETTERS
-        # setNomin
         cls.setNomin = lambda self, sender, addr: mine_tx(
             self.havven.functions.setNomin(addr).transact({'from': sender}))
-        # setTargetFeePeriod
         cls.setTargetFeePeriodDuration = lambda self, sender, dur: mine_tx(
             self.havven.functions.setTargetFeePeriodDuration(dur).transact({'from': sender}))
 
         #
         # FUNCTIONS
-        # endow
         cls.endow = lambda self, sender, addr, amt: mine_tx(
             self.havven.functions.endow(addr, amt).transact({'from': sender}))
-        # transfer
         cls.transfer = lambda self, sender, addr, amt: mine_tx(
             self.havven.functions.transfer(addr, amt).transact({'from': sender}))
-        # transferFrom
         cls.transferFrom = lambda self, sender, frm, to, amt: mine_tx(
             self.havven.functions.transferFrom(frm, to, amt).transact({'from': sender}))
         cls.recomputeLastAverageBalance = lambda self, sender: mine_tx(
@@ -144,7 +122,6 @@ class TestHavven(unittest.TestCase):
 
         #
         # INTERNAL
-        # adjustFeeEntitlement (p_bal -> preBalance)
         cls.adjustFeeEntitlement = lambda self, sender, acc, p_bal: mine_tx(
             self.havven.functions._adjustFeeEntitlement(acc, p_bal).transact({'from': sender}))
         # rolloverFee (ltt->last_transfer_time)
@@ -264,10 +241,10 @@ class TestHavven(unittest.TestCase):
     def test_lastAverageBalance(self):
         # set the block time to be at least 30seconds away from the end of the fee_period
         fee_period = self.targetFeePeriodDurationSeconds()
-        time_remaining = self.targetFeePeriodDurationSeconds() + self.feePeriodStartTime() - block_time() 
+        time_remaining = self.targetFeePeriodDurationSeconds() + self.feePeriodStartTime() - block_time()
         if time_remaining < 30:
             fast_forward(50)
-            time_remaining = self.targetFeePeriodDurationSeconds() + self.feePeriodStartTime() - block_time() 
+            time_remaining = self.targetFeePeriodDurationSeconds() + self.feePeriodStartTime() - block_time()
 
         # fast forward next block with some extra padding
         delay = time_remaining + 100
@@ -297,10 +274,10 @@ class TestHavven(unittest.TestCase):
             actual, expected
         )
 
-        time_remaining = self.targetFeePeriodDurationSeconds() + self.feePeriodStartTime() - block_time() 
+        time_remaining = self.targetFeePeriodDurationSeconds() + self.feePeriodStartTime() - block_time()
         fast_forward(time_remaining - 5)
         self.transfer(alice, MASTER, start_amt // 2)
-        time_remaining = self.targetFeePeriodDurationSeconds() + self.feePeriodStartTime() - block_time() 
+        time_remaining = self.targetFeePeriodDurationSeconds() + self.feePeriodStartTime() - block_time()
         fast_forward(time_remaining + 10)
 
         actual = self.lastAverageBalance(alice)
@@ -353,7 +330,6 @@ class TestHavven(unittest.TestCase):
         self.endow(MASTER, alice, n * UNIT)
         time_remaining = self.targetFeePeriodDurationSeconds() + self.feePeriodStartTime() - block_time()
         fast_forward(time_remaining + 5)
-
 
         for _ in range(n):
             self.transfer(alice, MASTER, UNIT)
@@ -580,9 +556,7 @@ class TestHavven(unittest.TestCase):
         event = get_event_data_from_log(self.havven_event_dict, tx_receipt.logs[0])
         self.assertEqual(event['event'], 'Transfer')
 
-
     # transfer
-
     def test_transferRollsOver(self):
         alice = fresh_account()
         self.endow(MASTER, alice, 50 * UNIT)
@@ -590,7 +564,6 @@ class TestHavven(unittest.TestCase):
         tx_receipt = self.transfer(alice, MASTER, 25 * UNIT)
         event = get_event_data_from_log(self.havven_event_dict, tx_receipt.logs[0])
         self.assertEqual(event['event'], 'FeePeriodRollover')
-
 
     # same as test_ERC20
     def test_transfer(self):
@@ -632,8 +605,6 @@ class TestHavven(unittest.TestCase):
         self.assertEqual(self.balanceOf(no_tokens), 0)
 
     # transferFrom
-
-
     def test_transferFromRollsOver(self):
         alice = fresh_account()
         self.endow(MASTER, alice, 50 * UNIT)
@@ -642,7 +613,6 @@ class TestHavven(unittest.TestCase):
         tx_receipt = self.transferFrom(MASTER, alice, MASTER, 25 * UNIT)
         event = get_event_data_from_log(self.havven_event_dict, tx_receipt.logs[0])
         self.assertEqual(event['event'], 'FeePeriodRollover')
-
 
     def test_transferFrom(self):
         approver, spender, receiver, no_tokens = fresh_accounts(4)
@@ -685,7 +655,7 @@ class TestHavven(unittest.TestCase):
         # This should fail because the approver has no tokens.
         self.assertReverts(self.transferFrom, spender, no_tokens, receiver, value)
 
-    def test_double_collect(self):
+    def test_double_withdraw_fee(self):
         alice = fresh_account()
         self.withdrawFeeEntitlement(alice)
         self.assertReverts(self.withdrawFeeEntitlement, alice)
@@ -696,6 +666,8 @@ class TestHavven(unittest.TestCase):
         fast_forward(self.targetFeePeriodDurationSeconds()*2)
         self.rolloverFeePeriod(DUMMY)
         self.withdrawFeeEntitlement(alice)
+        fast_forward(self.targetFeePeriodDurationSeconds()*2)
+        self.rolloverFeePeriod(DUMMY)
 
     # adjustFeeEntitlement - tested above
     # rolloverFee - tested above, indirectly
@@ -706,6 +678,28 @@ class TestHavven(unittest.TestCase):
     # Modifiers
     ###
     # postCheckFeePeriodRollover - tested above
+
+    def test_abuse_havven_balance(self):
+        """Test whether repeatedly moving havvens between two parties will shift averages upwards"""
+        alice, bob = fresh_accounts(2)
+        amount = UNIT * 100000
+        a_sum = 0
+        b_sum = 0
+        self.endow(MASTER, alice, amount)
+        time = block_time()
+        self.assertEquals(self.balanceOf(alice), amount)
+        self.assertEquals(self.currentBalanceSum(alice), 0)
+        for i in range(20):
+            self.transfer(alice, bob, amount)
+            a_sum += (block_time() - time) * amount
+            time = block_time()
+            self.assertEquals(self.balanceOf(bob), amount)
+            self.assertEquals(self.currentBalanceSum(alice), a_sum)
+            self.transfer(bob, alice, amount)
+            b_sum += (block_time() - time) * amount
+            time = block_time()
+            self.assertEquals(self.balanceOf(alice), amount)
+            self.assertEquals(self.currentBalanceSum(bob), b_sum)
 
 
 if __name__ == '__main__':
