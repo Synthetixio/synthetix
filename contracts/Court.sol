@@ -5,6 +5,7 @@ FILE INFORMATION
 file:       Court.sol
 version:    0.2
 author:     Anton Jurisevic
+            Mike Spain
 
 date:       2018-1-16
 
@@ -209,7 +210,6 @@ contract Court is Owned, SafeDecimalMath {
 
     // A given account's vote in some confiscation action.
     // This requires the default value of the Vote enum to correspond to an abstention.
-    // If an account's vote is not an abstention, it may not transfer funds.
     mapping(address => Vote) public userVote;
     // The vote a user last participated in.
     mapping(address => address) public voteTarget;
@@ -362,7 +362,7 @@ contract Court is Owned, SafeDecimalMath {
         public
     {
         // A confiscation action must be mooted by someone with standing.
-        require((havven.balanceOf(msg.sender) > minStandingBalance) ||
+        require((havven.balanceOf(msg.sender) >= minStandingBalance) ||
                 msg.sender == owner);
 
         // Require that the voting period is longer than a single fee period,
@@ -412,7 +412,7 @@ contract Court is Owned, SafeDecimalMath {
         // the one inside setVotedYea().
         setVotedYea(msg.sender, target);
         voteWeight[msg.sender] = weight;
-        votesFor[msg.sender] += weight;
+        votesFor[target] += weight;
         VoteFor(msg.sender, target, weight);
     }
 
@@ -446,7 +446,7 @@ contract Court is Owned, SafeDecimalMath {
         // the one inside setVotedNay().
         setVotedNay(msg.sender, target);
         voteWeight[msg.sender] = weight;
-        votesAgainst[msg.sender] += weight;
+        votesAgainst[target] += weight;
         VoteAgainst(msg.sender, target, weight);
     }
 
@@ -468,10 +468,10 @@ contract Court is Owned, SafeDecimalMath {
             Vote vote = userVote[msg.sender];
 
             if (vote == Vote.Yea) {
-                votesFor[msg.sender] -= voteWeight[msg.sender];
+                votesFor[target] -= voteWeight[msg.sender];
             }
             else if (vote == Vote.Nay) {
-                votesAgainst[msg.sender] -= voteWeight[msg.sender];
+                votesAgainst[target] -= voteWeight[msg.sender];
             } else {
                 // The sender has not voted.
                 return;
@@ -482,10 +482,11 @@ contract Court is Owned, SafeDecimalMath {
             CancelledVote(msg.sender, target);
         }
 
-        // If the user is trying to cancel a vote for a different target
-        // than the one they have previously voted for, an exception is thrown
-        // inside cancelVote, and the state is rolled back.
-        cancelVote(msg.sender, target);
+        // Disallow users from cancelling a vote for a different target
+        // than the one they have previously voted for.
+        require(voteTarget[msg.sender] == target);
+        userVote[msg.sender] = Court.Vote.Abstention;
+        voteTarget[msg.sender] = 0;
     }
 
     /* If a vote has concluded, or if it lasted its full duration but not passed,
@@ -533,8 +534,6 @@ contract Court is Owned, SafeDecimalMath {
         Veto(target);
     }
 
-
-
     /* Indicate that the given account voted yea in a confiscation
      * action on the target account.
      * The account must not have an active vote in any action.
@@ -557,21 +556,6 @@ contract Court is Owned, SafeDecimalMath {
         require(userVote[account] == Court.Vote.Abstention);
         userVote[account] = Court.Vote.Nay;
         voteTarget[account] = target;
-    }
-
-    /* Cancel a previous vote by a given account on a target.
-     * The target of the cancelled vote must be the same
-     * as the target the account voted upon previously,
-     * otherwise throw an exception.
-     * This is in order to enforce that a user may only
-     * vote upon a single action at a time.
-     */
-    function cancelVote(address account, address target)
-        internal
-    {
-        require(voteTarget[account] == target);
-        userVote[account] = Court.Vote.Abstention;
-        voteTarget[account] = 0;
     }
 
     /* ========== EVENTS ========== */
