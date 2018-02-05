@@ -152,8 +152,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
 			totalVestedAccountBalance[msg.sender] = safeSub(totalVestedAccountBalance[msg.sender], qty);
 		}
 		totalVestedBalance = safeSub(totalVestedBalance, total);
+		havven.transfer(msg.sender, total)
 		return total;
 	}
-
-
 }
