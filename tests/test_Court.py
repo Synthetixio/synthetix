@@ -159,8 +159,6 @@ class TestCourt(unittest.TestCase):
 		# Only owner can set minStandingBalance.
 		self.assertReverts(self.setMinStandingBalance, DUMMY, new_min_standing_balance)
 		tx_receipt = self.setMinStandingBalance(owner, new_min_standing_balance)
-		# Check that event is emitted properly.
-		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "MinStandingBalanceUpdated")
 		self.assertEqual(self.minStandingBalance(), new_min_standing_balance)
 
 
@@ -170,8 +168,6 @@ class TestCourt(unittest.TestCase):
 		# Only owner can set votingPeriod.
 		self.assertReverts(self.setVotingPeriod, DUMMY, new_voting_period)
 		tx_receipt = self.setVotingPeriod(owner, new_voting_period)
-		# Check that event is emitted properly.
-		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "VotingPeriodUpdated")
 		self.assertEqual(self.votingPeriod(), new_voting_period)
 		# Voting period must be > than minVotingPeriod (~ currently 3 days).
 		bad_voting_period = 3 * self.days - 1
@@ -194,8 +190,6 @@ class TestCourt(unittest.TestCase):
 		# Only owner can set confirmationPeriod.
 		self.assertReverts(self.setConfirmationPeriod, DUMMY, new_confirmation_period)
 		tx_receipt = self.setConfirmationPeriod(owner, new_confirmation_period)
-		# Check that event is emitted properly.
-		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "ConfirmationPeriodUpdated")
 		self.assertEqual(self.confirmationPeriod(), new_confirmation_period)
 		# Confirmation period must be > than minConfirmationPeriod (~ currently 1 days).
 		bad_confirmation_period = 1 * self.days - 1
@@ -211,8 +205,6 @@ class TestCourt(unittest.TestCase):
 		# Only owner can set requiredParticipation.
 		self.assertReverts(self.setRequiredParticipation, DUMMY, new_required_participation)
 		tx_receipt = self.setRequiredParticipation(owner, new_required_participation)
-		# Check that event is emitted properly.
-		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "RequiredParticipationUpdated")
 		self.assertEqual(self.requiredParticipation(), new_required_participation)
 		# Required participation must be >= than 10%.
 		bad_required_participation = UNIT // 10 - 1
@@ -224,9 +216,7 @@ class TestCourt(unittest.TestCase):
 		new_required_majority = (3 * UNIT) // 4 
 		# Only owner can set requiredMajority.
 		self.assertReverts(self.setRequiredMajority, DUMMY, new_required_majority)
-		tx_receipt = self.setRequiredMajority(owner, new_required_majority)
-		# Check that event is emitted properly.
-		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "RequiredMajorityUpdated")
+		tx_receipt = self.setRequiredMajority(owner, new_required_majority) 
 		self.assertEqual(self.requiredMajority(), new_required_majority)
 		# Required majority must be >= than 50%.
 		bad_required_majority = UNIT // 2 - 1
