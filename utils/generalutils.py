@@ -50,7 +50,6 @@ def generate_default_test_settings():
 
 def refresh_test_settings():
     default_test_settings = generate_default_test_settings()
-
     with open(TEST_SETTINGS_FILE, 'w') as f:
         f.write("run_test = {\n")
         for test_name in default_test_settings:
@@ -60,7 +59,6 @@ def refresh_test_settings():
 
 def load_test_settings():
     default_test_settings = generate_default_test_settings()
-
     try:
         from test_settings import run_test as r
         for item in default_test_settings:

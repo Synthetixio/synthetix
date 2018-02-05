@@ -2,7 +2,7 @@ from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mi
 
 # Source files to compile from
 SOLIDITY_SOURCES = ["contracts/Havven.sol", "contracts/EtherNomin.sol",
-                    "contracts/Court.sol"]
+                    "contracts/Court.sol", "contracts/HavvenEscrow.sol"]
 
 
 def deploy_havven():
@@ -21,6 +21,9 @@ def deploy_havven():
                                                MASTER,
                                                [havven_contract.address, nomin_contract.address,
                                                 MASTER])
+    escrow_contract, escrow_txr = attempt_deploy(compiled, 'HavvenEscrow',
+                                                 MASTER,
+                                                 [MASTER, havven_contract.address, nomin_contract.address])
 
     # Hook up each of those contracts to each other
     txs = [havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
