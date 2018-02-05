@@ -1,6 +1,6 @@
 import unittest
 
-from utils.deployutils import compile_contracts, attempt_deploy, mine_tx, MASTER, DUMMY
+from utils.deployutils import compile_contracts, attempt_deploy, mine_tx, MASTER, DUMMY, take_snapshot, restore_snapshot
 from utils.testutils import assertReverts
 
 
@@ -18,6 +18,12 @@ def tearDownModule():
 
 
 class TestHavvenEscrow(unittest.TestCase):
+    def setUp(self):
+        self.snapshot = take_snapshot()
+
+    def tearDown(self):
+        restore_snapshot(self.snapshot)
+
     @classmethod
     def setUpClass(cls):
         cls.assertReverts = assertReverts
@@ -47,6 +53,7 @@ class TestHavvenEscrow(unittest.TestCase):
         cls.purgeAccount = lambda self, sender, account: mine_tx(cls.escrow.functions.purgeAccount(account).transact({'from': sender}))
         cls.withdrawHavvens = lambda self, sender, quantity: mine_tx(cls.escrow.functions.withdrawHavvens(quantity).transact({'from': sender}))
         cls.addNewVestedQuantity = lambda self, sender, account, time, quantity: mine_tx(cls.escrow.functions.addNewVestedQuantity(account, time, quantity).transact({'from': sender}))
+        cls.addVestingSchedule = lambda self, sender, account, time, quantity, periods: mine_tx(cls.escrow.functions.addVestingSchedule(account, time, quantity, periods).transact({'from': sender}))
         cls.vest = lambda self, sender: mine_tx(cls.escrow.functions.vest().transact({'from': sender}))
 
     def makeNominVelocity(self):
@@ -73,6 +80,9 @@ class TestHavvenEscrow(unittest.TestCase):
         pass
 
     def test_addNewVestedQuantity(self):
+        pass
+
+    def test_addVestingSchedule(self):
         pass
 
     def test_vest(self):
