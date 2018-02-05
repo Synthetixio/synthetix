@@ -234,7 +234,6 @@ contract Court is Owned, SafeDecimalMath {
         // the foundation can set this value such that
         // anyone or noone can actually start an action.
         minStandingBalance = balance;
-        MinStandingBalanceUpdated(balance);
     }
 
     function setVotingPeriod(uint duration)
@@ -247,7 +246,6 @@ contract Court is Owned, SafeDecimalMath {
         // So that a single vote can span at most two fee periods.
         require(duration <= havven.targetFeePeriodDurationSeconds());
         votingPeriod = duration;
-        VotingPeriodUpdated(duration);
     }
 
     function setConfirmationPeriod(uint duration)
@@ -257,7 +255,6 @@ contract Court is Owned, SafeDecimalMath {
         require(minConfirmationPeriod <= duration &&
                 duration <= maxConfirmationPeriod);
         confirmationPeriod = duration;
-        ConfirmationPeriodUpdated(duration);
     }
 
     function setRequiredParticipation(uint fraction)
@@ -266,7 +263,6 @@ contract Court is Owned, SafeDecimalMath {
     {
         require(minRequiredParticipation <= fraction);
         requiredParticipation = fraction;
-        RequiredParticipationUpdated(fraction);
     }
 
     function setRequiredMajority(uint fraction)
@@ -275,7 +271,6 @@ contract Court is Owned, SafeDecimalMath {
     {
         require(minRequiredMajority <= fraction);
         requiredMajority = fraction;
-        RequiredMajorityUpdated(fraction);
     }
 
 
@@ -377,7 +372,7 @@ contract Court is Owned, SafeDecimalMath {
         voteStartTimes[target] = now;
         votesFor[target] = 0;
         votesAgainst[target] = 0;
-        ConfiscationVote(msg.sender, target);
+        ConfiscationVote(msg.sender, msg.sender, target, target);
     }
 
     /* The sender casts a vote in favour of confiscation of the
@@ -412,7 +407,7 @@ contract Court is Owned, SafeDecimalMath {
         setVotedYea(msg.sender, target);
         voteWeight[msg.sender] = weight;
         votesFor[target] += weight;
-        VoteFor(msg.sender, target, weight);
+        VoteFor(msg.sender, msg.sender, target, target, weight);
     }
 
     /* The sender casts a vote against confiscation of the
@@ -446,7 +441,7 @@ contract Court is Owned, SafeDecimalMath {
         setVotedNay(msg.sender, target);
         voteWeight[msg.sender] = weight;
         votesAgainst[target] += weight;
-        VoteAgainst(msg.sender, target, weight);
+        VoteAgainst(msg.sender, msg.sender, target, target, weight);
     }
 
     /* Cancel an existing vote by the sender on an action
@@ -478,7 +473,7 @@ contract Court is Owned, SafeDecimalMath {
 
             // A cancelled vote is only meaningful if a vote is running
             voteWeight[msg.sender] = 0;
-            CancelledVote(msg.sender, target);
+            CancelledVote(msg.sender, msg.sender, target, target);
         }
 
         // If the user is trying to cancel a vote for a different target
@@ -500,7 +495,7 @@ contract Court is Owned, SafeDecimalMath {
         voteStartTimes[target] = 0;
         votesFor[target] = 0;
         votesAgainst[target] = 0;
-        VoteClosed(target);
+        VoteClosed(target, target);
     }
 
     /* The foundation may only confiscate a balance during the confirmation
@@ -517,8 +512,8 @@ contract Court is Owned, SafeDecimalMath {
         voteStartTimes[target] = 0;
         votesFor[target] = 0;
         votesAgainst[target] = 0;
-        VoteClosed(target);
-        ConfiscationApproval(target);
+        VoteClosed(target, target);
+        ConfiscationApproval(target, target);
     }
 
     /* The foundation may veto an action at any time. */
@@ -530,8 +525,8 @@ contract Court is Owned, SafeDecimalMath {
         voteStartTimes[target] = 0;
         votesFor[target] = 0;
         votesAgainst[target] = 0;
-        VoteClosed(target);
-        Veto(target);
+        VoteClosed(target, target);
+        Veto(target, target);
     }
 
     /* Indicate that the given account voted yea in a confiscation
@@ -560,27 +555,17 @@ contract Court is Owned, SafeDecimalMath {
 
     /* ========== EVENTS ========== */
 
-    event MinStandingBalanceUpdated(uint balance);
+    event ConfiscationVote(address initator, address indexed initiatorIndex, address target, address indexed targetIndex);
 
-    event VotingPeriodUpdated(uint duration);
+    event VoteFor(address account, address indexed accountIndex, address target, address indexed targetIndex, uint balance);
 
-    event ConfirmationPeriodUpdated(uint duration);
+    event VoteAgainst(address account, address indexed accountIndex, address target, address indexed targetIndex, uint balance);
 
-    event RequiredParticipationUpdated(uint fraction);
+    event CancelledVote(address account, address indexed accountIndex, address target, address indexed targetIndex);
 
-    event RequiredMajorityUpdated(uint fraction);
+    event VoteClosed(address target, address indexed targetIndex);
 
-    event ConfiscationVote(address indexed initiator, address indexed target);
+    event Veto(address target, address indexed targetIndex);
 
-    event VoteFor(address indexed account, address indexed target, uint balance);
-
-    event VoteAgainst(address indexed account, address indexed target, uint balance);
-
-    event CancelledVote(address indexed account, address indexed target);
-
-    event VoteClosed(address indexed target);
-
-    event Veto(address indexed target);
-
-    event ConfiscationApproval(address indexed target);
+    event ConfiscationApproval(address target, address indexed targetIndex);
 }
