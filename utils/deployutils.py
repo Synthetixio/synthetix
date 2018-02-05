@@ -2,6 +2,7 @@ import time
 
 from web3 import Web3, HTTPProvider
 from solc import compile_files
+from utils.generalutils import to_seconds, TERMCOLORS
 
 BLOCKCHAIN_ADDRESS = "http://localhost:8545"
 W3 = Web3(HTTPProvider(BLOCKCHAIN_ADDRESS))
@@ -26,22 +27,20 @@ last_accessed_account = 1
 
 
 def fresh_account():
-    global last_accessed_account
-    last_accessed_account += 1
+    """Return first account after DUMMY"""
     try:
-        return W3.eth.accounts[last_accessed_account]
+        return W3.eth.accounts[last_accessed_account+1]
     except KeyError:
         raise Exception("""W3.eth.accounts doesn't contain enough accounts,
         restart ganache with more accounts (i.e. ganache-cli -a 500)""")
 
 
-class TERMCOLORS:
-    BLUE = '\033[94m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    RED = '\033[91m'
-    BOLD = '\033[1m'
-    RESET = '\033[0m'
+def fresh_accounts(num_accs):
+    accs = W3.eth.accounts[last_accessed_account + 1:]
+    if len(accs) < num_accs:
+        raise Exception("""W3.eth.accounts doesn't contain enough accounts,
+                        restart ganache with more accounts (i.e. ganache-cli -a 500)""")
+    return accs[:num_accs]
 
 
 def attempt(function, func_args, init_string, print_status=True, print_exception=True):
@@ -79,26 +78,10 @@ def force_mine_block():
 
 
 def fast_forward(seconds=0, minutes=0, hours=0, days=0, weeks=0):
-    total_time = seconds
-    mult = 60
-    total_time += minutes*mult
-    mult *= 60
-    total_time += hours*mult
-    mult *= 24
-    total_time += days*mult
-    mult *= 7
-    total_time += weeks*mult
+    total_time = to_seconds(seconds, minutes, hours, days, weeks)
     W3.providers[0].make_request("evm_increaseTime", [total_time])
     force_mine_block()
 
-def take_snapshot():
-    x = W3.providers[0].make_request("evm_snapshot", [])
-    force_mine_block()
-    return x
-
-def restore_snapshot(snapshot):
-    W3.providers[0].make_request("evm_revert", [snapshot['result']])
-    force_mine_block()
 
 def take_snapshot():
     x = W3.providers[0].make_request("evm_snapshot", [])

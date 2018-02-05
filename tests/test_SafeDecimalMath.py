@@ -5,11 +5,14 @@ from utils.testutils import assertReverts
 
 MATH_MODULE_SOURCE = "tests/contracts/PublicMath.sol"
 
+
 def setUpModule():
     print("Testing SafeDecimalMath...")
 
+
 def tearDownModule():
     print()
+
 
 class TestSafeDecimalMath(unittest.TestCase):
     @classmethod
@@ -271,7 +274,7 @@ class TestSafeDecimalMath(unittest.TestCase):
     def testUnsafeDecDiv(self):
         # Numerator overflows
         self.assertReverts(self.safeDecDiv, 2**256 - 1, 1)
-        self.assertReverts(self.safeDecDiv, (2**256 // UNIT) + 1, 1)
+        self.assertReverts(self.safeDecDiv, 2**256 // UNIT + 1, 1)
         self.assertReverts(self.safeDecDiv, 10**42 * UNIT, 1)
         self.assertReverts(self.safeDecDiv, 2**197, 1)
 
