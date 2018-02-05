@@ -25,22 +25,6 @@ contract PublicCourt is Court {
 		return nomin;
 	}
 
-	function _minStandingBalance()
-		public
-		view
-		returns (uint)
-	{
-		return minStandingBalance;
-	}
-
-	function _votingPeriod()
-		public
-		view
-		returns (uint)
-	{
-		return votingPeriod;
-	}
-
 	function _minVotingPeriod()
 		public
 		view
@@ -55,14 +39,6 @@ contract PublicCourt is Court {
 		returns (uint)
 	{
 		return maxVotingPeriod;
-	}
-
-	function _confirmationPeriod()
-		public
-		view
-		returns (uint)
-	{
-		return confirmationPeriod;
 	}
 
 	function _minConfirmationPeriod()
@@ -81,28 +57,12 @@ contract PublicCourt is Court {
 		return maxConfirmationPeriod;
 	}
 
-	function _requiredParticipation()
-		public
-		view
-		returns (uint)
-	{
-		return requiredParticipation;
-	}
-
 	function _minRequiredParticipation()
 		public
 		view
 		returns (uint)
 	{
 		return minRequiredParticipation;
-	}
-
-	function _requiredMajority()
-		public
-		view
-		returns (uint)
-	{
-		return requiredMajority;
 	}
 
 	function _minRequiredMajority()

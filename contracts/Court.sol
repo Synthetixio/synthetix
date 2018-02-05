@@ -153,31 +153,31 @@ contract Court is Owned, SafeDecimalMath {
 
     // The minimum havven balance required to be considered to have standing
     // to begin confiscation proceedings.
-    uint minStandingBalance = 100 * UNIT;
+    uint public minStandingBalance = 100 * UNIT;
 
     // The voting period lasts for this duration,
     // and if set, must fall within the given bounds.
-    uint votingPeriod = 1 weeks;
+    uint public votingPeriod = 1 weeks;
     uint constant minVotingPeriod = 3 days;
     uint constant maxVotingPeriod = 4 weeks;
 
     // Duration of the period during which the foundation may confirm
     // or veto a vote that has concluded.
     // If set, the confirmation duration must fall within the given bounds.
-    uint confirmationPeriod = 1 weeks;
+    uint public confirmationPeriod = 1 weeks;
     uint constant minConfirmationPeriod = 1 days;
     uint constant maxConfirmationPeriod = 2 weeks;
 
     // No fewer than this fraction of havvens must participate in the vote
     // in order for a quorum to be reached.
     // The participation fraction required may be set no lower than 10%.
-    uint requiredParticipation = 3 * UNIT / 10;
+    uint public requiredParticipation = 3 * UNIT / 10;
     uint constant minRequiredParticipation = UNIT / 10;
 
     // At least this fraction of participating votes must be in favour of
     // confiscation for the proposal to pass.
     // The required majority may be no lower than 50%.
-    uint requiredMajority = (2 * UNIT) / 3;
+    uint public requiredMajority = (2 * UNIT) / 3;
     uint constant minRequiredMajority = UNIT / 2;
 
     // The timestamp at which a vote began. This is used to determine
