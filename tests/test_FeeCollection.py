@@ -1,7 +1,7 @@
 import unittest
 from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mine_txs, mine_tx, \
-    UNIT, MASTER, DUMMY, to_seconds, fast_forward, fresh_account, fresh_accounts, take_snapshot, restore_snapshot, ETHER
-from utils.testutils import assertReverts, block_time, assertClose, generate_topic_event_map, get_event_data_from_log
+    UNIT, MASTER, DUMMY, fast_forward, fresh_accounts, take_snapshot, restore_snapshot, ETHER
+from utils.testutils import assertReverts, block_time, assertClose
 
 SOLIDITY_SOURCES = ["tests/contracts/PublicHavven.sol", "tests/contracts/PublicEtherNomin.sol",
                     "tests/contracts/FakeCourt.sol", "contracts/Havven.sol"]
@@ -225,11 +225,19 @@ class TestHavven(unittest.TestCase):
     # people transferring nomins, other people collecting
 
     def check_fees_collected(self, percentage_havvens, hav_holders, nom_users):
+        """
+        Check that a single fee periods fees are collected correctly by some % of havven holders
+        :param percentage_havvens: the percent of havvens being used
+        :param hav_holders: a list (later normalised) of quantities each havven holder will have
+        :param nom_users: a list of nomin users, and how many nomins each holds
+        """
         addresses = fresh_accounts(len(hav_holders) + len(nom_users) + 1)
 
+        # Normalise havven holders quantites
         sum_vals = sum(hav_holders)
         hav_holders = [((i/sum_vals)*percentage_havvens) for i in hav_holders]
 
+        # give the percentage of havvens to each holder
         h_total_supply = self.h_totalSupply()
         hav_addr = addresses[:len(hav_holders)]
         for i in range(len(hav_holders)):
@@ -239,6 +247,7 @@ class TestHavven(unittest.TestCase):
 
         self.assertClose(sum([self.h_balanceOf(addr) for addr in hav_addr]), int(h_total_supply*percentage_havvens), precision=5)
 
+        # give each nomin holder their share of nomins
         nom_addr = addresses[len(hav_holders):-1]
         self.give_master_nomins(sum(nom_users)*2)
 
@@ -275,19 +284,27 @@ class TestHavven(unittest.TestCase):
 
         self.assertClose(inital_pool * percentage_havvens, total_fees_collected)
 
-    # def test_100_percent_withdrawal(self):
-    #     self.check_fees_collected(1, [10, 20, 30, 40], [100, 200, 200, 300, 300])
-    #
-    # def test_50_percent_withdrawal(self):
-    #     self.check_fees_collected(.5, [10, 20, 30, 40], [100, 200, 200, 300, 300])
-    #
-    # def test_0_percent_withdrawal(self):
-    #     self.check_fees_collected(0, [10, 20, 30, 40], [100, 200, 200, 300, 300])
+    def test_100_percent_withdrawal(self):
+        self.check_fees_collected(1, [10, 20, 30, 40], [100, 200, 200, 300, 300])
+
+    def test_50_percent_withdrawal(self):
+        self.check_fees_collected(.5, [10, 20, 30, 40], [100, 200, 200, 300, 300])
+
+    def test_0_percent_withdrawal(self):
+        self.check_fees_collected(0, [10, 20, 30, 40], [100, 200, 200, 300, 300])
 
     # - fees rolling over
     def check_fees_rolling_over(self, percentage_havvens, hav_holders, nom_users):
+        """
+        Check that fees roll over multiple fee periods fees are collected correctly by some % of havven holders
+        at the end of all the fee periods rolling over
+        :param percentage_havvens: the percent of havvens being used
+        :param hav_holders: a list (later normalised) of quantities each havven holder will have
+        :param nom_users: a list of nomin users, and how many nomins each holds
+        """
         addresses = fresh_accounts(len(hav_holders) + len(nom_users) + 1)
 
+        # create havven holders, and give their share of havvens
         sum_vals = sum(hav_holders)
         hav_holders = [((i/sum_vals)*percentage_havvens) for i in hav_holders]
 
@@ -300,6 +317,7 @@ class TestHavven(unittest.TestCase):
 
         self.assertClose(sum([self.h_balanceOf(addr) for addr in hav_addr]), int(h_total_supply*percentage_havvens), precision=5)
 
+        # give each nomin holder their share of nomins
         nom_addr = addresses[len(hav_holders):-1]
         self.give_master_nomins(sum(nom_users)*2)
 
@@ -348,18 +366,24 @@ class TestHavven(unittest.TestCase):
 
         self.assertClose(inital_pool * percentage_havvens, total_fees_collected)
 
-    # def test_rolling_over_100_percent_withdrawal(self):
-    #     self.check_fees_rolling_over(1, [10, 20, 30, 40], [100, 200, 200, 300, 300])
-    #
-    # def test_rolling_over_50_percent_withdrawal(self):
-    #     self.check_fees_rolling_over(.5, [10, 20, 30, 40], [100, 200, 200, 300, 300])
-    #
-    # def test_rolling_over_0_percent_withdrawal(self):
-    #     self.check_fees_rolling_over(0, [10, 20, 30, 40], [100, 200, 200, 300, 300])
+    def test_rolling_over_100_percent_withdrawal(self):
+        self.check_fees_rolling_over(1, [10, 20, 30, 40], [100, 200, 200, 300, 300])
+
+    def test_rolling_over_50_percent_withdrawal(self):
+        self.check_fees_rolling_over(.5, [10, 20, 30, 40], [100, 200, 200, 300, 300])
+
+    def test_rolling_over_0_percent_withdrawal(self):
+        self.check_fees_rolling_over(0, [10, 20, 30, 40], [100, 200, 200, 300, 300])
 
     # Collecting after transferring havvens
     # i.e. checking that averages work as intended
     def check_transferring_havven_fee_collection(self, h_percent, nom_users):
+        """
+        Check that the average balance calulation actually influences the number of nomins received
+        (Single user only)
+        :param h_percent: the percent of havvens being used
+        :param nom_users: a list of nomin users, and how many nomins each holds
+        """
         fee_period_duration = self.h_targetFeePeriodDurationSeconds()
 
         addresses = fresh_accounts(len(nom_users) + 3)
@@ -416,21 +440,27 @@ class TestHavven(unittest.TestCase):
         self.assertClose(self.n_balanceOf(havven_holder), fee_pool*2/5*h_percent)
 
         self.assertClose(self.n_balanceOf(h_receiver), fee_pool*3/5*h_percent)
-    #
-    # def test_transferring_havven_100_percent(self):
-    #     self.check_transferring_havven_fee_collection(1, [100, 200, 200, 300, 300])
-    #
-    # def test_transferring_havven_50_percent(self):
-    #     self.check_transferring_havven_fee_collection(0.5, [100, 200, 200, 300, 300])
-    #
-    # def test_transferring_havven_0_percent(self):
-    #     self.check_transferring_havven_fee_collection(0, [100, 200, 200, 300, 300])
-    #
+
+    def test_transferring_havven_100_percent(self):
+        self.check_transferring_havven_fee_collection(1, [100, 200, 200, 300, 300])
+
+    def test_transferring_havven_50_percent(self):
+        self.check_transferring_havven_fee_collection(0.5, [100, 200, 200, 300, 300])
+
+    def test_transferring_havven_0_percent(self):
+        self.check_transferring_havven_fee_collection(0, [100, 200, 200, 300, 300])
 
     # - fees rolling over
     def check_fees_multi_period(self, percentage_havvens, hav_holders, nom_users):
+        """
+        Check that fees over multiple periods are collected correctly (collecting each period)
+        :param percentage_havvens: the percent of havvens being used
+        :param hav_holders: a list (later normalised) of quantities each havven holder will have
+        :param nom_users: a list of nomin users, and how many nomins each holds
+        """
         addresses = fresh_accounts(len(hav_holders) + len(nom_users) + 1)
 
+        # create normalised havven holders
         sum_vals = sum(hav_holders)
         hav_holders = [((i/sum_vals)*percentage_havvens) for i in hav_holders]
 
@@ -462,7 +492,7 @@ class TestHavven(unittest.TestCase):
             self.h_withdrawFeeEntitlement(addr)
             self.assertEqual(self.n_balanceOf(addr), 0)
 
-        # roll over 4 more periods, generating more fees
+        # roll over 4 more periods, generating more fees, and withdrawing them
         for i in range(4):
             # fast forward to next period
 
@@ -474,6 +504,7 @@ class TestHavven(unittest.TestCase):
             fast_forward(2*self.h_targetFeePeriodDurationSeconds())
             self.h_checkFeePeriodRollover(DUMMY)
 
+            # withdraw the fees
             inital_pool = self.h_lastFeesCollected()
             total_fees_collected = 0
             for addr in hav_addr:
