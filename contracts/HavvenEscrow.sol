@@ -143,14 +143,11 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         addNewVestedQuantity(account, conclusion_time, safeSub(quantity, quant_sum));
     }
 
-    mapping(uint => uint) public debug;
-    uint public d_i = 0;
     /* Withdraw any tokens that have vested. */
     function vest() 
         public
     {
         uint total = 0;
-        debug[d_i++] = total;
         for (uint i = 0; i < vestingTimes[msg.sender].length; i++) {
             uint time = vestingTimes[msg.sender][i];
             // The list is sorted; when we reach the first future time, bail out.
@@ -165,11 +162,8 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
             vestingTimes[msg.sender][i] = 0;
             vestingQuantities[msg.sender][time] = 0;
             total = safeAdd(total, qty);
-            debug[d_i++] = total;
             totalVestedAccountBalance[msg.sender] = safeSub(totalVestedAccountBalance[msg.sender], qty);
-            debug[d_i++] = total;
         }
-        debug[d_i++] = total;
 
         totalVestedBalance = safeSub(totalVestedBalance, total);
         havven.transfer(msg.sender, total);
