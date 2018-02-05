@@ -437,7 +437,7 @@ contract EtherNomin is ERC20FeeToken {
         // sub requires that nominPool >= n
         nominPool = safeSub(nominPool, n);
         balanceOf[msg.sender] = safeAdd(balanceOf[msg.sender], n);
-        Purchase(msg.sender, n, msg.value);
+        Purchase(msg.sender, msg.sender, n, msg.value);
     }
 
     /* Sends n nomins to the pool from the sender, in exchange for
@@ -465,7 +465,7 @@ contract EtherNomin is ERC20FeeToken {
         // sub requires that the balance is greater than n
         balanceOf[msg.sender] = safeSub(balanceOf[msg.sender], n);
         nominPool = safeAdd(nominPool, n);
-        Sale(msg.sender, n, proceeds);
+        Sale(msg.sender, msg.sender, n, proceeds);
         msg.sender.transfer(proceeds);
     }
 
@@ -612,9 +612,9 @@ contract EtherNomin is ERC20FeeToken {
 
     event Burning(uint nominsBurned);
 
-    event Purchase(address buyer, uint nomins, uint eth);
+    event Purchase(address buyer, address indexed buyerIndex, uint nomins, uint eth);
 
-    event Sale(address seller, uint nomins, uint eth);
+    event Sale(address seller, address indexed sellerIndex, uint nomins, uint eth);
 
     event PriceUpdated(uint newPrice);
 
