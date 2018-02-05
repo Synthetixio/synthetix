@@ -41,6 +41,20 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
 		return nomin.balanceOf(this);
 	}
 
+	function setHavven(Havven newHavven)
+		public
+		onlyOwner
+	{
+		havven = newHavven;
+	}
+
+	function setNomin(EtherNomin newNomin)
+		public
+		onlyOwner
+	{
+		nomin = newNomin;
+	}
+
 	function sweepFees()
 		public
 		onlyOwner
