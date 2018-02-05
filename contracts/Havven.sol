@@ -5,8 +5,9 @@ FILE INFORMATION
 file:       Havven.sol
 version:    0.2
 author:     Anton Jurisevic
+            Dominic Romanowski
 
-date:       2018-1-16
+date:       2018-02-05
 
 checked:    Mike Spain
 approved:   Samuel Brooks
