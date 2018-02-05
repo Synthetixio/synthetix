@@ -14,8 +14,10 @@ FAKECOURT_SOURCE = "tests/contracts/FakeCourt.sol"
 def setUpModule():
     print("Testing EtherNomin...")
 
+
 def tearDownModule():
     print()
+
 
 class TestEtherNomin(unittest.TestCase):
     def setUp(self):
