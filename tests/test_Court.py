@@ -252,7 +252,12 @@ class TestCourt(unittest.TestCase):
 		self.voteFor(voter, suspect)	
 		# This should return true because the voter has voted.
 		self.assertTrue(self.hasVoted(voter))
-
+		# And false when they cancel their vote.
+		self.cancelVote(voter, suspect)	
+		self.assertFalse(self.hasVoted(voter))
+		# And true again if they vote against.
+		self.voteFor(voter, suspect)	
+		self.assertTrue(self.hasVoted(voter))
 
 	def test_waiting_voting_confirming_state_transitions(self):
 		owner = self.owner()
