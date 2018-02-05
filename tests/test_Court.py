@@ -159,6 +159,7 @@ class TestCourt(unittest.TestCase):
 		# Only owner can set minStandingBalance.
 		self.assertReverts(self.setMinStandingBalance, DUMMY, new_min_standing_balance)
 		tx_receipt = self.setMinStandingBalance(owner, new_min_standing_balance)
+		# Check that event is emitted properly.
 		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "MinStandingBalanceUpdated")
 		self.assertEqual(self.minStandingBalance(), new_min_standing_balance)
 
@@ -169,6 +170,7 @@ class TestCourt(unittest.TestCase):
 		# Only owner can set votingPeriod.
 		self.assertReverts(self.setVotingPeriod, DUMMY, new_voting_period)
 		tx_receipt = self.setVotingPeriod(owner, new_voting_period)
+		# Check that event is emitted properly.
 		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "VotingPeriodUpdated")
 		self.assertEqual(self.votingPeriod(), new_voting_period)
 		# Voting period must be > than minVotingPeriod (~ currently 3 days).
