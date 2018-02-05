@@ -1,9 +1,10 @@
 import unittest
 
-from utils.deployutils import W3, UNIT, MASTER
+from utils.deployutils import W3, UNIT, MASTER, DUMMY, fresh_account, fresh_accounts
 from utils.deployutils import compile_contracts, attempt_deploy, mine_tx
 from utils.deployutils import take_snapshot, restore_snapshot
 from utils.testutils import assertReverts
+from utils.testutils import generate_topic_event_map, get_event_data_from_log
 
 
 ERC20Token_SOURCE = "contracts/ERC20Token.sol"
@@ -30,6 +31,8 @@ class TestERC20Token(unittest.TestCase):
         cls.assertReverts = assertReverts
 
         compiled = compile_contracts([ERC20Token_SOURCE])
+        cls.erc20_abi = compiled['ERC20Token']['abi']
+        cls.erc20_event_dict = generate_topic_event_map(cls.erc20_abi)
         cls.erc20token, cls.construction_txr = attempt_deploy(compiled, 'ERC20Token', 
                                                               MASTER, ["Test Token", "TEST", 
                                                               1000 * UNIT, MASTER])
@@ -54,7 +57,7 @@ class TestERC20Token(unittest.TestCase):
         sender = MASTER
         sender_balance = self.balanceOf(sender)
 
-        receiver = W3.eth.accounts[1]
+        receiver = fresh_account()
         receiver_balance = self.balanceOf(receiver)
         self.assertEqual(receiver_balance, 0)
 
@@ -63,8 +66,9 @@ class TestERC20Token(unittest.TestCase):
 
         # This should fail because receiver has no tokens
         self.assertReverts(self.transfer, receiver, sender, value)
-
-        self.transfer(sender, receiver, value)
+        tx_receipt = self.transfer(sender, receiver, value)
+        # Check event is emitted properly.
+        self.assertEqual(get_event_data_from_log(self.erc20_event_dict, tx_receipt.logs[0])['event'], "Transfer")
         self.assertEqual(self.balanceOf(receiver), receiver_balance+value)
         self.assertEqual(self.balanceOf(sender), sender_balance-value)
 
@@ -79,33 +83,39 @@ class TestERC20Token(unittest.TestCase):
         value = 0
         pre_sender_balance = self.balanceOf(sender)
         pre_receiver_balance = self.balanceOf(receiver)
-        self.transfer(sender, receiver, value)
+        tx_receipt = self.transfer(sender, receiver, value)
+        # Check event is emitted properly.
+        self.assertEqual(get_event_data_from_log(self.erc20_event_dict, tx_receipt.logs[0])['event'], "Transfer")
         self.assertEqual(self.balanceOf(receiver), pre_receiver_balance)
         self.assertEqual(self.balanceOf(sender), pre_sender_balance)
 
         # It is also possible to send 0 value transfer from an account with 0 balance.
-        no_tokens = W3.eth.accounts[2]
+        no_tokens = fresh_account()
         self.assertEqual(self.balanceOf(no_tokens), 0)
-        self.transfer(no_tokens, receiver, value)
+        tx_receipt = self.transfer(no_tokens, receiver, value)
+        # Check event is emitted properly.
+        self.assertEqual(get_event_data_from_log(self.erc20_event_dict, tx_receipt.logs[0])['event'], "Transfer")
         self.assertEqual(self.balanceOf(no_tokens), 0)
 
     def test_approve(self):
-        approver = MASTER
-        spender = W3.eth.accounts[1]
+        approver, spender = fresh_accounts(2)
         approval_amount = 1 * UNIT
 
-        self.approve(approver, spender, approval_amount)
+        tx_receipt = self.approve(approver, spender, approval_amount)
+        # Check event is emitted properly.
+        self.assertEqual(get_event_data_from_log(self.erc20_event_dict, tx_receipt.logs[0])['event'], "Approval")
         self.assertEqual(self.allowance(approver, spender), approval_amount)
 
         # Any positive approval amount is valid, even greater than total_supply.
         approval_amount = self.totalSupply() * 100
-        self.approve(approver, spender, approval_amount)
+        tx_receipt = self.approve(approver, spender, approval_amount)
+        # Check event is emitted properly.
+        self.assertEqual(get_event_data_from_log(self.erc20_event_dict, tx_receipt.logs[0])['event'], "Approval")
         self.assertEqual(self.allowance(approver, spender), approval_amount)
 
     def test_transferFrom(self):
         approver = MASTER
-        spender = W3.eth.accounts[1]
-        receiver = W3.eth.accounts[2]
+        spender, receiver = fresh_accounts(2)
 
         approver_balance = self.balanceOf(approver)
         spender_balance = self.balanceOf(spender)
@@ -117,11 +127,15 @@ class TestERC20Token(unittest.TestCase):
         # This fails because there has been no approval yet
         self.assertReverts(self.transferFrom, spender, approver, receiver, value)
 
-        self.approve(approver, spender, 2 * value)
+        tx_receipt = self.approve(approver, spender, 2 * value)
+        # Check event is emitted properly.
+        self.assertEqual(get_event_data_from_log(self.erc20_event_dict, tx_receipt.logs[0])['event'], "Approval")
         self.assertEqual(self.allowance(approver, spender), 2 * value)
 
         self.assertReverts(self.transferFrom, spender, approver, receiver, 2 * value + 1)
-        self.transferFrom(spender, approver, receiver, value)
+        tx_receipt = self.transferFrom(spender, approver, receiver, value)
+        # Check event is emitted properly.
+        self.assertEqual(get_event_data_from_log(self.erc20_event_dict, tx_receipt.logs[0])['event'], "Transfer")
 
         self.assertEqual(self.balanceOf(approver), approver_balance - value)
         self.assertEqual(self.balanceOf(spender), spender_balance)
@@ -130,15 +144,19 @@ class TestERC20Token(unittest.TestCase):
         self.assertEqual(self.totalSupply(), total_supply)
 
         # Empty the account
-        self.transferFrom(spender, approver, receiver, value)
+        tx_receipt = self.transferFrom(spender, approver, receiver, value)
+        # Check event is emitted properly.
+        self.assertEqual(get_event_data_from_log(self.erc20_event_dict, tx_receipt.logs[0])['event'], "Transfer")
 
-        approver = W3.eth.accounts[4]
+        approver = fresh_account()
         # This account has no tokens
         approver_balance = self.balanceOf(approver) 
         self.assertEqual(approver_balance, 0)
         self.assertEqual(self.allowance(approver, spender), 0)
 
-        self.approve(approver, spender, value)
+        tx_receipt = self.approve(approver, spender, value)
+        # Check event is emitted properly.
+        self.assertEqual(get_event_data_from_log(self.erc20_event_dict, tx_receipt.logs[0])['event'], "Approval")
         self.assertEqual(self.allowance(approver, spender), value)
 
         # This should fail because the approver has no tokens.
@@ -155,11 +173,11 @@ class TestERC20FeeToken(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.assertReverts = assertReverts
-        cls.initial_beneficiary = W3.eth.accounts[2]
-        cls.fee_authority = W3.eth.accounts[3]
-        cls.token_owner = W3.eth.accounts[4]
+        cls.initial_beneficiary, cls.fee_authority, cls.token_owner = fresh_accounts(3)
 
         compiled = compile_contracts([ERC20FeeToken_SOURCE])
+        cls.erc20fee_abi = compiled['ERC20FeeToken']['abi']
+        cls.erc20fee_event_dict = generate_topic_event_map(cls.erc20fee_abi)
         cls.erc20feetoken, cls.construction_txr = attempt_deploy(compiled, "ERC20FeeToken", MASTER, 
                                                                  ["Test Fee Token", "FEE", 1000 * UNIT, 
                                                                   cls.initial_beneficiary, UNIT // 20,
@@ -186,7 +204,7 @@ class TestERC20FeeToken(unittest.TestCase):
         cls.approve = lambda self, sender, spender, value: mine_tx(cls.erc20feetoken.functions.approve(spender, value).transact({'from': sender}))
         cls.transferFrom = lambda self, sender, fromAccount, to, value: mine_tx(cls.erc20feetoken.functions.transferFrom(fromAccount, to, value).transact({'from': sender}))
 
-        cls.withdrawFee = lambda self, sender, account, value: cls.erc20feetoken.functions.withdrawFee(account, value).transact({'from' : sender})
+        cls.withdrawFee = lambda self, sender, account, value: mine_tx(cls.erc20feetoken.functions.withdrawFee(account, value).transact({'from' : sender}))
 
     def test_constructor(self):
         self.assertEqual(self.name(), "Test Fee Token")
@@ -198,7 +216,7 @@ class TestERC20FeeToken(unittest.TestCase):
 
     def test_getSetOwner(self):
         owner = self.owner()
-        new_owner = W3.eth.accounts[1]
+        new_owner = DUMMY
         self.assertNotEqual(owner, new_owner)
 
         # Only the owner must be able to change the new owner.
@@ -212,27 +230,31 @@ class TestERC20FeeToken(unittest.TestCase):
         transfer_fee_rate = self.transferFeeRate()
         new_transfer_fee_rate = transfer_fee_rate + UNIT // 20
         owner = self.owner()
-        fake_owner = W3.eth.accounts[1]
+        fake_owner = DUMMY
         self.assertNotEqual(owner, fake_owner)
 
-        # Only the owner is able to set the Transfer Fee Rate
+        # Only the owner is able to set the Transfer Fee Rate.
         self.assertReverts(self.setTransferFeeRate, fake_owner, new_transfer_fee_rate)
-        self.setTransferFeeRate(owner, new_transfer_fee_rate)
+        tx_receipt = self.setTransferFeeRate(owner, new_transfer_fee_rate)
+        # Check that event is emitted.
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'], "TransferFeeRateUpdate")
         self.assertEqual(self.transferFeeRate(), new_transfer_fee_rate)
 
-        # Maximum fee rate is UNIT /10
+        # Maximum fee rate is UNIT /10.
         bad_transfer_fee_rate = UNIT
         self.assertReverts(self.setTransferFeeRate, owner, bad_transfer_fee_rate)
         self.assertEqual(self.transferFeeRate(), new_transfer_fee_rate)
 
     def test_getSetFeeAuthority(self):
         fee_authority = self.feeAuthority()
-        new_fee_authority = W3.eth.accounts[1]
+        new_fee_authority = fresh_account()
         owner = self.owner()
 
-        #Only the owner is able to set the Fee Authority.
+        # Only the owner is able to set the Fee Authority.
         self.assertReverts(self.setFeeAuthority, new_fee_authority, new_fee_authority)
-        self.setFeeAuthority(owner, new_fee_authority)
+        tx_receipt = self.setFeeAuthority(owner, new_fee_authority)
+        # Check that event is emitted.
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'], "FeeAuthorityUpdate")
         self.assertEqual(self.feeAuthority(), new_fee_authority)
 
     def test_getTransferFeeIncurred(self):
@@ -254,7 +276,7 @@ class TestERC20FeeToken(unittest.TestCase):
         sender = self.initial_beneficiary
         sender_balance = self.balanceOf(sender)
 
-        receiver = W3.eth.accounts[1]
+        receiver = fresh_account()
         receiver_balance = self.balanceOf(receiver)
         self.assertEqual(receiver_balance, 0)
 
@@ -267,8 +289,10 @@ class TestERC20FeeToken(unittest.TestCase):
         # This should fail because receiver has no tokens
         self.assertReverts(self.transfer, receiver, sender, value)
 
-        self.transfer(sender, receiver, value)
-
+        tx_receipt = self.transfer(sender, receiver, value)
+        # Check that events are emitted properly.
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'], "Transfer")
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[1])['event'], "TransferFeePaid")
         self.assertEqual(self.balanceOf(receiver), receiver_balance + value)
         self.assertEqual(self.balanceOf(sender), sender_balance - total_value)
         self.assertEqual(self.totalSupply(), total_supply)
@@ -289,42 +313,49 @@ class TestERC20FeeToken(unittest.TestCase):
         total_supply = self.totalSupply()
         fee_pool = self.feePool()
 
-        self.transfer(sender, receiver, value)
-
+        tx_receipt = self.transfer(sender, receiver, value)
+        # Check that events are emitted properly.
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'], "Transfer")
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[1])['event'], "TransferFeePaid")
         self.assertEqual(self.totalSupply(), total_supply)
         self.assertEqual(self.feePool(), fee_pool)
 
         # It is also possible to send 0 value transfer from an account with 0 balance
         value = 0
-        no_tokens = W3.eth.accounts[4]
+        no_tokens = fresh_account()
         self.assertEqual(self.balanceOf(no_tokens), 0)
         fee = self.transferFeeIncurred(value)
         total_supply = self.totalSupply()
         fee_pool = self.feePool()
 
-        self.transfer(no_tokens, receiver, value)
-
+        tx_receipt = self.transfer(no_tokens, receiver, value)
+        # Check that events are emitted properly.
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'], "Transfer")
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[1])['event'], "TransferFeePaid")
         self.assertEqual(self.balanceOf(no_tokens), 0)
         self.assertEqual(self.totalSupply(), total_supply)
         self.assertEqual(self.feePool(), fee_pool)
 
     def test_approve(self):
         approver = MASTER
-        spender = W3.eth.accounts[1]
+        spender = fresh_account()
         approval_amount = 1 * UNIT
 
-        self.approve(approver, spender, approval_amount)
+        tx_receipt = self.approve(approver, spender, approval_amount)
+        # Check that event is emitted properly.
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'], "Approval")
         self.assertEqual(self.allowance(approver, spender), approval_amount)
 
         # Any positive approval amount is valid, even greater than total_supply.
         approval_amount = self.totalSupply() * 100
-        self.approve(approver, spender, approval_amount)
+        tx_receipt = self.approve(approver, spender, approval_amount)
+        # Check that event is emitted properly.
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'], "Approval")
         self.assertEqual(self.allowance(approver, spender), approval_amount)
 
     def test_transferFrom(self):
         approver = self.initial_beneficiary
-        spender = W3.eth.accounts[0]
-        receiver = W3.eth.accounts[1]
+        spender, receiver = fresh_accounts(2)
         self.assertNotEqual(approver, spender)
         self.assertNotEqual(approver, receiver)
 
@@ -338,14 +369,19 @@ class TestERC20FeeToken(unittest.TestCase):
         total_supply = self.totalSupply()
         fee_pool = self.feePool()
 
-        # This fails because there has been no approval yet
+        # This fails because there has been no approval yet.
         self.assertReverts(self.transferFrom, spender, approver, receiver, value)
 
-        # Approve total amount inclusive of fee
-        self.approve(approver, spender, total_value)
+        # Approve total amount inclusive of fee.
+        tx_receipt = self.approve(approver, spender, total_value)
+        # Check that event is emitted properly.
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'], "Approval")
         self.assertEqual(self.allowance(approver, spender), total_value)
 
-        self.transferFrom(spender, approver, receiver, value // 10)
+        tx_receipt = self.transferFrom(spender, approver, receiver, value // 10)
+        # Check that events are emitted properly.
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'], "Transfer")
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[1])['event'], "TransferFeePaid")
         self.assertEqual(self.allowance(approver, spender), 9 * total_value // 10)
 
         self.assertEqual(self.balanceOf(approver), approver_balance - total_value // 10)
@@ -354,8 +390,10 @@ class TestERC20FeeToken(unittest.TestCase):
         self.assertEqual(self.totalSupply(), total_supply)
         self.assertEqual(self.feePool(), fee_pool + fee // 10)
 
-        self.transferFrom(spender, approver, receiver, 9 * value // 10)
-
+        tx_receipt = self.transferFrom(spender, approver, receiver, 9 * value // 10)
+        # Check that events are emitted properly.
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'], "Transfer")
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[1])['event'], "TransferFeePaid")
         self.assertEqual(self.allowance(approver, spender), 0)
         self.assertEqual(self.balanceOf(approver), approver_balance - total_value)
         self.assertEqual(self.balanceOf(spender), spender_balance)
@@ -363,20 +401,19 @@ class TestERC20FeeToken(unittest.TestCase):
         self.assertEqual(self.totalSupply(), total_supply)
         self.assertEqual(self.feePool(), fee_pool + fee)
 
-        approver = W3.eth.accounts[4]
-        # This account has no tokens
+        approver = fresh_account()
+        # This account has no tokens.
         approver_balance = self.balanceOf(approver) 
         self.assertEqual(approver_balance, 0)
 
-        self.approve(approver, spender, total_value)
+        tx_receipt = self.approve(approver, spender, total_value)
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'], "Approval")
 
         # This should fail because the approver has no tokens.
         self.assertReverts(self.transferFrom, spender, approver, receiver, value)
 
     def test_withdrawFee(self): 
-        receiver = W3.eth.accounts[1]
-        fee_receiver = W3.eth.accounts[2]
-        not_fee_authority = W3.eth.accounts[4]
+        receiver, fee_receiver, not_fee_authority = fresh_accounts(3)
         self.assertNotEqual(self.fee_authority, not_fee_authority)
         self.assertNotEqual(self.fee_authority, receiver)
         self.assertNotEqual(self.fee_authority, fee_receiver)
@@ -384,7 +421,10 @@ class TestERC20FeeToken(unittest.TestCase):
 
         value = 500 * UNIT
         total_value = self.transferPlusFee(value)
-        self.transfer(self.initial_beneficiary, self.fee_authority, total_value)
+        tx_receipt = self.transfer(self.initial_beneficiary, self.fee_authority, total_value)
+        # Check that event is emitted properly.
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'], "Transfer")
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[1])['event'], "TransferFeePaid")
         self.assertEqual(self.balanceOf(self.fee_authority), total_value)
 
         fee = self.transferFeeIncurred(value)
@@ -395,7 +435,10 @@ class TestERC20FeeToken(unittest.TestCase):
         receiver_balance = self.balanceOf(receiver)
         fee_receiver_balance = self.balanceOf(fee_receiver)
 
-        self.transfer(self.fee_authority, receiver, value)
+        tx_receipt = self.transfer(self.fee_authority, receiver, value)
+        # Check that event is emitted properly.
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'], "Transfer")
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[1])['event'], "TransferFeePaid")
 
         self.assertEqual(self.balanceOf(receiver), receiver_balance + value)
         self.assertEqual(self.balanceOf(self.fee_authority), fee_authority_balance - total_value)
@@ -411,12 +454,16 @@ class TestERC20FeeToken(unittest.TestCase):
         self.assertReverts(self.withdrawFee, self.fee_authority, fee_receiver, fee_pool + 1)
 
         # Partial withdrawal leaves stuff in the pool
-        self.withdrawFee(self.fee_authority, fee_receiver, fee_pool // 4)
+        tx_receipt = self.withdrawFee(self.fee_authority, fee_receiver, fee_pool // 4)
+        # Check that event is emitted properly.
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'], "FeeWithdrawal")
         self.assertEqual(3 * fee_pool // 4, self.feePool())
         self.assertEqual(self.balanceOf(fee_receiver), fee_receiver_balance + fee_pool // 4)
 
         # Withdraw the rest
-        self.withdrawFee(self.fee_authority, fee_receiver, 3 * fee_pool // 4)
+        tx_receipt = self.withdrawFee(self.fee_authority, fee_receiver, 3 * fee_pool // 4)
+        # Check that event is emitted properly.
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'], "FeeWithdrawal")
 
         self.assertEqual(self.balanceOf(fee_receiver), fee_receiver_balance + fee_pool)
         self.assertEqual(self.totalSupply(), total_supply)
