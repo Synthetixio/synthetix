@@ -115,7 +115,7 @@ class TestCourt(unittest.TestCase):
 		# Havven mutators
 		cls.havvenEndow = lambda self, sender, account, value: mine_tx(self.havven.functions.endow(account, value).transact({'from' : sender}))
 		cls.havvenTransfer = lambda self, sender, to, value: mine_tx(self.havven.functions.transfer(to, value).transact({'from' : sender}))
-		cls.havvenPostCheckFeePeriodRollover = lambda self, sender: mine_tx(self.havven.functions._postCheckFeePeriodRollover().transact({'from': sender}))
+		cls.havvenCheckFeePeriodRollover = lambda self, sender: mine_tx(self.havven.functions._checkFeePeriodRollover().transact({'from': sender}))
 		cls.havvenAdjustFeeEntitlement = lambda self, sender, acc, p_bal: mine_tx(self.havven.functions._adjustFeeEntitlement(acc, p_bal).transact({'from': sender}))
 		cls.havvenSetTargetFeePeriodDuration = lambda self, sender, duration: mine_tx(self.havven.functions.setTargetFeePeriodDuration(duration).transact({'from' : sender}))
 
@@ -232,7 +232,7 @@ class TestCourt(unittest.TestCase):
 		self.assertEqual(self.havvenBalance(voter), 1000)
 		# Fast forward to update the vote weight.
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 		# This should fail because no confiscation action has begun.
 		self.assertFalse(self.hasVoted(voter))
@@ -299,9 +299,9 @@ class TestCourt(unittest.TestCase):
 			self.assertEqual(self.havvenBalance(voter), tokens)
 		# Fast forward to update the vote weights.
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		# Begin a confiscation action against the suspect.
 		self.beginConfiscationAction(owner, suspect)
 		self.assertFalse(self.votePasses(suspect))
@@ -357,9 +357,9 @@ class TestCourt(unittest.TestCase):
 		self.assertEqual(self.havvenBalance(voter), controlling_share)
 		# Fast forward to update the voter's weight.
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 		self.havvenEndow(owner, insufficient_standing, 99 * UNIT)
 		self.havvenEndow(owner, sufficient_standing, 100 * UNIT)
@@ -396,9 +396,9 @@ class TestCourt(unittest.TestCase):
 		self.assertReverts(self.voteFor, voter, suspects[0])
 		# Fast forward to update the voter's weight.
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 		# Begin a confiscation action against the suspect.
 		self.beginConfiscationAction(owner, suspects[0])
@@ -430,9 +430,9 @@ class TestCourt(unittest.TestCase):
 		self.assertReverts(self.voteAgainst, voter, suspects[0])
 		# Fast forward two fee periods to update the voter's weight.
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 		# Begin a confiscation action against the suspect.
 		self.beginConfiscationAction(owner, suspects[0])
@@ -460,7 +460,7 @@ class TestCourt(unittest.TestCase):
 		self.assertEqual(self.havvenBalance(voter), 1000)
 		fast_forward(fee_period + 1)
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 		# Begin a confiscation action against the suspect.
 		self.beginConfiscationAction(owner, suspect)
@@ -498,9 +498,9 @@ class TestCourt(unittest.TestCase):
 		self.havvenEndow(owner, voter, 1000)
 		# Fast forward two fee periods to update the voter's weight.
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 		self.beginConfiscationAction(owner, suspect)
 		# Should not be able to close vote in the voting period.
@@ -531,9 +531,9 @@ class TestCourt(unittest.TestCase):
 		self.havvenEndow(owner, voter, controlling_share)
 		# Fast forward two fee periods to update the voter's weight.
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 		self.beginConfiscationAction(owner, guilty)
 		# Cast a vote in favour of confiscation.
@@ -563,9 +563,9 @@ class TestCourt(unittest.TestCase):
 		self.havvenEndow(owner, voter, controlling_share)
 		# Fast forward two fee periods to update the voter's weight.
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 		# Cannot veto when there is no vote in progress.
 		self.assertReverts(self.veto, owner, acquitted)
