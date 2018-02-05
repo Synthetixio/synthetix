@@ -5,8 +5,9 @@ FILE INFORMATION
 file:       Havven.sol
 version:    0.2
 author:     Anton Jurisevic
+            Dominic Romanowski
 
-date:       2018-1-16
+date:       2018-02-05
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -302,7 +303,7 @@ contract Havven is ERC20Token, Owned {
                                    totalSupply);
         nomin.withdrawFee(msg.sender, feesOwed);
         hasWithdrawnLastPeriodFees[msg.sender] = true;
-        FeesWithdrawn(msg.sender, feesOwed);
+        FeesWithdrawn(msg.sender, msg.sender, feesOwed);
     }
 
     /* Update the fee entitlement since the last transfer or entitlement
@@ -450,6 +451,6 @@ contract Havven is ERC20Token, Owned {
 
     event FeePeriodDurationUpdated(uint duration);
 
-    event FeesWithdrawn(address indexed account, uint fees);
+    event FeesWithdrawn(address account, address indexed accountIndex, uint fees);
 
 }

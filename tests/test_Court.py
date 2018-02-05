@@ -52,16 +52,16 @@ class TestCourt(unittest.TestCase):
 		# Non-public variables
 		cls.getHavven = lambda self: self.court.functions._havven().call()
 		cls.getNomin = lambda self: self.court.functions._nomin().call()
-		cls.minStandingBalance = lambda self: self.court.functions._minStandingBalance().call()
-		cls.votingPeriod = lambda self: self.court.functions._votingPeriod().call()
+		cls.minStandingBalance = lambda self: self.court.functions.minStandingBalance().call()
+		cls.votingPeriod = lambda self: self.court.functions.votingPeriod().call()
 		cls.minVotingPeriod = lambda self: self.court.functions._minVotingPeriod().call()
 		cls.maxVotingPeriod = lambda self: self.court.functions._maxVotingPeriod().call()
-		cls.confirmationPeriod = lambda self: self.court.functions._confirmationPeriod().call()
+		cls.confirmationPeriod = lambda self: self.court.functions.confirmationPeriod().call()
 		cls.minConfirmationPeriod = lambda self: self.court.functions._minConfirmationPeriod().call()
 		cls.maxConfirmationPeriod = lambda self: self.court.functions._maxConfirmationPeriod().call()
-		cls.requiredParticipation = lambda self: self.court.functions._requiredParticipation().call()
+		cls.requiredParticipation = lambda self: self.court.functions.requiredParticipation().call()
 		cls.minRequiredParticipation = lambda self: self.court.functions._minRequiredParticipation().call()
-		cls.requiredMajority = lambda self: self.court.functions._requiredMajority().call()
+		cls.requiredMajority = lambda self: self.court.functions.requiredMajority().call()
 		cls.minRequiredMajority = lambda self: self.court.functions._minRequiredMajority().call()
 		cls.voteWeight = lambda self: self.court.functions.voteWeight().call()
 
@@ -115,7 +115,7 @@ class TestCourt(unittest.TestCase):
 		# Havven mutators
 		cls.havvenEndow = lambda self, sender, account, value: mine_tx(self.havven.functions.endow(account, value).transact({'from' : sender}))
 		cls.havvenTransfer = lambda self, sender, to, value: mine_tx(self.havven.functions.transfer(to, value).transact({'from' : sender}))
-		cls.havvenPostCheckFeePeriodRollover = lambda self, sender: mine_tx(self.havven.functions._postCheckFeePeriodRollover().transact({'from': sender}))
+		cls.havvenCheckFeePeriodRollover = lambda self, sender: mine_tx(self.havven.functions._checkFeePeriodRollover().transact({'from': sender}))
 		cls.havvenAdjustFeeEntitlement = lambda self, sender, acc, p_bal: mine_tx(self.havven.functions._adjustFeeEntitlement(acc, p_bal).transact({'from': sender}))
 		cls.havvenSetTargetFeePeriodDuration = lambda self, sender, duration: mine_tx(self.havven.functions.setTargetFeePeriodDuration(duration).transact({'from' : sender}))
 
@@ -159,8 +159,6 @@ class TestCourt(unittest.TestCase):
 		# Only owner can set minStandingBalance.
 		self.assertReverts(self.setMinStandingBalance, DUMMY, new_min_standing_balance)
 		tx_receipt = self.setMinStandingBalance(owner, new_min_standing_balance)
-		# Check that event is emitted properly.
-		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "MinStandingBalanceUpdated")
 		self.assertEqual(self.minStandingBalance(), new_min_standing_balance)
 
 
@@ -170,8 +168,6 @@ class TestCourt(unittest.TestCase):
 		# Only owner can set votingPeriod.
 		self.assertReverts(self.setVotingPeriod, DUMMY, new_voting_period)
 		tx_receipt = self.setVotingPeriod(owner, new_voting_period)
-		# Check that event is emitted properly.
-		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "VotingPeriodUpdated")
 		self.assertEqual(self.votingPeriod(), new_voting_period)
 		# Voting period must be > than minVotingPeriod (~ currently 3 days).
 		bad_voting_period = 3 * self.days - 1
@@ -194,8 +190,6 @@ class TestCourt(unittest.TestCase):
 		# Only owner can set confirmationPeriod.
 		self.assertReverts(self.setConfirmationPeriod, DUMMY, new_confirmation_period)
 		tx_receipt = self.setConfirmationPeriod(owner, new_confirmation_period)
-		# Check that event is emitted properly.
-		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "ConfirmationPeriodUpdated")
 		self.assertEqual(self.confirmationPeriod(), new_confirmation_period)
 		# Confirmation period must be > than minConfirmationPeriod (~ currently 1 days).
 		bad_confirmation_period = 1 * self.days - 1
@@ -211,8 +205,6 @@ class TestCourt(unittest.TestCase):
 		# Only owner can set requiredParticipation.
 		self.assertReverts(self.setRequiredParticipation, DUMMY, new_required_participation)
 		tx_receipt = self.setRequiredParticipation(owner, new_required_participation)
-		# Check that event is emitted properly.
-		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "RequiredParticipationUpdated")
 		self.assertEqual(self.requiredParticipation(), new_required_participation)
 		# Required participation must be >= than 10%.
 		bad_required_participation = UNIT // 10 - 1
@@ -224,9 +216,7 @@ class TestCourt(unittest.TestCase):
 		new_required_majority = (3 * UNIT) // 4 
 		# Only owner can set requiredMajority.
 		self.assertReverts(self.setRequiredMajority, DUMMY, new_required_majority)
-		tx_receipt = self.setRequiredMajority(owner, new_required_majority)
-		# Check that event is emitted properly.
-		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "RequiredMajorityUpdated")
+		tx_receipt = self.setRequiredMajority(owner, new_required_majority) 
 		self.assertEqual(self.requiredMajority(), new_required_majority)
 		# Required majority must be >= than 50%.
 		bad_required_majority = UNIT // 2 - 1
@@ -242,7 +232,7 @@ class TestCourt(unittest.TestCase):
 		self.assertEqual(self.havvenBalance(voter), 1000)
 		# Fast forward to update the vote weight.
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 		# This should fail because no confiscation action has begun.
 		self.assertFalse(self.hasVoted(voter))
@@ -309,9 +299,9 @@ class TestCourt(unittest.TestCase):
 			self.assertEqual(self.havvenBalance(voter), tokens)
 		# Fast forward to update the vote weights.
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		# Begin a confiscation action against the suspect.
 		self.beginConfiscationAction(owner, suspect)
 		self.assertFalse(self.votePasses(suspect))
@@ -367,9 +357,9 @@ class TestCourt(unittest.TestCase):
 		self.assertEqual(self.havvenBalance(voter), controlling_share)
 		# Fast forward to update the voter's weight.
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 		self.havvenEndow(owner, insufficient_standing, 99 * UNIT)
 		self.havvenEndow(owner, sufficient_standing, 100 * UNIT)
@@ -406,9 +396,9 @@ class TestCourt(unittest.TestCase):
 		self.assertReverts(self.voteFor, voter, suspects[0])
 		# Fast forward to update the voter's weight.
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 		# Begin a confiscation action against the suspect.
 		self.beginConfiscationAction(owner, suspects[0])
@@ -440,9 +430,9 @@ class TestCourt(unittest.TestCase):
 		self.assertReverts(self.voteAgainst, voter, suspects[0])
 		# Fast forward two fee periods to update the voter's weight.
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 		# Begin a confiscation action against the suspect.
 		self.beginConfiscationAction(owner, suspects[0])
@@ -470,7 +460,7 @@ class TestCourt(unittest.TestCase):
 		self.assertEqual(self.havvenBalance(voter), 1000)
 		fast_forward(fee_period + 1)
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 		# Begin a confiscation action against the suspect.
 		self.beginConfiscationAction(owner, suspect)
@@ -508,9 +498,9 @@ class TestCourt(unittest.TestCase):
 		self.havvenEndow(owner, voter, 1000)
 		# Fast forward two fee periods to update the voter's weight.
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 		self.beginConfiscationAction(owner, suspect)
 		# Should not be able to close vote in the voting period.
@@ -541,9 +531,9 @@ class TestCourt(unittest.TestCase):
 		self.havvenEndow(owner, voter, controlling_share)
 		# Fast forward two fee periods to update the voter's weight.
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 		self.beginConfiscationAction(owner, guilty)
 		# Cast a vote in favour of confiscation.
@@ -573,9 +563,9 @@ class TestCourt(unittest.TestCase):
 		self.havvenEndow(owner, voter, controlling_share)
 		# Fast forward two fee periods to update the voter's weight.
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		fast_forward(fee_period + 1)
-		self.havvenPostCheckFeePeriodRollover(DUMMY)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 		# Cannot veto when there is no vote in progress.
 		self.assertReverts(self.veto, owner, acquitted)

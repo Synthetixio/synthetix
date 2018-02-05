@@ -84,8 +84,9 @@ contract PublicHavven is Havven {
         return rolloverFee(account, lastTransferTime, preBalance);
     }
 
-    function _postCheckFeePeriodRollover()
-        postCheckFeePeriodRollover
+    function _checkFeePeriodRollover()
         public
-    {}
+    {
+        checkFeePeriodRollover();
+    }
 }
