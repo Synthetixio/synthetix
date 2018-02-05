@@ -40,11 +40,13 @@ class TestHavvenEscrow(unittest.TestCase):
 
         cls.h_endow = lambda self, sender, receiver, amt: mine_tx(cls.havven.functions.endow(receiver, amt).transact({'from': sender}))
         cls.h_balanceOf = lambda self, account: cls.havven.functions.balanceOf(account).call()
+        cls.h_transfer = lambda self, sender, receiver, amt: mine_tx(cls.havven.functions.transfer(receiver, amt).transact({'from': sender}))
 
         cls.e_havven = lambda self: cls.escrow.functions.havven().call()
         cls.e_nomin = lambda self: cls.escrow.functions.nomin().call()
-        cls.vestingTimes = lambda self, account: cls.escrow.functions.vestingTimes(account).call()
+        cls.vestingTimes = lambda self, account, index: cls.escrow.functions.vestingTimes(account, index).call()
         cls.numTimes = lambda self, account: cls.escrow.functions.numTimes(account).call()
+        cls.numVestingTimes = lambda self, account: cls.escrow.functions.numVestingTimes(account).call()
         cls.vestingQuantities = lambda self, account, time: cls.escrow.functions.vestingQuantities(account, time).call()
         cls.totalVestedAccountBalance = lambda self, account: cls.escrow.functions.totalVestedAccountBalance(account).call()
         cls.totalVestedBalance = lambda self: cls.escrow.functions.totalVestedBalance().call()
@@ -67,6 +69,7 @@ class TestHavvenEscrow(unittest.TestCase):
         self.assertEqual(self.e_havven(), self.havven.address)
         self.assertEqual(self.e_nomin(), self.nomin.address)
         self.assertEqual(self.owner(), MASTER)
+        self.assertEqual(self.totalVestedBalance(), 0)
 
     def test_feePool(self):
         pass
@@ -94,6 +97,22 @@ class TestHavvenEscrow(unittest.TestCase):
         fast_forward(weeks=3)
         self.vest(alice)
         self.assertEqual(self.h_balanceOf(alice), amount)
+        self.h_transfer(alice, MASTER, amount)
+
+        time = block_time()
+        t1 = time+to_seconds(weeks=1)
+        t2 = time+to_seconds(weeks=2)
+        self.addNewVestedQuantity(MASTER, alice, t1, amount)
+        self.assertReverts(self.addNewVestedQuantity, MASTER, alice, time+to_seconds(days=1), amount)
+        self.assertReverts(self.addNewVestedQuantity, MASTER, alice, time+to_seconds(weeks=1), amount)
+        self.addNewVestedQuantity(MASTER, alice, t2, amount + 1)
+
+        self.assertEqual(self.vestingQuantities(alice, t1), amount)
+        self.assertEqual(self.vestingQuantities(alice, t2), amount + 1)
+
+        self.assertEqual(self.vestingTimes(alice, 1), t1)
+        self.assertEqual(self.vestingTimes(alice, 2), t2)
+        self.assertEqual(self.numVestingTimes(alice), 3)
 
     def test_addVestingSchedule(self):
         pass

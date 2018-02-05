@@ -31,6 +31,13 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         nomin = _nomin;
     }
 
+    function numVestingTimes(address account)
+        public
+        returns (uint)
+    {
+        return vestingTimes[account].length;
+    }
+
     function feePool()
         public
         view
@@ -84,6 +91,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
     {
         for (uint i = 0; i < vestingTimes[account].length; i++) {
             vestingQuantities[account][vestingTimes[account][i]] = 0;
+            delete vestingTimes[account][i];
         }
         delete vestingTimes[account];
         totalVestedBalance = safeSub(totalVestedBalance, totalVestedAccountBalance[account]);
