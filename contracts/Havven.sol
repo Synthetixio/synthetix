@@ -136,7 +136,7 @@ contract Havven is ERC20Token, Owned {
 
     // Sums of balances*duration in the current fee period.
     // range: decimals; units: havven-seconds
-    mapping(address => uint) currentBalanceSum;
+    mapping(address => uint) public currentBalanceSum;
 
     // Average account balances in the last completed fee period. This is proportional
     // to that account's last period fee entitlement.
@@ -153,7 +153,7 @@ contract Havven is ERC20Token, Owned {
 
     // The time an account last made a transfer.
     // range: naturals
-    mapping(address => uint) lastTransferTimestamp;
+    mapping(address => uint) public lastTransferTimestamp;
 
     // The time the current fee period began.
     uint public feePeriodStartTime = 3;
@@ -168,18 +168,18 @@ contract Havven is ERC20Token, Owned {
 
     // Fee periods will roll over in no shorter a time than this.
     uint public targetFeePeriodDurationSeconds = 4 weeks;
-    // And may not be set to be shorter than 1 day.
+    // And may not be set to be shorter than a day.
     uint constant minFeePeriodDurationSeconds = 1 days;
+    // And may not be set to be longer than six months.
+    uint constant maxFeePeriodDurationSeconds = 26 weeks;
 
     // The quantity of nomins that were in the fee pot at the time
     // of the last fee rollover (feePeriodStartTime).
     uint public lastFeesCollected;
 
-    mapping(address => bool) hasWithdrawnLastPeriodFees;
+    mapping(address => bool) public hasWithdrawnLastPeriodFees;
 
     EtherNomin public nomin;
-
-    uint public debug;
 
 
     /* ========== CONSTRUCTOR ========== */
@@ -191,9 +191,11 @@ contract Havven is ERC20Token, Owned {
         Owned(_owner)
         public
     {
+        lastTransferTimestamp[this] = now;
         feePeriodStartTime = now;
+        lastFeePeriodStartTime = now - targetFeePeriodDurationSeconds;
+        penultimateFeePeriodStartTime = now - 2*targetFeePeriodDurationSeconds;
     }
-
 
     /* ========== SETTERS ========== */
 
@@ -206,10 +208,11 @@ contract Havven is ERC20Token, Owned {
 
     function setTargetFeePeriodDuration(uint duration)
         public
-        postCheckFeePeriodRollover
+        preCheckFeePeriodRollover
         onlyOwner
     {
-        require(duration >= minFeePeriodDurationSeconds);
+        require(minFeePeriodDurationSeconds <= duration &&
+                duration <= maxFeePeriodDurationSeconds);
         targetFeePeriodDurationSeconds = duration;
         FeePeriodDurationUpdated(duration);
     }
@@ -218,12 +221,17 @@ contract Havven is ERC20Token, Owned {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /* Allow the owner of this contract to endow any address with havvens
-     * from the initial supply. */
+     * from the initial supply. Since the entire initial supply resides
+     * in the havven contract, this disallows the foundation from withdrawing
+     * fees on undistributed balances. This function can also be used
+     * to retrieve any havvens sent to the Havven contract itself. */
     function endow(address account, uint value)
         public
         onlyOwner
         returns (bool)
     {
+        // Use "this" in order that the havven account is the sender.
+        // That this is an explicit transfer also initialises fee entitlement information.
         return this.transfer(account, value);
     }
 
@@ -232,7 +240,7 @@ contract Havven is ERC20Token, Owned {
      */
     function transfer(address _to, uint _value)
         public
-        postCheckFeePeriodRollover
+        preCheckFeePeriodRollover
         returns (bool)
     {
         uint senderPreBalance = balanceOf[msg.sender];
@@ -242,11 +250,8 @@ contract Havven is ERC20Token, Owned {
         // an exception will be thrown in super.transfer().
         super.transfer(_to, _value);
 
-        // If there was no balance update, no need to update any fee entitlement information.
-        if (_value == 0) {
-            return true;
-        }
-
+        // Zero-value transfers still update fee entitlement information,
+        // and may roll over the fee period.
         adjustFeeEntitlement(msg.sender, senderPreBalance);
         adjustFeeEntitlement(_to, recipientPreBalance);
 
@@ -258,7 +263,7 @@ contract Havven is ERC20Token, Owned {
      */
     function transferFrom(address _from, address _to, uint _value)
         public
-        postCheckFeePeriodRollover
+        preCheckFeePeriodRollover
         returns (bool)
     {
         uint senderPreBalance = balanceOf[_from];
@@ -268,11 +273,8 @@ contract Havven is ERC20Token, Owned {
         // an exception will be thrown in super.transferFrom().
         super.transferFrom(_from, _to, _value);
 
-        // If there was no balance update, no need to update any fee entitlement information.
-        if (_value == 0) {
-            return true;
-        }
-
+        // Zero-value transfers still update fee entitlement information,
+        // and may roll over the fee period.
         adjustFeeEntitlement(_from, senderPreBalance);
         adjustFeeEntitlement(_to, recipientPreBalance);
 
@@ -284,7 +286,7 @@ contract Havven is ERC20Token, Owned {
      */
     function withdrawFeeEntitlement()
         public
-        postCheckFeePeriodRollover
+        preCheckFeePeriodRollover
     {
         // Do not deposit fees into frozen accounts.
         require(!nomin.isFrozen(msg.sender));
@@ -346,32 +348,36 @@ contract Havven is ERC20Token, Owned {
     function rolloverFee(address account, uint lastTransferTime, uint preBalance)
         internal
     {
-        if (lastTransferTime <= feePeriodStartTime) {
-            if (lastTransferTime <= lastFeePeriodStartTime) {
-                if (lastTransferTime <= penultimateFeePeriodStartTime) {
-                    // transfer was before penultimate period
+        if (lastTransferTime < feePeriodStartTime) {
+            if (lastTransferTime < lastFeePeriodStartTime) {
+                // The last transfer predated the previous two fee periods.
+                if (lastTransferTime < penultimateFeePeriodStartTime) {
+                    // The balance did nothing in the penultimate fee period, so the average balance
+                    // in this period is their pre-transfer balance.
                     penultimateAverageBalance[account] = preBalance;
-                    debug = 1;
+                // The last transfer occurred within the one-before-the-last fee period.
                 } else {
-
+                    // No overflow risk here: the failed guard implies (penultimateFeePeriodStartTime <= lastTransferTime).
                     penultimateAverageBalance[account] = safeDiv(
                         safeAdd(currentBalanceSum[account], safeMul(preBalance, (lastFeePeriodStartTime - lastTransferTime))),
                         (lastFeePeriodStartTime - penultimateFeePeriodStartTime)
                     );
-                    debug = currentBalanceSum[account];
                 }
 
-                // If the user did not transfer/withdraw in the last fee period
-                // their average allocation is just their balance.
+                // The balance did nothing in the last fee period, so the average balance
+                // in this period is their pre-transfer balance.
                 lastAverageBalance[account] = preBalance;
+
+            // The last transfer occurred within the last fee period.
             } else {
-                // If the user did transfer in the last period, the penultimate just rolls over from the lastAverageBalance
+                // The previously-last average balance becomes the penultimate balance.
                 penultimateAverageBalance[account] = lastAverageBalance[account];
+
+                // No overflow risk here: the failed guard implies (lastFeePeriodStartTime <= lastTransferTime).
                 lastAverageBalance[account] = safeDiv(
                     safeAdd(currentBalanceSum[account], safeMul(preBalance, (feePeriodStartTime - lastTransferTime))),
                     (feePeriodStartTime - lastFeePeriodStartTime)
                 );
-                debug = 3;
             }
 
             // Roll over to the next fee period.
@@ -381,6 +387,23 @@ contract Havven is ERC20Token, Owned {
         }
     }
 
+    /* Recompute and return the sender's average balance information.
+     * This also rolls over the fee period if necessary, and brings
+     * the account's current balance sum up to date. */
+    function recomputeLastAverageBalance()
+        public
+        preCheckFeePeriodRollover
+        returns (uint)
+    {
+        adjustFeeEntitlement(msg.sender, balanceOf[msg.sender]);
+        return lastAverageBalance[msg.sender];
+    }
+
+    function rolloverFeePeriod()
+        public
+    {
+        checkFeePeriodRollover();
+    }
 
     /* ========== MODIFIERS ========== */
 
@@ -396,6 +419,18 @@ contract Havven is ERC20Token, Owned {
     modifier postCheckFeePeriodRollover
     {
         _;
+        checkFeePeriodRollover();
+    }
+
+    modifier preCheckFeePeriodRollover
+    {
+        checkFeePeriodRollover();
+        _;
+    }
+
+    function checkFeePeriodRollover()
+        internal
+    {
         // If the fee period has rolled over...
         if (feePeriodStartTime + targetFeePeriodDurationSeconds <= now) {
             lastFeesCollected = nomin.feePool();
@@ -404,10 +439,14 @@ contract Havven is ERC20Token, Owned {
             penultimateFeePeriodStartTime = lastFeePeriodStartTime;
             lastFeePeriodStartTime = feePeriodStartTime;
             feePeriodStartTime = now;
+            
+            FeePeriodRollover(now);
         }
     }
 
     /* ========== EVENTS ========== */
+
+    event FeePeriodRollover(uint timestamp);
 
     event FeePeriodDurationUpdated(uint duration);
 

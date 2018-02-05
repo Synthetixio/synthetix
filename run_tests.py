@@ -1,60 +1,25 @@
 from unittest import TestSuite, TestLoader, TextTestRunner
-from tests import *
+from utils.generalutils import load_test_settings, ganache_error_message
 
-TEST_SETTINGS_FILE = "test_settings.py"
-
-run_test = {
-    'Court': True,
-    'Deploy': True,
-    'ERC20Tokens': True,
-    'EtherNomin': True,
-    'FeeCollection': True,
-    'Havven': True,
-    'Owned': True,
-    'SafeDecimalMath': True,
-    'Upgrade': True,
-}
-
-
-def refresh_test_settings():
-    with open(TEST_SETTINGS_FILE, 'w') as f:
-        f.write("run_test = {\n")
-        for test_name in run_test:
-            f.write(f"    '{test_name}': True,\n")
-        f.write('}\n')
-
-
+raised_exception = False
 try:
-    from test_settings import run_test as r
-    for item in run_test:
-        if item not in r:
-            raise ImportError
-    run_test = r
-except ImportError:
-    refresh_test_settings()
+    from tests import *
+except:
+    # use boolean to hide multiple exceptions printing out from requests library
+    raised_exception = True
+
+if raised_exception:
+    raise Exception(ganache_error_message)
 
 
 if __name__ == '__main__':
+    test_settings = load_test_settings()
+
     test_suite = TestSuite()
     loader = TestLoader()
-    if run_test['Court']:
-        test_suite.addTests(loader.loadTestsFromModule(tests.test_Court))
-    if run_test['Deploy']:
-        test_suite.addTests(loader.loadTestsFromModule(tests.test_Deploy))
-    if run_test['ERC20Tokens']:
-        test_suite.addTests(loader.loadTestsFromModule(tests.test_ERC20Tokens))
-    if run_test['EtherNomin']:
-        test_suite.addTests(loader.loadTestsFromModule(tests.test_EtherNomin))
-    if run_test['Havven']:
-        test_suite.addTests(loader.loadTestsFromModule(tests.test_Havven))
-    if run_test['FeeCollection']:
-        test_suite.addTests(loader.loadTestsFromModule(tests.test_FeeCollection))
-    if run_test['Owned']:
-        test_suite.addTests(loader.loadTestsFromModule(tests.test_Owned))
-    if run_test['SafeDecimalMath']:
-        test_suite.addTests(loader.loadTestsFromModule(tests.test_SafeDecimalMath))
-    if run_test['Upgrade']:
-        test_suite.addTests(loader.loadTestsFromModule(tests.test_Upgrade))
+    for item in test_settings:
+        if test_settings[item]:
+            test_suite.addTests(loader.loadTestsFromModule(getattr(tests, item)))
 
     print("Running test suite...\n")
     TextTestRunner(verbosity=2).run(test_suite)

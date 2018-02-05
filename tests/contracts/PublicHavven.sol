@@ -64,6 +64,14 @@ contract PublicHavven is Havven {
         return minFeePeriodDurationSeconds;
     }
 
+    function _maxFeePeriodDurationSeconds()
+        public
+        view
+        returns (uint)
+    {
+        return maxFeePeriodDurationSeconds;
+    }
+    
     function _adjustFeeEntitlement(address account, uint preBalance)
         public
     {
