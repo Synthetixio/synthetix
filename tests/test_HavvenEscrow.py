@@ -45,22 +45,31 @@ class TestHavvenEscrow(unittest.TestCase):
         cls.addNewVestedQuantity = lambda self, sender, account, time, quantity: mine_tx(cls.escrow.functions.addNewVestedQuantity(account, time, quantity).transact({'from': sender}))
         cls.vest = lambda self, sender: mine_tx(cls.escrow.functions.vest().transact({'from': sender}))
 
-    def test_owner_is_master(self):
+    def test_constructor(self):
+        self.assertEqual(self.e_havven(), self.havven.address)
+        self.assertEqual(self.e_nomin(), self.nomin.address)
         self.assertEqual(self.owner(), MASTER)
 
-    def test_change_owner(self):
-        old_owner = self.owner()
-        new_owner = DUMMY
+    def test_feePool(self):
+        pass
 
-        self.setOwner(MASTER, new_owner)
-        self.assertEqual(self.owner(), new_owner)
+    def test_withdrawContractFees(self):
+        pass
 
-        self.setOwner(new_owner, old_owner)
+    def test_withdrawFees(self):
+        pass
 
-    def test_change_invalid_owner(self):
-        invalid_account = DUMMY
-        self.assertReverts(self.setOwner, invalid_account, invalid_account)
+    def test_purgeAccount(self):
+        pass
 
+    def test_withdrawHavvens(self):
+        pass
+
+    def test_addNewVestedQuantity(self):
+        pass
+
+    def test_vest(self):
+        pass
 
 if __name__ == '__main__':
     unittest.main()
