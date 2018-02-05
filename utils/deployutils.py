@@ -2,7 +2,7 @@ import time
 
 from web3 import Web3, HTTPProvider
 from solc import compile_files
-from utils.generalutils import *
+from utils.generalutils import to_seconds, TERMCOLORS
 
 BLOCKCHAIN_ADDRESS = "http://localhost:8545"
 W3 = Web3(HTTPProvider(BLOCKCHAIN_ADDRESS))
