@@ -175,7 +175,7 @@ contract Court is Owned, SafeDecimalMath {
     mapping(address => uint) public votesFor;
     mapping(address => uint) public votesAgainst;
 
-    // The penultimate average balance of a user at the time they voted.
+    // The last/penultimate average balance of a user at the time they voted.
     // If we did not save this information then we would have to
     // disallow transfers into an account lest it cancel a vote
     // with greater weight than that with which it originally voted,
@@ -213,7 +213,7 @@ contract Court is Owned, SafeDecimalMath {
     {
         // No requirement on the standing threshold here;
         // the foundation can set this value such that
-        // anyone or noone can actually start a motion.
+        // anyone or no one can actually start a motion.
         minStandingBalance = balance;
     }
 
@@ -267,8 +267,7 @@ contract Court is Owned, SafeDecimalMath {
     }
 
     /* There is a motion in progress on the specified
-     * account, and votes are being accepted in that motion.
-     */
+     * account, and votes are being accepted in that motion. */
     function voting(address target)
         public
         view
@@ -280,8 +279,7 @@ contract Court is Owned, SafeDecimalMath {
     }
 
     /* A vote on the target account has concluded, but the motion
-     * has not yet been approved, vetoed, or closed.
-     */
+     * has not yet been approved, vetoed, or closed. */
     function confirming(address target)
         public
         view
@@ -302,8 +300,7 @@ contract Court is Owned, SafeDecimalMath {
     }
 
     /* If the vote was to terminate at this instant, it would pass.
-     * That is: there was sufficient participation and a sizeable enough majority.
-     */
+     * That is: there was sufficient participation and a sizeable enough majority. */
     function votePasses(address target)
         public
         view
@@ -331,8 +328,7 @@ contract Court is Owned, SafeDecimalMath {
 
     /* Begin a vote to confiscate the funds in a given nomin account.
      * Only the foundation, or accounts with sufficient havven balances
-     * may elect to start such a vote.
-     */
+     * may elect to start such a vote. */
     function beginConfiscationMotion(address target)
         public
     {
@@ -356,11 +352,11 @@ contract Court is Owned, SafeDecimalMath {
         ConfiscationVote(msg.sender, msg.sender, target, target);
     }
 
-    /* The sender casts a vote in favour of confiscation of the
-     * target account's nomin balance.
-     */
-    function voteFor(address target)
-        public
+    /* Shared vote setup function between voteFor and voteAgainst.
+     * Returns the voter's vote weight. */
+    function voteSetup(address target)
+        internal
+        returns (uint)
     {
         // There must be an active vote for this target running.
         // Vote totals must only change during the voting phase.
@@ -382,9 +378,15 @@ contract Court is Owned, SafeDecimalMath {
         // Users must have a nonzero voting weight to vote.
         require(weight > 0);
 
-        // The user should not have voted previously without cancelling
-        // that vote; the previous check ensures this, along with
-        // the one inside setVotedYea().
+        return weight;
+    }
+
+    /* The sender casts a vote in favour of confiscation of the
+     * target account's nomin balance. */
+    function voteFor(address target)
+        public
+    {
+        uint weight = voteSetup(target);
         setVotedYea(msg.sender, target);
         voteWeight[msg.sender] = weight;
         votesFor[target] += weight;
@@ -396,29 +398,7 @@ contract Court is Owned, SafeDecimalMath {
     function voteAgainst(address target)
         public
     {
-        // There must be an active vote for this target running.
-        // Vote totals must only change during the voting phase.
-        require(voting(target));
-
-        // This user can't already have voted in anything.
-        require(!hasVoted(msg.sender));
-
-        uint weight;
-        // We use a fee period guaranteed to have terminated before
-        // the start of the vote. Select the right period if
-        // a fee period rolls over in the middle of the vote.
-        if (voteStartTimes[target] < havven.feePeriodStartTime()) {
-            weight = havven.penultimateAverageBalance(msg.sender);
-        } else {
-            weight = havven.lastAverageBalance(msg.sender);
-        }
-
-        // Users must have a nonzero voting weight to vote.
-        require(weight > 0);
-
-        // The user should not have voted previously without cancelling
-        // that vote; the previous check ensures this, along with
-        // the one inside setVotedNay().
+        uint weight = voteSetup(target);
         setVotedNay(msg.sender, target);
         voteWeight[msg.sender] = weight;
         votesAgainst[target] += weight;
@@ -426,8 +406,7 @@ contract Court is Owned, SafeDecimalMath {
     }
 
     /* Cancel an existing vote by the sender on a motion
-     * to confiscate the target balance.
-     */
+     * to confiscate the target balance. */
     function cancelVote(address target)
         public
     {
@@ -465,8 +444,7 @@ contract Court is Owned, SafeDecimalMath {
     }
 
     /* If a vote has concluded, or if it lasted its full duration but not passed,
-     * then anyone may close it (for example in order to unlock their havven account).
-     */
+     * then anyone may close it. */
     function closeVote(address target)
         public
     {
@@ -479,8 +457,7 @@ contract Court is Owned, SafeDecimalMath {
     }
 
     /* The foundation may only confiscate a balance during the confirmation
-     * period after a vote has passed.
-     */
+     * period after a vote has passed. */
     function approve(address target)
         public
         onlyOwner
@@ -511,8 +488,7 @@ contract Court is Owned, SafeDecimalMath {
 
     /* Indicate that the given account voted yea in a confiscation
      * motion on the target account.
-     * The account must not have an active vote in any motion.
-     */
+     * The account must not have an active vote in any motion. */
     function setVotedYea(address account, address target)
         internal
     {
@@ -523,8 +499,7 @@ contract Court is Owned, SafeDecimalMath {
 
     /* Indicate that the given account voted nay in a confiscation
      * motion on the target account.
-     * The account must not have an active vote in any motion.
-     */
+     * The account must not have an active vote in any motion. */
     function setVotedNay(address account, address target)
         internal
     {
