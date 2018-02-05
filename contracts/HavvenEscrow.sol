@@ -112,7 +112,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         public
     {
         if (numTimes[account] == 0) {
-            vestingTimes[account][0] = time;
+            vestingTimes[account].push(time);
             numTimes[account] = 1;
             vestingQuantities[account][time] = quantity;
             totalVestedAccountBalance[account] = quantity;

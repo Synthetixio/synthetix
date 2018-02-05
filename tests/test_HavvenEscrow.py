@@ -1,8 +1,9 @@
 import unittest
 
-from utils.deployutils import compile_contracts, attempt_deploy, mine_tx, MASTER, DUMMY, take_snapshot, restore_snapshot
-from utils.testutils import assertReverts
-
+from utils.deployutils import compile_contracts, attempt_deploy, mine_tx, MASTER, DUMMY, take_snapshot,\
+    restore_snapshot, fresh_account, fresh_accounts, UNIT, fast_forward
+from utils.testutils import assertReverts, block_time
+from utils.generalutils import to_seconds
 
 ESCROW_SOURCE = "contracts/HavvenEscrow.sol"
 HAVVEN_SOURCE = "contracts/Havven.sol"
@@ -36,6 +37,9 @@ class TestHavvenEscrow(unittest.TestCase):
 
         cls.owner = lambda self: cls.escrow.functions.owner().call()
         cls.setOwner = lambda self, sender, newOwner: mine_tx(cls.escrow.functions.setOwner(newOwner).transact({'from': sender}))
+
+        cls.h_endow = lambda self, sender, receiver, amt: mine_tx(cls.havven.functions.endow(receiver, amt).transact({'from': sender}))
+        cls.h_balanceOf = lambda self, account: cls.havven.functions.balanceOf(account).call()
 
         cls.e_havven = lambda self: cls.escrow.functions.havven().call()
         cls.e_nomin = lambda self: cls.escrow.functions.nomin().call()
@@ -80,7 +84,13 @@ class TestHavvenEscrow(unittest.TestCase):
         pass
 
     def test_addNewVestedQuantity(self):
-        pass
+        alice, bob = fresh_accounts(2)
+        amount = 16 * UNIT
+        self.h_endow(MASTER, self.escrow.address, amount)
+        time = block_time()
+        self.addNewVestedQuantity(MASTER, alice, amount, time+to_seconds(weeks=2))
+        self.vest(alice)
+        self.assertEqual(self.h_balanceOf(alice), 0)
 
     def test_addVestingSchedule(self):
         pass
