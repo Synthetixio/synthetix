@@ -181,6 +181,7 @@ class TestERC20FeeToken(unittest.TestCase):
 
         cls.setOwner = lambda self, sender, address: mine_tx(cls.erc20feetoken.functions.setOwner(address).transact({'from': sender}))
         cls.setTransferFeeRate = lambda self, sender, new_fee_rate: mine_tx(cls.erc20feetoken.functions.setTransferFeeRate(new_fee_rate).transact({'from': sender}))
+        cls.setFeeAuthority  = lambda self, sender, new_fee_authority: mine_tx(cls.erc20feetoken.functions.setFeeAuthority(new_fee_authority).transact({'from': sender}))
         cls.transfer = lambda self, sender, to, value: mine_tx(cls.erc20feetoken.functions.transfer(to, value).transact({'from': sender}))
         cls.approve = lambda self, sender, spender, value: mine_tx(cls.erc20feetoken.functions.approve(spender, value).transact({'from': sender}))
         cls.transferFrom = lambda self, sender, fromAccount, to, value: mine_tx(cls.erc20feetoken.functions.transferFrom(fromAccount, to, value).transact({'from': sender}))
@@ -223,6 +224,16 @@ class TestERC20FeeToken(unittest.TestCase):
         bad_transfer_fee_rate = UNIT
         self.assertReverts(self.setTransferFeeRate, owner, bad_transfer_fee_rate)
         self.assertEqual(self.transferFeeRate(), new_transfer_fee_rate)
+
+    def test_getSetFeeAuthority(self):
+        fee_authority = self.feeAuthority()
+        new_fee_authority = W3.eth.accounts[1]
+        owner = self.owner()
+
+        #Only the owner is able to set the Fee Authority.
+        self.assertReverts(self.setFeeAuthority, new_fee_authority, new_fee_authority)
+        self.setFeeAuthority(owner, new_fee_authority)
+        self.assertEqual(self.feeAuthority(), new_fee_authority)
 
     def test_getTransferFeeIncurred(self):
         value = 10 * UNIT

@@ -109,6 +109,14 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
         TransferFeeRateUpdate(newFeeRate);
     }
 
+    function setFeeAuthority(address newFeeAuthority)
+        public
+        onlyOwner
+    {
+        feeAuthority = newFeeAuthority;
+        FeeAuthorityUpdate(newFeeAuthority);
+    }
+
 
     /* ========== VIEW FUNCTIONS ========== */
 
@@ -226,5 +234,7 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
     event TransferFeeRateUpdate(uint newFeeRate);
 
     event FeeWithdrawal(address indexed account, uint value);
+
+    event FeeAuthorityUpdate(address feeAuthority);
 }
 
