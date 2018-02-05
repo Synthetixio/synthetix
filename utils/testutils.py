@@ -40,7 +40,7 @@ def send_value(sender, recipient, value):
 
 def get_eth_balance(account):
     return W3.eth.getBalance(account)
-
+        
 
 def generate_topic_event_map(abi):
     events = {}

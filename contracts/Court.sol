@@ -5,6 +5,7 @@ FILE INFORMATION
 file:       Court.sol
 version:    0.2
 author:     Anton Jurisevic
+            Mike Spain
 
 date:       2018-1-16
 
@@ -153,31 +154,31 @@ contract Court is Owned, SafeDecimalMath {
 
     // The minimum havven balance required to be considered to have standing
     // to begin confiscation proceedings.
-    uint minStandingBalance = 100 * UNIT;
+    uint public minStandingBalance = 100 * UNIT;
 
     // The voting period lasts for this duration,
     // and if set, must fall within the given bounds.
-    uint votingPeriod = 1 weeks;
+    uint public votingPeriod = 1 weeks;
     uint constant minVotingPeriod = 3 days;
     uint constant maxVotingPeriod = 4 weeks;
 
     // Duration of the period during which the foundation may confirm
     // or veto a vote that has concluded.
     // If set, the confirmation duration must fall within the given bounds.
-    uint confirmationPeriod = 1 weeks;
+    uint public confirmationPeriod = 1 weeks;
     uint constant minConfirmationPeriod = 1 days;
     uint constant maxConfirmationPeriod = 2 weeks;
 
     // No fewer than this fraction of havvens must participate in the vote
     // in order for a quorum to be reached.
     // The participation fraction required may be set no lower than 10%.
-    uint requiredParticipation = 3 * UNIT / 10;
+    uint public requiredParticipation = 3 * UNIT / 10;
     uint constant minRequiredParticipation = UNIT / 10;
 
     // At least this fraction of participating votes must be in favour of
     // confiscation for the proposal to pass.
     // The required majority may be no lower than 50%.
-    uint requiredMajority = (2 * UNIT) / 3;
+    uint public requiredMajority = (2 * UNIT) / 3;
     uint constant minRequiredMajority = UNIT / 2;
 
     // The timestamp at which a vote began. This is used to determine
@@ -209,7 +210,6 @@ contract Court is Owned, SafeDecimalMath {
 
     // A given account's vote in some confiscation action.
     // This requires the default value of the Vote enum to correspond to an abstention.
-    // If an account's vote is not an abstention, it may not transfer funds.
     mapping(address => Vote) public userVote;
     // The vote a user last participated in.
     mapping(address => address) public voteTarget;
@@ -235,7 +235,6 @@ contract Court is Owned, SafeDecimalMath {
         // the foundation can set this value such that
         // anyone or noone can actually start an action.
         minStandingBalance = balance;
-        MinStandingBalanceUpdated(balance);
     }
 
     function setVotingPeriod(uint duration)
@@ -248,7 +247,6 @@ contract Court is Owned, SafeDecimalMath {
         // So that a single vote can span at most two fee periods.
         require(duration <= havven.targetFeePeriodDurationSeconds());
         votingPeriod = duration;
-        VotingPeriodUpdated(duration);
     }
 
     function setConfirmationPeriod(uint duration)
@@ -258,7 +256,6 @@ contract Court is Owned, SafeDecimalMath {
         require(minConfirmationPeriod <= duration &&
                 duration <= maxConfirmationPeriod);
         confirmationPeriod = duration;
-        ConfirmationPeriodUpdated(duration);
     }
 
     function setRequiredParticipation(uint fraction)
@@ -267,7 +264,6 @@ contract Court is Owned, SafeDecimalMath {
     {
         require(minRequiredParticipation <= fraction);
         requiredParticipation = fraction;
-        RequiredParticipationUpdated(fraction);
     }
 
     function setRequiredMajority(uint fraction)
@@ -276,7 +272,6 @@ contract Court is Owned, SafeDecimalMath {
     {
         require(minRequiredMajority <= fraction);
         requiredMajority = fraction;
-        RequiredMajorityUpdated(fraction);
     }
 
 
@@ -362,7 +357,7 @@ contract Court is Owned, SafeDecimalMath {
         public
     {
         // A confiscation action must be mooted by someone with standing.
-        require((havven.balanceOf(msg.sender) > minStandingBalance) ||
+        require((havven.balanceOf(msg.sender) >= minStandingBalance) ||
                 msg.sender == owner);
 
         // Require that the voting period is longer than a single fee period,
@@ -378,7 +373,7 @@ contract Court is Owned, SafeDecimalMath {
         voteStartTimes[target] = now;
         votesFor[target] = 0;
         votesAgainst[target] = 0;
-        ConfiscationVote(msg.sender, target);
+        ConfiscationVote(msg.sender, msg.sender, target, target);
     }
 
     /* The sender casts a vote in favour of confiscation of the
@@ -412,8 +407,8 @@ contract Court is Owned, SafeDecimalMath {
         // the one inside setVotedYea().
         setVotedYea(msg.sender, target);
         voteWeight[msg.sender] = weight;
-        votesFor[msg.sender] += weight;
-        VoteFor(msg.sender, target, weight);
+        votesFor[target] += weight;
+        VoteFor(msg.sender, msg.sender, target, target, weight);
     }
 
     /* The sender casts a vote against confiscation of the
@@ -446,8 +441,8 @@ contract Court is Owned, SafeDecimalMath {
         // the one inside setVotedNay().
         setVotedNay(msg.sender, target);
         voteWeight[msg.sender] = weight;
-        votesAgainst[msg.sender] += weight;
-        VoteAgainst(msg.sender, target, weight);
+        votesAgainst[target] += weight;
+        VoteAgainst(msg.sender, msg.sender, target, target, weight);
     }
 
     /* Cancel an existing vote by the sender on an action
@@ -468,10 +463,10 @@ contract Court is Owned, SafeDecimalMath {
             Vote vote = userVote[msg.sender];
 
             if (vote == Vote.Yea) {
-                votesFor[msg.sender] -= voteWeight[msg.sender];
+                votesFor[target] -= voteWeight[msg.sender];
             }
             else if (vote == Vote.Nay) {
-                votesAgainst[msg.sender] -= voteWeight[msg.sender];
+                votesAgainst[target] -= voteWeight[msg.sender];
             } else {
                 // The sender has not voted.
                 return;
@@ -479,13 +474,14 @@ contract Court is Owned, SafeDecimalMath {
 
             // A cancelled vote is only meaningful if a vote is running
             voteWeight[msg.sender] = 0;
-            CancelledVote(msg.sender, target);
+            CancelledVote(msg.sender, msg.sender, target, target);
         }
 
-        // If the user is trying to cancel a vote for a different target
-        // than the one they have previously voted for, an exception is thrown
-        // inside cancelVote, and the state is rolled back.
-        cancelVote(msg.sender, target);
+        // Disallow users from cancelling a vote for a different target
+        // than the one they have previously voted for.
+        require(voteTarget[msg.sender] == target);
+        userVote[msg.sender] = Court.Vote.Abstention;
+        voteTarget[msg.sender] = 0;
     }
 
     /* If a vote has concluded, or if it lasted its full duration but not passed,
@@ -499,7 +495,7 @@ contract Court is Owned, SafeDecimalMath {
         voteStartTimes[target] = 0;
         votesFor[target] = 0;
         votesAgainst[target] = 0;
-        VoteClosed(target);
+        VoteClosed(target, target);
     }
 
     /* The foundation may only confiscate a balance during the confirmation
@@ -516,8 +512,8 @@ contract Court is Owned, SafeDecimalMath {
         voteStartTimes[target] = 0;
         votesFor[target] = 0;
         votesAgainst[target] = 0;
-        VoteClosed(target);
-        ConfiscationApproval(target);
+        VoteClosed(target, target);
+        ConfiscationApproval(target, target);
     }
 
     /* The foundation may veto an action at any time. */
@@ -529,11 +525,9 @@ contract Court is Owned, SafeDecimalMath {
         voteStartTimes[target] = 0;
         votesFor[target] = 0;
         votesAgainst[target] = 0;
-        VoteClosed(target);
-        Veto(target);
+        VoteClosed(target, target);
+        Veto(target, target);
     }
-
-
 
     /* Indicate that the given account voted yea in a confiscation
      * action on the target account.
@@ -559,44 +553,19 @@ contract Court is Owned, SafeDecimalMath {
         voteTarget[account] = target;
     }
 
-    /* Cancel a previous vote by a given account on a target.
-     * The target of the cancelled vote must be the same
-     * as the target the account voted upon previously,
-     * otherwise throw an exception.
-     * This is in order to enforce that a user may only
-     * vote upon a single action at a time.
-     */
-    function cancelVote(address account, address target)
-        internal
-    {
-        require(voteTarget[account] == target);
-        userVote[account] = Court.Vote.Abstention;
-        voteTarget[account] = 0;
-    }
-
     /* ========== EVENTS ========== */
 
-    event MinStandingBalanceUpdated(uint balance);
+    event ConfiscationVote(address initator, address indexed initiatorIndex, address target, address indexed targetIndex);
 
-    event VotingPeriodUpdated(uint duration);
+    event VoteFor(address account, address indexed accountIndex, address target, address indexed targetIndex, uint balance);
 
-    event ConfirmationPeriodUpdated(uint duration);
+    event VoteAgainst(address account, address indexed accountIndex, address target, address indexed targetIndex, uint balance);
 
-    event RequiredParticipationUpdated(uint fraction);
+    event CancelledVote(address account, address indexed accountIndex, address target, address indexed targetIndex);
 
-    event RequiredMajorityUpdated(uint fraction);
+    event VoteClosed(address target, address indexed targetIndex);
 
-    event ConfiscationVote(address indexed initiator, address indexed target);
+    event Veto(address target, address indexed targetIndex);
 
-    event VoteFor(address indexed account, address indexed target, uint balance);
-
-    event VoteAgainst(address indexed account, address indexed target, uint balance);
-
-    event CancelledVote(address indexed account, address indexed target);
-
-    event VoteClosed(address indexed target);
-
-    event Veto(address indexed target);
-
-    event ConfiscationApproval(address indexed target);
+    event ConfiscationApproval(address target, address indexed targetIndex);
 }

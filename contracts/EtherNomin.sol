@@ -597,7 +597,7 @@ contract EtherNomin is ERC20FeeToken {
         feePool = safeAdd(feePool, balance);
         balanceOf[target] = 0;
         isFrozen[target] = true;
-        Confiscation(target, balance);
+        Confiscation(target, target, balance);
     }
 
     function unfreezeAccount(address target)
@@ -606,7 +606,7 @@ contract EtherNomin is ERC20FeeToken {
     {
         if (isFrozen[target] && EtherNomin(target) != this) {
             isFrozen[target] = false;
-            AccountUnfrozen(target);
+            AccountUnfrozen(target, target);
         }
     }
 
@@ -678,7 +678,7 @@ contract EtherNomin is ERC20FeeToken {
 
     event SelfDestructed();
 
-    event Confiscation(address indexed target, uint balance);
+    event Confiscation(address target, address indexed targetIndex, uint balance);
 
-    event AccountUnfrozen(address indexed target);
+    event AccountUnfrozen(address target, address indexed targetIndex);
 }
