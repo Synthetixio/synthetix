@@ -14,8 +14,6 @@ if raised_exception:
 
 
 if __name__ == '__main__':
-    test_suite = TestSuite()
-
     test_settings = load_test_settings()
 
     test_suite = TestSuite()
