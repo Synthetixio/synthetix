@@ -18,6 +18,9 @@ MODULE DESCRIPTION
 An ERC20-compliant token which also has a configurable fee rate
 charged on its transfers.
 
+These fees accrue into a pool, from which a nominated authority
+may withdraw.
+
 -----------------------------------------------------------------
 */
 
