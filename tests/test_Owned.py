@@ -24,7 +24,7 @@ class TestOwned(unittest.TestCase):
         cls.owned, txr = attempt_deploy(compiled, 'Owned', MASTER, [MASTER])
 
         cls.owner = lambda self: cls.owned.functions.owner().call()
-        cls.setOwner = lambda self, new_owner, sender: cls.owned.functions.setOwner(new_owner).transact({'from': sender})
+        cls.setOwner = lambda self, sender, newOwner: mine_tx(cls.owned.functions.setOwner(newOwner).transact({'from': sender}))
 
     def test_owner_is_master(self):
         self.assertEqual(self.owner(), MASTER)
@@ -33,10 +33,10 @@ class TestOwned(unittest.TestCase):
         old_owner = self.owner()
         new_owner = DUMMY
 
-        mine_tx(self.setOwner(new_owner, MASTER))
+        self.setOwner(MASTER, new_owner)
         self.assertEqual(self.owner(), new_owner)
 
-        mine_tx(self.setOwner(old_owner, new_owner))
+        self.setOwner(new_owner, old_owner)
 
     def test_change_invalid_owner(self):
         invalid_account = DUMMY

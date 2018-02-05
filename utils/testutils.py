@@ -4,11 +4,27 @@ from eth_utils import event_abi_to_log_topic
 from utils.deployutils import mine_tx, W3
 
 
+def assertClose(testcase, actual, expected, precision=5, msg=''):
+    if expected == 0:
+        if actual == 0:
+            # this should always pass
+            testcase.assertEqual(actual, expected)
+            return
+        expected, actual = actual, expected
+
+    testcase.assertAlmostEqual(
+        actual/expected,
+        1,
+        places=precision,
+        msg=msg+f'\n{actual} ≉ {expected}'
+    )
+
+
 def assertReverts(testcase, function, *args):
     with testcase.assertRaises(ValueError) as error:
         function(*args)
     testcase.assertTrue("revert" in error.exception.args[0]['message'])
-    # ganache-cli beta 6.1.0 does not include a code field.
+    # The ganache-cli 6.1.0 beta does not include an error code field.
     # testcase.assertEqual(-32000, error.exception.args[0]['code'])
 
 
