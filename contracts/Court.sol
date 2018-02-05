@@ -4,7 +4,8 @@ FILE INFORMATION
 -----------------------------------------------------------------
 file:       Court.sol
 version:    0.2
-author:     Anton Jurisevic, Mike Spain
+author:     Anton Jurisevic
+            Mike Spain
 
 date:       2018-1-16
 
@@ -481,9 +482,8 @@ contract Court is Owned, SafeDecimalMath {
             CancelledVote(msg.sender, target);
         }
 
-        // If the user is trying to cancel a vote for a different target
-        // than the one they have previously voted for, an exception is thrown
-        // inside cancelVote, and the state is rolled back.
+        // Disallow users from cancelling a vote for a different target
+        // than the one they have previously voted for.
         require(voteTarget[msg.sender] == target);
         userVote[msg.sender] = Court.Vote.Abstention;
         voteTarget[msg.sender] = 0;
