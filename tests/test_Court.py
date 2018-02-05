@@ -96,13 +96,13 @@ class TestCourt(unittest.TestCase):
 		cls.cancelVote = lambda self, sender, target: mine_tx(self.court.functions.cancelVote(target).transact({'from' : sender}))
 		cls.closeVote = lambda self, sender, target: mine_tx(self.court.functions.closeVote(target).transact({'from' : sender}))
 
-		# Internal
-		cls.setVotedYea = lambda self, sender, account, target: self.court.functions.publicSetVotedYea(account, target).transact({'from' : sender})
-		cls.setVotedNay = lambda self, sender, account, target: self.court.functions.publicSetVotedNay(account, target).transact({'from' : sender})
-
 		# Owner only
 		cls.approve = lambda self, sender, target: mine_tx(self.court.functions.approve(target).transact({'from' : sender}))
 		cls.veto = lambda self, sender, target: mine_tx(self.court.functions.veto(target).transact({'from' : sender}))
+
+		# Internal
+		cls.setVotedYea = lambda self, sender, account, target: self.court.functions.publicSetVotedYea(account, target).transact({'from' : sender})
+		cls.setVotedNay = lambda self, sender, account, target: self.court.functions.publicSetVotedNay(account, target).transact({'from' : sender})
 
 		# Havven getters
 		cls.havvenSupply = lambda self: self.havven.functions.totalSupply().call()
@@ -237,7 +237,7 @@ class TestCourt(unittest.TestCase):
 		owner = self.owner()
 		voter, suspect = fresh_accounts(2)
 		fee_period = self.havvenTargetFeePeriodDurationSeconds()
-		# Give some havven tokens to our voter.
+		# Give 1000 havven tokens to our voter.
 		self.havvenEndow(owner, voter, 1000)
 		self.assertEqual(self.havvenBalance(voter), 1000)
 		# Fast forward to update the vote weight.
@@ -258,6 +258,7 @@ class TestCourt(unittest.TestCase):
 		owner = self.owner()
 		suspect = fresh_account()
 		voting_period = self.votingPeriod()
+		confirmation_period = self.confirmationPeriod()
 		# Before a confisaction action begins, should be in the waiting state.
 		self.assertTrue(self.waiting(suspect))
 		self.assertFalse(self.voting(suspect))
@@ -277,7 +278,16 @@ class TestCourt(unittest.TestCase):
 		self.assertFalse(self.waiting(suspect))
 		self.assertFalse(self.voting(suspect))
 		self.assertTrue(self.confirming(suspect))
-
+		# Fast forward to the middle of the confrimation period, should still be in the confirming state.
+		fast_forward(confirmation_period / 2)
+		self.assertFalse(self.waiting(suspect))
+		self.assertFalse(self.voting(suspect))
+		self.assertTrue(self.confirming(suspect))
+		# When the voting confirmation period finishes, should move to waiting state.
+		fast_forward(confirmation_period / 2)
+		self.assertTrue(self.waiting(suspect))
+		self.assertFalse(self.voting(suspect))
+		self.assertFalse(self.confirming(suspect))
 
 	def test_votePasses(self):
 		owner = self.owner()
