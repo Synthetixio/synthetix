@@ -28,26 +28,34 @@ In order to prevent tyranny, an account may only be frozen if
 users controlling at least 30% of the value of havvens participate,
 and a two thirds majority is attained in that vote.
 In order to prevent tyranny of the majority or mob justice,
-confiscation actions are only approved if the havven foundation
+confiscation motions are only approved if the havven foundation
 approves the result.
 This latter requirement may be lifted in future versions.
 
 The foundation, or any user with a sufficient havven balance may bring a
-confiscation action.
+confiscation motion.
 A vote lasts for a default period of one week, with a further confirmation
 period in which the foundation approves the result.
 The latter period may conclude early upon the foundation's decision to either
-veto or approve the mooted confiscation action.
+veto or approve the mooted confiscation motion.
 If the confirmation period elapses without the foundation making a decision,
-the action fails.
+the motion fails.
 
-In order to vote, a havven holder must lock their havvens. They may cast
-a vote for only one action at a time, but may cancel their vote
-at any time except during the confirmation period, in order to unlock
-their havven balance.
-The weight of their vote will be proportional with their locked balance.
+The weight of a havven holder's vote is determined by examining their
+average balance over the last completed fee period prior to the
+beginning of a given motion.
+Thus, since a fee period can roll over in the middle of a motion, we must
+also track a user's average balance of the last two periods.
+This system is designed such that it cannot be attacked by users transferring
+funds between themselves, while also not requiring them to lock their havvens
+for the duration of the vote. This is possible since any transfer that increases
+the average balance in one account will be reflected by an equivalent reduction
+in the voting weight in the other.
+At present a user may cast a vote only for one motion at a time,
+but may cancel their vote at any time except during the confirmation period,
+when the votes tallies must remain static until the matter has been settled.
 
-Hence an action to confiscate the balance of a given address composes
+A motion to confiscate the balance of a given address composes
 a state machine built of the following states:
 
 
@@ -57,8 +65,7 @@ Waiting:
     initialise vote tallies to 0;
     transition to the Voting state.
 
-  - An account cancels a previous vote:
-    the account is unlocked,
+  - An account cancels a previous residual vote:
     remain in the Waiting state.
 
 Voting:
@@ -69,11 +76,11 @@ Voting:
     transition to the Confirmation state.
 
   - An account votes (for or against the motion):
-    the account is locked, its balance is added to the appropriate tally;
+    its weight is added to the appropriate tally;
     remain in the Voting state.
 
   - An account cancels its previous vote:
-    the account is unlocked, its balance is deducted from the appropriate tally (if any);
+    its weight is deducted from the appropriate tally (if any);
     remain in the Voting state.
 
 Confirmation:
@@ -89,50 +96,23 @@ Confirmation:
 
 
 User votes are not automatically cancelled upon the conclusion of a vote.
-Therefore, after a vote comes to a conclusion, if a user wishes to free
-their havven balance, they must manually cancel their vote in order to do so.
+Therefore, after a vote comes to a conclusion, if a user wishes to vote 
+in another motion, they must manually cancel their vote in order to do so.
 
 This procedure is designed to be relatively simple.
 There are some things that can be added to enhance the functionality
 at the expense of simplicity and efficiency:
-
-  - Unique action IDs for clearer logging if multiple actions are mooted for a given account;
+  
+  - Allow users to vote in multiple motions at once;
+  - Unique motion IDs for clearer logging if multiple motions are mooted for a given account;
   - Democratic unfreezing of nomin accounts (induces multiple categories of vote)
   - Configurable per-vote durations;
   - Vote standing denominated in a fiat quantity rather than a quantity of havvens;
   - Confiscate from multiple addresses in a single vote;
-  - Allow users to vote in multiple actions at once (up to a limit).
 
 We might consider updating the contract with any of these features at a later date if necessary.
 
 -----------------------------------------------------------------
-LICENCE INFORMATION
------------------------------------------------------------------
-
-Copyright (c) 2018 Havven.io
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
------------------------------------------------------------------
-RELEASE NOTES
------------------------------------------------------------------
-
 */
 
 pragma solidity ^0.4.19;
@@ -195,7 +175,7 @@ contract Court is Owned, SafeDecimalMath {
     mapping(address => uint) public votesFor;
     mapping(address => uint) public votesAgainst;
 
-    // The penultimate average balance of a user at the time they voted.
+    // The last/penultimate average balance of a user at the time they voted.
     // If we did not save this information then we would have to
     // disallow transfers into an account lest it cancel a vote
     // with greater weight than that with which it originally voted,
@@ -204,11 +184,11 @@ contract Court is Owned, SafeDecimalMath {
 
     // The possible vote types.
     // Absention: not participating in a vote; This is the default value.
-    // Yea: voting in favour of an action.
-    // Nay: voting against an action.
+    // Yea: voting in favour of a motion.
+    // Nay: voting against a motion.
     enum Vote {Abstention, Yea, Nay}
 
-    // A given account's vote in some confiscation action.
+    // A given account's vote in some confiscation motion.
     // This requires the default value of the Vote enum to correspond to an abstention.
     mapping(address => Vote) public userVote;
     // The vote a user last participated in.
@@ -233,7 +213,7 @@ contract Court is Owned, SafeDecimalMath {
     {
         // No requirement on the standing threshold here;
         // the foundation can set this value such that
-        // anyone or noone can actually start an action.
+        // anyone or no one can actually start a motion.
         minStandingBalance = balance;
     }
 
@@ -286,9 +266,8 @@ contract Court is Owned, SafeDecimalMath {
         return userVote[account] != Court.Vote.Abstention;
     }
 
-    /* There is an action in progress on the specified
-     * account, and votes are being accepted in that action.
-     */
+    /* There is a motion in progress on the specified
+     * account, and votes are being accepted in that motion. */
     function voting(address target)
         public
         view
@@ -299,9 +278,8 @@ contract Court is Owned, SafeDecimalMath {
         return now < voteStartTimes[target] + votingPeriod;
     }
 
-    /* A vote on the target account has concluded, but the action
-     * has not yet been approved, vetoed, or closed.
-     */
+    /* A vote on the target account has concluded, but the motion
+     * has not yet been approved, vetoed, or closed. */
     function confirming(address target)
         public
         view
@@ -322,8 +300,7 @@ contract Court is Owned, SafeDecimalMath {
     }
 
     /* If the vote was to terminate at this instant, it would pass.
-     * That is: there was sufficient participation and a sizeable enough majority.
-     */
+     * That is: there was sufficient participation and a sizeable enough majority. */
     function votePasses(address target)
         public
         view
@@ -351,12 +328,11 @@ contract Court is Owned, SafeDecimalMath {
 
     /* Begin a vote to confiscate the funds in a given nomin account.
      * Only the foundation, or accounts with sufficient havven balances
-     * may elect to start such a vote.
-     */
-    function beginConfiscationAction(address target)
+     * may elect to start such a vote. */
+    function beginConfiscationMotion(address target)
         public
     {
-        // A confiscation action must be mooted by someone with standing.
+        // A confiscation motion must be mooted by someone with standing.
         require((havven.balanceOf(msg.sender) >= minStandingBalance) ||
                 msg.sender == owner);
 
@@ -376,11 +352,11 @@ contract Court is Owned, SafeDecimalMath {
         ConfiscationVote(msg.sender, msg.sender, target, target);
     }
 
-    /* The sender casts a vote in favour of confiscation of the
-     * target account's nomin balance.
-     */
-    function voteFor(address target)
-        public
+    /* Shared vote setup function between voteFor and voteAgainst.
+     * Returns the voter's vote weight. */
+    function voteSetup(address target)
+        internal
+        returns (uint)
     {
         // There must be an active vote for this target running.
         // Vote totals must only change during the voting phase.
@@ -402,9 +378,15 @@ contract Court is Owned, SafeDecimalMath {
         // Users must have a nonzero voting weight to vote.
         require(weight > 0);
 
-        // The user should not have voted previously without cancelling
-        // that vote; the previous check ensures this, along with
-        // the one inside setVotedYea().
+        return weight;
+    }
+
+    /* The sender casts a vote in favour of confiscation of the
+     * target account's nomin balance. */
+    function voteFor(address target)
+        public
+    {
+        uint weight = voteSetup(target);
         setVotedYea(msg.sender, target);
         voteWeight[msg.sender] = weight;
         votesFor[target] += weight;
@@ -416,38 +398,15 @@ contract Court is Owned, SafeDecimalMath {
     function voteAgainst(address target)
         public
     {
-        // There must be an active vote for this target running.
-        // Vote totals must only change during the voting phase.
-        require(voting(target));
-
-        // This user can't already have voted in anything.
-        require(!hasVoted(msg.sender));
-
-        uint weight;
-        // We use a fee period guaranteed to have terminated before
-        // the start of the vote. Select the right period if
-        // a fee period rolls over in the middle of the vote.
-        if (voteStartTimes[target] < havven.feePeriodStartTime()) {
-            weight = havven.penultimateAverageBalance(msg.sender);
-        } else {
-            weight = havven.lastAverageBalance(msg.sender);
-        }
-
-        // Users must have a nonzero voting weight to vote.
-        require(weight > 0);
-
-        // The user should not have voted previously without cancelling
-        // that vote; the previous check ensures this, along with
-        // the one inside setVotedNay().
+        uint weight = voteSetup(target);
         setVotedNay(msg.sender, target);
         voteWeight[msg.sender] = weight;
         votesAgainst[target] += weight;
         VoteAgainst(msg.sender, msg.sender, target, target, weight);
     }
 
-    /* Cancel an existing vote by the sender on an action
-     * to confiscate the target balance.
-     */
+    /* Cancel an existing vote by the sender on a motion
+     * to confiscate the target balance. */
     function cancelVote(address target)
         public
     {
@@ -485,8 +444,7 @@ contract Court is Owned, SafeDecimalMath {
     }
 
     /* If a vote has concluded, or if it lasted its full duration but not passed,
-     * then anyone may close it (for example in order to unlock their havven account).
-     */
+     * then anyone may close it. */
     function closeVote(address target)
         public
     {
@@ -499,8 +457,7 @@ contract Court is Owned, SafeDecimalMath {
     }
 
     /* The foundation may only confiscate a balance during the confirmation
-     * period after a vote has passed.
-     */
+     * period after a vote has passed. */
     function approve(address target)
         public
         onlyOwner
@@ -516,7 +473,7 @@ contract Court is Owned, SafeDecimalMath {
         ConfiscationApproval(target, target);
     }
 
-    /* The foundation may veto an action at any time. */
+    /* The foundation may veto a motion at any time. */
     function veto(address target)
         public
         onlyOwner
@@ -530,9 +487,8 @@ contract Court is Owned, SafeDecimalMath {
     }
 
     /* Indicate that the given account voted yea in a confiscation
-     * action on the target account.
-     * The account must not have an active vote in any action.
-     */
+     * motion on the target account.
+     * The account must not have an active vote in any motion. */
     function setVotedYea(address account, address target)
         internal
     {
@@ -542,9 +498,8 @@ contract Court is Owned, SafeDecimalMath {
     }
 
     /* Indicate that the given account voted nay in a confiscation
-     * action on the target account.
-     * The account must not have an active vote in any action.
-     */
+     * motion on the target account.
+     * The account must not have an active vote in any motion. */
     function setVotedNay(address account, address target)
         internal
     {
