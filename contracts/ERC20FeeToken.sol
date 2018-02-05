@@ -235,6 +235,6 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
 
     event FeeWithdrawal(address indexed account, uint value);
 
-    event FeeAuthorityUpdate(address feeAuthority)
+    event FeeAuthorityUpdate(address feeAuthority);
 }
 
