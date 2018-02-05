@@ -1,5 +1,4 @@
 from unittest import TestSuite, TestLoader, TextTestRunner
-import subprocess
 from utils.generalutils import load_test_settings, ganache_error_message
 
 raised_exception = False

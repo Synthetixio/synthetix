@@ -35,11 +35,14 @@ def deploy_public_havven():
     print("\nDeployment complete.\n")
     return havven_contract, nomin_contract, court_contract, hvn_block, havven_event_dict
 
+
 def setUpModule():
     print("Testing Havven...")
 
+
 def tearDownModule():
     print()
+
 
 class TestHavven(unittest.TestCase):
     def setUp(self):
