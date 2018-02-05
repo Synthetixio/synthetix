@@ -8,6 +8,7 @@ ESCROW_SOURCE = "contracts/HavvenEscrow.sol"
 HAVVEN_SOURCE = "contracts/Havven.sol"
 NOMIN_SOURCE = "contracts/EtherNomin.sol"
 
+
 def setUpModule():
     print("Testing HavvenEscrow...")
 
@@ -70,6 +71,7 @@ class TestHavvenEscrow(unittest.TestCase):
 
     def test_vest(self):
         pass
+
 
 if __name__ == '__main__':
     unittest.main()

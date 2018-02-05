@@ -61,8 +61,8 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
 		if (!havven.hasWithdrawnLastPeriodFees(this)) {
 			withdrawContractFees();
 		}
-
-		uint entitlement = safeDecMul(feePool(), safeDecDiv(totalVestedAccountBalance[msg.sender], totalVestedBalance));
+		// exception will be thrown if totalVestedBalance will be 0
+		uint entitlement = safeDecDiv(safeDecMul(feePool(), totalVestedAccountBalance[msg.sender]), totalVestedBalance);
 		nomin.transfer(msg.sender, entitlement);
 	}
 
@@ -87,9 +87,11 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
 		havven.transfer(havven, quantity);
 	}
 
-	/* A call to this should be accompanied by a corresponding call to havven.endow(),
-	 * to provide the balance that can be withdrawn make sure there's enough balance. 
-	 * Note that although this function could technically be used to produce unbounded
+	/* A call to this should be accompanied by either enough balance already available
+	 * in this contract, or a corresponding call to havven.endow(), to ensure that when
+	 * the funds are withdrawn, there is enough balance, as well as correctly calculating
+	 * the fees.
+	 * Note; although this function could technically be used to produce unbounded
 	 * arrays, it's only in the foundation's command to add to these lists. */
 	function addNewVestedQuantity(address account, uint time, uint quantity)
 		onlyOwner
@@ -114,6 +116,23 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
 		totalVestedAccountBalance[account] = safeAdd(totalVestedAccountBalance[account], quantity);
 		totalVestedBalance = safeAdd(totalVestedBalance, quantity);
 	}
+
+    function addVestingSchedule(address account, uint conclusion_time, uint quantity, uint vesting_periods)
+        onlyOwner
+        public
+    {
+        // safe sub to avoid now > conclusion_time
+        uint time_period = safeSub(conclusion_time - now);
+        uint item_quantity = (quantity/vesting_periods);
+
+        uint quant_sum = item_quantity*(vesting_periods-1);
+
+        for (uint i = 1; i < vesting_periods; i++) {
+            uint item_time_period = i * (time_period/vesting_periods);
+            addNewVestedQuantity(account, now + item_time_period, item_quantity);
+        }
+        addNewVestedQuantity(account, conclusion_time, quantity - quant_sum);
+    }
 
 	/* Withdraw any tokens that have vested. */
 	function vest() 
