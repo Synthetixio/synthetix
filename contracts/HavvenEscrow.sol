@@ -52,7 +52,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
 	{
     	// If fees need to be withdrawn into this contract, then withdraw them.
 		if (!havven.hasWithdrawnLastPeriodFees(this)) {
-			withdrawContractFees()
+			withdrawContractFees();
 		}
 
 		uint entitlement = safeDecMul(feePool(), safeDecDiv(totalVestedAccountBalance[msg.sender], totalVestedBalance));
