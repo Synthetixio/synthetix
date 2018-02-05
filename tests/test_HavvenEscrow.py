@@ -88,16 +88,11 @@ class TestHavvenEscrow(unittest.TestCase):
         amount = 16 * UNIT
         self.h_endow(MASTER, self.escrow.address, amount)
         time = block_time()
-        self.addNewVestedQuantity(MASTER, alice, amount, time+to_seconds(weeks=2))
+        self.addNewVestedQuantity(MASTER, alice, time+to_seconds(weeks=2), amount)
         self.vest(alice)
         self.assertEqual(self.h_balanceOf(alice), 0)
         fast_forward(weeks=3)
         self.vest(alice)
-        for i in range(100):
-            try:
-                print(self.escrow.functions.debug(i).call())
-            except:
-                break
         self.assertEqual(self.h_balanceOf(alice), amount)
 
     def test_addVestingSchedule(self):
