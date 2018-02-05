@@ -16,10 +16,6 @@ if raised_exception:
 if __name__ == '__main__':
     test_suite = TestSuite()
 
-    ver = str(subprocess.check_output(['npm', 'list', 'ganache-cli']))
-    if ver.split("@")[-1].split(" ")[0] != "6.1.0-beta.0":
-        raise Exception("Please install ganache-cli beta by running `npm install -g ganache-cli@6.1.0-beta.0`")
-
     test_settings = load_test_settings()
 
     test_suite = TestSuite()
