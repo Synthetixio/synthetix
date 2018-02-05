@@ -136,16 +136,16 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         public
     {
         // safe sub to avoid now > conclusion_time
-        uint time_period = safeSub(conclusion_time - now);
-        uint item_quantity = (quantity/vesting_periods);
-
-        uint quant_sum = item_quantity*(vesting_periods-1);
+        uint time_period = safeSub(conclusion_time, now);
+        // only quantity is UNIT
+        uint item_quantity = safeDiv(quantity, vesting_periods);
+        uint quant_sum = safeMul(item_quantity, (vesting_periods-1));
 
         for (uint i = 1; i < vesting_periods; i++) {
-            uint item_time_period = i * (time_period/vesting_periods);
-            addNewVestedQuantity(account, now + item_time_period, item_quantity);
+            uint item_time_period = safeMul(i, safeDiv(time_period, vesting_periods));
+            addNewVestedQuantity(account, safeAdd(now, item_time_period), item_quantity);
         }
-        addNewVestedQuantity(account, conclusion_time, quantity - quant_sum);
+        addNewVestedQuantity(account, conclusion_time, safeSub(quantity, quant_sum));
     }
 
 	/* Withdraw any tokens that have vested. */
