@@ -13,9 +13,6 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
     // Lists of vesting dates per account, in sorted order.
     mapping(address => uint[]) public vestingTimes;
 
-    // Number of vesting dates.
-    mapping(address => uint) public numTimes;
-
     // A mapping from time stamps to the quantity of tokens that vests at those times for a given account.
     mapping(address => mapping(uint => uint)) public vestingQuantities;
 
@@ -24,6 +21,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
 
     // The total remaining vested balance, for verifying the actual havven balance of this contract against.
     uint public totalVestedBalance;
+
 
     function HavvenEscrow(address _owner, Havven _havven, EtherNomin _nomin)
         Owned(_owner)
@@ -84,11 +82,10 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         onlyOwner
         public
     {
-        for (uint i = 0; i < numTimes[account]; i++) {
+        for (uint i = 0; i < vestingTimes[account].length; i++) {
             vestingQuantities[account][vestingTimes[account][i]] = 0;
-            vestingTimes[account][i] = 0;
         }
-        numTimes[account] = 0;
+        delete vestingTimes[account];
         totalVestedBalance = safeSub(totalVestedBalance, totalVestedAccountBalance[account]);
         totalVestedAccountBalance[account] = 0;
     }
@@ -111,9 +108,8 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         onlyOwner
         public
     {
-        if (numTimes[account] == 0) {
+        if (vestingTimes[account].length == 0) {
             vestingTimes[account].push(time);
-            numTimes[account] = 1;
             vestingQuantities[account][time] = quantity;
             totalVestedAccountBalance[account] = quantity;
             totalVestedBalance = safeAdd(totalVestedBalance, quantity);
@@ -122,10 +118,9 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
 
         // Disallow adding new vested havvens in the past
         // Since entries are only appended, no vesting date can be repeated.
-        require(vestingTimes[account][numTimes[account]-1] < time);
+        require(vestingTimes[account][vestingTimes[account].length - 1] < time);
 
-        vestingTimes[account][numTimes[account]] = time;
-        numTimes[account]++;
+        vestingTimes[account].push(time);
         vestingQuantities[account][time] = quantity;
         totalVestedAccountBalance[account] = safeAdd(totalVestedAccountBalance[account], quantity);
         totalVestedBalance = safeAdd(totalVestedBalance, quantity);
@@ -148,13 +143,15 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         addNewVestedQuantity(account, conclusion_time, safeSub(quantity, quant_sum));
     }
 
+    mapping(uint => uint) public debug;
+    uint public d_i = 0;
     /* Withdraw any tokens that have vested. */
     function vest() 
         public
-        returns (uint)
     {
         uint total = 0;
-        for (uint i = 0; i < numTimes[msg.sender]; i++) {
+        debug[d_i++] = total;
+        for (uint i = 0; i < vestingTimes[msg.sender].length; i++) {
             uint time = vestingTimes[msg.sender][i];
             // The list is sorted; when we reach the first future time, bail out.
             if (time > now) {
@@ -168,10 +165,13 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
             vestingTimes[msg.sender][i] = 0;
             vestingQuantities[msg.sender][time] = 0;
             total = safeAdd(total, qty);
+            debug[d_i++] = total;
             totalVestedAccountBalance[msg.sender] = safeSub(totalVestedAccountBalance[msg.sender], qty);
+            debug[d_i++] = total;
         }
+        debug[d_i++] = total;
+
         totalVestedBalance = safeSub(totalVestedBalance, total);
         havven.transfer(msg.sender, total);
-        return total;
     }
 }
