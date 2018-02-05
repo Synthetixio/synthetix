@@ -534,8 +534,6 @@ contract Court is Owned, SafeDecimalMath {
         Veto(target);
     }
 
-
-
     /* Indicate that the given account voted yea in a confiscation
      * action on the target account.
      * The account must not have an active vote in any action.

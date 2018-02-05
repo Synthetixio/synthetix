@@ -233,8 +233,7 @@ class TestCourt(unittest.TestCase):
 
 	def test_hasVoted(self):
 		owner = self.owner()
-		voter = fresh_account()
-		suspect = fresh_account()
+		voter, suspect = fresh_accounts(2)
 		fee_period = self.havvenTargetFeePeriodDurationSeconds()
 		# Give some havven tokens to our voter.
 		self.havvenEndow(owner, voter, 1000)
@@ -280,8 +279,9 @@ class TestCourt(unittest.TestCase):
 
 	def test_votePasses(self):
 		owner = self.owner()
-		suspect = fresh_account()
-		voters = fresh_accounts(10)
+		accounts = fresh_accounts(11)
+		suspect = accounts[0]
+		voters = accounts[1:]
 		required_participation = self.requiredParticipation()
 		required_majority = self.requiredMajority()
 		fee_period = self.havvenTargetFeePeriodDurationSeconds()
@@ -339,10 +339,11 @@ class TestCourt(unittest.TestCase):
 
 	def test_beginConfiscationAction(self):
 		owner = self.owner()
-		insufficient_standing = fresh_account()
-		sufficient_standing =  fresh_account()
-		suspects = fresh_accounts(2)
-		voter = fresh_account()
+		accounts = fresh_accounts(5)
+		insufficient_standing = accounts[0]
+		sufficient_standing =  accounts[1]
+		voter = accounts[2]
+		suspects = accounts[3:]
 		voting_period = self.votingPeriod()
 		fee_period = self.havvenTargetFeePeriodDurationSeconds()
 		controlling_share = self.havvenSupply() // 2
@@ -362,7 +363,6 @@ class TestCourt(unittest.TestCase):
 		# Must have at least 100 havvens to begin a confiscsation action.
 		self.assertReverts(self.beginConfiscationAction, insufficient_standing, suspects[0])
 		tx_receipt = self.beginConfiscationAction(sufficient_standing, suspects[0])
-		print(type(tx_receipt))
 		# Check that event is emitted properly.
 		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "ConfiscationVote")
 		self.assertTrue(self.voting(suspects[0]))
@@ -381,9 +381,10 @@ class TestCourt(unittest.TestCase):
 
 	def test_voteFor(self):
 		owner = self.owner()
-		voter = fresh_account()
-		no_tokens = fresh_account()
-		suspects = fresh_accounts(2)
+		accounts = fresh_accounts(4)
+		voter = accounts[0]
+		no_tokens = accounts[1]
+		suspects = accounts[2:]
 		voting_period = self.votingPeriod()
 		fee_period = self.havvenTargetFeePeriodDurationSeconds()
 		# Give some havven tokens to our voter.
@@ -414,9 +415,10 @@ class TestCourt(unittest.TestCase):
 
 	def test_voteAgainst(self):
 		owner = self.owner()
-		voter = fresh_account()
-		no_tokens = fresh_account()
-		suspects = fresh_accounts(2)
+		accounts = fresh_accounts(4)
+		voter = accounts[0]
+		no_tokens = accounts[1]
+		suspects = accounts[2:]
 		voting_period = self.votingPeriod()
 		fee_period = self.havvenTargetFeePeriodDurationSeconds()
 		# Give some havven tokens to our voter.
@@ -447,8 +449,7 @@ class TestCourt(unittest.TestCase):
 
 	def test_cancelVote(self):
 		owner = self.owner()
-		voter = fresh_account()
-		suspect = fresh_account()
+		voter, suspect = fresh_accounts(2)
 		voting_period = self.votingPeriod()
 		fee_period = self.havvenTargetFeePeriodDurationSeconds()
 		# Give some havven tokens to our voter.
@@ -476,8 +477,7 @@ class TestCourt(unittest.TestCase):
 
 	def test_closeVote(self):
 		owner = self.owner()
-		suspect = fresh_account()
-		voter = fresh_account()
+		voter, suspect = fresh_accounts(2)
 		voting_period = self.votingPeriod()
 		fee_period = self.havvenTargetFeePeriodDurationSeconds()
 		share = 500
@@ -503,8 +503,7 @@ class TestCourt(unittest.TestCase):
 
 	def test_approve(self):
 		owner = self.owner()
-		voter = fresh_account()
-		guilty = fresh_account()
+		voter, guilty = fresh_accounts(2)
 		voting_period = self.votingPeriod()
 		fee_period = self.havvenTargetFeePeriodDurationSeconds()
 		controlling_share = self.havvenSupply() // 2
@@ -519,7 +518,8 @@ class TestCourt(unittest.TestCase):
 		self.beginConfiscationAction(owner, guilty)
 		self.assertTrue(self.voting(guilty))
 		# Cast a vote in favour of confiscation.
-		self.voteFor(voter, guilty)
+		tx_receipt = self.voteFor(voter, guilty)
+		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "VoteFor")
 		self.assertEqual(self.votesFor(guilty), controlling_share)
 		fast_forward(voting_period)
 		self.assertTrue(self.confirming(guilty))
@@ -538,8 +538,7 @@ class TestCourt(unittest.TestCase):
 
 	def test_veto(self):
 		owner = self.owner()
-		voter = fresh_account()
-		acquitted = fresh_account()
+		voter, acquitted = fresh_accounts(2)
 		voting_period = self.votingPeriod()
 		fee_period = self.havvenTargetFeePeriodDurationSeconds()
 		controlling_share = self.havvenSupply() // 2
@@ -571,14 +570,15 @@ class TestCourt(unittest.TestCase):
 		# After veto action, suspect should be back in the waiting stage.
 		self.assertTrue(self.waiting(acquitted))
 		# Votes should be reset.
+		self.assertEqual(self.voteStartTimes(acquitted), 0)
 		self.assertEqual(self.votesFor(acquitted), 0)
+		self.assertEqual(self.votesAgainst(acquitted), 0)
 		self.assertTrue(self.waiting(acquitted))
 
 
 	def test_setVotedYea(self):
 		owner = self.owner()
-		voter = fresh_account()
-		suspect = fresh_account()
+		voter, suspect = fresh_accounts(2)
 		self.beginConfiscationAction(owner, suspect)
 		# Test that internal function properly updates state
 		self.setVotedYea(voter, voter, suspect)
@@ -586,16 +586,17 @@ class TestCourt(unittest.TestCase):
 		self.assertEqual(self.voteTarget(voter), suspect)
 		# If already voted, cannot set again
 		self.assertReverts(self.setVotedYea, voter, voter, suspect)
+		self.assertReverts(self.setVotedNay, voter, voter, suspect)
 
 
 	def test_setVotedNay(self):
 		owner = self.owner()
-		voter = fresh_account()
-		suspect = fresh_account()
+		voter, suspect = fresh_accounts(2)
 		self.beginConfiscationAction(owner, suspect)
 		self.setVotedNay(voter, voter, suspect)
 		self.assertEqual(self.userVote(voter), 2)
 		self.assertEqual(self.voteTarget(voter), suspect)
 		# If already voted, cannot set again
 		self.assertReverts(self.setVotedNay, voter, voter, suspect)
+		self.assertReverts(self.setVotedYea, voter, voter, suspect)
 		
