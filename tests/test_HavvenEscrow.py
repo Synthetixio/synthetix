@@ -155,9 +155,30 @@ class TestHavvenEscrow(unittest.TestCase):
         self.vest(alice)
         self.assertEqual(self.totalVestedAccountBalance(alice), 100 * (2**k - 1) - 100)
 
-
     def test_totalVestedBalance(self):
-        pass
+        alice, bob = fresh_accounts(2)
+        time = block_time()
+
+        self.h_endow(MASTER, self.escrow.address, 100 * UNIT)
+        self.assertEqual(self.totalVestedBalance(), 0)
+        self.appendVestingEntry(MASTER, bob, time + 100, UNIT)
+        self.assertEqual(self.totalVestedBalance(), UNIT)
+
+
+        self.appendVestingEntry(MASTER, alice, time + 100, UNIT)
+        self.assertEqual(self.totalVestedBalance(), 2 * UNIT)
+
+        self.purgeAccount(MASTER, alice)
+        self.assertEqual(self.totalVestedBalance(), UNIT)
+
+        k = 5
+        for n in [100 * 2**i for i in range(k)]:
+            self.appendVestingEntry(MASTER, alice, time + n, n)
+
+        self.assertEqual(self.totalVestedBalance(), UNIT + 100 * (2**k - 1))
+        fast_forward(110)
+        self.vest(alice)
+        self.assertEqual(self.totalVestedBalance(), UNIT + 100 * (2**k - 1) - 100)
 
     def test_numVestingEntries(self):
         alice = fresh_account()
