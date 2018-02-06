@@ -150,8 +150,10 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
 
     function withdrawContractFees()
         public
+        onlyOwner
     {
         havven.withdrawFeeEntitlement();
+        ContractFeesWithdrawn(now, feePool());
     }
 
     function withdrawFees()
@@ -160,12 +162,17 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         // If fees need to be withdrawn into this contract, then withdraw them.
         if (!havven.hasWithdrawnLastPeriodFees(this)) {
             withdrawContractFees();
+            // Since fees were remitted back to havven last time the fee period rolled over,
+            // which would set feePool()'s result to zero, so we are justified in using it
+            // as the withdrawn quantity here.
             ContractFeesWithdrawn(now, feePool());
         }
         // exception will be thrown if totalVestedBalance will be 0
-        uint entitlement = safeDecDiv(safeDecMul(feePool(), totalVestedAccountBalance[msg.sender]), totalVestedBalance);
-        nomin.transfer(msg.sender, entitlement);
-        FeesWithdrawn(msg.sender, msg.sender, now, entitlement);
+        uint entitlement = nomin.priceToSpend(safeDecDiv(safeDecMul(totalVestedAccountBalance[msg.sender], feePool()), totalVestedBalance));
+        if (entitlement != 0) {
+            nomin.transfer(msg.sender, entitlement);
+            FeesWithdrawn(msg.sender, msg.sender, now, entitlement);
+        }
     }
 
     function purgeAccount(address account)
