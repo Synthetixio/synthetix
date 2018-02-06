@@ -218,7 +218,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         totalVestedBalance = safeAdd(totalVestedBalance, quantity);
     }
 
-    function addVestingSchedule(address account, uint conclusion_time, uint quantity, uint vesting_periods)
+    function addRegularVestingSchedule(address account, uint conclusion_time, uint quantity, uint vesting_periods)
         onlyOwner
         public
     {
@@ -227,9 +227,10 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         // only quantity is UNIT
         uint item_quantity = safeDiv(quantity, vesting_periods);
         uint quant_sum = safeMul(item_quantity, (vesting_periods-1));
+        uint period_length = safeDiv(time_period, vesting_periods); // (zero vesting periods doesn't work.)
 
         for (uint i = 1; i < vesting_periods; i++) {
-            uint item_time_period = safeMul(i, safeDiv(time_period, vesting_periods));
+            uint item_time_period = safeMul(i, period_length);
             appendVestingEntry(account, safeAdd(now, item_time_period), item_quantity);
         }
         appendVestingEntry(account, conclusion_time, safeSub(quantity, quant_sum));

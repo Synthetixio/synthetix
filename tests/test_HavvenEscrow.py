@@ -84,7 +84,7 @@ class TestHavvenEscrow(unittest.TestCase):
         cls.purgeAccount = lambda self, sender, account: mine_tx(cls.escrow.functions.purgeAccount(account).transact({'from': sender}))
         cls.withdrawHavvens = lambda self, sender, quantity: mine_tx(cls.escrow.functions.withdrawHavvens(quantity).transact({'from': sender}))
         cls.appendVestingEntry = lambda self, sender, account, time, quantity: mine_tx(cls.escrow.functions.appendVestingEntry(account, time, quantity).transact({'from': sender}))
-        cls.addVestingSchedule = lambda self, sender, account, time, quantity, periods: mine_tx(cls.escrow.functions.addVestingSchedule(account, time, quantity, periods).transact({'from': sender}))
+        cls.addRegularVestingSchedule = lambda self, sender, account, time, quantity, periods: mine_tx(cls.escrow.functions.addRegularVestingSchedule(account, time, quantity, periods).transact({'from': sender}))
         cls.vest = lambda self, sender: mine_tx(cls.escrow.functions.vest().transact({'from': sender}))
 
     def make_nomin_velocity(self):
@@ -522,12 +522,55 @@ class TestHavvenEscrow(unittest.TestCase):
         self.vest(alice)
         self.assertEqual(self.h_balanceOf(alice), 6 * UNIT)
 
-    def test_addVestingSchedule(self):
-        pass
+    def test_addRegularVestingSchedule(self):
+        alice, bob, carol, tim, pim = fresh_accounts(5)
+        self.h_endow(MASTER, self.escrow.address, 100 * UNIT)
+        time = block_time()
+        self.addRegularVestingSchedule(MASTER, alice, time + to_seconds(weeks=52), 100 * UNIT, 4)
+        self.assertEqual(self.numVestingEntries(alice), 4)
 
-    def test_fee_rollover(self):
-        pass
+        self.vest(alice)
+        self.assertEqual(self.h_balanceOf(alice), 0)
 
+        fast_forward(to_seconds(weeks=13) + 10)
+        self.vest(alice)
+        self.assertEqual(self.h_balanceOf(alice), 25 * UNIT)
+
+        fast_forward(to_seconds(weeks=13) + 10)
+        self.vest(alice)
+        self.assertEqual(self.h_balanceOf(alice), 50 * UNIT)
+
+        fast_forward(to_seconds(weeks=13) + 10)
+        self.vest(alice)
+        self.assertEqual(self.h_balanceOf(alice), 75 * UNIT)
+
+        fast_forward(to_seconds(weeks=13) + 10)
+        self.vest(alice)
+        self.assertEqual(self.h_balanceOf(alice), 100 * UNIT)
+
+        fast_forward(to_seconds(weeks=13) + 10)
+        self.vest(alice)
+        self.assertEqual(self.h_balanceOf(alice), 100 * UNIT)
+
+        time = block_time() + 10000000
+        bob_periods = 7
+        self.addRegularVestingSchedule(MASTER, bob, time, UNIT, 7)
+
+        q = sum(self.getVestingQuantity(bob, i) for i in range(bob_periods))
+        self.assertEqual(q, UNIT)
+        self.assertEqual(self.getVestingTime(bob, bob_periods - 1), time, UNIT)
+
+        self.assertReverts(self.addRegularVestingSchedule, MASTER, carol, block_time() - 1, UNIT, 5)
+        self.assertReverts(self.addRegularVestingSchedule, MASTER, carol, 0, UNIT, 5)
+        self.assertReverts(self.addRegularVestingSchedule, MASTER, carol, block_time() + 100000, UNIT, 0)
+
+        time = block_time() + 10000
+        self.appendVestingEntry(MASTER, tim, time, UNIT)
+        self.addRegularVestingSchedule(MASTER, pim, time, UNIT, 1)
+
+        self.assertEqual(self.numVestingEntries(tim), self.numVestingEntries(pim))
+        self.assertEqual(self.getVestingTime(tim, 0), self.getVestingTime(pim, 0))
+        self.assertEqual(self.getVestingQuantity(tim, 0), self.getVestingQuantity(pim, 0))
 
 if __name__ == '__main__':
     unittest.main()
