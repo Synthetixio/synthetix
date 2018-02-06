@@ -69,7 +69,11 @@ class TestHavvenEscrow(unittest.TestCase):
         cls.getVestingQuantity = lambda self, account, index: cls.escrow.functions.getVestingQuantity(account, index).call()
         cls.totalVestedAccountBalance = lambda self, account: cls.escrow.functions.totalVestedAccountBalance(account).call()
         cls.totalVestedBalance = lambda self: cls.escrow.functions.totalVestedBalance().call()
-
+        cls.getNextVestingIndex = lambda self, account: cls.escrow.functions.getNextVestingIndex(account).call()
+        cls.getNextVestingScheduleEntry = lambda self, account: cls.escrow.functions.getNextVestingScheduleEntry(account).call()
+        cls.getNextVestingTime = lambda self, account: cls.escrow.functions.getNextVestingTime(account).call()
+        cls.getNextVestingQuantity = lambda self, account: cls.escrow.functions.getNextVestingQuantity(account).call()
+        
         cls.feePool = lambda self: cls.escrow.functions.feePool()
         cls.setHavven = lambda self, sender, account: mine_tx(cls.escrow.functions.setHavven(account).transact({'from': sender}))
         cls.setNomin = lambda self, sender, account: mine_tx(cls.escrow.functions.setNomin(account).transact({'from': sender}))
@@ -196,6 +200,24 @@ class TestHavvenEscrow(unittest.TestCase):
         self.assertEqual(self.numVestingEntries(alice), 5)
         self.purgeAccount(MASTER, alice)
         self.assertEqual(self.numVestingEntries(alice), 0)
+
+    def test_getVestingScheduleEntry(self):
+        alice = fresh_account()
+        time = block_time()
+        self.appendVestingEntry(MASTER, alice, time + 100, 1);
+        self.assertEqual(self.getVestingScheduleEntry(alice, 0), [time + 100, 1])
+
+    def test_getNextVestingIndex(self):
+        pass
+
+    def test_getNextVestingScheduleEntry(self):
+        pass
+
+    def test_getNextVestingTime(self):
+        pass
+
+    def test_getNextVestingQuantity(self):
+        pass
 
     def test_feePool(self):
         pass

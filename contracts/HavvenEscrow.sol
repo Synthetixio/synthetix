@@ -61,6 +61,55 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         return vestingSchedules[account][index][1];
     }
 
+    function getNextVestingIndex(address account)
+        public
+        view
+        returns (uint)
+    {
+        uint len = numVestingEntries(account);
+        for (uint i = 0; i < len; i++) {
+            if (getVestingTime(account, i) != 0) {
+                return i;
+            }
+        }
+        return len;
+    }
+
+    function getNextVestingEntry(address account)
+        public
+        view
+        returns (uint[2])
+    {
+        uint index = getNextVestingIndex(account);
+        if (index == numVestingEntries(account)) {
+            return [uint(0), 0];
+        }
+        return getVestingScheduleEntry(account, index);
+    }
+
+    function getNextVestingTime(address account)
+        public
+        view
+        returns (uint)
+    {
+        uint index = getNextVestingIndex(account);
+        if (index == numVestingEntries(account)) {
+            return 0;
+        }
+        return getVestingTime(account, index);
+    }
+
+    function getNextVestingQuantity(address account)
+        public
+        view
+        returns (uint)
+    {
+        uint index = getNextVestingIndex(account);
+        if (index == numVestingEntries(account)) {
+            return 0;
+        }
+        return getVestingQuantity(account, index);
+    }
 
     function feePool()
         public
