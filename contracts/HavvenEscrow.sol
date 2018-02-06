@@ -58,13 +58,19 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         onlyOwner
     {
         nomin = newNomin;
-    }
+    } 
 
-    function sweepFees()
+    function remitFees()
         public
-        onlyOwner
     {
-        nomin.transfer(owner, feePool());
+        // Only the havven contract should be able to force
+        // the escrow contract to remit its fees back to the common pool.
+        require(Havven(msg.sender) == havven);
+        uint feeBalance = feePool();
+        // Ensure balance is nonzero so that the fee pool function does not revert.
+        if (feeBalance != 0) {
+            nomin.donateToFeePool(feePool());
+        }
     }
 
     function withdrawContractFees()
