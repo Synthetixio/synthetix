@@ -97,6 +97,34 @@ class TestHavvenEscrow(unittest.TestCase):
         self.assertEqual(self.owner(), MASTER)
         self.assertEqual(self.totalVestedBalance(), 0)
 
+    def test_vestingTimes(self):
+        pass
+
+    def test_vestingQuantities(self):
+        pass
+
+    def test_totalVestedAccountBalance(self):
+        pass
+
+    def test_totalVestedBalance(self):
+        pass
+
+    def test_numVestingTimes(self):
+        alice = fresh_account()
+        time = block_time()
+
+        self.assertEqual(self.numVestingTimes(alice), 0)
+        self.addNewVestedQuantity(MASTER, alice, time+to_seconds(weeks=1), UNIT)
+        self.assertEqual(self.numVestingTimes(alice), 1)
+        self.addNewVestedQuantity(MASTER, alice, time+to_seconds(weeks=2), UNIT)
+        self.assertEqual(self.numVestingTimes(alice), 2)
+        self.addNewVestedQuantity(MASTER, alice, time+to_seconds(weeks=3), UNIT)
+        self.addNewVestedQuantity(MASTER, alice, time+to_seconds(weeks=4), UNIT)
+        self.addNewVestedQuantity(MASTER, alice, time+to_seconds(weeks=5), UNIT)
+        self.assertEqual(self.numVestingTimes(alice), 5)
+        self.purgeAccount(MASTER, alice)
+        self.assertEqual(self.numVestingTimes(alice), 0)
+
     def test_feePool(self):
         pass
         """
@@ -121,28 +149,17 @@ class TestHavvenEscrow(unittest.TestCase):
         self.assertEqual(self.feePool(), uncollected)
         """
 
-    def test_numVestingTimes(self):
-        alice = fresh_account()
-        time = block_time()
-
-        self.assertEqual(self.numVestingTimes(alice), 0)
-        self.addNewVestedQuantity(MASTER, alice, time+to_seconds(weeks=1), UNIT)
-        self.assertEqual(self.numVestingTimes(alice), 1)
-        self.addNewVestedQuantity(MASTER, alice, time+to_seconds(weeks=2), UNIT)
-        self.assertEqual(self.numVestingTimes(alice), 2)
-        self.addNewVestedQuantity(MASTER, alice, time+to_seconds(weeks=3), UNIT)
-        self.addNewVestedQuantity(MASTER, alice, time+to_seconds(weeks=4), UNIT)
-        self.addNewVestedQuantity(MASTER, alice, time+to_seconds(weeks=5), UNIT)
-        self.assertEqual(self.numVestingTimes(alice), 5)
-        self.purgeAccount(MASTER, alice)
-        self.assertEqual(self.numVestingTimes(alice), 0)
-        pass
-
     def test_setHavven(self):
-        pass
+        alice = fresh_account()
+        self.setHavven(MASTER, alice)
+        self.assertEqual(self.e_havven(), alice)
+        self.assertReverts(self.setHavven, alice, alice)
 
     def test_setNomin(self):
-        pass
+        alice = fresh_account()
+        self.setNomin(MASTER, alice)
+        self.assertEqual(self.e_nomin(), alice)
+        self.assertReverts(self.setNomin, alice, alice)
 
     def test_withdrawContractFees(self):
         pass
