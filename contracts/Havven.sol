@@ -409,7 +409,7 @@ contract Havven is ERC20Token, Owned {
     {
         // If the fee period has rolled over...
         if (feePeriodStartTime + targetFeePeriodDurationSeconds <= now) {
-            // Collect any fees from the escrow contract, if it exists.
+            // Reclaim any fees from the escrow contract, if it exists.
             if (escrow != HavvenEscrow(0)) {
                 escrow.remitFees();
             }
