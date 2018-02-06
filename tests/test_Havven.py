@@ -100,11 +100,14 @@ class TestHavven(unittest.TestCase):
         cls.lastFeesCollected = lambda self: self.havven.functions.lastFeesCollected().call()
 
         cls.get_nomin = lambda self: self.havven.functions.nomin().call()
+        cls.get_escrow = lambda self: self.havven.functions.escrow().call()
 
         #
         # SETTERS
         cls.setNomin = lambda self, sender, addr: mine_tx(
             self.havven.functions.setNomin(addr).transact({'from': sender}))
+        cls.setEscrow = lambda self, sender, addr: mine_tx(
+            self.havven.functions.setEscrow(addr).transact({'from': sender}))
         cls.setTargetFeePeriodDuration = lambda self, sender, dur: mine_tx(
             self.havven.functions.setTargetFeePeriodDuration(dur).transact({'from': sender}))
 
@@ -446,7 +449,7 @@ class TestHavven(unittest.TestCase):
     ###
 
     # setNomin
-    def test_SetNomin(self):
+    def test_setNomin(self):
         alice = fresh_account()
         self.setNomin(MASTER, alice)
         self.assertEqual(self.get_nomin(), alice)
@@ -454,6 +457,16 @@ class TestHavven(unittest.TestCase):
     def test_invalidSetNomin(self):
         alice = fresh_account()
         self.assertReverts(self.setNomin, alice, alice)
+
+    # setEscrow
+    def test_setEscrow(self):
+        alice = fresh_account()
+        self.setEscrow(MASTER, alice)
+        self.assertEqual(self.get_escrow(), alice)
+
+    def test_invalidSetEscrow(self):
+        alice = fresh_account()
+        self.assertReverts(self.setEscrow, alice, alice)
 
     # setTargetFeePeriod
     def test_setTargetFeePeriod(self):

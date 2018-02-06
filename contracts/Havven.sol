@@ -106,6 +106,7 @@ import "contracts/ERC20Token.sol";
 import "contracts/Owned.sol";
 import "contracts/EtherNomin.sol";
 import "contracts/Court.sol";
+import "contracts/HavvenEscrow.sol";
 
 
 contract Havven is ERC20Token, Owned {
@@ -158,6 +159,7 @@ contract Havven is ERC20Token, Owned {
     mapping(address => bool) public hasWithdrawnLastPeriodFees;
 
     EtherNomin public nomin;
+    HavvenEscrow public escrow;
 
 
     /* ========== CONSTRUCTOR ========== */
@@ -182,6 +184,13 @@ contract Havven is ERC20Token, Owned {
         onlyOwner
     {
         nomin = _nomin;
+    }
+
+    function setEscrow(HavvenEscrow _escrow)
+        public
+        onlyOwner
+    {
+        escrow = _escrow;
     }
 
     function setTargetFeePeriodDuration(uint duration)
