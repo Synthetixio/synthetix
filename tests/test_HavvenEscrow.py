@@ -99,7 +99,6 @@ class TestHavvenEscrow(unittest.TestCase):
         self.n_sell(buyer, self.n_balanceOf(MASTER))
         self.n_burn(MASTER, self.n_nominPool())
 
-    """
     def test_constructor(self):
         self.assertEqual(self.e_havven(), self.havven.address)
         self.assertEqual(self.e_nomin(), self.nomin.address)
@@ -375,7 +374,7 @@ class TestHavvenEscrow(unittest.TestCase):
         self.assertClose(self.feePool(), 36 * UNIT)
 
         self.assertReverts(self.withdrawContractFees, MASTER) 
-    """
+
     def test_withdrawFees(self):
         self.h_endow(MASTER, self.escrow.address, self.h_totalSupply() - (100 * UNIT))
         self.h_endow(MASTER, MASTER, 100 * UNIT)
@@ -423,9 +422,27 @@ class TestHavvenEscrow(unittest.TestCase):
         self.withdrawFees(MASTER)
         self.assertClose(self.n_balanceOf(MASTER), self.n_priceToSpend(18 * UNIT))
 
-
     def test_purgeAccount(self):
-        pass
+        alice = fresh_account()
+        time = block_time() + 100
+        self.appendVestingEntry(MASTER, alice, time, 1000)
+
+        self.assertReverts(self.purgeAccount, alice, alice);
+
+        self.assertEqual(self.numVestingEntries(alice), 1)
+        self.assertEqual(self.totalVestedBalance(), 1000)
+        self.assertEqual(self.totalVestedAccountBalance(alice), 1000)
+        self.assertEqual(self.getNextVestingIndex(alice), 0)
+        self.assertEqual(self.getNextVestingTime(alice), time)
+        self.assertEqual(self.getNextVestingQuantity(alice), 1000)
+
+        self.purgeAccount(MASTER, alice)
+        self.assertEqual(self.numVestingEntries(alice), 0)
+        self.assertEqual(self.totalVestedBalance(), 0)
+        self.assertEqual(self.totalVestedAccountBalance(alice), 0)
+        self.assertEqual(self.getNextVestingIndex(alice), 0)
+        self.assertEqual(self.getNextVestingTime(alice), 0)
+        self.assertEqual(self.getNextVestingQuantity(alice), 0)
 
     def test_withdrawHavvens(self):
         pass
