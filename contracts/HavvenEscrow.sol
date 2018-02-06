@@ -11,6 +11,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
     EtherNomin public nomin;
 
     // Lists of (timestamp, quantity) pairs per account, sorted in ascending time order.
+    // These are the times at which each given quantity of havvens vests.
     mapping(address => uint[2][]) public vestingSchedules;
 
     // An account's total vested havven balance to save recomputing this for fee extraction purposes.

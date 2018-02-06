@@ -123,8 +123,16 @@ class TestHavvenEscrow(unittest.TestCase):
         for i in range(1, len(times)):
             self.assertEqual(self.getVestingQuantity(alice, i), quantities[i])
 
-    def test_vestingQuantities(self):
-        pass
+    def test_vestingSchedules(self):
+        alice = fresh_account()
+        time = block_time()
+
+        self.appendVestingEntry(MASTER, alice, time + 1000, UNIT)
+        self.assertEqual(self.vestingSchedules(alice, 0, 0), time + 1000)
+        self.assertEqual(self.vestingSchedules(alice, 0, 1), UNIT)
+        self.appendVestingEntry(MASTER, alice, time + 2000, 2 * UNIT)
+        self.assertEqual(self.vestingSchedules(alice, 1, 0), time + 2000)
+        self.assertEqual(self.vestingSchedules(alice, 1, 1), 2 * UNIT)
 
     def test_totalVestedAccountBalance(self):
         pass
