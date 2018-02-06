@@ -275,6 +275,8 @@ contract Court is Owned, SafeDecimalMath {
     {
         // No need to check (startTime < now) as there is no way
         // to set future start times for votes.
+        // These values are timestamps, they will not overflow
+        // as they can only ever be initialised to relatively small values.
         return now < voteStartTimes[target] + votingPeriod;
     }
 
@@ -285,6 +287,8 @@ contract Court is Owned, SafeDecimalMath {
         view
         returns (bool)
     {
+        // These values are timestamps, they will not overflow
+        // as they can only ever be initialised to relatively small values.
         uint startTime = voteStartTimes[target];
         return startTime + votingPeriod <= now &&
                now < startTime + votingPeriod + confirmationPeriod;
@@ -296,6 +300,8 @@ contract Court is Owned, SafeDecimalMath {
         view
         returns (bool)
     {
+        // These values are timestamps, they will not overflow
+        // as they can only ever be initialised to relatively small values.
         return voteStartTimes[target] + votingPeriod + confirmationPeriod <= now;
     }
 
@@ -308,7 +314,7 @@ contract Court is Owned, SafeDecimalMath {
     {
         uint yeas = votesFor[target];
         uint nays = votesAgainst[target];
-        uint totalVotes = yeas + nays;
+        uint totalVotes = safeAdd(yeas, nays);
 
         if (totalVotes == 0) {
             return false;
@@ -389,7 +395,7 @@ contract Court is Owned, SafeDecimalMath {
         uint weight = voteSetup(target);
         setVotedYea(msg.sender, target);
         voteWeight[msg.sender] = weight;
-        votesFor[target] += weight;
+        votesFor[target] = safeAdd(votesFor[target], weight);
         VoteFor(msg.sender, msg.sender, target, target, weight);
     }
 
@@ -401,7 +407,7 @@ contract Court is Owned, SafeDecimalMath {
         uint weight = voteSetup(target);
         setVotedNay(msg.sender, target);
         voteWeight[msg.sender] = weight;
-        votesAgainst[target] += weight;
+        votesAgainst[target] = safeAdd(votesAgainst[target], weight);
         VoteAgainst(msg.sender, msg.sender, target, target, weight);
     }
 
@@ -422,10 +428,10 @@ contract Court is Owned, SafeDecimalMath {
             Vote vote = userVote[msg.sender];
 
             if (vote == Vote.Yea) {
-                votesFor[target] -= voteWeight[msg.sender];
+                votesFor[target] = safeSub(votesFor[target], voteWeight[msg.sender]);
             }
             else if (vote == Vote.Nay) {
-                votesAgainst[target] -= voteWeight[msg.sender];
+                votesAgainst[target] = safeSub(votesAgainst[target], voteWeight[msg.sender]);
             } else {
                 // The sender has not voted.
                 return;
