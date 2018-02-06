@@ -36,6 +36,7 @@ class TestHavvenEscrow(unittest.TestCase):
         cls.escrow, txr = attempt_deploy(compiled, 'HavvenEscrow', MASTER,
                                          [MASTER, cls.havven.address, cls.nomin.address])
         mine_tx(cls.havven.functions.setNomin(cls.nomin.address).transact({'from': MASTER}))
+        mine_tx(cls.havven.functions.setEscrow(cls.escrow.address).transact({'from': MASTER}))
 
         cls.h_totalSupply = lambda self: cls.havven.functions.totalSupply().call()
         cls.h_targetFeePeriodDurationSeconds = lambda self: cls.havven.functions.targetFeePeriodDurationSeconds().call()
@@ -74,7 +75,7 @@ class TestHavvenEscrow(unittest.TestCase):
         cls.getNextVestingTime = lambda self, account: cls.escrow.functions.getNextVestingTime(account).call()
         cls.getNextVestingQuantity = lambda self, account: cls.escrow.functions.getNextVestingQuantity(account).call()
         
-        cls.feePool = lambda self: cls.escrow.functions.feePool()
+        cls.feePool = lambda self: cls.escrow.functions.feePool().call()
         cls.setHavven = lambda self, sender, account: mine_tx(cls.escrow.functions.setHavven(account).transact({'from': sender}))
         cls.setNomin = lambda self, sender, account: mine_tx(cls.escrow.functions.setNomin(account).transact({'from': sender}))
         cls.sweepFees = lambda self, sender: mine_tx(cls.escrow.functions.sweepFees().transact({'from': sender}))
@@ -87,13 +88,14 @@ class TestHavvenEscrow(unittest.TestCase):
 
     def make_nomin_velocity(self):
         # should produce a 36 * UNIT fee pool
+        buyer = fresh_account()
         self.n_updatePrice(MASTER, UNIT)
         self.n_setTransferFeeRate(MASTER, UNIT // 100)
         self.n_issue(MASTER, 1000 * UNIT, 2000 * UNIT)
-        self.n_buy(MASTER, 1000 * UNIT, self.n_purchaseCostEther(1000 * UNIT))
+        self.n_buy(buyer, 1000 * UNIT, self.n_purchaseCostEther(1000 * UNIT))
         for i in range(8):
-            self.n_transfer(MASTER, MASTER, (9 - (i + 1)) * 100 * UNIT)
-        self.n_sell(MASTER, self.n_balanceOf(MASTER))
+            self.n_transfer(buyer, buyer, (9 - (i + 1)) * 100 * UNIT)
+        self.n_sell(buyer, self.n_balanceOf(MASTER))
         self.n_burn(MASTER, self.n_nominPool())
 
     def test_constructor(self):
@@ -277,28 +279,45 @@ class TestHavvenEscrow(unittest.TestCase):
             self.assertEqual(self.getNextVestingQuantity(alice), 0 if i == len(entries) - 1 else entries[i+1][1])
 
     def test_feePool(self):
-        pass
-        """
-        self.make_nomin_velocity()
         self.h_endow(MASTER, self.escrow.address, self.h_totalSupply() - (100 * UNIT))
         self.h_endow(MASTER, MASTER, 100 * UNIT)
+        self.make_nomin_velocity()
+
         uncollected = self.n_feePool()
         self.assertClose(uncollected, 36 * UNIT)
         self.assertEqual(self.feePool(), 0)
-        self.h_transfer(MASTER, self.escrow.address, UNIT)
 
-        self.h_transfer(MASTER, self.escrow.address, UNIT)
+        # Skip a period so we have a full period with no transfers
         target_period = self.h_targetFeePeriodDurationSeconds() + 1000
         fast_forward(seconds=target_period)
-        self.h_transfer(MASTER, self.escrow.address, UNIT)
+
+        # Zero value transfer to roll over the fee period
+        self.h_transfer(MASTER, self.escrow.address, 0)
         fast_forward(seconds=target_period)
-        self.h_transfer(MASTER, self.escrow.address, UNIT)
-        fast_forward(seconds=target_period)
-        self.h_transfer(MASTER, self.escrow.address, UNIT)
-        print(self.h_balanceOf(MASTER))
+
+        # Since escrow contract has most of the global supply, they should get
+        # most of the fees.
         self.withdrawContractFees(MASTER)
-        self.assertEqual(self.feePool(), uncollected)
-        """
+        self.assertClose(self.feePool(), 36 * UNIT)
+
+    def test_halfFeePool(self):
+        self.h_endow(MASTER, self.escrow.address, self.h_totalSupply() // 2)
+        self.h_endow(MASTER, MASTER, 100 * UNIT)
+
+        # Now we try all the same stuff, but with only half the havven supply.
+        self.assertClose(self.h_totalSupply() // 2, self.h_balanceOf(self.escrow.address))
+        self.make_nomin_velocity()
+        self.assertClose(self.n_feePool(), 36 * UNIT)
+
+        target_period = self.h_targetFeePeriodDurationSeconds() + 1000
+        fast_forward(seconds=target_period)
+        self.h_transfer(MASTER, self.escrow.address, 0)
+        fast_forward(seconds=target_period)
+
+        # Since escrow contract has half the global supply, they should get
+        # half the fees.
+        self.withdrawContractFees(MASTER)
+        self.assertClose(self.feePool(), 18 * UNIT)
 
     def test_setHavven(self):
         alice = fresh_account()
