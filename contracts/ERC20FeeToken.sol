@@ -122,6 +122,15 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
         return safeAdd(_value, safeDecMul(_value, transferFeeRate));
     }
 
+    // The quantity to send in order that the sender spends a certain value of tokens.
+    function priceToSpend(uint value)
+        public
+        view
+        returns (uint)
+    {
+        return safeDecDiv(value, safeAdd(UNIT, transferFeeRate));
+    }
+
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
