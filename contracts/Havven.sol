@@ -291,9 +291,12 @@ contract Havven is ERC20Token, Owned {
         uint feesOwed = safeDecDiv(safeDecMul(lastAverageBalance[msg.sender],
                                               lastFeesCollected),
                                    totalSupply);
-        nomin.withdrawFee(msg.sender, feesOwed);
+
         hasWithdrawnLastPeriodFees[msg.sender] = true;
-        FeesWithdrawn(msg.sender, msg.sender, feesOwed);
+        if (feesOwed != 0) {
+            nomin.withdrawFee(msg.sender, feesOwed);
+            FeesWithdrawn(msg.sender, msg.sender, feesOwed);
+        }
     }
 
     /* Update the fee entitlement since the last transfer or entitlement
