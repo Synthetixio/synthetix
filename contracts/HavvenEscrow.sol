@@ -143,7 +143,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         public
     {
         require(now < time);
-        require(0 < quantity);
+        require(quantity != 0);
 
         if (vestingSchedules[account].length == 0) {
             totalVestedAccountBalance[account] = quantity;

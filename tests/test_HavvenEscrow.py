@@ -253,6 +253,15 @@ class TestHavvenEscrow(unittest.TestCase):
         amount = 16 * UNIT
         self.h_endow(MASTER, self.escrow.address, amount)
         time = block_time()
+
+        # Should not be able to vest in the past
+        self.assertReverts(self.appendVestingEntry, MASTER, alice, 0, UNIT)
+        self.assertReverts(self.appendVestingEntry, MASTER, alice, time - 1, UNIT)
+        self.assertReverts(self.appendVestingEntry, MASTER, alice, time, UNIT)
+
+        # Vesting quantities should be nonzero
+        self.assertReverts(self.appendVestingEntry, MASTER, alice, time+to_seconds(weeks=2), 0)
+
         self.appendVestingEntry(MASTER, alice, time+to_seconds(weeks=2), amount)
         self.vest(alice)
         self.assertEqual(self.h_balanceOf(alice), 0)
