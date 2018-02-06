@@ -2,7 +2,7 @@ import unittest
 
 from utils.deployutils import compile_contracts, attempt_deploy, mine_tx, MASTER, DUMMY, take_snapshot,\
     restore_snapshot, fresh_account, fresh_accounts, UNIT, fast_forward
-from utils.testutils import assertReverts, block_time
+from utils.testutils import assertReverts, assertClose, block_time
 from utils.generalutils import to_seconds
 
 ESCROW_SOURCE = "contracts/HavvenEscrow.sol"
@@ -28,19 +28,37 @@ class TestHavvenEscrow(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.assertReverts = assertReverts
+        cls.assertClose = assertClose
 
         compiled = compile_contracts([ESCROW_SOURCE, HAVVEN_SOURCE, NOMIN_SOURCE])
         cls.havven, txr = attempt_deploy(compiled, 'Havven', MASTER, [MASTER])
         cls.nomin, txr = attempt_deploy(compiled, 'EtherNomin', MASTER, [cls.havven.address, MASTER, MASTER, 1000 * 10**18, MASTER])
         cls.escrow, txr = attempt_deploy(compiled, 'HavvenEscrow', MASTER,
                                          [MASTER, cls.havven.address, cls.nomin.address])
+        mine_tx(cls.havven.functions.setNomin(cls.nomin.address).transact({'from': MASTER}))
 
-        cls.owner = lambda self: cls.escrow.functions.owner().call()
-        cls.setOwner = lambda self, sender, newOwner: mine_tx(cls.escrow.functions.setOwner(newOwner).transact({'from': sender}))
-
+        cls.h_totalSupply = lambda self: cls.havven.functions.totalSupply().call()
+        cls.h_targetFeePeriodDurationSeconds = lambda self: cls.havven.functions.targetFeePeriodDurationSeconds().call()
+        cls.h_feePeriodStartTime = lambda self: cls.havven.functions.feePeriodStartTime().call()
         cls.h_endow = lambda self, sender, receiver, amt: mine_tx(cls.havven.functions.endow(receiver, amt).transact({'from': sender}))
         cls.h_balanceOf = lambda self, account: cls.havven.functions.balanceOf(account).call()
         cls.h_transfer = lambda self, sender, receiver, amt: mine_tx(cls.havven.functions.transfer(receiver, amt).transact({'from': sender}))
+        cls.h_recomputeLastAverageBalance = lambda self, sender: mine_tx(cls.havven.functions.recomputeLastAverageBalance().transact({'from': sender}))
+
+        cls.n_updatePrice = lambda self, sender, price: mine_tx(cls.nomin.functions.updatePrice(price).transact({'from': sender}))
+        cls.n_setTransferFeeRate = lambda self, sender, rate: mine_tx(cls.nomin.functions.setTransferFeeRate(rate).transact({'from': sender}))
+        cls.n_issue = lambda self, sender, quantity, value: mine_tx(cls.nomin.functions.issue(quantity).transact({'from': sender, 'value': value}))
+        cls.n_burn = lambda self, sender, quantity: mine_tx(cls.nomin.functions.burn(quantity).transact({'from': sender}))
+        cls.n_buy = lambda self, sender, quantity, value: mine_tx(cls.nomin.functions.buy(quantity).transact({'from': sender, 'value': value}))
+        cls.n_sell = lambda self, sender, quantity: mine_tx(cls.nomin.functions.sell(quantity).transact({'from': sender}))
+        cls.n_purchaseCostEther = lambda self, quantity: cls.nomin.functions.purchaseCostEther(quantity).call()
+        cls.n_balanceOf = lambda self, account: cls.nomin.functions.balanceOf(account).call()
+        cls.n_transfer = lambda self, sender, recipient, quantity: mine_tx(cls.nomin.functions.transfer(recipient, quantity).transact({'from': sender}))
+        cls.n_feePool = lambda self: cls.nomin.functions.feePool().call()
+        cls.n_nominPool = lambda self: cls.nomin.functions.nominPool().call()
+
+        cls.owner = lambda self: cls.escrow.functions.owner().call()
+        cls.setOwner = lambda self, sender, newOwner: mine_tx(cls.escrow.functions.setOwner(newOwner).transact({'from': sender}))
 
         cls.e_havven = lambda self: cls.escrow.functions.havven().call()
         cls.e_nomin = lambda self: cls.escrow.functions.nomin().call()
@@ -62,8 +80,16 @@ class TestHavvenEscrow(unittest.TestCase):
         cls.addVestingSchedule = lambda self, sender, account, time, quantity, periods: mine_tx(cls.escrow.functions.addVestingSchedule(account, time, quantity, periods).transact({'from': sender}))
         cls.vest = lambda self, sender: mine_tx(cls.escrow.functions.vest().transact({'from': sender}))
 
-    def makeNominVelocity(self):
-        pass
+    def make_nomin_velocity(self):
+        # should produce a 36 * UNIT fee pool
+        self.n_updatePrice(MASTER, UNIT)
+        self.n_setTransferFeeRate(MASTER, UNIT // 100)
+        self.n_issue(MASTER, 1000 * UNIT, 2000 * UNIT)
+        self.n_buy(MASTER, 1000 * UNIT, self.n_purchaseCostEther(1000 * UNIT))
+        for i in range(8):
+            self.n_transfer(MASTER, MASTER, (9 - (i + 1)) * 100 * UNIT)
+        self.n_sell(MASTER, self.n_balanceOf(MASTER))
+        self.n_burn(MASTER, self.n_nominPool())
 
     def test_constructor(self):
         self.assertEqual(self.e_havven(), self.havven.address)
@@ -73,8 +99,55 @@ class TestHavvenEscrow(unittest.TestCase):
 
     def test_feePool(self):
         pass
+        """
+        self.make_nomin_velocity()
+        self.h_endow(MASTER, self.escrow.address, self.h_totalSupply() - (100 * UNIT))
+        self.h_endow(MASTER, MASTER, 100 * UNIT)
+        uncollected = self.n_feePool()
+        self.assertClose(uncollected, 36 * UNIT)
+        self.assertEqual(self.feePool(), 0)
+        self.h_transfer(MASTER, self.escrow.address, UNIT)
+
+        self.h_transfer(MASTER, self.escrow.address, UNIT)
+        target_period = self.h_targetFeePeriodDurationSeconds() + 1000
+        fast_forward(seconds=target_period)
+        self.h_transfer(MASTER, self.escrow.address, UNIT)
+        fast_forward(seconds=target_period)
+        self.h_transfer(MASTER, self.escrow.address, UNIT)
+        fast_forward(seconds=target_period)
+        self.h_transfer(MASTER, self.escrow.address, UNIT)
+        print(self.h_balanceOf(MASTER))
+        self.withdrawContractFees(MASTER)
+        self.assertEqual(self.feePool(), uncollected)
+        """
+
+    def test_numVestingTimes(self):
+        alice = fresh_account()
+        time = block_time()
+
+        self.assertEqual(self.numVestingTimes(alice), 0)
+        self.addNewVestedQuantity(MASTER, alice, time+to_seconds(weeks=1), UNIT)
+        self.assertEqual(self.numVestingTimes(alice), 1)
+        self.addNewVestedQuantity(MASTER, alice, time+to_seconds(weeks=2), UNIT)
+        self.assertEqual(self.numVestingTimes(alice), 2)
+        self.addNewVestedQuantity(MASTER, alice, time+to_seconds(weeks=3), UNIT)
+        self.addNewVestedQuantity(MASTER, alice, time+to_seconds(weeks=4), UNIT)
+        self.addNewVestedQuantity(MASTER, alice, time+to_seconds(weeks=5), UNIT)
+        self.assertEqual(self.numVestingTimes(alice), 5)
+        self.purgeAccount(MASTER, alice)
+        self.assertEqual(self.numVestingTimes(alice), 0)
+        pass
+
+    def test_setHavven(self):
+        pass
+
+    def test_setNomin(self):
+        pass
 
     def test_withdrawContractFees(self):
+        pass
+
+    def test_remitFees(self):
         pass
 
     def test_withdrawFees(self):
