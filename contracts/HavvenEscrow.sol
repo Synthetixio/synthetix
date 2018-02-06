@@ -29,7 +29,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         nomin = _nomin;
     }
 
-    function numVestingTimes(address account)
+    function numVestingEntries(address account)
         public
         view
         returns (uint)
@@ -148,9 +148,9 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         if (vestingSchedules[account].length == 0) {
             totalVestedAccountBalance[account] = quantity;
         } else {
-            // Disallow adding new vested havvens in the past
+            // Disallow adding new vested havvens earlier than the last one.
             // Since entries are only appended, this means that no vesting date can be repeated.
-            require(vestingSchedules[account][vestingSchedules[account].length - 1][0] < time);
+            require(getVestingTime(account, numVestingEntries(account) - 1) < time);
             totalVestedAccountBalance[account] = safeAdd(totalVestedAccountBalance[account], quantity);
         }
 
@@ -180,14 +180,13 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         public
     {
         uint total = 0;
-        for (uint i = 0; i < vestingSchedules[msg.sender].length; i++) {
-            uint time = vestingSchedules[msg.sender][i][0];
+        for (uint i = 0; i < numVestingEntries(msg.sender); i++) {
+            uint time = getVestingTime(msg.sender, i);
             // The list is sorted; when we reach the first future time, bail out.
             if (time > now) {
                 break;
             }
-
-            uint qty = vestingSchedules[msg.sender][i][1];
+            uint qty = getVestingQuantity(msg.sender, i);
             if (qty == 0) {
                 continue;
             }
@@ -197,7 +196,9 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
             totalVestedAccountBalance[msg.sender] = safeSub(totalVestedAccountBalance[msg.sender], qty);
         }
 
-        totalVestedBalance = safeSub(totalVestedBalance, total);
-        havven.transfer(msg.sender, total);
+        if (total != 0) {
+            totalVestedBalance = safeSub(totalVestedBalance, total);
+            havven.transfer(msg.sender, total);
+        }
     }
 }
