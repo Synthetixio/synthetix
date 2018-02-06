@@ -98,7 +98,16 @@ class TestHavvenEscrow(unittest.TestCase):
         self.assertEqual(self.totalVestedBalance(), 0)
 
     def test_vestingTimes(self):
-        pass
+        alice = fresh_account()
+        time = block_time()
+        times = [time + to_seconds(weeks=i) for i in range(1, 6)]
+        self.addNewVestedQuantity(MASTER, alice, times[0], UNIT)
+        self.assertEqual(self.vestingTimes(alice, 0), times[0])
+
+        for i in range(1, len(times)):
+            self.addNewVestedQuantity(MASTER, alice, times[i], UNIT)
+        for i in range(1, len(times)):
+            self.assertEqual(self.vestingTimes(alice, i), times[i])
 
     def test_vestingQuantities(self):
         pass
@@ -112,15 +121,16 @@ class TestHavvenEscrow(unittest.TestCase):
     def test_numVestingTimes(self):
         alice = fresh_account()
         time = block_time()
+        times = [time + to_seconds(weeks=i) for i in range(1, 6)]
 
         self.assertEqual(self.numVestingTimes(alice), 0)
-        self.addNewVestedQuantity(MASTER, alice, time+to_seconds(weeks=1), UNIT)
+        self.addNewVestedQuantity(MASTER, alice, times[0], UNIT)
         self.assertEqual(self.numVestingTimes(alice), 1)
-        self.addNewVestedQuantity(MASTER, alice, time+to_seconds(weeks=2), UNIT)
+        self.addNewVestedQuantity(MASTER, alice, times[1], UNIT)
         self.assertEqual(self.numVestingTimes(alice), 2)
-        self.addNewVestedQuantity(MASTER, alice, time+to_seconds(weeks=3), UNIT)
-        self.addNewVestedQuantity(MASTER, alice, time+to_seconds(weeks=4), UNIT)
-        self.addNewVestedQuantity(MASTER, alice, time+to_seconds(weeks=5), UNIT)
+        self.addNewVestedQuantity(MASTER, alice, times[2], UNIT)
+        self.addNewVestedQuantity(MASTER, alice, times[3], UNIT)
+        self.addNewVestedQuantity(MASTER, alice, times[4], UNIT)
         self.assertEqual(self.numVestingTimes(alice), 5)
         self.purgeAccount(MASTER, alice)
         self.assertEqual(self.numVestingTimes(alice), 0)
@@ -161,10 +171,10 @@ class TestHavvenEscrow(unittest.TestCase):
         self.assertEqual(self.e_nomin(), alice)
         self.assertReverts(self.setNomin, alice, alice)
 
-    def test_withdrawContractFees(self):
+    def test_remitFees(self):
         pass
 
-    def test_remitFees(self):
+    def test_withdrawContractFees(self):
         pass
 
     def test_withdrawFees(self):
