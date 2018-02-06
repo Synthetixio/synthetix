@@ -124,6 +124,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         onlyOwner
     {
         havven = newHavven;
+        HavvenUpdated(newHavven);
     }
 
     function setNomin(EtherNomin newNomin)
@@ -131,6 +132,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         onlyOwner
     {
         nomin = newNomin;
+        NominUpdated(newNomin);
     } 
 
     function remitFees()
@@ -158,10 +160,12 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         // If fees need to be withdrawn into this contract, then withdraw them.
         if (!havven.hasWithdrawnLastPeriodFees(this)) {
             withdrawContractFees();
+            ContractFeesWithdrawn(now, feePool());
         }
         // exception will be thrown if totalVestedBalance will be 0
         uint entitlement = safeDecDiv(safeDecMul(feePool(), totalVestedAccountBalance[msg.sender]), totalVestedBalance);
         nomin.transfer(msg.sender, entitlement);
+        FeesWithdrawn(msg.sender, msg.sender, now, entitlement);
     }
 
     function purgeAccount(address account)
@@ -248,6 +252,18 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         if (total != 0) {
             totalVestedBalance = safeSub(totalVestedBalance, total);
             havven.transfer(msg.sender, total);
+            Vested(msg.sender, msg.sender, now, total);
         }
     }
+
+    event HavvenUpdated(address newHavven);
+
+    event NominUpdated(address newNomin);
+
+    event ContractFeesWithdrawn(uint time, uint value);
+
+    event FeesWithdrawn(address recipient, address indexed recipientIndex, uint time, uint value);
+
+    event Vested(address beneficiary, address indexed beneficiaryIndex, uint time, uint value);
+
 }

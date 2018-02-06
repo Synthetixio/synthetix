@@ -276,7 +276,6 @@ class TestHavvenEscrow(unittest.TestCase):
             self.vest(alice)
             self.assertEqual(self.getNextVestingQuantity(alice), 0 if i == len(entries) - 1 else entries[i+1][1])
 
-
     def test_feePool(self):
         pass
         """
