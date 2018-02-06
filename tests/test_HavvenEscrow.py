@@ -355,9 +355,24 @@ class TestHavvenEscrow(unittest.TestCase):
         self.h_transfer(MASTER, MASTER, 0)
         self.assertClose(self.n_feePool(), 36 * UNIT)
 
-
     def test_withdrawContractFees(self):
-        pass
+        self.h_endow(MASTER, self.escrow.address, self.h_totalSupply() - (100 * UNIT))
+        self.h_endow(MASTER, MASTER, 100 * UNIT)
+        self.make_nomin_velocity()
+
+        self.assertClose(self.n_feePool(), 36 * UNIT)
+        self.assertEqual(self.feePool(), 0)
+
+        target_period = self.h_targetFeePeriodDurationSeconds() + 1000
+        fast_forward(seconds=target_period)
+
+        self.h_transfer(MASTER, self.escrow.address, 0)
+        fast_forward(seconds=target_period)
+
+        self.withdrawContractFees(MASTER)
+        self.assertClose(self.feePool(), 36 * UNIT)
+
+        self.assertReverts(self.withdrawContractFees, MASTER) 
 
     def test_withdrawFees(self):
         pass
