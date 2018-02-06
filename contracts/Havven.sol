@@ -193,6 +193,13 @@ contract Havven is ERC20Token, Owned {
         escrow = _escrow;
     }
 
+    function unsetEscrow()
+        public
+        onlyOwner
+    {
+        delete escrow;
+    }
+
     function setTargetFeePeriodDuration(uint duration)
         public
         postCheckFeePeriodRollover
@@ -402,6 +409,10 @@ contract Havven is ERC20Token, Owned {
     {
         // If the fee period has rolled over...
         if (feePeriodStartTime + targetFeePeriodDurationSeconds <= now) {
+            // Collect any fees from the escrow contract, if it exists.
+            if (escrow != HavvenEscrow(0)) {
+                escrow.remitFees();
+            }
             lastFeesCollected = nomin.feePool();
 
             // Shift the three period start times back one place
