@@ -490,10 +490,39 @@ class TestHavvenEscrow(unittest.TestCase):
         self.assertEqual(self.getVestingTime(alice, 2), t2)
         self.assertEqual(self.numVestingEntries(alice), 3)
 
-    def test_addVestingSchedule(self):
-        pass
-
     def test_vest(self):
+        alice = fresh_account()
+        self.h_endow(MASTER, self.escrow.address, 100 * UNIT)
+
+        self.vest(alice)
+        self.assertEqual(self.h_balanceOf(alice), 0)
+
+        time = block_time()
+        self.appendVestingEntry(MASTER, alice, time + 100, UNIT)
+        self.appendVestingEntry(MASTER, alice, time + 200, UNIT)
+        self.appendVestingEntry(MASTER, alice, time + 300, UNIT)
+        self.appendVestingEntry(MASTER, alice, time + 400, UNIT)
+        self.appendVestingEntry(MASTER, alice, time + 500, UNIT)
+        self.appendVestingEntry(MASTER, alice, time + 600, UNIT)
+
+        fast_forward(105)
+        self.vest(alice)
+        self.assertEqual(self.h_balanceOf(alice), UNIT)
+        fast_forward(205)
+        self.vest(alice)
+        self.assertEqual(self.h_balanceOf(alice), 3 * UNIT)
+        self.vest(alice)
+        self.assertEqual(self.h_balanceOf(alice), 3 * UNIT)
+        fast_forward(105)
+        self.vest(alice)
+        self.assertEqual(self.h_balanceOf(alice), 4 * UNIT)
+        fast_forward(505)
+        self.vest(alice)
+        self.assertEqual(self.h_balanceOf(alice), 6 * UNIT)
+        self.vest(alice)
+        self.assertEqual(self.h_balanceOf(alice), 6 * UNIT)
+
+    def test_addVestingSchedule(self):
         pass
 
     def test_fee_rollover(self):
