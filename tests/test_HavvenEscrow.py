@@ -70,7 +70,7 @@ class TestHavvenEscrow(unittest.TestCase):
         cls.totalVestedAccountBalance = lambda self, account: cls.escrow.functions.totalVestedAccountBalance(account).call()
         cls.totalVestedBalance = lambda self: cls.escrow.functions.totalVestedBalance().call()
         cls.getNextVestingIndex = lambda self, account: cls.escrow.functions.getNextVestingIndex(account).call()
-        cls.getNextVestingScheduleEntry = lambda self, account: cls.escrow.functions.getNextVestingScheduleEntry(account).call()
+        cls.getNextVestingEntry = lambda self, account: cls.escrow.functions.getNextVestingEntry(account).call()
         cls.getNextVestingTime = lambda self, account: cls.escrow.functions.getNextVestingTime(account).call()
         cls.getNextVestingQuantity = lambda self, account: cls.escrow.functions.getNextVestingQuantity(account).call()
         
@@ -208,16 +208,74 @@ class TestHavvenEscrow(unittest.TestCase):
         self.assertEqual(self.getVestingScheduleEntry(alice, 0), [time + 100, 1])
 
     def test_getNextVestingIndex(self):
-        pass
+        self.h_endow(MASTER, self.escrow.address, 100 * UNIT)
+        alice = fresh_account()
+        time = block_time()
+        times = [time + to_seconds(weeks=i) for i in range(1, 6)]
 
-    def test_getNextVestingScheduleEntry(self):
-        pass
+        self.assertEqual(self.getNextVestingIndex(alice), 0)
+
+        for i in range(len(times)):
+            self.appendVestingEntry(MASTER, alice, times[i], UNIT)
+
+        for i in range(len(times)):
+            fast_forward(to_seconds(weeks=1) + 30)
+            self.assertEqual(self.getNextVestingIndex(alice), i)
+            self.vest(alice)
+            self.assertEqual(self.getNextVestingIndex(alice), i+1)
+
+    def test_getNextVestingEntry(self):
+        self.h_endow(MASTER, self.escrow.address, 100 * UNIT)
+        alice = fresh_account()
+        time = block_time()
+        entries = [[time + to_seconds(weeks=i), i * UNIT] for i in range(1, 6)]
+
+        self.assertEqual(self.getNextVestingEntry(alice), [0,0])
+
+        for i in range(len(entries)):
+            self.appendVestingEntry(MASTER, alice, entries[i][0], entries[i][1])
+
+        for i in range(len(entries)):
+            fast_forward(to_seconds(weeks=1) + 30)
+            self.assertEqual(self.getNextVestingEntry(alice), entries[i])
+            self.vest(alice)
+            self.assertEqual(self.getNextVestingEntry(alice), [0,0] if i == len(entries) - 1 else entries[i+1])
+
 
     def test_getNextVestingTime(self):
-        pass
+        self.h_endow(MASTER, self.escrow.address, 100 * UNIT)
+        alice = fresh_account()
+        time = block_time()
+        entries = [[time + to_seconds(weeks=i), i * UNIT] for i in range(1, 6)]
+
+        self.assertEqual(self.getNextVestingTime(alice), 0)
+
+        for i in range(len(entries)):
+            self.appendVestingEntry(MASTER, alice, entries[i][0], entries[i][1])
+
+        for i in range(len(entries)):
+            fast_forward(to_seconds(weeks=1) + 30)
+            self.assertEqual(self.getNextVestingTime(alice), entries[i][0])
+            self.vest(alice)
+            self.assertEqual(self.getNextVestingTime(alice), 0 if i == len(entries) - 1 else entries[i+1][0])
 
     def test_getNextVestingQuantity(self):
-        pass
+        self.h_endow(MASTER, self.escrow.address, 100 * UNIT)
+        alice = fresh_account()
+        time = block_time()
+        entries = [[time + to_seconds(weeks=i), i * UNIT] for i in range(1, 6)]
+
+        self.assertEqual(self.getNextVestingQuantity(alice), 0)
+
+        for i in range(len(entries)):
+            self.appendVestingEntry(MASTER, alice, entries[i][0], entries[i][1])
+
+        for i in range(len(entries)):
+            fast_forward(to_seconds(weeks=1) + 30)
+            self.assertEqual(self.getNextVestingQuantity(alice), entries[i][1])
+            self.vest(alice)
+            self.assertEqual(self.getNextVestingQuantity(alice), 0 if i == len(entries) - 1 else entries[i+1][1])
+
 
     def test_feePool(self):
         pass
@@ -311,6 +369,9 @@ class TestHavvenEscrow(unittest.TestCase):
         pass
 
     def test_vest(self):
+        pass
+
+    def test_fee_rollover(self):
         pass
 
 
