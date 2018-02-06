@@ -445,7 +445,13 @@ class TestHavvenEscrow(unittest.TestCase):
         self.assertEqual(self.getNextVestingQuantity(alice), 0)
 
     def test_withdrawHavvens(self):
-        pass
+        self.h_endow(MASTER, self.escrow.address, UNIT)
+        self.assertEqual(self.h_balanceOf(self.escrow.address), UNIT)
+
+        pre_h_balance = self.h_balanceOf(self.havven.address)
+        self.withdrawHavvens(MASTER, UNIT // 2)
+        self.assertEqual(self.h_balanceOf(self.escrow.address), UNIT // 2)
+        self.assertEqual(self.h_balanceOf(self.havven.address), pre_h_balance + UNIT // 2)
 
     def test_appendVestingEntry(self):
         alice, bob = fresh_accounts(2)
