@@ -1,3 +1,38 @@
+/*
+-----------------------------------------------------------------
+FILE INFORMATION
+-----------------------------------------------------------------
+file:       HavvenEscrow.sol
+version:    0.3
+author:     Anton Jurisevic
+            Dominic Romanowski
+
+date:       2018-02-07
+
+checked:    Mike Spain
+approved:   Samuel Brooks
+
+-----------------------------------------------------------------
+MODULE DESCRIPTION
+-----------------------------------------------------------------
+
+This contract allows the foundation to apply unique vesting
+schedules to havven funds sold at various discounts in the token
+sale. HavvenEscrow gives users the ability to inspect their
+vested funds, their quantities and vesting dates, and to withdraw
+the fees that accrue on those funds.
+
+The fees are handled by withdrawing the entire fee allocation
+for all havvens inside the escrow contract, and then allowing
+the contract itself to subdivide that pool up proportionally within
+itself. Every time the fee period rolls over in the main Havven
+contract, the HavvenEscrow fee pool is remitted back into the 
+main fee pool to be redistributed in the next fee period.
+
+-----------------------------------------------------------------
+
+*/
+
 import "contracts/SafeDecimalMath.sol";
 import "contracts/Owned.sol";
 import "contracts/Havven.sol";
@@ -29,6 +64,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         nomin = _nomin;
     }
 
+    /* The number of vesting dates in an account's schedule. */
     function numVestingEntries(address account)
         public
         view
@@ -37,6 +73,8 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         return vestingSchedules[account].length;
     }
 
+    /* Get a particular schedule entry for an account.
+     * The return value is a pair (timestamp, havven quantity) */
     function getVestingScheduleEntry(address account, uint index)
         public
         view
@@ -45,6 +83,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         return vestingSchedules[account][index];
     }
 
+    /* Get the time at which a given schedule entry will vest. */
     function getVestingTime(address account, uint index)
         public
         view
@@ -53,6 +92,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         return vestingSchedules[account][index][0];
     }
 
+    /* Get the quantity of havvens associated with a given schedule entry. */
     function getVestingQuantity(address account, uint index)
         public
         view
@@ -61,6 +101,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         return vestingSchedules[account][index][1];
     }
 
+    /* Obtain the index of the next schedule entry that will vest for a given user. */
     function getNextVestingIndex(address account)
         public
         view
@@ -75,6 +116,8 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         return len;
     }
 
+    /* Obtain the next schedule entry that will vest for a given user.
+     * The return value is a pair (timestamp, havven quantity) */
     function getNextVestingEntry(address account)
         public
         view
@@ -87,6 +130,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         return getVestingScheduleEntry(account, index);
     }
 
+    /* Obtain the time at which the next schedule entry will vest for a given user. */
     function getNextVestingTime(address account)
         public
         view
@@ -99,6 +143,8 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         return getVestingTime(account, index);
     }
 
+
+    /* Obtain the quantity which the next schedule entry will vest for a given user. */
     function getNextVestingQuantity(address account)
         public
         view
@@ -111,6 +157,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         return getVestingQuantity(account, index);
     }
 
+    /* The current pool of fees inside this contract. */
     function feePool()
         public
         view
@@ -135,6 +182,8 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         NominUpdated(newNomin);
     } 
 
+    /* Return the current fee balance back to the main pool to roll over to the
+     * next fee period. */
     function remitFees()
         public
     {
@@ -148,7 +197,8 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         }
     }
 
-    function withdrawContractFees()
+    /* Force a contract fee withdrawal. */
+    function withdrawFeePool()
         public
         onlyOwner
     {
@@ -156,12 +206,13 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         ContractFeesWithdrawn(now, feePool());
     }
 
+    /* Allow a particular user to withdraw the fees owed to them. */
     function withdrawFees()
         public
     {
         // If fees need to be withdrawn into this contract, then withdraw them.
         if (!havven.hasWithdrawnLastPeriodFees(this)) {
-            withdrawContractFees();
+            withdrawFeePool();
             // Since fees were remitted back to havven last time the fee period rolled over,
             // which would set feePool()'s result to zero, so we are justified in using it
             // as the withdrawn quantity here.
@@ -175,6 +226,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         }
     }
 
+    /* Destroy the vesting information associated with an account. */
     function purgeAccount(address account)
         onlyOwner
         public
@@ -192,7 +244,8 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         havven.transfer(havven, quantity);
     }
 
-    /* A call to this should be accompanied by either enough balance already available
+    /* Add a new vesting entry at a given time and quantity to an account's schedule.
+     * A call to this should be accompanied by either enough balance already available
      * in this contract, or a corresponding call to havven.endow(), to ensure that when
      * the funds are withdrawn, there is enough balance, as well as correctly calculating
      * the fees.
@@ -202,6 +255,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         onlyOwner
         public
     {
+        // No empty or already-passed vesting entries allowed.
         require(now < time);
         require(quantity != 0);
 
@@ -218,6 +272,8 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         totalVestedBalance = safeAdd(totalVestedBalance, quantity);
     }
 
+    /* Construct a vesting schedule to release a quantity at regular intervals ending
+     * at a given time. */
     function addRegularVestingSchedule(address account, uint conclusion_time, uint quantity, uint vesting_periods)
         onlyOwner
         public
@@ -236,7 +292,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         appendVestingEntry(account, conclusion_time, safeSub(quantity, quant_sum));
     }
 
-    /* Withdraw any tokens that have vested. */
+    /* Allow a user to withdraw any tokens that have vested. */
     function vest() 
         public
     {

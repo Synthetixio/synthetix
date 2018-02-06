@@ -80,7 +80,7 @@ class TestHavvenEscrow(unittest.TestCase):
         cls.setHavven = lambda self, sender, account: mine_tx(cls.escrow.functions.setHavven(account).transact({'from': sender}))
         cls.setNomin = lambda self, sender, account: mine_tx(cls.escrow.functions.setNomin(account).transact({'from': sender}))
         cls.withdrawFees = lambda self, sender: mine_tx(cls.escrow.functions.withdrawFees().transact({'from': sender}))
-        cls.withdrawContractFees = lambda self, sender: mine_tx(cls.escrow.functions.withdrawContractFees().transact({'from': sender}))
+        cls.withdrawFeePool = lambda self, sender: mine_tx(cls.escrow.functions.withdrawFeePool().transact({'from': sender}))
         cls.purgeAccount = lambda self, sender, account: mine_tx(cls.escrow.functions.purgeAccount(account).transact({'from': sender}))
         cls.withdrawHavvens = lambda self, sender, quantity: mine_tx(cls.escrow.functions.withdrawHavvens(quantity).transact({'from': sender}))
         cls.appendVestingEntry = lambda self, sender, account, time, quantity: mine_tx(cls.escrow.functions.appendVestingEntry(account, time, quantity).transact({'from': sender}))
@@ -298,7 +298,7 @@ class TestHavvenEscrow(unittest.TestCase):
 
         # Since escrow contract has most of the global supply, they should get
         # most of the fees.
-        self.withdrawContractFees(MASTER)
+        self.withdrawFeePool(MASTER)
         self.assertClose(self.feePool(), 36 * UNIT)
 
     def test_halfFeePool(self):
@@ -317,7 +317,7 @@ class TestHavvenEscrow(unittest.TestCase):
 
         # Since escrow contract has half the global supply, they should get
         # half the fees.
-        self.withdrawContractFees(MASTER)
+        self.withdrawFeePool(MASTER)
         self.assertClose(self.feePool(), 18 * UNIT)
 
     def test_setHavven(self):
@@ -346,7 +346,7 @@ class TestHavvenEscrow(unittest.TestCase):
         self.h_transfer(MASTER, self.escrow.address, 0)
         fast_forward(seconds=target_period)
 
-        self.withdrawContractFees(MASTER)
+        self.withdrawFeePool(MASTER)
         self.assertClose(self.feePool(), 36 * UNIT)
 
         self.h_transfer(MASTER, MASTER, 0)
@@ -356,7 +356,7 @@ class TestHavvenEscrow(unittest.TestCase):
         self.h_transfer(MASTER, MASTER, 0)
         self.assertClose(self.n_feePool(), 36 * UNIT)
 
-    def test_withdrawContractFees(self):
+    def test_withdrawFeePool(self):
         self.h_endow(MASTER, self.escrow.address, self.h_totalSupply() - (100 * UNIT))
         self.h_endow(MASTER, MASTER, 100 * UNIT)
         self.make_nomin_velocity()
@@ -370,10 +370,10 @@ class TestHavvenEscrow(unittest.TestCase):
         self.h_transfer(MASTER, self.escrow.address, 0)
         fast_forward(seconds=target_period)
 
-        self.withdrawContractFees(MASTER)
+        self.withdrawFeePool(MASTER)
         self.assertClose(self.feePool(), 36 * UNIT)
 
-        self.assertReverts(self.withdrawContractFees, MASTER) 
+        self.assertReverts(self.withdrawFeePool, MASTER) 
 
     def test_withdrawFees(self):
         self.h_endow(MASTER, self.escrow.address, self.h_totalSupply() - (100 * UNIT))
