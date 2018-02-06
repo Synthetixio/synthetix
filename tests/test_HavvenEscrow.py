@@ -63,7 +63,7 @@ class TestHavvenEscrow(unittest.TestCase):
         cls.e_havven = lambda self: cls.escrow.functions.havven().call()
         cls.e_nomin = lambda self: cls.escrow.functions.nomin().call()
         cls.vestingSchedules = lambda self, account, index, i: cls.escrow.functions.vestingSchedules(account, index, i).call()
-        cls.numVestingTimes = lambda self, account: cls.escrow.functions.numVestingTimes(account).call()
+        cls.numVestingEntries = lambda self, account: cls.escrow.functions.numVestingEntries(account).call()
         cls.getVestingScheduleEntry = lambda self, account, index: cls.escrow.functions.getVestingScheduleEntry(account, index).call()
         cls.getVestingTime = lambda self, account, index: cls.escrow.functions.getVestingTime(account, index).call()
         cls.getVestingQuantity = lambda self, account, index: cls.escrow.functions.getVestingQuantity(account, index).call()
@@ -135,27 +135,46 @@ class TestHavvenEscrow(unittest.TestCase):
         self.assertEqual(self.vestingSchedules(alice, 1, 1), 2 * UNIT)
 
     def test_totalVestedAccountBalance(self):
-        pass
+        alice = fresh_account()
+        time = block_time()
+
+        self.h_endow(MASTER, self.escrow.address, 100 * UNIT)
+        self.assertEqual(self.totalVestedAccountBalance(alice), 0)
+        self.appendVestingEntry(MASTER, alice, time + 100, UNIT)
+        self.assertEqual(self.totalVestedAccountBalance(alice), UNIT)
+
+        self.purgeAccount(MASTER, alice)
+        self.assertEqual(self.totalVestedAccountBalance(alice), 0)
+
+        k = 5
+        for n in [100 * 2**i for i in range(k)]:
+            self.appendVestingEntry(MASTER, alice, time + n, n)
+
+        self.assertEqual(self.totalVestedAccountBalance(alice), 100 * (2**k - 1))
+        fast_forward(110)
+        self.vest(alice)
+        self.assertEqual(self.totalVestedAccountBalance(alice), 100 * (2**k - 1) - 100)
+
 
     def test_totalVestedBalance(self):
         pass
 
-    def test_numVestingTimes(self):
+    def test_numVestingEntries(self):
         alice = fresh_account()
         time = block_time()
         times = [time + to_seconds(weeks=i) for i in range(1, 6)]
 
-        self.assertEqual(self.numVestingTimes(alice), 0)
+        self.assertEqual(self.numVestingEntries(alice), 0)
         self.appendVestingEntry(MASTER, alice, times[0], UNIT)
-        self.assertEqual(self.numVestingTimes(alice), 1)
+        self.assertEqual(self.numVestingEntries(alice), 1)
         self.appendVestingEntry(MASTER, alice, times[1], UNIT)
-        self.assertEqual(self.numVestingTimes(alice), 2)
+        self.assertEqual(self.numVestingEntries(alice), 2)
         self.appendVestingEntry(MASTER, alice, times[2], UNIT)
         self.appendVestingEntry(MASTER, alice, times[3], UNIT)
         self.appendVestingEntry(MASTER, alice, times[4], UNIT)
-        self.assertEqual(self.numVestingTimes(alice), 5)
+        self.assertEqual(self.numVestingEntries(alice), 5)
         self.purgeAccount(MASTER, alice)
-        self.assertEqual(self.numVestingTimes(alice), 0)
+        self.assertEqual(self.numVestingEntries(alice), 0)
 
     def test_feePool(self):
         pass
@@ -234,7 +253,7 @@ class TestHavvenEscrow(unittest.TestCase):
 
         self.assertEqual(self.getVestingTime(alice, 1), t1)
         self.assertEqual(self.getVestingTime(alice, 2), t2)
-        self.assertEqual(self.numVestingTimes(alice), 3)
+        self.assertEqual(self.numVestingEntries(alice), 3)
 
     def test_addVestingSchedule(self):
         pass
