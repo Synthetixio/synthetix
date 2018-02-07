@@ -3,10 +3,10 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       ERC20FeeToken.sol
-version:    0.2
+version:    0.3
 author:     Anton Jurisevic
 
-date:       2018-1-16
+date:       2018-2-7
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -119,7 +119,16 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
         view
         returns (uint)
     {
-        return safeAdd(_value, safeDecMul(_value, transferFeeRate));
+        return safeAdd(_value, transferFeeIncurred(_value));
+    }
+
+    // The quantity to send in order that the sender spends a certain value of tokens.
+    function priceToSpend(uint value)
+        public
+        view
+        returns (uint)
+    {
+        return safeDecDiv(value, safeAdd(UNIT, transferFeeRate));
     }
 
 
@@ -190,12 +199,29 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
     /* Withdraw tokens from the fee pool into a given account. */
     function withdrawFee(address account, uint value)
         public
+        returns (bool)
     {
         require(msg.sender == feeAuthority);
         // Safe subtraction ensures an exception is thrown if the balance is insufficient.
         feePool = safeSub(feePool, value);
         balanceOf[account] = safeAdd(balanceOf[account], value);
         FeeWithdrawal(account, value);
+        return true;
+    }
+
+    /* Donate tokens from the sender's balance into the fee pool. */
+    function donateToFeePool(uint n)
+        public
+        returns (bool)
+    {
+        uint balance = balanceOf[msg.sender];
+        require(balance != 0);
+
+        // safeSub ensures the donor has sufficient balance.
+        balanceOf[msg.sender] = safeSub(balance, n);
+        feePool = safeAdd(feePool, n);
+        FeeDonation(msg.sender, msg.sender, n);
+        return true;
     }
 
 
@@ -210,6 +236,8 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
     event TransferFeeRateUpdate(uint newFeeRate);
 
     event FeeWithdrawal(address indexed account, uint value);
+
+    event FeeDonation(address donor, address indexed donorIndex, uint value);
 
     event FeeAuthorityUpdate(address feeAuthority);
 }
