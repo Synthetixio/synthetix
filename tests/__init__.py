@@ -4,6 +4,7 @@ import tests.test_ERC20Tokens
 import tests.test_EtherNomin
 import tests.test_FeeCollection
 import tests.test_Havven
+import tests.test_HavvenEscrow
 import tests.test_Owned
 import tests.test_SafeDecimalMath
 import tests.test_Upgrade

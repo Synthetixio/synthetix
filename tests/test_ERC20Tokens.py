@@ -205,6 +205,7 @@ class TestERC20FeeToken(unittest.TestCase):
         cls.transferFrom = lambda self, sender, fromAccount, to, value: mine_tx(cls.erc20feetoken.functions.transferFrom(fromAccount, to, value).transact({'from': sender}))
 
         cls.withdrawFee = lambda self, sender, account, value: mine_tx(cls.erc20feetoken.functions.withdrawFee(account, value).transact({'from' : sender}))
+        cls.donateToFeePool = lambda self, sender, value: mine_tx(cls.erc20feetoken.functions.donateToFeePool(value).transact({'from': sender}))
 
     def test_constructor(self):
         self.assertEqual(self.name(), "Test Fee Token")
@@ -468,6 +469,36 @@ class TestERC20FeeToken(unittest.TestCase):
         self.assertEqual(self.balanceOf(fee_receiver), fee_receiver_balance + fee_pool)
         self.assertEqual(self.totalSupply(), total_supply)
         self.assertEqual(self.feePool(), 0)
+
+    def test_donateToFeePool(self):
+        donor, pauper = fresh_accounts(2)
+        self.assertNotEqual(donor, pauper)
+
+        self.transfer(self.initial_beneficiary, donor, 10 * UNIT)
+        self.withdrawFee(self.fee_authority, self.initial_beneficiary, self.feePool())
+
+        # No donations by people with no money...
+        self.assertReverts(self.donateToFeePool, pauper, 10 * UNIT)
+        # ...even if they donate nothing.
+        self.assertReverts(self.donateToFeePool, pauper, 0)
+
+        # No donations more than you possess.
+        self.assertReverts(self.donateToFeePool, donor, 11 * UNIT)
+
+        self.assertEqual(self.feePool(), 0)
+        self.assertEqual(self.balanceOf(donor), 10 * UNIT)
+        self.assertTrue(self.donateToFeePool(donor, UNIT))
+        self.assertEqual(self.feePool(), UNIT)
+        self.assertEqual(self.balanceOf(donor), 9 * UNIT)
+        self.assertTrue(self.donateToFeePool(donor, 5 * UNIT))
+        self.assertEqual(self.feePool(), 6 * UNIT)
+        self.assertEqual(self.balanceOf(donor), 4 * UNIT)
+
+        # And it should emit the right event.
+        tx_receipt = self.donateToFeePool(donor, UNIT)
+        self.assertEqual(len(tx_receipt.logs), 1)
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'], 'FeeDonation')
+
 
 if __name__ == '__main__':
     unittest.main()

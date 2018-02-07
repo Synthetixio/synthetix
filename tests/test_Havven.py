@@ -4,7 +4,7 @@ from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mi
 from utils.testutils import assertReverts, block_time, assertClose, generate_topic_event_map, get_event_data_from_log
 
 SOLIDITY_SOURCES = ["tests/contracts/PublicHavven.sol", "contracts/EtherNomin.sol",
-                    "contracts/Court.sol"]
+                    "contracts/Court.sol", "contracts/HavvenEscrow.sol"]
 
 
 def deploy_public_havven():
@@ -24,6 +24,9 @@ def deploy_public_havven():
                                                MASTER,
                                                [havven_contract.address, nomin_contract.address,
                                                 MASTER])
+    escrow_contract, escrow_txr = attempt_deploy(compiled, 'HavvenEscrow',
+                                                 MASTER,
+                                                 [MASTER, havven_contract.address, nomin_contract.address])
 
     # Hook up each of those contracts to each other
     txs = [havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
@@ -33,7 +36,7 @@ def deploy_public_havven():
     havven_event_dict = generate_topic_event_map(compiled['PublicHavven']['abi'])
 
     print("\nDeployment complete.\n")
-    return havven_contract, nomin_contract, court_contract, hvn_block, havven_event_dict
+    return havven_contract, nomin_contract, court_contract, escrow_contract, hvn_block, havven_event_dict
 
 
 def setUpModule():
@@ -61,7 +64,7 @@ class TestHavven(unittest.TestCase):
         # to avoid overflowing in the negative direction (now - targetFeePeriodDuration * 2)
         fast_forward(weeks=102)
 
-        cls.havven, cls.nomin, cls.court, cls.construction_block, cls.havven_event_dict = deploy_public_havven()
+        cls.havven, cls.nomin, cls.court, cls.escrow, cls.construction_block, cls.havven_event_dict = deploy_public_havven()
 
         # INHERITED
         # OWNED
@@ -100,11 +103,16 @@ class TestHavven(unittest.TestCase):
         cls.lastFeesCollected = lambda self: self.havven.functions.lastFeesCollected().call()
 
         cls.get_nomin = lambda self: self.havven.functions.nomin().call()
+        cls.get_escrow = lambda self: self.havven.functions.escrow().call()
 
         #
         # SETTERS
         cls.setNomin = lambda self, sender, addr: mine_tx(
             self.havven.functions.setNomin(addr).transact({'from': sender}))
+        cls.setEscrow = lambda self, sender, addr: mine_tx(
+            self.havven.functions.setEscrow(addr).transact({'from': sender}))
+        cls.unsetEscrow = lambda self, sender: mine_tx(
+            self.havven.functions.unsetEscrow().transact({'from': sender}))
         cls.setTargetFeePeriodDuration = lambda self, sender, dur: mine_tx(
             self.havven.functions.setTargetFeePeriodDuration(dur).transact({'from': sender}))
 
@@ -446,7 +454,7 @@ class TestHavven(unittest.TestCase):
     ###
 
     # setNomin
-    def test_SetNomin(self):
+    def test_setNomin(self):
         alice = fresh_account()
         self.setNomin(MASTER, alice)
         self.assertEqual(self.get_nomin(), alice)
@@ -454,6 +462,26 @@ class TestHavven(unittest.TestCase):
     def test_invalidSetNomin(self):
         alice = fresh_account()
         self.assertReverts(self.setNomin, alice, alice)
+
+    # setEscrow
+    def test_setEscrow(self):
+        alice = fresh_account()
+        self.setEscrow(MASTER, alice)
+        self.assertEqual(self.get_escrow(), alice)
+
+    def test_invalidSetEscrow(self):
+        alice = fresh_account()
+        self.assertReverts(self.setEscrow, alice, alice)
+
+    # unsetEscrow
+    def test_unsetEscrow(self):
+        alice = fresh_account()
+        self.unsetEscrow(MASTER)
+        self.assertEqual(self.get_escrow(), f"0x{'0'*40}")
+
+    def test_invalidUnsetEscrow(self):
+        alice = fresh_account()
+        self.assertReverts(self.unsetEscrow, alice)
 
     # setTargetFeePeriod
     def test_setTargetFeePeriod(self):
@@ -679,6 +707,20 @@ class TestHavven(unittest.TestCase):
     # Modifiers
     ###
     # postCheckFeePeriodRollover - tested above
+    def test_checkFeePeriodRollover_escrow_exists(self):
+        fast_forward(seconds=self.targetFeePeriodDurationSeconds() + 10)
+
+        pre_feePeriodStartTime = self.feePeriodStartTime()
+        # This should work fine.
+        self._checkFeePeriodRollover(MASTER)
+        self.assertGreater(self.feePeriodStartTime(), pre_feePeriodStartTime)
+
+        fast_forward(seconds=self.targetFeePeriodDurationSeconds() + 10)
+        pre_feePeriodStartTime = self.feePeriodStartTime()
+        # And so should this
+        self.unsetEscrow(MASTER)
+        self._checkFeePeriodRollover(MASTER)
+        self.assertGreater(self.feePeriodStartTime(), pre_feePeriodStartTime)
 
     def test_abuse_havven_balance(self):
         """Test whether repeatedly moving havvens between two parties will shift averages upwards"""

@@ -309,7 +309,7 @@ contract EtherNomin is ERC20FeeToken {
         view
         returns (bool)
     {
-        return lastPriceUpdate + stalePeriod < now;
+        return safeAdd(lastPriceUpdate, stalePeriod) < now;
     }
 
     function isLiquidating()
@@ -334,6 +334,8 @@ contract EtherNomin is ERC20FeeToken {
         // Not being in liquidation implies the timestamp is uint max, so it would roll over.
         // We need to check whether we're in liquidation first.
         if (isLiquidating()) {
+            // These timestamps and durations have values clamped within reasonable values and
+            // cannot overflow.
             bool totalPeriodElapsed = liquidationTimestamp + liquidationPeriod < now;
             bool allTokensReturned = (liquidationTimestamp + 1 weeks < now) && (nominPool == totalSupply);
             return totalPeriodElapsed || allTokensReturned;
@@ -397,8 +399,9 @@ contract EtherNomin is ERC20FeeToken {
         // Price staleness check occurs inside the call to fiatValue.
         // Safe additions are unnecessary here, as either the addition is checked on the following line
         // or the overflow would cause the requirement not to be satisfied.
-        require(fiatBalance() >= safeDecMul(totalSupply + n, collatRatioMinimum));
-        totalSupply = safeAdd(totalSupply, n);
+        uint sum = safeAdd(totalSupply, n);
+        require(fiatBalance() >= safeDecMul(sum, collatRatioMinimum));
+        totalSupply = sum;
         nominPool = safeAdd(nominPool, n);
         Issuance(n, msg.value);
     }
@@ -491,7 +494,7 @@ contract EtherNomin is ERC20FeeToken {
         Liquidation(liquidationPeriod);
     }
 
-    /* If the contract is liquidating, the owner may xxtend the liquidation period.
+    /* If the contract is liquidating, the owner may extend the liquidation period.
      * It may only get longer, not shorter, and it may not be extended past
      * the liquidation max. */
     function extendLiquidationPeriod(uint extension)
@@ -499,8 +502,9 @@ contract EtherNomin is ERC20FeeToken {
         onlyOwner
     {
         require(isLiquidating());
-        require(liquidationPeriod + extension <= maxLiquidationPeriod);
-        liquidationPeriod += extension;
+        uint sum = safeAdd(liquidationPeriod, extension);
+        require(sum <= maxLiquidationPeriod);
+        liquidationPeriod = sum;
         LiquidationExtended(extension);
     }
 

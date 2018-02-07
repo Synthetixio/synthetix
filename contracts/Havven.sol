@@ -106,6 +106,7 @@ import "contracts/ERC20Token.sol";
 import "contracts/Owned.sol";
 import "contracts/EtherNomin.sol";
 import "contracts/Court.sol";
+import "contracts/HavvenEscrow.sol";
 
 
 contract Havven is ERC20Token, Owned {
@@ -158,6 +159,7 @@ contract Havven is ERC20Token, Owned {
     mapping(address => bool) public hasWithdrawnLastPeriodFees;
 
     EtherNomin public nomin;
+    HavvenEscrow public escrow;
 
 
     /* ========== CONSTRUCTOR ========== */
@@ -182,6 +184,20 @@ contract Havven is ERC20Token, Owned {
         onlyOwner
     {
         nomin = _nomin;
+    }
+
+    function setEscrow(HavvenEscrow _escrow)
+        public
+        onlyOwner
+    {
+        escrow = _escrow;
+    }
+
+    function unsetEscrow()
+        public
+        onlyOwner
+    {
+        delete escrow;
     }
 
     function setTargetFeePeriodDuration(uint duration)
@@ -275,9 +291,12 @@ contract Havven is ERC20Token, Owned {
         uint feesOwed = safeDecDiv(safeDecMul(lastAverageBalance[msg.sender],
                                               lastFeesCollected),
                                    totalSupply);
-        nomin.withdrawFee(msg.sender, feesOwed);
+
         hasWithdrawnLastPeriodFees[msg.sender] = true;
-        FeesWithdrawn(msg.sender, msg.sender, feesOwed);
+        if (feesOwed != 0) {
+            nomin.withdrawFee(msg.sender, feesOwed);
+            FeesWithdrawn(msg.sender, msg.sender, feesOwed);
+        }
     }
 
     /* Update the fee entitlement since the last transfer or entitlement
@@ -393,6 +412,10 @@ contract Havven is ERC20Token, Owned {
     {
         // If the fee period has rolled over...
         if (feePeriodStartTime + targetFeePeriodDurationSeconds <= now) {
+            // Reclaim any fees from the escrow contract, if it exists.
+            if (escrow != HavvenEscrow(0)) {
+                escrow.remitFees();
+            }
             lastFeesCollected = nomin.feePool();
 
             // Shift the three period start times back one place
