@@ -6,7 +6,7 @@ file:       EtherNomin.sol
 version:    0.3
 author:     Anton Jurisevic
 
-date:       2018-1-16
+date:       2018-2-6
 
 checked:    Mike Spain
 approved:   Samuel Brooks
