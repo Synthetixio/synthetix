@@ -6,7 +6,7 @@ file:       ERC20FeeToken.sol
 version:    0.3
 author:     Anton Jurisevic
 
-date:       2018-2-7
+date:       2018-2-6
 
 checked:    Mike Spain
 approved:   Samuel Brooks
