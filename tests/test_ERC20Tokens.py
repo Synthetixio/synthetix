@@ -196,6 +196,7 @@ class TestERC20FeeToken(unittest.TestCase):
 
         cls.transferFeeIncurred = lambda self, value: cls.erc20feetoken.functions.transferFeeIncurred(value).call()
         cls.transferPlusFee = lambda self, value: cls.erc20feetoken.functions.transferPlusFee(value).call()
+        cls.priceToSpend = lambda self, value: cls.erc20feetoken.functions.priceToSpend(value).call()
 
         cls.setOwner = lambda self, sender, address: mine_tx(cls.erc20feetoken.functions.setOwner(address).transact({'from': sender}))
         cls.setTransferFeeRate = lambda self, sender, new_fee_rate: mine_tx(cls.erc20feetoken.functions.setTransferFeeRate(new_fee_rate).transact({'from': sender}))
@@ -272,6 +273,15 @@ class TestERC20FeeToken(unittest.TestCase):
         self.assertEqual(self.transferPlusFee(value), total)
 
         self.assertEqual(self.transferPlusFee(0), 0)
+
+    def test_priceToSpend(self):
+        value = 10 * UNIT
+        self.assertEqual(self.priceToSpend(0), 0)
+        fee_rate = self.transferFeeRate()
+        self.assertEqual(self.priceToSpend(value), (UNIT * value) // (UNIT + fee_rate))
+        fee_rate = 13 * UNIT // 10000
+        self.setTransferFeeRate(self.token_owner, fee_rate)
+        self.assertEqual(self.priceToSpend(value), (UNIT * value) // (UNIT + fee_rate))
 
     def test_transfer(self):
         sender = self.initial_beneficiary
