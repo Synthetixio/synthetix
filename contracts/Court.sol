@@ -362,6 +362,7 @@ contract Court is Owned, SafeDecimalMath {
      * Returns the voter's vote weight. */
     function voteSetup(address target)
         internal
+        view
         returns (uint)
     {
         // There must be an active vote for this target running.
