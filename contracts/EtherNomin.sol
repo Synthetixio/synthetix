@@ -126,7 +126,7 @@ contract EtherNomin is ERC20FeeToken {
                         address _owner)
         ERC20FeeToken("Ether-Backed USD Nomins", "eUSD",
                       0, _owner,
-                      UNIT / 500, // nomin transfers incur a 20 bp fee
+                      15 * UNIT / 10000, // nomin transfers incur a 15 bp fee
                       address(_havven), // havven contract is the fee authority
                       _owner)
         public
