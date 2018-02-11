@@ -146,7 +146,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.symbol(), "eUSD")
         self.assertEqual(self.totalSupply(), 0)
         self.assertEqual(self.balanceOf(MASTER), 0)
-        self.assertEqual(self.transferFeeRate(), 2 * UNIT // 1000)
+        self.assertEqual(self.transferFeeRate(), 15 * UNIT // 10000)
         self.assertEqual(self.feeAuthority(), self.nomin_havven)
 
     def test_getSetOwner(self):
