@@ -55,4 +55,3 @@ if __name__ == "__main__":
     print(f"Owner: {OWNER}")
     print(f"Oracle: {ORACLE}")
     print(f"Liquidation beneficiary: {LIQUIDATION_BENEFICIARY}")
-
