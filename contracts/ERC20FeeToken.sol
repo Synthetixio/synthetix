@@ -214,11 +214,11 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
         public
         returns (bool)
     {
-        uint balance = balanceOf[msg.sender];
-        require(balance != 0);
+        // Empty donations are disallowed.
+        require(n != 0);
 
         // safeSub ensures the donor has sufficient balance.
-        balanceOf[msg.sender] = safeSub(balance, n);
+        balanceOf[msg.sender] = safeSub(balanceOf[msg.sender], n);
         feePool = safeAdd(feePool, n);
         FeeDonation(msg.sender, msg.sender, n);
         return true;
