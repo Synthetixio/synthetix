@@ -363,14 +363,11 @@ contract Court is Owned, SafeDecimalMath {
         internal
         returns (uint)
     {
-        // The voter must not have an active vote in any motion.
-        require(userVote[msg.sender] == Court.Vote.Abstention);
-
         // There must be an active vote for this target running.
         // Vote totals must only change during the voting phase.
         require(voting(target));
 
-        // This user can't already have voted in anything.
+        // The voter must not have an active vote in any motion.
         require(!hasVoted(msg.sender));
 
         uint weight;
@@ -424,6 +421,9 @@ contract Court is Owned, SafeDecimalMath {
         // when the vote has concluded.
         // But the totals must not change during the confirmation phase itself.
         require(!confirming(target));
+        // Disallow users from cancelling a vote for a different target
+        // than the one they have previously voted for.
+        require(voteTarget[msg.sender] == target);
 
         // If we are not voting, there is no reason to update the vote totals.
         if (voting(target)) {
@@ -445,9 +445,6 @@ contract Court is Owned, SafeDecimalMath {
             CancelledVote(msg.sender, msg.sender, target, target);
         }
 
-        // Disallow users from cancelling a vote for a different target
-        // than the one they have previously voted for.
-        require(voteTarget[msg.sender] == target);
         userVote[msg.sender] = Court.Vote.Abstention;
         voteTarget[msg.sender] = 0;
     }
