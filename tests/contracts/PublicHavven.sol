@@ -8,9 +8,9 @@ pragma solidity ^0.4.19;
 import "contracts/Havven.sol";
 
 
-
+// Public getters for all items in the Havven contract, used for debugging/testing
 contract PublicHavven is Havven {
-    // Public getters for all items in the Havven contract, used for debugging/testing
+
     function PublicHavven(address _owner)
         Havven(_owner)
         public
@@ -56,20 +56,20 @@ contract PublicHavven is Havven {
         return penultimateFeePeriodStartTime;
     }
 
-    function _minFeePeriodDurationSeconds()
+    function _MIN_FEE_PERIOD_DURATION_SECONDS()
         public
         view
         returns (uint)
     {
-        return minFeePeriodDurationSeconds;
+        return MIN_FEE_PERIOD_DURATION_SECONDS;
     }
 
-    function _maxFeePeriodDurationSeconds()
+    function _MAX_FEE_PERIOD_DURATION_SECONDS()
         public
         view
         returns (uint)
     {
-        return maxFeePeriodDurationSeconds;
+        return MAX_FEE_PERIOD_DURATION_SECONDS;
     }
     
     function _adjustFeeEntitlement(address account, uint preBalance)

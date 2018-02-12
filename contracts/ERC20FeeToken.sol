@@ -47,7 +47,7 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
     // Zero by default, but may be set in derived contracts.
     uint public transferFeeRate;
     // Fee may not exceed 10%.
-    uint constant maxTransferFeeRate = UNIT / 10;
+    uint constant MAX_TRANSFER_FEE_RATE = UNIT / 10;
 
     // Collected fees sit here until they are distributed.
     uint public feePool = 0;
@@ -80,7 +80,7 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
         public
         onlyOwner
     {
-        require(newFeeRate <= maxTransferFeeRate);
+        require(newFeeRate <= MAX_TRANSFER_FEE_RATE);
         transferFeeRate = newFeeRate;
         TransferFeeRateUpdate(newFeeRate);
     }

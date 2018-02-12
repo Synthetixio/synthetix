@@ -6,6 +6,7 @@ pragma solidity ^0.4.19;
 import "contracts/SafeDecimalMath.sol";
 
 contract PublicMath is SafeDecimalMath {
+    
     function pubAddIsSafe(uint x, uint y)
         pure
         public
