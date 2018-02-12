@@ -177,6 +177,7 @@ contract Havven is ERC20Token, Owned {
         penultimateFeePeriodStartTime = now - 2*targetFeePeriodDurationSeconds;
     }
 
+
     /* ========== SETTERS ========== */
 
     function setNomin(EtherNomin _nomin) 
@@ -401,6 +402,7 @@ contract Havven is ERC20Token, Owned {
         checkFeePeriodRollover();
     }
 
+
     /* ========== MODIFIERS ========== */
 
     /* If the fee period has rolled over, then
@@ -438,7 +440,8 @@ contract Havven is ERC20Token, Owned {
         checkFeePeriodRollover();
         _;
     }
-    
+
+
     /* ========== EVENTS ========== */
 
     event FeePeriodRollover(uint timestamp);
