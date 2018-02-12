@@ -58,6 +58,8 @@ contract ERC20Token is SafeDecimalMath {
         public
         returns (bool)
     {
+        require(_to != address(0));
+
         // Zero-value transfers must fire the transfer event...
         Transfer(msg.sender, _to, _value);
 
@@ -77,6 +79,9 @@ contract ERC20Token is SafeDecimalMath {
         public
         returns (bool)
     {
+        require(_from != address(0));
+        require(_to != address(0));
+
         // Zero-value transfers must fire the transfer event...
         Transfer(_from, _to, _value);
 
