@@ -138,6 +138,8 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
         public
         returns (bool)
     {
+        require(_to != address(0));
+
         // The fee is deducted from the sender's balance, in addition to
         // the transferred quantity.
         uint fee = transferFeeIncurred(_value);
@@ -164,6 +166,8 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
         public
         returns (bool)
     {
+        require(_from != address(0));
+        require(_to != address(0));
         // The fee is deducted from the sender's balance, in addition to
         // the transferred quantity.
         uint fee = transferFeeIncurred(_value);
@@ -202,6 +206,13 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
         returns (bool)
     {
         require(msg.sender == feeAuthority);
+        require(account != address(0));
+        
+        // 0-value withdrawals do nothing.
+        if (value == 0) {
+            return false;
+        }
+
         // Safe subtraction ensures an exception is thrown if the balance is insufficient.
         feePool = safeSub(feePool, value);
         balanceOf[account] = safeAdd(balanceOf[account], value);
