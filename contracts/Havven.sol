@@ -211,7 +211,6 @@ contract Havven is ERC20Token, Owned {
         FeePeriodDurationUpdated(duration);
     }
 
-
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /* Allow the owner of this contract to endow any address with havvens
