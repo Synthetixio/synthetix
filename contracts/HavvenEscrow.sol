@@ -58,6 +58,8 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
     uint public totalVestedBalance;
 
 
+    /* ========== CONSTRUCTOR ========== */
+
     function HavvenEscrow(address _owner, Havven _havven, EtherNomin _nomin)
         Owned(_owner)
         public
@@ -65,6 +67,28 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         havven = _havven;
         nomin = _nomin;
     }
+
+
+    /* ========== SETTERS ========== */
+
+    function setHavven(Havven newHavven)
+        public
+        onlyOwner
+    {
+        havven = newHavven;
+        HavvenUpdated(newHavven);
+    }
+
+    function setNomin(EtherNomin newNomin)
+        public
+        onlyOwner
+    {
+        nomin = newNomin;
+        NominUpdated(newNomin);
+    } 
+
+
+    /* ========== VIEW FUNCTIONS ========== */
 
     /* The number of vesting dates in an account's schedule. */
     function numVestingEntries(address account)
@@ -167,21 +191,8 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         return nomin.balanceOf(this);
     }
 
-    function setHavven(Havven newHavven)
-        public
-        onlyOwner
-    {
-        havven = newHavven;
-        HavvenUpdated(newHavven);
-    }
 
-    function setNomin(EtherNomin newNomin)
-        public
-        onlyOwner
-    {
-        nomin = newNomin;
-        NominUpdated(newNomin);
-    } 
+    /* ========== MUTATIVE FUNCTIONS ========== */
 
     /* Return the current fee balance back to the main pool to roll over to the
      * next fee period. */
@@ -228,6 +239,14 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         }
     }
 
+    /* Withdraws a quantity of havvens back to the havven contract. */
+    function withdrawHavvens(uint quantity)
+        onlyOwner
+        external
+    {
+        havven.transfer(havven, quantity);
+    }
+
     /* Destroy the vesting information associated with an account. */
     function purgeAccount(address account)
         onlyOwner
@@ -236,14 +255,6 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         delete vestingSchedules[account];
         totalVestedBalance = safeSub(totalVestedBalance, totalVestedAccountBalance[account]);
         totalVestedAccountBalance[account] = 0;
-    }
-
-    /* Withdraws a quantity of havvens back to the havven contract. */
-    function withdrawHavvens(uint quantity)
-        onlyOwner
-        external
-    {
-        havven.transfer(havven, quantity);
     }
 
     /* Add a new vesting entry at a given time and quantity to an account's schedule.
@@ -327,6 +338,9 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
                    now, total);
         }
     }
+
+
+    /* ========== EVENTS ========== */
 
     event HavvenUpdated(address newHavven);
 
