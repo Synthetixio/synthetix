@@ -139,27 +139,27 @@ contract Court is Owned, SafeDecimalMath {
     // The voting period lasts for this duration,
     // and if set, must fall within the given bounds.
     uint public votingPeriod = 1 weeks;
-    uint constant minVotingPeriod = 3 days;
-    uint constant maxVotingPeriod = 4 weeks;
+    uint constant MIN_VOTING_PERIOD = 3 days;
+    uint constant MAX_VOTING_PERIOD = 4 weeks;
 
     // Duration of the period during which the foundation may confirm
     // or veto a vote that has concluded.
     // If set, the confirmation duration must fall within the given bounds.
     uint public confirmationPeriod = 1 weeks;
-    uint constant minConfirmationPeriod = 1 days;
-    uint constant maxConfirmationPeriod = 2 weeks;
+    uint constant MIN_CONFIRMATION_PERIOD = 1 days;
+    uint constant MAX_CONFIRMATION_PERIOD = 2 weeks;
 
     // No fewer than this fraction of havvens must participate in the vote
     // in order for a quorum to be reached.
     // The participation fraction required may be set no lower than 10%.
     uint public requiredParticipation = 3 * UNIT / 10;
-    uint constant minRequiredParticipation = UNIT / 10;
+    uint constant MIN_REQUIRED_PARTICIPATION = UNIT / 10;
 
     // At least this fraction of participating votes must be in favour of
     // confiscation for the proposal to pass.
     // The required majority may be no lower than 50%.
     uint public requiredMajority = (2 * UNIT) / 3;
-    uint constant minRequiredMajority = UNIT / 2;
+    uint constant MIN_REQUIRED_MAJORITY = UNIT / 2;
 
     // The timestamp at which a vote began. This is used to determine
     // Whether a vote is running, is in the confirmation period,
@@ -221,8 +221,8 @@ contract Court is Owned, SafeDecimalMath {
         public
         onlyOwner
     {
-        require(minVotingPeriod <= duration &&
-                duration <= maxVotingPeriod);
+        require(MIN_VOTING_PERIOD <= duration &&
+                duration <= MAX_VOTING_PERIOD);
         // Require that the voting period is no longer than a single fee period,
         // So that a single vote can span at most two fee periods.
         require(duration <= havven.targetFeePeriodDurationSeconds());
@@ -233,8 +233,8 @@ contract Court is Owned, SafeDecimalMath {
         public
         onlyOwner
     {
-        require(minConfirmationPeriod <= duration &&
-                duration <= maxConfirmationPeriod);
+        require(MIN_CONFIRMATION_PERIOD <= duration &&
+                duration <= MAX_CONFIRMATION_PERIOD);
         confirmationPeriod = duration;
     }
 
@@ -242,7 +242,7 @@ contract Court is Owned, SafeDecimalMath {
         public
         onlyOwner
     {
-        require(minRequiredParticipation <= fraction);
+        require(MIN_REQUIRED_PARTICIPATION <= fraction);
         requiredParticipation = fraction;
     }
 
@@ -250,7 +250,7 @@ contract Court is Owned, SafeDecimalMath {
         public
         onlyOwner
     {
-        require(minRequiredMajority <= fraction);
+        require(MIN_REQUIRED_MAJORITY <= fraction);
         requiredMajority = fraction;
     }
 

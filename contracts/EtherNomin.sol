@@ -84,20 +84,20 @@ contract EtherNomin is ERC20FeeToken {
     uint public poolFeeRate = UNIT / 200;
 
     // The minimum purchasable quantity of nomins is 1 cent.
-    uint constant purchaseMininum = UNIT / 100;
+    uint constant MINIMUM_PURCHASE = UNIT / 100;
 
     // When issuing, nomins must be overcollateralised by this ratio.
-    uint constant collatRatioMinimum =  2 * UNIT;
+    uint constant MINIMUM_ISSUANCE_RATIO =  2 * UNIT;
 
     // If the collateralisation ratio of the contract falls below this level,
     // immediately begin liquidation.
-    uint constant autoLiquidationRatio = UNIT;
+    uint constant AUTO_LIQUIDATION_RATIO = UNIT;
 
     // The liquidation period is the duration that must pass before the liquidation period is complete.
     // It can be extended up to a given duration.
-    uint constant defaultLiquidationPeriod = 90 days;
-    uint constant maxLiquidationPeriod = 180 days;
-    uint public liquidationPeriod = defaultLiquidationPeriod;
+    uint constant DEFAULT_LIQUIDATION_PERIOD = 90 days;
+    uint constant MAX_LIQUIDATION_PERIOD = 180 days;
+    uint public liquidationPeriod = DEFAULT_LIQUIDATION_PERIOD;
 
     // The timestamp when liquidation was activated. We initialise this to
     // uint max, so that we know that we are under liquidation if the
@@ -401,7 +401,7 @@ contract EtherNomin is ERC20FeeToken {
         // Safe additions are unnecessary here, as either the addition is checked on the following line
         // or the overflow would cause the requirement not to be satisfied.
         uint sum = safeAdd(totalSupply, n);
-        require(fiatBalance() >= safeDecMul(sum, collatRatioMinimum));
+        require(fiatBalance() >= safeDecMul(sum, MINIMUM_ISSUANCE_RATIO));
         totalSupply = sum;
         nominPool = safeAdd(nominPool, n);
         Issuance(n, msg.value);
@@ -436,7 +436,7 @@ contract EtherNomin is ERC20FeeToken {
         payable
     {
         // Price staleness check occurs inside the call to purchaseEtherCost.
-        require(n >= purchaseMininum &&
+        require(n >= MINIMUM_PURCHASE &&
                 msg.value == purchaseCostEther(n));
         // sub requires that nominPool >= n
         nominPool = safeSub(nominPool, n);
@@ -504,7 +504,7 @@ contract EtherNomin is ERC20FeeToken {
     {
         require(isLiquidating());
         uint sum = safeAdd(liquidationPeriod, extension);
-        require(sum <= maxLiquidationPeriod);
+        require(sum <= MAX_LIQUIDATION_PERIOD);
         liquidationPeriod = sum;
         LiquidationExtended(extension);
     }
@@ -520,9 +520,9 @@ contract EtherNomin is ERC20FeeToken {
         payable
     {
         require(isLiquidating());
-        require(totalSupply == 0 || collateralisationRatio() >= autoLiquidationRatio);
+        require(totalSupply == 0 || collateralisationRatio() >= AUTO_LIQUIDATION_RATIO);
         liquidationTimestamp = ~uint(0);
-        liquidationPeriod = defaultLiquidationPeriod;
+        liquidationPeriod = DEFAULT_LIQUIDATION_PERIOD;
         LiquidationTerminated();
     }
 
@@ -605,7 +605,7 @@ contract EtherNomin is ERC20FeeToken {
     modifier postCheckAutoLiquidate
     {
         _;
-        if (!isLiquidating() && totalSupply != 0 && collateralisationRatio() < autoLiquidationRatio) {
+        if (!isLiquidating() && totalSupply != 0 && collateralisationRatio() < AUTO_LIQUIDATION_RATIO) {
             beginLiquidation();
         }
     }

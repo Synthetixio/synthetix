@@ -3,7 +3,9 @@
  */
 pragma solidity ^0.4.19;
 
+
 import "contracts/EtherNomin.sol";
+
 
 contract PublicEtherNomin is EtherNomin {
 

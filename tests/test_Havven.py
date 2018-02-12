@@ -98,8 +98,8 @@ class TestHavven(unittest.TestCase):
         cls.lastFeePeriodStartTime = lambda self: self.havven.functions._lastFeePeriodStartTime().call()
         cls.penultimateFeePeriodStartTime = lambda self: self.havven.functions._penultimateFeePeriodStartTime().call()
         cls.targetFeePeriodDurationSeconds = lambda self: self.havven.functions.targetFeePeriodDurationSeconds().call()
-        cls.minFeePeriodDurationSeconds = lambda self: self.havven.functions._minFeePeriodDurationSeconds().call()
-        cls.maxFeePeriodDurationSeconds = lambda self: self.havven.functions._maxFeePeriodDurationSeconds().call()
+        cls.MIN_FEE_PERIOD_DURATION_SECONDS = lambda self: self.havven.functions._MIN_FEE_PERIOD_DURATION_SECONDS().call()
+        cls.MAX_FEE_PERIOD_DURATION_SECONDS= lambda self: self.havven.functions._MAX_FEE_PERIOD_DURATION_SECONDS().call()
         cls.lastFeesCollected = lambda self: self.havven.functions.lastFeesCollected().call()
 
         cls.get_nomin = lambda self: self.havven.functions.nomin().call()
@@ -205,8 +205,8 @@ class TestHavven(unittest.TestCase):
         fee_period = self.targetFeePeriodDurationSeconds()
         self.assertEquals(fee_period, to_seconds(weeks=4))
         self.assertGreater(block_time(), 2 * fee_period)
-        self.assertEquals(self.minFeePeriodDurationSeconds(), to_seconds(days=1))
-        self.assertEquals(self.maxFeePeriodDurationSeconds(), to_seconds(weeks=26))
+        self.assertEquals(self.MIN_FEE_PERIOD_DURATION_SECONDS(), to_seconds(days=1))
+        self.assertEquals(self.MAX_FEE_PERIOD_DURATION_SECONDS(), to_seconds(weeks=26))
         self.assertEquals(self.lastFeesCollected(), 0)
         self.assertEquals(self.get_nomin(), self.nomin.address)
 
@@ -447,7 +447,7 @@ class TestHavven(unittest.TestCase):
     ###
     # feePeriodStartTime - tested above
     # targetFeePeriodDurationSeconds - tested above
-    # minFeePeriodDurationSeconds - constant, checked in constructor test
+    # MIN_FEE_PERIOD_DURATION_SECONDS - constant, checked in constructor test
 
     ###
     # Functions
@@ -502,17 +502,17 @@ class TestHavven(unittest.TestCase):
         )
 
     def test_setTargetFeePeriod_minimal(self):
-        self.setTargetFeePeriodDuration(MASTER, self.minFeePeriodDurationSeconds())
+        self.setTargetFeePeriodDuration(MASTER, self.MIN_FEE_PERIOD_DURATION_SECONDS())
         self.assertEqual(
             self.targetFeePeriodDurationSeconds(),
-            self.minFeePeriodDurationSeconds()
+            self.MIN_FEE_PERIOD_DURATION_SECONDS()
         )
 
     def test_setTargetFeePeriod_invalid_below_min(self):
-        self.assertReverts(self.setTargetFeePeriodDuration, MASTER, self.minFeePeriodDurationSeconds() - 1)
+        self.assertReverts(self.setTargetFeePeriodDuration, MASTER, self.MIN_FEE_PERIOD_DURATION_SECONDS() - 1)
 
     def test_setTargetFeePeriod_invalid_0(self):
-        self.assertReverts(self.setTargetFeePeriodDuration, MASTER, self.minFeePeriodDurationSeconds() - 1)
+        self.assertReverts(self.setTargetFeePeriodDuration, MASTER, self.MIN_FEE_PERIOD_DURATION_SECONDS() - 1)
 
     # endow
     def test_endow_valid(self):

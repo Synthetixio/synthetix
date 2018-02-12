@@ -54,15 +54,15 @@ class TestCourt(unittest.TestCase):
 		cls.getNomin = lambda self: self.court.functions._nomin().call()
 		cls.minStandingBalance = lambda self: self.court.functions.minStandingBalance().call()
 		cls.votingPeriod = lambda self: self.court.functions.votingPeriod().call()
-		cls.minVotingPeriod = lambda self: self.court.functions._minVotingPeriod().call()
-		cls.maxVotingPeriod = lambda self: self.court.functions._maxVotingPeriod().call()
+		cls.MIN_VOTING_PERIOD = lambda self: self.court.functions._MIN_VOTING_PERIOD().call()
+		cls.MAX_VOTING_PERIOD = lambda self: self.court.functions._MAX_VOTING_PERIOD().call()
 		cls.confirmationPeriod = lambda self: self.court.functions.confirmationPeriod().call()
-		cls.minConfirmationPeriod = lambda self: self.court.functions._minConfirmationPeriod().call()
-		cls.maxConfirmationPeriod = lambda self: self.court.functions._maxConfirmationPeriod().call()
+		cls.MIN_CONFIRMATION_PERIOD = lambda self: self.court.functions._MIN_CONFIRMATION_PERIOD().call()
+		cls.MAX_CONFIRMATION_PERIOD = lambda self: self.court.functions._MAX_CONFIRMATION_PERIOD().call()
 		cls.requiredParticipation = lambda self: self.court.functions.requiredParticipation().call()
-		cls.minRequiredParticipation = lambda self: self.court.functions._minRequiredParticipation().call()
+		cls.MIN_REQUIRED_PARTICIPATION = lambda self: self.court.functions._MIN_REQUIRED_PARTICIPATION().call()
 		cls.requiredMajority = lambda self: self.court.functions.requiredMajority().call()
-		cls.minRequiredMajority = lambda self: self.court.functions._minRequiredMajority().call()
+		cls.MIN_REQUIRED_MAJORITY = lambda self: self.court.functions._MIN_REQUIRED_MAJORITY().call()
 		cls.voteWeight = lambda self: self.court.functions.voteWeight().call()
 
 		# Public variables
@@ -134,15 +134,15 @@ class TestCourt(unittest.TestCase):
 		self.assertEqual(self.nomin.address, self.getNomin())
 		self.assertEqual(self.minStandingBalance(), 100 * UNIT)
 		self.assertEqual(self.votingPeriod(), 1 * self.weeks)
-		self.assertEqual(self.minVotingPeriod(), 3 * self.days)
-		self.assertEqual(self.maxVotingPeriod(), 4 * self.weeks)
+		self.assertEqual(self.MIN_VOTING_PERIOD(), 3 * self.days)
+		self.assertEqual(self.MAX_VOTING_PERIOD(), 4 * self.weeks)
 		self.assertEqual(self.confirmationPeriod(), 1 * self.weeks)
-		self.assertEqual(self.minConfirmationPeriod(), 1 * self.days)
-		self.assertEqual(self.maxConfirmationPeriod(), 2 * self.weeks)
+		self.assertEqual(self.MIN_CONFIRMATION_PERIOD(), 1 * self.days)
+		self.assertEqual(self.MAX_CONFIRMATION_PERIOD(), 2 * self.weeks)
 		self.assertEqual(self.requiredParticipation(), 3 * UNIT / 10)
-		self.assertEqual(self.minRequiredParticipation(), UNIT / 10)
+		self.assertEqual(self.MIN_REQUIRED_PARTICIPATION(), UNIT / 10)
 		self.assertEqual(self.requiredMajority(), (2 * UNIT) // 3)
-		self.assertEqual(self.minRequiredMajority(), UNIT / 2)
+		self.assertEqual(self.MIN_REQUIRED_MAJORITY(), UNIT / 2)
 
 
 	def test_setOwner(self):
@@ -169,10 +169,10 @@ class TestCourt(unittest.TestCase):
 		self.assertReverts(self.setVotingPeriod, DUMMY, new_voting_period)
 		tx_receipt = self.setVotingPeriod(owner, new_voting_period)
 		self.assertEqual(self.votingPeriod(), new_voting_period)
-		# Voting period must be > than minVotingPeriod (~ currently 3 days).
+		# Voting period must be > than MIN_VOTING_PERIOD (~ currently 3 days).
 		bad_voting_period = 3 * self.days - 1
 		self.assertReverts(self.setVotingPeriod, owner, bad_voting_period)
-		# Voting period must be < than maxVotingPeriod (~ currently 4 weeks).
+		# Voting period must be < than MAX_VOTING_PERIOD (~ currently 4 weeks).
 		bad_voting_period = 4 * self.weeks + 1
 		self.assertReverts(self.setVotingPeriod, owner, bad_voting_period)
 		# Voting period must be <= the havven target fee period duration.
@@ -191,10 +191,10 @@ class TestCourt(unittest.TestCase):
 		self.assertReverts(self.setConfirmationPeriod, DUMMY, new_confirmation_period)
 		tx_receipt = self.setConfirmationPeriod(owner, new_confirmation_period)
 		self.assertEqual(self.confirmationPeriod(), new_confirmation_period)
-		# Confirmation period must be > than minConfirmationPeriod (~ currently 1 days).
+		# Confirmation period must be > than MIN_CONFIRMATION_PERIOD (~ currently 1 days).
 		bad_confirmation_period = 1 * self.days - 1
 		self.assertReverts(self.setConfirmationPeriod, owner, bad_confirmation_period)
-		# Confirmation period must be < than maxConfirmationPeriod (~ 3 weeks).
+		# Confirmation period must be < than MAX_CONFIRMATION_PERIOD (~ 3 weeks).
 		bad_confirmation_period = 3 * self.weeks + 1
 		self.assertReverts(self.setConfirmationPeriod, owner, bad_confirmation_period)
 

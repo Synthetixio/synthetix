@@ -148,9 +148,9 @@ contract Havven is ERC20Token, Owned {
     // Fee periods will roll over in no shorter a time than this.
     uint public targetFeePeriodDurationSeconds = 4 weeks;
     // And may not be set to be shorter than a day.
-    uint constant minFeePeriodDurationSeconds = 1 days;
+    uint constant MIN_FEE_PERIOD_DURATION_SECONDS = 1 days;
     // And may not be set to be longer than six months.
-    uint constant maxFeePeriodDurationSeconds = 26 weeks;
+    uint constant MAX_FEE_PERIOD_DURATION_SECONDS = 26 weeks;
 
     // The quantity of nomins that were in the fee pot at the time
     // of the last fee rollover (feePeriodStartTime).
@@ -206,8 +206,8 @@ contract Havven is ERC20Token, Owned {
         postCheckFeePeriodRollover
         onlyOwner
     {
-        require(minFeePeriodDurationSeconds <= duration &&
-                duration <= maxFeePeriodDurationSeconds);
+        require(MIN_FEE_PERIOD_DURATION_SECONDS <= duration &&
+                duration <= MAX_FEE_PERIOD_DURATION_SECONDS);
         targetFeePeriodDurationSeconds = duration;
         FeePeriodDurationUpdated(duration);
     }

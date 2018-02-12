@@ -1,6 +1,8 @@
 pragma solidity ^0.4.19;
 
+
 import "contracts/Court.sol";
+
 
 contract PublicCourt is Court {
 
@@ -25,52 +27,52 @@ contract PublicCourt is Court {
 		return nomin;
 	}
 
-	function _minVotingPeriod()
+	function _MIN_VOTING_PERIOD()
 		public
 		view
 		returns (uint)
 	{
-		return minVotingPeriod;
+		return MIN_VOTING_PERIOD;
 	}
 
-	function _maxVotingPeriod()
+	function _MAX_VOTING_PERIOD()
 		public
 		view
 		returns (uint)
 	{
-		return maxVotingPeriod;
+		return MAX_VOTING_PERIOD;
 	}
 
-	function _minConfirmationPeriod()
+	function _MIN_CONFIRMATION_PERIOD()
 		public
 		view
 		returns (uint)
 	{
-		return minConfirmationPeriod;
+		return MIN_CONFIRMATION_PERIOD;
 	}
 
-	function _maxConfirmationPeriod()
+	function _MAX_CONFIRMATION_PERIOD()
 		public
 		view
 		returns (uint)
 	{
-		return maxConfirmationPeriod;
+		return MAX_CONFIRMATION_PERIOD;
 	}
 
-	function _minRequiredParticipation()
+	function _MIN_REQUIRED_PARTICIPATION()
 		public
 		view
 		returns (uint)
 	{
-		return minRequiredParticipation;
+		return MIN_REQUIRED_PARTICIPATION;
 	}
 
-	function _minRequiredMajority()
+	function _MIN_REQUIRED_MAJORITY()
 		public
 		view
 		returns (uint)
 	{
-		return minRequiredMajority;
+		return MIN_REQUIRED_MAJORITY;
 	}
 
 	function _voteWeight(address account)
