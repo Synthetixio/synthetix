@@ -67,7 +67,7 @@ def compile_contracts(files, remappings=None):
     if remappings is None:
         remappings = []
     contract_interfaces = {}
-    compiled = compile_files(files, import_remappings=remappings)
+    compiled = compile_files(files, import_remappings=remappings, optimize=True)
     for key in compiled:
         name = key.split(':')[-1]
         contract_interfaces[name] = compiled[key]
@@ -119,7 +119,7 @@ def mine_txs(tx_hashes):
     return tx_receipts
 
 
-def deploy_contract(compiled_sol, contract_name, deploy_account, constructor_args=None, gas=5000000):
+def deploy_contract(compiled_sol, contract_name, deploy_account, constructor_args=None, gas=3000000):
     if constructor_args is None:
         constructor_args = []
     contract_interface = compiled_sol[contract_name]
@@ -136,3 +136,4 @@ def attempt_deploy(compiled_sol, contract_name, deploy_account, constructor_args
                    [compiled_sol, contract_name, deploy_account, constructor_args],
                    f"Deploying {contract_name}... ",
                    print_status=print_status, print_exception=print_exception)
+
