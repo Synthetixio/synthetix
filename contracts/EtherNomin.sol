@@ -185,6 +185,7 @@ contract EtherNomin is ERC20FeeToken {
         StalePeriodUpdated(period);
     }
 
+
     /* ========== VIEW FUNCTIONS ========== */
 
     /* Return the equivalent fiat value of the given quantity
