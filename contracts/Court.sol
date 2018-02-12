@@ -257,7 +257,6 @@ contract Court is Owned, SafeDecimalMath {
 
     /* ========== VIEW FUNCTIONS ========== */
 
-
     function hasVoted(address account)
         public
         view
@@ -514,6 +513,7 @@ contract Court is Owned, SafeDecimalMath {
         userVote[account] = Court.Vote.Nay;
         voteTarget[account] = target;
     }
+
 
     /* ========== EVENTS ========== */
 
