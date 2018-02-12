@@ -257,14 +257,6 @@ contract Court is Owned, SafeDecimalMath {
 
     /* ========== VIEW FUNCTIONS ========== */
 
-    function hasVoted(address account)
-        public
-        view
-        returns (bool)
-    {
-        return userVote[account] != Court.Vote.Abstention;
-    }
-
     /* There is a motion in progress on the specified
      * account, and votes are being accepted in that motion. */
     function voting(address target)
@@ -302,6 +294,14 @@ contract Court is Owned, SafeDecimalMath {
         // These values are timestamps, they will not overflow
         // as they can only ever be initialised to relatively small values.
         return voteStartTimes[target] + votingPeriod + confirmationPeriod <= now;
+    }
+
+    function hasVoted(address account)
+        public
+        view
+        returns (bool)
+    {
+        return userVote[account] != Court.Vote.Abstention;
     }
 
     /* If the vote was to terminate at this instant, it would pass.
@@ -359,16 +359,15 @@ contract Court is Owned, SafeDecimalMath {
 
     /* Shared vote setup function between voteFor and voteAgainst.
      * Returns the voter's vote weight. */
-    function voteSetup(address target)
+    function setupVote(address target)
         internal
-        view
         returns (uint)
     {
         // There must be an active vote for this target running.
         // Vote totals must only change during the voting phase.
         require(voting(target));
 
-        // This user can't already have voted in anything.
+        // The voter must not have an active vote in any motion.
         require(!hasVoted(msg.sender));
 
         uint weight;
@@ -384,6 +383,9 @@ contract Court is Owned, SafeDecimalMath {
         // Users must have a nonzero voting weight to vote.
         require(weight > 0);
 
+        voteTarget[msg.sender] = target;
+        voteWeight[msg.sender] = weight;
+
         return weight;
     }
 
@@ -392,9 +394,8 @@ contract Court is Owned, SafeDecimalMath {
     function voteFor(address target)
         public
     {
-        uint weight = voteSetup(target);
-        setVotedYea(msg.sender, target);
-        voteWeight[msg.sender] = weight;
+        uint weight = setupVote(target);
+        userVote[msg.sender] = Court.Vote.Yea;
         votesFor[target] = safeAdd(votesFor[target], weight);
         VoteFor(msg.sender, msg.sender, target, target, weight);
     }
@@ -404,9 +405,8 @@ contract Court is Owned, SafeDecimalMath {
     function voteAgainst(address target)
         public
     {
-        uint weight = voteSetup(target);
-        setVotedNay(msg.sender, target);
-        voteWeight[msg.sender] = weight;
+        uint weight = setupVote(target);
+        userVote[msg.sender] = Court.Vote.Nay;
         votesAgainst[target] = safeAdd(votesAgainst[target], weight);
         VoteAgainst(msg.sender, msg.sender, target, target, weight);
     }
@@ -421,6 +421,9 @@ contract Court is Owned, SafeDecimalMath {
         // when the vote has concluded.
         // But the totals must not change during the confirmation phase itself.
         require(!confirming(target));
+        // Disallow users from cancelling a vote for a different target
+        // than the one they have previously voted for.
+        require(voteTarget[msg.sender] == target);
 
         // If we are not voting, there is no reason to update the vote totals.
         if (voting(target)) {
@@ -442,9 +445,6 @@ contract Court is Owned, SafeDecimalMath {
             CancelledVote(msg.sender, msg.sender, target, target);
         }
 
-        // Disallow users from cancelling a vote for a different target
-        // than the one they have previously voted for.
-        require(voteTarget[msg.sender] == target);
         userVote[msg.sender] = Court.Vote.Abstention;
         voteTarget[msg.sender] = 0;
     }
@@ -490,28 +490,6 @@ contract Court is Owned, SafeDecimalMath {
         votesAgainst[target] = 0;
         VoteClosed(target, target);
         Veto(target, target);
-    }
-
-    /* Indicate that the given account voted yea in a confiscation
-     * motion on the target account.
-     * The account must not have an active vote in any motion. */
-    function setVotedYea(address account, address target)
-        internal
-    {
-        require(userVote[account] == Court.Vote.Abstention);
-        userVote[account] = Court.Vote.Yea;
-        voteTarget[account] = target;
-    }
-
-    /* Indicate that the given account voted nay in a confiscation
-     * motion on the target account.
-     * The account must not have an active vote in any motion. */
-    function setVotedNay(address account, address target)
-        internal
-    {
-        require(userVote[account] == Court.Vote.Abstention);
-        userVote[account] = Court.Vote.Nay;
-        voteTarget[account] = target;
     }
 
 

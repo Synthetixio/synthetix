@@ -83,15 +83,14 @@ contract PublicCourt is Court {
 		return voteWeight[account];
 	}
 
-	function publicSetVotedYea(address account, address target)
+	function publicSetupVote(address target)
 		public
+		returns (uint)
 	{
-		setVotedYea(account, target);
+		uint weight = setupVote(target);
+		SetupVoteReturnValue(weight);
+		return weight;
 	}
 
-	function publicSetVotedNay(address account, address target)
-		public
-	{
-		setVotedNay(account, target);
-	}
+	event SetupVoteReturnValue(uint value);
 }
