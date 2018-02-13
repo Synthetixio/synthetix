@@ -14,7 +14,10 @@ contract PublicHavven is Havven {
     function PublicHavven(address _owner)
         Havven(_owner)
         public
-    {}
+    {
+        // Because ganache does not reset the timestamp when reverting.
+        setupDuration = 50000 weeks;
+    }
 
     function _currentBalanceSum(address account)
         public

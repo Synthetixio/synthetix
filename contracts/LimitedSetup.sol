@@ -43,3 +43,5 @@ contract LimitedSetup {
         _;
     }
 }
+
+contract OneMonthSetup is LimitedSetup(4 weeks) {}

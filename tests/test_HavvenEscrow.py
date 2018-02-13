@@ -5,7 +5,7 @@ from utils.deployutils import compile_contracts, attempt_deploy, mine_tx, MASTER
 from utils.testutils import assertReverts, assertClose, block_time
 from utils.generalutils import to_seconds
 
-ESCROW_SOURCE = "contracts/HavvenEscrow.sol"
+ESCROW_SOURCE = "tests/contracts/PublicHavvenEscrow.sol"
 HAVVEN_SOURCE = "contracts/Havven.sol"
 NOMIN_SOURCE = "contracts/EtherNomin.sol"
 
@@ -30,11 +30,13 @@ class TestHavvenEscrow(unittest.TestCase):
         cls.assertReverts = assertReverts
         cls.assertClose = assertClose
 
-        compiled = compile_contracts([ESCROW_SOURCE, HAVVEN_SOURCE, NOMIN_SOURCE])
+        compiled = compile_contracts([ESCROW_SOURCE, HAVVEN_SOURCE, NOMIN_SOURCE],
+                                     remappings=['""=contracts'])
         cls.havven, txr = attempt_deploy(compiled, 'Havven', MASTER, [MASTER])
         cls.nomin, txr = attempt_deploy(compiled, 'EtherNomin', MASTER, [cls.havven.address, MASTER, MASTER, 1000 * 10**18, MASTER])
-        cls.escrow, txr = attempt_deploy(compiled, 'HavvenEscrow', MASTER,
+        cls.escrow, txr = attempt_deploy(compiled, 'PublicHavvenEscrow', MASTER,
                                          [MASTER, cls.havven.address, cls.nomin.address])
+                                         
         mine_tx(cls.havven.functions.setNomin(cls.nomin.address).transact({'from': MASTER}))
         mine_tx(cls.havven.functions.setEscrow(cls.escrow.address).transact({'from': MASTER}))
 
