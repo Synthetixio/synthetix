@@ -2,6 +2,8 @@ from unittest import TestSuite, TestLoader, TextTestRunner
 from utils.generalutils import load_test_settings, ganache_error_message
 
 raised_exception = False
+from tests import *
+"""
 try:
     from tests import *
 except:
@@ -10,6 +12,7 @@ except:
 
 if raised_exception:
     raise Exception(ganache_error_message)
+"""
 
 
 if __name__ == '__main__':
