@@ -161,19 +161,28 @@ contract Court is Owned, SafeDecimalMath {
     uint public requiredMajority = (2 * UNIT) / 3;
     uint constant MIN_REQUIRED_MAJORITY = UNIT / 2;
 
+    // The next index to use for a vote.
+    uint nextVoteIndex = 1;
+
+    // Mapping from vote indexes to addresses.
+    mapping(uint => address) public voteIndexAddresses;
+
+    // The index a vote on an address is currently operating at. Zero if no vote is running.
+    mapping(address => uint) public addressVoteIndex;
+
     // The timestamp at which a vote began. This is used to determine
     // Whether a vote is running, is in the confirmation period,
     // or has concluded.
     // A vote runs from its start time t until (t + votingPeriod),
     // and then the confirmation period terminates no later than
     // (t + votingPeriod + confirmationPeriod).
-    mapping(address => uint) public voteStartTimes;
+    mapping(uint => uint) public voteStartTimes;
 
     // The tallies for and against confiscation of a given balance.
     // These are set to zero at the start of a vote, and also on conclusion,
     // just to keep the blockchain clean.
-    mapping(address => uint) public votesFor;
-    mapping(address => uint) public votesAgainst;
+    mapping(uint => uint) public votesFor;
+    mapping(uint => uint) public votesAgainst;
 
     // The last/penultimate average balance of a user at the time they voted.
     // If we did not save this information then we would have to
@@ -192,7 +201,7 @@ contract Court is Owned, SafeDecimalMath {
     // This requires the default value of the Vote enum to correspond to an abstention.
     mapping(address => Vote) public userVote;
     // The vote a user last participated in.
-    mapping(address => address) public voteTarget;
+    mapping(address => uint) public userParticipatingVote;
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -259,7 +268,7 @@ contract Court is Owned, SafeDecimalMath {
 
     /* There is a motion in progress on the specified
      * account, and votes are being accepted in that motion. */
-    function voting(address target)
+    function voting(uint voteIndex)
         public
         view
         returns (bool)
@@ -268,32 +277,32 @@ contract Court is Owned, SafeDecimalMath {
         // to set future start times for votes.
         // These values are timestamps, they will not overflow
         // as they can only ever be initialised to relatively small values.
-        return now < voteStartTimes[target] + votingPeriod;
+        return now < voteStartTimes[voteIndex] + votingPeriod;
     }
 
     /* A vote on the target account has concluded, but the motion
      * has not yet been approved, vetoed, or closed. */
-    function confirming(address target)
+    function confirming(uint voteIndex)
         public
         view
         returns (bool)
     {
         // These values are timestamps, they will not overflow
         // as they can only ever be initialised to relatively small values.
-        uint startTime = voteStartTimes[target];
+        uint startTime = voteStartTimes[voteIndex];
         return startTime + votingPeriod <= now &&
                now < startTime + votingPeriod + confirmationPeriod;
     }
 
     /* A vote has either not begun, or it has completely terminated. */
-    function waiting(address target)
+    function waiting(uint voteIndex)
         public
         view
         returns (bool)
     {
         // These values are timestamps, they will not overflow
         // as they can only ever be initialised to relatively small values.
-        return voteStartTimes[target] + votingPeriod + confirmationPeriod <= now;
+        return voteStartTimes[voteIndex] + votingPeriod + confirmationPeriod <= now;
     }
 
     function hasVoted(address account)
@@ -306,13 +315,13 @@ contract Court is Owned, SafeDecimalMath {
 
     /* If the vote was to terminate at this instant, it would pass.
      * That is: there was sufficient participation and a sizeable enough majority. */
-    function votePasses(address target)
+    function votePasses(uint voteIndex)
         public
         view
         returns (bool)
     {
-        uint yeas = votesFor[target];
-        uint nays = votesAgainst[target];
+        uint yeas = votesFor[voteIndex];
+        uint nays = votesAgainst[voteIndex];
         uint totalVotes = safeAdd(yeas, nays);
 
         if (totalVotes == 0) {
@@ -333,9 +342,11 @@ contract Court is Owned, SafeDecimalMath {
 
     /* Begin a vote to confiscate the funds in a given nomin account.
      * Only the foundation, or accounts with sufficient havven balances
-     * may elect to start such a vote. */
+     * may elect to start such a vote.
+     * Returns the index of the vote that was begun. */
     function beginConfiscationMotion(address target)
         public
+        returns (uint)
     {
         // A confiscation motion must be mooted by someone with standing.
         require((havven.balanceOf(msg.sender) >= minStandingBalance) ||
@@ -346,26 +357,33 @@ contract Court is Owned, SafeDecimalMath {
         require(votingPeriod <= havven.targetFeePeriodDurationSeconds());
 
         // There must be no confiscation vote already running for this account.
-        require(waiting(target));
+        require(addressVoteIndex[target] == 0);
 
         // Disallow votes on accounts that have previously been frozen.
         require(!nomin.isFrozen(target));
 
-        voteStartTimes[target] = now;
-        votesFor[target] = 0;
-        votesAgainst[target] = 0;
-        ConfiscationVote(msg.sender, msg.sender, target, target);
+        uint voteIndex = nextVoteIndex++;
+        voteIndexAddresses[voteIndex] = target;
+        addressVoteIndex[target] = voteIndex;
+
+
+        voteStartTimes[voteIndex] = now;
+        votesFor[voteIndex] = 0;
+        votesAgainst[voteIndex] = 0;
+        ConfiscationVote(msg.sender, msg.sender, target, target, voteIndex, voteIndex);
+
+        return voteIndex;
     }
 
     /* Shared vote setup function between voteFor and voteAgainst.
      * Returns the voter's vote weight. */
-    function setupVote(address target)
+    function setupVote(uint voteIndex)
         internal
         returns (uint)
     {
         // There must be an active vote for this target running.
         // Vote totals must only change during the voting phase.
-        require(voting(target));
+        require(voting(voteIndex));
 
         // The voter must not have an active vote in any motion.
         require(!hasVoted(msg.sender));
@@ -374,7 +392,7 @@ contract Court is Owned, SafeDecimalMath {
         // We use a fee period guaranteed to have terminated before
         // the start of the vote. Select the right period if
         // a fee period rolls over in the middle of the vote.
-        if (voteStartTimes[target] < havven.feePeriodStartTime()) {
+        if (voteStartTimes[voteIndex] < havven.feePeriodStartTime()) {
             weight = havven.penultimateAverageBalance(msg.sender);
         } else {
             weight = havven.lastAverageBalance(msg.sender);
@@ -383,7 +401,7 @@ contract Court is Owned, SafeDecimalMath {
         // Users must have a nonzero voting weight to vote.
         require(weight > 0);
 
-        voteTarget[msg.sender] = target;
+        userParticipatingVote[msg.sender] = voteIndex;
         voteWeight[msg.sender] = weight;
 
         return weight;
@@ -391,50 +409,50 @@ contract Court is Owned, SafeDecimalMath {
 
     /* The sender casts a vote in favour of confiscation of the
      * target account's nomin balance. */
-    function voteFor(address target)
+    function voteFor(uint voteIndex)
         public
     {
-        uint weight = setupVote(target);
+        uint weight = setupVote(voteIndex);
         userVote[msg.sender] = Court.Vote.Yea;
-        votesFor[target] = safeAdd(votesFor[target], weight);
-        VoteFor(msg.sender, msg.sender, target, target, weight);
+        votesFor[voteIndex] = safeAdd(votesFor[voteIndex], weight);
+        VoteFor(msg.sender, msg.sender, voteIndex, voteIndex, weight);
     }
 
     /* The sender casts a vote against confiscation of the
      * target account's nomin balance. */
-    function voteAgainst(address target)
+    function voteAgainst(uint voteIndex)
         public
     {
-        uint weight = setupVote(target);
+        uint weight = setupVote(voteIndex);
         userVote[msg.sender] = Court.Vote.Nay;
-        votesAgainst[target] = safeAdd(votesAgainst[target], weight);
-        VoteAgainst(msg.sender, msg.sender, target, target, weight);
+        votesAgainst[voteIndex] = safeAdd(votesAgainst[voteIndex], weight);
+        VoteAgainst(msg.sender, msg.sender, voteIndex, voteIndex, weight);
     }
 
     /* Cancel an existing vote by the sender on a motion
      * to confiscate the target balance. */
-    function cancelVote(address target)
+    function cancelVote(uint voteIndex)
         public
     {
         // An account may cancel its vote either before the confirmation phase
         // when the vote is still open, or after the confirmation phase,
         // when the vote has concluded.
         // But the totals must not change during the confirmation phase itself.
-        require(!confirming(target));
+        require(!confirming(voteIndex));
         // Disallow users from cancelling a vote for a different target
         // than the one they have previously voted for.
-        require(voteTarget[msg.sender] == target);
+        require(userParticipatingVote[msg.sender] == voteIndex);
 
         // If we are not voting, there is no reason to update the vote totals.
-        if (voting(target)) {
+        if (voting(voteIndex)) {
             // This call to getVote() must come before the later call to cancelVote(), obviously.
             Vote vote = userVote[msg.sender];
 
             if (vote == Vote.Yea) {
-                votesFor[target] = safeSub(votesFor[target], voteWeight[msg.sender]);
+                votesFor[voteIndex] = safeSub(votesFor[voteIndex], voteWeight[msg.sender]);
             }
             else if (vote == Vote.Nay) {
-                votesAgainst[target] = safeSub(votesAgainst[target], voteWeight[msg.sender]);
+                votesAgainst[voteIndex] = safeSub(votesAgainst[voteIndex], voteWeight[msg.sender]);
             } else {
                 // The sender has not voted.
                 return;
@@ -442,70 +460,78 @@ contract Court is Owned, SafeDecimalMath {
 
             // A cancelled vote is only meaningful if a vote is running
             voteWeight[msg.sender] = 0;
-            CancelledVote(msg.sender, msg.sender, target, target);
+            CancelledVote(msg.sender, msg.sender, voteIndex, voteIndex);
         }
 
         userVote[msg.sender] = Court.Vote.Abstention;
-        voteTarget[msg.sender] = 0;
+        userParticipatingVote[msg.sender] = 0;
     }
 
     /* If a vote has concluded, or if it lasted its full duration but not passed,
      * then anyone may close it. */
-    function closeVote(address target)
+    function closeVote(uint voteIndex)
         public
     {
-        require((confirming(target) && !votePasses(target)) || waiting(target));
+        require((confirming(voteIndex) && !votePasses(voteIndex)) || waiting(voteIndex));
 
-        voteStartTimes[target] = 0;
-        votesFor[target] = 0;
-        votesAgainst[target] = 0;
-        VoteClosed(target, target);
+        addressVoteIndex[voteIndexAddresses[voteIndex]] = 0;
+        voteIndexAddresses[voteIndex] = 0;
+        voteStartTimes[voteIndex] = 0;
+        votesFor[voteIndex] = 0;
+        votesAgainst[voteIndex] = 0;
+        VoteClosed(voteIndex, voteIndex);
     }
 
     /* The foundation may only confiscate a balance during the confirmation
      * period after a vote has passed. */
-    function approve(address target)
+    function approve(uint voteIndex)
         public
         onlyOwner
     {
-        require(confirming(target));
-        require(votePasses(target));
+        require(confirming(voteIndex));
+        require(votePasses(voteIndex));
 
+        address target = voteIndexAddresses[voteIndex];
         nomin.confiscateBalance(target);
-        voteStartTimes[target] = 0;
-        votesFor[target] = 0;
-        votesAgainst[target] = 0;
-        VoteClosed(target, target);
-        ConfiscationApproval(target, target);
+
+        addressVoteIndex[voteIndexAddresses[voteIndex]] = 0;
+        voteIndexAddresses[voteIndex] = 0;
+        voteStartTimes[voteIndex] = 0;
+        votesFor[voteIndex] = 0;
+        votesAgainst[voteIndex] = 0;
+        VoteClosed(voteIndex, voteIndex);
+        ConfiscationApproval(voteIndex, voteIndex);
     }
 
     /* The foundation may veto a motion at any time. */
-    function veto(address target)
+    function veto(uint voteIndex)
         public
         onlyOwner
     {
-        require(!waiting(target));
-        voteStartTimes[target] = 0;
-        votesFor[target] = 0;
-        votesAgainst[target] = 0;
-        VoteClosed(target, target);
-        Veto(target, target);
+        require(!waiting(voteIndex));
+        addressVoteIndex[voteIndexAddresses[voteIndex]] = 0;
+        voteIndexAddresses[voteIndex] = 0;
+        voteStartTimes[voteIndex] = 0;
+        votesFor[voteIndex] = 0;
+        votesAgainst[voteIndex] = 0;
+        VoteClosed(voteIndex, voteIndex);
+        Veto(voteIndex, voteIndex);
     }
 
 
     /* ========== EVENTS ========== */
 
-    event ConfiscationVote(address initator, address indexed initiatorIndex, address target, address indexed targetIndex);
+    event ConfiscationVote(address initator, address indexed initiatorIndex, address target, address indexed targetIndex, uint voteIndex, uint indexed voteIndexIndex);
 
-    event VoteFor(address account, address indexed accountIndex, address target, address indexed targetIndex, uint balance);
+    event VoteFor(address voter, address indexed voterIndex, uint voteIndex, uint indexed voteIndexIndex, uint weight);
 
-    event VoteAgainst(address account, address indexed accountIndex, address target, address indexed targetIndex, uint balance);
+    event VoteAgainst(address voter, address indexed voterIndex, uint voteIndex, uint indexed voteIndexIndex, uint weight);
 
-    event CancelledVote(address account, address indexed accountIndex, address target, address indexed targetIndex);
+    event CancelledVote(address voter, address indexed voterIndex, uint voteIndex, uint indexed voteIndexIndex);
 
-    event VoteClosed(address target, address indexed targetIndex);
+    event VoteClosed(uint voteIndex, uint indexed voteIndexIndex);
 
-    event Veto(address target, address indexed targetIndex);
+    event Veto(uint voteIndex, uint indexed voteIndexIndex);
 
-    event ConfiscationApproval(address target, address indexed targetIndex);
+    event ConfiscationApproval(uint voteIndex, uint indexed voteIndexIndex);
 }

@@ -547,12 +547,16 @@ contract EtherNomin is ERC20FeeToken {
     {
         // Should be callable only by the confiscation court.
         require(Court(msg.sender) == court);
+        
+        uint voteIndex = court.addressVoteIndex(target);
+        require(voteIndex != 0);
 
         // These checks are strictly unnecessary,
         // since they are already checked in the court contract itself.
         // I leave them in out of paranoia.
-        require(court.confirming(target));
-        require(court.votePasses(target));
+        require(court.confirming(voteIndex));
+        require(court.votePasses(voteIndex));
+        require(!isFrozen[target]);
 
         // Confiscate the balance in the account and freeze it.
         uint balance = balanceOf[target];
