@@ -75,7 +75,9 @@ class TestCourt(unittest.TestCase):
 		cls.nextVoteIndex = lambda self: self.court.functions._nextVoteIndex().call()
 
 		# Public variables
-		cls.voteStartTimes = lambda self, account: self.court.functions.voteStartTimes(account).call()
+		cls.voteIndexAddresses = lambda self, index: self.court.functions.voteIndexAddresses(index).call()
+		cls.addressVoteIndex = lambda self, address: self.court.functions.addressVoteIndex(address).call()
+		cls.voteStartTime = lambda self, account: self.court.functions.voteStartTime(account).call()
 		cls.votesFor = lambda self, account: self.court.functions.votesFor(account).call()
 		cls.votesAgainst = lambda self, account: self.court.functions.votesAgainst(account).call()
 		cls.userVote = lambda self, account: self.court.functions.userVote(account).call()
@@ -522,7 +524,7 @@ class TestCourt(unittest.TestCase):
 		# After vote has closed, voteStarTimes and votesFor/votesAgainst should be 0 and suspect should be waiting.
 		self.closeVote(voter, vote_index)	
 		self.assertEqual(self.votesFor(vote_index), 0)
-		self.assertEqual(self.voteStartTimes(vote_index), 0)
+		self.assertEqual(self.voteStartTime(vote_index), 0)
 		self.assertTrue(self.waiting(vote_index))
 
 	def test_approve(self):
@@ -554,7 +556,7 @@ class TestCourt(unittest.TestCase):
 		self.assertEqual(get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[0])['event'], "Confiscation")
 		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[1])['event'], "VoteClosed")
 		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[2])['event'], "ConfiscationApproval")
-		self.assertEqual(self.voteStartTimes(vote_index), 0)
+		self.assertEqual(self.voteStartTime(vote_index), 0)
 		self.assertEqual(self.votesFor(vote_index), 0)
 		# After confiscation, their nomin balance should be frozen.
 		self.assertTrue(self.nominIsFrozen(guilty))
@@ -595,11 +597,11 @@ class TestCourt(unittest.TestCase):
 		self.assertTrue(self.waiting(vote_index))
 		self.assertTrue(self.waiting(vote_index_2))
 		# Votes should be reset.
-		self.assertEqual(self.voteStartTimes(vote_index), 0)
+		self.assertEqual(self.voteStartTime(vote_index), 0)
 		self.assertEqual(self.votesFor(vote_index), 0)
 		self.assertEqual(self.votesAgainst(vote_index), 0)
 		self.assertTrue(self.waiting(vote_index))
-		self.assertEqual(self.voteStartTimes(vote_index_2), 0)
+		self.assertEqual(self.voteStartTime(vote_index_2), 0)
 		self.assertEqual(self.votesFor(vote_index_2), 0)
 		self.assertEqual(self.votesAgainst(vote_index_2), 0)
 		self.assertTrue(self.waiting(vote_index_2))

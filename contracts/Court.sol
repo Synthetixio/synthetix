@@ -176,7 +176,7 @@ contract Court is Owned, SafeDecimalMath {
     // A vote runs from its start time t until (t + votingPeriod),
     // and then the confirmation period terminates no later than
     // (t + votingPeriod + confirmationPeriod).
-    mapping(uint => uint) public voteStartTimes;
+    mapping(uint => uint) public voteStartTime;
 
     // The tallies for and against confiscation of a given balance.
     // These are set to zero at the start of a vote, and also on conclusion,
@@ -277,7 +277,7 @@ contract Court is Owned, SafeDecimalMath {
         // to set future start times for votes.
         // These values are timestamps, they will not overflow
         // as they can only ever be initialised to relatively small values.
-        return now < voteStartTimes[voteIndex] + votingPeriod;
+        return now < voteStartTime[voteIndex] + votingPeriod;
     }
 
     /* A vote on the target account has concluded, but the motion
@@ -289,7 +289,7 @@ contract Court is Owned, SafeDecimalMath {
     {
         // These values are timestamps, they will not overflow
         // as they can only ever be initialised to relatively small values.
-        uint startTime = voteStartTimes[voteIndex];
+        uint startTime = voteStartTime[voteIndex];
         return startTime + votingPeriod <= now &&
                now < startTime + votingPeriod + confirmationPeriod;
     }
@@ -302,7 +302,7 @@ contract Court is Owned, SafeDecimalMath {
     {
         // These values are timestamps, they will not overflow
         // as they can only ever be initialised to relatively small values.
-        return voteStartTimes[voteIndex] + votingPeriod + confirmationPeriod <= now;
+        return voteStartTime[voteIndex] + votingPeriod + confirmationPeriod <= now;
     }
 
     function hasVoted(address account)
@@ -367,7 +367,7 @@ contract Court is Owned, SafeDecimalMath {
         addressVoteIndex[target] = voteIndex;
 
 
-        voteStartTimes[voteIndex] = now;
+        voteStartTime[voteIndex] = now;
         votesFor[voteIndex] = 0;
         votesAgainst[voteIndex] = 0;
         ConfiscationVote(msg.sender, msg.sender, target, target, voteIndex, voteIndex);
@@ -392,7 +392,7 @@ contract Court is Owned, SafeDecimalMath {
         // We use a fee period guaranteed to have terminated before
         // the start of the vote. Select the right period if
         // a fee period rolls over in the middle of the vote.
-        if (voteStartTimes[voteIndex] < havven.feePeriodStartTime()) {
+        if (voteStartTime[voteIndex] < havven.feePeriodStartTime()) {
             weight = havven.penultimateAverageBalance(msg.sender);
         } else {
             weight = havven.lastAverageBalance(msg.sender);
@@ -476,7 +476,7 @@ contract Court is Owned, SafeDecimalMath {
 
         addressVoteIndex[voteIndexAddresses[voteIndex]] = 0;
         voteIndexAddresses[voteIndex] = 0;
-        voteStartTimes[voteIndex] = 0;
+        voteStartTime[voteIndex] = 0;
         votesFor[voteIndex] = 0;
         votesAgainst[voteIndex] = 0;
         VoteClosed(voteIndex, voteIndex);
@@ -496,7 +496,7 @@ contract Court is Owned, SafeDecimalMath {
 
         addressVoteIndex[voteIndexAddresses[voteIndex]] = 0;
         voteIndexAddresses[voteIndex] = 0;
-        voteStartTimes[voteIndex] = 0;
+        voteStartTime[voteIndex] = 0;
         votesFor[voteIndex] = 0;
         votesAgainst[voteIndex] = 0;
         VoteClosed(voteIndex, voteIndex);
@@ -511,7 +511,7 @@ contract Court is Owned, SafeDecimalMath {
         require(!waiting(voteIndex));
         addressVoteIndex[voteIndexAddresses[voteIndex]] = 0;
         voteIndexAddresses[voteIndex] = 0;
-        voteStartTimes[voteIndex] = 0;
+        voteStartTime[voteIndex] = 0;
         votesFor[voteIndex] = 0;
         votesAgainst[voteIndex] = 0;
         VoteClosed(voteIndex, voteIndex);
