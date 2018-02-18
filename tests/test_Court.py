@@ -140,7 +140,7 @@ class TestCourt(unittest.TestCase):
 	# Extract vote index from a transaction receipt returned by a call to beginConfiscationMotion
 	def get_motion_index(self, tx_receipt):
 		event_data =  get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])
-		self.assertEqual(event_data['event'], "ConfiscationVote")
+		self.assertEqual(event_data['event'], "MotionBegun")
 		return event_data['args']['voteIndex']
 
 	def test_constructor(self):
@@ -377,7 +377,7 @@ class TestCourt(unittest.TestCase):
 		self.assertReverts(self.beginConfiscationMotion, insufficient_standing, suspects[0])
 		tx_receipt = self.beginConfiscationMotion(sufficient_standing, suspects[0])
 		# Check that event is emitted properly.
-		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "ConfiscationVote")
+		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "MotionBegun")
 		vote_index_0 = self.get_motion_index(tx_receipt)
 		self.assertTrue(self.voting(vote_index_0))
 		# The contract owner can also begin an motion, regardless of the token requirement.
@@ -477,7 +477,7 @@ class TestCourt(unittest.TestCase):
 		self.assertEqual(self.votesFor(vote_index), 1000)
 		tx_receipt  = self.cancelVote(voter, vote_index)
 		# Check that event is emitted properly.
-		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "CancelledVote")
+		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "VoteCancelled")
 		self.assertEqual(self.votesFor(vote_index), 0)
 		self.assertEqual(self.userVote(voter), 0)
 		# Cast a vote against confiscation.
@@ -516,7 +516,7 @@ class TestCourt(unittest.TestCase):
 		self.assertTrue(self.confirming(vote_index))
 		tx_receipt = self.closeVote(voter, vote_index)
 		# Check that event is emitted properly.
-		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "VoteClosed")
+		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "MotionClosed")
 		# Start another confiscation motion.
 		vote_index = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
 		self.voteFor(voter, vote_index)
@@ -554,8 +554,8 @@ class TestCourt(unittest.TestCase):
 		tx_receipt = self.approve(owner, vote_index)
 		# Check that event is emitted properly.
 		self.assertEqual(get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[0])['event'], "Confiscation")
-		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[1])['event'], "VoteClosed")
-		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[2])['event'], "ConfiscationApproval")
+		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[1])['event'], "MotionClosed")
+		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[2])['event'], "MotionApproved")
 		self.assertEqual(self.voteStartTime(vote_index), 0)
 		self.assertEqual(self.votesFor(vote_index), 0)
 		# After confiscation, their nomin balance should be frozen.
@@ -591,8 +591,8 @@ class TestCourt(unittest.TestCase):
 		# Once a vote has been passed, the owner can veto it.
 		tx_receipt = self.veto(owner, vote_index_2)
 		# Check that event is emitted properly.
-		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "VoteClosed")
-		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[1])['event'], "Veto")
+		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "MotionClosed")
+		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[1])['event'], "MotionVetoed")
 		# After veto motion, suspect should be back in the waiting stage.
 		self.assertTrue(self.waiting(vote_index))
 		self.assertTrue(self.waiting(vote_index_2))
