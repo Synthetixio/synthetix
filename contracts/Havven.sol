@@ -99,7 +99,7 @@ average balance, in order to support the voting functionality detailed in Court.
 
 */
 
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.20;
 
 
 import "contracts/ERC20Token.sol";

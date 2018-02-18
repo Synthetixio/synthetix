@@ -55,7 +55,7 @@ If the contract is recollateralised, the owner may terminate liquidation.
 -----------------------------------------------------------------
 */
 
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.20;
 
 
 import "contracts/ERC20FeeToken.sol";
