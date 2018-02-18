@@ -231,32 +231,6 @@ class TestCourt(unittest.TestCase):
 		bad_required_majority = UNIT // 2 - 1
 		self.assertReverts(self.setRequiredMajority, owner, bad_required_majority)
 
-	def test_hasVoted(self):
-		owner = self.owner()
-		voter, suspect = fresh_accounts(2)
-		fee_period = self.havvenTargetFeePeriodDurationSeconds()
-		# Give 1000 havven tokens to our voter.
-		self.havvenEndow(owner, voter, 1000)
-		self.assertEqual(self.havvenBalance(voter), 1000)
-		# Fast forward to update the vote weight.
-		fast_forward(fee_period + 1)
-		self.havvenCheckFeePeriodRollover(DUMMY)
-		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
-		# This should fail because no confiscation motion has begun.
-		self.assertFalse(self.hasVoted(voter))
-		vote_index = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
-		# This should return false because the voter has not voted yet.
-		self.assertFalse(self.hasVoted(voter))
-		self.voteFor(voter, vote_index)	
-		# This should return true because the voter has voted.
-		self.assertTrue(self.hasVoted(voter))
-		# And false when they cancel their vote.
-		self.cancelVote(voter, vote_index)	
-		self.assertFalse(self.hasVoted(voter))
-		# And true again if they vote against.
-		self.voteFor(voter, vote_index)	
-		self.assertTrue(self.hasVoted(voter))
-
 	def test_waiting_voting_confirming_state_transitions(self):
 		owner = self.owner()
 		suspect = fresh_account()
@@ -283,7 +257,7 @@ class TestCourt(unittest.TestCase):
 		self.assertFalse(self.waiting(vote_index))
 		self.assertFalse(self.voting(vote_index))
 		self.assertTrue(self.confirming(vote_index))
-		# Fast forward to the middle of the confrimation period, should still be in the confirming state.
+		# Fast forward to the middle of the confirmation period, should still be in the confirming state.
 		fast_forward(confirmation_period / 2)
 		self.assertFalse(self.waiting(vote_index))
 		self.assertFalse(self.voting(vote_index))
@@ -293,6 +267,32 @@ class TestCourt(unittest.TestCase):
 		self.assertTrue(self.waiting(vote_index))
 		self.assertFalse(self.voting(vote_index))
 		self.assertFalse(self.confirming(vote_index))
+
+	def test_hasVoted(self):
+		owner = self.owner()
+		voter, suspect = fresh_accounts(2)
+		fee_period = self.havvenTargetFeePeriodDurationSeconds()
+		# Give 1000 havven tokens to our voter.
+		self.havvenEndow(owner, voter, 1000)
+		self.assertEqual(self.havvenBalance(voter), 1000)
+		# Fast forward to update the vote weight.
+		fast_forward(fee_period + 1)
+		self.havvenCheckFeePeriodRollover(DUMMY)
+		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
+		# This should fail because no confiscation motion has begun.
+		self.assertFalse(self.hasVoted(voter))
+		vote_index = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
+		# This should return false because the voter has not voted yet.
+		self.assertFalse(self.hasVoted(voter))
+		self.voteFor(voter, vote_index)	
+		# This should return true because the voter has voted.
+		self.assertTrue(self.hasVoted(voter))
+		# And false when they cancel their vote.
+		self.cancelVote(voter, vote_index)	
+		self.assertFalse(self.hasVoted(voter))
+		# And true again if they vote against.
+		self.voteFor(voter, vote_index)	
+		self.assertTrue(self.hasVoted(voter))
 
 	def test_votePasses(self):
 		owner = self.owner()
@@ -317,7 +317,6 @@ class TestCourt(unittest.TestCase):
 		self.assertFalse(self.votePasses(vote_index))
 		# 100% in favour and 0% against (50% participation).
 		for voter in voters:
-			self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 			self.voteFor(voter, vote_index)
 		self.assertTrue(self.votePasses(vote_index))
 		self.assertEqual(self.votesFor(vote_index), self.havvenSupply() // 2)
