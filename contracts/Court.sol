@@ -388,6 +388,9 @@ contract Court is Owned, SafeDecimalMath {
         // The voter must not have an active vote in any motion.
         require(!hasVoted(msg.sender));
 
+        // Ensure the voter's vote weight is current.
+        havven.recomputeAccountLastAverageBalance(msg.sender);
+
         uint weight;
         // We use a fee period guaranteed to have terminated before
         // the start of the vote. Select the right period if
