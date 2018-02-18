@@ -445,7 +445,6 @@ class TestCourt(unittest.TestCase):
 		self.havvenCheckFeePeriodRollover(DUMMY)
 		fast_forward(fee_period + 1)
 		self.havvenCheckFeePeriodRollover(DUMMY)
-		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 		# Begin a confiscation motion against the suspect.
 		vote_index_0 = self.get_motion_index(self.beginConfiscationMotion(owner, suspects[0]))
 		self.assertTrue(self.voting(vote_index_0))
@@ -478,7 +477,6 @@ class TestCourt(unittest.TestCase):
 		self.havvenCheckFeePeriodRollover(DUMMY)
 		fast_forward(fee_period + 1)
 		self.havvenCheckFeePeriodRollover(DUMMY)
-		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 		# Begin a confiscation motion against the suspect.
 		vote_index_0 = self.get_motion_index(self.beginConfiscationMotion(owner, suspects[0]))
 		self.assertTrue(self.voting(vote_index_0))
