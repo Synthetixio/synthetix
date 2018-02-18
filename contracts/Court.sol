@@ -446,26 +446,25 @@ contract Court is Owned, SafeDecimalMath {
         // than the one they have previously voted for.
         require(userParticipatingVote[msg.sender] == voteIndex);
 
+        Vote vote = userVote[msg.sender];
+
+        // If the sender has not voted then there is no need to update anything.
+        require(vote != Vote.Abstention);
+
         // If we are not voting, there is no reason to update the vote totals.
         if (voting(voteIndex)) {
-            // This call to getVote() must come before the later call to cancelVote(), obviously.
-            Vote vote = userVote[msg.sender];
-
             if (vote == Vote.Yea) {
                 votesFor[voteIndex] = safeSub(votesFor[voteIndex], voteWeight[msg.sender]);
-            }
-            else if (vote == Vote.Nay) {
-                votesAgainst[voteIndex] = safeSub(votesAgainst[voteIndex], voteWeight[msg.sender]);
             } else {
-                // The sender has not voted.
-                return;
+                // Since we already ensured that the vote is not an abstention,
+                // the only option remaining is Vote.Nay.
+                votesAgainst[voteIndex] = safeSub(votesAgainst[voteIndex], voteWeight[msg.sender]);
             }
-
             // A cancelled vote is only meaningful if a vote is running
-            voteWeight[msg.sender] = 0;
             VoteCancelled(msg.sender, msg.sender, voteIndex, voteIndex);
         }
 
+        voteWeight[msg.sender] = 0;
         userVote[msg.sender] = Court.Vote.Abstention;
         userParticipatingVote[msg.sender] = 0;
     }
