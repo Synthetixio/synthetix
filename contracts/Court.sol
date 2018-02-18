@@ -115,7 +115,7 @@ We might consider updating the contract with any of these features at a later da
 -----------------------------------------------------------------
 */
 
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.20;
 
 
 import "contracts/Owned.sol";
@@ -370,7 +370,7 @@ contract Court is Owned, SafeDecimalMath {
         voteStartTime[voteIndex] = now;
         votesFor[voteIndex] = 0;
         votesAgainst[voteIndex] = 0;
-        ConfiscationVote(msg.sender, msg.sender, target, target, voteIndex, voteIndex);
+        MotionBegun(msg.sender, msg.sender, target, target, voteIndex, voteIndex);
 
         return voteIndex;
     }
@@ -460,7 +460,7 @@ contract Court is Owned, SafeDecimalMath {
 
             // A cancelled vote is only meaningful if a vote is running
             voteWeight[msg.sender] = 0;
-            CancelledVote(msg.sender, msg.sender, voteIndex, voteIndex);
+            VoteCancelled(msg.sender, msg.sender, voteIndex, voteIndex);
         }
 
         userVote[msg.sender] = Court.Vote.Abstention;
@@ -479,7 +479,7 @@ contract Court is Owned, SafeDecimalMath {
         voteStartTime[voteIndex] = 0;
         votesFor[voteIndex] = 0;
         votesAgainst[voteIndex] = 0;
-        VoteClosed(voteIndex, voteIndex);
+        MotionClosed(voteIndex, voteIndex);
     }
 
     /* The foundation may only confiscate a balance during the confirmation
@@ -499,8 +499,8 @@ contract Court is Owned, SafeDecimalMath {
         voteStartTime[voteIndex] = 0;
         votesFor[voteIndex] = 0;
         votesAgainst[voteIndex] = 0;
-        VoteClosed(voteIndex, voteIndex);
-        ConfiscationApproval(voteIndex, voteIndex);
+        MotionClosed(voteIndex, voteIndex);
+        MotionApproved(voteIndex, voteIndex);
     }
 
     /* The foundation may veto a motion at any time. */
@@ -514,24 +514,24 @@ contract Court is Owned, SafeDecimalMath {
         voteStartTime[voteIndex] = 0;
         votesFor[voteIndex] = 0;
         votesAgainst[voteIndex] = 0;
-        VoteClosed(voteIndex, voteIndex);
-        Veto(voteIndex, voteIndex);
+        MotionClosed(voteIndex, voteIndex);
+        MotionVetoed(voteIndex, voteIndex);
     }
 
 
     /* ========== EVENTS ========== */
 
-    event ConfiscationVote(address initator, address indexed initiatorIndex, address target, address indexed targetIndex, uint voteIndex, uint indexed voteIndexIndex);
+    event MotionBegun(address initator, address indexed initiatorIndex, address target, address indexed targetIndex, uint voteIndex, uint indexed voteIndexIndex);
 
     event VoteFor(address voter, address indexed voterIndex, uint voteIndex, uint indexed voteIndexIndex, uint weight);
 
     event VoteAgainst(address voter, address indexed voterIndex, uint voteIndex, uint indexed voteIndexIndex, uint weight);
 
-    event CancelledVote(address voter, address indexed voterIndex, uint voteIndex, uint indexed voteIndexIndex);
+    event VoteCancelled(address voter, address indexed voterIndex, uint voteIndex, uint indexed voteIndexIndex);
 
-    event VoteClosed(uint voteIndex, uint indexed voteIndexIndex);
+    event MotionClosed(uint voteIndex, uint indexed voteIndexIndex);
 
-    event Veto(uint voteIndex, uint indexed voteIndexIndex);
+    event MotionVetoed(uint voteIndex, uint indexed voteIndexIndex);
 
-    event ConfiscationApproval(uint voteIndex, uint indexed voteIndexIndex);
+    event MotionApproved(uint voteIndex, uint indexed voteIndexIndex);
 }
