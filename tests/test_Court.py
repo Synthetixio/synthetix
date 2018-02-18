@@ -452,11 +452,15 @@ class TestCourt(unittest.TestCase):
 		tx_receipt = self.voteFor(voter, vote_index_0)
 		# Check that event is emitted properly.
 		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "VoteFor")
+		# And that the totals have been updated properly.
 		self.assertEqual(self.votesFor(vote_index_0), 1000)
+		self.assertEqual(self.voteWeight(voter), 1000)
+		self.assertEqual(self.userVote(voter), 1)
+		self.assertEqual(self.userParticipatingVote(voter), vote_index_0)
 		# Our voter should not be able to vote in more than one motion at a time.
 		vote_index_1 = self.get_motion_index(self.beginConfiscationMotion(owner, suspects[1]))
 		self.assertReverts(self.voteFor, voter, vote_index_1)
-		# It should not be possible to vote without any tokens.
+		# It should not be possible to vote without any vote weight.
 		self.assertReverts(self.voteFor, no_tokens, vote_index_0)
 
 	def test_voteAgainst(self):
@@ -484,51 +488,77 @@ class TestCourt(unittest.TestCase):
 		tx_receipt = self.voteAgainst(voter, vote_index_0)
 		# Check that event is emitted properly.
 		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "VoteAgainst")
+		# And that the totals have been updated properly.
 		self.assertEqual(self.votesAgainst(vote_index_0), 1000)
+		self.assertEqual(self.voteWeight(voter), 1000)
+		self.assertEqual(self.userVote(voter), 2)
+		self.assertEqual(self.userParticipatingVote(voter), vote_index_0)
 		# Another confiscation motion is opened, our voter should not be able to vote in more than one motion at a time.
 		vote_index_1 = self.get_motion_index(self.beginConfiscationMotion(owner, suspects[1]))
 		self.assertReverts(self.voteAgainst, voter, vote_index_1)
-		# It should not be possible to vote without any tokens.
-		self.assertReverts(self.voteAgainst, no_tokens, vote_index_0)
+		# It should not be possible to vote without any vote weight.
+		self.assertReverts(self.voteAgainst, no_tokens, vote_index_0)	
 
 	def test_cancelVote(self):
 		owner = self.owner()
-		voter, suspect = fresh_accounts(2)
+		voter, voter2, suspect = fresh_accounts(3)
 		voting_period = self.votingPeriod()
 		confirmation_period = self.confirmationPeriod()
 		fee_period = self.havvenTargetFeePeriodDurationSeconds()
+
 		# Give some havven tokens to our voter.
 		self.havvenEndow(owner, voter, 1000)
+		self.havvenEndow(owner, voter2, 1000)
 		self.assertEqual(self.havvenBalance(voter), 1000)
 		fast_forward(fee_period + 1)
+		self.havvenCheckFeePeriodRollover(DUMMY)
 		fast_forward(fee_period + 1)
 		self.havvenCheckFeePeriodRollover(DUMMY)
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
+
 		# Begin a confiscation motion against the suspect.
 		vote_index = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
+
 		# Cast a vote in favour of confiscation.
 		self.voteFor(voter, vote_index)
 		self.assertEqual(self.votesFor(vote_index), 1000)
 		tx_receipt  = self.cancelVote(voter, vote_index)
+
 		# Check that event is emitted properly.
 		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "VoteCancelled")
 		self.assertEqual(self.votesFor(vote_index), 0)
 		self.assertEqual(self.userVote(voter), 0)
+
 		# Cast a vote against confiscation.
 		self.voteAgainst(voter, vote_index)
 		self.assertEqual(self.votesAgainst(vote_index), 1000)
 		self.cancelVote(voter, vote_index)
 		self.assertEqual(self.votesAgainst(vote_index), 0)
 		self.assertEqual(self.userVote(voter), 0)
+		self.assertEqual(self.voteWeight(voter), 0)
+		self.assertEqual(self.userParticipatingVote(voter), 0)
+
 		# Cannot cancel a vote during the confirmation period.
 		self.voteFor(voter, vote_index)
+		self.voteFor(voter2, vote_index)
+		self.assertEqual(self.userVote(voter2), 1)
 		fast_forward(voting_period)
 		self.assertReverts(self.cancelVote, voter, vote_index)
 		self.assertEqual(self.userVote(voter), 1)
+
 		# Can cancel it after the confirmation period.
 		fast_forward(confirmation_period)
 		self.cancelVote(voter, vote_index)
 		self.assertEqual(self.userVote(voter), 0)
+		self.assertEqual(self.voteWeight(voter), 0)
+		self.assertEqual(self.userParticipatingVote(voter), 0)
+
+		# And after the vote has been closed.
+		self.closeVote(voter2, vote_index)
+		self.cancelVote(voter2, vote_index)
+		self.assertEqual(self.userVote(voter2), 0)
+		self.assertEqual(self.voteWeight(voter2), 0)
+		self.assertEqual(self.userParticipatingVote(voter2), 0)
 
 	def test_closeVote(self):
 		owner = self.owner()
