@@ -355,7 +355,7 @@ class TestCourt(unittest.TestCase):
 		owner = self.owner()
 		accounts = fresh_accounts(5)
 		insufficient_standing = accounts[0]
-		sufficient_standing =  accounts[1]
+		sufficient_standing = accounts[1]
 		voter = accounts[2]
 		suspects = accounts[3:]
 		voting_period = self.votingPeriod()
@@ -372,14 +372,14 @@ class TestCourt(unittest.TestCase):
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 		self.havvenEndow(owner, insufficient_standing, 99 * UNIT)
 		self.havvenEndow(owner, sufficient_standing, 100 * UNIT)
-		# Must have at least 100 havvens to begin a confiscsation motion.
+		# Must have at least 100 havvens to begin a confiscation motion.
 		self.assertReverts(self.beginConfiscationMotion, insufficient_standing, suspects[0])
 		tx_receipt = self.beginConfiscationMotion(sufficient_standing, suspects[0])
 		# Check that event is emitted properly.
 		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "MotionBegun")
 		vote_index_0 = self.get_motion_index(tx_receipt)
 		self.assertTrue(self.voting(vote_index_0))
-		# The contract owner can also begin an motion, regardless of the token requirement.
+		# The contract owner can also begin a motion, regardless of the token requirement.
 		vote_index_1 = self.get_motion_index(self.beginConfiscationMotion(owner, suspects[1]))
 		# Cannot open multiple confiscation motions on one suspect.
 		self.assertReverts(self.beginConfiscationMotion, owner, suspects[0])
@@ -389,6 +389,43 @@ class TestCourt(unittest.TestCase):
 		self.assertTrue(self.nominIsFrozen(suspects[0]))
 		# Cannot open a vote on an account that has already been frozen.
 		self.assertReverts(self.beginConfiscationMotion, owner, suspects[0])
+
+	def test_setupVote(self):
+		owner = self.owner()
+		non_voter, voter, suspect = fresh_accounts(3)
+		voter_weight = 50 * UNIT
+
+		# Give the voter some voting weight.
+		self.havvenEndow(owner, voter, voter_weight)
+		fee_period = self.havvenTargetFeePeriodDurationSeconds()
+		fast_forward(fee_period + 1)
+		self.havvenCheckFeePeriodRollover(DUMMY)
+		fast_forward(fee_period + 1)
+		self.havvenCheckFeePeriodRollover(DUMMY)
+
+		# Start the vote itself
+		vote_index = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
+
+		# Zero-weight voters should not be able to cast votes.
+		self.assertEqual(self.voteWeight(non_voter), 0)
+		self.assertReverts(self.setupVote, non_voter, vote_index)
+
+		# Test that internal function properly updates state
+		self.assertEqual(self.voteWeight(voter), 0)
+		self.assertEqual(self.userVote(voter), 0)
+		self.assertTrue(self.voting(vote_index))
+		self.assertFalse(self.hasVoted(voter))
+		tx_receipt = self.setupVote(voter, vote_index)
+		# Additionally ensure that the vote recomputed the voter's fee totals.
+		self.assertClose(self.havvenLastAverageBalance(voter), voter_weight)
+		self.assertClose(self.havvenPenultimateAverageBalance(voter), voter_weight)
+		self.assertEqual(self.userParticipatingVote(voter), vote_index)
+		self.assertClose(self.voteWeight(voter), voter_weight)
+		self.assertClose(int(tx_receipt.logs[0].data, 16), voter_weight)
+
+		# If already voted, cannot setup again
+		self.voteFor(voter, vote_index)
+		self.assertReverts(self.setupVote, voter, vote_index)
 
 	def test_voteFor(self):
 		owner = self.owner()
@@ -604,40 +641,3 @@ class TestCourt(unittest.TestCase):
 		self.assertEqual(self.votesFor(vote_index_2), 0)
 		self.assertEqual(self.votesAgainst(vote_index_2), 0)
 		self.assertTrue(self.waiting(vote_index_2))
-
-	def test_setupVote(self):
-		owner = self.owner()
-		non_voter, voter, suspect = fresh_accounts(3)
-		voter_weight = 50 * UNIT
-
-		# Give the voter some voting weight.
-		self.havvenEndow(owner, voter, voter_weight)
-		fee_period = self.havvenTargetFeePeriodDurationSeconds()
-		fast_forward(fee_period + 1)
-		self.havvenCheckFeePeriodRollover(DUMMY)
-		fast_forward(fee_period + 1)
-		self.havvenCheckFeePeriodRollover(DUMMY)
-		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
-
-		# Start the vote itself
-		vote_index = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
-
-		# Zero-weight voters should not be able to cast votes.
-		self.assertEqual(self.voteWeight(non_voter), 0)
-		self.assertReverts(self.setupVote, non_voter, vote_index)
-
-		# Test that internal function properly updates state
-		self.assertEqual(self.voteWeight(voter), 0)
-		self.assertEqual(self.userVote(voter), 0)
-		self.assertTrue(self.voting(vote_index))
-		self.assertFalse(self.hasVoted(voter))
-		self.assertClose(self.havvenLastAverageBalance(voter), voter_weight)
-		self.assertClose(self.havvenPenultimateAverageBalance(voter), voter_weight)
-		tx_receipt = self.setupVote(voter, vote_index)
-		self.assertEqual(self.userParticipatingVote(voter), vote_index)
-		self.assertClose(self.voteWeight(voter), voter_weight)
-		self.assertClose(int(tx_receipt.logs[0].data, 16), voter_weight)
-
-		# If already voted, cannot setup again
-		self.voteFor(voter, vote_index)
-		self.assertReverts(self.setupVote, voter, vote_index)
