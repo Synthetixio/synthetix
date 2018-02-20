@@ -539,7 +539,7 @@ contract EtherNomin is ERC20FeeToken {
         selfdestruct(beneficiary);
     }
 
-    /* If a confiscation court vote has passed and reached the confirmation
+    /* If a confiscation court motion has passed and reached the confirmation
      * state, the court may transfer the target account's balance to the fee pool
      * and freeze its participation in further transactions. */
     function confiscateBalance(address target)
@@ -548,14 +548,15 @@ contract EtherNomin is ERC20FeeToken {
         // Should be callable only by the confiscation court.
         require(Court(msg.sender) == court);
         
-        uint voteIndex = court.addressVoteIndex(target);
-        require(voteIndex != 0);
+        // A motion must actually be underway.
+        uint motionID = court.addressMotionID(target);
+        require(motionID != 0);
 
         // These checks are strictly unnecessary,
         // since they are already checked in the court contract itself.
         // I leave them in out of paranoia.
-        require(court.confirming(voteIndex));
-        require(court.votePasses(voteIndex));
+        require(court.motionConfirming(motionID));
+        require(court.motionPasses(motionID));
         require(!isFrozen[target]);
 
         // Confiscate the balance in the account and freeze it.

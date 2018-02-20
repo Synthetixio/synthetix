@@ -27,12 +27,12 @@ contract PublicCourt is Court {
 		return nomin;
 	}
 
-	function _nextVoteIndex()
+	function _nextMotionID()
 		public
 		view
 		returns (uint)
 	{
-		return nextVoteIndex;
+		return nextMotionID;
 	}
 
 	function _MIN_VOTING_PERIOD()

@@ -34,7 +34,7 @@ This latter requirement may be lifted in future versions.
 
 The foundation, or any user with a sufficient havven balance may bring a
 confiscation motion.
-A vote lasts for a default period of one week, with a further confirmation
+A motion lasts for a default period of one week, with a further confirmation
 period in which the foundation approves the result.
 The latter period may conclude early upon the foundation's decision to either
 veto or approve the mooted confiscation motion.
@@ -53,14 +53,14 @@ the average balance in one account will be reflected by an equivalent reduction
 in the voting weight in the other.
 At present a user may cast a vote only for one motion at a time,
 but may cancel their vote at any time except during the confirmation period,
-when the votes tallies must remain static until the matter has been settled.
+when the vote tallies must remain static until the matter has been settled.
 
 A motion to confiscate the balance of a given address composes
 a state machine built of the following states:
 
 
 Waiting:
-  - A user with standing brings a vote:
+  - A user with standing brings a motion:
     If the target address is not frozen;
     initialise vote tallies to 0;
     transition to the Voting state.
@@ -69,7 +69,7 @@ Waiting:
     remain in the Waiting state.
 
 Voting:
-  - The foundation vetoes the in-progress vote:
+  - The foundation vetoes the in-progress motion:
     transition to the Waiting state.
 
   - The voting period elapses:
@@ -84,7 +84,7 @@ Voting:
     remain in the Voting state.
 
 Confirmation:
-  - The foundation vetoes the completed vote:
+  - The foundation vetoes the completed motion:
     transition to the Waiting state.
 
   - The foundation approves confiscation of the target account:
@@ -95,8 +95,8 @@ Confirmation:
     transition to the Waiting state.
 
 
-User votes are not automatically cancelled upon the conclusion of a vote.
-Therefore, after a vote comes to a conclusion, if a user wishes to vote 
+User votes are not automatically cancelled upon the conclusion of a motion.
+Therefore, after a motion comes to a conclusion, if a user wishes to vote 
 in another motion, they must manually cancel their vote in order to do so.
 
 This procedure is designed to be relatively simple.
@@ -104,7 +104,6 @@ There are some things that can be added to enhance the functionality
 at the expense of simplicity and efficiency:
   
   - Allow users to vote in multiple motions at once;
-  - Unique motion IDs for clearer logging if multiple motions are mooted for a given account;
   - Democratic unfreezing of nomin accounts (induces multiple categories of vote)
   - Configurable per-vote durations;
   - Vote standing denominated in a fiat quantity rather than a quantity of havvens;
@@ -143,44 +142,45 @@ contract Court is Owned, SafeDecimalMath {
     uint constant MAX_VOTING_PERIOD = 4 weeks;
 
     // Duration of the period during which the foundation may confirm
-    // or veto a vote that has concluded.
+    // or veto a motion that has concluded.
     // If set, the confirmation duration must fall within the given bounds.
     uint public confirmationPeriod = 1 weeks;
     uint constant MIN_CONFIRMATION_PERIOD = 1 days;
     uint constant MAX_CONFIRMATION_PERIOD = 2 weeks;
 
-    // No fewer than this fraction of havvens must participate in the vote
+    // No fewer than this fraction of havvens must participate in a motion
     // in order for a quorum to be reached.
     // The participation fraction required may be set no lower than 10%.
     uint public requiredParticipation = 3 * UNIT / 10;
     uint constant MIN_REQUIRED_PARTICIPATION = UNIT / 10;
 
     // At least this fraction of participating votes must be in favour of
-    // confiscation for the proposal to pass.
+    // confiscation for the motion to pass.
     // The required majority may be no lower than 50%.
     uint public requiredMajority = (2 * UNIT) / 3;
     uint constant MIN_REQUIRED_MAJORITY = UNIT / 2;
 
-    // The next index to use for a vote.
-    uint nextVoteIndex = 1;
+    // The next ID to use for opening a motion.
+    uint nextMotionID = 1;
 
-    // Mapping from vote indexes to addresses.
-    mapping(uint => address) public voteIndexAddresses;
+    // Mapping from motion IDs to addresses.
+    mapping(uint => address) public motionIDAddress;
 
-    // The index a vote on an address is currently operating at. Zero if no vote is running.
-    mapping(address => uint) public addressVoteIndex;
+    // The ID a motion on an address is currently operating at.
+    // Zero if no such motion is running.
+    mapping(address => uint) public addressMotionID;
 
-    // The timestamp at which a vote began. This is used to determine
-    // Whether a vote is running, is in the confirmation period,
+    // The timestamp at which a motion began. This is used to determine
+    // whether a motion is: running, in the confirmation period,
     // or has concluded.
-    // A vote runs from its start time t until (t + votingPeriod),
+    // A motion runs from its start time t until (t + votingPeriod),
     // and then the confirmation period terminates no later than
     // (t + votingPeriod + confirmationPeriod).
-    mapping(uint => uint) public voteStartTime;
+    mapping(uint => uint) public motionStartTime;
 
     // The tallies for and against confiscation of a given balance.
-    // These are set to zero at the start of a vote, and also on conclusion,
-    // just to keep the blockchain clean.
+    // These are set to zero at the start of a motion, and also on conclusion,
+    // just to keep the state clean.
     mapping(uint => uint) public votesFor;
     mapping(uint => uint) public votesAgainst;
 
@@ -192,16 +192,16 @@ contract Court is Owned, SafeDecimalMath {
     mapping(address => uint) voteWeight;
 
     // The possible vote types.
-    // Absention: not participating in a vote; This is the default value.
+    // Abstention: not participating in a motion; This is the default value.
     // Yea: voting in favour of a motion.
     // Nay: voting against a motion.
     enum Vote {Abstention, Yea, Nay}
 
     // A given account's vote in some confiscation motion.
     // This requires the default value of the Vote enum to correspond to an abstention.
-    mapping(address => Vote) public userVote;
-    // The vote a user last participated in.
-    mapping(address => uint) public userParticipatingVote;
+    mapping(address => Vote) public vote;
+    // The motion a user last participated in.
+    mapping(address => uint) public participatingMotion;
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -268,7 +268,7 @@ contract Court is Owned, SafeDecimalMath {
 
     /* There is a motion in progress on the specified
      * account, and votes are being accepted in that motion. */
-    function voting(uint voteIndex)
+    function motionVoting(uint motionID)
         public
         view
         returns (bool)
@@ -277,51 +277,43 @@ contract Court is Owned, SafeDecimalMath {
         // to set future start times for votes.
         // These values are timestamps, they will not overflow
         // as they can only ever be initialised to relatively small values.
-        return now < voteStartTime[voteIndex] + votingPeriod;
+        return now < motionStartTime[motionID] + votingPeriod;
     }
 
     /* A vote on the target account has concluded, but the motion
      * has not yet been approved, vetoed, or closed. */
-    function confirming(uint voteIndex)
+    function motionConfirming(uint motionID)
         public
         view
         returns (bool)
     {
         // These values are timestamps, they will not overflow
         // as they can only ever be initialised to relatively small values.
-        uint startTime = voteStartTime[voteIndex];
+        uint startTime = motionStartTime[motionID];
         return startTime + votingPeriod <= now &&
                now < startTime + votingPeriod + confirmationPeriod;
     }
 
-    /* A vote has either not begun, or it has completely terminated. */
-    function waiting(uint voteIndex)
+    /* A vote motion either not begun, or it has completely terminated. */
+    function motionWaiting(uint motionID)
         public
         view
         returns (bool)
     {
         // These values are timestamps, they will not overflow
         // as they can only ever be initialised to relatively small values.
-        return voteStartTime[voteIndex] + votingPeriod + confirmationPeriod <= now;
+        return motionStartTime[motionID] + votingPeriod + confirmationPeriod <= now;
     }
 
-    function hasVoted(address account)
-        public
-        view
-        returns (bool)
-    {
-        return userVote[account] != Court.Vote.Abstention;
-    }
-
-    /* If the vote was to terminate at this instant, it would pass.
+    /* If the motion was to terminate at this instant, it would pass.
      * That is: there was sufficient participation and a sizeable enough majority. */
-    function votePasses(uint voteIndex)
+    function motionPasses(uint motionID)
         public
         view
         returns (bool)
     {
-        uint yeas = votesFor[voteIndex];
-        uint nays = votesAgainst[voteIndex];
+        uint yeas = votesFor[motionID];
+        uint nays = votesAgainst[motionID];
         uint totalVotes = safeAdd(yeas, nays);
 
         if (totalVotes == 0) {
@@ -337,13 +329,21 @@ contract Court is Owned, SafeDecimalMath {
                fractionInFavour > requiredMajority;
     }
 
+    function hasVoted(address account)
+        public
+        view
+        returns (bool)
+    {
+        return vote[account] != Court.Vote.Abstention;
+    }
+
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    /* Begin a vote to confiscate the funds in a given nomin account.
+    /* Begin a motion to confiscate the funds in a given nomin account.
      * Only the foundation, or accounts with sufficient havven balances
-     * may elect to start such a vote.
-     * Returns the index of the vote that was begun. */
+     * may elect to start such a motion.
+     * Returns the ID of the motion that was begun. */
     function beginConfiscationMotion(address target)
         public
         returns (uint)
@@ -356,34 +356,34 @@ contract Court is Owned, SafeDecimalMath {
         // So that a single vote can span at most two fee periods.
         require(votingPeriod <= havven.targetFeePeriodDurationSeconds());
 
-        // There must be no confiscation vote already running for this account.
-        require(addressVoteIndex[target] == 0);
+        // There must be no confiscation motion already running for this account.
+        require(addressMotionID[target] == 0);
 
         // Disallow votes on accounts that have previously been frozen.
         require(!nomin.isFrozen(target));
 
-        uint voteIndex = nextVoteIndex++;
-        voteIndexAddresses[voteIndex] = target;
-        addressVoteIndex[target] = voteIndex;
+        uint motionID = nextMotionID++;
+        motionIDAddress[motionID] = target;
+        addressMotionID[target] = motionID;
 
 
-        voteStartTime[voteIndex] = now;
-        votesFor[voteIndex] = 0;
-        votesAgainst[voteIndex] = 0;
-        MotionBegun(msg.sender, msg.sender, target, target, voteIndex, voteIndex);
+        motionStartTime[motionID] = now;
+        votesFor[motionID] = 0;
+        votesAgainst[motionID] = 0;
+        MotionBegun(msg.sender, msg.sender, target, target, motionID, motionID);
 
-        return voteIndex;
+        return motionID;
     }
 
     /* Shared vote setup function between voteFor and voteAgainst.
      * Returns the voter's vote weight. */
-    function setupVote(uint voteIndex)
+    function setupVote(uint motionID)
         internal
         returns (uint)
     {
         // There must be an active vote for this target running.
         // Vote totals must only change during the voting phase.
-        require(voting(voteIndex));
+        require(motionVoting(motionID));
 
         // The voter must not have an active vote in any motion.
         require(!hasVoted(msg.sender));
@@ -395,7 +395,7 @@ contract Court is Owned, SafeDecimalMath {
         // We use a fee period guaranteed to have terminated before
         // the start of the vote. Select the right period if
         // a fee period rolls over in the middle of the vote.
-        if (voteStartTime[voteIndex] < havven.feePeriodStartTime()) {
+        if (motionStartTime[motionID] < havven.feePeriodStartTime()) {
             weight = havven.penultimateAverageBalance(msg.sender);
         } else {
             weight = havven.lastAverageBalance(msg.sender);
@@ -404,7 +404,7 @@ contract Court is Owned, SafeDecimalMath {
         // Users must have a nonzero voting weight to vote.
         require(weight > 0);
 
-        userParticipatingVote[msg.sender] = voteIndex;
+        participatingMotion[msg.sender] = motionID;
         voteWeight[msg.sender] = weight;
 
         return weight;
@@ -412,128 +412,128 @@ contract Court is Owned, SafeDecimalMath {
 
     /* The sender casts a vote in favour of confiscation of the
      * target account's nomin balance. */
-    function voteFor(uint voteIndex)
+    function voteFor(uint motionID)
         public
     {
-        uint weight = setupVote(voteIndex);
-        userVote[msg.sender] = Court.Vote.Yea;
-        votesFor[voteIndex] = safeAdd(votesFor[voteIndex], weight);
-        VoteFor(msg.sender, msg.sender, voteIndex, voteIndex, weight);
+        uint weight = setupVote(motionID);
+        vote[msg.sender] = Court.Vote.Yea;
+        votesFor[motionID] = safeAdd(votesFor[motionID], weight);
+        VoteFor(msg.sender, msg.sender, motionID, motionID, weight);
     }
 
     /* The sender casts a vote against confiscation of the
      * target account's nomin balance. */
-    function voteAgainst(uint voteIndex)
+    function voteAgainst(uint motionID)
         public
     {
-        uint weight = setupVote(voteIndex);
-        userVote[msg.sender] = Court.Vote.Nay;
-        votesAgainst[voteIndex] = safeAdd(votesAgainst[voteIndex], weight);
-        VoteAgainst(msg.sender, msg.sender, voteIndex, voteIndex, weight);
+        uint weight = setupVote(motionID);
+            vote[msg.sender] = Court.Vote.Nay;
+        votesAgainst[motionID] = safeAdd(votesAgainst[motionID], weight);
+        VoteAgainst(msg.sender, msg.sender, motionID, motionID, weight);
     }
 
     /* Cancel an existing vote by the sender on a motion
      * to confiscate the target balance. */
-    function cancelVote(uint voteIndex)
+    function cancelVote(uint motionID)
         public
     {
         // An account may cancel its vote either before the confirmation phase
-        // when the vote is still open, or after the confirmation phase,
-        // when the vote has concluded.
+        // when the motion is still open, or after the confirmation phase,
+        // when the motion has concluded.
         // But the totals must not change during the confirmation phase itself.
-        require(!confirming(voteIndex));
-        // Disallow users from cancelling a vote for a different target
+        require(!motionConfirming(motionID));
+        // Disallow accounts from cancelling a vote for a different target
         // than the one they have previously voted for.
-        require(userParticipatingVote[msg.sender] == voteIndex);
+        require(participatingMotion[msg.sender] == motionID);
 
-        Vote vote = userVote[msg.sender];
+        Vote senderVote = vote[msg.sender];
 
         // If the sender has not voted then there is no need to update anything.
-        require(vote != Vote.Abstention);
+        require(senderVote != Vote.Abstention);
 
         // If we are not voting, there is no reason to update the vote totals.
-        if (voting(voteIndex)) {
-            if (vote == Vote.Yea) {
-                votesFor[voteIndex] = safeSub(votesFor[voteIndex], voteWeight[msg.sender]);
+        if (motionVoting(motionID)) {
+            if (senderVote == Vote.Yea) {
+                votesFor[motionID] = safeSub(votesFor[motionID], voteWeight[msg.sender]);
             } else {
                 // Since we already ensured that the vote is not an abstention,
                 // the only option remaining is Vote.Nay.
-                votesAgainst[voteIndex] = safeSub(votesAgainst[voteIndex], voteWeight[msg.sender]);
+                votesAgainst[motionID] = safeSub(votesAgainst[motionID], voteWeight[msg.sender]);
             }
             // A cancelled vote is only meaningful if a vote is running
-            VoteCancelled(msg.sender, msg.sender, voteIndex, voteIndex);
+            VoteCancelled(msg.sender, msg.sender, motionID, motionID);
         }
 
         voteWeight[msg.sender] = 0;
-        userVote[msg.sender] = Court.Vote.Abstention;
-        userParticipatingVote[msg.sender] = 0;
+        vote[msg.sender] = Court.Vote.Abstention;
+        participatingMotion[msg.sender] = 0;
     }
 
-    /* If a vote has concluded, or if it lasted its full duration but not passed,
+    /* If a motion has concluded, or if it lasted its full duration but not passed,
      * then anyone may close it. */
-    function closeVote(uint voteIndex)
+    function closeMotion(uint motionID)
         public
     {
-        require((confirming(voteIndex) && !votePasses(voteIndex)) || waiting(voteIndex));
+        require((motionConfirming(motionID) && !motionPasses(motionID)) || motionWaiting(motionID));
 
-        addressVoteIndex[voteIndexAddresses[voteIndex]] = 0;
-        voteIndexAddresses[voteIndex] = 0;
-        voteStartTime[voteIndex] = 0;
-        votesFor[voteIndex] = 0;
-        votesAgainst[voteIndex] = 0;
-        MotionClosed(voteIndex, voteIndex);
+        addressMotionID[motionIDAddress[motionID]] = 0;
+        motionIDAddress[motionID] = 0;
+        motionStartTime[motionID] = 0;
+        votesFor[motionID] = 0;
+        votesAgainst[motionID] = 0;
+        MotionClosed(motionID, motionID);
     }
 
     /* The foundation may only confiscate a balance during the confirmation
-     * period after a vote has passed. */
-    function approve(uint voteIndex)
+     * period after a motion has passed. */
+    function approve(uint motionID)
         public
         onlyOwner
     {
-        require(confirming(voteIndex));
-        require(votePasses(voteIndex));
+        require(motionConfirming(motionID));
+        require(motionPasses(motionID));
 
-        address target = voteIndexAddresses[voteIndex];
+        address target = motionIDAddress[motionID];
         nomin.confiscateBalance(target);
 
-        addressVoteIndex[voteIndexAddresses[voteIndex]] = 0;
-        voteIndexAddresses[voteIndex] = 0;
-        voteStartTime[voteIndex] = 0;
-        votesFor[voteIndex] = 0;
-        votesAgainst[voteIndex] = 0;
-        MotionClosed(voteIndex, voteIndex);
-        MotionApproved(voteIndex, voteIndex);
+        addressMotionID[motionIDAddress[motionID]] = 0;
+        motionIDAddress[motionID] = 0;
+        motionStartTime[motionID] = 0;
+        votesFor[motionID] = 0;
+        votesAgainst[motionID] = 0;
+        MotionClosed(motionID, motionID);
+        MotionApproved(motionID, motionID);
     }
 
     /* The foundation may veto a motion at any time. */
-    function veto(uint voteIndex)
+    function veto(uint motionID)
         public
         onlyOwner
     {
-        require(!waiting(voteIndex));
-        addressVoteIndex[voteIndexAddresses[voteIndex]] = 0;
-        voteIndexAddresses[voteIndex] = 0;
-        voteStartTime[voteIndex] = 0;
-        votesFor[voteIndex] = 0;
-        votesAgainst[voteIndex] = 0;
-        MotionClosed(voteIndex, voteIndex);
-        MotionVetoed(voteIndex, voteIndex);
+        require(!motionWaiting(motionID));
+        addressMotionID[motionIDAddress[motionID]] = 0;
+        motionIDAddress[motionID] = 0;
+        motionStartTime[motionID] = 0;
+        votesFor[motionID] = 0;
+        votesAgainst[motionID] = 0;
+        MotionClosed(motionID, motionID);
+        MotionVetoed(motionID, motionID);
     }
 
 
     /* ========== EVENTS ========== */
 
-    event MotionBegun(address initator, address indexed initiatorIndex, address target, address indexed targetIndex, uint voteIndex, uint indexed voteIndexIndex);
+    event MotionBegun(address initator, address indexed initiatorIndex, address target, address indexed targetIndex, uint motionID, uint indexed motionIDIndex);
 
-    event VoteFor(address voter, address indexed voterIndex, uint voteIndex, uint indexed voteIndexIndex, uint weight);
+    event VoteFor(address voter, address indexed voterIndex, uint motionID, uint indexed motionIDIndex, uint weight);
 
-    event VoteAgainst(address voter, address indexed voterIndex, uint voteIndex, uint indexed voteIndexIndex, uint weight);
+    event VoteAgainst(address voter, address indexed voterIndex, uint motionID, uint indexed motionIDIndex, uint weight);
 
-    event VoteCancelled(address voter, address indexed voterIndex, uint voteIndex, uint indexed voteIndexIndex);
+    event VoteCancelled(address voter, address indexed voterIndex, uint motionID, uint indexed motionIDIndex);
 
-    event MotionClosed(uint voteIndex, uint indexed voteIndexIndex);
+    event MotionClosed(uint motionID, uint indexed motionIDIndex);
 
-    event MotionVetoed(uint voteIndex, uint indexed voteIndexIndex);
+    event MotionVetoed(uint motionID, uint indexed motionIDIndex);
 
-    event MotionApproved(uint voteIndex, uint indexed voteIndexIndex);
+    event MotionApproved(uint motionID, uint indexed motionIDIndex);
 }
