@@ -462,19 +462,24 @@ contract Court is Owned, SafeDecimalMath {
         vote[msg.sender][motionID] = Court.Vote.Abstention;
     }
 
+    function _closeMotion(uint motionID)
+        internal
+    {
+        addressMotionID[motionIDAddress[motionID]] = 0;
+        motionIDAddress[motionID] = 0;
+        motionStartTime[motionID] = 0;
+        votesFor[motionID] = 0;
+        votesAgainst[motionID] = 0;
+        MotionClosed(motionID, motionID);       
+    }
+
     /* If a motion has concluded, or if it lasted its full duration but not passed,
      * then anyone may close it. */
     function closeMotion(uint motionID)
         public
     {
         require((motionConfirming(motionID) && !motionPasses(motionID)) || motionWaiting(motionID));
-
-        addressMotionID[motionIDAddress[motionID]] = 0;
-        motionIDAddress[motionID] = 0;
-        motionStartTime[motionID] = 0;
-        votesFor[motionID] = 0;
-        votesAgainst[motionID] = 0;
-        MotionClosed(motionID, motionID);
+        _closeMotion(motionID);
     }
 
     /* The foundation may only confiscate a balance during the confirmation
@@ -483,18 +488,10 @@ contract Court is Owned, SafeDecimalMath {
         public
         onlyOwner
     {
-        require(motionConfirming(motionID));
-        require(motionPasses(motionID));
-
+        require(motionConfirming(motionID) && motionPasses(motionID));
         address target = motionIDAddress[motionID];
         nomin.confiscateBalance(target);
-
-        addressMotionID[motionIDAddress[motionID]] = 0;
-        motionIDAddress[motionID] = 0;
-        motionStartTime[motionID] = 0;
-        votesFor[motionID] = 0;
-        votesAgainst[motionID] = 0;
-        MotionClosed(motionID, motionID);
+        _closeMotion(motionID);
         MotionApproved(motionID, motionID);
     }
 
@@ -504,12 +501,7 @@ contract Court is Owned, SafeDecimalMath {
         onlyOwner
     {
         require(!motionWaiting(motionID));
-        addressMotionID[motionIDAddress[motionID]] = 0;
-        motionIDAddress[motionID] = 0;
-        motionStartTime[motionID] = 0;
-        votesFor[motionID] = 0;
-        votesAgainst[motionID] = 0;
-        MotionClosed(motionID, motionID);
+        _closeMotion(motionID);
         MotionVetoed(motionID, motionID);
     }
 
