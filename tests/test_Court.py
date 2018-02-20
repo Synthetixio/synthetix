@@ -236,37 +236,37 @@ class TestCourt(unittest.TestCase):
 		suspect = fresh_account()
 		voting_period = self.votingPeriod()
 		confirmation_period = self.confirmationPeriod()
-		vote_index = self.nextMotionID()
+		motion_id = self.nextMotionID()
 		# Before a confiscation motion begins, should be in the waiting state.
-		self.assertTrue(self.motionWaiting(vote_index))
-		self.assertFalse(self.motionVoting(vote_index))
-		self.assertFalse(self.motionConfirming(vote_index))
+		self.assertTrue(self.motionWaiting(motion_id))
+		self.assertFalse(self.motionVoting(motion_id))
+		self.assertFalse(self.motionConfirming(motion_id))
 		# Begin a confiscation motion against the suspect, should move to the voting state.
-		actual_vote_index = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
-		self.assertEqual(vote_index, actual_vote_index)
-		self.assertFalse(self.motionWaiting(vote_index))
-		self.assertTrue(self.motionVoting(vote_index))
-		self.assertFalse(self.motionConfirming(vote_index))
+		actual_motion_id = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
+		self.assertEqual(motion_id, actual_motion_id)
+		self.assertFalse(self.motionWaiting(motion_id))
+		self.assertTrue(self.motionVoting(motion_id))
+		self.assertFalse(self.motionConfirming(motion_id))
 		# Fast forward to the middle of the voting period, should still be in the voting state.
 		fast_forward(voting_period / 2)
-		self.assertFalse(self.motionWaiting(vote_index))
-		self.assertTrue(self.motionVoting(vote_index))
-		self.assertFalse(self.motionConfirming(vote_index))
+		self.assertFalse(self.motionWaiting(motion_id))
+		self.assertTrue(self.motionVoting(motion_id))
+		self.assertFalse(self.motionConfirming(motion_id))
 		# When the voting period finishes, should move to confirming state.
 		fast_forward(voting_period / 2)
-		self.assertFalse(self.motionWaiting(vote_index))
-		self.assertFalse(self.motionVoting(vote_index))
-		self.assertTrue(self.motionConfirming(vote_index))
+		self.assertFalse(self.motionWaiting(motion_id))
+		self.assertFalse(self.motionVoting(motion_id))
+		self.assertTrue(self.motionConfirming(motion_id))
 		# Fast forward to the middle of the confirmation period, should still be in the confirming state.
 		fast_forward(confirmation_period / 2)
-		self.assertFalse(self.motionWaiting(vote_index))
-		self.assertFalse(self.motionVoting(vote_index))
-		self.assertTrue(self.motionConfirming(vote_index))
+		self.assertFalse(self.motionWaiting(motion_id))
+		self.assertFalse(self.motionVoting(motion_id))
+		self.assertTrue(self.motionConfirming(motion_id))
 		# When the voting confirmation period finishes, should move to waiting state.
 		fast_forward(confirmation_period / 2)
-		self.assertTrue(self.motionWaiting(vote_index))
-		self.assertFalse(self.motionVoting(vote_index))
-		self.assertFalse(self.motionConfirming(vote_index))
+		self.assertTrue(self.motionWaiting(motion_id))
+		self.assertFalse(self.motionVoting(motion_id))
+		self.assertFalse(self.motionConfirming(motion_id))
 
 	def test_hasVoted(self):
 		owner = self.owner()
@@ -281,17 +281,17 @@ class TestCourt(unittest.TestCase):
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 		# This should fail because no confiscation motion has begun.
 		self.assertFalse(self.hasVoted(voter))
-		vote_index = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
+		motion_id = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
 		# This should return false because the voter has not voted yet.
 		self.assertFalse(self.hasVoted(voter))
-		self.voteFor(voter, vote_index)	
+		self.voteFor(voter, motion_id)	
 		# This should return true because the voter has voted.
 		self.assertTrue(self.hasVoted(voter))
 		# And false when they cancel their vote.
-		self.cancelVote(voter, vote_index)	
+		self.cancelVote(voter, motion_id)	
 		self.assertFalse(self.hasVoted(voter))
 		# And true again if they vote against.
-		self.voteFor(voter, vote_index)	
+		self.voteFor(voter, motion_id)	
 		self.assertTrue(self.hasVoted(voter))
 
 	def test_motionPasses(self):
@@ -313,43 +313,43 @@ class TestCourt(unittest.TestCase):
 		fast_forward(fee_period + 1)
 		self.havvenCheckFeePeriodRollover(DUMMY)
 		# Begin a confiscation motion against the suspect.
-		vote_index = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
-		self.assertFalse(self.motionPasses(vote_index))
+		motion_id = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
+		self.assertFalse(self.motionPasses(motion_id))
 		# 100% in favour and 0% against (50% participation).
 		for voter in voters:
-			self.voteFor(voter, vote_index)
-		self.assertTrue(self.motionPasses(vote_index))
-		self.assertEqual(self.votesFor(vote_index), self.havvenSupply() // 2)
+			self.voteFor(voter, motion_id)
+		self.assertTrue(self.motionPasses(motion_id))
+		self.assertEqual(self.votesFor(motion_id), self.havvenSupply() // 2)
 		# All cancel votes.
 		for voter in voters:
-			self.cancelVote(voter, vote_index)
-		self.assertFalse(self.motionPasses(vote_index))
-		self.assertEqual(self.votesFor(vote_index), 0)
+			self.cancelVote(voter, motion_id)
+		self.assertFalse(self.motionPasses(motion_id))
+		self.assertEqual(self.votesFor(motion_id), 0)
 		# 100% against and 0% in favour (50% participation).
 		for voter in voters:
-			self.voteAgainst(voter, vote_index)
-		self.assertFalse(self.motionPasses(vote_index))
-		self.assertEqual(self.votesAgainst(vote_index), self.havvenSupply() // 2)
+			self.voteAgainst(voter, motion_id)
+		self.assertFalse(self.motionPasses(motion_id))
+		self.assertEqual(self.votesAgainst(motion_id), self.havvenSupply() // 2)
 		# All cancel votes.
 		for voter in voters:
-			self.cancelVote(voter, vote_index)
-		self.assertEqual(self.votesAgainst(vote_index), 0)
+			self.cancelVote(voter, motion_id)
+		self.assertEqual(self.votesAgainst(motion_id), 0)
 		# 60% in favour and 0% against (30% participation)
 		for voter in voters[:6]:
-			self.voteFor(voter, vote_index)
+			self.voteFor(voter, motion_id)
 		# Required participation must be > than 30%.
-		self.assertFalse(self.motionPasses(vote_index))
+		self.assertFalse(self.motionPasses(motion_id))
 		# But if another user votes in favour, participation = 35% which is sufficient for a vote to pass.
-		self.voteFor(voters[7], vote_index)
-		self.assertTrue(self.motionPasses(vote_index))
+		self.voteFor(voters[7], motion_id)
+		self.assertTrue(self.motionPasses(motion_id))
 		# The last 3 vote against, 70% in favour and 30% against (required majority is 2/3).
 		for voter in voters[8:]:
-			self.voteAgainst(voter, vote_index)
-		self.assertTrue(self.motionPasses(vote_index))
+			self.voteAgainst(voter, motion_id)
+		self.assertTrue(self.motionPasses(motion_id))
 		# If one changes their vote for to against, should not pass since 60% in favour 40% against (less than the min required majority of 2/3).
-		self.cancelVote(voters[7], vote_index)
-		self.voteAgainst(voters[7], vote_index)
-		self.assertFalse(self.motionPasses(vote_index))
+		self.cancelVote(voters[7], motion_id)
+		self.voteAgainst(voters[7], motion_id)
+		self.assertFalse(self.motionPasses(motion_id))
 
 	def test_beginConfiscationMotion(self):
 		owner = self.owner()
@@ -377,15 +377,15 @@ class TestCourt(unittest.TestCase):
 		tx_receipt = self.beginConfiscationMotion(sufficient_standing, suspects[0])
 		# Check that event is emitted properly.
 		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "MotionBegun")
-		vote_index_0 = self.get_motion_index(tx_receipt)
-		self.assertTrue(self.motionVoting(vote_index_0))
+		motion_id_0 = self.get_motion_index(tx_receipt)
+		self.assertTrue(self.motionVoting(motion_id_0))
 		# The contract owner can also begin a motion, regardless of the token requirement.
-		vote_index_1 = self.get_motion_index(self.beginConfiscationMotion(owner, suspects[1]))
+		motion_id_1 = self.get_motion_index(self.beginConfiscationMotion(owner, suspects[1]))
 		# Cannot open multiple confiscation motions on one suspect.
 		self.assertReverts(self.beginConfiscationMotion, owner, suspects[0])
-		self.voteFor(voter, vote_index_0)
+		self.voteFor(voter, motion_id_0)
 		fast_forward(voting_period)
-		self.approve(owner, vote_index_0)
+		self.approve(owner, motion_id_0)
 		self.assertTrue(self.nominIsFrozen(suspects[0]))
 		# Cannot open a vote on an account that has already been frozen.
 		self.assertReverts(self.beginConfiscationMotion, owner, suspects[0])
@@ -404,28 +404,28 @@ class TestCourt(unittest.TestCase):
 		self.havvenCheckFeePeriodRollover(DUMMY)
 
 		# Start the vote itself
-		vote_index = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
+		motion_id = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
 
 		# Zero-weight voters should not be able to cast votes.
 		self.assertEqual(self.voteWeight(non_voter), 0)
-		self.assertReverts(self.setupVote, non_voter, vote_index)
+		self.assertReverts(self.setupVote, non_voter, motion_id)
 
 		# Test that internal function properly updates state
 		self.assertEqual(self.voteWeight(voter), 0)
 		self.assertEqual(self.vote(voter), 0)
-		self.assertTrue(self.motionVoting(vote_index))
+		self.assertTrue(self.motionVoting(motion_id))
 		self.assertFalse(self.hasVoted(voter))
-		tx_receipt = self.setupVote(voter, vote_index)
+		tx_receipt = self.setupVote(voter, motion_id)
 		# Additionally ensure that the vote recomputed the voter's fee totals.
 		self.assertClose(self.havvenLastAverageBalance(voter), voter_weight)
 		self.assertClose(self.havvenPenultimateAverageBalance(voter), voter_weight)
-		self.assertEqual(self.participatingMotion(voter), vote_index)
+		self.assertEqual(self.participatingMotion(voter), motion_id)
 		self.assertClose(self.voteWeight(voter), voter_weight)
 		self.assertClose(int(tx_receipt.logs[0].data, 16), voter_weight)
 
 		# If already voted, cannot setup again
-		self.voteFor(voter, vote_index)
-		self.assertReverts(self.setupVote, voter, vote_index)
+		self.voteFor(voter, motion_id)
+		self.assertReverts(self.setupVote, voter, motion_id)
 
 	def test_voteFor(self):
 		owner = self.owner()
@@ -446,22 +446,22 @@ class TestCourt(unittest.TestCase):
 		fast_forward(fee_period + 1)
 		self.havvenCheckFeePeriodRollover(DUMMY)
 		# Begin a confiscation motion against the suspect.
-		vote_index_0 = self.get_motion_index(self.beginConfiscationMotion(owner, suspects[0]))
-		self.assertTrue(self.motionVoting(vote_index_0))
+		motion_id_0 = self.get_motion_index(self.beginConfiscationMotion(owner, suspects[0]))
+		self.assertTrue(self.motionVoting(motion_id_0))
 		# Cast a vote in favour of confiscation.
-		tx_receipt = self.voteFor(voter, vote_index_0)
+		tx_receipt = self.voteFor(voter, motion_id_0)
 		# Check that event is emitted properly.
 		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "VoteFor")
 		# And that the totals have been updated properly.
-		self.assertEqual(self.votesFor(vote_index_0), 1000)
+		self.assertEqual(self.votesFor(motion_id_0), 1000)
 		self.assertEqual(self.voteWeight(voter), 1000)
 		self.assertEqual(self.vote(voter), 1)
-		self.assertEqual(self.participatingMotion(voter), vote_index_0)
+		self.assertEqual(self.participatingMotion(voter), motion_id_0)
 		# Our voter should not be able to vote in more than one motion at a time.
-		vote_index_1 = self.get_motion_index(self.beginConfiscationMotion(owner, suspects[1]))
-		self.assertReverts(self.voteFor, voter, vote_index_1)
+		motion_id_1 = self.get_motion_index(self.beginConfiscationMotion(owner, suspects[1]))
+		self.assertReverts(self.voteFor, voter, motion_id_1)
 		# It should not be possible to vote without any vote weight.
-		self.assertReverts(self.voteFor, no_tokens, vote_index_0)
+		self.assertReverts(self.voteFor, no_tokens, motion_id_0)
 
 	def test_voteAgainst(self):
 		owner = self.owner()
@@ -482,22 +482,22 @@ class TestCourt(unittest.TestCase):
 		fast_forward(fee_period + 1)
 		self.havvenCheckFeePeriodRollover(DUMMY)
 		# Begin a confiscation motion against the suspect.
-		vote_index_0 = self.get_motion_index(self.beginConfiscationMotion(owner, suspects[0]))
-		self.assertTrue(self.motionVoting(vote_index_0))
+		motion_id_0 = self.get_motion_index(self.beginConfiscationMotion(owner, suspects[0]))
+		self.assertTrue(self.motionVoting(motion_id_0))
 		# Cast a vote against confiscation.
-		tx_receipt = self.voteAgainst(voter, vote_index_0)
+		tx_receipt = self.voteAgainst(voter, motion_id_0)
 		# Check that event is emitted properly.
 		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "VoteAgainst")
 		# And that the totals have been updated properly.
-		self.assertEqual(self.votesAgainst(vote_index_0), 1000)
+		self.assertEqual(self.votesAgainst(motion_id_0), 1000)
 		self.assertEqual(self.voteWeight(voter), 1000)
 		self.assertEqual(self.vote(voter), 2)
-		self.assertEqual(self.participatingMotion(voter), vote_index_0)
+		self.assertEqual(self.participatingMotion(voter), motion_id_0)
 		# Another confiscation motion is opened, our voter should not be able to vote in more than one motion at a time.
-		vote_index_1 = self.get_motion_index(self.beginConfiscationMotion(owner, suspects[1]))
-		self.assertReverts(self.voteAgainst, voter, vote_index_1)
+		motion_id_1 = self.get_motion_index(self.beginConfiscationMotion(owner, suspects[1]))
+		self.assertReverts(self.voteAgainst, voter, motion_id_1)
 		# It should not be possible to vote without any vote weight.
-		self.assertReverts(self.voteAgainst, no_tokens, vote_index_0)	
+		self.assertReverts(self.voteAgainst, no_tokens, motion_id_0)	
 
 	def test_cancelVote(self):
 		owner = self.owner()
@@ -517,45 +517,45 @@ class TestCourt(unittest.TestCase):
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 
 		# Begin a confiscation motion against the suspect.
-		vote_index = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
+		motion_id = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
 
 		# Cast a vote in favour of confiscation.
-		self.voteFor(voter, vote_index)
-		self.assertEqual(self.votesFor(vote_index), 1000)
-		tx_receipt  = self.cancelVote(voter, vote_index)
+		self.voteFor(voter, motion_id)
+		self.assertEqual(self.votesFor(motion_id), 1000)
+		tx_receipt  = self.cancelVote(voter, motion_id)
 
 		# Check that event is emitted properly.
 		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "VoteCancelled")
-		self.assertEqual(self.votesFor(vote_index), 0)
+		self.assertEqual(self.votesFor(motion_id), 0)
 		self.assertEqual(self.vote(voter), 0)
 
 		# Cast a vote against confiscation.
-		self.voteAgainst(voter, vote_index)
-		self.assertEqual(self.votesAgainst(vote_index), 1000)
-		self.cancelVote(voter, vote_index)
-		self.assertEqual(self.votesAgainst(vote_index), 0)
+		self.voteAgainst(voter, motion_id)
+		self.assertEqual(self.votesAgainst(motion_id), 1000)
+		self.cancelVote(voter, motion_id)
+		self.assertEqual(self.votesAgainst(motion_id), 0)
 		self.assertEqual(self.vote(voter), 0)
 		self.assertEqual(self.voteWeight(voter), 0)
 		self.assertEqual(self.participatingMotion(voter), 0)
 
 		# Cannot cancel a vote during the confirmation period.
-		self.voteFor(voter, vote_index)
-		self.voteFor(voter2, vote_index)
+		self.voteFor(voter, motion_id)
+		self.voteFor(voter2, motion_id)
 		self.assertEqual(self.vote(voter2), 1)
 		fast_forward(voting_period)
-		self.assertReverts(self.cancelVote, voter, vote_index)
+		self.assertReverts(self.cancelVote, voter, motion_id)
 		self.assertEqual(self.vote(voter), 1)
 
 		# Can cancel it after the confirmation period.
 		fast_forward(confirmation_period)
-		self.cancelVote(voter, vote_index)
+		self.cancelVote(voter, motion_id)
 		self.assertEqual(self.vote(voter), 0)
 		self.assertEqual(self.voteWeight(voter), 0)
 		self.assertEqual(self.participatingMotion(voter), 0)
 
 		# And after the vote has been closed.
-		self.closeMotion(voter2, vote_index)
-		self.cancelVote(voter2, vote_index)
+		self.closeMotion(voter2, motion_id)
+		self.cancelVote(voter2, motion_id)
 		self.assertEqual(self.vote(voter2), 0)
 		self.assertEqual(self.voteWeight(voter2), 0)
 		self.assertEqual(self.participatingMotion(voter2), 0)
@@ -573,23 +573,23 @@ class TestCourt(unittest.TestCase):
 		fast_forward(fee_period + 1)
 		self.havvenCheckFeePeriodRollover(DUMMY)
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
-		vote_index = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
+		motion_id = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
 		# Should not be able to close vote in the voting period.
-		self.assertReverts(self.closeMotion, voter, vote_index)
+		self.assertReverts(self.closeMotion, voter, motion_id)
 		fast_forward(voting_period)
-		self.assertTrue(self.motionConfirming(vote_index))
-		tx_receipt = self.closeMotion(voter, vote_index)
+		self.assertTrue(self.motionConfirming(motion_id))
+		tx_receipt = self.closeMotion(voter, motion_id)
 		# Check that event is emitted properly.
 		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "MotionClosed")
 		# Start another confiscation motion.
-		vote_index = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
-		self.voteFor(voter, vote_index)
+		motion_id = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
+		self.voteFor(voter, motion_id)
 		fast_forward(voting_period)
 		# After vote has closed, voteStarTimes and votesFor/votesAgainst should be 0 and suspect should be waiting.
-		self.closeMotion(voter, vote_index)	
-		self.assertEqual(self.votesFor(vote_index), 0)
-		self.assertEqual(self.motionStartTime(vote_index), 0)
-		self.assertTrue(self.motionWaiting(vote_index))
+		self.closeMotion(voter, motion_id)	
+		self.assertEqual(self.votesFor(motion_id), 0)
+		self.assertEqual(self.motionStartTime(motion_id), 0)
+		self.assertTrue(self.motionWaiting(motion_id))
 
 	def test_approve(self):
 		owner = self.owner()
@@ -606,22 +606,22 @@ class TestCourt(unittest.TestCase):
 		self.havvenCheckFeePeriodRollover(DUMMY)
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 		tx_receipt = self.beginConfiscationMotion(owner, guilty)
-		vote_index = self.get_motion_index(tx_receipt)
+		motion_id = self.get_motion_index(tx_receipt)
 		# Cast a vote in favour of confiscation.
-		tx_receipt = self.voteFor(voter, vote_index)
+		tx_receipt = self.voteFor(voter, motion_id)
 		# It should not be possible to approve in the voting state.
-		self.assertReverts(self.approve, owner, vote_index)
+		self.assertReverts(self.approve, owner, motion_id)
 		fast_forward(voting_period)
-		self.assertTrue(self.motionConfirming(vote_index))
+		self.assertTrue(self.motionConfirming(motion_id))
 		# Only the owner can approve the confiscation of a balance.
-		self.assertReverts(self.approve, voter, vote_index)
-		tx_receipt = self.approve(owner, vote_index)
+		self.assertReverts(self.approve, voter, motion_id)
+		tx_receipt = self.approve(owner, motion_id)
 		# Check that event is emitted properly.
 		self.assertEqual(get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[0])['event'], "Confiscation")
 		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[1])['event'], "MotionClosed")
 		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[2])['event'], "MotionApproved")
-		self.assertEqual(self.motionStartTime(vote_index), 0)
-		self.assertEqual(self.votesFor(vote_index), 0)
+		self.assertEqual(self.motionStartTime(motion_id), 0)
+		self.assertEqual(self.votesFor(motion_id), 0)
 		# After confiscation, their nomin balance should be frozen.
 		self.assertTrue(self.nominIsFrozen(guilty))
 
@@ -640,32 +640,32 @@ class TestCourt(unittest.TestCase):
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 		# Cannot veto when there is no vote in progress.
 		self.assertReverts(self.veto, owner, 10)
-		vote_index = self.get_motion_index(self.beginConfiscationMotion(owner, acquitted))
+		motion_id = self.get_motion_index(self.beginConfiscationMotion(owner, acquitted))
 		# Only owner can veto.
-		self.assertReverts(self.veto, DUMMY, vote_index)
-		self.veto(owner, vote_index)
+		self.assertReverts(self.veto, DUMMY, motion_id)
+		self.veto(owner, motion_id)
 		# After veto motion, suspect should be back in the waiting stage.
-		self.assertTrue(self.motionWaiting(vote_index))
-		vote_index_2 = self.get_motion_index(self.beginConfiscationMotion(owner, acquitted))
-		self.assertNotEqual(vote_index, vote_index_2)
-		self.voteFor(voter, vote_index_2)
-		self.assertTrue(self.motionPasses(vote_index_2))
+		self.assertTrue(self.motionWaiting(motion_id))
+		motion_id_2 = self.get_motion_index(self.beginConfiscationMotion(owner, acquitted))
+		self.assertNotEqual(motion_id, motion_id_2)
+		self.voteFor(voter, motion_id_2)
+		self.assertTrue(self.motionPasses(motion_id_2))
 		fast_forward(voting_period)
-		self.assertTrue(self.motionConfirming(vote_index_2))
+		self.assertTrue(self.motionConfirming(motion_id_2))
 		# Once a vote has been passed, the owner can veto it.
-		tx_receipt = self.veto(owner, vote_index_2)
+		tx_receipt = self.veto(owner, motion_id_2)
 		# Check that event is emitted properly.
 		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "MotionClosed")
 		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[1])['event'], "MotionVetoed")
 		# After veto motion, suspect should be back in the waiting stage.
-		self.assertTrue(self.motionWaiting(vote_index))
-		self.assertTrue(self.motionWaiting(vote_index_2))
+		self.assertTrue(self.motionWaiting(motion_id))
+		self.assertTrue(self.motionWaiting(motion_id_2))
 		# Votes should be reset.
-		self.assertEqual(self.motionStartTime(vote_index), 0)
-		self.assertEqual(self.votesFor(vote_index), 0)
-		self.assertEqual(self.votesAgainst(vote_index), 0)
-		self.assertTrue(self.motionWaiting(vote_index))
-		self.assertEqual(self.motionStartTime(vote_index_2), 0)
-		self.assertEqual(self.votesFor(vote_index_2), 0)
-		self.assertEqual(self.votesAgainst(vote_index_2), 0)
-		self.assertTrue(self.motionWaiting(vote_index_2))
+		self.assertEqual(self.motionStartTime(motion_id), 0)
+		self.assertEqual(self.votesFor(motion_id), 0)
+		self.assertEqual(self.votesAgainst(motion_id), 0)
+		self.assertTrue(self.motionWaiting(motion_id))
+		self.assertEqual(self.motionStartTime(motion_id_2), 0)
+		self.assertEqual(self.votesFor(motion_id_2), 0)
+		self.assertEqual(self.votesAgainst(motion_id_2), 0)
+		self.assertTrue(self.motionWaiting(motion_id_2))
