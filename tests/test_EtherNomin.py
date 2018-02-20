@@ -56,7 +56,7 @@ class TestEtherNomin(unittest.TestCase):
         cls.fake_court.setNomin = lambda sender, new_nomin: mine_tx(cls.fake_court.functions.setNomin(new_nomin).transact({'from': sender}))
         cls.fake_court.setConfirming = lambda sender, target, status: mine_tx(cls.fake_court.functions.setConfirming(target, status).transact({'from': sender}))
         cls.fake_court.setVotePasses = lambda sender, target, status: mine_tx(cls.fake_court.functions.setVotePasses(target, status).transact({'from': sender}))
-        cls.fake_court.setAddressVoteIndex = lambda sender, target, index: mine_tx(cls.fake_court.functions.setAddressVoteIndex(target, index).transact({'from': sender}))
+        cls.fake_court.setAddressMotionID = lambda sender, target, motion_id: mine_tx(cls.fake_court.functions.setAddressMotionID(target, motion_id).transact({'from': sender}))
         cls.fake_court.confiscateBalance = lambda sender, target: mine_tx(cls.fake_court.functions.confiscateBalance(target).transact({'from': sender}))
         cls.fake_court.setNomin(W3.eth.accounts[0], cls.nomin.address)
         mine_tx(cls.nomin.functions.setCourt(cls.fake_court.address).transact({'from': cls.nomin_owner}))
@@ -537,10 +537,10 @@ class TestEtherNomin(unittest.TestCase):
 
         # Set up target balance to be confiscatable for later testing.
         self.assertEqual(self.court(), self.fake_court.address)
-        index = 1
-        self.fake_court.setAddressVoteIndex(owner, target, index)
-        self.fake_court.setConfirming(owner, index, True)
-        self.fake_court.setVotePasses(owner, index, True)
+        motion_id = 1
+        self.fake_court.setAddressMotionID(owner, target, motion_id)
+        self.fake_court.setConfirming(owner, motion_id, True)
+        self.fake_court.setVotePasses(owner, motion_id, True)
 
         # Create some nomins and set a convenient price.
         self.updatePrice(oracle, UNIT)
@@ -1079,25 +1079,25 @@ class TestEtherNomin(unittest.TestCase):
         self.buy(target, 10 * UNIT, ethercost)
         self.assertEqual(self.balanceOf(target), 10 * UNIT)
 
-        index = 1
-        self.fake_court.setAddressVoteIndex(owner, target, index)
+        motion_id = 1
+        self.fake_court.setAddressMotionID(owner, target, motion_id)
 
         # Attempt to confiscate even though the conditions are not met.
-        self.fake_court.setConfirming(owner, index, False)
-        self.fake_court.setVotePasses(owner, index, False)
+        self.fake_court.setConfirming(owner, motion_id, False)
+        self.fake_court.setVotePasses(owner, motion_id, False)
         self.assertReverts(self.fake_court.confiscateBalance, owner, target)
 
-        self.fake_court.setConfirming(owner, index, True)
-        self.fake_court.setVotePasses(owner, index, False)
+        self.fake_court.setConfirming(owner, motion_id, True)
+        self.fake_court.setVotePasses(owner, motion_id, False)
         self.assertReverts(self.fake_court.confiscateBalance, owner, target)
 
-        self.fake_court.setConfirming(owner, index, False)
-        self.fake_court.setVotePasses(owner, index, True)
+        self.fake_court.setConfirming(owner, motion_id, False)
+        self.fake_court.setVotePasses(owner, motion_id, True)
         self.assertReverts(self.fake_court.confiscateBalance, owner, target)
 
         # Set up the target balance to be confiscatable.
-        self.fake_court.setConfirming(owner, index, True)
-        self.fake_court.setVotePasses(owner, index, True)
+        self.fake_court.setConfirming(owner, motion_id, True)
+        self.fake_court.setVotePasses(owner, motion_id, True)
 
         # Only the court should be able to confiscate balances.
         self.assertReverts(self.confiscateBalance, owner, target)

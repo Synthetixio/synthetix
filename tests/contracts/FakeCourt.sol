@@ -5,9 +5,9 @@ import "contracts/EtherNomin.sol";
 contract FakeCourt {
 		EtherNomin public nomin;
 
-		mapping(uint => bool) public confirming;
-		mapping(uint => bool) public votePasses;
-		mapping(address => uint) public addressVoteIndex;
+		mapping(uint => bool) public motionConfirming;
+		mapping(uint => bool) public motionPasses;
+		mapping(address => uint) public addressMotionID;
 
 		function setNomin(EtherNomin newNomin)
 			public
@@ -15,22 +15,22 @@ contract FakeCourt {
 			nomin = newNomin;
 		}
 
-		function setConfirming(uint index, bool status)
+		function setConfirming(uint motionID, bool status)
 			public
 		{
-			confirming[index] = status;
+			motionConfirming[motionID] = status;
 		}
 
-		function setVotePasses(uint index, bool status)
+		function setVotePasses(uint motionID, bool status)
 			public
 		{
-			votePasses[index] = status;
+			motionPasses[motionID] = status;
 		}
 
-		function setAddressVoteIndex(address target, uint voteIndex)
+		function setAddressMotionID(address target, uint motionID)
 			public
 		{
-			addressVoteIndex[target] = voteIndex;
+			addressMotionID[target] = motionID;
 		}
 
 		function confiscateBalance(address target)
