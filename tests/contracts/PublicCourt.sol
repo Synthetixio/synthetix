@@ -83,12 +83,12 @@ contract PublicCourt is Court {
 		return MIN_REQUIRED_MAJORITY;
 	}
 
-	function _voteWeight(address account)
+	function _voteWeight(address account, uint motionID)
 		public
 		view
 		returns (uint)
 	{
-		return voteWeight[account];
+		return voteWeight[account][motionID];
 	}
 
 	function publicSetupVote(uint voteIndex)

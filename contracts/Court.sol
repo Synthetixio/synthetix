@@ -103,7 +103,6 @@ This procedure is designed to be relatively simple.
 There are some things that can be added to enhance the functionality
 at the expense of simplicity and efficiency:
   
-  - Allow users to vote in multiple motions at once;
   - Democratic unfreezing of nomin accounts (induces multiple categories of vote)
   - Configurable per-vote durations;
   - Vote standing denominated in a fiat quantity rather than a quantity of havvens;
@@ -184,12 +183,13 @@ contract Court is Owned, SafeDecimalMath {
     mapping(uint => uint) public votesFor;
     mapping(uint => uint) public votesAgainst;
 
-    // The last/penultimate average balance of a user at the time they voted.
+    // The last/penultimate average balance of a user at the time they voted
+    // in a particular motion.
     // If we did not save this information then we would have to
     // disallow transfers into an account lest it cancel a vote
     // with greater weight than that with which it originally voted,
     // and the fee period rolled over in between.
-    mapping(address => uint) voteWeight;
+    mapping(address => mapping(uint => uint)) voteWeight;
 
     // The possible vote types.
     // Abstention: not participating in a motion; This is the default value.
@@ -199,9 +199,7 @@ contract Court is Owned, SafeDecimalMath {
 
     // A given account's vote in some confiscation motion.
     // This requires the default value of the Vote enum to correspond to an abstention.
-    mapping(address => Vote) public vote;
-    // The motion a user last participated in.
-    mapping(address => uint) public participatingMotion;
+    mapping(address => mapping(uint => Vote)) public vote;
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -329,12 +327,12 @@ contract Court is Owned, SafeDecimalMath {
                fractionInFavour > requiredMajority;
     }
 
-    function hasVoted(address account)
+    function hasVoted(address account, uint motionID)
         public
         view
         returns (bool)
     {
-        return vote[account] != Court.Vote.Abstention;
+        return vote[account][motionID] != Court.Vote.Abstention;
     }
 
 
@@ -385,8 +383,8 @@ contract Court is Owned, SafeDecimalMath {
         // Vote totals must only change during the voting phase.
         require(motionVoting(motionID));
 
-        // The voter must not have an active vote in any motion.
-        require(!hasVoted(msg.sender));
+        // The voter must not have an active vote this motion.
+        require(!hasVoted(msg.sender, motionID));
 
         // Ensure the voter's vote weight is current.
         havven.recomputeAccountLastAverageBalance(msg.sender);
@@ -404,8 +402,7 @@ contract Court is Owned, SafeDecimalMath {
         // Users must have a nonzero voting weight to vote.
         require(weight > 0);
 
-        participatingMotion[msg.sender] = motionID;
-        voteWeight[msg.sender] = weight;
+        voteWeight[msg.sender][motionID] = weight;
 
         return weight;
     }
@@ -416,7 +413,7 @@ contract Court is Owned, SafeDecimalMath {
         public
     {
         uint weight = setupVote(motionID);
-        vote[msg.sender] = Court.Vote.Yea;
+        vote[msg.sender][motionID] = Court.Vote.Yea;
         votesFor[motionID] = safeAdd(votesFor[motionID], weight);
         VoteFor(msg.sender, msg.sender, motionID, motionID, weight);
     }
@@ -427,7 +424,7 @@ contract Court is Owned, SafeDecimalMath {
         public
     {
         uint weight = setupVote(motionID);
-            vote[msg.sender] = Court.Vote.Nay;
+        vote[msg.sender][motionID] = Court.Vote.Nay;
         votesAgainst[motionID] = safeAdd(votesAgainst[motionID], weight);
         VoteAgainst(msg.sender, msg.sender, motionID, motionID, weight);
     }
@@ -442,11 +439,8 @@ contract Court is Owned, SafeDecimalMath {
         // when the motion has concluded.
         // But the totals must not change during the confirmation phase itself.
         require(!motionConfirming(motionID));
-        // Disallow accounts from cancelling a vote for a different target
-        // than the one they have previously voted for.
-        require(participatingMotion[msg.sender] == motionID);
 
-        Vote senderVote = vote[msg.sender];
+        Vote senderVote = vote[msg.sender][motionID];
 
         // If the sender has not voted then there is no need to update anything.
         require(senderVote != Vote.Abstention);
@@ -454,19 +448,18 @@ contract Court is Owned, SafeDecimalMath {
         // If we are not voting, there is no reason to update the vote totals.
         if (motionVoting(motionID)) {
             if (senderVote == Vote.Yea) {
-                votesFor[motionID] = safeSub(votesFor[motionID], voteWeight[msg.sender]);
+                votesFor[motionID] = safeSub(votesFor[motionID], voteWeight[msg.sender][motionID]);
             } else {
                 // Since we already ensured that the vote is not an abstention,
                 // the only option remaining is Vote.Nay.
-                votesAgainst[motionID] = safeSub(votesAgainst[motionID], voteWeight[msg.sender]);
+                votesAgainst[motionID] = safeSub(votesAgainst[motionID], voteWeight[msg.sender][motionID]);
             }
             // A cancelled vote is only meaningful if a vote is running
             VoteCancelled(msg.sender, msg.sender, motionID, motionID);
         }
 
-        voteWeight[msg.sender] = 0;
-        vote[msg.sender] = Court.Vote.Abstention;
-        participatingMotion[msg.sender] = 0;
+        voteWeight[msg.sender][motionID] = 0;
+        vote[msg.sender][motionID] = Court.Vote.Abstention;
     }
 
     /* If a motion has concluded, or if it lasted its full duration but not passed,
