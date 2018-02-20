@@ -71,7 +71,7 @@ class TestCourt(unittest.TestCase):
 		cls.MIN_REQUIRED_PARTICIPATION = lambda self: self.court.functions._MIN_REQUIRED_PARTICIPATION().call()
 		cls.requiredMajority = lambda self: self.court.functions.requiredMajority().call()
 		cls.MIN_REQUIRED_MAJORITY = lambda self: self.court.functions._MIN_REQUIRED_MAJORITY().call()
-		cls.voteWeight = lambda self, account: self.court.functions._voteWeight(account).call()
+		cls.voteWeight = lambda self, account, motionID: self.court.functions._voteWeight(account, motionID).call()
 		cls.nextMotionID = lambda self: self.court.functions._nextMotionID().call()
 
 		# Public variables
@@ -80,8 +80,7 @@ class TestCourt(unittest.TestCase):
 		cls.motionStartTime = lambda self, account: self.court.functions.motionStartTime(account).call()
 		cls.votesFor = lambda self, account: self.court.functions.votesFor(account).call()
 		cls.votesAgainst = lambda self, account: self.court.functions.votesAgainst(account).call()
-		cls.vote = lambda self, account: self.court.functions.vote(account).call()
-		cls.participatingMotion = lambda self, account: self.court.functions.participatingMotion(account).call()
+		cls.vote = lambda self, account, motionID: self.court.functions.vote(account, motionID).call()
 
 		# Inherited setter
 		cls.setOwner = lambda self, sender, address: mine_tx(self.court.functions.setOwner(address).transact({'from': sender}))
@@ -94,7 +93,7 @@ class TestCourt(unittest.TestCase):
 		cls.setRequiredMajority = lambda self, sender, fraction: mine_tx(self.court.functions.setRequiredMajority(fraction).transact({'from' : sender}))
 
 		# Views
-		cls.hasVoted = lambda self, sender: self.court.functions.hasVoted(sender).call()
+		cls.hasVoted = lambda self, sender, motionID: self.court.functions.hasVoted(sender, motionID).call()
 		cls.motionVoting = lambda self, target: self.court.functions.motionVoting(target).call()
 		cls.motionConfirming = lambda self, target: self.court.functions.motionConfirming(target).call()
 		cls.motionWaiting = lambda self, target: self.court.functions.motionWaiting(target).call()
@@ -117,7 +116,6 @@ class TestCourt(unittest.TestCase):
 		# Havven getters
 		cls.havvenSupply = lambda self: self.havven.functions.totalSupply().call()
 		cls.havvenBalance = lambda self, account: self.havven.functions.balanceOf(account).call()
-		cls.havvenHasVoted = lambda self, account: self.havven.functions.hasVoted(account).call()
 		cls.havvenTargetFeePeriodDurationSeconds = lambda self : self.havven.functions.targetFeePeriodDurationSeconds().call()
 		cls.havvenPenultimateAverageBalance = lambda self, addr: self.havven.functions.penultimateAverageBalance(addr).call()
 		cls.havvenLastAverageBalance = lambda self, addr: self.havven.functions.lastAverageBalance(addr).call()
@@ -280,19 +278,21 @@ class TestCourt(unittest.TestCase):
 		self.havvenCheckFeePeriodRollover(DUMMY)
 		self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 		# This should fail because no confiscation motion has begun.
-		self.assertFalse(self.hasVoted(voter))
+		next_motion_id = self.nextMotionID()
+		self.assertFalse(self.hasVoted(voter, next_motion_id))
 		motion_id = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
+		self.assertEqual(motion_id, next_motion_id)
 		# This should return false because the voter has not voted yet.
-		self.assertFalse(self.hasVoted(voter))
+		self.assertFalse(self.hasVoted(voter, motion_id))
 		self.voteFor(voter, motion_id)	
 		# This should return true because the voter has voted.
-		self.assertTrue(self.hasVoted(voter))
+		self.assertTrue(self.hasVoted(voter, motion_id))
 		# And false when they cancel their vote.
 		self.cancelVote(voter, motion_id)	
-		self.assertFalse(self.hasVoted(voter))
+		self.assertFalse(self.hasVoted(voter, motion_id))
 		# And true again if they vote against.
 		self.voteFor(voter, motion_id)	
-		self.assertTrue(self.hasVoted(voter))
+		self.assertTrue(self.hasVoted(voter, motion_id))
 
 	def test_motionPasses(self):
 		owner = self.owner()
@@ -407,20 +407,19 @@ class TestCourt(unittest.TestCase):
 		motion_id = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
 
 		# Zero-weight voters should not be able to cast votes.
-		self.assertEqual(self.voteWeight(non_voter), 0)
+		self.assertEqual(self.voteWeight(non_voter, motion_id), 0)
 		self.assertReverts(self.setupVote, non_voter, motion_id)
 
 		# Test that internal function properly updates state
-		self.assertEqual(self.voteWeight(voter), 0)
-		self.assertEqual(self.vote(voter), 0)
+		self.assertEqual(self.voteWeight(voter, motion_id), 0)
+		self.assertEqual(self.vote(voter, motion_id), 0)
 		self.assertTrue(self.motionVoting(motion_id))
-		self.assertFalse(self.hasVoted(voter))
+		self.assertFalse(self.hasVoted(voter, motion_id))
 		tx_receipt = self.setupVote(voter, motion_id)
 		# Additionally ensure that the vote recomputed the voter's fee totals.
 		self.assertClose(self.havvenLastAverageBalance(voter), voter_weight)
 		self.assertClose(self.havvenPenultimateAverageBalance(voter), voter_weight)
-		self.assertEqual(self.participatingMotion(voter), motion_id)
-		self.assertClose(self.voteWeight(voter), voter_weight)
+		self.assertClose(self.voteWeight(voter, motion_id), voter_weight)
 		self.assertClose(int(tx_receipt.logs[0].data, 16), voter_weight)
 
 		# If already voted, cannot setup again
@@ -435,31 +434,39 @@ class TestCourt(unittest.TestCase):
 		suspects = accounts[2:]
 		voting_period = self.votingPeriod()
 		fee_period = self.havvenTargetFeePeriodDurationSeconds()
+
 		# Give some havven tokens to our voter.
 		self.havvenEndow(owner, voter, 1000)
 		self.assertEqual(self.havvenBalance(voter), 1000)
+
 		# Cannot vote unless there is a confiscation motion.
 		self.assertReverts(self.voteFor, voter, 10)
+
 		# Fast forward to update the voter's weight.
 		fast_forward(fee_period + 1)
 		self.havvenCheckFeePeriodRollover(DUMMY)
 		fast_forward(fee_period + 1)
 		self.havvenCheckFeePeriodRollover(DUMMY)
+
 		# Begin a confiscation motion against the suspect.
 		motion_id_0 = self.get_motion_index(self.beginConfiscationMotion(owner, suspects[0]))
 		self.assertTrue(self.motionVoting(motion_id_0))
+
 		# Cast a vote in favour of confiscation.
 		tx_receipt = self.voteFor(voter, motion_id_0)
+
 		# Check that event is emitted properly.
 		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "VoteFor")
+
 		# And that the totals have been updated properly.
 		self.assertEqual(self.votesFor(motion_id_0), 1000)
-		self.assertEqual(self.voteWeight(voter), 1000)
-		self.assertEqual(self.vote(voter), 1)
-		self.assertEqual(self.participatingMotion(voter), motion_id_0)
-		# Our voter should not be able to vote in more than one motion at a time.
-		motion_id_1 = self.get_motion_index(self.beginConfiscationMotion(owner, suspects[1]))
-		self.assertReverts(self.voteFor, voter, motion_id_1)
+		self.assertEqual(self.voteWeight(voter, motion_id_0), 1000)
+		self.assertEqual(self.vote(voter, motion_id_0), 1)
+
+		# It should not be possible to cast a repeat vote without cancelling first.
+		self.assertReverts(self.voteFor, voter, motion_id_0)
+		self.assertReverts(self.voteAgainst, voter, motion_id_0)
+
 		# It should not be possible to vote without any vote weight.
 		self.assertReverts(self.voteFor, no_tokens, motion_id_0)
 
@@ -471,31 +478,39 @@ class TestCourt(unittest.TestCase):
 		suspects = accounts[2:]
 		voting_period = self.votingPeriod()
 		fee_period = self.havvenTargetFeePeriodDurationSeconds()
+
 		# Give some havven tokens to our voter.
 		self.havvenEndow(owner, voter, 1000)
 		self.assertEqual(self.havvenBalance(voter), 1000)
+
 		# Cannot vote unless there is a confiscation motion.
 		self.assertReverts(self.voteAgainst, voter, 10)
+
 		# Fast forward two fee periods to update the voter's weight.
 		fast_forward(fee_period + 1)
 		self.havvenCheckFeePeriodRollover(DUMMY)
 		fast_forward(fee_period + 1)
 		self.havvenCheckFeePeriodRollover(DUMMY)
+
 		# Begin a confiscation motion against the suspect.
 		motion_id_0 = self.get_motion_index(self.beginConfiscationMotion(owner, suspects[0]))
 		self.assertTrue(self.motionVoting(motion_id_0))
+
 		# Cast a vote against confiscation.
 		tx_receipt = self.voteAgainst(voter, motion_id_0)
+
 		# Check that event is emitted properly.
 		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "VoteAgainst")
+
 		# And that the totals have been updated properly.
 		self.assertEqual(self.votesAgainst(motion_id_0), 1000)
-		self.assertEqual(self.voteWeight(voter), 1000)
-		self.assertEqual(self.vote(voter), 2)
-		self.assertEqual(self.participatingMotion(voter), motion_id_0)
-		# Another confiscation motion is opened, our voter should not be able to vote in more than one motion at a time.
-		motion_id_1 = self.get_motion_index(self.beginConfiscationMotion(owner, suspects[1]))
-		self.assertReverts(self.voteAgainst, voter, motion_id_1)
+		self.assertEqual(self.voteWeight(voter, motion_id_0), 1000)
+		self.assertEqual(self.vote(voter, motion_id_0), 2)
+
+		# It should not be possible to cast a repeat vote without cancelling first.
+		self.assertReverts(self.voteFor, voter, motion_id_0)
+		self.assertReverts(self.voteAgainst, voter, motion_id_0)
+
 		# It should not be possible to vote without any vote weight.
 		self.assertReverts(self.voteAgainst, no_tokens, motion_id_0)	
 
@@ -527,38 +542,41 @@ class TestCourt(unittest.TestCase):
 		# Check that event is emitted properly.
 		self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "VoteCancelled")
 		self.assertEqual(self.votesFor(motion_id), 0)
-		self.assertEqual(self.vote(voter), 0)
+		self.assertEqual(self.vote(voter, motion_id), 0)
 
 		# Cast a vote against confiscation.
 		self.voteAgainst(voter, motion_id)
 		self.assertEqual(self.votesAgainst(motion_id), 1000)
 		self.cancelVote(voter, motion_id)
 		self.assertEqual(self.votesAgainst(motion_id), 0)
-		self.assertEqual(self.vote(voter), 0)
-		self.assertEqual(self.voteWeight(voter), 0)
-		self.assertEqual(self.participatingMotion(voter), 0)
+		self.assertEqual(self.vote(voter, motion_id), 0)
+		self.assertEqual(self.voteWeight(voter, motion_id), 0)
+
+		# We should be able to re-vote after cancelling, both for and against.
+		self.voteFor(voter2, motion_id)
+		self.cancelVote(voter2, motion_id)
+		self.voteAgainst(voter2, motion_id)
+		self.cancelVote(voter2, motion_id)
+		self.voteFor(voter2, motion_id)
 
 		# Cannot cancel a vote during the confirmation period.
 		self.voteFor(voter, motion_id)
-		self.voteFor(voter2, motion_id)
-		self.assertEqual(self.vote(voter2), 1)
+		self.assertEqual(self.vote(voter2, motion_id), 1)
 		fast_forward(voting_period)
 		self.assertReverts(self.cancelVote, voter, motion_id)
-		self.assertEqual(self.vote(voter), 1)
+		self.assertEqual(self.vote(voter, motion_id), 1)
 
 		# Can cancel it after the confirmation period.
 		fast_forward(confirmation_period)
 		self.cancelVote(voter, motion_id)
-		self.assertEqual(self.vote(voter), 0)
-		self.assertEqual(self.voteWeight(voter), 0)
-		self.assertEqual(self.participatingMotion(voter), 0)
+		self.assertEqual(self.vote(voter, motion_id), 0)
+		self.assertEqual(self.voteWeight(voter, motion_id), 0)
 
 		# And after the vote has been closed.
 		self.closeMotion(voter2, motion_id)
 		self.cancelVote(voter2, motion_id)
-		self.assertEqual(self.vote(voter2), 0)
-		self.assertEqual(self.voteWeight(voter2), 0)
-		self.assertEqual(self.participatingMotion(voter2), 0)
+		self.assertEqual(self.vote(voter2, motion_id), 0)
+		self.assertEqual(self.voteWeight(voter2, motion_id), 0)
 
 	def test_closeMotion(self):
 		owner = self.owner()
@@ -669,3 +687,54 @@ class TestCourt(unittest.TestCase):
 		self.assertEqual(self.votesFor(motion_id_2), 0)
 		self.assertEqual(self.votesAgainst(motion_id_2), 0)
 		self.assertTrue(self.motionWaiting(motion_id_2))
+
+	def test_multi_vote(self):
+		owner = self.owner()
+		voting_period = self.votingPeriod()
+		fee_period = self.havvenTargetFeePeriodDurationSeconds()
+		controlling_share = self.havvenSupply() // 2
+
+		voter = fresh_account()
+		targets = fresh_accounts(10)
+
+		# Vote types to run simultaneously:
+		# Generate a bunch of voters
+		# pass (unanimous)
+		# pass (majority)
+		# pass (bare)
+		# fail (insufficient participation)
+		# fail (zero participation)
+		# fail (insufficient majority)
+		# fail (zero majority)
+		# fail (timeout)
+		# fail (veto during proceedings)
+		# fail (veto during confirmation)
+
+		self.havvenEndow(owner, voter, controlling_share)
+		fast_forward(fee_period + 1)
+		self.havvenCheckFeePeriodRollover(DUMMY)
+		fast_forward(fee_period + 1)
+		self.havvenCheckFeePeriodRollover(DUMMY)
+		
+		# Open a bunch of confiscation motions...
+		motion_ids = [self.get_motion_index(self.beginConfiscationMotion(owner, targets[i])) for i in range(len(targets))]
+
+		# Vote in all...
+		for motion_id in motion_ids:
+			self.voteFor(voter, motion_id)
+			self.assertTrue(self.motionVoting(motion_id))
+
+		# And pass them all...
+		fast_forward(voting_period)
+		for motion_id in motion_ids:
+			self.assertTrue(self.motionConfirming(motion_id))
+			self.approve(owner, motion_id)
+			self.assertTrue(self.motionWaiting(motion_id))
+
+		for target in targets:
+			self.assertTrue(self.nominIsFrozen(target))
+
+	def test_re_open_exploit(self):
+		pass
+
+
