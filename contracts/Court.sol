@@ -484,7 +484,7 @@ contract Court is Owned, SafeDecimalMath {
 
     /* The foundation may only confiscate a balance during the confirmation
      * period after a motion has passed. */
-    function approve(uint motionID)
+    function approveMotion(uint motionID)
         public
         onlyOwner
     {
@@ -496,7 +496,7 @@ contract Court is Owned, SafeDecimalMath {
     }
 
     /* The foundation may veto a motion at any time. */
-    function veto(uint motionID)
+    function vetoMotion(uint motionID)
         public
         onlyOwner
     {
