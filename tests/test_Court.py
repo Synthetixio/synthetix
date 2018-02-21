@@ -107,8 +107,8 @@ class TestCourt(unittest.TestCase):
         cls.closeMotion = lambda self, sender, target: mine_tx(self.court.functions.closeMotion(target).transact({'from' : sender}))
 
         # Owner only
-        cls.approve = lambda self, sender, target: mine_tx(self.court.functions.approve(target).transact({'from' : sender}))
-        cls.veto = lambda self, sender, target: mine_tx(self.court.functions.veto(target).transact({'from' : sender}))
+        cls.approveMotion = lambda self, sender, target: mine_tx(self.court.functions.approveMotion(target).transact({'from' : sender}))
+        cls.vetoMotion = lambda self, sender, target: mine_tx(self.court.functions.vetoMotion(target).transact({'from' : sender}))
 
         # Internal
         cls.setupVote = lambda self, sender, target: mine_tx(self.court.functions.publicSetupVote(target).transact({'from': sender}))
@@ -386,7 +386,7 @@ class TestCourt(unittest.TestCase):
         self.assertReverts(self.beginConfiscationMotion, owner, suspects[0])
         self.voteFor(voter, motion_id_0)
         fast_forward(voting_period)
-        self.approve(owner, motion_id_0)
+        self.approveMotion(owner, motion_id_0)
         self.assertTrue(self.nominIsFrozen(suspects[0]))
         # Cannot open a vote on an account that has already been frozen.
         self.assertReverts(self.beginConfiscationMotion, owner, suspects[0])
@@ -610,7 +610,7 @@ class TestCourt(unittest.TestCase):
         self.assertEqual(self.motionStartTime(motion_id), 0)
         self.assertTrue(self.motionWaiting(motion_id))
 
-    def test_approve(self):
+    def test_approveMotion(self):
         owner = self.owner()
         voter, guilty = fresh_accounts(2)
         voting_period = self.votingPeriod()
@@ -629,12 +629,12 @@ class TestCourt(unittest.TestCase):
         # Cast a vote in favour of confiscation.
         tx_receipt = self.voteFor(voter, motion_id)
         # It should not be possible to approve in the voting state.
-        self.assertReverts(self.approve, owner, motion_id)
+        self.assertReverts(self.approveMotion, owner, motion_id)
         fast_forward(voting_period)
         self.assertTrue(self.motionConfirming(motion_id))
         # Only the owner can approve the confiscation of a balance.
-        self.assertReverts(self.approve, voter, motion_id)
-        tx_receipt = self.approve(owner, motion_id)
+        self.assertReverts(self.approveMotion, voter, motion_id)
+        tx_receipt = self.approveMotion(owner, motion_id)
         # Check that event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[0])['event'], "Confiscation")
         self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[1])['event'], "MotionClosed")
@@ -644,7 +644,7 @@ class TestCourt(unittest.TestCase):
         # After confiscation, their nomin balance should be frozen.
         self.assertTrue(self.nominIsFrozen(guilty))
 
-    def test_veto(self):
+    def test_vetoMotion(self):
         owner = self.owner()
         voter, acquitted = fresh_accounts(2)
         voting_period = self.votingPeriod()
@@ -658,11 +658,11 @@ class TestCourt(unittest.TestCase):
         self.havvenCheckFeePeriodRollover(DUMMY)
         self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
         # Cannot veto when there is no vote in progress.
-        self.assertReverts(self.veto, owner, 10)
+        self.assertReverts(self.vetoMotion, owner, 10)
         motion_id = self.get_motion_index(self.beginConfiscationMotion(owner, acquitted))
         # Only owner can veto.
-        self.assertReverts(self.veto, DUMMY, motion_id)
-        self.veto(owner, motion_id)
+        self.assertReverts(self.vetoMotion, DUMMY, motion_id)
+        self.vetoMotion(owner, motion_id)
         # After veto motion, suspect should be back in the waiting stage.
         self.assertTrue(self.motionWaiting(motion_id))
         motion_id_2 = self.get_motion_index(self.beginConfiscationMotion(owner, acquitted))
@@ -672,7 +672,7 @@ class TestCourt(unittest.TestCase):
         fast_forward(voting_period)
         self.assertTrue(self.motionConfirming(motion_id_2))
         # Once a vote has been passed, the owner can veto it.
-        tx_receipt = self.veto(owner, motion_id_2)
+        tx_receipt = self.vetoMotion(owner, motion_id_2)
         # Check that event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "MotionClosed")
         self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[1])['event'], "MotionVetoed")
@@ -933,7 +933,7 @@ class TestCourt(unittest.TestCase):
         for motion in motions:
             self.assertTrue(self.motionVoting(motion))
 
-        tx_receipt = self.veto(owner, mid_veto_vote)
+        tx_receipt = self.vetoMotion(owner, mid_veto_vote)
         self.validate_MotionClosed_data(tx_receipt, 0, mid_veto_vote)
         self.validate_MotionVetoed_data(tx_receipt, 1, mid_veto_vote)
         self.assertTrue(self.motionWaiting(mid_veto_vote))
@@ -950,7 +950,7 @@ class TestCourt(unittest.TestCase):
             totalVotes = yeas + nays
             self.assertTrue(self.motionPasses(motion))
 
-            tx_receipt = self.approve(owner, motion)
+            tx_receipt = self.approveMotion(owner, motion)
             self.assertTrue(self.motionWaiting(motion))
             self.assertTrue(self.nominIsFrozen(target))
 
@@ -967,7 +967,7 @@ class TestCourt(unittest.TestCase):
 
         self.assertTrue(self.motionConfirming(post_veto_vote))
         self.assertReverts(self.closeMotion, owner, post_veto_vote)
-        tx_receipt = self.veto(owner, post_veto_vote)
+        tx_receipt = self.vetoMotion(owner, post_veto_vote)
         self.validate_MotionClosed_data(tx_receipt, 0, post_veto_vote)
         self.validate_MotionVetoed_data(tx_receipt, 1, post_veto_vote)
         self.assertTrue(self.motionWaiting(post_veto_vote))
