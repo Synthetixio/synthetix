@@ -114,9 +114,6 @@ contract EtherNomin is ERC20FeeToken {
     // If the price is stale, functions that require the price are disabled.
     uint public stalePeriod = 2 days;
 
-    // The set of addresses that have been frozen by confiscation.
-    mapping(address => bool) public isFrozen;
-
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -124,11 +121,9 @@ contract EtherNomin is ERC20FeeToken {
                         address _beneficiary,
                         uint initialEtherPrice,
                         address _owner)
-        ERC20FeeToken("Ether-Backed USD Nomins", "eUSD",
-                      0, _owner,
+        ERC20FeeToken(_owner, "Ether-Backed USD Nomins", "eUSD",
                       UNIT / 500, // nomin transfers incur a 20 bp fee
-                      address(_havven), // havven contract is the fee authority
-                      _owner)
+                      address(_havven)) // havven contract is the fee authority
         public
     {
         oracle = _oracle;
@@ -138,7 +133,8 @@ contract EtherNomin is ERC20FeeToken {
         lastPriceUpdate = now;
         PriceUpdated(etherPrice);
 
-        isFrozen[this] = true;
+        stateContract = new ERC20FeeState(_owner, 0, _owner, address(this));
+        setFrozen(this, true);
     }
 
 
@@ -183,6 +179,12 @@ contract EtherNomin is ERC20FeeToken {
     {
         stalePeriod = period;
         StalePeriodUpdated(period);
+    }
+
+    function setFrozen(address account, bool val)
+        internal
+    {
+        stateContract.setFrozen(account, val);
     }
 
     /* ========== VIEW FUNCTIONS ========== */
@@ -238,7 +240,7 @@ contract EtherNomin is ERC20FeeToken {
         view
         returns (uint)
     {
-        return safeDecDiv(fiatBalance(), totalSupply);
+        return safeDecDiv(fiatBalance(), stateContract.totalSupply());
     }
 
     /* Return the fee charged on a purchase or sale of n nomins. */
@@ -337,12 +339,19 @@ contract EtherNomin is ERC20FeeToken {
             // These timestamps and durations have values clamped within reasonable values and
             // cannot overflow.
             bool totalPeriodElapsed = liquidationTimestamp + liquidationPeriod < now;
-            bool allTokensReturned = (liquidationTimestamp + 1 weeks < now) && (nominPool == totalSupply);
+            bool allTokensReturned = (liquidationTimestamp + 1 weeks < now) && (nominPool == stateContract.totalSupply());
             return totalPeriodElapsed || allTokensReturned;
         }
         return false;
     }
 
+    
+    function isFrozen(address account) 
+        public
+        returns (bool)
+    {
+        return stateContract.isFrozen(account);
+    }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
@@ -352,7 +361,7 @@ contract EtherNomin is ERC20FeeToken {
         public
         returns (bool)
     {
-        require(!(isFrozen[msg.sender] || isFrozen[_to]));
+        require(!(isFrozen(msg.sender) || isFrozen(_to)));
         return super.transfer(_to, _value);
     }
 
@@ -362,7 +371,7 @@ contract EtherNomin is ERC20FeeToken {
         public
         returns (bool)
     {
-        require(!(isFrozen[_from] || isFrozen[_to]));
+        require(!(isFrozen(_from) || isFrozen(_to)));
         return super.transferFrom(_from, _to, _value);
     }
 
@@ -399,9 +408,9 @@ contract EtherNomin is ERC20FeeToken {
         // Price staleness check occurs inside the call to fiatValue.
         // Safe additions are unnecessary here, as either the addition is checked on the following line
         // or the overflow would cause the requirement not to be satisfied.
-        uint sum = safeAdd(totalSupply, n);
+        uint sum = safeAdd(stateContract.totalSupply(), n);
         require(fiatBalance() >= safeDecMul(sum, collatRatioMinimum));
-        totalSupply = sum;
+        stateContract.setTotalSupply(sum);
         nominPool = safeAdd(nominPool, n);
         Issuance(n, msg.value);
     }
@@ -417,7 +426,7 @@ contract EtherNomin is ERC20FeeToken {
         // Require that there are enough nomins in the accessible pool to burn
         require(nominPool >= n);
         nominPool = safeSub(nominPool, n);
-        totalSupply = safeSub(totalSupply, n);
+        stateContract.setTotalSupply(safeSub(stateContract.totalSupply(), n));
         Burning(n);
     }
 
@@ -439,7 +448,7 @@ contract EtherNomin is ERC20FeeToken {
                 msg.value == purchaseCostEther(n));
         // sub requires that nominPool >= n
         nominPool = safeSub(nominPool, n);
-        balanceOf[msg.sender] = safeAdd(balanceOf[msg.sender], n);
+        stateContract.setBalance(msg.sender, safeAdd(stateContract.balanceOf(msg.sender), n));
         Purchase(msg.sender, msg.sender, n, msg.value);
     }
 
@@ -466,7 +475,7 @@ contract EtherNomin is ERC20FeeToken {
         require(this.balance >= proceeds);
 
         // sub requires that the balance is greater than n
-        balanceOf[msg.sender] = safeSub(balanceOf[msg.sender], n);
+        stateContract.setBalance(msg.sender, safeSub(stateContract.balanceOf(msg.sender), n));
         nominPool = safeAdd(nominPool, n);
         Sale(msg.sender, msg.sender, n, proceeds);
         msg.sender.transfer(proceeds);
@@ -519,7 +528,7 @@ contract EtherNomin is ERC20FeeToken {
         payable
     {
         require(isLiquidating());
-        require(totalSupply == 0 || collateralisationRatio() >= autoLiquidationRatio);
+        require(stateContract.totalSupply() == 0 || collateralisationRatio() >= autoLiquidationRatio);
         liquidationTimestamp = ~uint(0);
         liquidationPeriod = defaultLiquidationPeriod;
         LiquidationTerminated();
@@ -554,10 +563,10 @@ contract EtherNomin is ERC20FeeToken {
         require(court.votePasses(target));
 
         // Confiscate the balance in the account and freeze it.
-        uint balance = balanceOf[target];
-        feePool = safeAdd(feePool, balance);
-        balanceOf[target] = 0;
-        isFrozen[target] = true;
+        uint balance = stateContract.balanceOf(target);
+        stateContract.setFeePool(safeAdd(stateContract.feePool(), balance));
+        stateContract.setBalance(target, 0);
+        setFrozen(target, true);
         Confiscation(target, target, balance);
     }
 
@@ -567,8 +576,8 @@ contract EtherNomin is ERC20FeeToken {
         public
         onlyOwner
     {
-        if (isFrozen[target] && EtherNomin(target) != this) {
-            isFrozen[target] = false;
+        if (isFrozen(target) && EtherNomin(target) != this) {
+            setFrozen(target, false);
             AccountUnfrozen(target, target);
         }
     }
@@ -604,7 +613,7 @@ contract EtherNomin is ERC20FeeToken {
     modifier postCheckAutoLiquidate
     {
         _;
-        if (!isLiquidating() && totalSupply != 0 && collateralisationRatio() < autoLiquidationRatio) {
+        if (!isLiquidating() && stateContract.totalSupply() != 0 && collateralisationRatio() < autoLiquidationRatio) {
             beginLiquidation();
         }
     }
