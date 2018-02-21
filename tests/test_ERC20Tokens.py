@@ -6,9 +6,10 @@ from utils.deployutils import take_snapshot, restore_snapshot
 from utils.testutils import assertReverts
 from utils.testutils import generate_topic_event_map, get_event_data_from_log
 
-
 ERC20Token_SOURCE = "contracts/ERC20Token.sol"
 ERC20FeeToken_SOURCE = "contracts/ERC20FeeToken.sol"
+ERC20State_SOURCE = "contracts/ERC20State.sol"
+ERC20FeeState_SOURCE = "contracts/ERC20FeeState.sol"
 
 
 def setUpModule():
@@ -33,9 +34,14 @@ class TestERC20Token(unittest.TestCase):
         compiled = compile_contracts([ERC20Token_SOURCE])
         cls.erc20_abi = compiled['ERC20Token']['abi']
         cls.erc20_event_dict = generate_topic_event_map(cls.erc20_abi)
-        cls.erc20token, cls.construction_txr = attempt_deploy(compiled, 'ERC20Token', 
-                                                              MASTER, ["Test Token", "TEST", 
-                                                              1000 * UNIT, MASTER])
+
+        cls.erc20token, cls.construction_txr = attempt_deploy(compiled, 'ERC20Token',
+                                                              MASTER, [MASTER, "Test Token", "TEST"])
+        cls.erc20state, cls.state_construction_txr = attempt_deploy(
+            compiled, 'ERC20State', MASTER, [MASTER, 1000 * UNIT, MASTER, cls.erc20token.address]
+        )
+
+        mine_tx(cls.erc20token.functions.setState(cls.erc20state.address).transact({'from': MASTER}))
 
         cls.totalSupply = lambda self: cls.erc20token.functions.totalSupply().call()
         cls.name = lambda self: cls.erc20token.functions.name().call()
@@ -43,9 +49,12 @@ class TestERC20Token(unittest.TestCase):
         cls.balanceOf = lambda self, account: cls.erc20token.functions.balanceOf(account).call()
         cls.allowance = lambda self, account, spender: cls.erc20token.functions.allowance(account, spender).call()
 
-        cls.transfer = lambda self, sender, to, value: mine_tx(cls.erc20token.functions.transfer(to, value).transact({'from' : sender}))
-        cls.approve = lambda self, sender, spender, value: mine_tx(cls.erc20token.functions.approve(spender, value).transact({'from' : sender}))
-        cls.transferFrom = lambda self, sender, fromAccount, to, value: mine_tx(cls.erc20token.functions.transferFrom(fromAccount, to, value).transact({'from' : sender}))
+        cls.transfer = lambda self, sender, to, value: mine_tx(
+            cls.erc20token.functions.transfer(to, value).transact({'from': sender}))
+        cls.approve = lambda self, sender, spender, value: mine_tx(
+            cls.erc20token.functions.approve(spender, value).transact({'from': sender}))
+        cls.transferFrom = lambda self, sender, fromAccount, to, value: mine_tx(
+            cls.erc20token.functions.transferFrom(fromAccount, to, value).transact({'from': sender}))
 
     def test_constructor(self):
         self.assertEqual(self.name(), "Test Token")
@@ -69,8 +78,8 @@ class TestERC20Token(unittest.TestCase):
         tx_receipt = self.transfer(sender, receiver, value)
         # Check event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.erc20_event_dict, tx_receipt.logs[0])['event'], "Transfer")
-        self.assertEqual(self.balanceOf(receiver), receiver_balance+value)
-        self.assertEqual(self.balanceOf(sender), sender_balance-value)
+        self.assertEqual(self.balanceOf(receiver), receiver_balance + value)
+        self.assertEqual(self.balanceOf(sender), sender_balance - value)
 
         # transfers should leave the supply unchanged
         self.assertEqual(self.totalSupply(), total_supply)
@@ -119,7 +128,7 @@ class TestERC20Token(unittest.TestCase):
 
         approver_balance = self.balanceOf(approver)
         spender_balance = self.balanceOf(spender)
-        receiver_balance = self.balanceOf(receiver) 
+        receiver_balance = self.balanceOf(receiver)
 
         value = 10 * UNIT
         total_supply = self.totalSupply()
@@ -150,7 +159,7 @@ class TestERC20Token(unittest.TestCase):
 
         approver = fresh_account()
         # This account has no tokens
-        approver_balance = self.balanceOf(approver) 
+        approver_balance = self.balanceOf(approver)
         self.assertEqual(approver_balance, 0)
         self.assertEqual(self.allowance(approver, spender), 0)
 
@@ -169,19 +178,24 @@ class TestERC20FeeToken(unittest.TestCase):
 
     def tearDown(self):
         restore_snapshot(self.snapshot)
-    
+
     @classmethod
     def setUpClass(cls):
         cls.assertReverts = assertReverts
         cls.initial_beneficiary, cls.fee_authority, cls.token_owner = fresh_accounts(3)
 
-        compiled = compile_contracts([ERC20FeeToken_SOURCE])
+        compiled = compile_contracts([ERC20FeeToken_SOURCE, ERC20FeeState_SOURCE])
         cls.erc20fee_abi = compiled['ERC20FeeToken']['abi']
         cls.erc20fee_event_dict = generate_topic_event_map(cls.erc20fee_abi)
-        cls.erc20feetoken, cls.construction_txr = attempt_deploy(compiled, "ERC20FeeToken", MASTER, 
-                                                                 ["Test Fee Token", "FEE", 1000 * UNIT, 
-                                                                  cls.initial_beneficiary, UNIT // 20,
-                                                                  cls.fee_authority, cls.token_owner])
+        cls.erc20feetoken, cls.construction_txr = attempt_deploy(
+            compiled, "ERC20FeeToken", MASTER, [cls.token_owner, "Test Fee Token", "FEE", UNIT // 20, cls.fee_authority]
+        )
+        cls.erc20feestate, txr = attempt_deploy(
+            compiled, "ERC20FeeState", MASTER,
+            [cls.token_owner, 1000 * UNIT, cls.initial_beneficiary, cls.erc20feetoken.address]
+        )
+
+        mine_tx(cls.erc20feetoken.functions.setState(cls.erc20feestate.address).transact({'from': cls.token_owner}))
 
         cls.owner = lambda self: cls.erc20feetoken.functions.owner().call()
         cls.totalSupply = lambda self: cls.erc20feetoken.functions.totalSupply().call()
@@ -197,15 +211,23 @@ class TestERC20FeeToken(unittest.TestCase):
         cls.transferFeeIncurred = lambda self, value: cls.erc20feetoken.functions.transferFeeIncurred(value).call()
         cls.transferPlusFee = lambda self, value: cls.erc20feetoken.functions.transferPlusFee(value).call()
 
-        cls.setOwner = lambda self, sender, address: mine_tx(cls.erc20feetoken.functions.setOwner(address).transact({'from': sender}))
-        cls.setTransferFeeRate = lambda self, sender, new_fee_rate: mine_tx(cls.erc20feetoken.functions.setTransferFeeRate(new_fee_rate).transact({'from': sender}))
-        cls.setFeeAuthority  = lambda self, sender, new_fee_authority: mine_tx(cls.erc20feetoken.functions.setFeeAuthority(new_fee_authority).transact({'from': sender}))
-        cls.transfer = lambda self, sender, to, value: mine_tx(cls.erc20feetoken.functions.transfer(to, value).transact({'from': sender}))
-        cls.approve = lambda self, sender, spender, value: mine_tx(cls.erc20feetoken.functions.approve(spender, value).transact({'from': sender}))
-        cls.transferFrom = lambda self, sender, fromAccount, to, value: mine_tx(cls.erc20feetoken.functions.transferFrom(fromAccount, to, value).transact({'from': sender}))
+        cls.setOwner = lambda self, sender, address: mine_tx(
+            cls.erc20feetoken.functions.setOwner(address).transact({'from': sender}))
+        cls.setTransferFeeRate = lambda self, sender, new_fee_rate: mine_tx(
+            cls.erc20feetoken.functions.setTransferFeeRate(new_fee_rate).transact({'from': sender}))
+        cls.setFeeAuthority = lambda self, sender, new_fee_authority: mine_tx(
+            cls.erc20feetoken.functions.setFeeAuthority(new_fee_authority).transact({'from': sender}))
+        cls.transfer = lambda self, sender, to, value: mine_tx(
+            cls.erc20feetoken.functions.transfer(to, value).transact({'from': sender}))
+        cls.approve = lambda self, sender, spender, value: mine_tx(
+            cls.erc20feetoken.functions.approve(spender, value).transact({'from': sender}))
+        cls.transferFrom = lambda self, sender, fromAccount, to, value: mine_tx(
+            cls.erc20feetoken.functions.transferFrom(fromAccount, to, value).transact({'from': sender}))
 
-        cls.withdrawFee = lambda self, sender, account, value: mine_tx(cls.erc20feetoken.functions.withdrawFee(account, value).transact({'from' : sender}))
-        cls.donateToFeePool = lambda self, sender, value: mine_tx(cls.erc20feetoken.functions.donateToFeePool(value).transact({'from': sender}))
+        cls.withdrawFee = lambda self, sender, account, value: mine_tx(
+            cls.erc20feetoken.functions.withdrawFee(account, value).transact({'from': sender}))
+        cls.donateToFeePool = lambda self, sender, value: mine_tx(
+            cls.erc20feetoken.functions.donateToFeePool(value).transact({'from': sender}))
 
     def test_constructor(self):
         self.assertEqual(self.name(), "Test Fee Token")
@@ -238,7 +260,8 @@ class TestERC20FeeToken(unittest.TestCase):
         self.assertReverts(self.setTransferFeeRate, fake_owner, new_transfer_fee_rate)
         tx_receipt = self.setTransferFeeRate(owner, new_transfer_fee_rate)
         # Check that event is emitted.
-        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'], "TransferFeeRateUpdate")
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'],
+                         "TransferFeeRateUpdate")
         self.assertEqual(self.transferFeeRate(), new_transfer_fee_rate)
 
         # Maximum fee rate is UNIT /10.
@@ -247,7 +270,6 @@ class TestERC20FeeToken(unittest.TestCase):
         self.assertEqual(self.transferFeeRate(), new_transfer_fee_rate)
 
     def test_getSetFeeAuthority(self):
-        fee_authority = self.feeAuthority()
         new_fee_authority = fresh_account()
         owner = self.owner()
 
@@ -255,7 +277,8 @@ class TestERC20FeeToken(unittest.TestCase):
         self.assertReverts(self.setFeeAuthority, new_fee_authority, new_fee_authority)
         tx_receipt = self.setFeeAuthority(owner, new_fee_authority)
         # Check that event is emitted.
-        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'], "FeeAuthorityUpdate")
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'],
+                         "FeeAuthorityUpdate")
         self.assertEqual(self.feeAuthority(), new_fee_authority)
 
     def test_getTransferFeeIncurred(self):
@@ -293,31 +316,28 @@ class TestERC20FeeToken(unittest.TestCase):
         tx_receipt = self.transfer(sender, receiver, value)
         # Check that events are emitted properly.
         self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'], "Transfer")
-        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[1])['event'], "TransferFeePaid")
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[1])['event'],
+                         "TransferFeePaid")
         self.assertEqual(self.balanceOf(receiver), receiver_balance + value)
         self.assertEqual(self.balanceOf(sender), sender_balance - total_value)
         self.assertEqual(self.totalSupply(), total_supply)
         self.assertEqual(self.feePool(), fee_pool + fee)
 
         value = 1001 * UNIT
-        fee = self.transferFeeIncurred(value)
-        total_value = self.transferPlusFee(value)
-        total_supply = self.totalSupply()
-        fee_pool = self.feePool()
 
         # This should fail because balance < value
         self.assertReverts(self.transfer, sender, receiver, value)
 
         # 0 Value transfers are allowed and incur no fee.
         value = 0
-        fee = self.transferFeeIncurred(value)
         total_supply = self.totalSupply()
         fee_pool = self.feePool()
 
         tx_receipt = self.transfer(sender, receiver, value)
         # Check that events are emitted properly.
         self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'], "Transfer")
-        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[1])['event'], "TransferFeePaid")
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[1])['event'],
+                         "TransferFeePaid")
         self.assertEqual(self.totalSupply(), total_supply)
         self.assertEqual(self.feePool(), fee_pool)
 
@@ -332,7 +352,8 @@ class TestERC20FeeToken(unittest.TestCase):
         tx_receipt = self.transfer(no_tokens, receiver, value)
         # Check that events are emitted properly.
         self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'], "Transfer")
-        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[1])['event'], "TransferFeePaid")
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[1])['event'],
+                         "TransferFeePaid")
         self.assertEqual(self.balanceOf(no_tokens), 0)
         self.assertEqual(self.totalSupply(), total_supply)
         self.assertEqual(self.feePool(), fee_pool)
@@ -382,7 +403,8 @@ class TestERC20FeeToken(unittest.TestCase):
         tx_receipt = self.transferFrom(spender, approver, receiver, value // 10)
         # Check that events are emitted properly.
         self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'], "Transfer")
-        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[1])['event'], "TransferFeePaid")
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[1])['event'],
+                         "TransferFeePaid")
         self.assertEqual(self.allowance(approver, spender), 9 * total_value // 10)
 
         self.assertEqual(self.balanceOf(approver), approver_balance - total_value // 10)
@@ -394,7 +416,8 @@ class TestERC20FeeToken(unittest.TestCase):
         tx_receipt = self.transferFrom(spender, approver, receiver, 9 * value // 10)
         # Check that events are emitted properly.
         self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'], "Transfer")
-        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[1])['event'], "TransferFeePaid")
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[1])['event'],
+                         "TransferFeePaid")
         self.assertEqual(self.allowance(approver, spender), 0)
         self.assertEqual(self.balanceOf(approver), approver_balance - total_value)
         self.assertEqual(self.balanceOf(spender), spender_balance)
@@ -404,7 +427,7 @@ class TestERC20FeeToken(unittest.TestCase):
 
         approver = fresh_account()
         # This account has no tokens.
-        approver_balance = self.balanceOf(approver) 
+        approver_balance = self.balanceOf(approver)
         self.assertEqual(approver_balance, 0)
 
         tx_receipt = self.approve(approver, spender, total_value)
@@ -413,19 +436,19 @@ class TestERC20FeeToken(unittest.TestCase):
         # This should fail because the approver has no tokens.
         self.assertReverts(self.transferFrom, spender, approver, receiver, value)
 
-    def test_withdrawFee(self): 
+    def test_withdrawFee(self):
         receiver, fee_receiver, not_fee_authority = fresh_accounts(3)
         self.assertNotEqual(self.fee_authority, not_fee_authority)
         self.assertNotEqual(self.fee_authority, receiver)
         self.assertNotEqual(self.fee_authority, fee_receiver)
-
 
         value = 500 * UNIT
         total_value = self.transferPlusFee(value)
         tx_receipt = self.transfer(self.initial_beneficiary, self.fee_authority, total_value)
         # Check that event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'], "Transfer")
-        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[1])['event'], "TransferFeePaid")
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[1])['event'],
+                         "TransferFeePaid")
         self.assertEqual(self.balanceOf(self.fee_authority), total_value)
 
         fee = self.transferFeeIncurred(value)
@@ -439,7 +462,8 @@ class TestERC20FeeToken(unittest.TestCase):
         tx_receipt = self.transfer(self.fee_authority, receiver, value)
         # Check that event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'], "Transfer")
-        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[1])['event'], "TransferFeePaid")
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[1])['event'],
+                         "TransferFeePaid")
 
         self.assertEqual(self.balanceOf(receiver), receiver_balance + value)
         self.assertEqual(self.balanceOf(self.fee_authority), fee_authority_balance - total_value)
@@ -457,14 +481,16 @@ class TestERC20FeeToken(unittest.TestCase):
         # Partial withdrawal leaves stuff in the pool
         tx_receipt = self.withdrawFee(self.fee_authority, fee_receiver, fee_pool // 4)
         # Check that event is emitted properly.
-        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'], "FeeWithdrawal")
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'],
+                         "FeeWithdrawal")
         self.assertEqual(3 * fee_pool // 4, self.feePool())
         self.assertEqual(self.balanceOf(fee_receiver), fee_receiver_balance + fee_pool // 4)
 
         # Withdraw the rest
         tx_receipt = self.withdrawFee(self.fee_authority, fee_receiver, 3 * fee_pool // 4)
         # Check that event is emitted properly.
-        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'], "FeeWithdrawal")
+        self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'],
+                         "FeeWithdrawal")
 
         self.assertEqual(self.balanceOf(fee_receiver), fee_receiver_balance + fee_pool)
         self.assertEqual(self.totalSupply(), total_supply)

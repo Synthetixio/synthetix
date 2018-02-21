@@ -24,35 +24,38 @@ pragma solidity ^0.4.19;
 
 
 import "contracts/SafeDecimalMath.sol";
+import "contracts/Owned.sol";
+import "contracts/ERC20State.sol";
 
 
-contract ERC20Token is SafeDecimalMath {
+contract ERC20Token is SafeDecimalMath, Owned {
 
     /* ========== STATE VARIABLES ========== */
 
-    // ERC20 token data
-    // Allowance mapping domain: (owner, spender)
-    uint public totalSupply;
+    ERC20State public stateContract;
+
     string public name;
     string public symbol;
-    mapping(address => uint) public balanceOf;
-    mapping(address => mapping (address => uint256)) public allowance;
 
 
     /* ========== CONSTRUCTOR ========== */
 
-    function ERC20Token(string _name, string _symbol,
-                        uint initialSupply, address initialBeneficiary)
+    function ERC20Token(address _owner, string _name, string _symbol)
+        Owned(_owner)
         public
     {
         name = _name;
         symbol = _symbol;
-        totalSupply = initialSupply;
-        balanceOf[initialBeneficiary] = initialSupply;
     }
 
-
     /* ========== MUTATIVE FUNCTIONS ========== */
+
+    function setState(ERC20State _stateContract)
+        onlyOwner
+        public
+    {
+        stateContract = _stateContract;
+    }
 
     function transfer(address _to, uint _value)
         public
@@ -67,8 +70,8 @@ contract ERC20Token is SafeDecimalMath {
         }
 
         // Insufficient balance will be handled by the safe subtraction.
-        balanceOf[msg.sender] = safeSub(balanceOf[msg.sender], _value);
-        balanceOf[_to] = safeAdd(balanceOf[_to], _value);
+        stateContract.setBalance(msg.sender, safeSub(stateContract.balanceOf(msg.sender), _value));
+        stateContract.setBalance(_to, safeAdd(stateContract.balanceOf(_to), _value));
 
         return true;
     }
@@ -86,9 +89,9 @@ contract ERC20Token is SafeDecimalMath {
         }
 
         // Insufficient balance will be handled by the safe subtraction.
-        balanceOf[_from] = safeSub(balanceOf[_from], _value);
-        allowance[_from][msg.sender] = safeSub(allowance[_from][msg.sender], _value);
-        balanceOf[_to] = safeAdd(balanceOf[_to], _value);
+        stateContract.setBalance(_from, safeSub(stateContract.balanceOf(_from), _value));
+        stateContract.setAllowance(_from, msg.sender, safeSub(stateContract.allowance(_from, msg.sender), _value));
+        stateContract.setBalance(_to, safeAdd(stateContract.balanceOf(_to), _value));
 
         return true;
     }
@@ -97,11 +100,32 @@ contract ERC20Token is SafeDecimalMath {
         public
         returns (bool)
     {
-        allowance[msg.sender][_spender] = _value;
+        stateContract.setAllowance(msg.sender, _spender, _value);
         Approval(msg.sender, _spender, _value);
+
         return true;
     }
 
+    function allowance(address _account, address _spender)
+        public
+        returns (uint)
+    {
+        return stateContract.allowance(_account, _spender);
+    }
+
+    function balanceOf(address _account)
+        public
+        returns (uint)
+    {
+        return stateContract.balanceOf(_account);
+    }
+
+    function totalSupply()
+        public
+        returns (uint)
+    {
+        return stateContract.totalSupply();
+    }
 
     /* ========== EVENTS ========== */
 

@@ -33,18 +33,18 @@ contract PublicEtherNomin is EtherNomin {
 	function debugWithdrawAllEther(address recipient)
 		public
 	{
-		recipient.send(this.balance);
+		recipient.send(balanceOf(this));
 	}
 	
 	function debugEmptyFeePool()
 		public
 	{
-		feePool = 0;
+		stateContract.setFeePool(0);
 	}
 
 	function debugFreezeAccount(address target)
 		public
 	{
-		isFrozen[target] = true;
+		setFrozen(target, true);
 	}
 }
