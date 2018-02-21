@@ -508,7 +508,7 @@ contract Court is Owned, SafeDecimalMath {
 
     /* ========== EVENTS ========== */
 
-    event MotionBegun(address initator, address indexed initiatorIndex, address target, address indexed targetIndex, uint motionID, uint indexed motionIDIndex);
+    event MotionBegun(address initiator, address indexed initiatorIndex, address target, address indexed targetIndex, uint motionID, uint indexed motionIDIndex);
 
     event VoteFor(address voter, address indexed voterIndex, uint motionID, uint indexed motionIDIndex, uint weight);
 
