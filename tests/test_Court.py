@@ -688,44 +688,243 @@ class TestCourt(unittest.TestCase):
 		self.assertEqual(self.votesAgainst(motion_id_2), 0)
 		self.assertTrue(self.motionWaiting(motion_id_2))
 
+	def validate_MotionBegun_data(self, tx_receipt, expected_initiator, expected_target, expected_motionID):
+		event_data = get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])
+		self.assertEqual(event_data['event'], "MotionBegun")
+		self.assertEqual(event_data['args']['initiator'], expected_initiator)
+		self.assertEqual(event_data['args']['target'], expected_target)
+		self.assertEqual(event_data['args']['motionID'], expected_motionID)
+
+	def validate_MotionClosed_data(self, tx_receipt, log_index, expected_motionID):
+		closed_data = get_event_data_from_log(self.court_event_dict, tx_receipt.logs[log_index])
+		self.assertEqual(closed_data['event'], "MotionClosed")
+		self.assertEqual(closed_data['args']['motionID'], expected_motionID)
+
+	def validate_MotionVetoed_data(self, tx_receipt, log_index, expected_motionID):
+		veto_data = get_event_data_from_log(self.court_event_dict, tx_receipt.logs[log_index])
+		self.assertEqual(veto_data['event'], "MotionVetoed")
+		self.assertEqual(closed_data['args']['motionID'], expected_motionID)
+
 	def test_multi_vote(self):
 		owner = self.owner()
 		voting_period = self.votingPeriod()
+		confirmation_period = self.confirmationPeriod()
 		fee_period = self.havvenTargetFeePeriodDurationSeconds()
-		controlling_share = self.havvenSupply() // 2
 
-		voter = fresh_account()
-		targets = fresh_accounts(10)
+		# Generate a bunch of voters with equal voting power
+		num_voters = 50
+		voters = fresh_accounts(num_voters)
+		for voter in voters:
+			self.havvenEndow(owner, voter, self.havvenSupply() // num_voters)
 
-		# Vote types to run simultaneously:
-		# Generate a bunch of voters
-		# pass (unanimous)
-		# pass (majority)
-		# pass (bare)
-		# fail (insufficient participation)
-		# fail (zero participation)
-		# fail (insufficient majority)
-		# fail (zero majority)
-		# fail (timeout)
-		# fail (veto during proceedings)
-		# fail (veto during confirmation)
-
-		self.havvenEndow(owner, voter, controlling_share)
+		targets = fresh_accounts(11)
+		frozen, unfrozen = [], []
+		
+		# Update their fee info.
 		fast_forward(fee_period + 1)
 		self.havvenCheckFeePeriodRollover(DUMMY)
 		fast_forward(fee_period + 1)
 		self.havvenCheckFeePeriodRollover(DUMMY)
 		
-		# Open a bunch of confiscation motions...
-		motion_ids = [self.get_motion_index(self.beginConfiscationMotion(owner, targets[i])) for i in range(len(targets))]
+		# Run a shitload of votes simultaneously:
+		motions = []
+		target_index = 0
+		motion_id = self.nextMotionID()
 
-		# Vote in all...
-		for motion_id in motion_ids:
-			self.voteFor(voter, motion_id)
-			self.assertTrue(self.motionVoting(motion_id))
+		# pass (unanimous)
+		target = targets[target_index]
+		frozen.append(target)
+		tx_receipt = self.beginConfiscationMotion(owner, target)
+		self.validate_MotionBegun_data(tx_receipt, owner, target, motion_id)
+		motion_id += 1
+		unanimous_vote = self.get_motion_index(tx_receipt)
+		target_index += 1
+		motions.append(unanimous_vote)
+		for voter in voters:
+			self.voteFor(voter, unanimous_vote)
+		for voter in voters:
+			self.assertTrue(self.hasVoted(voter, unanimous_vote))
 
-		# And pass them all...
-		fast_forward(voting_period)
+		# pass (majority)
+		target = targets[target_index]
+		frozen.append(target)
+		tx_receipt = self.beginConfiscationMotion(owner, target)
+		self.validate_MotionBegun_data(tx_receipt, owner, target, motion_id)
+		motion_id += 1
+		majority_vote = self.get_motion_index(tx_receipt)
+		target_index += 1
+		motions.append(majority_vote)
+		n_yeas = int(num_voters * 0.67) + 1
+		yeas, nays = voters[:n_yeas], voters[n_yeas:]
+		for voter in yeas:
+			self.voteFor(voter, majority_vote)
+		for voter in nays:
+			self.voteAgainst(voter, majority_vote)
+		for voter in voters:
+			self.assertTrue(self.hasVoted(voter, majority_vote))
+
+		# pass (bare)
+		target = targets[target_index]
+		frozen.append(target)
+		tx_receipt = self.beginConfiscationMotion(owner, target)
+		self.validate_MotionBegun_data(tx_receipt, owner, target, motion_id)
+		motion_id += 1
+		bare_majority_vote = self.get_motion_index(tx_receipt)
+		target_index += 1
+		motions.append(bare_majority_vote)
+		n_yeas = (num_voters // 2) + 1
+		yeas, nays = voters[:n_yeas], voters[n_yeas:]
+		for voter in yeas:
+			self.voteFor(voter, bare_majority_vote)
+		for voter in nays:
+			self.voteAgainst(voter, bare_majority_vote)	
+		for voter in voters:
+			self.assertTrue(self.hasVoted(voter, bare_majority_vote))
+
+		# pass (barely enough participation)
+		target = targets[target_index]
+		frozen.append(target)
+		tx_receipt = self.beginConfiscationMotion(owner, target)
+		self.validate_MotionBegun_data(tx_receipt, owner, target, motion_id)
+		motion_id += 1
+		bare_quorum_vote = self.get_motion_index(tx_receipt)
+		target_index += 1
+		motions.append(bare_quorum_vote)
+		bare_quorum = int(num_voters * 0.3)
+		n_yeas = (bare_quorum // 2) + 1
+		yeas, nays = voters[:n_yeas], voters[n_yeas:bare_quorum]
+		for voter in yeas:
+			self.voteFor(voter, bare_quorum_vote)
+		for voter in nays:
+			self.voteAgainst(voter, bare_quorum_vote)	
+		for voter in voters[:bare_quorum]:
+			self.assertTrue(self.hasVoted(voter, bare_quorum_vote))
+		for voter in voters[bare_quorum:]:
+			self.assertFalse(self.hasVoted(voter, bare_quorum_vote))
+
+		# fail (just-insufficient participation)
+		target = targets[target_index]
+		unfrozen.append(target)
+		tx_receipt = self.beginConfiscationMotion(owner, target)
+		self.validate_MotionBegun_data(tx_receipt, owner, target, motion_id)
+		motion_id += 1
+		not_quite_quorum_vote = self.get_motion_index(tx_receipt)
+		target_index += 1
+		motions.append(not_quite_quorum_vote)
+		not_quite_quorum = int(num_voters * 0.3) - 1
+		n_yeas = (not_quite_quorum // 2) + 1
+		yeas, nays = voters[:n_yeas], voters[n_yeas:not_quite_quorum]
+		for voter in yeas:
+			self.voteFor(voter, not_quite_quorum_vote)
+		for voter in nays:
+			self.voteAgainst(voter, not_quite_quorum_vote)
+		for voter in voters[:not_quite_quorum]:
+			self.assertTrue(self.hasVoted(voter, not_quite_quorum_vote))
+		for voter in voters[not_quite_quorum:]:
+			self.assertFalse(self.hasVoted(voter, not_quite_quorum_vote))
+
+		# fail (zero participation)
+		target = targets[target_index]
+		unfrozen.append(target)
+		tx_receipt = self.beginConfiscationMotion(owner, target)
+		self.validate_MotionBegun_data(tx_receipt, owner, target, motion_id)
+		motion_id += 1
+		zero_participation_vote = self.get_motion_index(tx_receipt)
+		target_index += 1
+		motions.append(zero_participation_vote)
+		for voter in voters:
+			self.assertFalse(self.hasVoted(voter, zero_participation_vote))
+
+		# fail (insufficient majority)
+		target = targets[target_index]
+		unfrozen.append(target)
+		tx_receipt = self.beginConfiscationMotion(owner, target)
+		self.validate_MotionBegun_data(tx_receipt, owner, target, motion_id)
+		motion_id += 1
+		insufficient_majority_vote = self.get_motion_index(tx_receipt)
+		target_index += 1
+		motions.append(insufficient_majority_vote)
+		n_yeas = int(num_voters * 0.66) - 1
+		yeas, nays = voters[:n_yeas], voters[n_yeas:]
+		for voter in yeas:
+			self.voteFor(voter, insufficient_majority_vote)
+		for voter in nays:
+			self.voteAgainst(voter, insufficient_majority_vote)
+		for voter in voters:
+			self.assertTrue(self.hasVoted(voter, insufficient_majority_vote))
+
+		# fail (zero majority)
+		target = targets[target_index]
+		unfrozen.append(target)
+		tx_receipt = self.beginConfiscationMotion(owner, target)
+		self.validate_MotionBegun_data(tx_receipt, owner, target, motion_id)
+		motion_id += 1
+		no_majority_vote = self.get_motion_index(tx_receipt)
+		target_index += 1
+		motions.append(no_majority_vote)
+		for voter in voters:
+			self.voteAgainst(voter, no_majority_vote)
+		for voter in voters:
+			self.assertTrue(self.hasVoted(voter, no_majority_vote))
+
+		# fail (timeout)
+		target = targets[target_index]
+		unfrozen.append(target)
+		tx_receipt = self.beginConfiscationMotion(owner, target)
+		self.validate_MotionBegun_data(tx_receipt, owner, target, motion_id)
+		motion_id += 1
+		timeout_vote = self.get_motion_index(tx_receipt)
+		target_index += 1
+		motions.append(timeout_vote)
+		for voter in voters:
+			self.voteFor(voter, timeout_vote)
+		for voter in voters:
+			self.assertTrue(self.hasVoted(voter, timeout_vote))
+
+		# fail (veto during proceedings)
+		target = targets[target_index]
+		unfrozen.append(target)
+		tx_receipt = self.beginConfiscationMotion(owner, target)
+		self.validate_MotionBegun_data(tx_receipt, owner, target, motion_id)
+		motion_id += 1
+		mid_veto_vote = self.get_motion_index(tx_receipt)
+		target_index += 1
+		motions.append(mid_veto_vote)
+		for voter in voters:
+			self.voteFor(voter, mid_veto_vote)
+		for voter in voters:
+			self.assertTrue(self.hasVoted(voter, mid_veto_vote))
+
+		# fail (veto during confirmation)
+		target = targets[target_index]
+		unfrozen.append(target)
+		tx_receipt = self.beginConfiscationMotion(owner, target)
+		self.validate_MotionBegun_data(tx_receipt, owner, target, motion_id)
+		motion_id += 1
+		post_veto_vote = self.get_motion_index(tx_receipt)
+		target_index += 1
+		motions.append(post_veto_vote)
+		for voter in voters:
+			self.voteFor(voter, post_veto_vote)
+		for voter in voters:
+			self.assertTrue(self.hasVoted(voter, post_veto_vote))
+
+		# All these motions should now be voting.
+		for motion in motions:
+			self.assertTrue(self.motionVoting(motion))
+
+		# Fast forward to mid voting period...
+		fast_forward(voting_period // 2)
+		for motion in motions:
+			self.assertTrue(self.motionVoting(motion))
+
+		tx_receipt = self.veto(owner, mid_veto_vote)
+		self.validate_MotionClosed_data(self, tx_receipt, 0, mid_veto_vote)
+		self.validate_MotionVetoed_data(self, tx_receipt, 1, mid_veto_vote)
+
+		self.assertTrue(self.waiting(mid_veto_vote))
+
+		"""
 		for motion_id in motion_ids:
 			self.assertTrue(self.motionConfirming(motion_id))
 			self.approve(owner, motion_id)
@@ -733,6 +932,7 @@ class TestCourt(unittest.TestCase):
 
 		for target in targets:
 			self.assertTrue(self.nominIsFrozen(target))
+		"""
 
 	def test_re_open_exploit(self):
 		pass
