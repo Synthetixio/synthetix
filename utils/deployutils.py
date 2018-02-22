@@ -67,7 +67,7 @@ def compile_contracts(files, remappings=None):
     if remappings is None:
         remappings = []
     contract_interfaces = {}
-    compiled = compile_files(files, import_remappings=remappings)
+    compiled = compile_files(files, import_remappings=remappings, optimize=True)
     for key in compiled:
         name = key.split(':')[-1]
         contract_interfaces[name] = compiled[key]
