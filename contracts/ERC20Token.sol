@@ -15,7 +15,7 @@ approved:   Samuel Brooks
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
-An ERC20-compliant token.
+An ERC20-compliant token
 
 -----------------------------------------------------------------
 */
@@ -32,7 +32,7 @@ contract ERC20Token is SafeDecimalMath, Owned {
 
     /* ========== STATE VARIABLES ========== */
 
-    ERC20State public stateContract;
+    ERC20State public state;
 
     string public name;
     string public symbol;
@@ -40,21 +40,52 @@ contract ERC20Token is SafeDecimalMath, Owned {
 
     /* ========== CONSTRUCTOR ========== */
 
-    function ERC20Token(address _owner, string _name, string _symbol)
+    function ERC20Token(
+        address _owner, string _name, string _symbol, uint initialSupply,
+        address initialBeneficiary, ERC20State _state
+    )
         Owned(_owner)
         public
     {
         name = _name;
         symbol = _symbol;
+        state = _state;
+        // if the state isn't set, create a new one
+        if (state == ERC20State(0)) {
+            state = new ERC20State(_owner, initialSupply, initialBeneficiary, address(this));
+        }
+    }
+
+    /* ========== GETTERS ========== */
+
+    function allowance(address _account, address _spender)
+        public
+        returns (uint)
+    {
+        return state.allowance(_account, _spender);
+    }
+
+    function balanceOf(address _account)
+        public
+        returns (uint)
+    {
+        return state.balanceOf(_account);
+    }
+
+    function totalSupply()
+        public
+        returns (uint)
+    {
+        return state.totalSupply();
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function setState(ERC20State _stateContract)
+    function setState(ERC20State _state)
         onlyOwner
         public
     {
-        stateContract = _stateContract;
+        state = _state;
     }
 
     function transfer(address _to, uint _value)
@@ -70,8 +101,8 @@ contract ERC20Token is SafeDecimalMath, Owned {
         }
 
         // Insufficient balance will be handled by the safe subtraction.
-        stateContract.setBalance(msg.sender, safeSub(stateContract.balanceOf(msg.sender), _value));
-        stateContract.setBalance(_to, safeAdd(stateContract.balanceOf(_to), _value));
+        state.setBalance(msg.sender, safeSub(state.balanceOf(msg.sender), _value));
+        state.setBalance(_to, safeAdd(state.balanceOf(_to), _value));
 
         return true;
     }
@@ -89,9 +120,9 @@ contract ERC20Token is SafeDecimalMath, Owned {
         }
 
         // Insufficient balance will be handled by the safe subtraction.
-        stateContract.setBalance(_from, safeSub(stateContract.balanceOf(_from), _value));
-        stateContract.setAllowance(_from, msg.sender, safeSub(stateContract.allowance(_from, msg.sender), _value));
-        stateContract.setBalance(_to, safeAdd(stateContract.balanceOf(_to), _value));
+        state.setBalance(_from, safeSub(state.balanceOf(_from), _value));
+        state.setAllowance(_from, msg.sender, safeSub(state.allowance(_from, msg.sender), _value));
+        state.setBalance(_to, safeAdd(state.balanceOf(_to), _value));
 
         return true;
     }
@@ -100,31 +131,10 @@ contract ERC20Token is SafeDecimalMath, Owned {
         public
         returns (bool)
     {
-        stateContract.setAllowance(msg.sender, _spender, _value);
+        state.setAllowance(msg.sender, _spender, _value);
         Approval(msg.sender, _spender, _value);
 
         return true;
-    }
-
-    function allowance(address _account, address _spender)
-        public
-        returns (uint)
-    {
-        return stateContract.allowance(_account, _spender);
-    }
-
-    function balanceOf(address _account)
-        public
-        returns (uint)
-    {
-        return stateContract.balanceOf(_account);
-    }
-
-    function totalSupply()
-        public
-        returns (uint)
-    {
-        return stateContract.totalSupply();
     }
 
     /* ========== EVENTS ========== */

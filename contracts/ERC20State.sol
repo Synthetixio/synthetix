@@ -12,9 +12,10 @@ contract ERC20State is Owned {
     mapping(address => uint) public balanceOf;
     mapping(address => mapping (address => uint256)) public allowance;
 
-    function ERC20State(address _owner,
-                        uint initialSupply, address initialBeneficiary,
-                        address _associatedContract)
+    function ERC20State(
+        address _owner, uint initialSupply,
+        address initialBeneficiary, address _associatedContract
+    )
         Owned(_owner)
         public
     {
