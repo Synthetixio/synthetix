@@ -29,9 +29,10 @@ pragma solidity ^0.4.19;
 
 import "contracts/SafeDecimalMath.sol";
 import "contracts/Owned.sol";
+import "contracts/LimitedSetup.sol";
 
 
-contract ERC20FeeToken is Owned, SafeDecimalMath {
+contract ERC20FeeToken is Owned, SafeDecimalMath, OneMonthSetup {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -88,6 +89,7 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
     function setFeeAuthority(address newFeeAuthority)
         public
         onlyOwner
+        setupFunction
     {
         feeAuthority = newFeeAuthority;
         FeeAuthorityUpdate(newFeeAuthority);

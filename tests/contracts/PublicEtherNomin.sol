@@ -14,7 +14,11 @@ contract PublicEtherNomin is EtherNomin {
                               uint initialEtherPrice,
                               address _owner)
 		EtherNomin(_havven, _oracle, _beneficiary, initialEtherPrice, _owner)
-		public {}
+		public 
+	{
+		// Because ganache does not change the timestamp when reverting.
+		setupDuration = 50000 weeks;
+	}
 
 	function publicEtherValueAllowStale(uint n) 
 		public

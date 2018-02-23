@@ -150,6 +150,7 @@ contract EtherNomin is ERC20FeeToken {
     function setOracle(address newOracle)
         public
         onlyOwner
+        setupFunction
     {
         oracle = newOracle;
         OracleUpdated(newOracle);
@@ -158,6 +159,7 @@ contract EtherNomin is ERC20FeeToken {
     function setCourt(address newCourt)
         public
         onlyOwner
+        setupFunction
     {
         court = Court(newCourt);
         CourtUpdated(newCourt);
@@ -183,6 +185,7 @@ contract EtherNomin is ERC20FeeToken {
     function setStalePeriod(uint period)
         public
         onlyOwner
+        setupFunction
     {
         stalePeriod = period;
         StalePeriodUpdated(period);

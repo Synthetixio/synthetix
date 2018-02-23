@@ -104,12 +104,13 @@ pragma solidity ^0.4.19;
 
 import "contracts/ERC20Token.sol";
 import "contracts/Owned.sol";
+import "contracts/LimitedSetup.sol";
 import "contracts/EtherNomin.sol";
 import "contracts/Court.sol";
 import "contracts/HavvenEscrow.sol";
 
 
-contract Havven is ERC20Token, Owned {
+contract Havven is ERC20Token, Owned, OneMonthSetup {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -183,6 +184,7 @@ contract Havven is ERC20Token, Owned {
     function setNomin(EtherNomin _nomin) 
         public
         onlyOwner
+        setupFunction
     {
         nomin = _nomin;
     }
@@ -190,6 +192,7 @@ contract Havven is ERC20Token, Owned {
     function setEscrow(HavvenEscrow _escrow)
         public
         onlyOwner
+        setupFunction
     {
         escrow = _escrow;
     }
@@ -197,6 +200,7 @@ contract Havven is ERC20Token, Owned {
     function unsetEscrow()
         public
         onlyOwner
+        setupFunction
     {
         delete escrow;
     }

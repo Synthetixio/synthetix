@@ -38,11 +38,12 @@ pragma solidity ^0.4.19;
 
 import "contracts/SafeDecimalMath.sol";
 import "contracts/Owned.sol";
+import "contracts/LimitedSetup.sol";
 import "contracts/Havven.sol";
 import "contracts/EtherNomin.sol";
 
 
-contract HavvenEscrow is Owned, SafeDecimalMath {    
+contract HavvenEscrow is Owned, SafeDecimalMath, OneMonthSetup {    
     // The corresponding Havven contract.
     Havven public havven;
     EtherNomin public nomin;
@@ -74,6 +75,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
     function setHavven(Havven newHavven)
         public
         onlyOwner
+        setupFunction
     {
         havven = newHavven;
         HavvenUpdated(newHavven);
@@ -82,6 +84,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
     function setNomin(EtherNomin newNomin)
         public
         onlyOwner
+        setupFunction
     {
         nomin = newNomin;
         NominUpdated(newNomin);
@@ -242,6 +245,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
     /* Withdraws a quantity of havvens back to the havven contract. */
     function withdrawHavvens(uint quantity)
         onlyOwner
+        setupFunction
         external
     {
         havven.transfer(havven, quantity);
@@ -250,6 +254,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
     /* Destroy the vesting information associated with an account. */
     function purgeAccount(address account)
         onlyOwner
+        setupFunction
         public
     {
         delete vestingSchedules[account];
@@ -266,6 +271,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
      * arrays, it's only in the foundation's command to add to these lists. */
     function appendVestingEntry(address account, uint time, uint quantity)
         onlyOwner
+        setupFunction
         public
     {
         // No empty or already-passed vesting entries allowed.
@@ -290,6 +296,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
     function addRegularVestingSchedule(address account, uint conclusionTime,
                                        uint totalQuantity, uint vestingPeriods)
         onlyOwner
+        setupFunction
         public
     {
         // safeSub prevents a conclusionTime in the past.
