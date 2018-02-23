@@ -36,7 +36,7 @@ class TestERC20Token(unittest.TestCase):
         cls.erc20_event_dict = generate_topic_event_map(cls.erc20_abi)
 
         cls.erc20token, cls.construction_txr = attempt_deploy(compiled, 'ERC20Token',
-                                                              MASTER, [MASTER, "Test Token", "TEST"])
+                                                              MASTER, [MASTER, "Test Token", "TEST", 1000 * UNIT, MASTER, '0x'+'0'*40])
         cls.erc20state, cls.state_construction_txr = attempt_deploy(
             compiled, 'ERC20State', MASTER, [MASTER, 1000 * UNIT, MASTER, cls.erc20token.address]
         )
@@ -188,7 +188,7 @@ class TestERC20FeeToken(unittest.TestCase):
         cls.erc20fee_abi = compiled['ERC20FeeToken']['abi']
         cls.erc20fee_event_dict = generate_topic_event_map(cls.erc20fee_abi)
         cls.erc20feetoken, cls.construction_txr = attempt_deploy(
-            compiled, "ERC20FeeToken", MASTER, [cls.token_owner, "Test Fee Token", "FEE", UNIT // 20, cls.fee_authority]
+            compiled, "ERC20FeeToken", MASTER, [cls.token_owner, "Test Fee Token", "FEE", 0, cls.initial_beneficiary, UNIT // 20, cls.fee_authority, '0x'+'0'*40]
         )
         cls.erc20feestate, txr = attempt_deploy(
             compiled, "ERC20FeeState", MASTER,

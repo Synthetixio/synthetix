@@ -164,7 +164,7 @@ contract Havven is ERC20Token {
     /* ========== CONSTRUCTOR ========== */
 
     function Havven(address _owner)
-        ERC20Token(_owner, "Havven", "HAV")
+        ERC20Token(_owner, "Havven", "HAV", 1e8 * UNIT, address(this), ERC20State(0))
         // Owned is initialised in ERC20Token
         public
     {
@@ -172,12 +172,6 @@ contract Havven is ERC20Token {
         feePeriodStartTime = now;
         lastFeePeriodStartTime = now - targetFeePeriodDurationSeconds;
         penultimateFeePeriodStartTime = now - 2*targetFeePeriodDurationSeconds;
-
-        // create stateContract for Havven, newer versions will
-        // just set the state contract
-        stateContract = new ERC20State(
-            _owner, 1e8 * UNIT, address(this), address(this)
-        );
     }
 
     /* ========== SETTERS ========== */
@@ -238,8 +232,8 @@ contract Havven is ERC20Token {
         preCheckFeePeriodRollover
         returns (bool)
     {
-        uint senderPreBalance = stateContract.balanceOf(msg.sender);
-        uint recipientPreBalance = stateContract.balanceOf(_to);
+        uint senderPreBalance = balanceOf(msg.sender);
+        uint recipientPreBalance = balanceOf(_to);
 
         // Perform the transfer: if there is a problem,
         // an exception will be thrown in super.transfer().
@@ -260,8 +254,8 @@ contract Havven is ERC20Token {
         preCheckFeePeriodRollover
         returns (bool)
     {
-        uint senderPreBalance = stateContract.balanceOf(_from);
-        uint recipientPreBalance = stateContract.balanceOf(_to);
+        uint senderPreBalance = balanceOf(_from);
+        uint recipientPreBalance = balanceOf(_to);
 
         // Perform the transfer: if there is a problem,
         // an exception will be thrown in super.transferFrom().
@@ -285,14 +279,14 @@ contract Havven is ERC20Token {
         require(!nomin.isFrozen(msg.sender));
 
         // check the period has rolled over first
-        rolloverFee(msg.sender, lastTransferTimestamp[msg.sender], stateContract.balanceOf(msg.sender));
+        rolloverFee(msg.sender, lastTransferTimestamp[msg.sender], balanceOf(msg.sender));
 
         // Only allow accounts to withdraw fees once per period.
         require(!hasWithdrawnLastPeriodFees[msg.sender]);
 
         uint feesOwed = safeDecDiv(safeDecMul(lastAverageBalance[msg.sender],
                                               lastFeesCollected),
-                                   stateContract.totalSupply());
+                                   totalSupply());
 
         hasWithdrawnLastPeriodFees[msg.sender] = true;
         if (feesOwed != 0) {
@@ -393,7 +387,7 @@ contract Havven is ERC20Token {
         preCheckFeePeriodRollover
         returns (uint)
     {
-        adjustFeeEntitlement(msg.sender, stateContract.balanceOf(msg.sender));
+        adjustFeeEntitlement(msg.sender, state.balanceOf(msg.sender));
         return lastAverageBalance[msg.sender];
     }
 

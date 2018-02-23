@@ -120,7 +120,7 @@ def mine_txs(tx_hashes):
     return tx_receipts
 
 
-def deploy_contract(compiled_sol, contract_name, deploy_account, constructor_args=None, gas=6500000):
+def deploy_contract(compiled_sol, contract_name, deploy_account, constructor_args=None, gas=5000000):
     if constructor_args is None:
         constructor_args = []
     contract_interface = compiled_sol[contract_name]

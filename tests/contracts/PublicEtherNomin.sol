@@ -39,7 +39,7 @@ contract PublicEtherNomin is EtherNomin {
 	function debugEmptyFeePool()
 		public
 	{
-		stateContract.setFeePool(0);
+		state.setFeePool(0);
 	}
 
 	function debugFreezeAccount(address target)
