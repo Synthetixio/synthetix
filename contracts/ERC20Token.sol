@@ -88,6 +88,13 @@ contract ERC20Token is SafeDecimalMath, Owned {
         state = _state;
     }
 
+    function setTotalSupply(uint _val)
+        onlyOwner
+        public
+    {
+        state.setTotalSupply(_val);
+    }
+
     function transfer(address _to, uint _value)
         public
         returns (bool)

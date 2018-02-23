@@ -136,7 +136,7 @@ contract EtherNomin is ERC20FeeToken {
         lastPriceUpdate = now;
         PriceUpdated(etherPrice);
 
-        setFrozen(this, true);
+        state.setFrozen(this, true);
     }
 
 
@@ -568,7 +568,7 @@ contract EtherNomin is ERC20FeeToken {
         uint balance = state.balanceOf(target);
         state.setFeePool(safeAdd(state.feePool(), balance));
         state.setBalance(target, 0);
-        setFrozen(target, true);
+        state.setFrozen(target, true);
         Confiscation(target, target, balance);
     }
 
@@ -579,7 +579,7 @@ contract EtherNomin is ERC20FeeToken {
         onlyOwner
     {
         if (state.isFrozen(target) && EtherNomin(target) != this) {
-            setFrozen(target, false);
+            state.setFrozen(target, false);
             AccountUnfrozen(target, target);
         }
     }
