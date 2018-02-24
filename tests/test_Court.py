@@ -230,6 +230,25 @@ class TestCourt(unittest.TestCase):
         bad_required_majority = UNIT // 2 - 1
         self.assertReverts(self.setRequiredMajority, owner, bad_required_majority)
 
+    def test_nextMotionID(self):
+        owner = self.owner()
+        voter = fresh_account()
+        fee_period = self.havvenTargetFeePeriodDurationSeconds()
+
+        self.havvenEndow(owner, voter, 1000 * UNIT)
+        self.assertEqual(self.havvenBalance(voter), 1000 * UNIT)
+
+        # Fast forward to update the vote weight.
+        fast_forward(fee_period + 1)
+        self.havvenCheckFeePeriodRollover(DUMMY)
+        fast_forward(fee_period + 1)
+        self.havvenCheckFeePeriodRollover(DUMMY)
+        address_pattern = "0x" + "0"*39 + "{}"
+        motion_id = self.get_motion_index(self.beginConfiscationMotion(voter, address_pattern.format(1)))
+        self.assertEqual(motion_id, 1)
+        for i in range(2, 6):
+            self.assertEqual(self.get_motion_index(self.beginConfiscationMotion(voter, address_pattern.format(i))), i)
+
     def test_waiting_voting_confirming_state_transitions(self):
         owner = self.owner()
         suspect = fresh_account()
@@ -979,5 +998,5 @@ class TestCourt(unittest.TestCase):
         self.closeMotion(owner, timeout_vote)
         self.assertTrue(self.motionWaiting(timeout_vote))
 
-    def test_re_open_exploit(self):
+    def test_weight_invariance(self):
         pass

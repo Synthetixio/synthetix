@@ -364,7 +364,6 @@ contract Court is Owned, SafeDecimalMath {
         motionTarget[motionID] = target;
         targetMotionID[target] = motionID;
 
-
         motionStartTime[motionID] = now;
         votesFor[motionID] = 0;
         votesAgainst[motionID] = 0;
