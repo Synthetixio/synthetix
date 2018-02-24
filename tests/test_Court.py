@@ -158,7 +158,6 @@ class TestCourt(unittest.TestCase):
 
     def test_setOwner(self):
         owner = self.owner()
-
         # Only owner can setOwner.
         self.assertReverts(self.setOwner, DUMMY, DUMMY)
         self.setOwner(owner, DUMMY)
@@ -167,7 +166,6 @@ class TestCourt(unittest.TestCase):
     def test_setMinStandingBalance(self):
         owner = self.owner()
         new_min_standing_balance = 200 * UNIT
-
         # Only owner can set minStandingBalance.
         self.assertReverts(self.setMinStandingBalance, DUMMY, new_min_standing_balance)
         tx_receipt = self.setMinStandingBalance(owner, new_min_standing_balance)
@@ -262,7 +260,7 @@ class TestCourt(unittest.TestCase):
         for i in range(2, 6):
             self.assertEqual(self.get_motion_index(self.beginConfiscationMotion(voter, address_pattern.format(i))), i)
 
-    def test_motionTarget(self):
+    def test_motionTarget_targetMotionID(self):
         owner = self.owner()
         voter, target1, target2, target3 = fresh_accounts(4)
         fee_period = self.havvenTargetFeePeriodDurationSeconds()
@@ -286,8 +284,13 @@ class TestCourt(unittest.TestCase):
         self.assertEqual(self.motionTarget(motion_id2), target2)
         self.assertEqual(self.motionTarget(motion_id3), target3)
 
+        self.assertEqual(self.targetMotionID(target1), motion_id1)
+        self.assertEqual(self.targetMotionID(target2), motion_id2)
+        self.assertEqual(self.targetMotionID(target3), motion_id3)
+
         self.vetoMotion(owner, motion_id1)
         self.assertEqual(int(self.motionTarget(motion_id1), 16), 0)
+        self.assertEqual(self.targetMotionID(target1), 0)
 
         self.voteFor(voter, motion_id2)
 
@@ -295,10 +298,12 @@ class TestCourt(unittest.TestCase):
 
         self.approveMotion(owner, motion_id2)
         self.assertEqual(int(self.motionTarget(motion_id2), 16), 0)
+        self.assertEqual(self.targetMotionID(target2), 0)
 
         fast_forward(confirmation_period + 1)
         self.closeMotion(voter, motion_id3)
         self.assertEqual(int(self.motionTarget(motion_id3), 16), 0)
+        self.assertEqual(self.targetMotionID(target3), 0)
 
     def test_waiting_voting_confirming_state_transitions(self):
         owner = self.owner()
