@@ -7,7 +7,7 @@ contract FakeCourt {
 
 		mapping(uint => bool) public motionConfirming;
 		mapping(uint => bool) public motionPasses;
-		mapping(address => uint) public addressMotionID;
+		mapping(address => uint) public targetMotionID;
 
 		function setNomin(EtherNomin newNomin)
 			public
@@ -27,10 +27,10 @@ contract FakeCourt {
 			motionPasses[motionID] = status;
 		}
 
-		function setAddressMotionID(address target, uint motionID)
+		function setTargetMotionID(address target, uint motionID)
 			public
 		{
-			addressMotionID[target] = motionID;
+			targetMotionID[target] = motionID;
 		}
 
 		function confiscateBalance(address target)
