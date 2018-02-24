@@ -56,7 +56,7 @@ class TestEtherNomin(unittest.TestCase):
         cls.fake_court.setNomin = lambda sender, new_nomin: mine_tx(cls.fake_court.functions.setNomin(new_nomin).transact({'from': sender}))
         cls.fake_court.setConfirming = lambda sender, target, status: mine_tx(cls.fake_court.functions.setConfirming(target, status).transact({'from': sender}))
         cls.fake_court.setVotePasses = lambda sender, target, status: mine_tx(cls.fake_court.functions.setVotePasses(target, status).transact({'from': sender}))
-        cls.fake_court.setAddressMotionID = lambda sender, target, motion_id: mine_tx(cls.fake_court.functions.setAddressMotionID(target, motion_id).transact({'from': sender}))
+        cls.fake_court.setTargetMotionID = lambda sender, target, motion_id: mine_tx(cls.fake_court.functions.setTargetMotionID(target, motion_id).transact({'from': sender}))
         cls.fake_court.confiscateBalance = lambda sender, target: mine_tx(cls.fake_court.functions.confiscateBalance(target).transact({'from': sender}))
         cls.fake_court.setNomin(W3.eth.accounts[0], cls.nomin.address)
         mine_tx(cls.nomin.functions.setCourt(cls.fake_court.address).transact({'from': cls.nomin_owner}))
@@ -538,7 +538,7 @@ class TestEtherNomin(unittest.TestCase):
         # Set up target balance to be confiscatable for later testing.
         self.assertEqual(self.court(), self.fake_court.address)
         motion_id = 1
-        self.fake_court.setAddressMotionID(owner, target, motion_id)
+        self.fake_court.setTargetMotionID(owner, target, motion_id)
         self.fake_court.setConfirming(owner, motion_id, True)
         self.fake_court.setVotePasses(owner, motion_id, True)
 
@@ -1080,7 +1080,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.balanceOf(target), 10 * UNIT)
 
         motion_id = 1
-        self.fake_court.setAddressMotionID(owner, target, motion_id)
+        self.fake_court.setTargetMotionID(owner, target, motion_id)
 
         # Attempt to confiscate even though the conditions are not met.
         self.fake_court.setConfirming(owner, motion_id, False)

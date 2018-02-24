@@ -162,12 +162,12 @@ contract Court is Owned, SafeDecimalMath {
     // The next ID to use for opening a motion.
     uint nextMotionID = 1;
 
-    // Mapping from motion IDs to addresses.
-    mapping(uint => address) public motionIDAddress;
+    // Mapping from motion IDs to target addresses.
+    mapping(uint => address) public motionTarget;
 
     // The ID a motion on an address is currently operating at.
     // Zero if no such motion is running.
-    mapping(address => uint) public addressMotionID;
+    mapping(address => uint) public targetMotionID;
 
     // The timestamp at which a motion began. This is used to determine
     // whether a motion is: running, in the confirmation period,
@@ -355,14 +355,14 @@ contract Court is Owned, SafeDecimalMath {
         require(votingPeriod <= havven.targetFeePeriodDurationSeconds());
 
         // There must be no confiscation motion already running for this account.
-        require(addressMotionID[target] == 0);
+        require(targetMotionID[target] == 0);
 
         // Disallow votes on accounts that have previously been frozen.
         require(!nomin.isFrozen(target));
 
         uint motionID = nextMotionID++;
-        motionIDAddress[motionID] = target;
-        addressMotionID[target] = motionID;
+        motionTarget[motionID] = target;
+        targetMotionID[target] = motionID;
 
 
         motionStartTime[motionID] = now;
@@ -465,8 +465,8 @@ contract Court is Owned, SafeDecimalMath {
     function _closeMotion(uint motionID)
         internal
     {
-        addressMotionID[motionIDAddress[motionID]] = 0;
-        motionIDAddress[motionID] = 0;
+        targetMotionID[motionTarget[motionID]] = 0;
+        motionTarget[motionID] = 0;
         motionStartTime[motionID] = 0;
         votesFor[motionID] = 0;
         votesAgainst[motionID] = 0;
@@ -489,7 +489,7 @@ contract Court is Owned, SafeDecimalMath {
         onlyOwner
     {
         require(motionConfirming(motionID) && motionPasses(motionID));
-        address target = motionIDAddress[motionID];
+        address target = motionTarget[motionID];
         nomin.confiscateBalance(target);
         _closeMotion(motionID);
         MotionApproved(motionID, motionID);

@@ -75,8 +75,8 @@ class TestCourt(unittest.TestCase):
         cls.nextMotionID = lambda self: self.court.functions._nextMotionID().call()
 
         # Public variables
-        cls.motionIDAddress = lambda self, index: self.court.functions.motionIDAddress(index).call()
-        cls.addressMotionID = lambda self, address: self.court.functions.addressMotionID(address).call()
+        cls.motionTarget = lambda self, index: self.court.functions.motionTarget(index).call()
+        cls.targetMotionID = lambda self, address: self.court.functions.targetMotionID(address).call()
         cls.motionStartTime = lambda self, account: self.court.functions.motionStartTime(account).call()
         cls.votesFor = lambda self, account: self.court.functions.votesFor(account).call()
         cls.votesAgainst = lambda self, account: self.court.functions.votesAgainst(account).call()
