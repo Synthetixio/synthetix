@@ -3,10 +3,11 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       ERC20Token.sol
-version:    0.1
+version:    0.3
 author:     Anton Jurisevic
+            Dominic Romanowski
 
-date:       2018-1-16
+date:       2018-2-24
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -15,7 +16,9 @@ approved:   Samuel Brooks
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
-An ERC20-compliant token
+An ERC20-compliant token.
+
+This contract utilises a state for upgradability purposes.
 
 -----------------------------------------------------------------
 */
@@ -32,6 +35,7 @@ contract ERC20Token is SafeDecimalMath, Owned {
 
     /* ========== STATE VARIABLES ========== */
 
+    // state that stores balances, allowances and totalSupply
     ERC20State public state;
 
     string public name;

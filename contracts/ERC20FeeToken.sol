@@ -5,8 +5,9 @@ FILE INFORMATION
 file:       ERC20FeeToken.sol
 version:    0.3
 author:     Anton Jurisevic
+            Dominic Romanowski
 
-date:       2018-2-6
+date:       2018-2-24
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -20,6 +21,8 @@ charged on its transfers.
 
 These fees accrue into a pool, from which a nominated authority
 may withdraw.
+
+This contract utilises a state for upgradability purposes.
 
 -----------------------------------------------------------------
 */
@@ -36,6 +39,7 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
 
     /* ========== STATE VARIABLES ========== */
 
+    // state that stores balances, allowances, totalSupply, fee pools and frozen accounts
     ERC20FeeState public state;
 
     string public name;
@@ -49,7 +53,6 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
 
     // The address with the authority to distribute fees.
     address public feeAuthority;
-
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -67,7 +70,6 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
             state = new ERC20FeeState(_owner, 0, initialBeneficiary, address(this));
         }
     }
-
 
     /* ========== SETTERS ========== */
 
@@ -131,7 +133,6 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
     {
         return safeDecDiv(value, safeAdd(UNIT, transferFeeRate));
     }
-
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
@@ -227,6 +228,8 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
         return true;
     }
 
+    /* ========== GETTERS ========== */
+
     function totalSupply()
         public
         returns (uint)
@@ -240,7 +243,6 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
     {
         return state.balanceOf(_account);
     }
-
 
     function allowance(address _from, address _to)
         public
