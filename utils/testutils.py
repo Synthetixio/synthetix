@@ -3,6 +3,7 @@ from eth_utils import event_abi_to_log_topic
 
 from utils.deployutils import mine_tx, W3
 
+ZERO_ADDRESS = "0x"+"0"*40
 
 def assertClose(testcase, actual, expected, precision=5, msg=''):
     if expected == 0:

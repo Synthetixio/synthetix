@@ -1,11 +1,13 @@
 import unittest
 
-from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mine_txs, mine_tx, UNIT, MASTER, fast_forward, force_mine_block, DUMMY, take_snapshot, restore_snapshot, fresh_account, fresh_accounts
+from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mine_txs, mine_tx, UNIT, MASTER, \
+    fast_forward, force_mine_block, DUMMY, take_snapshot, restore_snapshot, fresh_account, fresh_accounts
 from utils.testutils import assertReverts, assertClose
 from utils.testutils import generate_topic_event_map, get_event_data_from_log
+from utils.testutils import ZERO_ADDRESS
 
 
-SOLIDITY_SOURCES =  ["tests/contracts/PublicCourt.sol", "contracts/EtherNomin.sol", "tests/contracts/PublicHavven.sol"]
+SOLIDITY_SOURCES = ["tests/contracts/PublicCourt.sol", "contracts/EtherNomin.sol", "tests/contracts/PublicHavven.sol"]
 
 
 def deploy_public_court():
@@ -15,11 +17,14 @@ def deploy_public_court():
     court_abi = compiled['PublicCourt']['abi']
     nomin_abi = compiled['EtherNomin']['abi']
 
-    havven_contract, havven_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [MASTER])
-    nomin_contract, nomin_txr = attempt_deploy(compiled, 'EtherNomin', MASTER, [havven_contract.address, MASTER, MASTER, 1000*UNIT, MASTER])
-    court_contract, court_txr = attempt_deploy(compiled, 'PublicCourt', MASTER, [havven_contract.address, nomin_contract.address, MASTER])
+    havven_contract, havven_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [ZERO_ADDRESS, MASTER])
+    nomin_contract, nomin_txr = attempt_deploy(compiled, 'EtherNomin', MASTER,
+                                               [havven_contract.address, MASTER, MASTER, 1000*UNIT, MASTER, ZERO_ADDRESS])
+    court_contract, court_txr = attempt_deploy(compiled, 'PublicCourt', MASTER,
+                                               [havven_contract.address, nomin_contract.address, MASTER])
 
-    txs = [havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}), nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER})]
+    txs = [havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
+           nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER})]
     attempt(mine_txs, [txs], "Linking contracts... ")
 
     print("\nDeployment complete.\n")
@@ -80,16 +85,23 @@ class TestCourt(unittest.TestCase):
         cls.votesAgainst = lambda self, account: self.court.functions.votesAgainst(account).call()
         cls.vote = lambda self, account, motionID: self.court.functions.vote(account, motionID).call()
 
-        # Inherited setter
-        cls.nominateOwner = lambda self, sender, address: mine_tx(self.court.functions.nominateOwner(address).transact({'from': sender}))
-        cls.acceptOwnership = lambda self, sender: mine_tx(self.court.functions.acceptOwnership().transact({'from': sender}))
+        # Inherited setters
+        cls.nominateOwner = lambda self, sender, address: mine_tx(
+            self.court.functions.nominateOwner(address).transact({'from': sender}))
+        cls.acceptOwnership = lambda self, sender: mine_tx(
+            self.court.functions.acceptOwnership().transact({'from': sender}))
 
         # Setters
-        cls.setMinStandingBalance = lambda self, sender, balance: mine_tx(self.court.functions.setMinStandingBalance(balance).transact({'from' : sender}))
-        cls.setVotingPeriod = lambda self, sender, duration: mine_tx(self.court.functions.setVotingPeriod(duration).transact({'from' : sender}))
-        cls.setConfirmationPeriod = lambda self, sender, duration: mine_tx(self.court.functions.setConfirmationPeriod(duration).transact({'from' : sender}))
-        cls.setRequiredParticipation = lambda self, sender, fraction: mine_tx(self.court.functions.setRequiredParticipation(fraction).transact({'from' : sender}))
-        cls.setRequiredMajority = lambda self, sender, fraction: mine_tx(self.court.functions.setRequiredMajority(fraction).transact({'from' : sender}))
+        cls.setMinStandingBalance = lambda self, sender, balance: mine_tx(
+            self.court.functions.setMinStandingBalance(balance).transact({'from' : sender}))
+        cls.setVotingPeriod = lambda self, sender, duration: mine_tx(
+            self.court.functions.setVotingPeriod(duration).transact({'from' : sender}))
+        cls.setConfirmationPeriod = lambda self, sender, duration: mine_tx(
+            self.court.functions.setConfirmationPeriod(duration).transact({'from' : sender}))
+        cls.setRequiredParticipation = lambda self, sender, fraction: mine_tx(
+            self.court.functions.setRequiredParticipation(fraction).transact({'from' : sender}))
+        cls.setRequiredMajority = lambda self, sender, fraction: mine_tx(
+            self.court.functions.setRequiredMajority(fraction).transact({'from' : sender}))
 
         # Views
         cls.hasVoted = lambda self, sender, motionID: self.court.functions.hasVoted(sender, motionID).call()
@@ -99,32 +111,45 @@ class TestCourt(unittest.TestCase):
         cls.motionPasses = lambda self, target: self.court.functions.motionPasses(target).call()
 
         # Mutators
-        cls.beginConfiscationMotion = lambda self, sender, target: mine_tx(self.court.functions.beginConfiscationMotion(target).transact({'from' : sender}))
-        cls.voteFor = lambda self, sender, target: mine_tx(self.court.functions.voteFor(target).transact({'from' : sender}))
-        cls.voteAgainst = lambda self, sender, target: mine_tx(self.court.functions.voteAgainst(target).transact({'from' : sender}))
-        cls.cancelVote = lambda self, sender, target: mine_tx(self.court.functions.cancelVote(target).transact({'from' : sender}))
-        cls.closeMotion = lambda self, sender, target: mine_tx(self.court.functions.closeMotion(target).transact({'from' : sender}))
+        cls.beginConfiscationMotion = lambda self, sender, target: mine_tx(
+            self.court.functions.beginConfiscationMotion(target).transact({'from' : sender}))
+        cls.voteFor = lambda self, sender, target: mine_tx(
+            self.court.functions.voteFor(target).transact({'from' : sender}))
+        cls.voteAgainst = lambda self, sender, target: mine_tx(
+            self.court.functions.voteAgainst(target).transact({'from' : sender}))
+        cls.cancelVote = lambda self, sender, target: mine_tx(
+            self.court.functions.cancelVote(target).transact({'from' : sender}))
+        cls.closeMotion = lambda self, sender, target: mine_tx(
+            self.court.functions.closeMotion(target).transact({'from' : sender}))
 
         # Owner only
-        cls.approveMotion = lambda self, sender, target: mine_tx(self.court.functions.approveMotion(target).transact({'from' : sender}))
-        cls.vetoMotion = lambda self, sender, target: mine_tx(self.court.functions.vetoMotion(target).transact({'from' : sender}))
+        cls.approveMotion = lambda self, sender, target: mine_tx(
+            self.court.functions.approveMotion(target).transact({'from' : sender}))
+        cls.vetoMotion = lambda self, sender, target: mine_tx(
+            self.court.functions.vetoMotion(target).transact({'from' : sender}))
 
         # Internal
-        cls.setupVote = lambda self, sender, target: mine_tx(self.court.functions.publicSetupVote(target).transact({'from': sender}))
+        cls.setupVote = lambda self, sender, target: mine_tx(
+            self.court.functions.publicSetupVote(target).transact({'from': sender}))
 
         # Havven getters
         cls.havvenSupply = lambda self: self.havven.functions.totalSupply().call()
         cls.havvenBalance = lambda self, account: self.havven.functions.balanceOf(account).call()
-        cls.havvenTargetFeePeriodDurationSeconds = lambda self : self.havven.functions.targetFeePeriodDurationSeconds().call()
+        cls.havvenTargetFeePeriodDurationSeconds = lambda self: self.havven.functions.targetFeePeriodDurationSeconds().call()
         cls.havvenPenultimateAverageBalance = lambda self, addr: self.havven.functions.penultimateAverageBalance(addr).call()
         cls.havvenLastAverageBalance = lambda self, addr: self.havven.functions.lastAverageBalance(addr).call()
 
         # Havven mutators
-        cls.havvenEndow = lambda self, sender, account, value: mine_tx(self.havven.functions.endow(account, value).transact({'from' : sender}))
-        cls.havvenTransfer = lambda self, sender, to, value: mine_tx(self.havven.functions.transfer(to, value).transact({'from' : sender}))
-        cls.havvenCheckFeePeriodRollover = lambda self, sender: mine_tx(self.havven.functions._checkFeePeriodRollover().transact({'from': sender}))
-        cls.havvenAdjustFeeEntitlement = lambda self, sender, acc, p_bal: mine_tx(self.havven.functions._adjustFeeEntitlement(acc, p_bal).transact({'from': sender}))
-        cls.havvenSetTargetFeePeriodDuration = lambda self, sender, duration: mine_tx(self.havven.functions.setTargetFeePeriodDuration(duration).transact({'from' : sender}))
+        cls.havvenEndow = lambda self, sender, account, value: mine_tx(
+            self.havven.functions.endow(account, value).transact({'from' : sender}))
+        cls.havvenTransfer = lambda self, sender, to, value: mine_tx(
+            self.havven.functions.transfer(to, value).transact({'from' : sender}))
+        cls.havvenCheckFeePeriodRollover = lambda self, sender: mine_tx(
+            self.havven.functions._checkFeePeriodRollover().transact({'from': sender}))
+        cls.havvenAdjustFeeEntitlement = lambda self, sender, acc, p_bal: mine_tx(
+            self.havven.functions._adjustFeeEntitlement(acc, p_bal).transact({'from': sender}))
+        cls.havvenSetTargetFeePeriodDuration = lambda self, sender, duration: mine_tx(
+            self.havven.functions.setTargetFeePeriodDuration(duration).transact({'from' : sender}))
 
         # Nomin getter
         cls.nominIsFrozen = lambda self, account: self.nomin.functions.isFrozen(account).call()
@@ -159,7 +184,7 @@ class TestCourt(unittest.TestCase):
 
     def test_setOwner(self):
         owner = self.owner()
-        # Only owner can setOwner.
+        # Only owner can change the owner.
         self.assertReverts(self.nominateOwner, DUMMY, DUMMY)
         self.nominateOwner(owner, DUMMY)
         self.acceptOwnership(DUMMY)

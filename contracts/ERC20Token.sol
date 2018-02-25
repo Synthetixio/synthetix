@@ -3,10 +3,11 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       ERC20Token.sol
-version:    0.1
+version:    0.3
 author:     Anton Jurisevic
+            Dominic Romanowski
 
-date:       2018-1-16
+date:       2018-2-24
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -17,6 +18,8 @@ MODULE DESCRIPTION
 
 An ERC20-compliant token.
 
+This contract utilises a state for upgradability purposes.
+
 -----------------------------------------------------------------
 */
 
@@ -24,35 +27,78 @@ pragma solidity ^0.4.20;
 
 
 import "contracts/SafeDecimalMath.sol";
+import "contracts/Owned.sol";
+import "contracts/ERC20State.sol";
 
 
-contract ERC20Token is SafeDecimalMath {
+contract ERC20Token is SafeDecimalMath, Owned {
 
     /* ========== STATE VARIABLES ========== */
 
-    // ERC20 token data
-    // Allowance mapping domain: (owner, spender)
-    uint public totalSupply;
+    // state that stores balances, allowances and totalSupply
+    ERC20State public state;
+
     string public name;
     string public symbol;
-    mapping(address => uint) public balanceOf;
-    mapping(address => mapping (address => uint256)) public allowance;
 
 
     /* ========== CONSTRUCTOR ========== */
 
-    function ERC20Token(string _name, string _symbol,
-                        uint initialSupply, address initialBeneficiary)
+    function ERC20Token(
+        string _name, string _symbol,
+        uint initialSupply, address initialBeneficiary,
+        ERC20State _state, address _owner
+    )
+        Owned(_owner)
         public
     {
         name = _name;
         symbol = _symbol;
-        totalSupply = initialSupply;
-        balanceOf[initialBeneficiary] = initialSupply;
+        state = _state;
+        // if the state isn't set, create a new one
+        if (state == ERC20State(0)) {
+            state = new ERC20State(_owner, initialSupply, initialBeneficiary, address(this));
+        }
     }
 
+    /* ========== GETTERS ========== */
+
+    function allowance(address _account, address _spender)
+        public
+        returns (uint)
+    {
+        return state.allowance(_account, _spender);
+    }
+
+    function balanceOf(address _account)
+        public
+        returns (uint)
+    {
+        return state.balanceOf(_account);
+    }
+
+    function totalSupply()
+        public
+        returns (uint)
+    {
+        return state.totalSupply();
+    }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
+
+    function setState(ERC20State _state)
+        onlyOwner
+        public
+    {
+        state = _state;
+    }
+
+    function setTotalSupply(uint _val)
+        onlyOwner
+        public
+    {
+        state.setTotalSupply(_val);
+    }
 
     function transfer(address _to, uint _value)
         public
@@ -69,8 +115,8 @@ contract ERC20Token is SafeDecimalMath {
         }
 
         // Insufficient balance will be handled by the safe subtraction.
-        balanceOf[msg.sender] = safeSub(balanceOf[msg.sender], _value);
-        balanceOf[_to] = safeAdd(balanceOf[_to], _value);
+        state.setBalance(msg.sender, safeSub(state.balanceOf(msg.sender), _value));
+        state.setBalance(_to, safeAdd(state.balanceOf(_to), _value));
 
         return true;
     }
@@ -91,9 +137,9 @@ contract ERC20Token is SafeDecimalMath {
         }
 
         // Insufficient balance will be handled by the safe subtraction.
-        balanceOf[_from] = safeSub(balanceOf[_from], _value);
-        allowance[_from][msg.sender] = safeSub(allowance[_from][msg.sender], _value);
-        balanceOf[_to] = safeAdd(balanceOf[_to], _value);
+        state.setBalance(_from, safeSub(state.balanceOf(_from), _value));
+        state.setAllowance(_from, msg.sender, safeSub(state.allowance(_from, msg.sender), _value));
+        state.setBalance(_to, safeAdd(state.balanceOf(_to), _value));
 
         return true;
     }
@@ -102,11 +148,11 @@ contract ERC20Token is SafeDecimalMath {
         public
         returns (bool)
     {
-        allowance[msg.sender][_spender] = _value;
+        state.setAllowance(msg.sender, _spender, _value);
         Approval(msg.sender, _spender, _value);
+
         return true;
     }
-
 
     /* ========== EVENTS ========== */
 

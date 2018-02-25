@@ -8,6 +8,7 @@ from utils.deployutils import compile_contracts, attempt_deploy, mine_tx
 from utils.deployutils import take_snapshot, restore_snapshot, fast_forward
 from utils.testutils import assertReverts, block_time, send_value, get_eth_balance
 from utils.testutils import generate_topic_event_map, get_event_data_from_log
+from utils.testutils import ZERO_ADDRESS
 
 
 ETHERNOMIN_SOURCE = "tests/contracts/PublicEtherNomin.sol"
@@ -60,7 +61,7 @@ class TestEtherNomin(unittest.TestCase):
 
         cls.nomin, cls.construction_txr = attempt_deploy(compiled, 'PublicEtherNomin', MASTER,
                                                          [cls.nomin_havven, cls.nomin_oracle, cls.nomin_beneficiary,
-                                                          1000 * UNIT, cls.nomin_owner])
+                                                          1000 * UNIT, cls.nomin_owner, ZERO_ADDRESS])
         cls.construction_price_time = cls.nomin.functions.lastPriceUpdate().call()
         cls.initial_time = cls.construction_price_time
 

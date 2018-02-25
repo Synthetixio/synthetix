@@ -5,10 +5,11 @@ from utils.deployutils import compile_contracts, attempt_deploy, mine_tx
 from utils.deployutils import take_snapshot, restore_snapshot
 from utils.testutils import assertReverts
 from utils.testutils import generate_topic_event_map, get_event_data_from_log
+from utils.testutils import ZERO_ADDRESS
 
 
 ERC20Token_SOURCE = "contracts/ERC20Token.sol"
-ERC20FeeToken_SOURCE = "contracts/ERC20FeeToken.sol"
+ERC20State_SOURCE = "contracts/ERC20State.sol"
 
 
 def setUpModule():
@@ -30,14 +31,24 @@ class TestERC20Token(unittest.TestCase):
     def setUpClass(cls):
         cls.assertReverts = assertReverts
 
-        compiled = compile_contracts([ERC20Token_SOURCE])
-        cls.erc20_abi = compiled['ERC20Token']['abi']
+        cls.the_owner = DUMMY
+
+        cls.compiled = compile_contracts([ERC20Token_SOURCE, ERC20State_SOURCE])
+        cls.erc20_abi = cls.compiled['ERC20Token']['abi']
         cls.erc20_event_dict = generate_topic_event_map(cls.erc20_abi)
-        cls.erc20token, cls.construction_txr = attempt_deploy(compiled, 'ERC20Token', 
-                                                              MASTER, ["Test Token", "TEST", 
-                                                              1000 * UNIT, MASTER])
+        cls.erc20token, cls.construction_txr = attempt_deploy(cls.compiled, 'ERC20Token', 
+                                                              MASTER,
+                                                              ["Test Token", "TEST", 
+                                                               0, cls.the_owner,
+                                                               ZERO_ADDRESS, cls.the_owner])
+        cls.erc20state, _ = attempt_deploy(cls.compiled, 'ERC20State',
+                                           MASTER,
+                                           [cls.the_owner, 1000 * UNIT, cls.the_owner, cls.erc20token.address])
+
+        mine_tx(cls.erc20token.functions.setState(cls.erc20state.address).transact({'from': cls.the_owner}))
 
         cls.totalSupply = lambda self: cls.erc20token.functions.totalSupply().call()
+        cls.state = lambda self: cls.erc20token.functions.state().call()
         cls.name = lambda self: cls.erc20token.functions.name().call()
         cls.symbol = lambda self: cls.erc20token.functions.symbol().call()
         cls.balanceOf = lambda self, account: cls.erc20token.functions.balanceOf(account).call()
@@ -51,10 +62,32 @@ class TestERC20Token(unittest.TestCase):
         self.assertEqual(self.name(), "Test Token")
         self.assertEqual(self.symbol(), "TEST")
         self.assertEqual(self.totalSupply(), 1000 * UNIT)
-        self.assertEqual(self.balanceOf(MASTER), 1000 * UNIT)
+        self.assertEqual(self.balanceOf(self.the_owner), 1000 * UNIT)
+        self.assertEqual(self.state(), self.erc20state.address)
+        self.assertEqual(self.erc20state.functions.associatedContract().call(), self.erc20token.address)
+
+    def test_provide_state(self):
+        erc20state, _ = attempt_deploy(self.compiled, 'ERC20State',
+                                       MASTER,
+                                       [self.the_owner, 0,
+                                       self.the_owner, self.erc20token.address])
+
+        erc20token, _ = attempt_deploy(self.compiled, 'ERC20Token', 
+                                       MASTER,
+                                      ["Test Token", "TEST", 
+                                       1000 * UNIT, MASTER,
+                                       ZERO_ADDRESS, DUMMY])
+        self.assertNotEqual(erc20token.functions.state().call(), ZERO_ADDRESS)
+  
+        erc20token, _ = attempt_deploy(self.compiled, 'ERC20Token', 
+                                       MASTER,
+                                      ["Test Token", "TEST", 
+                                       1000 * UNIT, MASTER,
+                                       erc20state.address, DUMMY])
+        self.assertEqual(erc20token.functions.state().call(), erc20state.address)
 
     def test_transfer(self):
-        sender = MASTER
+        sender = self.the_owner
         sender_balance = self.balanceOf(sender)
 
         receiver = fresh_account()
@@ -114,7 +147,7 @@ class TestERC20Token(unittest.TestCase):
         self.assertEqual(self.allowance(approver, spender), approval_amount)
 
     def test_transferFrom(self):
-        approver = MASTER
+        approver = self.the_owner
         spender, receiver = fresh_accounts(2)
 
         approver_balance = self.balanceOf(approver)

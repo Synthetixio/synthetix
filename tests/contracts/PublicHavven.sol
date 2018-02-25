@@ -2,17 +2,18 @@
  * for testing purposes.
  */
 
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.20;
 
 
 import "contracts/Havven.sol";
+import "contracts/ERC20State.sol";
 
 
 // Public getters for all items in the Havven contract, used for debugging/testing
 contract PublicHavven is Havven {
 
-    function PublicHavven(address _owner)
-        Havven(_owner)
+    function PublicHavven(ERC20State initialState, address _owner)
+        Havven(initialState, _owner)
         public
     {}
 
