@@ -7,5 +7,6 @@ import tests.test_FeeCollection
 import tests.test_Havven
 import tests.test_HavvenEscrow
 import tests.test_Owned
+import tests.test_Proxy
 import tests.test_SafeDecimalMath
 import tests.test_Upgrade
