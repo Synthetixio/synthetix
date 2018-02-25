@@ -1,7 +1,10 @@
 import unittest
+import time
+
 from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mine_txs, mine_tx, \
     UNIT, MASTER, DUMMY, to_seconds, fast_forward, fresh_account, fresh_accounts, take_snapshot, restore_snapshot
 from utils.testutils import assertReverts, block_time, assertClose, generate_topic_event_map, get_event_data_from_log
+from utils.testutils import ZERO_ADDRESS
 
 SOLIDITY_SOURCES = ["tests/contracts/PublicHavven.sol", "contracts/EtherNomin.sol",
                     "contracts/Court.sol", "contracts/HavvenEscrow.sol"]
@@ -14,12 +17,12 @@ def deploy_public_havven():
 
     # Deploy contracts
     havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven',
-                                              MASTER, [MASTER])
+                                              MASTER, [ZERO_ADDRESS, MASTER])
     hvn_block = W3.eth.blockNumber
     nomin_contract, nom_txr = attempt_deploy(compiled, 'EtherNomin',
                                              MASTER,
                                              [havven_contract.address, MASTER, MASTER,
-                                              1000 * UNIT, MASTER])
+                                              1000 * UNIT, MASTER, ZERO_ADDRESS])
     court_contract, court_txr = attempt_deploy(compiled, 'Court',
                                                MASTER,
                                                [havven_contract.address, nomin_contract.address,
@@ -69,10 +72,13 @@ class TestHavven(unittest.TestCase):
         # INHERITED
         # OWNED
         # owner
-        cls.owner = lambda self: self.havven.functions.owner().call()
-        # setOwner
-        cls.setOwner = lambda self, sender, addr: mine_tx(
-            self.havven.functions.setOwner(addr).transact({'from': sender}))
+        cls.h_owner = lambda self: self.havven.functions.owner().call()
+        cls.h_nominateOwner = lambda self, sender, addr: mine_tx(
+            self.havven.functions.nominateOwner(addr).transact({'from': sender}))
+        cls.h_acceptOwnership = lambda self, sender: mine_tx(
+            self.havven.functions.acceptOwnership().transact({'from': sender}))
+
+
 
         # ERC20TOKEN (transfer/transferFrom are overwritten)
         # totalSupply
@@ -98,8 +104,8 @@ class TestHavven(unittest.TestCase):
         cls.lastFeePeriodStartTime = lambda self: self.havven.functions._lastFeePeriodStartTime().call()
         cls.penultimateFeePeriodStartTime = lambda self: self.havven.functions._penultimateFeePeriodStartTime().call()
         cls.targetFeePeriodDurationSeconds = lambda self: self.havven.functions.targetFeePeriodDurationSeconds().call()
-        cls.minFeePeriodDurationSeconds = lambda self: self.havven.functions._minFeePeriodDurationSeconds().call()
-        cls.maxFeePeriodDurationSeconds = lambda self: self.havven.functions._maxFeePeriodDurationSeconds().call()
+        cls.MIN_FEE_PERIOD_DURATION_SECONDS = lambda self: self.havven.functions._MIN_FEE_PERIOD_DURATION_SECONDS().call()
+        cls.MAX_FEE_PERIOD_DURATION_SECONDS= lambda self: self.havven.functions._MAX_FEE_PERIOD_DURATION_SECONDS().call()
         cls.lastFeesCollected = lambda self: self.havven.functions.lastFeesCollected().call()
 
         cls.get_nomin = lambda self: self.havven.functions.nomin().call()
@@ -126,6 +132,8 @@ class TestHavven(unittest.TestCase):
             self.havven.functions.transferFrom(frm, to, amt).transact({'from': sender}))
         cls.recomputeLastAverageBalance = lambda self, sender: mine_tx(
             self.havven.functions.recomputeLastAverageBalance().transact({'from': sender}))
+        cls.recomputeAccountLastAverageBalance = lambda self, sender, account: mine_tx(
+            self.havven.functions.recomputeAccountLastAverageBalance(account).transact({'from': sender}))
         cls.rolloverFeePeriod = lambda self, sender: mine_tx(
             self.havven.functions.rolloverFeePeriod().transact({'from': sender}))
 
@@ -156,22 +164,24 @@ class TestHavven(unittest.TestCase):
     # Test inherited Owned - Should be the same test_Owned.py
     ###
     def test_owner_is_master(self):
-        self.assertEqual(self.owner(), MASTER)
+        self.assertEqual(self.h_owner(), MASTER)
 
     def test_change_owner(self):
-        old_owner = self.owner()
+        old_owner = self.h_owner()
         new_owner = DUMMY
 
-        self.setOwner(old_owner, new_owner)
-        self.assertEqual(self.owner(), new_owner)
+        self.h_nominateOwner(old_owner, new_owner)
+        self.h_acceptOwnership(new_owner)
+        self.assertEqual(self.h_owner(), new_owner)
 
         # reset back to old owner
-        self.setOwner(new_owner, old_owner)
-        self.assertEqual(self.owner(), old_owner)
+        self.h_nominateOwner(new_owner, old_owner)
+        self.h_acceptOwnership(old_owner)
+        self.assertEqual(self.h_owner(), old_owner)
 
     def test_change_invalid_owner(self):
         invalid_account = DUMMY
-        self.assertReverts(self.setOwner, invalid_account, invalid_account)
+        self.assertReverts(self.h_nominateOwner, invalid_account, invalid_account)
 
     ###
     # Test inherited ERC20Token
@@ -205,8 +215,8 @@ class TestHavven(unittest.TestCase):
         fee_period = self.targetFeePeriodDurationSeconds()
         self.assertEquals(fee_period, to_seconds(weeks=4))
         self.assertGreater(block_time(), 2 * fee_period)
-        self.assertEquals(self.minFeePeriodDurationSeconds(), to_seconds(days=1))
-        self.assertEquals(self.maxFeePeriodDurationSeconds(), to_seconds(weeks=26))
+        self.assertEquals(self.MIN_FEE_PERIOD_DURATION_SECONDS(), to_seconds(days=1))
+        self.assertEquals(self.MAX_FEE_PERIOD_DURATION_SECONDS(), to_seconds(weeks=26))
         self.assertEquals(self.lastFeesCollected(), 0)
         self.assertEquals(self.get_nomin(), self.nomin.address)
 
@@ -447,7 +457,7 @@ class TestHavven(unittest.TestCase):
     ###
     # feePeriodStartTime - tested above
     # targetFeePeriodDurationSeconds - tested above
-    # minFeePeriodDurationSeconds - constant, checked in constructor test
+    # MIN_FEE_PERIOD_DURATION_SECONDS - constant, checked in constructor test
 
     ###
     # Functions
@@ -477,7 +487,7 @@ class TestHavven(unittest.TestCase):
     def test_unsetEscrow(self):
         alice = fresh_account()
         self.unsetEscrow(MASTER)
-        self.assertEqual(self.get_escrow(), f"0x{'0'*40}")
+        self.assertEqual(self.get_escrow(), ZERO_ADDRESS)
 
     def test_invalidUnsetEscrow(self):
         alice = fresh_account()
@@ -502,17 +512,17 @@ class TestHavven(unittest.TestCase):
         )
 
     def test_setTargetFeePeriod_minimal(self):
-        self.setTargetFeePeriodDuration(MASTER, self.minFeePeriodDurationSeconds())
+        self.setTargetFeePeriodDuration(MASTER, self.MIN_FEE_PERIOD_DURATION_SECONDS())
         self.assertEqual(
             self.targetFeePeriodDurationSeconds(),
-            self.minFeePeriodDurationSeconds()
+            self.MIN_FEE_PERIOD_DURATION_SECONDS()
         )
 
     def test_setTargetFeePeriod_invalid_below_min(self):
-        self.assertReverts(self.setTargetFeePeriodDuration, MASTER, self.minFeePeriodDurationSeconds() - 1)
+        self.assertReverts(self.setTargetFeePeriodDuration, MASTER, self.MIN_FEE_PERIOD_DURATION_SECONDS() - 1)
 
     def test_setTargetFeePeriod_invalid_0(self):
-        self.assertReverts(self.setTargetFeePeriodDuration, MASTER, self.minFeePeriodDurationSeconds() - 1)
+        self.assertReverts(self.setTargetFeePeriodDuration, MASTER, self.MIN_FEE_PERIOD_DURATION_SECONDS() - 1)
 
     # endow
     def test_endow_valid(self):

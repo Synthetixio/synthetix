@@ -33,12 +33,14 @@ main fee pool to be redistributed in the next fee period.
 
 */
 
+pragma solidity ^0.4.20;
+
+
 import "contracts/SafeDecimalMath.sol";
 import "contracts/Owned.sol";
 import "contracts/Havven.sol";
 import "contracts/EtherNomin.sol";
 
-pragma solidity ^0.4.19;
 
 contract HavvenEscrow is Owned, SafeDecimalMath {    
     // The corresponding Havven contract.
@@ -56,6 +58,8 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
     uint public totalVestedBalance;
 
 
+    /* ========== CONSTRUCTOR ========== */
+
     function HavvenEscrow(address _owner, Havven _havven, EtherNomin _nomin)
         Owned(_owner)
         public
@@ -63,6 +67,28 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         havven = _havven;
         nomin = _nomin;
     }
+
+
+    /* ========== SETTERS ========== */
+
+    function setHavven(Havven newHavven)
+        public
+        onlyOwner
+    {
+        havven = newHavven;
+        HavvenUpdated(newHavven);
+    }
+
+    function setNomin(EtherNomin newNomin)
+        public
+        onlyOwner
+    {
+        nomin = newNomin;
+        NominUpdated(newNomin);
+    } 
+
+
+    /* ========== VIEW FUNCTIONS ========== */
 
     /* The number of vesting dates in an account's schedule. */
     function numVestingEntries(address account)
@@ -143,7 +169,6 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         return getVestingTime(account, index);
     }
 
-
     /* Obtain the quantity which the next schedule entry will vest for a given user. */
     function getNextVestingQuantity(address account)
         public
@@ -166,21 +191,8 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         return nomin.balanceOf(this);
     }
 
-    function setHavven(Havven newHavven)
-        public
-        onlyOwner
-    {
-        havven = newHavven;
-        HavvenUpdated(newHavven);
-    }
 
-    function setNomin(EtherNomin newNomin)
-        public
-        onlyOwner
-    {
-        nomin = newNomin;
-        NominUpdated(newNomin);
-    } 
+    /* ========== MUTATIVE FUNCTIONS ========== */
 
     /* Return the current fee balance back to the main pool to roll over to the
      * next fee period. */
@@ -222,8 +234,17 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         uint entitlement = nomin.priceToSpend(safeDecDiv(safeDecMul(totalVestedAccountBalance[msg.sender], feePool()), totalVestedBalance));
         if (entitlement != 0) {
             nomin.transfer(msg.sender, entitlement);
-            FeesWithdrawn(msg.sender, msg.sender, now, entitlement);
+            FeesWithdrawn(msg.sender, msg.sender,
+                          now, entitlement);
         }
+    }
+
+    /* Withdraws a quantity of havvens back to the havven contract. */
+    function withdrawHavvens(uint quantity)
+        onlyOwner
+        external
+    {
+        havven.transfer(havven, quantity);
     }
 
     /* Destroy the vesting information associated with an account. */
@@ -234,14 +255,6 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         delete vestingSchedules[account];
         totalVestedBalance = safeSub(totalVestedBalance, totalVestedAccountBalance[account]);
         totalVestedAccountBalance[account] = 0;
-    }
-
-    /* Withdraws a quantity of havvens back to the havven contract. */
-    function withdrawHavvens(uint quantity)
-        onlyOwner
-        external
-    {
-        havven.transfer(havven, quantity);
     }
 
     /* Add a new vesting entry at a given time and quantity to an account's schedule.
@@ -272,24 +285,29 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         totalVestedBalance = safeAdd(totalVestedBalance, quantity);
     }
 
-    /* Construct a vesting schedule to release a quantity at regular intervals ending
+    /* Construct a vesting schedule to release a quantity of havvens at regular intervals ending
      * at a given time. */
-    function addRegularVestingSchedule(address account, uint conclusion_time, uint quantity, uint vesting_periods)
+    function addRegularVestingSchedule(address account, uint conclusionTime,
+                                       uint totalQuantity, uint vestingPeriods)
         onlyOwner
         public
     {
-        // safe sub to avoid now > conclusion_time
-        uint time_period = safeSub(conclusion_time, now);
-        // only quantity is UNIT
-        uint item_quantity = safeDiv(quantity, vesting_periods);
-        uint quant_sum = safeMul(item_quantity, (vesting_periods-1));
-        uint period_length = safeDiv(time_period, vesting_periods); // (zero vesting periods doesn't work.)
+        // safeSub prevents a conclusionTime in the past.
+        uint totalDuration = safeSub(conclusionTime, now);
 
-        for (uint i = 1; i < vesting_periods; i++) {
-            uint item_time_period = safeMul(i, period_length);
-            appendVestingEntry(account, safeAdd(now, item_time_period), item_quantity);
+        // safeDiv prevents zero vesting periods.
+        uint periodQuantity = safeDiv(totalQuantity, vestingPeriods);
+        uint periodDuration = safeDiv(totalDuration, vestingPeriods);
+
+        // Generate all but the last period.
+        for (uint i = 1; i < vestingPeriods; i++) {
+            uint periodConclusionTime = safeAdd(now, safeMul(i, periodDuration));
+            appendVestingEntry(account, periodConclusionTime, periodQuantity);
         }
-        appendVestingEntry(account, conclusion_time, safeSub(quantity, quant_sum));
+
+        // Generate the final period. Quantities left out due to integer division truncation are incorporated here.
+        uint finalPeriodQuantity = safeSub(totalQuantity, safeMul(periodQuantity, (vestingPeriods - 1)));
+        appendVestingEntry(account, conclusionTime, finalPeriodQuantity);
     }
 
     /* Allow a user to withdraw any tokens that have vested. */
@@ -316,9 +334,13 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         if (total != 0) {
             totalVestedBalance = safeSub(totalVestedBalance, total);
             havven.transfer(msg.sender, total);
-            Vested(msg.sender, msg.sender, now, total);
+            Vested(msg.sender, msg.sender,
+                   now, total);
         }
     }
+
+
+    /* ========== EVENTS ========== */
 
     event HavvenUpdated(address newHavven);
 

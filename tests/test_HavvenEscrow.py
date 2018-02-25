@@ -1,8 +1,11 @@
 import unittest
+import time
 
+import utils.generalutils
 from utils.deployutils import compile_contracts, attempt_deploy, mine_tx, MASTER, DUMMY, take_snapshot,\
     restore_snapshot, fresh_account, fresh_accounts, UNIT, fast_forward
 from utils.testutils import assertReverts, assertClose, block_time
+from utils.testutils import ZERO_ADDRESS
 from utils.generalutils import to_seconds
 
 ESCROW_SOURCE = "contracts/HavvenEscrow.sol"
@@ -21,9 +24,17 @@ def tearDownModule():
 class TestHavvenEscrow(unittest.TestCase):
     def setUp(self):
         self.snapshot = take_snapshot()
+        utils.generalutils.time_fast_forwarded = 0
+        self.initial_time = round(time.time())
 
     def tearDown(self):
         restore_snapshot(self.snapshot)
+
+    def test_time_elapsed(self):
+        return utils.generalutils.time_fast_forwarded + (round(time.time()) - self.initial_time)
+
+    def now_block_time(self):
+        return block_time() + self.test_time_elapsed()
 
     @classmethod
     def setUpClass(cls):
@@ -31,12 +42,14 @@ class TestHavvenEscrow(unittest.TestCase):
         cls.assertClose = assertClose
 
         compiled = compile_contracts([ESCROW_SOURCE, HAVVEN_SOURCE, NOMIN_SOURCE])
-        cls.havven, txr = attempt_deploy(compiled, 'Havven', MASTER, [MASTER])
-        cls.nomin, txr = attempt_deploy(compiled, 'EtherNomin', MASTER, [cls.havven.address, MASTER, MASTER, 1000 * 10**18, MASTER])
+        cls.havven, txr = attempt_deploy(compiled, 'Havven', MASTER, [ZERO_ADDRESS, MASTER])
+        cls.nomin, txr = attempt_deploy(compiled, 'EtherNomin', MASTER, [cls.havven.address, MASTER, MASTER, 1000 * 10**18, MASTER, ZERO_ADDRESS])
         cls.escrow, txr = attempt_deploy(compiled, 'HavvenEscrow', MASTER,
                                          [MASTER, cls.havven.address, cls.nomin.address])
         mine_tx(cls.havven.functions.setNomin(cls.nomin.address).transact({'from': MASTER}))
         mine_tx(cls.havven.functions.setEscrow(cls.escrow.address).transact({'from': MASTER}))
+
+        cls.initial_time = cls.nomin.functions.lastPriceUpdate().call()
 
         cls.h_totalSupply = lambda self: cls.havven.functions.totalSupply().call()
         cls.h_targetFeePeriodDurationSeconds = lambda self: cls.havven.functions.targetFeePeriodDurationSeconds().call()
@@ -46,7 +59,7 @@ class TestHavvenEscrow(unittest.TestCase):
         cls.h_transfer = lambda self, sender, receiver, amt: mine_tx(cls.havven.functions.transfer(receiver, amt).transact({'from': sender}))
         cls.h_recomputeLastAverageBalance = lambda self, sender: mine_tx(cls.havven.functions.recomputeLastAverageBalance().transact({'from': sender}))
 
-        cls.n_updatePrice = lambda self, sender, price: mine_tx(cls.nomin.functions.updatePrice(price).transact({'from': sender}))
+        cls.n_updatePrice = lambda self, sender, price, timeSent: mine_tx(cls.nomin.functions.updatePrice(price, timeSent).transact({'from': sender}))
         cls.n_setTransferFeeRate = lambda self, sender, rate: mine_tx(cls.nomin.functions.setTransferFeeRate(rate).transact({'from': sender}))
         cls.n_issue = lambda self, sender, quantity, value: mine_tx(cls.nomin.functions.issue(quantity).transact({'from': sender, 'value': value}))
         cls.n_burn = lambda self, sender, quantity: mine_tx(cls.nomin.functions.burn(quantity).transact({'from': sender}))
@@ -60,7 +73,8 @@ class TestHavvenEscrow(unittest.TestCase):
         cls.n_priceToSpend = lambda self, v: cls.nomin.functions.priceToSpend(v).call()
 
         cls.owner = lambda self: cls.escrow.functions.owner().call()
-        cls.setOwner = lambda self, sender, newOwner: mine_tx(cls.escrow.functions.setOwner(newOwner).transact({'from': sender}))
+        cls.nominateOwner = lambda self, sender, newOwner: mine_tx(cls.escrow.functions.nominateOwner(newOwner).transact({'from': sender}))
+        cls.acceptOwnership = lambda self, sender: mine_tx(cls.escrow.functions.acceptOwnership().transact({'from': sender}))
 
         cls.e_havven = lambda self: cls.escrow.functions.havven().call()
         cls.e_nomin = lambda self: cls.escrow.functions.nomin().call()
@@ -90,7 +104,7 @@ class TestHavvenEscrow(unittest.TestCase):
     def make_nomin_velocity(self):
         # should produce a 36 * UNIT fee pool
         buyer = fresh_account()
-        self.n_updatePrice(MASTER, UNIT)
+        self.n_updatePrice(MASTER, UNIT, self.now_block_time())
         self.n_setTransferFeeRate(MASTER, UNIT // 100)
         self.n_issue(MASTER, 1000 * UNIT, 2000 * UNIT)
         self.n_buy(buyer, 1000 * UNIT, self.n_purchaseCostEther(1000 * UNIT))

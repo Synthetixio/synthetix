@@ -79,8 +79,12 @@ def force_mine_block():
     W3.providers[0].make_request("evm_mine", [])
 
 
+time_fast_forwarded = 0
+
 def fast_forward(seconds=0, minutes=0, hours=0, days=0, weeks=0):
+    global time_fast_forwarded
     total_time = to_seconds(seconds, minutes, hours, days, weeks)
+    time_fast_forwarded += total_time
     W3.providers[0].make_request("evm_increaseTime", [total_time])
     force_mine_block()
 
@@ -137,3 +141,4 @@ def attempt_deploy(compiled_sol, contract_name, deploy_account, constructor_args
                    [compiled_sol, contract_name, deploy_account, constructor_args],
                    f"Deploying {contract_name}... ",
                    print_status=print_status, print_exception=print_exception)
+

@@ -27,7 +27,7 @@ This contract utilises a state for upgradability purposes.
 -----------------------------------------------------------------
 */
 
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.20;
 
 
 import "contracts/SafeDecimalMath.sol";
@@ -49,14 +49,17 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
     // Zero by default, but may be set in derived contracts.
     uint public transferFeeRate;
     // Fee may not exceed 10%.
-    uint constant maxTransferFeeRate = UNIT / 10;
+    uint constant MAX_TRANSFER_FEE_RATE = UNIT / 10;
 
     // The address with the authority to distribute fees.
     address public feeAuthority;
 
     /* ========== CONSTRUCTOR ========== */
 
-    function ERC20FeeToken(address _owner, string _name, string _symbol, uint initialSupply, address initialBeneficiary, uint _feeRate, address _feeAuthority, ERC20FeeState _state)
+    function ERC20FeeToken(string _name, string _symbol,
+                           uint initialSupply, address initialBeneficiary,
+                           uint _feeRate, address _feeAuthority,
+                           ERC20FeeState _state, address _owner)
         Owned(_owner)
         public
     {
@@ -77,7 +80,7 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
         public
         onlyOwner
     {
-        require(newFeeRate <= maxTransferFeeRate);
+        require(newFeeRate <= MAX_TRANSFER_FEE_RATE);
         transferFeeRate = newFeeRate;
         TransferFeeRateUpdate(newFeeRate);
     }
@@ -140,6 +143,8 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
         public
         returns (bool)
     {
+        require(_to != address(0));
+
         // The fee is deducted from the sender's balance, in addition to
         // the transferred quantity.
         uint fee = transferFeeIncurred(_value);
@@ -167,6 +172,8 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
         public
         returns (bool)
     {
+        require(_from != address(0));
+        require(_to != address(0));
         // The fee is deducted from the sender's balance, in addition to
         // the transferred quantity.
         uint fee = transferFeeIncurred(_value);
@@ -206,6 +213,13 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
         returns (bool)
     {
         require(msg.sender == feeAuthority);
+        require(account != address(0));
+        
+        // 0-value withdrawals do nothing.
+        if (value == 0) {
+            return false;
+        }
+
         // Safe subtraction ensures an exception is thrown if the balance is insufficient.
         state.setFeePool(safeSub(feePool(), value));
         state.setBalance(account, safeAdd(state.balanceOf(account), value));
@@ -218,6 +232,7 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
         public
         returns (bool)
     {
+        // Empty donations are disallowed.
         uint balance = state.balanceOf(msg.sender);
         require(balance != 0);
 
@@ -237,11 +252,11 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
         return state.totalSupply();
     }
 
-    function balanceOf(address _account)
+    function balanceOf(address _owner)
         public
         returns (uint)
     {
-        return state.balanceOf(_account);
+        return state.balanceOf(_owner);
     }
 
     function allowance(address _from, address _to)
