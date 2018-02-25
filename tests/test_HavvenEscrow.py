@@ -1,6 +1,7 @@
 import unittest
 import time
 
+import utils.generalutils
 from utils.deployutils import compile_contracts, attempt_deploy, mine_tx, MASTER, DUMMY, take_snapshot,\
     restore_snapshot, fresh_account, fresh_accounts, UNIT, fast_forward
 from utils.testutils import assertReverts, assertClose, block_time
@@ -22,9 +23,17 @@ def tearDownModule():
 class TestHavvenEscrow(unittest.TestCase):
     def setUp(self):
         self.snapshot = take_snapshot()
+        utils.generalutils.time_fast_forwarded = 0
+        self.initial_time = round(time.time())
 
     def tearDown(self):
         restore_snapshot(self.snapshot)
+
+    def test_time_elapsed(self):
+        return utils.generalutils.time_fast_forwarded + (round(time.time()) - self.initial_time)
+
+    def now_block_time(self):
+        return block_time() + self.test_time_elapsed()
 
     @classmethod
     def setUpClass(cls):
@@ -38,6 +47,8 @@ class TestHavvenEscrow(unittest.TestCase):
                                          [MASTER, cls.havven.address, cls.nomin.address])
         mine_tx(cls.havven.functions.setNomin(cls.nomin.address).transact({'from': MASTER}))
         mine_tx(cls.havven.functions.setEscrow(cls.escrow.address).transact({'from': MASTER}))
+
+        cls.initial_time = cls.nomin.functions.lastPriceUpdate().call()
 
         cls.h_totalSupply = lambda self: cls.havven.functions.totalSupply().call()
         cls.h_targetFeePeriodDurationSeconds = lambda self: cls.havven.functions.targetFeePeriodDurationSeconds().call()
@@ -92,7 +103,7 @@ class TestHavvenEscrow(unittest.TestCase):
     def make_nomin_velocity(self):
         # should produce a 36 * UNIT fee pool
         buyer = fresh_account()
-        self.n_updatePrice(MASTER, UNIT, round(time.time()))
+        self.n_updatePrice(MASTER, UNIT, self.now_block_time())
         self.n_setTransferFeeRate(MASTER, UNIT // 100)
         self.n_issue(MASTER, 1000 * UNIT, 2000 * UNIT)
         self.n_buy(buyer, 1000 * UNIT, self.n_purchaseCostEther(1000 * UNIT))

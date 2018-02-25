@@ -110,9 +110,6 @@ contract EtherNomin is ERC20FeeToken {
     // Last time the price was updated.
     uint public lastPriceUpdate;
 
-    // Time that price was sent from the oracle.
-    uint public lastTimeSent;
-
     // The period it takes for the price to be considered stale.
     // If the price is stale, functions that require the price are disabled.
     uint public stalePeriod = 2 days;
@@ -383,12 +380,12 @@ contract EtherNomin is ERC20FeeToken {
     {
         // Should be callable only by the oracle.
         require(msg.sender == oracle);
-        // Must be the most recently sent price.
-        require(timeSent > lastTimeSent);
+        // Must be the most recently sent price, but not too far in the future.
+        // (so we can't lock ourselves out of updating the oracle for longer than this)
+        require(lastPriceUpdate < timeSent && timeSent < now + 10 minutes);
 
         etherPrice = price;
-        lastPriceUpdate = now;
-        lastTimeSent = timeSent;
+        lastPriceUpdate = timeSent;
         PriceUpdated(price);
     }
 
