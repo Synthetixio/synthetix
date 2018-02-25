@@ -549,7 +549,7 @@ contract EtherNomin is ERC20FeeToken {
         require(Court(msg.sender) == court);
         
         // A motion must actually be underway.
-        uint motionID = court.addressMotionID(target);
+        uint motionID = court.targetMotionID(target);
         require(motionID != 0);
 
         // These checks are strictly unnecessary,
