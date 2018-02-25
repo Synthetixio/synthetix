@@ -32,6 +32,21 @@ contract PublicEtherNomin is EtherNomin {
 		return saleProceedsEtherAllowStale(n);
 	}
 
+	function publicLastPriceUpdate()
+		public
+		view
+		returns (uint)
+	{
+		return lastPriceUpdate;
+	}
+
+    function currentTime()
+        public
+        returns (uint)
+    {
+        return now;
+    }
+
 	function debugWithdrawAllEther(address recipient)
 		public
 	{

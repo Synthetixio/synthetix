@@ -1,6 +1,7 @@
 import unittest
 import time
 
+import utils.generalutils
 from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mine_txs, mine_tx, \
     UNIT, MASTER, DUMMY, fast_forward, fresh_accounts, take_snapshot, restore_snapshot, ETHER
 from utils.testutils import assertReverts, block_time, assertClose
@@ -46,12 +47,14 @@ def tearDownModule():
 class TestHavven(unittest.TestCase):
     def setUp(self):
         self.snapshot = take_snapshot()
+        utils.generalutils.time_fast_forwarded = 0
+        self.initial_time = round(time.time())
         time_remaining = self.h_targetFeePeriodDurationSeconds() + self.h_feePeriodStartTime() - block_time()
         fast_forward(time_remaining + 1)
         self.h_recomputeLastAverageBalance(MASTER)
 
         # Reset the price at the start of tests so that it's never stale.
-        self.n_updatePrice(self.n_oracle(), self.n_etherPrice(), round(time.time()) - 1)
+        self.n_updatePrice(self.n_oracle(), self.n_etherPrice(), self.now_block_time()) #round(time.time()) - 1)
         # Reset the liquidation timestamp so that it's never active.
         owner = self.n_owner()
         self.n_forceLiquidation(owner)
@@ -59,6 +62,12 @@ class TestHavven(unittest.TestCase):
 
     def tearDown(self):
         restore_snapshot(self.snapshot)
+
+    def test_time_elapsed(self):
+        return utils.generalutils.time_fast_forwarded + (round(time.time()) - self.initial_time)
+
+    def now_block_time(self):
+        return block_time() + self.test_time_elapsed()
 
     @classmethod
     def setUpClass(cls):
@@ -218,7 +227,7 @@ class TestHavven(unittest.TestCase):
         cls.n_debugFreezeAccount = lambda self, sender, target: mine_tx(cls.nomin.functions.debugFreezeAccount(target).transact({'from': sender}))
 
     def give_master_nomins(self, amt):
-        self.n_updatePrice(MASTER, UNIT, round(time.time()))
+        self.n_updatePrice(MASTER, UNIT, self.now_block_time())
         self.n_issue(MASTER, amt * UNIT, 2 * amt * ETHER)
         ethercost = self.n_purchaseCostEther(amt * UNIT)
         self.n_buy(MASTER, amt * UNIT, ethercost)
