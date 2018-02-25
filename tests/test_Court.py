@@ -536,10 +536,7 @@ class TestCourt(unittest.TestCase):
 
     def test_voteFor(self):
         owner = self.owner()
-        accounts = fresh_accounts(4)
-        voter = accounts[0]
-        no_tokens = accounts[1]
-        suspects = accounts[2:]
+        voter, no_tokens, suspect = fresh_accounts(3)
         voting_period = self.votingPeriod()
         fee_period = self.havvenTargetFeePeriodDurationSeconds()
 
@@ -557,33 +554,33 @@ class TestCourt(unittest.TestCase):
         self.havvenCheckFeePeriodRollover(DUMMY)
 
         # Begin a confiscation motion against the suspect.
-        motion_id_0 = self.get_motion_index(self.beginConfiscationMotion(owner, suspects[0]))
-        self.assertTrue(self.motionVoting(motion_id_0))
+        motion_id = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
+        self.assertTrue(self.motionVoting(motion_id))
 
         # Cast a vote in favour of confiscation.
-        tx_receipt = self.voteFor(voter, motion_id_0)
+        tx_receipt = self.voteFor(voter, motion_id)
 
         # Check that event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "VoteFor")
 
         # And that the totals have been updated properly.
-        self.assertEqual(self.votesFor(motion_id_0), 1000)
-        self.assertEqual(self.voteWeight(voter, motion_id_0), 1000)
-        self.assertEqual(self.vote(voter, motion_id_0), 1)
+        self.assertEqual(self.votesFor(motion_id), 1000)
+        self.assertEqual(self.voteWeight(voter, motion_id), 1000)
+        self.assertEqual(self.vote(voter, motion_id), 1)
 
         # It should not be possible to cast a repeat vote without cancelling first.
-        self.assertReverts(self.voteFor, voter, motion_id_0)
-        self.assertReverts(self.voteAgainst, voter, motion_id_0)
+        self.assertReverts(self.voteFor, voter, motion_id)
+        self.assertReverts(self.voteAgainst, voter, motion_id)
 
         # It should not be possible to vote without any vote weight.
-        self.assertReverts(self.voteFor, no_tokens, motion_id_0)
+        self.assertReverts(self.voteFor, no_tokens, motion_id)
+
+        # And a target should not be able to vote for themself.
+        self.assertReverts(self.voteFor, suspect, motion_id)
 
     def test_voteAgainst(self):
         owner = self.owner()
-        accounts = fresh_accounts(4)
-        voter = accounts[0]
-        no_tokens = accounts[1]
-        suspects = accounts[2:]
+        voter, no_tokens, suspect = fresh_accounts(3)
         voting_period = self.votingPeriod()
         fee_period = self.havvenTargetFeePeriodDurationSeconds()
 
@@ -601,26 +598,29 @@ class TestCourt(unittest.TestCase):
         self.havvenCheckFeePeriodRollover(DUMMY)
 
         # Begin a confiscation motion against the suspect.
-        motion_id_0 = self.get_motion_index(self.beginConfiscationMotion(owner, suspects[0]))
-        self.assertTrue(self.motionVoting(motion_id_0))
+        motion_id = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
+        self.assertTrue(self.motionVoting(motion_id))
 
         # Cast a vote against confiscation.
-        tx_receipt = self.voteAgainst(voter, motion_id_0)
+        tx_receipt = self.voteAgainst(voter, motion_id)
 
         # Check that event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "VoteAgainst")
 
         # And that the totals have been updated properly.
-        self.assertEqual(self.votesAgainst(motion_id_0), 1000)
-        self.assertEqual(self.voteWeight(voter, motion_id_0), 1000)
-        self.assertEqual(self.vote(voter, motion_id_0), 2)
+        self.assertEqual(self.votesAgainst(motion_id), 1000)
+        self.assertEqual(self.voteWeight(voter, motion_id), 1000)
+        self.assertEqual(self.vote(voter, motion_id), 2)
 
         # It should not be possible to cast a repeat vote without cancelling first.
-        self.assertReverts(self.voteFor, voter, motion_id_0)
-        self.assertReverts(self.voteAgainst, voter, motion_id_0)
+        self.assertReverts(self.voteFor, voter, motion_id)
+        self.assertReverts(self.voteAgainst, voter, motion_id)
 
         # It should not be possible to vote without any vote weight.
-        self.assertReverts(self.voteAgainst, no_tokens, motion_id_0)    
+        self.assertReverts(self.voteAgainst, no_tokens, motion_id)
+
+        # And a target should not be able to vote against themself.
+        self.assertReverts(self.voteAgainst, suspect, motion_id)
 
     def test_cancelVote(self):
         owner = self.owner()
@@ -856,11 +856,12 @@ class TestCourt(unittest.TestCase):
 
         # Generate a bunch of voters with equal voting power
         num_voters = 50
-        voters = fresh_accounts(num_voters)
+        num_targets = 11
+        accounts = fresh_accounts(num_voters + num_targets)
+        voters, targets = accounts[:num_voters], accounts[num_voters:]
         for voter in voters:
             self.havvenEndow(owner, voter, self.havvenSupply() // num_voters)
 
-        targets = fresh_accounts(11)
         frozen, unfrozen = [], []
         
         # Update their fee info.
