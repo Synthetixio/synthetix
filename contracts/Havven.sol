@@ -99,7 +99,7 @@ average balance, in order to support the voting functionality detailed in Court.
 
 */
 
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.20;
 
 
 import "contracts/ERC20Token.sol";
@@ -384,16 +384,32 @@ contract Havven is ERC20Token, Owned {
         }
     }
 
-    /* Recompute and return the sender's average balance information.
+    /* Recompute and return the given account's average balance information.
      * This also rolls over the fee period if necessary, and brings
      * the account's current balance sum up to date. */
-    function recomputeLastAverageBalance()
-        public
+    function _recomputeAccountLastAverageBalance(address account)
+        internal
         preCheckFeePeriodRollover
         returns (uint)
     {
-        adjustFeeEntitlement(msg.sender, balanceOf[msg.sender]);
-        return lastAverageBalance[msg.sender];
+        adjustFeeEntitlement(account, balanceOf[account]);
+        return lastAverageBalance[account];
+    }
+
+    /* Recompute and return the sender's average balance information. */
+    function recomputeLastAverageBalance()
+        external
+        returns (uint)
+    {
+        return _recomputeAccountLastAverageBalance(msg.sender);
+    }
+
+    /* Recompute and return the given account's average balance information. */
+    function recomputeAccountLastAverageBalance(address account)
+        external
+        returns (uint)
+    {
+        return _recomputeAccountLastAverageBalance(account);
     }
 
     function rolloverFeePeriod()

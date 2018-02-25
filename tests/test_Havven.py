@@ -126,6 +126,8 @@ class TestHavven(unittest.TestCase):
             self.havven.functions.transferFrom(frm, to, amt).transact({'from': sender}))
         cls.recomputeLastAverageBalance = lambda self, sender: mine_tx(
             self.havven.functions.recomputeLastAverageBalance().transact({'from': sender}))
+        cls.recomputeAccountLastAverageBalance = lambda self, sender, account: mine_tx(
+            self.havven.functions.recomputeAccountLastAverageBalance(account).transact({'from': sender}))
         cls.rolloverFeePeriod = lambda self, sender: mine_tx(
             self.havven.functions.rolloverFeePeriod().transact({'from': sender}))
 

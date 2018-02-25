@@ -20,7 +20,7 @@ An ERC20-compliant token.
 -----------------------------------------------------------------
 */
 
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.20;
 
 
 import "contracts/SafeDecimalMath.sol";
