@@ -5,8 +5,9 @@ FILE INFORMATION
 file:       ERC20FeeToken.sol
 version:    0.3
 author:     Anton Jurisevic
+            Dominic Romanowski
 
-date:       2018-2-6
+date:       2018-2-24
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -21,6 +22,8 @@ charged on its transfers.
 These fees accrue into a pool, from which a nominated authority
 may withdraw.
 
+This contract utilises a state for upgradability purposes.
+
 -----------------------------------------------------------------
 */
 
@@ -29,19 +32,18 @@ pragma solidity ^0.4.20;
 
 import "contracts/SafeDecimalMath.sol";
 import "contracts/Owned.sol";
+import "contracts/ERC20FeeState.sol";
 
 
 contract ERC20FeeToken is Owned, SafeDecimalMath {
 
     /* ========== STATE VARIABLES ========== */
 
-    // ERC20 token data
-    // Allowance mapping domain: (owner, spender)
-    uint public totalSupply;
+    // state that stores balances, allowances, totalSupply, fee pools and frozen accounts
+    ERC20FeeState public state;
+
     string public name;
     string public symbol;
-    mapping(address => uint) public balanceOf;
-    mapping(address => mapping (address => uint256)) public allowance;
 
     // A percentage fee charged on each transfer.
     // Zero by default, but may be set in derived contracts.
@@ -49,30 +51,28 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
     // Fee may not exceed 10%.
     uint constant MAX_TRANSFER_FEE_RATE = UNIT / 10;
 
-    // Collected fees sit here until they are distributed.
-    uint public feePool = 0;
-
     // The address with the authority to distribute fees.
     address public feeAuthority;
-
 
     /* ========== CONSTRUCTOR ========== */
 
     function ERC20FeeToken(string _name, string _symbol,
                            uint initialSupply, address initialBeneficiary,
                            uint _feeRate, address _feeAuthority,
-                           address _owner)
+                           ERC20FeeState _state, address _owner)
         Owned(_owner)
         public
     {
         name = _name;
         symbol = _symbol;
-        totalSupply = initialSupply;
-        balanceOf[initialBeneficiary] = initialSupply;
         transferFeeRate = _feeRate;
         feeAuthority = _feeAuthority;
-    }
 
+        state = _state;
+        if (state == ERC20FeeState(0)) {
+            state = new ERC20FeeState(_owner, 0, initialBeneficiary, address(this));
+        }
+    }
 
     /* ========== SETTERS ========== */
 
@@ -93,6 +93,12 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
         FeeAuthorityUpdate(newFeeAuthority);
     }
 
+    function setState(ERC20FeeState _state)
+        onlyOwner
+        public
+    {
+        state = _state;
+    }
 
     /* ========== VIEW FUNCTIONS ========== */
 
@@ -131,7 +137,6 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
         return safeDecDiv(value, safeAdd(UNIT, transferFeeRate));
     }
 
-
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     function transfer(address _to, uint _value)
@@ -155,9 +160,10 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
         }
 
         // Insufficient balance will be handled by the safe subtraction.
-        balanceOf[msg.sender] = safeSub(balanceOf[msg.sender], totalCharge);
-        balanceOf[_to] = safeAdd(balanceOf[_to], _value);
-        feePool = safeAdd(feePool, fee);
+
+        state.setBalance(msg.sender, safeSub(balanceOf(msg.sender), totalCharge));
+        state.setBalance(_to, safeAdd(balanceOf(_to), _value));
+        state.setFeePool(safeAdd(feePool(), fee));
 
         return true;
     }
@@ -183,10 +189,11 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
         }
 
         // Insufficient balance will be handled by the safe subtraction.
-        balanceOf[_from] = safeSub(balanceOf[_from], totalCharge);
-        allowance[_from][msg.sender] = safeSub(allowance[_from][msg.sender], totalCharge);
-        balanceOf[_to] = safeAdd(balanceOf[_to], _value);
-        feePool = safeAdd(feePool, fee);
+
+        state.setBalance(_from, safeSub(state.balanceOf(_from), totalCharge));
+        state.setAllowance(_from, msg.sender, safeSub(state.allowance(_from, msg.sender), totalCharge));
+        state.setBalance(_to, safeAdd(state.balanceOf(_to), _value));
+        state.setFeePool(safeAdd(feePool(), fee));
 
         return true;
     }
@@ -195,7 +202,7 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
         public
         returns (bool)
     {
-        allowance[msg.sender][_spender] = _value;
+        state.setAllowance(msg.sender, _spender, _value);
         Approval(msg.sender, _spender, _value);
         return true;
     }
@@ -214,8 +221,8 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
         }
 
         // Safe subtraction ensures an exception is thrown if the balance is insufficient.
-        feePool = safeSub(feePool, value);
-        balanceOf[account] = safeAdd(balanceOf[account], value);
+        state.setFeePool(safeSub(feePool(), value));
+        state.setBalance(account, safeAdd(state.balanceOf(account), value));
         FeeWithdrawal(account, value);
         return true;
     }
@@ -226,15 +233,45 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
         returns (bool)
     {
         // Empty donations are disallowed.
-        require(n != 0);
+        uint balance = state.balanceOf(msg.sender);
+        require(balance != 0);
 
         // safeSub ensures the donor has sufficient balance.
-        balanceOf[msg.sender] = safeSub(balanceOf[msg.sender], n);
-        feePool = safeAdd(feePool, n);
+        state.setBalance(msg.sender, safeSub(balance, n));
+        state.setFeePool(safeAdd(feePool(), n));
         FeeDonation(msg.sender, msg.sender, n);
         return true;
     }
 
+    /* ========== GETTERS ========== */
+
+    function totalSupply()
+        public
+        returns (uint)
+    {
+        return state.totalSupply();
+    }
+
+    function balanceOf(address _owner)
+        public
+        returns (uint)
+    {
+        return state.balanceOf(_owner);
+    }
+
+    function allowance(address _from, address _to)
+        public
+        returns (uint)
+    {
+        return state.allowance(_from, _to);
+    }
+
+    function feePool()
+        public
+        returns (uint)
+    {
+        return state.feePool();
+    }
 
     /* ========== EVENTS ========== */
 

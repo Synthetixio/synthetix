@@ -103,13 +103,12 @@ pragma solidity ^0.4.20;
 
 
 import "contracts/ERC20Token.sol";
-import "contracts/Owned.sol";
 import "contracts/EtherNomin.sol";
-import "contracts/Court.sol";
 import "contracts/HavvenEscrow.sol";
+import "contracts/ERC20State.sol";
 
 
-contract Havven is ERC20Token, Owned {
+contract Havven is ERC20Token {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -164,11 +163,9 @@ contract Havven is ERC20Token, Owned {
 
     /* ========== CONSTRUCTOR ========== */
 
-    function Havven(address _owner)
-        ERC20Token("Havven", "HAV",
-                   1e8 * UNIT, // initial supply is one hundred million tokens
-                   this)
-        Owned(_owner)
+    function Havven(ERC20State initialState, address _owner)
+        ERC20Token("Havven", "HAV", 1e8 * UNIT, address(this), initialState, _owner)
+        // Owned is initialised in ERC20Token
         public
     {
         lastTransferTimestamp[this] = now;
@@ -212,7 +209,6 @@ contract Havven is ERC20Token, Owned {
         FeePeriodDurationUpdated(duration);
     }
 
-
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /* Allow the owner of this contract to endow any address with havvens
@@ -237,8 +233,8 @@ contract Havven is ERC20Token, Owned {
         preCheckFeePeriodRollover
         returns (bool)
     {
-        uint senderPreBalance = balanceOf[msg.sender];
-        uint recipientPreBalance = balanceOf[_to];
+        uint senderPreBalance = state.balanceOf(msg.sender);
+        uint recipientPreBalance = state.balanceOf(_to);
 
         // Perform the transfer: if there is a problem,
         // an exception will be thrown in super.transfer().
@@ -259,8 +255,8 @@ contract Havven is ERC20Token, Owned {
         preCheckFeePeriodRollover
         returns (bool)
     {
-        uint senderPreBalance = balanceOf[_from];
-        uint recipientPreBalance = balanceOf[_to];
+        uint senderPreBalance = state.balanceOf(_from);
+        uint recipientPreBalance = state.balanceOf(_to);
 
         // Perform the transfer: if there is a problem,
         // an exception will be thrown in super.transferFrom().
@@ -284,14 +280,14 @@ contract Havven is ERC20Token, Owned {
         require(!nomin.isFrozen(msg.sender));
 
         // check the period has rolled over first
-        rolloverFee(msg.sender, lastTransferTimestamp[msg.sender], balanceOf[msg.sender]);
+        rolloverFee(msg.sender, lastTransferTimestamp[msg.sender], state.balanceOf(msg.sender));
 
         // Only allow accounts to withdraw fees once per period.
         require(!hasWithdrawnLastPeriodFees[msg.sender]);
 
         uint feesOwed = safeDecDiv(safeDecMul(lastAverageBalance[msg.sender],
                                               lastFeesCollected),
-                                   totalSupply);
+                                   state.totalSupply());
 
         hasWithdrawnLastPeriodFees[msg.sender] = true;
         if (feesOwed != 0) {
@@ -392,7 +388,7 @@ contract Havven is ERC20Token, Owned {
         preCheckFeePeriodRollover
         returns (uint)
     {
-        adjustFeeEntitlement(account, balanceOf[account]);
+        adjustFeeEntitlement(account, state.balanceOf(account));
         return lastAverageBalance[account];
     }
 
@@ -465,5 +461,4 @@ contract Havven is ERC20Token, Owned {
     event FeePeriodDurationUpdated(uint duration);
 
     event FeesWithdrawn(address account, address indexed accountIndex, uint fees);
-
 }

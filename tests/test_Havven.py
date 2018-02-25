@@ -4,6 +4,7 @@ import time
 from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mine_txs, mine_tx, \
     UNIT, MASTER, DUMMY, to_seconds, fast_forward, fresh_account, fresh_accounts, take_snapshot, restore_snapshot
 from utils.testutils import assertReverts, block_time, assertClose, generate_topic_event_map, get_event_data_from_log
+from utils.testutils import ZERO_ADDRESS
 
 SOLIDITY_SOURCES = ["tests/contracts/PublicHavven.sol", "contracts/EtherNomin.sol",
                     "contracts/Court.sol", "contracts/HavvenEscrow.sol"]
@@ -16,12 +17,12 @@ def deploy_public_havven():
 
     # Deploy contracts
     havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven',
-                                              MASTER, [MASTER])
+                                              MASTER, [ZERO_ADDRESS, MASTER])
     hvn_block = W3.eth.blockNumber
     nomin_contract, nom_txr = attempt_deploy(compiled, 'EtherNomin',
                                              MASTER,
                                              [havven_contract.address, MASTER, MASTER,
-                                              1000 * UNIT, MASTER])
+                                              1000 * UNIT, MASTER, ZERO_ADDRESS])
     court_contract, court_txr = attempt_deploy(compiled, 'Court',
                                                MASTER,
                                                [havven_contract.address, nomin_contract.address,
@@ -486,7 +487,7 @@ class TestHavven(unittest.TestCase):
     def test_unsetEscrow(self):
         alice = fresh_account()
         self.unsetEscrow(MASTER)
-        self.assertEqual(self.get_escrow(), f"0x{'0'*40}")
+        self.assertEqual(self.get_escrow(), ZERO_ADDRESS)
 
     def test_invalidUnsetEscrow(self):
         alice = fresh_account()

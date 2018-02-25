@@ -4,7 +4,7 @@ import time
 import utils.generalutils
 from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mine_txs, mine_tx, \
     UNIT, MASTER, DUMMY, fast_forward, fresh_accounts, take_snapshot, restore_snapshot, ETHER
-from utils.testutils import assertReverts, block_time, assertClose
+from utils.testutils import assertReverts, block_time, assertClose, ZERO_ADDRESS
 
 SOLIDITY_SOURCES = ["tests/contracts/PublicHavven.sol", "tests/contracts/PublicEtherNomin.sol",
                     "tests/contracts/FakeCourt.sol", "contracts/Havven.sol"]
@@ -17,11 +17,11 @@ def deploy_public_contracts():
 
     # Deploy contracts
     havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven',
-                                              MASTER, [MASTER])
+                                              MASTER, [ZERO_ADDRESS, MASTER])
     nomin_contract, nom_txr = attempt_deploy(compiled, 'PublicEtherNomin',
                                              MASTER,
                                              [havven_contract.address, MASTER, MASTER,
-                                              1000 * UNIT, MASTER])
+                                              1000 * UNIT, MASTER, ZERO_ADDRESS])
     court_contract, court_txr = attempt_deploy(compiled, 'FakeCourt',
                                                MASTER,
                                                [havven_contract.address, nomin_contract.address,
