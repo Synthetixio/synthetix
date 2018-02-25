@@ -69,10 +69,13 @@ class TestHavven(unittest.TestCase):
         # INHERITED
         # OWNED
         # owner
-        cls.owner = lambda self: self.havven.functions.owner().call()
-        # setOwner
-        cls.setOwner = lambda self, sender, addr: mine_tx(
-            self.havven.functions.setOwner(addr).transact({'from': sender}))
+        cls.h_owner = lambda self: self.havven.functions.owner().call()
+        cls.h_nominateOwner = lambda self, sender, addr: mine_tx(
+            self.havven.functions.nominateOwner(addr).transact({'from': sender}))
+        cls.h_acceptOwnership = lambda self, sender: mine_tx(
+            self.havven.functions.acceptOwnership().transact({'from': sender}))
+
+
 
         # ERC20TOKEN (transfer/transferFrom are overwritten)
         # totalSupply
@@ -158,22 +161,24 @@ class TestHavven(unittest.TestCase):
     # Test inherited Owned - Should be the same test_Owned.py
     ###
     def test_owner_is_master(self):
-        self.assertEqual(self.owner(), MASTER)
+        self.assertEqual(self.h_owner(), MASTER)
 
     def test_change_owner(self):
-        old_owner = self.owner()
+        old_owner = self.h_owner()
         new_owner = DUMMY
 
-        self.setOwner(old_owner, new_owner)
-        self.assertEqual(self.owner(), new_owner)
+        self.h_nominateOwner(old_owner, new_owner)
+        self.h_acceptOwnership(new_owner)
+        self.assertEqual(self.h_owner(), new_owner)
 
         # reset back to old owner
-        self.setOwner(new_owner, old_owner)
-        self.assertEqual(self.owner(), old_owner)
+        self.h_nominateOwner(new_owner, old_owner)
+        self.h_acceptOwnership(old_owner)
+        self.assertEqual(self.h_owner(), old_owner)
 
     def test_change_invalid_owner(self):
         invalid_account = DUMMY
-        self.assertReverts(self.setOwner, invalid_account, invalid_account)
+        self.assertReverts(self.h_nominateOwner, invalid_account, invalid_account)
 
     ###
     # Test inherited ERC20Token

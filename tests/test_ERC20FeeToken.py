@@ -19,7 +19,6 @@ def tearDownModule():
     print()
 
 
-
 class TestERC20FeeToken(unittest.TestCase):
     def setUp(self):
         self.snapshot = take_snapshot()
@@ -81,7 +80,8 @@ class TestERC20FeeToken(unittest.TestCase):
         # Only the owner must be able to change the new owner.
         self.assertReverts(self.setOwner, new_owner, new_owner)
 
-        self.setOwner(owner, new_owner)
+        self.nominateOwner(owner, new_owner)
+        self.acceptOwnership(new_owner)
         self.assertEqual(self.owner(), new_owner)
         self.setOwner(new_owner, owner)
 

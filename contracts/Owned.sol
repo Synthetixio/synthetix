@@ -28,6 +28,9 @@ pragma solidity ^0.4.20;
 
 contract Owned {
     address public owner;
+    address nominatedOwner;
+    uint nominationTime;
+    uint constant forceDelay = 1 days;
 
     function Owned(address _owner)
         public
@@ -35,12 +38,36 @@ contract Owned {
         owner = _owner;
     }
 
-    function setOwner(address newOwner)
+    function nominateOwner(address newOwner)
         public
         onlyOwner
     {
-        owner = newOwner;
-        OwnerChanged(owner, newOwner);
+        nominatedOwner = newOwner;
+        nominationTime = now;
+        NewOwnerNominated(newOwner);
+    }
+
+    function _setOwner()
+        internal
+    {
+        OwnerChanged(owner, nominatedOwner);
+        owner = nominatedOwner;
+        nominatedOwner = address(0);
+    }
+
+    function acceptOwnership()
+        public
+    {
+        require(msg.sender == nominatedOwner);
+        _setOwner();
+    }
+
+    function forceAcceptOwnership()
+        public
+        onlyOwner
+    {
+        require(nominationTime + forceDelay < now);
+        _setOwner();
     }
 
     modifier onlyOwner
@@ -49,5 +76,6 @@ contract Owned {
         _;
     }
 
+    event NewOwnerNominated(address newOwner);
     event OwnerChanged(address oldOwner, address newOwner);
 }

@@ -60,7 +60,8 @@ class TestHavvenEscrow(unittest.TestCase):
         cls.n_priceToSpend = lambda self, v: cls.nomin.functions.priceToSpend(v).call()
 
         cls.owner = lambda self: cls.escrow.functions.owner().call()
-        cls.setOwner = lambda self, sender, newOwner: mine_tx(cls.escrow.functions.setOwner(newOwner).transact({'from': sender}))
+        cls.nominateOwner = lambda self, sender, newOwner: mine_tx(cls.escrow.functions.nominateOwner(newOwner).transact({'from': sender}))
+        cls.acceptOwnership = lambda self, sender: mine_tx(cls.escrow.functions.acceptOwnership().transact({'from': sender}))
 
         cls.e_havven = lambda self: cls.escrow.functions.havven().call()
         cls.e_nomin = lambda self: cls.escrow.functions.nomin().call()
