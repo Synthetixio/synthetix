@@ -1,4 +1,6 @@
 import unittest
+import time
+
 from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mine_txs, mine_tx, \
     UNIT, MASTER, DUMMY, fast_forward, fresh_accounts, take_snapshot, restore_snapshot, ETHER
 from utils.testutils import assertReverts, block_time, assertClose
@@ -49,7 +51,7 @@ class TestHavven(unittest.TestCase):
         self.h_recomputeLastAverageBalance(MASTER)
 
         # Reset the price at the start of tests so that it's never stale.
-        self.n_updatePrice(self.n_oracle(), self.n_etherPrice())
+        self.n_updatePrice(self.n_oracle(), self.n_etherPrice(), round(time.time()) - 1)
         # Reset the liquidation timestamp so that it's never active.
         owner = self.n_owner()
         self.n_forceLiquidation(owner)
@@ -68,11 +70,11 @@ class TestHavven(unittest.TestCase):
 
         # INHERITED
         # OWNED
-        # owner
         cls.h_owner = lambda self: self.havven.functions.owner().call()
-        # setOwner
-        cls.h_setOwner = lambda self, sender, addr: mine_tx(
-            self.havven.functions.setOwner(addr).transact({'from': sender}))
+        cls.h_nominateOwner = lambda self, sender, addr: mine_tx(
+            self.havven.functions.nominateOwner(addr).transact({'from': sender}))
+        cls.h_acceptOwnership = lambda self, sender: mine_tx(
+            self.havven.functions.acceptOwnership().transact({'from': sender}))
 
         # ERC20TOKEN (transfer/transferFrom are overwritten)
         # totalSupply
@@ -161,12 +163,13 @@ class TestHavven(unittest.TestCase):
         cls.n_lastPriceUpdate = lambda self: cls.nomin.functions.lastPriceUpdate().call()
         cls.n_stalePeriod = lambda self: cls.nomin.functions.stalePeriod().call()
 
-        cls.n_setOwner = lambda self, sender, address: mine_tx(cls.nomin.functions.setOwner(address).transact({'from': sender}))
+        cls.n_nominateOwner = lambda self, sender, address: mine_tx(cls.nomin.functions.nominateOwner(address).transact({'from': sender}))
+        cls.n_acceptOwnership = lambda self, sender: mine_tx(cls.nomin.functions.acceptOwnership().transact({'from': sender}))
         cls.n_setOracle = lambda self, sender, address: mine_tx(cls.nomin.functions.setOracle(address).transact({'from': sender}))
         cls.n_setCourt = lambda self, sender, address: mine_tx(cls.nomin.functions.setCourt(address).transact({'from': sender}))
         cls.n_setBeneficiary = lambda self, sender, address: mine_tx(cls.nomin.functions.setBeneficiary(address).transact({'from': sender}))
         cls.n_setPoolFeeRate = lambda self, sender, rate: mine_tx(cls.nomin.functions.setPoolFeeRate(rate).transact({'from': sender}))
-        cls.n_updatePrice = lambda self, sender, price: mine_tx(cls.nomin.functions.updatePrice(price).transact({'from': sender}))
+        cls.n_updatePrice = lambda self, sender, price, timeSent: mine_tx(cls.nomin.functions.updatePrice(price, timeSent).transact({'from': sender}))
         cls.n_setStalePeriod = lambda self, sender, period: mine_tx(cls.nomin.functions.setStalePeriod(period).transact({'from': sender}))
 
         cls.n_fiatValue = lambda self, eth: cls.nomin.functions.fiatValue(eth).call()
@@ -215,7 +218,7 @@ class TestHavven(unittest.TestCase):
         cls.n_debugFreezeAccount = lambda self, sender, target: mine_tx(cls.nomin.functions.debugFreezeAccount(target).transact({'from': sender}))
 
     def give_master_nomins(self, amt):
-        self.n_updatePrice(MASTER, UNIT)
+        self.n_updatePrice(MASTER, UNIT, round(time.time()))
         self.n_issue(MASTER, amt * UNIT, 2 * amt * ETHER)
         ethercost = self.n_purchaseCostEther(amt * UNIT)
         self.n_buy(MASTER, amt * UNIT, ethercost)

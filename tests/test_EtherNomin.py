@@ -76,7 +76,8 @@ class TestEtherNomin(unittest.TestCase):
         cls.lastPriceUpdate = lambda self: cls.nomin.functions.lastPriceUpdate().call()
         cls.stalePeriod = lambda self: cls.nomin.functions.stalePeriod().call()
 
-        cls.setOwner = lambda self, sender, address: mine_tx(cls.nomin.functions.setOwner(address).transact({'from': sender}))
+        cls.nominateOwner = lambda self, sender, address: mine_tx(cls.nomin.functions.nominateOwner(address).transact({'from': sender}))
+        cls.acceptOwnership = lambda self, sender: mine_tx(cls.nomin.functions.acceptOwnership().transact({'from': sender}))
         cls.setOracle = lambda self, sender, address: mine_tx(cls.nomin.functions.setOracle(address).transact({'from': sender}))
         cls.setCourt = lambda self, sender, address: mine_tx(cls.nomin.functions.setCourt(address).transact({'from': sender}))
         cls.setBeneficiary = lambda self, sender, address: mine_tx(cls.nomin.functions.setBeneficiary(address).transact({'from': sender}))
@@ -156,10 +157,10 @@ class TestEtherNomin(unittest.TestCase):
         pre_owner = self.owner()
         new_owner = DUMMY
 
-        # Only the owner must be able to set the oracle.
-        self.assertReverts(self.setOwner, new_owner, new_owner)
-
-        self.setOwner(pre_owner, new_owner)
+        # Only the owner must be able to set the owner.
+        self.assertReverts(self.nominateOwner, new_owner, new_owner)
+        self.nominateOwner(pre_owner, new_owner)
+        self.acceptOwnership(new_owner)
         self.assertEqual(self.owner(), new_owner)
 
     def test_getSetOracle(self):
