@@ -156,8 +156,8 @@ class TestEtherNomin(unittest.TestCase):
         pre_owner = self.owner()
         new_owner = DUMMY
 
-        # Only the owner must be able to set the oracle.
-        self.assertReverts(self.setOwner, new_owner, new_owner)
+        # Only the owner must be able to set the owner.
+        self.assertReverts(self.nominateOwner, new_owner, new_owner)
 
         self.setOwner(pre_owner, new_owner)
         self.assertEqual(self.owner(), new_owner)

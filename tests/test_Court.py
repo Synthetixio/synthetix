@@ -81,7 +81,8 @@ class TestCourt(unittest.TestCase):
         cls.vote = lambda self, account, motionID: self.court.functions.vote(account, motionID).call()
 
         # Inherited setter
-        cls.setOwner = lambda self, sender, address: mine_tx(self.court.functions.setOwner(address).transact({'from': sender}))
+        cls.nominateOwner = lambda self, sender, address: mine_tx(self.court.functions.nominateOwner(address).transact({'from': sender}))
+        cls.acceptOwnership = lambda self, sender: mine_tx(self.court.functions.acceptOwnership().transact({'from': sender}))
 
         # Setters
         cls.setMinStandingBalance = lambda self, sender, balance: mine_tx(self.court.functions.setMinStandingBalance(balance).transact({'from' : sender}))
@@ -159,8 +160,9 @@ class TestCourt(unittest.TestCase):
     def test_setOwner(self):
         owner = self.owner()
         # Only owner can setOwner.
-        self.assertReverts(self.setOwner, DUMMY, DUMMY)
-        self.setOwner(owner, DUMMY)
+        self.assertReverts(self.nominateOwner, DUMMY, DUMMY)
+        self.nominateOwner(owner, DUMMY)
+        self.acceptOwnership(DUMMY)
         self.assertEqual(self.owner(), DUMMY)
 
     def test_setMinStandingBalance(self):

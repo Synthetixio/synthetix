@@ -68,11 +68,11 @@ class TestHavven(unittest.TestCase):
 
         # INHERITED
         # OWNED
-        # owner
         cls.h_owner = lambda self: self.havven.functions.owner().call()
-        # setOwner
-        cls.h_setOwner = lambda self, sender, addr: mine_tx(
-            self.havven.functions.setOwner(addr).transact({'from': sender}))
+        cls.h_nominateOwner = lambda self, sender, addr: mine_tx(
+            self.havven.functions.nominateOwner(addr).transact({'from': sender}))
+        cls.h_acceptOwnership = lambda self, sender: mine_tx(
+            self.havven.functions.acceptOwnership().transact({'from': sender}))
 
         # ERC20TOKEN (transfer/transferFrom are overwritten)
         # totalSupply
@@ -161,7 +161,8 @@ class TestHavven(unittest.TestCase):
         cls.n_lastPriceUpdate = lambda self: cls.nomin.functions.lastPriceUpdate().call()
         cls.n_stalePeriod = lambda self: cls.nomin.functions.stalePeriod().call()
 
-        cls.n_setOwner = lambda self, sender, address: mine_tx(cls.nomin.functions.setOwner(address).transact({'from': sender}))
+        cls.n_nominateOwner = lambda self, sender, address: mine_tx(cls.nomin.functions.nominateOwner(address).transact({'from': sender}))
+        cls.n_acceptOwnership = lambda self, sender: mine_tx(cls.nomin.functions.acceptOwnership().transact({'from': sender}))
         cls.n_setOracle = lambda self, sender, address: mine_tx(cls.nomin.functions.setOracle(address).transact({'from': sender}))
         cls.n_setCourt = lambda self, sender, address: mine_tx(cls.nomin.functions.setCourt(address).transact({'from': sender}))
         cls.n_setBeneficiary = lambda self, sender, address: mine_tx(cls.nomin.functions.setBeneficiary(address).transact({'from': sender}))
