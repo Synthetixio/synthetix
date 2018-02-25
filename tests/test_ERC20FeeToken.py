@@ -19,7 +19,6 @@ def tearDownModule():
     print()
 
 
-
 class TestERC20FeeToken(unittest.TestCase):
     def setUp(self):
         self.snapshot = take_snapshot()
@@ -55,7 +54,8 @@ class TestERC20FeeToken(unittest.TestCase):
         cls.transferPlusFee = lambda self, value: cls.erc20feetoken.functions.transferPlusFee(value).call()
         cls.priceToSpend = lambda self, value: cls.erc20feetoken.functions.priceToSpend(value).call()
 
-        cls.setOwner = lambda self, sender, address: mine_tx(cls.erc20feetoken.functions.setOwner(address).transact({'from': sender}))
+        cls.nominateOwner = lambda self, sender, address: mine_tx(cls.erc20feetoken.functions.nominateOwner(address).transact({'from': sender}))
+        cls.acceptOwnership = lambda self, sender: mine_tx(cls.erc20feetoken.functions.acceptOwnership().transact({'from': sender}))
         cls.setTransferFeeRate = lambda self, sender, new_fee_rate: mine_tx(cls.erc20feetoken.functions.setTransferFeeRate(new_fee_rate).transact({'from': sender}))
         cls.setFeeAuthority  = lambda self, sender, new_fee_authority: mine_tx(cls.erc20feetoken.functions.setFeeAuthority(new_fee_authority).transact({'from': sender}))
         cls.transfer = lambda self, sender, to, value: mine_tx(cls.erc20feetoken.functions.transfer(to, value).transact({'from': sender}))
@@ -79,11 +79,13 @@ class TestERC20FeeToken(unittest.TestCase):
         self.assertNotEqual(owner, new_owner)
 
         # Only the owner must be able to change the new owner.
-        self.assertReverts(self.setOwner, new_owner, new_owner)
+        self.assertReverts(self.nominateOwner, new_owner, new_owner)
 
-        self.setOwner(owner, new_owner)
+        self.nominateOwner(owner, new_owner)
+        self.acceptOwnership(new_owner)
         self.assertEqual(self.owner(), new_owner)
-        self.setOwner(new_owner, owner)
+        self.nominateOwner(new_owner, owner)
+        self.acceptOwnership(owner)
 
     def test_getSetTransferFeeRate(self):
         transfer_fee_rate = self.transferFeeRate()
