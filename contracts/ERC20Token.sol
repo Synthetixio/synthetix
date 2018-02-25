@@ -23,7 +23,7 @@ This contract utilises a state for upgradability purposes.
 -----------------------------------------------------------------
 */
 
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.20;
 
 
 import "contracts/SafeDecimalMath.sol";
@@ -45,8 +45,9 @@ contract ERC20Token is SafeDecimalMath, Owned {
     /* ========== CONSTRUCTOR ========== */
 
     function ERC20Token(
-        address _owner, string _name, string _symbol, uint initialSupply,
-        address initialBeneficiary, ERC20State _state
+        string _name, string _symbol,
+        uint initialSupply, address initialBeneficiary,
+        ERC20State _state, address _owner
     )
         Owned(_owner)
         public
@@ -103,6 +104,8 @@ contract ERC20Token is SafeDecimalMath, Owned {
         public
         returns (bool)
     {
+        require(_to != address(0));
+
         // Zero-value transfers must fire the transfer event...
         Transfer(msg.sender, _to, _value);
 
@@ -122,6 +125,9 @@ contract ERC20Token is SafeDecimalMath, Owned {
         public
         returns (bool)
     {
+        require(_from != address(0));
+        require(_to != address(0));
+
         // Zero-value transfers must fire the transfer event...
         Transfer(_from, _to, _value);
 

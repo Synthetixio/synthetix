@@ -55,10 +55,11 @@ If the contract is recollateralised, the owner may terminate liquidation.
 -----------------------------------------------------------------
 */
 
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.20;
 
 
 import "contracts/ERC20FeeToken.sol";
+import "contracts/ERC20FeeState.sol";
 import "contracts/Havven.sol";
 import "contracts/Court.sol";
 
@@ -84,20 +85,20 @@ contract EtherNomin is ERC20FeeToken {
     uint public poolFeeRate = UNIT / 200;
 
     // The minimum purchasable quantity of nomins is 1 cent.
-    uint constant purchaseMininum = UNIT / 100;
+    uint constant MINIMUM_PURCHASE = UNIT / 100;
 
     // When issuing, nomins must be overcollateralised by this ratio.
-    uint constant collatRatioMinimum =  2 * UNIT;
+    uint constant MINIMUM_ISSUANCE_RATIO =  2 * UNIT;
 
     // If the collateralisation ratio of the contract falls below this level,
     // immediately begin liquidation.
-    uint constant autoLiquidationRatio = UNIT;
+    uint constant AUTO_LIQUIDATION_RATIO = UNIT;
 
     // The liquidation period is the duration that must pass before the liquidation period is complete.
     // It can be extended up to a given duration.
-    uint constant defaultLiquidationPeriod = 90 days;
-    uint constant maxLiquidationPeriod = 180 days;
-    uint public liquidationPeriod = defaultLiquidationPeriod;
+    uint constant DEFAULT_LIQUIDATION_PERIOD = 90 days;
+    uint constant MAX_LIQUIDATION_PERIOD = 180 days;
+    uint public liquidationPeriod = DEFAULT_LIQUIDATION_PERIOD;
 
     // The timestamp when liquidation was activated. We initialise this to
     // uint max, so that we know that we are under liquidation if the
@@ -120,13 +121,13 @@ contract EtherNomin is ERC20FeeToken {
     function EtherNomin(Havven _havven, address _oracle,
                         address _beneficiary,
                         uint initialEtherPrice,
-                        address _owner)
-        ERC20FeeToken(
-            _owner, "Ether-Backed USD Nomins", "eUSD",
-                0, address(_havven), UNIT / 500, // nomin transfers incur a 20 bp fee
-                address(_havven), // havven contract is the fee authority
-                ERC20FeeState(0)
-            )
+                        address _owner, ERC20FeeState initialState)
+        ERC20FeeToken("Ether-Backed USD Nomins", "eUSD",
+                      0, _owner,
+                      15 * UNIT / 10000, // nomin transfers incur a 15 bp fee
+                      address(_havven), // havven contract is the fee authority
+                      initialState, // Construct a new state_owner
+                      _owner)
         public
     {
         oracle = _oracle;
@@ -382,16 +383,20 @@ contract EtherNomin is ERC20FeeToken {
      * Also checks whether the contract's collateral levels have fallen to low,
      * and initiates liquidation if that is the case.
      * Exceptional conditions:
-     *     Not called by the oracle. */
-    function updatePrice(uint price)
+     *     Not called by the oracle.
+     *     Not the most recently sent price. */
+    function updatePrice(uint price, uint timeSent)
         public
         postCheckAutoLiquidate
     {
         // Should be callable only by the oracle.
         require(msg.sender == oracle);
+        // Must be the most recently sent price, but not too far in the future.
+        // (so we can't lock ourselves out of updating the oracle for longer than this)
+        require(lastPriceUpdate < timeSent && timeSent < now + 10 minutes);
 
         etherPrice = price;
-        lastPriceUpdate = now;
+        lastPriceUpdate = timeSent;
         PriceUpdated(price);
     }
 
@@ -411,7 +416,7 @@ contract EtherNomin is ERC20FeeToken {
         // Safe additions are unnecessary here, as either the addition is checked on the following line
         // or the overflow would cause the requirement not to be satisfied.
         uint sum = safeAdd(state.totalSupply(), n);
-        require(fiatBalance() >= safeDecMul(sum, collatRatioMinimum));
+        require(fiatBalance() >= safeDecMul(sum, MINIMUM_ISSUANCE_RATIO));
         state.setTotalSupply(sum);
         nominPool = safeAdd(nominPool, n);
         Issuance(n, msg.value);
@@ -446,7 +451,7 @@ contract EtherNomin is ERC20FeeToken {
         payable
     {
         // Price staleness check occurs inside the call to purchaseEtherCost.
-        require(n >= purchaseMininum &&
+        require(n >= MINIMUM_PURCHASE &&
                 msg.value == purchaseCostEther(n));
         // sub requires that nominPool >= n
         nominPool = safeSub(nominPool, n);
@@ -514,7 +519,7 @@ contract EtherNomin is ERC20FeeToken {
     {
         require(isLiquidating());
         uint sum = safeAdd(liquidationPeriod, extension);
-        require(sum <= maxLiquidationPeriod);
+        require(sum <= MAX_LIQUIDATION_PERIOD);
         liquidationPeriod = sum;
         LiquidationExtended(extension);
     }
@@ -530,9 +535,9 @@ contract EtherNomin is ERC20FeeToken {
         payable
     {
         require(isLiquidating());
-        require(state.totalSupply() == 0 || collateralisationRatio() >= autoLiquidationRatio);
+        require(state.totalSupply() == 0 || collateralisationRatio() >= AUTO_LIQUIDATION_RATIO);
         liquidationTimestamp = ~uint(0);
-        liquidationPeriod = defaultLiquidationPeriod;
+        liquidationPeriod = DEFAULT_LIQUIDATION_PERIOD;
         LiquidationTerminated();
     }
 
@@ -549,7 +554,7 @@ contract EtherNomin is ERC20FeeToken {
         selfdestruct(beneficiary);
     }
 
-    /* If a confiscation court vote has passed and reached the confirmation
+    /* If a confiscation court motion has passed and reached the confirmation
      * state, the court may transfer the target account's balance to the fee pool
      * and freeze its participation in further transactions. */
     function confiscateBalance(address target)
@@ -557,12 +562,17 @@ contract EtherNomin is ERC20FeeToken {
     {
         // Should be callable only by the confiscation court.
         require(Court(msg.sender) == court);
+        
+        // A motion must actually be underway.
+        uint motionID = court.targetMotionID(target);
+        require(motionID != 0);
 
         // These checks are strictly unnecessary,
         // since they are already checked in the court contract itself.
         // I leave them in out of paranoia.
-        require(court.confirming(target));
-        require(court.votePasses(target));
+        require(court.motionConfirming(motionID));
+        require(court.motionPasses(motionID));
+        require(!state.isFrozen(target));
 
         // Confiscate the balance in the account and freeze it.
         uint balance = state.balanceOf(target);
@@ -615,7 +625,7 @@ contract EtherNomin is ERC20FeeToken {
     modifier postCheckAutoLiquidate
     {
         _;
-        if (!isLiquidating() && state.totalSupply() != 0 && collateralisationRatio() < autoLiquidationRatio) {
+        if (!isLiquidating() && state.totalSupply() != 0 && collateralisationRatio() < AUTO_LIQUIDATION_RATIO) {
             beginLiquidation();
         }
     }

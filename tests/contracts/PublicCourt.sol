@@ -1,6 +1,8 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.20;
+
 
 import "contracts/Court.sol";
+
 
 contract PublicCourt is Court {
 
@@ -25,71 +27,78 @@ contract PublicCourt is Court {
 		return nomin;
 	}
 
-	function _minVotingPeriod()
+	function _nextMotionID()
 		public
 		view
 		returns (uint)
 	{
-		return minVotingPeriod;
+		return nextMotionID;
 	}
 
-	function _maxVotingPeriod()
+	function _MIN_VOTING_PERIOD()
 		public
 		view
 		returns (uint)
 	{
-		return maxVotingPeriod;
+		return MIN_VOTING_PERIOD;
 	}
 
-	function _minConfirmationPeriod()
+	function _MAX_VOTING_PERIOD()
 		public
 		view
 		returns (uint)
 	{
-		return minConfirmationPeriod;
+		return MAX_VOTING_PERIOD;
 	}
 
-	function _maxConfirmationPeriod()
+	function _MIN_CONFIRMATION_PERIOD()
 		public
 		view
 		returns (uint)
 	{
-		return maxConfirmationPeriod;
+		return MIN_CONFIRMATION_PERIOD;
 	}
 
-	function _minRequiredParticipation()
+	function _MAX_CONFIRMATION_PERIOD()
 		public
 		view
 		returns (uint)
 	{
-		return minRequiredParticipation;
+		return MAX_CONFIRMATION_PERIOD;
 	}
 
-	function _minRequiredMajority()
+	function _MIN_REQUIRED_PARTICIPATION()
 		public
 		view
 		returns (uint)
 	{
-		return minRequiredMajority;
+		return MIN_REQUIRED_PARTICIPATION;
 	}
 
-	function _voteWeight(address account)
+	function _MIN_REQUIRED_MAJORITY()
 		public
 		view
 		returns (uint)
 	{
-		return voteWeight[account];
+		return MIN_REQUIRED_MAJORITY;
 	}
 
-	function publicSetVotedYea(address account, address target)
+	function _voteWeight(address account, uint motionID)
 		public
+		view
+		returns (uint)
 	{
-		setVotedYea(account, target);
+		return voteWeight[account][motionID];
 	}
 
-	function publicSetVotedNay(address account, address target)
+	function publicSetupVote(uint voteIndex)
 		public
+		returns (uint)
 	{
-		setVotedNay(account, target);
+		uint weight = setupVote(voteIndex);
+		SetupVoteReturnValue(weight);
+		return weight;
 	}
+
+	event SetupVoteReturnValue(uint value);
 }

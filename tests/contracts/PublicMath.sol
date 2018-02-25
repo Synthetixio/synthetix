@@ -1,11 +1,12 @@
 /* PublicMath.sol: expose the internal functions in SafeDecimalMath
  * for testing purposes.
  */
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.20;
 
 import "contracts/SafeDecimalMath.sol";
 
 contract PublicMath is SafeDecimalMath {
+    
     function pubAddIsSafe(uint x, uint y)
         pure
         public

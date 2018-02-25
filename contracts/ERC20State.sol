@@ -28,7 +28,7 @@ then the Owner of the state contract would change the associated contract to be 
 -----------------------------------------------------------------
 */
 
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.20;
 
 
 import "contracts/Owned.sol";

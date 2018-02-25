@@ -1,17 +1,20 @@
 /* PublicEtherNomin.sol: expose the internal functions in EtherNomin
  * for testing purposes.
  */
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.20;
+
 
 import "contracts/EtherNomin.sol";
+import "contracts/ERC20FeeState.sol";
+
 
 contract PublicEtherNomin is EtherNomin {
 
 	function PublicEtherNomin(Havven _havven, address _oracle,
                               address _beneficiary,
                               uint initialEtherPrice,
-                              address _owner)
-		EtherNomin(_havven, _oracle, _beneficiary, initialEtherPrice, _owner)
+                              address _owner, ERC20FeeState initialState)
+		EtherNomin(_havven, _oracle, _beneficiary, initialEtherPrice, _owner, initialState)
 		public {}
 
 	function publicEtherValueAllowStale(uint n) 
@@ -29,6 +32,21 @@ contract PublicEtherNomin is EtherNomin {
 	{
 		return saleProceedsEtherAllowStale(n);
 	}
+
+	function publicLastPriceUpdate()
+		public
+		view
+		returns (uint)
+	{
+		return lastPriceUpdate;
+	}
+
+    function currentTime()
+        public
+        returns (uint)
+    {
+        return now;
+    }
 
 	function debugWithdrawAllEther(address recipient)
 		public
