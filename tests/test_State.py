@@ -2,6 +2,7 @@ import unittest
 from utils.deployutils import compile_contracts, attempt_deploy, W3, mine_txs, mine_tx, \
     UNIT, MASTER, DUMMY, fast_forward, fresh_accounts, take_snapshot, restore_snapshot, ETHER
 from utils.testutils import assertReverts, block_time, assertClose, generate_topic_event_map
+from utils.testutils import ZERO_ADDRESS
 
 ERC20Token_SOURCE = "contracts/ERC20Token.sol"
 ERC20FeeToken_SOURCE = "contracts/ERC20FeeToken.sol"
@@ -17,7 +18,7 @@ def deploy_state(compiled, sender, owner, supply, beneficiary, associated_contra
 
 
 def setUpModule():
-    print("Testing FeeCollection...")
+    print("Testing Upgrade...")
 
 
 def tearDownModule():
@@ -40,7 +41,7 @@ class TestHavven(unittest.TestCase):
         cls.erc20_event_dict = generate_topic_event_map(cls.erc20_abi)
 
         cls.erc20token, cls.construction_txr = attempt_deploy(
-            cls.compiled, 'ERC20Token', MASTER, [MASTER, "Test Token", "TEST", 1000 * UNIT, MASTER, '0x'+'0'*40]
+            cls.compiled, 'ERC20Token', MASTER, ["Test Token", "TEST", 1000 * UNIT, MASTER, ZERO_ADDRESS, MASTER]
         )
         cls.erc20state = deploy_state(cls.compiled, MASTER, MASTER, 1000 * UNIT, MASTER, cls.erc20token.address)
 
@@ -79,7 +80,7 @@ class TestHavven(unittest.TestCase):
         self.assertEquals(self.tok_state(), self.erc20state.address)
 
     def test_change_state(self):
-        new_state = '0x'+'0'*40
+        new_state = ZERO_ADDRESS
         # ensure only master can set state
         self.assertReverts(self.tok_set_state, DUMMY, new_state)
         self.tok_set_state(MASTER, new_state)
@@ -91,18 +92,17 @@ class TestHavven(unittest.TestCase):
         self.assertEqual(self.tok_totalSupply(), 100 * UNIT)
 
     def test_change_token(self):
-        new_token = '0x' + '0'*40
+        new_token = ZERO_ADDRESS
         self.assertReverts(self.state_setAssociatedContract, DUMMY, new_token)
         self.state_setAssociatedContract(MASTER, new_token)
         self.assertEqual(self.state_associatedContract(), new_token)
-        # check that the old contract cant cause a transfer
         self.assertReverts(self.tok_transfer, MASTER, DUMMY, UNIT)
 
-        new_token, txr = attempt_deploy(
+        valid_token, txr = attempt_deploy(
             self.compiled, 'ERC20Token', MASTER, [MASTER, "Test2", "TEST2", 100 * UNIT, MASTER, self.erc20state.address]
         )
 
-        self.state_setAssociatedContract(MASTER, new_token)
+        self.state_setAssociatedContract(MASTER, valid_token)
 
-        mine_tx(new_token.functions.transfer(DUMMY, 10 * UNIT).transact({'from': MASTER}))
-        self.assertEqual(new_token.functions.balanceOf(DUMMY).call(), 10 * UNIT)
+        mine_tx(valid_token.functions.transfer(DUMMY, 10 * UNIT).transact({'from': MASTER}))
+        self.assertEqual(valid_token.functions.balanceOf(DUMMY).call(), 10 * UNIT)
