@@ -27,6 +27,14 @@ contract PublicCourt is Court {
 		return nomin;
 	}
 
+	function _nextMotionID()
+		public
+		view
+		returns (uint)
+	{
+		return nextMotionID;
+	}
+
 	function _MIN_VOTING_PERIOD()
 		public
 		view
@@ -75,19 +83,19 @@ contract PublicCourt is Court {
 		return MIN_REQUIRED_MAJORITY;
 	}
 
-	function _voteWeight(address account)
+	function _voteWeight(address account, uint motionID)
 		public
 		view
 		returns (uint)
 	{
-		return voteWeight[account];
+		return voteWeight[account][motionID];
 	}
 
-	function publicSetupVote(address target)
+	function publicSetupVote(uint voteIndex)
 		public
 		returns (uint)
 	{
-		uint weight = setupVote(target);
+		uint weight = setupVote(voteIndex);
 		SetupVoteReturnValue(weight);
 		return weight;
 	}

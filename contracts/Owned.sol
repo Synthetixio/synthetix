@@ -23,7 +23,7 @@ which itself must only be callable by the current owner.
 -----------------------------------------------------------------
 */
 
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.20;
 
 
 contract Owned {

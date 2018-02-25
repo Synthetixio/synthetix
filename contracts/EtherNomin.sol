@@ -55,7 +55,7 @@ If the contract is recollateralised, the owner may terminate liquidation.
 -----------------------------------------------------------------
 */
 
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.20;
 
 
 import "contracts/ERC20FeeToken.sol";
@@ -546,7 +546,7 @@ contract EtherNomin is ERC20FeeToken {
         selfdestruct(beneficiary);
     }
 
-    /* If a confiscation court vote has passed and reached the confirmation
+    /* If a confiscation court motion has passed and reached the confirmation
      * state, the court may transfer the target account's balance to the fee pool
      * and freeze its participation in further transactions. */
     function confiscateBalance(address target)
@@ -554,12 +554,17 @@ contract EtherNomin is ERC20FeeToken {
     {
         // Should be callable only by the confiscation court.
         require(Court(msg.sender) == court);
+        
+        // A motion must actually be underway.
+        uint motionID = court.targetMotionID(target);
+        require(motionID != 0);
 
         // These checks are strictly unnecessary,
         // since they are already checked in the court contract itself.
         // I leave them in out of paranoia.
-        require(court.confirming(target));
-        require(court.votePasses(target));
+        require(court.motionConfirming(motionID));
+        require(court.motionPasses(motionID));
+        require(!isFrozen[target]);
 
         // Confiscate the balance in the account and freeze it.
         uint balance = balanceOf[target];

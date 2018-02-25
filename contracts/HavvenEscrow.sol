@@ -33,7 +33,7 @@ main fee pool to be redistributed in the next fee period.
 
 */
 
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.20;
 
 
 import "contracts/SafeDecimalMath.sol";
