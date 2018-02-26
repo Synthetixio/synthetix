@@ -45,16 +45,15 @@ contract Proxy is Owned {
             {
                 // Forward all gas, ether, and data to the target contract.
                 let result := call(gas, sload(target_slot), callvalue, free_ptr, calldatasize, 0, 0)
-                let ret_size := returndatasize 
-                returndatacopy(free_ptr, 0, ret_size)
+                returndatacopy(free_ptr, 0, returndatasize)
 
                 // Revert if the call failed, otherwise return the result.
                 if iszero(result) { revert(0, 0) }
-                return(free_ptr, ret_size)
+                return(free_ptr, returndatasize)
             }
-            // If metropolis is unavailable, allow static 32-byte return values.
+            // If metropolis is unavailable, use static 32-byte return values.
             let ret_size := 32
-            let result := call(gas, sload(target_slot), callvalue, free_ptr, calldatasize, free_ptr, 32)
+            let result := call(gas, sload(target_slot), callvalue, free_ptr, calldatasize, free_ptr, ret_size)
             if iszero(result) { revert(0, 0) }
             return(free_ptr, ret_size)
         } 
