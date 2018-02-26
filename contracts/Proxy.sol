@@ -34,6 +34,13 @@ contract Proxy is Owned {
         metropolis = _metropolis;
     }
 
+    function _setMessageSender(address sender)
+        public
+        onlyTarget
+    {
+        messageSender = sender;
+    }
+
     function () 
         public
     {
@@ -62,6 +69,13 @@ contract Proxy is Owned {
             return(free_ptr, ret_size)
         } 
     }
+
+    modifier _onlyTarget
+    {
+        require(Proxyable(msg.sender) == target);
+        _;
+    }
+
     event TargetChanged(address targetAddress);
 }
 
@@ -90,6 +104,14 @@ contract Proxyable is Owned {
     modifier onlyOwner_Proxy
     {
         require(proxy.messageSender() == owner);
+        _;
+    }
+
+    modifier optionalProxy
+    {
+        if (Proxy(msg.sender) != proxy) {
+            proxy._setMessageSender(msg.sender);
+        }
         _;
     }
 
