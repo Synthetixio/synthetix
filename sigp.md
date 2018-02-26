@@ -1,11 +1,29 @@
-# Sigma Prime Audit Response #
+# Sigma Prime Mid Audit Update #
 
 ## Introduction ##
-In this document, we respond to the issues raised in Sigma Prime's initial audit of Havven.
+The purpose of this document is twofold:
+1. Outline the work done on upgradeability.
+2. Respond to the issues raised in Sigma Prime's initial audit of Havven.
 
-Fixed - Suggested change has been implemented
-Not Implemented - Suggested change not implemented
-Progress - TBA
+## Upgradeability ##
+
+Since the audit began, the primary focus has been on rearchitecting the contracts so that the system is fully upgradeable. We have decided to use proxy contracts.
+
+### New Files ###
+
+1. ERC20State.sol
+2. ERC20FeeState.sol
+3. Proxy.sol
+
+### ERC20State and ERC20FeeState ###
+
+<< Anton >>
+
+### Proxy ###
+
+<< Anton >>
+
+## Initial Audit Response ##
 
 ### ERC20 Implementation ###
 
