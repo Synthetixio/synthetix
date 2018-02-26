@@ -99,10 +99,10 @@ class TestHavven(unittest.TestCase):
         self.assertReverts(self.tok_transfer, MASTER, DUMMY, UNIT)
 
         valid_token, txr = attempt_deploy(
-            self.compiled, 'ERC20Token', MASTER, [MASTER, "Test2", "TEST2", 100 * UNIT, MASTER, self.erc20state.address]
+            self.compiled, 'ERC20Token', MASTER, ["Test2", "TEST2", 100 * UNIT, MASTER, self.erc20state.address, MASTER]
         )
 
-        self.state_setAssociatedContract(MASTER, valid_token)
+        self.state_setAssociatedContract(MASTER, valid_token.address)
 
         mine_tx(valid_token.functions.transfer(DUMMY, 10 * UNIT).transact({'from': MASTER}))
         self.assertEqual(valid_token.functions.balanceOf(DUMMY).call(), 10 * UNIT)
