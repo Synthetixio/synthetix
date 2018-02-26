@@ -17,7 +17,7 @@ PROXY_SOURCE = "contracts/Proxy.sol"
 
 
 def setUpModule():
-    print("Testing EtherNomin...")
+    print("Testing Proxy...")
 
 
 def tearDownModule():
@@ -66,7 +66,8 @@ class TestProxy(unittest.TestCase):
         cls.fake_court.setTargetMotionID = lambda sender, target, motion_id: mine_tx(cls.fake_court.functions.setTargetMotionID(target, motion_id).transact({'from': sender}))
         cls.fake_court.confiscateBalance = lambda sender, target: mine_tx(cls.fake_court.functions.confiscateBalance(target).transact({'from': sender}))
         cls.fake_court.setNomin(W3.eth.accounts[0], cls.nomin.address)
-        mine_tx(cls.nomin.functions.setCourt(cls.fake_court.address).transact({'from': cls.nomin_owner}))
+        mine_tx(cls.nomin.functions.setProxy(cls.proxy.address).transact({'from': cls.nomin_owner}))
+        mine_tx(cls.proxy_nomin.functions.setCourt(cls.fake_court.address).transact({'from': cls.nomin_owner}))
 
         cls.issue = lambda self, sender, n, value: mine_tx(cls.nomin.functions.issue(n).transact({'from': sender, 'value': value}))
         cls.burn = lambda self, sender, n: mine_tx(cls.nomin.functions.burn(n).transact({'from': sender}))

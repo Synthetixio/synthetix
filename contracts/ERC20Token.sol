@@ -29,9 +29,10 @@ pragma solidity ^0.4.20;
 import "contracts/SafeDecimalMath.sol";
 import "contracts/Owned.sol";
 import "contracts/ERC20State.sol";
+import "contracts/Proxy.sol";
 
 
-contract ERC20Token is SafeDecimalMath, Owned {
+contract ERC20Token is SafeDecimalMath, Proxyable {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -49,7 +50,7 @@ contract ERC20Token is SafeDecimalMath, Owned {
         uint initialSupply, address initialBeneficiary,
         ERC20State _state, address _owner
     )
-        Owned(_owner)
+        Proxyable(_owner)
         public
     {
         name = _name;
@@ -92,22 +93,23 @@ contract ERC20Token is SafeDecimalMath, Owned {
     {
         state = _state;
     }
-
+    
+    /*
     function setTotalSupply(uint _val)
         onlyOwner
         public
     {
         state.setTotalSupply(_val);
-    }
+    }*/
 
-    function transfer(address _to, uint _value)
+    function transfer(address messageSender, address _to, uint _value)
         public
         returns (bool)
     {
         require(_to != address(0));
 
         // Zero-value transfers must fire the transfer event...
-        Transfer(msg.sender, _to, _value);
+        Transfer(messageSender, _to, _value);
 
         // ...but don't spend gas updating state unnecessarily.
         if (_value == 0) {
@@ -115,13 +117,13 @@ contract ERC20Token is SafeDecimalMath, Owned {
         }
 
         // Insufficient balance will be handled by the safe subtraction.
-        state.setBalance(msg.sender, safeSub(state.balanceOf(msg.sender), _value));
+        state.setBalance(messageSender, safeSub(state.balanceOf(messageSender), _value));
         state.setBalance(_to, safeAdd(state.balanceOf(_to), _value));
 
         return true;
     }
 
-    function transferFrom(address _from, address _to, uint _value)
+    function transferFrom(address messageSender, address _from, address _to, uint _value)
         public
         returns (bool)
     {
@@ -138,7 +140,7 @@ contract ERC20Token is SafeDecimalMath, Owned {
 
         // Insufficient balance will be handled by the safe subtraction.
         state.setBalance(_from, safeSub(state.balanceOf(_from), _value));
-        state.setAllowance(_from, msg.sender, safeSub(state.allowance(_from, msg.sender), _value));
+        state.setAllowance(_from, messageSender, safeSub(state.allowance(_from, messageSender), _value));
         state.setBalance(_to, safeAdd(state.balanceOf(_to), _value));
 
         return true;
@@ -148,8 +150,9 @@ contract ERC20Token is SafeDecimalMath, Owned {
         public
         returns (bool)
     {
-        state.setAllowance(msg.sender, _spender, _value);
-        Approval(msg.sender, _spender, _value);
+        address messageSender = proxy.messageSender();
+        state.setAllowance(messageSender, _spender, _value);
+        Approval(messageSender, _spender, _value);
 
         return true;
     }

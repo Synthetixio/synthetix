@@ -5,11 +5,11 @@ pragma solidity ^0.4.20;
 import "contracts/Owned.sol";
 
 contract Proxy is Owned {
-    address target;
+    Proxyable target;
     address public messageSender;
     bool public metropolis;
 
-    function Proxy(address _target, address _owner)
+    function Proxy(Proxyable _target, address _owner)
         Owned(_owner)
         public
     {
@@ -22,7 +22,7 @@ contract Proxy is Owned {
         onlyOwner
     {
         require(_target != address(0));
-        target = _target;
+        target = Proxyable(_target);
         TargetChanged(_target);
     }
 
@@ -52,29 +52,26 @@ contract Proxy is Owned {
                 returndatacopy(free_ptr, 0, returndatasize)
 
                 // Revert if the call failed, otherwise return the result.
-                if iszero(result) { revert(0, 0) }
+                if iszero(result) { revert(free_ptr, calldatasize) }
                 return(free_ptr, returndatasize)
             }
             // If metropolis is unavailable, use static 32-byte return values.
             let ret_size := 32
             let result := call(gas, sload(target_slot), callvalue, free_ptr, calldatasize, free_ptr, ret_size)
-            if iszero(result) { revert(0, 0) }
+            if iszero(result) { revert(free_ptr, calldatasize) }
             return(free_ptr, ret_size)
         } 
     }
     event TargetChanged(address targetAddress);
 }
 
+
 contract Proxyable is Owned {
     Proxy proxy;
 
-    function Proxyable(Proxy _proxy, address _owner)
+    function Proxyable(address _owner)
         Owned(_owner)
-        public
-    {
-        proxy = _proxy;
-        ProxyChanged(_proxy);
-    }
+        public { }
 
     function setProxy(Proxy _proxy)
         public
@@ -86,7 +83,13 @@ contract Proxyable is Owned {
 
     modifier onlyProxy
     {
-        require(msg.sender == proxy);
+        require(Proxy(msg.sender) == proxy);
+        _;
+    }
+
+    modifier onlyOwner_Proxy
+    {
+        require(proxy.messageSender() == owner);
         _;
     }
 
