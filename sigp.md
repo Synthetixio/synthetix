@@ -7,7 +7,7 @@ The purpose of this document is twofold:
 
 ## 1. Upgradeability ##
 
-Since the audit began, the primary focus has been on rearchitecting the contracts so that the system is fully upgradeable. We have decided to use proxy contracts.
+Since the audit began, the primary focus has been on rearchitecting the contracts so that the system is fully upgradeable. We have decided to use a proxy contract which handles all interactions with the `Havven` and `EtherNomin` contract. We have also decided to factor out balances from the ERC20 implementations.
 
 ### New Files ###
 
@@ -17,11 +17,11 @@ Since the audit began, the primary focus has been on rearchitecting the contract
 
 ### ERC20State and ERC20FeeState ###
 
-<< Anton >>
+<< Description >>
 
 ### Proxy ###
 
-<< Anton >>
+<< Description >>
 
 ## 2. Initial Audit Response ##
 
@@ -30,9 +30,9 @@ In this section, we provide responses to the Havven-Audit. They are structured i
 ### ERC20 Implementation ###
 
 ###### 1. Initial creation of ERC20FeeToken and ERC20Token do not fire the transfer event with the 0x0 address as the sender ######
-Fixed - Firing the transfer event on creation of token state in ERC20, not ERC20Fee (since 0 tokens initially).
+Fixed - Firing the transfer event on creation of token state in ERC20, not in ERC20Fee - since no tokens are created initially.
 ###### 2. Decimals variable is of type uint256, not the specified uint8 (SafeDecimalMath.sol[38]) ######
-Fixed
+Fixed.
 
 ### Recommendations ###
 
@@ -43,14 +43,14 @@ Fixed - motions indexed.
 ###### 2. Inaccurate Vote Calculation due to Outdated Average Balance ######
 Fixed - current weight ensured.
 ###### 3. Token Wrapping Prevention Bypass ######
-Not implemented - tba
+Not implemented - tba.
 ###### 4. Arbitrary Dependednt Contract Address Modification ######
 Not implemented - tba.
 
 #### Moderate ####
 
 ###### 1. Inactive Owner Leading to User Fund Lockups ######
-Fixed - HavvenEscrow[227]
+Fixed - HavvenEscrow[227].
 
 #### Low ####
 
