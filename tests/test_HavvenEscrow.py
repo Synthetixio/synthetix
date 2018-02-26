@@ -412,6 +412,30 @@ class TestHavvenEscrow(unittest.TestCase):
         self.withdrawFees(MASTER)
         self.assertClose(self.n_balanceOf(MASTER), self.n_priceToSpend(36 * UNIT))
 
+    def test_withdrawFeesNotMaster(self):
+        recipient = fresh_account()
+        self.h_endow(MASTER, self.escrow.address, self.h_totalSupply() - (100 * UNIT))
+        self.h_endow(MASTER, recipient, 100 * UNIT)
+        self.appendVestingEntry(MASTER, recipient, block_time() + 100000, self.h_totalSupply() // 2)
+        self.make_nomin_velocity()
+
+        uncollected = self.n_feePool()
+        self.assertClose(uncollected, 36 * UNIT)
+        self.assertEqual(self.feePool(), 0)
+
+        # Skip a period so we have a full period with no transfers
+        target_period = self.h_targetFeePeriodDurationSeconds() + 1000
+        fast_forward(seconds=target_period)
+
+        # Zero value transfer to roll over the fee period
+        self.h_transfer(recipient, self.escrow.address, 0)
+        fast_forward(seconds=target_period)
+
+        # Since escrow contract has most of the global supply, and most of the
+        # escrowed balance, they should get most of the fees.
+        self.withdrawFees(recipient)
+        self.assertClose(self.n_balanceOf(recipient), self.n_priceToSpend(36 * UNIT))
+
     def test_withdrawHalfFees(self):
         self.h_endow(MASTER, self.escrow.address, self.h_totalSupply() - (100 * UNIT))
         self.h_endow(MASTER, MASTER, 100 * UNIT)
