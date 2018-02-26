@@ -86,12 +86,4 @@ class TestProxy(unittest.TestCase):
         backing = self.etherValue(10 * UNIT)
         self.issue(self.nomin_owner, UNIT, backing)
         self.buy(self.nomin_beneficiary, UNIT, self.purchaseCostEther(UNIT))
-        print(self.nomin.functions.balanceOf(self.nomin_beneficiary).call())
-        print(self.nomin.functions.totalSupply().call())
-
-        print(self.proxy_nomin.functions.totalSupply().call())
-        print(self.proxy.functions.metropolis().call())
         self.setMetropolis(MASTER, True)
-        print(self.proxy.functions.metropolis().call())
-
-        print(self.proxy_nomin.functions.totalSupply().call())
