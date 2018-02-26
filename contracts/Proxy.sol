@@ -36,7 +36,7 @@ contract Proxy is Owned {
 
     function _setMessageSender(address sender)
         public
-        onlyTarget
+        _onlyTarget
     {
         messageSender = sender;
     }

@@ -178,6 +178,7 @@ contract Havven is ERC20Token {
 
     function setNomin(EtherNomin _nomin) 
         public
+        optionalProxy
         onlyOwner_Proxy
     {
         nomin = _nomin;
@@ -185,6 +186,7 @@ contract Havven is ERC20Token {
 
     function setEscrow(HavvenEscrow _escrow)
         public
+        optionalProxy
         onlyOwner_Proxy
     {
         escrow = _escrow;
@@ -193,6 +195,7 @@ contract Havven is ERC20Token {
     function setTargetFeePeriodDuration(uint duration)
         public
         postCheckFeePeriodRollover
+        optionalProxy
         onlyOwner_Proxy
     {
         require(MIN_FEE_PERIOD_DURATION_SECONDS <= duration &&
@@ -210,7 +213,8 @@ contract Havven is ERC20Token {
      * to retrieve any havvens sent to the Havven contract itself. */
     function endow(address account, uint value)
         public
-        onlyOwner
+        optionalProxy
+        onlyOwner_Proxy
         returns (bool)
     {
 
@@ -223,6 +227,7 @@ contract Havven is ERC20Token {
      * fee entitlement recomputation whenever balances are updated. */
     function transfer(address _to, uint _value)
         public
+        optionalProxy
         returns (bool)
     {
         return _transfer(proxy.messageSender(), _to, _value);
@@ -254,6 +259,7 @@ contract Havven is ERC20Token {
     function transferFrom(address _from, address _to, uint _value)
         public
         preCheckFeePeriodRollover
+        optionalProxy
         returns (bool)
     {
         uint senderPreBalance = state.balanceOf(_from);
@@ -276,6 +282,7 @@ contract Havven is ERC20Token {
     function withdrawFeeEntitlement()
         public
         preCheckFeePeriodRollover
+        optionalProxy
     {
         address messageSender = proxy.messageSender();
 
@@ -398,6 +405,7 @@ contract Havven is ERC20Token {
     /* Recompute and return the sender's average balance information. */
     function recomputeLastAverageBalance()
         external
+        optionalProxy
         returns (uint)
     {
         return _recomputeAccountLastAverageBalance(proxy.messageSender());

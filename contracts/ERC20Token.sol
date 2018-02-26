@@ -148,6 +148,7 @@ contract ERC20Token is SafeDecimalMath, Proxyable {
 
     function approve(address _spender, uint _value)
         public
+        optionalProxy
         returns (bool)
     {
         address messageSender = proxy.messageSender();
