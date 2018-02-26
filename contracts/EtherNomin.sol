@@ -5,6 +5,7 @@ FILE INFORMATION
 file:       EtherNomin.sol
 version:    0.3
 author:     Anton Jurisevic
+            Mike Spain
 
 date:       2018-2-6
 
@@ -78,20 +79,20 @@ contract EtherNomin is ERC20FeeToken {
     address public beneficiary;
 
     // Nomins in the pool ready to be sold.
-    uint public nominPool = 0;
+    uint public nominPool_dec = 0;
 
     // Impose a 50 basis-point fee for buying from and selling to the nomin pool.
-    uint public poolFeeRate = UNIT / 200;
+    uint public poolFeeRate_dec = UNIT / 200;
 
     // The minimum purchasable quantity of nomins is 1 cent.
-    uint constant MINIMUM_PURCHASE = UNIT / 100;
+    uint constant MINIMUM_PURCHASE_dec = UNIT / 100;
 
     // When issuing, nomins must be overcollateralised by this ratio.
-    uint constant MINIMUM_ISSUANCE_RATIO =  2 * UNIT;
+    uint constant MINIMUM_ISSUANCE_RATIO_dec =  2 * UNIT;
 
     // If the collateralisation ratio of the contract falls below this level,
     // immediately begin liquidation.
-    uint constant AUTO_LIQUIDATION_RATIO = UNIT;
+    uint constant AUTO_LIQUIDATION_RATIO_dec = UNIT;
 
     // The liquidation period is the duration that must pass before the liquidation period is complete.
     // It can be extended up to a given duration.
@@ -105,7 +106,7 @@ contract EtherNomin is ERC20FeeToken {
     uint public liquidationTimestamp = ~uint(0);
 
     // Ether price from oracle (fiat per ether).
-    uint public etherPrice;
+    uint public etherPrice_dec;
 
     // Last time the price was updated.
     uint public lastPriceUpdate;
@@ -119,7 +120,7 @@ contract EtherNomin is ERC20FeeToken {
 
     function EtherNomin(address _havven, address _oracle,
                         address _beneficiary,
-                        uint initialEtherPrice,
+                        uint initialetherPrice_dec,
                         address _owner, ERC20FeeState initialState)
         ERC20FeeToken("Ether-Backed USD Nomins", "eUSD",
                       0, _owner,
@@ -132,9 +133,9 @@ contract EtherNomin is ERC20FeeToken {
         oracle = _oracle;
         beneficiary = _beneficiary;
 
-        etherPrice = initialEtherPrice;
+        etherPrice_dec = initialetherPrice_dec;
         lastPriceUpdate = now;
-        PriceUpdated(etherPrice);
+        PriceUpdated(etherPrice_dec);
 
         state.setFrozen(this, true);
     }
@@ -171,8 +172,8 @@ contract EtherNomin is ERC20FeeToken {
         onlyOwner
     {
         require(newFeeRate <= UNIT);
-        poolFeeRate = newFeeRate;
-        PoolFeeRateUpdated(newFeeRate);
+        poolFeeRate_dec = newFeeRate;
+        poolFeeRateUpdated(newFeeRate);
     }
 
     function setStalePeriod(uint period)
@@ -194,13 +195,13 @@ contract EtherNomin is ERC20FeeToken {
     /* Return the equivalent fiat value of the given quantity
      * of ether at the current price.
      * Reverts if the price is stale. */
-    function fiatValue(uint eth)
+    function fiatValue(uint eth_dec)
         public
         view
         priceNotStale
         returns (uint)
     {
-        return safeDecMul(eth, etherPrice);
+        return safeDecMul(eth_dec, etherPrice_dec);
     }
 
     /* Return the current fiat value of the contract's balance.
@@ -223,7 +224,7 @@ contract EtherNomin is ERC20FeeToken {
         priceNotStale
         returns (uint)
     {
-        return safeDecDiv(fiat, etherPrice);
+        return safeDecDiv(fiat, etherPrice_dec);
     }
 
     /* The same as etherValue(), but without the stale price check. */
@@ -232,7 +233,7 @@ contract EtherNomin is ERC20FeeToken {
         view
         returns (uint)
     {
-        return safeDecDiv(fiat, etherPrice);
+        return safeDecDiv(fiat, etherPrice_dec);
     }
 
     /* Return the units of fiat per nomin in the supply.
@@ -251,7 +252,7 @@ contract EtherNomin is ERC20FeeToken {
         view
         returns (uint)
     {
-        return safeDecMul(n, poolFeeRate);
+        return safeDecMul(n, poolFeeRate_dec);
     }
 
     /* Return the fiat cost (including fee) of purchasing n nomins.
@@ -341,7 +342,7 @@ contract EtherNomin is ERC20FeeToken {
             // These timestamps and durations have values clamped within reasonable values and
             // cannot overflow.
             bool totalPeriodElapsed = liquidationTimestamp + liquidationPeriod < now;
-            bool allTokensReturned = (liquidationTimestamp + 1 weeks < now) && (nominPool == state.totalSupply());
+            bool allTokensReturned = (liquidationTimestamp + 1 weeks < now) && (nominPool_dec == state.totalSupply());
             return totalPeriodElapsed || allTokensReturned;
         }
         return false;
@@ -394,7 +395,7 @@ contract EtherNomin is ERC20FeeToken {
         // (so we can't lock ourselves out of updating the oracle for longer than this)
         require(lastPriceUpdate < timeSent && timeSent < now + 10 minutes);
 
-        etherPrice = price;
+        etherPrice_dec = price;
         lastPriceUpdate = timeSent;
         PriceUpdated(price);
     }
@@ -415,9 +416,9 @@ contract EtherNomin is ERC20FeeToken {
         // Safe additions are unnecessary here, as either the addition is checked on the following line
         // or the overflow would cause the requirement not to be satisfied.
         uint sum = safeAdd(state.totalSupply(), n);
-        require(fiatBalance() >= safeDecMul(sum, MINIMUM_ISSUANCE_RATIO));
+        require(fiatBalance() >= safeDecMul(sum, MINIMUM_ISSUANCE_RATIO_dec));
         state.setTotalSupply(sum);
-        nominPool = safeAdd(nominPool, n);
+        nominPool_dec = safeAdd(nominPool_dec, n);
         Issuance(n, msg.value);
     }
 
@@ -430,8 +431,8 @@ contract EtherNomin is ERC20FeeToken {
         onlyOwner
     {
         // Require that there are enough nomins in the accessible pool to burn
-        require(nominPool >= n);
-        nominPool = safeSub(nominPool, n);
+        require(nominPool_dec >= n);
+        nominPool_dec = safeSub(nominPool_dec, n);
         state.setTotalSupply(safeSub(state.totalSupply(), n));
         Burning(n);
     }
@@ -450,10 +451,10 @@ contract EtherNomin is ERC20FeeToken {
         payable
     {
         // Price staleness check occurs inside the call to purchaseEtherCost.
-        require(n >= MINIMUM_PURCHASE &&
+        require(n >= MINIMUM_PURCHASE_dec &&
                 msg.value == purchaseCostEther(n));
-        // sub requires that nominPool >= n
-        nominPool = safeSub(nominPool, n);
+        // sub requires that nominPool_dec >= n
+        nominPool_dec = safeSub(nominPool_dec, n);
         state.setBalance(msg.sender, safeAdd(state.balanceOf(msg.sender), n));
         Purchase(msg.sender, msg.sender, n, msg.value);
     }
@@ -482,7 +483,7 @@ contract EtherNomin is ERC20FeeToken {
 
         // sub requires that the balance is greater than n
         state.setBalance(msg.sender, safeSub(state.balanceOf(msg.sender), n));
-        nominPool = safeAdd(nominPool, n);
+        nominPool_dec = safeAdd(nominPool_dec, n);
         Sale(msg.sender, msg.sender, n, proceeds);
         msg.sender.transfer(proceeds);
     }
@@ -534,7 +535,7 @@ contract EtherNomin is ERC20FeeToken {
         payable
     {
         require(isLiquidating());
-        require(state.totalSupply() == 0 || collateralisationRatio() >= AUTO_LIQUIDATION_RATIO);
+        require(state.totalSupply() == 0 || collateralisationRatio() >= AUTO_LIQUIDATION_RATIO_dec);
         liquidationTimestamp = ~uint(0);
         liquidationPeriod = DEFAULT_LIQUIDATION_PERIOD;
         LiquidationTerminated();
@@ -624,7 +625,7 @@ contract EtherNomin is ERC20FeeToken {
     modifier postCheckAutoLiquidate
     {
         _;
-        if (!isLiquidating() && state.totalSupply() != 0 && collateralisationRatio() < AUTO_LIQUIDATION_RATIO) {
+        if (!isLiquidating() && state.totalSupply() != 0 && collateralisationRatio() < AUTO_LIQUIDATION_RATIO_dec) {
             beginLiquidation();
         }
     }
@@ -656,7 +657,7 @@ contract EtherNomin is ERC20FeeToken {
 
     event LiquidationExtended(uint extension);
 
-    event PoolFeeRateUpdated(uint newFeeRate);
+    event poolFeeRateUpdated(uint newFeeRate);
 
     event SelfDestructed();
 
