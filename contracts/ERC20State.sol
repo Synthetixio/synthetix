@@ -42,7 +42,7 @@ contract ERC20State is Owned {
 
     uint public totalSupply;
     mapping(address => uint) public balanceOf;
-    mapping(address => mapping (address => uint256)) public allowance;
+    mapping(address => mapping(address => uint256)) public allowance;
 
     function ERC20State(
         address _owner, uint initialSupply,

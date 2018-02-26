@@ -67,7 +67,7 @@ contract Proxy is Owned {
 
 
 contract Proxyable is Owned {
-    Proxy proxy;
+    Proxy public proxy;
 
     function Proxyable(address _owner)
         Owned(_owner)
