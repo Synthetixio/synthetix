@@ -127,8 +127,8 @@ contract Court is Owned, SafeDecimalMath {
     /* ========== STATE VARIABLES ========== */
 
     // The addresses of the token contracts this confiscation court interacts with.
-    Havven havven;
-    EtherNomin nomin;
+    Havven public havven;
+    EtherNomin public nomin;
 
     // The minimum havven balance required to be considered to have standing
     // to begin confiscation proceedings.
