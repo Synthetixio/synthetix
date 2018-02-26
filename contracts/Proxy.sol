@@ -6,6 +6,7 @@ import "contracts/Owned.sol";
 
 contract Proxy is Owned {
     address target;
+    address public messageSender;
     bool public metropolis;
 
     function Proxy(address _target, address _owner)
@@ -13,6 +14,7 @@ contract Proxy is Owned {
         public
     {
         target = _target;
+        TargetChanged(_target);
     }
 
     function _setTarget(address _target) 
@@ -21,6 +23,7 @@ contract Proxy is Owned {
     {
         require(_target != address(0));
         target = _target;
+        TargetChanged(_target);
     }
 
     // Allow the use of the more-flexible metropolis RETURNDATACOPY/SIZE operations.
@@ -34,6 +37,7 @@ contract Proxy is Owned {
     function () 
         public
     {
+        messageSender = msg.sender;
         assembly {
             // Copy call data into free memory region.
             let free_ptr := mload(0x40)
@@ -58,4 +62,34 @@ contract Proxy is Owned {
             return(free_ptr, ret_size)
         } 
     }
+    event TargetChanged(address targetAddress);
 }
+
+contract Proxyable is Owned {
+    Proxy proxy;
+
+    function Proxyable(Proxy _proxy, address _owner)
+        Owned(_owner)
+        public
+    {
+        proxy = _proxy;
+        ProxyChanged(_proxy);
+    }
+
+    function setProxy(Proxy _proxy)
+        public
+        onlyOwner
+    {
+        proxy = _proxy;
+        ProxyChanged(_proxy);
+    }
+
+    modifier onlyProxy
+    {
+        require(msg.sender == proxy);
+        _;
+    }
+
+    event ProxyChanged(address proxyAddress);
+
+ }
