@@ -82,9 +82,6 @@ class TestProxy(unittest.TestCase):
         cls.setMetropolis = lambda self, sender, value: mine_tx(cls.proxy.functions._setMetropolis(value).transact({'from': sender}))
 
     def test_Something(self):
-        print(self.priceIsStale())
-        print(self.isLiquidating())
-
         backing = self.etherValue(10 * UNIT)
         self.issue(self.nomin_owner, UNIT, backing)
         self.buy(self.nomin_beneficiary, UNIT, self.purchaseCostEther(UNIT))
@@ -92,5 +89,8 @@ class TestProxy(unittest.TestCase):
         print(self.nomin.functions.totalSupply().call())
 
         print(self.proxy_nomin.functions.totalSupply().call())
+        print(self.proxy.functions.metropolis().call())
         self.setMetropolis(MASTER, True)
+        print(self.proxy.functions.metropolis().call())
+
         print(self.proxy_nomin.functions.totalSupply().call())
