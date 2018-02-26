@@ -105,7 +105,7 @@ class TestERC20State(unittest.TestCase):
         mine_tx(valid_token.functions.transfer(DUMMY, 10 * UNIT).transact({'from': MASTER}))
         self.assertEqual(valid_token.functions.balanceOf(DUMMY).call(), 10 * UNIT)
 
-    def test_balances_remain_after_swap(self):
+    def test_balances_after_swap(self):
         valid_token, txr = attempt_deploy(  # initial supply and beneficiary don't have to be set, as state exists
             self.compiled, 'ERC20Token', MASTER, ["Test2", "TEST2", 0, ZERO_ADDRESS, self.erc20state.address, MASTER]
         )
@@ -138,6 +138,45 @@ class TestERC20State(unittest.TestCase):
         self.assertEqual(self.tok_balanceOf(DUMMY), 20 * UNIT)
 
         self.assertReverts(self.tok_transfer, MASTER, DUMMY, 10 * UNIT)
+
+    def test_allowances(self):
+        valid_token, txr = attempt_deploy(  # initial supply and beneficiary don't have to be set, as state exists
+            self.compiled, 'ERC20Token', MASTER, ["Test2", "TEST2", 0, ZERO_ADDRESS, self.erc20state.address, MASTER]
+        )
+
+        self.assertEqual(self.tok_allowance(MASTER, DUMMY), 0)
+        self.tok_approve(MASTER, DUMMY, 100 * UNIT)
+        self.assertEqual(self.tok_allowance(MASTER, DUMMY), 100 * UNIT)
+        self.assertEqual(valid_token.functions.allowance(MASTER, DUMMY).call(), 100 * UNIT)
+
+        self.tok_transferFrom(DUMMY, MASTER, DUMMY, 20 * UNIT)
+
+        self.assertEqual(self.tok_balanceOf(MASTER), 980 * UNIT)
+        self.assertEqual(self.tok_balanceOf(DUMMY), 20 * UNIT)
+        self.assertEqual(self.tok_allowance(MASTER, DUMMY), 80 * UNIT)
+        self.assertEqual(valid_token.functions.allowance(MASTER, DUMMY).call(), 80 * UNIT)
+
+        self.state_setAssociatedContract(MASTER, valid_token.address)
+
+        self.assertReverts(self.tok_transferFrom, DUMMY, MASTER, DUMMY, 20 * UNIT)
+
+        mine_tx(valid_token.functions.transferFrom(MASTER, DUMMY, 20 * UNIT).transact({'from': DUMMY}))
+
+        self.assertEqual(self.state_balanceOf(MASTER), 960 * UNIT)
+        self.assertEqual(self.state_balanceOf(DUMMY), 40 * UNIT)
+        self.assertEqual(self.tok_allowance(MASTER, DUMMY), 60 * UNIT)
+        self.assertEqual(self.state_allowance(MASTER, DUMMY), 60 * UNIT)
+        self.assertEqual(valid_token.functions.allowance(MASTER, DUMMY).call(), 60 * UNIT)
+
+        mine_tx(valid_token.functions.approve(DUMMY, 0).transact({'from': MASTER}))
+
+        self.assertEqual(self.state_balanceOf(MASTER), 960 * UNIT)
+        self.assertEqual(self.state_balanceOf(DUMMY), 40 * UNIT)
+        self.assertEqual(self.tok_allowance(MASTER, DUMMY), 0)
+        self.assertEqual(self.state_allowance(MASTER, DUMMY), 0)
+        self.assertEqual(valid_token.functions.allowance(MASTER, DUMMY).call(), 0)
+
+        self.assertReverts(valid_token.functions.transferFrom(MASTER, DUMMY, 20 * UNIT).transact, {'from': DUMMY})
 
 
 class TestERC20FeeState(unittest.TestCase):
@@ -183,6 +222,8 @@ class TestERC20FeeState(unittest.TestCase):
         cls.state_totalSupply = lambda self: cls.erc20feestate.functions.totalSupply().call()
         cls.state_balanceOf = lambda self, acc: cls.erc20feestate.functions.balanceOf(acc).call()
         cls.state_allowance = lambda self, frm, to: cls.erc20feestate.functions.allowance(frm, to).call()
+        cls.state_frozen = lambda self, acc: cls.erc20feestate.functions.isFrozen(acc).call()
+        cls.state_feePool = lambda self: cls.erc20feestate.functions.feePool().call()
 
         cls.tok_set_state(cls, MASTER, cls.erc20feestate.address)
 
@@ -261,3 +302,47 @@ class TestERC20FeeState(unittest.TestCase):
         self.assertEqual(valid_token.functions.feePool().call(), fee)
 
         self.assertReverts(self.tok_transfer, MASTER, DUMMY, 10 * UNIT)
+
+    def test_allowances(self):
+        valid_token, txr = attempt_deploy(  # initial supply and beneficiary don't have to be set, as state exists
+            self.compiled, 'ERC20FeeToken', MASTER, ["Test2", "TEST2", 0, ZERO_ADDRESS, UNIT//100, self.fee_beneficiary, self.erc20feestate.address, MASTER]
+        )
+
+        self.assertEqual(self.tok_allowance(MASTER, DUMMY), 0)
+        self.tok_approve(MASTER, DUMMY, 100 * UNIT)
+        self.assertEqual(self.tok_allowance(MASTER, DUMMY), 100 * UNIT)
+        self.assertEqual(valid_token.functions.allowance(MASTER, DUMMY).call(), 100 * UNIT)
+
+        fee = int(20 * UNIT * 0.01)
+        self.tok_transferFrom(DUMMY, MASTER, DUMMY, 20 * UNIT)
+
+        self.assertEqual(self.tok_balanceOf(MASTER), 980 * UNIT - fee)
+        self.assertEqual(self.tok_balanceOf(DUMMY), 20 * UNIT)
+        self.assertEqual(self.tok_allowance(MASTER, DUMMY), 80 * UNIT - fee)
+        self.assertEqual(valid_token.functions.allowance(MASTER, DUMMY).call(), 80 * UNIT - fee)
+
+        self.state_setAssociatedContract(MASTER, valid_token.address)
+
+        self.assertReverts(self.tok_transferFrom, DUMMY, MASTER, DUMMY, 20 * UNIT)
+
+        fee = int(20 * UNIT * 0.01) + fee
+
+        mine_tx(valid_token.functions.transferFrom(MASTER, DUMMY, 20 * UNIT).transact({'from': DUMMY}))
+
+        self.assertEqual(self.state_balanceOf(MASTER), 960 * UNIT - fee)
+        self.assertEqual(self.state_balanceOf(DUMMY), 40 * UNIT)
+        self.assertEqual(self.tok_allowance(MASTER, DUMMY), 60 * UNIT - fee)
+        self.assertEqual(self.state_allowance(MASTER, DUMMY), 60 * UNIT - fee)
+        self.assertEqual(valid_token.functions.allowance(MASTER, DUMMY).call(), 60 * UNIT - fee)
+
+        mine_tx(valid_token.functions.approve(DUMMY, 0).transact({'from': MASTER}))
+
+        self.assertEqual(self.state_balanceOf(MASTER), 960 * UNIT - fee)
+        self.assertEqual(self.state_balanceOf(DUMMY), 40 * UNIT)
+        self.assertEqual(self.tok_allowance(MASTER, DUMMY), 0)
+        self.assertEqual(self.state_allowance(MASTER, DUMMY), 0)
+        self.assertEqual(valid_token.functions.allowance(MASTER, DUMMY).call(), 0)
+
+        self.assertReverts(valid_token.functions.transferFrom(MASTER, DUMMY, 20 * UNIT).transact, {'from': DUMMY})
+
+        self.assertEqual(self.state_feePool(), fee)
