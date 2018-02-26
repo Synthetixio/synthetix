@@ -151,11 +151,11 @@ contract EtherNomin is ERC20FeeToken {
         OracleUpdated(newOracle);
     }
 
-    function setCourt(address newCourt)
+    function setCourt(Court newCourt)
         public
-        onlyOwner
+        onlyOwner_Proxy
     {
-        court = Court(newCourt);
+        court = newCourt;
         CourtUpdated(newCourt);
     }
 
