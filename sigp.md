@@ -27,44 +27,62 @@ Progress
 
 #### Moderate ####
 
-1. Progress: Inactive Owner Leading to User Fund Lockups
+##### 1. Inactive Owner Leading to User Fund Lockups #####
+Progress
 
 #### Low ####
 
-1. Fixed: Insufficient Hardening of Contract Ownership Transfer
-2. Fixed: Insufficient Receipient Address Validation
-3. Not Implemented: Insufficient Transfer Fee Rate Validation
-4. Progress: Duplicate Event Call
-5. Progress: Lack of Vesting Periods Validation
+##### 1. Insufficient Hardening of Contract Ownership Transfer #####
+Fixed - Implemented Claimable
+##### 2. Fixed: Insufficient Receipient Address Validation #####
+Fixed - no 0x0
+##### 3. Insufficient Transfer Fee Rate Validation #####
+Not Implemented
+##### 4. Duplicate Event Call #####
+Progress
+##### 5. Lack of Vesting Periods Validation #####
+Progress
 
 #### General Suggestions ####
 
 ##### SafeDecimalMath #####
 
-1. Not Implemented (gas costs) Assert vs Require
+###### 1. Assert vs Require ######
+Not Implemented - gas costs 
 
 ##### Court #####
 
-1. Fixed: Havven and Nomin addresses not public 
-2. Fixed: Court prefix not required [266, 512, 513]
+###### 1. Havven and Nomin addresses not public ######
+Fixed
+###### 2. Court prefix not required [266, 512, 513] ######
+Fixed
 
 ##### EtherNomin #####
 
-1. Fixed: Does not need to import Havven.sol and cast can be removed from constructor [62, 123]
-2. Progress: Variable naming in parameter could be changed from wei to eth [193]
-3. Not Implemented: Inconsistent variable naming in parameters initialEtherPrice should be `_initialEtherPrice_`
-4. Not Implemented: Make variables public [87, 90, 94]
-5. Progress: Make it very clear that variables should be supplied as multiples of UNIT
-6. Not Implemented: It may be prudent to allow any address to call terminateLiquidation()
+###### 1. Does not need to import Havven.sol and cast can be removed from constructor [62, 123] ######
+Fixed
+###### 2. Variable naming in parameter could be changed from wei to eth [193] ######
+Progress
+###### 3. Inconsistent variable naming in parameters initialEtherPrice should be `_initialEtherPrice_` ######
+Not Implemented
+###### 4. Make variables public [87, 90, 94] ######
+Not Implemented
+###### 5. Make it very clear that variables should be supplied as multiples of UNIT ######
+Progress
+###### 6. It may be prudent to allow any address to call terminateLiquidation() ######
+Not Implemented
 
 ##### Havven #####
 
-1. Fixed: Does not need to import Court.sol
-2. Not Implemented (warning added): LastAverageBalance and penultimateAverageBalance are public and would quite frequently be out-of-date, misleading
+###### 1. Does not need to import Court.sol ######
+Fixed
+###### 2. LastAverageBalance and penultimateAverageBalance are public and would quite frequently be out-of-date, misleading ######
+Not implemented - added warning in comments
 
 ##### ERC20FeeToken #####
 
-1. Progress: Use of uint256 in contrast to otherwise consistent unit usage [36].
+###### 1. Use of uint256 in contrast to otherwise consistent unit usage [36] ######
+Progress
 
 ### Potential Attacks ###
 
