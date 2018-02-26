@@ -7,28 +7,16 @@ Bold means we have responded to the issue (could be no action though).
 
 ### ERC20 Implementation ###
 
-1. Initial creation of ERC20FeeToken and ERC20Token do not fire the transfer event with the 0x0 address as the sender. 
-
-Clarify what to do here regarding ERC20State.
-
-** 2. Decimals variable is of type uint256, not the specified uint8 (SafeDecimalMath.sol[38]) **
-
-Fixed.
+1. ** Progress (clarify erc20state) ** Initial creation of ERC20FeeToken and ERC20Token do not fire the transfer event with the 0x0 address as the sender.
+2. ** Fixed ** Decimals variable is of type uint256, not the specified uint8 (SafeDecimalMath.sol[38]) **
 
 ### Recommendations ###
 
 #### High ####
 
-** 1. Vote Manipulation via Improper Variable Resetting ** 
-
-Fixed. Motions are now indexed.
-
-** 2. Inaccurate Vote Calculation due to Outdated Average Balance **
-
-Fixed. The `setupVote()` function now ensures that voter's weight is current [Havven.sol:392].
-
+1. ** Fixed (motions indexed) ** Vote Manipulation via Improper Variable Resetting
+2. ** Fixed (current weight ensured) ** Inaccurate Vote Calculation due to Outdated Average Balance **
 3. Token Wrapping Prevention Bypass
-
 4. Arbitrary Dependednt Contract Address Modification
 
 #### Moderate ####
@@ -37,79 +25,40 @@ Fixed. The `setupVote()` function now ensures that voter's weight is current [Ha
 
 #### Low ####
 
-** 1. Insufficient Hardening of Contract Ownership Transfer ** 
-
-Fixed. Have implemented claimable ownership pattern.
-
-** 2. Insufficient Receipient Address Validation **
-
-Fixed. Have implemented requirement that `_to_ NOT 0x0 in transfer()` and both `_to_ AND _from_ NOT 0x0 in transferFrom`.
-
-** 3. Insufficient Transfer Fee Rate Validation **
-
-Not implemented. Why?
-
+1. ** Fixed ** Insufficient Hardening of Contract Ownership Transfer
+2. ** Fixed ** Insufficient Receipient Address Validation
+3. ** Not Implemented ** Insufficient Transfer Fee Rate Validation
 4. Duplicate Event Call
-
 5. Lack of Vesting Periods Validation
 
 #### General Suggestions ####
 
 ##### SafeDecimalMath #####
 
-** 1. Assert vs Require ** 
-
-Not implemented. Why consume all gas if we don't need to?
+1. ** Not Implemented (gas costs) Assert vs Require
 
 ##### Court #####
 
-** 1. Havven and Nomin addresses not public. ** 
-
-Fixed.
-
-** 2. Court prefix not required [266, 512, 513] **
-
-Fixed.
+1. ** Fixed ** Havven and Nomin addresses not public 
+2. ** Fixed ** Court prefix not required [266, 512, 513]
 
 ##### EtherNomin #####
 
-** 1. Does not need to import Havven.sol and cast can be removed from constructor [62, 123] **
-
-Fixed.
-
+1. ** Fixed ** Does not need to import Havven.sol and cast can be removed from constructor [62, 123]
 2. Variable naming in parameter could be changed from wei to eth [193]
-
-** 3. Inconsistent variable naming in parameters initialEtherPrice should be `_initialEtherPrice_` **
-
-Not implemented. `_` only used when referencing variable name that is the same as the parameter.
-
-** 4. Make variables public [87, 90, 94] **
-
-Not implemented. Constant variables cannot be modified and their values can be checked with source code.
-
+3. ** Not Implemented ** Inconsistent variable naming in parameters initialEtherPrice should be `_initialEtherPrice_`
+4. ** Not Implemented ** Make variables public [87, 90, 94]
 5. Make it very clear that variables should be supplied as multiples of UNIT.
-
-???
-
-** 6. It may be prudent to allow any address to call terminateLiquidation(). **
-
-Not implemented. Why?
+6. ** Not Implemented ** It may be prudent to allow any address to call terminateLiquidation()
 
 ##### Havven #####
 
-** 1. Does not need to import Court.sol **
-
-Fixed.
-
-** 2. LastAverageBalance and penultimateAverageBalance are public and would quite frequently be out-of-date, misleading. **
-
-Not implemented. Court relies on accessing these variables. Added warning to documentation that they may be out of date.
+1. ** Fixed ** Does not need to import Court.sol
+2. ** Not Implemented (warning added) ** LastAverageBalance and penultimateAverageBalance are public and would quite frequently be out-of-date, misleading
 
 ##### ERC20FeeToken #####
 
 1. Use of uint256 in contrast to otherwise consistent unit usage [36].
-
-???
 
 ### Potential Attacks ###
 
