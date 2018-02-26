@@ -3,123 +3,113 @@
 ## Introduction ##
 In this document, we respond to the issues raised in Sigma Prime's initial audit of Havven. 
 
+Bold means we have responded to the issue (could be no action though).
+
 ### ERC20 Implementation ###
 
-1. Initial creation of ERC20FeeToken and ERC20Token do not fire the transfer event with the 0x0 address as the sender
+1. Initial creation of ERC20FeeToken and ERC20Token do not fire the transfer event with the 0x0 address as the sender. 
 
-- STATUS: Clarify what to do here regarding ERC20State.
+Clarify what to do here regarding ERC20State.
 
-2. Decimals variable is of type uint256, not the specified uint8 (SafeDecimalMath.sol[38])
+** 2. Decimals variable is of type uint256, not the specified uint8 (SafeDecimalMath.sol[38]) **
 
-- STATUS: Fixed.
+Fixed.
 
 ### Recommendations ###
 
 #### High ####
 
-1. Vote Manipulation via Improper Variable Resetting
+** 1. Vote Manipulation via Improper Variable Resetting ** 
 
-- STATUS: Fixed. Motions are now indexed.
+Fixed. Motions are now indexed.
 
-2. Inaccurate Vote Calculation due to Outdated Average Balance
+** 2. Inaccurate Vote Calculation due to Outdated Average Balance **
 
-- STATUS: Fixed. The `setupVote()` function now ensures that voter's weight is current [Havven.sol:392].
+Fixed. The `setupVote()` function now ensures that voter's weight is current [Havven.sol:392].
 
 3. Token Wrapping Prevention Bypass
 
-- STATUS: 
-
 4. Arbitrary Dependednt Contract Address Modification
-
-- STATUS:
 
 #### Moderate ####
 
 1. Inactive Owner Leading to User Fund Lockups
 
-- STATUS:
-
 #### Low ####
 
-1. Insufficient Hardening of Contract Ownership Transfer
+** 1. Insufficient Hardening of Contract Ownership Transfer ** 
 
-- STATUS: Fixed. Have implemented claimable ownership pattern.
+Fixed. Have implemented claimable ownership pattern.
 
-2. Insufficient Receipient Address Validation
+** 2. Insufficient Receipient Address Validation **
 
-- STATUS: Fixed. Have implemented requirement that `_to_ NOT 0x0 in transfer()` and both `_to_ AND _from_ NOT 0x0 in transferFrom`.
+Fixed. Have implemented requirement that `_to_ NOT 0x0 in transfer()` and both `_to_ AND _from_ NOT 0x0 in transferFrom`.
 
-3. Insufficient Transfer Fee Rate Validation
+** 3. Insufficient Transfer Fee Rate Validation **
 
-- STATUS: Not implemented.
+Not implemented. Why?
 
 4. Duplicate Event Call
 
-- STATUS:
-
 5. Lack of Vesting Periods Validation
-
-- STATUS: IN PROGRESS
 
 #### General Suggestions ####
 
 ##### SafeDecimalMath #####
 
-1. Assert vs Require
+** 1. Assert vs Require ** 
 
-- STATUS: Not implemented. Why consume all gas if we don't need to?
+Not implemented. Why consume all gas if we don't need to?
 
 ##### Court #####
 
-1. Havven and Nomin addresses not public.
+** 1. Havven and Nomin addresses not public. ** 
 
-- STATUS: Fixed.
+Fixed.
 
-2. Court prefix not required [266, 512, 513]
+** 2. Court prefix not required [266, 512, 513] **
 
-- STATUS: Fixed.
+Fixed.
 
 ##### EtherNomin #####
 
-1. Does not need to import Havven.sol and cast can be removed from constructor [62, 123]
+** 1. Does not need to import Havven.sol and cast can be removed from constructor [62, 123] **
 
-- STATUS: Fixed.
+Fixed.
 
 2. Variable naming in parameter could be changed from wei to eth [193]
 
-- STATUS: In Fixed. 
+** 3. Inconsistent variable naming in parameters initialEtherPrice should be `_initialEtherPrice_` **
 
-3. Inconsistent variable naming in parameters initialEtherPrice should be `_initialEtherPrice_`
+Not implemented. `_` only used when referencing variable name that is the same as the parameter.
 
-- STATUS: Not implemented. `_` only used when referencing variable name that is the same as the parameter.
+** 4. Make variables public [87, 90, 94] **
 
-4. Make variables public [87, 90, 94]
-
-- STATUS: Not implemented. Constant variables cannot be modified and their values can be checked with source code.
+Not implemented. Constant variables cannot be modified and their values can be checked with source code.
 
 5. Make it very clear that variables should be supplied as multiples of UNIT.
 
-- STATUS: ???
+???
 
-6. It may be prudent to allow any address to call terminateLiquidation().
+** 6. It may be prudent to allow any address to call terminateLiquidation(). **
 
-- STATUS: Not implemented.
+Not implemented. Why?
 
 ##### Havven #####
 
-1. Does not need to import Court.sol
+** 1. Does not need to import Court.sol **
 
-- STATUS: Fixed.
+Fixed.
 
-2. LastAverageBalance and penultimateAverageBalance are public and would quite frequently be out-of-date, misleading.
+** 2. LastAverageBalance and penultimateAverageBalance are public and would quite frequently be out-of-date, misleading. **
 
-- STATUS: Not implemented. Court relies on accessing these variables. Added warning to documentation that they may be out of date.
+Not implemented. Court relies on accessing these variables. Added warning to documentation that they may be out of date.
 
 ##### ERC20FeeToken #####
 
 1. Use of uint256 in contrast to otherwise consistent unit usage [36].
 
-- STATUS: ???
+???
 
 ### Potential Attacks ###
 
