@@ -10,7 +10,7 @@ Progress - TBA
 ### ERC20 Implementation ###
 
 ###### 1. Initial creation of ERC20FeeToken and ERC20Token do not fire the transfer event with the 0x0 address as the sender ######
-Progress - clarify erc20state
+Fixed - Firing the transfer event on creation of token state in ERC20, not ERC20Fee (since 0 tokens initially).
 ###### 2. Decimals variable is of type uint256, not the specified uint8 (SafeDecimalMath.sol[38]) ######
 Fixed
 
@@ -19,9 +19,9 @@ Fixed
 #### High ####
 
 ###### 1. Vote Manipulation via Improper Variable Resetting ######
-Fixed - motions indexed
+Fixed - motions indexed.
 ###### 2. Inaccurate Vote Calculation due to Outdated Average Balance ######
-Fixed - current weight ensured
+Fixed - current weight ensured.
 ###### 3. Token Wrapping Prevention Bypass ######
 Not implemented
 ###### 4. Arbitrary Dependednt Contract Address Modification ######
@@ -35,22 +35,22 @@ Fixed - HavvenEscrow[227]
 #### Low ####
 
 ###### 1. Insufficient Hardening of Contract Ownership Transfer ######
-Fixed - Implemented Claimable
+Fixed - Implemented Claimable.
 ###### 2. Fixed: Insufficient Receipient Address Validation ######
-Fixed - no 0x0 allowed in `_to` or `_from` in both transfer and transferFrom
+Fixed - No 0x0 allowed in `_to` or `_from` in both transfer and transferFrom.
 ###### 3. Insufficient Transfer Fee Rate Validation ######
-Not Implemented - 
+Not Implemented
 ###### 4. Duplicate Event Call ######
-Fixed - No longer duplicating event
+Fixed - No longer duplicating event.
 ###### 5. Lack of Vesting Periods Validation ######
-Progress
+Fixed - TotalVestedBalance must be <= havvens in escrow contract 
 
 #### General Suggestions ####
 
 ##### SafeDecimalMath #####
 
 ###### 1. Assert vs Require ######
-Not Implemented - extra gas costs 
+Not Implemented - extra gas costs.
 
 ##### Court #####
 
@@ -64,7 +64,7 @@ Fixed
 ###### 1. Does not need to import Havven.sol and cast can be removed from constructor [62, 123] ######
 Fixed
 ###### 2. Variable naming in parameter could be changed from wei to eth [193] ######
-Progress
+Fixed - Have implemented suffix `_dec` to variables which are fixed point values.
 ###### 3. Inconsistent variable naming in parameters initialEtherPrice should be `_initialEtherPrice_` ######
 Not Implemented - `_` only used when parameter name is the same as variable name.
 ###### 4. Make variables public [87, 90, 94] ######
@@ -79,12 +79,12 @@ Not Implemented
 ###### 1. Does not need to import Court.sol ######
 Fixed
 ###### 2. LastAverageBalance and penultimateAverageBalance are public and would quite frequently be out-of-date, misleading ######
-Not implemented - added warning in comments
+Not implemented - added warning in comments.
 
 ##### ERC20FeeToken #####
 
 ###### 1. Use of uint256 in contrast to otherwise consistent unit usage [36] ######
-Progress
+Not implemented - Can't find this.
 
 ### Potential Attacks ###
 

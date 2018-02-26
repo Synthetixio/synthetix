@@ -6,6 +6,7 @@ file:       HavvenEscrow.sol
 version:    0.3
 author:     Anton Jurisevic
             Dominic Romanowski
+            Mike Spain
 
 date:       2018-02-07
 
@@ -283,6 +284,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
 
         vestingSchedules[account].push([time, quantity]);
         totalVestedBalance = safeAdd(totalVestedBalance, quantity);
+        require(totalVestedBalance <= havven.balanceOf(this));
     }
 
     /* Construct a vesting schedule to release a quantity of havvens at regular intervals ending
