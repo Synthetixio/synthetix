@@ -11,21 +11,21 @@ Since the audit began, the primary focus has been on rearchitecting the contract
 
 ### New Files ###
 
-1. ERC20State.sol
-2. ERC20FeeState.sol
-3. Proxy.sol
-
-### ERC20State and ERC20FeeState ###
-
-<< Description >>
+1. Proxy.sol
+2. ERC20State.sol
+3. ERC20FeeState.sol
 
 ### Proxy ###
 
 << Description >>
 
+### ERC20State and ERC20FeeState ###
+
+<< Description >>
+
 ## 2. Initial Audit Response ##
 
-In this section, we provide responses to the Havven-Audit. They are structured in the order they appear in the audit. Where we have not implemented a suggested change, there is a note describing the rationale.
+In this section, we provide responses to the Havven-Audit. They appear in the same order as the audit. Where we have not implemented a suggested change, there is a note outlining the rationale.
 
 ### ERC20 Implementation ###
 
@@ -45,7 +45,7 @@ Fixed - current weight ensured.
 ###### 3. Token Wrapping Prevention Bypass ######
 Not implemented - tba.
 ###### 4. Arbitrary Dependednt Contract Address Modification ######
-Not implemented - tba.
+Not implemented - We are comfortable with the levle of control granted to Owner.
 
 #### Moderate ####
 
@@ -59,7 +59,7 @@ Fixed - Implemented Claimable.
 ###### 2. Fixed: Insufficient Receipient Address Validation ######
 Fixed - No 0x0 allowed in `_to` or `_from` in both transfer and transferFrom.
 ###### 3. Insufficient Transfer Fee Rate Validation ######
-Not Implemented.
+Not Implemented - tba.
 ###### 4. Duplicate Event Call ######
 Fixed - No longer duplicating event.
 ###### 5. Lack of Vesting Periods Validation ######
