@@ -10,7 +10,7 @@ import "contracts/ERC20FeeState.sol";
 
 contract PublicEtherNomin is EtherNomin {
 
-	function PublicEtherNomin(Havven _havven, address _oracle,
+	function PublicEtherNomin(address _havven, address _oracle,
                               address _beneficiary,
                               uint initialEtherPrice,
                               address _owner, ERC20FeeState initialState)

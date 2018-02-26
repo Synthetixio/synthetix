@@ -60,7 +60,6 @@ pragma solidity ^0.4.20;
 
 import "contracts/ERC20FeeToken.sol";
 import "contracts/ERC20FeeState.sol";
-import "contracts/Havven.sol";
 import "contracts/Court.sol";
 
 
@@ -118,14 +117,14 @@ contract EtherNomin is ERC20FeeToken {
 
     /* ========== CONSTRUCTOR ========== */
 
-    function EtherNomin(Havven _havven, address _oracle,
+    function EtherNomin(address _havven, address _oracle,
                         address _beneficiary,
                         uint initialEtherPrice,
                         address _owner, ERC20FeeState initialState)
         ERC20FeeToken("Ether-Backed USD Nomins", "eUSD",
                       0, _owner,
                       15 * UNIT / 10000, // nomin transfers incur a 15 bp fee
-                      address(_havven), // havven contract is the fee authority
+                      _havven, // havven contract is the fee authority
                       initialState, // Construct a new state_owner
                       _owner)
         public
