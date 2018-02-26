@@ -3,10 +3,11 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       Owned.sol
-version:    0.2
+version:    0.3
 author:     Anton Jurisevic
+            Dominic Romanowski
 
-date:       2018-1-16
+date:       2018-2-26
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -29,8 +30,6 @@ pragma solidity ^0.4.20;
 contract Owned {
     address public owner;
     address nominatedOwner;
-    uint nominationTime;
-    uint constant forceDelay = 1 days;
 
     function Owned(address _owner)
         public
@@ -43,7 +42,6 @@ contract Owned {
         onlyOwner
     {
         nominatedOwner = newOwner;
-        nominationTime = now;
         NewOwnerNominated(newOwner);
     }
 
@@ -59,14 +57,6 @@ contract Owned {
         public
     {
         require(msg.sender == nominatedOwner);
-        _setOwner();
-    }
-
-    function forceAcceptOwnership()
-        public
-        onlyOwner
-    {
-        require(nominationTime + forceDelay < now);
         _setOwner();
     }
 
