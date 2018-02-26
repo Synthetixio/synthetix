@@ -16,10 +16,14 @@ Progress (queries) - TBA
 
 #### High ####
 
-1. Fixed (motions indexed): Vote Manipulation via Improper Variable Resetting
-2. Fixed (current weight ensured): Inaccurate Vote Calculation due to Outdated Average Balance **
-3. Progress: Token Wrapping Prevention Bypass
-4. Progress: Arbitrary Dependednt Contract Address Modification
+##### 1. Vote Manipulation via Improper Variable Resetting #####
+Fixed - motions indexed
+##### 2. Inaccurate Vote Calculation due to Outdated Average Balance #####
+Fixed - current weight ensured
+##### 3. Token Wrapping Prevention Bypass #####
+Progress
+##### 4. Arbitrary Dependednt Contract Address Modification #####
+Progress
 
 #### Moderate ####
 
