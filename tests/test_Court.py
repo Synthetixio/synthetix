@@ -7,7 +7,10 @@ from utils.testutils import generate_topic_event_map, get_event_data_from_log
 from utils.testutils import ZERO_ADDRESS
 
 
-SOLIDITY_SOURCES = ["tests/contracts/PublicCourt.sol", "contracts/EtherNomin.sol", "tests/contracts/PublicHavven.sol"]
+SOLIDITY_SOURCES = ["tests/contracts/PublicCourt.sol",
+                    "contracts/EtherNomin.sol",
+                    "tests/contracts/PublicHavven.sol",
+                    "contracts/Proxy.sol"]
 
 
 def deploy_public_court():
@@ -23,12 +26,23 @@ def deploy_public_court():
     court_contract, court_txr = attempt_deploy(compiled, 'PublicCourt', MASTER,
                                                [havven_contract.address, nomin_contract.address, MASTER])
 
+    # Install proxies
+    havven_proxy, _ = attempt_deploy(compiled, 'Proxy',
+                                     MASTER, [havven_contract.address, MASTER])
+    mine_tx(havven_contract.functions.setProxy(havven_proxy.address).transact({'from': MASTER}))
+    proxy_havven = W3.eth.contract(address=havven_proxy.address, abi=compiled['PublicHavven']['abi'])
+
+    nomin_proxy, _ = attempt_deploy(compiled, 'Proxy',
+                                    MASTER, [nomin_contract.address, MASTER])
+    mine_tx(nomin_contract.functions.setProxy(nomin_proxy.address).transact({'from': MASTER}))
+    proxy_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['EtherNomin']['abi'])
+
     txs = [havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
            nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER})]
     attempt(mine_txs, [txs], "Linking contracts... ")
 
     print("\nDeployment complete.\n")
-    return havven_contract, nomin_contract, court_contract, nomin_abi, court_abi
+    return proxy_havven, proxy_nomin, havven_proxy, nomin_proxy, havven_contract, nomin_contract, court_contract, nomin_abi, court_abi
 
 
 def setUpModule():
@@ -51,7 +65,7 @@ class TestCourt(unittest.TestCase):
         cls.assertReverts = assertReverts
         cls.assertClose = assertClose
 
-        cls.havven, cls.nomin, cls.court, cls.nomin_abi, cls.court_abi = deploy_public_court()
+        cls.havven, cls.nomin, cls.havven_proxy, cls.nomin_proxy, cls.havven_real, cls.nomin_real, cls.court, cls.nomin_abi, cls.court_abi = deploy_public_court()
 
         # Event stuff
         cls.court_event_dict = generate_topic_event_map(cls.court_abi)
