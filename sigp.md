@@ -3,44 +3,46 @@
 ## Introduction ##
 In this document, we respond to the issues raised in Sigma Prime's initial audit of Havven.
 
-Fixed (notes) - Suggested change has been implemented
-Not Implemented (reason)- Suggested change not implemented
-Progress (queries) - TBA
+Fixed - Suggested change has been implemented
+Not Implemented - Suggested change not implemented
+Progress - TBA
 
 ### ERC20 Implementation ###
 
-1. Progress (clarify erc20state): Initial creation of ERC20FeeToken and ERC20Token do not fire the transfer event with the 0x0 address as the sender
-2. Fixed: Decimals variable is of type uint256, not the specified uint8 (SafeDecimalMath.sol[38])
+###### 1. Initial creation of ERC20FeeToken and ERC20Token do not fire the transfer event with the 0x0 address as the sender ######
+Progress - clarify erc20state
+###### 2. Decimals variable is of type uint256, not the specified uint8 (SafeDecimalMath.sol[38]) ######
+Fixed
 
 ### Recommendations ###
 
 #### High ####
 
-##### 1. Vote Manipulation via Improper Variable Resetting #####
+###### 1. Vote Manipulation via Improper Variable Resetting ######
 Fixed - motions indexed
-##### 2. Inaccurate Vote Calculation due to Outdated Average Balance #####
+###### 2. Inaccurate Vote Calculation due to Outdated Average Balance ######
 Fixed - current weight ensured
-##### 3. Token Wrapping Prevention Bypass #####
+###### 3. Token Wrapping Prevention Bypass ######
 Progress
-##### 4. Arbitrary Dependednt Contract Address Modification #####
+###### 4. Arbitrary Dependednt Contract Address Modification ######
 Progress
 
 #### Moderate ####
 
-##### 1. Inactive Owner Leading to User Fund Lockups #####
+###### 1. Inactive Owner Leading to User Fund Lockups ######
 Progress
 
 #### Low ####
 
-##### 1. Insufficient Hardening of Contract Ownership Transfer #####
+###### 1. Insufficient Hardening of Contract Ownership Transfer ######
 Fixed - Implemented Claimable
-##### 2. Fixed: Insufficient Receipient Address Validation #####
+###### 2. Fixed: Insufficient Receipient Address Validation ######
 Fixed - no 0x0
-##### 3. Insufficient Transfer Fee Rate Validation #####
+###### 3. Insufficient Transfer Fee Rate Validation ######
 Not Implemented
-##### 4. Duplicate Event Call #####
+###### 4. Duplicate Event Call ######
 Progress
-##### 5. Lack of Vesting Periods Validation #####
+###### 5. Lack of Vesting Periods Validation ######
 Progress
 
 #### General Suggestions ####
