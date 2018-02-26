@@ -224,7 +224,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
     {
         // If fees need to be withdrawn into this contract, then withdraw them.
         if (!havven.hasWithdrawnLastPeriodFees(this)) {
-            withdrawFeePool();
+            havven.withdrawFeeEntitlement();
             // Since fees were remitted back to havven last time the fee period rolled over,
             // which would set feePool()'s result to zero, so we are justified in using it
             // as the withdrawn quantity here.

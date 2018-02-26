@@ -23,25 +23,25 @@ Fixed - motions indexed
 ###### 2. Inaccurate Vote Calculation due to Outdated Average Balance ######
 Fixed - current weight ensured
 ###### 3. Token Wrapping Prevention Bypass ######
-Progress
+Not implemented
 ###### 4. Arbitrary Dependednt Contract Address Modification ######
-Progress
+Not implemented
 
 #### Moderate ####
 
 ###### 1. Inactive Owner Leading to User Fund Lockups ######
-Progress
+Fixed - HavvenEscrow[227]
 
 #### Low ####
 
 ###### 1. Insufficient Hardening of Contract Ownership Transfer ######
 Fixed - Implemented Claimable
 ###### 2. Fixed: Insufficient Receipient Address Validation ######
-Fixed - no 0x0
+Fixed - no 0x0 allowed in `_to` or `_from` in both transfer and transferFrom
 ###### 3. Insufficient Transfer Fee Rate Validation ######
-Not Implemented
+Not Implemented - 
 ###### 4. Duplicate Event Call ######
-Progress
+Fixed - No longer duplicating event
 ###### 5. Lack of Vesting Periods Validation ######
 Progress
 
@@ -50,7 +50,7 @@ Progress
 ##### SafeDecimalMath #####
 
 ###### 1. Assert vs Require ######
-Not Implemented - gas costs 
+Not Implemented - extra gas costs 
 
 ##### Court #####
 
@@ -66,7 +66,7 @@ Fixed
 ###### 2. Variable naming in parameter could be changed from wei to eth [193] ######
 Progress
 ###### 3. Inconsistent variable naming in parameters initialEtherPrice should be `_initialEtherPrice_` ######
-Not Implemented
+Not Implemented - `_` only used when parameter name is the same as variable name.
 ###### 4. Make variables public [87, 90, 94] ######
 Not Implemented
 ###### 5. Make it very clear that variables should be supplied as multiples of UNIT ######
