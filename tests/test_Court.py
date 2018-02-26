@@ -182,8 +182,8 @@ class TestCourt(unittest.TestCase):
 
     def test_constructor(self):
         self.assertEqual(self.owner(), MASTER)
-        self.assertEqual(self.havven.address, self.getHavven())
-        self.assertEqual(self.nomin.address, self.getNomin())
+        self.assertEqual(self.havven_real.address, self.getHavven())
+        self.assertEqual(self.nomin_real.address, self.getNomin())
         self.assertEqual(self.minStandingBalance(), 100 * UNIT)
         self.assertEqual(self.votingPeriod(), 1 * self.weeks)
         self.assertEqual(self.MIN_VOTING_PERIOD(), 3 * self.days)
