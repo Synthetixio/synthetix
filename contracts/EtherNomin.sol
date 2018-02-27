@@ -456,14 +456,16 @@ contract EtherNomin is ERC20FeeToken {
         public
         notLiquidating
         payable
+        optionalProxy
     {
         // Price staleness check occurs inside the call to purchaseEtherCost.
         require(n >= MINIMUM_PURCHASE &&
                 msg.value == purchaseCostEther(n));
+        address messageSender = proxy.messageSender();
         // sub requires that nominPool >= n
         nominPool = safeSub(nominPool, n);
-        state.setBalance(msg.sender, safeAdd(state.balanceOf(msg.sender), n));
-        Purchase(msg.sender, msg.sender, n, msg.value);
+        state.setBalance(messageSender, safeAdd(state.balanceOf(messageSender), n));
+        Purchase(messageSender, messageSender, n, msg.value);
     }
 
     /* Sends n nomins to the pool from the sender, in exchange for
@@ -474,6 +476,7 @@ contract EtherNomin is ERC20FeeToken {
      *     Price is stale if not in liquidation. */
     function sell(uint n)
         public
+        optionalProxy
     {
 
         // Price staleness check occurs inside the call to saleProceedsEther,
@@ -488,11 +491,13 @@ contract EtherNomin is ERC20FeeToken {
 
         require(this.balance >= proceeds);
 
+        address messageSender = proxy.messageSender();
+
         // sub requires that the balance is greater than n
-        state.setBalance(msg.sender, safeSub(state.balanceOf(msg.sender), n));
+        state.setBalance(messageSender, safeSub(state.balanceOf(messageSender), n));
         nominPool = safeAdd(nominPool, n);
-        Sale(msg.sender, msg.sender, n, proceeds);
-        msg.sender.transfer(proceeds);
+        Sale(messageSender, messageSender, n, proceeds);
+        messageSender.transfer(proceeds);
     }
 
     /* Lock nomin purchase function in preparation for destroying the contract.
