@@ -16,7 +16,7 @@ approved:   Samuel Brooks
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
-Havven token contract. Havvens are transferrable ERC20 tokens,
+Havven token contract. Havvens are transferable ERC20 tokens,
 and also give their holders the following privileges.
 An owner of havvens is entitled to a share in the fees levied on
 nomin transactions, and additionally may participate in nomin

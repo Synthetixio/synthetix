@@ -76,7 +76,6 @@ class TestProxy(unittest.TestCase):
         cls.purchaseCostEther = lambda self, n: cls.nomin.functions.purchaseCostEther(n).call()
         cls.etherValue = lambda self, fiat: cls.nomin.functions.etherValue(fiat).call()
 
-
         cls.priceIsStale = lambda self: cls.nomin.functions.priceIsStale().call()
         cls.isLiquidating = lambda self: cls.nomin.functions.isLiquidating().call()
 
