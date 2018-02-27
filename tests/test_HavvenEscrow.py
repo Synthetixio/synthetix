@@ -86,14 +86,6 @@ class TestHavvenEscrow(unittest.TestCase):
 
         cls.havven, cls.nomin, cls.havven_proxy, cls.nomin_proxy, cls.havven_real, cls.nomin_real, cls.court, cls.escrow, cls.construction_block, cls.havven_event_dict = deploy_public_havven()
 
-        # compiled = compile_contracts([ESCROW_SOURCE, HAVVEN_SOURCE, NOMIN_SOURCE])
-        # cls.havven, txr = attempt_deploy(compiled, 'Havven', MASTER, [ZERO_ADDRESS, MASTER])
-        # cls.nomin, txr = attempt_deploy(compiled, 'EtherNomin', MASTER, [cls.havven.address, MASTER, MASTER, 1000 * 10**18, MASTER, ZERO_ADDRESS])
-        # cls.escrow, txr = attempt_deploy(compiled, 'HavvenEscrow', MASTER,
-        #                                  [MASTER, cls.havven.address, cls.nomin.address])
-        # mine_tx(cls.havven.functions.setNomin(cls.nomin.address).transact({'from': MASTER}))
-        # mine_tx(cls.havven.functions.setEscrow(cls.escrow.address).transact({'from': MASTER}))
-
         cls.initial_time = cls.nomin.functions.lastPriceUpdate().call()
 
         cls.h_totalSupply = lambda self: cls.havven.functions.totalSupply().call()
