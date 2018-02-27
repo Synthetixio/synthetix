@@ -33,9 +33,10 @@ pragma solidity ^0.4.20;
 import "contracts/SafeDecimalMath.sol";
 import "contracts/Owned.sol";
 import "contracts/ERC20FeeState.sol";
+import "contracts/Proxy.sol";
 
 
-contract ERC20FeeToken is Owned, SafeDecimalMath {
+contract ERC20FeeToken is Proxyable, SafeDecimalMath {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -60,7 +61,7 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
                            uint initialSupply, address initialBeneficiary,
                            uint _feeRate, address _feeAuthority,
                            ERC20FeeState _state, address _owner)
-        Owned(_owner)
+        Proxyable(_owner)
         public
     {
         name = _name;
@@ -78,7 +79,8 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
 
     function setTransferFeeRate(uint newFeeRate)
         public
-        onlyOwner
+        optionalProxy
+        onlyOwner_Proxy
     {
         require(newFeeRate <= MAX_TRANSFER_FEE_RATE);
         transferFeeRate = newFeeRate;
@@ -87,14 +89,16 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
 
     function setFeeAuthority(address newFeeAuthority)
         public
-        onlyOwner
+        optionalProxy
+        onlyOwner_Proxy
     {
         feeAuthority = newFeeAuthority;
         FeeAuthorityUpdate(newFeeAuthority);
     }
 
     function setState(ERC20FeeState _state)
-        onlyOwner
+        optionalProxy
+        onlyOwner_Proxy
         public
     {
         state = _state;
@@ -189,7 +193,6 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
         }
 
         // Insufficient balance will be handled by the safe subtraction.
-
         state.setBalance(_from, safeSub(state.balanceOf(_from), totalCharge));
         state.setAllowance(_from, msg.sender, safeSub(state.allowance(_from, msg.sender), totalCharge));
         state.setBalance(_to, safeAdd(state.balanceOf(_to), _value));
@@ -289,4 +292,3 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
 
     event FeeAuthorityUpdate(address feeAuthority);
 }
-

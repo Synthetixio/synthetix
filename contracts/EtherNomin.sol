@@ -145,23 +145,26 @@ contract EtherNomin is ERC20FeeToken {
 
     function setOracle(address newOracle)
         public
-        onlyOwner
+        optionalProxy
+        onlyOwner_Proxy
     {
         oracle = newOracle;
         OracleUpdated(newOracle);
     }
 
-    function setCourt(address newCourt)
+    function setCourt(Court newCourt)
         public
-        onlyOwner
+        optionalProxy
+        onlyOwner_Proxy
     {
-        court = Court(newCourt);
+        court = newCourt;
         CourtUpdated(newCourt);
     }
 
     function setBeneficiary(address newBeneficiary)
         public
-        onlyOwner
+        optionalProxy
+        onlyOwner_Proxy
     {
         beneficiary = newBeneficiary;
         BeneficiaryUpdated(newBeneficiary);
@@ -169,7 +172,8 @@ contract EtherNomin is ERC20FeeToken {
 
     function setPoolFeeRate(uint newFeeRate)
         public
-        onlyOwner
+        optionalProxy
+        onlyOwner_Proxy
     {
         require(newFeeRate <= UNIT);
         poolFeeRate = newFeeRate;
@@ -178,7 +182,8 @@ contract EtherNomin is ERC20FeeToken {
 
     function setStalePeriod(uint period)
         public
-        onlyOwner
+        optionalProxy
+        onlyOwner_Proxy
     {
         stalePeriod = period;
         StalePeriodUpdated(period);
@@ -408,7 +413,8 @@ contract EtherNomin is ERC20FeeToken {
      *     Price is stale. */
     function issue(uint n)
         public
-        onlyOwner
+        optionalProxy
+        onlyOwner_Proxy
         payable
         notLiquidating
     {
@@ -428,7 +434,8 @@ contract EtherNomin is ERC20FeeToken {
      *     There are fewer than n nomins in the pool. */
     function burn(uint n)
         public
-        onlyOwner
+        optionalProxy
+        onlyOwner_Proxy
     {
         // Require that there are enough nomins in the accessible pool to burn
         require(nominPool >= n);
@@ -449,14 +456,16 @@ contract EtherNomin is ERC20FeeToken {
         public
         notLiquidating
         payable
+        optionalProxy
     {
         // Price staleness check occurs inside the call to purchaseEtherCost.
         require(n >= MINIMUM_PURCHASE &&
                 msg.value == purchaseCostEther(n));
+        address messageSender = proxy.messageSender();
         // sub requires that nominPool >= n
         nominPool = safeSub(nominPool, n);
-        state.setBalance(msg.sender, safeAdd(state.balanceOf(msg.sender), n));
-        Purchase(msg.sender, msg.sender, n, msg.value);
+        state.setBalance(messageSender, safeAdd(state.balanceOf(messageSender), n));
+        Purchase(messageSender, messageSender, n, msg.value);
     }
 
     /* Sends n nomins to the pool from the sender, in exchange for
@@ -467,6 +476,7 @@ contract EtherNomin is ERC20FeeToken {
      *     Price is stale if not in liquidation. */
     function sell(uint n)
         public
+        optionalProxy
     {
 
         // Price staleness check occurs inside the call to saleProceedsEther,
@@ -481,11 +491,13 @@ contract EtherNomin is ERC20FeeToken {
 
         require(this.balance >= proceeds);
 
+        address messageSender = proxy.messageSender();
+
         // sub requires that the balance is greater than n
-        state.setBalance(msg.sender, safeSub(state.balanceOf(msg.sender), n));
+        state.setBalance(messageSender, safeSub(state.balanceOf(messageSender), n));
         nominPool = safeAdd(nominPool, n);
-        Sale(msg.sender, msg.sender, n, proceeds);
-        msg.sender.transfer(proceeds);
+        Sale(messageSender, messageSender, n, proceeds);
+        messageSender.transfer(proceeds);
     }
 
     /* Lock nomin purchase function in preparation for destroying the contract.
@@ -497,7 +509,8 @@ contract EtherNomin is ERC20FeeToken {
      *     contract already in liquidation; */
     function forceLiquidation()
         public
-        onlyOwner
+        optionalProxy
+        onlyOwner_Proxy
         notLiquidating
     {
         beginLiquidation();
@@ -515,7 +528,8 @@ contract EtherNomin is ERC20FeeToken {
      * the liquidation max. */
     function extendLiquidationPeriod(uint extension)
         public
-        onlyOwner
+        optionalProxy
+        onlyOwner_Proxy
     {
         require(isLiquidating());
         uint sum = safeAdd(liquidationPeriod, extension);
@@ -530,7 +544,8 @@ contract EtherNomin is ERC20FeeToken {
      * or by including enough ether in this transaction. */
     function terminateLiquidation()
         public
-        onlyOwner
+        optionalProxy
+        onlyOwner_Proxy
         priceNotStale
         payable
     {
@@ -547,7 +562,8 @@ contract EtherNomin is ERC20FeeToken {
      * nomins have been sold back into the pool. */
     function selfDestruct()
         public
-        onlyOwner
+        optionalProxy
+        onlyOwner_Proxy
     {
         require(canSelfDestruct());
         SelfDestructed();
@@ -586,7 +602,8 @@ contract EtherNomin is ERC20FeeToken {
      * again accept and transfer nomins. */
     function unfreezeAccount(address target)
         public
-        onlyOwner
+        optionalProxy
+        onlyOwner_Proxy
     {
         if (state.isFrozen(target) && EtherNomin(target) != this) {
             state.setFrozen(target, false);
