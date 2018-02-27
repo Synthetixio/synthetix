@@ -63,21 +63,21 @@ Fixed: The change made to HavvenEscrow[227] removes the duplication of events.
 ###### 5. Lack of Vesting Periods Validation ######
 Fixed: TotalVestedBalance must be <= havvens in escrow contract.
 
-### 3. General Suggestions ###
+### 2.3 General Suggestions ###
 
-#### 3.1 SafeDecimalMath ####
+#### 2.3.1 SafeDecimalMath ####
 
 ###### 1. Assert vs Require ######
 Not Implemented: We have decided against implementing assert due to the extra gas costs associated.
 
-#### 3.2 Court ####
+#### 2.3.2 Court ####
 
 ###### 1. Havven and Nomin addresses not public ######
 Fixed: These variables are now public.
 ###### 2. Court prefix not required [266, 512, 513] ######
 Fixed: Have been removed.
 
-#### 3.3 EtherNomin ####
+#### 2.3.3 EtherNomin ####
 
 ###### 1. Does not need to import Havven.sol and cast can be removed from constructor [62, 123] ######
 Fixed: Removed.
@@ -92,18 +92,18 @@ Fixed: All fixed point variables now carry the suffix `_dec`.
 ###### 6. It may be prudent to allow any address to call terminateLiquidation() ######
 Not Implemented: We do not want any user other than Owner to be able to call `terminateLiquidation()`
 
-#### 3.4 Havven ####
+#### 2.3.4 Havven ####
 
 ###### 1. Does not need to import Court.sol ######
 Fixed:
 ###### 2. LastAverageBalance and penultimateAverageBalance are public and would quite frequently be out-of-date, misleading ######
 Not implemented: added warning in comments.
 
-#### 3.5 ERC20FeeToken ####
+#### 2.3.5 ERC20FeeToken ####
 
 ###### 1. Use of uint256 in contrast to otherwise consistent unit usage [36] ######
 Not implemented: Can't find this.
 
-### 4. Owner Account Privileges ###
+### 3. Owner Account Privileges ###
 
 We understand that there are a significant number of direct and indirect priveleges for the Owner account. We are comfortable with the level of control in this version of Havven. In future, upgraded versions of the contracts will gradually relinquish control.
