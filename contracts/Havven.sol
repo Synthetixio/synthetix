@@ -295,9 +295,15 @@ contract Havven is ERC20Token {
         // Only allow accounts to withdraw fees once per period.
         require(!hasWithdrawnLastPeriodFees[messageSender]);
 
-        uint feesOwed = safeDecDiv(safeDecMul(lastAverageBalance[messageSender],
-                                              lastFeesCollected),
-                                   state.totalSupply());
+        uint feesOwed;
+
+        if (escrow != HavvenEscrow(0)) {
+            feesOwed = escrow.totalVestedAccountBalance(messageSender);
+        }
+
+        feesOwed = safeDecDiv(safeDecMul(safeAdd(feesOwed, lastAverageBalance[messageSender]),
+                                         lastFeesCollected),
+                              state.totalSupply());
 
         hasWithdrawnLastPeriodFees[messageSender] = true;
         if (feesOwed != 0) {
@@ -437,10 +443,6 @@ contract Havven is ERC20Token {
     {
         // If the fee period has rolled over...
         if (feePeriodStartTime + targetFeePeriodDurationSeconds <= now) {
-            // Reclaim any fees from the escrow contract, if it exists.
-            if (escrow != HavvenEscrow(0)) {
-                escrow.remitFees();
-            }
             lastFeesCollected = nomin.feePool();
 
             // Shift the three period start times back one place

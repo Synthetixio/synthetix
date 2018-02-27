@@ -30,7 +30,7 @@ def deploy_public_havven():
                                                 MASTER])
     escrow_contract, escrow_txr = attempt_deploy(compiled, 'HavvenEscrow',
                                                  MASTER,
-                                                 [MASTER, havven_contract.address, nomin_contract.address])
+                                                 [MASTER, havven_contract.address])
 
     # Install proxies
     havven_proxy, _ = attempt_deploy(compiled, 'Proxy',

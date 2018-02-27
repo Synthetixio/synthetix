@@ -6,6 +6,7 @@ from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mi
     UNIT, MASTER, DUMMY, fast_forward, fresh_accounts, take_snapshot, restore_snapshot, ETHER
 from utils.testutils import assertReverts, block_time, assertClose, ZERO_ADDRESS
 
+
 SOLIDITY_SOURCES = ["tests/contracts/PublicHavven.sol", "tests/contracts/PublicEtherNomin.sol",
                     "tests/contracts/FakeCourt.sol", "contracts/Havven.sol"]
 
@@ -36,7 +37,7 @@ def deploy_public_contracts():
     nomin_proxy, _ = attempt_deploy(compiled, 'Proxy',
                                     MASTER, [nomin_contract.address, MASTER])
     mine_tx(nomin_contract.functions.setProxy(nomin_proxy.address).transact({'from': MASTER}))
-    proxy_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['EtherNomin']['abi'])
+    proxy_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['PublicEtherNomin']['abi'])
 
     # Hook up each of those contracts to each other
     txs = [havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
