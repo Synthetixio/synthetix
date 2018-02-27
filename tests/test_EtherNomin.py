@@ -13,6 +13,7 @@ from utils.testutils import ZERO_ADDRESS
 
 ETHERNOMIN_SOURCE = "tests/contracts/PublicEtherNomin.sol"
 FAKECOURT_SOURCE = "tests/contracts/FakeCourt.sol"
+PROXY_SOURCE = "contracts/Proxy.sol"
 
 
 def setUpModule():
@@ -30,7 +31,7 @@ class TestEtherNomin(unittest.TestCase):
         self.initial_time = round(time.time())
         # Reset the price at the start of tests so that it's never stale.
         self.updatePrice(self.oracle(), self.etherPrice(), self.now_block_time() + 1)
-        time.sleep(2)
+        fast_forward(2)
         # Reset the liquidation timestamp so that it's never active.
         owner = self.owner()
         self.forceLiquidation(owner)
@@ -49,7 +50,7 @@ class TestEtherNomin(unittest.TestCase):
     def setUpClass(cls):
         cls.assertReverts = assertReverts
 
-        compiled = compile_contracts([ETHERNOMIN_SOURCE, FAKECOURT_SOURCE],
+        compiled = compile_contracts([ETHERNOMIN_SOURCE, FAKECOURT_SOURCE, PROXY_SOURCE],
                                      remappings=['""=contracts'])
         cls.nomin_abi = compiled['PublicEtherNomin']['abi']
         cls.nomin_event_dict = generate_topic_event_map(cls.nomin_abi)
@@ -59,10 +60,10 @@ class TestEtherNomin(unittest.TestCase):
         cls.nomin_beneficiary = W3.eth.accounts[3]
         cls.nomin_owner = W3.eth.accounts[0]
 
-        cls.nomin, cls.construction_txr = attempt_deploy(compiled, 'PublicEtherNomin', MASTER,
+        cls.nomin_real, cls.construction_txr = attempt_deploy(compiled, 'PublicEtherNomin', MASTER,
                                                          [cls.nomin_havven, cls.nomin_oracle, cls.nomin_beneficiary,
                                                           1000 * UNIT, cls.nomin_owner, ZERO_ADDRESS])
-        cls.construction_price_time = cls.nomin.functions.lastPriceUpdate().call()
+        cls.construction_price_time = cls.nomin_real.functions.lastPriceUpdate().call()
         cls.initial_time = cls.construction_price_time
 
         cls.fake_court, _ = attempt_deploy(compiled, 'FakeCourt', MASTER, [])
@@ -72,8 +73,14 @@ class TestEtherNomin(unittest.TestCase):
         cls.fake_court.setVotePasses = lambda sender, target, status: mine_tx(cls.fake_court.functions.setVotePasses(target, status).transact({'from': sender}))
         cls.fake_court.setTargetMotionID = lambda sender, target, motion_id: mine_tx(cls.fake_court.functions.setTargetMotionID(target, motion_id).transact({'from': sender}))
         cls.fake_court.confiscateBalance = lambda sender, target: mine_tx(cls.fake_court.functions.confiscateBalance(target).transact({'from': sender}))
-        cls.fake_court.setNomin(W3.eth.accounts[0], cls.nomin.address)
-        mine_tx(cls.nomin.functions.setCourt(cls.fake_court.address).transact({'from': cls.nomin_owner}))
+        cls.fake_court.setNomin(W3.eth.accounts[0], cls.nomin_real.address)
+
+        cls.nomin_proxy, _ = attempt_deploy(compiled, 'Proxy',
+                                        MASTER, [cls.nomin_real.address, cls.nomin_owner])
+        mine_tx(cls.nomin_real.functions.setProxy(cls.nomin_proxy.address).transact({'from': cls.nomin_owner}))
+        cls.nomin = W3.eth.contract(address=cls.nomin_proxy.address, abi=compiled['PublicEtherNomin']['abi'])
+
+        mine_tx(cls.nomin_real.functions.setCourt(cls.fake_court.address).transact({'from': cls.nomin_owner}))
 
         cls.owner = lambda self: cls.nomin.functions.owner().call()
         cls.oracle = lambda self: cls.nomin.functions.oracle().call()
@@ -94,7 +101,7 @@ class TestEtherNomin(unittest.TestCase):
         cls.setCourt = lambda self, sender, address: mine_tx(cls.nomin.functions.setCourt(address).transact({'from': sender}))
         cls.setBeneficiary = lambda self, sender, address: mine_tx(cls.nomin.functions.setBeneficiary(address).transact({'from': sender}))
         cls.setPoolFeeRate = lambda self, sender, rate: mine_tx(cls.nomin.functions.setPoolFeeRate(rate).transact({'from': sender}))
-        cls.updatePrice = lambda self, sender, price, timeSent: mine_tx(cls.nomin.functions.updatePrice(price, timeSent).transact({'from': sender}))
+        cls.updatePrice = lambda self, sender, price, timeSent: mine_tx(cls.nomin_real.functions.updatePrice(price, timeSent).transact({'from': sender}))
         cls.setStalePeriod = lambda self, sender, period: mine_tx(cls.nomin.functions.setStalePeriod(period).transact({'from': sender}))
 
         cls.fiatValue = lambda self, eth: cls.nomin.functions.fiatValue(eth).call()
@@ -155,7 +162,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.nominPool(), 0)
         construct_time = block_time(self.construction_txr.blockNumber)
         self.assertEqual(construct_time, self.construction_price_time)
-        self.assertTrue(self.isFrozen(self.nomin.address))
+        self.assertTrue(self.isFrozen(self.nomin_real.address))
 
         # ERC20FeeToken members
         self.assertEqual(self.name(), "Ether-Backed USD Nomins")
@@ -244,7 +251,7 @@ class TestEtherNomin(unittest.TestCase):
         t = self.now_block_time()
         tx_receipt = self.updatePrice(pre_oracle, new_price, t)
         tx_time = W3.eth.getBlock(tx_receipt.blockNumber)['timestamp']
-        time.sleep(2)
+        fast_forward(2)
         self.assertEqual(self.lastPriceUpdate(), t)
         self.assertEqual(self.etherPrice(), new_price)
 
@@ -255,20 +262,20 @@ class TestEtherNomin(unittest.TestCase):
         t = self.now_block_time()
         tx_receipt = self.updatePrice(new_oracle, new_price2, t)
         tx_time = W3.eth.getBlock(tx_receipt.blockNumber)['timestamp']
-        time.sleep(2)
+        fast_forward(2)
 
         self.assertEqual(self.lastPriceUpdate(), t)
         self.assertEqual(self.etherPrice(), new_price2)
 
         # Check if everything works with something in the pool.
         self.updatePrice(new_oracle, UNIT, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         backing = self.etherValue(10 * UNIT)
         self.issue(owner, UNIT, backing)
 
         t = self.now_block_time()
         tx_receipt = self.updatePrice(new_oracle, pre_price, t)
-        time.sleep(2)
+        fast_forward(2)
         tx_time = W3.eth.getBlock(tx_receipt.blockNumber)['timestamp']
         self.assertEqual(self.lastPriceUpdate(), t)
         self.assertEqual(self.etherPrice(), pre_price)
@@ -281,7 +288,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.etherPrice(), pre_price)
         # A transaction that was sent 10 seconds before the above one should fail.
         self.assertReverts(self.updatePrice, new_oracle, new_price2, t - 10)
-        time.sleep(2)
+        fast_forward(2)
 
         # Check that a transaction with the same sentTime doesn't overwrite the most recently received one.
         t = self.now_block_time()
@@ -300,7 +307,7 @@ class TestEtherNomin(unittest.TestCase):
         oracle = self.oracle()
 
         self.updatePrice(oracle, UNIT, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.assertEqual(self.fiatValue(ETHER), ETHER)
         self.assertEqual(self.fiatValue(777 * ETHER), 777 * ETHER)
         self.assertEqual(self.fiatValue(ETHER // 777), ETHER // 777)
@@ -308,7 +315,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.fiatValue(ETHER // 10**12), ETHER // 10**12)
 
         self.updatePrice(oracle, 10**8 * UNIT, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.assertEqual(self.fiatValue(ETHER), 10**8 * ETHER)
         self.assertEqual(self.fiatValue(317 * ETHER), 317 * 10**8 * ETHER)
         self.assertEqual(self.fiatValue(ETHER // 317), 10**8 * (ETHER // 317))
@@ -316,7 +323,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.fiatValue(ETHER // 10**12), ETHER // 10**4)
 
         self.updatePrice(oracle, UNIT // 10**12, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.assertEqual(self.fiatValue(ETHER), ETHER // 10**12)
         self.assertEqual(self.fiatValue(10**15 * ETHER), 10**3 * ETHER)
         self.assertEqual(self.fiatValue((7 * ETHER) // 3), ((7 * ETHER) // 3) // 10**12)
@@ -326,22 +333,24 @@ class TestEtherNomin(unittest.TestCase):
         oracle = self.oracle()
         pre_price = self.etherPrice()
 
-        send_value(owner, self.nomin.address, ETHER)
+        send_value(owner, self.nomin_real.address, ETHER // 2)
+        send_value(owner, self.nomin.address, ETHER // 2)
         self.assertEqual(self.fiatBalance(), pre_price)
         self.updatePrice(oracle, UNIT // 10**12, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.assertEqual(self.fiatBalance(), UNIT // 10**12)
         self.updatePrice(oracle, 300 * UNIT, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.assertEqual(self.fiatBalance(), 300 * UNIT)
-        send_value(owner, self.nomin.address, ETHER)
+        send_value(owner, self.nomin_real.address, ETHER // 2)
+        send_value(owner, self.nomin.address, ETHER // 2)
         self.assertEqual(self.fiatBalance(), 600 * UNIT)
 
     def test_etherValue(self):
         oracle = self.oracle()
 
         self.updatePrice(oracle, UNIT, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.assertEqual(self.etherValue(UNIT), ETHER)
         self.assertEqual(self.etherValue(777 * UNIT), 777 * ETHER)
         self.assertEqual(self.etherValue(UNIT // 777), ETHER // 777)
@@ -349,7 +358,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.etherValue(UNIT // 10**12), ETHER // 10**12)
 
         self.updatePrice(oracle, 10 * UNIT, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.assertEqual(self.etherValue(UNIT), ETHER // 10)
         self.assertEqual(self.etherValue(2 * UNIT), ETHER // 5)
 
@@ -366,24 +375,25 @@ class TestEtherNomin(unittest.TestCase):
 
         # Set the ether price to $1, and issue one nomin against 2 ether.
         self.updatePrice(oracle, UNIT, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.issue(owner, UNIT, 2 * ETHER)
         self.assertEqual(self.collateralisationRatio(), 2 * UNIT)
 
         # Set the ether price to $2, now the collateralisation ratio should double to 4.
         self.updatePrice(oracle, 2 * UNIT, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.assertEqual(self.collateralisationRatio(), 4 * UNIT)
 
         # Now set the ether price to 50 cents, so that the collateralisation is exactly 1
         self.updatePrice(oracle, UNIT // 2, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         # (this should not trigger liquidation)
         self.assertFalse(self.isLiquidating())
         self.assertEqual(self.collateralisationRatio(), UNIT)
 
         # Now double the ether in the contract to 2.
-        send_value(owner, self.nomin.address, 2 * ETHER)
+        send_value(owner, self.nomin.address, ETHER)
+        send_value(owner, self.nomin_real.address, ETHER)
         self.assertEqual(self.collateralisationRatio(), 2 * UNIT)
 
     def test_poolFeeIncurred(self):
@@ -426,7 +436,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.purchaseCostEther(0), 0)
 
         self.updatePrice(oracle, UNIT, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.assertEqual(self.purchaseCostEther(UNIT), UNIT + poolFeeRate)
         self.assertEqual(self.purchaseCostEther(UNIT // 2), (UNIT + poolFeeRate) // 2)
         self.setPoolFeeRate(owner, UNIT // 10**7)
@@ -435,7 +445,7 @@ class TestEtherNomin(unittest.TestCase):
 
         self.setPoolFeeRate(owner, poolFeeRate)
         self.updatePrice(oracle, UNIT // 2, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.assertEqual(self.purchaseCostEther(UNIT // 2), UNIT + poolFeeRate)
         self.assertEqual(self.purchaseCostEther(3 * UNIT), 6 * (UNIT + poolFeeRate))
 
@@ -457,7 +467,7 @@ class TestEtherNomin(unittest.TestCase):
                 qty = int(qty_mult * UNIT)
                 total_qty += qty
                 self.updatePrice(oracle, price, self.now_block_time())
-                time.sleep(2)
+                fast_forward(2)
                 cost = self.purchaseCostEther(qty)
                 total_cost += cost
                 self.buy(owner, qty, cost)
@@ -495,7 +505,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.saleProceedsEther(0), 0)
 
         self.updatePrice(oracle, UNIT, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.assertEqual(self.saleProceedsEther(UNIT), UNIT - poolFeeRate)
         self.assertEqual(self.saleProceedsEther(UNIT // 2), (UNIT - poolFeeRate) // 2)
         self.setPoolFeeRate(owner, UNIT // 10**7)
@@ -504,7 +514,7 @@ class TestEtherNomin(unittest.TestCase):
 
         self.setPoolFeeRate(owner, poolFeeRate)
         self.updatePrice(oracle, UNIT // 2, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.assertEqual(self.saleProceedsEther(UNIT // 2), UNIT - poolFeeRate)
         self.assertEqual(self.saleProceedsEther(3 * UNIT), 6 * (UNIT - poolFeeRate))
 
@@ -533,7 +543,7 @@ class TestEtherNomin(unittest.TestCase):
                 qty = int(qty_mult * UNIT)
                 total_qty += qty
                 self.updatePrice(oracle, price, self.now_block_time())
-                time.sleep(2)
+                fast_forward(2)
                 proceeds = self.saleProceedsEther(qty)
                 total_proceeds += proceeds
                 self.sell(owner, qty)
@@ -548,7 +558,7 @@ class TestEtherNomin(unittest.TestCase):
         owner = self.owner()
         stale_period = self.stalePeriod()
         self.updatePrice(oracle, UNIT, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         # Price is not stale immediately following an update.
         self.assertFalse(self.priceIsStale())
 
@@ -569,7 +579,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertTrue(self.priceIsStale())
 
         self.updatePrice(oracle, UNIT, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.assertFalse(self.priceIsStale()) 
 
         # Lengthening stale periods should not trigger staleness.
@@ -607,7 +617,7 @@ class TestEtherNomin(unittest.TestCase):
 
         # Create some nomins and set a convenient price.
         self.updatePrice(oracle, UNIT, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         pce = self.purchaseCostEther(UNIT)
         self.issue(owner, 3 * UNIT, 7 * UNIT)
         self.buy(owner, UNIT, pce)
@@ -627,7 +637,7 @@ class TestEtherNomin(unittest.TestCase):
         self.liquidationTimestamp()
         self.etherPrice()
         self.lastPriceUpdate()
-        self.isFrozen(self.nomin.address)
+        self.isFrozen(self.nomin_real.address)
         self.setOracle(owner, oracle)
         self.setCourt(owner, court)
         self.setBeneficiary(owner, beneficiary)
@@ -677,7 +687,7 @@ class TestEtherNomin(unittest.TestCase):
 
         # Finally that updating the price gets us out of the stale period
         self.updatePrice(oracle, UNIT, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.assertFalse(self.priceIsStale())
         self.terminateLiquidation(owner)
 
@@ -696,7 +706,7 @@ class TestEtherNomin(unittest.TestCase):
         target = W3.eth.accounts[1]
 
         self.updatePrice(oracle, UNIT, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.issue(owner, 10 * UNIT, 20 * ETHER)
         ethercost = self.purchaseCostEther(10 * UNIT)
         self.buy(owner, 10 * UNIT, ethercost)
@@ -705,7 +715,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.balanceOf(target), 0)
 
         # Should be impossible to transfer to the nomin contract itself.
-        self.assertReverts(self.transfer, owner, self.nomin.address, UNIT)
+        self.assertReverts(self.transfer, owner, self.nomin_real.address, UNIT)
 
         self.transfer(owner, target, 5 * UNIT)
         remainder = 10 * UNIT - self.transferPlusFee(5 * UNIT)
@@ -741,7 +751,7 @@ class TestEtherNomin(unittest.TestCase):
         self.approve(owner, proxy, 10000 * UNIT)
 
         self.updatePrice(oracle, UNIT, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.issue(owner, 10 * UNIT, 20 * ETHER)
         ethercost = self.purchaseCostEther(10 * UNIT)
         self.buy(owner, 10 * UNIT, ethercost)
@@ -750,7 +760,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.balanceOf(target), 0)
 
         # Should be impossible to transfer to the nomin contract itself.
-        self.assertReverts(self.transferFrom, proxy, owner, self.nomin.address, UNIT)
+        self.assertReverts(self.transferFrom, proxy, owner, self.nomin_real.address, UNIT)
 
         self.transferFrom(proxy, owner, target, 5 * UNIT)
         remainder = 10 * UNIT - self.transferPlusFee(5 * UNIT)
@@ -776,7 +786,7 @@ class TestEtherNomin(unittest.TestCase):
 
         # Only the contract owner should be able to issue new nomins.
         self.updatePrice(oracle, UNIT, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.assertReverts(self.issue, W3.eth.accounts[4], UNIT, 2 * ETHER)
 
         self.assertEqual(self.totalSupply(), 0)
@@ -789,34 +799,34 @@ class TestEtherNomin(unittest.TestCase):
         self.issue(owner, UNIT, 2 * ETHER)
         self.assertEqual(self.totalSupply(), UNIT)
         self.assertEqual(self.nominPool(), UNIT)
-        self.assertEqual(get_eth_balance(self.nomin.address), 2 * ETHER)
+        self.assertEqual(get_eth_balance(self.nomin_real.address), 2 * ETHER)
 
         # Issuing more nomins should stack with existing supply
         self.issue(owner, UNIT, 2 * ETHER)
         self.assertEqual(self.totalSupply(), 2 * UNIT)
         self.assertEqual(self.nominPool(), 2 * UNIT)
-        self.assertEqual(get_eth_balance(self.nomin.address), 4 * ETHER)
+        self.assertEqual(get_eth_balance(self.nomin_real.address), 4 * ETHER)
 
         # Issue more into the pool for free if price goes up
         self.updatePrice(oracle, 2 * UNIT, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.assertFalse(self.isLiquidating())
         self.assertReverts(self.issue, owner, 2 * UNIT + 1, 0)
         self.issue(owner, 2 * UNIT, 0)
         self.assertEqual(self.totalSupply(), 4 * UNIT)
         self.assertEqual(self.nominPool(), 4 * UNIT)
-        self.assertEqual(get_eth_balance(self.nomin.address), 4 * ETHER)
+        self.assertEqual(get_eth_balance(self.nomin_real.address), 4 * ETHER)
 
         # provide more than 2x collateral for new issuance if price drops
         self.updatePrice(oracle, UNIT, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.assertFalse(self.isLiquidating())
         self.assertReverts(self.issue, owner, UNIT, 2 * ETHER)
         self.assertReverts(self.issue, owner, UNIT, 6 * ETHER - 1)
         self.issue(owner, UNIT, 6 * ETHER)
         self.assertEqual(self.totalSupply(), 5 * UNIT)
         self.assertEqual(self.nominPool(), 5 * UNIT)
-        self.assertEqual(get_eth_balance(self.nomin.address), 10 * ETHER)
+        self.assertEqual(get_eth_balance(self.nomin_real.address), 10 * ETHER)
 
     def test_burn(self):
         owner = self.owner()
@@ -824,7 +834,7 @@ class TestEtherNomin(unittest.TestCase):
 
         # issue some nomins to be burned
         self.updatePrice(oracle, UNIT, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.issue(owner, 10 * UNIT, 20 * ETHER)
 
         # Only the contract owner should be able to burn nomins.
@@ -847,7 +857,7 @@ class TestEtherNomin(unittest.TestCase):
 
     def test_buy(self):
         self.updatePrice(self.oracle(), UNIT, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         buyer = W3.eth.accounts[4]
 
         # Should not be possible to buy when there's no supply
@@ -894,7 +904,7 @@ class TestEtherNomin(unittest.TestCase):
     def test_sell(self):
         # Prepare a seller who owns some nomins.
         self.updatePrice(self.oracle(), UNIT, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         seller = W3.eth.accounts[4]
         self.issue(self.owner(), 5 * UNIT, 10 * ETHER)
         self.assertEqual(self.totalSupply(), 5 * UNIT)
@@ -950,22 +960,22 @@ class TestEtherNomin(unittest.TestCase):
 
         # Do not liquidate if there's nothing in the pool.
         self.updatePrice(oracle, UNIT // 10, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.assertFalse(self.isLiquidating())
 
         # Issue something so that we can liquidate.
         self.updatePrice(oracle, UNIT, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.issue(owner, UNIT, 2 * UNIT)
 
         # Ordinary price updates don't cause liquidation.
         self.updatePrice(oracle, UNIT // 2, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.assertFalse(self.isLiquidating())
 
         # Price updates inducing sub-unity collateralisation ratios cause liquidation.
         tx_receipt = self.updatePrice(oracle, UNIT // 2 - 1, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.assertTrue(self.isLiquidating())
         self.assertEqual(len(tx_receipt.logs), 2)
         price_update_log = get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[0])
@@ -975,7 +985,7 @@ class TestEtherNomin(unittest.TestCase):
 
         # The auto liquidation check should do nothing when already under liquidation.
         tx_receipt = self.updatePrice(oracle, UNIT // 3 - 1, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.assertEqual(len(tx_receipt.logs), 1)
         price_update_log = get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[0])
         self.assertEqual(price_update_log['event'], 'PriceUpdated')
@@ -1025,16 +1035,16 @@ class TestEtherNomin(unittest.TestCase):
 
         # Should not be able to terminate liquidation if the supply is undercollateralised.
         self.updatePrice(oracle, 2 * UNIT, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.issue(owner, UNIT, UNIT)
         self.updatePrice(oracle, UNIT - 1, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.assertTrue(self.isLiquidating()) # Price update triggers liquidation.
         self.assertReverts(self.terminateLiquidation, owner)
 
         # But if the price recovers we should be fine to terminate.
         self.updatePrice(oracle, UNIT, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.terminateLiquidation(owner)
         self.assertFalse(self.isLiquidating())
 
@@ -1049,7 +1059,7 @@ class TestEtherNomin(unittest.TestCase):
         oracle = self.oracle()
 
         self.updatePrice(oracle, UNIT, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.issue(owner, 2 * UNIT, 4 * UNIT)
         self.buy(owner, UNIT, self.purchaseCostEther(UNIT))
 
@@ -1061,7 +1071,7 @@ class TestEtherNomin(unittest.TestCase):
         fast_forward(seconds=self.liquidationPeriod() + 10)
         self.assertTrue(self.canSelfDestruct()) 
         self.updatePrice(oracle, UNIT, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
 
         self.terminateLiquidation(owner)
         self.sell(owner, UNIT)
@@ -1079,7 +1089,7 @@ class TestEtherNomin(unittest.TestCase):
 
         # Buy some nomins so that we can't short circuit self-destruction.
         self.updatePrice(oracle, UNIT, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.issue(owner, UNIT, 2 * UNIT)
         self.buy(owner, UNIT, self.purchaseCostEther(UNIT))
 
@@ -1109,14 +1119,14 @@ class TestEtherNomin(unittest.TestCase):
         # Should not be able to self-destruct if the period was terminated.
         # Refresh the price so we can terminate liquidation.
         self.updatePrice(self.oracle(), self.etherPrice(), self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.terminateLiquidation(owner)
         self.assertReverts(self.selfDestruct, owner)
 
         # Check that the beneficiary receives the entire balance of the smart contract.
         self.forceLiquidation(owner)
         fast_forward(seconds=self.liquidationPeriod() + 1)
-        value = get_eth_balance(self.nomin.address)
+        value = get_eth_balance(self.nomin_real.address)
         beneficiary = self.beneficiary()
         pre_balance = get_eth_balance(beneficiary)
         self.selfDestruct(owner)
@@ -1130,7 +1140,7 @@ class TestEtherNomin(unittest.TestCase):
 
         # Buy some nomins so that we can't immediately short circuit self-destruction.
         self.updatePrice(oracle, UNIT, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.issue(owner, UNIT, 2 * UNIT)
         self.buy(owner, UNIT // 2, self.purchaseCostEther(UNIT // 2))
 
@@ -1159,7 +1169,7 @@ class TestEtherNomin(unittest.TestCase):
 
         # The target must have some nomins. We will issue 10 for him to buy
         self.updatePrice(self.oracle(), UNIT, self.now_block_time())
-        time.sleep(2)
+        fast_forward(2)
         self.issue(owner, 10 * UNIT, 20 * ETHER)
         ethercost = self.purchaseCostEther(10 * UNIT)
         send_value(owner, target, ethercost)
@@ -1202,8 +1212,8 @@ class TestEtherNomin(unittest.TestCase):
         target = W3.eth.accounts[1]
 
         # The nomin contract itself should not be unfreezable.
-        tx_receipt = self.unfreezeAccount(owner, self.nomin.address)
-        self.assertTrue(self.isFrozen(self.nomin.address))
+        tx_receipt = self.unfreezeAccount(owner, self.nomin_real.address)
+        self.assertTrue(self.isFrozen(self.nomin_real.address))
         self.assertEqual(len(tx_receipt.logs), 0)
 
         # Unfreezing non-frozen accounts should not do anything.
@@ -1230,6 +1240,7 @@ class TestEtherNomin(unittest.TestCase):
         owner = self.owner()
         self.debugWithdrawAllEther(owner, owner)
         self.debugEmptyFeePool(owner)
-        self.assertEqual(get_eth_balance(self.nomin.address), 0)
-        send_value(owner, self.nomin.address, ETHER)
-        self.assertEqual(get_eth_balance(self.nomin.address), ETHER)
+        self.assertEqual(get_eth_balance(self.nomin_real.address), 0)
+        send_value(owner, self.nomin.address, ETHER // 2)
+        send_value(owner, self.nomin_real.address, ETHER // 2)
+        self.assertEqual(get_eth_balance(self.nomin_real.address), ETHER)
