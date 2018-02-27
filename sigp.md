@@ -1,13 +1,11 @@
 # Sigma Prime Mid Audit Update #
-
-## Introduction ##
 The purpose of this document is twofold:
-1. Outline the work done on upgradeability.
+1. Describe the upgradeability work since the audit began.
 2. Respond to the issues raised in Sigma Prime's initial audit of Havven.
 
 ## 1. Upgradeability ##
 
-Since the audit began, the primary focus has been on rearchitecting the contracts so that the system is fully upgradeable. We have decided to use a proxy contract which handles all interactions with the `Havven` and `EtherNomin` contract. We have also decided to factor out balances from the ERC20 implementations.
+Since the audit began, the primary focus has been on rearchitecting the contracts so that the system is upgradeable. We have decided to use a proxy contract which handles all interactions with the `Havven` and `EtherNomin` contract. We have also decided to factor out balances from the ERC20 implementations.
 
 ### New Files ###
 
@@ -25,86 +23,86 @@ Since the audit began, the primary focus has been on rearchitecting the contract
 
 ## 2. Initial Audit Response ##
 
-In this section, we provide responses to the Havven-Audit. They appear in the same order as the audit. Where we have not implemented a suggested change, there is a note outlining the rationale.
+In this section, we respond to the recommendations made in the Havven audit. They appear in the same order as the audit. Where we have not implemented a suggested change, there is a note outlining the rationale.
 
 ### ERC20 Implementation ###
 
 ###### 1. Initial creation of ERC20FeeToken and ERC20Token do not fire the transfer event with the 0x0 address as the sender ######
-Fixed - Firing the transfer event on creation of token state in ERC20, not in ERC20Fee - since no tokens are created initially.
+Fixed: Firing the transfer event on creation of state in ERC20Token, not in ERC20FeeToken - since no tokens are created initially.
 ###### 2. Decimals variable is of type uint256, not the specified uint8 (SafeDecimalMath.sol[38]) ######
-Fixed.
+Fixed: This suggestion has been implemented.
 
 ### Recommendations ###
 
 #### High ####
 
 ###### 1. Vote Manipulation via Improper Variable Resetting ######
-Fixed - motions indexed.
+Fixed: Motions are now indexed so this type of attack is now infeasable.
 ###### 2. Inaccurate Vote Calculation due to Outdated Average Balance ######
-Fixed - current weight ensured.
+Fixed: Crrent vote weight is ensured by recomputing before vote is made.
 ###### 3. Token Wrapping Prevention Bypass ######
-Not implemented - tba.
+Not implemented: The suggested fix (immediate freezing of havvens) has not been implemented at this stage.
 ###### 4. Arbitrary Dependednt Contract Address Modification ######
-Not implemented - We are comfortable with the levle of control granted to Owner.
+Not implemented: We are comfortable with the levle of control granted to Owner.
 
 #### Moderate ####
 
 ###### 1. Inactive Owner Leading to User Fund Lockups ######
-Fixed - HavvenEscrow[227].
+Fixed: The `withdrawFees()` function is now callable by anyone HavvenEscrow[227].
 
 #### Low ####
 
 ###### 1. Insufficient Hardening of Contract Ownership Transfer ######
-Fixed - Implemented Claimable.
+Fixed: Implemented Claimable.
 ###### 2. Fixed: Insufficient Receipient Address Validation ######
-Fixed - No 0x0 allowed in `_to` or `_from` in both transfer and transferFrom.
+Fixed: No 0x0 allowed in `_to` or `_from` in both transfer and transferFrom.
 ###### 3. Insufficient Transfer Fee Rate Validation ######
-Not Implemented - tba.
+Not Implemented: There are other occurences such as in Court - we have decided to remain consistent.
 ###### 4. Duplicate Event Call ######
-Fixed - No longer duplicating event.
+Fixed: The change made to HavvenEscrow[227] removes the duplication of events.
 ###### 5. Lack of Vesting Periods Validation ######
-Fixed - TotalVestedBalance must be <= havvens in escrow contract.
+Fixed: TotalVestedBalance must be <= havvens in escrow contract.
 
 #### General Suggestions ####
 
 ##### SafeDecimalMath #####
 
 ###### 1. Assert vs Require ######
-Not Implemented - extra gas costs.
+Not Implemented: We have decided against implementing assert due to the extra gas costs associated.
 
 ##### Court #####
 
 ###### 1. Havven and Nomin addresses not public ######
-Fixed.
+Fixed: These variables are now public.
 ###### 2. Court prefix not required [266, 512, 513] ######
-Fixed.
+Fixed: Have been removed.
 
 ##### EtherNomin #####
 
 ###### 1. Does not need to import Havven.sol and cast can be removed from constructor [62, 123] ######
-Fixed.
+Fixed: Removed.
 ###### 2. Variable naming in parameter could be changed from wei to eth [193] ######
-Fixed - Have implemented suffix `_dec` to variables which are fixed point values.
+Fixed: Have implemented suffix `_dec` to variables which are fixed point values.
 ###### 3. Inconsistent variable naming in parameters initialEtherPrice should be `_initialEtherPrice_` ######
-Not Implemented - `_` only used when parameter name is the same as variable name.
+Not Implemented: `_` only used when parameter name is the same as variable name.
 ###### 4. Make variables public [87, 90, 94] ######
-Not Implemented - tba.
+Not Implemented: tba.
 ###### 5. Make it very clear that variables should be supplied as multiples of UNIT ######
-Progress.
+Fixed: All fixed point variables now carry the suffix `_dec`.
 ###### 6. It may be prudent to allow any address to call terminateLiquidation() ######
-Not Implemented - tba.
+Not Implemented: We do not want any user other than Owner to be able to call `terminateLiquidation()`
 
 ##### Havven #####
 
 ###### 1. Does not need to import Court.sol ######
-Fixed.
+Fixed:
 ###### 2. LastAverageBalance and penultimateAverageBalance are public and would quite frequently be out-of-date, misleading ######
-Not implemented - added warning in comments.
+Not implemented: added warning in comments.
 
 ##### ERC20FeeToken #####
 
 ###### 1. Use of uint256 in contrast to otherwise consistent unit usage [36] ######
-Not implemented - Can't find this.
+Not implemented: Can't find this.
 
 ### Owner Account Privileges ###
 
