@@ -13,6 +13,7 @@ from utils.testutils import ZERO_ADDRESS
 
 ETHERNOMIN_SOURCE = "tests/contracts/PublicEtherNomin.sol"
 FAKECOURT_SOURCE = "tests/contracts/FakeCourt.sol"
+PROXY_SOURCE = "contracts/Proxy.sol"
 
 
 def setUpModule():
@@ -49,7 +50,7 @@ class TestEtherNomin(unittest.TestCase):
     def setUpClass(cls):
         cls.assertReverts = assertReverts
 
-        compiled = compile_contracts([ETHERNOMIN_SOURCE, FAKECOURT_SOURCE],
+        compiled = compile_contracts([ETHERNOMIN_SOURCE, FAKECOURT_SOURCE, PROXY_SOURCE],
                                      remappings=['""=contracts'])
         cls.nomin_abi = compiled['PublicEtherNomin']['abi']
         cls.nomin_event_dict = generate_topic_event_map(cls.nomin_abi)
@@ -59,10 +60,10 @@ class TestEtherNomin(unittest.TestCase):
         cls.nomin_beneficiary = W3.eth.accounts[3]
         cls.nomin_owner = W3.eth.accounts[0]
 
-        cls.nomin, cls.construction_txr = attempt_deploy(compiled, 'PublicEtherNomin', MASTER,
+        cls.nomin_real, cls.construction_txr = attempt_deploy(compiled, 'PublicEtherNomin', MASTER,
                                                          [cls.nomin_havven, cls.nomin_oracle, cls.nomin_beneficiary,
                                                           1000 * UNIT, cls.nomin_owner, ZERO_ADDRESS])
-        cls.construction_price_time = cls.nomin.functions.lastPriceUpdate().call()
+        cls.construction_price_time = cls.nomin_real.functions.lastPriceUpdate().call()
         cls.initial_time = cls.construction_price_time
 
         cls.fake_court, _ = attempt_deploy(compiled, 'FakeCourt', MASTER, [])
@@ -72,8 +73,14 @@ class TestEtherNomin(unittest.TestCase):
         cls.fake_court.setVotePasses = lambda sender, target, status: mine_tx(cls.fake_court.functions.setVotePasses(target, status).transact({'from': sender}))
         cls.fake_court.setTargetMotionID = lambda sender, target, motion_id: mine_tx(cls.fake_court.functions.setTargetMotionID(target, motion_id).transact({'from': sender}))
         cls.fake_court.confiscateBalance = lambda sender, target: mine_tx(cls.fake_court.functions.confiscateBalance(target).transact({'from': sender}))
-        cls.fake_court.setNomin(W3.eth.accounts[0], cls.nomin.address)
-        mine_tx(cls.nomin.functions.setCourt(cls.fake_court.address).transact({'from': cls.nomin_owner}))
+        cls.fake_court.setNomin(W3.eth.accounts[0], cls.nomin_real.address)
+
+        cls.nomin_proxy, _ = attempt_deploy(compiled, 'Proxy',
+                                        MASTER, [cls.nomin_real.address, cls.nomin_owner])
+        mine_tx(cls.nomin_real.functions.setProxy(cls.nomin_proxy.address).transact({'from': cls.nomin_owner}))
+        cls.nomin = W3.eth.contract(address=cls.nomin_proxy.address, abi=compiled['PublicEtherNomin']['abi'])
+
+        mine_tx(cls.nomin_real.functions.setCourt(cls.fake_court.address).transact({'from': cls.nomin_owner}))
 
         cls.owner = lambda self: cls.nomin.functions.owner().call()
         cls.oracle = lambda self: cls.nomin.functions.oracle().call()
@@ -94,7 +101,7 @@ class TestEtherNomin(unittest.TestCase):
         cls.setCourt = lambda self, sender, address: mine_tx(cls.nomin.functions.setCourt(address).transact({'from': sender}))
         cls.setBeneficiary = lambda self, sender, address: mine_tx(cls.nomin.functions.setBeneficiary(address).transact({'from': sender}))
         cls.setPoolFeeRate = lambda self, sender, rate: mine_tx(cls.nomin.functions.setPoolFeeRate(rate).transact({'from': sender}))
-        cls.updatePrice = lambda self, sender, price, timeSent: mine_tx(cls.nomin.functions.updatePrice(price, timeSent).transact({'from': sender}))
+        cls.updatePrice = lambda self, sender, price, timeSent: mine_tx(cls.nomin_real.functions.updatePrice(price, timeSent).transact({'from': sender}))
         cls.setStalePeriod = lambda self, sender, period: mine_tx(cls.nomin.functions.setStalePeriod(period).transact({'from': sender}))
 
         cls.fiatValue = lambda self, eth: cls.nomin.functions.fiatValue(eth).call()
