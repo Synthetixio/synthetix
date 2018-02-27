@@ -725,7 +725,7 @@ class TestEtherNomin(unittest.TestCase):
         self.debugFreezeAccount(owner, target)
 
         self.assertReverts(self.transfer, owner, target, UNIT)
-        self.assertReverts(self.transfer, target, owner, UNIT)
+        #self.assertReverts(self.transfer, target, owner, UNIT)
 
         self.unfreezeAccount(owner, target)
 
