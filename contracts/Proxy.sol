@@ -43,6 +43,7 @@ contract Proxy is Owned {
 
     function () 
         public
+        payable
     {
         messageSender = msg.sender;
         assembly {
