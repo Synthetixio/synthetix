@@ -173,7 +173,7 @@ contract EtherNomin is ERC20FeeToken {
     {
         require(newFeeRate <= UNIT);
         poolFeeRate_dec = newFeeRate;
-        poolFeeRateUpdated(newFeeRate);
+        PoolFeeRateUpdated(newFeeRate);
     }
 
     function setStalePeriod(uint period)

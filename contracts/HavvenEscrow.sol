@@ -272,6 +272,8 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         // No empty or already-passed vesting entries allowed.
         require(now < time);
         require(quantity != 0);
+        totalVestedBalance = safeAdd(totalVestedBalance, quantity);
+        require(totalVestedBalance <= havven.balanceOf(this));
 
         if (vestingSchedules[account].length == 0) {
             totalVestedAccountBalance[account] = quantity;
@@ -283,8 +285,6 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         }
 
         vestingSchedules[account].push([time, quantity]);
-        totalVestedBalance = safeAdd(totalVestedBalance, quantity);
-        require(totalVestedBalance <= havven.balanceOf(this));
     }
 
     /* Construct a vesting schedule to release a quantity of havvens at regular intervals ending
