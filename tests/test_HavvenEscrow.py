@@ -2,15 +2,58 @@ import unittest
 import time
 
 import utils.generalutils
-from utils.deployutils import compile_contracts, attempt_deploy, mine_tx, MASTER, DUMMY, take_snapshot,\
-    restore_snapshot, fresh_account, fresh_accounts, UNIT, fast_forward
 from utils.testutils import assertReverts, assertClose, block_time
-from utils.testutils import ZERO_ADDRESS
-from utils.generalutils import to_seconds
+from utils.testutils import ZERO_ADDRESS, generate_topic_event_map
 
-ESCROW_SOURCE = "contracts/HavvenEscrow.sol"
-HAVVEN_SOURCE = "contracts/Havven.sol"
-NOMIN_SOURCE = "contracts/EtherNomin.sol"
+from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mine_txs, mine_tx, \
+    UNIT, MASTER, DUMMY, to_seconds, fast_forward, fresh_account, fresh_accounts, take_snapshot, restore_snapshot
+
+SOLIDITY_SOURCES = ["tests/contracts/PublicHavven.sol", "contracts/EtherNomin.sol",
+                    "contracts/Court.sol", "contracts/HavvenEscrow.sol",
+                    "contracts/Proxy.sol"]
+
+
+def deploy_public_havven():
+    print("Deployment initiated.\n")
+
+    compiled = attempt(compile_contracts, [SOLIDITY_SOURCES], "Compiling contracts... ")
+
+    # Deploy contracts
+    havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven',
+                                              MASTER, [ZERO_ADDRESS, MASTER])
+    hvn_block = W3.eth.blockNumber
+    nomin_contract, nom_txr = attempt_deploy(compiled, 'EtherNomin',
+                                             MASTER,
+                                             [havven_contract.address, MASTER, MASTER,
+                                              1000 * UNIT, MASTER, ZERO_ADDRESS])
+    court_contract, court_txr = attempt_deploy(compiled, 'Court',
+                                               MASTER,
+                                               [havven_contract.address, nomin_contract.address,
+                                                MASTER])
+    escrow_contract, escrow_txr = attempt_deploy(compiled, 'HavvenEscrow',
+                                                 MASTER,
+                                                 [MASTER, havven_contract.address, nomin_contract.address])
+
+    # Install proxies
+    havven_proxy, _ = attempt_deploy(compiled, 'Proxy',
+                                     MASTER, [havven_contract.address, MASTER])
+    mine_tx(havven_contract.functions.setProxy(havven_proxy.address).transact({'from': MASTER}))
+    proxy_havven = W3.eth.contract(address=havven_proxy.address, abi=compiled['PublicHavven']['abi'])
+
+    nomin_proxy, _ = attempt_deploy(compiled, 'Proxy',
+                                    MASTER, [nomin_contract.address, MASTER])
+    mine_tx(nomin_contract.functions.setProxy(nomin_proxy.address).transact({'from': MASTER}))
+    proxy_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['EtherNomin']['abi'])
+
+    # Hook up each of those contracts to each other
+    txs = [proxy_havven.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
+           proxy_nomin.functions.setCourt(court_contract.address).transact({'from': MASTER})]
+    attempt(mine_txs, [txs], "Linking contracts... ")
+
+    havven_event_dict = generate_topic_event_map(compiled['PublicHavven']['abi'])
+
+    print("\nDeployment complete.\n")
+    return proxy_havven, proxy_nomin, havven_proxy, nomin_proxy, havven_contract, nomin_contract, court_contract, escrow_contract, hvn_block, havven_event_dict
 
 
 def setUpModule():
@@ -41,13 +84,15 @@ class TestHavvenEscrow(unittest.TestCase):
         cls.assertReverts = assertReverts
         cls.assertClose = assertClose
 
-        compiled = compile_contracts([ESCROW_SOURCE, HAVVEN_SOURCE, NOMIN_SOURCE])
-        cls.havven, txr = attempt_deploy(compiled, 'Havven', MASTER, [ZERO_ADDRESS, MASTER])
-        cls.nomin, txr = attempt_deploy(compiled, 'EtherNomin', MASTER, [cls.havven.address, MASTER, MASTER, 1000 * 10**18, MASTER, ZERO_ADDRESS])
-        cls.escrow, txr = attempt_deploy(compiled, 'HavvenEscrow', MASTER,
-                                         [MASTER, cls.havven.address, cls.nomin.address])
-        mine_tx(cls.havven.functions.setNomin(cls.nomin.address).transact({'from': MASTER}))
-        mine_tx(cls.havven.functions.setEscrow(cls.escrow.address).transact({'from': MASTER}))
+        cls.havven, cls.nomin, cls.havven_proxy, cls.nomin_proxy, cls.havven_real, cls.nomin_real, cls.court, cls.escrow, cls.construction_block, cls.havven_event_dict = deploy_public_havven()
+
+        # compiled = compile_contracts([ESCROW_SOURCE, HAVVEN_SOURCE, NOMIN_SOURCE])
+        # cls.havven, txr = attempt_deploy(compiled, 'Havven', MASTER, [ZERO_ADDRESS, MASTER])
+        # cls.nomin, txr = attempt_deploy(compiled, 'EtherNomin', MASTER, [cls.havven.address, MASTER, MASTER, 1000 * 10**18, MASTER, ZERO_ADDRESS])
+        # cls.escrow, txr = attempt_deploy(compiled, 'HavvenEscrow', MASTER,
+        #                                  [MASTER, cls.havven.address, cls.nomin.address])
+        # mine_tx(cls.havven.functions.setNomin(cls.nomin.address).transact({'from': MASTER}))
+        # mine_tx(cls.havven.functions.setEscrow(cls.escrow.address).transact({'from': MASTER}))
 
         cls.initial_time = cls.nomin.functions.lastPriceUpdate().call()
 
