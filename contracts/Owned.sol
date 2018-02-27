@@ -16,10 +16,14 @@ approved:   Samuel Brooks
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
-An ownable contract, to be inherited by other contracts.
-Requires its owner to be explicitly set in the constructor,
-provides onlyOwner access modifier and setOwner function,
-which itself must only be callable by the current owner.
+An Owned contract, to be inherited by other contracts.
+Requires its owner to be explicitly set in the constructor.
+Provides an onlyOwner access modifier.
+
+To change owner, the current owner must nominate the next owner,
+who then has to accept the nomination. The nomination can be
+cancelled before it is accepted by the new owner by having the
+previous owner change the nomination (setting it to 0).
 
 -----------------------------------------------------------------
 */
