@@ -92,15 +92,7 @@ contract ERC20Token is SafeDecimalMath, Proxyable {
         public
     {
         state = _state;
-    }
-    
-    /*
-    function setTotalSupply(uint _val)
-        onlyOwner
-        public
-    {
-        state.setTotalSupply(_val);
-    }*/
+    } 
 
     function transfer(address messageSender, address _to, uint _value)
         public
