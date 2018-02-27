@@ -657,7 +657,7 @@ contract EtherNomin is ERC20FeeToken {
 
     event LiquidationExtended(uint extension);
 
-    event poolFeeRateUpdated(uint newFeeRate);
+    event PoolFeeRateUpdated(uint newFeeRate);
 
     event SelfDestructed();
 
