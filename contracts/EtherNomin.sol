@@ -364,22 +364,25 @@ contract EtherNomin is ERC20FeeToken {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /* Override ERC20 transfer function in order to check
-     * whether the sender or recipient account is frozen. */
+     * whether the recipient account is frozen. Note that there is
+     * no need to check whether the sender has a frozen account,
+     * since their funds have already been confiscated,
+     * and no new funds can be transferred to it.*/
     function transfer(address _to, uint _value)
         public
         returns (bool)
     {
-        require(!(state.isFrozen(msg.sender) || state.isFrozen(_to)));
+        require(!state.isFrozen(_to));
         return super.transfer(_to, _value);
     }
 
     /* Override ERC20 transferFrom function in order to check
-     * whether the sender or recipient account is frozen. */
+     * whether the recipient account is frozen. */
     function transferFrom(address _from, address _to, uint _value)
         public
         returns (bool)
     {
-        require(!(state.isFrozen(_from) || state.isFrozen(_to)));
+        require(!state.isFrozen(_to));
         return super.transferFrom(_from, _to, _value);
     }
 
