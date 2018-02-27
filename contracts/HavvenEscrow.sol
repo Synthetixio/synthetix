@@ -6,6 +6,7 @@ file:       HavvenEscrow.sol
 version:    0.3
 author:     Anton Jurisevic
             Dominic Romanowski
+            Mike Spain
 
 date:       2018-02-07
 
@@ -224,7 +225,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
     {
         // If fees need to be withdrawn into this contract, then withdraw them.
         if (!havven.hasWithdrawnLastPeriodFees(this)) {
-            withdrawFeePool();
+            havven.withdrawFeeEntitlement();
             // Since fees were remitted back to havven last time the fee period rolled over,
             // which would set feePool()'s result to zero, so we are justified in using it
             // as the withdrawn quantity here.
@@ -271,6 +272,8 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         // No empty or already-passed vesting entries allowed.
         require(now < time);
         require(quantity != 0);
+        totalVestedBalance = safeAdd(totalVestedBalance, quantity);
+        require(totalVestedBalance <= havven.balanceOf(this));
 
         if (vestingSchedules[account].length == 0) {
             totalVestedAccountBalance[account] = quantity;
@@ -282,7 +285,6 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         }
 
         vestingSchedules[account].push([time, quantity]);
-        totalVestedBalance = safeAdd(totalVestedBalance, quantity);
     }
 
     /* Construct a vesting schedule to release a quantity of havvens at regular intervals ending

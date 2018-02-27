@@ -35,10 +35,10 @@ pragma solidity ^0.4.20;
 contract SafeDecimalMath {
 
     // Number of decimal places in the representation.
-    uint public constant decimals = 18;
+    uint8 public constant decimals = 18;
 
     // The number representing 1.0.
-    uint public constant UNIT = 10 ** decimals;
+    uint public constant UNIT = 10 ** uint(decimals);
 
     /* True iff adding x and y will not overflow. */
     function addIsSafe(uint x, uint y)
