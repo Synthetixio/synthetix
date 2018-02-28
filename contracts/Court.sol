@@ -127,8 +127,8 @@ contract Court is Owned, SafeDecimalMath {
     /* ========== STATE VARIABLES ========== */
 
     // The addresses of the token contracts this confiscation court interacts with.
-    Havven havven;
-    EtherNomin nomin;
+    Havven public havven;
+    EtherNomin public nomin;
 
     // The minimum havven balance required to be considered to have standing
     // to begin confiscation proceedings.
@@ -332,7 +332,7 @@ contract Court is Owned, SafeDecimalMath {
         view
         returns (bool)
     {
-        return vote[account][motionID] != Court.Vote.Abstention;
+        return vote[account][motionID] != Vote.Abstention;
     }
 
 
@@ -415,7 +415,7 @@ contract Court is Owned, SafeDecimalMath {
         public
     {
         uint weight = setupVote(motionID);
-        vote[msg.sender][motionID] = Court.Vote.Yea;
+        vote[msg.sender][motionID] = Vote.Yea;
         votesFor[motionID] = safeAdd(votesFor[motionID], weight);
         VoteFor(msg.sender, msg.sender, motionID, motionID, weight);
     }
@@ -426,7 +426,7 @@ contract Court is Owned, SafeDecimalMath {
         public
     {
         uint weight = setupVote(motionID);
-        vote[msg.sender][motionID] = Court.Vote.Nay;
+        vote[msg.sender][motionID] = Vote.Nay;
         votesAgainst[motionID] = safeAdd(votesAgainst[motionID], weight);
         VoteAgainst(msg.sender, msg.sender, motionID, motionID, weight);
     }
@@ -461,7 +461,7 @@ contract Court is Owned, SafeDecimalMath {
         }
 
         voteWeight[msg.sender][motionID] = 0;
-        vote[msg.sender][motionID] = Court.Vote.Abstention;
+        vote[msg.sender][motionID] = Vote.Abstention;
     }
 
     function _closeMotion(uint motionID)
