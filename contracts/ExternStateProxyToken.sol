@@ -84,7 +84,7 @@ contract ExternStateProxyToken is SafeDecimalMath, Proxyable {
     }
 
     function totalSupply()
-        public
+        external
         view
         returns (uint)
     {
@@ -94,8 +94,8 @@ contract ExternStateProxyToken is SafeDecimalMath, Proxyable {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     function setState(TokenState _state)
+        external
         onlyOwner
-        public
     {
         state = _state;
     } 
@@ -132,7 +132,7 @@ contract ExternStateProxyToken is SafeDecimalMath, Proxyable {
     }
 
     function approve(address _spender, uint _value)
-        public
+        external
         optionalProxy
         returns (bool)
     {

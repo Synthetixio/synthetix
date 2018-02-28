@@ -81,7 +81,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
     /* ========== SETTERS ========== */
 
     function setTransferFeeRate(uint newFeeRate)
-        public
+        external
         optionalProxy_onlyOwner
     {
         require(newFeeRate <= MAX_TRANSFER_FEE_RATE);
@@ -90,7 +90,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
     }
 
     function setFeeAuthority(address newFeeAuthority)
-        public
+        external
         optionalProxy_onlyOwner
     {
         feeAuthority = newFeeAuthority;
@@ -98,8 +98,8 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
     }
 
     function setState(FeeTokenState _state)
+        external
         optionalProxy_onlyOwner
-        public
     {
         state = _state;
     }
@@ -107,7 +107,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
     /* ========== VIEWS ========== */
 
     function totalSupply()
-        public
+        external
         view
         returns (uint)
     {
@@ -157,7 +157,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
     // The value that you would need to send so that the recipient receives
     // a specified value.
     function transferPlusFee(uint _value)
-        public
+        external
         view
         returns (uint)
     {
@@ -166,7 +166,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
 
     // The quantity to send in order that the sender spends a certain value of tokens.
     function priceToSpend(uint value)
-        public
+        external
         view
         returns (uint)
     {
@@ -227,7 +227,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
     }
 
     function approve(address _spender, uint _value)
-        public
+        external
         optionalProxy
         returns (bool)
     {
@@ -241,7 +241,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
 
     /* Withdraw tokens from the fee pool into a given account. */
     function withdrawFee(address account, uint value)
-        public
+        external
         returns (bool)
     {
         require(msg.sender == feeAuthority && account != address(0));
@@ -262,7 +262,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
 
     /* Donate tokens from the sender's balance into the fee pool. */
     function donateToFeePool(uint n)
-        public
+        external
         optionalProxy
         returns (bool)
     {
