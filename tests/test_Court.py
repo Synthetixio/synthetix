@@ -528,6 +528,10 @@ class TestCourt(unittest.TestCase):
         motion_id_0 = self.get_motion_index(tx_receipt)
         self.assertTrue(self.motionVoting(motion_id_0))
 
+        # Initial vote balances should be zero.
+        self.assertEqual(self.votesFor(motion_id_0), 0)
+        self.assertEqual(self.votesAgainst(motion_id_0), 0)
+
         # The contract owner can also begin a motion, regardless of the token requirement.
         motion_id_1 = self.get_motion_index(self.beginConfiscationMotion(owner, suspects[1]))
 
@@ -762,7 +766,10 @@ class TestCourt(unittest.TestCase):
 
         # After vote has closed, voteStarTimes and votesFor/votesAgainst should be 0 and suspect should be waiting.
         self.closeMotion(voter, motion_id)
+        self.assertEqual(self.targetMotionID(suspect), 0)
+        self.assertEqual(self.motionTarget(motion_id), ZERO_ADDRESS)
         self.assertEqual(self.votesFor(motion_id), 0)
+        self.assertEqual(self.votesAgainst(motion_id), 0)
         self.assertEqual(self.motionStartTime(motion_id), 0)
         self.assertTrue(self.motionWaiting(motion_id))
 

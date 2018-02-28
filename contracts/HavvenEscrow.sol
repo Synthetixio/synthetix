@@ -191,7 +191,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
     {
         delete vestingSchedules[account];
         totalVestedBalance = safeSub(totalVestedBalance, totalVestedAccountBalance[account]);
-        totalVestedAccountBalance[account] = 0;
+        delete totalVestedAccountBalance[account];
     }
 
     /* Add a new vesting entry at a given time and quantity to an account's schedule.
@@ -252,7 +252,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
     function vest() 
         public
     {
-        uint total = 0;
+        uint total;
         for (uint i = 0; i < numVestingEntries(msg.sender); i++) {
             uint time = getVestingTime(msg.sender, i);
             // The list is sorted; when we reach the first future time, bail out.
