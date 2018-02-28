@@ -144,7 +144,6 @@ contract EtherNomin is ExternStateProxyFeeToken {
     /* ========== SETTERS ========== */
 
     function setOracle(address _oracle)
-        public
         optionalProxy_onlyOwner
     {
         oracle = _oracle;
@@ -152,7 +151,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
     }
 
     function setCourt(Court _court)
-        public
+        external
         optionalProxy_onlyOwner
     {
         court = _court;
@@ -160,7 +159,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
     }
 
     function setBeneficiary(address _beneficiary)
-        public
+        external
         optionalProxy_onlyOwner
     {
         beneficiary = _beneficiary;
@@ -168,7 +167,6 @@ contract EtherNomin is ExternStateProxyFeeToken {
     }
 
     function setPoolFeeRate(uint _poolFeeRate_dec)
-        public
         optionalProxy_onlyOwner
     {
         require(_poolFeeRate_dec <= UNIT);
@@ -177,7 +175,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
     }
 
     function setStalePeriod(uint _stalePeriod)
-        public
+        external
         optionalProxy_onlyOwner
     {
         stalePeriod = _stalePeriod;
