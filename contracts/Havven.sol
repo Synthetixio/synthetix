@@ -180,16 +180,14 @@ contract Havven is ERC20Token {
 
     function setNomin(EtherNomin _nomin) 
         public
-        optionalProxy
-        onlyOwner_Proxy
+        optionalProxy_onlyOwner
     {
         nomin = _nomin;
     }
 
     function setEscrow(HavvenEscrow _escrow)
         public
-        optionalProxy
-        onlyOwner_Proxy
+        optionalProxy_onlyOwner
     {
         escrow = _escrow;
     }
@@ -197,8 +195,7 @@ contract Havven is ERC20Token {
     function setTargetFeePeriodDuration(uint duration)
         public
         postCheckFeePeriodRollover
-        optionalProxy
-        onlyOwner_Proxy
+        optionalProxy_onlyOwner
     {
         require(MIN_FEE_PERIOD_DURATION_SECONDS <= duration &&
                 duration <= MAX_FEE_PERIOD_DURATION_SECONDS);
@@ -215,8 +212,7 @@ contract Havven is ERC20Token {
      * to retrieve any havvens sent to the Havven contract itself. */
     function endow(address account, uint value)
         public
-        optionalProxy
-        onlyOwner_Proxy
+        optionalProxy_onlyOwner
         returns (bool)
     {
 

@@ -116,6 +116,19 @@ contract Proxyable is Owned {
         _;
     }
 
+    // Combine the optionalProxy and onlyOwner_Proxy modifiers.
+    // This is slightly cheaper and safer, since there is an ordering requirement.
+    modifier optionalProxy_onlyOwner
+    {
+        if (Proxy(msg.sender) != proxy) {
+            proxy._setMessageSender(msg.sender);
+            require(msg.sender == owner);
+        } else {
+            require(proxy.messageSender() == owner);
+        }
+        _;
+    }
+
     event ProxyChanged(address proxyAddress);
 
  }
