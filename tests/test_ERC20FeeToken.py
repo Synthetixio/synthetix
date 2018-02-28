@@ -38,7 +38,7 @@ class TestERC20FeeToken(unittest.TestCase):
         cls.erc20fee_event_dict = generate_topic_event_map(cls.erc20fee_abi)
         cls.erc20feetoken_real, cls.construction_txr = attempt_deploy(
             cls.compiled, "ERC20FeeToken", MASTER, ["Test Fee Token", "FEE",
-                                                    0, cls.initial_beneficiary,
+                                                    cls.initial_beneficiary,
                                                     UNIT // 20, cls.fee_authority,
                                                     ZERO_ADDRESS, cls.token_owner]
         )
@@ -112,7 +112,7 @@ class TestERC20FeeToken(unittest.TestCase):
         erc20feetoken, _ = attempt_deploy(self.compiled, 'ERC20FeeToken',
                                           MASTER,
                                           ["Test Fee Token", "FEE",
-                                           0, MASTER, UNIT // 20,
+                                           MASTER, UNIT // 20,
                                            self.fee_authority,
                                            ZERO_ADDRESS, DUMMY])
         self.assertNotEqual(erc20feetoken.functions.state().call(), ZERO_ADDRESS)
@@ -120,7 +120,7 @@ class TestERC20FeeToken(unittest.TestCase):
         erc20feetoken, _ = attempt_deploy(self.compiled, 'ERC20FeeToken',
                                           MASTER,
                                           ["Test Fee Token", "FEE",
-                                           0, MASTER, UNIT // 20,
+                                           MASTER, UNIT // 20,
                                            self.fee_authority,
                                            erc20feestate.address, DUMMY])
         self.assertEqual(erc20feetoken.functions.state().call(), erc20feestate.address)

@@ -209,7 +209,7 @@ class TestERC20FeeState(unittest.TestCase):
         cls.fee_beneficiary = fresh_accounts(1)[0]
         cls.erc20feetoken, cls.construction_txr = attempt_deploy(
             cls.compiled, 'ERC20FeeToken', MASTER,
-            ["Test Token", "TEST", 1000 * UNIT, MASTER, UNIT // 100, cls.fee_beneficiary, ZERO_ADDRESS, MASTER]
+            ["Test Token", "TEST", MASTER, UNIT // 100, cls.fee_beneficiary, ZERO_ADDRESS, MASTER]
         )
         cls.erc20feestate = deploy_state('ERC20FeeState', cls.compiled, MASTER, MASTER, 1000 * UNIT, MASTER,
                                          cls.erc20feetoken.address)
@@ -281,7 +281,7 @@ class TestERC20FeeState(unittest.TestCase):
 
         valid_token, txr = attempt_deploy(
             self.compiled, 'ERC20FeeToken', MASTER,
-            ["Test2", "TEST2", 100 * UNIT, MASTER, UNIT // 100, self.fee_beneficiary, self.erc20feestate.address,
+            ["Test2", "TEST2", MASTER, UNIT // 100, self.fee_beneficiary, self.erc20feestate.address,
              MASTER]
         )
         fake_proxy, _ = attempt_deploy(self.compiled, 'FakeProxy', MASTER, [])
@@ -298,7 +298,7 @@ class TestERC20FeeState(unittest.TestCase):
     def test_balances_remain_after_swap(self):
         valid_token, txr = attempt_deploy(  # initial supply and beneficiary don't have to be set, as state exists
             self.compiled, 'ERC20FeeToken', MASTER,
-            ["Test2", "TEST2", 0, ZERO_ADDRESS, UNIT // 100, self.fee_beneficiary, self.erc20feestate.address, MASTER]
+            ["Test2", "TEST2", ZERO_ADDRESS, UNIT // 100, self.fee_beneficiary, self.erc20feestate.address, MASTER]
         )
         fake_proxy, _ = attempt_deploy(self.compiled, 'FakeProxy', MASTER, [])
         mine_tx(valid_token.functions.setProxy(fake_proxy.address).transact({'from': MASTER}))
@@ -339,7 +339,7 @@ class TestERC20FeeState(unittest.TestCase):
     def test_allowances(self):
         valid_token, txr = attempt_deploy(  # initial supply and beneficiary don't have to be set, as state exists
             self.compiled, 'ERC20FeeToken', MASTER,
-            ["Test2", "TEST2", 0, ZERO_ADDRESS, UNIT // 100, self.fee_beneficiary, self.erc20feestate.address, MASTER]
+            ["Test2", "TEST2", ZERO_ADDRESS, UNIT // 100, self.fee_beneficiary, self.erc20feestate.address, MASTER]
         )
         fake_proxy, _ = attempt_deploy(self.compiled, 'FakeProxy', MASTER, [])
         mine_tx(valid_token.functions.setProxy(fake_proxy.address).transact({'from': MASTER}))
