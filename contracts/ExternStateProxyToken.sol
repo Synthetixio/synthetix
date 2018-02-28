@@ -67,20 +67,20 @@ contract ExternStateProxyToken is SafeDecimalMath, Proxyable {
 
     /* ========== VIEWS ========== */
 
-    function allowance(address _account, address _spender)
+    function allowance(address account, address spender)
         public
         view
         returns (uint)
     {
-        return state.allowance(_account, _spender);
+        return state.allowance(account, spender);
     }
 
-    function balanceOf(address _account)
+    function balanceOf(address account)
         public
         view
         returns (uint)
     {
-        return state.balanceOf(_account);
+        return state.balanceOf(account);
     }
 
     function totalSupply()
@@ -100,54 +100,53 @@ contract ExternStateProxyToken is SafeDecimalMath, Proxyable {
         state = _state;
     } 
 
-    function transfer(address messageSender, address _to, uint _value)
+    function transfer(address messageSender, address to, uint value)
         public
         returns (bool)
     {
-        require(_to != address(0));
+        require(to != address(0));
 
         // Insufficient balance will be handled by the safe subtraction.
-        state.setBalance(messageSender, safeSub(state.balanceOf(messageSender), _value));
-        state.setBalance(_to, safeAdd(state.balanceOf(_to), _value));
+        state.setBalance(messageSender, safeSub(state.balanceOf(messageSender), value));
+        state.setBalance(to, safeAdd(state.balanceOf(to), value));
 
-        Transfer(messageSender, _to, _value);
+        Transfer(messageSender, to, value);
 
         return true;
     }
 
-    function transferFrom(address messageSender, address _from, address _to, uint _value)
+    function transferFrom(address messageSender, address from, address to, uint value)
         public
         returns (bool)
     {
-        require(_from != address(0) && _to != address(0));
+        require(from != address(0) && to != address(0));
 
         // Insufficient balance will be handled by the safe subtraction.
-        state.setBalance(_from, safeSub(state.balanceOf(_from), _value));
-        state.setAllowance(_from, messageSender, safeSub(state.allowance(_from, messageSender), _value));
-        state.setBalance(_to, safeAdd(state.balanceOf(_to), _value));
+        state.setBalance(from, safeSub(state.balanceOf(from), value));
+        state.setAllowance(from, messageSender, safeSub(state.allowance(from, messageSender), value));
+        state.setBalance(to, safeAdd(state.balanceOf(to), value));
 
-        Transfer(_from, _to, _value);
+        Transfer(from, to, value);
 
         return true;
     }
 
-    function approve(address _spender, uint _value)
+    function approve(address spender, uint value)
         public
         optionalProxy
         returns (bool)
     {
         address messageSender = proxy.messageSender();
-        state.setAllowance(messageSender, _spender, _value);
+        state.setAllowance(messageSender, spender, value);
 
-        Approval(messageSender, _spender, _value);
+        Approval(messageSender, spender, value);
 
         return true;
     }
 
     /* ========== EVENTS ========== */
 
-    event Transfer(address indexed _from, address indexed _to, uint _value);
+    event Transfer(address indexed from, address indexed to, uint value);
 
-    event Approval(address indexed _owner, address indexed _spender, uint _value);
-
+    event Approval(address indexed owner, address indexed spender, uint value);
 }

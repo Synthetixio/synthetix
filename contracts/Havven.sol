@@ -225,54 +225,54 @@ contract Havven is ExternStateProxyToken {
 
     /* Override ERC20 transfer function in order to perform
      * fee entitlement recomputation whenever balances are updated. */
-    function transfer(address _to, uint _value)
+    function transfer(address to, uint value)
         public
         optionalProxy
         returns (bool)
     {
-        return _transfer(proxy.messageSender(), _to, _value);
+        return _transfer(proxy.messageSender(), to, value);
     }
 
-    function _transfer(address messageSender, address _to, uint _value)
+    function _transfer(address messageSender, address to, uint value)
         internal
         preCheckFeePeriodRollover
         returns (bool)
     {
 
         uint senderPreBalance = state.balanceOf(messageSender);
-        uint recipientPreBalance = state.balanceOf(_to);
+        uint recipientPreBalance = state.balanceOf(to);
 
         // Perform the transfer: if there is a problem,
         // an exception will be thrown in super.transfer().
-        super.transfer(messageSender, _to, _value);
+        super.transfer(messageSender, to, value);
 
         // Zero-value transfers still update fee entitlement information,
         // and may roll over the fee period.
         adjustFeeEntitlement(messageSender, senderPreBalance);
-        adjustFeeEntitlement(_to, recipientPreBalance);
+        adjustFeeEntitlement(to, recipientPreBalance);
 
         return true;
     }
 
     /* Override ERC20 transferFrom function in order to perform
      * fee entitlement recomputation whenever balances are updated. */
-    function transferFrom(address _from, address _to, uint _value)
+    function transferFrom(address from, address to, uint value)
         public
         preCheckFeePeriodRollover
         optionalProxy
         returns (bool)
     {
-        uint senderPreBalance = state.balanceOf(_from);
-        uint recipientPreBalance = state.balanceOf(_to);
+        uint senderPreBalance = state.balanceOf(from);
+        uint recipientPreBalance = state.balanceOf(to);
 
         // Perform the transfer: if there is a problem,
         // an exception will be thrown in super.transferFrom().
-        super.transferFrom(proxy.messageSender(), _from, _to, _value);
+        super.transferFrom(proxy.messageSender(), from, to, value);
 
         // Zero-value transfers still update fee entitlement information,
         // and may roll over the fee period.
-        adjustFeeEntitlement(_from, senderPreBalance);
-        adjustFeeEntitlement(_to, recipientPreBalance);
+        adjustFeeEntitlement(from, senderPreBalance);
+        adjustFeeEntitlement(to, recipientPreBalance);
 
         return true;
     }

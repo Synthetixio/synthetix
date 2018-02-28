@@ -143,51 +143,51 @@ contract EtherNomin is ExternStateProxyFeeToken {
 
     /* ========== SETTERS ========== */
 
-    function setOracle(address newOracle)
+    function setOracle(address _oracle)
         public
         optionalProxy_onlyOwner
     {
-        oracle = newOracle;
-        OracleUpdated(newOracle);
+        oracle = _oracle;
+        OracleUpdated(_oracle);
     }
 
-    function setCourt(Court newCourt)
+    function setCourt(Court _court)
         public
         optionalProxy_onlyOwner
     {
-        court = newCourt;
-        CourtUpdated(newCourt);
+        court = _court;
+        CourtUpdated(_court);
     }
 
-    function setBeneficiary(address newBeneficiary)
+    function setBeneficiary(address _beneficiary)
         public
         optionalProxy_onlyOwner
     {
-        beneficiary = newBeneficiary;
-        BeneficiaryUpdated(newBeneficiary);
+        beneficiary = _beneficiary;
+        BeneficiaryUpdated(_beneficiary);
     }
 
-    function setPoolFeeRate(uint newFeeRate)
+    function setPoolFeeRate(uint _poolFeeRate_dec)
         public
         optionalProxy_onlyOwner
     {
-        require(newFeeRate <= UNIT);
-        poolFeeRate_dec = newFeeRate;
-        PoolFeeRateUpdated(newFeeRate);
+        require(_poolFeeRate_dec <= UNIT);
+        poolFeeRate_dec = _poolFeeRate_dec;
+        PoolFeeRateUpdated(_poolFeeRate_dec);
     }
 
-    function setStalePeriod(uint period)
+    function setStalePeriod(uint _stalePeriod)
         public
         optionalProxy_onlyOwner
     {
-        stalePeriod = period;
-        StalePeriodUpdated(period);
+        stalePeriod = _stalePeriod;
+        StalePeriodUpdated(_stalePeriod);
     }
 
-    function setFrozen(address account, bool val)
+    function setFrozen(address account, bool value)
         internal
     {
-        state.setFrozen(account, val);
+        state.setFrozen(account, value);
     }
 
     /* ========== VIEW FUNCTIONS ========== */
@@ -218,22 +218,22 @@ contract EtherNomin is ExternStateProxyFeeToken {
     /* Return the equivalent ether value of the given quantity
      * of fiat at the current price.
      * Reverts if the price is stale. */
-    function etherValue(uint fiat)
+    function etherValue(uint fiat_dec)
         public
         view
         priceNotStale
         returns (uint)
     {
-        return safeDecDiv(fiat, etherPrice_dec);
+        return safeDecDiv(fiat_dec, etherPrice_dec);
     }
 
     /* The same as etherValue(), but without the stale price check. */
-    function etherValueAllowStale(uint fiat) 
+    function etherValueAllowStale(uint fiat_dec) 
         internal
         view
         returns (uint)
     {
-        return safeDecDiv(fiat, etherPrice_dec);
+        return safeDecDiv(fiat_dec, etherPrice_dec);
     }
 
     /* Return the units of fiat per nomin in the supply.
@@ -364,22 +364,22 @@ contract EtherNomin is ExternStateProxyFeeToken {
      * no need to check whether the sender has a frozen account,
      * since their funds have already been confiscated,
      * and no new funds can be transferred to it.*/
-    function transfer(address _to, uint _value)
+    function transfer(address to, uint value)
         public
         returns (bool)
     {
-        require(!state.isFrozen(_to));
-        return super.transfer(_to, _value);
+        require(!state.isFrozen(to));
+        return super.transfer(to, value);
     }
 
     /* Override ERC20 transferFrom function in order to check
      * whether the recipient account is frozen. */
-    function transferFrom(address _from, address _to, uint _value)
+    function transferFrom(address from, address to, uint value)
         public
         returns (bool)
     {
-        require(!state.isFrozen(_to));
-        return super.transferFrom(_from, _to, _value);
+        require(!state.isFrozen(to));
+        return super.transferFrom(from, to, value);
     }
 
     /* Update the current ether price and update the last updated time,

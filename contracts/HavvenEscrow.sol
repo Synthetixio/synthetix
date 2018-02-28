@@ -70,12 +70,12 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
 
     /* ========== SETTERS ========== */
 
-    function setHavven(Havven newHavven)
+    function setHavven(Havven _havven)
         public
         onlyOwner
     {
-        havven = newHavven;
-        HavvenUpdated(newHavven);
+        havven = _havven;
+        HavvenUpdated(_havven);
     }
 
 
