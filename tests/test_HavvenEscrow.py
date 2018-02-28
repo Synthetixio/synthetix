@@ -10,7 +10,7 @@ from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mi
 
 SOLIDITY_SOURCES = ["tests/contracts/PublicHavven.sol", "contracts/EtherNomin.sol",
                     "contracts/Court.sol", "contracts/HavvenEscrow.sol",
-                    "contracts/Proxy.sol"]
+                    "contracts/Proxy.sol", "tests/contracts/PublicHavvenEscrow.sol"]
 
 
 def deploy_public_havven():
@@ -30,7 +30,7 @@ def deploy_public_havven():
                                                MASTER,
                                                [havven_contract.address, nomin_contract.address,
                                                 MASTER])
-    escrow_contract, escrow_txr = attempt_deploy(compiled, 'HavvenEscrow',
+    escrow_contract, escrow_txr = attempt_deploy(compiled, 'PublicHavvenEscrow',
                                                  MASTER,
                                                  [MASTER, havven_contract.address])
 

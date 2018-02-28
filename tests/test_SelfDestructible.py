@@ -31,8 +31,7 @@ class TestSelfDestructible(unittest.TestCase):
                                      remappings=['""=contracts'])
 
 
-        cls.sd, txr = attempt_deploy(compiled, 'PayableSD', MASTER, [MASTER, DUMMY],
-                        value=10*UNIT)
+        cls.sd, txr = attempt_deploy(compiled, 'PayableSD', MASTER, [MASTER, DUMMY])
 
         cls.owner = lambda self: cls.sd.functions.owner().call()
         cls.nominateOwner = lambda self, sender, newOwner: mine_tx(

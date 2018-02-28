@@ -41,9 +41,10 @@ import "contracts/SafeDecimalMath.sol";
 import "contracts/Owned.sol";
 import "contracts/Havven.sol";
 import "contracts/EtherNomin.sol";
+import "contracts/LimitedSetup.sol";
 
 
-contract HavvenEscrow is Owned, SafeDecimalMath {    
+contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {    
     // The corresponding Havven contract.
     Havven public havven;
 
@@ -178,16 +179,18 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
 
     /* Withdraws a quantity of havvens back to the havven contract. */
     function withdrawHavvens(uint quantity)
-        onlyOwner
         external
+        onlyOwner
+        setupFunction
     {
         havven.transfer(havven, quantity);
     }
 
     /* Destroy the vesting information associated with an account. */
     function purgeAccount(address account)
-        onlyOwner
         external
+        onlyOwner
+        setupFunction
     {
         delete vestingSchedules[account];
         totalVestedBalance = safeSub(totalVestedBalance, totalVestedAccountBalance[account]);
@@ -203,8 +206,9 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
      * Note; although this function could technically be used to produce unbounded
      * arrays, it's only in the foundation's command to add to these lists. */
     function appendVestingEntry(address account, uint time, uint quantity)
-        onlyOwner
         public
+        onlyOwner
+        setupFunction
     {
         // No empty or already-passed vesting entries allowed.
         require(now < time);
@@ -228,8 +232,9 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
      * at a given time. */
     function addRegularVestingSchedule(address account, uint conclusionTime,
                                        uint totalQuantity, uint vestingPeriods)
-        onlyOwner
         external
+        onlyOwner
+        setupFunction
     {
         // safeSub prevents a conclusionTime in the past.
         uint totalDuration = safeSub(conclusionTime, now);
