@@ -104,17 +104,11 @@ contract ERC20Token is SafeDecimalMath, Proxyable {
     {
         require(_to != address(0));
 
-        // Zero-value transfers must fire the transfer event...
-        Transfer(messageSender, _to, _value);
-
-        // ...but don't spend gas updating state unnecessarily.
-        if (_value == 0) {
-            return true;
-        }
-
         // Insufficient balance will be handled by the safe subtraction.
         state.setBalance(messageSender, safeSub(state.balanceOf(messageSender), _value));
         state.setBalance(_to, safeAdd(state.balanceOf(_to), _value));
+
+        Transfer(messageSender, _to, _value);
 
         return true;
     }
@@ -123,21 +117,14 @@ contract ERC20Token is SafeDecimalMath, Proxyable {
         public
         returns (bool)
     {
-        require(_from != address(0));
-        require(_to != address(0));
-
-        // Zero-value transfers must fire the transfer event...
-        Transfer(_from, _to, _value);
-
-        // ...but don't spend gas updating state unnecessarily.
-        if (_value == 0) {
-            return true;
-        }
+        require(_from != address(0) && _to != address(0));
 
         // Insufficient balance will be handled by the safe subtraction.
         state.setBalance(_from, safeSub(state.balanceOf(_from), _value));
         state.setAllowance(_from, messageSender, safeSub(state.allowance(_from, messageSender), _value));
         state.setBalance(_to, safeAdd(state.balanceOf(_to), _value));
+
+        Transfer(_from, _to, _value);
 
         return true;
     }
@@ -149,7 +136,9 @@ contract ERC20Token is SafeDecimalMath, Proxyable {
     {
         address messageSender = proxy.messageSender();
         state.setAllowance(messageSender, _spender, _value);
+
         Approval(messageSender, _spender, _value);
+
         return true;
     }
 
