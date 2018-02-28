@@ -64,29 +64,29 @@ contract TokenState is Owned {
 
     // Change the associated contract to a new address
     function setAssociatedContract(address _associatedContract)
+        external
         onlyOwner
-        public
     {
         associatedContract = _associatedContract;
     }
 
     function setAllowance(address _from, address _to, uint _value)
+        external
         onlyAssociatedContract
-        public
     {
         allowance[_from][_to] = _value;
     }
 
     function setBalance(address account, uint _value)
+        external
         onlyAssociatedContract
-        public
     {
         balanceOf[account] = _value;
     }
 
     function setTotalSupply(uint _value)
+        external
         onlyAssociatedContract
-        public
     {
         totalSupply = _value;
     }

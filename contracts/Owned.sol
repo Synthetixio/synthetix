@@ -42,7 +42,7 @@ contract Owned {
     }
 
     function nominateOwner(address newOwner)
-        public
+        external
         onlyOwner
     {
         nominatedOwner = newOwner;
@@ -58,7 +58,7 @@ contract Owned {
     }
 
     function acceptOwnership()
-        public
+        external
     {
         require(msg.sender == nominatedOwner);
         _setOwner();
