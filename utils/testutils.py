@@ -26,8 +26,6 @@ def assertReverts(testcase, function, *args):
     with testcase.assertRaises(ValueError) as error:
         function(*args)
     testcase.assertTrue("revert" in error.exception.args[0]['message'])
-    # The ganache-cli 6.1.0 beta does not include an error code field.
-    # testcase.assertEqual(-32000, error.exception.args[0]['code'])
 
 
 def block_time(block_num=None):
