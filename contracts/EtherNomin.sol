@@ -120,7 +120,7 @@ contract EtherNomin is ERC20FeeToken {
 
     function EtherNomin(address _havven, address _oracle,
                         address _beneficiary,
-                        uint initialetherPrice_dec,
+                        uint initialEtherPrice_dec,
                         address _owner, ERC20FeeState initialState)
         ERC20FeeToken("Ether-Backed USD Nomins", "eUSD",
                       _owner,
@@ -133,7 +133,7 @@ contract EtherNomin is ERC20FeeToken {
         oracle = _oracle;
         beneficiary = _beneficiary;
 
-        etherPrice_dec = initialetherPrice_dec;
+        etherPrice_dec = initialEtherPrice_dec;
         lastPriceUpdate = now;
         PriceUpdated(etherPrice_dec);
 
@@ -195,13 +195,13 @@ contract EtherNomin is ERC20FeeToken {
     /* Return the equivalent fiat value of the given quantity
      * of ether at the current price.
      * Reverts if the price is stale. */
-    function fiatValue(uint eth_dec)
+    function fiatValue(uint ether_dec)
         public
         view
         priceNotStale
         returns (uint)
     {
-        return safeDecMul(eth_dec, etherPrice_dec);
+        return safeDecMul(ether_dec, etherPrice_dec);
     }
 
     /* Return the current fiat value of the contract's balance.
