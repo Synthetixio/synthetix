@@ -42,14 +42,16 @@ class TestERC20State(unittest.TestCase):
         cls.erc20token, cls.construction_txr = attempt_deploy(
             cls.compiled, 'ERC20Token', MASTER, ["Test Token", "TEST", 1000 * UNIT, MASTER, ZERO_ADDRESS, MASTER]
         )
-        cls.erc20state = deploy_state('ERC20State', cls.compiled, MASTER, MASTER, 1000 * UNIT, MASTER, cls.erc20token.address)
+        cls.erc20state = deploy_state('ERC20State', cls.compiled, MASTER, MASTER, 1000 * UNIT, MASTER,
+                                      cls.erc20token.address)
 
         cls.fake_proxy, _ = attempt_deploy(cls.compiled, 'FakeProxy', MASTER, [])
         mine_tx(cls.erc20token.functions.setProxy(cls.fake_proxy.address).transact({'from': MASTER}))
 
         mine_tx(cls.erc20token.functions.setState(cls.erc20state.address).transact({'from': MASTER}))
 
-        cls.tok_set_state = lambda self, sender, addr: mine_tx(cls.erc20token.functions.setState(addr).transact({'from': sender}))
+        cls.tok_set_state = lambda self, sender, addr: mine_tx(
+            cls.erc20token.functions.setState(addr).transact({'from': sender}))
         cls.tok_state = lambda self: cls.erc20token.functions.state().call()
         cls.tok_totalSupply = lambda self: cls.erc20token.functions.totalSupply().call()
         cls.tok_name = lambda self: cls.erc20token.functions.name().call()
@@ -64,10 +66,14 @@ class TestERC20State(unittest.TestCase):
         cls.tok_transferFrom = lambda self, sender, argSender, fromAccount, to, value: mine_tx(
             cls.erc20token.functions.transferFrom(argSender, fromAccount, to, value).transact({'from': sender}))
 
-        cls.state_setAssociatedContract = lambda self, sender, addr: mine_tx(cls.erc20state.functions.setAssociatedContract(addr).transact({'from': sender}))
-        cls.state_setAllowance = lambda self, sender, frm, to, val: mine_tx(cls.erc20state.functions.setAllowance(frm, to, val).transact({'from': sender}))
-        cls.state_setBalance = lambda self, sender, acc, val: mine_tx(cls.erc20state.functions.setBalance(acc, val).transact({'from': sender}))
-        cls.state_setTotalSupply = lambda self, sender, val: mine_tx(cls.erc20state.functions.setTotalSupply(val).transact({'from': sender}))
+        cls.state_setAssociatedContract = lambda self, sender, addr: mine_tx(
+            cls.erc20state.functions.setAssociatedContract(addr).transact({'from': sender}))
+        cls.state_setAllowance = lambda self, sender, frm, to, val: mine_tx(
+            cls.erc20state.functions.setAllowance(frm, to, val).transact({'from': sender}))
+        cls.state_setBalance = lambda self, sender, acc, val: mine_tx(
+            cls.erc20state.functions.setBalance(acc, val).transact({'from': sender}))
+        cls.state_setTotalSupply = lambda self, sender, val: mine_tx(
+            cls.erc20state.functions.setTotalSupply(val).transact({'from': sender}))
 
         cls.state_associatedContract = lambda self: cls.erc20state.functions.associatedContract().call()
         cls.state_totalSupply = lambda self: cls.erc20state.functions.totalSupply().call()
@@ -89,7 +95,8 @@ class TestERC20State(unittest.TestCase):
         # assert an invalid state reverts when calling functions that are part of state
         self.assertReverts(self.tok_totalSupply)
 
-        valid_state = deploy_state('ERC20State', self.compiled, MASTER, MASTER, 100 * UNIT, MASTER, self.erc20token.address)
+        valid_state = deploy_state('ERC20State', self.compiled, MASTER, MASTER, 100 * UNIT, MASTER,
+                                   self.erc20token.address)
         self.tok_set_state(MASTER, valid_state.address)
         self.assertEqual(self.tok_totalSupply(), 100 * UNIT)
 
@@ -182,7 +189,8 @@ class TestERC20State(unittest.TestCase):
         self.assertEqual(self.state_allowance(MASTER, DUMMY), 0)
         self.assertEqual(valid_token.functions.allowance(MASTER, DUMMY).call(), 0)
 
-        self.assertReverts(valid_token.functions.transferFrom(DUMMY, MASTER, DUMMY, 20 * UNIT).transact, {'from': DUMMY})
+        self.assertReverts(valid_token.functions.transferFrom(DUMMY, MASTER, DUMMY, 20 * UNIT).transact,
+                           {'from': DUMMY})
 
 
 class TestERC20FeeState(unittest.TestCase):
@@ -200,22 +208,26 @@ class TestERC20FeeState(unittest.TestCase):
 
         cls.fee_beneficiary = fresh_accounts(1)[0]
         cls.erc20feetoken, cls.construction_txr = attempt_deploy(
-            cls.compiled, 'ERC20FeeToken', MASTER, ["Test Token", "TEST", 1000 * UNIT, MASTER, UNIT//100, cls.fee_beneficiary, ZERO_ADDRESS, MASTER]
+            cls.compiled, 'ERC20FeeToken', MASTER,
+            ["Test Token", "TEST", 1000 * UNIT, MASTER, UNIT // 100, cls.fee_beneficiary, ZERO_ADDRESS, MASTER]
         )
-        cls.erc20feestate = deploy_state('ERC20FeeState', cls.compiled, MASTER, MASTER, 1000 * UNIT, MASTER, cls.erc20feetoken.address)
+        cls.erc20feestate = deploy_state('ERC20FeeState', cls.compiled, MASTER, MASTER, 1000 * UNIT, MASTER,
+                                         cls.erc20feetoken.address)
 
         cls.fake_proxy, _ = attempt_deploy(cls.compiled, 'FakeProxy', MASTER, [])
         mine_tx(cls.erc20feetoken.functions.setProxy(cls.fake_proxy.address).transact({'from': MASTER}))
 
         mine_tx(cls.erc20feetoken.functions.setState(cls.erc20feestate.address).transact({'from': MASTER}))
 
-        cls.tok_set_state = lambda self, sender, addr: mine_tx(cls.erc20feetoken.functions.setState(addr).transact({'from': sender}))
+        cls.tok_set_state = lambda self, sender, addr: mine_tx(
+            cls.erc20feetoken.functions.setState(addr).transact({'from': sender}))
         cls.tok_state = lambda self: cls.erc20feetoken.functions.state().call()
         cls.tok_totalSupply = lambda self: cls.erc20feetoken.functions.totalSupply().call()
         cls.tok_name = lambda self: cls.erc20feetoken.functions.name().call()
         cls.tok_symbol = lambda self: cls.erc20feetoken.functions.symbol().call()
         cls.tok_balanceOf = lambda self, account: cls.erc20feetoken.functions.balanceOf(account).call()
-        cls.tok_allowance = lambda self, account, spender: cls.erc20feetoken.functions.allowance(account, spender).call()
+        cls.tok_allowance = lambda self, account, spender: cls.erc20feetoken.functions.allowance(account,
+                                                                                                 spender).call()
 
         cls.tok_transfer = lambda self, sender, to, value: mine_tx(
             cls.erc20feetoken.functions.transfer(to, value).transact({'from': sender}))
@@ -224,10 +236,14 @@ class TestERC20FeeState(unittest.TestCase):
         cls.tok_transferFrom = lambda self, sender, fromAccount, to, value: mine_tx(
             cls.erc20feetoken.functions.transferFrom(fromAccount, to, value).transact({'from': sender}))
 
-        cls.state_setAssociatedContract = lambda self, sender, addr: mine_tx(cls.erc20feestate.functions.setAssociatedContract(addr).transact({'from': sender}))
-        cls.state_setAllowance = lambda self, sender, frm, to, val: mine_tx(cls.erc20feestate.functions.setAllowance(frm, to, val).transact({'from': sender}))
-        cls.state_setBalance = lambda self, sender, acc, val: mine_tx(cls.erc20feestate.functions.setBalance(acc, val).transact({'from': sender}))
-        cls.state_setTotalSupply = lambda self, sender, val: mine_tx(cls.erc20feestate.functions.setTotalSupply(val).transact({'from': sender}))
+        cls.state_setAssociatedContract = lambda self, sender, addr: mine_tx(
+            cls.erc20feestate.functions.setAssociatedContract(addr).transact({'from': sender}))
+        cls.state_setAllowance = lambda self, sender, frm, to, val: mine_tx(
+            cls.erc20feestate.functions.setAllowance(frm, to, val).transact({'from': sender}))
+        cls.state_setBalance = lambda self, sender, acc, val: mine_tx(
+            cls.erc20feestate.functions.setBalance(acc, val).transact({'from': sender}))
+        cls.state_setTotalSupply = lambda self, sender, val: mine_tx(
+            cls.erc20feestate.functions.setTotalSupply(val).transact({'from': sender}))
 
         cls.state_associatedContract = lambda self: cls.erc20feestate.functions.associatedContract().call()
         cls.state_totalSupply = lambda self: cls.erc20feestate.functions.totalSupply().call()
@@ -235,7 +251,6 @@ class TestERC20FeeState(unittest.TestCase):
         cls.state_allowance = lambda self, frm, to: cls.erc20feestate.functions.allowance(frm, to).call()
         cls.state_frozen = lambda self, acc: cls.erc20feestate.functions.isFrozen(acc).call()
         cls.state_feePool = lambda self: cls.erc20feestate.functions.feePool().call()
-
 
     def test_constructor(self):
         self.assertEqual(self.tok_name(), "Test Token")
@@ -252,7 +267,8 @@ class TestERC20FeeState(unittest.TestCase):
         # assert an invalid state reverts when calling functions that are part of state
         self.assertReverts(self.tok_totalSupply)
 
-        valid_state = deploy_state('ERC20FeeState', self.compiled, MASTER, MASTER, 100 * UNIT, MASTER, self.erc20feetoken.address)
+        valid_state = deploy_state('ERC20FeeState', self.compiled, MASTER, MASTER, 100 * UNIT, MASTER,
+                                   self.erc20feetoken.address)
         self.tok_set_state(MASTER, valid_state.address)
         self.assertEqual(self.tok_totalSupply(), 100 * UNIT)
 
@@ -264,7 +280,9 @@ class TestERC20FeeState(unittest.TestCase):
         self.assertReverts(self.tok_transfer, MASTER, DUMMY, UNIT)
 
         valid_token, txr = attempt_deploy(
-            self.compiled, 'ERC20FeeToken', MASTER, ["Test2", "TEST2", 100 * UNIT, MASTER, UNIT//100, self.fee_beneficiary, self.erc20feestate.address, MASTER]
+            self.compiled, 'ERC20FeeToken', MASTER,
+            ["Test2", "TEST2", 100 * UNIT, MASTER, UNIT // 100, self.fee_beneficiary, self.erc20feestate.address,
+             MASTER]
         )
         fake_proxy, _ = attempt_deploy(self.compiled, 'FakeProxy', MASTER, [])
         mine_tx(valid_token.functions.setProxy(fake_proxy.address).transact({'from': MASTER}))
@@ -279,7 +297,8 @@ class TestERC20FeeState(unittest.TestCase):
 
     def test_balances_remain_after_swap(self):
         valid_token, txr = attempt_deploy(  # initial supply and beneficiary don't have to be set, as state exists
-            self.compiled, 'ERC20FeeToken', MASTER, ["Test2", "TEST2", 0, ZERO_ADDRESS, UNIT//100, self.fee_beneficiary, self.erc20feestate.address, MASTER]
+            self.compiled, 'ERC20FeeToken', MASTER,
+            ["Test2", "TEST2", 0, ZERO_ADDRESS, UNIT // 100, self.fee_beneficiary, self.erc20feestate.address, MASTER]
         )
         fake_proxy, _ = attempt_deploy(self.compiled, 'FakeProxy', MASTER, [])
         mine_tx(valid_token.functions.setProxy(fake_proxy.address).transact({'from': MASTER}))
@@ -307,7 +326,7 @@ class TestERC20FeeState(unittest.TestCase):
 
         # do the transaction with the new token
         mine_tx(valid_token.functions.transfer(DUMMY, 10 * UNIT).transact({'from': MASTER}))
-        fee = fee*2
+        fee = fee * 2
 
         self.assertEqual(valid_token.functions.balanceOf(MASTER).call(), 980 * UNIT - fee)
         self.assertEqual(self.tok_balanceOf(MASTER), 980 * UNIT - fee)
@@ -319,7 +338,8 @@ class TestERC20FeeState(unittest.TestCase):
 
     def test_allowances(self):
         valid_token, txr = attempt_deploy(  # initial supply and beneficiary don't have to be set, as state exists
-            self.compiled, 'ERC20FeeToken', MASTER, ["Test2", "TEST2", 0, ZERO_ADDRESS, UNIT//100, self.fee_beneficiary, self.erc20feestate.address, MASTER]
+            self.compiled, 'ERC20FeeToken', MASTER,
+            ["Test2", "TEST2", 0, ZERO_ADDRESS, UNIT // 100, self.fee_beneficiary, self.erc20feestate.address, MASTER]
         )
         fake_proxy, _ = attempt_deploy(self.compiled, 'FakeProxy', MASTER, [])
         mine_tx(valid_token.functions.setProxy(fake_proxy.address).transact({'from': MASTER}))

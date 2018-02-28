@@ -4,7 +4,6 @@ from utils.deployutils import compile_contracts, attempt_deploy, mine_tx, MASTER
 from utils.deployutils import take_snapshot, restore_snapshot, fast_forward
 from utils.testutils import assertReverts, block_time, ZERO_ADDRESS
 
-
 OWNED_SOURCE = "contracts/Owned.sol"
 
 
@@ -31,8 +30,10 @@ class TestOwned(unittest.TestCase):
         cls.owned, txr = attempt_deploy(compiled, 'Owned', MASTER, [MASTER])
 
         cls.owner = lambda self: cls.owned.functions.owner().call()
-        cls.nominateOwner = lambda self, sender, newOwner: mine_tx(cls.owned.functions.nominateOwner(newOwner).transact({'from': sender}))
-        cls.acceptOwnership = lambda self, sender: mine_tx(cls.owned.functions.acceptOwnership().transact({'from': sender}))
+        cls.nominateOwner = lambda self, sender, newOwner: mine_tx(
+            cls.owned.functions.nominateOwner(newOwner).transact({'from': sender}))
+        cls.acceptOwnership = lambda self, sender: mine_tx(
+            cls.owned.functions.acceptOwnership().transact({'from': sender}))
 
     def test_owner_is_master(self):
         self.assertEqual(self.owner(), MASTER)
