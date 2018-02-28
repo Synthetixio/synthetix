@@ -51,7 +51,7 @@ contract PublicEtherNomin is EtherNomin {
 	function debugWithdrawAllEther(address recipient)
 		public
 	{
-		recipient.send(balanceOf(this));
+		recipient.transfer(balanceOf(this));
 	}
 	
 	function debugEmptyFeePool()

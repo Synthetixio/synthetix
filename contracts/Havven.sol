@@ -16,7 +16,7 @@ approved:   Samuel Brooks
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
-Havven token contract. Havvens are transferrable ERC20 tokens,
+Havven token contract. Havvens are transferable ERC20 tokens,
 and also give their holders the following privileges.
 An owner of havvens is entitled to a share in the fees levied on
 nomin transactions, and additionally may participate in nomin
@@ -107,7 +107,6 @@ import "contracts/EtherNomin.sol";
 import "contracts/HavvenEscrow.sol";
 import "contracts/ERC20State.sol";
 
-
 contract Havven is ERC20Token {
 
     /* ========== STATE VARIABLES ========== */
@@ -181,29 +180,25 @@ contract Havven is ERC20Token {
 
     function setNomin(EtherNomin _nomin) 
         public
-        onlyOwner
+        optionalProxy
+        onlyOwner_Proxy
     {
         nomin = _nomin;
     }
 
     function setEscrow(HavvenEscrow _escrow)
         public
-        onlyOwner
+        optionalProxy
+        onlyOwner_Proxy
     {
         escrow = _escrow;
-    }
-
-    function unsetEscrow()
-        public
-        onlyOwner
-    {
-        delete escrow;
     }
 
     function setTargetFeePeriodDuration(uint duration)
         public
         postCheckFeePeriodRollover
-        onlyOwner
+        optionalProxy
+        onlyOwner_Proxy
     {
         require(MIN_FEE_PERIOD_DURATION_SECONDS <= duration &&
                 duration <= MAX_FEE_PERIOD_DURATION_SECONDS);
@@ -220,31 +215,42 @@ contract Havven is ERC20Token {
      * to retrieve any havvens sent to the Havven contract itself. */
     function endow(address account, uint value)
         public
-        onlyOwner
+        optionalProxy
+        onlyOwner_Proxy
         returns (bool)
     {
+
         // Use "this" in order that the havven account is the sender.
         // That this is an explicit transfer also initialises fee entitlement information.
-        return this.transfer(account, value);
+        return _transfer(this, account, value);
     }
 
     /* Override ERC20 transfer function in order to perform
      * fee entitlement recomputation whenever balances are updated. */
     function transfer(address _to, uint _value)
         public
+        optionalProxy
+        returns (bool)
+    {
+        return _transfer(proxy.messageSender(), _to, _value);
+    }
+
+    function _transfer(address messageSender, address _to, uint _value)
+        internal
         preCheckFeePeriodRollover
         returns (bool)
     {
-        uint senderPreBalance = state.balanceOf(msg.sender);
+
+        uint senderPreBalance = state.balanceOf(messageSender);
         uint recipientPreBalance = state.balanceOf(_to);
 
         // Perform the transfer: if there is a problem,
         // an exception will be thrown in super.transfer().
-        super.transfer(_to, _value);
+        super.transfer(messageSender, _to, _value);
 
         // Zero-value transfers still update fee entitlement information,
         // and may roll over the fee period.
-        adjustFeeEntitlement(msg.sender, senderPreBalance);
+        adjustFeeEntitlement(messageSender, senderPreBalance);
         adjustFeeEntitlement(_to, recipientPreBalance);
 
         return true;
@@ -255,6 +261,7 @@ contract Havven is ERC20Token {
     function transferFrom(address _from, address _to, uint _value)
         public
         preCheckFeePeriodRollover
+        optionalProxy
         returns (bool)
     {
         uint senderPreBalance = state.balanceOf(_from);
@@ -262,7 +269,7 @@ contract Havven is ERC20Token {
 
         // Perform the transfer: if there is a problem,
         // an exception will be thrown in super.transferFrom().
-        super.transferFrom(_from, _to, _value);
+        super.transferFrom(proxy.messageSender(), _from, _to, _value);
 
         // Zero-value transfers still update fee entitlement information,
         // and may roll over the fee period.
@@ -277,24 +284,33 @@ contract Havven is ERC20Token {
     function withdrawFeeEntitlement()
         public
         preCheckFeePeriodRollover
+        optionalProxy
     {
+        address messageSender = proxy.messageSender();
+
         // Do not deposit fees into frozen accounts.
-        require(!nomin.isFrozen(msg.sender));
+        require(!nomin.isFrozen(messageSender));
 
         // check the period has rolled over first
-        rolloverFee(msg.sender, lastTransferTimestamp[msg.sender], state.balanceOf(msg.sender));
+        rolloverFee(messageSender, lastTransferTimestamp[messageSender], state.balanceOf(messageSender));
 
         // Only allow accounts to withdraw fees once per period.
-        require(!hasWithdrawnLastPeriodFees[msg.sender]);
+        require(!hasWithdrawnLastPeriodFees[messageSender]);
 
-        uint feesOwed = safeDecDiv(safeDecMul(lastAverageBalance[msg.sender],
-                                              lastFeesCollected),
-                                   state.totalSupply());
+        uint feesOwed;
 
-        hasWithdrawnLastPeriodFees[msg.sender] = true;
+        if (escrow != HavvenEscrow(0)) {
+            feesOwed = escrow.totalVestedAccountBalance(messageSender);
+        }
+
+        feesOwed = safeDecDiv(safeDecMul(safeAdd(feesOwed, lastAverageBalance[messageSender]),
+                                         lastFeesCollected),
+                              state.totalSupply());
+
+        hasWithdrawnLastPeriodFees[messageSender] = true;
         if (feesOwed != 0) {
-            nomin.withdrawFee(msg.sender, feesOwed);
-            FeesWithdrawn(msg.sender, msg.sender, feesOwed);
+            nomin.withdrawFee(messageSender, feesOwed);
+            FeesWithdrawn(messageSender, messageSender, feesOwed);
         }
     }
 
@@ -397,9 +413,10 @@ contract Havven is ERC20Token {
     /* Recompute and return the sender's average balance information. */
     function recomputeLastAverageBalance()
         external
+        optionalProxy
         returns (uint)
     {
-        return _recomputeAccountLastAverageBalance(msg.sender);
+        return _recomputeAccountLastAverageBalance(proxy.messageSender());
     }
 
     /* Recompute and return the given account's average balance information. */
@@ -428,10 +445,6 @@ contract Havven is ERC20Token {
     {
         // If the fee period has rolled over...
         if (feePeriodStartTime + targetFeePeriodDurationSeconds <= now) {
-            // Reclaim any fees from the escrow contract, if it exists.
-            if (escrow != HavvenEscrow(0)) {
-                escrow.remitFees();
-            }
             lastFeesCollected = nomin.feePool();
 
             // Shift the three period start times back one place

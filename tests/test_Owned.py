@@ -2,7 +2,7 @@ import unittest
 
 from utils.deployutils import compile_contracts, attempt_deploy, mine_tx, MASTER, DUMMY
 from utils.deployutils import take_snapshot, restore_snapshot, fast_forward
-from utils.testutils import assertReverts
+from utils.testutils import assertReverts, block_time, ZERO_ADDRESS
 
 
 OWNED_SOURCE = "contracts/Owned.sol"
@@ -31,10 +31,8 @@ class TestOwned(unittest.TestCase):
         cls.owned, txr = attempt_deploy(compiled, 'Owned', MASTER, [MASTER])
 
         cls.owner = lambda self: cls.owned.functions.owner().call()
-        cls.nominateOwner = lambda self, sender, newOwner: cls.owned.functions.nominateOwner(newOwner).transact({'from': sender})
-        cls.acceptOwnership = lambda self, sender: cls.owned.functions.acceptOwnership().transact({'from': sender})
-        cls.forceAcceptOwnership = lambda self, sender: cls.owned.functions.forceAcceptOwnership().transact({'from': sender})
-        cls.setOwner = lambda self, sender, newOwner: mine_tx(cls.owned.functions.setOwner(newOwner).transact({'from': sender}))
+        cls.nominateOwner = lambda self, sender, newOwner: mine_tx(cls.owned.functions.nominateOwner(newOwner).transact({'from': sender}))
+        cls.acceptOwnership = lambda self, sender: mine_tx(cls.owned.functions.acceptOwnership().transact({'from': sender}))
 
     def test_owner_is_master(self):
         self.assertEqual(self.owner(), MASTER)
@@ -51,21 +49,22 @@ class TestOwned(unittest.TestCase):
         self.assertEqual(self.owner(), new_owner)
         self.assertReverts(self.nominateOwner, old_owner, new_owner)
         self.nominateOwner(new_owner, old_owner)
-
-    def test_forceAcceptOwnership(self):
-        owner = self.owner()
-        new_owner = DUMMY
-        self.nominateOwner(owner, new_owner)
-        self.assertReverts(self.forceAcceptOwnership, owner)
-        fast_forward(24*60*60  - 100)
-        self.assertReverts(self.forceAcceptOwnership, owner)
-        fast_forward(200)
-        self.forceAcceptOwnership(owner)
-        self.assertEqual(self.owner(), new_owner)
+        self.acceptOwnership(old_owner)
+        self.assertEqual(self.owner(), old_owner)
 
     def test_change_invalid_owner(self):
         invalid_account = DUMMY
         self.assertReverts(self.nominateOwner, invalid_account, invalid_account)
+
+    def test_undo_change_owner(self):
+        old_owner = self.owner()
+        new_owner = DUMMY
+
+        self.assertReverts(self.nominateOwner, new_owner, old_owner)
+        self.nominateOwner(old_owner, new_owner)
+        self.nominateOwner(old_owner, ZERO_ADDRESS)
+        self.assertReverts(self.acceptOwnership, new_owner)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -6,6 +6,7 @@ from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mi
     UNIT, MASTER, DUMMY, fast_forward, fresh_accounts, take_snapshot, restore_snapshot, ETHER
 from utils.testutils import assertReverts, block_time, assertClose, ZERO_ADDRESS
 
+
 SOLIDITY_SOURCES = ["tests/contracts/PublicHavven.sol", "tests/contracts/PublicEtherNomin.sol",
                     "tests/contracts/FakeCourt.sol", "contracts/Havven.sol"]
 
@@ -27,13 +28,24 @@ def deploy_public_contracts():
                                                [havven_contract.address, nomin_contract.address,
                                                 MASTER])
 
+    # Install proxies
+    havven_proxy, _ = attempt_deploy(compiled, 'Proxy',
+                                     MASTER, [havven_contract.address, MASTER])
+    mine_tx(havven_contract.functions.setProxy(havven_proxy.address).transact({'from': MASTER}))
+    proxy_havven = W3.eth.contract(address=havven_proxy.address, abi=compiled['PublicHavven']['abi'])
+
+    nomin_proxy, _ = attempt_deploy(compiled, 'Proxy',
+                                    MASTER, [nomin_contract.address, MASTER])
+    mine_tx(nomin_contract.functions.setProxy(nomin_proxy.address).transact({'from': MASTER}))
+    proxy_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['PublicEtherNomin']['abi'])
+
     # Hook up each of those contracts to each other
     txs = [havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
            nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER})]
     attempt(mine_txs, [txs], "Linking contracts... ")
 
     print("\nDeployment complete.\n")
-    return havven_contract, nomin_contract, court_contract
+    return proxy_havven, proxy_nomin, havven_proxy, nomin_proxy, havven_contract, nomin_contract, court_contract
 
 
 def setUpModule():
@@ -54,7 +66,7 @@ class TestHavven(unittest.TestCase):
         self.h_recomputeLastAverageBalance(MASTER)
 
         # Reset the price at the start of tests so that it's never stale.
-        self.n_updatePrice(self.n_oracle(), self.n_etherPrice(), self.now_block_time()) #round(time.time()) - 1)
+        self.n_updatePrice(self.n_oracle(), self.n_etherPrice(), self.now_block_time())
         # Reset the liquidation timestamp so that it's never active.
         owner = self.n_owner()
         self.n_forceLiquidation(owner)
@@ -71,7 +83,7 @@ class TestHavven(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.havven, cls.nomin, cls.fake_court = deploy_public_contracts()
+        cls.havven, cls.nomin, cls.havven_proxy, cls.nomin_proxy, cls.havven_real, cls.nomin_real, cls.fake_court = deploy_public_contracts()
 
         cls.assertClose = assertClose
         cls.assertReverts = assertReverts
@@ -178,7 +190,7 @@ class TestHavven(unittest.TestCase):
         cls.n_setCourt = lambda self, sender, address: mine_tx(cls.nomin.functions.setCourt(address).transact({'from': sender}))
         cls.n_setBeneficiary = lambda self, sender, address: mine_tx(cls.nomin.functions.setBeneficiary(address).transact({'from': sender}))
         cls.n_setPoolFeeRate = lambda self, sender, rate: mine_tx(cls.nomin.functions.setPoolFeeRate(rate).transact({'from': sender}))
-        cls.n_updatePrice = lambda self, sender, price, timeSent: mine_tx(cls.nomin.functions.updatePrice(price, timeSent).transact({'from': sender}))
+        cls.n_updatePrice = lambda self, sender, price, timeSent: mine_tx(cls.nomin_real.functions.updatePrice(price, timeSent).transact({'from': sender}))
         cls.n_setStalePeriod = lambda self, sender, period: mine_tx(cls.nomin.functions.setStalePeriod(period).transact({'from': sender}))
 
         cls.n_fiatValue = lambda self, eth: cls.nomin.functions.fiatValue(eth).call()

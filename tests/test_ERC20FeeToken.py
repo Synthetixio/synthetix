@@ -35,7 +35,7 @@ class TestERC20FeeToken(unittest.TestCase):
         cls.compiled = compile_contracts([ERC20FeeToken_SOURCE, ERC20FeeState_SOURCE])
         cls.erc20fee_abi = cls.compiled['ERC20FeeToken']['abi']
         cls.erc20fee_event_dict = generate_topic_event_map(cls.erc20fee_abi)
-        cls.erc20feetoken, cls.construction_txr = attempt_deploy(
+        cls.erc20feetoken_real, cls.construction_txr = attempt_deploy(
             cls.compiled, "ERC20FeeToken", MASTER, ["Test Fee Token", "FEE",
                                                 0, cls.initial_beneficiary,
                                                 UNIT // 20, cls.fee_authority,
@@ -43,10 +43,15 @@ class TestERC20FeeToken(unittest.TestCase):
         )
         cls.erc20feestate, txr = attempt_deploy(
             cls.compiled, "ERC20FeeState", MASTER,
-            [cls.token_owner, 1000 * UNIT, cls.initial_beneficiary, cls.erc20feetoken.address]
+            [cls.token_owner, 1000 * UNIT, cls.initial_beneficiary, cls.erc20feetoken_real.address]
         )
 
-        mine_tx(cls.erc20feetoken.functions.setState(cls.erc20feestate.address).transact({'from': cls.token_owner}))
+        cls.erc20feetoken_proxy, _ = attempt_deploy(cls.compiled, 'Proxy',
+                                           MASTER, [cls.erc20feetoken_real.address, cls.token_owner])
+        mine_tx(cls.erc20feetoken_real.functions.setProxy(cls.erc20feetoken_proxy.address).transact({'from': cls.token_owner}))
+        cls.erc20feetoken = W3.eth.contract(address=cls.erc20feetoken_proxy.address, abi=cls.compiled['ERC20FeeToken']['abi'])
+
+        mine_tx(cls.erc20feetoken_real.functions.setState(cls.erc20feestate.address).transact({'from': cls.token_owner}))
 
         cls.owner = lambda self: cls.erc20feetoken.functions.owner().call()
         cls.totalSupply = lambda self: cls.erc20feetoken.functions.totalSupply().call()
@@ -80,7 +85,7 @@ class TestERC20FeeToken(unittest.TestCase):
             cls.erc20feetoken.functions.transferFrom(fromAccount, to, value).transact({'from': sender}))
 
         cls.withdrawFee = lambda self, sender, account, value: mine_tx(
-            cls.erc20feetoken.functions.withdrawFee(account, value).transact({'from' : sender}))
+            cls.erc20feetoken_real.functions.withdrawFee(account, value).transact({'from' : sender}))
         cls.donateToFeePool = lambda self, sender, value: mine_tx(
             cls.erc20feetoken.functions.donateToFeePool(value).transact({'from': sender}))
 
@@ -92,7 +97,7 @@ class TestERC20FeeToken(unittest.TestCase):
         self.assertEqual(self.transferFeeRate(), UNIT // 20)
         self.assertEqual(self.feeAuthority(), self.fee_authority)
         self.assertEqual(self.state(), self.erc20feestate.address)
-        self.assertEqual(self.erc20feestate.functions.associatedContract().call(), self.erc20feetoken.address)
+        self.assertEqual(self.erc20feestate.functions.associatedContract().call(), self.erc20feetoken_real.address)
 
     def test_provide_state(self):
         erc20feestate, _ = attempt_deploy(self.compiled, 'ERC20FeeState',

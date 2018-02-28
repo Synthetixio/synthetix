@@ -3,10 +3,11 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       Owned.sol
-version:    0.2
+version:    0.3
 author:     Anton Jurisevic
+            Dominic Romanowski
 
-date:       2018-1-16
+date:       2018-2-26
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -15,10 +16,14 @@ approved:   Samuel Brooks
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
-An ownable contract, to be inherited by other contracts.
-Requires its owner to be explicitly set in the constructor,
-provides onlyOwner access modifier and setOwner function,
-which itself must only be callable by the current owner.
+An Owned contract, to be inherited by other contracts.
+Requires its owner to be explicitly set in the constructor.
+Provides an onlyOwner access modifier.
+
+To change owner, the current owner must nominate the next owner,
+who then has to accept the nomination. The nomination can be
+cancelled before it is accepted by the new owner by having the
+previous owner change the nomination (setting it to 0).
 
 -----------------------------------------------------------------
 */
@@ -29,8 +34,6 @@ pragma solidity ^0.4.20;
 contract Owned {
     address public owner;
     address nominatedOwner;
-    uint nominationTime;
-    uint constant forceDelay = 1 days;
 
     function Owned(address _owner)
         public
@@ -43,7 +46,6 @@ contract Owned {
         onlyOwner
     {
         nominatedOwner = newOwner;
-        nominationTime = now;
         NewOwnerNominated(newOwner);
     }
 
@@ -59,14 +61,6 @@ contract Owned {
         public
     {
         require(msg.sender == nominatedOwner);
-        _setOwner();
-    }
-
-    function forceAcceptOwnership()
-        public
-        onlyOwner
-    {
-        require(nominationTime + forceDelay < now);
         _setOwner();
     }
 

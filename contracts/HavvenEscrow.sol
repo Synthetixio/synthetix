@@ -46,7 +46,6 @@ import "contracts/EtherNomin.sol";
 contract HavvenEscrow is Owned, SafeDecimalMath {    
     // The corresponding Havven contract.
     Havven public havven;
-    EtherNomin public nomin;
 
     // Lists of (timestamp, quantity) pairs per account, sorted in ascending time order.
     // These are the times at which each given quantity of havvens vests.
@@ -61,12 +60,11 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
 
     /* ========== CONSTRUCTOR ========== */
 
-    function HavvenEscrow(address _owner, Havven _havven, EtherNomin _nomin)
+    function HavvenEscrow(address _owner, Havven _havven)
         Owned(_owner)
         public
     {
         havven = _havven;
-        nomin = _nomin;
     }
 
 
@@ -79,14 +77,6 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         havven = newHavven;
         HavvenUpdated(newHavven);
     }
-
-    function setNomin(EtherNomin newNomin)
-        public
-        onlyOwner
-    {
-        nomin = newNomin;
-        NominUpdated(newNomin);
-    } 
 
 
     /* ========== VIEW FUNCTIONS ========== */
@@ -183,62 +173,8 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         return getVestingQuantity(account, index);
     }
 
-    /* The current pool of fees inside this contract. */
-    function feePool()
-        public
-        view
-        returns (uint)
-    {
-        return nomin.balanceOf(this);
-    }
-
 
     /* ========== MUTATIVE FUNCTIONS ========== */
-
-    /* Return the current fee balance back to the main pool to roll over to the
-     * next fee period. */
-    function remitFees()
-        public
-    {
-        // Only the havven contract should be able to force
-        // the escrow contract to remit its fees back to the common pool.
-        require(Havven(msg.sender) == havven);
-        uint feeBalance = feePool();
-        // Ensure balance is nonzero so that the fee pool function does not revert.
-        if (feeBalance != 0) {
-            nomin.donateToFeePool(feePool());
-        }
-    }
-
-    /* Force a contract fee withdrawal. */
-    function withdrawFeePool()
-        public
-        onlyOwner
-    {
-        havven.withdrawFeeEntitlement();
-        ContractFeesWithdrawn(now, feePool());
-    }
-
-    /* Allow a particular user to withdraw the fees owed to them. */
-    function withdrawFees()
-        public
-    {
-        // If fees need to be withdrawn into this contract, then withdraw them.
-        if (!havven.hasWithdrawnLastPeriodFees(this)) {
-            havven.withdrawFeeEntitlement();
-            // Since fees were remitted back to havven last time the fee period rolled over,
-            // which would set feePool()'s result to zero, so we are justified in using it
-            // as the withdrawn quantity here.
-            ContractFeesWithdrawn(now, feePool());
-        }
-        // exception will be thrown if totalVestedBalance will be 0
-        uint entitlement = nomin.priceToSpend(safeDecDiv(safeDecMul(totalVestedAccountBalance[msg.sender], feePool()), totalVestedBalance));
-        if (entitlement != 0) {
-            nomin.transfer(msg.sender, entitlement);
-            FeesWithdrawn(msg.sender, msg.sender,
-                          now, entitlement);
-        }
-    }
 
     /* Withdraws a quantity of havvens back to the havven contract. */
     function withdrawHavvens(uint quantity)

@@ -33,9 +33,10 @@ pragma solidity ^0.4.20;
 import "contracts/SafeDecimalMath.sol";
 import "contracts/Owned.sol";
 import "contracts/ERC20FeeState.sol";
+import "contracts/Proxy.sol";
 
 
-contract ERC20FeeToken is Owned, SafeDecimalMath {
+contract ERC20FeeToken is Proxyable, SafeDecimalMath {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -60,7 +61,7 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
                            uint initialSupply, address initialBeneficiary,
                            uint _feeRate, address _feeAuthority,
                            ERC20FeeState _state, address _owner)
-        Owned(_owner)
+        Proxyable(_owner)
         public
     {
         name = _name;
@@ -78,7 +79,8 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
 
     function setTransferFeeRate(uint newFeeRate)
         public
-        onlyOwner
+        optionalProxy
+        onlyOwner_Proxy
     {
         require(newFeeRate <= MAX_TRANSFER_FEE_RATE);
         transferFeeRate = newFeeRate;
@@ -87,14 +89,16 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
 
     function setFeeAuthority(address newFeeAuthority)
         public
-        onlyOwner
+        optionalProxy
+        onlyOwner_Proxy
     {
         feeAuthority = newFeeAuthority;
         FeeAuthorityUpdate(newFeeAuthority);
     }
 
     function setState(ERC20FeeState _state)
-        onlyOwner
+        optionalProxy
+        onlyOwner_Proxy
         public
     {
         state = _state;
@@ -141,6 +145,7 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
 
     function transfer(address _to, uint _value)
         public
+        optionalProxy
         returns (bool)
     {
         require(_to != address(0));
@@ -150,9 +155,11 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
         uint fee = transferFeeIncurred(_value);
         uint totalCharge = safeAdd(_value, fee);
 
+        address messageSender = proxy.messageSender();
+
         // Zero-value transfers must fire the transfer event...
-        Transfer(msg.sender, _to, _value);
-        TransferFeePaid(msg.sender, fee);
+        Transfer(messageSender, _to, _value);
+        TransferFeePaid(messageSender, fee);
 
         // ...but don't spend gas updating state unnecessarily.
         if (_value == 0) {
@@ -161,7 +168,7 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
 
         // Insufficient balance will be handled by the safe subtraction.
 
-        state.setBalance(msg.sender, safeSub(balanceOf(msg.sender), totalCharge));
+        state.setBalance(messageSender, safeSub(balanceOf(messageSender), totalCharge));
         state.setBalance(_to, safeAdd(balanceOf(_to), _value));
         state.setFeePool(safeAdd(feePool(), fee));
 
@@ -170,6 +177,7 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
 
     function transferFrom(address _from, address _to, uint _value)
         public
+        optionalProxy
         returns (bool)
     {
         require(_from != address(0));
@@ -179,9 +187,11 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
         uint fee = transferFeeIncurred(_value);
         uint totalCharge = safeAdd(_value, fee);
 
+        address messageSender = proxy.messageSender();
+
         // Zero-value transfers must fire the transfer event...
         Transfer(_from, _to, _value);
-        TransferFeePaid(msg.sender, fee);
+        TransferFeePaid(messageSender, fee);
 
         // ...but don't spend gas updating state unnecessarily.
         if (_value == 0) {
@@ -189,9 +199,8 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
         }
 
         // Insufficient balance will be handled by the safe subtraction.
-
         state.setBalance(_from, safeSub(state.balanceOf(_from), totalCharge));
-        state.setAllowance(_from, msg.sender, safeSub(state.allowance(_from, msg.sender), totalCharge));
+        state.setAllowance(_from, messageSender, safeSub(state.allowance(_from, messageSender), totalCharge));
         state.setBalance(_to, safeAdd(state.balanceOf(_to), _value));
         state.setFeePool(safeAdd(feePool(), fee));
 
@@ -200,10 +209,12 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
 
     function approve(address _spender, uint _value)
         public
+        optionalProxy
         returns (bool)
     {
-        state.setAllowance(msg.sender, _spender, _value);
-        Approval(msg.sender, _spender, _value);
+        address messageSender = proxy.messageSender();
+        state.setAllowance(messageSender, _spender, _value);
+        Approval(messageSender, _spender, _value);
         return true;
     }
 
@@ -230,16 +241,19 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
     /* Donate tokens from the sender's balance into the fee pool. */
     function donateToFeePool(uint n)
         public
+        optionalProxy
         returns (bool)
     {
+        address messageSender = proxy.messageSender();
+
         // Empty donations are disallowed.
-        uint balance = state.balanceOf(msg.sender);
+        uint balance = state.balanceOf(messageSender);
         require(balance != 0);
 
         // safeSub ensures the donor has sufficient balance.
-        state.setBalance(msg.sender, safeSub(balance, n));
+        state.setBalance(messageSender, safeSub(balance, n));
         state.setFeePool(safeAdd(feePool(), n));
-        FeeDonation(msg.sender, msg.sender, n);
+        FeeDonation(messageSender, messageSender, n);
         return true;
     }
 
@@ -289,4 +303,3 @@ contract ERC20FeeToken is Owned, SafeDecimalMath {
 
     event FeeAuthorityUpdate(address feeAuthority);
 }
-
