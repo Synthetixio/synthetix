@@ -1,4 +1,3 @@
-
 class TERMCOLORS:
     BLUE = '\033[94m'
     GREEN = '\033[92m'
@@ -11,13 +10,13 @@ class TERMCOLORS:
 def to_seconds(seconds=0, minutes=0, hours=0, days=0, weeks=0):
     total_time = seconds
     mult = 60
-    total_time += minutes*mult
+    total_time += minutes * mult
     mult *= 60
-    total_time += hours*mult
+    total_time += hours * mult
     mult *= 24
-    total_time += days*mult
+    total_time += days * mult
     mult *= 7
-    total_time += weeks*mult
+    total_time += weeks * mult
     return total_time
 
 
@@ -27,7 +26,6 @@ Please run ganache-cli.
   If you do not have it installed, run `npm install -g ganache-cli@6.1.0-beta.0`
   And run it with the flags: {TERMCOLORS.RESET}ganache-cli -e 1000000000000
 """
-
 
 TEST_SETTINGS_FILE = "test_settings.py"
 

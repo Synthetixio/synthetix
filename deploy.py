@@ -48,7 +48,6 @@ def deploy_havven(print_addresses=False):
     proxy_havven = W3.eth.contract(address=havven_proxy.address, abi=compiled['Havven']['abi'])
     proxy_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['EtherNomin']['abi'])
 
-
     # Hook up each of those contracts to each other
     txs = [havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
            havven_contract.functions.setEscrow(escrow_contract.address).transact({'from': MASTER}),
@@ -56,7 +55,7 @@ def deploy_havven(print_addresses=False):
     attempt(mine_txs, [txs], "Linking contracts... ")
 
     print("\nDeployment complete.\n")
-    
+
     if print_addresses:
         print("Addresses")
         print("========\n")
@@ -69,6 +68,7 @@ def deploy_havven(print_addresses=False):
         print()
 
     return havven_contract, nomin_contract, havven_proxy, nomin_proxy, court_contract, escrow_contract, hvn_txr, nom_txr, court_txr
+
 
 if __name__ == "__main__":
     deploy_havven(True)

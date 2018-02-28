@@ -3,7 +3,8 @@ from eth_utils import event_abi_to_log_topic
 
 from utils.deployutils import mine_tx, W3
 
-ZERO_ADDRESS = "0x"+"0"*40
+ZERO_ADDRESS = "0x" + "0" * 40
+
 
 def assertClose(testcase, actual, expected, precision=5, msg=''):
     if expected == 0:
@@ -14,10 +15,10 @@ def assertClose(testcase, actual, expected, precision=5, msg=''):
         expected, actual = actual, expected
 
     testcase.assertAlmostEqual(
-        actual/expected,
+        actual / expected,
         1,
         places=precision,
-        msg=msg+f'\n{actual} ≉ {expected}'
+        msg=msg + f'\n{actual} ≉ {expected}'
     )
 
 
@@ -41,7 +42,7 @@ def send_value(sender, recipient, value):
 
 def get_eth_balance(account):
     return W3.eth.getBalance(account)
-        
+
 
 def generate_topic_event_map(abi):
     events = {}

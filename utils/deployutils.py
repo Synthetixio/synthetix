@@ -9,12 +9,11 @@ W3 = Web3(HTTPProvider(BLOCKCHAIN_ADDRESS))
 POLLING_INTERVAL = 0.1
 STATUS_ALIGN_SPACING = 6
 
-
 # The number representing 1 in our contracts.
-UNIT = 10**18
+UNIT = 10 ** 18
 
 # The number of wei per ether.
-ETHER = 10**18
+ETHER = 10 ** 18
 
 # Master test account
 MASTER = W3.eth.accounts[0]
@@ -29,7 +28,7 @@ last_accessed_account = 1
 def fresh_account():
     """Return first account after DUMMY"""
     try:
-        global last_accessed_account 
+        global last_accessed_account
         last_accessed_account += 1
         return W3.eth.accounts[last_accessed_account]
     except KeyError:
@@ -60,7 +59,8 @@ def attempt(function, func_args, init_string, print_status=True, print_exception
         if print_status:
             print(f"{TERMCOLORS.RED}{' '*pad}Failed.{TERMCOLORS.RESET}")
         if print_exception:
-            print(f"{TERMCOLORS.YELLOW}{TERMCOLORS.BOLD}ERROR:{TERMCOLORS.RESET} {TERMCOLORS.BOLD}{e}{TERMCOLORS.RESET}")
+            print(
+                f"{TERMCOLORS.YELLOW}{TERMCOLORS.BOLD}ERROR:{TERMCOLORS.RESET} {TERMCOLORS.BOLD}{e}{TERMCOLORS.RESET}")
         return None
 
 
@@ -80,6 +80,7 @@ def force_mine_block():
 
 
 time_fast_forwarded = 0
+
 
 def fast_forward(seconds=0, minutes=0, hours=0, days=0, weeks=0):
     global time_fast_forwarded
@@ -136,9 +137,9 @@ def deploy_contract(compiled_sol, contract_name, deploy_account, constructor_arg
     return contract_instance, tx_receipt
 
 
-def attempt_deploy(compiled_sol, contract_name, deploy_account, constructor_args, print_status=True, print_exception=True):
+def attempt_deploy(compiled_sol, contract_name, deploy_account, constructor_args, print_status=True,
+                   print_exception=True):
     return attempt(deploy_contract,
                    [compiled_sol, contract_name, deploy_account, constructor_args],
                    f"Deploying {contract_name}... ",
                    print_status=print_status, print_exception=print_exception)
-

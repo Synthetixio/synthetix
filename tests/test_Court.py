@@ -6,7 +6,6 @@ from utils.testutils import assertReverts, assertClose
 from utils.testutils import generate_topic_event_map, get_event_data_from_log
 from utils.testutils import ZERO_ADDRESS
 
-
 SOLIDITY_SOURCES = ["tests/contracts/PublicCourt.sol",
                     "contracts/EtherNomin.sol",
                     "tests/contracts/PublicHavven.sol",
@@ -22,7 +21,8 @@ def deploy_public_court():
 
     havven_contract, havven_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [ZERO_ADDRESS, MASTER])
     nomin_contract, nomin_txr = attempt_deploy(compiled, 'EtherNomin', MASTER,
-                                               [havven_contract.address, MASTER, MASTER, 1000*UNIT, MASTER, ZERO_ADDRESS])
+                                               [havven_contract.address, MASTER, MASTER, 1000 * UNIT, MASTER,
+                                                ZERO_ADDRESS])
     court_contract, court_txr = attempt_deploy(compiled, 'PublicCourt', MASTER,
                                                [havven_contract.address, nomin_contract.address, MASTER])
 
@@ -107,15 +107,15 @@ class TestCourt(unittest.TestCase):
 
         # Setters
         cls.setMinStandingBalance = lambda self, sender, balance: mine_tx(
-            self.court.functions.setMinStandingBalance(balance).transact({'from' : sender}))
+            self.court.functions.setMinStandingBalance(balance).transact({'from': sender}))
         cls.setVotingPeriod = lambda self, sender, duration: mine_tx(
-            self.court.functions.setVotingPeriod(duration).transact({'from' : sender}))
+            self.court.functions.setVotingPeriod(duration).transact({'from': sender}))
         cls.setConfirmationPeriod = lambda self, sender, duration: mine_tx(
-            self.court.functions.setConfirmationPeriod(duration).transact({'from' : sender}))
+            self.court.functions.setConfirmationPeriod(duration).transact({'from': sender}))
         cls.setRequiredParticipation = lambda self, sender, fraction: mine_tx(
-            self.court.functions.setRequiredParticipation(fraction).transact({'from' : sender}))
+            self.court.functions.setRequiredParticipation(fraction).transact({'from': sender}))
         cls.setRequiredMajority = lambda self, sender, fraction: mine_tx(
-            self.court.functions.setRequiredMajority(fraction).transact({'from' : sender}))
+            self.court.functions.setRequiredMajority(fraction).transact({'from': sender}))
 
         # Views
         cls.hasVoted = lambda self, sender, motionID: self.court.functions.hasVoted(sender, motionID).call()
@@ -126,21 +126,21 @@ class TestCourt(unittest.TestCase):
 
         # Mutators
         cls.beginConfiscationMotion = lambda self, sender, target: mine_tx(
-            self.court.functions.beginConfiscationMotion(target).transact({'from' : sender}))
+            self.court.functions.beginConfiscationMotion(target).transact({'from': sender}))
         cls.voteFor = lambda self, sender, target: mine_tx(
-            self.court.functions.voteFor(target).transact({'from' : sender}))
+            self.court.functions.voteFor(target).transact({'from': sender}))
         cls.voteAgainst = lambda self, sender, target: mine_tx(
-            self.court.functions.voteAgainst(target).transact({'from' : sender}))
+            self.court.functions.voteAgainst(target).transact({'from': sender}))
         cls.cancelVote = lambda self, sender, target: mine_tx(
-            self.court.functions.cancelVote(target).transact({'from' : sender}))
+            self.court.functions.cancelVote(target).transact({'from': sender}))
         cls.closeMotion = lambda self, sender, target: mine_tx(
-            self.court.functions.closeMotion(target).transact({'from' : sender}))
+            self.court.functions.closeMotion(target).transact({'from': sender}))
 
         # Owner only
         cls.approveMotion = lambda self, sender, target: mine_tx(
-            self.court.functions.approveMotion(target).transact({'from' : sender}))
+            self.court.functions.approveMotion(target).transact({'from': sender}))
         cls.vetoMotion = lambda self, sender, target: mine_tx(
-            self.court.functions.vetoMotion(target).transact({'from' : sender}))
+            self.court.functions.vetoMotion(target).transact({'from': sender}))
 
         # Internal
         cls.setupVote = lambda self, sender, target: mine_tx(
@@ -149,21 +149,23 @@ class TestCourt(unittest.TestCase):
         # Havven getters
         cls.havvenSupply = lambda self: self.havven.functions.totalSupply().call()
         cls.havvenBalance = lambda self, account: self.havven.functions.balanceOf(account).call()
-        cls.havvenTargetFeePeriodDurationSeconds = lambda self: self.havven.functions.targetFeePeriodDurationSeconds().call()
-        cls.havvenPenultimateAverageBalance = lambda self, addr: self.havven.functions.penultimateAverageBalance(addr).call()
+        cls.havvenTargetFeePeriodDurationSeconds = lambda \
+            self: self.havven.functions.targetFeePeriodDurationSeconds().call()
+        cls.havvenPenultimateAverageBalance = lambda self, addr: self.havven.functions.penultimateAverageBalance(
+            addr).call()
         cls.havvenLastAverageBalance = lambda self, addr: self.havven.functions.lastAverageBalance(addr).call()
 
         # Havven mutators
         cls.havvenEndow = lambda self, sender, account, value: mine_tx(
-            self.havven.functions.endow(account, value).transact({'from' : sender}))
+            self.havven.functions.endow(account, value).transact({'from': sender}))
         cls.havvenTransfer = lambda self, sender, to, value: mine_tx(
-            self.havven.functions.transfer(to, value).transact({'from' : sender}))
+            self.havven.functions.transfer(to, value).transact({'from': sender}))
         cls.havvenCheckFeePeriodRollover = lambda self, sender: mine_tx(
             self.havven.functions._checkFeePeriodRollover().transact({'from': sender}))
         cls.havvenAdjustFeeEntitlement = lambda self, sender, acc, p_bal: mine_tx(
             self.havven.functions._adjustFeeEntitlement(acc, p_bal).transact({'from': sender}))
         cls.havvenSetTargetFeePeriodDuration = lambda self, sender, duration: mine_tx(
-            self.havven.functions.setTargetFeePeriodDuration(duration).transact({'from' : sender}))
+            self.havven.functions.setTargetFeePeriodDuration(duration).transact({'from': sender}))
 
         # Nomin getter
         cls.nominIsFrozen = lambda self, account: self.nomin.functions.isFrozen(account).call()
@@ -172,11 +174,11 @@ class TestCourt(unittest.TestCase):
         cls.days = 86400
         cls.weeks = 604800
         cls.months = 2628000
-        cls.unit = 10**18
+        cls.unit = 10 ** 18
 
     # Extract vote index from a transaction receipt returned by a call to beginConfiscationMotion
     def get_motion_index(self, tx_receipt):
-        event_data =  get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])
+        event_data = get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])
         self.assertEqual(event_data['event'], "MotionBegun")
         return event_data['args']['motionID']
 
@@ -270,11 +272,11 @@ class TestCourt(unittest.TestCase):
 
     def test_setRequiredMajority(self):
         owner = self.owner()
-        new_required_majority = (3 * UNIT) // 4 
+        new_required_majority = (3 * UNIT) // 4
 
         # Only owner can set requiredMajority.
         self.assertReverts(self.setRequiredMajority, DUMMY, new_required_majority)
-        tx_receipt = self.setRequiredMajority(owner, new_required_majority) 
+        tx_receipt = self.setRequiredMajority(owner, new_required_majority)
         self.assertEqual(self.requiredMajority(), new_required_majority)
 
         # Required majority must be >= than 50%.
@@ -295,7 +297,7 @@ class TestCourt(unittest.TestCase):
         fast_forward(fee_period + 1)
         self.havvenCheckFeePeriodRollover(DUMMY)
 
-        address_pattern = "0x" + "0"*39 + "{}"
+        address_pattern = "0x" + "0" * 39 + "{}"
         motion_id = self.get_motion_index(self.beginConfiscationMotion(voter, address_pattern.format(1)))
         self.assertEqual(motion_id, 1)
         for i in range(2, 6):
@@ -308,14 +310,14 @@ class TestCourt(unittest.TestCase):
         voting_period = self.votingPeriod()
         confirmation_period = self.confirmationPeriod()
 
-        self.havvenEndow(owner, voter,  self.havvenSupply() // 2)
+        self.havvenEndow(owner, voter, self.havvenSupply() // 2)
 
         # Fast forward to update the vote weight.
         fast_forward(fee_period + 1)
         self.havvenCheckFeePeriodRollover(DUMMY)
         fast_forward(fee_period + 1)
         self.havvenCheckFeePeriodRollover(DUMMY)
-        
+
         # Start three motions to close them in three different ways.
         motion_id1 = self.get_motion_index(self.beginConfiscationMotion(voter, target1))
         motion_id2 = self.get_motion_index(self.beginConfiscationMotion(voter, target2))
@@ -411,17 +413,17 @@ class TestCourt(unittest.TestCase):
 
         # This should return false because the voter has not voted yet.
         self.assertFalse(self.hasVoted(voter, motion_id))
-        self.voteFor(voter, motion_id)  
+        self.voteFor(voter, motion_id)
 
         # This should return true because the voter has voted.
         self.assertTrue(self.hasVoted(voter, motion_id))
 
         # And false when they cancel their vote.
-        self.cancelVote(voter, motion_id)   
+        self.cancelVote(voter, motion_id)
         self.assertFalse(self.hasVoted(voter, motion_id))
 
         # And true again if they vote against.
-        self.voteFor(voter, motion_id)  
+        self.voteFor(voter, motion_id)
         self.assertTrue(self.hasVoted(voter, motion_id))
 
     def test_motionPasses(self):
@@ -686,7 +688,7 @@ class TestCourt(unittest.TestCase):
         # Cast a vote in favour of confiscation.
         self.voteFor(voter, motion_id)
         self.assertEqual(self.votesFor(motion_id), 1000)
-        tx_receipt  = self.cancelVote(voter, motion_id)
+        tx_receipt = self.cancelVote(voter, motion_id)
 
         # Check that event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "VoteCancelled")
@@ -759,7 +761,7 @@ class TestCourt(unittest.TestCase):
         fast_forward(voting_period)
 
         # After vote has closed, voteStarTimes and votesFor/votesAgainst should be 0 and suspect should be waiting.
-        self.closeMotion(voter, motion_id)  
+        self.closeMotion(voter, motion_id)
         self.assertEqual(self.votesFor(motion_id), 0)
         self.assertEqual(self.motionStartTime(motion_id), 0)
         self.assertTrue(self.motionWaiting(motion_id))
@@ -904,13 +906,13 @@ class TestCourt(unittest.TestCase):
             self.havvenEndow(owner, voter, self.havvenSupply() // num_voters)
 
         frozen, unfrozen = [], []
-        
+
         # Update their fee info.
         fast_forward(fee_period + 1)
         self.havvenCheckFeePeriodRollover(DUMMY)
         fast_forward(fee_period + 1)
         self.havvenCheckFeePeriodRollover(DUMMY)
-        
+
         # Run a shitload of votes simultaneously:
         motions = []
         target_index = 0
@@ -962,7 +964,7 @@ class TestCourt(unittest.TestCase):
         for voter in yeas:
             self.voteFor(voter, bare_majority_vote)
         for voter in nays:
-            self.voteAgainst(voter, bare_majority_vote) 
+            self.voteAgainst(voter, bare_majority_vote)
         for voter in voters:
             self.assertTrue(self.hasVoted(voter, bare_majority_vote))
 
@@ -981,7 +983,7 @@ class TestCourt(unittest.TestCase):
         for voter in yeas:
             self.voteFor(voter, bare_quorum_vote)
         for voter in nays:
-            self.voteAgainst(voter, bare_quorum_vote)   
+            self.voteAgainst(voter, bare_quorum_vote)
         for voter in voters[:bare_quorum]:
             self.assertTrue(self.hasVoted(voter, bare_quorum_vote))
         for voter in voters[bare_quorum:]:
