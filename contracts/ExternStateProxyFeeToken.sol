@@ -86,7 +86,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
     {
         require(_transferFeeRate <= MAX_TRANSFER_FEE_RATE);
         transferFeeRate = _transferFeeRate;
-        TransferFeeRateUpdate(_transferFeeRate);
+        TransferFeeRateUpdated(_transferFeeRate);
     }
 
     function setFeeAuthority(address _feeAuthority)
@@ -94,7 +94,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         optionalProxy_onlyOwner
     {
         feeAuthority = _feeAuthority;
-        FeeAuthorityUpdate(_feeAuthority);
+        FeeAuthorityUpdated(_feeAuthority);
     }
 
     function setState(FeeTokenState _state)
@@ -253,7 +253,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         state.setFeePool(safeSub(feePool(), value));
         state.setBalance(account, safeAdd(state.balanceOf(account), value));
 
-        FeeWithdrawal(account, value);
+        FeesWithdrawn(account, value);
 
         return true;
     }
@@ -274,7 +274,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         state.setBalance(sender, safeSub(balance, n));
         state.setFeePool(safeAdd(feePool(), n));
 
-        FeeDonation(sender, sender, n);
+        FeesDonated(sender, sender, n);
 
         return true;
     }
@@ -287,11 +287,11 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
 
     event Approval(address indexed owner, address indexed spender, uint value);
 
-    event TransferFeeRateUpdate(uint newFeeRate);
+    event TransferFeeRateUpdated(uint newFeeRate);
 
-    event FeeWithdrawal(address indexed account, uint value);
+    event FeeAuthorityUpdated(address feeAuthority);
 
-    event FeeDonation(address donor, address indexed donorIndex, uint value);
+    event FeesWithdrawn(address indexed account, uint value);
 
-    event FeeAuthorityUpdate(address feeAuthority);
+    event FeesDonated(address donor, address indexed donorIndex, uint value);
 }

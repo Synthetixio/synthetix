@@ -156,7 +156,7 @@ class TestExternStateProxyFeeToken(unittest.TestCase):
         tx_receipt = self.setTransferFeeRate(owner, new_transfer_fee_rate)
         # Check that event is emitted.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'],
-                         "TransferFeeRateUpdate")
+                         "TransferFeeRateUpdated")
         self.assertEqual(self.transferFeeRate(), new_transfer_fee_rate)
 
         # Maximum fee rate is UNIT /10.
@@ -173,7 +173,7 @@ class TestExternStateProxyFeeToken(unittest.TestCase):
         tx_receipt = self.setFeeAuthority(owner, new_fee_authority)
         # Check that event is emitted.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'],
-                         "FeeAuthorityUpdate")
+                         "FeeAuthorityUpdated")
         self.assertEqual(self.feeAuthority(), new_fee_authority)
 
     def test_getTransferFeeIncurred(self):
@@ -386,7 +386,7 @@ class TestExternStateProxyFeeToken(unittest.TestCase):
         tx_receipt = self.withdrawFee(self.fee_authority, fee_receiver, fee_pool // 4)
         # Check that event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'],
-                         "FeeWithdrawal")
+                         "FeesWithdrawn")
         self.assertEqual(3 * fee_pool // 4, self.feePool())
         self.assertEqual(self.balanceOf(fee_receiver), fee_receiver_balance + fee_pool // 4)
 
@@ -394,7 +394,7 @@ class TestExternStateProxyFeeToken(unittest.TestCase):
         tx_receipt = self.withdrawFee(self.fee_authority, fee_receiver, 3 * fee_pool // 4)
         # Check that event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'],
-                         "FeeWithdrawal")
+                         "FeesWithdrawn")
 
         self.assertEqual(self.balanceOf(fee_receiver), fee_receiver_balance + fee_pool)
         self.assertEqual(self.totalSupply(), total_supply)
@@ -427,4 +427,4 @@ class TestExternStateProxyFeeToken(unittest.TestCase):
         # And it should emit the right event.
         tx_receipt = self.donateToFeePool(donor, UNIT)
         self.assertEqual(len(tx_receipt.logs), 1)
-        self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'], 'FeeDonation')
+        self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'], 'FeesDonated')

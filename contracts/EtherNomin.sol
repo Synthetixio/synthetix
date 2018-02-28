@@ -423,7 +423,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         require(fiatBalance() >= safeDecMul(sum, MINIMUM_ISSUANCE_RATIO_dec));
         state.setTotalSupply(sum);
         nominPool_dec = safeAdd(nominPool_dec, n);
-        Issuance(n, msg.value);
+        Issued(n, msg.value);
     }
 
     /* Burns n nomins from the pool.
@@ -438,7 +438,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         require(nominPool_dec >= n);
         nominPool_dec = safeSub(nominPool_dec, n);
         state.setTotalSupply(safeSub(state.totalSupply(), n));
-        Burning(n);
+        Burned(n);
     }
 
     /* Sends n nomins to the sender from the pool, in exchange for
@@ -462,7 +462,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         // sub requires that nominPool_dec >= n
         nominPool_dec = safeSub(nominPool_dec, n);
         state.setBalance(sender, safeAdd(state.balanceOf(sender), n));
-        Purchase(sender, sender, n, msg.value);
+        Purchased(sender, sender, n, msg.value);
     }
 
     /* Sends n nomins to the pool from the sender, in exchange for
@@ -492,7 +492,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         // sub requires that the balance is greater than n
         state.setBalance(sender, safeSub(state.balanceOf(sender), n));
         nominPool_dec = safeAdd(nominPool_dec, n);
-        Sale(sender, sender, n, proceeds);
+        Sold(sender, sender, n, proceeds);
         sender.transfer(proceeds);
     }
 
@@ -515,7 +515,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         internal
     {
         liquidationTimestamp = now;
-        Liquidation(liquidationPeriod);
+        LiquidationBegun(liquidationPeriod);
     }
 
     /* If the contract is liquidating, the owner may extend the liquidation period.
@@ -587,7 +587,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         state.setFeePool(safeAdd(state.feePool(), balance));
         state.setBalance(target, 0);
         state.setFrozen(target, true);
-        Confiscation(target, target, balance);
+        Confiscated(target, target, balance);
     }
 
     /* The owner may allow a previously-frozen contract to once
@@ -641,13 +641,13 @@ contract EtherNomin is ExternStateProxyFeeToken {
 
     /* ========== EVENTS ========== */
 
-    event Issuance(uint nominsIssued, uint collateralDeposited);
+    event Issued(uint nominsIssued, uint collateralDeposited);
 
-    event Burning(uint nominsBurned);
+    event Burned(uint nominsBurned);
 
-    event Purchase(address buyer, address indexed buyerIndex, uint nomins, uint eth);
+    event Purchased(address buyer, address indexed buyerIndex, uint nomins, uint eth);
 
-    event Sale(address seller, address indexed sellerIndex, uint nomins, uint eth);
+    event Sold(address seller, address indexed sellerIndex, uint nomins, uint eth);
 
     event PriceUpdated(uint newPrice);
 
@@ -659,7 +659,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
 
     event BeneficiaryUpdated(address newBeneficiary);
 
-    event Liquidation(uint duration);
+    event LiquidationBegun(uint duration);
 
     event LiquidationTerminated();
 
@@ -669,7 +669,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
 
     event SelfDestructed();
 
-    event Confiscation(address target, address indexed targetIndex, uint balance);
+    event Confiscated(address target, address indexed targetIndex, uint balance);
 
     event AccountUnfrozen(address target, address indexed targetIndex);
 }
