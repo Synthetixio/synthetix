@@ -244,6 +244,7 @@ class TestHavven(unittest.TestCase):
         self.assertEquals(self.MAX_FEE_PERIOD_DURATION_SECONDS(), to_seconds(weeks=26))
         self.assertEquals(self.lastFeesCollected(), 0)
         self.assertEquals(self.get_nomin(), self.nomin_real.address)
+        self.assertEqual(self.havven.functions.decimals().call(), 18)
 
     ###
     # Mappings
@@ -950,6 +951,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.balanceOf(MASTER), 0)
         self.assertEqual(self.transferFeeRate(), 15 * UNIT // 10000)
         self.assertEqual(self.feeAuthority(), self.nomin_havven)
+        self.assertEqual(self.nomin.functions.decimals().call(), 18)
 
     def test_getSetOwner(self):
         pre_owner = self.owner()
