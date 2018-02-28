@@ -106,10 +106,10 @@ class TestHavvenEscrow(unittest.TestCase):
             cls.nomin_real.functions.updatePrice(price, timeSent).transact({'from': sender}))
         cls.n_setTransferFeeRate = lambda self, sender, rate: mine_tx(
             cls.nomin.functions.setTransferFeeRate(rate).transact({'from': sender}))
-        cls.n_issue = lambda self, sender, quantity, value: mine_tx(
-            cls.nomin.functions.issue(quantity).transact({'from': sender, 'value': value}))
-        cls.n_burn = lambda self, sender, quantity: mine_tx(
-            cls.nomin.functions.burn(quantity).transact({'from': sender}))
+        cls.n_replenishPool = lambda self, sender, quantity, value: mine_tx(
+            cls.nomin.functions.replenishPool(quantity).transact({'from': sender, 'value': value}))
+        cls.n_diminishPool = lambda self, sender, quantity: mine_tx(
+            cls.nomin.functions.diminishPool(quantity).transact({'from': sender}))
         cls.n_buy = lambda self, sender, quantity, value: mine_tx(
             cls.nomin.functions.buy(quantity).transact({'from': sender, 'value': value}))
         cls.n_sell = lambda self, sender, quantity: mine_tx(
@@ -162,12 +162,12 @@ class TestHavvenEscrow(unittest.TestCase):
         buyer = fresh_account()
         self.n_updatePrice(MASTER, UNIT, self.now_block_time())
         self.n_setTransferFeeRate(MASTER, UNIT // 100)
-        self.n_issue(MASTER, 1000 * UNIT, 2000 * UNIT)
+        self.n_replenishPool(MASTER, 1000 * UNIT, 2000 * UNIT)
         self.n_buy(buyer, 1000 * UNIT, self.n_purchaseCostEther(1000 * UNIT))
         for i in range(8):
             self.n_transfer(buyer, buyer, (9 - (i + 1)) * 100 * UNIT)
         self.n_sell(buyer, self.n_balanceOf(MASTER))
-        self.n_burn(MASTER, self.n_nominPool())
+        self.n_diminishPool(MASTER, self.n_nominPool())
 
     def test_constructor(self):
         self.assertEqual(self.e_havven(), self.havven_real.address)

@@ -8,10 +8,9 @@ from utils.testutils import generate_topic_event_map, get_event_data_from_log
 from utils.testutils import ZERO_ADDRESS
 
 
-ExternStateProxyToken_SOURCE = "contracts/ExternStateProxyToken.sol"
 ExternStateProxyFeeToken_SOURCE = "tests/contracts/PublicExternStateProxyFeeToken.sol"
+Proxy_SOURCE = "contracts/Proxy.sol"
 TokenState_SOURCE = "contracts/TokenState.sol"
-FeeTokenState_SOURCE = "contracts/FeeTokenState.sol"
 
 
 def setUpModule():
@@ -34,19 +33,22 @@ class TestExternStateProxyFeeToken(unittest.TestCase):
         cls.assertReverts = assertReverts
         cls.initial_beneficiary, cls.fee_authority, cls.token_owner = fresh_accounts(3)
 
-        cls.compiled = compile_contracts([ExternStateProxyFeeToken_SOURCE, FeeTokenState_SOURCE])
+        cls.compiled = compile_contracts([ExternStateProxyFeeToken_SOURCE, Proxy_SOURCE, TokenState_SOURCE],
+                                         remappings=['""=contracts'])
         cls.feetoken_abi = cls.compiled['PublicExternStateProxyFeeToken']['abi']
         cls.feetoken_event_dict = generate_topic_event_map(cls.feetoken_abi)
         cls.feetoken_real, cls.construction_txr = attempt_deploy(
             cls.compiled, "PublicExternStateProxyFeeToken", MASTER, ["Test Fee Token", "FEE",
-                                                    cls.initial_beneficiary,
-                                                    UNIT // 20, cls.fee_authority,
-                                                    ZERO_ADDRESS, cls.token_owner]
+                                                                     UNIT // 20, cls.fee_authority,
+                                                                     ZERO_ADDRESS, cls.token_owner]
         )
+
         cls.feestate, txr = attempt_deploy(
-            cls.compiled, "FeeTokenState", MASTER,
-            [cls.token_owner, 1000 * UNIT, cls.initial_beneficiary, cls.feetoken_real.address]
+            cls.compiled, "TokenState", MASTER,
+            [cls.token_owner, cls.token_owner]
         )
+        mine_tx(cls.feestate.functions.setBalanceOf(cls.initial_beneficiary, 1000 * UNIT).transact({'from': cls.token_owner}))
+        mine_tx(cls.feestate.functions.setAssociatedContract(cls.feetoken_real.address).transact({'from': cls.token_owner}))
 
         cls.feetoken_proxy, _ = attempt_deploy(cls.compiled, 'Proxy',
                                                     MASTER, [cls.feetoken_real.address, cls.token_owner])
@@ -101,33 +103,28 @@ class TestExternStateProxyFeeToken(unittest.TestCase):
     def test_constructor(self):
         self.assertEqual(self.name(), "Test Fee Token")
         self.assertEqual(self.symbol(), "FEE")
-        self.assertEqual(self.totalSupply(), 1000 * UNIT)
-        self.assertEqual(self.balanceOf(self.initial_beneficiary), 1000 * UNIT)
+        self.assertEqual(self.totalSupply(), 0)
         self.assertEqual(self.transferFeeRate(), UNIT // 20)
         self.assertEqual(self.feeAuthority(), self.fee_authority)
         self.assertEqual(self.state(), self.feestate.address)
         self.assertEqual(self.feestate.functions.associatedContract().call(), self.feetoken_real.address)
 
     def test_provide_state(self):
-        feestate, _ = attempt_deploy(self.compiled, 'FeeTokenState',
-                                          MASTER,
-                                          [MASTER, 0,
-                                           MASTER, self.feetoken.address])
+        feestate, _ = attempt_deploy(self.compiled, 'TokenState',
+                                     MASTER, [MASTER, self.feetoken.address])
 
         feetoken, _ = attempt_deploy(self.compiled, 'PublicExternStateProxyFeeToken',
-                                          MASTER,
-                                          ["Test Fee Token", "FEE",
-                                           MASTER, UNIT // 20,
-                                           self.fee_authority,
-                                           ZERO_ADDRESS, DUMMY])
+                                     MASTER,
+                                     ["Test Fee Token", "FEE",
+                                      UNIT // 20, self.fee_authority,
+                                      ZERO_ADDRESS, DUMMY])
         self.assertNotEqual(feetoken.functions.state().call(), ZERO_ADDRESS)
 
         feetoken, _ = attempt_deploy(self.compiled, 'PublicExternStateProxyFeeToken',
-                                          MASTER,
-                                          ["Test Fee Token", "FEE",
-                                           MASTER, UNIT // 20,
-                                           self.fee_authority,
-                                           feestate.address, DUMMY])
+                                     MASTER,
+                                     ["Test Fee Token", "FEE",
+                                      UNIT // 20, self.fee_authority,
+                                      feestate.address, DUMMY])
         self.assertEqual(feetoken.functions.state().call(), feestate.address)
 
     def test_getSetOwner(self):
@@ -403,6 +400,8 @@ class TestExternStateProxyFeeToken(unittest.TestCase):
     def test_donateToFeePool(self):
         donor, pauper = fresh_accounts(2)
         self.assertNotEqual(donor, pauper)
+
+        self.assertGreater(self.balanceOf(self.initial_beneficiary), 10 * UNIT)
 
         self.transfer_byProxy(self.initial_beneficiary, donor, 10 * UNIT)
         self.withdrawFee(self.fee_authority, self.initial_beneficiary, self.feePool())

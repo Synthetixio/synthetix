@@ -35,7 +35,7 @@ pragma solidity ^0.4.20;
 
 import "contracts/SafeDecimalMath.sol";
 import "contracts/Owned.sol";
-import "contracts/FeeTokenState.sol";
+import "contracts/TokenState.sol";
 import "contracts/Proxy.sol";
 
 
@@ -43,39 +43,42 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
 
     /* ========== STATE VARIABLES ========== */
 
-    // state that stores balances, allowances, totalSupply, fee pools and frozen accounts
-    FeeTokenState public state;
+    // state that stores balances, allowances and frozen accounts.
+    TokenState public state;
 
+    // Other ERC20 fields
     string public name;
     string public symbol;
+    uint public totalSupply;
 
+    // Collected fees sit here until they are distributed
+    uint public feePool;
     // A percentage fee charged on each transfer.
-    // Zero by default, but may be set in derived contracts.
     uint public transferFeeRate;
     // Fee may not exceed 10%.
     uint constant MAX_TRANSFER_FEE_RATE = UNIT / 10;
-
     // The address with the authority to distribute fees.
     address public feeAuthority;
+
 
     /* ========== CONSTRUCTOR ========== */
 
     function ExternStateProxyFeeToken(string _name, string _symbol,
-                                      address initialBeneficiary,
-                                      uint _feeRate, address _feeAuthority,
-                                      FeeTokenState _state, address _owner)
+                                      uint _transferFeeRate, address _feeAuthority,
+                                      TokenState _state, address _owner)
         Proxyable(_owner)
         public
     {
+        if (_state == TokenState(0)) {
+            state = new TokenState(_owner, address(this));
+        } else {
+            state = _state;
+        }
+
         name = _name;
         symbol = _symbol;
-        transferFeeRate = _feeRate;
+        transferFeeRate = _transferFeeRate;
         feeAuthority = _feeAuthority;
-
-        state = _state;
-        if (state == FeeTokenState(0)) {
-            state = new FeeTokenState(_owner, 0, initialBeneficiary, address(this));
-        }
     }
 
     /* ========== SETTERS ========== */
@@ -97,7 +100,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         FeeAuthorityUpdated(_feeAuthority);
     }
 
-    function setState(FeeTokenState _state)
+    function setState(TokenState _state)
         external
         optionalProxy_onlyOwner
     {
@@ -105,14 +108,6 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
     }
 
     /* ========== VIEWS ========== */
-
-    function totalSupply()
-        external
-        view
-        returns (uint)
-    {
-        return state.totalSupply();
-    }
 
     function balanceOf(address account)
         public
@@ -128,14 +123,6 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         returns (uint)
     {
         return state.allowance(from, to);
-    }
-
-    function feePool()
-        public
-        view
-        returns (uint)
-    {
-        return state.feePool();
     }
 
     // Return the fee charged on top in order to transfer _value worth of tokens.
@@ -189,9 +176,9 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         uint totalCharge = safeAdd(value, fee);
 
         // Insufficient balance will be handled by the safe subtraction.
-        state.setBalance(sender, safeSub(balanceOf(sender), totalCharge));
-        state.setBalance(to, safeAdd(balanceOf(to), value));
-        state.setFeePool(safeAdd(feePool(), fee));
+        state.setBalanceOf(sender, safeSub(balanceOf(sender), totalCharge));
+        state.setBalanceOf(to, safeAdd(balanceOf(to), value));
+        feePool = safeAdd(feePool, fee);
 
         Transfer(sender, to, value);
         TransferFeePaid(sender, fee);
@@ -205,7 +192,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         internal
         returns (bool)
     {
-        require(from != address(0) && to != address(0));
+        require(to != address(0));
 
         // The fee is deducted from the sender's balance, in addition to
         // the transferred quantity.
@@ -213,10 +200,10 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         uint totalCharge = safeAdd(value, fee);
 
         // Insufficient balance will be handled by the safe subtraction.
-        state.setBalance(from, safeSub(state.balanceOf(from), totalCharge));
+        state.setBalanceOf(from, safeSub(state.balanceOf(from), totalCharge));
         state.setAllowance(from, sender, safeSub(state.allowance(from, sender), totalCharge));
-        state.setBalance(to, safeAdd(state.balanceOf(to), value));
-        state.setFeePool(safeAdd(feePool(), fee));
+        state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
+        feePool = safeAdd(feePool, fee);
 
         Transfer(from, to, value);
         TransferFeePaid(sender, fee);
@@ -250,8 +237,8 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         }
 
         // Safe subtraction ensures an exception is thrown if the balance is insufficient.
-        state.setFeePool(safeSub(feePool(), value));
-        state.setBalance(account, safeAdd(state.balanceOf(account), value));
+        feePool = safeSub(feePool, value);
+        state.setBalanceOf(account, safeAdd(state.balanceOf(account), value));
 
         FeesWithdrawn(account, value);
 
@@ -271,8 +258,8 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         require(balance != 0);
 
         // safeSub ensures the donor has sufficient balance.
-        state.setBalance(sender, safeSub(balance, n));
-        state.setFeePool(safeAdd(feePool(), n));
+        state.setBalanceOf(sender, safeSub(balance, n));
+        feePool = safeAdd(feePool, n);
 
         FeesDonated(sender, sender, n);
 
