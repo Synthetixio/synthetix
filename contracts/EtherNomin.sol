@@ -388,7 +388,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
      *     Not called by the oracle.
      *     Not the most recently sent price. */
     function updatePrice(uint price, uint timeSent)
-        public
+        external
         postCheckAutoLiquidate
     {
         // Should be callable only by the oracle.
@@ -409,7 +409,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
      *     Insufficient backing funds provided (post-issuance collateralisation below minimum requirement).
      *     Price is stale. */
     function issue(uint n)
-        public
+        external
         payable
         notLiquidating
         optionalProxy_onlyOwner
@@ -429,7 +429,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
      *     Not called by contract owner.
      *     There are fewer than n nomins in the pool. */
     function burn(uint n)
-        public
+        external
         optionalProxy_onlyOwner
     {
         // Require that there are enough nomins in the accessible pool to burn
@@ -448,7 +448,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
      *     contract in liquidation.
      *     Price is stale. */
     function buy(uint n)
-        public
+        external
         payable
         notLiquidating
         optionalProxy
@@ -470,7 +470,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
      *     Insufficient funds in the pool to pay sender.
      *     Price is stale if not in liquidation. */
     function sell(uint n)
-        public
+        external
         optionalProxy
     {
 
@@ -503,7 +503,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
      *     Not called by contract owner;
      *     contract already in liquidation; */
     function forceLiquidation()
-        public
+        external
         notLiquidating
         optionalProxy_onlyOwner
     {
@@ -521,7 +521,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
      * It may only get longer, not shorter, and it may not be extended past
      * the liquidation max. */
     function extendLiquidationPeriod(uint extension)
-        public
+        external
         optionalProxy_onlyOwner
     {
         require(isLiquidating());
@@ -536,7 +536,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
      * threshold, for example if the ether price has increased,
      * or by including enough ether in this transaction. */
     function terminateLiquidation()
-        public
+        external
         payable
         priceNotStale
         optionalProxy_onlyOwner
@@ -553,7 +553,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
      * liquidation for at least liquidationPeriod, or all circulating
      * nomins have been sold back into the pool. */
     function selfDestruct()
-        public
+        external
         optionalProxy_onlyOwner
     {
         require(canSelfDestruct());
@@ -565,7 +565,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
      * state, the court may transfer the target account's balance to the fee pool
      * and freeze its participation in further transactions. */
     function confiscateBalance(address target)
-        public
+        external
     {
         // Should be callable only by the confiscation court.
         require(Court(msg.sender) == court);
@@ -592,7 +592,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
     /* The owner may allow a previously-frozen contract to once
      * again accept and transfer nomins. */
     function unfreezeAccount(address target)
-        public
+        external
         optionalProxy_onlyOwner
     {
         if (state.isFrozen(target) && EtherNomin(target) != this) {
