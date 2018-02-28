@@ -102,13 +102,13 @@ average balance, in order to support the voting functionality detailed in Court.
 pragma solidity ^0.4.20;
 
 
-import "contracts/ERC20Token.sol";
+import "contracts/ExternStateProxyToken.sol";
 import "contracts/EtherNomin.sol";
 import "contracts/HavvenEscrow.sol";
-import "contracts/ERC20State.sol";
+import "contracts/TokenState.sol";
 
 
-contract Havven is ERC20Token {
+contract Havven is ExternStateProxyToken {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -165,9 +165,9 @@ contract Havven is ERC20Token {
 
     /* ========== CONSTRUCTOR ========== */
 
-    function Havven(ERC20State initialState, address _owner)
-        ERC20Token("Havven", "HAV", 1e8 * UNIT, address(this), initialState, _owner)
-        // Owned is initialised in ERC20Token
+    function Havven(TokenState initialState, address _owner)
+        ExternStateProxyToken("Havven", "HAV", 1e8 * UNIT, address(this), initialState, _owner)
+        // Owned is initialised in ExternStateProxyToken
         public
     {
         lastTransferTimestamp[this] = now;

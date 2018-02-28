@@ -5,7 +5,7 @@ pragma solidity ^0.4.20;
 
 
 import "contracts/EtherNomin.sol";
-import "contracts/ERC20FeeState.sol";
+import "contracts/FeeTokenState.sol";
 
 
 contract PublicEtherNomin is EtherNomin {
@@ -13,7 +13,7 @@ contract PublicEtherNomin is EtherNomin {
     function PublicEtherNomin(address _havven, address _oracle,
                               address _beneficiary,
                               uint initialEtherPrice,
-                              address _owner, ERC20FeeState initialState)
+                              address _owner, FeeTokenState initialState)
         EtherNomin(_havven, _oracle, _beneficiary, initialEtherPrice, _owner, initialState)
         public {}
 
