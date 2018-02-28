@@ -4,8 +4,9 @@ from utils.deployutils import compile_contracts, attempt_deploy, mine_tx, \
 from utils.testutils import assertReverts
 from utils.testutils import ZERO_ADDRESS
 
-ExternStateProxyToken_SOURCE = "contracts/ExternStateProxyToken.sol"
-ExternStateProxyFeeToken_SOURCE = "contracts/ExternStateProxyFeeToken.sol"
+
+ExternStateProxyToken_SOURCE = "tests/contracts/PublicExternStateProxyToken.sol"
+ExternStateProxyFeeToken_SOURCE = "tests/contracts/PublicExternStateProxyFeeToken.sol"
 TokenState_SOURCE = "contracts/TokenState.sol"
 FeeTokenState_SOURCE = "contracts/FeeTokenState.sol"
 FAKEPROXY_SOURCE = "tests/contracts/FakeProxy.sol"
@@ -37,10 +38,11 @@ class TestTokenState(unittest.TestCase):
     def setUpClass(cls):
         cls.assertReverts = assertReverts
 
-        cls.compiled = compile_contracts([ExternStateProxyToken_SOURCE, FAKEPROXY_SOURCE])
+        cls.compiled = compile_contracts([ExternStateProxyToken_SOURCE, FAKEPROXY_SOURCE],
+                                         remappings=['""=contracts'])
 
         cls.token, cls.construction_txr = attempt_deploy(
-            cls.compiled, 'ExternStateProxyToken', MASTER, ["Test Token", "TEST", 1000 * UNIT, MASTER, ZERO_ADDRESS, MASTER]
+            cls.compiled, 'PublicExternStateProxyToken', MASTER, ["Test Token", "TEST", 1000 * UNIT, MASTER, ZERO_ADDRESS, MASTER]
         )
         cls.tokenstate = deploy_state('TokenState', cls.compiled, MASTER, MASTER, 1000 * UNIT, MASTER,
                                       cls.token.address)
@@ -59,12 +61,12 @@ class TestTokenState(unittest.TestCase):
         cls.tok_balanceOf = lambda self, account: cls.token.functions.balanceOf(account).call()
         cls.tok_allowance = lambda self, account, spender: cls.token.functions.allowance(account, spender).call()
 
-        cls.tok_transfer = lambda self, sender, argSender, to, value: mine_tx(
-            cls.token.functions.transfer(argSender, to, value).transact({'from': sender}))
+        cls.tok_transfer_byProxy = lambda self, sender, to, value: mine_tx(
+            cls.token.functions.transfer_byProxy(to, value).transact({'from': sender}))
         cls.tok_approve = lambda self, sender, spender, value: mine_tx(
             cls.token.functions.approve(spender, value).transact({'from': sender}))
-        cls.tok_transferFrom = lambda self, sender, argSender, fromAccount, to, value: mine_tx(
-            cls.token.functions.transferFrom(argSender, fromAccount, to, value).transact({'from': sender}))
+        cls.tok_transferFrom_byProxy = lambda self, sender, fromAccount, to, value: mine_tx(
+            cls.token.functions.transferFrom_byProxy(fromAccount, to, value).transact({'from': sender}))
 
         cls.state_setAssociatedContract = lambda self, sender, addr: mine_tx(
             cls.tokenstate.functions.setAssociatedContract(addr).transact({'from': sender}))
@@ -105,20 +107,20 @@ class TestTokenState(unittest.TestCase):
         self.assertReverts(self.state_setAssociatedContract, DUMMY, new_token)
         self.state_setAssociatedContract(MASTER, new_token)
         self.assertEqual(self.state_associatedContract(), new_token)
-        self.assertReverts(self.tok_transfer, MASTER, MASTER, DUMMY, UNIT)
+        self.assertReverts(self.tok_transfer_byProxy, MASTER, DUMMY, UNIT)
 
         valid_token, txr = attempt_deploy(
-            self.compiled, 'ExternStateProxyToken', MASTER, ["Test2", "TEST2", 100 * UNIT, MASTER, self.tokenstate.address, MASTER]
+            self.compiled, 'PublicExternStateProxyToken', MASTER, ["Test2", "TEST2", 100 * UNIT, MASTER, self.tokenstate.address, MASTER]
         )
 
         self.state_setAssociatedContract(MASTER, valid_token.address)
 
-        mine_tx(valid_token.functions.transfer(MASTER, DUMMY, 10 * UNIT).transact({'from': MASTER}))
+        mine_tx(valid_token.functions.transfer_byProxy(DUMMY, 10 * UNIT).transact({'from': MASTER}))
         self.assertEqual(valid_token.functions.balanceOf(DUMMY).call(), 10 * UNIT)
 
     def test_balances_after_swap(self):
         valid_token, txr = attempt_deploy(  # initial supply and beneficiary don't have to be set, as state exists
-            self.compiled, 'ExternStateProxyToken', MASTER, ["Test2", "TEST2", 0, ZERO_ADDRESS, self.tokenstate.address, MASTER]
+            self.compiled, 'PublicExternStateProxyToken', MASTER, ["Test2", "TEST2", 0, ZERO_ADDRESS, self.tokenstate.address, MASTER]
         )
         # new token only reads balances, but state doesn't accept any changes from it, until the token is
         #   set in the state as the associated contract
@@ -128,7 +130,7 @@ class TestTokenState(unittest.TestCase):
         self.assertEqual(valid_token.functions.balanceOf(DUMMY).call(), 0)
         self.assertEqual(self.tok_balanceOf(DUMMY), 0)
 
-        self.tok_transfer(MASTER, MASTER, DUMMY, 10 * UNIT)
+        self.tok_transfer_byProxy(MASTER, DUMMY, 10 * UNIT)
 
         self.assertEqual(valid_token.functions.balanceOf(MASTER).call(), 990 * UNIT)
         self.assertEqual(self.tok_balanceOf(MASTER), 990 * UNIT)
@@ -136,23 +138,23 @@ class TestTokenState(unittest.TestCase):
         self.assertEqual(self.tok_balanceOf(DUMMY), 10 * UNIT)
 
         # assert transaction reverts before the state sets the associated contract
-        self.assertReverts(valid_token.functions.transfer(MASTER, DUMMY, 10 * UNIT).transact, {'from': MASTER})
+        self.assertReverts(valid_token.functions.transfer_byProxy(DUMMY, 10 * UNIT).transact, {'from': MASTER})
 
         self.state_setAssociatedContract(MASTER, valid_token.address)
 
         # do the transaction with the new token
-        mine_tx(valid_token.functions.transfer(MASTER, DUMMY, 10 * UNIT).transact({'from': MASTER}))
+        mine_tx(valid_token.functions.transfer_byProxy(DUMMY, 10 * UNIT).transact({'from': MASTER}))
 
         self.assertEqual(valid_token.functions.balanceOf(MASTER).call(), 980 * UNIT)
         self.assertEqual(self.tok_balanceOf(MASTER), 980 * UNIT)
         self.assertEqual(valid_token.functions.balanceOf(DUMMY).call(), 20 * UNIT)
         self.assertEqual(self.tok_balanceOf(DUMMY), 20 * UNIT)
 
-        self.assertReverts(self.tok_transfer, MASTER, MASTER, DUMMY, 10 * UNIT)
+        self.assertReverts(self.tok_transfer_byProxy, MASTER, DUMMY, 10 * UNIT)
 
     def test_allowances(self):
         valid_token, txr = attempt_deploy(  # initial supply and beneficiary don't have to be set, as state exists
-            self.compiled, 'ExternStateProxyToken', MASTER, ["Test2", "TEST2", 0, ZERO_ADDRESS, self.tokenstate.address, MASTER]
+            self.compiled, 'PublicExternStateProxyToken', MASTER, ["Test2", "TEST2", 0, ZERO_ADDRESS, self.tokenstate.address, MASTER]
         )
         fake_proxy, _ = attempt_deploy(self.compiled, 'FakeProxy', MASTER, [])
         mine_tx(valid_token.functions.setProxy(fake_proxy.address).transact({'from': MASTER}))
@@ -162,7 +164,7 @@ class TestTokenState(unittest.TestCase):
         self.assertEqual(self.tok_allowance(MASTER, DUMMY), 100 * UNIT)
         self.assertEqual(valid_token.functions.allowance(MASTER, DUMMY).call(), 100 * UNIT)
 
-        self.tok_transferFrom(DUMMY, DUMMY, MASTER, DUMMY, 20 * UNIT)
+        self.tok_transferFrom_byProxy(DUMMY, MASTER, DUMMY, 20 * UNIT)
 
         self.assertEqual(self.tok_balanceOf(MASTER), 980 * UNIT)
         self.assertEqual(self.tok_balanceOf(DUMMY), 20 * UNIT)
@@ -171,9 +173,9 @@ class TestTokenState(unittest.TestCase):
 
         self.state_setAssociatedContract(MASTER, valid_token.address)
 
-        self.assertReverts(self.tok_transferFrom, DUMMY, DUMMY, MASTER, DUMMY, 20 * UNIT)
+        self.assertReverts(self.tok_transferFrom_byProxy, DUMMY, MASTER, DUMMY, 20 * UNIT)
 
-        mine_tx(valid_token.functions.transferFrom(DUMMY, MASTER, DUMMY, 20 * UNIT).transact({'from': DUMMY}))
+        mine_tx(valid_token.functions.transferFrom_byProxy(MASTER, DUMMY, 20 * UNIT).transact({'from': DUMMY}))
 
         self.assertEqual(self.state_balanceOf(MASTER), 960 * UNIT)
         self.assertEqual(self.state_balanceOf(DUMMY), 40 * UNIT)
@@ -190,7 +192,7 @@ class TestTokenState(unittest.TestCase):
         self.assertEqual(valid_token.functions.allowance(MASTER, DUMMY).call(), 0)
 
         self.assertReverts(
-            valid_token.functions.transferFrom(DUMMY, MASTER, DUMMY, 20 * UNIT).transact, {'from': DUMMY}
+            valid_token.functions.transferFrom_byProxy(MASTER, DUMMY, 20 * UNIT).transact, {'from': DUMMY}
         )
 
 
@@ -205,11 +207,12 @@ class TestFeeTokenState(unittest.TestCase):
     def setUpClass(cls):
         cls.assertReverts = assertReverts
 
-        cls.compiled = compile_contracts([ExternStateProxyFeeToken_SOURCE, FAKEPROXY_SOURCE])
+        cls.compiled = compile_contracts([ExternStateProxyFeeToken_SOURCE, FAKEPROXY_SOURCE],
+                                         remappings=['""=contracts'])
 
         cls.fee_beneficiary = fresh_accounts(1)[0]
         cls.feetoken, cls.construction_txr = attempt_deploy(
-            cls.compiled, 'ExternStateProxyFeeToken', MASTER,
+            cls.compiled, 'PublicExternStateProxyFeeToken', MASTER,
             ["Test Token", "TEST", MASTER, UNIT // 100, cls.fee_beneficiary, ZERO_ADDRESS, MASTER]
         )
         cls.feestate = deploy_state('FeeTokenState', cls.compiled, MASTER, MASTER, 1000 * UNIT, MASTER,
@@ -230,12 +233,12 @@ class TestFeeTokenState(unittest.TestCase):
         cls.tok_allowance = lambda self, account, spender: cls.feetoken.functions.allowance(account,
                                                                                                  spender).call()
 
-        cls.tok_transfer = lambda self, sender, to, value: mine_tx(
-            cls.feetoken.functions.transfer(to, value).transact({'from': sender}))
+        cls.tok_transfer_byProxy = lambda self, sender, to, value: mine_tx(
+            cls.feetoken.functions.transfer_byProxy(to, value).transact({'from': sender}))
         cls.tok_approve = lambda self, sender, argSender, spender, value: mine_tx(
             cls.feetoken.functions.approve(spender, value).transact({'from': sender}))
-        cls.tok_transferFrom = lambda self, sender, fromAccount, to, value: mine_tx(
-            cls.feetoken.functions.transferFrom(fromAccount, to, value).transact({'from': sender}))
+        cls.tok_transferFrom_byProxy = lambda self, sender, fromAccount, to, value: mine_tx(
+            cls.feetoken.functions.transferFrom_byProxy(fromAccount, to, value).transact({'from': sender}))
 
         cls.state_setAssociatedContract = lambda self, sender, addr: mine_tx(
             cls.feestate.functions.setAssociatedContract(addr).transact({'from': sender}))
@@ -278,10 +281,10 @@ class TestFeeTokenState(unittest.TestCase):
         self.assertReverts(self.state_setAssociatedContract, DUMMY, new_token)
         self.state_setAssociatedContract(MASTER, new_token)
         self.assertEqual(self.state_associatedContract(), new_token)
-        self.assertReverts(self.tok_transfer, MASTER, DUMMY, UNIT)
+        self.assertReverts(self.tok_transfer_byProxy, MASTER, DUMMY, UNIT)
 
         valid_token, txr = attempt_deploy(
-            self.compiled, 'ExternStateProxyFeeToken', MASTER,
+            self.compiled, 'PublicExternStateProxyFeeToken', MASTER,
             ["Test2", "TEST2", MASTER, UNIT // 100, self.fee_beneficiary, self.feestate.address,
              MASTER]
         )
@@ -290,7 +293,7 @@ class TestFeeTokenState(unittest.TestCase):
 
         self.state_setAssociatedContract(MASTER, valid_token.address)
 
-        mine_tx(valid_token.functions.transfer(DUMMY, 10 * UNIT).transact({'from': MASTER}))
+        mine_tx(valid_token.functions.transfer_byProxy(DUMMY, 10 * UNIT).transact({'from': MASTER}))
         fee = int(10 * UNIT * 0.01)
         self.assertEqual(valid_token.functions.balanceOf(DUMMY).call(), 10 * UNIT)
         self.assertEqual(valid_token.functions.balanceOf(MASTER).call(), 990 * UNIT - fee)
@@ -298,7 +301,7 @@ class TestFeeTokenState(unittest.TestCase):
 
     def test_balances_remain_after_swap(self):
         valid_token, txr = attempt_deploy(  # initial supply and beneficiary don't have to be set, as state exists
-            self.compiled, 'ExternStateProxyFeeToken', MASTER,
+            self.compiled, 'PublicExternStateProxyFeeToken', MASTER,
             ["Test2", "TEST2", ZERO_ADDRESS, UNIT // 100, self.fee_beneficiary, self.feestate.address, MASTER]
         )
         fake_proxy, _ = attempt_deploy(self.compiled, 'FakeProxy', MASTER, [])
@@ -311,7 +314,7 @@ class TestFeeTokenState(unittest.TestCase):
         self.assertEqual(valid_token.functions.balanceOf(DUMMY).call(), 0)
         self.assertEqual(self.tok_balanceOf(DUMMY), 0)
 
-        self.tok_transfer(MASTER, DUMMY, 10 * UNIT)
+        self.tok_transfer_byProxy(MASTER, DUMMY, 10 * UNIT)
         fee = int(10 * UNIT * 0.01)
 
         self.assertEqual(valid_token.functions.balanceOf(MASTER).call(), 990 * UNIT - fee)
@@ -321,12 +324,12 @@ class TestFeeTokenState(unittest.TestCase):
         self.assertEqual(valid_token.functions.feePool().call(), fee)
 
         # assert transaction reverts before the state sets the associated contract
-        self.assertReverts(valid_token.functions.transfer(DUMMY, 10 * UNIT).transact, {'from': MASTER})
+        self.assertReverts(valid_token.functions.transfer_byProxy(DUMMY, 10 * UNIT).transact, {'from': MASTER})
 
         self.state_setAssociatedContract(MASTER, valid_token.address)
 
         # do the transaction with the new token
-        mine_tx(valid_token.functions.transfer(DUMMY, 10 * UNIT).transact({'from': MASTER}))
+        mine_tx(valid_token.functions.transfer_byProxy(DUMMY, 10 * UNIT).transact({'from': MASTER}))
         fee = fee * 2
 
         self.assertEqual(valid_token.functions.balanceOf(MASTER).call(), 980 * UNIT - fee)
@@ -335,11 +338,11 @@ class TestFeeTokenState(unittest.TestCase):
         self.assertEqual(self.tok_balanceOf(DUMMY), 20 * UNIT)
         self.assertEqual(valid_token.functions.feePool().call(), fee)
 
-        self.assertReverts(self.tok_transfer, MASTER, DUMMY, 10 * UNIT)
+        self.assertReverts(self.tok_transfer_byProxy, MASTER, DUMMY, 10 * UNIT)
 
     def test_allowances(self):
         valid_token, txr = attempt_deploy(  # initial supply and beneficiary don't have to be set, as state exists
-            self.compiled, 'ExternStateProxyFeeToken', MASTER,
+            self.compiled, 'PublicExternStateProxyFeeToken', MASTER,
             ["Test2", "TEST2", ZERO_ADDRESS, UNIT // 100, self.fee_beneficiary, self.feestate.address, MASTER]
         )
         fake_proxy, _ = attempt_deploy(self.compiled, 'FakeProxy', MASTER, [])
@@ -351,7 +354,7 @@ class TestFeeTokenState(unittest.TestCase):
         self.assertEqual(valid_token.functions.allowance(MASTER, DUMMY).call(), 100 * UNIT)
 
         fee = int(20 * UNIT * 0.01)
-        self.tok_transferFrom(DUMMY, MASTER, DUMMY, 20 * UNIT)
+        self.tok_transferFrom_byProxy(DUMMY, MASTER, DUMMY, 20 * UNIT)
 
         self.assertEqual(self.tok_balanceOf(MASTER), 980 * UNIT - fee)
         self.assertEqual(self.tok_balanceOf(DUMMY), 20 * UNIT)
@@ -360,11 +363,11 @@ class TestFeeTokenState(unittest.TestCase):
 
         self.state_setAssociatedContract(MASTER, valid_token.address)
 
-        self.assertReverts(self.tok_transferFrom, DUMMY, MASTER, DUMMY, 20 * UNIT)
+        self.assertReverts(self.tok_transferFrom_byProxy, DUMMY, MASTER, DUMMY, 20 * UNIT)
 
         fee = int(20 * UNIT * 0.01) + fee
 
-        mine_tx(valid_token.functions.transferFrom(MASTER, DUMMY, 20 * UNIT).transact({'from': DUMMY}))
+        mine_tx(valid_token.functions.transferFrom_byProxy(MASTER, DUMMY, 20 * UNIT).transact({'from': DUMMY}))
 
         self.assertEqual(self.state_balanceOf(MASTER), 960 * UNIT - fee)
         self.assertEqual(self.state_balanceOf(DUMMY), 40 * UNIT)
@@ -380,6 +383,6 @@ class TestFeeTokenState(unittest.TestCase):
         self.assertEqual(self.state_allowance(MASTER, DUMMY), 0)
         self.assertEqual(valid_token.functions.allowance(MASTER, DUMMY).call(), 0)
 
-        self.assertReverts(valid_token.functions.transferFrom(MASTER, DUMMY, 20 * UNIT).transact, {'from': DUMMY})
+        self.assertReverts(valid_token.functions.transferFrom_byProxy(MASTER, DUMMY, 20 * UNIT).transact, {'from': DUMMY})
 
         self.assertEqual(self.state_feePool(), fee)

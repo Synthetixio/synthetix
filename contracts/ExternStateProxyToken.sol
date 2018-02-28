@@ -101,7 +101,7 @@ contract ExternStateProxyToken is SafeDecimalMath, Proxyable {
     } 
 
     /* Anything calling this must apply the onlyProxy or optionalProxy modifiers.*/
-    function transfer_byProxy(address sender, address to, uint value)
+    function _transfer_byProxy(address sender, address to, uint value)
         internal
         returns (bool)
     {
@@ -117,7 +117,7 @@ contract ExternStateProxyToken is SafeDecimalMath, Proxyable {
     }
 
     /* Anything calling this must apply the onlyProxy or optionalProxy modifiers.*/
-    function transferFrom_byProxy(address sender, address from, address to, uint value)
+    function _transferFrom_byProxy(address sender, address from, address to, uint value)
         internal
         returns (bool)
     {
