@@ -386,7 +386,7 @@ contract Court is Owned, SafeDecimalMath {
         require(!hasVoted(msg.sender, motionID));
 
         // The voter may not cast votes on themselves.
-        require(msg.sen25der != motionTarget[motionID]);
+        require(msg.sender != motionTarget[motionID]);
 
         // Ensure the voter's vote weight is current.
         havven.recomputeAccountLastAverageBalance(msg.sender);
