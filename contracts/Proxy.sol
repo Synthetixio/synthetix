@@ -18,7 +18,7 @@ contract Proxy is Owned {
     }
 
     function _setTarget(address _target) 
-        public
+        external
         onlyOwner
     {
         require(_target != address(0));
@@ -28,14 +28,14 @@ contract Proxy is Owned {
 
     // Allow the use of the more-flexible metropolis RETURNDATACOPY/SIZE operations.
     function _setMetropolis(bool _metropolis)
-        public
+        external
         onlyOwner
     {
         metropolis = _metropolis;
     }
 
     function _setMessageSender(address sender)
-        public
+        external
         _onlyTarget
     {
         messageSender = sender;
@@ -89,7 +89,7 @@ contract Proxyable is Owned {
         public { }
 
     function setProxy(Proxy _proxy)
-        public
+        external
         onlyOwner
     {
         proxy = _proxy;
