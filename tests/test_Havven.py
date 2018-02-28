@@ -756,7 +756,3 @@ class TestHavven(unittest.TestCase):
             time = block_time()
             self.assertEquals(self.balanceOf(alice), amount)
             self.assertEquals(self.currentBalanceSum(bob), b_sum)
-
-
-if __name__ == '__main__':
-    unittest.main()

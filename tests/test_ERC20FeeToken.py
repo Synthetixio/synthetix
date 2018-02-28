@@ -423,7 +423,3 @@ class TestERC20FeeToken(unittest.TestCase):
         tx_receipt = self.donateToFeePool(donor, UNIT)
         self.assertEqual(len(tx_receipt.logs), 1)
         self.assertEqual(get_event_data_from_log(self.erc20fee_event_dict, tx_receipt.logs[0])['event'], 'FeeDonation')
-
-
-if __name__ == '__main__':
-    unittest.main()

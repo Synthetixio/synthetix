@@ -293,7 +293,3 @@ class TestSafeDecimalMath(unittest.TestCase):
         ), self.safeDecMul(2 * UNIT, UNIT)), 0)
         self.assertEqual(self.safeDecDiv(self.safeDecMul(self.safeAdd(
             self.intToDec(1), UNIT), self.safeMul(2, UNIT)), UNIT // 2), self.intToDec(8))
-
-
-if __name__ == '__main__':
-    unittest.main()

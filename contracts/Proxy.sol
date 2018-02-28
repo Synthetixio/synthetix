@@ -131,4 +131,4 @@ contract Proxyable is Owned {
 
     event ProxyChanged(address proxyAddress);
 
- }
+}
