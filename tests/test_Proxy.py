@@ -1,14 +1,8 @@
 import unittest
-import time
 
-import utils.generalutils
-from utils.generalutils import to_seconds
-from utils.deployutils import W3, UNIT, MASTER, DUMMY, ETHER
-from utils.deployutils import compile_contracts, attempt_deploy, mine_tx
-from utils.deployutils import take_snapshot, restore_snapshot, fast_forward
-from utils.testutils import assertReverts, block_time, send_value, get_eth_balance
-from utils.testutils import generate_topic_event_map, get_event_data_from_log
-from utils.testutils import ZERO_ADDRESS
+from utils.deployutils import W3, UNIT, MASTER, compile_contracts, attempt_deploy, mine_tx, take_snapshot, \
+    restore_snapshot
+from utils.testutils import assertReverts, generate_topic_event_map, ZERO_ADDRESS
 
 ETHERNOMIN_SOURCE = "tests/contracts/PublicEtherNomin.sol"
 FAKECOURT_SOURCE = "tests/contracts/FakeCourt.sol"
@@ -45,9 +39,10 @@ class TestProxy(unittest.TestCase):
         cls.nomin_beneficiary = W3.eth.accounts[3]
         cls.nomin_owner = W3.eth.accounts[0]
 
-        cls.nomin, cls.construction_txr = attempt_deploy(compiled, 'PublicEtherNomin', MASTER,
-                                                         [cls.nomin_havven, cls.nomin_oracle, cls.nomin_beneficiary,
-                                                          UNIT, cls.nomin_owner, ZERO_ADDRESS])
+        cls.nomin, cls.construction_txr = attempt_deploy(
+            compiled, 'PublicEtherNomin', MASTER,
+            [cls.nomin_havven, cls.nomin_oracle, cls.nomin_beneficiary, UNIT, cls.nomin_owner, ZERO_ADDRESS]
+        )
 
         cls.proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER,
                                       [cls.nomin.address, MASTER])
