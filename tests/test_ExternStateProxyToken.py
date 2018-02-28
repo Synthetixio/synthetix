@@ -7,20 +7,20 @@ from utils.testutils import assertReverts
 from utils.testutils import generate_topic_event_map, get_event_data_from_log
 from utils.testutils import ZERO_ADDRESS
 
-ERC20Token_SOURCE = "contracts/ERC20Token.sol"
-ERC20State_SOURCE = "contracts/ERC20State.sol"
+ExternStateProxyToken_SOURCE = "contracts/ExternStateProxyToken.sol"
+TokenState_SOURCE = "contracts/TokenState.sol"
 Proxy_SOURCE = "contracts/Proxy.sol"
 
 
 def setUpModule():
-    print("Testing ERC20Token...")
+    print("Testing ExternStateProxyToken...")
 
 
 def tearDownModule():
     print()
 
 
-class TestERC20Token(unittest.TestCase):
+class TestExternStateProxyToken(unittest.TestCase):
     def setUp(self):
         self.snapshot = take_snapshot()
 
@@ -33,66 +33,66 @@ class TestERC20Token(unittest.TestCase):
 
         cls.the_owner = DUMMY
 
-        cls.compiled = compile_contracts([ERC20Token_SOURCE, ERC20State_SOURCE, Proxy_SOURCE])
-        cls.erc20_abi = cls.compiled['ERC20Token']['abi']
-        cls.erc20_event_dict = generate_topic_event_map(cls.erc20_abi)
-        cls.erc20token_real, cls.construction_txr = attempt_deploy(cls.compiled, 'ERC20Token',
+        cls.compiled = compile_contracts([ExternStateProxyToken_SOURCE, TokenState_SOURCE, Proxy_SOURCE])
+        cls.token_abi = cls.compiled['ExternStateProxyToken']['abi']
+        cls.token_event_dict = generate_topic_event_map(cls.token_abi)
+        cls.token_real, cls.construction_txr = attempt_deploy(cls.compiled, 'ExternStateProxyToken',
                                                                    MASTER,
                                                                    ["Test Token", "TEST",
                                                                     0, cls.the_owner,
                                                                     ZERO_ADDRESS, cls.the_owner])
-        cls.erc20state, _ = attempt_deploy(cls.compiled, 'ERC20State',
+        cls.tokenstate, _ = attempt_deploy(cls.compiled, 'TokenState',
                                            MASTER,
-                                           [cls.the_owner, 1000 * UNIT, cls.the_owner, cls.erc20token_real.address])
+                                           [cls.the_owner, 1000 * UNIT, cls.the_owner, cls.token_real.address])
 
-        mine_tx(cls.erc20token_real.functions.setState(cls.erc20state.address).transact({'from': cls.the_owner}))
+        mine_tx(cls.token_real.functions.setState(cls.tokenstate.address).transact({'from': cls.the_owner}))
 
-        cls.erc20proxy, _ = attempt_deploy(cls.compiled, 'Proxy',
-                                           MASTER, [cls.erc20token_real.address, cls.the_owner])
-        mine_tx(cls.erc20token_real.functions.setProxy(cls.erc20proxy.address).transact({'from': cls.the_owner}))
-        cls.erc20token = W3.eth.contract(address=cls.erc20proxy.address, abi=cls.compiled['ERC20Token']['abi'])
+        cls.tokenproxy, _ = attempt_deploy(cls.compiled, 'Proxy',
+                                           MASTER, [cls.token_real.address, cls.the_owner])
+        mine_tx(cls.token_real.functions.setProxy(cls.tokenproxy.address).transact({'from': cls.the_owner}))
+        cls.token = W3.eth.contract(address=cls.tokenproxy.address, abi=cls.compiled['ExternStateProxyToken']['abi'])
 
-        cls.totalSupply = lambda self: cls.erc20token.functions.totalSupply().call()
-        cls.state = lambda self: cls.erc20token.functions.state().call()
-        cls.name = lambda self: cls.erc20token.functions.name().call()
-        cls.symbol = lambda self: cls.erc20token.functions.symbol().call()
-        cls.balanceOf = lambda self, account: cls.erc20token.functions.balanceOf(account).call()
-        cls.allowance = lambda self, account, spender: cls.erc20token.functions.allowance(account, spender).call()
+        cls.totalSupply = lambda self: cls.token.functions.totalSupply().call()
+        cls.state = lambda self: cls.token.functions.state().call()
+        cls.name = lambda self: cls.token.functions.name().call()
+        cls.symbol = lambda self: cls.token.functions.symbol().call()
+        cls.balanceOf = lambda self, account: cls.token.functions.balanceOf(account).call()
+        cls.allowance = lambda self, account, spender: cls.token.functions.allowance(account, spender).call()
 
         cls.transfer = lambda self, sender, argSender, to, value: mine_tx(
-            cls.erc20token.functions.transfer(argSender, to, value).transact({'from': sender}))
+            cls.token.functions.transfer(argSender, to, value).transact({'from': sender}))
         cls.approve = lambda self, sender, spender, value: mine_tx(
-            cls.erc20token.functions.approve(spender, value).transact({'from': sender}))
+            cls.token.functions.approve(spender, value).transact({'from': sender}))
         cls.transferFrom = lambda self, sender, argSender, fromAccount, to, value: mine_tx(
-            cls.erc20token.functions.transferFrom(argSender, fromAccount, to, value).transact({'from': sender}))
+            cls.token.functions.transferFrom(argSender, fromAccount, to, value).transact({'from': sender}))
 
     def test_constructor(self):
         self.assertEqual(self.name(), "Test Token")
         self.assertEqual(self.symbol(), "TEST")
         self.assertEqual(self.totalSupply(), 1000 * UNIT)
         self.assertEqual(self.balanceOf(self.the_owner), 1000 * UNIT)
-        self.assertEqual(self.state(), self.erc20state.address)
-        self.assertEqual(self.erc20state.functions.associatedContract().call(), self.erc20token_real.address)
+        self.assertEqual(self.state(), self.tokenstate.address)
+        self.assertEqual(self.tokenstate.functions.associatedContract().call(), self.token_real.address)
 
     def test_provide_state(self):
-        erc20state, _ = attempt_deploy(self.compiled, 'ERC20State',
+        tokenstate, _ = attempt_deploy(self.compiled, 'TokenState',
                                        MASTER,
                                        [self.the_owner, 0,
-                                        self.the_owner, self.erc20token.address])
+                                        self.the_owner, self.token.address])
 
-        erc20token, _ = attempt_deploy(self.compiled, 'ERC20Token',
+        token, _ = attempt_deploy(self.compiled, 'ExternStateProxyToken',
                                        MASTER,
                                        ["Test Token", "TEST",
                                         1000 * UNIT, MASTER,
                                         ZERO_ADDRESS, DUMMY])
-        self.assertNotEqual(erc20token.functions.state().call(), ZERO_ADDRESS)
+        self.assertNotEqual(token.functions.state().call(), ZERO_ADDRESS)
 
-        erc20token, _ = attempt_deploy(self.compiled, 'ERC20Token',
+        token, _ = attempt_deploy(self.compiled, 'ExternStateProxyToken',
                                        MASTER,
                                        ["Test Token", "TEST",
                                         1000 * UNIT, MASTER,
-                                        erc20state.address, DUMMY])
-        self.assertEqual(erc20token.functions.state().call(), erc20state.address)
+                                        tokenstate.address, DUMMY])
+        self.assertEqual(token.functions.state().call(), tokenstate.address)
 
     def test_transfer(self):
         sender = self.the_owner
@@ -109,7 +109,7 @@ class TestERC20Token(unittest.TestCase):
         self.assertReverts(self.transfer, receiver, receiver, sender, value)
         tx_receipt = self.transfer(sender, sender, receiver, value)
         # Check event is emitted properly.
-        self.assertEqual(get_event_data_from_log(self.erc20_event_dict, tx_receipt.logs[0])['event'], "Transfer")
+        self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'], "Transfer")
         self.assertEqual(self.balanceOf(receiver), receiver_balance + value)
         self.assertEqual(self.balanceOf(sender), sender_balance - value)
 
@@ -126,7 +126,7 @@ class TestERC20Token(unittest.TestCase):
         pre_receiver_balance = self.balanceOf(receiver)
         tx_receipt = self.transfer(sender, sender, receiver, value)
         # Check event is emitted properly.
-        self.assertEqual(get_event_data_from_log(self.erc20_event_dict, tx_receipt.logs[0])['event'], "Transfer")
+        self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'], "Transfer")
         self.assertEqual(self.balanceOf(receiver), pre_receiver_balance)
         self.assertEqual(self.balanceOf(sender), pre_sender_balance)
 
@@ -135,7 +135,7 @@ class TestERC20Token(unittest.TestCase):
         self.assertEqual(self.balanceOf(no_tokens), 0)
         tx_receipt = self.transfer(no_tokens, no_tokens, receiver, value)
         # Check event is emitted properly.
-        self.assertEqual(get_event_data_from_log(self.erc20_event_dict, tx_receipt.logs[0])['event'], "Transfer")
+        self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'], "Transfer")
         self.assertEqual(self.balanceOf(no_tokens), 0)
 
     def test_approve(self):
@@ -145,14 +145,14 @@ class TestERC20Token(unittest.TestCase):
         tx_receipt = self.approve(approver, spender, approval_amount)
 
         # Check event is emitted properly.
-        self.assertEqual(get_event_data_from_log(self.erc20_event_dict, tx_receipt.logs[0])['event'], "Approval")
+        self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'], "Approval")
         self.assertEqual(self.allowance(approver, spender), approval_amount)
 
         # Any positive approval amount is valid, even greater than total_supply.
         approval_amount = self.totalSupply() * 100
         tx_receipt = self.approve(approver, spender, approval_amount)
         # Check event is emitted properly.
-        self.assertEqual(get_event_data_from_log(self.erc20_event_dict, tx_receipt.logs[0])['event'], "Approval")
+        self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'], "Approval")
         self.assertEqual(self.allowance(approver, spender), approval_amount)
 
     def test_transferFrom(self):
@@ -171,13 +171,13 @@ class TestERC20Token(unittest.TestCase):
 
         tx_receipt = self.approve(approver, spender, 2 * value)
         # Check event is emitted properly.
-        self.assertEqual(get_event_data_from_log(self.erc20_event_dict, tx_receipt.logs[0])['event'], "Approval")
+        self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'], "Approval")
         self.assertEqual(self.allowance(approver, spender), 2 * value)
 
         self.assertReverts(self.transferFrom, spender, spender, approver, receiver, 2 * value + 1)
         tx_receipt = self.transferFrom(spender, spender, approver, receiver, value)
         # Check event is emitted properly.
-        self.assertEqual(get_event_data_from_log(self.erc20_event_dict, tx_receipt.logs[0])['event'], "Transfer")
+        self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'], "Transfer")
 
         self.assertEqual(self.balanceOf(approver), approver_balance - value)
         self.assertEqual(self.balanceOf(spender), spender_balance)
@@ -188,7 +188,7 @@ class TestERC20Token(unittest.TestCase):
         # Empty the account
         tx_receipt = self.transferFrom(spender, spender, approver, receiver, value)
         # Check event is emitted properly.
-        self.assertEqual(get_event_data_from_log(self.erc20_event_dict, tx_receipt.logs[0])['event'], "Transfer")
+        self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'], "Transfer")
 
         approver = fresh_account()
         # This account has no tokens
@@ -198,7 +198,7 @@ class TestERC20Token(unittest.TestCase):
 
         tx_receipt = self.approve(approver, spender, value)
         # Check event is emitted properly.
-        self.assertEqual(get_event_data_from_log(self.erc20_event_dict, tx_receipt.logs[0])['event'], "Approval")
+        self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'], "Approval")
         self.assertEqual(self.allowance(approver, spender), value)
 
         # This should fail because the approver has no tokens.

@@ -6,13 +6,13 @@ pragma solidity ^0.4.20;
 
 
 import "contracts/Havven.sol";
-import "contracts/ERC20State.sol";
+import "contracts/TokenState.sol";
 
 
 // Public getters for all items in the Havven contract, used for debugging/testing
 contract PublicHavven is Havven {
 
-    function PublicHavven(ERC20State initialState, address _owner)
+    function PublicHavven(TokenState initialState, address _owner)
         Havven(initialState, _owner)
         public
     {}
