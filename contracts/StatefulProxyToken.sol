@@ -2,12 +2,12 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
-file:       ERC20Token.sol
-version:    0.3
+file:       StatefulProxyToken.sol
+version:    0.4
 author:     Anton Jurisevic
             Dominic Romanowski
 
-date:       2018-2-24
+date:       2018-2-28
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -16,7 +16,9 @@ approved:   Samuel Brooks
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
-An ERC20-compliant token.
+A token interface to be overridden to produce an ERC20-compliant
+token contract. It relies on being called underneath a proxy,
+as described in Proxy.sol.
 
 This contract utilises a state for upgradability purposes.
 
@@ -28,16 +30,16 @@ pragma solidity ^0.4.20;
 
 import "contracts/SafeDecimalMath.sol";
 import "contracts/Owned.sol";
-import "contracts/ERC20State.sol";
+import "contracts/TokenState.sol";
 import "contracts/Proxy.sol";
 
 
-contract ERC20Token is SafeDecimalMath, Proxyable {
+contract StatefulProxyToken is SafeDecimalMath, Proxyable {
 
     /* ========== STATE VARIABLES ========== */
 
     // state that stores balances, allowances and totalSupply
-    ERC20State public state;
+    TokenState public state;
 
     string public name;
     string public symbol;
@@ -45,10 +47,10 @@ contract ERC20Token is SafeDecimalMath, Proxyable {
 
     /* ========== CONSTRUCTOR ========== */
 
-    function ERC20Token(
+    function StatefulProxyToken(
         string _name, string _symbol,
         uint initialSupply, address initialBeneficiary,
-        ERC20State _state, address _owner
+        TokenState _state, address _owner
     )
         Proxyable(_owner)
         public
@@ -57,8 +59,8 @@ contract ERC20Token is SafeDecimalMath, Proxyable {
         symbol = _symbol;
         state = _state;
         // if the state isn't set, create a new one
-        if (state == ERC20State(0)) {
-            state = new ERC20State(_owner, initialSupply, initialBeneficiary, address(this));
+        if (state == TokenState(0)) {
+            state = new TokenState(_owner, initialSupply, initialBeneficiary, address(this));
             Transfer(0x0, initialBeneficiary, initialSupply);
         }
     }
@@ -91,7 +93,7 @@ contract ERC20Token is SafeDecimalMath, Proxyable {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function setState(ERC20State _state)
+    function setState(TokenState _state)
         onlyOwner
         public
     {

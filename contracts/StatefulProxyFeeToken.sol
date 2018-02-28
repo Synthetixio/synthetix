@@ -2,12 +2,12 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
-file:       ERC20FeeToken.sol
-version:    0.3
+file:       StatefulProxyFeeToken.sol
+version:    0.4
 author:     Anton Jurisevic
             Dominic Romanowski
 
-date:       2018-2-24
+date:       2018-2-28
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -16,13 +16,16 @@ approved:   Samuel Brooks
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
-An ERC20-compliant token which also has a configurable fee rate
-charged on its transfers.
+A token which also has a configurable fee rate
+charged on its transfers. This is designed to be overridden in
+order to produce an ERC20-compliant token.
 
 These fees accrue into a pool, from which a nominated authority
 may withdraw.
 
 This contract utilises a state for upgradability purposes.
+It relies on being called underneath a proxy contract, as
+included in Proxy.sol.
 
 -----------------------------------------------------------------
 */
@@ -32,16 +35,16 @@ pragma solidity ^0.4.20;
 
 import "contracts/SafeDecimalMath.sol";
 import "contracts/Owned.sol";
-import "contracts/ERC20FeeState.sol";
+import "contracts/FeeTokenState.sol";
 import "contracts/Proxy.sol";
 
 
-contract ERC20FeeToken is Proxyable, SafeDecimalMath {
+contract StatefulProxyFeeToken is Proxyable, SafeDecimalMath {
 
     /* ========== STATE VARIABLES ========== */
 
     // state that stores balances, allowances, totalSupply, fee pools and frozen accounts
-    ERC20FeeState public state;
+    FeeTokenState public state;
 
     string public name;
     string public symbol;
@@ -57,10 +60,10 @@ contract ERC20FeeToken is Proxyable, SafeDecimalMath {
 
     /* ========== CONSTRUCTOR ========== */
 
-    function ERC20FeeToken(string _name, string _symbol,
-                           address initialBeneficiary,
-                           uint _feeRate, address _feeAuthority,
-                           ERC20FeeState _state, address _owner)
+    function StatefulProxyFeeToken(string _name, string _symbol,
+                                   address initialBeneficiary,
+                                   uint _feeRate, address _feeAuthority,
+                                   FeeTokenState _state, address _owner)
         Proxyable(_owner)
         public
     {
@@ -70,8 +73,8 @@ contract ERC20FeeToken is Proxyable, SafeDecimalMath {
         feeAuthority = _feeAuthority;
 
         state = _state;
-        if (state == ERC20FeeState(0)) {
-            state = new ERC20FeeState(_owner, 0, initialBeneficiary, address(this));
+        if (state == FeeTokenState(0)) {
+            state = new FeeTokenState(_owner, 0, initialBeneficiary, address(this));
         }
     }
 
@@ -94,7 +97,7 @@ contract ERC20FeeToken is Proxyable, SafeDecimalMath {
         FeeAuthorityUpdate(newFeeAuthority);
     }
 
-    function setState(ERC20FeeState _state)
+    function setState(FeeTokenState _state)
         optionalProxy_onlyOwner
         public
     {
