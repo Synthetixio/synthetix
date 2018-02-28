@@ -63,10 +63,11 @@ contract ERC20Token is SafeDecimalMath, Proxyable {
         }
     }
 
-    /* ========== GETTERS ========== */
+    /* ========== VIEWS ========== */
 
     function allowance(address _account, address _spender)
         public
+        view
         returns (uint)
     {
         return state.allowance(_account, _spender);
@@ -74,6 +75,7 @@ contract ERC20Token is SafeDecimalMath, Proxyable {
 
     function balanceOf(address _account)
         public
+        view
         returns (uint)
     {
         return state.balanceOf(_account);
@@ -81,6 +83,7 @@ contract ERC20Token is SafeDecimalMath, Proxyable {
 
     function totalSupply()
         public
+        view
         returns (uint)
     {
         return state.totalSupply();

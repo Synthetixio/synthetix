@@ -123,7 +123,7 @@ contract EtherNomin is ERC20FeeToken {
                         uint initialetherPrice_dec,
                         address _owner, ERC20FeeState initialState)
         ERC20FeeToken("Ether-Backed USD Nomins", "eUSD",
-                      0, _owner,
+                      _owner,
                       15 * UNIT / 10000, // nomin transfers incur a 15 bp fee
                       _havven, // havven contract is the fee authority
                       initialState, // Construct a new state_owner
@@ -351,6 +351,7 @@ contract EtherNomin is ERC20FeeToken {
     
     function isFrozen(address account) 
         public
+        view
         returns (bool)
     {
         return state.isFrozen(account);
