@@ -230,25 +230,26 @@ contract Havven is ExternStateProxyToken {
         optionalProxy
         returns (bool)
     {
-        return _transfer(proxy.messageSender(), to, value);
+        return _transfer(messageSender, to, value);
     }
 
-    function _transfer(address messageSender, address to, uint value)
+    /* Anything calling this must apply the optionalProxy or onlyProxy modifier. */
+    function _transfer(address sender, address to, uint value)
         internal
         preCheckFeePeriodRollover
         returns (bool)
     {
 
-        uint senderPreBalance = state.balanceOf(messageSender);
+        uint senderPreBalance = state.balanceOf(sender);
         uint recipientPreBalance = state.balanceOf(to);
 
         // Perform the transfer: if there is a problem,
-        // an exception will be thrown in super.transfer().
-        super.transfer(messageSender, to, value);
+        // an exception will be thrown in this call.
+        transfer_byProxy(sender, to, value);
 
         // Zero-value transfers still update fee entitlement information,
         // and may roll over the fee period.
-        adjustFeeEntitlement(messageSender, senderPreBalance);
+        adjustFeeEntitlement(sender, senderPreBalance);
         adjustFeeEntitlement(to, recipientPreBalance);
 
         return true;
@@ -266,8 +267,8 @@ contract Havven is ExternStateProxyToken {
         uint recipientPreBalance = state.balanceOf(to);
 
         // Perform the transfer: if there is a problem,
-        // an exception will be thrown in super.transferFrom().
-        super.transferFrom(proxy.messageSender(), from, to, value);
+        // an exception will be thrown in this call.
+        transferFrom_byProxy(messageSender, from, to, value);
 
         // Zero-value transfers still update fee entitlement information,
         // and may roll over the fee period.
@@ -284,31 +285,31 @@ contract Havven is ExternStateProxyToken {
         preCheckFeePeriodRollover
         optionalProxy
     {
-        address messageSender = proxy.messageSender();
+        address sender = messageSender;
 
         // Do not deposit fees into frozen accounts.
-        require(!nomin.isFrozen(messageSender));
+        require(!nomin.isFrozen(sender));
 
         // check the period has rolled over first
-        rolloverFee(messageSender, lastTransferTimestamp[messageSender], state.balanceOf(messageSender));
+        rolloverFee(sender, lastTransferTimestamp[sender], state.balanceOf(sender));
 
         // Only allow accounts to withdraw fees once per period.
-        require(!hasWithdrawnLastPeriodFees[messageSender]);
+        require(!hasWithdrawnLastPeriodFees[sender]);
 
         uint feesOwed;
 
         if (escrow != HavvenEscrow(0)) {
-            feesOwed = escrow.totalVestedAccountBalance(messageSender);
+            feesOwed = escrow.totalVestedAccountBalance(sender);
         }
 
-        feesOwed = safeDecDiv(safeDecMul(safeAdd(feesOwed, lastAverageBalance[messageSender]),
+        feesOwed = safeDecDiv(safeDecMul(safeAdd(feesOwed, lastAverageBalance[sender]),
                                          lastFeesCollected),
                               state.totalSupply());
 
-        hasWithdrawnLastPeriodFees[messageSender] = true;
+        hasWithdrawnLastPeriodFees[sender] = true;
         if (feesOwed != 0) {
-            nomin.withdrawFee(messageSender, feesOwed);
-            FeesWithdrawn(messageSender, messageSender, feesOwed);
+            nomin.withdrawFee(sender, feesOwed);
+            FeesWithdrawn(sender, sender, feesOwed);
         }
     }
 
@@ -414,7 +415,7 @@ contract Havven is ExternStateProxyToken {
         optionalProxy
         returns (uint)
     {
-        return _recomputeAccountLastAverageBalance(proxy.messageSender());
+        return _recomputeAccountLastAverageBalance(messageSender);
     }
 
     /* Recompute and return the given account's average balance information. */
