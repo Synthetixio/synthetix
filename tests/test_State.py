@@ -1,7 +1,7 @@
 import unittest
-from utils.deployutils import compile_contracts, attempt_deploy, W3, mine_txs, mine_tx, \
-    UNIT, MASTER, DUMMY, fast_forward, fresh_accounts, take_snapshot, restore_snapshot, ETHER
-from utils.testutils import assertReverts, block_time, assertClose, generate_topic_event_map
+from utils.deployutils import compile_contracts, attempt_deploy, mine_tx, \
+    UNIT, MASTER, DUMMY, fresh_accounts, take_snapshot, restore_snapshot
+from utils.testutils import assertReverts
 from utils.testutils import ZERO_ADDRESS
 
 ERC20Token_SOURCE = "contracts/ERC20Token.sol"
@@ -189,8 +189,9 @@ class TestERC20State(unittest.TestCase):
         self.assertEqual(self.state_allowance(MASTER, DUMMY), 0)
         self.assertEqual(valid_token.functions.allowance(MASTER, DUMMY).call(), 0)
 
-        self.assertReverts(valid_token.functions.transferFrom(DUMMY, MASTER, DUMMY, 20 * UNIT).transact,
-                           {'from': DUMMY})
+        self.assertReverts(
+            valid_token.functions.transferFrom(DUMMY, MASTER, DUMMY, 20 * UNIT).transact, {'from': DUMMY}
+        )
 
 
 class TestERC20FeeState(unittest.TestCase):

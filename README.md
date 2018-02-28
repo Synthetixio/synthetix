@@ -3,7 +3,7 @@
 Havven is a decentralised payment network and stablecoin.
 It is critical to the system's viability that functionality is phased in over time. The initial release will provide a functional stablecoin and the opportunity to collect significant data on the market response. This will ultimately protect the system and those who back it as the network scales.
 
-The initial release of Havven will possess most of the key features of the system.
+The first version of Havven will possess most of the key features of the system.
 
 * A two token system composed of a stablecoin (nomins) and collateral token (havvens).
 * Nomins are backed with a pool of value with which it is convertible.
@@ -21,8 +21,7 @@ Users can buy and sell nomins into the pool for $1 USD worth of ether. The ether
 obtained from a trusted oracle. Fees charged on nomins are paid to owners of the havven token in proportion with the the number of havvens they hold.
 
 Please note that this repository is under development.
-The code here will be under continual audit and
-improvement up until release of the completed system.
+The code here will be under continual audit and improved up until release of the completed system.
 
 
 ## Usage and requirements
@@ -34,13 +33,16 @@ Deployment and testing scripts require Python 3.6+, web3.py 4.0.0+, and pysolc 2
 Ensure `BLOCKCHAIN_ADDRESS` in `utils/deployutils.py` is pointing to a running
 Ethereum client or `ganache-cli` instance. Update other variables like
 the master address as appropriate. Then, from the root directory,
-deployment is as simple as
+deployment is as simple as:
 
 ```python3 deploy.py```
 
-Similarly, the test suite is run with
+The test suite requires a ganache-cli instance to be running. For testing purposes there need to exist more accounts and
+ether for each account, so we run `ganache-cli -e 1000000000000 -a 100` to prepare the test environment, and then
+run the tests as follow:
 
 ```python3 run_tests.py```
+
 
 
 ## Files
@@ -72,3 +74,4 @@ come at the expense of clarity or simplicity.
 * `tests/contracts` contracts used by the test suite.
 * `utils/deployutils.py` deployment helper functions.
 * `utils/testutils.py` testing helper functions.
+* `utils/generalutils.py` printing and test settings helper functions.

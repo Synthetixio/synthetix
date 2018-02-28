@@ -184,7 +184,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.beneficiary(), self.nomin_beneficiary)
         self.assertEqual(self.etherPrice(), 1000 * UNIT)
         self.assertEqual(self.stalePeriod(), 2 * 24 * 60 * 60)  # default two days
-        self.assertEqual(self.liquidationTimestamp(), 2 ** 256 - 1)
+        self.assertEqual(self.liquidationTimestamp(), 2**256 - 1)
         self.assertEqual(self.liquidationPeriod(), 90 * 24 * 60 * 60)  # default ninety days
         self.assertEqual(self.poolFeeRate(), UNIT / 200)  # default fifty basis points
         self.assertEqual(self.nominPool(), 0)
@@ -247,7 +247,7 @@ class TestEtherNomin(unittest.TestCase):
 
         # Pool fee rate must be no greater than UNIT.
         self.assertReverts(self.setPoolFeeRate, owner, UNIT + 1)
-        self.assertReverts(self.setPoolFeeRate, owner, 2 ** 256 - 1)
+        self.assertReverts(self.setPoolFeeRate, owner, 2**256 - 1)
         self.setPoolFeeRate(owner, UNIT)
         self.assertEqual(self.poolFeeRate(), UNIT)
 
@@ -267,8 +267,8 @@ class TestEtherNomin(unittest.TestCase):
     def test_updatePrice(self):
         owner = self.owner()
         pre_price = self.etherPrice()
-        new_price = 10 ** 8 * UNIT  # one hundred million dollar ethers $$$$$$
-        new_price2 = UNIT // 10 ** 6  # one ten thousandth of a cent ethers :(
+        new_price = 10**8 * UNIT  # one hundred million dollar ethers $$$$$$
+        new_price2 = UNIT // 10**6  # one ten thousandth of a cent ethers :(
         pre_oracle = self.oracle()
         new_oracle = DUMMY
 
@@ -339,22 +339,22 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.fiatValue(ETHER), ETHER)
         self.assertEqual(self.fiatValue(777 * ETHER), 777 * ETHER)
         self.assertEqual(self.fiatValue(ETHER // 777), ETHER // 777)
-        self.assertEqual(self.fiatValue(10 ** 8 * ETHER), 10 ** 8 * ETHER)
-        self.assertEqual(self.fiatValue(ETHER // 10 ** 12), ETHER // 10 ** 12)
+        self.assertEqual(self.fiatValue(10**8 * ETHER), 10**8 * ETHER)
+        self.assertEqual(self.fiatValue(ETHER // 10**12), ETHER // 10**12)
 
-        self.updatePrice(oracle, 10 ** 8 * UNIT, self.now_block_time())
+        self.updatePrice(oracle, 10**8 * UNIT, self.now_block_time())
         fast_forward(2)
-        self.assertEqual(self.fiatValue(ETHER), 10 ** 8 * ETHER)
-        self.assertEqual(self.fiatValue(317 * ETHER), 317 * 10 ** 8 * ETHER)
-        self.assertEqual(self.fiatValue(ETHER // 317), 10 ** 8 * (ETHER // 317))
-        self.assertEqual(self.fiatValue(10 ** 8 * ETHER), 10 ** 16 * ETHER)
-        self.assertEqual(self.fiatValue(ETHER // 10 ** 12), ETHER // 10 ** 4)
+        self.assertEqual(self.fiatValue(ETHER), 10**8 * ETHER)
+        self.assertEqual(self.fiatValue(317 * ETHER), 317 * 10**8 * ETHER)
+        self.assertEqual(self.fiatValue(ETHER // 317), 10**8 * (ETHER // 317))
+        self.assertEqual(self.fiatValue(10**8 * ETHER), 10**16 * ETHER)
+        self.assertEqual(self.fiatValue(ETHER // 10**12), ETHER // 10**4)
 
-        self.updatePrice(oracle, UNIT // 10 ** 12, self.now_block_time())
+        self.updatePrice(oracle, UNIT // 10**12, self.now_block_time())
         fast_forward(2)
-        self.assertEqual(self.fiatValue(ETHER), ETHER // 10 ** 12)
-        self.assertEqual(self.fiatValue(10 ** 15 * ETHER), 10 ** 3 * ETHER)
-        self.assertEqual(self.fiatValue((7 * ETHER) // 3), ((7 * ETHER) // 3) // 10 ** 12)
+        self.assertEqual(self.fiatValue(ETHER), ETHER // 10**12)
+        self.assertEqual(self.fiatValue(10**15 * ETHER), 10**3 * ETHER)
+        self.assertEqual(self.fiatValue((7 * ETHER) // 3), ((7 * ETHER) // 3) // 10**12)
 
     def test_fiatBalance(self):
         owner = self.owner()
@@ -364,9 +364,9 @@ class TestEtherNomin(unittest.TestCase):
         send_value(owner, self.nomin_real.address, ETHER // 2)
         send_value(owner, self.nomin.address, ETHER // 2)
         self.assertEqual(self.fiatBalance(), pre_price)
-        self.updatePrice(oracle, UNIT // 10 ** 12, self.now_block_time())
+        self.updatePrice(oracle, UNIT // 10**12, self.now_block_time())
         fast_forward(2)
-        self.assertEqual(self.fiatBalance(), UNIT // 10 ** 12)
+        self.assertEqual(self.fiatBalance(), UNIT // 10**12)
         self.updatePrice(oracle, 300 * UNIT, self.now_block_time())
         fast_forward(2)
         self.assertEqual(self.fiatBalance(), 300 * UNIT)
@@ -382,15 +382,15 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.etherValue(UNIT), ETHER)
         self.assertEqual(self.etherValue(777 * UNIT), 777 * ETHER)
         self.assertEqual(self.etherValue(UNIT // 777), ETHER // 777)
-        self.assertEqual(self.etherValue(10 ** 8 * UNIT), 10 ** 8 * ETHER)
-        self.assertEqual(self.etherValue(UNIT // 10 ** 12), ETHER // 10 ** 12)
+        self.assertEqual(self.etherValue(10**8 * UNIT), 10**8 * ETHER)
+        self.assertEqual(self.etherValue(UNIT // 10**12), ETHER // 10**12)
 
         self.updatePrice(oracle, 10 * UNIT, self.now_block_time())
         fast_forward(2)
         self.assertEqual(self.etherValue(UNIT), ETHER // 10)
         self.assertEqual(self.etherValue(2 * UNIT), ETHER // 5)
 
-        for v in [0.0004, 2.1, 1, 49994, 49.29384, 0.00000028, 1235759872, 2.5 * 10 ** 25]:
+        for v in [0.0004, 2.1, 1, 49994, 49.29384, 0.00000028, 1235759872, 2.5 * 10**25]:
             vi = int(v * UNIT)
             self.assertEqual(self.etherValue(vi), self.etherValueAllowStale(vi))
 
@@ -431,10 +431,10 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.poolFeeIncurred(UNIT), poolFeeRate)
         self.assertEqual(self.poolFeeIncurred(10 * UNIT), 10 * poolFeeRate)
         self.assertEqual(self.poolFeeIncurred(UNIT // 2), poolFeeRate // 2)
-        self.setPoolFeeRate(self.owner(), UNIT // 10 ** 7)
-        self.assertEqual(self.poolFeeIncurred(UNIT), UNIT // 10 ** 7)
-        self.assertEqual(self.poolFeeIncurred(100 * UNIT), UNIT // 10 ** 5)
-        self.assertEqual(self.poolFeeIncurred(UNIT // 2), UNIT // (2 * 10 ** 7))
+        self.setPoolFeeRate(self.owner(), UNIT // 10**7)
+        self.assertEqual(self.poolFeeIncurred(UNIT), UNIT // 10**7)
+        self.assertEqual(self.poolFeeIncurred(100 * UNIT), UNIT // 10**5)
+        self.assertEqual(self.poolFeeIncurred(UNIT // 2), UNIT // (2 * 10**7))
 
     def test_purchaseCostFiat(self):
         owner = self.owner()
@@ -447,10 +447,10 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.purchaseCostFiat(UNIT), UNIT + poolFeeRate)
         self.assertEqual(self.purchaseCostFiat(10 * UNIT), 10 * (UNIT + poolFeeRate))
         self.assertEqual(self.purchaseCostFiat(UNIT // 2), (UNIT + poolFeeRate) // 2)
-        self.setPoolFeeRate(owner, UNIT // 10 ** 7)
-        self.assertEqual(self.purchaseCostFiat(UNIT), (UNIT + UNIT // 10 ** 7))
-        self.assertEqual(self.purchaseCostFiat(100 * UNIT), 100 * (UNIT + UNIT // 10 ** 7))
-        self.assertEqual(self.purchaseCostFiat(UNIT // 2), (UNIT + UNIT // 10 ** 7) // 2)
+        self.setPoolFeeRate(owner, UNIT // 10**7)
+        self.assertEqual(self.purchaseCostFiat(UNIT), (UNIT + UNIT // 10**7))
+        self.assertEqual(self.purchaseCostFiat(100 * UNIT), 100 * (UNIT + UNIT // 10**7))
+        self.assertEqual(self.purchaseCostFiat(UNIT // 2), (UNIT + UNIT // 10**7) // 2)
         self.setPoolFeeRate(owner, poolFeeRate)
 
     def test_purchaseCostEther(self):
@@ -467,9 +467,9 @@ class TestEtherNomin(unittest.TestCase):
         fast_forward(2)
         self.assertEqual(self.purchaseCostEther(UNIT), UNIT + poolFeeRate)
         self.assertEqual(self.purchaseCostEther(UNIT // 2), (UNIT + poolFeeRate) // 2)
-        self.setPoolFeeRate(owner, UNIT // 10 ** 7)
-        self.assertEqual(self.purchaseCostEther(UNIT), (UNIT + UNIT // 10 ** 7))
-        self.assertEqual(self.purchaseCostEther(100 * UNIT), 100 * (UNIT + UNIT // 10 ** 7))
+        self.setPoolFeeRate(owner, UNIT // 10**7)
+        self.assertEqual(self.purchaseCostEther(UNIT), (UNIT + UNIT // 10**7))
+        self.assertEqual(self.purchaseCostEther(100 * UNIT), 100 * (UNIT + UNIT // 10**7))
 
         self.setPoolFeeRate(owner, poolFeeRate)
         self.updatePrice(oracle, UNIT // 2, self.now_block_time())
@@ -480,7 +480,7 @@ class TestEtherNomin(unittest.TestCase):
     def test_purchaseCostEtherShoppingSpree(self):
         owner = self.owner()
         oracle = self.oracle()
-        self.issue(owner, 800000 * UNIT, 8 * 10 ** 9 * UNIT)
+        self.issue(owner, 800000 * UNIT, 8 * 10**9 * UNIT)
 
         price_multiples = [12398, 1.2384889, 7748.22, 0.238838, 0.00049944, 5.7484, 87.2211111]
         qty_multiples = [2.3, 84.4828, 284.10002, 0.4992, 105.289299991, 7.651948, 0.01, 100000]
@@ -516,10 +516,10 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.saleProceedsFiat(UNIT), UNIT - poolFeeRate)
         self.assertEqual(self.saleProceedsFiat(10 * UNIT), 10 * (UNIT - poolFeeRate))
         self.assertEqual(self.saleProceedsFiat(UNIT // 2), (UNIT - poolFeeRate) // 2)
-        self.setPoolFeeRate(owner, UNIT // 10 ** 7)
-        self.assertEqual(self.saleProceedsFiat(UNIT), (UNIT - UNIT // 10 ** 7))
-        self.assertEqual(self.saleProceedsFiat(100 * UNIT), 100 * (UNIT - UNIT // 10 ** 7))
-        self.assertEqual(self.saleProceedsFiat(UNIT // 2), (UNIT - UNIT // 10 ** 7) // 2)
+        self.setPoolFeeRate(owner, UNIT // 10**7)
+        self.assertEqual(self.saleProceedsFiat(UNIT), (UNIT - UNIT // 10**7))
+        self.assertEqual(self.saleProceedsFiat(100 * UNIT), 100 * (UNIT - UNIT // 10**7))
+        self.assertEqual(self.saleProceedsFiat(UNIT // 2), (UNIT - UNIT // 10**7) // 2)
         self.setPoolFeeRate(owner, poolFeeRate)
 
     def test_saleProceedsEther(self):
@@ -536,9 +536,9 @@ class TestEtherNomin(unittest.TestCase):
         fast_forward(2)
         self.assertEqual(self.saleProceedsEther(UNIT), UNIT - poolFeeRate)
         self.assertEqual(self.saleProceedsEther(UNIT // 2), (UNIT - poolFeeRate) // 2)
-        self.setPoolFeeRate(owner, UNIT // 10 ** 7)
-        self.assertEqual(self.saleProceedsEther(UNIT), (UNIT - UNIT // 10 ** 7))
-        self.assertEqual(self.saleProceedsEther(100 * UNIT), 100 * (UNIT - UNIT // 10 ** 7))
+        self.setPoolFeeRate(owner, UNIT // 10**7)
+        self.assertEqual(self.saleProceedsEther(UNIT), (UNIT - UNIT // 10**7))
+        self.assertEqual(self.saleProceedsEther(100 * UNIT), 100 * (UNIT - UNIT // 10**7))
 
         self.setPoolFeeRate(owner, poolFeeRate)
         self.updatePrice(oracle, UNIT // 2, self.now_block_time())
@@ -546,7 +546,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.saleProceedsEther(UNIT // 2), UNIT - poolFeeRate)
         self.assertEqual(self.saleProceedsEther(3 * UNIT), 6 * (UNIT - poolFeeRate))
 
-        for v in [0.0004, 2.1, 1, 49994, 49.29384, 0.00000028, 1235759872, 2.5 * 10 ** 25]:
+        for v in [0.0004, 2.1, 1, 49994, 49.29384, 0.00000028, 1235759872, 2.5 * 10**25]:
             vi = int(v * UNIT)
             self.assertEqual(self.saleProceedsEther(vi), self.saleProceedsEtherAllowStale(vi))
 
@@ -555,7 +555,7 @@ class TestEtherNomin(unittest.TestCase):
         oracle = self.oracle()
 
         initial_qty = 800000 * UNIT
-        self.issue(owner, initial_qty, 8 * 10 ** 9 * UNIT)
+        self.issue(owner, initial_qty, 8 * 10**9 * UNIT)
         self.buy(owner, initial_qty, self.purchaseCostEther(initial_qty))
 
         price_multiples = [12398, 1.2384889, 7748.22, 0.238838, 0.00049944, 5.7484, 87.2211111]
@@ -1056,7 +1056,7 @@ class TestEtherNomin(unittest.TestCase):
 
         # Should be able to terminate liquidation if there is no supply.
         tx_receipt = self.terminateLiquidation(owner)
-        self.assertEqual(self.liquidationTimestamp(), 2 ** 256 - 1)
+        self.assertEqual(self.liquidationTimestamp(), 2**256 - 1)
         self.assertEqual(self.liquidationPeriod(), 90 * 24 * 60 * 60)
         self.assertEqual(len(tx_receipt.logs), 1)
         self.assertEqual(get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[0])['event'],
