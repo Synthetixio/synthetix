@@ -131,7 +131,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         view
         returns (uint)
     {
-        return safeDecMul(value, transferFeeRate);
+        return safeMul_dec(value, transferFeeRate);
         // Transfers less than the reciprocal of transferFeeRate should be completely eaten up by fees.
         // This is on the basis that transfers less than this value will result in a nil fee.
         // Probably too insignificant to worry about, but the following code will achieve it.
@@ -157,7 +157,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         view
         returns (uint)
     {
-        return safeDecDiv(value, safeAdd(UNIT, transferFeeRate));
+        return safeDiv_dec(value, safeAdd(UNIT, transferFeeRate));
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */

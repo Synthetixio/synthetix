@@ -318,8 +318,8 @@ contract Court is Owned, SafeDecimalMath {
             return false;
         }
 
-        uint participation = safeDecDiv(totalVotes, havven.totalSupply());
-        uint fractionInFavour = safeDecDiv(yeas, totalVotes);
+        uint participation = safeDiv_dec(totalVotes, havven.totalSupply());
+        uint fractionInFavour = safeDiv_dec(yeas, totalVotes);
 
         // We require the result to be strictly greater than the requirement
         // to enforce a majority being "50% + 1", and so on.

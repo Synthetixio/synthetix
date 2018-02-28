@@ -29,10 +29,10 @@ class TestSafeDecimalMath(unittest.TestCase):
         cls.safeSub = lambda self, x, y: cls.math.functions.pubSafeSub(x, y).call()
         cls.mulIsSafe = lambda self, x, y: cls.math.functions.pubMulIsSafe(x, y).call()
         cls.safeMul = lambda self, x, y: cls.math.functions.pubSafeMul(x, y).call()
-        cls.safeDecMul = lambda self, x, y: cls.math.functions.pubSafeDecMul(x, y).call()
+        cls.safeMul_dec = lambda self, x, y: cls.math.functions.pubSafeMul_dec(x, y).call()
         cls.divIsSafe = lambda self, x, y: cls.math.functions.pubDivIsSafe(x, y).call()
         cls.safeDiv = lambda self, x, y: cls.math.functions.pubSafeDiv(x, y).call()
-        cls.safeDecDiv = lambda self, x, y: cls.math.functions.pubSafeDecDiv(x, y).call()
+        cls.safeDiv_dec = lambda self, x, y: cls.math.functions.pubSafeDiv_dec(x, y).call()
         cls.intToDec = lambda self, i: cls.math.functions.pubIntToDec(i).call()
 
     # Test addIsSafe function
@@ -168,35 +168,35 @@ class TestSafeDecimalMath(unittest.TestCase):
         self.assertReverts(self.safeMul, 2**200, 3**100)
         self.assertReverts(self.safeMul, 2**254, 5)
 
-    # Test safeDecMul function
-    def testSafeDecMul(self):
-        self.assertEqual(self.safeDecMul(99999 * UNIT, 777777 * UNIT), 99999 * 777777 * UNIT)
-        self.assertEqual(self.safeDecMul(10 * UNIT, UNIT + UNIT), 20 * UNIT)
-        self.assertEqual(self.safeDecMul(2**256 // UNIT, UNIT), 2**256 // UNIT)
-        self.assertEqual(self.safeDecMul(2**255 - 1, 2), (2**256 - 2) // UNIT)
-        self.assertEqual(self.safeDecMul(10**8 * UNIT, 10**8 * UNIT), 10**8 * 10**8 * UNIT)
-        self.assertEqual(self.safeDecMul(17 * UNIT, 23 * UNIT), 17 * 23 * UNIT)
-        self.assertEqual(self.safeDecMul(UNIT // 2, UNIT // 2), UNIT // 4)
-        self.assertEqual(self.safeDecMul(UNIT // 25, UNIT // 5), UNIT // 125)
-        self.assertEqual(self.safeDecMul(UNIT // 7, UNIT // 3), ((UNIT // 7) * (UNIT // 3)) // UNIT)
+    # Test safeMul_dec function
+    def testSafeMul_dec(self):
+        self.assertEqual(self.safeMul_dec(99999 * UNIT, 777777 * UNIT), 99999 * 777777 * UNIT)
+        self.assertEqual(self.safeMul_dec(10 * UNIT, UNIT + UNIT), 20 * UNIT)
+        self.assertEqual(self.safeMul_dec(2**256 // UNIT, UNIT), 2**256 // UNIT)
+        self.assertEqual(self.safeMul_dec(2**255 - 1, 2), (2**256 - 2) // UNIT)
+        self.assertEqual(self.safeMul_dec(10**8 * UNIT, 10**8 * UNIT), 10**8 * 10**8 * UNIT)
+        self.assertEqual(self.safeMul_dec(17 * UNIT, 23 * UNIT), 17 * 23 * UNIT)
+        self.assertEqual(self.safeMul_dec(UNIT // 2, UNIT // 2), UNIT // 4)
+        self.assertEqual(self.safeMul_dec(UNIT // 25, UNIT // 5), UNIT // 125)
+        self.assertEqual(self.safeMul_dec(UNIT // 7, UNIT // 3), ((UNIT // 7) * (UNIT // 3)) // UNIT)
 
         # Test zero
-        self.assertEqual(self.safeDecMul(UNIT, 0), 0)
-        self.assertEqual(self.safeDecMul(0, 100), 0)
+        self.assertEqual(self.safeMul_dec(UNIT, 0), 0)
+        self.assertEqual(self.safeMul_dec(0, 100), 0)
 
         # Test identity
-        self.assertEqual(self.safeDecMul(10 * UNIT, UNIT), 10 * UNIT)
-        self.assertEqual(self.safeDecMul(UNIT, 10 * UNIT), 10 * UNIT)
-        self.assertEqual(self.safeDecMul(UNIT, 1), 1)
-        self.assertEqual(self.safeDecMul(1, UNIT), 1)
+        self.assertEqual(self.safeMul_dec(10 * UNIT, UNIT), 10 * UNIT)
+        self.assertEqual(self.safeMul_dec(UNIT, 10 * UNIT), 10 * UNIT)
+        self.assertEqual(self.safeMul_dec(UNIT, 1), 1)
+        self.assertEqual(self.safeMul_dec(1, UNIT), 1)
 
         # Commutativity
-        self.assertEqual(self.safeDecMul(17 * UNIT, 23 * UNIT), self.safeDecMul(23 * UNIT, 17 * UNIT))
+        self.assertEqual(self.safeMul_dec(17 * UNIT, 23 * UNIT), self.safeMul_dec(23 * UNIT, 17 * UNIT))
 
         # Rounding occurs towards zero
-        self.assertEqual(self.safeDecMul(UNIT + 1, UNIT - 1), UNIT-1)
+        self.assertEqual(self.safeMul_dec(UNIT + 1, UNIT - 1), UNIT-1)
 
-    def testUnsafeDecMul(self):
+    def testUnsafeMul_dec(self):
         self.assertReverts(self.safeMul, 2**255, 2)
         self.assertReverts(self.safeMul, 2**200, 2**56)
         self.assertReverts(self.safeMul, 2**200, 3**40)
@@ -227,54 +227,54 @@ class TestSafeDecimalMath(unittest.TestCase):
         self.assertReverts(self.safeDiv, 1, 0)
         self.assertReverts(self.safeDiv, 2**256 - 1, 0)
 
-    # Test safeDecDiv function
-    def testSafeDecDiv(self):
-        self.assertEqual(self.safeDecDiv(4 * UNIT, 2 * UNIT), 2 * UNIT)
-        self.assertEqual(self.safeDecDiv(UNIT, 2 * UNIT), UNIT // 2)
-        self.assertEqual(self.safeDecDiv(10**8 * UNIT, 3 * UNIT), (10**8 * UNIT) // 3)
-        self.assertEqual(self.safeDecDiv(20 * UNIT, UNIT // 2), 40 * UNIT)
-        self.assertEqual(self.safeDecDiv(UNIT, 10 * UNIT), UNIT // 10)
+    # Test safeDiv_dec function
+    def testSafeDiv_dec(self):
+        self.assertEqual(self.safeDiv_dec(4 * UNIT, 2 * UNIT), 2 * UNIT)
+        self.assertEqual(self.safeDiv_dec(UNIT, 2 * UNIT), UNIT // 2)
+        self.assertEqual(self.safeDiv_dec(10**8 * UNIT, 3 * UNIT), (10**8 * UNIT) // 3)
+        self.assertEqual(self.safeDiv_dec(20 * UNIT, UNIT // 2), 40 * UNIT)
+        self.assertEqual(self.safeDiv_dec(UNIT, 10 * UNIT), UNIT // 10)
 
-        self.assertEqual(self.safeDecDiv(10**8 * UNIT, 10**8 * UNIT), UNIT)
-        self.assertEqual(self.safeDecDiv(10**8 * UNIT, UNIT), 10**8 * UNIT)
-        self.assertEqual(self.safeDecDiv(10**30 * UNIT, 10**10 * UNIT), 10**20 * UNIT)
-        self.assertEqual(self.safeDecDiv(2**256 // UNIT, 10 * UNIT), (2**256 // UNIT) // 10)
-        self.assertEqual(self.safeDecDiv(UNIT, UNIT * UNIT), 1)
-        self.assertEqual(self.safeDecDiv(10 * UNIT, UNIT * UNIT), 10)
+        self.assertEqual(self.safeDiv_dec(10**8 * UNIT, 10**8 * UNIT), UNIT)
+        self.assertEqual(self.safeDiv_dec(10**8 * UNIT, UNIT), 10**8 * UNIT)
+        self.assertEqual(self.safeDiv_dec(10**30 * UNIT, 10**10 * UNIT), 10**20 * UNIT)
+        self.assertEqual(self.safeDiv_dec(2**256 // UNIT, 10 * UNIT), (2**256 // UNIT) // 10)
+        self.assertEqual(self.safeDiv_dec(UNIT, UNIT * UNIT), 1)
+        self.assertEqual(self.safeDiv_dec(10 * UNIT, UNIT * UNIT), 10)
 
         # Largest usable numerator
-        self.assertEqual(self.safeDecDiv(2**256 // UNIT, UNIT), 2**256 // UNIT)
+        self.assertEqual(self.safeDiv_dec(2**256 // UNIT, UNIT), 2**256 // UNIT)
         # Largest usable power of ten in the numerator
-        self.assertEqual(self.safeDecDiv(10**41 * UNIT, 10**11 * UNIT), 10**30 * UNIT)
+        self.assertEqual(self.safeDiv_dec(10**41 * UNIT, 10**11 * UNIT), 10**30 * UNIT)
         # Largest usable power of two in the numerator
-        self.assertEqual(self.safeDecDiv(2**196, UNIT), 2**196)
+        self.assertEqual(self.safeDiv_dec(2**196, UNIT), 2**196)
 
         # Operations yielding zero (greater than a UNIT factor difference between operands)
-        self.assertEqual(self.safeDecDiv(2**256 // UNIT, 2**256 - 1), 0)
-        self.assertEqual(self.safeDecDiv(UNIT - 1, UNIT * UNIT), 0)
+        self.assertEqual(self.safeDiv_dec(2**256 // UNIT, 2**256 - 1), 0)
+        self.assertEqual(self.safeDiv_dec(UNIT - 1, UNIT * UNIT), 0)
 
         # Identity and zero.
-        self.assertEqual(self.safeDecDiv(1, UNIT), 1)
-        self.assertEqual(self.safeDecDiv(100000, UNIT), 100000)
-        self.assertEqual(self.safeDecDiv(UNIT, UNIT), UNIT)
-        self.assertEqual(self.safeDecDiv(10 * UNIT, UNIT), 10 * UNIT)
-        self.assertEqual(self.safeDecDiv(0, UNIT), 0)
-        self.assertEqual(self.safeDecDiv(0, 1), 0)
+        self.assertEqual(self.safeDiv_dec(1, UNIT), 1)
+        self.assertEqual(self.safeDiv_dec(100000, UNIT), 100000)
+        self.assertEqual(self.safeDiv_dec(UNIT, UNIT), UNIT)
+        self.assertEqual(self.safeDiv_dec(10 * UNIT, UNIT), 10 * UNIT)
+        self.assertEqual(self.safeDiv_dec(0, UNIT), 0)
+        self.assertEqual(self.safeDiv_dec(0, 1), 0)
 
-    def testUnsafeDecDiv(self):
+    def testUnsafeDiv_dec(self):
         # Numerator overflows
-        self.assertReverts(self.safeDecDiv, 2**256 - 1, 1)
-        self.assertReverts(self.safeDecDiv, 2**256 // UNIT + 1, 1)
-        self.assertReverts(self.safeDecDiv, 10**42 * UNIT, 1)
-        self.assertReverts(self.safeDecDiv, 2**197, 1)
+        self.assertReverts(self.safeDiv_dec, 2**256 - 1, 1)
+        self.assertReverts(self.safeDiv_dec, 2**256 // UNIT + 1, 1)
+        self.assertReverts(self.safeDiv_dec, 10**42 * UNIT, 1)
+        self.assertReverts(self.safeDiv_dec, 2**197, 1)
 
         # Zero denominator overflows
-        self.assertReverts(self.safeDecDiv, 0, 0)
-        self.assertReverts(self.safeDecDiv, 1, 0)
-        self.assertReverts(self.safeDecDiv, 2**256 // UNIT, 0)
+        self.assertReverts(self.safeDiv_dec, 0, 0)
+        self.assertReverts(self.safeDiv_dec, 1, 0)
+        self.assertReverts(self.safeDiv_dec, 2**256 // UNIT, 0)
 
         # Both
-        self.assertReverts(self.safeDecDiv, 2**256 - 1, 0)
+        self.assertReverts(self.safeDiv_dec, 2**256 - 1, 0)
 
     # Test intToDec function
     def testIntToDec(self):
@@ -289,7 +289,7 @@ class TestSafeDecimalMath(unittest.TestCase):
     # Test combined arithmetic
     def testArithmeticExpressions(self):
         self.assertEqual(self.safeSub(self.safeAdd(
-            UNIT, self.safeDecDiv(self.safeDiv(self.safeAdd(UNIT, UNIT), 2), UNIT)
-        ), self.safeDecMul(2 * UNIT, UNIT)), 0)
-        self.assertEqual(self.safeDecDiv(self.safeDecMul(self.safeAdd(
+            UNIT, self.safeDiv_dec(self.safeDiv(self.safeAdd(UNIT, UNIT), 2), UNIT)
+        ), self.safeMul_dec(2 * UNIT, UNIT)), 0)
+        self.assertEqual(self.safeDiv_dec(self.safeMul_dec(self.safeAdd(
             self.intToDec(1), UNIT), self.safeMul(2, UNIT)), UNIT // 2), self.intToDec(8))

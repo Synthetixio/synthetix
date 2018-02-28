@@ -55,12 +55,12 @@ contract PublicMath is SafeDecimalMath {
         return safeMul(x, y);
     }
 
-    function pubSafeDecMul(uint x, uint y)
+    function pubSafeMul_dec(uint x, uint y)
         pure
         public
         returns (uint)
     {
-        return safeDecMul(x, y);
+        return safeMul_dec(x, y);
     }
 
     function pubDivIsSafe(uint x, uint y)
@@ -79,12 +79,12 @@ contract PublicMath is SafeDecimalMath {
         return safeDiv(x, y);
     }
 
-    function pubSafeDecDiv(uint x, uint y)
+    function pubSafeDiv_dec(uint x, uint y)
         pure
         public
         returns (uint)
     {
-        return safeDecDiv(x, y);
+        return safeDiv_dec(x, y);
     }
 
     function pubIntToDec(uint i)
