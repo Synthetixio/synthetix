@@ -1,13 +1,13 @@
 pragma solidity ^0.4.20;
 
 import "contracts/ExternStateProxyFeeToken.sol";
+import "contracts/TokenState.sol";
 
 contract PublicExternStateProxyFeeToken is ExternStateProxyFeeToken {
     function PublicExternStateProxyFeeToken(string _name, string _symbol,
-                                            address initialBeneficiary,
                                             uint _feeRate, address _feeAuthority,
-                                            FeeTokenState _state, address _owner)
-        ExternStateProxyFeeToken(_name, _symbol, initialBeneficiary, _feeRate, _feeAuthority, _state, _owner)
+                                            TokenState _state, address _owner)
+        ExternStateProxyFeeToken(_name, _symbol, _feeRate, _feeAuthority, _state, _owner)
         public {}
 
     function transfer_byProxy(address to, uint value) 

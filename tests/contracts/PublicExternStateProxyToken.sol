@@ -1,6 +1,7 @@
 pragma solidity ^0.4.20;
 
 import "contracts/ExternStateProxyToken.sol";
+import "contracts/TokenState.sol";
 
 contract PublicExternStateProxyToken is ExternStateProxyToken {
     function PublicExternStateProxyToken(string _name, string _symbol,

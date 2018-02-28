@@ -5,7 +5,7 @@ pragma solidity ^0.4.20;
 
 
 import "contracts/EtherNomin.sol";
-import "contracts/FeeTokenState.sol";
+import "contracts/TokenState.sol";
 
 
 contract PublicEtherNomin is EtherNomin {
@@ -13,7 +13,7 @@ contract PublicEtherNomin is EtherNomin {
     function PublicEtherNomin(address _havven, address _oracle,
                               address _beneficiary,
                               uint initialEtherPrice,
-                              address _owner, FeeTokenState initialState)
+                              address _owner, TokenState initialState)
         EtherNomin(_havven, _oracle, _beneficiary, initialEtherPrice, _owner, initialState)
         public {}
 
@@ -57,12 +57,12 @@ contract PublicEtherNomin is EtherNomin {
     function debugEmptyFeePool()
         public
     {
-        state.setFeePool(0);
+        delete feePool;
     }
 
     function debugFreezeAccount(address target)
         public
     {
-        setFrozen(target, true);
+        frozen[target] = true;
     }
 }
