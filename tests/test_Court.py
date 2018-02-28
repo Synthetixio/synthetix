@@ -170,7 +170,7 @@ class TestCourt(unittest.TestCase):
             self.havven.functions.setTargetFeePeriodDuration(duration).transact({'from': sender}))
 
         # Nomin getter
-        cls.nominIsFrozen = lambda self, account: self.nomin.functions.isFrozen(account).call()
+        cls.nominIsFrozen = lambda self, account: self.nomin.functions.frozen(account).call()
 
         # Solidity convenience
         cls.days = 86400

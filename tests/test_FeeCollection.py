@@ -186,7 +186,7 @@ class TestHavven(unittest.TestCase):
         cls.n_liquidationPeriod = lambda self: cls.nomin.functions.liquidationPeriod().call()
         cls.n_liquidationTimestamp = lambda self: cls.nomin.functions.liquidationTimestamp().call()
         cls.n_etherPrice = lambda self: cls.nomin.functions.etherPrice_dec().call()
-        cls.n_isFrozen = lambda self, address: cls.nomin.functions.isFrozen(address).call()
+        cls.n_frozen = lambda self, address: cls.nomin.functions.frozen(address).call()
         cls.n_lastPriceUpdate = lambda self: cls.nomin.functions.lastPriceUpdate().call()
         cls.n_stalePeriod = lambda self: cls.nomin.functions.stalePeriod().call()
 
@@ -230,9 +230,9 @@ class TestHavven(unittest.TestCase):
             cls.nomin.functions.transferFrom(fromAccount, to, value).transact({'from': sender}))
         cls.n_approve = lambda self, sender, spender, value: mine_tx(
             cls.nomin.functions.approve(spender, value).transact({'from': sender}))
-        cls.n_issue = lambda self, sender, n, value: mine_tx(
-            cls.nomin.functions.issue(n).transact({'from': sender, 'value': value}))
-        cls.n_burn = lambda self, sender, n: mine_tx(cls.nomin.functions.burn(n).transact({'from': sender}))
+        cls.n_replenishPool = lambda self, sender, n, value: mine_tx(
+            cls.nomin.functions.replenishPool(n).transact({'from': sender, 'value': value}))
+        cls.n_diminishPool = lambda self, sender, n: mine_tx(cls.nomin.functions.diminishPool(n).transact({'from': sender}))
         cls.n_buy = lambda self, sender, n, value: mine_tx(
             cls.nomin.functions.buy(n).transact({'from': sender, 'value': value}))
         cls.n_sell = lambda self, sender, n: mine_tx(
@@ -270,7 +270,7 @@ class TestHavven(unittest.TestCase):
     def give_master_nomins(self, amt):
         fast_forward(1)  # fast forward to allow price to not clash with previous block
         self.n_updatePrice(MASTER, UNIT, self.now_block_time())
-        self.n_issue(MASTER, amt * UNIT, 2 * amt * ETHER)
+        self.n_replenishPool(MASTER, amt * UNIT, 2 * amt * ETHER)
         ethercost = self.n_purchaseCostEther(amt * UNIT)
         self.n_buy(MASTER, amt * UNIT, ethercost)
 

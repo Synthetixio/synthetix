@@ -33,17 +33,18 @@ class TestExternStateProxyToken(unittest.TestCase):
 
         cls.the_owner = DUMMY
 
-        cls.compiled = compile_contracts([ExternStateProxyToken_SOURCE, TokenState_SOURCE, Proxy_SOURCE])
+        cls.compiled = compile_contracts([ExternStateProxyToken_SOURCE, TokenState_SOURCE, Proxy_SOURCE],
+                                         remappings=['""=contracts'])
         cls.token_abi = cls.compiled['PublicExternStateProxyToken']['abi']
         cls.token_event_dict = generate_topic_event_map(cls.token_abi)
         cls.token_real, cls.construction_txr = attempt_deploy(cls.compiled, 'PublicExternStateProxyToken',
                                                                    MASTER,
                                                                    ["Test Token", "TEST",
-                                                                    0, cls.the_owner,
+                                                                    1000 * UNIT, cls.the_owner,
                                                                     ZERO_ADDRESS, cls.the_owner])
-        cls.tokenstate, _ = attempt_deploy(cls.compiled, 'TokenState',
-                                           MASTER,
-                                           [cls.the_owner, 1000 * UNIT, cls.the_owner, cls.token_real.address])
+
+        cls.tokenstate = W3.eth.contract(address=cls.token_real.functions.state().call(),
+                                         abi=cls.compiled['TokenState']['abi'])
 
         mine_tx(cls.token_real.functions.setState(cls.tokenstate.address).transact({'from': cls.the_owner}))
 
@@ -77,8 +78,7 @@ class TestExternStateProxyToken(unittest.TestCase):
     def test_provide_state(self):
         tokenstate, _ = attempt_deploy(self.compiled, 'TokenState',
                                        MASTER,
-                                       [self.the_owner, 0,
-                                        self.the_owner, self.token.address])
+                                       [self.the_owner, self.token_real.address])
 
         token, _ = attempt_deploy(self.compiled, 'PublicExternStateProxyToken',
                                        MASTER,

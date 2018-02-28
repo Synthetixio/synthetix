@@ -97,7 +97,7 @@ class TestEtherNomin(unittest.TestCase):
         cls.liquidationPeriod = lambda self: cls.nomin.functions.liquidationPeriod().call()
         cls.liquidationTimestamp = lambda self: cls.nomin.functions.liquidationTimestamp().call()
         cls.etherPrice = lambda self: cls.nomin.functions.etherPrice_dec().call()
-        cls.isFrozen = lambda self, address: cls.nomin.functions.isFrozen(address).call()
+        cls.frozen = lambda self, address: cls.nomin.functions.frozen(address).call()
         cls.lastPriceUpdate = lambda self: cls.nomin.functions.lastPriceUpdate().call()
         cls.stalePeriod = lambda self: cls.nomin.functions.stalePeriod().call()
 
@@ -191,7 +191,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.nominPool(), 0)
         construct_time = block_time(self.construction_txr.blockNumber)
         self.assertEqual(construct_time, self.construction_price_time)
-        self.assertTrue(self.isFrozen(self.nomin_real.address))
+        self.assertTrue(self.frozen(self.nomin_real.address))
 
         # ExternStateProxyFeeToken members
         self.assertEqual(self.name(), "Ether-Backed USD Nomins")
@@ -666,7 +666,7 @@ class TestEtherNomin(unittest.TestCase):
         self.liquidationTimestamp()
         self.etherPrice()
         self.lastPriceUpdate()
-        self.isFrozen(self.nomin_real.address)
+        self.frozen(self.nomin_real.address)
         self.setOracle(owner, oracle)
         self.setCourt(owner, court)
         self.setBeneficiary(owner, beneficiary)
@@ -679,7 +679,7 @@ class TestEtherNomin(unittest.TestCase):
         self.saleProceedsFiat(UNIT)
         self.priceIsStale()
         self.isLiquidating()
-        self.assertFalse(self.isFrozen(MASTER))
+        self.assertFalse(self.frozen(MASTER))
         self.transfer(MASTER, MASTER, 0)
         self.transferFrom(MASTER, MASTER, MASTER, 0)
         self.fake_court.confiscateBalance(owner, target)
@@ -1235,7 +1235,7 @@ class TestEtherNomin(unittest.TestCase):
         self.fake_court.confiscateBalance(owner, target)
         self.assertEqual(self.balanceOf(target), 0)
         self.assertEqual(self.feePool(), pre_feePool + pre_balance)
-        self.assertTrue(self.isFrozen(target))
+        self.assertTrue(self.frozen(target))
 
     def test_unfreezeAccount(self):
         owner = self.owner()
@@ -1243,23 +1243,23 @@ class TestEtherNomin(unittest.TestCase):
 
         # The nomin contract itself should not be unfreezable.
         tx_receipt = self.unfreezeAccount(owner, self.nomin_real.address)
-        self.assertTrue(self.isFrozen(self.nomin_real.address))
+        self.assertTrue(self.frozen(self.nomin_real.address))
         self.assertEqual(len(tx_receipt.logs), 0)
 
         # Unfreezing non-frozen accounts should not do anything.
-        self.assertFalse(self.isFrozen(target))
+        self.assertFalse(self.frozen(target))
         tx_receipt = self.unfreezeAccount(owner, target)
-        self.assertFalse(self.isFrozen(target))
+        self.assertFalse(self.frozen(target))
         self.assertEqual(len(tx_receipt.logs), 0)
 
         self.debugFreezeAccount(owner, target)
-        self.assertTrue(self.isFrozen(target))
+        self.assertTrue(self.frozen(target))
 
         # Only the owner should be able to unfreeze an account.
         self.assertReverts(self.unfreezeAccount, target, target)
 
         tx_receipt = self.unfreezeAccount(owner, target)
-        self.assertFalse(self.isFrozen(target))
+        self.assertFalse(self.frozen(target))
 
         # Unfreezing should emit the appropriate log.
         log = get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[0])

@@ -288,7 +288,7 @@ contract Havven is ExternStateProxyToken {
         address sender = messageSender;
 
         // Do not deposit fees into frozen accounts.
-        require(!nomin.isFrozen(sender));
+        require(!nomin.frozen(sender));
 
         // check the period has rolled over first
         rolloverFee(sender, lastTransferTimestamp[sender], state.balanceOf(sender));
@@ -304,7 +304,7 @@ contract Havven is ExternStateProxyToken {
 
         feesOwed = safeDecDiv(safeDecMul(safeAdd(feesOwed, lastAverageBalance[sender]),
                                          lastFeesCollected),
-                              state.totalSupply());
+                              totalSupply);
 
         hasWithdrawnLastPeriodFees[sender] = true;
         if (feesOwed != 0) {

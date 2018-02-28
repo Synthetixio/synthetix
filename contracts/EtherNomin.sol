@@ -60,7 +60,7 @@ pragma solidity ^0.4.20;
 
 
 import "contracts/ExternStateProxyFeeToken.sol";
-import "contracts/FeeTokenState.sol";
+import "contracts/TokenState.sol";
 import "contracts/Court.sol";
 
 
@@ -115,19 +115,21 @@ contract EtherNomin is ExternStateProxyFeeToken {
     // If the price is stale, functions that require the price are disabled.
     uint public stalePeriod = 2 days;
 
+    // Accounts which have lost the privilege to transact in nomins.
+    mapping(address => bool) public frozen;
+
 
     /* ========== CONSTRUCTOR ========== */
 
     function EtherNomin(address _havven, address _oracle,
                         address _beneficiary,
                         uint initialEtherPrice_dec,
-                        address _owner, FeeTokenState initialState)
+                        address _owner, TokenState initialState)
         ExternStateProxyFeeToken("Ether-Backed USD Nomins", "eUSD",
-                      _owner,
-                      15 * UNIT / 10000, // nomin transfers incur a 15 bp fee
-                      _havven, // havven contract is the fee authority
-                      initialState, // Construct a new state_owner
-                      _owner)
+                                 15 * UNIT / 10000, // nomin transfers incur a 15 bp fee
+                                 _havven, // the havven contract is the fee authority
+                                 initialState,
+                                 _owner)
         public
     {
         oracle = _oracle;
@@ -137,13 +139,15 @@ contract EtherNomin is ExternStateProxyFeeToken {
         lastPriceUpdate = now;
         PriceUpdated(etherPrice_dec);
 
-        state.setFrozen(this, true);
+        // It should not be possible to transfer to the nomin contract itself.
+        frozen[this] = true;
     }
 
 
     /* ========== SETTERS ========== */
 
     function setOracle(address _oracle)
+        external
         optionalProxy_onlyOwner
     {
         oracle = _oracle;
@@ -167,6 +171,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
     }
 
     function setPoolFeeRate(uint _poolFeeRate_dec)
+        external
         optionalProxy_onlyOwner
     {
         require(_poolFeeRate_dec <= UNIT);
@@ -181,12 +186,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         stalePeriod = _stalePeriod;
         StalePeriodUpdated(_stalePeriod);
     }
-
-    function setFrozen(address account, bool value)
-        internal
-    {
-        state.setFrozen(account, value);
-    }
+ 
 
     /* ========== VIEW FUNCTIONS ========== */ 
 
@@ -241,17 +241,17 @@ contract EtherNomin is ExternStateProxyFeeToken {
         view
         returns (uint)
     {
-        return safeDecDiv(fiatBalance(), _cap());
+        return safeDecDiv(fiatBalance(), _nominCap());
     }
 
     /* Return the maximum number of extant nomins,
      * equal to the nomin pool plus total (circulating) supply. */
-    function _cap()
+    function _nominCap()
         internal
         view
         returns (uint)
     {
-        return nominPool_dec + state.totalSupply();
+        return nominPool_dec + totalSupply;
     }
 
     /* Return the fee charged on a purchase or sale of n nomins. */
@@ -351,20 +351,12 @@ contract EtherNomin is ExternStateProxyFeeToken {
             // cannot overflow.
             bool totalPeriodElapsed = liquidationTimestamp + liquidationPeriod < now;
             // Total supply of 0 means all tokens have returned to the pool.
-            bool allTokensReturned = (liquidationTimestamp + 1 weeks < now) && (state.totalSupply() == 0);
+            bool allTokensReturned = (liquidationTimestamp + 1 weeks < now) && (totalSupply == 0);
             return totalPeriodElapsed || allTokensReturned;
         }
         return false;
     }
 
-    
-    function isFrozen(address account) 
-        public
-        view
-        returns (bool)
-    {
-        return state.isFrozen(account);
-    }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
@@ -378,7 +370,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         optionalProxy
         returns (bool)
     {
-        require(!state.isFrozen(to));
+        require(!frozen[to]);
         return _transfer_byProxy(messageSender, to, value);
     }
 
@@ -389,7 +381,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         optionalProxy
         returns (bool)
     {
-        require(!state.isFrozen(to));
+        require(!frozen[to]);
         return _transferFrom_byProxy(messageSender, from, to, value);
     }
 
@@ -430,7 +422,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         // Price staleness check occurs inside the call to fiatBalance.
         // Safe additions are unnecessary here, as either the addition is checked on the following line
         // or the overflow would cause the requirement not to be satisfied.
-        require(fiatBalance() >= safeDecMul(safeAdd(_cap(), n), MINIMUM_ISSUANCE_RATIO_dec));
+        require(fiatBalance() >= safeDecMul(safeAdd(_nominCap(), n), MINIMUM_ISSUANCE_RATIO_dec));
         nominPool_dec = safeAdd(nominPool_dec, n);
         PoolReplenished(n, msg.value);
     }
@@ -469,10 +461,10 @@ contract EtherNomin is ExternStateProxyFeeToken {
         address sender = messageSender;
         // sub requires that nominPool_dec >= n
         nominPool_dec = safeSub(nominPool_dec, n);
-        state.setBalance(sender, safeAdd(state.balanceOf(sender), n));
+        state.setBalanceOf(sender, safeAdd(state.balanceOf(sender), n));
         Purchased(sender, sender, n, msg.value);
         Transfer(0, sender, n);
-        state.setTotalSupply(safeAdd(state.totalSupply(), n));
+        totalSupply = safeAdd(totalSupply, n);
     }
 
     /* Sends n nomins to the pool from the sender, in exchange for
@@ -500,11 +492,11 @@ contract EtherNomin is ExternStateProxyFeeToken {
 
         address sender = messageSender;
         // sub requires that the balance is greater than n
-        state.setBalance(sender, safeSub(state.balanceOf(sender), n));
+        state.setBalanceOf(sender, safeSub(state.balanceOf(sender), n));
         nominPool_dec = safeAdd(nominPool_dec, n);
         Sold(sender, sender, n, proceeds);
         Transfer(sender, 0, n);
-        state.setTotalSupply(safeSub(state.totalSupply(), n));
+        totalSupply = safeSub(totalSupply, n);
         sender.transfer(proceeds);
     }
 
@@ -555,7 +547,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         optionalProxy_onlyOwner
     {
         require(isLiquidating());
-        require(_cap() == 0 || collateralisationRatio() >= AUTO_LIQUIDATION_RATIO_dec);
+        require(_nominCap() == 0 || collateralisationRatio() >= AUTO_LIQUIDATION_RATIO_dec);
         liquidationTimestamp = ~uint(0);
         liquidationPeriod = DEFAULT_LIQUIDATION_PERIOD;
         LiquidationTerminated();
@@ -592,13 +584,13 @@ contract EtherNomin is ExternStateProxyFeeToken {
         // I leave them in out of paranoia.
         require(court.motionConfirming(motionID));
         require(court.motionPasses(motionID));
-        require(!state.isFrozen(target));
+        require(!frozen[target]);
 
         // Confiscate the balance in the account and freeze it.
         uint balance = state.balanceOf(target);
-        state.setFeePool(safeAdd(state.feePool(), balance));
-        state.setBalance(target, 0);
-        state.setFrozen(target, true);
+        feePool = safeAdd(feePool, balance);
+        state.setBalanceOf(target, 0);
+        frozen[target] = true;
         Confiscated(target, target, balance);
     }
 
@@ -608,8 +600,8 @@ contract EtherNomin is ExternStateProxyFeeToken {
         external
         optionalProxy_onlyOwner
     {
-        if (state.isFrozen(target) && EtherNomin(target) != this) {
-            state.setFrozen(target, false);
+        if (frozen[target] && EtherNomin(target) != this) {
+            frozen[target] = false;
             AccountUnfrozen(target, target);
         }
     }
@@ -645,7 +637,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
     modifier postCheckAutoLiquidate
     {
         _;
-        if (!isLiquidating() && _cap() != 0 && collateralisationRatio() < AUTO_LIQUIDATION_RATIO_dec) {
+        if (!isLiquidating() && _nominCap() != 0 && collateralisationRatio() < AUTO_LIQUIDATION_RATIO_dec) {
             beginLiquidation();
         }
     }

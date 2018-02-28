@@ -358,7 +358,7 @@ contract Court is Owned, SafeDecimalMath {
         require(targetMotionID[target] == 0);
 
         // Disallow votes on accounts that have previously been frozen.
-        require(!nomin.isFrozen(target));
+        require(!nomin.frozen(target));
 
         uint motionID = nextMotionID++;
         motionTarget[motionID] = target;
