@@ -562,7 +562,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         optionalProxy_onlyOwner
     {
         require(canSelfDestruct());
-        SelfDestructed();
+        SelfDestructed(beneficiary);
         selfdestruct(beneficiary);
     }
 
@@ -671,7 +671,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
 
     event PoolFeeRateUpdated(uint newFeeRate);
 
-    event SelfDestructed();
+    event SelfDestructed(address beneficiary);
 
     event Confiscated(address target, address indexed targetIndex, uint balance);
 

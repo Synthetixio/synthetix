@@ -106,9 +106,10 @@ import "contracts/ExternStateProxyToken.sol";
 import "contracts/EtherNomin.sol";
 import "contracts/HavvenEscrow.sol";
 import "contracts/TokenState.sol";
+import "contracts/SelfDestructible.sol";
 
 
-contract Havven is ExternStateProxyToken {
+contract Havven is ExternStateProxyToken, SelfDestructible {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -167,6 +168,7 @@ contract Havven is ExternStateProxyToken {
 
     function Havven(TokenState initialState, address _owner)
         ExternStateProxyToken("Havven", "HAV", 1e8 * UNIT, address(this), initialState, _owner)
+        SelfDestructible(_owner, _owner)
         // Owned is initialised in ExternStateProxyToken
         public
     {

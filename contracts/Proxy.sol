@@ -23,9 +23,9 @@ The proxy can also optionally activate metropolis operations,
 which will allow more-versatile return values once that fork
 has hit.
 
-Additionally this file contains the Proxyable interface,
-which contracts that the proxy wraps must implement, in order
-for it to be able to pass msg.sender into the underlying
+Additionally this file contains the Proxyable interface.
+Any contract the proxy wraps must implement this, in order
+for the proxy to be able to pass msg.sender into the underlying
 contract as the state parameter, messageSender.
 
 -----------------------------------------------------------------

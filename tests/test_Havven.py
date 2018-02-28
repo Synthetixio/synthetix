@@ -232,6 +232,7 @@ class TestHavven(unittest.TestCase):
         self.assertEquals(self.MAX_FEE_PERIOD_DURATION_SECONDS(), to_seconds(weeks=26))
         self.assertEquals(self.lastFeesCollected(), 0)
         self.assertEquals(self.get_nomin(), self.nomin_real.address)
+        self.assertEqual(self.havven.functions.decimals().call(), 18)
 
     ###
     # Mappings

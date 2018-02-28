@@ -200,6 +200,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.balanceOf(MASTER), 0)
         self.assertEqual(self.transferFeeRate(), 15 * UNIT // 10000)
         self.assertEqual(self.feeAuthority(), self.nomin_havven)
+        self.assertEqual(self.nomin.functions.decimals().call(), 18)
 
     def test_getSetOwner(self):
         pre_owner = self.owner()
