@@ -45,7 +45,8 @@ class TestHavven(unittest.TestCase):
         )
         cls.erc20state = deploy_state(cls.compiled, MASTER, MASTER, 1000 * UNIT, MASTER, cls.erc20token.address)
 
-        cls.tok_set_state = lambda self, sender, addr: mine_tx(cls.erc20token.functions.setState(addr).transact({'from': sender}))
+        cls.tok_set_state = lambda self, sender, addr: mine_tx(
+            cls.erc20token.functions.setState(addr).transact({'from': sender}))
         cls.tok_state = lambda self: cls.erc20token.functions.state().call()
         cls.tok_totalSupply = lambda self: cls.erc20token.functions.totalSupply().call()
         cls.tok_name = lambda self: cls.erc20token.functions.name().call()
@@ -60,10 +61,14 @@ class TestHavven(unittest.TestCase):
         cls.tok_transferFrom = lambda self, sender, fromAccount, to, value: mine_tx(
             cls.erc20token.functions.transferFrom(fromAccount, to, value).transact({'from': sender}))
 
-        cls.state_setAssociatedContract = lambda self, sender, addr: mine_tx(cls.erc20state.functions.setAssociatedContract(addr).transact({'from': sender}))
-        cls.state_setAllowance = lambda self, sender, frm, to, val: mine_tx(cls.erc20state.functions.setAllowance(frm, to, val).transact({'from': sender}))
-        cls.state_setBalance = lambda self, sender, acc, val: mine_tx(cls.erc20state.functions.setBalance(acc, val).transact({'from': sender}))
-        cls.state_setTotalSupply = lambda self, sender, val: mine_tx(cls.erc20state.functions.setTotalSupply(val).transact({'from': sender}))
+        cls.state_setAssociatedContract = lambda self, sender, addr: mine_tx(
+            cls.erc20state.functions.setAssociatedContract(addr).transact({'from': sender}))
+        cls.state_setAllowance = lambda self, sender, frm, to, val: mine_tx(
+            cls.erc20state.functions.setAllowance(frm, to, val).transact({'from': sender}))
+        cls.state_setBalance = lambda self, sender, acc, val: mine_tx(
+            cls.erc20state.functions.setBalance(acc, val).transact({'from': sender}))
+        cls.state_setTotalSupply = lambda self, sender, val: mine_tx(
+            cls.erc20state.functions.setTotalSupply(val).transact({'from': sender}))
 
         cls.state_associatedContract = lambda self: cls.erc20state.functions.associatedContract().call()
         cls.state_totalSupply = lambda self: cls.erc20state.functions.totalSupply().call()

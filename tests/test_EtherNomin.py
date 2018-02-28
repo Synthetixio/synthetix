@@ -10,7 +10,6 @@ from utils.testutils import assertReverts, block_time, send_value, get_eth_balan
 from utils.testutils import generate_topic_event_map, get_event_data_from_log
 from utils.testutils import ZERO_ADDRESS
 
-
 ETHERNOMIN_SOURCE = "tests/contracts/PublicEtherNomin.sol"
 FAKECOURT_SOURCE = "tests/contracts/FakeCourt.sol"
 PROXY_SOURCE = "contracts/Proxy.sol"
@@ -61,22 +60,28 @@ class TestEtherNomin(unittest.TestCase):
         cls.nomin_owner = W3.eth.accounts[0]
 
         cls.nomin_real, cls.construction_txr = attempt_deploy(compiled, 'PublicEtherNomin', MASTER,
-                                                         [cls.nomin_havven, cls.nomin_oracle, cls.nomin_beneficiary,
-                                                          1000 * UNIT, cls.nomin_owner, ZERO_ADDRESS])
+                                                              [cls.nomin_havven, cls.nomin_oracle,
+                                                               cls.nomin_beneficiary,
+                                                               1000 * UNIT, cls.nomin_owner, ZERO_ADDRESS])
         cls.construction_price_time = cls.nomin_real.functions.lastPriceUpdate().call()
         cls.initial_time = cls.construction_price_time
 
         cls.fake_court, _ = attempt_deploy(compiled, 'FakeCourt', MASTER, [])
 
-        cls.fake_court.setNomin = lambda sender, new_nomin: mine_tx(cls.fake_court.functions.setNomin(new_nomin).transact({'from': sender}))
-        cls.fake_court.setConfirming = lambda sender, target, status: mine_tx(cls.fake_court.functions.setConfirming(target, status).transact({'from': sender}))
-        cls.fake_court.setVotePasses = lambda sender, target, status: mine_tx(cls.fake_court.functions.setVotePasses(target, status).transact({'from': sender}))
-        cls.fake_court.setTargetMotionID = lambda sender, target, motion_id: mine_tx(cls.fake_court.functions.setTargetMotionID(target, motion_id).transact({'from': sender}))
-        cls.fake_court.confiscateBalance = lambda sender, target: mine_tx(cls.fake_court.functions.confiscateBalance(target).transact({'from': sender}))
+        cls.fake_court.setNomin = lambda sender, new_nomin: mine_tx(
+            cls.fake_court.functions.setNomin(new_nomin).transact({'from': sender}))
+        cls.fake_court.setConfirming = lambda sender, target, status: mine_tx(
+            cls.fake_court.functions.setConfirming(target, status).transact({'from': sender}))
+        cls.fake_court.setVotePasses = lambda sender, target, status: mine_tx(
+            cls.fake_court.functions.setVotePasses(target, status).transact({'from': sender}))
+        cls.fake_court.setTargetMotionID = lambda sender, target, motion_id: mine_tx(
+            cls.fake_court.functions.setTargetMotionID(target, motion_id).transact({'from': sender}))
+        cls.fake_court.confiscateBalance = lambda sender, target: mine_tx(
+            cls.fake_court.functions.confiscateBalance(target).transact({'from': sender}))
         cls.fake_court.setNomin(W3.eth.accounts[0], cls.nomin_real.address)
 
         cls.nomin_proxy, _ = attempt_deploy(compiled, 'Proxy',
-                                        MASTER, [cls.nomin_real.address, cls.nomin_owner])
+                                            MASTER, [cls.nomin_real.address, cls.nomin_owner])
         mine_tx(cls.nomin_real.functions.setProxy(cls.nomin_proxy.address).transact({'from': cls.nomin_owner}))
         cls.nomin = W3.eth.contract(address=cls.nomin_proxy.address, abi=compiled['PublicEtherNomin']['abi'])
 
@@ -95,14 +100,22 @@ class TestEtherNomin(unittest.TestCase):
         cls.lastPriceUpdate = lambda self: cls.nomin.functions.lastPriceUpdate().call()
         cls.stalePeriod = lambda self: cls.nomin.functions.stalePeriod().call()
 
-        cls.nominateOwner = lambda self, sender, address: mine_tx(cls.nomin.functions.nominateOwner(address).transact({'from': sender}))
-        cls.acceptOwnership = lambda self, sender: mine_tx(cls.nomin.functions.acceptOwnership().transact({'from': sender}))
-        cls.setOracle = lambda self, sender, address: mine_tx(cls.nomin.functions.setOracle(address).transact({'from': sender}))
-        cls.setCourt = lambda self, sender, address: mine_tx(cls.nomin.functions.setCourt(address).transact({'from': sender}))
-        cls.setBeneficiary = lambda self, sender, address: mine_tx(cls.nomin.functions.setBeneficiary(address).transact({'from': sender}))
-        cls.setPoolFeeRate = lambda self, sender, rate: mine_tx(cls.nomin.functions.setPoolFeeRate(rate).transact({'from': sender}))
-        cls.updatePrice = lambda self, sender, price, timeSent: mine_tx(cls.nomin_real.functions.updatePrice(price, timeSent).transact({'from': sender}))
-        cls.setStalePeriod = lambda self, sender, period: mine_tx(cls.nomin.functions.setStalePeriod(period).transact({'from': sender}))
+        cls.nominateOwner = lambda self, sender, address: mine_tx(
+            cls.nomin.functions.nominateOwner(address).transact({'from': sender}))
+        cls.acceptOwnership = lambda self, sender: mine_tx(
+            cls.nomin.functions.acceptOwnership().transact({'from': sender}))
+        cls.setOracle = lambda self, sender, address: mine_tx(
+            cls.nomin.functions.setOracle(address).transact({'from': sender}))
+        cls.setCourt = lambda self, sender, address: mine_tx(
+            cls.nomin.functions.setCourt(address).transact({'from': sender}))
+        cls.setBeneficiary = lambda self, sender, address: mine_tx(
+            cls.nomin.functions.setBeneficiary(address).transact({'from': sender}))
+        cls.setPoolFeeRate = lambda self, sender, rate: mine_tx(
+            cls.nomin.functions.setPoolFeeRate(rate).transact({'from': sender}))
+        cls.updatePrice = lambda self, sender, price, timeSent: mine_tx(
+            cls.nomin_real.functions.updatePrice(price, timeSent).transact({'from': sender}))
+        cls.setStalePeriod = lambda self, sender, period: mine_tx(
+            cls.nomin.functions.setStalePeriod(period).transact({'from': sender}))
 
         cls.fiatValue = lambda self, eth: cls.nomin.functions.fiatValue(eth).call()
         cls.fiatBalance = lambda self: cls.nomin.functions.fiatBalance().call()
@@ -114,28 +127,40 @@ class TestEtherNomin(unittest.TestCase):
         cls.purchaseCostEther = lambda self, n: cls.nomin.functions.purchaseCostEther(n).call()
         cls.saleProceedsFiat = lambda self, n: cls.nomin.functions.saleProceedsFiat(n).call()
         cls.saleProceedsEther = lambda self, n: cls.nomin.functions.saleProceedsEther(n).call()
-        cls.saleProceedsEtherAllowStale = lambda self, n: cls.nomin.functions.publicSaleProceedsEtherAllowStale(n).call()
+        cls.saleProceedsEtherAllowStale = lambda self, n: cls.nomin.functions.publicSaleProceedsEtherAllowStale(
+            n).call()
         cls.priceIsStale = lambda self: cls.nomin.functions.priceIsStale().call()
         cls.isLiquidating = lambda self: cls.nomin.functions.isLiquidating().call()
         cls.canSelfDestruct = lambda self: cls.nomin.functions.canSelfDestruct().call()
 
         cls.transferPlusFee = lambda self, value: cls.nomin.functions.transferPlusFee(value).call()
-        cls.transfer = lambda self, sender, recipient, value: mine_tx(cls.nomin.functions.transfer(recipient, value).transact({'from': sender}))
-        cls.transferFrom = lambda self, sender, fromAccount, to, value: mine_tx(cls.nomin.functions.transferFrom(fromAccount, to, value).transact({'from': sender}))
-        cls.approve = lambda self, sender, spender, value: mine_tx(cls.nomin.functions.approve(spender, value).transact({'from': sender}))
-        cls.issue = lambda self, sender, n, value: mine_tx(cls.nomin.functions.issue(n).transact({'from': sender, 'value': value}))
+        cls.transfer = lambda self, sender, recipient, value: mine_tx(
+            cls.nomin.functions.transfer(recipient, value).transact({'from': sender}))
+        cls.transferFrom = lambda self, sender, fromAccount, to, value: mine_tx(
+            cls.nomin.functions.transferFrom(fromAccount, to, value).transact({'from': sender}))
+        cls.approve = lambda self, sender, spender, value: mine_tx(
+            cls.nomin.functions.approve(spender, value).transact({'from': sender}))
+        cls.issue = lambda self, sender, n, value: mine_tx(
+            cls.nomin.functions.issue(n).transact({'from': sender, 'value': value}))
         cls.burn = lambda self, sender, n: mine_tx(cls.nomin.functions.burn(n).transact({'from': sender}))
-        cls.buy = lambda self, sender, n, value: mine_tx(cls.nomin.functions.buy(n).transact({'from': sender, 'value': value}))
-        cls.sell = lambda self, sender, n: mine_tx(cls.nomin.functions.sell(n).transact({'from': sender, 'gasPrice': 10}))
+        cls.buy = lambda self, sender, n, value: mine_tx(
+            cls.nomin.functions.buy(n).transact({'from': sender, 'value': value}))
+        cls.sell = lambda self, sender, n: mine_tx(
+            cls.nomin.functions.sell(n).transact({'from': sender, 'gasPrice': 10}))
 
-        cls.forceLiquidation = lambda self, sender: mine_tx(cls.nomin.functions.forceLiquidation().transact({'from': sender}))
+        cls.forceLiquidation = lambda self, sender: mine_tx(
+            cls.nomin.functions.forceLiquidation().transact({'from': sender}))
         cls.liquidate = lambda self, sender: mine_tx(cls.nomin.functions.liquidate().transact({'from': sender}))
-        cls.extendLiquidationPeriod = lambda self, sender, extension: mine_tx(cls.nomin.functions.extendLiquidationPeriod(extension).transact({'from': sender}))
-        cls.terminateLiquidation = lambda self, sender: mine_tx(cls.nomin.functions.terminateLiquidation().transact({'from': sender}))
+        cls.extendLiquidationPeriod = lambda self, sender, extension: mine_tx(
+            cls.nomin.functions.extendLiquidationPeriod(extension).transact({'from': sender}))
+        cls.terminateLiquidation = lambda self, sender: mine_tx(
+            cls.nomin.functions.terminateLiquidation().transact({'from': sender}))
         cls.selfDestruct = lambda self, sender: mine_tx(cls.nomin.functions.selfDestruct().transact({'from': sender}))
 
-        cls.confiscateBalance = lambda self, sender, target: mine_tx(cls.nomin.functions.confiscateBalance(target).transact({'from': sender}))
-        cls.unfreezeAccount = lambda self, sender, target: mine_tx(cls.nomin.functions.unfreezeAccount(target).transact({'from': sender}))
+        cls.confiscateBalance = lambda self, sender, target: mine_tx(
+            cls.nomin.functions.confiscateBalance(target).transact({'from': sender}))
+        cls.unfreezeAccount = lambda self, sender, target: mine_tx(
+            cls.nomin.functions.unfreezeAccount(target).transact({'from': sender}))
 
         cls.name = lambda self: cls.nomin.functions.name().call()
         cls.symbol = lambda self: cls.nomin.functions.symbol().call()
@@ -145,9 +170,12 @@ class TestEtherNomin(unittest.TestCase):
         cls.feePool = lambda self: cls.nomin.functions.feePool().call()
         cls.feeAuthority = lambda self: cls.nomin.functions.feeAuthority().call()
 
-        cls.debugWithdrawAllEther = lambda self, sender, recipient: mine_tx(cls.nomin.functions.debugWithdrawAllEther(recipient).transact({'from': sender}))
-        cls.debugEmptyFeePool = lambda self, sender: mine_tx(cls.nomin.functions.debugEmptyFeePool().transact({'from': sender}))
-        cls.debugFreezeAccount = lambda self, sender, target: mine_tx(cls.nomin.functions.debugFreezeAccount(target).transact({'from': sender}))
+        cls.debugWithdrawAllEther = lambda self, sender, recipient: mine_tx(
+            cls.nomin.functions.debugWithdrawAllEther(recipient).transact({'from': sender}))
+        cls.debugEmptyFeePool = lambda self, sender: mine_tx(
+            cls.nomin.functions.debugEmptyFeePool().transact({'from': sender}))
+        cls.debugFreezeAccount = lambda self, sender, target: mine_tx(
+            cls.nomin.functions.debugFreezeAccount(target).transact({'from': sender}))
 
     def test_constructor(self):
         # Nomin-specific members
@@ -155,10 +183,10 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.oracle(), self.nomin_oracle)
         self.assertEqual(self.beneficiary(), self.nomin_beneficiary)
         self.assertEqual(self.etherPrice(), 1000 * UNIT)
-        self.assertEqual(self.stalePeriod(), 2 * 24 * 60 * 60) # default two days
-        self.assertEqual(self.liquidationTimestamp(), 2**256 - 1)
-        self.assertEqual(self.liquidationPeriod(), 90 * 24 * 60 * 60) # default ninety days
-        self.assertEqual(self.poolFeeRate(), UNIT / 200) # default fifty basis points
+        self.assertEqual(self.stalePeriod(), 2 * 24 * 60 * 60)  # default two days
+        self.assertEqual(self.liquidationTimestamp(), 2 ** 256 - 1)
+        self.assertEqual(self.liquidationPeriod(), 90 * 24 * 60 * 60)  # default ninety days
+        self.assertEqual(self.poolFeeRate(), UNIT / 200)  # default fifty basis points
         self.assertEqual(self.nominPool(), 0)
         construct_time = block_time(self.construction_txr.blockNumber)
         self.assertEqual(construct_time, self.construction_price_time)
@@ -219,7 +247,7 @@ class TestEtherNomin(unittest.TestCase):
 
         # Pool fee rate must be no greater than UNIT.
         self.assertReverts(self.setPoolFeeRate, owner, UNIT + 1)
-        self.assertReverts(self.setPoolFeeRate, owner, 2**256 - 1)
+        self.assertReverts(self.setPoolFeeRate, owner, 2 ** 256 - 1)
         self.setPoolFeeRate(owner, UNIT)
         self.assertEqual(self.poolFeeRate(), UNIT)
 
@@ -239,8 +267,8 @@ class TestEtherNomin(unittest.TestCase):
     def test_updatePrice(self):
         owner = self.owner()
         pre_price = self.etherPrice()
-        new_price = 10**8 * UNIT # one hundred million dollar ethers $$$$$$
-        new_price2 = UNIT // 10**6 # one ten thousandth of a cent ethers :(
+        new_price = 10 ** 8 * UNIT  # one hundred million dollar ethers $$$$$$
+        new_price2 = UNIT // 10 ** 6  # one ten thousandth of a cent ethers :(
         pre_oracle = self.oracle()
         new_oracle = DUMMY
 
@@ -311,22 +339,22 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.fiatValue(ETHER), ETHER)
         self.assertEqual(self.fiatValue(777 * ETHER), 777 * ETHER)
         self.assertEqual(self.fiatValue(ETHER // 777), ETHER // 777)
-        self.assertEqual(self.fiatValue(10**8 * ETHER), 10**8 * ETHER)
-        self.assertEqual(self.fiatValue(ETHER // 10**12), ETHER // 10**12)
+        self.assertEqual(self.fiatValue(10 ** 8 * ETHER), 10 ** 8 * ETHER)
+        self.assertEqual(self.fiatValue(ETHER // 10 ** 12), ETHER // 10 ** 12)
 
-        self.updatePrice(oracle, 10**8 * UNIT, self.now_block_time())
+        self.updatePrice(oracle, 10 ** 8 * UNIT, self.now_block_time())
         fast_forward(2)
-        self.assertEqual(self.fiatValue(ETHER), 10**8 * ETHER)
-        self.assertEqual(self.fiatValue(317 * ETHER), 317 * 10**8 * ETHER)
-        self.assertEqual(self.fiatValue(ETHER // 317), 10**8 * (ETHER // 317))
-        self.assertEqual(self.fiatValue(10**8 * ETHER), 10**16 * ETHER)
-        self.assertEqual(self.fiatValue(ETHER // 10**12), ETHER // 10**4)
+        self.assertEqual(self.fiatValue(ETHER), 10 ** 8 * ETHER)
+        self.assertEqual(self.fiatValue(317 * ETHER), 317 * 10 ** 8 * ETHER)
+        self.assertEqual(self.fiatValue(ETHER // 317), 10 ** 8 * (ETHER // 317))
+        self.assertEqual(self.fiatValue(10 ** 8 * ETHER), 10 ** 16 * ETHER)
+        self.assertEqual(self.fiatValue(ETHER // 10 ** 12), ETHER // 10 ** 4)
 
-        self.updatePrice(oracle, UNIT // 10**12, self.now_block_time())
+        self.updatePrice(oracle, UNIT // 10 ** 12, self.now_block_time())
         fast_forward(2)
-        self.assertEqual(self.fiatValue(ETHER), ETHER // 10**12)
-        self.assertEqual(self.fiatValue(10**15 * ETHER), 10**3 * ETHER)
-        self.assertEqual(self.fiatValue((7 * ETHER) // 3), ((7 * ETHER) // 3) // 10**12)
+        self.assertEqual(self.fiatValue(ETHER), ETHER // 10 ** 12)
+        self.assertEqual(self.fiatValue(10 ** 15 * ETHER), 10 ** 3 * ETHER)
+        self.assertEqual(self.fiatValue((7 * ETHER) // 3), ((7 * ETHER) // 3) // 10 ** 12)
 
     def test_fiatBalance(self):
         owner = self.owner()
@@ -336,9 +364,9 @@ class TestEtherNomin(unittest.TestCase):
         send_value(owner, self.nomin_real.address, ETHER // 2)
         send_value(owner, self.nomin.address, ETHER // 2)
         self.assertEqual(self.fiatBalance(), pre_price)
-        self.updatePrice(oracle, UNIT // 10**12, self.now_block_time())
+        self.updatePrice(oracle, UNIT // 10 ** 12, self.now_block_time())
         fast_forward(2)
-        self.assertEqual(self.fiatBalance(), UNIT // 10**12)
+        self.assertEqual(self.fiatBalance(), UNIT // 10 ** 12)
         self.updatePrice(oracle, 300 * UNIT, self.now_block_time())
         fast_forward(2)
         self.assertEqual(self.fiatBalance(), 300 * UNIT)
@@ -354,15 +382,15 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.etherValue(UNIT), ETHER)
         self.assertEqual(self.etherValue(777 * UNIT), 777 * ETHER)
         self.assertEqual(self.etherValue(UNIT // 777), ETHER // 777)
-        self.assertEqual(self.etherValue(10**8 * UNIT), 10**8 * ETHER)
-        self.assertEqual(self.etherValue(UNIT // 10**12), ETHER // 10**12)
+        self.assertEqual(self.etherValue(10 ** 8 * UNIT), 10 ** 8 * ETHER)
+        self.assertEqual(self.etherValue(UNIT // 10 ** 12), ETHER // 10 ** 12)
 
         self.updatePrice(oracle, 10 * UNIT, self.now_block_time())
         fast_forward(2)
         self.assertEqual(self.etherValue(UNIT), ETHER // 10)
         self.assertEqual(self.etherValue(2 * UNIT), ETHER // 5)
 
-        for v in [0.0004, 2.1, 1, 49994, 49.29384, 0.00000028, 1235759872, 2.5 * 10**25]:
+        for v in [0.0004, 2.1, 1, 49994, 49.29384, 0.00000028, 1235759872, 2.5 * 10 ** 25]:
             vi = int(v * UNIT)
             self.assertEqual(self.etherValue(vi), self.etherValueAllowStale(vi))
 
@@ -403,10 +431,10 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.poolFeeIncurred(UNIT), poolFeeRate)
         self.assertEqual(self.poolFeeIncurred(10 * UNIT), 10 * poolFeeRate)
         self.assertEqual(self.poolFeeIncurred(UNIT // 2), poolFeeRate // 2)
-        self.setPoolFeeRate(self.owner(), UNIT // 10**7)
-        self.assertEqual(self.poolFeeIncurred(UNIT), UNIT // 10**7)
-        self.assertEqual(self.poolFeeIncurred(100 * UNIT), UNIT // 10**5)
-        self.assertEqual(self.poolFeeIncurred(UNIT // 2), UNIT // (2 * 10**7))
+        self.setPoolFeeRate(self.owner(), UNIT // 10 ** 7)
+        self.assertEqual(self.poolFeeIncurred(UNIT), UNIT // 10 ** 7)
+        self.assertEqual(self.poolFeeIncurred(100 * UNIT), UNIT // 10 ** 5)
+        self.assertEqual(self.poolFeeIncurred(UNIT // 2), UNIT // (2 * 10 ** 7))
 
     def test_purchaseCostFiat(self):
         owner = self.owner()
@@ -419,10 +447,10 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.purchaseCostFiat(UNIT), UNIT + poolFeeRate)
         self.assertEqual(self.purchaseCostFiat(10 * UNIT), 10 * (UNIT + poolFeeRate))
         self.assertEqual(self.purchaseCostFiat(UNIT // 2), (UNIT + poolFeeRate) // 2)
-        self.setPoolFeeRate(owner, UNIT // 10**7)
-        self.assertEqual(self.purchaseCostFiat(UNIT), (UNIT + UNIT // 10**7))
-        self.assertEqual(self.purchaseCostFiat(100 * UNIT), 100 * (UNIT + UNIT // 10**7))
-        self.assertEqual(self.purchaseCostFiat(UNIT // 2), (UNIT + UNIT // 10**7) // 2)
+        self.setPoolFeeRate(owner, UNIT // 10 ** 7)
+        self.assertEqual(self.purchaseCostFiat(UNIT), (UNIT + UNIT // 10 ** 7))
+        self.assertEqual(self.purchaseCostFiat(100 * UNIT), 100 * (UNIT + UNIT // 10 ** 7))
+        self.assertEqual(self.purchaseCostFiat(UNIT // 2), (UNIT + UNIT // 10 ** 7) // 2)
         self.setPoolFeeRate(owner, poolFeeRate)
 
     def test_purchaseCostEther(self):
@@ -439,9 +467,9 @@ class TestEtherNomin(unittest.TestCase):
         fast_forward(2)
         self.assertEqual(self.purchaseCostEther(UNIT), UNIT + poolFeeRate)
         self.assertEqual(self.purchaseCostEther(UNIT // 2), (UNIT + poolFeeRate) // 2)
-        self.setPoolFeeRate(owner, UNIT // 10**7)
-        self.assertEqual(self.purchaseCostEther(UNIT), (UNIT + UNIT // 10**7))
-        self.assertEqual(self.purchaseCostEther(100 * UNIT), 100 * (UNIT + UNIT // 10**7))
+        self.setPoolFeeRate(owner, UNIT // 10 ** 7)
+        self.assertEqual(self.purchaseCostEther(UNIT), (UNIT + UNIT // 10 ** 7))
+        self.assertEqual(self.purchaseCostEther(100 * UNIT), 100 * (UNIT + UNIT // 10 ** 7))
 
         self.setPoolFeeRate(owner, poolFeeRate)
         self.updatePrice(oracle, UNIT // 2, self.now_block_time())
@@ -452,7 +480,7 @@ class TestEtherNomin(unittest.TestCase):
     def test_purchaseCostEtherShoppingSpree(self):
         owner = self.owner()
         oracle = self.oracle()
-        self.issue(owner, 800000 * UNIT, 8 * 10**9 * UNIT)
+        self.issue(owner, 800000 * UNIT, 8 * 10 ** 9 * UNIT)
 
         price_multiples = [12398, 1.2384889, 7748.22, 0.238838, 0.00049944, 5.7484, 87.2211111]
         qty_multiples = [2.3, 84.4828, 284.10002, 0.4992, 105.289299991, 7.651948, 0.01, 100000]
@@ -488,10 +516,10 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.saleProceedsFiat(UNIT), UNIT - poolFeeRate)
         self.assertEqual(self.saleProceedsFiat(10 * UNIT), 10 * (UNIT - poolFeeRate))
         self.assertEqual(self.saleProceedsFiat(UNIT // 2), (UNIT - poolFeeRate) // 2)
-        self.setPoolFeeRate(owner, UNIT // 10**7)
-        self.assertEqual(self.saleProceedsFiat(UNIT), (UNIT - UNIT // 10**7))
-        self.assertEqual(self.saleProceedsFiat(100 * UNIT), 100 * (UNIT - UNIT // 10**7))
-        self.assertEqual(self.saleProceedsFiat(UNIT // 2), (UNIT - UNIT // 10**7) // 2)
+        self.setPoolFeeRate(owner, UNIT // 10 ** 7)
+        self.assertEqual(self.saleProceedsFiat(UNIT), (UNIT - UNIT // 10 ** 7))
+        self.assertEqual(self.saleProceedsFiat(100 * UNIT), 100 * (UNIT - UNIT // 10 ** 7))
+        self.assertEqual(self.saleProceedsFiat(UNIT // 2), (UNIT - UNIT // 10 ** 7) // 2)
         self.setPoolFeeRate(owner, poolFeeRate)
 
     def test_saleProceedsEther(self):
@@ -508,9 +536,9 @@ class TestEtherNomin(unittest.TestCase):
         fast_forward(2)
         self.assertEqual(self.saleProceedsEther(UNIT), UNIT - poolFeeRate)
         self.assertEqual(self.saleProceedsEther(UNIT // 2), (UNIT - poolFeeRate) // 2)
-        self.setPoolFeeRate(owner, UNIT // 10**7)
-        self.assertEqual(self.saleProceedsEther(UNIT), (UNIT - UNIT // 10**7))
-        self.assertEqual(self.saleProceedsEther(100 * UNIT), 100 * (UNIT - UNIT // 10**7))
+        self.setPoolFeeRate(owner, UNIT // 10 ** 7)
+        self.assertEqual(self.saleProceedsEther(UNIT), (UNIT - UNIT // 10 ** 7))
+        self.assertEqual(self.saleProceedsEther(100 * UNIT), 100 * (UNIT - UNIT // 10 ** 7))
 
         self.setPoolFeeRate(owner, poolFeeRate)
         self.updatePrice(oracle, UNIT // 2, self.now_block_time())
@@ -518,7 +546,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.saleProceedsEther(UNIT // 2), UNIT - poolFeeRate)
         self.assertEqual(self.saleProceedsEther(3 * UNIT), 6 * (UNIT - poolFeeRate))
 
-        for v in [0.0004, 2.1, 1, 49994, 49.29384, 0.00000028, 1235759872, 2.5 * 10**25]:
+        for v in [0.0004, 2.1, 1, 49994, 49.29384, 0.00000028, 1235759872, 2.5 * 10 ** 25]:
             vi = int(v * UNIT)
             self.assertEqual(self.saleProceedsEther(vi), self.saleProceedsEtherAllowStale(vi))
 
@@ -527,7 +555,7 @@ class TestEtherNomin(unittest.TestCase):
         oracle = self.oracle()
 
         initial_qty = 800000 * UNIT
-        self.issue(owner, initial_qty, 8 * 10**9 * UNIT)
+        self.issue(owner, initial_qty, 8 * 10 ** 9 * UNIT)
         self.buy(owner, initial_qty, self.purchaseCostEther(initial_qty))
 
         price_multiples = [12398, 1.2384889, 7748.22, 0.238838, 0.00049944, 5.7484, 87.2211111]
@@ -580,18 +608,18 @@ class TestEtherNomin(unittest.TestCase):
 
         self.updatePrice(oracle, UNIT, self.now_block_time())
         fast_forward(2)
-        self.assertFalse(self.priceIsStale()) 
+        self.assertFalse(self.priceIsStale())
 
         # Lengthening stale periods should not trigger staleness.
         self.setStalePeriod(owner, 2 * stale_period)
-        self.assertFalse(self.priceIsStale()) 
+        self.assertFalse(self.priceIsStale())
 
         # Shortening them to longer than the current elapsed period should not trigger staleness.
         self.setStalePeriod(owner, stale_period)
         self.assertFalse(self.priceIsStale())
 
         # Shortening to shorter than the current elapsed period should trigger staleness.
-        fast_forward(seconds= 3 * stale_period // 4)
+        fast_forward(seconds=3 * stale_period // 4)
         self.setStalePeriod(owner, stale_period // 2)
         self.assertTrue(self.priceIsStale())
 
@@ -623,7 +651,7 @@ class TestEtherNomin(unittest.TestCase):
         self.buy(owner, UNIT, pce)
 
         # Enter stale period.
-        fast_forward(seconds=10*self.stalePeriod())
+        fast_forward(seconds=10 * self.stalePeriod())
         self.assertTrue(self.priceIsStale())
 
         # These calls should work if the price is stale.
@@ -725,7 +753,7 @@ class TestEtherNomin(unittest.TestCase):
         self.debugFreezeAccount(owner, target)
 
         self.assertReverts(self.transfer, owner, target, UNIT)
-        #self.assertReverts(self.transfer, target, owner, UNIT)
+        # self.assertReverts(self.transfer, target, owner, UNIT)
 
         self.unfreezeAccount(owner, target)
 
@@ -952,7 +980,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[0])['event'], "Liquidation")
 
         # This call should not work if liquidation has begun.
-        self.assertReverts(self.forceLiquidation, owner) 
+        self.assertReverts(self.forceLiquidation, owner)
 
     def test_autoLiquidation(self):
         owner = self.owner()
@@ -1003,7 +1031,7 @@ class TestEtherNomin(unittest.TestCase):
         oneEightyDays = 180 * 24 * 60 * 60
 
         self.forceLiquidation(owner)
-        self.assertEqual(self.liquidationPeriod(), ninetyDays) # Default 90 days.
+        self.assertEqual(self.liquidationPeriod(), ninetyDays)  # Default 90 days.
         self.assertReverts(self.extendLiquidationPeriod, owner, 12309198139871)
         self.extendLiquidationPeriod(owner, 1)
         self.assertEqual(self.liquidationPeriod(), ninetyDays + 1)
@@ -1028,10 +1056,11 @@ class TestEtherNomin(unittest.TestCase):
 
         # Should be able to terminate liquidation if there is no supply.
         tx_receipt = self.terminateLiquidation(owner)
-        self.assertEqual(self.liquidationTimestamp(), 2**256 - 1)
+        self.assertEqual(self.liquidationTimestamp(), 2 ** 256 - 1)
         self.assertEqual(self.liquidationPeriod(), 90 * 24 * 60 * 60)
         self.assertEqual(len(tx_receipt.logs), 1)
-        self.assertEqual(get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[0])['event'], "LiquidationTerminated")
+        self.assertEqual(get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[0])['event'],
+                         "LiquidationTerminated")
 
         # Should not be able to terminate liquidation if the supply is undercollateralised.
         self.updatePrice(oracle, 2 * UNIT, self.now_block_time())
@@ -1039,7 +1068,7 @@ class TestEtherNomin(unittest.TestCase):
         self.issue(owner, UNIT, UNIT)
         self.updatePrice(oracle, UNIT - 1, self.now_block_time())
         fast_forward(2)
-        self.assertTrue(self.isLiquidating()) # Price update triggers liquidation.
+        self.assertTrue(self.isLiquidating())  # Price update triggers liquidation.
         self.assertReverts(self.terminateLiquidation, owner)
 
         # But if the price recovers we should be fine to terminate.
@@ -1069,7 +1098,7 @@ class TestEtherNomin(unittest.TestCase):
         # Not enough time elapsed.
         self.assertFalse(self.canSelfDestruct())
         fast_forward(seconds=self.liquidationPeriod() + 10)
-        self.assertTrue(self.canSelfDestruct()) 
+        self.assertTrue(self.canSelfDestruct())
         self.updatePrice(oracle, UNIT, self.now_block_time())
         fast_forward(2)
 
@@ -1148,7 +1177,7 @@ class TestEtherNomin(unittest.TestCase):
 
         # Should not be able to self-destruct, as one week has not yet elapsed.
         self.assertReverts(self.selfDestruct, owner)
-        
+
         fast_forward(weeks=2)
 
         # Should not be able to self-destruct as there are still some nomins in circulation.

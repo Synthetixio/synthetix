@@ -92,47 +92,69 @@ class TestHavvenEscrow(unittest.TestCase):
         cls.h_totalSupply = lambda self: cls.havven.functions.totalSupply().call()
         cls.h_targetFeePeriodDurationSeconds = lambda self: cls.havven.functions.targetFeePeriodDurationSeconds().call()
         cls.h_feePeriodStartTime = lambda self: cls.havven.functions.feePeriodStartTime().call()
-        cls.h_endow = lambda self, sender, receiver, amt: mine_tx(cls.havven.functions.endow(receiver, amt).transact({'from': sender}))
+        cls.h_endow = lambda self, sender, receiver, amt: mine_tx(
+            cls.havven.functions.endow(receiver, amt).transact({'from': sender}))
         cls.h_balanceOf = lambda self, account: cls.havven.functions.balanceOf(account).call()
-        cls.h_transfer = lambda self, sender, receiver, amt: mine_tx(cls.havven.functions.transfer(receiver, amt).transact({'from': sender}))
-        cls.h_recomputeLastAverageBalance = lambda self, sender: mine_tx(cls.havven.functions.recomputeLastAverageBalance().transact({'from': sender}))
-        cls.h_withdrawFeeEntitlement = lambda self, sender: mine_tx(cls.havven.functions.withdrawFeeEntitlement().transact({'from': sender}))
+        cls.h_transfer = lambda self, sender, receiver, amt: mine_tx(
+            cls.havven.functions.transfer(receiver, amt).transact({'from': sender}))
+        cls.h_recomputeLastAverageBalance = lambda self, sender: mine_tx(
+            cls.havven.functions.recomputeLastAverageBalance().transact({'from': sender}))
+        cls.h_withdrawFeeEntitlement = lambda self, sender: mine_tx(
+            cls.havven.functions.withdrawFeeEntitlement().transact({'from': sender}))
 
-        cls.n_updatePrice = lambda self, sender, price, timeSent: mine_tx(cls.nomin_real.functions.updatePrice(price, timeSent).transact({'from': sender}))
-        cls.n_setTransferFeeRate = lambda self, sender, rate: mine_tx(cls.nomin.functions.setTransferFeeRate(rate).transact({'from': sender}))
-        cls.n_issue = lambda self, sender, quantity, value: mine_tx(cls.nomin.functions.issue(quantity).transact({'from': sender, 'value': value}))
-        cls.n_burn = lambda self, sender, quantity: mine_tx(cls.nomin.functions.burn(quantity).transact({'from': sender}))
-        cls.n_buy = lambda self, sender, quantity, value: mine_tx(cls.nomin.functions.buy(quantity).transact({'from': sender, 'value': value}))
-        cls.n_sell = lambda self, sender, quantity: mine_tx(cls.nomin.functions.sell(quantity).transact({'from': sender}))
+        cls.n_updatePrice = lambda self, sender, price, timeSent: mine_tx(
+            cls.nomin_real.functions.updatePrice(price, timeSent).transact({'from': sender}))
+        cls.n_setTransferFeeRate = lambda self, sender, rate: mine_tx(
+            cls.nomin.functions.setTransferFeeRate(rate).transact({'from': sender}))
+        cls.n_issue = lambda self, sender, quantity, value: mine_tx(
+            cls.nomin.functions.issue(quantity).transact({'from': sender, 'value': value}))
+        cls.n_burn = lambda self, sender, quantity: mine_tx(
+            cls.nomin.functions.burn(quantity).transact({'from': sender}))
+        cls.n_buy = lambda self, sender, quantity, value: mine_tx(
+            cls.nomin.functions.buy(quantity).transact({'from': sender, 'value': value}))
+        cls.n_sell = lambda self, sender, quantity: mine_tx(
+            cls.nomin.functions.sell(quantity).transact({'from': sender}))
         cls.n_purchaseCostEther = lambda self, quantity: cls.nomin.functions.purchaseCostEther(quantity).call()
         cls.n_balanceOf = lambda self, account: cls.nomin.functions.balanceOf(account).call()
-        cls.n_transfer = lambda self, sender, recipient, quantity: mine_tx(cls.nomin.functions.transfer(recipient, quantity).transact({'from': sender}))
+        cls.n_transfer = lambda self, sender, recipient, quantity: mine_tx(
+            cls.nomin.functions.transfer(recipient, quantity).transact({'from': sender}))
         cls.n_feePool = lambda self: cls.nomin.functions.feePool().call()
         cls.n_nominPool = lambda self: cls.nomin.functions.nominPool_dec().call()
         cls.n_priceToSpend = lambda self, v: cls.nomin.functions.priceToSpend(v).call()
 
         cls.owner = lambda self: cls.escrow.functions.owner().call()
-        cls.nominateOwner = lambda self, sender, newOwner: mine_tx(cls.escrow.functions.nominateOwner(newOwner).transact({'from': sender}))
-        cls.acceptOwnership = lambda self, sender: mine_tx(cls.escrow.functions.acceptOwnership().transact({'from': sender}))
+        cls.nominateOwner = lambda self, sender, newOwner: mine_tx(
+            cls.escrow.functions.nominateOwner(newOwner).transact({'from': sender}))
+        cls.acceptOwnership = lambda self, sender: mine_tx(
+            cls.escrow.functions.acceptOwnership().transact({'from': sender}))
 
         cls.e_havven = lambda self: cls.escrow.functions.havven().call()
-        cls.vestingSchedules = lambda self, account, index, i: cls.escrow.functions.vestingSchedules(account, index, i).call()
+        cls.vestingSchedules = lambda self, account, index, i: cls.escrow.functions.vestingSchedules(account, index,
+                                                                                                     i).call()
         cls.numVestingEntries = lambda self, account: cls.escrow.functions.numVestingEntries(account).call()
-        cls.getVestingScheduleEntry = lambda self, account, index: cls.escrow.functions.getVestingScheduleEntry(account, index).call()
+        cls.getVestingScheduleEntry = lambda self, account, index: cls.escrow.functions.getVestingScheduleEntry(account,
+                                                                                                                index).call()
         cls.getVestingTime = lambda self, account, index: cls.escrow.functions.getVestingTime(account, index).call()
-        cls.getVestingQuantity = lambda self, account, index: cls.escrow.functions.getVestingQuantity(account, index).call()
-        cls.totalVestedAccountBalance = lambda self, account: cls.escrow.functions.totalVestedAccountBalance(account).call()
+        cls.getVestingQuantity = lambda self, account, index: cls.escrow.functions.getVestingQuantity(account,
+                                                                                                      index).call()
+        cls.totalVestedAccountBalance = lambda self, account: cls.escrow.functions.totalVestedAccountBalance(
+            account).call()
         cls.totalVestedBalance = lambda self: cls.escrow.functions.totalVestedBalance().call()
         cls.getNextVestingIndex = lambda self, account: cls.escrow.functions.getNextVestingIndex(account).call()
         cls.getNextVestingEntry = lambda self, account: cls.escrow.functions.getNextVestingEntry(account).call()
         cls.getNextVestingTime = lambda self, account: cls.escrow.functions.getNextVestingTime(account).call()
         cls.getNextVestingQuantity = lambda self, account: cls.escrow.functions.getNextVestingQuantity(account).call()
-        
-        cls.setHavven = lambda self, sender, account: mine_tx(cls.escrow.functions.setHavven(account).transact({'from': sender}))
-        cls.purgeAccount = lambda self, sender, account: mine_tx(cls.escrow.functions.purgeAccount(account).transact({'from': sender}))
-        cls.withdrawHavvens = lambda self, sender, quantity: mine_tx(cls.escrow.functions.withdrawHavvens(quantity).transact({'from': sender}))
-        cls.appendVestingEntry = lambda self, sender, account, time, quantity: mine_tx(cls.escrow.functions.appendVestingEntry(account, time, quantity).transact({'from': sender}))
-        cls.addRegularVestingSchedule = lambda self, sender, account, time, quantity, periods: mine_tx(cls.escrow.functions.addRegularVestingSchedule(account, time, quantity, periods).transact({'from': sender}))
+
+        cls.setHavven = lambda self, sender, account: mine_tx(
+            cls.escrow.functions.setHavven(account).transact({'from': sender}))
+        cls.purgeAccount = lambda self, sender, account: mine_tx(
+            cls.escrow.functions.purgeAccount(account).transact({'from': sender}))
+        cls.withdrawHavvens = lambda self, sender, quantity: mine_tx(
+            cls.escrow.functions.withdrawHavvens(quantity).transact({'from': sender}))
+        cls.appendVestingEntry = lambda self, sender, account, time, quantity: mine_tx(
+            cls.escrow.functions.appendVestingEntry(account, time, quantity).transact({'from': sender}))
+        cls.addRegularVestingSchedule = lambda self, sender, account, time, quantity, periods: mine_tx(
+            cls.escrow.functions.addRegularVestingSchedule(account, time, quantity, periods).transact({'from': sender}))
         cls.vest = lambda self, sender: mine_tx(cls.escrow.functions.vest().transact({'from': sender}))
 
     def make_nomin_velocity(self):
@@ -204,13 +226,13 @@ class TestHavvenEscrow(unittest.TestCase):
         self.assertEqual(self.totalVestedAccountBalance(alice), 0)
 
         k = 5
-        for n in [100 * 2**i for i in range(k)]:
+        for n in [100 * 2 ** i for i in range(k)]:
             self.appendVestingEntry(MASTER, alice, time + n, n)
 
-        self.assertEqual(self.totalVestedAccountBalance(alice), 100 * (2**k - 1))
+        self.assertEqual(self.totalVestedAccountBalance(alice), 100 * (2 ** k - 1))
         fast_forward(110)
         self.vest(alice)
-        self.assertEqual(self.totalVestedAccountBalance(alice), 100 * (2**k - 1) - 100)
+        self.assertEqual(self.totalVestedAccountBalance(alice), 100 * (2 ** k - 1) - 100)
 
     def test_totalVestedBalance(self):
         alice, bob = fresh_accounts(2)
@@ -221,7 +243,6 @@ class TestHavvenEscrow(unittest.TestCase):
         self.appendVestingEntry(MASTER, bob, time + 100, UNIT)
         self.assertEqual(self.totalVestedBalance(), UNIT)
 
-
         self.appendVestingEntry(MASTER, alice, time + 100, UNIT)
         self.assertEqual(self.totalVestedBalance(), 2 * UNIT)
 
@@ -229,13 +250,13 @@ class TestHavvenEscrow(unittest.TestCase):
         self.assertEqual(self.totalVestedBalance(), UNIT)
 
         k = 5
-        for n in [100 * 2**i for i in range(k)]:
+        for n in [100 * 2 ** i for i in range(k)]:
             self.appendVestingEntry(MASTER, alice, time + n, n)
 
-        self.assertEqual(self.totalVestedBalance(), UNIT + 100 * (2**k - 1))
+        self.assertEqual(self.totalVestedBalance(), UNIT + 100 * (2 ** k - 1))
         fast_forward(110)
         self.vest(alice)
-        self.assertEqual(self.totalVestedBalance(), UNIT + 100 * (2**k - 1) - 100)
+        self.assertEqual(self.totalVestedBalance(), UNIT + 100 * (2 ** k - 1) - 100)
 
     def test_numVestingEntries(self):
         alice = fresh_account()
@@ -277,7 +298,7 @@ class TestHavvenEscrow(unittest.TestCase):
             fast_forward(to_seconds(weeks=1) + 30)
             self.assertEqual(self.getNextVestingIndex(alice), i)
             self.vest(alice)
-            self.assertEqual(self.getNextVestingIndex(alice), i+1)
+            self.assertEqual(self.getNextVestingIndex(alice), i + 1)
 
     def test_getNextVestingEntry(self):
         self.h_endow(MASTER, self.escrow.address, 100 * UNIT)
@@ -285,7 +306,7 @@ class TestHavvenEscrow(unittest.TestCase):
         time = block_time()
         entries = [[time + to_seconds(weeks=i), i * UNIT] for i in range(1, 6)]
 
-        self.assertEqual(self.getNextVestingEntry(alice), [0,0])
+        self.assertEqual(self.getNextVestingEntry(alice), [0, 0])
 
         for i in range(len(entries)):
             self.appendVestingEntry(MASTER, alice, entries[i][0], entries[i][1])
@@ -294,8 +315,7 @@ class TestHavvenEscrow(unittest.TestCase):
             fast_forward(to_seconds(weeks=1) + 30)
             self.assertEqual(self.getNextVestingEntry(alice), entries[i])
             self.vest(alice)
-            self.assertEqual(self.getNextVestingEntry(alice), [0,0] if i == len(entries) - 1 else entries[i+1])
-
+            self.assertEqual(self.getNextVestingEntry(alice), [0, 0] if i == len(entries) - 1 else entries[i + 1])
 
     def test_getNextVestingTime(self):
         self.h_endow(MASTER, self.escrow.address, 100 * UNIT)
@@ -312,7 +332,7 @@ class TestHavvenEscrow(unittest.TestCase):
             fast_forward(to_seconds(weeks=1) + 30)
             self.assertEqual(self.getNextVestingTime(alice), entries[i][0])
             self.vest(alice)
-            self.assertEqual(self.getNextVestingTime(alice), 0 if i == len(entries) - 1 else entries[i+1][0])
+            self.assertEqual(self.getNextVestingTime(alice), 0 if i == len(entries) - 1 else entries[i + 1][0])
 
     def test_getNextVestingQuantity(self):
         self.h_endow(MASTER, self.escrow.address, 100 * UNIT)
@@ -329,7 +349,7 @@ class TestHavvenEscrow(unittest.TestCase):
             fast_forward(to_seconds(weeks=1) + 30)
             self.assertEqual(self.getNextVestingQuantity(alice), entries[i][1])
             self.vest(alice)
-            self.assertEqual(self.getNextVestingQuantity(alice), 0 if i == len(entries) - 1 else entries[i+1][1])
+            self.assertEqual(self.getNextVestingQuantity(alice), 0 if i == len(entries) - 1 else entries[i + 1][1])
 
     def test_setHavven(self):
         alice = fresh_account()
@@ -417,10 +437,10 @@ class TestHavvenEscrow(unittest.TestCase):
         time = block_time()
 
         # Should not be able to add a vestingEntry > havven.totalSupply()
-        self.assertReverts(self.appendVestingEntry, MASTER, alice, time+to_seconds(weeks=2), self.h_totalSupply() + 1)
+        self.assertReverts(self.appendVestingEntry, MASTER, alice, time + to_seconds(weeks=2), self.h_totalSupply() + 1)
 
         # Should not be able to add a vestingEntry > balanceOf escrow account
-        self.assertReverts(self.appendVestingEntry, MASTER, alice, time+to_seconds(weeks=2), escrow_balance + 1)
+        self.assertReverts(self.appendVestingEntry, MASTER, alice, time + to_seconds(weeks=2), escrow_balance + 1)
 
         # Should not be able to vest in the past
         self.assertReverts(self.appendVestingEntry, MASTER, alice, 0, UNIT)
@@ -428,9 +448,9 @@ class TestHavvenEscrow(unittest.TestCase):
         self.assertReverts(self.appendVestingEntry, MASTER, alice, time, UNIT)
 
         # Vesting quantities should be nonzero
-        self.assertReverts(self.appendVestingEntry, MASTER, alice, time+to_seconds(weeks=2), 0)
+        self.assertReverts(self.appendVestingEntry, MASTER, alice, time + to_seconds(weeks=2), 0)
 
-        self.appendVestingEntry(MASTER, alice, time+to_seconds(weeks=2), amount)
+        self.appendVestingEntry(MASTER, alice, time + to_seconds(weeks=2), amount)
         self.vest(alice)
         self.assertEqual(self.h_balanceOf(alice), 0)
         fast_forward(weeks=3)
@@ -439,11 +459,11 @@ class TestHavvenEscrow(unittest.TestCase):
         self.h_transfer(alice, MASTER, amount)
 
         time = block_time()
-        t1 = time+to_seconds(weeks=1)
-        t2 = time+to_seconds(weeks=2)
+        t1 = time + to_seconds(weeks=1)
+        t2 = time + to_seconds(weeks=2)
         self.appendVestingEntry(MASTER, alice, t1, amount)
-        self.assertReverts(self.appendVestingEntry, MASTER, alice, time+to_seconds(days=1), amount)
-        self.assertReverts(self.appendVestingEntry, MASTER, alice, time+to_seconds(weeks=1), amount)
+        self.assertReverts(self.appendVestingEntry, MASTER, alice, time + to_seconds(days=1), amount)
+        self.assertReverts(self.appendVestingEntry, MASTER, alice, time + to_seconds(weeks=1), amount)
         self.appendVestingEntry(MASTER, alice, t2, amount + 1)
 
         self.assertEqual(self.getVestingQuantity(alice, 1), amount)
@@ -534,6 +554,7 @@ class TestHavvenEscrow(unittest.TestCase):
         self.assertEqual(self.numVestingEntries(tim), self.numVestingEntries(pim))
         self.assertEqual(self.getVestingTime(tim, 0), self.getVestingTime(pim, 0))
         self.assertEqual(self.getVestingQuantity(tim, 0), self.getVestingQuantity(pim, 0))
+
 
 if __name__ == '__main__':
     unittest.main()
