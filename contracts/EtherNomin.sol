@@ -199,7 +199,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         priceNotStale
         returns (uint)
     {
-        return safeDecMul(ether_dec, etherPrice_dec);
+        return safeMul_dec(ether_dec, etherPrice_dec);
     }
 
     /* Return the current fiat value of the contract's balance.
@@ -222,7 +222,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         priceNotStale
         returns (uint)
     {
-        return safeDecDiv(fiat_dec, etherPrice_dec);
+        return safeDiv_dec(fiat_dec, etherPrice_dec);
     }
 
     /* The same as etherValue(), but without the stale price check. */
@@ -231,7 +231,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         view
         returns (uint)
     {
-        return safeDecDiv(fiat_dec, etherPrice_dec);
+        return safeDiv_dec(fiat_dec, etherPrice_dec);
     }
 
     /* Return the units of fiat per nomin in the supply.
@@ -241,7 +241,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         view
         returns (uint)
     {
-        return safeDecDiv(fiatBalance(), _nominCap());
+        return safeDiv_dec(fiatBalance(), _nominCap());
     }
 
     /* Return the maximum number of extant nomins,
@@ -260,7 +260,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         view
         returns (uint)
     {
-        return safeDecMul(n, poolFeeRate_dec);
+        return safeMul_dec(n, poolFeeRate_dec);
     }
 
     /* Return the fiat cost (including fee) of purchasing n nomins.
@@ -422,7 +422,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         // Price staleness check occurs inside the call to fiatBalance.
         // Safe additions are unnecessary here, as either the addition is checked on the following line
         // or the overflow would cause the requirement not to be satisfied.
-        require(fiatBalance() >= safeDecMul(safeAdd(_nominCap(), n), MINIMUM_ISSUANCE_RATIO_dec));
+        require(fiatBalance() >= safeMul_dec(safeAdd(_nominCap(), n), MINIMUM_ISSUANCE_RATIO_dec));
         nominPool_dec = safeAdd(nominPool_dec, n);
         PoolReplenished(n, msg.value);
     }

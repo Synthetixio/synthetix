@@ -114,7 +114,7 @@ contract SafeDecimalMath {
      * contain small enough fractional components. It would also marginally diminish the 
      * domain this function is defined upon. 
      */
-    function safeDecMul(uint x, uint y)
+    function safeMul_dec(uint x, uint y)
         pure
         internal
         returns (uint)
@@ -150,7 +150,7 @@ contract SafeDecimalMath {
     /* Return the result of dividing x by y, interpreting the operands as fixed point decimal numbers.
      * Throws an exception in case of overflow or zero divisor; x must be less than 2^256 / UNIT.
      * Internal rounding is downward: a similar caveat holds as with safeDecMul().*/
-    function safeDecDiv(uint x, uint y)
+    function safeDiv_dec(uint x, uint y)
         pure
         internal
         returns (uint)

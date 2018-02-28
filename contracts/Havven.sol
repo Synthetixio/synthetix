@@ -304,9 +304,9 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
             feesOwed = escrow.totalVestedAccountBalance(sender);
         }
 
-        feesOwed = safeDecDiv(safeDecMul(safeAdd(feesOwed, lastAverageBalance[sender]),
-                                         lastFeesCollected),
-                              totalSupply);
+        feesOwed = safeDiv_dec(safeMul_dec(safeAdd(feesOwed, lastAverageBalance[sender]),
+                                           lastFeesCollected),
+                               totalSupply);
 
         hasWithdrawnLastPeriodFees[sender] = true;
         if (feesOwed != 0) {
