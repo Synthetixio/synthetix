@@ -591,7 +591,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         feePool = safeAdd(feePool, balance);
         state.setBalanceOf(target, 0);
         frozen[target] = true;
-        Confiscated(target, target, balance);
+        AccountFrozen(target, target, balance);
     }
 
     /* The owner may allow a previously-frozen contract to once
@@ -673,7 +673,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
 
     event SelfDestructed(address beneficiary);
 
-    event Confiscated(address target, address indexed targetIndex, uint balance);
+    event AccountFrozen(address target, address indexed targetIndex, uint balance);
 
     event AccountUnfrozen(address target, address indexed targetIndex);
 }

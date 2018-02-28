@@ -127,8 +127,8 @@ class TestCourt(unittest.TestCase):
         cls.motionPasses = lambda self, target: self.court.functions.motionPasses(target).call()
 
         # Mutators
-        cls.beginConfiscationMotion = lambda self, sender, target: mine_tx(
-            self.court.functions.beginConfiscationMotion(target).transact({'from': sender}))
+        cls.beginMotion = lambda self, sender, target: mine_tx(
+            self.court.functions.beginMotion(target).transact({'from': sender}))
         cls.voteFor = lambda self, sender, target: mine_tx(
             self.court.functions.voteFor(target).transact({'from': sender}))
         cls.voteAgainst = lambda self, sender, target: mine_tx(
@@ -178,7 +178,7 @@ class TestCourt(unittest.TestCase):
         cls.months = 2628000
         cls.unit = 10**18
 
-    # Extract vote index from a transaction receipt returned by a call to beginConfiscationMotion
+    # Extract vote index from a transaction receipt returned by a call to beginMotion
     def get_motion_index(self, tx_receipt):
         event_data = get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])
         self.assertEqual(event_data['event'], "MotionBegun")
@@ -300,10 +300,10 @@ class TestCourt(unittest.TestCase):
         self.havvenCheckFeePeriodRollover(DUMMY)
 
         address_pattern = "0x" + "0" * 39 + "{}"
-        motion_id = self.get_motion_index(self.beginConfiscationMotion(voter, address_pattern.format(1)))
+        motion_id = self.get_motion_index(self.beginMotion(voter, address_pattern.format(1)))
         self.assertEqual(motion_id, 1)
         for i in range(2, 6):
-            self.assertEqual(self.get_motion_index(self.beginConfiscationMotion(voter, address_pattern.format(i))), i)
+            self.assertEqual(self.get_motion_index(self.beginMotion(voter, address_pattern.format(i))), i)
 
     def test_motionTarget_targetMotionID(self):
         owner = self.owner()
@@ -321,9 +321,9 @@ class TestCourt(unittest.TestCase):
         self.havvenCheckFeePeriodRollover(DUMMY)
 
         # Start three motions to close them in three different ways.
-        motion_id1 = self.get_motion_index(self.beginConfiscationMotion(voter, target1))
-        motion_id2 = self.get_motion_index(self.beginConfiscationMotion(voter, target2))
-        motion_id3 = self.get_motion_index(self.beginConfiscationMotion(voter, target3))
+        motion_id1 = self.get_motion_index(self.beginMotion(voter, target1))
+        motion_id2 = self.get_motion_index(self.beginMotion(voter, target2))
+        motion_id3 = self.get_motion_index(self.beginMotion(voter, target3))
 
         self.assertEqual(self.motionTarget(motion_id1), target1)
         self.assertEqual(self.motionTarget(motion_id2), target2)
@@ -363,7 +363,7 @@ class TestCourt(unittest.TestCase):
         self.assertFalse(self.motionConfirming(motion_id))
 
         # Begin a confiscation motion against the suspect, should move to the voting state.
-        actual_motion_id = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
+        actual_motion_id = self.get_motion_index(self.beginMotion(owner, suspect))
         self.assertEqual(motion_id, actual_motion_id)
         self.assertFalse(self.motionWaiting(motion_id))
         self.assertTrue(self.motionVoting(motion_id))
@@ -410,7 +410,7 @@ class TestCourt(unittest.TestCase):
         # This should fail because no confiscation motion has begun.
         next_motion_id = self.nextMotionID()
         self.assertFalse(self.hasVoted(voter, next_motion_id))
-        motion_id = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
+        motion_id = self.get_motion_index(self.beginMotion(owner, suspect))
         self.assertEqual(motion_id, next_motion_id)
 
         # This should return false because the voter has not voted yet.
@@ -450,7 +450,7 @@ class TestCourt(unittest.TestCase):
         self.havvenCheckFeePeriodRollover(DUMMY)
 
         # Begin a confiscation motion against the suspect.
-        motion_id = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
+        motion_id = self.get_motion_index(self.beginMotion(owner, suspect))
         self.assertFalse(self.motionPasses(motion_id))
 
         # 100% in favour and 0% against (50% participation).
@@ -497,7 +497,7 @@ class TestCourt(unittest.TestCase):
         self.voteAgainst(voters[7], motion_id)
         self.assertFalse(self.motionPasses(motion_id))
 
-    def test_beginConfiscationMotion(self):
+    def test_beginMotion(self):
         owner = self.owner()
         accounts = fresh_accounts(5)
         insufficient_standing = accounts[0]
@@ -522,8 +522,8 @@ class TestCourt(unittest.TestCase):
         self.havvenEndow(owner, sufficient_standing, 100 * UNIT)
 
         # Must have at least 100 havvens to begin a confiscation motion.
-        self.assertReverts(self.beginConfiscationMotion, insufficient_standing, suspects[0])
-        tx_receipt = self.beginConfiscationMotion(sufficient_standing, suspects[0])
+        self.assertReverts(self.beginMotion, insufficient_standing, suspects[0])
+        tx_receipt = self.beginMotion(sufficient_standing, suspects[0])
 
         # Check that event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "MotionBegun")
@@ -535,17 +535,17 @@ class TestCourt(unittest.TestCase):
         self.assertEqual(self.votesAgainst(motion_id_0), 0)
 
         # The contract owner can also begin a motion, regardless of the token requirement.
-        motion_id_1 = self.get_motion_index(self.beginConfiscationMotion(owner, suspects[1]))
+        motion_id_1 = self.get_motion_index(self.beginMotion(owner, suspects[1]))
 
         # Cannot open multiple confiscation motions on one suspect.
-        self.assertReverts(self.beginConfiscationMotion, owner, suspects[0])
+        self.assertReverts(self.beginMotion, owner, suspects[0])
         self.voteFor(voter, motion_id_0)
         fast_forward(voting_period)
         self.approveMotion(owner, motion_id_0)
         self.assertTrue(self.nominIsFrozen(suspects[0]))
 
         # Cannot open a vote on an account that has already been frozen.
-        self.assertReverts(self.beginConfiscationMotion, owner, suspects[0])
+        self.assertReverts(self.beginMotion, owner, suspects[0])
 
     def test_setupVote(self):
         owner = self.owner()
@@ -561,7 +561,7 @@ class TestCourt(unittest.TestCase):
         self.havvenCheckFeePeriodRollover(DUMMY)
 
         # Start the vote itself
-        motion_id = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
+        motion_id = self.get_motion_index(self.beginMotion(owner, suspect))
 
         # Zero-weight voters should not be able to cast votes.
         self.assertEqual(self.voteWeight(non_voter, motion_id), 0)
@@ -603,7 +603,7 @@ class TestCourt(unittest.TestCase):
         self.havvenCheckFeePeriodRollover(DUMMY)
 
         # Begin a confiscation motion against the suspect.
-        motion_id = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
+        motion_id = self.get_motion_index(self.beginMotion(owner, suspect))
         self.assertTrue(self.motionVoting(motion_id))
 
         # Cast a vote in favour of confiscation.
@@ -647,7 +647,7 @@ class TestCourt(unittest.TestCase):
         self.havvenCheckFeePeriodRollover(DUMMY)
 
         # Begin a confiscation motion against the suspect.
-        motion_id = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
+        motion_id = self.get_motion_index(self.beginMotion(owner, suspect))
         self.assertTrue(self.motionVoting(motion_id))
 
         # Cast a vote against confiscation.
@@ -689,7 +689,7 @@ class TestCourt(unittest.TestCase):
         self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
 
         # Begin a confiscation motion against the suspect.
-        motion_id = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
+        motion_id = self.get_motion_index(self.beginMotion(owner, suspect))
 
         # Cast a vote in favour of confiscation.
         self.voteFor(voter, motion_id)
@@ -750,7 +750,7 @@ class TestCourt(unittest.TestCase):
         fast_forward(fee_period + 1)
         self.havvenCheckFeePeriodRollover(DUMMY)
         self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
-        motion_id = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
+        motion_id = self.get_motion_index(self.beginMotion(owner, suspect))
 
         # Should not be able to close vote in the voting period.
         self.assertReverts(self.closeMotion, voter, motion_id)
@@ -762,7 +762,7 @@ class TestCourt(unittest.TestCase):
         self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "MotionClosed")
 
         # Start another confiscation motion.
-        motion_id = self.get_motion_index(self.beginConfiscationMotion(owner, suspect))
+        motion_id = self.get_motion_index(self.beginMotion(owner, suspect))
         self.voteFor(voter, motion_id)
         fast_forward(voting_period)
 
@@ -791,7 +791,7 @@ class TestCourt(unittest.TestCase):
         fast_forward(fee_period + 1)
         self.havvenCheckFeePeriodRollover(DUMMY)
         self.havvenAdjustFeeEntitlement(voter, voter, self.havvenBalance(voter))
-        tx_receipt = self.beginConfiscationMotion(owner, guilty)
+        tx_receipt = self.beginMotion(owner, guilty)
         motion_id = self.get_motion_index(tx_receipt)
 
         # Cast a vote in favour of confiscation.
@@ -807,7 +807,7 @@ class TestCourt(unittest.TestCase):
         tx_receipt = self.approveMotion(owner, motion_id)
 
         # Check that event is emitted properly.
-        self.assertEqual(get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[0])['event'], "Confiscated")
+        self.assertEqual(get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[0])['event'], "AccountFrozen")
         self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[1])['event'], "MotionClosed")
         self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[2])['event'], "MotionApproved")
         self.assertEqual(self.motionStartTime(motion_id), 0)
@@ -833,7 +833,7 @@ class TestCourt(unittest.TestCase):
 
         # Cannot veto when there is no vote in progress.
         self.assertReverts(self.vetoMotion, owner, 10)
-        motion_id = self.get_motion_index(self.beginConfiscationMotion(owner, acquitted))
+        motion_id = self.get_motion_index(self.beginMotion(owner, acquitted))
 
         # Only owner can veto.
         self.assertReverts(self.vetoMotion, DUMMY, motion_id)
@@ -841,7 +841,7 @@ class TestCourt(unittest.TestCase):
 
         # After veto motion, suspect should be back in the waiting stage.
         self.assertTrue(self.motionWaiting(motion_id))
-        motion_id_2 = self.get_motion_index(self.beginConfiscationMotion(owner, acquitted))
+        motion_id_2 = self.get_motion_index(self.beginMotion(owner, acquitted))
         self.assertNotEqual(motion_id, motion_id_2)
         self.voteFor(voter, motion_id_2)
         self.assertTrue(self.motionPasses(motion_id_2))
@@ -893,7 +893,7 @@ class TestCourt(unittest.TestCase):
 
     def validate_Confiscation_data(self, tx_receipt, log_index, expected_target, expected_balance=None):
         veto_data = get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[log_index])
-        self.assertEqual(veto_data['event'], "Confiscated")
+        self.assertEqual(veto_data['event'], "AccountFrozen")
         self.assertEqual(veto_data['args']['target'], expected_target)
         if expected_balance is not None:
             self.assertEqual(veto_data['args']['balance'], expected_balance)
@@ -930,7 +930,7 @@ class TestCourt(unittest.TestCase):
         # pass (unanimous)
         unanimous_target = targets[target_index]
         frozen.append(unanimous_target)
-        tx_receipt = self.beginConfiscationMotion(owner, unanimous_target)
+        tx_receipt = self.beginMotion(owner, unanimous_target)
         self.validate_MotionBegun_data(tx_receipt, owner, unanimous_target, motion_id)
         motion_id += 1
         unanimous_vote = self.get_motion_index(tx_receipt)
@@ -944,7 +944,7 @@ class TestCourt(unittest.TestCase):
         # pass (majority)
         majority_target = targets[target_index]
         frozen.append(majority_target)
-        tx_receipt = self.beginConfiscationMotion(owner, majority_target)
+        tx_receipt = self.beginMotion(owner, majority_target)
         self.validate_MotionBegun_data(tx_receipt, owner, majority_target, motion_id)
         motion_id += 1
         majority_vote = self.get_motion_index(tx_receipt)
@@ -962,7 +962,7 @@ class TestCourt(unittest.TestCase):
         # pass (bare)
         bare_target = targets[target_index]
         frozen.append(bare_target)
-        tx_receipt = self.beginConfiscationMotion(owner, bare_target)
+        tx_receipt = self.beginMotion(owner, bare_target)
         self.validate_MotionBegun_data(tx_receipt, owner, bare_target, motion_id)
         motion_id += 1
         bare_majority_vote = self.get_motion_index(tx_receipt)
@@ -980,7 +980,7 @@ class TestCourt(unittest.TestCase):
         # pass (barely enough participation)
         quorum_target = targets[target_index]
         frozen.append(quorum_target)
-        tx_receipt = self.beginConfiscationMotion(owner, quorum_target)
+        tx_receipt = self.beginMotion(owner, quorum_target)
         self.validate_MotionBegun_data(tx_receipt, owner, quorum_target, motion_id)
         motion_id += 1
         bare_quorum_vote = self.get_motion_index(tx_receipt)
@@ -1001,7 +1001,7 @@ class TestCourt(unittest.TestCase):
         # fail (just-insufficient participation)
         target = targets[target_index]
         unfrozen.append(target)
-        tx_receipt = self.beginConfiscationMotion(owner, target)
+        tx_receipt = self.beginMotion(owner, target)
         self.validate_MotionBegun_data(tx_receipt, owner, target, motion_id)
         motion_id += 1
         not_quite_quorum_vote = self.get_motion_index(tx_receipt)
@@ -1022,7 +1022,7 @@ class TestCourt(unittest.TestCase):
         # fail (zero participation)
         target = targets[target_index]
         unfrozen.append(target)
-        tx_receipt = self.beginConfiscationMotion(owner, target)
+        tx_receipt = self.beginMotion(owner, target)
         self.validate_MotionBegun_data(tx_receipt, owner, target, motion_id)
         motion_id += 1
         zero_participation_vote = self.get_motion_index(tx_receipt)
@@ -1034,7 +1034,7 @@ class TestCourt(unittest.TestCase):
         # fail (insufficient majority)
         target = targets[target_index]
         unfrozen.append(target)
-        tx_receipt = self.beginConfiscationMotion(owner, target)
+        tx_receipt = self.beginMotion(owner, target)
         self.validate_MotionBegun_data(tx_receipt, owner, target, motion_id)
         motion_id += 1
         insufficient_majority_vote = self.get_motion_index(tx_receipt)
@@ -1052,7 +1052,7 @@ class TestCourt(unittest.TestCase):
         # fail (zero majority)
         target = targets[target_index]
         unfrozen.append(target)
-        tx_receipt = self.beginConfiscationMotion(owner, target)
+        tx_receipt = self.beginMotion(owner, target)
         self.validate_MotionBegun_data(tx_receipt, owner, target, motion_id)
         motion_id += 1
         no_majority_vote = self.get_motion_index(tx_receipt)
@@ -1066,7 +1066,7 @@ class TestCourt(unittest.TestCase):
         # fail (timeout)
         target = targets[target_index]
         unfrozen.append(target)
-        tx_receipt = self.beginConfiscationMotion(owner, target)
+        tx_receipt = self.beginMotion(owner, target)
         self.validate_MotionBegun_data(tx_receipt, owner, target, motion_id)
         motion_id += 1
         timeout_vote = self.get_motion_index(tx_receipt)
@@ -1080,7 +1080,7 @@ class TestCourt(unittest.TestCase):
         # fail (veto during proceedings)
         target = targets[target_index]
         unfrozen.append(target)
-        tx_receipt = self.beginConfiscationMotion(owner, target)
+        tx_receipt = self.beginMotion(owner, target)
         self.validate_MotionBegun_data(tx_receipt, owner, target, motion_id)
         motion_id += 1
         mid_veto_vote = self.get_motion_index(tx_receipt)
@@ -1094,7 +1094,7 @@ class TestCourt(unittest.TestCase):
         # fail (veto during confirmation)
         target = targets[target_index]
         unfrozen.append(target)
-        tx_receipt = self.beginConfiscationMotion(owner, target)
+        tx_receipt = self.beginMotion(owner, target)
         self.validate_MotionBegun_data(tx_receipt, owner, target, motion_id)
         motion_id += 1
         post_veto_vote = self.get_motion_index(tx_receipt)

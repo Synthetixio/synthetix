@@ -342,7 +342,7 @@ contract Court is Owned, SafeDecimalMath {
      * Only the foundation, or accounts with sufficient havven balances
      * may elect to start such a motion.
      * Returns the ID of the motion that was begun. */
-    function beginConfiscationMotion(address target)
+    function beginMotion(address target)
         external
         returns (uint)
     {
