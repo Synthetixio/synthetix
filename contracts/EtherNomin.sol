@@ -79,7 +79,7 @@ contract EtherNomin is ERC20FeeToken {
     address public beneficiary;
 
     // Nomins in the pool ready to be sold.
-    uint public nominPool_dec = 0;
+    uint public nominPool_dec;
 
     // Impose a 50 basis-point fee for buying from and selling to the nomin pool.
     uint public poolFeeRate_dec = UNIT / 200;
