@@ -59,6 +59,7 @@ contract ERC20Token is SafeDecimalMath, Proxyable {
         // if the state isn't set, create a new one
         if (state == ERC20State(0)) {
             state = new ERC20State(_owner, initialSupply, initialBeneficiary, address(this));
+            Transfer(0x0, initialBeneficiary, initialSupply);
         }
     }
 
