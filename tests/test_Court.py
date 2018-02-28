@@ -610,7 +610,7 @@ class TestCourt(unittest.TestCase):
         tx_receipt = self.voteFor(voter, motion_id)
 
         # Check that event is emitted properly.
-        self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "VoteFor")
+        self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "VotedFor")
 
         # And that the totals have been updated properly.
         self.assertEqual(self.votesFor(motion_id), 1000)
@@ -654,7 +654,7 @@ class TestCourt(unittest.TestCase):
         tx_receipt = self.voteAgainst(voter, motion_id)
 
         # Check that event is emitted properly.
-        self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "VoteAgainst")
+        self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "VotedAgainst")
 
         # And that the totals have been updated properly.
         self.assertEqual(self.votesAgainst(motion_id), 1000)
@@ -807,7 +807,7 @@ class TestCourt(unittest.TestCase):
         tx_receipt = self.approveMotion(owner, motion_id)
 
         # Check that event is emitted properly.
-        self.assertEqual(get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[0])['event'], "Confiscation")
+        self.assertEqual(get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[0])['event'], "Confiscated")
         self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[1])['event'], "MotionClosed")
         self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[2])['event'], "MotionApproved")
         self.assertEqual(self.motionStartTime(motion_id), 0)
@@ -893,7 +893,7 @@ class TestCourt(unittest.TestCase):
 
     def validate_Confiscation_data(self, tx_receipt, log_index, expected_target, expected_balance=None):
         veto_data = get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[log_index])
-        self.assertEqual(veto_data['event'], "Confiscation")
+        self.assertEqual(veto_data['event'], "Confiscated")
         self.assertEqual(veto_data['args']['target'], expected_target)
         if expected_balance is not None:
             self.assertEqual(veto_data['args']['balance'], expected_balance)
