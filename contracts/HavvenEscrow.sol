@@ -71,7 +71,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
     /* ========== SETTERS ========== */
 
     function setHavven(Havven newHavven)
-        public
+        external
         onlyOwner
     {
         havven = newHavven;
@@ -136,7 +136,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
     /* Obtain the next schedule entry that will vest for a given user.
      * The return value is a pair (timestamp, havven quantity) */
     function getNextVestingEntry(address account)
-        public
+        external
         view
         returns (uint[2])
     {
@@ -149,7 +149,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
 
     /* Obtain the time at which the next schedule entry will vest for a given user. */
     function getNextVestingTime(address account)
-        public
+        external
         view
         returns (uint)
     {
@@ -162,7 +162,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
 
     /* Obtain the quantity which the next schedule entry will vest for a given user. */
     function getNextVestingQuantity(address account)
-        public
+        external
         view
         returns (uint)
     {
@@ -187,7 +187,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
     /* Destroy the vesting information associated with an account. */
     function purgeAccount(address account)
         onlyOwner
-        public
+        external
     {
         delete vestingSchedules[account];
         totalVestedBalance = safeSub(totalVestedBalance, totalVestedAccountBalance[account]);
@@ -228,7 +228,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
     function addRegularVestingSchedule(address account, uint conclusionTime,
                                        uint totalQuantity, uint vestingPeriods)
         onlyOwner
-        public
+        external
     {
         // safeSub prevents a conclusionTime in the past.
         uint totalDuration = safeSub(conclusionTime, now);
@@ -250,7 +250,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
 
     /* Allow a user to withdraw any tokens that have vested. */
     function vest() 
-        public
+        external
     {
         uint total;
         for (uint i = 0; i < numVestingEntries(msg.sender); i++) {
