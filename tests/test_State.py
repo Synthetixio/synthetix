@@ -53,8 +53,8 @@ class TestHavven(unittest.TestCase):
         cls.tok_balanceOf = lambda self, account: cls.erc20token.functions.balanceOf(account).call()
         cls.tok_allowance = lambda self, account, spender: cls.erc20token.functions.allowance(account, spender).call()
 
-        cls.tok_transfer = lambda self, sender, to, value: mine_tx(
-            cls.erc20token.functions.transfer(to, value).transact({'from': sender}))
+        cls.tok_transfer = lambda self, sender, argSender, to, value: mine_tx(
+            cls.erc20token.functions.transfer(argSender, to, value).transact({'from': sender}))
         cls.tok_approve = lambda self, sender, spender, value: mine_tx(
             cls.erc20token.functions.approve(spender, value).transact({'from': sender}))
         cls.tok_transferFrom = lambda self, sender, fromAccount, to, value: mine_tx(
@@ -96,7 +96,7 @@ class TestHavven(unittest.TestCase):
         self.assertReverts(self.state_setAssociatedContract, DUMMY, new_token)
         self.state_setAssociatedContract(MASTER, new_token)
         self.assertEqual(self.state_associatedContract(), new_token)
-        self.assertReverts(self.tok_transfer, MASTER, DUMMY, UNIT)
+        self.assertReverts(self.tok_transfer, MASTER, MASTER, DUMMY, UNIT)
 
         valid_token, txr = attempt_deploy(
             self.compiled, 'ERC20Token', MASTER, ["Test2", "TEST2", 100 * UNIT, MASTER, self.erc20state.address, MASTER]
@@ -104,5 +104,5 @@ class TestHavven(unittest.TestCase):
 
         self.state_setAssociatedContract(MASTER, valid_token.address)
 
-        mine_tx(valid_token.functions.transfer(DUMMY, 10 * UNIT).transact({'from': MASTER}))
+        mine_tx(valid_token.functions.transfer(MASTER, DUMMY, 10 * UNIT).transact({'from': MASTER}))
         self.assertEqual(valid_token.functions.balanceOf(DUMMY).call(), 10 * UNIT)
