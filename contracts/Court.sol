@@ -365,8 +365,6 @@ contract Court is Owned, SafeDecimalMath {
         targetMotionID[target] = motionID;
 
         motionStartTime[motionID] = now;
-        votesFor[motionID] = 0;
-        votesAgainst[motionID] = 0;
         MotionBegun(msg.sender, msg.sender, target, target, motionID, motionID);
 
         return motionID;
@@ -460,18 +458,18 @@ contract Court is Owned, SafeDecimalMath {
             VoteCancelled(msg.sender, msg.sender, motionID, motionID);
         }
 
-        voteWeight[msg.sender][motionID] = 0;
-        vote[msg.sender][motionID] = Vote.Abstention;
+        delete voteWeight[msg.sender][motionID];
+        delete vote[msg.sender][motionID];
     }
 
     function _closeMotion(uint motionID)
         internal
     {
-        targetMotionID[motionTarget[motionID]] = 0;
-        motionTarget[motionID] = 0;
-        motionStartTime[motionID] = 0;
-        votesFor[motionID] = 0;
-        votesAgainst[motionID] = 0;
+        delete targetMotionID[motionTarget[motionID]];
+        delete motionTarget[motionID];
+        delete motionStartTime[motionID];
+        delete votesFor[motionID];
+        delete votesAgainst[motionID];
         MotionClosed(motionID, motionID);       
     }
 
