@@ -180,21 +180,21 @@ contract Havven is ExternStateProxyToken {
     /* ========== SETTERS ========== */
 
     function setNomin(EtherNomin _nomin) 
-        public
+        external
         optionalProxy_onlyOwner
     {
         nomin = _nomin;
     }
 
     function setEscrow(HavvenEscrow _escrow)
-        public
+        external
         optionalProxy_onlyOwner
     {
         escrow = _escrow;
     }
 
     function setTargetFeePeriodDuration(uint duration)
-        public
+        external
         postCheckFeePeriodRollover
         optionalProxy_onlyOwner
     {
@@ -213,7 +213,7 @@ contract Havven is ExternStateProxyToken {
      * fees on undistributed balances. This function can also be used
      * to retrieve any havvens sent to the Havven contract itself. */
     function endow(address account, uint value)
-        public
+        external
         optionalProxy_onlyOwner
         returns (bool)
     {
@@ -226,7 +226,7 @@ contract Havven is ExternStateProxyToken {
     /* Override ERC20 transfer function in order to perform
      * fee entitlement recomputation whenever balances are updated. */
     function transfer(address to, uint value)
-        public
+        external
         optionalProxy
         returns (bool)
     {
@@ -257,7 +257,7 @@ contract Havven is ExternStateProxyToken {
     /* Override ERC20 transferFrom function in order to perform
      * fee entitlement recomputation whenever balances are updated. */
     function transferFrom(address from, address to, uint value)
-        public
+        external
         preCheckFeePeriodRollover
         optionalProxy
         returns (bool)
