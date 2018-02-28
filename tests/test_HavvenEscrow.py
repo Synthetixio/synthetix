@@ -554,7 +554,3 @@ class TestHavvenEscrow(unittest.TestCase):
         self.assertEqual(self.numVestingEntries(tim), self.numVestingEntries(pim))
         self.assertEqual(self.getVestingTime(tim, 0), self.getVestingTime(pim, 0))
         self.assertEqual(self.getVestingQuantity(tim, 0), self.getVestingQuantity(pim, 0))
-
-
-if __name__ == '__main__':
-    unittest.main()

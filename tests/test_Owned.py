@@ -65,7 +65,3 @@ class TestOwned(unittest.TestCase):
         self.nominateOwner(old_owner, new_owner)
         self.nominateOwner(old_owner, ZERO_ADDRESS)
         self.assertReverts(self.acceptOwnership, new_owner)
-
-
-if __name__ == '__main__':
-    unittest.main()

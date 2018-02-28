@@ -203,7 +203,3 @@ class TestERC20Token(unittest.TestCase):
 
         # This should fail because the approver has no tokens.
         self.assertReverts(self.transferFrom, spender, spender, approver, receiver, value)
-
-
-if __name__ == '__main__':
-    unittest.main()
