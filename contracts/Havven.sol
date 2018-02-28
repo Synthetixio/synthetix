@@ -107,6 +107,7 @@ import "contracts/EtherNomin.sol";
 import "contracts/HavvenEscrow.sol";
 import "contracts/ERC20State.sol";
 
+
 contract Havven is ERC20Token {
 
     /* ========== STATE VARIABLES ========== */
@@ -202,6 +203,7 @@ contract Havven is ERC20Token {
         targetFeePeriodDurationSeconds = duration;
         FeePeriodDurationUpdated(duration);
     }
+
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
