@@ -268,6 +268,7 @@ class TestHavven(unittest.TestCase):
             cls.nomin.functions.debugFreezeAccount(target).transact({'from': sender}))
 
     def give_master_nomins(self, amt):
+        fast_forward(1)  # fast forward to allow price to not clash with previous block
         self.n_updatePrice(MASTER, UNIT, self.now_block_time())
         self.n_issue(MASTER, amt * UNIT, 2 * amt * ETHER)
         ethercost = self.n_purchaseCostEther(amt * UNIT)
