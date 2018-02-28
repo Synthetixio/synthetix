@@ -49,17 +49,17 @@ contract FeeTokenState is TokenState {
 
     /* ========== SETTERS ========== */
 
-    function setFeePool(uint _val)
+    function setFeePool(uint value)
         onlyAssociatedContract
         public
     {
-        feePool = _val;
+        feePool = value;
     }
 
-    function setFrozen(address _account, bool _val)
+    function setFrozen(address account, bool value)
         onlyAssociatedContract
         public
     {
-        isFrozen[_account] = _val;
+        isFrozen[account] = value;
     }
 }

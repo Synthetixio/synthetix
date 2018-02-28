@@ -70,25 +70,25 @@ contract TokenState is Owned {
         associatedContract = _associatedContract;
     }
 
-    function setAllowance(address _from, address _to, uint _value)
+    function setAllowance(address from, address to, uint value)
         onlyAssociatedContract
         public
     {
-        allowance[_from][_to] = _value;
+        allowance[from][to] = value;
     }
 
-    function setBalance(address account, uint _value)
+    function setBalance(address account, uint value)
         onlyAssociatedContract
         public
     {
-        balanceOf[account] = _value;
+        balanceOf[account] = value;
     }
 
-    function setTotalSupply(uint _value)
+    function setTotalSupply(uint value)
         onlyAssociatedContract
         public
     {
-        totalSupply = _value;
+        totalSupply = value;
     }
 
     /* ========== MODIFIERS ========== */

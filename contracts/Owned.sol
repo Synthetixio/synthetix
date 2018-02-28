@@ -41,12 +41,12 @@ contract Owned {
         owner = _owner;
     }
 
-    function nominateOwner(address newOwner)
+    function nominateOwner(address _owner)
         public
         onlyOwner
     {
-        nominatedOwner = newOwner;
-        NewOwnerNominated(newOwner);
+        nominatedOwner = _owner;
+        NewOwnerNominated(_owner);
     }
 
     function _setOwner()
