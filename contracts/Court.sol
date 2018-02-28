@@ -415,7 +415,7 @@ contract Court is Owned, SafeDecimalMath {
         uint weight = setupVote(motionID);
         vote[msg.sender][motionID] = Vote.Yea;
         votesFor[motionID] = safeAdd(votesFor[motionID], weight);
-        VoteFor(msg.sender, msg.sender, motionID, motionID, weight);
+        VotedFor(msg.sender, msg.sender, motionID, motionID, weight);
     }
 
     /* The sender casts a vote against confiscation of the
@@ -426,7 +426,7 @@ contract Court is Owned, SafeDecimalMath {
         uint weight = setupVote(motionID);
         vote[msg.sender][motionID] = Vote.Nay;
         votesAgainst[motionID] = safeAdd(votesAgainst[motionID], weight);
-        VoteAgainst(msg.sender, msg.sender, motionID, motionID, weight);
+        VotedAgainst(msg.sender, msg.sender, motionID, motionID, weight);
     }
 
     /* Cancel an existing vote by the sender on a motion
@@ -510,9 +510,9 @@ contract Court is Owned, SafeDecimalMath {
 
     event MotionBegun(address initiator, address indexed initiatorIndex, address target, address indexed targetIndex, uint motionID, uint indexed motionIDIndex);
 
-    event VoteFor(address voter, address indexed voterIndex, uint motionID, uint indexed motionIDIndex, uint weight);
+    event VotedFor(address voter, address indexed voterIndex, uint motionID, uint indexed motionIDIndex, uint weight);
 
-    event VoteAgainst(address voter, address indexed voterIndex, uint motionID, uint indexed motionIDIndex, uint weight);
+    event VotedAgainst(address voter, address indexed voterIndex, uint motionID, uint indexed motionIDIndex, uint weight);
 
     event VoteCancelled(address voter, address indexed voterIndex, uint motionID, uint indexed motionIDIndex);
 
