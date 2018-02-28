@@ -50,7 +50,7 @@ def deploy_public_havven():
     havven_event_dict = generate_topic_event_map(compiled['PublicHavven']['abi'])
 
     print("\nDeployment complete.\n")
-    return proxy_havven, proxy_nomin, havven_proxy, nomin_proxy, havven_contract, nomin_contract, court_contract, escrow_contract, hvn_block, havven_event_dict
+    return havven_contract, nomin_contract, havven_proxy, nomin_proxy, havven_contract, nomin_contract, court_contract, escrow_contract, hvn_block, havven_event_dict
 
 
 def setUpModule():
