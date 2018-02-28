@@ -145,8 +145,7 @@ contract EtherNomin is ERC20FeeToken {
 
     function setOracle(address newOracle)
         public
-        optionalProxy
-        onlyOwner_Proxy
+        optionalProxy_onlyOwner
     {
         oracle = newOracle;
         OracleUpdated(newOracle);
@@ -154,8 +153,7 @@ contract EtherNomin is ERC20FeeToken {
 
     function setCourt(Court newCourt)
         public
-        optionalProxy
-        onlyOwner_Proxy
+        optionalProxy_onlyOwner
     {
         court = newCourt;
         CourtUpdated(newCourt);
@@ -163,8 +161,7 @@ contract EtherNomin is ERC20FeeToken {
 
     function setBeneficiary(address newBeneficiary)
         public
-        optionalProxy
-        onlyOwner_Proxy
+        optionalProxy_onlyOwner
     {
         beneficiary = newBeneficiary;
         BeneficiaryUpdated(newBeneficiary);
@@ -172,8 +169,7 @@ contract EtherNomin is ERC20FeeToken {
 
     function setPoolFeeRate(uint newFeeRate)
         public
-        optionalProxy
-        onlyOwner_Proxy
+        optionalProxy_onlyOwner
     {
         require(newFeeRate <= UNIT);
         poolFeeRate_dec = newFeeRate;
@@ -182,8 +178,7 @@ contract EtherNomin is ERC20FeeToken {
 
     function setStalePeriod(uint period)
         public
-        optionalProxy
-        onlyOwner_Proxy
+        optionalProxy_onlyOwner
     {
         stalePeriod = period;
         StalePeriodUpdated(period);
@@ -416,10 +411,9 @@ contract EtherNomin is ERC20FeeToken {
      *     Price is stale. */
     function issue(uint n)
         public
-        optionalProxy
-        onlyOwner_Proxy
         payable
         notLiquidating
+        optionalProxy_onlyOwner
     {
         // Price staleness check occurs inside the call to fiatValue.
         // Safe additions are unnecessary here, as either the addition is checked on the following line
@@ -437,8 +431,7 @@ contract EtherNomin is ERC20FeeToken {
      *     There are fewer than n nomins in the pool. */
     function burn(uint n)
         public
-        optionalProxy
-        onlyOwner_Proxy
+        optionalProxy_onlyOwner
     {
         // Require that there are enough nomins in the accessible pool to burn
         require(nominPool_dec >= n);
@@ -457,8 +450,8 @@ contract EtherNomin is ERC20FeeToken {
      *     Price is stale. */
     function buy(uint n)
         public
-        notLiquidating
         payable
+        notLiquidating
         optionalProxy
     {
         // Price staleness check occurs inside the call to purchaseEtherCost.
@@ -512,9 +505,8 @@ contract EtherNomin is ERC20FeeToken {
      *     contract already in liquidation; */
     function forceLiquidation()
         public
-        optionalProxy
-        onlyOwner_Proxy
         notLiquidating
+        optionalProxy_onlyOwner
     {
         beginLiquidation();
     }
@@ -531,8 +523,7 @@ contract EtherNomin is ERC20FeeToken {
      * the liquidation max. */
     function extendLiquidationPeriod(uint extension)
         public
-        optionalProxy
-        onlyOwner_Proxy
+        optionalProxy_onlyOwner
     {
         require(isLiquidating());
         uint sum = safeAdd(liquidationPeriod, extension);
@@ -547,10 +538,9 @@ contract EtherNomin is ERC20FeeToken {
      * or by including enough ether in this transaction. */
     function terminateLiquidation()
         public
-        optionalProxy
-        onlyOwner_Proxy
-        priceNotStale
         payable
+        priceNotStale
+        optionalProxy_onlyOwner
     {
         require(isLiquidating());
         require(state.totalSupply() == 0 || collateralisationRatio() >= AUTO_LIQUIDATION_RATIO_dec);
@@ -565,8 +555,7 @@ contract EtherNomin is ERC20FeeToken {
      * nomins have been sold back into the pool. */
     function selfDestruct()
         public
-        optionalProxy
-        onlyOwner_Proxy
+        optionalProxy_onlyOwner
     {
         require(canSelfDestruct());
         SelfDestructed();
@@ -605,8 +594,7 @@ contract EtherNomin is ERC20FeeToken {
      * again accept and transfer nomins. */
     function unfreezeAccount(address target)
         public
-        optionalProxy
-        onlyOwner_Proxy
+        optionalProxy_onlyOwner
     {
         if (state.isFrozen(target) && EtherNomin(target) != this) {
             state.setFrozen(target, false);

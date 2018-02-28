@@ -79,8 +79,7 @@ contract ERC20FeeToken is Proxyable, SafeDecimalMath {
 
     function setTransferFeeRate(uint newFeeRate)
         public
-        optionalProxy
-        onlyOwner_Proxy
+        optionalProxy_onlyOwner
     {
         require(newFeeRate <= MAX_TRANSFER_FEE_RATE);
         transferFeeRate = newFeeRate;
@@ -89,16 +88,14 @@ contract ERC20FeeToken is Proxyable, SafeDecimalMath {
 
     function setFeeAuthority(address newFeeAuthority)
         public
-        optionalProxy
-        onlyOwner_Proxy
+        optionalProxy_onlyOwner
     {
         feeAuthority = newFeeAuthority;
         FeeAuthorityUpdate(newFeeAuthority);
     }
 
     function setState(ERC20FeeState _state)
-        optionalProxy
-        onlyOwner_Proxy
+        optionalProxy_onlyOwner
         public
     {
         state = _state;
