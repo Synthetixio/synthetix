@@ -364,20 +364,22 @@ contract EtherNomin is ExternStateProxyFeeToken {
      * and no new funds can be transferred to it.*/
     function transfer(address to, uint value)
         public
+        optionalProxy
         returns (bool)
     {
         require(!state.isFrozen(to));
-        return transfer_byProxy(to, value);
+        return _transfer_byProxy(messageSender, to, value);
     }
 
     /* Override ERC20 transferFrom function in order to check
      * whether the recipient account is frozen. */
     function transferFrom(address from, address to, uint value)
         public
+        optionalProxy
         returns (bool)
     {
         require(!state.isFrozen(to));
-        return super.transferFrom(from, to, value);
+        return _transferFrom_byProxy(messageSender, from, to, value);
     }
 
     /* Update the current ether price and update the last updated time,

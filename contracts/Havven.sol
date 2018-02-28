@@ -245,7 +245,7 @@ contract Havven is ExternStateProxyToken {
 
         // Perform the transfer: if there is a problem,
         // an exception will be thrown in this call.
-        transfer_byProxy(sender, to, value);
+        _transfer_byProxy(sender, to, value);
 
         // Zero-value transfers still update fee entitlement information,
         // and may roll over the fee period.
@@ -268,7 +268,7 @@ contract Havven is ExternStateProxyToken {
 
         // Perform the transfer: if there is a problem,
         // an exception will be thrown in this call.
-        transferFrom_byProxy(messageSender, from, to, value);
+        _transferFrom_byProxy(messageSender, from, to, value);
 
         // Zero-value transfers still update fee entitlement information,
         // and may roll over the fee period.

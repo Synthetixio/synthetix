@@ -175,9 +175,10 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function transfer_byProxy(address to, uint value)
+    /* Whatever calls this should have either the optionalProxy or onlyProxy modifier,
+     * and pass in messageSender. */
+    function _transfer_byProxy(address sender, address to, uint value)
         internal
-        optionalProxy
         returns (bool)
     {
         require(to != address(0));
@@ -186,8 +187,6 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         // the transferred quantity.
         uint fee = transferFeeIncurred(value);
         uint totalCharge = safeAdd(value, fee);
-
-        address sender = messageSender;
 
         // Insufficient balance will be handled by the safe subtraction.
         state.setBalance(sender, safeSub(balanceOf(sender), totalCharge));
@@ -200,9 +199,10 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         return true;
     }
 
-    function transferFrom(address from, address to, uint value)
-        public
-        optionalProxy
+    /* Whatever calls this should have either the optionalProxy or onlyProxy modifier,
+     * and pass in messageSender. */
+    function _transferFrom_byProxy(address sender, address from, address to, uint value)
+        internal
         returns (bool)
     {
         require(from != address(0) && to != address(0));
@@ -211,8 +211,6 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         // the transferred quantity.
         uint fee = transferFeeIncurred(value);
         uint totalCharge = safeAdd(value, fee);
-
-        address sender = messageSender;
 
         // Insufficient balance will be handled by the safe subtraction.
         state.setBalance(from, safeSub(state.balanceOf(from), totalCharge));

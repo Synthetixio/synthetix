@@ -7,7 +7,7 @@ from utils.testutils import assertReverts
 from utils.testutils import generate_topic_event_map, get_event_data_from_log
 from utils.testutils import ZERO_ADDRESS
 
-ExternStateProxyToken_SOURCE = "contracts/ExternStateProxyToken.sol"
+ExternStateProxyToken_SOURCE = "tests/contracts/PublicExternStateProxyToken.sol"
 TokenState_SOURCE = "contracts/TokenState.sol"
 Proxy_SOURCE = "contracts/Proxy.sol"
 
@@ -34,9 +34,9 @@ class TestExternStateProxyToken(unittest.TestCase):
         cls.the_owner = DUMMY
 
         cls.compiled = compile_contracts([ExternStateProxyToken_SOURCE, TokenState_SOURCE, Proxy_SOURCE])
-        cls.token_abi = cls.compiled['ExternStateProxyToken']['abi']
+        cls.token_abi = cls.compiled['PublicExternStateProxyToken']['abi']
         cls.token_event_dict = generate_topic_event_map(cls.token_abi)
-        cls.token_real, cls.construction_txr = attempt_deploy(cls.compiled, 'ExternStateProxyToken',
+        cls.token_real, cls.construction_txr = attempt_deploy(cls.compiled, 'PublicExternStateProxyToken',
                                                                    MASTER,
                                                                    ["Test Token", "TEST",
                                                                     0, cls.the_owner,
@@ -50,7 +50,7 @@ class TestExternStateProxyToken(unittest.TestCase):
         cls.tokenproxy, _ = attempt_deploy(cls.compiled, 'Proxy',
                                            MASTER, [cls.token_real.address, cls.the_owner])
         mine_tx(cls.token_real.functions.setProxy(cls.tokenproxy.address).transact({'from': cls.the_owner}))
-        cls.token = W3.eth.contract(address=cls.tokenproxy.address, abi=cls.compiled['ExternStateProxyToken']['abi'])
+        cls.token = W3.eth.contract(address=cls.tokenproxy.address, abi=cls.compiled['PublicExternStateProxyToken']['abi'])
 
         cls.totalSupply = lambda self: cls.token.functions.totalSupply().call()
         cls.state = lambda self: cls.token.functions.state().call()
@@ -59,12 +59,12 @@ class TestExternStateProxyToken(unittest.TestCase):
         cls.balanceOf = lambda self, account: cls.token.functions.balanceOf(account).call()
         cls.allowance = lambda self, account, spender: cls.token.functions.allowance(account, spender).call()
 
-        cls.transfer = lambda self, sender, argSender, to, value: mine_tx(
-            cls.token.functions.transfer(argSender, to, value).transact({'from': sender}))
+        cls.transfer_byProxy = lambda self, sender, to, value: mine_tx(
+            cls.token.functions.transfer_byProxy(to, value).transact({'from': sender}))
         cls.approve = lambda self, sender, spender, value: mine_tx(
             cls.token.functions.approve(spender, value).transact({'from': sender}))
-        cls.transferFrom = lambda self, sender, argSender, fromAccount, to, value: mine_tx(
-            cls.token.functions.transferFrom(argSender, fromAccount, to, value).transact({'from': sender}))
+        cls.transferFrom_byProxy = lambda self, sender, fromAccount, to, value: mine_tx(
+            cls.token.functions.transferFrom_byProxy(fromAccount, to, value).transact({'from': sender}))
 
     def test_constructor(self):
         self.assertEqual(self.name(), "Test Token")
@@ -80,14 +80,14 @@ class TestExternStateProxyToken(unittest.TestCase):
                                        [self.the_owner, 0,
                                         self.the_owner, self.token.address])
 
-        token, _ = attempt_deploy(self.compiled, 'ExternStateProxyToken',
+        token, _ = attempt_deploy(self.compiled, 'PublicExternStateProxyToken',
                                        MASTER,
                                        ["Test Token", "TEST",
                                         1000 * UNIT, MASTER,
                                         ZERO_ADDRESS, DUMMY])
         self.assertNotEqual(token.functions.state().call(), ZERO_ADDRESS)
 
-        token, _ = attempt_deploy(self.compiled, 'ExternStateProxyToken',
+        token, _ = attempt_deploy(self.compiled, 'PublicExternStateProxyToken',
                                        MASTER,
                                        ["Test Token", "TEST",
                                         1000 * UNIT, MASTER,
@@ -106,8 +106,8 @@ class TestExternStateProxyToken(unittest.TestCase):
         total_supply = self.totalSupply()
 
         # This should fail because receiver has no tokens
-        self.assertReverts(self.transfer, receiver, receiver, sender, value)
-        tx_receipt = self.transfer(sender, sender, receiver, value)
+        self.assertReverts(self.transfer_byProxy, receiver, sender, value)
+        tx_receipt = self.transfer_byProxy(sender, receiver, value)
         # Check event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'], "Transfer")
         self.assertEqual(self.balanceOf(receiver), receiver_balance + value)
@@ -118,13 +118,13 @@ class TestExternStateProxyToken(unittest.TestCase):
 
         value = 1001 * UNIT
         # This should fail because balance < value and balance > totalSupply
-        self.assertReverts(self.transfer, sender, sender, receiver, value)
+        self.assertReverts(self.transfer_byProxy, sender, receiver, value)
 
         # 0 value transfers are allowed.
         value = 0
         pre_sender_balance = self.balanceOf(sender)
         pre_receiver_balance = self.balanceOf(receiver)
-        tx_receipt = self.transfer(sender, sender, receiver, value)
+        tx_receipt = self.transfer_byProxy(sender, receiver, value)
         # Check event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'], "Transfer")
         self.assertEqual(self.balanceOf(receiver), pre_receiver_balance)
@@ -133,7 +133,7 @@ class TestExternStateProxyToken(unittest.TestCase):
         # It is also possible to send 0 value transfer from an account with 0 balance.
         no_tokens = fresh_account()
         self.assertEqual(self.balanceOf(no_tokens), 0)
-        tx_receipt = self.transfer(no_tokens, no_tokens, receiver, value)
+        tx_receipt = self.transfer_byProxy(no_tokens, receiver, value)
         # Check event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'], "Transfer")
         self.assertEqual(self.balanceOf(no_tokens), 0)
@@ -167,15 +167,15 @@ class TestExternStateProxyToken(unittest.TestCase):
         total_supply = self.totalSupply()
 
         # This fails because there has been no approval yet
-        self.assertReverts(self.transferFrom, spender, spender, approver, receiver, value)
+        self.assertReverts(self.transferFrom_byProxy, spender, approver, receiver, value)
 
         tx_receipt = self.approve(approver, spender, 2 * value)
         # Check event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'], "Approval")
         self.assertEqual(self.allowance(approver, spender), 2 * value)
 
-        self.assertReverts(self.transferFrom, spender, spender, approver, receiver, 2 * value + 1)
-        tx_receipt = self.transferFrom(spender, spender, approver, receiver, value)
+        self.assertReverts(self.transferFrom_byProxy, spender, approver, receiver, 2 * value + 1)
+        tx_receipt = self.transferFrom_byProxy(spender, approver, receiver, value)
         # Check event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'], "Transfer")
 
@@ -186,7 +186,7 @@ class TestExternStateProxyToken(unittest.TestCase):
         self.assertEqual(self.totalSupply(), total_supply)
 
         # Empty the account
-        tx_receipt = self.transferFrom(spender, spender, approver, receiver, value)
+        tx_receipt = self.transferFrom_byProxy(spender, approver, receiver, value)
         # Check event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'], "Transfer")
 
@@ -202,4 +202,4 @@ class TestExternStateProxyToken(unittest.TestCase):
         self.assertEqual(self.allowance(approver, spender), value)
 
         # This should fail because the approver has no tokens.
-        self.assertReverts(self.transferFrom, spender, spender, approver, receiver, value)
+        self.assertReverts(self.transferFrom_byProxy, spender, approver, receiver, value)
