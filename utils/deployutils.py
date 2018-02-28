@@ -10,10 +10,10 @@ POLLING_INTERVAL = 0.1
 STATUS_ALIGN_SPACING = 6
 
 # The number representing 1 in our contracts.
-UNIT = 10 ** 18
+UNIT = 10**18
 
 # The number of wei per ether.
-ETHER = 10 ** 18
+ETHER = 10**18
 
 # Master test account
 MASTER = W3.eth.accounts[0]
@@ -49,18 +49,17 @@ def attempt(function, func_args, init_string, print_status=True, print_exception
         print(init_string, end="", flush=True)
 
     pad = (STATUS_ALIGN_SPACING - len(init_string)) % STATUS_ALIGN_SPACING
-
+    reset = TERMCOLORS.RESET
     try:
         result = function(*func_args)
         if print_status:
-            print(f"{TERMCOLORS.GREEN}{' '*pad}Done!{TERMCOLORS.RESET}")
+            print(f"{TERMCOLORS.GREEN}{' '*pad}Done!{reset}")
         return result
     except Exception as e:
         if print_status:
-            print(f"{TERMCOLORS.RED}{' '*pad}Failed.{TERMCOLORS.RESET}")
+            print(f"{TERMCOLORS.RED}{' '*pad}Failed.{reset}")
         if print_exception:
-            print(
-                f"{TERMCOLORS.YELLOW}{TERMCOLORS.BOLD}ERROR:{TERMCOLORS.RESET} {TERMCOLORS.BOLD}{e}{TERMCOLORS.RESET}")
+            print(f"{TERMCOLORS.YELLOW}{TERMCOLORS.BOLD}ERROR:{reset} {TERMCOLORS.BOLD}{e}{reset}")
         return None
 
 
@@ -130,8 +129,9 @@ def deploy_contract(compiled_sol, contract_name, deploy_account, constructor_arg
         constructor_args = []
     contract_interface = compiled_sol[contract_name]
     contract = W3.eth.contract(abi=contract_interface['abi'], bytecode=contract_interface['bin'])
-    tx_hash = contract.deploy(transaction={'from': deploy_account, 'gas': gas},
-                              args=constructor_args)
+    tx_hash = contract.deploy(
+        transaction={'from': deploy_account, 'gas': gas}, args=constructor_args
+    )
     tx_receipt = mine_tx(tx_hash)
     contract_instance = W3.eth.contract(address=tx_receipt['contractAddress'], abi=contract_interface['abi'])
     return contract_instance, tx_receipt
@@ -139,7 +139,7 @@ def deploy_contract(compiled_sol, contract_name, deploy_account, constructor_arg
 
 def attempt_deploy(compiled_sol, contract_name, deploy_account, constructor_args, print_status=True,
                    print_exception=True):
-    return attempt(deploy_contract,
-                   [compiled_sol, contract_name, deploy_account, constructor_args],
-                   f"Deploying {contract_name}... ",
-                   print_status=print_status, print_exception=print_exception)
+    return attempt(
+        deploy_contract, [compiled_sol, contract_name, deploy_account, constructor_args],
+        f"Deploying {contract_name}... ", print_status=print_status, print_exception=print_exception
+    )

@@ -1,7 +1,7 @@
 import unittest
 
 from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mine_txs, mine_tx, UNIT, MASTER, \
-    fast_forward, force_mine_block, DUMMY, take_snapshot, restore_snapshot, fresh_account, fresh_accounts
+    fast_forward, DUMMY, take_snapshot, restore_snapshot, fresh_account, fresh_accounts
 from utils.testutils import assertReverts, assertClose
 from utils.testutils import generate_topic_event_map, get_event_data_from_log
 from utils.testutils import ZERO_ADDRESS
@@ -42,7 +42,8 @@ def deploy_public_court():
     attempt(mine_txs, [txs], "Linking contracts... ")
 
     print("\nDeployment complete.\n")
-    return proxy_havven, proxy_nomin, havven_proxy, nomin_proxy, havven_contract, nomin_contract, court_contract, nomin_abi, court_abi
+    return (proxy_havven, proxy_nomin, havven_proxy, nomin_proxy, havven_contract,
+            nomin_contract, court_contract, nomin_abi, court_abi)
 
 
 def setUpModule():
@@ -65,7 +66,8 @@ class TestCourt(unittest.TestCase):
         cls.assertReverts = assertReverts
         cls.assertClose = assertClose
 
-        cls.havven, cls.nomin, cls.havven_proxy, cls.nomin_proxy, cls.havven_real, cls.nomin_real, cls.court, cls.nomin_abi, cls.court_abi = deploy_public_court()
+        cls.havven, cls.nomin, cls.havven_proxy, cls.nomin_proxy, cls.havven_real, \
+            cls.nomin_real, cls.court, cls.nomin_abi, cls.court_abi = deploy_public_court()
 
         # Event stuff
         cls.court_event_dict = generate_topic_event_map(cls.court_abi)
@@ -149,10 +151,10 @@ class TestCourt(unittest.TestCase):
         # Havven getters
         cls.havvenSupply = lambda self: self.havven.functions.totalSupply().call()
         cls.havvenBalance = lambda self, account: self.havven.functions.balanceOf(account).call()
-        cls.havvenTargetFeePeriodDurationSeconds = lambda \
-            self: self.havven.functions.targetFeePeriodDurationSeconds().call()
-        cls.havvenPenultimateAverageBalance = lambda self, addr: self.havven.functions.penultimateAverageBalance(
-            addr).call()
+        cls.havvenTargetFeePeriodDurationSeconds = lambda self: \
+            self.havven.functions.targetFeePeriodDurationSeconds().call()
+        cls.havvenPenultimateAverageBalance = lambda self, addr: \
+            self.havven.functions.penultimateAverageBalance(addr).call()
         cls.havvenLastAverageBalance = lambda self, addr: self.havven.functions.lastAverageBalance(addr).call()
 
         # Havven mutators
@@ -174,7 +176,7 @@ class TestCourt(unittest.TestCase):
         cls.days = 86400
         cls.weeks = 604800
         cls.months = 2628000
-        cls.unit = 10 ** 18
+        cls.unit = 10**18
 
     # Extract vote index from a transaction receipt returned by a call to beginConfiscationMotion
     def get_motion_index(self, tx_receipt):

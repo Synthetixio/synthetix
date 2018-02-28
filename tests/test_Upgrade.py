@@ -1,7 +1,7 @@
 import unittest
-from utils.deployutils import compile_contracts, attempt_deploy, W3, mine_txs, mine_tx, \
-    UNIT, MASTER, DUMMY, fast_forward, fresh_accounts, take_snapshot, restore_snapshot, ETHER
-from utils.testutils import assertReverts, block_time, assertClose, generate_topic_event_map
+from utils.deployutils import compile_contracts, attempt_deploy, mine_tx, \
+    UNIT, MASTER, DUMMY, take_snapshot, restore_snapshot
+from utils.testutils import assertReverts, generate_topic_event_map
 from utils.testutils import ZERO_ADDRESS
 
 ERC20Token_SOURCE = "contracts/ERC20Token.sol"

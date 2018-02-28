@@ -1,8 +1,8 @@
 import unittest
 
 from utils.deployutils import compile_contracts, attempt_deploy, mine_tx, MASTER, DUMMY
-from utils.deployutils import take_snapshot, restore_snapshot, fast_forward
-from utils.testutils import assertReverts, block_time, ZERO_ADDRESS
+from utils.deployutils import take_snapshot, restore_snapshot
+from utils.testutils import assertReverts, ZERO_ADDRESS
 
 OWNED_SOURCE = "contracts/Owned.sol"
 

@@ -47,7 +47,7 @@ contract PublicMath is SafeDecimalMath {
         return mulIsSafe(x, y);
     }
 
-	function pubSafeMul(uint x, uint y)
+    function pubSafeMul(uint x, uint y)
         pure
         public
         returns (uint)
@@ -71,7 +71,7 @@ contract PublicMath is SafeDecimalMath {
         return divIsSafe(x, y);
     }
 
-	function pubSafeDiv(uint x, uint y)
+    function pubSafeDiv(uint x, uint y)
         pure
         public
         returns (uint)
