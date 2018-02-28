@@ -55,19 +55,18 @@ contract ExternStateProxyToken is SafeDecimalMath, Proxyable {
         Proxyable(_owner)
         public
     {
-        // if the state isn't set, create a new one
-        if (_state == TokenState(0)) {
-            state = new TokenState(_owner, address(this));
-        } else {
-            state = _state;
-        }
-
         name = _name;
         symbol = _symbol;
         totalSupply = initialSupply;
-        state.setBalanceOf(initialBeneficiary, totalSupply);
-        Transfer(address(0), initialBeneficiary, initialSupply);
 
+        // if the state isn't set, create a new one
+        if (_state == TokenState(0)) {
+            state = new TokenState(_owner, address(this));
+            state.setBalanceOf(initialBeneficiary, totalSupply);
+            Transfer(address(0), initialBeneficiary, initialSupply);
+        } else {
+            state = _state;
+        }
    }
 
     /* ========== VIEWS ========== */
