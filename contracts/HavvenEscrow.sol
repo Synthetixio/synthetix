@@ -289,5 +289,4 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
     event FeesWithdrawn(address recipient, address indexed recipientIndex, uint time, uint value);
 
     event Vested(address beneficiary, address indexed beneficiaryIndex, uint time, uint value);
-
 }
