@@ -100,30 +100,32 @@ contract ExternStateProxyToken is SafeDecimalMath, Proxyable {
         state = _state;
     } 
 
-    function transfer(address messageSender, address to, uint value)
-        public
+    /* Anything calling this must apply the onlyProxy or optionalProxy modifiers.*/
+    function transfer_byProxy(address sender, address to, uint value)
+        internal
         returns (bool)
     {
         require(to != address(0));
 
         // Insufficient balance will be handled by the safe subtraction.
-        state.setBalance(messageSender, safeSub(state.balanceOf(messageSender), value));
+        state.setBalance(sender, safeSub(state.balanceOf(sender), value));
         state.setBalance(to, safeAdd(state.balanceOf(to), value));
 
-        Transfer(messageSender, to, value);
+        Transfer(sender, to, value);
 
         return true;
     }
 
-    function transferFrom(address messageSender, address from, address to, uint value)
-        public
+    /* Anything calling this must apply the onlyProxy or optionalProxy modifiers.*/
+    function transferFrom_byProxy(address sender, address from, address to, uint value)
+        internal
         returns (bool)
     {
         require(from != address(0) && to != address(0));
 
         // Insufficient balance will be handled by the safe subtraction.
         state.setBalance(from, safeSub(state.balanceOf(from), value));
-        state.setAllowance(from, messageSender, safeSub(state.allowance(from, messageSender), value));
+        state.setAllowance(from, sender, safeSub(state.allowance(from, sender), value));
         state.setBalance(to, safeAdd(state.balanceOf(to), value));
 
         Transfer(from, to, value);
@@ -136,11 +138,9 @@ contract ExternStateProxyToken is SafeDecimalMath, Proxyable {
         optionalProxy
         returns (bool)
     {
-        address messageSender = proxy.messageSender();
-        state.setAllowance(messageSender, spender, value);
-
-        Approval(messageSender, spender, value);
-
+        address sender = messageSender;
+        state.setAllowance(sender, spender, value);
+        Approval(sender, spender, value);
         return true;
     }
 

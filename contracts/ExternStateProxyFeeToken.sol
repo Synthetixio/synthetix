@@ -175,8 +175,8 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function transfer(address to, uint value)
-        public
+    function transfer_byProxy(address to, uint value)
+        internal
         optionalProxy
         returns (bool)
     {
@@ -187,15 +187,15 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         uint fee = transferFeeIncurred(value);
         uint totalCharge = safeAdd(value, fee);
 
-        address messageSender = proxy.messageSender();
+        address sender = messageSender;
 
         // Insufficient balance will be handled by the safe subtraction.
-        state.setBalance(messageSender, safeSub(balanceOf(messageSender), totalCharge));
+        state.setBalance(sender, safeSub(balanceOf(sender), totalCharge));
         state.setBalance(to, safeAdd(balanceOf(to), value));
         state.setFeePool(safeAdd(feePool(), fee));
 
-        Transfer(messageSender, to, value);
-        TransferFeePaid(messageSender, fee);
+        Transfer(sender, to, value);
+        TransferFeePaid(sender, fee);
 
         return true;
     }
@@ -212,16 +212,16 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         uint fee = transferFeeIncurred(value);
         uint totalCharge = safeAdd(value, fee);
 
-        address messageSender = proxy.messageSender();
+        address sender = messageSender;
 
         // Insufficient balance will be handled by the safe subtraction.
         state.setBalance(from, safeSub(state.balanceOf(from), totalCharge));
-        state.setAllowance(from, messageSender, safeSub(state.allowance(from, messageSender), totalCharge));
+        state.setAllowance(from, sender, safeSub(state.allowance(from, sender), totalCharge));
         state.setBalance(to, safeAdd(state.balanceOf(to), value));
         state.setFeePool(safeAdd(feePool(), fee));
 
         Transfer(from, to, value);
-        TransferFeePaid(messageSender, fee);
+        TransferFeePaid(sender, fee);
 
         return true;
     }
@@ -231,10 +231,10 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         optionalProxy
         returns (bool)
     {
-        address messageSender = proxy.messageSender();
-        state.setAllowance(messageSender, spender, value);
+        address sender = messageSender;
+        state.setAllowance(sender, spender, value);
 
-        Approval(messageSender, spender, value);
+        Approval(sender, spender, value);
 
         return true;
     }
@@ -266,17 +266,17 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         optionalProxy
         returns (bool)
     {
-        address messageSender = proxy.messageSender();
+        address sender = messageSender;
 
         // Empty donations are disallowed.
-        uint balance = state.balanceOf(messageSender);
+        uint balance = state.balanceOf(sender);
         require(balance != 0);
 
         // safeSub ensures the donor has sufficient balance.
-        state.setBalance(messageSender, safeSub(balance, n));
+        state.setBalance(sender, safeSub(balance, n));
         state.setFeePool(safeAdd(feePool(), n));
 
-        FeeDonation(messageSender, messageSender, n);
+        FeeDonation(sender, sender, n);
 
         return true;
     }

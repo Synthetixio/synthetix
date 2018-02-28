@@ -1,3 +1,37 @@
+/*
+-----------------------------------------------------------------
+FILE INFORMATION
+-----------------------------------------------------------------
+file:       Proxy.sol
+version:    0.3
+author:     Anton Jurisevic
+
+date:       2018-2-28
+
+checked:    Mike Spain
+approved:   Samuel Brooks
+
+-----------------------------------------------------------------
+MODULE DESCRIPTION
+-----------------------------------------------------------------
+
+A proxy contract that, if it does not recognise the function
+being called on it, passes all value and call data to an
+underlying target contract.
+
+The proxy can also optionally activate metropolis operations,
+which will allow more-versatile return values once that fork
+has hit.
+
+Additionally this file contains the Proxyable interface,
+which contracts that the proxy wraps must implement, in order
+for it to be able to pass msg.sender into the underlying
+contract as the state parameter, messageSender.
+
+-----------------------------------------------------------------
+*/
+
+
 /* With inspiration from Martin Swende and Zeppelin.*/
 
 pragma solidity ^0.4.20;
@@ -6,7 +40,6 @@ import "contracts/Owned.sol";
 
 contract Proxy is Owned {
     Proxyable target;
-    address public messageSender;
     bool public metropolis;
 
     function Proxy(Proxyable _target, address _owner)
@@ -34,18 +67,11 @@ contract Proxy is Owned {
         metropolis = _metropolis;
     }
 
-    function _setMessageSender(address sender)
-        external
-        _onlyTarget
-    {
-        messageSender = sender;
-    }
-
     function () 
         public
         payable
     {
-        messageSender = msg.sender;
+        target.setMessageSender(msg.sender);
         assembly {
             // Copy call data into free memory region.
             let free_ptr := mload(0x40)
@@ -71,18 +97,18 @@ contract Proxy is Owned {
         } 
     }
 
-    modifier _onlyTarget
-    {
-        require(Proxyable(msg.sender) == target);
-        _;
-    }
-
     event TargetChanged(address targetAddress);
 }
 
 
 contract Proxyable is Owned {
+    // the proxy this contract exists behind.
     Proxy public proxy;
+
+    // The caller of the proxy, passed through to this contract.
+    // Note that every function using this member must apply the onlyProxy or
+    // optionalProxy modifiers, otherwise their invocations can use stale values.
+    address messageSender;
 
     function Proxyable(address _owner)
         Owned(_owner)
@@ -96,6 +122,13 @@ contract Proxyable is Owned {
         ProxyChanged(_proxy);
     }
 
+    function setMessageSender(address sender)
+        external
+        onlyProxy
+    {
+        messageSender = sender;
+    }
+
     modifier onlyProxy
     {
         require(Proxy(msg.sender) == proxy);
@@ -104,14 +137,14 @@ contract Proxyable is Owned {
 
     modifier onlyOwner_Proxy
     {
-        require(proxy.messageSender() == owner);
+        require(messageSender == owner);
         _;
     }
 
     modifier optionalProxy
     {
         if (Proxy(msg.sender) != proxy) {
-            proxy._setMessageSender(msg.sender);
+            messageSender = msg.sender;
         }
         _;
     }
@@ -121,11 +154,9 @@ contract Proxyable is Owned {
     modifier optionalProxy_onlyOwner
     {
         if (Proxy(msg.sender) != proxy) {
-            proxy._setMessageSender(msg.sender);
-            require(msg.sender == owner);
-        } else {
-            require(proxy.messageSender() == owner);
+            messageSender = msg.sender;
         }
+        require(messageSender == owner);
         _;
     }
 

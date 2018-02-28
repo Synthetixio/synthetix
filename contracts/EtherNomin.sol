@@ -367,7 +367,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         returns (bool)
     {
         require(!state.isFrozen(to));
-        return super.transfer(to, value);
+        return transfer_byProxy(to, value);
     }
 
     /* Override ERC20 transferFrom function in order to check
@@ -456,11 +456,11 @@ contract EtherNomin is ExternStateProxyFeeToken {
         // Price staleness check occurs inside the call to purchaseEtherCost.
         require(n >= MINIMUM_PURCHASE_dec &&
                 msg.value == purchaseCostEther(n));
-        address messageSender = proxy.messageSender();
+        address sender = messageSender;
         // sub requires that nominPool_dec >= n
         nominPool_dec = safeSub(nominPool_dec, n);
-        state.setBalance(messageSender, safeAdd(state.balanceOf(messageSender), n));
-        Purchase(messageSender, messageSender, n, msg.value);
+        state.setBalance(sender, safeAdd(state.balanceOf(sender), n));
+        Purchase(sender, sender, n, msg.value);
     }
 
     /* Sends n nomins to the pool from the sender, in exchange for
@@ -486,13 +486,12 @@ contract EtherNomin is ExternStateProxyFeeToken {
 
         require(this.balance >= proceeds);
 
-        address messageSender = proxy.messageSender();
-
+        address sender = messageSender;
         // sub requires that the balance is greater than n
-        state.setBalance(messageSender, safeSub(state.balanceOf(messageSender), n));
+        state.setBalance(sender, safeSub(state.balanceOf(sender), n));
         nominPool_dec = safeAdd(nominPool_dec, n);
-        Sale(messageSender, messageSender, n, proceeds);
-        messageSender.transfer(proceeds);
+        Sale(sender, sender, n, proceeds);
+        sender.transfer(proceeds);
     }
 
     /* Lock nomin purchase function in preparation for destroying the contract.
