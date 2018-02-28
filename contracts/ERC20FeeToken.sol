@@ -186,20 +186,13 @@ contract ERC20FeeToken is Proxyable, SafeDecimalMath {
 
         address messageSender = proxy.messageSender();
 
-        // Zero-value transfers must fire the transfer event...
-        Transfer(messageSender, _to, _value);
-        TransferFeePaid(messageSender, fee);
-
-        // ...but don't spend gas updating state unnecessarily.
-        if (_value == 0) {
-            return true;
-        }
-
         // Insufficient balance will be handled by the safe subtraction.
-
         state.setBalance(messageSender, safeSub(balanceOf(messageSender), totalCharge));
         state.setBalance(_to, safeAdd(balanceOf(_to), _value));
         state.setFeePool(safeAdd(feePool(), fee));
+
+        Transfer(messageSender, _to, _value);
+        TransferFeePaid(messageSender, fee);
 
         return true;
     }
@@ -209,8 +202,8 @@ contract ERC20FeeToken is Proxyable, SafeDecimalMath {
         optionalProxy
         returns (bool)
     {
-        require(_from != address(0));
-        require(_to != address(0));
+        require(_from != address(0) && _to != address(0));
+
         // The fee is deducted from the sender's balance, in addition to
         // the transferred quantity.
         uint fee = transferFeeIncurred(_value);
@@ -218,20 +211,14 @@ contract ERC20FeeToken is Proxyable, SafeDecimalMath {
 
         address messageSender = proxy.messageSender();
 
-        // Zero-value transfers must fire the transfer event...
-        Transfer(_from, _to, _value);
-        TransferFeePaid(messageSender, fee);
-
-        // ...but don't spend gas updating state unnecessarily.
-        if (_value == 0) {
-            return true;
-        }
-
         // Insufficient balance will be handled by the safe subtraction.
         state.setBalance(_from, safeSub(state.balanceOf(_from), totalCharge));
         state.setAllowance(_from, messageSender, safeSub(state.allowance(_from, messageSender), totalCharge));
         state.setBalance(_to, safeAdd(state.balanceOf(_to), _value));
         state.setFeePool(safeAdd(feePool(), fee));
+
+        Transfer(_from, _to, _value);
+        TransferFeePaid(messageSender, fee);
 
         return true;
     }
@@ -243,7 +230,9 @@ contract ERC20FeeToken is Proxyable, SafeDecimalMath {
     {
         address messageSender = proxy.messageSender();
         state.setAllowance(messageSender, _spender, _value);
+
         Approval(messageSender, _spender, _value);
+
         return true;
     }
 
@@ -252,8 +241,7 @@ contract ERC20FeeToken is Proxyable, SafeDecimalMath {
         public
         returns (bool)
     {
-        require(msg.sender == feeAuthority);
-        require(account != address(0));
+        require(msg.sender == feeAuthority && account != address(0));
         
         // 0-value withdrawals do nothing.
         if (value == 0) {
@@ -263,7 +251,9 @@ contract ERC20FeeToken is Proxyable, SafeDecimalMath {
         // Safe subtraction ensures an exception is thrown if the balance is insufficient.
         state.setFeePool(safeSub(feePool(), value));
         state.setBalance(account, safeAdd(state.balanceOf(account), value));
+
         FeeWithdrawal(account, value);
+
         return true;
     }
 
@@ -282,7 +272,9 @@ contract ERC20FeeToken is Proxyable, SafeDecimalMath {
         // safeSub ensures the donor has sufficient balance.
         state.setBalance(messageSender, safeSub(balance, n));
         state.setFeePool(safeAdd(feePool(), n));
+
         FeeDonation(messageSender, messageSender, n);
+
         return true;
     }
 
