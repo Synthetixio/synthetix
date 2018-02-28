@@ -3,11 +3,11 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       EtherNomin.sol
-version:    0.3
+version:    0.4
 author:     Anton Jurisevic
             Mike Spain
 
-date:       2018-2-6
+date:       2018-2-28
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -188,7 +188,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         state.setFrozen(account, value);
     }
 
-    /* ========== VIEW FUNCTIONS ========== */
+    /* ========== VIEW FUNCTIONS ========== */ 
 
     /* Return the equivalent fiat value of the given quantity
      * of ether at the current price.
@@ -241,7 +241,17 @@ contract EtherNomin is ExternStateProxyFeeToken {
         view
         returns (uint)
     {
-        return safeDecDiv(fiatBalance(), state.totalSupply());
+        return safeDecDiv(fiatBalance(), _cap());
+    }
+
+    /* Return the maximum number of extant nomins,
+     * equal to the nomin pool plus total (circulating) supply. */
+    function _cap()
+        internal
+        view
+        returns (uint)
+    {
+        return nominPool_dec + state.totalSupply();
     }
 
     /* Return the fee charged on a purchase or sale of n nomins. */
@@ -340,7 +350,8 @@ contract EtherNomin is ExternStateProxyFeeToken {
             // These timestamps and durations have values clamped within reasonable values and
             // cannot overflow.
             bool totalPeriodElapsed = liquidationTimestamp + liquidationPeriod < now;
-            bool allTokensReturned = (liquidationTimestamp + 1 weeks < now) && (nominPool_dec == state.totalSupply());
+            // Total supply of 0 means all tokens have returned to the pool.
+            bool allTokensReturned = (liquidationTimestamp + 1 weeks < now) && (state.totalSupply() == 0);
             return totalPeriodElapsed || allTokensReturned;
         }
         return false;
@@ -410,35 +421,32 @@ contract EtherNomin is ExternStateProxyFeeToken {
      *     Not called by contract owner.
      *     Insufficient backing funds provided (post-issuance collateralisation below minimum requirement).
      *     Price is stale. */
-    function issue(uint n)
+    function replenishPool(uint n)
         external
         payable
         notLiquidating
         optionalProxy_onlyOwner
     {
-        // Price staleness check occurs inside the call to fiatValue.
+        // Price staleness check occurs inside the call to fiatBalance.
         // Safe additions are unnecessary here, as either the addition is checked on the following line
         // or the overflow would cause the requirement not to be satisfied.
-        uint sum = safeAdd(state.totalSupply(), n);
-        require(fiatBalance() >= safeDecMul(sum, MINIMUM_ISSUANCE_RATIO_dec));
-        state.setTotalSupply(sum);
+        require(fiatBalance() >= safeDecMul(safeAdd(_cap(), n), MINIMUM_ISSUANCE_RATIO_dec));
         nominPool_dec = safeAdd(nominPool_dec, n);
-        Issued(n, msg.value);
+        PoolReplenished(n, msg.value);
     }
 
     /* Burns n nomins from the pool.
      * Exceptional conditions:
      *     Not called by contract owner.
      *     There are fewer than n nomins in the pool. */
-    function burn(uint n)
+    function diminishPool(uint n)
         external
         optionalProxy_onlyOwner
     {
         // Require that there are enough nomins in the accessible pool to burn
         require(nominPool_dec >= n);
         nominPool_dec = safeSub(nominPool_dec, n);
-        state.setTotalSupply(safeSub(state.totalSupply(), n));
-        Burned(n);
+        PoolDiminished(n);
     }
 
     /* Sends n nomins to the sender from the pool, in exchange for
@@ -463,6 +471,8 @@ contract EtherNomin is ExternStateProxyFeeToken {
         nominPool_dec = safeSub(nominPool_dec, n);
         state.setBalance(sender, safeAdd(state.balanceOf(sender), n));
         Purchased(sender, sender, n, msg.value);
+        Transfer(0, sender, n);
+        state.setTotalSupply(safeAdd(state.totalSupply(), n));
     }
 
     /* Sends n nomins to the pool from the sender, in exchange for
@@ -493,6 +503,8 @@ contract EtherNomin is ExternStateProxyFeeToken {
         state.setBalance(sender, safeSub(state.balanceOf(sender), n));
         nominPool_dec = safeAdd(nominPool_dec, n);
         Sold(sender, sender, n, proceeds);
+        Transfer(sender, 0, n);
+        state.setTotalSupply(safeSub(state.totalSupply(), n));
         sender.transfer(proceeds);
     }
 
@@ -543,7 +555,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         optionalProxy_onlyOwner
     {
         require(isLiquidating());
-        require(state.totalSupply() == 0 || collateralisationRatio() >= AUTO_LIQUIDATION_RATIO_dec);
+        require(_cap() == 0 || collateralisationRatio() >= AUTO_LIQUIDATION_RATIO_dec);
         liquidationTimestamp = ~uint(0);
         liquidationPeriod = DEFAULT_LIQUIDATION_PERIOD;
         LiquidationTerminated();
@@ -633,7 +645,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
     modifier postCheckAutoLiquidate
     {
         _;
-        if (!isLiquidating() && state.totalSupply() != 0 && collateralisationRatio() < AUTO_LIQUIDATION_RATIO_dec) {
+        if (!isLiquidating() && _cap() != 0 && collateralisationRatio() < AUTO_LIQUIDATION_RATIO_dec) {
             beginLiquidation();
         }
     }
@@ -641,9 +653,9 @@ contract EtherNomin is ExternStateProxyFeeToken {
 
     /* ========== EVENTS ========== */
 
-    event Issued(uint nominsIssued, uint collateralDeposited);
+    event PoolReplenished(uint nominsCreated, uint collateralDeposited);
 
-    event Burned(uint nominsBurned);
+    event PoolDiminished(uint nominsDestroyed);
 
     event Purchased(address buyer, address indexed buyerIndex, uint nomins, uint eth);
 
