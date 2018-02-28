@@ -3,7 +3,7 @@ import time
 
 import utils.generalutils
 from utils.testutils import assertReverts, assertClose, block_time
-from utils.testutils import ZERO_ADDRESS, generate_topic_event_map
+from utils.testutils import ZERO_ADDRESS, generate_topic_event_map, get_event_data_from_log
 
 from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mine_txs, mine_tx, \
     UNIT, MASTER, DUMMY, to_seconds, fast_forward, fresh_account, fresh_accounts, take_snapshot, restore_snapshot
@@ -51,10 +51,10 @@ def deploy_public_havven():
            proxy_havven.functions.setEscrow(escrow_contract.address).transact({'from': MASTER})]
     attempt(mine_txs, [txs], "Linking contracts... ")
 
-    havven_event_dict = generate_topic_event_map(compiled['PublicHavven']['abi'])
+    escrow_event_dict = generate_topic_event_map(compiled['HavvenEscrow']['abi'])
 
     print("\nDeployment complete.\n")
-    return proxy_havven, proxy_nomin, havven_proxy, nomin_proxy, havven_contract, nomin_contract, court_contract, escrow_contract, hvn_block, havven_event_dict
+    return proxy_havven, proxy_nomin, havven_proxy, nomin_proxy, havven_contract, nomin_contract, court_contract, escrow_contract, hvn_block, escrow_event_dict
 
 
 def setUpModule():
@@ -85,7 +85,7 @@ class TestHavvenEscrow(unittest.TestCase):
         cls.assertReverts = assertReverts
         cls.assertClose = assertClose
 
-        cls.havven, cls.nomin, cls.havven_proxy, cls.nomin_proxy, cls.havven_real, cls.nomin_real, cls.court, cls.escrow, cls.construction_block, cls.havven_event_dict = deploy_public_havven()
+        cls.havven, cls.nomin, cls.havven_proxy, cls.nomin_proxy, cls.havven_real, cls.nomin_real, cls.court, cls.escrow, cls.construction_block, cls.escrow_event_dict = deploy_public_havven()
 
         cls.initial_time = cls.nomin.functions.lastPriceUpdate().call()
 
@@ -412,7 +412,9 @@ class TestHavvenEscrow(unittest.TestCase):
         self.assertEqual(self.getNextVestingTime(alice), time)
         self.assertEqual(self.getNextVestingQuantity(alice), 1000)
 
-        self.purgeAccount(MASTER, alice)
+        tx_receipt = self.purgeAccount(MASTER, alice)
+        self.assertEqual(get_event_data_from_log(self.escrow_event_dict, tx_receipt.logs[0])['event'], 'SchedulePurged')
+
         self.assertEqual(self.numVestingEntries(alice), 0)
         self.assertEqual(self.totalVestedBalance(), 0)
         self.assertEqual(self.totalVestedAccountBalance(alice), 0)
