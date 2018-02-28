@@ -59,12 +59,12 @@ If the contract is recollateralised, the owner may terminate liquidation.
 pragma solidity ^0.4.20;
 
 
-import "contracts/ERC20FeeToken.sol";
-import "contracts/ERC20FeeState.sol";
+import "contracts/ExternStateProxyFeeToken.sol";
+import "contracts/FeeTokenState.sol";
 import "contracts/Court.sol";
 
 
-contract EtherNomin is ERC20FeeToken {
+contract EtherNomin is ExternStateProxyFeeToken {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -121,8 +121,8 @@ contract EtherNomin is ERC20FeeToken {
     function EtherNomin(address _havven, address _oracle,
                         address _beneficiary,
                         uint initialEtherPrice_dec,
-                        address _owner, ERC20FeeState initialState)
-        ERC20FeeToken("Ether-Backed USD Nomins", "eUSD",
+                        address _owner, FeeTokenState initialState)
+        ExternStateProxyFeeToken("Ether-Backed USD Nomins", "eUSD",
                       _owner,
                       15 * UNIT / 10000, // nomin transfers incur a 15 bp fee
                       _havven, // havven contract is the fee authority

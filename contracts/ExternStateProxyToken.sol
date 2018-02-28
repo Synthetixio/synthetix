@@ -2,7 +2,7 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
-file:       StatefulProxyToken.sol
+file:       ExternStateProxyToken.sol
 version:    0.4
 author:     Anton Jurisevic
             Dominic Romanowski
@@ -34,7 +34,7 @@ import "contracts/TokenState.sol";
 import "contracts/Proxy.sol";
 
 
-contract StatefulProxyToken is SafeDecimalMath, Proxyable {
+contract ExternStateProxyToken is SafeDecimalMath, Proxyable {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -47,7 +47,7 @@ contract StatefulProxyToken is SafeDecimalMath, Proxyable {
 
     /* ========== CONSTRUCTOR ========== */
 
-    function StatefulProxyToken(
+    function ExternStateProxyToken(
         string _name, string _symbol,
         uint initialSupply, address initialBeneficiary,
         TokenState _state, address _owner

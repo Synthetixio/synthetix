@@ -2,7 +2,7 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
-file:       StatefulProxyFeeToken.sol
+file:       ExternStateProxyFeeToken.sol
 version:    0.4
 author:     Anton Jurisevic
             Dominic Romanowski
@@ -39,7 +39,7 @@ import "contracts/FeeTokenState.sol";
 import "contracts/Proxy.sol";
 
 
-contract StatefulProxyFeeToken is Proxyable, SafeDecimalMath {
+contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -60,10 +60,10 @@ contract StatefulProxyFeeToken is Proxyable, SafeDecimalMath {
 
     /* ========== CONSTRUCTOR ========== */
 
-    function StatefulProxyFeeToken(string _name, string _symbol,
-                                   address initialBeneficiary,
-                                   uint _feeRate, address _feeAuthority,
-                                   FeeTokenState _state, address _owner)
+    function ExternStateProxyFeeToken(string _name, string _symbol,
+                                      address initialBeneficiary,
+                                      uint _feeRate, address _feeAuthority,
+                                      FeeTokenState _state, address _owner)
         Proxyable(_owner)
         public
     {
