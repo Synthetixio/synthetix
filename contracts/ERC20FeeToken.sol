@@ -58,7 +58,7 @@ contract ERC20FeeToken is Proxyable, SafeDecimalMath {
     /* ========== CONSTRUCTOR ========== */
 
     function ERC20FeeToken(string _name, string _symbol,
-                           uint initialSupply, address initialBeneficiary,
+                           address initialBeneficiary,
                            uint _feeRate, address _feeAuthority,
                            ERC20FeeState _state, address _owner)
         Proxyable(_owner)
@@ -101,7 +101,39 @@ contract ERC20FeeToken is Proxyable, SafeDecimalMath {
         state = _state;
     }
 
-    /* ========== VIEW FUNCTIONS ========== */
+    /* ========== VIEWS ========== */
+
+    function totalSupply()
+        public
+        view
+        returns (uint)
+    {
+        return state.totalSupply();
+    }
+
+    function balanceOf(address _owner)
+        public
+        view
+        returns (uint)
+    {
+        return state.balanceOf(_owner);
+    }
+
+    function allowance(address _from, address _to)
+        public
+        view
+        returns (uint)
+    {
+        return state.allowance(_from, _to);
+    }
+
+    function feePool()
+        public
+        view
+        returns (uint)
+    {
+        return state.feePool();
+    }
 
     // Return the fee charged on top in order to transfer _value worth of tokens.
     function transferFeeIncurred(uint _value)
@@ -252,36 +284,6 @@ contract ERC20FeeToken is Proxyable, SafeDecimalMath {
         state.setFeePool(safeAdd(feePool(), n));
         FeeDonation(messageSender, messageSender, n);
         return true;
-    }
-
-    /* ========== GETTERS ========== */
-
-    function totalSupply()
-        public
-        returns (uint)
-    {
-        return state.totalSupply();
-    }
-
-    function balanceOf(address _owner)
-        public
-        returns (uint)
-    {
-        return state.balanceOf(_owner);
-    }
-
-    function allowance(address _from, address _to)
-        public
-        returns (uint)
-    {
-        return state.allowance(_from, _to);
-    }
-
-    function feePool()
-        public
-        returns (uint)
-    {
-        return state.feePool();
     }
 
     /* ========== EVENTS ========== */
