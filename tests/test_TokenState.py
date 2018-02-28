@@ -4,7 +4,6 @@ from utils.deployutils import compile_contracts, attempt_deploy, mine_tx, \
 from utils.testutils import assertReverts
 from utils.testutils import ZERO_ADDRESS
 
-
 ExternStateProxyToken_SOURCE = "contracts/ExternStateProxyToken.sol"
 ExternStateProxyFeeToken_SOURCE = "contracts/ExternStateProxyFeeToken.sol"
 TokenState_SOURCE = "contracts/TokenState.sol"

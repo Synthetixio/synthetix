@@ -96,7 +96,7 @@ class TestHavven(unittest.TestCase):
         cls.h_acceptOwnership = lambda self, sender: mine_tx(
             self.havven.functions.acceptOwnership().transact({'from': sender}))
 
-        # ERC20TOKEN (transfer/transferFrom are overwritten)
+        # ExternStateProxyToken (transfer/transferFrom are overwritten)
         # totalSupply
         cls.h_totalSupply = lambda self: self.havven.functions.totalSupply().call()
         cls.h_name = lambda self: self.havven.functions.name().call()
