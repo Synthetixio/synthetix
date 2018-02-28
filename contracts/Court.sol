@@ -215,7 +215,7 @@ contract Court is Owned, SafeDecimalMath {
     /* ========== SETTERS ========== */
 
     function setMinStandingBalance(uint balance)
-        public
+        external
         onlyOwner
     {
         // No requirement on the standing threshold here;
@@ -225,7 +225,7 @@ contract Court is Owned, SafeDecimalMath {
     }
 
     function setVotingPeriod(uint duration)
-        public
+        external
         onlyOwner
     {
         require(MIN_VOTING_PERIOD <= duration &&
@@ -237,7 +237,7 @@ contract Court is Owned, SafeDecimalMath {
     }
 
     function setConfirmationPeriod(uint duration)
-        public
+        external
         onlyOwner
     {
         require(MIN_CONFIRMATION_PERIOD <= duration &&
@@ -246,7 +246,7 @@ contract Court is Owned, SafeDecimalMath {
     }
 
     function setRequiredParticipation(uint fraction)
-        public
+        external
         onlyOwner
     {
         require(MIN_REQUIRED_PARTICIPATION <= fraction);
@@ -254,7 +254,7 @@ contract Court is Owned, SafeDecimalMath {
     }
 
     function setRequiredMajority(uint fraction)
-        public
+        external
         onlyOwner
     {
         require(MIN_REQUIRED_MAJORITY <= fraction);
@@ -343,7 +343,7 @@ contract Court is Owned, SafeDecimalMath {
      * may elect to start such a motion.
      * Returns the ID of the motion that was begun. */
     function beginConfiscationMotion(address target)
-        public
+        external
         returns (uint)
     {
         // A confiscation motion must be mooted by someone with standing.
@@ -410,7 +410,7 @@ contract Court is Owned, SafeDecimalMath {
     /* The sender casts a vote in favour of confiscation of the
      * target account's nomin balance. */
     function voteFor(uint motionID)
-        public
+        external
     {
         uint weight = setupVote(motionID);
         vote[msg.sender][motionID] = Vote.Yea;
@@ -421,7 +421,7 @@ contract Court is Owned, SafeDecimalMath {
     /* The sender casts a vote against confiscation of the
      * target account's nomin balance. */
     function voteAgainst(uint motionID)
-        public
+        external
     {
         uint weight = setupVote(motionID);
         vote[msg.sender][motionID] = Vote.Nay;
@@ -432,7 +432,7 @@ contract Court is Owned, SafeDecimalMath {
     /* Cancel an existing vote by the sender on a motion
      * to confiscate the target balance. */
     function cancelVote(uint motionID)
-        public
+        external
     {
         // An account may cancel its vote either before the confirmation phase
         // when the motion is still open, or after the confirmation phase,
@@ -476,7 +476,7 @@ contract Court is Owned, SafeDecimalMath {
     /* If a motion has concluded, or if it lasted its full duration but not passed,
      * then anyone may close it. */
     function closeMotion(uint motionID)
-        public
+        external
     {
         require((motionConfirming(motionID) && !motionPasses(motionID)) || motionWaiting(motionID));
         _closeMotion(motionID);
@@ -485,7 +485,7 @@ contract Court is Owned, SafeDecimalMath {
     /* The foundation may only confiscate a balance during the confirmation
      * period after a motion has passed. */
     function approveMotion(uint motionID)
-        public
+        external
         onlyOwner
     {
         require(motionConfirming(motionID) && motionPasses(motionID));
@@ -497,7 +497,7 @@ contract Court is Owned, SafeDecimalMath {
 
     /* The foundation may veto a motion at any time. */
     function vetoMotion(uint motionID)
-        public
+        external
         onlyOwner
     {
         require(!motionWaiting(motionID));

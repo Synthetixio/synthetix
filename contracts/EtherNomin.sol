@@ -144,7 +144,7 @@ contract EtherNomin is ERC20FeeToken {
     /* ========== SETTERS ========== */
 
     function setOracle(address newOracle)
-        public
+        external
         optionalProxy_onlyOwner
     {
         oracle = newOracle;
@@ -152,7 +152,7 @@ contract EtherNomin is ERC20FeeToken {
     }
 
     function setCourt(Court newCourt)
-        public
+        external
         optionalProxy_onlyOwner
     {
         court = newCourt;
@@ -160,7 +160,7 @@ contract EtherNomin is ERC20FeeToken {
     }
 
     function setBeneficiary(address newBeneficiary)
-        public
+        external
         optionalProxy_onlyOwner
     {
         beneficiary = newBeneficiary;
@@ -168,7 +168,7 @@ contract EtherNomin is ERC20FeeToken {
     }
 
     function setPoolFeeRate(uint newFeeRate)
-        public
+        external
         optionalProxy_onlyOwner
     {
         require(newFeeRate <= UNIT);
@@ -177,7 +177,7 @@ contract EtherNomin is ERC20FeeToken {
     }
 
     function setStalePeriod(uint period)
-        public
+        external
         optionalProxy_onlyOwner
     {
         stalePeriod = period;
