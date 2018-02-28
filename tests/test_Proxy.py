@@ -10,7 +10,6 @@ from utils.testutils import assertReverts, block_time, send_value, get_eth_balan
 from utils.testutils import generate_topic_event_map, get_event_data_from_log
 from utils.testutils import ZERO_ADDRESS
 
-
 ETHERNOMIN_SOURCE = "tests/contracts/PublicEtherNomin.sol"
 FAKECOURT_SOURCE = "tests/contracts/FakeCourt.sol"
 PROXY_SOURCE = "contracts/Proxy.sol"
@@ -60,26 +59,35 @@ class TestProxy(unittest.TestCase):
 
         cls.fake_court, _ = attempt_deploy(compiled, 'FakeCourt', MASTER, [])
 
-        cls.fake_court.setNomin = lambda sender, new_nomin: mine_tx(cls.fake_court.functions.setNomin(new_nomin).transact({'from': sender}))
-        cls.fake_court.setConfirming = lambda sender, target, status: mine_tx(cls.fake_court.functions.setConfirming(target, status).transact({'from': sender}))
-        cls.fake_court.setVotePasses = lambda sender, target, status: mine_tx(cls.fake_court.functions.setVotePasses(target, status).transact({'from': sender}))
-        cls.fake_court.setTargetMotionID = lambda sender, target, motion_id: mine_tx(cls.fake_court.functions.setTargetMotionID(target, motion_id).transact({'from': sender}))
-        cls.fake_court.confiscateBalance = lambda sender, target: mine_tx(cls.fake_court.functions.confiscateBalance(target).transact({'from': sender}))
+        cls.fake_court.setNomin = lambda sender, new_nomin: mine_tx(
+            cls.fake_court.functions.setNomin(new_nomin).transact({'from': sender}))
+        cls.fake_court.setConfirming = lambda sender, target, status: mine_tx(
+            cls.fake_court.functions.setConfirming(target, status).transact({'from': sender}))
+        cls.fake_court.setVotePasses = lambda sender, target, status: mine_tx(
+            cls.fake_court.functions.setVotePasses(target, status).transact({'from': sender}))
+        cls.fake_court.setTargetMotionID = lambda sender, target, motion_id: mine_tx(
+            cls.fake_court.functions.setTargetMotionID(target, motion_id).transact({'from': sender}))
+        cls.fake_court.confiscateBalance = lambda sender, target: mine_tx(
+            cls.fake_court.functions.confiscateBalance(target).transact({'from': sender}))
         cls.fake_court.setNomin(W3.eth.accounts[0], cls.nomin.address)
         mine_tx(cls.nomin.functions.setProxy(cls.proxy.address).transact({'from': cls.nomin_owner}))
         mine_tx(cls.proxy_nomin.functions.setCourt(cls.fake_court.address).transact({'from': cls.nomin_owner}))
 
-        cls.issue = lambda self, sender, n, value: mine_tx(cls.nomin.functions.issue(n).transact({'from': sender, 'value': value}))
+        cls.issue = lambda self, sender, n, value: mine_tx(
+            cls.nomin.functions.issue(n).transact({'from': sender, 'value': value}))
         cls.burn = lambda self, sender, n: mine_tx(cls.nomin.functions.burn(n).transact({'from': sender}))
-        cls.buy = lambda self, sender, n, value: mine_tx(cls.nomin.functions.buy(n).transact({'from': sender, 'value': value}))
-        cls.sell = lambda self, sender, n: mine_tx(cls.nomin.functions.sell(n).transact({'from': sender, 'gasPrice': 10}))
+        cls.buy = lambda self, sender, n, value: mine_tx(
+            cls.nomin.functions.buy(n).transact({'from': sender, 'value': value}))
+        cls.sell = lambda self, sender, n: mine_tx(
+            cls.nomin.functions.sell(n).transact({'from': sender, 'gasPrice': 10}))
         cls.purchaseCostEther = lambda self, n: cls.nomin.functions.purchaseCostEther(n).call()
         cls.etherValue = lambda self, fiat: cls.nomin.functions.etherValue(fiat).call()
 
         cls.priceIsStale = lambda self: cls.nomin.functions.priceIsStale().call()
         cls.isLiquidating = lambda self: cls.nomin.functions.isLiquidating().call()
 
-        cls.setMetropolis = lambda self, sender, value: mine_tx(cls.proxy.functions._setMetropolis(value).transact({'from': sender}))
+        cls.setMetropolis = lambda self, sender, value: mine_tx(
+            cls.proxy.functions._setMetropolis(value).transact({'from': sender}))
 
     def test_Something(self):
         backing = self.etherValue(10 * UNIT)

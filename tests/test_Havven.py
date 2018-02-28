@@ -79,7 +79,8 @@ class TestHavven(unittest.TestCase):
         # to avoid overflowing in the negative direction (now - targetFeePeriodDuration * 2)
         fast_forward(weeks=102)
 
-        cls.havven, cls.nomin, cls.havven_proxy, cls.nomin_proxy, cls.havven_real, cls.nomin_real, cls.court, cls.escrow, cls.construction_block, cls.havven_event_dict = deploy_public_havven()
+        cls.havven, cls.nomin, cls.havven_proxy, cls.nomin_proxy, cls.havven_real, cls.nomin_real, cls.court, \
+            cls.escrow, cls.construction_block, cls.havven_event_dict = deploy_public_havven()
 
         # INHERITED
         # OWNED
@@ -108,14 +109,17 @@ class TestHavven(unittest.TestCase):
         cls.lastTransferTimestamp = lambda self, addr: self.havven.functions._lastTransferTimestamp(addr).call()
         cls.hasWithdrawnLastPeriodFees = lambda self, addr: self.havven.functions._hasWithdrawnLastPeriodFees(
             addr).call()
-        cls.lastAverageBalanceNeedsRecomputation = lambda self, addr: self.havven.functions.lastAverageBalanceNeedsRecomputation(addr).call()
+        cls.lastAverageBalanceNeedsRecomputation = lambda self, addr: \
+            self.havven.functions.lastAverageBalanceNeedsRecomputation(addr).call()
 
         cls.feePeriodStartTime = lambda self: self.havven.functions.feePeriodStartTime().call()
         cls.lastFeePeriodStartTime = lambda self: self.havven.functions._lastFeePeriodStartTime().call()
         cls.penultimateFeePeriodStartTime = lambda self: self.havven.functions._penultimateFeePeriodStartTime().call()
         cls.targetFeePeriodDurationSeconds = lambda self: self.havven.functions.targetFeePeriodDurationSeconds().call()
-        cls.MIN_FEE_PERIOD_DURATION_SECONDS = lambda self: self.havven.functions._MIN_FEE_PERIOD_DURATION_SECONDS().call()
-        cls.MAX_FEE_PERIOD_DURATION_SECONDS= lambda self: self.havven.functions._MAX_FEE_PERIOD_DURATION_SECONDS().call()
+        cls.MIN_FEE_PERIOD_DURATION_SECONDS = lambda \
+            self: self.havven.functions._MIN_FEE_PERIOD_DURATION_SECONDS().call()
+        cls.MAX_FEE_PERIOD_DURATION_SECONDS = lambda \
+            self: self.havven.functions._MAX_FEE_PERIOD_DURATION_SECONDS().call()
         cls.lastFeesCollected = lambda self: self.havven.functions.lastFeesCollected().call()
 
         cls.get_nomin = lambda self: self.havven.functions.nomin().call()
@@ -365,7 +369,7 @@ class TestHavven(unittest.TestCase):
             fast_forward(fee_period // n)
 
         self.recomputeLastAverageBalance(alice)
-        self.assertClose(self.lastAverageBalance(alice), n*(n-1) * UNIT // (2*n))
+        self.assertClose(self.lastAverageBalance(alice), n * (n - 1) * UNIT // (2 * n))
 
     def test_averageBalanceSum(self):
         alice, bob, carol = fresh_accounts(3)
@@ -503,7 +507,7 @@ class TestHavven(unittest.TestCase):
 
     def test_setTargetFeePeriod_max(self):
         sixmonths = 26 * 7 * 24 * 60 * 60
-        self.assertReverts(self.setTargetFeePeriodDuration, MASTER, 2**256 - 1)
+        self.assertReverts(self.setTargetFeePeriodDuration, MASTER, 2 ** 256 - 1)
         self.assertReverts(self.setTargetFeePeriodDuration, MASTER, sixmonths + 1)
         self.setTargetFeePeriodDuration(MASTER, sixmonths)
         self.assertEqual(
@@ -702,10 +706,10 @@ class TestHavven(unittest.TestCase):
     def test_withdraw_multiple_periods(self):
         alice = fresh_account()
         self.withdrawFeeEntitlement(alice)
-        fast_forward(self.targetFeePeriodDurationSeconds()*2)
+        fast_forward(self.targetFeePeriodDurationSeconds() * 2)
         self.rolloverFeePeriod(DUMMY)
         self.withdrawFeeEntitlement(alice)
-        fast_forward(self.targetFeePeriodDurationSeconds()*2)
+        fast_forward(self.targetFeePeriodDurationSeconds() * 2)
         self.rolloverFeePeriod(DUMMY)
 
     # adjustFeeEntitlement - tested above

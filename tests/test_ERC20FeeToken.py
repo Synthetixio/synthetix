@@ -20,6 +20,7 @@ def setUpModule():
 def tearDownModule():
     print()
 
+
 class TestERC20FeeToken(unittest.TestCase):
     def setUp(self):
         self.snapshot = take_snapshot()
@@ -37,9 +38,9 @@ class TestERC20FeeToken(unittest.TestCase):
         cls.erc20fee_event_dict = generate_topic_event_map(cls.erc20fee_abi)
         cls.erc20feetoken_real, cls.construction_txr = attempt_deploy(
             cls.compiled, "ERC20FeeToken", MASTER, ["Test Fee Token", "FEE",
-                                                0, cls.initial_beneficiary,
-                                                UNIT // 20, cls.fee_authority,
-                                                ZERO_ADDRESS, cls.token_owner]
+                                                    0, cls.initial_beneficiary,
+                                                    UNIT // 20, cls.fee_authority,
+                                                    ZERO_ADDRESS, cls.token_owner]
         )
         cls.erc20feestate, txr = attempt_deploy(
             cls.compiled, "ERC20FeeState", MASTER,
@@ -47,11 +48,14 @@ class TestERC20FeeToken(unittest.TestCase):
         )
 
         cls.erc20feetoken_proxy, _ = attempt_deploy(cls.compiled, 'Proxy',
-                                           MASTER, [cls.erc20feetoken_real.address, cls.token_owner])
-        mine_tx(cls.erc20feetoken_real.functions.setProxy(cls.erc20feetoken_proxy.address).transact({'from': cls.token_owner}))
-        cls.erc20feetoken = W3.eth.contract(address=cls.erc20feetoken_proxy.address, abi=cls.compiled['ERC20FeeToken']['abi'])
+                                                    MASTER, [cls.erc20feetoken_real.address, cls.token_owner])
+        mine_tx(cls.erc20feetoken_real.functions.setProxy(cls.erc20feetoken_proxy.address).transact(
+            {'from': cls.token_owner}))
+        cls.erc20feetoken = W3.eth.contract(address=cls.erc20feetoken_proxy.address,
+                                            abi=cls.compiled['ERC20FeeToken']['abi'])
 
-        mine_tx(cls.erc20feetoken_real.functions.setState(cls.erc20feestate.address).transact({'from': cls.token_owner}))
+        mine_tx(
+            cls.erc20feetoken_real.functions.setState(cls.erc20feestate.address).transact({'from': cls.token_owner}))
 
         cls.owner = lambda self: cls.erc20feetoken.functions.owner().call()
         cls.totalSupply = lambda self: cls.erc20feetoken.functions.totalSupply().call()
@@ -75,7 +79,7 @@ class TestERC20FeeToken(unittest.TestCase):
             cls.erc20feetoken.functions.acceptOwnership().transact({'from': sender}))
         cls.setTransferFeeRate = lambda self, sender, new_fee_rate: mine_tx(
             cls.erc20feetoken.functions.setTransferFeeRate(new_fee_rate).transact({'from': sender}))
-        cls.setFeeAuthority  = lambda self, sender, new_fee_authority: mine_tx(
+        cls.setFeeAuthority = lambda self, sender, new_fee_authority: mine_tx(
             cls.erc20feetoken.functions.setFeeAuthority(new_fee_authority).transact({'from': sender}))
         cls.transfer = lambda self, sender, to, value: mine_tx(
             cls.erc20feetoken.functions.transfer(to, value).transact({'from': sender}))
@@ -85,7 +89,7 @@ class TestERC20FeeToken(unittest.TestCase):
             cls.erc20feetoken.functions.transferFrom(fromAccount, to, value).transact({'from': sender}))
 
         cls.withdrawFee = lambda self, sender, account, value: mine_tx(
-            cls.erc20feetoken_real.functions.withdrawFee(account, value).transact({'from' : sender}))
+            cls.erc20feetoken_real.functions.withdrawFee(account, value).transact({'from': sender}))
         cls.donateToFeePool = lambda self, sender, value: mine_tx(
             cls.erc20feetoken.functions.donateToFeePool(value).transact({'from': sender}))
 
@@ -105,17 +109,17 @@ class TestERC20FeeToken(unittest.TestCase):
                                           [MASTER, 0,
                                            MASTER, self.erc20feetoken.address])
 
-        erc20feetoken, _ = attempt_deploy(self.compiled, 'ERC20FeeToken', 
+        erc20feetoken, _ = attempt_deploy(self.compiled, 'ERC20FeeToken',
                                           MASTER,
-                                          ["Test Fee Token", "FEE", 
+                                          ["Test Fee Token", "FEE",
                                            0, MASTER, UNIT // 20,
                                            self.fee_authority,
                                            ZERO_ADDRESS, DUMMY])
         self.assertNotEqual(erc20feetoken.functions.state().call(), ZERO_ADDRESS)
 
-        erc20feetoken, _ = attempt_deploy(self.compiled, 'ERC20FeeToken', 
+        erc20feetoken, _ = attempt_deploy(self.compiled, 'ERC20FeeToken',
                                           MASTER,
-                                          ["Test Fee Token", "FEE", 
+                                          ["Test Fee Token", "FEE",
                                            0, MASTER, UNIT // 20,
                                            self.fee_authority,
                                            erc20feestate.address, DUMMY])
