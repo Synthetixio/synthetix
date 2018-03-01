@@ -22,7 +22,8 @@ conclusion of the configurable-length post-construction setup period.
 -----------------------------------------------------------------
 */
 
-pragma solidity ^0.4.19;
+
+pragma solidity ^0.4.20;
 
 
 contract LimitedSetup {

@@ -82,3 +82,4 @@ contract SelfDestructible is Owned {
 
 	event SelfDestructed(address beneficiary);
 }
+
