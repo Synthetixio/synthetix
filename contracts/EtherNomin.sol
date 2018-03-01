@@ -251,7 +251,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         view
         returns (uint)
     {
-        return nominPool + totalSupply;
+        return safeAdd(nominPool, totalSupply);
     }
 
     /* Return the fee charged on a purchase or sale of n nomins. */
