@@ -3,10 +3,11 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       Owned.sol
-version:    0.2
+version:    0.3
 author:     Anton Jurisevic
+            Dominic Romanowski
 
-date:       2018-1-16
+date:       2018-2-26
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -15,18 +16,24 @@ approved:   Samuel Brooks
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
-An ownable contract, to be inherited by other contracts.
-Requires its owner to be explicitly set in the constuctor,
-provides onlyOwner access modifier and setOwner function,
-which itself must only be callable by the current owner.
+An Owned contract, to be inherited by other contracts.
+Requires its owner to be explicitly set in the constructor.
+Provides an onlyOwner access modifier.
+
+To change owner, the current owner must nominate the next owner,
+who then has to accept the nomination. The nomination can be
+cancelled before it is accepted by the new owner by having the
+previous owner change the nomination (setting it to 0).
 
 -----------------------------------------------------------------
 */
 
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.20;
+
 
 contract Owned {
     address public owner;
+    address nominatedOwner;
 
     function Owned(address _owner)
         public
@@ -34,12 +41,27 @@ contract Owned {
         owner = _owner;
     }
 
-    function setOwner(address newOwner)
-        public
+    function nominateOwner(address _owner)
+        external
         onlyOwner
     {
-        owner = newOwner;
-        OwnerChanged(owner, newOwner);
+        nominatedOwner = _owner;
+        NewOwnerNominated(_owner);
+    }
+
+    function _setOwner()
+        internal
+    {
+        OwnerChanged(owner, nominatedOwner);
+        owner = nominatedOwner;
+        nominatedOwner = address(0);
+    }
+
+    function acceptOwnership()
+        external
+    {
+        require(msg.sender == nominatedOwner);
+        _setOwner();
     }
 
     modifier onlyOwner
@@ -48,5 +70,6 @@ contract Owned {
         _;
     }
 
+    event NewOwnerNominated(address newOwner);
     event OwnerChanged(address oldOwner, address newOwner);
 }

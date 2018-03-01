@@ -1,50 +1,68 @@
 /* PublicEtherNomin.sol: expose the internal functions in EtherNomin
  * for testing purposes.
  */
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.20;
+
 
 import "contracts/EtherNomin.sol";
+import "contracts/TokenState.sol";
+
 
 contract PublicEtherNomin is EtherNomin {
 
-	function PublicEtherNomin(Havven _havven, address _oracle,
+    function PublicEtherNomin(address _havven, address _oracle,
                               address _beneficiary,
                               uint initialEtherPrice,
-                              address _owner)
-		EtherNomin(_havven, _oracle, _beneficiary, initialEtherPrice, _owner)
-		public {}
+                              address _owner, TokenState initialState)
+        EtherNomin(_havven, _oracle, _beneficiary, initialEtherPrice, _owner, initialState)
+        public {}
 
-	function publicEtherValueAllowStale(uint n) 
-		public
-		view
-		returns (uint)
-	{
-		return etherValueAllowStale(n);
-	}
+    function publicEtherValueAllowStale(uint n) 
+        public
+        view
+        returns (uint)
+    {
+        return etherValueAllowStale(n);
+    }
 
-	function publicSaleProceedsEtherAllowStale(uint n)
-		public
-		view
-		returns (uint)
-	{
-		return saleProceedsEtherAllowStale(n);
-	}
+    function publicSaleProceedsEtherAllowStale(uint n)
+        public
+        view
+        returns (uint)
+    {
+        return saleProceedsEtherAllowStale(n);
+    }
 
-	function debugWithdrawAllEther(address recipient)
-		public
-	{
-		recipient.send(this.balance);
-	}
-	
-	function debugEmptyFeePool()
-		public
-	{
-		feePool = 0;
-	}
+    function publicLastPriceUpdate()
+        public
+        view
+        returns (uint)
+    {
+        return lastPriceUpdate;
+    }
 
-	function debugFreezeAccount(address target)
-		public
-	{
-		isFrozen[target] = true;
-	}
+    function currentTime()
+        public
+        returns (uint)
+    {
+        return now;
+    }
+
+    function debugWithdrawAllEther(address recipient)
+        public
+    {
+        recipient.transfer(balanceOf(this));
+    }
+    
+    function debugEmptyFeePool()
+        public
+    {
+        delete feePool;
+    }
+
+    function debugFreezeAccount(address target)
+        public
+    {
+        frozen[target] = true;
+    }
 }

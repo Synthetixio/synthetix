@@ -1,95 +1,104 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.20;
+
 
 import "contracts/Court.sol";
 
+
 contract PublicCourt is Court {
 
-	function PublicCourt(Havven _havven, EtherNomin _nomin, address _owner)
-		Court(_havven, _nomin, _owner)
-		public
-	{}
+    function PublicCourt(Havven _havven, EtherNomin _nomin, address _owner)
+        Court(_havven, _nomin, _owner)
+        public
+    {}
 
-	function _havven()
-		public 
-		view
-		returns (address)
-	{
-		return havven;
-	}
+    function _havven()
+        public 
+        view
+        returns (address)
+    {
+        return havven;
+    }
 
-	function _nomin()
-		public 
-		view
-		returns (address)
-	{
-		return nomin;
-	}
+    function _nomin()
+        public 
+        view
+        returns (address)
+    {
+        return nomin;
+    }
 
-	function _minVotingPeriod()
-		public
-		view
-		returns (uint)
-	{
-		return minVotingPeriod;
-	}
+    function _nextMotionID()
+        public
+        view
+        returns (uint)
+    {
+        return nextMotionID;
+    }
 
-	function _maxVotingPeriod()
-		public
-		view
-		returns (uint)
-	{
-		return maxVotingPeriod;
-	}
+    function _MIN_VOTING_PERIOD()
+        public
+        view
+        returns (uint)
+    {
+        return MIN_VOTING_PERIOD;
+    }
 
-	function _minConfirmationPeriod()
-		public
-		view
-		returns (uint)
-	{
-		return minConfirmationPeriod;
-	}
+    function _MAX_VOTING_PERIOD()
+        public
+        view
+        returns (uint)
+    {
+        return MAX_VOTING_PERIOD;
+    }
 
-	function _maxConfirmationPeriod()
-		public
-		view
-		returns (uint)
-	{
-		return maxConfirmationPeriod;
-	}
+    function _MIN_CONFIRMATION_PERIOD()
+        public
+        view
+        returns (uint)
+    {
+        return MIN_CONFIRMATION_PERIOD;
+    }
 
-	function _minRequiredParticipation()
-		public
-		view
-		returns (uint)
-	{
-		return minRequiredParticipation;
-	}
+    function _MAX_CONFIRMATION_PERIOD()
+        public
+        view
+        returns (uint)
+    {
+        return MAX_CONFIRMATION_PERIOD;
+    }
 
-	function _minRequiredMajority()
-		public
-		view
-		returns (uint)
-	{
-		return minRequiredMajority;
-	}
+    function _MIN_REQUIRED_PARTICIPATION()
+        public
+        view
+        returns (uint)
+    {
+        return MIN_REQUIRED_PARTICIPATION;
+    }
 
-	function _voteWeight(address account)
-		public
-		view
-		returns (uint)
-	{
-		return voteWeight[account];
-	}
+    function _MIN_REQUIRED_MAJORITY()
+        public
+        view
+        returns (uint)
+    {
+        return MIN_REQUIRED_MAJORITY;
+    }
 
-	function publicSetVotedYea(address account, address target)
-		public
-	{
-		setVotedYea(account, target);
-	}
+    function _voteWeight(address account, uint motionID)
+        public
+        view
+        returns (uint)
+    {
+        return voteWeight[account][motionID];
+    }
 
-	function publicSetVotedNay(address account, address target)
-		public
-	{
-		setVotedNay(account, target);
-	}
+    function publicSetupVote(uint voteIndex)
+        public
+        returns (uint)
+    {
+        uint weight = setupVote(voteIndex);
+        SetupVoteReturnValue(weight);
+        return weight;
+    }
+
+    event SetupVoteReturnValue(uint value);
 }

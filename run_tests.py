@@ -11,7 +11,6 @@ except:
 if raised_exception:
     raise Exception(ganache_error_message)
 
-
 if __name__ == '__main__':
     test_settings = load_test_settings()
 

@@ -1,34 +1,41 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.20;
 
 import "contracts/EtherNomin.sol";
 
 contract FakeCourt {
-		EtherNomin public nomin;
+    EtherNomin public nomin;
 
-		mapping(address => bool) public confirming;
-		mapping(address => bool) public votePasses;
+    mapping(uint => bool) public motionConfirming;
+    mapping(uint => bool) public motionPasses;
+    mapping(address => uint) public targetMotionID;
 
-		function setNomin(EtherNomin newNomin)
-			public
-		{
-			nomin = newNomin;
-		}
+    function setNomin(EtherNomin newNomin)
+        public
+    {
+        nomin = newNomin;
+    }
 
-		function setConfirming(address target, bool status)
-			public
-		{
-			confirming[target] = status;
-		}
+    function setConfirming(uint motionID, bool status)
+        public
+    {
+        motionConfirming[motionID] = status;
+    }
 
-		function setVotePasses(address target, bool status)
-			public
-		{
-			votePasses[target] = status;
-		}
+    function setVotePasses(uint motionID, bool status)
+        public
+    {
+        motionPasses[motionID] = status;
+    }
 
-		function confiscateBalance(address target)
-			public
-		{
-			nomin.confiscateBalance(target);
-		}
+    function setTargetMotionID(address target, uint motionID)
+        public
+    {
+        targetMotionID[target] = motionID;
+    }
+
+    function confiscateBalance(address target)
+        public
+    {
+        nomin.confiscateBalance(target);
+    }
 }
