@@ -25,7 +25,7 @@ occur.
 -----------------------------------------------------------------
 */
 
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.20;
 
 
 /* Safely manipulate unsigned fixed-point decimals at a given precision level.
@@ -35,10 +35,10 @@ pragma solidity ^0.4.19;
 contract SafeDecimalMath {
 
     // Number of decimal places in the representation.
-    uint public constant decimals = 18;
+    uint8 public constant decimals = 18;
 
     // The number representing 1.0.
-    uint public constant UNIT = 10 ** decimals;
+    uint public constant UNIT = 10 ** uint(decimals);
 
     /* True iff adding x and y will not overflow. */
     function addIsSafe(uint x, uint y)
@@ -55,7 +55,7 @@ contract SafeDecimalMath {
         internal
         returns (uint)
     {
-        require(addIsSafe(x, y));
+        require(x + y >= y);
         return x + y;
     }
 
@@ -74,7 +74,7 @@ contract SafeDecimalMath {
         internal
         returns (uint)
     {
-        require(subIsSafe(x, y));
+        require(y <= x);
         return x - y;
     }
 
@@ -87,8 +87,7 @@ contract SafeDecimalMath {
         if (x == 0) {
             return true;
         }
-        uint r = x * y;
-        return r / x == y;
+        return (x * y) / x == y;
     }
 
     /* Return the result of multiplying x and y, throwing an exception in case of overflow.*/
@@ -97,8 +96,12 @@ contract SafeDecimalMath {
         internal
         returns (uint)
     {
-        require(mulIsSafe(x, y));
-        return x * y;
+        if (x == 0) {
+            return 0;
+        }
+        uint p = x * y;
+        require(p / x == y);
+        return p;
     }
 
     /* Return the result of multiplying x and y, interpreting the operands as fixed-point
@@ -111,7 +114,7 @@ contract SafeDecimalMath {
      * contain small enough fractional components. It would also marginally diminish the 
      * domain this function is defined upon. 
      */
-    function safeDecMul(uint x, uint y)
+    function safeMul_dec(uint x, uint y)
         pure
         internal
         returns (uint)
@@ -140,14 +143,14 @@ contract SafeDecimalMath {
         // Although a 0 denominator already throws an exception,
         // it is equivalent to a THROW operation, which consumes all gas.
         // A require statement emits REVERT instead, which remits remaining gas.
-        require(divIsSafe(x, y));
+        require(y != 0);
         return x / y;
     }
 
     /* Return the result of dividing x by y, interpreting the operands as fixed point decimal numbers.
      * Throws an exception in case of overflow or zero divisor; x must be less than 2^256 / UNIT.
      * Internal rounding is downward: a similar caveat holds as with safeDecMul().*/
-    function safeDecDiv(uint x, uint y)
+    function safeDiv_dec(uint x, uint y)
         pure
         internal
         returns (uint)

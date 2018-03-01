@@ -6,6 +6,7 @@ file:       HavvenEscrow.sol
 version:    0.3
 author:     Anton Jurisevic
             Dominic Romanowski
+            Mike Spain
 
 date:       2018-02-07
 
@@ -33,17 +34,19 @@ main fee pool to be redistributed in the next fee period.
 
 */
 
+pragma solidity ^0.4.20;
+
+
 import "contracts/SafeDecimalMath.sol";
 import "contracts/Owned.sol";
 import "contracts/Havven.sol";
 import "contracts/EtherNomin.sol";
+import "contracts/LimitedSetup.sol";
 
-pragma solidity ^0.4.19;
 
-contract HavvenEscrow is Owned, SafeDecimalMath {    
+contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {    
     // The corresponding Havven contract.
     Havven public havven;
-    EtherNomin public nomin;
 
     // Lists of (timestamp, quantity) pairs per account, sorted in ascending time order.
     // These are the times at which each given quantity of havvens vests.
@@ -56,13 +59,28 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
     uint public totalVestedBalance;
 
 
-    function HavvenEscrow(address _owner, Havven _havven, EtherNomin _nomin)
+    /* ========== CONSTRUCTOR ========== */
+
+    function HavvenEscrow(address _owner, Havven _havven)
         Owned(_owner)
         public
     {
         havven = _havven;
-        nomin = _nomin;
     }
+
+
+    /* ========== SETTERS ========== */
+
+    function setHavven(Havven _havven)
+        external
+        onlyOwner
+    {
+        havven = _havven;
+        HavvenUpdated(_havven);
+    }
+
+
+    /* ========== VIEW FUNCTIONS ========== */
 
     /* The number of vesting dates in an account's schedule. */
     function numVestingEntries(address account)
@@ -119,7 +137,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
     /* Obtain the next schedule entry that will vest for a given user.
      * The return value is a pair (timestamp, havven quantity) */
     function getNextVestingEntry(address account)
-        public
+        external
         view
         returns (uint[2])
     {
@@ -132,7 +150,7 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
 
     /* Obtain the time at which the next schedule entry will vest for a given user. */
     function getNextVestingTime(address account)
-        public
+        external
         view
         returns (uint)
     {
@@ -143,10 +161,9 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         return getVestingTime(account, index);
     }
 
-
     /* Obtain the quantity which the next schedule entry will vest for a given user. */
     function getNextVestingQuantity(address account)
-        public
+        external
         view
         returns (uint)
     {
@@ -157,91 +174,28 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         return getVestingQuantity(account, index);
     }
 
-    /* The current pool of fees inside this contract. */
-    function feePool()
-        public
-        view
-        returns (uint)
-    {
-        return nomin.balanceOf(this);
-    }
 
-    function setHavven(Havven newHavven)
-        public
+    /* ========== MUTATIVE FUNCTIONS ========== */
+
+    /* Withdraws a quantity of havvens back to the havven contract. */
+    function withdrawHavvens(uint quantity)
+        external
         onlyOwner
+        setupFunction
     {
-        havven = newHavven;
-        HavvenUpdated(newHavven);
-    }
-
-    function setNomin(EtherNomin newNomin)
-        public
-        onlyOwner
-    {
-        nomin = newNomin;
-        NominUpdated(newNomin);
-    } 
-
-    /* Return the current fee balance back to the main pool to roll over to the
-     * next fee period. */
-    function remitFees()
-        public
-    {
-        // Only the havven contract should be able to force
-        // the escrow contract to remit its fees back to the common pool.
-        require(Havven(msg.sender) == havven);
-        uint feeBalance = feePool();
-        // Ensure balance is nonzero so that the fee pool function does not revert.
-        if (feeBalance != 0) {
-            nomin.donateToFeePool(feePool());
-        }
-    }
-
-    /* Force a contract fee withdrawal. */
-    function withdrawFeePool()
-        public
-        onlyOwner
-    {
-        havven.withdrawFeeEntitlement();
-        ContractFeesWithdrawn(now, feePool());
-    }
-
-    /* Allow a particular user to withdraw the fees owed to them. */
-    function withdrawFees()
-        public
-    {
-        // If fees need to be withdrawn into this contract, then withdraw them.
-        if (!havven.hasWithdrawnLastPeriodFees(this)) {
-            withdrawFeePool();
-            // Since fees were remitted back to havven last time the fee period rolled over,
-            // which would set feePool()'s result to zero, so we are justified in using it
-            // as the withdrawn quantity here.
-            ContractFeesWithdrawn(now, feePool());
-        }
-        // exception will be thrown if totalVestedBalance will be 0
-        uint entitlement = nomin.priceToSpend(safeDecDiv(safeDecMul(totalVestedAccountBalance[msg.sender], feePool()), totalVestedBalance));
-        if (entitlement != 0) {
-            nomin.transfer(msg.sender, entitlement);
-            FeesWithdrawn(msg.sender, msg.sender, now, entitlement);
-        }
+        havven.transfer(havven, quantity);
     }
 
     /* Destroy the vesting information associated with an account. */
     function purgeAccount(address account)
+        external
         onlyOwner
-        public
+        setupFunction
     {
         delete vestingSchedules[account];
         totalVestedBalance = safeSub(totalVestedBalance, totalVestedAccountBalance[account]);
-        totalVestedAccountBalance[account] = 0;
-    }
-
-    /* Withdraws a quantity of havvens back to the havven contract. */
-    function withdrawHavvens(uint quantity)
-        onlyOwner
-        external
-    {
-        havven.transfer(havven, quantity);
+        delete totalVestedAccountBalance[account];
+        SchedulePurged(account);
     }
 
     /* Add a new vesting entry at a given time and quantity to an account's schedule.
@@ -252,12 +206,15 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
      * Note; although this function could technically be used to produce unbounded
      * arrays, it's only in the foundation's command to add to these lists. */
     function appendVestingEntry(address account, uint time, uint quantity)
-        onlyOwner
         public
+        onlyOwner
+        setupFunction
     {
         // No empty or already-passed vesting entries allowed.
         require(now < time);
         require(quantity != 0);
+        totalVestedBalance = safeAdd(totalVestedBalance, quantity);
+        require(totalVestedBalance <= havven.balanceOf(this));
 
         if (vestingSchedules[account].length == 0) {
             totalVestedAccountBalance[account] = quantity;
@@ -269,34 +226,39 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         }
 
         vestingSchedules[account].push([time, quantity]);
-        totalVestedBalance = safeAdd(totalVestedBalance, quantity);
     }
 
-    /* Construct a vesting schedule to release a quantity at regular intervals ending
+    /* Construct a vesting schedule to release a quantity of havvens at regular intervals ending
      * at a given time. */
-    function addRegularVestingSchedule(address account, uint conclusion_time, uint quantity, uint vesting_periods)
+    function addRegularVestingSchedule(address account, uint conclusionTime,
+                                       uint totalQuantity, uint vestingPeriods)
+        external
         onlyOwner
-        public
+        setupFunction
     {
-        // safe sub to avoid now > conclusion_time
-        uint time_period = safeSub(conclusion_time, now);
-        // only quantity is UNIT
-        uint item_quantity = safeDiv(quantity, vesting_periods);
-        uint quant_sum = safeMul(item_quantity, (vesting_periods-1));
-        uint period_length = safeDiv(time_period, vesting_periods); // (zero vesting periods doesn't work.)
+        // safeSub prevents a conclusionTime in the past.
+        uint totalDuration = safeSub(conclusionTime, now);
 
-        for (uint i = 1; i < vesting_periods; i++) {
-            uint item_time_period = safeMul(i, period_length);
-            appendVestingEntry(account, safeAdd(now, item_time_period), item_quantity);
+        // safeDiv prevents zero vesting periods.
+        uint periodQuantity = safeDiv(totalQuantity, vestingPeriods);
+        uint periodDuration = safeDiv(totalDuration, vestingPeriods);
+
+        // Generate all but the last period.
+        for (uint i = 1; i < vestingPeriods; i++) {
+            uint periodConclusionTime = safeAdd(now, safeMul(i, periodDuration));
+            appendVestingEntry(account, periodConclusionTime, periodQuantity);
         }
-        appendVestingEntry(account, conclusion_time, safeSub(quantity, quant_sum));
+
+        // Generate the final period. Quantities left out due to integer division truncation are incorporated here.
+        uint finalPeriodQuantity = safeSub(totalQuantity, safeMul(periodQuantity, (vestingPeriods - 1)));
+        appendVestingEntry(account, conclusionTime, finalPeriodQuantity);
     }
 
     /* Allow a user to withdraw any tokens that have vested. */
     function vest() 
-        public
+        external
     {
-        uint total = 0;
+        uint total;
         for (uint i = 0; i < numVestingEntries(msg.sender); i++) {
             uint time = getVestingTime(msg.sender, i);
             // The list is sorted; when we reach the first future time, bail out.
@@ -316,9 +278,13 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
         if (total != 0) {
             totalVestedBalance = safeSub(totalVestedBalance, total);
             havven.transfer(msg.sender, total);
-            Vested(msg.sender, msg.sender, now, total);
+            Vested(msg.sender, msg.sender,
+                   now, total);
         }
     }
+
+
+    /* ========== EVENTS ========== */
 
     event HavvenUpdated(address newHavven);
 
@@ -330,4 +296,5 @@ contract HavvenEscrow is Owned, SafeDecimalMath {
 
     event Vested(address beneficiary, address indexed beneficiaryIndex, uint time, uint value);
 
+    event SchedulePurged(address account);
 }

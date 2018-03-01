@@ -1,10 +1,15 @@
 import tests.test_Court
 import tests.test_Deploy
-import tests.test_ERC20Tokens
+import tests.test_ExternStateProxyToken
+import tests.test_ExternStateProxyFeeToken
 import tests.test_EtherNomin
 import tests.test_FeeCollection
 import tests.test_Havven
 import tests.test_HavvenEscrow
+import tests.test_LimitedSetup
 import tests.test_Owned
+import tests.test_Proxy
 import tests.test_SafeDecimalMath
+import tests.test_SelfDestructible
+import tests.test_TokenState
 import tests.test_Upgrade

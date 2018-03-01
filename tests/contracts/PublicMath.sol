@@ -1,11 +1,12 @@
 /* PublicMath.sol: expose the internal functions in SafeDecimalMath
  * for testing purposes.
  */
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.20;
 
 import "contracts/SafeDecimalMath.sol";
 
 contract PublicMath is SafeDecimalMath {
+    
     function pubAddIsSafe(uint x, uint y)
         pure
         public
@@ -46,7 +47,7 @@ contract PublicMath is SafeDecimalMath {
         return mulIsSafe(x, y);
     }
 
-	function pubSafeMul(uint x, uint y)
+    function pubSafeMul(uint x, uint y)
         pure
         public
         returns (uint)
@@ -54,12 +55,12 @@ contract PublicMath is SafeDecimalMath {
         return safeMul(x, y);
     }
 
-    function pubSafeDecMul(uint x, uint y)
+    function pubSafeMul_dec(uint x, uint y)
         pure
         public
         returns (uint)
     {
-        return safeDecMul(x, y);
+        return safeMul_dec(x, y);
     }
 
     function pubDivIsSafe(uint x, uint y)
@@ -70,7 +71,7 @@ contract PublicMath is SafeDecimalMath {
         return divIsSafe(x, y);
     }
 
-	function pubSafeDiv(uint x, uint y)
+    function pubSafeDiv(uint x, uint y)
         pure
         public
         returns (uint)
@@ -78,12 +79,12 @@ contract PublicMath is SafeDecimalMath {
         return safeDiv(x, y);
     }
 
-    function pubSafeDecDiv(uint x, uint y)
+    function pubSafeDiv_dec(uint x, uint y)
         pure
         public
         returns (uint)
     {
-        return safeDecDiv(x, y);
+        return safeDiv_dec(x, y);
     }
 
     function pubIntToDec(uint i)
