@@ -120,7 +120,8 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
     // Average account balances in the last completed fee period. This is proportional
     // to that account's last period fee entitlement.
     // (i.e. currentBalanceSum for the previous period divided through by duration)
-    // WARNING: This may be out of date.
+    // WARNING: This may not have been updated for the latest fee period at the
+    //          time it is queried.
     // range: decimals; units: havvens
     mapping(address => uint) public lastAverageBalance;
 
@@ -129,7 +130,8 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
     // the vote duration must be no longer than the fee period in order to guarantee that 
     // no portion of a fee period used for determining vote weights falls within the
     // duration of a vote it contributes to.
-    // WARNING: This may be out of date.
+    // WARNING: This may not have been updated for the latest fee period at the
+    //          time it is queried.
     mapping(address => uint) public penultimateAverageBalance;
 
     // The time an account last made a transfer.
