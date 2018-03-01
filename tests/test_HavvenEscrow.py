@@ -119,7 +119,7 @@ class TestHavvenEscrow(unittest.TestCase):
         cls.n_transfer = lambda self, sender, recipient, quantity: mine_tx(
             cls.nomin.functions.transfer(recipient, quantity).transact({'from': sender}))
         cls.n_feePool = lambda self: cls.nomin.functions.feePool().call()
-        cls.n_nominPool = lambda self: cls.nomin.functions.nominPool_dec().call()
+        cls.n_nominPool = lambda self: cls.nomin.functions.nominPool().call()
         cls.n_priceToSpend = lambda self, v: cls.nomin.functions.priceToSpend(v).call()
 
         cls.owner = lambda self: cls.escrow.functions.owner().call()

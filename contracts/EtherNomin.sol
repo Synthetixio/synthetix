@@ -79,20 +79,20 @@ contract EtherNomin is ExternStateProxyFeeToken {
     address public beneficiary;
 
     // Nomins in the pool ready to be sold.
-    uint public nominPool_dec;
+    uint public nominPool;
 
     // Impose a 50 basis-point fee for buying from and selling to the nomin pool.
-    uint public poolFeeRate_dec = UNIT / 200;
+    uint public poolFeeRate = UNIT / 200;
 
     // The minimum purchasable quantity of nomins is 1 cent.
-    uint constant MINIMUM_PURCHASE_dec = UNIT / 100;
+    uint constant MINIMUM_PURCHASE = UNIT / 100;
 
     // When issuing, nomins must be overcollateralised by this ratio.
-    uint constant MINIMUM_ISSUANCE_RATIO_dec =  2 * UNIT;
+    uint constant MINIMUM_ISSUANCE_RATIO =  2 * UNIT;
 
     // If the collateralisation ratio of the contract falls below this level,
     // immediately begin liquidation.
-    uint constant AUTO_LIQUIDATION_RATIO_dec = UNIT;
+    uint constant AUTO_LIQUIDATION_RATIO = UNIT;
 
     // The liquidation period is the duration that must pass before the liquidation period is complete.
     // It can be extended up to a given duration.
@@ -106,7 +106,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
     uint public liquidationTimestamp = ~uint(0);
 
     // Ether price from oracle (fiat per ether).
-    uint public etherPrice_dec;
+    uint public etherPrice;
 
     // Last time the price was updated.
     uint public lastPriceUpdate;
@@ -123,7 +123,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
 
     function EtherNomin(address _havven, address _oracle,
                         address _beneficiary,
-                        uint initialEtherPrice_dec,
+                        uint initialEtherPrice,
                         address _owner, TokenState initialState)
         ExternStateProxyFeeToken("Ether-Backed USD Nomins", "eUSD",
                                  15 * UNIT / 10000, // nomin transfers incur a 15 bp fee
@@ -135,9 +135,9 @@ contract EtherNomin is ExternStateProxyFeeToken {
         oracle = _oracle;
         beneficiary = _beneficiary;
 
-        etherPrice_dec = initialEtherPrice_dec;
+        etherPrice = initialEtherPrice;
         lastPriceUpdate = now;
-        PriceUpdated(etherPrice_dec);
+        PriceUpdated(etherPrice);
 
         // It should not be possible to transfer to the nomin contract itself.
         frozen[this] = true;
@@ -170,13 +170,13 @@ contract EtherNomin is ExternStateProxyFeeToken {
         BeneficiaryUpdated(_beneficiary);
     }
 
-    function setPoolFeeRate(uint _poolFeeRate_dec)
+    function setPoolFeeRate(uint _poolFeeRate)
         external
         optionalProxy_onlyOwner
     {
-        require(_poolFeeRate_dec <= UNIT);
-        poolFeeRate_dec = _poolFeeRate_dec;
-        PoolFeeRateUpdated(_poolFeeRate_dec);
+        require(_poolFeeRate <= UNIT);
+        poolFeeRate = _poolFeeRate;
+        PoolFeeRateUpdated(_poolFeeRate);
     }
 
     function setStalePeriod(uint _stalePeriod)
@@ -193,13 +193,13 @@ contract EtherNomin is ExternStateProxyFeeToken {
     /* Return the equivalent fiat value of the given quantity
      * of ether at the current price.
      * Reverts if the price is stale. */
-    function fiatValue(uint ether_dec)
+    function fiatValue(uint eth)
         public
         view
         priceNotStale
         returns (uint)
     {
-        return safeMul_dec(ether_dec, etherPrice_dec);
+        return safeMul_dec(eth, etherPrice);
     }
 
     /* Return the current fiat value of the contract's balance.
@@ -216,22 +216,22 @@ contract EtherNomin is ExternStateProxyFeeToken {
     /* Return the equivalent ether value of the given quantity
      * of fiat at the current price.
      * Reverts if the price is stale. */
-    function etherValue(uint fiat_dec)
+    function etherValue(uint fiat)
         public
         view
         priceNotStale
         returns (uint)
     {
-        return safeDiv_dec(fiat_dec, etherPrice_dec);
+        return safeDiv_dec(fiat, etherPrice);
     }
 
     /* The same as etherValue(), but without the stale price check. */
-    function etherValueAllowStale(uint fiat_dec) 
+    function etherValueAllowStale(uint fiat) 
         internal
         view
         returns (uint)
     {
-        return safeDiv_dec(fiat_dec, etherPrice_dec);
+        return safeDiv_dec(fiat, etherPrice);
     }
 
     /* Return the units of fiat per nomin in the supply.
@@ -251,7 +251,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         view
         returns (uint)
     {
-        return nominPool_dec + totalSupply;
+        return nominPool + totalSupply;
     }
 
     /* Return the fee charged on a purchase or sale of n nomins. */
@@ -260,7 +260,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         view
         returns (uint)
     {
-        return safeMul_dec(n, poolFeeRate_dec);
+        return safeMul_dec(n, poolFeeRate);
     }
 
     /* Return the fiat cost (including fee) of purchasing n nomins.
@@ -402,7 +402,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         // (so we can't lock ourselves out of updating the oracle for longer than this)
         require(lastPriceUpdate < timeSent && timeSent < now + 10 minutes);
 
-        etherPrice_dec = price;
+        etherPrice = price;
         lastPriceUpdate = timeSent;
         PriceUpdated(price);
     }
@@ -422,8 +422,8 @@ contract EtherNomin is ExternStateProxyFeeToken {
         // Price staleness check occurs inside the call to fiatBalance.
         // Safe additions are unnecessary here, as either the addition is checked on the following line
         // or the overflow would cause the requirement not to be satisfied.
-        require(fiatBalance() >= safeMul_dec(safeAdd(_nominCap(), n), MINIMUM_ISSUANCE_RATIO_dec));
-        nominPool_dec = safeAdd(nominPool_dec, n);
+        require(fiatBalance() >= safeMul_dec(safeAdd(_nominCap(), n), MINIMUM_ISSUANCE_RATIO));
+        nominPool = safeAdd(nominPool, n);
         PoolReplenished(n, msg.value);
     }
 
@@ -436,8 +436,8 @@ contract EtherNomin is ExternStateProxyFeeToken {
         optionalProxy_onlyOwner
     {
         // Require that there are enough nomins in the accessible pool to burn
-        require(nominPool_dec >= n);
-        nominPool_dec = safeSub(nominPool_dec, n);
+        require(nominPool >= n);
+        nominPool = safeSub(nominPool, n);
         PoolDiminished(n);
     }
 
@@ -456,11 +456,11 @@ contract EtherNomin is ExternStateProxyFeeToken {
         optionalProxy
     {
         // Price staleness check occurs inside the call to purchaseEtherCost.
-        require(n >= MINIMUM_PURCHASE_dec &&
+        require(n >= MINIMUM_PURCHASE &&
                 msg.value == purchaseCostEther(n));
         address sender = messageSender;
-        // sub requires that nominPool_dec >= n
-        nominPool_dec = safeSub(nominPool_dec, n);
+        // sub requires that nominPool >= n
+        nominPool = safeSub(nominPool, n);
         state.setBalanceOf(sender, safeAdd(state.balanceOf(sender), n));
         Purchased(sender, sender, n, msg.value);
         Transfer(0, sender, n);
@@ -493,7 +493,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         address sender = messageSender;
         // sub requires that the balance is greater than n
         state.setBalanceOf(sender, safeSub(state.balanceOf(sender), n));
-        nominPool_dec = safeAdd(nominPool_dec, n);
+        nominPool = safeAdd(nominPool, n);
         Sold(sender, sender, n, proceeds);
         Transfer(sender, 0, n);
         totalSupply = safeSub(totalSupply, n);
@@ -547,7 +547,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         optionalProxy_onlyOwner
     {
         require(isLiquidating());
-        require(_nominCap() == 0 || collateralisationRatio() >= AUTO_LIQUIDATION_RATIO_dec);
+        require(_nominCap() == 0 || collateralisationRatio() >= AUTO_LIQUIDATION_RATIO);
         liquidationTimestamp = ~uint(0);
         liquidationPeriod = DEFAULT_LIQUIDATION_PERIOD;
         LiquidationTerminated();
@@ -637,7 +637,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
     modifier postCheckAutoLiquidate
     {
         _;
-        if (!isLiquidating() && _nominCap() != 0 && collateralisationRatio() < AUTO_LIQUIDATION_RATIO_dec) {
+        if (!isLiquidating() && _nominCap() != 0 && collateralisationRatio() < AUTO_LIQUIDATION_RATIO) {
             beginLiquidation();
         }
     }
