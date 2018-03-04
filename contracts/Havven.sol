@@ -478,5 +478,5 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
 
     event FeePeriodDurationUpdated(uint duration);
 
-    event FeesWithdrawn(address account, address indexed accountIndex, uint fees);
+    event FeesWithdrawn(address account, address indexed accountIndex, uint value);
 }
