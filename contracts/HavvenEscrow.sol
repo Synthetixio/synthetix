@@ -195,7 +195,6 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
         delete vestingSchedules[account];
         totalVestedBalance = safeSub(totalVestedBalance, totalVestedAccountBalance[account]);
         delete totalVestedAccountBalance[account];
-        SchedulePurged(account);
     }
 
     /* Add a new vesting entry at a given time and quantity to an account's schedule.
@@ -290,11 +289,5 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
 
     event NominUpdated(address newNomin);
 
-    event ContractFeesWithdrawn(uint time, uint value);
-
-    event FeesWithdrawn(address recipient, address indexed recipientIndex, uint time, uint value);
-
     event Vested(address beneficiary, address indexed beneficiaryIndex, uint time, uint value);
-
-    event SchedulePurged(address account);
 }
