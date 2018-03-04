@@ -49,19 +49,13 @@ contract Owned {
         NewOwnerNominated(_owner);
     }
 
-    function _setOwner()
-        internal
-    {
-        OwnerChanged(owner, nominatedOwner);
-        owner = nominatedOwner;
-        nominatedOwner = address(0);
-    }
-
     function acceptOwnership()
         external
     {
         require(msg.sender == nominatedOwner);
-        _setOwner();
+        OwnerChanged(owner, nominatedOwner);
+        owner = nominatedOwner;
+        nominatedOwner = address(0);
     }
 
     modifier onlyOwner
