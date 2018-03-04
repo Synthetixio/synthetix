@@ -46,7 +46,7 @@ contract Owned {
         onlyOwner
     {
         nominatedOwner = _owner;
-        NewOwnerNominated(_owner);
+        OwnerNominated(_owner);
     }
 
     function acceptOwnership()
@@ -64,6 +64,6 @@ contract Owned {
         _;
     }
 
-    event NewOwnerNominated(address newOwner);
+    event OwnerNominated(address newOwner);
     event OwnerChanged(address oldOwner, address newOwner);
 }
