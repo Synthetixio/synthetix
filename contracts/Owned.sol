@@ -33,7 +33,7 @@ pragma solidity ^0.4.20;
 
 contract Owned {
     address public owner;
-    address nominatedOwner;
+    address public nominatedOwner;
 
     function Owned(address _owner)
         public
