@@ -49,7 +49,7 @@ class TestOwned(unittest.TestCase):
         self.assertReverts(self.nominateOwner, new_owner, old_owner)
         nominated_tx = self.nominateOwner(old_owner, new_owner)
         event_data = get_event_data_from_log(self.owned_event_map, nominated_tx.logs[0])
-        self.assertEqual(event_data['event'], "NewOwnerNominated")
+        self.assertEqual(event_data['event'], "OwnerNominated")
         self.assertEqual(event_data['args']['newOwner'], new_owner)
 
         self.assertEqual(self.owner(), old_owner)
