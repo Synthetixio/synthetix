@@ -3,6 +3,7 @@ import unittest
 from utils.deployutils import compile_contracts, attempt_deploy, mine_tx, MASTER, DUMMY
 from utils.deployutils import take_snapshot, restore_snapshot
 from utils.testutils import assertReverts, ZERO_ADDRESS
+from utils.testutils import generate_topic_event_map, get_event_data_from_log
 
 OWNED_SOURCE = "contracts/Owned.sol"
 
@@ -30,10 +31,13 @@ class TestOwned(unittest.TestCase):
         cls.owned, txr = attempt_deploy(compiled, 'Owned', MASTER, [MASTER])
 
         cls.owner = lambda self: cls.owned.functions.owner().call()
+        cls.nominatedOwner = lambda self: cls.owned.functions.nominatedOwner().call()
         cls.nominateOwner = lambda self, sender, newOwner: mine_tx(
             cls.owned.functions.nominateOwner(newOwner).transact({'from': sender}))
         cls.acceptOwnership = lambda self, sender: mine_tx(
             cls.owned.functions.acceptOwnership().transact({'from': sender}))
+
+        cls.owned_event_map = generate_topic_event_map(compiled['Owned']['abi'])
 
     def test_owner_is_master(self):
         self.assertEqual(self.owner(), MASTER)
@@ -43,10 +47,16 @@ class TestOwned(unittest.TestCase):
         new_owner = DUMMY
 
         self.assertReverts(self.nominateOwner, new_owner, old_owner)
-        self.nominateOwner(old_owner, new_owner)
+        nominated = self.nominateOwner(old_owner, new_owner)
+        event_data = get_event_data_from_log(self.owned_event_map, nominated.logs[0])
+        self.assertEqual(event_data['event'], "NewOwnerNominated")
+        self.assertEqual(event_data.args[0], new_owner)
+
         self.assertEqual(self.owner(), old_owner)
+        self.assertEqual(self.nominatedOwner(), new_owner)
         self.assertReverts(self.nominateOwner, new_owner, old_owner)
         self.acceptOwnership(new_owner)
+        self.assertEqual(self.nominatedOwner(), ZERO_ADDRESS)
         self.assertEqual(self.owner(), new_owner)
         self.assertReverts(self.nominateOwner, old_owner, new_owner)
         self.nominateOwner(new_owner, old_owner)
