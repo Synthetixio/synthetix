@@ -38,7 +38,7 @@ contract ExternStateProxyToken is SafeDecimalMath, Proxyable {
 
     /* ========== STATE VARIABLES ========== */
 
-    // state that stores balances and allowances.
+    // Stores balances and allowances.
     TokenState public state;
 
     // Other ERC20 fields
