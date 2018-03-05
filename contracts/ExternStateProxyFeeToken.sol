@@ -240,7 +240,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         feePool = safeSub(feePool, value);
         state.setBalanceOf(account, safeAdd(state.balanceOf(account), value));
 
-        FeesWithdrawn(account, value);
+        FeesWithdrawn(account, account, value);
 
         return true;
     }
@@ -278,7 +278,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
 
     event FeeAuthorityUpdated(address feeAuthority);
 
-    event FeesWithdrawn(address indexed account, uint value);
+    event FeesWithdrawn(address account, address indexed accountIndex, uint value);
 
     event FeesDonated(address donor, address indexed donorIndex, uint value);
 }
