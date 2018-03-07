@@ -3,7 +3,7 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       Proxy.sol
-version:    0.3
+version:    0.4
 author:     Anton Jurisevic
 
 date:       2018-2-28
@@ -19,10 +19,6 @@ A proxy contract that, if it does not recognise the function
 being called on it, passes all value and call data to an
 underlying target contract.
 
-The proxy can also optionally activate metropolis operations,
-which will allow more-versatile return values once that fork
-has hit.
-
 Additionally this file contains the Proxyable interface.
 Any contract the proxy wraps must implement this, in order
 for the proxy to be able to pass msg.sender into the underlying
@@ -32,15 +28,12 @@ contract as the state parameter, messageSender.
 */
 
 
-/* With inspiration from Martin Swende and Zeppelin.*/
-
 pragma solidity ^0.4.20;
 
 import "contracts/Owned.sol";
 
 contract Proxy is Owned {
     Proxyable target;
-    bool public metropolis;
 
     function Proxy(Proxyable _target, address _owner)
         Owned(_owner)
@@ -59,14 +52,6 @@ contract Proxy is Owned {
         TargetChanged(_target);
     }
 
-    // Allow the use of the more-flexible metropolis RETURNDATACOPY/SIZE operations.
-    function _setMetropolis(bool _metropolis)
-        external
-        onlyOwner
-    {
-        metropolis = _metropolis;
-    }
-
     function () 
         public
         payable
@@ -77,23 +62,13 @@ contract Proxy is Owned {
             let free_ptr := mload(0x40)
             calldatacopy(free_ptr, 0, calldatasize)
 
-            // Use metropolis if possible.
-            let met_cond := sload(metropolis_slot)
-            if met_cond
-            {
-                // Forward all gas, ether, and data to the target contract.
-                let result := call(gas, sload(target_slot), callvalue, free_ptr, calldatasize, 0, 0)
-                returndatacopy(free_ptr, 0, returndatasize)
+            // Forward all gas, ether, and data to the target contract.
+            let result := call(gas, sload(target_slot), callvalue, free_ptr, calldatasize, 0, 0)
+            returndatacopy(free_ptr, 0, returndatasize)
 
-                // Revert if the call failed, otherwise return the result.
-                if iszero(result) { revert(free_ptr, calldatasize) }
-                return(free_ptr, returndatasize)
-            }
-            // If metropolis is unavailable, use static 32-byte return values.
-            let ret_size := 32
-            let result := call(gas, sload(target_slot), callvalue, free_ptr, calldatasize, free_ptr, ret_size)
+            // Revert if the call failed, otherwise return the result.
             if iszero(result) { revert(free_ptr, calldatasize) }
-            return(free_ptr, ret_size)
+            return(free_ptr, returndatasize)
         } 
     }
 
