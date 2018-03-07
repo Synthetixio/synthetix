@@ -413,7 +413,6 @@ class TestHavvenEscrow(unittest.TestCase):
         self.assertEqual(self.getNextVestingQuantity(alice), 1000)
 
         tx_receipt = self.purgeAccount(MASTER, alice)
-        self.assertEqual(get_event_data_from_log(self.escrow_event_dict, tx_receipt.logs[0])['event'], 'SchedulePurged')
 
         self.assertEqual(self.numVestingEntries(alice), 0)
         self.assertEqual(self.totalVestedBalance(), 0)
