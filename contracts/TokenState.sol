@@ -55,6 +55,7 @@ contract TokenState is Owned {
         public
     {
         associatedContract = _associatedContract;
+        AssociatedContractUpdated(_associatedContract);
     }
 
     /* ========== SETTERS ========== */
@@ -65,6 +66,7 @@ contract TokenState is Owned {
         onlyOwner
     {
         associatedContract = _associatedContract;
+        AssociatedContractUpdated(_associatedContract);
     }
 
     function setAllowance(address tokenOwner, address spender, uint value)
@@ -89,4 +91,8 @@ contract TokenState is Owned {
         require(msg.sender == associatedContract);
         _;
     }
+
+    /* ========== EVENTS ========== */
+
+    event AssociatedContractUpdated(address _associatedContract);
 }
