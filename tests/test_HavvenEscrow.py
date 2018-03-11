@@ -600,8 +600,8 @@ class TestHavvenEscrow(unittest.TestCase):
         self.assertEqual(self.getNextVestingTime(alice), 0)
         self.assertEqual(self.getNextVestingQuantity(alice), 0)
 
-        # Bad (zero) quantities
         time = block_time()
+        # Bad (zero) quantities
         self.assertReverts(self.addVestingSchedule, MASTER, eve, [time + 1000, time + 2000], [0, UNIT])
         self.assertReverts(self.addVestingSchedule, MASTER, eve, [time + 1000, time + 2000], [UNIT, 0])
 
