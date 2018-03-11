@@ -806,10 +806,10 @@ class TestCourt(unittest.TestCase):
         self.assertReverts(self.approveMotion, voter, motion_id)
         tx_receipt = self.approveMotion(owner, motion_id)
 
-        # Check that event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[0])['event'], "AccountFrozen")
-        self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[1])['event'], "MotionClosed")
-        self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[2])['event'], "MotionApproved")
+        self.assertEqual(get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[1])['event'], "Transfer")
+        self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[2])['event'], "MotionClosed")
+        self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[3])['event'], "MotionApproved")
         self.assertEqual(self.motionStartTime(motion_id), 0)
         self.assertEqual(self.votesFor(motion_id), 0)
 
@@ -887,17 +887,19 @@ class TestCourt(unittest.TestCase):
         self.assertEqual(veto_data['args']['motionID'], expected_motionID)
 
     def validate_MotionApproved_data(self, tx_receipt, log_index, expected_motionID):
-        veto_data = get_event_data_from_log(self.court_event_dict, tx_receipt.logs[log_index])
-        self.assertEqual(veto_data['event'], "MotionApproved")
-        self.assertEqual(veto_data['args']['motionID'], expected_motionID)
+        approved_data = get_event_data_from_log(self.court_event_dict, tx_receipt.logs[log_index])
+        self.assertEqual(approved_data['event'], "MotionApproved")
+        self.assertEqual(approved_data['args']['motionID'], expected_motionID)
 
     def validate_Confiscation_data(self, tx_receipt, log_index, expected_target, expected_balance=None):
-        veto_data = get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[log_index])
-        self.assertEqual(veto_data['event'], "AccountFrozen")
-        self.assertEqual(veto_data['args']['target'], expected_target)
+        freeze_data = get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[log_index])
+        self.assertEqual(freeze_data['event'], "AccountFrozen")
+        self.assertEqual(freeze_data['args']['target'], expected_target)
         if expected_balance is not None:
-            self.assertEqual(veto_data['args']['balance'], expected_balance)
-
+            self.assertEqual(freeze_data['args']['balance'], expected_balance)
+        xfer_data = get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[log_index + 1])
+        self.assertEqual(xfer_data['event'], "Transfer")
+        
     def test_multi_vote(self):
         owner = self.owner()
         voting_period = self.votingPeriod()
@@ -1136,8 +1138,8 @@ class TestCourt(unittest.TestCase):
             self.assertTrue(self.nominIsFrozen(target))
 
             self.validate_Confiscation_data(tx_receipt, 0, target)
-            self.validate_MotionClosed_data(tx_receipt, 1, motion)
-            self.validate_MotionApproved_data(tx_receipt, 2, motion)
+            self.validate_MotionClosed_data(tx_receipt, 2, motion)
+            self.validate_MotionApproved_data(tx_receipt, 3, motion)
 
         for motion in [not_quite_quorum_vote, zero_participation_vote,
                        insufficient_majority_vote, no_majority_vote]:
