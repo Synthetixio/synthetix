@@ -107,9 +107,10 @@ import "contracts/EtherNomin.sol";
 import "contracts/HavvenEscrow.sol";
 import "contracts/TokenState.sol";
 import "contracts/SelfDestructible.sol";
+import "contracts/LimitedSetup.sol";
 
 
-contract Havven is ExternStateProxyToken, SelfDestructible {
+contract Havven is ExternStateProxyToken, SelfDestructible, LimitedSetup(8 weeks) {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -225,6 +226,18 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
         // Use "this" in order that the havven account is the sender.
         // That this is an explicit transfer also initialises fee entitlement information.
         return _transfer(this, account, value);
+    }
+
+    /* Allow the owner of this contract to emit transfer events for
+     * contract setup purposes. */
+    function emitTransferEvents(address sender, address[] recipients, uint[] values)
+        external
+        onlyOwner
+        setupFunction
+    {
+        for (uint i = 0; i < recipients.length; ++i) {
+            Transfer(sender, recipients[i], values[i]);
+        }
     }
 
     /* Override ERC20 transfer function in order to perform
