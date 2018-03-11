@@ -84,6 +84,8 @@ class TestExternStateProxyFeeToken(unittest.TestCase):
             cls.feetoken.functions.setTransferFeeRate(new_fee_rate).transact({'from': sender}))
         cls.setFeeAuthority = lambda self, sender, new_fee_authority: mine_tx(
             cls.feetoken.functions.setFeeAuthority(new_fee_authority).transact({'from': sender}))
+        cls.setState = lambda self, sender, new_state: mine_tx(
+            cls.feetoken.functions.setState(new_state).transact({'from': sender}))
         cls.transfer_byProxy = lambda self, sender, to, value: mine_tx(
             cls.feetoken.functions.transfer_byProxy(to, value).transact({'from': sender}))
         cls.approve = lambda self, sender, spender, value: mine_tx(
@@ -172,6 +174,19 @@ class TestExternStateProxyFeeToken(unittest.TestCase):
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'],
                          "FeeAuthorityUpdated")
         self.assertEqual(self.feeAuthority(), new_fee_authority)
+
+    def test_getSetState(self):
+        _, new_state = fresh_accounts(2)
+        owner = self.owner()
+        self.assertNotEqual(new_state, owner)
+
+        # Only the owner is able to set the Fee Authority.
+        self.assertReverts(self.setState, new_state, new_state)
+        tx_receipt = self.setState(owner, new_state)
+        # Check that event is emitted.
+        self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'],
+                         "StateUpdated")
+        self.assertEqual(self.state(), new_state)
 
     def test_getTransferFeeIncurred(self):
         value = 10 * UNIT

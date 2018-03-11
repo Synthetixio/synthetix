@@ -91,9 +91,10 @@ contract ExternStateProxyToken is SafeDecimalMath, Proxyable {
 
     function setState(TokenState _state)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         state = _state;
+        StateUpdated(_state);
     } 
 
     /* Anything calling this must apply the onlyProxy or optionalProxy modifiers.*/
@@ -145,4 +146,6 @@ contract ExternStateProxyToken is SafeDecimalMath, Proxyable {
     event Transfer(address indexed from, address indexed to, uint value);
 
     event Approval(address indexed owner, address indexed spender, uint value);
+
+    event StateUpdated(address newState);
 }
