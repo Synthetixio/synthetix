@@ -440,5 +440,6 @@ class TestExternStateProxyFeeToken(unittest.TestCase):
 
         # And it should emit the right event.
         tx_receipt = self.donateToFeePool(donor, UNIT)
-        self.assertEqual(len(tx_receipt.logs), 1)
+        self.assertEqual(len(tx_receipt.logs), 2)
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'], 'FeesDonated')
+        self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[1])['event'], 'Transfer')

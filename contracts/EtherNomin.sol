@@ -592,6 +592,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         state.setBalanceOf(target, 0);
         frozen[target] = true;
         AccountFrozen(target, target, balance);
+        Transfer(target, address(this), balance);
     }
 
     /* The owner may allow a previously-frozen contract to once

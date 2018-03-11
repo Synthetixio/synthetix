@@ -177,12 +177,13 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         uint totalCharge = safeAdd(value, fee);
 
         // Insufficient balance will be handled by the safe subtraction.
-        state.setBalanceOf(sender, safeSub(balanceOf(sender), totalCharge));
-        state.setBalanceOf(to, safeAdd(balanceOf(to), value));
+        state.setBalanceOf(sender, safeSub(state.balanceOf(sender), totalCharge));
+        state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
         feePool = safeAdd(feePool, fee);
 
         Transfer(sender, to, value);
         TransferFeePaid(sender, fee);
+        Transfer(sender, address(this), fee);
 
         return true;
     }
@@ -208,6 +209,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
 
         Transfer(from, to, value);
         TransferFeePaid(sender, fee);
+        Transfer(from, address(this), fee);
 
         return true;
     }
@@ -242,6 +244,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         state.setBalanceOf(account, safeAdd(state.balanceOf(account), value));
 
         FeesWithdrawn(account, account, value);
+        Transfer(address(this), account, value);
 
         return true;
     }
@@ -263,6 +266,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         feePool = safeAdd(feePool, n);
 
         FeesDonated(sender, sender, n);
+        Transfer(sender, address(this), n);
 
         return true;
     }
