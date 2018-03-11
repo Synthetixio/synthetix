@@ -224,9 +224,9 @@ class TestHavven(unittest.TestCase):
         owner = MASTER
         spender = DUMMY
         self.approve(owner, spender, UNIT)
-        self.assertEquals(self.allowance(owner, spender), UNIT)
+        self.assertEqual(self.allowance(owner, spender), UNIT)
         self.approve(owner, spender, 0)
-        self.assertEquals(self.allowance(owner, spender), 0)
+        self.assertEqual(self.allowance(owner, spender), 0)
 
     #
     ##
@@ -238,12 +238,12 @@ class TestHavven(unittest.TestCase):
     ###
     def test_constructor(self):
         fee_period = self.targetFeePeriodDurationSeconds()
-        self.assertEquals(fee_period, to_seconds(weeks=4))
+        self.assertEqual(fee_period, to_seconds(weeks=4))
         self.assertGreater(block_time(), 2 * fee_period)
-        self.assertEquals(self.MIN_FEE_PERIOD_DURATION_SECONDS(), to_seconds(days=1))
-        self.assertEquals(self.MAX_FEE_PERIOD_DURATION_SECONDS(), to_seconds(weeks=26))
-        self.assertEquals(self.lastFeesCollected(), 0)
-        self.assertEquals(self.get_nomin(), self.nomin_real.address)
+        self.assertEqual(self.MIN_FEE_PERIOD_DURATION_SECONDS(), to_seconds(days=1))
+        self.assertEqual(self.MAX_FEE_PERIOD_DURATION_SECONDS(), to_seconds(weeks=26))
+        self.assertEqual(self.lastFeesCollected(), 0)
+        self.assertEqual(self.get_nomin(), self.nomin_real.address)
         self.assertEqual(self.havven.functions.decimals().call(), 18)
 
     ###
@@ -259,23 +259,23 @@ class TestHavven(unittest.TestCase):
         fee_period = self.targetFeePeriodDurationSeconds()
         delay = int(fee_period / 10)
         alice = fresh_account()
-        self.assertEquals(self.balanceOf(alice), 0)
+        self.assertEqual(self.balanceOf(alice), 0)
 
         start_amt = UNIT * 50
         self.endow(MASTER, alice, start_amt)
-        self.assertEquals(self.balanceOf(alice), start_amt)
-        self.assertEquals(self.currentBalanceSum(alice), 0)
+        self.assertEqual(self.balanceOf(alice), start_amt)
+        self.assertEqual(self.currentBalanceSum(alice), 0)
         start_time = block_time()
         fast_forward(delay)
         self.adjustFeeEntitlement(alice, alice, self.balanceOf(alice))
         end_time = block_time()
         balance_sum = (end_time - start_time) * start_amt
-        self.assertEquals(
+        self.assertEqual(
             self.currentBalanceSum(alice),
             balance_sum
         )
         self.transfer(alice, self.havven_real.address, start_amt)
-        self.assertEquals(self.balanceOf(alice), 0)
+        self.assertEqual(self.balanceOf(alice), 0)
         fast_forward(delay)
         self.adjustFeeEntitlement(alice, alice, self.balanceOf(alice))
         self.assertClose(
@@ -294,15 +294,15 @@ class TestHavven(unittest.TestCase):
         # fast forward next block with some extra padding
         delay = time_remaining + 100
         alice = fresh_account()
-        self.assertEquals(self.balanceOf(alice), 0)
+        self.assertEqual(self.balanceOf(alice), 0)
 
         start_amt = UNIT * 50
 
         tx_receipt = self.endow(MASTER, alice, start_amt)
-        self.assertEquals(self.balanceOf(alice), start_amt)
-        self.assertEquals(self.currentBalanceSum(alice), 0)
-        self.assertEquals(self.lastAverageBalance(alice), 0)
-        self.assertEquals(self.lastTransferTimestamp(alice), block_time(tx_receipt['blockNumber']))
+        self.assertEqual(self.balanceOf(alice), start_amt)
+        self.assertEqual(self.currentBalanceSum(alice), 0)
+        self.assertEqual(self.lastAverageBalance(alice), 0)
+        self.assertEqual(self.lastTransferTimestamp(alice), block_time(tx_receipt['blockNumber']))
         fast_forward(delay)
         self._checkFeePeriodRollover(DUMMY)
         fast_forward(fee_period // 2)
@@ -337,13 +337,13 @@ class TestHavven(unittest.TestCase):
 
         # Alice will initially have 20 havvens
         self.endow(MASTER, alice, 20 * UNIT)
-        self.assertEquals(self.balanceOf(alice), 20 * UNIT)
+        self.assertEqual(self.balanceOf(alice), 20 * UNIT)
 
         # Fastforward until just before a fee period rolls over.
         time_remaining = self.targetFeePeriodDurationSeconds() + self.feePeriodStartTime() - block_time()
         fast_forward(time_remaining + 50)
         tx_receipt = self.transfer(alice, alice, 0)
-        self.assertEquals(self.lastTransferTimestamp(alice), block_time(tx_receipt['blockNumber']))
+        self.assertEqual(self.lastTransferTimestamp(alice), block_time(tx_receipt['blockNumber']))
         event = get_event_data_from_log(self.havven_event_dict, tx_receipt.logs[0])
         self.assertEqual(event['event'], 'FeePeriodRollover')
 
@@ -352,7 +352,7 @@ class TestHavven(unittest.TestCase):
         tx_receipt = self.transfer(alice, alice, 0)
         event = get_event_data_from_log(self.havven_event_dict, tx_receipt.logs[0])
         self.assertEqual(event['event'], 'FeePeriodRollover')
-        self.assertEquals(self.lastTransferTimestamp(alice), block_time(tx_receipt['blockNumber']))
+        self.assertEqual(self.lastTransferTimestamp(alice), block_time(tx_receipt['blockNumber']))
         self.assertEqual(self.lastAverageBalance(alice), 20 * UNIT)
 
         # Try a half-and-half period
@@ -428,15 +428,15 @@ class TestHavven(unittest.TestCase):
         delay = fee_period // 2
         fast_forward(delay)
 
-        self.assertEquals(self.balanceOf(alice), 0)
+        self.assertEqual(self.balanceOf(alice), 0)
 
         start_amt = UNIT * 50
 
         self.endow(MASTER, alice, start_amt)
         inital_transfer_time = self.lastTransferTimestamp(alice)
-        self.assertEquals(self.balanceOf(alice), start_amt)
-        self.assertEquals(self.currentBalanceSum(alice), 0)
-        self.assertEquals(self.lastAverageBalance(alice), 0)
+        self.assertEqual(self.balanceOf(alice), start_amt)
+        self.assertEqual(self.currentBalanceSum(alice), 0)
+        self.assertEqual(self.lastAverageBalance(alice), 0)
 
         # rollover two fee periods without alice doing anything
         fast_forward(fee_period * 2)
@@ -545,46 +545,46 @@ class TestHavven(unittest.TestCase):
         amount = 50 * UNIT
         havven_balance = self.balanceOf(self.havven_real.address)
         alice = fresh_account()
-        self.assertEquals(self.balanceOf(alice), 0)
+        self.assertEqual(self.balanceOf(alice), 0)
         self.endow(MASTER, alice, amount)
-        self.assertEquals(self.balanceOf(alice), amount)
-        self.assertEquals(havven_balance - self.balanceOf(self.havven_real.address), amount)
+        self.assertEqual(self.balanceOf(alice), amount)
+        self.assertEqual(havven_balance - self.balanceOf(self.havven_real.address), amount)
 
     def test_endow_0(self):
         amount = 0
         havven_balance = self.balanceOf(self.havven_real.address)
         alice = fresh_account()
-        self.assertEquals(self.balanceOf(alice), 0)
+        self.assertEqual(self.balanceOf(alice), 0)
         self.endow(MASTER, alice, amount)
-        self.assertEquals(self.balanceOf(alice), amount)
-        self.assertEquals(havven_balance - self.balanceOf(self.havven_real.address), amount)
+        self.assertEqual(self.balanceOf(alice), amount)
+        self.assertEqual(havven_balance - self.balanceOf(self.havven_real.address), amount)
 
     def test_endow_supply(self):
         amount = self.totalSupply()
         havven_balance = self.balanceOf(self.havven_real.address)
         alice = fresh_account()
-        self.assertEquals(self.balanceOf(alice), 0)
+        self.assertEqual(self.balanceOf(alice), 0)
         self.endow(MASTER, alice, amount)
-        self.assertEquals(self.balanceOf(alice), amount)
-        self.assertEquals(havven_balance - self.balanceOf(self.havven_real.address), amount)
+        self.assertEqual(self.balanceOf(alice), amount)
+        self.assertEqual(havven_balance - self.balanceOf(self.havven_real.address), amount)
 
     def test_endow_more_than_supply(self):
         amount = self.totalSupply() * 2
         alice = fresh_account()
         self.assertReverts(self.endow, MASTER, alice, amount)
-        self.assertEquals(self.balanceOf(alice), 0)
+        self.assertEqual(self.balanceOf(alice), 0)
 
     def test_endow_invalid_sender(self):
         amount = 50 * UNIT
         alice = fresh_account()
         self.assertReverts(self.endow, alice, alice, amount)
-        self.assertEquals(self.balanceOf(alice), 0)
+        self.assertEqual(self.balanceOf(alice), 0)
 
     def test_endow_contract_sender(self):
         amount = 50 * UNIT
         alice = fresh_account()
         self.assertReverts(self.endow, self.havven_real.address, alice, amount)
-        self.assertEquals(self.balanceOf(alice), 0)
+        self.assertEqual(self.balanceOf(alice), 0)
 
     def test_endow_to_contract(self):
         amount = 50 * UNIT
@@ -756,19 +756,19 @@ class TestHavven(unittest.TestCase):
         b_sum = 0
         self.endow(MASTER, alice, amount)
         time = block_time()
-        self.assertEquals(self.balanceOf(alice), amount)
-        self.assertEquals(self.currentBalanceSum(alice), 0)
+        self.assertEqual(self.balanceOf(alice), amount)
+        self.assertEqual(self.currentBalanceSum(alice), 0)
         for i in range(20):
             self.transfer(alice, bob, amount)
             a_sum += (block_time() - time) * amount
             time = block_time()
-            self.assertEquals(self.balanceOf(bob), amount)
-            self.assertEquals(self.currentBalanceSum(alice), a_sum)
+            self.assertEqual(self.balanceOf(bob), amount)
+            self.assertEqual(self.currentBalanceSum(alice), a_sum)
             self.transfer(bob, alice, amount)
             b_sum += (block_time() - time) * amount
             time = block_time()
-            self.assertEquals(self.balanceOf(alice), amount)
-            self.assertEquals(self.currentBalanceSum(bob), b_sum)
+            self.assertEqual(self.balanceOf(alice), amount)
+            self.assertEqual(self.currentBalanceSum(bob), b_sum)
 
 
 
