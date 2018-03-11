@@ -34,7 +34,7 @@ contract to the new one.
 -----------------------------------------------------------------
 */
 
-pragma solidity ^0.4.20;
+pragma solidity ^0.4.21;
 
 
 import "contracts/Owned.sol";
@@ -55,7 +55,7 @@ contract TokenState is Owned {
         public
     {
         associatedContract = _associatedContract;
-        AssociatedContractUpdated(_associatedContract);
+        emit AssociatedContractUpdated(_associatedContract);
     }
 
     /* ========== SETTERS ========== */
@@ -66,7 +66,7 @@ contract TokenState is Owned {
         onlyOwner
     {
         associatedContract = _associatedContract;
-        AssociatedContractUpdated(_associatedContract);
+        emit AssociatedContractUpdated(_associatedContract);
     }
 
     function setAllowance(address tokenOwner, address spender, uint value)

@@ -28,7 +28,7 @@ previous owner change the nomination (setting it to 0).
 -----------------------------------------------------------------
 */
 
-pragma solidity ^0.4.20;
+pragma solidity ^0.4.21;
 
 
 contract Owned {
@@ -46,14 +46,14 @@ contract Owned {
         onlyOwner
     {
         nominatedOwner = _owner;
-        OwnerNominated(_owner);
+        emit OwnerNominated(_owner);
     }
 
     function acceptOwnership()
         external
     {
         require(msg.sender == nominatedOwner);
-        OwnerChanged(owner, nominatedOwner);
+        emit OwnerChanged(owner, nominatedOwner);
         owner = nominatedOwner;
         nominatedOwner = address(0);
     }

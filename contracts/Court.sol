@@ -113,7 +113,7 @@ We might consider updating the contract with any of these features at a later da
 -----------------------------------------------------------------
 */
 
-pragma solidity ^0.4.20;
+pragma solidity ^0.4.21;
 
 
 import "contracts/Owned.sol";
@@ -365,7 +365,7 @@ contract Court is Owned, SafeDecimalMath {
         targetMotionID[target] = motionID;
 
         motionStartTime[motionID] = now;
-        MotionBegun(msg.sender, msg.sender, target, target, motionID, motionID);
+        emit MotionBegun(msg.sender, msg.sender, target, target, motionID, motionID);
 
         return motionID;
     }
@@ -415,7 +415,7 @@ contract Court is Owned, SafeDecimalMath {
         uint weight = setupVote(motionID);
         vote[msg.sender][motionID] = Vote.Yea;
         votesFor[motionID] = safeAdd(votesFor[motionID], weight);
-        VotedFor(msg.sender, msg.sender, motionID, motionID, weight);
+        emit VotedFor(msg.sender, msg.sender, motionID, motionID, weight);
     }
 
     /* The sender casts a vote against confiscation of the
@@ -426,7 +426,7 @@ contract Court is Owned, SafeDecimalMath {
         uint weight = setupVote(motionID);
         vote[msg.sender][motionID] = Vote.Nay;
         votesAgainst[motionID] = safeAdd(votesAgainst[motionID], weight);
-        VotedAgainst(msg.sender, msg.sender, motionID, motionID, weight);
+        emit VotedAgainst(msg.sender, msg.sender, motionID, motionID, weight);
     }
 
     /* Cancel an existing vote by the sender on a motion
@@ -455,7 +455,7 @@ contract Court is Owned, SafeDecimalMath {
                 votesAgainst[motionID] = safeSub(votesAgainst[motionID], voteWeight[msg.sender][motionID]);
             }
             // A cancelled vote is only meaningful if a vote is running
-            VoteCancelled(msg.sender, msg.sender, motionID, motionID);
+            emit VoteCancelled(msg.sender, msg.sender, motionID, motionID);
         }
 
         delete voteWeight[msg.sender][motionID];
@@ -470,7 +470,7 @@ contract Court is Owned, SafeDecimalMath {
         delete motionStartTime[motionID];
         delete votesFor[motionID];
         delete votesAgainst[motionID];
-        MotionClosed(motionID, motionID);       
+        emit MotionClosed(motionID, motionID);
     }
 
     /* If a motion has concluded, or if it lasted its full duration but not passed,
@@ -492,7 +492,7 @@ contract Court is Owned, SafeDecimalMath {
         address target = motionTarget[motionID];
         nomin.confiscateBalance(target);
         _closeMotion(motionID);
-        MotionApproved(motionID, motionID);
+        emit MotionApproved(motionID, motionID);
     }
 
     /* The foundation may veto a motion at any time. */
@@ -502,7 +502,7 @@ contract Court is Owned, SafeDecimalMath {
     {
         require(!motionWaiting(motionID));
         _closeMotion(motionID);
-        MotionVetoed(motionID, motionID);
+        emit MotionVetoed(motionID, motionID);
     }
 
 

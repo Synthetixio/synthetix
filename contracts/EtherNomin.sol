@@ -56,7 +56,7 @@ If the contract is recollateralised, the owner may terminate liquidation.
 -----------------------------------------------------------------
 */
 
-pragma solidity ^0.4.20;
+pragma solidity ^0.4.21;
 
 
 import "contracts/ExternStateProxyFeeToken.sol";
@@ -137,7 +137,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
 
         etherPrice = initialEtherPrice;
         lastPriceUpdate = now;
-        PriceUpdated(etherPrice);
+        emit PriceUpdated(etherPrice);
 
         // It should not be possible to transfer to the nomin contract itself.
         frozen[this] = true;
@@ -151,7 +151,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         optionalProxy_onlyOwner
     {
         oracle = _oracle;
-        OracleUpdated(_oracle);
+        emit OracleUpdated(_oracle);
     }
 
     function setCourt(Court _court)
@@ -159,7 +159,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         optionalProxy_onlyOwner
     {
         court = _court;
-        CourtUpdated(_court);
+        emit CourtUpdated(_court);
     }
 
     function setBeneficiary(address _beneficiary)
@@ -167,7 +167,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         optionalProxy_onlyOwner
     {
         beneficiary = _beneficiary;
-        BeneficiaryUpdated(_beneficiary);
+        emit BeneficiaryUpdated(_beneficiary);
     }
 
     function setPoolFeeRate(uint _poolFeeRate)
@@ -176,7 +176,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
     {
         require(_poolFeeRate <= UNIT);
         poolFeeRate = _poolFeeRate;
-        PoolFeeRateUpdated(_poolFeeRate);
+        emit PoolFeeRateUpdated(_poolFeeRate);
     }
 
     function setStalePeriod(uint _stalePeriod)
@@ -184,7 +184,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         optionalProxy_onlyOwner
     {
         stalePeriod = _stalePeriod;
-        StalePeriodUpdated(_stalePeriod);
+        emit StalePeriodUpdated(_stalePeriod);
     }
  
 
@@ -210,7 +210,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         returns (uint)
     {
         // Price staleness check occurs inside the call to fiatValue.
-        return fiatValue(this.balance);
+        return fiatValue(address(this).balance);
     }
 
     /* Return the equivalent ether value of the given quantity
@@ -404,7 +404,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
 
         etherPrice = price;
         lastPriceUpdate = timeSent;
-        PriceUpdated(price);
+        emit PriceUpdated(price);
     }
 
     /* Issues n nomins into the pool available to be bought by users.
@@ -424,7 +424,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         // or the overflow would cause the requirement not to be satisfied.
         require(fiatBalance() >= safeMul_dec(safeAdd(_nominCap(), n), MINIMUM_ISSUANCE_RATIO));
         nominPool = safeAdd(nominPool, n);
-        PoolReplenished(n, msg.value);
+        emit PoolReplenished(n, msg.value);
     }
 
     /* Burns n nomins from the pool.
@@ -438,7 +438,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         // Require that there are enough nomins in the accessible pool to burn
         require(nominPool >= n);
         nominPool = safeSub(nominPool, n);
-        PoolDiminished(n);
+        emit PoolDiminished(n);
     }
 
     /* Sends n nomins to the sender from the pool, in exchange for
@@ -462,8 +462,8 @@ contract EtherNomin is ExternStateProxyFeeToken {
         // sub requires that nominPool >= n
         nominPool = safeSub(nominPool, n);
         state.setBalanceOf(sender, safeAdd(state.balanceOf(sender), n));
-        Purchased(sender, sender, n, msg.value);
-        Transfer(0, sender, n);
+        emit Purchased(sender, sender, n, msg.value);
+        emit Transfer(0, sender, n);
         totalSupply = safeAdd(totalSupply, n);
     }
 
@@ -488,14 +488,14 @@ contract EtherNomin is ExternStateProxyFeeToken {
             proceeds = saleProceedsEther(n);
         }
 
-        require(this.balance >= proceeds);
+        require(address(this).balance >= proceeds);
 
         address sender = messageSender;
         // sub requires that the balance is greater than n
         state.setBalanceOf(sender, safeSub(state.balanceOf(sender), n));
         nominPool = safeAdd(nominPool, n);
-        Sold(sender, sender, n, proceeds);
-        Transfer(sender, 0, n);
+        emit Sold(sender, sender, n, proceeds);
+        emit Transfer(sender, 0, n);
         totalSupply = safeSub(totalSupply, n);
         sender.transfer(proceeds);
     }
@@ -519,7 +519,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         internal
     {
         liquidationTimestamp = now;
-        LiquidationBegun(liquidationPeriod);
+        emit LiquidationBegun(liquidationPeriod);
     }
 
     /* If the contract is liquidating, the owner may extend the liquidation period.
@@ -533,7 +533,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         uint sum = safeAdd(liquidationPeriod, extension);
         require(sum <= MAX_LIQUIDATION_PERIOD);
         liquidationPeriod = sum;
-        LiquidationExtended(extension);
+        emit LiquidationExtended(extension);
     }
 
     /* Liquidation can only be stopped if the collateralisation ratio
@@ -550,7 +550,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         require(_nominCap() == 0 || collateralisationRatio() >= AUTO_LIQUIDATION_RATIO);
         liquidationTimestamp = ~uint(0);
         liquidationPeriod = DEFAULT_LIQUIDATION_PERIOD;
-        LiquidationTerminated();
+        emit LiquidationTerminated();
     }
 
     /* The owner may destroy this contract, returning all funds back to the beneficiary
@@ -562,7 +562,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         optionalProxy_onlyOwner
     {
         require(canSelfDestruct());
-        SelfDestructed(beneficiary);
+        emit SelfDestructed(beneficiary);
         selfdestruct(beneficiary);
     }
 
@@ -591,8 +591,8 @@ contract EtherNomin is ExternStateProxyFeeToken {
         state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), balance));
         state.setBalanceOf(target, 0);
         frozen[target] = true;
-        AccountFrozen(target, target, balance);
-        Transfer(target, address(this), balance);
+        emit AccountFrozen(target, target, balance);
+        emit Transfer(target, address(this), balance);
     }
 
     /* The owner may allow a previously-frozen contract to once
@@ -603,7 +603,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
     {
         if (frozen[target] && EtherNomin(target) != this) {
             frozen[target] = false;
-            AccountUnfrozen(target, target);
+            emit AccountUnfrozen(target, target);
         }
     }
 

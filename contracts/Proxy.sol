@@ -28,7 +28,7 @@ contract as the state parameter, messageSender.
 */
 
 
-pragma solidity ^0.4.20;
+pragma solidity ^0.4.21;
 
 import "contracts/Owned.sol";
 
@@ -40,7 +40,7 @@ contract Proxy is Owned {
         public
     {
         target = _target;
-        TargetChanged(_target);
+        emit TargetChanged(_target);
     }
 
     function _setTarget(address _target) 
@@ -49,7 +49,7 @@ contract Proxy is Owned {
     {
         require(_target != address(0));
         target = Proxyable(_target);
-        TargetChanged(_target);
+        emit TargetChanged(_target);
     }
 
     function () 
@@ -94,7 +94,7 @@ contract Proxyable is Owned {
         onlyOwner
     {
         proxy = _proxy;
-        ProxyChanged(_proxy);
+        emit ProxyChanged(_proxy);
     }
 
     function setMessageSender(address sender)

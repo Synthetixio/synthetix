@@ -22,7 +22,7 @@ without changing their mind.
 -----------------------------------------------------------------
 */
 
-pragma solidity ^0.4.20;
+pragma solidity ^0.4.21;
 
 
 import "contracts/Owned.sol";
@@ -46,7 +46,7 @@ contract SelfDestructible is Owned {
 		onlyOwner
 	{
 		beneficiary = _beneficiary;
-		SelfDestructBeneficiaryUpdated(_beneficiary);
+		emit SelfDestructBeneficiaryUpdated(_beneficiary);
 	}
 
 	function initiateSelfDestruct()
@@ -54,7 +54,7 @@ contract SelfDestructible is Owned {
 		onlyOwner
 	{
 		initiationTime = now;
-		SelfDestructInitiated(SD_DURATION);
+		emit SelfDestructInitiated(SD_DURATION);
 	}
 
 	function terminateSelfDestruct()
@@ -62,7 +62,7 @@ contract SelfDestructible is Owned {
 		onlyOwner
 	{
 		initiationTime = ~uint(0);
-		SelfDestructTerminated();
+		emit SelfDestructTerminated();
 	}
 
 	function selfDestruct()
@@ -70,7 +70,7 @@ contract SelfDestructible is Owned {
 		onlyOwner
 	{
 		require(initiationTime + SD_DURATION < now);
-		SelfDestructed(beneficiary);
+		emit SelfDestructed(beneficiary);
 		selfdestruct(beneficiary);
 	}
 

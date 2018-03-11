@@ -99,7 +99,7 @@ average balance, in order to support the voting functionality detailed in Court.
 
 */
 
-pragma solidity ^0.4.20;
+pragma solidity ^0.4.21;
 
 
 import "contracts/ExternStateProxyToken.sol";
@@ -107,10 +107,9 @@ import "contracts/EtherNomin.sol";
 import "contracts/HavvenEscrow.sol";
 import "contracts/TokenState.sol";
 import "contracts/SelfDestructible.sol";
-import "contracts/LimitedSetup.sol";
 
 
-contract Havven is ExternStateProxyToken, SelfDestructible, LimitedSetup(8 weeks) {
+contract Havven is ExternStateProxyToken, SelfDestructible {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -206,7 +205,7 @@ contract Havven is ExternStateProxyToken, SelfDestructible, LimitedSetup(8 weeks
         require(MIN_FEE_PERIOD_DURATION_SECONDS <= duration &&
                 duration <= MAX_FEE_PERIOD_DURATION_SECONDS);
         targetFeePeriodDurationSeconds = duration;
-        FeePeriodDurationUpdated(duration);
+        emit FeePeriodDurationUpdated(duration);
     }
 
 
@@ -233,10 +232,9 @@ contract Havven is ExternStateProxyToken, SelfDestructible, LimitedSetup(8 weeks
     function emitTransferEvents(address sender, address[] recipients, uint[] values)
         external
         onlyOwner
-        setupFunction
     {
         for (uint i = 0; i < recipients.length; ++i) {
-            Transfer(sender, recipients[i], values[i]);
+            emit Transfer(sender, recipients[i], values[i]);
         }
     }
 
@@ -326,7 +324,7 @@ contract Havven is ExternStateProxyToken, SelfDestructible, LimitedSetup(8 weeks
         hasWithdrawnLastPeriodFees[sender] = true;
         if (feesOwed != 0) {
             nomin.withdrawFee(sender, feesOwed);
-            FeesWithdrawn(sender, sender, feesOwed);
+            emit FeesWithdrawn(sender, sender, feesOwed);
         }
     }
 
@@ -468,7 +466,7 @@ contract Havven is ExternStateProxyToken, SelfDestructible, LimitedSetup(8 weeks
             lastFeePeriodStartTime = feePeriodStartTime;
             feePeriodStartTime = now;
             
-            FeePeriodRollover(now);
+            emit FeePeriodRollover(now);
         }
     }
 

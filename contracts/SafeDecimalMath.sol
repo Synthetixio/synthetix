@@ -25,7 +25,7 @@ occur.
 -----------------------------------------------------------------
 */
 
-pragma solidity ^0.4.20;
+pragma solidity ^0.4.21;
 
 
 /* Safely manipulate unsigned fixed-point decimals at a given precision level.
