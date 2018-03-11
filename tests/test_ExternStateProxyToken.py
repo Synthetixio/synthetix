@@ -100,6 +100,7 @@ class TestExternStateProxyToken(unittest.TestCase):
     def test_getSetState(self):
         new_state = fresh_account()
         owner = self.owner()
+        self.assertNotEqual(new_state, owner)
 
         # Only the owner is able to set the Fee Authority.
         self.assertReverts(self.setState, new_state, new_state)
