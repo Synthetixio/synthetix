@@ -588,7 +588,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
 
         // Confiscate the balance in the account and freeze it.
         uint balance = state.balanceOf(target);
-        feePool = safeAdd(feePool, balance);
+        state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), balance));
         state.setBalanceOf(target, 0);
         frozen[target] = true;
         AccountFrozen(target, target, balance);
