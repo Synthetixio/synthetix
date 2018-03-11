@@ -39,11 +39,11 @@ class TestEtherNomin(unittest.TestCase):
     def tearDown(self):
         restore_snapshot(self.snapshot)
 
-    def test_time_elapsed(self):
+    def _test_time_elapsed(self):
         return utils.generalutils.time_fast_forwarded + (round(time.time()) - self.initial_time)
 
     def now_block_time(self):
-        return block_time() + self.test_time_elapsed()
+        return block_time() + self._test_time_elapsed()
 
     @classmethod
     def setUpClass(cls):

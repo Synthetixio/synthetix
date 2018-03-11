@@ -51,8 +51,6 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
     string public symbol;
     uint public totalSupply;
 
-    // Collected fees sit here until they are distributed
-    uint public feePool;
     // A percentage fee charged on each transfer.
     uint public transferFeeRate;
     // Fee may not exceed 10%.
@@ -161,6 +159,17 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         return safeDiv_dec(value, safeAdd(UNIT, transferFeeRate));
     }
 
+    // The balance of the nomin contract itself is the fee pool.
+    // Collected fees sit here until they are distributed.
+    function feePool()
+        external
+        view
+        returns (uint)
+    {
+        return state.balanceOf(address(this));
+    }
+
+
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /* Whatever calls this should have either the optionalProxy or onlyProxy modifier,
@@ -179,7 +188,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         // Insufficient balance will be handled by the safe subtraction.
         state.setBalanceOf(sender, safeSub(state.balanceOf(sender), totalCharge));
         state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
-        feePool = safeAdd(feePool, fee);
+        state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), fee));
 
         Transfer(sender, to, value);
         TransferFeePaid(sender, fee);
@@ -205,7 +214,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         state.setBalanceOf(from, safeSub(state.balanceOf(from), totalCharge));
         state.setAllowance(from, sender, safeSub(state.allowance(from, sender), totalCharge));
         state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
-        feePool = safeAdd(feePool, fee);
+        state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), fee));
 
         Transfer(from, to, value);
         TransferFeePaid(sender, fee);
@@ -240,7 +249,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         }
 
         // Safe subtraction ensures an exception is thrown if the balance is insufficient.
-        feePool = safeSub(feePool, value);
+        state.setBalanceOf(address(this), safeSub(state.balanceOf(address(this)), value));
         state.setBalanceOf(account, safeAdd(state.balanceOf(account), value));
 
         FeesWithdrawn(account, account, value);
@@ -263,7 +272,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
 
         // safeSub ensures the donor has sufficient balance.
         state.setBalanceOf(sender, safeSub(balance, n));
-        feePool = safeAdd(feePool, n);
+        state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), n));
 
         FeesDonated(sender, sender, n);
         Transfer(sender, address(this), n);
