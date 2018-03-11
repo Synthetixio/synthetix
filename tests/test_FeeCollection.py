@@ -331,7 +331,7 @@ class TestHavven(unittest.TestCase):
         for addr in hav_addr:
             self.h_withdrawFeeEntitlement(addr)
             if percentage_havvens == 0:
-                self.assertEquals(self.n_balanceOf(addr), 0)
+                self.assertEqual(self.n_balanceOf(addr), 0)
             else:
                 self.assertNotEqual(self.n_balanceOf(addr), 0)
             total_fees_collected += self.n_balanceOf(addr)
@@ -417,7 +417,7 @@ class TestHavven(unittest.TestCase):
         for addr in hav_addr:
             self.h_withdrawFeeEntitlement(addr)
             if percentage_havvens == 0:
-                self.assertEquals(self.n_balanceOf(addr), 0)
+                self.assertEqual(self.n_balanceOf(addr), 0)
             else:
                 self.assertNotEqual(self.n_balanceOf(addr), 0)
             total_fees_collected += self.n_balanceOf(addr)
@@ -577,7 +577,7 @@ class TestHavven(unittest.TestCase):
                 inital_n = self.n_balanceOf(addr)
                 self.h_withdrawFeeEntitlement(addr)
                 if percentage_havvens == 0:
-                    self.assertEquals(self.n_balanceOf(addr), 0)
+                    self.assertEqual(self.n_balanceOf(addr), 0)
                 else:
                     self.assertNotEqual(self.n_balanceOf(addr), 0)
                 total_fees_collected += self.n_balanceOf(addr) - inital_n
