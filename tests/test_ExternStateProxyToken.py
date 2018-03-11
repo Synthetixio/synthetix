@@ -53,6 +53,7 @@ class TestExternStateProxyToken(unittest.TestCase):
         mine_tx(cls.token_real.functions.setProxy(cls.tokenproxy.address).transact({'from': cls.the_owner}))
         cls.token = W3.eth.contract(address=cls.tokenproxy.address, abi=cls.compiled['PublicExternStateProxyToken']['abi'])
 
+        cls.owner = lambda self: cls.token.functions.owner().call()
         cls.totalSupply = lambda self: cls.token.functions.totalSupply().call()
         cls.state = lambda self: cls.token.functions.state().call()
         cls.name = lambda self: cls.token.functions.name().call()
@@ -60,6 +61,8 @@ class TestExternStateProxyToken(unittest.TestCase):
         cls.balanceOf = lambda self, account: cls.token.functions.balanceOf(account).call()
         cls.allowance = lambda self, account, spender: cls.token.functions.allowance(account, spender).call()
 
+        cls.setState = lambda self, sender, new_state: mine_tx(
+            cls.token.functions.setState(new_state).transact({'from': sender}))
         cls.transfer_byProxy = lambda self, sender, to, value: mine_tx(
             cls.token.functions.transfer_byProxy(to, value).transact({'from': sender}))
         cls.approve = lambda self, sender, spender, value: mine_tx(
@@ -93,6 +96,18 @@ class TestExternStateProxyToken(unittest.TestCase):
                                         1000 * UNIT, MASTER,
                                         tokenstate.address, DUMMY])
         self.assertEqual(token.functions.state().call(), tokenstate.address)
+
+    def test_getSetState(self):
+        new_state = fresh_account()
+        owner = self.owner()
+
+        # Only the owner is able to set the Fee Authority.
+        self.assertReverts(self.setState, new_state, new_state)
+        tx_receipt = self.setState(owner, new_state)
+        # Check that event is emitted.
+        self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'],
+                         "StateUpdated")
+        self.assertEqual(self.state(), new_state)
 
     def test_transfer(self):
         sender = self.the_owner

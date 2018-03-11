@@ -105,6 +105,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         optionalProxy_onlyOwner
     {
         state = _state;
+        StateUpdated(_state);
     }
 
     /* ========== VIEWS ========== */
@@ -277,6 +278,8 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
     event TransferFeeRateUpdated(uint newFeeRate);
 
     event FeeAuthorityUpdated(address feeAuthority);
+
+    event StateUpdated(address newState);
 
     event FeesWithdrawn(address account, address indexed accountIndex, uint value);
 
