@@ -1,7 +1,7 @@
 /* PublicEtherNomin.sol: expose the internal functions in EtherNomin
  * for testing purposes.
  */
-pragma solidity ^0.4.20;
+pragma solidity ^0.4.21;
 
 
 import "contracts/HavvenEscrow.sol";

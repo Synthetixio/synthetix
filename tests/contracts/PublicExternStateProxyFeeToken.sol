@@ -1,4 +1,4 @@
-pragma solidity ^0.4.20;
+pragma solidity ^0.4.21;
 
 import "contracts/ExternStateProxyFeeToken.sol";
 import "contracts/TokenState.sol";

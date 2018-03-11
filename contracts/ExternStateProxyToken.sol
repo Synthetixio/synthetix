@@ -25,7 +25,7 @@ This contract utilises a state for upgradability purposes.
 -----------------------------------------------------------------
 */
 
-pragma solidity ^0.4.20;
+pragma solidity ^0.4.21;
 
 
 import "contracts/SafeDecimalMath.sol";
@@ -63,7 +63,7 @@ contract ExternStateProxyToken is SafeDecimalMath, Proxyable {
         if (_state == TokenState(0)) {
             state = new TokenState(_owner, address(this));
             state.setBalanceOf(initialBeneficiary, totalSupply);
-            Transfer(address(0), initialBeneficiary, initialSupply);
+            emit Transfer(address(0), initialBeneficiary, initialSupply);
         } else {
             state = _state;
         }
@@ -94,7 +94,7 @@ contract ExternStateProxyToken is SafeDecimalMath, Proxyable {
         optionalProxy_onlyOwner
     {
         state = _state;
-        StateUpdated(_state);
+        emit StateUpdated(_state);
     } 
 
     /* Anything calling this must apply the onlyProxy or optionalProxy modifiers.*/
@@ -108,7 +108,7 @@ contract ExternStateProxyToken is SafeDecimalMath, Proxyable {
         state.setBalanceOf(sender, safeSub(state.balanceOf(sender), value));
         state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
 
-        Transfer(sender, to, value);
+        emit Transfer(sender, to, value);
 
         return true;
     }
@@ -125,7 +125,7 @@ contract ExternStateProxyToken is SafeDecimalMath, Proxyable {
         state.setAllowance(from, sender, safeSub(state.allowance(from, sender), value));
         state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
 
-        Transfer(from, to, value);
+        emit Transfer(from, to, value);
 
         return true;
     }
@@ -137,7 +137,7 @@ contract ExternStateProxyToken is SafeDecimalMath, Proxyable {
     {
         address sender = messageSender;
         state.setAllowance(sender, spender, value);
-        Approval(sender, spender, value);
+        emit Approval(sender, spender, value);
         return true;
     }
 

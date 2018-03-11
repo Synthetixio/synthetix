@@ -34,7 +34,7 @@ main fee pool to be redistributed in the next fee period.
 
 */
 
-pragma solidity ^0.4.20;
+pragma solidity ^0.4.21;
 
 
 import "contracts/SafeDecimalMath.sol";
@@ -76,7 +76,7 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
         onlyOwner
     {
         havven = _havven;
-        HavvenUpdated(_havven);
+        emit HavvenUpdated(_havven);
     }
 
 
@@ -274,7 +274,7 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
         if (total != 0) {
             totalVestedBalance = safeSub(totalVestedBalance, total);
             havven.transfer(msg.sender, total);
-            Vested(msg.sender, msg.sender,
+            emit Vested(msg.sender, msg.sender,
                    now, total);
         }
     }
@@ -283,8 +283,6 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
     /* ========== EVENTS ========== */
 
     event HavvenUpdated(address newHavven);
-
-    event NominUpdated(address newNomin);
 
     event Vested(address beneficiary, address indexed beneficiaryIndex, uint time, uint value);
 }

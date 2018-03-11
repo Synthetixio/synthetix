@@ -30,7 +30,7 @@ included in Proxy.sol.
 -----------------------------------------------------------------
 */
 
-pragma solidity ^0.4.20;
+pragma solidity ^0.4.21;
 
 
 import "contracts/SafeDecimalMath.sol";
@@ -87,7 +87,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
     {
         require(_transferFeeRate <= MAX_TRANSFER_FEE_RATE);
         transferFeeRate = _transferFeeRate;
-        TransferFeeRateUpdated(_transferFeeRate);
+        emit TransferFeeRateUpdated(_transferFeeRate);
     }
 
     function setFeeAuthority(address _feeAuthority)
@@ -95,7 +95,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         optionalProxy_onlyOwner
     {
         feeAuthority = _feeAuthority;
-        FeeAuthorityUpdated(_feeAuthority);
+        emit FeeAuthorityUpdated(_feeAuthority);
     }
 
     function setState(TokenState _state)
@@ -103,7 +103,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         optionalProxy_onlyOwner
     {
         state = _state;
-        StateUpdated(_state);
+        emit StateUpdated(_state);
     }
 
     /* ========== VIEWS ========== */
@@ -190,9 +190,9 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
         state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), fee));
 
-        Transfer(sender, to, value);
-        TransferFeePaid(sender, fee);
-        Transfer(sender, address(this), fee);
+        emit Transfer(sender, to, value);
+        emit TransferFeePaid(sender, fee);
+        emit Transfer(sender, address(this), fee);
 
         return true;
     }
@@ -216,9 +216,9 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
         state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), fee));
 
-        Transfer(from, to, value);
-        TransferFeePaid(sender, fee);
-        Transfer(from, address(this), fee);
+        emit Transfer(from, to, value);
+        emit TransferFeePaid(sender, fee);
+        emit Transfer(from, address(this), fee);
 
         return true;
     }
@@ -231,7 +231,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         address sender = messageSender;
         state.setAllowance(sender, spender, value);
 
-        Approval(sender, spender, value);
+        emit Approval(sender, spender, value);
 
         return true;
     }
@@ -252,8 +252,8 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         state.setBalanceOf(address(this), safeSub(state.balanceOf(address(this)), value));
         state.setBalanceOf(account, safeAdd(state.balanceOf(account), value));
 
-        FeesWithdrawn(account, account, value);
-        Transfer(address(this), account, value);
+        emit FeesWithdrawn(account, account, value);
+        emit Transfer(address(this), account, value);
 
         return true;
     }
@@ -274,8 +274,8 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         state.setBalanceOf(sender, safeSub(balance, n));
         state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), n));
 
-        FeesDonated(sender, sender, n);
-        Transfer(sender, address(this), n);
+        emit FeesDonated(sender, sender, n);
+        emit Transfer(sender, address(this), n);
 
         return true;
     }
