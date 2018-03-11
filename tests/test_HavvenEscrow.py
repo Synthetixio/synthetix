@@ -144,6 +144,7 @@ class TestHavvenEscrow(unittest.TestCase):
         cls.getNextVestingEntry = lambda self, account: cls.escrow.functions.getNextVestingEntry(account).call()
         cls.getNextVestingTime = lambda self, account: cls.escrow.functions.getNextVestingTime(account).call()
         cls.getNextVestingQuantity = lambda self, account: cls.escrow.functions.getNextVestingQuantity(account).call()
+        cls.balanceOf = lambda self, account: cls.escrow.functions.balanceOf(account).call()
 
         cls.setHavven = lambda self, sender, account: mine_tx(
             cls.escrow.functions.setHavven(account).transact({'from': sender}))
@@ -212,6 +213,27 @@ class TestHavvenEscrow(unittest.TestCase):
         self.appendVestingEntry(MASTER, alice, time + 2000, 2 * UNIT)
         self.assertEqual(self.vestingSchedules(alice, 1, 0), time + 2000)
         self.assertEqual(self.vestingSchedules(alice, 1, 1), 2 * UNIT)
+
+    def test_balanceOf(self):
+        alice = fresh_account()
+        time = block_time()
+
+        self.h_endow(MASTER, self.escrow.address, 100 * UNIT)
+        self.assertEqual(self.balanceOf(alice), 0)
+        self.appendVestingEntry(MASTER, alice, time + 100, UNIT)
+        self.assertEqual(self.balanceOf(alice), UNIT)
+
+        self.purgeAccount(MASTER, alice)
+        self.assertEqual(self.balanceOf(alice), 0)
+
+        k = 5
+        for n in [100 * 2 ** i for i in range(k)]:
+            self.appendVestingEntry(MASTER, alice, time + n, n)
+
+        self.assertEqual(self.balanceOf(alice), 100 * (2 ** k - 1))
+        fast_forward(110)
+        self.vest(alice)
+        self.assertEqual(self.balanceOf(alice), 100 * (2 ** k - 1) - 100)
 
     def test_totalVestedAccountBalance(self):
         alice = fresh_account()
