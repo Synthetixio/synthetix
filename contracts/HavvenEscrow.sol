@@ -236,30 +236,18 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
         vestingSchedules[account].push([time, quantity]);
     }
 
-    /* Construct a vesting schedule to release a quantity of havvens at regular intervals ending
-     * at a given time. */
-    function addRegularVestingSchedule(address account, uint conclusionTime,
-                                       uint totalQuantity, uint vestingPeriods)
+    /* Construct a vesting schedule to release a quantities of havvens
+     * over a series of intervals. Assumes that the quantities are nonzero
+     * and that the sequence of timestamps is strictly increasing. */
+    function addVestingSchedule(address account, uint[] times, uint[] quantities)
         external
         onlyOwner
         setupFunction
     {
-        // safeSub prevents a conclusionTime in the past.
-        uint totalDuration = safeSub(conclusionTime, now);
-
-        // safeDiv prevents zero vesting periods.
-        uint periodQuantity = safeDiv(totalQuantity, vestingPeriods);
-        uint periodDuration = safeDiv(totalDuration, vestingPeriods);
-
-        // Generate all but the last period.
-        for (uint i = 1; i < vestingPeriods; i++) {
-            uint periodConclusionTime = safeAdd(now, safeMul(i, periodDuration));
-            appendVestingEntry(account, periodConclusionTime, periodQuantity);
+        for (uint i = 0; i < times.length; i++) {
+            appendVestingEntry(account, times[i], quantities[i]);
         }
 
-        // Generate the final period. Quantities left out due to integer division truncation are incorporated here.
-        uint finalPeriodQuantity = safeSub(totalQuantity, safeMul(periodQuantity, (vestingPeriods - 1)));
-        appendVestingEntry(account, conclusionTime, finalPeriodQuantity);
     }
 
     /* Allow a user to withdraw any tokens that have vested. */
