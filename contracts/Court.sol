@@ -3,7 +3,7 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       Court.sol
-version:    0.2
+version:    1.0
 author:     Anton Jurisevic
             Mike Spain
 

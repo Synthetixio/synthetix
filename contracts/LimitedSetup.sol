@@ -3,7 +3,7 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       LimitedSetup.sol
-version:    0.1
+version:    1.0
 author:     Anton Jurisevic
 
 date:       2018-2-13

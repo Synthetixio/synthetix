@@ -3,7 +3,7 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       SelfDestructible.sol
-version:    0.2
+version:    1.0
 author:     Anton Jurisevic
 
 date:       2018-2-28

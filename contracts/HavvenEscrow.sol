@@ -3,7 +3,7 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       HavvenEscrow.sol
-version:    0.3
+version:    1.0
 author:     Anton Jurisevic
             Dominic Romanowski
             Mike Spain

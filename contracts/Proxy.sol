@@ -3,7 +3,7 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       Proxy.sol
-version:    0.4
+version:    1.0
 author:     Anton Jurisevic
 
 date:       2018-2-28

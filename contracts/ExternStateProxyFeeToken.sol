@@ -3,7 +3,7 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       ExternStateProxyFeeToken.sol
-version:    0.4
+version:    1.0
 author:     Anton Jurisevic
             Dominic Romanowski
 
