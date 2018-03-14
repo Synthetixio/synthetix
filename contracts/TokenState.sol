@@ -3,7 +3,7 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       TokenState.sol
-version:    0.3
+version:    1.0
 author:     Dominic Romanowski
             Anton Jurisevic
 

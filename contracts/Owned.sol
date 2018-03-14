@@ -3,7 +3,7 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       Owned.sol
-version:    0.3
+version:    1.0
 author:     Anton Jurisevic
             Dominic Romanowski
 
