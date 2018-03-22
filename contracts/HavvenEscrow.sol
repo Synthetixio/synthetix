@@ -278,8 +278,7 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
         if (total != 0) {
             totalVestedBalance = safeSub(totalVestedBalance, total);
             havven.transfer(msg.sender, total);
-            Vested(msg.sender, msg.sender,
-                   now, total);
+            Vested(msg.sender, msg.sender, now, total);
         }
     }
 
