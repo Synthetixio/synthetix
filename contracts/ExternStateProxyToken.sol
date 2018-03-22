@@ -36,8 +36,6 @@ import "contracts/Proxy.sol";
 
 contract ExternStateProxyToken is SafeDecimalMath, Proxyable {
 
-    /* ========== STATE VARIABLES ========== */
-
     // state that stores balances and allowances.
     TokenState public state;
 
@@ -47,11 +45,14 @@ contract ExternStateProxyToken is SafeDecimalMath, Proxyable {
     uint public totalSupply;
 
 
-    /* ========== CONSTRUCTOR ========== */
-
-    function ExternStateProxyToken(string _name, string _symbol,
-                                   uint initialSupply, address initialBeneficiary,
-                                   TokenState _state, address _owner)
+    function ExternStateProxyToken(
+        string _name,
+        string _symbol,
+        uint initialSupply,
+        address initialBeneficiary,
+        TokenState _state,
+        address _owner
+    )
         Proxyable(_owner)
         public
     {
@@ -67,9 +68,7 @@ contract ExternStateProxyToken is SafeDecimalMath, Proxyable {
         } else {
             state = _state;
         }
-   }
-
-    /* ========== VIEWS ========== */
+    }
 
     function allowance(address tokenOwner, address spender)
         public
@@ -86,8 +85,6 @@ contract ExternStateProxyToken is SafeDecimalMath, Proxyable {
     {
         return state.balanceOf(account);
     }
-
-    /* ========== MUTATIVE FUNCTIONS ========== */
 
     function setState(TokenState _state)
         external
@@ -139,8 +136,6 @@ contract ExternStateProxyToken is SafeDecimalMath, Proxyable {
         Approval(sender, spender, value);
         return true;
     }
-
-    /* ========== EVENTS ========== */
 
     event Transfer(address indexed from, address indexed to, uint value);
 

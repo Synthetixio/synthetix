@@ -41,8 +41,6 @@ import "contracts/Proxy.sol";
 
 contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
 
-    /* ========== STATE VARIABLES ========== */
-
     // state that stores balances, allowances and frozen accounts.
     TokenState public state;
 
@@ -59,9 +57,6 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
     uint constant MAX_TRANSFER_FEE_RATE = UNIT / 10;
     // The address with the authority to distribute fees.
     address public feeAuthority;
-
-
-    /* ========== CONSTRUCTOR ========== */
 
     function ExternStateProxyFeeToken(
         string _name,
@@ -86,8 +81,6 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         feeAuthority = _feeAuthority;
     }
 
-    /* ========== SETTERS ========== */
-
     function setTransferFeeRate(uint _transferFeeRate)
         external
         optionalProxy_onlyOwner
@@ -111,8 +104,6 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
     {
         state = _state;
     }
-
-    /* ========== VIEWS ========== */
 
     function balanceOf(address account)
         public
@@ -164,8 +155,6 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
     {
         return safeDiv_dec(value, safeAdd(UNIT, transferFeeRate));
     }
-
-    /* ========== MUTATIVE FUNCTIONS ========== */
 
     /* Whatever calls this should have either the optionalProxy or onlyProxy modifier,
      * and pass in messageSender. */
@@ -270,8 +259,6 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
 
         return true;
     }
-
-    /* ========== EVENTS ========== */
 
     event Transfer(address indexed from, address indexed to, uint value);
 

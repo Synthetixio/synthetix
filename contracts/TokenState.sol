@@ -57,8 +57,6 @@ contract TokenState is Owned {
         associatedContract = _associatedContract;
     }
 
-    /* ========== SETTERS ========== */
-
     // Change the associated contract to a new address
     function setAssociatedContract(address _associatedContract)
         external
@@ -80,9 +78,6 @@ contract TokenState is Owned {
     {
         balanceOf[account] = value;
     }
-
-
-    /* ========== MODIFIERS ========== */
 
     modifier onlyAssociatedContract
     {

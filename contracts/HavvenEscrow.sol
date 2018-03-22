@@ -58,18 +58,12 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
     // The total remaining vested balance, for verifying the actual havven balance of this contract against.
     uint public totalVestedBalance;
 
-
-    /* ========== CONSTRUCTOR ========== */
-
     function HavvenEscrow(address _owner, Havven _havven)
         Owned(_owner)
         public
     {
         havven = _havven;
     }
-
-
-    /* ========== SETTERS ========== */
 
     function setHavven(Havven _havven)
         external
@@ -78,9 +72,6 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
         havven = _havven;
         HavvenUpdated(_havven);
     }
-
-
-    /* ========== VIEW FUNCTIONS ========== */
 
     /* The number of vesting dates in an account's schedule. */
     function numVestingEntries(address account)
@@ -173,9 +164,6 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
         }
         return getVestingQuantity(account, index);
     }
-
-
-    /* ========== MUTATIVE FUNCTIONS ========== */
 
     /* Withdraws a quantity of havvens back to the havven contract. */
     function withdrawHavvens(uint quantity)
@@ -284,9 +272,6 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
             Vested(msg.sender, msg.sender, now, total);
         }
     }
-
-
-    /* ========== EVENTS ========== */
 
     event HavvenUpdated(address newHavven);
 
