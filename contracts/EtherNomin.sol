@@ -462,8 +462,8 @@ contract EtherNomin is ExternStateProxyFeeToken {
         optionalProxy
     {
         // Price staleness check occurs inside the call to purchaseEtherCost.
-        require(n >= MINIMUM_PURCHASE &&
-                msg.value == purchaseCostEther(n));
+        require(n >= MINIMUM_PURCHASE);
+        require(msg.value == purchaseCostEther(n));
         address sender = messageSender;
         // sub requires that nominPool >= n
         nominPool = safeSub(nominPool, n);
