@@ -207,12 +207,22 @@ contract Court is Owned, SafeDecimalMath {
         Owned(_owner)
         public
     {
-        havven = _havven;
-        nomin = _nomin;
+        setHavven(_havven);
+        setNomin(nomin);
     }
 
 
     /* ========== SETTERS ========== */
+
+    function setHavven(Havven _havven) public onlyOwner {
+        require(address(_havven) != 0x0);
+        havven = _havven;
+    }
+
+    function setNomin(EtherNomin _nomin) public onlyOwner {
+        require(address(_nomin) != 0x0);
+        nomin = _nomin;
+    }
 
     function setMinStandingBalance(uint balance)
         external

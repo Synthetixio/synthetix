@@ -121,15 +121,21 @@ contract EtherNomin is ExternStateProxyFeeToken {
 
     /* ========== CONSTRUCTOR ========== */
 
-    function EtherNomin(address _havven, address _oracle,
-                        address _beneficiary,
-                        uint initialEtherPrice,
-                        address _owner, TokenState initialState)
-        ExternStateProxyFeeToken("Ether-Backed USD Nomins", "eUSD",
-                                 15 * UNIT / 10000, // nomin transfers incur a 15 bp fee
-                                 _havven, // the havven contract is the fee authority
-                                 initialState,
-                                 _owner)
+    function EtherNomin(
+        address _havven,
+        address _oracle,
+        address _beneficiary,
+        uint initialEtherPrice,
+        address _owner,
+        TokenState initialState
+    ) ExternStateProxyFeeToken(
+        "Ether-Backed USD Nomins",
+        "eUSD",
+        15 * UNIT / 10000, // nomin transfers incur a 15 bp fee
+        _havven, // the havven contract is the fee authority
+        initialState,
+        _owner
+    )
         public
     {
         oracle = _oracle;

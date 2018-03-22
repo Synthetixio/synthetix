@@ -63,9 +63,14 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
 
     /* ========== CONSTRUCTOR ========== */
 
-    function ExternStateProxyFeeToken(string _name, string _symbol,
-                                      uint _transferFeeRate, address _feeAuthority,
-                                      TokenState _state, address _owner)
+    function ExternStateProxyFeeToken(
+        string _name,
+        string _symbol,
+        uint _transferFeeRate,
+        address _feeAuthority,
+        TokenState _state,
+        address _owner
+    )
         Proxyable(_owner)
         public
     {
