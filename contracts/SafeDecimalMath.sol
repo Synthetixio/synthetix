@@ -125,15 +125,6 @@ contract SafeDecimalMath {
 
     }
 
-    /* True iff the denominator of x/y is nonzero. */
-    function divIsSafe(uint x, uint y)
-        pure
-        internal
-        returns (bool)
-    {
-        return y != 0;
-    }
-
     /* Return the result of dividing x by y, throwing an exception if the divisor is zero. */
     function safeDiv(uint x, uint y)
         pure

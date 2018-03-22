@@ -58,18 +58,12 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
     // The total remaining vested balance, for verifying the actual havven balance of this contract against.
     uint public totalVestedBalance;
 
-
-    /* ========== CONSTRUCTOR ========== */
-
     function HavvenEscrow(address _owner, Havven _havven)
         Owned(_owner)
         public
     {
         havven = _havven;
     }
-
-
-    /* ========== SETTERS ========== */
 
     function setHavven(Havven _havven)
         external
@@ -78,9 +72,6 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
         havven = _havven;
         HavvenUpdated(_havven);
     }
-
-
-    /* ========== VIEW FUNCTIONS ========== */
 
     /* The number of vesting dates in an account's schedule. */
     function numVestingEntries(address account)
@@ -174,9 +165,6 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
         return getVestingQuantity(account, index);
     }
 
-
-    /* ========== MUTATIVE FUNCTIONS ========== */
-
     /* Withdraws a quantity of havvens back to the havven contract. */
     function withdrawHavvens(uint quantity)
         external
@@ -216,22 +204,25 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
         totalVestedBalance = safeAdd(totalVestedBalance, quantity);
         require(totalVestedBalance <= havven.balanceOf(this));
 
-        if (vestingSchedules[account].length == 0) {
-            totalVestedAccountBalance[account] = quantity;
-        } else {
+        if (vestingSchedules[account].length != 0) {
             // Disallow adding new vested havvens earlier than the last one.
             // Since entries are only appended, this means that no vesting date can be repeated.
             require(getVestingTime(account, numVestingEntries(account) - 1) < time);
-            totalVestedAccountBalance[account] = safeAdd(totalVestedAccountBalance[account], quantity);
         }
+
+        totalVestedAccountBalance[account] = safeAdd(totalVestedAccountBalance[account], quantity);
 
         vestingSchedules[account].push([time, quantity]);
     }
 
     /* Construct a vesting schedule to release a quantity of havvens at regular intervals ending
      * at a given time. */
-    function addRegularVestingSchedule(address account, uint conclusionTime,
-                                       uint totalQuantity, uint vestingPeriods)
+    function addRegularVestingSchedule(
+        address account,
+        uint conclusionTime,
+        uint totalQuantity,
+        uint vestingPeriods
+    )
         external
         onlyOwner
         setupFunction
@@ -278,13 +269,9 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
         if (total != 0) {
             totalVestedBalance = safeSub(totalVestedBalance, total);
             havven.transfer(msg.sender, total);
-            Vested(msg.sender, msg.sender,
-                   now, total);
+            Vested(msg.sender, msg.sender, now, total);
         }
     }
-
-
-    /* ========== EVENTS ========== */
 
     event HavvenUpdated(address newHavven);
 

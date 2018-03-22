@@ -30,7 +30,6 @@ class TestSafeDecimalMath(unittest.TestCase):
         cls.mulIsSafe = lambda self, x, y: cls.math.functions.pubMulIsSafe(x, y).call()
         cls.safeMul = lambda self, x, y: cls.math.functions.pubSafeMul(x, y).call()
         cls.safeMul_dec = lambda self, x, y: cls.math.functions.pubSafeMul_dec(x, y).call()
-        cls.divIsSafe = lambda self, x, y: cls.math.functions.pubDivIsSafe(x, y).call()
         cls.safeDiv = lambda self, x, y: cls.math.functions.pubSafeDiv(x, y).call()
         cls.safeDiv_dec = lambda self, x, y: cls.math.functions.pubSafeDiv_dec(x, y).call()
         cls.intToDec = lambda self, i: cls.math.functions.pubIntToDec(i).call()
@@ -200,16 +199,6 @@ class TestSafeDecimalMath(unittest.TestCase):
         self.assertReverts(self.safeMul, 2**255, 2)
         self.assertReverts(self.safeMul, 2**200, 2**56)
         self.assertReverts(self.safeMul, 2**200, 3**40)
-
-    # Test divIsSafe function
-    def testDivIsSafe(self):
-        self.assertTrue(self.divIsSafe(1, 1))
-        self.assertTrue(self.divIsSafe(2**256 - 1, 2**256 - 1))
-        self.assertTrue(self.divIsSafe(100, 10*20))
-
-    def testDivIsUnsafe(self):
-        self.assertFalse(self.divIsSafe(1, 0))
-        self.assertFalse(self.divIsSafe(2**256 - 1, 0))
 
     # Test safeDiv function
     def testSafeDiv(self):

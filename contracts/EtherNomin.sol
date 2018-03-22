@@ -66,8 +66,6 @@ import "contracts/Court.sol";
 
 contract EtherNomin is ExternStateProxyFeeToken {
 
-    /* ========== STATE VARIABLES ========== */
-
     // The oracle provides price information to this contract.
     // It may only call the updatePrice() function.
     address public oracle;
@@ -118,18 +116,21 @@ contract EtherNomin is ExternStateProxyFeeToken {
     // Accounts which have lost the privilege to transact in nomins.
     mapping(address => bool) public frozen;
 
-
-    /* ========== CONSTRUCTOR ========== */
-
-    function EtherNomin(address _havven, address _oracle,
-                        address _beneficiary,
-                        uint initialEtherPrice,
-                        address _owner, TokenState initialState)
-        ExternStateProxyFeeToken("Ether-Backed USD Nomins", "eUSD",
-                                 15 * UNIT / 10000, // nomin transfers incur a 15 bp fee
-                                 _havven, // the havven contract is the fee authority
-                                 initialState,
-                                 _owner)
+    function EtherNomin(
+        address _havven,
+        address _oracle,
+        address _beneficiary,
+        uint initialEtherPrice,
+        address _owner,
+        TokenState initialState
+    ) ExternStateProxyFeeToken(
+        "Ether-Backed USD Nomins",
+        "eUSD",
+        15 * UNIT / 10000, // nomin transfers incur a 15 bp fee
+        _havven, // the havven contract is the fee authority
+        initialState,
+        _owner
+    )
         public
     {
         oracle = _oracle;
@@ -142,9 +143,6 @@ contract EtherNomin is ExternStateProxyFeeToken {
         // It should not be possible to transfer to the nomin contract itself.
         frozen[this] = true;
     }
-
-
-    /* ========== SETTERS ========== */
 
     function setOracle(address _oracle)
         external
@@ -186,9 +184,6 @@ contract EtherNomin is ExternStateProxyFeeToken {
         stalePeriod = _stalePeriod;
         StalePeriodUpdated(_stalePeriod);
     }
- 
-
-    /* ========== VIEW FUNCTIONS ========== */ 
 
     /* Return the equivalent fiat value of the given quantity
      * of ether at the current price.
@@ -357,9 +352,6 @@ contract EtherNomin is ExternStateProxyFeeToken {
         return false;
     }
 
-
-    /* ========== MUTATIVE FUNCTIONS ========== */
-
     /* Override ERC20 transfer function in order to check
      * whether the recipient account is frozen. Note that there is
      * no need to check whether the sender has a frozen account,
@@ -456,8 +448,8 @@ contract EtherNomin is ExternStateProxyFeeToken {
         optionalProxy
     {
         // Price staleness check occurs inside the call to purchaseEtherCost.
-        require(n >= MINIMUM_PURCHASE &&
-                msg.value == purchaseCostEther(n));
+        require(n >= MINIMUM_PURCHASE);
+        require(msg.value == purchaseCostEther(n));
         address sender = messageSender;
         // sub requires that nominPool >= n
         nominPool = safeSub(nominPool, n);
@@ -610,9 +602,6 @@ contract EtherNomin is ExternStateProxyFeeToken {
      * including by non-foundation parties. */
     function() public payable {}
 
-
-    /* ========== MODIFIERS ========== */
-
     modifier notLiquidating
     {
         require(!isLiquidating());
@@ -641,9 +630,6 @@ contract EtherNomin is ExternStateProxyFeeToken {
             beginLiquidation();
         }
     }
-
-
-    /* ========== EVENTS ========== */
 
     event PoolReplenished(uint nominsCreated, uint collateralDeposited);
 

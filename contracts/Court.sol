@@ -124,8 +124,6 @@ import "contracts/Havven.sol";
 
 contract Court is Owned, SafeDecimalMath {
 
-    /* ========== STATE VARIABLES ========== */
-
     // The addresses of the token contracts this confiscation court interacts with.
     Havven public havven;
     EtherNomin public nomin;
@@ -201,18 +199,23 @@ contract Court is Owned, SafeDecimalMath {
     // This requires the default value of the Vote enum to correspond to an abstention.
     mapping(address => mapping(uint => Vote)) public vote;
 
-    /* ========== CONSTRUCTOR ========== */
-
     function Court(Havven _havven, EtherNomin _nomin, address _owner)
         Owned(_owner)
         public
     {
-        havven = _havven;
-        nomin = _nomin;
+        setHavven(_havven);
+        setNomin(nomin);
     }
 
+    function setHavven(Havven _havven) public onlyOwner {
+        require(address(_havven) != 0x0);
+        havven = _havven;
+    }
 
-    /* ========== SETTERS ========== */
+    function setNomin(EtherNomin _nomin) public onlyOwner {
+        require(address(_nomin) != 0x0);
+        nomin = _nomin;
+    }
 
     function setMinStandingBalance(uint balance)
         external
@@ -240,8 +243,8 @@ contract Court is Owned, SafeDecimalMath {
         external
         onlyOwner
     {
-        require(MIN_CONFIRMATION_PERIOD <= duration &&
-                duration <= MAX_CONFIRMATION_PERIOD);
+        require(MIN_CONFIRMATION_PERIOD <= duration);
+        require(duration <= MAX_CONFIRMATION_PERIOD);
         confirmationPeriod = duration;
     }
 
@@ -260,9 +263,6 @@ contract Court is Owned, SafeDecimalMath {
         require(MIN_REQUIRED_MAJORITY <= fraction);
         requiredMajority = fraction;
     }
-
-
-    /* ========== VIEW FUNCTIONS ========== */
 
     /* There is a motion in progress on the specified
      * account, and votes are being accepted in that motion. */
@@ -335,9 +335,6 @@ contract Court is Owned, SafeDecimalMath {
         return vote[account][motionID] != Vote.Abstention;
     }
 
-
-    /* ========== MUTATIVE FUNCTIONS ========== */
-
     /* Begin a motion to confiscate the funds in a given nomin account.
      * Only the foundation, or accounts with sufficient havven balances
      * may elect to start such a motion.
@@ -347,8 +344,7 @@ contract Court is Owned, SafeDecimalMath {
         returns (uint)
     {
         // A confiscation motion must be mooted by someone with standing.
-        require((havven.balanceOf(msg.sender) >= minStandingBalance) ||
-                msg.sender == owner);
+        require((havven.balanceOf(msg.sender) >= minStandingBalance) || msg.sender == owner);
 
         // Require that the voting period is longer than a single fee period,
         // So that a single vote can span at most two fee periods.
@@ -505,10 +501,14 @@ contract Court is Owned, SafeDecimalMath {
         MotionVetoed(motionID, motionID);
     }
 
-
-    /* ========== EVENTS ========== */
-
-    event MotionBegun(address initiator, address indexed initiatorIndex, address target, address indexed targetIndex, uint motionID, uint indexed motionIDIndex);
+    event MotionBegun(
+        address initiator,
+        address indexed initiatorIndex,
+        address target,
+        address indexed targetIndex,
+        uint motionID,
+        uint indexed motionIDIndex
+    );
 
     event VotedFor(address voter, address indexed voterIndex, uint motionID, uint indexed motionIDIndex, uint weight);
 

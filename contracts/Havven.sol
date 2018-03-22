@@ -111,8 +111,6 @@ import "contracts/SelfDestructible.sol";
 
 contract Havven is ExternStateProxyToken, SelfDestructible {
 
-    /* ========== STATE VARIABLES ========== */
-
     // Sums of balances*duration in the current fee period.
     // range: decimals; units: havven-seconds
     mapping(address => uint) public currentBalanceSum;
@@ -165,9 +163,6 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
     EtherNomin public nomin;
     HavvenEscrow public escrow;
 
-
-    /* ========== CONSTRUCTOR ========== */
-
     function Havven(TokenState initialState, address _owner)
         ExternStateProxyToken("Havven", "HAV", 1e8 * UNIT, address(this), initialState, _owner)
         SelfDestructible(_owner, _owner)
@@ -179,9 +174,6 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
         lastFeePeriodStartTime = now - targetFeePeriodDurationSeconds;
         penultimateFeePeriodStartTime = now - 2*targetFeePeriodDurationSeconds;
     }
-
-
-    /* ========== SETTERS ========== */
 
     function setNomin(EtherNomin _nomin) 
         external
@@ -207,9 +199,6 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
         targetFeePeriodDurationSeconds = duration;
         FeePeriodDurationUpdated(duration);
     }
-
-
-    /* ========== MUTATIVE FUNCTIONS ========== */
 
     /* Allow the owner of this contract to endow any address with havvens
      * from the initial supply. Since the entire initial supply resides
@@ -306,9 +295,10 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
             feesOwed = escrow.totalVestedAccountBalance(sender);
         }
 
-        feesOwed = safeDiv_dec(safeMul_dec(safeAdd(feesOwed, lastAverageBalance[sender]),
-                                           lastFeesCollected),
-                               totalSupply);
+        feesOwed = safeDiv_dec(
+            safeMul_dec(safeAdd(feesOwed, lastAverageBalance[sender]), lastFeesCollected),
+            totalSupply
+        );
 
         hasWithdrawnLastPeriodFees[sender] = true;
         if (feesOwed != 0) {
@@ -436,9 +426,6 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
         checkFeePeriodRollover();
     }
 
-
-    /* ========== MODIFIERS ========== */
-
     /* If the fee period has rolled over, then
      * save the start times of the last fee period,
      * as well as the penultimate fee period.
@@ -470,9 +457,6 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
         checkFeePeriodRollover();
         _;
     }
-
-
-    /* ========== EVENTS ========== */
 
     event FeePeriodRollover(uint timestamp);
 

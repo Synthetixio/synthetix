@@ -63,14 +63,6 @@ contract PublicMath is SafeDecimalMath {
         return safeMul_dec(x, y);
     }
 
-    function pubDivIsSafe(uint x, uint y)
-        pure
-        public
-        returns (bool)
-    {
-        return divIsSafe(x, y);
-    }
-
     function pubSafeDiv(uint x, uint y)
         pure
         public
