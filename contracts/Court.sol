@@ -243,8 +243,8 @@ contract Court is Owned, SafeDecimalMath {
         external
         onlyOwner
     {
-        require(MIN_CONFIRMATION_PERIOD <= duration &&
-                duration <= MAX_CONFIRMATION_PERIOD);
+        require(MIN_CONFIRMATION_PERIOD <= duration);
+        require(duration <= MAX_CONFIRMATION_PERIOD);
         confirmationPeriod = duration;
     }
 
@@ -344,8 +344,7 @@ contract Court is Owned, SafeDecimalMath {
         returns (uint)
     {
         // A confiscation motion must be mooted by someone with standing.
-        require((havven.balanceOf(msg.sender) >= minStandingBalance) ||
-                msg.sender == owner);
+        require((havven.balanceOf(msg.sender) >= minStandingBalance) || msg.sender == owner);
 
         // Require that the voting period is longer than a single fee period,
         // So that a single vote can span at most two fee periods.
