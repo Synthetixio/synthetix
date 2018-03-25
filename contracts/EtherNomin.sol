@@ -113,7 +113,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
 
     // The period it takes for the price to be considered stale.
     // If the price is stale, functions that require the price are disabled.
-    uint public stalePeriod = 2 days;
+    uint public stalePeriod = 30 minutes;
 
     // Accounts which have lost the privilege to transact in nomins.
     mapping(address => bool) public frozen;
