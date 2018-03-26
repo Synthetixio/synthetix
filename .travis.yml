@@ -8,11 +8,14 @@ before_install:
   - nvm install node
   - npm install -g ganache-cli
   - ganache-cli -a 120 -e 1000000000000 &
+  - sudo add-apt-repository ppa:ethereum/ethereum
+  - sudo apt-get update
+  - sudo apt-get install solc
 install:
-  #- pip install -r requirements.txt
-  - pip install web3
-  - pip install eth-utils
-  - pip install https://github.com/zyzek/py-solc/archive/patch-1.zip
-  - python3 -m solc.install v0.4.21
+  - pip install -r requirements.txt
+  #- pip install web3
+  #- pip install eth-utils
+  #- pip install https://github.com/zyzek/py-solc/archive/patch-1.zip
+  #- python3 -m solc.install v0.4.21
 script:
   - python3 run_tests.py
