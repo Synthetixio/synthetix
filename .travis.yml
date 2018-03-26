@@ -10,5 +10,6 @@ before_install:
   - ganache-cli -a 120 -e 1000000000000 &
 install:
   - pip install -r requirements.txt
+  - python3 -m solc.install v0.4.21
 script:
   - python3 run_tests.py
