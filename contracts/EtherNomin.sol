@@ -144,6 +144,13 @@ contract EtherNomin is ExternStateProxyFeeToken {
     }
 
 
+    /* ========== FALLBACK FUNCTION ========== */
+
+    /* Fallback function allows convenient collateralisation of the contract,
+     * including by non-foundation parties. */
+    function() public payable {}
+
+
     /* ========== SETTERS ========== */
 
     function setOracle(address _oracle)
@@ -606,10 +613,6 @@ contract EtherNomin is ExternStateProxyFeeToken {
             emit AccountUnfrozen(target, target);
         }
     }
-
-    /* Fallback function allows convenient collateralisation of the contract,
-     * including by non-foundation parties. */
-    function() public payable {}
 
 
     /* ========== MODIFIERS ========== */
