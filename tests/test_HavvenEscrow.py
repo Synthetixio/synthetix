@@ -87,7 +87,7 @@ class TestHavvenEscrow(unittest.TestCase):
 
         cls.havven, cls.nomin, cls.havven_proxy, cls.nomin_proxy, cls.havven_real, cls.nomin_real, cls.court, cls.escrow, cls.construction_block, cls.escrow_event_dict = deploy_public_havven()
 
-        cls.initial_time = cls.nomin.functions.lastPriceUpdate().call()
+        cls.initial_time = cls.nomin.functions.lastPriceUpdateTime().call()
 
         cls.h_totalSupply = lambda self: cls.havven.functions.totalSupply().call()
         cls.h_targetFeePeriodDurationSeconds = lambda self: cls.havven.functions.targetFeePeriodDurationSeconds().call()
