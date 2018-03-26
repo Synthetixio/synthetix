@@ -3,7 +3,7 @@ language: python
 python:
   - "3.6"
 before_install:
-  - wget -qO- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh
+  - wget -qO- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash
   - source ~/.nvm/nvm.sh
   - nvm install node
   - npm install -g ganache-cli
