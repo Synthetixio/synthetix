@@ -10,12 +10,7 @@ before_install:
   - sudo add-apt-repository ppa:ethereum/ethereum
   - sudo apt-get update
   - sudo apt-get install solc
-  - ganache-cli -a 120 -e 1000000000000 &
 install:
   - pip install -r requirements.txt
-  #- pip install web3
-  #- pip install eth-utils
-  #- pip install https://github.com/zyzek/py-solc/archive/patch-1.zip
-  #- python3 -m solc.install v0.4.21
 script:
-  - python3 run_tests_which_are_missing.py
+  - python3 run_tests.py
