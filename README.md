@@ -1,5 +1,7 @@
 # Havven
 
+[![Build Status](https://travis-ci.org/Havven/havven.svg?branch=master)](https://travis-ci.org/Havven/havven)
+
 Havven is a decentralised payment network and stablecoin.
 It is critical to the system's viability that functionality is phased in over time. The initial release will provide a functional stablecoin and the opportunity to collect significant data on the market response. This will ultimately protect the system and those who back it as the network scales.
 
