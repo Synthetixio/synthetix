@@ -12,4 +12,4 @@ install:
 before_script:
   - ganache-cli -a 120 -e 1000000000000 &
 script:
-  - run_tests.py
+  - python3 run_tests.py
