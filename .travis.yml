@@ -1,0 +1,14 @@
+language: python
+python:
+  - "3.6"
+before_install:
+  - wget -qO- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh
+  - source ~/.nvm/nvm.sh
+  - nvm install node
+  - npm install -g ganache-cli
+install:
+  - pip install -r requirements.txt
+before_script:
+  - ganache-cli -a 120 -e 1000000000000 &
+script:
+  - run_tests.py
