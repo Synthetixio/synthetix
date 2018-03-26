@@ -7,7 +7,7 @@ before_install:
   - source ~/.nvm/nvm.sh
   - nvm install node
   - npm install -g ganache-cli
-  - sudo add-apt-repository ppa:ethereum/ethereum
+  - sudo add-apt-repository ppa:ethereum/ethereum -y
   - sudo apt-get update
   - sudo apt-get install solc
 install:
