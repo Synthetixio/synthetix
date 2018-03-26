@@ -109,7 +109,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
     uint public etherPrice;
 
     // Last time the price was updated.
-    uint public lastPriceUpdate;
+    uint public lastPriceUpdateTime;
 
     // The period it takes for the price to be considered stale.
     // If the price is stale, functions that require the price are disabled.
@@ -136,7 +136,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         beneficiary = _beneficiary;
 
         etherPrice = initialEtherPrice;
-        lastPriceUpdate = now;
+        lastPriceUpdateTime = now;
         emit PriceUpdated(etherPrice);
 
         // It should not be possible to transfer to the nomin contract itself.
@@ -322,7 +322,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         view
         returns (bool)
     {
-        return safeAdd(lastPriceUpdate, stalePeriod) < now;
+        return safeAdd(lastPriceUpdateTime, stalePeriod) < now;
     }
 
     function isLiquidating()
@@ -400,10 +400,10 @@ contract EtherNomin is ExternStateProxyFeeToken {
         require(msg.sender == oracle);
         // Must be the most recently sent price, but not too far in the future.
         // (so we can't lock ourselves out of updating the oracle for longer than this)
-        require(lastPriceUpdate < timeSent && timeSent < now + 10 minutes);
+        require(lastPriceUpdateTime < timeSent && timeSent < now + 10 minutes);
 
         etherPrice = price;
-        lastPriceUpdate = timeSent;
+        lastPriceUpdateTime = timeSent;
         emit PriceUpdated(price);
     }
 
