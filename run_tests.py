@@ -23,7 +23,7 @@ if __name__ == '__main__':
     for _ in range(3):
         print(".", end="", flush=True)
         time.sleep(1)
-    print(" Done.")
+    print(" Done!")
 
     # Import here to only initiate RPC connection after ganache is running.
     from tests import *
