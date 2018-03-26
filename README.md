@@ -28,11 +28,11 @@ The code here will be under continual audit and improved up until release of the
 
 ## Usage and requirements
 
-Deployment and testing scripts require Python 3.6+, [web3.py](https://github.com/ethereum/web3.py) 4.0.0+, [py-solc](https://github.com/ethereum/py-solc) 2.1.0+, and [eth-utils](https://github.com/ethereum/eth-utils) 1.0.0+. To install, ensure that python is up to date and run:
+Deployment and testing scripts require Python 3.6+, [web3.py](https://github.com/ethereum/web3.py) 4.0.0+, [py-solc](https://github.com/ethereum/py-solc) 2.1.0+, and [eth-utils](https://github.com/ethereum/eth-utils) 1.0.0+. To install these dependencies, ensure that python is up to date and run:
 
 ```pip3 install -r requirements.txt```
 
-In addition, the tests require [ganache](https://github.com/trufflesuite/ganache-cli) 6.1.0+ to be running, which can be installed from the node package manager with:
+In addition, the test and deployment scripts require [solc](https://github.com/ethereum/solidity) 0.4.21+ to be installed. The tests need [ganache](https://github.com/trufflesuite/ganache-cli) 6.1.0+, for speed and time fast-forwarding. It can be installed from the node package manager with:
 
 ```npm install ganache-cli```
 
@@ -43,7 +43,7 @@ deployment is as simple as:
 
 ```python3 deploy.py```
 
-The test suite runs on ganache for speed and to fast-forward time. For testing purposes it uses many accounts with plenty of ether. To ensure these requirements are satisfied, run `ganache-cli -e 1000000000000 -a 120` to prepare the test environment, and then run the tests as follows:
+Run the test suite as follows:
 
 ```python3 run_tests.py```
 
