@@ -7,10 +7,10 @@ before_install:
   - source ~/.nvm/nvm.sh
   - nvm install node
   - npm install -g ganache-cli
-  - ganache-cli -a 120 -e 1000000000000 &
   - sudo add-apt-repository ppa:ethereum/ethereum
   - sudo apt-get update
   - sudo apt-get install solc
+  - ganache-cli -a 120 -e 1000000000000 &
 install:
   - pip install -r requirements.txt
   #- pip install web3
