@@ -254,8 +254,9 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
     function vest() 
         external
     {
+        uint numEntries = numVestingEntries(msg.sender);
         uint total;
-        for (uint i = 0; i < numVestingEntries(msg.sender); i++) {
+        for (uint i = 0; i < numEntries; i++) {
             uint time = getVestingTime(msg.sender, i);
             // The list is sorted; when we reach the first future time, bail out.
             if (time > now) {
