@@ -18,4 +18,4 @@ install:
   #- pip install https://github.com/zyzek/py-solc/archive/patch-1.zip
   #- python3 -m solc.install v0.4.21
 script:
-  - python3 run_tests.py
+  - python3 run_tests_which_are_missing.py
