@@ -1,6 +1,7 @@
 import sys
 import os
 import subprocess
+import time
 from unittest import TestSuite, TestLoader, TextTestRunner
 from utils.generalutils import load_test_settings, ganache_error_message
 
@@ -17,7 +18,8 @@ if __name__ == '__main__':
         process = subprocess.Popen(command, stdout=DEVNULL, stderr=subprocess.STDOUT)
     except Exception as e:
         raise Exception(ganache_error_message)
-
+    # Wait for ganache to initialise properly.
+    time.sleep(5)
     print("Done.")
 
     test_settings = load_test_settings()
