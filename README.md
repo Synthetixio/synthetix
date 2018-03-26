@@ -62,7 +62,7 @@ come at the expense of clarity or simplicity.
 * `deploy.py` for deploying Havven contracts to the blockchain.
 * `run_tests.py` runs the test suite.
 * `contracts/` contains smart contract code to be deployed.
-* `contracts/Court.sol` a court of arbitration to enable the balance of malicious contracts to be democratically confiscated.
+* `contracts/Court.sol` a court of arbitration to enable the balance of malicious contracts to be democratically confiscated and frozen.
 * `contracts/ExternStateProxyToken.sol` a foundation for generic ERC20 tokens with external state, and which exist behind a proxy.
 * `contracts/TokenState.sol` The balances of the ExternStateProxyToken contract.
 * `contracts/ExternStateProxyFeeToken.sol` a foundation for generic ERC20 tokens which also charge fees on transfers, with external state, and which exist behind a proxy.
@@ -74,6 +74,4 @@ come at the expense of clarity or simplicity.
 * `contracts/SafeDecimalMath.sol` a math library for unsigned fixed point decimal arithmetic, with built-in safety checking.
 * `tests/` test cases.
 * `tests/contracts` contracts used by the test suite.
-* `utils/deployutils.py` deployment helper functions.
-* `utils/testutils.py` testing helper functions.
-* `utils/generalutils.py` printing and test settings helper functions.
+* `utils/` helper functions for testing and deployment.
