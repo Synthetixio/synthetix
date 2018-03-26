@@ -53,7 +53,7 @@ Run the test suite as follows:
 The following files should be sufficient for deploying and testing version 1.0
 of the havven system. We have leant heavily towards logical simplicity and
 explicitness where possible; while in documentation and naming conventions,
-verbosity and descriptiveness even to the point of excess.
+verbosity and descriptiveness even to the point of [excess](https://en.wikipedia.org/wiki/Literate_programming).
 Some consideration has been given to efficiency, but typically architecturally,
 in determining how to allow operations to pay for themselves as they go.
 We have mostly forgone local and machine optimisations whenever they would
