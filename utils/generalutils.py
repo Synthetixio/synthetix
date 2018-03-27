@@ -21,26 +21,15 @@ def to_seconds(seconds=0, minutes=0, hours=0, days=0, weeks=0):
 
 
 ganache_error_message = f"""{TERMCOLORS.RED}
-===========
-Please run ganache-cli.
-  If you do not have it installed, run `npm install -g ganache-cli@6.1.0-beta.0`
-  And run it with the flags: {TERMCOLORS.RESET}ganache-cli -e 1000000000000
+Error running ganache-cli.
+If it is missing, it can be installed with `npm install -g ganache-cli`.
 """
 
 TEST_SETTINGS_FILE = "test_settings.py"
 
 
 def generate_default_test_settings():
-    raised_exception = False
-    try:
-        import tests
-    except:
-        # use boolean to hide multiple exceptions printing out from requests library
-        raised_exception = True
-
-    if raised_exception:
-        raise Exception(ganache_error_message)
-
+    import tests
     return {
         i: True for i in dir(tests) if i.startswith('test_')
     }
