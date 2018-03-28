@@ -118,7 +118,7 @@ contract ExternStateProxyToken is SafeDecimalMath, Proxyable {
         internal
         returns (bool)
     {
-        require(from != address(0) && to != address(0));
+        require(to != address(0));
 
         // Insufficient balance will be handled by the safe subtraction.
         state.setBalanceOf(from, safeSub(state.balanceOf(from), value));
