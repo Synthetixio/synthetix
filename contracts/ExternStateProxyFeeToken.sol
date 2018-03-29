@@ -75,8 +75,10 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
 
         name = _name;
         symbol = _symbol;
-        transferFeeRate = _transferFeeRate;
         feeAuthority = _feeAuthority;
+
+        require(_transferFeeRate <= MAX_TRANSFER_FEE_RATE);
+        transferFeeRate = _transferFeeRate;
     }
 
     /* ========== SETTERS ========== */
