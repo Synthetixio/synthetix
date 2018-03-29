@@ -110,12 +110,6 @@ contract Proxyable is Owned {
         _;
     }
 
-    modifier onlyOwner_Proxy
-    {
-        require(messageSender == owner);
-        _;
-    }
-
     modifier optionalProxy
     {
         if (Proxy(msg.sender) != proxy) {
