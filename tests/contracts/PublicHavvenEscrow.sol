@@ -16,7 +16,7 @@ contract PublicHavvenEscrow is HavvenEscrow {
 		public 
 	{
 		// Because ganache does not change the timestamp when reverting.
-		setupDuration = 50000 weeks;
+		setupExpiryTime = now + 50000 weeks;
 	}
 
     function addRegularVestingSchedule(address account, uint conclusionTime,
