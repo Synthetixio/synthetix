@@ -56,7 +56,7 @@ If the contract is recollateralised, the owner may terminate liquidation.
 -----------------------------------------------------------------
 */
 
-pragma solidity ^0.4.21;
+pragma solidity 0.4.21;
 
 
 import "contracts/ExternStateProxyFeeToken.sol";
@@ -123,21 +123,21 @@ contract EtherNomin is ExternStateProxyFeeToken {
 
     function EtherNomin(address _havven, address _oracle,
                         address _beneficiary,
-                        uint initialEtherPrice,
-                        address _owner, TokenState initialState)
+                        uint _initialEtherPrice,
+                        address _owner, TokenState _initialState)
         ExternStateProxyFeeToken("Ether-Backed USD Nomins", "eUSD",
                                  15 * UNIT / 10000, // nomin transfers incur a 15 bp fee
                                  _havven, // the havven contract is the fee authority
-                                 initialState,
+                                 _initialState,
                                  _owner)
         public
     {
         oracle = _oracle;
         beneficiary = _beneficiary;
 
-        etherPrice = initialEtherPrice;
+        etherPrice = _initialEtherPrice;
         lastPriceUpdateTime = now;
-        emit PriceUpdated(etherPrice);
+        emit PriceUpdated(_initialEtherPrice);
 
         // It should not be possible to transfer to the nomin contract itself.
         frozen[this] = true;
@@ -200,13 +200,13 @@ contract EtherNomin is ExternStateProxyFeeToken {
     /* Return the equivalent fiat value of the given quantity
      * of ether at the current price.
      * Reverts if the price is stale. */
-    function fiatValue(uint eth)
+    function fiatValue(uint etherWei)
         public
         view
         priceNotStale
         returns (uint)
     {
-        return safeMul_dec(eth, etherPrice);
+        return safeMul_dec(etherWei, etherPrice);
     }
 
     /* Return the current fiat value of the contract's balance.
@@ -653,9 +653,9 @@ contract EtherNomin is ExternStateProxyFeeToken {
 
     event PoolDiminished(uint nominsDestroyed);
 
-    event Purchased(address buyer, address indexed buyerIndex, uint nomins, uint eth);
+    event Purchased(address buyer, address indexed buyerIndex, uint nomins, uint etherWei);
 
-    event Sold(address seller, address indexed sellerIndex, uint nomins, uint eth);
+    event Sold(address seller, address indexed sellerIndex, uint nomins, uint etherWei);
 
     event PriceUpdated(uint newPrice);
 

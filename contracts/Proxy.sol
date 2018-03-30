@@ -28,7 +28,7 @@ contract as the state parameter, messageSender.
 */
 
 
-pragma solidity ^0.4.21;
+pragma solidity 0.4.21;
 
 import "contracts/Owned.sol";
 
@@ -107,12 +107,6 @@ contract Proxyable is Owned {
     modifier onlyProxy
     {
         require(Proxy(msg.sender) == proxy);
-        _;
-    }
-
-    modifier onlyOwner_Proxy
-    {
-        require(messageSender == owner);
         _;
     }
 

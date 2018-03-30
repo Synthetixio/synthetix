@@ -23,24 +23,22 @@ conclusion of the configurable-length post-construction setup period.
 */
 
 
-pragma solidity ^0.4.21;
+pragma solidity 0.4.21;
 
 
 contract LimitedSetup {
 
-    uint constructionTime;
-    uint setupDuration;
+    uint setupExpiryTime;
 
-    function LimitedSetup(uint _setupDuration)
+    function LimitedSetup(uint setupDuration)
         public
     {
-        constructionTime = now;
-        setupDuration = _setupDuration;
+        setupExpiryTime = now + setupDuration;
     }
 
     modifier setupFunction
     {
-        require(now < constructionTime + setupDuration);
+        require(now < setupExpiryTime);
         _;
     }
 }

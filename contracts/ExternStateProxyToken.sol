@@ -25,7 +25,7 @@ This contract utilises a state for upgradability purposes.
 -----------------------------------------------------------------
 */
 
-pragma solidity ^0.4.21;
+pragma solidity 0.4.21;
 
 
 import "contracts/SafeDecimalMath.sol";
@@ -118,7 +118,7 @@ contract ExternStateProxyToken is SafeDecimalMath, Proxyable {
         internal
         returns (bool)
     {
-        require(from != address(0) && to != address(0));
+        require(to != address(0));
 
         // Insufficient balance will be handled by the safe subtraction.
         state.setBalanceOf(from, safeSub(state.balanceOf(from), value));
