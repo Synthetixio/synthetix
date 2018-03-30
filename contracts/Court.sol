@@ -232,7 +232,7 @@ contract Court is Owned, SafeDecimalMath {
                 duration <= MAX_VOTING_PERIOD);
         // Require that the voting period is no longer than a single fee period,
         // So that a single vote can span at most two fee periods.
-        require(duration <= havven.targetFeePeriodDurationSeconds());
+        require(duration <= havven.s().targetFeePeriodDurationSeconds());
         votingPeriod = duration;
     }
 
@@ -318,7 +318,7 @@ contract Court is Owned, SafeDecimalMath {
             return false;
         }
 
-        uint participation = safeDiv_dec(totalVotes, havven.totalSupply());
+        uint participation = safeDiv_dec(totalVotes, havven.s().totalSupply());
         uint fractionInFavour = safeDiv_dec(yeas, totalVotes);
 
         // We require the result to be strictly greater than the requirement
@@ -347,12 +347,12 @@ contract Court is Owned, SafeDecimalMath {
         returns (uint)
     {
         // A confiscation motion must be mooted by someone with standing.
-        require((havven.balanceOf(msg.sender) >= minStandingBalance) ||
+        require((havven.bal_s().balanceOf(msg.sender) >= minStandingBalance) ||
                 msg.sender == owner);
 
         // Require that the voting period is longer than a single fee period,
         // So that a single vote can span at most two fee periods.
-        require(votingPeriod <= havven.targetFeePeriodDurationSeconds());
+        require(votingPeriod <= havven.s().targetFeePeriodDurationSeconds());
 
         // There must be no confiscation motion already running for this account.
         require(targetMotionID[target] == 0);
@@ -393,10 +393,10 @@ contract Court is Owned, SafeDecimalMath {
         // We use a fee period guaranteed to have terminated before
         // the start of the vote. Select the right period if
         // a fee period rolls over in the middle of the vote.
-        if (motionStartTime[motionID] < havven.feePeriodStartTime()) {
-            weight = havven.penultimateAverageBalance(msg.sender);
+        if (motionStartTime[motionID] < havven.s().feePeriodStartTime()) {
+            weight = havven.s().penultimateAverageBalance(msg.sender);
         } else {
-            weight = havven.lastAverageBalance(msg.sender);
+            weight = havven.s().lastAverageBalance(msg.sender);
         }
 
         // Users must have a nonzero voting weight to vote.

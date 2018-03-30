@@ -33,7 +33,7 @@ pragma solidity ^0.4.21;
 import "contracts/Owned.sol";
 
 contract Proxy is Owned {
-    Proxyable target;
+    Proxyable public target;
 
     function Proxy(Proxyable _target, address _owner)
         Owned(_owner)

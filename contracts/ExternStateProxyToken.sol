@@ -34,38 +34,36 @@ import "contracts/TokenState.sol";
 import "contracts/Proxy.sol";
 
 
-contract ExternStateProxyToken is SafeDecimalMath, Proxyable {
+contract ExternStateToken is SafeDecimalMath, Owned {
 
     /* ========== STATE VARIABLES ========== */
 
     // Stores balances and allowances.
-    TokenState public state;
-
-    // Other ERC20 fields
-    string public name;
-    string public symbol;
-    uint public totalSupply;
+    TokenState public bal_s;
+    // Stores all other variables
+    address public s;
 
 
     /* ========== CONSTRUCTOR ========== */
 
-    function ExternStateProxyToken(string _name, string _symbol,
+    function ExternStateToken(string _name, string _symbol,
                                    uint initialSupply, address initialBeneficiary,
-                                   TokenState _state, address _owner)
-        Proxyable(_owner)
+                                   address _state, TokenState _token_state, address _owner)
+        Owned(_owner)
         public
     {
-        name = _name;
-        symbol = _symbol;
-        totalSupply = initialSupply;
+        s = _state;
+        s.setName(_name);
+        s.setSymbol(_symbol);
+        s.setTotalSupply(initialSupply);
 
         // if the state isn't set, create a new one
-        if (_state == TokenState(0)) {
-            state = new TokenState(_owner, address(this));
-            state.setBalanceOf(initialBeneficiary, totalSupply);
+        if (_token_state == TokenState(0)) {
+            bal_s = new TokenState(_owner, address(this));
+            bal_s.setBalanceOf(initialBeneficiary, totalSupply);
             emit Transfer(address(0), initialBeneficiary, initialSupply);
         } else {
-            state = _state;
+            bal_s = _token_state;
         }
    }
 
@@ -76,7 +74,7 @@ contract ExternStateProxyToken is SafeDecimalMath, Proxyable {
         view
         returns (uint)
     {
-        return state.allowance(tokenOwner, spender);
+        return bal_s.allowance(tokenOwner, spender);
     }
 
     function balanceOf(address account)
@@ -84,46 +82,76 @@ contract ExternStateProxyToken is SafeDecimalMath, Proxyable {
         view
         returns (uint)
     {
-        return state.balanceOf(account);
+        return bal_s.balanceOf(account);
+    }
+
+    function name()
+        public
+        view
+        returns (string)
+    {
+        return s.name();
+    }
+
+    function symbol()
+        public
+        view
+        returns (string)
+    {
+        return s.symbol();
+    }
+
+    function totalSupply()
+        public
+        view
+        returns (uint)
+    {
+        return s.totalSupply();
+    }
+
+    function setTotalSupply(uint _total_supply)
+        internal
+    {
+        s.setTotalSupply(_total_supply);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function setState(TokenState _state)
+    function setState(address _state)
         external
-        optionalProxy_onlyOwner
+        onlyOwner
     {
-        state = _state;
+        s = _state;
         emit StateUpdated(_state);
     } 
 
     /* Anything calling this must apply the onlyProxy or optionalProxy modifiers.*/
-    function _transfer_byProxy(address sender, address to, uint value)
+    function transfer(address to, uint value)
         internal
         returns (bool)
     {
         require(to != address(0));
 
         // Insufficient balance will be handled by the safe subtraction.
-        state.setBalanceOf(sender, safeSub(state.balanceOf(sender), value));
-        state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
+        bal_s.setBalanceOf(msg.sender, safeSub(bal_s.balanceOf(msg.sender), value));
+        bal_s.setBalanceOf(to, safeAdd(bal_s.balanceOf(to), value));
 
-        emit Transfer(sender, to, value);
+        emit Transfer(msg.sender, to, value);
 
         return true;
     }
 
     /* Anything calling this must apply the onlyProxy or optionalProxy modifiers.*/
-    function _transferFrom_byProxy(address sender, address from, address to, uint value)
+    function transferFrom(address from, address to, uint value)
         internal
         returns (bool)
     {
         require(from != address(0) && to != address(0));
 
         // Insufficient balance will be handled by the safe subtraction.
-        state.setBalanceOf(from, safeSub(state.balanceOf(from), value));
-        state.setAllowance(from, sender, safeSub(state.allowance(from, sender), value));
-        state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
+        bal_s.setBalanceOf(from, safeSub(bal_s.balanceOf(from), value));
+        bal_s.setAllowance(from, msg.sender, safeSub(bal_s.allowance(from, msg.sender), value));
+        bal_s.setBalanceOf(to, safeAdd(bal_s.balanceOf(to), value));
 
         emit Transfer(from, to, value);
 
@@ -132,11 +160,10 @@ contract ExternStateProxyToken is SafeDecimalMath, Proxyable {
 
     function approve(address spender, uint value)
         external
-        optionalProxy
         returns (bool)
     {
-        address sender = messageSender;
-        state.setAllowance(sender, spender, value);
+        address sender = msg.sender;
+        bal_s.setAllowance(sender, spender, value);
         emit Approval(sender, spender, value);
         return true;
     }
