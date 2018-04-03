@@ -219,7 +219,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), fee));
 
         emit Transfer(from, to, value);
-        emit TransferFeePaid(sender, fee);
+        emit TransferFeePaid(from, fee);
         emit Transfer(from, address(this), fee);
 
         return true;
