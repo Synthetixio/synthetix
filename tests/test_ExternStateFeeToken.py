@@ -8,20 +8,20 @@ from utils.testutils import generate_topic_event_map, get_event_data_from_log
 from utils.testutils import ZERO_ADDRESS
 
 
-ExternStateProxyFeeToken_SOURCE = "contracts/ExternStateProxyFeeToken.sol"
+ExternStateFeeToken_SOURCE = "contracts/ExternStateFeeToken.sol"
 Proxy_SOURCE = "contracts/Proxy.sol"
 TokenState_SOURCE = "contracts/TokenState.sol"
 
 
 def setUpModule():
-    print("Testing ExternStateProxyFeeToken...")
+    print("Testing ExternStateFeeToken...")
 
 
 def tearDownModule():
     print()
 
 
-class TestExternStateProxyFeeToken(unittest.TestCase):
+class TestExternStateFeeToken(unittest.TestCase):
     def setUp(self):
         self.snapshot = take_snapshot()
 
@@ -33,12 +33,12 @@ class TestExternStateProxyFeeToken(unittest.TestCase):
         cls.assertReverts = assertReverts
         cls.initial_beneficiary, cls.fee_authority, cls.token_owner = fresh_accounts(3)
 
-        cls.compiled = compile_contracts([ExternStateProxyFeeToken_SOURCE, TokenState_SOURCE],
+        cls.compiled = compile_contracts([ExternStateFeeToken_SOURCE, TokenState_SOURCE],
                                          remappings=['""=contracts'])
-        cls.feetoken_abi = cls.compiled['ExternStateProxyFeeToken']['abi']
+        cls.feetoken_abi = cls.compiled['ExternStateFeeToken']['abi']
         cls.feetoken_event_dict = generate_topic_event_map(cls.feetoken_abi)
         cls.feetoken_real, cls.construction_txr = attempt_deploy(
-            cls.compiled, "ExternStateProxyFeeToken", MASTER, ["Test Fee Token", "FEE",
+            cls.compiled, "ExternStateFeeToken", MASTER, ["Test Fee Token", "FEE",
                                                                      UNIT // 20, cls.fee_authority,
                                                                      ZERO_ADDRESS, cls.token_owner]
         )
@@ -107,14 +107,14 @@ class TestExternStateProxyFeeToken(unittest.TestCase):
         feestate, _ = attempt_deploy(self.compiled, 'TokenState',
                                      MASTER, [MASTER, self.feetoken.address])
 
-        feetoken, _ = attempt_deploy(self.compiled, 'ExternStateProxyFeeToken',
+        feetoken, _ = attempt_deploy(self.compiled, 'ExternStateFeeToken',
                                      MASTER,
                                      ["Test Fee Token", "FEE",
                                       UNIT // 20, self.fee_authority,
                                       ZERO_ADDRESS, DUMMY])
         self.assertNotEqual(feetoken.functions.state().call(), ZERO_ADDRESS)
 
-        feetoken, _ = attempt_deploy(self.compiled, 'ExternStateProxyFeeToken',
+        feetoken, _ = attempt_deploy(self.compiled, 'ExternStateFeeToken',
                                      MASTER,
                                      ["Test Fee Token", "FEE",
                                       UNIT // 20, self.fee_authority,

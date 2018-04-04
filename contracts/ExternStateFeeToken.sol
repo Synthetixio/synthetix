@@ -38,7 +38,7 @@ import "contracts/Owned.sol";
 import "contracts/TokenState.sol";
 
 
-contract ExternStateProxyFeeToken is SafeDecimalMath, Owned {
+contract ExternStateFeeToken is SafeDecimalMath, Owned {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -60,7 +60,7 @@ contract ExternStateProxyFeeToken is SafeDecimalMath, Owned {
 
     /* ========== CONSTRUCTOR ========== */
 
-    function ExternStateProxyFeeToken(string _name, string _symbol,
+    function ExternStateFeeToken(string _name, string _symbol,
                                       uint _transferFeeRate, address _feeAuthority,
                                       TokenState _state, address _owner)
         Owned(_owner)

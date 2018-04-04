@@ -189,7 +189,7 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(construct_time, self.construction_price_time)
         self.assertTrue(self.frozen(self.nomin_real.address))
 
-        # ExternStateProxyFeeToken members
+        # ExternStateFeeToken members
         self.assertEqual(self.name(), "Ether-Backed USD Nomins")
         self.assertEqual(self.symbol(), "eUSD")
         self.assertEqual(self.totalSupply(), 0)
