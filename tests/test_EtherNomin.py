@@ -59,11 +59,11 @@ class TestEtherNomin(unittest.TestCase):
         cls.nomin_beneficiary = W3.eth.accounts[3]
         cls.nomin_owner = W3.eth.accounts[0]
 
-        cls.nomin_real, cls.construction_txr = attempt_deploy(compiled, 'PublicEtherNomin', MASTER,
+        cls.nomin, cls.construction_txr = attempt_deploy(compiled, 'PublicEtherNomin', MASTER,
                                                               [cls.nomin_havven, cls.nomin_oracle,
                                                                cls.nomin_beneficiary,
                                                                1000 * UNIT, cls.nomin_owner, ZERO_ADDRESS])
-        cls.construction_price_time = cls.nomin_real.functions.lastPriceUpdateTime().call()
+        cls.construction_price_time = cls.nomin.functions.lastPriceUpdateTime().call()
         cls.initial_time = cls.construction_price_time
 
         cls.fake_court, _ = attempt_deploy(compiled, 'FakeCourt', MASTER, [])
@@ -78,11 +78,9 @@ class TestEtherNomin(unittest.TestCase):
             cls.fake_court.functions.setTargetMotionID(target, motion_id).transact({'from': sender}))
         cls.fake_court.confiscateBalance = lambda sender, target: mine_tx(
             cls.fake_court.functions.confiscateBalance(target).transact({'from': sender}))
-        cls.fake_court.setNomin(W3.eth.accounts[0], cls.nomin_real.address)
+        cls.fake_court.setNomin(W3.eth.accounts[0], cls.nomin.address)
 
-        cls.nomin = cls.nomin_real
-
-        mine_tx(cls.nomin_real.functions.setCourt(cls.fake_court.address).transact({'from': cls.nomin_owner}))
+        mine_tx(cls.nomin.functions.setCourt(cls.fake_court.address).transact({'from': cls.nomin_owner}))
 
         cls.owner = lambda self: cls.nomin.functions.owner().call()
         cls.oracle = lambda self: cls.nomin.functions.oracle().call()
@@ -110,7 +108,7 @@ class TestEtherNomin(unittest.TestCase):
         cls.setPoolFeeRate = lambda self, sender, rate: mine_tx(
             cls.nomin.functions.setPoolFeeRate(rate).transact({'from': sender}))
         cls.updatePrice = lambda self, sender, price, timeSent: mine_tx(
-            cls.nomin_real.functions.updatePrice(price, timeSent).transact({'from': sender}))
+            cls.nomin.functions.updatePrice(price, timeSent).transact({'from': sender}))
         cls.setStalePeriod = lambda self, sender, period: mine_tx(
             cls.nomin.functions.setStalePeriod(period).transact({'from': sender}))
 

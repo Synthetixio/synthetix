@@ -62,9 +62,7 @@ class TestCourt(unittest.TestCase):
         cls.assertClose = assertClose
 
         cls.havven, cls.havven_proxy, cls.havven_real, \
-            cls.nomin_real, cls.court, cls.nomin_abi, cls.court_abi = deploy_public_court()
-
-        cls.nomin = cls.nomin_real
+            cls.nomin, cls.court, cls.nomin_abi, cls.court_abi = deploy_public_court()
 
         # Event stuff
         cls.court_event_dict = generate_topic_event_map(cls.court_abi)

@@ -24,8 +24,6 @@ These fees accrue into a pool, from which a nominated authority
 may withdraw.
 
 This contract utilises a state for upgradability purposes.
-It relies on being called underneath a proxy contract, as
-included in Proxy.sol.
 
 -----------------------------------------------------------------
 */
@@ -173,8 +171,6 @@ contract ExternStateFeeToken is SafeDecimalMath, Owned {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    /* Whatever calls this should have either the optionalProxy or onlyProxy modifier,
-     * and pass in messageSender. */
     function transfer(address to, uint value)
         public
         returns (bool)
@@ -198,8 +194,6 @@ contract ExternStateFeeToken is SafeDecimalMath, Owned {
         return true;
     }
 
-    /* Whatever calls this should have either the optionalProxy or onlyProxy modifier,
-     * and pass in messageSender. */
     function transferFrom(address from, address to, uint value)
         public
         returns (bool)

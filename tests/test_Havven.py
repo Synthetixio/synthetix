@@ -45,7 +45,7 @@ def deploy_public_havven():
     havven_event_dict = generate_topic_event_map(compiled['PublicHavven']['abi'])
 
     print("\nDeployment complete.\n")
-    return havven_contract, nomin_contract, havven_proxy, havven_contract, nomin_contract, court_contract, escrow_contract, hvn_block, havven_event_dict
+    return havven_contract, havven_proxy, havven_contract, nomin_contract, court_contract, escrow_contract, hvn_block, havven_event_dict
 
 
 def setUpModule():
@@ -73,7 +73,7 @@ class TestHavven(unittest.TestCase):
         # to avoid overflowing in the negative direction (now - targetFeePeriodDuration * 2)
         fast_forward(weeks=102)
 
-        cls.havven, cls.nomin, cls.havven_proxy, cls.havven_real, cls.nomin_real, cls.court, \
+        cls.havven, cls.havven_proxy, cls.havven_real, cls.nomin, cls.court, \
             cls.escrow, cls.construction_block, cls.havven_event_dict = deploy_public_havven()
 
         # INHERITED

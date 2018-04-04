@@ -85,10 +85,8 @@ class TestHavven(unittest.TestCase):
         # to avoid overflowing in the negative direction (now - targetFeePeriodDuration * 2)
         fast_forward(weeks=102)
 
-        cls.havven, cls.havven_proxy, cls.havven_real, cls.nomin_real, cls.court, \
+        cls.havven, cls.havven_proxy, cls.havven_real, cls.nomin, cls.court, \
             cls.escrow, cls.construction_block, cls.havven_event_dict = deploy_public_havven()
-
-        cls.nomin = cls.nomin_real
 
         # INHERITED
         # OWNED

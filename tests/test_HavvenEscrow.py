@@ -81,8 +81,7 @@ class TestHavvenEscrow(unittest.TestCase):
         cls.assertReverts = assertReverts
         cls.assertClose = assertClose
 
-        cls.havven, cls.havven_proxy, cls.havven_real, cls.nomin_real, cls.court, cls.escrow, cls.construction_block, cls.escrow_event_dict = deploy_public_havven()
-        cls.nomin = cls.nomin_real
+        cls.havven, cls.havven_proxy, cls.havven_real, cls.nomin, cls.court, cls.escrow, cls.construction_block, cls.escrow_event_dict = deploy_public_havven()
 
         cls.initial_time = cls.nomin.functions.lastPriceUpdateTime().call()
 
@@ -100,7 +99,7 @@ class TestHavvenEscrow(unittest.TestCase):
             cls.havven.functions.withdrawFeeEntitlement().transact({'from': sender}))
 
         cls.n_updatePrice = lambda self, sender, price, timeSent: mine_tx(
-            cls.nomin_real.functions.updatePrice(price, timeSent).transact({'from': sender}))
+            cls.nomin.functions.updatePrice(price, timeSent).transact({'from': sender}))
         cls.n_setTransferFeeRate = lambda self, sender, rate: mine_tx(
             cls.nomin.functions.setTransferFeeRate(rate).transact({'from': sender}))
         cls.n_replenishPool = lambda self, sender, quantity, value: mine_tx(

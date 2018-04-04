@@ -77,8 +77,7 @@ class TestHavven(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.havven, cls.havven_proxy, cls.havven_real, cls.nomin_real, cls.fake_court = deploy_public_contracts()
-        cls.nomin = cls.nomin_real
+        cls.havven, cls.havven_proxy, cls.havven_real, cls.nomin, cls.fake_court = deploy_public_contracts()
 
         cls.assertClose = assertClose
         cls.assertReverts = assertReverts
@@ -199,7 +198,7 @@ class TestHavven(unittest.TestCase):
         cls.n_setPoolFeeRate = lambda self, sender, rate: mine_tx(
             cls.nomin.functions.setPoolFeeRate(rate).transact({'from': sender}))
         cls.n_updatePrice = lambda self, sender, price, timeSent: mine_tx(
-            cls.nomin_real.functions.updatePrice(price, timeSent).transact({'from': sender}))
+            cls.nomin.functions.updatePrice(price, timeSent).transact({'from': sender}))
         cls.n_setStalePeriod = lambda self, sender, period: mine_tx(
             cls.nomin.functions.setStalePeriod(period).transact({'from': sender}))
 
