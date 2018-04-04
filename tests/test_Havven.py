@@ -226,7 +226,7 @@ class TestHavven(unittest.TestCase):
         self.assertEqual(self.MIN_FEE_PERIOD_DURATION_SECONDS(), to_seconds(days=1))
         self.assertEqual(self.MAX_FEE_PERIOD_DURATION_SECONDS(), to_seconds(weeks=26))
         self.assertEqual(self.lastFeesCollected(), 0)
-        self.assertEqual(self.get_nomin(), self.nomin_real.address)
+        self.assertEqual(self.get_nomin(), self.nomin.address)
         self.assertEqual(self.havven.functions.decimals().call(), 18)
 
     ###
