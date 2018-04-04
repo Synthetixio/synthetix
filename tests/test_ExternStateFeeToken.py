@@ -37,7 +37,7 @@ class TestExternStateFeeToken(unittest.TestCase):
                                          remappings=['""=contracts'])
         cls.feetoken_abi = cls.compiled['ExternStateFeeToken']['abi']
         cls.feetoken_event_dict = generate_topic_event_map(cls.feetoken_abi)
-        cls.feetoken_real, cls.construction_txr = attempt_deploy(
+        cls.feetoken, cls.construction_txr = attempt_deploy(
             cls.compiled, "ExternStateFeeToken", MASTER, ["Test Fee Token", "FEE",
                                                                      UNIT // 20, cls.fee_authority,
                                                                      ZERO_ADDRESS, cls.token_owner]
@@ -48,11 +48,9 @@ class TestExternStateFeeToken(unittest.TestCase):
             [cls.token_owner, cls.token_owner]
         )
         mine_tx(cls.feestate.functions.setBalanceOf(cls.initial_beneficiary, 1000 * UNIT).transact({'from': cls.token_owner}))
-        mine_tx(cls.feestate.functions.setAssociatedContract(cls.feetoken_real.address).transact({'from': cls.token_owner}))
+        mine_tx(cls.feestate.functions.setAssociatedContract(cls.feetoken.address).transact({'from': cls.token_owner}))
 
-        cls.feetoken = cls.feetoken_real
-
-        mine_tx(cls.feetoken_real.functions.setState(cls.feestate.address).transact({'from': cls.token_owner}))
+        mine_tx(cls.feetoken.functions.setState(cls.feestate.address).transact({'from': cls.token_owner}))
 
         cls.owner = lambda self: cls.feetoken.functions.owner().call()
         cls.totalSupply = lambda self: cls.feetoken.functions.totalSupply().call()
@@ -88,11 +86,9 @@ class TestExternStateFeeToken(unittest.TestCase):
             cls.feetoken.functions.transferFrom(fromAccount, to, value).transact({'from': sender}))
 
         cls.withdrawFee = lambda self, sender, account, value: mine_tx(
-            cls.feetoken_real.functions.withdrawFee(account, value).transact({'from': sender}))
+            cls.feetoken.functions.withdrawFee(account, value).transact({'from': sender}))
         cls.donateToFeePool = lambda self, sender, value: mine_tx(
             cls.feetoken.functions.donateToFeePool(value).transact({'from': sender}))
-
-        cls.debug_messageSender = lambda self: cls.feetoken_real.functions._messageSender().call()
 
     def test_constructor(self):
         self.assertEqual(self.name(), "Test Fee Token")
@@ -101,7 +97,7 @@ class TestExternStateFeeToken(unittest.TestCase):
         self.assertEqual(self.transferFeeRate(), UNIT // 20)
         self.assertEqual(self.feeAuthority(), self.fee_authority)
         self.assertEqual(self.state(), self.feestate.address)
-        self.assertEqual(self.feestate.functions.associatedContract().call(), self.feetoken_real.address)
+        self.assertEqual(self.feestate.functions.associatedContract().call(), self.feetoken.address)
 
     def test_provide_state(self):
         feestate, _ = attempt_deploy(self.compiled, 'TokenState',
