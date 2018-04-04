@@ -8,7 +8,7 @@ from utils.testutils import generate_topic_event_map, get_event_data_from_log
 from utils.testutils import ZERO_ADDRESS
 
 
-ExternStateProxyFeeToken_SOURCE = "tests/contracts/PublicExternStateProxyFeeToken.sol"
+ExternStateProxyFeeToken_SOURCE = "contracts/ExternStateProxyFeeToken.sol"
 Proxy_SOURCE = "contracts/Proxy.sol"
 TokenState_SOURCE = "contracts/TokenState.sol"
 
@@ -33,12 +33,12 @@ class TestExternStateProxyFeeToken(unittest.TestCase):
         cls.assertReverts = assertReverts
         cls.initial_beneficiary, cls.fee_authority, cls.token_owner = fresh_accounts(3)
 
-        cls.compiled = compile_contracts([ExternStateProxyFeeToken_SOURCE, Proxy_SOURCE, TokenState_SOURCE],
+        cls.compiled = compile_contracts([ExternStateProxyFeeToken_SOURCE, TokenState_SOURCE],
                                          remappings=['""=contracts'])
-        cls.feetoken_abi = cls.compiled['PublicExternStateProxyFeeToken']['abi']
+        cls.feetoken_abi = cls.compiled['ExternStateProxyFeeToken']['abi']
         cls.feetoken_event_dict = generate_topic_event_map(cls.feetoken_abi)
         cls.feetoken_real, cls.construction_txr = attempt_deploy(
-            cls.compiled, "PublicExternStateProxyFeeToken", MASTER, ["Test Fee Token", "FEE",
+            cls.compiled, "ExternStateProxyFeeToken", MASTER, ["Test Fee Token", "FEE",
                                                                      UNIT // 20, cls.fee_authority,
                                                                      ZERO_ADDRESS, cls.token_owner]
         )
@@ -50,15 +50,9 @@ class TestExternStateProxyFeeToken(unittest.TestCase):
         mine_tx(cls.feestate.functions.setBalanceOf(cls.initial_beneficiary, 1000 * UNIT).transact({'from': cls.token_owner}))
         mine_tx(cls.feestate.functions.setAssociatedContract(cls.feetoken_real.address).transact({'from': cls.token_owner}))
 
-        cls.feetoken_proxy, _ = attempt_deploy(cls.compiled, 'Proxy',
-                                                    MASTER, [cls.feetoken_real.address, cls.token_owner])
-        mine_tx(cls.feetoken_real.functions.setProxy(cls.feetoken_proxy.address).transact(
-            {'from': cls.token_owner}))
-        cls.feetoken = W3.eth.contract(address=cls.feetoken_proxy.address,
-                                            abi=cls.compiled['PublicExternStateProxyFeeToken']['abi'])
+        cls.feetoken = cls.feetoken_real
 
-        mine_tx(
-            cls.feetoken_real.functions.setState(cls.feestate.address).transact({'from': cls.token_owner}))
+        mine_tx(cls.feetoken_real.functions.setState(cls.feestate.address).transact({'from': cls.token_owner}))
 
         cls.owner = lambda self: cls.feetoken.functions.owner().call()
         cls.totalSupply = lambda self: cls.feetoken.functions.totalSupply().call()
@@ -86,12 +80,12 @@ class TestExternStateProxyFeeToken(unittest.TestCase):
             cls.feetoken.functions.setFeeAuthority(new_fee_authority).transact({'from': sender}))
         cls.setState = lambda self, sender, new_state: mine_tx(
             cls.feetoken.functions.setState(new_state).transact({'from': sender}))
-        cls.transfer_byProxy = lambda self, sender, to, value: mine_tx(
-            cls.feetoken.functions.transfer_byProxy(to, value).transact({'from': sender}))
+        cls.transfer = lambda self, sender, to, value: mine_tx(
+            cls.feetoken.functions.transfer(to, value).transact({'from': sender}))
         cls.approve = lambda self, sender, spender, value: mine_tx(
             cls.feetoken.functions.approve(spender, value).transact({'from': sender}))
-        cls.transferFrom_byProxy = lambda self, sender, fromAccount, to, value: mine_tx(
-            cls.feetoken.functions.transferFrom_byProxy(fromAccount, to, value).transact({'from': sender}))
+        cls.transferFrom = lambda self, sender, fromAccount, to, value: mine_tx(
+            cls.feetoken.functions.transferFrom(fromAccount, to, value).transact({'from': sender}))
 
         cls.withdrawFee = lambda self, sender, account, value: mine_tx(
             cls.feetoken_real.functions.withdrawFee(account, value).transact({'from': sender}))
@@ -99,8 +93,6 @@ class TestExternStateProxyFeeToken(unittest.TestCase):
             cls.feetoken.functions.donateToFeePool(value).transact({'from': sender}))
 
         cls.debug_messageSender = lambda self: cls.feetoken_real.functions._messageSender().call()
-        cls.debug_optionalProxy = lambda self, sender: mine_tx(cls.feetoken.functions._optionalProxy_tester().transact({'from': sender}))
-        cls.debug_optionalProxy_direct = lambda self, sender: mine_tx(cls.feetoken_real.functions._optionalProxy_tester().transact({'from': sender}))
 
     def test_constructor(self):
         self.assertEqual(self.name(), "Test Fee Token")
@@ -115,14 +107,14 @@ class TestExternStateProxyFeeToken(unittest.TestCase):
         feestate, _ = attempt_deploy(self.compiled, 'TokenState',
                                      MASTER, [MASTER, self.feetoken.address])
 
-        feetoken, _ = attempt_deploy(self.compiled, 'PublicExternStateProxyFeeToken',
+        feetoken, _ = attempt_deploy(self.compiled, 'ExternStateProxyFeeToken',
                                      MASTER,
                                      ["Test Fee Token", "FEE",
                                       UNIT // 20, self.fee_authority,
                                       ZERO_ADDRESS, DUMMY])
         self.assertNotEqual(feetoken.functions.state().call(), ZERO_ADDRESS)
 
-        feetoken, _ = attempt_deploy(self.compiled, 'PublicExternStateProxyFeeToken',
+        feetoken, _ = attempt_deploy(self.compiled, 'ExternStateProxyFeeToken',
                                      MASTER,
                                      ["Test Fee Token", "FEE",
                                       UNIT // 20, self.fee_authority,
@@ -227,9 +219,9 @@ class TestExternStateProxyFeeToken(unittest.TestCase):
         fee_pool = self.feePool()
 
         # This should fail because receiver has no tokens
-        self.assertReverts(self.transfer_byProxy, receiver, sender, value)
+        self.assertReverts(self.transfer, receiver, sender, value)
 
-        tx_receipt = self.transfer_byProxy(sender, receiver, value)
+        tx_receipt = self.transfer(sender, receiver, value)
         # Check that events are emitted properly.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'], "Transfer")
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[1])['event'],
@@ -242,14 +234,14 @@ class TestExternStateProxyFeeToken(unittest.TestCase):
         value = 1001 * UNIT
 
         # This should fail because balance < value
-        self.assertReverts(self.transfer_byProxy, sender, receiver, value)
+        self.assertReverts(self.transfer, sender, receiver, value)
 
         # 0 Value transfers are allowed and incur no fee.
         value = 0
         total_supply = self.totalSupply()
         fee_pool = self.feePool()
 
-        tx_receipt = self.transfer_byProxy(sender, receiver, value)
+        tx_receipt = self.transfer(sender, receiver, value)
         # Check that events are emitted properly.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'], "Transfer")
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[1])['event'],
@@ -265,7 +257,7 @@ class TestExternStateProxyFeeToken(unittest.TestCase):
         total_supply = self.totalSupply()
         fee_pool = self.feePool()
 
-        tx_receipt = self.transfer_byProxy(no_tokens, receiver, value)
+        tx_receipt = self.transfer(no_tokens, receiver, value)
         # Check that events are emitted properly.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'], "Transfer")
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[1])['event'],
@@ -308,7 +300,7 @@ class TestExternStateProxyFeeToken(unittest.TestCase):
         fee_pool = self.feePool()
 
         # This fails because there has been no approval yet.
-        self.assertReverts(self.transferFrom_byProxy, spender, approver, receiver, value)
+        self.assertReverts(self.transferFrom, spender, approver, receiver, value)
 
         # Approve total amount inclusive of fee.
         tx_receipt = self.approve(approver, spender, total_value)
@@ -316,7 +308,7 @@ class TestExternStateProxyFeeToken(unittest.TestCase):
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'], "Approval")
         self.assertEqual(self.allowance(approver, spender), total_value)
 
-        tx_receipt = self.transferFrom_byProxy(spender, approver, receiver, value // 10)
+        tx_receipt = self.transferFrom(spender, approver, receiver, value // 10)
         # Check that events are emitted properly.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'], "Transfer")
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[1])['event'],
@@ -329,7 +321,7 @@ class TestExternStateProxyFeeToken(unittest.TestCase):
         self.assertEqual(self.totalSupply(), total_supply)
         self.assertEqual(self.feePool(), fee_pool + fee // 10)
 
-        tx_receipt = self.transferFrom_byProxy(spender, approver, receiver, 9 * value // 10)
+        tx_receipt = self.transferFrom(spender, approver, receiver, 9 * value // 10)
         # Check that events are emitted properly.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'], "Transfer")
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[1])['event'],
@@ -350,7 +342,7 @@ class TestExternStateProxyFeeToken(unittest.TestCase):
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'], "Approval")
 
         # This should fail because the approver has no tokens.
-        self.assertReverts(self.transferFrom_byProxy, spender, approver, receiver, value)
+        self.assertReverts(self.transferFrom, spender, approver, receiver, value)
 
     def test_withdrawFee(self):
         receiver, fee_receiver, not_fee_authority = fresh_accounts(3)
@@ -360,7 +352,7 @@ class TestExternStateProxyFeeToken(unittest.TestCase):
 
         value = 500 * UNIT
         total_value = self.transferPlusFee(value)
-        tx_receipt = self.transfer_byProxy(self.initial_beneficiary, self.fee_authority, total_value)
+        tx_receipt = self.transfer(self.initial_beneficiary, self.fee_authority, total_value)
         # Check that event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'], "Transfer")
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[1])['event'],
@@ -375,7 +367,7 @@ class TestExternStateProxyFeeToken(unittest.TestCase):
         receiver_balance = self.balanceOf(receiver)
         fee_receiver_balance = self.balanceOf(fee_receiver)
 
-        tx_receipt = self.transfer_byProxy(self.fee_authority, receiver, value)
+        tx_receipt = self.transfer(self.fee_authority, receiver, value)
         # Check that event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'], "Transfer")
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[1])['event'],
@@ -418,7 +410,7 @@ class TestExternStateProxyFeeToken(unittest.TestCase):
 
         self.assertGreater(self.balanceOf(self.initial_beneficiary), 10 * UNIT)
 
-        self.transfer_byProxy(self.initial_beneficiary, donor, 10 * UNIT)
+        self.transfer(self.initial_beneficiary, donor, 10 * UNIT)
         self.withdrawFee(self.fee_authority, self.initial_beneficiary, self.feePool())
 
         # No donations by people with no money...

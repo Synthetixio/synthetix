@@ -80,10 +80,6 @@ class TestEtherNomin(unittest.TestCase):
             cls.fake_court.functions.confiscateBalance(target).transact({'from': sender}))
         cls.fake_court.setNomin(W3.eth.accounts[0], cls.nomin_real.address)
 
-        cls.nomin_proxy, _ = attempt_deploy(compiled, 'Proxy',
-                                            MASTER, [cls.nomin_real.address, cls.nomin_owner])
-        mine_tx(cls.nomin_real.functions.setProxy(cls.nomin_proxy.address).transact({'from': cls.nomin_owner}))
-        #cls.nomin = W3.eth.contract(address=cls.nomin_proxy.address, abi=compiled['PublicEtherNomin']['abi'])
         cls.nomin = cls.nomin_real
 
         mine_tx(cls.nomin_real.functions.setCourt(cls.fake_court.address).transact({'from': cls.nomin_owner}))

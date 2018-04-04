@@ -37,20 +37,15 @@ def deploy_public_havven():
     mine_tx(havven_contract.functions.setProxy(havven_proxy.address).transact({'from': MASTER}))
     proxy_havven = W3.eth.contract(address=havven_proxy.address, abi=compiled['PublicHavven']['abi'])
 
-    nomin_proxy, _ = attempt_deploy(compiled, 'Proxy',
-                                    MASTER, [nomin_contract.address, MASTER])
-    mine_tx(nomin_contract.functions.setProxy(nomin_proxy.address).transact({'from': MASTER}))
-    proxy_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['EtherNomin']['abi'])
-
     # Hook up each of those contracts to each other
     txs = [proxy_havven.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
-           proxy_nomin.functions.setCourt(court_contract.address).transact({'from': MASTER})]
+           nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER})]
     attempt(mine_txs, [txs], "Linking contracts... ")
 
     havven_event_dict = generate_topic_event_map(compiled['PublicHavven']['abi'])
 
     print("\nDeployment complete.\n")
-    return havven_contract, nomin_contract, havven_proxy, nomin_proxy, havven_contract, nomin_contract, court_contract, escrow_contract, hvn_block, havven_event_dict
+    return havven_contract, nomin_contract, havven_proxy, havven_contract, nomin_contract, court_contract, escrow_contract, hvn_block, havven_event_dict
 
 
 def setUpModule():
@@ -78,7 +73,7 @@ class TestHavven(unittest.TestCase):
         # to avoid overflowing in the negative direction (now - targetFeePeriodDuration * 2)
         fast_forward(weeks=102)
 
-        cls.havven, cls.nomin, cls.havven_proxy, cls.nomin_proxy, cls.havven_real, cls.nomin_real, cls.court, \
+        cls.havven, cls.nomin, cls.havven_proxy, cls.havven_real, cls.nomin_real, cls.court, \
             cls.escrow, cls.construction_block, cls.havven_event_dict = deploy_public_havven()
 
         # INHERITED

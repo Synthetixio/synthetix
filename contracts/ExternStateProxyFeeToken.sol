@@ -2,7 +2,7 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
-file:       ExternStateProxyFeeToken.sol
+file:       ExternStateFeeToken.sol
 version:    1.0
 author:     Anton Jurisevic
             Dominic Romanowski
@@ -36,10 +36,9 @@ pragma solidity 0.4.21;
 import "contracts/SafeDecimalMath.sol";
 import "contracts/Owned.sol";
 import "contracts/TokenState.sol";
-import "contracts/Proxy.sol";
 
 
-contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
+contract ExternStateProxyFeeToken is SafeDecimalMath, Owned {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -64,7 +63,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
     function ExternStateProxyFeeToken(string _name, string _symbol,
                                       uint _transferFeeRate, address _feeAuthority,
                                       TokenState _state, address _owner)
-        Proxyable(_owner)
+        Owned(_owner)
         public
     {
         if (_state == TokenState(0)) {
@@ -85,7 +84,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
 
     function setTransferFeeRate(uint _transferFeeRate)
         external
-        optionalProxy_onlyOwner
+        onlyOwner
     {
         require(_transferFeeRate <= MAX_TRANSFER_FEE_RATE);
         transferFeeRate = _transferFeeRate;
@@ -94,7 +93,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
 
     function setFeeAuthority(address _feeAuthority)
         external
-        optionalProxy_onlyOwner
+        onlyOwner
     {
         feeAuthority = _feeAuthority;
         emit FeeAuthorityUpdated(_feeAuthority);
@@ -102,7 +101,7 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
 
     function setState(TokenState _state)
         external
-        optionalProxy_onlyOwner
+        onlyOwner
     {
         state = _state;
         emit StateUpdated(_state);
@@ -176,8 +175,8 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
 
     /* Whatever calls this should have either the optionalProxy or onlyProxy modifier,
      * and pass in messageSender. */
-    function _transfer_byProxy(address sender, address to, uint value)
-        internal
+    function transfer(address to, uint value)
+        public
         returns (bool)
     {
         require(to != address(0));
@@ -188,21 +187,21 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
         uint totalCharge = safeAdd(value, fee);
 
         // Insufficient balance will be handled by the safe subtraction.
-        state.setBalanceOf(sender, safeSub(state.balanceOf(sender), totalCharge));
+        state.setBalanceOf(msg.sender, safeSub(state.balanceOf(msg.sender), totalCharge));
         state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
         state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), fee));
 
-        emit Transfer(sender, to, value);
-        emit TransferFeePaid(sender, fee);
-        emit Transfer(sender, address(this), fee);
+        emit Transfer(msg.sender, to, value);
+        emit TransferFeePaid(msg.sender, fee);
+        emit Transfer(msg.sender, address(this), fee);
 
         return true;
     }
 
     /* Whatever calls this should have either the optionalProxy or onlyProxy modifier,
      * and pass in messageSender. */
-    function _transferFrom_byProxy(address sender, address from, address to, uint value)
-        internal
+    function transferFrom(address from, address to, uint value)
+        public
         returns (bool)
     {
         require(to != address(0));
@@ -214,12 +213,12 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
 
         // Insufficient balance will be handled by the safe subtraction.
         state.setBalanceOf(from, safeSub(state.balanceOf(from), totalCharge));
-        state.setAllowance(from, sender, safeSub(state.allowance(from, sender), totalCharge));
+        state.setAllowance(from, msg.sender, safeSub(state.allowance(from, msg.sender), totalCharge));
         state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
         state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), fee));
 
         emit Transfer(from, to, value);
-        emit TransferFeePaid(sender, fee);
+        emit TransferFeePaid(from, fee);
         emit Transfer(from, address(this), fee);
 
         return true;
@@ -227,13 +226,11 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
 
     function approve(address spender, uint value)
         external
-        optionalProxy
         returns (bool)
     {
-        address sender = messageSender;
-        state.setAllowance(sender, spender, value);
+        state.setAllowance(msg.sender, spender, value);
 
-        emit Approval(sender, spender, value);
+        emit Approval(msg.sender, spender, value);
 
         return true;
     }
@@ -263,21 +260,18 @@ contract ExternStateProxyFeeToken is Proxyable, SafeDecimalMath {
     /* Donate tokens from the sender's balance into the fee pool. */
     function donateToFeePool(uint n)
         external
-        optionalProxy
         returns (bool)
     {
-        address sender = messageSender;
-
         // Empty donations are disallowed.
-        uint balance = state.balanceOf(sender);
+        uint balance = state.balanceOf(msg.sender);
         require(balance != 0);
 
         // safeSub ensures the donor has sufficient balance.
-        state.setBalanceOf(sender, safeSub(balance, n));
+        state.setBalanceOf(msg.sender, safeSub(balance, n));
         state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), n));
 
-        emit FeesDonated(sender, sender, n);
-        emit Transfer(sender, address(this), n);
+        emit FeesDonated(msg.sender, msg.sender, n);
+        emit Transfer(msg.sender, address(this), n);
 
         return true;
     }

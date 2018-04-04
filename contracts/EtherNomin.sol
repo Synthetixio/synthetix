@@ -155,7 +155,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
 
     function setOracle(address _oracle)
         external
-        optionalProxy_onlyOwner
+        onlyOwner
     {
         oracle = _oracle;
         emit OracleUpdated(_oracle);
@@ -163,7 +163,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
 
     function setCourt(Court _court)
         external
-        optionalProxy_onlyOwner
+        onlyOwner
     {
         court = _court;
         emit CourtUpdated(_court);
@@ -171,7 +171,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
 
     function setBeneficiary(address _beneficiary)
         external
-        optionalProxy_onlyOwner
+        onlyOwner
     {
         beneficiary = _beneficiary;
         emit BeneficiaryUpdated(_beneficiary);
@@ -179,7 +179,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
 
     function setPoolFeeRate(uint _poolFeeRate)
         external
-        optionalProxy_onlyOwner
+        onlyOwner
     {
         require(_poolFeeRate <= UNIT);
         poolFeeRate = _poolFeeRate;
@@ -188,7 +188,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
 
     function setStalePeriod(uint _stalePeriod)
         external
-        optionalProxy_onlyOwner
+        onlyOwner
     {
         stalePeriod = _stalePeriod;
         emit StalePeriodUpdated(_stalePeriod);
@@ -374,22 +374,20 @@ contract EtherNomin is ExternStateProxyFeeToken {
      * and no new funds can be transferred to it.*/
     function transfer(address to, uint value)
         public
-        optionalProxy
         returns (bool)
     {
         require(!frozen[to]);
-        return _transfer_byProxy(messageSender, to, value);
+        return super.transfer(to, value);
     }
 
     /* Override ERC20 transferFrom function in order to check
      * whether the recipient account is frozen. */
     function transferFrom(address from, address to, uint value)
         public
-        optionalProxy
         returns (bool)
     {
         require(!frozen[to]);
-        return _transferFrom_byProxy(messageSender, from, to, value);
+        return super.transferFrom(from, to, value);
     }
 
     /* Update the current ether price and update the last updated time,
@@ -424,7 +422,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         external
         payable
         notLiquidating
-        optionalProxy_onlyOwner
+        onlyOwner
     {
         // Price staleness check occurs inside the call to fiatBalance.
         // Safe additions are unnecessary here, as either the addition is checked on the following line
@@ -440,7 +438,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
      *     There are fewer than n nomins in the pool. */
     function diminishPool(uint n)
         external
-        optionalProxy_onlyOwner
+        onlyOwner
     {
         // Require that there are enough nomins in the accessible pool to burn
         require(nominPool >= n);
@@ -460,17 +458,15 @@ contract EtherNomin is ExternStateProxyFeeToken {
         external
         payable
         notLiquidating
-        optionalProxy
     {
         // Price staleness check occurs inside the call to purchaseEtherCost.
         require(n >= MINIMUM_PURCHASE &&
                 msg.value == purchaseCostEther(n));
-        address sender = messageSender;
         // sub requires that nominPool >= n
         nominPool = safeSub(nominPool, n);
-        state.setBalanceOf(sender, safeAdd(state.balanceOf(sender), n));
-        emit Purchased(sender, sender, n, msg.value);
-        emit Transfer(0, sender, n);
+        state.setBalanceOf(msg.sender, safeAdd(state.balanceOf(msg.sender), n));
+        emit Purchased(msg.sender, msg.sender, n, msg.value);
+        emit Transfer(0, msg.sender, n);
         totalSupply = safeAdd(totalSupply, n);
     }
 
@@ -482,7 +478,6 @@ contract EtherNomin is ExternStateProxyFeeToken {
      *     Price is stale if not in liquidation. */
     function sell(uint n)
         external
-        optionalProxy
     {
 
         // Price staleness check occurs inside the call to saleProceedsEther,
@@ -497,14 +492,13 @@ contract EtherNomin is ExternStateProxyFeeToken {
 
         require(address(this).balance >= proceeds);
 
-        address sender = messageSender;
         // sub requires that the balance is greater than n
-        state.setBalanceOf(sender, safeSub(state.balanceOf(sender), n));
+        state.setBalanceOf(msg.sender, safeSub(state.balanceOf(msg.sender), n));
         nominPool = safeAdd(nominPool, n);
-        emit Sold(sender, sender, n, proceeds);
-        emit Transfer(sender, 0, n);
+        emit Sold(msg.sender, msg.sender, n, proceeds);
+        emit Transfer(msg.sender, 0, n);
         totalSupply = safeSub(totalSupply, n);
-        sender.transfer(proceeds);
+        msg.sender.transfer(proceeds);
     }
 
     /* Lock nomin purchase function in preparation for destroying the contract.
@@ -517,7 +511,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
     function forceLiquidation()
         external
         notLiquidating
-        optionalProxy_onlyOwner
+        onlyOwner
     {
         beginLiquidation();
     }
@@ -534,7 +528,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
      * the liquidation max. */
     function extendLiquidationPeriod(uint extension)
         external
-        optionalProxy_onlyOwner
+        onlyOwner
     {
         require(isLiquidating());
         uint sum = safeAdd(liquidationPeriod, extension);
@@ -551,7 +545,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         external
         payable
         priceNotStale
-        optionalProxy_onlyOwner
+        onlyOwner
     {
         require(isLiquidating());
         require(_nominCap() == 0 || collateralisationRatio() >= AUTO_LIQUIDATION_RATIO);
@@ -566,7 +560,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
      * nomins have been sold back into the pool. */
     function selfDestruct()
         external
-        optionalProxy_onlyOwner
+        onlyOwner
     {
         require(canSelfDestruct());
         emit SelfDestructed(beneficiary);
@@ -606,7 +600,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
      * again accept and transfer nomins. */
     function unfreezeAccount(address target)
         external
-        optionalProxy_onlyOwner
+        onlyOwner
     {
         if (frozen[target] && EtherNomin(target) != this) {
             frozen[target] = false;

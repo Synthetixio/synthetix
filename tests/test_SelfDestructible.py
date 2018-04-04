@@ -30,7 +30,6 @@ class TestSelfDestructible(unittest.TestCase):
         compiled = compile_contracts([SD_SOURCE],
                                      remappings=['""=contracts'])
 
-
         cls.sd, txr = attempt_deploy(compiled, 'PayableSD', MASTER, [MASTER, DUMMY])
 
         cls.owner = lambda self: cls.sd.functions.owner().call()
