@@ -357,7 +357,7 @@ class TestEtherNomin(unittest.TestCase):
         oracle = self.oracle()
         pre_price = self.etherPrice()
 
-        send_value(owner, self.nomin.address, ETHER // 2)
+        send_value(owner, self.nomin.address, ETHER)
         self.assertEqual(self.fiatBalance(), pre_price)
         self.updatePrice(oracle, UNIT // 10**12, self.now_block_time())
         fast_forward(2)
@@ -365,7 +365,8 @@ class TestEtherNomin(unittest.TestCase):
         self.updatePrice(oracle, 300 * UNIT, self.now_block_time())
         fast_forward(2)
         self.assertEqual(self.fiatBalance(), 300 * UNIT)
-        send_value(owner, self.nomin.address, ETHER // 2)
+
+        send_value(owner, self.nomin.address, ETHER)
         self.assertEqual(self.fiatBalance(), 600 * UNIT)
 
     def test_etherValue(self):
@@ -659,7 +660,7 @@ class TestEtherNomin(unittest.TestCase):
         self.liquidationTimestamp()
         self.etherPrice()
         self.lastPriceUpdateTime()
-        self.frozen(self.nomin_real.address)
+        self.frozen(self.nomin.address)
         self.setOracle(owner, oracle)
         self.setCourt(owner, court)
         self.setBeneficiary(owner, beneficiary)
