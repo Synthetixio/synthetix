@@ -59,12 +59,13 @@ If the contract is recollateralised, the owner may terminate liquidation.
 pragma solidity 0.4.21;
 
 
-import "contracts/ExternStateProxyFeeToken.sol";
+import "contracts/ExternStateFeeToken.sol";
+import "contracts/TokenState.sol";
 import "contracts/Court.sol";
 import "contracts/Havven.sol";
 
 
-contract EtherNomin is ExternStateProxyFeeToken {
+contract EtherNomin is ExternStateFeeToken {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -81,11 +82,11 @@ contract EtherNomin is ExternStateProxyFeeToken {
     function EtherNomin(address _havven,
                         uint _initialEtherPrice,
                         address _owner, TokenState _initialState)
-        ExternStateProxyFeeToken("Havven-Backed USD Nomins", "eUSD",
-                                 15 * UNIT / 10000, // nomin transfers incur a 15 bp fee
-                                 _havven, // the havven contract is the fee authority
-                                 _initialState,
-                                 _owner)
+        ExternStateFeeToken("Havven-Backed USD Nomins", "nUSD",
+                            15 * UNIT / 10000, // nomin transfers incur a 15 bp fee
+                            _havven, // the havven contract is the fee authority
+                            _initialState,
+                            _owner)
         public
     {
         // It should not be possible to transfer to the nomin contract itself.
@@ -123,7 +124,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
         returns (bool)
     {
         require(!frozen[to]);
-        return _transfer_byProxy(messageSender, to, value);
+        return super.transfer(to, value);
     }
 
     /* Override ERC20 transferFrom function in order to check

@@ -40,21 +40,17 @@ def deploy_public_havven():
     mine_tx(havven_contract.functions.setProxy(havven_proxy.address).transact({'from': MASTER}))
     proxy_havven = W3.eth.contract(address=havven_proxy.address, abi=compiled['PublicHavven']['abi'])
 
-    nomin_proxy, _ = attempt_deploy(compiled, 'Proxy',
-                                    MASTER, [nomin_contract.address, MASTER])
-    mine_tx(nomin_contract.functions.setProxy(nomin_proxy.address).transact({'from': MASTER}))
-    proxy_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['EtherNomin']['abi'])
 
     # Hook up each of those contracts to each other
     txs = [proxy_havven.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
-           proxy_nomin.functions.setCourt(court_contract.address).transact({'from': MASTER}),
+           nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER}),
            proxy_havven.functions.setEscrow(escrow_contract.address).transact({'from': MASTER})]
     attempt(mine_txs, [txs], "Linking contracts... ")
 
     escrow_event_dict = generate_topic_event_map(compiled['HavvenEscrow']['abi'])
 
     print("\nDeployment complete.\n")
-    return proxy_havven, proxy_nomin, havven_proxy, nomin_proxy, havven_contract, nomin_contract, court_contract, escrow_contract, hvn_block, escrow_event_dict
+    return proxy_havven, havven_proxy, havven_contract, nomin_contract, court_contract, escrow_contract, hvn_block, escrow_event_dict
 
 
 def setUpModule():
@@ -85,7 +81,7 @@ class TestHavvenEscrow(unittest.TestCase):
         cls.assertReverts = assertReverts
         cls.assertClose = assertClose
 
-        cls.havven, cls.nomin, cls.havven_proxy, cls.nomin_proxy, cls.havven_real, cls.nomin_real, cls.court, cls.escrow, cls.construction_block, cls.escrow_event_dict = deploy_public_havven()
+        cls.havven, cls.havven_proxy, cls.havven_real, cls.nomin, cls.court, cls.escrow, cls.construction_block, cls.escrow_event_dict = deploy_public_havven()
 
         cls.initial_time = cls.nomin.functions.lastPriceUpdateTime().call()
 
@@ -103,7 +99,7 @@ class TestHavvenEscrow(unittest.TestCase):
             cls.havven.functions.withdrawFeeEntitlement().transact({'from': sender}))
 
         cls.n_updatePrice = lambda self, sender, price, timeSent: mine_tx(
-            cls.nomin_real.functions.updatePrice(price, timeSent).transact({'from': sender}))
+            cls.nomin.functions.updatePrice(price, timeSent).transact({'from': sender}))
         cls.n_setTransferFeeRate = lambda self, sender, rate: mine_tx(
             cls.nomin.functions.setTransferFeeRate(rate).transact({'from': sender}))
         cls.n_replenishPool = lambda self, sender, quantity, value: mine_tx(
