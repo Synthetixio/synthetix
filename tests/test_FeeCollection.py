@@ -6,7 +6,7 @@ from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mi
     UNIT, MASTER, DUMMY, fast_forward, fresh_accounts, take_snapshot, restore_snapshot, ETHER
 from utils.testutils import assertReverts, block_time, assertClose, ZERO_ADDRESS
 
-SOLIDITY_SOURCES = ["tests/contracts/PublicHavven.sol", "tests/contracts/PublicEtherNomin.sol",
+SOLIDITY_SOURCES = ["tests/contracts/PublicHavven.sol", "tests/contracts/PublicNomin.sol",
                     "tests/contracts/FakeCourt.sol", "contracts/Havven.sol"]
 
 
@@ -18,7 +18,7 @@ def deploy_public_contracts():
     # Deploy contracts
     havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven',
                                               MASTER, [ZERO_ADDRESS, MASTER])
-    nomin_contract, nom_txr = attempt_deploy(compiled, 'PublicEtherNomin',
+    nomin_contract, nom_txr = attempt_deploy(compiled, 'PublicNomin',
                                              MASTER,
                                              [havven_contract.address, MASTER, MASTER,
                                               1000 * UNIT, MASTER, ZERO_ADDRESS])
@@ -27,11 +27,6 @@ def deploy_public_contracts():
                                                [havven_contract.address, nomin_contract.address,
                                                 MASTER])
 
-    # Install proxies
-    havven_proxy, _ = attempt_deploy(compiled, 'Proxy',
-                                     MASTER, [havven_contract.address, MASTER])
-    mine_tx(havven_contract.functions.setProxy(havven_proxy.address).transact({'from': MASTER}))
-    proxy_havven = W3.eth.contract(address=havven_proxy.address, abi=compiled['PublicHavven']['abi'])
 
     # Hook up each of those contracts to each other
     txs = [havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
@@ -39,7 +34,7 @@ def deploy_public_contracts():
     attempt(mine_txs, [txs], "Linking contracts... ")
 
     print("\nDeployment complete.\n")
-    return proxy_havven, havven_proxy, havven_contract, nomin_contract, court_contract
+    return havven_contract, nomin_contract, court_contract
 
 
 def setUpModule():
@@ -77,7 +72,7 @@ class TestHavven(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.havven, cls.havven_proxy, cls.havven_real, cls.nomin, cls.fake_court = deploy_public_contracts()
+        cls.havven, cls.nomin, cls.fake_court = deploy_public_contracts()
 
         cls.assertClose = assertClose
         cls.assertReverts = assertReverts

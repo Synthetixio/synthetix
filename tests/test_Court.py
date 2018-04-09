@@ -7,9 +7,8 @@ from utils.testutils import generate_topic_event_map, get_event_data_from_log
 from utils.testutils import ZERO_ADDRESS
 
 SOLIDITY_SOURCES = ["tests/contracts/PublicCourt.sol",
-                    "contracts/EtherNomin.sol",
-                    "tests/contracts/PublicHavven.sol",
-                    "contracts/Proxy.sol"]
+                    "contracts/Nomin.sol",
+                    "tests/contracts/PublicHavven.sol"]
 
 
 def deploy_public_court():
@@ -17,28 +16,21 @@ def deploy_public_court():
 
     compiled = attempt(compile_contracts, [SOLIDITY_SOURCES], "Compiling contracts...")
     court_abi = compiled['PublicCourt']['abi']
-    nomin_abi = compiled['EtherNomin']['abi']
+    nomin_abi = compiled['Nomin']['abi']
 
     havven_contract, havven_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [ZERO_ADDRESS, MASTER])
-    nomin_contract, nomin_txr = attempt_deploy(compiled, 'EtherNomin', MASTER,
+    nomin_contract, nomin_txr = attempt_deploy(compiled, 'Nomin', MASTER,
                                                [havven_contract.address, MASTER, MASTER, 1000 * UNIT, MASTER,
                                                 ZERO_ADDRESS])
     court_contract, court_txr = attempt_deploy(compiled, 'PublicCourt', MASTER,
                                                [havven_contract.address, nomin_contract.address, MASTER])
-
-    # Install proxies
-    havven_proxy, _ = attempt_deploy(compiled, 'Proxy',
-                                     MASTER, [havven_contract.address, MASTER])
-    mine_tx(havven_contract.functions.setProxy(havven_proxy.address).transact({'from': MASTER}))
-    proxy_havven = W3.eth.contract(address=havven_proxy.address, abi=compiled['PublicHavven']['abi'])
 
     txs = [havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
            nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER})]
     attempt(mine_txs, [txs], "Linking contracts... ")
 
     print("\nDeployment complete.\n")
-    return (proxy_havven, havven_proxy, havven_contract,
-            nomin_contract, court_contract, nomin_abi, court_abi)
+    return havven_contract, nomin_contract, court_contract, nomin_abi, court_abi
 
 
 def setUpModule():
@@ -61,8 +53,7 @@ class TestCourt(unittest.TestCase):
         cls.assertReverts = assertReverts
         cls.assertClose = assertClose
 
-        cls.havven, cls.havven_proxy, cls.havven_real, \
-            cls.nomin, cls.court, cls.nomin_abi, cls.court_abi = deploy_public_court()
+        cls.havven, cls.nomin, cls.court, cls.nomin_abi, cls.court_abi = deploy_public_court()
 
         # Event stuff
         cls.court_event_dict = generate_topic_event_map(cls.court_abi)
@@ -181,7 +172,7 @@ class TestCourt(unittest.TestCase):
 
     def test_constructor(self):
         self.assertEqual(self.owner(), MASTER)
-        self.assertEqual(self.havven_real.address, self.getHavven())
+        self.assertEqual(self.havven.address, self.getHavven())
         self.assertEqual(self.nomin.address, self.getNomin())
         self.assertEqual(self.minStandingBalance(), 100 * UNIT)
         self.assertEqual(self.votingPeriod(), 1 * self.weeks)

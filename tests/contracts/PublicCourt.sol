@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity 0.4.21;
 
 
 import "contracts/Court.sol";
@@ -6,7 +6,7 @@ import "contracts/Court.sol";
 
 contract PublicCourt is Court {
 
-    function PublicCourt(Havven _havven, EtherNomin _nomin, address _owner)
+    function PublicCourt(Havven _havven, Nomin _nomin, address _owner)
         Court(_havven, _nomin, _owner)
         public
     {}

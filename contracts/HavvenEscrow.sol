@@ -40,7 +40,7 @@ pragma solidity 0.4.21;
 import "contracts/SafeDecimalMath.sol";
 import "contracts/Owned.sol";
 import "contracts/Havven.sol";
-import "contracts/EtherNomin.sol";
+import "contracts/Nomin.sol";
 import "contracts/LimitedSetup.sol";
 
 

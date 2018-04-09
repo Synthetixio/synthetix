@@ -118,7 +118,7 @@ pragma solidity 0.4.21;
 
 import "contracts/Owned.sol";
 import "contracts/SafeDecimalMath.sol";
-import "contracts/EtherNomin.sol";
+import "contracts/Nomin.sol";
 import "contracts/Havven.sol";
 
 
@@ -128,7 +128,7 @@ contract Court is Owned, SafeDecimalMath {
 
     // The addresses of the token contracts this confiscation court interacts with.
     Havven public havven;
-    EtherNomin public nomin;
+    Nomin public nomin;
 
     // The minimum havven balance required to be considered to have standing
     // to begin confiscation proceedings.
@@ -203,7 +203,7 @@ contract Court is Owned, SafeDecimalMath {
 
     /* ========== CONSTRUCTOR ========== */
 
-    function Court(Havven _havven, EtherNomin _nomin, address _owner)
+    function Court(Havven _havven, Nomin _nomin, address _owner)
         Owned(_owner)
         public
     {

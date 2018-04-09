@@ -9,7 +9,6 @@ from utils.testutils import ZERO_ADDRESS
 
 
 ExternStateFeeToken_SOURCE = "contracts/ExternStateFeeToken.sol"
-Proxy_SOURCE = "contracts/Proxy.sol"
 TokenState_SOURCE = "contracts/TokenState.sol"
 
 

@@ -2,7 +2,7 @@ pragma solidity ^0.4.21;
 
 
 import "contracts/State.sol";
-import "contracts/EtherNomin.sol";
+import "contracts/Nomin.sol";
 import "contracts/HavvenEscrow.sol";
 
 
@@ -63,7 +63,7 @@ contract HavvenState is State {
     uint public lastFeesCollected;
 
     mapping(address => bool) public hasWithdrawnLastPeriodFees;
-    EtherNomin public nomin;
+    Nomin public nomin;
     HavvenEscrow public escrow;
 
     function setName(string _name) public onlyAssociatedContract {
@@ -127,7 +127,7 @@ contract HavvenState is State {
 
 
     function setNomin(address _nomin) public onlyAssociatedContract {
-        nomin = EtherNomin(_nomin);
+        nomin = Nomin(_nomin);
     }
 
 

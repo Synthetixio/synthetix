@@ -1,6 +1,6 @@
 import unittest
 from utils.deployutils import compile_contracts, attempt_deploy, mine_tx, \
-    UNIT, MASTER, DUMMY, fresh_accounts, take_snapshot, restore_snapshot
+    UNIT, MASTER, DUMMY, take_snapshot, restore_snapshot
 from utils.testutils import assertReverts
 from utils.testutils import ZERO_ADDRESS
 

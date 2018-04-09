@@ -2,7 +2,7 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
-file:       EtherNomin.sol
+file:       Nomin.sol
 version:    1.0
 author:     Anton Jurisevic
             Mike Spain
@@ -65,7 +65,7 @@ import "contracts/Court.sol";
 import "contracts/Havven.sol";
 
 
-contract EtherNomin is ExternStateFeeToken {
+contract Nomin is ExternStateFeeToken {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -79,9 +79,7 @@ contract EtherNomin is ExternStateFeeToken {
 
     /* ========== CONSTRUCTOR ========== */
 
-    function EtherNomin(address _havven,
-                        uint _initialEtherPrice,
-                        address _owner, TokenState _initialState)
+    function Nomin(address _havven, address _owner, TokenState _initialState)
         ExternStateFeeToken("Havven-Backed USD Nomins", "nUSD",
                             15 * UNIT / 10000, // nomin transfers incur a 15 bp fee
                             _havven, // the havven contract is the fee authority
@@ -171,7 +169,7 @@ contract EtherNomin is ExternStateFeeToken {
         external
         onlyOwner
     {
-        if (frozen[target] && EtherNomin(target) != this) {
+        if (frozen[target] && Nomin(target) != this) {
             frozen[target] = false;
             emit AccountUnfrozen(target, target);
         }

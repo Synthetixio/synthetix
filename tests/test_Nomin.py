@@ -10,20 +10,19 @@ from utils.testutils import assertReverts, block_time, send_value, get_eth_balan
 from utils.testutils import generate_topic_event_map, get_event_data_from_log
 from utils.testutils import ZERO_ADDRESS
 
-ETHERNOMIN_SOURCE = "tests/contracts/PublicEtherNomin.sol"
+Nomin_SOURCE = "tests/contracts/PublicNomin.sol"
 FAKECOURT_SOURCE = "tests/contracts/FakeCourt.sol"
-PROXY_SOURCE = "contracts/Proxy.sol"
 
 
 def setUpModule():
-    print("Testing EtherNomin...")
+    print("Testing Nomin...")
 
 
 def tearDownModule():
     print()
 
 
-class TestEtherNomin(unittest.TestCase):
+class TestNomin(unittest.TestCase):
     def setUp(self):
         self.snapshot = take_snapshot()
         utils.generalutils.time_fast_forwarded = 0
@@ -49,9 +48,9 @@ class TestEtherNomin(unittest.TestCase):
     def setUpClass(cls):
         cls.assertReverts = assertReverts
 
-        compiled = compile_contracts([ETHERNOMIN_SOURCE, FAKECOURT_SOURCE, PROXY_SOURCE],
+        compiled = compile_contracts([Nomin_SOURCE, FAKECOURT_SOURCE],
                                      remappings=['""=contracts'])
-        cls.nomin_abi = compiled['PublicEtherNomin']['abi']
+        cls.nomin_abi = compiled['PublicNomin']['abi']
         cls.nomin_event_dict = generate_topic_event_map(cls.nomin_abi)
 
         cls.nomin_havven = W3.eth.accounts[1]
@@ -59,7 +58,7 @@ class TestEtherNomin(unittest.TestCase):
         cls.nomin_beneficiary = W3.eth.accounts[3]
         cls.nomin_owner = W3.eth.accounts[0]
 
-        cls.nomin, cls.construction_txr = attempt_deploy(compiled, 'PublicEtherNomin', MASTER,
+        cls.nomin, cls.construction_txr = attempt_deploy(compiled, 'PublicNomin', MASTER,
                                                               [cls.nomin_havven, cls.nomin_oracle,
                                                                cls.nomin_beneficiary,
                                                                1000 * UNIT, cls.nomin_owner, ZERO_ADDRESS])
@@ -116,14 +115,12 @@ class TestEtherNomin(unittest.TestCase):
         cls.fiatBalance = lambda self: cls.nomin.functions.fiatBalance().call()
         cls.collateralisationRatio = lambda self: cls.nomin.functions.collateralisationRatio().call()
         cls.etherValue = lambda self, fiat: cls.nomin.functions.etherValue(fiat).call()
-        cls.etherValueAllowStale = lambda self, fiat: cls.nomin.functions.publicEtherValueAllowStale(fiat).call()
         cls.poolFeeIncurred = lambda self, n: cls.nomin.functions.poolFeeIncurred(n).call()
         cls.purchaseCostFiat = lambda self, n: cls.nomin.functions.purchaseCostFiat(n).call()
         cls.purchaseCostEther = lambda self, n: cls.nomin.functions.purchaseCostEther(n).call()
         cls.saleProceedsFiat = lambda self, n: cls.nomin.functions.saleProceedsFiat(n).call()
         cls.saleProceedsEther = lambda self, n: cls.nomin.functions.saleProceedsEther(n).call()
-        cls.saleProceedsEtherAllowStale = lambda self, n: cls.nomin.functions.publicSaleProceedsEtherAllowStale(
-            n).call()
+
         cls.priceIsStale = lambda self: cls.nomin.functions.priceIsStale().call()
         cls.isLiquidating = lambda self: cls.nomin.functions.isLiquidating().call()
         cls.canSelfDestruct = lambda self: cls.nomin.functions.canSelfDestruct().call()
@@ -762,16 +759,15 @@ class TestEtherNomin(unittest.TestCase):
         owner = self.owner()
         oracle = self.oracle()
         target = W3.eth.accounts[1]
-        proxy = W3.eth.accounts[2]
 
         # Unauthorized transfers should not work
-        self.assertReverts(self.transferFrom, proxy, owner, target, UNIT)
+        self.assertReverts(self.transferFrom, DUMMY, owner, target, UNIT)
 
         # Neither should transfers that are too large for the allowance.
-        self.approve(owner, proxy, UNIT)
-        self.assertReverts(self.transferFrom, proxy, owner, target, 2 * UNIT)
+        self.approve(owner, DUMMY, UNIT)
+        self.assertReverts(self.transferFrom, DUMMY, owner, target, 2 * UNIT)
 
-        self.approve(owner, proxy, 10000 * UNIT)
+        self.approve(owner, DUMMY, 10000 * UNIT)
 
         self.updatePrice(oracle, UNIT, self.now_block_time())
         fast_forward(2)
@@ -783,17 +779,17 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.balanceOf(target), 0)
 
         # Should be impossible to transfer to the nomin contract itself.
-        self.assertReverts(self.transferFrom, proxy, owner, self.nomin.address, UNIT)
+        self.assertReverts(self.transferFrom, DUMMY, owner, self.nomin.address, UNIT)
 
-        self.transferFrom(proxy, owner, target, 5 * UNIT)
+        self.transferFrom(DUMMY, owner, target, 5 * UNIT)
         remainder = 10 * UNIT - self.transferPlusFee(5 * UNIT)
         self.assertEqual(self.balanceOf(owner), remainder)
         self.assertEqual(self.balanceOf(target), 5 * UNIT)
 
         self.debugFreezeAccount(owner, target)
 
-        self.assertReverts(self.transferFrom, proxy, owner, target, UNIT)
-        self.assertReverts(self.transferFrom, proxy, target, owner, UNIT)
+        self.assertReverts(self.transferFrom, DUMMY, owner, target, UNIT)
+        self.assertReverts(self.transferFrom, DUMMY, target, owner, UNIT)
 
         self.unfreezeAccount(owner, target)
 

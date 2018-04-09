@@ -42,6 +42,7 @@ class TestLimitedSetup(unittest.TestCase):
 
     def test_setupDuration(self):
         self.assertEqual(self.contractConstructionTime + to_seconds(weeks=1), self.setupExpiryTime())
- 
+
+
 if __name__ == '__main__':
     unittest.main()

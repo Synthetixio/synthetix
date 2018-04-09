@@ -100,7 +100,7 @@ pragma solidity 0.4.21;
 
 
 import "contracts/ExternStateToken.sol";
-import "contracts/EtherNomin.sol";
+import "contracts/Nomin.sol";
 import "contracts/HavvenEscrow.sol";
 import "contracts/TokenState.sol";
 import "contracts/SelfDestructible.sol";
@@ -119,8 +119,8 @@ contract Havven is ExternStateToken, SelfDestructible {
         uint lastTransferTimestamp;
     }
 
-    mapping(address => BalanceManager) public havvenBalanceManager;
-    mapping(address => BalanceManager) public issuedNominBalanceManager;
+    mapping(address => BalanceManager) internal havvenBalanceManager;
+    mapping(address => BalanceManager) internal issuedNominBalanceManager;
 
     // The time the current fee period began.
     uint public feePeriodStartTime = 2;
@@ -144,15 +144,15 @@ contract Havven is ExternStateToken, SelfDestructible {
 
     mapping(address => bool) public hasWithdrawnLastPeriodFees;
 
-    EtherNomin public nomin;
+    Nomin public nomin;
     HavvenEscrow public escrow;
 
     address public oracle;
-    uint havPrice;
-    uint lastHavPriceUpdateTime;
-    uint havPriceStalePeriod = 60 minutes;
-    uint CMax = 5 * UNIT / 100;
-    uint MAX_C_MAX = UNIT;
+    uint public havPrice;
+    uint public lastHavPriceUpdateTime;
+    uint public havPriceStalePeriod = 60 minutes;
+    uint public CMax = 5 * UNIT / 100;
+    uint public MAX_C_MAX = UNIT;
 
     mapping(address => bool) public whitelistedIssuers;
     mapping(address => uint) public issuedNomins;
@@ -172,7 +172,7 @@ contract Havven is ExternStateToken, SelfDestructible {
 
     /* ========== SETTERS ========== */
 
-    function setNomin(EtherNomin _nomin) 
+    function setNomin(Nomin _nomin)
         external
         onlyOwner
     {
@@ -218,6 +218,54 @@ contract Havven is ExternStateToken, SelfDestructible {
         onlyOwner
     {
         whitelistedIssuers[account] = value;
+    }
+
+    function currentHavvenBalanceSum(address account)
+        external
+        view
+        returns (uint)
+    {
+        return havvenBalanceManager[account].currentBalanceSum;
+    }
+
+    function lastAverageHavvenBalance(address account)
+        external
+        view
+        returns (uint)
+    {
+        return havvenBalanceManager[account].lastAverageBalance;
+    }
+
+    function lastHavvenTransferTimestamp(address account)
+        external
+        view
+        returns (uint)
+    {
+        return havvenBalanceManager[account].lastTransferTimestamp;
+    }
+
+    function currentIssuedNominBalanceSum(address account)
+        external
+        view
+        returns (uint)
+    {
+        return issuedNominBalanceManager[account].currentBalanceSum;
+    }
+
+    function lastAverageIssuedNominBalance(address account)
+        external
+        view
+        returns (uint)
+    {
+        return issuedNominBalanceManager[account].lastAverageBalance;
+    }
+
+    function lastIssuedNominTransferTimestamp(address account)
+        external
+        view
+        returns (uint)
+    {
+        return issuedNominBalanceManager[account].lastTransferTimestamp;
     }
 
 

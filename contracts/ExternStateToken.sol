@@ -17,8 +17,7 @@ MODULE DESCRIPTION
 -----------------------------------------------------------------
 
 A token interface to be overridden to produce an ERC20-compliant
-token contract. It relies on being called underneath a proxy,
-as described in Proxy.sol.
+token contract.
 
 This contract utilises a state for upgradability purposes.
 

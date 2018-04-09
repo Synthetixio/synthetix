@@ -2,7 +2,7 @@ import unittest
 
 from utils.deployutils import compile_contracts, attempt_deploy, mine_tx, W3, MASTER, DUMMY, UNIT
 from utils.deployutils import take_snapshot, restore_snapshot, fast_forward, fresh_account
-from utils.testutils import assertReverts, assertClose, ZERO_ADDRESS, send_value, block_time
+from utils.testutils import assertReverts, assertClose, send_value, block_time
 
 SD_SOURCE = "tests/contracts/PayableSD.sol"
 
