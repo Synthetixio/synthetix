@@ -7,9 +7,8 @@ from utils.testutils import assertReverts
 from utils.testutils import generate_topic_event_map, get_event_data_from_log
 from utils.testutils import ZERO_ADDRESS
 
-ExternStateToken_SOURCE = "tests/contracts/PublicExternStateToken.sol"
+ExternStateToken_SOURCE = "contracts/ExternStateToken.sol"
 TokenState_SOURCE = "contracts/TokenState.sol"
-Proxy_SOURCE = "contracts/Proxy.sol"
 
 
 def setUpModule():
@@ -33,25 +32,21 @@ class TestExternStateToken(unittest.TestCase):
 
         cls.the_owner = DUMMY
 
-        cls.compiled = compile_contracts([ExternStateToken_SOURCE, TokenState_SOURCE, Proxy_SOURCE],
+        cls.compiled = compile_contracts([ExternStateToken_SOURCE, TokenState_SOURCE],
                                          remappings=['""=contracts'])
-        cls.token_abi = cls.compiled['PublicExternStateToken']['abi']
+        cls.token_abi = cls.compiled['ExternStateToken']['abi']
         cls.token_event_dict = generate_topic_event_map(cls.token_abi)
-        cls.token_real, cls.construction_txr = attempt_deploy(cls.compiled, 'PublicExternStateToken',
+        cls.token, cls.construction_txr = attempt_deploy(cls.compiled, 'ExternStateToken',
                                                                    MASTER,
                                                                    ["Test Token", "TEST",
                                                                     1000 * UNIT, cls.the_owner,
                                                                     ZERO_ADDRESS, cls.the_owner])
 
-        cls.tokenstate = W3.eth.contract(address=cls.token_real.functions.state().call(),
+        cls.tokenstate = W3.eth.contract(address=cls.token.functions.state().call(),
                                          abi=cls.compiled['TokenState']['abi'])
 
-        mine_tx(cls.token_real.functions.setState(cls.tokenstate.address).transact({'from': cls.the_owner}))
+        mine_tx(cls.token.functions.setState(cls.tokenstate.address).transact({'from': cls.the_owner}))
 
-        cls.tokenproxy, _ = attempt_deploy(cls.compiled, 'Proxy',
-                                           MASTER, [cls.token_real.address, cls.the_owner])
-        mine_tx(cls.token_real.functions.setProxy(cls.tokenproxy.address).transact({'from': cls.the_owner}))
-        cls.token = W3.eth.contract(address=cls.tokenproxy.address, abi=cls.compiled['PublicExternStateToken']['abi'])
 
         cls.owner = lambda self: cls.token.functions.owner().call()
         cls.totalSupply = lambda self: cls.token.functions.totalSupply().call()
@@ -76,21 +71,21 @@ class TestExternStateToken(unittest.TestCase):
         self.assertEqual(self.totalSupply(), 1000 * UNIT)
         self.assertEqual(self.balanceOf(self.the_owner), 1000 * UNIT)
         self.assertEqual(self.state(), self.tokenstate.address)
-        self.assertEqual(self.tokenstate.functions.associatedContract().call(), self.token_real.address)
+        self.assertEqual(self.tokenstate.functions.associatedContract().call(), self.token.address)
 
     def test_provide_state(self):
         tokenstate, _ = attempt_deploy(self.compiled, 'TokenState',
                                        MASTER,
-                                       [self.the_owner, self.token_real.address])
+                                       [self.the_owner, self.token.address])
 
-        token, _ = attempt_deploy(self.compiled, 'PublicExternStateToken',
+        token, _ = attempt_deploy(self.compiled, 'ExternStateToken',
                                        MASTER,
                                        ["Test Token", "TEST",
                                         1000 * UNIT, MASTER,
                                         ZERO_ADDRESS, DUMMY])
         self.assertNotEqual(token.functions.state().call(), ZERO_ADDRESS)
 
-        token, _ = attempt_deploy(self.compiled, 'PublicExternStateToken',
+        token, _ = attempt_deploy(self.compiled, 'ExternStateToken',
                                        MASTER,
                                        ["Test Token", "TEST",
                                         1000 * UNIT, MASTER,
