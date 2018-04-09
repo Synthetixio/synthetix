@@ -92,7 +92,7 @@ class TestTokenState(unittest.TestCase):
     """
     def test_balances_after_swap(self):
         valid_token, txr = attempt_deploy(  # initial supply and beneficiary don't have to be set, as state exists
-            self.compiled, 'PublicExternStateProxyToken', MASTER, ["Test2", "TEST2", 0, ZERO_ADDRESS, self.tokenstate.address, MASTER]
+            self.compiled, 'PublicExternStateToken', MASTER, ["Test2", "TEST2", 0, ZERO_ADDRESS, self.tokenstate.address, MASTER]
         )
         # new token only reads balances, but state doesn't accept any changes from it, until the token is
         #   set in the state as the associated contract
@@ -126,7 +126,7 @@ class TestTokenState(unittest.TestCase):
 
     def test_allowances(self):
         valid_token, txr = attempt_deploy(  # initial supply and beneficiary don't have to be set, as state exists
-            self.compiled, 'PublicExternStateProxyToken', MASTER, ["Test2", "TEST2", 0, ZERO_ADDRESS, self.tokenstate.address, MASTER]
+            self.compiled, 'PublicExternStateToken', MASTER, ["Test2", "TEST2", 0, ZERO_ADDRESS, self.tokenstate.address, MASTER]
         )
         fake_proxy, _ = attempt_deploy(self.compiled, 'FakeProxy', MASTER, [])
         mine_tx(valid_token.functions.setProxy(fake_proxy.address).transact({'from': MASTER}))

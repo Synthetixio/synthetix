@@ -1,6 +1,6 @@
 import tests.test_Court
 import tests.test_Deploy
-import tests.test_ExternStateProxyToken
+import tests.test_ExternStateToken
 import tests.test_ExternStateFeeToken
 import tests.test_EtherNomin
 import tests.test_FeeCollection

@@ -97,7 +97,7 @@ class TestHavven(unittest.TestCase):
         cls.h_acceptOwnership = lambda self, sender: mine_tx(
             self.havven.functions.acceptOwnership().transact({'from': sender}))
 
-        # ExternStateProxyToken (transfer/transferFrom are overwritten)
+        # ExternStateToken (transfer/transferFrom are overwritten)
         # totalSupply
         cls.totalSupply = lambda self: self.havven.functions.totalSupply().call()
         cls.name = lambda self: self.havven.functions.name().call()
@@ -204,10 +204,10 @@ class TestHavven(unittest.TestCase):
         self.assertReverts(self.h_nominateOwner, invalid_account, invalid_account)
 
     ###
-    # Test inherited ExternStateProxyToken
+    # Test inherited ExternStateToken
     ###
     # Constuctor
-    def test_ExternStateProxyToken_constructor(self):
+    def test_ExternStateToken_constructor(self):
         total_supply = 10 ** 8 * UNIT
         self.assertEqual(self.name(), "Havven")
         self.assertEqual(self.symbol(), "HAV")
@@ -615,7 +615,7 @@ class TestHavven(unittest.TestCase):
         event = get_event_data_from_log(self.havven_event_dict, tx_receipt.logs[0])
         self.assertEqual(event['event'], 'FeePeriodRollover')
 
-    # same as test_ExternStateProxyToken
+    # same as test_ExternStateToken
     def test_transfer(self):
         sender, receiver, no_tokens = fresh_accounts(3)
         self.endow(MASTER, sender, 50 * UNIT)

@@ -7,20 +7,20 @@ from utils.testutils import assertReverts
 from utils.testutils import generate_topic_event_map, get_event_data_from_log
 from utils.testutils import ZERO_ADDRESS
 
-ExternStateProxyToken_SOURCE = "tests/contracts/PublicExternStateProxyToken.sol"
+ExternStateToken_SOURCE = "tests/contracts/PublicExternStateToken.sol"
 TokenState_SOURCE = "contracts/TokenState.sol"
 Proxy_SOURCE = "contracts/Proxy.sol"
 
 
 def setUpModule():
-    print("Testing ExternStateProxyToken...")
+    print("Testing ExternStateToken...")
 
 
 def tearDownModule():
     print()
 
 
-class TestExternStateProxyToken(unittest.TestCase):
+class TestExternStateToken(unittest.TestCase):
     def setUp(self):
         self.snapshot = take_snapshot()
 
@@ -33,11 +33,11 @@ class TestExternStateProxyToken(unittest.TestCase):
 
         cls.the_owner = DUMMY
 
-        cls.compiled = compile_contracts([ExternStateProxyToken_SOURCE, TokenState_SOURCE, Proxy_SOURCE],
+        cls.compiled = compile_contracts([ExternStateToken_SOURCE, TokenState_SOURCE, Proxy_SOURCE],
                                          remappings=['""=contracts'])
-        cls.token_abi = cls.compiled['PublicExternStateProxyToken']['abi']
+        cls.token_abi = cls.compiled['PublicExternStateToken']['abi']
         cls.token_event_dict = generate_topic_event_map(cls.token_abi)
-        cls.token_real, cls.construction_txr = attempt_deploy(cls.compiled, 'PublicExternStateProxyToken',
+        cls.token_real, cls.construction_txr = attempt_deploy(cls.compiled, 'PublicExternStateToken',
                                                                    MASTER,
                                                                    ["Test Token", "TEST",
                                                                     1000 * UNIT, cls.the_owner,
@@ -51,7 +51,7 @@ class TestExternStateProxyToken(unittest.TestCase):
         cls.tokenproxy, _ = attempt_deploy(cls.compiled, 'Proxy',
                                            MASTER, [cls.token_real.address, cls.the_owner])
         mine_tx(cls.token_real.functions.setProxy(cls.tokenproxy.address).transact({'from': cls.the_owner}))
-        cls.token = W3.eth.contract(address=cls.tokenproxy.address, abi=cls.compiled['PublicExternStateProxyToken']['abi'])
+        cls.token = W3.eth.contract(address=cls.tokenproxy.address, abi=cls.compiled['PublicExternStateToken']['abi'])
 
         cls.owner = lambda self: cls.token.functions.owner().call()
         cls.totalSupply = lambda self: cls.token.functions.totalSupply().call()
@@ -83,14 +83,14 @@ class TestExternStateProxyToken(unittest.TestCase):
                                        MASTER,
                                        [self.the_owner, self.token_real.address])
 
-        token, _ = attempt_deploy(self.compiled, 'PublicExternStateProxyToken',
+        token, _ = attempt_deploy(self.compiled, 'PublicExternStateToken',
                                        MASTER,
                                        ["Test Token", "TEST",
                                         1000 * UNIT, MASTER,
                                         ZERO_ADDRESS, DUMMY])
         self.assertNotEqual(token.functions.state().call(), ZERO_ADDRESS)
 
-        token, _ = attempt_deploy(self.compiled, 'PublicExternStateProxyToken',
+        token, _ = attempt_deploy(self.compiled, 'PublicExternStateToken',
                                        MASTER,
                                        ["Test Token", "TEST",
                                         1000 * UNIT, MASTER,

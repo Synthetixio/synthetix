@@ -152,7 +152,6 @@ contract EtherNomin is ExternStateFeeToken {
 
         // These checks are strictly unnecessary,
         // since they are already checked in the court contract itself.
-        // I leave them in out of paranoia.
         require(court.motionConfirming(motionID));
         require(court.motionPasses(motionID));
         require(!frozen[target]);
@@ -183,15 +182,28 @@ contract EtherNomin is ExternStateFeeToken {
         onlyHavven
     {
         // assume Havven contract has checked issued nomin amount
-        state.setBalance(target, safeSub(state.balanceOf(target), amount));
-        emit Transfer(target, address(0x0), amount);
+        state.setBalanceOf(target, safeSub(state.balanceOf(target), amount));
+        totalSupply = safeSub(totalSupply, amount);
+        emit Transfer(target, address(0), amount);
+        emit BurnedNomins(target, amount);
+    }
+
+    function issue(address target, uint amount)
+        external
+        onlyHavven
+    {
+        // assume Havven contract is only issuing valid amounts
+        state.setBalanceOf(target, safeAdd(state.balanceOf(target), amount));
+        totalSupply = safeAdd(totalSupply, amount);
+        emit Transfer(address(0), target, amount);
+        emit IssuedNomins(target, amount);
     }
 
 
     /* ========== MODIFIERS ========== */
 
     modifier onlyHavven() {
-        require(msg.sender == havven);
+        require(Havven(msg.sender) == havven);
         _;
     }
 
@@ -200,7 +212,13 @@ contract EtherNomin is ExternStateFeeToken {
 
     event CourtUpdated(address newCourt);
 
+    event HavvenUpdated(address havven);
+
     event AccountFrozen(address target, address indexed targetIndex, uint balance);
 
     event AccountUnfrozen(address target, address indexed targetIndex);
+
+    event IssuedNomins(address target, uint amount);
+
+    event BurnedNomins(address target, uint amount);
 }

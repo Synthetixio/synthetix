@@ -1,13 +1,13 @@
 pragma solidity ^0.4.21;
 
-import "contracts/ExternStateProxyToken.sol";
+import "contracts/ExternStateToken.sol";
 import "contracts/TokenState.sol";
 
-contract PublicExternStateProxyToken is ExternStateProxyToken {
-    function PublicExternStateProxyToken(string _name, string _symbol,
+contract PublicExternStateToken is ExternStateToken {
+    function PublicExternStateToken(string _name, string _symbol,
                                          uint initialSupply, address initialBeneficiary,
                                          TokenState _state, address _owner)
-        ExternStateProxyToken(_name, _symbol, initialSupply, initialBeneficiary, _state, _owner)
+        ExternStateToken(_name, _symbol, initialSupply, initialBeneficiary, _state, _owner)
         public {}
 
     function transfer_byProxy(address to, uint value) 

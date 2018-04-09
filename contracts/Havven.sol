@@ -92,9 +92,6 @@ In the implementation, the duration of different fee periods may be slightly irr
 as the check that they have rolled over occurs only when state-changing havven
 operations are performed.
 
-Additionally, we keep track also of the penultimate and not just the last
-average balance, in order to support the voting functionality detailed in Court.sol.
-
 -----------------------------------------------------------------
 
 */
@@ -102,52 +99,37 @@ average balance, in order to support the voting functionality detailed in Court.
 pragma solidity 0.4.21;
 
 
-import "contracts/ExternStateProxyToken.sol";
+import "contracts/ExternStateToken.sol";
 import "contracts/EtherNomin.sol";
 import "contracts/HavvenEscrow.sol";
 import "contracts/TokenState.sol";
 import "contracts/SelfDestructible.sol";
 
 
-contract Havven is ExternStateProxyToken, SelfDestructible {
+contract Havven is ExternStateToken, SelfDestructible {
 
     /* ========== STATE VARIABLES ========== */
 
     // Sums of balances*duration in the current fee period.
     // range: decimals; units: havven-seconds
-    mapping(address => uint) public currentBalanceSum;
 
-    // Average account balances in the last completed fee period. This is proportional
-    // to that account's last period fee entitlement.
-    // (i.e. currentBalanceSum for the previous period divided through by duration)
-    // WARNING: This may not have been updated for the latest fee period at the
-    //          time it is queried.
-    // range: decimals; units: havvens
-    mapping(address => uint) public lastAverageBalance;
+    struct BalanceManager {
+        uint currentBalanceSum;
+        uint lastAverageBalance;
+        uint lastTransferTimestamp;
+    }
 
-    // The average account balances in the period before the last completed fee period.
-    // This is used as a person's weight in a confiscation vote, so it implies that
-    // the vote duration must be no longer than the fee period in order to guarantee that 
-    // no portion of a fee period used for determining vote weights falls within the
-    // duration of a vote it contributes to.
-    // WARNING: This may not have been updated for the latest fee period at the
-    //          time it is queried.
-    mapping(address => uint) public penultimateAverageBalance;
-
-    // The time an account last made a transfer.
-    // range: naturals
-    mapping(address => uint) public lastTransferTimestamp;
+    mapping(address => BalanceManager) public havvenBalanceManager;
+    mapping(address => BalanceManager) public issuedNominBalanceManager;
 
     // The time the current fee period began.
-    uint public feePeriodStartTime = 3;
+    uint public feePeriodStartTime = 2;
     // The actual start of the last fee period (seconds).
-    // This, and the penultimate fee period can be initially set to any value
+    // This fee period can be initially set to any value
     //   0 < val < now, as everyone's individual lastTransferTime will be 0
-    //   and as such, their lastAvgBal/penultimateAvgBal will be set to that value
+    //   and as such, their lastAvgBal will be set to that value
     //   apart from the contract, which will have totalSupply
-    uint public lastFeePeriodStartTime = 2;
-    // The actual start of the penultimate fee period (seconds).
-    uint public penultimateFeePeriodStartTime = 1;
+    uint public lastFeePeriodStartTime = 1;
 
     // Fee periods will roll over in no shorter a time than this.
     uint public targetFeePeriodDurationSeconds = 4 weeks;
@@ -165,34 +147,41 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
     EtherNomin public nomin;
     HavvenEscrow public escrow;
 
+    address public oracle;
+    uint havPrice;
+    uint lastHavPriceUpdateTime;
+    uint havPriceStalePeriod = 60 minutes;
+    uint CMax = 5 * UNIT / 100;
+    uint MAX_C_MAX = UNIT;
+
+    mapping(address => bool) public whitelistedIssuers;
+    mapping(address => uint) public issuedNomins;
 
     /* ========== CONSTRUCTOR ========== */
 
-    function Havven(TokenState initialState, address _owner)
-        ExternStateProxyToken("Havven", "HAV", 1e8 * UNIT, address(this), initialState, _owner)
+    function Havven(TokenState initialState, address _owner, address _oracle)
+        ExternStateToken("Havven", "HAV", 1e8 * UNIT, address(this), initialState, _owner)
         SelfDestructible(_owner, _owner)
-        // Owned is initialised in ExternStateProxyToken
+        // Owned is initialised in ExternStateToken
         public
     {
-        lastTransferTimestamp[this] = now;
+        oracle = _oracle;
         feePeriodStartTime = now;
         lastFeePeriodStartTime = now - targetFeePeriodDurationSeconds;
-        penultimateFeePeriodStartTime = now - 2*targetFeePeriodDurationSeconds;
     }
-
 
     /* ========== SETTERS ========== */
 
     function setNomin(EtherNomin _nomin) 
         external
-        optionalProxy_onlyOwner
+        onlyOwner
     {
         nomin = _nomin;
     }
 
     function setEscrow(HavvenEscrow _escrow)
         external
-        optionalProxy_onlyOwner
+        onlyOwner
     {
         escrow = _escrow;
     }
@@ -200,7 +189,7 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
     function setTargetFeePeriodDuration(uint duration)
         external
         postCheckFeePeriodRollover
-        optionalProxy_onlyOwner
+        onlyOwner
     {
         require(MIN_FEE_PERIOD_DURATION_SECONDS <= duration &&
                 duration <= MAX_FEE_PERIOD_DURATION_SECONDS);
@@ -208,64 +197,49 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
         emit FeePeriodDurationUpdated(duration);
     }
 
-
-    /* ========== MUTATIVE FUNCTIONS ========== */
-
-    /* Allow the owner of this contract to endow any address with havvens
-     * from the initial supply. Since the entire initial supply resides
-     * in the havven contract, this disallows the foundation from withdrawing
-     * fees on undistributed balances. This function can also be used
-     * to retrieve any havvens sent to the Havven contract itself. */
-    function endow(address account, uint value)
-        external
-        optionalProxy_onlyOwner
-        returns (bool)
-    {
-
-        // Use "this" in order that the havven account is the sender.
-        // That this is an explicit transfer also initialises fee entitlement information.
-        return _transfer(this, account, value);
-    }
-
-    /* Allow the owner of this contract to emit transfer events for
-     * contract setup purposes. */
-    function emitTransferEvents(address sender, address[] recipients, uint[] values)
+    function setOracle(address _oracle)
         external
         onlyOwner
     {
-        for (uint i = 0; i < recipients.length; ++i) {
-            emit Transfer(sender, recipients[i], values[i]);
-        }
+        oracle = _oracle;
+        emit OracleUpdated(_oracle);
     }
 
-    /* Override ERC20 transfer function in order to perform
-     * fee entitlement recomputation whenever balances are updated. */
-    function transfer(address to, uint value)
+    function setCMax(uint _CMax)
         external
-        optionalProxy
-        returns (bool)
+        onlyOwner
     {
-        return _transfer(messageSender, to, value);
+        require(_CMax <= MAX_C_MAX);
+        CMax = _CMax;
     }
 
-    /* Anything calling this must apply the optionalProxy or onlyProxy modifier. */
-    function _transfer(address sender, address to, uint value)
-        internal
+    function setWhitelisted(address account, bool value)
+        external
+        onlyOwner
+    {
+        whitelistedIssuers[account] = value;
+    }
+
+
+    /* ========== MUTATIVE FUNCTIONS ========== */
+
+    function transfer(address to, uint value)
+        public
         preCheckFeePeriodRollover
         returns (bool)
     {
 
-        uint senderPreBalance = state.balanceOf(sender);
+        uint senderPreBalance = state.balanceOf(msg.sender);
         uint recipientPreBalance = state.balanceOf(to);
 
         // Perform the transfer: if there is a problem,
         // an exception will be thrown in this call.
-        _transfer_byProxy(sender, to, value);
+        super.transfer(to, value);
 
         // Zero-value transfers still update fee entitlement information,
         // and may roll over the fee period.
-        adjustFeeEntitlement(sender, senderPreBalance);
-        adjustFeeEntitlement(to, recipientPreBalance);
+        adjustHavvenBalanceAverages(msg.sender, senderPreBalance);
+        adjustHavvenBalanceAverages(to, recipientPreBalance);
 
         return true;
     }
@@ -273,9 +247,8 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
     /* Override ERC20 transferFrom function in order to perform
      * fee entitlement recomputation whenever balances are updated. */
     function transferFrom(address from, address to, uint value)
-        external
+        public
         preCheckFeePeriodRollover
-        optionalProxy
         returns (bool)
     {
         uint senderPreBalance = state.balanceOf(from);
@@ -283,12 +256,12 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
 
         // Perform the transfer: if there is a problem,
         // an exception will be thrown in this call.
-        _transferFrom_byProxy(messageSender, from, to, value);
+        super.transferFrom(from, to, value);
 
         // Zero-value transfers still update fee entitlement information,
         // and may roll over the fee period.
-        adjustFeeEntitlement(from, senderPreBalance);
-        adjustFeeEntitlement(to, recipientPreBalance);
+        adjustHavvenBalanceAverages(from, senderPreBalance);
+        adjustHavvenBalanceAverages(to, recipientPreBalance);
 
         return true;
     }
@@ -298,119 +271,96 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
     function withdrawFeeEntitlement()
         public
         preCheckFeePeriodRollover
-        optionalProxy
     {
-        address sender = messageSender;
-
         // Do not deposit fees into frozen accounts.
-        require(!nomin.frozen(sender));
+        require(!nomin.frozen(msg.sender));
 
         // check the period has rolled over first
-        rolloverFee(sender, lastTransferTimestamp[sender], state.balanceOf(sender));
+        BalanceManager memory updatedBalances = rolloverBalances(msg.sender, issuedNomins[msg.sender], issuedNominBalanceManager[msg.sender]);
 
         // Only allow accounts to withdraw fees once per period.
-        require(!hasWithdrawnLastPeriodFees[sender]);
+        require(!hasWithdrawnLastPeriodFees[msg.sender]);
 
         uint feesOwed;
 
-        if (escrow != HavvenEscrow(0)) {
-            feesOwed = escrow.totalVestedAccountBalance(sender);
-        }
 
-        feesOwed = safeDiv_dec(safeMul_dec(safeAdd(feesOwed, lastAverageBalance[sender]),
-                                           lastFeesCollected),
-                               totalSupply);
+        feesOwed = safeDiv_dec(safeMul_dec(safeAdd(feesOwed, updatedBalances.lastAverageBalance), lastFeesCollected), totalSupply);
 
-        hasWithdrawnLastPeriodFees[sender] = true;
+        hasWithdrawnLastPeriodFees[msg.sender] = true;
         if (feesOwed != 0) {
-            nomin.withdrawFee(sender, feesOwed);
-            emit FeesWithdrawn(sender, sender, feesOwed);
+            nomin.withdrawFee(msg.sender, feesOwed);
+            emit FeesWithdrawn(msg.sender, msg.sender, feesOwed);
         }
+
+        issuedNominBalanceManager[msg.sender] = updatedBalances;
     }
 
     /* Update the fee entitlement since the last transfer or entitlement
      * adjustment. Since this updates the last transfer timestamp, if invoked
      * consecutively, this function will do nothing after the first call. */
-    function adjustFeeEntitlement(address account, uint preBalance)
+    function adjustHavvenBalanceAverages(address account, uint preBalance)
         internal
     {
         // The time since the last transfer clamps at the last fee rollover time if the last transfer
         // was earlier than that.
-        rolloverFee(account, lastTransferTimestamp[account], preBalance);
+        BalanceManager memory updatedBalances = rolloverBalances(account, preBalance, havvenBalanceManager[account]);
 
-        currentBalanceSum[account] = safeAdd(
-            currentBalanceSum[account],
-            safeMul(preBalance, now - lastTransferTimestamp[account])
+        updatedBalances.currentBalanceSum = safeAdd(
+            updatedBalances.currentBalanceSum,
+            safeMul(preBalance, now - updatedBalances.lastTransferTimestamp)
         );
 
         // Update the last time this user's balance changed.
-        lastTransferTimestamp[account] = now;
+        updatedBalances.lastTransferTimestamp = now;
+
+        havvenBalanceManager[account] = updatedBalances;
     }
 
-    /* Update the given account's previous period fee entitlement value.
-     * Do nothing if the last transfer occurred since the fee period rolled over.
-     * If the entitlement was updated, also update the last transfer time to be
-     * at the timestamp of the rollover, so if this should do nothing if called more
-     * than once during a given period.
-     *
-     * Consider the case where the entitlement is updated. If the last transfer
-     * occurred at time t in the last period, then the starred region is added to the
-     * entitlement, the last transfer timestamp is moved to r, and the fee period is
-     * rolled over from k-1 to k so that the new fee period start time is at time r.
-     * 
-     *   k-1       |        k
-     *         s __|
-     *  _  _ ___|**|
-     *          |**|
-     *  _  _ ___|**|___ __ _  _
-     *             |
-     *          t  |
-     *             r
-     * 
-     * Similar computations are performed according to the fee period in which the
-     * last transfer occurred.
-     */
-    function rolloverFee(address account, uint lastTransferTime, uint preBalance)
+    function adjustIssuanceBalanceAverages(address account, uint preBalance)
         internal
     {
+        BalanceManager memory updatedBalances = rolloverBalances(account, preBalance, issuedNominBalanceManager[account]);
+
+        updatedBalances.currentBalanceSum = safeAdd(
+            updatedBalances.currentBalanceSum,
+            safeMul(preBalance, now - updatedBalances.lastTransferTimestamp)
+        );
+
+        updatedBalances.lastTransferTimestamp = now;
+
+        issuedNominBalanceManager[account] = updatedBalances;
+    }
+
+
+    function rolloverBalances(address account, uint preBalance, BalanceManager balanceInfo)
+        internal
+        returns (BalanceManager)
+    {
+
+        uint currentBalanceSum = balanceInfo.currentBalanceSum;
+        uint lastAvgBal = balanceInfo.lastAverageBalance;
+        uint lastTransferTime = balanceInfo.lastTransferTimestamp;
+
         if (lastTransferTime < feePeriodStartTime) {
             if (lastTransferTime < lastFeePeriodStartTime) {
-                // The last transfer predated the previous two fee periods.
-                if (lastTransferTime < penultimateFeePeriodStartTime) {
-                    // The balance did nothing in the penultimate fee period, so the average balance
-                    // in this period is their pre-transfer balance.
-                    penultimateAverageBalance[account] = preBalance;
-                // The last transfer occurred within the one-before-the-last fee period.
-                } else {
-                    // No overflow risk here: the failed guard implies (penultimateFeePeriodStartTime <= lastTransferTime).
-                    penultimateAverageBalance[account] = safeDiv(
-                        safeAdd(currentBalanceSum[account], safeMul(preBalance, (lastFeePeriodStartTime - lastTransferTime))),
-                        (lastFeePeriodStartTime - penultimateFeePeriodStartTime)
-                    );
-                }
-
                 // The balance did nothing in the last fee period, so the average balance
                 // in this period is their pre-transfer balance.
-                lastAverageBalance[account] = preBalance;
-
-            // The last transfer occurred within the last fee period.
+                lastAvgBal = preBalance;
             } else {
-                // The previously-last average balance becomes the penultimate balance.
-                penultimateAverageBalance[account] = lastAverageBalance[account];
-
                 // No overflow risk here: the failed guard implies (lastFeePeriodStartTime <= lastTransferTime).
-                lastAverageBalance[account] = safeDiv(
-                    safeAdd(currentBalanceSum[account], safeMul(preBalance, (feePeriodStartTime - lastTransferTime))),
+                lastAvgBal = safeDiv(
+                    safeAdd(currentBalanceSum, safeMul(preBalance, (feePeriodStartTime - lastTransferTime))),
                     (feePeriodStartTime - lastFeePeriodStartTime)
                 );
             }
-
             // Roll over to the next fee period.
-            currentBalanceSum[account] = 0;
-            hasWithdrawnLastPeriodFees[account] = false;
-            lastTransferTimestamp[account] = feePeriodStartTime;
+            currentBalanceSum = 0;
+            lastTransferTime = feePeriodStartTime;
         }
+
+        return BalanceManager(currentBalanceSum, lastAvgBal, lastTransferTime);
     }
+
 
     /* Recompute and return the given account's average balance information.
      * This also rolls over the fee period if necessary, and brings
@@ -420,17 +370,16 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
         preCheckFeePeriodRollover
         returns (uint)
     {
-        adjustFeeEntitlement(account, state.balanceOf(account));
-        return lastAverageBalance[account];
+        adjustHavvenBalanceAverages(account, state.balanceOf(account));
+        return havvenBalanceManager[account].lastAverageBalance;
     }
 
     /* Recompute and return the sender's average balance information. */
     function recomputeLastAverageBalance()
         external
-        optionalProxy
         returns (uint)
     {
-        return _recomputeAccountLastAverageBalance(messageSender);
+        return _recomputeAccountLastAverageBalance(msg.sender);
     }
 
     /* Recompute and return the given account's average balance information. */
@@ -447,13 +396,6 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
         checkFeePeriodRollover();
     }
 
-
-    /* ========== MODIFIERS ========== */
-
-    /* If the fee period has rolled over, then
-     * save the start times of the last fee period,
-     * as well as the penultimate fee period.
-     */
     function checkFeePeriodRollover()
         internal
     {
@@ -462,7 +404,6 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
             lastFeesCollected = nomin.feePool();
 
             // Shift the three period start times back one place
-            penultimateFeePeriodStartTime = lastFeePeriodStartTime;
             lastFeePeriodStartTime = feePeriodStartTime;
             feePeriodStartTime = now;
             
@@ -470,6 +411,115 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
         }
     }
 
+    /* ========== HAV PRICE ========== */
+
+    /* Havvens that are not escrowed */
+    function availableHavvens(address account)
+        public
+        view
+        returns (uint)
+    {
+        uint bal = state.balanceOf(account);
+        uint bal_val = havValue(bal);
+        uint issued_nom = issuedNomins[account];
+        return 0;
+    }
+
+    function maxIssuanceRights(address issuer)
+        view
+        public
+        onlyWhitelistedIssuers
+        havPriceNotStale
+        returns (uint)
+    {
+        if (escrow != HavvenEscrow(0)) {
+            return safeMul_dec(havValue(safeAdd(state.balanceOf(issuer), escrow.totalVestedAccountBalance(msg.sender))), CMax);
+        } else {
+            return safeMul_dec(havValue(state.balanceOf(issuer)), CMax);
+        }
+    }
+
+    function remainingIssuanceRights(address issuer)
+        view
+        public
+        onlyWhitelistedIssuers
+        havPriceNotStale
+        returns (uint)
+    {
+        uint issued = issuedNomins[issuer];
+        uint max = maxIssuanceRights(issuer);
+        if (issued > max) {
+            return 0;
+        } else {
+            return maxIssuanceRights(issuer) - issuedNomins[issuer];
+        }
+    }
+
+    // Issue nomins for a whitelisted account
+    function issueNomins(uint amount)
+        onlyWhitelistedIssuers
+        havPriceNotStale
+        external
+    {
+        require(amount <= remainingIssuanceRights(msg.sender));
+        uint issued = issuedNomins[msg.sender];
+        nomin.issue(msg.sender, amount);
+        adjustIssuanceBalanceAverages(msg.sender, issued);
+    }
+
+    function burnNomins(uint amount)
+        // it doesn't matter if the price is stale/user is whitelisted
+        external
+    {
+        require(amount <= issuedNomins[msg.sender]);
+        // nomin.burn does safeSub on balance (so revert if not enough nomins)
+        uint issued = issuedNomins[msg.sender];
+        nomin.burn(msg.sender, amount);
+        adjustIssuanceBalanceAverages(msg.sender, issued);
+    }
+
+    // Value in USD for a given amount of HAV
+    function havValue(uint havWei)
+        public
+        view
+        havPriceNotStale
+        returns (uint)
+    {
+        return safeMul_dec(havWei, havPrice);
+    }
+
+    function updatePrice(uint price, uint timeSent)
+        external
+    {
+        // Should be callable only by the oracle.
+        require(msg.sender == oracle);
+        // Must be the most recently sent price, but not too far in the future.
+        // (so we can't lock ourselves out of updating the oracle for longer than this)
+        require(lastHavPriceUpdateTime < timeSent && timeSent < now + 10 minutes);
+
+        havPrice = price;
+        lastHavPriceUpdateTime = timeSent;
+        emit PriceUpdated(price);
+    }
+
+    function havPriceIsStale()
+        public
+        view
+        returns (bool)
+    {
+        return safeAdd(lastHavPriceUpdateTime, havPriceStalePeriod) < now;
+    }
+
+    modifier havPriceNotStale
+    {
+        require(!havPriceIsStale());
+        _;
+    }
+    /* ========== MODIFIERS ========== */
+
+    /* If the fee period has rolled over, then
+     * save the start times of the last fee period,
+     */
     modifier postCheckFeePeriodRollover
     {
         _;
@@ -482,12 +532,21 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
         _;
     }
 
+    modifier onlyWhitelistedIssuers
+    {
+        require(whitelistedIssuers[msg.sender]);
+        _;
+    }
 
     /* ========== EVENTS ========== */
+
+    event PriceUpdated(uint price);
 
     event FeePeriodRollover(uint timestamp);
 
     event FeePeriodDurationUpdated(uint duration);
 
     event FeesWithdrawn(address account, address indexed accountIndex, uint value);
+
+    event OracleUpdated(address new_oracle);
 }

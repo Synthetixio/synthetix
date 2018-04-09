@@ -183,7 +183,7 @@ contract Court is Owned, SafeDecimalMath {
     mapping(uint => uint) public votesFor;
     mapping(uint => uint) public votesAgainst;
 
-    // The last/penultimate average balance of a user at the time they voted
+    // The last average balance of a user at the time they voted
     // in a particular motion.
     // If we did not save this information then we would have to
     // disallow transfers into an account lest it cancel a vote
@@ -364,7 +364,7 @@ contract Court is Owned, SafeDecimalMath {
         motionTarget[motionID] = target;
         targetMotionID[target] = motionID;
 
-        motionStartTime[motionID] = now;
+        motionStartTime[motionID] = havven.lastFeePeriodStartTime() + havven.targetFeePeriodDurationSeconds();
         emit MotionBegun(msg.sender, msg.sender, target, target, motionID, motionID);
 
         return motionID;
@@ -387,17 +387,11 @@ contract Court is Owned, SafeDecimalMath {
         require(msg.sender != motionTarget[motionID]);
 
         // Ensure the voter's vote weight is current.
-        havven.recomputeAccountLastAverageBalance(msg.sender);
-
-        uint weight;
         // We use a fee period guaranteed to have terminated before
         // the start of the vote. Select the right period if
         // a fee period rolls over in the middle of the vote.
-        if (motionStartTime[motionID] < havven.feePeriodStartTime()) {
-            weight = havven.penultimateAverageBalance(msg.sender);
-        } else {
-            weight = havven.lastAverageBalance(msg.sender);
-        }
+
+        uint weight = havven.recomputeAccountLastAverageBalance(msg.sender);
 
         // Users must have a nonzero voting weight to vote.
         require(weight > 0);
