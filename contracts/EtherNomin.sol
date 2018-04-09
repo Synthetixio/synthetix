@@ -96,7 +96,7 @@ contract EtherNomin is ExternStateProxyFeeToken {
 
     // The liquidation period is the duration that must pass before the liquidation period is complete.
     // It can be extended up to a given duration.
-    uint constant DEFAULT_LIQUIDATION_PERIOD = 90 days;
+    uint constant DEFAULT_LIQUIDATION_PERIOD = 14 days;
     uint constant MAX_LIQUIDATION_PERIOD = 180 days;
     uint public liquidationPeriod = DEFAULT_LIQUIDATION_PERIOD;
 
