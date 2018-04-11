@@ -27,13 +27,20 @@ pragma solidity 0.4.21;
 
 import "contracts/Owned.sol";
 
-
+/**
+ * @title A contract that can be destroyed by its owner after a timer elapses.
+ */
 contract SelfDestructible is Owned {
 	
 	uint public initiationTime = ~uint(0);
 	uint constant SD_DURATION = 3 days;
 	address public beneficiary;
 
+	/**
+	 * @dev Constructor
+	 * @param _owner The account which controls this contract.
+	 * @param _beneficiary The account to forward all ether in this contract upon self-destruction
+	 */
 	function SelfDestructible(address _owner, address _beneficiary)
 		public
 		Owned(_owner)
@@ -41,6 +48,10 @@ contract SelfDestructible is Owned {
 		beneficiary = _beneficiary;
 	}
 
+	/**
+	 * @notice Set the beneficiary address of this contract.
+	 * @dev Only the contract owner may call this.
+	 */
 	function setBeneficiary(address _beneficiary)
 		external
 		onlyOwner
@@ -49,6 +60,11 @@ contract SelfDestructible is Owned {
 		emit SelfDestructBeneficiaryUpdated(_beneficiary);
 	}
 
+	/**
+	 * @notice Begin the self-destruction counter of this contract.
+	 * Once the three-day timer has elapsed, the contract may be self-destructed.
+	 * @dev Only the contract owner may call this.
+	 */
 	function initiateSelfDestruct()
 		external
 		onlyOwner
@@ -57,6 +73,10 @@ contract SelfDestructible is Owned {
 		emit SelfDestructInitiated(SD_DURATION);
 	}
 
+	/**
+	 * @notice Terminate and reset the self-destruction timer.
+	 * @dev Only the contract owner may call this.
+	 */
 	function terminateSelfDestruct()
 		external
 		onlyOwner
@@ -65,6 +85,11 @@ contract SelfDestructible is Owned {
 		emit SelfDestructTerminated();
 	}
 
+	/**
+	 * @notice If the self-destruction timer has elapsed, destroy this contract and
+	 * remit any ether it owns to the beneficiary address.
+	 * @dev Only the contract owner may call this.
+	 */
 	function selfDestruct()
 		external
 		onlyOwner
