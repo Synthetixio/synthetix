@@ -47,7 +47,6 @@ class TestExternStateToken(unittest.TestCase):
 
         mine_tx(cls.token.functions.setState(cls.tokenstate.address).transact({'from': cls.the_owner}))
 
-
         cls.owner = lambda self: cls.token.functions.owner().call()
         cls.totalSupply = lambda self: cls.token.functions.totalSupply().call()
         cls.state = lambda self: cls.token.functions.state().call()

@@ -120,7 +120,6 @@ contract SafeDecimalMath {
         returns (uint)
     {
         // Divide by UNIT to remove the extra factor introduced by the product.
-        // UNIT be 0.
         return safeMul(x, y) / UNIT;
 
     }

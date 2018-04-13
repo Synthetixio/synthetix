@@ -122,7 +122,7 @@ import "contracts/Nomin.sol";
 import "contracts/Havven.sol";
 
 
-contract Court is Owned, SafeDecimalMath {
+contract Court is SafeDecimalMath, Owned {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -391,7 +391,7 @@ contract Court is Owned, SafeDecimalMath {
         // the start of the vote. Select the right period if
         // a fee period rolls over in the middle of the vote.
 
-        uint weight = havven.recomputeAccountLastAverageBalance(msg.sender);
+        uint weight = havven.recomputeAccountLastHavvenAverageBalance(msg.sender);
 
         // Users must have a nonzero voting weight to vote.
         require(weight > 0);

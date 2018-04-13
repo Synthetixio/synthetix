@@ -25,4 +25,18 @@ contract PublicNomin is Nomin {
     {
         frozen[target] = true;
     }
+
+    function giveNomins(address account, uint amount)
+        public
+    {
+        state.setBalanceOf(account, safeAdd(amount, state.balanceOf(account)));
+        totalSupply = safeAdd(totalSupply, amount);
+    }
+
+    function clearNomins(address account)
+        public
+    {
+        totalSupply = safeSub(totalSupply, state.balanceOf(account));
+        state.setBalanceOf(account, 0);
+    }
 }

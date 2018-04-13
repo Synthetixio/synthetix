@@ -1,9 +1,18 @@
 import unittest
 
-from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mine_txs, mine_tx, \
-    UNIT, MASTER, DUMMY, to_seconds, fast_forward, fresh_account, fresh_accounts, take_snapshot, restore_snapshot
-from utils.testutils import assertReverts, block_time, assertClose, generate_topic_event_map, get_event_data_from_log
+from utils.deployutils import attempt, mine_txs, fresh_accounts
+from utils.testutils import assertClose
+
+from utils.deployutils import W3, UNIT, MASTER, DUMMY, ETHER
+from utils.deployutils import compile_contracts, attempt_deploy
+from utils.deployutils import take_snapshot, restore_snapshot, fast_forward
+from utils.testutils import assertReverts, block_time
+from utils.testutils import generate_topic_event_map
 from utils.testutils import ZERO_ADDRESS
+import time
+
+from tests.contract_interfaces.havven_interface import PublicHavvenInterface
+
 
 SOLIDITY_SOURCES = ["tests/contracts/PublicHavven.sol", "contracts/Nomin.sol",
                     "contracts/Court.sol", "contracts/HavvenEscrow.sol"]
@@ -15,13 +24,11 @@ def deploy_public_havven():
     compiled = attempt(compile_contracts, [SOLIDITY_SOURCES], "Compiling contracts... ")
 
     # Deploy contracts
-    havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven',
-                                              MASTER, [ZERO_ADDRESS, MASTER])
+    havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [ZERO_ADDRESS, MASTER, MASTER])
     hvn_block = W3.eth.blockNumber
     nomin_contract, nom_txr = attempt_deploy(compiled, 'Nomin',
                                              MASTER,
-                                             [havven_contract.address, MASTER, MASTER,
-                                              1000 * UNIT, MASTER, ZERO_ADDRESS])
+                                             [havven_contract.address, MASTER, ZERO_ADDRESS])
     court_contract, court_txr = attempt_deploy(compiled, 'Court',
                                                MASTER,
                                                [havven_contract.address, nomin_contract.address,
@@ -32,7 +39,9 @@ def deploy_public_havven():
 
     # Hook up each of those contracts to each other
     txs = [havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
-           nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER})]
+           nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER}),
+           nomin_contract.functions.setHavven(havven_contract.address).transact({'from': MASTER}),
+           havven_contract.functions.setEscrow(escrow_contract.address).transact({'from': MASTER})]
     attempt(mine_txs, [txs], "Linking contracts... ")
 
     havven_event_dict = generate_topic_event_map(compiled['PublicHavven']['abi'])
@@ -52,9 +61,15 @@ def tearDownModule():
 class TestHavven(unittest.TestCase):
     def setUp(self):
         self.snapshot = take_snapshot()
-        time_remaining = self.targetFeePeriodDurationSeconds() + self.feePeriodStartTime() - block_time()
+        time_remaining = self.havven.targetFeePeriodDurationSeconds() + self.havven.feePeriodStartTime() - block_time()
         fast_forward(time_remaining + 1)
-        self.recomputeLastAverageBalance(MASTER)
+        self.havven.recomputeAccountLastHavvenAverageBalance(MASTER, MASTER)
+
+    def _test_time_elapsed(self):
+        return utils.testutils.time_fast_forwarded + (round(time.time()) - self.initial_time)
+
+    def now_block_time(self):
+        return block_time() + self._test_time_elapsed()
 
     def tearDown(self):
         restore_snapshot(self.snapshot)
@@ -66,96 +81,33 @@ class TestHavven(unittest.TestCase):
         # to avoid overflowing in the negative direction (now - targetFeePeriodDuration * 2)
         fast_forward(weeks=102)
 
-        cls.havven, cls.nomin, cls.court, \
-            cls.escrow, cls.construction_block, cls.havven_event_dict = deploy_public_havven()
+        cls.havven_contract, cls.nomin_contract, cls.court_contract, \
+            cls.escrow_contract, cls.construction_block, cls.havven_event_dict = deploy_public_havven()
 
-        # INHERITED
-        # OWNED
-        # owner
-        cls.h_owner = lambda self: self.havven.functions.owner().call()
-        cls.h_nominateOwner = lambda self, sender, addr: mine_tx(
-            self.havven.functions.nominateOwner(addr).transact({'from': sender}))
-        cls.h_acceptOwnership = lambda self, sender: mine_tx(
-            self.havven.functions.acceptOwnership().transact({'from': sender}))
+        cls.havven = PublicHavvenInterface(cls.havven_contract)
 
-        # ExternStateToken (transfer/transferFrom are overwritten)
-        # totalSupply
-        cls.totalSupply = lambda self: self.havven.functions.totalSupply().call()
-        cls.name = lambda self: self.havven.functions.name().call()
-        cls.symbol = lambda self: self.havven.functions.symbol().call()
-        cls.balanceOf = lambda self, a: self.havven.functions.balanceOf(a).call()
-        cls.allowance = lambda self, owner, spender: self.havven.functions.allowance(owner, spender).call()
-        cls.approve = lambda self, sender, spender, val: mine_tx(
-            self.havven.functions.approve(spender, val).transact({"from": sender}))
+        cls.initial_time = cls.havven.lastFeePeriodStartTime()
+        cls.time_fast_forwarded = 0
 
-        # HAVVEN
-        # GETTERS
-        cls.currentBalanceSum = lambda self, addr: self.havven.functions._currentBalanceSum(addr).call()
-        cls.lastAverageBalance = lambda self, addr: self.havven.functions.lastAverageBalance(addr).call()
-        cls.penultimateAverageBalance = lambda self, addr: self.havven.functions.penultimateAverageBalance(addr).call()
-        cls.lastTransferTimestamp = lambda self, addr: self.havven.functions._lastTransferTimestamp(addr).call()
-        cls.hasWithdrawnLastPeriodFees = lambda self, addr: self.havven.functions._hasWithdrawnLastPeriodFees(
-            addr).call()
-        cls.lastAverageBalanceNeedsRecomputation = lambda self, addr: \
-            self.havven.functions.lastAverageBalanceNeedsRecomputation(addr).call()
+        cls.base_havven_price = UNIT
 
-        cls.feePeriodStartTime = lambda self: self.havven.functions.feePeriodStartTime().call()
-        cls.lastFeePeriodStartTime = lambda self: self.havven.functions._lastFeePeriodStartTime().call()
-        cls.penultimateFeePeriodStartTime = lambda self: self.havven.functions._penultimateFeePeriodStartTime().call()
-        cls.targetFeePeriodDurationSeconds = lambda self: self.havven.functions.targetFeePeriodDurationSeconds().call()
-        cls.MIN_FEE_PERIOD_DURATION_SECONDS = lambda \
-            self: self.havven.functions._MIN_FEE_PERIOD_DURATION_SECONDS().call()
-        cls.MAX_FEE_PERIOD_DURATION_SECONDS = lambda \
-            self: self.havven.functions._MAX_FEE_PERIOD_DURATION_SECONDS().call()
-        cls.lastFeesCollected = lambda self: self.havven.functions.lastFeesCollected().call()
+    def test_scenario(self):
+        alice, bob = fresh_accounts(2)
+        self.havven.endow(MASTER, alice, 1000 * UNIT)
+        self.havven.setWhitelisted(MASTER, alice, True)
 
-        cls.get_nomin = lambda self: self.havven.functions.nomin().call()
-        cls.get_escrow = lambda self: self.havven.functions.escrow().call()
+        self.assertEqual(self.havven.balanceOf(alice), 1000 * UNIT)
 
-        #
-        # SETTERS
-        cls.setNomin = lambda self, sender, addr: mine_tx(
-            self.havven.functions.setNomin(addr).transact({'from': sender}))
-        cls.setEscrow = lambda self, sender, addr: mine_tx(
-            self.havven.functions.setEscrow(addr).transact({'from': sender}))
-        cls.unsetEscrow = lambda self, sender: mine_tx(
-            self.havven.functions.unsetEscrow().transact({'from': sender}))
-        cls.setTargetFeePeriodDuration = lambda self, sender, dur: mine_tx(
-            self.havven.functions.setTargetFeePeriodDuration(dur).transact({'from': sender}))
+        # UPDATE PRICE
+        self.havven.updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
 
-        #
-        # FUNCTIONS
-        cls.endow = lambda self, sender, addr, amt: mine_tx(
-            self.havven.functions.endow(addr, amt).transact({'from': sender}))
-        cls.transfer = lambda self, sender, addr, amt: mine_tx(
-            self.havven.functions.transfer(addr, amt).transact({'from': sender}))
-        cls.transferFrom = lambda self, sender, frm, to, amt: mine_tx(
-            self.havven.functions.transferFrom(frm, to, amt).transact({'from': sender}))
-        cls.recomputeLastAverageBalance = lambda self, sender: mine_tx(
-            self.havven.functions.recomputeLastAverageBalance().transact({'from': sender}))
-        cls.recomputeAccountLastAverageBalance = lambda self, sender, account: mine_tx(
-            self.havven.functions.recomputeAccountLastAverageBalance(account).transact({'from': sender}))
-        cls.rolloverFeePeriod = lambda self, sender: mine_tx(
-            self.havven.functions.rolloverFeePeriod().transact({'from': sender}))
+        # ISSUE NOMINS
 
-        #
-        # INTERNAL
-        cls.adjustFeeEntitlement = lambda self, sender, acc, p_bal: mine_tx(
-            self.havven.functions._adjustFeeEntitlement(acc, p_bal).transact({'from': sender}))
-        # rolloverFee (ltt->last_transfer_time)
-        cls.rolloverFee = lambda self, sender, acc, ltt, p_bal: mine_tx(
-            self.havven.functions._rolloverFee(acc, ltt, p_bal).transact({'from': sender}))
+        self.havven.issueNomins(alice, 5 * UNIT)
 
-        # withdrawFeeEntitlement
-        cls.withdrawFeeEntitlement = lambda self, sender: mine_tx(
-            self.havven.functions.withdrawFeeEntitlement().transact({'from': sender}))
+        self.assertEqual(self.nomin_contract.functions.balanceOf(alice).call(), 5 * UNIT)
 
-        #
-        # MODIFIERS
-        # postCheckFeePeriodRollover
-        cls._checkFeePeriodRollover = lambda self, sender: mine_tx(
-            self.havven.functions._checkFeePeriodRollover().transact({'from': sender}))
-
+    '''
     def start_new_fee_period(self):
         time_remaining = self.targetFeePeriodDurationSeconds() + self.feePeriodStartTime() - block_time()
         fast_forward(time_remaining + 1)
@@ -745,3 +697,4 @@ class TestHavven(unittest.TestCase):
             time = block_time()
             self.assertEqual(self.balanceOf(alice), amount)
             self.assertEqual(self.currentBalanceSum(bob), b_sum)
+    '''

@@ -106,7 +106,7 @@ import "contracts/TokenState.sol";
 import "contracts/SelfDestructible.sol";
 
 
-contract Havven is ExternStateToken, SelfDestructible {
+contract Havven is SelfDestructible, ExternStateToken {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -271,6 +271,15 @@ contract Havven is ExternStateToken, SelfDestructible {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
+    function endow(address to, uint value)
+        external
+        onlyOwner
+    {
+        // Use "this" in order to ensure that the havven contract is the sender.
+        this.transfer(to, value);
+    }
+
+
     function transfer(address to, uint value)
         public
         preCheckFeePeriodRollover
@@ -422,16 +431,8 @@ contract Havven is ExternStateToken, SelfDestructible {
         return havvenBalanceManager[account].lastAverageBalance;
     }
 
-    /* Recompute and return the sender's average balance information. */
-    function recomputeLastAverageBalance()
-        external
-        returns (uint)
-    {
-        return _recomputeAccountLastAverageBalance(msg.sender);
-    }
-
     /* Recompute and return the given account's average balance information. */
-    function recomputeAccountLastAverageBalance(address account)
+    function recomputeAccountLastHavvenAverageBalance(address account)
         external
         returns (uint)
     {
@@ -476,21 +477,21 @@ contract Havven is ExternStateToken, SelfDestructible {
     function maxIssuanceRights(address issuer)
         view
         public
-        onlyWhitelistedIssuers
+        onlyWhitelistedIssuers(issuer)
         havPriceNotStale
         returns (uint)
     {
         if (escrow != HavvenEscrow(0)) {
-            return safeMul_dec(havValue(safeAdd(state.balanceOf(issuer), escrow.totalVestedAccountBalance(msg.sender))), CMax);
+            return safeMul_dec(havValue(safeAdd(balanceOf(issuer), escrow.totalVestedAccountBalance(msg.sender))), CMax);
         } else {
-            return safeMul_dec(havValue(state.balanceOf(issuer)), CMax);
+            return safeMul_dec(havValue(balanceOf(issuer)), CMax);
         }
     }
 
     function remainingIssuanceRights(address issuer)
         view
         public
-        onlyWhitelistedIssuers
+        onlyWhitelistedIssuers(issuer)
         havPriceNotStale
         returns (uint)
     {
@@ -505,7 +506,7 @@ contract Havven is ExternStateToken, SelfDestructible {
 
     // Issue nomins for a whitelisted account
     function issueNomins(uint amount)
-        onlyWhitelistedIssuers
+        onlyWhitelistedIssuers(msg.sender)
         havPriceNotStale
         external
     {
@@ -580,9 +581,9 @@ contract Havven is ExternStateToken, SelfDestructible {
         _;
     }
 
-    modifier onlyWhitelistedIssuers
+    modifier onlyWhitelistedIssuers(address account)
     {
-        require(whitelistedIssuers[msg.sender]);
+        require(whitelistedIssuers[account]);
         _;
     }
 

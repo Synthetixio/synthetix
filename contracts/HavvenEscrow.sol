@@ -44,7 +44,7 @@ import "contracts/Nomin.sol";
 import "contracts/LimitedSetup.sol";
 
 
-contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {    
+contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
     // The corresponding Havven contract.
     Havven public havven;
 
