@@ -122,87 +122,94 @@ import "contracts/EtherNomin.sol";
 import "contracts/Havven.sol";
 
 
+/**
+ * @title A court contract allowing a democratic mechanism to dissuade token wrappers.
+ */
 contract Court is Owned, SafeDecimalMath {
 
     /* ========== STATE VARIABLES ========== */
 
-    // The addresses of the token contracts this confiscation court interacts with.
+    /* The addresses of the token contracts this confiscation court interacts with. */
     Havven public havven;
     EtherNomin public nomin;
 
-    // The minimum havven balance required to be considered to have standing
-    // to begin confiscation proceedings.
+    /* The minimum havven balance required to be considered to have standing
+     * to begin confiscation proceedings. */
     uint public minStandingBalance = 100 * UNIT;
 
-    // The voting period lasts for this duration,
-    // and if set, must fall within the given bounds.
+    /* The voting period lasts for this duration,
+     * and if set, must fall within the given bounds. */
     uint public votingPeriod = 1 weeks;
     uint constant MIN_VOTING_PERIOD = 3 days;
     uint constant MAX_VOTING_PERIOD = 4 weeks;
 
-    // Duration of the period during which the foundation may confirm
-    // or veto a motion that has concluded.
-    // If set, the confirmation duration must fall within the given bounds.
+    /* Duration of the period during which the foundation may confirm
+     * or veto a motion that has concluded.
+     * If set, the confirmation duration must fall within the given bounds. */
     uint public confirmationPeriod = 1 weeks;
     uint constant MIN_CONFIRMATION_PERIOD = 1 days;
     uint constant MAX_CONFIRMATION_PERIOD = 2 weeks;
 
-    // No fewer than this fraction of havvens must participate in a motion
-    // in order for a quorum to be reached.
-    // The participation fraction required may be set no lower than 10%.
+    /* No fewer than this fraction of havvens must participate in a motion
+     * in order for a quorum to be reached.
+     * The participation fraction required may be set no lower than 10%. */
     uint public requiredParticipation = 3 * UNIT / 10;
     uint constant MIN_REQUIRED_PARTICIPATION = UNIT / 10;
 
-    // At least this fraction of participating votes must be in favour of
-    // confiscation for the motion to pass.
-    // The required majority may be no lower than 50%.
+    /* At least this fraction of participating votes must be in favour of
+     * confiscation for the motion to pass.
+     * The required majority may be no lower than 50%. */
     uint public requiredMajority = (2 * UNIT) / 3;
     uint constant MIN_REQUIRED_MAJORITY = UNIT / 2;
 
-    // The next ID to use for opening a motion.
+    /* The next ID to use for opening a motion. */
     uint nextMotionID = 1;
 
-    // Mapping from motion IDs to target addresses.
+    /* Mapping from motion IDs to target addresses. */
     mapping(uint => address) public motionTarget;
 
-    // The ID a motion on an address is currently operating at.
-    // Zero if no such motion is running.
+    /* The ID a motion on an address is currently operating at.
+     * Zero if no such motion is running. */
     mapping(address => uint) public targetMotionID;
 
-    // The timestamp at which a motion began. This is used to determine
-    // whether a motion is: running, in the confirmation period,
-    // or has concluded.
-    // A motion runs from its start time t until (t + votingPeriod),
-    // and then the confirmation period terminates no later than
-    // (t + votingPeriod + confirmationPeriod).
+    /* The timestamp at which a motion began. This is used to determine
+     * whether a motion is: running, in the confirmation period,
+     * or has concluded.
+     * A motion runs from its start time t until (t + votingPeriod),
+     * and then the confirmation period terminates no later than
+     * (t + votingPeriod + confirmationPeriod). */
     mapping(uint => uint) public motionStartTime;
 
-    // The tallies for and against confiscation of a given balance.
-    // These are set to zero at the start of a motion, and also on conclusion,
-    // just to keep the state clean.
+    /* The tallies for and against confiscation of a given balance.
+     * These are set to zero at the start of a motion, and also on conclusion,
+     * just to keep the state clean. */
     mapping(uint => uint) public votesFor;
     mapping(uint => uint) public votesAgainst;
 
-    // The last/penultimate average balance of a user at the time they voted
-    // in a particular motion.
-    // If we did not save this information then we would have to
-    // disallow transfers into an account lest it cancel a vote
-    // with greater weight than that with which it originally voted,
-    // and the fee period rolled over in between.
+    /* The last/penultimate average balance of a user at the time they voted
+     * in a particular motion.
+     * If we did not save this information then we would have to
+     * disallow transfers into an account lest it cancel a vote
+     * with greater weight than that with which it originally voted,
+     * and the fee period rolled over in between. */
     mapping(address => mapping(uint => uint)) voteWeight;
 
-    // The possible vote types.
-    // Abstention: not participating in a motion; This is the default value.
-    // Yea: voting in favour of a motion.
-    // Nay: voting against a motion.
+    /* The possible vote types.
+     * Abstention: not participating in a motion; This is the default value.
+     * Yea: voting in favour of a motion.
+     * Nay: voting against a motion. */
     enum Vote {Abstention, Yea, Nay}
 
-    // A given account's vote in some confiscation motion.
-    // This requires the default value of the Vote enum to correspond to an abstention.
+    /* A given account's vote in some confiscation motion.
+     * This requires the default value of the Vote enum to correspond to an abstention. */
     mapping(address => mapping(uint => Vote)) public vote;
+
 
     /* ========== CONSTRUCTOR ========== */
 
+    /**
+     * @dev Constructor.
+     */
     function Court(Havven _havven, EtherNomin _nomin, address _owner)
         Owned(_owner)
         public
@@ -214,24 +221,33 @@ contract Court is Owned, SafeDecimalMath {
 
     /* ========== SETTERS ========== */
 
+    /**
+     * @notice Set the minimum required havven balance to have standing to bring a motion.
+     * @dev Only the contract owner may call this.
+     */
     function setMinStandingBalance(uint balance)
         external
         onlyOwner
     {
-        // No requirement on the standing threshold here;
-        // the foundation can set this value such that
-        // anyone or no one can actually start a motion.
+        /* No requirement on the standing threshold here;
+         * the foundation can set this value such that
+         * anyone or no one can actually start a motion. */
         minStandingBalance = balance;
     }
 
+    /**
+     * @notice Set the length of time a vote runs for.
+     * @dev Only the contract owner may call this. The proposed duration must fall
+     * within sensible bounds (1 to 4 weeks), and must be no longer than a single fee period.
+     */
     function setVotingPeriod(uint duration)
         external
         onlyOwner
     {
         require(MIN_VOTING_PERIOD <= duration &&
                 duration <= MAX_VOTING_PERIOD);
-        // Require that the voting period is no longer than a single fee period,
-        // So that a single vote can span at most two fee periods.
+        /* Require that the voting period is no longer than a single fee period,
+         * So that a single vote can span at most two fee periods. */
         require(duration <= havven.targetFeePeriodDurationSeconds());
         votingPeriod = duration;
     }
@@ -271,10 +287,10 @@ contract Court is Owned, SafeDecimalMath {
         view
         returns (bool)
     {
-        // No need to check (startTime < now) as there is no way
-        // to set future start times for votes.
-        // These values are timestamps, they will not overflow
-        // as they can only ever be initialised to relatively small values.
+        /* No need to check (startTime < now) as there is no way
+         * to set future start times for votes.
+         * These values are timestamps, they will not overflow
+         * as they can only ever be initialised to relatively small values. */
         return now < motionStartTime[motionID] + votingPeriod;
     }
 
@@ -285,8 +301,8 @@ contract Court is Owned, SafeDecimalMath {
         view
         returns (bool)
     {
-        // These values are timestamps, they will not overflow
-        // as they can only ever be initialised to relatively small values.
+        /* These values are timestamps, they will not overflow
+         * as they can only ever be initialised to relatively small values. */
         uint startTime = motionStartTime[motionID];
         return startTime + votingPeriod <= now &&
                now < startTime + votingPeriod + confirmationPeriod;
@@ -298,8 +314,8 @@ contract Court is Owned, SafeDecimalMath {
         view
         returns (bool)
     {
-        // These values are timestamps, they will not overflow
-        // as they can only ever be initialised to relatively small values.
+        /* These values are timestamps, they will not overflow
+         * as they can only ever be initialised to relatively small values. */
         return motionStartTime[motionID] + votingPeriod + confirmationPeriod <= now;
     }
 
@@ -321,8 +337,8 @@ contract Court is Owned, SafeDecimalMath {
         uint participation = safeDiv_dec(totalVotes, havven.totalSupply());
         uint fractionInFavour = safeDiv_dec(yeas, totalVotes);
 
-        // We require the result to be strictly greater than the requirement
-        // to enforce a majority being "50% + 1", and so on.
+        /* We require the result to be strictly greater than the requirement
+         * to enforce a majority being "50% + 1", and so on. */
         return participation > requiredParticipation &&
                fractionInFavour > requiredMajority;
     }
@@ -346,18 +362,18 @@ contract Court is Owned, SafeDecimalMath {
         external
         returns (uint)
     {
-        // A confiscation motion must be mooted by someone with standing.
+        /* A confiscation motion must be mooted by someone with standing. */
         require((havven.balanceOf(msg.sender) >= minStandingBalance) ||
                 msg.sender == owner);
 
-        // Require that the voting period is longer than a single fee period,
-        // So that a single vote can span at most two fee periods.
+        /* Require that the voting period is longer than a single fee period,
+         * So that a single vote can span at most two fee periods. */
         require(votingPeriod <= havven.targetFeePeriodDurationSeconds());
 
-        // There must be no confiscation motion already running for this account.
+        /* There must be no confiscation motion already running for this account. */
         require(targetMotionID[target] == 0);
 
-        // Disallow votes on accounts that have previously been frozen.
+        /* Disallow votes on accounts that have previously been frozen. */
         require(!nomin.frozen(target));
 
         uint motionID = nextMotionID++;
@@ -376,30 +392,30 @@ contract Court is Owned, SafeDecimalMath {
         internal
         returns (uint)
     {
-        // There must be an active vote for this target running.
-        // Vote totals must only change during the voting phase.
+        /* There must be an active vote for this target running.
+         * Vote totals must only change during the voting phase. */
         require(motionVoting(motionID));
 
-        // The voter must not have an active vote this motion.
+        /* The voter must not have an active vote this motion. */
         require(!hasVoted(msg.sender, motionID));
 
-        // The voter may not cast votes on themselves.
+        /* The voter may not cast votes on themselves. */
         require(msg.sender != motionTarget[motionID]);
 
-        // Ensure the voter's vote weight is current.
+        /* Ensure the voter's vote weight is current. */
         havven.recomputeAccountLastAverageBalance(msg.sender);
 
         uint weight;
-        // We use a fee period guaranteed to have terminated before
-        // the start of the vote. Select the right period if
-        // a fee period rolls over in the middle of the vote.
+        /* We use a fee period guaranteed to have terminated before
+         * the start of the vote. Select the right period if
+         * a fee period rolls over in the middle of the vote. */
         if (motionStartTime[motionID] < havven.feePeriodStartTime()) {
             weight = havven.penultimateAverageBalance(msg.sender);
         } else {
             weight = havven.lastAverageBalance(msg.sender);
         }
 
-        // Users must have a nonzero voting weight to vote.
+        /* Users must have a nonzero voting weight to vote. */
         require(weight > 0);
 
         voteWeight[msg.sender][motionID] = weight;
@@ -434,27 +450,27 @@ contract Court is Owned, SafeDecimalMath {
     function cancelVote(uint motionID)
         external
     {
-        // An account may cancel its vote either before the confirmation phase
-        // when the motion is still open, or after the confirmation phase,
-        // when the motion has concluded.
-        // But the totals must not change during the confirmation phase itself.
+        /* An account may cancel its vote either before the confirmation phase
+         * when the motion is still open, or after the confirmation phase,
+         * when the motion has concluded.
+         * But the totals must not change during the confirmation phase itself. */
         require(!motionConfirming(motionID));
 
         Vote senderVote = vote[msg.sender][motionID];
 
-        // If the sender has not voted then there is no need to update anything.
+        /* If the sender has not voted then there is no need to update anything. */
         require(senderVote != Vote.Abstention);
 
-        // If we are not voting, there is no reason to update the vote totals.
+        /* If we are not voting, there is no reason to update the vote totals. */
         if (motionVoting(motionID)) {
             if (senderVote == Vote.Yea) {
                 votesFor[motionID] = safeSub(votesFor[motionID], voteWeight[msg.sender][motionID]);
             } else {
-                // Since we already ensured that the vote is not an abstention,
-                // the only option remaining is Vote.Nay.
+                /* Since we already ensured that the vote is not an abstention,
+                 * the only option remaining is Vote.Nay. */
                 votesAgainst[motionID] = safeSub(votesAgainst[motionID], voteWeight[msg.sender][motionID]);
             }
-            // A cancelled vote is only meaningful if a vote is running
+            /* A cancelled vote is only meaningful if a vote is running. */
             emit VoteCancelled(msg.sender, msg.sender, motionID, motionID);
         }
 

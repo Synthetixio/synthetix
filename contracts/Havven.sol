@@ -108,56 +108,58 @@ import "contracts/HavvenEscrow.sol";
 import "contracts/TokenState.sol";
 import "contracts/SelfDestructible.sol";
 
-
+/**
+ * @title Havven ERC20 contract.
+ * @notice The Havven contracts does not only facilitate transfers and track balances,
+ * but it also computes the quantity of fees each havven holder is entitled to.
+ */
 contract Havven is ExternStateProxyToken, SelfDestructible {
 
     /* ========== STATE VARIABLES ========== */
 
-    // Sums of balances*duration in the current fee period.
-    // range: decimals; units: havven-seconds
+    /* Sums of balances*duration in the current fee period.
+     * range: decimals; units: havven-seconds */
     mapping(address => uint) public currentBalanceSum;
 
-    // Average account balances in the last completed fee period. This is proportional
-    // to that account's last period fee entitlement.
-    // (i.e. currentBalanceSum for the previous period divided through by duration)
-    // WARNING: This may not have been updated for the latest fee period at the
-    //          time it is queried.
-    // range: decimals; units: havvens
+    /* Average account balances in the last completed fee period. This is proportional
+     * to that account's last period fee entitlement.
+     * (i.e. currentBalanceSum for the previous period divided through by duration)
+     * WARNING: This may not have been updated for the latest fee period at the
+     *          time it is queried.
+     * range: decimals; units: havvens */
     mapping(address => uint) public lastAverageBalance;
 
-    // The average account balances in the period before the last completed fee period.
-    // This is used as a person's weight in a confiscation vote, so it implies that
-    // the vote duration must be no longer than the fee period in order to guarantee that 
-    // no portion of a fee period used for determining vote weights falls within the
-    // duration of a vote it contributes to.
-    // WARNING: This may not have been updated for the latest fee period at the
-    //          time it is queried.
+    /* The average account balances in the period before the last completed fee period.
+     * This is used as a person's weight in a confiscation vote, so it implies that
+     * the vote duration must be no longer than the fee period in order to guarantee that 
+     * no portion of a fee period used for determining vote weights falls within the
+     * duration of a vote it contributes to.
+     * WARNING: This may not have been updated for the latest fee period at the
+     *          time it is queried.
+     * range: decimals; units: havvens */
     mapping(address => uint) public penultimateAverageBalance;
 
-    // The time an account last made a transfer.
-    // range: naturals
+    /* The time an account last made a transfer. */
     mapping(address => uint) public lastTransferTimestamp;
 
-    // The time the current fee period began.
+    /* The time the current fee period began. */
     uint public feePeriodStartTime = 3;
-    // The actual start of the last fee period (seconds).
-    // This, and the penultimate fee period can be initially set to any value
-    //   0 < val < now, as everyone's individual lastTransferTime will be 0
-    //   and as such, their lastAvgBal/penultimateAvgBal will be set to that value
-    //   apart from the contract, which will have totalSupply
+    /* The actual start of the last fee period (seconds). */
     uint public lastFeePeriodStartTime = 2;
-    // The actual start of the penultimate fee period (seconds).
+    /* The actual start of the penultimate fee period (seconds). */
     uint public penultimateFeePeriodStartTime = 1;
+    /* The foregoing members are initialised to past timestamps,
+     * as they will be updated upon the next transfer. */
 
-    // Fee periods will roll over in no shorter a time than this.
+    /* Fee periods will roll over in no shorter a time than this. */
     uint public targetFeePeriodDurationSeconds = 4 weeks;
-    // And may not be set to be shorter than a day.
+    /* And may not be set to be shorter than a day. */
     uint constant MIN_FEE_PERIOD_DURATION_SECONDS = 1 days;
-    // And may not be set to be longer than six months.
+    /* And may not be set to be longer than six months. */
     uint constant MAX_FEE_PERIOD_DURATION_SECONDS = 26 weeks;
 
-    // The quantity of nomins that were in the fee pot at the time
-    // of the last fee rollover (feePeriodStartTime).
+    /* The quantity of nomins that were in the fee pot at the time
+     * of the last fee rollover (feePeriodStartTime). */
     uint public lastFeesCollected;
 
     mapping(address => bool) public hasWithdrawnLastPeriodFees;
@@ -167,11 +169,16 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
 
 
     /* ========== CONSTRUCTOR ========== */
-
-    function Havven(TokenState initialState, address _owner)
-        ExternStateProxyToken("Havven", "HAV", 1e8 * UNIT, address(this), initialState, _owner)
-        SelfDestructible(_owner, _owner)
-        // Owned is initialised in ExternStateProxyToken
+    
+    /**
+     * @dev Constructor
+     * @param _initialState A pre-populated contract containing token balances.
+     * If the provided address is 0x0, then a fresh one will be constructed with the contract owning all tokens.
+     * @param _owner The owner of this contract.
+     */
+    function Havven(TokenState _initialState, address _owner)
+        ExternStateProxyToken("Havven", "HAV", 1e8 * UNIT, address(this), _initialState, _owner)
+        SelfDestructible(_owner, _owner) /* Owned is initialised in ExternStateProxyToken */
         public
     {
         lastTransferTimestamp[this] = now;
@@ -183,6 +190,10 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
 
     /* ========== SETTERS ========== */
 
+    /**
+     * @notice Set the associated Nomin contract to collect fees from.
+     * @dev Only the contract owner may call this.
+     */
     function setNomin(EtherNomin _nomin) 
         external
         optionalProxy_onlyOwner
@@ -190,6 +201,10 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
         nomin = _nomin;
     }
 
+    /**
+     * @notice Set the associated havven escrow contract.
+     * @dev Only the contract owner may call this.
+     */
     function setEscrow(HavvenEscrow _escrow)
         external
         optionalProxy_onlyOwner
@@ -197,6 +212,12 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
         escrow = _escrow;
     }
 
+    /**
+     * @notice Set the targeted fee period duration.
+     * @dev Only callable by the contract owner. The duration must fall within
+     * acceptable bounds (1 day to 26 weeks). Upon resetting this the fee period
+     * may roll over if the target duration was shortened sufficiently.
+     */
     function setTargetFeePeriodDuration(uint duration)
         external
         postCheckFeePeriodRollover
@@ -211,24 +232,29 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    /* Allow the owner of this contract to endow any address with havvens
-     * from the initial supply. Since the entire initial supply resides
-     * in the havven contract, this disallows the foundation from withdrawing
-     * fees on undistributed balances. This function can also be used
-     * to retrieve any havvens sent to the Havven contract itself. */
+    /**
+     * @notice Allow the owner of this contract to endow any address with havvens
+     * from the initial supply.
+     * @dev Since the entire initial supply resides in the havven contract,
+     * this disallows the foundation from withdrawing fees on undistributed balances.
+     * This function can also be used to retrieve any havvens sent to the Havven contract itself.S
+     * Only callable by the contract owner.
+     */
     function endow(address account, uint value)
         external
         optionalProxy_onlyOwner
         returns (bool)
     {
 
-        // Use "this" in order that the havven account is the sender.
-        // That this is an explicit transfer also initialises fee entitlement information.
+        /* Use "this" in order that the havven account is the sender.
+         * The explicit transfer also initialises fee entitlement information. */
         return _transfer(this, account, value);
     }
 
-    /* Allow the owner of this contract to emit transfer events for
-     * contract setup purposes. */
+    /**
+     * @notice Allow the owner of this contract to emit transfer events for
+     * contract setup purposes.
+     */
     function emitTransferEvents(address sender, address[] recipients, uint[] values)
         external
         onlyOwner
@@ -238,8 +264,9 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
         }
     }
 
-    /* Override ERC20 transfer function in order to perform
-     * fee entitlement recomputation whenever balances are updated. */
+    /**
+     * @notice ERC20 transfer function.
+     */
     function transfer(address to, uint value)
         external
         optionalProxy
@@ -248,7 +275,11 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
         return _transfer(messageSender, to, value);
     }
 
-    /* Anything calling this must apply the optionalProxy or onlyProxy modifier. */
+    /**
+     * @dev Calls transfer() in ExternStateProxyToken to perform the transfer itself,
+     * and also recomputes fee entitlement information when balances are updated.
+     * Anything calling this must apply the optionalProxy or onlyProxy modifier.
+     */
     function _transfer(address sender, address to, uint value)
         internal
         preCheckFeePeriodRollover
@@ -258,20 +289,22 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
         uint senderPreBalance = state.balanceOf(sender);
         uint recipientPreBalance = state.balanceOf(to);
 
-        // Perform the transfer: if there is a problem,
-        // an exception will be thrown in this call.
+        /* Perform the transfer: if there is a problem,
+         * an exception will be thrown in this call. */
         _transfer_byProxy(sender, to, value);
 
-        // Zero-value transfers still update fee entitlement information,
-        // and may roll over the fee period.
+        /* Zero-value transfers still update fee entitlement information,
+         * and may roll over the fee period. */
         adjustFeeEntitlement(sender, senderPreBalance);
         adjustFeeEntitlement(to, recipientPreBalance);
 
         return true;
     }
 
-    /* Override ERC20 transferFrom function in order to perform
-     * fee entitlement recomputation whenever balances are updated. */
+    /**
+     * @notice ERC20 transferFrom function, which also performs
+     * fee entitlement recomputation whenever balances are updated.
+     */
     function transferFrom(address from, address to, uint value)
         external
         preCheckFeePeriodRollover
@@ -281,20 +314,22 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
         uint senderPreBalance = state.balanceOf(from);
         uint recipientPreBalance = state.balanceOf(to);
 
-        // Perform the transfer: if there is a problem,
-        // an exception will be thrown in this call.
+        /* Perform the transfer: if there is a problem,
+         * an exception will be thrown in this call. */
         _transferFrom_byProxy(messageSender, from, to, value);
 
-        // Zero-value transfers still update fee entitlement information,
-        // and may roll over the fee period.
+        /* Zero-value transfers still update fee entitlement information,
+         * and may roll over the fee period. */
         adjustFeeEntitlement(from, senderPreBalance);
         adjustFeeEntitlement(to, recipientPreBalance);
 
         return true;
     }
 
-    /* Compute the last period's fee entitlement for the message sender
-     * and then deposit it into their nomin account. */
+    /**
+     * @notice Compute the last period's fee entitlement for the message sender
+     * and then deposit it into their nomin account.
+     */
     function withdrawFeeEntitlement()
         public
         preCheckFeePeriodRollover
@@ -302,13 +337,13 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
     {
         address sender = messageSender;
 
-        // Do not deposit fees into frozen accounts.
+        /* Do not deposit fees into frozen accounts. */
         require(!nomin.frozen(sender));
 
-        // check the period has rolled over first
+        /* Check the period has rolled over first. */
         rolloverFee(sender, lastTransferTimestamp[sender], state.balanceOf(sender));
 
-        // Only allow accounts to withdraw fees once per period.
+        /* Only allow accounts to withdraw fees once per period. */
         require(!hasWithdrawnLastPeriodFees[sender]);
 
         uint feesOwed;
@@ -328,14 +363,16 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
         }
     }
 
-    /* Update the fee entitlement since the last transfer or entitlement
-     * adjustment. Since this updates the last transfer timestamp, if invoked
-     * consecutively, this function will do nothing after the first call. */
+    /**
+     * @notice Update the fee entitlement since the last transfer or entitlement adjustment.
+     * @dev Since this updates the last transfer timestamp, if invoked
+     * consecutively, this function will do nothing after the first call.
+     */
     function adjustFeeEntitlement(address account, uint preBalance)
         internal
     {
-        // The time since the last transfer clamps at the last fee rollover time if the last transfer
-        // was earlier than that.
+        /* The time since the last transfer clamps at the last fee rollover time
+         * if the last transfer was earlier than that. */
         rolloverFee(account, lastTransferTimestamp[account], preBalance);
 
         currentBalanceSum[account] = safeAdd(
@@ -343,11 +380,11 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
             safeMul(preBalance, now - lastTransferTimestamp[account])
         );
 
-        // Update the last time this user's balance changed.
+        /* Update the last time this user's balance changed. */
         lastTransferTimestamp[account] = now;
     }
 
-    /* Update the given account's previous period fee entitlement value.
+    /* @dev Update the given account's previous period fee entitlement value.
      * Do nothing if the last transfer occurred since the fee period rolled over.
      * If the entitlement was updated, also update the last transfer time to be
      * at the timestamp of the rollover, so if this should do nothing if called more
@@ -375,44 +412,44 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
     {
         if (lastTransferTime < feePeriodStartTime) {
             if (lastTransferTime < lastFeePeriodStartTime) {
-                // The last transfer predated the previous two fee periods.
+                /* The last transfer predated the previous two fee periods. */
                 if (lastTransferTime < penultimateFeePeriodStartTime) {
-                    // The balance did nothing in the penultimate fee period, so the average balance
-                    // in this period is their pre-transfer balance.
+                    /* The balance did nothing in the penultimate fee period, so the average balance
+                     * in this period is their pre-transfer balance. */
                     penultimateAverageBalance[account] = preBalance;
-                // The last transfer occurred within the one-before-the-last fee period.
+                /* The last transfer occurred within the one-before-the-last fee period. */
                 } else {
-                    // No overflow risk here: the failed guard implies (penultimateFeePeriodStartTime <= lastTransferTime).
+                    /* No overflow risk here: the failed guard implies (penultimateFeePeriodStartTime <= lastTransferTime). */
                     penultimateAverageBalance[account] = safeDiv(
                         safeAdd(currentBalanceSum[account], safeMul(preBalance, (lastFeePeriodStartTime - lastTransferTime))),
                         (lastFeePeriodStartTime - penultimateFeePeriodStartTime)
                     );
                 }
 
-                // The balance did nothing in the last fee period, so the average balance
-                // in this period is their pre-transfer balance.
+                /* The balance did nothing in the last fee period, so the average balance
+                 * in this period is their pre-transfer balance. */
                 lastAverageBalance[account] = preBalance;
 
-            // The last transfer occurred within the last fee period.
+            /* The last transfer occurred within the last fee period. */
             } else {
-                // The previously-last average balance becomes the penultimate balance.
+                /* The previously-last average balance becomes the penultimate balance. */
                 penultimateAverageBalance[account] = lastAverageBalance[account];
 
-                // No overflow risk here: the failed guard implies (lastFeePeriodStartTime <= lastTransferTime).
+                /* No overflow risk here: the failed guard implies (lastFeePeriodStartTime <= lastTransferTime). */
                 lastAverageBalance[account] = safeDiv(
                     safeAdd(currentBalanceSum[account], safeMul(preBalance, (feePeriodStartTime - lastTransferTime))),
                     (feePeriodStartTime - lastFeePeriodStartTime)
                 );
             }
 
-            // Roll over to the next fee period.
+            /* Roll over to the next fee period. */
             currentBalanceSum[account] = 0;
             hasWithdrawnLastPeriodFees[account] = false;
             lastTransferTimestamp[account] = feePeriodStartTime;
         }
     }
 
-    /* Recompute and return the given account's average balance information.
+    /* @dev Recompute and return the given account's average balance information.
      * This also rolls over the fee period if necessary, and brings
      * the account's current balance sum up to date. */
     function _recomputeAccountLastAverageBalance(address account)
@@ -424,7 +461,7 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
         return lastAverageBalance[account];
     }
 
-    /* Recompute and return the sender's average balance information. */
+    /* @notice Recompute and return the sender's average balance information. */
     function recomputeLastAverageBalance()
         external
         optionalProxy
@@ -433,7 +470,7 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
         return _recomputeAccountLastAverageBalance(messageSender);
     }
 
-    /* Recompute and return the given account's average balance information. */
+    /* @notice Recompute and return the given account's average balance information. */
     function recomputeAccountLastAverageBalance(address account)
         external
         returns (uint)
@@ -441,6 +478,7 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
         return _recomputeAccountLastAverageBalance(account);
     }
 
+    /* @notice Check if the current fee period has terminated and, if so, roll it over. */
     function rolloverFeePeriod()
         public
     {
@@ -452,16 +490,15 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
 
     /* If the fee period has rolled over, then
      * save the start times of the last fee period,
-     * as well as the penultimate fee period.
-     */
+     * as well as the penultimate fee period. */
     function checkFeePeriodRollover()
         internal
     {
-        // If the fee period has rolled over...
+        /* If the fee period has rolled over... */
         if (feePeriodStartTime + targetFeePeriodDurationSeconds <= now) {
             lastFeesCollected = nomin.feePool();
 
-            // Shift the three period start times back one place
+            /* ...shift the three period start times back one place. */
             penultimateFeePeriodStartTime = lastFeePeriodStartTime;
             lastFeePeriodStartTime = feePeriodStartTime;
             feePeriodStartTime = now;

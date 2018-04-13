@@ -74,15 +74,15 @@ contract Proxy is Owned {
     {
         _target.setMessageSender(msg.sender);
         assembly {
-            // Copy call data into free memory region.
+            /* Copy call data into free memory region. */
             let free_ptr := mload(0x40)
             calldatacopy(free_ptr, 0, calldatasize)
 
-            // Forward all gas, ether, and data to the target contract.
+            /* Forward all gas, ether, and data to the target contract. */
             let result := call(gas, sload(_target_slot), callvalue, free_ptr, calldatasize, 0, 0)
             returndatacopy(free_ptr, 0, returndatasize)
 
-            // Revert if the call failed, otherwise return the result.
+            /* Revert if the call failed, otherwise return the result. */
             if iszero(result) { revert(free_ptr, calldatasize) }
             return(free_ptr, returndatasize)
         } 

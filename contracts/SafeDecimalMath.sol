@@ -35,10 +35,10 @@ pragma solidity 0.4.21;
  */
 contract SafeDecimalMath {
 
-    // Number of decimal places in the representation.
+    /* Number of decimal places in the representation. */
     uint8 public constant decimals = 18;
 
-    // The number representing 1.0.
+    /* The number representing 1.0. */
     uint public constant UNIT = 10 ** uint(decimals);
 
     /**
@@ -134,8 +134,7 @@ contract SafeDecimalMath {
         internal
         returns (uint)
     {
-        // Divide by UNIT to remove the extra factor introduced by the product.
-        // UNIT be 0.
+        /* Divide by UNIT to remove the extra factor introduced by the product. */
         return safeMul(x, y) / UNIT;
 
     }
@@ -159,9 +158,9 @@ contract SafeDecimalMath {
         internal
         returns (uint)
     {
-        // Although a 0 denominator already throws an exception,
-        // it is equivalent to a THROW operation, which consumes all gas.
-        // A require statement emits REVERT instead, which remits remaining gas.
+        /* Although a 0 denominator already throws an exception,
+         * it is equivalent to a THROW operation, which consumes all gas.
+         * A require statement emits REVERT instead, which remits remaining gas. */
         require(y != 0);
         return x / y;
     }
@@ -176,7 +175,7 @@ contract SafeDecimalMath {
         internal
         returns (uint)
     {
-        // Reintroduce the UNIT factor that will be divided out by y.
+        /* Reintroduce the UNIT factor that will be divided out by y. */
         return safeDiv(safeMul(x, UNIT), y);
     }
 
