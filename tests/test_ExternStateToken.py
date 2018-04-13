@@ -7,6 +7,8 @@ from utils.testutils import assertReverts
 from utils.testutils import generate_topic_event_map, get_event_data_from_log
 from utils.testutils import ZERO_ADDRESS
 
+from tests.contract_interfaces.extern_state_token_interface import ExternStateTokenInterface
+
 ExternStateToken_SOURCE = "contracts/ExternStateToken.sol"
 TokenState_SOURCE = "contracts/TokenState.sol"
 
@@ -36,46 +38,31 @@ class TestExternStateToken(unittest.TestCase):
                                          remappings=['""=contracts'])
         cls.token_abi = cls.compiled['ExternStateToken']['abi']
         cls.token_event_dict = generate_topic_event_map(cls.token_abi)
-        cls.token, cls.construction_txr = attempt_deploy(cls.compiled, 'ExternStateToken',
+        cls.token_contract, cls.construction_txr = attempt_deploy(cls.compiled, 'ExternStateToken',
                                                                    MASTER,
                                                                    ["Test Token", "TEST",
                                                                     1000 * UNIT, cls.the_owner,
                                                                     ZERO_ADDRESS, cls.the_owner])
 
-        cls.tokenstate = W3.eth.contract(address=cls.token.functions.state().call(),
+        cls.tokenstate = W3.eth.contract(address=cls.token_contract.functions.state().call(),
                                          abi=cls.compiled['TokenState']['abi'])
 
-        mine_tx(cls.token.functions.setState(cls.tokenstate.address).transact({'from': cls.the_owner}))
+        mine_tx(cls.token_contract.functions.setState(cls.tokenstate.address).transact({'from': cls.the_owner}))
 
-        cls.owner = lambda self: cls.token.functions.owner().call()
-        cls.totalSupply = lambda self: cls.token.functions.totalSupply().call()
-        cls.state = lambda self: cls.token.functions.state().call()
-        cls.name = lambda self: cls.token.functions.name().call()
-        cls.symbol = lambda self: cls.token.functions.symbol().call()
-        cls.balanceOf = lambda self, account: cls.token.functions.balanceOf(account).call()
-        cls.allowance = lambda self, account, spender: cls.token.functions.allowance(account, spender).call()
-
-        cls.setState = lambda self, sender, new_state: mine_tx(
-            cls.token.functions.setState(new_state).transact({'from': sender}))
-        cls.transfer = lambda self, sender, to, value: mine_tx(
-            cls.token.functions.transfer(to, value).transact({'from': sender}))
-        cls.approve = lambda self, sender, spender, value: mine_tx(
-            cls.token.functions.approve(spender, value).transact({'from': sender}))
-        cls.transferFrom = lambda self, sender, fromAccount, to, value: mine_tx(
-            cls.token.functions.transferFrom(fromAccount, to, value).transact({'from': sender}))
+        cls.token = ExternStateTokenInterface(cls.token_contract)
 
     def test_constructor(self):
-        self.assertEqual(self.name(), "Test Token")
-        self.assertEqual(self.symbol(), "TEST")
-        self.assertEqual(self.totalSupply(), 1000 * UNIT)
-        self.assertEqual(self.balanceOf(self.the_owner), 1000 * UNIT)
-        self.assertEqual(self.state(), self.tokenstate.address)
-        self.assertEqual(self.tokenstate.functions.associatedContract().call(), self.token.address)
+        self.assertEqual(self.token.name(), "Test Token")
+        self.assertEqual(self.token.symbol(), "TEST")
+        self.assertEqual(self.token.totalSupply(), 1000 * UNIT)
+        self.assertEqual(self.token.balanceOf(self.the_owner), 1000 * UNIT)
+        self.assertEqual(self.token.state(), self.tokenstate.address)
+        self.assertEqual(self.tokenstate.functions.associatedContract().call(), self.token_contract.address)
 
     def test_provide_state(self):
         tokenstate, _ = attempt_deploy(self.compiled, 'TokenState',
                                        MASTER,
-                                       [self.the_owner, self.token.address])
+                                       [self.the_owner, self.token_contract.address])
 
         token, _ = attempt_deploy(self.compiled, 'ExternStateToken',
                                        MASTER,
@@ -93,123 +80,123 @@ class TestExternStateToken(unittest.TestCase):
 
     def test_getSetState(self):
         new_state = fresh_account()
-        owner = self.owner()
+        owner = self.token.owner()
         self.assertNotEqual(new_state, owner)
 
         # Only the owner is able to set the Fee Authority.
-        self.assertReverts(self.setState, new_state, new_state)
-        tx_receipt = self.setState(owner, new_state)
+        self.assertReverts(self.token.setState, new_state, new_state)
+        tx_receipt = self.token.setState(owner, new_state)
         # Check that event is emitted.
         self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'],
                          "StateUpdated")
-        self.assertEqual(self.state(), new_state)
+        self.assertEqual(self.token.state(), new_state)
 
     def test_transfer(self):
         sender = self.the_owner
-        sender_balance = self.balanceOf(sender)
+        sender_balance = self.token.balanceOf(sender)
 
         receiver = fresh_account()
-        receiver_balance = self.balanceOf(receiver)
+        receiver_balance = self.token.balanceOf(receiver)
         self.assertEqual(receiver_balance, 0)
 
         value = 10 * UNIT
-        total_supply = self.totalSupply()
+        total_supply = self.token.totalSupply()
 
         # This should fail because receiver has no tokens
-        self.assertReverts(self.transfer, receiver, sender, value)
-        tx_receipt = self.transfer(sender, receiver, value)
+        self.assertReverts(self.token.transfer, receiver, sender, value)
+        tx_receipt = self.token.transfer(sender, receiver, value)
         # Check event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'], "Transfer")
-        self.assertEqual(self.balanceOf(receiver), receiver_balance + value)
-        self.assertEqual(self.balanceOf(sender), sender_balance - value)
+        self.assertEqual(self.token.balanceOf(receiver), receiver_balance + value)
+        self.assertEqual(self.token.balanceOf(sender), sender_balance - value)
 
         # transfers should leave the supply unchanged
-        self.assertEqual(self.totalSupply(), total_supply)
+        self.assertEqual(self.token.totalSupply(), total_supply)
 
         value = 1001 * UNIT
         # This should fail because balance < value and balance > totalSupply
-        self.assertReverts(self.transfer, sender, receiver, value)
+        self.assertReverts(self.token.transfer, sender, receiver, value)
 
         # 0 value transfers are allowed.
         value = 0
-        pre_sender_balance = self.balanceOf(sender)
-        pre_receiver_balance = self.balanceOf(receiver)
-        tx_receipt = self.transfer(sender, receiver, value)
+        pre_sender_balance = self.token.balanceOf(sender)
+        pre_receiver_balance = self.token.balanceOf(receiver)
+        tx_receipt = self.token.transfer(sender, receiver, value)
         # Check event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'], "Transfer")
-        self.assertEqual(self.balanceOf(receiver), pre_receiver_balance)
-        self.assertEqual(self.balanceOf(sender), pre_sender_balance)
+        self.assertEqual(self.token.balanceOf(receiver), pre_receiver_balance)
+        self.assertEqual(self.token.balanceOf(sender), pre_sender_balance)
 
         # It is also possible to send 0 value transfer from an account with 0 balance.
         no_tokens = fresh_account()
-        self.assertEqual(self.balanceOf(no_tokens), 0)
-        tx_receipt = self.transfer(no_tokens, receiver, value)
+        self.assertEqual(self.token.balanceOf(no_tokens), 0)
+        tx_receipt = self.token.transfer(no_tokens, receiver, value)
         # Check event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'], "Transfer")
-        self.assertEqual(self.balanceOf(no_tokens), 0)
+        self.assertEqual(self.token.balanceOf(no_tokens), 0)
 
     def test_approve(self):
         approver, spender = fresh_accounts(2)
         approval_amount = 1 * UNIT
 
-        tx_receipt = self.approve(approver, spender, approval_amount)
+        tx_receipt = self.token.approve(approver, spender, approval_amount)
 
         # Check event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'], "Approval")
-        self.assertEqual(self.allowance(approver, spender), approval_amount)
+        self.assertEqual(self.token.allowance(approver, spender), approval_amount)
 
         # Any positive approval amount is valid, even greater than total_supply.
-        approval_amount = self.totalSupply() * 100
-        tx_receipt = self.approve(approver, spender, approval_amount)
+        approval_amount = self.token.totalSupply() * 100
+        tx_receipt = self.token.approve(approver, spender, approval_amount)
         # Check event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'], "Approval")
-        self.assertEqual(self.allowance(approver, spender), approval_amount)
+        self.assertEqual(self.token.allowance(approver, spender), approval_amount)
 
     def test_transferFrom(self):
         approver = self.the_owner
         spender, receiver = fresh_accounts(2)
 
-        approver_balance = self.balanceOf(approver)
-        spender_balance = self.balanceOf(spender)
-        receiver_balance = self.balanceOf(receiver)
+        approver_balance = self.token.balanceOf(approver)
+        spender_balance = self.token.balanceOf(spender)
+        receiver_balance = self.token.balanceOf(receiver)
 
         value = 10 * UNIT
-        total_supply = self.totalSupply()
+        total_supply = self.token.totalSupply()
 
         # This fails because there has been no approval yet
-        self.assertReverts(self.transferFrom, spender, approver, receiver, value)
+        self.assertReverts(self.token.transferFrom, spender, approver, receiver, value)
 
-        tx_receipt = self.approve(approver, spender, 2 * value)
+        tx_receipt = self.token.approve(approver, spender, 2 * value)
         # Check event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'], "Approval")
-        self.assertEqual(self.allowance(approver, spender), 2 * value)
+        self.assertEqual(self.token.allowance(approver, spender), 2 * value)
 
-        self.assertReverts(self.transferFrom, spender, approver, receiver, 2 * value + 1)
-        tx_receipt = self.transferFrom(spender, approver, receiver, value)
+        self.assertReverts(self.token.transferFrom, spender, approver, receiver, 2 * value + 1)
+        tx_receipt = self.token.transferFrom(spender, approver, receiver, value)
         # Check event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'], "Transfer")
 
-        self.assertEqual(self.balanceOf(approver), approver_balance - value)
-        self.assertEqual(self.balanceOf(spender), spender_balance)
-        self.assertEqual(self.balanceOf(receiver), receiver_balance + value)
-        self.assertEqual(self.allowance(approver, spender), value)
-        self.assertEqual(self.totalSupply(), total_supply)
+        self.assertEqual(self.token.balanceOf(approver), approver_balance - value)
+        self.assertEqual(self.token.balanceOf(spender), spender_balance)
+        self.assertEqual(self.token.balanceOf(receiver), receiver_balance + value)
+        self.assertEqual(self.token.allowance(approver, spender), value)
+        self.assertEqual(self.token.totalSupply(), total_supply)
 
         # Empty the account
-        tx_receipt = self.transferFrom(spender, approver, receiver, value)
+        tx_receipt = self.token.transferFrom(spender, approver, receiver, value)
         # Check event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'], "Transfer")
 
         approver = fresh_account()
         # This account has no tokens
-        approver_balance = self.balanceOf(approver)
+        approver_balance = self.token.balanceOf(approver)
         self.assertEqual(approver_balance, 0)
-        self.assertEqual(self.allowance(approver, spender), 0)
+        self.assertEqual(self.token.allowance(approver, spender), 0)
 
-        tx_receipt = self.approve(approver, spender, value)
+        tx_receipt = self.token.approve(approver, spender, value)
         # Check event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'], "Approval")
-        self.assertEqual(self.allowance(approver, spender), value)
+        self.assertEqual(self.token.allowance(approver, spender), value)
 
         # This should fail because the approver has no tokens.
-        self.assertReverts(self.transferFrom, spender, approver, receiver, value)
+        self.assertReverts(self.token.transferFrom, spender, approver, receiver, value)
