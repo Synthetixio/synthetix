@@ -34,8 +34,7 @@ class TestTokenState(unittest.TestCase):
     def setUpClass(cls):
         cls.assertReverts = assertReverts
 
-        cls.compiled = compile_contracts([TokenState_SOURCE],
-                                         remappings=['""=contracts'])
+        cls.compiled = compile_contracts([TokenState_SOURCE], remappings=['""=contracts'])
         cls.owner = MASTER
         cls.associate = DUMMY
 
