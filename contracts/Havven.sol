@@ -384,7 +384,8 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
         lastTransferTimestamp[account] = now;
     }
 
-    /* @dev Update the given account's previous period fee entitlement value.
+    /**
+     * @dev Update the given account's previous period fee entitlement value.
      * Do nothing if the last transfer occurred since the fee period rolled over.
      * If the entitlement was updated, also update the last transfer time to be
      * at the timestamp of the rollover, so if this should do nothing if called more
@@ -449,9 +450,11 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
         }
     }
 
-    /* @dev Recompute and return the given account's average balance information.
+    /**
+     * @dev Recompute and return the given account's average balance information.
      * This also rolls over the fee period if necessary, and brings
-     * the account's current balance sum up to date. */
+     * the account's current balance sum up to date.
+     */
     function _recomputeAccountLastAverageBalance(address account)
         internal
         preCheckFeePeriodRollover
@@ -461,7 +464,9 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
         return lastAverageBalance[account];
     }
 
-    /* @notice Recompute and return the sender's average balance information. */
+    /**
+     * @notice Recompute and return the sender's average balance information.
+     */
     function recomputeLastAverageBalance()
         external
         optionalProxy
@@ -470,7 +475,9 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
         return _recomputeAccountLastAverageBalance(messageSender);
     }
 
-    /* @notice Recompute and return the given account's average balance information. */
+    /**
+     * @notice Recompute and return the given account's average balance information.
+     */
     function recomputeAccountLastAverageBalance(address account)
         external
         returns (uint)
@@ -478,7 +485,9 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
         return _recomputeAccountLastAverageBalance(account);
     }
 
-    /* @notice Check if the current fee period has terminated and, if so, roll it over. */
+    /** 
+     * @notice Check if the current fee period has terminated and, if so, roll it over.
+     */
     function rolloverFeePeriod()
         public
     {
@@ -488,9 +497,11 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
 
     /* ========== MODIFIERS ========== */
 
-    /* If the fee period has rolled over, then
+    /**
+     * @dev If the fee period has rolled over, then
      * save the start times of the last fee period,
-     * as well as the penultimate fee period. */
+     * as well as the penultimate fee period.
+     */
     function checkFeePeriodRollover()
         internal
     {
