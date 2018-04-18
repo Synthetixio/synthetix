@@ -935,9 +935,9 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.oracle(), self.nomin_oracle)
         self.assertEqual(self.beneficiary(), self.nomin_beneficiary)
         self.assertEqual(self.etherPrice(), 1000 * UNIT)
-        self.assertEqual(self.stalePeriod(), 60 * 30)  # default half an hour
+        self.assertEqual(self.stalePeriod(), 60 * 60)  # default one hour
         self.assertEqual(self.liquidationTimestamp(), 2**256 - 1)
-        self.assertEqual(self.liquidationPeriod(), 90 * 24 * 60 * 60)  # default ninety days
+        self.assertEqual(self.liquidationPeriod(), 14 * 24 * 60 * 60)  # default fourteen days
         self.assertEqual(self.poolFeeRate(), UNIT / 200)  # default fifty basis points
         self.assertEqual(self.nominPool(), 0)
         construct_time = block_time(self.construction_txr.blockNumber)
@@ -1780,17 +1780,17 @@ class TestEtherNomin(unittest.TestCase):
         self.assertNotEqual(owner, non_owner)
         self.assertReverts(self.forceLiquidation, non_owner)
 
-        ninetyDays = 90 * 24 * 60 * 60
+        fourteenDays = 14 * 24 * 60 * 60
         oneEightyDays = 180 * 24 * 60 * 60
 
         self.forceLiquidation(owner)
-        self.assertEqual(self.liquidationPeriod(), ninetyDays)  # Default 90 days.
+        self.assertEqual(self.liquidationPeriod(), fourteenDays)  # Default 14 days.
         self.assertReverts(self.extendLiquidationPeriod, owner, 12309198139871)
         self.extendLiquidationPeriod(owner, 1)
-        self.assertEqual(self.liquidationPeriod(), ninetyDays + 1)
+        self.assertEqual(self.liquidationPeriod(), fourteenDays + 1)
         self.extendLiquidationPeriod(owner, 12345)
-        self.assertEqual(self.liquidationPeriod(), ninetyDays + 12346)
-        self.extendLiquidationPeriod(owner, ninetyDays - 12346)
+        self.assertEqual(self.liquidationPeriod(), fourteenDays + 12346)
+        self.extendLiquidationPeriod(owner, oneEightyDays - (fourteenDays + 12346))
         self.assertEqual(self.liquidationPeriod(), oneEightyDays)
         self.assertReverts(self.extendLiquidationPeriod, owner, 1)
         self.assertReverts(self.extendLiquidationPeriod, owner, 12309198139871)
@@ -1810,7 +1810,7 @@ class TestEtherNomin(unittest.TestCase):
         # Should be able to terminate liquidation if there is no supply.
         tx_receipt = self.terminateLiquidation(owner)
         self.assertEqual(self.liquidationTimestamp(), 2**256 - 1)
-        self.assertEqual(self.liquidationPeriod(), 90 * 24 * 60 * 60)
+        self.assertEqual(self.liquidationPeriod(), 14 * 24 * 60 * 60)
         self.assertEqual(len(tx_receipt.logs), 1)
         self.assertEqual(get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[0])['event'],
                          "LiquidationTerminated")
