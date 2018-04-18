@@ -499,7 +499,7 @@ class TestCourt(unittest.TestCase):
 
     def test_beginMotion(self):
         owner = self.owner()
-        accounts = fresh_accounts(5)
+        accounts = fresh_accounts(6)[1:]
         insufficient_standing = accounts[0]
         sufficient_standing = accounts[1]
         voter = accounts[2]
@@ -507,6 +507,14 @@ class TestCourt(unittest.TestCase):
         voting_period = self.votingPeriod()
         fee_period = self.havvenTargetFeePeriodDurationSeconds()
         controlling_share = self.havvenSupply() // 2
+
+        # Assert that accounts are unique.
+        l = [owner] + accounts
+        for i in range(len(l)):
+            for j in range(len(l)):
+                if j == i:
+                    continue
+                self.assertNotEqual(l[i], l[j])
 
         # Give 50% of the havven tokens to voter, enough to pass a confiscation motion on their own.
         self.havvenEndow(owner, voter, controlling_share)
@@ -777,10 +785,14 @@ class TestCourt(unittest.TestCase):
 
     def test_approveMotion(self):
         owner = self.owner()
-        voter, guilty = fresh_accounts(2)
+        _, voter, guilty = fresh_accounts(3)
         voting_period = self.votingPeriod()
         fee_period = self.havvenTargetFeePeriodDurationSeconds()
         controlling_share = self.havvenSupply() // 2
+
+        self.assertNotEqual(owner, voter)
+        self.assertNotEqual(owner, guilty)
+        self.assertNotEqual(voter, guilty)
 
         # Give 50% of all havven tokens to our voter.
         self.havvenEndow(owner, voter, controlling_share)
