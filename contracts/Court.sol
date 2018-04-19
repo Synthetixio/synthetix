@@ -275,7 +275,7 @@ contract Court is SafeDecimalMath, Owned {
         // to set future start times for votes.
         // These values are timestamps, they will not overflow
         // as they can only ever be initialised to relatively small values.
-        return now < motionStartTime[motionID] + votingPeriod;
+        return motionStartTime[motionID] < now && now < motionStartTime[motionID] + votingPeriod;
     }
 
     /* A vote on the target account has concluded, but the motion
@@ -360,12 +360,15 @@ contract Court is SafeDecimalMath, Owned {
         // Disallow votes on accounts that have previously been frozen.
         require(!nomin.frozen(target));
 
+        havven.rolloverFeePeriod();
+
         uint motionID = nextMotionID++;
         motionTarget[motionID] = target;
         targetMotionID[target] = motionID;
 
-        motionStartTime[motionID] = havven.lastFeePeriodStartTime() + havven.targetFeePeriodDurationSeconds();
-        emit MotionBegun(msg.sender, msg.sender, target, target, motionID, motionID);
+        // Start the vote at the start of the next fee period
+        motionStartTime[motionID] = havven.feePeriodStartTime() + havven.targetFeePeriodDurationSeconds();
+        emit MotionBegun(msg.sender, msg.sender, target, target, motionID, motionID, motionStartTime[motionID]);
 
         return motionID;
     }
@@ -502,7 +505,7 @@ contract Court is SafeDecimalMath, Owned {
 
     /* ========== EVENTS ========== */
 
-    event MotionBegun(address initiator, address indexed initiatorIndex, address target, address indexed targetIndex, uint motionID, uint indexed motionIDIndex);
+    event MotionBegun(address initiator, address indexed initiatorIndex, address target, address indexed targetIndex, uint motionID, uint indexed motionIDIndex, uint startTime);
 
     event VotedFor(address voter, address indexed voterIndex, uint motionID, uint indexed motionIDIndex, uint weight);
 

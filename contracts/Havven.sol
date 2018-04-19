@@ -449,7 +449,7 @@ contract Havven is SelfDestructible, ExternStateToken {
         internal
     {
         // If the fee period has rolled over...
-        if (feePeriodStartTime + targetFeePeriodDurationSeconds <= now) {
+        if (now >= feePeriodStartTime + targetFeePeriodDurationSeconds) {
             lastFeesCollected = nomin.feePool();
 
             // Shift the three period start times back one place
