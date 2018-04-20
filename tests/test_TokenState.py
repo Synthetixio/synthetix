@@ -4,6 +4,7 @@ from utils.deployutils import compile_contracts, attempt_deploy, mine_tx, \
 from utils.testutils import assertReverts
 from utils.testutils import ZERO_ADDRESS
 
+from tests.contract_interfaces.token_state_interface import TokenStateInterface
 
 TokenState_SOURCE = "contracts/TokenState.sol"
 
@@ -40,50 +41,40 @@ class TestTokenState(unittest.TestCase):
 
         cls.tokenstate, _ = attempt_deploy(cls.compiled, 'TokenState', MASTER, [cls.owner, cls.associate])
 
-        cls.state_owner = lambda self: cls.tokenstate.functions.owner().call()
-        cls.associatedContract = lambda self: cls.tokenstate.functions.associatedContract().call()
-        cls.balanceOf = lambda self, acc: cls.tokenstate.functions.balanceOf(acc).call()
-        cls.allowance = lambda self, frm, to: cls.tokenstate.functions.allowance(frm, to).call()
-
-        cls.setAssociatedContract = lambda self, sender, addr: mine_tx(
-            cls.tokenstate.functions.setAssociatedContract(addr).transact({'from': sender}))
-        cls.setAllowance = lambda self, sender, tokenOwner, spender, value: mine_tx(
-            cls.tokenstate.functions.setAllowance(tokenOwner, spender, value).transact({'from': sender}))
-        cls.setBalanceOf = lambda self, sender, account, value: mine_tx(
-            cls.tokenstate.functions.setBalanceOf(account, value).transact({'from': sender}))
+        cls.tokenstate = TokenStateInterface(cls.tokenstate)
 
     def test_constructor(self):
-        self.assertEquals(self.state_owner(), self.owner)
-        self.assertEquals(self.associatedContract(), self.associate)
+        self.assertEquals(self.tokenstate.owner(), self.owner)
+        self.assertEquals(self.tokenstate.associatedContract(), self.associate)
 
     def test_setAssociatedContract(self):
         new_token = ZERO_ADDRESS
 
         # Non-owner can't set the associated contract
-        self.assertReverts(self.setAssociatedContract, DUMMY, new_token)
+        self.assertReverts(self.tokenstate.setAssociatedContract, DUMMY, new_token)
 
-        self.assertEqual(self.balanceOf(DUMMY), 0)
-        self.setBalanceOf(self.associate, DUMMY, UNIT)
-        self.setAssociatedContract(MASTER, new_token)
-        self.assertEqual(self.associatedContract(), new_token)
-        self.assertEqual(self.balanceOf(DUMMY), UNIT)
+        self.assertEqual(self.tokenstate.balanceOf(DUMMY), 0)
+        self.tokenstate.setBalanceOf(self.associate, DUMMY, UNIT)
+        self.tokenstate.setAssociatedContract(MASTER, new_token)
+        self.assertEqual(self.tokenstate.associatedContract(), new_token)
+        self.assertEqual(self.tokenstate.balanceOf(DUMMY), UNIT)
 
     def test_setAllowance(self):
 
-        self.assertEqual(self.allowance(MASTER, DUMMY), 0)
-        self.setAllowance(self.associate, MASTER, DUMMY, UNIT)
-        self.assertEqual(self.allowance(MASTER, DUMMY), UNIT)
+        self.assertEqual(self.tokenstate.allowance(MASTER, DUMMY), 0)
+        self.tokenstate.setAllowance(self.associate, MASTER, DUMMY, UNIT)
+        self.assertEqual(self.tokenstate.allowance(MASTER, DUMMY), UNIT)
 
         # Only the associated contract should be able to set allowances.
         self.assertNotEqual(self.associate, MASTER)
-        self.assertReverts(self.setAllowance, MASTER, MASTER, DUMMY, UNIT)
+        self.assertReverts(self.tokenstate.setAllowance, MASTER, MASTER, DUMMY, UNIT)
 
 
     def test_setBalanceOf(self):
-        self.assertEqual(self.balanceOf(MASTER), 0)
-        self.setBalanceOf(self.associate, MASTER, UNIT)
-        self.assertEqual(self.balanceOf(MASTER), UNIT)
+        self.assertEqual(self.tokenstate.balanceOf(MASTER), 0)
+        self.tokenstate.setBalanceOf(self.associate, MASTER, UNIT)
+        self.assertEqual(self.tokenstate.balanceOf(MASTER), UNIT)
 
         # Only the associated contract should be able to set allowances.
         self.assertNotEqual(self.associate, MASTER)
-        self.assertReverts(self.setBalanceOf, MASTER, MASTER, 2*UNIT)
+        self.assertReverts(self.tokenstate.setBalanceOf, MASTER, MASTER, 2*UNIT)

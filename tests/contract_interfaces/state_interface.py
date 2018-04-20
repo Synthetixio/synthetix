@@ -8,6 +8,6 @@ class StateInterface(OwnedInterface):
 
         self.contract = contract
 
-        self.associatedContract = lambda: self.contract.functions.associatedContract.call()
+        self.associatedContract = lambda: self.contract.functions.associatedContract().call()
 
         self.setAssociatedContract = lambda sender, addr: mine_tx(self.contract.functions.setAssociatedContract(addr).transact({"from": sender}))
