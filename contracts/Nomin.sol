@@ -89,6 +89,7 @@ contract Nomin is ExternStateFeeToken {
     {
         // It should not be possible to transfer to the nomin contract itself.
         frozen[this] = true;
+        havven = Havven(_havven);
     }
 
     /* ========== SETTERS ========== */
@@ -105,6 +106,8 @@ contract Nomin is ExternStateFeeToken {
         external
         onlyOwner
     {
+        // havven should be set as the feeAuthority after calling this depending on
+        // havven's internal logic
         havven = _havven;
         emit HavvenUpdated(_havven);
     }
