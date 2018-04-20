@@ -6,6 +6,7 @@ class OwnedInterface:
         self.contract = contract
 
         self.owner = lambda: self.contract.functions.owner().call()
+        self.nominatedOwner = lambda: self.contract.functions.nominatedOwner().call()
 
         self.nominateOwner = lambda sender, addr: mine_tx(
             self.contract.functions.nominateOwner(addr).transact({'from': sender}))
