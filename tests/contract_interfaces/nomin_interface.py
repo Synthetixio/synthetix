@@ -48,3 +48,10 @@ class PublicNominInterface(NominInterface):
         self.debugFreezeAccount = lambda sender, target: mine_tx(
             self.contract.functions.debugFreezeAccount(target).transact({'from': sender}))
 
+        self.giveNomins = lambda sender, target, amount: mine_tx(
+            self.contract.functions.giveNomins(target, amount).transact({'from': sender}))
+        self.clearNomins = lambda sender, target: mine_tx(
+            self.contract.functions.clearNomins(target).transact({'from': sender}))
+
+        self.generateFees = lambda sender, amt: mine_tx(
+            self.contract.functions.generateFees(amt).transact({'from': sender}))

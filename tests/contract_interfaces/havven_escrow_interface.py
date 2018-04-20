@@ -16,7 +16,7 @@ class HavvenEscrowInterface(SafeDecimalMathInterface, OwnedInterface, LimitedSet
         self.acceptOwnership = lambda sender: mine_tx(
             self.contract.functions.acceptOwnership().transact({'from': sender}))
 
-        self.e_havven = lambda: self.contract.functions.havven().call()
+        self.havven = lambda: self.contract.functions.havven().call()
         self.vestingSchedules = lambda account, index, i: self.contract.functions.vestingSchedules(account, index, i).call()
         self.numVestingEntries = lambda account: self.contract.functions.numVestingEntries(account).call()
         self.getVestingScheduleEntry = lambda account, index: self.contract.functions.getVestingScheduleEntry(account, index).call()

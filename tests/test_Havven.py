@@ -93,19 +93,19 @@ class TestHavven(unittest.TestCase):
 
     def test_scenario(self):
         alice, bob = fresh_accounts(2)
-        self.havven.endow(MASTER, alice, 1000 * UNIT)
-        self.havven.setWhitelisted(MASTER, alice, True)
+        self.havven.endow(MASTER, MASTER, 1000 * UNIT)
+        self.havven.setWhitelisted(MASTER, MASTER, True)
 
-        self.assertEqual(self.havven.balanceOf(alice), 1000 * UNIT)
+        self.assertEqual(self.havven.balanceOf(MASTER), 1000 * UNIT)
 
         # UPDATE PRICE
         self.havven.updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
 
         # ISSUE NOMINS
 
-        self.havven.issueNomins(alice, 5 * UNIT)
+        self.havven.issueNomins(MASTER, 5 * UNIT)
 
-        self.assertEqual(self.nomin_contract.functions.balanceOf(alice).call(), 5 * UNIT)
+        self.assertEqual(self.nomin_contract.functions.balanceOf(MASTER).call(), 5 * UNIT)
 
     '''
     def start_new_fee_period(self):

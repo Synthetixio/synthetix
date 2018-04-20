@@ -59,6 +59,7 @@ class HavvenInterface(ExternStateTokenInterface, SelfDestructibleInterface):
         self.transferFrom = lambda sender, frm, to, val: mine_tx(self.contract.functions.transferFrom(frm, to, val).transact({"from": sender}))
         self.withdrawFeeEntitlement = lambda sender: mine_tx(self.contract.functions.withdrawFeeEntitlement().transact({"from": sender}))
         self.recomputeAccountLastHavvenAverageBalance = lambda sender, acc: mine_tx(self.contract.functions.recomputeAccountLastHavvenAverageBalance(acc).transact({"from": sender}))
+        self.recomputeAccountLastIssuedNominAverageBalance = lambda sender, acc: mine_tx(self.contract.functions.recomputeAccountLastIssuedNominAverageBalance(acc).transact({"from": sender}))
         self.rolloverFeePeriod = lambda sender: mine_tx(self.contract.functions.rolloverFeePeriod().transact({"from": sender}))
         self.issueNomins = lambda sender, amt: mine_tx(self.contract.functions.issueNomins(amt).transact({"from": sender}))
         self.burnNomins = lambda sender, amt: mine_tx(self.contract.functions.burnNomins(amt).transact({"from": sender}))
@@ -72,4 +73,3 @@ class PublicHavvenInterface(HavvenInterface):
         self.public_contract = contract
 
         self.currentTime = lambda: self.contract.functions.currentTime().call()
-        self._checkFeePeriodRollover = lambda: self.contract.functions._checkFeePeriodRollover().call()

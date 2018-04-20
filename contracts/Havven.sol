@@ -338,10 +338,7 @@ contract Havven is SelfDestructible, ExternStateToken {
         // Only allow accounts to withdraw fees once per period.
         require(!hasWithdrawnLastPeriodFees[msg.sender]);
 
-        uint feesOwed;
-
-
-        feesOwed = safeDiv_dec(safeMul_dec(safeAdd(feesOwed, updatedBalances.lastAverageBalance), lastFeesCollected), totalSupply);
+        uint feesOwed = safeDiv_dec(safeMul_dec(updatedBalances.lastAverageBalance, lastFeesCollected), nomin.totalSupply());
 
         hasWithdrawnLastPeriodFees[msg.sender] = true;
         if (feesOwed != 0) {
@@ -422,8 +419,8 @@ contract Havven is SelfDestructible, ExternStateToken {
     /* Recompute and return the given account's average balance information.
      * This also rolls over the fee period if necessary, and brings
      * the account's current balance sum up to date. */
-    function _recomputeAccountLastAverageBalance(address account)
-        internal
+    function recomputeAccountLastHavvenAverageBalance(address account)
+        public
         preCheckFeePeriodRollover
         returns (uint)
     {
@@ -431,13 +428,17 @@ contract Havven is SelfDestructible, ExternStateToken {
         return havvenBalanceManager[account].lastAverageBalance;
     }
 
+
+
     /* Recompute and return the given account's average balance information. */
-    function recomputeAccountLastHavvenAverageBalance(address account)
+    function recomputeAccountLastIssuedNominAverageBalance(address account)
         external
         returns (uint)
     {
-        return _recomputeAccountLastAverageBalance(account);
+        adjustIssuanceBalanceAverages(account, issuedNomins[account]);
+        return issuedNominBalanceManager[account].lastAverageBalance;
     }
+
 
     function rolloverFeePeriod()
         public
@@ -462,7 +463,7 @@ contract Havven is SelfDestructible, ExternStateToken {
 
     /* ========== HAV PRICE ========== */
 
-    /* Havvens that are not escrowed */
+    /* TODO: Havvens that are not escrowed */
     function availableHavvens(address account)
         public
         view
@@ -471,7 +472,7 @@ contract Havven is SelfDestructible, ExternStateToken {
         uint bal = state.balanceOf(account);
         uint bal_val = havValue(bal);
         uint issued_nom = issuedNomins[account];
-        return 0;
+        return ;
     }
 
     function maxIssuanceRights(address issuer)
@@ -513,6 +514,7 @@ contract Havven is SelfDestructible, ExternStateToken {
         require(amount <= remainingIssuanceRights(msg.sender));
         uint issued = issuedNomins[msg.sender];
         nomin.issue(msg.sender, amount);
+        issuedNomins[msg.sender] = safeAdd(issued, amount);
         adjustIssuanceBalanceAverages(msg.sender, issued);
     }
 
@@ -524,6 +526,7 @@ contract Havven is SelfDestructible, ExternStateToken {
         // nomin.burn does safeSub on balance (so revert if not enough nomins)
         uint issued = issuedNomins[msg.sender];
         nomin.burn(msg.sender, amount);
+        issuedNomins[msg.sender] = safeSub(issued, amount);
         adjustIssuanceBalanceAverages(msg.sender, issued);
     }
 

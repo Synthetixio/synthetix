@@ -17,12 +17,6 @@ contract PublicHavven is Havven {
         public
     {}
 
-    function _checkFeePeriodRollover()
-        public
-    {
-        checkFeePeriodRollover();
-    }
-
     function currentTime()
         public
         returns (uint)
