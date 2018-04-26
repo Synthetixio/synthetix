@@ -113,14 +113,15 @@ contract Havven is SelfDestructible, ExternStateToken {
     // Sums of balances*duration in the current fee period.
     // range: decimals; units: havven-seconds
 
-    struct BalanceManager {
+    struct BalanceData {
         uint currentBalanceSum;
         uint lastAverageBalance;
         uint lastTransferTimestamp;
     }
 
-    mapping(address => BalanceManager) internal havvenBalanceManager;
-    mapping(address => BalanceManager) internal issuedNominBalanceManager;
+    mapping(address => BalanceData) internal havvenBalanceData;
+    mapping(address => BalanceData) internal issuedNominBalanceData;
+    BalanceData internal totalIssuedNominBalanceData;
 
     // The time the current fee period began.
     uint public feePeriodStartTime = 2;
@@ -225,7 +226,7 @@ contract Havven is SelfDestructible, ExternStateToken {
         view
         returns (uint)
     {
-        return havvenBalanceManager[account].currentBalanceSum;
+        return havvenBalanceData[account].currentBalanceSum;
     }
 
     function lastAverageHavvenBalance(address account)
@@ -233,7 +234,7 @@ contract Havven is SelfDestructible, ExternStateToken {
         view
         returns (uint)
     {
-        return havvenBalanceManager[account].lastAverageBalance;
+        return havvenBalanceData[account].lastAverageBalance;
     }
 
     function lastHavvenTransferTimestamp(address account)
@@ -241,7 +242,7 @@ contract Havven is SelfDestructible, ExternStateToken {
         view
         returns (uint)
     {
-        return havvenBalanceManager[account].lastTransferTimestamp;
+        return havvenBalanceData[account].lastTransferTimestamp;
     }
 
     function currentIssuedNominBalanceSum(address account)
@@ -249,7 +250,7 @@ contract Havven is SelfDestructible, ExternStateToken {
         view
         returns (uint)
     {
-        return issuedNominBalanceManager[account].currentBalanceSum;
+        return issuedNominBalanceData[account].currentBalanceSum;
     }
 
     function lastAverageIssuedNominBalance(address account)
@@ -257,7 +258,7 @@ contract Havven is SelfDestructible, ExternStateToken {
         view
         returns (uint)
     {
-        return issuedNominBalanceManager[account].lastAverageBalance;
+        return issuedNominBalanceData[account].lastAverageBalance;
     }
 
     function lastIssuedNominTransferTimestamp(address account)
@@ -265,7 +266,7 @@ contract Havven is SelfDestructible, ExternStateToken {
         view
         returns (uint)
     {
-        return issuedNominBalanceManager[account].lastTransferTimestamp;
+        return issuedNominBalanceData[account].lastTransferTimestamp;
     }
 
 
@@ -333,20 +334,21 @@ contract Havven is SelfDestructible, ExternStateToken {
         require(!nomin.frozen(msg.sender));
 
         // check the period has rolled over first
-        BalanceManager memory updatedBalances = rolloverBalances(msg.sender, issuedNomins[msg.sender], issuedNominBalanceManager[msg.sender]);
+        adjustIssuanceBalanceAverages(msg.sender, issuedNomins[msg.sender], nomin.totalSupply());
+
+        BalanceData memory updatedBalances = issuedNominBalanceData[msg.sender];
 
         // Only allow accounts to withdraw fees once per period.
         require(!hasWithdrawnLastPeriodFees[msg.sender]);
 
-        uint feesOwed = safeDiv_dec(safeMul_dec(updatedBalances.lastAverageBalance, lastFeesCollected), nomin.totalSupply());
+        uint feesOwed = safeDiv_dec(safeMul_dec(updatedBalances.lastAverageBalance, lastFeesCollected), totalIssuedNominBalanceData.lastAverageBalance);
 
         hasWithdrawnLastPeriodFees[msg.sender] = true;
+
         if (feesOwed != 0) {
             nomin.withdrawFee(msg.sender, feesOwed);
-            emit FeesWithdrawn(msg.sender, msg.sender, feesOwed);
         }
-
-        issuedNominBalanceManager[msg.sender] = updatedBalances;
+        emit FeesWithdrawn(msg.sender, msg.sender, feesOwed);
     }
 
     /* Update the fee entitlement since the last transfer or entitlement
@@ -357,7 +359,7 @@ contract Havven is SelfDestructible, ExternStateToken {
     {
         // The time since the last transfer clamps at the last fee rollover time if the last transfer
         // was earlier than that.
-        BalanceManager memory updatedBalances = rolloverBalances(account, preBalance, havvenBalanceManager[account]);
+        BalanceData memory updatedBalances = rolloverBalances(preBalance, havvenBalanceData[account]);
 
         updatedBalances.currentBalanceSum = safeAdd(
             updatedBalances.currentBalanceSum,
@@ -367,13 +369,20 @@ contract Havven is SelfDestructible, ExternStateToken {
         // Update the last time this user's balance changed.
         updatedBalances.lastTransferTimestamp = now;
 
-        havvenBalanceManager[account] = updatedBalances;
+        havvenBalanceData[account] = updatedBalances;
     }
 
-    function adjustIssuanceBalanceAverages(address account, uint preBalance)
+    function adjustIssuanceBalanceAverages(address account, uint preBalance, uint last_total_supply)
         internal
     {
-        BalanceManager memory updatedBalances = rolloverBalances(account, preBalance, issuedNominBalanceManager[account]);
+
+        adjustTotalIssuanceBalanceAverages(last_total_supply);
+
+        if (issuedNominBalanceData[account].lastTransferTimestamp < feePeriodStartTime) {
+            hasWithdrawnLastPeriodFees[account] = false;
+        }
+
+        BalanceData memory updatedBalances = rolloverBalances(preBalance, issuedNominBalanceData[account]);
 
         updatedBalances.currentBalanceSum = safeAdd(
             updatedBalances.currentBalanceSum,
@@ -381,14 +390,28 @@ contract Havven is SelfDestructible, ExternStateToken {
         );
 
         updatedBalances.lastTransferTimestamp = now;
-
-        issuedNominBalanceManager[account] = updatedBalances;
+        issuedNominBalanceData[account] = updatedBalances;
     }
 
 
-    function rolloverBalances(address account, uint preBalance, BalanceManager balanceInfo)
+    function adjustTotalIssuanceBalanceAverages(uint preBalance)
         internal
-        returns (BalanceManager)
+    {
+        BalanceData memory updatedBalances = rolloverBalances(preBalance, totalIssuedNominBalanceData);
+
+        updatedBalances.currentBalanceSum = safeAdd(
+            updatedBalances.currentBalanceSum,
+            safeMul(preBalance, now - updatedBalances.lastTransferTimestamp)
+        );
+
+        updatedBalances.lastTransferTimestamp = now;
+        totalIssuedNominBalanceData = updatedBalances;
+    }
+
+
+    function rolloverBalances(uint preBalance, BalanceData balanceInfo)
+        internal
+        returns (BalanceData)
     {
 
         uint currentBalanceSum = balanceInfo.currentBalanceSum;
@@ -412,7 +435,7 @@ contract Havven is SelfDestructible, ExternStateToken {
             lastTransferTime = feePeriodStartTime;
         }
 
-        return BalanceManager(currentBalanceSum, lastAvgBal, lastTransferTime);
+        return BalanceData(currentBalanceSum, lastAvgBal, lastTransferTime);
     }
 
 
@@ -425,24 +448,22 @@ contract Havven is SelfDestructible, ExternStateToken {
         returns (uint)
     {
         adjustHavvenBalanceAverages(account, state.balanceOf(account));
-        return havvenBalanceManager[account].lastAverageBalance;
+        return havvenBalanceData[account].lastAverageBalance;
     }
-
-
 
     /* Recompute and return the given account's average balance information. */
     function recomputeAccountLastIssuedNominAverageBalance(address account)
         external
         returns (uint)
     {
-        adjustIssuanceBalanceAverages(account, issuedNomins[account]);
-        return issuedNominBalanceManager[account].lastAverageBalance;
+        adjustIssuanceBalanceAverages(account, issuedNomins[account], nomin.totalSupply());
+        return issuedNominBalanceData[account].lastAverageBalance;
     }
-
 
     function rolloverFeePeriod()
         public
     {
+        require(now >= feePeriodStartTime + targetFeePeriodDurationSeconds);
         checkFeePeriodRollover();
     }
 
@@ -472,7 +493,7 @@ contract Havven is SelfDestructible, ExternStateToken {
         uint bal = state.balanceOf(account);
         uint bal_val = havValue(bal);
         uint issued_nom = issuedNomins[account];
-        return ;
+        return 0;
     }
 
     function maxIssuanceRights(address issuer)
@@ -483,7 +504,7 @@ contract Havven is SelfDestructible, ExternStateToken {
         returns (uint)
     {
         if (escrow != HavvenEscrow(0)) {
-            return safeMul_dec(havValue(safeAdd(balanceOf(issuer), escrow.totalVestedAccountBalance(msg.sender))), CMax);
+            return safeMul_dec(havValue(safeAdd(balanceOf(issuer), escrow.balanceOf(msg.sender))), CMax);
         } else {
             return safeMul_dec(havValue(balanceOf(issuer)), CMax);
         }
@@ -512,10 +533,11 @@ contract Havven is SelfDestructible, ExternStateToken {
         external
     {
         require(amount <= remainingIssuanceRights(msg.sender));
+        uint lastTot = nomin.totalSupply();
         uint issued = issuedNomins[msg.sender];
         nomin.issue(msg.sender, amount);
         issuedNomins[msg.sender] = safeAdd(issued, amount);
-        adjustIssuanceBalanceAverages(msg.sender, issued);
+        adjustIssuanceBalanceAverages(msg.sender, issued, lastTot);
     }
 
     function burnNomins(uint amount)
@@ -524,10 +546,11 @@ contract Havven is SelfDestructible, ExternStateToken {
     {
         require(amount <= issuedNomins[msg.sender]);
         // nomin.burn does safeSub on balance (so revert if not enough nomins)
+        uint lastTot = nomin.totalSupply();
         uint issued = issuedNomins[msg.sender];
         nomin.burn(msg.sender, amount);
         issuedNomins[msg.sender] = safeSub(issued, amount);
-        adjustIssuanceBalanceAverages(msg.sender, issued);
+        adjustIssuanceBalanceAverages(msg.sender, issued, lastTot);
     }
 
     // Value in USD for a given amount of HAV

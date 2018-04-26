@@ -6,8 +6,8 @@ from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mi
     UNIT, MASTER, DUMMY, fast_forward, fresh_accounts, take_snapshot, restore_snapshot, ETHER
 from utils.testutils import assertReverts, block_time, assertClose, ZERO_ADDRESS
 
-from tests.contract_interfaces.havven_interface import HavvenInterface
-from tests.contract_interfaces.nomin_interface import NominInterface
+from tests.contract_interfaces.havven_interface import PublicHavvenInterface
+from tests.contract_interfaces.nomin_interface import PublicNominInterface
 
 SOLIDITY_SOURCES = ["tests/contracts/PublicHavven.sol", "tests/contracts/PublicNomin.sol",
                     "tests/contracts/FakeCourt.sol", "contracts/Havven.sol"]
@@ -20,16 +20,14 @@ def deploy_public_contracts():
 
     # Deploy contracts
     havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven',
-                                              MASTER, [ZERO_ADDRESS, MASTER])
+                                              MASTER, [ZERO_ADDRESS, MASTER, MASTER])
     nomin_contract, nom_txr = attempt_deploy(compiled, 'PublicNomin',
                                              MASTER,
-                                             [havven_contract.address, MASTER, MASTER,
-                                              1000 * UNIT, MASTER, ZERO_ADDRESS])
+                                             [havven_contract.address, MASTER, ZERO_ADDRESS])
     court_contract, court_txr = attempt_deploy(compiled, 'FakeCourt',
                                                MASTER,
                                                [havven_contract.address, nomin_contract.address,
                                                 MASTER])
-
 
     # Hook up each of those contracts to each other
     txs = [havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
@@ -51,39 +49,20 @@ def tearDownModule():
 class TestHavven(unittest.TestCase):
     def setUp(self):
         self.snapshot = take_snapshot()
-        utils.generalutils.time_fast_forwarded = 0
-        self.initial_time = round(time.time())
-        time_remaining = self.havven.targetFeePeriodDurationSeconds() + self.havven.feePeriodStartTime() - block_time()
-        fast_forward(time_remaining + 1)
-
-        # Reset the liquidation timestamp so that it's never active.
-        owner = self.nomin.owner()
 
     def tearDown(self):
         restore_snapshot(self.snapshot)
-
-    def test_time_elapsed(self):
-        return utils.generalutils.time_fast_forwarded + (round(time.time()) - self.initial_time)
-
-    def now_block_time(self):
-        return block_time() + self.test_time_elapsed()
 
     @classmethod
     def setUpClass(cls):
         cls.havven_contract, cls.nomin_contract, cls.fake_court = deploy_public_contracts()
 
-        cls.havven = HavvenInterface(cls.havven_contract)
-        cls.nomin = NominInterface(cls.nomin_contract)
+        cls.havven = PublicHavvenInterface(cls.havven_contract)
+        cls.nomin = PublicNominInterface(cls.nomin_contract)
 
         cls.assertClose = assertClose
         cls.assertReverts = assertReverts
         fast_forward(weeks=102)
-
-        #
-        # MODIFIERS
-        # postCheckFeePeriodRollover
-        cls.h_checkFeePeriodRollover = lambda self, sender: mine_tx(
-            self.havven.functions._checkFeePeriodRollover().transact({'from': sender}))
 
         cls.fake_court_setNomin = lambda sender, new_nomin: mine_tx(
             cls.fake_court.functions.setNomin(new_nomin).transact({'from': sender}))
@@ -96,26 +75,17 @@ class TestHavven(unittest.TestCase):
         
         cls.fake_court_setNomin(W3.eth.accounts[0], cls.nomin_contract.address)
 
-    '''
-    def give_master_nomins(self, amt):
-        fast_forward(1)  # fast forward to allow price to not clash with previous block
-        self.nomin.updatePrice(MASTER, UNIT, self.now_block_time())
-        self.nomin.replenishPool(MASTER, amt * UNIT, 2 * amt * ETHER)
-        ethercost = self.nomin.purchaseCostEther(amt * UNIT)
-        self.nomin.buy(MASTER, amt * UNIT, ethercost)
-
     # Scenarios to test
     # Basic:
     # people transferring nomins, other people collecting
 
-    def check_fees_collected(self, percentage_havvens, hav_holders, nom_users):
+    def check_fees_collected(self, percentage_havvens, hav_holders):
         """
         Check that a single fee periods fees are collected correctly by some % of havven holders
         :param percentage_havvens: the percent of havvens being used
         :param hav_holders: a list (later normalised) of quantities each havven holder will have
-        :param nom_users: a list of nomin users, and how many nomins each holds
         """
-        addresses = fresh_accounts(len(hav_holders) + len(nom_users) + 1)
+        addresses = fresh_accounts(len(hav_holders) + 1)
 
         # Normalise havven holders quantites
         sum_vals = sum(hav_holders)
@@ -126,69 +96,79 @@ class TestHavven(unittest.TestCase):
         hav_addr = addresses[:len(hav_holders)]
         for i in range(len(hav_holders)):
             # use int to clear float imprecision
-            self.havven.endow(MASTER, hav_addr[i], int(100 * hav_holders[i]) * h_total_supply // 100)
-            self.assertClose(self.havven.balanceOf(hav_addr[i]), h_total_supply * hav_holders[i], precision=5)
+            self.havven.endow(MASTER, hav_addr[i], int(hav_holders[i] * h_total_supply) // UNIT * UNIT)
+            self.assertClose(
+                self.havven.balanceOf(hav_addr[i]),
+                h_total_supply * hav_holders[i],
+                precision=5
+            )
+        self.assertClose(
+            sum([self.havven.balanceOf(addr) for addr in hav_addr]),
+            int(h_total_supply * percentage_havvens),
+            precision=5
+        )
 
-        self.assertClose(sum([self.havven.balanceOf(addr) for addr in hav_addr]), int(h_total_supply * percentage_havvens),
-                         precision=5)
+        self.havven.updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
 
-        # give each nomin holder their share of nomins
-        nom_addr = addresses[len(hav_holders):-1]
-        self.give_master_nomins(sum(nom_users) * 2)
-
-        for i in range(len(nom_users)):
-            self.nomin.transfer(MASTER, nom_addr[i], nom_users[i] * UNIT)
-            self.assertEqual(self.nomin.balanceOf(nom_addr[i]), nom_users[i] * UNIT)
-
-        # will receive and send back nomins
-        receiver = addresses[-1]
-
-        # generate some fees
-        for addr in nom_addr:
-            self.nomin.transfer(addr, receiver, int(((self.nomin.balanceOf(addr) * UNIT) // (self.nomin.transferFeeRate() + UNIT))))
-            self.nomin.transfer(receiver, addr,
-                            int(((self.nomin.balanceOf(receiver) * UNIT) // (self.nomin.transferFeeRate() + UNIT))))
+        fast_forward(self.havven.targetFeePeriodDurationSeconds() + 1)
+        self.havven.rolloverFeePeriod(DUMMY)
 
         for addr in hav_addr:
-            self.havven.withdrawFeeEntitlement(addr)
+            # period hasn't rolled over yet, so no fees should get collected
+            self.assertEqual(self.havven.issuedNomins(addr), 0)
             self.assertEqual(self.nomin.balanceOf(addr), 0)
 
-        # fast forward to next period
-        fast_forward(2 * self.havven.targetFeePeriodDurationSeconds())
-        self.havven.checkFeePeriodRollover(DUMMY)
-        inital_pool = self.nomin.feePool()
-        total_fees_collected = 0
+        self.havven.updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
+
         for addr in hav_addr:
+            self.havven.setWhitelisted(MASTER, addr, True)
+            self.havven.issueNomins(addr, self.havven.maxIssuanceRights(addr))
+
+        self.nomin.generateFees(MASTER, 100 * UNIT)
+        # fast forward to next period
+        fast_forward(self.havven.targetFeePeriodDurationSeconds() + 1)
+        self.havven.rolloverFeePeriod(DUMMY)
+
+        fee_pool = self.nomin.feePool()
+        self.assertEqual(fee_pool, self.havven.lastFeesCollected())
+        total_fees_collected = 0
+
+        self.havven.updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)  # ensure price not stale
+        for n, addr in enumerate(hav_addr):
             self.havven.withdrawFeeEntitlement(addr)
             if percentage_havvens == 0:
                 self.assertEqual(self.nomin.balanceOf(addr), 0)
             else:
-                self.assertNotEqual(self.nomin.balanceOf(addr), 0)
-            total_fees_collected += self.nomin.balanceOf(addr)
+                self.assertClose(
+                    self.nomin.balanceOf(addr) - self.havven.issuedNomins(addr),
+                    fee_pool * hav_holders[n] / sum(hav_holders),
+                    precision=3
+                )
+            total_fees_collected += self.nomin.balanceOf(addr) - self.havven.issuedNomins(addr)
 
-        self.assertClose(self.nomin.feePool() + total_fees_collected, inital_pool, precision=1)
-
-        self.assertClose(inital_pool * percentage_havvens, total_fees_collected)
+        if percentage_havvens == 0:
+            self.assertEqual(total_fees_collected, 0)
+        else:
+            self.assertClose(fee_pool, total_fees_collected, precision=3)
 
     def test_100_percent_withdrawal(self):
-        self.check_fees_collected(1, [10, 20, 30, 40], [100, 200, 200, 300, 300])
+        self.check_fees_collected(1, [100, 200, 200, 300, 300])
 
     def test_50_percent_withdrawal(self):
-        self.check_fees_collected(.5, [10, 20, 30, 40], [100, 200, 200, 300, 300])
+        self.check_fees_collected(.5, [100, 200, 200, 300, 300])
 
     def test_0_percent_withdrawal(self):
-        self.check_fees_collected(0, [10, 20, 30, 40], [100, 200, 200, 300, 300])
+        self.check_fees_collected(0, [100, 200, 200, 300, 300])
 
     # - fees rolling over
-    def check_fees_rolling_over(self, percentage_havvens, hav_holders, nom_users):
+    def check_fees_rolling_over(self, percentage_havvens, hav_holders):
         """
         Check that fees roll over multiple fee periods fees are collected correctly by some % of havven holders
         at the end of all the fee periods rolling over
         :param percentage_havvens: the percent of havvens being used
         :param hav_holders: a list (later normalised) of quantities each havven holder will have
-        :param nom_users: a list of nomin users, and how many nomins each holds
         """
-        addresses = fresh_accounts(len(hav_holders) + len(nom_users) + 1)
+        addresses = fresh_accounts(len(hav_holders) + 1)
 
         # create havven holders, and give their share of havvens
         sum_vals = sum(hav_holders)
@@ -198,161 +178,151 @@ class TestHavven(unittest.TestCase):
         hav_addr = addresses[:len(hav_holders)]
         for i in range(len(hav_holders)):
             # use int to clear float imprecision
-            self.havven.endow(MASTER, hav_addr[i], int(100 * hav_holders[i]) * h_total_supply // 100)
+            self.havven.endow(MASTER, hav_addr[i], int(hav_holders[i] * h_total_supply) // UNIT * UNIT)
             self.assertClose(self.havven.balanceOf(hav_addr[i]), h_total_supply * hav_holders[i], precision=5)
 
-        self.assertClose(sum([self.havven.balanceOf(addr) for addr in hav_addr]), int(h_total_supply * percentage_havvens),
-                         precision=5)
+        self.assertClose(
+            sum([self.havven.balanceOf(addr) for addr in hav_addr]),
+            int(h_total_supply * percentage_havvens),
+            precision=5
+        )
 
-        # give each nomin holder their share of nomins
-        nom_addr = addresses[len(hav_holders):-1]
-        self.give_master_nomins(sum(nom_users) * 2)
+        self.havven.updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 2)
+        self.nomin.generateFees(MASTER, 20 * UNIT)
 
-        for i in range(len(nom_users)):
-            self.nomin.transfer(MASTER, nom_addr[i], nom_users[i] * UNIT)
-            self.assertEqual(self.nomin.balanceOf(nom_addr[i]), nom_users[i] * UNIT)
-
-        # will receive and send back nomins
-        receiver = addresses[-1]
-
-        # generate some fees
-        for addr in nom_addr:
-            self.nomin.transfer(addr, receiver, int(((self.nomin.balanceOf(addr) * UNIT) // (self.nomin.transferFeeRate() + UNIT))))
-            self.nomin.transfer(receiver, addr,
-                            int(((self.nomin.balanceOf(receiver) * UNIT) // (self.nomin.transferFeeRate() + UNIT))))
+        for addr in hav_addr:
+            self.havven.setWhitelisted(MASTER, addr, True)
+            self.havven.issueNomins(addr, self.havven.maxIssuanceRights(addr))
 
         for addr in hav_addr:
             self.havven.withdrawFeeEntitlement(addr)
-            self.assertEqual(self.nomin.balanceOf(addr), 0)
+            self.assertEqual(self.nomin.balanceOf(addr), self.havven.issuedNomins(addr))  # no fees
 
         # roll over 4 more periods, generating more fees
         for i in range(4):
             # fast forward to next period
-            fast_forward(2 * self.havven.targetFeePeriodDurationSeconds())
-            self.havven.checkFeePeriodRollover(DUMMY)
-
-            # generate some more fees
-            for addr in nom_addr:
-                self.nomin.transfer(addr, receiver,
-                                int(((self.nomin.balanceOf(addr) * UNIT) // (self.nomin.transferFeeRate() + UNIT))))
-                self.nomin.transfer(receiver, addr,
-                                int(((self.nomin.balanceOf(receiver) * UNIT) // (self.nomin.transferFeeRate() + UNIT))))
+            fast_forward(self.havven.targetFeePeriodDurationSeconds() + 1)
+            self.havven.rolloverFeePeriod(DUMMY)
+            self.nomin.generateFees(MASTER, 20 * UNIT)
 
         # fast forward to next period
         fast_forward(2 * self.havven.targetFeePeriodDurationSeconds())
-        self.havven.checkFeePeriodRollover(DUMMY)
+        self.havven.rolloverFeePeriod(DUMMY)
+
         self.assertEqual(self.nomin.feePool(), self.havven.lastFeesCollected())
+        self.assertEqual(self.nomin.feePool(), 100 * UNIT)
+
         inital_pool = self.nomin.feePool()
         total_fees_collected = 0
+        self.havven.updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
+
         for addr in hav_addr:
             self.havven.withdrawFeeEntitlement(addr)
             if percentage_havvens == 0:
                 self.assertEqual(self.nomin.balanceOf(addr), 0)
             else:
-                self.assertNotEqual(self.nomin.balanceOf(addr), 0)
-            total_fees_collected += self.nomin.balanceOf(addr)
+                self.assertGreater(self.nomin.balanceOf(addr), self.havven.maxIssuanceRights(addr))
+            total_fees_collected += self.nomin.balanceOf(addr) - self.havven.issuedNomins(addr)
 
-        self.assertClose(self.nomin.feePool() + total_fees_collected, inital_pool, precision=1)
-
-        self.assertClose(inital_pool * percentage_havvens, total_fees_collected)
+        if percentage_havvens == 0:
+            self.assertEqual(self.nomin.feePool(), inital_pool)
+            self.assertEqual(total_fees_collected, 0)
+        else:
+            self.assertClose(self.nomin.feePool() + total_fees_collected, inital_pool, precision=2)
+            self.assertClose(inital_pool, total_fees_collected, precision=2)
 
     def test_rolling_over_100_percent_withdrawal(self):
-        self.check_fees_rolling_over(1, [10, 20, 30, 40], [100, 200, 200, 300, 300])
+        self.check_fees_rolling_over(1, [100, 200, 200, 300, 300])
 
     def test_rolling_over_50_percent_withdrawal(self):
-        self.check_fees_rolling_over(.5, [10, 20, 30, 40], [100, 200, 200, 300, 300])
+        self.check_fees_rolling_over(.5, [100, 200, 200, 300, 300])
 
     def test_rolling_over_0_percent_withdrawal(self):
-        self.check_fees_rolling_over(0, [10, 20, 30, 40], [100, 200, 200, 300, 300])
+        self.check_fees_rolling_over(0, [100, 200, 200, 300, 300])
 
     # Collecting after transferring havvens
     # i.e. checking that averages work as intended
-    def check_transferring_havven_fee_collection(self, h_percent, nom_users):
+    def check_transferring_havven_fee_collection(self, h_percent, h_price):
         """
-        Check that the average balance calulation actually influences the number of nomins received
+        Check that the average balance calculation actually influences the number of nomins received
         (Single user only)
         :param h_percent: the percent of havvens being used
-        :param nom_users: a list of nomin users, and how many nomins each holds
         """
         fee_period_duration = self.havven.targetFeePeriodDurationSeconds()
 
-        addresses = fresh_accounts(len(nom_users) + 3)
-        havven_holder = addresses[0]
+        havven_holder, h_receiver = fresh_accounts(2)
+
         h_total_supply = self.havven.totalSupply()
 
-        self.havven.endow(MASTER, havven_holder, int(h_total_supply * h_percent))
+        self.havven.endow(MASTER, havven_holder, int(h_total_supply * h_percent) // UNIT * UNIT)
         self.assertClose(self.havven.balanceOf(havven_holder), h_total_supply * h_percent, precision=2)
 
-        nom_addr = addresses[1:-2]
-        self.give_master_nomins(sum(nom_users) * 2)
+        fast_forward(fee_period_duration + 1)
+        self.havven.rolloverFeePeriod(MASTER)
 
-        for i in range(len(nom_users)):
-            self.nomin.transfer(MASTER, nom_addr[i], nom_users[i] * UNIT)
-            self.assertEqual(self.nomin.balanceOf(nom_addr[i]), nom_users[i] * UNIT)
-
-        n_receiver = addresses[-1]
-        for addr in nom_addr:
-            self.nomin.transfer(addr, n_receiver,
-                            int(((self.nomin.balanceOf(addr) * UNIT) // (self.nomin.transferFeeRate() + UNIT))))
-            self.nomin.transfer(n_receiver, addr,
-                            int(((self.nomin.balanceOf(n_receiver) * UNIT) // (self.nomin.transferFeeRate() + UNIT))))
-
-        # transfer to receiver and back 5 times
-        # havven balance should look like:
+        # transfer to receiver and back 6 times
+        # issued nomin balance should look like:
         #
         # |            :
         # | _   _   _  :
         # ||_|_|_|_|_|_:__ __  _
 
-        h_receiver = addresses[-2]
-        self.havven.transfer(havven_holder, h_receiver, self.havven.balanceOf(havven_holder))
-        fast_forward(fee_period_duration / 5)
+        self.havven.setWhitelisted(MASTER, havven_holder, True)
+        self.havven.setWhitelisted(MASTER, h_receiver, True)
 
-        self.havven.transfer(h_receiver, havven_holder, self.havven.balanceOf(h_receiver))
-        fast_forward(fee_period_duration / 5)
+        addrs = [havven_holder, h_receiver]
+        current_addr = False
+        for i in range(6):
+            self.havven.updatePrice(self.havven.oracle(), h_price, self.havven.currentTime() + 1)
+            self.havven.issueNomins(addrs[current_addr], self.havven.remainingIssuanceRights(addrs[current_addr]))
+            self.assertClose(self.nomin.totalSupply(), h_price * h_total_supply * h_percent * self.havven.CMax() // UNIT // UNIT)
+            fast_forward(fee_period_duration // 6 - 5)
+            self.havven.burnNomins(addrs[current_addr], self.nomin.balanceOf(addrs[current_addr]))
+            self.havven.transfer(addrs[current_addr], addrs[not current_addr], self.havven.balanceOf(addrs[current_addr]))
+            self.assertClose(self.nomin.totalSupply(), 0)
+            current_addr = not current_addr  # switch between accounts
 
-        self.havven.transfer(havven_holder, h_receiver, self.havven.balanceOf(havven_holder))
-        fast_forward(fee_period_duration / 5)
-
-        self.havven.transfer(h_receiver, havven_holder, self.havven.balanceOf(h_receiver))
-        fast_forward(fee_period_duration / 5)
-
-        self.havven.transfer(havven_holder, h_receiver, self.havven.balanceOf(havven_holder))
-        fast_forward(fee_period_duration / 5)  # should roll over after this
-
-        self.assertEqual(self.havven.balanceOf(havven_holder), 0)
+        self.assertEqual(self.havven.balanceOf(h_receiver), 0)
         self.assertEqual(self.nomin.balanceOf(havven_holder), 0)
+        self.assertEqual(self.nomin.balanceOf(h_receiver), 0)
+        self.nomin.generateFees(MASTER, 100 * UNIT)
         fee_pool = self.nomin.feePool()
-        self.havven.checkFeePeriodRollover(DUMMY)
+        fast_forward(100)  # fast forward to the next period
+        self.havven.rolloverFeePeriod(DUMMY)
         self.assertEqual(self.havven.lastFeesCollected(), fee_pool)
 
         self.havven.withdrawFeeEntitlement(havven_holder)
         self.havven.withdrawFeeEntitlement(h_receiver)
-
-        self.assertClose(self.nomin.balanceOf(havven_holder), fee_pool * 2 / 5 * h_percent)
-
-        self.assertClose(self.nomin.balanceOf(h_receiver), fee_pool * 3 / 5 * h_percent)
+        if h_percent == 0:
+            self.assertEqual(self.nomin.balanceOf(havven_holder), 0)
+            self.assertEqual(self.nomin.balanceOf(h_receiver), 0)
+        else:
+            self.assertClose(self.nomin.balanceOf(havven_holder), fee_pool // 2)
+            self.assertClose(self.nomin.balanceOf(h_receiver), fee_pool // 2)
 
     def test_transferring_havven_100_percent(self):
-        self.check_transferring_havven_fee_collection(1, [100, 200, 200, 300, 300])
+        self.check_transferring_havven_fee_collection(1, UNIT)
 
     def test_transferring_havven_50_percent(self):
-        self.check_transferring_havven_fee_collection(0.5, [100, 200, 200, 300, 300])
+        self.check_transferring_havven_fee_collection(0.5, UNIT)
+
+    def test_transferring_havven_1_percent(self):
+        # full fees should be withdrawable by even with only 1% of havvens issuing
+        self.check_transferring_havven_fee_collection(0.01, UNIT)
 
     def test_transferring_havven_0_percent(self):
-        self.check_transferring_havven_fee_collection(0, [100, 200, 200, 300, 300])
+        self.check_transferring_havven_fee_collection(0, UNIT)
 
-    # - fees rolling over
-    def check_fees_multi_period(self, percentage_havvens, hav_holders, nom_users):
+    # # - fees rolling over
+    def check_fees_multi_period(self, percentage_havvens, hav_holders):
         """
         Check that fees over multiple periods are collected correctly (collecting each period)
         :param percentage_havvens: the percent of havvens being used
         :param hav_holders: a list (later normalised) of quantities each havven holder will have
-        :param nom_users: a list of nomin users, and how many nomins each holds
         """
-        addresses = fresh_accounts(len(hav_holders) + len(nom_users) + 1)
+        addresses = fresh_accounts(len(hav_holders) + 1)
 
-        # create normalised havven holders
+        # create havven holders, and give their share of havvens
         sum_vals = sum(hav_holders)
         hav_holders = [((i / sum_vals) * percentage_havvens) for i in hav_holders]
 
@@ -360,45 +330,31 @@ class TestHavven(unittest.TestCase):
         hav_addr = addresses[:len(hav_holders)]
         for i in range(len(hav_holders)):
             # use int to clear float imprecision
-            self.havven.endow(MASTER, hav_addr[i], int(100 * hav_holders[i]) * h_total_supply // 100)
+            self.havven.endow(MASTER, hav_addr[i], int(hav_holders[i] * h_total_supply) // UNIT * UNIT)
             self.assertClose(self.havven.balanceOf(hav_addr[i]), h_total_supply * hav_holders[i], precision=5)
 
-        self.assertClose(sum([self.havven.balanceOf(addr) for addr in hav_addr]), int(h_total_supply * percentage_havvens),
-                         precision=5)
+        self.assertClose(
+            sum([self.havven.balanceOf(addr) for addr in hav_addr]),
+            int(h_total_supply * percentage_havvens),
+            precision=5
+        )
 
-        nom_addr = addresses[len(hav_holders):-1]
-        self.give_master_nomins(sum(nom_users) * 2)
-
-        for i in range(len(nom_users)):
-            self.nomin.transfer(MASTER, nom_addr[i], nom_users[i] * UNIT)
-            self.assertEqual(self.nomin.balanceOf(nom_addr[i]), nom_users[i] * UNIT)
-
-        # will receive and send back nomins
-        receiver = addresses[-1]
-
-        # generate some fees
-        for addr in nom_addr:
-            self.nomin.transfer(addr, receiver, int(((self.nomin.balanceOf(addr) * UNIT) // (self.nomin.transferFeeRate() + UNIT))))
-            self.nomin.transfer(receiver, addr,
-                            int(((self.nomin.balanceOf(receiver) * UNIT) // (self.nomin.transferFeeRate() + UNIT))))
+        self.havven.updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 2)
+        self.nomin.generateFees(MASTER, 20 * UNIT)
 
         for addr in hav_addr:
-            self.havven.withdrawFeeEntitlement(addr)
-            self.assertEqual(self.nomin.balanceOf(addr), 0)
+            self.havven.setWhitelisted(MASTER, addr, True)
+            self.havven.issueNomins(addr, self.havven.maxIssuanceRights(addr))
 
         # roll over 4 more periods, generating more fees, and withdrawing them
         for i in range(4):
             # fast forward to next period
 
             # generate some more fees
-            for addr in nom_addr:
-                self.nomin.transfer(addr, receiver,
-                                int(((self.nomin.balanceOf(addr) * UNIT) // (self.nomin.transferFeeRate() + UNIT))))
-                self.nomin.transfer(receiver, addr,
-                                int(((self.nomin.balanceOf(receiver) * UNIT) // (self.nomin.transferFeeRate() + UNIT))))
+            self.nomin.generateFees(MASTER, 10 * UNIT)
 
-            fast_forward(2 * self.havven.targetFeePeriodDurationSeconds())
-            self.havven.checkFeePeriodRollover(DUMMY)
+            fast_forward(self.havven.targetFeePeriodDurationSeconds() + 1)
+            self.havven.rolloverFeePeriod(DUMMY)
 
             # withdraw the fees
             inital_pool = self.havven.lastFeesCollected()
@@ -411,14 +367,17 @@ class TestHavven(unittest.TestCase):
                 else:
                     self.assertNotEqual(self.nomin.balanceOf(addr), 0)
                 total_fees_collected += self.nomin.balanceOf(addr) - inital_n
-            self.assertClose(inital_pool * percentage_havvens, total_fees_collected, precision=5)
+            if percentage_havvens == 0:
+                self.assertEqual(total_fees_collected, 0)
+                self.assertEqual(inital_pool, self.nomin.feePool())
+            else:
+                self.assertClose(inital_pool, total_fees_collected, precision=3)
 
     def test_multi_period_100_percent_withdrawal(self):
-        self.check_fees_multi_period(1, [10, 20, 30, 40], [100, 200, 200, 300, 300])
+        self.check_fees_multi_period(1, [10, 20, 30, 40])
 
     def test_multi_period_50_percent_withdrawal(self):
-        self.check_fees_multi_period(.5, [10, 20, 30, 40], [100, 200, 200, 300, 300])
+        self.check_fees_multi_period(.5, [10, 20, 30, 40])
 
     def test_multi_period_0_percent_withdrawal(self):
-        self.check_fees_multi_period(0, [10, 20, 30, 40], [100, 200, 200, 300, 300])
-    '''
+        self.check_fees_multi_period(0, [10, 20, 30, 40])
