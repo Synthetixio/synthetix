@@ -463,7 +463,6 @@ contract Havven is SelfDestructible, ExternStateToken {
     function rolloverFeePeriod()
         public
     {
-        require(now >= feePeriodStartTime + targetFeePeriodDurationSeconds);
         checkFeePeriodRollover();
     }
 

@@ -1,10 +1,8 @@
 import unittest
-import time
 
-import utils.generalutils
 from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mine_txs, mine_tx, \
-    UNIT, MASTER, DUMMY, fast_forward, fresh_accounts, take_snapshot, restore_snapshot, ETHER
-from utils.testutils import assertReverts, block_time, assertClose, ZERO_ADDRESS
+    UNIT, MASTER, DUMMY, fast_forward, fresh_accounts, take_snapshot, restore_snapshot
+from utils.testutils import assertReverts, assertClose, ZERO_ADDRESS
 
 from tests.contract_interfaces.havven_interface import PublicHavvenInterface
 from tests.contract_interfaces.nomin_interface import PublicNominInterface
