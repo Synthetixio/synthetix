@@ -30,17 +30,28 @@ previous owner change the nomination (setting it to 0).
 
 pragma solidity 0.4.23;
 
-
+/**
+ * @title A contract with an owner.
+ * @notice Contract ownership can be transferred by first nominating the new owner,
+ * who must then accept the ownership, which prevents accidental incorrect ownership transfers.
+ */
 contract Owned {
     address public owner;
     address public nominatedOwner;
 
-    function Owned(address _owner)
+    /**
+     * @dev Constructor
+     */
+    constructor(address _owner)
         public
     {
         owner = _owner;
     }
 
+    /**
+     * @notice Nominate a new owner of this contract.
+     * @dev Only the current owner may nominate a new owner.
+     */
     function nominateOwner(address _owner)
         external
         onlyOwner
@@ -49,6 +60,9 @@ contract Owned {
         emit OwnerNominated(_owner);
     }
 
+    /**
+     * @notice Accept the nomination to be owner.
+     */
     function acceptOwnership()
         external
     {

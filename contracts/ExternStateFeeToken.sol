@@ -36,31 +36,44 @@ import "contracts/Owned.sol";
 import "contracts/TokenState.sol";
 
 
+/**
+ * @title ERC20 Token contract, with detached state.
+ * Additionally charges fees on each transfer.
+ */
 contract ExternStateFeeToken is SafeDecimalMath, Owned {
 
     /* ========== STATE VARIABLES ========== */
 
-    // Stores balances and allowances.
+    /* Stores balances and allowances. */
     TokenState public state;
 
-    // Other ERC20 fields
+    /* Other ERC20 fields. */
     string public name;
     string public symbol;
     uint public totalSupply;
 
-    // A percentage fee charged on each transfer.
+    /* A percentage fee charged on each transfer. */
     uint public transferFeeRate;
-    // Fee may not exceed 10%.
+    /* Fee may not exceed 10%. */
     uint constant MAX_TRANSFER_FEE_RATE = UNIT / 10;
-    // The address with the authority to distribute fees.
+    /* The address with the authority to distribute fees. */
     address public feeAuthority;
 
 
     /* ========== CONSTRUCTOR ========== */
 
-    function ExternStateFeeToken(string _name, string _symbol,
-                                      uint _transferFeeRate, address _feeAuthority,
-                                      TokenState _state, address _owner)
+    /**
+     * @dev Constructor.
+     * @param _name Token's ERC20 name.
+     * @param _symbol Token's ERC20 symbol.
+     * @param _transferFeeRate The fee rate to charge on transfers.
+     * @param _feeAuthority The address which has the authority to withdraw fees from the accumulated pool.
+     * @param _state The state contract address. A fresh one is constructed if 0x0 is provided.
+     * @param _owner The owner of this contract.
+     */
+    constructor(string _name, string _symbol,
+                                 uint _transferFeeRate, address _feeAuthority,
+                                 TokenState _state, address _owner)
         Owned(_owner)
         public
     {
@@ -74,6 +87,7 @@ contract ExternStateFeeToken is SafeDecimalMath, Owned {
         symbol = _symbol;
         feeAuthority = _feeAuthority;
 
+        /* Constructed transfer fee rate should respect the maximum fee rate. */
         require(_transferFeeRate <= MAX_TRANSFER_FEE_RATE);
         transferFeeRate = _transferFeeRate;
     }
@@ -130,13 +144,14 @@ contract ExternStateFeeToken is SafeDecimalMath, Owned {
         returns (uint)
     {
         return safeMul_dec(value, transferFeeRate);
-        // Transfers less than the reciprocal of transferFeeRate should be completely eaten up by fees.
-        // This is on the basis that transfers less than this value will result in a nil fee.
-        // Probably too insignificant to worry about, but the following code will achieve it.
-        //      if (fee == 0 && transferFeeRate != 0) {
-        //          return _value;
-        //      }
-        //      return fee;
+        /* Transfers less than the reciprocal of transferFeeRate should be completely eaten up by fees.
+         * This is on the basis that transfers less than this value will result in a nil fee.
+         * Probably too insignificant to worry about, but the following code will achieve it.
+         *      if (fee == 0 && transferFeeRate != 0) {
+         *          return _value;
+         *      }
+         *      return fee;
+         */
     }
 
     // The value that you would need to send so that the recipient receives
@@ -229,7 +244,10 @@ contract ExternStateFeeToken is SafeDecimalMath, Owned {
         return true;
     }
 
-    /* Withdraw tokens from the fee pool into a given account. */
+    /**
+     * @notice Withdraw tokens from the fee pool into a given account.
+     * @dev Only the fee authority may call this.
+     */
     function withdrawFee(address account, uint value)
         external
         returns (bool)
@@ -251,16 +269,18 @@ contract ExternStateFeeToken is SafeDecimalMath, Owned {
         return true;
     }
 
-    /* Donate tokens from the sender's balance into the fee pool. */
+    /**
+     * @notice Donate tokens from the sender's balance into the fee pool.
+     */
     function donateToFeePool(uint n)
         external
         returns (bool)
     {
-        // Empty donations are disallowed.
+        /* Empty donations are disallowed. */
         uint balance = state.balanceOf(msg.sender);
         require(balance != 0);
 
-        // safeSub ensures the donor has sufficient balance.
+        /* safeSub ensures the donor has sufficient balance. */
         state.setBalanceOf(msg.sender, safeSub(balance, n));
         state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), n));
 

@@ -6,7 +6,7 @@ import "contracts/Court.sol";
 
 contract PublicCourt is Court {
 
-    function PublicCourt(Havven _havven, Nomin _nomin, address _owner)
+    constructor(Havven _havven, Nomin _nomin, address _owner)
         Court(_havven, _nomin, _owner)
         public
     {}

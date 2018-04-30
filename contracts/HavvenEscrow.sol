@@ -43,25 +43,27 @@ import "contracts/Havven.sol";
 import "contracts/Nomin.sol";
 import "contracts/LimitedSetup.sol";
 
-
+/**
+ * @title A contract to hold escrowed havvens and free them at given schedules.
+ */
 contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
-    // The corresponding Havven contract.
+    /* The corresponding Havven contract. */
     Havven public havven;
 
-    // Lists of (timestamp, quantity) pairs per account, sorted in ascending time order.
-    // These are the times at which each given quantity of havvens vests.
+    /* Lists of (timestamp, quantity) pairs per account, sorted in ascending time order.
+     * These are the times at which each given quantity of havvens vests. */
     mapping(address => uint[2][]) public vestingSchedules;
 
-    // An account's total vested havven balance to save recomputing this for fee extraction purposes.
+    /* An account's total vested havven balance to save recomputing this for fee extraction purposes. */
     mapping(address => uint) public totalVestedAccountBalance;
 
-    // The total remaining vested balance, for verifying the actual havven balance of this contract against.
+    /* The total remaining vested balance, for verifying the actual havven balance of this contract against. */
     uint public totalVestedBalance;
 
 
     /* ========== CONSTRUCTOR ========== */
 
-    function HavvenEscrow(address _owner, Havven _havven)
+    constructor(address _owner, Havven _havven)
         Owned(_owner)
         public
     {
@@ -82,7 +84,9 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
 
     /* ========== VIEW FUNCTIONS ========== */
 
-    /* A simple alias to totalVestedAccountBalance: provides ERC20 balance integration. */
+    /**
+     * @notice A simple alias to totalVestedAccountBalance: provides ERC20 balance integration.
+     */
     function balanceOf(address account)
         public
         view
@@ -91,7 +95,9 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
         return totalVestedAccountBalance[account];
     }
 
-    /* The number of vesting dates in an account's schedule. */
+    /**
+     * @notice The number of vesting dates in an account's schedule.
+     */
     function numVestingEntries(address account)
         public
         view
@@ -100,8 +106,10 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
         return vestingSchedules[account].length;
     }
 
-    /* Get a particular schedule entry for an account.
-     * The return value is a pair (timestamp, havven quantity) */
+    /**
+     * @notice Get a particular schedule entry for an account.
+     * @return A pair of uints: (timestamp, havven quantity).
+     */
     function getVestingScheduleEntry(address account, uint index)
         public
         view
@@ -110,7 +118,9 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
         return vestingSchedules[account][index];
     }
 
-    /* Get the time at which a given schedule entry will vest. */
+    /**
+     * @notice Get the time at which a given schedule entry will vest.
+     */
     function getVestingTime(address account, uint index)
         public
         view
@@ -119,7 +129,9 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
         return vestingSchedules[account][index][0];
     }
 
-    /* Get the quantity of havvens associated with a given schedule entry. */
+    /**
+     * @notice Get the quantity of havvens associated with a given schedule entry.
+     */
     function getVestingQuantity(address account, uint index)
         public
         view
@@ -128,7 +140,9 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
         return vestingSchedules[account][index][1];
     }
 
-    /* Obtain the index of the next schedule entry that will vest for a given user. */
+    /**
+     * @notice Obtain the index of the next schedule entry that will vest for a given user.
+     */
     function getNextVestingIndex(address account)
         public
         view
@@ -143,8 +157,9 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
         return len;
     }
 
-    /* Obtain the next schedule entry that will vest for a given user.
-     * The return value is a pair (timestamp, havven quantity) */
+    /**
+     * @notice Obtain the next schedule entry that will vest for a given user.
+     * @return A pair of uints: (timestamp, havven quantity). */
     function getNextVestingEntry(address account)
         external
         view
@@ -157,7 +172,9 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
         return getVestingScheduleEntry(account, index);
     }
 
-    /* Obtain the time at which the next schedule entry will vest for a given user. */
+    /**
+     * @notice Obtain the time at which the next schedule entry will vest for a given user.
+     */
     function getNextVestingTime(address account)
         external
         view
@@ -170,7 +187,9 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
         return getVestingTime(account, index);
     }
 
-    /* Obtain the quantity which the next schedule entry will vest for a given user. */
+    /**
+     * @notice Obtain the quantity which the next schedule entry will vest for a given user.
+     */
     function getNextVestingQuantity(address account)
         external
         view
@@ -186,7 +205,10 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    /* Withdraws a quantity of havvens back to the havven contract. */
+    /**
+     * @notice Withdraws a quantity of havvens back to the havven contract.
+     * @dev This may only be called by the owner during the contract's setup period.
+     */
     function withdrawHavvens(uint quantity)
         external
         onlyOwner
@@ -195,7 +217,9 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
         havven.transfer(havven, quantity);
     }
 
-    /* Destroy the vesting information associated with an account. */
+    /**
+     * @notice Destroy the vesting information associated with an account.
+     */
     function purgeAccount(address account)
         external
         onlyOwner
@@ -206,19 +230,25 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
         delete totalVestedAccountBalance[account];
     }
 
-    /* Add a new vesting entry at a given time and quantity to an account's schedule.
-     * A call to this should be accompanied by either enough balance already available
+    /**
+     * @notice Add a new vesting entry at a given time and quantity to an account's schedule.
+     * @dev A call to this should be accompanied by either enough balance already available
      * in this contract, or a corresponding call to havven.endow(), to ensure that when
      * the funds are withdrawn, there is enough balance, as well as correctly calculating
      * the fees.
+     * This may only be called by the owner during the contract's setup period.
      * Note; although this function could technically be used to produce unbounded
-     * arrays, it's only in the foundation's command to add to these lists. */
+     * arrays, it's only in the foundation's command to add to these lists.
+     * @param account The account to append a new vesting entry to.
+     * @param time The absolute unix timestamp after which the vested quantity may be withdrawn.
+     * @param quantity The quantity of havvens that will vest.
+     */
     function appendVestingEntry(address account, uint time, uint quantity)
         public
         onlyOwner
         setupFunction
     {
-        // No empty or already-passed vesting entries allowed.
+        /* No empty or already-passed vesting entries allowed. */
         require(now < time);
         require(quantity != 0);
         totalVestedBalance = safeAdd(totalVestedBalance, quantity);
@@ -227,8 +257,8 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
         if (vestingSchedules[account].length == 0) {
             totalVestedAccountBalance[account] = quantity;
         } else {
-            // Disallow adding new vested havvens earlier than the last one.
-            // Since entries are only appended, this means that no vesting date can be repeated.
+            /* Disallow adding new vested havvens earlier than the last one.
+             * Since entries are only appended, this means that no vesting date can be repeated. */
             require(getVestingTime(account, numVestingEntries(account) - 1) < time);
             totalVestedAccountBalance[account] = safeAdd(totalVestedAccountBalance[account], quantity);
         }
@@ -236,9 +266,13 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
         vestingSchedules[account].push([time, quantity]);
     }
 
-    /* Construct a vesting schedule to release a quantities of havvens
-     * over a series of intervals. Assumes that the quantities are nonzero
-     * and that the sequence of timestamps is strictly increasing. */
+    /**
+     * @notice Construct a vesting schedule to release a quantities of havvens
+     * over a series of intervals.
+     * @dev Assumes that the quantities are nonzero
+     * and that the sequence of timestamps is strictly increasing.
+     * This may only be called by the owner during the contract's setup period.
+     */
     function addVestingSchedule(address account, uint[] times, uint[] quantities)
         external
         onlyOwner
@@ -250,7 +284,9 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
 
     }
 
-    /* Allow a user to withdraw any tokens that have vested. */
+    /**
+     * @notice Allow a user to withdraw any havvens in their schedule that have vested.
+     */
     function vest() 
         external
     {
@@ -258,7 +294,7 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
         uint total;
         for (uint i = 0; i < numEntries; i++) {
             uint time = getVestingTime(msg.sender, i);
-            // The list is sorted; when we reach the first future time, bail out.
+            /* The list is sorted; when we reach the first future time, bail out. */
             if (time > now) {
                 break;
             }

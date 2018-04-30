@@ -15,7 +15,7 @@ contract PublicHavven is Havven {
     uint constant public MIN_FEE_PERIOD_DURATION_SECONDS = 1 days;
     uint constant public MAX_FEE_PERIOD_DURATION_SECONDS = 26 weeks;
 
-    function PublicHavven(TokenState initialState, address _owner, address _oracle)
+    constructor(TokenState initialState, address _owner, address _oracle)
         Havven(initialState, _owner, _oracle)
         public
     {}

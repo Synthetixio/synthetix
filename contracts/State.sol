@@ -10,7 +10,7 @@ contract State is Owned {
     address public associatedContract;
 
 
-    function State(address _owner, address _associatedContract)
+    constructor(address _owner, address _associatedContract)
         Owned(_owner)
         public
     {

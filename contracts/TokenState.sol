@@ -39,20 +39,36 @@ pragma solidity 0.4.23;
 
 import "contracts/State.sol";
 
-
+/**
+ * @title ERC20 Token State
+ * @notice Stores balance information of an ERC20 token contract.
+ */
 contract TokenState is State {
 
-    // ERC20 fields.
+    /* ERC20 fields. */
     mapping(address => uint) public balanceOf;
     mapping(address => mapping(address => uint)) public allowance;
 
-    function TokenState(address _owner, address _associatedContract)
+    /**
+     * @dev Constructor
+     * @param _owner The address which controls this contract.
+     * @param _associatedContract The ERC20 contract whose state this composes.
+     */
+    constructor(address _owner, address _associatedContract)
         State(_owner, _associatedContract)
         public
     {}
 
     /* ========== SETTERS ========== */
 
+    /**
+     * @notice Set ERC20 allowance.
+     * @dev Only the associated contract may call this.
+     * @param tokenOwner The authorising party.
+     * @param spender The authorised party.
+     * @param value The total value the authorised party may spend on the
+     * authorising party's behalf.
+     */
     function setAllowance(address tokenOwner, address spender, uint value)
         external
         onlyAssociatedContract
@@ -60,6 +76,12 @@ contract TokenState is State {
         allowance[tokenOwner][spender] = value;
     }
 
+    /**
+     * @notice Set the balance in a given account
+     * @dev Only the associated contract may call this.
+     * @param account The account whose value to set.
+     * @param value The new balance of the given account.
+     */
     function setBalanceOf(address account, uint value)
         external
         onlyAssociatedContract

@@ -10,7 +10,7 @@ import "contracts/Havven.sol";
 
 contract PublicHavvenEscrow is HavvenEscrow {
 
-	function PublicHavvenEscrow(address _owner,
+	constructor(address _owner,
                                 Havven _havven)
 		HavvenEscrow(_owner, _havven)
 		public 

@@ -25,12 +25,19 @@ conclusion of the configurable-length post-construction setup period.
 
 pragma solidity 0.4.23;
 
-
+/**
+ * @title Any function decorated with the modifier this contract provides
+ * deactivates after a specified setup period.
+ */
 contract LimitedSetup {
 
     uint setupExpiryTime;
 
-    function LimitedSetup(uint setupDuration)
+    /**
+     * @dev Constructor.
+     * @param setupDuration The time the setup period will last for.
+     */
+    constructor(uint setupDuration)
         public
     {
         setupExpiryTime = now + setupDuration;
