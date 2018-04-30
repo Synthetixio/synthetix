@@ -28,7 +28,7 @@ contract as the state parameter, messageSender.
 */
 
 
-pragma solidity 0.4.21;
+pragma solidity ^0.4.21;
 
 import "contracts/Owned.sol";
 

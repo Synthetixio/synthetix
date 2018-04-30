@@ -56,7 +56,7 @@ If the contract is recollateralised, the owner may terminate liquidation.
 -----------------------------------------------------------------
 */
 
-pragma solidity 0.4.21;
+pragma solidity ^0.4.21;
 
 
 import "contracts/ExternStateProxyFeeToken.sol";
