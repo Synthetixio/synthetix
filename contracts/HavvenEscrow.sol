@@ -3,7 +3,7 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       HavvenEscrow.sol
-version:    0.3
+version:    1.0
 author:     Anton Jurisevic
             Dominic Romanowski
             Mike Spain
@@ -34,7 +34,7 @@ main fee pool to be redistributed in the next fee period.
 
 */
 
-pragma solidity ^0.4.20;
+pragma solidity 0.4.21;
 
 
 import "contracts/SafeDecimalMath.sol";
@@ -43,19 +43,21 @@ import "contracts/Havven.sol";
 import "contracts/EtherNomin.sol";
 import "contracts/LimitedSetup.sol";
 
-
+/**
+ * @title A contract to hold escrowed havvens and free them at given schedules.
+ */
 contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {    
-    // The corresponding Havven contract.
+    /* The corresponding Havven contract. */
     Havven public havven;
 
-    // Lists of (timestamp, quantity) pairs per account, sorted in ascending time order.
-    // These are the times at which each given quantity of havvens vests.
+    /* Lists of (timestamp, quantity) pairs per account, sorted in ascending time order.
+     * These are the times at which each given quantity of havvens vests. */
     mapping(address => uint[2][]) public vestingSchedules;
 
-    // An account's total vested havven balance to save recomputing this for fee extraction purposes.
+    /* An account's total vested havven balance to save recomputing this for fee extraction purposes. */
     mapping(address => uint) public totalVestedAccountBalance;
 
-    // The total remaining vested balance, for verifying the actual havven balance of this contract against.
+    /* The total remaining vested balance, for verifying the actual havven balance of this contract against. */
     uint public totalVestedBalance;
 
 
@@ -76,13 +78,26 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
         onlyOwner
     {
         havven = _havven;
-        HavvenUpdated(_havven);
+        emit HavvenUpdated(_havven);
     }
 
 
     /* ========== VIEW FUNCTIONS ========== */
 
-    /* The number of vesting dates in an account's schedule. */
+    /**
+     * @notice A simple alias to totalVestedAccountBalance: provides ERC20 balance integration.
+     */
+    function balanceOf(address account)
+        public
+        view
+        returns (uint)
+    {
+        return totalVestedAccountBalance[account];
+    }
+
+    /** 
+     * @notice The number of vesting dates in an account's schedule.
+     */
     function numVestingEntries(address account)
         public
         view
@@ -91,8 +106,10 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
         return vestingSchedules[account].length;
     }
 
-    /* Get a particular schedule entry for an account.
-     * The return value is a pair (timestamp, havven quantity) */
+    /** 
+     * @notice Get a particular schedule entry for an account.
+     * @return A pair of uints: (timestamp, havven quantity).
+     */
     function getVestingScheduleEntry(address account, uint index)
         public
         view
@@ -101,7 +118,9 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
         return vestingSchedules[account][index];
     }
 
-    /* Get the time at which a given schedule entry will vest. */
+    /**
+     * @notice Get the time at which a given schedule entry will vest.
+     */
     function getVestingTime(address account, uint index)
         public
         view
@@ -110,7 +129,9 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
         return vestingSchedules[account][index][0];
     }
 
-    /* Get the quantity of havvens associated with a given schedule entry. */
+    /**
+     * @notice Get the quantity of havvens associated with a given schedule entry.
+     */
     function getVestingQuantity(address account, uint index)
         public
         view
@@ -119,7 +140,9 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
         return vestingSchedules[account][index][1];
     }
 
-    /* Obtain the index of the next schedule entry that will vest for a given user. */
+    /**
+     * @notice Obtain the index of the next schedule entry that will vest for a given user.
+     */
     function getNextVestingIndex(address account)
         public
         view
@@ -134,8 +157,9 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
         return len;
     }
 
-    /* Obtain the next schedule entry that will vest for a given user.
-     * The return value is a pair (timestamp, havven quantity) */
+    /**
+     * @notice Obtain the next schedule entry that will vest for a given user.
+     * @return A pair of uints: (timestamp, havven quantity). */
     function getNextVestingEntry(address account)
         external
         view
@@ -148,7 +172,9 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
         return getVestingScheduleEntry(account, index);
     }
 
-    /* Obtain the time at which the next schedule entry will vest for a given user. */
+    /**
+     * @notice Obtain the time at which the next schedule entry will vest for a given user.
+     */
     function getNextVestingTime(address account)
         external
         view
@@ -161,7 +187,9 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
         return getVestingTime(account, index);
     }
 
-    /* Obtain the quantity which the next schedule entry will vest for a given user. */
+    /**
+     * @notice Obtain the quantity which the next schedule entry will vest for a given user.
+     */
     function getNextVestingQuantity(address account)
         external
         view
@@ -177,7 +205,10 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    /* Withdraws a quantity of havvens back to the havven contract. */
+    /**
+     * @notice Withdraws a quantity of havvens back to the havven contract.
+     * @dev This may only be called by the owner during the contract's setup period.
+     */
     function withdrawHavvens(uint quantity)
         external
         onlyOwner
@@ -186,7 +217,9 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
         havven.transfer(havven, quantity);
     }
 
-    /* Destroy the vesting information associated with an account. */
+    /**
+     * @notice Destroy the vesting information associated with an account.
+     */
     function purgeAccount(address account)
         external
         onlyOwner
@@ -195,22 +228,27 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
         delete vestingSchedules[account];
         totalVestedBalance = safeSub(totalVestedBalance, totalVestedAccountBalance[account]);
         delete totalVestedAccountBalance[account];
-        SchedulePurged(account);
     }
 
-    /* Add a new vesting entry at a given time and quantity to an account's schedule.
-     * A call to this should be accompanied by either enough balance already available
+    /**
+     * @notice Add a new vesting entry at a given time and quantity to an account's schedule.
+     * @dev A call to this should be accompanied by either enough balance already available
      * in this contract, or a corresponding call to havven.endow(), to ensure that when
      * the funds are withdrawn, there is enough balance, as well as correctly calculating
      * the fees.
+     * This may only be called by the owner during the contract's setup period.
      * Note; although this function could technically be used to produce unbounded
-     * arrays, it's only in the foundation's command to add to these lists. */
+     * arrays, it's only in the foundation's command to add to these lists.
+     * @param account The account to append a new vesting entry to.
+     * @param time The absolute unix timestamp after which the vested quantity may be withdrawn.
+     * @param quantity The quantity of havvens that will vest.
+     */
     function appendVestingEntry(address account, uint time, uint quantity)
         public
         onlyOwner
         setupFunction
     {
-        // No empty or already-passed vesting entries allowed.
+        /* No empty or already-passed vesting entries allowed. */
         require(now < time);
         require(quantity != 0);
         totalVestedBalance = safeAdd(totalVestedBalance, quantity);
@@ -219,8 +257,8 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
         if (vestingSchedules[account].length == 0) {
             totalVestedAccountBalance[account] = quantity;
         } else {
-            // Disallow adding new vested havvens earlier than the last one.
-            // Since entries are only appended, this means that no vesting date can be repeated.
+            /* Disallow adding new vested havvens earlier than the last one.
+             * Since entries are only appended, this means that no vesting date can be repeated. */
             require(getVestingTime(account, numVestingEntries(account) - 1) < time);
             totalVestedAccountBalance[account] = safeAdd(totalVestedAccountBalance[account], quantity);
         }
@@ -228,40 +266,35 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
         vestingSchedules[account].push([time, quantity]);
     }
 
-    /* Construct a vesting schedule to release a quantity of havvens at regular intervals ending
-     * at a given time. */
-    function addRegularVestingSchedule(address account, uint conclusionTime,
-                                       uint totalQuantity, uint vestingPeriods)
+    /**
+     * @notice Construct a vesting schedule to release a quantities of havvens
+     * over a series of intervals.
+     * @dev Assumes that the quantities are nonzero
+     * and that the sequence of timestamps is strictly increasing.
+     * This may only be called by the owner during the contract's setup period.
+     */
+    function addVestingSchedule(address account, uint[] times, uint[] quantities)
         external
         onlyOwner
         setupFunction
     {
-        // safeSub prevents a conclusionTime in the past.
-        uint totalDuration = safeSub(conclusionTime, now);
-
-        // safeDiv prevents zero vesting periods.
-        uint periodQuantity = safeDiv(totalQuantity, vestingPeriods);
-        uint periodDuration = safeDiv(totalDuration, vestingPeriods);
-
-        // Generate all but the last period.
-        for (uint i = 1; i < vestingPeriods; i++) {
-            uint periodConclusionTime = safeAdd(now, safeMul(i, periodDuration));
-            appendVestingEntry(account, periodConclusionTime, periodQuantity);
+        for (uint i = 0; i < times.length; i++) {
+            appendVestingEntry(account, times[i], quantities[i]);
         }
 
-        // Generate the final period. Quantities left out due to integer division truncation are incorporated here.
-        uint finalPeriodQuantity = safeSub(totalQuantity, safeMul(periodQuantity, (vestingPeriods - 1)));
-        appendVestingEntry(account, conclusionTime, finalPeriodQuantity);
     }
 
-    /* Allow a user to withdraw any tokens that have vested. */
+    /** 
+     * @notice Allow a user to withdraw any havvens in their schedule that have vested.
+     */
     function vest() 
         external
     {
+        uint numEntries = numVestingEntries(msg.sender);
         uint total;
-        for (uint i = 0; i < numVestingEntries(msg.sender); i++) {
+        for (uint i = 0; i < numEntries; i++) {
             uint time = getVestingTime(msg.sender, i);
-            // The list is sorted; when we reach the first future time, bail out.
+            /* The list is sorted; when we reach the first future time, bail out. */
             if (time > now) {
                 break;
             }
@@ -278,7 +311,7 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
         if (total != 0) {
             totalVestedBalance = safeSub(totalVestedBalance, total);
             havven.transfer(msg.sender, total);
-            Vested(msg.sender, msg.sender,
+            emit Vested(msg.sender, msg.sender,
                    now, total);
         }
     }
@@ -288,13 +321,5 @@ contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
 
     event HavvenUpdated(address newHavven);
 
-    event NominUpdated(address newNomin);
-
-    event ContractFeesWithdrawn(uint time, uint value);
-
-    event FeesWithdrawn(address recipient, address indexed recipientIndex, uint time, uint value);
-
     event Vested(address beneficiary, address indexed beneficiaryIndex, uint time, uint value);
-
-    event SchedulePurged(address account);
 }

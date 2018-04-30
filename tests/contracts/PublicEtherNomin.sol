@@ -1,7 +1,7 @@
 /* PublicEtherNomin.sol: expose the internal functions in EtherNomin
  * for testing purposes.
  */
-pragma solidity ^0.4.20;
+pragma solidity ^0.4.21;
 
 
 import "contracts/EtherNomin.sol";
@@ -33,14 +33,6 @@ contract PublicEtherNomin is EtherNomin {
         return saleProceedsEtherAllowStale(n);
     }
 
-    function publicLastPriceUpdate()
-        public
-        view
-        returns (uint)
-    {
-        return lastPriceUpdate;
-    }
-
     function currentTime()
         public
         returns (uint)
@@ -57,7 +49,7 @@ contract PublicEtherNomin is EtherNomin {
     function debugEmptyFeePool()
         public
     {
-        delete feePool;
+        state.setBalanceOf(address(this), 0);
     }
 
     function debugFreezeAccount(address target)

@@ -3,7 +3,7 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       Owned.sol
-version:    0.3
+version:    1.0
 author:     Anton Jurisevic
             Dominic Romanowski
 
@@ -28,40 +28,48 @@ previous owner change the nomination (setting it to 0).
 -----------------------------------------------------------------
 */
 
-pragma solidity ^0.4.20;
+pragma solidity 0.4.21;
 
-
+/**
+ * @title A contract with an owner.
+ * @notice Contract ownership can be transferred by first nominating the new owner,
+ * who must then accept the ownership, which prevents accidental incorrect ownership transfers.
+ */
 contract Owned {
     address public owner;
-    address nominatedOwner;
+    address public nominatedOwner;
 
+    /**
+     * @dev Constructor
+     */
     function Owned(address _owner)
         public
     {
         owner = _owner;
     }
 
+    /**
+     * @notice Nominate a new owner of this contract.
+     * @dev Only the current owner may nominate a new owner.
+     */
     function nominateOwner(address _owner)
         external
         onlyOwner
     {
         nominatedOwner = _owner;
-        NewOwnerNominated(_owner);
+        emit OwnerNominated(_owner);
     }
 
-    function _setOwner()
-        internal
-    {
-        OwnerChanged(owner, nominatedOwner);
-        owner = nominatedOwner;
-        nominatedOwner = address(0);
-    }
-
+    /**
+     * @notice Accept the nomination to be owner.
+     */
     function acceptOwnership()
         external
     {
         require(msg.sender == nominatedOwner);
-        _setOwner();
+        emit OwnerChanged(owner, nominatedOwner);
+        owner = nominatedOwner;
+        nominatedOwner = address(0);
     }
 
     modifier onlyOwner
@@ -70,6 +78,6 @@ contract Owned {
         _;
     }
 
-    event NewOwnerNominated(address newOwner);
+    event OwnerNominated(address newOwner);
     event OwnerChanged(address oldOwner, address newOwner);
 }

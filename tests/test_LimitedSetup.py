@@ -27,8 +27,7 @@ class TestLimitedSetup(unittest.TestCase):
         cls.contractConstructionTime = block_time(txr.blockNumber)
 
         cls.testFunc = lambda self: cls.setup.functions.testFunc().call()
-        cls.constructionTime = lambda self: cls.setup.functions.publicConstructionTime().call()
-        cls.setupDuration = lambda self: cls.setup.functions.publicSetupDuration().call()
+        cls.setupExpiryTime = lambda self: cls.setup.functions.publicSetupExpiryTime().call()
 
     def test_setupFunc(self):
         self.assertTrue(self.testFunc())
@@ -41,11 +40,8 @@ class TestLimitedSetup(unittest.TestCase):
         fast_forward(days=1)        
         self.assertReverts(self.testFunc)
 
-    def test_constructionTime(self):
-        self.assertEqual(self.contractConstructionTime, self.constructionTime())
-
     def test_setupDuration(self):
-        self.assertEqual(to_seconds(weeks=1), self.setupDuration())
+        self.assertEqual(self.contractConstructionTime + to_seconds(weeks=1), self.setupExpiryTime())
  
 if __name__ == '__main__':
     unittest.main()

@@ -1,5 +1,7 @@
 # Havven
 
+[![Build Status](https://travis-ci.org/Havven/havven.svg?branch=master)](https://travis-ci.org/Havven/havven)
+
 Havven is a decentralised payment network and stablecoin.
 It is critical to the system's viability that functionality is phased in over time. The initial release will provide a functional stablecoin and the opportunity to collect significant data on the market response. This will ultimately protect the system and those who back it as the network scales.
 
@@ -26,9 +28,13 @@ The code here will be under continual audit and improved up until release of the
 
 ## Usage and requirements
 
-Deployment and testing scripts require Python 3.6+, web3.py 4.0.0+, and pysolc 2.1.0+. To install, ensure that python is up to date and run:
+Deployment and testing scripts require Python 3.6+, [web3.py](https://github.com/ethereum/web3.py) 4.0.0+, [py-solc](https://github.com/ethereum/py-solc) 2.1.0+, and [eth-utils](https://github.com/ethereum/eth-utils) 1.0.0+. To install these dependencies, ensure that python is up to date and run:
 
 ```pip3 install -r requirements.txt```
+
+In addition, the test and deployment scripts require [solc](https://github.com/ethereum/solidity) 0.4.21+ to be installed. The tests need [ganache](https://github.com/trufflesuite/ganache-cli) 6.1.0+, for speed and time fast-forwarding. It can be installed from the node package manager with:
+
+```npm install ganache-cli```
 
 Ensure `BLOCKCHAIN_ADDRESS` in `utils/deployutils.py` is pointing to a running
 Ethereum client or `ganache-cli` instance. Update other variables like
@@ -37,12 +43,9 @@ deployment is as simple as:
 
 ```python3 deploy.py```
 
-The test suite requires a ganache-cli instance to be running. For testing purposes there need to exist more accounts and
-ether for each account, so we run `ganache-cli -e 1000000000000 -a 100` to prepare the test environment, and then
-run the tests as follow:
+Run the test suite as follows:
 
 ```python3 run_tests.py```
-
 
 
 ## Files
@@ -50,7 +53,7 @@ run the tests as follow:
 The following files should be sufficient for deploying and testing version 1.0
 of the havven system. We have leant heavily towards logical simplicity and
 explicitness where possible; while in documentation and naming conventions,
-verbosity and descriptiveness even to the point of excess.
+verbosity and descriptiveness even to the point of [excess](https://en.wikipedia.org/wiki/Literate_programming).
 Some consideration has been given to efficiency, but typically architecturally,
 in determining how to allow operations to pay for themselves as they go.
 We have mostly forgone local and machine optimisations whenever they would
@@ -59,7 +62,7 @@ come at the expense of clarity or simplicity.
 * `deploy.py` for deploying Havven contracts to the blockchain.
 * `run_tests.py` runs the test suite.
 * `contracts/` contains smart contract code to be deployed.
-* `contracts/Court.sol` a court of arbitration to enable the balance of malicious contracts to be democratically confiscated.
+* `contracts/Court.sol` a court of arbitration to enable the balance of malicious contracts to be democratically confiscated and frozen.
 * `contracts/ExternStateProxyToken.sol` a foundation for generic ERC20 tokens with external state, and which exist behind a proxy.
 * `contracts/TokenState.sol` The balances of the ExternStateProxyToken contract.
 * `contracts/ExternStateProxyFeeToken.sol` a foundation for generic ERC20 tokens which also charge fees on transfers, with external state, and which exist behind a proxy.
@@ -71,6 +74,4 @@ come at the expense of clarity or simplicity.
 * `contracts/SafeDecimalMath.sol` a math library for unsigned fixed point decimal arithmetic, with built-in safety checking.
 * `tests/` test cases.
 * `tests/contracts` contracts used by the test suite.
-* `utils/deployutils.py` deployment helper functions.
-* `utils/testutils.py` testing helper functions.
-* `utils/generalutils.py` printing and test settings helper functions.
+* `utils/` helper functions for testing and deployment.

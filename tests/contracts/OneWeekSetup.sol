@@ -1,4 +1,4 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.21;
 
 
 import "contracts/LimitedSetup.sol";
@@ -13,17 +13,10 @@ contract OneWeekSetup is LimitedSetup(1 weeks) {
 		return true;
 	}
 
-	function publicConstructionTime()
+	function publicSetupExpiryTime()
 		public
 		returns (uint)
 	{
-		return constructionTime;
-	}
-
-	function publicSetupDuration()
-		public
-		returns (uint)
-	{
-		return setupDuration;
+		return setupExpiryTime;
 	}
 }

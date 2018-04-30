@@ -39,11 +39,11 @@ class TestEtherNomin(unittest.TestCase):
     def tearDown(self):
         restore_snapshot(self.snapshot)
 
-    def test_time_elapsed(self):
+    def _test_time_elapsed(self):
         return utils.generalutils.time_fast_forwarded + (round(time.time()) - self.initial_time)
 
     def now_block_time(self):
-        return block_time() + self.test_time_elapsed()
+        return block_time() + self._test_time_elapsed()
 
     @classmethod
     def setUpClass(cls):
@@ -63,7 +63,7 @@ class TestEtherNomin(unittest.TestCase):
                                                               [cls.nomin_havven, cls.nomin_oracle,
                                                                cls.nomin_beneficiary,
                                                                1000 * UNIT, cls.nomin_owner, ZERO_ADDRESS])
-        cls.construction_price_time = cls.nomin_real.functions.lastPriceUpdate().call()
+        cls.construction_price_time = cls.nomin_real.functions.lastPriceUpdateTime().call()
         cls.initial_time = cls.construction_price_time
 
         cls.fake_court, _ = attempt_deploy(compiled, 'FakeCourt', MASTER, [])
@@ -98,7 +98,7 @@ class TestEtherNomin(unittest.TestCase):
         cls.liquidationTimestamp = lambda self: cls.nomin.functions.liquidationTimestamp().call()
         cls.etherPrice = lambda self: cls.nomin.functions.etherPrice().call()
         cls.frozen = lambda self, address: cls.nomin.functions.frozen(address).call()
-        cls.lastPriceUpdate = lambda self: cls.nomin.functions.lastPriceUpdate().call()
+        cls.lastPriceUpdateTime = lambda self: cls.nomin.functions.lastPriceUpdateTime().call()
         cls.stalePeriod = lambda self: cls.nomin.functions.stalePeriod().call()
 
         cls.nominateOwner = lambda self, sender, address: mine_tx(
@@ -184,9 +184,9 @@ class TestEtherNomin(unittest.TestCase):
         self.assertEqual(self.oracle(), self.nomin_oracle)
         self.assertEqual(self.beneficiary(), self.nomin_beneficiary)
         self.assertEqual(self.etherPrice(), 1000 * UNIT)
-        self.assertEqual(self.stalePeriod(), 2 * 24 * 60 * 60)  # default two days
+        self.assertEqual(self.stalePeriod(), 60 * 60)  # default one hour
         self.assertEqual(self.liquidationTimestamp(), 2**256 - 1)
-        self.assertEqual(self.liquidationPeriod(), 90 * 24 * 60 * 60)  # default ninety days
+        self.assertEqual(self.liquidationPeriod(), 14 * 24 * 60 * 60)  # default fourteen days
         self.assertEqual(self.poolFeeRate(), UNIT / 200)  # default fifty basis points
         self.assertEqual(self.nominPool(), 0)
         construct_time = block_time(self.construction_txr.blockNumber)
@@ -282,7 +282,7 @@ class TestEtherNomin(unittest.TestCase):
         tx_receipt = self.updatePrice(pre_oracle, new_price, t)
         tx_time = W3.eth.getBlock(tx_receipt.blockNumber)['timestamp']
         fast_forward(2)
-        self.assertEqual(self.lastPriceUpdate(), t)
+        self.assertEqual(self.lastPriceUpdateTime(), t)
         self.assertEqual(self.etherPrice(), new_price)
 
         self.setOracle(owner, new_oracle)
@@ -294,7 +294,7 @@ class TestEtherNomin(unittest.TestCase):
         tx_time = W3.eth.getBlock(tx_receipt.blockNumber)['timestamp']
         fast_forward(2)
 
-        self.assertEqual(self.lastPriceUpdate(), t)
+        self.assertEqual(self.lastPriceUpdateTime(), t)
         self.assertEqual(self.etherPrice(), new_price2)
 
         # Check if everything works with something in the pool.
@@ -307,14 +307,14 @@ class TestEtherNomin(unittest.TestCase):
         tx_receipt = self.updatePrice(new_oracle, pre_price, t)
         fast_forward(2)
         tx_time = W3.eth.getBlock(tx_receipt.blockNumber)['timestamp']
-        self.assertEqual(self.lastPriceUpdate(), t)
+        self.assertEqual(self.lastPriceUpdateTime(), t)
         self.assertEqual(self.etherPrice(), pre_price)
 
         # Check that an old transaction doesn't overwrite a new one.
         t = self.now_block_time()
         tx_receipt = self.updatePrice(new_oracle, pre_price, t)
         tx_time = W3.eth.getBlock(tx_receipt.blockNumber)['timestamp']
-        self.assertEqual(self.lastPriceUpdate(), t)
+        self.assertEqual(self.lastPriceUpdateTime(), t)
         self.assertEqual(self.etherPrice(), pre_price)
         # A transaction that was sent 10 seconds before the above one should fail.
         self.assertReverts(self.updatePrice, new_oracle, new_price2, t - 10)
@@ -324,7 +324,7 @@ class TestEtherNomin(unittest.TestCase):
         t = self.now_block_time()
         tx_receipt = self.updatePrice(new_oracle, pre_price, t)
         tx_time = W3.eth.getBlock(tx_receipt.blockNumber)['timestamp']
-        self.assertEqual(self.lastPriceUpdate(), t)
+        self.assertEqual(self.lastPriceUpdateTime(), t)
         self.assertEqual(self.etherPrice(), pre_price)
         # A transaction that was sent at the same time as the last one should fail.
         self.assertReverts(self.updatePrice, new_oracle, new_price2, t)
@@ -666,7 +666,7 @@ class TestEtherNomin(unittest.TestCase):
         self.liquidationPeriod()
         self.liquidationTimestamp()
         self.etherPrice()
-        self.lastPriceUpdate()
+        self.lastPriceUpdateTime()
         self.frozen(self.nomin_real.address)
         self.setOracle(owner, oracle)
         self.setCourt(owner, court)
@@ -1029,17 +1029,17 @@ class TestEtherNomin(unittest.TestCase):
         self.assertNotEqual(owner, non_owner)
         self.assertReverts(self.forceLiquidation, non_owner)
 
-        ninetyDays = 90 * 24 * 60 * 60
+        fourteenDays = 14 * 24 * 60 * 60
         oneEightyDays = 180 * 24 * 60 * 60
 
         self.forceLiquidation(owner)
-        self.assertEqual(self.liquidationPeriod(), ninetyDays)  # Default 90 days.
+        self.assertEqual(self.liquidationPeriod(), fourteenDays)  # Default 14 days.
         self.assertReverts(self.extendLiquidationPeriod, owner, 12309198139871)
         self.extendLiquidationPeriod(owner, 1)
-        self.assertEqual(self.liquidationPeriod(), ninetyDays + 1)
+        self.assertEqual(self.liquidationPeriod(), fourteenDays + 1)
         self.extendLiquidationPeriod(owner, 12345)
-        self.assertEqual(self.liquidationPeriod(), ninetyDays + 12346)
-        self.extendLiquidationPeriod(owner, ninetyDays - 12346)
+        self.assertEqual(self.liquidationPeriod(), fourteenDays + 12346)
+        self.extendLiquidationPeriod(owner, oneEightyDays - (fourteenDays + 12346))
         self.assertEqual(self.liquidationPeriod(), oneEightyDays)
         self.assertReverts(self.extendLiquidationPeriod, owner, 1)
         self.assertReverts(self.extendLiquidationPeriod, owner, 12309198139871)
@@ -1059,7 +1059,7 @@ class TestEtherNomin(unittest.TestCase):
         # Should be able to terminate liquidation if there is no supply.
         tx_receipt = self.terminateLiquidation(owner)
         self.assertEqual(self.liquidationTimestamp(), 2**256 - 1)
-        self.assertEqual(self.liquidationPeriod(), 90 * 24 * 60 * 60)
+        self.assertEqual(self.liquidationPeriod(), 14 * 24 * 60 * 60)
         self.assertEqual(len(tx_receipt.logs), 1)
         self.assertEqual(get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[0])['event'],
                          "LiquidationTerminated")
