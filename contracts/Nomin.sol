@@ -3,11 +3,12 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       Nomin.sol
-version:    1.0
+version:    1.1
 author:     Anton Jurisevic
             Mike Spain
+            Dominic Romanowski
 
-date:       2018-2-28
+date:       2018-4-26
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -18,40 +19,15 @@ MODULE DESCRIPTION
 
 Ether-backed nomin stablecoin contract.
 
-This contract issues nomins, which are tokens worth 1 USD each. They are backed
-by a pool of ether collateral, so that if a user has nomins, they may
-redeem them for ether from the pool, or if they want to obtain nomins,
-they may pay ether into the pool in order to do so.
+This contract issues nomins, which are tokens worth 1 USD each.
 
-The supply of nomins that may be in circulation at any time is limited.
-The contract owner may increase this quantity, but only if they provide
-ether to back it. The backing the owner provides at issuance must
-keep each nomin at least twice overcollateralised.
-The owner may also destroy nomins in the pool, which is potential avenue
-by which to maintain healthy collateralisation levels, as it reduces
-supply without withdrawing ether collateral.
+Nomins are issuable by Havven holders who have to lock up some
+value of their havvens to issue H * Cmax nomins. Where Cmax is
+some value less than 1.
 
 A configurable fee is charged on nomin transfers and deposited
 into a common pot, which havven holders may withdraw from once per
 fee period.
-
-Ether price is continually updated by an external oracle, and the value
-of the backing is computed on this basis. To ensure the integrity of
-this system, if the contract's price has not been updated recently enough,
-it will temporarily disable itself until it receives more price information.
-
-The contract owner may at any time initiate contract liquidation.
-During the liquidation period, most contract functions will be deactivated.
-No new nomins may be issued or bought, but users may sell nomins back
-to the system.
-If the system's collateral falls below a specified level, then anyone
-may initiate liquidation.
-
-After the liquidation period has elapsed, which is initially 90 days,
-the owner may destroy the contract, transferring any remaining collateral
-to a nominated beneficiary address.
-This liquidation period may be extended up to a maximum of 180 days.
-If the contract is recollateralised, the owner may terminate liquidation.
 
 -----------------------------------------------------------------
 */
@@ -109,6 +85,7 @@ contract Nomin is ExternStateFeeToken {
         // havven should be set as the feeAuthority after calling this depending on
         // havven's internal logic
         havven = _havven;
+        setFeeAuthority(_havven);
         emit HavvenUpdated(_havven);
     }
 
@@ -178,28 +155,29 @@ contract Nomin is ExternStateFeeToken {
         }
     }
 
+    /* Allow havven to burn a certain number of
+     * nomins from a target address */
     function burn(address target, uint amount)
         external
         onlyHavven
     {
-        // assume Havven contract has checked issued nomin amount
         state.setBalanceOf(target, safeSub(state.balanceOf(target), amount));
         totalSupply = safeSub(totalSupply, amount);
         emit Transfer(target, address(0), amount);
         emit BurnedNomins(target, amount);
     }
 
+    /* Allow havven to issue a certain number of
+     * nomins from a target address */
     function issue(address target, uint amount)
         external
         onlyHavven
     {
-        // assume Havven contract is only issuing valid amounts
         state.setBalanceOf(target, safeAdd(state.balanceOf(target), amount));
         totalSupply = safeAdd(totalSupply, amount);
         emit Transfer(address(0), target, amount);
         emit IssuedNomins(target, amount);
     }
-
 
     /* ========== MODIFIERS ========== */
 
@@ -207,7 +185,6 @@ contract Nomin is ExternStateFeeToken {
         require(Havven(msg.sender) == havven);
         _;
     }
-
 
     /* ========== EVENTS ========== */
 

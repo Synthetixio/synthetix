@@ -3,17 +3,17 @@ import time
 
 import utils.generalutils
 from utils.generalutils import to_seconds
-from utils.deployutils import W3, UNIT, MASTER, DUMMY, ETHER, fresh_account
+from utils.deployutils import W3, UNIT, MASTER, DUMMY, fresh_account, fresh_accounts
 from utils.deployutils import compile_contracts, attempt_deploy, mine_tx
 from utils.deployutils import take_snapshot, restore_snapshot, fast_forward
-from utils.testutils import assertReverts, block_time, send_value, get_eth_balance
+from utils.testutils import assertReverts
 from utils.testutils import generate_topic_event_map, get_event_data_from_log
 from utils.testutils import ZERO_ADDRESS
 
 from tests.contract_interfaces.nomin_interface import PublicNominInterface
+from tests.contract_interfaces.havven_interface import HavvenInterface
 
-Nomin_SOURCE = "tests/contracts/PublicNomin.sol"
-FAKECOURT_SOURCE = "tests/contracts/FakeCourt.sol"
+SOURCES = ["tests/contracts/PublicNomin.sol", "tests/contracts/FakeCourt.sol", "contracts/Havven.sol"]
 
 
 def setUpModule():
@@ -35,16 +35,21 @@ class TestNomin(unittest.TestCase):
     def setUpClass(cls):
         cls.assertReverts = assertReverts
 
-        compiled = compile_contracts([Nomin_SOURCE, FAKECOURT_SOURCE],
-                                     remappings=['""=contracts'])
+        compiled = compile_contracts(SOURCES, remappings=['""=contracts'])
+
         cls.nomin_abi = compiled['PublicNomin']['abi']
         cls.nomin_event_dict = generate_topic_event_map(cls.nomin_abi)
 
-        cls.nomin_contract, cls.construction_txr = attempt_deploy(
+        cls.nomin_contract, cls.nomin_txr = attempt_deploy(
             compiled, 'PublicNomin', MASTER, [MASTER, MASTER, ZERO_ADDRESS]
         )
 
+        cls.havven_contract, cls.havven_txr = attempt_deploy(
+            compiled, "Havven", MASTER, [ZERO_ADDRESS, MASTER, MASTER]
+        )
+
         cls.nomin = PublicNominInterface(cls.nomin_contract)
+        cls.havven = HavvenInterface(cls.havven_contract)
 
         cls.fake_court, _ = attempt_deploy(compiled, 'FakeCourt', MASTER, [])
 
@@ -62,6 +67,9 @@ class TestNomin(unittest.TestCase):
 
         cls.nomin.setCourt(MASTER, cls.fake_court.address)
 
+        cls.nomin.setHavven(MASTER, cls.havven.contract.address)
+        cls.nomin.setFeeAuthority(MASTER, cls.havven.contract.address)
+
     def test_constructor(self):
         # Nomin-specific members
         self.assertEqual(self.nomin.owner(), MASTER)
@@ -76,7 +84,7 @@ class TestNomin(unittest.TestCase):
         self.assertEqual(self.nomin.feeAuthority(), self.nomin.havven())
         self.assertEqual(self.nomin.decimals(), 18)
 
-    def test_getSetOwner(self):
+    def test_setOwner(self):
         pre_owner = self.nomin.owner()
         new_owner = DUMMY
 
@@ -86,12 +94,25 @@ class TestNomin(unittest.TestCase):
         self.nomin.acceptOwnership(new_owner)
         self.assertEqual(self.nomin.owner(), new_owner)
 
-    def test_getSetCourt(self):
+    def test_setCourt(self):
         new_court = DUMMY
+        old_court = self.nomin.court()
 
         # Only the owner must be able to set the court.
         self.nomin.setCourt(self.nomin.owner(), new_court)
         self.assertEqual(self.nomin.court(), new_court)
+        self.assertReverts(self.nomin.setCourt, DUMMY, new_court)
+        self.nomin.setCourt(self.nomin.owner(), old_court)
+
+    def test_setHavven(self):
+        new_havven = DUMMY
+        old_havven = self.nomin.havven()
+
+        # Only the owner must be able to set the court.
+        self.nomin.setHavven(self.nomin.owner(), new_havven)
+        self.assertEqual(self.nomin.havven(), new_havven)
+        self.assertReverts(self.nomin.setHavven, DUMMY, old_havven)
+        self.nomin.setHavven(self.nomin.owner(), old_havven)
 
     def test_transfer(self):
         target = fresh_account()
@@ -228,3 +249,34 @@ class TestNomin(unittest.TestCase):
         # Unfreezing should emit the appropriate log.
         log = get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[0])
         self.assertEqual(log['event'], 'AccountUnfrozen')
+
+    def test_issue_burn(self):
+        havven, acc1, acc2 = fresh_accounts(3)
+        self.nomin.setHavven(MASTER, havven)
+
+        # not even the owner can issue, only the havven contract
+        self.assertReverts(self.nomin.issue, MASTER, acc1, 100 * UNIT)
+        self.nomin.issue(havven, acc1, 100 * UNIT)
+        self.assertEqual(self.nomin.balanceOf(acc1), 100 * UNIT)
+        self.assertEqual(self.nomin.totalSupply(), 100 * UNIT)
+        self.nomin.issue(havven, acc2, 200 * UNIT)
+        self.assertEqual(self.nomin.balanceOf(acc2), 200 * UNIT)
+        self.assertEqual(self.nomin.totalSupply(), 300 * UNIT)
+
+        self.nomin.transfer(acc1, acc2, 50 * UNIT)
+        self.assertNotEqual(self.nomin.totalSupply(), self.nomin.balanceOf(acc1) + self.nomin.balanceOf(acc2))
+        self.assertEqual(self.nomin.totalSupply(), self.nomin.balanceOf(acc1) + self.nomin.balanceOf(acc2) + self.nomin.feePool())
+
+        # shouldn't be able to burn 50, (as 50 + fees transferred)
+        self.assertReverts(self.nomin.burn, havven, acc1, 50 * UNIT)
+        acc1_bal = self.nomin.balanceOf(acc1)
+        self.nomin.burn(havven, acc1, acc1_bal)
+        self.assertEqual(self.nomin.totalSupply(), self.nomin.balanceOf(acc2) + self.nomin.feePool())
+
+        # burning more than issued is allowed, as that logic is controlled in the havven contract
+        self.nomin.burn(havven, acc2, self.nomin.balanceOf(acc2))
+
+        self.assertEqual(self.nomin.balanceOf(acc1), self.nomin.balanceOf(acc2), 0)
+
+
+

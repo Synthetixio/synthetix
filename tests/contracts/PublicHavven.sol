@@ -24,20 +24,4 @@ contract PublicHavven is Havven {
         return now;
     }
 
-    function currentTotalIssuedNominBalanceSum()
-        external
-        view
-        returns (uint)
-    {
-        return totalIssuedNominBalanceData.currentBalanceSum;
-    }
-
-    function lastAverageTotalIssuedNominBalance()
-        external
-        view
-        returns (uint)
-    {
-        return totalIssuedNominBalanceData.lastAverageBalance;
-    }
-
 }

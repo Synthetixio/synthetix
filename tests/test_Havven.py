@@ -107,7 +107,9 @@ class TestHavven(unittest.TestCase):
 
         self.assertEqual(self.nomin_contract.functions.balanceOf(MASTER).call(), 5 * UNIT)
 
-    '''
+        # TODO: test issuing against vesting havvens
+
+    '''    
     def start_new_fee_period(self):
         time_remaining = self.targetFeePeriodDurationSeconds() + self.feePeriodStartTime() - block_time()
         fast_forward(time_remaining + 1)

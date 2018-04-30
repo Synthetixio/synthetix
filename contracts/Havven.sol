@@ -18,26 +18,30 @@ MODULE DESCRIPTION
 
 Havven token contract. Havvens are transferable ERC20 tokens,
 and also give their holders the following privileges.
-An owner of havvens is entitled to a share in the fees levied on
-nomin transactions, and additionally may participate in nomin
-confiscation votes.
+An owner of havvens may participate in nomin confiscation votes, they
+may also have the right to issue nomins based on the discretion of the
+foundation for this version of the contract.
 
 After a fee period terminates, the duration and fees collected for that
-period are computed, and the next period begins.
-Thus an account may only withdraw the fees owed to them for the previous
-period, and may only do so once per period.
-Any unclaimed fees roll over into the common pot for the next period.
+period are computed, and the next period begins. Thus an account may only
+withdraw the fees owed to them for the previous period, and may only do
+so once per period. Any unclaimed fees roll over into the common pot for
+the next period.
+
+== Average Balance Calculations ==
 
 The fee entitlement of a havven holder is proportional to their average
-havven balance over the last fee period. This is computed by measuring the
-area under the graph of a user's balance over time, and then when fees are
-distributed, dividing through by the duration of the fee period.
+issued nomin balance over the last fee period. This is computed by
+measuring the area under the graph of a user's issued nomin balance over
+time, and then when a new fee period begins, dividing through by the
+duration of the fee period.
 
-We need only update fee entitlement on transfer when the havven balances of the sender
-and recipient are modified. This is for efficiency, and adds an implicit friction to
-trading in the havven market. A havven holder pays for his own recomputation whenever
-he wants to change his position, which saves the foundation having to maintain a pot
-dedicated to resourcing this.
+We need only update values when the balances of an account is modified.
+When issuing or burning for the issued nomin balances and when transferring
+for the havven balances. This is for efficiency, and adds an implicit
+friction to interacting with havvens. A havven holder pays for his own
+recomputation whenever he wants to change his position, which saves the
+foundation having to maintain a pot dedicated to resourcing this.
 
 A hypothetical user's balance history over one fee period, pictorially:
 
@@ -92,6 +96,27 @@ In the implementation, the duration of different fee periods may be slightly irr
 as the check that they have rolled over occurs only when state-changing havven
 operations are performed.
 
+== Issuance and Burning ==
+
+In this version of the havven contract, nomins can only be issued by
+those that have been whitelisted by the havven foundation. Nomins are assumed
+to be valued at $1, as they are a stable unit of account.
+
+All nomins issued require some value of havvens to be locked up for the
+proportional to the value of CMax (The collateralisation ratio). This
+means for every $1 of Havvens locked up, $(CMax) nomins can be issued.
+i.e. to issue 100 nomins, 100/CMax dollars of havvens need to be locked up.
+
+To determine the value of some amount of havvens, an oracle is used to push
+the price of havvens in dollars to the contract. The value of some amount of
+havvens would then be: H * p_H.
+
+Any havvens that are locked up by this issuance process cannot be transferred.
+The amount that is locked floats based on the price of havvens. If the price
+of havvens moves up, less havvens are locked, so they can be issued against,
+or transferred freely. If the price of havvens moves down, more havvens are locked,
+even going above the initial amount that was locked.
+
 -----------------------------------------------------------------
 
 */
@@ -110,52 +135,63 @@ contract Havven is SelfDestructible, ExternStateToken {
 
     /* ========== STATE VARIABLES ========== */
 
-    // Sums of balances*duration in the current fee period.
-    // range: decimals; units: havven-seconds
 
+    // A struct for handing values associated with average balance calculations
     struct BalanceData {
+        // Sums of balances*duration in the current fee period.
+        // range: decimals; units: havven-seconds
         uint currentBalanceSum;
+        // The last period's average balance
         uint lastAverageBalance;
+        // The last time the data was calculated
         uint lastTransferTimestamp;
     }
 
+    // Havven balance averages for voting weight
     mapping(address => BalanceData) internal havvenBalanceData;
+    // Issued nomin balances for individual fee entitlements
     mapping(address => BalanceData) internal issuedNominBalanceData;
+    // The total number of issued nomins for determining fee entitlements
     BalanceData internal totalIssuedNominBalanceData;
 
-    // The time the current fee period began.
-    uint public feePeriodStartTime = 2;
-    // The actual start of the last fee period (seconds).
-    // This fee period can be initially set to any value
-    //   0 < val < now, as everyone's individual lastTransferTime will be 0
-    //   and as such, their lastAvgBal will be set to that value
-    //   apart from the contract, which will have totalSupply
-    uint public lastFeePeriodStartTime = 1;
+    // The time the current fee period began
+    uint public feePeriodStartTime;
+    // The time the last fee period began
+    uint public lastFeePeriodStartTime;
 
-    // Fee periods will roll over in no shorter a time than this.
+    // Fee periods will roll over in no shorter a time than this
     uint public targetFeePeriodDurationSeconds = 4 weeks;
-    // And may not be set to be shorter than a day.
+    // And may not be set to be shorter than a day
     uint constant MIN_FEE_PERIOD_DURATION_SECONDS = 1 days;
-    // And may not be set to be longer than six months.
+    // And may not be set to be longer than six months
     uint constant MAX_FEE_PERIOD_DURATION_SECONDS = 26 weeks;
 
     // The quantity of nomins that were in the fee pot at the time
-    // of the last fee rollover (feePeriodStartTime).
+    // of the last fee rollover (feePeriodStartTime)
     uint public lastFeesCollected;
 
+    // Whether a user has withdrawn their last fees
     mapping(address => bool) public hasWithdrawnLastPeriodFees;
 
     Nomin public nomin;
     HavvenEscrow public escrow;
 
+    // The address of the oracle which pushes the havven price to this contract
     address public oracle;
+    // The price of havvens written in UNIT
     uint public havPrice;
+    // The time the havven price was last updated
     uint public lastHavPriceUpdateTime;
-    uint public havPriceStalePeriod = 60 minutes;
-    uint public CMax = 5 * UNIT / 100;
-    uint public MAX_C_MAX = UNIT;
+    // How long will the contract assume the price of havvens is correct
+    uint public havPriceStalePeriod = 3 hours;
 
+    // The maximal amount that
+    uint public CMax = 5 * UNIT / 100;
+    uint public MAX_C_MAX = 50 * UNIT / 100; // TODO: get kain to confirm
+
+    // whether the address can issue nomins or not
     mapping(address => bool) public whitelistedIssuers;
+    // the number of nomins the user has issued
     mapping(address => uint) public issuedNomins;
 
     /* ========== CONSTRUCTOR ========== */
@@ -221,6 +257,11 @@ contract Havven is SelfDestructible, ExternStateToken {
         whitelistedIssuers[account] = value;
     }
 
+    /* ========== GETTERS ========== */
+
+    //
+    // Havven balance sum data
+    //
     function currentHavvenBalanceSum(address account)
         external
         view
@@ -245,6 +286,9 @@ contract Havven is SelfDestructible, ExternStateToken {
         return havvenBalanceData[account].lastTransferTimestamp;
     }
 
+    //
+    // Issued nomin balance sum data
+    //
     function currentIssuedNominBalanceSum(address account)
         external
         view
@@ -269,6 +313,24 @@ contract Havven is SelfDestructible, ExternStateToken {
         return issuedNominBalanceData[account].lastTransferTimestamp;
     }
 
+    //
+    // The total issued nomin balance sum data
+    //
+    function currentTotalIssuedNominBalanceSum()
+        external
+        view
+        returns (uint)
+    {
+        return totalIssuedNominBalanceData.currentBalanceSum;
+    }
+
+    function lastAverageTotalIssuedNominBalance()
+        external
+        view
+        returns (uint)
+    {
+        return totalIssuedNominBalanceData.lastAverageBalance;
+    }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
@@ -286,7 +348,9 @@ contract Havven is SelfDestructible, ExternStateToken {
         preCheckFeePeriodRollover
         returns (bool)
     {
-
+        // This allows for the unescrowed havvens to be transferred
+        //  if any escrowed havvens are locked.
+        require(value <= availableHavvens(msg.sender));
         uint senderPreBalance = state.balanceOf(msg.sender);
         uint recipientPreBalance = state.balanceOf(to);
 
@@ -309,6 +373,7 @@ contract Havven is SelfDestructible, ExternStateToken {
         preCheckFeePeriodRollover
         returns (bool)
     {
+        require(value <= availableHavvens(from));
         uint senderPreBalance = state.balanceOf(from);
         uint recipientPreBalance = state.balanceOf(to);
 
@@ -466,6 +531,33 @@ contract Havven is SelfDestructible, ExternStateToken {
         checkFeePeriodRollover();
     }
 
+    // Issue nomins for a whitelisted account
+    function issueNomins(uint amount)
+        onlyWhitelistedIssuers(msg.sender)
+        havPriceNotStale
+        external
+    {
+        require(amount <= remainingIssuanceRights(msg.sender));
+        uint lastTot = nomin.totalSupply();
+        uint issued = issuedNomins[msg.sender];
+        nomin.issue(msg.sender, amount);
+        issuedNomins[msg.sender] = safeAdd(issued, amount);
+        adjustIssuanceBalanceAverages(msg.sender, issued, lastTot);
+    }
+
+    function burnNomins(uint amount)
+        // it doesn't matter if the price is stale or if the user is whitelisted
+        external
+    {
+        require(amount <= issuedNomins[msg.sender]);
+        uint lastTot = nomin.totalSupply();
+        uint issued = issuedNomins[msg.sender];
+        // nomin.burn does safeSub on balance (so it will revert if there are not enough nomins)
+        nomin.burn(msg.sender, amount);
+        issuedNomins[msg.sender] = safeSub(issued, amount);
+        adjustIssuanceBalanceAverages(msg.sender, issued, lastTot);
+    }
+
     function checkFeePeriodRollover()
         internal
     {
@@ -481,19 +573,7 @@ contract Havven is SelfDestructible, ExternStateToken {
         }
     }
 
-    /* ========== HAV PRICE ========== */
-
-    /* TODO: Havvens that are not escrowed */
-    function availableHavvens(address account)
-        public
-        view
-        returns (uint)
-    {
-        uint bal = state.balanceOf(account);
-        uint bal_val = havValue(bal);
-        uint issued_nom = issuedNomins[account];
-        return 0;
-    }
+    /* ========== Issuance/Burning ========== */
 
     function maxIssuanceRights(address issuer)
         view
@@ -503,9 +583,9 @@ contract Havven is SelfDestructible, ExternStateToken {
         returns (uint)
     {
         if (escrow != HavvenEscrow(0)) {
-            return safeMul_dec(havValue(safeAdd(balanceOf(issuer), escrow.balanceOf(msg.sender))), CMax);
+            return safeMul_dec(HAVtoUSD(safeAdd(balanceOf(issuer), escrow.balanceOf(msg.sender))), CMax);
         } else {
-            return safeMul_dec(havValue(balanceOf(issuer)), CMax);
+            return safeMul_dec(HAVtoUSD(balanceOf(issuer)), CMax);
         }
     }
 
@@ -525,41 +605,45 @@ contract Havven is SelfDestructible, ExternStateToken {
         }
     }
 
-    // Issue nomins for a whitelisted account
-    function issueNomins(uint amount)
-        onlyWhitelistedIssuers(msg.sender)
-        havPriceNotStale
-        external
+    /* Havvens that are not locked */
+    function availableHavvens(address account)
+        public
+        view
+        returns (uint)
     {
-        require(amount <= remainingIssuanceRights(msg.sender));
-        uint lastTot = nomin.totalSupply();
-        uint issued = issuedNomins[msg.sender];
-        nomin.issue(msg.sender, amount);
-        issuedNomins[msg.sender] = safeAdd(issued, amount);
-        adjustIssuanceBalanceAverages(msg.sender, issued, lastTot);
-    }
+        uint issued_nom = issuedNomins[account];
+        if (issued_nom == 0) {
+            return state.balanceOf(account);
+        }
 
-    function burnNomins(uint amount)
-        // it doesn't matter if the price is stale/user is whitelisted
-        external
-    {
-        require(amount <= issuedNomins[msg.sender]);
-        // nomin.burn does safeSub on balance (so revert if not enough nomins)
-        uint lastTot = nomin.totalSupply();
-        uint issued = issuedNomins[msg.sender];
-        nomin.burn(msg.sender, amount);
-        issuedNomins[msg.sender] = safeSub(issued, amount);
-        adjustIssuanceBalanceAverages(msg.sender, issued, lastTot);
+        uint bal = state.balanceOf(account);
+        uint bal_val = HAVtoUSD(bal);
+        uint locked_val = safeDiv_dec(issued_nom, CMax);
+        if (locked_val > bal_val) {
+            return 0;
+        }
+        // Don't need to safe sub, as the check is done above
+        return USDtoHAV(bal_val - locked_val);
     }
 
     // Value in USD for a given amount of HAV
-    function havValue(uint havWei)
+    function HAVtoUSD(uint hav_dec)
         public
         view
         havPriceNotStale
         returns (uint)
     {
-        return safeMul_dec(havWei, havPrice);
+        return safeMul_dec(hav_dec, havPrice);
+    }
+
+    // Value in HAV for a given amount of USD
+    function USDtoHAV(uint usd_dec)
+        public
+        view
+        havPriceNotStale
+        returns (uint)
+    {
+        return safeDiv_dec(usd_dec, havPrice);
     }
 
     function updatePrice(uint price, uint timeSent)

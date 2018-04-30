@@ -90,7 +90,7 @@ contract ExternStateFeeToken is SafeDecimalMath, Owned {
     }
 
     function setFeeAuthority(address _feeAuthority)
-        external
+        public
         onlyOwner
     {
         feeAuthority = _feeAuthority;
