@@ -16,8 +16,6 @@ class HavvenInterface(ExternStateTokenInterface, SelfDestructibleInterface):
         self.feePeriodStartTime = lambda: self.contract.functions.feePeriodStartTime().call()
         self.lastFeePeriodStartTime = lambda: self.contract.functions.lastFeePeriodStartTime().call()
         self.targetFeePeriodDurationSeconds = lambda: self.contract.functions.targetFeePeriodDurationSeconds().call()
-        self.MIN_FEE_PERIOD_DURATION_SECONDS = lambda: self.contract.functions.MIN_FEE_PERIOD_DURATION_SECONDS().call()
-        self.MAX_FEE_PERIOD_DURATION_SECONDS = lambda: self.contract.functions.MAX_FEE_PERIOD_DURATION_SECONDS().call()
         self.lastFeesCollected = lambda: self.contract.functions.lastFeesCollected().call()
         self.nomin = lambda: self.contract.functions.nomin().call()
         self.escrow = lambda: self.contract.functions.escrow().call()
@@ -71,5 +69,8 @@ class PublicHavvenInterface(HavvenInterface):
         HavvenInterface.__init__(self, contract)
 
         self.public_contract = contract
+
+        self.MIN_FEE_PERIOD_DURATION_SECONDS = lambda: self.contract.functions.MIN_FEE_PERIOD_DURATION_SECONDS().call()
+        self.MAX_FEE_PERIOD_DURATION_SECONDS = lambda: self.contract.functions.MAX_FEE_PERIOD_DURATION_SECONDS().call()
 
         self.currentTime = lambda: self.contract.functions.currentTime().call()

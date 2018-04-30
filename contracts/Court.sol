@@ -113,7 +113,7 @@ We might consider updating the contract with any of these features at a later da
 -----------------------------------------------------------------
 */
 
-pragma solidity 0.4.21;
+pragma solidity 0.4.23;
 
 
 import "contracts/Owned.sol";

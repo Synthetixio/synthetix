@@ -121,7 +121,7 @@ even going above the initial amount that was locked.
 
 */
 
-pragma solidity 0.4.21;
+pragma solidity 0.4.23;
 
 
 import "contracts/ExternStateToken.sol";
@@ -405,8 +405,10 @@ contract Havven is SelfDestructible, ExternStateToken {
 
         // Only allow accounts to withdraw fees once per period.
         require(!hasWithdrawnLastPeriodFees[msg.sender]);
-
-        uint feesOwed = safeDiv_dec(safeMul_dec(updatedBalances.lastAverageBalance, lastFeesCollected), totalIssuedNominBalanceData.lastAverageBalance);
+        uint feesOwed = 0;
+        if (totalIssuedNominBalanceData.lastAverageBalance > 0) {
+            feesOwed = safeDiv_dec(safeMul_dec(updatedBalances.lastAverageBalance, lastFeesCollected), totalIssuedNominBalanceData.lastAverageBalance);
+        }
 
         hasWithdrawnLastPeriodFees[msg.sender] = true;
 

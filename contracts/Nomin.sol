@@ -32,7 +32,7 @@ fee period.
 -----------------------------------------------------------------
 */
 
-pragma solidity 0.4.21;
+pragma solidity 0.4.23;
 
 
 import "contracts/ExternStateFeeToken.sol";

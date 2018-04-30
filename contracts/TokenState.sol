@@ -34,7 +34,7 @@ contract to the new one.
 -----------------------------------------------------------------
 */
 
-pragma solidity 0.4.21;
+pragma solidity 0.4.23;
 
 
 import "contracts/State.sol";

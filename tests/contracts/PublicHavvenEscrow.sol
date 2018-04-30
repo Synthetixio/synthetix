@@ -1,7 +1,7 @@
 /* PublicNomin.sol: expose the internal functions in Nomin
  * for testing purposes.
  */
-pragma solidity 0.4.21;
+pragma solidity 0.4.23;
 
 
 import "contracts/HavvenEscrow.sol";

@@ -24,7 +24,7 @@ This contract utilises a state for upgradability purposes.
 -----------------------------------------------------------------
 */
 
-pragma solidity 0.4.21;
+pragma solidity 0.4.23;
 
 
 import "contracts/SafeDecimalMath.sol";
