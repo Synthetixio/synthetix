@@ -44,7 +44,7 @@ def tearDownModule():
     print()
 
 
-class TestHavven(unittest.TestCase):
+class TestFeeCollection(unittest.TestCase):
     def setUp(self):
         self.snapshot = take_snapshot()
 

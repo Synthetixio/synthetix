@@ -9,7 +9,7 @@ from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mi
     UNIT, MASTER, DUMMY, to_seconds, fast_forward, fresh_account, fresh_accounts, take_snapshot, restore_snapshot
 
 from tests.contract_interfaces.havven_interface import PublicHavvenInterface
-from tests.contract_interfaces.havven_escrow_interface import HavvenEscrowInterface
+from tests.contract_interfaces.havven_escrow_interface import PublicHavvenEscrowInterface
 from tests.contract_interfaces.nomin_interface import PublicNominInterface
 
 SOLIDITY_SOURCES = ["tests/contracts/PublicHavven.sol", "tests/contracts/PublicNomin.sol",
@@ -61,17 +61,9 @@ def tearDownModule():
 class TestHavvenEscrow(unittest.TestCase):
     def setUp(self):
         self.snapshot = take_snapshot()
-        utils.generalutils.time_fast_forwarded = 0
-        self.initial_time = round(time.time())
 
     def tearDown(self):
         restore_snapshot(self.snapshot)
-
-    def time_elapsed(self):
-        return utils.generalutils.time_fast_forwarded + (round(time.time()) - self.initial_time)
-
-    def now_block_time(self):
-        return block_time() + self.time_elapsed()
 
     @classmethod
     def setUpClass(cls):
@@ -82,7 +74,7 @@ class TestHavvenEscrow(unittest.TestCase):
 
         cls.havven = PublicHavvenInterface(cls.havven_contract)
         cls.nomin = PublicNominInterface(cls.nomin_contract)
-        cls.escrow = HavvenEscrowInterface(cls.escrow_contract)
+        cls.escrow = PublicHavvenEscrowInterface(cls.escrow_contract)
 
     def test_constructor(self):
         self.assertEqual(self.escrow.havven(), self.havven.contract.address)

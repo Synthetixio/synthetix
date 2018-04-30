@@ -1,11 +1,12 @@
 import tests.test_Court
 import tests.test_ExternStateToken
 import tests.test_ExternStateFeeToken
-import tests.test_Nomin
 import tests.test_FeeCollection
 import tests.test_Havven
 import tests.test_HavvenEscrow
+import tests.test_Issuance
 import tests.test_LimitedSetup
+import tests.test_Nomin
 import tests.test_Owned
 import tests.test_SafeDecimalMath
 import tests.test_SelfDestructible

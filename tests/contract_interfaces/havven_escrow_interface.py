@@ -7,6 +7,8 @@ from utils.deployutils import mine_tx
 class HavvenEscrowInterface(SafeDecimalMathInterface, OwnedInterface, LimitedSetupInterface):
     def __init__(self, contract):
         SafeDecimalMathInterface.__init__(self, contract)
+        OwnedInterface.__init__(self, contract)
+        LimitedSetupInterface.__init__(self, contract)
 
         self.contract = contract
 
@@ -40,6 +42,11 @@ class HavvenEscrowInterface(SafeDecimalMathInterface, OwnedInterface, LimitedSet
             self.contract.functions.appendVestingEntry(account, time, quantity).transact({'from': sender}))
         self.addVestingSchedule = lambda sender, account, times, quantities: mine_tx(
             self.contract.functions.addVestingSchedule(account, times, quantities).transact({'from': sender}))
+        self.vest = lambda sender: mine_tx(self.contract.functions.vest().transact({'from': sender}))
+
+
+class PublicHavvenEscrowInterface(HavvenEscrowInterface):
+    def __init__(self, contract):
+        HavvenEscrowInterface.__init__(self, contract)
         self.addRegularVestingSchedule = lambda sender, account, time, quantity, periods: mine_tx(
             self.contract.functions.addRegularVestingSchedule(account, time, quantity, periods).transact({'from': sender}))
-        self.vest = lambda sender: mine_tx(self.contract.functions.vest().transact({'from': sender}))

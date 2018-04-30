@@ -85,25 +85,6 @@ class TestHavven(unittest.TestCase):
 
         cls.base_havven_price = UNIT
 
-    def test_issue(self):
-        self.havven.endow(MASTER, MASTER, 1000 * UNIT)
-        self.havven.setWhitelisted(MASTER, MASTER, True)
-
-        self.assertEqual(self.havven.balanceOf(MASTER), 1000 * UNIT)
-
-        # UPDATE PRICE
-        self.havven.updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
-
-        # ISSUE NOMINS
-
-        self.havven.issueNomins(MASTER, 5 * UNIT)
-
-        self.assertEqual(self.nomin_contract.functions.balanceOf(MASTER).call(), 5 * UNIT)
-
-    # def test_issue_against_escrowed(self):
-
-
-
     ###
     # Test inherited Owned - Should be the same test_Owned.py
     ###
