@@ -1,8 +1,8 @@
 import unittest
 
 from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mine_txs, mine_tx, \
-    UNIT, MASTER, DUMMY, fast_forward, fresh_accounts, take_snapshot, restore_snapshot
-from utils.testutils import assertReverts, assertClose, ZERO_ADDRESS
+    UNIT, MASTER, DUMMY, fast_forward, fresh_account, take_snapshot, restore_snapshot
+from utils.testutils import assertReverts, assertClose, ZERO_ADDRESS, block_time
 
 from tests.contract_interfaces.havven_interface import PublicHavvenInterface
 from tests.contract_interfaces.nomin_interface import PublicNominInterface
@@ -63,6 +63,7 @@ class TestIssuance(unittest.TestCase):
 
         cls.havven = PublicHavvenInterface(cls.havven_contract)
         cls.nomin = PublicNominInterface(cls.nomin_contract)
+        cls.escrow = PublicHavvenEscrowInterface(cls.escrow_contract)
 
         cls.assertClose = assertClose
         cls.assertReverts = assertReverts
@@ -85,13 +86,26 @@ class TestIssuance(unittest.TestCase):
 
         self.assertEqual(self.havven.balanceOf(MASTER), 1000 * UNIT)
 
-        # UPDATE PRICE
         self.havven.updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
-
-        # ISSUE NOMINS
-
         self.havven.issueNomins(MASTER, 5 * UNIT)
 
         self.assertEqual(self.nomin_contract.functions.balanceOf(MASTER).call(), 5 * UNIT)
 
-    # def test_issue_against_escrowed(self):
+    def test_issue_against_escrowed(self):
+        alice = fresh_account()
+        self.havven.endow(MASTER, self.escrow.contract.address, self.havven.totalSupply())
+        self.escrow.appendVestingEntry(MASTER, alice, block_time() + 100000, self.havven.totalSupply() // 2)
+
+        self.havven.setWhitelisted(MASTER, alice, True)
+        self.havven.updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
+        self.havven.issueNomins(alice, 100 * UNIT)
+
+        self.assertEqual(self.havven.balanceOf(alice), 0)
+        self.assertEqual(self.nomin.balanceOf(alice), 100 * UNIT)
+        self.assertClose(self.havven.availableHavvens(alice) + 100 * UNIT / (self.havven.CMax() / UNIT), self.havven.totalSupply() // 2)
+
+    def test_price_shift(self):
+        alice = fresh_account()
+        self.havven.endow(MASTER, alice, 1000 * UNIT)
+        self.havven.setWhitelisted(MASTER, alice, True)
+        self.havven.

@@ -191,7 +191,7 @@ contract Havven is ExternStateToken {
 
     // The maximal amount that
     uint public CMax = 5 * UNIT / 100;
-    uint public MAX_C_MAX = 50 * UNIT / 100; // TODO: get kain to confirm
+    uint public MAX_C_MAX = 50 * UNIT / 100;  // TODO: get final value
 
     // whether the address can issue nomins or not
     mapping(address => bool) public whitelistedIssuers;
@@ -663,7 +663,7 @@ contract Havven is ExternStateToken {
             return state.balanceOf(account);
         }
 
-        uint bal = state.balanceOf(account);
+        uint bal = state.balanceOf(account) + escrow.balanceOf(account);
         uint bal_val = HAVtoUSD(bal);
         uint locked_val = safeDiv_dec(issued_nom, CMax);
         if (locked_val > bal_val) {
