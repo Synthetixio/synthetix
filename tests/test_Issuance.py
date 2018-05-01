@@ -108,4 +108,4 @@ class TestIssuance(unittest.TestCase):
         alice = fresh_account()
         self.havven.endow(MASTER, alice, 1000 * UNIT)
         self.havven.setWhitelisted(MASTER, alice, True)
-        self.havven.
+

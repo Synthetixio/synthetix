@@ -383,8 +383,10 @@ contract Havven is ExternStateToken {
         preCheckFeePeriodRollover
         returns (bool)
     {
-        // This allows for the unescrowed havvens to be transferred
-        //  if any escrowed havvens are locked.
+        /* If they have enough available Havvens, it could be that
+         * their havvens are escrowed, however the transfer would then
+         * fail. This means that escrowed havvens are locked first,
+         * and then the actual transferable ones. */
         require(value <= availableHavvens(msg.sender));
         uint senderPreBalance = state.balanceOf(msg.sender);
         uint recipientPreBalance = state.balanceOf(to);
@@ -652,7 +654,14 @@ contract Havven is ExternStateToken {
         }
     }
 
-    /* Havvens that are not locked */
+    function lockedHavvens(address account)
+        public
+        view
+        returns (uint)
+    { // TODO
+    }
+
+    /* Havvens that are not locked, available for issuance */
     function availableHavvens(address account)
         public
         view
@@ -660,7 +669,7 @@ contract Havven is ExternStateToken {
     {
         uint issued_nom = issuedNomins[account];
         if (issued_nom == 0) {
-            return state.balanceOf(account);
+            return state.balanceOf(account) + escrow.balanceOf(account);
         }
 
         uint bal = state.balanceOf(account) + escrow.balanceOf(account);
@@ -715,11 +724,6 @@ contract Havven is ExternStateToken {
         return safeAdd(lastHavPriceUpdateTime, havPriceStalePeriod) < now;
     }
 
-    modifier havPriceNotStale
-    {
-        require(!havPriceIsStale());
-        _;
-    }
     /* ========== MODIFIERS ========== */
 
     /* If the fee period has rolled over, then
@@ -742,6 +746,13 @@ contract Havven is ExternStateToken {
         require(whitelistedIssuers[account]);
         _;
     }
+
+    modifier havPriceNotStale
+    {
+        require(!havPriceIsStale());
+        _;
+    }
+
 
     /* ========== EVENTS ========== */
 
