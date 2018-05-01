@@ -673,8 +673,13 @@ contract Havven is ExternStateToken {
         returns (uint)
     {
         uint locked = lockedHavvens(account);
-        uint bal = state.balanceOf(account) + escrow.balanceOf(account);
-        if (locked > bal) {
+        uint bal;
+        if (escrow != address(0)) {
+            bal = state.balanceOf(account) + escrow.balanceOf(account);
+        } else {
+            bal = state.balanceOf(account);
+        }
+        if (locked >= bal) {
             return 0;
         }
         return bal - locked;
