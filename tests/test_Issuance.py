@@ -146,10 +146,21 @@ class TestIssuance(unittest.TestCase):
         self.havven.setCMax(MASTER, 0)
         self.assertReverts(self.havven.issueNomins, alice, 10 * UNIT)  # reverts, as CMAX too low (0)
         self.havven.setCMax(MASTER, int(0.05 * UNIT))
-        self.havven.issueNomins(alice, 10 * UNIT)
-        self.assertEqual(self.havven.issuedNomins(alice), 10 * UNIT)
+        self.havven.issueNomins(alice, self.havven.maxIssuanceRights(alice))
+        self.assertEqual(self.havven.issuedNomins(alice), 50 * UNIT)
+        self.assertReverts(self.havven.issueNomins, alice, self.havven.maxIssuanceRights(alice))
+        self.assertEqual(self.havven.remainingIssuanceRights(alice), 0)
+        self.havven.issueNomins(alice, self.havven.remainingIssuanceRights(alice))
 
-
-
+    def test_burn(self):
+        alice = fresh_account()
+        self.havven.endow(MASTER, alice, 1000 * UNIT)
+        self.havven.setWhitelisted(MASTER, alice, True)
+        self.havven.updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
+        self.havven.issueNomins(alice, 50 * UNIT)
+        for i in range(50):
+            self.havven.burnNomins(alice, 1 * UNIT)
+        self.assertEqual(self.havven.issuedNomins(alice), 0)
+        self.assertEqual(self.nomin.balanceOf(alice), 0)
 
 

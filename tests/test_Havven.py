@@ -3,13 +3,12 @@ import unittest
 from utils.deployutils import attempt, mine_txs, fresh_accounts
 from utils.testutils import assertClose
 
-from utils.deployutils import W3, UNIT, MASTER, DUMMY, ETHER, fresh_accounts, fresh_account
+from utils.deployutils import W3, UNIT, MASTER, DUMMY, fresh_accounts, fresh_account
 from utils.deployutils import compile_contracts, attempt_deploy, to_seconds
 from utils.deployutils import take_snapshot, restore_snapshot, fast_forward
 from utils.testutils import assertReverts, block_time, get_event_data_from_log
 from utils.testutils import generate_topic_event_map
 from utils.testutils import ZERO_ADDRESS
-import time
 
 from tests.contract_interfaces.havven_interface import PublicHavvenInterface
 from tests.contract_interfaces.nomin_interface import PublicNominInterface
