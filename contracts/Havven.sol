@@ -647,18 +647,23 @@ contract Havven is ExternStateToken {
     {
         uint issued = issuedNomins[issuer];
         uint max = maxIssuanceRights(issuer);
-        if (issued > max) {
+        if (issued >= max) {
             return 0;
         } else {
             return maxIssuanceRights(issuer) - issuedNomins[issuer];
         }
     }
 
+    /* Havvens that are locked, which can exceed the user's total balance + escrowed */
     function lockedHavvens(address account)
         public
         view
         returns (uint)
-    { // TODO
+    {
+        if (issuedNomins[account] == 0) {
+            return 0;
+        }
+        return USDtoHAV(safeDiv_dec(issuedNomins[account], CMax));
     }
 
     /* Havvens that are not locked, available for issuance */
@@ -667,19 +672,12 @@ contract Havven is ExternStateToken {
         view
         returns (uint)
     {
-        uint issued_nom = issuedNomins[account];
-        if (issued_nom == 0) {
-            return state.balanceOf(account) + escrow.balanceOf(account);
-        }
-
+        uint locked = lockedHavvens(account);
         uint bal = state.balanceOf(account) + escrow.balanceOf(account);
-        uint bal_val = HAVtoUSD(bal);
-        uint locked_val = safeDiv_dec(issued_nom, CMax);
-        if (locked_val > bal_val) {
+        if (locked > bal) {
             return 0;
         }
-        // Don't need to safe sub, as the check is done above
-        return USDtoHAV(bal_val - locked_val);
+        return bal - locked;
     }
 
     // Value in USD for a given amount of HAV

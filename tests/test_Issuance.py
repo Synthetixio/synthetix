@@ -104,8 +104,52 @@ class TestIssuance(unittest.TestCase):
         self.assertEqual(self.nomin.balanceOf(alice), 100 * UNIT)
         self.assertClose(self.havven.availableHavvens(alice) + 100 * UNIT / (self.havven.CMax() / UNIT), self.havven.totalSupply() // 2)
 
-    def test_price_shift(self):
+    def test_issuance_price_shift(self):
         alice = fresh_account()
         self.havven.endow(MASTER, alice, 1000 * UNIT)
+
         self.havven.setWhitelisted(MASTER, alice, True)
+        self.havven.updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
+        self.havven.issueNomins(alice, 10 * UNIT)
+        self.assertEqual(self.havven.availableHavvens(alice), 800 * UNIT)
+        fast_forward(2)
+        self.havven.updatePrice(self.havven.oracle(), 100 * UNIT, self.havven.currentTime() + 1)
+        self.assertEqual(self.havven.availableHavvens(alice), 998 * UNIT)
+        fast_forward(2)
+        self.havven.updatePrice(self.havven.oracle(), int(0.01 * UNIT), self.havven.currentTime() + 1)
+        self.assertEqual(self.havven.availableHavvens(alice), 0)
+
+        self.assertReverts(self.havven.transfer, alice, MASTER, 1)
+
+        fast_forward(2)
+        self.havven.updatePrice(self.havven.oracle(), 1 * UNIT, self.havven.currentTime() + 1)
+        self.havven.transfer(alice, MASTER, 800 * UNIT)
+        self.assertReverts(self.havven.transfer, alice, MASTER, 200 * UNIT)
+        self.havven.burnNomins(alice, 10 * UNIT)
+        self.havven.transfer(alice, MASTER, 200 * UNIT)
+        self.assertEqual(self.nomin.balanceOf(alice), 0)
+        self.assertEqual(self.nomin.balanceOf(MASTER), 0)
+        self.assertEqual(self.havven.balanceOf(MASTER), 1000 * UNIT)
+        self.assertEqual(self.havven.balanceOf(alice), 0)
+        self.assertEqual(self.havven.issuedNomins(alice), 0)
+
+    def test_issue_revert_conditions(self):
+        alice = fresh_account()
+        self.havven.endow(MASTER, alice, 1000 * UNIT)
+        self.havven.updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
+        self.assertReverts(self.havven.issueNomins, alice, 10 * UNIT)  # reverts, as not whitelisted
+        self.havven.setWhitelisted(MASTER, alice, True)
+        fast_forward(days=1)  # fast forward to make price stale
+        self.assertReverts(self.havven.issueNomins, alice, 10 * UNIT)  # reverts, as price is stale
+        self.havven.updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
+        self.assertReverts(self.havven.issueNomins, alice, 1000 * UNIT)  # reverts, as too many nomins being issued
+        self.havven.setCMax(MASTER, 0)
+        self.assertReverts(self.havven.issueNomins, alice, 10 * UNIT)  # reverts, as CMAX too low (0)
+        self.havven.setCMax(MASTER, int(0.05 * UNIT))
+        self.havven.issueNomins(alice, 10 * UNIT)
+        self.assertEqual(self.havven.issuedNomins(alice), 10 * UNIT)
+
+
+
+
 

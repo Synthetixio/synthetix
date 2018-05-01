@@ -39,6 +39,7 @@ class HavvenInterface(ExternStateTokenInterface, SelfDestructibleInterface):
         self.lastAverageIssuedNominBalance = lambda acc: self.contract.functions.lastAverageIssuedNominBalance(acc).call()
         self.lastIssuedNominTransferTimestamp = lambda acc: self.contract.functions.lastIssuedNominTransferTimestamp(acc).call()
         self.availableHavvens = lambda acc: self.contract.functions.availableHavvens(acc).call()
+        self.lockedHavvens = lambda acc: self.contract.functions.lockedHavvens(acc).call()
         self.maxIssuanceRights = lambda acc: self.contract.functions.maxIssuanceRights(acc).call()
         self.remainingIssuanceRights = lambda acc: self.contract.functions.remainingIssuanceRights(acc).call()
 
