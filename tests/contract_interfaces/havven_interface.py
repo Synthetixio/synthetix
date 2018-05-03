@@ -30,12 +30,12 @@ class HavvenInterface(DestructibleExternStateTokenInterface):
         self.hasWithdrawnLastPeriodFees = lambda acc: self.contract.functions.hasWithdrawnLastPeriodFees(acc).call()
         self.whitelistedIssuers = lambda acc: self.contract.functions.whitelistedIssuers(acc).call()
         self.issuedNomins = lambda acc: self.contract.functions.issuedNomins(acc).call()
-        self.currentHavvenBalanceSum = lambda acc: self.contract.functions.currentHavvenBalanceSum(acc).call()
-        self.lastAverageHavvenBalance = lambda acc: self.contract.functions.lastAverageHavvenBalance(acc).call()
-        self.lastHavvenTransferTimestamp = lambda acc: self.contract.functions.lastHavvenTransferTimestamp(acc).call()
-        self.currentIssuedNominBalanceSum = lambda acc: self.contract.functions.currentIssuedNominBalanceSum(acc).call()
-        self.lastAverageIssuedNominBalance = lambda acc: self.contract.functions.lastAverageIssuedNominBalance(acc).call()
-        self.lastIssuedNominTransferTimestamp = lambda acc: self.contract.functions.lastIssuedNominTransferTimestamp(acc).call()
+        self.currentHavvenBalanceSum = lambda acc: self.balance_data_current_balance_sum(self.contract.functions.havvenBalanceData(acc).call())
+        self.lastAverageHavvenBalance = lambda acc: self.balance_data_last_average_balance(self.contract.functions.havvenBalanceData(acc).call())
+        self.lastHavvenTransferTimestamp = lambda acc: self.balance_data_last_transfer_time(self.contract.functions.havvenBalanceData(acc).call())
+        self.currentIssuedNominBalanceSum = lambda acc: self.balance_data_current_balance_sum(self.contract.functions.issuedNominBalanceData(acc).call())
+        self.lastAverageIssuedNominBalance = lambda acc: self.balance_data_last_average_balance(self.contract.functions.issuedNominBalanceData(acc).call())
+        self.lastIssuedNominTransferTimestamp = lambda acc: self.balance_data_last_transfer_time(self.contract.functions.issuedNominBalanceData(acc).call())
         self.availableHavvens = lambda acc: self.contract.functions.availableHavvens(acc).call()
         self.lockedHavvens = lambda acc: self.contract.functions.lockedHavvens(acc).call()
         self.maxIssuanceRights = lambda acc: self.contract.functions.maxIssuanceRights(acc).call()
@@ -61,6 +61,18 @@ class HavvenInterface(DestructibleExternStateTokenInterface):
         self.issueNomins = lambda sender, amt: mine_tx(self.contract.functions.issueNomins(amt).transact({"from": sender}))
         self.burnNomins = lambda sender, amt: mine_tx(self.contract.functions.burnNomins(amt).transact({"from": sender}))
         self.updatePrice = lambda sender, price, time: mine_tx(self.contract.functions.updatePrice(price, time).transact({"from": sender}))
+
+    @classmethod
+    def balance_data_current_balance_sum(cls, balance_data):
+        return balance_data[0]
+
+    @classmethod
+    def balance_data_last_average_balance(cls, balance_data):
+        return balance_data[1]
+
+    @classmethod
+    def balance_data_last_transfer_time(cls, balance_data):
+        return balance_data[2]
 
 
 class PublicHavvenInterface(HavvenInterface):
