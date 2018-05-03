@@ -6,7 +6,7 @@ from utils.generalutils import to_seconds
 from utils.deployutils import W3, UNIT, MASTER, DUMMY, fresh_account, fresh_accounts
 from utils.deployutils import compile_contracts, attempt_deploy, mine_tx
 from utils.deployutils import take_snapshot, restore_snapshot, fast_forward
-from utils.testutils import assertReverts
+from utils.testutils import assertReverts, assertClose
 from utils.testutils import generate_topic_event_map, get_event_data_from_log
 from utils.testutils import ZERO_ADDRESS
 
@@ -34,6 +34,7 @@ class TestNomin(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.assertReverts = assertReverts
+        cls.assertClose = assertClose
 
         compiled = compile_contracts(SOURCES, remappings=['""=contracts'])
 
@@ -117,8 +118,6 @@ class TestNomin(unittest.TestCase):
     def test_transfer(self):
         target = fresh_account()
 
-        fast_forward(2)
-
         self.nomin.giveNomins(MASTER, MASTER, 10 * UNIT)
         self.assertEqual(self.nomin.balanceOf(MASTER), 10 * UNIT)
         self.assertEqual(self.nomin.balanceOf(target), 0)
@@ -127,22 +126,26 @@ class TestNomin(unittest.TestCase):
         self.assertReverts(self.nomin.transfer, MASTER, self.nomin.contract.address, UNIT)
 
         self.nomin.transfer(MASTER, target, 5 * UNIT)
-        remainder = 10 * UNIT - self.nomin.transferPlusFee(5 * UNIT)
-        self.assertEqual(self.nomin.balanceOf(MASTER), remainder)
-        self.assertEqual(self.nomin.balanceOf(target), 5 * UNIT)
+
+        self.assertClose(self.nomin.balanceOf(MASTER), 5 * UNIT)
+        self.assertEqual(self.nomin.balanceOf(target), self.nomin.priceToSpend(5 * UNIT))
+        self.assertEqual(self.nomin.feePool(), self.nomin.transferFeeIncurred(self.nomin.priceToSpend(5 * UNIT)))
 
         self.nomin.debugFreezeAccount(MASTER, target)
 
+        self.assertEqual(self.nomin.balanceOf(target), 0)
+
         self.assertReverts(self.nomin.transfer, MASTER, target, UNIT)
-        # self.assertReverts(self.nomin.transfer, target, MASTER, UNIT)
+        self.assertReverts(self.nomin.transfer, target, MASTER, UNIT)
 
         self.nomin.unfreezeAccount(MASTER, target)
 
-        qty = (5 * UNIT * UNIT) // self.nomin.transferPlusFee(UNIT) + 1
-        self.nomin.transfer(target, MASTER, qty)
-
-        self.assertEqual(self.nomin.balanceOf(MASTER), remainder + qty)
         self.assertEqual(self.nomin.balanceOf(target), 0)
+
+        self.nomin.transfer(MASTER, target, 5 * UNIT)
+
+        self.assertEqual(self.nomin.balanceOf(target), self.nomin.priceToSpend(5 * UNIT))
+        self.assertLess(self.nomin.balanceOf(MASTER), 3)  # assert MASTER only has the tiniest bit of change
 
     def test_transferFrom(self):
         target = fresh_account()
@@ -165,9 +168,10 @@ class TestNomin(unittest.TestCase):
         self.assertReverts(self.nomin.transferFrom, DUMMY, MASTER, self.nomin.contract.address, UNIT)
 
         self.nomin.transferFrom(DUMMY, MASTER, target, 5 * UNIT)
-        remainder = 10 * UNIT - self.nomin.transferPlusFee(5 * UNIT)
-        self.assertEqual(self.nomin.balanceOf(MASTER), remainder)
-        self.assertEqual(self.nomin.balanceOf(target), 5 * UNIT)
+
+        self.assertClose(self.nomin.balanceOf(MASTER), 5 * UNIT)
+        self.assertEqual(self.nomin.balanceOf(target), self.nomin.priceToSpend(5 * UNIT))
+        self.assertEqual(self.nomin.feePool(), self.nomin.transferFeeIncurred(self.nomin.priceToSpend(5 * UNIT)))
 
         self.nomin.debugFreezeAccount(MASTER, target)
 
@@ -176,11 +180,84 @@ class TestNomin(unittest.TestCase):
 
         self.nomin.unfreezeAccount(MASTER, target)
 
-        qty = (5 * UNIT * UNIT) // self.nomin.transferPlusFee(UNIT) + 1
-        self.nomin.transfer(target, MASTER, qty)
+        self.nomin.transferFrom(DUMMY, MASTER, target, 5 * UNIT)
 
-        self.assertEqual(self.nomin.balanceOf(MASTER), remainder + qty)
+        self.assertEqual(self.nomin.balanceOf(target), self.nomin.priceToSpend(5 * UNIT))
+        self.assertLess(self.nomin.balanceOf(MASTER), 3)  # assert MASTER only has the tiniest bit of change
+
+    def test_transferSenderPaysFee(self):
+        target = fresh_account()
+
+        self.nomin.giveNomins(MASTER, MASTER, 10 * UNIT)
+        self.assertEqual(self.nomin.balanceOf(MASTER), 10 * UNIT)
         self.assertEqual(self.nomin.balanceOf(target), 0)
+
+        # Should be impossible to transfer to the nomin contract itself.
+        self.assertReverts(self.nomin.transfer, MASTER, self.nomin.contract.address, UNIT)
+
+        self.nomin.transferSenderPaysFee(MASTER, target, 5 * UNIT)
+
+        self.assertClose(self.nomin.balanceOf(MASTER), 5 * UNIT - self.nomin.transferFeeIncurred(5 * UNIT))
+        self.assertEqual(self.nomin.balanceOf(target), 5 * UNIT)
+        self.assertEqual(self.nomin.feePool(), self.nomin.transferFeeIncurred(5 * UNIT))
+
+        self.nomin.debugFreezeAccount(MASTER, target)
+
+        self.assertEqual(self.nomin.balanceOf(target), 0)
+
+        self.assertReverts(self.nomin.transfer, MASTER, target, UNIT)
+        self.assertReverts(self.nomin.transfer, target, MASTER, UNIT)
+
+        self.nomin.unfreezeAccount(MASTER, target)
+
+        self.assertEqual(self.nomin.balanceOf(target), 0)
+
+        old_bal = self.nomin.balanceOf(MASTER)
+
+        self.nomin.transferSenderPaysFee(MASTER, target, self.nomin.priceToSpend(old_bal))
+
+        self.assertEqual(self.nomin.balanceOf(target), self.nomin.priceToSpend(old_bal))
+        self.assertLess(self.nomin.balanceOf(MASTER), 3)  # assert MASTER only has the tiniest bit of change
+
+    def test_transferFromSenderPaysFee(self):
+        target = fresh_account()
+
+        self.nomin.giveNomins(MASTER, MASTER, 10 * UNIT)
+
+        # Unauthorized transfers should not work
+        self.assertReverts(self.nomin.transferFrom, DUMMY, MASTER, target, UNIT)
+
+        # Neither should transfers that are too large for the allowance.
+        self.nomin.approve(MASTER, DUMMY, UNIT)
+        self.assertReverts(self.nomin.transferFrom, DUMMY, MASTER, target, 2 * UNIT)
+
+        self.nomin.approve(MASTER, DUMMY, 10000 * UNIT)
+
+        self.assertEqual(self.nomin.balanceOf(MASTER), 10 * UNIT)
+        self.assertEqual(self.nomin.balanceOf(target), 0)
+
+        # Should be impossible to transfer to the nomin contract itself.
+        self.assertReverts(self.nomin.transferFrom, DUMMY, MASTER, self.nomin.contract.address, UNIT)
+
+        self.nomin.transferFromSenderPaysFee(DUMMY, MASTER, target, 5 * UNIT)
+
+        self.assertClose(self.nomin.balanceOf(MASTER), 5 * UNIT - self.nomin.transferFeeIncurred(5 * UNIT))
+        self.assertEqual(self.nomin.balanceOf(target), 5 * UNIT)
+        self.assertEqual(self.nomin.feePool(), self.nomin.transferFeeIncurred(5 * UNIT))
+
+        self.nomin.debugFreezeAccount(MASTER, target)
+
+        self.assertReverts(self.nomin.transferFrom, DUMMY, MASTER, target, UNIT)
+        self.assertReverts(self.nomin.transferFrom, DUMMY, target, MASTER, UNIT)
+
+        self.nomin.unfreezeAccount(MASTER, target)
+
+        old_bal = self.nomin.balanceOf(MASTER)
+
+        self.nomin.transferFromSenderPaysFee(DUMMY, MASTER, target, self.nomin.priceToSpend(old_bal))
+
+        self.assertEqual(self.nomin.balanceOf(target), self.nomin.priceToSpend(old_bal))
+        self.assertLess(self.nomin.balanceOf(MASTER), 3)  # assert MASTER only has the tiniest bit of change
 
     def test_confiscateBalance(self):
         target = W3.eth.accounts[2]
@@ -267,8 +344,6 @@ class TestNomin(unittest.TestCase):
         self.assertNotEqual(self.nomin.totalSupply(), self.nomin.balanceOf(acc1) + self.nomin.balanceOf(acc2))
         self.assertEqual(self.nomin.totalSupply(), self.nomin.balanceOf(acc1) + self.nomin.balanceOf(acc2) + self.nomin.feePool())
 
-        # shouldn't be able to burn 50, (as 50 + fees transferred)
-        self.assertReverts(self.nomin.burn, havven, acc1, 50 * UNIT)
         acc1_bal = self.nomin.balanceOf(acc1)
         self.nomin.burn(havven, acc1, acc1_bal)
         self.assertEqual(self.nomin.totalSupply(), self.nomin.balanceOf(acc2) + self.nomin.feePool())
@@ -277,6 +352,4 @@ class TestNomin(unittest.TestCase):
         self.nomin.burn(havven, acc2, self.nomin.balanceOf(acc2))
 
         self.assertEqual(self.nomin.balanceOf(acc1), self.nomin.balanceOf(acc2), 0)
-
-
 

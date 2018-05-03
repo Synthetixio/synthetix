@@ -54,10 +54,10 @@ contract Emittor {
         emit AssociatedContractUpdated(_associatedContract);
     }
 
-    function emitBurnedNomins(address target, uint amount)
+    function emitBurned(address target, uint amount)
         internal
     {
-        emit BurnedNomins(target, amount);
+        emit Burned(target, amount);
     }
 
     function emitCourtUpdated(address newCourt)
@@ -102,10 +102,10 @@ contract Emittor {
         emit HavvenUpdated(newHavven);
     }
 
-    function emitIssuedNomins(address target, uint amount)
+    function emitIssued(address target, uint amount)
         internal
     {
-        emit IssuedNomins(target, amount);
+        emit Issued(target, amount);
     }
 
     function emitMotionApproved(uint motionID, uint motionIDIndex)
@@ -234,7 +234,7 @@ contract Emittor {
     event AccountUnfrozen(address target, address indexed targetIndex);
     event Approval(address indexed owner, address indexed spender, uint value);
     event AssociatedContractUpdated(address _associatedContract);
-    event BurnedNomins(address target, uint amount);
+    event Burned(address target, uint amount);
     event CourtUpdated(address newCourt);
     event FeeAuthorityUpdated(address feeAuthority);
     event FeePeriodDurationUpdated(uint duration);
@@ -242,7 +242,7 @@ contract Emittor {
     event FeesDonated(address donor, address indexed donorIndex, uint value);
     event FeesWithdrawn(address account, address indexed accountIndex, uint value);
     event HavvenUpdated(address newHavven);
-    event IssuedNomins(address target, uint amount);
+    event Issued(address target, uint amount);
     event MotionApproved(uint motionID, uint indexed motionIDIndex);
     event MotionBegun(address initiator, address indexed initiatorIndex, address target, address indexed targetIndex, uint motionID, uint indexed motionIDIndex, uint startTime);
     event MotionClosed(uint motionID, uint indexed motionIDIndex);

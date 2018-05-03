@@ -1,12 +1,12 @@
 from tests.contract_interfaces.safe_decimal_math_interface import SafeDecimalMathInterface
-from tests.contract_interfaces.owned_interface import OwnedInterface
+from tests.contract_interfaces.self_destructible_interface import SelfDestructibleInterface
 from utils.deployutils import mine_tx
 
 
-class ExternStateTokenInterface(SafeDecimalMathInterface, OwnedInterface):
+class DestructibleExternStateTokenInterface(SafeDecimalMathInterface, SelfDestructibleInterface):
     def __init__(self, contract):
         SafeDecimalMathInterface.__init__(self, contract)
-        OwnedInterface.__init__(self, contract)
+        SelfDestructibleInterface.__init__(self, contract)
         self.contract = contract
 
         self.owner = lambda: self.contract.functions.owner().call()

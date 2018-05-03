@@ -25,7 +25,13 @@ contract PublicNomin is Nomin {
     function debugFreezeAccount(address target)
         public
     {
+        require(!frozen[target]);
+        uint balance = state.balanceOf(target);
+        state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), balance));
+        state.setBalanceOf(target, 0);
         frozen[target] = true;
+        emit AccountFrozen(target, target, balance);
+        emit Transfer(target, address(this), balance);
     }
 
     function giveNomins(address account, uint amount)

@@ -8,8 +8,8 @@ author:     Anton Jurisevic
 
 date:       2018-2-13
 
-checked:    -
-approved:   -
+checked:    Dominic Romanowski
+approved:   Samuel Brooks
 
 -----------------------------------------------------------------
 MODULE DESCRIPTION
@@ -34,7 +34,7 @@ contract LimitedSetup {
     uint setupExpiryTime;
 
     /**
-     * @dev Constructor.
+     * @dev LimitedSetup Constructor.
      * @param setupDuration The time the setup period will last for.
      */
     constructor(uint setupDuration)

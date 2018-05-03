@@ -43,7 +43,7 @@ contract Owned is Emittor {
     address public nominatedOwner;
 
     /**
-     * @dev Constructor
+     * @dev Owned Constructor
      */
     constructor(address _owner)
         public

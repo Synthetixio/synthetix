@@ -34,7 +34,7 @@ import "contracts/Owned.sol";
 contract SelfDestructible is Emittor, Owned {
 
 	uint public initiationTime = ~uint(0);
-	uint constant SD_DURATION = 3 days;
+	uint constant SD_DURATION = 4 weeks;
 	address public beneficiary;
 
 	/**
