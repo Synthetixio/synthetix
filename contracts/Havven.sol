@@ -292,9 +292,7 @@ contract Havven is DestructibleExternStateToken {
 
     /* ========== GETTERS ========== */
 
-    //
-    // Havven balance sum data
-    //
+    /* Havven balance sum data. */
 
     /**
      * @notice The current Havven balance sum of an account.
@@ -331,7 +329,7 @@ contract Havven is DestructibleExternStateToken {
         return havvenBalanceData[account].lastTransferTimestamp;
     }
 
-    /* Individuals's Issued Nomin Balance data. */
+    /* Individuals's issued nomin balance data. */
 
     /**
      * @notice The current issued nomin balance sum of an account.
