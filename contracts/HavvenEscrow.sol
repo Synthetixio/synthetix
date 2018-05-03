@@ -78,7 +78,7 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
         onlyOwner
     {
         havven = _havven;
-        emit HavvenUpdated(_havven);
+        emitHavvenUpdated(_havven);
     }
 
 
@@ -311,15 +311,8 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
         if (total != 0) {
             totalVestedBalance = safeSub(totalVestedBalance, total);
             havven.transfer(msg.sender, total);
-            emit Vested(msg.sender, msg.sender,
-                   now, total);
+            emitVested(msg.sender, msg.sender, now, total);
         }
     }
 
-
-    /* ========== EVENTS ========== */
-
-    event HavvenUpdated(address newHavven);
-
-    event Vested(address beneficiary, address indexed beneficiaryIndex, uint time, uint value);
 }

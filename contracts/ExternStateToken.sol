@@ -31,7 +31,6 @@ import "contracts/SafeDecimalMath.sol";
 import "contracts/Owned.sol";
 import "contracts/TokenState.sol";
 
-
 /**
  * @title ERC20 Token contract, with detached state and designed to operate behind a proxy.
  */
@@ -73,7 +72,7 @@ contract ExternStateToken is SafeDecimalMath, Owned {
         if (_state == TokenState(0)) {
             state = new TokenState(_owner, address(this));
             state.setBalanceOf(_initialBeneficiary, totalSupply);
-            emit Transfer(address(0), _initialBeneficiary, _initialSupply);
+            emitTransfer(address(0), _initialBeneficiary, _initialSupply);
         } else {
             state = _state;
         }
@@ -116,7 +115,7 @@ contract ExternStateToken is SafeDecimalMath, Owned {
         onlyOwner
     {
         state = _state;
-        emit StateUpdated(_state);
+        emitStateUpdated(_state);
     } 
 
     /**
@@ -133,7 +132,7 @@ contract ExternStateToken is SafeDecimalMath, Owned {
         state.setBalanceOf(msg.sender, safeSub(state.balanceOf(msg.sender), value));
         state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
 
-        emit Transfer(msg.sender, to, value);
+        emitTransfer(msg.sender, to, value);
 
         return true;
     }
@@ -153,7 +152,7 @@ contract ExternStateToken is SafeDecimalMath, Owned {
         state.setAllowance(from, msg.sender, safeSub(state.allowance(from, msg.sender), value));
         state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
 
-        emit Transfer(from, to, value);
+        emitTransfer(from, to, value);
 
         return true;
     }
@@ -166,15 +165,8 @@ contract ExternStateToken is SafeDecimalMath, Owned {
         returns (bool)
     {
         state.setAllowance(msg.sender, spender, value);
-        emit Approval(msg.sender, spender, value);
+        emitApproval(msg.sender, spender, value);
         return true;
     }
 
-    /* ========== EVENTS ========== */
-
-    event Transfer(address indexed from, address indexed to, uint value);
-
-    event Approval(address indexed owner, address indexed spender, uint value);
-
-    event StateUpdated(address newState);
 }

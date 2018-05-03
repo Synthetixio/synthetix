@@ -3,7 +3,6 @@ pragma solidity 0.4.23;
 
 import "contracts/Owned.sol";
 
-
 contract State is Owned {
     // the address of the contract that can modify variables
     // this can only be changed by the owner of this contract
@@ -15,7 +14,7 @@ contract State is Owned {
         public
     {
         associatedContract = _associatedContract;
-        emit AssociatedContractUpdated(_associatedContract);
+        emitAssociatedContractUpdated(_associatedContract);
     }
 
     /* ========== SETTERS ========== */
@@ -26,7 +25,7 @@ contract State is Owned {
         onlyOwner
     {
         associatedContract = _associatedContract;
-        emit AssociatedContractUpdated(_associatedContract);
+        emitAssociatedContractUpdated(_associatedContract);
     }
 
     /* ========== MODIFIERS ========== */
@@ -37,7 +36,4 @@ contract State is Owned {
         _;
     }
 
-    /* ========== EVENTS ========== */
-
-    event AssociatedContractUpdated(address _associatedContract);
 }

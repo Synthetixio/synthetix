@@ -121,7 +121,6 @@ import "contracts/SafeDecimalMath.sol";
 import "contracts/Nomin.sol";
 import "contracts/Havven.sol";
 
-
 /**
  * @title A court contract allowing a democratic mechanism to dissuade token wrappers.
  */
@@ -385,7 +384,7 @@ contract Court is SafeDecimalMath, Owned {
 
         /* Start the vote at the start of the next fee period */
         motionStartTime[motionID] = havven.feePeriodStartTime() + havven.targetFeePeriodDurationSeconds();
-        emit MotionBegun(msg.sender, msg.sender, target, target, motionID, motionID, motionStartTime[motionID]);
+        emitMotionBegun(msg.sender, msg.sender, target, target, motionID, motionID, motionStartTime[motionID]);
 
         return motionID;
     }
@@ -429,7 +428,7 @@ contract Court is SafeDecimalMath, Owned {
         uint weight = setupVote(motionID);
         vote[msg.sender][motionID] = Vote.Yea;
         votesFor[motionID] = safeAdd(votesFor[motionID], weight);
-        emit VotedFor(msg.sender, msg.sender, motionID, motionID, weight);
+        emitVotedFor(msg.sender, msg.sender, motionID, motionID, weight);
     }
 
     /* The sender casts a vote against confiscation of the
@@ -440,7 +439,7 @@ contract Court is SafeDecimalMath, Owned {
         uint weight = setupVote(motionID);
         vote[msg.sender][motionID] = Vote.Nay;
         votesAgainst[motionID] = safeAdd(votesAgainst[motionID], weight);
-        emit VotedAgainst(msg.sender, msg.sender, motionID, motionID, weight);
+        emitVotedAgainst(msg.sender, msg.sender, motionID, motionID, weight);
     }
 
     /* Cancel an existing vote by the sender on a motion
@@ -469,7 +468,7 @@ contract Court is SafeDecimalMath, Owned {
                 votesAgainst[motionID] = safeSub(votesAgainst[motionID], voteWeight[msg.sender][motionID]);
             }
             /* A cancelled vote is only meaningful if a vote is running. */
-            emit VoteCancelled(msg.sender, msg.sender, motionID, motionID);
+            emitVoteCancelled(msg.sender, msg.sender, motionID, motionID);
         }
 
         delete voteWeight[msg.sender][motionID];
@@ -484,7 +483,7 @@ contract Court is SafeDecimalMath, Owned {
         delete motionStartTime[motionID];
         delete votesFor[motionID];
         delete votesAgainst[motionID];
-        emit MotionClosed(motionID, motionID);
+        emitMotionClosed(motionID, motionID);
     }
 
     /* If a motion has concluded, or if it lasted its full duration but not passed,
@@ -506,7 +505,7 @@ contract Court is SafeDecimalMath, Owned {
         address target = motionTarget[motionID];
         nomin.confiscateBalance(target);
         _closeMotion(motionID);
-        emit MotionApproved(motionID, motionID);
+        emitMotionApproved(motionID, motionID);
     }
 
     /* The foundation may veto a motion at any time. */
@@ -516,23 +515,6 @@ contract Court is SafeDecimalMath, Owned {
     {
         require(!motionWaiting(motionID));
         _closeMotion(motionID);
-        emit MotionVetoed(motionID, motionID);
+        emitMotionVetoed(motionID, motionID);
     }
-
-
-    /* ========== EVENTS ========== */
-
-    event MotionBegun(address initiator, address indexed initiatorIndex, address target, address indexed targetIndex, uint motionID, uint indexed motionIDIndex, uint startTime);
-
-    event VotedFor(address voter, address indexed voterIndex, uint motionID, uint indexed motionIDIndex, uint weight);
-
-    event VotedAgainst(address voter, address indexed voterIndex, uint motionID, uint indexed motionIDIndex, uint weight);
-
-    event VoteCancelled(address voter, address indexed voterIndex, uint motionID, uint indexed motionIDIndex);
-
-    event MotionClosed(uint motionID, uint indexed motionIDIndex);
-
-    event MotionVetoed(uint motionID, uint indexed motionIDIndex);
-
-    event MotionApproved(uint motionID, uint indexed motionIDIndex);
 }

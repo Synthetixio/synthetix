@@ -40,7 +40,6 @@ import "contracts/TokenState.sol";
 import "contracts/Court.sol";
 import "contracts/Havven.sol";
 
-
 contract Nomin is ExternStateFeeToken {
 
     /* ========== STATE VARIABLES ========== */
@@ -75,7 +74,7 @@ contract Nomin is ExternStateFeeToken {
         onlyOwner
     {
         court = _court;
-        emit CourtUpdated(_court);
+        emitCourtUpdated(_court);
     }
 
     function setHavven(Havven _havven)
@@ -86,7 +85,7 @@ contract Nomin is ExternStateFeeToken {
         // havven's internal logic
         havven = _havven;
         setFeeAuthority(_havven);
-        emit HavvenUpdated(_havven);
+        emitHavvenUpdated(_havven);
     }
 
 
@@ -139,8 +138,8 @@ contract Nomin is ExternStateFeeToken {
         state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), balance));
         state.setBalanceOf(target, 0);
         frozen[target] = true;
-        emit AccountFrozen(target, target, balance);
-        emit Transfer(target, address(this), balance);
+        emitAccountFrozen(target, target, balance);
+        emitTransfer(target, address(this), balance);
     }
 
     /* The owner may allow a previously-frozen contract to once
@@ -151,7 +150,7 @@ contract Nomin is ExternStateFeeToken {
     {
         if (frozen[target] && Nomin(target) != this) {
             frozen[target] = false;
-            emit AccountUnfrozen(target, target);
+            emitAccountUnfrozen(target, target);
         }
     }
 
@@ -163,8 +162,8 @@ contract Nomin is ExternStateFeeToken {
     {
         state.setBalanceOf(target, safeSub(state.balanceOf(target), amount));
         totalSupply = safeSub(totalSupply, amount);
-        emit Transfer(target, address(0), amount);
-        emit BurnedNomins(target, amount);
+        emitTransfer(target, address(0), amount);
+        emitBurnedNomins(target, amount);
     }
 
     /* Allow havven to issue a certain number of
@@ -175,8 +174,8 @@ contract Nomin is ExternStateFeeToken {
     {
         state.setBalanceOf(target, safeAdd(state.balanceOf(target), amount));
         totalSupply = safeAdd(totalSupply, amount);
-        emit Transfer(address(0), target, amount);
-        emit IssuedNomins(target, amount);
+        emitTransfer(address(0), target, amount);
+        emitIssuedNomins(target, amount);
     }
 
     /* ========== MODIFIERS ========== */
@@ -186,17 +185,4 @@ contract Nomin is ExternStateFeeToken {
         _;
     }
 
-    /* ========== EVENTS ========== */
-
-    event CourtUpdated(address newCourt);
-
-    event HavvenUpdated(address havven);
-
-    event AccountFrozen(address target, address indexed targetIndex, uint balance);
-
-    event AccountUnfrozen(address target, address indexed targetIndex);
-
-    event IssuedNomins(address target, uint amount);
-
-    event BurnedNomins(address target, uint amount);
 }
