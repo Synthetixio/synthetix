@@ -8,7 +8,7 @@ author:     Anton Jurisevic
             Mike Spain
             Dominic Romanowski
 
-date:       2018-4-26
+date:       2018-05-02
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -102,12 +102,28 @@ contract Nomin is ExternStateFeeToken {
         returns (bool)
     {
         require(!frozen[to]);
-        return super.transfer(to, value);
+        return super.transfer(to, priceToSpend(value));
     }
 
     /* Override ERC20 transferFrom function in order to check
      * whether the recipient account is frozen. */
     function transferFrom(address from, address to, uint value)
+        public
+        returns (bool)
+    {
+        require(!frozen[to]);
+        return super.transferFrom(from, to, priceToSpend(value));
+    }
+
+    function transferSenderPaysFee(address to, uint value)
+        public
+        returns (bool)
+    {
+        require(!frozen[to]);
+        return super.transfer(to, value);
+    }
+
+    function transferFromSenderPaysFee(address from, address to, uint value)
         public
         returns (bool)
     {
@@ -120,9 +136,8 @@ contract Nomin is ExternStateFeeToken {
      * and freeze its participation in further transactions. */
     function confiscateBalance(address target)
         external
+        onlyCourt
     {
-        // Should be callable only by the confiscation court.
-        require(Court(msg.sender) == court);
         
         // A motion must actually be underway.
         uint motionID = court.targetMotionID(target);
@@ -164,7 +179,7 @@ contract Nomin is ExternStateFeeToken {
         state.setBalanceOf(target, safeSub(state.balanceOf(target), amount));
         totalSupply = safeSub(totalSupply, amount);
         emit Transfer(target, address(0), amount);
-        emit BurnedNomins(target, amount);
+        emit Burned(target, amount);
     }
 
     /* Allow havven to issue a certain number of
@@ -176,13 +191,18 @@ contract Nomin is ExternStateFeeToken {
         state.setBalanceOf(target, safeAdd(state.balanceOf(target), amount));
         totalSupply = safeAdd(totalSupply, amount);
         emit Transfer(address(0), target, amount);
-        emit IssuedNomins(target, amount);
+        emit Issued(target, amount);
     }
 
     /* ========== MODIFIERS ========== */
 
     modifier onlyHavven() {
         require(Havven(msg.sender) == havven);
+        _;
+    }
+
+    modifier onlyCourt() {
+        require(Court(msg.sender) == court);
         _;
     }
 
@@ -196,7 +216,7 @@ contract Nomin is ExternStateFeeToken {
 
     event AccountUnfrozen(address target, address indexed targetIndex);
 
-    event IssuedNomins(address target, uint amount);
+    event Issued(address target, uint amount);
 
-    event BurnedNomins(address target, uint amount);
+    event Burned(address target, uint amount);
 }

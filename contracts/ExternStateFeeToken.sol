@@ -3,11 +3,11 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       ExternStateFeeToken.sol
-version:    1.0
+version:    1.1
 author:     Anton Jurisevic
             Dominic Romanowski
 
-date:       2018-2-28
+date:       2018-05-02
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -40,7 +40,7 @@ import "contracts/TokenState.sol";
  * @title ERC20 Token contract, with detached state.
  * Additionally charges fees on each transfer.
  */
-contract ExternStateFeeToken is SafeDecimalMath, Owned {
+contract ExternStateFeeToken is Owned, SafeDecimalMath {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -94,6 +94,10 @@ contract ExternStateFeeToken is SafeDecimalMath, Owned {
 
     /* ========== SETTERS ========== */
 
+    /**
+     * @notice Set the transfer fee, anywhere within the range 0-10%.
+     * @dev The fee rate is in decimal format, with UNIT being the value of 100%.
+     */
     function setTransferFeeRate(uint _transferFeeRate)
         external
         onlyOwner
@@ -103,6 +107,10 @@ contract ExternStateFeeToken is SafeDecimalMath, Owned {
         emit TransferFeeRateUpdated(_transferFeeRate);
     }
 
+    /**
+     * @notice Set the address of the user/contract responsible for collecting or
+     * distributing fees.
+     */
     function setFeeAuthority(address _feeAuthority)
         public
         onlyOwner
@@ -111,6 +119,11 @@ contract ExternStateFeeToken is SafeDecimalMath, Owned {
         emit FeeAuthorityUpdated(_feeAuthority);
     }
 
+    /**
+     * @notice Set the address of the state contract.
+     * @dev This can be used to "pause" transfer functionality, by pointing the state at 0x000..
+     * as balances would be unreachable
+     */
     function setState(TokenState _state)
         external
         onlyOwner
@@ -121,6 +134,9 @@ contract ExternStateFeeToken is SafeDecimalMath, Owned {
 
     /* ========== VIEWS ========== */
 
+    /**
+     * @notice Query an account's balance from the state
+     */
     function balanceOf(address account)
         public
         view
@@ -129,6 +145,9 @@ contract ExternStateFeeToken is SafeDecimalMath, Owned {
         return state.balanceOf(account);
     }
 
+    /**
+     * @notice Query an account's balance from the state
+     */
     function allowance(address from, address to)
         public
         view
@@ -137,7 +156,10 @@ contract ExternStateFeeToken is SafeDecimalMath, Owned {
         return state.allowance(from, to);
     }
 
-    // Return the fee charged on top in order to transfer _value worth of tokens.
+    /**
+     * @notice Calculate the Fee charged on top of a value being sent
+     * @return Return the fee charged
+     */
     function transferFeeIncurred(uint value)
         public
         view
@@ -154,8 +176,10 @@ contract ExternStateFeeToken is SafeDecimalMath, Owned {
          */
     }
 
-    // The value that you would need to send so that the recipient receives
-    // a specified value.
+    /**
+     * @notice The value that you would need to send so that the recipient receives
+     * a specified value.
+     */
     function transferPlusFee(uint value)
         external
         view
@@ -164,17 +188,21 @@ contract ExternStateFeeToken is SafeDecimalMath, Owned {
         return safeAdd(value, transferFeeIncurred(value));
     }
 
-    // The quantity to send in order that the sender spends a certain value of tokens.
+    /**
+     * @notice The quantity to send in order that the sender spends a certain value of tokens.
+     */
     function priceToSpend(uint value)
-        external
+        public
         view
         returns (uint)
     {
         return safeDiv_dec(value, safeAdd(UNIT, transferFeeRate));
     }
 
-    // The balance of the nomin contract itself is the fee pool.
-    // Collected fees sit here until they are distributed.
+    /**
+     * @notice Collected fees sit here until they are distributed.
+     * @dev The balance of the nomin contract itself is the fee pool.
+     */
     function feePool()
         external
         view
@@ -186,6 +214,9 @@ contract ExternStateFeeToken is SafeDecimalMath, Owned {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
+    /**
+     * @notice ERC20 friendly transfer function.
+     */
     function transfer(address to, uint value)
         public
         returns (bool)
@@ -209,6 +240,9 @@ contract ExternStateFeeToken is SafeDecimalMath, Owned {
         return true;
     }
 
+    /**
+     * @notice ERC20 friendly transferFrom function.
+     */
     function transferFrom(address from, address to, uint value)
         public
         returns (bool)
@@ -233,6 +267,9 @@ contract ExternStateFeeToken is SafeDecimalMath, Owned {
         return true;
     }
 
+    /**
+     * @notice ERC20 friendly approve function.
+     */
     function approve(address spender, uint value)
         external
         returns (bool)

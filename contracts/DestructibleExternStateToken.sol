@@ -2,12 +2,12 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
-file:       ExternStateToken.sol
-version:    1.0
+file:       DestructibleExternStateToken.sol
+version:    1.1
 author:     Anton Jurisevic
             Dominic Romanowski
 
-date:       2018-2-28
+date:       2018-05-02
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -28,14 +28,14 @@ pragma solidity 0.4.23;
 
 
 import "contracts/SafeDecimalMath.sol";
-import "contracts/Owned.sol";
+import "contracts/SelfDestructible.sol";
 import "contracts/TokenState.sol";
 
 
 /**
  * @title ERC20 Token contract, with detached state and designed to operate behind a proxy.
  */
-contract ExternStateToken is SafeDecimalMath, Owned {
+contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -62,7 +62,7 @@ contract ExternStateToken is SafeDecimalMath, Owned {
     constructor(string _name, string _symbol,
                                    uint _initialSupply, address _initialBeneficiary,
                                    TokenState _state, address _owner)
-        Owned(_owner)
+        SelfDestructible(_owner, _owner)
         public
     {
         name = _name;

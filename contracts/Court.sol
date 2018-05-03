@@ -3,11 +3,12 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       Court.sol
-version:    1.0
+version:    1.1
 author:     Anton Jurisevic
             Mike Spain
+            Dominic Romanowski
 
-date:       2018-2-6
+date:       2018-05-02
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -96,13 +97,13 @@ Confirmation:
 
 
 User votes are not automatically cancelled upon the conclusion of a motion.
-Therefore, after a motion comes to a conclusion, if a user wishes to vote 
+Therefore, after a motion comes to a conclusion, if a user wishes to vote
 in another motion, they must manually cancel their vote in order to do so.
 
 This procedure is designed to be relatively simple.
 There are some things that can be added to enhance the functionality
 at the expense of simplicity and efficiency:
-  
+
   - Democratic unfreezing of nomin accounts (induces multiple categories of vote)
   - Configurable per-vote durations;
   - Vote standing denominated in a fiat quantity rather than a quantity of havvens;
@@ -208,7 +209,7 @@ contract Court is SafeDecimalMath, Owned {
     /* ========== CONSTRUCTOR ========== */
 
     /**
-     * @dev Constructor.
+     * @dev Court Constructor.
      */
     constructor(Havven _havven, Nomin _nomin, address _owner)
         Owned(_owner)
@@ -238,7 +239,7 @@ contract Court is SafeDecimalMath, Owned {
     /**
      * @notice Set the length of time a vote runs for.
      * @dev Only the contract owner may call this. The proposed duration must fall
-     * within sensible bounds (1 to 4 weeks), and must be no longer than a single fee period.
+     * within sensible bounds (3 days to 4 weeks), and must be no longer than a single fee period.
      */
     function setVotingPeriod(uint duration)
         external
@@ -252,6 +253,11 @@ contract Court is SafeDecimalMath, Owned {
         votingPeriod = duration;
     }
 
+    /**
+     * @notice Set the confirmation period after a vote has concluded.
+     * @dev Only the contract owner may call this. The proposed duration must fall
+     * within sensible bounds (1 day to 2 weeks).
+     */
     function setConfirmationPeriod(uint duration)
         external
         onlyOwner
@@ -261,6 +267,10 @@ contract Court is SafeDecimalMath, Owned {
         confirmationPeriod = duration;
     }
 
+    /**
+     * @notice Set the required fraction of all Havvens that need to be part of
+     * a vote for it to pass.
+     */
     function setRequiredParticipation(uint fraction)
         external
         onlyOwner
@@ -269,6 +279,10 @@ contract Court is SafeDecimalMath, Owned {
         requiredParticipation = fraction;
     }
 
+    /**
+     * @notice Set what portion of voting havvens need to be in the affirmative
+     * to allow it to pass.
+     */
     function setRequiredMajority(uint fraction)
         external
         onlyOwner
@@ -280,21 +294,20 @@ contract Court is SafeDecimalMath, Owned {
 
     /* ========== VIEW FUNCTIONS ========== */
 
-    /* There is a motion in progress on the specified
-     * account, and votes are being accepted in that motion. */
+    /**
+     * @notice There is a motion in progress on the specified
+     * account, and votes are being accepted in that motion.
+     */
     function motionVoting(uint motionID)
         public
         view
         returns (bool)
     {
-        /* No need to check (startTime < now) as there is no way
-         * to set future start times for votes.
-         * These values are timestamps, they will not overflow
-         * as they can only ever be initialised to relatively small values. */
         return motionStartTime[motionID] < now && now < motionStartTime[motionID] + votingPeriod;
     }
 
-    /* A vote on the target account has concluded, but the motion
+    /** 
+     * @notice A vote on the target account has concluded, but the motion
      * has not yet been approved, vetoed, or closed. */
     function motionConfirming(uint motionID)
         public
@@ -302,13 +315,16 @@ contract Court is SafeDecimalMath, Owned {
         returns (bool)
     {
         /* These values are timestamps, they will not overflow
-         * as they can only ever be initialised to relatively small values. */
+         * as they can only ever be initialised to relatively small values.
+         */
         uint startTime = motionStartTime[motionID];
         return startTime + votingPeriod <= now &&
                now < startTime + votingPeriod + confirmationPeriod;
     }
 
-    /* A vote motion either not begun, or it has completely terminated. */
+    /**
+     * @notice A vote motion either not begun, or it has completely terminated.
+     */
     function motionWaiting(uint motionID)
         public
         view
@@ -319,8 +335,10 @@ contract Court is SafeDecimalMath, Owned {
         return motionStartTime[motionID] + votingPeriod + confirmationPeriod <= now;
     }
 
-    /* If the motion was to terminate at this instant, it would pass.
-     * That is: there was sufficient participation and a sizeable enough majority. */
+    /**
+     * @notice If the motion was to terminate at this instant, it would pass.
+     * That is: there was sufficient participation and a sizeable enough majority.
+     */
     function motionPasses(uint motionID)
         public
         view
@@ -343,6 +361,9 @@ contract Court is SafeDecimalMath, Owned {
                fractionInFavour > requiredMajority;
     }
 
+    /**
+     * @notice Return if the specified account has voted on the specified motion
+     */
     function hasVoted(address account, uint motionID)
         public
         view
@@ -354,10 +375,12 @@ contract Court is SafeDecimalMath, Owned {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    /* Begin a motion to confiscate the funds in a given nomin account.
-     * Only the foundation, or accounts with sufficient havven balances
+    /**
+     * @notice Begin a motion to confiscate the funds in a given nomin account.
+     * @dev Only the foundation, or accounts with sufficient havven balances
      * may elect to start such a motion.
-     * Returns the ID of the motion that was begun. */
+     * @return Returns the ID of the motion that was begun.
+     */
     function beginMotion(address target)
         external
         returns (uint)
@@ -376,22 +399,21 @@ contract Court is SafeDecimalMath, Owned {
         /* Disallow votes on accounts that have previously been frozen. */
         require(!nomin.frozen(target));
 
-        /* Rollover the fee period in case it hasn't happened yet */
-        havven.rolloverFeePeriod();
-
         uint motionID = nextMotionID++;
         motionTarget[motionID] = target;
         targetMotionID[target] = motionID;
 
         /* Start the vote at the start of the next fee period */
-        motionStartTime[motionID] = havven.feePeriodStartTime() + havven.targetFeePeriodDurationSeconds();
-        emit MotionBegun(msg.sender, msg.sender, target, target, motionID, motionID, motionStartTime[motionID]);
+        uint startTime = havven.feePeriodStartTime() + havven.targetFeePeriodDurationSeconds();
+        motionStartTime[motionID] = startTime;
+        emit MotionBegun(msg.sender, msg.sender, target, target, motionID, motionID, startTime);
 
         return motionID;
     }
 
-    /* Shared vote setup function between voteFor and voteAgainst.
-     * Returns the voter's vote weight. */
+    /**
+     * @notice Shared vote setup function between voteFor and voteAgainst.
+     * @return Returns the voter's vote weight. */
     function setupVote(uint motionID)
         internal
         returns (uint)
@@ -406,11 +428,6 @@ contract Court is SafeDecimalMath, Owned {
         /* The voter may not cast votes on themselves. */
         require(msg.sender != motionTarget[motionID]);
 
-        /* Ensure the voter's vote weight is current. */
-        /* We use a fee period guaranteed to have terminated before
-         * the start of the vote. Select the right period if
-         * a fee period rolls over in the middle of the vote. */
-
         uint weight = havven.recomputeAccountLastHavvenAverageBalance(msg.sender);
 
         /* Users must have a nonzero voting weight to vote. */
@@ -421,8 +438,10 @@ contract Court is SafeDecimalMath, Owned {
         return weight;
     }
 
-    /* The sender casts a vote in favour of confiscation of the
-     * target account's nomin balance. */
+    /**
+     * @notice The sender casts a vote in favour of confiscation of the
+     * target account's nomin balance.
+     */
     function voteFor(uint motionID)
         external
     {
@@ -432,8 +451,10 @@ contract Court is SafeDecimalMath, Owned {
         emit VotedFor(msg.sender, msg.sender, motionID, motionID, weight);
     }
 
-    /* The sender casts a vote against confiscation of the
-     * target account's nomin balance. */
+    /**
+     * @notice The sender casts a vote against confiscation of the
+     * target account's nomin balance.
+     */
     function voteAgainst(uint motionID)
         external
     {
@@ -443,8 +464,10 @@ contract Court is SafeDecimalMath, Owned {
         emit VotedAgainst(msg.sender, msg.sender, motionID, motionID, weight);
     }
 
-    /* Cancel an existing vote by the sender on a motion
-     * to confiscate the target balance. */
+    /** 
+     * @notice Cancel an existing vote by the sender on a motion
+     * to confiscate the target balance.
+     */
     function cancelVote(uint motionID)
         external
     {
@@ -476,6 +499,9 @@ contract Court is SafeDecimalMath, Owned {
         delete vote[msg.sender][motionID];
     }
 
+    /**
+     * @notice clear all data associated with a motionID for hygiene purposes.
+     */
     function _closeMotion(uint motionID)
         internal
     {
@@ -487,8 +513,10 @@ contract Court is SafeDecimalMath, Owned {
         emit MotionClosed(motionID, motionID);
     }
 
-    /* If a motion has concluded, or if it lasted its full duration but not passed,
-     * then anyone may close it. */
+    /**
+     * @notice If a motion has concluded, or if it lasted its full duration but not passed,
+     * then anyone may close it.
+     */
     function closeMotion(uint motionID)
         external
     {
@@ -496,8 +524,10 @@ contract Court is SafeDecimalMath, Owned {
         _closeMotion(motionID);
     }
 
-    /* The foundation may only confiscate a balance during the confirmation
-     * period after a motion has passed. */
+    /**
+     * @notice The foundation may only confiscate a balance during the confirmation
+     * period after a motion has passed.
+     */
     function approveMotion(uint motionID)
         external
         onlyOwner
@@ -509,7 +539,7 @@ contract Court is SafeDecimalMath, Owned {
         emit MotionApproved(motionID, motionID);
     }
 
-    /* The foundation may veto a motion at any time. */
+    /* @notice The foundation may veto a motion at any time. */
     function vetoMotion(uint motionID)
         external
         onlyOwner

@@ -3,11 +3,11 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 file:       Havven.sol
-version:    1.0
+version:    1.1
 author:     Anton Jurisevic
             Dominic Romanowski
 
-date:       2018-02-05
+date:       2018-05-02
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -19,7 +19,7 @@ MODULE DESCRIPTION
 Havven token contract. Havvens are transferable ERC20 tokens,
 and also give their holders the following privileges.
 An owner of havvens may participate in nomin confiscation votes, they
-may also have the right to issue nomins based on the discretion of the
+may also have the right to issue nomins at the discretion of the
 foundation for this version of the contract.
 
 After a fee period terminates, the duration and fees collected for that
@@ -107,15 +107,15 @@ proportional to the value of CMax (The collateralisation ratio). This
 means for every $1 of Havvens locked up, $(CMax) nomins can be issued.
 i.e. to issue 100 nomins, 100/CMax dollars of havvens need to be locked up.
 
-To determine the value of some amount of havvens, an oracle is used to push
-the price of havvens in dollars to the contract. The value of some amount of
-havvens would then be: H * p_H.
+To determine the value of some amount of havvens(H), an oracle is used to push
+the price of havvens (P_h) in dollars to the contract. The value of H
+would then be: H * P_h.
 
 Any havvens that are locked up by this issuance process cannot be transferred.
 The amount that is locked floats based on the price of havvens. If the price
 of havvens moves up, less havvens are locked, so they can be issued against,
 or transferred freely. If the price of havvens moves down, more havvens are locked,
-even going above the initial amount that was locked.
+even going above the initial wallet balance.
 
 -----------------------------------------------------------------
 
@@ -124,7 +124,7 @@ even going above the initial amount that was locked.
 pragma solidity 0.4.23;
 
 
-import "contracts/ExternStateToken.sol";
+import "contracts/DestructibleExternStateToken.sol";
 import "contracts/Nomin.sol";
 import "contracts/HavvenEscrow.sol";
 import "contracts/TokenState.sol";
@@ -135,7 +135,7 @@ import "contracts/SelfDestructible.sol";
  * @notice The Havven contracts does not only facilitate transfers and track balances,
  * but it also computes the quantity of fees each havven holder is entitled to.
  */
-contract Havven is ExternStateToken {
+contract Havven is DestructibleExternStateToken {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -152,11 +152,11 @@ contract Havven is ExternStateToken {
     }
 
     // Havven balance averages for voting weight
-    mapping(address => BalanceData) internal havvenBalanceData;
+    mapping(address => BalanceData) havvenBalanceData;
     // Issued nomin balances for individual fee entitlements
-    mapping(address => BalanceData) internal issuedNominBalanceData;
+    mapping(address => BalanceData) issuedNominBalanceData;
     // The total number of issued nomins for determining fee entitlements
-    BalanceData internal totalIssuedNominBalanceData;
+    BalanceData totalIssuedNominBalanceData;
 
     // The time the current fee period began
     uint public feePeriodStartTime;
@@ -207,8 +207,8 @@ contract Havven is ExternStateToken {
      * @param _owner The owner of this contract.
      */
     constructor(TokenState initialState, address _owner, address _oracle)
-        ExternStateToken("Havven", "HAV", 1e8 * UNIT, address(this), initialState, _owner)
-        // Owned is initialised in ExternStateToken
+        DestructibleExternStateToken("Havven", "HAV", 1e8 * UNIT, address(this), initialState, _owner)
+        // Owned is initialised in DestructibleExternStateToken
         public
     {
         oracle = _oracle;
@@ -257,6 +257,9 @@ contract Havven is ExternStateToken {
         emit FeePeriodDurationUpdated(duration);
     }
 
+    /**
+     * @notice Set the Oracle that pushes the havven price to this contract
+     */
     function setOracle(address _oracle)
         external
         onlyOwner
@@ -265,6 +268,10 @@ contract Havven is ExternStateToken {
         emit OracleUpdated(_oracle);
     }
 
+    /**
+     * @notice Set the CMax for issuance calculations.
+     * @dev Only callable by the contract owner.
+     */
     function setCMax(uint _CMax)
         external
         onlyOwner
@@ -273,6 +280,9 @@ contract Havven is ExternStateToken {
         CMax = _CMax;
     }
 
+    /**
+     * @notice Set whether the specified can issue nomins or not.
+     */
     function setWhitelisted(address account, bool value)
         external
         onlyOwner
@@ -285,6 +295,11 @@ contract Havven is ExternStateToken {
     //
     // Havven balance sum data
     //
+
+    /**
+     * @notice The current Havven balance sum of an account.
+     * Note, this may be out of date.
+     */
     function currentHavvenBalanceSum(address account)
         external
         view
@@ -293,6 +308,10 @@ contract Havven is ExternStateToken {
         return havvenBalanceData[account].currentBalanceSum;
     }
 
+    /**
+     * @notice The last average havven balance of an account.
+     * Note, this may be out of date.
+     */
     function lastAverageHavvenBalance(address account)
         external
         view
@@ -301,6 +320,9 @@ contract Havven is ExternStateToken {
         return havvenBalanceData[account].lastAverageBalance;
     }
 
+    /**
+     * @notice The last time the Havven balance computations were done.
+     */
     function lastHavvenTransferTimestamp(address account)
         external
         view
@@ -309,9 +331,12 @@ contract Havven is ExternStateToken {
         return havvenBalanceData[account].lastTransferTimestamp;
     }
 
-    //
-    // Issued nomin balance sum data
-    //
+    /* Individuals's Issued Nomin Balance data. */
+
+    /**
+     * @notice The current issued nomin balance sum of an account.
+     * @dev This is only true up until the last time it was computed.
+     */
     function currentIssuedNominBalanceSum(address account)
         external
         view
@@ -320,6 +345,10 @@ contract Havven is ExternStateToken {
         return issuedNominBalanceData[account].currentBalanceSum;
     }
 
+    /**
+     * @notice The last average issued nomin balance of an account.
+     * @dev This is only true up until the last time it was computed.
+     */
     function lastAverageIssuedNominBalance(address account)
         external
         view
@@ -328,6 +357,9 @@ contract Havven is ExternStateToken {
         return issuedNominBalanceData[account].lastAverageBalance;
     }
 
+    /**
+     * @notice The last time the Individuals issued nomin balance computations were done.
+     */
     function lastIssuedNominTransferTimestamp(address account)
         external
         view
@@ -336,9 +368,12 @@ contract Havven is ExternStateToken {
         return issuedNominBalanceData[account].lastTransferTimestamp;
     }
 
-    //
-    // The total issued nomin balance sum data
-    //
+    /* Total System's Issued Nomin Balance data. */
+
+    /**
+     * @notice The current issued nomin balance sum of the entire system.
+     * @dev This is only true up until the last time it was computed.
+     */
     function currentTotalIssuedNominBalanceSum()
         external
         view
@@ -347,6 +382,10 @@ contract Havven is ExternStateToken {
         return totalIssuedNominBalanceData.currentBalanceSum;
     }
 
+    /**
+     * @notice The last average issued nomin balance of the entire system.
+     * @dev This is only true up until the last time it was computed.
+     */
     function lastAverageTotalIssuedNominBalance()
         external
         view
@@ -387,7 +426,7 @@ contract Havven is ExternStateToken {
          * their havvens are escrowed, however the transfer would then
          * fail. This means that escrowed havvens are locked first,
          * and then the actual transferable ones. */
-        require(value <= availableHavvens(msg.sender));
+        require(issuedNomins[msg.sender] == 0 || value <= availableHavvens(msg.sender));
         uint senderPreBalance = state.balanceOf(msg.sender);
         uint recipientPreBalance = state.balanceOf(to);
 
@@ -412,7 +451,7 @@ contract Havven is ExternStateToken {
         preCheckFeePeriodRollover
         returns (bool)
     {
-        require(value <= availableHavvens(from));
+        require(issuedNomins[msg.sender] == 0 || value <= availableHavvens(from));
         uint senderPreBalance = state.balanceOf(from);
         uint recipientPreBalance = state.balanceOf(to);
 
@@ -460,7 +499,8 @@ contract Havven is ExternStateToken {
     }
 
     /**
-     * @notice Update the fee entitlement since the last transfer or entitlement adjustment.
+     * @notice Update the havven balance averages since the last transfer
+     * or entitlement adjustment.
      * @dev Since this updates the last transfer timestamp, if invoked
      * consecutively, this function will do nothing after the first call.
      */
@@ -482,6 +522,13 @@ contract Havven is ExternStateToken {
         havvenBalanceData[account] = updatedBalances;
     }
 
+    /**
+     * @notice Update the havven balance averages since the last transfer
+     * or entitlement adjustment.
+     * @dev Since this updates the last transfer timestamp, if invoked
+     * consecutively, this function will do nothing after the first call.
+     * Also, this will adjust the total issuance at the same time.
+     */
     function adjustIssuanceBalanceAverages(address account, uint preBalance, uint last_total_supply)
         internal
     {
@@ -503,7 +550,12 @@ contract Havven is ExternStateToken {
         issuedNominBalanceData[account] = updatedBalances;
     }
 
-
+    /**
+     * @notice Update the total issuance balance averages since the last transfer
+     * or entitlement adjustment.
+     * @dev Since this updates the last transfer timestamp, if invoked
+     * consecutively, this function will do nothing after the first call.
+     */
     function adjustTotalIssuanceBalanceAverages(uint preBalance)
         internal
     {
@@ -518,7 +570,9 @@ contract Havven is ExternStateToken {
         totalIssuedNominBalanceData = updatedBalances;
     }
 
-
+    /**
+     * @notice Compute the new BalanceData on the old balance
+     */
     function rolloverBalances(uint preBalance, BalanceData balanceInfo)
         internal
         returns (BalanceData)
@@ -583,7 +637,10 @@ contract Havven is ExternStateToken {
         checkFeePeriodRollover();
     }
 
-    // Issue nomins for a whitelisted account
+    /**
+     * @notice Issue nomins against the sender's havvens.
+     * @dev Issuance is only allowed if the havven price isn't stale and the issuer is whitelisted.
+     */
     function issueNomins(uint amount)
         onlyWhitelistedIssuers(msg.sender)
         havPriceNotStale
@@ -597,6 +654,9 @@ contract Havven is ExternStateToken {
         adjustIssuanceBalanceAverages(msg.sender, issued, lastTot);
     }
 
+    /**
+     * @notice Burn nomins to clear issued nomins/free havvens.
+     */
     function burnNomins(uint amount)
         // it doesn't matter if the price is stale or if the user is whitelisted
         external
@@ -610,6 +670,10 @@ contract Havven is ExternStateToken {
         adjustIssuanceBalanceAverages(msg.sender, issued, lastTot);
     }
 
+    /**
+     * @notice Check if the fee period has rolled over. If it has, set the new fee period start
+     * time, and collect fees from the nomin contract.
+     */
     function checkFeePeriodRollover()
         internal
     {
@@ -624,6 +688,10 @@ contract Havven is ExternStateToken {
 
     /* ========== Issuance/Burning ========== */
 
+    /**
+     * @notice The maximum nomins an issuer can issue against their total havven quantity. This ignores any
+     * already issued nomins.
+     */
     function maxIssuanceRights(address issuer)
         view
         public
@@ -638,6 +706,9 @@ contract Havven is ExternStateToken {
         }
     }
 
+    /**
+     * @notice The remaining nomins an issuer can issue against their total havven quantity.
+     */
     function remainingIssuanceRights(address issuer)
         view
         public
@@ -654,7 +725,9 @@ contract Havven is ExternStateToken {
         }
     }
 
-    /* Havvens that are locked, which can exceed the user's total balance + escrowed */
+    /**
+     * @notice Havvens that are locked, which can exceed the user's total balance + escrowed
+     */
     function lockedHavvens(address account)
         public
         view
@@ -666,7 +739,9 @@ contract Havven is ExternStateToken {
         return USDtoHAV(safeDiv_dec(issuedNomins[account], CMax));
     }
 
-    /* Havvens that are not locked, available for issuance */
+    /**
+     * @notice Havvens that are not locked, available for issuance
+     */
     function availableHavvens(address account)
         public
         view
@@ -685,7 +760,9 @@ contract Havven is ExternStateToken {
         return bal - locked;
     }
 
-    // Value in USD for a given amount of HAV
+    /**
+     * @notice The value in USD for a given amount of HAV
+     */
     function HAVtoUSD(uint hav_dec)
         public
         view
@@ -695,7 +772,10 @@ contract Havven is ExternStateToken {
         return safeMul_dec(hav_dec, havPrice);
     }
 
-    // Value in HAV for a given amount of USD
+
+    /**
+     * @notice The value in HAV for a given amount of USD
+     */
     function USDtoHAV(uint usd_dec)
         public
         view
@@ -705,11 +785,13 @@ contract Havven is ExternStateToken {
         return safeDiv_dec(usd_dec, havPrice);
     }
 
+    /**
+     * @notice Endpoint for the oraclt to update the price of havvens.
+     */
     function updatePrice(uint price, uint timeSent)
         external
+        onlyOracle  // Should be callable only by the oracle.
     {
-        // Should be callable only by the oracle.
-        require(msg.sender == oracle);
         // Must be the most recently sent price, but not too far in the future.
         // (so we can't lock ourselves out of updating the oracle for longer than this)
         require(lastHavPriceUpdateTime < timeSent && timeSent < now + 10 minutes);
@@ -719,6 +801,9 @@ contract Havven is ExternStateToken {
         emit PriceUpdated(price);
     }
 
+    /**
+     * @notice Check if the price of havvens hasn't been updated for longer than the stale period.
+     */
     function havPriceIsStale()
         public
         view
@@ -729,15 +814,14 @@ contract Havven is ExternStateToken {
 
     /* ========== MODIFIERS ========== */
 
-    /* If the fee period has rolled over, then
-     * save the start times of the last fee period,
-     */
+    /* check if the fee period has rolled over after the function is run. */
     modifier postCheckFeePeriodRollover
     {
         _;
         checkFeePeriodRollover();
     }
 
+    /* check if the fee period has rolled over before the function is run. */
     modifier preCheckFeePeriodRollover
     {
         checkFeePeriodRollover();
@@ -747,6 +831,12 @@ contract Havven is ExternStateToken {
     modifier onlyWhitelistedIssuers(address account)
     {
         require(whitelistedIssuers[account]);
+        _;
+    }
+
+    modifier onlyOracle
+    {
+        require(msg.sender == oracle);
         _;
     }
 

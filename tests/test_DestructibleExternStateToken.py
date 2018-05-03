@@ -7,21 +7,21 @@ from utils.testutils import assertReverts
 from utils.testutils import generate_topic_event_map, get_event_data_from_log
 from utils.testutils import ZERO_ADDRESS
 
-from tests.contract_interfaces.extern_state_token_interface import ExternStateTokenInterface
+from tests.contract_interfaces.destructible_extern_state_token_interface import DestructibleExternStateTokenInterface
 
-ExternStateToken_SOURCE = "contracts/ExternStateToken.sol"
+DestructibleExternStateToken_SOURCE = "contracts/DestructibleExternStateToken.sol"
 TokenState_SOURCE = "contracts/TokenState.sol"
 
 
 def setUpModule():
-    print("Testing ExternStateToken...")
+    print("Testing DestructibleExternStateToken...")
 
 
 def tearDownModule():
     print()
 
 
-class TestExternStateToken(unittest.TestCase):
+class TestDestructibleExternStateToken(unittest.TestCase):
     def setUp(self):
         self.snapshot = take_snapshot()
 
@@ -34,11 +34,11 @@ class TestExternStateToken(unittest.TestCase):
 
         cls.the_owner = DUMMY
 
-        cls.compiled = compile_contracts([ExternStateToken_SOURCE, TokenState_SOURCE],
+        cls.compiled = compile_contracts([DestructibleExternStateToken_SOURCE, TokenState_SOURCE],
                                          remappings=['""=contracts'])
-        cls.token_abi = cls.compiled['ExternStateToken']['abi']
+        cls.token_abi = cls.compiled['DestructibleExternStateToken']['abi']
         cls.token_event_dict = generate_topic_event_map(cls.token_abi)
-        cls.token_contract, cls.construction_txr = attempt_deploy(cls.compiled, 'ExternStateToken',
+        cls.token_contract, cls.construction_txr = attempt_deploy(cls.compiled, 'DestructibleExternStateToken',
                                                                    MASTER,
                                                                    ["Test Token", "TEST",
                                                                     1000 * UNIT, cls.the_owner,
@@ -49,7 +49,7 @@ class TestExternStateToken(unittest.TestCase):
 
         mine_tx(cls.token_contract.functions.setState(cls.tokenstate.address).transact({'from': cls.the_owner}))
 
-        cls.token = ExternStateTokenInterface(cls.token_contract)
+        cls.token = DestructibleExternStateTokenInterface(cls.token_contract)
 
     def test_constructor(self):
         self.assertEqual(self.token.name(), "Test Token")
@@ -64,14 +64,14 @@ class TestExternStateToken(unittest.TestCase):
                                        MASTER,
                                        [self.the_owner, self.token_contract.address])
 
-        token, _ = attempt_deploy(self.compiled, 'ExternStateToken',
+        token, _ = attempt_deploy(self.compiled, 'DestructibleExternStateToken',
                                        MASTER,
                                        ["Test Token", "TEST",
                                         1000 * UNIT, MASTER,
                                         ZERO_ADDRESS, DUMMY])
         self.assertNotEqual(token.functions.state().call(), ZERO_ADDRESS)
 
-        token, _ = attempt_deploy(self.compiled, 'ExternStateToken',
+        token, _ = attempt_deploy(self.compiled, 'DestructibleExternStateToken',
                                        MASTER,
                                        ["Test Token", "TEST",
                                         1000 * UNIT, MASTER,

@@ -1,12 +1,10 @@
-from tests.contract_interfaces.extern_state_token_interface import ExternStateTokenInterface
-from tests.contract_interfaces.self_destructible_interface import SelfDestructibleInterface
+from tests.contract_interfaces.destructible_extern_state_token_interface import DestructibleExternStateTokenInterface
 from utils.deployutils import mine_tx
 
 
-class HavvenInterface(ExternStateTokenInterface, SelfDestructibleInterface):
+class HavvenInterface(DestructibleExternStateTokenInterface):
     def __init__(self, contract):
-        ExternStateTokenInterface.__init__(self, contract)
-        SelfDestructibleInterface.__init__(self, contract)
+        DestructibleExternStateTokenInterface.__init__(self, contract)
 
         self.contract = contract
 

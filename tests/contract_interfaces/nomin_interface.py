@@ -21,6 +21,11 @@ class NominInterface(ExternStateFeeTokenInterface):
             self.contract.functions.transfer(recipient, value).transact({'from': sender}))
         self.transferFrom = lambda sender, frm, to, value: mine_tx(
             self.contract.functions.transferFrom(frm, to, value).transact({'from': sender}))
+        self.transferSenderPaysFee = lambda sender, recipient, value: mine_tx(
+            self.contract.functions.transferSenderPaysFee(recipient, value).transact({'from': sender}))
+        self.transferFromSenderPaysFee = lambda sender, frm, to, value: mine_tx(
+            self.contract.functions.transferFromSenderPaysFee(frm, to, value).transact({'from': sender}))
+
         self.approve = lambda sender, spender, value: mine_tx(
             self.contract.functions.approve(spender, value).transact({'from': sender}))
 

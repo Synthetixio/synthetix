@@ -1,6 +1,6 @@
 import unittest
 
-from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mine_txs, mine_tx, UNIT, MASTER, \
+from utils.deployutils import attempt, compile_contracts, attempt_deploy, mine_txs, UNIT, MASTER, \
     fast_forward, DUMMY, take_snapshot, restore_snapshot, fresh_account, fresh_accounts
 from utils.testutils import assertReverts, assertClose, block_time
 from utils.testutils import generate_topic_event_map, get_event_data_from_log
@@ -23,7 +23,6 @@ def deploy_public_court():
     nomin_abi = compiled['Nomin']['abi']
 
     havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [ZERO_ADDRESS, MASTER, MASTER])
-    hvn_block = W3.eth.blockNumber
     nomin_contract, nom_txr = attempt_deploy(compiled, 'Nomin',
                                              MASTER,
                                              [havven_contract.address, MASTER, ZERO_ADDRESS])
@@ -1104,4 +1103,3 @@ class TestCourt(unittest.TestCase):
         self.assertTrue(self.court.motionWaiting(timeout_vote))
         self.court.closeMotion(owner, timeout_vote)
         self.assertTrue(self.court.motionWaiting(timeout_vote))
-
