@@ -1,9 +1,10 @@
 pragma solidity 0.4.23;
 
 
+import "contracts/Emittor.sol";
 import "contracts/Owned.sol";
 
-contract State is Owned {
+contract State is Emittor, Owned {
     // the address of the contract that can modify variables
     // this can only be changed by the owner of this contract
     address public associatedContract;

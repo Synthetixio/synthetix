@@ -27,7 +27,7 @@ The fees are handled by withdrawing the entire fee allocation
 for all havvens inside the escrow contract, and then allowing
 the contract itself to subdivide that pool up proportionally within
 itself. Every time the fee period rolls over in the main Havven
-contract, the HavvenEscrow fee pool is remitted back into the 
+contract, the HavvenEscrow fee pool is remitted back into the
 main fee pool to be redistributed in the next fee period.
 
 -----------------------------------------------------------------
@@ -38,6 +38,7 @@ pragma solidity 0.4.23;
 
 
 import "contracts/SafeDecimalMath.sol";
+import "contracts/Emittor.sol";
 import "contracts/Owned.sol";
 import "contracts/Havven.sol";
 import "contracts/Nomin.sol";
@@ -46,7 +47,7 @@ import "contracts/LimitedSetup.sol";
 /**
  * @title A contract to hold escrowed havvens and free them at given schedules.
  */
-contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
+contract HavvenEscrow is SafeDecimalMath, Emittor, Owned, LimitedSetup(8 weeks) {
     /* The corresponding Havven contract. */
     Havven public havven;
 
@@ -287,7 +288,7 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
     /**
      * @notice Allow a user to withdraw any havvens in their schedule that have vested.
      */
-    function vest() 
+    function vest()
         external
     {
         uint numEntries = numVestingEntries(msg.sender);

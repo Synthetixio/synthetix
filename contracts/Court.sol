@@ -96,13 +96,13 @@ Confirmation:
 
 
 User votes are not automatically cancelled upon the conclusion of a motion.
-Therefore, after a motion comes to a conclusion, if a user wishes to vote 
+Therefore, after a motion comes to a conclusion, if a user wishes to vote
 in another motion, they must manually cancel their vote in order to do so.
 
 This procedure is designed to be relatively simple.
 There are some things that can be added to enhance the functionality
 at the expense of simplicity and efficiency:
-  
+
   - Democratic unfreezing of nomin accounts (induces multiple categories of vote)
   - Configurable per-vote durations;
   - Vote standing denominated in a fiat quantity rather than a quantity of havvens;
@@ -116,6 +116,7 @@ We might consider updating the contract with any of these features at a later da
 pragma solidity 0.4.23;
 
 
+import "contracts/Emittor.sol";
 import "contracts/Owned.sol";
 import "contracts/SafeDecimalMath.sol";
 import "contracts/Nomin.sol";
@@ -124,7 +125,7 @@ import "contracts/Havven.sol";
 /**
  * @title A court contract allowing a democratic mechanism to dissuade token wrappers.
  */
-contract Court is SafeDecimalMath, Owned {
+contract Court is SafeDecimalMath, Emittor, Owned {
 
     /* ========== STATE VARIABLES ========== */
 

@@ -30,6 +30,7 @@ previous owner change the nomination (setting it to 0).
 
 pragma solidity 0.4.23;
 
+
 import "contracts/Emittor.sol";
 
 /**

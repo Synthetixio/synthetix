@@ -25,13 +25,14 @@ without changing their mind.
 pragma solidity 0.4.23;
 
 
+import "contracts/Emittor.sol";
 import "contracts/Owned.sol";
 
 /**
  * @title A contract that can be destroyed by its owner after a timer elapses.
  */
-contract SelfDestructible is Owned {
-	
+contract SelfDestructible is Emittor, Owned {
+
 	uint public initiationTime = ~uint(0);
 	uint constant SD_DURATION = 3 days;
 	address public beneficiary;
@@ -99,4 +100,3 @@ contract SelfDestructible is Owned {
 		selfdestruct(beneficiary);
 	}
 }
-

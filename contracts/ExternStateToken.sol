@@ -28,13 +28,14 @@ pragma solidity 0.4.23;
 
 
 import "contracts/SafeDecimalMath.sol";
+import "contracts/Emittor.sol";
 import "contracts/Owned.sol";
 import "contracts/TokenState.sol";
 
 /**
  * @title ERC20 Token contract, with detached state and designed to operate behind a proxy.
  */
-contract ExternStateToken is SafeDecimalMath, Owned {
+contract ExternStateToken is SafeDecimalMath, Emittor, Owned {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -116,7 +117,7 @@ contract ExternStateToken is SafeDecimalMath, Owned {
     {
         state = _state;
         emitStateUpdated(_state);
-    } 
+    }
 
     /**
      * @dev Perform an ERC20 token transfer. Designed to be called by transfer functions possessing
