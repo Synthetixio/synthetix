@@ -152,11 +152,11 @@ contract Havven is DestructibleExternStateToken {
     }
 
     // Havven balance averages for voting weight
-    mapping(address => BalanceData) havvenBalanceData;
+    mapping(address => BalanceData) public havvenBalanceData;
     // Issued nomin balances for individual fee entitlements
-    mapping(address => BalanceData) issuedNominBalanceData;
+    mapping(address => BalanceData) public issuedNominBalanceData;
     // The total number of issued nomins for determining fee entitlements
-    BalanceData totalIssuedNominBalanceData;
+    BalanceData public totalIssuedNominBalanceData;
 
     // The time the current fee period began
     uint public feePeriodStartTime;
@@ -288,108 +288,6 @@ contract Havven is DestructibleExternStateToken {
         onlyOwner
     {
         whitelistedIssuers[account] = value;
-    }
-
-    /* ========== GETTERS ========== */
-
-    /* Havven balance sum data. */
-
-    /**
-     * @notice The current Havven balance sum of an account.
-     * Note, this may be out of date.
-     */
-    function currentHavvenBalanceSum(address account)
-        external
-        view
-        returns (uint)
-    {
-        return havvenBalanceData[account].currentBalanceSum;
-    }
-
-    /**
-     * @notice The last average havven balance of an account.
-     * Note, this may be out of date.
-     */
-    function lastAverageHavvenBalance(address account)
-        external
-        view
-        returns (uint)
-    {
-        return havvenBalanceData[account].lastAverageBalance;
-    }
-
-    /**
-     * @notice The last time the Havven balance computations were done.
-     */
-    function lastHavvenTransferTimestamp(address account)
-        external
-        view
-        returns (uint)
-    {
-        return havvenBalanceData[account].lastTransferTimestamp;
-    }
-
-    /* Individuals's issued nomin balance data. */
-
-    /**
-     * @notice The current issued nomin balance sum of an account.
-     * @dev This is only true up until the last time it was computed.
-     */
-    function currentIssuedNominBalanceSum(address account)
-        external
-        view
-        returns (uint)
-    {
-        return issuedNominBalanceData[account].currentBalanceSum;
-    }
-
-    /**
-     * @notice The last average issued nomin balance of an account.
-     * @dev This is only true up until the last time it was computed.
-     */
-    function lastAverageIssuedNominBalance(address account)
-        external
-        view
-        returns (uint)
-    {
-        return issuedNominBalanceData[account].lastAverageBalance;
-    }
-
-    /**
-     * @notice The last time the Individuals issued nomin balance computations were done.
-     */
-    function lastIssuedNominTransferTimestamp(address account)
-        external
-        view
-        returns (uint)
-    {
-        return issuedNominBalanceData[account].lastTransferTimestamp;
-    }
-
-    /* Total System's Issued Nomin Balance data. */
-
-    /**
-     * @notice The current issued nomin balance sum of the entire system.
-     * @dev This is only true up until the last time it was computed.
-     */
-    function currentTotalIssuedNominBalanceSum()
-        external
-        view
-        returns (uint)
-    {
-        return totalIssuedNominBalanceData.currentBalanceSum;
-    }
-
-    /**
-     * @notice The last average issued nomin balance of the entire system.
-     * @dev This is only true up until the last time it was computed.
-     */
-    function lastAverageTotalIssuedNominBalance()
-        external
-        view
-        returns (uint)
-    {
-        return totalIssuedNominBalanceData.lastAverageBalance;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
