@@ -140,62 +140,62 @@ contract Havven is DestructibleExternStateToken {
     /* ========== STATE VARIABLES ========== */
 
 
-    // A struct for handing values associated with average balance calculations
+    /* A struct for handing values associated with average balance calculations */
     struct BalanceData {
-        // Sums of balances*duration in the current fee period.
-        // range: decimals; units: havven-seconds
+        /* Sums of balances*duration in the current fee period.
+        /* range: decimals; units: havven-seconds */
         uint currentBalanceSum;
-        // The last period's average balance
+        /* The last period's average balance */
         uint lastAverageBalance;
-        // The last time the data was calculated
+        /* The last time the data was calculated */
         uint lastTransferTimestamp;
     }
 
-    // Havven balance averages for voting weight
+    /* Havven balance averages for voting weight */
     mapping(address => BalanceData) havvenBalanceData;
-    // Issued nomin balances for individual fee entitlements
+    /* Issued nomin balances for individual fee entitlements */
     mapping(address => BalanceData) issuedNominBalanceData;
-    // The total number of issued nomins for determining fee entitlements
+    /* The total number of issued nomins for determining fee entitlements */
     BalanceData totalIssuedNominBalanceData;
 
-    // The time the current fee period began
+    /* The time the current fee period began */
     uint public feePeriodStartTime;
-    // The time the last fee period began
+    /* The time the last fee period began */
     uint public lastFeePeriodStartTime;
 
-    // Fee periods will roll over in no shorter a time than this
+    /* Fee periods will roll over in no shorter a time than this */
     uint public targetFeePeriodDurationSeconds = 4 weeks;
-    // And may not be set to be shorter than a day
+    /* And may not be set to be shorter than a day */
     uint constant MIN_FEE_PERIOD_DURATION_SECONDS = 1 days;
-    // And may not be set to be longer than six months
+    /* And may not be set to be longer than six months */
     uint constant MAX_FEE_PERIOD_DURATION_SECONDS = 26 weeks;
 
-    // The quantity of nomins that were in the fee pot at the time
-    // of the last fee rollover (feePeriodStartTime)
+    /* The quantity of nomins that were in the fee pot at the time */
+    /* of the last fee rollover (feePeriodStartTime) */
     uint public lastFeesCollected;
 
-    // Whether a user has withdrawn their last fees
+    /* Whether a user has withdrawn their last fees */
     mapping(address => bool) public hasWithdrawnLastPeriodFees;
 
     Nomin public nomin;
     HavvenEscrow public escrow;
 
-    // The address of the oracle which pushes the havven price to this contract
+    /* The address of the oracle which pushes the havven price to this contract */
     address public oracle;
-    // The price of havvens written in UNIT
+    /* The price of havvens written in UNIT */
     uint public havPrice;
-    // The time the havven price was last updated
+    /* The time the havven price was last updated */
     uint public lastHavPriceUpdateTime;
-    // How long will the contract assume the price of havvens is correct
+    /* How long will the contract assume the price of havvens is correct */
     uint public havPriceStalePeriod = 3 hours;
 
-    // The maximal amount that
+    /* The maximal amount that */
     uint public CMax = 5 * UNIT / 100;
-    uint public MAX_C_MAX = 50 * UNIT / 100;  // TODO: get final value
+    uint public MAX_C_MAX = 50 * UNIT / 100;  /* TODO: get final value */
 
-    // whether the address can issue nomins or not
+    /* whether the address can issue nomins or not */
     mapping(address => bool) public whitelistedIssuers;
-    // the number of nomins the user has issued
+    /* the number of nomins the user has issued */
     mapping(address => uint) public issuedNomins;
 
     /* ========== CONSTRUCTOR ========== */
@@ -208,7 +208,7 @@ contract Havven is DestructibleExternStateToken {
      */
     constructor(TokenState initialState, address _owner, address _oracle)
         DestructibleExternStateToken("Havven", "HAV", 1e8 * UNIT, address(this), initialState, _owner)
-        // Owned is initialised in DestructibleExternStateToken
+        /* Owned is initialised in DestructibleExternStateToken
         public
     {
         oracle = _oracle;
@@ -292,9 +292,7 @@ contract Havven is DestructibleExternStateToken {
 
     /* ========== GETTERS ========== */
 
-    //
-    // Havven balance sum data
-    //
+    /* Havven balance sum data */
 
     /**
      * @notice The current Havven balance sum of an account.
@@ -584,11 +582,11 @@ contract Havven is DestructibleExternStateToken {
 
         if (lastTransferTime < feePeriodStartTime) {
             if (lastTransferTime < lastFeePeriodStartTime) {
-                // The balance did nothing in the last fee period, so the average balance
-                // in this period is their pre-transfer balance.
+                /* The balance did nothing in the last fee period, so the average balance
+                 * in this period is their pre-transfer balance. */
                 lastAvgBal = preBalance;
             } else {
-                // No overflow risk here: the failed guard implies (lastFeePeriodStartTime <= lastTransferTime).
+                /* No overflow risk here: the failed guard implies (lastFeePeriodStartTime <= lastTransferTime). */
                 lastAvgBal = safeDiv(
                     safeAdd(currentBalanceSum, safeMul(preBalance, (feePeriodStartTime - lastTransferTime))),
                     (feePeriodStartTime - lastFeePeriodStartTime)
@@ -658,13 +656,13 @@ contract Havven is DestructibleExternStateToken {
      * @notice Burn nomins to clear issued nomins/free havvens.
      */
     function burnNomins(uint amount)
-        // it doesn't matter if the price is stale or if the user is whitelisted
+        /* it doesn't matter if the price is stale or if the user is whitelisted */
         external
     {
         require(amount <= issuedNomins[msg.sender]);
         uint lastTot = nomin.totalSupply();
         uint issued = issuedNomins[msg.sender];
-        // nomin.burn does safeSub on balance (so it will revert if there are not enough nomins)
+        /* nomin.burn does safeSub on balance (so it will revert if there are not enough nomins) */
         nomin.burn(msg.sender, amount);
         issuedNomins[msg.sender] = safeSub(issued, amount);
         adjustIssuanceBalanceAverages(msg.sender, issued, lastTot);
@@ -790,10 +788,10 @@ contract Havven is DestructibleExternStateToken {
      */
     function updatePrice(uint price, uint timeSent)
         external
-        onlyOracle  // Should be callable only by the oracle.
+        onlyOracle  /* Should be callable only by the oracle. */
     {
-        // Must be the most recently sent price, but not too far in the future.
-        // (so we can't lock ourselves out of updating the oracle for longer than this)
+        /* Must be the most recently sent price, but not too far in the future.
+         * (so we can't lock ourselves out of updating the oracle for longer than this) */
         require(lastHavPriceUpdateTime < timeSent && timeSent < now + 10 minutes);
 
         havPrice = price;
