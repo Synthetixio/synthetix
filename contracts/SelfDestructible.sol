@@ -25,13 +25,14 @@ without changing their mind.
 pragma solidity 0.4.23;
 
 
+import "contracts/Emittor.sol";
 import "contracts/Owned.sol";
 
 /**
  * @title A contract that can be destroyed by its owner after a timer elapses.
  */
-contract SelfDestructible is Owned {
-	
+contract SelfDestructible is Emittor, Owned {
+
 	uint public initiationTime = ~uint(0);
 	uint constant SD_DURATION = 4 weeks;
 	address public beneficiary;
@@ -57,7 +58,7 @@ contract SelfDestructible is Owned {
 		onlyOwner
 	{
 		beneficiary = _beneficiary;
-		emit SelfDestructBeneficiaryUpdated(_beneficiary);
+		emitSelfDestructBeneficiaryUpdated(_beneficiary);
 	}
 
 	/**
@@ -70,7 +71,7 @@ contract SelfDestructible is Owned {
 		onlyOwner
 	{
 		initiationTime = now;
-		emit SelfDestructInitiated(SD_DURATION);
+		emitSelfDestructInitiated(SD_DURATION);
 	}
 
 	/**
@@ -82,7 +83,7 @@ contract SelfDestructible is Owned {
 		onlyOwner
 	{
 		initiationTime = ~uint(0);
-		emit SelfDestructTerminated();
+		emitSelfDestructTerminated();
 	}
 
 	/**
@@ -95,16 +96,7 @@ contract SelfDestructible is Owned {
 		onlyOwner
 	{
 		require(initiationTime + SD_DURATION < now);
-		emit SelfDestructed(beneficiary);
+		emitSelfDestructed(beneficiary);
 		selfdestruct(beneficiary);
 	}
-
-	event SelfDestructBeneficiaryUpdated(address newBeneficiary);
-
-	event SelfDestructInitiated(uint duration);
-
-	event SelfDestructTerminated();
-
-	event SelfDestructed(address beneficiary);
 }
-

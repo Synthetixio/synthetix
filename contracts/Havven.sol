@@ -254,7 +254,7 @@ contract Havven is DestructibleExternStateToken {
         require(MIN_FEE_PERIOD_DURATION_SECONDS <= duration &&
                 duration <= MAX_FEE_PERIOD_DURATION_SECONDS);
         targetFeePeriodDurationSeconds = duration;
-        emit FeePeriodDurationUpdated(duration);
+        emitFeePeriodDurationUpdated(duration);
     }
 
     /**
@@ -265,7 +265,7 @@ contract Havven is DestructibleExternStateToken {
         onlyOwner
     {
         oracle = _oracle;
-        emit OracleUpdated(_oracle);
+        emitOracleUpdated(_oracle);
     }
 
     /**
@@ -391,7 +391,7 @@ contract Havven is DestructibleExternStateToken {
         if (feesOwed != 0) {
             nomin.withdrawFee(msg.sender, feesOwed);
         }
-        emit FeesWithdrawn(msg.sender, msg.sender, feesOwed);
+        emitFeesWithdrawn(msg.sender, msg.sender, feesOwed);
     }
 
     /**
@@ -578,7 +578,7 @@ contract Havven is DestructibleExternStateToken {
             lastFeesCollected = nomin.feePool();
             lastFeePeriodStartTime = feePeriodStartTime;
             feePeriodStartTime = now;
-            emit FeePeriodRollover(now);
+            emitFeePeriodRollover(now);
         }
     }
 
@@ -694,7 +694,7 @@ contract Havven is DestructibleExternStateToken {
 
         havPrice = price;
         lastHavPriceUpdateTime = timeSent;
-        emit PriceUpdated(price);
+        emitPriceUpdated(price);
     }
 
     /**
@@ -742,16 +742,4 @@ contract Havven is DestructibleExternStateToken {
         _;
     }
 
-
-    /* ========== EVENTS ========== */
-
-    event PriceUpdated(uint price);
-
-    event FeePeriodRollover(uint timestamp);
-
-    event FeePeriodDurationUpdated(uint duration);
-
-    event FeesWithdrawn(address account, address indexed accountIndex, uint value);
-
-    event OracleUpdated(address new_oracle);
 }
