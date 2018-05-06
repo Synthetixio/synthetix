@@ -118,7 +118,6 @@ pragma solidity 0.4.23;
 
 
 import "contracts/Emittor.sol";
-import "contracts/Owned.sol";
 import "contracts/SafeDecimalMath.sol";
 import "contracts/Nomin.sol";
 import "contracts/Havven.sol";
@@ -126,7 +125,7 @@ import "contracts/Havven.sol";
 /**
  * @title A court contract allowing a democratic mechanism to dissuade token wrappers.
  */
-contract Court is SafeDecimalMath, Emittor, Owned {
+contract Court is SafeDecimalMath, Emittor {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -212,7 +211,7 @@ contract Court is SafeDecimalMath, Emittor, Owned {
      * @dev Court Constructor.
      */
     constructor(Havven _havven, Nomin _nomin, address _owner)
-        Owned(_owner)
+        Proxyable(_owner)
         public
     {
         havven = _havven;

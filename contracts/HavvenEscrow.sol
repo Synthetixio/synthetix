@@ -39,7 +39,6 @@ pragma solidity 0.4.23;
 
 import "contracts/SafeDecimalMath.sol";
 import "contracts/Emittor.sol";
-import "contracts/Owned.sol";
 import "contracts/Havven.sol";
 import "contracts/Nomin.sol";
 import "contracts/LimitedSetup.sol";
@@ -47,7 +46,7 @@ import "contracts/LimitedSetup.sol";
 /**
  * @title A contract to hold escrowed havvens and free them at given schedules.
  */
-contract HavvenEscrow is SafeDecimalMath, Emittor, Owned, LimitedSetup(8 weeks) {
+contract HavvenEscrow is SafeDecimalMath, Emittor, LimitedSetup(8 weeks) {
     /* The corresponding Havven contract. */
     Havven public havven;
 
@@ -65,7 +64,7 @@ contract HavvenEscrow is SafeDecimalMath, Emittor, Owned, LimitedSetup(8 weeks) 
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _owner, Havven _havven)
-        Owned(_owner)
+        Proxyable(_owner)
         public
     {
         havven = _havven;

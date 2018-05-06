@@ -33,7 +33,6 @@ pragma solidity 0.4.23;
 
 import "contracts/SafeDecimalMath.sol";
 import "contracts/Emittor.sol";
-import "contracts/Owned.sol";
 import "contracts/TokenState.sol";
 
 
@@ -41,7 +40,7 @@ import "contracts/TokenState.sol";
  * @title ERC20 Token contract, with detached state.
  * Additionally charges fees on each transfer.
  */
-contract ExternStateFeeToken is Owned, Emittor, SafeDecimalMath {
+contract ExternStateFeeToken is Emittor, SafeDecimalMath {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -75,7 +74,7 @@ contract ExternStateFeeToken is Owned, Emittor, SafeDecimalMath {
     constructor(string _name, string _symbol,
                                  uint _transferFeeRate, address _feeAuthority,
                                  TokenState _state, address _owner)
-        Owned(_owner)
+        Proxyable(_owner)
         public
     {
         if (_state == TokenState(0)) {

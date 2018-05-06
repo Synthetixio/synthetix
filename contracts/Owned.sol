@@ -31,22 +31,24 @@ previous owner change the nomination (setting it to 0).
 pragma solidity 0.4.23;
 
 
-import "contracts/Emittor.sol";
-
 /**
  * @title A contract with an owner.
  * @notice Contract ownership can be transferred by first nominating the new owner,
  * who must then accept the ownership, which prevents accidental incorrect ownership transfers.
  */
-contract Owned is Emittor {
+contract Owned {
     address public owner;
     address public nominatedOwner;
+
+    /*** ABSTRACT FUNCTIONS ***/
+    function emitOwnerNominated(address _owner) internal;
+    function emitOwnerChanged(address _owner, address _nominatedOwner) internal;
 
     /**
      * @dev Owned Constructor
      */
     constructor(address _owner)
-        public
+    public
     {
         owner = _owner;
     }
@@ -56,8 +58,8 @@ contract Owned is Emittor {
      * @dev Only the current owner may nominate a new owner.
      */
     function nominateOwner(address _owner)
-        external
-        onlyOwner
+    external
+    onlyOwner
     {
         nominatedOwner = _owner;
         emitOwnerNominated(_owner);
@@ -67,7 +69,7 @@ contract Owned is Emittor {
      * @notice Accept the nomination to be owner.
      */
     function acceptOwnership()
-        external
+    external
     {
         require(msg.sender == nominatedOwner);
         emitOwnerChanged(owner, nominatedOwner);

@@ -26,12 +26,11 @@ pragma solidity 0.4.23;
 
 
 import "contracts/Emittor.sol";
-import "contracts/Owned.sol";
 
 /**
  * @title A contract that can be destroyed by its owner after a timer elapses.
  */
-contract SelfDestructible is Emittor, Owned {
+contract SelfDestructible is Emittor {
 
 	uint public initiationTime = ~uint(0);
 	uint constant SD_DURATION = 4 weeks;
@@ -44,7 +43,7 @@ contract SelfDestructible is Emittor, Owned {
 	 */
 	constructor(address _owner, address _beneficiary)
 		public
-		Owned(_owner)
+		Proxyable(_owner)
 	{
 		beneficiary = _beneficiary;
 	}
