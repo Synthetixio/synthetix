@@ -25,12 +25,12 @@ without changing their mind.
 pragma solidity 0.4.23;
 
 
-import "contracts/Owned.sol";
+import "contracts/Emitter.sol";
 
 /**
  * @title A contract that can be destroyed by its owner after a delay elapses.
  */
-contract SelfDestructible is Owned {
+contract SelfDestructible is Emitter {
 	
 	// Initialise to half uint max to be far in the future (without allowing overflows)
 	uint constant NULL_INITIATION = ~uint(0) / 2;
@@ -46,7 +46,7 @@ contract SelfDestructible is Owned {
 	 */
 	constructor(address _owner, address _beneficiary, uint _delay)
 		public
-		Owned(_owner)
+		Proxyable(_owner)
 	{
 		selfDestructBeneficiary = _beneficiary;
 		selfDestructDelay = _delay;
@@ -63,7 +63,7 @@ contract SelfDestructible is Owned {
 		onlyOwner
 	{
 		selfDestructBeneficiary = _beneficiary;
-		emit SelfDestructBeneficiaryUpdated(_beneficiary);
+		emitSelfDestructBeneficiaryUpdated(_beneficiary);
 	}
 
 	/**
@@ -76,7 +76,7 @@ contract SelfDestructible is Owned {
 		onlyOwner
 	{
 		initiationTime = now;
-		emit SelfDestructInitiated(selfDestructDelay);
+		emitSelfDestructInitiated(selfDestructDelay);
 	}
 
 	/**
@@ -88,7 +88,7 @@ contract SelfDestructible is Owned {
 		onlyOwner
 	{
 		initiationTime = NULL_INITIATION;
-		emit SelfDestructTerminated();
+		emitSelfDestructTerminated();
 	}
 
 	/**
@@ -102,16 +102,7 @@ contract SelfDestructible is Owned {
 	{
 		require(initiationTime + selfDestructDelay < now);
 		address beneficiary = selfDestructBeneficiary;
-		emit SelfDestructed(beneficiary);
+		emitSelfDestructed(beneficiary);
 		selfdestruct(beneficiary);
 	}
-
-	event SelfDestructBeneficiaryUpdated(address newBeneficiary);
-
-	event SelfDestructInitiated(uint duration);
-
-	event SelfDestructTerminated();
-
-	event SelfDestructed(address beneficiary);
 }
-

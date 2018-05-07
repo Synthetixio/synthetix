@@ -12,7 +12,7 @@ contract PublicCourt is Court {
     {}
 
     function _havven()
-        public 
+        public
         view
         returns (address)
     {
@@ -20,7 +20,7 @@ contract PublicCourt is Court {
     }
 
     function _nomin()
-        public 
+        public
         view
         returns (address)
     {
@@ -96,7 +96,7 @@ contract PublicCourt is Court {
         returns (uint)
     {
         uint weight = setupVote(voteIndex);
-        SetupVoteReturnValue(weight);
+        emit SetupVoteReturnValue(weight);
         return weight;
     }
 

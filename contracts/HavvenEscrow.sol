@@ -27,7 +27,7 @@ The fees are handled by withdrawing the entire fee allocation
 for all havvens inside the escrow contract, and then allowing
 the contract itself to subdivide that pool up proportionally within
 itself. Every time the fee period rolls over in the main Havven
-contract, the HavvenEscrow fee pool is remitted back into the 
+contract, the HavvenEscrow fee pool is remitted back into the
 main fee pool to be redistributed in the next fee period.
 
 -----------------------------------------------------------------
@@ -38,7 +38,7 @@ pragma solidity 0.4.23;
 
 
 import "contracts/SafeDecimalMath.sol";
-import "contracts/Owned.sol";
+import "contracts/Emitter.sol";
 import "contracts/Havven.sol";
 import "contracts/Nomin.sol";
 import "contracts/LimitedSetup.sol";
@@ -46,7 +46,7 @@ import "contracts/LimitedSetup.sol";
 /**
  * @title A contract to hold escrowed havvens and free them at given schedules.
  */
-contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
+contract HavvenEscrow is SafeDecimalMath, Emitter, LimitedSetup(8 weeks) {
     /* The corresponding Havven contract. */
     Havven public havven;
 
@@ -64,7 +64,7 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _owner, Havven _havven)
-        Owned(_owner)
+        Proxyable(_owner)
         public
     {
         havven = _havven;
@@ -78,7 +78,7 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
         onlyOwner
     {
         havven = _havven;
-        emit HavvenUpdated(_havven);
+        emitHavvenUpdated(_havven);
     }
 
 
@@ -287,7 +287,7 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
     /**
      * @notice Allow a user to withdraw any havvens in their schedule that have vested.
      */
-    function vest() 
+    function vest()
         external
     {
         uint numEntries = numVestingEntries(msg.sender);
@@ -311,15 +311,8 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
         if (total != 0) {
             totalVestedBalance = safeSub(totalVestedBalance, total);
             havven.transfer(msg.sender, total);
-            emit Vested(msg.sender, msg.sender,
-                   now, total);
+            emitVested(msg.sender, msg.sender, now, total);
         }
     }
 
-
-    /* ========== EVENTS ========== */
-
-    event HavvenUpdated(address newHavven);
-
-    event Vested(address beneficiary, address indexed beneficiaryIndex, uint time, uint value);
 }

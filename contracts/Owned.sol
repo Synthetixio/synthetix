@@ -39,6 +39,10 @@ contract Owned {
     address public owner;
     address public nominatedOwner;
 
+    /*** ABSTRACT FUNCTIONS ***/
+    function emitOwnerNominated(address _owner) internal;
+    function emitOwnerChanged(address _owner, address _nominatedOwner) internal;
+
     /**
      * @dev Owned Constructor
      */
@@ -46,7 +50,7 @@ contract Owned {
         public
     {
         owner = _owner;
-        emit OwnerChanged(address(0), _owner);
+        emitOwnerChanged(address(0), _owner);
     }
 
     /**
@@ -58,7 +62,7 @@ contract Owned {
         onlyOwner
     {
         nominatedOwner = _owner;
-        emit OwnerNominated(_owner);
+        emitOwnerNominated(_owner);
     }
 
     /**
@@ -68,7 +72,7 @@ contract Owned {
         external
     {
         require(msg.sender == nominatedOwner);
-        emit OwnerChanged(owner, nominatedOwner);
+        emitOwnerChanged(owner, nominatedOwner);
         owner = nominatedOwner;
         nominatedOwner = address(0);
     }
@@ -79,6 +83,4 @@ contract Owned {
         _;
     }
 
-    event OwnerNominated(address newOwner);
-    event OwnerChanged(address oldOwner, address newOwner);
 }
