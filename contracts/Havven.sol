@@ -103,9 +103,9 @@ those that have been whitelisted by the havven foundation. Nomins are assumed
 to be valued at $1, as they are a stable unit of account.
 
 All nomins issued require some value of havvens to be locked up for the
-proportional to the value of IssuanceRatio (The collateralisation ratio). This
-means for every $1 of Havvens locked up, $(IssuanceRatio) nomins can be issued.
-i.e. to issue 100 nomins, 100/IssuanceRatio dollars of havvens need to be locked up.
+proportional to the value of issuanceRatio (The collateralisation ratio). This
+means for every $1 of Havvens locked up, $(issuanceRatio) nomins can be issued.
+i.e. to issue 100 nomins, 100/issuanceRatio dollars of havvens need to be locked up.
 
 To determine the value of some amount of havvens(H), an oracle is used to push
 the price of havvens (P_H) in dollars to the contract. The value of H
@@ -188,7 +188,7 @@ contract Havven is DestructibleExternStateToken {
     /* How long will the contract assume the price of havvens is correct */
     uint public havvenPriceStalePeriod = 3 hours;
 
-    uint public IssuanceRatio = 5 * UNIT / 100;
+    uint public issuanceRatio = 5 * UNIT / 100;
     /* The maximal the issuance ratio can be */
     uint constant maxIssuanceRatio = UNIT;
 
@@ -279,15 +279,15 @@ contract Havven is DestructibleExternStateToken {
     }
 
     /**
-     * @notice Set the IssuanceRatio for issuance calculations.
+     * @notice Set the issuanceRatio for issuance calculations.
      * @dev Only callable by the contract owner.
      */
-    function setIssuanceRatio(uint _IssuanceRatio)
+    function setIssuanceRatio(uint _issuanceRatio)
         external
         onlyOwner
     {
-        require(_IssuanceRatio <= maxIssuanceRatio);
-        IssuanceRatio = _IssuanceRatio;
+        require(_issuanceRatio <= maxIssuanceRatio);
+        issuanceRatio = _issuanceRatio;
     }
 
     /**
@@ -377,12 +377,12 @@ contract Havven is DestructibleExternStateToken {
     function withdrawFeeEntitlement()
         public
     {
+        checkFeePeriodRollover();
         /* Do not deposit fees into frozen accounts. */
         require(!nomin.frozen(msg.sender));
 
         /* Check the period has rolled over first. */
         adjustIssuanceBalanceAverages(msg.sender, nominsIssued[msg.sender], nomin.totalSupply());
-
 
         /* Only allow accounts to withdraw fees once per period. */
         require(!hasWithdrawnLastPeriodFees[msg.sender]);
@@ -401,7 +401,6 @@ contract Havven is DestructibleExternStateToken {
         }
         emit FeesWithdrawn(msg.sender, msg.sender, feesOwed);
 
-        checkFeePeriodRollover();
     }
 
     /**
@@ -429,7 +428,7 @@ contract Havven is DestructibleExternStateToken {
         internal
     {
         /* update the total balances first */
-        totalIssuedNominBalanceData = rolloverBalances(preBalance, totalIssuedNominBalanceData);
+        totalIssuedNominBalanceData = rolloverBalances(last_total_supply, totalIssuedNominBalanceData);
 
         if (issuedNominBalanceData[account].lastTransferTimestamp < feePeriodStartTime) {
             hasWithdrawnLastPeriodFees[account] = false;
@@ -570,9 +569,9 @@ contract Havven is DestructibleExternStateToken {
             return 0;
         }
         if (escrow != HavvenEscrow(0)) {
-            return safeMul_dec(HAVtoUSD(safeAdd(balanceOf(issuer), escrow.balanceOf(msg.sender))), IssuanceRatio);
+            return safeMul_dec(HAVtoUSD(safeAdd(balanceOf(issuer), escrow.balanceOf(msg.sender))), issuanceRatio);
         } else {
-            return safeMul_dec(HAVtoUSD(balanceOf(issuer)), IssuanceRatio);
+            return safeMul_dec(HAVtoUSD(balanceOf(issuer)), issuanceRatio);
         }
     }
 
@@ -604,7 +603,7 @@ contract Havven is DestructibleExternStateToken {
         if (nominsIssued[account] == 0) {
             return 0;
         }
-        return USDtoHAV(safeDiv_dec(nominsIssued[account], IssuanceRatio));
+        return USDtoHAV(safeDiv_dec(nominsIssued[account], issuanceRatio));
     }
 
     /**
