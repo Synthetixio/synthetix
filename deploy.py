@@ -4,7 +4,7 @@ from utils.testutils import ZERO_ADDRESS
 # Source files to compile from
 SOLIDITY_SOURCES = ["contracts/Havven.sol", "contracts/EtherNomin.sol",
                     "contracts/Court.sol", "contracts/HavvenEscrow.sol",
-                    "contracts/ERC20State.sol", "contracts/ERC20FeeState.sol",
+                    "contracts/ExternStateProxyFeeToken.sol", "contracts/ExternStateProxyToken.sol",
                     "contracts/Proxy.sol"]
 
 OWNER = MASTER
