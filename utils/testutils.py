@@ -3,24 +3,31 @@ import unittest
 from web3.utils.events import get_event_data
 from eth_utils import event_abi_to_log_topic
 
-from utils.deployutils import mine_tx, W3
+from utils.deployutils import mine_tx, W3, compile_contracts
 
 ZERO_ADDRESS = "0x" + "0" * 40
 
 class HavvenTestCase(unittest.TestCase):
-
+    
     def assertReverts(self, function, *args):
         with self.assertRaises(ValueError) as error:
             function(*args)
         self.assertTrue("revert" in error.exception.args[0]['message'])
 
-    def assertEventEquals(self, log, event_name, fields):
-        event_data = get_event_data_from_log(self.event_map, log)
+    def assertEventEquals(self, log, event_name, fields, contract=None):
+        event_map = self.event_maps[contract] if contract is not None else self.event_map
+        event_data = get_event_data_from_log(event_map, log)
         self.assertEqual(event_data['event'], event_name)
         for k, v in fields.items():
             self.assertEqual(event_data['args'][k], v)
 
-
+    @classmethod
+    def setUpHavvenTestClass(cls, source_paths, primary=None):
+        cls.compiled = compile_contracts(source_paths)
+        cls.event_maps = {name: generate_topic_event_map(cls.compiled[name]['abi']) \
+                          for name in cls.compiled}
+        primary_contract = primary if primary is not None else list(cls.event_maps.keys())[0]
+        cls.event_map = cls.event_maps[primary_contract]
 
 
 def assertClose(testcase, actual, expected, precision=5, msg=''):

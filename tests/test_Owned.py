@@ -25,16 +25,19 @@ class TestOwned(HavvenTestCase):
 
     @classmethod
     def setUpClass(cls):
-        compiled = compile_contracts([OWNED_SOURCE])
-        cls.owned_contract, txr = attempt_deploy(compiled, 'Owned', MASTER, [MASTER])
+        cls.setUpHavvenTestClass([OWNED_SOURCE])
 
+        cls.owned_contract, cls.deploy_tx = attempt_deploy(cls.compiled, 'Owned', MASTER, [MASTER])       
         cls.owned = OwnedInterface(cls.owned_contract)
 
-        cls.event_map = generate_topic_event_map(compiled['Owned']['abi'])
 
     def test_constructor(self):
         self.assertEqual(self.owned.owner(), MASTER)
         self.assertEqual(self.owned.nominatedOwner(), ZERO_ADDRESS)
+        self.assertEventEquals(self.deploy_tx.logs[0],
+                              "OwnerChanged",
+                              {"oldOwner": ZERO_ADDRESS,
+                               "newOwner": MASTER})
 
     def test_change_owner(self):
         old_owner = self.owned.owner()
