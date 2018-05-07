@@ -1,9 +1,26 @@
+import unittest
+
 from web3.utils.events import get_event_data
 from eth_utils import event_abi_to_log_topic
 
 from utils.deployutils import mine_tx, W3
 
 ZERO_ADDRESS = "0x" + "0" * 40
+
+class HavvenTestCase(unittest.TestCase):
+
+    def assertReverts(self, function, *args):
+        with self.assertRaises(ValueError) as error:
+            function(*args)
+        self.assertTrue("revert" in error.exception.args[0]['message'])
+
+    def assertEventEquals(self, log, event_name, fields):
+        event_data = get_event_data_from_log(self.event_map, log)
+        self.assertEqual(event_data['event'], event_name)
+        for k, v in fields.items():
+            self.assertEqual(event_data['args'][k], v)
+
+
 
 
 def assertClose(testcase, actual, expected, precision=5, msg=''):
