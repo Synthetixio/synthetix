@@ -50,6 +50,14 @@ import "contracts/Proxyable.sol";
 
 contract EmitterBase is Proxyable {
 
+    /*** CONSTRUCTOR ***/
+    constructor(address _owner)
+        Proxyable(_owner)
+        public
+    {
+
+    }
+
     /*
      * This structure hold data for all parameters and topic of an event.
      * It also holds information of how much data is stored there.

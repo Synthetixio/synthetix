@@ -211,7 +211,7 @@ contract Court is SafeDecimalMath, Emitter {
      * @dev Court Constructor.
      */
     constructor(Havven _havven, Nomin _nomin, address _owner)
-        Proxyable(_owner)
+        Emitter(_owner)
         public
     {
         havven = _havven;

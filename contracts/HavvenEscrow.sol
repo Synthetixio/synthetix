@@ -64,7 +64,7 @@ contract HavvenEscrow is SafeDecimalMath, Emitter, LimitedSetup(8 weeks) {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _owner, Havven _havven)
-        Proxyable(_owner)
+        Emitter(_owner)
         public
     {
         havven = _havven;

@@ -1,7 +1,7 @@
 pragma solidity ^0.4.23;
 
-import "./Owned.sol";
-import "./Proxy.sol";
+import "contracts/Owned.sol";
+import "contracts/Proxy.sol";
 
 contract Proxyable is Owned {
     // the proxy this contract exists behind.

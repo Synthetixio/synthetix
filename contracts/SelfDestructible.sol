@@ -46,11 +46,11 @@ contract SelfDestructible is Emitter {
 	 */
 	constructor(address _owner, address _beneficiary, uint _delay)
 		public
-		Proxyable(_owner)
+	    Emitter(_owner)
 	{
 		selfDestructBeneficiary = _beneficiary;
 		selfDestructDelay = _delay;
-		emit SelfDestructBeneficiaryUpdated(_beneficiary);
+		emitSelfDestructBeneficiaryUpdated(_beneficiary);
 	}
 
 	/**

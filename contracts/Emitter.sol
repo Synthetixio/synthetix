@@ -31,6 +31,13 @@ import "contracts/EmitterBase.sol";
  */
 contract Emitter is EmitterBase {
 
+    /*** CONSTRUCTOR ***/
+    constructor(address _owner)
+        EmitterBase(_owner)
+        public
+    {
+
+    }
 
     function emitProxyChanged(address proxyAddress)
     internal

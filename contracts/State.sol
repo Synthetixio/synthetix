@@ -47,7 +47,7 @@ contract State is Emitter {
 
 
     constructor(address _owner, address _associatedContract)
-        Proxyable(_owner)
+        Emitter(_owner)
         public
     {
         associatedContract = _associatedContract;
