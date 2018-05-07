@@ -170,18 +170,6 @@ contract Nomin is ExternStateFeeToken {
         }
     }
 
-    /* Allow havven to burn a certain number of
-     * nomins from a target address */
-    function burn(address target, uint amount)
-        external
-        onlyHavven
-    {
-        state.setBalanceOf(target, safeSub(state.balanceOf(target), amount));
-        totalSupply = safeSub(totalSupply, amount);
-        emit Transfer(target, address(0), amount);
-        emit Burned(target, amount);
-    }
-
     /* Allow havven to issue a certain number of
      * nomins from a target address */
     function issue(address target, uint amount)
@@ -192,6 +180,18 @@ contract Nomin is ExternStateFeeToken {
         totalSupply = safeAdd(totalSupply, amount);
         emit Transfer(address(0), target, amount);
         emit Issued(target, amount);
+    }
+
+    /* Allow havven to burn a certain number of
+     * nomins from a target address */
+    function burn(address target, uint amount)
+        external
+        onlyHavven
+    {
+        state.setBalanceOf(target, safeSub(state.balanceOf(target), amount));
+        totalSupply = safeSub(totalSupply, amount);
+        emit Transfer(target, address(0), amount);
+        emit Burned(target, amount);
     }
 
     /* ========== MODIFIERS ========== */

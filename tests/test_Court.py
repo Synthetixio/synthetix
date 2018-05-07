@@ -160,7 +160,7 @@ class TestCourt(unittest.TestCase):
         new_min_standing_balance = 200 * UNIT
         # Only owner can set minStandingBalance.
         self.assertReverts(self.court.setMinStandingBalance, DUMMY, new_min_standing_balance)
-        tx_receipt = self.court.setMinStandingBalance(owner, new_min_standing_balance)
+        self.court.setMinStandingBalance(owner, new_min_standing_balance)
         self.assertEqual(self.court.minStandingBalance(), new_min_standing_balance)
 
     def test_setVotingPeriod(self):
@@ -169,7 +169,7 @@ class TestCourt(unittest.TestCase):
 
         # Only owner can set votingPeriod.
         self.assertReverts(self.court.setVotingPeriod, DUMMY, new_voting_period)
-        tx_receipt = self.court.setVotingPeriod(owner, new_voting_period)
+        self.court.setVotingPeriod(owner, new_voting_period)
         self.assertEqual(self.court.votingPeriod(), new_voting_period)
 
         # Voting period must be > than MIN_VOTING_PERIOD (~ currently 3 days).
@@ -195,7 +195,7 @@ class TestCourt(unittest.TestCase):
 
         # Only owner can set confirmationPeriod.
         self.assertReverts(self.court.setConfirmationPeriod, DUMMY, new_confirmation_period)
-        tx_receipt = self.court.setConfirmationPeriod(owner, new_confirmation_period)
+        self.court.setConfirmationPeriod(owner, new_confirmation_period)
         self.assertEqual(self.court.confirmationPeriod(), new_confirmation_period)
 
         # Confirmation period must be > than MIN_CONFIRMATION_PERIOD (~ currently 1 days).
@@ -212,7 +212,7 @@ class TestCourt(unittest.TestCase):
 
         # Only owner can set requiredParticipation.
         self.assertReverts(self.court.setRequiredParticipation, DUMMY, new_required_participation)
-        tx_receipt = self.court.setRequiredParticipation(owner, new_required_participation)
+        self.court.setRequiredParticipation(owner, new_required_participation)
         self.assertEqual(self.court.requiredParticipation(), new_required_participation)
 
         # Required participation must be >= than 10%.
@@ -225,7 +225,7 @@ class TestCourt(unittest.TestCase):
 
         # Only owner can set requiredMajority.
         self.assertReverts(self.court.setRequiredMajority, DUMMY, new_required_majority)
-        tx_receipt = self.court.setRequiredMajority(owner, new_required_majority)
+        self.court.setRequiredMajority(owner, new_required_majority)
         self.assertEqual(self.court.requiredMajority(), new_required_majority)
 
         # Required majority must be >= than 50%.
@@ -381,8 +381,8 @@ class TestCourt(unittest.TestCase):
         accounts = fresh_accounts(11)
         suspect = accounts[0]
         voters = accounts[1:]
-        required_participation = self.court.requiredParticipation()
-        required_majority = self.court.requiredMajority()
+        self.court.requiredParticipation()
+        self.court.requiredMajority()
         fee_period = self.havven.targetFeePeriodDurationSeconds()
         tokens = self.havven.totalSupply() // 20
 
@@ -442,7 +442,8 @@ class TestCourt(unittest.TestCase):
             self.court.voteAgainst(voter, motion_id)
         self.assertTrue(self.court.motionPasses(motion_id))
 
-        # If one changes their vote for to against, should not pass since 60% in favour 40% against (less than the min required majority of 2/3).
+        # If one changes their vote for to against, should not pass since 60% in favour 40% against
+        #  (less than the min required majority of 2/3).
         self.court.cancelVote(voters[7], motion_id)
         self.court.voteAgainst(voters[7], motion_id)
         self.assertFalse(self.court.motionPasses(motion_id))
@@ -459,12 +460,12 @@ class TestCourt(unittest.TestCase):
         controlling_share = self.havven.totalSupply() // 2
 
         # Assert that accounts are unique.
-        l = [owner] + accounts
-        for i in range(len(l)):
-            for j in range(len(l)):
+        li = [owner] + accounts
+        for i in range(len(li)):
+            for j in range(len(li)):
                 if j == i:
                     continue
-                self.assertNotEqual(l[i], l[j])
+                self.assertNotEqual(li[i], li[j])
 
         # Give 50% of the havven tokens to voter, enough to pass a confiscation motion on their own.
         self.havven.endow(owner, voter, controlling_share)
@@ -548,7 +549,6 @@ class TestCourt(unittest.TestCase):
     def test_voteFor(self):
         owner = self.court.owner()
         voter, no_tokens, suspect = fresh_accounts(3)
-        voting_period = self.court.votingPeriod()
         fee_period = self.havven.targetFeePeriodDurationSeconds()
 
         # Give some havven tokens to our voter.
@@ -592,7 +592,6 @@ class TestCourt(unittest.TestCase):
     def test_voteAgainst(self):
         owner = self.court.owner()
         voter, no_tokens, suspect = fresh_accounts(3)
-        voting_period = self.court.votingPeriod()
         fee_period = self.havven.targetFeePeriodDurationSeconds()
 
         # Give some havven tokens to our voter.
@@ -645,6 +644,8 @@ class TestCourt(unittest.TestCase):
         self.havven.endow(owner, voter, 1000)
         self.havven.endow(owner, voter2, 1000)
         self.assertEqual(self.havven.balanceOf(voter), 1000)
+        fast_forward(fee_period + 1)
+        self.havven.checkFeePeriodRollover(DUMMY)
         fast_forward(fee_period + 1)
         self.havven.checkFeePeriodRollover(DUMMY)
 
@@ -760,7 +761,7 @@ class TestCourt(unittest.TestCase):
         motion_id = self.startVotingPeriod(owner, guilty)
 
         # Cast a vote in favour of confiscation.
-        tx_receipt = self.court.voteFor(voter, motion_id)
+        self.court.voteFor(voter, motion_id)
 
         # It should not be possible to approve in the voting state.
         self.assertReverts(self.court.approveMotion, owner, motion_id)

@@ -293,11 +293,11 @@ class TestNomin(unittest.TestCase):
         self.assertReverts(self.nomin.confiscateBalance, MASTER, target)
 
         # Actually confiscate the balance.
-        pre_feePool = self.nomin.feePool()
+        pre_fee_pool = self.nomin.feePool()
         pre_balance = self.nomin.balanceOf(target)
         self.fake_court.confiscateBalance(MASTER, target)
         self.assertEqual(self.nomin.balanceOf(target), 0)
-        self.assertEqual(self.nomin.feePool(), pre_feePool + pre_balance)
+        self.assertEqual(self.nomin.feePool(), pre_fee_pool + pre_balance)
         self.assertTrue(self.nomin.frozen(target))
 
     def test_unfreezeAccount(self):
@@ -345,6 +345,8 @@ class TestNomin(unittest.TestCase):
         self.assertEqual(self.nomin.totalSupply(), self.nomin.balanceOf(acc1) + self.nomin.balanceOf(acc2) + self.nomin.feePool())
 
         acc1_bal = self.nomin.balanceOf(acc1)
+        # not even the owner can burn...
+        self.assertReverts(self.nomin.burn, MASTER, acc1, acc1_bal)
         self.nomin.burn(havven, acc1, acc1_bal)
         self.assertEqual(self.nomin.totalSupply(), self.nomin.balanceOf(acc2) + self.nomin.feePool())
 
@@ -352,4 +354,20 @@ class TestNomin(unittest.TestCase):
         self.nomin.burn(havven, acc2, self.nomin.balanceOf(acc2))
 
         self.assertEqual(self.nomin.balanceOf(acc1), self.nomin.balanceOf(acc2), 0)
+
+    def test_edge_issue_burn(self):
+        havven, acc1, acc2 = fresh_accounts(3)
+        self.nomin.setHavven(MASTER, havven)
+
+        max_int = 2**256 - 1
+        self.nomin.issue(havven, acc1, 100 * UNIT)
+        self.assertReverts(self.nomin.issue, havven, acc1, max_int)
+        self.assertReverts(self.nomin.issue, havven, acc2, max_int)
+        # there shouldn't be a way to burn towards a larger value by overflowing
+        self.assertReverts(self.nomin.burn, havven, acc1, max_int)
+        self.nomin.burn(havven, acc1, 100 * UNIT)
+
+        # as long as no nomins exist, its a valid action
+        self.nomin.issue(havven, acc2, max_int)
+        self.nomin.burn(havven, acc2, max_int)
 
