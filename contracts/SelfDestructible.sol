@@ -50,11 +50,13 @@ contract SelfDestructible is Owned {
 	{
 		selfDestructBeneficiary = _beneficiary;
 		selfDestructDelay = _delay;
+		emit SelfDestructBeneficiaryUpdated(_beneficiary);
 	}
 
 	/**
 	 * @notice Set the beneficiary address of this contract.
 	 * @dev Only the contract owner may call this.
+	 * @param _beneficiary The address to pay any eth contained in this contract to upon self-destruction.
 	 */
 	function setBeneficiary(address _beneficiary)
 		external
