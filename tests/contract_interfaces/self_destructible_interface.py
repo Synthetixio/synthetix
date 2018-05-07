@@ -13,7 +13,7 @@ class SelfDestructibleInterface(OwnedInterface):
             self.contract.functions.acceptOwnership().transact({'from': sender}))
 
         self.initiationTime = lambda: self.contract.functions.initiationTime().call()
-        self.beneficiary = lambda: self.contract.functions.beneficiary().call()
+        self.selfDestructBeneficiary = lambda: self.contract.functions.selfDestructBeneficiary().call()
 
         self.setBeneficiary = lambda sender, beneficiary: mine_tx(
             self.contract.functions.setBeneficiary(beneficiary).transact({'from': sender}))

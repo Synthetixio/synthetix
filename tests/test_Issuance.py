@@ -102,7 +102,7 @@ class TestIssuance(unittest.TestCase):
 
         self.assertEqual(self.havven.balanceOf(alice), 0)
         self.assertEqual(self.nomin.balanceOf(alice), 100 * UNIT)
-        self.assertClose(self.havven.availableHavvens(alice) + 100 * UNIT / (self.havven.CMax() / UNIT), self.havven.totalSupply() // 2)
+        self.assertClose(self.havven.availableHavvens(alice) + 100 * UNIT / (self.havven.issuanceRatio() / UNIT), self.havven.totalSupply() // 2)
 
     def test_issuance_price_shift(self):
         alice = fresh_account()
@@ -131,7 +131,7 @@ class TestIssuance(unittest.TestCase):
         self.assertEqual(self.nomin.balanceOf(MASTER), 0)
         self.assertEqual(self.havven.balanceOf(MASTER), 1000 * UNIT)
         self.assertEqual(self.havven.balanceOf(alice), 0)
-        self.assertEqual(self.havven.issuedNomins(alice), 0)
+        self.assertEqual(self.havven.nominsIssued(alice), 0)
 
     def test_issue_revert_conditions(self):
         alice = fresh_account()
@@ -143,11 +143,11 @@ class TestIssuance(unittest.TestCase):
         self.assertReverts(self.havven.issueNomins, alice, 10 * UNIT)  # reverts, as price is stale
         self.havven.updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
         self.assertReverts(self.havven.issueNomins, alice, 1000 * UNIT)  # reverts, as too many nomins being issued
-        self.havven.setCMax(MASTER, 0)
+        self.havven.setIssuanceRatio(MASTER, 0)
         self.assertReverts(self.havven.issueNomins, alice, 10 * UNIT)  # reverts, as CMAX too low (0)
-        self.havven.setCMax(MASTER, int(0.05 * UNIT))
+        self.havven.setIssuanceRatio(MASTER, int(0.05 * UNIT))
         self.havven.issueNomins(alice, self.havven.maxIssuanceRights(alice))
-        self.assertEqual(self.havven.issuedNomins(alice), 50 * UNIT)
+        self.assertEqual(self.havven.nominsIssued(alice), 50 * UNIT)
         self.assertReverts(self.havven.issueNomins, alice, self.havven.maxIssuanceRights(alice))
         self.assertEqual(self.havven.remainingIssuanceRights(alice), 0)
         self.havven.issueNomins(alice, self.havven.remainingIssuanceRights(alice))
@@ -160,7 +160,7 @@ class TestIssuance(unittest.TestCase):
         self.havven.issueNomins(alice, 50 * UNIT)
         for i in range(50):
             self.havven.burnNomins(alice, 1 * UNIT)
-        self.assertEqual(self.havven.issuedNomins(alice), 0)
+        self.assertEqual(self.havven.nominsIssued(alice), 0)
         self.assertEqual(self.nomin.balanceOf(alice), 0)
 
 

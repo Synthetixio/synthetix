@@ -398,6 +398,8 @@ contract Court is SafeDecimalMath, Emittor {
         /* Disallow votes on accounts that have previously been frozen. */
         require(!nomin.frozen(target));
 
+        havven.checkFeePeriodRollover();
+
         uint motionID = nextMotionID++;
         motionTarget[motionID] = target;
         targetMotionID[target] = motionID;
