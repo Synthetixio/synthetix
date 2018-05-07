@@ -62,7 +62,7 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible {
     constructor(string _name, string _symbol,
                                    uint _initialSupply, address _initialBeneficiary,
                                    TokenState _state, address _owner)
-        SelfDestructible(_owner, _owner)
+        SelfDestructible(_owner, _owner, 4 weeks)
         public
     {
         name = _name;

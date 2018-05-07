@@ -28,24 +28,28 @@ pragma solidity 0.4.23;
 import "contracts/Owned.sol";
 
 /**
- * @title A contract that can be destroyed by its owner after a timer elapses.
+ * @title A contract that can be destroyed by its owner after a delay elapses.
  */
 contract SelfDestructible is Owned {
 	
-	uint public initiationTime = ~uint(0);
-	uint constant SD_DURATION = 4 weeks;
-	address public beneficiary;
+	// Initialise to half uint max to be far in the future (without allowing overflows)
+	uint constant NULL_INITIATION = ~uint(0) / 2;
+	uint public initiationTime = NULL_INITIATION;
+	uint public selfDestructDelay;
+	address public selfDestructBeneficiary;
 
 	/**
 	 * @dev Constructor
 	 * @param _owner The account which controls this contract.
 	 * @param _beneficiary The account to forward all ether in this contract upon self-destruction
+	 * @param _delay The time to wait after initiating self-destruction before it can be triggered.
 	 */
-	constructor(address _owner, address _beneficiary)
+	constructor(address _owner, address _beneficiary, uint _delay)
 		public
 		Owned(_owner)
 	{
-		beneficiary = _beneficiary;
+		selfDestructBeneficiary = _beneficiary;
+		selfDestructDelay = _delay;
 	}
 
 	/**
@@ -56,13 +60,13 @@ contract SelfDestructible is Owned {
 		external
 		onlyOwner
 	{
-		beneficiary = _beneficiary;
+		selfDestructBeneficiary = _beneficiary;
 		emit SelfDestructBeneficiaryUpdated(_beneficiary);
 	}
 
 	/**
 	 * @notice Begin the self-destruction counter of this contract.
-	 * Once the three-day timer has elapsed, the contract may be self-destructed.
+	 * Once the delay has elapsed, the contract may be self-destructed.
 	 * @dev Only the contract owner may call this.
 	 */
 	function initiateSelfDestruct()
@@ -70,7 +74,7 @@ contract SelfDestructible is Owned {
 		onlyOwner
 	{
 		initiationTime = now;
-		emit SelfDestructInitiated(SD_DURATION);
+		emit SelfDestructInitiated(selfDestructDelay);
 	}
 
 	/**
@@ -81,12 +85,12 @@ contract SelfDestructible is Owned {
 		external
 		onlyOwner
 	{
-		initiationTime = ~uint(0);
+		initiationTime = NULL_INITIATION;
 		emit SelfDestructTerminated();
 	}
 
 	/**
-	 * @notice If the self-destruction timer has elapsed, destroy this contract and
+	 * @notice If the self-destruction delay has elapsed, destroy this contract and
 	 * remit any ether it owns to the beneficiary address.
 	 * @dev Only the contract owner may call this.
 	 */
@@ -94,7 +98,8 @@ contract SelfDestructible is Owned {
 		external
 		onlyOwner
 	{
-		require(initiationTime + SD_DURATION < now);
+		require(initiationTime + selfDestructDelay < now);
+		address beneficiary = selfDestructBeneficiary;
 		emit SelfDestructed(beneficiary);
 		selfdestruct(beneficiary);
 	}
