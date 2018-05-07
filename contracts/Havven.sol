@@ -118,7 +118,6 @@ or transferred freely. If the price of havvens moves down, more havvens are lock
 even going above the initial wallet balance.
 
 -----------------------------------------------------------------
-
 */
 
 pragma solidity 0.4.23;
@@ -130,6 +129,7 @@ import "contracts/HavvenEscrow.sol";
 import "contracts/TokenState.sol";
 import "contracts/SelfDestructible.sol";
 
+
 /**
  * @title Havven ERC20 contract.
  * @notice The Havven contracts does not only facilitate transfers and track balances,
@@ -138,7 +138,6 @@ import "contracts/SelfDestructible.sol";
 contract Havven is DestructibleExternStateToken {
 
     /* ========== STATE VARIABLES ========== */
-
 
     /* A struct for handing values associated with average balance calculations */
     struct BalanceData {
@@ -308,7 +307,7 @@ contract Havven is DestructibleExternStateToken {
      * from the initial supply.
      * @dev Since the entire initial supply resides in the havven contract,
      * this disallows the foundation from withdrawing fees on undistributed balances.
-     * This function can also be used to retrieve any havvens sent to the Havven contract itself.S
+     * This function can also be used to retrieve any havvens sent to the Havven contract itself.
      * Only callable by the contract owner.
      */
     function endow(address to, uint value)
@@ -319,7 +318,6 @@ contract Havven is DestructibleExternStateToken {
          * The explicit transfer also initialises fee entitlement information. */
         this.transfer(to, value);
     }
-
 
     /**
      * @notice ERC20 transfer function.
@@ -476,7 +474,6 @@ contract Havven is DestructibleExternStateToken {
 
         return BalanceData(currentBalanceSum, lastAvgBal, now);
     }
-
 
     /**
      * @dev Recompute and return the given account's average balance information.
@@ -642,7 +639,6 @@ contract Havven is DestructibleExternStateToken {
     {
         return safeMul_dec(hav_dec, havvenPrice);
     }
-
 
     /**
      * @notice The value in HAV for a given amount of USD
