@@ -36,32 +36,48 @@ class TestOwned(unittest.TestCase):
 
         cls.owned_event_map = generate_topic_event_map(compiled['Owned']['abi'])
 
-    def test_owner_is_master(self):
+    def test_constructor(self):
         self.assertEqual(self.owned.owner(), MASTER)
+        self.assertEqual(self.owned.nominatedOwner(), ZERO_ADDRESS)
 
     def test_change_owner(self):
         old_owner = self.owned.owner()
         new_owner = DUMMY
+        self.assertNotEqual(old_owner, new_owner)
 
+        # Only the owner may nominate a new owner.
         self.assertReverts(self.owned.nominateOwner, new_owner, old_owner)
+
+        # Nominate new owner and ensure event emitted properly.
         nominated_tx = self.owned.nominateOwner(old_owner, new_owner)
         event_data = get_event_data_from_log(self.owned_event_map, nominated_tx.logs[0])
         self.assertEqual(event_data['event'], "OwnerNominated")
         self.assertEqual(event_data['args']['newOwner'], new_owner)
 
+        # Ensure owner unchanged, nominated owner was set properly.
         self.assertEqual(self.owned.owner(), old_owner)
         self.assertEqual(self.owned.nominatedOwner(), new_owner)
+
+        # Ensure only the nominated owner can accept the ownership.
+        self.assertReverts(self.owned.acceptOwnership, old_owner)
+        # But the nominee gains no other privileges.
         self.assertReverts(self.owned.nominateOwner, new_owner, old_owner)
+
+        # Accept ownership and ensure event emitted properly.
         accepted_tx = self.owned.acceptOwnership(new_owner)
         event_data = get_event_data_from_log(self.owned_event_map, accepted_tx.logs[0])
         self.assertEqual(event_data['event'], "OwnerChanged")
         self.assertEqual(event_data['args']['oldOwner'], old_owner)
         self.assertEqual(event_data['args']['newOwner'], new_owner)
 
+        # Ensure owner changed, nominated owner reset to zero.
         self.assertEqual(self.owned.nominatedOwner(), ZERO_ADDRESS)
         self.assertEqual(self.owned.owner(), new_owner)
+
+        # The old owner may no longer nominate a new owner.
         self.assertReverts(self.owned.nominateOwner, old_owner, new_owner)
 
+        # Go backwards.
         self.owned.nominateOwner(new_owner, old_owner)
         self.owned.acceptOwnership(old_owner)
         self.assertEqual(self.owned.owner(), old_owner)
