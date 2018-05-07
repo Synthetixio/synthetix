@@ -4,7 +4,7 @@ class SafeDecimalMathInterface:
         self.contract = contract
 
         self.decimals = lambda: self.contract.functions.decimals().call()
-        self.unit = lambda: self.contract.functions.UNIT().call()
+        self.UNIT = lambda: self.contract.functions.UNIT().call()
 
         self.addIsSafe = lambda x, y: self.contract.functions.pubAddIsSafe(x, y).call()
         self.safeAdd = lambda x, y: self.contract.functions.pubSafeAdd(x, y).call()

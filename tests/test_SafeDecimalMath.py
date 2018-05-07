@@ -27,6 +27,10 @@ class TestSafeDecimalMath(unittest.TestCase):
 
         cls.safeDecMath = SafeDecimalMathInterface(cls.math)
 
+    def test_scale(self):
+        self.assertEqual(self.safeDecMath.decimals(), 18)
+        self.assertEqual(self.safeDecMath.UNIT(), UNIT)
+
     # Test addIsSafe function
     def test_addIsSafe(self):
         self.assertTrue(self.safeDecMath.addIsSafe(1, 1))
