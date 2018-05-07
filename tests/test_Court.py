@@ -647,6 +647,8 @@ class TestCourt(unittest.TestCase):
         self.assertEqual(self.havven.balanceOf(voter), 1000)
         fast_forward(fee_period + 1)
         self.havven.checkFeePeriodRollover(DUMMY)
+        fast_forward(fee_period + 1)
+        self.havven.checkFeePeriodRollover(DUMMY)
 
         # Begin a confiscation motion against the suspect.
         motion_id = self.startVotingPeriod(owner, suspect)
