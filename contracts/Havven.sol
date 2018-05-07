@@ -103,13 +103,13 @@ those that have been whitelisted by the havven foundation. Nomins are assumed
 to be valued at $1, as they are a stable unit of account.
 
 All nomins issued require some value of havvens to be locked up for the
-proportional to the value of CMax (The collateralisation ratio). This
-means for every $1 of Havvens locked up, $(CMax) nomins can be issued.
-i.e. to issue 100 nomins, 100/CMax dollars of havvens need to be locked up.
+proportional to the value of IssuanceRatio (The collateralisation ratio). This
+means for every $1 of Havvens locked up, $(IssuanceRatio) nomins can be issued.
+i.e. to issue 100 nomins, 100/IssuanceRatio dollars of havvens need to be locked up.
 
 To determine the value of some amount of havvens(H), an oracle is used to push
-the price of havvens (P_h) in dollars to the contract. The value of H
-would then be: H * P_h.
+the price of havvens (P_H) in dollars to the contract. The value of H
+would then be: H * P_H.
 
 Any havvens that are locked up by this issuance process cannot be transferred.
 The amount that is locked floats based on the price of havvens. If the price
@@ -183,18 +183,18 @@ contract Havven is DestructibleExternStateToken {
     /* The address of the oracle which pushes the havven price to this contract */
     address public oracle;
     /* The price of havvens written in UNIT */
-    uint public havPrice;
+    uint public havvenPrice;
     /* The time the havven price was last updated */
-    uint public lastHavPriceUpdateTime;
+    uint public lastHavvenPriceUpdateTime;
     /* How long will the contract assume the price of havvens is correct */
-    uint public havPriceStalePeriod = 3 hours;
+    uint public havvenPriceStalePeriod = 3 hours;
 
-    /* The maximal amount that */
-    uint public CMax = 5 * UNIT / 100;
-    uint public MAX_C_MAX = 50 * UNIT / 100;  /* TODO: get final value */
+    uint public IssuanceRatio = 5 * UNIT / 100;
+    /* The maximal the issuance ratio can be */
+    uint constant maxIssuanceRatio = UNIT;
 
     /* whether the address can issue nomins or not */
-    mapping(address => bool) public whitelistedIssuers;
+    mapping(address => bool) public whitelistedIssuer;
     /* the number of nomins the user has issued */
     mapping(address => uint) public issuedNomins;
 
@@ -248,13 +248,13 @@ contract Havven is DestructibleExternStateToken {
      */
     function setTargetFeePeriodDuration(uint duration)
         external
-        postCheckFeePeriodRollover
         onlyOwner
     {
         require(MIN_FEE_PERIOD_DURATION_SECONDS <= duration &&
                 duration <= MAX_FEE_PERIOD_DURATION_SECONDS);
         targetFeePeriodDurationSeconds = duration;
         emit FeePeriodDurationUpdated(duration);
+        checkFeePeriodRollover();
     }
 
     /**
@@ -269,15 +269,26 @@ contract Havven is DestructibleExternStateToken {
     }
 
     /**
-     * @notice Set the CMax for issuance calculations.
-     * @dev Only callable by the contract owner.
+     * @notice Set the stale period on the updated havven price
+     * @dev No max/minimum, as changing it wont influence anything but issuance by the foundation
      */
-    function setCMax(uint _CMax)
+    function setHavvenPriceStalePeriod(uint time)
         external
         onlyOwner
     {
-        require(_CMax <= MAX_C_MAX);
-        CMax = _CMax;
+        havvenPriceStalePeriod = time;
+    }
+
+    /**
+     * @notice Set the IssuanceRatio for issuance calculations.
+     * @dev Only callable by the contract owner.
+     */
+    function setIssuanceRatio(uint _IssuanceRatio)
+        external
+        onlyOwner
+    {
+        require(_IssuanceRatio <= maxIssuanceRatio);
+        IssuanceRatio = _IssuanceRatio;
     }
 
     /**
@@ -287,7 +298,7 @@ contract Havven is DestructibleExternStateToken {
         external
         onlyOwner
     {
-        whitelistedIssuers[account] = value;
+        whitelistedIssuer[account] = value;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -315,7 +326,6 @@ contract Havven is DestructibleExternStateToken {
      */
     function transfer(address to, uint value)
         public
-        preCheckFeePeriodRollover
         returns (bool)
     {
         /* If they have enough available Havvens, it could be that
@@ -344,7 +354,6 @@ contract Havven is DestructibleExternStateToken {
      */
     function transferFrom(address from, address to, uint value)
         public
-        preCheckFeePeriodRollover
         returns (bool)
     {
         require(issuedNomins[msg.sender] == 0 || value <= availableHavvens(from));
@@ -369,7 +378,6 @@ contract Havven is DestructibleExternStateToken {
      */
     function withdrawFeeEntitlement()
         public
-        preCheckFeePeriodRollover
     {
         /* Do not deposit fees into frozen accounts. */
         require(!nomin.frozen(msg.sender));
@@ -377,13 +385,15 @@ contract Havven is DestructibleExternStateToken {
         /* Check the period has rolled over first. */
         adjustIssuanceBalanceAverages(msg.sender, issuedNomins[msg.sender], nomin.totalSupply());
 
-        BalanceData memory updatedBalances = issuedNominBalanceData[msg.sender];
 
         /* Only allow accounts to withdraw fees once per period. */
         require(!hasWithdrawnLastPeriodFees[msg.sender]);
         uint feesOwed = 0;
-        if (totalIssuedNominBalanceData.lastAverageBalance > 0) {
-            feesOwed = safeDiv_dec(safeMul_dec(updatedBalances.lastAverageBalance, lastFeesCollected), totalIssuedNominBalanceData.lastAverageBalance);
+
+        uint lastTotalIssued = totalIssuedNominBalanceData.lastAverageBalance;
+
+        if (lastTotalIssued > 0) {
+            feesOwed = safeDiv_dec(safeMul_dec(issuedNominBalanceData[msg.sender].lastAverageBalance, lastFeesCollected), lastTotalIssued);
         }
 
         hasWithdrawnLastPeriodFees[msg.sender] = true;
@@ -392,6 +402,8 @@ contract Havven is DestructibleExternStateToken {
             nomin.withdrawFee(msg.sender, feesOwed);
         }
         emit FeesWithdrawn(msg.sender, msg.sender, feesOwed);
+
+        checkFeePeriodRollover();
     }
 
     /**
@@ -405,17 +417,7 @@ contract Havven is DestructibleExternStateToken {
     {
         /* The time since the last transfer clamps at the last fee rollover time
          * if the last transfer was earlier than that. */
-        BalanceData memory updatedBalances = rolloverBalances(preBalance, havvenBalanceData[account]);
-
-        updatedBalances.currentBalanceSum = safeAdd(
-            updatedBalances.currentBalanceSum,
-            safeMul(preBalance, now - updatedBalances.lastTransferTimestamp)
-        );
-
-        /* Update the last time this user's balance changed. */
-        updatedBalances.lastTransferTimestamp = now;
-
-        havvenBalanceData[account] = updatedBalances;
+        havvenBalanceData[account] = rolloverBalances(preBalance, havvenBalanceData[account]);
     }
 
     /**
@@ -428,43 +430,16 @@ contract Havven is DestructibleExternStateToken {
     function adjustIssuanceBalanceAverages(address account, uint preBalance, uint last_total_supply)
         internal
     {
-
-        adjustTotalIssuanceBalanceAverages(last_total_supply);
+        /* update the total balances first */
+        totalIssuedNominBalanceData = rolloverBalances(preBalance, totalIssuedNominBalanceData);
 
         if (issuedNominBalanceData[account].lastTransferTimestamp < feePeriodStartTime) {
             hasWithdrawnLastPeriodFees[account] = false;
         }
 
-        BalanceData memory updatedBalances = rolloverBalances(preBalance, issuedNominBalanceData[account]);
-
-        updatedBalances.currentBalanceSum = safeAdd(
-            updatedBalances.currentBalanceSum,
-            safeMul(preBalance, now - updatedBalances.lastTransferTimestamp)
-        );
-
-        updatedBalances.lastTransferTimestamp = now;
-        issuedNominBalanceData[account] = updatedBalances;
+        issuedNominBalanceData[account] = rolloverBalances(preBalance, issuedNominBalanceData[account]);
     }
 
-    /**
-     * @notice Update the total issuance balance averages since the last transfer
-     * or entitlement adjustment.
-     * @dev Since this updates the last transfer timestamp, if invoked
-     * consecutively, this function will do nothing after the first call.
-     */
-    function adjustTotalIssuanceBalanceAverages(uint preBalance)
-        internal
-    {
-        BalanceData memory updatedBalances = rolloverBalances(preBalance, totalIssuedNominBalanceData);
-
-        updatedBalances.currentBalanceSum = safeAdd(
-            updatedBalances.currentBalanceSum,
-            safeMul(preBalance, now - updatedBalances.lastTransferTimestamp)
-        );
-
-        updatedBalances.lastTransferTimestamp = now;
-        totalIssuedNominBalanceData = updatedBalances;
-    }
 
     /**
      * @notice Compute the new BalanceData on the old balance
@@ -491,11 +466,15 @@ contract Havven is DestructibleExternStateToken {
                 );
             }
             /* Roll over to the next fee period. */
-            currentBalanceSum = 0;
-            lastTransferTime = feePeriodStartTime;
+            currentBalanceSum = safeMul(preBalance, now - feePeriodStartTime);
+        } else {
+            currentBalanceSum = safeAdd(
+                currentBalanceSum,
+                safeMul(preBalance, now - lastTransferTime)
+            );
         }
 
-        return BalanceData(currentBalanceSum, lastAvgBal, lastTransferTime);
+        return BalanceData(currentBalanceSum, lastAvgBal, now);
     }
 
 
@@ -506,7 +485,6 @@ contract Havven is DestructibleExternStateToken {
      */
     function recomputeAccountLastHavvenAverageBalance(address account)
         public
-        preCheckFeePeriodRollover
         returns (uint)
     {
         adjustHavvenBalanceAverages(account, state.balanceOf(account));
@@ -525,22 +503,13 @@ contract Havven is DestructibleExternStateToken {
     }
 
     /**
-     * @notice Check if the current fee period has terminated and, if so, roll it over.
-     */
-    function rolloverFeePeriod()
-        public
-    {
-        checkFeePeriodRollover();
-    }
-
-    /**
      * @notice Issue nomins against the sender's havvens.
      * @dev Issuance is only allowed if the havven price isn't stale and the issuer is whitelisted.
      */
     function issueNomins(uint amount)
-        onlyWhitelistedIssuers(msg.sender)
-        havPriceNotStale
-        external
+        onlyWhitelistedIssuer(msg.sender)
+        /* No need to check if price is stale, as it is checked in maxIssuanceRights. */
+        public
     {
         require(amount <= remainingIssuanceRights(msg.sender));
         uint lastTot = nomin.totalSupply();
@@ -550,6 +519,12 @@ contract Havven is DestructibleExternStateToken {
         adjustIssuanceBalanceAverages(msg.sender, issued, lastTot);
     }
 
+    function issueNominsToMax()
+        external
+    {
+        issueNomins(remainingIssuanceRights(msg.sender));
+    }
+
     /**
      * @notice Burn nomins to clear issued nomins/free havvens.
      */
@@ -557,11 +532,11 @@ contract Havven is DestructibleExternStateToken {
         /* it doesn't matter if the price is stale or if the user is whitelisted */
         external
     {
-        require(amount <= issuedNomins[msg.sender]);
         uint lastTot = nomin.totalSupply();
         uint issued = issuedNomins[msg.sender];
-        /* nomin.burn does safeSub on balance (so it will revert if there are not enough nomins) */
+        /* nomin.burn does a safeSub on balance (so it will revert if there are not enough nomins). */
         nomin.burn(msg.sender, amount);
+        /* This safe sub ensures amount <= number issued */
         issuedNomins[msg.sender] = safeSub(issued, amount);
         adjustIssuanceBalanceAverages(msg.sender, issued, lastTot);
     }
@@ -571,7 +546,7 @@ contract Havven is DestructibleExternStateToken {
      * time, and collect fees from the nomin contract.
      */
     function checkFeePeriodRollover()
-        internal
+        public
     {
         /* If the fee period has rolled over... */
         if (now >= feePeriodStartTime + targetFeePeriodDurationSeconds) {
@@ -591,14 +566,16 @@ contract Havven is DestructibleExternStateToken {
     function maxIssuanceRights(address issuer)
         view
         public
-        onlyWhitelistedIssuers(issuer)
-        havPriceNotStale
+        havvenPriceNotStale
         returns (uint)
     {
+        if (!whitelistedIssuer[issuer]) {
+            return 0;
+        }
         if (escrow != HavvenEscrow(0)) {
-            return safeMul_dec(HAVtoUSD(safeAdd(balanceOf(issuer), escrow.balanceOf(msg.sender))), CMax);
+            return safeMul_dec(HAVtoUSD(safeAdd(balanceOf(issuer), escrow.balanceOf(msg.sender))), IssuanceRatio);
         } else {
-            return safeMul_dec(HAVtoUSD(balanceOf(issuer)), CMax);
+            return safeMul_dec(HAVtoUSD(balanceOf(issuer)), IssuanceRatio);
         }
     }
 
@@ -608,8 +585,6 @@ contract Havven is DestructibleExternStateToken {
     function remainingIssuanceRights(address issuer)
         view
         public
-        onlyWhitelistedIssuers(issuer)
-        havPriceNotStale
         returns (uint)
     {
         uint issued = issuedNomins[issuer];
@@ -617,7 +592,7 @@ contract Havven is DestructibleExternStateToken {
         if (issued >= max) {
             return 0;
         } else {
-            return maxIssuanceRights(issuer) - issuedNomins[issuer];
+            return maxIssuanceRights(issuer) - issued;
         }
     }
 
@@ -632,7 +607,7 @@ contract Havven is DestructibleExternStateToken {
         if (issuedNomins[account] == 0) {
             return 0;
         }
-        return USDtoHAV(safeDiv_dec(issuedNomins[account], CMax));
+        return USDtoHAV(safeDiv_dec(issuedNomins[account], IssuanceRatio));
     }
 
     /**
@@ -662,10 +637,10 @@ contract Havven is DestructibleExternStateToken {
     function HAVtoUSD(uint hav_dec)
         public
         view
-        havPriceNotStale
+        havvenPriceNotStale
         returns (uint)
     {
-        return safeMul_dec(hav_dec, havPrice);
+        return safeMul_dec(hav_dec, havvenPrice);
     }
 
 
@@ -675,14 +650,14 @@ contract Havven is DestructibleExternStateToken {
     function USDtoHAV(uint usd_dec)
         public
         view
-        havPriceNotStale
+        havvenPriceNotStale
         returns (uint)
     {
-        return safeDiv_dec(usd_dec, havPrice);
+        return safeDiv_dec(usd_dec, havvenPrice);
     }
 
     /**
-     * @notice Endpoint for the oraclt to update the price of havvens.
+     * @notice Access point for the oracle to update the price of havvens.
      */
     function updatePrice(uint price, uint timeSent)
         external
@@ -690,43 +665,32 @@ contract Havven is DestructibleExternStateToken {
     {
         /* Must be the most recently sent price, but not too far in the future.
          * (so we can't lock ourselves out of updating the oracle for longer than this) */
-        require(lastHavPriceUpdateTime < timeSent && timeSent < now + 10 minutes);
+        require(lastHavvenPriceUpdateTime < timeSent && timeSent < now + 10 minutes);
 
-        havPrice = price;
-        lastHavPriceUpdateTime = timeSent;
+        havvenPrice = price;
+        lastHavvenPriceUpdateTime = timeSent;
         emit PriceUpdated(price);
+
+        /* Check the fee period rollover within this as the price should be pushed every 15min. */
+        checkFeePeriodRollover();
     }
 
     /**
      * @notice Check if the price of havvens hasn't been updated for longer than the stale period.
      */
-    function havPriceIsStale()
+    function havvenPriceIsStale()
         public
         view
         returns (bool)
     {
-        return safeAdd(lastHavPriceUpdateTime, havPriceStalePeriod) < now;
+        return safeAdd(lastHavvenPriceUpdateTime, havvenPriceStalePeriod) < now;
     }
 
     /* ========== MODIFIERS ========== */
 
-    /* check if the fee period has rolled over after the function is run. */
-    modifier postCheckFeePeriodRollover
+    modifier onlyWhitelistedIssuer(address account)
     {
-        _;
-        checkFeePeriodRollover();
-    }
-
-    /* check if the fee period has rolled over before the function is run. */
-    modifier preCheckFeePeriodRollover
-    {
-        checkFeePeriodRollover();
-        _;
-    }
-
-    modifier onlyWhitelistedIssuers(address account)
-    {
-        require(whitelistedIssuers[account]);
+        require(whitelistedIssuer[account]);
         _;
     }
 
@@ -736,9 +700,9 @@ contract Havven is DestructibleExternStateToken {
         _;
     }
 
-    modifier havPriceNotStale
+    modifier havvenPriceNotStale
     {
-        require(!havPriceIsStale());
+        require(!havvenPriceIsStale());
         _;
     }
 
