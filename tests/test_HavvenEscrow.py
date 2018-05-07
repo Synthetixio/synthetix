@@ -300,11 +300,11 @@ class TestHavvenEscrow(unittest.TestCase):
 
         # Skip a period so we have a full period with no transfers
         fast_forward(self.havven.targetFeePeriodDurationSeconds() + 100)
-        self.havven.rolloverFeePeriod(MASTER)
+        self.havven.checkFeePeriodRollover(MASTER)
         self.havven.recomputeAccountLastIssuedNominAverageBalance(MASTER, MASTER)
         # Skip a period so we have a full period with no transfers
         fast_forward(self.havven.targetFeePeriodDurationSeconds() + 100)
-        self.havven.rolloverFeePeriod(MASTER)
+        self.havven.checkFeePeriodRollover(MASTER)
         self.havven.recomputeAccountLastIssuedNominAverageBalance(MASTER, MASTER)
 
         self.assertEqual(fees, self.havven.lastFeesCollected())
@@ -332,7 +332,7 @@ class TestHavvenEscrow(unittest.TestCase):
 
         # Skip a period so we have a full period with no transfers
         fast_forward(self.havven.targetFeePeriodDurationSeconds() + 100)
-        self.havven.rolloverFeePeriod(MASTER)
+        self.havven.checkFeePeriodRollover(MASTER)
         self.havven.recomputeAccountLastIssuedNominAverageBalance(MASTER, MASTER)
 
         # Since escrow contract has most of the global supply, and half of the
