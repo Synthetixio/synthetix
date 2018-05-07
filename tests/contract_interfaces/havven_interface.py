@@ -18,18 +18,18 @@ class HavvenInterface(DestructibleExternStateTokenInterface):
         self.nomin = lambda: self.contract.functions.nomin().call()
         self.escrow = lambda: self.contract.functions.escrow().call()
         self.oracle = lambda: self.contract.functions.oracle().call()
-        self.havPrice = lambda: self.contract.functions.havPrice().call()
-        self.lastHavPriceUpdateTime = lambda: self.contract.functions.lastHavPriceUpdateTime().call()
-        self.havPriceStalePeriod = lambda: self.contract.functions.havPriceStalePeriod().call()
-        self.CMax = lambda: self.contract.functions.CMax().call()
-        self.MAX_C_MAX = lambda: self.contract.functions.MAX_C_MAX().call()
+        self.havvenPrice = lambda: self.contract.functions.havvenPrice().call()
+        self.lastHavvenPriceUpdateTime = lambda: self.contract.functions.lastHavvenPriceUpdateTime().call()
+        self.havvenPriceStalePeriod = lambda: self.contract.functions.havvenPriceStalePeriod().call()
+        self.issuanceRatio = lambda: self.contract.functions.issuanceRatio().call()
+        self.maxIssuanceRatio = lambda: self.contract.functions.maxIssuanceRatio().call()
 
         self.havPriceIsStale = lambda: self.contract.functions.havPriceIsStale().call()
 
         # account specific getters
         self.hasWithdrawnLastPeriodFees = lambda acc: self.contract.functions.hasWithdrawnLastPeriodFees(acc).call()
         self.whitelistedIssuers = lambda acc: self.contract.functions.whitelistedIssuers(acc).call()
-        self.issuedNomins = lambda acc: self.contract.functions.issuedNomins(acc).call()
+        self.nominsIssued = lambda acc: self.contract.functions.nominsIssued(acc).call()
         self.currentHavvenBalanceSum = lambda acc: self.balance_data_current_balance_sum(self.contract.functions.havvenBalanceData(acc).call())
         self.lastAverageHavvenBalance = lambda acc: self.balance_data_last_average_balance(self.contract.functions.havvenBalanceData(acc).call())
         self.lastHavvenTransferTimestamp = lambda acc: self.balance_data_last_transfer_time(self.contract.functions.havvenBalanceData(acc).call())
@@ -49,7 +49,7 @@ class HavvenInterface(DestructibleExternStateTokenInterface):
         self.setEscrow = lambda sender, addr: mine_tx(self.contract.functions.setEscrow(addr).transact({"from": sender}))
         self.setTargetFeePeriodDuration = lambda sender, duration: mine_tx(self.contract.functions.setTargetFeePeriodDuration(duration).transact({"from": sender}))
         self.setOracle = lambda sender, addr: mine_tx(self.contract.functions.setOracle(addr).transact({"from": sender}))
-        self.setCMax = lambda sender, val: mine_tx(self.contract.functions.setCMax(val).transact({"from": sender}))
+        self.setIssuanceRatio = lambda sender, val: mine_tx(self.contract.functions.setIssuanceRatio(val).transact({"from": sender}))
         self.endow = lambda sender, to, val: mine_tx(self.contract.functions.endow(to, val).transact({"from": sender}))
         self.setWhitelisted = lambda sender, acc, val: mine_tx(self.contract.functions.setWhitelisted(acc, val).transact({"from": sender}))
         self.transfer = lambda sender, to, val: mine_tx(self.contract.functions.transfer(to, val).transact({"from": sender}))
@@ -57,21 +57,21 @@ class HavvenInterface(DestructibleExternStateTokenInterface):
         self.withdrawFeeEntitlement = lambda sender: mine_tx(self.contract.functions.withdrawFeeEntitlement().transact({"from": sender}))
         self.recomputeAccountLastHavvenAverageBalance = lambda sender, acc: mine_tx(self.contract.functions.recomputeAccountLastHavvenAverageBalance(acc).transact({"from": sender}))
         self.recomputeAccountLastIssuedNominAverageBalance = lambda sender, acc: mine_tx(self.contract.functions.recomputeAccountLastIssuedNominAverageBalance(acc).transact({"from": sender}))
-        self.rolloverFeePeriod = lambda sender: mine_tx(self.contract.functions.rolloverFeePeriod().transact({"from": sender}))
+        self.checkFeePeriodRollover = lambda sender: mine_tx(self.contract.functions.checkFeePeriodRollover().transact({"from": sender}))
         self.issueNomins = lambda sender, amt: mine_tx(self.contract.functions.issueNomins(amt).transact({"from": sender}))
         self.burnNomins = lambda sender, amt: mine_tx(self.contract.functions.burnNomins(amt).transact({"from": sender}))
         self.updatePrice = lambda sender, price, time: mine_tx(self.contract.functions.updatePrice(price, time).transact({"from": sender}))
 
-    @classmethod
-    def balance_data_current_balance_sum(cls, balance_data):
+    @staticmethod
+    def balance_data_current_balance_sum(balance_data):
         return balance_data[0]
 
-    @classmethod
-    def balance_data_last_average_balance(cls, balance_data):
+    @staticmethod
+    def balance_data_last_average_balance(balance_data):
         return balance_data[1]
 
-    @classmethod
-    def balance_data_last_transfer_time(cls, balance_data):
+    @staticmethod
+    def balance_data_last_transfer_time(balance_data):
         return balance_data[2]
 
 

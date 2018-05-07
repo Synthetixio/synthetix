@@ -39,16 +39,15 @@ pragma solidity 0.4.23;
 
 
 import "contracts/Emittor.sol";
-import "contracts/Owned.sol";
 
-contract State is Emittor, Owned {
+contract State is Emittor {
     // the address of the contract that can modify variables
     // this can only be changed by the owner of this contract
     address public associatedContract;
 
 
     constructor(address _owner, address _associatedContract)
-        Owned(_owner)
+        Proxyable(_owner)
         public
     {
         associatedContract = _associatedContract;

@@ -24,209 +24,323 @@ could be emitted from the proxy in later implementations.
 
 pragma solidity ^0.4.23;
 
+import "contracts/Emitable.sol";
 
 /**
  * @title A contract holding convenience methods for emitting events.
  */
-contract Emittor {
+contract Emittor is Emitable {
 
-    function emitAccountFrozen(address target, address targetIndex, uint balance)
-        internal
+
+    function emitProxyChanged(address proxyAddress)
+    internal
     {
-        emit AccountFrozen(target, targetIndex, balance);
+        EventData memory data = createEventData("ProxyChanged(address)", 1);
+        addAddress(data, proxyAddress, false);
+        emitOnProxy(data);
+    }
+
+    function emitAccountFrozen(address target, address targetIndex, uint256 balance)
+    internal
+    {
+        EventData memory data = createEventData("AccountFrozen(address,address,uint256)", 2);
+        addAddress(data, target, false);
+        addAddress(data, targetIndex, true);
+        addUint256(data, balance, false);
+        emitOnProxy(data);
     }
 
     function emitAccountUnfrozen(address target, address targetIndex)
-        internal
+    internal
     {
-        emit AccountUnfrozen(target, targetIndex);
+        EventData memory data = createEventData("AccountUnfrozen(address,address)", 1);
+        addAddress(data, target, false);
+        addAddress(data, targetIndex, true);
+        emitOnProxy(data);
     }
 
-    function emitApproval(address owner, address spender, uint value)
-        internal
+    function emitApproval(address owner, address spender, uint256 value)
+    internal
     {
-        emit Approval(owner, spender, value);
+        EventData memory data = createEventData("Approval(address,address,uint256)", 1);
+        addAddress(data, owner, true);
+        addAddress(data, spender, true);
+        addUint256(data, value, false);
+        emitOnProxy(data);
     }
 
     function emitAssociatedContractUpdated(address _associatedContract)
-        internal
+    internal
     {
-        emit AssociatedContractUpdated(_associatedContract);
+        EventData memory data = createEventData("AssociatedContractUpdated(address)", 1);
+        addAddress(data, _associatedContract, false);
+        emitOnProxy(data);
     }
 
-    function emitBurned(address target, uint amount)
-        internal
+    function emitBurned(address target, uint256 amount)
+    internal
     {
-        emit Burned(target, amount);
+        EventData memory data = createEventData("Burned(address,uint256)", 2);
+        addAddress(data, target, false);
+        addUint256(data, amount, false);
+        emitOnProxy(data);
     }
 
     function emitCourtUpdated(address newCourt)
-        internal
+    internal
     {
-        emit CourtUpdated(newCourt);
+        EventData memory data = createEventData("CourtUpdated(address)", 1);
+        addAddress(data, newCourt, false);
+        emitOnProxy(data);
     }
 
     function emitFeeAuthorityUpdated(address feeAuthority)
-        internal
+    internal
     {
-        emit FeeAuthorityUpdated(feeAuthority);
+        EventData memory data = createEventData("CourtUpdated(address)", 1);
+        addAddress(data, feeAuthority, false);
+        emitOnProxy(data);
     }
 
-    function emitFeePeriodDurationUpdated(uint duration)
-        internal
+    function emitFeePeriodDurationUpdated(uint256 duration)
+    internal
     {
-        emit FeePeriodDurationUpdated(duration);
+        EventData memory data = createEventData("FeePeriodDurationUpdated(uint256)", 1);
+        addUint256(data, duration, false);
+        emitOnProxy(data);
     }
 
-    function emitFeePeriodRollover(uint timestamp)
-        internal
+    function emitFeePeriodRollover(uint256 timestamp)
+    internal
     {
-        emit FeePeriodRollover(timestamp);
+        EventData memory data = createEventData("FeePeriodRollover(uint256)", 1);
+        addUint256(data, timestamp, false);
+        emitOnProxy(data);
     }
 
-    function emitFeesDonated(address donor, address donorIndex, uint value)
-        internal
+    function emitFeesDonated(address donor, address donorIndex, uint256 value)
+    internal
     {
-        emit FeesDonated(donor, donorIndex, value);
+        EventData memory data = createEventData("FeesDonated(address,address,uint256)", 2);
+        addAddress(data, donor, false);
+        addAddress(data, donorIndex, true);
+        addUint256(data, value, false);
+        emitOnProxy(data);
     }
 
-    function emitFeesWithdrawn(address account, address accountIndex, uint value)
-        internal
+    function emitFeesWithdrawn(address account, address accountIndex, uint256 value)
+    internal
     {
-        emit FeesWithdrawn(account, accountIndex, value);
+        EventData memory data = createEventData("FeesWithdrawn(address,address,uint256)", 2);
+        addAddress(data, account, false);
+        addAddress(data, accountIndex, true);
+        addUint256(data, value, false);
+        emitOnProxy(data);
     }
 
     function emitHavvenUpdated(address newHavven)
-        internal
+    internal
     {
-        emit HavvenUpdated(newHavven);
+        EventData memory data = createEventData("HavvenUpdated(address)", 1);
+        addAddress(data, newHavven, false);
+        emitOnProxy(data);
     }
 
-    function emitIssued(address target, uint amount)
-        internal
+    function emitIssued(address target, uint256 amount)
+    internal
     {
-        emit Issued(target, amount);
+        EventData memory data = createEventData("Issued(address,uint256)", 2);
+        addAddress(data, target, false);
+        addUint256(data, amount, false);
+        emitOnProxy(data);
     }
 
-    function emitMotionApproved(uint motionID, uint motionIDIndex)
-        internal
+    function emitMotionApproved(uint256 motionID, uint256 motionIDIndex)
+    internal
     {
-        emit MotionApproved(motionID, motionIDIndex);
+        EventData memory data = createEventData("MotionApproved(uint256,uint256)", 1);
+        addUint256(data, motionID, false);
+        addUint256(data, motionIDIndex, true);
+        emitOnProxy(data);
     }
 
-    function emitMotionBegun(address initiator, address initiatorIndex, address target, address targetIndex, uint motionID, uint motionIDIndex, uint startTime)
-        internal
+    function emitMotionBegun(address initiator, address initiatorIndex, address target, address targetIndex, uint256 motionID, uint256 motionIDIndex, uint256 startTime)
+    internal
     {
-        emit MotionBegun(initiator, initiatorIndex, target, targetIndex, motionID, motionIDIndex, startTime);
+        EventData memory data = createEventData("MotionBegun(address,address,address,address,uint256,uint256,uint256)", 4);
+        addAddress(data, initiator, false);
+        addAddress(data, initiatorIndex, true);
+        addAddress(data, target, false);
+        addAddress(data, targetIndex, true);
+        addUint256(data, motionID, false);
+        addUint256(data, motionIDIndex, true);
+        addUint256(data, startTime, false);
+        emitOnProxy(data);
     }
 
-    function emitMotionClosed(uint motionID, uint motionIDIndex)
-        internal
+    function emitMotionClosed(uint256 motionID, uint256 motionIDIndex)
+    internal
     {
-        emit MotionClosed(motionID, motionIDIndex);
+        EventData memory data = createEventData("MotionClosed(uint256,uint256)", 1);
+        addUint256(data, motionID, false);
+        addUint256(data, motionIDIndex, true);
+        emitOnProxy(data);
     }
 
-    function emitMotionVetoed(uint motionID, uint motionIDIndex)
-        internal
+    function emitMotionVetoed(uint256 motionID, uint256 motionIDIndex)
+    internal
     {
-        emit MotionVetoed(motionID, motionIDIndex);
+        EventData memory data = createEventData("MotionVetoed(uint256,uint256)", 1);
+        addUint256(data, motionID, false);
+        addUint256(data, motionIDIndex, true);
+        emitOnProxy(data);
     }
 
     function emitOracleUpdated(address new_oracle)
-        internal
+    internal
     {
-        emit OracleUpdated(new_oracle);
+        EventData memory data = createEventData("OracleUpdated(address)", 1);
+        addAddress(data, new_oracle, false);
+        emitOnProxy(data);
     }
 
     function emitOwnerChanged(address oldOwner, address newOwner)
-        internal
+    internal
     {
-        emit OwnerChanged(oldOwner, newOwner);
+        EventData memory data = createEventData("OwnerChanged(address,address)", 2);
+        addAddress(data, oldOwner, false);
+        addAddress(data, newOwner, false);
+        emitOnProxy(data);
     }
 
     function emitOwnerNominated(address newOwner)
-        internal
+    internal
     {
-        emit OwnerNominated(newOwner);
+        EventData memory data = createEventData("OwnerNominated(address)", 1);
+        addAddress(data, newOwner, false);
+        emitOnProxy(data);
     }
 
-    function emitPriceUpdated(uint price)
-        internal
+    function emitPriceUpdated(uint256 price)
+    internal
     {
-        emit PriceUpdated(price);
+        EventData memory data = createEventData("PriceUpdated(uint256)", 1);
+        addUint256(data, price, false);
+        emitOnProxy(data);
     }
 
     function emitSelfDestructBeneficiaryUpdated(address newBeneficiary)
-        internal
+    internal
     {
-        emit SelfDestructBeneficiaryUpdated(newBeneficiary);
+        EventData memory data = createEventData("SelfDestructBeneficiaryUpdated(address)", 1);
+        addAddress(data, newBeneficiary, false);
+        emitOnProxy(data);
     }
 
     function emitSelfDestructed(address beneficiary)
-        internal
+    internal
     {
-        emit SelfDestructed(beneficiary);
+        EventData memory data = createEventData("SelfDestructed(address)", 1);
+        addAddress(data, beneficiary, false);
+        emitOnProxy(data);
     }
 
-    function emitSelfDestructInitiated(uint duration)
-        internal
+    function emitSelfDestructInitiated(uint256 duration)
+    internal
     {
-        emit SelfDestructInitiated(duration);
+        EventData memory data = createEventData("SelfDestructInitiated(uint256)", 1);
+        addUint256(data, duration, false);
+        emitOnProxy(data);
     }
 
     function emitSelfDestructTerminated()
-        internal
+    internal
     {
-        emit SelfDestructTerminated();
+        EventData memory data = createEventData("SelfDestructTerminated()", 0);
+        emitOnProxy(data);
     }
 
     function emitStateUpdated(address newState)
-        internal
+    internal
     {
-        emit StateUpdated(newState);
+        EventData memory data = createEventData("StateUpdated(address)", 1);
+        addAddress(data, newState, false);
+        emitOnProxy(data);
     }
 
-    function emitTransfer(address from, address to, uint value)
-        internal
+    function emitTransfer(address from, address to, uint256 value)
+    internal
     {
-        emit Transfer(from, to, value);
+        EventData memory data = createEventData("Transfer(address,address,uint256)", 1);
+        addAddress(data, from, true);
+        addAddress(data, to, true);
+        addUint256(data, value, false);
+        emitOnProxy(data);
     }
 
-    function emitTransferFeePaid(address account, uint value)
-        internal
+    function emitTransferFeePaid(address account, uint256 value)
+    internal
     {
-        emit TransferFeePaid(account, value);
+        EventData memory data = createEventData("TransferFeePaid(address,uint256)", 1);
+        addAddress(data, account, true);
+        addUint256(data, value, false);
+        emitOnProxy(data);
     }
 
-    function emitTransferFeeRateUpdated(uint newFeeRate)
-        internal
+    function emitTransferFeeRateUpdated(uint256 newFeeRate)
+    internal
     {
-        emit TransferFeeRateUpdated(newFeeRate);
+        EventData memory data = createEventData("TransferFeeRateUpdated(uint256)", 1);
+        addUint256(data, newFeeRate, false);
+        emitOnProxy(data);
     }
 
-    function emitVested(address beneficiary, address beneficiaryIndex, uint time, uint value)
-        internal
+    function emitVested(address beneficiary, address beneficiaryIndex, uint256 time, uint256 value)
+    internal
     {
-        emit Vested(beneficiary, beneficiaryIndex, time, value);
+        EventData memory data = createEventData("Vested(address,address,uint256,uint256)", 3);
+        addAddress(data, beneficiary, false);
+        addAddress(data, beneficiaryIndex, true);
+        addUint256(data, time, false);
+        addUint256(data, value, false);
+        emitOnProxy(data);
     }
 
-    function emitVoteCancelled(address voter, address voterIndex, uint motionID, uint motionIDIndex)
-        internal
+    function emitVoteCancelled(address voter, address voterIndex, uint256 motionID, uint256 motionIDIndex)
+    internal
     {
-        emit VoteCancelled(voter, voterIndex, motionID, motionIDIndex);
+        EventData memory data = createEventData("VoteCancelled(address,address,uint256,uint256)", 2);
+        addAddress(data, voter, false);
+        addAddress(data, voterIndex, true);
+        addUint256(data, motionID, false);
+        addUint256(data, motionIDIndex, true);
+        emitOnProxy(data);
     }
 
-    function emitVotedAgainst(address voter, address voterIndex, uint motionID, uint motionIDIndex, uint weight)
-        internal
+    function emitVotedAgainst(address voter, address voterIndex, uint256 motionID, uint256 motionIDIndex, uint256 weight)
+    internal
     {
-        emit VotedAgainst(voter, voterIndex, motionID, motionIDIndex, weight);
+        EventData memory data = createEventData("VotedAgainst(address,address,uint256,uint256,uint256)", 3);
+        addAddress(data, voter, false);
+        addAddress(data, voterIndex, true);
+        addUint256(data, motionID, false);
+        addUint256(data, motionIDIndex, true);
+        addUint256(data, weight, false);
+        emitOnProxy(data);
     }
 
-    function emitVotedFor(address voter, address voterIndex, uint motionID, uint motionIDIndex, uint weight)
-        internal
+    function emitVotedFor(address voter, address voterIndex, uint256 motionID, uint256 motionIDIndex, uint256 weight)
+    internal
     {
-        emit VotedFor(voter, voterIndex, motionID, motionIDIndex, weight);
+        EventData memory data = createEventData("VotedFor(address,address,uint256,uint256,uint256)", 3);
+        addAddress(data, voter, false);
+        addAddress(data, voterIndex, true);
+        addUint256(data, motionID, false);
+        addUint256(data, motionIDIndex, true);
+        addUint256(data, weight, false);
+        emitOnProxy(data);
     }
+
 
     /* ========== EVENTS ========== */
 
@@ -251,6 +365,7 @@ contract Emittor {
     event OwnerChanged(address oldOwner, address newOwner);
     event OwnerNominated(address newOwner);
     event PriceUpdated(uint price);
+    event ProxyChanged(address proxyAddress);
     event SelfDestructBeneficiaryUpdated(address newBeneficiary);
     event SelfDestructed(address beneficiary);
     event SelfDestructInitiated(uint duration);

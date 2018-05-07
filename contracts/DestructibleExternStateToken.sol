@@ -29,13 +29,12 @@ pragma solidity 0.4.23;
 
 import "contracts/SafeDecimalMath.sol";
 import "contracts/SelfDestructible.sol";
-import "contracts/Emittor.sol";
 import "contracts/TokenState.sol";
 
 /**
  * @title ERC20 Token contract, with detached state and designed to operate behind a proxy.
  */
-contract DestructibleExternStateToken is SafeDecimalMath, Emittor, SelfDestructible {
+contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -62,7 +61,7 @@ contract DestructibleExternStateToken is SafeDecimalMath, Emittor, SelfDestructi
     constructor(string _name, string _symbol,
                                    uint _initialSupply, address _initialBeneficiary,
                                    TokenState _state, address _owner)
-        SelfDestructible(_owner, _owner)
+        SelfDestructible(_owner, _owner, 4 weeks)
         public
     {
         name = _name;
