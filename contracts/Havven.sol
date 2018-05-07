@@ -195,7 +195,7 @@ contract Havven is DestructibleExternStateToken {
     /* whether the address can issue nomins or not */
     mapping(address => bool) public whitelistedIssuer;
     /* the number of nomins the user has issued */
-    mapping(address => uint) public issuedNomins;
+    mapping(address => uint) public nominsIssued;
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -330,7 +330,7 @@ contract Havven is DestructibleExternStateToken {
          * their havvens are escrowed, however the transfer would then
          * fail. This means that escrowed havvens are locked first,
          * and then the actual transferable ones. */
-        require(issuedNomins[msg.sender] == 0 || value <= availableHavvens(msg.sender));
+        require(nominsIssued[msg.sender] == 0 || value <= availableHavvens(msg.sender));
         uint senderPreBalance = state.balanceOf(msg.sender);
         uint recipientPreBalance = state.balanceOf(to);
 
@@ -354,7 +354,7 @@ contract Havven is DestructibleExternStateToken {
         public
         returns (bool)
     {
-        require(issuedNomins[msg.sender] == 0 || value <= availableHavvens(from));
+        require(nominsIssued[msg.sender] == 0 || value <= availableHavvens(from));
         uint senderPreBalance = state.balanceOf(from);
         uint recipientPreBalance = state.balanceOf(to);
 
@@ -381,7 +381,7 @@ contract Havven is DestructibleExternStateToken {
         require(!nomin.frozen(msg.sender));
 
         /* Check the period has rolled over first. */
-        adjustIssuanceBalanceAverages(msg.sender, issuedNomins[msg.sender], nomin.totalSupply());
+        adjustIssuanceBalanceAverages(msg.sender, nominsIssued[msg.sender], nomin.totalSupply());
 
 
         /* Only allow accounts to withdraw fees once per period. */
@@ -495,7 +495,7 @@ contract Havven is DestructibleExternStateToken {
         external
         returns (uint)
     {
-        adjustIssuanceBalanceAverages(account, issuedNomins[account], nomin.totalSupply());
+        adjustIssuanceBalanceAverages(account, nominsIssued[account], nomin.totalSupply());
         return issuedNominBalanceData[account].lastAverageBalance;
     }
 
@@ -510,9 +510,9 @@ contract Havven is DestructibleExternStateToken {
     {
         require(amount <= remainingIssuanceRights(msg.sender));
         uint lastTot = nomin.totalSupply();
-        uint issued = issuedNomins[msg.sender];
+        uint issued = nominsIssued[msg.sender];
         nomin.issue(msg.sender, amount);
-        issuedNomins[msg.sender] = safeAdd(issued, amount);
+        nominsIssued[msg.sender] = safeAdd(issued, amount);
         adjustIssuanceBalanceAverages(msg.sender, issued, lastTot);
     }
 
@@ -530,11 +530,11 @@ contract Havven is DestructibleExternStateToken {
         external
     {
         uint lastTot = nomin.totalSupply();
-        uint issued = issuedNomins[msg.sender];
+        uint issued = nominsIssued[msg.sender];
         /* nomin.burn does a safeSub on balance (so it will revert if there are not enough nomins). */
         nomin.burn(msg.sender, amount);
         /* This safe sub ensures amount <= number issued */
-        issuedNomins[msg.sender] = safeSub(issued, amount);
+        nominsIssued[msg.sender] = safeSub(issued, amount);
         adjustIssuanceBalanceAverages(msg.sender, issued, lastTot);
     }
 
@@ -584,7 +584,7 @@ contract Havven is DestructibleExternStateToken {
         public
         returns (uint)
     {
-        uint issued = issuedNomins[issuer];
+        uint issued = nominsIssued[issuer];
         uint max = maxIssuanceRights(issuer);
         if (issued >= max) {
             return 0;
@@ -601,10 +601,10 @@ contract Havven is DestructibleExternStateToken {
         view
         returns (uint)
     {
-        if (issuedNomins[account] == 0) {
+        if (nominsIssued[account] == 0) {
             return 0;
         }
-        return USDtoHAV(safeDiv_dec(issuedNomins[account], IssuanceRatio));
+        return USDtoHAV(safeDiv_dec(nominsIssued[account], IssuanceRatio));
     }
 
     /**
