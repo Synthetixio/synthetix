@@ -67,9 +67,9 @@ contract Owned {
         external
     {
         require(msg.sender == nominatedOwner);
-        emit OwnerChanged(owner, nominatedOwner);
         owner = nominatedOwner;
         nominatedOwner = address(0);
+        emit OwnerChanged(owner, nominatedOwner);
     }
 
     modifier onlyOwner
