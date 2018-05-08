@@ -1,13 +1,14 @@
 import unittest
 
-from utils.deployutils import W3, UNIT, MASTER, DUMMY, fresh_account, fresh_accounts
-from utils.deployutils import compile_contracts, attempt_deploy, mine_tx
+from utils.deployutils import UNIT, MASTER, DUMMY, fresh_account, fresh_accounts
+from utils.deployutils import compile_contracts, attempt_deploy, mine_tx, mine_txs
 from utils.deployutils import take_snapshot, restore_snapshot
 from utils.testutils import assertReverts
 from utils.testutils import generate_topic_event_map, get_event_data_from_log
 from utils.testutils import ZERO_ADDRESS
 
 from tests.contract_interfaces.extern_state_fee_token_interface import ExternStateFeeTokenInterface
+from tests.contract_interfaces.token_state_interface import TokenStateInterface
 
 
 ExternStateFeeToken_SOURCE = "contracts/ExternStateFeeToken.sol"
@@ -39,21 +40,26 @@ class TestExternStateFeeToken(unittest.TestCase):
         cls.feetoken_abi = cls.compiled['ExternStateFeeToken']['abi']
         cls.feetoken_event_dict = generate_topic_event_map(cls.feetoken_abi)
         cls.feetoken_contract, cls.construction_txr = attempt_deploy(
-            cls.compiled, "ExternStateFeeToken", MASTER, ["Test Fee Token", "FEE",
-                                                                     UNIT // 20, cls.fee_authority,
-                                                                     ZERO_ADDRESS, cls.token_owner]
+            cls.compiled, "ExternStateFeeToken", MASTER,
+            ["Test Fee Token", "FEE", UNIT // 20, cls.fee_authority, ZERO_ADDRESS, cls.token_owner]
         )
 
         cls.feestate, txr = attempt_deploy(
             cls.compiled, "TokenState", MASTER,
             [cls.token_owner, cls.token_owner]
         )
-        mine_tx(cls.feestate.functions.setBalanceOf(cls.initial_beneficiary, 1000 * UNIT).transact({'from': cls.token_owner}))
-        mine_tx(cls.feestate.functions.setAssociatedContract(cls.feetoken_contract.address).transact({'from': cls.token_owner}))
-
-        mine_tx(cls.feetoken_contract.functions.setState(cls.feestate.address).transact({'from': cls.token_owner}))
+        cls.state = TokenStateInterface(cls.feestate)
+        mine_txs([cls.feestate.functions.setBalanceOf(cls.initial_beneficiary, 1000 * UNIT).transact({'from': cls.token_owner}),
+                  cls.feestate.functions.setAssociatedContract(cls.feetoken_contract.address).transact({'from': cls.token_owner}),
+                  cls.feetoken_contract.functions.setState(cls.feestate.address).transact({'from': cls.token_owner})])
 
         cls.feetoken = ExternStateFeeTokenInterface(cls.feetoken_contract)
+
+    def set_balance(self, state, acc, amt):
+        owner = state.owner()
+        state.setAssociatedContract(owner, MASTER)
+        state.setBalanceOf(MASTER, acc, amt)
+        state.setAssociatedContract(owner, self.feetoken.contract.address)
 
     def test_constructor(self):
         self.assertEqual(self.feetoken.name(), "Test Fee Token")
@@ -68,18 +74,22 @@ class TestExternStateFeeToken(unittest.TestCase):
         feestate, _ = attempt_deploy(self.compiled, 'TokenState',
                                      MASTER, [MASTER, self.feetoken_contract.address])
 
+        # build one token without a state
         feetoken, _ = attempt_deploy(self.compiled, 'ExternStateFeeToken',
                                      MASTER,
                                      ["Test Fee Token", "FEE",
                                       UNIT // 20, self.fee_authority,
                                       ZERO_ADDRESS, DUMMY])
+        # and assert that it constructs a new state
         self.assertNotEqual(feetoken.functions.state().call(), ZERO_ADDRESS)
+        self.assertNotEqual(feetoken.functions.state().call(), feestate.address)
 
         feetoken, _ = attempt_deploy(self.compiled, 'ExternStateFeeToken',
                                      MASTER,
                                      ["Test Fee Token", "FEE",
                                       UNIT // 20, self.fee_authority,
                                       feestate.address, DUMMY])
+        # assert that constructing a token with a given state uses it
         self.assertEqual(feetoken.functions.state().call(), feestate.address)
 
     def test_getSetOwner(self):
@@ -116,12 +126,19 @@ class TestExternStateFeeToken(unittest.TestCase):
         self.assertReverts(self.feetoken.setTransferFeeRate, owner, bad_transfer_fee_rate)
         self.assertEqual(self.feetoken.transferFeeRate(), new_transfer_fee_rate)
 
+        # ensure fee can be set to the max
+        self.feetoken.setTransferFeeRate(owner, UNIT // 10)
+
+        # but not even 1 more
+        self.assertReverts(self.feetoken.setTransferFeeRate, owner, UNIT // 10 + 1)
+
     def test_getSetFeeAuthority(self):
         new_fee_authority = fresh_account()
         owner = self.feetoken.owner()
 
         # Only the owner is able to set the Fee Authority.
         self.assertReverts(self.feetoken.setFeeAuthority, new_fee_authority, new_fee_authority)
+        self.assertReverts(self.feetoken.setFeeAuthority, DUMMY, new_fee_authority)
         tx_receipt = self.feetoken.setFeeAuthority(owner, new_fee_authority)
         # Check that event is emitted.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'],
@@ -134,12 +151,20 @@ class TestExternStateFeeToken(unittest.TestCase):
         self.assertNotEqual(new_state, owner)
 
         # Only the owner is able to set the Fee Authority.
+        self.assertReverts(self.feetoken.setState, DUMMY, new_state)
         self.assertReverts(self.feetoken.setState, new_state, new_state)
+
         tx_receipt = self.feetoken.setState(owner, new_state)
         # Check that event is emitted.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'],
                          "StateUpdated")
         self.assertEqual(self.feetoken.state(), new_state)
+
+        feestate, _ = attempt_deploy(self.compiled, 'TokenState',
+                                     MASTER, [MASTER, self.feetoken_contract.address])
+
+        self.feetoken.setState(owner, feestate.address)
+        self.assertEqual(self.feetoken.state(), feestate.address)
 
     def test_getTransferFeeIncurred(self):
         value = 10 * UNIT
@@ -147,6 +172,8 @@ class TestExternStateFeeToken(unittest.TestCase):
         self.assertEqual(self.feetoken.transferFeeIncurred(value), fee)
 
         self.assertEqual(self.feetoken.transferFeeIncurred(0), 0)
+
+    # def test_balanceOf(self):
 
     def test_getTransferPlusFee(self):
         value = 10 * UNIT
@@ -192,10 +219,14 @@ class TestExternStateFeeToken(unittest.TestCase):
         self.assertEqual(self.feetoken.totalSupply(), total_supply)
         self.assertEqual(self.feetoken.feePool(), fee_pool + fee)
 
-        value = 1001 * UNIT
+        value = 10500 * UNIT
 
         # This should fail because balance < value
-        self.assertReverts(self.feetoken.transfer, sender, receiver, value)
+        self.assertReverts(self.feetoken.transfer, sender, receiver, 10000 * UNIT)
+        self.set_balance(self.state, sender, value)
+        self.feetoken.transfer(sender, receiver, 10000 * UNIT)
+        self.assertEqual(self.feetoken.balanceOf(receiver) + self.feetoken.feePool(), value)
+        self.assertEqual(self.feetoken.balanceOf(sender), 0)
 
         # 0 Value transfers are allowed and incur no fee.
         value = 0

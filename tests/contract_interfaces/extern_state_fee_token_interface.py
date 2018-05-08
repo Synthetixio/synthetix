@@ -18,7 +18,6 @@ class ExternStateFeeTokenInterface(SafeDecimalMathInterface, OwnedInterface):
         self.balanceOf = lambda account: self.contract.functions.balanceOf(account).call()
         self.allowance = lambda account, spender: self.contract.functions.allowance(account, spender).call()
         self.transferFeeRate = lambda: self.contract.functions.transferFeeRate().call()
-        self.maxTransferFeeRate = lambda: self.contract.functions.maxTransferFeeRate().call()
         self.feePool = lambda: self.contract.functions.feePool().call()
         self.feeAuthority = lambda: self.contract.functions.feeAuthority().call()
 
