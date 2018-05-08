@@ -141,6 +141,21 @@ class TestExternStateFeeToken(unittest.TestCase):
                          "StateUpdated")
         self.assertEqual(self.feetoken.state(), new_state)
 
+    def test_balanceOf(self):
+        self.assertEqual(self.feetoken.balanceOf(ZERO_ADDRESS), 0)
+        self.assertEqual(self.feetoken.balanceOf(self.initial_beneficiary), 1000 * UNIT)
+        self.feetoken.setState(self.feetoken.owner(), ZERO_ADDRESS)
+        self.assertReverts(self.feetoken.balanceOf, ZERO_ADDRESS)
+
+    def test_allowance(self):
+        self.assertEqual(self.feetoken.allowance(self.initial_beneficiary, ZERO_ADDRESS), 0)
+        self.assertEqual(self.feetoken.allowance(ZERO_ADDRESS, self.initial_beneficiary), 0)
+        self.feetoken.approve(self.initial_beneficiary, ZERO_ADDRESS, 1000)
+        self.assertEqual(self.feetoken.allowance(self.initial_beneficiary, ZERO_ADDRESS), 1000)
+        self.assertEqual(self.feetoken.allowance(ZERO_ADDRESS, self.initial_beneficiary), 0)
+        self.feetoken.setState(self.feetoken.owner(), ZERO_ADDRESS)
+        self.assertReverts(self.feetoken.allowance, self.initial_beneficiary, ZERO_ADDRESS)
+
     def test_getTransferFeeIncurred(self):
         value = 10 * UNIT
         fee = value * self.feetoken.transferFeeRate() // UNIT
