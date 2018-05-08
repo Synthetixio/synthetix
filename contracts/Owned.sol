@@ -46,6 +46,7 @@ contract Owned {
         public
     {
         owner = _owner;
+        emit OwnerChanged(address(0), _owner);
     }
 
     /**
