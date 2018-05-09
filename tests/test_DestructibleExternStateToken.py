@@ -1,16 +1,13 @@
 import unittest
 
 from utils.deployutils import W3, UNIT, MASTER, DUMMY, fresh_account, fresh_accounts
-from utils.deployutils import compile_contracts, attempt_deploy, mine_tx
-from utils.deployutils import take_snapshot, restore_snapshot
+from utils.deployutils import compile_contracts, attempt_deploy, mine_tx, attempt
+from utils.deployutils import take_snapshot, restore_snapshot, mine_txs
 from utils.testutils import assertReverts
 from utils.testutils import generate_topic_event_map, get_event_data_from_log
 from utils.testutils import ZERO_ADDRESS
 
 from tests.contract_interfaces.destructible_extern_state_token_interface import DestructibleExternStateTokenInterface
-
-DestructibleExternStateToken_SOURCE = "contracts/DestructibleExternStateToken.sol"
-TokenState_SOURCE = "contracts/TokenState.sol"
 
 
 def setUpModule():
@@ -28,41 +25,44 @@ class TestDestructibleExternStateToken(unittest.TestCase):
     def tearDown(self):
         restore_snapshot(self.snapshot)
 
+    @staticmethod
+    def deploy_contracts():
+        sources = ['contracts/DestructibleExternStateToken.sol',
+                   'contracts/TokenState.sol']
+
+        compiled = compile_contracts(sources, remappings=['""=contracts'])
+
+        token_abi = compiled['DestructibleExternStateToken']['abi']
+        token_event_dict = generate_topic_event_map(token_abi)
+        token_contract, construction_txr = attempt_deploy(
+            compiled, 'DestructibleExternStateToken', MASTER,
+            ["Test Token", "TEST", 1000 * UNIT, MASTER, ZERO_ADDRESS, MASTER]
+        )
+
+        tokenstate = W3.eth.contract(address=token_contract.functions.state().call(),
+                                     abi=compiled['TokenState']['abi'])
+
+        mine_tx(token_contract.functions.setState(tokenstate.address).transact({'from': MASTER}))
+        return compiled, token_contract, token_abi, token_event_dict, tokenstate
+
     @classmethod
     def setUpClass(cls):
         cls.assertReverts = assertReverts
-
-        cls.the_owner = DUMMY
-
-        cls.compiled = compile_contracts([DestructibleExternStateToken_SOURCE, TokenState_SOURCE],
-                                         remappings=['""=contracts'])
-        cls.token_abi = cls.compiled['DestructibleExternStateToken']['abi']
-        cls.token_event_dict = generate_topic_event_map(cls.token_abi)
-        cls.token_contract, cls.construction_txr = attempt_deploy(cls.compiled, 'DestructibleExternStateToken',
-                                                                   MASTER,
-                                                                   ["Test Token", "TEST",
-                                                                    1000 * UNIT, cls.the_owner,
-                                                                    ZERO_ADDRESS, cls.the_owner])
-
-        cls.tokenstate = W3.eth.contract(address=cls.token_contract.functions.state().call(),
-                                         abi=cls.compiled['TokenState']['abi'])
-
-        mine_tx(cls.token_contract.functions.setState(cls.tokenstate.address).transact({'from': cls.the_owner}))
-
+        cls.compiled, cls.token_contract, cls.token_abi, cls.token_event_dict, cls.tokenstate = cls.deploy_contracts()
         cls.token = DestructibleExternStateTokenInterface(cls.token_contract)
 
     def test_constructor(self):
         self.assertEqual(self.token.name(), "Test Token")
         self.assertEqual(self.token.symbol(), "TEST")
         self.assertEqual(self.token.totalSupply(), 1000 * UNIT)
-        self.assertEqual(self.token.balanceOf(self.the_owner), 1000 * UNIT)
+        self.assertEqual(self.token.balanceOf(MASTER), 1000 * UNIT)
         self.assertEqual(self.token.state(), self.tokenstate.address)
         self.assertEqual(self.tokenstate.functions.associatedContract().call(), self.token_contract.address)
 
     def test_provide_state(self):
         tokenstate, _ = attempt_deploy(self.compiled, 'TokenState',
                                        MASTER,
-                                       [self.the_owner, self.token_contract.address])
+                                       [MASTER, self.token_contract.address])
 
         token, _ = attempt_deploy(self.compiled, 'DestructibleExternStateToken',
                                        MASTER,
@@ -92,7 +92,7 @@ class TestDestructibleExternStateToken(unittest.TestCase):
         self.assertEqual(self.token.state(), new_state)
 
     def test_transfer(self):
-        sender = self.the_owner
+        sender = MASTER
         sender_balance = self.token.balanceOf(sender)
 
         receiver = fresh_account()
@@ -153,7 +153,7 @@ class TestDestructibleExternStateToken(unittest.TestCase):
         self.assertEqual(self.token.allowance(approver, spender), approval_amount)
 
     def test_transferFrom(self):
-        approver = self.the_owner
+        approver = MASTER
         spender, receiver = fresh_accounts(2)
 
         approver_balance = self.token.balanceOf(approver)

@@ -1,7 +1,7 @@
 import unittest
 
 from utils.deployutils import attempt, compile_contracts, attempt_deploy, mine_txs, UNIT, MASTER, \
-    fast_forward, DUMMY, take_snapshot, restore_snapshot, fresh_account, fresh_accounts
+    fast_forward, DUMMY, take_snapshot, restore_snapshot, fresh_account, fresh_accounts, to_seconds
 from utils.testutils import assertReverts, assertClose, block_time
 from utils.testutils import generate_topic_event_map, get_event_data_from_log
 from utils.testutils import ZERO_ADDRESS
@@ -9,34 +9,6 @@ from utils.testutils import ZERO_ADDRESS
 from tests.contract_interfaces.court_interface import PublicCourtInterface
 from tests.contract_interfaces.havven_interface import PublicHavvenInterface
 from tests.contract_interfaces.nomin_interface import NominInterface
-
-SOLIDITY_SOURCES = ["tests/contracts/PublicCourt.sol",
-                    "contracts/Nomin.sol",
-                    "tests/contracts/PublicHavven.sol"]
-
-
-def deploy_public_court():
-    print("Deployment Initiated. \n")
-
-    compiled = attempt(compile_contracts, [SOLIDITY_SOURCES], "Compiling contracts...")
-    court_abi = compiled['PublicCourt']['abi']
-    nomin_abi = compiled['Nomin']['abi']
-
-    havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [ZERO_ADDRESS, MASTER, MASTER])
-    nomin_contract, nom_txr = attempt_deploy(compiled, 'Nomin',
-                                             MASTER,
-                                             [havven_contract.address, MASTER, ZERO_ADDRESS])
-    court_contract, court_txr = attempt_deploy(compiled, 'PublicCourt',
-                                               MASTER,
-                                               [havven_contract.address, nomin_contract.address,
-                                                MASTER])
-
-    txs = [havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
-           nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER})]
-    attempt(mine_txs, [txs], "Linking contracts... ")
-
-    print("\nDeployment complete.\n")
-    return havven_contract, nomin_contract, court_contract, nomin_abi, court_abi
 
 
 def setUpModule():
@@ -54,12 +26,40 @@ class TestCourt(unittest.TestCase):
     def tearDown(self):
         restore_snapshot(self.snapshot)
 
+    @staticmethod
+    def deployContracts():
+        sources = ["tests/contracts/PublicCourt.sol",
+                   "contracts/Nomin.sol",
+                   "tests/contracts/PublicHavven.sol"]
+
+        print("Deployment Initiated. \n")
+
+        compiled = attempt(compile_contracts, [sources], "Compiling contracts...")
+        court_abi = compiled['PublicCourt']['abi']
+        nomin_abi = compiled['Nomin']['abi']
+
+        havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [ZERO_ADDRESS, MASTER, MASTER])
+        nomin_contract, nom_txr = attempt_deploy(compiled, 'Nomin',
+                                                 MASTER,
+                                                 [havven_contract.address, MASTER, ZERO_ADDRESS])
+        court_contract, court_txr = attempt_deploy(compiled, 'PublicCourt',
+                                                   MASTER,
+                                                   [havven_contract.address, nomin_contract.address,
+                                                    MASTER])
+
+        txs = [havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
+               nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER})]
+        attempt(mine_txs, [txs], "Linking contracts... ")
+
+        print("\nDeployment complete.\n")
+        return havven_contract, nomin_contract, court_contract, nomin_abi, court_abi
+
     @classmethod
     def setUpClass(cls):
         cls.assertReverts = assertReverts
         cls.assertClose = assertClose
 
-        cls.havven_contract, cls.nomin_contract, cls.court_contract, cls.nomin_abi, cls.court_abi = deploy_public_court()
+        cls.havven_contract, cls.nomin_contract, cls.court_contract, cls.nomin_abi, cls.court_abi = cls.deployContracts()
 
         # Event stuff
         cls.court_event_dict = generate_topic_event_map(cls.court_abi)
@@ -69,12 +69,6 @@ class TestCourt(unittest.TestCase):
 
         cls.havven = PublicHavvenInterface(cls.havven_contract)
         cls.nomin = NominInterface(cls.nomin_contract)
-
-        # Solidity convenience
-        cls.days = 86400
-        cls.weeks = 604800
-        cls.months = 2628000
-        cls.unit = 10**18
 
     #
     # HELPER FUNCTIONS
@@ -136,12 +130,12 @@ class TestCourt(unittest.TestCase):
         self.assertEqual(self.havven.contract.address, self.court.getHavven())
         self.assertEqual(self.nomin.contract.address, self.court.getNomin())
         self.assertEqual(self.court.minStandingBalance(), 100 * UNIT)
-        self.assertEqual(self.court.votingPeriod(), 1 * self.weeks)
-        self.assertEqual(self.court.MIN_VOTING_PERIOD(), 3 * self.days)
-        self.assertEqual(self.court.MAX_VOTING_PERIOD(), 4 * self.weeks)
-        self.assertEqual(self.court.confirmationPeriod(), 1 * self.weeks)
-        self.assertEqual(self.court.MIN_CONFIRMATION_PERIOD(), 1 * self.days)
-        self.assertEqual(self.court.MAX_CONFIRMATION_PERIOD(), 2 * self.weeks)
+        self.assertEqual(self.court.votingPeriod(), to_seconds(weeks=1))
+        self.assertEqual(self.court.MIN_VOTING_PERIOD(), to_seconds(days=3))
+        self.assertEqual(self.court.MAX_VOTING_PERIOD(), to_seconds(weeks=4))
+        self.assertEqual(self.court.confirmationPeriod(), to_seconds(weeks=1))
+        self.assertEqual(self.court.MIN_CONFIRMATION_PERIOD(), to_seconds(days=1))
+        self.assertEqual(self.court.MAX_CONFIRMATION_PERIOD(), to_seconds(weeks=2))
         self.assertEqual(self.court.requiredParticipation(), 3 * UNIT / 10)
         self.assertEqual(self.court.MIN_REQUIRED_PARTICIPATION(), UNIT / 10)
         self.assertEqual(self.court.requiredMajority(), (2 * UNIT) // 3)
@@ -165,7 +159,7 @@ class TestCourt(unittest.TestCase):
 
     def test_setVotingPeriod(self):
         owner = self.court.owner()
-        new_voting_period = 2 * self.weeks
+        new_voting_period = to_seconds(weeks=2)
 
         # Only owner can set votingPeriod.
         self.assertReverts(self.court.setVotingPeriod, DUMMY, new_voting_period)
@@ -173,25 +167,25 @@ class TestCourt(unittest.TestCase):
         self.assertEqual(self.court.votingPeriod(), new_voting_period)
 
         # Voting period must be > than MIN_VOTING_PERIOD (~ currently 3 days).
-        bad_voting_period = 3 * self.days - 1
+        bad_voting_period = to_seconds(days=3) - 1
         self.assertReverts(self.court.setVotingPeriod, owner, bad_voting_period)
 
         # Voting period must be < than MAX_VOTING_PERIOD (~ currently 4 weeks).
-        bad_voting_period = 4 * self.weeks + 1
+        bad_voting_period = to_seconds(weeks=4) + 1
         self.assertReverts(self.court.setVotingPeriod, owner, bad_voting_period)
 
         # Voting period must be <= the havven target fee period duration.
-        fee_period_duration = 2 * self.weeks
+        fee_period_duration = to_seconds(weeks=2)
         self.havven.setTargetFeePeriodDuration(owner, fee_period_duration)
         self.assertEqual(self.havven.targetFeePeriodDurationSeconds(), fee_period_duration)
 
         # Voting period must be <= fee period duration.
-        bad_voting_period = 2 * self.weeks + 1
+        bad_voting_period = to_seconds(weeks=2) + 1
         self.assertReverts(self.court.setVotingPeriod, owner, bad_voting_period)
 
     def test_setConfirmationPeriod(self):
         owner = self.court.owner()
-        new_confirmation_period = 2 * self.weeks
+        new_confirmation_period = to_seconds(weeks=2)
 
         # Only owner can set confirmationPeriod.
         self.assertReverts(self.court.setConfirmationPeriod, DUMMY, new_confirmation_period)
@@ -199,11 +193,11 @@ class TestCourt(unittest.TestCase):
         self.assertEqual(self.court.confirmationPeriod(), new_confirmation_period)
 
         # Confirmation period must be > than MIN_CONFIRMATION_PERIOD (~ currently 1 days).
-        bad_confirmation_period = 1 * self.days - 1
+        bad_confirmation_period = to_seconds(days=1) - 1
         self.assertReverts(self.court.setConfirmationPeriod, owner, bad_confirmation_period)
 
         # Confirmation period must be < than MAX_CONFIRMATION_PERIOD (~ 3 weeks).
-        bad_confirmation_period = 3 * self.weeks + 1
+        bad_confirmation_period = to_seconds(weeks=3) + 1
         self.assertReverts(self.court.setConfirmationPeriod, owner, bad_confirmation_period)
 
     def test_setRequiredParticipation(self):
@@ -837,8 +831,8 @@ class TestCourt(unittest.TestCase):
         voting_period = self.court.votingPeriod()
         confirmation_period = self.court.confirmationPeriod()
         fee_period = self.havven.targetFeePeriodDurationSeconds()
-        required_participation = self.court.requiredParticipation() / self.unit
-        required_majority = self.court.requiredMajority() / self.unit
+        required_participation = self.court.requiredParticipation() / UNIT
+        required_majority = self.court.requiredMajority() / UNIT
 
         # Generate a bunch of voters with equal voting power
         num_voters = 50

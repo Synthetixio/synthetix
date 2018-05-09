@@ -23,13 +23,19 @@ class TestOwned(HavvenTestCase):
     def tearDown(self):
         restore_snapshot(self.snapshot)
 
+    @staticmethod
+    def deployContracts(source_paths, primary=None):
+        compiled = compile_contracts(source_paths)
+        event_maps = {name: generate_topic_event_map(compiled[name]['abi']) for name in compiled}
+        primary_contract = primary if primary is not None else list(event_maps.keys())[0]
+        event_map = event_maps[primary_contract]
+        return compiled, event_maps, primary_contract, event_map
+
     @classmethod
     def setUpClass(cls):
-        cls.setUpHavvenTestClass([OWNED_SOURCE])
-
+        cls.compiled, cls.event_maps, cls.primary_contract, cls.event_map = cls.deployContracts([OWNED_SOURCE])
         cls.owned_contract, cls.deploy_tx = attempt_deploy(cls.compiled, 'Owned', MASTER, [MASTER])       
         cls.owned = OwnedInterface(cls.owned_contract)
-
 
     def test_constructor(self):
         self.assertEqual(self.owned.owner(), MASTER)

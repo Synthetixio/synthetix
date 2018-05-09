@@ -5,9 +5,6 @@ from utils.testutils import assertReverts, block_time
 from utils.generalutils import to_seconds
 
 
-SETUP_SOURCE = "tests/contracts/OneWeekSetup.sol"
-
-
 def setUpModule():
     print("Testing LimitedSetup...")
 
@@ -21,7 +18,7 @@ class TestLimitedSetup(unittest.TestCase):
     def setUpClass(cls):
         cls.assertReverts = assertReverts
 
-        compiled = compile_contracts([SETUP_SOURCE],
+        compiled = compile_contracts(["tests/contracts/OneWeekSetup.sol"],
                                      remappings=['""=contracts'])
         cls.setup, txr = attempt_deploy(compiled, 'OneWeekSetup', MASTER, [])
         cls.contractConstructionTime = block_time(txr.blockNumber)

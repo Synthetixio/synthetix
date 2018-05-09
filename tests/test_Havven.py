@@ -18,38 +18,6 @@ SOLIDITY_SOURCES = ["tests/contracts/PublicHavven.sol", "contracts/Nomin.sol",
                     "contracts/Court.sol", "contracts/HavvenEscrow.sol"]
 
 
-def deploy_public_havven():
-    print("Deployment initiated.\n")
-
-    compiled = attempt(compile_contracts, [SOLIDITY_SOURCES], "Compiling contracts... ")
-
-    # Deploy contracts
-    havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [ZERO_ADDRESS, MASTER, MASTER])
-    hvn_block = W3.eth.blockNumber
-    nomin_contract, nom_txr = attempt_deploy(compiled, 'Nomin',
-                                             MASTER,
-                                             [havven_contract.address, MASTER, ZERO_ADDRESS])
-    court_contract, court_txr = attempt_deploy(compiled, 'Court',
-                                               MASTER,
-                                               [havven_contract.address, nomin_contract.address,
-                                                MASTER])
-    escrow_contract, escrow_txr = attempt_deploy(compiled, 'HavvenEscrow',
-                                                 MASTER,
-                                                 [MASTER, havven_contract.address])
-
-    # Hook up each of those contracts to each other
-    txs = [havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
-           nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER}),
-           nomin_contract.functions.setHavven(havven_contract.address).transact({'from': MASTER}),
-           havven_contract.functions.setEscrow(escrow_contract.address).transact({'from': MASTER})]
-    attempt(mine_txs, [txs], "Linking contracts... ")
-
-    havven_event_dict = generate_topic_event_map(compiled['PublicHavven']['abi'])
-
-    print("\nDeployment complete.\n")
-    return havven_contract, nomin_contract, court_contract, escrow_contract, hvn_block, havven_event_dict
-
-
 def setUpModule():
     print("Testing Havven...")
 
@@ -65,6 +33,38 @@ class TestHavven(unittest.TestCase):
     def tearDown(self):
         restore_snapshot(self.snapshot)
 
+    @staticmethod
+    def deployContracts():
+        print("Deployment initiated.\n")
+
+        compiled = attempt(compile_contracts, [SOLIDITY_SOURCES], "Compiling contracts... ")
+
+        # Deploy contracts
+        havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [ZERO_ADDRESS, MASTER, MASTER])
+        hvn_block = W3.eth.blockNumber
+        nomin_contract, nom_txr = attempt_deploy(compiled, 'Nomin',
+                                                 MASTER,
+                                                 [havven_contract.address, MASTER, ZERO_ADDRESS])
+        court_contract, court_txr = attempt_deploy(compiled, 'Court',
+                                                   MASTER,
+                                                   [havven_contract.address, nomin_contract.address,
+                                                    MASTER])
+        escrow_contract, escrow_txr = attempt_deploy(compiled, 'HavvenEscrow',
+                                                     MASTER,
+                                                     [MASTER, havven_contract.address])
+
+        # Hook up each of those contracts to each other
+        txs = [havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
+               nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER}),
+               nomin_contract.functions.setHavven(havven_contract.address).transact({'from': MASTER}),
+               havven_contract.functions.setEscrow(escrow_contract.address).transact({'from': MASTER})]
+        attempt(mine_txs, [txs], "Linking contracts... ")
+
+        havven_event_dict = generate_topic_event_map(compiled['PublicHavven']['abi'])
+
+        print("\nDeployment complete.\n")
+        return havven_contract, nomin_contract, court_contract, escrow_contract, hvn_block, havven_event_dict
+
     @classmethod
     def setUpClass(cls):
         cls.assertClose = assertClose
@@ -73,7 +73,7 @@ class TestHavven(unittest.TestCase):
         fast_forward(weeks=102)
 
         cls.havven_contract, cls.nomin_contract, cls.court_contract, \
-            cls.escrow_contract, cls.construction_block, cls.havven_event_dict = deploy_public_havven()
+            cls.escrow_contract, cls.construction_block, cls.havven_event_dict = cls.deployContracts()
 
         cls.havven = PublicHavvenInterface(cls.havven_contract)
         
