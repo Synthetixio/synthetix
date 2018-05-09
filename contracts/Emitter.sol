@@ -22,7 +22,7 @@ could be emitted from the proxy in later implementations.
 -----------------------------------------------------------------
 */
 
-pragma solidity ^0.4.23;
+pragma solidity 0.4.23;
 
 import "contracts/EmitterBase.sol";
 
@@ -32,8 +32,8 @@ import "contracts/EmitterBase.sol";
 contract Emitter is EmitterBase {
 
     /*** CONSTRUCTOR ***/
-    constructor(address _owner)
-        EmitterBase(_owner)
+    constructor(address _proxy, address _owner)
+        EmitterBase(_proxy, _owner)
         public
     {
 

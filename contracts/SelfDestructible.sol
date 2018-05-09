@@ -44,9 +44,9 @@ contract SelfDestructible is Emitter {
 	 * @param _beneficiary The account to forward all ether in this contract upon self-destruction
 	 * @param _delay The time to wait after initiating self-destruction before it can be triggered.
 	 */
-	constructor(address _owner, address _beneficiary, uint _delay)
+	constructor(address _proxy, address _owner, address _beneficiary, uint _delay)
 		public
-	    Emitter(_owner)
+	    Emitter(_proxy, _owner)
 	{
 		selfDestructBeneficiary = _beneficiary;
 		selfDestructDelay = _delay;
@@ -60,7 +60,7 @@ contract SelfDestructible is Emitter {
 	 */
 	function setBeneficiary(address _beneficiary)
 		external
-		onlyOwner
+		optionalProxy_onlyOwner
 	{
 		selfDestructBeneficiary = _beneficiary;
 		emitSelfDestructBeneficiaryUpdated(_beneficiary);
@@ -73,7 +73,7 @@ contract SelfDestructible is Emitter {
 	 */
 	function initiateSelfDestruct()
 		external
-		onlyOwner
+		optionalProxy_onlyOwner
 	{
 		initiationTime = now;
 		emitSelfDestructInitiated(selfDestructDelay);
@@ -85,7 +85,7 @@ contract SelfDestructible is Emitter {
 	 */
 	function terminateSelfDestruct()
 		external
-		onlyOwner
+		optionalProxy_onlyOwner
 	{
 		initiationTime = NULL_INITIATION;
 		emitSelfDestructTerminated();
@@ -98,7 +98,7 @@ contract SelfDestructible is Emitter {
 	 */
 	function selfDestruct()
 		external
-		onlyOwner
+		optionalProxy_onlyOwner
 	{
 		require(initiationTime + selfDestructDelay < now);
 		address beneficiary = selfDestructBeneficiary;

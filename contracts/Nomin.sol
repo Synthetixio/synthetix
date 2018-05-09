@@ -54,11 +54,12 @@ contract Nomin is ExternStateFeeToken {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _havven, address _owner, TokenState _initialState)
+    constructor(address _havven, address _proxy, address _owner, TokenState _initialState)
         ExternStateFeeToken("Havven-Backed USD Nomins", "nUSD",
                             15 * UNIT / 10000, // nomin transfers incur a 15 bp fee
                             _havven, // the havven contract is the fee authority
                             _initialState,
+                            _proxy,
                             _owner)
         public
     {
@@ -71,7 +72,7 @@ contract Nomin is ExternStateFeeToken {
 
     function setCourt(Court _court)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         court = _court;
         emitCourtUpdated(_court);
@@ -79,7 +80,7 @@ contract Nomin is ExternStateFeeToken {
 
     function setHavven(Havven _havven)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         // havven should be set as the feeAuthority after calling this depending on
         // havven's internal logic
@@ -98,6 +99,7 @@ contract Nomin is ExternStateFeeToken {
      * and no new funds can be transferred to it.*/
     function transfer(address to, uint value)
         public
+        optionalProxy
         returns (bool)
     {
         require(!frozen[to]);
@@ -108,6 +110,7 @@ contract Nomin is ExternStateFeeToken {
      * whether the recipient account is frozen. */
     function transferFrom(address from, address to, uint value)
         public
+        optionalProxy
         returns (bool)
     {
         require(!frozen[to]);
@@ -116,6 +119,7 @@ contract Nomin is ExternStateFeeToken {
 
     function transferSenderPaysFee(address to, uint value)
         public
+        optionalProxy
         returns (bool)
     {
         require(!frozen[to]);
@@ -124,6 +128,7 @@ contract Nomin is ExternStateFeeToken {
 
     function transferFromSenderPaysFee(address from, address to, uint value)
         public
+        optionalProxy
         returns (bool)
     {
         require(!frozen[to]);
@@ -135,6 +140,7 @@ contract Nomin is ExternStateFeeToken {
      * and freeze its participation in further transactions. */
     function confiscateBalance(address target)
         external
+        optionalProxy
         onlyCourt
     {
         
@@ -161,7 +167,7 @@ contract Nomin is ExternStateFeeToken {
      * again accept and transfer nomins. */
     function unfreezeAccount(address target)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         if (frozen[target] && Nomin(target) != this) {
             frozen[target] = false;
@@ -173,6 +179,7 @@ contract Nomin is ExternStateFeeToken {
      * nomins from a target address */
     function issue(address target, uint amount)
         external
+        optionalProxy
         onlyHavven
     {
         state.setBalanceOf(target, safeAdd(state.balanceOf(target), amount));
@@ -185,6 +192,7 @@ contract Nomin is ExternStateFeeToken {
      * nomins from a target address */
     function burn(address target, uint amount)
         external
+        optionalProxy
         onlyHavven
     {
         state.setBalanceOf(target, safeSub(state.balanceOf(target), amount));
@@ -196,12 +204,12 @@ contract Nomin is ExternStateFeeToken {
     /* ========== MODIFIERS ========== */
 
     modifier onlyHavven() {
-        require(Havven(msg.sender) == havven);
+        require(Havven(messageSender) == havven);
         _;
     }
 
     modifier onlyCourt() {
-        require(Court(msg.sender) == court);
+        require(Court(messageSender) == court);
         _;
     }
 

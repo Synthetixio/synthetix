@@ -43,12 +43,11 @@ contract Proxy is Owned {
     Proxyable target;
     bool public metropolis;
 
-    constructor(Proxyable _target, address _owner)
+    constructor(address _owner)
         Owned(_owner)
         public
     {
-        target = _target;
-        emit TargetChanged(_target);
+
     }
 
     function _setTarget(address _target)

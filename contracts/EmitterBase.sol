@@ -43,7 +43,7 @@ function emitMyEvent(string memory _string, uint256 _nr)
 -----------------------------------------------------------------
 */
 
-pragma solidity ^0.4.23;
+pragma solidity 0.4.23;
 
 
 import "contracts/Proxyable.sol";
@@ -51,8 +51,8 @@ import "contracts/Proxyable.sol";
 contract EmitterBase is Proxyable {
 
     /*** CONSTRUCTOR ***/
-    constructor(address _owner)
-        Proxyable(_owner)
+    constructor(address _proxy, address _owner)
+        Proxyable(_proxy, _owner)
         public
     {
 

@@ -2,23 +2,29 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
-file:       Owned.sol
+file:       ProxyableOwned.sol
 version:    1.0
 author:     Anton Jurisevic
             Dominic Romanowski
+
 date:       2018-2-26
+
 checked:    Mike Spain
 approved:   Samuel Brooks
+
 -----------------------------------------------------------------
 MODULE DESCRIPTION
 -----------------------------------------------------------------
+
 An Owned contract, to be inherited by other contracts.
 Requires its owner to be explicitly set in the constructor.
 Provides an onlyOwner access modifier.
+
 To change owner, the current owner must nominate the next owner,
 who then has to accept the nomination. The nomination can be
 cancelled before it is accepted by the new owner by having the
 previous owner change the nomination (setting it to 0).
+
 -----------------------------------------------------------------
 */
 
@@ -29,9 +35,13 @@ pragma solidity 0.4.23;
  * @notice Contract ownership can be transferred by first nominating the new owner,
  * who must then accept the ownership, which prevents accidental incorrect ownership transfers.
  */
-contract Owned {
+contract ProxyableOwned {
     address public owner;
     address public nominatedOwner;
+
+    /*** ABSTRACT FUNCTIONS ***/
+    function emitOwnerNominated(address _owner) internal;
+    function emitOwnerChanged(address _owner, address _nominatedOwner) internal;
 
     /**
      * @dev Owned Constructor
@@ -40,7 +50,6 @@ contract Owned {
         public
     {
         owner = _owner;
-        emit OwnerChanged(address(0), _owner);
     }
 
     /**
@@ -49,10 +58,10 @@ contract Owned {
      */
     function nominateOwner(address _owner)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         nominatedOwner = _owner;
-        emit OwnerNominated(_owner);
+        emitOwnerNominated(_owner);
     }
 
     /**
@@ -60,19 +69,18 @@ contract Owned {
      */
     function acceptOwnership()
         external
+        optionalProxy
     {
-        require(msg.sender == nominatedOwner);
-        emit OwnerChanged(owner, nominatedOwner);
+        require(messageSender == nominatedOwner);
+        emitOwnerChanged(owner, nominatedOwner);
         owner = nominatedOwner;
         nominatedOwner = address(0);
     }
 
     modifier onlyOwner
     {
-        require(msg.sender == owner);
+        require(messageSender == owner);
         _;
     }
 
-    event OwnerNominated(address newOwner);
-    event OwnerChanged(address oldOwner, address newOwner);
 }
