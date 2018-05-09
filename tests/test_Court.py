@@ -9,8 +9,10 @@ from utils.testutils import ZERO_ADDRESS
 from tests.contract_interfaces.court_interface import PublicCourtInterface
 from tests.contract_interfaces.havven_interface import PublicHavvenInterface
 from tests.contract_interfaces.nomin_interface import NominInterface
+from tests.contract_interfaces.proxy_interface import ProxyInterface
 
-SOLIDITY_SOURCES = ["tests/contracts/PublicCourt.sol",
+SOLIDITY_SOURCES = ["contracts/Proxy.sol",
+                    "tests/contracts/PublicCourt.sol",
                     "contracts/Nomin.sol",
                     "tests/contracts/PublicHavven.sol"]
 
@@ -19,6 +21,7 @@ def deploy_public_court():
     print("Deployment Initiated. \n")
 
     compiled = attempt(compile_contracts, [SOLIDITY_SOURCES], "Compiling contracts...")
+    proxy_abi = compiled['Proxy']['abi']
     court_abi = compiled['PublicCourt']['abi']
     nomin_abi = compiled['Nomin']['abi']
 
