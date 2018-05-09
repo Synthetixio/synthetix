@@ -42,7 +42,6 @@ class TestSelfDestructible(unittest.TestCase):
 
         send_value(MASTER, cls.sd_contract.address, 10 * UNIT)
 
-
     def test_constructor(self):
         self.assertEqual(self.sd.owner(), MASTER)
         self.assertEqual(self.sd.selfDestructBeneficiary(), DUMMY)

@@ -6,7 +6,6 @@ from utils.testutils import ZERO_ADDRESS
 
 from tests.contract_interfaces.token_state_interface import TokenStateInterface
 
-TokenState_SOURCE = "contracts/TokenState.sol"
 
 
 def deploy_state(name, compiled, sender, owner, supply, beneficiary, associated_contract):
@@ -31,17 +30,22 @@ class TestTokenState(unittest.TestCase):
     def tearDown(self):
         restore_snapshot(self.snapshot)
 
+    @staticmethod
+    def deployContracts():
+        sources = ["contracts/TokenState.sol"]
+        compiled = compile_contracts(sources, remappings=['""=contracts'])
+        tokenstate, _ = attempt_deploy(compiled, 'TokenState', MASTER, [MASTER, DUMMY])
+        return tokenstate
+
     @classmethod
     def setUpClass(cls):
         cls.assertReverts = assertReverts
 
-        cls.compiled = compile_contracts([TokenState_SOURCE], remappings=['""=contracts'])
+        cls.tokenstate_contract = cls.deployContracts()
+
+        cls.tokenstate = TokenStateInterface(cls.tokenstate_contract)
         cls.owner = MASTER
         cls.associate = DUMMY
-
-        cls.tokenstate, _ = attempt_deploy(cls.compiled, 'TokenState', MASTER, [cls.owner, cls.associate])
-
-        cls.tokenstate = TokenStateInterface(cls.tokenstate)
 
     def test_constructor(self):
         self.assertEquals(self.tokenstate.owner(), self.owner)

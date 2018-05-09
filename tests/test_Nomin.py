@@ -31,28 +31,34 @@ class TestNomin(unittest.TestCase):
     def tearDown(self):
         restore_snapshot(self.snapshot)
 
+    @staticmethod
+    def deployContracts():
+        compiled = compile_contracts(SOURCES, remappings=['""=contracts'])
+
+        nomin_abi = compiled['PublicNomin']['abi']
+        nomin_event_dict = generate_topic_event_map(nomin_abi)
+
+        nomin_contract, _ = attempt_deploy(
+            compiled, 'PublicNomin', MASTER, [MASTER, MASTER, ZERO_ADDRESS]
+        )
+
+        havven_contract, _ = attempt_deploy(
+            compiled, "Havven", MASTER, [ZERO_ADDRESS, MASTER, MASTER]
+        )
+
+        fake_court, _ = attempt_deploy(compiled, 'FakeCourt', MASTER, [])
+
+        return nomin_contract, nomin_event_dict, havven_contract, fake_court
+
     @classmethod
     def setUpClass(cls):
         cls.assertReverts = assertReverts
         cls.assertClose = assertClose
 
-        compiled = compile_contracts(SOURCES, remappings=['""=contracts'])
-
-        cls.nomin_abi = compiled['PublicNomin']['abi']
-        cls.nomin_event_dict = generate_topic_event_map(cls.nomin_abi)
-
-        cls.nomin_contract, cls.nomin_txr = attempt_deploy(
-            compiled, 'PublicNomin', MASTER, [MASTER, MASTER, ZERO_ADDRESS]
-        )
-
-        cls.havven_contract, cls.havven_txr = attempt_deploy(
-            compiled, "Havven", MASTER, [ZERO_ADDRESS, MASTER, MASTER]
-        )
+        cls.nomin_contract, cls.nomin_event_dict, cls.havven_contract, cls.fake_court = cls.deployContracts()
 
         cls.nomin = PublicNominInterface(cls.nomin_contract)
         cls.havven = HavvenInterface(cls.havven_contract)
-
-        cls.fake_court, _ = attempt_deploy(compiled, 'FakeCourt', MASTER, [])
 
         cls.fake_court.setNomin = lambda sender, new_nomin: mine_tx(
             cls.fake_court.functions.setNomin(new_nomin).transact({'from': sender}))
