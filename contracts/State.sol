@@ -46,8 +46,8 @@ contract State is Emitter {
     address public associatedContract;
 
 
-    constructor(address _owner, address _associatedContract)
-        Emitter(_owner)
+    constructor(address _proxy, address _owner, address _associatedContract)
+        Emitter(_proxy, _owner)
         public
     {
         associatedContract = _associatedContract;
@@ -59,7 +59,7 @@ contract State is Emitter {
     // Change the associated contract to a new address
     function setAssociatedContract(address _associatedContract)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         associatedContract = _associatedContract;
         emitAssociatedContractUpdated(_associatedContract);
@@ -69,7 +69,7 @@ contract State is Emitter {
 
     modifier onlyAssociatedContract
     {
-        require(msg.sender == associatedContract);
+        require(messageSender == associatedContract);
         _;
     }
 

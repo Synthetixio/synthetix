@@ -60,8 +60,8 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible {
      */
     constructor(string _name, string _symbol,
                                    uint _initialSupply, address _initialBeneficiary,
-                                   TokenState _state, address _owner)
-        SelfDestructible(_owner, _owner, 4 weeks)
+                                   TokenState _state, address _proxy, address _owner)
+        SelfDestructible(_owner, _proxy, _owner, 4 weeks)
         public
     {
         name = _name;
@@ -88,6 +88,7 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible {
     function allowance(address tokenOwner, address spender)
         public
         view
+        optionalProxy
         returns (uint)
     {
         return state.allowance(tokenOwner, spender);
@@ -99,6 +100,7 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible {
     function balanceOf(address account)
         public
         view
+        optionalProxy
         returns (uint)
     {
         return state.balanceOf(account);
@@ -112,7 +114,7 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible {
      */
     function setState(TokenState _state)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         state = _state;
         emitStateUpdated(_state);
@@ -124,32 +126,34 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible {
      */
     function transfer(address to, uint value)
         public
+        optionalProxy
         returns (bool)
     {
         require(to != address(0));
 
         /* Insufficient balance will be handled by the safe subtraction. */
-        state.setBalanceOf(msg.sender, safeSub(state.balanceOf(msg.sender), value));
+        state.setBalanceOf(messageSender, safeSub(state.balanceOf(messageSender), value));
         state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
 
-        emitTransfer(msg.sender, to, value);
+        emitTransfer(messageSender, to, value);
 
         return true;
     }
 
     /**
      * @dev Perform an ERC20 token transferFrom. Designed to be called by transferFrom functions
-     * possessing the onlyProxy or optionalProxy modifiers.
+     * possessing the optionalProxy or optionalProxy modifiers.
      */
     function transferFrom(address from, address to, uint value)
         public
+        optionalProxy
         returns (bool)
     {
         require(to != address(0));
 
         /* Insufficient balance will be handled by the safe subtraction. */
         state.setBalanceOf(from, safeSub(state.balanceOf(from), value));
-        state.setAllowance(from, msg.sender, safeSub(state.allowance(from, msg.sender), value));
+        state.setAllowance(from, messageSender, safeSub(state.allowance(from, messageSender), value));
         state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
 
         emitTransfer(from, to, value);
@@ -162,10 +166,11 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible {
      */
     function approve(address spender, uint value)
         public
+        optionalProxy
         returns (bool)
     {
-        state.setAllowance(msg.sender, spender, value);
-        emitApproval(msg.sender, spender, value);
+        state.setAllowance(messageSender, spender, value);
+        emitApproval(messageSender, spender, value);
         return true;
     }
 

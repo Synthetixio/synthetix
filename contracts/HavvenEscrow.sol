@@ -63,8 +63,8 @@ contract HavvenEscrow is SafeDecimalMath, Emitter, LimitedSetup(8 weeks) {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, Havven _havven)
-        Emitter(_owner)
+    constructor(address _proxy, address _owner, Havven _havven)
+        Emitter(_proxy, _owner)
         public
     {
         havven = _havven;
@@ -75,7 +75,7 @@ contract HavvenEscrow is SafeDecimalMath, Emitter, LimitedSetup(8 weeks) {
 
     function setHavven(Havven _havven)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         havven = _havven;
         emitHavvenUpdated(_havven);
@@ -90,6 +90,7 @@ contract HavvenEscrow is SafeDecimalMath, Emitter, LimitedSetup(8 weeks) {
     function balanceOf(address account)
         public
         view
+        optionalProxy
         returns (uint)
     {
         return totalVestedAccountBalance[account];
@@ -101,6 +102,7 @@ contract HavvenEscrow is SafeDecimalMath, Emitter, LimitedSetup(8 weeks) {
     function numVestingEntries(address account)
         public
         view
+        optionalProxy
         returns (uint)
     {
         return vestingSchedules[account].length;
@@ -113,6 +115,7 @@ contract HavvenEscrow is SafeDecimalMath, Emitter, LimitedSetup(8 weeks) {
     function getVestingScheduleEntry(address account, uint index)
         public
         view
+        optionalProxy
         returns (uint[2])
     {
         return vestingSchedules[account][index];
@@ -124,6 +127,7 @@ contract HavvenEscrow is SafeDecimalMath, Emitter, LimitedSetup(8 weeks) {
     function getVestingTime(address account, uint index)
         public
         view
+        optionalProxy
         returns (uint)
     {
         return vestingSchedules[account][index][0];
@@ -135,6 +139,7 @@ contract HavvenEscrow is SafeDecimalMath, Emitter, LimitedSetup(8 weeks) {
     function getVestingQuantity(address account, uint index)
         public
         view
+        optionalProxy
         returns (uint)
     {
         return vestingSchedules[account][index][1];
@@ -146,6 +151,7 @@ contract HavvenEscrow is SafeDecimalMath, Emitter, LimitedSetup(8 weeks) {
     function getNextVestingIndex(address account)
         public
         view
+        optionalProxy
         returns (uint)
     {
         uint len = numVestingEntries(account);
@@ -163,6 +169,7 @@ contract HavvenEscrow is SafeDecimalMath, Emitter, LimitedSetup(8 weeks) {
     function getNextVestingEntry(address account)
         external
         view
+        optionalProxy
         returns (uint[2])
     {
         uint index = getNextVestingIndex(account);
@@ -178,6 +185,7 @@ contract HavvenEscrow is SafeDecimalMath, Emitter, LimitedSetup(8 weeks) {
     function getNextVestingTime(address account)
         external
         view
+        optionalProxy
         returns (uint)
     {
         uint index = getNextVestingIndex(account);
@@ -193,6 +201,7 @@ contract HavvenEscrow is SafeDecimalMath, Emitter, LimitedSetup(8 weeks) {
     function getNextVestingQuantity(address account)
         external
         view
+        optionalProxy
         returns (uint)
     {
         uint index = getNextVestingIndex(account);
@@ -211,7 +220,7 @@ contract HavvenEscrow is SafeDecimalMath, Emitter, LimitedSetup(8 weeks) {
      */
     function withdrawHavvens(uint quantity)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
         setupFunction
     {
         havven.transfer(havven, quantity);
@@ -222,7 +231,7 @@ contract HavvenEscrow is SafeDecimalMath, Emitter, LimitedSetup(8 weeks) {
      */
     function purgeAccount(address account)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
         setupFunction
     {
         delete vestingSchedules[account];
@@ -245,7 +254,7 @@ contract HavvenEscrow is SafeDecimalMath, Emitter, LimitedSetup(8 weeks) {
      */
     function appendVestingEntry(address account, uint time, uint quantity)
         public
-        onlyOwner
+        optionalProxy_onlyOwner
         setupFunction
     {
         /* No empty or already-passed vesting entries allowed. */
@@ -275,7 +284,7 @@ contract HavvenEscrow is SafeDecimalMath, Emitter, LimitedSetup(8 weeks) {
      */
     function addVestingSchedule(address account, uint[] times, uint[] quantities)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
         setupFunction
     {
         for (uint i = 0; i < times.length; i++) {
@@ -289,29 +298,30 @@ contract HavvenEscrow is SafeDecimalMath, Emitter, LimitedSetup(8 weeks) {
      */
     function vest()
         external
+        optionalProxy
     {
-        uint numEntries = numVestingEntries(msg.sender);
+        uint numEntries = numVestingEntries(messageSender);
         uint total;
         for (uint i = 0; i < numEntries; i++) {
-            uint time = getVestingTime(msg.sender, i);
+            uint time = getVestingTime(messageSender, i);
             /* The list is sorted; when we reach the first future time, bail out. */
             if (time > now) {
                 break;
             }
-            uint qty = getVestingQuantity(msg.sender, i);
+            uint qty = getVestingQuantity(messageSender, i);
             if (qty == 0) {
                 continue;
             }
 
-            vestingSchedules[msg.sender][i] = [0, 0];
+            vestingSchedules[messageSender][i] = [0, 0];
             total = safeAdd(total, qty);
-            totalVestedAccountBalance[msg.sender] = safeSub(totalVestedAccountBalance[msg.sender], qty);
+            totalVestedAccountBalance[messageSender] = safeSub(totalVestedAccountBalance[messageSender], qty);
         }
 
         if (total != 0) {
             totalVestedBalance = safeSub(totalVestedBalance, total);
-            havven.transfer(msg.sender, total);
-            emitVested(msg.sender, msg.sender, now, total);
+            havven.transfer(messageSender, total);
+            emitVested(messageSender, messageSender, now, total);
         }
     }
 

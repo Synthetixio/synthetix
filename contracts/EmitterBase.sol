@@ -51,8 +51,8 @@ import "contracts/Proxyable.sol";
 contract EmitterBase is Proxyable {
 
     /*** CONSTRUCTOR ***/
-    constructor(address _owner)
-        Proxyable(_owner)
+    constructor(address _proxy, address _owner)
+        Proxyable(_proxy, _owner)
         public
     {
 

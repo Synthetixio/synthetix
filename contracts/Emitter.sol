@@ -32,8 +32,8 @@ import "contracts/EmitterBase.sol";
 contract Emitter is EmitterBase {
 
     /*** CONSTRUCTOR ***/
-    constructor(address _owner)
-        EmitterBase(_owner)
+    constructor(address _proxy, address _owner)
+        EmitterBase(_proxy, _owner)
         public
     {
 

@@ -54,8 +54,8 @@ contract TokenState is State {
      * @param _owner The address which controls this contract.
      * @param _associatedContract The ERC20 contract whose state this composes.
      */
-    constructor(address _owner, address _associatedContract)
-        State(_owner, _associatedContract)
+    constructor(address _proxy, address _owner, address _associatedContract)
+        State(_proxy, _owner, _associatedContract)
         public
     {}
 
@@ -71,6 +71,7 @@ contract TokenState is State {
      */
     function setAllowance(address tokenOwner, address spender, uint value)
         external
+        optionalProxy
         onlyAssociatedContract
     {
         allowance[tokenOwner][spender] = value;
@@ -84,6 +85,7 @@ contract TokenState is State {
      */
     function setBalanceOf(address account, uint value)
         external
+        optionalProxy
         onlyAssociatedContract
     {
         balanceOf[account] = value;

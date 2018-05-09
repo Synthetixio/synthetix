@@ -210,8 +210,8 @@ contract Court is SafeDecimalMath, Emitter {
     /**
      * @dev Court Constructor.
      */
-    constructor(Havven _havven, Nomin _nomin, address _owner)
-        Emitter(_owner)
+    constructor(Havven _havven, Nomin _nomin, address _proxy, address _owner)
+        Emitter(_proxy, _owner)
         public
     {
         havven = _havven;
@@ -227,7 +227,7 @@ contract Court is SafeDecimalMath, Emitter {
      */
     function setMinStandingBalance(uint balance)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         /* No requirement on the standing threshold here;
          * the foundation can set this value such that
@@ -242,7 +242,7 @@ contract Court is SafeDecimalMath, Emitter {
      */
     function setVotingPeriod(uint duration)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         require(MIN_VOTING_PERIOD <= duration &&
                 duration <= MAX_VOTING_PERIOD);
@@ -259,7 +259,7 @@ contract Court is SafeDecimalMath, Emitter {
      */
     function setConfirmationPeriod(uint duration)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         require(MIN_CONFIRMATION_PERIOD <= duration &&
                 duration <= MAX_CONFIRMATION_PERIOD);
@@ -272,7 +272,7 @@ contract Court is SafeDecimalMath, Emitter {
      */
     function setRequiredParticipation(uint fraction)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         require(MIN_REQUIRED_PARTICIPATION <= fraction);
         requiredParticipation = fraction;
@@ -284,7 +284,7 @@ contract Court is SafeDecimalMath, Emitter {
      */
     function setRequiredMajority(uint fraction)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         require(MIN_REQUIRED_MAJORITY <= fraction);
         requiredMajority = fraction;
@@ -300,6 +300,7 @@ contract Court is SafeDecimalMath, Emitter {
     function motionVoting(uint motionID)
         public
         view
+        optionalProxy
         returns (bool)
     {
         return motionStartTime[motionID] < now && now < motionStartTime[motionID] + votingPeriod;
@@ -311,6 +312,7 @@ contract Court is SafeDecimalMath, Emitter {
     function motionConfirming(uint motionID)
         public
         view
+        optionalProxy
         returns (bool)
     {
         /* These values are timestamps, they will not overflow
@@ -327,6 +329,7 @@ contract Court is SafeDecimalMath, Emitter {
     function motionWaiting(uint motionID)
         public
         view
+        optionalProxy
         returns (bool)
     {
         /* These values are timestamps, they will not overflow
@@ -341,6 +344,7 @@ contract Court is SafeDecimalMath, Emitter {
     function motionPasses(uint motionID)
         public
         view
+        optionalProxy
         returns (bool)
     {
         uint yeas = votesFor[motionID];
@@ -366,6 +370,7 @@ contract Court is SafeDecimalMath, Emitter {
     function hasVoted(address account, uint motionID)
         public
         view
+        optionalProxy
         returns (bool)
     {
         return vote[account][motionID] != Vote.Abstention;
@@ -382,11 +387,12 @@ contract Court is SafeDecimalMath, Emitter {
      */
     function beginMotion(address target)
         external
+        optionalProxy
         returns (uint)
     {
         /* A confiscation motion must be mooted by someone with standing. */
-        require((havven.balanceOf(msg.sender) >= minStandingBalance) ||
-                msg.sender == owner);
+        require((havven.balanceOf(messageSender) >= minStandingBalance) ||
+                messageSender == owner);
 
         /* Require that the voting period is longer than a single fee period,
          * So that a single vote can span at most two fee periods. */
@@ -407,7 +413,7 @@ contract Court is SafeDecimalMath, Emitter {
         /* Start the vote at the start of the next fee period */
         uint startTime = havven.feePeriodStartTime() + havven.targetFeePeriodDurationSeconds();
         motionStartTime[motionID] = startTime;
-        emitMotionBegun(msg.sender, msg.sender, target, target, motionID, motionID, startTime);
+        emitMotionBegun(messageSender, messageSender, target, target, motionID, motionID, startTime);
 
         return motionID;
     }
@@ -417,6 +423,7 @@ contract Court is SafeDecimalMath, Emitter {
      * @return Returns the voter's vote weight. */
     function setupVote(uint motionID)
         internal
+        optionalProxy
         returns (uint)
     {
         /* There must be an active vote for this target running.
@@ -424,17 +431,17 @@ contract Court is SafeDecimalMath, Emitter {
         require(motionVoting(motionID));
 
         /* The voter must not have an active vote this motion. */
-        require(!hasVoted(msg.sender, motionID));
+        require(!hasVoted(messageSender, motionID));
 
         /* The voter may not cast votes on themselves. */
-        require(msg.sender != motionTarget[motionID]);
+        require(messageSender != motionTarget[motionID]);
 
-        uint weight = havven.recomputeAccountLastHavvenAverageBalance(msg.sender);
+        uint weight = havven.recomputeAccountLastHavvenAverageBalance(messageSender);
 
         /* Users must have a nonzero voting weight to vote. */
         require(weight > 0);
 
-        voteWeight[msg.sender][motionID] = weight;
+        voteWeight[messageSender][motionID] = weight;
 
         return weight;
     }
@@ -445,11 +452,12 @@ contract Court is SafeDecimalMath, Emitter {
      */
     function voteFor(uint motionID)
         external
+        optionalProxy
     {
         uint weight = setupVote(motionID);
-        vote[msg.sender][motionID] = Vote.Yea;
+        vote[messageSender][motionID] = Vote.Yea;
         votesFor[motionID] = safeAdd(votesFor[motionID], weight);
-        emitVotedFor(msg.sender, msg.sender, motionID, motionID, weight);
+        emitVotedFor(messageSender, messageSender, motionID, motionID, weight);
     }
 
     /**
@@ -458,11 +466,12 @@ contract Court is SafeDecimalMath, Emitter {
      */
     function voteAgainst(uint motionID)
         external
+        optionalProxy
     {
         uint weight = setupVote(motionID);
-        vote[msg.sender][motionID] = Vote.Nay;
+        vote[messageSender][motionID] = Vote.Nay;
         votesAgainst[motionID] = safeAdd(votesAgainst[motionID], weight);
-        emitVotedAgainst(msg.sender, msg.sender, motionID, motionID, weight);
+        emitVotedAgainst(messageSender, messageSender, motionID, motionID, weight);
     }
 
     /**
@@ -471,6 +480,7 @@ contract Court is SafeDecimalMath, Emitter {
      */
     function cancelVote(uint motionID)
         external
+        optionalProxy
     {
         /* An account may cancel its vote either before the confirmation phase
          * when the motion is still open, or after the confirmation phase,
@@ -478,7 +488,7 @@ contract Court is SafeDecimalMath, Emitter {
          * But the totals must not change during the confirmation phase itself. */
         require(!motionConfirming(motionID));
 
-        Vote senderVote = vote[msg.sender][motionID];
+        Vote senderVote = vote[messageSender][motionID];
 
         /* If the sender has not voted then there is no need to update anything. */
         require(senderVote != Vote.Abstention);
@@ -486,18 +496,18 @@ contract Court is SafeDecimalMath, Emitter {
         /* If we are not voting, there is no reason to update the vote totals. */
         if (motionVoting(motionID)) {
             if (senderVote == Vote.Yea) {
-                votesFor[motionID] = safeSub(votesFor[motionID], voteWeight[msg.sender][motionID]);
+                votesFor[motionID] = safeSub(votesFor[motionID], voteWeight[messageSender][motionID]);
             } else {
                 /* Since we already ensured that the vote is not an abstention,
                  * the only option remaining is Vote.Nay. */
-                votesAgainst[motionID] = safeSub(votesAgainst[motionID], voteWeight[msg.sender][motionID]);
+                votesAgainst[motionID] = safeSub(votesAgainst[motionID], voteWeight[messageSender][motionID]);
             }
             /* A cancelled vote is only meaningful if a vote is running. */
-            emitVoteCancelled(msg.sender, msg.sender, motionID, motionID);
+            emitVoteCancelled(messageSender, messageSender, motionID, motionID);
         }
 
-        delete voteWeight[msg.sender][motionID];
-        delete vote[msg.sender][motionID];
+        delete voteWeight[messageSender][motionID];
+        delete vote[messageSender][motionID];
     }
 
     /**
@@ -520,6 +530,7 @@ contract Court is SafeDecimalMath, Emitter {
      */
     function closeMotion(uint motionID)
         external
+        optionalProxy
     {
         require((motionConfirming(motionID) && !motionPasses(motionID)) || motionWaiting(motionID));
         _closeMotion(motionID);
@@ -531,7 +542,7 @@ contract Court is SafeDecimalMath, Emitter {
      */
     function approveMotion(uint motionID)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         require(motionConfirming(motionID) && motionPasses(motionID));
         address target = motionTarget[motionID];
@@ -543,7 +554,7 @@ contract Court is SafeDecimalMath, Emitter {
     /* @notice The foundation may veto a motion at any time. */
     function vetoMotion(uint motionID)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         require(!motionWaiting(motionID));
         _closeMotion(motionID);

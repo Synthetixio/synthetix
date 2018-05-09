@@ -50,7 +50,6 @@ contract Owned {
         public
     {
         owner = _owner;
-        emitOwnerChanged(address(0), _owner);
     }
 
     /**
@@ -59,7 +58,7 @@ contract Owned {
      */
     function nominateOwner(address _owner)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         nominatedOwner = _owner;
         emitOwnerNominated(_owner);
@@ -70,8 +69,9 @@ contract Owned {
      */
     function acceptOwnership()
         external
+        optionalProxy
     {
-        require(msg.sender == nominatedOwner);
+        require(messageSender == nominatedOwner);
         emitOwnerChanged(owner, nominatedOwner);
         owner = nominatedOwner;
         nominatedOwner = address(0);
@@ -79,7 +79,7 @@ contract Owned {
 
     modifier onlyOwner
     {
-        require(msg.sender == owner);
+        require(messageSender == owner);
         _;
     }
 

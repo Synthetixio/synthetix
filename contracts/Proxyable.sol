@@ -15,23 +15,36 @@ contract Proxyable is Owned {
     /*** ABSTRACT FUNCTION ***/
     function emitProxyChanged(address _proxy) internal;
 
+    /*
+     * This modifier is a necessity to set proxy address before Owned constructor
+     * so that Owned could emit an event on proxy
+     */
+    modifier initialSetProxy(address _proxy)
+    {
+        proxy = Proxy(_proxy);
+        _;
+    }
+
     /*** CONSTRUCTOR ***/
-    constructor(address _owner)
+    constructor(address _proxy, address _owner)
+        initialSetProxy(_proxy)
         Owned(_owner)
         public
-    { }
+    {
+        emitProxyChanged(_proxy);
+    }
 
     function setProxy(address _proxy)
-    external
-    onlyOwner
+        external
+        onlyOwner
     {
         proxy = Proxy(_proxy);
         emitProxyChanged(_proxy);
     }
 
     function setMessageSender(address sender)
-    external
-    onlyProxy
+        external
+        onlyProxy
     {
         messageSender = sender;
     }
