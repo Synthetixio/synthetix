@@ -1,6 +1,6 @@
 import unittest
 
-from utils.deployutils import W3, UNIT, MASTER, DUMMY, fresh_account, fresh_accounts
+from utils.deployutils import UNIT, MASTER, DUMMY, fresh_account, fresh_accounts
 from utils.deployutils import compile_contracts, attempt_deploy, mine_tx
 from utils.deployutils import take_snapshot, restore_snapshot
 from utils.testutils import assertReverts
@@ -140,6 +140,21 @@ class TestExternStateFeeToken(unittest.TestCase):
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'],
                          "StateUpdated")
         self.assertEqual(self.feetoken.state(), new_state)
+
+    def test_balanceOf(self):
+        self.assertEqual(self.feetoken.balanceOf(ZERO_ADDRESS), 0)
+        self.assertEqual(self.feetoken.balanceOf(self.initial_beneficiary), 1000 * UNIT)
+        self.feetoken.setState(self.feetoken.owner(), ZERO_ADDRESS)
+        self.assertReverts(self.feetoken.balanceOf, ZERO_ADDRESS)
+
+    def test_allowance(self):
+        self.assertEqual(self.feetoken.allowance(self.initial_beneficiary, ZERO_ADDRESS), 0)
+        self.assertEqual(self.feetoken.allowance(ZERO_ADDRESS, self.initial_beneficiary), 0)
+        self.feetoken.approve(self.initial_beneficiary, ZERO_ADDRESS, 1000)
+        self.assertEqual(self.feetoken.allowance(self.initial_beneficiary, ZERO_ADDRESS), 1000)
+        self.assertEqual(self.feetoken.allowance(ZERO_ADDRESS, self.initial_beneficiary), 0)
+        self.feetoken.setState(self.feetoken.owner(), ZERO_ADDRESS)
+        self.assertReverts(self.feetoken.allowance, self.initial_beneficiary, ZERO_ADDRESS)
 
     def test_getTransferFeeIncurred(self):
         value = 10 * UNIT
