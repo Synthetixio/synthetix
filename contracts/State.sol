@@ -76,5 +76,5 @@ contract State is Owned {
 
     /* ========== EVENTS ========== */
 
-    event AssociatedContractUpdated(address _associatedContract);
+    event AssociatedContractUpdated(address associatedContract);
 }
