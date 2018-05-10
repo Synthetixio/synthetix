@@ -86,3 +86,8 @@ class PublicCourtInterface(CourtInterface):
         # Internal
         self.setupVote = lambda sender, target: mine_tx(
             self.contract.functions.publicSetupVote(target).transact({'from': sender}))
+
+        self.setHavven = lambda sender, addr: mine_tx(
+            self.contract.functions.setHavven(addr).transact({'from': sender}))
+        self.setNomin = lambda sender, addr: mine_tx(
+            self.contract.functions.setNomin(addr).transact({'from': sender}))

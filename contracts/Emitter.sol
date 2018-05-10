@@ -104,7 +104,7 @@ contract Emitter is EmitterBase {
     function emitFeeAuthorityUpdated(address feeAuthority)
     internal
     {
-        EventData memory data = createEventData("CourtUpdated(address)", 1);
+        EventData memory data = createEventData("FeeAuthorityUpdated(address)", 1);
         addAddress(data, feeAuthority, false);
         emitOnProxy(data);
     }

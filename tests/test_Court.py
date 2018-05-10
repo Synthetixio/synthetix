@@ -1,7 +1,7 @@
 import unittest
 
 from utils.deployutils import attempt, compile_contracts, attempt_deploy, mine_txs, UNIT, MASTER, \
-    fast_forward, DUMMY, take_snapshot, restore_snapshot, fresh_account, fresh_accounts, to_seconds
+    fast_forward, DUMMY, take_snapshot, restore_snapshot, fresh_account, fresh_accounts, to_seconds, W3
 from utils.testutils import assertReverts, assertClose, block_time
 from utils.testutils import generate_topic_event_map, get_event_data_from_log
 from utils.testutils import ZERO_ADDRESS
@@ -37,9 +37,12 @@ class TestCourt(unittest.TestCase):
         compiled = attempt(compile_contracts, [sources], "Compiling contracts...")
         court_abi = compiled['PublicCourt']['abi']
         nomin_abi = compiled['Nomin']['abi']
+        havven_abi = compiled['Havven']['abi']
 
         havven_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
         nomin_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
+        proxied_havven = W3.eth.contract(address=havven_proxy.address, abi=havven_abi)
+        proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=nomin_abi)
 
         havven_contract, hvn_txr = attempt_deploy(
             compiled, 'PublicHavven', MASTER, [havven_proxy.address, ZERO_ADDRESS, MASTER, MASTER]
@@ -60,14 +63,14 @@ class TestCourt(unittest.TestCase):
         attempt(mine_txs, [txs], "Linking contracts... ")
 
         print("\nDeployment complete.\n")
-        return havven_proxy, nomin_proxy, havven_contract, nomin_contract, court_contract, nomin_abi, court_abi
+        return havven_proxy, proxied_havven, nomin_proxy, proxied_nomin, havven_contract, nomin_contract, court_contract, nomin_abi, court_abi
 
     @classmethod
     def setUpClass(cls):
         cls.assertReverts = assertReverts
         cls.assertClose = assertClose
 
-        cls.havven_proxy, cls.nomin_proxy, cls.havven_contract, cls.nomin_contract, cls.court_contract, cls.nomin_abi, cls.court_abi = cls.deployContracts()
+        cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, cls.nomin_contract, cls.court_contract, cls.nomin_abi, cls.court_abi = cls.deployContracts()
 
         # Event stuff
         cls.court_event_dict = generate_topic_event_map(cls.court_abi)

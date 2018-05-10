@@ -1,7 +1,7 @@
 import unittest
 
-from utils.deployutils import UNIT, MASTER, DUMMY, fresh_account, fresh_accounts
-from utils.deployutils import compile_contracts, attempt_deploy, mine_tx
+from utils.deployutils import W3, UNIT, MASTER, DUMMY, fresh_account, fresh_accounts
+from utils.deployutils import compile_contracts, attempt_deploy, mine_txs
 from utils.deployutils import take_snapshot, restore_snapshot
 from utils.testutils import assertReverts
 from utils.testutils import generate_topic_event_map, get_event_data_from_log
@@ -30,10 +30,16 @@ class TestExternStateFeeToken(unittest.TestCase):
         sources = ["contracts/ExternStateFeeToken.sol", "contracts/TokenState.sol"]
         compiled = compile_contracts(sources, remappings=['""=contracts'])
         feetoken_abi = compiled['ExternStateFeeToken']['abi']
+
+        proxy, _ = attempt_deploy(
+            compiled, "Proxy", MASTER, [MASTER]
+        )
+        proxied_feetoken = W3.eth.contract(address=proxy.address, abi=feetoken_abi)
+
         feetoken_event_dict = generate_topic_event_map(feetoken_abi)
         feetoken_contract, construction_txr = attempt_deploy(
             compiled, "ExternStateFeeToken", MASTER,
-            ["Test Fee Token", "FEE", UNIT // 20, MASTER, ZERO_ADDRESS, MASTER]
+            [proxy.address, "Test Fee Token", "FEE", UNIT // 20, MASTER, ZERO_ADDRESS, MASTER]
         )
 
         feestate, txr = attempt_deploy(
@@ -41,18 +47,23 @@ class TestExternStateFeeToken(unittest.TestCase):
             [MASTER, MASTER]
         )
 
-        return compiled, feetoken_contract, feetoken_event_dict, feestate
+        mine_txs([
+            proxy.functions.setTarget(feetoken_contract.address).transact({'from': MASTER}),
+            feestate.functions.setBalanceOf(DUMMY, 1000 * UNIT).transact({'from': MASTER}),
+            feestate.functions.setAssociatedContract(feetoken_contract.address).transact({'from': MASTER}),
+            feetoken_contract.functions.setState(feestate.address).transact({'from': MASTER})]
+        )
+
+        return compiled, proxy, proxied_feetoken, feetoken_contract, feetoken_event_dict, feestate
 
     @classmethod
     def setUpClass(cls):
         cls.assertReverts = assertReverts
 
-        cls.compiled, cls.feetoken_contract, cls.feetoken_event_dict, cls.feestate = cls.deployContracts()
-        cls.initial_beneficiary, cls.fee_authority = fresh_accounts(2)
+        cls.compiled, cls.proxy, cls.proxied_feetoken, cls.feetoken_contract, cls.feetoken_event_dict, cls.feestate = cls.deployContracts()
 
-        mine_tx(cls.feestate.functions.setBalanceOf(cls.initial_beneficiary, 1000 * UNIT).transact({'from': MASTER}))
-        mine_tx(cls.feestate.functions.setAssociatedContract(cls.feetoken_contract.address).transact({'from': MASTER}))
-        mine_tx(cls.feetoken_contract.functions.setState(cls.feestate.address).transact({'from': MASTER}))
+        cls.initial_beneficiary = DUMMY
+        cls.fee_authority = fresh_account()
 
         cls.feetoken = ExternStateFeeTokenInterface(cls.feetoken_contract)
         cls.feetoken.setFeeAuthority(MASTER, cls.fee_authority)
@@ -72,14 +83,14 @@ class TestExternStateFeeToken(unittest.TestCase):
 
         feetoken, _ = attempt_deploy(self.compiled, 'ExternStateFeeToken',
                                      MASTER,
-                                     ["Test Fee Token", "FEE",
+                                     [self.proxy.address, "Test Fee Token", "FEE",
                                       UNIT // 20, self.fee_authority,
                                       ZERO_ADDRESS, DUMMY])
         self.assertNotEqual(feetoken.functions.state().call(), ZERO_ADDRESS)
 
         feetoken, _ = attempt_deploy(self.compiled, 'ExternStateFeeToken',
                                      MASTER,
-                                     ["Test Fee Token", "FEE",
+                                     [self.proxy.address, "Test Fee Token", "FEE",
                                       UNIT // 20, self.fee_authority,
                                       feestate.address, DUMMY])
         self.assertEqual(feetoken.functions.state().call(), feestate.address)

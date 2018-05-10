@@ -32,20 +32,27 @@ class TestFeeCollection(unittest.TestCase):
         compiled = attempt(compile_contracts, [sources], "Compiling contracts... ")
 
         # Deploy contracts
+        havven_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
+        nomin_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
+        proxied_havven = W3.eth.contract(address=havven_proxy.address, abi=compiled['Havven']['abi'])
+        proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['Nomin']['abi'])
         havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven',
-                                                  MASTER, [ZERO_ADDRESS, MASTER, MASTER])
+                                                  MASTER, [havven_proxy.address, ZERO_ADDRESS, MASTER, MASTER])
         nomin_contract, nom_txr = attempt_deploy(compiled, 'PublicNomin',
                                                  MASTER,
-                                                 [havven_contract.address, MASTER, ZERO_ADDRESS])
+                                                 [nomin_proxy.address, havven_contract.address, MASTER, ZERO_ADDRESS])
         court_contract, court_txr = attempt_deploy(compiled, 'FakeCourt',
                                                    MASTER,
                                                    [havven_contract.address, nomin_contract.address,
                                                     MASTER])
 
         # Hook up each of those contracts to each other
-        txs = [havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
-               nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER})]
-        attempt(mine_txs, [txs], "Linking contracts... ")
+        mine_txs([
+            havven_proxy.functions.setTarget(havven_contract.address).transact({'from': MASTER}),
+            nomin_proxy.functions.setTarget(nomin_contract.address).transact({'from': MASTER}),
+            havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
+            nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER})
+        ])
 
         print("\nDeployment complete.\n")
         return havven_contract, nomin_contract, court_contract
