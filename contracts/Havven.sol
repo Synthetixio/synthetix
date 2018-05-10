@@ -664,7 +664,7 @@ contract Havven is DestructibleExternStateToken {
 
         havvenPrice = price;
         lastHavvenPriceUpdateTime = timeSent;
-        emit PriceUpdated(price);
+        emit PriceUpdated(price, timeSent);
 
         /* Check the fee period rollover within this as the price should be pushed every 15min. */
         checkFeePeriodRollover();
@@ -704,7 +704,7 @@ contract Havven is DestructibleExternStateToken {
 
     /* ========== EVENTS ========== */
 
-    event PriceUpdated(uint price);
+    event PriceUpdated(uint price, uint timestamp);
 
     event FeePeriodRollover(uint timestamp);
 
