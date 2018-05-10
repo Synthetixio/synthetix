@@ -43,12 +43,18 @@ class TestHavvenEscrow(HavvenTestCase):
         compiled = attempt(compile_contracts, [sources], "Compiling contracts... ")
 
         # Deploy contracts
-        havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [ZERO_ADDRESS, MASTER, MASTER])
+
+        havven_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
+        nomin_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
+        proxied_havven = W3.eth.contract(address=havven_proxy.address, abi=compiled['PublicHavven']['abi'])
+        proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['Nomin']['abi'])
+
+        havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [havven_proxy.address, ZERO_ADDRESS, MASTER, MASTER])
         hvn_block = W3.eth.blockNumber
 
         nomin_contract, nom_txr = attempt_deploy(compiled, 'PublicNomin',
                                                  MASTER,
-                                                 [havven_contract.address, MASTER, ZERO_ADDRESS])
+                                                 [nomin_proxy.address, havven_contract.address, MASTER, ZERO_ADDRESS])
         court_contract, court_txr = attempt_deploy(compiled, 'Court',
                                                    MASTER,
                                                    [havven_contract.address, nomin_contract.address,
@@ -58,7 +64,9 @@ class TestHavvenEscrow(HavvenTestCase):
                                                      [MASTER, havven_contract.address])
 
         # Hook up each of those contracts to each other
-        txs = [havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
+        txs = [havven_proxy.functions.setTarget(havven_contract.address).transact({'from': MASTER}),
+               nomin_proxy.functions.setTarget(nomin_contract.address).transact({'from': MASTER}),
+               havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
                nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER}),
                nomin_contract.functions.setHavven(havven_contract.address).transact({'from': MASTER}),
                havven_contract.functions.setEscrow(escrow_contract.address).transact({'from': MASTER})]
@@ -67,11 +75,13 @@ class TestHavvenEscrow(HavvenTestCase):
         escrow_event_dict = generate_topic_event_map(compiled['HavvenEscrow']['abi'])
 
         print("\nDeployment complete.\n")
-        return havven_contract, nomin_contract, court_contract, escrow_contract, hvn_block, escrow_event_dict
+        return havven_proxy, proxied_havven, nomin_proxy, proxied_nomin, havven_contract, nomin_contract, court_contract, escrow_contract, hvn_block, escrow_event_dict
 
     @classmethod
     def setUpClass(cls):
-        cls.havven_contract, cls.nomin_contract, cls.court, cls.escrow_contract, cls.construction_block, cls.escrow_event_dict = cls.deployContracts()
+        cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, \
+            cls.nomin_contract, cls.court, cls.escrow_contract, cls.construction_block, \
+            cls.escrow_event_dict = cls.deployContracts()
         cls.havven = PublicHavvenInterface(cls.havven_contract)
         cls.nomin = PublicNominInterface(cls.nomin_contract)
         cls.escrow = PublicHavvenEscrowInterface(cls.escrow_contract)
@@ -551,7 +561,7 @@ class TestHavvenEscrow(HavvenTestCase):
 
         fast_forward(to_seconds(weeks=13) + 10)
 
-    def test_addRegularVestingSchedule(self):
+    def test_addRegularVestingSchedule2(self):
         alice, bob, carol, tim, pim = fresh_accounts(5)
         self.havven.endow(MASTER, self.escrow.contract.address, 1000 * UNIT)
         time = block_time()
