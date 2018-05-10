@@ -21,6 +21,21 @@ class HavvenTestCase(unittest.TestCase):
         for k, v in fields.items():
             self.assertEqual(event_data['args'][k], v)
 
+    def assertClose(self, actual, expected, precision=5, msg=''):
+        if expected == 0:
+            if actual == 0:
+                # this should always pass
+                self.assertEqual(actual, expected)
+                return
+            expected, actual = actual, expected
+
+        self.assertAlmostEqual(
+            actual / expected,
+            1,
+            places=precision,
+            msg=msg + f'\n{actual} ≉ {expected}'
+        )
+
     @classmethod
     def setUpHavvenTestClass(cls, source_paths, primary=None):
         cls.compiled = compile_contracts(source_paths)
