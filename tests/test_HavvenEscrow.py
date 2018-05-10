@@ -12,42 +12,6 @@ from tests.contract_interfaces.havven_interface import PublicHavvenInterface
 from tests.contract_interfaces.havven_escrow_interface import PublicHavvenEscrowInterface
 from tests.contract_interfaces.nomin_interface import PublicNominInterface
 
-SOLIDITY_SOURCES = ["tests/contracts/PublicHavven.sol", "tests/contracts/PublicNomin.sol",
-                    "contracts/Court.sol", "contracts/HavvenEscrow.sol",
-                    "tests/contracts/PublicHavvenEscrow.sol"]
-
-
-def deploy_public_havven():
-    print("Deployment initiated.\n")
-
-    compiled = attempt(compile_contracts, [SOLIDITY_SOURCES], "Compiling contracts... ")
-
-    # Deploy contracts
-    havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [ZERO_ADDRESS, MASTER, MASTER])
-    hvn_block = W3.eth.blockNumber
-
-    nomin_contract, nom_txr = attempt_deploy(compiled, 'PublicNomin',
-                                             MASTER,
-                                             [havven_contract.address, MASTER, ZERO_ADDRESS])
-    court_contract, court_txr = attempt_deploy(compiled, 'Court',
-                                               MASTER,
-                                               [havven_contract.address, nomin_contract.address,
-                                                MASTER])
-    escrow_contract, escrow_txr = attempt_deploy(compiled, 'PublicHavvenEscrow',
-                                                 MASTER,
-                                                 [MASTER, havven_contract.address])
-
-    # Hook up each of those contracts to each other
-    txs = [havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
-           nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER}),
-           nomin_contract.functions.setHavven(havven_contract.address).transact({'from': MASTER}),
-           havven_contract.functions.setEscrow(escrow_contract.address).transact({'from': MASTER})]
-    attempt(mine_txs, [txs], "Linking contracts... ")
-
-    escrow_event_dict = generate_topic_event_map(compiled['HavvenEscrow']['abi'])
-
-    print("\nDeployment complete.\n")
-    return havven_contract, nomin_contract, court_contract, escrow_contract, hvn_block, escrow_event_dict
 
 
 def setUpModule():
@@ -65,12 +29,49 @@ class TestHavvenEscrow(unittest.TestCase):
     def tearDown(self):
         restore_snapshot(self.snapshot)
 
+    @staticmethod
+    def deployContracts():
+        sources = ["tests/contracts/PublicHavven.sol", "tests/contracts/PublicNomin.sol",
+                   "contracts/Court.sol", "contracts/HavvenEscrow.sol",
+                   "tests/contracts/PublicHavvenEscrow.sol"]
+
+        print("Deployment initiated.\n")
+
+        compiled = attempt(compile_contracts, [sources], "Compiling contracts... ")
+
+        # Deploy contracts
+        havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [ZERO_ADDRESS, MASTER, MASTER])
+        hvn_block = W3.eth.blockNumber
+
+        nomin_contract, nom_txr = attempt_deploy(compiled, 'PublicNomin',
+                                                 MASTER,
+                                                 [havven_contract.address, MASTER, ZERO_ADDRESS])
+        court_contract, court_txr = attempt_deploy(compiled, 'Court',
+                                                   MASTER,
+                                                   [havven_contract.address, nomin_contract.address,
+                                                    MASTER])
+        escrow_contract, escrow_txr = attempt_deploy(compiled, 'PublicHavvenEscrow',
+                                                     MASTER,
+                                                     [MASTER, havven_contract.address])
+
+        # Hook up each of those contracts to each other
+        txs = [havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
+               nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER}),
+               nomin_contract.functions.setHavven(havven_contract.address).transact({'from': MASTER}),
+               havven_contract.functions.setEscrow(escrow_contract.address).transact({'from': MASTER})]
+        attempt(mine_txs, [txs], "Linking contracts... ")
+
+        escrow_event_dict = generate_topic_event_map(compiled['HavvenEscrow']['abi'])
+
+        print("\nDeployment complete.\n")
+        return havven_contract, nomin_contract, court_contract, escrow_contract, hvn_block, escrow_event_dict
+
     @classmethod
     def setUpClass(cls):
         cls.assertReverts = assertReverts
         cls.assertClose = assertClose
 
-        cls.havven_contract, cls.nomin_contract, cls.court, cls.escrow_contract, cls.construction_block, cls.escrow_event_dict = deploy_public_havven()
+        cls.havven_contract, cls.nomin_contract, cls.court, cls.escrow_contract, cls.construction_block, cls.escrow_event_dict = cls.deployContracts()
 
         cls.havven = PublicHavvenInterface(cls.havven_contract)
         cls.nomin = PublicNominInterface(cls.nomin_contract)

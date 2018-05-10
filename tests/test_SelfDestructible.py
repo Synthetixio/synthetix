@@ -38,7 +38,6 @@ class TestSelfDestructible(HavvenTestCase):
         # Send some value to the contract so that we can test receipt of funds by beneficiary
         send_value(MASTER, cls.sd_contract.address, cls.contract_balance)
 
-
     def test_constructor(self):
         self.assertNotEqual(MASTER, DUMMY)
         self.assertEqual(self.sd.owner(), MASTER)

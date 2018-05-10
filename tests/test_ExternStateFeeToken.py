@@ -10,10 +10,6 @@ from utils.testutils import ZERO_ADDRESS
 from tests.contract_interfaces.extern_state_fee_token_interface import ExternStateFeeTokenInterface
 
 
-ExternStateFeeToken_SOURCE = "contracts/ExternStateFeeToken.sol"
-TokenState_SOURCE = "contracts/TokenState.sol"
-
-
 def setUpModule():
     print("Testing ExternStateFeeToken...")
 
@@ -29,31 +25,37 @@ class TestExternStateFeeToken(unittest.TestCase):
     def tearDown(self):
         restore_snapshot(self.snapshot)
 
+    @staticmethod
+    def deployContracts():
+        sources = ["contracts/ExternStateFeeToken.sol", "contracts/TokenState.sol"]
+        compiled = compile_contracts(sources, remappings=['""=contracts'])
+        feetoken_abi = compiled['ExternStateFeeToken']['abi']
+        feetoken_event_dict = generate_topic_event_map(feetoken_abi)
+        feetoken_contract, construction_txr = attempt_deploy(
+            compiled, "ExternStateFeeToken", MASTER,
+            ["Test Fee Token", "FEE", UNIT // 20, MASTER, ZERO_ADDRESS, MASTER]
+        )
+
+        feestate, txr = attempt_deploy(
+            compiled, "TokenState", MASTER,
+            [MASTER, MASTER]
+        )
+
+        return compiled, feetoken_contract, feetoken_event_dict, feestate
+
     @classmethod
     def setUpClass(cls):
         cls.assertReverts = assertReverts
-        cls.initial_beneficiary, cls.fee_authority, cls.token_owner = fresh_accounts(3)
 
-        cls.compiled = compile_contracts([ExternStateFeeToken_SOURCE, TokenState_SOURCE],
-                                         remappings=['""=contracts'])
-        cls.feetoken_abi = cls.compiled['ExternStateFeeToken']['abi']
-        cls.feetoken_event_dict = generate_topic_event_map(cls.feetoken_abi)
-        cls.feetoken_contract, cls.construction_txr = attempt_deploy(
-            cls.compiled, "ExternStateFeeToken", MASTER, ["Test Fee Token", "FEE",
-                                                                     UNIT // 20, cls.fee_authority,
-                                                                     ZERO_ADDRESS, cls.token_owner]
-        )
+        cls.compiled, cls.feetoken_contract, cls.feetoken_event_dict, cls.feestate = cls.deployContracts()
+        cls.initial_beneficiary, cls.fee_authority = fresh_accounts(2)
 
-        cls.feestate, txr = attempt_deploy(
-            cls.compiled, "TokenState", MASTER,
-            [cls.token_owner, cls.token_owner]
-        )
-        mine_tx(cls.feestate.functions.setBalanceOf(cls.initial_beneficiary, 1000 * UNIT).transact({'from': cls.token_owner}))
-        mine_tx(cls.feestate.functions.setAssociatedContract(cls.feetoken_contract.address).transact({'from': cls.token_owner}))
-
-        mine_tx(cls.feetoken_contract.functions.setState(cls.feestate.address).transact({'from': cls.token_owner}))
+        mine_tx(cls.feestate.functions.setBalanceOf(cls.initial_beneficiary, 1000 * UNIT).transact({'from': MASTER}))
+        mine_tx(cls.feestate.functions.setAssociatedContract(cls.feetoken_contract.address).transact({'from': MASTER}))
+        mine_tx(cls.feetoken_contract.functions.setState(cls.feestate.address).transact({'from': MASTER}))
 
         cls.feetoken = ExternStateFeeTokenInterface(cls.feetoken_contract)
+        cls.feetoken.setFeeAuthority(MASTER, cls.fee_authority)
 
     def test_constructor(self):
         self.assertEqual(self.feetoken.name(), "Test Fee Token")
@@ -141,6 +143,21 @@ class TestExternStateFeeToken(unittest.TestCase):
                          "StateUpdated")
         self.assertEqual(self.feetoken.state(), new_state)
 
+    def test_balanceOf(self):
+        self.assertEqual(self.feetoken.balanceOf(ZERO_ADDRESS), 0)
+        self.assertEqual(self.feetoken.balanceOf(self.initial_beneficiary), 1000 * UNIT)
+        self.feetoken.setState(self.feetoken.owner(), ZERO_ADDRESS)
+        self.assertReverts(self.feetoken.balanceOf, ZERO_ADDRESS)
+
+    def test_allowance(self):
+        self.assertEqual(self.feetoken.allowance(self.initial_beneficiary, ZERO_ADDRESS), 0)
+        self.assertEqual(self.feetoken.allowance(ZERO_ADDRESS, self.initial_beneficiary), 0)
+        self.feetoken.approve(self.initial_beneficiary, ZERO_ADDRESS, 1000)
+        self.assertEqual(self.feetoken.allowance(self.initial_beneficiary, ZERO_ADDRESS), 1000)
+        self.assertEqual(self.feetoken.allowance(ZERO_ADDRESS, self.initial_beneficiary), 0)
+        self.feetoken.setState(self.feetoken.owner(), ZERO_ADDRESS)
+        self.assertReverts(self.feetoken.allowance, self.initial_beneficiary, ZERO_ADDRESS)
+
     def test_getTransferFeeIncurred(self):
         value = 10 * UNIT
         fee = value * self.feetoken.transferFeeRate() // UNIT
@@ -162,7 +179,7 @@ class TestExternStateFeeToken(unittest.TestCase):
         fee_rate = self.feetoken.transferFeeRate()
         self.assertEqual(self.feetoken.priceToSpend(value), (UNIT * value) // (UNIT + fee_rate))
         fee_rate = 13 * UNIT // 10000
-        self.feetoken.setTransferFeeRate(self.token_owner, fee_rate)
+        self.feetoken.setTransferFeeRate(MASTER, fee_rate)
         self.assertEqual(self.feetoken.priceToSpend(value), (UNIT * value) // (UNIT + fee_rate))
 
     def test_transfer(self):

@@ -7,8 +7,8 @@ from utils.deployutils import mine_tx, W3, compile_contracts
 
 ZERO_ADDRESS = "0x" + "0" * 40
 
+
 class HavvenTestCase(unittest.TestCase):
-    
     def assertReverts(self, function, *args):
         with self.assertRaises(ValueError) as error:
             function(*args)
@@ -43,7 +43,6 @@ class HavvenTestCase(unittest.TestCase):
                           for name in cls.compiled}
         primary_contract = primary if primary is not None else list(cls.event_maps.keys())[0]
         cls.event_map = cls.event_maps[primary_contract]
-
 
 def assertClose(testcase, actual, expected, precision=5, msg=''):
     if expected == 0:

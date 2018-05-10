@@ -5,7 +5,6 @@ from utils.testutils import assertReverts
 
 from tests.contract_interfaces.safe_decimal_math_interface import SafeDecimalMathInterface
 
-MATH_MODULE_SOURCE = "tests/contracts/PublicMath.sol"
 
 
 def setUpModule():
@@ -17,13 +16,20 @@ def tearDownModule():
 
 
 class TestSafeDecimalMath(unittest.TestCase):
+    @staticmethod
+    def deployContracts():
+        source = "tests/contracts/PublicMath.sol"
+
+        compiled = compile_contracts([source],
+                                     remappings=['""=contracts'])
+        math, tx_receipt = attempt_deploy(compiled, 'PublicMath', MASTER, [])
+        return math
+
     @classmethod
     def setUpClass(cls):
         cls.assertReverts = assertReverts
 
-        compiled = compile_contracts([MATH_MODULE_SOURCE],
-                                     remappings=['""=contracts'])
-        cls.math, tx_receipt = attempt_deploy(compiled, 'PublicMath', MASTER, [])
+        cls.math = cls.deployContracts()
 
         cls.safeDecMath = SafeDecimalMathInterface(cls.math)
 
