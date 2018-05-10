@@ -41,11 +41,16 @@ class TestHavven(HavvenTestCase):
         compiled = attempt(compile_contracts, [SOLIDITY_SOURCES], "Compiling contracts... ")
 
         # Deploy contracts
-        havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [ZERO_ADDRESS, MASTER, MASTER])
+        havven_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
+        nomin_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
+        proxied_havven = W3.eth.contract(address=havven_proxy.address, abi=compiled['PublicHavven']['abi'])
+        proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['Nomin']['abi'])
+
+        havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [havven_proxy.address, ZERO_ADDRESS, MASTER, MASTER])
         hvn_block = W3.eth.blockNumber
         nomin_contract, nom_txr = attempt_deploy(compiled, 'Nomin',
                                                  MASTER,
-                                                 [havven_contract.address, MASTER, ZERO_ADDRESS])
+                                                 [nomin_proxy.address, havven_contract.address, MASTER, ZERO_ADDRESS])
         court_contract, court_txr = attempt_deploy(compiled, 'Court',
                                                    MASTER,
                                                    [havven_contract.address, nomin_contract.address,
@@ -55,23 +60,27 @@ class TestHavven(HavvenTestCase):
                                                      [MASTER, havven_contract.address])
 
         # Hook up each of those contracts to each other
-        txs = [havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
-               nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER}),
-               nomin_contract.functions.setHavven(havven_contract.address).transact({'from': MASTER}),
-               havven_contract.functions.setEscrow(escrow_contract.address).transact({'from': MASTER})]
-        attempt(mine_txs, [txs], "Linking contracts... ")
+        mine_txs([
+            havven_proxy.functions.setTarget(havven_contract.address).transact({'from': MASTER}),
+            nomin_proxy.functions.setTarget(nomin_contract.address).transact({'from': MASTER}),
+            havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
+            nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER}),
+            nomin_contract.functions.setHavven(havven_contract.address).transact({'from': MASTER}),
+            havven_contract.functions.setEscrow(escrow_contract.address).transact({'from': MASTER})
+        ])
 
         havven_event_dict = generate_topic_event_map(compiled['PublicHavven']['abi'])
 
         print("\nDeployment complete.\n")
-        return havven_contract, nomin_contract, court_contract, escrow_contract, hvn_block, havven_event_dict
+        return havven_proxy, proxied_havven, nomin_proxy, proxied_nomin, havven_contract, nomin_contract, court_contract, escrow_contract, hvn_block, havven_event_dict
 
     @classmethod
     def setUpClass(cls):
         # to avoid overflowing in the negative direction (now - targetFeePeriodDuration * 2)
         fast_forward(weeks=102)
 
-        cls.havven_contract, cls.nomin_contract, cls.court_contract, \
+        cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, \
+            cls.havven_contract, cls.nomin_contract, cls.court_contract, \
             cls.escrow_contract, cls.construction_block, cls.havven_event_dict = cls.deployContracts()
 
         cls.havven = PublicHavvenInterface(cls.havven_contract)
@@ -115,7 +124,7 @@ class TestHavven(HavvenTestCase):
         self.assertEqual(self.havven.name(), "Havven")
         self.assertEqual(self.havven.symbol(), "HAV")
         self.assertEqual(self.havven.totalSupply(), total_supply)
-        self.assertEqual(self.havven.balanceOf(self.havven.contract.address), total_supply)
+        self.assertEqual(self.havven.balanceOf(self.havven_contract.address), total_supply)
 
     # Approval
     def test_approve(self):
@@ -141,7 +150,7 @@ class TestHavven(HavvenTestCase):
         self.assertEqual(self.havven.MIN_FEE_PERIOD_DURATION_SECONDS(), to_seconds(days=1))
         self.assertEqual(self.havven.MAX_FEE_PERIOD_DURATION_SECONDS(), to_seconds(weeks=26))
         self.assertEqual(self.havven.lastFeesCollected(), 0)
-        self.assertEqual(self.havven.nomin(), self.nomin.contract.address)
+        self.assertEqual(self.havven.nomin(), self.nomin_contract.address)
         self.assertEqual(self.havven.decimals(), 18)
 
     ###
@@ -402,30 +411,30 @@ class TestHavven(HavvenTestCase):
     # endow
     def test_endow_valid(self):
         amount = 50 * UNIT
-        havven_balance = self.havven.balanceOf(self.havven.contract.address)
+        havven_balance = self.havven.balanceOf(self.havven_contract.address)
         alice = fresh_account()
         self.assertEqual(self.havven.balanceOf(alice), 0)
         self.havven.endow(MASTER, alice, amount)
         self.assertEqual(self.havven.balanceOf(alice), amount)
-        self.assertEqual(havven_balance - self.havven.balanceOf(self.havven.contract.address), amount)
+        self.assertEqual(havven_balance - self.havven.balanceOf(self.havven_contract.address), amount)
 
     def test_endow_0(self):
         amount = 0
-        havven_balance = self.havven.balanceOf(self.havven.contract.address)
+        havven_balance = self.havven.balanceOf(self.havven_contract.address)
         alice = fresh_account()
         self.assertEqual(self.havven.balanceOf(alice), 0)
         self.havven.endow(MASTER, alice, amount)
         self.assertEqual(self.havven.balanceOf(alice), amount)
-        self.assertEqual(havven_balance - self.havven.balanceOf(self.havven.contract.address), amount)
+        self.assertEqual(havven_balance - self.havven.balanceOf(self.havven_contract.address), amount)
 
     def test_endow_supply(self):
         amount = self.havven.totalSupply()
-        havven_balance = self.havven.balanceOf(self.havven.contract.address)
+        havven_balance = self.havven.balanceOf(self.havven_contract.address)
         alice = fresh_account()
         self.assertEqual(self.havven.balanceOf(alice), 0)
         self.havven.endow(MASTER, alice, amount)
         self.assertEqual(self.havven.balanceOf(alice), amount)
-        self.assertEqual(havven_balance - self.havven.balanceOf(self.havven.contract.address), amount)
+        self.assertEqual(havven_balance - self.havven.balanceOf(self.havven_contract.address), amount)
 
     def test_endow_more_than_supply(self):
         amount = self.havven.totalSupply() * 2
@@ -447,9 +456,9 @@ class TestHavven(HavvenTestCase):
 
     def test_endow_to_contract(self):
         amount = 50 * UNIT
-        self.assertEqual(self.havven.balanceOf(self.havven.contract.address), self.havven.totalSupply())
-        self.havven.endow(MASTER, self.havven.contract.address, amount)
-        self.assertEqual(self.havven.balanceOf(self.havven.contract.address), self.havven.totalSupply())
+        self.assertEqual(self.havven.balanceOf(self.havven_contract.address), self.havven.totalSupply())
+        self.havven.endow(MASTER, self.havven_contract.address, amount)
+        self.assertEqual(self.havven.balanceOf(self.havven_contract.address), self.havven.totalSupply())
         # Balance is not lost (still distributable) if sent to the contract.
         self.havven.endow(MASTER, self.havven.contract.address, amount)
 
@@ -457,11 +466,11 @@ class TestHavven(HavvenTestCase):
         amount = 50 * UNIT
         # Force updates.
         self.havven.endow(MASTER, self.havven.contract.address, 0)
-        havven_balanceSum = self.havven.currentHavvenBalanceSum(self.havven.contract.address)
+        havven_balanceSum = self.havven.currentHavvenBalanceSum(self.havven_contract.address)
         alice = fresh_account()
         fast_forward(seconds=60)
         self.havven.endow(MASTER, alice, amount)
-        self.assertGreater(self.havven.currentHavvenBalanceSum(self.havven.contract.address), havven_balanceSum)
+        self.assertGreater(self.havven.currentHavvenBalanceSum(self.havven_contract.address), havven_balanceSum)
 
     def test_endow_transfers(self):
         alice = fresh_account()
