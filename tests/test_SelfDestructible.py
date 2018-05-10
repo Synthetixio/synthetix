@@ -30,9 +30,9 @@ class TestSelfDestructible(HavvenTestCase):
         cls.NULL_INITIATION = (2**256 - 1) // 2
         cls.contract_balance = 10 * UNIT
 
-        compiled = compile_contracts([SD_SOURCE],
-                                     remappings=['""=contracts'])
-        cls.sd_contract, txr = attempt_deploy(compiled, 'PayableSD', MASTER, [MASTER, DUMMY, cls.sd_duration])
+        cls.setUpHavvenTestClass([SD_SOURCE], remappings=['""=contracts'], primary='SelfDestructible')
+        cls.sd_contract, cls.deploy_tx = attempt_deploy(cls.compiled, 'PayableSD', MASTER,
+                                                        [MASTER, DUMMY, cls.sd_duration])
         cls.sd = SelfDestructibleInterface(cls.sd_contract)
 
         # Send some value to the contract so that we can test receipt of funds by beneficiary
@@ -43,6 +43,10 @@ class TestSelfDestructible(HavvenTestCase):
         self.assertEqual(self.sd.owner(), MASTER)
         self.assertEqual(self.sd.selfDestructBeneficiary(), DUMMY)
         self.assertEqual(self.sd.initiationTime(), self.NULL_INITIATION)
+        self.assertEqual(self.sd.selfDestructDelay(), self.sd_duration)
+        self.assertEventEquals(self.deploy_tx.logs[1],
+                               "SelfDestructBeneficiaryUpdated",
+                               {"newBeneficiary": self.sd.selfDestructBeneficiary()})
 
     def test_setBeneficiary(self):
         owner = self.sd.owner()

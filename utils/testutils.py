@@ -37,8 +37,10 @@ class HavvenTestCase(unittest.TestCase):
         )
 
     @classmethod
-    def setUpHavvenTestClass(cls, source_paths, primary=None):
-        cls.compiled = compile_contracts(source_paths)
+    def setUpHavvenTestClass(cls, source_paths, remappings=None, primary=None):
+        if remappings is None:
+            remappings = []
+        cls.compiled = compile_contracts(source_paths, remappings=remappings)
         cls.event_maps = {name: generate_topic_event_map(cls.compiled[name]['abi']) \
                           for name in cls.compiled}
         primary_contract = primary if primary is not None else list(cls.event_maps.keys())[0]
