@@ -1,9 +1,11 @@
-import unittest
-
-from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mine_txs, mine_tx, \
-    UNIT, MASTER, DUMMY, fast_forward, fresh_account, take_snapshot, restore_snapshot
-from utils.testutils import assertReverts, assertClose, ZERO_ADDRESS, block_time
-
+from utils.deployutils import (
+    W3, MASTER, DUMMY, UNIT,
+    attempt, attempt_deploy, compile_contracts,
+    mine_txs, mine_tx,
+    fast_forward, fresh_account,
+    take_snapshot, restore_snapshot
+)
+from utils.testutils import HavvenTestCase, ZERO_ADDRESS, block_time
 from tests.contract_interfaces.havven_interface import PublicHavvenInterface
 from tests.contract_interfaces.nomin_interface import PublicNominInterface
 from tests.contract_interfaces.havven_escrow_interface import PublicHavvenEscrowInterface
@@ -17,7 +19,7 @@ def tearDownModule():
     print()
 
 
-class TestIssuance(unittest.TestCase):
+class TestIssuance(HavvenTestCase):
     def setUp(self):
         self.snapshot = take_snapshot()
 
@@ -64,8 +66,6 @@ class TestIssuance(unittest.TestCase):
         cls.nomin = PublicNominInterface(cls.nomin_contract)
         cls.escrow = PublicHavvenEscrowInterface(cls.escrow_contract)
 
-        cls.assertClose = assertClose
-        cls.assertReverts = assertReverts
         fast_forward(weeks=102)
 
         cls.fake_court_setNomin = lambda sender, new_nomin: mine_tx(

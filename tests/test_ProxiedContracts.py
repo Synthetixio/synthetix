@@ -1,8 +1,5 @@
-from utils.testutils import assertReverts, assertClose
-from utils.testutils import generate_topic_event_map
 from utils.deployutils import MASTER, DUMMY, fresh_account, mine_tx, fast_forward
 
-from tests.contract_interfaces.court_interface import PublicCourtInterface
 from tests.contract_interfaces.havven_interface import PublicHavvenInterface
 from tests.contract_interfaces.nomin_interface import PublicNominInterface
 from tests.contract_interfaces.destructible_extern_state_token_interface import DestructibleExternStateTokenInterface
@@ -12,7 +9,6 @@ from tests.contract_interfaces.extern_state_fee_token_interface import ExternSta
 class TestProxiedDestructibleExternStateToken(__import__('tests').test_DestructibleExternStateToken.TestDestructibleExternStateToken):
     @classmethod
     def setUpClass(cls):
-        cls.assertReverts = assertReverts
         cls.proxy, cls.proxied_token, cls.compiled, cls.token_contract, cls.token_abi, cls.token_event_dict, cls.tokenstate = cls.deploy_contracts()
         cls.token = DestructibleExternStateTokenInterface(cls.proxied_token)
 
@@ -20,7 +16,6 @@ class TestProxiedDestructibleExternStateToken(__import__('tests').test_Destructi
 class TestProxiedExternStateFeeToken(__import__('tests').test_ExternStateFeeToken.TestExternStateFeeToken):
     @classmethod
     def setUpClass(cls):
-        cls.assertReverts = assertReverts
 
         cls.compiled, cls.proxy, cls.proxied_feetoken, cls.feetoken_contract, cls.feetoken_event_dict, cls.feestate = cls.deployContracts()
 
@@ -39,8 +34,6 @@ class TestProxiedFeeCollection(__import__('tests').test_FeeCollection.TestFeeCol
         cls.havven = PublicHavvenInterface(cls.havven_contract)
         cls.nomin = PublicNominInterface(cls.nomin_contract)
 
-        cls.assertClose = assertClose
-        cls.assertReverts = assertReverts
         fast_forward(weeks=102)
 
         cls.fake_court_setNomin = lambda sender, new_nomin: mine_tx(

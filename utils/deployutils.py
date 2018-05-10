@@ -44,14 +44,17 @@ def fresh_accounts(num_accs):
     return accs[:num_accs]
 
 
-def attempt(function, func_args, init_string, print_status=True, print_exception=True):
+def attempt(function, func_args, init_string, func_kwargs=None, print_status=True, print_exception=True):
+    if func_kwargs is None:
+        func_kwargs = {}
+
     if print_status:
         print(init_string, end="", flush=True)
 
     pad = (STATUS_ALIGN_SPACING - len(init_string)) % STATUS_ALIGN_SPACING
     reset = TERMCOLORS.RESET
     try:
-        result = function(*func_args)
+        result = function(*func_args, **func_kwargs)
         if print_status:
             print(f"{TERMCOLORS.GREEN}{' '*pad}Done!{reset}")
         return result

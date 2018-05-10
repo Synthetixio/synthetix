@@ -1,9 +1,14 @@
-from utils.deployutils import compile_contracts, attempt_deploy, mine_tx, MASTER, DUMMY
-from utils.deployutils import take_snapshot, restore_snapshot
-from utils.testutils import HavvenTestCase, ZERO_ADDRESS
-from utils.testutils import generate_topic_event_map, get_event_data_from_log
-
+from utils.deployutils import (
+    MASTER, DUMMY,
+    compile_contracts, attempt_deploy, mine_tx, 
+    take_snapshot, restore_snapshot
+)
+from utils.testutils import (
+    HavvenTestCase, ZERO_ADDRESS,
+    generate_topic_event_map, get_event_data_from_log
+)
 from tests.contract_interfaces.owned_interface import OwnedInterface
+
 
 OWNED_SOURCE = "contracts/Owned.sol"
 
@@ -23,17 +28,9 @@ class TestOwned(HavvenTestCase):
     def tearDown(self):
         restore_snapshot(self.snapshot)
 
-    @staticmethod
-    def deployContracts(source_paths, primary=None):
-        compiled = compile_contracts(source_paths)
-        event_maps = {name: generate_topic_event_map(compiled[name]['abi']) for name in compiled}
-        primary_contract = primary if primary is not None else list(event_maps.keys())[0]
-        event_map = event_maps[primary_contract]
-        return compiled, event_maps, primary_contract, event_map
-
     @classmethod
     def setUpClass(cls):
-        cls.compiled, cls.event_maps, cls.primary_contract, cls.event_map = cls.deployContracts([OWNED_SOURCE])
+        cls.setUpHavvenTestClass([OWNED_SOURCE], event_primary='Owned')
         cls.owned_contract, cls.deploy_tx = attempt_deploy(cls.compiled, 'Owned', MASTER, [MASTER])       
         cls.owned = OwnedInterface(cls.owned_contract)
 

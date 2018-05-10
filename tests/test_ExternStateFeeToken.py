@@ -1,12 +1,12 @@
-import unittest
-
-from utils.deployutils import W3, UNIT, MASTER, DUMMY, fresh_account, fresh_accounts
-from utils.deployutils import compile_contracts, attempt_deploy, mine_txs
-from utils.deployutils import take_snapshot, restore_snapshot
-from utils.testutils import assertReverts
-from utils.testutils import generate_topic_event_map, get_event_data_from_log
-from utils.testutils import ZERO_ADDRESS
-
+from utils.deployutils import (
+    W3, UNIT, MASTER, DUMMY, fresh_account, fresh_accounts,
+    compile_contracts, attempt_deploy, mine_txs,
+    take_snapshot, restore_snapshot
+)
+from utils.testutils import (
+    HavvenTestCase, ZERO_ADDRESS,
+    generate_topic_event_map, get_event_data_from_log
+)
 from tests.contract_interfaces.extern_state_fee_token_interface import ExternStateFeeTokenInterface
 
 
@@ -18,7 +18,7 @@ def tearDownModule():
     print()
 
 
-class TestExternStateFeeToken(unittest.TestCase):
+class TestExternStateFeeToken(HavvenTestCase):
     def setUp(self):
         self.snapshot = take_snapshot()
 
@@ -58,8 +58,6 @@ class TestExternStateFeeToken(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.assertReverts = assertReverts
-
         cls.compiled, cls.proxy, cls.proxied_feetoken, cls.feetoken_contract, cls.feetoken_event_dict, cls.feestate = cls.deployContracts()
 
         cls.initial_beneficiary = DUMMY

@@ -1,10 +1,6 @@
-import unittest
-
 from utils.deployutils import compile_contracts, attempt_deploy, UNIT, MASTER
-from utils.testutils import assertReverts
-
+from utils.testutils import HavvenTestCase
 from tests.contract_interfaces.safe_decimal_math_interface import SafeDecimalMathInterface
-
 
 
 def setUpModule():
@@ -15,7 +11,7 @@ def tearDownModule():
     print()
 
 
-class TestSafeDecimalMath(unittest.TestCase):
+class TestSafeDecimalMath(HavvenTestCase):
     @staticmethod
     def deployContracts():
         source = "tests/contracts/PublicMath.sol"
@@ -27,10 +23,7 @@ class TestSafeDecimalMath(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.assertReverts = assertReverts
-
         cls.math = cls.deployContracts()
-
         cls.safeDecMath = SafeDecimalMathInterface(cls.math)
 
     def test_scale(self):

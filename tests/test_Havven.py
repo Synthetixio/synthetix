@@ -1,15 +1,16 @@
-import unittest
-
-from utils.deployutils import attempt, mine_txs, fresh_accounts
-from utils.testutils import assertClose
-
-from utils.deployutils import W3, UNIT, MASTER, DUMMY, fresh_accounts, fresh_account
-from utils.deployutils import compile_contracts, attempt_deploy, to_seconds
-from utils.deployutils import take_snapshot, restore_snapshot, fast_forward
-from utils.testutils import assertReverts, block_time, get_event_data_from_log
-from utils.testutils import generate_topic_event_map
-from utils.testutils import ZERO_ADDRESS
-
+from utils.deployutils import (
+    W3, UNIT, MASTER, DUMMY,
+    mine_txs, attempt,
+    fresh_accounts, fresh_account,
+    compile_contracts, attempt_deploy,
+    take_snapshot, restore_snapshot,
+    fast_forward, to_seconds
+)
+from utils.testutils import (
+    HavvenTestCase, block_time,
+    get_event_data_from_log, generate_topic_event_map,
+    ZERO_ADDRESS
+)
 from tests.contract_interfaces.havven_interface import PublicHavvenInterface
 from tests.contract_interfaces.nomin_interface import PublicNominInterface
 
@@ -26,7 +27,7 @@ def tearDownModule():
     print()
 
 
-class TestHavven(unittest.TestCase):
+class TestHavven(HavvenTestCase):
     def setUp(self):
         self.snapshot = take_snapshot()
 
@@ -67,8 +68,6 @@ class TestHavven(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.assertClose = assertClose
-        cls.assertReverts = assertReverts
         # to avoid overflowing in the negative direction (now - targetFeePeriodDuration * 2)
         fast_forward(weeks=102)
 

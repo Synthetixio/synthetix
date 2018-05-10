@@ -1,17 +1,20 @@
-import unittest
-import time
+from utils.testutils import (
+    HavvenTestCase, ZERO_ADDRESS, block_time,
+    generate_topic_event_map, get_event_data_from_log
+)
 
-import utils.generalutils
-from utils.testutils import assertReverts, assertClose, block_time
-from utils.testutils import ZERO_ADDRESS, generate_topic_event_map, get_event_data_from_log
-
-from utils.deployutils import attempt, compile_contracts, attempt_deploy, W3, mine_txs, mine_tx, \
-    UNIT, MASTER, DUMMY, to_seconds, fast_forward, fresh_account, fresh_accounts, take_snapshot, restore_snapshot
+from utils.deployutils import (
+    W3, UNIT, MASTER, DUMMY,
+    mine_txs, mine_tx,
+    attempt, attempt_deploy, compile_contracts,
+    to_seconds, fast_forward,
+    fresh_account, fresh_accounts,
+    take_snapshot, restore_snapshot
+)
 
 from tests.contract_interfaces.havven_interface import PublicHavvenInterface
 from tests.contract_interfaces.havven_escrow_interface import PublicHavvenEscrowInterface
 from tests.contract_interfaces.nomin_interface import PublicNominInterface
-
 
 
 def setUpModule():
@@ -22,7 +25,7 @@ def tearDownModule():
     print()
 
 
-class TestHavvenEscrow(unittest.TestCase):
+class TestHavvenEscrow(HavvenTestCase):
     def setUp(self):
         self.snapshot = take_snapshot()
 
@@ -68,11 +71,7 @@ class TestHavvenEscrow(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.assertReverts = assertReverts
-        cls.assertClose = assertClose
-
         cls.havven_contract, cls.nomin_contract, cls.court, cls.escrow_contract, cls.construction_block, cls.escrow_event_dict = cls.deployContracts()
-
         cls.havven = PublicHavvenInterface(cls.havven_contract)
         cls.nomin = PublicNominInterface(cls.nomin_contract)
         cls.escrow = PublicHavvenEscrowInterface(cls.escrow_contract)
