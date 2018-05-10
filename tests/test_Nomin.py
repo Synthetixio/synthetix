@@ -1,7 +1,7 @@
 from utils.deployutils import (
     W3, UNIT, MASTER, DUMMY,
     fresh_account, fresh_accounts,
-    compile_contracts, attempt_deploy, mine_tx,
+    compile_contracts, attempt_deploy, mine_tx, mine_txs,
     take_snapshot, restore_snapshot, fast_forward
 )
 from utils.testutils import (
@@ -36,21 +36,34 @@ class TestNomin(HavvenTestCase):
         nomin_abi = compiled['PublicNomin']['abi']
         nomin_event_dict = generate_topic_event_map(nomin_abi)
 
+        havven_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
+        nomin_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
+        proxied_havven = W3.eth.contract(address=havven_proxy.address, abi=compiled['Havven']['abi'])
+        proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=nomin_abi)
+
         nomin_contract, _ = attempt_deploy(
-            compiled, 'PublicNomin', MASTER, [MASTER, MASTER, ZERO_ADDRESS]
+            compiled, 'PublicNomin', MASTER, [nomin_proxy.address, MASTER, MASTER, ZERO_ADDRESS]
         )
 
         havven_contract, _ = attempt_deploy(
-            compiled, "Havven", MASTER, [ZERO_ADDRESS, MASTER, MASTER]
+            compiled, "Havven", MASTER, [havven_proxy.address, ZERO_ADDRESS, MASTER, MASTER]
         )
 
         fake_court, _ = attempt_deploy(compiled, 'FakeCourt', MASTER, [])
 
-        return nomin_contract, nomin_event_dict, havven_contract, fake_court
+        mine_txs([
+            havven_proxy.functions.setTarget(havven_contract.address).transact({'from': MASTER}),
+            nomin_proxy.functions.setTarget(nomin_contract.address).transact({'from': MASTER}),
+            havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
+            nomin_contract.functions.setCourt(fake_court.address).transact({'from': MASTER}),
+            nomin_contract.functions.setHavven(havven_contract.address).transact({'from': MASTER})
+        ])
+
+        return havven_proxy, proxied_havven, nomin_proxy, proxied_nomin, nomin_contract, nomin_event_dict, havven_contract, fake_court
 
     @classmethod
     def setUpClass(cls):
-        cls.nomin_contract, cls.nomin_event_dict, cls.havven_contract, cls.fake_court = cls.deployContracts()
+        cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.nomin_contract, cls.nomin_event_dict, cls.havven_contract, cls.fake_court = cls.deployContracts()
 
         cls.nomin = PublicNominInterface(cls.nomin_contract)
         cls.havven = HavvenInterface(cls.havven_contract)
@@ -65,20 +78,17 @@ class TestNomin(HavvenTestCase):
             cls.fake_court.functions.setTargetMotionID(target, motion_id).transact({'from': sender}))
         cls.fake_court.confiscateBalance = lambda sender, target: mine_tx(
             cls.fake_court.functions.confiscateBalance(target).transact({'from': sender}))
-        cls.fake_court.setNomin(W3.eth.accounts[0], cls.nomin.contract.address)
+        cls.fake_court.setNomin(MASTER, cls.nomin_contract.address)
 
-        cls.nomin.setCourt(MASTER, cls.fake_court.address)
-
-        cls.nomin.setHavven(MASTER, cls.havven.contract.address)
-        cls.nomin.setFeeAuthority(MASTER, cls.havven.contract.address)
+        cls.nomin.setFeeAuthority(MASTER, cls.havven_contract.address)
 
     def test_constructor(self):
         # Nomin-specific members
         self.assertEqual(self.nomin.owner(), MASTER)
-        self.assertTrue(self.nomin.frozen(self.nomin.contract.address))
+        self.assertTrue(self.nomin.frozen(self.nomin_contract.address))
 
         # ExternStateFeeToken members
-        self.assertEqual(self.nomin.name(), "Havven-Backed USD Nomins")
+        self.assertEqual(self.nomin.name(), "USD Nomins")
         self.assertEqual(self.nomin.symbol(), "nUSD")
         self.assertEqual(self.nomin.totalSupply(), 0)
         self.assertEqual(self.nomin.balanceOf(MASTER), 0)
@@ -124,7 +134,7 @@ class TestNomin(HavvenTestCase):
         self.assertEqual(self.nomin.balanceOf(target), 0)
 
         # Should be impossible to transfer to the nomin contract itself.
-        self.assertReverts(self.nomin.transfer, MASTER, self.nomin.contract.address, UNIT)
+        self.assertReverts(self.nomin.transfer, MASTER, self.nomin_contract.address, UNIT)
 
         self.nomin.transfer(MASTER, target, 5 * UNIT)
 
@@ -166,7 +176,7 @@ class TestNomin(HavvenTestCase):
         self.assertEqual(self.nomin.balanceOf(target), 0)
 
         # Should be impossible to transfer to the nomin contract itself.
-        self.assertReverts(self.nomin.transferFrom, DUMMY, MASTER, self.nomin.contract.address, UNIT)
+        self.assertReverts(self.nomin.transferFrom, DUMMY, MASTER, self.nomin_contract.address, UNIT)
 
         self.nomin.transferFrom(DUMMY, MASTER, target, 5 * UNIT)
 
@@ -194,7 +204,7 @@ class TestNomin(HavvenTestCase):
         self.assertEqual(self.nomin.balanceOf(target), 0)
 
         # Should be impossible to transfer to the nomin contract itself.
-        self.assertReverts(self.nomin.transfer, MASTER, self.nomin.contract.address, UNIT)
+        self.assertReverts(self.nomin.transfer, MASTER, self.nomin_contract.address, UNIT)
 
         self.nomin.transferSenderPaysFee(MASTER, target, 5 * UNIT)
 
@@ -238,7 +248,7 @@ class TestNomin(HavvenTestCase):
         self.assertEqual(self.nomin.balanceOf(target), 0)
 
         # Should be impossible to transfer to the nomin contract itself.
-        self.assertReverts(self.nomin.transferFrom, DUMMY, MASTER, self.nomin.contract.address, UNIT)
+        self.assertReverts(self.nomin.transferFrom, DUMMY, MASTER, self.nomin_contract.address, UNIT)
 
         self.nomin.transferFromSenderPaysFee(DUMMY, MASTER, target, 5 * UNIT)
 
@@ -305,8 +315,8 @@ class TestNomin(HavvenTestCase):
         target = fresh_account()
 
         # The nomin contract itself should not be unfreezable.
-        tx_receipt = self.nomin.unfreezeAccount(MASTER, self.nomin.contract.address)
-        self.assertTrue(self.nomin.frozen(self.nomin.contract.address))
+        tx_receipt = self.nomin.unfreezeAccount(MASTER, self.nomin_contract.address)
+        self.assertTrue(self.nomin.frozen(self.nomin_contract.address))
         self.assertEqual(len(tx_receipt.logs), 0)
 
         # Unfreezing non-frozen accounts should not do anything.

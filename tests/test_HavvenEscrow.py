@@ -47,7 +47,7 @@ class TestHavvenEscrow(HavvenTestCase):
         havven_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
         nomin_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
         proxied_havven = W3.eth.contract(address=havven_proxy.address, abi=compiled['PublicHavven']['abi'])
-        proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['Nomin']['abi'])
+        proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['PublicNomin']['abi'])
 
         havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [havven_proxy.address, ZERO_ADDRESS, MASTER, MASTER])
         hvn_block = W3.eth.blockNumber
@@ -64,13 +64,12 @@ class TestHavvenEscrow(HavvenTestCase):
                                                      [MASTER, havven_contract.address])
 
         # Hook up each of those contracts to each other
-        txs = [havven_proxy.functions.setTarget(havven_contract.address).transact({'from': MASTER}),
+        mine_txs([havven_proxy.functions.setTarget(havven_contract.address).transact({'from': MASTER}),
                nomin_proxy.functions.setTarget(nomin_contract.address).transact({'from': MASTER}),
                havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
                nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER}),
                nomin_contract.functions.setHavven(havven_contract.address).transact({'from': MASTER}),
-               havven_contract.functions.setEscrow(escrow_contract.address).transact({'from': MASTER})]
-        attempt(mine_txs, [txs], "Linking contracts... ")
+               havven_contract.functions.setEscrow(escrow_contract.address).transact({'from': MASTER})])
 
         escrow_event_dict = generate_topic_event_map(compiled['HavvenEscrow']['abi'])
 
@@ -87,7 +86,7 @@ class TestHavvenEscrow(HavvenTestCase):
         cls.escrow = PublicHavvenEscrowInterface(cls.escrow_contract)
 
     def test_constructor(self):
-        self.assertEqual(self.escrow.havven(), self.havven.contract.address)
+        self.assertEqual(self.escrow.havven(), self.havven_contract.address)
         self.assertEqual(self.escrow.owner(), MASTER)
         self.assertEqual(self.escrow.totalVestedBalance(), 0)
 
@@ -381,10 +380,10 @@ class TestHavvenEscrow(HavvenTestCase):
         self.havven.endow(MASTER, self.escrow.contract.address, UNIT)
         self.assertEqual(self.havven.balanceOf(self.escrow.contract.address), UNIT)
 
-        pre_h_balance = self.havven.balanceOf(self.havven.contract.address)
+        pre_h_balance = self.havven.balanceOf(self.havven_contract.address)
         self.escrow.withdrawHavvens(MASTER, UNIT // 2)
         self.assertEqual(self.havven.balanceOf(self.escrow.contract.address), UNIT // 2)
-        self.assertEqual(self.havven.balanceOf(self.havven.contract.address), pre_h_balance + UNIT // 2)
+        self.assertEqual(self.havven.balanceOf(self.havven_contract.address), pre_h_balance + UNIT // 2)
 
     def test_appendVestingEntry(self):
         alice, bob = fresh_accounts(2)

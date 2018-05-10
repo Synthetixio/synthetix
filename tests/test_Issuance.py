@@ -39,7 +39,7 @@ class TestIssuance(HavvenTestCase):
         havven_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
         nomin_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
         proxied_havven = W3.eth.contract(address=havven_proxy.address, abi=compiled['PublicHavven']['abi'])
-        proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['Nomin']['abi'])
+        proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['PublicNomin']['abi'])
 
         havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven', MASTER,
                                                   [havven_proxy.address, ZERO_ADDRESS, MASTER, MASTER])

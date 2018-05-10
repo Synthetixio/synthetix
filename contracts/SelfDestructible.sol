@@ -30,7 +30,7 @@ import "contracts/Emitter.sol";
 /**
  * @title A contract that can be destroyed by its owner after a delay elapses.
  */
-contract SelfDestructible is Emitter {
+contract SelfDestructible is Owned {
 	
 	// Initialise to half uint max to be far in the future (without allowing overflows)
 	uint constant NULL_INITIATION = ~uint(0) / 2;
@@ -44,13 +44,12 @@ contract SelfDestructible is Emitter {
 	 * @param _beneficiary The account to forward all ether in this contract upon self-destruction
 	 * @param _delay The time to wait after initiating self-destruction before it can be triggered.
 	 */
-	constructor(address _proxy, address _owner, address _beneficiary, uint _delay)
+	constructor(address _owner, address _beneficiary, uint _delay)
 		public
-	    Emitter(_proxy, _owner)
+	    Owned(_owner)
 	{
 		selfDestructBeneficiary = _beneficiary;
 		selfDestructDelay = _delay;
-//  		emitSelfDestructBeneficiaryUpdated(_beneficiary);
 	}
 
 	/**
@@ -60,10 +59,10 @@ contract SelfDestructible is Emitter {
 	 */
 	function setBeneficiary(address _beneficiary)
 		external
-		optionalProxy_onlyOwner
+		onlyOwner
 	{
 		selfDestructBeneficiary = _beneficiary;
-		emitSelfDestructBeneficiaryUpdated(_beneficiary);
+		emit SelfDestructBeneficiaryUpdated(_beneficiary);
 	}
 
 	/**
@@ -73,10 +72,10 @@ contract SelfDestructible is Emitter {
 	 */
 	function initiateSelfDestruct()
 		external
-		optionalProxy_onlyOwner
+		onlyOwner
 	{
 		initiationTime = now;
-		emitSelfDestructInitiated(selfDestructDelay);
+		emit SelfDestructInitiated(selfDestructDelay);
 	}
 
 	/**
@@ -85,10 +84,10 @@ contract SelfDestructible is Emitter {
 	 */
 	function terminateSelfDestruct()
 		external
-		optionalProxy_onlyOwner
+		onlyOwner
 	{
 		initiationTime = NULL_INITIATION;
-		emitSelfDestructTerminated();
+		emit SelfDestructTerminated();
 	}
 
 	/**
@@ -98,11 +97,16 @@ contract SelfDestructible is Emitter {
 	 */
 	function selfDestruct()
 		external
-		optionalProxy_onlyOwner
+		onlyOwner
 	{
 		require(initiationTime + selfDestructDelay < now);
 		address beneficiary = selfDestructBeneficiary;
-		emitSelfDestructed(beneficiary);
+		emit SelfDestructed(beneficiary);
 		selfdestruct(beneficiary);
 	}
+
+	event SelfDestructTerminated();
+	event SelfDestructInitiated(uint selfDestructDelay);
+	event SelfDestructed(address beneficiary);
+	event SelfDestructBeneficiaryUpdated(address newBeneficiary);
 }

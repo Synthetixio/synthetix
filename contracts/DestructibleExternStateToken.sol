@@ -34,7 +34,7 @@ import "contracts/TokenState.sol";
 /**
  * @title ERC20 Token contract, with detached state and designed to operate behind a proxy.
  */
-contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible {
+contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Emitter {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -53,13 +53,14 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible {
      * @dev Constructor.
      * @param _name Token's ERC20 name.
      * @param _symbol Token's ERC20 symbol.
-     * @param _totalSupply The initial supply of the token.
+     * @param _totalSupply The total supply of the token.
      * @param _state The state contract address. A fresh one is constructed if 0x0 is provided.
      * @param _owner The owner of this contract.
      */
     constructor(address _proxy, string _name, string _symbol, uint _totalSupply,
                                    TokenState _state, address _owner)
-        SelfDestructible(_proxy, _owner, _owner, 4 weeks)
+        SelfDestructible(_owner, _owner, 4 weeks)
+        Emitter(_proxy, _owner)
         public
     {
         name = _name;
