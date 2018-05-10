@@ -1,7 +1,5 @@
-import unittest
-
-from utils.deployutils import compile_contracts, attempt_deploy, MASTER, fast_forward
-from utils.testutils import assertReverts, block_time
+from utils.deployutils import MASTER, compile_contracts, attempt_deploy, fast_forward
+from utils.testutils import HavvenTestCase, block_time
 from utils.generalutils import to_seconds
 
 
@@ -13,11 +11,9 @@ def tearDownModule():
     print()
 
 
-class TestLimitedSetup(unittest.TestCase):
+class TestLimitedSetup(HavvenTestCase):
     @classmethod
     def setUpClass(cls):
-        cls.assertReverts = assertReverts
-
         compiled = compile_contracts(["tests/contracts/OneWeekSetup.sol"],
                                      remappings=['""=contracts'])
         cls.setup, txr = attempt_deploy(compiled, 'OneWeekSetup', MASTER, [])

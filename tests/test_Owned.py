@@ -1,9 +1,14 @@
-from utils.deployutils import compile_contracts, attempt_deploy, mine_tx, MASTER, DUMMY
-from utils.deployutils import take_snapshot, restore_snapshot
-from utils.testutils import HavvenTestCase, ZERO_ADDRESS
-from utils.testutils import generate_topic_event_map, get_event_data_from_log
-
+from utils.deployutils import (
+    MASTER, DUMMY,
+    compile_contracts, attempt_deploy, mine_tx, 
+    take_snapshot, restore_snapshot
+)
+from utils.testutils import (
+    HavvenTestCase, ZERO_ADDRESS,
+    generate_topic_event_map, get_event_data_from_log
+)
 from tests.contract_interfaces.owned_interface import OwnedInterface
+
 
 OWNED_SOURCE = "contracts/Owned.sol"
 
@@ -25,7 +30,7 @@ class TestOwned(HavvenTestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.setUpHavvenTestClass([OWNED_SOURCE], primary='Owned')
+        cls.setUpHavvenTestClass([OWNED_SOURCE], event_primary='Owned')
         cls.owned_contract, cls.deploy_tx = attempt_deploy(cls.compiled, 'Owned', MASTER, [MASTER])       
         cls.owned = OwnedInterface(cls.owned_contract)
 

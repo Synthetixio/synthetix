@@ -1,11 +1,11 @@
 import unittest
-from utils.deployutils import compile_contracts, attempt_deploy, mine_tx, \
-    UNIT, MASTER, DUMMY, take_snapshot, restore_snapshot
-from utils.testutils import assertReverts
-from utils.testutils import ZERO_ADDRESS
-
+from utils.deployutils import (
+    UNIT, MASTER, DUMMY, 
+    compile_contracts, attempt_deploy, mine_tx,
+    take_snapshot, restore_snapshot
+)
+from utils.testutils import HavvenTestCase, ZERO_ADDRESS
 from tests.contract_interfaces.token_state_interface import TokenStateInterface
-
 
 
 def deploy_state(name, compiled, sender, owner, supply, beneficiary, associated_contract):
@@ -23,7 +23,7 @@ def tearDownModule():
     print()
 
 
-class TestTokenState(unittest.TestCase):
+class TestTokenState(HavvenTestCase):
     def setUp(self):
         self.snapshot = take_snapshot()
 
@@ -39,10 +39,7 @@ class TestTokenState(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.assertReverts = assertReverts
-
         cls.tokenstate_contract = cls.deployContracts()
-
         cls.tokenstate = TokenStateInterface(cls.tokenstate_contract)
         cls.owner = MASTER
         cls.associate = DUMMY

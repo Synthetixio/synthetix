@@ -1,11 +1,15 @@
-import unittest
-
-from utils.deployutils import attempt, compile_contracts, attempt_deploy, mine_txs, UNIT, MASTER, \
-    fast_forward, DUMMY, take_snapshot, restore_snapshot, fresh_account, fresh_accounts, to_seconds
-from utils.testutils import assertReverts, assertClose, block_time
-from utils.testutils import generate_topic_event_map, get_event_data_from_log
-from utils.testutils import ZERO_ADDRESS
-
+from utils.deployutils import (
+    UNIT, MASTER, DUMMY,
+    attempt, attempt_deploy, compile_contracts, mine_txs,
+    fast_forward, to_seconds,
+    take_snapshot, restore_snapshot,
+    fresh_account, fresh_accounts
+)
+from utils.testutils import (
+    HavvenTestCase, block_time,
+    generate_topic_event_map, get_event_data_from_log,
+    ZERO_ADDRESS
+)
 from tests.contract_interfaces.court_interface import PublicCourtInterface
 from tests.contract_interfaces.havven_interface import PublicHavvenInterface
 from tests.contract_interfaces.nomin_interface import NominInterface
@@ -19,30 +23,22 @@ def tearDownModule():
     print()
 
 
-class TestCourt(unittest.TestCase):
+class TestCourt(HavvenTestCase):
     def setUp(self):
         self.snapshot = take_snapshot()
 
     def tearDown(self):
         restore_snapshot(self.snapshot)
 
-    @staticmethod
-    def deployContracts():
-        sources = ["tests/contracts/PublicCourt.sol",
-                   "contracts/Nomin.sol",
-                   "tests/contracts/PublicHavven.sol"]
-
+    @classmethod
+    def deployContracts(cls):
         print("Deployment Initiated. \n")
 
-        compiled = attempt(compile_contracts, [sources], "Compiling contracts...")
-        court_abi = compiled['PublicCourt']['abi']
-        nomin_abi = compiled['Nomin']['abi']
-
-        havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [ZERO_ADDRESS, MASTER, MASTER])
-        nomin_contract, nom_txr = attempt_deploy(compiled, 'Nomin',
+        havven_contract, hvn_txr = attempt_deploy(cls.compiled, 'PublicHavven', MASTER, [ZERO_ADDRESS, MASTER, MASTER])
+        nomin_contract, nom_txr = attempt_deploy(cls.compiled, 'Nomin',
                                                  MASTER,
                                                  [havven_contract.address, MASTER, ZERO_ADDRESS])
-        court_contract, court_txr = attempt_deploy(compiled, 'PublicCourt',
+        court_contract, court_txr = attempt_deploy(cls.compiled, 'PublicCourt',
                                                    MASTER,
                                                    [havven_contract.address, nomin_contract.address,
                                                     MASTER])
@@ -52,21 +48,16 @@ class TestCourt(unittest.TestCase):
         attempt(mine_txs, [txs], "Linking contracts... ")
 
         print("\nDeployment complete.\n")
-        return havven_contract, nomin_contract, court_contract, nomin_abi, court_abi
+        return havven_contract, nomin_contract, court_contract
 
     @classmethod
     def setUpClass(cls):
-        cls.assertReverts = assertReverts
-        cls.assertClose = assertClose
-
-        cls.havven_contract, cls.nomin_contract, cls.court_contract, cls.nomin_abi, cls.court_abi = cls.deployContracts()
-
-        # Event stuff
-        cls.court_event_dict = generate_topic_event_map(cls.court_abi)
-        cls.nomin_event_dict = generate_topic_event_map(cls.nomin_abi)
-
+        sources = ["tests/contracts/PublicCourt.sol",
+                   "contracts/Nomin.sol",
+                   "tests/contracts/PublicHavven.sol"]
+        cls.setUpHavvenTestClass(sources, event_primary="Court") 
+        cls.havven_contract, cls.nomin_contract, cls.court_contract = cls.deployContracts()
         cls.court = PublicCourtInterface(cls.court_contract)
-
         cls.havven = PublicHavvenInterface(cls.havven_contract)
         cls.nomin = NominInterface(cls.nomin_contract)
 
@@ -76,7 +67,7 @@ class TestCourt(unittest.TestCase):
 
     #  Extract vote index from a transaction receipt returned by a call to beginMotion
     def get_motion_index(self, tx_receipt):
-        event_data = get_event_data_from_log(self.court_event_dict, tx_receipt.logs[-1])
+        event_data = get_event_data_from_log(self.event_map, tx_receipt.logs[-1])
         self.assertEqual(event_data['event'], "MotionBegun")
         return event_data['args']['motionID']
 
@@ -90,7 +81,7 @@ class TestCourt(unittest.TestCase):
         return motion_id
 
     def validate_MotionBegun_data(self, tx_receipt, expected_initiator, expected_target, expected_motion_id):
-        event_data = get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])
+        event_data = get_event_data_from_log(self.event_map, tx_receipt.logs[0])
         self.assertEqual(event_data['event'], "MotionBegun")
         self.assertEqual(event_data['args']['initiator'], expected_initiator)
         self.assertEqual(event_data['args']['target'], expected_target)
@@ -98,27 +89,27 @@ class TestCourt(unittest.TestCase):
         # TODO: check start time
 
     def validate_MotionClosed_data(self, tx_receipt, log_index, expected_motion_id):
-        closed_data = get_event_data_from_log(self.court_event_dict, tx_receipt.logs[log_index])
+        closed_data = get_event_data_from_log(self.event_map, tx_receipt.logs[log_index])
         self.assertEqual(closed_data['event'], "MotionClosed")
         self.assertEqual(closed_data['args']['motionID'], expected_motion_id)
 
     def validate_MotionVetoed_data(self, tx_receipt, log_index, expected_motion_id):
-        veto_data = get_event_data_from_log(self.court_event_dict, tx_receipt.logs[log_index])
+        veto_data = get_event_data_from_log(self.event_map, tx_receipt.logs[log_index])
         self.assertEqual(veto_data['event'], "MotionVetoed")
         self.assertEqual(veto_data['args']['motionID'], expected_motion_id)
 
     def validate_MotionApproved_data(self, tx_receipt, log_index, expected_motion_id):
-        approved_data = get_event_data_from_log(self.court_event_dict, tx_receipt.logs[log_index])
+        approved_data = get_event_data_from_log(self.event_map, tx_receipt.logs[log_index])
         self.assertEqual(approved_data['event'], "MotionApproved")
         self.assertEqual(approved_data['args']['motionID'], expected_motion_id)
 
     def validate_Confiscation_data(self, tx_receipt, log_index, expected_target, expected_balance=None):
-        freeze_data = get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[log_index])
+        freeze_data = get_event_data_from_log(self.event_maps["Nomin"], tx_receipt.logs[log_index])
         self.assertEqual(freeze_data['event'], "AccountFrozen")
         self.assertEqual(freeze_data['args']['target'], expected_target)
         if expected_balance is not None:
             self.assertEqual(freeze_data['args']['balance'], expected_balance)
-        xfer_data = get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[log_index + 1])
+        xfer_data = get_event_data_from_log(self.event_maps["Nomin"], tx_receipt.logs[log_index + 1])
         self.assertEqual(xfer_data['event'], "Transfer")
 
     #
@@ -481,7 +472,7 @@ class TestCourt(unittest.TestCase):
         tx_receipt = self.court.beginMotion(sufficient_standing, suspects[0])
 
         # Check that event is emitted properly.
-        self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[-1])['event'], "MotionBegun")
+        self.assertEqual(get_event_data_from_log(self.event_map, tx_receipt.logs[-1])['event'], "MotionBegun")
         motion_id_0 = self.get_motion_index(tx_receipt)
         fast_forward(self.court.motionStartTime(motion_id_0) - block_time() + 1)
 
@@ -566,7 +557,7 @@ class TestCourt(unittest.TestCase):
         tx_receipt = self.court.voteFor(voter, motion_id)
 
         # Check that event is emitted properly.
-        self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[-1])['event'], "VotedFor")
+        self.assertEqual(get_event_data_from_log(self.event_map, tx_receipt.logs[-1])['event'], "VotedFor")
 
         # And that the totals have been updated properly.
         self.assertEqual(self.court.votesFor(motion_id), 1000)
@@ -609,7 +600,7 @@ class TestCourt(unittest.TestCase):
         tx_receipt = self.court.voteAgainst(voter, motion_id)
 
         # Check that event is emitted properly.
-        self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[-1])['event'], "VotedAgainst")
+        self.assertEqual(get_event_data_from_log(self.event_map, tx_receipt.logs[-1])['event'], "VotedAgainst")
 
         # And that the totals have been updated properly.
         self.assertEqual(self.court.votesAgainst(motion_id), 1000)
@@ -652,7 +643,7 @@ class TestCourt(unittest.TestCase):
         tx_receipt = self.court.cancelVote(voter, motion_id)
 
         # Check that event is emitted properly.
-        self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "VoteCancelled")
+        self.assertEqual(get_event_data_from_log(self.event_map, tx_receipt.logs[0])['event'], "VoteCancelled")
         self.assertEqual(self.court.votesFor(motion_id), 0)
         self.assertEqual(self.court.vote(voter, motion_id), 0)
 
@@ -715,7 +706,7 @@ class TestCourt(unittest.TestCase):
         tx_receipt = self.court.closeMotion(voter, motion_id)
 
         # Check that event is emitted properly.
-        self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "MotionClosed")
+        self.assertEqual(get_event_data_from_log(self.event_map, tx_receipt.logs[0])['event'], "MotionClosed")
 
         fast_forward(fee_period + 1)
 
@@ -766,10 +757,10 @@ class TestCourt(unittest.TestCase):
         self.assertReverts(self.court.approveMotion, voter, motion_id)
         tx_receipt = self.court.approveMotion(owner, motion_id)
 
-        self.assertEqual(get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[0])['event'], "AccountFrozen")
-        self.assertEqual(get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[1])['event'], "Transfer")
-        self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[2])['event'], "MotionClosed")
-        self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[3])['event'], "MotionApproved")
+        self.assertEqual(get_event_data_from_log(self.event_maps["Nomin"], tx_receipt.logs[0])['event'], "AccountFrozen")
+        self.assertEqual(get_event_data_from_log(self.event_maps["Nomin"], tx_receipt.logs[1])['event'], "Transfer")
+        self.assertEqual(get_event_data_from_log(self.event_map, tx_receipt.logs[2])['event'], "MotionClosed")
+        self.assertEqual(get_event_data_from_log(self.event_map, tx_receipt.logs[3])['event'], "MotionApproved")
         self.assertEqual(self.court.motionStartTime(motion_id), 0)
         self.assertEqual(self.court.votesFor(motion_id), 0)
 
@@ -809,8 +800,8 @@ class TestCourt(unittest.TestCase):
         tx_receipt = self.court.vetoMotion(owner, motion_id_2)
 
         # Check that event is emitted properly.
-        self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[0])['event'], "MotionClosed")
-        self.assertEqual(get_event_data_from_log(self.court_event_dict, tx_receipt.logs[1])['event'], "MotionVetoed")
+        self.assertEqual(get_event_data_from_log(self.event_map, tx_receipt.logs[0])['event'], "MotionClosed")
+        self.assertEqual(get_event_data_from_log(self.event_map, tx_receipt.logs[1])['event'], "MotionVetoed")
 
         # After veto motion, suspect should be back in the waiting stage.
         self.assertTrue(self.court.motionWaiting(motion_id))

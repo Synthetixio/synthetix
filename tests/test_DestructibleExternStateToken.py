@@ -1,12 +1,14 @@
-import unittest
-
-from utils.deployutils import W3, UNIT, MASTER, DUMMY, fresh_account, fresh_accounts
-from utils.deployutils import compile_contracts, attempt_deploy, mine_tx, attempt
-from utils.deployutils import take_snapshot, restore_snapshot, mine_txs
-from utils.testutils import assertReverts
-from utils.testutils import generate_topic_event_map, get_event_data_from_log
-from utils.testutils import ZERO_ADDRESS
-
+from utils.deployutils import (
+    W3, UNIT, MASTER, DUMMY,
+    fresh_account, fresh_accounts,
+    compile_contracts, attempt_deploy, attempt,
+    mine_tx, mine_txs,
+    take_snapshot, restore_snapshot
+)
+from utils.testutils import (
+    HavvenTestCase, ZERO_ADDRESS,
+    generate_topic_event_map, get_event_data_from_log
+)
 from tests.contract_interfaces.destructible_extern_state_token_interface import DestructibleExternStateTokenInterface
 
 
@@ -18,7 +20,7 @@ def tearDownModule():
     print()
 
 
-class TestDestructibleExternStateToken(unittest.TestCase):
+class TestDestructibleExternStateToken(HavvenTestCase):
     def setUp(self):
         self.snapshot = take_snapshot()
 
@@ -47,7 +49,6 @@ class TestDestructibleExternStateToken(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.assertReverts = assertReverts
         cls.compiled, cls.token_contract, cls.token_abi, cls.token_event_dict, cls.tokenstate = cls.deploy_contracts()
         cls.token = DestructibleExternStateTokenInterface(cls.token_contract)
 

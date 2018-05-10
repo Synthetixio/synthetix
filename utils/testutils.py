@@ -3,7 +3,7 @@ import unittest
 from web3.utils.events import get_event_data
 from eth_utils import event_abi_to_log_topic
 
-from utils.deployutils import mine_tx, W3, compile_contracts
+from utils.deployutils import mine_tx, W3, compile_contracts, attempt
 
 ZERO_ADDRESS = "0x" + "0" * 40
 
@@ -39,35 +39,15 @@ class HavvenTestCase(unittest.TestCase):
         )
 
     @classmethod
-    def setUpHavvenTestClass(cls, source_paths, remappings=None, primary=None):
+    def setUpHavvenTestClass(cls, source_paths, remappings=None, event_primary=None):
         if remappings is None:
             remappings = []
-        cls.compiled = compile_contracts(source_paths, remappings=remappings)
+        cls.compiled = attempt(compile_contracts, [source_paths], "Compiling contracts...",
+                               func_kwargs={'remappings': remappings})
         cls.event_maps = {name: generate_topic_event_map(cls.compiled[name]['abi']) \
                           for name in cls.compiled}
-        primary_contract = primary if primary is not None else list(cls.event_maps.keys())[0]
+        primary_contract = event_primary if event_primary is not None else list(cls.event_maps.keys())[0]
         cls.event_map = cls.event_maps[primary_contract]
-
-def assertClose(testcase, actual, expected, precision=5, msg=''):
-    if expected == 0:
-        if actual == 0:
-            # this should always pass
-            testcase.assertEqual(actual, expected)
-            return
-        expected, actual = actual, expected
-
-    testcase.assertAlmostEqual(
-        actual / expected,
-        1,
-        places=precision,
-        msg=msg + f'\n{actual} ≉ {expected}'
-    )
-
-
-def assertReverts(testcase, function, *args):
-    with testcase.assertRaises(ValueError) as error:
-        function(*args)
-    testcase.assertTrue("revert" in error.exception.args[0]['message'])
 
 
 def block_time(block_num=None):

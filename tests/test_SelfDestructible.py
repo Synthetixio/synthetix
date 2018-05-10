@@ -30,7 +30,7 @@ class TestSelfDestructible(HavvenTestCase):
         cls.NULL_INITIATION = (2**256 - 1) // 2
         cls.contract_balance = 10 * UNIT
 
-        cls.setUpHavvenTestClass([SD_SOURCE], remappings=['""=contracts'], primary='SelfDestructible')
+        cls.setUpHavvenTestClass([SD_SOURCE], remappings=['""=contracts'], event_primary='SelfDestructible')
         cls.sd_contract, cls.deploy_tx = attempt_deploy(cls.compiled, 'PayableSD', MASTER,
                                                         [MASTER, DUMMY, cls.sd_duration])
         cls.sd = SelfDestructibleInterface(cls.sd_contract)
