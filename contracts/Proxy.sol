@@ -41,16 +41,13 @@ import "contracts/Proxyable.sol";
 
 contract Proxy is Owned {
     Proxyable target;
-    bool public metropolis;
 
     constructor(address _owner)
         Owned(_owner)
         public
-    {
+    {}
 
-    }
-
-    function _setTarget(address _target)
+    function setTarget(address _target)
         external
         onlyOwner
     {
@@ -59,41 +56,23 @@ contract Proxy is Owned {
         emit TargetChanged(_target);
     }
 
-    // Allow the use of the more-flexible metropolis RETURNDATACOPY/SIZE operations.
-    function _setMetropolis(bool _metropolis)
-        external
-        onlyOwner
-    {
-        metropolis = _metropolis;
-    }
-
     function ()
         public
         payable
     {
         target.setMessageSender(msg.sender);
         assembly {
-        // Copy call data into free memory region.
+            // Copy call data into free memory region.
             let free_ptr := mload(0x40)
             calldatacopy(free_ptr, 0, calldatasize)
 
-        // Use metropolis if possible.
-            let met_cond := sload(metropolis_slot)
-            if met_cond
-            {
             // Forward all gas, ether, and data to the target contract.
-                let result := call(gas, sload(target_slot), callvalue, free_ptr, calldatasize, 0, 0)
-                returndatacopy(free_ptr, 0, returndatasize)
+            let result := call(gas, sload(target_slot), callvalue, free_ptr, calldatasize, 0, 0)
+            returndatacopy(free_ptr, 0, returndatasize)
 
             // Revert if the call failed, otherwise return the result.
-                if iszero(result) { revert(free_ptr, calldatasize) }
-                return(free_ptr, returndatasize)
-            }
-        // If metropolis is unavailable, use static 32-byte return values.
-            let ret_size := 32
-            let result := call(gas, sload(target_slot), callvalue, free_ptr, calldatasize, free_ptr, ret_size)
             if iszero(result) { revert(free_ptr, calldatasize) }
-            return(free_ptr, ret_size)
+            return(free_ptr, returndatasize)
         }
     }
 

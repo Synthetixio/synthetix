@@ -38,18 +38,21 @@ contract to the new one.
 pragma solidity 0.4.23;
 
 
-contract State {
+import "contracts/Owned.sol";
+
+
+contract State is Owned {
     // the address of the contract that can modify variables
     // this can only be changed by the owner of this contract
     address public associatedContract;
 
 
-    constructor(address _proxy, address _owner, address _associatedContract)
-        Emitter(_proxy, _owner)
+    constructor(address _owner, address _associatedContract)
+        Owned(_owner)
         public
     {
         associatedContract = _associatedContract;
-        emitAssociatedContractUpdated(_associatedContract);
+        emit AssociatedContractUpdated(_associatedContract);
     }
 
     /* ========== SETTERS ========== */
@@ -57,18 +60,21 @@ contract State {
     // Change the associated contract to a new address
     function setAssociatedContract(address _associatedContract)
         external
-        optionalProxy_onlyOwner
+        onlyOwner
     {
         associatedContract = _associatedContract;
-        emitAssociatedContractUpdated(_associatedContract);
+        emit AssociatedContractUpdated(_associatedContract);
     }
 
     /* ========== MODIFIERS ========== */
 
     modifier onlyAssociatedContract
     {
-        require(messageSender == associatedContract);
+        require(msg.sender == associatedContract);
         _;
     }
 
+    /* ========== EVENTS ========== */
+
+    event AssociatedContractUpdated(address _associatedContract);
 }

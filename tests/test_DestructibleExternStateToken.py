@@ -28,27 +28,36 @@ class TestDestructibleExternStateToken(unittest.TestCase):
     @staticmethod
     def deploy_contracts():
         sources = ['contracts/DestructibleExternStateToken.sol',
-                   'contracts/TokenState.sol']
+                   'contracts/TokenState.sol', 'contracts/Proxy.sol']
 
         compiled = compile_contracts(sources, remappings=['""=contracts'])
 
+        proxy_contract, _ = attempt_deploy(
+            compiled, "Proxy", MASTER, [MASTER]
+        )
+
         token_abi = compiled['DestructibleExternStateToken']['abi']
+
         token_event_dict = generate_topic_event_map(token_abi)
         token_contract, construction_txr = attempt_deploy(
             compiled, 'DestructibleExternStateToken', MASTER,
-            ["Test Token", "TEST", 1000 * UNIT, MASTER, ZERO_ADDRESS, MASTER]
+            [proxy_contract.address, "Test Token", "TEST", 1000 * UNIT, MASTER, ZERO_ADDRESS, MASTER]
         )
 
         tokenstate = W3.eth.contract(address=token_contract.functions.state().call(),
                                      abi=compiled['TokenState']['abi'])
 
+        proxied_token = W3.eth.contract(address=proxy_contract.address, abi=token_abi)
+
+
+        mine_tx(proxy_contract.functions.setTarget(token_contract.address).transact({'from': MASTER}))
         mine_tx(token_contract.functions.setState(tokenstate.address).transact({'from': MASTER}))
-        return compiled, token_contract, token_abi, token_event_dict, tokenstate
+        return proxy_contract, proxied_token, compiled, token_contract, token_abi, token_event_dict, tokenstate
 
     @classmethod
     def setUpClass(cls):
         cls.assertReverts = assertReverts
-        cls.compiled, cls.token_contract, cls.token_abi, cls.token_event_dict, cls.tokenstate = cls.deploy_contracts()
+        cls.proxy, cls.proxied_token, cls.compiled, cls.token_contract, cls.token_abi, cls.token_event_dict, cls.tokenstate = cls.deploy_contracts()
         cls.token = DestructibleExternStateTokenInterface(cls.token_contract)
 
     def test_constructor(self):
@@ -66,14 +75,14 @@ class TestDestructibleExternStateToken(unittest.TestCase):
 
         token, _ = attempt_deploy(self.compiled, 'DestructibleExternStateToken',
                                        MASTER,
-                                       ["Test Token", "TEST",
+                                       [self.proxy.address, "Test Token", "TEST",
                                         1000 * UNIT, MASTER,
                                         ZERO_ADDRESS, DUMMY])
         self.assertNotEqual(token.functions.state().call(), ZERO_ADDRESS)
 
         token, _ = attempt_deploy(self.compiled, 'DestructibleExternStateToken',
                                        MASTER,
-                                       ["Test Token", "TEST",
+                                       [self.proxy.address, "Test Token", "TEST",
                                         1000 * UNIT, MASTER,
                                         tokenstate.address, DUMMY])
         self.assertEqual(token.functions.state().call(), tokenstate.address)

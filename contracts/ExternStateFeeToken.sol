@@ -71,9 +71,8 @@ contract ExternStateFeeToken is Emitter, SafeDecimalMath {
      * @param _state The state contract address. A fresh one is constructed if 0x0 is provided.
      * @param _owner The owner of this contract.
      */
-    constructor(string _name, string _symbol,
-                                 uint _transferFeeRate, address _feeAuthority,
-                                 TokenState _state, address _proxy, address _owner)
+    constructor(address _proxy, string _name, string _symbol, uint _transferFeeRate, address _feeAuthority,
+                TokenState _state, address _owner)
         Emitter(_proxy, _owner)
         public
     {

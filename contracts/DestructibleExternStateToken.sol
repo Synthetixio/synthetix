@@ -58,10 +58,9 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible {
      * @param _state The state contract address. A fresh one is constructed if 0x0 is provided.
      * @param _owner The owner of this contract.
      */
-    constructor(string _name, string _symbol,
-                                   uint _initialSupply, address _initialBeneficiary,
-                                   TokenState _state, address _proxy, address _owner)
-        SelfDestructible(_owner, _proxy, _owner, 4 weeks)
+    constructor(address _proxy, string _name, string _symbol, uint _initialSupply, address _initialBeneficiary,
+                                   TokenState _state, address _owner)
+        SelfDestructible(_proxy, _owner, _owner, 4 weeks)
         public
     {
         name = _name;
@@ -72,7 +71,7 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible {
         if (_state == TokenState(0)) {
             state = new TokenState(_owner, address(this));
             state.setBalanceOf(_initialBeneficiary, totalSupply);
-            emitTransfer(address(0), _initialBeneficiary, _initialSupply);
+//            emitTransfer(address(0), _initialBeneficiary, _initialSupply);
         } else {
             state = _state;
         }

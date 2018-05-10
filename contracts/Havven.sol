@@ -205,8 +205,8 @@ contract Havven is DestructibleExternStateToken {
      * If the provided address is 0x0, then a fresh one will be constructed with the contract owning all tokens.
      * @param _owner The owner of this contract.
      */
-    constructor(TokenState initialState, address _proxy, address _owner, address _oracle)
-        DestructibleExternStateToken("Havven", "HAV", 1e8 * UNIT, address(this), initialState, _proxy, _owner)
+    constructor(address _proxy, TokenState initialState, address _owner, address _oracle)
+        DestructibleExternStateToken(_proxy, "Havven", "HAV", 1e8 * UNIT, address(this), initialState, _owner)
         /* Owned is initialised in DestructibleExternStateToken */
         public
     {

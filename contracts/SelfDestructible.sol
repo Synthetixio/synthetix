@@ -50,7 +50,7 @@ contract SelfDestructible is Emitter {
 	{
 		selfDestructBeneficiary = _beneficiary;
 		selfDestructDelay = _delay;
-		emitSelfDestructBeneficiaryUpdated(_beneficiary);
+//		emitSelfDestructBeneficiaryUpdated(_beneficiary);
 	}
 
 	/**

@@ -1,6 +1,6 @@
 pragma solidity ^0.4.23;
 
-import "contracts/ProxyableOwned.sol";
+import "contracts/Owned.sol";
 import "contracts/Proxy.sol";
 
 contract Proxyable is Owned {
@@ -11,9 +11,6 @@ contract Proxyable is Owned {
     // Note that every function using this member must apply the onlyProxy or
     // optionalProxy modifiers, otherwise their invocations can use stale values.
     address messageSender;
-
-    /*** ABSTRACT FUNCTION ***/
-    function emitProxyChanged(address _proxy) internal;
 
     /*
      * This modifier is a necessity to set proxy address before Owned constructor
@@ -28,10 +25,10 @@ contract Proxyable is Owned {
     /*** CONSTRUCTOR ***/
     constructor(address _proxy, address _owner)
         initialSetProxy(_proxy)
-        ProxyOwned(_owner)
+        Owned(_owner)
         public
     {
-        emitProxyChanged(_proxy);
+        emit ProxyChanged(_proxy);
     }
 
     function setProxy(address _proxy)
@@ -39,7 +36,7 @@ contract Proxyable is Owned {
         onlyOwner
     {
         proxy = Proxy(_proxy);
-        emitProxyChanged(_proxy);
+        emit ProxyChanged(_proxy);
     }
 
     function setMessageSender(address sender)
@@ -79,5 +76,7 @@ contract Proxyable is Owned {
         require(messageSender == owner);
         _;
     }
+
+    event ProxyChanged(address _proxy);
 
 }
