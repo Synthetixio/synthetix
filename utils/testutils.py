@@ -14,12 +14,14 @@ class HavvenTestCase(unittest.TestCase):
             function(*args)
         self.assertTrue("revert" in error.exception.args[0]['message'])
 
-    def assertEventEquals(self, log, event_name, fields, contract=None):
+    def assertEventEquals(self, log, event_name, fields=None, contract=None):
+        if fields is None:
+            fields = {}
         event_map = self.event_maps[contract] if contract is not None else self.event_map
         event_data = get_event_data_from_log(event_map, log)
         self.assertEqual(event_data['event'], event_name)
-        for k, v in fields.items():
-            self.assertEqual(event_data['args'][k], v)
+        for k, v in event_data['args'].items():
+            self.assertEqual(fields[k], v)
 
     def assertClose(self, actual, expected, precision=5, msg=''):
         if expected == 0:

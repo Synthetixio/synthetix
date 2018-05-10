@@ -58,8 +58,12 @@ class TestSelfDestructible(HavvenTestCase):
 
         # The owner can correctly set the variable...
         self.assertEqual(self.sd.selfDestructBeneficiary(), DUMMY)
-        self.sd.setBeneficiary(owner, owner)
-        self.assertEqual(self.sd.selfDestructBeneficiary(), owner)
+        tx = self.sd.setBeneficiary(owner, owner)
+        self.assertEqual(self.sd.selfDestructBeneficiary(), owner) 
+        # Event is properly emitted.
+        self.assertEventEquals(tx.logs[0],
+                               "SelfDestructBeneficiaryUpdated",
+                               {"newBeneficiary": owner})
 
         # ...and set it back.
         self.sd.setBeneficiary(owner, DUMMY)
@@ -69,20 +73,36 @@ class TestSelfDestructible(HavvenTestCase):
         owner = self.sd.owner()
         notowner = DUMMY
         self.assertNotEqual(owner, notowner)
+
+        # Non-owners cannot SD the contract.
         self.assertReverts(self.sd.initiateSelfDestruct, notowner)
+
+        # Initiation time starts at 0.
         self.assertEqual(self.sd.initiationTime(), self.NULL_INITIATION)
-        tx_receipt = self.sd.initiateSelfDestruct(owner)
-        self.assertEqual(self.sd.initiationTime(), block_time(tx_receipt['blockNumber']))
+
+        tx = self.sd.initiateSelfDestruct(owner)
+
+        # Initiated at the right time.
+        self.assertEqual(self.sd.initiationTime(), block_time(tx['blockNumber']))
+
+        # Event is properly emitted.
+        self.assertEventEquals(tx.logs[0],
+                               "SelfDestructInitiated",
+                               {"duration": self.sd_duration})
 
     def test_terminateSelfDestruct(self):
         owner = self.sd.owner()
         notowner = DUMMY
         self.assertNotEqual(owner, notowner)
+
         self.sd.initiateSelfDestruct(owner)
         self.assertNotEqual(self.sd.initiationTime(), self.NULL_INITIATION)
         self.assertReverts(self.sd.terminateSelfDestruct, notowner)
-        self.sd.terminateSelfDestruct(owner)
+
+        tx = self.sd.terminateSelfDestruct(owner)
         self.assertEqual(self.sd.initiationTime(), self.NULL_INITIATION)
+
+        self.assertEventEquals(tx.logs[0], "SelfDestructTerminated")
 
     def test_selfDestruct(self):
         owner = self.sd.owner()
@@ -92,7 +112,10 @@ class TestSelfDestructible(HavvenTestCase):
         # The contract cannot be self-destructed before the SD has been initiated.
         self.assertReverts(self.sd.selfDestruct, owner)
 
-        self.sd.initiateSelfDestruct(owner)
+        tx = self.sd.initiateSelfDestruct(owner)
+        self.assertEventEquals(tx.logs[0],
+                               "SelfDestructInitiated",
+                               {"duration": self.sd_duration})
 
         # Neither owners nor non-owners may not self-destruct before the time has elapsed.
         self.assertReverts(self.sd.selfDestruct, notowner)
@@ -108,9 +131,14 @@ class TestSelfDestructible(HavvenTestCase):
 
         # Non-owner should not be able to self-destruct even if the time has elapsed.
         self.assertReverts(self.sd.selfDestruct, notowner)
-
-        self.sd.selfDestruct(owner)
+        address = self.sd.contract.address
+        tx = self.sd.selfDestruct(owner)
 
         # The balance in the contract is correctly refunded to the beneficiary.
         self.assertEqual(W3.eth.getBalance(beneficiary), pre_balance + self.contract_balance)
+        
+        self.assertEventEquals(tx.logs[0], "SelfDestructed",
+                               {"beneficiary": beneficiary})
 
+        # Check contract not exist 
+        self.assertEqual(W3.eth.getCode(address), b'\x00')
