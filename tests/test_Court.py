@@ -38,28 +38,36 @@ class TestCourt(unittest.TestCase):
         court_abi = compiled['PublicCourt']['abi']
         nomin_abi = compiled['Nomin']['abi']
 
-        havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [ZERO_ADDRESS, MASTER, MASTER])
-        nomin_contract, nom_txr = attempt_deploy(compiled, 'Nomin',
-                                                 MASTER,
-                                                 [havven_contract.address, MASTER, ZERO_ADDRESS])
-        court_contract, court_txr = attempt_deploy(compiled, 'PublicCourt',
-                                                   MASTER,
-                                                   [havven_contract.address, nomin_contract.address,
-                                                    MASTER])
+        havven_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
+        nomin_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
 
-        txs = [havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
-               nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER})]
+        havven_contract, hvn_txr = attempt_deploy(
+            compiled, 'PublicHavven', MASTER, [havven_proxy.address, ZERO_ADDRESS, MASTER, MASTER]
+        )
+        nomin_contract, nom_txr = attempt_deploy(
+            compiled, 'Nomin', MASTER, [nomin_proxy.address, havven_contract.address, MASTER, ZERO_ADDRESS]
+        )
+        court_contract, court_txr = attempt_deploy(
+            compiled, 'PublicCourt', MASTER, [havven_contract.address, nomin_contract.address, MASTER]
+        )
+
+        txs = [
+            havven_proxy.functions.setTarget(havven_contract.address).transact({'from': MASTER}),
+            nomin_proxy.functions.setTarget(nomin_contract.address).transact({'from': MASTER}),
+            havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
+            nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER})
+        ]
         attempt(mine_txs, [txs], "Linking contracts... ")
 
         print("\nDeployment complete.\n")
-        return havven_contract, nomin_contract, court_contract, nomin_abi, court_abi
+        return havven_proxy, nomin_proxy, havven_contract, nomin_contract, court_contract, nomin_abi, court_abi
 
     @classmethod
     def setUpClass(cls):
         cls.assertReverts = assertReverts
         cls.assertClose = assertClose
 
-        cls.havven_contract, cls.nomin_contract, cls.court_contract, cls.nomin_abi, cls.court_abi = cls.deployContracts()
+        cls.havven_proxy, cls.nomin_proxy, cls.havven_contract, cls.nomin_contract, cls.court_contract, cls.nomin_abi, cls.court_abi = cls.deployContracts()
 
         # Event stuff
         cls.court_event_dict = generate_topic_event_map(cls.court_abi)

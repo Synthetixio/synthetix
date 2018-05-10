@@ -53,25 +53,22 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible {
      * @dev Constructor.
      * @param _name Token's ERC20 name.
      * @param _symbol Token's ERC20 symbol.
-     * @param _initialSupply The initial supply of the token.
-     * @param _initialBeneficiary The recipient of the initial token supply if _state is 0.
+     * @param _totalSupply The initial supply of the token.
      * @param _state The state contract address. A fresh one is constructed if 0x0 is provided.
      * @param _owner The owner of this contract.
      */
-    constructor(address _proxy, string _name, string _symbol, uint _initialSupply, address _initialBeneficiary,
+    constructor(address _proxy, string _name, string _symbol, uint _totalSupply,
                                    TokenState _state, address _owner)
         SelfDestructible(_proxy, _owner, _owner, 4 weeks)
         public
     {
         name = _name;
         symbol = _symbol;
-        totalSupply = _initialSupply;
+        totalSupply = _totalSupply;
 
         // if the state isn't set, create a new one
         if (_state == TokenState(0)) {
             state = new TokenState(_owner, address(this));
-            state.setBalanceOf(_initialBeneficiary, totalSupply);
-//            emitTransfer(address(0), _initialBeneficiary, _initialSupply);
         } else {
             state = _state;
         }

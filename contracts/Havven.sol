@@ -197,6 +197,8 @@ contract Havven is DestructibleExternStateToken {
     /* the number of nomins the user has issued */
     mapping(address => uint) public nominsIssued;
 
+    uint constant havvenSupply = 1e8 * UNIT;
+
     /* ========== CONSTRUCTOR ========== */
 
     /**
@@ -206,12 +208,13 @@ contract Havven is DestructibleExternStateToken {
      * @param _owner The owner of this contract.
      */
     constructor(address _proxy, TokenState initialState, address _owner, address _oracle)
-        DestructibleExternStateToken(_proxy, "Havven", "HAV", 1e8 * UNIT, address(this), initialState, _owner)
+        DestructibleExternStateToken(_proxy, "Havven", "HAV", havvenSupply, initialState, _owner)
         /* Owned is initialised in DestructibleExternStateToken */
         public
     {
         oracle = _oracle;
         feePeriodStartTime = now;
+        state.setBalanceOf(address(this), havvenSupply);
         lastFeePeriodStartTime = now - targetFeePeriodDurationSeconds;
     }
 

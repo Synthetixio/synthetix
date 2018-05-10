@@ -12,8 +12,8 @@ contract PublicNomin is Nomin {
 
     uint constant MAX_TRANSFER_FEE_RATE = UNIT;  // allow for 100% fees
 
-    constructor(address _havven, address _owner, TokenState initialState)
-        Nomin(_havven, _owner, initialState)
+    constructor(address _proxy, address _havven, address _owner, TokenState initialState)
+        Nomin(_proxy, _havven, _owner, initialState)
         public {}
     
     function debugEmptyFeePool()

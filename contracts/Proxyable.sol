@@ -12,22 +12,12 @@ contract Proxyable is Owned {
     // optionalProxy modifiers, otherwise their invocations can use stale values.
     address messageSender;
 
-    /*
-     * This modifier is a necessity to set proxy address before Owned constructor
-     * so that Owned could emit an event on proxy
-     */
-    modifier initialSetProxy(address _proxy)
-    {
-        proxy = Proxy(_proxy);
-        _;
-    }
-
     /*** CONSTRUCTOR ***/
     constructor(address _proxy, address _owner)
-        initialSetProxy(_proxy)
         Owned(_owner)
         public
     {
+        proxy = Proxy(_proxy);
         emit ProxyChanged(_proxy);
     }
 
