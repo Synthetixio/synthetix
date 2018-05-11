@@ -67,6 +67,7 @@ class TestCourt(HavvenTestCase):
         ])
 
         cls.event_maps = {name: generate_topic_event_map(compiled[name]['abi']) for name in compiled}
+        cls.event_map = cls.event_maps['Court']
 
         print("\nDeployment complete.\n")
         return havven_proxy, proxied_havven, nomin_proxy, proxied_nomin, havven_contract, nomin_contract, court_contract, nomin_abi, court_abi
