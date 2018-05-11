@@ -63,7 +63,7 @@ class TestIssuance(HavvenTestCase):
                nomin_contract.functions.setHavven(havven_contract.address).transact({'from': MASTER}),
                havven_contract.functions.setEscrow(escrow_contract.address).transact({'from': MASTER})]
 
-        attempt(mine_txs, [txs], "Linking contracts... ")
+        mine_txs(txs)
 
         print("\nDeployment complete.\n")
         return havven_proxy, proxied_havven, nomin_proxy, proxied_nomin, havven_contract, nomin_contract, court_contract, escrow_contract
@@ -72,20 +72,23 @@ class TestIssuance(HavvenTestCase):
     def setUpClass(cls):
         cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, cls.nomin_contract, cls.fake_court, cls.escrow_contract = cls.deployContracts()
 
-        cls.havven = PublicHavvenInterface(cls.havven_contract)
-        cls.nomin = PublicNominInterface(cls.nomin_contract)
-        cls.escrow = PublicHavvenEscrowInterface(cls.escrow_contract)
+        cls.havven = PublicHavvenInterface(cls.havven_contract, "Havven")
+        cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
+        cls.escrow = PublicHavvenEscrowInterface(cls.escrow_contract, "HavvenEscrow")
 
         fast_forward(weeks=102)
 
         cls.fake_court_setNomin = lambda sender, new_nomin: mine_tx(
-            cls.fake_court.functions.setNomin(new_nomin).transact({'from': sender}))
+            cls.fake_court.functions.setNomin(new_nomin).transact({'from': sender}), "setNomin", "FakeCourt")
         cls.fake_court_setConfirming = lambda sender, target, status: mine_tx(
-            cls.fake_court.functions.setConfirming(target, status).transact({'from': sender}))
+            cls.fake_court.functions.setConfirming(target, status).transact({'from': sender}), "setConfirming",
+            "FakeCourt")
         cls.fake_court_setVotePasses = lambda sender, target, status: mine_tx(
-            cls.fake_court.functions.setVotePasses(target, status).transact({'from': sender}))
+            cls.fake_court.functions.setVotePasses(target, status).transact({'from': sender}), "setVotePasses",
+            "FakeCourt")
         cls.fake_court_confiscateBalance = lambda sender, target: mine_tx(
-            cls.fake_court.functions.confiscateBalance(target).transact({'from': sender}))
+            cls.fake_court.functions.confiscateBalance(target).transact({'from': sender}), "confiscateBalance",
+            "FakeCourt")
         
         cls.fake_court_setNomin(W3.eth.accounts[0], cls.nomin_contract.address)
 

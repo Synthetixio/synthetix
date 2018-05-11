@@ -65,8 +65,8 @@ class TestNomin(HavvenTestCase):
     def setUpClass(cls):
         cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.nomin_contract, cls.nomin_event_dict, cls.havven_contract, cls.fake_court = cls.deployContracts()
 
-        cls.nomin = PublicNominInterface(cls.nomin_contract)
-        cls.havven = HavvenInterface(cls.havven_contract)
+        cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
+        cls.havven = HavvenInterface(cls.havven_contract, "Havven")
 
         cls.fake_court_setNomin = lambda sender, new_nomin: mine_tx(
             cls.fake_court.functions.setNomin(new_nomin).transact({'from': sender}), "setNomin", "fakeCourt")

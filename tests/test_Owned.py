@@ -31,7 +31,7 @@ class TestOwned(HavvenTestCase):
     def setUpClass(cls):
         cls.setUpHavvenTestClass([OWNED_SOURCE], event_primary='Owned')
         cls.owned_contract, cls.deploy_tx = attempt_deploy(cls.compiled, 'Owned', MASTER, [MASTER])       
-        cls.owned = OwnedInterface(cls.owned_contract)
+        cls.owned = OwnedInterface(cls.owned_contract, "Owned")
 
     def test_constructor(self):
         self.assertEqual(self.owned.owner(), MASTER)

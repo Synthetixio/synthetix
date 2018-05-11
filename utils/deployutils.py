@@ -106,19 +106,19 @@ def restore_snapshot(snapshot):
     force_mine_block()
 
 
-def mine_tx(tx_hash, function_name, obj):
+def mine_tx(tx_hash, function_name, contract_name):
     global PERFORMANCE_DATA
     tx_receipt = W3.eth.getTransactionReceipt(tx_hash)
     while tx_receipt is None:
         time.sleep(POLLING_INTERVAL)
         tx_receipt = W3.eth.getTransactionReceipt(tx_hash)
 
-    if type(obj) == str:
-        contract_name = obj
-    else:
-        contract_name = str(type(obj)).split(".")[-1].split("'")[0].split("Interface")[0]
-
     gas = tx_receipt['gasUsed']
+
+    if type(function_name) != str:
+        raise Exception(function_name)
+    if type(contract_name) != str:
+        raise Exception(contract_name)
 
     if contract_name in PERFORMANCE_DATA:
         if function_name in PERFORMANCE_DATA[contract_name]:
@@ -128,7 +128,7 @@ def mine_tx(tx_hash, function_name, obj):
             PERFORMANCE_DATA[contract_name][function_name] = (gas, 1, gas, gas)
     else:
         PERFORMANCE_DATA[contract_name] = {function_name: (gas, 1, gas, gas)}
-    print(PERFORMANCE_DATA)
+
     return tx_receipt
 
 

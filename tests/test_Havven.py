@@ -83,9 +83,9 @@ class TestHavven(HavvenTestCase):
             cls.havven_contract, cls.nomin_contract, cls.court_contract, \
             cls.escrow_contract, cls.construction_block, cls.havven_event_dict = cls.deployContracts()
 
-        cls.havven = PublicHavvenInterface(cls.havven_contract)
+        cls.havven = PublicHavvenInterface(cls.havven_contract, "Havven")
         
-        cls.nomin = PublicNominInterface(cls.nomin_contract)
+        cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
 
         cls.initial_time = cls.havven.lastFeePeriodStartTime()
         cls.time_fast_forwarded = 0

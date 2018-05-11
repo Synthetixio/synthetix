@@ -81,9 +81,9 @@ class TestHavvenEscrow(HavvenTestCase):
         cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, \
             cls.nomin_contract, cls.court, cls.escrow_contract, cls.construction_block, \
             cls.escrow_event_dict = cls.deployContracts()
-        cls.havven = PublicHavvenInterface(cls.havven_contract)
-        cls.nomin = PublicNominInterface(cls.nomin_contract)
-        cls.escrow = PublicHavvenEscrowInterface(cls.escrow_contract)
+        cls.havven = PublicHavvenInterface(cls.havven_contract, "Havven")
+        cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
+        cls.escrow = PublicHavvenEscrowInterface(cls.escrow_contract, "HavvenEscrow")
 
     def test_constructor(self):
         self.assertEqual(self.escrow.havven(), self.havven_contract.address)

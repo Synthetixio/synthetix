@@ -62,8 +62,8 @@ class TestFeeCollection(HavvenTestCase):
     @classmethod
     def setUpClass(cls):
         cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, cls.nomin_contract, cls.fake_court = cls.deployContracts()
-        cls.havven = PublicHavvenInterface(cls.havven_contract)
-        cls.nomin = PublicNominInterface(cls.nomin_contract)
+        cls.havven = PublicHavvenInterface(cls.havven_contract, "Havven")
+        cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
 
         fast_forward(weeks=102)
 

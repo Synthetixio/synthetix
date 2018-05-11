@@ -4,7 +4,7 @@ import subprocess
 import time
 from unittest import TestSuite, TestLoader, TextTestRunner
 from utils.generalutils import load_test_settings, ganache_error_message
-
+from utils.deployutils import PERFORMANCE_DATA
 
 if __name__ == '__main__':
     num_agents = "120"
@@ -40,5 +40,7 @@ if __name__ == '__main__':
     result = TextTestRunner(verbosity=2).run(test_suite)
     process.terminate()
     print("\nTesting complete.")
+
+    print(PERFORMANCE_DATA)
 
     sys.exit(0 if result.wasSuccessful() else 1)

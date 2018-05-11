@@ -9,7 +9,7 @@ from utils.deployutils import (
 from utils.testutils import (
     HavvenTestCase, block_time,
     get_event_data_from_log,
-    ZERO_ADDRESS
+    ZERO_ADDRESS, generate_topic_event_map
 )
 
 from tests.contract_interfaces.court_interface import PublicCourtInterface
@@ -65,6 +65,8 @@ class TestCourt(HavvenTestCase):
             havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
             nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER})
         ])
+
+        cls.event_maps = {name: generate_topic_event_map(compiled[name]['abi']) for name in compiled}
 
         print("\nDeployment complete.\n")
         return havven_proxy, proxied_havven, nomin_proxy, proxied_nomin, havven_contract, nomin_contract, court_contract, nomin_abi, court_abi
