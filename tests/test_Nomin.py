@@ -266,7 +266,7 @@ class TestNomin(HavvenTestCase):
     def test_confiscateBalance(self):
         target = W3.eth.accounts[2]
 
-        self.assertEqual(self.nomin.court(), self.fake_court.address)
+        self.assertEqual(self.nomin.court(), self.fake_court.contract.address)
 
         self.nomin.giveNomins(MASTER, target, 10 * UNIT)
 

@@ -38,7 +38,6 @@ if __name__ == '__main__':
     print("Running test suite...\n")
     result = TextTestRunner(verbosity=2).run(test_suite)
     from utils.deployutils import PERFORMANCE_DATA
-    print(PERFORMANCE_DATA)
 
     for i in PERFORMANCE_DATA:
         for j in PERFORMANCE_DATA[i]:
@@ -52,7 +51,11 @@ if __name__ == '__main__':
     max_contract_name = max([len(i) for i in list(PERFORMANCE_DATA.keys())])
     max_method_name = max([max([len(str(i)) for i in PERFORMANCE_DATA[j].keys()]) for j in PERFORMANCE_DATA.keys()])
     max_gas_len = max([max([max([len(str(i)) for i in PERFORMANCE_DATA[k][j]]) for j in PERFORMANCE_DATA[k]]) for k in PERFORMANCE_DATA])
-
+    print()
+    print(max_contract_name)
+    print(max_method_name)
+    print(max_gas_len)
+    print()
     current = 'CONTRACT'
     remaining = sorted(list(PERFORMANCE_DATA.keys()))
     remaining.pop(remaining.index('CONTRACT'))
@@ -61,13 +64,13 @@ if __name__ == '__main__':
         for method in sorted(list(PERFORMANCE_DATA[current].keys())):
             vals = PERFORMANCE_DATA[current][method]
             print(
-                ' ' + current + ' '*(1 + max_contract_name - len(current)) + '| '
+                '| ' + current + ' '*(1 + max_contract_name - len(current)) + '| '
                 + str(method) + ' '*(1 + max_method_name - len(str(method))) + '| '
                 + ''.join([str(i) + ' ' * (1 + max_gas_len - len(str(i))) + '| ' for i in vals])
             )
         if len(remaining) == 0:
             break
-        print('.' * (13*3 + max_gas_len + max_method_name + max_contract_name))
+        print('.' * (40 + max_gas_len + max_method_name + max_contract_name))
         current = remaining.pop(0)
 
     process.terminate()
