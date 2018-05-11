@@ -4,10 +4,11 @@ from utils.deployutils import mine_tx
 
 
 class DestructibleExternStateTokenInterface(SafeDecimalMathInterface, SelfDestructibleInterface):
-    def __init__(self, contract):
-        SafeDecimalMathInterface.__init__(self, contract)
-        SelfDestructibleInterface.__init__(self, contract)
+    def __init__(self, contract, name):
+        SafeDecimalMathInterface.__init__(self, contract, name)
+        SelfDestructibleInterface.__init__(self, contract, name)
         self.contract = contract
+        self.name = name
 
         self.owner = lambda: self.contract.functions.owner().call()
         self.totalSupply = lambda: self.contract.functions.totalSupply().call()
@@ -18,10 +19,10 @@ class DestructibleExternStateTokenInterface(SafeDecimalMathInterface, SelfDestru
         self.allowance = lambda account, spender: self.contract.functions.allowance(account, spender).call()
 
         self.setState = lambda sender, new_state: mine_tx(
-            self.contract.functions.setState(new_state).transact({'from': sender}))
+            self.contract.functions.setState(new_state).transact({'from': sender}), "setState", self.name)
         self.transfer = lambda sender, to, value: mine_tx(
-            self.contract.functions.transfer(to, value).transact({'from': sender}))
+            self.contract.functions.transfer(to, value).transact({'from': sender}), "transfer", self.name)
         self.approve = lambda sender, spender, value: mine_tx(
-            self.contract.functions.approve(spender, value).transact({'from': sender}))
+            self.contract.functions.approve(spender, value).transact({'from': sender}), "approve", self.name)
         self.transferFrom = lambda sender, frm, to, value: mine_tx(
-            self.contract.functions.transferFrom(frm, to, value).transact({'from': sender}))
+            self.contract.functions.transferFrom(frm, to, value).transact({'from': sender}), "transferFrom", self.name)

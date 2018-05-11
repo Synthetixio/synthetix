@@ -59,13 +59,12 @@ class TestCourt(HavvenTestCase):
             compiled, 'PublicCourt', MASTER, [havven_contract.address, nomin_contract.address, MASTER]
         )
 
-        txs = [
+        mine_txs([
             havven_proxy.functions.setTarget(havven_contract.address).transact({'from': MASTER}),
             nomin_proxy.functions.setTarget(nomin_contract.address).transact({'from': MASTER}),
             havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
             nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER})
-        ]
-        attempt(mine_txs, [txs], "Linking contracts... ")
+        ])
 
         print("\nDeployment complete.\n")
         return havven_proxy, proxied_havven, nomin_proxy, proxied_nomin, havven_contract, nomin_contract, court_contract, nomin_abi, court_abi
@@ -74,9 +73,9 @@ class TestCourt(HavvenTestCase):
     def setUpClass(cls):
         cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, cls.nomin_contract, cls.court_contract, cls.nomin_abi, cls.court_abi = cls.deployContracts()
 
-        cls.court = PublicCourtInterface(cls.court_contract)
-        cls.havven = PublicHavvenInterface(cls.havven_contract)
-        cls.nomin = NominInterface(cls.nomin_contract)
+        cls.court = PublicCourtInterface(cls.court_contract, "Court")
+        cls.havven = PublicHavvenInterface(cls.havven_contract, "Havven")
+        cls.nomin = NominInterface(cls.nomin_contract, "Nomin")
 
     #
     # HELPER FUNCTIONS

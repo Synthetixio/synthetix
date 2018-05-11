@@ -3,6 +3,7 @@ import time
 from web3 import Web3, HTTPProvider
 from solc import compile_files
 from utils.generalutils import to_seconds, TERMCOLORS
+from eth_utils import function_abi_to_4byte_selector
 
 BLOCKCHAIN_ADDRESS = "http://localhost:8545"
 W3 = Web3(HTTPProvider(BLOCKCHAIN_ADDRESS))
@@ -23,6 +24,8 @@ DUMMY = W3.eth.accounts[1]
 
 # what account was last accessed, assumes ganache-cli was started with enough actors
 last_accessed_account = 1
+
+PERFORMANCE_DATA = {}
 
 
 def fresh_account():
@@ -103,11 +106,29 @@ def restore_snapshot(snapshot):
     force_mine_block()
 
 
-def mine_tx(tx_hash):
+def mine_tx(tx_hash, function_name, obj):
+    global PERFORMANCE_DATA
     tx_receipt = W3.eth.getTransactionReceipt(tx_hash)
     while tx_receipt is None:
         time.sleep(POLLING_INTERVAL)
         tx_receipt = W3.eth.getTransactionReceipt(tx_hash)
+
+    if type(obj) == str:
+        contract_name = obj
+    else:
+        contract_name = str(type(obj)).split(".")[-1].split("'")[0].split("Interface")[0]
+
+    gas = tx_receipt['gasUsed']
+
+    if contract_name in PERFORMANCE_DATA:
+        if function_name in PERFORMANCE_DATA[contract_name]:
+            values = PERFORMANCE_DATA[contract_name][function_name]
+            PERFORMANCE_DATA[contract_name][function_name] = (values[0] + gas, values[1] + 1, max([values[2], gas]), min([values[3], gas]))
+        else:
+            PERFORMANCE_DATA[contract_name][function_name] = (gas, 1, gas, gas)
+    else:
+        PERFORMANCE_DATA[contract_name] = {function_name: (gas, 1, gas, gas)}
+    print(PERFORMANCE_DATA)
     return tx_receipt
 
 
@@ -135,7 +156,7 @@ def deploy_contract(compiled_sol, contract_name, deploy_account, constructor_arg
     tx_hash = contract.deploy(
         transaction={'from': deploy_account, 'gas': gas}, args=constructor_args
     )
-    tx_receipt = mine_tx(tx_hash)
+    tx_receipt = mine_txs([tx_hash])[tx_hash]
     contract_instance = W3.eth.contract(address=tx_receipt['contractAddress'], abi=contract_interface['abi'])
     return contract_instance, tx_receipt
 

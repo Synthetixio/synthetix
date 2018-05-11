@@ -2,7 +2,7 @@ from utils.deployutils import (
     W3, UNIT, MASTER, DUMMY,
     fresh_account, fresh_accounts,
     compile_contracts, attempt_deploy,
-    mine_tx, take_snapshot, restore_snapshot
+    mine_txs, take_snapshot, restore_snapshot
 )
 from utils.testutils import (
     HavvenTestCase, ZERO_ADDRESS,
@@ -47,19 +47,20 @@ class TestDestructibleExternStateToken(HavvenTestCase):
 
         tokenstate, _ = attempt_deploy(compiled, 'TokenState',
                                        MASTER, [MASTER, MASTER])
-        mine_tx(tokenstate.functions.setBalanceOf(MASTER, 1000 * UNIT).transact({'from': MASTER}))
-        mine_tx(tokenstate.functions.setAssociatedContract(token_contract.address).transact({'from': MASTER}))
-
         proxied_token = W3.eth.contract(address=proxy_contract.address, abi=token_abi)
 
-        mine_tx(proxy_contract.functions.setTarget(token_contract.address).transact({'from': MASTER}))
-        mine_tx(token_contract.functions.setState(tokenstate.address).transact({'from': MASTER}))
+        mine_txs([
+            tokenstate.functions.setBalanceOf(MASTER, 1000 * UNIT).transact({'from': MASTER}),
+            tokenstate.functions.setAssociatedContract(token_contract.address).transact({'from': MASTER}),
+            proxy_contract.functions.setTarget(token_contract.address).transact({'from': MASTER}),
+            token_contract.functions.setState(tokenstate.address).transact({'from': MASTER})
+        ])
         return proxy_contract, proxied_token, compiled, token_contract, token_abi, token_event_dict, tokenstate
 
     @classmethod
     def setUpClass(cls):
         cls.proxy, cls.proxied_token, cls.compiled, cls.token_contract, cls.token_abi, cls.token_event_dict, cls.tokenstate = cls.deploy_contracts()
-        cls.token = DestructibleExternStateTokenInterface(cls.token_contract)
+        cls.token = DestructibleExternStateTokenInterface(cls.token_contract, "DestructibleExternStateToken")
 
     def test_constructor(self):
         self.assertEqual(self.token.name(), "Test Token")

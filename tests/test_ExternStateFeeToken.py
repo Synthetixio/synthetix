@@ -63,7 +63,7 @@ class TestExternStateFeeToken(HavvenTestCase):
         cls.initial_beneficiary = DUMMY
         cls.fee_authority = fresh_account()
 
-        cls.feetoken = ExternStateFeeTokenInterface(cls.feetoken_contract)
+        cls.feetoken = ExternStateFeeTokenInterface(cls.feetoken_contract, "ExternStateFeeToken")
         cls.feetoken.setFeeAuthority(MASTER, cls.fee_authority)
 
     def test_constructor(self):

@@ -1,7 +1,6 @@
-import unittest
 from utils.deployutils import (
     UNIT, MASTER, DUMMY, 
-    compile_contracts, attempt_deploy, mine_tx,
+    compile_contracts, attempt_deploy,
     take_snapshot, restore_snapshot
 )
 from utils.testutils import HavvenTestCase, ZERO_ADDRESS

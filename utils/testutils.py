@@ -44,7 +44,7 @@ class HavvenTestCase(unittest.TestCase):
             remappings = []
         cls.compiled = attempt(compile_contracts, [source_paths], "Compiling contracts...",
                                func_kwargs={'remappings': remappings})
-        cls.event_maps = {name: generate_topic_event_map(cls.compiled[name]['abi']) \
+        cls.event_maps = {name: generate_topic_event_map(cls.compiled[name]['abi'])
                           for name in cls.compiled}
         primary_contract = event_primary if event_primary is not None else list(cls.event_maps.keys())[0]
         cls.event_map = cls.event_maps[primary_contract]

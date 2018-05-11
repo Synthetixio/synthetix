@@ -1,11 +1,10 @@
 from utils.deployutils import (
     MASTER, DUMMY,
-    compile_contracts, attempt_deploy, mine_tx, 
+    attempt_deploy,
     take_snapshot, restore_snapshot
 )
 from utils.testutils import (
-    HavvenTestCase, ZERO_ADDRESS,
-    generate_topic_event_map, get_event_data_from_log
+    HavvenTestCase, ZERO_ADDRESS
 )
 from tests.contract_interfaces.owned_interface import OwnedInterface
 

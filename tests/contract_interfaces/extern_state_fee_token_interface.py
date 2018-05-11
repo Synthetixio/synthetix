@@ -4,11 +4,12 @@ from utils.deployutils import mine_tx
 
 
 class ExternStateFeeTokenInterface(SafeDecimalMathInterface, OwnedInterface):
-    def __init__(self, contract):
-        SafeDecimalMathInterface.__init__(self, contract)
-        OwnedInterface.__init__(self, contract)
+    def __init__(self, contract, name):
+        SafeDecimalMathInterface.__init__(self, contract, name)
+        OwnedInterface.__init__(self, contract, name)
         
         self.contract = contract
+        self.name = name
 
         self.owner = lambda: self.contract.functions.owner().call()
         self.totalSupply = lambda: self.contract.functions.totalSupply().call()
@@ -26,23 +27,23 @@ class ExternStateFeeTokenInterface(SafeDecimalMathInterface, OwnedInterface):
         self.priceToSpend = lambda value: self.contract.functions.priceToSpend(value).call()
 
         self.nominateOwner = lambda sender, address: mine_tx(
-            self.contract.functions.nominateOwner(address).transact({'from': sender}))
+            self.contract.functions.nominateOwner(address).transact({'from': sender}), "nominateOwner", self.name)
         self.acceptOwnership = lambda sender: mine_tx(
-            self.contract.functions.acceptOwnership().transact({'from': sender}))
+            self.contract.functions.acceptOwnership().transact({'from': sender}), "acceptOwnership", self.name)
         self.setTransferFeeRate = lambda sender, new_fee_rate: mine_tx(
-            self.contract.functions.setTransferFeeRate(new_fee_rate).transact({'from': sender}))
+            self.contract.functions.setTransferFeeRate(new_fee_rate).transact({'from': sender}), "setTransferFeeRate", self.name)
         self.setFeeAuthority = lambda sender, new_fee_authority: mine_tx(
-            self.contract.functions.setFeeAuthority(new_fee_authority).transact({'from': sender}))
+            self.contract.functions.setFeeAuthority(new_fee_authority).transact({'from': sender}), "setFeeAuthority", self.name)
         self.setState = lambda sender, new_state: mine_tx(
-            self.contract.functions.setState(new_state).transact({'from': sender}))
+            self.contract.functions.setState(new_state).transact({'from': sender}), "setState", self.name)
         self.transfer = lambda sender, to, value: mine_tx(
-            self.contract.functions.transfer(to, value).transact({'from': sender}))
+            self.contract.functions.transfer(to, value).transact({'from': sender}), "transfer", self.name)
         self.approve = lambda sender, spender, value: mine_tx(
-            self.contract.functions.approve(spender, value).transact({'from': sender}))
+            self.contract.functions.approve(spender, value).transact({'from': sender}), "approve", self.name)
         self.transferFrom = lambda sender, frm, to, value: mine_tx(
-            self.contract.functions.transferFrom(frm, to, value).transact({'from': sender}))
+            self.contract.functions.transferFrom(frm, to, value).transact({'from': sender}), "transferFrom", self.name)
 
         self.withdrawFee = lambda sender, account, value: mine_tx(
-            self.contract.functions.withdrawFee(account, value).transact({'from': sender}))
+            self.contract.functions.withdrawFee(account, value).transact({'from': sender}), "withdrawFee", self.name)
         self.donateToFeePool = lambda sender, value: mine_tx(
-            self.contract.functions.donateToFeePool(value).transact({'from': sender}))
+            self.contract.functions.donateToFeePool(value).transact({'from': sender}), "donateToFeePool", self.name)

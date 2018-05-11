@@ -1,7 +1,5 @@
-import unittest
-
-from utils.deployutils import compile_contracts, attempt_deploy, mine_tx, W3, MASTER, DUMMY, UNIT
-from utils.deployutils import take_snapshot, restore_snapshot, fast_forward, fresh_account
+from utils.deployutils import attempt_deploy, W3, MASTER, DUMMY, UNIT
+from utils.deployutils import take_snapshot, restore_snapshot, fast_forward
 from utils.testutils import HavvenTestCase, send_value, block_time
 
 from tests.contract_interfaces.self_destructible_interface import SelfDestructibleInterface

@@ -2,7 +2,7 @@ from utils.deployutils import (
     W3, UNIT, MASTER, DUMMY,
     fresh_account, fresh_accounts,
     compile_contracts, attempt_deploy, mine_tx, mine_txs,
-    take_snapshot, restore_snapshot, fast_forward
+    take_snapshot, restore_snapshot
 )
 from utils.testutils import (
     HavvenTestCase, ZERO_ADDRESS,
@@ -68,17 +68,19 @@ class TestNomin(HavvenTestCase):
         cls.nomin = PublicNominInterface(cls.nomin_contract)
         cls.havven = HavvenInterface(cls.havven_contract)
 
-        cls.fake_court.setNomin = lambda sender, new_nomin: mine_tx(
-            cls.fake_court.functions.setNomin(new_nomin).transact({'from': sender}))
-        cls.fake_court.setConfirming = lambda sender, target, status: mine_tx(
-            cls.fake_court.functions.setConfirming(target, status).transact({'from': sender}))
-        cls.fake_court.setVotePasses = lambda sender, target, status: mine_tx(
-            cls.fake_court.functions.setVotePasses(target, status).transact({'from': sender}))
-        cls.fake_court.setTargetMotionID = lambda sender, target, motion_id: mine_tx(
-            cls.fake_court.functions.setTargetMotionID(target, motion_id).transact({'from': sender}))
-        cls.fake_court.confiscateBalance = lambda sender, target: mine_tx(
-            cls.fake_court.functions.confiscateBalance(target).transact({'from': sender}))
-        cls.fake_court.setNomin(MASTER, cls.nomin_contract.address)
+        cls.fake_court_setNomin = lambda sender, new_nomin: mine_tx(
+            cls.fake_court.functions.setNomin(new_nomin).transact({'from': sender}), "setNomin", "fakeCourt")
+        cls.fake_court_setConfirming = lambda sender, target, status: mine_tx(
+            cls.fake_court.functions.setConfirming(target, status).transact({'from': sender}), "setConfirming",
+            "fakeCourt")
+        cls.fake_court_setVotePasses = lambda sender, target, status: mine_tx(
+            cls.fake_court.functions.setVotePasses(target, status).transact({'from': sender}), "setVotePasses",
+            "fakeCourt")
+        cls.fake_court_confiscateBalance = lambda sender, target: mine_tx(
+            cls.fake_court.functions.confiscateBalance(target).transact({'from': sender}), "confiscateBalance",
+            "fakeCourt")
+
+        cls.fake_court_setNomin(MASTER, cls.nomin_contract.address)
 
         cls.nomin.setFeeAuthority(MASTER, cls.havven_contract.address)
 

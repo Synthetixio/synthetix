@@ -1,11 +1,11 @@
 from utils.testutils import (
     HavvenTestCase, ZERO_ADDRESS, block_time,
-    generate_topic_event_map, get_event_data_from_log
+    generate_topic_event_map
 )
 
 from utils.deployutils import (
     W3, UNIT, MASTER, DUMMY,
-    mine_txs, mine_tx,
+    mine_txs,
     attempt, attempt_deploy, compile_contracts,
     to_seconds, fast_forward,
     fresh_account, fresh_accounts,
@@ -36,7 +36,7 @@ class TestHavvenEscrow(HavvenTestCase):
     def deployContracts():
         sources = ["tests/contracts/PublicHavven.sol", "tests/contracts/PublicNomin.sol",
                    "contracts/Court.sol", "contracts/HavvenEscrow.sol",
-                   "tests/contracts/PublicHavvenEscrow.sol"]
+                   "tests/contracts/PublicHavvenEscrow.sol", "contracts/Proxy.sol"]
 
         print("Deployment initiated.\n")
 

@@ -1,5 +1,5 @@
 from utils.deployutils import (
-    W3, MASTER, DUMMY, UNIT,
+    W3, MASTER, UNIT,
     attempt, attempt_deploy, compile_contracts,
     mine_txs, mine_tx,
     fast_forward, fresh_account,

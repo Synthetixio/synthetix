@@ -68,13 +68,13 @@ class TestFeeCollection(HavvenTestCase):
         fast_forward(weeks=102)
 
         cls.fake_court_setNomin = lambda sender, new_nomin: mine_tx(
-            cls.fake_court.functions.setNomin(new_nomin).transact({'from': sender}))
+            cls.fake_court.functions.setNomin(new_nomin).transact({'from': sender}), "setNomin", "FakeCourt")
         cls.fake_court_setConfirming = lambda sender, target, status: mine_tx(
-            cls.fake_court.functions.setConfirming(target, status).transact({'from': sender}))
+            cls.fake_court.functions.setConfirming(target, status).transact({'from': sender}), "setConfirming", "FakeCourt")
         cls.fake_court_setVotePasses = lambda sender, target, status: mine_tx(
-            cls.fake_court.functions.setVotePasses(target, status).transact({'from': sender}))
+            cls.fake_court.functions.setVotePasses(target, status).transact({'from': sender}), "setVotePasses", "FakeCourt")
         cls.fake_court_confiscateBalance = lambda sender, target: mine_tx(
-            cls.fake_court.functions.confiscateBalance(target).transact({'from': sender}))
+            cls.fake_court.functions.confiscateBalance(target).transact({'from': sender}), "confiscateBalance", "FakeCourt")
         
         cls.fake_court_setNomin(MASTER, cls.nomin_contract.address)
 

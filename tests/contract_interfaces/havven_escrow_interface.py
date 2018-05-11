@@ -5,18 +5,13 @@ from utils.deployutils import mine_tx
 
 
 class HavvenEscrowInterface(SafeDecimalMathInterface, OwnedInterface, LimitedSetupInterface):
-    def __init__(self, contract):
-        SafeDecimalMathInterface.__init__(self, contract)
-        OwnedInterface.__init__(self, contract)
-        LimitedSetupInterface.__init__(self, contract)
+    def __init__(self, contract, name):
+        SafeDecimalMathInterface.__init__(self, contract, name)
+        OwnedInterface.__init__(self, contract, name)
+        LimitedSetupInterface.__init__(self, contract, name)
 
         self.contract = contract
-
-        self.owner = lambda: self.contract.functions.owner().call()
-        self.nominateOwner = lambda sender, newOwner: mine_tx(
-            self.contract.functions.nominateOwner(newOwner).transact({'from': sender}))
-        self.acceptOwnership = lambda sender: mine_tx(
-            self.contract.functions.acceptOwnership().transact({'from': sender}))
+        self.name = name
 
         self.havven = lambda: self.contract.functions.havven().call()
         self.vestingSchedules = lambda account, index, i: self.contract.functions.vestingSchedules(account, index, i).call()
@@ -33,20 +28,22 @@ class HavvenEscrowInterface(SafeDecimalMathInterface, OwnedInterface, LimitedSet
         self.balanceOf = lambda account: self.contract.functions.balanceOf(account).call()
 
         self.setHavven = lambda sender, account: mine_tx(
-            self.contract.functions.setHavven(account).transact({'from': sender}))
+            self.contract.functions.setHavven(account).transact({'from': sender}), "setHavven", self.name)
         self.purgeAccount = lambda sender, account: mine_tx(
-            self.contract.functions.purgeAccount(account).transact({'from': sender}))
+            self.contract.functions.purgeAccount(account).transact({'from': sender}), "purgeAccount", self.name)
         self.withdrawHavvens = lambda sender, quantity: mine_tx(
-            self.contract.functions.withdrawHavvens(quantity).transact({'from': sender}))
+            self.contract.functions.withdrawHavvens(quantity).transact({'from': sender}), "withdrawHavvens", self.name)
         self.appendVestingEntry = lambda sender, account, time, quantity: mine_tx(
-            self.contract.functions.appendVestingEntry(account, time, quantity).transact({'from': sender}))
+            self.contract.functions.appendVestingEntry(account, time, quantity).transact({'from': sender}), "appendVestingEntry", self.name)
         self.addVestingSchedule = lambda sender, account, times, quantities: mine_tx(
-            self.contract.functions.addVestingSchedule(account, times, quantities).transact({'from': sender}))
-        self.vest = lambda sender: mine_tx(self.contract.functions.vest().transact({'from': sender}))
+            self.contract.functions.addVestingSchedule(account, times, quantities).transact({'from': sender}), "addVestingSchedule", self.name)
+        self.vest = lambda sender: mine_tx(self.contract.functions.vest().transact({'from': sender}), "vest", self.name)
 
 
 class PublicHavvenEscrowInterface(HavvenEscrowInterface):
-    def __init__(self, contract):
-        HavvenEscrowInterface.__init__(self, contract)
+    def __init__(self, contract, name):
+        HavvenEscrowInterface.__init__(self, contract, name)
+        self.contract = contract
+        self.name = name
         self.addRegularVestingSchedule = lambda sender, account, time, quantity, periods: mine_tx(
-            self.contract.functions.addRegularVestingSchedule(account, time, quantity, periods).transact({'from': sender}))
+            self.contract.functions.addRegularVestingSchedule(account, time, quantity, periods).transact({'from': sender}), "addRegularVestingSchedule", self.name)
