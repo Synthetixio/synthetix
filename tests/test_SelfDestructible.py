@@ -31,7 +31,7 @@ class TestSelfDestructible(HavvenTestCase):
         cls.setUpHavvenTestClass([SD_SOURCE], remappings=['""=contracts'], event_primary='SelfDestructible')
         cls.sd_contract, cls.deploy_tx = attempt_deploy(cls.compiled, 'PayableSD', MASTER,
                                                         [MASTER, DUMMY, cls.sd_duration])
-        cls.sd = SelfDestructibleInterface(cls.sd_contract)
+        cls.sd = SelfDestructibleInterface(cls.sd_contract, 'SelfDestructible')
 
         # Send some value to the contract so that we can test receipt of funds by beneficiary
         send_value(MASTER, cls.sd_contract.address, cls.contract_balance)

@@ -24,7 +24,7 @@ class TestSafeDecimalMath(HavvenTestCase):
     @classmethod
     def setUpClass(cls):
         cls.math = cls.deployContracts()
-        cls.safeDecMath = SafeDecimalMathInterface(cls.math)
+        cls.safeDecMath = SafeDecimalMathInterface(cls.math, 'SafeDecimalMath')
 
     def test_scale(self):
         self.assertEqual(self.safeDecMath.decimals(), 18)

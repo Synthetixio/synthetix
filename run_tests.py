@@ -40,9 +40,38 @@ if __name__ == '__main__':
     from utils.deployutils import PERFORMANCE_DATA
     print(PERFORMANCE_DATA)
 
+    for i in PERFORMANCE_DATA:
+        for j in PERFORMANCE_DATA[i]:
+            vals = PERFORMANCE_DATA[i][j]
+            # (avg, min, max, #calls)
+            PERFORMANCE_DATA[i][j] = (vals[0]//vals[1], vals[2], vals[3], vals[1])
+
+    PERFORMANCE_DATA['CONTRACT'] = {'METHOD': ['AVG_GAS', 'MIN_GAS', 'MAX_GAS', "#CALLS"]}
+
+    # PRINT TABLE | CONTRACT | METHOD | AVG GAS | MIN GAS | MAX GAS | #CALLS |
+    max_contract_name = max([len(i) for i in list(PERFORMANCE_DATA.keys())])
+    max_method_name = max([max([len(str(i)) for i in PERFORMANCE_DATA[j].keys()]) for j in PERFORMANCE_DATA.keys()])
+    max_gas_len = max([max([max([len(str(i)) for i in PERFORMANCE_DATA[k][j]]) for j in PERFORMANCE_DATA[k]]) for k in PERFORMANCE_DATA])
+
+    current = 'CONTRACT'
+    remaining = sorted(list(PERFORMANCE_DATA.keys()))
+    remaining.pop(remaining.index('CONTRACT'))
+
+    while True:
+        for method in sorted(list(PERFORMANCE_DATA[current].keys())):
+            vals = PERFORMANCE_DATA[current][method]
+            print(
+                ' ' + current + ' '*(1 + max_contract_name - len(current)) + '| '
+                + str(method) + ' '*(1 + max_method_name - len(str(method))) + '| '
+                + ''.join([str(i) + ' ' * (1 + max_gas_len - len(str(i))) + '| ' for i in vals])
+            )
+        if len(remaining) == 0:
+            break
+        print('.' * (13*3 + max_gas_len + max_method_name + max_contract_name))
+        current = remaining.pop(0)
+
     process.terminate()
 
     print("\nTesting complete.")
-
 
     sys.exit(0 if result.wasSuccessful() else 1)

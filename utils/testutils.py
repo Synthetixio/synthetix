@@ -3,7 +3,7 @@ import unittest
 from web3.utils.events import get_event_data
 from eth_utils import event_abi_to_log_topic
 
-from utils.deployutils import mine_tx, W3, compile_contracts, attempt
+from utils.deployutils import mine_txs, W3, compile_contracts, attempt
 
 ZERO_ADDRESS = "0x" + "0" * 40
 
@@ -57,7 +57,7 @@ def block_time(block_num=None):
 
 
 def send_value(sender, recipient, value):
-    return mine_tx(W3.eth.sendTransaction({'from': sender, 'to': recipient, 'value': value}))
+    return mine_txs([W3.eth.sendTransaction({'from': sender, 'to': recipient, 'value': value})])
 
 
 def get_eth_balance(account):

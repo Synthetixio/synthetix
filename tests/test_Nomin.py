@@ -1,7 +1,7 @@
 from utils.deployutils import (
     W3, UNIT, MASTER, DUMMY,
     fresh_account, fresh_accounts,
-    compile_contracts, attempt_deploy, mine_tx, mine_txs,
+    compile_contracts, attempt_deploy, mine_txs,
     take_snapshot, restore_snapshot
 )
 from utils.testutils import (
@@ -10,6 +10,7 @@ from utils.testutils import (
 )
 from tests.contract_interfaces.nomin_interface import PublicNominInterface
 from tests.contract_interfaces.havven_interface import HavvenInterface
+from tests.contract_interfaces.court_interface import FakeCourtInterface
 
 SOURCES = ["tests/contracts/PublicNomin.sol", "tests/contracts/FakeCourt.sol", "contracts/Havven.sol"]
 
@@ -63,24 +64,14 @@ class TestNomin(HavvenTestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.nomin_contract, cls.nomin_event_dict, cls.havven_contract, cls.fake_court = cls.deployContracts()
+        cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.nomin_contract, cls.nomin_event_dict, cls.havven_contract, cls.fake_court_contract = cls.deployContracts()
 
         cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
         cls.havven = HavvenInterface(cls.havven_contract, "Havven")
 
-        cls.fake_court_setNomin = lambda sender, new_nomin: mine_tx(
-            cls.fake_court.functions.setNomin(new_nomin).transact({'from': sender}), "setNomin", "fakeCourt")
-        cls.fake_court_setConfirming = lambda sender, target, status: mine_tx(
-            cls.fake_court.functions.setConfirming(target, status).transact({'from': sender}), "setConfirming",
-            "fakeCourt")
-        cls.fake_court_setVotePasses = lambda sender, target, status: mine_tx(
-            cls.fake_court.functions.setVotePasses(target, status).transact({'from': sender}), "setVotePasses",
-            "fakeCourt")
-        cls.fake_court_confiscateBalance = lambda sender, target: mine_tx(
-            cls.fake_court.functions.confiscateBalance(target).transact({'from': sender}), "confiscateBalance",
-            "fakeCourt")
+        cls.fake_court = FakeCourtInterface(cls.fake_court_contract, "FakeCourt")
 
-        cls.fake_court_setNomin(MASTER, cls.nomin_contract.address)
+        cls.fake_court.setNomin(MASTER, cls.nomin_contract.address)
 
         cls.nomin.setFeeAuthority(MASTER, cls.havven_contract.address)
 

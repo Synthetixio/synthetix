@@ -5,6 +5,7 @@ from tests.contract_interfaces.nomin_interface import PublicNominInterface
 from tests.contract_interfaces.destructible_extern_state_token_interface import DestructibleExternStateTokenInterface
 from tests.contract_interfaces.extern_state_fee_token_interface import ExternStateFeeTokenInterface
 from tests.contract_interfaces.havven_escrow_interface import PublicHavvenEscrowInterface
+from tests.contract_interfaces.court_interface import FakeCourtInterface
 
 
 class TestProxiedDestructibleExternStateToken(__import__('tests').test_DestructibleExternStateToken.TestDestructibleExternStateToken):
@@ -30,26 +31,16 @@ class TestProxiedExternStateFeeToken(__import__('tests').test_ExternStateFeeToke
 class TestProxiedFeeCollection(__import__('tests').test_FeeCollection.TestFeeCollection):
     @classmethod
     def setUpClass(cls):
-        cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, cls.nomin_contract, cls.fake_court = cls.deployContracts()
+        cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, cls.nomin_contract, cls.fake_court_contract = cls.deployContracts()
 
         cls.havven = PublicHavvenInterface(cls.proxied_havven, "ProxiedPublicHavven")
         cls.nomin = PublicNominInterface(cls.proxied_nomin, "ProxiedPublicNomin")
 
         fast_forward(weeks=102)
 
-        cls.fake_court_setNomin = lambda sender, new_nomin: mine_tx(
-            cls.fake_court.functions.setNomin(new_nomin).transact({'from': sender}), "setNomin", "FakeCourt")
-        cls.fake_court_setConfirming = lambda sender, target, status: mine_tx(
-            cls.fake_court.functions.setConfirming(target, status).transact({'from': sender}), "setConfirming",
-            "FakeCourt")
-        cls.fake_court_setVotePasses = lambda sender, target, status: mine_tx(
-            cls.fake_court.functions.setVotePasses(target, status).transact({'from': sender}), "setVotePasses",
-            "FakeCourt")
-        cls.fake_court_confiscateBalance = lambda sender, target: mine_tx(
-            cls.fake_court.functions.confiscateBalance(target).transact({'from': sender}), "confiscateBalance",
-            "FakeCourt")
+        cls.fake_court = FakeCourtInterface(cls.fake_court_contract, "FakeCourt")
 
-        cls.fake_court_setNomin(MASTER, cls.nomin_contract.address)
+        cls.fake_court.setNomin(MASTER, cls.nomin_contract.address)
 
 
 class TestProxiedHavven(__import__('tests').test_Havven.TestHavven):
@@ -86,7 +77,7 @@ class TestProxiedHavvenEscrow(__import__('tests').test_HavvenEscrow.TestHavvenEs
 class TestProxiedIssuance(__import__('tests').test_Issuance.TestIssuance):
     @classmethod
     def setUpClass(cls):
-        cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, cls.nomin_contract, cls.fake_court, cls.escrow_contract = cls.deployContracts()
+        cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, cls.nomin_contract, cls.fake_court_contract, cls.escrow_contract = cls.deployContracts()
 
         cls.havven = PublicHavvenInterface(cls.proxied_havven, "ProxiedHavven")
         cls.nomin = PublicNominInterface(cls.proxied_nomin, "ProxiedNomin")
@@ -94,41 +85,21 @@ class TestProxiedIssuance(__import__('tests').test_Issuance.TestIssuance):
 
         fast_forward(weeks=102)
 
-        cls.fake_court_setNomin = lambda sender, new_nomin: mine_tx(
-            cls.fake_court.functions.setNomin(new_nomin).transact({'from': sender}), "setNomin", "FakeCourt")
-        cls.fake_court_setConfirming = lambda sender, target, status: mine_tx(
-            cls.fake_court.functions.setConfirming(target, status).transact({'from': sender}), "setConfirming",
-            "FakeCourt")
-        cls.fake_court_setVotePasses = lambda sender, target, status: mine_tx(
-            cls.fake_court.functions.setVotePasses(target, status).transact({'from': sender}), "setVotePasses",
-            "FakeCourt")
-        cls.fake_court_confiscateBalance = lambda sender, target: mine_tx(
-            cls.fake_court.functions.confiscateBalance(target).transact({'from': sender}), "confiscateBalance",
-            "FakeCourt")
+        cls.fake_court = FakeCourtInterface(cls.fake_court_contract, "FakeCourt")
 
-        cls.fake_court_setNomin(MASTER, cls.nomin_contract.address)
+        cls.fake_court.setNomin(MASTER, cls.nomin_contract.address)
 
 
 class TestProxiedNomin(__import__('tests').test_Nomin.TestNomin):
     @classmethod
     def setUpClass(cls):
-        cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.nomin_contract, cls.nomin_event_dict, cls.havven_contract, cls.fake_court = cls.deployContracts()
+        cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.nomin_contract, cls.nomin_event_dict, cls.havven_contract, cls.fake_court_contract = cls.deployContracts()
 
         cls.nomin = PublicNominInterface(cls.proxied_nomin, "ProxiedNomin")
         cls.havven = HavvenInterface(cls.proxied_havven, "ProxiedHavven")
 
-        cls.fake_court_setNomin = lambda sender, new_nomin: mine_tx(
-            cls.fake_court.functions.setNomin(new_nomin).transact({'from': sender}), "setNomin", "FakeCourt")
-        cls.fake_court_setConfirming = lambda sender, target, status: mine_tx(
-            cls.fake_court.functions.setConfirming(target, status).transact({'from': sender}), "setConfirming",
-            "FakeCourt")
-        cls.fake_court_setVotePasses = lambda sender, target, status: mine_tx(
-            cls.fake_court.functions.setVotePasses(target, status).transact({'from': sender}), "setVotePasses",
-            "FakeCourt")
-        cls.fake_court_confiscateBalance = lambda sender, target: mine_tx(
-            cls.fake_court.functions.confiscateBalance(target).transact({'from': sender}), "confiscateBalance",
-            "FakeCourt")
+        cls.fake_court = FakeCourtInterface(cls.fake_court_contract, "FakeCourt")
 
-        cls.fake_court.setNomin(MASTER, cls.nomin_contract.address)
+        cls.fake_court_setNomin(MASTER, cls.nomin_contract.address)
 
         cls.nomin.setFeeAuthority(MASTER, cls.havven_contract.address)

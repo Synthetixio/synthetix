@@ -123,7 +123,7 @@ def mine_tx(tx_hash, function_name, contract_name):
     if contract_name in PERFORMANCE_DATA:
         if function_name in PERFORMANCE_DATA[contract_name]:
             values = PERFORMANCE_DATA[contract_name][function_name]
-            PERFORMANCE_DATA[contract_name][function_name] = (values[0] + gas, values[1] + 1, max([values[2], gas]), min([values[3], gas]))
+            PERFORMANCE_DATA[contract_name][function_name] = (values[0] + gas, values[1] + 1, min([values[2], gas]), max([values[3], gas]))
         else:
             PERFORMANCE_DATA[contract_name][function_name] = (gas, 1, gas, gas)
     else:

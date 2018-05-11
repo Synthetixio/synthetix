@@ -39,7 +39,7 @@ class TestTokenState(HavvenTestCase):
     @classmethod
     def setUpClass(cls):
         cls.tokenstate_contract = cls.deployContracts()
-        cls.tokenstate = TokenStateInterface(cls.tokenstate_contract)
+        cls.tokenstate = TokenStateInterface(cls.tokenstate_contract, 'TokenState')
         cls.owner = MASTER
         cls.associate = DUMMY
 
