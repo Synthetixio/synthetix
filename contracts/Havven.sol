@@ -150,8 +150,6 @@ contract Havven is DestructibleExternStateToken {
         uint lastTransferTimestamp;
     }
 
-    /* Havven balance averages for voting weight */
-    mapping(address => BalanceData) public havvenBalanceData;
     /* Issued nomin balances for individual fee entitlements */
     mapping(address => BalanceData) public issuedNominBalanceData;
     /* The total number of issued nomins for determining fee entitlements */
@@ -300,6 +298,50 @@ contract Havven is DestructibleExternStateToken {
         whitelistedIssuer[account] = value;
     }
 
+    /* ========== VIEWS ========== */
+
+    function issuedNominCurrentBalanceSum(address account)
+        external
+        returns (uint)
+    {
+        return issuedNominBalanceData[account].currentBalanceSum;
+    }
+
+    function issuedNominLastAverageBalance(address account)
+        external
+        returns (uint)
+    {
+        return issuedNominBalanceData[account].lastAverageBalance;
+    }
+
+    function issuedNominLastTransferTimestamp(address account)
+        external
+        returns (uint)
+    {
+        return issuedNominBalanceData[account].lastTransferTimestamp;
+    }
+
+    function totalIssuedNominCurrentBalanceSum()
+        external
+        returns (uint)
+    {
+        return totalIssuedNominBalanceData.currentBalanceSum;
+    }
+
+    function totalIssuedNominLastAverageBalance()
+        external
+        returns (uint)
+    {
+        return totalIssuedNominBalanceData.lastAverageBalance;
+    }
+
+    function totalIssuedNominLastTransferTimestamp()
+        external
+        returns (uint)
+    {
+        return totalIssuedNominBalanceData.lastTransferTimestamp;
+    }
+
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
@@ -338,11 +380,6 @@ contract Havven is DestructibleExternStateToken {
          * an exception will be thrown in this call. */
         super.transfer(to, value);
 
-        /* Zero-value transfers still update fee entitlement information,
-         * and may roll over the fee period. */
-        adjustHavvenBalanceAverages(msg.sender, senderPreBalance);
-        adjustHavvenBalanceAverages(to, recipientPreBalance);
-
         return true;
     }
 
@@ -361,11 +398,6 @@ contract Havven is DestructibleExternStateToken {
         /* Perform the transfer: if there is a problem,
          * an exception will be thrown in this call. */
         super.transferFrom(from, to, value);
-
-        /* Zero-value transfers still update fee entitlement information,
-         * and may roll over the fee period. */
-        adjustHavvenBalanceAverages(from, senderPreBalance);
-        adjustHavvenBalanceAverages(to, recipientPreBalance);
 
         return true;
     }
@@ -401,20 +433,6 @@ contract Havven is DestructibleExternStateToken {
         }
         emit FeesWithdrawn(msg.sender, msg.sender, feesOwed);
 
-    }
-
-    /**
-     * @notice Update the havven balance averages since the last transfer
-     * or entitlement adjustment.
-     * @dev Since this updates the last transfer timestamp, if invoked
-     * consecutively, this function will do nothing after the first call.
-     */
-    function adjustHavvenBalanceAverages(address account, uint preBalance)
-        internal
-    {
-        /* The time since the last transfer clamps at the last fee rollover time
-         * if the last transfer was earlier than that. */
-        havvenBalanceData[account] = rolloverBalances(preBalance, havvenBalanceData[account]);
     }
 
     /**
@@ -472,19 +490,6 @@ contract Havven is DestructibleExternStateToken {
         }
 
         return BalanceData(currentBalanceSum, lastAvgBal, now);
-    }
-
-    /**
-     * @dev Recompute and return the given account's average balance information.
-     * This also rolls over the fee period if necessary, and brings
-     * the account's current balance sum up to date.
-     */
-    function recomputeAccountLastHavvenAverageBalance(address account)
-        public
-        returns (uint)
-    {
-        adjustHavvenBalanceAverages(account, state.balanceOf(account));
-        return havvenBalanceData[account].lastAverageBalance;
     }
 
     /**
