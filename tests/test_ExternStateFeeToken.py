@@ -1,6 +1,6 @@
 from utils.deployutils import (
     W3, UNIT, MASTER, DUMMY, fresh_account, fresh_accounts,
-    compile_contracts, attempt_deploy, mine_txs,
+    attempt_deploy, mine_txs,
     take_snapshot, restore_snapshot
 )
 from utils.testutils import (
@@ -25,10 +25,12 @@ class TestExternStateFeeToken(HavvenTestCase):
     def tearDown(self):
         restore_snapshot(self.snapshot)
 
-    @staticmethod
-    def deployContracts():
+    @classmethod
+    def deployContracts(cls):
         sources = ["contracts/ExternStateFeeToken.sol", "contracts/TokenState.sol"]
-        compiled = compile_contracts(sources, remappings=['""=contracts'])
+
+        compiled, cls.event_maps = cls.compileAndMapEvents(sources)
+
         feetoken_abi = compiled['ExternStateFeeToken']['abi']
 
         proxy, _ = attempt_deploy(
@@ -59,6 +61,7 @@ class TestExternStateFeeToken(HavvenTestCase):
     @classmethod
     def setUpClass(cls):
         cls.compiled, cls.proxy, cls.proxied_feetoken, cls.feetoken_contract, cls.feetoken_event_dict, cls.feestate = cls.deployContracts()
+        cls.event_map = cls.event_maps['PublicCourt']
 
         cls.initial_beneficiary = DUMMY
         cls.fee_authority = fresh_account()

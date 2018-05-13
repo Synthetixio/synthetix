@@ -51,11 +51,8 @@ if __name__ == '__main__':
     max_contract_name = max([len(i) for i in list(PERFORMANCE_DATA.keys())])
     max_method_name = max([max([len(str(i)) for i in PERFORMANCE_DATA[j].keys()]) for j in PERFORMANCE_DATA.keys()])
     max_gas_len = max([max([max([len(str(i)) for i in PERFORMANCE_DATA[k][j]]) for j in PERFORMANCE_DATA[k]]) for k in PERFORMANCE_DATA])
-    print()
-    print(max_contract_name)
-    print(max_method_name)
-    print(max_gas_len)
-    print()
+
+    print("Gas performance data")
     current = 'CONTRACT'
     remaining = sorted(list(PERFORMANCE_DATA.keys()))
     remaining.pop(remaining.index('CONTRACT'))
@@ -70,7 +67,7 @@ if __name__ == '__main__':
             )
         if len(remaining) == 0:
             break
-        print('.' * (40 + max_gas_len + max_method_name + max_contract_name))
+        print('.' * (19 + 4*max_gas_len + max_method_name + max_contract_name))
         current = remaining.pop(0)
 
     process.terminate()

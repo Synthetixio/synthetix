@@ -1,7 +1,7 @@
 
 from utils.deployutils import (
     UNIT, MASTER, DUMMY, W3,
-    attempt, attempt_deploy, compile_contracts, mine_txs,
+    attempt_deploy, mine_txs,
     fast_forward, to_seconds,
     take_snapshot, restore_snapshot,
     fresh_account, fresh_accounts
@@ -9,7 +9,7 @@ from utils.deployutils import (
 from utils.testutils import (
     HavvenTestCase, block_time,
     get_event_data_from_log,
-    ZERO_ADDRESS, generate_topic_event_map
+    ZERO_ADDRESS
 )
 
 from tests.contract_interfaces.court_interface import PublicCourtInterface
@@ -39,7 +39,8 @@ class TestCourt(HavvenTestCase):
                    "contracts/Nomin.sol",
                    "tests/contracts/PublicHavven.sol"]
 
-        compiled = attempt(compile_contracts, [sources], "Compiling contracts...")
+        compiled, cls.event_maps = cls.compileAndMapEvents(sources)
+
         court_abi = compiled['PublicCourt']['abi']
         nomin_abi = compiled['Nomin']['abi']
         havven_abi = compiled['Havven']['abi']
@@ -66,15 +67,14 @@ class TestCourt(HavvenTestCase):
             nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER})
         ])
 
-        cls.event_maps = {name: generate_topic_event_map(compiled[name]['abi']) for name in compiled}
-        cls.event_map = cls.event_maps['Court']
-
         print("\nDeployment complete.\n")
         return havven_proxy, proxied_havven, nomin_proxy, proxied_nomin, havven_contract, nomin_contract, court_contract, nomin_abi, court_abi
 
     @classmethod
     def setUpClass(cls):
         cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, cls.nomin_contract, cls.court_contract, cls.nomin_abi, cls.court_abi = cls.deployContracts()
+
+        cls.event_map = cls.event_maps['PublicCourt']
 
         cls.court = PublicCourtInterface(cls.court_contract, "Court")
         cls.havven = PublicHavvenInterface(cls.havven_contract, "Havven")
@@ -105,7 +105,6 @@ class TestCourt(HavvenTestCase):
         self.assertEqual(event_data['args']['initiator'], expected_initiator)
         self.assertEqual(event_data['args']['target'], expected_target)
         self.assertEqual(event_data['args']['motionID'], expected_motion_id)
-        # TODO: check start time
 
     def validate_MotionClosed_data(self, tx_receipt, log_index, expected_motion_id):
         closed_data = get_event_data_from_log(self.event_map, tx_receipt.logs[log_index])
@@ -134,7 +133,6 @@ class TestCourt(HavvenTestCase):
     #
     # UNIT TESTS
     #
-
     def test_constructor(self):
         self.assertEqual(self.court.owner(), MASTER)
         self.assertEqual(self.havven.contract.address, self.court.getHavven())

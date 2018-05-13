@@ -39,7 +39,10 @@ class TestTokenState(HavvenTestCase):
     @classmethod
     def setUpClass(cls):
         sources = ["contracts/TokenState.sol"]
-        cls.setUpHavvenTestClass(sources, remappings=['""=contracts'], event_primary="State")
+
+        compiled, cls.event_maps = cls.compileAndMapEvents(sources)
+        cls.event_map = cls.event_maps['TokenState']
+
         cls.tokenstate_contract = cls.deployContracts()
         cls.tokenstate = TokenStateInterface(cls.tokenstate_contract, 'TokenState')
         cls.owner = MASTER

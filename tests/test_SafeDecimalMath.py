@@ -12,12 +12,12 @@ def tearDownModule():
 
 
 class TestSafeDecimalMath(HavvenTestCase):
-    @staticmethod
-    def deployContracts():
-        source = "tests/contracts/PublicMath.sol"
+    @classmethod
+    def deployContracts(cls):
+        sources = ["tests/contracts/PublicMath.sol"]
 
-        compiled = compile_contracts([source],
-                                     remappings=['""=contracts'])
+        compiled, cls.event_maps = cls.compileAndMapEvents(sources)
+
         math, tx_receipt = attempt_deploy(compiled, 'PublicMath', MASTER, [])
         return math
 

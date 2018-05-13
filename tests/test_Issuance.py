@@ -27,13 +27,14 @@ class TestIssuance(HavvenTestCase):
     def tearDown(self):
         restore_snapshot(self.snapshot)
 
-    @staticmethod
-    def deployContracts():
+    @classmethod
+    def deployContracts(cls):
         sources = ["contracts/Havven.sol", "tests/contracts/PublicHavven.sol", "tests/contracts/PublicNomin.sol",
                    "tests/contracts/FakeCourt.sol", "tests/contracts/PublicHavvenEscrow.sol"]
         print("Deployment initiated.\n")
 
-        compiled = attempt(compile_contracts, [sources], "Compiling contracts... ")
+        compiled, cls.event_maps = cls.compileAndMapEvents(sources)
+        cls.event_map = cls.event_maps['PublicCourt']
 
         # Deploy contracts
 

@@ -4,7 +4,6 @@ from utils.testutils import HavvenTestCase, send_value, block_time
 
 from tests.contract_interfaces.self_destructible_interface import SelfDestructibleInterface
 
-SD_SOURCE = "tests/contracts/PayableSD.sol"
 
 
 def setUpModule():
@@ -28,7 +27,11 @@ class TestSelfDestructible(HavvenTestCase):
         cls.NULL_INITIATION = (2**256 - 1) // 2
         cls.contract_balance = 10 * UNIT
 
-        cls.setUpHavvenTestClass([SD_SOURCE], remappings=['""=contracts'], event_primary='SelfDestructible')
+        sources = ["tests/contracts/PayableSD.sol"]
+
+        compiled, cls.event_maps = cls.compileAndMapEvents(sources)
+        cls.event_map = cls.event_maps['SelfDestructible']
+
         cls.sd_contract, cls.deploy_tx = attempt_deploy(cls.compiled, 'PayableSD', MASTER,
                                                         [MASTER, DUMMY, cls.sd_duration])
         cls.sd = SelfDestructibleInterface(cls.sd_contract, 'SelfDestructible')

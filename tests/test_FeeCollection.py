@@ -2,8 +2,8 @@ from utils.deployutils import (
     W3, UNIT, MASTER, DUMMY,
     fast_forward, fresh_accounts,
     take_snapshot, restore_snapshot,
-    attempt, attempt_deploy, compile_contracts, 
-    mine_txs, mine_tx
+    attempt_deploy,
+    mine_txs
 )
 from utils.testutils import HavvenTestCase, ZERO_ADDRESS
 from tests.contract_interfaces.havven_interface import PublicHavvenInterface
@@ -26,13 +26,13 @@ class TestFeeCollection(HavvenTestCase):
     def tearDown(self):
         restore_snapshot(self.snapshot)
 
-    @staticmethod
-    def deployContracts():
+    @classmethod
+    def deployContracts(cls):
         sources = ["tests/contracts/PublicHavven.sol", "tests/contracts/PublicNomin.sol",
                    "tests/contracts/FakeCourt.sol", "contracts/Havven.sol"]
         print("Deployment initiated.\n")
 
-        compiled = attempt(compile_contracts, [sources], "Compiling contracts... ")
+        compiled, cls.event_maps = cls.compileAndMapEvents(sources)
 
         # Deploy contracts
         havven_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
@@ -63,6 +63,9 @@ class TestFeeCollection(HavvenTestCase):
     @classmethod
     def setUpClass(cls):
         cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, cls.nomin_contract, cls.fake_court_contract = cls.deployContracts()
+
+        cls.event_map = cls.event_maps['PublicCourt']
+
         cls.havven = PublicHavvenInterface(cls.havven_contract, "Havven")
         cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
 

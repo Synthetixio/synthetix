@@ -15,10 +15,6 @@ from tests.contract_interfaces.havven_interface import PublicHavvenInterface
 from tests.contract_interfaces.nomin_interface import PublicNominInterface
 
 
-SOLIDITY_SOURCES = ["tests/contracts/PublicHavven.sol", "contracts/Nomin.sol",
-                    "contracts/Court.sol", "contracts/HavvenEscrow.sol"]
-
-
 def setUpModule():
     print("Testing Havven...")
 
@@ -34,11 +30,14 @@ class TestHavven(HavvenTestCase):
     def tearDown(self):
         restore_snapshot(self.snapshot)
 
-    @staticmethod
-    def deployContracts():
+    @classmethod
+    def deployContracts(cls):
         print("Deployment initiated.\n")
 
-        compiled = attempt(compile_contracts, [SOLIDITY_SOURCES], "Compiling contracts... ")
+        sources = ["tests/contracts/PublicHavven.sol", "contracts/Nomin.sol",
+                   "contracts/Court.sol", "contracts/HavvenEscrow.sol"]
+
+        compiled, cls.event_maps = cls.compileAndMapEvents(sources)
 
         # Deploy contracts
         havven_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
@@ -82,6 +81,8 @@ class TestHavven(HavvenTestCase):
         cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, \
             cls.havven_contract, cls.nomin_contract, cls.court_contract, \
             cls.escrow_contract, cls.construction_block, cls.havven_event_dict = cls.deployContracts()
+
+        cls.event_map = cls.event_maps['PublicCourt']
 
         cls.havven = PublicHavvenInterface(cls.havven_contract, "Havven")
         

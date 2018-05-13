@@ -9,7 +9,6 @@ from utils.testutils import (
 from tests.contract_interfaces.owned_interface import OwnedInterface
 
 
-OWNED_SOURCE = "contracts/Owned.sol"
 
 
 def setUpModule():
@@ -29,17 +28,21 @@ class TestOwned(HavvenTestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.setUpHavvenTestClass([OWNED_SOURCE], event_primary='Owned')
-        cls.owned_contract, cls.deploy_tx = attempt_deploy(cls.compiled, 'Owned', MASTER, [MASTER])       
+        sources = ["contracts/Owned.sol"]
+
+        compiled, cls.event_maps = cls.compileAndMapEvents(sources)
+        cls.owned_events = cls.event_maps['Owned']
+
+        cls.owned_contract, cls.deploy_tx = attempt_deploy(compiled, 'Owned', MASTER, [MASTER])
         cls.owned = OwnedInterface(cls.owned_contract, "Owned")
 
     def test_constructor(self):
         self.assertEqual(self.owned.owner(), MASTER)
         self.assertEqual(self.owned.nominatedOwner(), ZERO_ADDRESS)
         self.assertEventEquals(self.deploy_tx.logs[0],
-                              "OwnerChanged",
-                              {"oldOwner": ZERO_ADDRESS,
-                               "newOwner": MASTER})
+                               "OwnerChanged",
+                               {"oldOwner": ZERO_ADDRESS,
+                                "newOwner": MASTER})
 
     def test_change_owner(self):
         old_owner = self.owned.owner()

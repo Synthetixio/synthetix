@@ -32,15 +32,15 @@ class TestHavvenEscrow(HavvenTestCase):
     def tearDown(self):
         restore_snapshot(self.snapshot)
 
-    @staticmethod
-    def deployContracts():
+    @classmethod
+    def deployContracts(cls):
         sources = ["tests/contracts/PublicHavven.sol", "tests/contracts/PublicNomin.sol",
                    "contracts/Court.sol", "contracts/HavvenEscrow.sol",
                    "tests/contracts/PublicHavvenEscrow.sol", "contracts/Proxy.sol"]
 
         print("Deployment initiated.\n")
 
-        compiled = attempt(compile_contracts, [sources], "Compiling contracts... ")
+        compiled, cls.event_maps = cls.compileAndMapEvents(sources)
 
         # Deploy contracts
 
@@ -81,6 +81,9 @@ class TestHavvenEscrow(HavvenTestCase):
         cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, \
             cls.nomin_contract, cls.court, cls.escrow_contract, cls.construction_block, \
             cls.escrow_event_dict = cls.deployContracts()
+
+        cls.event_map = cls.event_maps['PublicCourt']
+
         cls.havven = PublicHavvenInterface(cls.havven_contract, "Havven")
         cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
         cls.escrow = PublicHavvenEscrowInterface(cls.escrow_contract, "HavvenEscrow")

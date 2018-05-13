@@ -1,7 +1,7 @@
 from utils.deployutils import (
     W3, UNIT, MASTER, DUMMY,
     fresh_account, fresh_accounts,
-    compile_contracts, attempt_deploy,
+    attempt_deploy,
     mine_txs, take_snapshot, restore_snapshot
 )
 from utils.testutils import (
@@ -26,12 +26,12 @@ class TestDestructibleExternStateToken(HavvenTestCase):
     def tearDown(self):
         restore_snapshot(self.snapshot)
 
-    @staticmethod
-    def deploy_contracts():
+    @classmethod
+    def deploy_contracts(cls):
         sources = ['contracts/DestructibleExternStateToken.sol',
                    'contracts/TokenState.sol', 'contracts/Proxy.sol']
 
-        compiled = compile_contracts(sources, remappings=['""=contracts'])
+        compiled, cls.event_maps = cls.compileAndMapEvents(sources)
 
         proxy_contract, _ = attempt_deploy(
             compiled, "Proxy", MASTER, [MASTER]
@@ -60,6 +60,8 @@ class TestDestructibleExternStateToken(HavvenTestCase):
     @classmethod
     def setUpClass(cls):
         cls.proxy, cls.proxied_token, cls.compiled, cls.token_contract, cls.token_abi, cls.token_event_dict, cls.tokenstate = cls.deploy_contracts()
+        cls.event_map = cls.event_maps['PublicCourt']
+
         cls.token = DestructibleExternStateTokenInterface(cls.token_contract, "DestructibleExternStateToken")
 
     def test_constructor(self):

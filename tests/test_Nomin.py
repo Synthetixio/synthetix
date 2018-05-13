@@ -12,7 +12,6 @@ from tests.contract_interfaces.nomin_interface import PublicNominInterface
 from tests.contract_interfaces.havven_interface import HavvenInterface
 from tests.contract_interfaces.court_interface import FakeCourtInterface
 
-SOURCES = ["tests/contracts/PublicNomin.sol", "tests/contracts/FakeCourt.sol", "contracts/Havven.sol"]
 
 
 def setUpModule():
@@ -30,17 +29,16 @@ class TestNomin(HavvenTestCase):
     def tearDown(self):
         restore_snapshot(self.snapshot)
 
-    @staticmethod
-    def deployContracts():
-        compiled = compile_contracts(SOURCES, remappings=['""=contracts'])
+    @classmethod
+    def deployContracts(cls):
+        sources = ["tests/contracts/PublicNomin.sol", "tests/contracts/FakeCourt.sol", "contracts/Havven.sol"]
 
-        nomin_abi = compiled['PublicNomin']['abi']
-        nomin_event_dict = generate_topic_event_map(nomin_abi)
+        compiled, cls.event_maps = cls.compileAndMapEvents(sources)
 
         havven_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
         nomin_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
         proxied_havven = W3.eth.contract(address=havven_proxy.address, abi=compiled['Havven']['abi'])
-        proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=nomin_abi)
+        proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['Nomin']['abi'])
 
         nomin_contract, _ = attempt_deploy(
             compiled, 'PublicNomin', MASTER, [nomin_proxy.address, MASTER, MASTER, ZERO_ADDRESS]
@@ -60,11 +58,13 @@ class TestNomin(HavvenTestCase):
             nomin_contract.functions.setHavven(havven_contract.address).transact({'from': MASTER})
         ])
 
-        return havven_proxy, proxied_havven, nomin_proxy, proxied_nomin, nomin_contract, nomin_event_dict, havven_contract, fake_court
+        return havven_proxy, proxied_havven, nomin_proxy, proxied_nomin, nomin_contract, havven_contract, fake_court
 
     @classmethod
     def setUpClass(cls):
-        cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.nomin_contract, cls.nomin_event_dict, cls.havven_contract, cls.fake_court_contract = cls.deployContracts()
+        cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.nomin_contract, cls.havven_contract, cls.fake_court_contract = cls.deployContracts()
+
+        cls.nomin_event_dict = cls.event_maps['Nomin']
 
         cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
         cls.havven = HavvenInterface(cls.havven_contract, "Havven")

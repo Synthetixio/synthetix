@@ -9,17 +9,35 @@ ZERO_ADDRESS = "0x" + "0" * 40
 
 
 class HavvenTestCase(unittest.TestCase):
-    def assertReverts(self, function, *args):
+    event_maps = {}
+    event_map = {}
+
+    def assertReverts(self, func, *args):
         with self.assertRaises(ValueError) as error:
-            function(*args)
+            func(*args)
         self.assertTrue("revert" in error.exception.args[0]['message'])
 
-    def assertEventEquals(self, log, event_name, fields=None, contract=None):
+    def assertEventEmitted(self, log, event_name, event_map, location=None):
+        event_data = get_event_data_from_log(event_map, log)
+        self.assertIsNotNone(event_data)
+        self.assertEqual(event_data['event'], event_name)
+        if location:
+            print(event_data)
+            print(dir(event_data))
+            raise Exception("fill in event data field name... :(")
+            self.assertEqual(event_data[''])
+
+    def assertEventEquals(self, log, event_name, event_map, fields=None, location=None):
         if fields is None:
             fields = {}
-        event_map = self.event_maps[contract] if contract is not None else self.event_map
         event_data = get_event_data_from_log(event_map, log)
+        self.assertIsNotNone(event_data)
         self.assertEqual(event_data['event'], event_name)
+        if location:
+            print(event_data)
+            print(dir(event_data))
+            raise Exception("fill in event data field name... :(")
+            self.assertEqual(event_data[''])
         for k, v in event_data['args'].items():
             self.assertEqual(fields[k], v)
 
@@ -39,15 +57,14 @@ class HavvenTestCase(unittest.TestCase):
         )
 
     @classmethod
-    def setUpHavvenTestClass(cls, source_paths, remappings=None, event_primary=None):
+    def compileAndMapEvents(cls, source_paths, remappings=None):
         if remappings is None:
             remappings = []
-        cls.compiled = attempt(compile_contracts, [source_paths], "Compiling contracts...",
-                               func_kwargs={'remappings': remappings})
-        cls.event_maps = {name: generate_topic_event_map(cls.compiled[name]['abi'])
-                          for name in cls.compiled}
-        primary_contract = event_primary if event_primary is not None else list(cls.event_maps.keys())[0]
-        cls.event_map = cls.event_maps[primary_contract]
+        compiled = attempt(compile_contracts, [source_paths], "Compiling contracts...",
+                           func_kwargs={'remappings': remappings})
+        event_maps = {name: generate_topic_event_map(compiled[name]['abi'])
+                      for name in compiled}
+        return compiled, event_maps
 
 
 def block_time(block_num=None):
