@@ -51,7 +51,7 @@ class TestCourt(HavvenTestCase):
         proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=nomin_abi)
 
         havven_contract, hvn_txr = attempt_deploy(
-            compiled, 'PublicHavven', MASTER, [havven_proxy.address, ZERO_ADDRESS, MASTER, MASTER]
+            compiled, 'PublicHavven', MASTER, [havven_proxy.address, ZERO_ADDRESS, MASTER, MASTER, UNIT//2]
         )
         nomin_contract, nom_txr = attempt_deploy(
             compiled, 'Nomin', MASTER, [nomin_proxy.address, havven_contract.address, MASTER, ZERO_ADDRESS]

@@ -45,7 +45,7 @@ class TestNomin(HavvenTestCase):
         )
 
         havven_contract, _ = attempt_deploy(
-            compiled, "Havven", MASTER, [havven_proxy.address, ZERO_ADDRESS, MASTER, MASTER]
+            compiled, "Havven", MASTER, [havven_proxy.address, ZERO_ADDRESS, MASTER, MASTER, UNIT//2]
         )
 
         fake_court, _ = attempt_deploy(compiled, 'FakeCourt', MASTER, [])

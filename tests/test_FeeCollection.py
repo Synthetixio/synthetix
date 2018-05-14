@@ -40,7 +40,7 @@ class TestFeeCollection(HavvenTestCase):
         proxied_havven = W3.eth.contract(address=havven_proxy.address, abi=compiled['PublicHavven']['abi'])
         proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['PublicNomin']['abi'])
         havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven',
-                                                  MASTER, [havven_proxy.address, ZERO_ADDRESS, MASTER, MASTER])
+                                                  MASTER, [havven_proxy.address, ZERO_ADDRESS, MASTER, MASTER, UNIT//2])
         nomin_contract, nom_txr = attempt_deploy(compiled, 'PublicNomin',
                                                  MASTER,
                                                  [nomin_proxy.address, havven_contract.address, MASTER, ZERO_ADDRESS])
