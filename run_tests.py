@@ -45,6 +45,8 @@ if __name__ == '__main__':
             # (avg, min, max, #calls)
             PERFORMANCE_DATA[i][j] = (vals[0]//vals[1], vals[2], vals[3], vals[1])
 
+    print(PERFORMANCE_DATA)
+
     PERFORMANCE_DATA['CONTRACT'] = {'METHOD': ['AVG_GAS', 'MIN_GAS', 'MAX_GAS', "#CALLS"]}
 
     # PRINT TABLE | CONTRACT | METHOD | AVG GAS | MIN GAS | MAX GAS | #CALLS |
