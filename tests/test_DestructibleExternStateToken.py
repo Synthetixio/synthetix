@@ -27,30 +27,25 @@ class TestDestructibleExternStateToken(HavvenTestCase):
     def tearDown(self):
         restore_snapshot(self.snapshot)
 
-    @staticmethod
-    def deploy_contracts():
+    @classmethod
+    def deploy_contracts(cls):
         sources = ['contracts/DestructibleExternStateToken.sol',
                    'contracts/TokenState.sol']
-
-        compiled = compile_contracts(sources, remappings=['""=contracts'])
-
-        token_abi = compiled['DestructibleExternStateToken']['abi']
-        token_event_dict = generate_topic_event_map(token_abi)
-        token_contract, construction_txr = attempt_deploy(
-            compiled, 'DestructibleExternStateToken', MASTER,
+        cls.compiled, cls.event_maps = cls.compileAndMapEvents(sources, remappings=['""=contracts'])
+        cls.token_event_dict = cls.event_maps['DestructibleExternStateToken']
+        cls.token_contract, construction_txr = attempt_deploy(
+            cls.compiled, 'DestructibleExternStateToken', MASTER,
             ["Test Token", "TEST", 1000 * UNIT, MASTER, ZERO_ADDRESS, MASTER]
         )
-
-        tokenstate = W3.eth.contract(address=token_contract.functions.state().call(),
-                                     abi=compiled['TokenState']['abi'])
-
-        mine_tx(token_contract.functions.setState(tokenstate.address).transact({'from': MASTER}))
-        return compiled, token_contract, token_abi, token_event_dict, tokenstate
+        cls.tokenstate = W3.eth.contract(address=cls.token_contract.functions.state().call(),
+                                     abi=cls.compiled['TokenState']['abi'])
+        mine_tx(cls.token_contract.functions.setState(cls.tokenstate.address).transact({'from': MASTER}),
+                "setState", "DestructibleExternStateToken")
 
     @classmethod
     def setUpClass(cls):
-        cls.compiled, cls.token_contract, cls.token_abi, cls.token_event_dict, cls.tokenstate = cls.deploy_contracts()
-        cls.token = DestructibleExternStateTokenInterface(cls.token_contract)
+        cls.deploy_contracts()
+        cls.token = DestructibleExternStateTokenInterface(cls.token_contract, "DestructibleExternStateToken")
 
     def test_constructor(self):
         self.assertEqual(self.token.name(), "Test Token")

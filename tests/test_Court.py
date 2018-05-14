@@ -55,11 +55,12 @@ class TestCourt(HavvenTestCase):
         sources = ["tests/contracts/PublicCourt.sol",
                    "contracts/Nomin.sol",
                    "tests/contracts/PublicHavven.sol"]
-        cls.setUpHavvenTestClass(sources, event_primary="Court") 
+        cls.compiled, cls.event_maps = cls.compileAndMapEvents(sources) 
+        cls.event_map = cls.event_maps["Court"]
         cls.havven_contract, cls.nomin_contract, cls.court_contract = cls.deployContracts()
-        cls.court = PublicCourtInterface(cls.court_contract)
-        cls.havven = PublicHavvenInterface(cls.havven_contract)
-        cls.nomin = NominInterface(cls.nomin_contract)
+        cls.court = PublicCourtInterface(cls.court_contract, "Court")
+        cls.havven = PublicHavvenInterface(cls.havven_contract, "Havven")
+        cls.nomin = NominInterface(cls.nomin_contract, "Nomin")
 
     #
     # HELPER FUNCTIONS

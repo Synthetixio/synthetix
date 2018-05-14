@@ -10,9 +10,6 @@ from utils.testutils import (
 from tests.contract_interfaces.owned_interface import OwnedInterface
 
 
-OWNED_SOURCE = "contracts/Owned.sol"
-
-
 def setUpModule():
     print("Testing Owned...")
 
@@ -30,17 +27,20 @@ class TestOwned(HavvenTestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.setUpHavvenTestClass([OWNED_SOURCE], event_primary='Owned')
-        cls.owned_contract, cls.deploy_tx = attempt_deploy(cls.compiled, 'Owned', MASTER, [MASTER])       
-        cls.owned = OwnedInterface(cls.owned_contract)
+        source = ["contracts/Owned.sol"]
+        cls.compiled, cls.event_maps = cls.compileAndMapEvents(source)
+        cls.event_map = cls.event_maps['Owned']
+        cls.owned_contract, cls.deploy_tx = attempt_deploy(cls.compiled, 'Owned', MASTER, [MASTER])
+        cls.owned = OwnedInterface(cls.owned_contract, 'Owned')
 
     def test_constructor(self):
         self.assertEqual(self.owned.owner(), MASTER)
         self.assertEqual(self.owned.nominatedOwner(), ZERO_ADDRESS)
         self.assertEventEquals(self.deploy_tx.logs[0],
-                              "OwnerChanged",
-                              {"oldOwner": ZERO_ADDRESS,
-                               "newOwner": MASTER})
+                               "OwnerChanged",
+                               self.event_map,
+                               {"oldOwner": ZERO_ADDRESS,
+                                "newOwner": MASTER})
 
     def test_change_owner(self):
         old_owner = self.owned.owner()
@@ -54,6 +54,7 @@ class TestOwned(HavvenTestCase):
         nominated_tx = self.owned.nominateOwner(old_owner, new_owner)
         self.assertEventEquals(nominated_tx.logs[0],
                                "OwnerNominated",
+                               self.event_map,
                                {"newOwner": new_owner})
 
         # Ensure owner unchanged, nominated owner was set properly.
@@ -69,6 +70,7 @@ class TestOwned(HavvenTestCase):
         accepted_tx = self.owned.acceptOwnership(new_owner)
         self.assertEventEquals(accepted_tx.logs[0],
                                "OwnerChanged",
+                               self.event_map,
                                {"oldOwner": old_owner,
                                 "newOwner": new_owner})
 

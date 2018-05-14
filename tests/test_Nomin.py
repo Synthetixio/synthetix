@@ -10,6 +10,7 @@ from utils.testutils import (
 )
 from tests.contract_interfaces.nomin_interface import PublicNominInterface
 from tests.contract_interfaces.havven_interface import HavvenInterface
+from tests.contract_interfaces.court_interface import FakeCourtInterface
 
 SOURCES = ["tests/contracts/PublicNomin.sol", "tests/contracts/FakeCourt.sol", "contracts/Havven.sol"]
 
@@ -50,25 +51,14 @@ class TestNomin(HavvenTestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.nomin_contract, cls.nomin_event_dict, cls.havven_contract, cls.fake_court = cls.deployContracts()
+        cls.nomin_contract, cls.nomin_event_dict, cls.havven_contract, cls.fake_court_contract = cls.deployContracts()
 
-        cls.nomin = PublicNominInterface(cls.nomin_contract)
-        cls.havven = HavvenInterface(cls.havven_contract)
+        cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
+        cls.havven = HavvenInterface(cls.havven_contract, "Havven")
+        cls.fake_court = FakeCourtInterface(cls.fake_court_contract, "FakeCourt")
 
-        cls.fake_court.setNomin = lambda sender, new_nomin: mine_tx(
-            cls.fake_court.functions.setNomin(new_nomin).transact({'from': sender}))
-        cls.fake_court.setConfirming = lambda sender, target, status: mine_tx(
-            cls.fake_court.functions.setConfirming(target, status).transact({'from': sender}))
-        cls.fake_court.setVotePasses = lambda sender, target, status: mine_tx(
-            cls.fake_court.functions.setVotePasses(target, status).transact({'from': sender}))
-        cls.fake_court.setTargetMotionID = lambda sender, target, motion_id: mine_tx(
-            cls.fake_court.functions.setTargetMotionID(target, motion_id).transact({'from': sender}))
-        cls.fake_court.confiscateBalance = lambda sender, target: mine_tx(
-            cls.fake_court.functions.confiscateBalance(target).transact({'from': sender}))
-        cls.fake_court.setNomin(W3.eth.accounts[0], cls.nomin.contract.address)
-
-        cls.nomin.setCourt(MASTER, cls.fake_court.address)
-
+        cls.fake_court.setNomin(MASTER, cls.nomin.contract.address)
+        cls.nomin.setCourt(MASTER, cls.fake_court_contract.address)
         cls.nomin.setHavven(MASTER, cls.havven.contract.address)
         cls.nomin.setFeeAuthority(MASTER, cls.havven.contract.address)
 
@@ -263,7 +253,7 @@ class TestNomin(HavvenTestCase):
     def test_confiscateBalance(self):
         target = W3.eth.accounts[2]
 
-        self.assertEqual(self.nomin.court(), self.fake_court.address)
+        self.assertEqual(self.nomin.court(), self.fake_court_contract.address)
 
         self.nomin.giveNomins(MASTER, target, 10 * UNIT)
 

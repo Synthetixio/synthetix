@@ -15,8 +15,6 @@ from tests.contract_interfaces.havven_interface import PublicHavvenInterface
 from tests.contract_interfaces.nomin_interface import PublicNominInterface
 
 
-SOLIDITY_SOURCES = ["tests/contracts/PublicHavven.sol", "contracts/Nomin.sol",
-                    "contracts/Court.sol", "contracts/HavvenEscrow.sol"]
 
 
 def setUpModule():
@@ -34,50 +32,45 @@ class TestHavven(HavvenTestCase):
     def tearDown(self):
         restore_snapshot(self.snapshot)
 
-    @staticmethod
-    def deployContracts():
+    @classmethod
+    def deployContracts(cls):
         print("Deployment initiated.\n")
 
-        compiled = attempt(compile_contracts, [SOLIDITY_SOURCES], "Compiling contracts... ")
+        sources = ["tests/contracts/PublicHavven.sol", "contracts/Nomin.sol",
+                   "contracts/Court.sol", "contracts/HavvenEscrow.sol"]
+        cls.compiled, cls.event_maps = cls.compileAndMapEvents(sources, remappings=['""=contracts'])
+        cls.havven_event_dict = cls.event_maps["PublicHavven"]
 
         # Deploy contracts
-        havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [ZERO_ADDRESS, MASTER, MASTER])
-        hvn_block = W3.eth.blockNumber
-        nomin_contract, nom_txr = attempt_deploy(compiled, 'Nomin',
+        cls.havven_contract, hvn_txr = attempt_deploy(cls.compiled, 'PublicHavven', MASTER, [ZERO_ADDRESS, MASTER, MASTER])
+        cls.construction_block = W3.eth.blockNumber
+        cls.nomin_contract, nom_txr = attempt_deploy(cls.compiled, 'Nomin',
                                                  MASTER,
-                                                 [havven_contract.address, MASTER, ZERO_ADDRESS])
-        court_contract, court_txr = attempt_deploy(compiled, 'Court',
+                                                 [cls.havven_contract.address, MASTER, ZERO_ADDRESS])
+        cls.court_contract, court_txr = attempt_deploy(cls.compiled, 'Court',
                                                    MASTER,
-                                                   [havven_contract.address, nomin_contract.address,
+                                                   [cls.havven_contract.address, cls.nomin_contract.address,
                                                     MASTER])
-        escrow_contract, escrow_txr = attempt_deploy(compiled, 'HavvenEscrow',
+        cls.escrow_contract, escrow_txr = attempt_deploy(cls.compiled, 'HavvenEscrow',
                                                      MASTER,
-                                                     [MASTER, havven_contract.address])
+                                                     [MASTER, cls.havven_contract.address]) 
 
         # Hook up each of those contracts to each other
-        txs = [havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
-               nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER}),
-               nomin_contract.functions.setHavven(havven_contract.address).transact({'from': MASTER}),
-               havven_contract.functions.setEscrow(escrow_contract.address).transact({'from': MASTER})]
+        txs = [cls.havven_contract.functions.setNomin(cls.nomin_contract.address).transact({'from': MASTER}),
+               cls.nomin_contract.functions.setCourt(cls.court_contract.address).transact({'from': MASTER}),
+               cls.nomin_contract.functions.setHavven(cls.havven_contract.address).transact({'from': MASTER}),
+               cls.havven_contract.functions.setEscrow(cls.escrow_contract.address).transact({'from': MASTER})]
         attempt(mine_txs, [txs], "Linking contracts... ")
-
-        havven_event_dict = generate_topic_event_map(compiled['PublicHavven']['abi'])
-
         print("\nDeployment complete.\n")
-        return havven_contract, nomin_contract, court_contract, escrow_contract, hvn_block, havven_event_dict
 
     @classmethod
     def setUpClass(cls):
         # to avoid overflowing in the negative direction (now - targetFeePeriodDuration * 2)
         fast_forward(weeks=102)
+        cls.deployContracts()
 
-        cls.havven_contract, cls.nomin_contract, cls.court_contract, \
-            cls.escrow_contract, cls.construction_block, cls.havven_event_dict = cls.deployContracts()
-
-        cls.havven = PublicHavvenInterface(cls.havven_contract)
-        
-        cls.nomin = PublicNominInterface(cls.nomin_contract)
-
+        cls.havven = PublicHavvenInterface(cls.havven_contract, "Havven") 
+        cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
         cls.initial_time = cls.havven.lastFeePeriodStartTime()
         cls.time_fast_forwarded = 0
 
@@ -148,7 +141,7 @@ class TestHavven(HavvenTestCase):
     # Mappings
     ###
     # currentBalanceSum
-    def test_currentBalanceSum(self):
+    def test_issuedNominCurrentBalanceSum(self):
         """
         Testing the value of currentBalanceSum works as intended,
         Further testing involving this and fee collection will be done
@@ -158,58 +151,73 @@ class TestHavven(HavvenTestCase):
         delay = int(fee_period / 10)
         alice = fresh_account()
         self.assertEqual(self.havven.balanceOf(alice), 0)
+        self.havven.setIssuanceRatio(MASTER, UNIT)
 
         start_amt = UNIT * 50
         self.havven.endow(MASTER, alice, start_amt)
+        self.havven.setWhitelisted(MASTER, alice, True)
+        self.havven.updatePrice(MASTER, UNIT, block_time())
+        self.havven.issueNomins(alice, start_amt)
         self.assertEqual(self.havven.balanceOf(alice), start_amt)
-        self.assertEqual(self.havven.currentHavvenBalanceSum(alice), 0)
+        self.assertEqual(self.nomin.balanceOf(alice), start_amt)
+        self.assertEqual(self.havven.issuedNominCurrentBalanceSum(alice), 0)
         start_time = block_time()
         fast_forward(delay)
-        self.havven.recomputeAccountLastHavvenAverageBalance(alice, alice)
+        self.havven.recomputeAccountIssuedNominLastAverageBalance(alice, alice)
         end_time = block_time()
         balance_sum = (end_time - start_time) * start_amt
         self.assertEqual(
-            self.havven.currentHavvenBalanceSum(alice),
+            self.havven.issuedNominCurrentBalanceSum(alice),
             balance_sum
         )
+        self.havven.updatePrice(MASTER, UNIT, block_time())
+        self.havven.burnNomins(alice, start_amt)
         self.havven.transfer(alice, self.havven.contract.address, start_amt)
+        self.assertEqual(self.nomin.balanceOf(alice), 0)
         self.assertEqual(self.havven.balanceOf(alice), 0)
         fast_forward(delay)
-        self.havven.recomputeAccountLastHavvenAverageBalance(alice, alice)
+        self.havven.updatePrice(MASTER, UNIT, block_time())
+        self.havven.recomputeAccountIssuedNominLastAverageBalance(alice, alice)
         self.assertClose(
-            self.havven.currentHavvenBalanceSum(alice), balance_sum
+            self.havven.issuedNominCurrentBalanceSum(alice), balance_sum
         )
 
     # lastAverageBalance
-    def test_lastAverageBalance(self):
+    def test_issuedNominLastAverageBalance(self):
         # set the block time to be at least 30seconds away from the end of the fee_period
         fee_period = self.havven.targetFeePeriodDurationSeconds()
 
         # fast forward next block with some extra padding
         delay = fee_period + 1
         fast_forward(delay)
+
         self.havven.checkFeePeriodRollover(DUMMY)
+        self.havven.setIssuanceRatio(MASTER, UNIT)
+        self.havven.updatePrice(MASTER, UNIT, block_time())
         alice = fresh_account()
         self.assertEqual(self.havven.balanceOf(alice), 0)
+        self.havven.setWhitelisted(MASTER, alice, True)
 
         start_amt = UNIT * 50
 
-        tx_receipt = self.havven.endow(MASTER, alice, start_amt)
+        self.havven.endow(MASTER, alice, start_amt)
+        tx_receipt = self.havven.issueNomins(alice, start_amt)
         self.assertEqual(self.havven.balanceOf(alice), start_amt)
-        self.assertEqual(self.havven.currentHavvenBalanceSum(alice), 0)
-        self.assertEqual(self.havven.lastAverageHavvenBalance(alice), 0)
-        self.assertEqual(self.havven.lastHavvenTransferTimestamp(alice), block_time(tx_receipt['blockNumber']))
+        self.assertEqual(self.havven.issuedNominCurrentBalanceSum(alice), 0)
+        self.assertEqual(self.havven.issuedNominLastAverageBalance(alice), 0)
+        self.assertEqual(self.havven.issuedNominLastTransferTimestamp(alice), block_time(tx_receipt['blockNumber']))
         fast_forward(delay)
         self.havven.checkFeePeriodRollover(DUMMY)
         fast_forward(fee_period // 2)
+        self.havven.updatePrice(MASTER, UNIT, block_time())
 
-        tx_receipt = self.havven.recomputeAccountLastHavvenAverageBalance(alice, alice)
+        tx_receipt = self.havven.recomputeAccountIssuedNominLastAverageBalance(alice, alice)
         block_number = tx_receipt['blockNumber']
 
         duration_since_rollover = block_time(block_number) - self.havven.feePeriodStartTime()
         balance_sum = duration_since_rollover * start_amt
 
-        actual = self.havven.currentHavvenBalanceSum(alice)
+        actual = self.havven.issuedNominCurrentBalanceSum(alice)
         expected = balance_sum
         self.assertClose(
             actual, expected
@@ -217,26 +225,30 @@ class TestHavven(HavvenTestCase):
 
         time_remaining = self.havven.targetFeePeriodDurationSeconds() + self.havven.feePeriodStartTime() - block_time()
         fast_forward(time_remaining - 5)
-        self.havven.transfer(alice, MASTER, start_amt // 2)
+        self.havven.burnNomins(alice, start_amt // 2)
         time_remaining = self.havven.targetFeePeriodDurationSeconds() + self.havven.feePeriodStartTime() - block_time()
         fast_forward(time_remaining + 10)
 
+        self.havven.updatePrice(MASTER, UNIT, block_time())
         self.havven.checkFeePeriodRollover(alice)
-        self.havven.recomputeAccountLastHavvenAverageBalance(alice, alice)
+        self.havven.recomputeAccountIssuedNominLastAverageBalance(alice, alice)
 
-        actual = self.havven.lastAverageHavvenBalance(alice)
+        actual = self.havven.issuedNominLastAverageBalance(alice)
         expected = (start_amt * delay) // (self.havven.feePeriodStartTime() - self.havven.lastFeePeriodStartTime())
         self.assertClose(
             actual, expected
         )
 
-    def test_lastAverageBalanceFullPeriod(self):
+    def test_issuedNominLastAverageBalanceFullPeriod(self):
         alice = fresh_account()
         self.havven.setWhitelisted(MASTER, alice, True)
+        self.havven.setIssuanceRatio(MASTER, UNIT)
         fee_period = self.havven.targetFeePeriodDurationSeconds()
 
         # Alice will initially have 20 havvens
         self.havven.endow(MASTER, alice, 20 * UNIT)
+        self.havven.updatePrice(self.havven.oracle(), UNIT, block_time())
+        self.havven.issueNomins(alice, 20 * UNIT)
         self.assertEqual(self.havven.balanceOf(alice), 20 * UNIT)
 
         # Fastforward until just before a fee period rolls over.
@@ -253,21 +265,24 @@ class TestHavven(HavvenTestCase):
         # roll over the full period
         fast_forward(fee_period + 50)
         tx_receipt = self.havven.checkFeePeriodRollover(MASTER)
-        transfer_receipt = self.havven.transfer(alice, alice, 0)
+        self.havven.updatePrice(self.havven.oracle(), UNIT, block_time())
+        issue_receipt = self.havven.burnNomins(alice, 0)
 
         event = get_event_data_from_log(self.havven_event_dict, tx_receipt.logs[0])
         self.assertEqual(event['event'], 'FeePeriodRollover')
-        self.assertEqual(self.havven.issuedNominLastTransferTimestamp(alice), block_time(transfer_receipt['blockNumber']))
-        self.assertEqual(self.havven.lastAverageHavvenBalance(alice), 20 * UNIT)
+        self.assertEqual(self.havven.issuedNominLastTransferTimestamp(alice), block_time(issue_receipt['blockNumber']))
+        self.assertEqual(self.havven.issuedNominLastAverageBalance(alice), 20 * UNIT)
 
         # Try a half-and-half period
         time_remaining = self.havven.targetFeePeriodDurationSeconds() + self.havven.feePeriodStartTime() - block_time()
         fast_forward(time_remaining + 50)
         self.havven.checkFeePeriodRollover(MASTER)
-        self.havven.transfer(alice, MASTER, 10 * UNIT)
+        self.havven.updatePrice(self.havven.oracle(), UNIT, block_time())
+        self.havven.burnNomins(alice, 10 * UNIT)
 
         fast_forward(fee_period // 2 + 10)
-        self.havven.transfer(alice, MASTER, 10 * UNIT)
+        self.havven.updatePrice(self.havven.oracle(), UNIT, block_time())
+        self.havven.burnNomins(alice, 10 * UNIT)
         self.havven.checkFeePeriodRollover(MASTER)
 
         fast_forward(fee_period // 2 + 10)
@@ -276,8 +291,9 @@ class TestHavven(HavvenTestCase):
         event = get_event_data_from_log(self.havven_event_dict, tx_receipt.logs[0])
         self.assertEqual(event['event'], 'FeePeriodRollover')
 
-        self.havven.transfer(alice, alice, 0 * UNIT)
-        self.assertClose(self.havven.lastAverageHavvenBalance(alice), 5 * UNIT)
+        self.havven.updatePrice(self.havven.oracle(), UNIT, block_time())
+        self.havven.recomputeAccountIssuedNominLastAverageBalance(alice, alice)
+        self.assertClose(self.havven.issuedNominLastAverageBalance(alice), 5 * UNIT)
 
     def test_arithmeticSeriesBalance(self):
         alice = fresh_account()
@@ -304,39 +320,62 @@ class TestHavven(HavvenTestCase):
         self.havven.recomputeAccountIssuedNominLastAverageBalance(alice, alice)
         self.assertClose(self.havven.issuedNominLastAverageBalance(alice), n * (n - 1) * UNIT // (2 * n * 20), precision=3)
 
-    def test_averageBalanceSum(self):
+    def test_issuedNominAverageBalanceSum(self):
         alice, bob, carol = fresh_accounts(3)
         fee_period = self.havven.targetFeePeriodDurationSeconds()
 
-        self.havven.endow(MASTER, alice, UNIT)
+        self.havven.endow(MASTER, alice, 10 * UNIT)
+        self.havven.endow(MASTER, bob, 10 * UNIT)
+        self.havven.endow(MASTER, carol, 10 * UNIT)
+        self.havven.setIssuanceRatio(MASTER, UNIT)
+        self.havven.updatePrice(MASTER, UNIT, block_time())
+        self.havven.setWhitelisted(MASTER, alice, True)
+        self.havven.setWhitelisted(MASTER, bob, True)
+        self.havven.setWhitelisted(MASTER, carol, True)
+        self.havven.issueNomins(alice, UNIT)
 
         fast_forward(fee_period + 1)
+        self.havven.updatePrice(MASTER, UNIT, block_time())
         self.havven.checkFeePeriodRollover(DUMMY)
 
-        self.havven.transfer(alice, bob, UNIT // 4)
-        self.havven.transfer(alice, carol, UNIT // 4)
+        self.havven.burnNomins(alice, UNIT // 4)
+        self.havven.issueNomins(bob, UNIT // 4)
+        self.havven.burnNomins(alice, UNIT // 4)
+        self.havven.issueNomins(carol, UNIT // 4)
         fast_forward(fee_period // 10)
-        self.havven.transfer(bob, carol, UNIT // 4)
+        self.havven.updatePrice(MASTER, UNIT, block_time())
+        self.havven.burnNomins(bob, UNIT // 4)
+        self.havven.issueNomins(carol, UNIT // 4)
         fast_forward(fee_period // 10)
-        self.havven.transfer(carol, bob, UNIT // 2)
+        self.havven.updatePrice(MASTER, UNIT, block_time())
+        self.havven.burnNomins(carol, UNIT // 4)
+        self.havven.issueNomins(bob, UNIT // 4)
         fast_forward(fee_period // 10)
-        self.havven.transfer(bob, alice, UNIT // 4)
+        self.havven.updatePrice(MASTER, UNIT, block_time())
+        self.havven.burnNomins(bob, UNIT // 4)
+        self.havven.issueNomins(alice, UNIT // 4)
         fast_forward(2 * fee_period // 10)
-        self.havven.transfer(alice, bob, UNIT // 3)
-        self.havven.transfer(alice, carol, UNIT // 3)
+        self.havven.updatePrice(MASTER, UNIT, block_time())
+        self.havven.burnNomins(alice, UNIT // 3)
+        self.havven.issueNomins(bob, UNIT // 3)
+        self.havven.burnNomins(alice, UNIT // 3)
+        self.havven.issueNomins(carol, UNIT // 3)
         fast_forward(3 * fee_period // 10)
-        self.havven.transfer(carol, bob, UNIT // 3)
+        self.havven.updatePrice(MASTER, UNIT, block_time())
+        self.havven.burnNomins(carol, UNIT // 3)
+        self.havven.issueNomins(bob, UNIT // 3)
         fast_forward(3 * fee_period // 10)
+        self.havven.updatePrice(MASTER, UNIT, block_time())
 
         self.havven.checkFeePeriodRollover(MASTER)
 
-        self.havven.recomputeAccountLastHavvenAverageBalance(alice, alice)
-        self.havven.recomputeAccountLastHavvenAverageBalance(carol, bob)
-        self.havven.recomputeAccountLastHavvenAverageBalance(carol, carol)
+        self.havven.recomputeAccountIssuedNominLastAverageBalance(alice, alice)
+        self.havven.recomputeAccountIssuedNominLastAverageBalance(carol, bob)
+        self.havven.recomputeAccountIssuedNominLastAverageBalance(carol, carol)
 
-        total_average = self.havven.lastAverageHavvenBalance(alice) + \
-                        self.havven.lastAverageHavvenBalance(bob) + \
-                        self.havven.lastAverageHavvenBalance(carol)
+        total_average = self.havven.issuedNominLastAverageBalance(alice) + \
+                        self.havven.issuedNominLastAverageBalance(bob) + \
+                        self.havven.issuedNominLastAverageBalance(carol)
 
         self.assertClose(UNIT, total_average)
 
@@ -461,14 +500,18 @@ class TestHavven(HavvenTestCase):
         self.havven.endow(MASTER, self.havven.contract.address, amount)
 
     def test_endow_currentBalanceSum(self):
+        alice = fresh_account()
         amount = 50 * UNIT
         # Force updates.
-        self.havven.endow(MASTER, self.havven.contract.address, 0)
-        havven_balanceSum = self.havven.currentHavvenBalanceSum(self.havven.contract.address)
-        alice = fresh_account()
-        fast_forward(seconds=60)
         self.havven.endow(MASTER, alice, amount)
-        self.assertGreater(self.havven.currentHavvenBalanceSum(self.havven.contract.address), havven_balanceSum)
+        self.havven.setIssuanceRatio(MASTER, UNIT)
+        self.havven.updatePrice(MASTER, UNIT, block_time())
+        self.havven.setWhitelisted(MASTER, alice, True)
+        self.havven.issueNomins(alice, amount)
+        balanceSum = self.havven.issuedNominCurrentBalanceSum(self.havven.contract.address)
+        fast_forward(seconds=60)
+        self.havven.issueNomins(alice, 0)
+        self.assertGreater(self.havven.issuedNominCurrentBalanceSum(alice), balanceSum)
 
     def test_endow_transfers(self):
         alice = fresh_account()
