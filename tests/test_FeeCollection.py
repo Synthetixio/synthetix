@@ -64,7 +64,7 @@ class TestFeeCollection(HavvenTestCase):
     def setUpClass(cls):
         cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, cls.nomin_contract, cls.fake_court_contract = cls.deployContracts()
 
-        cls.event_map = cls.event_maps['PublicCourt']
+        cls.event_map = cls.event_maps['Havven']
 
         cls.havven = PublicHavvenInterface(cls.havven_contract, "Havven")
         cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")

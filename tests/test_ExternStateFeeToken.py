@@ -61,7 +61,7 @@ class TestExternStateFeeToken(HavvenTestCase):
     @classmethod
     def setUpClass(cls):
         cls.compiled, cls.proxy, cls.proxied_feetoken, cls.feetoken_contract, cls.feetoken_event_dict, cls.feestate = cls.deployContracts()
-        cls.event_map = cls.event_maps['PublicCourt']
+        cls.event_map = cls.event_maps['ExternStateFeeToken']
 
         cls.initial_beneficiary = DUMMY
         cls.fee_authority = fresh_account()
