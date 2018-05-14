@@ -134,8 +134,8 @@ contract Court is SafeDecimalMath, Owned {
     Havven public havven;
     Nomin public nomin;
 
-    /* The minimum havven balance required to be considered to have standing
-     * to begin confiscation proceedings. */
+    /* The minimum issued nomin balance required to be considered to have
+     * standing to begin confiscation proceedings. */
     uint public minStandingBalance = 100 * UNIT;
 
     /* The voting period lasts for this duration,
@@ -352,7 +352,7 @@ contract Court is SafeDecimalMath, Owned {
             return false;
         }
 
-        uint participation = safeDiv_dec(totalVotes, havven.totalSupply());
+        uint participation = safeDiv_dec(totalVotes, havven.totalIssuedNominLastAverageBalance());  
         uint fractionInFavour = safeDiv_dec(yeas, totalVotes);
 
         /* We require the result to be strictly greater than the requirement
@@ -385,8 +385,8 @@ contract Court is SafeDecimalMath, Owned {
         external
         returns (uint)
     {
-        /* A confiscation motion must be mooted by someone with standing. */
-        require((havven.balanceOf(msg.sender) >= minStandingBalance) ||
+        /* A confiscation motion must be mooted by someone with standing. */ 
+        require((havven.issuedNominLastAverageBalance(msg.sender) >= minStandingBalance) ||
                 msg.sender == owner);
 
         /* Require that the voting period is longer than a single fee period,
@@ -430,7 +430,7 @@ contract Court is SafeDecimalMath, Owned {
         /* The voter may not cast votes on themselves. */
         require(msg.sender != motionTarget[motionID]);
 
-        uint weight = havven.recomputeAccountLastHavvenAverageBalance(msg.sender);
+        uint weight = havven.recomputeAccountIssuedNominLastAverageBalance(msg.sender);
 
         /* Users must have a nonzero voting weight to vote. */
         require(weight > 0);
