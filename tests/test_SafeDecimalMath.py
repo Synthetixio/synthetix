@@ -12,19 +12,16 @@ def tearDownModule():
 
 
 class TestSafeDecimalMath(HavvenTestCase):
-    @staticmethod
-    def deployContracts():
-        source = "tests/contracts/PublicMath.sol"
-
-        compiled = compile_contracts([source],
-                                     remappings=['""=contracts'])
-        math, tx_receipt = attempt_deploy(compiled, 'PublicMath', MASTER, [])
-        return math
+    @classmethod
+    def deployContracts(cls):
+        source = ["tests/contracts/PublicMath.sol"]        
+        cls.compiled, cls.event_maps = cls.compileAndMapEvents(source, remappings=['""=contracts'])
+        cls.math, tx_receipt = attempt_deploy(cls.compiled, 'PublicMath', MASTER, [])
 
     @classmethod
     def setUpClass(cls):
-        cls.math = cls.deployContracts()
-        cls.safeDecMath = SafeDecimalMathInterface(cls.math)
+        cls.deployContracts()
+        cls.safeDecMath = SafeDecimalMathInterface(cls.math, "SafeDecimalMath")
 
     def test_scale(self):
         self.assertEqual(self.safeDecMath.decimals(), 18)

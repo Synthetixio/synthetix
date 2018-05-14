@@ -8,6 +8,7 @@ from utils.testutils import (
     generate_topic_event_map, get_event_data_from_log
 )
 from tests.contract_interfaces.extern_state_fee_token_interface import ExternStateFeeTokenInterface
+from tests.contract_interfaces.token_state_interface import TokenStateInterface
 
 
 def setUpModule():
@@ -25,34 +26,32 @@ class TestExternStateFeeToken(HavvenTestCase):
     def tearDown(self):
         restore_snapshot(self.snapshot)
 
-    @staticmethod
-    def deployContracts():
+    @classmethod
+    def deployContracts(cls):
         sources = ["contracts/ExternStateFeeToken.sol", "contracts/TokenState.sol"]
-        compiled = compile_contracts(sources, remappings=['""=contracts'])
-        feetoken_abi = compiled['ExternStateFeeToken']['abi']
-        feetoken_event_dict = generate_topic_event_map(feetoken_abi)
-        feetoken_contract, construction_txr = attempt_deploy(
-            compiled, "ExternStateFeeToken", MASTER,
+        cls.compiled, cls.event_maps = cls.compileAndMapEvents(sources, remappings=['""=contracts'])
+        cls.feetoken_event_dict = cls.event_maps['ExternStateFeeToken']
+        cls.feetoken_contract, construction_txr = attempt_deploy(
+            cls.compiled, "ExternStateFeeToken", MASTER,
             ["Test Fee Token", "FEE", UNIT // 20, MASTER, ZERO_ADDRESS, MASTER]
         )
 
-        feestate, txr = attempt_deploy(
-            compiled, "TokenState", MASTER,
+        cls.feestate_contract, txr = attempt_deploy(
+            cls.compiled, "TokenState", MASTER,
             [MASTER, MASTER]
         )
 
-        return compiled, feetoken_contract, feetoken_event_dict, feestate
-
     @classmethod
     def setUpClass(cls):
-        cls.compiled, cls.feetoken_contract, cls.feetoken_event_dict, cls.feestate = cls.deployContracts()
+        cls.deployContracts()
         cls.initial_beneficiary, cls.fee_authority = fresh_accounts(2)
 
-        mine_tx(cls.feestate.functions.setBalanceOf(cls.initial_beneficiary, 1000 * UNIT).transact({'from': MASTER}))
-        mine_tx(cls.feestate.functions.setAssociatedContract(cls.feetoken_contract.address).transact({'from': MASTER}))
-        mine_tx(cls.feetoken_contract.functions.setState(cls.feestate.address).transact({'from': MASTER}))
+        cls.feestate = TokenStateInterface(cls.feestate_contract, "TokenState")
+        cls.feestate.setBalanceOf(MASTER, cls.initial_beneficiary, 1000 * UNIT)
+        cls.feestate.setAssociatedContract(MASTER, cls.feetoken_contract.address)
 
-        cls.feetoken = ExternStateFeeTokenInterface(cls.feetoken_contract)
+        cls.feetoken = ExternStateFeeTokenInterface(cls.feetoken_contract, "ExternStateFeeToken")
+        cls.feetoken.setState(MASTER, cls.feestate_contract.address)
         cls.feetoken.setFeeAuthority(MASTER, cls.fee_authority)
 
     def test_constructor(self):
@@ -61,8 +60,8 @@ class TestExternStateFeeToken(HavvenTestCase):
         self.assertEqual(self.feetoken.totalSupply(), 0)
         self.assertEqual(self.feetoken.transferFeeRate(), UNIT // 20)
         self.assertEqual(self.feetoken.feeAuthority(), self.fee_authority)
-        self.assertEqual(self.feetoken.state(), self.feestate.address)
-        self.assertEqual(self.feestate.functions.associatedContract().call(), self.feetoken_contract.address)
+        self.assertEqual(self.feetoken.state(), self.feestate_contract.address)
+        self.assertEqual(self.feestate.associatedContract(), self.feetoken_contract.address)
 
     def test_provide_state(self):
         feestate, _ = attempt_deploy(self.compiled, 'TokenState',
@@ -200,8 +199,6 @@ class TestExternStateFeeToken(HavvenTestCase):
         tx_receipt = self.feetoken.transfer(sender, receiver, value)
         # Check that events are emitted properly.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'], "Transfer")
-        self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[1])['event'],
-                         "TransferFeePaid")
         self.assertEqual(self.feetoken.balanceOf(receiver), receiver_balance + value)
         self.assertEqual(self.feetoken.balanceOf(sender), sender_balance - total_value)
         self.assertEqual(self.feetoken.totalSupply(), total_supply)
@@ -220,8 +217,6 @@ class TestExternStateFeeToken(HavvenTestCase):
         tx_receipt = self.feetoken.transfer(sender, receiver, value)
         # Check that events are emitted properly.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'], "Transfer")
-        self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[1])['event'],
-                         "TransferFeePaid")
         self.assertEqual(self.feetoken.totalSupply(), total_supply)
         self.assertEqual(self.feetoken.feePool(), fee_pool)
 
@@ -236,8 +231,6 @@ class TestExternStateFeeToken(HavvenTestCase):
         tx_receipt = self.feetoken.transfer(no_tokens, receiver, value)
         # Check that events are emitted properly.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'], "Transfer")
-        self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[1])['event'],
-                         "TransferFeePaid")
         self.assertEqual(self.feetoken.balanceOf(no_tokens), 0)
         self.assertEqual(self.feetoken.totalSupply(), total_supply)
         self.assertEqual(self.feetoken.feePool(), fee_pool)
@@ -287,8 +280,6 @@ class TestExternStateFeeToken(HavvenTestCase):
         tx_receipt = self.feetoken.transferFrom(spender, approver, receiver, value // 10)
         # Check that events are emitted properly.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'], "Transfer")
-        self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[1])['event'],
-                         "TransferFeePaid")
         self.assertEqual(self.feetoken.allowance(approver, spender), 9 * total_value // 10)
 
         self.assertEqual(self.feetoken.balanceOf(approver), approver_balance - total_value // 10)
@@ -300,8 +291,6 @@ class TestExternStateFeeToken(HavvenTestCase):
         tx_receipt = self.feetoken.transferFrom(spender, approver, receiver, 9 * value // 10)
         # Check that events are emitted properly.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'], "Transfer")
-        self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[1])['event'],
-                         "TransferFeePaid")
         self.assertEqual(self.feetoken.allowance(approver, spender), 0)
         self.assertEqual(self.feetoken.balanceOf(approver), approver_balance - total_value)
         self.assertEqual(self.feetoken.balanceOf(spender), spender_balance)
@@ -331,8 +320,6 @@ class TestExternStateFeeToken(HavvenTestCase):
         tx_receipt = self.feetoken.transfer(self.initial_beneficiary, self.fee_authority, total_value)
         # Check that event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'], "Transfer")
-        self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[1])['event'],
-                         "TransferFeePaid")
         self.assertEqual(self.feetoken.balanceOf(self.fee_authority), total_value)
 
         fee = self.feetoken.transferFeeIncurred(value)
@@ -346,8 +333,6 @@ class TestExternStateFeeToken(HavvenTestCase):
         tx_receipt = self.feetoken.transfer(self.fee_authority, receiver, value)
         # Check that event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'], "Transfer")
-        self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[1])['event'],
-                         "TransferFeePaid")
 
         self.assertEqual(self.feetoken.balanceOf(receiver), receiver_balance + value)
         self.assertEqual(self.feetoken.balanceOf(self.fee_authority), fee_authority_balance - total_value)

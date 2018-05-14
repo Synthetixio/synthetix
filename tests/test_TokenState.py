@@ -39,9 +39,10 @@ class TestTokenState(HavvenTestCase):
     @classmethod
     def setUpClass(cls):
         sources = ["contracts/TokenState.sol"]
-        cls.setUpHavvenTestClass(sources, remappings=['""=contracts'], event_primary="State")
+        cls.compiled, cls.event_maps = cls.compileAndMapEvents(sources, remappings=['""=contracts'])
+        cls.event_map = cls.event_maps['State']
         cls.tokenstate_contract = cls.deployContracts()
-        cls.tokenstate = TokenStateInterface(cls.tokenstate_contract)
+        cls.tokenstate = TokenStateInterface(cls.tokenstate_contract, "TokenState")
 
     def test_constructor(self):
         self.assertNotEqual(self.owner, self.associate)
@@ -49,6 +50,7 @@ class TestTokenState(HavvenTestCase):
         self.assertEquals(self.tokenstate.associatedContract(), self.associate)
         self.assertEventEquals(self.deploy_tx.logs[1],
                                "AssociatedContractUpdated",
+                               self.event_map,
                                {"associatedContract": self.tokenstate.associatedContract()})
 
     def test_setAssociatedContract(self):
@@ -65,6 +67,7 @@ class TestTokenState(HavvenTestCase):
         self.assertEqual(self.tokenstate.balanceOf(DUMMY), UNIT)
         self.assertEventEquals(tx.logs[0],
                                "AssociatedContractUpdated",
+                               self.event_map,
                                {"associatedContract": new_token})
 
     def test_setAllowance(self):

@@ -9,6 +9,7 @@ from utils.testutils import HavvenTestCase, ZERO_ADDRESS, block_time
 from tests.contract_interfaces.havven_interface import PublicHavvenInterface
 from tests.contract_interfaces.nomin_interface import PublicNominInterface
 from tests.contract_interfaces.havven_escrow_interface import PublicHavvenEscrowInterface
+from tests.contract_interfaces.court_interface import FakeCourtInterface
 
 
 def setUpModule():
@@ -26,58 +27,48 @@ class TestIssuance(HavvenTestCase):
     def tearDown(self):
         restore_snapshot(self.snapshot)
 
-    @staticmethod
-    def deployContracts():
+    @classmethod
+    def deployContracts(cls):
         sources = ["contracts/Havven.sol", "tests/contracts/PublicHavven.sol", "tests/contracts/PublicNomin.sol",
                    "tests/contracts/FakeCourt.sol", "tests/contracts/PublicHavvenEscrow.sol"]
         print("Deployment initiated.\n")
 
-        compiled = attempt(compile_contracts, [sources], "Compiling contracts... ")
+        cls.compiled, cls.event_maps = cls.compileAndMapEvents(sources, remappings=['""=contracts'])
 
         # Deploy contracts
-        havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [ZERO_ADDRESS, MASTER, MASTER])
+        cls.havven_contract, hvn_txr = attempt_deploy(cls.compiled, 'PublicHavven', MASTER, [ZERO_ADDRESS, MASTER, MASTER])
 
-        nomin_contract, nom_txr = attempt_deploy(compiled, 'PublicNomin',
-                                                 MASTER,
-                                                 [havven_contract.address, MASTER, ZERO_ADDRESS])
-        court_contract, court_txr = attempt_deploy(compiled, 'FakeCourt',
-                                                   MASTER,
-                                                   [havven_contract.address, nomin_contract.address,
-                                                    MASTER])
-        escrow_contract, escrow_txr = attempt_deploy(compiled, 'PublicHavvenEscrow',
+        cls.nomin_contract, nom_txr = attempt_deploy(cls.compiled, 'PublicNomin',
                                                      MASTER,
-                                                     [MASTER, havven_contract.address])
+                                                     [cls.havven_contract.address, MASTER, ZERO_ADDRESS])
+        cls.court_contract, court_txr = attempt_deploy(cls.compiled, 'FakeCourt',
+                                                       MASTER,
+                                                       [cls.havven_contract.address, cls.nomin_contract.address,
+                                                       MASTER])
+        cls.escrow_contract, escrow_txr = attempt_deploy(cls.compiled, 'PublicHavvenEscrow',
+                                                         MASTER,
+                                                         [MASTER, cls.havven_contract.address])
 
         # Hook up each of those contracts to each other
-        txs = [havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
-               nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER}),
-               nomin_contract.functions.setHavven(havven_contract.address).transact({'from': MASTER}),
-               havven_contract.functions.setEscrow(escrow_contract.address).transact({'from': MASTER})]
+        txs = [cls.havven_contract.functions.setNomin(cls.nomin_contract.address).transact({'from': MASTER}),
+               cls.nomin_contract.functions.setCourt(cls.court_contract.address).transact({'from': MASTER}),
+               cls.nomin_contract.functions.setHavven(cls.havven_contract.address).transact({'from': MASTER}),
+               cls.havven_contract.functions.setEscrow(cls.escrow_contract.address).transact({'from': MASTER})]
         attempt(mine_txs, [txs], "Linking contracts... ")
 
         print("\nDeployment complete.\n")
-        return havven_contract, nomin_contract, court_contract, escrow_contract
 
     @classmethod
     def setUpClass(cls):
-        cls.havven_contract, cls.nomin_contract, cls.fake_court, cls.escrow_contract = cls.deployContracts()
+        cls.deployContracts()
+        cls.havven = PublicHavvenInterface(cls.havven_contract, "Havven")
+        cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
+        cls.escrow = PublicHavvenEscrowInterface(cls.escrow_contract, "HavvenEscrow")
+        cls.fake_court = FakeCourtInterface(cls.court_contract, "FakeCourt")
 
-        cls.havven = PublicHavvenInterface(cls.havven_contract)
-        cls.nomin = PublicNominInterface(cls.nomin_contract)
-        cls.escrow = PublicHavvenEscrowInterface(cls.escrow_contract)
+        fast_forward(weeks=102) 
 
-        fast_forward(weeks=102)
-
-        cls.fake_court_setNomin = lambda sender, new_nomin: mine_tx(
-            cls.fake_court.functions.setNomin(new_nomin).transact({'from': sender}))
-        cls.fake_court_setConfirming = lambda sender, target, status: mine_tx(
-            cls.fake_court.functions.setConfirming(target, status).transact({'from': sender}))
-        cls.fake_court_setVotePasses = lambda sender, target, status: mine_tx(
-            cls.fake_court.functions.setVotePasses(target, status).transact({'from': sender}))
-        cls.fake_court_confiscateBalance = lambda sender, target: mine_tx(
-            cls.fake_court.functions.confiscateBalance(target).transact({'from': sender}))
-        
-        cls.fake_court_setNomin(W3.eth.accounts[0], cls.nomin_contract.address)
+        cls.fake_court.setNomin(MASTER, cls.nomin_contract.address)
 
     def test_issue(self):
         self.havven.endow(MASTER, MASTER, 1000 * UNIT)

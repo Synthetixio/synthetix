@@ -1,7 +1,8 @@
 
 class SafeDecimalMathInterface:
-    def __init__(self, contract):
+    def __init__(self, contract, name):
         self.contract = contract
+        self.contract_name = name
 
         self.decimals = lambda: self.contract.functions.decimals().call()
         self.UNIT = lambda: self.contract.functions.UNIT().call()
