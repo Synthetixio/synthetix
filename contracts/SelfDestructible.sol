@@ -50,6 +50,8 @@ contract SelfDestructible is Owned {
 	{
 		selfDestructBeneficiary = _beneficiary;
 		selfDestructDelay = _delay;
+		emit SelfDestructBeneficiaryUpdated(_beneficiary);
+
 	}
 
 	/**

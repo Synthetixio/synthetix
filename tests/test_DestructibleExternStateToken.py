@@ -60,7 +60,7 @@ class TestDestructibleExternStateToken(HavvenTestCase):
     @classmethod
     def setUpClass(cls):
         cls.proxy, cls.proxied_token, cls.compiled, cls.token_contract, cls.token_abi, cls.token_event_dict, cls.tokenstate = cls.deploy_contracts()
-        cls.event_map = cls.event_maps['PublicCourt']
+        cls.event_map = cls.event_maps['DestructibleExternStateToken']
 
         cls.token = DestructibleExternStateTokenInterface(cls.token_contract, "DestructibleExternStateToken")
 

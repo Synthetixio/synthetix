@@ -34,7 +34,7 @@ class TestIssuance(HavvenTestCase):
         print("Deployment initiated.\n")
 
         compiled, cls.event_maps = cls.compileAndMapEvents(sources)
-        cls.event_map = cls.event_maps['PublicCourt']
+        cls.event_map = cls.event_maps['Havven']
 
         # Deploy contracts
 

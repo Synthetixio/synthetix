@@ -16,7 +16,7 @@ class TestSafeDecimalMath(HavvenTestCase):
     def deployContracts(cls):
         sources = ["tests/contracts/PublicMath.sol"]
 
-        compiled, cls.event_maps = cls.compileAndMapEvents(sources)
+        compiled, cls.event_maps = cls.compileAndMapEvents(sources, remappings=['""=contracts'])
 
         math, tx_receipt = attempt_deploy(compiled, 'PublicMath', MASTER, [])
         return math
