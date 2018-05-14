@@ -240,7 +240,6 @@ contract ExternStateFeeToken is Emitter, SafeDecimalMath {
         state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), fee));
 
         emitTransfer(messageSender, to, value);
-        emitTransferFeePaid(messageSender, fee);
         emitTransfer(messageSender, address(this), fee);
 
         return true;
@@ -268,7 +267,6 @@ contract ExternStateFeeToken is Emitter, SafeDecimalMath {
         state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), fee));
 
         emitTransfer(from, to, value);
-        emitTransferFeePaid(from, fee);
         emitTransfer(from, address(this), fee);
 
         return true;

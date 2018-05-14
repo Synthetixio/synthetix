@@ -82,7 +82,7 @@ class TestHavvenEscrow(HavvenTestCase):
             cls.nomin_contract, cls.court, cls.escrow_contract, cls.construction_block, \
             cls.escrow_event_dict = cls.deployContracts()
 
-        cls.event_map = cls.event_maps['PublicCourt']
+        cls.event_map = cls.event_maps['HavvenEscrow']
 
         cls.havven = PublicHavvenInterface(cls.havven_contract, "Havven")
         cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
