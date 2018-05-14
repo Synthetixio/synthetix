@@ -70,6 +70,9 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Emit
         // if the state isn't set, create a new one
         if (_state == TokenState(0)) {
             state = new TokenState(_owner, address(this));
+            state.setBalanceOf(address(this), totalSupply);
+            // We don't emit the event here, as it can't be emitted as the proxy won't know the address of this
+            // contract. This isn't very important as the state should already have been set.
         } else {
             state = _state;
         }

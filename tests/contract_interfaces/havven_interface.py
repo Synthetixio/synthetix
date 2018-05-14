@@ -51,6 +51,7 @@ class HavvenInterface(DestructibleExternStateTokenInterface):
         self.setTargetFeePeriodDuration = lambda sender, duration: mine_tx(self.contract.functions.setTargetFeePeriodDuration(duration).transact({'from': sender}), "setTargetFeePeriodDuration", self.contract_name)
         self.setOracle = lambda sender, addr: mine_tx(self.contract.functions.setOracle(addr).transact({'from': sender}), "setOracle", self.contract_name)
         self.setIssuanceRatio = lambda sender, val: mine_tx(self.contract.functions.setIssuanceRatio(val).transact({'from': sender}), "setIssuanceRatio", self.contract_name)
+        self.setHavvenPriceStalePeriod = lambda sender, val:  mine_tx(self.contract.functions.setHavvenPriceStalePeriod(val).transact({'from': sender}), "setHavvenPriceStalePeriod", self.contract_name)
         self.endow = lambda sender, to, val: mine_tx(self.contract.functions.endow(to, val).transact({'from': sender}), "endow", self.contract_name)
         self.setWhitelisted = lambda sender, acc, val: mine_tx(self.contract.functions.setWhitelisted(acc, val).transact({'from': sender}), "setWhitelisted", self.contract_name)
         self.transfer = lambda sender, to, val: mine_tx(self.contract.functions.transfer(to, val).transact({'from': sender}), "transfer", self.contract_name)

@@ -212,7 +212,6 @@ contract Havven is DestructibleExternStateToken {
     {
         oracle = _oracle;
         feePeriodStartTime = now;
-        state.setBalanceOf(address(this), havvenSupply);
         lastFeePeriodStartTime = now - targetFeePeriodDurationSeconds;
         havvenPrice = initalHavPrice;
         lastHavvenPriceUpdateTime = now;

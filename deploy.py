@@ -139,11 +139,11 @@ def deploy_havven(print_addresses=False):
         print("Addresses")
         print("========\n")
         print(f"Havven Proxy: {havven_proxy.address}")
-        print(f"Nomin Proxy: {nomin_proxy.address}")
-        print(f"Havven: {havven_contract.address}")
-        print(f"Nomin:  {nomin_contract.address}")
-        print(f"Court:  {court_contract.address}")
-        print(f"Escrow: {escrow_contract.address}")
+        print(f"Nomin Proxy:  {nomin_proxy.address}")
+        print(f"Havven:       {havven_contract.address}")
+        print(f"Nomin:        {nomin_contract.address}")
+        print(f"Court:        {court_contract.address}")
+        print(f"Escrow:       {escrow_contract.address}")
         print()
 
     return havven_proxy, nomin_proxy, havven_contract, nomin_contract, court_contract, escrow_contract
