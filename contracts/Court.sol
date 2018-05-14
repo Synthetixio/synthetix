@@ -430,7 +430,7 @@ contract Court is SafeDecimalMath, Owned {
         /* The voter may not cast votes on themselves. */
         require(msg.sender != motionTarget[motionID]);
 
-        uint weight = havven.recomputeAccountLastIssuedNominAverageBalance(msg.sender);
+        uint weight = havven.recomputeAccountIssuedNominLastAverageBalance(msg.sender);
 
         /* Users must have a nonzero voting weight to vote. */
         require(weight > 0);

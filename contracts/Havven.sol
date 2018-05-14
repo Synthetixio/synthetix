@@ -495,7 +495,7 @@ contract Havven is DestructibleExternStateToken {
     /**
      * @notice Recompute and return the given account's average balance information.
      */
-    function recomputeAccountLastIssuedNominAverageBalance(address account)
+    function recomputeAccountIssuedNominLastAverageBalance(address account)
         external
         returns (uint)
     {

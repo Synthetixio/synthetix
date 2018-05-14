@@ -232,6 +232,7 @@ class TestHavven(HavvenTestCase):
 
     def test_lastAverageBalanceFullPeriod(self):
         alice = fresh_account()
+        self.havven.setWhitelisted(MASTER, alice, True)
         fee_period = self.havven.targetFeePeriodDurationSeconds()
 
         # Alice will initially have 20 havvens
@@ -242,9 +243,10 @@ class TestHavven(HavvenTestCase):
         time_remaining = self.havven.targetFeePeriodDurationSeconds() + self.havven.feePeriodStartTime() - block_time()
         fast_forward(time_remaining + 50)
         tx_receipt = self.havven.checkFeePeriodRollover(alice)
-        transfer_receipt = self.havven.transfer(alice, alice, 0)
+        self.havven.updatePrice(self.havven.oracle(), UNIT, block_time())
+        issue_receipt = self.havven.issueNomins(alice, 0)
 
-        self.assertEqual(self.havven.lastHavvenTransferTimestamp(alice), block_time(transfer_receipt['blockNumber']))
+        self.assertEqual(self.havven.issuedNominLastTransferTimestamp(alice), block_time(issue_receipt['blockNumber']))
         event = get_event_data_from_log(self.havven_event_dict, tx_receipt.logs[0])
         self.assertEqual(event['event'], 'FeePeriodRollover')
 
@@ -255,7 +257,7 @@ class TestHavven(HavvenTestCase):
 
         event = get_event_data_from_log(self.havven_event_dict, tx_receipt.logs[0])
         self.assertEqual(event['event'], 'FeePeriodRollover')
-        self.assertEqual(self.havven.lastHavvenTransferTimestamp(alice), block_time(transfer_receipt['blockNumber']))
+        self.assertEqual(self.havven.issuedNominLastTransferTimestamp(alice), block_time(transfer_receipt['blockNumber']))
         self.assertEqual(self.havven.lastAverageHavvenBalance(alice), 20 * UNIT)
 
         # Try a half-and-half period
@@ -283,19 +285,24 @@ class TestHavven(HavvenTestCase):
         n = 50
 
         self.havven.endow(MASTER, alice, n * UNIT)
+        self.havven.updatePrice(self.havven.oracle(), UNIT, block_time())
+        self.havven.setWhitelisted(MASTER, alice, True)
+        self.havven.issueNomins(alice, n * UNIT // 20)
+
         time_remaining = self.havven.targetFeePeriodDurationSeconds() + self.havven.feePeriodStartTime() - block_time()
         fast_forward(time_remaining + 5)
         self.havven.checkFeePeriodRollover(MASTER)
 
         for _ in range(n):
-            self.havven.transfer(alice, MASTER, UNIT)
+            #self.havven.transfer(alice, MASTER, UNIT)
+            self.havven.burnNomins(alice, UNIT // 20)
             fast_forward(fee_period // n)
 
         fast_forward(n)  # fast forward allow the rollover to happen
         self.havven.checkFeePeriodRollover(MASTER)
 
-        self.havven.recomputeAccountLastHavvenAverageBalance(alice, alice)
-        self.assertClose(self.havven.lastAverageHavvenBalance(alice), n * (n - 1) * UNIT // (2 * n), precision=3)
+        self.havven.recomputeAccountIssuedNominLastAverageBalance(alice, alice)
+        self.assertClose(self.havven.issuedNominLastAverageBalance(alice), n * (n - 1) * UNIT // (2 * n * 20), precision=3)
 
     def test_averageBalanceSum(self):
         alice, bob, carol = fresh_accounts(3)
@@ -465,8 +472,8 @@ class TestHavven(HavvenTestCase):
 
     def test_endow_transfers(self):
         alice = fresh_account()
-        self.havven.recomputeAccountLastHavvenAverageBalance(MASTER, MASTER)
         tx_receipt = self.havven.endow(MASTER, alice, 50 * UNIT)
+        self.assertEqual(self.havven.balanceOf(alice), 50 * UNIT)
         event = get_event_data_from_log(self.havven_event_dict, tx_receipt.logs[0])
         self.assertEqual(event['event'], 'Transfer')
 
@@ -610,25 +617,3 @@ class TestHavven(HavvenTestCase):
         self.havven.setEscrow(MASTER, ZERO_ADDRESS)
         self.havven.checkFeePeriodRollover(MASTER)
         self.assertGreater(self.havven.feePeriodStartTime(), pre_feePeriodStartTime)
-
-    def test_abuse_havven_balance(self):
-        """Test whether repeatedly moving havvens between two parties will shift averages upwards"""
-        alice, bob = fresh_accounts(2)
-        amount = UNIT * 100000
-        a_sum = 0
-        b_sum = 0
-        self.havven.endow(MASTER, alice, amount)
-        t = block_time()
-        self.assertEqual(self.havven.balanceOf(alice), amount)
-        self.assertEqual(self.havven.currentHavvenBalanceSum(alice), 0)
-        for i in range(20):
-            self.havven.transfer(alice, bob, amount)
-            a_sum += (block_time() - t) * amount
-            t = block_time()
-            self.assertEqual(self.havven.balanceOf(bob), amount)
-            self.assertEqual(self.havven.currentHavvenBalanceSum(alice), a_sum)
-            self.havven.transfer(bob, alice, amount)
-            b_sum += (block_time() - t) * amount
-            t = block_time()
-            self.assertEqual(self.havven.balanceOf(alice), amount)
-            self.assertEqual(self.havven.currentHavvenBalanceSum(bob), b_sum)
