@@ -5,7 +5,7 @@ from solc import compile_files
 from utils.generalutils import to_seconds, TERMCOLORS
 from eth_utils import function_abi_to_4byte_selector
 
-BLOCKCHAIN_ADDRESS = "http://localhost:8545"
+BLOCKCHAIN_ADDRESS = "http://kovan.infura.io/QAgCw3CHAo4KNoTzfoiX"
 W3 = Web3(HTTPProvider(BLOCKCHAIN_ADDRESS))
 POLLING_INTERVAL = 0.1
 STATUS_ALIGN_SPACING = 6

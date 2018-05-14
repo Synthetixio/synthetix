@@ -186,7 +186,7 @@ contract Havven is DestructibleExternStateToken {
     /* The time the havven price was last updated */
     uint public lastHavvenPriceUpdateTime;
     /* How long will the contract assume the price of havvens is correct */
-    uint public havvenPriceStalePeriod = 3 hours;
+    uint public havvenPriceStalePeriod = 4 weeks;  /* TODO: set to 3hrs for deploy */
 
     uint public issuanceRatio = 5 * UNIT / 100;
     /* The maximal the issuance ratio can be */
@@ -207,7 +207,7 @@ contract Havven is DestructibleExternStateToken {
      * If the provided address is 0x0, then a fresh one will be constructed with the contract owning all tokens.
      * @param _owner The owner of this contract.
      */
-    constructor(address _proxy, TokenState initialState, address _owner, address _oracle)
+    constructor(address _proxy, TokenState initialState, address _owner, address _oracle, uint initalHavPrice)
         DestructibleExternStateToken(_proxy, "Havven", "HAV", havvenSupply, initialState, _owner)
         /* Owned is initialised in DestructibleExternStateToken */
         public
@@ -216,6 +216,8 @@ contract Havven is DestructibleExternStateToken {
         feePeriodStartTime = now;
         state.setBalanceOf(address(this), havvenSupply);
         lastFeePeriodStartTime = now - targetFeePeriodDurationSeconds;
+        havvenPrice = initalHavPrice;
+        lastHavvenPriceUpdateTime = now;
     }
 
     /* ========== SETTERS ========== */
