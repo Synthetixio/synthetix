@@ -23,6 +23,7 @@ contract PublicNomin is Nomin {
     }
 
     function debugFreezeAccount(address target)
+        optionalProxy
         public
     {
         require(!frozen[target]);
@@ -35,6 +36,7 @@ contract PublicNomin is Nomin {
     }
 
     function giveNomins(address account, uint amount)
+        optionalProxy
         public
     {
         state.setBalanceOf(account, safeAdd(amount, state.balanceOf(account)));
@@ -42,6 +44,7 @@ contract PublicNomin is Nomin {
     }
 
     function clearNomins(address account)
+        optionalProxy
         public
     {
         totalSupply = safeSub(totalSupply, state.balanceOf(account));
@@ -49,6 +52,7 @@ contract PublicNomin is Nomin {
     }
 
     function generateFees(uint amount)
+        optionalProxy
         public
     {
         totalSupply = safeAdd(totalSupply, amount);
