@@ -234,7 +234,6 @@ contract ExternStateFeeToken is Owned, SafeDecimalMath {
         state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), fee));
 
         emit Transfer(msg.sender, to, value);
-        emit TransferFeePaid(msg.sender, fee);
         emit Transfer(msg.sender, address(this), fee);
 
         return true;
@@ -261,7 +260,6 @@ contract ExternStateFeeToken is Owned, SafeDecimalMath {
         state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), fee));
 
         emit Transfer(from, to, value);
-        emit TransferFeePaid(from, fee);
         emit Transfer(from, address(this), fee);
 
         return true;
@@ -330,8 +328,6 @@ contract ExternStateFeeToken is Owned, SafeDecimalMath {
     /* ========== EVENTS ========== */
 
     event Transfer(address indexed from, address indexed to, uint value);
-
-    event TransferFeePaid(address indexed account, uint value);
 
     event Approval(address indexed owner, address indexed spender, uint value);
 
