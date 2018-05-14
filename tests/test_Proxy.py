@@ -8,6 +8,8 @@ from utils.testutils import (
     generate_topic_event_map, get_event_data_from_log
 )
 from tests.contract_interfaces.extern_state_fee_token_interface import ExternStateFeeTokenInterface
+from tests.contract_interfaces.proxy_interface import ProxyInterface
+from tests.contract_interfaces.token_state_interface import TokenStateInterface
 
 
 def setUpModule():
@@ -69,8 +71,10 @@ class TestExternStateFeeToken(HavvenTestCase):
         cls.fee_authority = fresh_account()
 
         cls.feetoken = ExternStateFeeTokenInterface(cls.proxied_feetoken, "ExternStateFeeToken")
-        cls.feetoken.setFeeAuthority(MASTER, cls.fee_authority)
+        cls.proxy = ProxyInterface(cls.proxy, "ExternStateFeeTokenProxy")
+        cls.feestate = TokenStateInterface(cls.feestate, "TokenState")
 
+        cls.feetoken.setFeeAuthority(MASTER, cls.fee_authority)
 
     def test_swap(self):
         self.assertEqual(self.feetoken.name(), "Test Fee Token")
@@ -78,16 +82,16 @@ class TestExternStateFeeToken(HavvenTestCase):
         self.assertEqual(self.feetoken.totalSupply(), 0)
         self.assertEqual(self.feetoken.transferFeeRate(), UNIT // 20)
         self.assertEqual(self.feetoken.feeAuthority(), self.fee_authority)
-        self.assertEqual(self.feetoken.state(), self.feestate.address)
-        self.assertEqual(self.feestate.functions.associatedContract().call(), self.feetoken_contract_1.address)
-        mine_txs([
-            self.proxy.functions.setTarget(self.feetoken_contract_2.address).transact({'from': MASTER}),
-            self.feestate.functions.setAssociatedContract(self.feetoken_contract_2.address).transact({'from': MASTER}),
-            self.feetoken_contract_2.functions.setState(self.feestate.address).transact({'from': MASTER})]
-        )
+        self.assertEqual(self.feetoken.state(), self.feestate.contract.address)
+        self.assertEqual(self.feestate.associatedContract(), self.feetoken_contract_1.address)
+
+        self.proxy.setTarget(MASTER, self.feetoken_contract_2.address)
+        self.feestate.setAssociatedContract(MASTER, self.feetoken_contract_2.address)
+        mine_txs([self.feetoken_contract_2.functions.setState(self.feestate.contract.address).transact({'from': MASTER})])
+
         self.assertEqual(self.feetoken.name(), "Test Fee Token 2")
-        self.assertEqual(self.feetoken.state(), self.feestate.address)
-        self.assertEqual(self.feestate.functions.associatedContract().call(), self.feetoken_contract_2.address)
+        self.assertEqual(self.feetoken.state(), self.feestate.contract.address)
+        self.assertEqual(self.feestate.associatedContract(), self.feetoken_contract_2.address)
 
     def test_balance_after_swap(self):
         sender = self.initial_beneficiary
@@ -101,11 +105,10 @@ class TestExternStateFeeToken(HavvenTestCase):
 
         self.assertEqual(self.feetoken.balanceOf(receiver), receiver_balance + value)
 
-        mine_txs([
-            self.proxy.functions.setTarget(self.feetoken_contract_2.address).transact({'from': MASTER}),
-            self.feestate.functions.setAssociatedContract(self.feetoken_contract_2.address).transact({'from': MASTER}),
-            self.feetoken_contract_2.functions.setState(self.feestate.address).transact({'from': MASTER})]
-        )
+        self.proxy.setTarget(MASTER, self.feetoken_contract_2.address)
+        self.feestate.setAssociatedContract(MASTER, self.feetoken_contract_2.address)
+
+        mine_txs([self.feetoken_contract_2.functions.setState(self.feestate.contract.address).transact({'from': MASTER})])
 
         self.assertEqual(self.feetoken.balanceOf(receiver), receiver_balance + value)
 

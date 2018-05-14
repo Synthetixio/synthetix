@@ -32,15 +32,13 @@ contract as the state parameter, messageSender.
 */
 
 
-/* With inspiration from Martin Swende and Zeppelin.*/
-
 pragma solidity ^0.4.23;
 
 import "contracts/Owned.sol";
 import "contracts/Proxyable.sol";
 
 contract Proxy is Owned {
-    Proxyable target;
+    Proxyable public target;
 
     constructor(address _owner)
         Owned(_owner)
@@ -136,20 +134,6 @@ contract Proxy is Owned {
         assembly {
             log4(add(stream, 32), size, topic1, topic2, topic3, topic4)
         }
-    }
-
-    /* ========== IMPLEMENTATION OF OWNED ABSTRACT METHODS ========== */
-
-    function emitOwnerChanged(address oldOwner, address newOwner)
-        internal
-    {
-        emit OwnerChanged(oldOwner, newOwner);
-    }
-
-    function emitOwnerNominated(address newOwner)
-        internal
-    {
-        emit OwnerNominated(newOwner);
     }
 
     /* ========== EVENTS ========== */
