@@ -284,16 +284,7 @@ contract Emitter is EmitterBase {
         addUint256(data, value, false);
         emitOnProxy(data);
     }
-
-    function emitTransferFeePaid(address account, uint256 value)
-    internal
-    {
-        EventData memory data = createEventData("TransferFeePaid(address,uint256)", 1);
-        addAddress(data, account, true);
-        addUint256(data, value, false);
-        emitOnProxy(data);
-    }
-
+ 
     function emitTransferFeeRateUpdated(uint256 newFeeRate)
     internal
     {
