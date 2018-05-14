@@ -184,7 +184,7 @@ contract Havven is DestructibleExternStateToken {
     /* The time the havven price was last updated */
     uint public lastHavvenPriceUpdateTime;
     /* How long will the contract assume the price of havvens is correct */
-    uint public havvenPriceStalePeriod = 4 weeks;  /* TODO: set to 3hrs for deploy */
+    uint public havvenPriceStalePeriod = 25 hours;
 
     uint public issuanceRatio = 5 * UNIT / 100;
     /* The maximal the issuance ratio can be */

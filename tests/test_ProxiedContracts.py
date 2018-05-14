@@ -93,7 +93,7 @@ class TestProxiedIssuance(__import__('tests').test_Issuance.TestIssuance):
 class TestProxiedNomin(__import__('tests').test_Nomin.TestNomin):
     @classmethod
     def setUpClass(cls):
-        cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.nomin_contract, cls.nomin_event_dict, cls.havven_contract, cls.fake_court_contract = cls.deployContracts()
+        cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.nomin_contract, cls.havven_contract, cls.fake_court_contract = cls.deployContracts()
 
         cls.nomin = PublicNominInterface(cls.proxied_nomin, "ProxiedNomin")
         cls.havven = HavvenInterface(cls.proxied_havven, "ProxiedHavven")

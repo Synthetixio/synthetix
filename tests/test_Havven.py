@@ -91,7 +91,6 @@ class TestHavven(HavvenTestCase):
         cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
 
         cls.initial_time = cls.havven.lastFeePeriodStartTime()
-        cls.havven.setHavvenPriceStalePeriod(MASTER, to_seconds(weeks=100000))
         cls.time_fast_forwarded = 0
 
         cls.base_havven_price = UNIT
@@ -274,7 +273,7 @@ class TestHavven(HavvenTestCase):
         time_remaining = self.havven.targetFeePeriodDurationSeconds() + self.havven.feePeriodStartTime() - block_time()
         fast_forward(time_remaining + 50)
         tx_receipt = self.havven.checkFeePeriodRollover(alice)
-        self.havven.updatePrice(self.havven.oracle(), UNIT, block_time()) 
+        self.havven.updatePrice(MASTER, UNIT, block_time())
         issue_receipt = self.havven.issueNomins(alice, 0) 
 
         self.assertEqual(self.havven.issuedNominLastTransferTimestamp(alice), block_time(issue_receipt['blockNumber']))
@@ -284,6 +283,7 @@ class TestHavven(HavvenTestCase):
         # roll over the full period
         fast_forward(fee_period + 50)
         tx_receipt = self.havven.checkFeePeriodRollover(MASTER)
+        self.havven.updatePrice(MASTER, UNIT, block_time()+1)
         transfer_receipt = self.havven.issueNomins(alice, 0)
 
         event = get_event_data_from_log(self.havven_event_dict, tx_receipt.logs[0])
@@ -346,24 +346,24 @@ class TestHavven(HavvenTestCase):
         self.havven.setWhitelisted(MASTER, bob, True)
         self.havven.setWhitelisted(MASTER, carol, True)
         self.havven.setIssuanceRatio(MASTER, UNIT)
-        self.havven.updatePrice(MASTER, UNIT, block_time()+1)
 
         fast_forward(fee_period + 1)
         self.havven.checkFeePeriodRollover(DUMMY)
 
         for i in range(10):
+            self.havven.updatePrice(MASTER, UNIT, block_time() + 1)
             a_weight = random.random()
             b_weight = random.random()
             c_weight = random.random()
             tot = a_weight + b_weight + c_weight
 
-            self.havven.issueNomins(alice, int(UNIT * a_weight / tot))
-            self.havven.issueNomins(bob, int(UNIT * b_weight / tot))
-            self.havven.issueNomins(carol, int(UNIT * c_weight / tot))
+            self.havven.issueNomins(alice, max(1, int(UNIT * a_weight / tot)))
+            self.havven.issueNomins(bob, max(1, int(UNIT * b_weight / tot)))
+            self.havven.issueNomins(carol, max(1, int(UNIT * c_weight / tot)))
             fast_forward(fee_period // 10 - 1)
-            self.havven.burnNomins(alice, int(UNIT * a_weight / tot))
-            self.havven.burnNomins(bob, int(UNIT * b_weight / tot))
-            self.havven.burnNomins(carol, int(UNIT * c_weight / tot))
+            self.havven.burnNomins(alice, max(1, int(UNIT * a_weight / tot)))
+            self.havven.burnNomins(bob, max(1, int(UNIT * b_weight / tot)))
+            self.havven.burnNomins(carol, max(1, int(UNIT * c_weight / tot)))
         fast_forward(11)
         self.havven.checkFeePeriodRollover(MASTER)
 

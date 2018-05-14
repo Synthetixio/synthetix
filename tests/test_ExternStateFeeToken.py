@@ -214,8 +214,6 @@ class TestExternStateFeeToken(HavvenTestCase):
         tx_receipt = self.feetoken.transfer(sender, receiver, value)
         # Check that events are emitted properly.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'], "Transfer")
-        self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[1])['event'],
-                         "TransferFeePaid")
         self.assertEqual(self.feetoken.balanceOf(receiver), receiver_balance + value)
         self.assertEqual(self.feetoken.balanceOf(sender), sender_balance - total_value)
         self.assertEqual(self.feetoken.totalSupply(), total_supply)
@@ -234,8 +232,6 @@ class TestExternStateFeeToken(HavvenTestCase):
         tx_receipt = self.feetoken.transfer(sender, receiver, value)
         # Check that events are emitted properly.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'], "Transfer")
-        self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[1])['event'],
-                         "TransferFeePaid")
         self.assertEqual(self.feetoken.totalSupply(), total_supply)
         self.assertEqual(self.feetoken.feePool(), fee_pool)
 
@@ -250,8 +246,6 @@ class TestExternStateFeeToken(HavvenTestCase):
         tx_receipt = self.feetoken.transfer(no_tokens, receiver, value)
         # Check that events are emitted properly.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'], "Transfer")
-        self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[1])['event'],
-                         "TransferFeePaid")
         self.assertEqual(self.feetoken.balanceOf(no_tokens), 0)
         self.assertEqual(self.feetoken.totalSupply(), total_supply)
         self.assertEqual(self.feetoken.feePool(), fee_pool)
@@ -301,8 +295,7 @@ class TestExternStateFeeToken(HavvenTestCase):
         tx_receipt = self.feetoken.transferFrom(spender, approver, receiver, value // 10)
         # Check that events are emitted properly.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'], "Transfer")
-        self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[1])['event'],
-                         "TransferFeePaid")
+
         self.assertEqual(self.feetoken.allowance(approver, spender), 9 * total_value // 10)
 
         self.assertEqual(self.feetoken.balanceOf(approver), approver_balance - total_value // 10)
@@ -314,8 +307,7 @@ class TestExternStateFeeToken(HavvenTestCase):
         tx_receipt = self.feetoken.transferFrom(spender, approver, receiver, 9 * value // 10)
         # Check that events are emitted properly.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'], "Transfer")
-        self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[1])['event'],
-                         "TransferFeePaid")
+
         self.assertEqual(self.feetoken.allowance(approver, spender), 0)
         self.assertEqual(self.feetoken.balanceOf(approver), approver_balance - total_value)
         self.assertEqual(self.feetoken.balanceOf(spender), spender_balance)
@@ -345,8 +337,6 @@ class TestExternStateFeeToken(HavvenTestCase):
         tx_receipt = self.feetoken.transfer(self.initial_beneficiary, self.fee_authority, total_value)
         # Check that event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'], "Transfer")
-        self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[1])['event'],
-                         "TransferFeePaid")
         self.assertEqual(self.feetoken.balanceOf(self.fee_authority), total_value)
 
         fee = self.feetoken.transferFeeIncurred(value)
@@ -360,8 +350,6 @@ class TestExternStateFeeToken(HavvenTestCase):
         tx_receipt = self.feetoken.transfer(self.fee_authority, receiver, value)
         # Check that event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'], "Transfer")
-        self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[1])['event'],
-                         "TransferFeePaid")
 
         self.assertEqual(self.feetoken.balanceOf(receiver), receiver_balance + value)
         self.assertEqual(self.feetoken.balanceOf(self.fee_authority), fee_authority_balance - total_value)
