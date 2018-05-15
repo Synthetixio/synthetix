@@ -103,7 +103,7 @@ contract Nomin is ExternStateFeeToken {
         returns (bool)
     {
         require(!frozen[to]);
-        return super.transfer(to, priceToSpend(value));
+        return _transfer_byProxy(messageSender, to, priceToSpend(value));
     }
 
     /* Override ERC20 transferFrom function in order to check
@@ -114,7 +114,7 @@ contract Nomin is ExternStateFeeToken {
         returns (bool)
     {
         require(!frozen[to]);
-        return super.transferFrom(from, to, priceToSpend(value));
+        return _transferFrom_byProxy(messageSender, from, to, priceToSpend(value));
     }
 
     function transferSenderPaysFee(address to, uint value)
@@ -123,7 +123,7 @@ contract Nomin is ExternStateFeeToken {
         returns (bool)
     {
         require(!frozen[to]);
-        return super.transfer(to, value);
+        return _transfer_byProxy(messageSender, to, value);
     }
 
     function transferFromSenderPaysFee(address from, address to, uint value)
@@ -132,7 +132,7 @@ contract Nomin is ExternStateFeeToken {
         returns (bool)
     {
         require(!frozen[to]);
-        return super.transferFrom(from, to, value);
+        return _transferFrom_byProxy(messageSender, from, to, value);
     }
 
     /* If a confiscation court motion has passed and reached the confirmation

@@ -140,7 +140,6 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
     function balanceOf(address account)
         public
         view
-        optionalProxy
         returns (uint)
     {
         return state.balanceOf(account);
@@ -152,7 +151,6 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
     function allowance(address from, address to)
         public
         view
-        optionalProxy
         returns (uint)
     {
         return state.allowance(from, to);
@@ -218,14 +216,12 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
     /**
      * @notice ERC20 friendly transfer function.
      */
-    function transfer(address to, uint value)
-        public
-        optionalProxy
+    function _transfer_byProxy(address sender, address to, uint value)
+        internal
         returns (bool)
     {
         require(to != address(0));
 
-        address sender = messageSender;
         // The fee is deducted from the sender's balance, in addition to
         // the transferred quantity.
         uint fee = transferFeeIncurred(value);
@@ -245,14 +241,11 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
     /**
      * @notice ERC20 friendly transferFrom function.
      */
-    function transferFrom(address from, address to, uint value)
-        public
-        optionalProxy
+    function _transferFrom_byProxy(address sender, address from, address to, uint value)
+        internal
         returns (bool)
     {
         require(to != address(0));
-
-        address sender = messageSender;
 
         // The fee is deducted from the sender's balance, in addition to
         // the transferred quantity.

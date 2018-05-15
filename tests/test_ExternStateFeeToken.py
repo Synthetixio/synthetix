@@ -27,11 +27,13 @@ class TestExternStateFeeToken(HavvenTestCase):
 
     @classmethod
     def deployContracts(cls):
-        sources = ["contracts/ExternStateFeeToken.sol", "contracts/TokenState.sol"]
+        sources = ["contracts/ExternStateFeeToken.sol",
+                   "contracts/TokenState.sol",
+                   "tests/contracts/PublicESFT.sol"]
 
         compiled, cls.event_maps = cls.compileAndMapEvents(sources)
 
-        feetoken_abi = compiled['ExternStateFeeToken']['abi']
+        feetoken_abi = compiled['PublicESFT']['abi']
 
         proxy, _ = attempt_deploy(
             compiled, "Proxy", MASTER, [MASTER]
@@ -40,7 +42,7 @@ class TestExternStateFeeToken(HavvenTestCase):
 
         feetoken_event_dict = generate_topic_event_map(feetoken_abi)
         feetoken_contract, construction_txr = attempt_deploy(
-            compiled, "ExternStateFeeToken", MASTER,
+            compiled, "PublicESFT", MASTER,
             [proxy.address, "Test Fee Token", "FEE", UNIT // 20, MASTER, ZERO_ADDRESS, MASTER]
         )
 
