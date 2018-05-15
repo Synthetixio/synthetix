@@ -681,7 +681,6 @@ contract Havven is DestructibleExternStateToken {
      */
     function updatePrice(uint price, uint timeSent)
         external
-        optionalProxy
         onlyOracle  /* Should be callable only by the oracle. */
     {
         /* Must be the most recently sent price, but not too far in the future.
