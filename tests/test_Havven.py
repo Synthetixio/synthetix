@@ -2,9 +2,9 @@ import random
 
 from utils.deployutils import (
     W3, UNIT, MASTER, DUMMY,
-    mine_txs, attempt,
+    mine_txs, mine_tx,
     fresh_accounts, fresh_account,
-    compile_contracts, attempt_deploy,
+    attempt_deploy,
     take_snapshot, restore_snapshot,
     fast_forward, to_seconds
 )
@@ -95,6 +95,9 @@ class TestHavven(HavvenTestCase):
 
         cls.base_havven_price = UNIT
 
+    def updateHavvenPrice(self, sender, price, time):
+        mine_tx(self.havven_contract.functions.updatePrice(price, time).transfer({'from': sender}), 'updatePrice', 'Havven')
+
     ###
     # Test inherited Owned - Should be the same test_Owned.py
     ###
@@ -175,7 +178,7 @@ class TestHavven(HavvenTestCase):
 
         self.havven.endow(MASTER, alice, start_amt)
         self.havven.setWhitelisted(MASTER, alice, True)
-        self.havven.updatePrice(MASTER, UNIT, block_time()+1)
+        self.updateHavvenPrice(MASTER, UNIT, block_time()+1)
         self.havven.setIssuanceRatio(MASTER, UNIT)
         self.havven.issueNomins(alice, start_amt)
 
@@ -215,7 +218,7 @@ class TestHavven(HavvenTestCase):
 
         self.havven.endow(MASTER, alice, start_amt)
         self.havven.setWhitelisted(MASTER, alice, True)
-        self.havven.updatePrice(MASTER, UNIT, block_time()+1)
+        self.updateHavvenPrice(MASTER, UNIT, block_time()+1)
         self.havven.setIssuanceRatio(MASTER, UNIT)
         tx_receipt = self.havven.issueNomins(alice, start_amt)
 
@@ -262,7 +265,7 @@ class TestHavven(HavvenTestCase):
         # Alice will initially have 20 havvens
         self.havven.endow(MASTER, alice, 20 * UNIT)
         self.havven.setWhitelisted(MASTER, alice, True)
-        self.havven.updatePrice(MASTER, UNIT, block_time()+1)
+        self.updateHavvenPrice(MASTER, UNIT, block_time()+1)
         self.havven.setIssuanceRatio(MASTER, UNIT)
         self.havven.issueNomins(alice, 20 * UNIT)
 
@@ -273,7 +276,7 @@ class TestHavven(HavvenTestCase):
         time_remaining = self.havven.targetFeePeriodDurationSeconds() + self.havven.feePeriodStartTime() - block_time()
         fast_forward(time_remaining + 50)
         tx_receipt = self.havven.checkFeePeriodRollover(alice)
-        self.havven.updatePrice(MASTER, UNIT, block_time())
+        self.updateHavvenPrice(MASTER, UNIT, block_time())
         issue_receipt = self.havven.issueNomins(alice, 0) 
 
         self.assertEqual(self.havven.issuedNominLastTransferTimestamp(alice), block_time(issue_receipt['blockNumber']))
@@ -283,7 +286,7 @@ class TestHavven(HavvenTestCase):
         # roll over the full period
         fast_forward(fee_period + 50)
         tx_receipt = self.havven.checkFeePeriodRollover(MASTER)
-        self.havven.updatePrice(MASTER, UNIT, block_time()+1)
+        self.updateHavvenPrice(MASTER, UNIT, block_time()+1)
         transfer_receipt = self.havven.issueNomins(alice, 0)
 
         event = get_event_data_from_log(self.havven_event_dict, tx_receipt.logs[0])
@@ -317,7 +320,7 @@ class TestHavven(HavvenTestCase):
         n = 50
 
         self.havven.endow(MASTER, alice, n * UNIT)
-        self.havven.updatePrice(self.havven.oracle(), UNIT, block_time())
+        self.updateHavvenPrice(self.havven.oracle(), UNIT, block_time())
         self.havven.setWhitelisted(MASTER, alice, True)
         self.havven.issueNomins(alice, n * UNIT // 20)
         time_remaining = self.havven.targetFeePeriodDurationSeconds() + self.havven.feePeriodStartTime() - block_time()
@@ -351,7 +354,7 @@ class TestHavven(HavvenTestCase):
         self.havven.checkFeePeriodRollover(DUMMY)
 
         for i in range(10):
-            self.havven.updatePrice(MASTER, UNIT, block_time() + 1)
+            self.updateHavvenPrice(MASTER, UNIT, block_time() + 1)
             a_weight = random.random()
             b_weight = random.random()
             c_weight = random.random()
@@ -648,7 +651,7 @@ class TestHavven(HavvenTestCase):
         # Test whether repeatedly moving havvens between two parties will shift averages upwards
         alice = fresh_account()
         amount = UNIT * 100000
-        self.havven.updatePrice(MASTER, UNIT, block_time() + 1)
+        self.updateHavvenPrice(MASTER, UNIT, block_time() + 1)
         self.havven.setWhitelisted(MASTER, alice, True)
         self.havven.setIssuanceRatio(MASTER, UNIT)
         a_sum = 0

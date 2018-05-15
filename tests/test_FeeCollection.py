@@ -2,7 +2,7 @@ from utils.deployutils import (
     W3, UNIT, MASTER, DUMMY,
     fast_forward, fresh_accounts,
     take_snapshot, restore_snapshot,
-    attempt_deploy,
+    attempt_deploy, mine_tx,
     mine_txs
 )
 from utils.testutils import HavvenTestCase, ZERO_ADDRESS
@@ -74,6 +74,9 @@ class TestFeeCollection(HavvenTestCase):
         cls.fake_court = FakeCourtInterface(cls.fake_court_contract, 'FakeCourt')
         cls.fake_court.setNomin(MASTER, cls.nomin_contract.address)
 
+    def updateHavvenPrice(self, sender, price, time):
+        mine_tx(self.havven_contract.functions.updatePrice(price, time).transact({'from': sender}), 'updatePrice', 'Havven')
+
     # Scenarios to test
     # Basic:
     # people transferring nomins, other people collecting
@@ -107,7 +110,7 @@ class TestFeeCollection(HavvenTestCase):
             precision=5
         )
 
-        self.havven.updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
+        self.updateHavvenPrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
 
         fast_forward(self.havven.targetFeePeriodDurationSeconds() + 1)
         self.havven.checkFeePeriodRollover(DUMMY)
@@ -117,7 +120,7 @@ class TestFeeCollection(HavvenTestCase):
             self.assertEqual(self.havven.nominsIssued(addr), 0)
             self.assertEqual(self.nomin.balanceOf(addr), 0)
 
-        self.havven.updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
+        self.updateHavvenPrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
 
         for addr in hav_addr:
             self.havven.setWhitelisted(MASTER, addr, True)
@@ -132,7 +135,7 @@ class TestFeeCollection(HavvenTestCase):
         self.assertEqual(fee_pool, self.havven.lastFeesCollected())
         total_fees_collected = 0
 
-        self.havven.updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)  # ensure price not stale
+        self.updateHavvenPrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)  # ensure price not stale
         for n, addr in enumerate(hav_addr):
             self.havven.withdrawFeeEntitlement(addr)
             if percentage_havvens == 0:
@@ -186,7 +189,7 @@ class TestFeeCollection(HavvenTestCase):
             precision=5
         )
 
-        self.havven.updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 2)
+        self.updateHavvenPrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 2)
         self.nomin.generateFees(MASTER, 20 * UNIT)
 
         for addr in hav_addr:
@@ -213,7 +216,7 @@ class TestFeeCollection(HavvenTestCase):
 
         inital_pool = self.nomin.feePool()
         total_fees_collected = 0
-        self.havven.updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
+        self.updateHavvenPrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
 
         for addr in hav_addr:
             self.havven.withdrawFeeEntitlement(addr)
@@ -272,7 +275,7 @@ class TestFeeCollection(HavvenTestCase):
         addrs = [havven_holder, h_receiver]
         current_addr = False
         for i in range(6):
-            self.havven.updatePrice(self.havven.oracle(), h_price, self.havven.currentTime() + 1)
+            self.updateHavvenPrice(self.havven.oracle(), h_price, self.havven.currentTime() + 1)
             self.havven.issueNomins(addrs[current_addr], self.havven.remainingIssuanceRights(addrs[current_addr]))
             self.assertClose(self.nomin.totalSupply(), h_price * h_total_supply * h_percent * self.havven.issuanceRatio() // UNIT // UNIT)
             fast_forward(fee_period_duration // 6 - 5)
@@ -338,7 +341,7 @@ class TestFeeCollection(HavvenTestCase):
             precision=5
         )
 
-        self.havven.updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 2)
+        self.updateHavvenPrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 2)
         self.nomin.generateFees(MASTER, 20 * UNIT)
 
         for addr in hav_addr:
