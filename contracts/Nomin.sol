@@ -140,7 +140,6 @@ contract Nomin is ExternStateFeeToken {
      * and freeze its participation in further transactions. */
     function confiscateBalance(address target)
         external
-        optionalProxy
         onlyCourt
     {
         
@@ -179,7 +178,6 @@ contract Nomin is ExternStateFeeToken {
      * nomins from a target address */
     function issue(address target, uint amount)
         external
-        optionalProxy
         onlyHavven
     {
         state.setBalanceOf(target, safeAdd(state.balanceOf(target), amount));
@@ -192,7 +190,6 @@ contract Nomin is ExternStateFeeToken {
      * nomins from a target address */
     function burn(address target, uint amount)
         external
-        optionalProxy
         onlyHavven
     {
         state.setBalanceOf(target, safeSub(state.balanceOf(target), amount));

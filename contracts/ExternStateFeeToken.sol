@@ -225,18 +225,19 @@ contract ExternStateFeeToken is Emitter, SafeDecimalMath {
     {
         require(to != address(0));
 
+        address sender = messageSender;
         // The fee is deducted from the sender's balance, in addition to
         // the transferred quantity.
         uint fee = transferFeeIncurred(value);
         uint totalCharge = safeAdd(value, fee);
 
         // Insufficient balance will be handled by the safe subtraction.
-        state.setBalanceOf(messageSender, safeSub(state.balanceOf(messageSender), totalCharge));
+        state.setBalanceOf(sender, safeSub(state.balanceOf(sender), totalCharge));
         state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
         state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), fee));
 
-        emitTransfer(messageSender, to, value);
-        emitTransfer(messageSender, address(this), fee);
+        emitTransfer(sender, to, value);
+        emitTransfer(sender, address(this), fee);
 
         return true;
     }
@@ -251,6 +252,8 @@ contract ExternStateFeeToken is Emitter, SafeDecimalMath {
     {
         require(to != address(0));
 
+        address sender = messageSender;
+
         // The fee is deducted from the sender's balance, in addition to
         // the transferred quantity.
         uint fee = transferFeeIncurred(value);
@@ -258,7 +261,7 @@ contract ExternStateFeeToken is Emitter, SafeDecimalMath {
 
         // Insufficient balance will be handled by the safe subtraction.
         state.setBalanceOf(from, safeSub(state.balanceOf(from), totalCharge));
-        state.setAllowance(from, messageSender, safeSub(state.allowance(from, messageSender), totalCharge));
+        state.setAllowance(from, sender, safeSub(state.allowance(from, sender), totalCharge));
         state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
         state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), fee));
 

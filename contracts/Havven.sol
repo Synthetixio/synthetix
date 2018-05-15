@@ -376,12 +376,13 @@ contract Havven is DestructibleExternStateToken {
         optionalProxy
         returns (bool)
     {
+        address sender = messageSender;
         /* If they have enough available Havvens, it could be that
          * their havvens are escrowed, however the transfer would then
          * fail. This means that escrowed havvens are locked first,
          * and then the actual transferable ones. */
-        require(nominsIssued[messageSender] == 0 || value <= availableHavvens(messageSender));
-        uint senderPreBalance = state.balanceOf(messageSender);
+        require(nominsIssued[sender] == 0 || value <= availableHavvens(sender));
+        uint senderPreBalance = state.balanceOf(sender);
         uint recipientPreBalance = state.balanceOf(to);
 
         /* Perform the transfer: if there is a problem,
@@ -419,29 +420,30 @@ contract Havven is DestructibleExternStateToken {
         public
         optionalProxy
     {
+        address sender = messageSender;
         checkFeePeriodRollover();
         /* Do not deposit fees into frozen accounts. */
-        require(!nomin.frozen(messageSender));
+        require(!nomin.frozen(sender));
 
         /* Check the period has rolled over first. */
-        adjustIssuanceBalanceAverages(messageSender, nominsIssued[messageSender], nomin.totalSupply());
+        adjustIssuanceBalanceAverages(sender, nominsIssued[sender], nomin.totalSupply());
 
         /* Only allow accounts to withdraw fees once per period. */
-        require(!hasWithdrawnLastPeriodFees[messageSender]);
+        require(!hasWithdrawnLastPeriodFees[sender]);
         uint feesOwed = 0;
 
         uint lastTotalIssued = totalIssuedNominBalanceData.lastAverageBalance;
 
         if (lastTotalIssued > 0) {
-            feesOwed = safeDiv_dec(safeMul_dec(issuedNominBalanceData[messageSender].lastAverageBalance, lastFeesCollected), lastTotalIssued);
+            feesOwed = safeDiv_dec(safeMul_dec(issuedNominBalanceData[sender].lastAverageBalance, lastFeesCollected), lastTotalIssued);
         }
 
-        hasWithdrawnLastPeriodFees[messageSender] = true;
+        hasWithdrawnLastPeriodFees[sender] = true;
 
         if (feesOwed != 0) {
-            nomin.withdrawFee(messageSender, feesOwed);
+            nomin.withdrawFee(sender, feesOwed);
         }
-        emitFeesWithdrawn(messageSender, messageSender, feesOwed);
+        emitFeesWithdrawn(sender, sender, feesOwed);
 
     }
 
@@ -524,12 +526,14 @@ contract Havven is DestructibleExternStateToken {
         /* No need to check if price is stale, as it is checked in maxIssuanceRights. */
         public
     {
-        require(amount <= remainingIssuanceRights(messageSender));
+        address sender = messageSender;
+
+        require(amount <= remainingIssuanceRights(sender));
         uint lastTot = nomin.totalSupply();
-        uint issued = nominsIssued[messageSender];
-        nomin.issue(messageSender, amount);
-        nominsIssued[messageSender] = safeAdd(issued, amount);
-        adjustIssuanceBalanceAverages(messageSender, issued, lastTot);
+        uint issued = nominsIssued[sender];
+        nomin.issue(sender, amount);
+        nominsIssued[sender] = safeAdd(issued, amount);
+        adjustIssuanceBalanceAverages(sender, issued, lastTot);
     }
 
     function issueNominsToMax()
@@ -547,13 +551,15 @@ contract Havven is DestructibleExternStateToken {
         external
         optionalProxy
     {
+        address sender = messageSender;
+
         uint lastTot = nomin.totalSupply();
-        uint issued = nominsIssued[messageSender];
+        uint issued = nominsIssued[sender];
         /* nomin.burn does a safeSub on balance (so it will revert if there are not enough nomins). */
-        nomin.burn(messageSender, amount);
+        nomin.burn(sender, amount);
         /* This safe sub ensures amount <= number issued */
-        nominsIssued[messageSender] = safeSub(issued, amount);
-        adjustIssuanceBalanceAverages(messageSender, issued, lastTot);
+        nominsIssued[sender] = safeSub(issued, amount);
+        adjustIssuanceBalanceAverages(sender, issued, lastTot);
     }
 
     /**
@@ -582,7 +588,6 @@ contract Havven is DestructibleExternStateToken {
     function maxIssuanceRights(address issuer)
         view
         public
-        optionalProxy
         havvenPriceNotStale
         returns (uint)
     {
@@ -590,7 +595,7 @@ contract Havven is DestructibleExternStateToken {
             return 0;
         }
         if (escrow != HavvenEscrow(0)) {
-            return safeMul_dec(HAVtoUSD(safeAdd(balanceOf(issuer), escrow.balanceOf(messageSender))), issuanceRatio);
+            return safeMul_dec(HAVtoUSD(safeAdd(balanceOf(issuer), escrow.balanceOf(issuer))), issuanceRatio);
         } else {
             return safeMul_dec(HAVtoUSD(balanceOf(issuer)), issuanceRatio);
         }
@@ -602,7 +607,6 @@ contract Havven is DestructibleExternStateToken {
     function remainingIssuanceRights(address issuer)
         view
         public
-        optionalProxy
         returns (uint)
     {
         uint issued = nominsIssued[issuer];
@@ -620,7 +624,6 @@ contract Havven is DestructibleExternStateToken {
     function lockedHavvens(address account)
         public
         view
-        optionalProxy
         returns (uint)
     {
         if (nominsIssued[account] == 0) {
@@ -635,7 +638,6 @@ contract Havven is DestructibleExternStateToken {
     function availableHavvens(address account)
         public
         view
-        optionalProxy
         returns (uint)
     {
         uint locked = lockedHavvens(account);
@@ -657,7 +659,6 @@ contract Havven is DestructibleExternStateToken {
     function HAVtoUSD(uint hav_dec)
         public
         view
-        optionalProxy
         havvenPriceNotStale
         returns (uint)
     {
@@ -670,7 +671,6 @@ contract Havven is DestructibleExternStateToken {
     function USDtoHAV(uint usd_dec)
         public
         view
-        optionalProxy
         havvenPriceNotStale
         returns (uint)
     {
@@ -703,7 +703,6 @@ contract Havven is DestructibleExternStateToken {
     function havvenPriceIsStale()
         public
         view
-        optionalProxy
         returns (bool)
     {
         return safeAdd(lastHavvenPriceUpdateTime, havvenPriceStalePeriod) < now;
