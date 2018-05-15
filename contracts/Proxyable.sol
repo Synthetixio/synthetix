@@ -1,3 +1,29 @@
+/*
+-----------------------------------------------------------------
+FILE INFORMATION
+-----------------------------------------------------------------
+
+file:       Proxyable.sol
+version:    1.1
+author:     Anton Jurisevic
+
+date:       2018-05-15
+
+checked:    Mike Spain
+approved:   Samuel Brooks
+
+-----------------------------------------------------------------
+MODULE DESCRIPTION
+-----------------------------------------------------------------
+
+A proxyable contract that works hand in hand with the Proxy contract
+to allow for anyone to interact with the underlying contract both
+directly and through the proxy.
+
+-----------------------------------------------------------------
+*/
+
+
 pragma solidity ^0.4.23;
 
 import "contracts/Owned.sol";
@@ -18,7 +44,7 @@ contract Proxyable is Owned {
         public
     {
         proxy = Proxy(_proxy);
-        emit ProxyChanged(_proxy);
+        emit ProxyUpdated(_proxy);
     }
 
     function setProxy(address _proxy)
@@ -26,7 +52,7 @@ contract Proxyable is Owned {
         onlyOwner
     {
         proxy = Proxy(_proxy);
-        emit ProxyChanged(_proxy);
+        emit ProxyUpdated(_proxy);
     }
 
     function setMessageSender(address sender)
@@ -67,6 +93,6 @@ contract Proxyable is Owned {
         _;
     }
 
-    event ProxyChanged(address _proxy);
+    event ProxyUpdated(address _proxy);
 
 }

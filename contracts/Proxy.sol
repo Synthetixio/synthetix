@@ -2,11 +2,12 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
+
 file:       Proxy.sol
-version:    0.3
+version:    1.1
 author:     Anton Jurisevic
 
-date:       2018-2-28
+date:       2018-05-15
 
 checked:    Mike Spain
 approved:   Samuel Brooks

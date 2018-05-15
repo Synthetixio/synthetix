@@ -2,11 +2,12 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
+
 file:       EmitterBase.sol
-version:    1.0
+version:    1.1
 author:     Martin Zdarsky-Jones
 
-date:       2018-5-4
+date:       2018-05-15
 
 checked:
 approved:
@@ -49,16 +50,7 @@ pragma solidity 0.4.23;
 import "contracts/Proxyable.sol";
 
 contract EmitterBase is Proxyable {
-
-    /*** CONSTRUCTOR ***/
-    constructor(address _proxy, address _owner)
-        Proxyable(_proxy, _owner)
-        public
-    {
-
-    }
-
-    /*
+    /**
      * This structure hold data for all parameters and topic of an event.
      * It also holds information of how much data is stored there.
      */
@@ -70,7 +62,7 @@ contract EmitterBase is Proxyable {
         EventDataItem[] items;
     }
 
-    /*
+    /**
      * This struct represents one event parameter of any kind (uint, string, address, ...)
      */
     struct EventDataItem {
@@ -79,8 +71,16 @@ contract EmitterBase is Proxyable {
         bytes32[] payload;
     }
 
-    /*
-     * Once the data structure is filled with parameters,
+    /**
+     * @notice The constructor for the EmitterBase
+     */
+    constructor(address _proxy, address _owner)
+        Proxyable(_proxy, _owner)
+        public
+    {}
+
+    /**
+     * @notice Once the data structure is filled with parameters,
      * this method will construct the event data payload and will pass it
      * on proxy along with event topics.
      */
@@ -114,8 +114,8 @@ contract EmitterBase is Proxyable {
         }
     }
 
-    /*
-     * This method creates data structure for building up data payload for an event.
+    /**
+     * @notice This method creates data structure for building up data payload for an event.
      * methodsignature determines event type, i.e. "MyEvent(string,uint256)"
      * maxBuffer value must be big enough to store all parameters.
      */
@@ -279,8 +279,8 @@ contract EmitterBase is Proxyable {
     }
 
     function addTopic(EventData memory data, bytes32 _topic)
-    private
-    pure
+        private
+        pure
     {
         data.topics[data.topicsIndex] = _topic;
         data.topicsIndex++;

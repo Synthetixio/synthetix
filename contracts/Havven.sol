@@ -2,12 +2,13 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
+
 file:       Havven.sol
 version:    1.1
 author:     Anton Jurisevic
             Dominic Romanowski
 
-date:       2018-05-02
+date:       2018-05-15
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -228,6 +229,7 @@ contract Havven is DestructibleExternStateToken {
         optionalProxy_onlyOwner
     {
         nomin = _nomin;
+        emitNominChanged(_nomin);
     }
 
     /**
@@ -239,6 +241,7 @@ contract Havven is DestructibleExternStateToken {
         optionalProxy_onlyOwner
     {
         escrow = _escrow;
+        emitEscrowChanged(_escrow);
     }
 
     /**
