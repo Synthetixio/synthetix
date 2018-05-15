@@ -158,7 +158,7 @@ contract Nomin is ExternStateFeeToken {
         state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), balance));
         state.setBalanceOf(target, 0);
         frozen[target] = true;
-        emitAccountFrozen(target, target, balance);
+        emitAccountFrozen(target, balance);
         emitTransfer(target, address(this), balance);
     }
 
@@ -170,7 +170,7 @@ contract Nomin is ExternStateFeeToken {
     {
         if (frozen[target] && Nomin(target) != this) {
             frozen[target] = false;
-            emitAccountUnfrozen(target, target);
+            emitAccountUnfrozen(target);
         }
     }
 
@@ -212,4 +212,53 @@ contract Nomin is ExternStateFeeToken {
         _;
     }
 
+    /* ========== EVENTS ========== */
+
+    event CourtUpdated(address newCourt);
+    function emitCourtUpdated(address newCourt) internal {
+        bytes memory data = abi.encode(newCourt);
+        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
+            data, 1, keccak256("CourtUpdated(address)"));
+        require(address(proxy).call(call_args));
+    }
+
+    event HavvenUpdated(address newHavven);
+    function emitHavvenUpdated(address newHavven) internal {
+        bytes memory data = abi.encode(newHavven);
+        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
+            data, 1, keccak256("HavvenUpdated(address)"));
+        require(address(proxy).call(call_args));
+    }
+
+    event AccountFrozen(address target, address indexed targetIndex, uint balance);
+    function emitAccountFrozen(address target, uint balance) internal {
+        bytes memory data = abi.encode(target, balance);
+        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
+            data, 2, keccak256("AccountFrozen(address,address,uint256)"), bytes32(target));
+        require(address(proxy).call(call_args));
+    }
+
+    event AccountUnfrozen(address target, address indexed targetIndex);
+    function emitAccountUnfrozen(address target) internal {
+        bytes memory data = abi.encode(target);
+        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
+            data, 2, keccak256("AccountUnfrozen(address,address)"), bytes32(target));
+        require(address(proxy).call(call_args));
+    }
+
+    event Issued(address target, uint amount);
+    function emitIssued(address target, uint amount) internal {
+        bytes memory data = abi.encode(target, amount);
+        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
+            data, 1, keccak256("Issued(address,address)"));
+        require(address(proxy).call(call_args));
+    }
+
+    event Burned(address target, uint amount); 
+    function emitBurned(address target, uint amount) internal {
+        bytes memory data = abi.encode(target, amount);
+        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
+            data, 1, keccak256("Burned(address)"));
+        require(address(proxy).call(call_args));
+    }
 }

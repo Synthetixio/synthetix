@@ -37,108 +37,82 @@ pragma solidity ^0.4.23;
 import "contracts/Owned.sol";
 import "contracts/Proxyable.sol";
 
+
 contract Proxy is Owned {
     Proxyable public target;
+
+    event TargetUpdated(Proxyable _new_address);
+
+    modifier onlyTarget() {
+        require(Proxyable(msg.sender) == target,
+                "caller is not proxy target");
+        _;
+    }
 
     constructor(address _owner)
         Owned(_owner)
         public
     {}
 
-    function setTarget(address _target)
+    function setTarget(Proxyable _target)
         external
         onlyOwner
     {
-        require(_target != address(0));
-        target = Proxyable(_target);
-        emit TargetChanged(_target);
+        target = _target;
+        emit TargetUpdated(_target);
     }
 
-    function ()
-        public
+    function _emit(bytes callData, uint numTopics,
+                   bytes32 topic1, bytes32 topic2,
+                   bytes32 topic3, bytes32 topic4)
+        external
+        onlyTarget
+    {
+        uint size = callData.length;
+        bytes memory _callData = callData;
+
+        assembly {
+            /* The first 32 bytes of callData contain its length (as specified by the abi). 
+             * Length is assumed to be a uint256 and therefore maximum of 32 bytes
+             * in length. It is also leftpadded to be a multiple of 32 bytes.
+             * This means moving call_data across 32 bytes guarantees we correctly access
+             * the data itself. */
+            switch numTopics
+            case 0 {
+                log0(add(_callData, 32), size)
+            } 
+            case 1 {
+                log1(add(_callData, 32), size, topic1)
+            }
+            case 2 {
+                log2(add(_callData, 32), size, topic1, topic2)
+            }
+            case 3 {
+                log3(add(_callData, 32), size, topic1, topic2, topic3)
+            }
+            case 4 {
+                log4(add(_callData, 32), size, topic1, topic2, topic3, topic4)
+            }
+        }
+    }
+
+    function()
+        external
         payable
     {
         target.setMessageSender(msg.sender);
         assembly {
-            // Copy call data into free memory region.
+            /* Copy call data into free memory region. */
             let free_ptr := mload(0x40)
             calldatacopy(free_ptr, 0, calldatasize)
 
-            // Forward all gas, ether, and data to the target contract.
+            /* Forward all gas, ether, and data to the target contract. */
             let result := call(gas, sload(target_slot), callvalue, free_ptr, calldatasize, 0, 0)
             returndatacopy(free_ptr, 0, returndatasize)
 
-            // Revert if the call failed, otherwise return the result.
+            /* Revert if the call failed, otherwise return the result. */
             if iszero(result) { revert(free_ptr, calldatasize) }
             return(free_ptr, returndatasize)
         }
     }
-
-    // only the current underlying contract is allowed to trigger events from this proxy.
-    modifier onlyCurrentContract
-    {
-        require(Proxyable(msg.sender) == target);
-        _;
-    }
-
-    function emitOnProxy(bytes payload)
-        onlyCurrentContract
-        external
-    {
-        uint size = payload.length;
-        bytes memory stream = payload;
-        assembly {
-            log0(add(stream, 32), size)
-        }
-    }
-
-    function emitOnProxy(bytes payload, bytes32 topic)
-        onlyCurrentContract
-        external
-    {
-        uint size = payload.length;
-        bytes memory stream = payload;
-        assembly {
-            log1(add(stream, 32), size, topic)
-        }
-    }
-
-    function emitOnProxy(bytes payload, bytes32 topic1, bytes32 topic2)
-        onlyCurrentContract
-        external
-    {
-        uint size = payload.length;
-        bytes memory stream = payload;
-        assembly {
-            log2(add(stream, 32), size, topic1, topic2)
-        }
-    }
-
-    function emitOnProxy(bytes payload, bytes32 topic1, bytes32 topic2, bytes32 topic3)
-        onlyCurrentContract
-        external
-    {
-        uint size = payload.length;
-        bytes memory stream = payload;
-        assembly {
-            log3(add(stream, 32), size, topic1, topic2, topic3)
-        }
-    }
-
-    function emitOnProxy(bytes payload, bytes32 topic1, bytes32 topic2, bytes32 topic3, bytes32 topic4)
-        onlyCurrentContract
-        external
-    {
-        uint size = payload.length;
-        bytes memory stream = payload;
-        assembly {
-            log4(add(stream, 32), size, topic1, topic2, topic3, topic4)
-        }
-    }
-
-    /* ========== EVENTS ========== */
-
-    event OwnerChanged(address oldOwner, address newOwner);
-    event OwnerNominated(address newOwner);
-    event TargetChanged(address targetAddress);
 }

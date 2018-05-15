@@ -32,7 +32,7 @@ pragma solidity 0.4.23;
 
 
 import "contracts/SafeDecimalMath.sol";
-import "contracts/EmitterAssembly.sol";
+import "contracts/Proxyable.sol";
 import "contracts/TokenState.sol";
 
 
@@ -40,7 +40,7 @@ import "contracts/TokenState.sol";
  * @title ERC20 Token contract, with detached state.
  * Additionally charges fees on each transfer.
  */
-contract ExternStateFeeToken is EmitterAssembly, SafeDecimalMath {
+contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -73,7 +73,7 @@ contract ExternStateFeeToken is EmitterAssembly, SafeDecimalMath {
      */
     constructor(address _proxy, string _name, string _symbol, uint _transferFeeRate, address _feeAuthority,
                 TokenState _state, address _owner)
-        EmitterAssembly(_proxy, _owner)
+        Proxyable(_proxy, _owner)
         public
     {
         if (_state == TokenState(0)) {
@@ -307,7 +307,7 @@ contract ExternStateFeeToken is EmitterAssembly, SafeDecimalMath {
         state.setBalanceOf(address(this), safeSub(state.balanceOf(address(this)), value));
         state.setBalanceOf(account, safeAdd(state.balanceOf(account), value));
 
-        emitFeesWithdrawn(account, account, value);
+        emitFeesWithdrawn(account, value);
         emitTransfer(address(this), account, value);
 
         return true;
@@ -329,10 +329,67 @@ contract ExternStateFeeToken is EmitterAssembly, SafeDecimalMath {
         state.setBalanceOf(messageSender, safeSub(balance, n));
         state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), n));
 
-        emitFeesDonated(messageSender, messageSender, n);
+        emitFeesDonated(messageSender, n);
         emitTransfer(messageSender, address(this), n);
 
         return true;
     }
 
+    /* ========== EVENTS ========== */
+
+    event Transfer(address indexed from, address indexed to, uint value);
+    function emitTransfer(address from, address to, uint value) internal {
+        bytes memory data = abi.encode(value);
+        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
+            data, 3, keccak256("Transfer(address,address,uint256)"), bytes32(to), bytes32(from));
+        require(address(proxy).call(call_args));
+    }
+
+    event Approval(address indexed owner, address indexed spender, uint value);
+    function emitApproval(address owner, address spender, uint value) internal {
+        bytes memory data = abi.encode(value);
+        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
+            data, 3, keccak256("Approval(address,address,uint256)"), bytes32(owner), bytes32(spender));
+        require(address(proxy).call(call_args));
+    }
+
+    event TransferFeeRateUpdated(uint newFeeRate);
+    function emitTransferFeeRateUpdated(uint newFeeRate) internal {
+        bytes memory data = abi.encode(newFeeRate);
+        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
+            data, 1, keccak256("TransferFeeRateUpdated(uint256)"));
+        require(address(proxy).call(call_args));
+    }
+
+    event FeeAuthorityUpdated(address newFeeAuthority);
+    function emitFeeAuthorityUpdated(address newFeeAuthority) internal {
+        bytes memory data = abi.encode(newFeeAuthority);
+        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
+            data, 1, keccak256("FeeAuthorityUpdated(address)"));
+        require(address(proxy).call(call_args));
+    } 
+
+    event StateUpdated(address newState);
+    function emitStateUpdated(address newState) internal {
+        bytes memory data = abi.encode(newState);
+        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
+            data, 1, keccak256("StateUpdated(address)"));
+        require(address(proxy).call(call_args));
+    }
+
+    event FeesWithdrawn(address account, address indexed accountIndex, uint value);
+    function emitFeesWithdrawn(address account, uint value) internal {
+        bytes memory data = abi.encode(account, value);
+        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
+            data, 2, keccak256("FeesWithdrawn(address,address,uint256)"), bytes32(account));
+        require(address(proxy).call(call_args));
+    }
+
+    event FeesDonated(address donor, address indexed donorIndex, uint value);
+    function emitFeesDonated(address donor, uint value) internal {
+        bytes memory data = abi.encode(donor, value);
+        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
+            data, 2, keccak256("FeesDonated(address,address,uint256)"), bytes32(donor));
+        require(address(proxy).call(call_args));
+    }
 }

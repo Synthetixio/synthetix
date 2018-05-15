@@ -438,7 +438,7 @@ contract Havven is DestructibleExternStateToken {
         if (feesOwed != 0) {
             nomin.withdrawFee(messageSender, feesOwed);
         }
-        emitFeesWithdrawn(messageSender, messageSender, feesOwed);
+        emitFeesWithdrawn(messageSender, feesOwed);
 
     }
 
@@ -688,7 +688,7 @@ contract Havven is DestructibleExternStateToken {
 
         havvenPrice = price;
         lastHavvenPriceUpdateTime = timeSent;
-        emitPriceUpdated(price);
+        emitPriceUpdated(price, timeSent);
 
         /* Check the fee period rollover within this as the price should be pushed every 15min. */
         checkFeePeriodRollover();
@@ -726,4 +726,45 @@ contract Havven is DestructibleExternStateToken {
         _;
     }
 
+    /* ========== EVENTS ========== */
+
+    event PriceUpdated(uint price, uint timestamp);
+    function emitPriceUpdated(uint price, uint timestamp) internal {
+        bytes memory data = abi.encode(price, timestamp);
+        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
+            data, 1, keccak256("PriceUpdated(uint256,uint256)"));
+        require(address(proxy).call(call_args));
+    } 
+
+    event FeePeriodRollover(uint timestamp);
+    function emitFeePeriodRollover(uint timestamp) internal {
+        bytes memory data = abi.encode(timestamp);
+        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
+            data, 1, keccak256("FeePeriodRollover(uint256)"));
+        require(address(proxy).call(call_args));
+    } 
+
+    event FeePeriodDurationUpdated(uint duration);
+    function emitFeePeriodDurationUpdated(uint duration) internal {
+        bytes memory data = abi.encode(duration);
+        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
+            data, 1, keccak256("FeePeriodDurationUpdated(uint256)"));
+        require(address(proxy).call(call_args));
+    } 
+
+    event FeesWithdrawn(address account, address indexed accountIndex, uint value);
+    function emitFeesWithdrawn(address account, uint value) internal {
+        bytes memory data = abi.encode(account, value);
+        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
+            data, 2, keccak256("FeesWithdrawn(address,address,uint256)"), bytes32(account));
+        require(address(proxy).call(call_args));
+    }
+
+    event OracleUpdated(address newOracle);
+    function emitOracleUpdated(address newOracle) internal {
+        bytes memory data = abi.encode(newOracle);
+        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
+            data, 1, keccak256("FeePeriodDurationUpdated(address)"));
+        require(address(proxy).call(call_args));
+    }
 }

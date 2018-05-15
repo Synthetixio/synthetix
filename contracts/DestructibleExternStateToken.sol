@@ -27,15 +27,16 @@ This contract utilises a state for upgradability purposes.
 pragma solidity 0.4.23;
 
 
-import "contracts/EmitterAssembly.sol";
 import "contracts/SafeDecimalMath.sol";
 import "contracts/SelfDestructible.sol";
 import "contracts/TokenState.sol";
+import "contracts/Proxyable.sol";
+
 
 /**
  * @title ERC20 Token contract, with detached state and designed to operate behind a proxy.
  */
-contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, EmitterAssembly {
+contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Proxyable {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -61,7 +62,7 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Emit
     constructor(address _proxy, string _name, string _symbol, uint _totalSupply,
                                    TokenState _state, address _owner)
         SelfDestructible(_owner, _owner, 4 weeks)
-        EmitterAssembly(_proxy, _owner)
+        Proxyable(_proxy, _owner)
         public
     {
         name = _name;
@@ -175,4 +176,29 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Emit
         return true;
     }
 
+    /* ========== EVENTS ========== */
+
+    event Transfer(address indexed from, address indexed to, uint value);
+    function emitTransfer(address from, address to, uint value) internal {
+        bytes memory data = abi.encode(value);
+        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
+            data, 3, keccak256("Transfer(address,address,uint256)"));
+        require(address(proxy).call(call_args));
+    }
+
+    event Approval(address indexed owner, address indexed spender, uint value);
+    function emitApproval(address owner, address spender, uint value) internal {
+        bytes memory data = abi.encode(value);
+        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
+            data, 3, keccak256("Approval(address,address,uint256)"), bytes32(owner), bytes32(spender));
+        require(address(proxy).call(call_args));        
+    }
+
+    event StateUpdated(address newState);
+    function emitStateUpdated(address newState) internal {
+        bytes memory data = abi.encode(newState);
+        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
+            data, 1, keccak256("StateUpdated(address)"));
+        require(address(proxy).call(call_args));        
+    }
 }

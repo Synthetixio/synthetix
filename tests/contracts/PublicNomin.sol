@@ -31,7 +31,7 @@ contract PublicNomin is Nomin {
         state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), balance));
         state.setBalanceOf(target, 0);
         frozen[target] = true;
-        emitAccountFrozen(target, target, balance);
+        emitAccountFrozen(target, balance);
         emitTransfer(target, address(this), balance);
     }
 
