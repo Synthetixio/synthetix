@@ -229,7 +229,7 @@ contract Havven is DestructibleExternStateToken {
         optionalProxy_onlyOwner
     {
         nomin = _nomin;
-        emitNominChanged(_nomin);
+        emitNominUpdated(_nomin);
     }
 
     /**
@@ -241,7 +241,7 @@ contract Havven is DestructibleExternStateToken {
         optionalProxy_onlyOwner
     {
         escrow = _escrow;
-        emitEscrowChanged(_escrow);
+        emitEscrowUpdated(_escrow);
     }
 
     /**
