@@ -29,8 +29,8 @@ class HavvenInterface(DestructibleExternStateTokenInterface):
 
         # account specific getters
         self.hasWithdrawnLastPeriodFees = lambda acc: self.contract.functions.hasWithdrawnLastPeriodFees(acc).call()
-        self.whitelistedIssuers = lambda acc: self.contract.functions.whitelistedIssuers(acc).call()
-        self.nominsIssued = lambda acc: self.contract.functions.nominsIssued(acc).call() 
+        self.whitelistedIssuer = lambda acc: self.contract.functions.whitelistedIssuer(acc).call()
+        self.nominsIssued = lambda acc: self.contract.functions.nominsIssued(acc).call()
         self.issuedNominCurrentBalanceSum = lambda acc: self.contract.functions.issuedNominCurrentBalanceSum(acc).call()
         self.issuedNominLastAverageBalance = lambda acc: self.contract.functions.issuedNominLastAverageBalance(acc).call()
         self.issuedNominLastTransferTimestamp = lambda acc: self.contract.functions.issuedNominLastTransferTimestamp(acc).call()
