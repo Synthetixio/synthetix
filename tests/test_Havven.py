@@ -96,7 +96,7 @@ class TestHavven(HavvenTestCase):
         cls.base_havven_price = UNIT
 
     def updateHavvenPrice(self, sender, price, time):
-        mine_tx(self.havven_contract.functions.updatePrice(price, time).transfer({'from': sender}), 'updatePrice', 'Havven')
+        mine_tx(self.havven_contract.functions.updatePrice(price, time).transact({'from': sender}), 'updatePrice', 'Havven')
 
     ###
     # Test inherited Owned - Should be the same test_Owned.py
