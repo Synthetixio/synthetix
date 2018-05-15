@@ -382,12 +382,9 @@ contract Havven is DestructibleExternStateToken {
          * fail. This means that escrowed havvens are locked first,
          * and then the actual transferable ones. */
         require(nominsIssued[sender] == 0 || value <= availableHavvens(sender));
-        uint senderPreBalance = state.balanceOf(sender);
-        uint recipientPreBalance = state.balanceOf(to);
-
         /* Perform the transfer: if there is a problem,
          * an exception will be thrown in this call. */
-        super.transfer(to, value);
+        _transfer_byProxy(sender, to, value);
 
         return true;
     }
@@ -401,13 +398,11 @@ contract Havven is DestructibleExternStateToken {
         optionalProxy
         returns (bool)
     {
-        require(nominsIssued[messageSender] == 0 || value <= availableHavvens(from));
-        uint senderPreBalance = state.balanceOf(from);
-        uint recipientPreBalance = state.balanceOf(to);
-
+        address sender = messageSender;
+        require(nominsIssued[sender] == 0 || value <= availableHavvens(from));
         /* Perform the transfer: if there is a problem,
          * an exception will be thrown in this call. */
-        super.transferFrom(from, to, value);
+        _transferFrom_byProxy(sender, from, to, value);
 
         return true;
     }
@@ -716,7 +711,7 @@ contract Havven is DestructibleExternStateToken {
 
     modifier onlyOracle
     {
-        require(messageSender == oracle);
+        require(msg.sender == oracle);
         _;
     }
 

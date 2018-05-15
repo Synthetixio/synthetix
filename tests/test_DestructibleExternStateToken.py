@@ -28,7 +28,8 @@ class TestDestructibleExternStateToken(HavvenTestCase):
 
     @classmethod
     def deploy_contracts(cls):
-        sources = ['contracts/DestructibleExternStateToken.sol',
+        sources = ['tests/contracts/PublicDEST.sol',
+                   'contracts/DestructibleExternStateToken.sol',
                    'contracts/TokenState.sol', 'contracts/Proxy.sol']
 
         compiled, cls.event_maps = cls.compileAndMapEvents(sources)
@@ -37,11 +38,11 @@ class TestDestructibleExternStateToken(HavvenTestCase):
             compiled, "Proxy", MASTER, [MASTER]
         )
 
-        token_abi = compiled['DestructibleExternStateToken']['abi']
+        token_abi = compiled['PublicDEST']['abi']
 
         token_event_dict = generate_topic_event_map(token_abi)
         token_contract, construction_txr = attempt_deploy(
-            compiled, 'DestructibleExternStateToken', MASTER,
+            compiled, 'PublicDEST', MASTER,
             [proxy_contract.address, "Test Token", "TEST", 1000 * UNIT, ZERO_ADDRESS, MASTER]
         )
 

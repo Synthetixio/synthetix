@@ -122,14 +122,11 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Prox
      * @dev Perform an ERC20 token transfer. Designed to be called by transfer functions possessing
      * the onlyProxy or optionalProxy modifiers.
      */
-    function transfer(address to, uint value)
-        public
-        optionalProxy
+    function _transfer_byProxy(address sender, address to, uint value)
+        internal
         returns (bool)
     {
         require(to != address(0));
-
-        address sender = messageSender;
 
         /* Insufficient balance will be handled by the safe subtraction. */
         state.setBalanceOf(sender, safeSub(state.balanceOf(sender), value));
@@ -144,14 +141,11 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Prox
      * @dev Perform an ERC20 token transferFrom. Designed to be called by transferFrom functions
      * possessing the optionalProxy or optionalProxy modifiers.
      */
-    function transferFrom(address from, address to, uint value)
-        public
-        optionalProxy
+    function _transferFrom_byProxy(address sender, address from, address to, uint value)
+        internal
         returns (bool)
     {
         require(to != address(0));
-
-        address sender = messageSender;
 
         /* Insufficient balance will be handled by the safe subtraction. */
         state.setBalanceOf(from, safeSub(state.balanceOf(from), value));
