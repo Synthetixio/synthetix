@@ -15,7 +15,7 @@ approved:
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
-An Emittor contract, to be inherited by other contracts.
+An EmitterAssembly contract, to be inherited by other contracts.
 The events are separated from the actual contract so that they
 could be emitted from the proxy in later implementations.
 
@@ -29,7 +29,7 @@ import "./Proxyable.sol";
 /**
  * @title A contract holding convenience methods for emitting events.
  */
-contract Emittor is Proxyable {
+contract EmitterAssembly is Proxyable {
 
     /*** CONSTRUCTOR ***/
     constructor(address _proxy, address _owner)
