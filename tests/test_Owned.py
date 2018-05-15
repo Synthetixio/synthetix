@@ -1,13 +1,14 @@
 from utils.deployutils import (
     MASTER, DUMMY,
-    compile_contracts, attempt_deploy, mine_tx, 
+    attempt_deploy,
     take_snapshot, restore_snapshot
 )
 from utils.testutils import (
-    HavvenTestCase, ZERO_ADDRESS,
-    generate_topic_event_map, get_event_data_from_log
+    HavvenTestCase, ZERO_ADDRESS
 )
 from tests.contract_interfaces.owned_interface import OwnedInterface
+
+
 
 
 def setUpModule():
@@ -27,11 +28,13 @@ class TestOwned(HavvenTestCase):
 
     @classmethod
     def setUpClass(cls):
-        source = ["contracts/Owned.sol"]
-        cls.compiled, cls.event_maps = cls.compileAndMapEvents(source)
+        sources = ["contracts/Owned.sol"]
+
+        cls.compiled, cls.event_maps = cls.compileAndMapEvents(sources)
         cls.event_map = cls.event_maps['Owned']
+
         cls.owned_contract, cls.deploy_tx = attempt_deploy(cls.compiled, 'Owned', MASTER, [MASTER])
-        cls.owned = OwnedInterface(cls.owned_contract, 'Owned')
+        cls.owned = OwnedInterface(cls.owned_contract, "Owned")
 
     def test_constructor(self):
         self.assertEqual(self.owned.owner(), MASTER)
@@ -40,7 +43,8 @@ class TestOwned(HavvenTestCase):
                                "OwnerChanged",
                                self.event_map,
                                {"oldOwner": ZERO_ADDRESS,
-                                "newOwner": MASTER})
+                                "newOwner": MASTER},
+                               location=self.owned_contract.address)
 
     def test_change_owner(self):
         old_owner = self.owned.owner()
@@ -55,7 +59,8 @@ class TestOwned(HavvenTestCase):
         self.assertEventEquals(nominated_tx.logs[0],
                                "OwnerNominated",
                                self.event_map,
-                               {"newOwner": new_owner})
+                               {"newOwner": new_owner},
+                               location=self.owned_contract.address)
 
         # Ensure owner unchanged, nominated owner was set properly.
         self.assertEqual(self.owned.owner(), old_owner)
@@ -72,7 +77,8 @@ class TestOwned(HavvenTestCase):
                                "OwnerChanged",
                                self.event_map,
                                {"oldOwner": old_owner,
-                                "newOwner": new_owner})
+                                "newOwner": new_owner},
+                               location=self.owned_contract.address)
 
         # Ensure owner changed, nominated owner reset to zero.
         self.assertEqual(self.owned.nominatedOwner(), ZERO_ADDRESS)

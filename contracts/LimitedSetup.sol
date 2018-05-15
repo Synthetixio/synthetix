@@ -2,11 +2,12 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
+
 file:       LimitedSetup.sol
-version:    1.0
+version:    1.1
 author:     Anton Jurisevic
 
-date:       2018-2-13
+date:       2018-05-15
 
 checked:    Dominic Romanowski
 approved:   Samuel Brooks

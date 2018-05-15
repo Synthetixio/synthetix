@@ -1,8 +1,8 @@
 from utils.deployutils import (
     W3, UNIT, MASTER, DUMMY,
     fresh_account, fresh_accounts,
-    compile_contracts, attempt_deploy, mine_tx,
-    take_snapshot, restore_snapshot, fast_forward
+    compile_contracts, attempt_deploy, mine_txs,
+    take_snapshot, restore_snapshot
 )
 from utils.testutils import (
     HavvenTestCase, ZERO_ADDRESS,
@@ -12,7 +12,6 @@ from tests.contract_interfaces.nomin_interface import PublicNominInterface
 from tests.contract_interfaces.havven_interface import HavvenInterface
 from tests.contract_interfaces.court_interface import FakeCourtInterface
 
-SOURCES = ["tests/contracts/PublicNomin.sol", "tests/contracts/FakeCourt.sol", "contracts/Havven.sol"]
 
 
 def setUpModule():
@@ -30,45 +29,59 @@ class TestNomin(HavvenTestCase):
     def tearDown(self):
         restore_snapshot(self.snapshot)
 
-    @staticmethod
-    def deployContracts():
-        compiled = compile_contracts(SOURCES, remappings=['""=contracts'])
+    @classmethod
+    def deployContracts(cls):
+        sources = ["tests/contracts/PublicNomin.sol", "tests/contracts/FakeCourt.sol", "contracts/Havven.sol"]
 
-        nomin_abi = compiled['PublicNomin']['abi']
-        nomin_event_dict = generate_topic_event_map(nomin_abi)
+        compiled, cls.event_maps = cls.compileAndMapEvents(sources)
+
+        havven_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
+        nomin_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
+        proxied_havven = W3.eth.contract(address=havven_proxy.address, abi=compiled['Havven']['abi'])
+        proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['PublicNomin']['abi'])
 
         nomin_contract, _ = attempt_deploy(
-            compiled, 'PublicNomin', MASTER, [MASTER, MASTER, ZERO_ADDRESS]
+            compiled, 'PublicNomin', MASTER, [nomin_proxy.address, MASTER, MASTER, ZERO_ADDRESS]
         )
 
         havven_contract, _ = attempt_deploy(
-            compiled, "Havven", MASTER, [ZERO_ADDRESS, MASTER, MASTER]
+            compiled, "Havven", MASTER, [havven_proxy.address, ZERO_ADDRESS, MASTER, MASTER, UNIT//2]
         )
 
         fake_court, _ = attempt_deploy(compiled, 'FakeCourt', MASTER, [])
 
-        return nomin_contract, nomin_event_dict, havven_contract, fake_court
+        mine_txs([
+            havven_proxy.functions.setTarget(havven_contract.address).transact({'from': MASTER}),
+            nomin_proxy.functions.setTarget(nomin_contract.address).transact({'from': MASTER}),
+            havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
+            nomin_contract.functions.setCourt(fake_court.address).transact({'from': MASTER}),
+            nomin_contract.functions.setHavven(havven_contract.address).transact({'from': MASTER})
+        ])
+
+        return havven_proxy, proxied_havven, nomin_proxy, proxied_nomin, nomin_contract, havven_contract, fake_court
 
     @classmethod
     def setUpClass(cls):
-        cls.nomin_contract, cls.nomin_event_dict, cls.havven_contract, cls.fake_court_contract = cls.deployContracts()
+        cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.nomin_contract, cls.havven_contract, cls.fake_court_contract = cls.deployContracts()
+
+        cls.nomin_event_dict = cls.event_maps['Nomin']
 
         cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
         cls.havven = HavvenInterface(cls.havven_contract, "Havven")
+
         cls.fake_court = FakeCourtInterface(cls.fake_court_contract, "FakeCourt")
 
-        cls.fake_court.setNomin(MASTER, cls.nomin.contract.address)
-        cls.nomin.setCourt(MASTER, cls.fake_court_contract.address)
-        cls.nomin.setHavven(MASTER, cls.havven.contract.address)
-        cls.nomin.setFeeAuthority(MASTER, cls.havven.contract.address)
+        cls.fake_court.setNomin(MASTER, cls.nomin_contract.address)
+
+        cls.nomin.setFeeAuthority(MASTER, cls.havven_contract.address)
 
     def test_constructor(self):
         # Nomin-specific members
         self.assertEqual(self.nomin.owner(), MASTER)
-        self.assertTrue(self.nomin.frozen(self.nomin.contract.address))
+        self.assertTrue(self.nomin.frozen(self.nomin_contract.address))
 
         # ExternStateFeeToken members
-        self.assertEqual(self.nomin.name(), "Havven-Backed USD Nomins")
+        self.assertEqual(self.nomin.name(), "USD Nomins")
         self.assertEqual(self.nomin.symbol(), "nUSD")
         self.assertEqual(self.nomin.totalSupply(), 0)
         self.assertEqual(self.nomin.balanceOf(MASTER), 0)
@@ -114,7 +127,7 @@ class TestNomin(HavvenTestCase):
         self.assertEqual(self.nomin.balanceOf(target), 0)
 
         # Should be impossible to transfer to the nomin contract itself.
-        self.assertReverts(self.nomin.transfer, MASTER, self.nomin.contract.address, UNIT)
+        self.assertReverts(self.nomin.transfer, MASTER, self.nomin_contract.address, UNIT)
 
         self.nomin.transfer(MASTER, target, 5 * UNIT)
 
@@ -156,7 +169,7 @@ class TestNomin(HavvenTestCase):
         self.assertEqual(self.nomin.balanceOf(target), 0)
 
         # Should be impossible to transfer to the nomin contract itself.
-        self.assertReverts(self.nomin.transferFrom, DUMMY, MASTER, self.nomin.contract.address, UNIT)
+        self.assertReverts(self.nomin.transferFrom, DUMMY, MASTER, self.nomin_contract.address, UNIT)
 
         self.nomin.transferFrom(DUMMY, MASTER, target, 5 * UNIT)
 
@@ -184,7 +197,7 @@ class TestNomin(HavvenTestCase):
         self.assertEqual(self.nomin.balanceOf(target), 0)
 
         # Should be impossible to transfer to the nomin contract itself.
-        self.assertReverts(self.nomin.transfer, MASTER, self.nomin.contract.address, UNIT)
+        self.assertReverts(self.nomin.transfer, MASTER, self.nomin_contract.address, UNIT)
 
         self.nomin.transferSenderPaysFee(MASTER, target, 5 * UNIT)
 
@@ -228,7 +241,7 @@ class TestNomin(HavvenTestCase):
         self.assertEqual(self.nomin.balanceOf(target), 0)
 
         # Should be impossible to transfer to the nomin contract itself.
-        self.assertReverts(self.nomin.transferFrom, DUMMY, MASTER, self.nomin.contract.address, UNIT)
+        self.assertReverts(self.nomin.transferFrom, DUMMY, MASTER, self.nomin_contract.address, UNIT)
 
         self.nomin.transferFromSenderPaysFee(DUMMY, MASTER, target, 5 * UNIT)
 
@@ -253,7 +266,7 @@ class TestNomin(HavvenTestCase):
     def test_confiscateBalance(self):
         target = W3.eth.accounts[2]
 
-        self.assertEqual(self.nomin.court(), self.fake_court_contract.address)
+        self.assertEqual(self.nomin.court(), self.fake_court.contract.address)
 
         self.nomin.giveNomins(MASTER, target, 10 * UNIT)
 
@@ -295,8 +308,8 @@ class TestNomin(HavvenTestCase):
         target = fresh_account()
 
         # The nomin contract itself should not be unfreezable.
-        tx_receipt = self.nomin.unfreezeAccount(MASTER, self.nomin.contract.address)
-        self.assertTrue(self.nomin.frozen(self.nomin.contract.address))
+        tx_receipt = self.nomin.unfreezeAccount(MASTER, self.nomin_contract.address)
+        self.assertTrue(self.nomin.frozen(self.nomin_contract.address))
         self.assertEqual(len(tx_receipt.logs), 0)
 
         # Unfreezing non-frozen accounts should not do anything.
@@ -324,10 +337,10 @@ class TestNomin(HavvenTestCase):
 
         # not even the owner can issue, only the havven contract
         self.assertReverts(self.nomin.issue, MASTER, acc1, 100 * UNIT)
-        self.nomin.issue(havven, acc1, 100 * UNIT)
+        self.nomin.publicIssue(havven, acc1, 100 * UNIT)
         self.assertEqual(self.nomin.balanceOf(acc1), 100 * UNIT)
         self.assertEqual(self.nomin.totalSupply(), 100 * UNIT)
-        self.nomin.issue(havven, acc2, 200 * UNIT)
+        self.nomin.publicIssue(havven, acc2, 200 * UNIT)
         self.assertEqual(self.nomin.balanceOf(acc2), 200 * UNIT)
         self.assertEqual(self.nomin.totalSupply(), 300 * UNIT)
 
@@ -338,11 +351,11 @@ class TestNomin(HavvenTestCase):
         acc1_bal = self.nomin.balanceOf(acc1)
         # not even the owner can burn...
         self.assertReverts(self.nomin.burn, MASTER, acc1, acc1_bal)
-        self.nomin.burn(havven, acc1, acc1_bal)
+        self.nomin.publicBurn(havven, acc1, acc1_bal)
         self.assertEqual(self.nomin.totalSupply(), self.nomin.balanceOf(acc2) + self.nomin.feePool())
 
         # burning more than issued is allowed, as that logic is controlled in the havven contract
-        self.nomin.burn(havven, acc2, self.nomin.balanceOf(acc2))
+        self.nomin.publicBurn(havven, acc2, self.nomin.balanceOf(acc2))
 
         self.assertEqual(self.nomin.balanceOf(acc1), self.nomin.balanceOf(acc2), 0)
 
@@ -351,14 +364,14 @@ class TestNomin(HavvenTestCase):
         self.nomin.setHavven(MASTER, havven)
 
         max_int = 2**256 - 1
-        self.nomin.issue(havven, acc1, 100 * UNIT)
-        self.assertReverts(self.nomin.issue, havven, acc1, max_int)
-        self.assertReverts(self.nomin.issue, havven, acc2, max_int)
+        self.nomin.publicIssue(havven, acc1, 100 * UNIT)
+        self.assertReverts(self.nomin.publicIssue, havven, acc1, max_int)
+        self.assertReverts(self.nomin.publicIssue, havven, acc2, max_int)
         # there shouldn't be a way to burn towards a larger value by overflowing
-        self.assertReverts(self.nomin.burn, havven, acc1, max_int)
-        self.nomin.burn(havven, acc1, 100 * UNIT)
+        self.assertReverts(self.nomin.publicBurn, havven, acc1, max_int)
+        self.nomin.publicBurn(havven, acc1, 100 * UNIT)
 
         # as long as no nomins exist, its a valid action
-        self.nomin.issue(havven, acc2, max_int)
-        self.nomin.burn(havven, acc2, max_int)
+        self.nomin.publicIssue(havven, acc2, max_int)
+        self.nomin.publicBurn(havven, acc2, max_int)
 

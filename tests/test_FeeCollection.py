@@ -2,8 +2,8 @@ from utils.deployutils import (
     W3, UNIT, MASTER, DUMMY,
     fast_forward, fresh_accounts,
     take_snapshot, restore_snapshot,
-    attempt, attempt_deploy, compile_contracts, 
-    mine_txs, mine_tx
+    attempt_deploy,
+    mine_txs
 )
 from utils.testutils import HavvenTestCase, ZERO_ADDRESS
 from tests.contract_interfaces.havven_interface import PublicHavvenInterface
@@ -32,35 +32,46 @@ class TestFeeCollection(HavvenTestCase):
                    "tests/contracts/FakeCourt.sol", "contracts/Havven.sol"]
         print("Deployment initiated.\n")
 
-        cls.compiled, cls.event_maps = cls.compileAndMapEvents(sources, remappings=['""=contracts'])
+        compiled, cls.event_maps = cls.compileAndMapEvents(sources)
 
         # Deploy contracts
-        cls.havven_contract, hvn_txr = attempt_deploy(cls.compiled, 'PublicHavven',
-                                                      MASTER, [ZERO_ADDRESS, MASTER, MASTER])
-        cls.nomin_contract, nom_txr = attempt_deploy(cls.compiled, 'PublicNomin',
-                                                     MASTER,
-                                                     [cls.havven_contract.address, MASTER, ZERO_ADDRESS])
-        cls.fake_court_contract, court_txr = attempt_deploy(cls.compiled, 'FakeCourt',
-                                                       MASTER,
-                                                       [cls.havven_contract.address, cls.nomin_contract.address,
-                                                       MASTER])
+        havven_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
+        nomin_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
+        proxied_havven = W3.eth.contract(address=havven_proxy.address, abi=compiled['PublicHavven']['abi'])
+        proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['PublicNomin']['abi'])
+        havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven',
+                                                  MASTER, [havven_proxy.address, ZERO_ADDRESS, MASTER, MASTER, UNIT//2])
+        nomin_contract, nom_txr = attempt_deploy(compiled, 'PublicNomin',
+                                                 MASTER,
+                                                 [nomin_proxy.address, havven_contract.address, MASTER, ZERO_ADDRESS])
+        court_contract, court_txr = attempt_deploy(compiled, 'FakeCourt',
+                                                   MASTER,
+                                                   [havven_contract.address, nomin_contract.address,
+                                                    MASTER])
 
         # Hook up each of those contracts to each other
-        txs = [cls.havven_contract.functions.setNomin(cls.nomin_contract.address).transact({'from': MASTER}),
-               cls.nomin_contract.functions.setCourt(cls.fake_court_contract.address).transact({'from': MASTER})]
-        attempt(mine_txs, [txs], "Linking contracts... ")
+        mine_txs([
+            havven_proxy.functions.setTarget(havven_contract.address).transact({'from': MASTER}),
+            nomin_proxy.functions.setTarget(nomin_contract.address).transact({'from': MASTER}),
+            havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
+            nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER})
+        ])
 
         print("\nDeployment complete.\n")
+        return havven_proxy, proxied_havven, nomin_proxy, proxied_nomin, havven_contract, nomin_contract, court_contract
 
     @classmethod
     def setUpClass(cls):
-        cls.deployContracts()
+        cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, cls.nomin_contract, cls.fake_court_contract = cls.deployContracts()
+
+        cls.event_map = cls.event_maps['Havven']
+
         cls.havven = PublicHavvenInterface(cls.havven_contract, "Havven")
         cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
-        cls.fake_court = FakeCourtInterface(cls.fake_court_contract, "FakeCourt")
 
         fast_forward(weeks=102)
-       
+
+        cls.fake_court = FakeCourtInterface(cls.fake_court_contract, 'FakeCourt')
         cls.fake_court.setNomin(MASTER, cls.nomin_contract.address)
 
     # Scenarios to test

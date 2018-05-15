@@ -12,8 +12,8 @@ contract PublicNomin is Nomin {
 
     uint constant MAX_TRANSFER_FEE_RATE = UNIT;  // allow for 100% fees
 
-    constructor(address _havven, address _owner, TokenState initialState)
-        Nomin(_havven, _owner, initialState)
+    constructor(address _proxy, address _havven, address _owner, TokenState initialState)
+        Nomin(_proxy, _havven, _owner, initialState)
         public {}
     
     function debugEmptyFeePool()
@@ -23,6 +23,7 @@ contract PublicNomin is Nomin {
     }
 
     function debugFreezeAccount(address target)
+        optionalProxy
         public
     {
         require(!frozen[target]);
@@ -30,11 +31,12 @@ contract PublicNomin is Nomin {
         state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), balance));
         state.setBalanceOf(target, 0);
         frozen[target] = true;
-        emit AccountFrozen(target, target, balance);
-        emit Transfer(target, address(this), balance);
+        emitAccountFrozen(target, target, balance);
+        emitTransfer(target, address(this), balance);
     }
 
     function giveNomins(address account, uint amount)
+        optionalProxy
         public
     {
         state.setBalanceOf(account, safeAdd(amount, state.balanceOf(account)));
@@ -42,6 +44,7 @@ contract PublicNomin is Nomin {
     }
 
     function clearNomins(address account)
+        optionalProxy
         public
     {
         totalSupply = safeSub(totalSupply, state.balanceOf(account));
@@ -49,9 +52,32 @@ contract PublicNomin is Nomin {
     }
 
     function generateFees(uint amount)
+        optionalProxy
         public
     {
         totalSupply = safeAdd(totalSupply, amount);
         state.setBalanceOf(address(this), safeAdd(balanceOf(address(this)), amount));
+    }
+
+    /* Allow havven to issue a certain number of
+     * nomins from a target address */
+    function publicIssue(address target, uint amount)
+        public
+    {
+        state.setBalanceOf(target, safeAdd(state.balanceOf(target), amount));
+        totalSupply = safeAdd(totalSupply, amount);
+        emitTransfer(address(0), target, amount);
+        emitIssued(target, amount);
+    }
+
+    /* Allow havven to burn a certain number of
+     * nomins from a target address */
+    function publicBurn(address target, uint amount)
+        public
+    {
+        state.setBalanceOf(target, safeSub(state.balanceOf(target), amount));
+        totalSupply = safeSub(totalSupply, amount);
+        emitTransfer(target, address(0), amount);
+        emitBurned(target, amount);
     }
 }

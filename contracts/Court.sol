@@ -2,13 +2,14 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
+
 file:       Court.sol
 version:    1.1
 author:     Anton Jurisevic
             Mike Spain
             Dominic Romanowski
 
-date:       2018-05-02
+date:       2018-05-15
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -33,32 +34,34 @@ confiscation motions are only approved if the havven foundation
 approves the result.
 This latter requirement may be lifted in future versions.
 
-The foundation, or any user with a sufficient havven balance may bring a
-confiscation motion.
-A motion lasts for a default period of one week, with a further confirmation
-period in which the foundation approves the result.
-The latter period may conclude early upon the foundation's decision to either
-veto or approve the mooted confiscation motion.
-If the confirmation period elapses without the foundation making a decision,
-the motion fails.
+The foundation, or any user with a sufficient havven balance may
+bring a confiscation motion.
+A motion lasts for a default period of one week, with a further
+confirmation period in which the foundation approves the result.
+The latter period may conclude early upon the foundation's decision
+to either veto or approve the mooted confiscation motion.
+If the confirmation period elapses without the foundation making
+a decision, the motion fails.
 
-The weight of a havven holder's vote is determined by examining their
-average balance over the last completed fee period prior to the
-beginning of a given motion.
-Thus, since a fee period can roll over in the middle of a motion, we must
-also track a user's average balance of the last two periods.
-This system is designed such that it cannot be attacked by users transferring
-funds between themselves, while also not requiring them to lock their havvens
-for the duration of the vote. This is possible since any transfer that increases
-the average balance in one account will be reflected by an equivalent reduction
-in the voting weight in the other.
+The weight of a havven holder's vote is determined by examining
+their average balance over the last completed fee period prior to
+the beginning of a given motion.
+
+Thus, since a fee period can roll over in the middle of a motion,
+we must also track a user's average balance of the last two periods.
+This system is designed such that it cannot be attacked by users
+transferring funds between themselves, while also not requiring them
+to lock their havvens for the duration of the vote. This is possible
+since any transfer that increases the average balance in one account
+will be reflected by an equivalent reduction in the voting weight in
+the other.
+
 At present a user may cast a vote only for one motion at a time,
 but may cancel their vote at any time except during the confirmation period,
 when the vote tallies must remain static until the matter has been settled.
 
 A motion to confiscate the balance of a given address composes
 a state machine built of the following states:
-
 
 Waiting:
   - A user with standing brings a motion:
@@ -94,7 +97,6 @@ Confirmation:
 
   - The confirmation period elapses:
     transition to the Waiting state.
-
 
 User votes are not automatically cancelled upon the conclusion of a motion.
 Therefore, after a motion comes to a conclusion, if a user wishes to vote
@@ -306,7 +308,7 @@ contract Court is SafeDecimalMath, Owned {
         return motionStartTime[motionID] < now && now < motionStartTime[motionID] + votingPeriod;
     }
 
-    /** 
+    /**
      * @notice A vote on the target account has concluded, but the motion
      * has not yet been approved, vetoed, or closed. */
     function motionConfirming(uint motionID)
@@ -352,7 +354,7 @@ contract Court is SafeDecimalMath, Owned {
             return false;
         }
 
-        uint participation = safeDiv_dec(totalVotes, havven.totalIssuedNominLastAverageBalance());  
+        uint participation = safeDiv_dec(totalVotes, havven.totalIssuedNominLastAverageBalance());
         uint fractionInFavour = safeDiv_dec(yeas, totalVotes);
 
         /* We require the result to be strictly greater than the requirement
@@ -385,7 +387,7 @@ contract Court is SafeDecimalMath, Owned {
         external
         returns (uint)
     {
-        /* A confiscation motion must be mooted by someone with standing. */ 
+        /* A confiscation motion must be mooted by someone with standing. */
         require((havven.issuedNominLastAverageBalance(msg.sender) >= minStandingBalance) ||
                 msg.sender == owner);
 
@@ -466,7 +468,7 @@ contract Court is SafeDecimalMath, Owned {
         emit VotedAgainst(msg.sender, msg.sender, motionID, motionID, weight);
     }
 
-    /** 
+    /**
      * @notice Cancel an existing vote by the sender on a motion
      * to confiscate the target balance.
      */

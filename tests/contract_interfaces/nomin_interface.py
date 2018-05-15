@@ -62,3 +62,8 @@ class PublicNominInterface(NominInterface):
 
         self.generateFees = lambda sender, amt: mine_tx(
             self.contract.functions.generateFees(amt).transact({'from': sender}), "generateFees", self.contract_name)
+
+        self.publicBurn = lambda sender, target, amount: mine_tx(
+            self.contract.functions.publicBurn(target, amount).transact({'from': sender}), "publicBurn", self.contract_name)
+        self.publicIssue = lambda sender, target, amount: mine_tx(
+            self.contract.functions.publicIssue(target, amount).transact({'from': sender}), "publicIssue", self.contract_name)

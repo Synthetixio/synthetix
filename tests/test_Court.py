@@ -1,15 +1,17 @@
+
 from utils.deployutils import (
-    UNIT, MASTER, DUMMY,
-    attempt, attempt_deploy, compile_contracts, mine_txs,
+    UNIT, MASTER, DUMMY, W3,
+    attempt_deploy, mine_txs,
     fast_forward, to_seconds,
     take_snapshot, restore_snapshot,
     fresh_account, fresh_accounts
 )
 from utils.testutils import (
     HavvenTestCase, block_time,
-    generate_topic_event_map, get_event_data_from_log,
+    get_event_data_from_log,
     ZERO_ADDRESS
 )
+
 from tests.contract_interfaces.court_interface import PublicCourtInterface
 from tests.contract_interfaces.havven_interface import PublicHavvenInterface
 from tests.contract_interfaces.nomin_interface import NominInterface
@@ -33,31 +35,47 @@ class TestCourt(HavvenTestCase):
     @classmethod
     def deployContracts(cls):
         print("Deployment Initiated. \n")
-
-        havven_contract, hvn_txr = attempt_deploy(cls.compiled, 'PublicHavven', MASTER, [ZERO_ADDRESS, MASTER, MASTER])
-        nomin_contract, nom_txr = attempt_deploy(cls.compiled, 'Nomin',
-                                                 MASTER,
-                                                 [havven_contract.address, MASTER, ZERO_ADDRESS])
-        court_contract, court_txr = attempt_deploy(cls.compiled, 'PublicCourt',
-                                                   MASTER,
-                                                   [havven_contract.address, nomin_contract.address,
-                                                    MASTER])
-
-        txs = [havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
-               nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER})]
-        attempt(mine_txs, [txs], "Linking contracts... ")
-
-        print("\nDeployment complete.\n")
-        return havven_contract, nomin_contract, court_contract
-
-    @classmethod
-    def setUpClass(cls):
         sources = ["tests/contracts/PublicCourt.sol",
                    "contracts/Nomin.sol",
                    "tests/contracts/PublicHavven.sol"]
-        cls.compiled, cls.event_maps = cls.compileAndMapEvents(sources) 
-        cls.event_map = cls.event_maps["Court"]
-        cls.havven_contract, cls.nomin_contract, cls.court_contract = cls.deployContracts()
+
+        compiled, cls.event_maps = cls.compileAndMapEvents(sources)
+
+        court_abi = compiled['PublicCourt']['abi']
+        nomin_abi = compiled['Nomin']['abi']
+        havven_abi = compiled['Havven']['abi']
+
+        havven_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
+        nomin_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
+        proxied_havven = W3.eth.contract(address=havven_proxy.address, abi=havven_abi)
+        proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=nomin_abi)
+
+        havven_contract, hvn_txr = attempt_deploy(
+            compiled, 'PublicHavven', MASTER, [havven_proxy.address, ZERO_ADDRESS, MASTER, MASTER, UNIT//2]
+        )
+        nomin_contract, nom_txr = attempt_deploy(
+            compiled, 'Nomin', MASTER, [nomin_proxy.address, havven_contract.address, MASTER, ZERO_ADDRESS]
+        )
+        court_contract, court_txr = attempt_deploy(
+            compiled, 'PublicCourt', MASTER, [havven_contract.address, nomin_contract.address, MASTER]
+        )
+
+        mine_txs([
+            havven_proxy.functions.setTarget(havven_contract.address).transact({'from': MASTER}),
+            nomin_proxy.functions.setTarget(nomin_contract.address).transact({'from': MASTER}),
+            havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
+            nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER})
+        ])
+
+        print("\nDeployment complete.\n")
+        return havven_proxy, proxied_havven, nomin_proxy, proxied_nomin, havven_contract, nomin_contract, court_contract, nomin_abi, court_abi
+
+    @classmethod
+    def setUpClass(cls):
+        cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, cls.nomin_contract, cls.court_contract, cls.nomin_abi, cls.court_abi = cls.deployContracts()
+
+        cls.event_map = cls.event_maps['PublicCourt']
+
         cls.court = PublicCourtInterface(cls.court_contract, "Court")
         cls.havven = PublicHavvenInterface(cls.havven_contract, "Havven")
         cls.nomin = NominInterface(cls.nomin_contract, "Nomin")
@@ -65,6 +83,13 @@ class TestCourt(HavvenTestCase):
     #
     # HELPER FUNCTIONS
     #
+
+    def allow_acc_max_vote(self, account):
+        if self.havven.lastHavvenPriceUpdateTime() < block_time():
+            self.havven.updatePrice(MASTER, UNIT, block_time() + 1)
+        self.havven.setIssuanceRatio(MASTER, UNIT)
+        self.havven.setWhitelisted(MASTER, account, True)
+        self.havven.issueNominsToMax(account)
 
     #  Extract vote index from a transaction receipt returned by a call to beginMotion
     def get_motion_index(self, tx_receipt):
@@ -87,7 +112,6 @@ class TestCourt(HavvenTestCase):
         self.assertEqual(event_data['args']['initiator'], expected_initiator)
         self.assertEqual(event_data['args']['target'], expected_target)
         self.assertEqual(event_data['args']['motionID'], expected_motion_id)
-        # TODO: check start time
 
     def validate_MotionClosed_data(self, tx_receipt, log_index, expected_motion_id):
         closed_data = get_event_data_from_log(self.event_map, tx_receipt.logs[log_index])
@@ -116,7 +140,6 @@ class TestCourt(HavvenTestCase):
     #
     # UNIT TESTS
     #
-
     def test_constructor(self):
         self.assertEqual(self.court.owner(), MASTER)
         self.assertEqual(self.havven.contract.address, self.court.getHavven())
@@ -224,6 +247,7 @@ class TestCourt(HavvenTestCase):
         fee_period = self.havven.targetFeePeriodDurationSeconds()
 
         self.havven.endow(owner, voter, 1000 * UNIT)
+        self.allow_acc_max_vote(voter)
         self.assertEqual(self.havven.balanceOf(voter), 1000 * UNIT)
 
         # Fast forward to update the vote weight.
@@ -231,6 +255,7 @@ class TestCourt(HavvenTestCase):
         self.havven.checkFeePeriodRollover(DUMMY)
         fast_forward(fee_period + 1)
         self.havven.checkFeePeriodRollover(DUMMY)
+        self.havven.recomputeAccountIssuedNominLastAverageBalance(voter, voter)
 
         address_pattern = "0x" + "0" * 39 + "{}"
         motion_id = self.get_motion_index(self.court.beginMotion(voter, address_pattern.format(1)))
@@ -246,10 +271,14 @@ class TestCourt(HavvenTestCase):
         confirmation_period = self.court.confirmationPeriod()
 
         self.havven.endow(owner, voter, self.havven.totalSupply() // 2)
+        self.allow_acc_max_vote(voter)
+
         fast_forward(fee_period + 1)
         self.havven.checkFeePeriodRollover(MASTER)
         # Fast forward to update the vote weight.
         fast_forward(fee_period + 1)
+        self.havven.checkFeePeriodRollover(MASTER)
+        self.havven.recomputeAccountIssuedNominLastAverageBalance(voter, voter)
 
         # Start three motions to close them in three different ways.
         motion_id1 = self.get_motion_index(self.court.beginMotion(voter, target1))
@@ -332,12 +361,14 @@ class TestCourt(HavvenTestCase):
 
         # Give 1000 havven tokens to our voter.
         self.havven.endow(owner, voter, 1000)
+        self.allow_acc_max_vote(voter)
+
         self.assertEqual(self.havven.balanceOf(voter), 1000)
 
         # Fast forward to update the vote weight.
         fast_forward(fee_period + 1)
         self.havven.checkFeePeriodRollover(DUMMY)
-        self.havven.recomputeAccountLastHavvenAverageBalance(voter, voter)
+        self.havven.recomputeAccountIssuedNominLastAverageBalance(voter, voter)
 
         # This should fail because no confiscation motion has begun.
         next_motion_id = self.court.nextMotionID()
@@ -364,9 +395,10 @@ class TestCourt(HavvenTestCase):
 
     def test_motionPasses(self):
         owner = self.court.owner()
-        accounts = fresh_accounts(11)
+        accounts = fresh_accounts(12)
         suspect = accounts[0]
-        voters = accounts[1:]
+        other = accounts[1]
+        voters = accounts[2:]
         self.court.requiredParticipation()
         self.court.requiredMajority()
         fee_period = self.havven.targetFeePeriodDurationSeconds()
@@ -375,7 +407,10 @@ class TestCourt(HavvenTestCase):
         # Give 1/20th of the token supply to each of our 10 voters. In total 50% of tokens distributed.
         for voter in voters:
             self.havven.endow(owner, voter, tokens)
+            self.allow_acc_max_vote(voter)
             self.assertEqual(self.havven.balanceOf(voter), tokens)
+        self.havven.endow(owner, other, self.havven.balanceOf(self.havven.contract.address))
+        self.allow_acc_max_vote(other)
 
         # Fast forward to update the vote weights.
         fast_forward(fee_period + 1)
@@ -455,19 +490,22 @@ class TestCourt(HavvenTestCase):
 
         # Give 50% of the havven tokens to voter, enough to pass a confiscation motion on their own.
         self.havven.endow(owner, voter, controlling_share)
+        self.allow_acc_max_vote(voter)
         self.assertEqual(self.havven.balanceOf(voter), controlling_share)
+
+        self.havven.endow(owner, insufficient_standing, 99 * UNIT)
+        self.allow_acc_max_vote(insufficient_standing)
+        self.havven.endow(owner, sufficient_standing, 100 * UNIT)
+        self.allow_acc_max_vote(sufficient_standing)
 
         # Fast forward to update the voter's weight.
         fast_forward(fee_period + 1)
         self.havven.checkFeePeriodRollover(MASTER)
-
-        self.havven.endow(owner, insufficient_standing, 99 * UNIT)
-        self.havven.endow(owner, sufficient_standing, 100 * UNIT)
-
-        # Fast forward to update the vote weight.
         fast_forward(fee_period + 1)
         self.havven.checkFeePeriodRollover(DUMMY)
-
+        self.havven.recomputeAccountIssuedNominLastAverageBalance(voter, voter)
+        self.havven.recomputeAccountIssuedNominLastAverageBalance(insufficient_standing, insufficient_standing)
+        self.havven.recomputeAccountIssuedNominLastAverageBalance(sufficient_standing,sufficient_standing)
         # Must have at least 100 havvens to begin a confiscation motion.
         self.assertReverts(self.court.beginMotion, insufficient_standing, suspects[0])
         tx_receipt = self.court.beginMotion(sufficient_standing, suspects[0])
@@ -504,6 +542,8 @@ class TestCourt(HavvenTestCase):
 
         # Give the voter some voting weight.
         self.havven.endow(owner, voter, voter_weight)
+        self.allow_acc_max_vote(voter)
+
         fee_period = self.havven.targetFeePeriodDurationSeconds()
         fast_forward(fee_period + 1)
         self.havven.checkFeePeriodRollover(DUMMY)
@@ -524,7 +564,7 @@ class TestCourt(HavvenTestCase):
         self.assertFalse(self.court.hasVoted(voter, motion_id))
         tx_receipt = self.court.setupVote(voter, motion_id)
         # Additionally ensure that the vote recomputed the voter's fee totals.
-        self.assertClose(self.havven.lastAverageHavvenBalance(voter), voter_weight)
+        self.assertClose(self.havven.issuedNominLastAverageBalance(voter), voter_weight)
         self.assertClose(self.court.voteWeight(voter, motion_id), voter_weight)
         self.assertClose(int(tx_receipt.logs[-1].data, 16), voter_weight)
 
@@ -539,6 +579,8 @@ class TestCourt(HavvenTestCase):
 
         # Give some havven tokens to our voter.
         self.havven.endow(owner, voter, 1000)
+        self.allow_acc_max_vote(voter)
+
         self.assertEqual(self.havven.balanceOf(voter), 1000)
 
         # Cannot vote unless there is a confiscation motion.
@@ -582,6 +624,8 @@ class TestCourt(HavvenTestCase):
 
         # Give some havven tokens to our voter.
         self.havven.endow(owner, voter, 1000)
+        self.allow_acc_max_vote(voter)
+
         self.assertEqual(self.havven.balanceOf(voter), 1000)
 
         # Cannot vote unless there is a confiscation motion.
@@ -628,12 +672,18 @@ class TestCourt(HavvenTestCase):
         self.havven.checkFeePeriodRollover(DUMMY)
         # Give some havven tokens to our voter.
         self.havven.endow(owner, voter, 1000)
+        self.allow_acc_max_vote(voter)
         self.havven.endow(owner, voter2, 1000)
+        self.allow_acc_max_vote(voter2)
+
         self.assertEqual(self.havven.balanceOf(voter), 1000)
         fast_forward(fee_period + 1)
         self.havven.checkFeePeriodRollover(DUMMY)
         fast_forward(fee_period + 1)
         self.havven.checkFeePeriodRollover(DUMMY)
+
+        self.havven.recomputeAccountIssuedNominLastAverageBalance(voter, voter)
+        self.havven.recomputeAccountIssuedNominLastAverageBalance(voter2, voter2)
 
         # Begin a confiscation motion against the suspect.
         motion_id = self.startVotingPeriod(owner, suspect)
@@ -684,18 +734,23 @@ class TestCourt(HavvenTestCase):
 
     def test_closeMotion(self):
         owner = self.court.owner()
-        voter, suspect = fresh_accounts(2)
+        voter, other, suspect = fresh_accounts(3)
         voting_period = self.court.votingPeriod()
         fee_period = self.havven.targetFeePeriodDurationSeconds()
 
         # Give some havven tokens to our voter.
         self.havven.endow(owner, voter, 1000)
+        self.havven.endow(owner, other, 10000)
+
+        self.allow_acc_max_vote(voter)
+        self.allow_acc_max_vote(other)
 
         # Fast forward one fee period to update the voter's weight.
         fast_forward(fee_period + 1)
         self.havven.checkFeePeriodRollover(DUMMY)
 
-        self.havven.recomputeAccountLastHavvenAverageBalance(voter, voter)
+        self.havven.recomputeAccountIssuedNominLastAverageBalance(voter, voter)
+        self.havven.recomputeAccountIssuedNominLastAverageBalance(other, other)
         motion_id = self.startVotingPeriod(owner, suspect)
 
         # Should not be able to close vote in the voting period.
@@ -715,9 +770,10 @@ class TestCourt(HavvenTestCase):
         motion_id = self.startVotingPeriod(owner, suspect)
 
         self.court.voteFor(voter, motion_id)
-        fast_forward(voting_period)
+        fast_forward(voting_period + 1)
 
         # After vote has closed, voteStarTimes and votesFor/votesAgainst should be 0 and suspect should be waiting.
+
         self.court.closeMotion(voter, motion_id)
         self.assertEqual(self.court.targetMotionID(suspect), 0)
         self.assertEqual(self.court.motionTarget(motion_id), ZERO_ADDRESS)
@@ -739,6 +795,7 @@ class TestCourt(HavvenTestCase):
 
         # Give 50% of all havven tokens to our voter.
         self.havven.endow(owner, voter, controlling_share)
+        self.allow_acc_max_vote(voter)
 
         # Fast forward two fee periods to update the voter's weight.
         fast_forward(fee_period + 1)
@@ -775,6 +832,7 @@ class TestCourt(HavvenTestCase):
         fee_period = self.havven.targetFeePeriodDurationSeconds()
         controlling_share = self.havven.totalSupply() // 2
         self.havven.endow(owner, voter, controlling_share)
+        self.allow_acc_max_vote(voter)
 
         # Fast forward two fee periods to update the voter's weight.
         fast_forward(fee_period + 1)
@@ -833,6 +891,7 @@ class TestCourt(HavvenTestCase):
         voters, targets = accounts[:num_voters], accounts[num_voters:]
         for voter in voters:
             self.havven.endow(owner, voter, self.havven.totalSupply() // num_voters)
+            self.allow_acc_max_vote(voter)
 
         frozen, unfrozen = [], []
 

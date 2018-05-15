@@ -2,12 +2,13 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
+
 file:       DestructibleExternStateToken.sol
 version:    1.1
 author:     Anton Jurisevic
             Dominic Romanowski
 
-date:       2018-05-02
+date:       2018-05-15
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -26,7 +27,7 @@ This contract utilises a state for upgradability purposes.
 
 pragma solidity 0.4.23;
 
-
+import "contracts/Emitter.sol";
 import "contracts/SafeDecimalMath.sol";
 import "contracts/SelfDestructible.sol";
 import "contracts/TokenState.sol";
@@ -35,9 +36,7 @@ import "contracts/TokenState.sol";
 /**
  * @title ERC20 Token contract, with detached state and designed to operate behind a proxy.
  */
-contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible {
-
-    /* ========== STATE VARIABLES ========== */
+contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Emitter {
 
     /* Stores balances and allowances. */
     TokenState public state;
@@ -47,33 +46,30 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible {
     string public symbol;
     uint public totalSupply;
 
-
-    /* ========== CONSTRUCTOR ========== */
-
     /**
      * @dev Constructor.
      * @param _name Token's ERC20 name.
      * @param _symbol Token's ERC20 symbol.
-     * @param _initialSupply The initial supply of the token.
-     * @param _initialBeneficiary The recipient of the initial token supply if _state is 0.
+     * @param _totalSupply The total supply of the token.
      * @param _state The state contract address. A fresh one is constructed if 0x0 is provided.
      * @param _owner The owner of this contract.
      */
-    constructor(string _name, string _symbol,
-                                   uint _initialSupply, address _initialBeneficiary,
+    constructor(address _proxy, string _name, string _symbol, uint _totalSupply,
                                    TokenState _state, address _owner)
         SelfDestructible(_owner, _owner, 4 weeks)
+        Emitter(_proxy, _owner)
         public
     {
         name = _name;
         symbol = _symbol;
-        totalSupply = _initialSupply;
+        totalSupply = _totalSupply;
 
         // if the state isn't set, create a new one
         if (_state == TokenState(0)) {
             state = new TokenState(_owner, address(this));
-            state.setBalanceOf(_initialBeneficiary, totalSupply);
-            emit Transfer(address(0), _initialBeneficiary, _initialSupply);
+            state.setBalanceOf(address(this), totalSupply);
+            // We don't emit the event here, as it can't be emitted as the proxy won't know the address of this
+            // contract. This isn't very important as the state should already have been set.
         } else {
             state = _state;
         }
@@ -113,11 +109,11 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible {
      */
     function setState(TokenState _state)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         state = _state;
-        emit StateUpdated(_state);
-    } 
+        emitStateUpdated(_state);
+    }
 
     /**
      * @dev Perform an ERC20 token transfer. Designed to be called by transfer functions possessing
@@ -125,35 +121,41 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible {
      */
     function transfer(address to, uint value)
         public
+        optionalProxy
         returns (bool)
     {
         require(to != address(0));
 
+        address sender = messageSender;
+
         /* Insufficient balance will be handled by the safe subtraction. */
-        state.setBalanceOf(msg.sender, safeSub(state.balanceOf(msg.sender), value));
+        state.setBalanceOf(sender, safeSub(state.balanceOf(sender), value));
         state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
 
-        emit Transfer(msg.sender, to, value);
+        emitTransfer(sender, to, value);
 
         return true;
     }
 
     /**
      * @dev Perform an ERC20 token transferFrom. Designed to be called by transferFrom functions
-     * possessing the onlyProxy or optionalProxy modifiers.
+     * possessing the optionalProxy or optionalProxy modifiers.
      */
     function transferFrom(address from, address to, uint value)
         public
+        optionalProxy
         returns (bool)
     {
         require(to != address(0));
 
+        address sender = messageSender;
+
         /* Insufficient balance will be handled by the safe subtraction. */
         state.setBalanceOf(from, safeSub(state.balanceOf(from), value));
-        state.setAllowance(from, msg.sender, safeSub(state.allowance(from, msg.sender), value));
+        state.setAllowance(from, sender, safeSub(state.allowance(from, sender), value));
         state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
 
-        emit Transfer(from, to, value);
+        emitTransfer(from, to, value);
 
         return true;
     }
@@ -163,18 +165,13 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible {
      */
     function approve(address spender, uint value)
         public
+        optionalProxy
         returns (bool)
     {
-        state.setAllowance(msg.sender, spender, value);
-        emit Approval(msg.sender, spender, value);
+        address sender = messageSender;
+
+        state.setAllowance(sender, spender, value);
+        emitApproval(sender, spender, value);
         return true;
     }
-
-    /* ========== EVENTS ========== */
-
-    event Transfer(address indexed from, address indexed to, uint value);
-
-    event Approval(address indexed owner, address indexed spender, uint value);
-
-    event StateUpdated(address newState);
 }

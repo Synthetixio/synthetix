@@ -1,11 +1,11 @@
 from utils.testutils import (
     HavvenTestCase, ZERO_ADDRESS, block_time,
-    generate_topic_event_map, get_event_data_from_log
+    generate_topic_event_map
 )
 
 from utils.deployutils import (
     W3, UNIT, MASTER, DUMMY,
-    mine_txs, mine_tx,
+    mine_txs,
     attempt, attempt_deploy, compile_contracts,
     to_seconds, fast_forward,
     fresh_account, fresh_accounts,
@@ -36,47 +36,60 @@ class TestHavvenEscrow(HavvenTestCase):
     def deployContracts(cls):
         sources = ["tests/contracts/PublicHavven.sol", "tests/contracts/PublicNomin.sol",
                    "contracts/Court.sol", "contracts/HavvenEscrow.sol",
-                   "tests/contracts/PublicHavvenEscrow.sol"]
+                   "tests/contracts/PublicHavvenEscrow.sol", "contracts/Proxy.sol"]
 
         print("Deployment initiated.\n")
 
-        cls.compiled, cls.event_maps = cls.compileAndMapEvents(sources)
+        compiled, cls.event_maps = cls.compileAndMapEvents(sources)
 
         # Deploy contracts
-        cls.havven_contract, hvn_txr = attempt_deploy(cls.compiled, 'PublicHavven', MASTER, [ZERO_ADDRESS, MASTER, MASTER])
+
+        havven_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
+        nomin_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
+        proxied_havven = W3.eth.contract(address=havven_proxy.address, abi=compiled['PublicHavven']['abi'])
+        proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['PublicNomin']['abi'])
+
+        havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [havven_proxy.address, ZERO_ADDRESS, MASTER, MASTER, UNIT//2])
         hvn_block = W3.eth.blockNumber
 
-        cls.nomin_contract, nom_txr = attempt_deploy(cls.compiled, 'PublicNomin',
+        nomin_contract, nom_txr = attempt_deploy(compiled, 'PublicNomin',
+                                                 MASTER,
+                                                 [nomin_proxy.address, havven_contract.address, MASTER, ZERO_ADDRESS])
+        court_contract, court_txr = attempt_deploy(compiled, 'Court',
+                                                   MASTER,
+                                                   [havven_contract.address, nomin_contract.address,
+                                                    MASTER])
+        escrow_contract, escrow_txr = attempt_deploy(compiled, 'PublicHavvenEscrow',
                                                      MASTER,
-                                                     [cls.havven_contract.address, MASTER, ZERO_ADDRESS])
-        cls.court_contract, court_txr = attempt_deploy(cls.compiled, 'Court',
-                                                       MASTER,
-                                                       [cls.havven_contract.address, cls.nomin_contract.address,
-                                                        MASTER])
-        cls.escrow_contract, escrow_txr = attempt_deploy(cls.compiled, 'PublicHavvenEscrow',
-                                                         MASTER,
-                                                         [MASTER, cls.havven_contract.address])
+                                                     [MASTER, havven_contract.address])
 
         # Hook up each of those contracts to each other
-        txs = [cls.havven_contract.functions.setNomin(cls.nomin_contract.address).transact({'from': MASTER}),
-               cls.nomin_contract.functions.setCourt(cls.court_contract.address).transact({'from': MASTER}),
-               cls.nomin_contract.functions.setHavven(cls.havven_contract.address).transact({'from': MASTER}),
-               cls.havven_contract.functions.setEscrow(cls.escrow_contract.address).transact({'from': MASTER})]
-        attempt(mine_txs, [txs], "Linking contracts... ")
+        mine_txs([havven_proxy.functions.setTarget(havven_contract.address).transact({'from': MASTER}),
+               nomin_proxy.functions.setTarget(nomin_contract.address).transact({'from': MASTER}),
+               havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
+               nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER}),
+               nomin_contract.functions.setHavven(havven_contract.address).transact({'from': MASTER}),
+               havven_contract.functions.setEscrow(escrow_contract.address).transact({'from': MASTER})])
 
-        cls.escrow_event_dict = cls.event_maps['HavvenEscrow']
+        escrow_event_dict = generate_topic_event_map(compiled['HavvenEscrow']['abi'])
 
         print("\nDeployment complete.\n")
+        return havven_proxy, proxied_havven, nomin_proxy, proxied_nomin, havven_contract, nomin_contract, court_contract, escrow_contract, hvn_block, escrow_event_dict
 
     @classmethod
     def setUpClass(cls):
-        cls.deployContracts()
+        cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, \
+            cls.nomin_contract, cls.court, cls.escrow_contract, cls.construction_block, \
+            cls.escrow_event_dict = cls.deployContracts()
+
+        cls.event_map = cls.event_maps['HavvenEscrow']
+
         cls.havven = PublicHavvenInterface(cls.havven_contract, "Havven")
         cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
         cls.escrow = PublicHavvenEscrowInterface(cls.escrow_contract, "HavvenEscrow")
 
     def test_constructor(self):
-        self.assertEqual(self.escrow.havven(), self.havven.contract.address)
+        self.assertEqual(self.escrow.havven(), self.havven_contract.address)
         self.assertEqual(self.escrow.owner(), MASTER)
         self.assertEqual(self.escrow.totalVestedBalance(), 0)
 
@@ -370,10 +383,10 @@ class TestHavvenEscrow(HavvenTestCase):
         self.havven.endow(MASTER, self.escrow.contract.address, UNIT)
         self.assertEqual(self.havven.balanceOf(self.escrow.contract.address), UNIT)
 
-        pre_h_balance = self.havven.balanceOf(self.havven.contract.address)
+        pre_h_balance = self.havven.balanceOf(self.havven_contract.address)
         self.escrow.withdrawHavvens(MASTER, UNIT // 2)
         self.assertEqual(self.havven.balanceOf(self.escrow.contract.address), UNIT // 2)
-        self.assertEqual(self.havven.balanceOf(self.havven.contract.address), pre_h_balance + UNIT // 2)
+        self.assertEqual(self.havven.balanceOf(self.havven_contract.address), pre_h_balance + UNIT // 2)
 
     def test_appendVestingEntry(self):
         alice, bob = fresh_accounts(2)
@@ -550,7 +563,7 @@ class TestHavvenEscrow(HavvenTestCase):
 
         fast_forward(to_seconds(weeks=13) + 10)
 
-    def test_addRegularVestingSchedule(self):
+    def test_addRegularVestingSchedule2(self):
         alice, bob, carol, tim, pim = fresh_accounts(5)
         self.havven.endow(MASTER, self.escrow.contract.address, 1000 * UNIT)
         time = block_time()

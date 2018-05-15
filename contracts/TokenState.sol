@@ -2,12 +2,13 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
+
 file:       TokenState.sol
-version:    1.0
+version:    1.1
 author:     Dominic Romanowski
             Anton Jurisevic
 
-date:       2018-2-24
+date:       2018-05-15
 
 checked:    Anton Jurisevic
 approved:   Samuel Brooks

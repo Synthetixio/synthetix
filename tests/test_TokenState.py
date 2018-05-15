@@ -1,6 +1,6 @@
 from utils.deployutils import (
     UNIT, MASTER, DUMMY, 
-    compile_contracts, attempt_deploy, mine_tx,
+    compile_contracts, attempt_deploy,
     take_snapshot, restore_snapshot
 )
 from utils.testutils import HavvenTestCase, ZERO_ADDRESS
@@ -39,10 +39,14 @@ class TestTokenState(HavvenTestCase):
     @classmethod
     def setUpClass(cls):
         sources = ["contracts/TokenState.sol"]
-        cls.compiled, cls.event_maps = cls.compileAndMapEvents(sources, remappings=['""=contracts'])
-        cls.event_map = cls.event_maps['State']
+
+        cls.compiled, cls.event_maps = cls.compileAndMapEvents(sources)
+        cls.event_map = cls.event_maps['TokenState']
+
         cls.tokenstate_contract = cls.deployContracts()
-        cls.tokenstate = TokenStateInterface(cls.tokenstate_contract, "TokenState")
+        cls.tokenstate = TokenStateInterface(cls.tokenstate_contract, 'TokenState')
+        cls.owner = MASTER
+        cls.associate = DUMMY
 
     def test_constructor(self):
         self.assertNotEqual(self.owner, self.associate)
@@ -51,7 +55,8 @@ class TestTokenState(HavvenTestCase):
         self.assertEventEquals(self.deploy_tx.logs[1],
                                "AssociatedContractUpdated",
                                self.event_map,
-                               {"associatedContract": self.tokenstate.associatedContract()})
+                               {"associatedContract": self.tokenstate.associatedContract()},
+                               location=self.tokenstate_contract.address)
 
     def test_setAssociatedContract(self):
         new_token = ZERO_ADDRESS
@@ -68,7 +73,8 @@ class TestTokenState(HavvenTestCase):
         self.assertEventEquals(tx.logs[0],
                                "AssociatedContractUpdated",
                                self.event_map,
-                               {"associatedContract": new_token})
+                               {"associatedContract": new_token},
+                               location=self.tokenstate_contract.address)
 
     def test_setAllowance(self):
         self.assertEqual(self.tokenstate.allowance(MASTER, DUMMY), 0)

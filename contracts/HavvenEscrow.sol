@@ -2,6 +2,7 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
+
 file:       HavvenEscrow.sol
 version:    1.0
 author:     Anton Jurisevic
@@ -27,11 +28,10 @@ The fees are handled by withdrawing the entire fee allocation
 for all havvens inside the escrow contract, and then allowing
 the contract itself to subdivide that pool up proportionally within
 itself. Every time the fee period rolls over in the main Havven
-contract, the HavvenEscrow fee pool is remitted back into the 
+contract, the HavvenEscrow fee pool is remitted back into the
 main fee pool to be redistributed in the next fee period.
 
 -----------------------------------------------------------------
-
 */
 
 pragma solidity 0.4.23;
@@ -287,7 +287,7 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
     /**
      * @notice Allow a user to withdraw any havvens in their schedule that have vested.
      */
-    function vest() 
+    function vest()
         external
     {
         uint numEntries = numVestingEntries(msg.sender);

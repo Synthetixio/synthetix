@@ -2,13 +2,14 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
+
 file:       Nomin.sol
 version:    1.1
 author:     Anton Jurisevic
             Mike Spain
             Dominic Romanowski
 
-date:       2018-05-02
+date:       2018-05-15
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -40,7 +41,6 @@ import "contracts/TokenState.sol";
 import "contracts/Court.sol";
 import "contracts/Havven.sol";
 
-
 contract Nomin is ExternStateFeeToken {
 
     /* ========== STATE VARIABLES ========== */
@@ -55,8 +55,8 @@ contract Nomin is ExternStateFeeToken {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _havven, address _owner, TokenState _initialState)
-        ExternStateFeeToken("Havven-Backed USD Nomins", "nUSD",
+    constructor(address _proxy, address _havven, address _owner, TokenState _initialState)
+        ExternStateFeeToken(_proxy, "USD Nomins", "nUSD",
                             15 * UNIT / 10000, // nomin transfers incur a 15 bp fee
                             _havven, // the havven contract is the fee authority
                             _initialState,
@@ -72,21 +72,21 @@ contract Nomin is ExternStateFeeToken {
 
     function setCourt(Court _court)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         court = _court;
-        emit CourtUpdated(_court);
+        emitCourtUpdated(_court);
     }
 
     function setHavven(Havven _havven)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         // havven should be set as the feeAuthority after calling this depending on
         // havven's internal logic
         havven = _havven;
         setFeeAuthority(_havven);
-        emit HavvenUpdated(_havven);
+        emitHavvenUpdated(_havven);
     }
 
 
@@ -99,6 +99,7 @@ contract Nomin is ExternStateFeeToken {
      * and no new funds can be transferred to it.*/
     function transfer(address to, uint value)
         public
+        optionalProxy
         returns (bool)
     {
         require(!frozen[to]);
@@ -109,6 +110,7 @@ contract Nomin is ExternStateFeeToken {
      * whether the recipient account is frozen. */
     function transferFrom(address from, address to, uint value)
         public
+        optionalProxy
         returns (bool)
     {
         require(!frozen[to]);
@@ -117,6 +119,7 @@ contract Nomin is ExternStateFeeToken {
 
     function transferSenderPaysFee(address to, uint value)
         public
+        optionalProxy
         returns (bool)
     {
         require(!frozen[to]);
@@ -125,6 +128,7 @@ contract Nomin is ExternStateFeeToken {
 
     function transferFromSenderPaysFee(address from, address to, uint value)
         public
+        optionalProxy
         returns (bool)
     {
         require(!frozen[to]);
@@ -154,19 +158,19 @@ contract Nomin is ExternStateFeeToken {
         state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), balance));
         state.setBalanceOf(target, 0);
         frozen[target] = true;
-        emit AccountFrozen(target, target, balance);
-        emit Transfer(target, address(this), balance);
+        emitAccountFrozen(target, target, balance);
+        emitTransfer(target, address(this), balance);
     }
 
     /* The owner may allow a previously-frozen contract to once
      * again accept and transfer nomins. */
     function unfreezeAccount(address target)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         if (frozen[target] && Nomin(target) != this) {
             frozen[target] = false;
-            emit AccountUnfrozen(target, target);
+            emitAccountUnfrozen(target, target);
         }
     }
 
@@ -178,8 +182,8 @@ contract Nomin is ExternStateFeeToken {
     {
         state.setBalanceOf(target, safeAdd(state.balanceOf(target), amount));
         totalSupply = safeAdd(totalSupply, amount);
-        emit Transfer(address(0), target, amount);
-        emit Issued(target, amount);
+        emitTransfer(address(0), target, amount);
+        emitIssued(target, amount);
     }
 
     /* Allow havven to burn a certain number of
@@ -190,8 +194,8 @@ contract Nomin is ExternStateFeeToken {
     {
         state.setBalanceOf(target, safeSub(state.balanceOf(target), amount));
         totalSupply = safeSub(totalSupply, amount);
-        emit Transfer(target, address(0), amount);
-        emit Burned(target, amount);
+        emitTransfer(target, address(0), amount);
+        emitBurned(target, amount);
     }
 
     /* ========== MODIFIERS ========== */
@@ -206,17 +210,4 @@ contract Nomin is ExternStateFeeToken {
         _;
     }
 
-    /* ========== EVENTS ========== */
-
-    event CourtUpdated(address newCourt);
-
-    event HavvenUpdated(address havven);
-
-    event AccountFrozen(address target, address indexed targetIndex, uint balance);
-
-    event AccountUnfrozen(address target, address indexed targetIndex);
-
-    event Issued(address target, uint amount);
-
-    event Burned(address target, uint amount);
 }

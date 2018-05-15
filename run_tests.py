@@ -47,6 +47,8 @@ if __name__ == '__main__':
             # (avg, min, max, #calls)
             PERFORMANCE_DATA[i][j] = (vals[0]//vals[1], vals[2], vals[3], vals[1])
 
+    print(PERFORMANCE_DATA)
+
     PERFORMANCE_DATA['CONTRACT'] = {'METHOD': ['AVG_GAS', 'MIN_GAS', 'MAX_GAS', "#CALLS"]}
 
     # PRINT TABLE | CONTRACT | METHOD | AVG GAS | MIN GAS | MAX GAS | #CALLS |
@@ -54,7 +56,7 @@ if __name__ == '__main__':
     max_method_name = max([max([len(str(i)) for i in PERFORMANCE_DATA[j].keys()]) for j in PERFORMANCE_DATA.keys()])
     max_gas_len = max([max([max([len(str(i)) for i in PERFORMANCE_DATA[k][j]]) for j in PERFORMANCE_DATA[k]]) for k in PERFORMANCE_DATA])
 
-    print("\nGas performance data")
+    print("Gas performance data")
     current = 'CONTRACT'
     remaining = sorted(list(PERFORMANCE_DATA.keys()))
     remaining.pop(remaining.index('CONTRACT'))

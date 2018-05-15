@@ -2,12 +2,13 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
+
 file:       ExternStateFeeToken.sol
 version:    1.1
 author:     Anton Jurisevic
             Dominic Romanowski
 
-date:       2018-05-02
+date:       2018-05-15
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -32,7 +33,7 @@ pragma solidity 0.4.23;
 
 
 import "contracts/SafeDecimalMath.sol";
-import "contracts/Owned.sol";
+import "contracts/Emitter.sol";
 import "contracts/TokenState.sol";
 
 
@@ -40,7 +41,7 @@ import "contracts/TokenState.sol";
  * @title ERC20 Token contract, with detached state.
  * Additionally charges fees on each transfer.
  */
-contract ExternStateFeeToken is Owned, SafeDecimalMath {
+contract ExternStateFeeToken is Emitter, SafeDecimalMath {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -71,10 +72,9 @@ contract ExternStateFeeToken is Owned, SafeDecimalMath {
      * @param _state The state contract address. A fresh one is constructed if 0x0 is provided.
      * @param _owner The owner of this contract.
      */
-    constructor(string _name, string _symbol,
-                                 uint _transferFeeRate, address _feeAuthority,
-                                 TokenState _state, address _owner)
-        Owned(_owner)
+    constructor(address _proxy, string _name, string _symbol, uint _transferFeeRate, address _feeAuthority,
+                TokenState _state, address _owner)
+        Emitter(_proxy, _owner)
         public
     {
         if (_state == TokenState(0)) {
@@ -100,11 +100,11 @@ contract ExternStateFeeToken is Owned, SafeDecimalMath {
      */
     function setTransferFeeRate(uint _transferFeeRate)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         require(_transferFeeRate <= MAX_TRANSFER_FEE_RATE);
         transferFeeRate = _transferFeeRate;
-        emit TransferFeeRateUpdated(_transferFeeRate);
+        emitTransferFeeRateUpdated(_transferFeeRate);
     }
 
     /**
@@ -113,10 +113,10 @@ contract ExternStateFeeToken is Owned, SafeDecimalMath {
      */
     function setFeeAuthority(address _feeAuthority)
         public
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         feeAuthority = _feeAuthority;
-        emit FeeAuthorityUpdated(_feeAuthority);
+        emitFeeAuthorityUpdated(_feeAuthority);
     }
 
     /**
@@ -126,10 +126,10 @@ contract ExternStateFeeToken is Owned, SafeDecimalMath {
      */
     function setState(TokenState _state)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         state = _state;
-        emit StateUpdated(_state);
+        emitStateUpdated(_state);
     }
 
     /* ========== VIEWS ========== */
@@ -140,6 +140,7 @@ contract ExternStateFeeToken is Owned, SafeDecimalMath {
     function balanceOf(address account)
         public
         view
+        optionalProxy
         returns (uint)
     {
         return state.balanceOf(account);
@@ -151,6 +152,7 @@ contract ExternStateFeeToken is Owned, SafeDecimalMath {
     function allowance(address from, address to)
         public
         view
+        optionalProxy
         returns (uint)
     {
         return state.allowance(from, to);
@@ -211,7 +213,6 @@ contract ExternStateFeeToken is Owned, SafeDecimalMath {
         return state.balanceOf(address(this));
     }
 
-
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
@@ -219,22 +220,24 @@ contract ExternStateFeeToken is Owned, SafeDecimalMath {
      */
     function transfer(address to, uint value)
         public
+        optionalProxy
         returns (bool)
     {
         require(to != address(0));
 
+        address sender = messageSender;
         // The fee is deducted from the sender's balance, in addition to
         // the transferred quantity.
         uint fee = transferFeeIncurred(value);
         uint totalCharge = safeAdd(value, fee);
 
         // Insufficient balance will be handled by the safe subtraction.
-        state.setBalanceOf(msg.sender, safeSub(state.balanceOf(msg.sender), totalCharge));
+        state.setBalanceOf(sender, safeSub(state.balanceOf(sender), totalCharge));
         state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
         state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), fee));
 
-        emit Transfer(msg.sender, to, value);
-        emit Transfer(msg.sender, address(this), fee);
+        emitTransfer(sender, to, value);
+        emitTransfer(sender, address(this), fee);
 
         return true;
     }
@@ -244,9 +247,12 @@ contract ExternStateFeeToken is Owned, SafeDecimalMath {
      */
     function transferFrom(address from, address to, uint value)
         public
+        optionalProxy
         returns (bool)
     {
         require(to != address(0));
+
+        address sender = messageSender;
 
         // The fee is deducted from the sender's balance, in addition to
         // the transferred quantity.
@@ -255,12 +261,12 @@ contract ExternStateFeeToken is Owned, SafeDecimalMath {
 
         // Insufficient balance will be handled by the safe subtraction.
         state.setBalanceOf(from, safeSub(state.balanceOf(from), totalCharge));
-        state.setAllowance(from, msg.sender, safeSub(state.allowance(from, msg.sender), totalCharge));
+        state.setAllowance(from, sender, safeSub(state.allowance(from, sender), totalCharge));
         state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
         state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), fee));
 
-        emit Transfer(from, to, value);
-        emit Transfer(from, address(this), fee);
+        emitTransfer(from, to, value);
+        emitTransfer(from, address(this), fee);
 
         return true;
     }
@@ -270,11 +276,13 @@ contract ExternStateFeeToken is Owned, SafeDecimalMath {
      */
     function approve(address spender, uint value)
         external
+        optionalProxy
         returns (bool)
     {
-        state.setAllowance(msg.sender, spender, value);
+        address sender = messageSender;
 
-        emit Approval(msg.sender, spender, value);
+        state.setAllowance(sender, spender, value);
+        emitApproval(sender, spender, value);
 
         return true;
     }
@@ -285,10 +293,11 @@ contract ExternStateFeeToken is Owned, SafeDecimalMath {
      */
     function withdrawFee(address account, uint value)
         external
+        optionalProxy
         returns (bool)
     {
-        require(msg.sender == feeAuthority && account != address(0));
-        
+        require(messageSender == feeAuthority && account != address(0));
+
         // 0-value withdrawals do nothing.
         if (value == 0) {
             return false;
@@ -298,8 +307,8 @@ contract ExternStateFeeToken is Owned, SafeDecimalMath {
         state.setBalanceOf(address(this), safeSub(state.balanceOf(address(this)), value));
         state.setBalanceOf(account, safeAdd(state.balanceOf(account), value));
 
-        emit FeesWithdrawn(account, account, value);
-        emit Transfer(address(this), account, value);
+        emitFeesWithdrawn(account, account, value);
+        emitTransfer(address(this), account, value);
 
         return true;
     }
@@ -309,35 +318,22 @@ contract ExternStateFeeToken is Owned, SafeDecimalMath {
      */
     function donateToFeePool(uint n)
         external
+        optionalProxy
         returns (bool)
     {
+        address sender = messageSender;
         /* Empty donations are disallowed. */
-        uint balance = state.balanceOf(msg.sender);
+        uint balance = state.balanceOf(sender);
         require(balance != 0);
 
         /* safeSub ensures the donor has sufficient balance. */
-        state.setBalanceOf(msg.sender, safeSub(balance, n));
+        state.setBalanceOf(sender, safeSub(balance, n));
         state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), n));
 
-        emit FeesDonated(msg.sender, msg.sender, n);
-        emit Transfer(msg.sender, address(this), n);
+        emitFeesDonated(sender, sender, n);
+        emitTransfer(sender, address(this), n);
 
         return true;
     }
 
-    /* ========== EVENTS ========== */
-
-    event Transfer(address indexed from, address indexed to, uint value);
-
-    event Approval(address indexed owner, address indexed spender, uint value);
-
-    event TransferFeeRateUpdated(uint newFeeRate);
-
-    event FeeAuthorityUpdated(address feeAuthority);
-
-    event StateUpdated(address newState);
-
-    event FeesWithdrawn(address account, address indexed accountIndex, uint value);
-
-    event FeesDonated(address donor, address indexed donorIndex, uint value);
 }

@@ -2,11 +2,12 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
+
 file:       SelfDestructible.sol
-version:    1.0
+version:    1.1
 author:     Anton Jurisevic
 
-date:       2018-2-28
+date:       2018-05-15
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -25,7 +26,7 @@ without changing their mind.
 pragma solidity 0.4.23;
 
 
-import "contracts/Owned.sol";
+import "contracts/Emitter.sol";
 
 /**
  * @title A contract that can be destroyed by its owner after a delay elapses.
@@ -46,11 +47,12 @@ contract SelfDestructible is Owned {
 	 */
 	constructor(address _owner, address _beneficiary, uint _delay)
 		public
-		Owned(_owner)
+	    Owned(_owner)
 	{
 		selfDestructBeneficiary = _beneficiary;
 		selfDestructDelay = _delay;
 		emit SelfDestructBeneficiaryUpdated(_beneficiary);
+
 	}
 
 	/**
@@ -106,12 +108,8 @@ contract SelfDestructible is Owned {
 		selfdestruct(beneficiary);
 	}
 
-	event SelfDestructBeneficiaryUpdated(address newBeneficiary);
-
-	event SelfDestructInitiated(uint duration);
-
 	event SelfDestructTerminated();
-
+	event SelfDestructInitiated(uint selfDestructDelay);
 	event SelfDestructed(address beneficiary);
+	event SelfDestructBeneficiaryUpdated(address newBeneficiary);
 }
-
