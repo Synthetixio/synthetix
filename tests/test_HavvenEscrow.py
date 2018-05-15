@@ -5,7 +5,7 @@ from utils.testutils import (
 
 from utils.deployutils import (
     W3, UNIT, MASTER, DUMMY,
-    mine_txs,
+    mine_tx, mine_txs,
     attempt, attempt_deploy, compile_contracts,
     to_seconds, fast_forward,
     fresh_account, fresh_accounts,
@@ -87,6 +87,9 @@ class TestHavvenEscrow(HavvenTestCase):
         cls.havven = PublicHavvenInterface(cls.havven_contract, "Havven")
         cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
         cls.escrow = PublicHavvenEscrowInterface(cls.escrow_contract, "HavvenEscrow")
+
+    def updateHavvenPrice(self, sender, price, time):
+        mine_tx(self.havven_contract.functions.updatePrice(price, time).transact({'from': sender}), 'updatePrice', 'Havven')
 
     def test_constructor(self):
         self.assertEqual(self.escrow.havven(), self.havven_contract.address)
@@ -301,7 +304,7 @@ class TestHavvenEscrow(HavvenTestCase):
         self.havven.endow(MASTER, self.escrow.contract.address, self.havven.totalSupply())
         self.escrow.appendVestingEntry(MASTER, MASTER, block_time() + 100000, self.havven.totalSupply())
 
-        self.havven.updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
+        self.updateHavvenPrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
         self.havven.setWhitelisted(MASTER, MASTER, True)
         self.havven.issueNomins(MASTER, UNIT)
 
@@ -331,7 +334,7 @@ class TestHavvenEscrow(HavvenTestCase):
         self.escrow.appendVestingEntry(MASTER, MASTER, block_time() + 100000, self.havven.totalSupply() // 2)
         self.escrow.appendVestingEntry(MASTER, DUMMY, block_time() + 100000, self.havven.totalSupply() // 2)
 
-        self.havven.updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
+        self.updateHavvenPrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
         self.havven.setWhitelisted(MASTER, MASTER, True)
         self.havven.issueNomins(MASTER, UNIT)
 
