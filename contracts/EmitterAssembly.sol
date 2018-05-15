@@ -15,7 +15,7 @@ approved:
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
-An Emitter contract, to be inherited by other contracts.
+An EmitterAssembly contract, to be inherited by other contracts.
 The events are separated from the actual contract so that they
 could be emitted from the proxy in later implementations.
 
@@ -29,7 +29,7 @@ import "./Proxyable.sol";
 /**
  * @title A contract holding convenience methods for emitting events.
  */
-contract Emitter is Proxyable {
+contract EmitterAssembly is Proxyable {
 
     /*** CONSTRUCTOR ***/
     constructor(address _proxy, address _owner)
@@ -40,17 +40,17 @@ contract Emitter is Proxyable {
     }
 
     function emitProxyChanged(address proxyAddress)
-    internal
+        internal
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x20)
-        // store proxyAddress into output payload
+            // store proxyAddress into output payload
             mstore(add(_ptr, 0x20), proxyAddress)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -60,19 +60,19 @@ contract Emitter is Proxyable {
     }
 
     function emitAccountFrozen(address target, address targetIndex, uint256 _balance)
-    internal
+        internal
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x40)
-        // store target into output payload
+            // store target into output payload
             mstore(add(_ptr, 0x20), target)
-        // store balance into output payload
+            // store balance into output payload
             mstore(add(_ptr, 0x40), _balance)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -87,13 +87,13 @@ contract Emitter is Proxyable {
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x20)
-        // store target into output payload
+            // store target into output payload
             mstore(add(_ptr, 0x20), target)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -104,17 +104,17 @@ contract Emitter is Proxyable {
     }
 
     function emitApproval(address owner, address spender, uint256 value)
-    internal
+        internal
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x20)
-        // store value into output payload
+            // store value into output payload
             mstore(add(_ptr, 0x20), value)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -126,17 +126,17 @@ contract Emitter is Proxyable {
     }
 
     function emitAssociatedContractUpdated(address _associatedContract)
-    internal
+        internal
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x20)
-        // store _associatedContract into output payload
+            // store _associatedContract into output payload
             mstore(add(_ptr, 0x20), _associatedContract)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -146,19 +146,19 @@ contract Emitter is Proxyable {
     }
 
     function emitBurned(address target, uint256 amount)
-    internal
+        internal
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x40)
-        // store target into output payload
+            // store target into output payload
             mstore(add(_ptr, 0x20), target)
-        // store amount into output payload
+            // store amount into output payload
             mstore(add(_ptr, 0x40), amount)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -168,17 +168,17 @@ contract Emitter is Proxyable {
     }
 
     function emitCourtUpdated(address newCourt)
-    internal
+        internal
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x20)
-        // store newCourt into output payload
+            // store newCourt into output payload
             mstore(add(_ptr, 0x20), newCourt)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -188,17 +188,17 @@ contract Emitter is Proxyable {
     }
 
     function emitFeeAuthorityUpdated(address feeAuthority)
-    internal
+        internal
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x20)
-        // store feeAuthority into output payload
+            // store feeAuthority into output payload
             mstore(add(_ptr, 0x20), feeAuthority)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -208,17 +208,17 @@ contract Emitter is Proxyable {
     }
 
     function emitFeePeriodDurationUpdated(uint256 duration)
-    internal
+        internal
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x20)
-        // store duration into output payload
+            // store duration into output payload
             mstore(add(_ptr, 0x20), duration)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -228,17 +228,17 @@ contract Emitter is Proxyable {
     }
 
     function emitFeePeriodRollover(uint256 _timestamp)
-    internal
+        internal
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x20)
-        // store timestamp into output payload
+            // store timestamp into output payload
             mstore(add(_ptr, 0x20), _timestamp)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -252,15 +252,15 @@ contract Emitter is Proxyable {
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x40)
-        // store donor into output payload
+            // store donor into output payload
             mstore(add(_ptr, 0x20), donor)
-        // store value into output payload
+            // store value into output payload
             mstore(add(_ptr, 0x40), value)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -271,19 +271,19 @@ contract Emitter is Proxyable {
     }
 
     function emitFeesWithdrawn(address account, address accountIndex, uint256 value)
-    internal
+        internal
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x40)
-        // store account into output payload
+            // store account into output payload
             mstore(add(_ptr, 0x20), account)
-        // store value into output payload
+            // store value into output payload
             mstore(add(_ptr, 0x40), value)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -294,17 +294,17 @@ contract Emitter is Proxyable {
     }
 
     function emitHavvenUpdated(address newHavven)
-    internal
+        internal
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x20)
-        // store account into output payload
+            // store account into output payload
             mstore(add(_ptr, 0x20), newHavven)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -314,19 +314,19 @@ contract Emitter is Proxyable {
     }
 
     function emitIssued(address target, uint256 amount)
-    internal
+        internal
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x40)
-        // store target into output payload
+            // store target into output payload
             mstore(add(_ptr, 0x20), target)
-        // store amount into output payload
+            // store amount into output payload
             mstore(add(_ptr, 0x40), amount)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -336,17 +336,17 @@ contract Emitter is Proxyable {
     }
 
     function emitMotionApproved(uint256 motionID, uint256 motionIDIndex)
-    internal
+        internal
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x20)
-        // store target into output payload
+            // store target into output payload
             mstore(add(_ptr, 0x20), motionID)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -357,23 +357,23 @@ contract Emitter is Proxyable {
     }
 
     function emitMotionBegun(address initiator, address initiatorIndex, address target, address targetIndex, uint256 motionID, uint256 motionIDIndex, uint256 startTime)
-    internal
+        internal
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x80)
-        // store initiator into output payload
+            // store initiator into output payload
             mstore(add(_ptr, 0x20), initiator)
-        // store target into output payload
+            // store target into output payload
             mstore(add(_ptr, 0x40), target)
-        // store motionID into output payload
+            // store motionID into output payload
             mstore(add(_ptr, 0x60), motionID)
-        // store startTime into output payload
+            // store startTime into output payload
             mstore(add(_ptr, 0x80), startTime)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -386,17 +386,17 @@ contract Emitter is Proxyable {
     }
 
     function emitMotionClosed(uint256 motionID, uint256 motionIDIndex)
-    internal
+        internal
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x20)
-        // store target into output payload
+            // store target into output payload
             mstore(add(_ptr, 0x20), motionID)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -407,17 +407,17 @@ contract Emitter is Proxyable {
     }
 
     function emitMotionVetoed(uint256 motionID, uint256 motionIDIndex)
-    internal
+        internal
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x20)
-        // store target into output payload
+            // store target into output payload
             mstore(add(_ptr, 0x20), motionID)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -428,17 +428,17 @@ contract Emitter is Proxyable {
     }
 
     function emitOracleUpdated(address new_oracle)
-    internal
+        internal
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x20)
-        // store new_oracle into output payload
+            // store new_oracle into output payload
             mstore(add(_ptr, 0x20), new_oracle)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -448,19 +448,19 @@ contract Emitter is Proxyable {
     }
 
     function emitOwnerChanged(address oldOwner, address newOwner)
-    internal
+        internal
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x40)
-        // store oldOwner into output payload
+            // store oldOwner into output payload
             mstore(add(_ptr, 0x20), oldOwner)
-        // store newOwner into output payload
+            // store newOwner into output payload
             mstore(add(_ptr, 0x40), newOwner)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -470,17 +470,17 @@ contract Emitter is Proxyable {
     }
 
     function emitOwnerNominated(address newOwner)
-    internal
+        internal
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x20)
-        // store newOwner into output payload
+            // store newOwner into output payload
             mstore(add(_ptr, 0x20), newOwner)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -494,13 +494,13 @@ contract Emitter is Proxyable {
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x20)
-        // store price into output payload
+            // store price into output payload
             mstore(add(_ptr, 0x20), price)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -510,17 +510,17 @@ contract Emitter is Proxyable {
     }
 
     function emitSelfDestructBeneficiaryUpdated(address newBeneficiary)
-    internal
+        internal
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x20)
-        // store newBeneficiary into output payload
+            // store newBeneficiary into output payload
             mstore(add(_ptr, 0x20), newBeneficiary)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -530,17 +530,17 @@ contract Emitter is Proxyable {
     }
 
     function emitSelfDestructed(address beneficiary)
-    internal
+        internal
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x20)
-        // store beneficiary into output payload
+            // store beneficiary into output payload
             mstore(add(_ptr, 0x20), beneficiary)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -550,17 +550,17 @@ contract Emitter is Proxyable {
     }
 
     function emitSelfDestructInitiated(uint256 duration)
-    internal
+        internal
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x20)
-        // store duration into output payload
+            // store duration into output payload
             mstore(add(_ptr, 0x20), duration)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -570,7 +570,7 @@ contract Emitter is Proxyable {
     }
 
     function emitSelfDestructTerminated()
-    internal
+        internal
     {
         bytes memory _output = new bytes(0);
         // the main topic is always event signature hashed into keccak256
@@ -579,17 +579,17 @@ contract Emitter is Proxyable {
     }
 
     function emitStateUpdated(address newState)
-    internal
+        internal
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x20)
-        // store newState into output payload
+            // store newState into output payload
             mstore(add(_ptr, 0x20), newState)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -599,17 +599,17 @@ contract Emitter is Proxyable {
     }
 
     function emitTransfer(address from, address to, uint256 value)
-    internal
+        internal
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x20)
-        // store value into output payload
+            // store value into output payload
             mstore(add(_ptr, 0x20), value)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -621,17 +621,17 @@ contract Emitter is Proxyable {
     }
 
     function emitTransferFeePaid(address account, uint256 value)
-    internal
+        internal
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x20)
-        // store value into output payload
+            // store value into output payload
             mstore(add(_ptr, 0x20), value)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -642,17 +642,17 @@ contract Emitter is Proxyable {
     }
 
     function emitTransferFeeRateUpdated(uint256 newFeeRate)
-    internal
+        internal
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x20)
-        // store newFeeRate into output payload
+            // store newFeeRate into output payload
             mstore(add(_ptr, 0x20), newFeeRate)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -662,21 +662,21 @@ contract Emitter is Proxyable {
     }
 
     function emitVested(address beneficiary, address beneficiaryIndex, uint256 time, uint256 value)
-    internal
+        internal
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x60)
-        // store beneficiary into output payload
+            // store beneficiary into output payload
             mstore(add(_ptr, 0x20), beneficiary)
-        // store time into output payload
+            // store time into output payload
             mstore(add(_ptr, 0x40), time)
-        // store value into output payload
+            // store value into output payload
             mstore(add(_ptr, 0x60), value)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -687,19 +687,19 @@ contract Emitter is Proxyable {
     }
 
     function emitVoteCancelled(address voter, address voterIndex, uint256 motionID, uint256 motionIDIndex)
-    internal
+        internal
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x40)
-        // store voter into output payload
+            // store voter into output payload
             mstore(add(_ptr, 0x20), voter)
-        // store motionID into output payload
+            // store motionID into output payload
             mstore(add(_ptr, 0x40), motionID)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -711,21 +711,21 @@ contract Emitter is Proxyable {
     }
 
     function emitVotedAgainst(address voter, address voterIndex, uint256 motionID, uint256 motionIDIndex, uint256 weight)
-    internal
+        internal
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x60)
-        // store voter into output payload
+            // store voter into output payload
             mstore(add(_ptr, 0x20), voter)
-        // store motionID into output payload
+            // store motionID into output payload
             mstore(add(_ptr, 0x40), motionID)
-        // store motionID into output payload
+            // store motionID into output payload
             mstore(add(_ptr, 0x60), weight)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -737,21 +737,21 @@ contract Emitter is Proxyable {
     }
 
     function emitVotedFor(address voter, address voterIndex, uint256 motionID, uint256 motionIDIndex, uint256 weight)
-    internal
+        internal
     {
         bytes memory _output;
         assembly {
-        // get pointer for free memory to store data to
+            // get pointer for free memory to store data to
             let _ptr := add(mload(0x40), 0x20)
-        // Load the length of output bytes to the head of the new bytes array
+            // Load the length of output bytes to the head of the new bytes array
             mstore(_ptr, 0x60)
-        // store voter into output payload
+            // store voter into output payload
             mstore(add(_ptr, 0x20), voter)
-        // store motionID into output payload
+            // store motionID into output payload
             mstore(add(_ptr, 0x40), motionID)
-        // store motionID into output payload
+            // store motionID into output payload
             mstore(add(_ptr, 0x60), weight)
-        // assign _output the the newly created bytes
+            // assign _output the the newly created bytes
             _output := _ptr
         }
 
@@ -764,32 +764,32 @@ contract Emitter is Proxyable {
 
 
     /* ========== PRIVATE FUNCTIONS ========== */
-    function emitOnProxy(bytes stream)
-    private
+    function emitOnProxy(bytes memory stream)
+        private
     {
         proxy.emitOnProxy(stream);
     }
 
-    function emitOnProxy(bytes stream, bytes32 topic1)
-    private
+    function emitOnProxy(bytes memory stream, bytes32 topic1)
+        private
     {
         proxy.emitOnProxy(stream, topic1);
     }
 
-    function emitOnProxy(bytes stream, bytes32 topic1, bytes32 topic2)
-    private
+    function emitOnProxy(bytes memory stream, bytes32 topic1, bytes32 topic2)
+        private
     {
         proxy.emitOnProxy(stream, topic1, topic2);
     }
 
-    function emitOnProxy(bytes stream, bytes32 topic1, bytes32 topic2, bytes32 topic3)
-    private
+    function emitOnProxy(bytes memory stream, bytes32 topic1, bytes32 topic2, bytes32 topic3)
+        private
     {
         proxy.emitOnProxy(stream, topic1, topic2, topic3);
     }
 
-    function emitOnProxy(bytes stream, bytes32 topic1, bytes32 topic2, bytes32 topic3, bytes32 topic4)
-    private
+    function emitOnProxy(bytes memory stream, bytes32 topic1, bytes32 topic2, bytes32 topic3, bytes32 topic4)
+        private
     {
         proxy.emitOnProxy(stream, topic1, topic2, topic3, topic4);
     }
