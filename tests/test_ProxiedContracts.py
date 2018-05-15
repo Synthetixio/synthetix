@@ -7,6 +7,7 @@ from tests.contract_interfaces.extern_state_fee_token_interface import ExternSta
 from tests.contract_interfaces.havven_escrow_interface import PublicHavvenEscrowInterface
 from tests.contract_interfaces.court_interface import FakeCourtInterface
 
+
 class TestProxiedDestructibleExternStateToken(__import__('tests').test_DestructibleExternStateToken.TestDestructibleExternStateToken):
     @classmethod
     def setUpClass(cls):
@@ -32,8 +33,8 @@ class TestProxiedFeeCollection(__import__('tests').test_FeeCollection.TestFeeCol
     def setUpClass(cls):
         cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, cls.nomin_contract, cls.fake_court_contract = cls.deployContracts()
 
-        cls.havven = PublicHavvenInterface(cls.proxied_havven, "ProxiedPublicHavven")
-        cls.nomin = PublicNominInterface(cls.proxied_nomin, "ProxiedPublicNomin")
+        cls.havven = PublicHavvenInterface(cls.proxied_havven, "ProxiedHavven")
+        cls.nomin = PublicNominInterface(cls.proxied_nomin, "ProxiedNomin")
 
         fast_forward(weeks=102)
 
@@ -52,9 +53,8 @@ class TestProxiedHavven(__import__('tests').test_Havven.TestHavven):
             cls.havven_contract, cls.nomin_contract, cls.court_contract, \
             cls.escrow_contract, cls.construction_block, cls.havven_event_dict = cls.deployContracts()
 
-        cls.havven = PublicHavvenInterface(cls.proxied_havven, "ProxiedPublicHavven")
-
-        cls.nomin = PublicNominInterface(cls.proxied_nomin, "ProxiedPublicNomin")
+        cls.havven = PublicHavvenInterface(cls.proxied_havven, "ProxiedHavven")
+        cls.nomin = PublicNominInterface(cls.proxied_nomin, "ProxiedNomin")
 
         cls.initial_time = cls.havven.lastFeePeriodStartTime()
         cls.time_fast_forwarded = 0
@@ -71,6 +71,7 @@ class TestProxiedHavvenEscrow(__import__('tests').test_HavvenEscrow.TestHavvenEs
         cls.havven = PublicHavvenInterface(cls.proxied_havven, "ProxiedHavven")
         cls.nomin = PublicNominInterface(cls.proxied_nomin, "ProxiedNomin")
         cls.escrow = PublicHavvenEscrowInterface(cls.escrow_contract, "HavvenEscrow")
+
 
 class TestProxiedIssuance(__import__('tests').test_Issuance.TestIssuance):
     @classmethod
