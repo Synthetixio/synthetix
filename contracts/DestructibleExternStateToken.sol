@@ -2,12 +2,13 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
+
 file:       DestructibleExternStateToken.sol
 version:    1.1
 author:     Anton Jurisevic
             Dominic Romanowski
 
-date:       2018-05-02
+date:       2018-05-15
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -48,9 +49,6 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Prox
     string public symbol;
     uint public totalSupply;
 
-
-    /* ========== CONSTRUCTOR ========== */
-
     /**
      * @dev Constructor.
      * @param _name Token's ERC20 name.
@@ -90,7 +88,6 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Prox
     function allowance(address tokenOwner, address spender)
         public
         view
-        optionalProxy
         returns (uint)
     {
         return state.allowance(tokenOwner, spender);
@@ -102,7 +99,6 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Prox
     function balanceOf(address account)
         public
         view
-        optionalProxy
         returns (uint)
     {
         return state.balanceOf(account);
@@ -133,11 +129,13 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Prox
     {
         require(to != address(0));
 
+        address sender = messageSender;
+
         /* Insufficient balance will be handled by the safe subtraction. */
-        state.setBalanceOf(messageSender, safeSub(state.balanceOf(messageSender), value));
+        state.setBalanceOf(sender, safeSub(state.balanceOf(sender), value));
         state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
 
-        emitTransfer(messageSender, to, value);
+        emitTransfer(sender, to, value);
 
         return true;
     }
@@ -153,9 +151,11 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Prox
     {
         require(to != address(0));
 
+        address sender = messageSender;
+
         /* Insufficient balance will be handled by the safe subtraction. */
         state.setBalanceOf(from, safeSub(state.balanceOf(from), value));
-        state.setAllowance(from, messageSender, safeSub(state.allowance(from, messageSender), value));
+        state.setAllowance(from, sender, safeSub(state.allowance(from, sender), value));
         state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
 
         emitTransfer(from, to, value);
@@ -171,8 +171,10 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Prox
         optionalProxy
         returns (bool)
     {
-        state.setAllowance(messageSender, spender, value);
-        emitApproval(messageSender, spender, value);
+        address sender = messageSender;
+
+        state.setAllowance(sender, spender, value);
+        emitApproval(sender, spender, value);
         return true;
     }
 

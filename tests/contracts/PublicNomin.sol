@@ -58,4 +58,26 @@ contract PublicNomin is Nomin {
         totalSupply = safeAdd(totalSupply, amount);
         state.setBalanceOf(address(this), safeAdd(balanceOf(address(this)), amount));
     }
+
+    /* Allow havven to issue a certain number of
+     * nomins from a target address */
+    function publicIssue(address target, uint amount)
+        public
+    {
+        state.setBalanceOf(target, safeAdd(state.balanceOf(target), amount));
+        totalSupply = safeAdd(totalSupply, amount);
+        emitTransfer(address(0), target, amount);
+        emitIssued(target, amount);
+    }
+
+    /* Allow havven to burn a certain number of
+     * nomins from a target address */
+    function publicBurn(address target, uint amount)
+        public
+    {
+        state.setBalanceOf(target, safeSub(state.balanceOf(target), amount));
+        totalSupply = safeSub(totalSupply, amount);
+        emitTransfer(target, address(0), amount);
+        emitBurned(target, amount);
+    }
 }

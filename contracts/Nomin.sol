@@ -2,13 +2,14 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
+
 file:       Nomin.sol
 version:    1.1
 author:     Anton Jurisevic
             Mike Spain
             Dominic Romanowski
 
-date:       2018-05-02
+date:       2018-05-15
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -139,7 +140,6 @@ contract Nomin is ExternStateFeeToken {
      * and freeze its participation in further transactions. */
     function confiscateBalance(address target)
         external
-        optionalProxy
         onlyCourt
     {
         
@@ -178,7 +178,6 @@ contract Nomin is ExternStateFeeToken {
      * nomins from a target address */
     function issue(address target, uint amount)
         external
-        optionalProxy
         onlyHavven
     {
         state.setBalanceOf(target, safeAdd(state.balanceOf(target), amount));
@@ -191,7 +190,6 @@ contract Nomin is ExternStateFeeToken {
      * nomins from a target address */
     function burn(address target, uint amount)
         external
-        optionalProxy
         onlyHavven
     {
         state.setBalanceOf(target, safeSub(state.balanceOf(target), amount));
@@ -203,12 +201,12 @@ contract Nomin is ExternStateFeeToken {
     /* ========== MODIFIERS ========== */
 
     modifier onlyHavven() {
-        require(Havven(messageSender) == havven);
+        require(Havven(msg.sender) == havven);
         _;
     }
 
     modifier onlyCourt() {
-        require(Court(messageSender) == court);
+        require(Court(msg.sender) == court);
         _;
     }
 

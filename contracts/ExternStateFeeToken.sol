@@ -2,12 +2,13 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
+
 file:       ExternStateFeeToken.sol
 version:    1.1
 author:     Anton Jurisevic
             Dominic Romanowski
 
-date:       2018-05-02
+date:       2018-05-15
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -164,7 +165,6 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
     function transferFeeIncurred(uint value)
         public
         view
-        optionalProxy
         returns (uint)
     {
         return safeMul_dec(value, transferFeeRate);
@@ -185,7 +185,6 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
     function transferPlusFee(uint value)
         external
         view
-        optionalProxy
         returns (uint)
     {
         return safeAdd(value, transferFeeIncurred(value));
@@ -197,7 +196,6 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
     function priceToSpend(uint value)
         public
         view
-        optionalProxy
         returns (uint)
     {
         return safeDiv_dec(value, safeAdd(UNIT, transferFeeRate));
@@ -210,12 +208,10 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
     function feePool()
         external
         view
-        optionalProxy
         returns (uint)
     {
         return state.balanceOf(address(this));
     }
-
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
@@ -229,18 +225,19 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
     {
         require(to != address(0));
 
+        address sender = messageSender;
         // The fee is deducted from the sender's balance, in addition to
         // the transferred quantity.
         uint fee = transferFeeIncurred(value);
         uint totalCharge = safeAdd(value, fee);
 
         // Insufficient balance will be handled by the safe subtraction.
-        state.setBalanceOf(messageSender, safeSub(state.balanceOf(messageSender), totalCharge));
+        state.setBalanceOf(sender, safeSub(state.balanceOf(sender), totalCharge));
         state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
         state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), fee));
 
-        emitTransfer(messageSender, to, value);
-        emitTransfer(messageSender, address(this), fee);
+        emitTransfer(sender, to, value);
+        emitTransfer(sender, address(this), fee);
 
         return true;
     }
@@ -255,6 +252,8 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
     {
         require(to != address(0));
 
+        address sender = messageSender;
+
         // The fee is deducted from the sender's balance, in addition to
         // the transferred quantity.
         uint fee = transferFeeIncurred(value);
@@ -262,7 +261,7 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
 
         // Insufficient balance will be handled by the safe subtraction.
         state.setBalanceOf(from, safeSub(state.balanceOf(from), totalCharge));
-        state.setAllowance(from, messageSender, safeSub(state.allowance(from, messageSender), totalCharge));
+        state.setAllowance(from, sender, safeSub(state.allowance(from, sender), totalCharge));
         state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
         state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), fee));
 
@@ -280,9 +279,10 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
         optionalProxy
         returns (bool)
     {
-        state.setAllowance(messageSender, spender, value);
+        address sender = messageSender;
 
-        emitApproval(messageSender, spender, value);
+        state.setAllowance(sender, spender, value);
+        emitApproval(sender, spender, value);
 
         return true;
     }
@@ -321,16 +321,17 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
         optionalProxy
         returns (bool)
     {
+        address sender = messageSender;
         /* Empty donations are disallowed. */
-        uint balance = state.balanceOf(messageSender);
+        uint balance = state.balanceOf(sender);
         require(balance != 0);
 
         /* safeSub ensures the donor has sufficient balance. */
-        state.setBalanceOf(messageSender, safeSub(balance, n));
+        state.setBalanceOf(sender, safeSub(balance, n));
         state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), n));
 
-        emitFeesDonated(messageSender, n);
-        emitTransfer(messageSender, address(this), n);
+        emitFeesDonated(sender, n);
+        emitTransfer(sender, address(this), n);
 
         return true;
     }

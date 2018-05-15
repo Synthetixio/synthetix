@@ -2,12 +2,13 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
+
 file:       State.sol
-version:    1.0
+version:    1.1
 author:     Dominic Romanowski
             Anton Jurisevic
 
-date:       2018-2-24
+date:       2018-05-15
 
 checked:    Anton Jurisevic
 approved:   Samuel Brooks
@@ -15,8 +16,6 @@ approved:   Samuel Brooks
 -----------------------------------------------------------------
 MODULE DESCRIPTION
 -----------------------------------------------------------------
-
-A contract that holds the state of an ERC20 compliant token.
 
 This contract is used side by side with external state token
 contracts, such as Havven and Nomin.

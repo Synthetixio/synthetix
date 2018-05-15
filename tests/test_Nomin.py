@@ -337,10 +337,10 @@ class TestNomin(HavvenTestCase):
 
         # not even the owner can issue, only the havven contract
         self.assertReverts(self.nomin.issue, MASTER, acc1, 100 * UNIT)
-        self.nomin.issue(havven, acc1, 100 * UNIT)
+        self.nomin.publicIssue(havven, acc1, 100 * UNIT)
         self.assertEqual(self.nomin.balanceOf(acc1), 100 * UNIT)
         self.assertEqual(self.nomin.totalSupply(), 100 * UNIT)
-        self.nomin.issue(havven, acc2, 200 * UNIT)
+        self.nomin.publicIssue(havven, acc2, 200 * UNIT)
         self.assertEqual(self.nomin.balanceOf(acc2), 200 * UNIT)
         self.assertEqual(self.nomin.totalSupply(), 300 * UNIT)
 
@@ -351,11 +351,11 @@ class TestNomin(HavvenTestCase):
         acc1_bal = self.nomin.balanceOf(acc1)
         # not even the owner can burn...
         self.assertReverts(self.nomin.burn, MASTER, acc1, acc1_bal)
-        self.nomin.burn(havven, acc1, acc1_bal)
+        self.nomin.publicBurn(havven, acc1, acc1_bal)
         self.assertEqual(self.nomin.totalSupply(), self.nomin.balanceOf(acc2) + self.nomin.feePool())
 
         # burning more than issued is allowed, as that logic is controlled in the havven contract
-        self.nomin.burn(havven, acc2, self.nomin.balanceOf(acc2))
+        self.nomin.publicBurn(havven, acc2, self.nomin.balanceOf(acc2))
 
         self.assertEqual(self.nomin.balanceOf(acc1), self.nomin.balanceOf(acc2), 0)
 
@@ -364,14 +364,14 @@ class TestNomin(HavvenTestCase):
         self.nomin.setHavven(MASTER, havven)
 
         max_int = 2**256 - 1
-        self.nomin.issue(havven, acc1, 100 * UNIT)
-        self.assertReverts(self.nomin.issue, havven, acc1, max_int)
-        self.assertReverts(self.nomin.issue, havven, acc2, max_int)
+        self.nomin.publicIssue(havven, acc1, 100 * UNIT)
+        self.assertReverts(self.nomin.publicIssue, havven, acc1, max_int)
+        self.assertReverts(self.nomin.publicIssue, havven, acc2, max_int)
         # there shouldn't be a way to burn towards a larger value by overflowing
-        self.assertReverts(self.nomin.burn, havven, acc1, max_int)
-        self.nomin.burn(havven, acc1, 100 * UNIT)
+        self.assertReverts(self.nomin.publicBurn, havven, acc1, max_int)
+        self.nomin.publicBurn(havven, acc1, 100 * UNIT)
 
         # as long as no nomins exist, its a valid action
-        self.nomin.issue(havven, acc2, max_int)
-        self.nomin.burn(havven, acc2, max_int)
+        self.nomin.publicIssue(havven, acc2, max_int)
+        self.nomin.publicBurn(havven, acc2, max_int)
 
