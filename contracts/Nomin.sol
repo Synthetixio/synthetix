@@ -201,12 +201,12 @@ contract Nomin is ExternStateFeeToken {
     /* ========== MODIFIERS ========== */
 
     modifier onlyHavven() {
-        require(Havven(messageSender) == havven);
+        require(Havven(msg.sender) == havven);
         _;
     }
 
     modifier onlyCourt() {
-        require(Court(messageSender) == court);
+        require(Court(msg.sender) == court);
         _;
     }
 
