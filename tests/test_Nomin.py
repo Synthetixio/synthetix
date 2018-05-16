@@ -95,8 +95,18 @@ class TestNomin(HavvenTestCase):
 
         # Only the owner must be able to set the owner.
         self.assertReverts(self.nomin.nominateOwner, new_owner, new_owner)
-        self.nomin.nominateOwner(pre_owner, new_owner)
-        self.nomin.acceptOwnership(new_owner)
+        txr = self.nomin.nominateOwner(pre_owner, new_owner)
+        self.assertEventEquals(
+            self.nomin_event_dict, txr.logs[0], 'OwnerNominated',
+            fields={'newOwner': new_owner},
+            location=self.nomin_contract.address
+        )
+        txr = self.nomin.acceptOwnership(new_owner)
+        self.assertEventEquals(
+            self.nomin_event_dict, txr.logs[0], 'OwnerChanged',
+            fields={'oldOwner': pre_owner, 'newOwner': new_owner},
+            location=self.nomin_contract.address
+        )
         self.assertEqual(self.nomin.owner(), new_owner)
 
     def test_setCourt(self):
@@ -104,7 +114,12 @@ class TestNomin(HavvenTestCase):
         old_court = self.nomin.court()
 
         # Only the owner must be able to set the court.
-        self.nomin.setCourt(self.nomin.owner(), new_court)
+        txr = self.nomin.setCourt(self.nomin.owner(), new_court)
+        self.assertEventEquals(
+            self.nomin_event_dict, txr.logs[0], 'CourtUpdated',
+            fields={'newCourt': new_court},
+            location=self.nomin_proxy.address
+        )
         self.assertEqual(self.nomin.court(), new_court)
         self.assertReverts(self.nomin.setCourt, DUMMY, new_court)
         self.nomin.setCourt(self.nomin.owner(), old_court)
@@ -328,8 +343,11 @@ class TestNomin(HavvenTestCase):
         self.assertFalse(self.nomin.frozen(target))
 
         # Unfreezing should emit the appropriate log.
-        log = get_event_data_from_log(self.nomin_event_dict, tx_receipt.logs[0])
-        self.assertEqual(log['event'], 'AccountUnfrozen')
+        self.assertEventEquals(
+            self.nomin_event_dict, tx_receipt.logs[0], 'AccountUnfrozen',
+            fields={'target': target, 'targetIndex': target},
+            location=self.nomin_proxy.address
+        )
 
     def test_issue_burn(self):
         havven, acc1, acc2 = fresh_accounts(3)

@@ -17,7 +17,7 @@ class HavvenTestCase(unittest.TestCase):
             func(*args)
         self.assertTrue("revert" in error.exception.args[0]['message'])
 
-    def assertEventEquals(self, log, event_name, event_map, fields=None, location=None):
+    def assertEventEquals(self, event_map, log, event_name, fields=None, location=None):
         if fields is None:
             fields = {}
         event_data = get_event_data_from_log(event_map, log)
@@ -26,6 +26,7 @@ class HavvenTestCase(unittest.TestCase):
 
         # Iterate through the event data rather than the fields parameter
         # to ensure that all fields of the event are checked.
+        self.assertEqual(len(fields), len(event_data['args']))
         for k, v in event_data['args'].items():
             self.assertEqual(fields[k], v)
         if location:
