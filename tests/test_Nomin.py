@@ -178,7 +178,7 @@ class TestNomin(HavvenTestCase):
 
         self.assertEventEquals(
             self.nomin_event_dict, txr.logs[0], 'AccountFrozen',
-            fields={'target': target, 'targetIndex': target, 'balance': self.nomin.priceToSpend(5 * UNIT)},
+            fields={'target': target, 'balance': self.nomin.priceToSpend(5 * UNIT)},
             location=self.nomin_proxy.address
         )
 
@@ -201,7 +201,7 @@ class TestNomin(HavvenTestCase):
 
         self.assertEventEquals(
             self.nomin_event_dict, txr.logs[0], 'AccountUnfrozen',
-            fields={'target': target, 'targetIndex': target},
+            fields={'target': target},
             location=self.nomin_proxy.address
         )
         self.assertEqual(self.nomin.balanceOf(target), 0)
@@ -283,7 +283,7 @@ class TestNomin(HavvenTestCase):
         txr = self.nomin.debugFreezeAccount(MASTER, target)
         self.assertEventEquals(
             self.nomin_event_dict, txr.logs[0], 'AccountFrozen',
-            fields={'target': target, 'targetIndex': target, 'balance': self.nomin.priceToSpend(5 * UNIT)},
+            fields={'target': target, 'balance': self.nomin.priceToSpend(5 * UNIT)},
             location=self.nomin_proxy.address
         )
 
@@ -304,7 +304,7 @@ class TestNomin(HavvenTestCase):
 
         self.assertEventEquals(
             self.nomin_event_dict, txr.logs[0], 'AccountUnfrozen',
-            fields={'target': target, 'targetIndex': target},
+            fields={'target': target},
             location=self.nomin_proxy.address
         )
 
@@ -363,7 +363,7 @@ class TestNomin(HavvenTestCase):
         txr = self.nomin.debugFreezeAccount(MASTER, target)
         self.assertEventEquals(
             self.nomin_event_dict, txr.logs[0], 'AccountFrozen',
-            fields={'target': target, 'targetIndex': target, 'balance': 5 * UNIT},
+            fields={'target': target, 'balance': 5 * UNIT},
             location=self.nomin_proxy.address
         )
 
@@ -386,7 +386,7 @@ class TestNomin(HavvenTestCase):
 
         self.assertEventEquals(
             self.nomin_event_dict, txr.logs[0], 'AccountUnfrozen',
-            fields={'target': target, 'targetIndex': target},
+            fields={'target': target},
             location=self.nomin_proxy.address
         )
         self.assertEqual(self.nomin.balanceOf(target), 0)
@@ -448,7 +448,7 @@ class TestNomin(HavvenTestCase):
 
         self.assertEventEquals(
             self.nomin_event_dict, txr.logs[0], 'AccountUnfrozen',
-            fields={'target': target, 'targetIndex': target},
+            fields={'target': target},
             location=self.nomin_proxy.address
         )
 
@@ -524,7 +524,7 @@ class TestNomin(HavvenTestCase):
 
         self.assertEventEquals(
             self.nomin_event_dict, txr.logs[0], 'AccountUnfrozen',
-            fields={'target': target, 'targetIndex': target},
+            fields={'target': target},
             location=self.nomin_proxy.address
         )
 
@@ -545,7 +545,7 @@ class TestNomin(HavvenTestCase):
         )
         self.assertEventEquals(
             self.nomin_event_dict, txr.logs[1], 'Issued',
-            fields={'target': acc1, 'amount': 100 * UNIT},
+            fields={'account': acc1, 'amount': 100 * UNIT},
             location=self.nomin_proxy.address
         )
 
@@ -560,7 +560,7 @@ class TestNomin(HavvenTestCase):
         )
         self.assertEventEquals(
             self.nomin_event_dict, txr.logs[1], 'Issued',
-            fields={'target': acc2, 'amount': 200 * UNIT},
+            fields={'account': acc2, 'amount': 200 * UNIT},
             location=self.nomin_proxy.address
         )
 
@@ -583,7 +583,7 @@ class TestNomin(HavvenTestCase):
         )
         self.assertEventEquals(
             self.nomin_event_dict, txr.logs[1], 'Burned',
-            fields={'target': acc1, 'amount': acc1_bal},
+            fields={'account': acc1, 'amount': acc1_bal},
             location=self.nomin_proxy.address
         )
 
@@ -607,7 +607,7 @@ class TestNomin(HavvenTestCase):
         )
         self.assertEventEquals(
             self.nomin_event_dict, txr.logs[1], 'Issued',
-            fields={'target': acc1, 'amount': 100 * UNIT},
+            fields={'account': acc1, 'amount': 100 * UNIT},
             location=self.nomin_proxy.address
         )
         self.assertReverts(self.nomin.publicIssue, havven, acc1, max_int)
@@ -622,7 +622,7 @@ class TestNomin(HavvenTestCase):
         )
         self.assertEventEquals(
             self.nomin_event_dict, txr.logs[1], 'Burned',
-            fields={'target': acc1, 'amount': 100 * UNIT},
+            fields={'account': acc1, 'amount': 100 * UNIT},
             location=self.nomin_proxy.address
         )
 
@@ -635,7 +635,7 @@ class TestNomin(HavvenTestCase):
         )
         self.assertEventEquals(
             self.nomin_event_dict, txr.logs[1], 'Issued',
-            fields={'target': acc2, 'amount': max_int},
+            fields={'account': acc2, 'amount': max_int},
             location=self.nomin_proxy.address
         )
 
@@ -647,7 +647,7 @@ class TestNomin(HavvenTestCase):
         )
         self.assertEventEquals(
             self.nomin_event_dict, txr.logs[1], 'Burned',
-            fields={'target': acc2, 'amount': max_int},
+            fields={'account': acc2, 'amount': max_int},
             location=self.nomin_proxy.address
         )
 
