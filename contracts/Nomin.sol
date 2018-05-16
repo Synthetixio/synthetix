@@ -252,7 +252,7 @@ contract Nomin is ExternStateFeeToken {
         require(address(proxy).call(call_args));
     }
 
-    event Burned(address target, uint amount); 
+    event Burned(address target, uint amount);
     function emitBurned(address target, uint amount) internal {
         bytes memory data = abi.encode(target, amount);
         bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",

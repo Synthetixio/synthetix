@@ -48,18 +48,18 @@ def attempt(function, func_args, init_string, func_kwargs=None, print_status=Tru
 def sign_and_mine_txs(from_acc, key, txs):
     receipts = []
     for item in txs:
-        print("building transaction")
+        print("Sending transaction")
         tx = item.buildTransaction({
             'from': from_acc,
-            'gasPrice': W3.toWei('2', 'gwei'),
+            'gasPrice': W3.toWei('5', 'gwei'),
             'nonce': W3.eth.getTransactionCount(from_acc, "pending")
         })
         tx['gas'] = W3.eth.estimateGas(tx)
         signed = W3.eth.account.signTransaction(tx, key)
         txh = W3.eth.sendRawTransaction(signed.rawTransaction)
-        print("waiting for receipt")
+        print("Transaction hash:", txh)
         txn_receipt = W3.eth.waitForTransactionReceipt(txh)
-        print("got receipt")
+        print("Transaction accepted")
         receipts.append(txn_receipt)
     return receipts
 
@@ -82,11 +82,13 @@ def attempt_deploy_signed(compiled_sol, contract_name, from_acc, key, constructo
     contract_interface = compiled_sol[contract_name]
     contract = W3.eth.contract(abi=contract_interface['abi'], bytecode=contract_interface['bin'])
     const_f = contract.constructor(*constructor_args)
-    tx = const_f.buildTransaction({'from': from_acc, 'gas': gas, 'nonce': W3.eth.getTransactionCount(from_acc)})
+    tx = const_f.buildTransaction({'from': from_acc, 'nonce': W3.eth.getTransactionCount(from_acc), 'gas': gas})
+    tx['gasPrice'] = W3.toWei('5', 'gwei')
     signed = W3.eth.account.signTransaction(tx, key)
     txh = W3.eth.sendRawTransaction(signed.rawTransaction)
     txn_receipt = W3.eth.waitForTransactionReceipt(txh)
     address = txn_receipt.contractAddress
+    print("Deployed to", address)
     contract.address = address
     return contract, txn_receipt
 
@@ -97,7 +99,6 @@ def deploy_havven(print_addresses=False):
     compiled = attempt(compile_contracts, [SOLIDITY_SOURCES], "Compiling contracts... ")
 
     # Deploy contracts
-
     havven_proxy, h_prox_txr = attempt_deploy_signed(
         compiled, 'Proxy', MASTER_ADDRESS, MASTER_KEY, [MASTER_ADDRESS]
     )
