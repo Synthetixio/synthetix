@@ -7,7 +7,6 @@ from tests.contract_interfaces.extern_state_fee_token_interface import ExternSta
 from tests.contract_interfaces.havven_escrow_interface import PublicHavvenEscrowInterface
 from tests.contract_interfaces.court_interface import FakeCourtInterface
 
-"""
 class TestProxiedDestructibleExternStateToken(__import__('tests').test_DestructibleExternStateToken.TestDestructibleExternStateToken):
     @classmethod
     def setUpClass(cls):
@@ -42,8 +41,6 @@ class TestProxiedFeeCollection(__import__('tests').test_FeeCollection.TestFeeCol
 
         cls.fake_court.setNomin(MASTER, cls.nomin_contract.address)
 
-"""
-
 class TestProxiedHavven(__import__('tests').test_Havven.TestHavven):
     @classmethod
     def setUpClass(cls):
@@ -64,7 +61,6 @@ class TestProxiedHavven(__import__('tests').test_Havven.TestHavven):
         cls.base_havven_price = UNIT
 
 
-"""
 class TestProxiedHavvenEscrow(__import__('tests').test_HavvenEscrow.TestHavvenEscrow):
     @classmethod
     def setUpClass(cls):
@@ -90,7 +86,6 @@ class TestProxiedIssuance(__import__('tests').test_Issuance.TestIssuance):
         cls.fake_court = FakeCourtInterface(cls.fake_court_contract, "FakeCourt")
 
         cls.fake_court.setNomin(MASTER, cls.nomin_contract.address)
-"""
 
 
 class TestProxiedNomin(__import__('tests').test_Nomin.TestNomin):
