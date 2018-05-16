@@ -711,7 +711,6 @@ class TestHavven(HavvenTestCase):
         self.assertEventEquals(self.event_map,
                                tx.logs[3], "FeesWithdrawn",
                                {"account": issuer,
-                                "accountIndex": issuer,
                                 "value": fee_rate},
                                 self.havven_proxy.address)  
 
