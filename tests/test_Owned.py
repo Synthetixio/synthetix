@@ -39,9 +39,8 @@ class TestOwned(HavvenTestCase):
     def test_constructor(self):
         self.assertEqual(self.owned.owner(), MASTER)
         self.assertEqual(self.owned.nominatedOwner(), ZERO_ADDRESS)
-        self.assertEventEquals(self.deploy_tx.logs[0],
+        self.assertEventEquals(self.event_map, self.deploy_tx.logs[0],
                                "OwnerChanged",
-                               self.event_map,
                                {"oldOwner": ZERO_ADDRESS,
                                 "newOwner": MASTER},
                                location=self.owned_contract.address)
@@ -56,9 +55,8 @@ class TestOwned(HavvenTestCase):
 
         # Nominate new owner and ensure event emitted properly.
         nominated_tx = self.owned.nominateOwner(old_owner, new_owner)
-        self.assertEventEquals(nominated_tx.logs[0],
+        self.assertEventEquals(self.event_map, nominated_tx.logs[0],
                                "OwnerNominated",
-                               self.event_map,
                                {"newOwner": new_owner},
                                location=self.owned_contract.address)
 
@@ -73,9 +71,8 @@ class TestOwned(HavvenTestCase):
 
         # Accept ownership and ensure event emitted properly.
         accepted_tx = self.owned.acceptOwnership(new_owner)
-        self.assertEventEquals(accepted_tx.logs[0],
+        self.assertEventEquals(self.event_map, accepted_tx.logs[0],
                                "OwnerChanged",
-                               self.event_map,
                                {"oldOwner": old_owner,
                                 "newOwner": new_owner},
                                location=self.owned_contract.address)

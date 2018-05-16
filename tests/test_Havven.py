@@ -98,7 +98,6 @@ class TestHavven(HavvenTestCase):
     def havven_updatePrice(self, sender, price, time):
         return mine_tx(self.havven_contract.functions.updatePrice(price, time).transact({'from': sender}), 'updatePrice', 'Havven')
 
-    """
     ###
     # Test inherited Owned - Should be the same test_Owned.py
     ###
@@ -666,12 +665,12 @@ class TestHavven(HavvenTestCase):
             a_sum += (block_time() - t) * amount
             self.assertEqual(self.nomin.balanceOf(alice), 0)
             self.assertEqual(self.havven.issuedNominCurrentBalanceSum(alice), a_sum)
-    """
+
     def test_event_PriceUpdated(self):
         time = block_time()
         tx = self.havven_updatePrice(self.havven.oracle(), 10 * UNIT, time)
-        self.assertEventEquals(tx.logs[0], "PriceUpdated",
-                               self.event_map,
+        self.assertEventEquals(self.event_map,
+                               tx.logs[0], "PriceUpdated",
                                {"price": 10 * UNIT,
                                 "timestamp": time},
                                 self.havven_proxy.address)
@@ -682,16 +681,16 @@ class TestHavven(HavvenTestCase):
         fast_forward(fee_period + 10) 
         tx = self.havven.checkFeePeriodRollover(MASTER)
         time = block_time(tx.blockNumber)
-        self.assertEventEquals(tx.logs[0], "FeePeriodRollover",
-                               self.event_map,
+        self.assertEventEquals(self.event_map,
+                               tx.logs[0], "FeePeriodRollover",
                                {"timestamp": time},
                                 self.havven_proxy.address)
 
     def test_event_FeePeriodDurationUpdated(self):
         new_duration = 19 * 24 * 60 * 60
         tx = self.havven.setTargetFeePeriodDuration(MASTER, new_duration)
-        self.assertEventEquals(tx.logs[0], "FeePeriodDurationUpdated",
-                               self.event_map,
+        self.assertEventEquals(self.event_map,
+                               tx.logs[0], "FeePeriodDurationUpdated",
                                {"duration": new_duration},
                                 self.havven_proxy.address)
 
@@ -709,8 +708,8 @@ class TestHavven(HavvenTestCase):
         self.nomin.transferSenderPaysFee(issuer, issuer, UNIT)
         fast_forward(fee_period + 100)
         tx = self.havven.withdrawFeeEntitlement(issuer)
-        self.assertEventEquals(tx.logs[3], "FeesWithdrawn",
-                               self.event_map,
+        self.assertEventEquals(self.event_map,
+                               tx.logs[3], "FeesWithdrawn",
                                {"account": issuer,
                                 "accountIndex": issuer,
                                 "value": fee_rate},
@@ -720,8 +719,8 @@ class TestHavven(HavvenTestCase):
         new_oracle = fresh_account()
         self.assertNotEqual(MASTER, new_oracle)
         tx = self.havven.setOracle(MASTER, new_oracle)
-        self.assertEventEquals(tx.logs[0], "OracleUpdated",
-                               self.event_map,
+        self.assertEventEquals(self.event_map,
+                               tx.logs[0], "OracleUpdated",
                                {"newOracle": new_oracle},
                                 self.havven_proxy.address)
 
@@ -729,8 +728,8 @@ class TestHavven(HavvenTestCase):
         new_nomin = fresh_account()
         self.assertNotEqual(MASTER, new_nomin)
         tx = self.havven.setNomin(MASTER, new_nomin)
-        self.assertEventEquals(tx.logs[0], "NominUpdated",
-                               self.event_map,
+        self.assertEventEquals(self.event_map,
+                               tx.logs[0], "NominUpdated",
                                {"newNomin": new_nomin},
                                 self.havven_proxy.address)
 
@@ -738,7 +737,7 @@ class TestHavven(HavvenTestCase):
         new_escrow = fresh_account()
         self.assertNotEqual(MASTER, new_escrow)
         tx = self.havven.setEscrow(MASTER, new_escrow)
-        self.assertEventEquals(tx.logs[0], "EscrowUpdated",
-                               self.event_map,
+        self.assertEventEquals(self.event_map,
+                               tx.logs[0], "EscrowUpdated",
                                {"newEscrow": new_escrow},
                                 self.havven_proxy.address)

@@ -52,9 +52,9 @@ class TestTokenState(HavvenTestCase):
         self.assertNotEqual(self.owner, self.associate)
         self.assertEquals(self.tokenstate.owner(), self.owner)
         self.assertEquals(self.tokenstate.associatedContract(), self.associate)
-        self.assertEventEquals(self.deploy_tx.logs[1],
+        self.assertEventEquals(self.event_map,
+                               self.deploy_tx.logs[1],
                                "AssociatedContractUpdated",
-                               self.event_map,
                                {"associatedContract": self.tokenstate.associatedContract()},
                                location=self.tokenstate_contract.address)
 
@@ -70,9 +70,8 @@ class TestTokenState(HavvenTestCase):
         tx = self.tokenstate.setAssociatedContract(MASTER, new_token)
         self.assertEqual(self.tokenstate.associatedContract(), new_token)
         self.assertEqual(self.tokenstate.balanceOf(DUMMY), UNIT)
-        self.assertEventEquals(tx.logs[0],
+        self.assertEventEquals(self.event_map, tx.logs[0],
                                "AssociatedContractUpdated",
-                               self.event_map,
                                {"associatedContract": new_token},
                                location=self.tokenstate_contract.address)
 

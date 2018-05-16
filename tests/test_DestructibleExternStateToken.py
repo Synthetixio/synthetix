@@ -218,8 +218,8 @@ class TestDestructibleExternStateToken(HavvenTestCase):
         receiver = fresh_account()
         self.assertNotEqual(receiver, MASTER)
         tx = self.token.transfer(MASTER, receiver, 10 * UNIT)
-        self.assertEventEquals(tx.logs[0], "Transfer",
-                               self.token_event_dict,
+        self.assertEventEquals(self.token_event_dict,
+                               tx.logs[0], "Transfer",
                                {"from": MASTER,
                                 "to": receiver,
                                 "value": 10 * UNIT},
@@ -229,8 +229,8 @@ class TestDestructibleExternStateToken(HavvenTestCase):
         receiver = fresh_account()
         self.assertNotEqual(receiver, MASTER)
         tx = self.token.approve(MASTER, receiver, 10 * UNIT)
-        self.assertEventEquals(tx.logs[0], "Approval",
-                               self.token_event_dict,
+        self.assertEventEquals(self.token_event_dict,
+                               tx.logs[0], "Approval",
                                {"owner": MASTER,
                                 "spender": receiver,
                                 "value": 10 * UNIT},
@@ -239,7 +239,7 @@ class TestDestructibleExternStateToken(HavvenTestCase):
     def test_event_StateUpdated(self):
         new_state = fresh_account()
         tx = self.token.setState(MASTER, new_state)
-        self.assertEventEquals(tx.logs[0], "StateUpdated",
-                               self.token_event_dict,
+        self.assertEventEquals(self.token_event_dict,
+                               tx.logs[0], "StateUpdated",
                                {"newState": new_state},
                                 self.proxy.address)
