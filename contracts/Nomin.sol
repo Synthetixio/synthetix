@@ -248,7 +248,7 @@ contract Nomin is ExternStateFeeToken {
     function emitIssued(address target, uint amount) internal {
         bytes memory data = abi.encode(target, amount);
         bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 1, keccak256("Issued(address,address)"));
+            data, 1, keccak256("Issued(address,uint256)"));
         require(address(proxy).call(call_args));
     }
 
@@ -256,7 +256,7 @@ contract Nomin is ExternStateFeeToken {
     function emitBurned(address target, uint amount) internal {
         bytes memory data = abi.encode(target, amount);
         bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 1, keccak256("Burned(address)"));
+            data, 1, keccak256("Burned(address,uint256)"));
         require(address(proxy).call(call_args));
     }
 }
