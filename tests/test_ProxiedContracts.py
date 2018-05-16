@@ -3,7 +3,7 @@ from utils.deployutils import MASTER, DUMMY, fresh_account, fast_forward, UNIT
 from tests.contract_interfaces.havven_interface import PublicHavvenInterface, HavvenInterface
 from tests.contract_interfaces.nomin_interface import PublicNominInterface
 from tests.contract_interfaces.destructible_extern_state_token_interface import DestructibleExternStateTokenInterface
-from tests.contract_interfaces.extern_state_fee_token_interface import ExternStateFeeTokenInterface
+from tests.contract_interfaces.extern_state_fee_token_interface import PublicExternStateFeeTokenInterface
 from tests.contract_interfaces.havven_escrow_interface import PublicHavvenEscrowInterface
 from tests.contract_interfaces.court_interface import FakeCourtInterface
 
@@ -23,7 +23,7 @@ class TestProxiedExternStateFeeToken(__import__('tests').test_ExternStateFeeToke
         cls.initial_beneficiary = DUMMY
         cls.fee_authority = fresh_account()
 
-        cls.feetoken = ExternStateFeeTokenInterface(cls.proxied_feetoken, "ProxiedFeeToken")
+        cls.feetoken = PublicExternStateFeeTokenInterface(cls.proxied_feetoken, "ProxiedFeeToken")
         cls.feetoken.setFeeAuthority(MASTER, cls.fee_authority)
 
 
