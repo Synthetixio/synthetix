@@ -763,11 +763,11 @@ contract Havven is DestructibleExternStateToken {
         require(address(proxy).call(call_args));
     } 
 
-    event FeesWithdrawn(address account, address indexed accountIndex, uint value);
+    event FeesWithdrawn(address indexed account, uint value);
     function emitFeesWithdrawn(address account, uint value) internal {
-        bytes memory data = abi.encode(account, value);
+        bytes memory data = abi.encode(value);
         bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 2, keccak256("FeesWithdrawn(address,address,uint256)"), bytes32(account));
+            data, 2, keccak256("FeesWithdrawn(address,uint256)"), bytes32(account));
         require(address(proxy).call(call_args));
     }
 

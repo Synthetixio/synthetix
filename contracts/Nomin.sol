@@ -228,35 +228,35 @@ contract Nomin is ExternStateFeeToken {
         require(address(proxy).call(call_args));
     }
 
-    event AccountFrozen(address target, address indexed targetIndex, uint balance);
+    event AccountFrozen(address indexed target, uint balance);
     function emitAccountFrozen(address target, uint balance) internal {
-        bytes memory data = abi.encode(target, balance);
+        bytes memory data = abi.encode(balance);
         bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 2, keccak256("AccountFrozen(address,address,uint256)"), bytes32(target));
+            data, 2, keccak256("AccountFrozen(address,uint256)"), bytes32(target));
         require(address(proxy).call(call_args));
     }
 
-    event AccountUnfrozen(address target, address indexed targetIndex);
+    event AccountUnfrozen(address indexed target);
     function emitAccountUnfrozen(address target) internal {
-        bytes memory data = abi.encode(target);
+        bytes memory data = abi.encode();
         bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 2, keccak256("AccountUnfrozen(address,address)"), bytes32(target));
+            data, 2, keccak256("AccountUnfrozen(address)"), bytes32(target));
         require(address(proxy).call(call_args));
     }
 
-    event Issued(address target, uint amount);
-    function emitIssued(address target, uint amount) internal {
-        bytes memory data = abi.encode(target, amount);
+    event Issued(address indexed account, uint amount);
+    function emitIssued(address account, uint amount) internal {
+        bytes memory data = abi.encode(amount);
         bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 1, keccak256("Issued(address,uint256)"));
+            data, 1, keccak256("Issued(address,uint256)"), bytes32(account));
         require(address(proxy).call(call_args));
     }
 
-    event Burned(address target, uint amount);
-    function emitBurned(address target, uint amount) internal {
-        bytes memory data = abi.encode(target, amount);
+    event Burned(address indexed account, uint amount);
+    function emitBurned(address account, uint amount) internal {
+        bytes memory data = abi.encode(amount);
         bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 1, keccak256("Burned(address,uint256)"));
+            data, 1, keccak256("Burned(address,uint256)"), bytes32(account));
         require(address(proxy).call(call_args));
     }
 }
