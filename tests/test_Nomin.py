@@ -1,17 +1,15 @@
 from utils.deployutils import (
     W3, UNIT, MASTER, DUMMY,
     fresh_account, fresh_accounts,
-    compile_contracts, attempt_deploy, mine_txs,
+    mine_tx, attempt_deploy, mine_txs,
     take_snapshot, restore_snapshot
 )
 from utils.testutils import (
     HavvenTestCase, ZERO_ADDRESS,
-    generate_topic_event_map, get_event_data_from_log
 )
 from tests.contract_interfaces.nomin_interface import PublicNominInterface
 from tests.contract_interfaces.havven_interface import HavvenInterface
 from tests.contract_interfaces.court_interface import FakeCourtInterface
-
 
 
 def setUpModule():
@@ -95,13 +93,13 @@ class TestNomin(HavvenTestCase):
 
         # Only the owner must be able to set the owner.
         self.assertReverts(self.nomin.nominateOwner, new_owner, new_owner)
-        txr = self.nomin.nominateOwner(pre_owner, new_owner)
+        txr = mine_tx(self.nomin_contract.functions.nominateOwner(new_owner).transact({'from': pre_owner}), 'nominateOwner', 'Nomin')
         self.assertEventEquals(
             self.nomin_event_dict, txr.logs[0], 'OwnerNominated',
             fields={'newOwner': new_owner},
             location=self.nomin_contract.address
         )
-        txr = self.nomin.acceptOwnership(new_owner)
+        txr = mine_tx(self.nomin_contract.functions.acceptOwnership().transact({'from': new_owner}), 'acceptOwnership', 'Nomin')
         self.assertEventEquals(
             self.nomin_event_dict, txr.logs[0], 'OwnerChanged',
             fields={'oldOwner': pre_owner, 'newOwner': new_owner},
