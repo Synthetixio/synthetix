@@ -178,7 +178,7 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Prox
     function emitTransfer(address from, address to, uint value) internal {
         bytes memory data = abi.encode(value);
         bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 3, keccak256("Transfer(address,address,uint256)"));
+            data, 3, keccak256("Transfer(address,address,uint256)"), bytes32(from), bytes32(to));
         require(address(proxy).call(call_args));
     }
 

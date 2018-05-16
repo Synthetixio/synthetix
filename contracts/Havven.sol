@@ -309,6 +309,7 @@ contract Havven is DestructibleExternStateToken {
 
     function issuedNominCurrentBalanceSum(address account)
         external
+        view
         returns (uint)
     {
         return issuedNominBalanceData[account].currentBalanceSum;
@@ -316,6 +317,7 @@ contract Havven is DestructibleExternStateToken {
 
     function issuedNominLastAverageBalance(address account)
         external
+        view
         returns (uint)
     {
         return issuedNominBalanceData[account].lastAverageBalance;
@@ -323,6 +325,7 @@ contract Havven is DestructibleExternStateToken {
 
     function issuedNominLastTransferTimestamp(address account)
         external
+        view
         returns (uint)
     {
         return issuedNominBalanceData[account].lastTransferTimestamp;
@@ -330,6 +333,7 @@ contract Havven is DestructibleExternStateToken {
 
     function totalIssuedNominCurrentBalanceSum()
         external
+        view
         returns (uint)
     {
         return totalIssuedNominBalanceData.currentBalanceSum;
@@ -337,6 +341,7 @@ contract Havven is DestructibleExternStateToken {
 
     function totalIssuedNominLastAverageBalance()
         external
+        view
         returns (uint)
     {
         return totalIssuedNominBalanceData.lastAverageBalance;
@@ -344,6 +349,7 @@ contract Havven is DestructibleExternStateToken {
 
     function totalIssuedNominLastTransferTimestamp()
         external
+        view
         returns (uint)
     {
         return totalIssuedNominBalanceData.lastTransferTimestamp;
@@ -467,6 +473,7 @@ contract Havven is DestructibleExternStateToken {
      */
     function rolloverBalances(uint preBalance, BalanceData balanceInfo)
         internal
+        view
         returns (BalanceData)
     {
 
