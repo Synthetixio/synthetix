@@ -28,7 +28,7 @@ class HavvenTestCase(unittest.TestCase):
         # to ensure that all fields of the event are checked.
         self.assertEqual(len(fields), len(event_data['args']))
         for k, v in event_data['args'].items():
-            self.assertEqual(fields[k], v)
+            self.assertEqual(fields[k], v, msg=f"\nField: <{k}> For event: <{event_name}>")
         if location:
             self.assertEqual(event_data['address'], location)
 

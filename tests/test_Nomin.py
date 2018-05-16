@@ -129,7 +129,17 @@ class TestNomin(HavvenTestCase):
         old_havven = self.nomin.havven()
 
         # Only the owner must be able to set the court.
-        self.nomin.setHavven(self.nomin.owner(), new_havven)
+        txr = self.nomin.setHavven(self.nomin.owner(), new_havven)
+        self.assertEventEquals(
+            self.nomin_event_dict, txr.logs[0], 'FeeAuthorityUpdated',
+            fields={'newFeeAuthority': new_havven},
+            location=self.nomin_proxy.address
+        )
+        self.assertEventEquals(
+            self.nomin_event_dict, txr.logs[1], 'HavvenUpdated',
+            fields={'newHavven': new_havven},
+            location=self.nomin_proxy.address
+        )
         self.assertEqual(self.nomin.havven(), new_havven)
         self.assertReverts(self.nomin.setHavven, DUMMY, old_havven)
         self.nomin.setHavven(self.nomin.owner(), old_havven)
@@ -144,13 +154,45 @@ class TestNomin(HavvenTestCase):
         # Should be impossible to transfer to the nomin contract itself.
         self.assertReverts(self.nomin.transfer, MASTER, self.nomin_contract.address, UNIT)
 
-        self.nomin.transfer(MASTER, target, 5 * UNIT)
+        txr = self.nomin.transfer(MASTER, target, 5 * UNIT)
+
+        self.assertEventEquals(
+            self.nomin_event_dict, txr.logs[0], 'Transfer',
+            fields={'from': MASTER, 'to': target, 'value': self.nomin.priceToSpend(5*UNIT)},
+            location=self.nomin_proxy.address
+        )
+
+        self.assertEventEquals(
+            self.nomin_event_dict, txr.logs[1], 'Transfer',
+            fields={
+                'from': MASTER,
+                'to': self.nomin_contract.address,
+                'value': self.nomin.transferFeeIncurred(self.nomin.priceToSpend(5*UNIT))
+            },
+            location=self.nomin_proxy.address
+        )
 
         self.assertClose(self.nomin.balanceOf(MASTER), 5 * UNIT)
         self.assertEqual(self.nomin.balanceOf(target), self.nomin.priceToSpend(5 * UNIT))
         self.assertEqual(self.nomin.feePool(), self.nomin.transferFeeIncurred(self.nomin.priceToSpend(5 * UNIT)))
 
-        self.nomin.debugFreezeAccount(MASTER, target)
+        txr = self.nomin.debugFreezeAccount(MASTER, target)
+
+        self.assertEventEquals(
+            self.nomin_event_dict, txr.logs[0], 'AccountFrozen',
+            fields={'target': target, 'targetIndex': target, 'balance': self.nomin.priceToSpend(5 * UNIT)},
+            location=self.nomin_proxy.address
+        )
+
+        self.assertEventEquals(
+            self.nomin_event_dict, txr.logs[1], 'Transfer',
+            fields={
+                'from': target,
+                'to': self.nomin_contract.address,
+                'value': self.nomin.priceToSpend(5 * UNIT)
+            },
+            location=self.nomin_proxy.address
+        )
 
         self.assertEqual(self.nomin.balanceOf(target), 0)
 
