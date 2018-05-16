@@ -87,7 +87,8 @@ class TestIssuance(HavvenTestCase):
         mine_tx(self.havven_contract.functions.updatePrice(price, time).transact({'from': sender}), 'updatePrice', 'Havven')
 
     def test_issue(self):
-        self.havven.endow(MASTER, MASTER, 1000 * UNIT)
+        tx = self.havven.endow(MASTER, MASTER, 1000 * UNIT)
+        self.assertEventEquals(self.event_maps['Havven'], tx.logs[0], 'T')
         self.havven.setWhitelisted(MASTER, MASTER, True)
 
         self.assertEqual(self.havven.balanceOf(MASTER), 1000 * UNIT)

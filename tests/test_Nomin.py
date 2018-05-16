@@ -105,7 +105,7 @@ class TestNomin(HavvenTestCase):
             fields={'oldOwner': pre_owner, 'newOwner': new_owner},
             location=self.nomin_contract.address
         )
-        self.assertEqual(self.nomin.owner(), new_owner)
+        self.assertEqual(self.nomin_contract.functions.owner().call(), new_owner)
 
     def test_setCourt(self):
         new_court = DUMMY
