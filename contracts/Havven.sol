@@ -293,6 +293,7 @@ contract Havven is DestructibleExternStateToken {
     {
         require(_issuanceRatio <= maxIssuanceRatio);
         issuanceRatio = _issuanceRatio;
+        emitIssuanceRatioUpdated(_issuanceRatio);
     }
 
     /**
@@ -736,7 +737,15 @@ contract Havven is DestructibleExternStateToken {
         bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
             data, 1, keccak256("PriceUpdated(uint256,uint256)"));
         require(address(proxy).call(call_args));
-    } 
+    }
+
+    event IssuanceRatioUpdated(uint new_ratio);
+    function emitIssuanceRatioUpdated(uint new_ratio) internal {
+        bytes memory data = abi.encode(new_ratio);
+        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
+            data, 1, keccak256("PriceUpdated(uint256)"));
+        require(address(proxy).call(call_args));
+    }
 
     event FeePeriodRollover(uint timestamp);
     function emitFeePeriodRollover(uint timestamp) internal {
