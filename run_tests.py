@@ -8,7 +8,7 @@ from unittest import TestSuite, TestLoader, TextTestRunner
 from utils.generalutils import load_test_settings, ganache_error_message
 
 if __name__ == '__main__':
-    num_agents = "500"
+    num_agents = "150"
     eth_per_agent = "1000000000000"
 
     print("Launching ganache", end="", flush=True)
