@@ -214,7 +214,7 @@ class TestDestructibleExternStateToken(HavvenTestCase):
         # This should fail because the approver has no tokens.
         self.assertReverts(self.token.transferFrom, spender, approver, receiver, value)
 
-    def test_Transfer_event(self):
+    def test_event_Transfer(self):
         receiver = fresh_account()
         self.assertNotEqual(receiver, MASTER)
         tx = self.token.transfer(MASTER, receiver, 10 * UNIT)
@@ -225,7 +225,7 @@ class TestDestructibleExternStateToken(HavvenTestCase):
                                 "value": 10 * UNIT},
                                 self.proxy.address)
 
-    def test_Approval_event(self):
+    def test_event_Approval(self):
         receiver = fresh_account()
         self.assertNotEqual(receiver, MASTER)
         tx = self.token.approve(MASTER, receiver, 10 * UNIT)
@@ -236,7 +236,7 @@ class TestDestructibleExternStateToken(HavvenTestCase):
                                 "value": 10 * UNIT},
                                 self.proxy.address)
 
-    def test_StateUpdated_event(self):
+    def test_event_StateUpdated(self):
         new_state = fresh_account()
         tx = self.token.setState(MASTER, new_state)
         self.assertEventEquals(tx.logs[0], "StateUpdated",

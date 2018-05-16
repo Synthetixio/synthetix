@@ -770,7 +770,6 @@ contract Havven is DestructibleExternStateToken {
         require(address(proxy).call(call_args));
     }
 
-
     event NominUpdated(address newNomin);
     function emitNominUpdated(address newNomin) internal {
         bytes memory data = abi.encode(newNomin);
