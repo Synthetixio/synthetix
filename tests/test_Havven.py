@@ -699,7 +699,7 @@ class TestHavven(HavvenTestCase):
         fee_rate = self.nomin.transferFeeRate()
         fee_period = self.havven.targetFeePeriodDurationSeconds()
         self.havven.endow(MASTER, issuer, 2 * UNIT)
-        self.havven.updatePrice(self.havven.oracle(), UNIT, block_time())
+        self.havven_updatePrice(self.havven.oracle(), UNIT, block_time())
         self.havven.setIssuanceRatio(MASTER, UNIT)
         self.havven.setWhitelisted(MASTER, issuer, True)
         self.havven.issueNomins(issuer, 2 * UNIT)
