@@ -46,6 +46,7 @@ contract SelfDestructible is Owned {
 	 */
 	constructor(address _owner, address _beneficiary, uint _delay)
 	    Owned(_owner)
+	    public
 	{
 		selfDestructBeneficiary = _beneficiary;
 		selfDestructDelay = _delay;
