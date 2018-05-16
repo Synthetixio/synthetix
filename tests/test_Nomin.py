@@ -697,7 +697,7 @@ class TestNomin(HavvenTestCase):
     def test_event_Issued(self):
         issuer = fresh_account()
         self.nomin.setHavven(MASTER, MASTER)
-        txr = self.nomin.issue(MASTER, issuer, UNIT)
+        txr = self.nomin.publicIssue(MASTER, issuer, UNIT)
         self.assertEventEquals(
             self.nomin_event_dict, txr.logs[1], 'Issued',
             fields={'account': issuer,
@@ -708,8 +708,8 @@ class TestNomin(HavvenTestCase):
     def test_event_Burned(self):
         burner = fresh_account()
         self.nomin.setHavven(MASTER, MASTER)
-        self.nomin.issue(MASTER, burner, UNIT)
-        txr = self.nomin.burn(MASTER, burner, UNIT)
+        self.nomin.publicIssue(MASTER, burner, UNIT)
+        txr = self.nomin.publicBurn(MASTER, burner, UNIT)
         self.assertEventEquals(
             self.nomin_event_dict, txr.logs[1], 'Burned',
             fields={'account': burner,
