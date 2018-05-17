@@ -651,3 +651,69 @@ class TestNomin(HavvenTestCase):
             location=self.nomin_proxy.address
         )
 
+    def test_event_CourtUpdated(self):
+        new_court = fresh_account()
+        tx = self.nomin.setCourt(MASTER, new_court)
+        self.assertEventEquals(self.nomin_event_dict,
+                               tx.logs[0], "CourtUpdated",
+                               {"newCourt": new_court},
+                                self.nomin_proxy.address)
+
+    def test_event_HavvenUpdated(self):
+        new_havven = fresh_account()
+        tx = self.nomin.setHavven(MASTER, new_havven)
+        self.assertEventEquals(self.nomin_event_dict,
+                               tx.logs[1], "HavvenUpdated",
+                               {"newHavven": new_havven},
+                                self.nomin_proxy.address)
+
+    def test_event_AccountFrozen(self):
+        target = fresh_account()
+        self.nomin.clearNomins(MASTER, target)
+        self.nomin.giveNomins(MASTER, target, 5 * UNIT)
+        motion_id = 1
+        self.fake_court.setTargetMotionID(MASTER, target, motion_id)
+        self.fake_court.setConfirming(MASTER, motion_id, True)
+        self.fake_court.setVotePasses(MASTER, motion_id, True)
+        self.assertEqual(self.nomin.balanceOf(target), 5 * UNIT)
+        txr = self.fake_court.confiscateBalance(MASTER, target)
+        self.assertEqual(self.nomin.balanceOf(target), 0)
+        self.assertEventEquals(
+            self.nomin_event_dict, txr.logs[0], 'AccountFrozen',
+            fields={'target': target, 'balance': 5 * UNIT},
+            location=self.nomin_proxy.address
+        )
+
+    def test_event_AccountUnfrozen(self):
+        target = fresh_account()
+        self.nomin.debugFreezeAccount(MASTER, target)
+        txr = self.nomin.unfreezeAccount(MASTER, target)
+        self.assertEventEquals(
+            self.nomin_event_dict, txr.logs[0], 'AccountUnfrozen',
+            fields={'target': target},
+            location=self.nomin_proxy.address
+        )
+
+    def test_event_Issued(self):
+        issuer = fresh_account()
+        self.nomin.setHavven(MASTER, MASTER)
+        txr = self.nomin.publicIssue(MASTER, issuer, UNIT)
+        self.assertEventEquals(
+            self.nomin_event_dict, txr.logs[1], 'Issued',
+            fields={'account': issuer,
+                    'amount': UNIT},
+            location=self.nomin_proxy.address
+        )
+
+    def test_event_Burned(self):
+        burner = fresh_account()
+        self.nomin.setHavven(MASTER, MASTER)
+        self.nomin.publicIssue(MASTER, burner, UNIT)
+        txr = self.nomin.publicBurn(MASTER, burner, UNIT)
+        self.assertEventEquals(
+            self.nomin_event_dict, txr.logs[1], 'Burned',
+            fields={'account': burner,
+                    'amount': UNIT},
+            location=self.nomin_proxy.address
+        )
+        

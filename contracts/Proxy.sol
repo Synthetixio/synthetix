@@ -42,7 +42,7 @@ import "contracts/Proxyable.sol";
 contract Proxy is Owned {
     Proxyable public target;
 
-    event TargetUpdated(Proxyable _new_address);
+    event TargetUpdated(Proxyable newTarget);
 
     modifier onlyTarget() {
         require(Proxyable(msg.sender) == target,

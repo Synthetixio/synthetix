@@ -47,3 +47,12 @@ class ExternStateFeeTokenInterface(SafeDecimalMathInterface, OwnedInterface):
             self.contract.functions.withdrawFee(account, value).transact({'from': sender}), "withdrawFee", self.contract_name)
         self.donateToFeePool = lambda sender, value: mine_tx(
             self.contract.functions.donateToFeePool(value).transact({'from': sender}), "donateToFeePool", self.contract_name)
+
+class PublicExternStateFeeTokenInterface(ExternStateFeeTokenInterface):
+    def __init__(self, contract, name):
+        ExternStateFeeTokenInterface.__init__(self, contract, name)
+
+        self.clearTokens = lambda sender, address: mine_tx(
+            self.contract.functions.clearTokens(address).transact({"from": sender}), "clearTokens", self.contract_name)
+        self.giveTokens = lambda sender, address, value: mine_tx(
+            self.contract.functions.giveTokens(address, value).transact({"from": sender}), "giveTokens", self.contract_name)

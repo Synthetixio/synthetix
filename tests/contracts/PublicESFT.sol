@@ -22,4 +22,21 @@ contract PublicESFT is ExternStateFeeToken {
     {
         _transferFrom_byProxy(messageSender, from, to, value);
     }
+
+    function giveTokens(address account, uint amount)
+        optionalProxy
+        public
+    {
+        state.setBalanceOf(account, safeAdd(amount, state.balanceOf(account)));
+        totalSupply = safeAdd(totalSupply, amount);
+    }
+
+    function clearTokens(address account)
+        optionalProxy
+        public
+    {
+        totalSupply = safeSub(totalSupply, state.balanceOf(account));
+        state.setBalanceOf(account, 0);
+    }
+
 }

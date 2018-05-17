@@ -1,13 +1,13 @@
 from utils.deployutils import (
     W3, UNIT, MASTER, DUMMY, fresh_account, fresh_accounts,
-    attempt_deploy, mine_txs,
+    attempt_deploy, mine_txs, mine_tx,
     take_snapshot, restore_snapshot
 )
 from utils.testutils import (
     HavvenTestCase, ZERO_ADDRESS,
     generate_topic_event_map, get_event_data_from_log
 )
-from tests.contract_interfaces.extern_state_fee_token_interface import ExternStateFeeTokenInterface
+from tests.contract_interfaces.extern_state_fee_token_interface import PublicExternStateFeeTokenInterface
 
 
 def setUpModule():
@@ -68,7 +68,7 @@ class TestExternStateFeeToken(HavvenTestCase):
         cls.initial_beneficiary = DUMMY
         cls.fee_authority = fresh_account()
 
-        cls.feetoken = ExternStateFeeTokenInterface(cls.feetoken_contract, "ExternStateFeeToken")
+        cls.feetoken = PublicExternStateFeeTokenInterface(cls.feetoken_contract, "ExternStateFeeToken")
         cls.feetoken.setFeeAuthority(MASTER, cls.fee_authority)
 
     def test_constructor(self):
@@ -415,3 +415,60 @@ class TestExternStateFeeToken(HavvenTestCase):
         self.assertEqual(len(tx_receipt.logs), 2)
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'], 'FeesDonated')
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[1])['event'], 'Transfer')
+
+    def test_event_Transfer(self):
+        sender = self.initial_beneficiary
+        txr = self.feetoken.transfer(sender, MASTER, UNIT)
+        self.assertEventEquals(
+            self.feetoken_event_dict, txr.logs[0], 'Transfer',
+            fields={'from': sender, 'to': MASTER, 'value': UNIT},
+            location=self.proxy.address
+        )
+
+    def test_event_Approval(self):
+        approver, approvee = fresh_accounts(2)
+        txr = self.feetoken.approve(approver, approvee, UNIT)
+        self.assertEventEquals(
+            self.feetoken_event_dict, txr.logs[0], 'Approval',
+            fields={'owner': approver, 'spender': approvee, 'value': UNIT},
+            location=self.proxy.address
+        )
+
+    def test_event_TransferFeeRateUpdated(self):
+        new_rate = UNIT // 11
+        txr = self.feetoken.setTransferFeeRate(MASTER, new_rate)
+        self.assertEventEquals(
+            self.feetoken_event_dict, txr.logs[0], 'TransferFeeRateUpdated',
+            fields={'newFeeRate': new_rate},
+            location=self.proxy.address
+        )
+
+    def test_event_FeeAuthorityUpdated(self):
+        new_authority = fresh_account()
+        txr = self.feetoken.setFeeAuthority(MASTER, new_authority)
+        self.assertEventEquals(
+            self.feetoken_event_dict, txr.logs[0], 'FeeAuthorityUpdated',
+            fields={'newFeeAuthority': new_authority},
+            location=self.proxy.address
+        )
+
+    def test_event_StateUpdated(self):
+        new_state = fresh_account()
+        txr = self.feetoken.setState(MASTER, new_state)
+        self.assertEventEquals(
+            self.feetoken_event_dict, txr.logs[0], 'StateUpdated',
+            fields={'newState': new_state},
+            location=self.proxy.address
+        )
+
+    def test_event_FeesWithdrawn(self):
+        beneficiary = fresh_account()
+        self.feetoken.clearTokens(MASTER, self.feetoken_contract.address)
+        self.feetoken.giveTokens(MASTER, self.feetoken_contract.address, UNIT)
+        txr = self.feetoken.withdrawFee(self.feetoken.feeAuthority(),
+                                  beneficiary, UNIT)
+        self.assertEventEquals(self.feetoken_event_dict,
+                               txr.logs[0], "FeesWithdrawn",
+                               {"account": beneficiary,
+                                "value": UNIT},
+                                self.proxy.address)  
