@@ -198,6 +198,8 @@ contract Havven is DestructibleExternStateToken {
 
     uint constant HAVVEN_SUPPLY = 1e8 * UNIT;
     uint constant ORACLE_FUTURE_LIMIT = 10 minutes;
+    string constant TOKEN_NAME = "Havven";
+    string constant TOKEN_SYMBOL = "HAV";
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -208,7 +210,7 @@ contract Havven is DestructibleExternStateToken {
      * @param _owner The owner of this contract.
      */
     constructor(address _proxy, TokenState initialState, address _owner, address _oracle, uint initalHavPrice)
-        DestructibleExternStateToken(_proxy, "Havven", "HAV", HAVVEN_SUPPLY, initialState, _owner)
+        DestructibleExternStateToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, initialState, _owner)
         /* Owned is initialised in DestructibleExternStateToken */
         public
     {

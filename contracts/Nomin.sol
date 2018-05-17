@@ -54,12 +54,13 @@ contract Nomin is ExternStateFeeToken {
 
     // Nomin transfers incur a 15 bp fee by default.
     uint constant TRANSFER_FEE = 15 * UNIT / 10000;
-
+    string constant TOKEN_NAME = "USD Nomins";
+    string constant TOKEN_SYMBOL = "nUSD";
 
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _proxy, address _havven, address _owner, TokenState _initialState)
-        ExternStateFeeToken(_proxy, "USD Nomins", "nUSD",
+        ExternStateFeeToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL,
                             TRANSFER_FEE,
                             _havven, // The havven contract is the fee authority.
                             _initialState,
