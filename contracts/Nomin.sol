@@ -52,13 +52,16 @@ contract Nomin is ExternStateFeeToken {
     // Accounts which have lost the privilege to transact in nomins.
     mapping(address => bool) public frozen;
 
+    // Nomin transfers incur a 15 bp fee by default.
+    uint constant TRANSFER_FEE = 15 * UNIT / 10000;
+
 
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _proxy, address _havven, address _owner, TokenState _initialState)
         ExternStateFeeToken(_proxy, "USD Nomins", "nUSD",
-                            15 * UNIT / 10000, // nomin transfers incur a 15 bp fee
-                            _havven, // the havven contract is the fee authority
+                            TRANSFER_FEE,
+                            _havven, // The havven contract is the fee authority.
                             _initialState,
                             _owner)
         public

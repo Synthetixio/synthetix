@@ -41,6 +41,8 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Prox
 
     /* ========== STATE VARIABLES ========== */
 
+    uint constant SELF_DESTRUCT_DELAY = 4 weeks;
+
     /* Stores balances and allowances. */
     TokenState public state;
 
@@ -59,7 +61,7 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Prox
      */
     constructor(address _proxy, string _name, string _symbol, uint _totalSupply,
                                    TokenState _state, address _owner)
-        SelfDestructible(_owner, _owner, 4 weeks)
+        SelfDestructible(_owner, _owner, SELF_DESTRUCT_DELAY)
         Proxyable(_proxy, _owner)
         public
     {
