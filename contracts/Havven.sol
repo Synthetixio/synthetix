@@ -196,7 +196,8 @@ contract Havven is DestructibleExternStateToken {
     /* the number of nomins the user has issued */
     mapping(address => uint) public nominsIssued;
 
-    uint constant havvenSupply = 1e8 * UNIT;
+    uint constant HAVVEN_SUPPLY = 1e8 * UNIT;
+    uint constant ORACLE_FUTURE_LIMIT = 10 minutes;
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -207,7 +208,7 @@ contract Havven is DestructibleExternStateToken {
      * @param _owner The owner of this contract.
      */
     constructor(address _proxy, TokenState initialState, address _owner, address _oracle, uint initalHavPrice)
-        DestructibleExternStateToken(_proxy, "Havven", "HAV", havvenSupply, initialState, _owner)
+        DestructibleExternStateToken(_proxy, "Havven", "HAV", HAVVEN_SUPPLY, initialState, _owner)
         /* Owned is initialised in DestructibleExternStateToken */
         public
     {
@@ -688,7 +689,7 @@ contract Havven is DestructibleExternStateToken {
     {
         /* Must be the most recently sent price, but not too far in the future.
          * (so we can't lock ourselves out of updating the oracle for longer than this) */
-        require(lastHavvenPriceUpdateTime < timeSent && timeSent < now + 10 minutes);
+        require(lastHavvenPriceUpdateTime < timeSent && timeSent < now + ORACLE_FUTURE_LIMIT);
 
         havvenPrice = price;
         lastHavvenPriceUpdateTime = timeSent;
