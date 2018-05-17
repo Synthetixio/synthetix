@@ -29,7 +29,7 @@ previous owner change the nomination (setting it to 0).
 -----------------------------------------------------------------
 */
 
-pragma solidity 0.4.23;
+pragma solidity 0.4.24;
 
 /**
  * @title A contract with an owner.

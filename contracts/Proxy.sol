@@ -33,7 +33,7 @@ contract as the state parameter, messageSender.
 */
 
 
-pragma solidity ^0.4.23;
+pragma solidity 0.4.24;
 
 import "contracts/Owned.sol";
 import "contracts/Proxyable.sol";

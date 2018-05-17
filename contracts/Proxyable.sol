@@ -24,7 +24,7 @@ directly and through the proxy.
 */
 
 
-pragma solidity ^0.4.23;
+pragma solidity 0.4.24;
 
 import "contracts/Owned.sol";
 import "contracts/Proxy.sol";

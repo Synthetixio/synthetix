@@ -97,32 +97,39 @@ def deploy_havven(print_addresses=False):
     print("Deployment initiated.\n")
 
     compiled = attempt(compile_contracts, [SOLIDITY_SOURCES], "Compiling contracts... ")
+    #
+    # # Deploy contracts
+    # havven_proxy, h_prox_txr = attempt_deploy_signed(
+    #     compiled, 'Proxy', MASTER_ADDRESS, MASTER_KEY, [MASTER_ADDRESS]
+    # )
+    #
+    # nomin_proxy, h_prox_txr = attempt_deploy_signed(
+    #     compiled, 'Proxy', MASTER_ADDRESS, MASTER_KEY, [MASTER_ADDRESS]
+    # )
+    #
+    # havven_contract, hvn_txr = attempt_deploy_signed(
+    #     compiled, 'Havven', MASTER_ADDRESS, MASTER_KEY,
+    #     [havven_proxy.address, ZERO_ADDRESS, MASTER_ADDRESS, MASTER_ADDRESS, UNIT // 2]
+    # )
+    # nomin_contract, nom_txr = attempt_deploy_signed(
+    #     compiled, 'Nomin', MASTER_ADDRESS, MASTER_KEY,
+    #     [nomin_proxy.address, havven_contract.address, MASTER_ADDRESS, ZERO_ADDRESS]
+    # )
+    #
+    # court_contract, court_txr = attempt_deploy_signed(
+    #     compiled, 'Court', MASTER_ADDRESS, MASTER_KEY,
+    #     [havven_contract.address, nomin_contract.address, MASTER_ADDRESS])
+    #
+    # escrow_contract, escrow_txr = attempt_deploy_signed(
+    #     compiled, 'HavvenEscrow', MASTER_ADDRESS, MASTER_KEY, [MASTER_ADDRESS, havven_contract.address]
+    # )
 
-    # Deploy contracts
-    havven_proxy, h_prox_txr = attempt_deploy_signed(
-        compiled, 'Proxy', MASTER_ADDRESS, MASTER_KEY, [MASTER_ADDRESS]
-    )
-
-    nomin_proxy, h_prox_txr = attempt_deploy_signed(
-        compiled, 'Proxy', MASTER_ADDRESS, MASTER_KEY, [MASTER_ADDRESS]
-    )
-
-    havven_contract, hvn_txr = attempt_deploy_signed(
-        compiled, 'Havven', MASTER_ADDRESS, MASTER_KEY,
-        [havven_proxy.address, ZERO_ADDRESS, MASTER_ADDRESS, MASTER_ADDRESS, UNIT // 2]
-    )
-    nomin_contract, nom_txr = attempt_deploy_signed(
-        compiled, 'Nomin', MASTER_ADDRESS, MASTER_KEY,
-        [nomin_proxy.address, havven_contract.address, MASTER_ADDRESS, ZERO_ADDRESS]
-    )
-
-    court_contract, court_txr = attempt_deploy_signed(
-        compiled, 'Court', MASTER_ADDRESS, MASTER_KEY,
-        [havven_contract.address, nomin_contract.address, MASTER_ADDRESS])
-
-    escrow_contract, escrow_txr = attempt_deploy_signed(
-        compiled, 'HavvenEscrow', MASTER_ADDRESS, MASTER_KEY, [MASTER_ADDRESS, havven_contract.address]
-    )
+    havven_proxy = W3.eth.contract(abi=compiled['Proxy']['abi'], address='0xEF630f892b69acb7Fd80a908f9ea4e84DE588e01')
+    nomin_proxy = W3.eth.contract(abi=compiled['Proxy']['abi'], address='0xE77c61cD53301EfB6d9361fa91f5Fb6cd10d2253')
+    havven_contract = W3.eth.contract(abi=compiled['Havven']['abi'], address='0xfC92FeBD60E6B4A28F959e5a833d0C16B46fe905')
+    nomin_contract = W3.eth.contract(abi=compiled['Nomin']['abi'], address='0x95537CdC53Ef318b97A31BF66A620C2f760c962B')
+    court_contract = W3.eth.contract(abi=compiled['Court']['abi'], address='0x0248f9f62e7613EFD3e10C09eeDd6153B2f2EAA2')
+    escrow_contract = W3.eth.contract(abi=compiled['HavvenEscrow']['abi'], address='0xA05Abe0Eba145E9A5b9B4D049772A3f92D45638e')
 
     # Hook up each of those contracts to each other
     sign_and_mine_txs(MASTER_ADDRESS, MASTER_KEY, [

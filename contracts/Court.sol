@@ -117,7 +117,7 @@ We might consider updating the contract with any of these features at a later da
 -----------------------------------------------------------------
 */
 
-pragma solidity 0.4.23;
+pragma solidity 0.4.24;
 
 
 import "contracts/Owned.sol";

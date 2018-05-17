@@ -23,7 +23,7 @@ without changing their mind.
 -----------------------------------------------------------------
 */
 
-pragma solidity 0.4.23;
+pragma solidity 0.4.24;
 
 import "contracts/Owned.sol";
 
