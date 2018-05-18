@@ -307,6 +307,7 @@ contract Havven is DestructibleExternStateToken {
         optionalProxy_onlyOwner
     {
         whitelistedIssuer[account] = value;
+        emitWhitelistUpdated(account, value);
     }
 
     /* ========== VIEWS ========== */
@@ -797,4 +798,13 @@ contract Havven is DestructibleExternStateToken {
             data, 1, keccak256("EscrowUpdated(address)"));
         require(address(proxy).call(call_args));
     }
+
+    event WhitelistUpdated(address indexed account, bool indexed value);
+    function emitWhitelistUpdated(address account, bool value) internal {
+        bytes memory data = abi.encode();
+        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
+            data, 3, keccak256("WhitelistUpdated(address,bool)"), bytes32(account), value);
+        require(address(proxy).call(call_args));
+    }
+
 }

@@ -740,3 +740,20 @@ class TestHavven(HavvenTestCase):
                                tx.logs[0], "EscrowUpdated",
                                {"newEscrow": new_escrow},
                                 self.havven_proxy.address)
+
+    def test_event_WhitelistUpdated(self):
+        new_issuer = fresh_account()
+        self.assertNotEqual(MASTER, new_issuer)
+        tx = self.havven.setWhitelisted(MASTER, new_issuer, True)
+        self.assertEventEquals(self.event_map,
+                               tx.logs[0], "WhitelistUpdated",
+                               {"account": new_issuer,
+                                "value": True},
+                                self.havven_proxy.address)
+        tx = self.havven.setWhitelisted(MASTER, new_issuer, False)
+        self.assertEventEquals(self.event_map,
+                               tx.logs[0], "WhitelistUpdated",
+                               {"account": new_issuer,
+                                "value": False},
+                                self.havven_proxy.address)
+

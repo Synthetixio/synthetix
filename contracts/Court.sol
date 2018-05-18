@@ -196,6 +196,8 @@ contract Court is SafeDecimalMath, Owned {
      * disallow transfers into an account lest it cancel a vote
      * with greater weight than that with which it originally voted,
      * and the fee period rolled over in between. */
+    // TODO: This may be unnecessary now that votes are forced to be
+    // within a fee period. Likely possible to delete this.
     mapping(address => mapping(uint => uint)) voteWeight;
 
     /* The possible vote types.
