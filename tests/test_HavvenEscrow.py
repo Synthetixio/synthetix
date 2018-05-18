@@ -324,7 +324,7 @@ class TestHavvenEscrow(HavvenTestCase):
 
         self.assertEqual(fees, self.havven.lastFeesCollected())
 
-        self.havven.withdrawFeeEntitlement(MASTER)
+        self.havven.withdrawFees(MASTER)
 
         self.assertEqual(self.nomin.feePool(), 0)
         self.assertEqual(self.nomin.balanceOf(MASTER), fees)
@@ -352,10 +352,10 @@ class TestHavvenEscrow(HavvenTestCase):
 
         # Since escrow contract has most of the global supply, and half of the
         # escrowed balance, they should get half of the fees.
-        self.havven.withdrawFeeEntitlement(MASTER)
+        self.havven.withdrawFees(MASTER)
         self.assertClose(self.nomin.balanceOf(MASTER) - UNIT, fees/2)
 
-        self.havven.withdrawFeeEntitlement(DUMMY)
+        self.havven.withdrawFees(DUMMY)
         self.assertClose(self.nomin.balanceOf(DUMMY), fees/2)
 
     def test_purgeAccount(self):

@@ -173,7 +173,7 @@ contract Havven is DestructibleExternStateToken {
     uint public lastFeesCollected;
 
     /* Whether a user has withdrawn their last fees */
-    mapping(address => bool) public hasWithdrawnLastPeriodFees;
+    mapping(address => bool) public hasWithdrawnFees;
 
     Nomin public nomin;
     HavvenEscrow public escrow;
@@ -422,7 +422,7 @@ contract Havven is DestructibleExternStateToken {
      * @notice Compute the last period's fee entitlement for the message sender
      * and then deposit it into their nomin account.
      */
-    function withdrawFeeEntitlement()
+    function withdrawFees()
         public
         optionalProxy
     {
@@ -435,7 +435,7 @@ contract Havven is DestructibleExternStateToken {
         adjustIssuanceBalanceAverages(sender, nominsIssued[sender], nomin.totalSupply());
 
         /* Only allow accounts to withdraw fees once per period. */
-        require(!hasWithdrawnLastPeriodFees[sender]);
+        require(!hasWithdrawnFees[sender]);
         uint feesOwed = 0;
 
         uint lastTotalIssued = totalIssuedNominBalanceData.lastAverageBalance;
@@ -444,10 +444,10 @@ contract Havven is DestructibleExternStateToken {
             feesOwed = safeDiv_dec(safeMul_dec(issuedNominBalanceData[sender].lastAverageBalance, lastFeesCollected), lastTotalIssued);
         }
 
-        hasWithdrawnLastPeriodFees[sender] = true;
+        hasWithdrawnFees[sender] = true;
 
         if (feesOwed != 0) {
-            nomin.withdrawFee(sender, feesOwed);
+            nomin.withdrawFees(sender, feesOwed);
         }
         emitFeesWithdrawn(messageSender, feesOwed);
     }
@@ -466,7 +466,7 @@ contract Havven is DestructibleExternStateToken {
         totalIssuedNominBalanceData = rolloverBalances(last_total_supply, totalIssuedNominBalanceData);
 
         if (issuedNominBalanceData[account].lastTransferTimestamp < feePeriodStartTime) {
-            hasWithdrawnLastPeriodFees[account] = false;
+            hasWithdrawnFees[account] = false;
         }
 
         issuedNominBalanceData[account] = rolloverBalances(preBalance, issuedNominBalanceData[account]);

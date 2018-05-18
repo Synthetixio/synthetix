@@ -379,7 +379,7 @@ class TestHavven(HavvenTestCase):
         self.assertClose(UNIT, total_average, precision=3)
 
     # lastTransferTimestamp - tested above
-    # hasWithdrawnLastPeriodFees - tested in test_FeeCollection.py
+    # hasWithdrawnFees - tested in test_FeeCollection.py
     # lastFeesCollected - tested in test_FeeCollection.py
 
     ###
@@ -609,22 +609,22 @@ class TestHavven(HavvenTestCase):
 
     def test_double_withdraw_fee(self):
         alice = fresh_account()
-        self.havven.withdrawFeeEntitlement(alice)
-        self.assertReverts(self.havven.withdrawFeeEntitlement, alice)
+        self.havven.withdrawFees(alice)
+        self.assertReverts(self.havven.withdrawFees, alice)
 
     def test_withdraw_multiple_periods(self):
         alice = fresh_account()
-        self.havven.withdrawFeeEntitlement(alice)
+        self.havven.withdrawFees(alice)
         fast_forward(self.havven.targetFeePeriodDurationSeconds() * 2)
         self.havven.checkFeePeriodRollover(DUMMY)
-        self.havven.withdrawFeeEntitlement(alice)
+        self.havven.withdrawFees(alice)
         fast_forward(self.havven.targetFeePeriodDurationSeconds() * 2)
         self.havven.checkFeePeriodRollover(DUMMY)
 
     # adjustFeeEntitlement - tested above
     # rolloverFee - tested above, indirectly
 
-    # withdrawFeeEntitlement - tested in test_FeeCollection.py
+    # withdrawFees - tested in test_FeeCollection.py
 
     ###
     # Modifiers
@@ -707,7 +707,7 @@ class TestHavven(HavvenTestCase):
         self.havven.checkFeePeriodRollover(MASTER)
         self.nomin.transferSenderPaysFee(issuer, issuer, UNIT)
         fast_forward(fee_period + 100)
-        tx = self.havven.withdrawFeeEntitlement(issuer)
+        tx = self.havven.withdrawFees(issuer)
         self.assertEventEquals(self.event_map,
                                tx.logs[3], "FeesWithdrawn",
                                {"account": issuer,

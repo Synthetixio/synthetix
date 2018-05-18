@@ -284,7 +284,7 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
      * @notice Withdraw tokens from the fee pool into a given account.
      * @dev Only the fee authority may call this.
      */
-    function withdrawFee(address account, uint value)
+    function withdrawFees(address account, uint value)
         external
         returns (bool)
     {

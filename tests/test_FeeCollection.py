@@ -1,11 +1,11 @@
 from utils.deployutils import (
     W3, UNIT, MASTER, DUMMY,
-    fast_forward, fresh_accounts,
+    fast_forward, fresh_accounts, fresh_account,
     take_snapshot, restore_snapshot,
     attempt_deploy, mine_tx,
     mine_txs
 )
-from utils.testutils import HavvenTestCase, ZERO_ADDRESS
+from utils.testutils import HavvenTestCase, ZERO_ADDRESS, block_time
 from tests.contract_interfaces.havven_interface import PublicHavvenInterface
 from tests.contract_interfaces.nomin_interface import PublicNominInterface
 from tests.contract_interfaces.court_interface import FakeCourtInterface
@@ -74,8 +74,34 @@ class TestFeeCollection(HavvenTestCase):
         cls.fake_court = FakeCourtInterface(cls.fake_court_contract, 'FakeCourt')
         cls.fake_court.setNomin(MASTER, cls.nomin_contract.address)
 
-    def updateHavvenPrice(self, sender, price, time):
-        mine_tx(self.havven_contract.functions.updatePrice(price, time).transact({'from': sender}), 'updatePrice', 'Havven')
+    def havven_updatePrice(self, sender, price, time):
+        return mine_tx(self.havven_contract.functions.updatePrice(price, time).transact({'from': sender}), 'updatePrice', 'Havven')
+
+    def rollover_and_validate(self, duration=None):
+        time = duration if duration is not None else self.havven.targetFeePeriodDurationSeconds() + 1
+        fast_forward(time)
+        tx = self.havven.checkFeePeriodRollover(DUMMY)
+        rollover_time = block_time(tx.blockNumber)
+        self.assertEventEquals(self.event_map,
+                               tx.logs[0], "FeePeriodRollover",
+                               {"timestamp": rollover_time},
+                               self.havven_proxy.address)
+
+    def withdraw_and_validate(self, addr):
+        self.havven.recomputeAccountIssuedNominLastAverageBalance(addr, addr)
+        self.assertFalse(self.havven.hasWithdrawnFees(addr))
+        self.havven.withdrawFees(addr)
+        self.assertTrue(self.havven.hasWithdrawnFees(addr))
+
+    def test_hasWithdrawnFees(self):
+        issuer = fresh_account()
+        self.havven.endow(MASTER, issuer, UNIT)
+        self.havven.setIssuer(MASTER, issuer, True)
+        self.havven_updatePrice(self.havven.oracle(), UNIT, block_time())
+        self.havven.issueNomins(issuer, self.havven.maxIssuanceRights(issuer))
+        self.nomin.generateFees(MASTER, 100 * UNIT)
+        self.rollover_and_validate()
+        self.withdraw_and_validate(issuer)
 
     # Scenarios to test
     # Basic:
@@ -110,17 +136,16 @@ class TestFeeCollection(HavvenTestCase):
             precision=5
         )
 
-        self.updateHavvenPrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
+        self.havven_updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
 
-        fast_forward(self.havven.targetFeePeriodDurationSeconds() + 1)
-        self.havven.checkFeePeriodRollover(DUMMY)
+        self.rollover_and_validate()
 
         for addr in hav_addr:
             # period hasn't rolled over yet, so no fees should get collected
             self.assertEqual(self.havven.nominsIssued(addr), 0)
             self.assertEqual(self.nomin.balanceOf(addr), 0)
 
-        self.updateHavvenPrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
+        self.havven_updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
 
         for addr in hav_addr:
             self.havven.setIssuer(MASTER, addr, True)
@@ -128,16 +153,15 @@ class TestFeeCollection(HavvenTestCase):
 
         self.nomin.generateFees(MASTER, 100 * UNIT)
         # fast forward to next period
-        fast_forward(self.havven.targetFeePeriodDurationSeconds() + 1)
-        self.havven.checkFeePeriodRollover(DUMMY)
+        self.rollover_and_validate()
 
         fee_pool = self.nomin.feePool()
         self.assertEqual(fee_pool, self.havven.lastFeesCollected())
         total_fees_collected = 0
 
-        self.updateHavvenPrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)  # ensure price not stale
+        self.havven_updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)  # ensure price not stale
         for n, addr in enumerate(hav_addr):
-            self.havven.withdrawFeeEntitlement(addr)
+            self.withdraw_and_validate(addr)
             if percentage_havvens == 0:
                 self.assertEqual(self.nomin.balanceOf(addr), 0)
             else:
@@ -189,7 +213,7 @@ class TestFeeCollection(HavvenTestCase):
             precision=5
         )
 
-        self.updateHavvenPrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 2)
+        self.havven_updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 2)
         self.nomin.generateFees(MASTER, 20 * UNIT)
 
         for addr in hav_addr:
@@ -197,29 +221,27 @@ class TestFeeCollection(HavvenTestCase):
             self.havven.issueNomins(addr, self.havven.maxIssuanceRights(addr))
 
         for addr in hav_addr:
-            self.havven.withdrawFeeEntitlement(addr)
+            self.withdraw_and_validate(addr)
             self.assertEqual(self.nomin.balanceOf(addr), self.havven.nominsIssued(addr))  # no fees
 
         # roll over 4 more periods, generating more fees
         for i in range(4):
             # fast forward to next period
-            fast_forward(self.havven.targetFeePeriodDurationSeconds() + 1)
-            self.havven.checkFeePeriodRollover(DUMMY)
+            self.rollover_and_validate()
             self.nomin.generateFees(MASTER, 20 * UNIT)
 
         # fast forward to next period
-        fast_forward(2 * self.havven.targetFeePeriodDurationSeconds())
-        self.havven.checkFeePeriodRollover(DUMMY)
+        self.rollover_and_validate()
 
         self.assertEqual(self.nomin.feePool(), self.havven.lastFeesCollected())
         self.assertEqual(self.nomin.feePool(), 100 * UNIT)
 
         inital_pool = self.nomin.feePool()
         total_fees_collected = 0
-        self.updateHavvenPrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
+        self.havven_updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
 
         for addr in hav_addr:
-            self.havven.withdrawFeeEntitlement(addr)
+            self.withdraw_and_validate(addr)
             if percentage_havvens == 0:
                 self.assertEqual(self.nomin.balanceOf(addr), 0)
             else:
@@ -259,8 +281,7 @@ class TestFeeCollection(HavvenTestCase):
         self.havven.endow(MASTER, havven_holder, int(h_total_supply * h_percent) // UNIT * UNIT)
         self.assertClose(self.havven.balanceOf(havven_holder), h_total_supply * h_percent, precision=2)
 
-        fast_forward(fee_period_duration + 1)
-        self.havven.checkFeePeriodRollover(MASTER)
+        self.rollover_and_validate()
 
         # transfer to receiver and back 6 times
         # issued nomin balance should look like:
@@ -275,7 +296,7 @@ class TestFeeCollection(HavvenTestCase):
         addrs = [havven_holder, h_receiver]
         current_addr = False
         for i in range(6):
-            self.updateHavvenPrice(self.havven.oracle(), h_price, self.havven.currentTime() + 1)
+            self.havven_updatePrice(self.havven.oracle(), h_price, self.havven.currentTime() + 1)
             self.havven.issueNomins(addrs[current_addr], self.havven.remainingIssuanceRights(addrs[current_addr]))
             self.assertClose(self.nomin.totalSupply(), h_price * h_total_supply * h_percent * self.havven.issuanceRatio() // UNIT // UNIT)
             fast_forward(fee_period_duration // 6 - 5)
@@ -289,12 +310,11 @@ class TestFeeCollection(HavvenTestCase):
         self.assertEqual(self.nomin.balanceOf(h_receiver), 0)
         self.nomin.generateFees(MASTER, 100 * UNIT)
         fee_pool = self.nomin.feePool()
-        fast_forward(100)  # fast forward to the next period
-        self.havven.checkFeePeriodRollover(DUMMY)
+        self.rollover_and_validate(100)
         self.assertEqual(self.havven.lastFeesCollected(), fee_pool)
 
-        self.havven.withdrawFeeEntitlement(havven_holder)
-        self.havven.withdrawFeeEntitlement(h_receiver)
+        self.withdraw_and_validate(havven_holder)
+        self.withdraw_and_validate(h_receiver)
         if h_percent == 0:
             self.assertEqual(self.nomin.balanceOf(havven_holder), 0)
             self.assertEqual(self.nomin.balanceOf(h_receiver), 0)
@@ -341,12 +361,14 @@ class TestFeeCollection(HavvenTestCase):
             precision=5
         )
 
-        self.updateHavvenPrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 2)
+        self.havven_updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 2)
         self.nomin.generateFees(MASTER, 20 * UNIT)
 
         for addr in hav_addr:
             self.havven.setIssuer(MASTER, addr, True)
             self.havven.issueNomins(addr, self.havven.maxIssuanceRights(addr))
+
+        self.rollover_and_validate()
 
         # roll over 4 more periods, generating more fees, and withdrawing them
         for i in range(4):
@@ -355,15 +377,14 @@ class TestFeeCollection(HavvenTestCase):
             # generate some more fees
             self.nomin.generateFees(MASTER, 10 * UNIT)
 
-            fast_forward(self.havven.targetFeePeriodDurationSeconds() + 1)
-            self.havven.checkFeePeriodRollover(DUMMY)
+            self.rollover_and_validate()
 
             # withdraw the fees
             inital_pool = self.havven.lastFeesCollected()
             total_fees_collected = 0
             for addr in hav_addr:
                 inital_n = self.nomin.balanceOf(addr)
-                self.havven.withdrawFeeEntitlement(addr)
+                self.withdraw_and_validate(addr)
                 if percentage_havvens == 0:
                     self.assertEqual(self.nomin.balanceOf(addr), 0)
                 else:

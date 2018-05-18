@@ -28,7 +28,7 @@ class HavvenInterface(DestructibleExternStateTokenInterface):
         self.havPriceIsStale = lambda: self.contract.functions.havPriceIsStale().call()
 
         # account specific getters
-        self.hasWithdrawnLastPeriodFees = lambda acc: self.contract.functions.hasWithdrawnLastPeriodFees(acc).call()
+        self.hasWithdrawnFees = lambda acc: self.contract.functions.hasWithdrawnFees(acc).call()
         self.isIssuer = lambda acc: self.contract.functions.isIssuer(acc).call()
         self.nominsIssued = lambda acc: self.contract.functions.nominsIssued(acc).call()
         self.issuedNominCurrentBalanceSum = lambda acc: self.contract.functions.issuedNominCurrentBalanceSum(acc).call()
@@ -56,7 +56,7 @@ class HavvenInterface(DestructibleExternStateTokenInterface):
         self.setIssuer = lambda sender, acc, val: mine_tx(self.contract.functions.setIssuer(acc, val).transact({'from': sender}), "setIssuer", self.contract_name)
         self.transfer = lambda sender, to, val: mine_tx(self.contract.functions.transfer(to, val).transact({'from': sender}), "transfer", self.contract_name)
         self.transferFrom = lambda sender, frm, to, val: mine_tx(self.contract.functions.transferFrom(frm, to, val).transact({'from': sender}), "transferFrom", self.contract_name)
-        self.withdrawFeeEntitlement = lambda sender: mine_tx(self.contract.functions.withdrawFeeEntitlement().transact({'from': sender}), "withdrawFeeEntitlement", self.contract_name)
+        self.withdrawFees = lambda sender: mine_tx(self.contract.functions.withdrawFees().transact({'from': sender}), "withdrawFees", self.contract_name)
         self.recomputeAccountIssuedNominLastAverageBalance = lambda sender, acc: mine_tx(self.contract.functions.recomputeAccountIssuedNominLastAverageBalance(acc).transact({'from': sender}), "recomputeAccountIssuedNominLastAverageBalance", self.contract_name)
         self.checkFeePeriodRollover = lambda sender: mine_tx(self.contract.functions.checkFeePeriodRollover().transact({'from': sender}), "checkFeePeriodRollover", self.contract_name)
         self.issueNominsToMax = lambda sender: mine_tx(self.contract.functions.issueNominsToMax().transact({'from': sender}), "issueNominsToMax", self.contract_name)
