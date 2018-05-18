@@ -25,7 +25,9 @@ without changing their mind.
 
 pragma solidity 0.4.24;
 
+
 import "contracts/Owned.sol";
+
 
 /**
  * @title A contract that can be destroyed by its owner after a delay elapses.
@@ -51,7 +53,6 @@ contract SelfDestructible is Owned {
 		selfDestructBeneficiary = _beneficiary;
 		selfDestructDelay = _delay;
 		emit SelfDestructBeneficiaryUpdated(_beneficiary);
-
 	}
 
 	/**

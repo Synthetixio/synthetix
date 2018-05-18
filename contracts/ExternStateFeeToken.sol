@@ -286,9 +286,10 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
      */
     function withdrawFees(address account, uint value)
         external
+        onlyFeeAuthority
         returns (bool)
     {
-        require(msg.sender == feeAuthority && account != address(0));
+        require(account != address(0));
 
         // 0-value withdrawals do nothing.
         if (value == 0) {
@@ -327,6 +328,16 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
 
         return true;
     }
+
+
+    /* ========== MODIFIERS ========== */
+
+    modifier onlyFeeAuthority
+    {
+        require(msg.sender == feeAuthority);
+        _;
+    }
+
 
     /* ========== EVENTS ========== */
 
