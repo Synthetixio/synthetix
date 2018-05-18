@@ -83,7 +83,7 @@ class TestIssuance(HavvenTestCase):
         cls.fake_court = FakeCourtInterface(cls.fake_court_contract, "FakeCourt")
         cls.fake_court.setNomin(MASTER, cls.nomin_contract.address)
 
-    def updateHavvenPrice(self, sender, price, time):
+    def havven_updatePrice(self, sender, price, time):
         mine_tx(self.havven_contract.functions.updatePrice(price, time).transact({'from': sender}), 'updatePrice', 'Havven')
 
     def test_issue(self):
@@ -92,7 +92,7 @@ class TestIssuance(HavvenTestCase):
 
         self.assertEqual(self.havven.balanceOf(MASTER), 1000 * UNIT)
 
-        self.updateHavvenPrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
+        self.havven_updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
         self.havven.issueNomins(MASTER, 5 * UNIT)
 
         self.assertEqual(self.nomin_contract.functions.balanceOf(MASTER).call(), 5 * UNIT)
@@ -103,7 +103,7 @@ class TestIssuance(HavvenTestCase):
         self.escrow.appendVestingEntry(MASTER, alice, block_time() + 100000, self.havven.totalSupply() // 2)
 
         self.havven.setIssuer(MASTER, alice, True)
-        self.updateHavvenPrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
+        self.havven_updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
         self.havven.issueNomins(alice, 100 * UNIT)
 
         self.assertEqual(self.havven.balanceOf(alice), 0)
@@ -115,20 +115,20 @@ class TestIssuance(HavvenTestCase):
         self.havven.endow(MASTER, alice, 1000 * UNIT)
 
         self.havven.setIssuer(MASTER, alice, True)
-        self.updateHavvenPrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
+        self.havven_updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
         self.havven.issueNomins(alice, 10 * UNIT)
         self.assertEqual(self.havven.availableHavvens(alice), 800 * UNIT)
         fast_forward(2)
-        self.updateHavvenPrice(self.havven.oracle(), 100 * UNIT, self.havven.currentTime() + 1)
+        self.havven_updatePrice(self.havven.oracle(), 100 * UNIT, self.havven.currentTime() + 1)
         self.assertEqual(self.havven.availableHavvens(alice), 998 * UNIT)
         fast_forward(2)
-        self.updateHavvenPrice(self.havven.oracle(), int(0.01 * UNIT), self.havven.currentTime() + 1)
+        self.havven_updatePrice(self.havven.oracle(), int(0.01 * UNIT), self.havven.currentTime() + 1)
         self.assertEqual(self.havven.availableHavvens(alice), 0)
 
         self.assertReverts(self.havven.transfer, alice, MASTER, 1)
 
         fast_forward(2)
-        self.updateHavvenPrice(self.havven.oracle(), 1 * UNIT, self.havven.currentTime() + 1)
+        self.havven_updatePrice(self.havven.oracle(), 1 * UNIT, self.havven.currentTime() + 1)
         self.havven.transfer(alice, MASTER, 800 * UNIT)
         self.assertReverts(self.havven.transfer, alice, MASTER, 200 * UNIT)
         self.havven.burnNomins(alice, 10 * UNIT)
@@ -142,12 +142,12 @@ class TestIssuance(HavvenTestCase):
     def test_issue_revert_conditions(self):
         alice = fresh_account()
         self.havven.endow(MASTER, alice, 1000 * UNIT)
-        self.updateHavvenPrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
+        self.havven_updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
         self.assertReverts(self.havven.issueNomins, alice, 10 * UNIT)  # reverts, as not an issuer 
         self.havven.setIssuer(MASTER, alice, True)
         fast_forward(days=1)  # fast forward to make price stale
         self.assertReverts(self.havven.issueNomins, alice, 10 * UNIT)  # reverts, as price is stale
-        self.updateHavvenPrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
+        self.havven_updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
         self.assertReverts(self.havven.issueNomins, alice, 1000 * UNIT)  # reverts, as too many nomins being issued
         self.havven.setIssuanceRatio(MASTER, 0)
         self.assertReverts(self.havven.issueNomins, alice, 10 * UNIT)  # reverts, as CMAX too low (0)
@@ -162,7 +162,7 @@ class TestIssuance(HavvenTestCase):
         alice = fresh_account()
         self.havven.endow(MASTER, alice, 1000 * UNIT)
         self.havven.setIssuer(MASTER, alice, True)
-        self.updateHavvenPrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
+        self.havven_updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
         self.havven.issueNomins(alice, 50 * UNIT)
         for i in range(50):
             self.havven.burnNomins(alice, 1 * UNIT)

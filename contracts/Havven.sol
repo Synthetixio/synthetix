@@ -181,11 +181,11 @@ contract Havven is DestructibleExternStateToken {
     /* The address of the oracle which pushes the havven price to this contract */
     address public oracle;
     /* The price of havvens written in UNIT */
-    uint public havvenPrice;
+    uint public price;
     /* The time the havven price was last updated */
-    uint public lastHavvenPriceUpdateTime;
+    uint public lastPriceUpdateTime;
     /* How long will the contract assume the price of havvens is correct */
-    uint public havvenPriceStalePeriod = 3 hours;
+    uint public priceStalePeriod = 3 hours;
 
     uint public issuanceRatio = 5 * UNIT / 100;
     /* The maximal the issuance ratio can be */
@@ -209,7 +209,7 @@ contract Havven is DestructibleExternStateToken {
      * If the provided address is 0x0, then a fresh one will be constructed with the contract owning all tokens.
      * @param _owner The owner of this contract.
      */
-    constructor(address _proxy, TokenState initialState, address _owner, address _oracle, uint initalHavPrice)
+    constructor(address _proxy, TokenState initialState, address _owner, address _oracle, uint initalPrice)
         DestructibleExternStateToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, initialState, _owner)
         /* Owned is initialised in DestructibleExternStateToken */
         public
@@ -217,8 +217,8 @@ contract Havven is DestructibleExternStateToken {
         oracle = _oracle;
         feePeriodStartTime = now;
         lastFeePeriodStartTime = now - targetFeePeriodDurationSeconds;
-        havvenPrice = initalHavPrice;
-        lastHavvenPriceUpdateTime = now;
+        price = initalPrice;
+        lastPriceUpdateTime = now;
     }
 
     /* ========== SETTERS ========== */
@@ -279,11 +279,11 @@ contract Havven is DestructibleExternStateToken {
      * @notice Set the stale period on the updated havven price
      * @dev No max/minimum, as changing it wont influence anything but issuance by the foundation
      */
-    function setHavvenPriceStalePeriod(uint time)
+    function setPriceStalePeriod(uint time)
         external
         optionalProxy_onlyOwner
     {
-        havvenPriceStalePeriod = time;
+        priceStalePeriod = time;
     }
 
     /**
@@ -527,10 +527,10 @@ contract Havven is DestructibleExternStateToken {
      * @dev Issuance is only allowed if the havven price isn't stale and the sender is an issuer.
      */
     function issueNomins(uint amount)
+        public
         optionalProxy
         requireIssuer(messageSender)
         /* No need to check if price is stale, as it is checked in maxIssuanceRights. */
-        public
     {
         address sender = messageSender;
 
@@ -594,7 +594,7 @@ contract Havven is DestructibleExternStateToken {
     function maxIssuanceRights(address issuer)
         view
         public
-        havvenPriceNotStale
+        priceNotStale
         returns (uint)
     {
         if (!isIssuer[issuer]) {
@@ -665,10 +665,10 @@ contract Havven is DestructibleExternStateToken {
     function HAVtoUSD(uint hav_dec)
         public
         view
-        havvenPriceNotStale
+        priceNotStale
         returns (uint)
     {
-        return safeMul_dec(hav_dec, havvenPrice);
+        return safeMul_dec(hav_dec, price);
     }
 
     /**
@@ -677,26 +677,26 @@ contract Havven is DestructibleExternStateToken {
     function USDtoHAV(uint usd_dec)
         public
         view
-        havvenPriceNotStale
+        priceNotStale
         returns (uint)
     {
-        return safeDiv_dec(usd_dec, havvenPrice);
+        return safeDiv_dec(usd_dec, price);
     }
 
     /**
      * @notice Access point for the oracle to update the price of havvens.
      */
-    function updatePrice(uint price, uint timeSent)
+    function updatePrice(uint newPrice, uint timeSent)
         external
         onlyOracle  /* Should be callable only by the oracle. */
     {
         /* Must be the most recently sent price, but not too far in the future.
          * (so we can't lock ourselves out of updating the oracle for longer than this) */
-        require(lastHavvenPriceUpdateTime < timeSent && timeSent < now + ORACLE_FUTURE_LIMIT);
+        require(lastPriceUpdateTime < timeSent && timeSent < now + ORACLE_FUTURE_LIMIT);
 
-        havvenPrice = price;
-        lastHavvenPriceUpdateTime = timeSent;
-        emitPriceUpdated(price, timeSent);
+        price = newPrice;
+        lastPriceUpdateTime = timeSent;
+        emitPriceUpdated(newPrice, timeSent);
 
         /* Check the fee period rollover within this as the price should be pushed every 15min. */
         checkFeePeriodRollover();
@@ -705,12 +705,12 @@ contract Havven is DestructibleExternStateToken {
     /**
      * @notice Check if the price of havvens hasn't been updated for longer than the stale period.
      */
-    function havvenPriceIsStale()
+    function priceIsStale()
         public
         view
         returns (bool)
     {
-        return safeAdd(lastHavvenPriceUpdateTime, havvenPriceStalePeriod) < now;
+        return safeAdd(lastPriceUpdateTime, priceStalePeriod) < now;
     }
 
     /* ========== MODIFIERS ========== */
@@ -727,9 +727,9 @@ contract Havven is DestructibleExternStateToken {
         _;
     }
 
-    modifier havvenPriceNotStale
+    modifier priceNotStale
     {
-        require(!havvenPriceIsStale());
+        require(!priceIsStale());
         _;
     }
 

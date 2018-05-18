@@ -85,7 +85,7 @@ class TestCourt(HavvenTestCase):
     #
 
     def allow_acc_max_vote(self, account):
-        if self.havven.lastHavvenPriceUpdateTime() < block_time():
+        if self.havven.lastPriceUpdateTime() < block_time():
             self.havven.updatePrice(MASTER, UNIT, block_time() + 1)
         self.havven.setIssuanceRatio(MASTER, UNIT)
         self.havven.setIssuer(MASTER, account, True)

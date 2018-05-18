@@ -88,7 +88,7 @@ class TestHavvenEscrow(HavvenTestCase):
         cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
         cls.escrow = PublicHavvenEscrowInterface(cls.escrow_contract, "HavvenEscrow")
 
-    def updateHavvenPrice(self, sender, price, time):
+    def havven_updatePrice(self, sender, price, time):
         mine_tx(self.havven_contract.functions.updatePrice(price, time).transact({'from': sender}), 'updatePrice', 'Havven')
 
     def test_constructor(self):
@@ -304,7 +304,7 @@ class TestHavvenEscrow(HavvenTestCase):
         self.havven.endow(MASTER, self.escrow.contract.address, self.havven.totalSupply())
         self.escrow.appendVestingEntry(MASTER, MASTER, block_time() + 100000, self.havven.totalSupply())
 
-        self.updateHavvenPrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
+        self.havven_updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
         self.havven.setIssuer(MASTER, MASTER, True)
         self.havven.issueNomins(MASTER, UNIT)
 
@@ -334,7 +334,7 @@ class TestHavvenEscrow(HavvenTestCase):
         self.escrow.appendVestingEntry(MASTER, MASTER, block_time() + 100000, self.havven.totalSupply() // 2)
         self.escrow.appendVestingEntry(MASTER, DUMMY, block_time() + 100000, self.havven.totalSupply() // 2)
 
-        self.updateHavvenPrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
+        self.havven_updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
         self.havven.setIssuer(MASTER, MASTER, True)
         self.havven.issueNomins(MASTER, UNIT)
 

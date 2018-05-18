@@ -19,13 +19,12 @@ class HavvenInterface(DestructibleExternStateTokenInterface):
         self.nomin = lambda: self.contract.functions.nomin().call()
         self.escrow = lambda: self.contract.functions.escrow().call()
         self.oracle = lambda: self.contract.functions.oracle().call()
-        self.havvenPrice = lambda: self.contract.functions.havvenPrice().call()
-        self.lastHavvenPriceUpdateTime = lambda: self.contract.functions.lastHavvenPriceUpdateTime().call()
-        self.havvenPriceStalePeriod = lambda: self.contract.functions.havvenPriceStalePeriod().call()
+        self.price = lambda: self.contract.functions.price().call()
+        self.lastPriceUpdateTime = lambda: self.contract.functions.lastPriceUpdateTime().call()
+        self.priceStalePeriod = lambda: self.contract.functions.priceStalePeriod().call()
         self.issuanceRatio = lambda: self.contract.functions.issuanceRatio().call()
         self.maxIssuanceRatio = lambda: self.contract.functions.maxIssuanceRatio().call()
-
-        self.havPriceIsStale = lambda: self.contract.functions.havPriceIsStale().call()
+        self.priceIsStale = lambda: self.contract.functions.priceIsStale().call()
 
         # account specific getters
         self.hasWithdrawnFees = lambda acc: self.contract.functions.hasWithdrawnFees(acc).call()
@@ -51,7 +50,7 @@ class HavvenInterface(DestructibleExternStateTokenInterface):
         self.setTargetFeePeriodDuration = lambda sender, duration: mine_tx(self.contract.functions.setTargetFeePeriodDuration(duration).transact({'from': sender}), "setTargetFeePeriodDuration", self.contract_name)
         self.setOracle = lambda sender, addr: mine_tx(self.contract.functions.setOracle(addr).transact({'from': sender}), "setOracle", self.contract_name)
         self.setIssuanceRatio = lambda sender, val: mine_tx(self.contract.functions.setIssuanceRatio(val).transact({'from': sender}), "setIssuanceRatio", self.contract_name)
-        self.setHavvenPriceStalePeriod = lambda sender, val:  mine_tx(self.contract.functions.setHavvenPriceStalePeriod(val).transact({'from': sender}), "setHavvenPriceStalePeriod", self.contract_name)
+        self.setPriceStalePeriod = lambda sender, val:  mine_tx(self.contract.functions.setPriceStalePeriod(val).transact({'from': sender}), "setPriceStalePeriod", self.contract_name)
         self.endow = lambda sender, to, val: mine_tx(self.contract.functions.endow(to, val).transact({'from': sender}), "endow", self.contract_name)
         self.setIssuer = lambda sender, acc, val: mine_tx(self.contract.functions.setIssuer(acc, val).transact({'from': sender}), "setIssuer", self.contract_name)
         self.transfer = lambda sender, to, val: mine_tx(self.contract.functions.transfer(to, val).transact({'from': sender}), "transfer", self.contract_name)
