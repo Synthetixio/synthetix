@@ -71,6 +71,9 @@ class TestExternStateFeeToken(HavvenTestCase):
         cls.feetoken = PublicExternStateFeeTokenInterface(cls.feetoken_contract, "ExternStateFeeToken")
         cls.feetoken.setFeeAuthority(MASTER, cls.fee_authority)
 
+    def feetoken_withdrawFee(self, sender, beneficiary, quantity):
+        return mine_tx(self.feetoken_contract.functions.withdrawFee(beneficiary, quantity).transact({'from': sender}), "withdrawFee", self.feetoken.contract_name)
+
     def test_constructor(self):
         self.assertEqual(self.feetoken.name(), "Test Fee Token")
         self.assertEqual(self.feetoken.symbol(), "FEE")
@@ -361,13 +364,13 @@ class TestExternStateFeeToken(HavvenTestCase):
         fee_pool = self.feetoken.feePool()
 
         # This should fail because only the Fee Authority can withdraw fees
-        self.assertReverts(self.feetoken.withdrawFee, not_fee_authority, not_fee_authority, fee_pool)
+        self.assertReverts(self.feetoken_withdrawFee, not_fee_authority, not_fee_authority, fee_pool)
 
         # Failure due to too-large a withdrawal.
-        self.assertReverts(self.feetoken.withdrawFee, self.fee_authority, fee_receiver, fee_pool + 1)
+        self.assertReverts(self.feetoken_withdrawFee, self.fee_authority, fee_receiver, fee_pool + 1)
 
         # Partial withdrawal leaves stuff in the pool
-        tx_receipt = self.feetoken.withdrawFee(self.fee_authority, fee_receiver, fee_pool // 4)
+        tx_receipt = self.feetoken_withdrawFee(self.fee_authority, fee_receiver, fee_pool // 4)
         # Check that event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'],
                          "FeesWithdrawn")
@@ -375,7 +378,7 @@ class TestExternStateFeeToken(HavvenTestCase):
         self.assertEqual(self.feetoken.balanceOf(fee_receiver), fee_receiver_balance + fee_pool // 4)
 
         # Withdraw the rest
-        tx_receipt = self.feetoken.withdrawFee(self.fee_authority, fee_receiver, 3 * fee_pool // 4)
+        tx_receipt = self.feetoken_withdrawFee(self.fee_authority, fee_receiver, 3 * fee_pool // 4)
         # Check that event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'],
                          "FeesWithdrawn")
@@ -391,7 +394,7 @@ class TestExternStateFeeToken(HavvenTestCase):
         self.assertGreater(self.feetoken.balanceOf(self.initial_beneficiary), 10 * UNIT)
 
         self.feetoken.transfer(self.initial_beneficiary, donor, 10 * UNIT)
-        self.feetoken.withdrawFee(self.fee_authority, self.initial_beneficiary, self.feetoken.feePool())
+        self.feetoken_withdrawFee(self.fee_authority, self.initial_beneficiary, self.feetoken.feePool())
 
         # No donations by people with no money...
         self.assertReverts(self.feetoken.donateToFeePool, pauper, 10 * UNIT)
@@ -465,7 +468,7 @@ class TestExternStateFeeToken(HavvenTestCase):
         beneficiary = fresh_account()
         self.feetoken.clearTokens(MASTER, self.feetoken_contract.address)
         self.feetoken.giveTokens(MASTER, self.feetoken_contract.address, UNIT)
-        txr = self.feetoken.withdrawFee(self.feetoken.feeAuthority(),
+        txr = self.feetoken_withdrawFee(self.feetoken.feeAuthority(),
                                   beneficiary, UNIT)
         self.assertEventEquals(self.feetoken_event_dict,
                                txr.logs[0], "FeesWithdrawn",
