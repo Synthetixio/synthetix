@@ -35,20 +35,14 @@ contract as the state parameter, messageSender.
 
 pragma solidity 0.4.24;
 
+
 import "contracts/Owned.sol";
 import "contracts/Proxyable.sol";
 
 
 contract Proxy is Owned {
+
     Proxyable public target;
-
-    event TargetUpdated(Proxyable newTarget);
-
-    modifier onlyTarget() {
-        require(Proxyable(msg.sender) == target,
-                "caller is not proxy target");
-        _;
-    }
 
     constructor(address _owner)
         Owned(_owner)
@@ -116,4 +110,12 @@ contract Proxy is Owned {
             return(free_ptr, returndatasize)
         }
     }
+
+    modifier onlyTarget() {
+        require(Proxyable(msg.sender) == target,
+                "caller is not proxy target");
+        _;
+    }
+
+    event TargetUpdated(Proxyable newTarget);
 }
