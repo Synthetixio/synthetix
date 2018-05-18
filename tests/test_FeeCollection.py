@@ -123,7 +123,7 @@ class TestFeeCollection(HavvenTestCase):
         self.updateHavvenPrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
 
         for addr in hav_addr:
-            self.havven.setWhitelisted(MASTER, addr, True)
+            self.havven.setIssuer(MASTER, addr, True)
             self.havven.issueNomins(addr, self.havven.maxIssuanceRights(addr))
 
         self.nomin.generateFees(MASTER, 100 * UNIT)
@@ -193,7 +193,7 @@ class TestFeeCollection(HavvenTestCase):
         self.nomin.generateFees(MASTER, 20 * UNIT)
 
         for addr in hav_addr:
-            self.havven.setWhitelisted(MASTER, addr, True)
+            self.havven.setIssuer(MASTER, addr, True)
             self.havven.issueNomins(addr, self.havven.maxIssuanceRights(addr))
 
         for addr in hav_addr:
@@ -269,8 +269,8 @@ class TestFeeCollection(HavvenTestCase):
         # | _   _   _  :
         # ||_|_|_|_|_|_:__ __  _
 
-        self.havven.setWhitelisted(MASTER, havven_holder, True)
-        self.havven.setWhitelisted(MASTER, h_receiver, True)
+        self.havven.setIssuer(MASTER, havven_holder, True)
+        self.havven.setIssuer(MASTER, h_receiver, True)
 
         addrs = [havven_holder, h_receiver]
         current_addr = False
@@ -345,7 +345,7 @@ class TestFeeCollection(HavvenTestCase):
         self.nomin.generateFees(MASTER, 20 * UNIT)
 
         for addr in hav_addr:
-            self.havven.setWhitelisted(MASTER, addr, True)
+            self.havven.setIssuer(MASTER, addr, True)
             self.havven.issueNomins(addr, self.havven.maxIssuanceRights(addr))
 
         # roll over 4 more periods, generating more fees, and withdrawing them

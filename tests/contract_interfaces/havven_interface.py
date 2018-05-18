@@ -29,7 +29,7 @@ class HavvenInterface(DestructibleExternStateTokenInterface):
 
         # account specific getters
         self.hasWithdrawnLastPeriodFees = lambda acc: self.contract.functions.hasWithdrawnLastPeriodFees(acc).call()
-        self.whitelistedIssuer = lambda acc: self.contract.functions.whitelistedIssuer(acc).call()
+        self.isIssuer = lambda acc: self.contract.functions.isIssuer(acc).call()
         self.nominsIssued = lambda acc: self.contract.functions.nominsIssued(acc).call()
         self.issuedNominCurrentBalanceSum = lambda acc: self.contract.functions.issuedNominCurrentBalanceSum(acc).call()
         self.issuedNominLastAverageBalance = lambda acc: self.contract.functions.issuedNominLastAverageBalance(acc).call()
@@ -53,7 +53,7 @@ class HavvenInterface(DestructibleExternStateTokenInterface):
         self.setIssuanceRatio = lambda sender, val: mine_tx(self.contract.functions.setIssuanceRatio(val).transact({'from': sender}), "setIssuanceRatio", self.contract_name)
         self.setHavvenPriceStalePeriod = lambda sender, val:  mine_tx(self.contract.functions.setHavvenPriceStalePeriod(val).transact({'from': sender}), "setHavvenPriceStalePeriod", self.contract_name)
         self.endow = lambda sender, to, val: mine_tx(self.contract.functions.endow(to, val).transact({'from': sender}), "endow", self.contract_name)
-        self.setWhitelisted = lambda sender, acc, val: mine_tx(self.contract.functions.setWhitelisted(acc, val).transact({'from': sender}), "setWhitelisted", self.contract_name)
+        self.setIssuer = lambda sender, acc, val: mine_tx(self.contract.functions.setIssuer(acc, val).transact({'from': sender}), "setIssuer", self.contract_name)
         self.transfer = lambda sender, to, val: mine_tx(self.contract.functions.transfer(to, val).transact({'from': sender}), "transfer", self.contract_name)
         self.transferFrom = lambda sender, frm, to, val: mine_tx(self.contract.functions.transferFrom(frm, to, val).transact({'from': sender}), "transferFrom", self.contract_name)
         self.withdrawFeeEntitlement = lambda sender: mine_tx(self.contract.functions.withdrawFeeEntitlement().transact({'from': sender}), "withdrawFeeEntitlement", self.contract_name)

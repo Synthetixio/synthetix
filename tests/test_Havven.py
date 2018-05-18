@@ -175,7 +175,7 @@ class TestHavven(HavvenTestCase):
         start_amt = UNIT * 50
 
         self.havven.endow(MASTER, alice, start_amt)
-        self.havven.setWhitelisted(MASTER, alice, True)
+        self.havven.setIssuer(MASTER, alice, True)
         self.havven_updatePrice(MASTER, UNIT, block_time()+1)
         self.havven.setIssuanceRatio(MASTER, UNIT)
         self.havven.issueNomins(alice, start_amt)
@@ -215,7 +215,7 @@ class TestHavven(HavvenTestCase):
         start_amt = UNIT * 50
 
         self.havven.endow(MASTER, alice, start_amt)
-        self.havven.setWhitelisted(MASTER, alice, True)
+        self.havven.setIssuer(MASTER, alice, True)
         self.havven_updatePrice(MASTER, UNIT, block_time()+1)
         self.havven.setIssuanceRatio(MASTER, UNIT)
         tx_receipt = self.havven.issueNomins(alice, start_amt)
@@ -257,12 +257,12 @@ class TestHavven(HavvenTestCase):
 
     def test_lastAverageBalanceFullPeriod(self):
         alice = fresh_account()
-        self.havven.setWhitelisted(MASTER, alice, True)
+        self.havven.setIssuer(MASTER, alice, True)
         fee_period = self.havven.targetFeePeriodDurationSeconds()
 
         # Alice will initially have 20 havvens
         self.havven.endow(MASTER, alice, 20 * UNIT)
-        self.havven.setWhitelisted(MASTER, alice, True)
+        self.havven.setIssuer(MASTER, alice, True)
         self.havven_updatePrice(MASTER, UNIT, block_time()+1)
         self.havven.setIssuanceRatio(MASTER, UNIT)
         self.havven.issueNomins(alice, 20 * UNIT)
@@ -319,7 +319,7 @@ class TestHavven(HavvenTestCase):
 
         self.havven.endow(MASTER, alice, n * UNIT)
         self.havven_updatePrice(self.havven.oracle(), UNIT, block_time())
-        self.havven.setWhitelisted(MASTER, alice, True)
+        self.havven.setIssuer(MASTER, alice, True)
         self.havven.issueNomins(alice, n * UNIT // 20)
         time_remaining = self.havven.targetFeePeriodDurationSeconds() + self.havven.feePeriodStartTime() - block_time()
         fast_forward(time_remaining + 5 )
@@ -343,9 +343,9 @@ class TestHavven(HavvenTestCase):
         self.havven.endow(MASTER, bob, UNIT)
         self.havven.endow(MASTER, carol, UNIT)
 
-        self.havven.setWhitelisted(MASTER, alice, True)
-        self.havven.setWhitelisted(MASTER, bob, True)
-        self.havven.setWhitelisted(MASTER, carol, True)
+        self.havven.setIssuer(MASTER, alice, True)
+        self.havven.setIssuer(MASTER, bob, True)
+        self.havven.setIssuer(MASTER, carol, True)
         self.havven.setIssuanceRatio(MASTER, UNIT)
 
         fast_forward(fee_period + 1)
@@ -650,7 +650,7 @@ class TestHavven(HavvenTestCase):
         alice = fresh_account()
         amount = UNIT * 100000
         self.havven_updatePrice(MASTER, UNIT, block_time() + 1)
-        self.havven.setWhitelisted(MASTER, alice, True)
+        self.havven.setIssuer(MASTER, alice, True)
         self.havven.setIssuanceRatio(MASTER, UNIT)
         a_sum = 0
         self.havven.endow(MASTER, alice, amount)
@@ -701,7 +701,7 @@ class TestHavven(HavvenTestCase):
         self.havven.endow(MASTER, issuer, 2 * UNIT)
         self.havven_updatePrice(self.havven.oracle(), UNIT, block_time())
         self.havven.setIssuanceRatio(MASTER, UNIT)
-        self.havven.setWhitelisted(MASTER, issuer, True)
+        self.havven.setIssuer(MASTER, issuer, True)
         self.havven.issueNomins(issuer, 2 * UNIT)
         fast_forward(fee_period + 100)
         self.havven.checkFeePeriodRollover(MASTER)
@@ -741,18 +741,18 @@ class TestHavven(HavvenTestCase):
                                {"newEscrow": new_escrow},
                                 self.havven_proxy.address)
 
-    def test_event_WhitelistUpdated(self):
+    def test_event_IssuersUpdated(self):
         new_issuer = fresh_account()
         self.assertNotEqual(MASTER, new_issuer)
-        tx = self.havven.setWhitelisted(MASTER, new_issuer, True)
+        tx = self.havven.setIssuer(MASTER, new_issuer, True)
         self.assertEventEquals(self.event_map,
-                               tx.logs[0], "WhitelistUpdated",
+                               tx.logs[0], "IssuersUpdated",
                                {"account": new_issuer,
                                 "value": True},
                                 self.havven_proxy.address)
-        tx = self.havven.setWhitelisted(MASTER, new_issuer, False)
+        tx = self.havven.setIssuer(MASTER, new_issuer, False)
         self.assertEventEquals(self.event_map,
-                               tx.logs[0], "WhitelistUpdated",
+                               tx.logs[0], "IssuersUpdated",
                                {"account": new_issuer,
                                 "value": False},
                                 self.havven_proxy.address)

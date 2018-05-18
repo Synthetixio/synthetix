@@ -88,7 +88,7 @@ class TestCourt(HavvenTestCase):
         if self.havven.lastHavvenPriceUpdateTime() < block_time():
             self.havven.updatePrice(MASTER, UNIT, block_time() + 1)
         self.havven.setIssuanceRatio(MASTER, UNIT)
-        self.havven.setWhitelisted(MASTER, account, True)
+        self.havven.setIssuer(MASTER, account, True)
         self.havven.issueNominsToMax(account)
 
     #  Extract vote index from a transaction receipt returned by a call to beginMotion

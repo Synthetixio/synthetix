@@ -100,7 +100,7 @@ operations are performed.
 == Issuance and Burning ==
 
 In this version of the havven contract, nomins can only be issued by
-those that have been whitelisted by the havven foundation. Nomins are assumed
+those that have been nominated by the havven foundation. Nomins are assumed
 to be valued at $1, as they are a stable unit of account.
 
 All nomins issued require some value of havvens to be locked up for the
@@ -192,7 +192,7 @@ contract Havven is DestructibleExternStateToken {
     uint constant maxIssuanceRatio = UNIT;
 
     /* whether the address can issue nomins or not */
-    mapping(address => bool) public whitelistedIssuer;
+    mapping(address => bool) public isIssuer;
     /* the number of nomins the user has issued */
     mapping(address => uint) public nominsIssued;
 
@@ -302,12 +302,12 @@ contract Havven is DestructibleExternStateToken {
     /**
      * @notice Set whether the specified can issue nomins or not.
      */
-    function setWhitelisted(address account, bool value)
+    function setIssuer(address account, bool value)
         external
         optionalProxy_onlyOwner
     {
-        whitelistedIssuer[account] = value;
-        emitWhitelistUpdated(account, value);
+        isIssuer[account] = value;
+        emitIssuersUpdated(account, value);
     }
 
     /* ========== VIEWS ========== */
@@ -524,11 +524,11 @@ contract Havven is DestructibleExternStateToken {
 
     /**
      * @notice Issue nomins against the sender's havvens.
-     * @dev Issuance is only allowed if the havven price isn't stale and the issuer is whitelisted.
+     * @dev Issuance is only allowed if the havven price isn't stale and the sender is an issuer.
      */
     function issueNomins(uint amount)
         optionalProxy
-        onlyWhitelistedIssuer(messageSender)
+        requireIssuer(messageSender)
         /* No need to check if price is stale, as it is checked in maxIssuanceRights. */
         public
     {
@@ -553,7 +553,7 @@ contract Havven is DestructibleExternStateToken {
      * @notice Burn nomins to clear issued nomins/free havvens.
      */
     function burnNomins(uint amount)
-        /* it doesn't matter if the price is stale or if the user is whitelisted */
+        /* it doesn't matter if the price is stale or if the user is an issuer, as non-issuers have issued no nomins.*/
         external
         optionalProxy
     {
@@ -597,7 +597,7 @@ contract Havven is DestructibleExternStateToken {
         havvenPriceNotStale
         returns (uint)
     {
-        if (!whitelistedIssuer[issuer]) {
+        if (!isIssuer[issuer]) {
             return 0;
         }
         if (escrow != HavvenEscrow(0)) {
@@ -715,9 +715,9 @@ contract Havven is DestructibleExternStateToken {
 
     /* ========== MODIFIERS ========== */
 
-    modifier onlyWhitelistedIssuer(address account)
+    modifier requireIssuer(address account)
     {
-        require(whitelistedIssuer[account]);
+        require(isIssuer[account]);
         _;
     }
 
@@ -799,11 +799,11 @@ contract Havven is DestructibleExternStateToken {
         require(address(proxy).call(call_args));
     }
 
-    event WhitelistUpdated(address indexed account, bool indexed value);
-    function emitWhitelistUpdated(address account, bool value) internal {
+    event IssuersUpdated(address indexed account, bool indexed value);
+    function emitIssuersUpdated(address account, bool value) internal {
         bytes memory data = abi.encode();
         bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 3, keccak256("WhitelistUpdated(address,bool)"), bytes32(account), value);
+            data, 3, keccak256("IssuersUpdated(address,bool)"), bytes32(account), value);
         require(address(proxy).call(call_args));
     }
 

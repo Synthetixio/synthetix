@@ -305,7 +305,7 @@ class TestHavvenEscrow(HavvenTestCase):
         self.escrow.appendVestingEntry(MASTER, MASTER, block_time() + 100000, self.havven.totalSupply())
 
         self.updateHavvenPrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
-        self.havven.setWhitelisted(MASTER, MASTER, True)
+        self.havven.setIssuer(MASTER, MASTER, True)
         self.havven.issueNomins(MASTER, UNIT)
 
         # generate 1 UNIT of fees
@@ -335,11 +335,11 @@ class TestHavvenEscrow(HavvenTestCase):
         self.escrow.appendVestingEntry(MASTER, DUMMY, block_time() + 100000, self.havven.totalSupply() // 2)
 
         self.updateHavvenPrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
-        self.havven.setWhitelisted(MASTER, MASTER, True)
+        self.havven.setIssuer(MASTER, MASTER, True)
         self.havven.issueNomins(MASTER, UNIT)
 
         # generate 1 UNIT of fees
-        self.havven.setWhitelisted(MASTER, DUMMY, True)
+        self.havven.setIssuer(MASTER, DUMMY, True)
         self.havven.issueNomins(DUMMY, UNIT)
         self.nomin.donateToFeePool(DUMMY, UNIT)
 

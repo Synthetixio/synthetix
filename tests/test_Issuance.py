@@ -88,7 +88,7 @@ class TestIssuance(HavvenTestCase):
 
     def test_issue(self):
         self.havven.endow(MASTER, MASTER, 1000 * UNIT)
-        self.havven.setWhitelisted(MASTER, MASTER, True)
+        self.havven.setIssuer(MASTER, MASTER, True)
 
         self.assertEqual(self.havven.balanceOf(MASTER), 1000 * UNIT)
 
@@ -102,7 +102,7 @@ class TestIssuance(HavvenTestCase):
         self.havven.endow(MASTER, self.escrow.contract.address, self.havven.totalSupply())
         self.escrow.appendVestingEntry(MASTER, alice, block_time() + 100000, self.havven.totalSupply() // 2)
 
-        self.havven.setWhitelisted(MASTER, alice, True)
+        self.havven.setIssuer(MASTER, alice, True)
         self.updateHavvenPrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
         self.havven.issueNomins(alice, 100 * UNIT)
 
@@ -114,7 +114,7 @@ class TestIssuance(HavvenTestCase):
         alice = fresh_account()
         self.havven.endow(MASTER, alice, 1000 * UNIT)
 
-        self.havven.setWhitelisted(MASTER, alice, True)
+        self.havven.setIssuer(MASTER, alice, True)
         self.updateHavvenPrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
         self.havven.issueNomins(alice, 10 * UNIT)
         self.assertEqual(self.havven.availableHavvens(alice), 800 * UNIT)
@@ -143,8 +143,8 @@ class TestIssuance(HavvenTestCase):
         alice = fresh_account()
         self.havven.endow(MASTER, alice, 1000 * UNIT)
         self.updateHavvenPrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
-        self.assertReverts(self.havven.issueNomins, alice, 10 * UNIT)  # reverts, as not whitelisted
-        self.havven.setWhitelisted(MASTER, alice, True)
+        self.assertReverts(self.havven.issueNomins, alice, 10 * UNIT)  # reverts, as not an issuer 
+        self.havven.setIssuer(MASTER, alice, True)
         fast_forward(days=1)  # fast forward to make price stale
         self.assertReverts(self.havven.issueNomins, alice, 10 * UNIT)  # reverts, as price is stale
         self.updateHavvenPrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
@@ -161,7 +161,7 @@ class TestIssuance(HavvenTestCase):
     def test_burn(self):
         alice = fresh_account()
         self.havven.endow(MASTER, alice, 1000 * UNIT)
-        self.havven.setWhitelisted(MASTER, alice, True)
+        self.havven.setIssuer(MASTER, alice, True)
         self.updateHavvenPrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
         self.havven.issueNomins(alice, 50 * UNIT)
         for i in range(50):
