@@ -19,13 +19,7 @@ class CourtInterface(SafeDecimalMathInterface, OwnedInterface):
         self.votesAgainst = lambda account: self.contract.functions.votesAgainst(account).call()
         self.vote = lambda account, motionID: self.contract.functions.vote(account, motionID).call()
 
-        # Inherited setters
-        self.nominateOwner = lambda sender, address: mine_tx(
-            self.contract.functions.nominateOwner(address).transact({'from': sender}), "nominateOwner", self.contract_name)
-        self.acceptOwnership = lambda sender: mine_tx(
-            self.contract.functions.acceptOwnership().transact({'from': sender}), "acceptOwnership", self.contract_name)
-
-        # Setters
+         # Setters
         self.setMinStandingBalance = lambda sender, balance: mine_tx(
             self.contract.functions.setMinStandingBalance(balance).transact({'from': sender}), "setMinStandingBalance", self.contract_name)
         self.setVotingPeriod = lambda sender, duration: mine_tx(

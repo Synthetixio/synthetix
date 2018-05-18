@@ -108,18 +108,18 @@ class TestHavven(HavvenTestCase):
         old_owner = self.havven.owner()
         new_owner = DUMMY
 
-        self.havven.nominateOwner(old_owner, new_owner)
+        self.havven.nominateNewOwner(old_owner, new_owner)
         self.havven.acceptOwnership(new_owner)
         self.assertEqual(self.havven.owner(), new_owner)
 
         # reset back to old owner
-        self.havven.nominateOwner(new_owner, old_owner)
+        self.havven.nominateNewOwner(new_owner, old_owner)
         self.havven.acceptOwnership(old_owner)
         self.assertEqual(self.havven.owner(), old_owner)
 
     def test_change_invalid_owner(self):
         invalid_account = DUMMY
-        self.assertReverts(self.havven.nominateOwner, invalid_account, invalid_account)
+        self.assertReverts(self.havven.nominateNewOwner, invalid_account, invalid_account)
 
     ###
     # Test inherited DestructibleExternStateToken

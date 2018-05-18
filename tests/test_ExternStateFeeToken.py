@@ -107,12 +107,12 @@ class TestExternStateFeeToken(HavvenTestCase):
         self.assertNotEqual(owner, new_owner)
 
         # Only the owner must be able to change the new owner.
-        self.assertReverts(self.feetoken.nominateOwner, new_owner, new_owner)
+        self.assertReverts(self.feetoken.nominateNewOwner, new_owner, new_owner)
 
-        self.feetoken.nominateOwner(owner, new_owner)
+        self.feetoken.nominateNewOwner(owner, new_owner)
         self.feetoken.acceptOwnership(new_owner)
         self.assertEqual(self.feetoken.owner(), new_owner)
-        self.feetoken.nominateOwner(new_owner, owner)
+        self.feetoken.nominateNewOwner(new_owner, owner)
         self.feetoken.acceptOwnership(owner)
 
     def test_getSetTransferFeeRate(self):

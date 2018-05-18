@@ -159,8 +159,8 @@ class TestCourt(HavvenTestCase):
     def test_setOwner(self):
         owner = self.court.owner()
         # Only owner can change the owner.
-        self.assertReverts(self.court.nominateOwner, DUMMY, DUMMY)
-        self.court.nominateOwner(owner, DUMMY)
+        self.assertReverts(self.court.nominateNewOwner, DUMMY, DUMMY)
+        self.court.nominateNewOwner(owner, DUMMY)
         self.court.acceptOwnership(DUMMY)
         self.assertEqual(self.court.owner(), DUMMY)
 

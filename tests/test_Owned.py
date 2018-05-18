@@ -51,10 +51,10 @@ class TestOwned(HavvenTestCase):
         self.assertNotEqual(old_owner, new_owner)
 
         # Only the owner may nominate a new owner.
-        self.assertReverts(self.owned.nominateOwner, new_owner, old_owner)
+        self.assertReverts(self.owned.nominateNewOwner, new_owner, old_owner)
 
         # Nominate new owner and ensure event emitted properly.
-        nominated_tx = self.owned.nominateOwner(old_owner, new_owner)
+        nominated_tx = self.owned.nominateNewOwner(old_owner, new_owner)
         self.assertEventEquals(self.event_map, nominated_tx.logs[0],
                                "OwnerNominated",
                                {"newOwner": new_owner},
@@ -67,7 +67,7 @@ class TestOwned(HavvenTestCase):
         # Ensure only the nominated owner can accept the ownership.
         self.assertReverts(self.owned.acceptOwnership, old_owner)
         # But the nominee gains no other privileges.
-        self.assertReverts(self.owned.nominateOwner, new_owner, old_owner)
+        self.assertReverts(self.owned.nominateNewOwner, new_owner, old_owner)
 
         # Accept ownership and ensure event emitted properly.
         accepted_tx = self.owned.acceptOwnership(new_owner)
@@ -82,22 +82,22 @@ class TestOwned(HavvenTestCase):
         self.assertEqual(self.owned.owner(), new_owner)
 
         # The old owner may no longer nominate a new owner.
-        self.assertReverts(self.owned.nominateOwner, old_owner, new_owner)
+        self.assertReverts(self.owned.nominateNewOwner, old_owner, new_owner)
 
         # Go backwards.
-        self.owned.nominateOwner(new_owner, old_owner)
+        self.owned.nominateNewOwner(new_owner, old_owner)
         self.owned.acceptOwnership(old_owner)
         self.assertEqual(self.owned.owner(), old_owner)
 
     def test_change_invalid_owner(self):
         invalid_account = DUMMY
-        self.assertReverts(self.owned.nominateOwner, invalid_account, invalid_account)
+        self.assertReverts(self.owned.nominateNewOwner, invalid_account, invalid_account)
 
     def test_undo_change_owner(self):
         old_owner = self.owned.owner()
         new_owner = DUMMY
 
-        self.assertReverts(self.owned.nominateOwner, new_owner, old_owner)
-        self.owned.nominateOwner(old_owner, new_owner)
-        self.owned.nominateOwner(old_owner, ZERO_ADDRESS)
+        self.assertReverts(self.owned.nominateNewOwner, new_owner, old_owner)
+        self.owned.nominateNewOwner(old_owner, new_owner)
+        self.owned.nominateNewOwner(old_owner, ZERO_ADDRESS)
         self.assertReverts(self.owned.acceptOwnership, new_owner)

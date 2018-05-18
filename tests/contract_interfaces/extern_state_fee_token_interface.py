@@ -11,7 +11,6 @@ class ExternStateFeeTokenInterface(SafeDecimalMathInterface, OwnedInterface):
         self.contract = contract
         self.contract_name = name
 
-        self.owner = lambda: self.contract.functions.owner().call()
         self.totalSupply = lambda: self.contract.functions.totalSupply().call()
         self.state = lambda: self.contract.functions.state().call()
         self.name = lambda: self.contract.functions.name().call()
@@ -26,10 +25,6 @@ class ExternStateFeeTokenInterface(SafeDecimalMathInterface, OwnedInterface):
         self.transferPlusFee = lambda value: self.contract.functions.transferPlusFee(value).call()
         self.priceToSpend = lambda value: self.contract.functions.priceToSpend(value).call()
 
-        self.nominateOwner = lambda sender, address: mine_tx(
-            self.contract.functions.nominateOwner(address).transact({'from': sender}), "nominateOwner", self.contract_name)
-        self.acceptOwnership = lambda sender: mine_tx(
-            self.contract.functions.acceptOwnership().transact({'from': sender}), "acceptOwnership", self.contract_name)
         self.setTransferFeeRate = lambda sender, new_fee_rate: mine_tx(
             self.contract.functions.setTransferFeeRate(new_fee_rate).transact({'from': sender}), "setTransferFeeRate", self.contract_name)
         self.setFeeAuthority = lambda sender, new_fee_authority: mine_tx(

@@ -54,7 +54,7 @@ contract Owned {
      * @notice Nominate a new owner of this contract.
      * @dev Only the current owner may nominate a new owner.
      */
-    function nominateOwner(address _owner)
+    function nominateNewOwner(address _owner)
         external
         onlyOwner
     {

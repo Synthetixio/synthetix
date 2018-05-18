@@ -92,8 +92,8 @@ class TestNomin(HavvenTestCase):
         new_owner = DUMMY
 
         # Only the owner must be able to set the owner.
-        self.assertReverts(self.nomin.nominateOwner, new_owner, new_owner)
-        txr = mine_tx(self.nomin_contract.functions.nominateOwner(new_owner).transact({'from': pre_owner}), 'nominateOwner', 'Nomin')
+        self.assertReverts(self.nomin.nominateNewOwner, new_owner, new_owner)
+        txr = mine_tx(self.nomin_contract.functions.nominateNewOwner(new_owner).transact({'from': pre_owner}), 'nominateNewOwner', 'Nomin')
         self.assertEventEquals(
             self.nomin_event_dict, txr.logs[0], 'OwnerNominated',
             fields={'newOwner': new_owner},
