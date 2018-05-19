@@ -161,12 +161,11 @@ contract Havven is DestructibleExternStateToken {
     /* The time the last fee period began */
     uint public lastFeePeriodStartTime;
 
-    /* Fee periods will roll over in no shorter a time than this */
-    uint public targetFeePeriodDurationSeconds = 4 weeks;
-    /* And may not be set to be shorter than a day */
-    uint constant MIN_FEE_PERIOD_DURATION_SECONDS = 1 days;
-    /* And may not be set to be longer than six months */
-    uint constant MAX_FEE_PERIOD_DURATION_SECONDS = 26 weeks;
+    /* Fee periods will roll over in no shorter a time than this.. */
+    uint public targetFeePeriod = 4 weeks;
+    /* ...and must target between 1 day and six months. */
+    uint constant MIN_FEE_PERIOD = 1 days;
+    uint constant MAX_FEE_PERIOD = 26 weeks;
 
     /* The quantity of nomins that were in the fee pot at the time */
     /* of the last fee rollover (feePeriodStartTime) */
@@ -205,19 +204,19 @@ contract Havven is DestructibleExternStateToken {
 
     /**
      * @dev Constructor
-     * @param initialState A pre-populated contract containing token balances.
+     * @param _state A pre-populated contract containing token balances.
      * If the provided address is 0x0, then a fresh one will be constructed with the contract owning all tokens.
      * @param _owner The owner of this contract.
      */
-    constructor(address _proxy, TokenState initialState, address _owner, address _oracle, uint initalPrice)
-        DestructibleExternStateToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, initialState, _owner)
+    constructor(address _proxy, TokenState _state, address _owner, address _oracle, uint _price)
+        DestructibleExternStateToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, _state, _owner)
         /* Owned is initialised in DestructibleExternStateToken */
         public
     {
         oracle = _oracle;
         feePeriodStartTime = now;
-        lastFeePeriodStartTime = now - targetFeePeriodDurationSeconds;
-        price = initalPrice;
+        lastFeePeriodStartTime = now - targetFeePeriod;
+        price = _price;
         lastPriceUpdateTime = now;
     }
 
@@ -253,13 +252,12 @@ contract Havven is DestructibleExternStateToken {
      * acceptable bounds (1 day to 26 weeks). Upon resetting this the fee period
      * may roll over if the target duration was shortened sufficiently.
      */
-    function setTargetFeePeriodDuration(uint duration)
+    function setTargetFeePeriod(uint duration)
         external
         optionalProxy_onlyOwner
     {
-        require(MIN_FEE_PERIOD_DURATION_SECONDS <= duration &&
-                duration <= MAX_FEE_PERIOD_DURATION_SECONDS);
-        targetFeePeriodDurationSeconds = duration;
+        require(MIN_FEE_PERIOD <= duration && duration <= MAX_FEE_PERIOD);
+        targetFeePeriod = duration;
         emitFeePeriodDurationUpdated(duration);
         checkFeePeriodRollover();
     }
@@ -577,7 +575,7 @@ contract Havven is DestructibleExternStateToken {
         optionalProxy
     {
         /* If the fee period has rolled over... */
-        if (now >= feePeriodStartTime + targetFeePeriodDurationSeconds) {
+        if (now >= feePeriodStartTime + targetFeePeriod) {
             lastFeesCollected = nomin.feePool();
             lastFeePeriodStartTime = feePeriodStartTime;
             feePeriodStartTime = now;
@@ -735,19 +733,19 @@ contract Havven is DestructibleExternStateToken {
 
     /* ========== EVENTS ========== */
 
-    event PriceUpdated(uint price, uint timestamp);
-    function emitPriceUpdated(uint price, uint timestamp) internal {
-        bytes memory data = abi.encode(price, timestamp);
+    event PriceUpdated(uint newPrice, uint timestamp);
+    function emitPriceUpdated(uint newPrice, uint timestamp) internal {
+        bytes memory data = abi.encode(newPrice, timestamp);
         bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
             data, 1, keccak256("PriceUpdated(uint256,uint256)"));
         require(address(proxy).call(call_args));
     }
 
-    event IssuanceRatioUpdated(uint new_ratio);
-    function emitIssuanceRatioUpdated(uint new_ratio) internal {
-        bytes memory data = abi.encode(new_ratio);
+    event IssuanceRatioUpdated(uint newRatio);
+    function emitIssuanceRatioUpdated(uint newRatio) internal {
+        bytes memory data = abi.encode(newRatio);
         bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 1, keccak256("PriceUpdated(uint256)"));
+            data, 1, keccak256("IssuanceRatioUpdated(uint256)"));
         require(address(proxy).call(call_args));
     }
 

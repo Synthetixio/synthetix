@@ -14,7 +14,7 @@ class HavvenInterface(DestructibleExternStateTokenInterface):
         # getters
         self.feePeriodStartTime = lambda: self.contract.functions.feePeriodStartTime().call()
         self.lastFeePeriodStartTime = lambda: self.contract.functions.lastFeePeriodStartTime().call()
-        self.targetFeePeriodDurationSeconds = lambda: self.contract.functions.targetFeePeriodDurationSeconds().call()
+        self.targetFeePeriod = lambda: self.contract.functions.targetFeePeriod().call()
         self.lastFeesCollected = lambda: self.contract.functions.lastFeesCollected().call()
         self.nomin = lambda: self.contract.functions.nomin().call()
         self.escrow = lambda: self.contract.functions.escrow().call()
@@ -47,7 +47,7 @@ class HavvenInterface(DestructibleExternStateTokenInterface):
         # mutable functions
         self.setNomin = lambda sender, addr: mine_tx(self.contract.functions.setNomin(addr).transact({'from': sender}), "setNomin", self.contract_name)
         self.setEscrow = lambda sender, addr: mine_tx(self.contract.functions.setEscrow(addr).transact({'from': sender}), "setEscrow", self.contract_name)
-        self.setTargetFeePeriodDuration = lambda sender, duration: mine_tx(self.contract.functions.setTargetFeePeriodDuration(duration).transact({'from': sender}), "setTargetFeePeriodDuration", self.contract_name)
+        self.setTargetFeePeriod = lambda sender, duration: mine_tx(self.contract.functions.setTargetFeePeriod(duration).transact({'from': sender}), "setTargetFeePeriod", self.contract_name)
         self.setOracle = lambda sender, addr: mine_tx(self.contract.functions.setOracle(addr).transact({'from': sender}), "setOracle", self.contract_name)
         self.setIssuanceRatio = lambda sender, val: mine_tx(self.contract.functions.setIssuanceRatio(val).transact({'from': sender}), "setIssuanceRatio", self.contract_name)
         self.setPriceStalePeriod = lambda sender, val:  mine_tx(self.contract.functions.setPriceStalePeriod(val).transact({'from': sender}), "setPriceStalePeriod", self.contract_name)
@@ -83,7 +83,7 @@ class PublicHavvenInterface(HavvenInterface):
         self.contract = contract
         self.contract_name = name
 
-        self.MIN_FEE_PERIOD_DURATION_SECONDS = lambda: self.contract.functions.MIN_FEE_PERIOD_DURATION_SECONDS().call()
-        self.MAX_FEE_PERIOD_DURATION_SECONDS = lambda: self.contract.functions.MAX_FEE_PERIOD_DURATION_SECONDS().call()
+        self.MIN_FEE_PERIOD = lambda: self.contract.functions.MIN_FEE_PERIOD().call()
+        self.MAX_FEE_PERIOD = lambda: self.contract.functions.MAX_FEE_PERIOD().call()
 
         self.currentTime = lambda: self.contract.functions.currentTime().call()

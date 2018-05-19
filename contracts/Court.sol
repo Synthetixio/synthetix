@@ -253,7 +253,7 @@ contract Court is SafeDecimalMath, Owned {
                 duration <= MAX_VOTING_PERIOD);
         /* Require that the voting period is no longer than a single fee period,
          * So that a single vote can span at most two fee periods. */
-        require(duration <= havven.targetFeePeriodDurationSeconds());
+        require(duration <= havven.targetFeePeriod());
         votingPeriod = duration;
     }
 
@@ -395,7 +395,7 @@ contract Court is SafeDecimalMath, Owned {
 
         /* Require that the voting period is longer than a single fee period,
          * So that a single vote can span at most two fee periods. */
-        require(votingPeriod <= havven.targetFeePeriodDurationSeconds());
+        require(votingPeriod <= havven.targetFeePeriod());
 
         /* There must be no confiscation motion already running for this account. */
         require(targetMotionID[target] == 0);
@@ -410,7 +410,7 @@ contract Court is SafeDecimalMath, Owned {
         targetMotionID[target] = motionID;
 
         /* Start the vote at the start of the next fee period */
-        uint startTime = havven.feePeriodStartTime() + havven.targetFeePeriodDurationSeconds();
+        uint startTime = havven.feePeriodStartTime() + havven.targetFeePeriod();
         motionStartTime[motionID] = startTime;
         emit MotionBegun(msg.sender, target, motionID, startTime);
 

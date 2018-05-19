@@ -314,11 +314,11 @@ class TestHavvenEscrow(HavvenTestCase):
         fees = self.nomin.feePool()
 
         # Skip a period so we have a full period with no transfers
-        fast_forward(self.havven.targetFeePeriodDurationSeconds() + 100)
+        fast_forward(self.havven.targetFeePeriod() + 100)
         self.havven.checkFeePeriodRollover(MASTER)
         self.havven.recomputeAccountIssuedNominLastAverageBalance(MASTER, MASTER)
         # Skip a period so we have a full period with no transfers
-        fast_forward(self.havven.targetFeePeriodDurationSeconds() + 100)
+        fast_forward(self.havven.targetFeePeriod() + 100)
         self.havven.checkFeePeriodRollover(MASTER)
         self.havven.recomputeAccountIssuedNominLastAverageBalance(MASTER, MASTER)
 
@@ -346,7 +346,7 @@ class TestHavvenEscrow(HavvenTestCase):
         fees = self.nomin.feePool()
 
         # Skip a period so we have a full period with no transfers
-        fast_forward(self.havven.targetFeePeriodDurationSeconds() + 100)
+        fast_forward(self.havven.targetFeePeriod() + 100)
         self.havven.checkFeePeriodRollover(MASTER)
         self.havven.recomputeAccountIssuedNominLastAverageBalance(MASTER, MASTER)
 

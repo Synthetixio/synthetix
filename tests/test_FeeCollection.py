@@ -78,7 +78,7 @@ class TestFeeCollection(HavvenTestCase):
         return mine_tx(self.havven_contract.functions.updatePrice(price, time).transact({'from': sender}), 'updatePrice', 'Havven')
 
     def rollover_and_validate(self, duration=None):
-        time = duration if duration is not None else self.havven.targetFeePeriodDurationSeconds() + 1
+        time = duration if duration is not None else self.havven.targetFeePeriod() + 1
         fast_forward(time)
         tx = self.havven.checkFeePeriodRollover(DUMMY)
         rollover_time = block_time(tx.blockNumber)
@@ -272,7 +272,7 @@ class TestFeeCollection(HavvenTestCase):
         (Single user only)
         :param h_percent: the percent of havvens being used
         """
-        fee_period_duration = self.havven.targetFeePeriodDurationSeconds()
+        fee_period_duration = self.havven.targetFeePeriod()
 
         havven_holder, h_receiver = fresh_accounts(2)
 

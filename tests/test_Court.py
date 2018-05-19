@@ -191,8 +191,8 @@ class TestCourt(HavvenTestCase):
 
         # Voting period must be <= the havven target fee period duration.
         fee_period_duration = to_seconds(weeks=2)
-        self.havven.setTargetFeePeriodDuration(owner, fee_period_duration)
-        self.assertEqual(self.havven.targetFeePeriodDurationSeconds(), fee_period_duration)
+        self.havven.setTargetFeePeriod(owner, fee_period_duration)
+        self.assertEqual(self.havven.targetFeePeriod(), fee_period_duration)
 
         # Voting period must be <= fee period duration.
         bad_voting_period = to_seconds(weeks=2) + 1
@@ -244,7 +244,7 @@ class TestCourt(HavvenTestCase):
     def test_nextMotionID(self):
         owner = self.court.owner()
         voter = fresh_account()
-        fee_period = self.havven.targetFeePeriodDurationSeconds()
+        fee_period = self.havven.targetFeePeriod()
 
         self.havven.endow(owner, voter, 1000 * UNIT)
         self.allow_acc_max_vote(voter)
@@ -266,7 +266,7 @@ class TestCourt(HavvenTestCase):
     def test_motionTarget_targetMotionID(self):
         owner = self.court.owner()
         voter, target1, target2, target3 = fresh_accounts(4)
-        fee_period = self.havven.targetFeePeriodDurationSeconds()
+        fee_period = self.havven.targetFeePeriod()
         voting_period = self.court.votingPeriod()
         confirmation_period = self.court.confirmationPeriod()
 
@@ -357,7 +357,7 @@ class TestCourt(HavvenTestCase):
     def test_hasVoted(self):
         owner = self.court.owner()
         voter, suspect = fresh_accounts(2)
-        fee_period = self.havven.targetFeePeriodDurationSeconds()
+        fee_period = self.havven.targetFeePeriod()
 
         # Give 1000 havven tokens to our voter.
         self.havven.endow(owner, voter, 1000)
@@ -401,7 +401,7 @@ class TestCourt(HavvenTestCase):
         voters = accounts[2:]
         self.court.requiredParticipation()
         self.court.requiredMajority()
-        fee_period = self.havven.targetFeePeriodDurationSeconds()
+        fee_period = self.havven.targetFeePeriod()
         tokens = self.havven.totalSupply() // 20
 
         # Give 1/20th of the token supply to each of our 10 voters. In total 50% of tokens distributed.
@@ -477,7 +477,7 @@ class TestCourt(HavvenTestCase):
         voter = accounts[2]
         suspects = accounts[3:]
         voting_period = self.court.votingPeriod()
-        fee_period = self.havven.targetFeePeriodDurationSeconds()
+        fee_period = self.havven.targetFeePeriod()
         controlling_share = self.havven.totalSupply() // 2
 
         # Assert that accounts are unique.
@@ -544,7 +544,7 @@ class TestCourt(HavvenTestCase):
         self.havven.endow(owner, voter, voter_weight)
         self.allow_acc_max_vote(voter)
 
-        fee_period = self.havven.targetFeePeriodDurationSeconds()
+        fee_period = self.havven.targetFeePeriod()
         fast_forward(fee_period + 1)
         self.havven.checkFeePeriodRollover(DUMMY)
         fast_forward(fee_period + 1)
@@ -575,7 +575,7 @@ class TestCourt(HavvenTestCase):
     def test_voteFor(self):
         owner = self.court.owner()
         voter, no_tokens, suspect = fresh_accounts(3)
-        fee_period = self.havven.targetFeePeriodDurationSeconds()
+        fee_period = self.havven.targetFeePeriod()
 
         # Give some havven tokens to our voter.
         self.havven.endow(owner, voter, 1000)
@@ -620,7 +620,7 @@ class TestCourt(HavvenTestCase):
     def test_voteAgainst(self):
         owner = self.court.owner()
         voter, no_tokens, suspect = fresh_accounts(3)
-        fee_period = self.havven.targetFeePeriodDurationSeconds()
+        fee_period = self.havven.targetFeePeriod()
 
         # Give some havven tokens to our voter.
         self.havven.endow(owner, voter, 1000)
@@ -667,7 +667,7 @@ class TestCourt(HavvenTestCase):
         voter, voter2, suspect = fresh_accounts(3)
         voting_period = self.court.votingPeriod()
         confirmation_period = self.court.confirmationPeriod()
-        fee_period = self.havven.targetFeePeriodDurationSeconds()
+        fee_period = self.havven.targetFeePeriod()
         fast_forward(fee_period + 1)
         self.havven.checkFeePeriodRollover(DUMMY)
         # Give some havven tokens to our voter.
@@ -736,7 +736,7 @@ class TestCourt(HavvenTestCase):
         owner = self.court.owner()
         voter, other, suspect = fresh_accounts(3)
         voting_period = self.court.votingPeriod()
-        fee_period = self.havven.targetFeePeriodDurationSeconds()
+        fee_period = self.havven.targetFeePeriod()
 
         # Give some havven tokens to our voter.
         self.havven.endow(owner, voter, 1000)
@@ -786,7 +786,7 @@ class TestCourt(HavvenTestCase):
         owner = self.court.owner()
         _, voter, guilty = fresh_accounts(3)
         voting_period = self.court.votingPeriod()
-        fee_period = self.havven.targetFeePeriodDurationSeconds()
+        fee_period = self.havven.targetFeePeriod()
         controlling_share = self.havven.totalSupply() // 2
 
         self.assertNotEqual(owner, voter)
@@ -829,7 +829,7 @@ class TestCourt(HavvenTestCase):
         owner = self.court.owner()
         voter, acquitted = fresh_accounts(2)
         voting_period = self.court.votingPeriod()
-        fee_period = self.havven.targetFeePeriodDurationSeconds()
+        fee_period = self.havven.targetFeePeriod()
         controlling_share = self.havven.totalSupply() // 2
         self.havven.endow(owner, voter, controlling_share)
         self.allow_acc_max_vote(voter)
@@ -880,7 +880,7 @@ class TestCourt(HavvenTestCase):
         owner = self.court.owner()
         voting_period = self.court.votingPeriod()
         confirmation_period = self.court.confirmationPeriod()
-        fee_period = self.havven.targetFeePeriodDurationSeconds()
+        fee_period = self.havven.targetFeePeriod()
         required_participation = self.court.requiredParticipation() / UNIT
         required_majority = self.court.requiredMajority() / UNIT
 

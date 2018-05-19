@@ -46,7 +46,7 @@ class TestProxiedFeeCollection(__import__('tests').test_FeeCollection.TestFeeCol
 class TestProxiedHavven(__import__('tests').test_Havven.TestHavven):
     @classmethod
     def setUpClass(cls):
-        # to avoid overflowing in the negative direction (now - targetFeePeriodDuration * 2)
+        # to avoid overflowing in the negative direction (now - targetFeePeriod * 2)
         fast_forward(weeks=102)
 
         cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, \
