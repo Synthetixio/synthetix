@@ -23,7 +23,6 @@ class HavvenInterface(DestructibleExternStateTokenInterface):
         self.lastPriceUpdateTime = lambda: self.contract.functions.lastPriceUpdateTime().call()
         self.priceStalePeriod = lambda: self.contract.functions.priceStalePeriod().call()
         self.issuanceRatio = lambda: self.contract.functions.issuanceRatio().call()
-        self.maxIssuanceRatio = lambda: self.contract.functions.maxIssuanceRatio().call()
         self.priceIsStale = lambda: self.contract.functions.priceIsStale().call()
 
         # account specific getters

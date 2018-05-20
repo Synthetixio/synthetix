@@ -186,9 +186,11 @@ contract Havven is DestructibleExternStateToken {
     /* How long will the contract assume the price of havvens is correct */
     uint public priceStalePeriod = 3 hours;
 
+    /* A quantity of nomins greater than this ratio
+     * may not be issued against a given value of havvens. */
     uint public issuanceRatio = 5 * UNIT / 100;
-    /* The maximal the issuance ratio can be */
-    uint constant maxIssuanceRatio = UNIT;
+    /* No more nomins may be issued than the value of havvens backing them. */
+    uint constant MAX_ISSUANCE_RATIO = UNIT;
 
     /* whether the address can issue nomins or not */
     mapping(address => bool) public isIssuer;
@@ -292,7 +294,7 @@ contract Havven is DestructibleExternStateToken {
         external
         optionalProxy_onlyOwner
     {
-        require(_issuanceRatio <= maxIssuanceRatio);
+        require(_issuanceRatio <= MAX_ISSUANCE_RATIO);
         issuanceRatio = _issuanceRatio;
         emitIssuanceRatioUpdated(_issuanceRatio);
     }
