@@ -620,7 +620,7 @@ contract Havven is DestructibleExternStateToken {
         if (issued >= max) {
             return 0;
         } else {
-            return maxIssuableNomins(issuer) - issued;
+            return max - issued;
         }
     }
 
