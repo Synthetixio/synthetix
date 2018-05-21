@@ -253,7 +253,7 @@ contract Court is SafeDecimalMath, Owned {
                 duration <= MAX_VOTING_PERIOD);
         /* Require that the voting period is no longer than a single fee period,
          * So that a single vote can span at most two fee periods. */
-        require(duration <= havven.targetFeePeriod());
+        require(duration <= havven.feePeriodDuration());
         votingPeriod = duration;
     }
 
@@ -356,7 +356,7 @@ contract Court is SafeDecimalMath, Owned {
             return false;
         }
 
-        uint participation = safeDiv_dec(totalVotes, havven.totalIssuedNominLastAverageBalance());
+        uint participation = safeDiv_dec(totalVotes, havven.totalIssuanceLastAverageBalance());
         uint fractionInFavour = safeDiv_dec(yeas, totalVotes);
 
         /* We require the result to be strictly greater than the requirement
@@ -390,12 +390,12 @@ contract Court is SafeDecimalMath, Owned {
         returns (uint)
     {
         /* A confiscation motion must be mooted by someone with standing. */
-        require((havven.issuedNominLastAverageBalance(msg.sender) >= minStandingBalance) ||
+        require((havven.issuanceLastAverageBalance(msg.sender) >= minStandingBalance) ||
                 msg.sender == owner);
 
         /* Require that the voting period is longer than a single fee period,
          * So that a single vote can span at most two fee periods. */
-        require(votingPeriod <= havven.targetFeePeriod());
+        require(votingPeriod <= havven.feePeriodDuration());
 
         /* There must be no confiscation motion already running for this account. */
         require(targetMotionID[target] == 0);
@@ -410,7 +410,7 @@ contract Court is SafeDecimalMath, Owned {
         targetMotionID[target] = motionID;
 
         /* Start the vote at the start of the next fee period */
-        uint startTime = havven.feePeriodStartTime() + havven.targetFeePeriod();
+        uint startTime = havven.feePeriodStartTime() + havven.feePeriodDuration();
         motionStartTime[motionID] = startTime;
         emit MotionBegun(msg.sender, target, motionID, startTime);
 
@@ -434,7 +434,7 @@ contract Court is SafeDecimalMath, Owned {
         /* The voter may not cast votes on themselves. */
         require(msg.sender != motionTarget[motionID]);
 
-        uint weight = havven.recomputeAccountIssuedNominLastAverageBalance(msg.sender);
+        uint weight = havven.recomputeLastAverageBalance(msg.sender);
 
         /* Users must have a nonzero voting weight to vote. */
         require(weight > 0);

@@ -5,9 +5,12 @@ from utils.generalutils import to_seconds
 
 def setUpModule():
     print("Testing LimitedSetup...")
+    print("=======================")
+    print()
 
 
 def tearDownModule():
+    print()
     print()
 
 

@@ -13,9 +13,12 @@ from tests.contract_interfaces.owned_interface import OwnedInterface
 
 def setUpModule():
     print("Testing Owned...")
+    print("================")
+    print()
 
 
 def tearDownModule():
+    print()
     print()
 
 

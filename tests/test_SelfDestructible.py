@@ -8,9 +8,12 @@ from tests.contract_interfaces.self_destructible_interface import SelfDestructib
 
 def setUpModule():
     print("Testing SelfDestructible...")
+    print("===========================")
+    print()
 
 
 def tearDownModule():
+    print()
     print()
 
 

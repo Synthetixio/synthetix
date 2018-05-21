@@ -141,20 +141,20 @@ contract Havven is DestructibleExternStateToken {
     /* ========== STATE VARIABLES ========== */
 
     /* A struct for handing values associated with average balance calculations */
-    struct BalanceData {
+    struct IssuanceData {
         /* Sums of balances*duration in the current fee period.
         /* range: decimals; units: havven-seconds */
         uint currentBalanceSum;
         /* The last period's average balance */
         uint lastAverageBalance;
         /* The last time the data was calculated */
-        uint lastTransferTimestamp;
+        uint lastModified;
     }
 
     /* Issued nomin balances for individual fee entitlements */
-    mapping(address => BalanceData) public issuedNominBalanceData;
+    mapping(address => IssuanceData) public issuanceData;
     /* The total number of issued nomins for determining fee entitlements */
-    BalanceData public totalIssuedNominBalanceData;
+    IssuanceData public totalIssuanceData;
 
     /* The time the current fee period began */
     uint public feePeriodStartTime;
@@ -162,13 +162,13 @@ contract Havven is DestructibleExternStateToken {
     uint public lastFeePeriodStartTime;
 
     /* Fee periods will roll over in no shorter a time than this.. */
-    uint public targetFeePeriod = 4 weeks;
+    uint public feePeriodDuration = 4 weeks;
     /* ...and must target between 1 day and six months. */
-    uint constant MIN_FEE_PERIOD = 1 days;
-    uint constant MAX_FEE_PERIOD = 26 weeks;
+    uint constant MIN_FEE_PERIOD_DURATION = 1 days;
+    uint constant MAX_FEE_PERIOD_DURATION = 26 weeks;
 
     /* The quantity of nomins that were in the fee pot at the time */
-    /* of the last fee rollover (feePeriodStartTime) */
+    /* of the last fee rollover, at feePeriodStartTime. */
     uint public lastFeesCollected;
 
     /* Whether a user has withdrawn their last fees */
@@ -217,7 +217,7 @@ contract Havven is DestructibleExternStateToken {
     {
         oracle = _oracle;
         feePeriodStartTime = now;
-        lastFeePeriodStartTime = now - targetFeePeriod;
+        lastFeePeriodStartTime = now - feePeriodDuration;
         price = _price;
         lastPriceUpdateTime = now;
     }
@@ -254,12 +254,13 @@ contract Havven is DestructibleExternStateToken {
      * acceptable bounds (1 day to 26 weeks). Upon resetting this the fee period
      * may roll over if the target duration was shortened sufficiently.
      */
-    function setTargetFeePeriod(uint duration)
+    function setFeePeriodDuration(uint duration)
         external
         optionalProxy_onlyOwner
     {
-        require(MIN_FEE_PERIOD <= duration && duration <= MAX_FEE_PERIOD);
-        targetFeePeriod = duration;
+        require(MIN_FEE_PERIOD_DURATION <= duration &&
+                               duration <= MAX_FEE_PERIOD_DURATION);
+        feePeriodDuration = duration;
         emitFeePeriodDurationUpdated(duration);
         checkFeePeriodRollover();
     }
@@ -312,52 +313,52 @@ contract Havven is DestructibleExternStateToken {
 
     /* ========== VIEWS ========== */
 
-    function issuedNominCurrentBalanceSum(address account)
+    function issuanceCurrentBalanceSum(address account)
         external
         view
         returns (uint)
     {
-        return issuedNominBalanceData[account].currentBalanceSum;
+        return issuanceData[account].currentBalanceSum;
     }
 
-    function issuedNominLastAverageBalance(address account)
+    function issuanceLastAverageBalance(address account)
         external
         view
         returns (uint)
     {
-        return issuedNominBalanceData[account].lastAverageBalance;
+        return issuanceData[account].lastAverageBalance;
     }
 
-    function issuedNominLastTransferTimestamp(address account)
+    function issuanceLastModified(address account)
         external
         view
         returns (uint)
     {
-        return issuedNominBalanceData[account].lastTransferTimestamp;
+        return issuanceData[account].lastModified;
     }
 
-    function totalIssuedNominCurrentBalanceSum()
+    function totalIssuanceCurrentBalanceSum()
         external
         view
         returns (uint)
     {
-        return totalIssuedNominBalanceData.currentBalanceSum;
+        return totalIssuanceData.currentBalanceSum;
     }
 
-    function totalIssuedNominLastAverageBalance()
+    function totalIssuanceLastAverageBalance()
         external
         view
         returns (uint)
     {
-        return totalIssuedNominBalanceData.lastAverageBalance;
+        return totalIssuanceData.lastAverageBalance;
     }
 
-    function totalIssuedNominLastTransferTimestamp()
+    function totalIssuanceLastModified()
         external
         view
         returns (uint)
     {
-        return totalIssuedNominBalanceData.lastTransferTimestamp;
+        return totalIssuanceData.lastModified;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -432,16 +433,16 @@ contract Havven is DestructibleExternStateToken {
         require(!nomin.frozen(sender));
 
         /* Check the period has rolled over first. */
-        adjustIssuanceBalanceAverages(sender, nominsIssued[sender], nomin.totalSupply());
+        updateIssuanceData(sender, nominsIssued[sender], nomin.totalSupply());
 
         /* Only allow accounts to withdraw fees once per period. */
         require(!hasWithdrawnFees[sender]);
         uint feesOwed = 0;
 
-        uint lastTotalIssued = totalIssuedNominBalanceData.lastAverageBalance;
+        uint lastTotalIssued = totalIssuanceData.lastAverageBalance;
 
         if (lastTotalIssued > 0) {
-            feesOwed = safeDiv_dec(safeMul_dec(issuedNominBalanceData[sender].lastAverageBalance, lastFeesCollected), lastTotalIssued);
+            feesOwed = safeDiv_dec(safeMul_dec(issuanceData[sender].lastAverageBalance, lastFeesCollected), lastTotalIssued);
         }
 
         hasWithdrawnFees[sender] = true;
@@ -459,42 +460,42 @@ contract Havven is DestructibleExternStateToken {
      * consecutively, this function will do nothing after the first call.
      * Also, this will adjust the total issuance at the same time.
      */
-    function adjustIssuanceBalanceAverages(address account, uint preBalance, uint last_total_supply)
+    function updateIssuanceData(address account, uint preBalance, uint lastTotalSupply)
         internal
     {
         /* update the total balances first */
-        totalIssuedNominBalanceData = rolloverBalances(last_total_supply, totalIssuedNominBalanceData);
+        totalIssuanceData = rolloverBalances(lastTotalSupply, totalIssuanceData);
 
-        if (issuedNominBalanceData[account].lastTransferTimestamp < feePeriodStartTime) {
+        if (issuanceData[account].lastModified < feePeriodStartTime) {
             hasWithdrawnFees[account] = false;
         }
 
-        issuedNominBalanceData[account] = rolloverBalances(preBalance, issuedNominBalanceData[account]);
+        issuanceData[account] = rolloverBalances(preBalance, issuanceData[account]);
     }
 
 
     /**
-     * @notice Compute the new BalanceData on the old balance
+     * @notice Compute the new IssuanceData on the old balance
      */
-    function rolloverBalances(uint preBalance, BalanceData balanceInfo)
+    function rolloverBalances(uint preBalance, IssuanceData preIssuance)
         internal
         view
-        returns (BalanceData)
+        returns (IssuanceData)
     {
 
-        uint currentBalanceSum = balanceInfo.currentBalanceSum;
-        uint lastAvgBal = balanceInfo.lastAverageBalance;
-        uint lastTransferTime = balanceInfo.lastTransferTimestamp;
+        uint currentBalanceSum = preIssuance.currentBalanceSum;
+        uint lastAvgBal = preIssuance.lastAverageBalance;
+        uint lastModified = preIssuance.lastModified;
 
-        if (lastTransferTime < feePeriodStartTime) {
-            if (lastTransferTime < lastFeePeriodStartTime) {
+        if (lastModified < feePeriodStartTime) {
+            if (lastModified < lastFeePeriodStartTime) {
                 /* The balance did nothing in the last fee period, so the average balance
                  * in this period is their pre-transfer balance. */
                 lastAvgBal = preBalance;
             } else {
-                /* No overflow risk here: the failed guard implies (lastFeePeriodStartTime <= lastTransferTime). */
+                /* No overflow risk here: the failed guard implies (lastFeePeriodStartTime <= lastModified). */
                 lastAvgBal = safeDiv(
-                    safeAdd(currentBalanceSum, safeMul(preBalance, (feePeriodStartTime - lastTransferTime))),
+                    safeAdd(currentBalanceSum, safeMul(preBalance, (feePeriodStartTime - lastModified))),
                     (feePeriodStartTime - lastFeePeriodStartTime)
                 );
             }
@@ -503,23 +504,23 @@ contract Havven is DestructibleExternStateToken {
         } else {
             currentBalanceSum = safeAdd(
                 currentBalanceSum,
-                safeMul(preBalance, now - lastTransferTime)
+                safeMul(preBalance, now - lastModified)
             );
         }
 
-        return BalanceData(currentBalanceSum, lastAvgBal, now);
+        return IssuanceData(currentBalanceSum, lastAvgBal, now);
     }
 
     /**
      * @notice Recompute and return the given account's average balance information.
      */
-    function recomputeAccountIssuedNominLastAverageBalance(address account)
+    function recomputeLastAverageBalance(address account)
         external
         optionalProxy
         returns (uint)
     {
-        adjustIssuanceBalanceAverages(account, nominsIssued[account], nomin.totalSupply());
-        return issuedNominBalanceData[account].lastAverageBalance;
+        updateIssuanceData(account, nominsIssued[account], nomin.totalSupply());
+        return issuanceData[account].lastAverageBalance;
     }
 
     /**
@@ -530,23 +531,22 @@ contract Havven is DestructibleExternStateToken {
         public
         optionalProxy
         requireIssuer(messageSender)
-        /* No need to check if price is stale, as it is checked in maxIssuanceRights. */
+        /* No need to check if price is stale, as it is checked in issuableNomins. */
     {
         address sender = messageSender;
-
-        require(amount <= remainingIssuanceRights(sender));
+        require(amount <= remainingIssuableNomins(sender));
         uint lastTot = nomin.totalSupply();
         uint issued = nominsIssued[sender];
         nomin.issue(sender, amount);
         nominsIssued[sender] = safeAdd(issued, amount);
-        adjustIssuanceBalanceAverages(sender, issued, lastTot);
+        updateIssuanceData(sender, issued, lastTot);
     }
 
-    function issueNominsToMax()
+    function issueMaxNomins()
         external
         optionalProxy
     {
-        issueNomins(remainingIssuanceRights(messageSender));
+        issueNomins(remainingIssuableNomins(messageSender));
     }
 
     /**
@@ -565,7 +565,7 @@ contract Havven is DestructibleExternStateToken {
         nomin.burn(sender, amount);
         /* This safe sub ensures amount <= number issued */
         nominsIssued[sender] = safeSub(issued, amount);
-        adjustIssuanceBalanceAverages(sender, issued, lastTot);
+        updateIssuanceData(sender, issued, lastTot);
     }
 
     /**
@@ -577,7 +577,7 @@ contract Havven is DestructibleExternStateToken {
         optionalProxy
     {
         /* If the fee period has rolled over... */
-        if (now >= feePeriodStartTime + targetFeePeriod) {
+        if (now >= feePeriodStartTime + feePeriodDuration) {
             lastFeesCollected = nomin.feePool();
             lastFeePeriodStartTime = feePeriodStartTime;
             feePeriodStartTime = now;
@@ -591,7 +591,7 @@ contract Havven is DestructibleExternStateToken {
      * @notice The maximum nomins an issuer can issue against their total havven quantity. This ignores any
      * already issued nomins.
      */
-    function maxIssuanceRights(address issuer)
+    function maxIssuableNomins(address issuer)
         view
         public
         priceNotStale
@@ -610,17 +610,17 @@ contract Havven is DestructibleExternStateToken {
     /**
      * @notice The remaining nomins an issuer can issue against their total havven quantity.
      */
-    function remainingIssuanceRights(address issuer)
+    function remainingIssuableNomins(address issuer)
         view
         public
         returns (uint)
     {
         uint issued = nominsIssued[issuer];
-        uint max = maxIssuanceRights(issuer);
+        uint max = maxIssuableNomins(issuer);
         if (issued >= max) {
             return 0;
         } else {
-            return maxIssuanceRights(issuer) - issued;
+            return maxIssuableNomins(issuer) - issued;
         }
     }
 

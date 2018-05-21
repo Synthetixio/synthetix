@@ -12,9 +12,12 @@ from tests.contract_interfaces.extern_state_fee_token_interface import PublicExt
 
 def setUpModule():
     print("Testing ExternStateFeeToken...")
+    print("==============================")
+    print()
 
 
 def tearDownModule():
+    print()
     print()
 
 

@@ -14,9 +14,12 @@ from tests.contract_interfaces.havven_escrow_interface import PublicHavvenEscrow
 
 def setUpModule():
     print("Testing Issuance...")
+    print("===================")
+    print()
 
 
 def tearDownModule():
+    print()
     print()
 
 
@@ -152,11 +155,11 @@ class TestIssuance(HavvenTestCase):
         self.havven.setIssuanceRatio(MASTER, 0)
         self.assertReverts(self.havven.issueNomins, alice, 10 * UNIT)  # reverts, as CMAX too low (0)
         self.havven.setIssuanceRatio(MASTER, int(0.05 * UNIT))
-        self.havven.issueNomins(alice, self.havven.maxIssuanceRights(alice))
+        self.havven.issueNomins(alice, self.havven.maxIssuableNomins(alice))
         self.assertEqual(self.havven.nominsIssued(alice), 50 * UNIT)
-        self.assertReverts(self.havven.issueNomins, alice, self.havven.maxIssuanceRights(alice))
-        self.assertEqual(self.havven.remainingIssuanceRights(alice), 0)
-        self.havven.issueNomins(alice, self.havven.remainingIssuanceRights(alice))
+        self.assertReverts(self.havven.issueNomins, alice, self.havven.maxIssuableNomins(alice))
+        self.assertEqual(self.havven.remainingIssuableNomins(alice), 0)
+        self.havven.issueNomins(alice, self.havven.remainingIssuableNomins(alice))
 
     def test_burn(self):
         alice = fresh_account()

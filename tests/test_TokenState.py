@@ -16,9 +16,12 @@ def deploy_state(name, compiled, sender, owner, supply, beneficiary, associated_
 
 def setUpModule():
     print("Testing TokenState...")
+    print("=====================")
+    print()
 
 
 def tearDownModule():
+    print()
     print()
 
 

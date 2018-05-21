@@ -14,9 +14,12 @@ from tests.contract_interfaces.court_interface import FakeCourtInterface
 
 def setUpModule():
     print("Testing Nomin...")
+    print("================")
+    print()
 
 
 def tearDownModule():
+    print()
     print()
 
 

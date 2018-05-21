@@ -13,9 +13,12 @@ from tests.contract_interfaces.court_interface import FakeCourtInterface
 
 def setUpModule():
     print("Testing FeeCollection...")
+    print("========================")
+    print()
 
 
 def tearDownModule():
+    print()
     print()
 
 
@@ -78,7 +81,7 @@ class TestFeeCollection(HavvenTestCase):
         return mine_tx(self.havven_contract.functions.updatePrice(price, time).transact({'from': sender}), 'updatePrice', 'Havven')
 
     def rollover_and_validate(self, duration=None):
-        time = duration if duration is not None else self.havven.targetFeePeriod() + 1
+        time = duration if duration is not None else self.havven.feePeriodDuration() + 1
         fast_forward(time)
         tx = self.havven.checkFeePeriodRollover(DUMMY)
         rollover_time = block_time(tx.blockNumber)
@@ -88,7 +91,7 @@ class TestFeeCollection(HavvenTestCase):
                                self.havven_proxy.address)
 
     def withdraw_and_validate(self, addr):
-        self.havven.recomputeAccountIssuedNominLastAverageBalance(addr, addr)
+        self.havven.recomputeLastAverageBalance(addr, addr)
         self.assertFalse(self.havven.hasWithdrawnFees(addr))
         self.havven.withdrawFees(addr)
         self.assertTrue(self.havven.hasWithdrawnFees(addr))
@@ -98,7 +101,7 @@ class TestFeeCollection(HavvenTestCase):
         self.havven.endow(MASTER, issuer, UNIT)
         self.havven.setIssuer(MASTER, issuer, True)
         self.havven_updatePrice(self.havven.oracle(), UNIT, block_time())
-        self.havven.issueNomins(issuer, self.havven.maxIssuanceRights(issuer))
+        self.havven.issueNomins(issuer, self.havven.maxIssuableNomins(issuer))
         self.nomin.generateFees(MASTER, 100 * UNIT)
         self.rollover_and_validate()
         self.withdraw_and_validate(issuer)
@@ -149,7 +152,7 @@ class TestFeeCollection(HavvenTestCase):
 
         for addr in hav_addr:
             self.havven.setIssuer(MASTER, addr, True)
-            self.havven.issueNomins(addr, self.havven.maxIssuanceRights(addr))
+            self.havven.issueNomins(addr, self.havven.maxIssuableNomins(addr))
 
         self.nomin.generateFees(MASTER, 100 * UNIT)
         # fast forward to next period
@@ -218,7 +221,7 @@ class TestFeeCollection(HavvenTestCase):
 
         for addr in hav_addr:
             self.havven.setIssuer(MASTER, addr, True)
-            self.havven.issueNomins(addr, self.havven.maxIssuanceRights(addr))
+            self.havven.issueNomins(addr, self.havven.maxIssuableNomins(addr))
 
         for addr in hav_addr:
             self.withdraw_and_validate(addr)
@@ -245,7 +248,7 @@ class TestFeeCollection(HavvenTestCase):
             if percentage_havvens == 0:
                 self.assertEqual(self.nomin.balanceOf(addr), 0)
             else:
-                self.assertGreater(self.nomin.balanceOf(addr), self.havven.maxIssuanceRights(addr))
+                self.assertGreater(self.nomin.balanceOf(addr), self.havven.maxIssuableNomins(addr))
             total_fees_collected += self.nomin.balanceOf(addr) - self.havven.nominsIssued(addr)
 
         if percentage_havvens == 0:
@@ -272,7 +275,7 @@ class TestFeeCollection(HavvenTestCase):
         (Single user only)
         :param h_percent: the percent of havvens being used
         """
-        fee_period_duration = self.havven.targetFeePeriod()
+        fee_period_duration = self.havven.feePeriodDuration()
 
         havven_holder, h_receiver = fresh_accounts(2)
 
@@ -297,7 +300,7 @@ class TestFeeCollection(HavvenTestCase):
         current_addr = False
         for i in range(6):
             self.havven_updatePrice(self.havven.oracle(), h_price, self.havven.currentTime() + 1)
-            self.havven.issueNomins(addrs[current_addr], self.havven.remainingIssuanceRights(addrs[current_addr]))
+            self.havven.issueNomins(addrs[current_addr], self.havven.remainingIssuableNomins(addrs[current_addr]))
             self.assertClose(self.nomin.totalSupply(), h_price * h_total_supply * h_percent * self.havven.issuanceRatio() // UNIT // UNIT)
             fast_forward(fee_period_duration // 6 - 5)
             self.havven.burnNomins(addrs[current_addr], self.nomin.balanceOf(addrs[current_addr]))
@@ -366,7 +369,7 @@ class TestFeeCollection(HavvenTestCase):
 
         for addr in hav_addr:
             self.havven.setIssuer(MASTER, addr, True)
-            self.havven.issueNomins(addr, self.havven.maxIssuanceRights(addr))
+            self.havven.issueNomins(addr, self.havven.maxIssuableNomins(addr))
 
         self.rollover_and_validate()
 

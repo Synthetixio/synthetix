@@ -14,9 +14,12 @@ from tests.contract_interfaces.token_state_interface import TokenStateInterface
 
 def setUpModule():
     print("Testing Proxy...")
+    print("================")
+    print()
 
 
 def tearDownModule():
+    print()
     print()
 
 

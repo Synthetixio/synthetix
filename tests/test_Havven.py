@@ -19,9 +19,12 @@ from tests.contract_interfaces.nomin_interface import PublicNominInterface
 
 def setUpModule():
     print("Testing Havven...")
+    print("=================")
+    print()
 
 
 def tearDownModule():
+    print()
     print()
 
 
@@ -77,7 +80,7 @@ class TestHavven(HavvenTestCase):
 
     @classmethod
     def setUpClass(cls):
-        # to avoid overflowing in the negative direction (now - targetFeePeriod * 2)
+        # to avoid overflowing in the negative direction (now - feePeriodDuration * 2)
         fast_forward(weeks=102)
 
         cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, \
@@ -150,11 +153,11 @@ class TestHavven(HavvenTestCase):
     # Constructor
     ###
     def test_constructor(self):
-        fee_period = self.havven.targetFeePeriod()
+        fee_period = self.havven.feePeriodDuration()
         self.assertEqual(fee_period, to_seconds(weeks=4))
         self.assertGreater(block_time(), 2 * fee_period)
-        self.assertEqual(self.havven.MIN_FEE_PERIOD(), to_seconds(days=1))
-        self.assertEqual(self.havven.MAX_FEE_PERIOD(), to_seconds(weeks=26))
+        self.assertEqual(self.havven.MIN_FEE_PERIOD_DURATION(), to_seconds(days=1))
+        self.assertEqual(self.havven.MAX_FEE_PERIOD_DURATION(), to_seconds(weeks=26))
         self.assertEqual(self.havven.lastFeesCollected(), 0)
         self.assertEqual(self.havven.nomin(), self.nomin_contract.address)
         self.assertEqual(self.havven.decimals(), 18)
@@ -167,7 +170,7 @@ class TestHavven(HavvenTestCase):
         #Testing the value of currentBalanceSum works as intended,
         #Further testing involving this and fee collection will be done
         #in scenario testing
-        fee_period = self.havven.targetFeePeriod()
+        fee_period = self.havven.feePeriodDuration()
         delay = int(fee_period / 10)
         alice = fresh_account()
         self.assertEqual(self.havven.balanceOf(alice), 0)
@@ -182,28 +185,28 @@ class TestHavven(HavvenTestCase):
 
         self.assertEqual(self.havven.balanceOf(alice), start_amt)
         self.assertEqual(self.nomin.balanceOf(alice), start_amt)
-        self.assertEqual(self.havven.issuedNominCurrentBalanceSum(alice), 0)
+        self.assertEqual(self.havven.issuanceCurrentBalanceSum(alice), 0)
         start_time = block_time()
         fast_forward(delay)
-        self.havven.recomputeAccountIssuedNominLastAverageBalance(alice, alice)
+        self.havven.recomputeLastAverageBalance(alice, alice)
         end_time = block_time()
         balance_sum = (end_time - start_time) * start_amt
         self.assertEqual(
-            self.havven.issuedNominCurrentBalanceSum(alice),
+            self.havven.issuanceCurrentBalanceSum(alice),
             balance_sum
         )
         self.havven.burnNomins(alice, start_amt)
         self.assertEqual(self.nomin.balanceOf(alice), 0)
         fast_forward(delay)
-        self.havven.recomputeAccountIssuedNominLastAverageBalance(alice, alice)
+        self.havven.recomputeLastAverageBalance(alice, alice)
         self.assertClose(
-            self.havven.issuedNominCurrentBalanceSum(alice), balance_sum
+            self.havven.issuanceCurrentBalanceSum(alice), balance_sum
         )
 
     # lastAverageBalance
     def test_lastAverageBalance(self):
         # set the block time to be at least 30seconds away from the end of the fee_period
-        fee_period = self.havven.targetFeePeriod()
+        fee_period = self.havven.feePeriodDuration()
 
         # fast forward next block with some extra padding
         delay = fee_period + 1
@@ -221,35 +224,35 @@ class TestHavven(HavvenTestCase):
         tx_receipt = self.havven.issueNomins(alice, start_amt)
 
         self.assertEqual(self.havven.balanceOf(alice), start_amt)
-        self.assertEqual(self.havven.issuedNominCurrentBalanceSum(alice), 0)
-        self.assertEqual(self.havven.issuedNominLastAverageBalance(alice), 0)
-        self.assertEqual(self.havven.issuedNominLastTransferTimestamp(alice), block_time(tx_receipt['blockNumber']))
+        self.assertEqual(self.havven.issuanceCurrentBalanceSum(alice), 0)
+        self.assertEqual(self.havven.issuanceLastAverageBalance(alice), 0)
+        self.assertEqual(self.havven.issuanceLastModified(alice), block_time(tx_receipt['blockNumber']))
         fast_forward(delay)
         self.havven.checkFeePeriodRollover(DUMMY)
         fast_forward(fee_period // 2)
 
-        tx_receipt = self.havven.recomputeAccountIssuedNominLastAverageBalance(alice, alice)
+        tx_receipt = self.havven.recomputeLastAverageBalance(alice, alice)
         block_number = tx_receipt['blockNumber']
 
         duration_since_rollover = block_time(block_number) - self.havven.feePeriodStartTime()
         balance_sum = duration_since_rollover * start_amt
 
-        actual = self.havven.issuedNominCurrentBalanceSum(alice)
+        actual = self.havven.issuanceCurrentBalanceSum(alice)
         expected = balance_sum
         self.assertClose(
             actual, expected
         )
 
-        time_remaining = self.havven.targetFeePeriod() + self.havven.feePeriodStartTime() - block_time()
+        time_remaining = self.havven.feePeriodDuration() + self.havven.feePeriodStartTime() - block_time()
         fast_forward(time_remaining - 5)
         self.havven.burnNomins(alice, start_amt // 2)
-        time_remaining = self.havven.targetFeePeriod() + self.havven.feePeriodStartTime() - block_time()
+        time_remaining = self.havven.feePeriodDuration() + self.havven.feePeriodStartTime() - block_time()
         fast_forward(time_remaining + 10)
 
         self.havven.checkFeePeriodRollover(alice)
-        self.havven.recomputeAccountIssuedNominLastAverageBalance(alice, alice)
+        self.havven.recomputeLastAverageBalance(alice, alice)
 
-        actual = self.havven.issuedNominLastAverageBalance(alice)
+        actual = self.havven.issuanceLastAverageBalance(alice)
         expected = (start_amt * delay) // (self.havven.feePeriodStartTime() - self.havven.lastFeePeriodStartTime())
         self.assertClose(
             actual, expected
@@ -258,7 +261,7 @@ class TestHavven(HavvenTestCase):
     def test_lastAverageBalanceFullPeriod(self):
         alice = fresh_account()
         self.havven.setIssuer(MASTER, alice, True)
-        fee_period = self.havven.targetFeePeriod()
+        fee_period = self.havven.feePeriodDuration()
 
         # Alice will initially have 20 havvens
         self.havven.endow(MASTER, alice, 20 * UNIT)
@@ -271,13 +274,13 @@ class TestHavven(HavvenTestCase):
         self.assertEqual(self.nomin.balanceOf(alice), 20 * UNIT)
 
         # Fastforward until just before a fee period rolls over.
-        time_remaining = self.havven.targetFeePeriod() + self.havven.feePeriodStartTime() - block_time()
+        time_remaining = self.havven.feePeriodDuration() + self.havven.feePeriodStartTime() - block_time()
         fast_forward(time_remaining + 50)
         tx_receipt = self.havven.checkFeePeriodRollover(alice)
         self.havven_updatePrice(MASTER, UNIT, block_time())
         issue_receipt = self.havven.issueNomins(alice, 0) 
 
-        self.assertEqual(self.havven.issuedNominLastTransferTimestamp(alice), block_time(issue_receipt['blockNumber']))
+        self.assertEqual(self.havven.issuanceLastModified(alice), block_time(issue_receipt['blockNumber']))
         event = get_event_data_from_log(self.havven_event_dict, tx_receipt.logs[0])
         self.assertEqual(event['event'], 'FeePeriodRollover')
 
@@ -289,11 +292,11 @@ class TestHavven(HavvenTestCase):
 
         event = get_event_data_from_log(self.havven_event_dict, tx_receipt.logs[0])
         self.assertEqual(event['event'], 'FeePeriodRollover')
-        self.assertEqual(self.havven.issuedNominLastTransferTimestamp(alice), block_time(transfer_receipt['blockNumber'])) 
-        self.assertEqual(self.havven.issuedNominLastAverageBalance(alice), 20 * UNIT)
+        self.assertEqual(self.havven.issuanceLastModified(alice), block_time(transfer_receipt['blockNumber'])) 
+        self.assertEqual(self.havven.issuanceLastAverageBalance(alice), 20 * UNIT)
 
         # Try a half-and-half period
-        time_remaining = self.havven.targetFeePeriod() + self.havven.feePeriodStartTime() - block_time()
+        time_remaining = self.havven.feePeriodDuration() + self.havven.feePeriodStartTime() - block_time()
         fast_forward(time_remaining + 50)
         self.havven.checkFeePeriodRollover(MASTER)
         self.havven.burnNomins(alice, 10 * UNIT)
@@ -309,19 +312,19 @@ class TestHavven(HavvenTestCase):
         self.assertEqual(event['event'], 'FeePeriodRollover')
 
         self.havven.checkFeePeriodRollover(alice)
-        self.havven.recomputeAccountIssuedNominLastAverageBalance(alice, alice)
-        self.assertClose(self.havven.issuedNominLastAverageBalance(alice), 5 * UNIT)
+        self.havven.recomputeLastAverageBalance(alice, alice)
+        self.assertClose(self.havven.issuanceLastAverageBalance(alice), 5 * UNIT)
 
     def test_arithmeticSeriesBalance(self):
         alice = fresh_account()
-        fee_period = self.havven.targetFeePeriod()
+        fee_period = self.havven.feePeriodDuration()
         n = 50
 
         self.havven.endow(MASTER, alice, n * UNIT)
         self.havven_updatePrice(self.havven.oracle(), UNIT, block_time())
         self.havven.setIssuer(MASTER, alice, True)
         self.havven.issueNomins(alice, n * UNIT // 20)
-        time_remaining = self.havven.targetFeePeriod() + self.havven.feePeriodStartTime() - block_time()
+        time_remaining = self.havven.feePeriodDuration() + self.havven.feePeriodStartTime() - block_time()
         fast_forward(time_remaining + 5 )
         self.havven.checkFeePeriodRollover(MASTER)
 
@@ -332,12 +335,12 @@ class TestHavven(HavvenTestCase):
         fast_forward(n)  # fast forward allow the rollover to happen
         self.havven.checkFeePeriodRollover(MASTER)
 
-        self.havven.recomputeAccountIssuedNominLastAverageBalance(alice, alice)
-        self.assertClose(self.havven.issuedNominLastAverageBalance(alice), n * (n - 1) * UNIT // (2 * n * 20), precision=3)
+        self.havven.recomputeLastAverageBalance(alice, alice)
+        self.assertClose(self.havven.issuanceLastAverageBalance(alice), n * (n - 1) * UNIT // (2 * n * 20), precision=3)
 
     def test_averageBalanceSum(self):
         alice, bob, carol = fresh_accounts(3)
-        fee_period = self.havven.targetFeePeriod()
+        fee_period = self.havven.feePeriodDuration()
 
         self.havven.endow(MASTER, alice, UNIT)
         self.havven.endow(MASTER, bob, UNIT)
@@ -368,17 +371,17 @@ class TestHavven(HavvenTestCase):
         fast_forward(11)
         self.havven.checkFeePeriodRollover(MASTER)
 
-        self.havven.recomputeAccountIssuedNominLastAverageBalance(alice, alice)
-        self.havven.recomputeAccountIssuedNominLastAverageBalance(bob, bob)
-        self.havven.recomputeAccountIssuedNominLastAverageBalance(carol, carol)
+        self.havven.recomputeLastAverageBalance(alice, alice)
+        self.havven.recomputeLastAverageBalance(bob, bob)
+        self.havven.recomputeLastAverageBalance(carol, carol)
 
-        total_average = self.havven.issuedNominLastAverageBalance(alice) + \
-                        self.havven.issuedNominLastAverageBalance(bob) + \
-                        self.havven.issuedNominLastAverageBalance(carol)
+        total_average = self.havven.issuanceLastAverageBalance(alice) + \
+                        self.havven.issuanceLastAverageBalance(bob) + \
+                        self.havven.issuanceLastAverageBalance(carol)
 
         self.assertClose(UNIT, total_average, precision=3)
 
-    # lastTransferTimestamp - tested above
+    # lastModified - tested above
     # hasWithdrawnFees - tested in test_FeeCollection.py
     # lastFeesCollected - tested in test_FeeCollection.py
 
@@ -386,8 +389,8 @@ class TestHavven(HavvenTestCase):
     # Contract variables
     ###
     # feePeriodStartTime - tested above
-    # targetFeePeriod - tested above
-    # MIN_FEE_PERIOD - constant, checked in constructor test
+    # feePeriodDuration - tested above
+    # MIN_FEE_PERIOD_DURATION - constant, checked in constructor test
 
     ###
     # Functions
@@ -413,36 +416,36 @@ class TestHavven(HavvenTestCase):
         alice = fresh_account()
         self.assertReverts(self.havven.setEscrow, alice, alice)
 
-    # setTargetFeePeriod
-    def test_setTargetFeePeriod(self):
-        self.havven.setTargetFeePeriod(MASTER, to_seconds(weeks=10))
+    # setFeePeriodDuration
+    def test_setFeePeriodDuration(self):
+        self.havven.setFeePeriodDuration(MASTER, to_seconds(weeks=10))
         self.assertEqual(
-            self.havven.targetFeePeriod(),
+            self.havven.feePeriodDuration(),
             to_seconds(weeks=10)
         )
 
-    def test_setTargetFeePeriod_max(self):
+    def test_setFeePeriodDuration_max(self):
         sixmonths = 26 * 7 * 24 * 60 * 60
-        self.assertReverts(self.havven.setTargetFeePeriod, MASTER, 2 ** 256 - 1)
-        self.assertReverts(self.havven.setTargetFeePeriod, MASTER, sixmonths + 1)
-        self.havven.setTargetFeePeriod(MASTER, sixmonths)
+        self.assertReverts(self.havven.setFeePeriodDuration, MASTER, 2 ** 256 - 1)
+        self.assertReverts(self.havven.setFeePeriodDuration, MASTER, sixmonths + 1)
+        self.havven.setFeePeriodDuration(MASTER, sixmonths)
         self.assertEqual(
-            self.havven.targetFeePeriod(),
+            self.havven.feePeriodDuration(),
             sixmonths
         )
 
-    def test_setTargetFeePeriod_minimal(self):
-        self.havven.setTargetFeePeriod(MASTER, self.havven.MIN_FEE_PERIOD())
+    def test_setFeePeriodDuration_min(self):
+        self.havven.setFeePeriodDuration(MASTER, self.havven.MIN_FEE_PERIOD_DURATION())
         self.assertEqual(
-            self.havven.targetFeePeriod(),
-            self.havven.MIN_FEE_PERIOD()
+            self.havven.feePeriodDuration(),
+            self.havven.MIN_FEE_PERIOD_DURATION()
         )
 
-    def test_setTargetFeePeriod_invalid_below_min(self):
-        self.assertReverts(self.havven.setTargetFeePeriod, MASTER, self.havven.MIN_FEE_PERIOD() - 1)
+    def test_setFeePeriodDuration_invalid_below_min(self):
+        self.assertReverts(self.havven.setFeePeriodDuration, MASTER, self.havven.MIN_FEE_PERIOD_DURATION() - 1)
 
-    def test_setTargetFeePeriod_invalid_0(self):
-        self.assertReverts(self.havven.setTargetFeePeriod, MASTER, self.havven.MIN_FEE_PERIOD() - 1)
+    def test_setFeePeriodDuration_invalid_0(self):
+        self.assertReverts(self.havven.setFeePeriodDuration, MASTER, self.havven.MIN_FEE_PERIOD_DURATION() - 1)
 
     # endow
     def test_endow_valid(self):
@@ -508,7 +511,7 @@ class TestHavven(HavvenTestCase):
     def test_transferRollsOver(self):
         alice = fresh_account()
         self.havven.endow(MASTER, alice, 50 * UNIT)
-        fast_forward(seconds=self.havven.targetFeePeriod() + 100)
+        fast_forward(seconds=self.havven.feePeriodDuration() + 100)
         self.havven.transfer(alice, MASTER, 25 * UNIT)
         tx_receipt = self.havven.checkFeePeriodRollover(MASTER)
 
@@ -559,7 +562,7 @@ class TestHavven(HavvenTestCase):
         alice = fresh_account()
         self.havven.endow(MASTER, alice, 50 * UNIT)
         self.havven.approve(alice, MASTER, 25 * UNIT)
-        fast_forward(seconds=self.havven.targetFeePeriod() + 100)
+        fast_forward(seconds=self.havven.feePeriodDuration() + 100)
         self.havven.transferFrom(MASTER, alice, MASTER, 25 * UNIT)
         tx_receipt = self.havven.checkFeePeriodRollover(MASTER)
 
@@ -615,10 +618,10 @@ class TestHavven(HavvenTestCase):
     def test_withdraw_multiple_periods(self):
         alice = fresh_account()
         self.havven.withdrawFees(alice)
-        fast_forward(self.havven.targetFeePeriod() * 2)
+        fast_forward(self.havven.feePeriodDuration() * 2)
         self.havven.checkFeePeriodRollover(DUMMY)
         self.havven.withdrawFees(alice)
-        fast_forward(self.havven.targetFeePeriod() * 2)
+        fast_forward(self.havven.feePeriodDuration() * 2)
         self.havven.checkFeePeriodRollover(DUMMY)
 
     # adjustFeeEntitlement - tested above
@@ -631,14 +634,14 @@ class TestHavven(HavvenTestCase):
     ###
     # postCheckFeePeriodRollover - tested above
     def test_checkFeePeriodRollover_escrow_exists(self):
-        fast_forward(seconds=self.havven.targetFeePeriod() + 10)
+        fast_forward(seconds=self.havven.feePeriodDuration() + 10)
 
         pre_feePeriodStartTime = self.havven.feePeriodStartTime()
         # This should work fine.
         self.havven.checkFeePeriodRollover(MASTER)
         self.assertGreater(self.havven.feePeriodStartTime(), pre_feePeriodStartTime)
 
-        fast_forward(seconds=self.havven.targetFeePeriod() + 10)
+        fast_forward(seconds=self.havven.feePeriodDuration() + 10)
         pre_feePeriodStartTime = self.havven.feePeriodStartTime()
         # And so should this
         self.havven.setEscrow(MASTER, ZERO_ADDRESS)
@@ -655,16 +658,16 @@ class TestHavven(HavvenTestCase):
         a_sum = 0
         self.havven.endow(MASTER, alice, amount)
         self.assertEqual(self.havven.balanceOf(alice), amount)
-        self.assertEqual(self.havven.issuedNominCurrentBalanceSum(alice), 0)
+        self.assertEqual(self.havven.issuanceCurrentBalanceSum(alice), 0)
         for i in range(20):
             self.havven.issueNomins(alice, amount)
             t = block_time()
             self.assertEqual(self.nomin.balanceOf(alice), amount)
-            self.assertEqual(self.havven.issuedNominCurrentBalanceSum(alice), a_sum)
+            self.assertEqual(self.havven.issuanceCurrentBalanceSum(alice), a_sum)
             self.havven.burnNomins(alice, amount)
             a_sum += (block_time() - t) * amount
             self.assertEqual(self.nomin.balanceOf(alice), 0)
-            self.assertEqual(self.havven.issuedNominCurrentBalanceSum(alice), a_sum)
+            self.assertEqual(self.havven.issuanceCurrentBalanceSum(alice), a_sum)
 
     def test_event_PriceUpdated(self):
         time = block_time()
@@ -685,7 +688,7 @@ class TestHavven(HavvenTestCase):
 
     def test_event_FeePeriodRollover(self):
         time = block_time()
-        fee_period = self.havven.targetFeePeriod()
+        fee_period = self.havven.feePeriodDuration()
         fast_forward(fee_period + 10) 
         tx = self.havven.checkFeePeriodRollover(MASTER)
         time = block_time(tx.blockNumber)
@@ -696,7 +699,7 @@ class TestHavven(HavvenTestCase):
 
     def test_event_FeePeriodDurationUpdated(self):
         new_duration = 19 * 24 * 60 * 60
-        tx = self.havven.setTargetFeePeriod(MASTER, new_duration)
+        tx = self.havven.setFeePeriodDuration(MASTER, new_duration)
         self.assertEventEquals(self.event_map,
                                tx.logs[0], "FeePeriodDurationUpdated",
                                {"duration": new_duration},
@@ -705,7 +708,7 @@ class TestHavven(HavvenTestCase):
     def test_event_FeesWithdrawn(self):
         issuer = fresh_account()
         fee_rate = self.nomin.transferFeeRate()
-        fee_period = self.havven.targetFeePeriod()
+        fee_period = self.havven.feePeriodDuration()
         self.havven.endow(MASTER, issuer, 2 * UNIT)
         self.havven_updatePrice(self.havven.oracle(), UNIT, block_time())
         self.havven.setIssuanceRatio(MASTER, UNIT)

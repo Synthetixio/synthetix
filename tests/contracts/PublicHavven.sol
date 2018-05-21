@@ -12,8 +12,8 @@ import "contracts/TokenState.sol";
 // Public getters for all items in the Havven contract, used for debugging/testing
 contract PublicHavven is Havven {
     // generate getters for constants
-    uint constant public MIN_FEE_PERIOD = 1 days;
-    uint constant public MAX_FEE_PERIOD = 26 weeks;
+    uint constant public MIN_FEE_PERIOD_DURATION = 1 days;
+    uint constant public MAX_FEE_PERIOD_DURATION = 26 weeks;
 
     constructor(address _proxy, TokenState _state, address _owner, address _oracle, uint _price)
         Havven(_proxy, _state, _owner, _oracle, _price)

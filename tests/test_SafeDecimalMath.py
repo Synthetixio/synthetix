@@ -5,9 +5,12 @@ from tests.contract_interfaces.safe_decimal_math_interface import SafeDecimalMat
 
 def setUpModule():
     print("Testing SafeDecimalMath...")
+    print("==========================")
+    print()
 
 
 def tearDownModule():
+    print()
     print()
 
 

@@ -19,9 +19,12 @@ from tests.contract_interfaces.nomin_interface import PublicNominInterface
 
 def setUpModule():
     print("Testing HavvenEscrow...")
+    print("=======================")
+    print()
 
 
 def tearDownModule():
+    print()
     print()
 
 
@@ -314,13 +317,13 @@ class TestHavvenEscrow(HavvenTestCase):
         fees = self.nomin.feePool()
 
         # Skip a period so we have a full period with no transfers
-        fast_forward(self.havven.targetFeePeriod() + 100)
+        fast_forward(self.havven.feePeriodDuration() + 100)
         self.havven.checkFeePeriodRollover(MASTER)
-        self.havven.recomputeAccountIssuedNominLastAverageBalance(MASTER, MASTER)
+        self.havven.recomputeLastAverageBalance(MASTER, MASTER)
         # Skip a period so we have a full period with no transfers
-        fast_forward(self.havven.targetFeePeriod() + 100)
+        fast_forward(self.havven.feePeriodDuration() + 100)
         self.havven.checkFeePeriodRollover(MASTER)
-        self.havven.recomputeAccountIssuedNominLastAverageBalance(MASTER, MASTER)
+        self.havven.recomputeLastAverageBalance(MASTER, MASTER)
 
         self.assertEqual(fees, self.havven.lastFeesCollected())
 
@@ -346,9 +349,9 @@ class TestHavvenEscrow(HavvenTestCase):
         fees = self.nomin.feePool()
 
         # Skip a period so we have a full period with no transfers
-        fast_forward(self.havven.targetFeePeriod() + 100)
+        fast_forward(self.havven.feePeriodDuration() + 100)
         self.havven.checkFeePeriodRollover(MASTER)
-        self.havven.recomputeAccountIssuedNominLastAverageBalance(MASTER, MASTER)
+        self.havven.recomputeLastAverageBalance(MASTER, MASTER)
 
         # Since escrow contract has most of the global supply, and half of the
         # escrowed balance, they should get half of the fees.

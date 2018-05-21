@@ -13,9 +13,12 @@ from tests.contract_interfaces.destructible_extern_state_token_interface import 
 
 def setUpModule():
     print("Testing DestructibleExternStateToken...")
+    print("=======================================")
+    print()
 
 
 def tearDownModule():
+    print()
     print()
 
 
