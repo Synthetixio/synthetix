@@ -617,7 +617,7 @@ contract Havven is DestructibleExternStateToken {
     {
         uint issued = nominsIssued[issuer];
         uint max = maxIssuableNomins(issuer);
-        if (issued >= max) {
+        if (issued > max) {
             return 0;
         } else {
             return max - issued;
@@ -647,13 +647,11 @@ contract Havven is DestructibleExternStateToken {
         returns (uint)
     {
         uint locked = lockedHavvens(account);
-        uint bal;
+        uint bal = state.balanceOf(account);
         if (escrow != address(0)) {
-            bal = state.balanceOf(account) + escrow.balanceOf(account);
-        } else {
-            bal = state.balanceOf(account);
+            bal += escrow.balanceOf(account);
         }
-        if (locked >= bal) {
+        if (locked > bal) {
             return 0;
         }
         return bal - locked;
