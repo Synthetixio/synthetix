@@ -59,18 +59,25 @@ if __name__ == '__main__':
     remaining = sorted(list(PERFORMANCE_DATA.keys()))
     remaining.pop(remaining.index('CONTRACT'))
 
+    print('┌' + '─'*(2 + max_contract_name) + '┬' +
+          '─'*(2 + max_method_name) + '┬' +
+          ''.join(['─'*(2 + max_gas_len) + '┬' for i in vals[:-1]]) + '─'*(2 + max_gas_len) + '┐')
     while True:
-        for method in sorted(list(PERFORMANCE_DATA[current].keys())):
+        for method in sorted(PERFORMANCE_DATA[current].keys()):
             vals = PERFORMANCE_DATA[current][method]
-            print(
-                '| ' + current + ' '*(1 + max_contract_name - len(current)) + '| '
-                + str(method) + ' '*(1 + max_method_name - len(str(method))) + '| '
-                + ''.join([str(i) + ' ' * (1 + max_gas_len - len(str(i))) + '| ' for i in vals])
+            print('│ ' + current + ' '*(1 + max_contract_name - len(current)) + '│ '
+                  + str(method) + ' '*(1 + max_method_name - len(str(method))) + '│ '
+                  + ''.join([str(i) + ' ' * (1 + max_gas_len - len(str(i))) + '│ ' for i in vals])
             )
         if len(remaining) == 0:
             break
-        print('.' * (19 + 4*max_gas_len + max_method_name + max_contract_name))
+        print('├' + '─'*(2 + max_contract_name) + '┼' +
+              '─'*(2 + max_method_name) + '┼' +
+              ''.join(['─'*(2 + max_gas_len) + '┼' for i in vals[:-1]]) + '─'*(2 + max_gas_len) + '┤')
         current = remaining.pop(0)
+    print('└' + '─'*(2 + max_contract_name) + '┴' +
+          '─'*(2 + max_method_name) + '┴' +
+          ''.join(['─'*(2 + max_gas_len) + '┴' for i in vals[:-1]]) + '─'*(2 + max_gas_len) + '┘')
 
     process.terminate()
 
