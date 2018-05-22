@@ -4,7 +4,7 @@ from utils.deployutils import (
     take_snapshot, restore_snapshot
 )
 from utils.testutils import (
-    HavvenTestCase, ZERO_ADDRESS,
+    HavvenTestCase,
     generate_topic_event_map, get_event_data_from_log
 )
 from tests.contract_interfaces.extern_state_fee_token_interface import ExternStateFeeTokenInterface
@@ -46,12 +46,12 @@ class TestExternStateFeeToken(HavvenTestCase):
         feetoken_event_dict = generate_topic_event_map(feetoken_abi)
         feetoken_contract_1, construction_txr_1 = attempt_deploy(
             compiled, "PublicESFT", MASTER,
-            [proxy.address, "Test Fee Token", "FEE", UNIT // 20, MASTER, ZERO_ADDRESS, MASTER]
+            [proxy.address, "Test Fee Token", "FEE", UNIT // 20, MASTER, MASTER]
         )
 
         feetoken_contract_2, construction_txr_2 = attempt_deploy(
             compiled, "PublicESFT", MASTER,
-            [proxy.address, "Test Fee Token 2", "FEE", UNIT // 20, MASTER, ZERO_ADDRESS, MASTER]
+            [proxy.address, "Test Fee Token 2", "FEE", UNIT // 20, MASTER, MASTER]
         )
 
         feestate, txr = attempt_deploy(
