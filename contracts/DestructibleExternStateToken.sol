@@ -46,7 +46,8 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Prox
     /* Stores balances and allowances. */
     TokenState public state;
 
-    /* Other ERC20 fields. */
+    /* Other ERC20 fields.
+     * Note that the decimals field is defined in SafeDecimalMath.*/
     string public name;
     string public symbol;
     uint public totalSupply;

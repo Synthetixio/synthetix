@@ -71,6 +71,7 @@ class TestDestructibleExternStateToken(HavvenTestCase):
     def test_constructor(self):
         self.assertEqual(self.token.name(), "Test Token")
         self.assertEqual(self.token.symbol(), "TEST")
+        self.assertEqual(self.token.decimals(), 18)
         self.assertEqual(self.token.totalSupply(), 1000 * UNIT)
         self.assertEqual(self.token.balanceOf(MASTER), 1000 * UNIT)
         self.assertEqual(self.token.state(), self.tokenstate.address)

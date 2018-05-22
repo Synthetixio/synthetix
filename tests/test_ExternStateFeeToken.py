@@ -80,6 +80,7 @@ class TestExternStateFeeToken(HavvenTestCase):
     def test_constructor(self):
         self.assertEqual(self.feetoken.name(), "Test Fee Token")
         self.assertEqual(self.feetoken.symbol(), "FEE")
+        self.assertEqual(self.feetoken.decimals(), 18)
         self.assertEqual(self.feetoken.totalSupply(), 0)
         self.assertEqual(self.feetoken.transferFeeRate(), UNIT // 20)
         self.assertEqual(self.feetoken.feeAuthority(), self.fee_authority)
