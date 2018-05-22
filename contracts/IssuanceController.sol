@@ -59,9 +59,9 @@ contract IssuanceController is Pausable, SelfDestructible, SafeDecimalMath {
     /* The time the prices were last updated */
     uint public lastPriceUpdateTime;
     /* The USD price of havvens written in UNIT */
-    uint public havvenPrice;
+    uint public usdToHavPrice;
     /* The USD price of ETH written in UNIT */
-    uint public ethPrice;
+    uint public usdToEthPrice;
     
     /* ========== CONSTRUCTOR ========== */
 
@@ -74,14 +74,14 @@ contract IssuanceController is Pausable, SelfDestructible, SafeDecimalMath {
      * @param _ethPrice The current price of ETH in USD, expressed in UNIT.
      * @param _havvenPrice The current price of Havven in USD, expressed in UNIT.
      */
-    constructor(address _owner, address _beneficiary, uint _delay, address _oracle, uint _ethPrice, uint _havvenPrice)
+    constructor(address _owner, address _beneficiary, uint _delay, address _oracle, uint _usdToEthPrice, uint _usdToHavPrice)
         SelfDestructible(_owner, _beneficiary, _delay)
         /* Owned is initialised in SelfDestructible */
         public
     {
         oracle = _oracle;
-        ethPrice = _ethPrice;
-        havvenPrice = _havvenPrice;
+        usdToEthPrice = _usdToEthPrice;
+        usdToHavPrice = _usdToHavPrice;
         lastPriceUpdateTime = now;
     }
 
