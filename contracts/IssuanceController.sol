@@ -43,7 +43,7 @@ import "contracts/SafeDecimalMath.sol";
 /**
  * @title Issuance Controller Contract.
  */
-contract IssuanceController is Pausable, SelfDestructible, SafeDecimalMath {
+contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -75,8 +75,9 @@ contract IssuanceController is Pausable, SelfDestructible, SafeDecimalMath {
      * @param _havvenPrice The current price of Havven in USD, expressed in UNIT.
      */
     constructor(address _owner, address _beneficiary, uint _delay, address _oracle, uint _ethPrice, uint _havvenPrice)
-        SelfDestructible(_owner, _beneficiary, _delay)
         /* Owned is initialised in SelfDestructible */
+        SelfDestructible(_owner, _beneficiary, _delay)
+        Pausable(_owner)
         public
     {
         oracle = _oracle;

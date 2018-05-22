@@ -5,7 +5,7 @@ class IssuanceControllerInterface():
         self.contract = contract
         self.contract_name = name
 
-        self.getSomeValue = lambda: self.contract.functions.getSomeValue().call()
+        self.priceStalePeriod = lambda: self.contract.functions.priceStalePeriod().call()
         self.setSomeValue = lambda sender, someValue: mine_tx(
             self.contract.functions.setSomeValue(someValue).transact({'from': sender}), "setSomeValue", self.contract_name
         )
