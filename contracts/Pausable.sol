@@ -45,6 +45,7 @@ contract Pausable is Owned {
 	    Owned(_owner)
 	    public
 	{
+		paused = false;
         lastPauseTime = 0;
 	}
 
