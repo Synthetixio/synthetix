@@ -6,6 +6,13 @@ class IssuanceControllerInterface():
         self.contract_name = name
 
         self.getSomeValue = lambda: self.contract.functions.getSomeValue().call()
-        self.setSomeValue = lambda sender, address: mine_tx(
-            self.contract.functions.setSomeValue(address).transact({'from': sender}), "setSomeValue", self.contract_name
+        self.setSomeValue = lambda sender, someValue: mine_tx(
+            self.contract.functions.setSomeValue(someValue).transact({'from': sender}), "setSomeValue", self.contract_name
         )
+        self.buy = lambda sender, value: mine_tx(
+            self.contract.functions.buy().transact({
+                'from': sender,
+                'value': value,
+            }), "buy", self.contract_name
+        )
+

@@ -55,3 +55,22 @@ class TestIssuanceController(HavvenTestCase):
     def test_sample2(self):
         txr = self.issuanceController.setSomeValue(MASTER, 950)
         self.assertEqual(self.issuanceController.getSomeValue(), 950)
+
+    def test_etherChargedForNominsIsCorrect(self):
+        amountOfNominsToBuy = 67
+
+        self.issuanceController.setNominEtherExchangeRate(MASTER, 1.67)
+        exchangeRate = self.issuanceController.getNominEthExchangeRate()
+        conversionFeePercentage = self.issuanceController.getConversionFee()
+
+        totalNominsConsideration = amountOfNominsToBuy * (1 + conversionFeePercentage)
+        nominsToPayInFees = totalNominsConsideration - amountOfNominsToBuy
+        etherToSpend = totalNominsConsideration * exchangeRate
+
+        self.issuanceController.buy(DUMMY, etherToSpend)        
+        # TODO: Check I have the correct amount of Ether
+
+    
+
+
+        
