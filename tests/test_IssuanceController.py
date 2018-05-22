@@ -30,11 +30,19 @@ class TestIssuanceController(HavvenTestCase):
 
     @classmethod
     def deployContracts(cls):
-        sources = ["contracts/IssuanceController.sol"]
+        sources = [
+            "contracts/Owned.sol",
+            "contracts/SelfDestructible.sol",
+            "contracts/Pausable.sol",
+            "contracts/SafeDecimalMath.sol",
+            "contracts/IssuanceController.sol"
+        ]
 
         compiled, cls.event_maps = cls.compileAndMapEvents(sources)
 
-        issuanceControllerContract, _ = attempt_deploy(compiled, 'IssuanceController', MASTER, [])
+        issuanceControllerContract, _ = attempt_deploy(compiled, 'IssuanceController', MASTER,
+                                                    [MASTER, DUMMY, 100 * 60, MASTER, 500 * (10 ** 18), 0.65 * (10 ** 18)])
+        
         issuanceController = W3.eth.contract(address=issuanceControllerContract.address, abi=compiled['IssuanceController']['abi'])
 
         return issuanceControllerContract, issuanceController

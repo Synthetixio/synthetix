@@ -36,8 +36,6 @@ approach where users can exchange these assets freely.
 
 pragma solidity 0.4.24;
 
-import "contracts/Nomin.sol";
-import "contracts/Havven.sol";
 import "contracts/SelfDestructible.sol";
 import "contracts/Pausable.sol";
 import "contracts/SafeDecimalMath.sol";
@@ -48,9 +46,6 @@ import "contracts/SafeDecimalMath.sol";
 contract IssuanceController is Pausable, SelfDestructible, SafeDecimalMath {
 
     /* ========== STATE VARIABLES ========== */
-
-    Nomin public nomin;
-    Havven public havven;
 
     /* The address of the oracle which pushes the havven price to this contract */
     address public oracle;
@@ -72,13 +67,16 @@ contract IssuanceController is Pausable, SelfDestructible, SafeDecimalMath {
 
     /**
      * @dev Constructor
-     * @param _state A pre-populated contract containing token balances.
-     * If the provided address is 0x0, then a fresh one will be constructed with the contract owning all tokens.
      * @param _owner The owner of this contract.
+     * @param _beneficiary The address which will receive any ether upon self destruct completion.
+     * @param _delay The timeframe from request of self destruct to ability to destroy.
+     * @param _oracle The address which is able to update price information.
+     * @param _ethPrice The current price of ETH in USD, expressed in UNIT.
+     * @param _havvenPrice The current price of Havven in USD, expressed in UNIT.
      */
     constructor(address _owner, address _beneficiary, uint _delay, address _oracle, uint _ethPrice, uint _havvenPrice)
         SelfDestructible(_owner, _beneficiary, _delay)
-        /* Owned is initialised in DestructibleExternStateToken */
+        /* Owned is initialised in SelfDestructible */
         public
     {
         oracle = _oracle;
@@ -97,7 +95,7 @@ contract IssuanceController is Pausable, SelfDestructible, SafeDecimalMath {
         onlyOwner
     {
         oracle = _oracle;
-        
+
         emit OracleUpdated(oracle);
     }
 
