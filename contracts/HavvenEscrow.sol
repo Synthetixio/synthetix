@@ -60,6 +60,9 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
     /* The total remaining vested balance, for verifying the actual havven balance of this contract against. */
     uint public totalVestedBalance;
 
+    uint constant TIME_INDEX = 0;
+    uint constant QUANTITY_INDEX = 1;
+
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -126,7 +129,7 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
         view
         returns (uint)
     {
-        return vestingSchedules[account][index][0];
+        return getVestingScheduleEntry(account,index)[TIME_INDEX];
     }
 
     /**
@@ -137,7 +140,7 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
         view
         returns (uint)
     {
-        return vestingSchedules[account][index][1];
+        return getVestingScheduleEntry(account,index)[QUANTITY_INDEX];
     }
 
     /**
@@ -161,7 +164,7 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
      * @notice Obtain the next schedule entry that will vest for a given user.
      * @return A pair of uints: (timestamp, havven quantity). */
     function getNextVestingEntry(address account)
-        external
+        public
         view
         returns (uint[2])
     {
@@ -180,11 +183,7 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
         view
         returns (uint)
     {
-        uint index = getNextVestingIndex(account);
-        if (index == numVestingEntries(account)) {
-            return 0;
-        }
-        return getVestingTime(account, index);
+        return getNextVestingEntry(account)[TIME_INDEX];
     }
 
     /**
@@ -195,11 +194,7 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
         view
         returns (uint)
     {
-        uint index = getNextVestingIndex(account);
-        if (index == numVestingEntries(account)) {
-            return 0;
-        }
-        return getVestingQuantity(account, index);
+        return getNextVestingEntry(account)[QUANTITY_INDEX];
     }
 
 
