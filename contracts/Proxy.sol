@@ -111,7 +111,7 @@ contract Proxy is Owned {
         }
     }
 
-    modifier onlyTarget() {
+    modifier onlyTarget {
         require(Proxyable(msg.sender) == target,
                 "caller is not proxy target");
         _;
