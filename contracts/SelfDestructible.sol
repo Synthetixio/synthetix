@@ -4,10 +4,10 @@ FILE INFORMATION
 -----------------------------------------------------------------
 
 file:       SelfDestructible.sol
-version:    1.1
+version:    1.2
 author:     Anton Jurisevic
 
-date:       2018-05-15
+date:       2018-05-22
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -18,7 +18,8 @@ MODULE DESCRIPTION
 
 This contract allows an inheriting contract to be destroyed after
 its owner indicates an intention and then waits for a period
-without changing their mind.
+without changing their mind. All ether contained in the contract
+is forwarded to a nominated beneficiary upon destruction.
 
 -----------------------------------------------------------------
 */
@@ -34,10 +35,9 @@ import "contracts/Owned.sol";
  */
 contract SelfDestructible is Owned {
 	
-	// Initialise to half uint max to be far in the future (without allowing overflows)
-	uint constant NULL_INITIATION = ~uint(0) / 2;
-	uint public initiationTime = NULL_INITIATION;
+	uint public initiationTime;
 	uint public selfDestructDelay;
+	bool public selfDestructInitiated;
 	address public selfDestructBeneficiary;
 
 	/**
@@ -50,20 +50,22 @@ contract SelfDestructible is Owned {
 	    Owned(_owner)
 	    public
 	{
-		selfDestructBeneficiary = _beneficiary;
+		require(_beneficiary != address(0), "null beneficiary");
 		selfDestructDelay = _delay;
+		selfDestructBeneficiary = _beneficiary;
 		emit SelfDestructBeneficiaryUpdated(_beneficiary);
 	}
 
 	/**
 	 * @notice Set the beneficiary address of this contract.
-	 * @dev Only the contract owner may call this.
+	 * @dev Only the contract owner may call this. The provided beneficiary must be non-null.
 	 * @param _beneficiary The address to pay any eth contained in this contract to upon self-destruction.
 	 */
-	function setBeneficiary(address _beneficiary)
-		external
+	function setSelfDestructBeneficiary(address _beneficiary)
+		public
 		onlyOwner
 	{
+		require(_beneficiary != address(0), "null beneficiary");
 		selfDestructBeneficiary = _beneficiary;
 		emit SelfDestructBeneficiaryUpdated(_beneficiary);
 	}
@@ -78,6 +80,7 @@ contract SelfDestructible is Owned {
 		onlyOwner
 	{
 		initiationTime = now;
+		selfDestructInitiated = true;
 		emit SelfDestructInitiated(selfDestructDelay);
 	}
 
@@ -89,7 +92,8 @@ contract SelfDestructible is Owned {
 		external
 		onlyOwner
 	{
-		initiationTime = NULL_INITIATION;
+		initiationTime = 0;
+		selfDestructInitiated = false;
 		emit SelfDestructTerminated();
 	}
 
@@ -102,14 +106,14 @@ contract SelfDestructible is Owned {
 		external
 		onlyOwner
 	{
-		require(initiationTime + selfDestructDelay < now);
+		require(selfDestructInitiated && initiationTime + selfDestructDelay < now);
 		address beneficiary = selfDestructBeneficiary;
 		emit SelfDestructed(beneficiary);
 		selfdestruct(beneficiary);
 	}
 
 	event SelfDestructTerminated();
-	event SelfDestructInitiated(uint selfDestructDelay);
 	event SelfDestructed(address beneficiary);
+	event SelfDestructInitiated(uint selfDestructDelay);
 	event SelfDestructBeneficiaryUpdated(address newBeneficiary);
 }

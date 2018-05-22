@@ -88,7 +88,8 @@ class TestDestructibleExternStateToken(HavvenTestCase):
                                         ZERO_ADDRESS, DUMMY])
         self.assertNotEqual(token.functions.state().call(), ZERO_ADDRESS)
 
-        token, _ = attempt_deploy(self.compiled, 'DestructibleExternStateToken', MASTER,
+        token, _ = attempt_deploy(self.compiled, 'DestructibleExternStateToken',
+                                  MASTER,
                                   [self.proxy.address, "Test Token", "TEST",
                                    1000 * UNIT,
                                    tokenstate.address, DUMMY])

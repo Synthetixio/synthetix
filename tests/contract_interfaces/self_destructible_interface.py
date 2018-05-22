@@ -10,10 +10,11 @@ class SelfDestructibleInterface(OwnedInterface):
 
         self.initiationTime = lambda: self.contract.functions.initiationTime().call()
         self.selfDestructBeneficiary = lambda: self.contract.functions.selfDestructBeneficiary().call()
+        self.selfDestructInitiated = lambda: self.contract.functions.selfDestructInitiated().call()
         self.selfDestructDelay = lambda: self.contract.functions.selfDestructDelay().call()
 
-        self.setBeneficiary = lambda sender, beneficiary: mine_tx(
-            self.contract.functions.setBeneficiary(beneficiary).transact({'from': sender}), "setBeneficiary", self.contract_name)
+        self.setSelfDestructBeneficiary = lambda sender, beneficiary: mine_tx(
+            self.contract.functions.setSelfDestructBeneficiary(beneficiary).transact({'from': sender}), "setSelfDestructBeneficiary", self.contract_name)
         self.initiateSelfDestruct = lambda sender: mine_tx(
             self.contract.functions.initiateSelfDestruct().transact({'from': sender}), "initiateSelfDestruct", self.contract_name)
         self.terminateSelfDestruct = lambda sender: mine_tx(
