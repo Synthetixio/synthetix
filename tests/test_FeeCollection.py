@@ -48,7 +48,7 @@ class TestFeeCollection(HavvenTestCase):
                                                   MASTER, [havven_proxy.address, tokenstate.address, MASTER, MASTER, UNIT//2])
         nomin_contract, nom_txr = attempt_deploy(compiled, 'PublicNomin',
                                                  MASTER,
-                                                 [nomin_proxy.address, havven_contract.address, MASTER, ZERO_ADDRESS])
+                                                 [nomin_proxy.address, havven_contract.address, MASTER])
         court_contract, court_txr = attempt_deploy(compiled, 'FakeCourt',
                                                    MASTER,
                                                    [havven_contract.address, nomin_contract.address,

@@ -46,7 +46,7 @@ class TestExternStateFeeToken(HavvenTestCase):
         feetoken_event_dict = generate_topic_event_map(feetoken_abi)
         feetoken_contract, construction_txr = attempt_deploy(
             compiled, "PublicESFT", MASTER,
-            [proxy.address, "Test Fee Token", "FEE", UNIT // 20, MASTER, ZERO_ADDRESS, MASTER]
+            [proxy.address, "Test Fee Token", "FEE", UNIT // 20, MASTER, MASTER]
         )
 
         feestate, txr = attempt_deploy(
@@ -88,22 +88,11 @@ class TestExternStateFeeToken(HavvenTestCase):
         self.assertEqual(self.feestate.functions.associatedContract().call(), self.feetoken_contract.address)
 
     def test_provide_state(self):
-        feestate, _ = attempt_deploy(self.compiled, 'TokenState',
-                                     MASTER, [MASTER, self.feetoken_contract.address])
-
         feetoken, _ = attempt_deploy(self.compiled, 'ExternStateFeeToken',
                                      MASTER,
                                      [self.proxy.address, "Test Fee Token", "FEE",
-                                      UNIT // 20, self.fee_authority,
-                                      ZERO_ADDRESS, DUMMY])
+                                      UNIT // 20, self.fee_authority, DUMMY])
         self.assertNotEqual(feetoken.functions.state().call(), ZERO_ADDRESS)
-
-        feetoken, _ = attempt_deploy(self.compiled, 'ExternStateFeeToken',
-                                     MASTER,
-                                     [self.proxy.address, "Test Fee Token", "FEE",
-                                      UNIT // 20, self.fee_authority,
-                                      feestate.address, DUMMY])
-        self.assertEqual(feetoken.functions.state().call(), feestate.address)
 
     def test_getSetOwner(self):
         owner = self.feetoken.owner()

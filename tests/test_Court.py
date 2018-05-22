@@ -59,7 +59,7 @@ class TestCourt(HavvenTestCase):
             compiled, 'PublicHavven', MASTER, [havven_proxy.address, tokenstate.address, MASTER, MASTER, UNIT//2]
         )
         nomin_contract, nom_txr = attempt_deploy(
-            compiled, 'Nomin', MASTER, [nomin_proxy.address, havven_contract.address, MASTER, ZERO_ADDRESS]
+            compiled, 'Nomin', MASTER, [nomin_proxy.address, havven_contract.address, MASTER]
         )
         court_contract, court_txr = attempt_deploy(
             compiled, 'PublicCourt', MASTER, [havven_contract.address, nomin_contract.address, MASTER]

@@ -4,8 +4,8 @@ import "contracts/ExternStateFeeToken.sol";
 
 contract PublicESFT is ExternStateFeeToken {
     constructor(address _proxy, string _name, string _symbol, uint _transferFeeRate, address _feeAuthority,
-                                   TokenState _state, address _owner)
-        ExternStateFeeToken(_proxy, _name, _symbol, _transferFeeRate, _feeAuthority, _state, _owner)
+                address _owner)
+        ExternStateFeeToken(_proxy, _name, _symbol, _transferFeeRate, _feeAuthority, _owner)
         public
     {}
 

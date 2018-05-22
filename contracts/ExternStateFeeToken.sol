@@ -70,23 +70,17 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
      * @param _symbol Token's ERC20 symbol.
      * @param _transferFeeRate The fee rate to charge on transfers.
      * @param _feeAuthority The address which has the authority to withdraw fees from the accumulated pool.
-     * @param _state The state contract address. A fresh one is constructed if 0x0 is provided.
      * @param _owner The owner of this contract.
      */
     constructor(address _proxy, string _name, string _symbol, uint _transferFeeRate, address _feeAuthority,
-                TokenState _state, address _owner)
+                address _owner)
         Proxyable(_proxy, _owner)
         public
     {
-        if (_state == TokenState(0)) {
-            state = new TokenState(_owner, address(this));
-        } else {
-            state = _state;
-        }
-
         name = _name;
         symbol = _symbol;
         feeAuthority = _feeAuthority;
+        state = new TokenState(_owner, address(this));
 
         /* Constructed transfer fee rate should respect the maximum fee rate. */
         require(_transferFeeRate <= MAX_TRANSFER_FEE_RATE);

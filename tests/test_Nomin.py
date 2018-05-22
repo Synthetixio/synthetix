@@ -42,7 +42,7 @@ class TestNomin(HavvenTestCase):
         proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['PublicNomin']['abi'])
 
         nomin_contract, _ = attempt_deploy(
-            compiled, 'PublicNomin', MASTER, [nomin_proxy.address, MASTER, MASTER, ZERO_ADDRESS]
+            compiled, 'PublicNomin', MASTER, [nomin_proxy.address, MASTER, MASTER]
         )
 
         havven_contract, _ = attempt_deploy(
