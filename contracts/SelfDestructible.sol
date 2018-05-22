@@ -50,7 +50,7 @@ contract SelfDestructible is Owned {
 	    Owned(_owner)
 	    public
 	{
-		require(_beneficiary != address(0), "null beneficiary");
+		require(_beneficiary != address(0));
 		selfDestructDelay = _delay;
 		selfDestructBeneficiary = _beneficiary;
 		emit SelfDestructBeneficiaryUpdated(_beneficiary);
@@ -62,10 +62,10 @@ contract SelfDestructible is Owned {
 	 * @param _beneficiary The address to pay any eth contained in this contract to upon self-destruction.
 	 */
 	function setSelfDestructBeneficiary(address _beneficiary)
-		public
+		external
 		onlyOwner
 	{
-		require(_beneficiary != address(0), "null beneficiary");
+		require(_beneficiary != address(0));
 		selfDestructBeneficiary = _beneficiary;
 		emit SelfDestructBeneficiaryUpdated(_beneficiary);
 	}
