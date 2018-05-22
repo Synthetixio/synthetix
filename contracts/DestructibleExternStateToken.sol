@@ -4,11 +4,11 @@ FILE INFORMATION
 -----------------------------------------------------------------
 
 file:       DestructibleExternStateToken.sol
-version:    1.1
+version:    1.2
 author:     Anton Jurisevic
             Dominic Romanowski
 
-date:       2018-05-15
+date:       2018-05-22
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -17,10 +17,11 @@ approved:   Samuel Brooks
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
-A token interface to be overridden to produce an ERC20-compliant
-token contract.
-
-This contract utilises a state for upgradability purposes.
+A partial ERC20 token contract, designed to operate with a proxy.
+To produce a complete ERC20 token, transfer and transferFrom
+tokens must be implemented, using the provided _byProxy internal
+functions.
+This contract utilises an external state for upgradability.
 
 -----------------------------------------------------------------
 */
