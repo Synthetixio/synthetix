@@ -22,7 +22,7 @@ contract PublicHavvenEscrow is HavvenEscrow {
                                        uint totalQuantity, uint vestingPeriods)
         external
         onlyOwner
-        setupFunction
+        onlyDuringSetup
     {
         // safeSub prevents a conclusionTime in the past.
         uint totalDuration = safeSub(conclusionTime, now);

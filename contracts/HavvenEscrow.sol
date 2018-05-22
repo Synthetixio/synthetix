@@ -212,7 +212,7 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
     function withdrawHavvens(uint quantity)
         external
         onlyOwner
-        setupFunction
+        onlyDuringSetup
     {
         havven.transfer(havven, quantity);
     }
@@ -223,7 +223,7 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
     function purgeAccount(address account)
         external
         onlyOwner
-        setupFunction
+        onlyDuringSetup
     {
         delete vestingSchedules[account];
         totalVestedBalance = safeSub(totalVestedBalance, totalVestedAccountBalance[account]);
@@ -246,7 +246,7 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
     function appendVestingEntry(address account, uint time, uint quantity)
         public
         onlyOwner
-        setupFunction
+        onlyDuringSetup
     {
         /* No empty or already-passed vesting entries allowed. */
         require(now < time);
@@ -276,7 +276,7 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
     function addVestingSchedule(address account, uint[] times, uint[] quantities)
         external
         onlyOwner
-        setupFunction
+        onlyDuringSetup
     {
         for (uint i = 0; i < times.length; i++) {
             appendVestingEntry(account, times[i], quantities[i]);
