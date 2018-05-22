@@ -71,8 +71,8 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
      * @param _beneficiary The address which will receive any ether upon self destruct completion.
      * @param _delay The timeframe from request of self destruct to ability to destroy.
      * @param _oracle The address which is able to update price information.
-     * @param _ethPrice The current price of ETH in USD, expressed in UNIT.
-     * @param _havvenPrice The current price of Havven in USD, expressed in UNIT.
+     * @param _usdToEthPrice The current price of ETH in USD, expressed in UNIT.
+     * @param _usdToHavPrice The current price of Havven in USD, expressed in UNIT.
      */
     constructor(address _owner, address _beneficiary, uint _delay, address _oracle, uint _usdToEthPrice, uint _usdToHavPrice)
         /* Owned is initialised in SelfDestructible */
@@ -122,11 +122,11 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
          * (so we can't lock ourselves out of updating the oracle for longer than this) */
         require(lastPriceUpdateTime < timeSent && timeSent < now + ORACLE_FUTURE_LIMIT);
 
-        ethPrice = newEthPrice;
-        havvenPrice = newHavvenPrice;
+        usdToEthPrice = newEthPrice;
+        usdToHavPrice = newHavvenPrice;
         lastPriceUpdateTime = timeSent;
 
-        emit PricesUpdated(ethPrice, havvenPrice, lastPriceUpdateTime);
+        emit PricesUpdated(usdToEthPrice, usdToHavPrice, lastPriceUpdateTime);
     }
 
     /**
