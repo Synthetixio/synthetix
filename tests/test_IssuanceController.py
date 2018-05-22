@@ -41,7 +41,7 @@ class TestIssuanceController(HavvenTestCase):
         compiled, cls.event_maps = cls.compileAndMapEvents(sources)
 
         issuanceControllerContract, _ = attempt_deploy(compiled, 'IssuanceController', MASTER,
-                                                    [MASTER, DUMMY, 100 * 60, MASTER, 500 * (10 ** 18), 0.65 * (10 ** 18)])
+                                                    [MASTER, DUMMY, 100 * 60, MASTER, 500 * (10 ** 18), int(0.65 * (10 ** 18))])
         
         issuanceController = W3.eth.contract(address=issuanceControllerContract.address, abi=compiled['IssuanceController']['abi'])
 
@@ -58,8 +58,27 @@ class TestIssuanceController(HavvenTestCase):
     #     TODO
 
     def test_sample(self):
-        self.assertEqual(self.issuanceController.getSomeValue(), 900)
+        self.assertEqual(self.issuanceController.priceStalePeriod(), 10800)
 
-    def test_sample2(self):
-        txr = self.issuanceController.setSomeValue(MASTER, 950)
-        self.assertEqual(self.issuanceController.getSomeValue(), 950)
+    # def test_sample2(self):
+    #     txr = self.issuanceController.setSomeValue(MASTER, 950)
+    #     self.assertEqual(self.issuanceController.getSomeValue(), 950)
+
+    # def test_etherChargedForNominsIsCorrect(self):
+    #     amountOfNominsToBuy = 67
+
+    #     self.issuanceController.setNominEtherExchangeRate(MASTER, 1.67)
+    #     exchangeRate = self.issuanceController.getNominEthExchangeRate()
+    #     conversionFeePercentage = self.issuanceController.getConversionFee()
+
+    #     totalNominsConsideration = amountOfNominsToBuy * (1 + conversionFeePercentage)
+    #     nominsToPayInFees = totalNominsConsideration - amountOfNominsToBuy
+    #     etherToSpend = totalNominsConsideration * exchangeRate
+
+    #     self.issuanceController.buy(DUMMY, etherToSpend)        
+    #     # TODO: Check I have the correct amount of Ether
+
+    
+
+
+        
