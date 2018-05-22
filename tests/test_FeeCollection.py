@@ -42,8 +42,10 @@ class TestFeeCollection(HavvenTestCase):
         nomin_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
         proxied_havven = W3.eth.contract(address=havven_proxy.address, abi=compiled['PublicHavven']['abi'])
         proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['PublicNomin']['abi'])
+        tokenstate, _ = attempt_deploy(compiled, 'TokenState',
+                                       MASTER, [MASTER, MASTER])
         havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven',
-                                                  MASTER, [havven_proxy.address, ZERO_ADDRESS, MASTER, MASTER, UNIT//2])
+                                                  MASTER, [havven_proxy.address, tokenstate.address, MASTER, MASTER, UNIT//2])
         nomin_contract, nom_txr = attempt_deploy(compiled, 'PublicNomin',
                                                  MASTER,
                                                  [nomin_proxy.address, havven_contract.address, MASTER, ZERO_ADDRESS])
@@ -53,12 +55,12 @@ class TestFeeCollection(HavvenTestCase):
                                                     MASTER])
 
         # Hook up each of those contracts to each other
-        mine_txs([
-            havven_proxy.functions.setTarget(havven_contract.address).transact({'from': MASTER}),
-            nomin_proxy.functions.setTarget(nomin_contract.address).transact({'from': MASTER}),
-            havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
-            nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER})
-        ])
+        mine_txs([tokenstate.functions.setBalanceOf(havven_contract.address, 100000000 * UNIT).transact({'from': MASTER}),
+                  tokenstate.functions.setAssociatedContract(havven_contract.address).transact({'from': MASTER}),
+                  havven_proxy.functions.setTarget(havven_contract.address).transact({'from': MASTER}),
+                  nomin_proxy.functions.setTarget(nomin_contract.address).transact({'from': MASTER}),
+                  havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
+                  nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER})])
 
         print("\nDeployment complete.\n")
         return havven_proxy, proxied_havven, nomin_proxy, proxied_nomin, havven_contract, nomin_contract, court_contract

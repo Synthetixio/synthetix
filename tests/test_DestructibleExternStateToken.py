@@ -5,7 +5,7 @@ from utils.deployutils import (
     mine_txs, take_snapshot, restore_snapshot
 )
 from utils.testutils import (
-    HavvenTestCase, ZERO_ADDRESS,
+    HavvenTestCase,
     generate_topic_event_map, get_event_data_from_log
 )
 from tests.contract_interfaces.destructible_extern_state_token_interface import DestructibleExternStateTokenInterface
@@ -41,23 +41,23 @@ class TestDestructibleExternStateToken(HavvenTestCase):
             compiled, "Proxy", MASTER, [MASTER]
         )
 
-        token_abi = compiled['PublicDEST']['abi']
-
-        token_event_dict = generate_topic_event_map(token_abi)
-        token_contract, construction_txr = attempt_deploy(
-            compiled, 'PublicDEST', MASTER,
-            [proxy_contract.address, "Test Token", "TEST", 1000 * UNIT, ZERO_ADDRESS, MASTER]
-        )
-
         tokenstate, _ = attempt_deploy(compiled, 'TokenState',
                                        MASTER, [MASTER, MASTER])
+
+        token_contract, construction_txr = attempt_deploy(
+            compiled, 'PublicDEST', MASTER,
+            [proxy_contract.address, "Test Token", "TEST", 1000 * UNIT, tokenstate.address, MASTER]
+        )
+
+        token_abi = compiled['PublicDEST']['abi']
+        token_event_dict = generate_topic_event_map(token_abi)
+
         proxied_token = W3.eth.contract(address=proxy_contract.address, abi=token_abi)
 
         mine_txs([
             tokenstate.functions.setBalanceOf(MASTER, 1000 * UNIT).transact({'from': MASTER}),
             tokenstate.functions.setAssociatedContract(token_contract.address).transact({'from': MASTER}),
-            proxy_contract.functions.setTarget(token_contract.address).transact({'from': MASTER}),
-            token_contract.functions.setState(tokenstate.address).transact({'from': MASTER})
+            proxy_contract.functions.setTarget(token_contract.address).transact({'from': MASTER})
         ])
         return proxy_contract, proxied_token, compiled, token_contract, token_abi, token_event_dict, tokenstate
 
@@ -81,13 +81,14 @@ class TestDestructibleExternStateToken(HavvenTestCase):
         tokenstate, _ = attempt_deploy(self.compiled, 'TokenState',
                                        MASTER,
                                        [MASTER, self.token_contract.address])
-
+        """
         token, _ = attempt_deploy(self.compiled, 'DestructibleExternStateToken',
                                        MASTER,
                                        [self.proxy.address, "Test Token", "TEST",
                                         1000 * UNIT,
                                         ZERO_ADDRESS, DUMMY])
         self.assertNotEqual(token.functions.state().call(), ZERO_ADDRESS)
+        """
 
         token, _ = attempt_deploy(self.compiled, 'DestructibleExternStateToken',
                                   MASTER,

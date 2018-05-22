@@ -62,7 +62,7 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Prox
      * @param _owner The owner of this contract.
      */
     constructor(address _proxy, string _name, string _symbol, uint _totalSupply,
-                                   TokenState _state, address _owner)
+                TokenState _state, address _owner)
         SelfDestructible(_owner, _owner, SELF_DESTRUCT_DELAY)
         Proxyable(_proxy, _owner)
         public
@@ -70,16 +70,7 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Prox
         name = _name;
         symbol = _symbol;
         totalSupply = _totalSupply;
-
-        // if the state isn't set, create a new one
-        if (_state == TokenState(0)) {
-            state = new TokenState(_owner, address(this));
-            state.setBalanceOf(address(this), totalSupply);
-            // We don't emit the event here, as it can't be emitted as the proxy won't know the address of this
-            // contract. This isn't very important as the state should already have been set.
-        } else {
-            state = _state;
-        }
+        state = _state;
    }
 
     /* ========== VIEWS ========== */
