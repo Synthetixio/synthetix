@@ -127,6 +127,28 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     }
 
     /**
+     * @notice Set the Nomin contract that the issuance controller uses to issue Nomins.
+     */
+    function setNomin(Nomin _nomin)
+        external
+        onlyOwner
+    {
+        nomin = _nomin;
+        emit NominUpdated(_nomin);
+    }
+
+    /**
+     * @notice Set the Havven contract that the issuance controller uses to issue Havvens.
+     */
+    function setHavven(Havven _havven)
+        external
+        onlyOwner
+    {
+        havven = _havven;
+        emit HavvenUpdated(_havven);
+    }
+
+    /**
      * @notice Set the stale period on the updated price variables
      */
     function setPriceStalePeriod(uint _time)
@@ -233,4 +255,6 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
 
     event PricesUpdated(uint newEthPrice, uint newHavvenPrice, uint timeSent);
     event OracleUpdated(address newOracle);
+    event NominUpdated(Nomin newNominContract);
+    event HavvenUpdated(Havven newHavvenContract);
 }
