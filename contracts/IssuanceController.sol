@@ -39,6 +39,8 @@ pragma solidity 0.4.24;
 import "contracts/SelfDestructible.sol";
 import "contracts/Pausable.sol";
 import "contracts/SafeDecimalMath.sol";
+import "contracts/Havven.sol";
+import "contracts/Nomin.sol";
 
 /**
  * @title Issuance Controller Contract.
@@ -46,6 +48,8 @@ import "contracts/SafeDecimalMath.sol";
 contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
 
     /* ========== STATE VARIABLES ========== */
+    Havven public havven;
+    Nomin public nomin;
 
     /* The address of the oracle which pushes the havven price to this contract */
     address public oracle;
@@ -63,23 +67,45 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     /* The USD price of ETH written in UNIT */
     uint public usdToEthPrice;
     
+    uint public conversionFee;
+
     /* ========== CONSTRUCTOR ========== */
 
     /**
      * @dev Constructor
      * @param _owner The owner of this contract.
      * @param _beneficiary The address which will receive any ether upon self destruct completion.
-     * @param _delay The timeframe from request of self destruct to ability to destroy.
+     * @param _selfDestructDelay The timeframe from request of self destruct to ability to destroy.
+     * @param _havven The Havven contract we'll interact with for balances and sending.
+     * @param _nomin The Nomin contract we'll interact with for balances and sending.
      * @param _oracle The address which is able to update price information.
      * @param _usdToEthPrice The current price of ETH in USD, expressed in UNIT.
      * @param _usdToHavPrice The current price of Havven in USD, expressed in UNIT.
      */
-    constructor(address _owner, address _beneficiary, uint _delay, address _oracle, uint _usdToEthPrice, uint _usdToHavPrice)
+    constructor(
+        // Ownable
+        address _owner,
+
+        // SelfDestructable
+        address _beneficiary,
+        uint _selfDestructDelay,
+
+        // Other contracts needed
+        Havven _havven,
+        Nomin _nomin,
+
+        // Our own state variables
+        address _oracle,
+        uint _usdToEthPrice,
+        uint _usdToHavPrice
+    )
         /* Owned is initialised in SelfDestructible */
-        SelfDestructible(_owner, _beneficiary, _delay)
+        SelfDestructible(_owner, _beneficiary, _selfDestructDelay)
         Pausable(_owner)
         public
     {
+        havven = _havven;
+        nomin = _nomin;
         oracle = _oracle;
         usdToEthPrice = _usdToEthPrice;
         usdToHavPrice = _usdToHavPrice;
@@ -130,6 +156,36 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     }
 
     /**
+     * @notice Purchase nUSD with ETH.
+     */
+    function buyWithEth()
+        public
+        payable
+        pricesNotStale // We can only do this when the prices haven't gone stale
+        notPaused // And if the contract is paused we can't do this action either
+        returns (uint) // Returns the number of Nomins (nUSD) received
+    {
+        // How many Nomins are available for us to sell?
+        uint availableNomins = nomin.balanceOf(this);
+        uint requestedToPurchase = msg.value * usdToEthPrice;
+
+        // Ensure we are only sending ones we have allocated to us.
+        // This check is technically not required because the Nomin
+        // contract should enforce this as well.
+        require(availableNomins >= requestedToPurchase);
+
+        // Send the nomins.
+        // Note: Fees are calculated by the Nomin contract, so when 
+        //       we request a specific transfer here, the fee is
+        //       automatically deducted and sent to the fee pool.
+        nomin.transfer(msg.sender, requestedToPurchase);
+
+        return requestedToPurchase;
+    }
+
+
+    /* ========== VIEWS ========== */
+    /**
      * @notice Check if the prices haven't been updated for longer than the stale period.
      */
     function pricesAreStale()
@@ -148,7 +204,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         _;
     }
 
-    modifier priceNotStale
+    modifier pricesNotStale
     {
         require(!pricesAreStale());
         _;
