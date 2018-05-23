@@ -30,14 +30,28 @@ class TestIssuanceController(HavvenTestCase):
     @classmethod
     def deployContracts(cls):
         sources = [
-            "contracts/Owned.sol",
-            "contracts/SelfDestructible.sol",
-            "contracts/Pausable.sol",
-            "contracts/SafeDecimalMath.sol",
-            "contracts/IssuanceController.sol"
+            "contracts/Havven.sol",
+            "contracts/Nomin.sol",
+            "contracts/IssuanceController.sol",
+            "tests/contracts/PublicHavven.sol"
         ]
 
         compiled, cls.event_maps = cls.compileAndMapEvents(sources)
+        nomin_abi = compiled['Nomin']['abi']
+        havven_abi = compiled['Havven']['abi']
+        issuance_controller_abi = compiled['IssuanceController']['abi']
+
+        havven_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
+        nomin_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
+        proxied_havven = W3.eth.contract(address=havven_proxy.address, abi=havven_abi)
+        proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=nomin_abi)
+
+        havven_contract, hvn_txr = attempt_deploy(
+            compiled, 'PublicHavven', MASTER, [havven_proxy.address, ZERO_ADDRESS, MASTER, MASTER, UNIT//2]
+        )
+        nomin_contract, nom_txr = attempt_deploy(
+            compiled, 'Nomin', MASTER, [nomin_proxy.address, havven_contract.address, MASTER, ZERO_ADDRESS]
+        )
 
         issuanceControllerContract, _ = attempt_deploy(
             compiled, 'IssuanceController', MASTER,
@@ -45,14 +59,15 @@ class TestIssuanceController(HavvenTestCase):
                     cls.contractOwner,
                     cls.beneficiary,
                     cls.delay,
+                    havven_contract.address,
+                    nomin_contract.address,
                     cls.oracleAddress,
                     cls.usdToEthPrice,
                     cls.usdToHavPrice
                 ]
             )
-        
-        issuanceController = W3.eth.contract(address=issuanceControllerContract.address, abi=compiled['IssuanceController']['abi'])
-        return issuanceControllerContract, issuanceController
+
+        return havven_proxy, proxied_havven, nomin_proxy, proxied_nomin, havven_contract, nomin_contract, nomin_abi, issuanceControllerContract
 
     @classmethod
     def setUpClass(cls):
@@ -63,17 +78,19 @@ class TestIssuanceController(HavvenTestCase):
         cls.usdToEthPrice = 500 * (10 ** 18)
         cls.usdToHavPrice = int(0.65 * (10 ** 18))
         cls.priceStalePeriod = 3 * 60 * 60
-        cls.issuanceControllerContract, cls.issuanceController = cls.deployContracts()
+        cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, cls.nomin_contract, cls.nomin_abi, cls.issuanceControllerContract = cls.deployContracts()
         cls.issuanceController = IssuanceControllerInterface(cls.issuanceControllerContract, "IssuanceController")
 
     def test_constructor(self):
+        self.assertEqual(self.issuanceController.owner(), self.contractOwner)
         self.assertEqual(self.issuanceController.oracle(), self.oracleAddress)
         self.assertEqual(self.issuanceController.selfDestructBeneficiary(), self.beneficiary)
         self.assertEqual(self.issuanceController.selfDestructDelay(), self.delay)
         self.assertEqual(self.issuanceController.oracle(), self.oracleAddress)
         self.assertEqual(self.issuanceController.usdToEthPrice(), self.usdToEthPrice)
         self.assertEqual(self.issuanceController.usdToHavPrice(), self.usdToHavPrice)
-        self.assertEqual(self.issuanceController.priceStalePeriod(), self.priceStalePeriod)
+        self.assertEqual(self.issuanceController.havven(), self.havven_contract.address)
+        self.assertEqual(self.issuanceController.nomin(), self.nomin_contract.address)
 
     # Oracle address setter and getter tests
 

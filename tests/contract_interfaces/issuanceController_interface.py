@@ -6,6 +6,8 @@ class IssuanceControllerInterface():
         self.contract_name = name
 
         self.priceStalePeriod = lambda: self.contract.functions.priceStalePeriod().call()
+        self.havven = lambda: self.contract.functions.havven().call()
+        self.nomin = lambda: self.contract.functions.nomin().call()
         self.oracle = lambda: self.contract.functions.oracle().call()
         self.owner = lambda: self.contract.functions.owner().call()
         self.usdToEthPrice = lambda: self.contract.functions.usdToEthPrice().call()
