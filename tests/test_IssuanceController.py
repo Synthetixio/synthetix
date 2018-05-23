@@ -5,7 +5,7 @@ from utils.deployutils import (
     take_snapshot, restore_snapshot
 )
 from utils.testutils import (
-    HavvenTestCase, ZERO_ADDRESS,
+    HavvenTestCase, ZERO_ADDRESS, block_time
 )
 from tests.contract_interfaces.issuanceController_interface import IssuanceControllerInterface
 
@@ -132,6 +132,25 @@ class TestIssuanceController(HavvenTestCase):
         self.assertEqual(originalPriceStalePeriod, priceStalePeriodToCheck)
 
     # Update prices (aka exchange rate) setter and getter tests
+
+    def test_updatePrices(self):
+        newEthPrice = self.usdToEthPrice + 100
+        newHavPrice = self.usdToHavPrice + 100
+        timeSent = block_time()
+        self.issuanceController.updatePrices(self.oracleAddress, newEthPrice, newHavPrice, timeSent)
+        self.assertEqual(self.issuanceController.usdToEthPrice(), newEthPrice)
+        self.assertEqual(self.issuanceController.usdToHavPrice(), newHavPrice)
+        self.assertEqual(self.issuanceController.lastPriceUpdateTime(), timeSent)
+
+    def test_updatePricesTooEarly(self):
+        timeSent = block_time() - 120
+        self.assertReverts(self.issuanceController.updatePrices, self.oracleAddress, self.usdToEthPrice, self.usdToHavPrice, timeSent)
+
+    def test_updatePricesTooLate(self):
+        ORACLE_FUTURE_LIMIT = 10 * 60
+        timeSent = block_time() + ORACLE_FUTURE_LIMIT + 60
+        self.assertReverts(self.issuanceController.updatePrices, self.oracleAddress, self.usdToEthPrice, self.usdToHavPrice, timeSent)
+
     # TODO
 
     # def test_etherChargedForNominsIsCorrect(self):
