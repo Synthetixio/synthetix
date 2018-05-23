@@ -195,6 +195,11 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         //       automatically deducted and sent to the fee pool.
         nomin.transfer(msg.sender, requestedToPurchase);
 
+        // We don't emit our own events here because we assume that anyone
+        // who wants to watch what the Issuance Controller is doing can
+        // just watch ERC20 events from the Nomin contract filtered to our
+        // address.
+
         return requestedToPurchase;
     }
 
