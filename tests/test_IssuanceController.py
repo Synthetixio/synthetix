@@ -46,8 +46,8 @@ class TestIssuanceController(HavvenTestCase):
                     cls.beneficiary,
                     cls.delay,
                     cls.oracleAddress,
-                    cls.ethPrice,
-                    cls.havvenPrice
+                    cls.usdToEthPrice,
+                    cls.usdToHavPrice
                 ]
             )
         
@@ -60,8 +60,8 @@ class TestIssuanceController(HavvenTestCase):
         cls.oracleAddress = fresh_accounts(1)[0]
         cls.beneficiary = fresh_accounts(1)[0]
         cls.delay = 100 * 60
-        cls.ethPrice = 500 * (10 ** 18)
-        cls.havvenPrice = int(0.65 * (10 ** 18))
+        cls.usdToEthPrice = 500 * (10 ** 18)
+        cls.usdToHavPrice = int(0.65 * (10 ** 18))
         cls.priceStalePeriod = 3 * 60 * 60
         cls.issuanceControllerContract, cls.issuanceController = cls.deployContracts()
         cls.issuanceController = IssuanceControllerInterface(cls.issuanceControllerContract, "IssuanceController")
@@ -71,8 +71,8 @@ class TestIssuanceController(HavvenTestCase):
         self.assertEqual(self.issuanceController.selfDestructBeneficiary(), self.beneficiary)
         self.assertEqual(self.issuanceController.selfDestructDelay(), self.delay)
         self.assertEqual(self.issuanceController.oracle(), self.oracleAddress)
-        self.assertEqual(self.issuanceController.ethPrice(), self.ethPrice)
-        self.assertEqual(self.issuanceController.havvenPrice(), self.havvenPrice)
+        self.assertEqual(self.issuanceController.usdToEthPrice(), self.usdToEthPrice)
+        self.assertEqual(self.issuanceController.usdToHavPrice(), self.usdToHavPrice)
         self.assertEqual(self.issuanceController.priceStalePeriod(), self.priceStalePeriod)
 
     # Oracle address setter and getter tests
