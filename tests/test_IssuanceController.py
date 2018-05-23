@@ -53,6 +53,12 @@ class TestIssuanceController(HavvenTestCase):
             compiled, 'Nomin', MASTER, [nomin_proxy.address, havven_contract.address, MASTER, ZERO_ADDRESS]
         )
 
+        mine_txs([
+            havven_proxy.functions.setTarget(havven_contract.address).transact({'from': MASTER}),
+            nomin_proxy.functions.setTarget(nomin_contract.address).transact({'from': MASTER}),
+            havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
+        ])
+
         issuanceControllerContract, _ = attempt_deploy(
             compiled, 'IssuanceController', MASTER,
                 [

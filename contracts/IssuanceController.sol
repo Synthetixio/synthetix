@@ -182,7 +182,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     {
         // How many Nomins are available for us to sell?
         uint availableNomins = nomin.balanceOf(this);
-        uint requestedToPurchase = msg.value * usdToEthPrice;
+        uint requestedToPurchase = safeMul(msg.value, usdToEthPrice);
 
         // Ensure we are only sending ones we have allocated to us.
         // This check is technically not required because the Nomin
