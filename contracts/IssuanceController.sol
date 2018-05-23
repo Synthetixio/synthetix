@@ -94,7 +94,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         Havven _havven,
         Nomin _nomin,
 
-        // Our own state variables
+        // Oracle values - Allows for price updates
         address _oracle,
         uint _usdToEthPrice,
         uint _usdToHavPrice
@@ -153,6 +153,21 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         lastPriceUpdateTime = timeSent;
 
         emit PricesUpdated(usdToEthPrice, usdToHavPrice, lastPriceUpdateTime);
+    }
+
+    /**
+     * @notice Withdraw function to transfer ETH out to owner.
+     */
+    function withdraw(uint amount)
+        public
+        onlyOwner // Only owner can trigger withdrawls and they can happen while we're paused
+        returns(bool)
+    {
+        require(amount <= address(this).balance);
+
+        owner.transfer(amount);
+
+        return true;
     }
 
     /**
