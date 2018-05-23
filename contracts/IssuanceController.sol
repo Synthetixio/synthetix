@@ -225,6 +225,36 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         return requestedToPurchase;
     }
 
+    function exchangeForHavvens(uint amount)
+        external
+        pricesNotStale // We can only do this when the prices haven't gone stale
+        notPaused // And if the contract is paused we can't do this action either
+        returns (uint) // Returns the number of Havvens (HAV) received
+    {
+        // Does the sender have enough nUSD to request this exchange?
+        require(amount <= nomin.balanceOf(msg.sender));
+
+        // How many Havvens are they going to be receiving?
+        // Calculate the amount of Nomins we will receive after the transfer (minus fees)
+        uint amountReceived = safeDiv(nomin.priceToSpend(amount), usdToHavPrice);
+
+        // Do we have enough Havvens to service the request?
+        require(amountReceived <= havven.balanceOf(this));
+
+        // Ok, transfer the Nomins to our address.
+        nomin.transferFrom(msg.sender, this, amount);
+
+        // And send them the Havvens.
+        havven.transfer(msg.sender, amountReceived);
+
+        // We don't emit our own events here because we assume that anyone
+        // who wants to watch what the Issuance Controller is doing can
+        // just watch ERC20 events from the Nomin and/or Havven contracts
+        // filtered to our address.
+
+        return amountReceived;
+    }
+
     /* ========== VIEWS ========== */
     /**
      * @notice Check if the prices haven't been updated for longer than the stale period.
