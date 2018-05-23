@@ -80,6 +80,7 @@ class TestIssuanceController(HavvenTestCase):
         cls.priceStalePeriod = 3 * 60 * 60
         cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, cls.nomin_contract, cls.nomin_abi, cls.issuanceControllerContract = cls.deployContracts()
         cls.issuanceController = IssuanceControllerInterface(cls.issuanceControllerContract, "IssuanceController")
+        cls.issuanceControllerEventDict = cls.event_maps['IssuanceController']
 
     def test_constructor(self):
         self.assertEqual(self.issuanceController.owner(), self.contractOwner)
@@ -110,6 +111,15 @@ class TestIssuanceController(HavvenTestCase):
         self.assertReverts(self.issuanceController.setOracle, notOwner, newOracleAddress)
         oracleAddressToCheck = self.issuanceController.oracle()
         self.assertEqual(oracleAddressToCheck, originalOracleAddress)
+
+    def test_OracleEvent(self):
+        newOracleAddress = fresh_accounts(1)[0]
+        txr = self.issuanceController.setOracle(self.contractOwner, newOracleAddress)
+        self.assertEventEquals(
+            self.issuanceControllerEventDict, txr.logs[0], 'OracleUpdated',
+            fields={'newOracle': newOracleAddress},
+            location=self.issuanceControllerContract.address
+        )
 
     # Price stale period setter and getter tests
 
@@ -151,7 +161,19 @@ class TestIssuanceController(HavvenTestCase):
         timeSent = block_time() + ORACLE_FUTURE_LIMIT + 60
         self.assertReverts(self.issuanceController.updatePrices, self.oracleAddress, self.usdToEthPrice, self.usdToHavPrice, timeSent)
 
-    # TODO
+    def test_cannotUpdatePricesIfUnauthorised(self):
+        randomUser = fresh_accounts(1)[0]
+        self.assertReverts(self.issuanceController.updatePrices, randomUser, self.usdToEthPrice, self.usdToHavPrice, block_time())
+        self.assertReverts(self.issuanceController.updatePrices, self.contractOwner, self.usdToEthPrice, self.usdToHavPrice, block_time())
+
+    def test_updatePricesEvents(self):
+        timeSent = block_time()
+        txr = self.issuanceController.updatePrices(self.oracleAddress, self.usdToEthPrice, self.usdToHavPrice, timeSent)
+        self.assertEventEquals(
+            self.issuanceControllerEventDict, txr.logs[0], 'PricesUpdated',
+            fields={'newEthPrice': self.usdToEthPrice, 'newHavvenPrice': self.usdToHavPrice, 'timeSent': timeSent},
+            location=self.issuanceControllerContract.address
+        )
 
     # def test_etherChargedForNominsIsCorrect(self):
     #     amountOfNominsToBuy = 67
