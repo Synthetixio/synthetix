@@ -31,10 +31,6 @@ class TestIssuanceController(HavvenTestCase):
     @classmethod
     def deployContracts(cls):
         sources = [
-            "contracts/Owned.sol",
-            "contracts/SelfDestructible.sol",
-            "contracts/Pausable.sol",
-            "contracts/SafeDecimalMath.sol",
             "contracts/Havven.sol",
             "contracts/Nomin.sol",
             "contracts/IssuanceController.sol",
