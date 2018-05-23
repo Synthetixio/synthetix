@@ -93,9 +93,8 @@ class TestHavven(HavvenTestCase):
 
         cls.event_map = cls.event_maps['Havven']
 
-        cls.havven = PublicHavvenInterface(cls.havven_contract, "Havven")
-        
-        cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
+        cls.havven = PublicHavvenInterface(cls.proxied_havven, "Havven")        
+        cls.nomin = PublicNominInterface(cls.proxied_nomin, "Nomin")
 
         cls.initial_time = cls.havven.lastFeePeriodStartTime()
         cls.time_fast_forwarded = 0

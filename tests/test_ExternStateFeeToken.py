@@ -71,7 +71,7 @@ class TestExternStateFeeToken(HavvenTestCase):
         cls.initial_beneficiary = DUMMY
         cls.fee_authority = fresh_account()
 
-        cls.feetoken = PublicExternStateFeeTokenInterface(cls.feetoken_contract, "ExternStateFeeToken")
+        cls.feetoken = PublicExternStateFeeTokenInterface(cls.proxied_feetoken, "ExternStateFeeToken")
         cls.feetoken.setFeeAuthority(MASTER, cls.fee_authority)
 
     def feetoken_withdrawFees(self, sender, beneficiary, quantity):

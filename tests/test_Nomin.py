@@ -67,8 +67,8 @@ class TestNomin(HavvenTestCase):
 
         cls.nomin_event_dict = cls.event_maps['Nomin']
 
-        cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
-        cls.havven = HavvenInterface(cls.havven_contract, "Havven")
+        cls.nomin = PublicNominInterface(cls.proxied_nomin, "Nomin")
+        cls.havven = HavvenInterface(cls.proxied_havven, "Havven")
 
         cls.fake_court = FakeCourtInterface(cls.fake_court_contract, "FakeCourt")
 

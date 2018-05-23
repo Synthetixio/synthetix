@@ -71,8 +71,8 @@ class TestFeeCollection(HavvenTestCase):
 
         cls.event_map = cls.event_maps['Havven']
 
-        cls.havven = PublicHavvenInterface(cls.havven_contract, "Havven")
-        cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
+        cls.havven = PublicHavvenInterface(cls.proxied_havven, "Havven")
+        cls.nomin = PublicNominInterface(cls.proxied_nomin, "Nomin")
 
         fast_forward(weeks=102)
 

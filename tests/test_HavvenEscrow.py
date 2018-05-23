@@ -91,8 +91,8 @@ class TestHavvenEscrow(HavvenTestCase):
 
         cls.event_map = cls.event_maps['HavvenEscrow']
 
-        cls.havven = PublicHavvenInterface(cls.havven_contract, "Havven")
-        cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
+        cls.havven = PublicHavvenInterface(cls.proxied_havven, "Havven")
+        cls.nomin = PublicNominInterface(cls.proxied_nomin, "Nomin")
         cls.escrow = PublicHavvenEscrowInterface(cls.escrow_contract, "HavvenEscrow")
 
     def havven_updatePrice(self, sender, price, time):

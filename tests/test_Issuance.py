@@ -79,8 +79,8 @@ class TestIssuance(HavvenTestCase):
     def setUpClass(cls):
         cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, cls.nomin_contract, cls.fake_court_contract, cls.escrow_contract = cls.deployContracts()
 
-        cls.havven = PublicHavvenInterface(cls.havven_contract, "Havven")
-        cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
+        cls.havven = PublicHavvenInterface(cls.proxied_havven, "Havven")
+        cls.nomin = PublicNominInterface(cls.proxied_nomin, "Nomin")
         cls.escrow = PublicHavvenEscrowInterface(cls.escrow_contract, "HavvenEscrow")
 
         fast_forward(weeks=102)

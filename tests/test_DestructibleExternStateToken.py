@@ -65,8 +65,7 @@ class TestDestructibleExternStateToken(HavvenTestCase):
     def setUpClass(cls):
         cls.proxy, cls.proxied_token, cls.compiled, cls.token_contract, cls.token_abi, cls.token_event_dict, cls.tokenstate = cls.deploy_contracts()
         cls.event_map = cls.event_maps['DestructibleExternStateToken']
-
-        cls.token = DestructibleExternStateTokenInterface(cls.token_contract, "DestructibleExternStateToken")
+        cls.token = DestructibleExternStateTokenInterface(cls.proxied_token, "DestructibleExternStateToken")
 
     def test_constructor(self):
         self.assertEqual(self.token.name(), "Test Token")
@@ -81,15 +80,6 @@ class TestDestructibleExternStateToken(HavvenTestCase):
         tokenstate, _ = attempt_deploy(self.compiled, 'TokenState',
                                        MASTER,
                                        [MASTER, self.token_contract.address])
-        """
-        token, _ = attempt_deploy(self.compiled, 'DestructibleExternStateToken',
-                                       MASTER,
-                                       [self.proxy.address, "Test Token", "TEST",
-                                        1000 * UNIT,
-                                        ZERO_ADDRESS, DUMMY])
-        self.assertNotEqual(token.functions.state().call(), ZERO_ADDRESS)
-        """
-
         token, _ = attempt_deploy(self.compiled, 'DestructibleExternStateToken',
                                   MASTER,
                                   [self.proxy.address, "Test Token", "TEST",
