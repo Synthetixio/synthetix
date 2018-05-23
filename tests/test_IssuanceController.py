@@ -164,7 +164,6 @@ class TestIssuanceController(HavvenTestCase):
     def test_cannotUpdatePricesIfUnauthorised(self):
         randomUser = fresh_accounts(1)[0]
         self.assertReverts(self.issuanceController.updatePrices, randomUser, self.usdToEthPrice, self.usdToHavPrice, block_time())
-        self.assertReverts(self.issuanceController.updatePrices, self.contractOwner, self.usdToEthPrice, self.usdToHavPrice, block_time())
 
     def test_updatePricesEvents(self):
         timeSent = block_time()
