@@ -158,8 +158,8 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     /**
      * @notice Withdraw function to transfer ETH out to owner.
      */
-    function withdraw(uint amount)
-        public
+    function withdrawEth(uint amount)
+        external
         onlyOwner // Only owner can trigger withdrawls and they can happen while we're paused
         returns(bool)
     {
@@ -171,10 +171,10 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     }
 
     /**
-     * @notice Purchase nUSD with ETH.
+     * @notice Exchange ETH to nUSD.
      */
-    function buyWithEth()
-        public
+    function exchangeForNomins()
+        external
         payable
         pricesNotStale // We can only do this when the prices haven't gone stale
         notPaused // And if the contract is paused we can't do this action either
@@ -197,7 +197,6 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
 
         return requestedToPurchase;
     }
-
 
     /* ========== VIEWS ========== */
     /**
