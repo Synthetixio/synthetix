@@ -33,35 +33,37 @@ import "contracts/Owned.sol";
  * @title A contract that can be paused by its owner
  */
 contract Pausable is Owned {
-	
-	uint public lastPauseTime;
-	bool public paused;
+    
+    uint public lastPauseTime;
+    bool public paused;
 
-	/**
-	 * @dev Constructor
-	 * @param _owner The account which controls this contract.
-	 */
-	constructor(address _owner)
-	    Owned(_owner)
-	    public
-	{
-		paused = false;
+    /**
+     * @dev Constructor
+     * @param _owner The account which controls this contract.
+     */
+    constructor(address _owner)
+        Owned(_owner)
+        public
+    {
+        paused = false;
         lastPauseTime = 0;
-	}
+    }
 
-	/**
-	 * @notice Change the paused state of the contract
-	 * @dev Only the contract owner may call this.
-	 */
-	function setPaused(bool _paused)
-		external
-		onlyOwner
-	{
+    /**
+     * @notice Change the paused state of the contract
+     * @dev Only the contract owner may call this.
+     */
+    function setPaused(bool _paused)
+        external
+        onlyOwner
+    {
         // Ensure we're actually changing the state before we do anything
-        require(_paused != paused);
+        if (_paused != paused) {
+            return;
+        }
 
         // Set our paused state.
-		paused = _paused;
+        paused = _paused;
         
         // If applicable, set the last pause time.
         if (paused) {
@@ -69,10 +71,10 @@ contract Pausable is Owned {
         }
 
         // Let everyone know that our pause state has changed.
-		emit PauseChanged(paused);
-	}
+        emit PauseChanged(paused);
+    }
 
-	event PauseChanged(bool isPaused);
+    event PauseChanged(bool isPaused);
 
     modifier notPaused {
         require(!paused);
