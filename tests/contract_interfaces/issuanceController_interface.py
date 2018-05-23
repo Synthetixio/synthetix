@@ -26,10 +26,7 @@ class IssuanceControllerInterface():
         self.updatePrices = lambda sender, newEthPrice, newHavPrice, timeSent: mine_tx(
             self.contract.functions.updatePrices(newEthPrice, newHavPrice, timeSent).transact({'from': sender}), "updatePrices", self.contract_name
         )
-        self.buy = lambda sender, value: mine_tx(
-            self.contract.functions.buy().transact({
-                'from': sender,
-                'value': value,
-            }), "buy", self.contract_name
+        self.exchangeForNomins = lambda sender, value: mine_tx(
+            self.contract.functions.exchangeForNomins().transact({'from': sender, 'value': value}), "exchangeForNomins", self.contract_name
         )
 

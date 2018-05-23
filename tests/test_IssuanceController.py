@@ -174,6 +174,12 @@ class TestIssuanceController(HavvenTestCase):
             location=self.issuanceControllerContract.address
         )
 
+    def test_exchangeForNomins(self):
+        amountOfNominsToBuy = 67
+        someExchanger = fresh_accounts(1)[0]
+        amountOfEthToExchange = int(0.14 ** 18)
+        txr = self.issuanceController.exchangeForNomins(someExchanger, amountOfEthToExchange)
+
     # def test_etherChargedForNominsIsCorrect(self):
     #     amountOfNominsToBuy = 67
 
