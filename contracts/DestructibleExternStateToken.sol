@@ -170,26 +170,20 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Prox
     /* ========== EVENTS ========== */
 
     event Transfer(address indexed from, address indexed to, uint value);
+    bytes32 constant TRANSFER_SIG = keccak256("Transfer(address,address,uint256)");
     function emitTransfer(address from, address to, uint value) internal {
-        bytes memory data = abi.encode(value);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 3, keccak256("Transfer(address,address,uint256)"), bytes32(from), bytes32(to));
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(value), 3, TRANSFER_SIG, bytes32(from), bytes32(to), 0);
     }
 
     event Approval(address indexed owner, address indexed spender, uint value);
+    bytes32 constant APPROVAL_SIG = keccak256("Approval(address,address,uint256)");
     function emitApproval(address owner, address spender, uint value) internal {
-        bytes memory data = abi.encode(value);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 3, keccak256("Approval(address,address,uint256)"), bytes32(owner), bytes32(spender));
-        require(address(proxy).call(call_args));        
+        proxy._emit(abi.encode(value), 3, APPROVAL_SIG, bytes32(owner), bytes32(spender), 0);
     }
 
     event StateUpdated(address newState);
+    bytes32 constant STATEUPDATED_SIG = keccak256("StateUpdated(address)");
     function emitStateUpdated(address newState) internal {
-        bytes memory data = abi.encode(newState);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 1, keccak256("StateUpdated(address)"));
-        require(address(proxy).call(call_args));        
+        proxy._emit(abi.encode(newState), 1, STATEUPDATED_SIG, 0, 0, 0);
     }
 }

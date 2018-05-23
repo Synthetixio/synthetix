@@ -734,75 +734,57 @@ contract Havven is DestructibleExternStateToken {
     /* ========== EVENTS ========== */
 
     event PriceUpdated(uint newPrice, uint timestamp);
+    bytes32 constant PRICEUPDATED_SIG = keccak256("PriceUpdated(uint256,uint256)");
     function emitPriceUpdated(uint newPrice, uint timestamp) internal {
-        bytes memory data = abi.encode(newPrice, timestamp);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 1, keccak256("PriceUpdated(uint256,uint256)"));
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(newPrice, timestamp), 1, PRICEUPDATED_SIG, 0, 0, 0);
     }
 
     event IssuanceRatioUpdated(uint newRatio);
+    bytes32 constant ISSUANCERATIOUPDATED_SIG = keccak256("IssuanceRatioUpdated(uint256)");
     function emitIssuanceRatioUpdated(uint newRatio) internal {
-        bytes memory data = abi.encode(newRatio);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 1, keccak256("IssuanceRatioUpdated(uint256)"));
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(newRatio), 1, ISSUANCERATIOUPDATED_SIG, 0, 0, 0);
     }
 
     event FeePeriodRollover(uint timestamp);
+    bytes32 constant FEEPERIODROLLOVER_SIG = keccak256("FeePeriodRollover(uint256)");
     function emitFeePeriodRollover(uint timestamp) internal {
-        bytes memory data = abi.encode(timestamp);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 1, keccak256("FeePeriodRollover(uint256)"));
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(timestamp), 1, FEEPERIODROLLOVER_SIG, 0, 0, 0);
     } 
 
     event FeePeriodDurationUpdated(uint duration);
+    bytes32 constant FEEPERIODDURATIONUPDATED_SIG = keccak256("FeePeriodDurationUpdated(uint256)");
     function emitFeePeriodDurationUpdated(uint duration) internal {
-        bytes memory data = abi.encode(duration);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 1, keccak256("FeePeriodDurationUpdated(uint256)"));
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(duration), 1, FEEPERIODDURATIONUPDATED_SIG, 0, 0, 0);
     } 
 
     event FeesWithdrawn(address indexed account, uint value);
+    bytes32 constant FEESWITHDRAWN_SIG = keccak256("FeesWithdrawn(address,uint256)");
     function emitFeesWithdrawn(address account, uint value) internal {
-        bytes memory data = abi.encode(value);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 2, keccak256("FeesWithdrawn(address,uint256)"), bytes32(account));
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(value), 2, FEESWITHDRAWN_SIG, bytes32(account), 0, 0);
     }
 
     event OracleUpdated(address newOracle);
+    bytes32 constant ORACLEUPDATED_SIG = keccak256("OracleUpdated(address)");
     function emitOracleUpdated(address newOracle) internal {
-        bytes memory data = abi.encode(newOracle);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 1, keccak256("OracleUpdated(address)"));
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(newOracle), 1, ORACLEUPDATED_SIG, 0, 0, 0);
     }
 
     event NominUpdated(address newNomin);
+    bytes32 constant NOMINUPDATED_SIG = keccak256("NominUpdated(address)");
     function emitNominUpdated(address newNomin) internal {
-        bytes memory data = abi.encode(newNomin);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 1, keccak256("NominUpdated(address)"));
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(newNomin), 1, NOMINUPDATED_SIG, 0, 0, 0);
     }
 
     event EscrowUpdated(address newEscrow);
+    bytes32 constant ESCROWUPDATED_SIG = keccak256("EscrowUpdated(address)");
     function emitEscrowUpdated(address newEscrow) internal {
-        bytes memory data = abi.encode(newEscrow);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 1, keccak256("EscrowUpdated(address)"));
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(newEscrow), 1, ESCROWUPDATED_SIG, 0, 0, 0);
     }
 
     event IssuersUpdated(address indexed account, bool indexed value);
+    bytes32 constant ISSUERSUPDATED_SIG = keccak256("IssuersUpdated(address,bool)");
     function emitIssuersUpdated(address account, bool value) internal {
-        bytes memory data = abi.encode();
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 3, keccak256("IssuersUpdated(address,bool)"), bytes32(account), value);
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(), 3, ISSUERSUPDATED_SIG, bytes32(account), bytes32(value ? 1 : 0), 0);
     }
 
 }

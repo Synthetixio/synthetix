@@ -337,58 +337,44 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
     /* ========== EVENTS ========== */
 
     event Transfer(address indexed from, address indexed to, uint value);
+    bytes32 constant TRANSFER_SIG = keccak256("Transfer(address,address,uint256)");
     function emitTransfer(address from, address to, uint value) internal {
-        bytes memory data = abi.encode(value);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 3, keccak256("Transfer(address,address,uint256)"), bytes32(from), bytes32(to));
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(value), 3, TRANSFER_SIG, bytes32(from), bytes32(to), 0);
     }
 
     event Approval(address indexed owner, address indexed spender, uint value);
+    bytes32 constant APPROVAL_SIG = keccak256("Approval(address,address,uint256)");
     function emitApproval(address owner, address spender, uint value) internal {
-        bytes memory data = abi.encode(value);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 3, keccak256("Approval(address,address,uint256)"), bytes32(owner), bytes32(spender));
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(value), 3, APPROVAL_SIG, bytes32(owner), bytes32(spender), 0);
     }
 
     event TransferFeeRateUpdated(uint newFeeRate);
+    bytes32 constant TRANSFERFEERATEUPDATED_SIG = keccak256("TransferFeeRateUpdated(uint256)");
     function emitTransferFeeRateUpdated(uint newFeeRate) internal {
-        bytes memory data = abi.encode(newFeeRate);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 1, keccak256("TransferFeeRateUpdated(uint256)"));
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(newFeeRate), 1, TRANSFERFEERATEUPDATED_SIG, 0, 0, 0);
     }
 
     event FeeAuthorityUpdated(address newFeeAuthority);
+    bytes32 constant FEEAUTHORITYUPDATED_SIG = keccak256("FeeAuthorityUpdated(address)");
     function emitFeeAuthorityUpdated(address newFeeAuthority) internal {
-        bytes memory data = abi.encode(newFeeAuthority);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 1, keccak256("FeeAuthorityUpdated(address)"));
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(newFeeAuthority), 1, FEEAUTHORITYUPDATED_SIG, 0, 0, 0);
     } 
 
     event StateUpdated(address newState);
+    bytes32 constant STATEUPDATED_SIG = keccak256("StateUpdated(address)");
     function emitStateUpdated(address newState) internal {
-        bytes memory data = abi.encode(newState);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 1, keccak256("StateUpdated(address)"));
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(newState), 1, STATEUPDATED_SIG, 0, 0, 0);
     }
 
     event FeesWithdrawn(address indexed account, uint value);
+    bytes32 constant FEESWITHDRAWN_SIG = keccak256("FeesWithdrawn(address,uint256)");
     function emitFeesWithdrawn(address account, uint value) internal {
-        bytes memory data = abi.encode(value);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 2, keccak256("FeesWithdrawn(address,uint256)"), bytes32(account));
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(value), 2, FEESWITHDRAWN_SIG, bytes32(account), 0, 0);
     }
 
     event FeesDonated(address indexed donor, uint value);
+    bytes32 constant FEESDONATED_SIG = keccak256("FeesDonated(address,uint256)");
     function emitFeesDonated(address donor, uint value) internal {
-        bytes memory data = abi.encode(value);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 2, keccak256("FeesDonated(address,uint256)"), bytes32(donor));
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(value), 2, FEESDONATED_SIG, bytes32(donor), 0, 0);
     }
 }
