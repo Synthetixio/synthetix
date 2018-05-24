@@ -76,7 +76,7 @@ class TestExternStateFeeToken(HavvenTestCase):
         cls.fee_authority = fresh_account()
 
         cls.feetoken = ExternStateFeeTokenInterface(cls.proxied_feetoken, "ExternStateFeeToken")
-        cls.proxy = ProxyInterface(cls.proxy, "ExternStateFeeTokenProxy")
+        cls.proxy = ProxyInterface(cls.proxy, "Proxy")
         cls.feestate = TokenStateInterface(cls.feestate, "TokenState")
 
         cls.feetoken.setFeeAuthority(MASTER, cls.fee_authority)
