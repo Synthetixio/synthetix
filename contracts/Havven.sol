@@ -38,11 +38,12 @@ time, and then when a new fee period begins, dividing through by the
 duration of the fee period.
 
 We need only update values when the balances of an account is modified.
-When issuing or burning for the issued nomin balances and when transferring
-for the havven balances. This is for efficiency, and adds an implicit
-friction to interacting with havvens. A havven holder pays for his own
-recomputation whenever he wants to change his position, which saves the
-foundation having to maintain a pot dedicated to resourcing this.
+This occurs when issuing or burning for issued nomin balances,
+and when transferring for havven balances. This is for efficiency,
+and adds an implicit friction to interacting with havvens.
+A havven holder pays for his own recomputation whenever he wants to change
+his position, which saves the foundation having to maintain a pot dedicated
+to resourcing this.
 
 A hypothetical user's balance history over one fee period, pictorially:
 
@@ -103,8 +104,8 @@ In this version of the havven contract, nomins can only be issued by
 those that have been nominated by the havven foundation. Nomins are assumed
 to be valued at $1, as they are a stable unit of account.
 
-All nomins issued require some value of havvens to be locked up for the
-proportional to the value of issuanceRatio (The collateralisation ratio). This
+All nomins issued require a proportional value of havvens to be locked,
+where the proportion is governed by the current issuance ratio. This
 means for every $1 of Havvens locked up, $(issuanceRatio) nomins can be issued.
 i.e. to issue 100 nomins, 100/issuanceRatio dollars of havvens need to be locked up.
 
