@@ -7,6 +7,8 @@ from utils.deployutils import (
 from utils.testutils import (
     HavvenTestCase, ZERO_ADDRESS, block_time
 )
+from tests.contract_interfaces.nomin_interface import PublicNominInterface
+from tests.contract_interfaces.havven_interface import HavvenInterface
 from tests.contract_interfaces.issuanceController_interface import IssuanceControllerInterface
 
 def setUpModule():
@@ -31,13 +33,13 @@ class TestIssuanceController(HavvenTestCase):
     def deployContracts(cls):
         sources = [
             "contracts/Havven.sol",
-            "contracts/Nomin.sol",
+            "tests/contracts/PublicNomin.sol",
             "contracts/IssuanceController.sol",
             "tests/contracts/PublicHavven.sol"
         ]
 
         compiled, cls.event_maps = cls.compileAndMapEvents(sources)
-        nomin_abi = compiled['Nomin']['abi']
+        nomin_abi = compiled['PublicNomin']['abi']
         havven_abi = compiled['Havven']['abi']
         issuance_controller_abi = compiled['IssuanceController']['abi']
 
@@ -50,7 +52,7 @@ class TestIssuanceController(HavvenTestCase):
             compiled, 'PublicHavven', MASTER, [havven_proxy.address, ZERO_ADDRESS, MASTER, MASTER, UNIT//2]
         )
         nomin_contract, nom_txr = attempt_deploy(
-            compiled, 'Nomin', MASTER, [nomin_proxy.address, havven_contract.address, MASTER, ZERO_ADDRESS]
+            compiled, 'PublicNomin', MASTER, [nomin_proxy.address, havven_contract.address, MASTER, ZERO_ADDRESS]
         )
 
         mine_txs([
@@ -83,11 +85,12 @@ class TestIssuanceController(HavvenTestCase):
         cls.oracleAddress = addresses[0]
         cls.beneficiary = addresses[1]
         cls.delay = 100 * 60
-        cls.usdToEthPrice = 500 * (10 ** 18)
+        cls.usdToEthPrice = 100 * (10 ** 18)
         cls.usdToHavPrice = int(0.65 * (10 ** 18))
         cls.priceStalePeriod = 3 * 60 * 60
         cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, cls.nomin_contract, cls.nomin_abi, cls.issuanceControllerContract = cls.deployContracts()
         cls.issuanceController = IssuanceControllerInterface(cls.issuanceControllerContract, "IssuanceController")
+        cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
         cls.issuanceControllerEventDict = cls.event_maps['IssuanceController']
 
     def test_constructor(self):
@@ -128,6 +131,37 @@ class TestIssuanceController(HavvenTestCase):
             fields={'newOracle': newOracleAddress},
             location=self.issuanceControllerContract.address
         )
+
+    # Havven contract address setter and getter tests
+
+    def test_getHavvenAddress(self):
+        havvenAddress = self.issuanceController.havven()
+        self.assertEqual(havvenAddress, self.havven_contract.address)
+
+    # def test_setHavvenAddress(self):
+    # TODO
+    #     newOracleAddress = self.participantAddresses[0]
+    #     self.issuanceController.setOracle(self.contractOwner, newOracleAddress)
+    #     oracleAddressToCheck = self.issuanceController.oracle()
+    #     self.assertEqual(newOracleAddress, oracleAddressToCheck)
+
+    # def test_cannotSetHavvenIfUnauthorised(self):
+    # TODO
+    #     newOracleAddress, notOwner = self.participantAddresses[0:2]
+    #     originalOracleAddress = self.issuanceController.oracle()
+    #     self.assertReverts(self.issuanceController.setOracle, notOwner, newOracleAddress)
+    #     oracleAddressToCheck = self.issuanceController.oracle()
+    #     self.assertEqual(oracleAddressToCheck, originalOracleAddress)
+
+    # def test_HavvenUpdatedEvent(self):
+    # TODO
+    #     newOracleAddress = self.participantAddresses[0]
+    #     txr = self.issuanceController.setOracle(self.contractOwner, newOracleAddress)
+    #     self.assertEventEquals(
+    #         self.issuanceControllerEventDict, txr.logs[0], 'OracleUpdated',
+    #         fields={'newOracle': newOracleAddress},
+    #         location=self.issuanceControllerContract.address
+    # )
 
     # Price stale period setter and getter tests
 
@@ -183,26 +217,20 @@ class TestIssuanceController(HavvenTestCase):
         )
 
     def test_exchangeForNomins(self):
-        amountOfNominsToBuy = 67
+        # Set up the contract so it contains some nomins for folks to convert Ether for
+        self.nomin.giveNomins(self.contractOwner, self.issuanceControllerContract.address, 5000 * UNIT)
+
         someExchanger = self.participantAddresses[0]
-        amountOfEthToExchange = int(0.14 ** 18)
+        amountOfEthToExchange = int(1 * UNIT)
+        someExchangersBeforeBalance = self.nomin.balanceOf(someExchanger)
+        startingNominsInContract = self.nomin.balanceOf(self.issuanceControllerContract.address)
+        nominsToBeWithdrawnFromContract = int(int(amountOfEthToExchange * self.usdToEthPrice) / UNIT)
+        feesToPayInNomins = self.nomin.transferFeeIncurred(nominsToBeWithdrawnFromContract)
         txr = self.issuanceController.exchangeForNomins(someExchanger, amountOfEthToExchange)
-
-    # def test_etherChargedForNominsIsCorrect(self):
-    #     amountOfNominsToBuy = 67
-
-    #     self.issuanceController.setNominEtherExchangeRate(MASTER, 1.67)
-    #     exchangeRate = self.issuanceController.getNominEthExchangeRate()
-    #     conversionFeePercentage = self.issuanceController.getConversionFee()
-
-    #     totalNominsConsideration = amountOfNominsToBuy * (1 + conversionFeePercentage)
-    #     nominsToPayInFees = totalNominsConsideration - amountOfNominsToBuy
-    #     etherToSpend = totalNominsConsideration * exchangeRate
-
-    #     self.issuanceController.buy(DUMMY, etherToSpend)        
-    #     # TODO: Check I have the correct amount of Ether
-
-    
+        endingNominsInContract = self.nomin.balanceOf(self.issuanceControllerContract.address)
+        self.assertEqual(startingNominsInContract, endingNominsInContract + nominsToBeWithdrawnFromContract)
+        someExchangersAfterBalance = self.nomin.balanceOf(someExchanger)
+        self.assertEqual(someExchangersBeforeBalance + nominsToBeWithdrawnFromContract - feesToPayInNomins, someExchangersAfterBalance)
 
 
         
