@@ -6,6 +6,7 @@ import tests.test_Havven
 import tests.test_HavvenEscrow
 import tests.test_Issuance
 import tests.test_IssuanceController
+import tests.test_Pausable
 import tests.test_LimitedSetup
 import tests.test_Nomin
 import tests.test_Owned

@@ -77,9 +77,11 @@ class TestIssuanceController(HavvenTestCase):
 
     @classmethod
     def setUpClass(cls):
+        addresses = fresh_accounts(6)
+        cls.participantAddresses = addresses[2:]
         cls.contractOwner = MASTER
-        cls.oracleAddress = fresh_accounts(1)[0]
-        cls.beneficiary = fresh_accounts(1)[0]
+        cls.oracleAddress = addresses[0]
+        cls.beneficiary = addresses[1]
         cls.delay = 100 * 60
         cls.usdToEthPrice = 500 * (10 ** 18)
         cls.usdToHavPrice = int(0.65 * (10 ** 18))
@@ -106,20 +108,20 @@ class TestIssuanceController(HavvenTestCase):
         self.assertEqual(oracleAddress, self.oracleAddress)
 
     def test_setOracleAddress(self):
-        newOracleAddress = fresh_accounts(1)[0]
+        newOracleAddress = self.participantAddresses[0]
         self.issuanceController.setOracle(self.contractOwner, newOracleAddress)
         oracleAddressToCheck = self.issuanceController.oracle()
         self.assertEqual(newOracleAddress, oracleAddressToCheck)
 
     def test_cannotSetOracleIfUnauthorised(self):
-        newOracleAddress, notOwner = fresh_accounts(2)
+        newOracleAddress, notOwner = self.participantAddresses[0:2]
         originalOracleAddress = self.issuanceController.oracle()
         self.assertReverts(self.issuanceController.setOracle, notOwner, newOracleAddress)
         oracleAddressToCheck = self.issuanceController.oracle()
         self.assertEqual(oracleAddressToCheck, originalOracleAddress)
 
     def test_OracleEvent(self):
-        newOracleAddress = fresh_accounts(1)[0]
+        newOracleAddress = self.participantAddresses[0]
         txr = self.issuanceController.setOracle(self.contractOwner, newOracleAddress)
         self.assertEventEquals(
             self.issuanceControllerEventDict, txr.logs[0], 'OracleUpdated',
@@ -140,7 +142,7 @@ class TestIssuanceController(HavvenTestCase):
         self.assertEqual(newPriceStalePeriod, priceStalePeriodToCheck)
 
     def test_cannotSetPriceStalePeriodIfUnauthorised(self):
-        notOwner = fresh_accounts(1)[0]
+        notOwner = self.participantAddresses[0]
         originalPriceStalePeriod = self.issuanceController.priceStalePeriod()
         newPriceStalePeriod = originalPriceStalePeriod + 100
         self.assertReverts(self.issuanceController.setPriceStalePeriod, notOwner, newPriceStalePeriod)
@@ -168,7 +170,7 @@ class TestIssuanceController(HavvenTestCase):
         self.assertReverts(self.issuanceController.updatePrices, self.oracleAddress, self.usdToEthPrice, self.usdToHavPrice, timeSent)
 
     def test_cannotUpdatePricesIfUnauthorised(self):
-        randomUser = fresh_accounts(1)[0]
+        randomUser = self.participantAddresses[0]
         self.assertReverts(self.issuanceController.updatePrices, randomUser, self.usdToEthPrice, self.usdToHavPrice, block_time())
 
     def test_updatePricesEvents(self):
@@ -182,7 +184,7 @@ class TestIssuanceController(HavvenTestCase):
 
     def test_exchangeForNomins(self):
         amountOfNominsToBuy = 67
-        someExchanger = fresh_accounts(1)[0]
+        someExchanger = self.participantAddresses[0]
         amountOfEthToExchange = int(0.14 ** 18)
         txr = self.issuanceController.exchangeForNomins(someExchanger, amountOfEthToExchange)
 

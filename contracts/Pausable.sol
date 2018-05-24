@@ -58,7 +58,7 @@ contract Pausable is Owned {
         onlyOwner
     {
         // Ensure we're actually changing the state before we do anything
-        if (_paused != paused) {
+        if (_paused == paused) {
             return;
         }
 
