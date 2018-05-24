@@ -141,7 +141,7 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
     }
 
     /**
-     * @notice Query an account's balance from the state
+     * @notice Query the allowance granted by one account to another.
      */
     function allowance(address from, address to)
         public
