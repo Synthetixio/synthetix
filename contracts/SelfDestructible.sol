@@ -39,6 +39,7 @@ contract SelfDestructible is Owned {
 	uint public selfDestructDelay;
 	bool public selfDestructInitiated;
 	address public selfDestructBeneficiary;
+	uint constant MAX_SELFDESTRUCT_DELAY = 52 weeks;
 
 	/**
 	 * @dev Constructor
@@ -51,6 +52,7 @@ contract SelfDestructible is Owned {
 	    public
 	{
 		require(_beneficiary != address(0));
+		require(_delay <= MAX_SELFDESTRUCT_DELAY);
 		selfDestructDelay = _delay;
 		selfDestructBeneficiary = _beneficiary;
 		emit SelfDestructBeneficiaryUpdated(_beneficiary);

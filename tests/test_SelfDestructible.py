@@ -88,6 +88,7 @@ class TestSelfDestructible(HavvenTestCase):
 
         # Initiation time starts at 0.
         self.assertEqual(self.sd.initiationTime(), 0)
+        self.assertFalse(self.sd.selfDestructInitiated())
 
         tx = self.sd.initiateSelfDestruct(owner)
 
@@ -106,8 +107,10 @@ class TestSelfDestructible(HavvenTestCase):
         notowner = DUMMY
         self.assertNotEqual(owner, notowner)
 
+        self.assertFalse(self.sd.selfDestructInitiated())
         self.sd.initiateSelfDestruct(owner)
         self.assertNotEqual(self.sd.initiationTime(), 0)
+        self.assertTrue(self.sd.selfDestructInitiated())
         self.assertReverts(self.sd.terminateSelfDestruct, notowner)
 
         tx = self.sd.terminateSelfDestruct(owner)
