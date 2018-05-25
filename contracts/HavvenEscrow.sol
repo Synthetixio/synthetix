@@ -309,11 +309,11 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
 
             vestingSchedules[msg.sender][i] = [0, 0];
             total = safeAdd(total, qty);
-            totalVestedAccountBalance[msg.sender] = safeSub(totalVestedAccountBalance[msg.sender], qty);
         }
 
         if (total != 0) {
             totalVestedBalance = safeSub(totalVestedBalance, total);
+            totalVestedAccountBalance[msg.sender] = safeSub(totalVestedAccountBalance[msg.sender], total);
             havven.transfer(msg.sender, total);
             emit Vested(msg.sender, now, total);
         }
