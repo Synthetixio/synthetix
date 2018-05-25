@@ -46,7 +46,7 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
     /* ========== STATE VARIABLES ========== */
 
     /* Stores balances and allowances. */
-    TokenState public state;
+    TokenState public tokenState;
 
     /* Other ERC20 fields.
      * Note that the decimals field is defined in SafeDecimalMath. */
@@ -80,7 +80,7 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
         name = _name;
         symbol = _symbol;
         feeAuthority = _feeAuthority;
-        state = new TokenState(_owner, address(this));
+        tokenState = new TokenState(_owner, address(this));
 
         /* Constructed transfer fee rate should respect the maximum fee rate. */
         require(_transferFeeRate <= MAX_TRANSFER_FEE_RATE);
@@ -115,16 +115,16 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
     }
 
     /**
-     * @notice Set the address of the state contract.
-     * @dev This can be used to "pause" transfer functionality, by pointing the state at 0x000..
+     * @notice Set the address of the TokenState contract.
+     * @dev This can be used to "pause" transfer functionality, by pointing the tokenState at 0x000..
      * as balances would be unreachable
      */
-    function setState(TokenState _state)
+    function setTokenState(TokenState _tokenState)
         external
         optionalProxy_onlyOwner
     {
-        state = _state;
-        emitStateUpdated(_state);
+        tokenState = _tokenState;
+        emitTokenStateUpdated(_tokenState);
     }
 
     /* ========== VIEWS ========== */
@@ -137,7 +137,7 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
         view
         returns (uint)
     {
-        return state.balanceOf(account);
+        return tokenState.balanceOf(account);
     }
 
     /**
@@ -148,7 +148,7 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
         view
         returns (uint)
     {
-        return state.allowance(from, to);
+        return tokenState.allowance(from, to);
     }
 
     /**
@@ -203,7 +203,7 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
         view
         returns (uint)
     {
-        return state.balanceOf(address(this));
+        return tokenState.balanceOf(address(this));
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -223,9 +223,9 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
         uint totalCharge = safeAdd(value, fee);
 
         // Insufficient balance will be handled by the safe subtraction.
-        state.setBalanceOf(sender, safeSub(state.balanceOf(sender), totalCharge));
-        state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
-        state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), fee));
+        tokenState.setBalanceOf(sender, safeSub(tokenState.balanceOf(sender), totalCharge));
+        tokenState.setBalanceOf(to, safeAdd(tokenState.balanceOf(to), value));
+        tokenState.setBalanceOf(address(this), safeAdd(tokenState.balanceOf(address(this)), fee));
 
         emitTransfer(sender, to, value);
         emitTransfer(sender, address(this), fee);
@@ -248,10 +248,10 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
         uint totalCharge = safeAdd(value, fee);
 
         // Insufficient balance will be handled by the safe subtraction.
-        state.setBalanceOf(from, safeSub(state.balanceOf(from), totalCharge));
-        state.setAllowance(from, sender, safeSub(state.allowance(from, sender), totalCharge));
-        state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
-        state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), fee));
+        tokenState.setBalanceOf(from, safeSub(tokenState.balanceOf(from), totalCharge));
+        tokenState.setAllowance(from, sender, safeSub(tokenState.allowance(from, sender), totalCharge));
+        tokenState.setBalanceOf(to, safeAdd(tokenState.balanceOf(to), value));
+        tokenState.setBalanceOf(address(this), safeAdd(tokenState.balanceOf(address(this)), fee));
 
         emitTransfer(from, to, value);
         emitTransfer(from, address(this), fee);
@@ -269,7 +269,7 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
     {
         address sender = messageSender;
 
-        state.setAllowance(sender, spender, value);
+        tokenState.setAllowance(sender, spender, value);
         emitApproval(sender, spender, value);
 
         return true;
@@ -292,8 +292,8 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
         }
 
         // Safe subtraction ensures an exception is thrown if the balance is insufficient.
-        state.setBalanceOf(address(this), safeSub(state.balanceOf(address(this)), value));
-        state.setBalanceOf(account, safeAdd(state.balanceOf(account), value));
+        tokenState.setBalanceOf(address(this), safeSub(tokenState.balanceOf(address(this)), value));
+        tokenState.setBalanceOf(account, safeAdd(tokenState.balanceOf(account), value));
 
         emitFeesWithdrawn(account, value);
         emitTransfer(address(this), account, value);
@@ -311,12 +311,12 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
     {
         address sender = messageSender;
         /* Empty donations are disallowed. */
-        uint balance = state.balanceOf(sender);
+        uint balance = tokenState.balanceOf(sender);
         require(balance != 0);
 
         /* safeSub ensures the donor has sufficient balance. */
-        state.setBalanceOf(sender, safeSub(balance, n));
-        state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), n));
+        tokenState.setBalanceOf(sender, safeSub(balance, n));
+        tokenState.setBalanceOf(address(this), safeAdd(tokenState.balanceOf(address(this)), n));
 
         emitFeesDonated(sender, n);
         emitTransfer(sender, address(this), n);
@@ -360,10 +360,10 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
         proxy._emit(abi.encode(newFeeAuthority), 1, FEEAUTHORITYUPDATED_SIG, 0, 0, 0);
     } 
 
-    event StateUpdated(address newState);
-    bytes32 constant STATEUPDATED_SIG = keccak256("StateUpdated(address)");
-    function emitStateUpdated(address newState) internal {
-        proxy._emit(abi.encode(newState), 1, STATEUPDATED_SIG, 0, 0, 0);
+    event TokenStateUpdated(address newTokenState);
+    bytes32 constant TOKENSTATEUPDATED_SIG = keccak256("TokenStateUpdated(address)");
+    function emitTokenStateUpdated(address newTokenState) internal {
+        proxy._emit(abi.encode(newTokenState), 1, TOKENSTATEUPDATED_SIG, 0, 0, 0);
     }
 
     event FeesWithdrawn(address indexed account, uint value);

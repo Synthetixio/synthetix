@@ -73,7 +73,7 @@ class TestDestructibleExternStateToken(HavvenTestCase):
         self.assertEqual(self.token.decimals(), 18)
         self.assertEqual(self.token.totalSupply(), 1000 * UNIT)
         self.assertEqual(self.token.balanceOf(MASTER), 1000 * UNIT)
-        self.assertEqual(self.token.state(), self.tokenstate.address)
+        self.assertEqual(self.token.tokenState(), self.tokenstate.address)
         self.assertEqual(self.tokenstate.functions.associatedContract().call(), self.token_contract.address)
 
     def test_provide_state(self):
@@ -85,20 +85,20 @@ class TestDestructibleExternStateToken(HavvenTestCase):
                                   [self.proxy.address, "Test Token", "TEST",
                                    1000 * UNIT,
                                    tokenstate.address, DUMMY])
-        self.assertEqual(token.functions.state().call(), tokenstate.address)
+        self.assertEqual(token.functions.tokenState().call(), tokenstate.address)
 
-    def test_getSetState(self):
-        new_state = fresh_account()
+    def test_getSetTokenState(self):
+        new_tokenstate = fresh_account()
         owner = self.token.owner()
         self.assertNotEqual(new_state, owner)
 
         # Only the owner is able to set the Fee Authority.
-        self.assertReverts(self.token.setState, new_state, new_state)
-        tx_receipt = self.token.setState(owner, new_state)
+        self.assertReverts(self.token.setTokenState, new_state, new_state)
+        tx_receipt = self.token.setTokenState(owner, new_state)
         # Check that event is emitted.
         self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'],
-                         "StateUpdated")
-        self.assertEqual(self.token.state(), new_state)
+                         "TokenStateUpdated")
+        self.assertEqual(self.token.tokenState(), new_tokenstate)
 
     def test_transfer(self):
         sender = MASTER
@@ -234,8 +234,8 @@ class TestDestructibleExternStateToken(HavvenTestCase):
 
     def test_event_StateUpdated(self):
         new_state = fresh_account()
-        tx = self.token.setState(MASTER, new_state)
+        tx = self.token.setTokenState(MASTER, new_state)
         self.assertEventEquals(self.token_event_dict,
-                               tx.logs[0], "StateUpdated",
-                               {"newState": new_state},
+                               tx.logs[0], "TokenStateUpdated",
+                               {"newTokenState": new_state},
                                 self.proxy.address)

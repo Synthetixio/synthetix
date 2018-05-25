@@ -11,7 +11,7 @@ class DestructibleExternStateTokenInterface(SafeDecimalMathInterface, SelfDestru
         self.contract_name = name
 
         self.totalSupply = lambda: self.contract.functions.totalSupply().call()
-        self.state = lambda: self.contract.functions.state().call()
+        self.tokenState = lambda: self.contract.functions.tokenState().call()
         self.name = lambda: self.contract.functions.name().call()
         self.symbol = lambda: self.contract.functions.symbol().call()
         self.balanceOf = lambda account: self.contract.functions.balanceOf(account).call()

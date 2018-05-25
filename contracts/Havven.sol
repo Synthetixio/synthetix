@@ -207,12 +207,12 @@ contract Havven is DestructibleExternStateToken {
 
     /**
      * @dev Constructor
-     * @param _state A pre-populated contract containing token balances.
+     * @param _tokenState A pre-populated contract containing token balances.
      * If the provided address is 0x0, then a fresh one will be constructed with the contract owning all tokens.
      * @param _owner The owner of this contract.
      */
-    constructor(address _proxy, TokenState _state, address _owner, address _oracle, uint _price)
-        DestructibleExternStateToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, _state, _owner)
+    constructor(address _proxy, TokenState _tokenState, address _owner, address _oracle, uint _price)
+        DestructibleExternStateToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, _tokenState, _owner)
         /* Owned is initialised in DestructibleExternStateToken */
         public
     {
@@ -648,7 +648,7 @@ contract Havven is DestructibleExternStateToken {
         returns (uint)
     {
         uint locked = lockedHavvens(account);
-        uint bal = state.balanceOf(account);
+        uint bal = tokenState.balanceOf(account);
         if (escrow != address(0)) {
             bal += escrow.balanceOf(account);
         }

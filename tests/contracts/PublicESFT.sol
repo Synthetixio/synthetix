@@ -27,7 +27,7 @@ contract PublicESFT is ExternStateFeeToken {
         optionalProxy
         public
     {
-        state.setBalanceOf(account, safeAdd(amount, state.balanceOf(account)));
+        tokenState.setBalanceOf(account, safeAdd(amount, tokenState.balanceOf(account)));
         totalSupply = safeAdd(totalSupply, amount);
     }
 
@@ -35,8 +35,8 @@ contract PublicESFT is ExternStateFeeToken {
         optionalProxy
         public
     {
-        totalSupply = safeSub(totalSupply, state.balanceOf(account));
-        state.setBalanceOf(account, 0);
+        totalSupply = safeSub(totalSupply, tokenState.balanceOf(account));
+        tokenState.setBalanceOf(account, 0);
     }
 
 }

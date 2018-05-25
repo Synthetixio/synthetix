@@ -45,7 +45,7 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Prox
     uint constant SELF_DESTRUCT_DELAY = 4 weeks;
 
     /* Stores balances and allowances. */
-    TokenState public state;
+    TokenState public tokenState;
 
     /* Other ERC20 fields.
      * Note that the decimals field is defined in SafeDecimalMath.*/
@@ -58,11 +58,11 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Prox
      * @param _name Token's ERC20 name.
      * @param _symbol Token's ERC20 symbol.
      * @param _totalSupply The total supply of the token.
-     * @param _state The state contract address. A fresh one is constructed if 0x0 is provided.
+     * @param _tokenState The TokenState contract address.
      * @param _owner The owner of this contract.
      */
     constructor(address _proxy, string _name, string _symbol, uint _totalSupply,
-                TokenState _state, address _owner)
+                TokenState _tokenState, address _owner)
         SelfDestructible(_owner, _owner, SELF_DESTRUCT_DELAY)
         Proxyable(_proxy, _owner)
         public
@@ -70,7 +70,7 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Prox
         name = _name;
         symbol = _symbol;
         totalSupply = _totalSupply;
-        state = _state;
+        tokenState = _tokenState;
    }
 
     /* ========== VIEWS ========== */
@@ -85,7 +85,7 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Prox
         view
         returns (uint)
     {
-        return state.allowance(tokenOwner, spender);
+        return tokenState.allowance(tokenOwner, spender);
     }
 
     /**
@@ -96,21 +96,21 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Prox
         view
         returns (uint)
     {
-        return state.balanceOf(account);
+        return tokenState.balanceOf(account);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
-     * @notice Change the address of the state contract.
+     * @notice Change the address of the TokenState contract.
      * @dev Only the contract owner may operate this function.
      */
-    function setState(TokenState _state)
+    function setTokenState(TokenState _tokenState)
         external
         optionalProxy_onlyOwner
     {
-        state = _state;
-        emitStateUpdated(_state);
+        tokenState = _tokenState;
+        emitTokenStateUpdated(_tokenState);
     }
 
     /**
@@ -124,8 +124,8 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Prox
         require(to != address(0));
 
         /* Insufficient balance will be handled by the safe subtraction. */
-        state.setBalanceOf(sender, safeSub(state.balanceOf(sender), value));
-        state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
+        tokenState.setBalanceOf(sender, safeSub(tokenState.balanceOf(sender), value));
+        tokenState.setBalanceOf(to, safeAdd(tokenState.balanceOf(to), value));
 
         emitTransfer(sender, to, value);
 
@@ -143,9 +143,9 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Prox
         require(to != address(0));
 
         /* Insufficient balance will be handled by the safe subtraction. */
-        state.setBalanceOf(from, safeSub(state.balanceOf(from), value));
-        state.setAllowance(from, sender, safeSub(state.allowance(from, sender), value));
-        state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
+        tokenState.setBalanceOf(from, safeSub(tokenState.balanceOf(from), value));
+        tokenState.setAllowance(from, sender, safeSub(tokenState.allowance(from, sender), value));
+        tokenState.setBalanceOf(to, safeAdd(tokenState.balanceOf(to), value));
 
         emitTransfer(from, to, value);
 
@@ -162,7 +162,7 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Prox
     {
         address sender = messageSender;
 
-        state.setAllowance(sender, spender, value);
+        tokenState.setAllowance(sender, spender, value);
         emitApproval(sender, spender, value);
         return true;
     }
@@ -181,9 +181,9 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Prox
         proxy._emit(abi.encode(value), 3, APPROVAL_SIG, bytes32(owner), bytes32(spender), 0);
     }
 
-    event StateUpdated(address newState);
-    bytes32 constant STATEUPDATED_SIG = keccak256("StateUpdated(address)");
-    function emitStateUpdated(address newState) internal {
-        proxy._emit(abi.encode(newState), 1, STATEUPDATED_SIG, 0, 0, 0);
+    event TokenStateUpdated(address newTokenState);
+    bytes32 constant TOKENSTATEUPDATED_SIG = keccak256("TokenStateUpdated(address)");
+    function emitTokenStateUpdated(address newTokenState) internal {
+        proxy._emit(abi.encode(newTokenState), 1, TOKENSTATEUPDATED_SIG, 0, 0, 0);
     }
 }

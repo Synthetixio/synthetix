@@ -157,9 +157,9 @@ contract Nomin is ExternStateFeeToken {
         require(!frozen[target]);
 
         // Confiscate the balance in the account and freeze it.
-        uint balance = state.balanceOf(target);
-        state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), balance));
-        state.setBalanceOf(target, 0);
+        uint balance = tokenState.balanceOf(target);
+        tokenState.setBalanceOf(address(this), safeAdd(tokenState.balanceOf(address(this)), balance));
+        tokenState.setBalanceOf(target, 0);
         frozen[target] = true;
         emitAccountFrozen(target, balance);
         emitTransfer(target, address(this), balance);
@@ -183,7 +183,7 @@ contract Nomin is ExternStateFeeToken {
         external
         onlyHavven
     {
-        state.setBalanceOf(account, safeAdd(state.balanceOf(account), amount));
+        tokenState.setBalanceOf(account, safeAdd(tokenState.balanceOf(account), amount));
         totalSupply = safeAdd(totalSupply, amount);
         emitTransfer(address(0), account, amount);
         emitIssued(account, amount);
@@ -195,7 +195,7 @@ contract Nomin is ExternStateFeeToken {
         external
         onlyHavven
     {
-        state.setBalanceOf(account, safeSub(state.balanceOf(account), amount));
+        tokenState.setBalanceOf(account, safeSub(tokenState.balanceOf(account), amount));
         totalSupply = safeSub(totalSupply, amount);
         emitTransfer(account, address(0), amount);
         emitBurned(account, amount);
