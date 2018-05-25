@@ -163,6 +163,35 @@ class TestNomin(HavvenTestCase):
         self.assertEqual(self.nomin.balanceOf(receiver), amount - fee)
         self.assertEqual(self.nomin.balanceOf(self.nomin.address), fee)
 
+    def test_transferEventEmits(self):
+        amount = 5 * UNIT
+        fee = amount * 0.0015
+        sender = fresh_account()
+        receiver = fresh_account()
+
+        # Give them the nomins to start the test
+        self.nomin.giveNomins(MASTER, sender, amount)
+        self.assertEqual(self.nomin.balanceOf(sender), amount)
+
+        # Transfer the amount to another account
+        txr = self.nomin.transfer(sender, receiver, amount)
+
+        self.assertEventEquals(
+            self.nomin_event_dict, txr.logs[0], 'Transfer',
+            fields={'from': sender, 'to': receiver, 'value': 5 * UNIT - fee},
+            location=self.nomin_proxy.address
+        )
+
+        self.assertEventEquals(
+            self.nomin_event_dict, txr.logs[1], 'Transfer',
+            fields={
+                'from': sender,
+                'to': self.nomin_contract.address,
+                'value': fee
+            },
+            location=self.nomin_proxy.address
+        )
+
     def test_transfer(self):
         target = fresh_account()
 
