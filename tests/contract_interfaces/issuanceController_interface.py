@@ -20,6 +20,12 @@ class IssuanceControllerInterface():
         self.setOracle = lambda sender, newAddress: mine_tx(
             self.contract.functions.setOracle(newAddress).transact({'from': sender}), "setOracle", self.contract_name
         )
+        self.setHavven = lambda sender, newAddress: mine_tx(
+            self.contract.functions.setHavven(newAddress).transact({'from': sender}), "setHavven", self.contract_name
+        )
+        self.setNomin = lambda sender, newAddress: mine_tx(
+            self.contract.functions.setNomin(newAddress).transact({'from': sender}), "setNomin", self.contract_name
+        )
         self.setPriceStalePeriod = lambda sender, newPriceStalePeriod: mine_tx(
             self.contract.functions.setPriceStalePeriod(newPriceStalePeriod).transact({'from': sender}), "setPriceStalePeriod", self.contract_name
         )

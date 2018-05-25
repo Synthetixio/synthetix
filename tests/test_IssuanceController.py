@@ -132,36 +132,61 @@ class TestIssuanceController(HavvenTestCase):
             location=self.issuanceControllerContract.address
         )
 
+    # Nomin contract address setter and getter tests
+
+    def test_getNominAddress(self):
+        nominAddress = self.issuanceController.nomin()
+        self.assertEqual(nominAddress, self.nomin_contract.address)
+
+    def test_setNominAddress(self):
+        newNominAddress = self.participantAddresses[0]
+        self.issuanceController.setNomin(self.contractOwner, newNominAddress)
+        nominAddressToCheck = self.issuanceController.nomin()
+        self.assertEqual(newNominAddress, nominAddressToCheck)
+
+    def test_cannotSetNominIfUnauthorised(self):
+        newNominAddress, notOwner = self.participantAddresses[0:2]
+        originalNominAddress = self.issuanceController.nomin()
+        self.assertReverts(self.issuanceController.setNomin, notOwner, newNominAddress)
+        nominAddressToCheck = self.issuanceController.nomin()
+        self.assertEqual(nominAddressToCheck, originalNominAddress)
+
+    def test_NominUpdatedEvent(self):
+        newNominAddress = self.participantAddresses[0]
+        txr = self.issuanceController.setNomin(self.contractOwner, newNominAddress)
+        self.assertEventEquals(
+            self.issuanceControllerEventDict, txr.logs[0], 'NominUpdated',
+            fields={'newNominContract': newNominAddress},
+            location=self.issuanceControllerContract.address
+    )
+
     # Havven contract address setter and getter tests
 
     def test_getHavvenAddress(self):
         havvenAddress = self.issuanceController.havven()
         self.assertEqual(havvenAddress, self.havven_contract.address)
 
-    # def test_setHavvenAddress(self):
-    # TODO
-    #     newOracleAddress = self.participantAddresses[0]
-    #     self.issuanceController.setOracle(self.contractOwner, newOracleAddress)
-    #     oracleAddressToCheck = self.issuanceController.oracle()
-    #     self.assertEqual(newOracleAddress, oracleAddressToCheck)
+    def test_setHavvenAddress(self):
+        newHavvenAddress = self.participantAddresses[0]
+        self.issuanceController.setHavven(self.contractOwner, newHavvenAddress)
+        havvenAddressToCheck = self.issuanceController.havven()
+        self.assertEqual(newHavvenAddress, havvenAddressToCheck)
 
-    # def test_cannotSetHavvenIfUnauthorised(self):
-    # TODO
-    #     newOracleAddress, notOwner = self.participantAddresses[0:2]
-    #     originalOracleAddress = self.issuanceController.oracle()
-    #     self.assertReverts(self.issuanceController.setOracle, notOwner, newOracleAddress)
-    #     oracleAddressToCheck = self.issuanceController.oracle()
-    #     self.assertEqual(oracleAddressToCheck, originalOracleAddress)
+    def test_cannotSetHavvenIfUnauthorised(self):
+        newHavvenAddress, notOwner = self.participantAddresses[0:2]
+        originalHavvenAddress = self.issuanceController.havven()
+        self.assertReverts(self.issuanceController.setHavven, notOwner, newHavvenAddress)
+        havvenAddressToCheck = self.issuanceController.havven()
+        self.assertEqual(havvenAddressToCheck, originalHavvenAddress)
 
-    # def test_HavvenUpdatedEvent(self):
-    # TODO
-    #     newOracleAddress = self.participantAddresses[0]
-    #     txr = self.issuanceController.setOracle(self.contractOwner, newOracleAddress)
-    #     self.assertEventEquals(
-    #         self.issuanceControllerEventDict, txr.logs[0], 'OracleUpdated',
-    #         fields={'newOracle': newOracleAddress},
-    #         location=self.issuanceControllerContract.address
-    # )
+    def test_HavvenUpdatedEvent(self):
+        newHavvenAddress = self.participantAddresses[0]
+        txr = self.issuanceController.setHavven(self.contractOwner, newHavvenAddress)
+        self.assertEventEquals(
+            self.issuanceControllerEventDict, txr.logs[0], 'HavvenUpdated',
+            fields={'newHavvenContract': newHavvenAddress},
+            location=self.issuanceControllerContract.address
+    )
 
     # Price stale period setter and getter tests
 
