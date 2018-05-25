@@ -226,6 +226,13 @@ class TestHavvenEscrow(HavvenTestCase):
         self.escrow.purgeAccount(MASTER, alice)
         self.assertEqual(self.escrow.numVestingEntries(alice), 0)
 
+    def test_maxVestingEntries(self):
+        alice = fresh_account()
+        time = block_time()
+        self.havven.endow(MASTER, self.escrow.contract.address, 200 * UNIT)
+        self.escrow.addRegularVestingSchedule(MASTER, alice, time + to_seconds(weeks=52), 100 * UNIT, 21)
+        self.assertReverts(self.escrow.appendVestingEntry, MASTER, alice, time + to_seconds(weeks=52, days=1), UNIT)
+
     def test_getVestingScheduleEntry(self):
         alice = fresh_account()
         time = block_time()

@@ -63,6 +63,9 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
     uint constant TIME_INDEX = 0;
     uint constant QUANTITY_INDEX = 1;
 
+    /* Limit vesting entries to disallow unbounded iteration over vesting schedules. */
+    uint constant MAX_VESTING_ENTRIES = 20;
+
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -246,10 +249,16 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
         /* No empty or already-passed vesting entries allowed. */
         require(now < time);
         require(quantity != 0);
+
+        /* There must be enough balance in the contract to provide for the vesting entry. */
         totalVestedBalance = safeAdd(totalVestedBalance, quantity);
         require(totalVestedBalance <= havven.balanceOf(this));
 
-        if (vestingSchedules[account].length == 0) {
+        /* Disallow arbitrarily long vesting schedules in light of the gas limit. */
+        uint scheduleLength = vestingSchedules[account].length;
+        require(scheduleLength <= MAX_VESTING_ENTRIES);
+
+        if (scheduleLength == 0) {
             totalVestedAccountBalance[account] = quantity;
         } else {
             /* Disallow adding new vested havvens earlier than the last one.
