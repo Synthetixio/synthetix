@@ -145,6 +145,24 @@ class TestNomin(HavvenTestCase):
         self.assertReverts(self.nomin.setHavven, DUMMY, old_havven)
         self.nomin.setHavven(self.nomin.owner(), old_havven)
 
+    def test_ensureCompleteTransfer(self):
+        amount = 10 * UNIT
+        fee = amount * 0.0015
+        sender = fresh_account()
+        receiver = fresh_account()
+
+        # Give them the nomins to start the test
+        self.nomin.giveNomins(MASTER, sender, amount)
+        self.assertEqual(self.nomin.balanceOf(sender), amount)
+
+        # Transfer the amount to another account
+        txr = self.nomin.transfer(sender, receiver, amount)
+        
+        # Ensure the result of the transfer is correct.
+        self.assertEqual(self.nomin.balanceOf(sender), 0)
+        self.assertEqual(self.nomin.balanceOf(receiver), amount - fee)
+        self.assertEqual(self.nomin.balanceOf(self.nomin.address), fee)
+
     def test_transfer(self):
         target = fresh_account()
 
