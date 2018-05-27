@@ -162,7 +162,10 @@ contract Havven is DestructibleExternStateToken {
     /* The time the last fee period began */
     uint public lastFeePeriodStartTime;
 
-    /* Fee periods will roll over in no shorter a time than this.. */
+    /* Fee periods will roll over in no shorter a time than this. 
+     * The fee period cannot actually roll over until a fee-relevant
+     * operation such as withdrawal or a fee period duration update occurs,
+     * so this is just a target, and the actual duration may be slightly longer. */
     uint public feePeriodDuration = 4 weeks;
     /* ...and must target between 1 day and six months. */
     uint constant MIN_FEE_PERIOD_DURATION = 1 days;
