@@ -143,12 +143,12 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
     /**
      * @notice Query the allowance granted by one account to another.
      */
-    function allowance(address from, address to)
+    function allowance(address owner, address spender)
         public
         view
         returns (uint)
     {
-        return tokenState.allowance(from, to);
+        return tokenState.allowance(owner, spender);
     }
 
     /**
