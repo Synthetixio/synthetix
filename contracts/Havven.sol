@@ -59,7 +59,7 @@ When a new transfer occurs at time n, the balance being p,
 we must:
 
   - Add the area p * (n - t) to the total area recorded so far
-  - Update the last transfer time to p
+  - Update the last transfer time to n
 
 So if this graph represents the entire current fee period,
 the average havvens held so far is ((t-f)*s + (n-t)*p) / (n-f).
