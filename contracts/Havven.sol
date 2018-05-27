@@ -403,8 +403,7 @@ contract Havven is DestructibleExternStateToken {
     }
 
     /**
-     * @notice ERC20 transferFrom function, which also performs
-     * fee entitlement recomputation whenever balances are updated.
+     * @notice ERC20 transferFrom function.
      */
     function transferFrom(address from, address to, uint value)
         public
