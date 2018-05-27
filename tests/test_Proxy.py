@@ -63,7 +63,7 @@ class TestExternStateFeeToken(HavvenTestCase):
             proxy.functions.setTarget(feetoken_contract_1.address).transact({'from': MASTER}),
             feestate.functions.setBalanceOf(DUMMY, 1000 * UNIT).transact({'from': MASTER}),
             feestate.functions.setAssociatedContract(feetoken_contract_1.address).transact({'from': MASTER}),
-            feetoken_contract_1.functions.setState(feestate.address).transact({'from': MASTER})]
+            feetoken_contract_1.functions.setTokenState(feestate.address).transact({'from': MASTER})]
         )
 
         return compiled, proxy, proxied_feetoken, feetoken_contract_1, feetoken_contract_2, feetoken_event_dict, feestate
@@ -92,7 +92,7 @@ class TestExternStateFeeToken(HavvenTestCase):
 
         self.proxy.setTarget(MASTER, self.feetoken_contract_2.address)
         self.feestate.setAssociatedContract(MASTER, self.feetoken_contract_2.address)
-        mine_txs([self.feetoken_contract_2.functions.setState(self.feestate.contract.address).transact({'from': MASTER})])
+        mine_txs([self.feetoken_contract_2.functions.setTokenState(self.feestate.contract.address).transact({'from': MASTER})])
 
         self.assertEqual(self.feetoken.name(), "Test Fee Token 2")
         self.assertEqual(self.feetoken.state(), self.feestate.contract.address)
@@ -113,7 +113,7 @@ class TestExternStateFeeToken(HavvenTestCase):
         self.proxy.setTarget(MASTER, self.feetoken_contract_2.address)
         self.feestate.setAssociatedContract(MASTER, self.feetoken_contract_2.address)
 
-        mine_txs([self.feetoken_contract_2.functions.setState(self.feestate.contract.address).transact({'from': MASTER})])
+        mine_txs([self.feetoken_contract_2.functions.setTokenState(self.feestate.contract.address).transact({'from': MASTER})])
 
         self.assertEqual(self.feetoken.balanceOf(receiver), receiver_balance + value)
 

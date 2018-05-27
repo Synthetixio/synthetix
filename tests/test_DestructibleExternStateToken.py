@@ -90,11 +90,11 @@ class TestDestructibleExternStateToken(HavvenTestCase):
     def test_getSetTokenState(self):
         new_tokenstate = fresh_account()
         owner = self.token.owner()
-        self.assertNotEqual(new_state, owner)
+        self.assertNotEqual(new_tokenstate, owner)
 
         # Only the owner is able to set the Fee Authority.
-        self.assertReverts(self.token.setTokenState, new_state, new_state)
-        tx_receipt = self.token.setTokenState(owner, new_state)
+        self.assertReverts(self.token.setTokenState, new_tokenstate, new_tokenstate)
+        tx_receipt = self.token.setTokenState(owner, new_tokenstate)
         # Check that event is emitted.
         self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'],
                          "TokenStateUpdated")
@@ -233,9 +233,9 @@ class TestDestructibleExternStateToken(HavvenTestCase):
                                 self.proxy.address)
 
     def test_event_StateUpdated(self):
-        new_state = fresh_account()
-        tx = self.token.setTokenState(MASTER, new_state)
+        new_tokenstate = fresh_account()
+        tx = self.token.setTokenState(MASTER, new_tokenstate)
         self.assertEventEquals(self.token_event_dict,
                                tx.logs[0], "TokenStateUpdated",
-                               {"newTokenState": new_state},
+                               {"newTokenState": new_tokenstate},
                                 self.proxy.address)

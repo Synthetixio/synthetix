@@ -450,7 +450,7 @@ class TestExternStateFeeToken(HavvenTestCase):
 
     def test_event_TokenStateUpdated(self):
         new_tokenstate = fresh_account()
-        txr = self.feetoken.setState(MASTER, new_tokenstate)
+        txr = self.feetoken.setTokenState(MASTER, new_tokenstate)
         self.assertEventEquals(
             self.feetoken_event_dict, txr.logs[0], 'TokenStateUpdated',
             fields={'newTokenState': new_tokenstate},
