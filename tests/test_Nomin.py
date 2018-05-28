@@ -507,15 +507,13 @@ class TestNomin(HavvenTestCase):
         target = fresh_account()
 
         # The nomin contract itself should not be unfreezable.
-        tx_receipt = self.nomin.unfreezeAccount(MASTER, self.nomin_contract.address)
+        self.assertReverts(self.nomin.unfreezeAccount, MASTER, self.nomin_contract.address)
         self.assertTrue(self.nomin.frozen(self.nomin_contract.address))
-        self.assertEqual(len(tx_receipt.logs), 0)
 
         # Unfreezing non-frozen accounts should not do anything.
         self.assertFalse(self.nomin.frozen(target))
-        tx_receipt = self.nomin.unfreezeAccount(MASTER, target)
+        self.assertReverts(self.nomin.unfreezeAccount, MASTER, target)
         self.assertFalse(self.nomin.frozen(target))
-        self.assertEqual(len(tx_receipt.logs), 0)
 
         self.nomin.debugFreezeAccount(MASTER, target)
         self.assertTrue(self.nomin.frozen(target))

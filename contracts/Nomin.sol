@@ -172,10 +172,9 @@ contract Nomin is ExternStateFeeToken {
         external
         optionalProxy_onlyOwner
     {
-        if (frozen[target] && Nomin(target) != this) {
-            frozen[target] = false;
-            emitAccountUnfrozen(target);
-        }
+        require(frozen[target] && target != address(this));
+        frozen[target] = false;
+        emitAccountUnfrozen(target);
     }
 
     /* Allow havven to issue a certain number of
