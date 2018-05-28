@@ -59,16 +59,17 @@ contract Nomin is ExternStateFeeToken {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _proxy, address _havven, address _owner)
+    constructor(address _proxy, Havven _havven, address _owner)
         ExternStateFeeToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL,
                             TRANSFER_FEE,
                             _havven, // The havven contract is the fee authority.
                             _owner)
         public
     {
+        require(_proxy != 0 && address(_havven) != 0 && _owner != 0);
         // It should not be possible to transfer to the nomin contract itself.
         frozen[this] = true;
-        havven = Havven(_havven);
+        havven = _havven;
     }
 
     /* ========== SETTERS ========== */
