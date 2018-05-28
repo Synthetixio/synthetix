@@ -467,20 +467,20 @@ contract Havven is DestructibleExternStateToken {
         internal
     {
         /* update the total balances first */
-        totalIssuanceData = rolloverBalances(lastTotalSupply, totalIssuanceData);
+        totalIssuanceData = updatedIssuanceData(lastTotalSupply, totalIssuanceData);
 
         if (issuanceData[account].lastModified < feePeriodStartTime) {
             hasWithdrawnFees[account] = false;
         }
 
-        issuanceData[account] = rolloverBalances(preBalance, issuanceData[account]);
+        issuanceData[account] = updatedIssuanceData(preBalance, issuanceData[account]);
     }
 
 
     /**
      * @notice Compute the new IssuanceData on the old balance
      */
-    function rolloverBalances(uint preBalance, IssuanceData preIssuance)
+    function updatedIssuanceData(uint preBalance, IssuanceData preIssuance)
         internal
         view
         returns (IssuanceData)
