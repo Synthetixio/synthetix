@@ -176,7 +176,7 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
      * a specified value.
      */
     function transferPlusFee(uint value)
-        public 
+        external
         view
         returns (uint)
     {
@@ -287,8 +287,8 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
         require(to != address(0));
 
         // The fee is added to the amount sent
-        uint total = transferPlusFee(value);
-        uint fee = safeSub(total, value);
+        uint fee = transferFeeIncurred(value);
+        uint total = safeAdd(value, fee);
 
         // Reduce the allowance by the amount we're transferring
         tokenState.setAllowance(from, sender, safeSub(tokenState.allowance(from, sender), total));
