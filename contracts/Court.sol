@@ -404,7 +404,7 @@ contract Court is SafeDecimalMath, Owned {
         /* There must be no confiscation motion already running for this account. */
         require(targetMotionID[target] == 0);
 
-        /* Disallow votes on accounts that have previously been frozen. */
+        /* Disallow votes on accounts that are currently frozen. */
         require(!nomin.frozen(target));
 
         havven.rolloverFeePeriodIfElapsed();
