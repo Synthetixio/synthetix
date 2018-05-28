@@ -165,7 +165,9 @@ contract Court is SafeDecimalMath, Owned {
     uint public requiredMajority = (2 * UNIT) / 3;
     uint constant MIN_REQUIRED_MAJORITY = UNIT / 2;
 
-    /* The next ID to use for opening a motion. */
+    /* The next ID to use for opening a motion. 
+     * The 0 motion ID corresponds to no motion,
+     * and is used as a null value for later comparison. */
     uint nextMotionID = 1;
 
     /* Mapping from motion IDs to target addresses. */
