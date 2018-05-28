@@ -237,8 +237,7 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
     {
         require(to != address(0));
 
-        // The fee is deducted from the amount sent
-        uint fee = transferFeeIncurred(value);
+        uint fee = safeSub(value, priceToSpend(value));
         uint amountReceived = safeSub(value, fee);
 
         return _internalTransfer(sender, to, amountReceived, fee);
@@ -254,7 +253,7 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
         require(to != address(0));
 
         // The fee is deducted from the amount sent
-        uint fee = transferFeeIncurred(value);
+        uint fee = safeSub(value, priceToSpend(value));
         uint amountReceived = safeSub(value, fee);
 
         // Reduce the allowance by the amount we're transferring
@@ -273,8 +272,7 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
         require(to != address(0));
 
         // The fee is added to the amount sent
-        uint total = transferPlusFee(value);
-        uint fee = safeSub(total, value);
+        uint fee = transferFeeIncurred(value);
 
         return _internalTransfer(sender, to, value, fee);
     }

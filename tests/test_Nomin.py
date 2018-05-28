@@ -147,7 +147,8 @@ class TestNomin(HavvenTestCase):
 
     def test_ensureCompleteTransfer(self):
         amount = 10 * UNIT
-        fee = amount * 0.0015
+        amountToSend = amount / 1.0015
+        fee = amount - amountToSend
         sender = fresh_account()
         receiver = fresh_account()
 
