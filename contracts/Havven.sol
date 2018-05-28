@@ -539,10 +539,10 @@ contract Havven is DestructibleExternStateToken {
         address sender = messageSender;
         require(amount <= remainingIssuableNomins(sender));
         uint lastTot = nomin.totalSupply();
-        uint issued = nominsIssued[sender];
+        uint preIssued = nominsIssued[sender];
         nomin.issue(sender, amount);
-        nominsIssued[sender] = safeAdd(issued, amount);
-        updateIssuanceData(sender, issued, lastTot);
+        nominsIssued[sender] = safeAdd(preIssued, amount);
+        updateIssuanceData(sender, preIssued, lastTot);
     }
 
     function issueMaxNomins()
@@ -563,12 +563,12 @@ contract Havven is DestructibleExternStateToken {
         address sender = messageSender;
 
         uint lastTot = nomin.totalSupply();
-        uint issued = nominsIssued[sender];
+        uint preIssued = nominsIssued[sender];
         /* nomin.burn does a safeSub on balance (so it will revert if there are not enough nomins). */
         nomin.burn(sender, amount);
         /* This safe sub ensures amount <= number issued */
-        nominsIssued[sender] = safeSub(issued, amount);
-        updateIssuanceData(sender, issued, lastTot);
+        nominsIssued[sender] = safeSub(preIssued, amount);
+        updateIssuanceData(sender, preIssued, lastTot);
     }
 
     /**
