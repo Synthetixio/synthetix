@@ -96,10 +96,14 @@ class TestHavven(HavvenTestCase):
         cls.havven = PublicHavvenInterface(cls.proxied_havven, "Havven")        
         cls.nomin = PublicNominInterface(cls.proxied_nomin, "Nomin")
 
+        cls.unproxied_havven = PublicHavvenInterface(cls.havven_contract, "UnproxiedHavven")
+
         cls.initial_time = cls.havven.lastFeePeriodStartTime()
         cls.time_fast_forwarded = 0
 
         cls.base_havven_price = UNIT
+
+        cls.sd_duration = 4 * 7 * 24 * 60 * 60
 
     def havven_updatePrice(self, sender, price, time):
         return mine_tx(self.havven_contract.functions.updatePrice(price, time).transact({'from': sender}), 'updatePrice', 'Havven')
@@ -631,6 +635,41 @@ class TestHavven(HavvenTestCase):
     # rolloverFee - tested above, indirectly
 
     # withdrawFees - tested in test_FeeCollection.py
+
+    def test_selfDestruct(self):
+        owner = self.havven.owner()
+        notowner = DUMMY
+        self.assertNotEqual(owner, notowner)
+
+        # The contract cannot be self-destructed before the SD has been initiated.
+        self.assertReverts(self.unproxied_havven.selfDestruct, owner)
+
+        tx = self.unproxied_havven.initiateSelfDestruct(owner)
+        self.assertEventEquals(self.event_map, tx.logs[0],
+                               "SelfDestructInitiated",
+                               {"selfDestructDelay": self.sd_duration},
+                               location=self.havven_contract.address)
+
+        # Neither owners nor non-owners may not self-destruct before the time has elapsed.
+        self.assertReverts(self.unproxied_havven.selfDestruct, notowner)
+        self.assertReverts(self.unproxied_havven.selfDestruct, owner)
+        fast_forward(seconds=self.sd_duration, days=-1)
+        self.assertReverts(self.unproxied_havven.selfDestruct, notowner)
+        self.assertReverts(self.unproxied_havven.selfDestruct, owner)
+        fast_forward(seconds=10, days=1)
+
+        # Non-owner should not be able to self-destruct even if the time has elapsed.
+        self.assertReverts(self.unproxied_havven.selfDestruct, notowner)
+        address = self.unproxied_havven.contract.address
+        tx = self.unproxied_havven.selfDestruct(owner)
+
+        self.assertEventEquals(self.event_map, tx.logs[0],
+                               "SelfDestructed",
+                               {"beneficiary": owner},
+                               location=self.havven_contract.address)
+        # Check contract not exist 
+        self.assertEqual(W3.eth.getCode(address), b'\x00')
+
 
     ###
     # Modifiers

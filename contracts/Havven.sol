@@ -126,6 +126,7 @@ pragma solidity 0.4.24;
 
 
 import "contracts/ExternStateToken.sol";
+import "contracts/SelfDestructible.sol";
 import "contracts/Nomin.sol";
 import "contracts/HavvenEscrow.sol";
 import "contracts/TokenState.sol";
@@ -137,7 +138,7 @@ import "contracts/SelfDestructible.sol";
  * @notice The Havven contracts does not only facilitate transfers and track balances,
  * but it also computes the quantity of fees each havven holder is entitled to.
  */
-contract Havven is ExternStateToken {
+contract Havven is ExternStateToken, SelfDestructible {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -206,6 +207,8 @@ contract Havven is ExternStateToken {
     string constant TOKEN_NAME = "Havven";
     string constant TOKEN_SYMBOL = "HAV";
 
+    uint constant SELF_DESTRUCT_DELAY = 4 weeks;
+    
     /* ========== CONSTRUCTOR ========== */
 
     /**
@@ -216,6 +219,7 @@ contract Havven is ExternStateToken {
      */
     constructor(address _proxy, TokenState _tokenState, address _owner, address _oracle, uint _price)
         ExternStateToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, _tokenState, _owner)
+        SelfDestructible(_owner, _owner, SELF_DESTRUCT_DELAY)
         /* Owned is initialised in ExternStateToken */
         public
     {

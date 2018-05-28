@@ -662,7 +662,7 @@ class TestNomin(HavvenTestCase):
         self.assertNotEqual(owner, notowner)
 
         # The contract cannot be self-destructed before the SD has been initiated.
-        self.assertReverts(self.nomin.selfDestruct, owner)
+        self.assertReverts(self.unproxied_nomin.selfDestruct, owner)
 
         tx = self.unproxied_nomin.initiateSelfDestruct(owner)
         self.assertEventEquals(self.nomin_event_dict, tx.logs[0],
@@ -687,10 +687,8 @@ class TestNomin(HavvenTestCase):
                                "SelfDestructed",
                                {"beneficiary": owner},
                                location=self.nomin_contract.address)
-
         # Check contract not exist 
         self.assertEqual(W3.eth.getCode(address), b'\x00')
-
 
     def test_event_CourtUpdated(self):
         new_court = fresh_account()
