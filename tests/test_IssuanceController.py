@@ -245,17 +245,24 @@ class TestIssuanceController(HavvenTestCase):
         # Set up the contract so it contains some nomins for folks to convert Ether for
         self.nomin.giveNomins(self.contractOwner, self.issuanceControllerContract.address, 5000 * UNIT)
 
+        # Set up an exchanger so they have 1 ETH to exchange with
         someExchanger = self.participantAddresses[0]
         amountOfEthToExchange = int(1 * UNIT)
         someExchangersBeforeBalance = self.nomin.balanceOf(someExchanger)
         startingNominsInContract = self.nomin.balanceOf(self.issuanceControllerContract.address)
-        nominsToBeWithdrawnFromContract = int(int(amountOfEthToExchange * self.usdToEthPrice) / UNIT)
-        feesToPayInNomins = self.nomin.transferFeeIncurred(nominsToBeWithdrawnFromContract)
+
+        # The exchange parameters
+        nominsToBeWithdrawnFromContract = int(amountOfEthToExchange * self.usdToEthPrice / UNIT)
+        nominsReceived = self.nomin.priceToSpend(nominsToBeWithdrawnFromContract)
+        feesToPayInNomins = nominsToBeWithdrawnFromContract - nominsReceived 
+        
+        # Do the exchange
         txr = self.issuanceController.exchangeForNomins(someExchanger, amountOfEthToExchange)
+
+        # Ensure we have the right amount left in the contract
         endingNominsInContract = self.nomin.balanceOf(self.issuanceControllerContract.address)
         self.assertEqual(startingNominsInContract, endingNominsInContract + nominsToBeWithdrawnFromContract)
+
+        # Ensure the exchanger received the amount - fee
         someExchangersAfterBalance = self.nomin.balanceOf(someExchanger)
         self.assertEqual(someExchangersBeforeBalance + nominsToBeWithdrawnFromContract - feesToPayInNomins, someExchangersAfterBalance)
-
-
-        
