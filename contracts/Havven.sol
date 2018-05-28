@@ -487,31 +487,34 @@ contract Havven is DestructibleExternStateToken {
     {
 
         uint currentBalanceSum = preIssuance.currentBalanceSum;
-        uint lastAvgBal = preIssuance.lastAverageBalance;
+        uint lastAverageBalance = preIssuance.lastAverageBalance;
         uint lastModified = preIssuance.lastModified;
 
         if (lastModified < feePeriodStartTime) {
             if (lastModified < lastFeePeriodStartTime) {
-                /* The balance did nothing in the last fee period, so the average balance
-                 * in this period is their pre-transfer balance. */
-                lastAvgBal = preBalance;
+                /* The balance was last updated before the previous fee period, so the average
+                 * balance in this period is their pre-transfer balance. */
+                lastAverageBalance = preBalance;
             } else {
-                /* No overflow risk here: the failed guard implies (lastFeePeriodStartTime <= lastModified). */
-                lastAvgBal = safeDiv(
-                    safeAdd(currentBalanceSum, safeMul(preBalance, (feePeriodStartTime - lastModified))),
-                    (feePeriodStartTime - lastFeePeriodStartTime)
-                );
+                /* The balance was last updated during the previous fee period. */
+                /* No overflow or zero denominator problems, since lastFeePeriodStartTime < feePeriodStartTime < lastModified. 
+                 * implies these quantities are strictly positive. */
+                uint timeUpToRollover = feePeriodStartTime - lastModified;
+                uint lastFeePeriodDuration = feePeriodStartTime - lastFeePeriodStartTime;
+                uint lastBalanceSum = safeAdd(currentBalanceSum, safeMul(preBalance, timeUpToRollover));
+                lastAverageBalance = lastBalanceSum / lastFeePeriodDuration;
             }
             /* Roll over to the next fee period. */
             currentBalanceSum = safeMul(preBalance, now - feePeriodStartTime);
         } else {
+            /* The balance was last updated during the current fee period. */
             currentBalanceSum = safeAdd(
                 currentBalanceSum,
                 safeMul(preBalance, now - lastModified)
             );
         }
 
-        return IssuanceData(currentBalanceSum, lastAvgBal, now);
+        return IssuanceData(currentBalanceSum, lastAverageBalance, now);
     }
 
     /**
