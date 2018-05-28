@@ -21,7 +21,7 @@ A partial ERC20 token contract, designed to operate with a proxy.
 To produce a complete ERC20 token, transfer and transferFrom
 tokens must be implemented, using the provided _byProxy internal
 functions.
-This contract utilises an external state for upgradability.
+This contract utilises an external state for upgradeability.
 
 -----------------------------------------------------------------
 */
@@ -52,6 +52,7 @@ contract ExternStateToken is SafeDecimalMath, Proxyable {
 
     /**
      * @dev Constructor.
+     * @param _proxy The proxy associated with this contract.
      * @param _name Token's ERC20 name.
      * @param _symbol Token's ERC20 symbol.
      * @param _totalSupply The total supply of the token.
@@ -98,9 +99,10 @@ contract ExternStateToken is SafeDecimalMath, Proxyable {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
-     * @notice Change the address of the TokenState contract.
-     * @dev Only the contract owner may operate this function.
-     */
+     * @notice Set the address of the TokenState contract.
+     * @dev This can be used to "pause" transfer functionality, by pointing the tokenState at 0x000..
+     * as balances would be unreachable.
+     */ 
     function setTokenState(TokenState _tokenState)
         external
         optionalProxy_onlyOwner

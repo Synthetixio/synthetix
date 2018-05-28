@@ -36,26 +36,21 @@ import "contracts/Owned.sol";
 contract SelfDestructible is Owned {
 	
 	uint public initiationTime;
-	uint public selfDestructDelay;
 	bool public selfDestructInitiated;
 	address public selfDestructBeneficiary;
-	uint constant MAX_SELFDESTRUCT_DELAY = 52 weeks;
+	uint public constant SELFDESTRUCT_DELAY = 4 weeks;
 
 	/**
 	 * @dev Constructor
 	 * @param _owner The account which controls this contract.
-	 * @param _beneficiary The account to forward all ether in this contract upon self-destruction
-	 * @param _delay The time to wait after initiating self-destruction before it can be triggered.
 	 */
-	constructor(address _owner, address _beneficiary, uint _delay)
+	constructor(address _owner)
 	    Owned(_owner)
 	    public
 	{
-		require(_beneficiary != address(0));
-		require(_delay <= MAX_SELFDESTRUCT_DELAY);
-		selfDestructDelay = _delay;
-		selfDestructBeneficiary = _beneficiary;
-		emit SelfDestructBeneficiaryUpdated(_beneficiary);
+		require(_owner != address(0));
+		selfDestructBeneficiary = _owner;
+		emit SelfDestructBeneficiaryUpdated(_owner);
 	}
 
 	/**
@@ -83,7 +78,7 @@ contract SelfDestructible is Owned {
 	{
 		initiationTime = now;
 		selfDestructInitiated = true;
-		emit SelfDestructInitiated(selfDestructDelay);
+		emit SelfDestructInitiated(SELFDESTRUCT_DELAY);
 	}
 
 	/**
@@ -108,7 +103,7 @@ contract SelfDestructible is Owned {
 		external
 		onlyOwner
 	{
-		require(selfDestructInitiated && initiationTime + selfDestructDelay < now);
+		require(selfDestructInitiated && initiationTime + SELFDESTRUCT_DELAY < now);
 		address beneficiary = selfDestructBeneficiary;
 		emit SelfDestructed(beneficiary);
 		selfdestruct(beneficiary);

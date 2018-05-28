@@ -54,20 +54,20 @@ contract Nomin is ExternStateFeeToken, SelfDestructible {
     mapping(address => bool) public frozen;
 
     // Nomin transfers incur a 15 bp fee by default.
-    uint constant TRANSFER_FEE = 15 * UNIT / 10000;
+    uint constant TRANSFER_FEE_RATE = 15 * UNIT / 10000;
     string constant TOKEN_NAME = "USD Nomins";
     string constant TOKEN_SYMBOL = "nUSD";
 
-    uint constant SELF_DESTRUCT_DELAY = 4 weeks;
+    //uint constant SELF_DESTRUCT_DELAY = 4 weeks;
 
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _proxy, Havven _havven, address _owner)
-        ExternStateFeeToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL,
-                            TRANSFER_FEE,
+        ExternStateFeeToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL, 0, // Zero nomins initially exist.
+                            TRANSFER_FEE_RATE,
                             _havven, // The havven contract is the fee authority.
                             _owner)
-        SelfDestructible(_owner, _owner, SELF_DESTRUCT_DELAY)
+        SelfDestructible(_owner)
         public
     {
         require(_proxy != 0 && address(_havven) != 0 && _owner != 0);

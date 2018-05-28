@@ -4,11 +4,11 @@ FILE INFORMATION
 -----------------------------------------------------------------
 
 file:       ExternStateFeeToken.sol
-version:    1.1
+version:    1.2
 author:     Anton Jurisevic
             Dominic Romanowski
 
-date:       2018-05-15
+date:       2018-05-29
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -24,7 +24,7 @@ order to produce an ERC20-compliant token.
 These fees accrue into a pool, from which a nominated authority
 may withdraw.
 
-This contract utilises a state for upgradability purposes.
+This contract utilises an external state for upgradeability.
 
 -----------------------------------------------------------------
 */
@@ -32,27 +32,18 @@ This contract utilises a state for upgradability purposes.
 pragma solidity 0.4.24;
 
 
-import "contracts/SafeDecimalMath.sol";
-import "contracts/Proxyable.sol";
-import "contracts/TokenState.sol";
+import "contracts/ExternStateToken.sol";
 
 
 /**
  * @title ERC20 Token contract, with detached state.
  * Additionally charges fees on each transfer.
  */
-contract ExternStateFeeToken is SafeDecimalMath, Proxyable {
+contract ExternStateFeeToken is ExternStateToken {
 
     /* ========== STATE VARIABLES ========== */
 
-    /* Stores balances and allowances. */
-    TokenState public tokenState;
-
-    /* Other ERC20 fields.
-     * Note that the decimals field is defined in SafeDecimalMath. */
-    string public name;
-    string public symbol;
-    uint public totalSupply;
+    /* ERC20 members are declared in ExternStateToken. */
 
     /* A percentage fee charged on each transfer. */
     uint public transferFeeRate;
@@ -66,21 +57,22 @@ contract ExternStateFeeToken is SafeDecimalMath, Proxyable {
 
     /**
      * @dev Constructor.
+     * @param _proxy The proxy associated with this contract.
      * @param _name Token's ERC20 name.
      * @param _symbol Token's ERC20 symbol.
+     * @param _totalSupply The total supply of the token.
      * @param _transferFeeRate The fee rate to charge on transfers.
      * @param _feeAuthority The address which has the authority to withdraw fees from the accumulated pool.
      * @param _owner The owner of this contract.
      */
-    constructor(address _proxy, string _name, string _symbol, uint _transferFeeRate, address _feeAuthority,
-                address _owner)
-        Proxyable(_proxy, _owner)
+    constructor(address _proxy, string _name, string _symbol, uint _totalSupply,
+                uint _transferFeeRate, address _feeAuthority, address _owner)
+        ExternStateToken(_proxy, _name, _symbol, _totalSupply,
+                         new TokenState(_owner, address(this)),
+                         _owner)
         public
     {
-        name = _name;
-        symbol = _symbol;
         feeAuthority = _feeAuthority;
-        tokenState = new TokenState(_owner, address(this));
 
         /* Constructed transfer fee rate should respect the maximum fee rate. */
         require(_transferFeeRate <= MAX_TRANSFER_FEE_RATE);
@@ -114,42 +106,7 @@ contract ExternStateFeeToken is SafeDecimalMath, Proxyable {
         emitFeeAuthorityUpdated(_feeAuthority);
     }
 
-    /**
-     * @notice Set the address of the TokenState contract.
-     * @dev This can be used to "pause" transfer functionality, by pointing the tokenState at 0x000..
-     * as balances would be unreachable
-     */
-    function setTokenState(TokenState _tokenState)
-        external
-        optionalProxy_onlyOwner
-    {
-        tokenState = _tokenState;
-        emitTokenStateUpdated(_tokenState);
-    }
-
     /* ========== VIEWS ========== */
-
-    /**
-     * @notice Query an account's balance from the state
-     */
-    function balanceOf(address account)
-        public
-        view
-        returns (uint)
-    {
-        return tokenState.balanceOf(account);
-    }
-
-    /**
-     * @notice Query the allowance granted by one account to another.
-     */
-    function allowance(address owner, address spender)
-        public
-        view
-        returns (uint)
-    {
-        return tokenState.allowance(owner, spender);
-    }
 
     /**
      * @notice Calculate the Fee charged on top of a value being sent
@@ -260,22 +217,6 @@ contract ExternStateFeeToken is SafeDecimalMath, Proxyable {
     }
 
     /**
-     * @notice ERC20 friendly approve function.
-     */
-    function approve(address spender, uint value)
-        external
-        optionalProxy
-        returns (bool)
-    {
-        address sender = messageSender;
-
-        tokenState.setAllowance(sender, spender, value);
-        emitApproval(sender, spender, value);
-
-        return true;
-    }
-
-    /**
      * @notice Withdraw tokens from the fee pool into a given account.
      * @dev Only the fee authority may call this.
      */
@@ -336,18 +277,6 @@ contract ExternStateFeeToken is SafeDecimalMath, Proxyable {
 
     /* ========== EVENTS ========== */
 
-    event Transfer(address indexed from, address indexed to, uint value);
-    bytes32 constant TRANSFER_SIG = keccak256("Transfer(address,address,uint256)");
-    function emitTransfer(address from, address to, uint value) internal {
-        proxy._emit(abi.encode(value), 3, TRANSFER_SIG, bytes32(from), bytes32(to), 0);
-    }
-
-    event Approval(address indexed owner, address indexed spender, uint value);
-    bytes32 constant APPROVAL_SIG = keccak256("Approval(address,address,uint256)");
-    function emitApproval(address owner, address spender, uint value) internal {
-        proxy._emit(abi.encode(value), 3, APPROVAL_SIG, bytes32(owner), bytes32(spender), 0);
-    }
-
     event TransferFeeRateUpdated(uint newFeeRate);
     bytes32 constant TRANSFERFEERATEUPDATED_SIG = keccak256("TransferFeeRateUpdated(uint256)");
     function emitTransferFeeRateUpdated(uint newFeeRate) internal {
@@ -359,12 +288,6 @@ contract ExternStateFeeToken is SafeDecimalMath, Proxyable {
     function emitFeeAuthorityUpdated(address newFeeAuthority) internal {
         proxy._emit(abi.encode(newFeeAuthority), 1, FEEAUTHORITYUPDATED_SIG, 0, 0, 0);
     } 
-
-    event TokenStateUpdated(address newTokenState);
-    bytes32 constant TOKENSTATEUPDATED_SIG = keccak256("TokenStateUpdated(address)");
-    function emitTokenStateUpdated(address newTokenState) internal {
-        proxy._emit(abi.encode(newTokenState), 1, TOKENSTATEUPDATED_SIG, 0, 0, 0);
-    }
 
     event FeesWithdrawn(address indexed account, uint value);
     bytes32 constant FEESWITHDRAWN_SIG = keccak256("FeesWithdrawn(address,uint256)");

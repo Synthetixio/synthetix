@@ -207,7 +207,7 @@ contract Havven is ExternStateToken, SelfDestructible {
     string constant TOKEN_NAME = "Havven";
     string constant TOKEN_SYMBOL = "HAV";
 
-    uint constant SELF_DESTRUCT_DELAY = 4 weeks;
+    //uint constant SELF_DESTRUCT_DELAY = 4 weeks;
     
     /* ========== CONSTRUCTOR ========== */
 
@@ -219,7 +219,7 @@ contract Havven is ExternStateToken, SelfDestructible {
      */
     constructor(address _proxy, TokenState _tokenState, address _owner, address _oracle, uint _price)
         ExternStateToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, _tokenState, _owner)
-        SelfDestructible(_owner, _owner, SELF_DESTRUCT_DELAY)
+        SelfDestructible(_owner)
         /* Owned is initialised in ExternStateToken */
         public
     {
