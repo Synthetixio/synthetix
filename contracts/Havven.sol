@@ -610,9 +610,10 @@ contract Havven is DestructibleExternStateToken {
             return 0;
         }
         if (escrow != HavvenEscrow(0)) {
-            return safeMul_dec(HAVtoUSD(safeAdd(balanceOf(issuer), escrow.balanceOf(issuer))), issuanceRatio);
+            uint totalOwnedHavvens = safeAdd(tokenState.balanceOf(issuer), escrow.balanceOf(issuer));
+            return safeMul_dec(HAVtoUSD(totalOwnedHavvens), issuanceRatio);
         } else {
-            return safeMul_dec(HAVtoUSD(balanceOf(issuer)), issuanceRatio);
+            return safeMul_dec(HAVtoUSD(tokenState.balanceOf(issuer)), issuanceRatio);
         }
     }
 
