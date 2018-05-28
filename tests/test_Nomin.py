@@ -161,7 +161,7 @@ class TestNomin(HavvenTestCase):
         # Ensure the result of the transfer is correct.
         self.assertEqual(self.nomin.balanceOf(sender), 0)
         self.assertEqual(self.nomin.balanceOf(receiver), amount - fee)
-        self.assertEqual(self.nomin.balanceOf(self.nomin.address), fee)
+        self.assertEqual(self.nomin.feePool(), fee)
 
     def test_transferEventEmits(self):
         amount = 5 * UNIT

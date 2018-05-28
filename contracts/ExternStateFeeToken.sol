@@ -176,7 +176,7 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
      * a specified value.
      */
     function transferPlusFee(uint value)
-        external
+        public 
         view
         returns (uint)
     {
@@ -209,6 +209,26 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
+     * @notice Base of transfer functions
+     */
+    function _internalTransfer(address sender, address to, uint amount, uint fee)
+        internal
+        returns (bool)
+    {
+        require(to != address(0));
+
+        // Insufficient balance will be handled by the safe subtraction.
+        state.setBalanceOf(sender, safeSub(state.balanceOf(sender), safeAdd(amount, fee)));
+        state.setBalanceOf(to, amount);
+        state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), fee));
+
+        emitTransfer(sender, to, amount);
+        emitTransfer(sender, address(this), fee);
+
+        return true;
+    }
+
+    /**
      * @notice ERC20 friendly transfer function.
      */
     function _transfer_byProxy(address sender, address to, uint value)
@@ -217,20 +237,11 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
     {
         require(to != address(0));
 
-        // The fee is deducted from the sender's balance, in addition to
-        // the transferred quantity.
+        // The fee is deducted from the amount sent
         uint fee = transferFeeIncurred(value);
-        uint totalCharge = safeAdd(value, fee);
+        uint amountReceived = safeSub(value, fee);
 
-        // Insufficient balance will be handled by the safe subtraction.
-        state.setBalanceOf(sender, safeSub(state.balanceOf(sender), totalCharge));
-        state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
-        state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), fee));
-
-        emitTransfer(sender, to, value);
-        emitTransfer(sender, address(this), fee);
-
-        return true;
+        return _internalTransfer(sender, to, amountReceived, fee);
     }
 
     /**
@@ -242,21 +253,49 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
     {
         require(to != address(0));
 
-        // The fee is deducted from the sender's balance, in addition to
-        // the transferred quantity.
+        // The fee is deducted from the amount sent
         uint fee = transferFeeIncurred(value);
-        uint totalCharge = safeAdd(value, fee);
+        uint amountReceived = safeSub(value, fee);
 
-        // Insufficient balance will be handled by the safe subtraction.
-        state.setBalanceOf(from, safeSub(state.balanceOf(from), totalCharge));
-        state.setAllowance(from, sender, safeSub(state.allowance(from, sender), totalCharge));
-        state.setBalanceOf(to, safeAdd(state.balanceOf(to), value));
-        state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), fee));
+        // Reduce the allowance by the amount we're transferring
+        state.setAllowance(from, sender, safeSub(state.allowance(from, sender), value));
 
-        emitTransfer(from, to, value);
-        emitTransfer(from, address(this), fee);
+        return _internalTransfer(from, to, amountReceived, fee);
+    }
 
-        return true;
+    /**
+     * @notice Ability to transfer where the sender pays the fees (not ERC20)
+     */
+    function _transferSenderPaysFee_byProxy(address sender, address to, uint value)
+        internal
+        returns (bool)
+    {
+        require(to != address(0));
+
+        // The fee is added to the amount sent
+        uint total = transferPlusFee(value);
+        uint fee = safeSub(total, value);
+
+        return _internalTransfer(sender, to, value, fee);
+    }
+
+   /**
+     * @notice Ability to transferFrom where they sender pays the fees (not ERC20).
+     */
+    function _transferFromSenderPaysFee_byProxy(address sender, address from, address to, uint value)
+        internal
+        returns (bool)
+    {
+        require(to != address(0));
+
+        // The fee is added to the amount sent
+        uint total = transferPlusFee(value);
+        uint fee = safeSub(total, value);
+
+        // Reduce the allowance by the amount we're transferring
+        state.setAllowance(from, sender, safeSub(state.allowance(from, sender), total));
+
+        return _internalTransfer(from, to, value, fee);
     }
 
     /**
