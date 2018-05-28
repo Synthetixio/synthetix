@@ -59,7 +59,7 @@ When a new transfer occurs at time n, the balance being p,
 we must:
 
   - Add the area p * (n - t) to the total area recorded so far
-  - Update the last transfer time to p
+  - Update the last transfer time to n
 
 So if this graph represents the entire current fee period,
 the average havvens held so far is ((t-f)*s + (n-t)*p) / (n-f).
@@ -162,7 +162,10 @@ contract Havven is DestructibleExternStateToken {
     /* The time the last fee period began */
     uint public lastFeePeriodStartTime;
 
-    /* Fee periods will roll over in no shorter a time than this.. */
+    /* Fee periods will roll over in no shorter a time than this. 
+     * The fee period cannot actually roll over until a fee-relevant
+     * operation such as withdrawal or a fee period duration update occurs,
+     * so this is just a target, and the actual duration may be slightly longer. */
     uint public feePeriodDuration = 4 weeks;
     /* ...and must target between 1 day and six months. */
     uint constant MIN_FEE_PERIOD_DURATION = 1 days;
@@ -193,9 +196,9 @@ contract Havven is DestructibleExternStateToken {
     /* No more nomins may be issued than the value of havvens backing them. */
     uint constant MAX_ISSUANCE_RATIO = UNIT;
 
-    /* whether the address can issue nomins or not */
+    /* Whether the address can issue nomins or not. */
     mapping(address => bool) public isIssuer;
-    /* the number of nomins the user has issued */
+    /* The number of currently-outstanding nomins the user has issued. */
     mapping(address => uint) public nominsIssued;
 
     uint constant HAVVEN_SUPPLY = 1e8 * UNIT;
@@ -207,12 +210,12 @@ contract Havven is DestructibleExternStateToken {
 
     /**
      * @dev Constructor
-     * @param _state A pre-populated contract containing token balances.
+     * @param _tokenState A pre-populated contract containing token balances.
      * If the provided address is 0x0, then a fresh one will be constructed with the contract owning all tokens.
      * @param _owner The owner of this contract.
      */
-    constructor(address _proxy, TokenState _state, address _owner, address _oracle, uint _price)
-        DestructibleExternStateToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, _state, _owner)
+    constructor(address _proxy, TokenState _tokenState, address _owner, address _oracle, uint _price)
+        DestructibleExternStateToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, _tokenState, _owner)
         /* Owned is initialised in DestructibleExternStateToken */
         public
     {
@@ -263,7 +266,7 @@ contract Havven is DestructibleExternStateToken {
                                duration <= MAX_FEE_PERIOD_DURATION);
         feePeriodDuration = duration;
         emitFeePeriodDurationUpdated(duration);
-        checkFeePeriodRollover();
+        rolloverFeePeriodIfElapsed();
     }
 
     /**
@@ -403,8 +406,7 @@ contract Havven is DestructibleExternStateToken {
     }
 
     /**
-     * @notice ERC20 transferFrom function, which also performs
-     * fee entitlement recomputation whenever balances are updated.
+     * @notice ERC20 transferFrom function.
      */
     function transferFrom(address from, address to, uint value)
         public
@@ -429,7 +431,7 @@ contract Havven is DestructibleExternStateToken {
         optionalProxy
     {
         address sender = messageSender;
-        checkFeePeriodRollover();
+        rolloverFeePeriodIfElapsed();
         /* Do not deposit fees into frozen accounts. */
         require(!nomin.frozen(sender));
 
@@ -438,12 +440,17 @@ contract Havven is DestructibleExternStateToken {
 
         /* Only allow accounts to withdraw fees once per period. */
         require(!hasWithdrawnFees[sender]);
-        uint feesOwed;
 
+        uint feesOwed;
         uint lastTotalIssued = totalIssuanceData.lastAverageBalance;
 
         if (lastTotalIssued > 0) {
-            feesOwed = safeDiv_dec(safeMul_dec(issuanceData[sender].lastAverageBalance, lastFeesCollected), lastTotalIssued);
+            /* Sender receives a share of last period's collected fees proportional
+             * with their average fraction of the last period's issued nomins. */
+            feesOwed = safeDiv_dec(
+                safeMul_dec(issuanceData[sender].lastAverageBalance, lastFeesCollected),
+                lastTotalIssued
+            );
         }
 
         hasWithdrawnFees[sender] = true;
@@ -465,51 +472,54 @@ contract Havven is DestructibleExternStateToken {
         internal
     {
         /* update the total balances first */
-        totalIssuanceData = rolloverBalances(lastTotalSupply, totalIssuanceData);
+        totalIssuanceData = updatedIssuanceData(lastTotalSupply, totalIssuanceData);
 
         if (issuanceData[account].lastModified < feePeriodStartTime) {
             hasWithdrawnFees[account] = false;
         }
 
-        issuanceData[account] = rolloverBalances(preBalance, issuanceData[account]);
+        issuanceData[account] = updatedIssuanceData(preBalance, issuanceData[account]);
     }
 
 
     /**
      * @notice Compute the new IssuanceData on the old balance
      */
-    function rolloverBalances(uint preBalance, IssuanceData preIssuance)
+    function updatedIssuanceData(uint preBalance, IssuanceData preIssuance)
         internal
         view
         returns (IssuanceData)
     {
 
         uint currentBalanceSum = preIssuance.currentBalanceSum;
-        uint lastAvgBal = preIssuance.lastAverageBalance;
+        uint lastAverageBalance = preIssuance.lastAverageBalance;
         uint lastModified = preIssuance.lastModified;
 
         if (lastModified < feePeriodStartTime) {
             if (lastModified < lastFeePeriodStartTime) {
-                /* The balance did nothing in the last fee period, so the average balance
-                 * in this period is their pre-transfer balance. */
-                lastAvgBal = preBalance;
+                /* The balance was last updated before the previous fee period, so the average
+                 * balance in this period is their pre-transfer balance. */
+                lastAverageBalance = preBalance;
             } else {
-                /* No overflow risk here: the failed guard implies (lastFeePeriodStartTime <= lastModified). */
-                lastAvgBal = safeDiv(
-                    safeAdd(currentBalanceSum, safeMul(preBalance, (feePeriodStartTime - lastModified))),
-                    (feePeriodStartTime - lastFeePeriodStartTime)
-                );
+                /* The balance was last updated during the previous fee period. */
+                /* No overflow or zero denominator problems, since lastFeePeriodStartTime < feePeriodStartTime < lastModified. 
+                 * implies these quantities are strictly positive. */
+                uint timeUpToRollover = feePeriodStartTime - lastModified;
+                uint lastFeePeriodDuration = feePeriodStartTime - lastFeePeriodStartTime;
+                uint lastBalanceSum = safeAdd(currentBalanceSum, safeMul(preBalance, timeUpToRollover));
+                lastAverageBalance = lastBalanceSum / lastFeePeriodDuration;
             }
             /* Roll over to the next fee period. */
             currentBalanceSum = safeMul(preBalance, now - feePeriodStartTime);
         } else {
+            /* The balance was last updated during the current fee period. */
             currentBalanceSum = safeAdd(
                 currentBalanceSum,
                 safeMul(preBalance, now - lastModified)
             );
         }
 
-        return IssuanceData(currentBalanceSum, lastAvgBal, now);
+        return IssuanceData(currentBalanceSum, lastAverageBalance, now);
     }
 
     /**
@@ -537,10 +547,10 @@ contract Havven is DestructibleExternStateToken {
         address sender = messageSender;
         require(amount <= remainingIssuableNomins(sender));
         uint lastTot = nomin.totalSupply();
-        uint issued = nominsIssued[sender];
+        uint preIssued = nominsIssued[sender];
         nomin.issue(sender, amount);
-        nominsIssued[sender] = safeAdd(issued, amount);
-        updateIssuanceData(sender, issued, lastTot);
+        nominsIssued[sender] = safeAdd(preIssued, amount);
+        updateIssuanceData(sender, preIssued, lastTot);
     }
 
     function issueMaxNomins()
@@ -561,21 +571,20 @@ contract Havven is DestructibleExternStateToken {
         address sender = messageSender;
 
         uint lastTot = nomin.totalSupply();
-        uint issued = nominsIssued[sender];
+        uint preIssued = nominsIssued[sender];
         /* nomin.burn does a safeSub on balance (so it will revert if there are not enough nomins). */
         nomin.burn(sender, amount);
         /* This safe sub ensures amount <= number issued */
-        nominsIssued[sender] = safeSub(issued, amount);
-        updateIssuanceData(sender, issued, lastTot);
+        nominsIssued[sender] = safeSub(preIssued, amount);
+        updateIssuanceData(sender, preIssued, lastTot);
     }
 
     /**
      * @notice Check if the fee period has rolled over. If it has, set the new fee period start
-     * time, and collect fees from the nomin contract.
+     * time, and record the fees collected in the nomin contract.
      */
-    function checkFeePeriodRollover()
+    function rolloverFeePeriodIfElapsed()
         public
-        optionalProxy
     {
         /* If the fee period has rolled over... */
         if (now >= feePeriodStartTime + feePeriodDuration) {
@@ -648,7 +657,7 @@ contract Havven is DestructibleExternStateToken {
         returns (uint)
     {
         uint locked = lockedHavvens(account);
-        uint bal = state.balanceOf(account);
+        uint bal = tokenState.balanceOf(account);
         if (escrow != address(0)) {
             bal += escrow.balanceOf(account);
         }
@@ -698,7 +707,7 @@ contract Havven is DestructibleExternStateToken {
         emitPriceUpdated(newPrice, timeSent);
 
         /* Check the fee period rollover within this as the price should be pushed every 15min. */
-        checkFeePeriodRollover();
+        rolloverFeePeriodIfElapsed();
     }
 
     /**

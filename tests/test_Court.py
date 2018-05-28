@@ -259,9 +259,9 @@ class TestCourt(HavvenTestCase):
 
         # Fast forward to update the vote weight.
         fast_forward(fee_period + 1)
-        self.havven.checkFeePeriodRollover(DUMMY)
+        self.havven.rolloverFeePeriodIfElapsed(DUMMY)
         fast_forward(fee_period + 1)
-        self.havven.checkFeePeriodRollover(DUMMY)
+        self.havven.rolloverFeePeriodIfElapsed(DUMMY)
         self.havven.recomputeLastAverageBalance(voter, voter)
 
         address_pattern = "0x" + "0" * 39 + "{}"
@@ -281,10 +281,10 @@ class TestCourt(HavvenTestCase):
         self.allow_acc_max_vote(voter)
 
         fast_forward(fee_period + 1)
-        self.havven.checkFeePeriodRollover(MASTER)
+        self.havven.rolloverFeePeriodIfElapsed(MASTER)
         # Fast forward to update the vote weight.
         fast_forward(fee_period + 1)
-        self.havven.checkFeePeriodRollover(MASTER)
+        self.havven.rolloverFeePeriodIfElapsed(MASTER)
         self.havven.recomputeLastAverageBalance(voter, voter)
 
         # Start three motions to close them in three different ways.
@@ -374,7 +374,7 @@ class TestCourt(HavvenTestCase):
 
         # Fast forward to update the vote weight.
         fast_forward(fee_period + 1)
-        self.havven.checkFeePeriodRollover(DUMMY)
+        self.havven.rolloverFeePeriodIfElapsed(DUMMY)
         self.havven.recomputeLastAverageBalance(voter, voter)
 
         # This should fail because no confiscation motion has begun.
@@ -421,9 +421,9 @@ class TestCourt(HavvenTestCase):
 
         # Fast forward to update the vote weights.
         fast_forward(fee_period + 1)
-        self.havven.checkFeePeriodRollover(DUMMY)
+        self.havven.rolloverFeePeriodIfElapsed(DUMMY)
         fast_forward(fee_period + 1)
-        self.havven.checkFeePeriodRollover(DUMMY)
+        self.havven.rolloverFeePeriodIfElapsed(DUMMY)
 
         # Begin a confiscation motion against the suspect.
         motion_id = self.get_motion_index(self.court.beginMotion(owner, suspect))
@@ -507,9 +507,9 @@ class TestCourt(HavvenTestCase):
 
         # Fast forward to update the voter's weight.
         fast_forward(fee_period + 1)
-        self.havven.checkFeePeriodRollover(MASTER)
+        self.havven.rolloverFeePeriodIfElapsed(MASTER)
         fast_forward(fee_period + 1)
-        self.havven.checkFeePeriodRollover(DUMMY)
+        self.havven.rolloverFeePeriodIfElapsed(DUMMY)
         self.havven.recomputeLastAverageBalance(voter, voter)
         self.havven.recomputeLastAverageBalance(insufficient_standing, insufficient_standing)
         self.havven.recomputeLastAverageBalance(sufficient_standing,sufficient_standing)
@@ -553,9 +553,9 @@ class TestCourt(HavvenTestCase):
 
         fee_period = self.havven.feePeriodDuration()
         fast_forward(fee_period + 1)
-        self.havven.checkFeePeriodRollover(DUMMY)
+        self.havven.rolloverFeePeriodIfElapsed(DUMMY)
         fast_forward(fee_period + 1)
-        self.havven.checkFeePeriodRollover(DUMMY)
+        self.havven.rolloverFeePeriodIfElapsed(DUMMY)
 
         # Start the vote itself
         motion_id = self.startVotingPeriod(owner, suspect)
@@ -595,9 +595,9 @@ class TestCourt(HavvenTestCase):
 
         # Fast forward to update the voter's weight.
         fast_forward(fee_period + 1)
-        self.havven.checkFeePeriodRollover(DUMMY)
+        self.havven.rolloverFeePeriodIfElapsed(DUMMY)
         fast_forward(fee_period + 1)
-        self.havven.checkFeePeriodRollover(DUMMY)
+        self.havven.rolloverFeePeriodIfElapsed(DUMMY)
 
         # Begin a confiscation motion against the suspect.
         motion_id = self.startVotingPeriod(owner, suspect)
@@ -640,9 +640,9 @@ class TestCourt(HavvenTestCase):
 
         # Fast forward two fee periods to update the voter's weight.
         fast_forward(fee_period + 1)
-        self.havven.checkFeePeriodRollover(DUMMY)
+        self.havven.rolloverFeePeriodIfElapsed(DUMMY)
         fast_forward(fee_period + 1)
-        self.havven.checkFeePeriodRollover(DUMMY)
+        self.havven.rolloverFeePeriodIfElapsed(DUMMY)
 
         # Begin a confiscation motion against the suspect.
         motion_id = self.startVotingPeriod(owner, suspect)
@@ -676,7 +676,7 @@ class TestCourt(HavvenTestCase):
         confirmation_period = self.court.confirmationPeriod()
         fee_period = self.havven.feePeriodDuration()
         fast_forward(fee_period + 1)
-        self.havven.checkFeePeriodRollover(DUMMY)
+        self.havven.rolloverFeePeriodIfElapsed(DUMMY)
         # Give some havven tokens to our voter.
         self.havven.endow(owner, voter, 1000)
         self.allow_acc_max_vote(voter)
@@ -685,9 +685,9 @@ class TestCourt(HavvenTestCase):
 
         self.assertEqual(self.havven.balanceOf(voter), 1000)
         fast_forward(fee_period + 1)
-        self.havven.checkFeePeriodRollover(DUMMY)
+        self.havven.rolloverFeePeriodIfElapsed(DUMMY)
         fast_forward(fee_period + 1)
-        self.havven.checkFeePeriodRollover(DUMMY)
+        self.havven.rolloverFeePeriodIfElapsed(DUMMY)
 
         self.havven.recomputeLastAverageBalance(voter, voter)
         self.havven.recomputeLastAverageBalance(voter2, voter2)
@@ -754,7 +754,7 @@ class TestCourt(HavvenTestCase):
 
         # Fast forward one fee period to update the voter's weight.
         fast_forward(fee_period + 1)
-        self.havven.checkFeePeriodRollover(DUMMY)
+        self.havven.rolloverFeePeriodIfElapsed(DUMMY)
 
         self.havven.recomputeLastAverageBalance(voter, voter)
         self.havven.recomputeLastAverageBalance(other, other)
@@ -806,7 +806,7 @@ class TestCourt(HavvenTestCase):
 
         # Fast forward two fee periods to update the voter's weight.
         fast_forward(fee_period + 1)
-        self.havven.checkFeePeriodRollover(DUMMY)
+        self.havven.rolloverFeePeriodIfElapsed(DUMMY)
 
         motion_id = self.startVotingPeriod(owner, guilty)
 
@@ -843,7 +843,7 @@ class TestCourt(HavvenTestCase):
 
         # Fast forward two fee periods to update the voter's weight.
         fast_forward(fee_period + 1)
-        self.havven.checkFeePeriodRollover(DUMMY)
+        self.havven.rolloverFeePeriodIfElapsed(DUMMY)
 
         # Cannot veto when there is no vote in progress.
         self.assertReverts(self.court.vetoMotion, owner, 10)
@@ -904,9 +904,9 @@ class TestCourt(HavvenTestCase):
 
         # Fast forward to update the vote weight.
         fast_forward(fee_period + 1)
-        self.havven.checkFeePeriodRollover(MASTER)
+        self.havven.rolloverFeePeriodIfElapsed(MASTER)
         fast_forward(fee_period + 1)
-        self.havven.checkFeePeriodRollover(DUMMY)
+        self.havven.rolloverFeePeriodIfElapsed(DUMMY)
 
         # Run a load of votes simultaneously:
         motions = []

@@ -12,7 +12,7 @@ class ExternStateFeeTokenInterface(SafeDecimalMathInterface, OwnedInterface):
         self.contract_name = name
 
         self.totalSupply = lambda: self.contract.functions.totalSupply().call()
-        self.state = lambda: self.contract.functions.state().call()
+        self.tokenState = lambda: self.contract.functions.tokenState().call()
         self.name = lambda: self.contract.functions.name().call()
         self.symbol = lambda: self.contract.functions.symbol().call()
         self.balanceOf = lambda account: self.contract.functions.balanceOf(account).call()
@@ -29,8 +29,8 @@ class ExternStateFeeTokenInterface(SafeDecimalMathInterface, OwnedInterface):
             self.contract.functions.setTransferFeeRate(new_fee_rate).transact({'from': sender}), "setTransferFeeRate", self.contract_name)
         self.setFeeAuthority = lambda sender, new_fee_authority: mine_tx(
             self.contract.functions.setFeeAuthority(new_fee_authority).transact({'from': sender}), "setFeeAuthority", self.contract_name)
-        self.setState = lambda sender, new_state: mine_tx(
-            self.contract.functions.setState(new_state).transact({'from': sender}), "setState", self.contract_name)
+        self.setTokenState = lambda sender, new_state: mine_tx(
+            self.contract.functions.setTokenState(new_state).transact({'from': sender}), "setTokenState", self.contract_name)
         self.transfer = lambda sender, to, value: mine_tx(
             self.contract.functions.transfer(to, value).transact({'from': sender}), "transfer", self.contract_name)
         self.approve = lambda sender, spender, value: mine_tx(

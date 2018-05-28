@@ -226,6 +226,13 @@ class TestHavvenEscrow(HavvenTestCase):
         self.escrow.purgeAccount(MASTER, alice)
         self.assertEqual(self.escrow.numVestingEntries(alice), 0)
 
+    def test_maxVestingEntries(self):
+        alice = fresh_account()
+        time = block_time()
+        self.havven.endow(MASTER, self.escrow.contract.address, 200 * UNIT)
+        self.escrow.addRegularVestingSchedule(MASTER, alice, time + to_seconds(weeks=52), 100 * UNIT, 21)
+        self.assertReverts(self.escrow.appendVestingEntry, MASTER, alice, time + to_seconds(weeks=52, days=1), UNIT)
+
     def test_getVestingScheduleEntry(self):
         alice = fresh_account()
         time = block_time()
@@ -322,11 +329,11 @@ class TestHavvenEscrow(HavvenTestCase):
 
         # Skip a period so we have a full period with no transfers
         fast_forward(self.havven.feePeriodDuration() + 100)
-        self.havven.checkFeePeriodRollover(MASTER)
+        self.havven.rolloverFeePeriodIfElapsed(MASTER)
         self.havven.recomputeLastAverageBalance(MASTER, MASTER)
         # Skip a period so we have a full period with no transfers
         fast_forward(self.havven.feePeriodDuration() + 100)
-        self.havven.checkFeePeriodRollover(MASTER)
+        self.havven.rolloverFeePeriodIfElapsed(MASTER)
         self.havven.recomputeLastAverageBalance(MASTER, MASTER)
 
         self.assertEqual(fees, self.havven.lastFeesCollected())
@@ -354,7 +361,7 @@ class TestHavvenEscrow(HavvenTestCase):
 
         # Skip a period so we have a full period with no transfers
         fast_forward(self.havven.feePeriodDuration() + 100)
-        self.havven.checkFeePeriodRollover(MASTER)
+        self.havven.rolloverFeePeriodIfElapsed(MASTER)
         self.havven.recomputeLastAverageBalance(MASTER, MASTER)
 
         # Since escrow contract has most of the global supply, and half of the
@@ -457,22 +464,29 @@ class TestHavvenEscrow(HavvenTestCase):
         self.escrow.appendVestingEntry(MASTER, alice, time + 500, UNIT)
         self.escrow.appendVestingEntry(MASTER, alice, time + 600, UNIT)
 
+        self.assertEqual(self.escrow.balanceOf(alice), 6 * UNIT)
         fast_forward(105)
         self.escrow.vest(alice)
         self.assertEqual(self.havven.balanceOf(alice), UNIT)
+        self.assertEqual(self.escrow.balanceOf(alice), 5 * UNIT)
         fast_forward(205)
         self.escrow.vest(alice)
         self.assertEqual(self.havven.balanceOf(alice), 3 * UNIT)
+        self.assertEqual(self.escrow.balanceOf(alice), 3 * UNIT)
         self.escrow.vest(alice)
         self.assertEqual(self.havven.balanceOf(alice), 3 * UNIT)
+        self.assertEqual(self.escrow.balanceOf(alice), 3 * UNIT)
         fast_forward(105)
         self.escrow.vest(alice)
         self.assertEqual(self.havven.balanceOf(alice), 4 * UNIT)
+        self.assertEqual(self.escrow.balanceOf(alice), 2 * UNIT)
         fast_forward(505)
         self.escrow.vest(alice)
         self.assertEqual(self.havven.balanceOf(alice), 6 * UNIT)
+        self.assertEqual(self.escrow.balanceOf(alice), 0 * UNIT)
         self.escrow.vest(alice)
         self.assertEqual(self.havven.balanceOf(alice), 6 * UNIT)
+        self.assertEqual(self.escrow.balanceOf(alice), 0 * UNIT)
 
     def test_addVestingSchedule(self):
         alice, bob, eve = fresh_accounts(3)
