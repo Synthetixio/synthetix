@@ -523,11 +523,10 @@ contract Havven is DestructibleExternStateToken {
     }
 
     /**
-     * @notice Recompute and return the given account's average balance information.
+     * @notice Recompute and return the given account's last average balance.
      */
     function recomputeLastAverageBalance(address account)
         external
-        optionalProxy
         returns (uint)
     {
         updateIssuanceData(account, nominsIssued[account], nomin.totalSupply());
