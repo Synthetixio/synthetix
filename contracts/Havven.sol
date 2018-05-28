@@ -196,10 +196,10 @@ contract Havven is DestructibleExternStateToken {
     /* No more nomins may be issued than the value of havvens backing them. */
     uint constant MAX_ISSUANCE_RATIO = UNIT;
 
-    /* whether the address can issue nomins or not */
+    /* Whether the address can issue nomins or not. */
     mapping(address => bool) public isIssuer;
-    /* the number of nomins the user has issued */
-    mapping(address => uint) public nominsIssued;
+    /* The number of currently-outstanding nomins the user has issued. */
+    mapping(address => uint) public outstandingNominsIssued;
 
     uint constant HAVVEN_SUPPLY = 1e8 * UNIT;
     uint constant ORACLE_FUTURE_LIMIT = 10 minutes;
@@ -397,7 +397,7 @@ contract Havven is DestructibleExternStateToken {
          * their havvens are escrowed, however the transfer would then
          * fail. This means that escrowed havvens are locked first,
          * and then the actual transferable ones. */
-        require(nominsIssued[sender] == 0 || value <= availableHavvens(sender));
+        require(outstandingNominsIssued[sender] == 0 || value <= availableHavvens(sender));
         /* Perform the transfer: if there is a problem,
          * an exception will be thrown in this call. */
         _transfer_byProxy(sender, to, value);
@@ -414,7 +414,7 @@ contract Havven is DestructibleExternStateToken {
         returns (bool)
     {
         address sender = messageSender;
-        require(nominsIssued[sender] == 0 || value <= availableHavvens(from));
+        require(outstandingNominsIssued[sender] == 0 || value <= availableHavvens(from));
         /* Perform the transfer: if there is a problem,
          * an exception will be thrown in this call. */
         _transferFrom_byProxy(sender, from, to, value);
@@ -436,7 +436,7 @@ contract Havven is DestructibleExternStateToken {
         require(!nomin.frozen(sender));
 
         /* Check the period has rolled over first. */
-        updateIssuanceData(sender, nominsIssued[sender], nomin.totalSupply());
+        updateIssuanceData(sender, outstandingNominsIssued[sender], nomin.totalSupply());
 
         /* Only allow accounts to withdraw fees once per period. */
         require(!hasWithdrawnFees[sender]);
@@ -522,7 +522,7 @@ contract Havven is DestructibleExternStateToken {
         optionalProxy
         returns (uint)
     {
-        updateIssuanceData(account, nominsIssued[account], nomin.totalSupply());
+        updateIssuanceData(account, outstandingNominsIssued[account], nomin.totalSupply());
         return issuanceData[account].lastAverageBalance;
     }
 
@@ -539,9 +539,9 @@ contract Havven is DestructibleExternStateToken {
         address sender = messageSender;
         require(amount <= remainingIssuableNomins(sender));
         uint lastTot = nomin.totalSupply();
-        uint preIssued = nominsIssued[sender];
+        uint preIssued = outstandingNominsIssued[sender];
         nomin.issue(sender, amount);
-        nominsIssued[sender] = safeAdd(preIssued, amount);
+        outstandingNominsIssued[sender] = safeAdd(preIssued, amount);
         updateIssuanceData(sender, preIssued, lastTot);
     }
 
@@ -563,11 +563,11 @@ contract Havven is DestructibleExternStateToken {
         address sender = messageSender;
 
         uint lastTot = nomin.totalSupply();
-        uint preIssued = nominsIssued[sender];
+        uint preIssued = outstandingNominsIssued[sender];
         /* nomin.burn does a safeSub on balance (so it will revert if there are not enough nomins). */
         nomin.burn(sender, amount);
         /* This safe sub ensures amount <= number issued */
-        nominsIssued[sender] = safeSub(preIssued, amount);
+        outstandingNominsIssued[sender] = safeSub(preIssued, amount);
         updateIssuanceData(sender, preIssued, lastTot);
     }
 
@@ -618,7 +618,7 @@ contract Havven is DestructibleExternStateToken {
         public
         returns (uint)
     {
-        uint issued = nominsIssued[issuer];
+        uint issued = outstandingNominsIssued[issuer];
         uint max = maxIssuableNomins(issuer);
         if (issued > max) {
             return 0;
@@ -635,10 +635,10 @@ contract Havven is DestructibleExternStateToken {
         view
         returns (uint)
     {
-        if (nominsIssued[account] == 0) {
+        if (outstandingNominsIssued[account] == 0) {
             return 0;
         }
-        return USDtoHAV(safeDiv_dec(nominsIssued[account], issuanceRatio));
+        return USDtoHAV(safeDiv_dec(outstandingNominsIssued[account], issuanceRatio));
     }
 
     /**
