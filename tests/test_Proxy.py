@@ -87,7 +87,7 @@ class TestExternStateFeeToken(HavvenTestCase):
         self.assertEqual(self.feetoken.totalSupply(), 0)
         self.assertEqual(self.feetoken.transferFeeRate(), UNIT // 20)
         self.assertEqual(self.feetoken.feeAuthority(), self.fee_authority)
-        self.assertEqual(self.feetoken.state(), self.feestate.contract.address)
+        self.assertEqual(self.feetoken.tokenState(), self.feestate.contract.address)
         self.assertEqual(self.feestate.associatedContract(), self.feetoken_contract_1.address)
 
         self.proxy.setTarget(MASTER, self.feetoken_contract_2.address)
@@ -95,7 +95,7 @@ class TestExternStateFeeToken(HavvenTestCase):
         mine_txs([self.feetoken_contract_2.functions.setTokenState(self.feestate.contract.address).transact({'from': MASTER})])
 
         self.assertEqual(self.feetoken.name(), "Test Fee Token 2")
-        self.assertEqual(self.feetoken.state(), self.feestate.contract.address)
+        self.assertEqual(self.feetoken.tokenState(), self.feestate.contract.address)
         self.assertEqual(self.feestate.associatedContract(), self.feetoken_contract_2.address)
 
     def test_balance_after_swap(self):
