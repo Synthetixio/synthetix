@@ -4,7 +4,7 @@ from utils.deployutils import (
     take_snapshot, restore_snapshot
 )
 from utils.testutils import (
-    HavvenTestCase, ZERO_ADDRESS,
+    HavvenTestCase,
     generate_topic_event_map, get_event_data_from_log
 )
 from tests.contract_interfaces.extern_state_fee_token_interface import ExternStateFeeTokenInterface
@@ -46,12 +46,12 @@ class TestExternStateFeeToken(HavvenTestCase):
         feetoken_event_dict = generate_topic_event_map(feetoken_abi)
         feetoken_contract_1, construction_txr_1 = attempt_deploy(
             compiled, "PublicESFT", MASTER,
-            [proxy.address, "Test Fee Token", "FEE", UNIT // 20, MASTER, ZERO_ADDRESS, MASTER]
+            [proxy.address, "Test Fee Token", "FEE", UNIT // 20, MASTER, MASTER]
         )
 
         feetoken_contract_2, construction_txr_2 = attempt_deploy(
             compiled, "PublicESFT", MASTER,
-            [proxy.address, "Test Fee Token 2", "FEE", UNIT // 20, MASTER, ZERO_ADDRESS, MASTER]
+            [proxy.address, "Test Fee Token 2", "FEE", UNIT // 20, MASTER, MASTER]
         )
 
         feestate, txr = attempt_deploy(
@@ -63,7 +63,7 @@ class TestExternStateFeeToken(HavvenTestCase):
             proxy.functions.setTarget(feetoken_contract_1.address).transact({'from': MASTER}),
             feestate.functions.setBalanceOf(DUMMY, 1000 * UNIT).transact({'from': MASTER}),
             feestate.functions.setAssociatedContract(feetoken_contract_1.address).transact({'from': MASTER}),
-            feetoken_contract_1.functions.setState(feestate.address).transact({'from': MASTER})]
+            feetoken_contract_1.functions.setTokenState(feestate.address).transact({'from': MASTER})]
         )
 
         return compiled, proxy, proxied_feetoken, feetoken_contract_1, feetoken_contract_2, feetoken_event_dict, feestate
@@ -76,7 +76,7 @@ class TestExternStateFeeToken(HavvenTestCase):
         cls.fee_authority = fresh_account()
 
         cls.feetoken = ExternStateFeeTokenInterface(cls.proxied_feetoken, "ExternStateFeeToken")
-        cls.proxy = ProxyInterface(cls.proxy, "ExternStateFeeTokenProxy")
+        cls.proxy = ProxyInterface(cls.proxy, "Proxy")
         cls.feestate = TokenStateInterface(cls.feestate, "TokenState")
 
         cls.feetoken.setFeeAuthority(MASTER, cls.fee_authority)
@@ -87,15 +87,15 @@ class TestExternStateFeeToken(HavvenTestCase):
         self.assertEqual(self.feetoken.totalSupply(), 0)
         self.assertEqual(self.feetoken.transferFeeRate(), UNIT // 20)
         self.assertEqual(self.feetoken.feeAuthority(), self.fee_authority)
-        self.assertEqual(self.feetoken.state(), self.feestate.contract.address)
+        self.assertEqual(self.feetoken.tokenState(), self.feestate.contract.address)
         self.assertEqual(self.feestate.associatedContract(), self.feetoken_contract_1.address)
 
         self.proxy.setTarget(MASTER, self.feetoken_contract_2.address)
         self.feestate.setAssociatedContract(MASTER, self.feetoken_contract_2.address)
-        mine_txs([self.feetoken_contract_2.functions.setState(self.feestate.contract.address).transact({'from': MASTER})])
+        mine_txs([self.feetoken_contract_2.functions.setTokenState(self.feestate.contract.address).transact({'from': MASTER})])
 
         self.assertEqual(self.feetoken.name(), "Test Fee Token 2")
-        self.assertEqual(self.feetoken.state(), self.feestate.contract.address)
+        self.assertEqual(self.feetoken.tokenState(), self.feestate.contract.address)
         self.assertEqual(self.feestate.associatedContract(), self.feetoken_contract_2.address)
 
     def test_balance_after_swap(self):
@@ -113,7 +113,7 @@ class TestExternStateFeeToken(HavvenTestCase):
         self.proxy.setTarget(MASTER, self.feetoken_contract_2.address)
         self.feestate.setAssociatedContract(MASTER, self.feetoken_contract_2.address)
 
-        mine_txs([self.feetoken_contract_2.functions.setState(self.feestate.contract.address).transact({'from': MASTER})])
+        mine_txs([self.feetoken_contract_2.functions.setTokenState(self.feestate.contract.address).transact({'from': MASTER})])
 
         self.assertEqual(self.feetoken.balanceOf(receiver), receiver_balance + value)
 

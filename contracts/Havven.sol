@@ -38,11 +38,12 @@ time, and then when a new fee period begins, dividing through by the
 duration of the fee period.
 
 We need only update values when the balances of an account is modified.
-When issuing or burning for the issued nomin balances and when transferring
-for the havven balances. This is for efficiency, and adds an implicit
-friction to interacting with havvens. A havven holder pays for his own
-recomputation whenever he wants to change his position, which saves the
-foundation having to maintain a pot dedicated to resourcing this.
+This occurs when issuing or burning for issued nomin balances,
+and when transferring for havven balances. This is for efficiency,
+and adds an implicit friction to interacting with havvens.
+A havven holder pays for his own recomputation whenever he wants to change
+his position, which saves the foundation having to maintain a pot dedicated
+to resourcing this.
 
 A hypothetical user's balance history over one fee period, pictorially:
 
@@ -58,7 +59,7 @@ When a new transfer occurs at time n, the balance being p,
 we must:
 
   - Add the area p * (n - t) to the total area recorded so far
-  - Update the last transfer time to p
+  - Update the last transfer time to n
 
 So if this graph represents the entire current fee period,
 the average havvens held so far is ((t-f)*s + (n-t)*p) / (n-f).
@@ -103,8 +104,8 @@ In this version of the havven contract, nomins can only be issued by
 those that have been nominated by the havven foundation. Nomins are assumed
 to be valued at $1, as they are a stable unit of account.
 
-All nomins issued require some value of havvens to be locked up for the
-proportional to the value of issuanceRatio (The collateralisation ratio). This
+All nomins issued require a proportional value of havvens to be locked,
+where the proportion is governed by the current issuance ratio. This
 means for every $1 of Havvens locked up, $(issuanceRatio) nomins can be issued.
 i.e. to issue 100 nomins, 100/issuanceRatio dollars of havvens need to be locked up.
 
@@ -161,7 +162,10 @@ contract Havven is DestructibleExternStateToken {
     /* The time the last fee period began */
     uint public lastFeePeriodStartTime;
 
-    /* Fee periods will roll over in no shorter a time than this.. */
+    /* Fee periods will roll over in no shorter a time than this. 
+     * The fee period cannot actually roll over until a fee-relevant
+     * operation such as withdrawal or a fee period duration update occurs,
+     * so this is just a target, and the actual duration may be slightly longer. */
     uint public feePeriodDuration = 4 weeks;
     /* ...and must target between 1 day and six months. */
     uint constant MIN_FEE_PERIOD_DURATION = 1 days;
@@ -192,9 +196,9 @@ contract Havven is DestructibleExternStateToken {
     /* No more nomins may be issued than the value of havvens backing them. */
     uint constant MAX_ISSUANCE_RATIO = UNIT;
 
-    /* whether the address can issue nomins or not */
+    /* Whether the address can issue nomins or not. */
     mapping(address => bool) public isIssuer;
-    /* the number of nomins the user has issued */
+    /* The number of currently-outstanding nomins the user has issued. */
     mapping(address => uint) public nominsIssued;
 
     uint constant HAVVEN_SUPPLY = 1e8 * UNIT;
@@ -206,12 +210,12 @@ contract Havven is DestructibleExternStateToken {
 
     /**
      * @dev Constructor
-     * @param _state A pre-populated contract containing token balances.
+     * @param _tokenState A pre-populated contract containing token balances.
      * If the provided address is 0x0, then a fresh one will be constructed with the contract owning all tokens.
      * @param _owner The owner of this contract.
      */
-    constructor(address _proxy, TokenState _state, address _owner, address _oracle, uint _price)
-        DestructibleExternStateToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, _state, _owner)
+    constructor(address _proxy, TokenState _tokenState, address _owner, address _oracle, uint _price)
+        DestructibleExternStateToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, _tokenState, _owner)
         /* Owned is initialised in DestructibleExternStateToken */
         public
     {
@@ -262,7 +266,7 @@ contract Havven is DestructibleExternStateToken {
                                duration <= MAX_FEE_PERIOD_DURATION);
         feePeriodDuration = duration;
         emitFeePeriodDurationUpdated(duration);
-        checkFeePeriodRollover();
+        rolloverFeePeriodIfElapsed();
     }
 
     /**
@@ -402,8 +406,7 @@ contract Havven is DestructibleExternStateToken {
     }
 
     /**
-     * @notice ERC20 transferFrom function, which also performs
-     * fee entitlement recomputation whenever balances are updated.
+     * @notice ERC20 transferFrom function.
      */
     function transferFrom(address from, address to, uint value)
         public
@@ -428,7 +431,7 @@ contract Havven is DestructibleExternStateToken {
         optionalProxy
     {
         address sender = messageSender;
-        checkFeePeriodRollover();
+        rolloverFeePeriodIfElapsed();
         /* Do not deposit fees into frozen accounts. */
         require(!nomin.frozen(sender));
 
@@ -437,12 +440,17 @@ contract Havven is DestructibleExternStateToken {
 
         /* Only allow accounts to withdraw fees once per period. */
         require(!hasWithdrawnFees[sender]);
-        uint feesOwed = 0;
 
+        uint feesOwed;
         uint lastTotalIssued = totalIssuanceData.lastAverageBalance;
 
         if (lastTotalIssued > 0) {
-            feesOwed = safeDiv_dec(safeMul_dec(issuanceData[sender].lastAverageBalance, lastFeesCollected), lastTotalIssued);
+            /* Sender receives a share of last period's collected fees proportional
+             * with their average fraction of the last period's issued nomins. */
+            feesOwed = safeDiv_dec(
+                safeMul_dec(issuanceData[sender].lastAverageBalance, lastFeesCollected),
+                lastTotalIssued
+            );
         }
 
         hasWithdrawnFees[sender] = true;
@@ -464,51 +472,54 @@ contract Havven is DestructibleExternStateToken {
         internal
     {
         /* update the total balances first */
-        totalIssuanceData = rolloverBalances(lastTotalSupply, totalIssuanceData);
+        totalIssuanceData = updatedIssuanceData(lastTotalSupply, totalIssuanceData);
 
         if (issuanceData[account].lastModified < feePeriodStartTime) {
             hasWithdrawnFees[account] = false;
         }
 
-        issuanceData[account] = rolloverBalances(preBalance, issuanceData[account]);
+        issuanceData[account] = updatedIssuanceData(preBalance, issuanceData[account]);
     }
 
 
     /**
      * @notice Compute the new IssuanceData on the old balance
      */
-    function rolloverBalances(uint preBalance, IssuanceData preIssuance)
+    function updatedIssuanceData(uint preBalance, IssuanceData preIssuance)
         internal
         view
         returns (IssuanceData)
     {
 
         uint currentBalanceSum = preIssuance.currentBalanceSum;
-        uint lastAvgBal = preIssuance.lastAverageBalance;
+        uint lastAverageBalance = preIssuance.lastAverageBalance;
         uint lastModified = preIssuance.lastModified;
 
         if (lastModified < feePeriodStartTime) {
             if (lastModified < lastFeePeriodStartTime) {
-                /* The balance did nothing in the last fee period, so the average balance
-                 * in this period is their pre-transfer balance. */
-                lastAvgBal = preBalance;
+                /* The balance was last updated before the previous fee period, so the average
+                 * balance in this period is their pre-transfer balance. */
+                lastAverageBalance = preBalance;
             } else {
-                /* No overflow risk here: the failed guard implies (lastFeePeriodStartTime <= lastModified). */
-                lastAvgBal = safeDiv(
-                    safeAdd(currentBalanceSum, safeMul(preBalance, (feePeriodStartTime - lastModified))),
-                    (feePeriodStartTime - lastFeePeriodStartTime)
-                );
+                /* The balance was last updated during the previous fee period. */
+                /* No overflow or zero denominator problems, since lastFeePeriodStartTime < feePeriodStartTime < lastModified. 
+                 * implies these quantities are strictly positive. */
+                uint timeUpToRollover = feePeriodStartTime - lastModified;
+                uint lastFeePeriodDuration = feePeriodStartTime - lastFeePeriodStartTime;
+                uint lastBalanceSum = safeAdd(currentBalanceSum, safeMul(preBalance, timeUpToRollover));
+                lastAverageBalance = lastBalanceSum / lastFeePeriodDuration;
             }
             /* Roll over to the next fee period. */
             currentBalanceSum = safeMul(preBalance, now - feePeriodStartTime);
         } else {
+            /* The balance was last updated during the current fee period. */
             currentBalanceSum = safeAdd(
                 currentBalanceSum,
                 safeMul(preBalance, now - lastModified)
             );
         }
 
-        return IssuanceData(currentBalanceSum, lastAvgBal, now);
+        return IssuanceData(currentBalanceSum, lastAverageBalance, now);
     }
 
     /**
@@ -536,10 +547,10 @@ contract Havven is DestructibleExternStateToken {
         address sender = messageSender;
         require(amount <= remainingIssuableNomins(sender));
         uint lastTot = nomin.totalSupply();
-        uint issued = nominsIssued[sender];
+        uint preIssued = nominsIssued[sender];
         nomin.issue(sender, amount);
-        nominsIssued[sender] = safeAdd(issued, amount);
-        updateIssuanceData(sender, issued, lastTot);
+        nominsIssued[sender] = safeAdd(preIssued, amount);
+        updateIssuanceData(sender, preIssued, lastTot);
     }
 
     function issueMaxNomins()
@@ -560,21 +571,20 @@ contract Havven is DestructibleExternStateToken {
         address sender = messageSender;
 
         uint lastTot = nomin.totalSupply();
-        uint issued = nominsIssued[sender];
+        uint preIssued = nominsIssued[sender];
         /* nomin.burn does a safeSub on balance (so it will revert if there are not enough nomins). */
         nomin.burn(sender, amount);
         /* This safe sub ensures amount <= number issued */
-        nominsIssued[sender] = safeSub(issued, amount);
-        updateIssuanceData(sender, issued, lastTot);
+        nominsIssued[sender] = safeSub(preIssued, amount);
+        updateIssuanceData(sender, preIssued, lastTot);
     }
 
     /**
      * @notice Check if the fee period has rolled over. If it has, set the new fee period start
-     * time, and collect fees from the nomin contract.
+     * time, and record the fees collected in the nomin contract.
      */
-    function checkFeePeriodRollover()
+    function rolloverFeePeriodIfElapsed()
         public
-        optionalProxy
     {
         /* If the fee period has rolled over... */
         if (now >= feePeriodStartTime + feePeriodDuration) {
@@ -647,7 +657,7 @@ contract Havven is DestructibleExternStateToken {
         returns (uint)
     {
         uint locked = lockedHavvens(account);
-        uint bal = state.balanceOf(account);
+        uint bal = tokenState.balanceOf(account);
         if (escrow != address(0)) {
             bal += escrow.balanceOf(account);
         }
@@ -697,7 +707,7 @@ contract Havven is DestructibleExternStateToken {
         emitPriceUpdated(newPrice, timeSent);
 
         /* Check the fee period rollover within this as the price should be pushed every 15min. */
-        checkFeePeriodRollover();
+        rolloverFeePeriodIfElapsed();
     }
 
     /**
@@ -734,75 +744,57 @@ contract Havven is DestructibleExternStateToken {
     /* ========== EVENTS ========== */
 
     event PriceUpdated(uint newPrice, uint timestamp);
+    bytes32 constant PRICEUPDATED_SIG = keccak256("PriceUpdated(uint256,uint256)");
     function emitPriceUpdated(uint newPrice, uint timestamp) internal {
-        bytes memory data = abi.encode(newPrice, timestamp);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 1, keccak256("PriceUpdated(uint256,uint256)"));
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(newPrice, timestamp), 1, PRICEUPDATED_SIG, 0, 0, 0);
     }
 
     event IssuanceRatioUpdated(uint newRatio);
+    bytes32 constant ISSUANCERATIOUPDATED_SIG = keccak256("IssuanceRatioUpdated(uint256)");
     function emitIssuanceRatioUpdated(uint newRatio) internal {
-        bytes memory data = abi.encode(newRatio);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 1, keccak256("IssuanceRatioUpdated(uint256)"));
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(newRatio), 1, ISSUANCERATIOUPDATED_SIG, 0, 0, 0);
     }
 
     event FeePeriodRollover(uint timestamp);
+    bytes32 constant FEEPERIODROLLOVER_SIG = keccak256("FeePeriodRollover(uint256)");
     function emitFeePeriodRollover(uint timestamp) internal {
-        bytes memory data = abi.encode(timestamp);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 1, keccak256("FeePeriodRollover(uint256)"));
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(timestamp), 1, FEEPERIODROLLOVER_SIG, 0, 0, 0);
     } 
 
     event FeePeriodDurationUpdated(uint duration);
+    bytes32 constant FEEPERIODDURATIONUPDATED_SIG = keccak256("FeePeriodDurationUpdated(uint256)");
     function emitFeePeriodDurationUpdated(uint duration) internal {
-        bytes memory data = abi.encode(duration);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 1, keccak256("FeePeriodDurationUpdated(uint256)"));
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(duration), 1, FEEPERIODDURATIONUPDATED_SIG, 0, 0, 0);
     } 
 
     event FeesWithdrawn(address indexed account, uint value);
+    bytes32 constant FEESWITHDRAWN_SIG = keccak256("FeesWithdrawn(address,uint256)");
     function emitFeesWithdrawn(address account, uint value) internal {
-        bytes memory data = abi.encode(value);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 2, keccak256("FeesWithdrawn(address,uint256)"), bytes32(account));
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(value), 2, FEESWITHDRAWN_SIG, bytes32(account), 0, 0);
     }
 
     event OracleUpdated(address newOracle);
+    bytes32 constant ORACLEUPDATED_SIG = keccak256("OracleUpdated(address)");
     function emitOracleUpdated(address newOracle) internal {
-        bytes memory data = abi.encode(newOracle);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 1, keccak256("OracleUpdated(address)"));
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(newOracle), 1, ORACLEUPDATED_SIG, 0, 0, 0);
     }
 
     event NominUpdated(address newNomin);
+    bytes32 constant NOMINUPDATED_SIG = keccak256("NominUpdated(address)");
     function emitNominUpdated(address newNomin) internal {
-        bytes memory data = abi.encode(newNomin);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 1, keccak256("NominUpdated(address)"));
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(newNomin), 1, NOMINUPDATED_SIG, 0, 0, 0);
     }
 
     event EscrowUpdated(address newEscrow);
+    bytes32 constant ESCROWUPDATED_SIG = keccak256("EscrowUpdated(address)");
     function emitEscrowUpdated(address newEscrow) internal {
-        bytes memory data = abi.encode(newEscrow);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 1, keccak256("EscrowUpdated(address)"));
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(newEscrow), 1, ESCROWUPDATED_SIG, 0, 0, 0);
     }
 
     event IssuersUpdated(address indexed account, bool indexed value);
+    bytes32 constant ISSUERSUPDATED_SIG = keccak256("IssuersUpdated(address,bool)");
     function emitIssuersUpdated(address account, bool value) internal {
-        bytes memory data = abi.encode();
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 3, keccak256("IssuersUpdated(address,bool)"), bytes32(account), value);
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(), 3, ISSUERSUPDATED_SIG, bytes32(account), bytes32(value ? 1 : 0), 0);
     }
 
 }

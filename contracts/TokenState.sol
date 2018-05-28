@@ -23,7 +23,7 @@ This contract is used side by side with external state token
 contracts, such as Havven and Nomin.
 It provides an easy way to upgrade contract logic while
 maintaining all user balances and allowances. This is designed
-to to make the changeover as easy as possible, since mappings
+to make the changeover as easy as possible, since mappings
 are not so cheap or straightforward to migrate.
 
 The first deployed contract would create this state contract,

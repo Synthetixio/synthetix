@@ -120,7 +120,7 @@ contract SafeDecimalMath {
 
     /**
      * @return The result of multiplying x and y, interpreting the operands as fixed-point
-     * demicimals. Throws an exception in case of overflow.
+     * decimals. Throws an exception in case of overflow.
      * 
      * @dev A unit factor is divided out after the product of x and y is evaluated,
      * so that product must be less than 2**256.

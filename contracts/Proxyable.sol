@@ -62,15 +62,8 @@ contract Proxyable is Owned {
         messageSender = sender;
     }
 
-    modifier onlyProxy() {
-        require(Proxy(msg.sender) == proxy, "caller is not proxy");
-        _;
-    }
-
-    modifier setSender() {
-        if (Proxy(msg.sender) != proxy) {
-            messageSender = msg.sender;
-        }
+    modifier onlyProxy {
+        require(Proxy(msg.sender) == proxy);
         _;
     }
 

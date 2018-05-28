@@ -42,7 +42,7 @@ class TestNomin(HavvenTestCase):
         proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['PublicNomin']['abi'])
 
         nomin_contract, _ = attempt_deploy(
-            compiled, 'PublicNomin', MASTER, [nomin_proxy.address, MASTER, MASTER, ZERO_ADDRESS]
+            compiled, 'PublicNomin', MASTER, [nomin_proxy.address, MASTER, MASTER]
         )
 
         havven_contract, _ = attempt_deploy(
@@ -67,8 +67,8 @@ class TestNomin(HavvenTestCase):
 
         cls.nomin_event_dict = cls.event_maps['Nomin']
 
-        cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
-        cls.havven = HavvenInterface(cls.havven_contract, "Havven")
+        cls.nomin = PublicNominInterface(cls.proxied_nomin, "Nomin")
+        cls.havven = HavvenInterface(cls.proxied_havven, "Havven")
 
         cls.fake_court = FakeCourtInterface(cls.fake_court_contract, "FakeCourt")
 
@@ -145,6 +145,55 @@ class TestNomin(HavvenTestCase):
         self.assertReverts(self.nomin.setHavven, DUMMY, old_havven)
         self.nomin.setHavven(self.nomin.owner(), old_havven)
 
+    def test_ensureCompleteTransfer(self):
+        amount = 10 * UNIT
+        amountReceived = self.nomin.priceToSpend(amount)
+        fee = amount - amountReceived
+        sender = fresh_account()
+        receiver = fresh_account()
+
+        # Give them the nomins to start the test
+        self.nomin.giveNomins(MASTER, sender, amount)
+        self.assertEqual(self.nomin.balanceOf(sender), amount)
+
+        # Transfer the amount to another account
+        txr = self.nomin.transfer(sender, receiver, amount)
+        
+        # Ensure the result of the transfer is correct.
+        self.assertEqual(self.nomin.balanceOf(sender), 0)
+        self.assertEqual(self.nomin.balanceOf(receiver), amount - fee)
+        self.assertEqual(self.nomin.feePool(), fee)
+
+    def test_transferEventEmits(self):
+        amount = 5 * UNIT
+        sender = fresh_account()
+        receiver = fresh_account()
+
+        # Give them the nomins to start the test
+        self.nomin.giveNomins(MASTER, sender, amount)
+        self.assertEqual(self.nomin.balanceOf(sender), amount)
+
+        # Transfer the amount to another account
+        txr = self.nomin.transfer(sender, receiver, amount)
+        amountReceived = self.nomin.priceToSpend(amount)
+        fee = amount - amountReceived
+
+        self.assertEventEquals(
+            self.nomin_event_dict, txr.logs[0], 'Transfer',
+            fields={'from': sender, 'to': receiver, 'value': amountReceived},
+            location=self.nomin_proxy.address
+        )
+
+        self.assertEventEquals(
+            self.nomin_event_dict, txr.logs[1], 'Transfer',
+            fields={
+                'from': sender,
+                'to': self.nomin_contract.address,
+                'value': fee
+            },
+            location=self.nomin_proxy.address
+        )
+
     def test_transfer(self):
         target = fresh_account()
 
@@ -156,10 +205,12 @@ class TestNomin(HavvenTestCase):
         self.assertReverts(self.nomin.transfer, MASTER, self.nomin_contract.address, UNIT)
 
         txr = self.nomin.transfer(MASTER, target, 5 * UNIT)
+        amountReceived = self.nomin.priceToSpend(5 * UNIT)
+        fee = 5 * UNIT - amountReceived
 
         self.assertEventEquals(
             self.nomin_event_dict, txr.logs[0], 'Transfer',
-            fields={'from': MASTER, 'to': target, 'value': self.nomin.priceToSpend(5*UNIT)},
+            fields={'from': MASTER, 'to': target, 'value': amountReceived},
             location=self.nomin_proxy.address
         )
 
@@ -168,20 +219,20 @@ class TestNomin(HavvenTestCase):
             fields={
                 'from': MASTER,
                 'to': self.nomin_contract.address,
-                'value': self.nomin.transferFeeIncurred(self.nomin.priceToSpend(5*UNIT))
+                'value': fee
             },
             location=self.nomin_proxy.address
         )
 
-        self.assertClose(self.nomin.balanceOf(MASTER), 5 * UNIT)
-        self.assertEqual(self.nomin.balanceOf(target), self.nomin.priceToSpend(5 * UNIT))
-        self.assertEqual(self.nomin.feePool(), self.nomin.transferFeeIncurred(self.nomin.priceToSpend(5 * UNIT)))
+        self.assertEqual(self.nomin.balanceOf(MASTER), 5 * UNIT)
+        self.assertEqual(self.nomin.balanceOf(target), amountReceived)
+        self.assertEqual(self.nomin.feePool(), fee)
 
         txr = self.nomin.debugFreezeAccount(MASTER, target)
 
         self.assertEventEquals(
             self.nomin_event_dict, txr.logs[0], 'AccountFrozen',
-            fields={'target': target, 'balance': self.nomin.priceToSpend(5 * UNIT)},
+            fields={'target': target, 'balance': amountReceived},
             location=self.nomin_proxy.address
         )
 
@@ -190,7 +241,7 @@ class TestNomin(HavvenTestCase):
             fields={
                 'from': target,
                 'to': self.nomin_contract.address,
-                'value': self.nomin.priceToSpend(5 * UNIT)
+                'value': amountReceived
             },
             location=self.nomin_proxy.address
         )
@@ -210,10 +261,12 @@ class TestNomin(HavvenTestCase):
         self.assertEqual(self.nomin.balanceOf(target), 0)
 
         txr = self.nomin.transfer(MASTER, target, 5 * UNIT)
+        amountReceived = self.nomin.priceToSpend(5 * UNIT)
+        fee = 5 * UNIT - amountReceived
 
         self.assertEventEquals(
             self.nomin_event_dict, txr.logs[0], 'Transfer',
-            fields={'from': MASTER, 'to': target, 'value': self.nomin.priceToSpend(5*UNIT)},
+            fields={'from': MASTER, 'to': target, 'value': amountReceived},
             location=self.nomin_proxy.address
         )
 
@@ -222,13 +275,13 @@ class TestNomin(HavvenTestCase):
             fields={
                 'from': MASTER,
                 'to': self.nomin_contract.address,
-                'value': self.nomin.transferFeeIncurred(self.nomin.priceToSpend(5*UNIT))
+                'value': fee
             },
             location=self.nomin_proxy.address
         )
 
-        self.assertEqual(self.nomin.balanceOf(target), self.nomin.priceToSpend(5 * UNIT))
-        self.assertLess(self.nomin.balanceOf(MASTER), 3)  # assert MASTER only has the tiniest bit of change
+        self.assertEqual(self.nomin.balanceOf(target), amountReceived)
+        self.assertEqual(self.nomin.balanceOf(MASTER), 0)  # assert MASTER has nothing left
 
     def test_transferFrom(self):
         target = fresh_account()
@@ -263,9 +316,12 @@ class TestNomin(HavvenTestCase):
 
         txr = self.nomin.transferFrom(DUMMY, MASTER, target, 5 * UNIT)
 
+        amountReceived = self.nomin.priceToSpend(5 * UNIT)
+        fee = 5 * UNIT - amountReceived
+
         self.assertEventEquals(
             self.nomin_event_dict, txr.logs[0], 'Transfer',
-            fields={'from': MASTER, 'to': target, 'value': self.nomin.priceToSpend(5 * UNIT)},
+            fields={'from': MASTER, 'to': target, 'value': amountReceived },
             location=self.nomin_proxy.address
         )
 
@@ -274,14 +330,14 @@ class TestNomin(HavvenTestCase):
             fields={
                 'from': MASTER,
                 'to': self.nomin_contract.address,
-                'value': self.nomin.transferFeeIncurred(self.nomin.priceToSpend(5 * UNIT))
+                'value': fee
             },
             location=self.nomin_proxy.address
         )
 
-        self.assertClose(self.nomin.balanceOf(MASTER), 5 * UNIT)
-        self.assertEqual(self.nomin.balanceOf(target), self.nomin.priceToSpend(5 * UNIT))
-        self.assertEqual(self.nomin.feePool(), self.nomin.transferFeeIncurred(self.nomin.priceToSpend(5 * UNIT)))
+        self.assertEqual(self.nomin.balanceOf(MASTER), 5 * UNIT)
+        self.assertEqual(self.nomin.balanceOf(target), amountReceived)
+        self.assertEqual(self.nomin.feePool(), fee)
 
         txr = self.nomin.debugFreezeAccount(MASTER, target)
         self.assertEventEquals(
@@ -312,10 +368,12 @@ class TestNomin(HavvenTestCase):
         )
 
         txr = self.nomin.transferFrom(DUMMY, MASTER, target, 5 * UNIT)
+        amountReceived = self.nomin.priceToSpend(5 * UNIT)
+        fee = 5 * UNIT - amountReceived
 
         self.assertEventEquals(
             self.nomin_event_dict, txr.logs[0], 'Transfer',
-            fields={'from': MASTER, 'to': target, 'value': self.nomin.priceToSpend(5 * UNIT)},
+            fields={'from': MASTER, 'to': target, 'value': amountReceived},
             location=self.nomin_proxy.address
         )
 
@@ -324,13 +382,13 @@ class TestNomin(HavvenTestCase):
             fields={
                 'from': MASTER,
                 'to': self.nomin_contract.address,
-                'value': self.nomin.transferFeeIncurred(self.nomin.priceToSpend(5 * UNIT))
+                'value': fee
             },
             location=self.nomin_proxy.address
         )
 
-        self.assertEqual(self.nomin.balanceOf(target), self.nomin.priceToSpend(5 * UNIT))
-        self.assertLess(self.nomin.balanceOf(MASTER), 3)  # assert MASTER only has the tiniest bit of change
+        self.assertEqual(self.nomin.balanceOf(target), amountReceived)
+        self.assertEqual(self.nomin.balanceOf(MASTER), 0)  # assert MASTER has nothing left
 
     def test_transferSenderPaysFee(self):
         target = fresh_account()

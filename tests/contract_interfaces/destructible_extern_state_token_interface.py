@@ -11,14 +11,14 @@ class DestructibleExternStateTokenInterface(SafeDecimalMathInterface, SelfDestru
         self.contract_name = name
 
         self.totalSupply = lambda: self.contract.functions.totalSupply().call()
-        self.state = lambda: self.contract.functions.state().call()
+        self.tokenState = lambda: self.contract.functions.tokenState().call()
         self.name = lambda: self.contract.functions.name().call()
         self.symbol = lambda: self.contract.functions.symbol().call()
         self.balanceOf = lambda account: self.contract.functions.balanceOf(account).call()
         self.allowance = lambda account, spender: self.contract.functions.allowance(account, spender).call()
 
-        self.setState = lambda sender, new_state: mine_tx(
-            self.contract.functions.setState(new_state).transact({'from': sender}), "setState", self.contract_name)
+        self.setTokenState = lambda sender, new_state: mine_tx(
+            self.contract.functions.setTokenState(new_state).transact({'from': sender}), "setTokenState", self.contract_name)
         self.transfer = lambda sender, to, value: mine_tx(
             self.contract.functions.transfer(to, value).transact({'from': sender}), "transfer", self.contract_name)
         self.approve = lambda sender, spender, value: mine_tx(

@@ -1,6 +1,6 @@
 from utils.deployutils import attempt_deploy, W3, MASTER, DUMMY, UNIT
 from utils.deployutils import take_snapshot, restore_snapshot, fast_forward
-from utils.testutils import HavvenTestCase, send_value, block_time
+from utils.testutils import HavvenTestCase, send_value, block_time, ZERO_ADDRESS
 
 from tests.contract_interfaces.self_destructible_interface import SelfDestructibleInterface
 
@@ -27,7 +27,6 @@ class TestSelfDestructible(HavvenTestCase):
     @classmethod
     def setUpClass(cls):
         cls.sd_duration = 60 * 60 * 24 * 7 * 4
-        cls.NULL_INITIATION = (2**256 - 1) // 2
         cls.contract_balance = 10 * UNIT
 
         sources = ["tests/contracts/PayableSD.sol"]
@@ -46,24 +45,28 @@ class TestSelfDestructible(HavvenTestCase):
         self.assertNotEqual(MASTER, DUMMY)
         self.assertEqual(self.sd.owner(), MASTER)
         self.assertEqual(self.sd.selfDestructBeneficiary(), DUMMY)
-        self.assertEqual(self.sd.initiationTime(), self.NULL_INITIATION)
+        self.assertFalse(self.sd.selfDestructInitiated())
+        self.assertEqual(self.sd.initiationTime(), 0)
         self.assertEqual(self.sd.selfDestructDelay(), self.sd_duration)
         self.assertEventEquals(self.event_map, self.deploy_tx.logs[1],
                                "SelfDestructBeneficiaryUpdated",
                                {"newBeneficiary": self.sd.selfDestructBeneficiary()},
                                location=self.sd_contract.address)
 
-    def test_setBeneficiary(self):
+    def test_setSelfDestructBeneficiary(self):
         owner = self.sd.owner()
         notowner = DUMMY
         self.assertNotEqual(owner, notowner)
 
         # Only the owner may set the beneficiary
-        self.assertReverts(self.sd.setBeneficiary, notowner, owner)
+        self.assertReverts(self.sd.setSelfDestructBeneficiary, notowner, owner)
+
+        # Beneficiary must be nonzero
+        self.assertReverts(self.sd.setSelfDestructBeneficiary, owner, ZERO_ADDRESS)
 
         # The owner can correctly set the variable...
         self.assertEqual(self.sd.selfDestructBeneficiary(), DUMMY)
-        tx = self.sd.setBeneficiary(owner, owner)
+        tx = self.sd.setSelfDestructBeneficiary(owner, owner)
         self.assertEqual(self.sd.selfDestructBeneficiary(), owner) 
         # Event is properly emitted.
         self.assertEventEquals(self.event_map, tx.logs[0],
@@ -72,7 +75,7 @@ class TestSelfDestructible(HavvenTestCase):
                                location=self.sd_contract.address)
 
         # ...and set it back.
-        self.sd.setBeneficiary(owner, DUMMY)
+        self.sd.setSelfDestructBeneficiary(owner, DUMMY)
         self.assertEqual(self.sd.selfDestructBeneficiary(), DUMMY)
 
     def test_initiateSelfDestruct(self):
@@ -84,12 +87,14 @@ class TestSelfDestructible(HavvenTestCase):
         self.assertReverts(self.sd.initiateSelfDestruct, notowner)
 
         # Initiation time starts at 0.
-        self.assertEqual(self.sd.initiationTime(), self.NULL_INITIATION)
+        self.assertEqual(self.sd.initiationTime(), 0)
+        self.assertFalse(self.sd.selfDestructInitiated())
 
         tx = self.sd.initiateSelfDestruct(owner)
 
         # Initiated at the right time.
         self.assertEqual(self.sd.initiationTime(), block_time(tx['blockNumber']))
+        self.assertTrue(self.sd.selfDestructInitiated())
 
         # Event is properly emitted.
         self.assertEventEquals(self.event_map, tx.logs[0],
@@ -102,12 +107,15 @@ class TestSelfDestructible(HavvenTestCase):
         notowner = DUMMY
         self.assertNotEqual(owner, notowner)
 
+        self.assertFalse(self.sd.selfDestructInitiated())
         self.sd.initiateSelfDestruct(owner)
-        self.assertNotEqual(self.sd.initiationTime(), self.NULL_INITIATION)
+        self.assertNotEqual(self.sd.initiationTime(), 0)
+        self.assertTrue(self.sd.selfDestructInitiated())
         self.assertReverts(self.sd.terminateSelfDestruct, notowner)
 
         tx = self.sd.terminateSelfDestruct(owner)
-        self.assertEqual(self.sd.initiationTime(), self.NULL_INITIATION)
+        self.assertEqual(self.sd.initiationTime(), 0)
+        self.assertFalse(self.sd.selfDestructInitiated())
 
         self.assertEventEquals(self.event_map, tx.logs[0],
                                "SelfDestructTerminated",
@@ -154,3 +162,38 @@ class TestSelfDestructible(HavvenTestCase):
 
         # Check contract not exist 
         self.assertEqual(W3.eth.getCode(address), b'\x00')
+
+    def test_event_SelfDestructTerminated(self):
+        owner = self.sd.owner()
+        self.sd.initiateSelfDestruct(owner)
+        tx = self.sd.terminateSelfDestruct(owner)
+        self.assertEventEquals(self.event_map, tx.logs[0],
+                               "SelfDestructTerminated",
+                               location=self.sd_contract.address)
+
+    def test_event_SelfDestructInitiated(self):
+        owner = self.sd.owner()
+        tx = self.sd.initiateSelfDestruct(owner)
+        self.assertEventEquals(self.event_map, tx.logs[0],
+                               "SelfDestructInitiated",
+                               {"selfDestructDelay": self.sd_duration},
+                               location=self.sd_contract.address)
+
+    def test_event_SelfDestructed(self):
+        owner = self.sd.owner()
+        beneficiary = self.sd.selfDestructBeneficiary()
+        self.sd.initiateSelfDestruct(owner)
+        fast_forward(self.sd_duration + 1)
+        tx = self.sd.selfDestruct(owner)
+        self.assertEventEquals(self.event_map, tx.logs[0],
+                               "SelfDestructed",
+                               {"beneficiary": beneficiary},
+                               location=self.sd_contract.address)
+
+    def test_event_SelfDestructBeneficiaryUpdated(self):
+        owner = self.sd.owner()
+        tx = self.sd.setSelfDestructBeneficiary(owner, owner)
+        self.assertEventEquals(self.event_map, tx.logs[0],
+                               "SelfDestructBeneficiaryUpdated",
+                               {"newBeneficiary": owner},
+                               location=self.sd_contract.address)

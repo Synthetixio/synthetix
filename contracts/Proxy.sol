@@ -106,14 +106,14 @@ contract Proxy is Owned {
             returndatacopy(free_ptr, 0, returndatasize)
 
             /* Revert if the call failed, otherwise return the result. */
-            if iszero(result) { revert(free_ptr, calldatasize) }
+            if iszero(result) { revert(free_ptr, returndatasize) }
             return(free_ptr, returndatasize)
         }
+        //target.setMessageSender(0);
     }
 
-    modifier onlyTarget() {
-        require(Proxyable(msg.sender) == target,
-                "caller is not proxy target");
+    modifier onlyTarget {
+        require(Proxyable(msg.sender) == target);
         _;
     }
 

@@ -52,12 +52,14 @@ class TestHavvenEscrow(HavvenTestCase):
         proxied_havven = W3.eth.contract(address=havven_proxy.address, abi=compiled['PublicHavven']['abi'])
         proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['PublicNomin']['abi'])
 
-        havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [havven_proxy.address, ZERO_ADDRESS, MASTER, MASTER, UNIT//2])
+        tokenstate, _ = attempt_deploy(compiled, 'TokenState',
+                                       MASTER, [MASTER, MASTER])
+        havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [havven_proxy.address, tokenstate.address, MASTER, MASTER, UNIT//2])
         hvn_block = W3.eth.blockNumber
 
         nomin_contract, nom_txr = attempt_deploy(compiled, 'PublicNomin',
                                                  MASTER,
-                                                 [nomin_proxy.address, havven_contract.address, MASTER, ZERO_ADDRESS])
+                                                 [nomin_proxy.address, havven_contract.address, MASTER])
         court_contract, court_txr = attempt_deploy(compiled, 'Court',
                                                    MASTER,
                                                    [havven_contract.address, nomin_contract.address,
@@ -67,12 +69,14 @@ class TestHavvenEscrow(HavvenTestCase):
                                                      [MASTER, havven_contract.address])
 
         # Hook up each of those contracts to each other
-        mine_txs([havven_proxy.functions.setTarget(havven_contract.address).transact({'from': MASTER}),
-               nomin_proxy.functions.setTarget(nomin_contract.address).transact({'from': MASTER}),
-               havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
-               nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER}),
-               nomin_contract.functions.setHavven(havven_contract.address).transact({'from': MASTER}),
-               havven_contract.functions.setEscrow(escrow_contract.address).transact({'from': MASTER})])
+        mine_txs([tokenstate.functions.setBalanceOf(havven_contract.address, 100000000 * UNIT).transact({'from': MASTER}),
+                  tokenstate.functions.setAssociatedContract(havven_contract.address).transact({'from': MASTER}),
+                  havven_proxy.functions.setTarget(havven_contract.address).transact({'from': MASTER}),
+                  nomin_proxy.functions.setTarget(nomin_contract.address).transact({'from': MASTER}),
+                  havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
+                  nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER}),
+                  nomin_contract.functions.setHavven(havven_contract.address).transact({'from': MASTER}),
+                  havven_contract.functions.setEscrow(escrow_contract.address).transact({'from': MASTER})])
 
         escrow_event_dict = generate_topic_event_map(compiled['HavvenEscrow']['abi'])
 
@@ -87,8 +91,8 @@ class TestHavvenEscrow(HavvenTestCase):
 
         cls.event_map = cls.event_maps['HavvenEscrow']
 
-        cls.havven = PublicHavvenInterface(cls.havven_contract, "Havven")
-        cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
+        cls.havven = PublicHavvenInterface(cls.proxied_havven, "Havven")
+        cls.nomin = PublicNominInterface(cls.proxied_nomin, "Nomin")
         cls.escrow = PublicHavvenEscrowInterface(cls.escrow_contract, "HavvenEscrow")
 
     def havven_updatePrice(self, sender, price, time):
@@ -222,6 +226,13 @@ class TestHavvenEscrow(HavvenTestCase):
         self.escrow.purgeAccount(MASTER, alice)
         self.assertEqual(self.escrow.numVestingEntries(alice), 0)
 
+    def test_maxVestingEntries(self):
+        alice = fresh_account()
+        time = block_time()
+        self.havven.endow(MASTER, self.escrow.contract.address, 200 * UNIT)
+        self.escrow.addRegularVestingSchedule(MASTER, alice, time + to_seconds(weeks=52), 100 * UNIT, 21)
+        self.assertReverts(self.escrow.appendVestingEntry, MASTER, alice, time + to_seconds(weeks=52, days=1), UNIT)
+
     def test_getVestingScheduleEntry(self):
         alice = fresh_account()
         time = block_time()
@@ -318,11 +329,11 @@ class TestHavvenEscrow(HavvenTestCase):
 
         # Skip a period so we have a full period with no transfers
         fast_forward(self.havven.feePeriodDuration() + 100)
-        self.havven.checkFeePeriodRollover(MASTER)
+        self.havven.rolloverFeePeriodIfElapsed(MASTER)
         self.havven.recomputeLastAverageBalance(MASTER, MASTER)
         # Skip a period so we have a full period with no transfers
         fast_forward(self.havven.feePeriodDuration() + 100)
-        self.havven.checkFeePeriodRollover(MASTER)
+        self.havven.rolloverFeePeriodIfElapsed(MASTER)
         self.havven.recomputeLastAverageBalance(MASTER, MASTER)
 
         self.assertEqual(fees, self.havven.lastFeesCollected())
@@ -350,7 +361,7 @@ class TestHavvenEscrow(HavvenTestCase):
 
         # Skip a period so we have a full period with no transfers
         fast_forward(self.havven.feePeriodDuration() + 100)
-        self.havven.checkFeePeriodRollover(MASTER)
+        self.havven.rolloverFeePeriodIfElapsed(MASTER)
         self.havven.recomputeLastAverageBalance(MASTER, MASTER)
 
         # Since escrow contract has most of the global supply, and half of the
@@ -453,22 +464,29 @@ class TestHavvenEscrow(HavvenTestCase):
         self.escrow.appendVestingEntry(MASTER, alice, time + 500, UNIT)
         self.escrow.appendVestingEntry(MASTER, alice, time + 600, UNIT)
 
+        self.assertEqual(self.escrow.balanceOf(alice), 6 * UNIT)
         fast_forward(105)
         self.escrow.vest(alice)
         self.assertEqual(self.havven.balanceOf(alice), UNIT)
+        self.assertEqual(self.escrow.balanceOf(alice), 5 * UNIT)
         fast_forward(205)
         self.escrow.vest(alice)
         self.assertEqual(self.havven.balanceOf(alice), 3 * UNIT)
+        self.assertEqual(self.escrow.balanceOf(alice), 3 * UNIT)
         self.escrow.vest(alice)
         self.assertEqual(self.havven.balanceOf(alice), 3 * UNIT)
+        self.assertEqual(self.escrow.balanceOf(alice), 3 * UNIT)
         fast_forward(105)
         self.escrow.vest(alice)
         self.assertEqual(self.havven.balanceOf(alice), 4 * UNIT)
+        self.assertEqual(self.escrow.balanceOf(alice), 2 * UNIT)
         fast_forward(505)
         self.escrow.vest(alice)
         self.assertEqual(self.havven.balanceOf(alice), 6 * UNIT)
+        self.assertEqual(self.escrow.balanceOf(alice), 0 * UNIT)
         self.escrow.vest(alice)
         self.assertEqual(self.havven.balanceOf(alice), 6 * UNIT)
+        self.assertEqual(self.escrow.balanceOf(alice), 0 * UNIT)
 
     def test_addVestingSchedule(self):
         alice, bob, eve = fresh_accounts(3)

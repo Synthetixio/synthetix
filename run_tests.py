@@ -48,6 +48,7 @@ if __name__ == '__main__':
             PERFORMANCE_DATA[i][j] = (vals[0]//vals[1], vals[2], vals[3], vals[1])
 
     PERFORMANCE_DATA['CONTRACT'] = {'METHOD': ['AVG_GAS', 'MIN_GAS', 'MAX_GAS', "CALLS"]}
+    num_fields = len(PERFORMANCE_DATA['CONTRACT']['METHOD'])
 
     # PRINT TABLE | CONTRACT | METHOD | AVG GAS | MIN GAS | MAX GAS | CALLS |
     max_contract_name = max([len(i) for i in list(PERFORMANCE_DATA.keys())])
@@ -61,7 +62,7 @@ if __name__ == '__main__':
 
     print('┌' + '─'*(2 + max_contract_name) + '┬' +
           '─'*(2 + max_method_name) + '┬' +
-          ''.join(['─'*(2 + max_gas_len) + '┬' for i in vals[:-1]]) + '─'*(2 + max_gas_len) + '┐')
+          ('─'*(2 + max_gas_len) + '┬')*(num_fields - 1) + '─'*(2 + max_gas_len) + '┐')
     while True:
         for method in sorted(PERFORMANCE_DATA[current].keys()):
             vals = PERFORMANCE_DATA[current][method]
@@ -73,11 +74,11 @@ if __name__ == '__main__':
             break
         print('├' + '─'*(2 + max_contract_name) + '┼' +
               '─'*(2 + max_method_name) + '┼' +
-              ''.join(['─'*(2 + max_gas_len) + '┼' for i in vals[:-1]]) + '─'*(2 + max_gas_len) + '┤')
+              ('─'*(2 + max_gas_len) + '┼')*(num_fields - 1) + '─'*(2 + max_gas_len) + '┤')
         current = remaining.pop(0)
     print('└' + '─'*(2 + max_contract_name) + '┴' +
           '─'*(2 + max_method_name) + '┴' +
-          ''.join(['─'*(2 + max_gas_len) + '┴' for i in vals[:-1]]) + '─'*(2 + max_gas_len) + '┘')
+          ('─'*(2 + max_gas_len) + '┴')*(num_fields - 1) + '─'*(2 + max_gas_len) + '┘')
 
     process.terminate()
 

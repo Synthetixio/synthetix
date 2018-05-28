@@ -59,11 +59,10 @@ contract Nomin is ExternStateFeeToken {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _proxy, address _havven, address _owner, TokenState _initialState)
+    constructor(address _proxy, address _havven, address _owner)
         ExternStateFeeToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL,
                             TRANSFER_FEE,
                             _havven, // The havven contract is the fee authority.
-                            _initialState,
                             _owner)
         public
     {
@@ -107,7 +106,7 @@ contract Nomin is ExternStateFeeToken {
         returns (bool)
     {
         require(!frozen[to]);
-        return _transfer_byProxy(messageSender, to, priceToSpend(value));
+        return _transfer_byProxy(messageSender, to, value);
     }
 
     /* Override ERC20 transferFrom function in order to check
@@ -118,7 +117,7 @@ contract Nomin is ExternStateFeeToken {
         returns (bool)
     {
         require(!frozen[to]);
-        return _transferFrom_byProxy(messageSender, from, to, priceToSpend(value));
+        return _transferFrom_byProxy(messageSender, from, to, value);
     }
 
     function transferSenderPaysFee(address to, uint value)
@@ -127,7 +126,7 @@ contract Nomin is ExternStateFeeToken {
         returns (bool)
     {
         require(!frozen[to]);
-        return _transfer_byProxy(messageSender, to, value);
+        return _transferSenderPaysFee_byProxy(messageSender, to, value);
     }
 
     function transferFromSenderPaysFee(address from, address to, uint value)
@@ -136,7 +135,7 @@ contract Nomin is ExternStateFeeToken {
         returns (bool)
     {
         require(!frozen[to]);
-        return _transferFrom_byProxy(messageSender, from, to, value);
+        return _transferFromSenderPaysFee_byProxy(messageSender, from, to, value);
     }
 
     /* If a confiscation court motion has passed and reached the confirmation
@@ -158,9 +157,9 @@ contract Nomin is ExternStateFeeToken {
         require(!frozen[target]);
 
         // Confiscate the balance in the account and freeze it.
-        uint balance = state.balanceOf(target);
-        state.setBalanceOf(address(this), safeAdd(state.balanceOf(address(this)), balance));
-        state.setBalanceOf(target, 0);
+        uint balance = tokenState.balanceOf(target);
+        tokenState.setBalanceOf(address(this), safeAdd(tokenState.balanceOf(address(this)), balance));
+        tokenState.setBalanceOf(target, 0);
         frozen[target] = true;
         emitAccountFrozen(target, balance);
         emitTransfer(target, address(this), balance);
@@ -184,7 +183,7 @@ contract Nomin is ExternStateFeeToken {
         external
         onlyHavven
     {
-        state.setBalanceOf(account, safeAdd(state.balanceOf(account), amount));
+        tokenState.setBalanceOf(account, safeAdd(tokenState.balanceOf(account), amount));
         totalSupply = safeAdd(totalSupply, amount);
         emitTransfer(address(0), account, amount);
         emitIssued(account, amount);
@@ -196,7 +195,7 @@ contract Nomin is ExternStateFeeToken {
         external
         onlyHavven
     {
-        state.setBalanceOf(account, safeSub(state.balanceOf(account), amount));
+        tokenState.setBalanceOf(account, safeSub(tokenState.balanceOf(account), amount));
         totalSupply = safeSub(totalSupply, amount);
         emitTransfer(account, address(0), amount);
         emitBurned(account, amount);
@@ -217,50 +216,38 @@ contract Nomin is ExternStateFeeToken {
     /* ========== EVENTS ========== */
 
     event CourtUpdated(address newCourt);
+    bytes32 constant COURTUPDATED_SIG = keccak256("CourtUpdated(address)");
     function emitCourtUpdated(address newCourt) internal {
-        bytes memory data = abi.encode(newCourt);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 1, keccak256("CourtUpdated(address)"));
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(newCourt), 1, COURTUPDATED_SIG, 0, 0, 0);
     }
 
     event HavvenUpdated(address newHavven);
+    bytes32 constant HAVVENUPDATED_SIG = keccak256("HavvenUpdated(address)");
     function emitHavvenUpdated(address newHavven) internal {
-        bytes memory data = abi.encode(newHavven);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 1, keccak256("HavvenUpdated(address)"));
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(newHavven), 1, HAVVENUPDATED_SIG, 0, 0, 0);
     }
 
     event AccountFrozen(address indexed target, uint balance);
+    bytes32 constant ACCOUNTFROZEN_SIG = keccak256("AccountFrozen(address,uint256)");
     function emitAccountFrozen(address target, uint balance) internal {
-        bytes memory data = abi.encode(balance);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 2, keccak256("AccountFrozen(address,uint256)"), bytes32(target));
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(balance), 2, ACCOUNTFROZEN_SIG, bytes32(target), 0, 0);
     }
 
     event AccountUnfrozen(address indexed target);
+    bytes32 constant ACCOUNTUNFROZEN_SIG = keccak256("AccountUnfrozen(address)");
     function emitAccountUnfrozen(address target) internal {
-        bytes memory data = abi.encode();
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 2, keccak256("AccountUnfrozen(address)"), bytes32(target));
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(), 2, ACCOUNTUNFROZEN_SIG, bytes32(target), 0, 0);
     }
 
     event Issued(address indexed account, uint amount);
+    bytes32 constant ISSUED_SIG = keccak256("Issued(address,uint256)");
     function emitIssued(address account, uint amount) internal {
-        bytes memory data = abi.encode(amount);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 2, keccak256("Issued(address,uint256)"), bytes32(account));
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(amount), 2, ISSUED_SIG, bytes32(account), 0, 0);
     }
 
     event Burned(address indexed account, uint amount);
+    bytes32 constant BURNED_SIG = keccak256("Burned(address,uint256)");
     function emitBurned(address account, uint amount) internal {
-        bytes memory data = abi.encode(amount);
-        bytes memory call_args = abi.encodeWithSignature("_emit(bytes,uint256,bytes32,bytes32,bytes32,bytes32)",
-            data, 2, keccak256("Burned(address,uint256)"), bytes32(account));
-        require(address(proxy).call(call_args));
+        proxy._emit(abi.encode(amount), 2, BURNED_SIG, bytes32(account), 0, 0);
     }
 }

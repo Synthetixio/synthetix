@@ -44,7 +44,7 @@ contract LimitedSetup {
         setupExpiryTime = now + setupDuration;
     }
 
-    modifier setupFunction
+    modifier onlyDuringSetup
     {
         require(now < setupExpiryTime);
         _;

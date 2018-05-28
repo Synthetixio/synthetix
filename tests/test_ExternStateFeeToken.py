@@ -46,7 +46,7 @@ class TestExternStateFeeToken(HavvenTestCase):
         feetoken_event_dict = generate_topic_event_map(feetoken_abi)
         feetoken_contract, construction_txr = attempt_deploy(
             compiled, "PublicESFT", MASTER,
-            [proxy.address, "Test Fee Token", "FEE", UNIT // 20, MASTER, ZERO_ADDRESS, MASTER]
+            [proxy.address, "Test Fee Token", "FEE", UNIT // 20, MASTER, MASTER]
         )
 
         feestate, txr = attempt_deploy(
@@ -58,7 +58,7 @@ class TestExternStateFeeToken(HavvenTestCase):
             proxy.functions.setTarget(feetoken_contract.address).transact({'from': MASTER}),
             feestate.functions.setBalanceOf(DUMMY, 1000 * UNIT).transact({'from': MASTER}),
             feestate.functions.setAssociatedContract(feetoken_contract.address).transact({'from': MASTER}),
-            feetoken_contract.functions.setState(feestate.address).transact({'from': MASTER})]
+            feetoken_contract.functions.setTokenState(feestate.address).transact({'from': MASTER})]
         )
 
         return compiled, proxy, proxied_feetoken, feetoken_contract, feetoken_event_dict, feestate
@@ -71,7 +71,7 @@ class TestExternStateFeeToken(HavvenTestCase):
         cls.initial_beneficiary = DUMMY
         cls.fee_authority = fresh_account()
 
-        cls.feetoken = PublicExternStateFeeTokenInterface(cls.feetoken_contract, "ExternStateFeeToken")
+        cls.feetoken = PublicExternStateFeeTokenInterface(cls.proxied_feetoken, "ExternStateFeeToken")
         cls.feetoken.setFeeAuthority(MASTER, cls.fee_authority)
 
     def feetoken_withdrawFees(self, sender, beneficiary, quantity):
@@ -80,29 +80,19 @@ class TestExternStateFeeToken(HavvenTestCase):
     def test_constructor(self):
         self.assertEqual(self.feetoken.name(), "Test Fee Token")
         self.assertEqual(self.feetoken.symbol(), "FEE")
+        self.assertEqual(self.feetoken.decimals(), 18)
         self.assertEqual(self.feetoken.totalSupply(), 0)
         self.assertEqual(self.feetoken.transferFeeRate(), UNIT // 20)
         self.assertEqual(self.feetoken.feeAuthority(), self.fee_authority)
-        self.assertEqual(self.feetoken.state(), self.feestate.address)
+        self.assertEqual(self.feetoken.tokenState(), self.feestate.address)
         self.assertEqual(self.feestate.functions.associatedContract().call(), self.feetoken_contract.address)
 
-    def test_provide_state(self):
-        feestate, _ = attempt_deploy(self.compiled, 'TokenState',
-                                     MASTER, [MASTER, self.feetoken_contract.address])
-
+    def test_provide_tokenstate(self):
         feetoken, _ = attempt_deploy(self.compiled, 'ExternStateFeeToken',
                                      MASTER,
                                      [self.proxy.address, "Test Fee Token", "FEE",
-                                      UNIT // 20, self.fee_authority,
-                                      ZERO_ADDRESS, DUMMY])
-        self.assertNotEqual(feetoken.functions.state().call(), ZERO_ADDRESS)
-
-        feetoken, _ = attempt_deploy(self.compiled, 'ExternStateFeeToken',
-                                     MASTER,
-                                     [self.proxy.address, "Test Fee Token", "FEE",
-                                      UNIT // 20, self.fee_authority,
-                                      feestate.address, DUMMY])
-        self.assertEqual(feetoken.functions.state().call(), feestate.address)
+                                      UNIT // 20, self.fee_authority, DUMMY])
+        self.assertNotEqual(feetoken.functions.tokenState().call(), ZERO_ADDRESS)
 
     def test_getSetOwner(self):
         owner = self.feetoken.owner()
@@ -150,23 +140,23 @@ class TestExternStateFeeToken(HavvenTestCase):
                          "FeeAuthorityUpdated")
         self.assertEqual(self.feetoken.feeAuthority(), new_fee_authority)
 
-    def test_getSetState(self):
-        _, new_state = fresh_accounts(2)
+    def test_getSetTokenState(self):
+        _, new_tokenstate = fresh_accounts(2)
         owner = self.feetoken.owner()
-        self.assertNotEqual(new_state, owner)
+        self.assertNotEqual(new_tokenstate, owner)
 
         # Only the owner is able to set the Fee Authority.
-        self.assertReverts(self.feetoken.setState, new_state, new_state)
-        tx_receipt = self.feetoken.setState(owner, new_state)
+        self.assertReverts(self.feetoken.setTokenState, new_tokenstate, new_tokenstate)
+        tx_receipt = self.feetoken.setTokenState(owner, new_tokenstate)
         # Check that event is emitted.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'],
-                         "StateUpdated")
-        self.assertEqual(self.feetoken.state(), new_state)
+                         "TokenStateUpdated")
+        self.assertEqual(self.feetoken.tokenState(), new_tokenstate)
 
     def test_balanceOf(self):
         self.assertEqual(self.feetoken.balanceOf(ZERO_ADDRESS), 0)
         self.assertEqual(self.feetoken.balanceOf(self.initial_beneficiary), 1000 * UNIT)
-        self.feetoken.setState(self.feetoken.owner(), ZERO_ADDRESS)
+        self.feetoken.setTokenState(self.feetoken.owner(), ZERO_ADDRESS)
         self.assertReverts(self.feetoken.balanceOf, ZERO_ADDRESS)
 
     def test_allowance(self):
@@ -175,7 +165,7 @@ class TestExternStateFeeToken(HavvenTestCase):
         self.feetoken.approve(self.initial_beneficiary, ZERO_ADDRESS, 1000)
         self.assertEqual(self.feetoken.allowance(self.initial_beneficiary, ZERO_ADDRESS), 1000)
         self.assertEqual(self.feetoken.allowance(ZERO_ADDRESS, self.initial_beneficiary), 0)
-        self.feetoken.setState(self.feetoken.owner(), ZERO_ADDRESS)
+        self.feetoken.setTokenState(self.feetoken.owner(), ZERO_ADDRESS)
         self.assertReverts(self.feetoken.allowance, self.initial_beneficiary, ZERO_ADDRESS)
 
     def test_getTransferFeeIncurred(self):
@@ -458,12 +448,12 @@ class TestExternStateFeeToken(HavvenTestCase):
             location=self.proxy.address
         )
 
-    def test_event_StateUpdated(self):
-        new_state = fresh_account()
-        txr = self.feetoken.setState(MASTER, new_state)
+    def test_event_TokenStateUpdated(self):
+        new_tokenstate = fresh_account()
+        txr = self.feetoken.setTokenState(MASTER, new_tokenstate)
         self.assertEventEquals(
-            self.feetoken_event_dict, txr.logs[0], 'StateUpdated',
-            fields={'newState': new_state},
+            self.feetoken_event_dict, txr.logs[0], 'TokenStateUpdated',
+            fields={'newTokenState': new_tokenstate},
             location=self.proxy.address
         )
 

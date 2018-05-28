@@ -10,7 +10,6 @@ import tests.test_Pausable
 import tests.test_LimitedSetup
 import tests.test_Nomin
 import tests.test_Owned
-import tests.test_ProxiedContracts
 import tests.test_Proxy
 import tests.test_SafeDecimalMath
 import tests.test_SelfDestructible
