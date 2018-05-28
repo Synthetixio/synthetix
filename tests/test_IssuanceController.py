@@ -52,7 +52,7 @@ class TestIssuanceController(HavvenTestCase):
             compiled, 'PublicHavven', MASTER, [havven_proxy.address, ZERO_ADDRESS, MASTER, MASTER, UNIT//2]
         )
         nomin_contract, nom_txr = attempt_deploy(
-            compiled, 'PublicNomin', MASTER, [nomin_proxy.address, havven_contract.address, MASTER, ZERO_ADDRESS]
+            compiled, 'PublicNomin', MASTER, [nomin_proxy.address, havven_contract.address, MASTER]
         )
 
         mine_txs([
