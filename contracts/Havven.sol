@@ -266,7 +266,7 @@ contract Havven is DestructibleExternStateToken {
                                duration <= MAX_FEE_PERIOD_DURATION);
         feePeriodDuration = duration;
         emitFeePeriodDurationUpdated(duration);
-        checkFeePeriodRollover();
+        rolloverFeePeriodIfElapsed();
     }
 
     /**
@@ -431,7 +431,7 @@ contract Havven is DestructibleExternStateToken {
         optionalProxy
     {
         address sender = messageSender;
-        checkFeePeriodRollover();
+        rolloverFeePeriodIfElapsed();
         /* Do not deposit fees into frozen accounts. */
         require(!nomin.frozen(sender));
 
@@ -573,11 +573,10 @@ contract Havven is DestructibleExternStateToken {
 
     /**
      * @notice Check if the fee period has rolled over. If it has, set the new fee period start
-     * time, and collect fees from the nomin contract.
+     * time, and record the fees collected in the nomin contract.
      */
-    function checkFeePeriodRollover()
+    function rolloverFeePeriodIfElapsed()
         public
-        optionalProxy
     {
         /* If the fee period has rolled over... */
         if (now >= feePeriodStartTime + feePeriodDuration) {
@@ -700,7 +699,7 @@ contract Havven is DestructibleExternStateToken {
         emitPriceUpdated(newPrice, timeSent);
 
         /* Check the fee period rollover within this as the price should be pushed every 15min. */
-        checkFeePeriodRollover();
+        rolloverFeePeriodIfElapsed();
     }
 
     /**

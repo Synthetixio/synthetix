@@ -403,7 +403,7 @@ contract Court is SafeDecimalMath, Owned {
         /* Disallow votes on accounts that have previously been frozen. */
         require(!nomin.frozen(target));
 
-        havven.checkFeePeriodRollover();
+        havven.rolloverFeePeriodIfElapsed();
 
         uint motionID = nextMotionID++;
         motionTarget[motionID] = target;

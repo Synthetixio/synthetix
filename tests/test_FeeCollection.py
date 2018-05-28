@@ -85,7 +85,7 @@ class TestFeeCollection(HavvenTestCase):
     def rollover_and_validate(self, duration=None):
         time = duration if duration is not None else self.havven.feePeriodDuration() + 1
         fast_forward(time)
-        tx = self.havven.checkFeePeriodRollover(DUMMY)
+        tx = self.havven.rolloverFeePeriodIfElapsed(DUMMY)
         rollover_time = block_time(tx.blockNumber)
         self.assertEventEquals(self.event_map,
                                tx.logs[0], "FeePeriodRollover",

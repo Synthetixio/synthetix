@@ -57,7 +57,7 @@ class HavvenInterface(DestructibleExternStateTokenInterface):
         self.transferFrom = lambda sender, frm, to, val: mine_tx(self.contract.functions.transferFrom(frm, to, val).transact({'from': sender}), "transferFrom", self.contract_name)
         self.withdrawFees = lambda sender: mine_tx(self.contract.functions.withdrawFees().transact({'from': sender}), "withdrawFees", self.contract_name)
         self.recomputeLastAverageBalance = lambda sender, acc: mine_tx(self.contract.functions.recomputeLastAverageBalance(acc).transact({'from': sender}), "recomputeLastAverageBalance", self.contract_name)
-        self.checkFeePeriodRollover = lambda sender: mine_tx(self.contract.functions.checkFeePeriodRollover().transact({'from': sender}), "checkFeePeriodRollover", self.contract_name)
+        self.rolloverFeePeriodIfElapsed = lambda sender: mine_tx(self.contract.functions.rolloverFeePeriodIfElapsed().transact({'from': sender}), "rolloverFeePeriodIfElapsed", self.contract_name)
         self.issueMaxNomins = lambda sender: mine_tx(self.contract.functions.issueMaxNomins().transact({'from': sender}), "issueMaxNomins", self.contract_name)
         self.issueNomins = lambda sender, amt: mine_tx(self.contract.functions.issueNomins(amt).transact({'from': sender}), "issueNomins", self.contract_name)
         self.burnNomins = lambda sender, amt: mine_tx(self.contract.functions.burnNomins(amt).transact({'from': sender}), "burnNomins", self.contract_name)
