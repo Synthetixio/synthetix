@@ -440,12 +440,17 @@ contract Havven is DestructibleExternStateToken {
 
         /* Only allow accounts to withdraw fees once per period. */
         require(!hasWithdrawnFees[sender]);
-        uint feesOwed;
 
+        uint feesOwed;
         uint lastTotalIssued = totalIssuanceData.lastAverageBalance;
 
         if (lastTotalIssued > 0) {
-            feesOwed = safeDiv_dec(safeMul_dec(issuanceData[sender].lastAverageBalance, lastFeesCollected), lastTotalIssued);
+            /* Sender receives a share of last period's collected fees proportional
+             * with their average fraction of the last period's issued nomins. */
+            feesOwed = safeDiv_dec(
+                safeMul_dec(issuanceData[sender].lastAverageBalance, lastFeesCollected),
+                lastTotalIssued
+            );
         }
 
         hasWithdrawnFees[sender] = true;
