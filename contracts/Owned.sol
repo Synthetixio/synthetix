@@ -46,6 +46,7 @@ contract Owned {
     constructor(address _owner)
         public
     {
+        require(_owner != address(0));
         owner = _owner;
         emit OwnerChanged(address(0), _owner);
     }
