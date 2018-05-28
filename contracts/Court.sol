@@ -153,15 +153,17 @@ contract Court is SafeDecimalMath, Owned {
     uint constant MIN_CONFIRMATION_PERIOD = 1 days;
     uint constant MAX_CONFIRMATION_PERIOD = 2 weeks;
 
-    /* No fewer than this fraction of havvens must participate in a motion
-     * in order for a quorum to be reached.
-     * The participation fraction required may be set no lower than 10%. */
+    /* No fewer than this fraction of total available voting power must
+     * participate in a motion in order for a quorum to be reached.
+     * The participation fraction required may be set no lower than 10%.
+     * As a fraction, it is expressed in terms of UNIT, not as an absolute quantity. */
     uint public requiredParticipation = 3 * UNIT / 10;
     uint constant MIN_REQUIRED_PARTICIPATION = UNIT / 10;
 
     /* At least this fraction of participating votes must be in favour of
      * confiscation for the motion to pass.
-     * The required majority may be no lower than 50%. */
+     * The required majority may be no lower than 50%.
+     * As a fraction, it is expressed in terms of UNIT, not as an absolute quantity. */
     uint public requiredMajority = (2 * UNIT) / 3;
     uint constant MIN_REQUIRED_MAJORITY = UNIT / 2;
 
