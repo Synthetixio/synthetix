@@ -407,6 +407,8 @@ contract Court is SafeDecimalMath, Owned {
         /* Disallow votes on accounts that are currently frozen. */
         require(!nomin.frozen(target));
 
+        /* It is necessary to roll over the fee period if it has elapsed, or else
+         * the vote might be initialised having begun in the past. */
         havven.rolloverFeePeriodIfElapsed();
 
         uint motionID = nextMotionID++;
