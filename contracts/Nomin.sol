@@ -142,7 +142,7 @@ contract Nomin is ExternStateFeeToken {
     /* If a confiscation court motion has passed and reached the confirmation
      * state, the court may transfer the target account's balance to the fee pool
      * and freeze its participation in further transactions. */
-    function confiscateBalance(address target)
+    function freezeAndConfiscate(address target)
         external
         onlyCourt
     {

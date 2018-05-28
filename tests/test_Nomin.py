@@ -462,7 +462,7 @@ class TestNomin(HavvenTestCase):
         self.assertEqual(self.nomin.balanceOf(target), self.nomin.priceToSpend(old_bal))
         self.assertLess(self.nomin.balanceOf(MASTER), 3)  # assert MASTER only has the tiniest bit of change
 
-    def test_confiscateBalance(self):
+    def test_freezeAndConfiscate(self):
         target = W3.eth.accounts[2]
 
         self.assertEqual(self.nomin.court(), self.fake_court.contract.address)
@@ -478,27 +478,27 @@ class TestNomin(HavvenTestCase):
         # Attempt to confiscate even though the conditions are not met.
         self.fake_court.setConfirming(MASTER, motion_id, False)
         self.fake_court.setVotePasses(MASTER, motion_id, False)
-        self.assertReverts(self.fake_court.confiscateBalance, MASTER, target)
+        self.assertReverts(self.fake_court.freezeAndConfiscate, MASTER, target)
 
         self.fake_court.setConfirming(MASTER, motion_id, True)
         self.fake_court.setVotePasses(MASTER, motion_id, False)
-        self.assertReverts(self.fake_court.confiscateBalance, MASTER, target)
+        self.assertReverts(self.fake_court.freezeAndConfiscate, MASTER, target)
 
         self.fake_court.setConfirming(MASTER, motion_id, False)
         self.fake_court.setVotePasses(MASTER, motion_id, True)
-        self.assertReverts(self.fake_court.confiscateBalance, MASTER, target)
+        self.assertReverts(self.fake_court.freezeAndConfiscate, MASTER, target)
 
         # Set up the target balance to be confiscatable.
         self.fake_court.setConfirming(MASTER, motion_id, True)
         self.fake_court.setVotePasses(MASTER, motion_id, True)
 
         # Only the court should be able to confiscate balances.
-        self.assertReverts(self.nomin.confiscateBalance, MASTER, target)
+        self.assertReverts(self.nomin.freezeAndConfiscate, MASTER, target)
 
         # Actually confiscate the balance.
         pre_fee_pool = self.nomin.feePool()
         pre_balance = self.nomin.balanceOf(target)
-        self.fake_court.confiscateBalance(MASTER, target)
+        self.fake_court.freezeAndConfiscate(MASTER, target)
         self.assertEqual(self.nomin.balanceOf(target), 0)
         self.assertEqual(self.nomin.feePool(), pre_fee_pool + pre_balance)
         self.assertTrue(self.nomin.frozen(target))
@@ -679,7 +679,7 @@ class TestNomin(HavvenTestCase):
         self.fake_court.setConfirming(MASTER, motion_id, True)
         self.fake_court.setVotePasses(MASTER, motion_id, True)
         self.assertEqual(self.nomin.balanceOf(target), 5 * UNIT)
-        txr = self.fake_court.confiscateBalance(MASTER, target)
+        txr = self.fake_court.freezeAndConfiscate(MASTER, target)
         self.assertEqual(self.nomin.balanceOf(target), 0)
         self.assertEventEquals(
             self.nomin_event_dict, txr.logs[0], 'AccountFrozen',

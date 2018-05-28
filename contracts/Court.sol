@@ -540,7 +540,7 @@ contract Court is SafeDecimalMath, Owned {
     {
         require(motionConfirming(motionID) && motionPasses(motionID));
         address target = motionTarget[motionID];
-        nomin.confiscateBalance(target);
+        nomin.freezeAndConfiscate(target);
         _closeMotion(motionID);
         emit MotionApproved(motionID);
     }
