@@ -1,5 +1,5 @@
 import tests.test_Court
-import tests.test_DestructibleExternStateToken
+import tests.test_ExternStateToken
 import tests.test_ExternStateFeeToken
 import tests.test_FeeCollection
 import tests.test_Havven

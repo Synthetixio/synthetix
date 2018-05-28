@@ -3,12 +3,12 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 
-file:       DestructibleExternStateToken.sol
-version:    1.2
+file:       ExternStateToken.sol
+version:    1.3
 author:     Anton Jurisevic
             Dominic Romanowski
 
-date:       2018-05-22
+date:       2018-05-29
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -38,7 +38,7 @@ import "contracts/Proxyable.sol";
 /**
  * @title ERC20 Token contract, with detached state and designed to operate behind a proxy.
  */
-contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Proxyable {
+contract ExternStateToken is SafeDecimalMath, SelfDestructible, Proxyable {
 
     /* ========== STATE VARIABLES ========== */
 

@@ -2,7 +2,7 @@ from utils.deployutils import (
     W3, UNIT, MASTER, DUMMY,
     fresh_account, fresh_accounts,
     mine_tx, attempt_deploy, mine_txs,
-    take_snapshot, restore_snapshot
+    take_snapshot, restore_snapshot, fast_forward
 )
 from utils.testutils import (
     HavvenTestCase, ZERO_ADDRESS,
@@ -70,11 +70,15 @@ class TestNomin(HavvenTestCase):
         cls.nomin = PublicNominInterface(cls.proxied_nomin, "Nomin")
         cls.havven = HavvenInterface(cls.proxied_havven, "Havven")
 
+        cls.unproxied_nomin = PublicNominInterface(cls.nomin_contract, "UnproxiedNomin")
+
         cls.fake_court = FakeCourtInterface(cls.fake_court_contract, "FakeCourt")
 
         cls.fake_court.setNomin(MASTER, cls.nomin_contract.address)
 
         cls.nomin.setFeeAuthority(MASTER, cls.havven_contract.address)
+
+        cls.sd_duration = 4 * 7 * 24 * 60 * 60
 
     def test_constructor(self):
         # Nomin-specific members
@@ -651,6 +655,42 @@ class TestNomin(HavvenTestCase):
             fields={'account': acc2, 'amount': max_int},
             location=self.nomin_proxy.address
         )
+
+    def test_selfDestruct(self):
+        owner = self.nomin.owner()
+        notowner = DUMMY
+        self.assertNotEqual(owner, notowner)
+
+        # The contract cannot be self-destructed before the SD has been initiated.
+        self.assertReverts(self.nomin.selfDestruct, owner)
+
+        tx = self.unproxied_nomin.initiateSelfDestruct(owner)
+        self.assertEventEquals(self.nomin_event_dict, tx.logs[0],
+                               "SelfDestructInitiated",
+                               {"selfDestructDelay": self.sd_duration},
+                               location=self.nomin_contract.address)
+
+        # Neither owners nor non-owners may not self-destruct before the time has elapsed.
+        self.assertReverts(self.unproxied_nomin.selfDestruct, notowner)
+        self.assertReverts(self.unproxied_nomin.selfDestruct, owner)
+        fast_forward(seconds=self.sd_duration, days=-1)
+        self.assertReverts(self.unproxied_nomin.selfDestruct, notowner)
+        self.assertReverts(self.unproxied_nomin.selfDestruct, owner)
+        fast_forward(seconds=10, days=1)
+
+        # Non-owner should not be able to self-destruct even if the time has elapsed.
+        self.assertReverts(self.unproxied_nomin.selfDestruct, notowner)
+        address = self.unproxied_nomin.contract.address
+        tx = self.unproxied_nomin.selfDestruct(owner)
+
+        self.assertEventEquals(self.nomin_event_dict, tx.logs[0],
+                               "SelfDestructed",
+                               {"beneficiary": owner},
+                               location=self.nomin_contract.address)
+
+        # Check contract not exist 
+        self.assertEqual(W3.eth.getCode(address), b'\x00')
+
 
     def test_event_CourtUpdated(self):
         new_court = fresh_account()

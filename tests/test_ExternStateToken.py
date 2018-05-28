@@ -8,11 +8,11 @@ from utils.testutils import (
     HavvenTestCase,
     generate_topic_event_map, get_event_data_from_log
 )
-from tests.contract_interfaces.destructible_extern_state_token_interface import DestructibleExternStateTokenInterface
+from tests.contract_interfaces.extern_state_token_interface import ExternStateTokenInterface
 
 
 def setUpModule():
-    print("Testing DestructibleExternStateToken...")
+    print("Testing ExternStateToken...")
     print("=======================================")
     print()
 
@@ -22,7 +22,7 @@ def tearDownModule():
     print()
 
 
-class TestDestructibleExternStateToken(HavvenTestCase):
+class TestExternStateToken(HavvenTestCase):
     def setUp(self):
         self.snapshot = take_snapshot()
 
@@ -31,8 +31,8 @@ class TestDestructibleExternStateToken(HavvenTestCase):
 
     @classmethod
     def deploy_contracts(cls):
-        sources = ['tests/contracts/PublicDEST.sol',
-                   'contracts/DestructibleExternStateToken.sol',
+        sources = ['tests/contracts/PublicEST.sol',
+                   'contracts/ExternStateToken.sol',
                    'contracts/TokenState.sol', 'contracts/Proxy.sol']
 
         compiled, cls.event_maps = cls.compileAndMapEvents(sources)
@@ -45,11 +45,11 @@ class TestDestructibleExternStateToken(HavvenTestCase):
                                        MASTER, [MASTER, MASTER])
 
         token_contract, construction_txr = attempt_deploy(
-            compiled, 'PublicDEST', MASTER,
+            compiled, 'PublicEST', MASTER,
             [proxy_contract.address, "Test Token", "TEST", 1000 * UNIT, tokenstate.address, MASTER]
         )
 
-        token_abi = compiled['PublicDEST']['abi']
+        token_abi = compiled['PublicEST']['abi']
         token_event_dict = generate_topic_event_map(token_abi)
 
         proxied_token = W3.eth.contract(address=proxy_contract.address, abi=token_abi)
@@ -64,8 +64,8 @@ class TestDestructibleExternStateToken(HavvenTestCase):
     @classmethod
     def setUpClass(cls):
         cls.proxy, cls.proxied_token, cls.compiled, cls.token_contract, cls.token_abi, cls.token_event_dict, cls.tokenstate = cls.deploy_contracts()
-        cls.event_map = cls.event_maps['DestructibleExternStateToken']
-        cls.token = DestructibleExternStateTokenInterface(cls.proxied_token, "DestructibleExternStateToken")
+        cls.event_map = cls.event_maps['ExternStateToken']
+        cls.token = ExternStateTokenInterface(cls.proxied_token, "ExternStateToken")
 
     def test_constructor(self):
         self.assertEqual(self.token.name(), "Test Token")
@@ -80,7 +80,7 @@ class TestDestructibleExternStateToken(HavvenTestCase):
         tokenstate, _ = attempt_deploy(self.compiled, 'TokenState',
                                        MASTER,
                                        [MASTER, self.token_contract.address])
-        token, _ = attempt_deploy(self.compiled, 'DestructibleExternStateToken',
+        token, _ = attempt_deploy(self.compiled, 'ExternStateToken',
                                   MASTER,
                                   [self.proxy.address, "Test Token", "TEST",
                                    1000 * UNIT,

@@ -128,10 +128,10 @@ class TestHavven(HavvenTestCase):
         self.assertReverts(self.havven.nominateNewOwner, invalid_account, invalid_account)
 
     ###
-    # Test inherited DestructibleExternStateToken
+    # Test inherited ExternStateToken
     ###
     # Constuctor
-    def test_DestructibleExternStateToken_constructor(self):
+    def test_ExternStateToken_constructor(self):
         total_supply = 10 ** 8 * UNIT
         self.assertEqual(self.havven.name(), "Havven")
         self.assertEqual(self.havven.symbol(), "HAV")
@@ -521,7 +521,7 @@ class TestHavven(HavvenTestCase):
         event = get_event_data_from_log(self.havven_event_dict, tx_receipt.logs[0])
         self.assertEqual(event['event'], 'FeePeriodRollover')
 
-    # same as test_DestructibleExternStateToken
+    # same as test_ExternStateToken
     def test_transfer(self):
         sender, receiver, no_tokens = fresh_accounts(3)
         self.havven.endow(MASTER, sender, 50 * UNIT)

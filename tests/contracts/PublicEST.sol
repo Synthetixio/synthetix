@@ -1,11 +1,11 @@
 pragma solidity ^0.4.23;
 
-import "contracts/DestructibleExternStateToken.sol";
+import "contracts/ExternStateToken.sol";
 
-contract PublicDEST is DestructibleExternStateToken {
+contract PublicEST is ExternStateToken {
     constructor(address _proxy, string _name, string _symbol, uint _totalSupply,
                                    TokenState _state, address _owner)
-        DestructibleExternStateToken(_proxy, _name, _symbol, _totalSupply, _state, _owner)
+        ExternStateToken(_proxy, _name, _symbol, _totalSupply, _state, _owner)
         public
     {}
 

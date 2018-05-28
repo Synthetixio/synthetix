@@ -125,7 +125,7 @@ even going above the initial wallet balance.
 pragma solidity 0.4.24;
 
 
-import "contracts/DestructibleExternStateToken.sol";
+import "contracts/ExternStateToken.sol";
 import "contracts/Nomin.sol";
 import "contracts/HavvenEscrow.sol";
 import "contracts/TokenState.sol";
@@ -137,7 +137,7 @@ import "contracts/SelfDestructible.sol";
  * @notice The Havven contracts does not only facilitate transfers and track balances,
  * but it also computes the quantity of fees each havven holder is entitled to.
  */
-contract Havven is DestructibleExternStateToken {
+contract Havven is ExternStateToken {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -215,8 +215,8 @@ contract Havven is DestructibleExternStateToken {
      * @param _owner The owner of this contract.
      */
     constructor(address _proxy, TokenState _tokenState, address _owner, address _oracle, uint _price)
-        DestructibleExternStateToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, _tokenState, _owner)
-        /* Owned is initialised in DestructibleExternStateToken */
+        ExternStateToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, _tokenState, _owner)
+        /* Owned is initialised in ExternStateToken */
         public
     {
         oracle = _oracle;
