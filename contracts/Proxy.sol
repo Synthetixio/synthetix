@@ -109,7 +109,6 @@ contract Proxy is Owned {
             if iszero(result) { revert(free_ptr, returndatasize) }
             return(free_ptr, returndatasize)
         }
-        //target.setMessageSender(0);
     }
 
     modifier onlyTarget {
