@@ -226,6 +226,9 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         return requestedToPurchase;
     }
 
+    /**
+     * @notice Exchange nUSD for Havvens
+     */
     function exchangeForHavvens(uint amount)
         external
         pricesNotStale // We can only do this when the prices haven't gone stale
