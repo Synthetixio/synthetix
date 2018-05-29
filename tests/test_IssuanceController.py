@@ -65,8 +65,6 @@ class TestIssuanceController(HavvenTestCase):
             compiled, 'IssuanceController', MASTER,
                 [
                     cls.contractOwner,
-                    cls.beneficiary,
-                    cls.delay,
                     havven_contract.address,
                     nomin_contract.address,
                     cls.oracleAddress,
@@ -83,8 +81,6 @@ class TestIssuanceController(HavvenTestCase):
         cls.participantAddresses = addresses[2:]
         cls.contractOwner = MASTER
         cls.oracleAddress = addresses[0]
-        cls.beneficiary = addresses[1]
-        cls.delay = 100 * 60
         cls.usdToEthPrice = 100 * (10 ** 18)
         cls.usdToHavPrice = int(0.65 * (10 ** 18))
         cls.priceStalePeriod = 3 * 60 * 60
@@ -96,8 +92,6 @@ class TestIssuanceController(HavvenTestCase):
     def test_constructor(self):
         self.assertEqual(self.issuanceController.owner(), self.contractOwner)
         self.assertEqual(self.issuanceController.oracle(), self.oracleAddress)
-        self.assertEqual(self.issuanceController.selfDestructBeneficiary(), self.beneficiary)
-        self.assertEqual(self.issuanceController.selfDestructDelay(), self.delay)
         self.assertEqual(self.issuanceController.oracle(), self.oracleAddress)
         self.assertEqual(self.issuanceController.usdToEthPrice(), self.usdToEthPrice)
         self.assertEqual(self.issuanceController.usdToHavPrice(), self.usdToHavPrice)

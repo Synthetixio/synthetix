@@ -51,6 +51,9 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     Havven public havven;
     Nomin public nomin;
 
+    // Address where the ether raised is transfered to
+    address public fundsWallet;
+
     /* The address of the oracle which pushes the havven price to this contract */
     address public oracle;
     /* Do not allow the oracle to submit times any further forward into the future than
@@ -74,8 +77,6 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     /**
      * @dev Constructor
      * @param _owner The owner of this contract.
-     * @param _beneficiary The address which will receive any ether upon self destruct completion.
-     * @param _selfDestructDelay The timeframe from request of self destruct to ability to destroy.
      * @param _havven The Havven contract we'll interact with for balances and sending.
      * @param _nomin The Nomin contract we'll interact with for balances and sending.
      * @param _oracle The address which is able to update price information.
@@ -85,10 +86,6 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     constructor(
         // Ownable
         address _owner,
-
-        // SelfDestructable
-        address _beneficiary,
-        uint _selfDestructDelay,
 
         // Other contracts needed
         Havven _havven,
@@ -100,7 +97,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         uint _usdToHavPrice
     )
         /* Owned is initialised in SelfDestructible */
-        SelfDestructible(_owner, _beneficiary, _selfDestructDelay)
+        SelfDestructible(_owner)
         Pausable(_owner)
         public
     {
@@ -114,6 +111,18 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
 
     /* ========== SETTERS ========== */
 
+    /**
+     * @notice Set the funds wallet where ETH raised is held
+     */
+    function setFundsWallet(address _fundsWallet)
+        external
+        onlyOwner
+    {
+        fundsWallet = _fundsWallet;
+
+        emit FundsWalletUpdated(fundsWallet);
+    }
+    
     /**
      * @notice Set the Oracle that pushes the havven price to this contract
      */
@@ -178,21 +187,6 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     }
 
     /**
-     * @notice Withdraw function to transfer ETH out to owner.
-     */
-    function withdrawEth(uint amount)
-        external
-        onlyOwner // Only owner can trigger withdrawls and they can happen while we're paused
-        returns(bool)
-    {
-        require(amount <= address(this).balance);
-
-        owner.transfer(amount);
-
-        return true;
-    }
-
-    /**
      * @notice Exchange ETH to nUSD.
      */
     function exchangeForNomins()
@@ -210,6 +204,9 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         // This check is technically not required because the Nomin
         // contract should enforce this as well.
         require(availableNomins >= requestedToPurchase);
+
+        // Store the ETH in our funds wallet
+        fundsWallet.transfer(msg.value);
 
         // Send the nomins.
         // Note: Fees are calculated by the Nomin contract, so when 
@@ -283,8 +280,9 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
 
     /* ========== EVENTS ========== */
 
-    event PricesUpdated(uint newEthPrice, uint newHavvenPrice, uint timeSent);
+    event FundsWalletUpdated(address newFundsWallet);
     event OracleUpdated(address newOracle);
     event NominUpdated(Nomin newNominContract);
     event HavvenUpdated(Havven newHavvenContract);
+    event PricesUpdated(uint newEthPrice, uint newHavvenPrice, uint timeSent);
 }
