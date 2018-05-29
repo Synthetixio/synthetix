@@ -27,6 +27,7 @@ pragma solidity 0.4.24;
 
 
 import "contracts/SafeDecimalMath.sol";
+import "contracts/SelfDestructible.sol";
 import "contracts/TokenState.sol";
 import "contracts/Proxyable.sol";
 
@@ -34,7 +35,7 @@ import "contracts/Proxyable.sol";
 /**
  * @title ERC20 Token contract, with detached state and designed to operate behind a proxy.
  */
-contract ExternStateToken is SafeDecimalMath, Proxyable {
+contract ExternStateToken is SafeDecimalMath, SelfDestructible, Proxyable {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -58,6 +59,7 @@ contract ExternStateToken is SafeDecimalMath, Proxyable {
      */
     constructor(address _proxy, string _name, string _symbol, uint _totalSupply,
                 TokenState _tokenState, address _owner)
+        SelfDestructible(_owner)
         Proxyable(_proxy, _owner)
         public
     {

@@ -34,12 +34,11 @@ pragma solidity 0.4.24;
 
 
 import "contracts/ExternStateFeeToken.sol";
-import "contracts/SelfDestructible.sol";
 import "contracts/TokenState.sol";
 import "contracts/Court.sol";
 import "contracts/Havven.sol";
 
-contract Nomin is ExternStateFeeToken, SelfDestructible {
+contract Nomin is ExternStateFeeToken {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -55,8 +54,6 @@ contract Nomin is ExternStateFeeToken, SelfDestructible {
     string constant TOKEN_NAME = "USD Nomins";
     string constant TOKEN_SYMBOL = "nUSD";
 
-    //uint constant SELF_DESTRUCT_DELAY = 4 weeks;
-
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _proxy, Havven _havven, address _owner)
@@ -64,7 +61,6 @@ contract Nomin is ExternStateFeeToken, SelfDestructible {
                             TRANSFER_FEE_RATE,
                             _havven, // The havven contract is the fee authority.
                             _owner)
-        SelfDestructible(_owner)
         public
     {
         require(_proxy != 0 && address(_havven) != 0 && _owner != 0);
