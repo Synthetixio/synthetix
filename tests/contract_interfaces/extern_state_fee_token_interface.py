@@ -23,7 +23,7 @@ class ExternStateFeeTokenInterface(SafeDecimalMathInterface, OwnedInterface):
 
         self.transferFeeIncurred = lambda value: self.contract.functions.transferFeeIncurred(value).call()
         self.transferPlusFee = lambda value: self.contract.functions.transferPlusFee(value).call()
-        self.priceToSpend = lambda value: self.contract.functions.priceToSpend(value).call()
+        self.amountReceived = lambda value: self.contract.functions.amountReceived(value).call()
 
         self.setTransferFeeRate = lambda sender, new_fee_rate: mine_tx(
             self.contract.functions.setTransferFeeRate(new_fee_rate).transact({'from': sender}), "setTransferFeeRate", self.contract_name)

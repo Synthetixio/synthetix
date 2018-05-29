@@ -183,14 +183,14 @@ class TestExternStateFeeToken(HavvenTestCase):
 
         self.assertEqual(self.feetoken.transferPlusFee(0), 0)
 
-    def test_priceToSpend(self):
+    def test_amountReceived(self):
         value = 10 * UNIT
-        self.assertEqual(self.feetoken.priceToSpend(0), 0)
+        self.assertEqual(self.feetoken.amountReceived(0), 0)
         fee_rate = self.feetoken.transferFeeRate()
-        self.assertEqual(self.feetoken.priceToSpend(value), (UNIT * value) // (UNIT + fee_rate))
+        self.assertEqual(self.feetoken.amountReceived(value), (UNIT * value) // (UNIT + fee_rate))
         fee_rate = 13 * UNIT // 10000
         self.feetoken.setTransferFeeRate(MASTER, fee_rate)
-        self.assertEqual(self.feetoken.priceToSpend(value), (UNIT * value) // (UNIT + fee_rate))
+        self.assertEqual(self.feetoken.amountReceived(value), (UNIT * value) // (UNIT + fee_rate))
 
     def test_transfer(self):
         sender = self.initial_beneficiary
@@ -203,7 +203,7 @@ class TestExternStateFeeToken(HavvenTestCase):
         total_supply = self.feetoken.totalSupply()
         fee_pool = self.feetoken.feePool()
         value = 10 * UNIT
-        amountReceived = self.feetoken.priceToSpend(value)
+        amountReceived = self.feetoken.amountReceived(value)
         fee = value - amountReceived
 
         # This should fail because receiver has no tokens
@@ -276,7 +276,7 @@ class TestExternStateFeeToken(HavvenTestCase):
         receiver_balance = self.feetoken.balanceOf(receiver)
 
         value = 10 * UNIT
-        amountReceived = self.feetoken.priceToSpend(value)
+        amountReceived = self.feetoken.amountReceived(value)
         fee = value - amountReceived
         total_supply = self.feetoken.totalSupply()
         fee_pool = self.feetoken.feePool()
@@ -291,7 +291,7 @@ class TestExternStateFeeToken(HavvenTestCase):
         self.assertEqual(self.feetoken.allowance(approver, spender), value)
 
         value = UNIT
-        amountReceived = self.feetoken.priceToSpend(value)
+        amountReceived = self.feetoken.amountReceived(value)
         fee = value - amountReceived
         tx_receipt = self.feetoken.transferFrom(spender, approver, receiver, value)
 
@@ -307,7 +307,7 @@ class TestExternStateFeeToken(HavvenTestCase):
         self.assertEqual(self.feetoken.feePool(), fee_pool + fee)
 
         value = 9 * UNIT
-        amountReceived = self.feetoken.priceToSpend(value)
+        amountReceived = self.feetoken.amountReceived(value)
         fee = value - amountReceived
         tx_receipt = self.feetoken.transferFrom(spender, approver, receiver, value)
 
@@ -317,10 +317,10 @@ class TestExternStateFeeToken(HavvenTestCase):
         self.assertEqual(self.feetoken.allowance(approver, spender), 0)
         self.assertEqual(self.feetoken.balanceOf(approver), approver_balance - 10 * UNIT)
         self.assertEqual(self.feetoken.balanceOf(spender), spender_balance)
-        self.assertEqual(self.feetoken.balanceOf(receiver), receiver_balance + self.feetoken.priceToSpend(UNIT) + self.feetoken.priceToSpend(9 * UNIT))
+        self.assertEqual(self.feetoken.balanceOf(receiver), receiver_balance + self.feetoken.amountReceived(UNIT) + self.feetoken.amountReceived(9 * UNIT))
         self.assertEqual(self.feetoken.totalSupply(), total_supply)
 
-        totalFees = 9 * UNIT - self.feetoken.priceToSpend(9 * UNIT) + UNIT - self.feetoken.priceToSpend(UNIT)
+        totalFees = 9 * UNIT - self.feetoken.amountReceived(9 * UNIT) + UNIT - self.feetoken.amountReceived(UNIT)
         self.assertEqual(self.feetoken.feePool(), fee_pool + totalFees)
 
         approver = fresh_account()
@@ -342,7 +342,7 @@ class TestExternStateFeeToken(HavvenTestCase):
         self.assertNotEqual(self.fee_authority, fee_receiver)
 
         value = 500 * UNIT
-        amountReceived = self.feetoken.priceToSpend(value)
+        amountReceived = self.feetoken.amountReceived(value)
         fee = value - amountReceived
 
         tx_receipt = self.feetoken.transfer(self.initial_beneficiary, self.fee_authority, value)
@@ -358,7 +358,7 @@ class TestExternStateFeeToken(HavvenTestCase):
         fee_receiver_balance = self.feetoken.balanceOf(fee_receiver)
 
         value = self.feetoken.balanceOf(self.fee_authority)
-        amountReceived = self.feetoken.priceToSpend(value)
+        amountReceived = self.feetoken.amountReceived(value)
         cumulativeFee = fee + value - amountReceived
         fee = value - amountReceived
 
@@ -432,7 +432,7 @@ class TestExternStateFeeToken(HavvenTestCase):
     def test_event_Transfer(self):
         sender = self.initial_beneficiary
         txr = self.feetoken.transfer(sender, MASTER, UNIT)
-        amountReceived = self.feetoken.priceToSpend(UNIT)
+        amountReceived = self.feetoken.amountReceived(UNIT)
         fee = UNIT - amountReceived
 
         self.assertEventEquals(

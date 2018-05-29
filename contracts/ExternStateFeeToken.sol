@@ -185,9 +185,9 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
     }
 
     /**
-     * @notice The quantity to send in order that the sender spends a certain value of tokens.
+     * @notice The amount the recipient will receive if you send a certain number of tokens.
      */
-    function priceToSpend(uint value)
+    function amountReceived(uint value)
         public
         view
         returns (uint)
@@ -238,10 +238,10 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
         internal
         returns (bool)
     {
-        uint amountReceived = priceToSpend(value);
-        uint fee = safeSub(value, amountReceived);
+        uint received = amountReceived(value);
+        uint fee = safeSub(value, received);
 
-        return _internalTransfer(sender, to, amountReceived, fee);
+        return _internalTransfer(sender, to, received, fee);
     }
 
     /**
@@ -252,13 +252,13 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
         returns (bool)
     {
         // The fee is deducted from the amount sent
-        uint amountReceived = priceToSpend(value);
-        uint fee = safeSub(value, amountReceived);
+        uint received = amountReceived(value);
+        uint fee = safeSub(value, received);
 
         // Reduce the allowance by the amount we're transferring
         tokenState.setAllowance(from, sender, safeSub(tokenState.allowance(from, sender), value));
 
-        return _internalTransfer(from, to, amountReceived, fee);
+        return _internalTransfer(from, to, received, fee);
     }
 
     /**

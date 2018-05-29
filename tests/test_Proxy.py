@@ -106,7 +106,7 @@ class TestExternStateFeeToken(HavvenTestCase):
         self.assertEqual(receiver_balance, 0)
 
         value = 10 * UNIT
-        amountReceived = self.feetoken.priceToSpend(value)
+        amountReceived = self.feetoken.amountReceived(value)
         fee = value - amountReceived
         tx_receipt = self.feetoken.transfer(sender, receiver, value)
 
