@@ -23,6 +23,20 @@ contract PublicFeeToken is FeeToken {
         _transferFrom_byProxy(messageSender, from, to, value);
     }
 
+    function transferSenderPaysFee(address to, uint value)
+        optionalProxy
+        external
+    {
+        _transferSenderPaysFee_byProxy(messageSender, to, value);
+    }
+
+    function transferFromSenderPaysFee(address from, address to, uint value)
+        optionalProxy
+        external
+    {
+        _transferFromSenderPaysFee_byProxy(messageSender, from, to, value);
+    }
+
     function giveTokens(address account, uint amount)
         optionalProxy
         public

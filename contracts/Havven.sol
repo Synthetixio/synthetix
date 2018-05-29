@@ -364,23 +364,6 @@ contract Havven is ExternStateToken {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
-     * @notice Allow the owner of this contract to endow any address with havvens
-     * from the initial supply.
-     * @dev Since the entire initial supply resides in the havven contract,
-     * this disallows the foundation from withdrawing fees on undistributed balances.
-     * This function can also be used to retrieve any havvens sent to the Havven contract itself.
-     * Only callable by the contract owner.
-     */
-    function endow(address to, uint value)
-        external
-        optionalProxy_onlyOwner
-    {
-        /* Use "this" in order that the havven account is the sender.
-         * The explicit transfer also initialises fee entitlement information. */
-        this.transfer(to, value);
-    }
-
-    /**
      * @notice ERC20 transfer function.
      */
     function transfer(address to, uint value)

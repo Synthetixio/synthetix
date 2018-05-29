@@ -7,6 +7,7 @@ file:       FeeToken.sol
 version:    1.3
 author:     Anton Jurisevic
             Dominic Romanowski
+            Kevin Brown
 
 date:       2018-05-29
 
@@ -138,9 +139,9 @@ contract FeeToken is ExternStateToken {
     }
 
     /**
-     * @notice The quantity to send in order that the sender spends a certain value of tokens.
+     * @notice The amount the recipient will receive if you send a certain number of tokens.
      */
-    function priceToSpend(uint value)
+    function amountReceived(uint value)
         public
         view
         returns (uint)
@@ -163,28 +164,40 @@ contract FeeToken is ExternStateToken {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
+     * @notice Base of transfer functions
+     */
+    function _internalTransfer(address from, address to, uint amount, uint fee)
+        internal
+        returns (bool)
+    {
+        /* Disallow transfers to irretrievable-addresses. */
+        require(to != address(0));
+        require(to != address(this));
+        require(to != address(proxy));
+
+        /* Insufficient balance will be handled by the safe subtraction. */
+        tokenState.setBalanceOf(from, safeSub(tokenState.balanceOf(from), safeAdd(amount, fee)));
+        tokenState.setBalanceOf(to, safeAdd(tokenState.balanceOf(to), amount));
+        tokenState.setBalanceOf(address(this), safeAdd(tokenState.balanceOf(address(this)), fee));
+
+        /* Emit events for both the transfer itself and the fee. */
+        emitTransfer(from, to, amount);
+        emitTransfer(from, address(this), fee);
+
+        return true;
+    }
+
+    /**
      * @notice ERC20 friendly transfer function.
      */
     function _transfer_byProxy(address sender, address to, uint value)
         internal
         returns (bool)
     {
-        require(to != address(0));
+        uint received = amountReceived(value);
+        uint fee = safeSub(value, received);
 
-        // The fee is deducted from the sender's balance, in addition to
-        // the transferred quantity.
-        uint fee = transferFeeIncurred(value);
-        uint totalCharge = safeAdd(value, fee);
-
-        // Insufficient balance will be handled by the safe subtraction.
-        tokenState.setBalanceOf(sender, safeSub(tokenState.balanceOf(sender), totalCharge));
-        tokenState.setBalanceOf(to, safeAdd(tokenState.balanceOf(to), value));
-        tokenState.setBalanceOf(address(this), safeAdd(tokenState.balanceOf(address(this)), fee));
-
-        emitTransfer(sender, to, value);
-        emitTransfer(sender, address(this), fee);
-
-        return true;
+        return _internalTransfer(sender, to, received, fee);
     }
 
     /**
@@ -194,23 +207,44 @@ contract FeeToken is ExternStateToken {
         internal
         returns (bool)
     {
-        require(to != address(0));
+        /* The fee is deducted from the amount sent. */
+        uint received = amountReceived(value);
+        uint fee = safeSub(value, received);
 
-        // The fee is deducted from the sender's balance, in addition to
-        // the transferred quantity.
+        /* Reduce the allowance by the amount we're transferring.
+         * The safeSub call will handle an insufficient allowance. */
+        tokenState.setAllowance(from, sender, safeSub(tokenState.allowance(from, sender), value));
+
+        return _internalTransfer(from, to, received, fee);
+    }
+
+    /**
+     * @notice Ability to transfer where the sender pays the fees (not ERC20)
+     */
+    function _transferSenderPaysFee_byProxy(address sender, address to, uint value)
+        internal
+        returns (bool)
+    {
+        /* The fee is added to the amount sent. */
         uint fee = transferFeeIncurred(value);
-        uint totalCharge = safeAdd(value, fee);
+        return _internalTransfer(sender, to, value, fee);
+    }
 
-        // Insufficient balance will be handled by the safe subtraction.
-        tokenState.setBalanceOf(from, safeSub(tokenState.balanceOf(from), totalCharge));
-        tokenState.setAllowance(from, sender, safeSub(tokenState.allowance(from, sender), totalCharge));
-        tokenState.setBalanceOf(to, safeAdd(tokenState.balanceOf(to), value));
-        tokenState.setBalanceOf(address(this), safeAdd(tokenState.balanceOf(address(this)), fee));
+    /**
+     * @notice Ability to transferFrom where they sender pays the fees (not ERC20).
+     */
+    function _transferFromSenderPaysFee_byProxy(address sender, address from, address to, uint value)
+        internal
+        returns (bool)
+    {
+        /* The fee is added to the amount sent. */
+        uint fee = transferFeeIncurred(value);
+        uint total = safeAdd(value, fee);
 
-        emitTransfer(from, to, value);
-        emitTransfer(from, address(this), fee);
+        /* Reduce the allowance by the amount we're transferring. */
+        tokenState.setAllowance(from, sender, safeSub(tokenState.allowance(from, sender), total));
 
-        return true;
+        return _internalTransfer(from, to, value, fee);
     }
 
     /**
@@ -224,12 +258,12 @@ contract FeeToken is ExternStateToken {
     {
         require(account != address(0));
 
-        // 0-value withdrawals do nothing.
+        /* 0-value withdrawals do nothing. */
         if (value == 0) {
             return false;
         }
 
-        // Safe subtraction ensures an exception is thrown if the balance is insufficient.
+        /* Safe subtraction ensures an exception is thrown if the balance is insufficient. */
         tokenState.setBalanceOf(address(this), safeSub(tokenState.balanceOf(address(this)), value));
         tokenState.setBalanceOf(account, safeAdd(tokenState.balanceOf(account), value));
 

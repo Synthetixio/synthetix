@@ -15,13 +15,16 @@ class FeeTokenInterface(ExternStateTokenInterface):
 
         self.transferFeeIncurred = lambda value: self.contract.functions.transferFeeIncurred(value).call()
         self.transferPlusFee = lambda value: self.contract.functions.transferPlusFee(value).call()
-        self.priceToSpend = lambda value: self.contract.functions.priceToSpend(value).call()
+        self.amountReceived = lambda value: self.contract.functions.amountReceived(value).call()
 
         self.setTransferFeeRate = lambda sender, new_fee_rate: mine_tx(
             self.contract.functions.setTransferFeeRate(new_fee_rate).transact({'from': sender}), "setTransferFeeRate", self.contract_name)
         self.setFeeAuthority = lambda sender, new_fee_authority: mine_tx(
             self.contract.functions.setFeeAuthority(new_fee_authority).transact({'from': sender}), "setFeeAuthority", self.contract_name)
-
+        self.transferSenderPaysFee = lambda sender, to, value: mine_tx(
+            self.contract.functions.transferSenderPaysFee(to, value).transact({'from': sender}), "transferSenderPaysFee", self.contract_name)
+        self.transferFromSenderPaysFee = lambda sender, frm, to, value: mine_tx(
+            self.contract.functions.transferFromSenderPaysFee(frm, to, value).transact({'from': sender}), "transferFromSenderPaysFee", self.contract_name)
         self.withdrawFees = lambda sender, account, value: mine_tx(
             self.contract.functions.withdrawFees(account, value).transact({'from': sender}), "withdrawFees", self.contract_name)
         self.donateToFeePool = lambda sender, value: mine_tx(
