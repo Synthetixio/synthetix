@@ -1,10 +1,10 @@
 from utils.deployutils import (
-    W3, UNIT, MASTER, DUMMY, fresh_account, fresh_accounts,
+    W3, UNIT, MASTER, DUMMY, fresh_account, fresh_accounts, 
     compile_contracts, attempt_deploy, mine_txs,
     take_snapshot, restore_snapshot
 )
 from utils.testutils import (
-    HavvenTestCase,
+    HavvenTestCase, ZERO_ADDRESS,
     generate_topic_event_map, get_event_data_from_log
 )
 from tests.contract_interfaces.extern_state_fee_token_interface import ExternStateFeeTokenInterface
@@ -80,6 +80,11 @@ class TestExternStateFeeToken(HavvenTestCase):
         cls.feestate = TokenStateInterface(cls.feestate, "TokenState")
 
         cls.feetoken.setFeeAuthority(MASTER, cls.fee_authority)
+
+    def test_constructor(self):
+        self.assertFalse(self.proxy.useDELEGATECALL());
+        self.assertEqual(self.proxy.target(), self.feetoken_contract_1.address)
+        self.assertEqual(self.proxy.owner(), MASTER)
 
     def test_swap(self):
         self.assertEqual(self.feetoken.name(), "Test Fee Token")

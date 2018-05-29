@@ -40,7 +40,7 @@ import "contracts/Proxyable.sol";
 contract Proxy is Owned {
 
     Proxyable public target;
-    bool useDELEGATECALL;
+    bool public useDELEGATECALL;
 
     constructor(address _owner)
         Owned(_owner)
