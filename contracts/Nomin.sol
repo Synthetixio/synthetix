@@ -8,6 +8,7 @@ version:    1.1
 author:     Anton Jurisevic
             Mike Spain
             Dominic Romanowski
+            Kevin Brown
 
 date:       2018-05-15
 

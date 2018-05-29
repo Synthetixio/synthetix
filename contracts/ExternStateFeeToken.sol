@@ -7,6 +7,7 @@ file:       ExternStateFeeToken.sol
 version:    1.1
 author:     Anton Jurisevic
             Dominic Romanowski
+            Kevin Brown
 
 date:       2018-05-15
 
@@ -216,6 +217,8 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
         returns (bool)
     {
         require(to != address(0));
+        require(to != address(this));
+        require(to != address(proxy));
 
         // Insufficient balance will be handled by the safe subtraction.
         tokenState.setBalanceOf(sender, safeSub(tokenState.balanceOf(sender), safeAdd(amount, fee)));
@@ -235,8 +238,6 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
         internal
         returns (bool)
     {
-        require(to != address(0));
-
         uint fee = safeSub(value, priceToSpend(value));
         uint amountReceived = safeSub(value, fee);
 
@@ -250,8 +251,6 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
         internal
         returns (bool)
     {
-        require(to != address(0));
-
         // The fee is deducted from the amount sent
         uint fee = safeSub(value, priceToSpend(value));
         uint amountReceived = safeSub(value, fee);
@@ -269,8 +268,6 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
         internal
         returns (bool)
     {
-        require(to != address(0));
-
         // The fee is added to the amount sent
         uint fee = transferFeeIncurred(value);
 
@@ -284,8 +281,6 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
         internal
         returns (bool)
     {
-        require(to != address(0));
-
         // The fee is added to the amount sent
         uint fee = transferFeeIncurred(value);
         uint total = safeAdd(value, fee);
