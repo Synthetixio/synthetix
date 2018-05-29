@@ -6,8 +6,8 @@ import "contracts/SelfDestructible.sol";
 
 contract PayableSD is SelfDestructible {
 
-    constructor(address _owner, address _beneficiary, uint _duration)
-        SelfDestructible(_owner, _beneficiary, _duration) public {}
+    constructor(address _owner)
+        SelfDestructible(_owner) public {}
 
     function () public payable {}
 }

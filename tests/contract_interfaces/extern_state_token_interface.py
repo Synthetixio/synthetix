@@ -3,7 +3,7 @@ from tests.contract_interfaces.self_destructible_interface import SelfDestructib
 from utils.deployutils import mine_tx
 
 
-class DestructibleExternStateTokenInterface(SafeDecimalMathInterface, SelfDestructibleInterface):
+class ExternStateTokenInterface(SafeDecimalMathInterface, SelfDestructibleInterface):
     def __init__(self, contract, name):
         SafeDecimalMathInterface.__init__(self, contract, name)
         SelfDestructibleInterface.__init__(self, contract, name)

@@ -4,15 +4,12 @@ FILE INFORMATION
 -----------------------------------------------------------------
 
 file:       Court.sol
-version:    1.1
+version:    1.2
 author:     Anton Jurisevic
             Mike Spain
             Dominic Romanowski
 
-date:       2018-05-15
-
-checked:    Mike Spain
-approved:   Samuel Brooks
+date:       2018-05-29
 
 -----------------------------------------------------------------
 MODULE DESCRIPTION
@@ -153,19 +150,23 @@ contract Court is SafeDecimalMath, Owned {
     uint constant MIN_CONFIRMATION_PERIOD = 1 days;
     uint constant MAX_CONFIRMATION_PERIOD = 2 weeks;
 
-    /* No fewer than this fraction of havvens must participate in a motion
-     * in order for a quorum to be reached.
-     * The participation fraction required may be set no lower than 10%. */
+    /* No fewer than this fraction of total available voting power must
+     * participate in a motion in order for a quorum to be reached.
+     * The participation fraction required may be set no lower than 10%.
+     * As a fraction, it is expressed in terms of UNIT, not as an absolute quantity. */
     uint public requiredParticipation = 3 * UNIT / 10;
     uint constant MIN_REQUIRED_PARTICIPATION = UNIT / 10;
 
     /* At least this fraction of participating votes must be in favour of
      * confiscation for the motion to pass.
-     * The required majority may be no lower than 50%. */
+     * The required majority may be no lower than 50%.
+     * As a fraction, it is expressed in terms of UNIT, not as an absolute quantity. */
     uint public requiredMajority = (2 * UNIT) / 3;
     uint constant MIN_REQUIRED_MAJORITY = UNIT / 2;
 
-    /* The next ID to use for opening a motion. */
+    /* The next ID to use for opening a motion. 
+     * The 0 motion ID corresponds to no motion,
+     * and is used as a null value for later comparison. */
     uint nextMotionID = 1;
 
     /* Mapping from motion IDs to target addresses. */
@@ -400,9 +401,11 @@ contract Court is SafeDecimalMath, Owned {
         /* There must be no confiscation motion already running for this account. */
         require(targetMotionID[target] == 0);
 
-        /* Disallow votes on accounts that have previously been frozen. */
+        /* Disallow votes on accounts that are currently frozen. */
         require(!nomin.frozen(target));
 
+        /* It is necessary to roll over the fee period if it has elapsed, or else
+         * the vote might be initialised having begun in the past. */
         havven.rolloverFeePeriodIfElapsed();
 
         uint motionID = nextMotionID++;
@@ -540,7 +543,7 @@ contract Court is SafeDecimalMath, Owned {
     {
         require(motionConfirming(motionID) && motionPasses(motionID));
         address target = motionTarget[motionID];
-        nomin.confiscateBalance(target);
+        nomin.freezeAndConfiscate(target);
         _closeMotion(motionID);
         emit MotionApproved(motionID);
     }

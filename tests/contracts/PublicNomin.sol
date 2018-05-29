@@ -4,6 +4,7 @@
 pragma solidity ^0.4.23;
 
 
+import "contracts/Havven.sol";
 import "contracts/Nomin.sol";
 
 
@@ -11,7 +12,7 @@ contract PublicNomin is Nomin {
 
     uint constant MAX_TRANSFER_FEE_RATE = UNIT;  // allow for 100% fees
 
-    constructor(address _proxy, address _havven, address _owner)
+    constructor(address _proxy, Havven _havven, address _owner)
         Nomin(_proxy, _havven, _owner)
         public {}
     

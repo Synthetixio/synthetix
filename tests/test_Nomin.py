@@ -2,7 +2,7 @@ from utils.deployutils import (
     W3, UNIT, MASTER, DUMMY,
     fresh_account, fresh_accounts,
     mine_tx, attempt_deploy, mine_txs,
-    take_snapshot, restore_snapshot
+    take_snapshot, restore_snapshot, fast_forward
 )
 from utils.testutils import (
     HavvenTestCase, ZERO_ADDRESS,
@@ -70,18 +70,22 @@ class TestNomin(HavvenTestCase):
         cls.nomin = PublicNominInterface(cls.proxied_nomin, "Nomin")
         cls.havven = HavvenInterface(cls.proxied_havven, "Havven")
 
+        cls.unproxied_nomin = PublicNominInterface(cls.nomin_contract, "UnproxiedNomin")
+
         cls.fake_court = FakeCourtInterface(cls.fake_court_contract, "FakeCourt")
 
         cls.fake_court.setNomin(MASTER, cls.nomin_contract.address)
 
         cls.nomin.setFeeAuthority(MASTER, cls.havven_contract.address)
 
+        cls.sd_duration = 4 * 7 * 24 * 60 * 60
+
     def test_constructor(self):
         # Nomin-specific members
         self.assertEqual(self.nomin.owner(), MASTER)
         self.assertTrue(self.nomin.frozen(self.nomin_contract.address))
 
-        # ExternStateFeeToken members
+        # FeeToken members
         self.assertEqual(self.nomin.name(), "USD Nomins")
         self.assertEqual(self.nomin.symbol(), "nUSD")
         self.assertEqual(self.nomin.totalSupply(), 0)
@@ -520,7 +524,7 @@ class TestNomin(HavvenTestCase):
         self.assertEqual(self.nomin.balanceOf(target), self.nomin.amountReceived(old_bal))
         self.assertLess(self.nomin.balanceOf(MASTER), 3)  # assert MASTER only has the tiniest bit of change
 
-    def test_confiscateBalance(self):
+    def test_freezeAndConfiscate(self):
         target = W3.eth.accounts[2]
 
         self.assertEqual(self.nomin.court(), self.fake_court.contract.address)
@@ -536,27 +540,27 @@ class TestNomin(HavvenTestCase):
         # Attempt to confiscate even though the conditions are not met.
         self.fake_court.setConfirming(MASTER, motion_id, False)
         self.fake_court.setVotePasses(MASTER, motion_id, False)
-        self.assertReverts(self.fake_court.confiscateBalance, MASTER, target)
+        self.assertReverts(self.fake_court.freezeAndConfiscate, MASTER, target)
 
         self.fake_court.setConfirming(MASTER, motion_id, True)
         self.fake_court.setVotePasses(MASTER, motion_id, False)
-        self.assertReverts(self.fake_court.confiscateBalance, MASTER, target)
+        self.assertReverts(self.fake_court.freezeAndConfiscate, MASTER, target)
 
         self.fake_court.setConfirming(MASTER, motion_id, False)
         self.fake_court.setVotePasses(MASTER, motion_id, True)
-        self.assertReverts(self.fake_court.confiscateBalance, MASTER, target)
+        self.assertReverts(self.fake_court.freezeAndConfiscate, MASTER, target)
 
         # Set up the target balance to be confiscatable.
         self.fake_court.setConfirming(MASTER, motion_id, True)
         self.fake_court.setVotePasses(MASTER, motion_id, True)
 
         # Only the court should be able to confiscate balances.
-        self.assertReverts(self.nomin.confiscateBalance, MASTER, target)
+        self.assertReverts(self.nomin.freezeAndConfiscate, MASTER, target)
 
         # Actually confiscate the balance.
         pre_fee_pool = self.nomin.feePool()
         pre_balance = self.nomin.balanceOf(target)
-        self.fake_court.confiscateBalance(MASTER, target)
+        self.fake_court.freezeAndConfiscate(MASTER, target)
         self.assertEqual(self.nomin.balanceOf(target), 0)
         self.assertEqual(self.nomin.feePool(), pre_fee_pool + pre_balance)
         self.assertTrue(self.nomin.frozen(target))
@@ -565,15 +569,13 @@ class TestNomin(HavvenTestCase):
         target = fresh_account()
 
         # The nomin contract itself should not be unfreezable.
-        tx_receipt = self.nomin.unfreezeAccount(MASTER, self.nomin_contract.address)
+        self.assertReverts(self.nomin.unfreezeAccount, MASTER, self.nomin_contract.address)
         self.assertTrue(self.nomin.frozen(self.nomin_contract.address))
-        self.assertEqual(len(tx_receipt.logs), 0)
 
         # Unfreezing non-frozen accounts should not do anything.
         self.assertFalse(self.nomin.frozen(target))
-        tx_receipt = self.nomin.unfreezeAccount(MASTER, target)
+        self.assertReverts(self.nomin.unfreezeAccount, MASTER, target)
         self.assertFalse(self.nomin.frozen(target))
-        self.assertEqual(len(tx_receipt.logs), 0)
 
         self.nomin.debugFreezeAccount(MASTER, target)
         self.assertTrue(self.nomin.frozen(target))
@@ -712,6 +714,40 @@ class TestNomin(HavvenTestCase):
             location=self.nomin_proxy.address
         )
 
+    def test_selfDestruct(self):
+        owner = self.nomin.owner()
+        notowner = DUMMY
+        self.assertNotEqual(owner, notowner)
+
+        # The contract cannot be self-destructed before the SD has been initiated.
+        self.assertReverts(self.unproxied_nomin.selfDestruct, owner)
+
+        tx = self.unproxied_nomin.initiateSelfDestruct(owner)
+        self.assertEventEquals(self.nomin_event_dict, tx.logs[0],
+                               "SelfDestructInitiated",
+                               {"selfDestructDelay": self.sd_duration},
+                               location=self.nomin_contract.address)
+
+        # Neither owners nor non-owners may not self-destruct before the time has elapsed.
+        self.assertReverts(self.unproxied_nomin.selfDestruct, notowner)
+        self.assertReverts(self.unproxied_nomin.selfDestruct, owner)
+        fast_forward(seconds=self.sd_duration, days=-1)
+        self.assertReverts(self.unproxied_nomin.selfDestruct, notowner)
+        self.assertReverts(self.unproxied_nomin.selfDestruct, owner)
+        fast_forward(seconds=10, days=1)
+
+        # Non-owner should not be able to self-destruct even if the time has elapsed.
+        self.assertReverts(self.unproxied_nomin.selfDestruct, notowner)
+        address = self.unproxied_nomin.contract.address
+        tx = self.unproxied_nomin.selfDestruct(owner)
+
+        self.assertEventEquals(self.nomin_event_dict, tx.logs[0],
+                               "SelfDestructed",
+                               {"beneficiary": owner},
+                               location=self.nomin_contract.address)
+        # Check contract not exist 
+        self.assertEqual(W3.eth.getCode(address), b'\x00')
+
     def test_event_CourtUpdated(self):
         new_court = fresh_account()
         tx = self.nomin.setCourt(MASTER, new_court)
@@ -737,7 +773,7 @@ class TestNomin(HavvenTestCase):
         self.fake_court.setConfirming(MASTER, motion_id, True)
         self.fake_court.setVotePasses(MASTER, motion_id, True)
         self.assertEqual(self.nomin.balanceOf(target), 5 * UNIT)
-        txr = self.fake_court.confiscateBalance(MASTER, target)
+        txr = self.fake_court.freezeAndConfiscate(MASTER, target)
         self.assertEqual(self.nomin.balanceOf(target), 0)
         self.assertEventEquals(
             self.nomin_event_dict, txr.logs[0], 'AccountFrozen',

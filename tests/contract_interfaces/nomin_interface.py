@@ -1,10 +1,10 @@
-from tests.contract_interfaces.extern_state_fee_token_interface import ExternStateFeeTokenInterface
+from tests.contract_interfaces.fee_token_interface import FeeTokenInterface
 from utils.deployutils import mine_tx
 
 
-class NominInterface(ExternStateFeeTokenInterface):
+class NominInterface(FeeTokenInterface):
     def __init__(self, contract, name):
-        ExternStateFeeTokenInterface.__init__(self, contract, name)
+        FeeTokenInterface.__init__(self, contract, name)
         self.contract = contract
         self.contract_name = name
 
@@ -31,8 +31,8 @@ class NominInterface(ExternStateFeeTokenInterface):
             self.contract.functions.approve(spender, value).transact({'from': sender}), "approve", self.contract_name)
 
         # onlyCourt
-        self.confiscateBalance = lambda sender, target: mine_tx(
-            self.contract.functions.confiscateBalance(target).transact({'from': sender}), "confiscateBalance", self.contract_name)
+        self.freezeAndConfiscate = lambda sender, target: mine_tx(
+            self.contract.functions.freezeAndConfiscate(target).transact({'from': sender}), "freezeAndConfiscate", self.contract_name)
         # onlyOwner
         self.unfreezeAccount = lambda sender, target: mine_tx(
             self.contract.functions.unfreezeAccount(target).transact({'from': sender}), "unfreezeAccount", self.contract_name)

@@ -105,6 +105,6 @@ class FakeCourtInterface:
         self.setTargetMotionID = lambda sender, target, motionID: mine_tx(
             self.contract.functions.setTargetMotionID(target, motionID).transact({'from': sender}), "setTargetMotionID",
             "FakeCourt")
-        self.confiscateBalance = lambda sender, target: mine_tx(
-            self.contract.functions.confiscateBalance(target).transact({'from': sender}), "confiscateBalance",
+        self.freezeAndConfiscate = lambda sender, target: mine_tx(
+            self.contract.functions.freezeAndConfiscate(target).transact({'from': sender}), "freezeAndConfiscate",
             "FakeCourt")

@@ -7,11 +7,11 @@ from utils.testutils import (
     HavvenTestCase, ZERO_ADDRESS,
     generate_topic_event_map, get_event_data_from_log
 )
-from tests.contract_interfaces.extern_state_fee_token_interface import PublicExternStateFeeTokenInterface
+from tests.contract_interfaces.fee_token_interface import PublicFeeTokenInterface
 
 
 def setUpModule():
-    print("Testing ExternStateFeeToken...")
+    print("Testing FeeToken...")
     print("==============================")
     print()
 
@@ -21,7 +21,7 @@ def tearDownModule():
     print()
 
 
-class TestExternStateFeeToken(HavvenTestCase):
+class TestFeeToken(HavvenTestCase):
     def setUp(self):
         self.snapshot = take_snapshot()
 
@@ -30,13 +30,13 @@ class TestExternStateFeeToken(HavvenTestCase):
 
     @classmethod
     def deployContracts(cls):
-        sources = ["contracts/ExternStateFeeToken.sol",
+        sources = ["contracts/FeeToken.sol",
                    "contracts/TokenState.sol",
-                   "tests/contracts/PublicESFT.sol"]
+                   "tests/contracts/PublicFeeToken.sol"]
 
         compiled, cls.event_maps = cls.compileAndMapEvents(sources)
 
-        feetoken_abi = compiled['PublicESFT']['abi']
+        feetoken_abi = compiled['PublicFeeToken']['abi']
 
         proxy, _ = attempt_deploy(
             compiled, "Proxy", MASTER, [MASTER]
@@ -45,7 +45,7 @@ class TestExternStateFeeToken(HavvenTestCase):
 
         feetoken_event_dict = generate_topic_event_map(feetoken_abi)
         feetoken_contract, construction_txr = attempt_deploy(
-            compiled, "PublicESFT", MASTER,
+            compiled, "PublicFeeToken", MASTER,
             [proxy.address, "Test Fee Token", "FEE", UNIT // 20, MASTER, MASTER]
         )
 
@@ -66,12 +66,12 @@ class TestExternStateFeeToken(HavvenTestCase):
     @classmethod
     def setUpClass(cls):
         cls.compiled, cls.proxy, cls.proxied_feetoken, cls.feetoken_contract, cls.feetoken_event_dict, cls.feestate = cls.deployContracts()
-        cls.event_map = cls.event_maps['ExternStateFeeToken']
+        cls.event_map = cls.event_maps['FeeToken']
 
         cls.initial_beneficiary = DUMMY
         cls.fee_authority = fresh_account()
 
-        cls.feetoken = PublicExternStateFeeTokenInterface(cls.proxied_feetoken, "ExternStateFeeToken")
+        cls.feetoken = PublicFeeTokenInterface(cls.proxied_feetoken, "FeeToken")
         cls.feetoken.setFeeAuthority(MASTER, cls.fee_authority)
 
     def feetoken_withdrawFees(self, sender, beneficiary, quantity):
@@ -88,9 +88,9 @@ class TestExternStateFeeToken(HavvenTestCase):
         self.assertEqual(self.feestate.functions.associatedContract().call(), self.feetoken_contract.address)
 
     def test_provide_tokenstate(self):
-        feetoken, _ = attempt_deploy(self.compiled, 'ExternStateFeeToken',
+        feetoken, _ = attempt_deploy(self.compiled, 'FeeToken',
                                      MASTER,
-                                     [self.proxy.address, "Test Fee Token", "FEE",
+                                     [self.proxy.address, "Test Fee Token", "FEE", 0,
                                       UNIT // 20, self.fee_authority, DUMMY])
         self.assertNotEqual(feetoken.functions.tokenState().call(), ZERO_ADDRESS)
 

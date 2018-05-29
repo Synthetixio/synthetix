@@ -33,9 +33,9 @@ contract FakeCourt {
         targetMotionID[target] = motionID;
     }
 
-    function confiscateBalance(address target)
+    function freezeAndConfiscate(address target)
         public
     {
-        nomin.confiscateBalance(target);
+        nomin.freezeAndConfiscate(target);
     }
 }

@@ -4,14 +4,11 @@ FILE INFORMATION
 -----------------------------------------------------------------
 
 file:       Havven.sol
-version:    1.1
+version:    1.2
 author:     Anton Jurisevic
             Dominic Romanowski
 
 date:       2018-05-15
-
-checked:    Mike Spain
-approved:   Samuel Brooks
 
 -----------------------------------------------------------------
 MODULE DESCRIPTION
@@ -125,11 +122,10 @@ even going above the initial wallet balance.
 pragma solidity 0.4.24;
 
 
-import "contracts/DestructibleExternStateToken.sol";
+import "contracts/ExternStateToken.sol";
 import "contracts/Nomin.sol";
 import "contracts/HavvenEscrow.sol";
 import "contracts/TokenState.sol";
-import "contracts/SelfDestructible.sol";
 
 
 /**
@@ -137,7 +133,7 @@ import "contracts/SelfDestructible.sol";
  * @notice The Havven contracts does not only facilitate transfers and track balances,
  * but it also computes the quantity of fees each havven holder is entitled to.
  */
-contract Havven is DestructibleExternStateToken {
+contract Havven is ExternStateToken {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -205,7 +201,7 @@ contract Havven is DestructibleExternStateToken {
     uint constant ORACLE_FUTURE_LIMIT = 10 minutes;
     string constant TOKEN_NAME = "Havven";
     string constant TOKEN_SYMBOL = "HAV";
-
+    
     /* ========== CONSTRUCTOR ========== */
 
     /**
@@ -215,8 +211,8 @@ contract Havven is DestructibleExternStateToken {
      * @param _owner The owner of this contract.
      */
     constructor(address _proxy, TokenState _tokenState, address _owner, address _oracle, uint _price)
-        DestructibleExternStateToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, _tokenState, _owner)
-        /* Owned is initialised in DestructibleExternStateToken */
+        ExternStateToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, _tokenState, _owner)
+        /* Owned is initialised in ExternStateToken */
         public
     {
         oracle = _oracle;
@@ -523,11 +519,10 @@ contract Havven is DestructibleExternStateToken {
     }
 
     /**
-     * @notice Recompute and return the given account's average balance information.
+     * @notice Recompute and return the given account's last average balance.
      */
     function recomputeLastAverageBalance(address account)
         external
-        optionalProxy
         returns (uint)
     {
         updateIssuanceData(account, nominsIssued[account], nomin.totalSupply());
@@ -611,9 +606,10 @@ contract Havven is DestructibleExternStateToken {
             return 0;
         }
         if (escrow != HavvenEscrow(0)) {
-            return safeMul_dec(HAVtoUSD(safeAdd(balanceOf(issuer), escrow.balanceOf(issuer))), issuanceRatio);
+            uint totalOwnedHavvens = safeAdd(tokenState.balanceOf(issuer), escrow.balanceOf(issuer));
+            return safeMul_dec(HAVtoUSD(totalOwnedHavvens), issuanceRatio);
         } else {
-            return safeMul_dec(HAVtoUSD(balanceOf(issuer)), issuanceRatio);
+            return safeMul_dec(HAVtoUSD(tokenState.balanceOf(issuer)), issuanceRatio);
         }
     }
 

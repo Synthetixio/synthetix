@@ -4,14 +4,11 @@ FILE INFORMATION
 -----------------------------------------------------------------
 
 file:       Owned.sol
-version:    1.0
+version:    1.1
 author:     Anton Jurisevic
             Dominic Romanowski
 
 date:       2018-2-26
-
-checked:    Mike Spain
-approved:   Samuel Brooks
 
 -----------------------------------------------------------------
 MODULE DESCRIPTION
@@ -46,6 +43,7 @@ contract Owned {
     constructor(address _owner)
         public
     {
+        require(_owner != address(0));
         owner = _owner;
         emit OwnerChanged(address(0), _owner);
     }
