@@ -106,14 +106,16 @@ class TestExternStateFeeToken(HavvenTestCase):
         self.assertEqual(receiver_balance, 0)
 
         value = 10 * UNIT
+        amountReceived = self.feetoken.priceToSpend(value)
+        fee = value - amountReceived
         tx_receipt = self.feetoken.transfer(sender, receiver, value)
 
-        self.assertEqual(self.feetoken.balanceOf(receiver), receiver_balance + value)
+        self.assertEqual(self.feetoken.balanceOf(receiver), receiver_balance + amountReceived)
 
         self.proxy.setTarget(MASTER, self.feetoken_contract_2.address)
         self.feestate.setAssociatedContract(MASTER, self.feetoken_contract_2.address)
 
         mine_txs([self.feetoken_contract_2.functions.setTokenState(self.feestate.contract.address).transact({'from': MASTER})])
 
-        self.assertEqual(self.feetoken.balanceOf(receiver), receiver_balance + value)
+        self.assertEqual(self.feetoken.balanceOf(receiver), receiver_balance + amountReceived)
 
