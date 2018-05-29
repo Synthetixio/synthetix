@@ -36,4 +36,8 @@ class IssuanceControllerInterface():
         self.exchangeForNomins = lambda sender, value: mine_tx(
             self.contract.functions.exchangeForNomins().transact({'from': sender, 'value': value}), "exchangeForNomins", self.contract_name
         )
+        self.setPaused = lambda sender, paused: mine_tx(
+            self.contract.functions.setPaused(paused).transact({'from': sender}), "setPaused", self.contract_name
+        )
+ 
 
