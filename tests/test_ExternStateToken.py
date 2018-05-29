@@ -238,7 +238,7 @@ class TestExternStateToken(HavvenTestCase):
                                 "value": 10 * UNIT},
                                 self.proxy.address)
 
-    def test_event_StateUpdated(self):
+    def test_event_TokenStateUpdated(self):
         new_tokenstate = fresh_account()
         tx = self.token.setTokenState(MASTER, new_tokenstate)
         self.assertEventEquals(self.token_event_dict,
