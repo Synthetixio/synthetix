@@ -237,7 +237,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
 
         // How many Havvens are they going to be receiving?
         // Calculate the amount of Nomins we will receive after the transfer (minus fees)
-        uint amountReceived = safeDiv(nomin.priceToSpend(amount), usdToHavPrice);
+        uint amountReceived = safeDiv(nomin.amountReceived(amount), usdToHavPrice);
 
         // Do we have enough Havvens to service the request?
         require(amountReceived <= havven.balanceOf(this));

@@ -244,7 +244,7 @@ class TestIssuanceController(HavvenTestCase):
     def test_cannotTransferIfPriceStale(self):
         amount = 10 * UNIT
         nominsBalance = (amount * self.usdToEthPrice) // UNIT
-        base = self.nomin.priceToSpend(nominsBalance)
+        base = self.nomin.amountReceived(nominsBalance)
         self.issuanceController.setPriceStalePeriod(self.contractOwner, 1)
         timeSent = block_time()
         self.issuanceController.updatePrices(self.oracleAddress, self.usdToEthPrice, self.usdToHavPrice, timeSent)
@@ -264,7 +264,7 @@ class TestIssuanceController(HavvenTestCase):
     def test_cannotTransferIfPaused(self):
         amount = 10 * UNIT
         nominsBalance = (amount * self.usdToEthPrice) // UNIT
-        base = self.nomin.priceToSpend(nominsBalance)
+        base = self.nomin.amountReceived(nominsBalance)
         self.issuanceController.setPaused(self.contractOwner, True)
         exchanger = self.participantAddresses[0]
 
@@ -283,7 +283,7 @@ class TestIssuanceController(HavvenTestCase):
         ethToSend = 1 * UNIT
         nominsBalance = (amount * self.usdToEthPrice) // UNIT
         nominsToSend = (ethToSend * self.usdToEthPrice) // UNIT
-        baseToSend = self.nomin.priceToSpend(nominsToSend)
+        baseToSend = self.nomin.amountReceived(nominsToSend)
         feesToPayInNomins = nominsToSend - baseToSend
         exchanger = self.participantAddresses[0]
 
@@ -302,7 +302,7 @@ class TestIssuanceController(HavvenTestCase):
     def test_exchangeForAllNomins(self):
         amount = 10 * UNIT
         nominsBalance = (amount * self.usdToEthPrice) // UNIT
-        base = self.nomin.priceToSpend(nominsBalance)
+        base = self.nomin.amountReceived(nominsBalance)
         feesToPayInNomins = nominsBalance - base
         exchanger = self.participantAddresses[0]
 
