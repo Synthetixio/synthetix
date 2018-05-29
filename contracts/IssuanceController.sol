@@ -87,6 +87,9 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         // Ownable
         address _owner,
 
+        // Funds Wallet
+        address _fundsWallet,
+
         // Other contracts needed
         Havven _havven,
         Nomin _nomin,
@@ -101,6 +104,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         Pausable(_owner)
         public
     {
+        fundsWallet = _fundsWallet;
         havven = _havven;
         nomin = _nomin;
         oracle = _oracle;
