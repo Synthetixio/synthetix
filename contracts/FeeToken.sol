@@ -3,7 +3,7 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 
-file:       ExternStateFeeToken.sol
+file:       FeeToken.sol
 version:    1.3
 author:     Anton Jurisevic
             Dominic Romanowski
@@ -36,7 +36,7 @@ import "contracts/ExternStateToken.sol";
  * @title ERC20 Token contract, with detached state.
  * Additionally charges fees on each transfer.
  */
-contract ExternStateFeeToken is ExternStateToken {
+contract FeeToken is ExternStateToken {
 
     /* ========== STATE VARIABLES ========== */
 

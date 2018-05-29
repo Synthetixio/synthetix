@@ -1,10 +1,10 @@
-from tests.contract_interfaces.extern_state_fee_token_interface import ExternStateFeeTokenInterface
+from tests.contract_interfaces.fee_token_interface import FeeTokenInterface
 from utils.deployutils import mine_tx
 
 
-class NominInterface(ExternStateFeeTokenInterface):
+class NominInterface(FeeTokenInterface):
     def __init__(self, contract, name):
-        ExternStateFeeTokenInterface.__init__(self, contract, name)
+        FeeTokenInterface.__init__(self, contract, name)
         self.contract = contract
         self.contract_name = name
 
