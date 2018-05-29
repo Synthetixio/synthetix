@@ -505,8 +505,7 @@ class TestHavven(HavvenTestCase):
         self.assertEqual(self.havven.balanceOf(self.havven_contract.address), self.havven.totalSupply())
         self.havven.endow(MASTER, self.havven_contract.address, amount)
         self.assertEqual(self.havven.balanceOf(self.havven_contract.address), self.havven.totalSupply())
-        # Balance is not lost (still distributable) if sent to the contract.
-        self.havven.endow(MASTER, self.havven.contract.address, amount)
+        self.havven.endow(MASTER, self.havven_contract.address, amount)
 
     def test_endow_transfers(self):
         alice = fresh_account()

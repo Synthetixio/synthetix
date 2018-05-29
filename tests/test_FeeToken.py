@@ -241,6 +241,11 @@ class TestFeeToken(HavvenTestCase):
         total_supply = self.feetoken.totalSupply()
         fee_pool = self.feetoken.feePool()
 
+        # Disallow transfers to zero, to the contract itself, and to its proxy.
+        self.assertReverts(self.feetoken.transfer, sender, ZERO_ADDRESS, value)
+        self.assertReverts(self.feetoken.transfer, sender, self.feetoken_contract.address, value)
+        self.assertReverts(self.feetoken.transfer, sender, self.proxy.address, value)
+
         tx_receipt = self.feetoken.transfer(no_tokens, receiver, value)
         # Check that events are emitted properly.
         self.assertEqual(get_event_data_from_log(self.feetoken_event_dict, tx_receipt.logs[0])['event'], "Transfer")

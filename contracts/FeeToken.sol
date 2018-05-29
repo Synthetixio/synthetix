@@ -166,21 +166,23 @@ contract FeeToken is ExternStateToken {
     /**
      * @notice Base of transfer functions
      */
-    function _internalTransfer(address sender, address to, uint amount, uint fee)
+    function _internalTransfer(address from, address to, uint amount, uint fee)
         internal
         returns (bool)
     {
+        /* Disallow transfers to irretrievable-addresses. */
         require(to != address(0));
         require(to != address(this));
         require(to != address(proxy));
 
-        // Insufficient balance will be handled by the safe subtraction.
-        tokenState.setBalanceOf(sender, safeSub(tokenState.balanceOf(sender), safeAdd(amount, fee)));
+        /* Insufficient balance will be handled by the safe subtraction. */
+        tokenState.setBalanceOf(from, safeSub(tokenState.balanceOf(from), safeAdd(amount, fee)));
         tokenState.setBalanceOf(to, safeAdd(tokenState.balanceOf(to), amount));
         tokenState.setBalanceOf(address(this), safeAdd(tokenState.balanceOf(address(this)), fee));
 
-        emitTransfer(sender, to, amount);
-        emitTransfer(sender, address(this), fee);
+        /* Emit events for both the transfer itself and the fee. */
+        emitTransfer(from, to, amount);
+        emitTransfer(from, address(this), fee);
 
         return true;
     }
@@ -205,11 +207,12 @@ contract FeeToken is ExternStateToken {
         internal
         returns (bool)
     {
-        // The fee is deducted from the amount sent
+        /* The fee is deducted from the amount sent. */
         uint received = amountReceived(value);
         uint fee = safeSub(value, received);
 
-        // Reduce the allowance by the amount we're transferring
+        /* Reduce the allowance by the amount we're transferring.
+         * The safeSub call will handle an insufficient allowance. */
         tokenState.setAllowance(from, sender, safeSub(tokenState.allowance(from, sender), value));
 
         return _internalTransfer(from, to, received, fee);
@@ -222,9 +225,8 @@ contract FeeToken is ExternStateToken {
         internal
         returns (bool)
     {
-        // The fee is added to the amount sent
+        /* The fee is added to the amount sent. */
         uint fee = transferFeeIncurred(value);
-
         return _internalTransfer(sender, to, value, fee);
     }
 
@@ -235,11 +237,11 @@ contract FeeToken is ExternStateToken {
         internal
         returns (bool)
     {
-        // The fee is added to the amount sent
+        /* The fee is added to the amount sent. */
         uint fee = transferFeeIncurred(value);
         uint total = safeAdd(value, fee);
 
-        // Reduce the allowance by the amount we're transferring
+        /* Reduce the allowance by the amount we're transferring. */
         tokenState.setAllowance(from, sender, safeSub(tokenState.allowance(from, sender), total));
 
         return _internalTransfer(from, to, value, fee);
@@ -256,12 +258,12 @@ contract FeeToken is ExternStateToken {
     {
         require(account != address(0));
 
-        // 0-value withdrawals do nothing.
+        /* 0-value withdrawals do nothing. */
         if (value == 0) {
             return false;
         }
 
-        // Safe subtraction ensures an exception is thrown if the balance is insufficient.
+        /* Safe subtraction ensures an exception is thrown if the balance is insufficient. */
         tokenState.setBalanceOf(address(this), safeSub(tokenState.balanceOf(address(this)), value));
         tokenState.setBalanceOf(account, safeAdd(tokenState.balanceOf(account), value));
 

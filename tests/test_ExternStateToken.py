@@ -5,7 +5,7 @@ from utils.deployutils import (
     mine_txs, take_snapshot, restore_snapshot
 )
 from utils.testutils import (
-    HavvenTestCase,
+    HavvenTestCase, ZERO_ADDRESS,
     generate_topic_event_map, get_event_data_from_log
 )
 from tests.contract_interfaces.extern_state_token_interface import ExternStateTokenInterface
@@ -130,6 +130,12 @@ class TestExternStateToken(HavvenTestCase):
         value = 0
         pre_sender_balance = self.token.balanceOf(sender)
         pre_receiver_balance = self.token.balanceOf(receiver)
+
+        # Disallow transfers to zero, to the contract itself, and to its proxy.
+        self.assertReverts(self.token.transfer, sender, ZERO_ADDRESS, value)
+        self.assertReverts(self.token.transfer, sender, self.token_contract.address, value)
+        self.assertReverts(self.token.transfer, sender, self.proxy.address, value)
+
         tx_receipt = self.token.transfer(sender, receiver, value)
         # Check event is emitted properly.
         self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'], "Transfer")
