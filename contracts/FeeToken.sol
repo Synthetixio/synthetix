@@ -3,15 +3,13 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 
-file:       ExternStateFeeToken.sol
-version:    1.2
+file:       FeeToken.sol
+version:    1.3
 author:     Anton Jurisevic
             Dominic Romanowski
+            Kevin Brown
 
 date:       2018-05-29
-
-checked:    Mike Spain
-approved:   Samuel Brooks
 
 -----------------------------------------------------------------
 MODULE DESCRIPTION
@@ -39,7 +37,7 @@ import "contracts/ExternStateToken.sol";
  * @title ERC20 Token contract, with detached state.
  * Additionally charges fees on each transfer.
  */
-contract ExternStateFeeToken is ExternStateToken {
+contract FeeToken is ExternStateToken {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -141,9 +139,9 @@ contract ExternStateFeeToken is ExternStateToken {
     }
 
     /**
-     * @notice The quantity to send in order that the sender spends a certain value of tokens.
+     * @notice The amount the recipient will receive if you send a certain number of tokens.
      */
-    function priceToSpend(uint value)
+    function amountReceived(uint value)
         public
         view
         returns (uint)
@@ -173,6 +171,8 @@ contract ExternStateFeeToken is ExternStateToken {
         returns (bool)
     {
         require(to != address(0));
+        require(to != address(this));
+        require(to != address(proxy));
 
         // Insufficient balance will be handled by the safe subtraction.
         tokenState.setBalanceOf(sender, safeSub(tokenState.balanceOf(sender), safeAdd(amount, fee)));
@@ -192,12 +192,10 @@ contract ExternStateFeeToken is ExternStateToken {
         internal
         returns (bool)
     {
-        require(to != address(0));
+        uint received = amountReceived(value);
+        uint fee = safeSub(value, received);
 
-        uint fee = safeSub(value, priceToSpend(value));
-        uint amountReceived = safeSub(value, fee);
-
-        return _internalTransfer(sender, to, amountReceived, fee);
+        return _internalTransfer(sender, to, received, fee);
     }
 
     /**
@@ -207,16 +205,14 @@ contract ExternStateFeeToken is ExternStateToken {
         internal
         returns (bool)
     {
-        require(to != address(0));
-
         // The fee is deducted from the amount sent
-        uint fee = safeSub(value, priceToSpend(value));
-        uint amountReceived = safeSub(value, fee);
+        uint received = amountReceived(value);
+        uint fee = safeSub(value, received);
 
         // Reduce the allowance by the amount we're transferring
         tokenState.setAllowance(from, sender, safeSub(tokenState.allowance(from, sender), value));
 
-        return _internalTransfer(from, to, amountReceived, fee);
+        return _internalTransfer(from, to, received, fee);
     }
 
     /**
@@ -226,8 +222,6 @@ contract ExternStateFeeToken is ExternStateToken {
         internal
         returns (bool)
     {
-        require(to != address(0));
-
         // The fee is added to the amount sent
         uint fee = transferFeeIncurred(value);
 
@@ -241,8 +235,6 @@ contract ExternStateFeeToken is ExternStateToken {
         internal
         returns (bool)
     {
-        require(to != address(0));
-
         // The fee is added to the amount sent
         uint fee = transferFeeIncurred(value);
         uint total = safeAdd(value, fee);

@@ -9,9 +9,6 @@ author:     Anton Jurisevic
 
 date:       2018-05-15
 
-checked:    Dominic Romanowski
-approved:   Samuel Brooks
-
 -----------------------------------------------------------------
 MODULE DESCRIPTION
 -----------------------------------------------------------------

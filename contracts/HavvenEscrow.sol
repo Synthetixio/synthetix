@@ -4,15 +4,12 @@ FILE INFORMATION
 -----------------------------------------------------------------
 
 file:       HavvenEscrow.sol
-version:    1.0
+version:    1.1
 author:     Anton Jurisevic
             Dominic Romanowski
             Mike Spain
 
-date:       2018-02-07
-
-checked:    Mike Spain
-approved:   Samuel Brooks
+date:       2018-05-29
 
 -----------------------------------------------------------------
 MODULE DESCRIPTION

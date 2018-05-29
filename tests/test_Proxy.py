@@ -1,13 +1,13 @@
 from utils.deployutils import (
-    W3, UNIT, MASTER, DUMMY, fresh_account, fresh_accounts,
+    W3, UNIT, MASTER, DUMMY, fresh_account, fresh_accounts, 
     compile_contracts, attempt_deploy, mine_txs,
     take_snapshot, restore_snapshot
 )
 from utils.testutils import (
-    HavvenTestCase,
+    HavvenTestCase, ZERO_ADDRESS,
     generate_topic_event_map, get_event_data_from_log
 )
-from tests.contract_interfaces.extern_state_fee_token_interface import ExternStateFeeTokenInterface
+from tests.contract_interfaces.fee_token_interface import FeeTokenInterface
 from tests.contract_interfaces.proxy_interface import ProxyInterface
 from tests.contract_interfaces.token_state_interface import TokenStateInterface
 
@@ -23,7 +23,7 @@ def tearDownModule():
     print()
 
 
-class TestExternStateFeeToken(HavvenTestCase):
+class TestFeeToken(HavvenTestCase):
     def setUp(self):
         self.snapshot = take_snapshot()
 
@@ -32,11 +32,11 @@ class TestExternStateFeeToken(HavvenTestCase):
 
     @staticmethod
     def deployContracts():
-        sources = ["tests/contracts/PublicESFT.sol",
-                   "contracts/ExternStateFeeToken.sol",
+        sources = ["tests/contracts/PublicFeeToken.sol",
+                   "contracts/FeeToken.sol",
                    "contracts/TokenState.sol"]
         compiled = compile_contracts(sources, remappings=['""=contracts'])
-        feetoken_abi = compiled['PublicESFT']['abi']
+        feetoken_abi = compiled['PublicFeeToken']['abi']
 
         proxy, _ = attempt_deploy(
             compiled, "Proxy", MASTER, [MASTER]
@@ -45,12 +45,12 @@ class TestExternStateFeeToken(HavvenTestCase):
 
         feetoken_event_dict = generate_topic_event_map(feetoken_abi)
         feetoken_contract_1, construction_txr_1 = attempt_deploy(
-            compiled, "PublicESFT", MASTER,
+            compiled, "PublicFeeToken", MASTER,
             [proxy.address, "Test Fee Token", "FEE", UNIT // 20, MASTER, MASTER]
         )
 
         feetoken_contract_2, construction_txr_2 = attempt_deploy(
-            compiled, "PublicESFT", MASTER,
+            compiled, "PublicFeeToken", MASTER,
             [proxy.address, "Test Fee Token 2", "FEE", UNIT // 20, MASTER, MASTER]
         )
 
@@ -75,11 +75,16 @@ class TestExternStateFeeToken(HavvenTestCase):
         cls.initial_beneficiary = DUMMY
         cls.fee_authority = fresh_account()
 
-        cls.feetoken = ExternStateFeeTokenInterface(cls.proxied_feetoken, "ExternStateFeeToken")
+        cls.feetoken = FeeTokenInterface(cls.proxied_feetoken, "FeeToken")
         cls.proxy = ProxyInterface(cls.proxy, "Proxy")
         cls.feestate = TokenStateInterface(cls.feestate, "TokenState")
 
         cls.feetoken.setFeeAuthority(MASTER, cls.fee_authority)
+
+    def test_constructor(self):
+        self.assertFalse(self.proxy.useDELEGATECALL());
+        self.assertEqual(self.proxy.target(), self.feetoken_contract_1.address)
+        self.assertEqual(self.proxy.owner(), MASTER)
 
     def test_swap(self):
         self.assertEqual(self.feetoken.name(), "Test Fee Token")
@@ -106,16 +111,18 @@ class TestExternStateFeeToken(HavvenTestCase):
         self.assertEqual(receiver_balance, 0)
 
         value = 10 * UNIT
+        amountReceived = self.feetoken.amountReceived(value)
+        fee = value - amountReceived
         tx_receipt = self.feetoken.transfer(sender, receiver, value)
 
-        self.assertEqual(self.feetoken.balanceOf(receiver), receiver_balance + value)
+        self.assertEqual(self.feetoken.balanceOf(receiver), receiver_balance + amountReceived)
 
         self.proxy.setTarget(MASTER, self.feetoken_contract_2.address)
         self.feestate.setAssociatedContract(MASTER, self.feetoken_contract_2.address)
 
         mine_txs([self.feetoken_contract_2.functions.setTokenState(self.feestate.contract.address).transact({'from': MASTER})])
 
-        self.assertEqual(self.feetoken.balanceOf(receiver), receiver_balance + value)
+        self.assertEqual(self.feetoken.balanceOf(receiver), receiver_balance + amountReceived)
 
 
     def test_DELEGATECALL(self):

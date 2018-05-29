@@ -4,19 +4,17 @@ FILE INFORMATION
 -----------------------------------------------------------------
 
 file:       Nomin.sol
-version:    1.1
+version:    1.2
 author:     Anton Jurisevic
             Mike Spain
             Dominic Romanowski
+            Kevin Brown
 
-date:       2018-05-15
-
-checked:    Mike Spain
-approved:   Samuel Brooks
+date:       2018-05-29
 
 -----------------------------------------------------------------
 MODULE DESCRIPTION
------------------------------------------------------------------
+----------------------------------------------------------------    -
 
 Ether-backed nomin stablecoin contract.
 
@@ -36,13 +34,12 @@ fee period.
 pragma solidity 0.4.24;
 
 
-import "contracts/ExternStateFeeToken.sol";
-import "contracts/SelfDestructible.sol";
+import "contracts/FeeToken.sol";
 import "contracts/TokenState.sol";
 import "contracts/Court.sol";
 import "contracts/Havven.sol";
 
-contract Nomin is ExternStateFeeToken, SelfDestructible {
+contract Nomin is FeeToken {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -58,16 +55,13 @@ contract Nomin is ExternStateFeeToken, SelfDestructible {
     string constant TOKEN_NAME = "USD Nomins";
     string constant TOKEN_SYMBOL = "nUSD";
 
-    //uint constant SELF_DESTRUCT_DELAY = 4 weeks;
-
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _proxy, Havven _havven, address _owner)
-        ExternStateFeeToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL, 0, // Zero nomins initially exist.
-                            TRANSFER_FEE_RATE,
-                            _havven, // The havven contract is the fee authority.
-                            _owner)
-        SelfDestructible(_owner)
+        FeeToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL, 0, // Zero nomins initially exist.
+                 TRANSFER_FEE_RATE,
+                 _havven, // The havven contract is the fee authority.
+                 _owner)
         public
     {
         require(_proxy != 0 && address(_havven) != 0 && _owner != 0);
