@@ -90,7 +90,7 @@ class TestExternStateFeeToken(HavvenTestCase):
     def test_provide_tokenstate(self):
         feetoken, _ = attempt_deploy(self.compiled, 'ExternStateFeeToken',
                                      MASTER,
-                                     [self.proxy.address, "Test Fee Token", "FEE",
+                                     [self.proxy.address, "Test Fee Token", "FEE", 0,
                                       UNIT // 20, self.fee_authority, DUMMY])
         self.assertNotEqual(feetoken.functions.tokenState().call(), ZERO_ADDRESS)
 

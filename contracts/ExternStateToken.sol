@@ -3,12 +3,12 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 
-file:       DestructibleExternStateToken.sol
-version:    1.2
+file:       ExternStateToken.sol
+version:    1.3
 author:     Anton Jurisevic
             Dominic Romanowski
 
-date:       2018-05-22
+date:       2018-05-29
 
 checked:    Mike Spain
 approved:   Samuel Brooks
@@ -21,7 +21,7 @@ A partial ERC20 token contract, designed to operate with a proxy.
 To produce a complete ERC20 token, transfer and transferFrom
 tokens must be implemented, using the provided _byProxy internal
 functions.
-This contract utilises an external state for upgradability.
+This contract utilises an external state for upgradeability.
 
 -----------------------------------------------------------------
 */
@@ -30,7 +30,6 @@ pragma solidity 0.4.24;
 
 
 import "contracts/SafeDecimalMath.sol";
-import "contracts/SelfDestructible.sol";
 import "contracts/TokenState.sol";
 import "contracts/Proxyable.sol";
 
@@ -38,11 +37,9 @@ import "contracts/Proxyable.sol";
 /**
  * @title ERC20 Token contract, with detached state and designed to operate behind a proxy.
  */
-contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Proxyable {
+contract ExternStateToken is SafeDecimalMath, Proxyable {
 
     /* ========== STATE VARIABLES ========== */
-
-    uint constant SELF_DESTRUCT_DELAY = 4 weeks;
 
     /* Stores balances and allowances. */
     TokenState public tokenState;
@@ -55,6 +52,7 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Prox
 
     /**
      * @dev Constructor.
+     * @param _proxy The proxy associated with this contract.
      * @param _name Token's ERC20 name.
      * @param _symbol Token's ERC20 symbol.
      * @param _totalSupply The total supply of the token.
@@ -63,7 +61,6 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Prox
      */
     constructor(address _proxy, string _name, string _symbol, uint _totalSupply,
                 TokenState _tokenState, address _owner)
-        SelfDestructible(_owner, _owner, SELF_DESTRUCT_DELAY)
         Proxyable(_proxy, _owner)
         public
     {
@@ -102,9 +99,10 @@ contract DestructibleExternStateToken is SafeDecimalMath, SelfDestructible, Prox
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
-     * @notice Change the address of the TokenState contract.
-     * @dev Only the contract owner may operate this function.
-     */
+     * @notice Set the address of the TokenState contract.
+     * @dev This can be used to "pause" transfer functionality, by pointing the tokenState at 0x000..
+     * as balances would be unreachable.
+     */ 
     function setTokenState(TokenState _tokenState)
         external
         optionalProxy_onlyOwner

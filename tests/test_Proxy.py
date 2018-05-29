@@ -117,3 +117,14 @@ class TestExternStateFeeToken(HavvenTestCase):
 
         self.assertEqual(self.feetoken.balanceOf(receiver), receiver_balance + value)
 
+
+    def test_DELEGATECALL(self):
+        # A -> A can access same data
+        # A -> B with same data structures can access same data
+        # A -> A.2 -> A.3 with extra data structures can still access same data
+        pass
+
+    def test_CALL_DELEGATECALL_switch(self):
+        # Switching to CALL and DELEGATECALL modes and back works fine.
+        # Test that DELEGATECALL can turn itself off.
+        pass

@@ -37,11 +37,12 @@ pragma solidity 0.4.24;
 
 
 import "contracts/ExternStateFeeToken.sol";
+import "contracts/SelfDestructible.sol";
 import "contracts/TokenState.sol";
 import "contracts/Court.sol";
 import "contracts/Havven.sol";
 
-contract Nomin is ExternStateFeeToken {
+contract Nomin is ExternStateFeeToken, SelfDestructible {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -53,22 +54,26 @@ contract Nomin is ExternStateFeeToken {
     mapping(address => bool) public frozen;
 
     // Nomin transfers incur a 15 bp fee by default.
-    uint constant TRANSFER_FEE = 15 * UNIT / 10000;
+    uint constant TRANSFER_FEE_RATE = 15 * UNIT / 10000;
     string constant TOKEN_NAME = "USD Nomins";
     string constant TOKEN_SYMBOL = "nUSD";
 
+    //uint constant SELF_DESTRUCT_DELAY = 4 weeks;
+
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _proxy, address _havven, address _owner)
-        ExternStateFeeToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL,
-                            TRANSFER_FEE,
+    constructor(address _proxy, Havven _havven, address _owner)
+        ExternStateFeeToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL, 0, // Zero nomins initially exist.
+                            TRANSFER_FEE_RATE,
                             _havven, // The havven contract is the fee authority.
                             _owner)
+        SelfDestructible(_owner)
         public
     {
+        require(_proxy != 0 && address(_havven) != 0 && _owner != 0);
         // It should not be possible to transfer to the nomin contract itself.
         frozen[this] = true;
-        havven = Havven(_havven);
+        havven = _havven;
     }
 
     /* ========== SETTERS ========== */
@@ -141,7 +146,7 @@ contract Nomin is ExternStateFeeToken {
     /* If a confiscation court motion has passed and reached the confirmation
      * state, the court may transfer the target account's balance to the fee pool
      * and freeze its participation in further transactions. */
-    function confiscateBalance(address target)
+    function freezeAndConfiscate(address target)
         external
         onlyCourt
     {
@@ -171,10 +176,9 @@ contract Nomin is ExternStateFeeToken {
         external
         optionalProxy_onlyOwner
     {
-        if (frozen[target] && Nomin(target) != this) {
-            frozen[target] = false;
-            emitAccountUnfrozen(target);
-        }
+        require(frozen[target] && target != address(this));
+        frozen[target] = false;
+        emitAccountUnfrozen(target);
     }
 
     /* Allow havven to issue a certain number of
