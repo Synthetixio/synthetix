@@ -239,7 +239,7 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
         returns (bool)
     {
         uint amountReceived = priceToSpend(value);
-        uint fee = safeSub(value, fee);
+        uint fee = safeSub(value, amountReceived);
 
         return _internalTransfer(sender, to, amountReceived, fee);
     }
