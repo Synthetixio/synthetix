@@ -252,8 +252,8 @@ contract ExternStateFeeToken is Proxyable, SafeDecimalMath {
         returns (bool)
     {
         // The fee is deducted from the amount sent
-        uint fee = safeSub(value, priceToSpend(value));
-        uint amountReceived = safeSub(value, fee);
+        uint amountReceived = priceToSpend(value);
+        uint fee = safeSub(value, amountReceived);
 
         // Reduce the allowance by the amount we're transferring
         tokenState.setAllowance(from, sender, safeSub(tokenState.allowance(from, sender), value));
