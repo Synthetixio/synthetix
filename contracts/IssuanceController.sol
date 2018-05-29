@@ -191,10 +191,21 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     }
 
     /**
+     * @notice Fallback function (exchanges ETH to nUSD)
+     */
+    function ()
+        external
+        payable
+    {
+        exchangeForNomins();
+    } 
+
+    
+    /**
      * @notice Exchange ETH to nUSD.
      */
     function exchangeForNomins()
-        external
+        public 
         payable
         pricesNotStale // We can only do this when the prices haven't gone stale
         notPaused // And if the contract is paused we can't do this action either
