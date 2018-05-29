@@ -20,6 +20,31 @@ contract PublicHavven is Havven {
         public
     {}
 
+     /**
+     * @notice Allow the owner of this contract to endow any address with havvens
+     * from the initial supply.
+     * @dev Since the entire initial supply resides in the havven contract,
+     * this disallows the foundation from withdrawing fees on undistributed balances.
+     * This function can also be used to retrieve any havvens sent to the Havven contract itself.
+     * Only callable by the contract owner.
+     */
+    function endow(address to, uint value)
+        external
+        optionalProxy_onlyOwner
+    {
+        address sender = this;
+        /* If they have enough available Havvens, it could be that
+         * their havvens are escrowed, however the transfer would then
+         * fail. This means that escrowed havvens are locked first,
+         * and then the actual transferable ones. */
+        require(nominsIssued[sender] == 0 || value <= availableHavvens(sender));
+        /* Perform the transfer: if there is a problem,
+         * an exception will be thrown in this call. */
+        tokenState.setBalanceOf(sender, safeSub(tokenState.balanceOf(sender), value));
+        tokenState.setBalanceOf(to, safeAdd(tokenState.balanceOf(to), value));
+        emitTransfer(sender, to, value);
+    }
+
     function currentTime()
         public
         returns (uint)

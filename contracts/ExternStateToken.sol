@@ -110,23 +110,33 @@ contract ExternStateToken is SafeDecimalMath, SelfDestructible, Proxyable {
         emitTokenStateUpdated(_tokenState);
     }
 
+    function _internalTransfer(address from, address to, uint value) 
+        internal
+        returns (bool)
+    { 
+        /* Disallow transfers to irretrievable-addresses. */
+        require(to != address(0));
+        require(to != address(this));
+        require(to != address(proxy));
+
+        /* Insufficient balance will be handled by the safe subtraction. */
+        tokenState.setBalanceOf(from, safeSub(tokenState.balanceOf(from), value));
+        tokenState.setBalanceOf(to, safeAdd(tokenState.balanceOf(to), value));
+
+        emitTransfer(from, to, value);
+
+        return true;
+    }
+
     /**
      * @dev Perform an ERC20 token transfer. Designed to be called by transfer functions possessing
      * the onlyProxy or optionalProxy modifiers.
      */
-    function _transfer_byProxy(address sender, address to, uint value)
+    function _transfer_byProxy(address from, address to, uint value)
         internal
         returns (bool)
     {
-        require(to != address(0));
-
-        /* Insufficient balance will be handled by the safe subtraction. */
-        tokenState.setBalanceOf(sender, safeSub(tokenState.balanceOf(sender), value));
-        tokenState.setBalanceOf(to, safeAdd(tokenState.balanceOf(to), value));
-
-        emitTransfer(sender, to, value);
-
-        return true;
+        return _internalTransfer(from, to, value);
     }
 
     /**
@@ -137,16 +147,9 @@ contract ExternStateToken is SafeDecimalMath, SelfDestructible, Proxyable {
         internal
         returns (bool)
     {
-        require(to != address(0));
-
-        /* Insufficient balance will be handled by the safe subtraction. */
-        tokenState.setBalanceOf(from, safeSub(tokenState.balanceOf(from), value));
+        /* Insufficient allowance will be handled by the safe subtraction. */
         tokenState.setAllowance(from, sender, safeSub(tokenState.allowance(from, sender), value));
-        tokenState.setBalanceOf(to, safeAdd(tokenState.balanceOf(to), value));
-
-        emitTransfer(from, to, value);
-
-        return true;
+        return _internalTransfer(from, to, value);
     }
 
     /**
