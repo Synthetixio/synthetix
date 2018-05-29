@@ -4,15 +4,12 @@ FILE INFORMATION
 -----------------------------------------------------------------
 
 file:       Court.sol
-version:    1.1
+version:    1.2
 author:     Anton Jurisevic
             Mike Spain
             Dominic Romanowski
 
-date:       2018-05-15
-
-checked:    Mike Spain
-approved:   Samuel Brooks
+date:       2018-05-29
 
 -----------------------------------------------------------------
 MODULE DESCRIPTION

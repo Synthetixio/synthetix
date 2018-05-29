@@ -7,10 +7,7 @@ file:       SelfDestructible.sol
 version:    1.2
 author:     Anton Jurisevic
 
-date:       2018-05-22
-
-checked:    Mike Spain
-approved:   Samuel Brooks
+date:       2018-05-29
 
 -----------------------------------------------------------------
 MODULE DESCRIPTION

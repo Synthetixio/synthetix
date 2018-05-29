@@ -4,14 +4,11 @@ FILE INFORMATION
 -----------------------------------------------------------------
 
 file:       ExternStateFeeToken.sol
-version:    1.2
+version:    1.3
 author:     Anton Jurisevic
             Dominic Romanowski
 
 date:       2018-05-29
-
-checked:    Mike Spain
-approved:   Samuel Brooks
 
 -----------------------------------------------------------------
 MODULE DESCRIPTION

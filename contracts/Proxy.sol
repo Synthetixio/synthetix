@@ -4,13 +4,10 @@ FILE INFORMATION
 -----------------------------------------------------------------
 
 file:       Proxy.sol
-version:    1.2
+version:    1.3
 author:     Anton Jurisevic
 
 date:       2018-05-29
-
-checked:    Mike Spain
-approved:   Samuel Brooks
 
 -----------------------------------------------------------------
 MODULE DESCRIPTION

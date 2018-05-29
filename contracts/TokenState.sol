@@ -10,9 +10,6 @@ author:     Dominic Romanowski
 
 date:       2018-05-15
 
-checked:    Anton Jurisevic
-approved:   Samuel Brooks
-
 -----------------------------------------------------------------
 MODULE DESCRIPTION
 -----------------------------------------------------------------

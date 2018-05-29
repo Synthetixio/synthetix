@@ -4,14 +4,11 @@ FILE INFORMATION
 -----------------------------------------------------------------
 
 file:       Havven.sol
-version:    1.1
+version:    1.2
 author:     Anton Jurisevic
             Dominic Romanowski
 
 date:       2018-05-15
-
-checked:    Mike Spain
-approved:   Samuel Brooks
 
 -----------------------------------------------------------------
 MODULE DESCRIPTION
