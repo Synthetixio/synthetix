@@ -394,3 +394,39 @@ class TestIssuanceController(HavvenTestCase):
         self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), 0)
         self.assertEqual(self.havven.balanceOf(self.contractOwner.address), amount)
 
+    def test_cannotWithdrawHavvensIfUnauthorised(self):
+        amount = 10 * UNIT
+
+        # Set up the contract so it contains some havvens
+        self.havven.endow(MASTER, self.issuanceControllerContract.address, amount)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), amount)
+
+        notOwner = self.participantAddresses[2]
+        self.assertReverts(self.issuanceController.withdrawHavvens, notOwner, amount)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), amount)
+
+    # Withdraw nomins tests
+
+    def test_withdrawNomins(self):
+        amount = 10 * UNIT
+        amountReceived = self.nomin.amountReceived(amount)
+
+        # Set up the contract so it contains some nomins
+        self.nomin.giveNomins(MASTER, self.issuanceControllerContract.address, amount)
+        self.assertEqual(self.nomin.balanceOf(self.issuanceControllerContract.address), amount)
+
+        # Withdraw the nomins and ensure we've received the endowment.
+        self.issuanceController.withdrawNomins(self.contractOwner, amount)
+        self.assertEqual(self.nomin.balanceOf(self.issuanceControllerContract.address), 0)
+        self.assertEqual(self.nomin.balanceOf(self.contractOwner), amountReceived)
+
+    def test_cannotWithdrawNominsIfUnauthorised(self):
+        amount = 10 * UNIT
+
+        # Set up the contract so it contains some nomins 
+        self.nomin.giveNomins(MASTER, self.issuanceControllerContract.address, amount)
+        self.assertEqual(self.nomin.balanceOf(self.issuanceControllerContract.address), amount)
+
+        notOwner = self.participantAddresses[2]
+        self.assertReverts(self.issuanceController.withdrawNomins, notOwner, amount)
+        self.assertEqual(self.nomin.balanceOf(self.issuanceControllerContract.address), amount)

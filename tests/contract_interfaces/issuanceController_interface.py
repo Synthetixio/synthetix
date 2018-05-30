@@ -40,10 +40,10 @@ class IssuanceControllerInterface():
             self.contract.functions.exchangeNominsForHavvens().transact({'from': sender, 'value': value}), "exchangeNominsForHavvens", self.contract_name
         )
         self.withdrawHavvens = lambda sender, value: mine_tx(
-            self.contract.functions.withdrawHavvens().transact({'from': sender, 'value': value}), "withdrawHavvens", self.contract_name
+            self.contract.functions.withdrawHavvens(value).transact({'from': sender}), "withdrawHavvens", self.contract_name
         )
         self.withdrawNomins = lambda sender, value: mine_tx(
-            self.contract.functions.withdrawNomins().transact({'from': sender, 'value': value}), "withdrawNomins", self.contract_name
+            self.contract.functions.withdrawNomins(value).transact({'from': sender}), "withdrawNomins", self.contract_name
         )
         self.setPaused = lambda sender, paused: mine_tx(
             self.contract.functions.setPaused(paused).transact({'from': sender}), "setPaused", self.contract_name
