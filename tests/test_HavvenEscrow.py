@@ -396,6 +396,7 @@ class TestHavvenEscrow(HavvenTestCase):
         self.assertEqual(self.escrow.getNextVestingTime(alice), 0)
         self.assertEqual(self.escrow.getNextVestingQuantity(alice), 0)
 
+    """
     def test_withdrawHavvens(self):
         self.havven.endow(MASTER, self.escrow.contract.address, UNIT)
         self.assertEqual(self.havven.balanceOf(self.escrow.contract.address), UNIT)
@@ -404,6 +405,7 @@ class TestHavvenEscrow(HavvenTestCase):
         self.escrow.withdrawHavvens(MASTER, UNIT // 2)
         self.assertEqual(self.havven.balanceOf(self.escrow.contract.address), UNIT // 2)
         self.assertEqual(self.havven.balanceOf(self.havven_contract.address), pre_h_balance + UNIT // 2)
+    """
 
     def test_appendVestingEntry(self):
         alice, bob = fresh_accounts(2)

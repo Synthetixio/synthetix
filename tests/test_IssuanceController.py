@@ -9,7 +9,7 @@ from utils.testutils import (
     HavvenTestCase, ZERO_ADDRESS, block_time, get_eth_balance
 )
 from tests.contract_interfaces.nomin_interface import PublicNominInterface
-from tests.contract_interfaces.havven_interface import HavvenInterface
+from tests.contract_interfaces.havven_interface import PublicHavvenInterface
 from tests.contract_interfaces.issuanceController_interface import IssuanceControllerInterface
 
 def setUpModule():
@@ -33,15 +33,14 @@ class TestIssuanceController(HavvenTestCase):
     @classmethod
     def deployContracts(cls):
         sources = [
-            "contracts/Havven.sol",
+            "tests/contracts/PublicHavven.sol",
             "tests/contracts/PublicNomin.sol",
-            "contracts/IssuanceController.sol",
-            "tests/contracts/PublicHavven.sol"
+            "contracts/IssuanceController.sol"
         ]
 
         compiled, cls.event_maps = cls.compileAndMapEvents(sources)
         nomin_abi = compiled['PublicNomin']['abi']
-        havven_abi = compiled['Havven']['abi']
+        havven_abi = compiled['PublicHavven']['abi']
         issuance_controller_abi = compiled['IssuanceController']['abi']
 
         havven_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
@@ -93,6 +92,7 @@ class TestIssuanceController(HavvenTestCase):
         cls.priceStalePeriod = 3 * 60 * 60
         cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, cls.nomin_contract, cls.nomin_abi, cls.issuanceControllerContract = cls.deployContracts()
         cls.issuanceController = IssuanceControllerInterface(cls.issuanceControllerContract, "IssuanceController")
+        cls.havven = PublicHavvenInterface(cls.havven_contract, "Havven")
         cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
         cls.havven = HavvenInterface(cls.havven_contract, "Havven")
         cls.issuanceControllerEventDict = cls.event_maps['IssuanceController']
@@ -264,7 +264,7 @@ class TestIssuanceController(HavvenTestCase):
         self.assertEqual(self.nomin.balanceOf(self.issuanceControllerContract.address), nominsBalance)
 
         # Attmpt transfer
-        self.assertReverts(self.issuanceController.exchangeForNomins, exchanger, amount)
+        self.assertReverts(self.issuanceController.exchangeEtherForNomins, exchanger, amount)
         endingFundsWalletEthBalance = get_eth_balance(self.fundsWallet)
         self.assertEqual(self.nomin.balanceOf(self.issuanceControllerContract.address), nominsBalance)
         self.assertEqual(self.nomin.balanceOf(exchanger), 0)
@@ -284,7 +284,7 @@ class TestIssuanceController(HavvenTestCase):
         self.assertEqual(self.nomin.balanceOf(self.issuanceControllerContract.address), nominsBalance)
 
         # Attmpt transfer
-        self.assertReverts(self.issuanceController.exchangeForNomins, exchanger, amount)
+        self.assertReverts(self.issuanceController.exchangeEtherForNomins, exchanger, amount)
         endingFundsWalletEthBalance = get_eth_balance(self.fundsWallet)
         self.assertEqual(self.nomin.balanceOf(self.issuanceControllerContract.address), nominsBalance)
         self.assertEqual(self.nomin.balanceOf(exchanger), 0)
@@ -306,7 +306,7 @@ class TestIssuanceController(HavvenTestCase):
         self.assertEqual(self.nomin.balanceOf(self.issuanceControllerContract.address), nominsBalance)
 
         # Transfer the amount to the receiver
-        txr = self.issuanceController.exchangeForNomins(exchanger, ethToSend)
+        txr = self.issuanceController.exchangeEtherForNomins(exchanger, ethToSend)
 
         # Ensure the result of the transfer is correct.
         endingFundsWalletEthBalance = get_eth_balance(self.fundsWallet)
@@ -328,7 +328,7 @@ class TestIssuanceController(HavvenTestCase):
         self.assertEqual(self.nomin.balanceOf(self.issuanceControllerContract.address), nominsBalance)
 
         # Transfer the amount to the receiver
-        txr = self.issuanceController.exchangeForNomins(exchanger, amount)
+        txr = self.issuanceController.exchangeEtherForNomins(exchanger, amount)
 
         # Ensure the result of the transfer is correct.
         endingFundsWalletEthBalance = get_eth_balance(self.fundsWallet)
@@ -352,7 +352,7 @@ class TestIssuanceController(HavvenTestCase):
         self.assertEqual(self.nomin.balanceOf(self.issuanceControllerContract.address), nominsBalance)
 
         # Transfer the amount to the receiver
-        txr = self.issuanceController.exchangeForNomins(exchanger, ethToSend)
+        txr = self.issuanceController.exchangeEtherForNomins(exchanger, ethToSend)
 
         # Ensure the result of the transfer is correct.
         endingFundsWalletEthBalance = get_eth_balance(self.fundsWallet)
@@ -374,7 +374,7 @@ class TestIssuanceController(HavvenTestCase):
         self.assertEqual(self.nomin.balanceOf(self.issuanceControllerContract.address), nominsBalance)
 
         # Ensure the transfer fails due to there not being enough nomins in the contract
-        self.assertReverts(self.issuanceController.exchangeForNomins, exchanger, amount)
+        self.assertReverts(self.issuanceController.exchangeEtherForNomins, exchanger, amount)
 
         # Ensure the result of the transfer is correct.
         endingFundsWalletEthBalance = get_eth_balance(self.fundsWallet)
@@ -405,3 +405,54 @@ class TestIssuanceController(HavvenTestCase):
 
         # self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), havvensBalance - ?????)
         self.assertEqual(self.nomin.balanceOf(exchanger), 0)
+
+    # Withdraw havvens tests
+
+    def test_withdrawHavvens(self):
+        amount = 10 * UNIT
+
+        # Set up the contract so it contains some havvens
+        self.havven.endow(MASTER, self.issuanceControllerContract.address, amount)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), amount)
+
+        # Withdraw the Havvens and ensure we've received the endowment.
+        self.issuanceController.withdrawHavvens(self.contractOwner, amount)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), 0)
+        self.assertEqual(self.havven.balanceOf(self.contractOwner), amount)
+
+    def test_cannotWithdrawHavvensIfUnauthorised(self):
+        amount = 10 * UNIT
+
+        # Set up the contract so it contains some havvens
+        self.havven.endow(MASTER, self.issuanceControllerContract.address, amount)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), amount)
+
+        notOwner = self.participantAddresses[2]
+        self.assertReverts(self.issuanceController.withdrawHavvens, notOwner, amount)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), amount)
+
+    # Withdraw nomins tests
+
+    def test_withdrawNomins(self):
+        amount = 10 * UNIT
+        amountReceived = self.nomin.amountReceived(amount)
+
+        # Set up the contract so it contains some nomins
+        self.nomin.giveNomins(MASTER, self.issuanceControllerContract.address, amount)
+        self.assertEqual(self.nomin.balanceOf(self.issuanceControllerContract.address), amount)
+
+        # Withdraw the nomins and ensure we've received the endowment.
+        self.issuanceController.withdrawNomins(self.contractOwner, amount)
+        self.assertEqual(self.nomin.balanceOf(self.issuanceControllerContract.address), 0)
+        self.assertEqual(self.nomin.balanceOf(self.contractOwner), amountReceived)
+
+    def test_cannotWithdrawNominsIfUnauthorised(self):
+        amount = 10 * UNIT
+
+        # Set up the contract so it contains some nomins 
+        self.nomin.giveNomins(MASTER, self.issuanceControllerContract.address, amount)
+        self.assertEqual(self.nomin.balanceOf(self.issuanceControllerContract.address), amount)
+
+        notOwner = self.participantAddresses[2]
+        self.assertReverts(self.issuanceController.withdrawNomins, notOwner, amount)
+        self.assertEqual(self.nomin.balanceOf(self.issuanceControllerContract.address), amount)
