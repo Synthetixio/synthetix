@@ -133,6 +133,34 @@ class TestIssuanceController(HavvenTestCase):
             location=self.issuanceControllerContract.address
         )
 
+    # Funds Wallet setter and getter tests
+
+    def test_getFundsWalletAddress(self):
+        fundsWalletAddress = self.issuanceController.fundsWallet()
+        self.assertEqual(fundsWalletAddress, self.fundsWallet)
+
+    def test_setFundsWalletAddress(self):
+        newFundsWalletAddress = self.participantAddresses[0]
+        self.issuanceController.setFundsWallet(self.contractOwner, newFundsWalletAddress)
+        fundsWalletAddressToCheck = self.issuanceController.fundsWallet()
+        self.assertEqual(newFundsWalletAddress, fundsWalletAddressToCheck)
+
+    def test_cannotSetFundsWalletUnauthorised(self):
+        newFundsWalletAddress, notOwner = self.participantAddresses[0:2]
+        originalFundsWalletAddress = self.issuanceController.fundsWallet()
+        self.assertReverts(self.issuanceController.setFundsWallet, notOwner, newFundsWalletAddress)
+        fundsWalletAddressToCheck = self.issuanceController.fundsWallet()
+        self.assertEqual(fundsWalletAddressToCheck, originalFundsWalletAddress)
+
+    def test_FundsWalletEvent(self):
+        newFundsWalletAddress = self.participantAddresses[0]
+        txr = self.issuanceController.setFundsWallet(self.contractOwner, newFundsWalletAddress)
+        self.assertEventEquals(
+            self.issuanceControllerEventDict, txr.logs[0], 'FundsWalletUpdated',
+            fields={'newFundsWallet': newFundsWalletAddress},
+            location=self.issuanceControllerContract.address
+        )
+
     # Nomin contract address setter and getter tests
 
     def test_getNominAddress(self):

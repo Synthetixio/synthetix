@@ -29,6 +29,9 @@ class IssuanceControllerInterface():
         self.setNomin = lambda sender, newAddress: mine_tx(
             self.contract.functions.setNomin(newAddress).transact({'from': sender}), "setNomin", self.contract_name
         )
+        self.setFundsWallet = lambda sender, newAddress: mine_tx(
+            self.contract.functions.setFundsWallet(newAddress).transact({'from': sender}), "setFundsWallet", self.contract_name
+        )
         self.setPriceStalePeriod = lambda sender, newPriceStalePeriod: mine_tx(
             self.contract.functions.setPriceStalePeriod(newPriceStalePeriod).transact({'from': sender}), "setPriceStalePeriod", self.contract_name
         )
