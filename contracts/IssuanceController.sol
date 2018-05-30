@@ -254,7 +254,6 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         require(amountReceived <= havven.balanceOf(this));
 
         // Ok, transfer the Nomins to our address.
-        nomin.approve(this, amount);
         nomin.transferFrom(msg.sender, this, amount);
 
         // And send them the Havvens.

@@ -399,6 +399,9 @@ class TestIssuanceController(HavvenTestCase):
         self.havven.endow(MASTER, self.issuanceControllerContract.address, havvensBalance)
         self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), havvensBalance)
 
+        # Allow the contract to work on the exchanger's behalf
+        self.nomin.approve(exchanger, self.issuanceControllerContract.address, nominsToSend)
+
         # Transfer the amount to the receiver
         self.issuanceController.exchangeNominsForHavvens(exchanger, nominsToSend)
 
