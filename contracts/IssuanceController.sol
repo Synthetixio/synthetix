@@ -257,7 +257,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         nomin.approve(this, amount);
         nomin.transferFrom(msg.sender, this, amount);
 
-        // // And send them the Havvens.
+        // And send them the Havvens.
         // havven.transfer(msg.sender, amountReceived);
 
         // We don't emit our own events here because we assume that anyone
