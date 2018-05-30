@@ -49,14 +49,18 @@ class TestIssuanceController(HavvenTestCase):
         proxied_havven = W3.eth.contract(address=havven_proxy.address, abi=havven_abi)
         proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=nomin_abi)
 
+        tokenstate, _ = attempt_deploy(compiled, 'TokenState',
+                                       MASTER, [MASTER, MASTER])
         havven_contract, hvn_txr = attempt_deploy(
-            compiled, 'PublicHavven', MASTER, [havven_proxy.address, ZERO_ADDRESS, MASTER, MASTER, UNIT//2]
+            compiled, 'PublicHavven', MASTER, [havven_proxy.address, tokenstate.address, MASTER, MASTER, UNIT//2]
         )
         nomin_contract, nom_txr = attempt_deploy(
             compiled, 'PublicNomin', MASTER, [nomin_proxy.address, havven_contract.address, MASTER]
         )
 
         mine_txs([
+            tokenstate.functions.setBalanceOf(havven_contract.address, 100000000 * UNIT).transact({'from': MASTER}),
+            tokenstate.functions.setAssociatedContract(havven_contract.address).transact({'from': MASTER}),
             havven_proxy.functions.setTarget(havven_contract.address).transact({'from': MASTER}),
             nomin_proxy.functions.setTarget(nomin_contract.address).transact({'from': MASTER}),
             havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
@@ -84,12 +88,13 @@ class TestIssuanceController(HavvenTestCase):
         cls.contractOwner = MASTER
         cls.oracleAddress = addresses[0]
         cls.fundsWallet = addresses[1]
-        cls.usdToEthPrice = 100 * (10 ** 18)
+        cls.usdToEthPrice = 500 * (10 ** 18)
         cls.usdToHavPrice = int(0.65 * (10 ** 18))
         cls.priceStalePeriod = 3 * 60 * 60
         cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, cls.nomin_contract, cls.nomin_abi, cls.issuanceControllerContract = cls.deployContracts()
         cls.issuanceController = IssuanceControllerInterface(cls.issuanceControllerContract, "IssuanceController")
         cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
+        cls.havven = HavvenInterface(cls.havven_contract, "Havven")
         cls.issuanceControllerEventDict = cls.event_maps['IssuanceController']
 
     def test_constructor(self):
@@ -378,3 +383,25 @@ class TestIssuanceController(HavvenTestCase):
         self.assertEqual(self.nomin.feePool(), 0)
         self.assertEqual(startingFundsWalletEthBalance, endingFundsWalletEthBalance)
 
+    # Exchange nUSD for HAV tests
+
+    def test_exchangeForAllHavvens(self):
+        nominsToSend = 7 * UNIT
+        nominsAfterFees = self.nomin.amountReceived(nominsToSend)
+        havvensBalance = 1000 * UNIT
+        feesToPayInNomins = nominsToSend - nominsAfterFees
+        exchanger = self.participantAddresses[0]
+
+        # Set up exchanger with some nomins
+        self.nomin.giveNomins(MASTER, exchanger, nominsToSend)
+        self.assertEqual(self.nomin.balanceOf(exchanger), nominsToSend)
+
+        # Set up the contract so it contains some havvens for folks to convert Nomins for
+        self.havven.endow(MASTER, self.issuanceControllerContract.address, havvensBalance)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), havvensBalance)
+
+        # Transfer the amount to the receiver
+        self.issuanceController.exchangeForHavvens(exchanger, nominsToSend)
+
+        # self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), havvensBalance - ?????)
+        self.assertEqual(self.nomin.balanceOf(exchanger), 0)
