@@ -6,7 +6,8 @@ from utils.deployutils import (
     take_snapshot, restore_snapshot
 )
 from utils.testutils import (
-    HavvenTestCase
+    HavvenTestCase,
+    block_time
 )
 from tests.contract_interfaces.pausable_interface import PausableInterface
 
@@ -63,7 +64,12 @@ class TestPausable(HavvenTestCase):
     def test_setPauseIgnoresSame(self):
         initialPausedState = self.pausable.paused()
         initialLastPauseTime = self.pausable.lastPauseTime()
-        self.pausable.setPaused(self.contractOwner, initialPausedState)
+
+        # Try to set it to the same value
+        txr = self.pausable.setPaused(self.contractOwner, initialPausedState)
+
+        # Ensure no event was emitted and the state is the same.
+        self.assertEqual(len(txr.logs), 0)
         currentlyPausedState = self.pausable.paused()
         self.assertEqual(initialPausedState, currentlyPausedState)
         currentLastPausedTime = self.pausable.lastPauseTime()
@@ -81,8 +87,9 @@ class TestPausable(HavvenTestCase):
         self.pausable.setPaused(self.contractOwner, False)
         afterFalseLastPausedTime = self.pausable.lastPauseTime()
         self.assertEqual(initialLastPauseTime, afterFalseLastPausedTime)
-        self.pausable.setPaused(self.contractOwner, True)
+        txr = self.pausable.setPaused(self.contractOwner, True)
         finalLastPausedTime = self.pausable.lastPauseTime()
+        self.assertEqual(finalLastPausedTime, block_time(txr.blockNumber))
         self.assertNotEqual(finalLastPausedTime, afterFalseLastPausedTime)
 
     def test_pausingEmitsEvent(self):
@@ -108,7 +115,16 @@ class TestPausable(HavvenTestCase):
         self.pausable.setSomeValue(self.contractOwner, newValue)
         updatedValue = self.pausable.getSomeValue()
         self.assertEqual(newValue, updatedValue)
+
+        # Pause and ensure it doesn't work
         self.pausable.setPaused(self.contractOwner, True)
         self.assertReverts(self.pausable.setSomeValue, self.contractOwner, originalValue)
         updatedValue = self.pausable.getSomeValue()
         self.assertNotEqual(originalValue, updatedValue)
+
+        # Unpause and ensure it works again
+        self.pausable.setPaused(self.contractOwner, False)
+        newValue = originalValue + 1234
+        self.pausable.setSomeValue(self.contractOwner, newValue)
+        updatedValue = self.pausable.getSomeValue()
+        self.assertEqual(newValue, updatedValue)
