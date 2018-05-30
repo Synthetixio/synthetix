@@ -58,6 +58,8 @@ class TestIssuanceController(HavvenTestCase):
         )
 
         mine_txs([
+            tokenstate.functions.setBalanceOf(havven_contract.address, 100000000 * UNIT).transact({'from': MASTER}),
+            tokenstate.functions.setAssociatedContract(havven_contract.address).transact({'from': MASTER}),
             havven_proxy.functions.setTarget(havven_contract.address).transact({'from': MASTER}),
             nomin_proxy.functions.setTarget(nomin_contract.address).transact({'from': MASTER}),
             havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
@@ -392,7 +394,7 @@ class TestIssuanceController(HavvenTestCase):
         # Withdraw the Havvens and ensure we've received the endowment.
         self.issuanceController.withdrawHavvens(self.contractOwner, amount)
         self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), 0)
-        self.assertEqual(self.havven.balanceOf(self.contractOwner.address), amount)
+        self.assertEqual(self.havven.balanceOf(self.contractOwner), amount)
 
     def test_cannotWithdrawHavvensIfUnauthorised(self):
         amount = 10 * UNIT
