@@ -118,7 +118,6 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         onlyOwner
     {
         fundsWallet = _fundsWallet;
-
         emit FundsWalletUpdated(fundsWallet);
     }
     
@@ -130,7 +129,6 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         onlyOwner
     {
         oracle = _oracle;
-
         emit OracleUpdated(oracle);
     }
 
@@ -164,6 +162,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         onlyOwner 
     {
         priceStalePeriod = _time;
+        emit PriceStalePeriodUpdated(priceStalePeriod);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -282,7 +281,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         // just watch ERC20 events from the Nomin and/or Havven contracts
         // filtered to our address.
     }
-    
+
     /**
      * @notice Withdraw nomins: Allows the owner to withdraw nomins from this contract if needed.
      */
@@ -330,5 +329,6 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     event OracleUpdated(address newOracle);
     event NominUpdated(Nomin newNominContract);
     event HavvenUpdated(Havven newHavvenContract);
+    event PriceStalePeriodUpdated(uint priceStalePeriod);
     event PricesUpdated(uint newEthPrice, uint newHavvenPrice, uint timeSent);
 }
