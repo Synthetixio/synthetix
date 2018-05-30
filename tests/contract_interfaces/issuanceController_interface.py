@@ -37,16 +37,13 @@ class IssuanceControllerInterface():
             self.contract.functions.exchangeEtherForNomins().transact({'from': sender, 'value': value}), "exchangeEtherForNomins", self.contract_name
         )
         self.exchangeNominsForHavvens = lambda sender, value: mine_tx(
-            self.contract.functions.exchangeNominsForHavvens().transact({'from': sender, 'value': value}), "exchangeNominsForHavvens", self.contract_name
+            self.contract.functions.exchangeNominsForHavvens(value).transact({'from': sender}), "exchangeNominsForHavvens", self.contract_name
         )
         self.withdrawHavvens = lambda sender, value: mine_tx(
             self.contract.functions.withdrawHavvens(value).transact({'from': sender}), "withdrawHavvens", self.contract_name
         )
         self.withdrawNomins = lambda sender, value: mine_tx(
             self.contract.functions.withdrawNomins(value).transact({'from': sender}), "withdrawNomins", self.contract_name
-        )
-        self.exchangeForHavvens = lambda sender, amount: mine_tx(
-            self.contract.functions.exchangeForHavvens(amount).transact({'from': sender}), "exchangeForHavvens", self.contract_name
         )
         # TODO: Add inherited interface here instead
         self.setPaused = lambda sender, paused: mine_tx(
