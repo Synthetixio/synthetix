@@ -1,9 +1,8 @@
-from time import sleep
 from utils.deployutils import (
     W3, UNIT, MASTER, DUMMY,
     fresh_account, fresh_accounts,
     mine_tx, attempt_deploy, mine_txs,
-    take_snapshot, restore_snapshot
+    take_snapshot, restore_snapshot, fast_forward
 )
 from utils.testutils import (
     HavvenTestCase, ZERO_ADDRESS, block_time, get_eth_balance
@@ -275,7 +274,7 @@ class TestIssuanceController(HavvenTestCase):
 
     # Exchange ETH for nUSD tests
 
-    def test_cannotTransferIfPriceStale(self):
+    def test_cannotExchangeEtherForNominsIfPriceStale(self):
         amount = 10 * UNIT
         nominsBalance = (amount * self.usdToEthPrice) // UNIT
         base = self.nomin.amountReceived(nominsBalance)
@@ -284,7 +283,7 @@ class TestIssuanceController(HavvenTestCase):
         self.issuanceController.updatePrices(self.oracleAddress, self.usdToEthPrice, self.usdToHavPrice, timeSent)
         exchanger = self.participantAddresses[0]
         startingFundsWalletEthBalance = get_eth_balance(self.fundsWallet)
-        sleep(2) # Wait so the lastPriceUpdateTime is different to now
+        fast_forward(2) # Wait so the lastPriceUpdateTime is different to now
 
         # Set up the contract so it contains some nomins for folks to convert Ether for
         self.nomin.giveNomins(MASTER, self.issuanceControllerContract.address, nominsBalance)
@@ -298,7 +297,7 @@ class TestIssuanceController(HavvenTestCase):
         self.assertEqual(self.nomin.feePool(), 0)
         self.assertEqual(startingFundsWalletEthBalance, endingFundsWalletEthBalance)
 
-    def test_cannotTransferIfPaused(self):
+    def test_cannotExchangeEtherForNominsIfPaused(self):
         amount = 10 * UNIT
         nominsBalance = (amount * self.usdToEthPrice) // UNIT
         base = self.nomin.amountReceived(nominsBalance)
@@ -411,6 +410,69 @@ class TestIssuanceController(HavvenTestCase):
         self.assertEqual(startingFundsWalletEthBalance, endingFundsWalletEthBalance)
 
     # Exchange nUSD for HAV tests
+
+    def test_cannotExchangeNominsForHavvensIfPriceStale(self):
+        exchanger = self.participantAddresses[0]
+        nominsToTransfer = 20 * UNIT
+        self.issuanceController.setPriceStalePeriod(self.contractOwner, 1)
+        
+        # Set up the contract so it contains some nomins and havvens
+        self.nomin.giveNomins(MASTER, exchanger, nominsToTransfer)
+        self.assertEqual(self.nomin.balanceOf(exchanger), nominsToTransfer)
+        self.havven.endow(MASTER, self.issuanceControllerContract.address, 1000 * UNIT)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), 1000 * UNIT)
+
+        timeSent = block_time()
+        self.issuanceController.updatePrices(self.oracleAddress, self.usdToEthPrice, self.usdToHavPrice, timeSent)
+        fast_forward(2)
+
+        # Attempt transfer
+        self.nomin.approve(exchanger, self.issuanceControllerContract.address, nominsToTransfer)
+        self.assertReverts(self.issuanceController.exchangeNominsForHavvens, exchanger, nominsToTransfer)
+        self.assertEqual(self.nomin.balanceOf(exchanger), nominsToTransfer)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), 1000 * UNIT)
+
+    def test_cannotExchangeNominsForHavvensIfPaused(self):
+        exchanger = self.participantAddresses[0]
+        nominsToTransfer = 20 * UNIT
+
+        # Set up the contract so it contains some nomins and havvens
+        self.nomin.giveNomins(MASTER, exchanger, nominsToTransfer)
+        self.assertEqual(self.nomin.balanceOf(exchanger), nominsToTransfer)
+        self.havven.endow(MASTER, self.issuanceControllerContract.address, 1000 * UNIT)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), 1000 * UNIT)
+
+        # Pause the contract
+        self.issuanceController.setPaused(self.contractOwner, True)
+
+        # Attempt transfer
+        self.nomin.approve(exchanger, self.issuanceControllerContract.address, nominsToTransfer)
+        self.assertReverts(self.issuanceController.exchangeNominsForHavvens, exchanger, nominsToTransfer)
+        self.assertEqual(self.nomin.balanceOf(exchanger), nominsToTransfer)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), 1000 * UNIT)
+
+    def test_exchangeForSomeHavvens(self):
+        exchanger = self.participantAddresses[0]
+        nominsToSend = 5 * UNIT
+        nominsReceived = self.nomin.amountReceived(nominsToSend)
+        havBalance = (nominsReceived / self.usdToHavPrice) * UNIT
+
+        # Set up the contract so it contains some nomins and havvens
+        self.nomin.giveNomins(MASTER, exchanger, nominsToSend)
+        self.assertEqual(self.nomin.balanceOf(exchanger), nominsToSend)
+        self.havven.endow(MASTER, self.issuanceControllerContract.address, 1000 * UNIT)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), 1000 * UNIT)
+
+        # Attempt transfer
+        self.nomin.approve(exchanger, self.issuanceControllerContract.address, nominsToSend)
+        self.issuanceController.exchangeNominsForHavvens(exchanger, nominsToSend)
+
+        # Ensure the result of the transfer is correct.
+        self.assertEqual(self.nomin.balanceOf(exchanger), 0)
+        self.assertEqual(self.nomin.balanceOf(self.issuanceControllerContract.address), nominsReceived)
+        self.assertEqual(self.nomin.feePool(), nominsToSend - nominsReceived)
+        self.assertClose(self.havven.balanceOf(exchanger), havBalance)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), 1000 * UNIT - havBalance)
 
     def test_exchangeForAllHavvens(self):
         nominsToSend = 7 * UNIT
