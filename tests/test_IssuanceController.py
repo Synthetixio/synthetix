@@ -87,13 +87,14 @@ class TestIssuanceController(HavvenTestCase):
         cls.contractOwner = MASTER
         cls.oracleAddress = addresses[0]
         cls.fundsWallet = addresses[1]
-        cls.usdToEthPrice = 100 * (10 ** 18)
+        cls.usdToEthPrice = 500 * (10 ** 18)
         cls.usdToHavPrice = int(0.65 * (10 ** 18))
         cls.priceStalePeriod = 3 * 60 * 60
         cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, cls.nomin_contract, cls.nomin_abi, cls.issuanceControllerContract = cls.deployContracts()
         cls.issuanceController = IssuanceControllerInterface(cls.issuanceControllerContract, "IssuanceController")
         cls.havven = PublicHavvenInterface(cls.havven_contract, "Havven")
         cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
+        cls.havven = HavvenInterface(cls.havven_contract, "Havven")
         cls.issuanceControllerEventDict = cls.event_maps['IssuanceController']
 
     def test_constructor(self):
@@ -381,6 +382,29 @@ class TestIssuanceController(HavvenTestCase):
         self.assertEqual(self.nomin.balanceOf(exchanger), 0)
         self.assertEqual(self.nomin.feePool(), 0)
         self.assertEqual(startingFundsWalletEthBalance, endingFundsWalletEthBalance)
+
+    # Exchange nUSD for HAV tests
+
+    def test_exchangeForAllHavvens(self):
+        nominsToSend = 7 * UNIT
+        nominsAfterFees = self.nomin.amountReceived(nominsToSend)
+        havvensBalance = 1000 * UNIT
+        feesToPayInNomins = nominsToSend - nominsAfterFees
+        exchanger = self.participantAddresses[0]
+
+        # Set up exchanger with some nomins
+        self.nomin.giveNomins(MASTER, exchanger, nominsToSend)
+        self.assertEqual(self.nomin.balanceOf(exchanger), nominsToSend)
+
+        # Set up the contract so it contains some havvens for folks to convert Nomins for
+        self.havven.endow(MASTER, self.issuanceControllerContract.address, havvensBalance)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), havvensBalance)
+
+        # Transfer the amount to the receiver
+        self.issuanceController.exchangeForHavvens(exchanger, nominsToSend)
+
+        # self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), havvensBalance - ?????)
+        self.assertEqual(self.nomin.balanceOf(exchanger), 0)
 
     # Withdraw havvens tests
 

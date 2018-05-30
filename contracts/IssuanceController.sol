@@ -248,16 +248,17 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
 
         // How many Havvens are they going to be receiving?
         // Calculate the amount of Nomins we will receive after the transfer (minus fees)
-        uint amountReceived = safeDiv_dec(nomin.amountReceived(amount), usdToHavPrice);
+        uint amountReceived = safeMul_dec(nomin.amountReceived(amount), usdToHavPrice);
 
         // Do we have enough Havvens to service the request?
         require(amountReceived <= havven.balanceOf(this));
 
         // Ok, transfer the Nomins to our address.
+        nomin.approve(this, amount);
         nomin.transferFrom(msg.sender, this, amount);
 
-        // And send them the Havvens.
-        havven.transfer(msg.sender, amountReceived);
+        // // And send them the Havvens.
+        // havven.transfer(msg.sender, amountReceived);
 
         // We don't emit our own events here because we assume that anyone
         // who wants to watch what the Issuance Controller is doing can
