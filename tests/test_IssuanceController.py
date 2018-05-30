@@ -390,6 +390,7 @@ class TestIssuanceController(HavvenTestCase):
         havvensBalance = 1000 * UNIT
         feesToPayInNomins = nominsToSend - nominsAfterFees
         exchanger = self.participantAddresses[0]
+        havvensReceived = self.issuanceController.havvensReceivedForNomins(nominsToSend)
 
         # Set up exchanger with some nomins
         self.nomin.giveNomins(MASTER, exchanger, nominsToSend)
@@ -405,8 +406,31 @@ class TestIssuanceController(HavvenTestCase):
         # Transfer the amount to the receiver
         self.issuanceController.exchangeNominsForHavvens(exchanger, nominsToSend)
 
-        # self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), havvensBalance - ?????)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), havvensBalance - havvensReceived)
+        self.assertEqual(self.havven.balanceOf(exchanger), havvensReceived)
         self.assertEqual(self.nomin.balanceOf(exchanger), 0)
+
+    # Exchange rate tests
+
+    def test_havvenExchangeRate(self):
+        havvenPrice = int(0.5 * UNIT) # 50 cent havvens
+        self.issuanceController.updatePrices(self.oracleAddress, 0, havvenPrice, block_time())
+
+        nominsToSend = 10 * UNIT
+        nominsAfterFees = self.nomin.amountReceived(nominsToSend)
+        havvensReceived = self.issuanceController.havvensReceivedForNomins(nominsToSend)
+
+        self.assertClose(havvensReceived, nominsAfterFees / 0.5)
+
+    def test_nominExchangeRate(self):
+        ethPrice = 500 * UNIT # $500 ETH
+        self.issuanceController.updatePrices(self.oracleAddress, ethPrice, 0, block_time())
+
+        ethToSend = UNIT
+        nominsSent = ethToSend * ethPrice // UNIT
+        nominsReceived = self.nomin.amountReceived(nominsSent)
+
+        self.assertEqual(self.issuanceController.nominsReceivedForEther(ethToSend), nominsReceived)
 
     # Withdraw havvens tests
 

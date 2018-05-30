@@ -205,17 +205,9 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         notPaused
         returns (uint) // Returns the number of Nomins (nUSD) received
     {
-        // How many Nomins are available for us to sell?
-        uint availableNomins = nomin.balanceOf(this);
-
         // The multiplication works here because usdToEthPrice is specified in
         // 18 decimal places, just like our currency base.
         uint requestedToPurchase = safeMul_dec(msg.value, usdToEthPrice);
-
-        // Ensure we are only sending ones we have allocated to us.
-        // This check is technically not required because the Nomin
-        // contract should enforce this as well.
-        require(availableNomins >= requestedToPurchase);
 
         // Store the ETH in our funds wallet
         fundsWallet.transfer(msg.value);
@@ -243,28 +235,21 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         notPaused
         returns (uint) // Returns the number of Havvens (HAV) received
     {
-        // Does the sender have enough nUSD to request this exchange?
-        require(amount <= nomin.balanceOf(msg.sender));
-
         // How many Havvens are they going to be receiving?
-        // Calculate the amount of Nomins we will receive after the transfer (minus fees)
-        uint amountReceived = safeMul_dec(nomin.amountReceived(amount), usdToHavPrice);
-
-        // Do we have enough Havvens to service the request?
-        require(amountReceived <= havven.balanceOf(this));
-
+        uint havvensToSend = havvensReceivedForNomins(amount);
+        
         // Ok, transfer the Nomins to our address.
         nomin.transferFrom(msg.sender, this, amount);
 
         // And send them the Havvens.
-        // havven.transfer(msg.sender, amountReceived);
+        havven.transfer(msg.sender, havvensToSend);
 
         // We don't emit our own events here because we assume that anyone
         // who wants to watch what the Issuance Controller is doing can
         // just watch ERC20 events from the Nomin and/or Havven contracts
         // filtered to our address.
 
-        return amountReceived;
+        return havvensToSend; 
     }
 
     /**
@@ -309,6 +294,32 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         return safeAdd(lastPriceUpdateTime, priceStalePeriod) < now;
     }
 
+    /**
+     * @notice Calculate how many havvens you will receive if you transfer
+     *         an amount of nomins.
+     */
+    function havvensReceivedForNomins(uint amount)
+        public 
+        view
+        returns (uint)
+    {
+        uint nominsReceived = nomin.amountReceived(amount);
+        return safeMul_dec(safeDiv_dec(nominsReceived, usdToHavPrice), UNIT);
+    }
+     
+    /**
+     * @notice Calculate how many nomins you will receive if you transfer
+     *         an amount of ether.
+     */
+    function nominsReceivedForEther(uint amount)
+        public 
+        view
+        returns (uint)
+    {
+        uint nominsTransferred = safeMul_dec(amount, usdToEthPrice);
+        return nomin.amountReceived(nominsTransferred);
+    }
+    
     /* ========== MODIFIERS ========== */
 
     modifier onlyOracle
