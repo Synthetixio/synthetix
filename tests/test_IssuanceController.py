@@ -94,7 +94,6 @@ class TestIssuanceController(HavvenTestCase):
         cls.issuanceController = IssuanceControllerInterface(cls.issuanceControllerContract, "IssuanceController")
         cls.havven = PublicHavvenInterface(cls.havven_contract, "Havven")
         cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
-        cls.havven = HavvenInterface(cls.havven_contract, "Havven")
         cls.issuanceControllerEventDict = cls.event_maps['IssuanceController']
 
     def test_constructor(self):
@@ -401,7 +400,7 @@ class TestIssuanceController(HavvenTestCase):
         self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), havvensBalance)
 
         # Transfer the amount to the receiver
-        self.issuanceController.exchangeForHavvens(exchanger, nominsToSend)
+        self.issuanceController.exchangeNominsForHavvens(exchanger, nominsToSend)
 
         # self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), havvensBalance - ?????)
         self.assertEqual(self.nomin.balanceOf(exchanger), 0)
