@@ -9,9 +9,6 @@ author:     Kevin Brown
 
 date:       2018-05-22
 
-checked:    
-approved:   
-
 -----------------------------------------------------------------
 MODULE DESCRIPTION
 -----------------------------------------------------------------
@@ -45,8 +42,7 @@ contract Pausable is Owned {
         Owned(_owner)
         public
     {
-        paused = false;
-        lastPauseTime = 0;
+        // Paused will be false, and lastPauseTime will be 0 upon initialisation
     }
 
     /**
