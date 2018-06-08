@@ -510,7 +510,7 @@ class TestIssuanceController(HavvenTestCase):
         nominsAfterFees = self.nomin.amountReceived(nominsToSend)
         havvensReceived = self.issuanceController.havvensReceivedForNomins(nominsToSend)
 
-        self.assertClose(havvensReceived, nominsAfterFees / 0.5)
+        self.assertEqual(havvensReceived, nominsAfterFees * UNIT // havvenPrice)
 
     def test_nominExchangeRate(self):
         ethPrice = 500 * UNIT # $500 ETH
