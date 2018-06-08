@@ -52,7 +52,7 @@ contract Nomin is FeeToken {
 
     // Nomin transfers incur a 15 bp fee by default.
     uint constant TRANSFER_FEE_RATE = 15 * UNIT / 10000;
-    string constant TOKEN_NAME = "USD Nomins";
+    string constant TOKEN_NAME = "Nomin USD";
     string constant TOKEN_SYMBOL = "nUSD";
 
     /* ========== CONSTRUCTOR ========== */

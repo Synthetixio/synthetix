@@ -86,7 +86,7 @@ class TestNomin(HavvenTestCase):
         self.assertTrue(self.nomin.frozen(self.nomin_contract.address))
 
         # FeeToken members
-        self.assertEqual(self.nomin.name(), "USD Nomins")
+        self.assertEqual(self.nomin.name(), "Nomin USD")
         self.assertEqual(self.nomin.symbol(), "nUSD")
         self.assertEqual(self.nomin.totalSupply(), 0)
         self.assertEqual(self.nomin.balanceOf(MASTER), 0)
