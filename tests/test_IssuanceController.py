@@ -455,7 +455,7 @@ class TestIssuanceController(HavvenTestCase):
         exchanger = self.participantAddresses[0]
         nominsToSend = 5 * UNIT
         nominsReceived = self.nomin.amountReceived(nominsToSend)
-        havBalance = (nominsReceived / self.usdToHavPrice) * UNIT
+        havBalance = nominsReceived * UNIT // self.usdToHavPrice
 
         # Set up the contract so it contains some nomins and havvens
         self.nomin.giveNomins(MASTER, exchanger, nominsToSend)
@@ -471,7 +471,7 @@ class TestIssuanceController(HavvenTestCase):
         self.assertEqual(self.nomin.balanceOf(exchanger), 0)
         self.assertEqual(self.nomin.balanceOf(self.issuanceControllerContract.address), nominsReceived)
         self.assertEqual(self.nomin.feePool(), nominsToSend - nominsReceived)
-        self.assertClose(self.havven.balanceOf(exchanger), havBalance)
+        self.assertEqual(self.havven.balanceOf(exchanger), havBalance)
         self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), 1000 * UNIT - havBalance)
 
     def test_exchangeForAllHavvens(self):
