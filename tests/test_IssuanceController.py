@@ -94,6 +94,7 @@ class TestIssuanceController(HavvenTestCase):
         cls.havven = PublicHavvenInterface(cls.havven_contract, "Havven")
         cls.nomin = PublicNominInterface(cls.nomin_contract, "Nomin")
         cls.issuanceControllerEventDict = cls.event_maps['IssuanceController']
+        fast_forward(1) # Give the contract constructor a second between its execution and execution of the other functions.
 
     def test_constructor(self):
         self.assertEqual(self.issuanceController.owner(), self.contractOwner)
