@@ -18,6 +18,7 @@ class NominInterface(FeeTokenInterface):
             self.contract.functions.setHavven(address).transact({'from': sender}), "setHavven", self.contract_name)
 
         self.transferPlusFee = lambda value: self.contract.functions.transferPlusFee(value).call()
+        self.transferFeeIncurred = lambda value: self.contract.functions.transferFeeIncurred(value).call()
         self.transfer = lambda sender, recipient, value: mine_tx(
             self.contract.functions.transfer(recipient, value).transact({'from': sender}), "transfer", self.contract_name)
         self.transferFrom = lambda sender, frm, to, value: mine_tx(
