@@ -2,15 +2,13 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
+
 file:       Havven.sol
-version:    1.0
+version:    1.2
 author:     Anton Jurisevic
             Dominic Romanowski
 
-date:       2018-02-05
-
-checked:    Mike Spain
-approved:   Samuel Brooks
+date:       2018-05-15
 
 -----------------------------------------------------------------
 MODULE DESCRIPTION
@@ -18,26 +16,31 @@ MODULE DESCRIPTION
 
 Havven token contract. Havvens are transferable ERC20 tokens,
 and also give their holders the following privileges.
-An owner of havvens is entitled to a share in the fees levied on
-nomin transactions, and additionally may participate in nomin
-confiscation votes.
+An owner of havvens may participate in nomin confiscation votes, they
+may also have the right to issue nomins at the discretion of the
+foundation for this version of the contract.
 
 After a fee period terminates, the duration and fees collected for that
-period are computed, and the next period begins.
-Thus an account may only withdraw the fees owed to them for the previous
-period, and may only do so once per period.
-Any unclaimed fees roll over into the common pot for the next period.
+period are computed, and the next period begins. Thus an account may only
+withdraw the fees owed to them for the previous period, and may only do
+so once per period. Any unclaimed fees roll over into the common pot for
+the next period.
+
+== Average Balance Calculations ==
 
 The fee entitlement of a havven holder is proportional to their average
-havven balance over the last fee period. This is computed by measuring the
-area under the graph of a user's balance over time, and then when fees are
-distributed, dividing through by the duration of the fee period.
+issued nomin balance over the last fee period. This is computed by
+measuring the area under the graph of a user's issued nomin balance over
+time, and then when a new fee period begins, dividing through by the
+duration of the fee period.
 
-We need only update fee entitlement on transfer when the havven balances of the sender
-and recipient are modified. This is for efficiency, and adds an implicit friction to
-trading in the havven market. A havven holder pays for his own recomputation whenever
-he wants to change his position, which saves the foundation having to maintain a pot
-dedicated to resourcing this.
+We need only update values when the balances of an account is modified.
+This occurs when issuing or burning for issued nomin balances,
+and when transferring for havven balances. This is for efficiency,
+and adds an implicit friction to interacting with havvens.
+A havven holder pays for his own recomputation whenever he wants to change
+his position, which saves the foundation having to maintain a pot dedicated
+to resourcing this.
 
 A hypothetical user's balance history over one fee period, pictorially:
 
@@ -53,7 +56,7 @@ When a new transfer occurs at time n, the balance being p,
 we must:
 
   - Add the area p * (n - t) to the total area recorded so far
-  - Update the last transfer time to p
+  - Update the last transfer time to n
 
 So if this graph represents the entire current fee period,
 the average havvens held so far is ((t-f)*s + (n-t)*p) / (n-f).
@@ -92,101 +95,132 @@ In the implementation, the duration of different fee periods may be slightly irr
 as the check that they have rolled over occurs only when state-changing havven
 operations are performed.
 
-Additionally, we keep track also of the penultimate and not just the last
-average balance, in order to support the voting functionality detailed in Court.sol.
+== Issuance and Burning ==
+
+In this version of the havven contract, nomins can only be issued by
+those that have been nominated by the havven foundation. Nomins are assumed
+to be valued at $1, as they are a stable unit of account.
+
+All nomins issued require a proportional value of havvens to be locked,
+where the proportion is governed by the current issuance ratio. This
+means for every $1 of Havvens locked up, $(issuanceRatio) nomins can be issued.
+i.e. to issue 100 nomins, 100/issuanceRatio dollars of havvens need to be locked up.
+
+To determine the value of some amount of havvens(H), an oracle is used to push
+the price of havvens (P_H) in dollars to the contract. The value of H
+would then be: H * P_H.
+
+Any havvens that are locked up by this issuance process cannot be transferred.
+The amount that is locked floats based on the price of havvens. If the price
+of havvens moves up, less havvens are locked, so they can be issued against,
+or transferred freely. If the price of havvens moves down, more havvens are locked,
+even going above the initial wallet balance.
 
 -----------------------------------------------------------------
-
 */
 
-pragma solidity ^0.4.21;
+pragma solidity 0.4.24;
 
 
-import "contracts/ExternStateProxyToken.sol";
-import "contracts/EtherNomin.sol";
+import "contracts/ExternStateToken.sol";
+import "contracts/Nomin.sol";
 import "contracts/HavvenEscrow.sol";
 import "contracts/TokenState.sol";
-import "contracts/SelfDestructible.sol";
+
 
 /**
  * @title Havven ERC20 contract.
  * @notice The Havven contracts does not only facilitate transfers and track balances,
  * but it also computes the quantity of fees each havven holder is entitled to.
  */
-contract Havven is ExternStateProxyToken, SelfDestructible {
+contract Havven is ExternStateToken {
 
     /* ========== STATE VARIABLES ========== */
 
-    /* Sums of balances*duration in the current fee period.
-     * range: decimals; units: havven-seconds */
-    mapping(address => uint) public currentBalanceSum;
+    /* A struct for handing values associated with average balance calculations */
+    struct IssuanceData {
+        /* Sums of balances*duration in the current fee period.
+        /* range: decimals; units: havven-seconds */
+        uint currentBalanceSum;
+        /* The last period's average balance */
+        uint lastAverageBalance;
+        /* The last time the data was calculated */
+        uint lastModified;
+    }
 
-    /* Average account balances in the last completed fee period. This is proportional
-     * to that account's last period fee entitlement.
-     * (i.e. currentBalanceSum for the previous period divided through by duration)
-     * WARNING: This may not have been updated for the latest fee period at the
-     *          time it is queried.
-     * range: decimals; units: havvens */
-    mapping(address => uint) public lastAverageBalance;
+    /* Issued nomin balances for individual fee entitlements */
+    mapping(address => IssuanceData) public issuanceData;
+    /* The total number of issued nomins for determining fee entitlements */
+    IssuanceData public totalIssuanceData;
 
-    /* The average account balances in the period before the last completed fee period.
-     * This is used as a person's weight in a confiscation vote, so it implies that
-     * the vote duration must be no longer than the fee period in order to guarantee that 
-     * no portion of a fee period used for determining vote weights falls within the
-     * duration of a vote it contributes to.
-     * WARNING: This may not have been updated for the latest fee period at the
-     *          time it is queried.
-     * range: decimals; units: havvens */
-    mapping(address => uint) public penultimateAverageBalance;
+    /* The time the current fee period began */
+    uint public feePeriodStartTime;
+    /* The time the last fee period began */
+    uint public lastFeePeriodStartTime;
 
-    /* The time an account last made a transfer. */
-    mapping(address => uint) public lastTransferTimestamp;
+    /* Fee periods will roll over in no shorter a time than this. 
+     * The fee period cannot actually roll over until a fee-relevant
+     * operation such as withdrawal or a fee period duration update occurs,
+     * so this is just a target, and the actual duration may be slightly longer. */
+    uint public feePeriodDuration = 4 weeks;
+    /* ...and must target between 1 day and six months. */
+    uint constant MIN_FEE_PERIOD_DURATION = 1 days;
+    uint constant MAX_FEE_PERIOD_DURATION = 26 weeks;
 
-    /* The time the current fee period began. */
-    uint public feePeriodStartTime = 3;
-    /* The actual start of the last fee period (seconds). */
-    uint public lastFeePeriodStartTime = 2;
-    /* The actual start of the penultimate fee period (seconds). */
-    uint public penultimateFeePeriodStartTime = 1;
-    /* The foregoing members are initialised to past timestamps,
-     * as they will be updated upon the next transfer. */
-
-    /* Fee periods will roll over in no shorter a time than this. */
-    uint public targetFeePeriodDurationSeconds = 4 weeks;
-    /* And may not be set to be shorter than a day. */
-    uint constant MIN_FEE_PERIOD_DURATION_SECONDS = 1 days;
-    /* And may not be set to be longer than six months. */
-    uint constant MAX_FEE_PERIOD_DURATION_SECONDS = 26 weeks;
-
-    /* The quantity of nomins that were in the fee pot at the time
-     * of the last fee rollover (feePeriodStartTime). */
+    /* The quantity of nomins that were in the fee pot at the time */
+    /* of the last fee rollover, at feePeriodStartTime. */
     uint public lastFeesCollected;
 
-    mapping(address => bool) public hasWithdrawnLastPeriodFees;
+    /* Whether a user has withdrawn their last fees */
+    mapping(address => bool) public hasWithdrawnFees;
 
-    EtherNomin public nomin;
+    Nomin public nomin;
     HavvenEscrow public escrow;
 
+    /* The address of the oracle which pushes the havven price to this contract */
+    address public oracle;
+    /* The price of havvens written in UNIT */
+    uint public price;
+    /* The time the havven price was last updated */
+    uint public lastPriceUpdateTime;
+    /* How long will the contract assume the price of havvens is correct */
+    uint public priceStalePeriod = 3 hours;
 
-    /* ========== CONSTRUCTOR ========== */
+    /* A quantity of nomins greater than this ratio
+     * may not be issued against a given value of havvens. */
+    uint public issuanceRatio = 5 * UNIT / 100;
+    /* No more nomins may be issued than the value of havvens backing them. */
+    uint constant MAX_ISSUANCE_RATIO = UNIT;
+
+    /* Whether the address can issue nomins or not. */
+    mapping(address => bool) public isIssuer;
+    /* The number of currently-outstanding nomins the user has issued. */
+    mapping(address => uint) public nominsIssued;
+
+    uint constant HAVVEN_SUPPLY = 1e8 * UNIT;
+    uint constant ORACLE_FUTURE_LIMIT = 10 minutes;
+    string constant TOKEN_NAME = "Havven";
+    string constant TOKEN_SYMBOL = "HAV";
     
+    /* ========== CONSTRUCTOR ========== */
+
     /**
      * @dev Constructor
-     * @param _initialState A pre-populated contract containing token balances.
+     * @param _tokenState A pre-populated contract containing token balances.
      * If the provided address is 0x0, then a fresh one will be constructed with the contract owning all tokens.
      * @param _owner The owner of this contract.
      */
-    function Havven(TokenState _initialState, address _owner)
-        ExternStateProxyToken("Havven", "HAV", 1e8 * UNIT, address(this), _initialState, _owner)
-        SelfDestructible(_owner, _owner) /* Owned is initialised in ExternStateProxyToken */
+    constructor(address _proxy, TokenState _tokenState, address _owner, address _oracle, uint _price)
+        ExternStateToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, _tokenState, _owner)
+        /* Owned is initialised in ExternStateToken */
         public
     {
-        lastTransferTimestamp[this] = now;
+        oracle = _oracle;
         feePeriodStartTime = now;
-        lastFeePeriodStartTime = now - targetFeePeriodDurationSeconds;
-        penultimateFeePeriodStartTime = now - 2*targetFeePeriodDurationSeconds;
+        lastFeePeriodStartTime = now - feePeriodDuration;
+        price = _price;
+        lastPriceUpdateTime = now;
     }
-
 
     /* ========== SETTERS ========== */
 
@@ -194,11 +228,12 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
      * @notice Set the associated Nomin contract to collect fees from.
      * @dev Only the contract owner may call this.
      */
-    function setNomin(EtherNomin _nomin) 
+    function setNomin(Nomin _nomin)
         external
         optionalProxy_onlyOwner
     {
         nomin = _nomin;
+        emitNominUpdated(_nomin);
     }
 
     /**
@@ -210,6 +245,7 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
         optionalProxy_onlyOwner
     {
         escrow = _escrow;
+        emitEscrowUpdated(_escrow);
     }
 
     /**
@@ -218,110 +254,149 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
      * acceptable bounds (1 day to 26 weeks). Upon resetting this the fee period
      * may roll over if the target duration was shortened sufficiently.
      */
-    function setTargetFeePeriodDuration(uint duration)
+    function setFeePeriodDuration(uint duration)
         external
-        postCheckFeePeriodRollover
         optionalProxy_onlyOwner
     {
-        require(MIN_FEE_PERIOD_DURATION_SECONDS <= duration &&
-                duration <= MAX_FEE_PERIOD_DURATION_SECONDS);
-        targetFeePeriodDurationSeconds = duration;
-        emit FeePeriodDurationUpdated(duration);
+        require(MIN_FEE_PERIOD_DURATION <= duration &&
+                               duration <= MAX_FEE_PERIOD_DURATION);
+        feePeriodDuration = duration;
+        emitFeePeriodDurationUpdated(duration);
+        rolloverFeePeriodIfElapsed();
     }
 
+    /**
+     * @notice Set the Oracle that pushes the havven price to this contract
+     */
+    function setOracle(address _oracle)
+        external
+        optionalProxy_onlyOwner
+    {
+        oracle = _oracle;
+        emitOracleUpdated(_oracle);
+    }
+
+    /**
+     * @notice Set the stale period on the updated havven price
+     * @dev No max/minimum, as changing it wont influence anything but issuance by the foundation
+     */
+    function setPriceStalePeriod(uint time)
+        external
+        optionalProxy_onlyOwner
+    {
+        priceStalePeriod = time;
+    }
+
+    /**
+     * @notice Set the issuanceRatio for issuance calculations.
+     * @dev Only callable by the contract owner.
+     */
+    function setIssuanceRatio(uint _issuanceRatio)
+        external
+        optionalProxy_onlyOwner
+    {
+        require(_issuanceRatio <= MAX_ISSUANCE_RATIO);
+        issuanceRatio = _issuanceRatio;
+        emitIssuanceRatioUpdated(_issuanceRatio);
+    }
+
+    /**
+     * @notice Set whether the specified can issue nomins or not.
+     */
+    function setIssuer(address account, bool value)
+        external
+        optionalProxy_onlyOwner
+    {
+        isIssuer[account] = value;
+        emitIssuersUpdated(account, value);
+    }
+
+    /* ========== VIEWS ========== */
+
+    function issuanceCurrentBalanceSum(address account)
+        external
+        view
+        returns (uint)
+    {
+        return issuanceData[account].currentBalanceSum;
+    }
+
+    function issuanceLastAverageBalance(address account)
+        external
+        view
+        returns (uint)
+    {
+        return issuanceData[account].lastAverageBalance;
+    }
+
+    function issuanceLastModified(address account)
+        external
+        view
+        returns (uint)
+    {
+        return issuanceData[account].lastModified;
+    }
+
+    function totalIssuanceCurrentBalanceSum()
+        external
+        view
+        returns (uint)
+    {
+        return totalIssuanceData.currentBalanceSum;
+    }
+
+    function totalIssuanceLastAverageBalance()
+        external
+        view
+        returns (uint)
+    {
+        return totalIssuanceData.lastAverageBalance;
+    }
+
+    function totalIssuanceLastModified()
+        external
+        view
+        returns (uint)
+    {
+        return totalIssuanceData.lastModified;
+    }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
-
-    /**
-     * @notice Allow the owner of this contract to endow any address with havvens
-     * from the initial supply.
-     * @dev Since the entire initial supply resides in the havven contract,
-     * this disallows the foundation from withdrawing fees on undistributed balances.
-     * This function can also be used to retrieve any havvens sent to the Havven contract itself.S
-     * Only callable by the contract owner.
-     */
-    function endow(address account, uint value)
-        external
-        optionalProxy_onlyOwner
-        returns (bool)
-    {
-
-        /* Use "this" in order that the havven account is the sender.
-         * The explicit transfer also initialises fee entitlement information. */
-        return _transfer(this, account, value);
-    }
-
-    /**
-     * @notice Allow the owner of this contract to emit transfer events for
-     * contract setup purposes.
-     */
-    function emitTransferEvents(address sender, address[] recipients, uint[] values)
-        external
-        onlyOwner
-    {
-        for (uint i = 0; i < recipients.length; ++i) {
-            emit Transfer(sender, recipients[i], values[i]);
-        }
-    }
 
     /**
      * @notice ERC20 transfer function.
      */
     function transfer(address to, uint value)
-        external
+        public
         optionalProxy
         returns (bool)
     {
-        return _transfer(messageSender, to, value);
-    }
-
-    /**
-     * @dev Calls transfer() in ExternStateProxyToken to perform the transfer itself,
-     * and also recomputes fee entitlement information when balances are updated.
-     * Anything calling this must apply the optionalProxy or onlyProxy modifier.
-     */
-    function _transfer(address sender, address to, uint value)
-        internal
-        preCheckFeePeriodRollover
-        returns (bool)
-    {
-
-        uint senderPreBalance = state.balanceOf(sender);
-        uint recipientPreBalance = state.balanceOf(to);
-
+        address sender = messageSender;
+        /* If they have enough available Havvens, it could be that
+         * their havvens are escrowed, however the transfer would then
+         * fail. This means that escrowed havvens are locked first,
+         * and then the actual transferable ones. */
+        require(nominsIssued[sender] == 0 || value <= availableHavvens(sender));
         /* Perform the transfer: if there is a problem,
          * an exception will be thrown in this call. */
         _transfer_byProxy(sender, to, value);
-
-        /* Zero-value transfers still update fee entitlement information,
-         * and may roll over the fee period. */
-        adjustFeeEntitlement(sender, senderPreBalance);
-        adjustFeeEntitlement(to, recipientPreBalance);
 
         return true;
     }
 
     /**
-     * @notice ERC20 transferFrom function, which also performs
-     * fee entitlement recomputation whenever balances are updated.
+     * @notice ERC20 transferFrom function.
      */
     function transferFrom(address from, address to, uint value)
-        external
-        preCheckFeePeriodRollover
+        public
         optionalProxy
         returns (bool)
     {
-        uint senderPreBalance = state.balanceOf(from);
-        uint recipientPreBalance = state.balanceOf(to);
-
+        address sender = messageSender;
+        require(nominsIssued[sender] == 0 || value <= availableHavvens(from));
         /* Perform the transfer: if there is a problem,
          * an exception will be thrown in this call. */
-        _transferFrom_byProxy(messageSender, from, to, value);
-
-        /* Zero-value transfers still update fee entitlement information,
-         * and may roll over the fee period. */
-        adjustFeeEntitlement(from, senderPreBalance);
-        adjustFeeEntitlement(to, recipientPreBalance);
+        _transferFrom_byProxy(sender, from, to, value);
 
         return true;
     }
@@ -330,212 +405,375 @@ contract Havven is ExternStateProxyToken, SelfDestructible {
      * @notice Compute the last period's fee entitlement for the message sender
      * and then deposit it into their nomin account.
      */
-    function withdrawFeeEntitlement()
+    function withdrawFees()
         public
-        preCheckFeePeriodRollover
         optionalProxy
     {
         address sender = messageSender;
-
+        rolloverFeePeriodIfElapsed();
         /* Do not deposit fees into frozen accounts. */
         require(!nomin.frozen(sender));
 
         /* Check the period has rolled over first. */
-        rolloverFee(sender, lastTransferTimestamp[sender], state.balanceOf(sender));
+        updateIssuanceData(sender, nominsIssued[sender], nomin.totalSupply());
 
         /* Only allow accounts to withdraw fees once per period. */
-        require(!hasWithdrawnLastPeriodFees[sender]);
+        require(!hasWithdrawnFees[sender]);
 
         uint feesOwed;
+        uint lastTotalIssued = totalIssuanceData.lastAverageBalance;
 
-        if (escrow != HavvenEscrow(0)) {
-            feesOwed = escrow.totalVestedAccountBalance(sender);
+        if (lastTotalIssued > 0) {
+            /* Sender receives a share of last period's collected fees proportional
+             * with their average fraction of the last period's issued nomins. */
+            feesOwed = safeDiv_dec(
+                safeMul_dec(issuanceData[sender].lastAverageBalance, lastFeesCollected),
+                lastTotalIssued
+            );
         }
 
-        feesOwed = safeDiv_dec(safeMul_dec(safeAdd(feesOwed, lastAverageBalance[sender]),
-                                           lastFeesCollected),
-                               totalSupply);
+        hasWithdrawnFees[sender] = true;
 
-        hasWithdrawnLastPeriodFees[sender] = true;
         if (feesOwed != 0) {
-            nomin.withdrawFee(sender, feesOwed);
-            emit FeesWithdrawn(sender, sender, feesOwed);
+            nomin.withdrawFees(sender, feesOwed);
         }
+        emitFeesWithdrawn(messageSender, feesOwed);
     }
 
     /**
-     * @notice Update the fee entitlement since the last transfer or entitlement adjustment.
+     * @notice Update the havven balance averages since the last transfer
+     * or entitlement adjustment.
      * @dev Since this updates the last transfer timestamp, if invoked
      * consecutively, this function will do nothing after the first call.
+     * Also, this will adjust the total issuance at the same time.
      */
-    function adjustFeeEntitlement(address account, uint preBalance)
+    function updateIssuanceData(address account, uint preBalance, uint lastTotalSupply)
         internal
     {
-        /* The time since the last transfer clamps at the last fee rollover time
-         * if the last transfer was earlier than that. */
-        rolloverFee(account, lastTransferTimestamp[account], preBalance);
+        /* update the total balances first */
+        totalIssuanceData = updatedIssuanceData(lastTotalSupply, totalIssuanceData);
 
-        currentBalanceSum[account] = safeAdd(
-            currentBalanceSum[account],
-            safeMul(preBalance, now - lastTransferTimestamp[account])
-        );
+        if (issuanceData[account].lastModified < feePeriodStartTime) {
+            hasWithdrawnFees[account] = false;
+        }
 
-        /* Update the last time this user's balance changed. */
-        lastTransferTimestamp[account] = now;
+        issuanceData[account] = updatedIssuanceData(preBalance, issuanceData[account]);
+    }
+
+
+    /**
+     * @notice Compute the new IssuanceData on the old balance
+     */
+    function updatedIssuanceData(uint preBalance, IssuanceData preIssuance)
+        internal
+        view
+        returns (IssuanceData)
+    {
+
+        uint currentBalanceSum = preIssuance.currentBalanceSum;
+        uint lastAverageBalance = preIssuance.lastAverageBalance;
+        uint lastModified = preIssuance.lastModified;
+
+        if (lastModified < feePeriodStartTime) {
+            if (lastModified < lastFeePeriodStartTime) {
+                /* The balance was last updated before the previous fee period, so the average
+                 * balance in this period is their pre-transfer balance. */
+                lastAverageBalance = preBalance;
+            } else {
+                /* The balance was last updated during the previous fee period. */
+                /* No overflow or zero denominator problems, since lastFeePeriodStartTime < feePeriodStartTime < lastModified. 
+                 * implies these quantities are strictly positive. */
+                uint timeUpToRollover = feePeriodStartTime - lastModified;
+                uint lastFeePeriodDuration = feePeriodStartTime - lastFeePeriodStartTime;
+                uint lastBalanceSum = safeAdd(currentBalanceSum, safeMul(preBalance, timeUpToRollover));
+                lastAverageBalance = lastBalanceSum / lastFeePeriodDuration;
+            }
+            /* Roll over to the next fee period. */
+            currentBalanceSum = safeMul(preBalance, now - feePeriodStartTime);
+        } else {
+            /* The balance was last updated during the current fee period. */
+            currentBalanceSum = safeAdd(
+                currentBalanceSum,
+                safeMul(preBalance, now - lastModified)
+            );
+        }
+
+        return IssuanceData(currentBalanceSum, lastAverageBalance, now);
     }
 
     /**
-     * @dev Update the given account's previous period fee entitlement value.
-     * Do nothing if the last transfer occurred since the fee period rolled over.
-     * If the entitlement was updated, also update the last transfer time to be
-     * at the timestamp of the rollover, so if this should do nothing if called more
-     * than once during a given period.
-     *
-     * Consider the case where the entitlement is updated. If the last transfer
-     * occurred at time t in the last period, then the starred region is added to the
-     * entitlement, the last transfer timestamp is moved to r, and the fee period is
-     * rolled over from k-1 to k so that the new fee period start time is at time r.
-     * 
-     *   k-1       |        k
-     *         s __|
-     *  _  _ ___|**|
-     *          |**|
-     *  _  _ ___|**|___ __ _  _
-     *             |
-     *          t  |
-     *             r
-     * 
-     * Similar computations are performed according to the fee period in which the
-     * last transfer occurred.
+     * @notice Recompute and return the given account's last average balance.
      */
-    function rolloverFee(address account, uint lastTransferTime, uint preBalance)
-        internal
+    function recomputeLastAverageBalance(address account)
+        external
+        returns (uint)
     {
-        if (lastTransferTime < feePeriodStartTime) {
-            if (lastTransferTime < lastFeePeriodStartTime) {
-                /* The last transfer predated the previous two fee periods. */
-                if (lastTransferTime < penultimateFeePeriodStartTime) {
-                    /* The balance did nothing in the penultimate fee period, so the average balance
-                     * in this period is their pre-transfer balance. */
-                    penultimateAverageBalance[account] = preBalance;
-                /* The last transfer occurred within the one-before-the-last fee period. */
-                } else {
-                    /* No overflow risk here: the failed guard implies (penultimateFeePeriodStartTime <= lastTransferTime). */
-                    penultimateAverageBalance[account] = safeDiv(
-                        safeAdd(currentBalanceSum[account], safeMul(preBalance, (lastFeePeriodStartTime - lastTransferTime))),
-                        (lastFeePeriodStartTime - penultimateFeePeriodStartTime)
-                    );
-                }
+        updateIssuanceData(account, nominsIssued[account], nomin.totalSupply());
+        return issuanceData[account].lastAverageBalance;
+    }
 
-                /* The balance did nothing in the last fee period, so the average balance
-                 * in this period is their pre-transfer balance. */
-                lastAverageBalance[account] = preBalance;
+    /**
+     * @notice Issue nomins against the sender's havvens.
+     * @dev Issuance is only allowed if the havven price isn't stale and the sender is an issuer.
+     */
+    function issueNomins(uint amount)
+        public
+        optionalProxy
+        requireIssuer(messageSender)
+        /* No need to check if price is stale, as it is checked in issuableNomins. */
+    {
+        address sender = messageSender;
+        require(amount <= remainingIssuableNomins(sender));
+        uint lastTot = nomin.totalSupply();
+        uint preIssued = nominsIssued[sender];
+        nomin.issue(sender, amount);
+        nominsIssued[sender] = safeAdd(preIssued, amount);
+        updateIssuanceData(sender, preIssued, lastTot);
+    }
 
-            /* The last transfer occurred within the last fee period. */
-            } else {
-                /* The previously-last average balance becomes the penultimate balance. */
-                penultimateAverageBalance[account] = lastAverageBalance[account];
+    function issueMaxNomins()
+        external
+        optionalProxy
+    {
+        issueNomins(remainingIssuableNomins(messageSender));
+    }
 
-                /* No overflow risk here: the failed guard implies (lastFeePeriodStartTime <= lastTransferTime). */
-                lastAverageBalance[account] = safeDiv(
-                    safeAdd(currentBalanceSum[account], safeMul(preBalance, (feePeriodStartTime - lastTransferTime))),
-                    (feePeriodStartTime - lastFeePeriodStartTime)
-                );
-            }
+    /**
+     * @notice Burn nomins to clear issued nomins/free havvens.
+     */
+    function burnNomins(uint amount)
+        /* it doesn't matter if the price is stale or if the user is an issuer, as non-issuers have issued no nomins.*/
+        external
+        optionalProxy
+    {
+        address sender = messageSender;
 
-            /* Roll over to the next fee period. */
-            currentBalanceSum[account] = 0;
-            hasWithdrawnLastPeriodFees[account] = false;
-            lastTransferTimestamp[account] = feePeriodStartTime;
+        uint lastTot = nomin.totalSupply();
+        uint preIssued = nominsIssued[sender];
+        /* nomin.burn does a safeSub on balance (so it will revert if there are not enough nomins). */
+        nomin.burn(sender, amount);
+        /* This safe sub ensures amount <= number issued */
+        nominsIssued[sender] = safeSub(preIssued, amount);
+        updateIssuanceData(sender, preIssued, lastTot);
+    }
+
+    /**
+     * @notice Check if the fee period has rolled over. If it has, set the new fee period start
+     * time, and record the fees collected in the nomin contract.
+     */
+    function rolloverFeePeriodIfElapsed()
+        public
+    {
+        /* If the fee period has rolled over... */
+        if (now >= feePeriodStartTime + feePeriodDuration) {
+            lastFeesCollected = nomin.feePool();
+            lastFeePeriodStartTime = feePeriodStartTime;
+            feePeriodStartTime = now;
+            emitFeePeriodRollover(now);
+        }
+    }
+
+    /* ========== Issuance/Burning ========== */
+
+    /**
+     * @notice The maximum nomins an issuer can issue against their total havven quantity. This ignores any
+     * already issued nomins.
+     */
+    function maxIssuableNomins(address issuer)
+        view
+        public
+        priceNotStale
+        returns (uint)
+    {
+        if (!isIssuer[issuer]) {
+            return 0;
+        }
+        if (escrow != HavvenEscrow(0)) {
+            uint totalOwnedHavvens = safeAdd(tokenState.balanceOf(issuer), escrow.balanceOf(issuer));
+            return safeMul_dec(HAVtoUSD(totalOwnedHavvens), issuanceRatio);
+        } else {
+            return safeMul_dec(HAVtoUSD(tokenState.balanceOf(issuer)), issuanceRatio);
         }
     }
 
     /**
-     * @dev Recompute and return the given account's average balance information.
-     * This also rolls over the fee period if necessary, and brings
-     * the account's current balance sum up to date.
+     * @notice The remaining nomins an issuer can issue against their total havven quantity.
      */
-    function _recomputeAccountLastAverageBalance(address account)
-        internal
-        preCheckFeePeriodRollover
-        returns (uint)
-    {
-        adjustFeeEntitlement(account, state.balanceOf(account));
-        return lastAverageBalance[account];
-    }
-
-    /**
-     * @notice Recompute and return the sender's average balance information.
-     */
-    function recomputeLastAverageBalance()
-        external
-        optionalProxy
-        returns (uint)
-    {
-        return _recomputeAccountLastAverageBalance(messageSender);
-    }
-
-    /**
-     * @notice Recompute and return the given account's average balance information.
-     */
-    function recomputeAccountLastAverageBalance(address account)
-        external
-        returns (uint)
-    {
-        return _recomputeAccountLastAverageBalance(account);
-    }
-
-    /** 
-     * @notice Check if the current fee period has terminated and, if so, roll it over.
-     */
-    function rolloverFeePeriod()
+    function remainingIssuableNomins(address issuer)
+        view
         public
+        returns (uint)
     {
-        checkFeePeriodRollover();
+        uint issued = nominsIssued[issuer];
+        uint max = maxIssuableNomins(issuer);
+        if (issued > max) {
+            return 0;
+        } else {
+            return max - issued;
+        }
     }
 
+    /**
+     * @notice Havvens that are locked, which can exceed the user's total balance + escrowed
+     */
+    function lockedHavvens(address account)
+        public
+        view
+        returns (uint)
+    {
+        if (nominsIssued[account] == 0) {
+            return 0;
+        }
+        return USDtoHAV(safeDiv_dec(nominsIssued[account], issuanceRatio));
+    }
+
+    /**
+     * @notice Havvens that are not locked, available for issuance
+     */
+    function availableHavvens(address account)
+        public
+        view
+        returns (uint)
+    {
+        uint locked = lockedHavvens(account);
+        uint bal = tokenState.balanceOf(account);
+        if (escrow != address(0)) {
+            bal += escrow.balanceOf(account);
+        }
+        if (locked > bal) {
+            return 0;
+        }
+        return bal - locked;
+    }
+
+    /**
+     * @notice The value in USD for a given amount of HAV
+     */
+    function HAVtoUSD(uint hav_dec)
+        public
+        view
+        priceNotStale
+        returns (uint)
+    {
+        return safeMul_dec(hav_dec, price);
+    }
+
+    /**
+     * @notice The value in HAV for a given amount of USD
+     */
+    function USDtoHAV(uint usd_dec)
+        public
+        view
+        priceNotStale
+        returns (uint)
+    {
+        return safeDiv_dec(usd_dec, price);
+    }
+
+    /**
+     * @notice Access point for the oracle to update the price of havvens.
+     */
+    function updatePrice(uint newPrice, uint timeSent)
+        external
+        onlyOracle  /* Should be callable only by the oracle. */
+    {
+        /* Must be the most recently sent price, but not too far in the future.
+         * (so we can't lock ourselves out of updating the oracle for longer than this) */
+        require(lastPriceUpdateTime < timeSent && timeSent < now + ORACLE_FUTURE_LIMIT);
+
+        price = newPrice;
+        lastPriceUpdateTime = timeSent;
+        emitPriceUpdated(newPrice, timeSent);
+
+        /* Check the fee period rollover within this as the price should be pushed every 15min. */
+        rolloverFeePeriodIfElapsed();
+    }
+
+    /**
+     * @notice Check if the price of havvens hasn't been updated for longer than the stale period.
+     */
+    function priceIsStale()
+        public
+        view
+        returns (bool)
+    {
+        return safeAdd(lastPriceUpdateTime, priceStalePeriod) < now;
+    }
 
     /* ========== MODIFIERS ========== */
 
-    /**
-     * @dev If the fee period has rolled over, then
-     * save the start times of the last fee period,
-     * as well as the penultimate fee period.
-     */
-    function checkFeePeriodRollover()
-        internal
+    modifier requireIssuer(address account)
     {
-        /* If the fee period has rolled over... */
-        if (feePeriodStartTime + targetFeePeriodDurationSeconds <= now) {
-            lastFeesCollected = nomin.feePool();
-
-            /* ...shift the three period start times back one place. */
-            penultimateFeePeriodStartTime = lastFeePeriodStartTime;
-            lastFeePeriodStartTime = feePeriodStartTime;
-            feePeriodStartTime = now;
-            
-            emit FeePeriodRollover(now);
-        }
-    }
-
-    modifier postCheckFeePeriodRollover
-    {
-        _;
-        checkFeePeriodRollover();
-    }
-
-    modifier preCheckFeePeriodRollover
-    {
-        checkFeePeriodRollover();
+        require(isIssuer[account]);
         _;
     }
 
+    modifier onlyOracle
+    {
+        require(msg.sender == oracle);
+        _;
+    }
+
+    modifier priceNotStale
+    {
+        require(!priceIsStale());
+        _;
+    }
 
     /* ========== EVENTS ========== */
 
+    event PriceUpdated(uint newPrice, uint timestamp);
+    bytes32 constant PRICEUPDATED_SIG = keccak256("PriceUpdated(uint256,uint256)");
+    function emitPriceUpdated(uint newPrice, uint timestamp) internal {
+        proxy._emit(abi.encode(newPrice, timestamp), 1, PRICEUPDATED_SIG, 0, 0, 0);
+    }
+
+    event IssuanceRatioUpdated(uint newRatio);
+    bytes32 constant ISSUANCERATIOUPDATED_SIG = keccak256("IssuanceRatioUpdated(uint256)");
+    function emitIssuanceRatioUpdated(uint newRatio) internal {
+        proxy._emit(abi.encode(newRatio), 1, ISSUANCERATIOUPDATED_SIG, 0, 0, 0);
+    }
+
     event FeePeriodRollover(uint timestamp);
+    bytes32 constant FEEPERIODROLLOVER_SIG = keccak256("FeePeriodRollover(uint256)");
+    function emitFeePeriodRollover(uint timestamp) internal {
+        proxy._emit(abi.encode(timestamp), 1, FEEPERIODROLLOVER_SIG, 0, 0, 0);
+    } 
 
     event FeePeriodDurationUpdated(uint duration);
+    bytes32 constant FEEPERIODDURATIONUPDATED_SIG = keccak256("FeePeriodDurationUpdated(uint256)");
+    function emitFeePeriodDurationUpdated(uint duration) internal {
+        proxy._emit(abi.encode(duration), 1, FEEPERIODDURATIONUPDATED_SIG, 0, 0, 0);
+    } 
 
-    event FeesWithdrawn(address account, address indexed accountIndex, uint value);
+    event FeesWithdrawn(address indexed account, uint value);
+    bytes32 constant FEESWITHDRAWN_SIG = keccak256("FeesWithdrawn(address,uint256)");
+    function emitFeesWithdrawn(address account, uint value) internal {
+        proxy._emit(abi.encode(value), 2, FEESWITHDRAWN_SIG, bytes32(account), 0, 0);
+    }
+
+    event OracleUpdated(address newOracle);
+    bytes32 constant ORACLEUPDATED_SIG = keccak256("OracleUpdated(address)");
+    function emitOracleUpdated(address newOracle) internal {
+        proxy._emit(abi.encode(newOracle), 1, ORACLEUPDATED_SIG, 0, 0, 0);
+    }
+
+    event NominUpdated(address newNomin);
+    bytes32 constant NOMINUPDATED_SIG = keccak256("NominUpdated(address)");
+    function emitNominUpdated(address newNomin) internal {
+        proxy._emit(abi.encode(newNomin), 1, NOMINUPDATED_SIG, 0, 0, 0);
+    }
+
+    event EscrowUpdated(address newEscrow);
+    bytes32 constant ESCROWUPDATED_SIG = keccak256("EscrowUpdated(address)");
+    function emitEscrowUpdated(address newEscrow) internal {
+        proxy._emit(abi.encode(newEscrow), 1, ESCROWUPDATED_SIG, 0, 0, 0);
+    }
+
+    event IssuersUpdated(address indexed account, bool indexed value);
+    bytes32 constant ISSUERSUPDATED_SIG = keccak256("IssuersUpdated(address,bool)");
+    function emitIssuersUpdated(address account, bool value) internal {
+        proxy._emit(abi.encode(), 3, ISSUERSUPDATED_SIG, bytes32(account), bytes32(value ? 1 : 0), 0);
+    }
+
 }

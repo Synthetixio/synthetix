@@ -2,14 +2,12 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
+
 file:       SelfDestructible.sol
-version:    1.0
+version:    1.2
 author:     Anton Jurisevic
 
-date:       2018-2-28
-
-checked:    Mike Spain
-approved:   Samuel Brooks
+date:       2018-05-29
 
 -----------------------------------------------------------------
 MODULE DESCRIPTION
@@ -17,52 +15,58 @@ MODULE DESCRIPTION
 
 This contract allows an inheriting contract to be destroyed after
 its owner indicates an intention and then waits for a period
-without changing their mind.
+without changing their mind. All ether contained in the contract
+is forwarded to a nominated beneficiary upon destruction.
 
 -----------------------------------------------------------------
 */
 
-pragma solidity ^0.4.21;
+pragma solidity 0.4.24;
 
 
 import "contracts/Owned.sol";
 
+
 /**
- * @title A contract that can be destroyed by its owner after a timer elapses.
+ * @title A contract that can be destroyed by its owner after a delay elapses.
  */
 contract SelfDestructible is Owned {
 	
-	uint public initiationTime = ~uint(0);
-	uint constant SD_DURATION = 3 days;
-	address public beneficiary;
+	uint public initiationTime;
+	bool public selfDestructInitiated;
+	address public selfDestructBeneficiary;
+	uint public constant SELFDESTRUCT_DELAY = 4 weeks;
 
 	/**
 	 * @dev Constructor
 	 * @param _owner The account which controls this contract.
-	 * @param _beneficiary The account to forward all ether in this contract upon self-destruction
 	 */
-	function SelfDestructible(address _owner, address _beneficiary)
-		public
-		Owned(_owner)
+	constructor(address _owner)
+	    Owned(_owner)
+	    public
 	{
-		beneficiary = _beneficiary;
+		require(_owner != address(0));
+		selfDestructBeneficiary = _owner;
+		emit SelfDestructBeneficiaryUpdated(_owner);
 	}
 
 	/**
 	 * @notice Set the beneficiary address of this contract.
-	 * @dev Only the contract owner may call this.
+	 * @dev Only the contract owner may call this. The provided beneficiary must be non-null.
+	 * @param _beneficiary The address to pay any eth contained in this contract to upon self-destruction.
 	 */
-	function setBeneficiary(address _beneficiary)
+	function setSelfDestructBeneficiary(address _beneficiary)
 		external
 		onlyOwner
 	{
-		beneficiary = _beneficiary;
+		require(_beneficiary != address(0));
+		selfDestructBeneficiary = _beneficiary;
 		emit SelfDestructBeneficiaryUpdated(_beneficiary);
 	}
 
 	/**
 	 * @notice Begin the self-destruction counter of this contract.
-	 * Once the three-day timer has elapsed, the contract may be self-destructed.
+	 * Once the delay has elapsed, the contract may be self-destructed.
 	 * @dev Only the contract owner may call this.
 	 */
 	function initiateSelfDestruct()
@@ -70,7 +74,8 @@ contract SelfDestructible is Owned {
 		onlyOwner
 	{
 		initiationTime = now;
-		emit SelfDestructInitiated(SD_DURATION);
+		selfDestructInitiated = true;
+		emit SelfDestructInitiated(SELFDESTRUCT_DELAY);
 	}
 
 	/**
@@ -81,12 +86,13 @@ contract SelfDestructible is Owned {
 		external
 		onlyOwner
 	{
-		initiationTime = ~uint(0);
+		initiationTime = 0;
+		selfDestructInitiated = false;
 		emit SelfDestructTerminated();
 	}
 
 	/**
-	 * @notice If the self-destruction timer has elapsed, destroy this contract and
+	 * @notice If the self-destruction delay has elapsed, destroy this contract and
 	 * remit any ether it owns to the beneficiary address.
 	 * @dev Only the contract owner may call this.
 	 */
@@ -94,17 +100,14 @@ contract SelfDestructible is Owned {
 		external
 		onlyOwner
 	{
-		require(initiationTime + SD_DURATION < now);
+		require(selfDestructInitiated && initiationTime + SELFDESTRUCT_DELAY < now);
+		address beneficiary = selfDestructBeneficiary;
 		emit SelfDestructed(beneficiary);
 		selfdestruct(beneficiary);
 	}
 
-	event SelfDestructBeneficiaryUpdated(address newBeneficiary);
-
-	event SelfDestructInitiated(uint duration);
-
 	event SelfDestructTerminated();
-
 	event SelfDestructed(address beneficiary);
+	event SelfDestructInitiated(uint selfDestructDelay);
+	event SelfDestructBeneficiaryUpdated(address newBeneficiary);
 }
-

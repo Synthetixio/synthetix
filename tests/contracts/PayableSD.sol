@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.23;
 
 
 import "contracts/SelfDestructible.sol";
@@ -6,8 +6,8 @@ import "contracts/SelfDestructible.sol";
 
 contract PayableSD is SelfDestructible {
 
-    function PayableSD(address _owner, address _beneficiary)
-        SelfDestructible(_owner, _beneficiary) public {}
+    constructor(address _owner)
+        SelfDestructible(_owner) public {}
 
     function () public payable {}
 }

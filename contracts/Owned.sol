@@ -2,15 +2,13 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
+
 file:       Owned.sol
-version:    1.0
+version:    1.1
 author:     Anton Jurisevic
             Dominic Romanowski
 
 date:       2018-2-26
-
-checked:    Mike Spain
-approved:   Samuel Brooks
 
 -----------------------------------------------------------------
 MODULE DESCRIPTION
@@ -28,7 +26,7 @@ previous owner change the nomination (setting it to 0).
 -----------------------------------------------------------------
 */
 
-pragma solidity ^0.4.21;
+pragma solidity 0.4.24;
 
 /**
  * @title A contract with an owner.
@@ -40,19 +38,21 @@ contract Owned {
     address public nominatedOwner;
 
     /**
-     * @dev Constructor
+     * @dev Owned Constructor
      */
-    function Owned(address _owner)
+    constructor(address _owner)
         public
     {
+        require(_owner != address(0));
         owner = _owner;
+        emit OwnerChanged(address(0), _owner);
     }
 
     /**
      * @notice Nominate a new owner of this contract.
      * @dev Only the current owner may nominate a new owner.
      */
-    function nominateOwner(address _owner)
+    function nominateNewOwner(address _owner)
         external
         onlyOwner
     {

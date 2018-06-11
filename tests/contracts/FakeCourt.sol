@@ -1,15 +1,15 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.23;
 
-import "contracts/EtherNomin.sol";
+import "contracts/Nomin.sol";
 
 contract FakeCourt {
-    EtherNomin public nomin;
+    Nomin public nomin;
 
     mapping(uint => bool) public motionConfirming;
     mapping(uint => bool) public motionPasses;
     mapping(address => uint) public targetMotionID;
 
-    function setNomin(EtherNomin newNomin)
+    function setNomin(Nomin newNomin)
         public
     {
         nomin = newNomin;
@@ -33,9 +33,9 @@ contract FakeCourt {
         targetMotionID[target] = motionID;
     }
 
-    function confiscateBalance(address target)
+    function freezeAndConfiscate(address target)
         public
     {
-        nomin.confiscateBalance(target);
+        nomin.freezeAndConfiscate(target);
     }
 }

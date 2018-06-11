@@ -1,27 +1,23 @@
-import unittest
-
-from utils.deployutils import compile_contracts, attempt_deploy, MASTER, fast_forward
-from utils.testutils import assertReverts, block_time
+from utils.deployutils import MASTER, compile_contracts, attempt_deploy, fast_forward
+from utils.testutils import HavvenTestCase, block_time
 from utils.generalutils import to_seconds
-
-
-SETUP_SOURCE = "tests/contracts/OneWeekSetup.sol"
 
 
 def setUpModule():
     print("Testing LimitedSetup...")
+    print("=======================")
+    print()
 
 
 def tearDownModule():
     print()
+    print()
 
 
-class TestLimitedSetup(unittest.TestCase):
+class TestLimitedSetup(HavvenTestCase):
     @classmethod
     def setUpClass(cls):
-        cls.assertReverts = assertReverts
-
-        compiled = compile_contracts([SETUP_SOURCE],
+        compiled = compile_contracts(["tests/contracts/OneWeekSetup.sol"],
                                      remappings=['""=contracts'])
         cls.setup, txr = attempt_deploy(compiled, 'OneWeekSetup', MASTER, [])
         cls.contractConstructionTime = block_time(txr.blockNumber)
@@ -42,6 +38,3 @@ class TestLimitedSetup(unittest.TestCase):
 
     def test_setupDuration(self):
         self.assertEqual(self.contractConstructionTime + to_seconds(weeks=1), self.setupExpiryTime())
- 
-if __name__ == '__main__':
-    unittest.main()

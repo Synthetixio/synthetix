@@ -2,14 +2,12 @@
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
+
 file:       LimitedSetup.sol
-version:    1.0
+version:    1.1
 author:     Anton Jurisevic
 
-date:       2018-2-13
-
-checked:    -
-approved:   -
+date:       2018-05-15
 
 -----------------------------------------------------------------
 MODULE DESCRIPTION
@@ -23,7 +21,7 @@ conclusion of the configurable-length post-construction setup period.
 */
 
 
-pragma solidity ^0.4.21;
+pragma solidity 0.4.24;
 
 /**
  * @title Any function decorated with the modifier this contract provides
@@ -34,16 +32,16 @@ contract LimitedSetup {
     uint setupExpiryTime;
 
     /**
-     * @dev Constructor.
+     * @dev LimitedSetup Constructor.
      * @param setupDuration The time the setup period will last for.
      */
-    function LimitedSetup(uint setupDuration)
+    constructor(uint setupDuration)
         public
     {
         setupExpiryTime = now + setupDuration;
     }
 
-    modifier setupFunction
+    modifier onlyDuringSetup
     {
         require(now < setupExpiryTime);
         _;

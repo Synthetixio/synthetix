@@ -1,7 +1,7 @@
-/* PublicEtherNomin.sol: expose the internal functions in EtherNomin
+/* PublicNomin.sol: expose the internal functions in Nomin
  * for testing purposes.
  */
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.23;
 
 
 import "contracts/HavvenEscrow.sol";
@@ -10,8 +10,7 @@ import "contracts/Havven.sol";
 
 contract PublicHavvenEscrow is HavvenEscrow {
 
-	function PublicHavvenEscrow(address _owner,
-                                Havven _havven)
+	constructor(address _owner, Havven _havven)
 		HavvenEscrow(_owner, _havven)
 		public 
 	{
@@ -23,7 +22,7 @@ contract PublicHavvenEscrow is HavvenEscrow {
                                        uint totalQuantity, uint vestingPeriods)
         external
         onlyOwner
-        setupFunction
+        onlyDuringSetup
     {
         // safeSub prevents a conclusionTime in the past.
         uint totalDuration = safeSub(conclusionTime, now);
