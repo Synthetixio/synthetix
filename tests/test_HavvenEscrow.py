@@ -43,28 +43,28 @@ class TestHavvenEscrow(HavvenTestCase):
 
         print("Deployment initiated.\n")
 
-        compiled, cls.event_maps = cls.compileAndMapEvents(sources)
+        cls.compiled, cls.event_maps = cls.compileAndMapEvents(sources)
 
         # Deploy contracts
 
-        havven_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
-        nomin_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
-        proxied_havven = W3.eth.contract(address=havven_proxy.address, abi=compiled['PublicHavven']['abi'])
-        proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['PublicNomin']['abi'])
+        havven_proxy, _ = attempt_deploy(cls.compiled, 'Proxy', MASTER, [MASTER])
+        nomin_proxy, _ = attempt_deploy(cls.compiled, 'Proxy', MASTER, [MASTER])
+        proxied_havven = W3.eth.contract(address=havven_proxy.address, abi=cls.compiled['PublicHavven']['abi'])
+        proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=cls.compiled['PublicNomin']['abi'])
 
-        tokenstate, _ = attempt_deploy(compiled, 'TokenState',
+        tokenstate, _ = attempt_deploy(cls.compiled, 'TokenState',
                                        MASTER, [MASTER, MASTER])
-        havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [havven_proxy.address, tokenstate.address, MASTER, MASTER, UNIT//2])
+        havven_contract, hvn_txr = attempt_deploy(cls.compiled, 'PublicHavven', MASTER, [havven_proxy.address, tokenstate.address, MASTER, MASTER, UNIT//2])
         hvn_block = W3.eth.blockNumber
 
-        nomin_contract, nom_txr = attempt_deploy(compiled, 'PublicNomin',
+        nomin_contract, nom_txr = attempt_deploy(cls.compiled, 'PublicNomin',
                                                  MASTER,
                                                  [nomin_proxy.address, havven_contract.address, MASTER])
-        court_contract, court_txr = attempt_deploy(compiled, 'Court',
+        court_contract, court_txr = attempt_deploy(cls.compiled, 'Court',
                                                    MASTER,
                                                    [havven_contract.address, nomin_contract.address,
                                                     MASTER])
-        escrow_contract, escrow_txr = attempt_deploy(compiled, 'PublicHavvenEscrow',
+        escrow_contract, escrow_txr = attempt_deploy(cls.compiled, 'PublicHavvenEscrow',
                                                      MASTER,
                                                      [MASTER, havven_contract.address])
 
@@ -78,16 +78,17 @@ class TestHavvenEscrow(HavvenTestCase):
                   nomin_contract.functions.setHavven(havven_contract.address).transact({'from': MASTER}),
                   havven_contract.functions.setEscrow(escrow_contract.address).transact({'from': MASTER})])
 
-        escrow_event_dict = generate_topic_event_map(compiled['HavvenEscrow']['abi'])
+        escrow_event_dict = generate_topic_event_map(cls.compiled['HavvenEscrow']['abi'])
+        havven_event_dict = generate_topic_event_map(cls.compiled['PublicHavven']['abi'])
 
         print("\nDeployment complete.\n")
-        return havven_proxy, proxied_havven, nomin_proxy, proxied_nomin, havven_contract, nomin_contract, court_contract, escrow_contract, hvn_block, escrow_event_dict
+        return havven_proxy, proxied_havven, tokenstate, nomin_proxy, proxied_nomin, havven_contract, nomin_contract, court_contract, escrow_contract, hvn_block, escrow_event_dict, havven_event_dict
 
     @classmethod
     def setUpClass(cls):
-        cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, \
+        cls.havven_proxy, cls.proxied_havven, cls.havven_token_state, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, \
             cls.nomin_contract, cls.court, cls.escrow_contract, cls.construction_block, \
-            cls.escrow_event_dict = cls.deployContracts()
+            cls.escrow_event_dict, cls.havven_event_dict = cls.deployContracts()
 
         cls.event_map = cls.event_maps['HavvenEscrow']
 
@@ -638,3 +639,120 @@ class TestHavvenEscrow(HavvenTestCase):
         self.assertEqual(self.escrow.numVestingEntries(tim), self.escrow.numVestingEntries(pim))
         self.assertEqual(self.escrow.getVestingTime(tim, 0), self.escrow.getVestingTime(pim, 0))
         self.assertEqual(self.escrow.getVestingQuantity(tim, 0), self.escrow.getVestingQuantity(pim, 0))
+
+    def test_swap_havven(self): 
+        alice, bob = fresh_accounts(2)
+        self.havven.endow(MASTER, self.escrow.contract.address, 200 * UNIT)
+        time = block_time()
+
+        # Set up escrow schedules for alice and bob to test with.
+        self.escrow.addRegularVestingSchedule(MASTER, alice, time + to_seconds(weeks=52), 100 * UNIT, 4)
+        self.escrow.addRegularVestingSchedule(MASTER, bob, time + to_seconds(weeks=52), 100 * UNIT, 4)
+
+        # Vest alice's first tranche as usual.
+        fast_forward(to_seconds(weeks=13) + 10)
+        self.escrow.vest(alice)
+        self.assertEqual(self.havven.balanceOf(alice), 25 * UNIT)
+        self.assertEqual(self.havven.balanceOf(self.escrow_contract.address), 175 * UNIT)
+
+        # Deploy the new havven contract, with proxy and all.
+        havven_proxy, _ = attempt_deploy(self.compiled, 'Proxy', MASTER, [MASTER])
+        havven_contract, _ = attempt_deploy(self.compiled, 'PublicHavven', MASTER, [havven_proxy.address, self.havven_token_state.address, MASTER, MASTER, UNIT//2])
+        proxied_havven = W3.eth.contract(address=havven_proxy.address, abi=self.compiled['PublicHavven']['abi'])
+        new_havven = PublicHavvenInterface(proxied_havven, "Havven")
+
+        # Connect the contracts together.
+        mine_txs([self.havven_token_state.functions.setAssociatedContract(havven_contract.address).transact({'from': MASTER}),
+                  havven_proxy.functions.setTarget(havven_contract.address).transact({'from': MASTER})])
+        new_havven.setEscrow(MASTER, self.escrow_contract.address)
+        # This should work if the escrow is pointing at the havven proxy.
+        self.escrow.setHavven(MASTER, proxied_havven.address)
+
+        # Ensure that the new contract is properly up and running, but with the old state.
+        self.assertEqual(new_havven.balanceOf(alice), 25 * UNIT)
+        self.assertEqual(new_havven.balanceOf(bob), 0)
+
+        tx = new_havven.transfer(alice, bob, 5 * UNIT)
+
+        self.assertEqual(new_havven.balanceOf(alice), 20 * UNIT)
+        self.assertEqual(new_havven.balanceOf(bob), 5 * UNIT)
+        self.assertEqual(new_havven.balanceOf(self.escrow_contract.address), 175 * UNIT)
+
+        # And the event emitted properly, from the proxy.
+        self.assertEventEquals(
+            self.havven_event_dict, tx.logs[0], 'Transfer',
+            fields={'from': alice,
+                    'to': bob,
+                    'value': 5 * UNIT},
+            location=havven_proxy.address
+        )
+
+        # Vest alice's second tranche, but this time on the new contract.
+        fast_forward(to_seconds(weeks=13) + 10)
+        tx = self.escrow.vest(alice)
+        self.assertEventEquals(
+            self.havven_event_dict, tx.logs[0], 'Transfer',
+            fields={'from': self.escrow_contract.address,
+                    'to': alice,
+                    'value': 25 * UNIT},
+            location=havven_proxy.address
+        )
+        self.assertEventEquals(
+            self.escrow_event_dict, tx.logs[1], 'Vested',
+            fields={'beneficiary': alice,
+                    'time': block_time(tx['blockNumber']),
+                    'value': 25 * UNIT},
+            location=self.escrow_contract.address
+        )
+        self.assertEqual(new_havven.balanceOf(alice), 45 * UNIT)
+        self.assertEqual(new_havven.balanceOf(bob), 5 * UNIT)
+        self.assertEqual(new_havven.balanceOf(self.escrow_contract.address), 150 * UNIT)
+
+        # The stuff should also work if the escrow is pointing at the underlying havven contract
+        fast_forward(to_seconds(weeks=13) + 10)
+        self.escrow.setHavven(MASTER, havven_contract.address)
+        tx = self.escrow.vest(alice)
+        self.assertEventEquals(
+            self.havven_event_dict, tx.logs[0], 'Transfer',
+            fields={'from': self.escrow_contract.address,
+                    'to': alice,
+                    'value': 25 * UNIT},
+            location=havven_proxy.address
+        )
+        self.assertEventEquals(
+            self.escrow_event_dict, tx.logs[1], 'Vested',
+            fields={'beneficiary': alice,
+                    'time': block_time(tx['blockNumber']),
+                    'value': 25 * UNIT},
+            location=self.escrow_contract.address
+        )
+        self.assertEqual(new_havven.balanceOf(alice), 70 * UNIT)
+        self.assertEqual(new_havven.balanceOf(bob), 5 * UNIT)
+        self.assertEqual(new_havven.balanceOf(self.escrow_contract.address), 125 * UNIT)
+
+        self.escrow.setHavven(MASTER, proxied_havven.address)
+        fast_forward(to_seconds(weeks=13) + 10)
+        tx = self.escrow.vest(alice)
+        self.assertEqual(new_havven.balanceOf(alice), 95 * UNIT)
+        self.assertEqual(new_havven.balanceOf(bob), 5 * UNIT)
+        self.assertEqual(new_havven.balanceOf(self.escrow_contract.address), 100 * UNIT)
+
+        # Now verify that vesting still works for bob on the new contract, even though he missed some.
+        tx = self.escrow.vest(bob)
+        self.assertEventEquals(
+            self.havven_event_dict, tx.logs[0], 'Transfer',
+            fields={'from': self.escrow_contract.address,
+                    'to': bob,
+                    'value': 100 * UNIT},
+            location=havven_proxy.address
+        )
+        self.assertEventEquals(
+            self.escrow_event_dict, tx.logs[1], 'Vested',
+            fields={'beneficiary': bob,
+                    'time': block_time(tx['blockNumber']),
+                    'value': 100 * UNIT},
+            location=self.escrow_contract.address
+        )
+        self.assertEqual(new_havven.balanceOf(alice), 95 * UNIT)
+        self.assertEqual(new_havven.balanceOf(bob), 105 * UNIT)
+        self.assertEqual(new_havven.balanceOf(self.escrow_contract.address), 0)
