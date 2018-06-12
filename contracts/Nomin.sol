@@ -16,7 +16,7 @@ date:       2018-05-29
 MODULE DESCRIPTION
 ----------------------------------------------------------------    -
 
-Ether-backed nomin stablecoin contract.
+Havven-backed nomin stablecoin contract.
 
 This contract issues nomins, which are tokens worth 1 USD each.
 
