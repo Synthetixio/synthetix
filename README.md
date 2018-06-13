@@ -3,27 +3,18 @@
 [![Build Status](https://travis-ci.org/Havven/havven.svg?branch=master)](https://travis-ci.org/Havven/havven)
 
 Havven is a decentralised payment network and stablecoin.
-It is critical to the system's viability that functionality is phased in over time. The initial release will provide a functional stablecoin and the opportunity to collect significant data on the market response. This will ultimately protect the system and those who back it as the network scales.
+It is critical to the system's viability that functionality is phased in over time. At this stage of the project, this will occur over three iterations, A, B, C.
 
-The first version of Havven will possess most of the key features of the system.
+The system uses a proxy system so that upgrades will not be disruptive to the functionality of the contract. This will be transparent to the end-user, such that new functionality will become available without any interruption in their experience, and also transparent to the community at large, since each upgrade is accompanied by events announcing those upgrades.
 
-* A two token system composed of a stablecoin (nomins) and collateral token (havvens).
-* Nomins are backed with a pool of value with which it is convertible.
-* The funds (ether) to stake nomins are provided by the owners of the backing token through the token sale.
-* Those staking the system, by owning havvens, are rewarded with fees charged on nomin transactions;
+* __System A__: All issuance is performed by the foundation at a static collateralisation ratio. Nomins are issued directly into the foundation's wallet. This is the system that is currently operating.
+* __System B__: Issuance is opened up to the market. As such, all incentive mechanisms will be activated, with nomins issued directly into market. This system will be "complete", in so far as the mechanisms in the white paper will be operating, but at first the nomin price will be tracking USD only. 
+* __System C__: This version will issue new flavours of nomins tracking currencies other than the US dollar.
 
-However it purposely omits others:
-
-* The nomin supply is centrally constrained, with only the havven foundation being able to expand it;
-* Users cannot issue nomins against their havvens, and therefore fee incentive mechanisms are not yet activated;
-* The backing capital cannot be expanded by the market, and so the currency’s ultimate total supply is constrained;
-
-In the version 1.0 system, the nomin contract owner can only expand the supply of nomins if it can provide adequate backing.
-Users can buy and sell nomins into the pool for $1 USD worth of ether. The ether price is
-obtained from a trusted oracle. Fees charged on nomins are paid to owners of the havven token in proportion with the the number of havvens they hold.
+At first, prices will be introduced to the blockchain by a trusted oracle. A parallel avenue of research is the ongoing decentralisation of this price oracle.
 
 Please note that this repository is under development.
-The code here will be under continual audit and improved up until release of the completed system.
+The code here will be under continual audit and improvement as the project progresses.
 
 
 ## Usage and requirements
@@ -59,17 +50,24 @@ in determining how to allow operations to pay for themselves as they go.
 We have mostly forgone local and machine optimisations whenever they would
 come at the expense of clarity or simplicity.
 
-* `deploy.py` for deploying Havven contracts to the blockchain.
-* `run_tests.py` runs the test suite.
-* `contracts/` contains smart contract code to be deployed.
-* `contracts/Owned.sol` a contract with an owner.
+* `deploy.py` For deploying Havven contracts to the blockchain.
+* `run_tests.py` Runs the test suite, which additionally generates a `test_settings.py` file, which can be used to activate or deactivate particular tests.
+* `contracts/` Contains smart contract code to be deployed.
+* `contracts/Owned.sol` A contract with an owner.
+* `contracts/SelfDestructible.sol` A contract which can be destroyed by its owner after a delay.
+* `contracts/LimitedSetup.sol` An abstract contract which provides a modifier which disables functions except during a short period after construction.
+* `contracts/Pausable.sol` A contract that allows contract functions to be paused by the owner.
 * `contracts/SafeDecimalMath.sol` a math library for unsigned fixed point decimal arithmetic, with built-in safety checking.
-* `contracts/TokenState.sol` The balances of the DestructibleExternStateToken contract.
-* `contracts/DestructibleExternStateToken.sol` a foundation for generic ERC20 tokens with external state.
-* `contracts/ExternStateFeeToken.sol` a foundation for generic ERC20 tokens which also charge fees on transfers, with external state.
-* `contracts/Nomin.sol` ether-backed nomin contract, with liquidation and confiscation logic.
-* `contracts/Havven.sol` havven collateral token, including calculations involving entitlements to fees being generated by nomins.
+* `contracts/State.sol` A generic external state contract that can be attached to another contract for storage purposes.
+* `contracts/TokenState.sol` The balances of ERC20 token contracts, inherits from State.
+* `contracts/ExternStateToken.sol` A foundation for generic ERC20 tokens with external state.
+* `contracts/FeeToken.sol` A foundation for generic ERC20 tokens which also charge fees on transfers, with external state.
+* `contracts/Nomin.sol` The nomin contract.
+* `contracts/Havven.sol` The havven contract issuance functions are performed from here, as the Nomin and Havven contracts integrate together as a complex.
+* `contracts/Proxy.sol` A contract that allows functions to be called on the proxy, and pushed to an underlying implementation so that contract logic can be upgraded. Can operate in one of two modes, providing either a `CALL` or a `DELEGATECALL` proxy style.
+* `contracts/Proxyable.sol` An interface to allow underlying contracts to be used with a proxy operating in `CALL` style.
 * `contracts/HavvenEscrow.sol` vesting schedule manager, allows vested havvens to be freed up after certain dates.
+* `contracts/IssuanceController.sol` A contract that allows the foundation to buy and sell nomins in exchange for ether and havvens.
 * `contracts/Court.sol` a court of arbitration to enable the balance of malicious contracts to be democratically confiscated and frozen.
 * `tests/` test cases.
 * `tests/contracts` contracts used by the test suite.
