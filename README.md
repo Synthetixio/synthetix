@@ -53,6 +53,7 @@ come at the expense of clarity or simplicity.
 * `deploy.py` For deploying Havven contracts to the blockchain.
 * `run_tests.py` Runs the test suite, which additionally generates a `test_settings.py` file, which can be used to activate or deactivate particular tests.
 * `contracts/` Contains smart contract code to be deployed.
+* `contracts/abis/` Contains abis for each smart contract in `contracts/`.
 * `contracts/Owned.sol` A contract with an owner.
 * `contracts/SelfDestructible.sol` A contract which can be destroyed by its owner after a delay.
 * `contracts/LimitedSetup.sol` An abstract contract which provides a modifier which disables functions except during a short period after construction.
