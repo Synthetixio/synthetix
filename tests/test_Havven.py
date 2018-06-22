@@ -174,9 +174,9 @@ class TestHavven(HavvenTestCase):
     ###
     # currentBalanceSum
     def test_currentBalanceSum(self):
-        #Testing the value of currentBalanceSum works as intended,
-        #Further testing involving this and fee collection will be done
-        #in scenario testing
+        # Testing the value of currentBalanceSum works as intended,
+        # Further testing involving this and fee collection will be done
+        # in scenario testing
         fee_period = self.havven.feePeriodDuration()
         delay = int(fee_period / 10)
         alice = fresh_account()
@@ -332,7 +332,7 @@ class TestHavven(HavvenTestCase):
         self.havven.setIssuer(MASTER, alice, True)
         self.havven.issueNomins(alice, n * UNIT // 20)
         time_remaining = self.havven.feePeriodDuration() + self.havven.feePeriodStartTime() - block_time()
-        fast_forward(time_remaining + 5 )
+        fast_forward(time_remaining + 5)
         self.havven.rolloverFeePeriodIfElapsed(MASTER)
 
         for _ in range(n):
@@ -383,8 +383,8 @@ class TestHavven(HavvenTestCase):
         self.havven.recomputeLastAverageBalance(carol, carol)
 
         total_average = self.havven.issuanceLastAverageBalance(alice) + \
-                        self.havven.issuanceLastAverageBalance(bob) + \
-                        self.havven.issuanceLastAverageBalance(carol)
+            self.havven.issuanceLastAverageBalance(bob) + \
+            self.havven.issuanceLastAverageBalance(carol)
 
         self.assertClose(UNIT, total_average, precision=3)
 
@@ -669,7 +669,6 @@ class TestHavven(HavvenTestCase):
         # Check contract not exist 
         self.assertEqual(W3.eth.getCode(address), b'\x00')
 
-
     ###
     # Modifiers
     ###
@@ -717,7 +716,7 @@ class TestHavven(HavvenTestCase):
                                tx.logs[0], "PriceUpdated",
                                {"newPrice": 10 * UNIT,
                                 "timestamp": time},
-                                self.havven_proxy.address)
+                               self.havven_proxy.address)
 
     def test_event_IssuanceRatioUpdated(self):
         new_ratio = UNIT // 12
@@ -725,10 +724,9 @@ class TestHavven(HavvenTestCase):
         self.assertEventEquals(self.event_map,
                                tx.logs[0], "IssuanceRatioUpdated",
                                {"newRatio": new_ratio},
-                                self.havven_proxy.address)
+                               self.havven_proxy.address)
 
     def test_event_FeePeriodRollover(self):
-        time = block_time()
         fee_period = self.havven.feePeriodDuration()
         fast_forward(fee_period + 10) 
         tx = self.havven.rolloverFeePeriodIfElapsed(MASTER)
@@ -736,7 +734,7 @@ class TestHavven(HavvenTestCase):
         self.assertEventEquals(self.event_map,
                                tx.logs[0], "FeePeriodRollover",
                                {"timestamp": time},
-                                self.havven_proxy.address)
+                               self.havven_proxy.address)
 
     def test_event_FeePeriodDurationUpdated(self):
         new_duration = 19 * 24 * 60 * 60
@@ -744,7 +742,7 @@ class TestHavven(HavvenTestCase):
         self.assertEventEquals(self.event_map,
                                tx.logs[0], "FeePeriodDurationUpdated",
                                {"duration": new_duration},
-                                self.havven_proxy.address)
+                               self.havven_proxy.address)
 
     def test_event_FeesWithdrawn(self):
         issuer = fresh_account()
@@ -764,7 +762,7 @@ class TestHavven(HavvenTestCase):
                                tx.logs[3], "FeesWithdrawn",
                                {"account": issuer,
                                 "value": fee_rate},
-                                self.havven_proxy.address)  
+                               self.havven_proxy.address)
 
     def test_event_OracleUpdated(self):
         new_oracle = fresh_account()
@@ -773,7 +771,7 @@ class TestHavven(HavvenTestCase):
         self.assertEventEquals(self.event_map,
                                tx.logs[0], "OracleUpdated",
                                {"newOracle": new_oracle},
-                                self.havven_proxy.address)
+                               self.havven_proxy.address)
 
     def test_event_NominUpdated(self):
         new_nomin = fresh_account()
@@ -782,7 +780,7 @@ class TestHavven(HavvenTestCase):
         self.assertEventEquals(self.event_map,
                                tx.logs[0], "NominUpdated",
                                {"newNomin": new_nomin},
-                                self.havven_proxy.address)
+                               self.havven_proxy.address)
 
     def test_event_EscrowUpdated(self):
         new_escrow = fresh_account()
@@ -791,7 +789,7 @@ class TestHavven(HavvenTestCase):
         self.assertEventEquals(self.event_map,
                                tx.logs[0], "EscrowUpdated",
                                {"newEscrow": new_escrow},
-                                self.havven_proxy.address)
+                               self.havven_proxy.address)
 
     def test_event_IssuersUpdated(self):
         new_issuer = fresh_account()
@@ -801,11 +799,11 @@ class TestHavven(HavvenTestCase):
                                tx.logs[0], "IssuersUpdated",
                                {"account": new_issuer,
                                 "value": True},
-                                self.havven_proxy.address)
+                               self.havven_proxy.address)
         tx = self.havven.setIssuer(MASTER, new_issuer, False)
         self.assertEventEquals(self.event_map,
                                tx.logs[0], "IssuersUpdated",
                                {"account": new_issuer,
                                 "value": False},
-                                self.havven_proxy.address)
+                               self.havven_proxy.address)
 

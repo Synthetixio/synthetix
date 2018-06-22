@@ -210,9 +210,9 @@ contract Havven is ExternStateToken {
      * If the provided address is 0x0, then a fresh one will be constructed with the contract owning all tokens.
      * @param _owner The owner of this contract.
      */
-    constructor(address _proxy, TokenState _tokenState, address _owner, address _oracle, uint _price, address[] _issuers, uint[] _nominsIssued)
+    constructor(address _proxy, TokenState _tokenState, address _owner, address _oracle,
+                uint _price, address[] _issuers, uint[] _nominsIssued)
         ExternStateToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, _tokenState, _owner)
-        /* Owned is initialised in ExternStateToken */
         public
     {
         oracle = _oracle;
@@ -379,10 +379,6 @@ contract Havven is ExternStateToken {
         returns (bool)
     {
         address sender = messageSender;
-        /* If they have enough available Havvens, it could be that
-         * their havvens are escrowed, however the transfer would then
-         * fail. This means that escrowed havvens are locked first,
-         * and then the actual transferable ones. */
         require(nominsIssued[sender] == 0 || value <= transferableHavvens(sender));
         /* Perform the transfer: if there is a problem,
          * an exception will be thrown in this call. */
@@ -637,7 +633,7 @@ contract Havven is ExternStateToken {
     }
 
     /**
-     * @notice Locked havvens based on nominsIssued, which can exceed the user's free and escrowed havvens.
+     * @notice The collateral that would be locked by issuance, which can exceed the account's actual collateral.
      */
     function issuanceDraft(address account)
         public
@@ -652,9 +648,9 @@ contract Havven is ExternStateToken {
     }
 
     /**
-     * @notice Locked Havvens that are capped at the user's free and escrowed havvens.
+     * @notice Collateral that has been locked due to issuance, which is capped at the account's total collateral.
      */
-    function lockedCollateral(address account)
+    function unavailableCollateral(address account)
         public
         view
         returns (uint)
@@ -668,20 +664,24 @@ contract Havven is ExternStateToken {
     }
 
     /**
-     * @notice Havvens that are not locked, available for issuance
+     * @notice Collateral that is not locked and available for issuance.
      */
     function availableCollateral(address account)
         public
         view
         returns (uint)
     {
-        uint locked = lockedHavvens(account);
-        uint bal = collateral(account);
-        return safeSub(bal, locked);
+        uint locked = unavailableCollateral(account);
+        uint collat = collateral(account);
+        return safeSub(collat, locked);
     }
 
     /**
      * @notice The number of havvens that are free to be transferred by an account.
+     * @dev If they have enough available Havvens, it could be that
+     * their havvens are escrowed, however the transfer would then
+     * fail. This means that escrowed havvens are locked first,
+     * and then the actual transferable ones.
      */
     function transferableHavvens(address account)
         public
@@ -690,15 +690,18 @@ contract Havven is ExternStateToken {
     {
         uint draft = issuanceDraft(account);
         uint collat = collateral(account);
+        // In the case where the issuanceDraft exceeds the collateral, nothing is free
         if (draft > collat) {
             return 0;
         }
 
         uint bal = balanceOf(account);
+        // In the case where the draft exceeds the escrow, but not the whole collateral
+        //   return the fraction of the balance that remains free
         if (draft > safeSub(collat, bal)) {
             return safeSub(collat, draft);
         }
-
+        // In the case where the draft doesn't exceed the escrow, return the entire balance
         return bal;
     }
 

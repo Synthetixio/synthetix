@@ -512,7 +512,7 @@ class TestCourt(HavvenTestCase):
         self.havven.rolloverFeePeriodIfElapsed(DUMMY)
         self.havven.recomputeLastAverageBalance(voter, voter)
         self.havven.recomputeLastAverageBalance(insufficient_standing, insufficient_standing)
-        self.havven.recomputeLastAverageBalance(sufficient_standing,sufficient_standing)
+        self.havven.recomputeLastAverageBalance(sufficient_standing, sufficient_standing)
         # Must have at least 100 havvens to begin a confiscation motion.
         self.assertReverts(self.court.beginMotion, insufficient_standing, suspects[0])
         tx_receipt = self.court.beginMotion(sufficient_standing, suspects[0])
@@ -822,7 +822,9 @@ class TestCourt(HavvenTestCase):
         self.assertReverts(self.court.approveMotion, voter, motion_id)
         tx_receipt = self.court.approveMotion(owner, motion_id)
 
-        self.assertEqual(get_event_data_from_log(self.event_maps["Nomin"], tx_receipt.logs[0])['event'], "AccountFrozen")
+        self.assertEqual(
+            get_event_data_from_log(self.event_maps["Nomin"], tx_receipt.logs[0])['event'], "AccountFrozen"
+        )
         self.assertEqual(get_event_data_from_log(self.event_maps["Nomin"], tx_receipt.logs[1])['event'], "Transfer")
         self.assertEqual(get_event_data_from_log(self.event_map, tx_receipt.logs[2])['event'], "MotionClosed")
         self.assertEqual(get_event_data_from_log(self.event_map, tx_receipt.logs[3])['event'], "MotionApproved")
