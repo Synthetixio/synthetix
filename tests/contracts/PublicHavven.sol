@@ -15,8 +15,8 @@ contract PublicHavven is Havven {
     uint constant public MIN_FEE_PERIOD_DURATION = 1 days;
     uint constant public MAX_FEE_PERIOD_DURATION = 26 weeks;
 
-    constructor(address _proxy, TokenState _state, address _owner, address _oracle, uint _price)
-        Havven(_proxy, _state, _owner, _oracle, _price)
+    constructor(address _proxy, TokenState _state, address _owner, address _oracle, uint _price, address[] _issuers, uint[] _issuedNomins)
+        Havven(_proxy, _state, _owner, _oracle, _price, _issuers, _issuedNomins)
         public
     {}
 

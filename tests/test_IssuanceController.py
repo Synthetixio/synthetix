@@ -50,7 +50,7 @@ class TestIssuanceController(HavvenTestCase):
         tokenstate, _ = attempt_deploy(compiled, 'TokenState',
                                        MASTER, [MASTER, MASTER])
         havven_contract, hvn_txr = attempt_deploy(
-            compiled, 'PublicHavven', MASTER, [havven_proxy.address, tokenstate.address, MASTER, MASTER, UNIT//2]
+            compiled, 'PublicHavven', MASTER, [havven_proxy.address, tokenstate.address, MASTER, MASTER, UNIT//2, [], []]
         )
         nomin_contract, nom_txr = attempt_deploy(
             compiled, 'PublicNomin', MASTER, [nomin_proxy.address, havven_contract.address, MASTER]
