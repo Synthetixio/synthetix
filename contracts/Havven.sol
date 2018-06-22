@@ -654,7 +654,7 @@ contract Havven is ExternStateToken {
     /**
      * @notice Locked Havvens that are capped at the user's free and escrowed havvens.
      */
-    function lockedHavvens(address account)
+    function lockedCollateral(address account)
         public
         view
         returns (uint)
@@ -665,6 +665,19 @@ contract Havven is ExternStateToken {
             return collat;
         }
         return debt;
+    }
+
+    /**
+     * @notice Havvens that are not locked, available for issuance
+     */
+    function availableCollateral(address account)
+        public
+        view
+        returns (uint)
+    {
+        uint locked = lockedHavvens(account);
+        uint bal = collateral(account);
+        return safeSub(bal, locked);
     }
 
     /**
@@ -687,19 +700,6 @@ contract Havven is ExternStateToken {
         }
 
         return bal;
-    }
-
-    /**
-     * @notice Havvens that are not locked, available for issuance
-     */
-    function availableHavvens(address account)
-        public
-        view
-        returns (uint)
-    {
-        uint locked = lockedHavvens(account);
-        uint bal = collateral(account);
-        return safeSub(bal, locked);
     }
 
     /**
