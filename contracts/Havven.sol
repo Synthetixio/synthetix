@@ -223,7 +223,7 @@ contract Havven is ExternStateToken {
 
         for (uint i=0; i < _issuers.length; i++) {
             address issuer = _issuers[i];
-            uint issuedNom = _nominsIssued[i];
+            nominsIssued[issuer] = _nominsIssued[i];
             isIssuer[issuer] = true;
         }
 
