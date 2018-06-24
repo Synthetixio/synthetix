@@ -87,6 +87,9 @@ class TestIssuance(HavvenTestCase):
 
         cls.fake_court = FakeCourtInterface(cls.fake_court_contract, "FakeCourt")
         cls.fake_court.setNomin(MASTER, cls.nomin_contract.address)
+    
+    def test_constructor_issuers(self):
+        self.assertTrue(False)
 
     def havven_updatePrice(self, sender, price, time):
         mine_tx(self.havven_contract.functions.updatePrice(price, time).transact({'from': sender}), 'updatePrice', 'Havven')
@@ -173,5 +176,26 @@ class TestIssuance(HavvenTestCase):
             self.havven.burnNomins(alice, 1 * UNIT)
         self.assertEqual(self.havven.nominsIssued(alice), 0)
         self.assertEqual(self.nomin.balanceOf(alice), 0)
+
+    def test_transfer_locked_havvens(self):
+        self.assertTrue(False)
+
+    def test_transferFrom_locked_havvens(self):
+        self.assertTrue(False)
+
+    def test_collateral(self):
+        self.assertTrue(False)
+
+    def test_issuanceDraft(self):
+        self.assertTrue(False)
+
+    def test_unavailableCollateral(self):
+        self.assertTrue(False)
+
+    def test_availableCollateral(self):
+        self.assertTrue(False)
+
+    def test_transferableHavvens(self):
+        self.assertTrue(False)
 
 
