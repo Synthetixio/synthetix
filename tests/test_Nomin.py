@@ -41,8 +41,12 @@ class TestNomin(HavvenTestCase):
         proxied_havven = W3.eth.contract(address=havven_proxy.address, abi=compiled['Havven']['abi'])
         proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['PublicNomin']['abi'])
 
+        nomin_state, txr = attempt_deploy(
+            compiled, "TokenState", MASTER,
+            [MASTER, MASTER]
+        )
         nomin_contract, _ = attempt_deploy(
-            compiled, 'PublicNomin', MASTER, [nomin_proxy.address, MASTER, MASTER]
+            compiled, 'PublicNomin', MASTER, [nomin_proxy.address, nomin_state.address, MASTER, MASTER]
         )
 
         havven_contract, _ = attempt_deploy(
@@ -52,6 +56,7 @@ class TestNomin(HavvenTestCase):
         fake_court, _ = attempt_deploy(compiled, 'FakeCourt', MASTER, [])
 
         mine_txs([
+            nomin_state.functions.setAssociatedContract(nomin_contract.address).transact({'from': MASTER}),
             havven_proxy.functions.setTarget(havven_contract.address).transact({'from': MASTER}),
             nomin_proxy.functions.setTarget(nomin_contract.address).transact({'from': MASTER}),
             havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
@@ -59,11 +64,11 @@ class TestNomin(HavvenTestCase):
             nomin_contract.functions.setHavven(havven_contract.address).transact({'from': MASTER})
         ])
 
-        return havven_proxy, proxied_havven, nomin_proxy, proxied_nomin, nomin_contract, havven_contract, fake_court
+        return havven_proxy, proxied_havven, nomin_proxy, proxied_nomin, nomin_contract, havven_contract, fake_court, nomin_state
 
     @classmethod
     def setUpClass(cls):
-        cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.nomin_contract, cls.havven_contract, cls.fake_court_contract = cls.deployContracts()
+        cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.nomin_contract, cls.havven_contract, cls.fake_court_contract, cls.nomin_state = cls.deployContracts()
 
         cls.nomin_event_dict = cls.event_maps['Nomin']
 
@@ -93,6 +98,7 @@ class TestNomin(HavvenTestCase):
         self.assertEqual(self.nomin.transferFeeRate(), 15 * UNIT // 10000)
         self.assertEqual(self.nomin.feeAuthority(), self.nomin.havven())
         self.assertEqual(self.nomin.decimals(), 18)
+        self.assertEqual(self.nomin.tokenState(), self.nomin_state.address)
 
     def test_setOwner(self):
         pre_owner = self.nomin.owner()

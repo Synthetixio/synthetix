@@ -44,19 +44,20 @@ class TestFeeToken(HavvenTestCase):
         proxied_feetoken = W3.eth.contract(address=proxy.address, abi=feetoken_abi)
 
         feetoken_event_dict = generate_topic_event_map(feetoken_abi)
-        feetoken_contract_1, construction_txr_1 = attempt_deploy(
-            compiled, "PublicFeeToken", MASTER,
-            [proxy.address, "Test Fee Token", "FEE", UNIT // 20, MASTER, MASTER]
-        )
-
-        feetoken_contract_2, construction_txr_2 = attempt_deploy(
-            compiled, "PublicFeeToken", MASTER,
-            [proxy.address, "Test Fee Token 2", "FEE", UNIT // 20, MASTER, MASTER]
-        )
 
         feestate, txr = attempt_deploy(
             compiled, "TokenState", MASTER,
             [MASTER, MASTER]
+        )
+
+        feetoken_contract_1, construction_txr_1 = attempt_deploy(
+            compiled, "PublicFeeToken", MASTER,
+            [proxy.address, feestate.address, "Test Fee Token", "FEE", UNIT // 20, MASTER, MASTER]
+        )
+
+        feetoken_contract_2, construction_txr_2 = attempt_deploy(
+            compiled, "PublicFeeToken", MASTER,
+            [proxy.address, feestate.address, "Test Fee Token 2", "FEE", UNIT // 20, MASTER, MASTER]
         )
 
         mine_txs([

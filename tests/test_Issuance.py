@@ -46,14 +46,16 @@ class TestIssuance(HavvenTestCase):
         proxied_havven = W3.eth.contract(address=havven_proxy.address, abi=compiled['PublicHavven']['abi'])
         proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['PublicNomin']['abi'])
 
-        tokenstate, _ = attempt_deploy(compiled, 'TokenState',
-                                       MASTER, [MASTER, MASTER])
-        havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven', MASTER,
-                                                  [havven_proxy.address, tokenstate.address, MASTER, MASTER, UNIT//2, [], []])
+        havven_tokenstate, _ = attempt_deploy(compiled, 'TokenState',
+                                              MASTER, [MASTER, MASTER])
+        nomin_tokenstate, _ = attempt_deploy(compiled, 'TokenState',
+                                             MASTER, [MASTER, MASTER])
 
+        havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven', MASTER,
+                                                  [havven_proxy.address, havven_tokenstate.address, MASTER, MASTER, UNIT//2, [], []])
         nomin_contract, nom_txr = attempt_deploy(compiled, 'PublicNomin',
                                                  MASTER,
-                                                 [nomin_proxy.address, havven_contract.address, MASTER])
+                                                 [nomin_proxy.address, nomin_tokenstate.address, havven_contract.address, MASTER])
         court_contract, court_txr = attempt_deploy(compiled, 'FakeCourt',
                                                    MASTER,
                                                    [havven_contract.address, nomin_contract.address,
@@ -63,8 +65,9 @@ class TestIssuance(HavvenTestCase):
                                                      [MASTER, havven_contract.address])
 
         # Hook up each of those contracts to each other
-        mine_txs([tokenstate.functions.setBalanceOf(havven_contract.address, 100000000 * UNIT).transact({'from': MASTER}),
-                  tokenstate.functions.setAssociatedContract(havven_contract.address).transact({'from': MASTER}),
+        mine_txs([havven_tokenstate.functions.setBalanceOf(havven_contract.address, 100000000 * UNIT).transact({'from': MASTER}),
+                  havven_tokenstate.functions.setAssociatedContract(havven_contract.address).transact({'from': MASTER}),
+                  nomin_tokenstate.functions.setAssociatedContract(nomin_contract.address).transact({'from': MASTER}),
                   havven_proxy.functions.setTarget(havven_contract.address).transact({'from': MASTER}),
                   nomin_proxy.functions.setTarget(nomin_contract.address).transact({'from': MASTER}),
                   havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
@@ -179,6 +182,17 @@ class TestIssuance(HavvenTestCase):
 
     def test_transfer_locked_havvens(self):
         self.assertTrue(False)
+        alice, bob = fresh_accounts(2)
+        self.havven.endow(MASTER, alice, 500 * UNIT)
+
+        self.havven.endow(MASTER, self.escrow.contract.address, 500 * UNIT)
+        self.escrow.appendVestingEntry(MASTER, alice, block_time() + 10000000, 500 * UNIT)
+        self.havven.setIssuer(MASTER, alice, True)
+        self.havven_updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
+        self.havven.setIssuanceRatio(MASTER, UNIT)
+
+        self.havven.issueNomins(alice, 100 * UNIT)
+
 
     def test_transferFrom_locked_havvens(self):
         self.assertTrue(False)

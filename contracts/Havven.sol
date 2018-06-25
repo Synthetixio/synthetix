@@ -212,7 +212,7 @@ contract Havven is ExternStateToken {
      */
     constructor(address _proxy, TokenState _tokenState, address _owner, address _oracle,
                 uint _price, address[] _issuers, uint[] _nominsIssued)
-        ExternStateToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, _tokenState, _owner)
+        ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, _owner)
         public
     {
         oracle = _oracle;

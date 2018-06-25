@@ -57,8 +57,9 @@ contract Nomin is FeeToken {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _proxy, Havven _havven, address _owner)
-        FeeToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL, 0, // Zero nomins initially exist.
+    constructor(address _proxy, TokenState _tokenState, Havven _havven, address _owner)
+        FeeToken(_proxy, _tokenState,
+                 TOKEN_NAME, TOKEN_SYMBOL, 0, // Zero nomins initially exist.
                  TRANSFER_FEE_RATE,
                  _havven, // The havven contract is the fee authority.
                  _owner)

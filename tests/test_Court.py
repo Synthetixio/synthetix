@@ -53,21 +53,24 @@ class TestCourt(HavvenTestCase):
         proxied_havven = W3.eth.contract(address=havven_proxy.address, abi=havven_abi)
         proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=nomin_abi)
 
-        tokenstate, _ = attempt_deploy(compiled, 'TokenState',
-                                       MASTER, [MASTER, MASTER])
+        havven_tokenstate, _ = attempt_deploy(compiled, 'TokenState',
+                                              MASTER, [MASTER, MASTER])
+        nomin_tokenstate, _ = attempt_deploy(compiled, 'TokenState',
+                                             MASTER, [MASTER, MASTER])
         havven_contract, hvn_txr = attempt_deploy(
-            compiled, 'PublicHavven', MASTER, [havven_proxy.address, tokenstate.address, MASTER, MASTER, UNIT//2, [], []]
+            compiled, 'PublicHavven', MASTER, [havven_proxy.address, havven_tokenstate.address, MASTER, MASTER, UNIT//2, [], []]
         )
         nomin_contract, nom_txr = attempt_deploy(
-            compiled, 'Nomin', MASTER, [nomin_proxy.address, havven_contract.address, MASTER]
+            compiled, 'Nomin', MASTER, [nomin_proxy.address, nomin_tokenstate.address, havven_contract.address, MASTER]
         )
         court_contract, court_txr = attempt_deploy(
             compiled, 'PublicCourt', MASTER, [havven_contract.address, nomin_contract.address, MASTER]
         )
 
         mine_txs([
-            tokenstate.functions.setBalanceOf(havven_contract.address, 100000000 * UNIT).transact({'from': MASTER}),
-            tokenstate.functions.setAssociatedContract(havven_contract.address).transact({'from': MASTER}),
+            havven_tokenstate.functions.setBalanceOf(havven_contract.address, 100000000 * UNIT).transact({'from': MASTER}),
+            havven_tokenstate.functions.setAssociatedContract(havven_contract.address).transact({'from': MASTER}),
+            nomin_tokenstate.functions.setAssociatedContract(nomin_contract.address).transact({'from': MASTER}),
             havven_proxy.functions.setTarget(havven_contract.address).transact({'from': MASTER}),
             nomin_proxy.functions.setTarget(nomin_contract.address).transact({'from': MASTER}),
             havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),

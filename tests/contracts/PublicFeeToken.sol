@@ -3,9 +3,12 @@ pragma solidity ^0.4.23;
 import "contracts/FeeToken.sol";
 
 contract PublicFeeToken is FeeToken {
-    constructor(address _proxy, string _name, string _symbol, uint _transferFeeRate, address _feeAuthority,
-                address _owner)
-        FeeToken(_proxy, _name, _symbol, 0, _transferFeeRate, _feeAuthority, _owner)
+    constructor(address _proxy, TokenState _tokenState,
+                string _name, string _symbol, uint _transferFeeRate,
+                address _feeAuthority, address _owner)
+        FeeToken(_proxy, _tokenState,
+                 _name, _symbol, 0, _transferFeeRate,
+                 _feeAuthority, _owner)
         public
     {}
 

@@ -63,10 +63,10 @@ contract FeeToken is ExternStateToken {
      * @param _feeAuthority The address which has the authority to withdraw fees from the accumulated pool.
      * @param _owner The owner of this contract.
      */
-    constructor(address _proxy, string _name, string _symbol, uint _totalSupply,
+    constructor(address _proxy, TokenState _tokenState, string _name, string _symbol, uint _totalSupply,
                 uint _transferFeeRate, address _feeAuthority, address _owner)
-        ExternStateToken(_proxy, _name, _symbol, _totalSupply,
-                         new TokenState(_owner, address(this)),
+        ExternStateToken(_proxy, _tokenState,
+                         _name, _symbol, _totalSupply,
                          _owner)
         public
     {
