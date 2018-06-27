@@ -160,11 +160,11 @@ contract Nomin is FeeToken {
 
         // Confiscate the balance in the account and freeze it.
         uint balance = tokenState.balanceOf(target);
-        tokenState.setBalanceOf(address(this), safeAdd(tokenState.balanceOf(address(this)), balance));
+        tokenState.setBalanceOf(FEE_ADDRESS, safeAdd(tokenState.balanceOf(FEE_ADDRESS), balance));
         tokenState.setBalanceOf(target, 0);
         frozen[target] = true;
         emitAccountFrozen(target, balance);
-        emitTransfer(target, address(this), balance);
+        emitTransfer(target, FEE_ADDRESS, balance);
     }
 
     /* The owner may allow a previously-frozen contract to once

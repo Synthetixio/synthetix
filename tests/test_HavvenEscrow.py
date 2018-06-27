@@ -61,7 +61,7 @@ class TestHavvenEscrow(HavvenTestCase):
 
         nomin_contract, nom_txr = attempt_deploy(cls.compiled, 'PublicNomin',
                                                  MASTER,
-                                                 [nomin_proxy.address, nomin_tokenstate.address, havven_contract.address, MASTER])
+                                                 [nomin_proxy.address, nomin_tokenstate.address, havven_contract.address, 0, MASTER])
         court_contract, court_txr = attempt_deploy(cls.compiled, 'Court',
                                                    MASTER,
                                                    [havven_contract.address, nomin_contract.address,

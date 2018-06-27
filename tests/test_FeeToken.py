@@ -52,7 +52,7 @@ class TestFeeToken(HavvenTestCase):
         feetoken_event_dict = generate_topic_event_map(feetoken_abi)
         feetoken_contract, construction_txr = attempt_deploy(
             compiled, "PublicFeeToken", MASTER,
-            [proxy.address, feestate.address, "Test Fee Token", "FEE", UNIT // 20, MASTER, MASTER]
+            [proxy.address, feestate.address, "Test Fee Token", "FEE", 1000 * UNIT, UNIT // 20, MASTER, MASTER]
         )
 
         mine_txs([
@@ -82,7 +82,7 @@ class TestFeeToken(HavvenTestCase):
         self.assertEqual(self.feetoken.name(), "Test Fee Token")
         self.assertEqual(self.feetoken.symbol(), "FEE")
         self.assertEqual(self.feetoken.decimals(), 18)
-        self.assertEqual(self.feetoken.totalSupply(), 0)
+        self.assertEqual(self.feetoken.totalSupply(), 1000 * UNIT)
         self.assertEqual(self.feetoken.transferFeeRate(), UNIT // 20)
         self.assertEqual(self.feetoken.feeAuthority(), self.fee_authority)
         self.assertEqual(self.feetoken.tokenState(), self.feestate.address)
@@ -475,7 +475,7 @@ class TestFeeToken(HavvenTestCase):
 
         self.assertEventEquals(
             self.feetoken_event_dict, txr.logs[1], 'Transfer',
-            fields={'from': sender, 'to': self.feetoken_contract.address, 'value': fee},
+            fields={'from': sender, 'to': self.feetoken_contract.functions.FEE_ADDRESS().call(), 'value': fee},
             location=self.proxy.address
         )
 
@@ -517,12 +517,12 @@ class TestFeeToken(HavvenTestCase):
 
     def test_event_FeesWithdrawn(self):
         beneficiary = fresh_account()
-        self.feetoken.clearTokens(MASTER, self.feetoken_contract.address)
-        self.feetoken.giveTokens(MASTER, self.feetoken_contract.address, UNIT)
+        self.feetoken.clearTokens(MASTER, self.feetoken_contract.functions.FEE_ADDRESS().call())
+        self.feetoken.giveTokens(MASTER, self.feetoken_contract.functions.FEE_ADDRESS().call(), UNIT)
         txr = self.feetoken_withdrawFees(self.feetoken.feeAuthority(),
                                          beneficiary, UNIT)
         self.assertEventEquals(self.feetoken_event_dict,
                                txr.logs[0], "FeesWithdrawn",
                                {"account": beneficiary,
                                 "value": UNIT},
-                                self.proxy.address)  
+                                self.proxy.address)

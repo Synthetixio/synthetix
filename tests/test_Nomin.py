@@ -46,7 +46,7 @@ class TestNomin(HavvenTestCase):
             [MASTER, MASTER]
         )
         nomin_contract, _ = attempt_deploy(
-            compiled, 'PublicNomin', MASTER, [nomin_proxy.address, nomin_state.address, MASTER, MASTER]
+            compiled, 'PublicNomin', MASTER, [nomin_proxy.address, nomin_state.address, MASTER, 0, MASTER]
         )
 
         havven_contract, _ = attempt_deploy(
@@ -198,7 +198,7 @@ class TestNomin(HavvenTestCase):
             self.nomin_event_dict, txr.logs[1], 'Transfer',
             fields={
                 'from': sender,
-                'to': self.nomin_contract.address,
+                'to': self.nomin_contract.functions.FEE_ADDRESS().call(),
                 'value': fee
             },
             location=self.nomin_proxy.address
@@ -228,7 +228,7 @@ class TestNomin(HavvenTestCase):
             self.nomin_event_dict, txr.logs[1], 'Transfer',
             fields={
                 'from': MASTER,
-                'to': self.nomin_contract.address,
+                'to': self.nomin_contract.functions.FEE_ADDRESS().call(),
                 'value': fee
             },
             location=self.nomin_proxy.address
@@ -250,7 +250,7 @@ class TestNomin(HavvenTestCase):
             self.nomin_event_dict, txr.logs[1], 'Transfer',
             fields={
                 'from': target,
-                'to': self.nomin_contract.address,
+                'to': self.nomin_contract.functions.FEE_ADDRESS().call(),
                 'value': amountReceived
             },
             location=self.nomin_proxy.address
@@ -284,7 +284,7 @@ class TestNomin(HavvenTestCase):
             self.nomin_event_dict, txr.logs[1], 'Transfer',
             fields={
                 'from': MASTER,
-                'to': self.nomin_contract.address,
+                'to': self.nomin_contract.functions.FEE_ADDRESS().call(),
                 'value': fee
             },
             location=self.nomin_proxy.address
@@ -339,7 +339,7 @@ class TestNomin(HavvenTestCase):
             self.nomin_event_dict, txr.logs[1], 'Transfer',
             fields={
                 'from': MASTER,
-                'to': self.nomin_contract.address,
+                'to': self.nomin_contract.functions.FEE_ADDRESS().call(),
                 'value': fee
             },
             location=self.nomin_proxy.address
@@ -360,7 +360,7 @@ class TestNomin(HavvenTestCase):
             self.nomin_event_dict, txr.logs[1], 'Transfer',
             fields={
                 'from': target,
-                'to': self.nomin_contract.address,
+                'to': self.nomin_contract.functions.FEE_ADDRESS().call(),
                 'value': self.nomin.amountReceived(5 * UNIT)
             },
             location=self.nomin_proxy.address
@@ -391,7 +391,7 @@ class TestNomin(HavvenTestCase):
             self.nomin_event_dict, txr.logs[1], 'Transfer',
             fields={
                 'from': MASTER,
-                'to': self.nomin_contract.address,
+                'to': self.nomin_contract.functions.FEE_ADDRESS().call(),
                 'value': fee
             },
             location=self.nomin_proxy.address
@@ -421,7 +421,7 @@ class TestNomin(HavvenTestCase):
             self.nomin_event_dict, txr.logs[1], 'Transfer',
             fields={
                 'from': MASTER,
-                'to': self.nomin_contract.address,
+                'to': self.nomin_contract.functions.FEE_ADDRESS().call(),
                 'value': self.nomin.transferFeeIncurred(5 * UNIT)
             },
             location=self.nomin_proxy.address
@@ -442,7 +442,7 @@ class TestNomin(HavvenTestCase):
             self.nomin_event_dict, txr.logs[1], 'Transfer',
             fields={
                 'from': target,
-                'to': self.nomin_contract.address,
+                'to': self.nomin_contract.functions.FEE_ADDRESS().call(),
                 'value': 5 * UNIT
             },
             location=self.nomin_proxy.address
@@ -475,7 +475,7 @@ class TestNomin(HavvenTestCase):
             self.nomin_event_dict, txr.logs[1], 'Transfer',
             fields={
                 'from': MASTER,
-                'to': self.nomin_contract.address,
+                'to': self.nomin_contract.functions.FEE_ADDRESS().call(),
                 'value': self.nomin.transferFeeIncurred(self.nomin.amountReceived(old_bal))
             },
             location=self.nomin_proxy.address

@@ -50,7 +50,7 @@ contract FeeToken is ExternStateToken {
     /* The address with the authority to distribute fees. */
     address public feeAuthority;
     /* The address that fees will be pooled in. */
-    address constant FEE_ADDRESS = 0xfeefeefeefeefeefeefeefeefeefeefeefeefeef;
+    address public constant FEE_ADDRESS = 0xfeefeefeefeefeefeefeefeefeefeefeefeefeef;
 
 
     /* ========== CONSTRUCTOR ========== */
@@ -290,7 +290,7 @@ contract FeeToken is ExternStateToken {
 
         /* safeSub ensures the donor has sufficient balance. */
         tokenState.setBalanceOf(sender, safeSub(balance, n));
-        tokenState.setBalanceOf(FEE_ADDRESS, safeAdd(tokenState.balanceOf(address(this)), n));
+        tokenState.setBalanceOf(FEE_ADDRESS, safeAdd(tokenState.balanceOf(FEE_ADDRESS), n));
 
         emitFeesDonated(sender, n);
         emitTransfer(sender, FEE_ADDRESS, n);

@@ -58,7 +58,7 @@ class TestHavven(HavvenTestCase):
         hvn_block = W3.eth.blockNumber
         nomin_contract, nom_txr = attempt_deploy(compiled, 'Nomin',
                                                  MASTER,
-                                                 [nomin_proxy.address, nomin_tokenstate.address, havven_contract.address, MASTER])
+                                                 [nomin_proxy.address, nomin_tokenstate.address, havven_contract.address, 0, MASTER])
         court_contract, court_txr = attempt_deploy(compiled, 'Court',
                                                    MASTER,
                                                    [havven_contract.address, nomin_contract.address,
@@ -171,6 +171,9 @@ class TestHavven(HavvenTestCase):
         self.assertEqual(self.havven.lastFeesCollected(), 0)
         self.assertEqual(self.havven.nomin(), self.nomin_contract.address)
         self.assertEqual(self.havven.decimals(), 18)
+
+        # Ensure issuers list updates issued balances properly
+        self.assertTrue(False)
 
     ###
     # Mappings
