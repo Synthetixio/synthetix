@@ -211,20 +211,42 @@ contract Havven is ExternStateToken {
      * @param _owner The owner of this contract.
      */
     constructor(address _proxy, TokenState _tokenState, address _owner, address _oracle,
-                uint _price, address[] _issuers, uint[] _nominsIssued)
+                uint _price, address[] _issuers, Havven _oldHavven)
         ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, _owner)
         public
     {
         oracle = _oracle;
-        feePeriodStartTime = now;
-        lastFeePeriodStartTime = now - feePeriodDuration;
         price = _price;
         lastPriceUpdateTime = now;
 
-        for (uint i=0; i < _issuers.length; i++) {
-            address issuer = _issuers[i];
-            nominsIssued[issuer] = _nominsIssued[i];
-            isIssuer[issuer] = true;
+        uint i;
+        if (_oldHavven == address(0)) {
+            feePeriodStartTime = now;
+            lastFeePeriodStartTime = now - feePeriodDuration;
+            for (i = 0; i < _issuers.length; i++) {
+                isIssuer[_issuers[i]] = true;
+            }
+        } else {
+            feePeriodStartTime = _oldHavven.feePeriodStartTime();
+            lastFeePeriodStartTime = _oldHavven.lastFeePeriodStartTime();
+
+            uint cbs;
+            uint lab;
+            uint lm;
+            (cbs, lab, lm) = _oldHavven.totalIssuanceData();
+            totalIssuanceData.currentBalanceSum = cbs;
+            totalIssuanceData.lastAverageBalance = lab;
+            totalIssuanceData.lastModified = lm;
+
+            for (i = 0; i < _issuers.length; i++) {
+                address issuer = _issuers[i];
+                isIssuer[issuer] = true;
+                nominsIssued[issuer] = _oldHavven.nominsIssued(issuer);
+                (cbs, lab, lm) = _oldHavven.issuanceData(issuer);
+                issuanceData[issuer].currentBalanceSum = cbs;
+                issuanceData[issuer].lastAverageBalance = lab;
+                issuanceData[issuer].lastModified = lm;
+            }
         }
 
     }

@@ -90,5 +90,6 @@ class PublicHavvenInterface(HavvenInterface):
 
         self.MIN_FEE_PERIOD_DURATION = lambda: self.contract.functions.MIN_FEE_PERIOD_DURATION().call()
         self.MAX_FEE_PERIOD_DURATION = lambda: self.contract.functions.MAX_FEE_PERIOD_DURATION().call()
+        self.MAX_ISSUANCE_RATIO = lambda: self.contract.functions.MAX_ISSUANCE_RATIO().call()
 
         self.currentTime = lambda: self.contract.functions.currentTime().call()

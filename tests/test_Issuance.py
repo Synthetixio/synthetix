@@ -52,7 +52,7 @@ class TestIssuance(HavvenTestCase):
                                              MASTER, [MASTER, MASTER])
 
         havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven', MASTER,
-                                                  [havven_proxy.address, havven_tokenstate.address, MASTER, MASTER, UNIT//2, [], []])
+                                                  [havven_proxy.address, havven_tokenstate.address, MASTER, MASTER, cls.initial_price, [], ZERO_ADDRESS])
         nomin_contract, nom_txr = attempt_deploy(compiled, 'PublicNomin',
                                                  MASTER,
                                                  [nomin_proxy.address, nomin_tokenstate.address, havven_contract.address, 0, MASTER])
@@ -80,11 +80,13 @@ class TestIssuance(HavvenTestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls.initial_price = UNIT // 2
         cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, cls.nomin_contract, cls.fake_court_contract, cls.escrow_contract = cls.deployContracts()
 
         cls.havven = PublicHavvenInterface(cls.proxied_havven, "Havven")
         cls.nomin = PublicNominInterface(cls.proxied_nomin, "Nomin")
         cls.escrow = PublicHavvenEscrowInterface(cls.escrow_contract, "HavvenEscrow")
+        cls.havven.setIssuanceRatio(MASTER, UNIT // 20)
 
         fast_forward(weeks=102)
 

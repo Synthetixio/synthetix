@@ -59,11 +59,11 @@ class TestHavven(HavvenTestCase):
                                               MASTER, [MASTER, MASTER])
         nomin_tokenstate, _ = attempt_deploy(compiled, 'TokenState',
                                              MASTER, [MASTER, MASTER])
-        havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [havven_proxy.address, havven_tokenstate.address, MASTER, MASTER, UNIT//2, [], []])
+        havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [havven_proxy.address, havven_tokenstate.address, MASTER, MASTER, cls.initial_price, [], ZERO_ADDRESS])
         hvn_block = W3.eth.blockNumber
         nomin_contract, nom_txr = attempt_deploy(compiled, 'Nomin',
                                                  MASTER,
-                                                 [nomin_proxy.address, nomin_tokenstate.address, havven_contract.address, total_nomins, MASTER])
+                                                 [nomin_proxy.address, nomin_tokenstate.address, havven_contract.address, 0, MASTER])
         court_contract, court_txr = attempt_deploy(compiled, 'Court',
                                                    MASTER,
                                                    [havven_contract.address, nomin_contract.address,
@@ -94,6 +94,8 @@ class TestHavven(HavvenTestCase):
     def setUpClass(cls):
         # to avoid overflowing in the negative direction (now - feePeriodDuration * 2)
         fast_forward(weeks=102)
+
+        cls.initial_price = UNIT // 2
 
         cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, \
             cls.havven_contract, cls.nomin_contract, cls.court_contract, \
@@ -175,7 +177,12 @@ class TestHavven(HavvenTestCase):
         self.assertEqual(self.havven.MAX_FEE_PERIOD_DURATION(), to_seconds(weeks=26))
         self.assertEqual(self.havven.lastFeesCollected(), 0)
         self.assertEqual(self.havven.nomin(), self.nomin_contract.address)
+        self.assertEqual(self.havven.escrow(), self.escrow_contract.address)
         self.assertEqual(self.havven.decimals(), 18)
+        self.assertEqual(self.havven.feePeriodStartTime(), block_time(self.construction_block))
+        self.assertEqual(self.havven.lastFeePeriodStartTime(), block_time(self.construction_block) - fee_period)
+        self.assertEqual(self.havven.lastFeesCollected(), 0)
+        self.assertEqual(self.havven.price(), self.initial_price)
 
         # Ensure issuers list updates issued balances properly... update deploycontracts above.
         self.assertTrue(False)
@@ -433,6 +440,15 @@ class TestHavven(HavvenTestCase):
     def test_invalidSetEscrow(self):
         alice = fresh_account()
         self.assertReverts(self.havven.setEscrow, alice, alice)
+
+    # setIssuanceRatio
+    def test_setIssuanceRatio(self):
+        self.havven.setIssuanceRatio(MASTER, 3 * UNIT // 10)
+        self.assertEqual(self.havven.issuanceRatio(), 3 * UNIT // 10)
+
+    def test_setIssuanceRatio_max(self):
+        self.havven.setIssuanceRatio(MASTER, self.havven.MAX_ISSUANCE_RATIO())
+        self.assertReverts(self.havven.setIssuanceRatio, MASTER, self.havven.MAX_ISSUANCE_RATIO() + 1)
 
     # setFeePeriodDuration
     def test_setFeePeriodDuration(self):

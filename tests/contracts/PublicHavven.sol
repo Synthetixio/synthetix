@@ -15,8 +15,10 @@ contract PublicHavven is Havven {
     uint constant public MIN_FEE_PERIOD_DURATION = 1 days;
     uint constant public MAX_FEE_PERIOD_DURATION = 26 weeks;
 
-    constructor(address _proxy, TokenState _state, address _owner, address _oracle, uint _price, address[] _issuers, uint[] _issuedNomins)
-        Havven(_proxy, _state, _owner, _oracle, _price, _issuers, _issuedNomins)
+    uint constant public MAX_ISSUANCE_RATIO = UNIT;
+
+    constructor(address _proxy, TokenState _state, address _owner, address _oracle, uint _price, address[] _issuers, Havven _oldHavven)
+        Havven(_proxy, _state, _owner, _oracle, _price, _issuers, _oldHavven)
         public
     {}
 
@@ -43,6 +45,45 @@ contract PublicHavven is Havven {
         tokenState.setBalanceOf(sender, safeSub(tokenState.balanceOf(sender), value));
         tokenState.setBalanceOf(to, safeAdd(tokenState.balanceOf(to), value));
         emitTransfer(sender, to, value);
+    }
+
+    function setFeePeriodStartTime(uint value)
+        external
+        optionalProxy_onlyOwner
+    {
+        feePeriodStartTime = value;
+    }
+
+    function setLastFeePeriodStartTime(uint value)
+        external
+        optionalProxy_onlyOwner
+    {
+        lastFeePeriodStartTime = value;
+    }
+
+    function setTotalIssuanceData(uint cbs, uint lab, uint lm)
+        external
+        optionalProxy_onlyOwner
+    {
+        totalIssuanceData.currentBalanceSum = cbs;
+        totalIssuanceData.lastAverageBalance = lab;
+        totalIssuanceData.lastModified = lm;
+    }
+    
+    function setIssuanceData(address account, uint cbs, uint lab, uint lm)
+        external
+        optionalProxy_onlyOwner
+    {
+        issuanceData[account].currentBalanceSum = cbs;
+        issuanceData[account].lastAverageBalance = lab;
+        issuanceData[account].lastModified = lm;
+    }
+
+    function setNominsIssued(address account, uint value)
+        external
+        optionalProxy_onlyOwner
+    {
+        nominsIssued[account] = value;
     }
 
     function currentTime()
