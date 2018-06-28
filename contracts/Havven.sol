@@ -617,8 +617,10 @@ contract Havven is ExternStateToken {
     }
 
     /**
-     * @notice the total havvens that can be used as collateral for issuing nomins by an account.
-     * This total includes all locked havvens as well.
+     * @notice The total havvens owned by this account, both escrowed and unescrowed,
+     * against which nomins can be issued.
+     * This includes those already being used as collateral (unlocked), and those
+     * available for further issuance (unlocked).
      */
     function collateral(address account)
         public
@@ -648,9 +650,10 @@ contract Havven is ExternStateToken {
     }
 
     /**
-     * @notice Collateral that has been locked due to issuance, which is capped at the account's total collateral.
+     * @notice Collateral that has been locked due to issuance, and cannot be
+     * transferred to other addresses. This is capped at the account's total collateral.
      */
-    function unavailableCollateral(address account)
+    function lockedCollateral(address account)
         public
         view
         returns (uint)
@@ -666,12 +669,12 @@ contract Havven is ExternStateToken {
     /**
      * @notice Collateral that is not locked and available for issuance.
      */
-    function availableCollateral(address account)
+    function unlockedCollateral(address account)
         public
         view
         returns (uint)
     {
-        uint locked = unavailableCollateral(account);
+        uint locked = lockedCollateral(account);
         uint collat = collateral(account);
         return safeSub(collat, locked);
     }

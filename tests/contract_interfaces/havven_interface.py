@@ -41,8 +41,8 @@ class HavvenInterface(ExternStateTokenInterface):
         self.remainingIssuableNomins = lambda acc: self.contract.functions.remainingIssuableNomins(acc).call()
         self.collateral = lambda acc: self.contract.functions.collateral(acc).call()
         self.issuanceDraft = lambda acc: self.contract.functions.issuanceDraft(acc).call()
-        self.unavailableCollateral = lambda acc: self.contract.functions.unavailableCollateral(acc).call()
-        self.availableCollateral = lambda acc: self.contract.functions.availableCollateral(acc).call()
+        self.lockedCollateral = lambda acc: self.contract.functions.lockedCollateral(acc).call()
+        self.unlockedCollateral = lambda acc: self.contract.functions.unlockedCollateral(acc).call()
         self.transferableHavvens = lambda acc: self.contract.functions.transferableHavvens(acc).call()
 
         # utility function

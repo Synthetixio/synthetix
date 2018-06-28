@@ -52,12 +52,12 @@ class TestFeeToken(HavvenTestCase):
 
         feetoken_contract_1, construction_txr_1 = attempt_deploy(
             compiled, "PublicFeeToken", MASTER,
-            [proxy.address, feestate.address, "Test Fee Token", "FEE", UNIT // 20, MASTER, MASTER]
+            [proxy.address, feestate.address, "Test Fee Token", "FEE", 1000 * UNIT, UNIT // 20, MASTER, MASTER]
         )
 
         feetoken_contract_2, construction_txr_2 = attempt_deploy(
             compiled, "PublicFeeToken", MASTER,
-            [proxy.address, feestate.address, "Test Fee Token 2", "FEE", UNIT // 20, MASTER, MASTER]
+            [proxy.address, feestate.address, "Test Fee Token 2", "FEE", 1000 * UNIT, UNIT // 20, MASTER, MASTER]
         )
 
         mine_txs([
@@ -90,7 +90,7 @@ class TestFeeToken(HavvenTestCase):
     def test_swap(self):
         self.assertEqual(self.feetoken.name(), "Test Fee Token")
         self.assertEqual(self.feetoken.symbol(), "FEE")
-        self.assertEqual(self.feetoken.totalSupply(), 0)
+        self.assertEqual(self.feetoken.totalSupply(), 1000 * UNIT)
         self.assertEqual(self.feetoken.transferFeeRate(), UNIT // 20)
         self.assertEqual(self.feetoken.feeAuthority(), self.fee_authority)
         self.assertEqual(self.feetoken.tokenState(), self.feestate.contract.address)

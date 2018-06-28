@@ -44,6 +44,11 @@ class TestHavven(HavvenTestCase):
 
         compiled, cls.event_maps = cls.compileAndMapEvents(sources)
 
+        # Initial issued nomin balances
+        #issuer_addresses = [f"0x{'0'*39}{i+1}" for i in range(10)]
+        #issuer_balances = [77 * UNIT * i for i in range(10)]
+        #total_nomins = sum(issuer_balances)
+
         # Deploy contracts
         havven_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
         nomin_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
@@ -58,7 +63,7 @@ class TestHavven(HavvenTestCase):
         hvn_block = W3.eth.blockNumber
         nomin_contract, nom_txr = attempt_deploy(compiled, 'Nomin',
                                                  MASTER,
-                                                 [nomin_proxy.address, nomin_tokenstate.address, havven_contract.address, 0, MASTER])
+                                                 [nomin_proxy.address, nomin_tokenstate.address, havven_contract.address, total_nomins, MASTER])
         court_contract, court_txr = attempt_deploy(compiled, 'Court',
                                                    MASTER,
                                                    [havven_contract.address, nomin_contract.address,
@@ -172,7 +177,7 @@ class TestHavven(HavvenTestCase):
         self.assertEqual(self.havven.nomin(), self.nomin_contract.address)
         self.assertEqual(self.havven.decimals(), 18)
 
-        # Ensure issuers list updates issued balances properly
+        # Ensure issuers list updates issued balances properly... update deploycontracts above.
         self.assertTrue(False)
 
     ###
