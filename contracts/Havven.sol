@@ -188,7 +188,7 @@ contract Havven is ExternStateToken {
 
     /* A quantity of nomins greater than this ratio
      * may not be issued against a given value of havvens. */
-    uint public issuanceRatio = 5 * UNIT / 100;
+    uint public issuanceRatio = UNIT / 5;
     /* No more nomins may be issued than the value of havvens backing them. */
     uint constant MAX_ISSUANCE_RATIO = UNIT;
 
