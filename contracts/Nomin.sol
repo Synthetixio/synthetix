@@ -68,8 +68,8 @@ contract Nomin is FeeToken {
         public
     {
         require(_proxy != 0 && address(_havven) != 0 && _owner != 0);
-        // It should not be possible to transfer to the nomin contract itself.
-        frozen[this] = true;
+        // It should not be possible to transfer to the fee pool directly (or confiscate its balance).
+        frozen[FEE_ADDRESS] = true;
         havven = _havven;
     }
 
