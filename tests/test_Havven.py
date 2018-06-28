@@ -184,6 +184,7 @@ class TestHavven(HavvenTestCase):
         self.assertEqual(self.havven.lastFeesCollected(), 0)
         self.assertEqual(self.havven.price(), self.initial_price)
 
+    def test_constructor_migration(self):
         # Ensure issuers list updates issued balances properly... update deploycontracts above.
         self.assertTrue(False)
 

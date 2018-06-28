@@ -93,9 +93,6 @@ class TestIssuance(HavvenTestCase):
         cls.fake_court = FakeCourtInterface(cls.fake_court_contract, "FakeCourt")
         cls.fake_court.setNomin(MASTER, cls.nomin_contract.address)
     
-    def test_constructor_issuers(self):
-        self.assertTrue(False)
-
     def havven_updatePrice(self, sender, price, time):
         mine_tx(self.havven_contract.functions.updatePrice(price, time).transact({'from': sender}), 'updatePrice', 'Havven')
 

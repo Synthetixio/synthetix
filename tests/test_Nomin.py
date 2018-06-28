@@ -78,17 +78,14 @@ class TestNomin(HavvenTestCase):
         cls.unproxied_nomin = PublicNominInterface(cls.nomin_contract, "UnproxiedNomin")
 
         cls.fake_court = FakeCourtInterface(cls.fake_court_contract, "FakeCourt")
-
         cls.fake_court.setNomin(MASTER, cls.nomin_contract.address)
-
         cls.nomin.setFeeAuthority(MASTER, cls.havven_contract.address)
-
         cls.sd_duration = 4 * 7 * 24 * 60 * 60
 
     def test_constructor(self):
         # Nomin-specific members
         self.assertEqual(self.nomin.owner(), MASTER)
-        self.assertTrue(self.nomin.frozen(self.nomin_contract.address))
+        self.assertTrue(self.nomin.frozen(self.nomin.FEE_ADDRESS()))
 
         # FeeToken members
         self.assertEqual(self.nomin.name(), "Nomin USD")
@@ -576,7 +573,7 @@ class TestNomin(HavvenTestCase):
 
         # The nomin contract itself should not be unfreezable.
         self.assertReverts(self.nomin.unfreezeAccount, MASTER, self.nomin_contract.address)
-        self.assertTrue(self.nomin.frozen(self.nomin_contract.address))
+        self.assertTrue(self.nomin.frozen(self.nomin.FEE_ADDRESS()))
 
         # Unfreezing non-frozen accounts should not do anything.
         self.assertFalse(self.nomin.frozen(target))
