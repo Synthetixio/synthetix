@@ -571,8 +571,9 @@ class TestNomin(HavvenTestCase):
     def test_unfreezeAccount(self):
         target = fresh_account()
 
-        # The nomin contract itself should not be unfreezable.
-        self.assertReverts(self.nomin.unfreezeAccount, MASTER, self.nomin_contract.address)
+        # The fee address should not be unfreezable.
+        self.assertTrue(self.nomin.frozen(self.nomin.FEE_ADDRESS()))
+        self.assertReverts(self.nomin.unfreezeAccount, MASTER, self.nomin.FEE_ADDRESS())
         self.assertTrue(self.nomin.frozen(self.nomin.FEE_ADDRESS()))
 
         # Unfreezing non-frozen accounts should not do anything.

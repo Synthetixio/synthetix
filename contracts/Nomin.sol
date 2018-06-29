@@ -173,7 +173,7 @@ contract Nomin is FeeToken {
         external
         optionalProxy_onlyOwner
     {
-        require(frozen[target] && target != address(this));
+        require(frozen[target] && target != FEE_ADDRESS);
         frozen[target] = false;
         emitAccountUnfrozen(target);
     }
