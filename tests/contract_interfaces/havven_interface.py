@@ -36,13 +36,18 @@ class HavvenInterface(ExternStateTokenInterface):
         self.totalIssuanceCurrentBalanceSum = lambda: self.contract.functions.totalIssuanceCurrentBalanceSum().call()
         self.totalIssuanceLastAverageBalance = lambda: self.contract.functions.totalIssuanceLastAverageBalance().call()
         self.totalIssuanceLastModified = lambda: self.contract.functions.totalIssuanceLastModified().call()
-        self.availableHavvens = lambda acc: self.contract.functions.availableHavvens(acc).call()
-        self.lockedHavvens = lambda acc: self.contract.functions.lockedHavvens(acc).call()
+
         self.maxIssuableNomins = lambda acc: self.contract.functions.maxIssuableNomins(acc).call()
         self.remainingIssuableNomins = lambda acc: self.contract.functions.remainingIssuableNomins(acc).call()
+        self.collateral = lambda acc: self.contract.functions.collateral(acc).call()
+        self.issuanceDraft = lambda acc: self.contract.functions.issuanceDraft(acc).call()
+        self.lockedCollateral = lambda acc: self.contract.functions.lockedCollateral(acc).call()
+        self.unlockedCollateral = lambda acc: self.contract.functions.unlockedCollateral(acc).call()
+        self.transferableHavvens = lambda acc: self.contract.functions.transferableHavvens(acc).call()
 
         # utility function
-        self.havValue = lambda havWei: self.contract.functions.havValue(havWei).call()
+        self.HAVtoUSD = lambda havWei: self.contract.functions.HAVtoUSD(havWei).call()
+        self.USDtoHAV = lambda usdWei: self.contract.functions.USDtoHAV(usdWei).call()
 
         # mutable functions
         self.setNomin = lambda sender, addr: mine_tx(self.contract.functions.setNomin(addr).transact({'from': sender}), "setNomin", self.contract_name)
@@ -65,15 +70,15 @@ class HavvenInterface(ExternStateTokenInterface):
 
     @staticmethod
     def issuance_data_current_balance_sum(issuance_data):
-        return balance_data[0]
+        return issuance_data[0]
 
     @staticmethod
     def issuance_data_last_average_balance(issuance_data):
-        return balance_data[1]
+        return issuance_data[1]
 
     @staticmethod
     def issuance_data_last_modified(issuance_data):
-        return balance_data[2]
+        return issuance_data[2]
 
 
 class PublicHavvenInterface(HavvenInterface):
@@ -85,5 +90,6 @@ class PublicHavvenInterface(HavvenInterface):
 
         self.MIN_FEE_PERIOD_DURATION = lambda: self.contract.functions.MIN_FEE_PERIOD_DURATION().call()
         self.MAX_FEE_PERIOD_DURATION = lambda: self.contract.functions.MAX_FEE_PERIOD_DURATION().call()
+        self.MAX_ISSUANCE_RATIO = lambda: self.contract.functions.MAX_ISSUANCE_RATIO().call()
 
         self.currentTime = lambda: self.contract.functions.currentTime().call()

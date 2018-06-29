@@ -14,7 +14,7 @@ date:       2018-05-29
 
 -----------------------------------------------------------------
 MODULE DESCRIPTION
-----------------------------------------------------------------    -
+-----------------------------------------------------------------
 
 Havven-backed nomin stablecoin contract.
 
@@ -25,8 +25,8 @@ value of their havvens to issue H * Cmax nomins. Where Cmax is
 some value less than 1.
 
 A configurable fee is charged on nomin transfers and deposited
-into a common pot, which havven holders may withdraw from once per
-fee period.
+into a common pot, which havven holders may withdraw from once
+per fee period.
 
 -----------------------------------------------------------------
 */
@@ -57,16 +57,19 @@ contract Nomin is FeeToken {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _proxy, Havven _havven, address _owner)
-        FeeToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL, 0, // Zero nomins initially exist.
+    constructor(address _proxy, TokenState _tokenState, Havven _havven,
+                uint _totalSupply,
+                address _owner)
+        FeeToken(_proxy, _tokenState,
+                 TOKEN_NAME, TOKEN_SYMBOL, _totalSupply,
                  TRANSFER_FEE_RATE,
                  _havven, // The havven contract is the fee authority.
                  _owner)
         public
     {
         require(_proxy != 0 && address(_havven) != 0 && _owner != 0);
-        // It should not be possible to transfer to the nomin contract itself.
-        frozen[this] = true;
+        // It should not be possible to transfer to the fee pool directly (or confiscate its balance).
+        frozen[FEE_ADDRESS] = true;
         havven = _havven;
     }
 
@@ -157,11 +160,11 @@ contract Nomin is FeeToken {
 
         // Confiscate the balance in the account and freeze it.
         uint balance = tokenState.balanceOf(target);
-        tokenState.setBalanceOf(address(this), safeAdd(tokenState.balanceOf(address(this)), balance));
+        tokenState.setBalanceOf(FEE_ADDRESS, safeAdd(tokenState.balanceOf(FEE_ADDRESS), balance));
         tokenState.setBalanceOf(target, 0);
         frozen[target] = true;
         emitAccountFrozen(target, balance);
-        emitTransfer(target, address(this), balance);
+        emitTransfer(target, FEE_ADDRESS, balance);
     }
 
     /* The owner may allow a previously-frozen contract to once
@@ -170,7 +173,7 @@ contract Nomin is FeeToken {
         external
         optionalProxy_onlyOwner
     {
-        require(frozen[target] && target != address(this));
+        require(frozen[target] && target != FEE_ADDRESS);
         frozen[target] = false;
         emitAccountUnfrozen(target);
     }

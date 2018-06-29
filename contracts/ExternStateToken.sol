@@ -57,8 +57,9 @@ contract ExternStateToken is SafeDecimalMath, SelfDestructible, Proxyable {
      * @param _tokenState The TokenState contract address.
      * @param _owner The owner of this contract.
      */
-    constructor(address _proxy, string _name, string _symbol, uint _totalSupply,
-                TokenState _tokenState, address _owner)
+    constructor(address _proxy, TokenState _tokenState,
+                string _name, string _symbol, uint _totalSupply,
+                address _owner)
         SelfDestructible(_owner)
         Proxyable(_proxy, _owner)
         public

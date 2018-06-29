@@ -15,8 +15,10 @@ contract PublicHavven is Havven {
     uint constant public MIN_FEE_PERIOD_DURATION = 1 days;
     uint constant public MAX_FEE_PERIOD_DURATION = 26 weeks;
 
-    constructor(address _proxy, TokenState _state, address _owner, address _oracle, uint _price)
-        Havven(_proxy, _state, _owner, _oracle, _price)
+    uint constant public MAX_ISSUANCE_RATIO = UNIT;
+
+    constructor(address _proxy, TokenState _state, address _owner, address _oracle, uint _price, address[] _issuers, Havven _oldHavven)
+        Havven(_proxy, _state, _owner, _oracle, _price, _issuers, _oldHavven)
         public
     {}
 
@@ -37,12 +39,51 @@ contract PublicHavven is Havven {
          * their havvens are escrowed, however the transfer would then
          * fail. This means that escrowed havvens are locked first,
          * and then the actual transferable ones. */
-        require(nominsIssued[sender] == 0 || value <= availableHavvens(sender));
+        require(nominsIssued[sender] == 0 || value <= transferableHavvens(sender));
         /* Perform the transfer: if there is a problem,
          * an exception will be thrown in this call. */
         tokenState.setBalanceOf(sender, safeSub(tokenState.balanceOf(sender), value));
         tokenState.setBalanceOf(to, safeAdd(tokenState.balanceOf(to), value));
         emitTransfer(sender, to, value);
+    }
+
+    function setFeePeriodStartTime(uint value)
+        external
+        optionalProxy_onlyOwner
+    {
+        feePeriodStartTime = value;
+    }
+
+    function setLastFeePeriodStartTime(uint value)
+        external
+        optionalProxy_onlyOwner
+    {
+        lastFeePeriodStartTime = value;
+    }
+
+    function setTotalIssuanceData(uint cbs, uint lab, uint lm)
+        external
+        optionalProxy_onlyOwner
+    {
+        totalIssuanceData.currentBalanceSum = cbs;
+        totalIssuanceData.lastAverageBalance = lab;
+        totalIssuanceData.lastModified = lm;
+    }
+    
+    function setIssuanceData(address account, uint cbs, uint lab, uint lm)
+        external
+        optionalProxy_onlyOwner
+    {
+        issuanceData[account].currentBalanceSum = cbs;
+        issuanceData[account].lastAverageBalance = lab;
+        issuanceData[account].lastModified = lm;
+    }
+
+    function setNominsIssued(address account, uint value)
+        external
+        optionalProxy_onlyOwner
+    {
+        nominsIssued[account] = value;
     }
 
     function currentTime()

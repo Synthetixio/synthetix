@@ -52,14 +52,16 @@ class TestHavvenEscrow(HavvenTestCase):
         proxied_havven = W3.eth.contract(address=havven_proxy.address, abi=cls.compiled['PublicHavven']['abi'])
         proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=cls.compiled['PublicNomin']['abi'])
 
-        tokenstate, _ = attempt_deploy(cls.compiled, 'TokenState',
-                                       MASTER, [MASTER, MASTER])
-        havven_contract, hvn_txr = attempt_deploy(cls.compiled, 'PublicHavven', MASTER, [havven_proxy.address, tokenstate.address, MASTER, MASTER, UNIT//2])
+        havven_tokenstate, _ = attempt_deploy(cls.compiled, 'TokenState',
+                                              MASTER, [MASTER, MASTER])
+        nomin_tokenstate, _ = attempt_deploy(cls.compiled, 'TokenState',
+                                             MASTER, [MASTER, MASTER])
+        havven_contract, hvn_txr = attempt_deploy(cls.compiled, 'PublicHavven', MASTER, [havven_proxy.address, havven_tokenstate.address, MASTER, MASTER, UNIT//2, [], ZERO_ADDRESS])
         hvn_block = W3.eth.blockNumber
 
         nomin_contract, nom_txr = attempt_deploy(cls.compiled, 'PublicNomin',
                                                  MASTER,
-                                                 [nomin_proxy.address, havven_contract.address, MASTER])
+                                                 [nomin_proxy.address, nomin_tokenstate.address, havven_contract.address, 0, MASTER])
         court_contract, court_txr = attempt_deploy(cls.compiled, 'Court',
                                                    MASTER,
                                                    [havven_contract.address, nomin_contract.address,
@@ -69,8 +71,9 @@ class TestHavvenEscrow(HavvenTestCase):
                                                      [MASTER, havven_contract.address])
 
         # Hook up each of those contracts to each other
-        mine_txs([tokenstate.functions.setBalanceOf(havven_contract.address, 100000000 * UNIT).transact({'from': MASTER}),
-                  tokenstate.functions.setAssociatedContract(havven_contract.address).transact({'from': MASTER}),
+        mine_txs([havven_tokenstate.functions.setBalanceOf(havven_contract.address, 100000000 * UNIT).transact({'from': MASTER}),
+                  havven_tokenstate.functions.setAssociatedContract(havven_contract.address).transact({'from': MASTER}),
+                  nomin_tokenstate.functions.setAssociatedContract(nomin_contract.address).transact({'from': MASTER}),
                   havven_proxy.functions.setTarget(havven_contract.address).transact({'from': MASTER}),
                   nomin_proxy.functions.setTarget(nomin_contract.address).transact({'from': MASTER}),
                   havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
@@ -82,7 +85,7 @@ class TestHavvenEscrow(HavvenTestCase):
         havven_event_dict = generate_topic_event_map(cls.compiled['PublicHavven']['abi'])
 
         print("\nDeployment complete.\n")
-        return havven_proxy, proxied_havven, tokenstate, nomin_proxy, proxied_nomin, havven_contract, nomin_contract, court_contract, escrow_contract, hvn_block, escrow_event_dict, havven_event_dict
+        return havven_proxy, proxied_havven, havven_tokenstate, nomin_proxy, proxied_nomin, havven_contract, nomin_contract, court_contract, escrow_contract, hvn_block, escrow_event_dict, havven_event_dict
 
     @classmethod
     def setUpClass(cls):
@@ -655,9 +658,10 @@ class TestHavvenEscrow(HavvenTestCase):
         self.assertEqual(self.havven.balanceOf(alice), 25 * UNIT)
         self.assertEqual(self.havven.balanceOf(self.escrow_contract.address), 175 * UNIT)
 
+        print()
         # Deploy the new havven contract, with proxy and all.
         havven_proxy, _ = attempt_deploy(self.compiled, 'Proxy', MASTER, [MASTER])
-        havven_contract, _ = attempt_deploy(self.compiled, 'PublicHavven', MASTER, [havven_proxy.address, self.havven_token_state.address, MASTER, MASTER, UNIT//2])
+        havven_contract, _ = attempt_deploy(self.compiled, 'PublicHavven', MASTER, [havven_proxy.address, self.havven_token_state.address, MASTER, MASTER, UNIT//2, [], ZERO_ADDRESS])
         proxied_havven = W3.eth.contract(address=havven_proxy.address, abi=self.compiled['PublicHavven']['abi'])
         new_havven = PublicHavvenInterface(proxied_havven, "Havven")
 

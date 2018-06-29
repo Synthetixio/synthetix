@@ -9,6 +9,7 @@ class FeeTokenInterface(ExternStateTokenInterface):
         self.contract = contract
         self.contract_name = name
 
+        self.FEE_ADDRESS = lambda: self.contract.functions.FEE_ADDRESS().call()
         self.feePool = lambda: self.contract.functions.feePool().call()
         self.feeAuthority = lambda: self.contract.functions.feeAuthority().call()
         self.transferFeeRate = lambda: self.contract.functions.transferFeeRate().call()

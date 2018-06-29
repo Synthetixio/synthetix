@@ -49,6 +49,8 @@ contract FeeToken is ExternStateToken {
     uint constant MAX_TRANSFER_FEE_RATE = UNIT / 10;
     /* The address with the authority to distribute fees. */
     address public feeAuthority;
+    /* The address that fees will be pooled in. */
+    address public constant FEE_ADDRESS = 0xfeefeefeefeefeefeefeefeefeefeefeefeefeef;
 
 
     /* ========== CONSTRUCTOR ========== */
@@ -63,10 +65,10 @@ contract FeeToken is ExternStateToken {
      * @param _feeAuthority The address which has the authority to withdraw fees from the accumulated pool.
      * @param _owner The owner of this contract.
      */
-    constructor(address _proxy, string _name, string _symbol, uint _totalSupply,
+    constructor(address _proxy, TokenState _tokenState, string _name, string _symbol, uint _totalSupply,
                 uint _transferFeeRate, address _feeAuthority, address _owner)
-        ExternStateToken(_proxy, _name, _symbol, _totalSupply,
-                         new TokenState(_owner, address(this)),
+        ExternStateToken(_proxy, _tokenState,
+                         _name, _symbol, _totalSupply,
                          _owner)
         public
     {
@@ -158,7 +160,7 @@ contract FeeToken is ExternStateToken {
         view
         returns (uint)
     {
-        return tokenState.balanceOf(address(this));
+        return tokenState.balanceOf(FEE_ADDRESS);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -178,11 +180,11 @@ contract FeeToken is ExternStateToken {
         /* Insufficient balance will be handled by the safe subtraction. */
         tokenState.setBalanceOf(from, safeSub(tokenState.balanceOf(from), safeAdd(amount, fee)));
         tokenState.setBalanceOf(to, safeAdd(tokenState.balanceOf(to), amount));
-        tokenState.setBalanceOf(address(this), safeAdd(tokenState.balanceOf(address(this)), fee));
+        tokenState.setBalanceOf(FEE_ADDRESS, safeAdd(tokenState.balanceOf(FEE_ADDRESS), fee));
 
         /* Emit events for both the transfer itself and the fee. */
         emitTransfer(from, to, amount);
-        emitTransfer(from, address(this), fee);
+        emitTransfer(from, FEE_ADDRESS, fee);
 
         return true;
     }
@@ -264,11 +266,11 @@ contract FeeToken is ExternStateToken {
         }
 
         /* Safe subtraction ensures an exception is thrown if the balance is insufficient. */
-        tokenState.setBalanceOf(address(this), safeSub(tokenState.balanceOf(address(this)), value));
+        tokenState.setBalanceOf(FEE_ADDRESS, safeSub(tokenState.balanceOf(FEE_ADDRESS), value));
         tokenState.setBalanceOf(account, safeAdd(tokenState.balanceOf(account), value));
 
         emitFeesWithdrawn(account, value);
-        emitTransfer(address(this), account, value);
+        emitTransfer(FEE_ADDRESS, account, value);
 
         return true;
     }
@@ -288,10 +290,10 @@ contract FeeToken is ExternStateToken {
 
         /* safeSub ensures the donor has sufficient balance. */
         tokenState.setBalanceOf(sender, safeSub(balance, n));
-        tokenState.setBalanceOf(address(this), safeAdd(tokenState.balanceOf(address(this)), n));
+        tokenState.setBalanceOf(FEE_ADDRESS, safeAdd(tokenState.balanceOf(FEE_ADDRESS), n));
 
         emitFeesDonated(sender, n);
-        emitTransfer(sender, address(this), n);
+        emitTransfer(sender, FEE_ADDRESS, n);
 
         return true;
     }

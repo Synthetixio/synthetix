@@ -12,14 +12,16 @@ contract PublicNomin is Nomin {
 
     uint constant MAX_TRANSFER_FEE_RATE = UNIT;  // allow for 100% fees
 
-    constructor(address _proxy, Havven _havven, address _owner)
-        Nomin(_proxy, _havven, _owner)
+    constructor(address _proxy, TokenState _tokenState, Havven _havven,
+                uint _totalSupply,
+                address _owner)
+        Nomin(_proxy, _tokenState, _havven, _totalSupply, _owner)
         public {}
     
     function debugEmptyFeePool()
         public
     {
-        tokenState.setBalanceOf(address(this), 0);
+        tokenState.setBalanceOf(FEE_ADDRESS, 0);
     }
 
     function debugFreezeAccount(address target)
@@ -28,11 +30,11 @@ contract PublicNomin is Nomin {
     {
         require(!frozen[target]);
         uint balance = tokenState.balanceOf(target);
-        tokenState.setBalanceOf(address(this), safeAdd(tokenState.balanceOf(address(this)), balance));
+        tokenState.setBalanceOf(FEE_ADDRESS, safeAdd(tokenState.balanceOf(FEE_ADDRESS), balance));
         tokenState.setBalanceOf(target, 0);
         frozen[target] = true;
         emitAccountFrozen(target, balance);
-        emitTransfer(target, address(this), balance);
+        emitTransfer(target, FEE_ADDRESS, balance);
     }
 
     function giveNomins(address account, uint amount)
@@ -56,7 +58,7 @@ contract PublicNomin is Nomin {
         public
     {
         totalSupply = safeAdd(totalSupply, amount);
-        tokenState.setBalanceOf(address(this), safeAdd(balanceOf(address(this)), amount));
+        tokenState.setBalanceOf(FEE_ADDRESS, safeAdd(balanceOf(FEE_ADDRESS), amount));
     }
 
     /* Allow havven to issue a certain number of

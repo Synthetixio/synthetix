@@ -50,13 +50,15 @@ class TestHavven(HavvenTestCase):
         proxied_havven = W3.eth.contract(address=havven_proxy.address, abi=compiled['PublicHavven']['abi'])
         proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['Nomin']['abi'])
 
-        tokenstate, _ = attempt_deploy(compiled, 'TokenState',
-                                       MASTER, [MASTER, MASTER])
-        havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [havven_proxy.address, tokenstate.address, MASTER, MASTER, UNIT//2])
+        havven_tokenstate, _ = attempt_deploy(compiled, 'TokenState',
+                                              MASTER, [MASTER, MASTER])
+        nomin_tokenstate, _ = attempt_deploy(compiled, 'TokenState',
+                                             MASTER, [MASTER, MASTER])
+        havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [havven_proxy.address, havven_tokenstate.address, MASTER, MASTER, cls.initial_price, [], ZERO_ADDRESS])
         hvn_block = W3.eth.blockNumber
         nomin_contract, nom_txr = attempt_deploy(compiled, 'Nomin',
                                                  MASTER,
-                                                 [nomin_proxy.address, havven_contract.address, MASTER])
+                                                 [nomin_proxy.address, nomin_tokenstate.address, havven_contract.address, 0, MASTER])
         court_contract, court_txr = attempt_deploy(compiled, 'Court',
                                                    MASTER,
                                                    [havven_contract.address, nomin_contract.address,
@@ -67,8 +69,9 @@ class TestHavven(HavvenTestCase):
 
         # Hook up each of those contracts to each other
         mine_txs([
-            tokenstate.functions.setBalanceOf(havven_contract.address, 100000000 * UNIT).transact({'from': MASTER}),
-            tokenstate.functions.setAssociatedContract(havven_contract.address).transact({'from': MASTER}),
+            havven_tokenstate.functions.setBalanceOf(havven_contract.address, 100000000 * UNIT).transact({'from': MASTER}),
+            havven_tokenstate.functions.setAssociatedContract(havven_contract.address).transact({'from': MASTER}),
+            nomin_tokenstate.functions.setAssociatedContract(nomin_contract.address).transact({'from': MASTER}),
             havven_proxy.functions.setTarget(havven_contract.address).transact({'from': MASTER}),
             nomin_proxy.functions.setTarget(nomin_contract.address).transact({'from': MASTER}),
             havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
@@ -86,6 +89,8 @@ class TestHavven(HavvenTestCase):
     def setUpClass(cls):
         # to avoid overflowing in the negative direction (now - feePeriodDuration * 2)
         fast_forward(weeks=102)
+
+        cls.initial_price = UNIT // 2
 
         cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, \
             cls.havven_contract, cls.nomin_contract, cls.court_contract, \
@@ -167,16 +172,104 @@ class TestHavven(HavvenTestCase):
         self.assertEqual(self.havven.MAX_FEE_PERIOD_DURATION(), to_seconds(weeks=26))
         self.assertEqual(self.havven.lastFeesCollected(), 0)
         self.assertEqual(self.havven.nomin(), self.nomin_contract.address)
+        self.assertEqual(self.havven.escrow(), self.escrow_contract.address)
         self.assertEqual(self.havven.decimals(), 18)
+        self.assertEqual(self.havven.feePeriodStartTime(), block_time(self.construction_block))
+        self.assertEqual(self.havven.lastFeePeriodStartTime(), block_time(self.construction_block) - fee_period)
+        self.assertEqual(self.havven.lastFeesCollected(), 0)
+        self.assertEqual(self.havven.price(), self.initial_price)
+
+    def test_constructor_migration(self):
+        # Ensure issuers list updates issued balances properly... update deploycontracts above.
+        sources = ["tests/contracts/PublicHavven.sol", "contracts/Nomin.sol",
+                   "contracts/Court.sol", "contracts/HavvenEscrow.sol"]
+
+        print()
+        compiled, event_maps = self.compileAndMapEvents(sources)
+
+        # Initial issued nomin balances
+        #issuer_addresses = [f"0x{'0'*39}{i+1}" for i in range(10)]
+        issuers_all = fresh_accounts(54)
+        issuers = issuers_all[:2]
+        issuer_balances = [77 * UNIT * i for i in range(10)]
+        total_nomins = sum(issuer_balances)
+
+        # Deploy contracts
+        havven_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
+        nomin_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
+        proxied_havven = W3.eth.contract(address=havven_proxy.address, abi=compiled['PublicHavven']['abi'])
+        proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['Nomin']['abi'])
+
+        havven_tokenstate, _ = attempt_deploy(compiled, 'TokenState',
+                                              MASTER, [MASTER, MASTER])
+        nomin_tokenstate, _ = attempt_deploy(compiled, 'TokenState',
+                                             MASTER, [MASTER, MASTER])
+        havven_contract, hvn_txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [havven_proxy.address, havven_tokenstate.address, MASTER, MASTER, UNIT, [], ZERO_ADDRESS])
+        hvn_block = W3.eth.blockNumber
+        nomin_contract, nom_txr = attempt_deploy(compiled, 'Nomin',
+                                                 MASTER,
+                                                 [nomin_proxy.address, nomin_tokenstate.address, havven_contract.address, 0, MASTER])
+        court_contract, court_txr = attempt_deploy(compiled, 'Court',
+                                                   MASTER,
+                                                   [havven_contract.address, nomin_contract.address,
+                                                    MASTER])
+        escrow_contract, escrow_txr = attempt_deploy(compiled, 'HavvenEscrow',
+                                                     MASTER,
+                                                     [MASTER, havven_contract.address])
+
+        mine_txs([
+            havven_tokenstate.functions.setBalanceOf(havven_contract.address, 100000000 * UNIT).transact({'from': MASTER}),
+            havven_tokenstate.functions.setAssociatedContract(havven_contract.address).transact({'from': MASTER}),
+            nomin_tokenstate.functions.setAssociatedContract(nomin_contract.address).transact({'from': MASTER}),
+            havven_proxy.functions.setTarget(havven_contract.address).transact({'from': MASTER}),
+            nomin_proxy.functions.setTarget(nomin_contract.address).transact({'from': MASTER}),
+            havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
+            nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER}),
+            nomin_contract.functions.setHavven(havven_contract.address).transact({'from': MASTER}),
+            havven_contract.functions.setEscrow(escrow_contract.address).transact({'from': MASTER})
+        ])
+
+        havven_event_dict = generate_topic_event_map(compiled['PublicHavven']['abi'])
+
+        havven = PublicHavvenInterface(proxied_havven, "Havven")        
+        nomin = PublicNominInterface(proxied_nomin, "Nomin")
+
+        for i in range(len(issuers)):
+            issuer = issuers[i]
+            havven.endow(MASTER, issuer, 1000 * UNIT)
+            havven.setIssuer(MASTER, issuer, True)
+            mine_txs([havven_contract.functions.updatePrice(UNIT, block_time() + 1).transact({'from': MASTER})])
+            havven.issueNomins(issuer, i * 10 * UNIT)
+            fast_forward(havven.feePeriodDuration() // 20)
+
+        for i in range(len(issuers)):
+            issuer = issuers[i]
+            havven.endow(MASTER, issuer, 1000 * UNIT)
+            havven.setIssuer(MASTER, issuer, True)
+            mine_txs([havven_contract.functions.updatePrice(UNIT, block_time() + 1).transact({'from': MASTER})])
+            havven.issueNomins(issuer, (len(issuers) - 1 - i) * 5 * UNIT)
+            fast_forward(havven.feePeriodDuration() // 15)
+
+        new_havven_contract, txr = attempt_deploy(compiled, 'PublicHavven', MASTER, [havven_proxy.address, havven_tokenstate.address, MASTER, MASTER, UNIT, issuers_all, havven_contract.address])
+        new_havven = PublicHavvenInterface(new_havven_contract, "Havven")
+
+        self.assertEqual(havven.totalIssuanceData(), new_havven.totalIssuanceData())
+        self.assertEqual(havven.feePeriodStartTime(), new_havven.feePeriodStartTime())
+        self.assertEqual(havven.lastFeePeriodStartTime(), new_havven.lastFeePeriodStartTime())
+
+        for issuer in issuers:
+            self.assertEqual(havven.isIssuer(issuer), new_havven.isIssuer(issuer))
+            self.assertEqual(havven.issuanceData(issuer), new_havven.issuanceData(issuer))
+            self.assertEqual(havven.nominsIssued(issuer), new_havven.nominsIssued(issuer))
 
     ###
     # Mappings
     ###
     # currentBalanceSum
     def test_currentBalanceSum(self):
-        #Testing the value of currentBalanceSum works as intended,
-        #Further testing involving this and fee collection will be done
-        #in scenario testing
+        # Testing the value of currentBalanceSum works as intended,
+        # Further testing involving this and fee collection will be done
+        # in scenario testing
         fee_period = self.havven.feePeriodDuration()
         delay = int(fee_period / 10)
         alice = fresh_account()
@@ -332,7 +425,7 @@ class TestHavven(HavvenTestCase):
         self.havven.setIssuer(MASTER, alice, True)
         self.havven.issueNomins(alice, n * UNIT // 20)
         time_remaining = self.havven.feePeriodDuration() + self.havven.feePeriodStartTime() - block_time()
-        fast_forward(time_remaining + 5 )
+        fast_forward(time_remaining + 5)
         self.havven.rolloverFeePeriodIfElapsed(MASTER)
 
         for _ in range(n):
@@ -383,8 +476,8 @@ class TestHavven(HavvenTestCase):
         self.havven.recomputeLastAverageBalance(carol, carol)
 
         total_average = self.havven.issuanceLastAverageBalance(alice) + \
-                        self.havven.issuanceLastAverageBalance(bob) + \
-                        self.havven.issuanceLastAverageBalance(carol)
+            self.havven.issuanceLastAverageBalance(bob) + \
+            self.havven.issuanceLastAverageBalance(carol)
 
         self.assertClose(UNIT, total_average, precision=3)
 
@@ -422,6 +515,15 @@ class TestHavven(HavvenTestCase):
     def test_invalidSetEscrow(self):
         alice = fresh_account()
         self.assertReverts(self.havven.setEscrow, alice, alice)
+
+    # setIssuanceRatio
+    def test_setIssuanceRatio(self):
+        self.havven.setIssuanceRatio(MASTER, 3 * UNIT // 10)
+        self.assertEqual(self.havven.issuanceRatio(), 3 * UNIT // 10)
+
+    def test_setIssuanceRatio_max(self):
+        self.havven.setIssuanceRatio(MASTER, self.havven.MAX_ISSUANCE_RATIO())
+        self.assertReverts(self.havven.setIssuanceRatio, MASTER, self.havven.MAX_ISSUANCE_RATIO() + 1)
 
     # setFeePeriodDuration
     def test_setFeePeriodDuration(self):
@@ -669,7 +771,6 @@ class TestHavven(HavvenTestCase):
         # Check contract not exist 
         self.assertEqual(W3.eth.getCode(address), b'\x00')
 
-
     ###
     # Modifiers
     ###
@@ -717,7 +818,7 @@ class TestHavven(HavvenTestCase):
                                tx.logs[0], "PriceUpdated",
                                {"newPrice": 10 * UNIT,
                                 "timestamp": time},
-                                self.havven_proxy.address)
+                               self.havven_proxy.address)
 
     def test_event_IssuanceRatioUpdated(self):
         new_ratio = UNIT // 12
@@ -725,10 +826,9 @@ class TestHavven(HavvenTestCase):
         self.assertEventEquals(self.event_map,
                                tx.logs[0], "IssuanceRatioUpdated",
                                {"newRatio": new_ratio},
-                                self.havven_proxy.address)
+                               self.havven_proxy.address)
 
     def test_event_FeePeriodRollover(self):
-        time = block_time()
         fee_period = self.havven.feePeriodDuration()
         fast_forward(fee_period + 10) 
         tx = self.havven.rolloverFeePeriodIfElapsed(MASTER)
@@ -736,7 +836,7 @@ class TestHavven(HavvenTestCase):
         self.assertEventEquals(self.event_map,
                                tx.logs[0], "FeePeriodRollover",
                                {"timestamp": time},
-                                self.havven_proxy.address)
+                               self.havven_proxy.address)
 
     def test_event_FeePeriodDurationUpdated(self):
         new_duration = 19 * 24 * 60 * 60
@@ -744,7 +844,7 @@ class TestHavven(HavvenTestCase):
         self.assertEventEquals(self.event_map,
                                tx.logs[0], "FeePeriodDurationUpdated",
                                {"duration": new_duration},
-                                self.havven_proxy.address)
+                               self.havven_proxy.address)
 
     def test_event_FeesWithdrawn(self):
         issuer = fresh_account()
@@ -764,7 +864,7 @@ class TestHavven(HavvenTestCase):
                                tx.logs[3], "FeesWithdrawn",
                                {"account": issuer,
                                 "value": fee_rate},
-                                self.havven_proxy.address)  
+                               self.havven_proxy.address)
 
     def test_event_OracleUpdated(self):
         new_oracle = fresh_account()
@@ -773,7 +873,7 @@ class TestHavven(HavvenTestCase):
         self.assertEventEquals(self.event_map,
                                tx.logs[0], "OracleUpdated",
                                {"newOracle": new_oracle},
-                                self.havven_proxy.address)
+                               self.havven_proxy.address)
 
     def test_event_NominUpdated(self):
         new_nomin = fresh_account()
@@ -782,7 +882,7 @@ class TestHavven(HavvenTestCase):
         self.assertEventEquals(self.event_map,
                                tx.logs[0], "NominUpdated",
                                {"newNomin": new_nomin},
-                                self.havven_proxy.address)
+                               self.havven_proxy.address)
 
     def test_event_EscrowUpdated(self):
         new_escrow = fresh_account()
@@ -791,7 +891,7 @@ class TestHavven(HavvenTestCase):
         self.assertEventEquals(self.event_map,
                                tx.logs[0], "EscrowUpdated",
                                {"newEscrow": new_escrow},
-                                self.havven_proxy.address)
+                               self.havven_proxy.address)
 
     def test_event_IssuersUpdated(self):
         new_issuer = fresh_account()
@@ -801,11 +901,10 @@ class TestHavven(HavvenTestCase):
                                tx.logs[0], "IssuersUpdated",
                                {"account": new_issuer,
                                 "value": True},
-                                self.havven_proxy.address)
+                               self.havven_proxy.address)
         tx = self.havven.setIssuer(MASTER, new_issuer, False)
         self.assertEventEquals(self.event_map,
                                tx.logs[0], "IssuersUpdated",
                                {"account": new_issuer,
                                 "value": False},
-                                self.havven_proxy.address)
-
+                               self.havven_proxy.address)

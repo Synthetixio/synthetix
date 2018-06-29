@@ -8,6 +8,7 @@ from utils.testutils import (
     generate_topic_event_map, get_event_data_from_log
 )
 from tests.contract_interfaces.fee_token_interface import PublicFeeTokenInterface
+from tests.contract_interfaces.token_state_interface import TokenStateInterface
 
 
 def setUpModule():
@@ -43,15 +44,15 @@ class TestFeeToken(HavvenTestCase):
         )
         proxied_feetoken = W3.eth.contract(address=proxy.address, abi=feetoken_abi)
 
-        feetoken_event_dict = generate_topic_event_map(feetoken_abi)
-        feetoken_contract, construction_txr = attempt_deploy(
-            compiled, "PublicFeeToken", MASTER,
-            [proxy.address, "Test Fee Token", "FEE", UNIT // 20, MASTER, MASTER]
-        )
-
         feestate, txr = attempt_deploy(
             compiled, "TokenState", MASTER,
             [MASTER, MASTER]
+        )
+
+        feetoken_event_dict = generate_topic_event_map(feetoken_abi)
+        feetoken_contract, construction_txr = attempt_deploy(
+            compiled, "PublicFeeToken", MASTER,
+            [proxy.address, feestate.address, "Test Fee Token", "FEE", 1000 * UNIT, UNIT // 20, MASTER, MASTER]
         )
 
         mine_txs([
@@ -81,18 +82,45 @@ class TestFeeToken(HavvenTestCase):
         self.assertEqual(self.feetoken.name(), "Test Fee Token")
         self.assertEqual(self.feetoken.symbol(), "FEE")
         self.assertEqual(self.feetoken.decimals(), 18)
-        self.assertEqual(self.feetoken.totalSupply(), 0)
+        self.assertEqual(self.feetoken.totalSupply(), 1000 * UNIT)
         self.assertEqual(self.feetoken.transferFeeRate(), UNIT // 20)
         self.assertEqual(self.feetoken.feeAuthority(), self.fee_authority)
         self.assertEqual(self.feetoken.tokenState(), self.feestate.address)
         self.assertEqual(self.feestate.functions.associatedContract().call(), self.feetoken_contract.address)
 
-    def test_provide_tokenstate(self):
-        feetoken, _ = attempt_deploy(self.compiled, 'FeeToken',
-                                     MASTER,
-                                     [self.proxy.address, "Test Fee Token", "FEE", 0,
-                                      UNIT // 20, self.fee_authority, DUMMY])
-        self.assertNotEqual(feetoken.functions.tokenState().call(), ZERO_ADDRESS)
+    def test_change_state(self):
+        lucky_one = fresh_account()
+
+        print()
+        # Deploy contract and old tokenstate
+        _old_tokenstate, _ = attempt_deploy(self.compiled, 'TokenState',
+                                       MASTER,
+                                       [MASTER, MASTER])
+        old_tokenstate = TokenStateInterface(_old_tokenstate, 'TokenState')
+        _token, _ = attempt_deploy(self.compiled, 'FeeToken',
+                                  MASTER,
+                                  [self.proxy.address, old_tokenstate.contract.address,
+                                   "Test Fee Token", "FEE", 0, UNIT // 20, self.fee_authority,
+                                   MASTER])
+        token = PublicFeeTokenInterface(_token, 'FeeToken')
+        mine_txs([self.proxy.functions.setTarget(token.contract.address).transact({"from": MASTER})])
+
+        old_tokenstate.setAssociatedContract(MASTER, token.contract.address)
+        self.assertEqual(token.balanceOf(lucky_one), 0)
+        self.assertEqual(old_tokenstate.balanceOf(lucky_one), 0)
+
+        # Deploy new tokenstate and swap it out with the existing one.
+        _new_tokenstate, _ = attempt_deploy(self.compiled, 'TokenState',
+                                       MASTER,
+                                       [MASTER, MASTER])
+        new_tokenstate = TokenStateInterface(_new_tokenstate, 'TokenState')
+        new_tokenstate.setBalanceOf(MASTER, lucky_one, UNIT)
+        new_tokenstate.setAssociatedContract(MASTER, token.contract.address)
+        token.setTokenState(MASTER, new_tokenstate.contract.address)
+
+        self.assertEqual(token.tokenState(), new_tokenstate.contract.address)
+        self.assertEqual(token.balanceOf(lucky_one), UNIT)
+        self.assertEqual(new_tokenstate.balanceOf(lucky_one), UNIT)
 
     def test_getSetOwner(self):
         owner = self.feetoken.owner()
@@ -448,7 +476,7 @@ class TestFeeToken(HavvenTestCase):
 
         self.assertEventEquals(
             self.feetoken_event_dict, txr.logs[1], 'Transfer',
-            fields={'from': sender, 'to': self.feetoken_contract.address, 'value': fee},
+            fields={'from': sender, 'to': self.feetoken_contract.functions.FEE_ADDRESS().call(), 'value': fee},
             location=self.proxy.address
         )
 
@@ -490,12 +518,12 @@ class TestFeeToken(HavvenTestCase):
 
     def test_event_FeesWithdrawn(self):
         beneficiary = fresh_account()
-        self.feetoken.clearTokens(MASTER, self.feetoken_contract.address)
-        self.feetoken.giveTokens(MASTER, self.feetoken_contract.address, UNIT)
+        self.feetoken.clearTokens(MASTER, self.feetoken_contract.functions.FEE_ADDRESS().call())
+        self.feetoken.giveTokens(MASTER, self.feetoken_contract.functions.FEE_ADDRESS().call(), UNIT)
         txr = self.feetoken_withdrawFees(self.feetoken.feeAuthority(),
                                          beneficiary, UNIT)
         self.assertEventEquals(self.feetoken_event_dict,
                                txr.logs[0], "FeesWithdrawn",
                                {"account": beneficiary,
                                 "value": UNIT},
-                                self.proxy.address)  
+                                self.proxy.address)

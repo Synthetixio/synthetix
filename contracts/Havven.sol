@@ -188,7 +188,7 @@ contract Havven is ExternStateToken {
 
     /* A quantity of nomins greater than this ratio
      * may not be issued against a given value of havvens. */
-    uint public issuanceRatio = 5 * UNIT / 100;
+    uint public issuanceRatio = UNIT / 5;
     /* No more nomins may be issued than the value of havvens backing them. */
     uint constant MAX_ISSUANCE_RATIO = UNIT;
 
@@ -210,16 +210,51 @@ contract Havven is ExternStateToken {
      * If the provided address is 0x0, then a fresh one will be constructed with the contract owning all tokens.
      * @param _owner The owner of this contract.
      */
-    constructor(address _proxy, TokenState _tokenState, address _owner, address _oracle, uint _price)
-        ExternStateToken(_proxy, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, _tokenState, _owner)
-        /* Owned is initialised in ExternStateToken */
+    constructor(address _proxy, TokenState _tokenState, address _owner, address _oracle,
+                uint _price, address[] _issuers, Havven _oldHavven)
+        ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, _owner)
         public
     {
         oracle = _oracle;
-        feePeriodStartTime = now;
-        lastFeePeriodStartTime = now - feePeriodDuration;
         price = _price;
         lastPriceUpdateTime = now;
+
+        uint i;
+        if (_oldHavven == address(0)) {
+            feePeriodStartTime = now;
+            lastFeePeriodStartTime = now - feePeriodDuration;
+            for (i = 0; i < _issuers.length; i++) {
+                isIssuer[_issuers[i]] = true;
+            }
+        } else {
+            feePeriodStartTime = _oldHavven.feePeriodStartTime();
+            lastFeePeriodStartTime = _oldHavven.lastFeePeriodStartTime();
+
+            uint cbs;
+            uint lab;
+            uint lm;
+            (cbs, lab, lm) = _oldHavven.totalIssuanceData();
+            totalIssuanceData.currentBalanceSum = cbs;
+            totalIssuanceData.lastAverageBalance = lab;
+            totalIssuanceData.lastModified = lm;
+
+            for (i = 0; i < _issuers.length; i++) {
+                address issuer = _issuers[i];
+                isIssuer[issuer] = true;
+                uint nomins = _oldHavven.nominsIssued(issuer);
+                if (nomins == 0) {
+                    // It is not valid in general to skip those with no currently-issued nomins.
+                    // But for this release, issuers with nonzero issuanceData have current issuance.
+                    continue;
+                }
+                (cbs, lab, lm) = _oldHavven.issuanceData(issuer);
+                nominsIssued[issuer] = nomins;
+                issuanceData[issuer].currentBalanceSum = cbs;
+                issuanceData[issuer].lastAverageBalance = lab;
+                issuanceData[issuer].lastModified = lm;
+            }
+        }
+
     }
 
     /* ========== SETTERS ========== */
@@ -372,11 +407,7 @@ contract Havven is ExternStateToken {
         returns (bool)
     {
         address sender = messageSender;
-        /* If they have enough available Havvens, it could be that
-         * their havvens are escrowed, however the transfer would then
-         * fail. This means that escrowed havvens are locked first,
-         * and then the actual transferable ones. */
-        require(nominsIssued[sender] == 0 || value <= availableHavvens(sender));
+        require(nominsIssued[sender] == 0 || value <= transferableHavvens(sender));
         /* Perform the transfer: if there is a problem,
          * an exception will be thrown in this call. */
         _transfer_byProxy(sender, to, value);
@@ -393,7 +424,7 @@ contract Havven is ExternStateToken {
         returns (bool)
     {
         address sender = messageSender;
-        require(nominsIssued[sender] == 0 || value <= availableHavvens(from));
+        require(nominsIssued[from] == 0 || value <= transferableHavvens(from));
         /* Perform the transfer: if there is a problem,
          * an exception will be thrown in this call. */
         _transferFrom_byProxy(sender, from, to, value);
@@ -406,7 +437,7 @@ contract Havven is ExternStateToken {
      * and then deposit it into their nomin account.
      */
     function withdrawFees()
-        public
+        external
         optionalProxy
     {
         address sender = messageSender;
@@ -451,20 +482,20 @@ contract Havven is ExternStateToken {
         internal
     {
         /* update the total balances first */
-        totalIssuanceData = updatedIssuanceData(lastTotalSupply, totalIssuanceData);
+        totalIssuanceData = computeIssuanceData(lastTotalSupply, totalIssuanceData);
 
         if (issuanceData[account].lastModified < feePeriodStartTime) {
             hasWithdrawnFees[account] = false;
         }
 
-        issuanceData[account] = updatedIssuanceData(preBalance, issuanceData[account]);
+        issuanceData[account] = computeIssuanceData(preBalance, issuanceData[account]);
     }
 
 
     /**
      * @notice Compute the new IssuanceData on the old balance
      */
-    function updatedIssuanceData(uint preBalance, IssuanceData preIssuance)
+    function computeIssuanceData(uint preBalance, IssuanceData preIssuance)
         internal
         view
         returns (IssuanceData)
@@ -609,41 +640,100 @@ contract Havven is ExternStateToken {
         if (issued > max) {
             return 0;
         } else {
-            return max - issued;
+            return safeSub(max, issued);
         }
     }
 
     /**
-     * @notice Havvens that are locked, which can exceed the user's total balance + escrowed
+     * @notice The total havvens owned by this account, both escrowed and unescrowed,
+     * against which nomins can be issued.
+     * This includes those already being used as collateral (locked), and those
+     * available for further issuance (unlocked).
      */
-    function lockedHavvens(address account)
+    function collateral(address account)
         public
         view
         returns (uint)
     {
-        if (nominsIssued[account] == 0) {
-            return 0;
-        }
-        return USDtoHAV(safeDiv_dec(nominsIssued[account], issuanceRatio));
-    }
-
-    /**
-     * @notice Havvens that are not locked, available for issuance
-     */
-    function availableHavvens(address account)
-        public
-        view
-        returns (uint)
-    {
-        uint locked = lockedHavvens(account);
         uint bal = tokenState.balanceOf(account);
         if (escrow != address(0)) {
-            bal += escrow.balanceOf(account);
+            bal = safeAdd(bal, escrow.balanceOf(account));
         }
-        if (locked > bal) {
+        return bal;
+    }
+
+    /**
+     * @notice The collateral that would be locked by issuance, which can exceed the account's actual collateral.
+     */
+    function issuanceDraft(address account)
+        public
+        view
+        returns (uint)
+    {
+        uint issued = nominsIssued[account];
+        if (issued == 0) {
             return 0;
         }
-        return bal - locked;
+        return USDtoHAV(safeDiv_dec(issued, issuanceRatio));
+    }
+
+    /**
+     * @notice Collateral that has been locked due to issuance, and cannot be
+     * transferred to other addresses. This is capped at the account's total collateral.
+     */
+    function lockedCollateral(address account)
+        public
+        view
+        returns (uint)
+    {
+        uint debt = issuanceDraft(account);
+        uint collat = collateral(account);
+        if (debt > collat) {
+            return collat;
+        }
+        return debt;
+    }
+
+    /**
+     * @notice Collateral that is not locked and available for issuance.
+     */
+    function unlockedCollateral(address account)
+        public
+        view
+        returns (uint)
+    {
+        uint locked = lockedCollateral(account);
+        uint collat = collateral(account);
+        return safeSub(collat, locked);
+    }
+
+    /**
+     * @notice The number of havvens that are free to be transferred by an account.
+     * @dev If they have enough available Havvens, it could be that
+     * their havvens are escrowed, however the transfer would then
+     * fail. This means that escrowed havvens are locked first,
+     * and then the actual transferable ones.
+     */
+    function transferableHavvens(address account)
+        public
+        view
+        returns (uint)
+    {
+        uint draft = issuanceDraft(account);
+        uint collat = collateral(account);
+        // In the case where the issuanceDraft exceeds the collateral, nothing is free
+        if (draft > collat) {
+            return 0;
+        }
+
+        uint bal = balanceOf(account);
+        // In the case where the draft exceeds the escrow, but not the whole collateral
+        //   return the fraction of the balance that remains free
+        if (draft > safeSub(collat, bal)) {
+            return safeSub(collat, draft);
+        }
+        // In the case where the draft doesn't exceed the escrow, return the entire balance
+        return bal;
     }
 
     /**

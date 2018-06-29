@@ -1,14 +1,15 @@
 from utils.deployutils import (
     W3, UNIT, MASTER, DUMMY,
     fresh_account, fresh_accounts,
-    attempt_deploy,
-    mine_txs, take_snapshot, restore_snapshot
+    attempt_deploy, mine_tx, mine_txs,
+    take_snapshot, restore_snapshot
 )
 from utils.testutils import (
     HavvenTestCase, ZERO_ADDRESS,
     generate_topic_event_map, get_event_data_from_log
 )
 from tests.contract_interfaces.extern_state_token_interface import ExternStateTokenInterface
+from tests.contract_interfaces.token_state_interface import TokenStateInterface
 
 
 def setUpModule():
@@ -46,7 +47,7 @@ class TestExternStateToken(HavvenTestCase):
 
         token_contract, construction_txr = attempt_deploy(
             compiled, 'PublicEST', MASTER,
-            [proxy_contract.address, "Test Token", "TEST", 1000 * UNIT, tokenstate.address, MASTER]
+            [proxy_contract.address, tokenstate.address, "Test Token", "TEST", 1000 * UNIT, MASTER]
         )
 
         token_abi = compiled['PublicEST']['abi']
@@ -76,16 +77,38 @@ class TestExternStateToken(HavvenTestCase):
         self.assertEqual(self.token.tokenState(), self.tokenstate.address)
         self.assertEqual(self.tokenstate.functions.associatedContract().call(), self.token_contract.address)
 
-    def test_provide_state(self):
-        tokenstate, _ = attempt_deploy(self.compiled, 'TokenState',
+    def test_change_state(self):
+        lucky_one = fresh_account()
+
+        print()
+        # Deploy contract and old tokenstate
+        _old_tokenstate, _ = attempt_deploy(self.compiled, 'TokenState',
                                        MASTER,
-                                       [MASTER, self.token_contract.address])
-        token, _ = attempt_deploy(self.compiled, 'ExternStateToken',
+                                       [MASTER, MASTER])
+        old_tokenstate = TokenStateInterface(_old_tokenstate, 'TokenState')
+        _token, _ = attempt_deploy(self.compiled, 'ExternStateToken',
                                   MASTER,
-                                  [self.proxy.address, "Test Token", "TEST",
-                                   1000 * UNIT,
-                                   tokenstate.address, DUMMY])
-        self.assertEqual(token.functions.tokenState().call(), tokenstate.address)
+                                  [self.proxy.address, old_tokenstate.contract.address,
+                                   "Test Token", "TEST", 1000 * UNIT, MASTER])
+        token = ExternStateTokenInterface(_token, 'ExternStateToken')
+        mine_txs([self.proxy.functions.setTarget(token.contract.address).transact({"from": MASTER})])
+
+        old_tokenstate.setAssociatedContract(MASTER, token.contract.address)
+        self.assertEqual(token.balanceOf(lucky_one), 0)
+        self.assertEqual(old_tokenstate.balanceOf(lucky_one), 0)
+
+        # Deploy new tokenstate and swap it out with the existing one.
+        _new_tokenstate, _ = attempt_deploy(self.compiled, 'TokenState',
+                                       MASTER,
+                                       [MASTER, MASTER])
+        new_tokenstate = TokenStateInterface(_new_tokenstate, 'TokenState')
+        new_tokenstate.setBalanceOf(MASTER, lucky_one, UNIT)
+        new_tokenstate.setAssociatedContract(MASTER, token.contract.address)
+        token.setTokenState(MASTER, new_tokenstate.contract.address)
+
+        self.assertEqual(token.tokenState(), new_tokenstate.contract.address)
+        self.assertEqual(token.balanceOf(lucky_one), UNIT)
+        self.assertEqual(new_tokenstate.balanceOf(lucky_one), UNIT)
 
     def test_getSetTokenState(self):
         new_tokenstate = fresh_account()

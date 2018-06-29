@@ -41,17 +41,22 @@ class TestNomin(HavvenTestCase):
         proxied_havven = W3.eth.contract(address=havven_proxy.address, abi=compiled['Havven']['abi'])
         proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['PublicNomin']['abi'])
 
+        nomin_state, txr = attempt_deploy(
+            compiled, "TokenState", MASTER,
+            [MASTER, MASTER]
+        )
         nomin_contract, _ = attempt_deploy(
-            compiled, 'PublicNomin', MASTER, [nomin_proxy.address, MASTER, MASTER]
+            compiled, 'PublicNomin', MASTER, [nomin_proxy.address, nomin_state.address, MASTER, 0, MASTER]
         )
 
         havven_contract, _ = attempt_deploy(
-            compiled, "Havven", MASTER, [havven_proxy.address, ZERO_ADDRESS, MASTER, MASTER, UNIT//2]
+            compiled, "Havven", MASTER, [havven_proxy.address, ZERO_ADDRESS, MASTER, MASTER, UNIT//2, [], ZERO_ADDRESS]
         )
 
         fake_court, _ = attempt_deploy(compiled, 'FakeCourt', MASTER, [])
 
         mine_txs([
+            nomin_state.functions.setAssociatedContract(nomin_contract.address).transact({'from': MASTER}),
             havven_proxy.functions.setTarget(havven_contract.address).transact({'from': MASTER}),
             nomin_proxy.functions.setTarget(nomin_contract.address).transact({'from': MASTER}),
             havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
@@ -59,11 +64,11 @@ class TestNomin(HavvenTestCase):
             nomin_contract.functions.setHavven(havven_contract.address).transact({'from': MASTER})
         ])
 
-        return havven_proxy, proxied_havven, nomin_proxy, proxied_nomin, nomin_contract, havven_contract, fake_court
+        return havven_proxy, proxied_havven, nomin_proxy, proxied_nomin, nomin_contract, havven_contract, fake_court, nomin_state
 
     @classmethod
     def setUpClass(cls):
-        cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.nomin_contract, cls.havven_contract, cls.fake_court_contract = cls.deployContracts()
+        cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.nomin_contract, cls.havven_contract, cls.fake_court_contract, cls.nomin_state = cls.deployContracts()
 
         cls.nomin_event_dict = cls.event_maps['Nomin']
 
@@ -73,17 +78,14 @@ class TestNomin(HavvenTestCase):
         cls.unproxied_nomin = PublicNominInterface(cls.nomin_contract, "UnproxiedNomin")
 
         cls.fake_court = FakeCourtInterface(cls.fake_court_contract, "FakeCourt")
-
         cls.fake_court.setNomin(MASTER, cls.nomin_contract.address)
-
         cls.nomin.setFeeAuthority(MASTER, cls.havven_contract.address)
-
         cls.sd_duration = 4 * 7 * 24 * 60 * 60
 
     def test_constructor(self):
         # Nomin-specific members
         self.assertEqual(self.nomin.owner(), MASTER)
-        self.assertTrue(self.nomin.frozen(self.nomin_contract.address))
+        self.assertTrue(self.nomin.frozen(self.nomin.FEE_ADDRESS()))
 
         # FeeToken members
         self.assertEqual(self.nomin.name(), "Nomin USD")
@@ -93,6 +95,7 @@ class TestNomin(HavvenTestCase):
         self.assertEqual(self.nomin.transferFeeRate(), 15 * UNIT // 10000)
         self.assertEqual(self.nomin.feeAuthority(), self.nomin.havven())
         self.assertEqual(self.nomin.decimals(), 18)
+        self.assertEqual(self.nomin.tokenState(), self.nomin_state.address)
 
     def test_setOwner(self):
         pre_owner = self.nomin.owner()
@@ -192,7 +195,7 @@ class TestNomin(HavvenTestCase):
             self.nomin_event_dict, txr.logs[1], 'Transfer',
             fields={
                 'from': sender,
-                'to': self.nomin_contract.address,
+                'to': self.nomin_contract.functions.FEE_ADDRESS().call(),
                 'value': fee
             },
             location=self.nomin_proxy.address
@@ -222,7 +225,7 @@ class TestNomin(HavvenTestCase):
             self.nomin_event_dict, txr.logs[1], 'Transfer',
             fields={
                 'from': MASTER,
-                'to': self.nomin_contract.address,
+                'to': self.nomin_contract.functions.FEE_ADDRESS().call(),
                 'value': fee
             },
             location=self.nomin_proxy.address
@@ -244,7 +247,7 @@ class TestNomin(HavvenTestCase):
             self.nomin_event_dict, txr.logs[1], 'Transfer',
             fields={
                 'from': target,
-                'to': self.nomin_contract.address,
+                'to': self.nomin_contract.functions.FEE_ADDRESS().call(),
                 'value': amountReceived
             },
             location=self.nomin_proxy.address
@@ -278,7 +281,7 @@ class TestNomin(HavvenTestCase):
             self.nomin_event_dict, txr.logs[1], 'Transfer',
             fields={
                 'from': MASTER,
-                'to': self.nomin_contract.address,
+                'to': self.nomin_contract.functions.FEE_ADDRESS().call(),
                 'value': fee
             },
             location=self.nomin_proxy.address
@@ -333,7 +336,7 @@ class TestNomin(HavvenTestCase):
             self.nomin_event_dict, txr.logs[1], 'Transfer',
             fields={
                 'from': MASTER,
-                'to': self.nomin_contract.address,
+                'to': self.nomin_contract.functions.FEE_ADDRESS().call(),
                 'value': fee
             },
             location=self.nomin_proxy.address
@@ -354,7 +357,7 @@ class TestNomin(HavvenTestCase):
             self.nomin_event_dict, txr.logs[1], 'Transfer',
             fields={
                 'from': target,
-                'to': self.nomin_contract.address,
+                'to': self.nomin_contract.functions.FEE_ADDRESS().call(),
                 'value': self.nomin.amountReceived(5 * UNIT)
             },
             location=self.nomin_proxy.address
@@ -385,7 +388,7 @@ class TestNomin(HavvenTestCase):
             self.nomin_event_dict, txr.logs[1], 'Transfer',
             fields={
                 'from': MASTER,
-                'to': self.nomin_contract.address,
+                'to': self.nomin_contract.functions.FEE_ADDRESS().call(),
                 'value': fee
             },
             location=self.nomin_proxy.address
@@ -415,7 +418,7 @@ class TestNomin(HavvenTestCase):
             self.nomin_event_dict, txr.logs[1], 'Transfer',
             fields={
                 'from': MASTER,
-                'to': self.nomin_contract.address,
+                'to': self.nomin_contract.functions.FEE_ADDRESS().call(),
                 'value': self.nomin.transferFeeIncurred(5 * UNIT)
             },
             location=self.nomin_proxy.address
@@ -436,7 +439,7 @@ class TestNomin(HavvenTestCase):
             self.nomin_event_dict, txr.logs[1], 'Transfer',
             fields={
                 'from': target,
-                'to': self.nomin_contract.address,
+                'to': self.nomin_contract.functions.FEE_ADDRESS().call(),
                 'value': 5 * UNIT
             },
             location=self.nomin_proxy.address
@@ -469,7 +472,7 @@ class TestNomin(HavvenTestCase):
             self.nomin_event_dict, txr.logs[1], 'Transfer',
             fields={
                 'from': MASTER,
-                'to': self.nomin_contract.address,
+                'to': self.nomin_contract.functions.FEE_ADDRESS().call(),
                 'value': self.nomin.transferFeeIncurred(self.nomin.amountReceived(old_bal))
             },
             location=self.nomin_proxy.address
@@ -568,9 +571,10 @@ class TestNomin(HavvenTestCase):
     def test_unfreezeAccount(self):
         target = fresh_account()
 
-        # The nomin contract itself should not be unfreezable.
-        self.assertReverts(self.nomin.unfreezeAccount, MASTER, self.nomin_contract.address)
-        self.assertTrue(self.nomin.frozen(self.nomin_contract.address))
+        # The fee address should not be unfreezable.
+        self.assertTrue(self.nomin.frozen(self.nomin.FEE_ADDRESS()))
+        self.assertReverts(self.nomin.unfreezeAccount, MASTER, self.nomin.FEE_ADDRESS())
+        self.assertTrue(self.nomin.frozen(self.nomin.FEE_ADDRESS()))
 
         # Unfreezing non-frozen accounts should not do anything.
         self.assertFalse(self.nomin.frozen(target))
