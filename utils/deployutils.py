@@ -106,20 +106,8 @@ def restore_snapshot(snapshot):
     force_mine_block()
 
 
-def mine_tx(tx_hash, function_name, contract_name):
+def update_performance_data(contract_name, function_name, gas):
     global PERFORMANCE_DATA
-    tx_receipt = W3.eth.getTransactionReceipt(tx_hash)
-    while tx_receipt is None:
-        time.sleep(POLLING_INTERVAL)
-        tx_receipt = W3.eth.getTransactionReceipt(tx_hash)
-
-    gas = tx_receipt['gasUsed']
-
-    if type(function_name) != str:
-        raise Exception(function_name)
-    if type(contract_name) != str:
-        raise Exception(contract_name)
-
     if contract_name in PERFORMANCE_DATA:
         if function_name in PERFORMANCE_DATA[contract_name]:
             values = PERFORMANCE_DATA[contract_name][function_name]
@@ -129,6 +117,19 @@ def mine_tx(tx_hash, function_name, contract_name):
     else:
         PERFORMANCE_DATA[contract_name] = {function_name: (gas, 1, gas, gas)}
 
+
+def mine_tx(tx_hash, function_name, contract_name):
+    tx_receipt = W3.eth.getTransactionReceipt(tx_hash)
+    while tx_receipt is None:
+        time.sleep(POLLING_INTERVAL)
+        tx_receipt = W3.eth.getTransactionReceipt(tx_hash)
+
+    if type(function_name) != str:
+        raise Exception(function_name)
+    if type(contract_name) != str:
+        raise Exception(contract_name)
+
+    update_performance_data(contract_name, function_name, tx_receipt['gasUsed'])
     return tx_receipt
 
 
@@ -149,7 +150,6 @@ def mine_txs(tx_hashes):
 
 
 def deploy_contract(compiled_sol, contract_name, deploy_account, constructor_args=None, gas=6300000):
-    global PERFORMANCE_DATA
     if constructor_args is None:
         constructor_args = []
     contract_interface = compiled_sol[contract_name]
@@ -160,17 +160,7 @@ def deploy_contract(compiled_sol, contract_name, deploy_account, constructor_arg
     tx_receipt = mine_txs([tx_hash])[tx_hash]
     contract_instance = W3.eth.contract(address=tx_receipt['contractAddress'], abi=contract_interface['abi'])
 
-    function_name = "<deployment>"
-    gas = tx_receipt['gasUsed']
-    if contract_name in PERFORMANCE_DATA:
-        if function_name in PERFORMANCE_DATA[contract_name]:
-            values = PERFORMANCE_DATA[contract_name][function_name]
-            PERFORMANCE_DATA[contract_name][function_name] = (values[0] + gas, values[1] + 1, min([values[2], gas]), max([values[3], gas]))
-        else:
-            PERFORMANCE_DATA[contract_name][function_name] = (gas, 1, gas, gas)
-    else:
-        PERFORMANCE_DATA[contract_name] = {function_name: (gas, 1, gas, gas)}
-
+    update_performance_data(contract_name, "<deployment>", tx_receipt['gasUsed'])
     return contract_instance, tx_receipt
 
 
