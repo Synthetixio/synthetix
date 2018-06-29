@@ -148,7 +148,8 @@ def mine_txs(tx_hashes):
     return tx_receipts
 
 
-def deploy_contract(compiled_sol, contract_name, deploy_account, constructor_args=None, gas=6000000):
+def deploy_contract(compiled_sol, contract_name, deploy_account, constructor_args=None, gas=6300000):
+    global PERFORMANCE_DATA
     if constructor_args is None:
         constructor_args = []
     contract_interface = compiled_sol[contract_name]
@@ -158,6 +159,18 @@ def deploy_contract(compiled_sol, contract_name, deploy_account, constructor_arg
     )
     tx_receipt = mine_txs([tx_hash])[tx_hash]
     contract_instance = W3.eth.contract(address=tx_receipt['contractAddress'], abi=contract_interface['abi'])
+
+    function_name = "<deployment>"
+    gas = tx_receipt['gasUsed']
+    if contract_name in PERFORMANCE_DATA:
+        if function_name in PERFORMANCE_DATA[contract_name]:
+            values = PERFORMANCE_DATA[contract_name][function_name]
+            PERFORMANCE_DATA[contract_name][function_name] = (values[0] + gas, values[1] + 1, min([values[2], gas]), max([values[3], gas]))
+        else:
+            PERFORMANCE_DATA[contract_name][function_name] = (gas, 1, gas, gas)
+    else:
+        PERFORMANCE_DATA[contract_name] = {function_name: (gas, 1, gas, gas)}
+
     return contract_instance, tx_receipt
 
 
