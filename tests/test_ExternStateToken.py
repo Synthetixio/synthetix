@@ -80,6 +80,7 @@ class TestExternStateToken(HavvenTestCase):
     def test_change_state(self):
         lucky_one = fresh_account()
 
+        print()
         # Deploy contract and old tokenstate
         _old_tokenstate, _ = attempt_deploy(self.compiled, 'TokenState',
                                        MASTER,

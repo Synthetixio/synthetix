@@ -658,6 +658,7 @@ class TestHavvenEscrow(HavvenTestCase):
         self.assertEqual(self.havven.balanceOf(alice), 25 * UNIT)
         self.assertEqual(self.havven.balanceOf(self.escrow_contract.address), 175 * UNIT)
 
+        print()
         # Deploy the new havven contract, with proxy and all.
         havven_proxy, _ = attempt_deploy(self.compiled, 'Proxy', MASTER, [MASTER])
         havven_contract, _ = attempt_deploy(self.compiled, 'PublicHavven', MASTER, [havven_proxy.address, self.havven_token_state.address, MASTER, MASTER, UNIT//2, [], ZERO_ADDRESS])
