@@ -2,7 +2,7 @@ from utils.deployutils import (
     W3, MASTER, UNIT,
     attempt, attempt_deploy, compile_contracts,
     mine_txs, mine_tx,
-    fast_forward, fresh_account,
+    fast_forward, fresh_account, fresh_accounts,
     take_snapshot, restore_snapshot
 )
 from utils.testutils import HavvenTestCase, ZERO_ADDRESS, block_time
@@ -180,7 +180,6 @@ class TestIssuance(HavvenTestCase):
         self.assertEqual(self.nomin.balanceOf(alice), 0)
 
     def test_transfer_locked_havvens(self):
-        self.assertTrue(False)
         alice, bob = fresh_accounts(2)
         self.havven.endow(MASTER, alice, 500 * UNIT)
 
@@ -190,25 +189,141 @@ class TestIssuance(HavvenTestCase):
         self.havven_updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
         self.havven.setIssuanceRatio(MASTER, UNIT)
 
-        self.havven.issueNomins(alice, 100 * UNIT)
+        self.havven.issueNomins(alice, 400 * UNIT)
+        self.havven.transfer(alice, bob, 500 * UNIT)
+        self.havven.endow(MASTER, alice, 500 * UNIT)
 
+        self.havven.issueNomins(alice, 100 * UNIT)
+        self.havven.transfer(alice, bob, 500 * UNIT)
+        self.havven.endow(MASTER, alice, 500 * UNIT)
+
+        self.havven.issueNomins(alice, 100 * UNIT)
+        self.assertReverts(self.havven.transfer, alice, bob, 500 * UNIT)
+        self.havven.transfer(alice, bob, 400 * UNIT)
+        self.havven.endow(MASTER, alice, 400 * UNIT)
+
+        self.havven.issueNomins(alice, 100 * UNIT)
+        self.assertReverts(self.havven.transfer, alice, bob, 300 * UNIT + 1)
+        self.havven.transfer(alice, bob, 300 * UNIT)
+        self.havven.endow(MASTER, alice, 300 * UNIT)
+
+        self.havven.issueNomins(alice, 300 * UNIT)
+        self.assertReverts(self.havven.transfer, alice, bob, 1)
 
     def test_transferFrom_locked_havvens(self):
-        self.assertTrue(False)
+        alice, bob, charlie = fresh_accounts(3)
+        self.havven.approve(alice, charlie, 2**256 - 1)
+        self.havven.endow(MASTER, alice, 500 * UNIT)
+
+        self.havven.endow(MASTER, self.escrow.contract.address, 500 * UNIT)
+        self.escrow.appendVestingEntry(MASTER, alice, block_time() + 10000000, 500 * UNIT)
+        self.havven.setIssuer(MASTER, alice, True)
+        self.havven_updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
+        self.havven.setIssuanceRatio(MASTER, UNIT)
+
+        self.havven.issueNomins(alice, 400 * UNIT)
+        self.havven.transferFrom(charlie, alice, bob, 500 * UNIT)
+        self.havven.endow(MASTER, alice, 500 * UNIT)
+
+        self.havven.issueNomins(alice, 100 * UNIT)
+        self.havven.transferFrom(charlie, alice, bob, 500 * UNIT)
+        self.havven.endow(MASTER, alice, 500 * UNIT)
+
+        self.havven.issueNomins(alice, 100 * UNIT)
+        self.assertReverts(self.havven.transferFrom, charlie, alice, bob, 500 * UNIT)
+        self.havven.transferFrom(charlie, alice, bob, 400 * UNIT)
+        self.havven.endow(MASTER, alice, 400 * UNIT)
+
+        self.havven.issueNomins(alice, 100 * UNIT)
+        self.assertReverts(self.havven.transferFrom, charlie, alice, bob, 300 * UNIT + 1)
+        self.havven.transferFrom(charlie, alice, bob, 300 * UNIT)
+        self.havven.endow(MASTER, alice, 300 * UNIT)
+
+        self.havven.issueNomins(alice, 300 * UNIT)
+        self.assertReverts(self.havven.transferFrom, charlie, alice, bob, 1)
 
     def test_collateral(self):
-        self.assertTrue(False)
+        alice, bob, charlie, debbie = fresh_accounts(4)
+        self.havven.endow(MASTER, alice, UNIT)
+        self.havven.endow(MASTER, bob, UNIT)
+        self.havven.endow(MASTER, self.escrow.contract.address, 2 * UNIT)
+        self.escrow.appendVestingEntry(MASTER, alice, block_time() + 10000000, UNIT)
+        self.escrow.appendVestingEntry(MASTER, charlie, block_time() + 10000000, UNIT)
+
+        self.assertEqual(self.havven.collateral(alice), 2 * UNIT)
+        self.assertEqual(self.havven.collateral(bob), UNIT)
+        self.assertEqual(self.havven.collateral(charlie), UNIT)
+        self.assertEqual(self.havven.collateral(debbie), 0)
+
+    def test_collateral_no_escrow_contract(self):
+        alice, bob, charlie, debbie = fresh_accounts(4)
+        self.havven.endow(MASTER, alice, UNIT)
+        self.havven.endow(MASTER, bob, UNIT)
+        self.havven.endow(MASTER, self.escrow.contract.address, 2 * UNIT)
+        self.escrow.appendVestingEntry(MASTER, alice, block_time() + 10000000, UNIT)
+        self.escrow.appendVestingEntry(MASTER, charlie, block_time() + 10000000, UNIT)
+        self.havven.setEscrow(MASTER, ZERO_ADDRESS)
+
+        self.assertEqual(self.havven.collateral(alice), UNIT)
+        self.assertEqual(self.havven.collateral(bob), UNIT)
+        self.assertEqual(self.havven.collateral(charlie), 0)
+        self.assertEqual(self.havven.collateral(debbie), 0)
 
     def test_issuanceDraft(self):
-        self.assertTrue(False)
+        alice = fresh_account()
+        self.havven.setIssuer(MASTER, alice, True)
+        self.havven.endow(MASTER, alice, 100 * UNIT)
+        self.havven_updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
+        self.havven.issueNomins(alice, 5 * UNIT)
+
+        self.assertEqual(self.havven.issuanceDraft(alice), 100 * UNIT)
+        self.havven_updatePrice(self.havven.oracle(), 2 * UNIT, self.havven.currentTime() + 2)
+        self.assertEqual(self.havven.issuanceDraft(alice), 50 * UNIT)
+        self.havven_updatePrice(self.havven.oracle(), UNIT // 2, self.havven.currentTime() + 3)
+        self.assertEqual(self.havven.issuanceDraft(alice), 200 * UNIT)
 
     def test_lockedCollateral(self):
-        self.assertTrue(False)
+        alice = fresh_account()
+        self.havven.setIssuer(MASTER, alice, True)
+        self.havven.endow(MASTER, alice, 100 * UNIT)
+        self.havven_updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
+        self.havven.issueNomins(alice, 5 * UNIT)
+
+        self.assertEqual(self.havven.lockedCollateral(alice), 100 * UNIT)
+        self.havven_updatePrice(self.havven.oracle(), 2 * UNIT, self.havven.currentTime() + 2)
+        self.assertEqual(self.havven.lockedCollateral(alice), 50 * UNIT)
+        self.havven_updatePrice(self.havven.oracle(), UNIT // 2, self.havven.currentTime() + 3)
+        self.assertEqual(self.havven.lockedCollateral(alice), 100 * UNIT)
 
     def test_unlockedCollateral(self):
-        self.assertTrue(False)
+        alice = fresh_account()
+        self.havven.setIssuer(MASTER, alice, True)
+        self.havven.endow(MASTER, alice, 100 * UNIT)
+        self.havven_updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
+        self.havven.issueNomins(alice, 5 * UNIT)
+
+        self.assertEqual(self.havven.unlockedCollateral(alice), 0 * UNIT)
+        self.havven_updatePrice(self.havven.oracle(), 2 * UNIT, self.havven.currentTime() + 2)
+        self.assertEqual(self.havven.unlockedCollateral(alice), 50 * UNIT)
+        self.havven_updatePrice(self.havven.oracle(), UNIT // 2, self.havven.currentTime() + 3)
+        self.assertEqual(self.havven.unlockedCollateral(alice), 0 * UNIT)
 
     def test_transferableHavvens(self):
-        self.assertTrue(False)
+        alice = fresh_account()
+        self.havven.setIssuer(MASTER, alice, True)
+        self.havven.endow(MASTER, alice, 300 * UNIT)
+        self.havven.endow(MASTER, self.escrow.contract.address, 100 * UNIT)
+        self.escrow.appendVestingEntry(MASTER, alice, block_time() + 10000000, 100 * UNIT)
 
+        self.havven_updatePrice(self.havven.oracle(), UNIT, self.havven.currentTime() + 1)
+        self.havven.issueNomins(alice, 5 * UNIT)
 
+        self.assertEqual(self.havven.transferableHavvens(alice), 300 * UNIT)
+        self.havven_updatePrice(self.havven.oracle(), 2 * UNIT, self.havven.currentTime() + 2)
+        self.assertEqual(self.havven.transferableHavvens(alice), 300 * UNIT)
+        self.havven_updatePrice(self.havven.oracle(), UNIT // 2, self.havven.currentTime() + 3)
+        self.assertEqual(self.havven.transferableHavvens(alice), 200 * UNIT)
+        self.havven_updatePrice(self.havven.oracle(), UNIT // 4, self.havven.currentTime() + 4)
+        self.assertEqual(self.havven.transferableHavvens(alice), 0 * UNIT)
+        self.havven_updatePrice(self.havven.oracle(), UNIT // 8, self.havven.currentTime() + 5)
+        self.assertEqual(self.havven.transferableHavvens(alice), 0 * UNIT)

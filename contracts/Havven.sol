@@ -424,7 +424,7 @@ contract Havven is ExternStateToken {
         returns (bool)
     {
         address sender = messageSender;
-        require(nominsIssued[sender] == 0 || value <= transferableHavvens(from));
+        require(nominsIssued[from] == 0 || value <= transferableHavvens(from));
         /* Perform the transfer: if there is a problem,
          * an exception will be thrown in this call. */
         _transferFrom_byProxy(sender, from, to, value);
