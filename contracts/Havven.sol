@@ -241,8 +241,14 @@ contract Havven is ExternStateToken {
             for (i = 0; i < _issuers.length; i++) {
                 address issuer = _issuers[i];
                 isIssuer[issuer] = true;
-                nominsIssued[issuer] = _oldHavven.nominsIssued(issuer);
+                uint nomins = _oldHavven.nominsIssued(issuer);
+                if (nomins == 0) {
+                    // It is not valid in general to skip those with no currently-issued nomins.
+                    // But for this release, issuers with nonzero issuanceData have current issuance.
+                    continue;
+                }
                 (cbs, lab, lm) = _oldHavven.issuanceData(issuer);
+                nominsIssued[issuer] = nomins;
                 issuanceData[issuer].currentBalanceSum = cbs;
                 issuanceData[issuer].lastAverageBalance = lab;
                 issuanceData[issuer].lastModified = lm;
