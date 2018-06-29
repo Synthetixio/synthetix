@@ -14,7 +14,7 @@ date:       2018-05-29
 
 -----------------------------------------------------------------
 MODULE DESCRIPTION
-----------------------------------------------------------------    -
+-----------------------------------------------------------------
 
 Havven-backed nomin stablecoin contract.
 
@@ -25,8 +25,8 @@ value of their havvens to issue H * Cmax nomins. Where Cmax is
 some value less than 1.
 
 A configurable fee is charged on nomin transfers and deposited
-into a common pot, which havven holders may withdraw from once per
-fee period.
+into a common pot, which havven holders may withdraw from once
+per fee period.
 
 -----------------------------------------------------------------
 */
