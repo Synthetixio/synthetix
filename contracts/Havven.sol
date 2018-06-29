@@ -647,7 +647,7 @@ contract Havven is ExternStateToken {
     /**
      * @notice The total havvens owned by this account, both escrowed and unescrowed,
      * against which nomins can be issued.
-     * This includes those already being used as collateral (unlocked), and those
+     * This includes those already being used as collateral (locked), and those
      * available for further issuance (unlocked).
      */
     function collateral(address account)
