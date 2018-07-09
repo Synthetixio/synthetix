@@ -86,4 +86,14 @@ class TestNominAirdropper(HavvenTestCase):
 
     def test_assertLengthCheck(self):
         # Sending unequal length transactions should revert.
-        self.assertReverts(self.airdropper.multisend, self.nomin_contract.address, [MASTER], [1, 2])
+        self.assertReverts(self.airdropper.multisend, MASTER, self.nomin_contract.address, [MASTER], [1, 2])
+    
+    def test_assertIfUsedByNonOwner(self):
+        # Only owner should be able to use.
+        self.assertReverts(self.airdropper.multisend, DUMMY, self.nomin_contract.address, [DUMMY, DUMMY], [50 * UNIT, 100 * UNIT])
+
+    def test_correctlyAirdrops(self):
+        # Sending multiple transactions should result in sender paying fees, and correct amount being received.
+        self.airdropper.multisend(MASTER, self.nomin_contract.address, [DUMMY, DUMMY], [50 * UNIT, 100 * UNIT])
+
+        self.assertEqual(self.nomin.balanceOf(DUMMY), 150 * UNIT)
