@@ -14,7 +14,7 @@ from tests.contract_interfaces.nomin_airdropper_interface import NominAirdropper
 
 
 def setUpModule():
-    print("Testing Nomin...")
+    print("Testing Nomin Airdropper...")
     print("================")
     print()
 

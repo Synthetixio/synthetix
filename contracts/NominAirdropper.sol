@@ -13,7 +13,7 @@ date:       2018-07-09
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
-This contract was adapted for use by the Havven project for the
+This contract was adapted for use by the Havven project from the
 airdropper contract that OmiseGO created here:
 https://github.com/omisego/airdrop/blob/master/contracts/Airdropper.sol
 
@@ -62,7 +62,6 @@ contract NominAirdropper is Owned {
     function multisend(address tokenAddress, address[] destinations, uint256[] values)
         external
         onlyOwner
-        returns (uint256)
     {
         // Protect against obviously incorrect calls.
         require(destinations.length == values.length);
@@ -74,7 +73,5 @@ contract NominAirdropper is Owned {
             Nomin(tokenAddress).transferSenderPaysFee(destinations[i], values[i]);
             i += 1;
         }
-
-        return i;
     }
 }
