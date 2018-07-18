@@ -4,19 +4,19 @@ FILE INFORMATION
 -----------------------------------------------------------------
 
 file:       IssuanceController.sol
-version:    1.0
+version:    2.0
 author:     Kevin Brown
 
-date:       2018-05-20
+date:       2018-07-18
 
 -----------------------------------------------------------------
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
 Issuance controller contract. The issuance controller provides
-a way for users to acquire nomins (Nomin.sol) by paying ETH
-and a way for users to acquire havvens (Havven.sol) by paying
-nomins.
+a way for users to acquire nomins (Nomin.sol) and havvens
+(Havven.sol) by paying ETH and a way for users to acquire havvens
+(Havven.sol) by paying nomins.
 
 This smart contract contains a balance of each currency, and
 allows the owner of the contract (the Havven Foundation) to
@@ -194,7 +194,6 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         exchangeEtherForNomins();
     } 
 
-    
     /**
      * @notice Exchange ETH to nUSD.
      */
@@ -227,19 +226,89 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     }
 
     /**
-     * @notice Exchange nUSD for Havvens
+     * @notice Exchange ETH to nUSD while insisting on a particular rate. This allows a user to
+     *         exchange while protecting against frontrunning by the contract owner on the exchange rate.
+     * @param guaranteedRate The exchange rate which must be honored or the call will revert.
      */
-    function exchangeNominsForHavvens(uint amount)
-        external
+    function exchangeEtherForNominsAtRate(uint guaranteedRate)
+        public
+        payable
+        pricesNotStale
+        notPaused
+        returns (uint) // Returns the number of Nomins (nUSD) received
+    {
+        require(guaranteedRate == usdToEthPrice);
+
+        return exchangeEtherForNomins();
+    }
+
+
+    /**
+     * @notice Exchange ETH to HAV.
+     */
+    function exchangeEtherForHavvens()
+        public 
+        payable
         pricesNotStale
         notPaused
         returns (uint) // Returns the number of Havvens (HAV) received
     {
         // How many Havvens are they going to be receiving?
-        uint havvensToSend = havvensReceivedForNomins(amount);
+        // First off, how much is the ETH they sent us worth in nUSD?
+        uint valueSentInNomins = safeMul_dec(msg.value, usdToEthPrice); 
+
+        // Now, how many HAV will that USD amount buy?
+        uint havvensToSend = havvensReceivedForNomins(valueSentInNomins);
+        
+        // Store the ETH in our funds wallet
+        fundsWallet.transfer(msg.value);
+
+        // And send them the Havvens.
+        havven.transfer(msg.sender, havvensToSend);
+
+        // We don't emit our own events here because we assume that anyone
+        // who wants to watch what the Issuance Controller is doing can
+        // just watch ERC20 events from the Nomin contract filtered to our
+        // address.
+
+        return havvensToSend;
+    }
+
+    /**
+     * @notice Exchange ETH to HAV while insisting on a particular set of rates. This allows a user to
+     *         exchange while protecting against frontrunning by the contract owner on the exchange rates.
+     * @param guaranteedEtherRate The ether exchange rate which must be honored or the call will revert.
+     * @param guaranteedHavvenRate The havven exchange rate which must be honored or the call will revert.
+     */
+    function exchangeEtherForHavvensAtRate(uint guaranteedEtherRate, uint guaranteedHavvenRate)
+        public
+        payable
+        pricesNotStale
+        notPaused
+        returns (uint) // Returns the number of Havvens (HAV) received
+    {
+        require(guaranteedEtherRate == usdToEthPrice);
+        require(guaranteedHavvenRate == usdToHavPrice);
+
+        return exchangeEtherForHavvens();
+    }
+
+
+    /**
+     * @notice Exchange nUSD for Havvens
+     * @param nominAmount The amount of nomins the user wishes to exchange.
+     */
+    function exchangeNominsForHavvens(uint nominAmount)
+        public 
+        pricesNotStale
+        notPaused
+        returns (uint) // Returns the number of Havvens (HAV) received
+    {
+        // How many Havvens are they going to be receiving?
+        uint havvensToSend = havvensReceivedForNomins(nominAmount);
         
         // Ok, transfer the Nomins to our address.
-        nomin.transferFrom(msg.sender, this, amount);
+        nomin.transferFrom(msg.sender, this, nominAmount);
 
         // And send them the Havvens.
         havven.transfer(msg.sender, havvensToSend);
@@ -252,6 +321,22 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         return havvensToSend; 
     }
 
+    /**
+     * @notice Exchange nUSD for Havvens while insisting on a particular rate. This allows a user to
+     *         exchange while protecting against frontrunning by the contract owner on the exchange rate.
+     * @param nominAmount The amount of nomins the user wishes to exchange.
+     */
+    function exchangeNominsForHavvensAtRate(uint nominAmount, uint guaranteedRate)
+        public 
+        pricesNotStale
+        notPaused
+        returns (uint) // Returns the number of Havvens (HAV) received
+    {
+        require(guaranteedRate == usdToHavPrice);
+
+        return exchangeNominsForHavvens(nominAmount);
+    }
+    
     /**
      * @notice Withdraw havvens: Allows the owner to withdraw havvens from this contract if needed.
      */
