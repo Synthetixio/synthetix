@@ -69,7 +69,6 @@ come at the expense of clarity or simplicity.
 * `contracts/Proxyable.sol` An interface to allow underlying contracts to be used with a proxy operating in `CALL` style.
 * `contracts/HavvenEscrow.sol` vesting schedule manager, allows vested havvens to be freed up after certain dates.
 * `contracts/IssuanceController.sol` A contract that allows the foundation to buy and sell nomins in exchange for ether and havvens.
-* `contracts/Court.sol` a court of arbitration to enable the balance of malicious contracts to be democratically confiscated and frozen.
 * `tests/` test cases.
 * `tests/contracts` contracts used by the test suite.
 * `utils/` helper functions for testing and deployment.

@@ -8,7 +8,6 @@ from utils.deployutils import (
 from utils.testutils import HavvenTestCase, ZERO_ADDRESS, block_time
 from tests.contract_interfaces.havven_interface import PublicHavvenInterface
 from tests.contract_interfaces.nomin_interface import PublicNominInterface
-from tests.contract_interfaces.court_interface import FakeCourtInterface
 
 
 def setUpModule():
@@ -32,7 +31,7 @@ class TestFeeCollection(HavvenTestCase):
     @classmethod
     def deployContracts(cls):
         sources = ["tests/contracts/PublicHavven.sol", "tests/contracts/PublicNomin.sol",
-                   "tests/contracts/FakeCourt.sol", "contracts/Havven.sol"]
+                   "contracts/Havven.sol"]
         print("Deployment initiated.\n")
 
         compiled, cls.event_maps = cls.compileAndMapEvents(sources)
@@ -51,10 +50,6 @@ class TestFeeCollection(HavvenTestCase):
         nomin_contract, nom_txr = attempt_deploy(compiled, 'PublicNomin',
                                                  MASTER,
                                                  [nomin_proxy.address, nomin_tokenstate.address, havven_contract.address, 0, MASTER])
-        court_contract, court_txr = attempt_deploy(compiled, 'FakeCourt',
-                                                   MASTER,
-                                                   [havven_contract.address, nomin_contract.address,
-                                                    MASTER])
 
         # Hook up each of those contracts to each other
         mine_txs([havven_tokenstate.functions.setBalanceOf(havven_contract.address, 100000000 * UNIT).transact({'from': MASTER}),
@@ -62,15 +57,14 @@ class TestFeeCollection(HavvenTestCase):
                   nomin_tokenstate.functions.setAssociatedContract(nomin_contract.address).transact({'from': MASTER}),
                   havven_proxy.functions.setTarget(havven_contract.address).transact({'from': MASTER}),
                   nomin_proxy.functions.setTarget(nomin_contract.address).transact({'from': MASTER}),
-                  havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
-                  nomin_contract.functions.setCourt(court_contract.address).transact({'from': MASTER})])
+                  havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER})])
 
         print("\nDeployment complete.\n")
-        return havven_proxy, proxied_havven, nomin_proxy, proxied_nomin, havven_contract, nomin_contract, court_contract
+        return havven_proxy, proxied_havven, nomin_proxy, proxied_nomin, havven_contract, nomin_contract
 
     @classmethod
     def setUpClass(cls):
-        cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, cls.nomin_contract, cls.fake_court_contract = cls.deployContracts()
+        cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, cls.nomin_contract = cls.deployContracts()
 
         cls.event_map = cls.event_maps['Havven']
 
@@ -78,9 +72,6 @@ class TestFeeCollection(HavvenTestCase):
         cls.nomin = PublicNominInterface(cls.proxied_nomin, "Nomin")
 
         fast_forward(weeks=102)
-
-        cls.fake_court = FakeCourtInterface(cls.fake_court_contract, 'FakeCourt')
-        cls.fake_court.setNomin(MASTER, cls.nomin_contract.address)
 
     def havven_updatePrice(self, sender, price, time):
         return mine_tx(self.havven_contract.functions.updatePrice(price, time).transact({'from': sender}), 'updatePrice', 'Havven')
