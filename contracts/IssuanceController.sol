@@ -254,12 +254,8 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         returns (uint) // Returns the number of Havvens (HAV) received
     {
         // How many Havvens are they going to be receiving?
-        // First off, how much is the ETH they sent us worth in nUSD?
-        uint valueSentInNomins = safeMul_dec(msg.value, usdToEthPrice); 
+        uint havvensToSend = havvensReceivedForEther(msg.value);
 
-        // Now, how many HAV will that USD amount buy?
-        uint havvensToSend = havvensReceivedForNomins(valueSentInNomins);
-        
         // Store the ETH in our funds wallet
         fundsWallet.transfer(msg.value);
 
@@ -390,6 +386,22 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     {
         uint nominsReceived = nomin.amountReceived(amount);
         return safeDiv_dec(nominsReceived, usdToHavPrice);
+    }
+
+    /**
+     * @notice Calculate how many havvens you will receive if you transfer
+     *         an amount of ether (in wei).
+     */
+    function havvensReceivedForEther(uint amount)
+        public 
+        view
+        returns (uint)
+    {
+        // First off, how much is the ETH they sent us worth in nUSD?
+        uint valueSentInNomins = safeMul_dec(msg.value, usdToEthPrice); 
+
+        // Now, how many HAV will that USD amount buy?
+        return havvensReceivedForNomins(valueSentInNomins);
     }
 
     /**

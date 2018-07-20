@@ -321,7 +321,7 @@ class TestIssuanceController(HavvenTestCase):
         self.assertEqual(self.nomin.feePool(), 0)
         self.assertEqual(startingFundsWalletEthBalance, endingFundsWalletEthBalance)
 
-    def test_exchangeForSomeNomins(self):
+    def test_exchangeEtherForSomeNomins(self):
         amount = 3 * UNIT
         ethToSend = 1 * UNIT
         nominsBalance = (amount * self.usdToEthPrice) // UNIT
@@ -345,7 +345,7 @@ class TestIssuanceController(HavvenTestCase):
         self.assertEqual(self.nomin.feePool(), feesToPayInNomins)
         self.assertEqual(startingFundsWalletEthBalance + ethToSend, endingFundsWalletEthBalance)
 
-    def test_exchangeForAllNomins(self):
+    def test_exchangeEtherForAllNomins(self):
         amount = 10 * UNIT
         nominsBalance = (amount * self.usdToEthPrice) // UNIT
         base = self.nomin.amountReceived(nominsBalance)
@@ -413,6 +413,40 @@ class TestIssuanceController(HavvenTestCase):
         self.assertEqual(self.nomin.feePool(), 0)
         self.assertEqual(startingFundsWalletEthBalance, endingFundsWalletEthBalance)
 
+    def test_ensureRateOnEtherToNominsExchangeRevertsWithWrongRate(self): 
+        exchanger = self.participantAddresses[0]
+
+        # Set up the contract so it contains some nomins for folks to convert Ether for
+        self.nomin.giveNomins(MASTER, self.issuanceControllerContract.address, 10000 * UNIT)
+        self.assertEqual(self.nomin.balanceOf(self.issuanceControllerContract.address), 10000 * UNIT)
+
+        # Ensure the transfer fails due to an incorrect rate
+        self.assertReverts(self.issuanceController.exchangeEtherForNominsAtRate, exchanger, 1 * UNIT, self.usdToEthPrice + 1)
+    
+    def test_ensureRateOnEtherToNominsExchangeSucceedsWithCorrectRate(self): 
+        amount = 3 * UNIT
+        ethToSend = 1 * UNIT
+        nominsBalance = (amount * self.usdToEthPrice) // UNIT
+        nominsToSend = (ethToSend * self.usdToEthPrice) // UNIT
+        baseToSend = self.nomin.amountReceived(nominsToSend)
+        feesToPayInNomins = nominsToSend - baseToSend
+        exchanger = self.participantAddresses[0]
+        startingFundsWalletEthBalance = get_eth_balance(self.fundsWallet)
+
+        # Set up the contract so it contains some nomins for folks to convert Ether for
+        self.nomin.giveNomins(MASTER, self.issuanceControllerContract.address, nominsBalance)
+        self.assertEqual(self.nomin.balanceOf(self.issuanceControllerContract.address), nominsBalance)
+
+        # The transfer should succeed with a correct rate
+        txr = self.issuanceController.exchangeEtherForNominsAtRate(exchanger, ethToSend, self.usdToEthPrice)
+
+        # Ensure the result of the transfer is correct.
+        endingFundsWalletEthBalance = get_eth_balance(self.fundsWallet)
+        self.assertEqual(self.nomin.balanceOf(self.issuanceControllerContract.address), nominsBalance - nominsToSend)
+        self.assertEqual(self.nomin.balanceOf(exchanger), baseToSend)
+        self.assertEqual(self.nomin.feePool(), feesToPayInNomins)
+        self.assertEqual(startingFundsWalletEthBalance + ethToSend, endingFundsWalletEthBalance)
+
     # Exchange nUSD for HAV tests
 
     def test_cannotExchangeNominsForHavvensIfPriceStale(self):
@@ -455,7 +489,7 @@ class TestIssuanceController(HavvenTestCase):
         self.assertEqual(self.nomin.balanceOf(exchanger), nominsToTransfer)
         self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), 1000 * UNIT)
 
-    def test_exchangeForSomeHavvens(self):
+    def test_exchangeNominsForSomeHavvens(self):
         exchanger = self.participantAddresses[0]
         nominsToSend = 5 * UNIT
         nominsReceived = self.nomin.amountReceived(nominsToSend)
@@ -478,7 +512,7 @@ class TestIssuanceController(HavvenTestCase):
         self.assertEqual(self.havven.balanceOf(exchanger), havBalance)
         self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), 1000 * UNIT - havBalance)
 
-    def test_exchangeForAllHavvens(self):
+    def test_exchangeNominsForAllHavvens(self):
         nominsToSend = 7 * UNIT
         nominsAfterFees = self.nomin.amountReceived(nominsToSend)
         havvensBalance = 1000 * UNIT
@@ -503,6 +537,34 @@ class TestIssuanceController(HavvenTestCase):
         self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), havvensBalance - havvensReceived)
         self.assertEqual(self.havven.balanceOf(exchanger), havvensReceived)
         self.assertEqual(self.nomin.balanceOf(exchanger), 0)
+
+    def test_ensureRateOnNominToHavvenExchangeRevertsWithWrongRate(self):
+        exchanger = self.participantAddresses[0]
+        nominsToSend = 5 * UNIT
+
+        # Set up the contract so it contains some nomins and havvens
+        self.nomin.giveNomins(MASTER, exchanger, nominsToSend)
+        self.assertEqual(self.nomin.balanceOf(exchanger), nominsToSend)
+        self.havven.endow(MASTER, self.issuanceControllerContract.address, 1000 * UNIT)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), 1000 * UNIT)
+ 
+        # Ensure the transfer fails due to an incorrect rate
+        self.assertReverts(self.issuanceController.exchangeNominsForHavvensAtRate, exchanger, nominsToSend, self.usdToHavPrice + 1)
+    
+    def test_ensureRateOnNominsToHavvensExchangeSucceedsWithCorrectRate(self): 
+        exchanger = self.participantAddresses[0]
+        nominsToSend = 5 * UNIT
+
+        # Set up the contract so it contains some nomins and havvens
+        self.nomin.giveNomins(MASTER, exchanger, nominsToSend)
+        self.assertEqual(self.nomin.balanceOf(exchanger), nominsToSend)
+        self.havven.endow(MASTER, self.issuanceControllerContract.address, 1000 * UNIT)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), 1000 * UNIT)
+ 
+        # The transfer should succeed with a correct rate
+        self.nomin.approve(exchanger, self.issuanceControllerContract.address, nominsToSend)
+        txr = self.issuanceController.exchangeNominsForHavvensAtRate(exchanger, nominsToSend, self.usdToHavPrice)
+        # Not going to bother to verify the transaction outputs because other tests cover those.
 
     # Exchange rate tests
 
