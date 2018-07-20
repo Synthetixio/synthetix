@@ -18,7 +18,7 @@ class IssuanceControllerInterface():
         self.selfDestructBeneficiary = lambda: self.contract.functions.selfDestructBeneficiary().call()
         self.priceStalePeriod = lambda: self.contract.functions.priceStalePeriod().call()
         self.havvensReceivedForNomins = lambda amount: self.contract.functions.havvensReceivedForNomins(amount).call()
-        self.havvensReceivedForEther = lambda amount: self.contract.functions.havvensReceivedForNomins(amount).call()
+        self.havvensReceivedForEther = lambda amount: self.contract.functions.havvensReceivedForEther(amount).call()
         self.nominsReceivedForEther = lambda amount: self.contract.functions.nominsReceivedForEther(amount).call()
 
         self.setOracle = lambda sender, newAddress: mine_tx(

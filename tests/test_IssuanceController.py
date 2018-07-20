@@ -89,8 +89,8 @@ class TestIssuanceController(HavvenTestCase):
         cls.contractOwner = MASTER
         cls.oracleAddress = addresses[0]
         cls.fundsWallet = addresses[1]
-        cls.usdToEthPrice = 500 * (10 ** 18)
-        cls.usdToHavPrice = int(0.65 * (10 ** 18))
+        cls.usdToEthPrice = 500 * UNIT
+        cls.usdToHavPrice = int(0.65 * UNIT)
         cls.priceStalePeriod = 3 * 60 * 60
         cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.havven_contract, cls.nomin_contract, cls.nomin_abi, cls.issuanceControllerContract = cls.deployContracts()
         cls.issuanceController = IssuanceControllerInterface(cls.issuanceControllerContract, "IssuanceController")
@@ -293,7 +293,7 @@ class TestIssuanceController(HavvenTestCase):
         self.nomin.giveNomins(MASTER, self.issuanceControllerContract.address, nominsBalance)
         self.assertEqual(self.nomin.balanceOf(self.issuanceControllerContract.address), nominsBalance)
 
-        # Attmpt transfer
+        # Attempt transfer
         self.assertReverts(self.issuanceController.exchangeEtherForNomins, exchanger, amount)
         endingFundsWalletEthBalance = get_eth_balance(self.fundsWallet)
         self.assertEqual(self.nomin.balanceOf(self.issuanceControllerContract.address), nominsBalance)
@@ -313,7 +313,7 @@ class TestIssuanceController(HavvenTestCase):
         self.nomin.giveNomins(MASTER, self.issuanceControllerContract.address, nominsBalance)
         self.assertEqual(self.nomin.balanceOf(self.issuanceControllerContract.address), nominsBalance)
 
-        # Attmpt transfer
+        # Attempt transfer
         self.assertReverts(self.issuanceController.exchangeEtherForNomins, exchanger, amount)
         endingFundsWalletEthBalance = get_eth_balance(self.fundsWallet)
         self.assertEqual(self.nomin.balanceOf(self.issuanceControllerContract.address), nominsBalance)
@@ -447,6 +447,166 @@ class TestIssuanceController(HavvenTestCase):
         self.assertEqual(self.nomin.feePool(), feesToPayInNomins)
         self.assertEqual(startingFundsWalletEthBalance + ethToSend, endingFundsWalletEthBalance)
 
+    # Exchange ETH for HAV tests
+
+    def test_cannotExchangeEtherForHavvensIfPriceStale(self):
+        amount = 10 * UNIT
+        havvenAmount = 10000 * UNIT
+        exchanger = self.participantAddresses[0]
+        startingFundsWalletEthBalance = get_eth_balance(self.fundsWallet)
+        
+        # Push a price update
+        self.issuanceController.setPriceStalePeriod(self.contractOwner, 1)
+        timeSent = block_time()
+        self.issuanceController.updatePrices(self.oracleAddress, self.usdToEthPrice, self.usdToHavPrice, timeSent)
+
+        # Wait so the lastPriceUpdateTime is different to now
+        fast_forward(2)
+
+        # Set up the contract so it contains some havvens for folks to convert Ether for
+        self.havven.endow(MASTER, self.issuanceControllerContract.address, havvenAmount)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), havvenAmount)
+
+        # Attempt transfer
+        self.assertReverts(self.issuanceController.exchangeEtherForHavvens, exchanger, amount)
+
+        endingFundsWalletEthBalance = get_eth_balance(self.fundsWallet)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), havvenAmount)
+        self.assertEqual(self.havven.balanceOf(exchanger), 0)
+        self.assertEqual(startingFundsWalletEthBalance, endingFundsWalletEthBalance)
+
+    def test_cannotExchangeEtherForHavvensIfPaused(self):
+        amount = 10 * UNIT
+        havvenAmount = 10000 * UNIT
+        exchanger = self.participantAddresses[0]
+        startingFundsWalletEthBalance = get_eth_balance(self.fundsWallet)
+        
+        # Set up the contract so it contains some havvens for folks to convert Ether for
+        self.havven.endow(MASTER, self.issuanceControllerContract.address, havvenAmount)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), havvenAmount)
+
+        # Pause the contract
+        self.issuanceController.setPaused(self.contractOwner, True)
+
+        # Attempt transfer
+        self.assertReverts(self.issuanceController.exchangeEtherForHavvens, exchanger, amount)
+
+        endingFundsWalletEthBalance = get_eth_balance(self.fundsWallet)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), havvenAmount)
+        self.assertEqual(self.havven.balanceOf(exchanger), 0)
+        self.assertEqual(startingFundsWalletEthBalance, endingFundsWalletEthBalance)
+
+    def test_exchangeEtherForSomeHavvens(self):
+        havvenBalance = 100000 * UNIT
+        ethToSend = 1 * UNIT
+        exchanger = self.participantAddresses[0]
+        startingFundsWalletEthBalance = get_eth_balance(self.fundsWallet)
+        havvensReceived = self.issuanceController.havvensReceivedForEther(ethToSend)
+
+        # Set up the contract so it contains some havvens for folks to convert Ether for
+        self.havven.endow(MASTER, self.issuanceControllerContract.address, havvenBalance)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), havvenBalance)
+
+        # Transfer the amount to the receiver
+        txr = self.issuanceController.exchangeEtherForHavvens(exchanger, ethToSend)
+
+        # Ensure the result of the transfer is correct.
+        endingFundsWalletEthBalance = get_eth_balance(self.fundsWallet)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), havvenBalance - havvensReceived)
+        self.assertEqual(self.havven.balanceOf(exchanger), havvensReceived)
+        self.assertEqual(startingFundsWalletEthBalance + ethToSend, endingFundsWalletEthBalance)
+
+    def test_exchangeEtherForAllHavvens(self):
+        ethToSend = 1 * UNIT
+        exchanger = self.participantAddresses[0]
+        havvensReceived = self.issuanceController.havvensReceivedForEther(ethToSend)
+        startingFundsWalletEthBalance = get_eth_balance(self.fundsWallet)
+
+        # Set up the contract so it contains some havvens for folks to convert Ether for
+        self.havven.endow(MASTER, self.issuanceControllerContract.address, havvensReceived)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), havvensReceived)
+
+        # Transfer the amount to the receiver
+        txr = self.issuanceController.exchangeEtherForHavvens(exchanger, ethToSend)
+
+        # Ensure the result of the transfer is correct.
+        endingFundsWalletEthBalance = get_eth_balance(self.fundsWallet)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), 0)
+        self.assertEqual(self.havven.balanceOf(exchanger), havvensReceived)
+        self.assertEqual(startingFundsWalletEthBalance + ethToSend, endingFundsWalletEthBalance)
+
+    def test_exchangeHavvensForZeroEth(self):
+        ethToSend = 0
+        exchanger = self.participantAddresses[0]
+        havvensBalance = 100000 * UNIT
+        startingFundsWalletEthBalance = get_eth_balance(self.fundsWallet)
+
+        # Set up the contract so it contains some havvens for folks to convert Ether for
+        self.havven.endow(MASTER, self.issuanceControllerContract.address, havvensBalance)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), havvensBalance)
+
+        # Transfer the amount to the receiver
+        txr = self.issuanceController.exchangeEtherForHavvens(exchanger, ethToSend)
+
+        # Ensure the result of the transfer is correct.
+        endingFundsWalletEthBalance = get_eth_balance(self.fundsWallet)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), havvensBalance)
+        self.assertEqual(self.havven.balanceOf(exchanger), 0)
+        self.assertEqual(startingFundsWalletEthBalance, endingFundsWalletEthBalance)
+
+    def test_exchangeEtherFailsNotEnoughHavvens(self):
+        havvensBalance = 1 * UNIT
+        ethToSend = 1 * UNIT
+        exchanger = self.participantAddresses[0]
+        startingFundsWalletEthBalance = get_eth_balance(self.fundsWallet)
+
+        # Set up the contract so it contains some havvens for folks to convert Ether for
+        self.havven.endow(MASTER, self.issuanceControllerContract.address, havvensBalance)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), havvensBalance)
+
+        # Ensure the transfer fails due to there not being enough havvens in the contract
+        self.assertReverts(self.issuanceController.exchangeEtherForHavvens, exchanger, ethToSend)
+
+        # Ensure the result of the transfer is correct.
+        endingFundsWalletEthBalance = get_eth_balance(self.fundsWallet)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), havvensBalance)
+        self.assertEqual(self.havven.balanceOf(exchanger), 0)
+        self.assertEqual(startingFundsWalletEthBalance, endingFundsWalletEthBalance)
+
+    def test_ensureRateOnEtherToHavvensExchangeRevertsWithWrongRate(self): 
+        exchanger = self.participantAddresses[0]
+        havvenBalance = 10000 * UNIT
+
+        # Set up the contract so it contains some nomins for folks to convert Ether for
+        self.havven.endow(MASTER, self.issuanceControllerContract.address, havvenBalance)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), havvenBalance)
+
+        # Ensure the transfer fails due to an incorrect rate(s)
+        self.assertReverts(self.issuanceController.exchangeEtherForHavvensAtRate, exchanger, 1 * UNIT, self.usdToEthPrice + 1, self.usdToHavPrice)
+        self.assertReverts(self.issuanceController.exchangeEtherForHavvensAtRate, exchanger, 1 * UNIT, self.usdToEthPrice, self.usdToHavPrice + 1)
+        self.assertReverts(self.issuanceController.exchangeEtherForHavvensAtRate, exchanger, 1 * UNIT, self.usdToEthPrice - 1, self.usdToHavPrice + 1)
+        self.assertReverts(self.issuanceController.exchangeEtherForHavvensAtRate, exchanger, 1 * UNIT, self.usdToEthPrice - 1, self.usdToHavPrice)
+    
+    def test_ensureRateOnEtherToHavvensExchangeSucceedsWithCorrectRate(self): 
+        ethToSend = 1 * UNIT
+        havvensBalance = 10000 * UNIT
+        havvensReceived = self.issuanceController.havvensReceivedForEther(ethToSend)
+        exchanger = self.participantAddresses[0]
+        startingFundsWalletEthBalance = get_eth_balance(self.fundsWallet)
+
+        # Set up the contract so it contains some havvens for folks to convert Ether for
+        self.havven.endow(MASTER, self.issuanceControllerContract.address, havvensBalance)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), havvensBalance)
+
+        # The transfer should succeed with a correct rate
+        txr = self.issuanceController.exchangeEtherForHavvensAtRate(exchanger, ethToSend, self.usdToEthPrice, self.usdToHavPrice)
+
+        # Ensure the result of the transfer is correct.
+        endingFundsWalletEthBalance = get_eth_balance(self.fundsWallet)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), havvensBalance - havvensReceived)
+        self.assertEqual(self.havven.balanceOf(exchanger), havvensReceived)
+        self.assertEqual(startingFundsWalletEthBalance + ethToSend, endingFundsWalletEthBalance)
+
     # Exchange nUSD for HAV tests
 
     def test_cannotExchangeNominsForHavvensIfPriceStale(self):
@@ -537,6 +697,34 @@ class TestIssuanceController(HavvenTestCase):
         self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), havvensBalance - havvensReceived)
         self.assertEqual(self.havven.balanceOf(exchanger), havvensReceived)
         self.assertEqual(self.nomin.balanceOf(exchanger), 0)
+
+    def test_exchangeFailsNotEnoughHavvens(self):
+        nominsToSend = 7000000 * UNIT
+        nominsAfterFees = self.nomin.amountReceived(nominsToSend)
+        havvensBalance = 1000 * UNIT
+        feesToPayInNomins = nominsToSend - nominsAfterFees
+        exchanger = self.participantAddresses[0]
+        havvensReceived = self.issuanceController.havvensReceivedForNomins(nominsToSend)
+
+        # Set up exchanger with some nomins
+        self.nomin.giveNomins(MASTER, exchanger, nominsToSend)
+        self.assertEqual(self.nomin.balanceOf(exchanger), nominsToSend)
+
+        # Set up the contract so it contains some havvens for folks to convert Nomins for
+        self.havven.endow(MASTER, self.issuanceControllerContract.address, havvensBalance)
+        self.assertEqual(self.havven.balanceOf(self.issuanceControllerContract.address), havvensBalance)
+
+        # Allow the contract to work on the exchanger's behalf
+        self.nomin.approve(exchanger, self.issuanceControllerContract.address, nominsToSend)
+
+        # We can't execute the transfer because there aren't sufficient havvens.
+        self.assertReverts(self.issuanceController.exchangeNominsForHavvens, exchanger, nominsToSend)
+
+        # Ensure the amount of nomins hasn't moved from the sender.
+        self.assertEqual(self.nomin.balanceOf(exchanger), nominsToSend) 
+
+        # And that we didn't receive havvens
+        self.assertEqual(self.havven.balanceOf(exchanger), 0)
 
     def test_ensureRateOnNominToHavvenExchangeRevertsWithWrongRate(self):
         exchanger = self.participantAddresses[0]

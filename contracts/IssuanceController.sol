@@ -397,8 +397,8 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         view
         returns (uint)
     {
-        // First off, how much is the ETH they sent us worth in nUSD?
-        uint valueSentInNomins = safeMul_dec(msg.value, usdToEthPrice); 
+        // First off, how much is the ETH they sent us worth in nUSD (ignoring the transfer fee)?
+        uint valueSentInNomins = safeMul_dec(amount, usdToEthPrice); 
 
         // Now, how many HAV will that USD amount buy?
         return havvensReceivedForNomins(valueSentInNomins);
