@@ -8,12 +8,9 @@ class NominInterface(FeeTokenInterface):
         self.contract = contract
         self.contract_name = name
 
-        self.court = lambda: self.contract.functions.court().call()
         self.havven = lambda: self.contract.functions.havven().call()
         self.frozen = lambda address: self.contract.functions.frozen(address).call()
 
-        self.setCourt = lambda sender, address: mine_tx(
-            self.contract.functions.setCourt(address).transact({'from': sender}), "setCourt", self.contract_name)
         self.setHavven = lambda sender, address: mine_tx(
             self.contract.functions.setHavven(address).transact({'from': sender}), "setHavven", self.contract_name)
 
@@ -31,9 +28,6 @@ class NominInterface(FeeTokenInterface):
         self.approve = lambda sender, spender, value: mine_tx(
             self.contract.functions.approve(spender, value).transact({'from': sender}), "approve", self.contract_name)
 
-        # onlyCourt
-        self.freezeAndConfiscate = lambda sender, target: mine_tx(
-            self.contract.functions.freezeAndConfiscate(target).transact({'from': sender}), "freezeAndConfiscate", self.contract_name)
         # onlyOwner
         self.unfreezeAccount = lambda sender, target: mine_tx(
             self.contract.functions.unfreezeAccount(target).transact({'from': sender}), "unfreezeAccount", self.contract_name)

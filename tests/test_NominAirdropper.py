@@ -9,7 +9,6 @@ from utils.testutils import (
 )
 from tests.contract_interfaces.nomin_interface import PublicNominInterface
 from tests.contract_interfaces.havven_interface import HavvenInterface
-from tests.contract_interfaces.court_interface import FakeCourtInterface
 from tests.contract_interfaces.nomin_airdropper_interface import NominAirdropperInterface
 
 

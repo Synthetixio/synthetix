@@ -36,15 +36,12 @@ pragma solidity 0.4.24;
 
 import "contracts/FeeToken.sol";
 import "contracts/TokenState.sol";
-import "contracts/Court.sol";
 import "contracts/Havven.sol";
 
 contract Nomin is FeeToken {
 
     /* ========== STATE VARIABLES ========== */
 
-    // The address of the contract which manages confiscation votes.
-    Court public court;
     Havven public havven;
 
     // Accounts which have lost the privilege to transact in nomins.
@@ -74,14 +71,6 @@ contract Nomin is FeeToken {
     }
 
     /* ========== SETTERS ========== */
-
-    function setCourt(Court _court)
-        external
-        optionalProxy_onlyOwner
-    {
-        court = _court;
-        emitCourtUpdated(_court);
-    }
 
     function setHavven(Havven _havven)
         external
@@ -140,33 +129,6 @@ contract Nomin is FeeToken {
         return _transferFromSenderPaysFee_byProxy(messageSender, from, to, value);
     }
 
-    /* If a confiscation court motion has passed and reached the confirmation
-     * state, the court may transfer the target account's balance to the fee pool
-     * and freeze its participation in further transactions. */
-    function freezeAndConfiscate(address target)
-        external
-        onlyCourt
-    {
-        
-        // A motion must actually be underway.
-        uint motionID = court.targetMotionID(target);
-        require(motionID != 0);
-
-        // These checks are strictly unnecessary,
-        // since they are already checked in the court contract itself.
-        require(court.motionConfirming(motionID));
-        require(court.motionPasses(motionID));
-        require(!frozen[target]);
-
-        // Confiscate the balance in the account and freeze it.
-        uint balance = tokenState.balanceOf(target);
-        tokenState.setBalanceOf(FEE_ADDRESS, safeAdd(tokenState.balanceOf(FEE_ADDRESS), balance));
-        tokenState.setBalanceOf(target, 0);
-        frozen[target] = true;
-        emitAccountFrozen(target, balance);
-        emitTransfer(target, FEE_ADDRESS, balance);
-    }
-
     /* The owner may allow a previously-frozen contract to once
      * again accept and transfer nomins. */
     function unfreezeAccount(address target)
@@ -209,18 +171,7 @@ contract Nomin is FeeToken {
         _;
     }
 
-    modifier onlyCourt() {
-        require(Court(msg.sender) == court);
-        _;
-    }
-
     /* ========== EVENTS ========== */
-
-    event CourtUpdated(address newCourt);
-    bytes32 constant COURTUPDATED_SIG = keccak256("CourtUpdated(address)");
-    function emitCourtUpdated(address newCourt) internal {
-        proxy._emit(abi.encode(newCourt), 1, COURTUPDATED_SIG, 0, 0, 0);
-    }
 
     event HavvenUpdated(address newHavven);
     bytes32 constant HAVVENUPDATED_SIG = keccak256("HavvenUpdated(address)");

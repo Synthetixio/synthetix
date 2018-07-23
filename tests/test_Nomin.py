@@ -9,8 +9,6 @@ from utils.testutils import (
 )
 from tests.contract_interfaces.nomin_interface import PublicNominInterface
 from tests.contract_interfaces.havven_interface import HavvenInterface
-from tests.contract_interfaces.court_interface import FakeCourtInterface
-
 
 def setUpModule():
     print("Testing Nomin...")
@@ -32,7 +30,7 @@ class TestNomin(HavvenTestCase):
 
     @classmethod
     def deployContracts(cls):
-        sources = ["tests/contracts/PublicNomin.sol", "tests/contracts/FakeCourt.sol", "contracts/Havven.sol"]
+        sources = ["tests/contracts/PublicNomin.sol", "contracts/Havven.sol"]
 
         compiled, cls.event_maps = cls.compileAndMapEvents(sources)
 
@@ -53,22 +51,19 @@ class TestNomin(HavvenTestCase):
             compiled, "Havven", MASTER, [havven_proxy.address, ZERO_ADDRESS, MASTER, MASTER, UNIT//2, [], ZERO_ADDRESS]
         )
 
-        fake_court, _ = attempt_deploy(compiled, 'FakeCourt', MASTER, [])
-
         mine_txs([
             nomin_state.functions.setAssociatedContract(nomin_contract.address).transact({'from': MASTER}),
             havven_proxy.functions.setTarget(havven_contract.address).transact({'from': MASTER}),
             nomin_proxy.functions.setTarget(nomin_contract.address).transact({'from': MASTER}),
             havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
-            nomin_contract.functions.setCourt(fake_court.address).transact({'from': MASTER}),
             nomin_contract.functions.setHavven(havven_contract.address).transact({'from': MASTER})
         ])
 
-        return havven_proxy, proxied_havven, nomin_proxy, proxied_nomin, nomin_contract, havven_contract, fake_court, nomin_state
+        return havven_proxy, proxied_havven, nomin_proxy, proxied_nomin, nomin_contract, havven_contract, nomin_state
 
     @classmethod
     def setUpClass(cls):
-        cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.nomin_contract, cls.havven_contract, cls.fake_court_contract, cls.nomin_state = cls.deployContracts()
+        cls.havven_proxy, cls.proxied_havven, cls.nomin_proxy, cls.proxied_nomin, cls.nomin_contract, cls.havven_contract, cls.nomin_state = cls.deployContracts()
 
         cls.nomin_event_dict = cls.event_maps['Nomin']
 
@@ -77,8 +72,6 @@ class TestNomin(HavvenTestCase):
 
         cls.unproxied_nomin = PublicNominInterface(cls.nomin_contract, "UnproxiedNomin")
 
-        cls.fake_court = FakeCourtInterface(cls.fake_court_contract, "FakeCourt")
-        cls.fake_court.setNomin(MASTER, cls.nomin_contract.address)
         cls.nomin.setFeeAuthority(MASTER, cls.havven_contract.address)
         cls.sd_duration = 4 * 7 * 24 * 60 * 60
 
@@ -117,26 +110,11 @@ class TestNomin(HavvenTestCase):
         )
         self.assertEqual(self.nomin_contract.functions.owner().call(), new_owner)
 
-    def test_setCourt(self):
-        new_court = DUMMY
-        old_court = self.nomin.court()
-
-        # Only the owner must be able to set the court.
-        txr = self.nomin.setCourt(self.nomin.owner(), new_court)
-        self.assertEventEquals(
-            self.nomin_event_dict, txr.logs[0], 'CourtUpdated',
-            fields={'newCourt': new_court},
-            location=self.nomin_proxy.address
-        )
-        self.assertEqual(self.nomin.court(), new_court)
-        self.assertReverts(self.nomin.setCourt, DUMMY, new_court)
-        self.nomin.setCourt(self.nomin.owner(), old_court)
-
     def test_setHavven(self):
         new_havven = DUMMY
         old_havven = self.nomin.havven()
 
-        # Only the owner must be able to set the court.
+        # Only the owner must be able to set the Havven address on the Nomin contract.
         txr = self.nomin.setHavven(self.nomin.owner(), new_havven)
         self.assertEventEquals(
             self.nomin_event_dict, txr.logs[0], 'FeeAuthorityUpdated',
@@ -527,47 +505,6 @@ class TestNomin(HavvenTestCase):
         self.assertEqual(self.nomin.balanceOf(target), self.nomin.amountReceived(old_bal))
         self.assertLess(self.nomin.balanceOf(MASTER), 3)  # assert MASTER only has the tiniest bit of change
 
-    def test_freezeAndConfiscate(self):
-        target = W3.eth.accounts[2]
-
-        self.assertEqual(self.nomin.court(), self.fake_court.contract.address)
-
-        self.nomin.giveNomins(MASTER, target, 10 * UNIT)
-
-        # The target must have some nomins.
-        self.assertEqual(self.nomin.balanceOf(target), 10 * UNIT)
-
-        motion_id = 1
-        self.fake_court.setTargetMotionID(MASTER, target, motion_id)
-
-        # Attempt to confiscate even though the conditions are not met.
-        self.fake_court.setConfirming(MASTER, motion_id, False)
-        self.fake_court.setVotePasses(MASTER, motion_id, False)
-        self.assertReverts(self.fake_court.freezeAndConfiscate, MASTER, target)
-
-        self.fake_court.setConfirming(MASTER, motion_id, True)
-        self.fake_court.setVotePasses(MASTER, motion_id, False)
-        self.assertReverts(self.fake_court.freezeAndConfiscate, MASTER, target)
-
-        self.fake_court.setConfirming(MASTER, motion_id, False)
-        self.fake_court.setVotePasses(MASTER, motion_id, True)
-        self.assertReverts(self.fake_court.freezeAndConfiscate, MASTER, target)
-
-        # Set up the target balance to be confiscatable.
-        self.fake_court.setConfirming(MASTER, motion_id, True)
-        self.fake_court.setVotePasses(MASTER, motion_id, True)
-
-        # Only the court should be able to confiscate balances.
-        self.assertReverts(self.nomin.freezeAndConfiscate, MASTER, target)
-
-        # Actually confiscate the balance.
-        pre_fee_pool = self.nomin.feePool()
-        pre_balance = self.nomin.balanceOf(target)
-        self.fake_court.freezeAndConfiscate(MASTER, target)
-        self.assertEqual(self.nomin.balanceOf(target), 0)
-        self.assertEqual(self.nomin.feePool(), pre_fee_pool + pre_balance)
-        self.assertTrue(self.nomin.frozen(target))
-
     def test_unfreezeAccount(self):
         target = fresh_account()
 
@@ -752,14 +689,6 @@ class TestNomin(HavvenTestCase):
         # Check contract not exist 
         self.assertEqual(W3.eth.getCode(address), b'\x00')
 
-    def test_event_CourtUpdated(self):
-        new_court = fresh_account()
-        tx = self.nomin.setCourt(MASTER, new_court)
-        self.assertEventEquals(self.nomin_event_dict,
-                               tx.logs[0], "CourtUpdated",
-                               {"newCourt": new_court},
-                                self.nomin_proxy.address)
-
     def test_event_HavvenUpdated(self):
         new_havven = fresh_account()
         tx = self.nomin.setHavven(MASTER, new_havven)
@@ -767,23 +696,6 @@ class TestNomin(HavvenTestCase):
                                tx.logs[1], "HavvenUpdated",
                                {"newHavven": new_havven},
                                 self.nomin_proxy.address)
-
-    def test_event_AccountFrozen(self):
-        target = fresh_account()
-        self.nomin.clearNomins(MASTER, target)
-        self.nomin.giveNomins(MASTER, target, 5 * UNIT)
-        motion_id = 1
-        self.fake_court.setTargetMotionID(MASTER, target, motion_id)
-        self.fake_court.setConfirming(MASTER, motion_id, True)
-        self.fake_court.setVotePasses(MASTER, motion_id, True)
-        self.assertEqual(self.nomin.balanceOf(target), 5 * UNIT)
-        txr = self.fake_court.freezeAndConfiscate(MASTER, target)
-        self.assertEqual(self.nomin.balanceOf(target), 0)
-        self.assertEventEquals(
-            self.nomin_event_dict, txr.logs[0], 'AccountFrozen',
-            fields={'target': target, 'balance': 5 * UNIT},
-            location=self.nomin_proxy.address
-        )
 
     def test_event_AccountUnfrozen(self):
         target = fresh_account()

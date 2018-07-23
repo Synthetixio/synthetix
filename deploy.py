@@ -8,9 +8,8 @@ from deploy_settings import MASTER_ADDRESS, MASTER_KEY
 
 # Source files to compile from
 SOLIDITY_SOURCES = ["contracts/Havven.sol", "contracts/Nomin.sol",
-                    "contracts/Court.sol", "contracts/HavvenEscrow.sol",
-                    "contracts/ExternStateFeeToken.sol", "contracts/DestructibleExternStateToken.sol",
-                    "contracts/Proxy.sol"]
+                    "contracts/HavvenEscrow.sol", "contracts/ExternStateFeeToken.sol",
+                    "contracts/DestructibleExternStateToken.sol", "contracts/Proxy.sol"]
 
 
 BLOCKCHAIN_ADDRESS = "http://localhost:8545"
@@ -116,10 +115,6 @@ def deploy_havven(print_addresses=False):
     #     [nomin_proxy.address, havven_contract.address, MASTER_ADDRESS, ZERO_ADDRESS]
     # )
     #
-    # court_contract, court_txr = attempt_deploy_signed(
-    #     compiled, 'Court', MASTER_ADDRESS, MASTER_KEY,
-    #     [havven_contract.address, nomin_contract.address, MASTER_ADDRESS])
-    #
     # escrow_contract, escrow_txr = attempt_deploy_signed(
     #     compiled, 'HavvenEscrow', MASTER_ADDRESS, MASTER_KEY, [MASTER_ADDRESS, havven_contract.address]
     # )
@@ -128,7 +123,6 @@ def deploy_havven(print_addresses=False):
     nomin_proxy = W3.eth.contract(abi=compiled['Proxy']['abi'], address='0xE77c61cD53301EfB6d9361fa91f5Fb6cd10d2253')
     havven_contract = W3.eth.contract(abi=compiled['Havven']['abi'], address='0xfC92FeBD60E6B4A28F959e5a833d0C16B46fe905')
     nomin_contract = W3.eth.contract(abi=compiled['Nomin']['abi'], address='0x95537CdC53Ef318b97A31BF66A620C2f760c962B')
-    court_contract = W3.eth.contract(abi=compiled['Court']['abi'], address='0x0248f9f62e7613EFD3e10C09eeDd6153B2f2EAA2')
     escrow_contract = W3.eth.contract(abi=compiled['HavvenEscrow']['abi'], address='0xA05Abe0Eba145E9A5b9B4D049772A3f92D45638e')
 
     # Hook up each of those contracts to each other
@@ -136,7 +130,6 @@ def deploy_havven(print_addresses=False):
         havven_proxy.functions.setTarget(havven_contract.address),
         nomin_proxy.functions.setTarget(nomin_contract.address),
         havven_contract.functions.setNomin(nomin_contract.address),
-        nomin_contract.functions.setCourt(court_contract.address),
         nomin_contract.functions.setHavven(havven_contract.address),
         havven_contract.functions.setEscrow(escrow_contract.address)
     ])
@@ -150,11 +143,10 @@ def deploy_havven(print_addresses=False):
         print(f"Nomin Proxy:  {nomin_proxy.address}")
         print(f"Havven:       {havven_contract.address}")
         print(f"Nomin:        {nomin_contract.address}")
-        print(f"Court:        {court_contract.address}")
         print(f"Escrow:       {escrow_contract.address}")
         print()
 
-    return havven_proxy, nomin_proxy, havven_contract, nomin_contract, court_contract, escrow_contract
+    return havven_proxy, nomin_proxy, havven_contract, nomin_contract, escrow_contract
 
 
 if __name__ == "__main__":
