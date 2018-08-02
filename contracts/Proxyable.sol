@@ -63,7 +63,7 @@ contract Proxyable is Owned {
     }
 
     modifier onlyProxy {
-        require(Proxy(msg.sender) == proxy);
+        require(Proxy(msg.sender) == proxy, "Only the proxy can call this function");
         _;
     }
 
@@ -80,7 +80,7 @@ contract Proxyable is Owned {
         if (Proxy(msg.sender) != proxy) {
             messageSender = msg.sender;
         }
-        require(messageSender == owner);
+        require(messageSender == owner, "This action can only be performed by the owner");
         _;
     }
 
