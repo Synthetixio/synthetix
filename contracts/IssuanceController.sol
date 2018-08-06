@@ -217,10 +217,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         //       automatically deducted and sent to the fee pool.
         nomin.transfer(msg.sender, requestedToPurchase);
 
-        // We don't emit our own events here because we assume that anyone
-        // who wants to watch what the Issuance Controller is doing can
-        // just watch ERC20 events from the Nomin contract filtered to our
-        // address.
+        emit Exchange("ETH", msg.value, "nUSD", requestedToPurchase);
 
         return requestedToPurchase;
     }
@@ -262,10 +259,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         // And send them the Havvens.
         havven.transfer(msg.sender, havvensToSend);
 
-        // We don't emit our own events here because we assume that anyone
-        // who wants to watch what the Issuance Controller is doing can
-        // just watch ERC20 events from the Nomin contract filtered to our
-        // address.
+        emit Exchange("ETH", msg.value, "HAV", havvensToSend);
 
         return havvensToSend;
     }
@@ -309,10 +303,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         // And send them the Havvens.
         havven.transfer(msg.sender, havvensToSend);
 
-        // We don't emit our own events here because we assume that anyone
-        // who wants to watch what the Issuance Controller is doing can
-        // just watch ERC20 events from the Nomin and/or Havven contracts
-        // filtered to our address.
+        emit Exchange("nUSD", nominAmount, "HAV", havvensToSend);
 
         return havvensToSend; 
     }
@@ -439,4 +430,5 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     event HavvenUpdated(Havven newHavvenContract);
     event PriceStalePeriodUpdated(uint priceStalePeriod);
     event PricesUpdated(uint newEthPrice, uint newHavvenPrice, uint timeSent);
+    event Exchange(string fromCurrency, uint fromAmount, string toCurrency, uint toAmount);
 }
