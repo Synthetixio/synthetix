@@ -32,9 +32,10 @@ class TestExternStateToken(HavvenTestCase):
 
     @classmethod
     def deploy_contracts(cls):
-        sources = ['tests/contracts/PublicEST.sol',
-                   'contracts/ExternStateToken.sol',
-                   'contracts/TokenState.sol', 'contracts/Proxy.sol']
+        sources = ['tests/contracts/PublicEST.sol', 'contracts/ExternStateToken.sol',
+                   'contracts/TokenState.sol', 'contracts/Proxy.sol',
+                   'tests/contracts/TokenRecipient.sol', 'tests/contracts/EmptytokenRecipient.sol',
+                   'tests/contracts/ReEntrantTokenRecipient.sol']
 
         compiled, cls.event_maps = cls.compileAndMapEvents(sources)
 
@@ -50,6 +51,21 @@ class TestExternStateToken(HavvenTestCase):
             [proxy_contract.address, tokenstate.address, "Test Token", "TEST", 1000 * UNIT, MASTER]
         )
 
+        token_recipient_contract, _ = attempt_deploy(
+            compiled, 'TokenRecipient', MASTER, []
+        )
+        token_recipient_abi = compiled['TokenRecipient']['abi']
+        token_recipient = W3.eth.contract(address=token_recipient_contract.address, abi=token_recipient_abi)  
+        token_recipient_event_dict = generate_topic_event_map(token_recipient_abi)
+
+        empty_token_recipient, _ = attempt_deploy(
+            compiled, 'EmptyTokenRecipient', MASTER, []
+        )
+
+        re_entrant_token_recipient, _ = attempt_deploy(
+            compiled, 'ReEntrantTokenRecipient', MASTER, []
+        )
+
         token_abi = compiled['PublicEST']['abi']
         token_event_dict = generate_topic_event_map(token_abi)
 
@@ -60,13 +76,14 @@ class TestExternStateToken(HavvenTestCase):
             tokenstate.functions.setAssociatedContract(token_contract.address).transact({'from': MASTER}),
             proxy_contract.functions.setTarget(token_contract.address).transact({'from': MASTER})
         ])
-        return proxy_contract, proxied_token, compiled, token_contract, token_abi, token_event_dict, tokenstate
+        return proxy_contract, proxied_token, compiled, token_contract, token_abi, token_event_dict, tokenstate, token_recipient, token_recipient_event_dict, empty_token_recipient, re_entrant_token_recipient
 
     @classmethod
     def setUpClass(cls):
-        cls.proxy, cls.proxied_token, cls.compiled, cls.token_contract, cls.token_abi, cls.token_event_dict, cls.tokenstate = cls.deploy_contracts()
+        cls.proxy, cls.proxied_token, cls.compiled, cls.token_contract, cls.token_abi, cls.token_event_dict, cls.tokenstate, cls.token_recipient, cls.token_recipient_event_dict, cls.empty_token_recipient, cls.re_entrant_token_recipient = cls.deploy_contracts()
         cls.event_map = cls.event_maps['ExternStateToken']
         cls.token = ExternStateTokenInterface(cls.proxied_token, "ExternStateToken")
+
 
     def test_constructor(self):
         self.assertEqual(self.token.name(), "Test Token")
@@ -239,6 +256,56 @@ class TestExternStateToken(HavvenTestCase):
         # This should fail because the approver has no tokens.
         self.assertReverts(self.token.transferFrom, spender, approver, receiver, value)
 
+    def test_tokenFallbackOnTransfer(self):
+        # Ensure the default state is correct
+        sender = MASTER
+        sender_balance = self.token.balanceOf(sender)
+        value = 10 * UNIT
+
+        # Transfer to the contract
+        tx_receipt = self.token.transfer(sender, self.token_recipient.address, value)
+
+        self.assertEventEquals(
+            self.token_recipient_event_dict, tx_receipt.logs[0], 'TokenFallbackCalled',
+            fields = {
+                "from": sender,
+                "value": value
+            },
+            location=self.token_recipient.address
+        )
+
+    def test_emptyTokenRecipientTransfer(self):
+        # Ensure the default state is correct
+        sender = MASTER
+        sender_balance = self.token.balanceOf(sender)
+        value = 10 * UNIT
+
+        # Transfer to the contract
+        tx_receipt = self.token.transfer(sender, self.empty_token_recipient.address, value)
+
+        # Assert that there's only the Transfer event, and we know the transfer succeeded above or we would have gotten an error.
+        self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'], "Transfer")
+        self.assertEqual(len(tx_receipt.logs), 1)
+     
+    # Assert you can't do a reentrancy attack with tokenFallback
+    def test_reentrantTokenRecipientTransfer(self):
+        # Ensure the default state is correct
+        sender = MASTER
+        sender_balance = self.token.balanceOf(sender)
+        value = 10 * UNIT
+
+        # Approve a bunch of limit to play with.
+        tx_receipt = self.token.approve(sender, self.re_entrant_token_recipient.address, 10 * value)
+       
+        # Kick off a re-entrant transfer
+        tx_receipt = self.token.transfer(sender, self.re_entrant_token_recipient.address, value)
+
+        # Assert that only the first transfer happened, and the tokenFallback call reverted.
+        self.assertEqual(get_event_data_from_log(self.token_event_dict, tx_receipt.logs[0])['event'], "Transfer")
+        self.assertEqual(self.token.balanceOf(self.re_entrant_token_recipient.address), value)
+        self.assertEqual(self.token.balanceOf(sender), sender_balance - value)
+
+    # Assert 
     def test_event_Transfer(self):
         receiver = fresh_account()
         self.assertNotEqual(receiver, MASTER)
