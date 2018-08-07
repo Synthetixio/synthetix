@@ -34,7 +34,7 @@ class TestExternStateToken(HavvenTestCase):
     def deploy_contracts(cls):
         sources = ['tests/contracts/PublicEST.sol', 'contracts/ExternStateToken.sol',
                    'contracts/TokenState.sol', 'contracts/Proxy.sol',
-                   'tests/contracts/TokenRecipient.sol', 'tests/contracts/EmptytokenRecipient.sol',
+                   'tests/contracts/TokenRecipient.sol', 'tests/contracts/EmptyTokenRecipient.sol',
                    'tests/contracts/ReEntrantTokenRecipient.sol']
 
         compiled, cls.event_maps = cls.compileAndMapEvents(sources)
