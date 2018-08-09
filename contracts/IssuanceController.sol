@@ -458,7 +458,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     }
 
     /**
-     * @notice Withdraw all nomins: Allows a user to withdraw all of their nomins from this contract if needed.
+     * @notice Allows a user to withdraw all of their previously deposited nomins from this contract if needed.
      *         Developer note: We could keep an index of address to deposits to make this operation more efficient
      *         but then all the other operations on the queue become less efficient. It's expected that this
      *         function will be very rarely used, so placing the inefficiency here is intentional. The usual
@@ -496,7 +496,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
      * @notice depositNomins: Allows users to deposit nomins via the approve / transferFrom workflow
      *         if they'd like. You can equally just transfer nomins to this contract and it will work
      *         exactly the same way but with one less call (and therefore cheaper transaction fees)
-     * @param amount The amount of nUSD you wish to deposit (must have been authorised first)
+     * @param amount The amount of nUSD you wish to deposit (must have been approved first)
      */
     function depositNomins(uint amount)
         external
