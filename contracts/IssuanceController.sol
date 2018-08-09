@@ -6,7 +6,6 @@ FILE INFORMATION
 file:       IssuanceController.sol
 version:    2.0
 author:     Kevin Brown
-
 date:       2018-07-18
 
 -----------------------------------------------------------------
@@ -48,7 +47,9 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     Havven public havven;
     Nomin public nomin;
 
-    // Address where the ether raised is transfered to
+    // Address where the ether and Nomins raised for selling HAV is transfered to
+    // Any ether raised for selling Nomins gets sent back to whoever deposited the Nomins,
+    // and doesn't have anything to do with this address.
     address public fundsWallet;
 
     /* The address of the oracle which pushes the USD price havvens and ether to this contract */
@@ -67,6 +68,36 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     /* The USD price of ETH denominated in UNIT */
     uint public usdToEthPrice;
     
+    /* Stores deposits from users. */
+    struct nominDeposit {
+        // The user that made the deposit
+        address user;
+        // The amount (in Nomins) that they deposited
+        uint amount;
+    }
+
+    /* User deposits are sold on a FIFO (First in First out) basis. When users deposit
+       nomins with us, they get added this queue, which then gets fulfilled in order.
+       Conceptually this fits well in an array, but then when users fill an order we
+       end up copying the whole array around, so better to use an index mapping instead
+       for gas performance reasons.
+       
+       The indexes are specified (inclusive, exclusive), so (0, 0) means there's nothing
+       in the array, and (3, 6) means there are 3 elements at 3, 4, and 5. You can obtain
+       the length of the "array" by querying depositEndIndex - depositStartIndex. All index
+       operations use safeAdd, so there is no way to overflow, so that means there is a
+       very large but finite amount of deposits this contract can handle before it fills up. */
+    mapping(uint => nominDeposit) public deposits;
+    // The starting index of our queue inclusive
+    uint public depositStartIndex;
+    // The ending index of our queue exclusive
+    uint public depositEndIndex;
+
+    /* This is a convenience variable so users and dApps can just query how much nUSD
+       we have available for purchase without having to iterate the mapping with a
+       O(n) amount of calls for something we'll probably want to display quite regularly. */
+    uint public totalSellableDeposits;
+
     /* ========== CONSTRUCTOR ========== */
 
     /**
@@ -106,6 +137,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         usdToEthPrice = _usdToEthPrice;
         usdToHavPrice = _usdToHavPrice;
         lastPriceUpdateTime = now;
+        totalSellableDeposits = 0;
     }
 
     /* ========== SETTERS ========== */
@@ -194,6 +226,10 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         exchangeEtherForNomins();
     } 
 
+    event Log(string message);
+    event LogInt(string message, uint number);
+    event LogAddress(string message, address addr);
+
     /**
      * @notice Exchange ETH to nUSD.
      */
@@ -207,19 +243,99 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         // The multiplication works here because usdToEthPrice is specified in
         // 18 decimal places, just like our currency base.
         uint requestedToPurchase = safeMul_dec(msg.value, usdToEthPrice);
+        emit LogInt("Requested to purchase", requestedToPurchase);
+        uint remainingToFulfill = requestedToPurchase;
+        emit LogInt("Remaining to fulfill", remainingToFulfill);
 
-        // Store the ETH in our funds wallet
-        fundsWallet.transfer(msg.value);
+        // Iterate through our outstanding deposits and sell them one at a time.
+        for (uint i = depositStartIndex; remainingToFulfill > 0 && i < depositEndIndex; i++) {
+            nominDeposit memory deposit = deposits[i];
 
-        // Send the nomins.
-        // Note: Fees are calculated by the Nomin contract, so when 
-        //       we request a specific transfer here, the fee is
-        //       automatically deducted and sent to the fee pool.
-        nomin.transfer(msg.sender, requestedToPurchase);
+            emit LogAddress("Deposit address", deposit.user);
+            emit LogInt("Deposit amount", deposit.amount);
 
-        emit Exchange("ETH", msg.value, "nUSD", requestedToPurchase);
+            // If it's an empty spot in the queue from a previous withdrawal, just skip over it and
+            // update the queue. It's already been deleted.
+            if (deposit.user == address(0)) {
+                emit LogInt("Queue spot is already deleted, skipping", i);
 
-        return requestedToPurchase;
+                depositStartIndex = safeAdd(depositStartIndex, 1);
+                emit LogInt("New start index", depositStartIndex);
+            } else {
+                // If the deposit can more than fill the order, we can do this
+                // without touching the structure of our queue.
+                if (deposit.amount > remainingToFulfill) {
+                    emit Log("Fulfilling from first deposit");
+
+                    // Ok, this deposit can fulfill the whole remainder. We don't need
+                    // to change anything about our queue we can just fulfill it.
+                    // Subtract the amount from our deposit and total.
+                    deposit.amount = safeSub(deposit.amount, remainingToFulfill);
+                    totalSellableDeposits = safeSub(totalSellableDeposits, remainingToFulfill);
+
+                    emit LogInt("New deposit amount", deposit.amount);
+                    emit LogInt("New total sellable", totalSellableDeposits);
+                    
+                    // Transfer the ETH to the depositor.
+                    deposit.user.transfer(safeDiv_dec(remainingToFulfill, usdToEthPrice));
+                    emit LogInt("Transferring ETH", safeDiv_dec(remainingToFulfill, usdToEthPrice));
+                    // And the Nomins to the recipient.
+                    // Note: Fees are calculated by the Nomin contract, so when 
+                    //       we request a specific transfer here, the fee is
+                    //       automatically deducted and sent to the fee pool.
+                    nomin.transfer(msg.sender, remainingToFulfill);
+                    emit LogInt("Amount of Nomins transferred", remainingToFulfill);
+
+                    // And we have nothing left to fulfill on this order.
+                    remainingToFulfill = 0;
+                } else if (deposit.amount <= remainingToFulfill) {
+                    emit LogInt("Deposit amount", deposit.amount);
+                    emit LogInt("Remaining to fulfill", remainingToFulfill);
+                    emit Log("Amount exceeds first deposit, consuming");
+                    // We need to fulfill this one in its entirety and kick it out of the queue.
+                    // Start by kicking it out of the queue.
+                    // Free the storage because we can.
+                    delete deposits[i];
+                    // Bump our start index forward one.
+                    depositStartIndex = safeAdd(depositStartIndex, 1);
+                    // We also need to tell our total it's decreased
+                    totalSellableDeposits = safeSub(totalSellableDeposits, deposit.amount);
+                    emit LogInt("New start index", depositStartIndex);
+                    emit LogInt("New end index", depositStartIndex);
+                    emit LogInt("New queue length", depositEndIndex - depositStartIndex);
+                    emit LogInt("New total", totalSellableDeposits);
+
+                    // Now fulfill by transfering the ETH to the depositor.
+                    deposit.user.transfer(safeDiv_dec(deposit.amount, usdToEthPrice));
+                    emit LogInt("Transferring ETH", safeDiv_dec(deposit.amount, usdToEthPrice));
+                    // And the Nomins to the recipient.
+                    // Note: Fees are calculated by the Nomin contract, so when 
+                    //       we request a specific transfer here, the fee is
+                    //       automatically deducted and sent to the fee pool.
+                    nomin.transfer(msg.sender, deposit.amount);
+                    emit LogInt("Transferring Nomins", deposit.amount);
+
+                    // And subtract the order from our outstanding amount remaining
+                    // for the next iteration of the loop.
+                    remainingToFulfill = safeSub(remainingToFulfill, deposit.amount);
+                    emit LogInt("New remaining to fulfill", remainingToFulfill);
+                }
+            }
+        }
+
+        // Ok, if we're here and 'remainingToFulfill' isn't zero, then
+        // we need to refund the remainder of their ETH back to them.
+        if (remainingToFulfill > 0) {
+            msg.sender.transfer(safeDiv_dec(remainingToFulfill, usdToEthPrice));
+        }
+
+        // How many did we actually give them?
+        uint fulfilled = safeSub(requestedToPurchase, remainingToFulfill);
+
+        // Now tell everyone that we gave them that many.
+        emit Exchange("ETH", msg.value, "nUSD", fulfilled);
+
+        return fulfilled;
     }
 
     /**
@@ -297,8 +413,10 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         // How many Havvens are they going to be receiving?
         uint havvensToSend = havvensReceivedForNomins(nominAmount);
         
-        // Ok, transfer the Nomins to our address.
-        nomin.transferFrom(msg.sender, this, nominAmount);
+        // Ok, transfer the Nomins to our funds wallet.
+        // These do not go in the deposit queue as they aren't for sale as such unless
+        // they're sent back in from the funds wallet.
+        nomin.transferFrom(msg.sender, fundsWallet, nominAmount);
 
         // And send them the Havvens.
         havven.transfer(msg.sender, havvensToSend);
@@ -340,18 +458,73 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     }
 
     /**
-     * @notice Withdraw nomins: Allows the owner to withdraw nomins from this contract if needed.
+     * @notice Withdraw all nomins: Allows a user to withdraw all of their nomins from this contract if needed.
+     *         Developer note: We could keep an index of address to deposits to make this operation more efficient
+     *         but then all the other operations on the queue become less efficient. It's expected that this
+     *         function will be very rarely used, so placing the inefficiency here is intentional. The usual
+     *         use case does not involve a withdrawal.
      */
-    function withdrawNomins(uint amount)
+    function withdrawMyDepositedNomins()
         external
-        onlyOwner
     {
-        nomin.transfer(owner, amount);
+        uint nominsToSend = 0;
+
+        for (uint i = depositStartIndex; i < depositEndIndex; i++) {
+            nominDeposit memory deposit = deposits[i];
+
+            if (deposit.user == msg.sender) {
+                // The user is withdrawing this deposit. Remove it from our queue.
+                // We'll just leave a gap, which the purchasing logic can walk past.
+                nominsToSend = safeAdd(nominsToSend, deposit.amount);
+                delete deposits[i];
+            }
+        }
+
+        // If there's nothing to do then go ahead and revert the transaction
+        require(nominsToSend > 0, "You have no deposits to withdraw.");
+
+        // Update our total
+        totalSellableDeposits = safeSub(totalSellableDeposits, nominsToSend);
+
+        // Send their deposits back to them (minus fees)
+        nomin.transfer(msg.sender, nominsToSend);
         
-        // We don't emit our own events here because we assume that anyone
-        // who wants to watch what the Issuance Controller is doing can
-        // just watch ERC20 events from the Nomin and/or Havven contracts
-        // filtered to our address.
+        emit NominWithdrawal(msg.sender, nominsToSend);
+    }
+
+    /**
+     * @notice depositNomins: Allows users to deposit nomins via the approve / transferFrom workflow
+     *         if they'd like. You can equally just transfer nomins to this contract and it will work
+     *         exactly the same way but with one less call (and therefore cheaper transaction fees)
+     * @param amount The amount of nUSD you wish to deposit (must have been authorised first)
+     */
+    function depositNomins(uint amount)
+        external
+    {
+        // Grab the amount of nomins
+        nomin.transferFrom(msg.sender, this, amount);
+
+        // Note, we don't need to add them to the deposit list below, as the Nomin contract itself will
+        // call havvenTokenFallback when the transfer happens, adding their deposit to the queue.
+    }
+
+    /**
+     * @notice havvenTokenFallback: Triggers when users send us HAV or nUSD, but the modifier only allows nUSD
+     *         calls to proceed.
+     * @param from The address sending the nUSD
+     * @param amount The amount of nUSD
+     */
+    function havvenTokenFallback(address from, uint amount)
+        external
+        onlyNomin
+    {
+        // Ok, thanks for the deposit, let's queue it up.
+        deposits[depositEndIndex] = nominDeposit({ user: from, amount: amount });
+        // Walk our index forward as well.
+        depositEndIndex = safeAdd(depositEndIndex, 1);
+
+        // And add it to our total.
+        totalSellableDeposits = safeAdd(totalSellableDeposits, amount);
     }
 
     /* ========== VIEWS ========== */
@@ -412,13 +585,20 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
 
     modifier onlyOracle
     {
-        require(msg.sender == oracle);
+        require(msg.sender == oracle, "Only the oracle can perform this action");
+        _;
+    }
+
+    modifier onlyNomin
+    {
+        // We're only interested in doing anything on receiving nUSD.
+        require(msg.sender == address(nomin), "Only the nomin contract can perform this action");
         _;
     }
 
     modifier pricesNotStale
     {
-        require(!pricesAreStale());
+        require(!pricesAreStale(), "Action cannot be performed while prices are stale");
         _;
     }
 
@@ -431,4 +611,5 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     event PriceStalePeriodUpdated(uint priceStalePeriod);
     event PricesUpdated(uint newEthPrice, uint newHavvenPrice, uint timeSent);
     event Exchange(string fromCurrency, uint fromAmount, string toCurrency, uint toAmount);
+    event NominWithdrawal(address user, uint amount);
 }
