@@ -401,7 +401,10 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         view
         returns (uint)
     {
+        // How many nomins would that amount of ether be worth?
         uint nominsTransferred = safeMul_dec(amount, usdToEthPrice);
+
+        // And how many of those would you receive after a transfer (deducting the transfer fee)
         return nomin.amountReceived(nominsTransferred);
     }
     
