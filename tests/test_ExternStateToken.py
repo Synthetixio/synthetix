@@ -269,7 +269,8 @@ class TestExternStateToken(HavvenTestCase):
             self.token_recipient_event_dict, tx_receipt.logs[0], 'TokenFallbackCalled',
             fields = {
                 "from": sender,
-                "value": value
+                "value": value,
+                "data": b''
             },
             location=self.token_recipient.address
         )

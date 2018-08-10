@@ -13,14 +13,34 @@ contract PublicEST is ExternStateToken {
     function transfer(address to, uint value)
         optionalProxy
         external
+        returns (bool)
     {
-        _transfer_byProxy(messageSender, to, value);
+        bytes memory empty;
+        return _transfer_byProxy(messageSender, to, value, empty);
+    }
+
+    function transfer(address to, uint value, bytes data)
+        optionalProxy
+        external
+        returns (bool)
+    {
+        return _transfer_byProxy(messageSender, to, value, data);
     }
 
     function transferFrom(address from, address to, uint value)
         optionalProxy
         external
+        returns (bool)
     {
-        _transferFrom_byProxy(messageSender, from, to, value);
+        bytes memory empty;
+        return _transferFrom_byProxy(messageSender, from, to, value, empty);
+    }
+
+    function transferFrom(address from, address to, uint value, bytes data)
+        optionalProxy
+        external
+        returns (bool)
+    {
+        return _transferFrom_byProxy(messageSender, from, to, value, data);
     }
 }

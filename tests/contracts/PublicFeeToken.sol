@@ -17,28 +17,60 @@ contract PublicFeeToken is FeeToken {
         optionalProxy
         external
     {
-        _transfer_byProxy(messageSender, to, value);
+        bytes memory empty;
+        _transfer_byProxy(messageSender, to, value, empty);
+    }
+
+    function transfer(address to, uint value, bytes data)
+        optionalProxy
+        external
+    {
+        _transfer_byProxy(messageSender, to, value, data);
     }
 
     function transferFrom(address from, address to, uint value)
         optionalProxy
         external
     {
-        _transferFrom_byProxy(messageSender, from, to, value);
+        bytes memory empty;
+        _transferFrom_byProxy(messageSender, from, to, value, empty);
+    }
+
+    function transferFrom(address from, address to, uint value, bytes data)
+        optionalProxy
+        external
+    {
+        _transferFrom_byProxy(messageSender, from, to, value, data);
     }
 
     function transferSenderPaysFee(address to, uint value)
         optionalProxy
         external
     {
-        _transferSenderPaysFee_byProxy(messageSender, to, value);
+        bytes memory empty;
+        _transferSenderPaysFee_byProxy(messageSender, to, value, empty);
+    }
+
+    function transferSenderPaysFee(address to, uint value, bytes data)
+        optionalProxy
+        external
+    {
+        _transferSenderPaysFee_byProxy(messageSender, to, value, data);
     }
 
     function transferFromSenderPaysFee(address from, address to, uint value)
         optionalProxy
         external
     {
-        _transferFromSenderPaysFee_byProxy(messageSender, from, to, value);
+        bytes memory empty;
+        _transferFromSenderPaysFee_byProxy(messageSender, from, to, value, empty);
+    }
+
+    function transferFromSenderPaysFee(address from, address to, uint value, bytes data)
+        optionalProxy
+        external
+    {
+        _transferFromSenderPaysFee_byProxy(messageSender, from, to, value, data);
     }
 
     function giveTokens(address account, uint amount)

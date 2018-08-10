@@ -293,8 +293,7 @@ contract Havven is ExternStateToken {
         external
         optionalProxy_onlyOwner
     {
-        require(MIN_FEE_PERIOD_DURATION <= duration &&
-                               duration <= MAX_FEE_PERIOD_DURATION);
+        require(MIN_FEE_PERIOD_DURATION <= duration && duration <= MAX_FEE_PERIOD_DURATION);
         feePeriodDuration = duration;
         emitFeePeriodDurationUpdated(duration);
         rolloverFeePeriodIfElapsed();
@@ -403,14 +402,28 @@ contract Havven is ExternStateToken {
      */
     function transfer(address to, uint value)
         public
+        returns (bool)
+    {
+        bytes memory empty;
+        return transfer(to, value, empty);
+    }
+
+    /**
+     * @notice ERC223 transfer function. Does not conform with the ERC223 spec, as:
+     *         - Transaction doesn't revert if the recipient doesn't implement tokenFallback()
+     *         - Emits a standard ERC20 event without the bytes data parameter so as not to confuse
+     *           tooling such as Etherscan.
+     */
+    function transfer(address to, uint value, bytes data)
+        public
         optionalProxy
         returns (bool)
     {
-        address sender = messageSender;
-        require(nominsIssued[sender] == 0 || value <= transferableHavvens(sender));
+        require(nominsIssued[messageSender] == 0 || value <= transferableHavvens(messageSender));
+
         /* Perform the transfer: if there is a problem,
          * an exception will be thrown in this call. */
-        _transfer_byProxy(sender, to, value);
+        _transfer_byProxy(messageSender, to, value, data);
 
         return true;
     }
@@ -420,14 +433,27 @@ contract Havven is ExternStateToken {
      */
     function transferFrom(address from, address to, uint value)
         public
+        returns (bool)
+    {
+        bytes memory empty;
+        return transferFrom(from, to, value, empty);
+    }
+
+    /**
+     * @notice ERC223 transferFrom function. Does not conform with the ERC223 spec, as:
+     *         - Transaction doesn't revert if the recipient doesn't implement tokenFallback()
+     *         - Emits a standard ERC20 event without the bytes data parameter so as not to confuse
+     *           tooling such as Etherscan.
+     */
+    function transferFrom(address from, address to, uint value, bytes data)
+        public
         optionalProxy
         returns (bool)
     {
-        address sender = messageSender;
         require(nominsIssued[from] == 0 || value <= transferableHavvens(from));
         /* Perform the transfer: if there is a problem,
          * an exception will be thrown in this call. */
-        _transferFrom_byProxy(sender, from, to, value);
+        _transferFrom_byProxy(messageSender, from, to, value, data);
 
         return true;
     }

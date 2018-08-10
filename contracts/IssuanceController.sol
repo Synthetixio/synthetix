@@ -505,16 +505,15 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         nomin.transferFrom(msg.sender, this, amount);
 
         // Note, we don't need to add them to the deposit list below, as the Nomin contract itself will
-        // call havvenTokenFallback when the transfer happens, adding their deposit to the queue.
+        // call tokenFallback when the transfer happens, adding their deposit to the queue.
     }
 
     /**
-     * @notice havvenTokenFallback: Triggers when users send us HAV or nUSD, but the modifier only allows nUSD
-     *         calls to proceed.
+     * @notice Triggers when users send us HAV or nUSD, but the modifier only allows nUSD calls to proceed.
      * @param from The address sending the nUSD
      * @param amount The amount of nUSD
      */
-    function havvenTokenFallback(address from, uint amount)
+    function tokenFallback(address from, uint amount, bytes data)
         external
         onlyNomin
     {

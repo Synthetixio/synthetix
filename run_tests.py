@@ -10,10 +10,11 @@ from utils.generalutils import load_test_settings, ganache_error_message
 if __name__ == '__main__':
     num_agents = "150"
     eth_per_agent = "1000000000000"
+    block_gas_limit = "0x7a213a" # From mainnet on 2018-08-10
 
     print("Launching ganache", end="", flush=True)
     DEVNULL = open(os.devnull, 'wb')
-    command = ["ganache-cli", "-a", num_agents, "-e", eth_per_agent]
+    command = ["ganache-cli", "-a", num_agents, "-e", eth_per_agent, "-l", block_gas_limit]
     try:
         process = subprocess.Popen(command, stdout=DEVNULL, stderr=subprocess.STDOUT)
     except Exception as e:

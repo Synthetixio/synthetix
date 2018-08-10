@@ -32,7 +32,6 @@ pragma solidity 0.4.24;
 
 import "contracts/ExternStateToken.sol";
 
-
 /**
  * @title ERC20 Token contract, with detached state.
  * Additionally charges fees on each transfer.
@@ -168,7 +167,7 @@ contract FeeToken is ExternStateToken {
     /**
      * @notice Base of transfer functions
      */
-    function _internalTransfer(address from, address to, uint amount, uint fee)
+    function _internalTransfer(address from, address to, uint amount, uint fee, bytes data)
         internal
         returns (bool)
     {
@@ -182,43 +181,7 @@ contract FeeToken is ExternStateToken {
         tokenState.setBalanceOf(to, safeAdd(tokenState.balanceOf(to), amount));
         tokenState.setBalanceOf(FEE_ADDRESS, safeAdd(tokenState.balanceOf(FEE_ADDRESS), fee));
 
-        /*
-        If we're transferring to a contract and it implements the havvenTokenFallback function, call it.
-        This isn't ERC223 compliant because:
-           1. We don't revert if the contract doesn't implement havvenTokenFallback.
-              This is because many DEXes and other contracts that expect to work with the standard
-              approve / transferFrom workflow don't implement tokenFallback but can still process our tokens as
-              usual, so it feels very harsh and likely to cause trouble if we add this restriction after having
-              previously gone live with a vanilla ERC20.
-           2. We don't pass the bytes parameter.
-              This is because of this solidity bug: https://github.com/ethereum/solidity/issues/2884
-           3. We also don't let the user use a custom tokenFallback. We figure as we're already not standards
-              compliant, there won't be a use case where users can't just implement our specific function.
-
-        As such we've called the function havvenTokenFallback to be clear that we are not following the standard.
-        */
-
-        // Is the to address a contract? We can check the code size on that address and know.
-        uint length;
-
-        // solium-disable-next-line security/no-inline-assembly
-        assembly {
-            // Retrieve the size of the code on the recipient address
-            length := extcodesize(to)
-        }
-
-        // If there's code there, it's a contract
-        if (length > 0) {
-            // Now we need to optionally call havvenTokenFallback(address from, uint value).
-            // We can't call it the normal way because that reverts when the recipient doesn't implement the function.
-            // We'll use .call(), which means we need the function selector. We've pre-computed
-            // abi.encodeWithSignature("havvenTokenFallback(address,uint256)"), to save some gas.
-
-            // solium-disable-next-line security/no-low-level-calls
-            to.call(0xcbff5d96, messageSender, amount);
-
-            // And yes, we specifically don't care if this call fails, so we're not checking the return value.
-        }
+        callTokenFallbackIfNeeded(from, to, amount, data);
 
         /* Emit events for both the transfer itself and the fee. */
         emitTransfer(from, to, amount);
@@ -228,22 +191,22 @@ contract FeeToken is ExternStateToken {
     }
 
     /**
-     * @notice ERC20 friendly transfer function.
+     * @notice ERC20 / ERC223 friendly transfer function.
      */
-    function _transfer_byProxy(address sender, address to, uint value)
+    function _transfer_byProxy(address sender, address to, uint value, bytes data)
         internal
         returns (bool)
     {
         uint received = amountReceived(value);
         uint fee = safeSub(value, received);
 
-        return _internalTransfer(sender, to, received, fee);
+        return _internalTransfer(sender, to, received, fee, data);
     }
 
     /**
      * @notice ERC20 friendly transferFrom function.
      */
-    function _transferFrom_byProxy(address sender, address from, address to, uint value)
+    function _transferFrom_byProxy(address sender, address from, address to, uint value, bytes data)
         internal
         returns (bool)
     {
@@ -255,25 +218,25 @@ contract FeeToken is ExternStateToken {
          * The safeSub call will handle an insufficient allowance. */
         tokenState.setAllowance(from, sender, safeSub(tokenState.allowance(from, sender), value));
 
-        return _internalTransfer(from, to, received, fee);
+        return _internalTransfer(from, to, received, fee, data);
     }
 
     /**
      * @notice Ability to transfer where the sender pays the fees (not ERC20)
      */
-    function _transferSenderPaysFee_byProxy(address sender, address to, uint value)
+    function _transferSenderPaysFee_byProxy(address sender, address to, uint value, bytes data)
         internal
         returns (bool)
     {
         /* The fee is added to the amount sent. */
         uint fee = transferFeeIncurred(value);
-        return _internalTransfer(sender, to, value, fee);
+        return _internalTransfer(sender, to, value, fee, data);
     }
 
     /**
      * @notice Ability to transferFrom where they sender pays the fees (not ERC20).
      */
-    function _transferFromSenderPaysFee_byProxy(address sender, address from, address to, uint value)
+    function _transferFromSenderPaysFee_byProxy(address sender, address from, address to, uint value, bytes data)
         internal
         returns (bool)
     {
@@ -284,7 +247,7 @@ contract FeeToken is ExternStateToken {
         /* Reduce the allowance by the amount we're transferring. */
         tokenState.setAllowance(from, sender, safeSub(tokenState.allowance(from, sender), total));
 
-        return _internalTransfer(from, to, value, fee);
+        return _internalTransfer(from, to, value, fee, data);
     }
 
     /**

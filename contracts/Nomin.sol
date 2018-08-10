@@ -97,7 +97,22 @@ contract Nomin is FeeToken {
         returns (bool)
     {
         require(!frozen[to]);
-        return _transfer_byProxy(messageSender, to, value);
+        bytes memory empty;
+        return _transfer_byProxy(messageSender, to, value, empty);
+    }
+
+    /* Override ERC223 transfer function in order to check
+     * whether the recipient account is frozen. Note that there is
+     * no need to check whether the sender has a frozen account,
+     * since their funds have already been confiscated,
+     * and no new funds can be transferred to it.*/
+    function transfer(address to, uint value, bytes data)
+        public
+        optionalProxy
+        returns (bool)
+    {
+        require(!frozen[to]);
+        return _transfer_byProxy(messageSender, to, value, data);
     }
 
     /* Override ERC20 transferFrom function in order to check
@@ -108,7 +123,19 @@ contract Nomin is FeeToken {
         returns (bool)
     {
         require(!frozen[to]);
-        return _transferFrom_byProxy(messageSender, from, to, value);
+        bytes memory empty;
+        return _transferFrom_byProxy(messageSender, from, to, value, empty);
+    }
+
+    /* Override ERC223 transferFrom function in order to check
+     * whether the recipient account is frozen. */
+    function transferFrom(address from, address to, uint value, bytes data)
+        public
+        optionalProxy
+        returns (bool)
+    {
+        require(!frozen[to]);
+        return _transferFrom_byProxy(messageSender, from, to, value, data);
     }
 
     function transferSenderPaysFee(address to, uint value)
@@ -117,7 +144,17 @@ contract Nomin is FeeToken {
         returns (bool)
     {
         require(!frozen[to]);
-        return _transferSenderPaysFee_byProxy(messageSender, to, value);
+        bytes memory empty;
+        return _transferSenderPaysFee_byProxy(messageSender, to, value, empty);
+    }
+
+    function transferSenderPaysFee(address to, uint value, bytes data)
+        public
+        optionalProxy
+        returns (bool)
+    {
+        require(!frozen[to]);
+        return _transferSenderPaysFee_byProxy(messageSender, to, value, data);
     }
 
     function transferFromSenderPaysFee(address from, address to, uint value)
@@ -126,7 +163,17 @@ contract Nomin is FeeToken {
         returns (bool)
     {
         require(!frozen[to]);
-        return _transferFromSenderPaysFee_byProxy(messageSender, from, to, value);
+        bytes memory empty;
+        return _transferFromSenderPaysFee_byProxy(messageSender, from, to, value, empty);
+    }
+
+    function transferFromSenderPaysFee(address from, address to, uint value, bytes data)
+        public
+        optionalProxy
+        returns (bool)
+    {
+        require(!frozen[to]);
+        return _transferFromSenderPaysFee_byProxy(messageSender, from, to, value, data);
     }
 
     /* The owner may allow a previously-frozen contract to once
