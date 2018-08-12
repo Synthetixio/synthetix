@@ -175,7 +175,8 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     {
         /* Must be the most recently sent price, but not too far in the future.
          * (so we can't lock ourselves out of updating the oracle for longer than this) */
-        require(lastPriceUpdateTime < timeSent && timeSent < now + ORACLE_FUTURE_LIMIT);
+        require(lastPriceUpdateTime < timeSent && timeSent < now + ORACLE_FUTURE_LIMIT, 
+            "Time sent must be bigger than the last update, and must be less than now + ORACLE_FUTURE_LIMIT");
 
         usdToEthPrice = newEthPrice;
         usdToHavPrice = newHavvenPrice;
@@ -324,13 +325,13 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
 
     modifier onlyOracle
     {
-        require(msg.sender == oracle);
+        require(msg.sender == oracle, "Must be oracle to perform this action");
         _;
     }
 
     modifier pricesNotStale
     {
-        require(!pricesAreStale());
+        require(!pricesAreStale(), "Prices must not be stale to perform this action");
         _;
     }
 

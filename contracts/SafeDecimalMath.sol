@@ -61,7 +61,7 @@ contract SafeDecimalMath {
         internal
         returns (uint)
     {
-        require(x + y >= y);
+        require(x + y >= y, "Safe add failed");
         return x + y;
     }
 
@@ -84,7 +84,7 @@ contract SafeDecimalMath {
         internal
         returns (uint)
     {
-        require(y <= x);
+        require(y <= x, "Safe sub failed");
         return x - y;
     }
 
@@ -114,7 +114,7 @@ contract SafeDecimalMath {
             return 0;
         }
         uint p = x * y;
-        require(p / x == y);
+        require(p / x == y, "Safe mul failed");
         return p;
     }
 
@@ -162,7 +162,7 @@ contract SafeDecimalMath {
         /* Although a 0 denominator already throws an exception,
          * it is equivalent to a THROW operation, which consumes all gas.
          * A require statement emits REVERT instead, which remits remaining gas. */
-        require(y != 0);
+        require(y != 0, "Denominator cannot be zero");
         return x / y;
     }
 
