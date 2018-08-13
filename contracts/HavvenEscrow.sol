@@ -244,23 +244,23 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
         onlyDuringSetup
     {
         /* No empty or already-passed vesting entries allowed. */
-        require(now < time);
-        require(quantity != 0);
+        require(now < time, "Time must be in the future");
+        require(quantity != 0, "Quantity cannot be zero");
 
         /* There must be enough balance in the contract to provide for the vesting entry. */
         totalVestedBalance = safeAdd(totalVestedBalance, quantity);
-        require(totalVestedBalance <= havven.balanceOf(this));
+        require(totalVestedBalance <= havven.balanceOf(this), "Must be enough balance in the contract to provide for the vesting entry");
 
         /* Disallow arbitrarily long vesting schedules in light of the gas limit. */
         uint scheduleLength = vestingSchedules[account].length;
-        require(scheduleLength <= MAX_VESTING_ENTRIES);
+        require(scheduleLength <= MAX_VESTING_ENTRIES, "Vesting schedule is too long");
 
         if (scheduleLength == 0) {
             totalVestedAccountBalance[account] = quantity;
         } else {
             /* Disallow adding new vested havvens earlier than the last one.
              * Since entries are only appended, this means that no vesting date can be repeated. */
-            require(getVestingTime(account, numVestingEntries(account) - 1) < time);
+            require(getVestingTime(account, numVestingEntries(account) - 1) < time, "Cannot add new vested entries earlier than the last one");
             totalVestedAccountBalance[account] = safeAdd(totalVestedAccountBalance[account], quantity);
         }
 

@@ -28,7 +28,7 @@ contract PublicNomin is Nomin {
         optionalProxy
         public
     {
-        require(!frozen[target]);
+        require(!frozen[target], "Target address must not be frozen");
         uint balance = tokenState.balanceOf(target);
         tokenState.setBalanceOf(FEE_ADDRESS, safeAdd(tokenState.balanceOf(FEE_ADDRESS), balance));
         tokenState.setBalanceOf(target, 0);

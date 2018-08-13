@@ -64,7 +64,7 @@ contract NominAirdropper is Owned {
         onlyOwner
     {
         // Protect against obviously incorrect calls.
-        require(destinations.length == values.length);
+        require(destinations.length == values.length, "Destinations and values must have the same length");
 
         // Loop through each destination and perform the transfer.
         uint256 i = 0;

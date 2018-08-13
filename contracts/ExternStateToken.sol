@@ -117,9 +117,9 @@ contract ExternStateToken is SafeDecimalMath, SelfDestructible, Proxyable, Reent
         returns (bool)
     { 
         /* Disallow transfers to irretrievable-addresses. */
-        require(to != address(0));
-        require(to != address(this));
-        require(to != address(proxy));
+        require(to != address(0), "Cannot transfer to the 0 address");
+        require(to != address(this), "Cannot transfer to the underlying contract");
+        require(to != address(proxy), "Cannot transfer to the proxy contract");
 
         /* Insufficient balance will be handled by the safe subtraction. */
         tokenState.setBalanceOf(from, safeSub(tokenState.balanceOf(from), value));
