@@ -15,17 +15,15 @@ MODULE DESCRIPTION
 Issuance controller contract. The issuance controller provides
 a way for users to acquire nomins (Nomin.sol) and havvens
 (Havven.sol) by paying ETH and a way for users to acquire havvens
-(Havven.sol) by paying nomins.
+(Havven.sol) by paying nomins. Users can also deposit their nomins
+and allow other users to purchase them with ETH. The ETH is sent
+to the user who offered their nomins for sale.
 
 This smart contract contains a balance of each currency, and
 allows the owner of the contract (the Havven Foundation) to
-manage the available balances of both currencies at their 
-discretion.
-
-In future releases this functionality will gradually move away
-from a centralised approach with the Havven foundation
-controlling all of the currency to a decentralised exchange
-approach where users can exchange these assets freely.
+manage the available balance of havven at their discretion, while
+users are allowed to deposit and withdraw their own nomin deposits
+if they have not yet been taken up by another user.
 
 -----------------------------------------------------------------
 */
@@ -103,6 +101,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     /**
      * @dev Constructor
      * @param _owner The owner of this contract.
+     * @param _fundsWallet The recipient of ETH and Nomins that are sent to this contract while exchanging.
      * @param _havven The Havven contract we'll interact with for balances and sending.
      * @param _nomin The Nomin contract we'll interact with for balances and sending.
      * @param _oracle The address which is able to update price information.
@@ -144,6 +143,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
 
     /**
      * @notice Set the funds wallet where ETH raised is held
+     * @param _fundsWallet The new address to forward ETH and Nomins to
      */
     function setFundsWallet(address _fundsWallet)
         external
@@ -155,6 +155,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     
     /**
      * @notice Set the Oracle that pushes the havven price to this contract
+     * @param _oracle The new oracle address
      */
     function setOracle(address _oracle)
         external
@@ -166,6 +167,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
 
     /**
      * @notice Set the Nomin contract that the issuance controller uses to issue Nomins.
+     * @param _nomin The new nomin contract target
      */
     function setNomin(Nomin _nomin)
         external
@@ -177,6 +179,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
 
     /**
      * @notice Set the Havven contract that the issuance controller uses to issue Havvens.
+     * @param _havven The new havven contract target
      */
     function setHavven(Havven _havven)
         external
@@ -188,6 +191,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
 
     /**
      * @notice Set the stale period on the updated price variables
+     * @param _time The new priceStalePeriod
      */
     function setPriceStalePeriod(uint _time)
         external
@@ -200,6 +204,9 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     /* ========== MUTATIVE FUNCTIONS ========== */
     /**
      * @notice Access point for the oracle to update the prices of havvens / eth.
+     * @param newEthPrice The current price of ether in USD, specified to 18 decimal places.
+     * @param newHavvenPrice The current price of havvens in USD, specified to 18 decimal places.
+     * @param timeSent The timestamp from the oracle when the transaction was created. This ensures we don't consider stale prices as current in times of heavy network congestion.
      */
     function updatePrices(uint newEthPrice, uint newHavvenPrice, uint timeSent)
         external
@@ -341,7 +348,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     /**
      * @notice Exchange ETH to nUSD while insisting on a particular rate. This allows a user to
      *         exchange while protecting against frontrunning by the contract owner on the exchange rate.
-     * @param guaranteedRate The exchange rate which must be honored or the call will revert.
+     * @param guaranteedRate The exchange rate (ether price) which must be honored or the call will revert.
      */
     function exchangeEtherForNominsAtRate(uint guaranteedRate)
         public
@@ -430,6 +437,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
      * @notice Exchange nUSD for Havvens while insisting on a particular rate. This allows a user to
      *         exchange while protecting against frontrunning by the contract owner on the exchange rate.
      * @param nominAmount The amount of nomins the user wishes to exchange.
+     * @param guaranteedRate A rate (havven price) the caller wishes to insist upon.
      */
     function exchangeNominsForHavvensAtRate(uint nominAmount, uint guaranteedRate)
         public 
@@ -443,7 +451,8 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     }
     
     /**
-     * @notice Withdraw havvens: Allows the owner to withdraw havvens from this contract if needed.
+     * @notice Allows the owner to withdraw havvens from this contract if needed.
+     * @param amount The amount of havvens to attempt to withdraw (in 18 decimal places).
      */
     function withdrawHavvens(uint amount)
         external
@@ -541,26 +550,31 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     /**
      * @notice Calculate how many havvens you will receive if you transfer
      *         an amount of nomins.
+     * @param amount The amount of nomins (in 18 decimal places) you want to ask about
      */
     function havvensReceivedForNomins(uint amount)
         public 
         view
         returns (uint)
     {
+        // How many nomins would we receive after the transfer fee?
         uint nominsReceived = nomin.amountReceived(amount);
+
+        // And what would that be worth in havvens based on the current price?
         return safeDiv_dec(nominsReceived, usdToHavPrice);
     }
 
     /**
      * @notice Calculate how many havvens you will receive if you transfer
-     *         an amount of ether (in wei).
+     *         an amount of ether.
+     * @param amount The amount of ether (in wei) you want to ask about
      */
     function havvensReceivedForEther(uint amount)
         public 
         view
         returns (uint)
     {
-        // First off, how much is the ETH they sent us worth in nUSD (ignoring the transfer fee)?
+        // How much is the ETH they sent us worth in nUSD (ignoring the transfer fee)?
         uint valueSentInNomins = safeMul_dec(amount, usdToEthPrice); 
 
         // Now, how many HAV will that USD amount buy?
@@ -570,13 +584,17 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     /**
      * @notice Calculate how many nomins you will receive if you transfer
      *         an amount of ether.
+     * @param amount The amount of ether (in wei) you want to ask about
      */
     function nominsReceivedForEther(uint amount)
         public 
         view
         returns (uint)
     {
+        // How many nomins would that amount of ether be worth?
         uint nominsTransferred = safeMul_dec(amount, usdToEthPrice);
+
+        // And how many of those would you receive after a transfer (deducting the transfer fee)
         return nomin.amountReceived(nominsTransferred);
     }
     
