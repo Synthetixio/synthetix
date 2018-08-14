@@ -281,6 +281,30 @@ class TestFeeToken(HavvenTestCase):
         self.assertEqual(self.feetoken.totalSupply(), total_supply)
         self.assertEqual(self.feetoken.feePool(), fee_pool)
 
+    def test_specificReversionOfTransferRollback(self): 
+        # This test replicates a very specific failure of transferring nUSD:
+        # https://etherscan.io/tx/0x3300d39d5c97060ddcc5cf044cd779ce6bdc17b8a9976bd01e59365702843104
+        # This is so we can be sure we've replicated the issue and fixed it.
+
+        # Set up the conditions to be the same as the transaction that failed.
+        sender = fresh_account()
+        value = 4800149663005492000000
+        tx_receipt = self.feetoken.giveTokens(self.initial_beneficiary, sender, value)
+        self.assertEqual(self.feetoken.balanceOf(sender), value)
+        receiver = fresh_account()
+        self.assertEqual(self.feetoken.balanceOf(receiver), 0)
+
+        amountReceived = self.feetoken.amountReceived(value)
+        fee = value - amountReceived
+        
+        # Ok, now do a transfer for exactly the whole amount.
+        tx_receipt = self.feetoken.transfer(sender, receiver, value)
+
+        # Assert that that worked.
+        self.assertEqual(self.feetoken.balanceOf(sender), 0)
+        self.assertEqual(self.feetoken.balanceOf(receiver), amountReceived)
+        self.assertEqual(self.feetoken.feePool(), fee)
+
     def test_approve(self):
         approver = MASTER
         spender = fresh_account()
