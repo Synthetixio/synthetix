@@ -293,7 +293,8 @@ contract Havven is ExternStateToken {
         external
         optionalProxy_onlyOwner
     {
-        require(MIN_FEE_PERIOD_DURATION <= duration && duration <= MAX_FEE_PERIOD_DURATION);
+        require(MIN_FEE_PERIOD_DURATION <= duration && duration <= MAX_FEE_PERIOD_DURATION,
+            "Duration must be between MIN_FEE_PERIOD_DURATION and MAX_FEE_PERIOD_DURATION");
         feePeriodDuration = duration;
         emitFeePeriodDurationUpdated(duration);
         rolloverFeePeriodIfElapsed();
@@ -329,7 +330,7 @@ contract Havven is ExternStateToken {
         external
         optionalProxy_onlyOwner
     {
-        require(_issuanceRatio <= MAX_ISSUANCE_RATIO);
+        require(_issuanceRatio <= MAX_ISSUANCE_RATIO, "New issuance ratio must be less than or equal to MAX_ISSUANCE_RATIO");
         issuanceRatio = _issuanceRatio;
         emitIssuanceRatioUpdated(_issuanceRatio);
     }
@@ -419,8 +420,8 @@ contract Havven is ExternStateToken {
         optionalProxy
         returns (bool)
     {
-        require(nominsIssued[messageSender] == 0 || value <= transferableHavvens(messageSender));
-
+        address sender = messageSender;
+        require(nominsIssued[sender] == 0 || value <= transferableHavvens(sender), "Value to transfer exceeds available havvens");
         /* Perform the transfer: if there is a problem,
          * an exception will be thrown in this call. */
         _transfer_byProxy(messageSender, to, value, data);
@@ -450,7 +451,8 @@ contract Havven is ExternStateToken {
         optionalProxy
         returns (bool)
     {
-        require(nominsIssued[from] == 0 || value <= transferableHavvens(from));
+        address sender = messageSender;
+        require(nominsIssued[from] == 0 || value <= transferableHavvens(from), "Value to transfer exceeds available havvens");
         /* Perform the transfer: if there is a problem,
          * an exception will be thrown in this call. */
         _transferFrom_byProxy(messageSender, from, to, value, data);
@@ -469,13 +471,13 @@ contract Havven is ExternStateToken {
         address sender = messageSender;
         rolloverFeePeriodIfElapsed();
         /* Do not deposit fees into frozen accounts. */
-        require(!nomin.frozen(sender));
+        require(!nomin.frozen(sender), "Cannot deposit fees into frozen accounts");
 
         /* Check the period has rolled over first. */
         updateIssuanceData(sender, nominsIssued[sender], nomin.totalSupply());
 
         /* Only allow accounts to withdraw fees once per period. */
-        require(!hasWithdrawnFees[sender]);
+        require(!hasWithdrawnFees[sender], "Fees have already been withdrawn in this period");
 
         uint feesOwed;
         uint lastTotalIssued = totalIssuanceData.lastAverageBalance;
@@ -580,7 +582,7 @@ contract Havven is ExternStateToken {
         /* No need to check if price is stale, as it is checked in issuableNomins. */
     {
         address sender = messageSender;
-        require(amount <= remainingIssuableNomins(sender));
+        require(amount <= remainingIssuableNomins(sender), "Amount must be less than or equal to remaining issuable nomins");
         uint lastTot = nomin.totalSupply();
         uint preIssued = nominsIssued[sender];
         nomin.issue(sender, amount);
@@ -795,7 +797,8 @@ contract Havven is ExternStateToken {
     {
         /* Must be the most recently sent price, but not too far in the future.
          * (so we can't lock ourselves out of updating the oracle for longer than this) */
-        require(lastPriceUpdateTime < timeSent && timeSent < now + ORACLE_FUTURE_LIMIT);
+        require(lastPriceUpdateTime < timeSent && timeSent < now + ORACLE_FUTURE_LIMIT,
+            "Time sent must be bigger than the last update, and must be less than now + ORACLE_FUTURE_LIMIT");
 
         price = newPrice;
         lastPriceUpdateTime = timeSent;
@@ -820,19 +823,19 @@ contract Havven is ExternStateToken {
 
     modifier requireIssuer(address account)
     {
-        require(isIssuer[account]);
+        require(isIssuer[account], "Must be issuer to perform this action");
         _;
     }
 
     modifier onlyOracle
     {
-        require(msg.sender == oracle);
+        require(msg.sender == oracle, "Must be oracle to perform this action");
         _;
     }
 
     modifier priceNotStale
     {
-        require(!priceIsStale());
+        require(!priceIsStale(), "Price must not be stale to perform this action");
         _;
     }
 

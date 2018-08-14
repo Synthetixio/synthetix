@@ -43,7 +43,7 @@ contract Owned {
     constructor(address _owner)
         public
     {
-        require(_owner != address(0));
+        require(_owner != address(0), "Owner address cannot be 0");
         owner = _owner;
         emit OwnerChanged(address(0), _owner);
     }
@@ -66,7 +66,7 @@ contract Owned {
     function acceptOwnership()
         external
     {
-        require(msg.sender == nominatedOwner);
+        require(msg.sender == nominatedOwner, "You must be nominated before you can accept ownership");
         emit OwnerChanged(owner, nominatedOwner);
         owner = nominatedOwner;
         nominatedOwner = address(0);
@@ -74,7 +74,7 @@ contract Owned {
 
     modifier onlyOwner
     {
-        require(msg.sender == owner);
+        require(msg.sender == owner, "Only the contract owner may perform this action");
         _;
     }
 

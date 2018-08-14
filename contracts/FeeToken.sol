@@ -74,7 +74,7 @@ contract FeeToken is ExternStateToken {
         feeAuthority = _feeAuthority;
 
         /* Constructed transfer fee rate should respect the maximum fee rate. */
-        require(_transferFeeRate <= MAX_TRANSFER_FEE_RATE);
+        require(_transferFeeRate <= MAX_TRANSFER_FEE_RATE, "Constructed transfer fee rate should respect the maximum fee rate");
         transferFeeRate = _transferFeeRate;
     }
 
@@ -88,7 +88,7 @@ contract FeeToken is ExternStateToken {
         external
         optionalProxy_onlyOwner
     {
-        require(_transferFeeRate <= MAX_TRANSFER_FEE_RATE);
+        require(_transferFeeRate <= MAX_TRANSFER_FEE_RATE, "Transfer fee rate must be below MAX_TRANSFER_FEE_RATE");
         transferFeeRate = _transferFeeRate;
         emitTransferFeeRateUpdated(_transferFeeRate);
     }
@@ -172,9 +172,9 @@ contract FeeToken is ExternStateToken {
         returns (bool)
     {
         /* Disallow transfers to irretrievable-addresses. */
-        require(to != address(0));
-        require(to != address(this));
-        require(to != address(proxy));
+        require(to != address(0), "Cannot transfer to the 0 address");
+        require(to != address(this), "Cannot transfer to the underlying contract");
+        require(to != address(proxy), "Cannot transfer to the proxy contract");
 
         /* Insufficient balance will be handled by the safe subtraction. */
         tokenState.setBalanceOf(from, safeSub(tokenState.balanceOf(from), safeAdd(amount, fee)));
@@ -259,7 +259,7 @@ contract FeeToken is ExternStateToken {
         onlyFeeAuthority
         returns (bool)
     {
-        require(account != address(0));
+        require(account != address(0), "Must supply an account address to withdraw fees");
 
         /* 0-value withdrawals do nothing. */
         if (value == 0) {
@@ -287,7 +287,7 @@ contract FeeToken is ExternStateToken {
         address sender = messageSender;
         /* Empty donations are disallowed. */
         uint balance = tokenState.balanceOf(sender);
-        require(balance != 0);
+        require(balance != 0, "Must have a balance in order to donate to the fee pool");
 
         /* safeSub ensures the donor has sufficient balance. */
         tokenState.setBalanceOf(sender, safeSub(balance, n));
@@ -304,7 +304,7 @@ contract FeeToken is ExternStateToken {
 
     modifier onlyFeeAuthority
     {
-        require(msg.sender == feeAuthority);
+        require(msg.sender == feeAuthority, "Only the fee authority can do this action");
         _;
     }
 

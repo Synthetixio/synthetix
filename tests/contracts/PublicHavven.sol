@@ -39,7 +39,7 @@ contract PublicHavven is Havven {
          * their havvens are escrowed, however the transfer would then
          * fail. This means that escrowed havvens are locked first,
          * and then the actual transferable ones. */
-        require(nominsIssued[sender] == 0 || value <= transferableHavvens(sender));
+        require(nominsIssued[sender] == 0 || value <= transferableHavvens(sender), "Insufficient transferrable havvens");
         /* Perform the transfer: if there is a problem,
          * an exception will be thrown in this call. */
         tokenState.setBalanceOf(sender, safeSub(tokenState.balanceOf(sender), value));

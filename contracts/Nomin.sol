@@ -64,7 +64,10 @@ contract Nomin is FeeToken {
                  _owner)
         public
     {
-        require(_proxy != 0 && address(_havven) != 0 && _owner != 0);
+        require(_proxy != 0, "_proxy cannot be 0");
+        require(address(_havven) != 0, "_havven cannot be 0");
+        require(_owner != 0, "_owner cannot be 0");
+
         // It should not be possible to transfer to the fee pool directly (or confiscate its balance).
         frozen[FEE_ADDRESS] = true;
         havven = _havven;
@@ -96,7 +99,7 @@ contract Nomin is FeeToken {
         optionalProxy
         returns (bool)
     {
-        require(!frozen[to]);
+        require(!frozen[to], "Cannot transfer to frozen address");
         bytes memory empty;
         return _transfer_byProxy(messageSender, to, value, empty);
     }
@@ -111,7 +114,7 @@ contract Nomin is FeeToken {
         optionalProxy
         returns (bool)
     {
-        require(!frozen[to]);
+        require(!frozen[to], "Cannot transfer to frozen address");
         return _transfer_byProxy(messageSender, to, value, data);
     }
 
@@ -122,7 +125,7 @@ contract Nomin is FeeToken {
         optionalProxy
         returns (bool)
     {
-        require(!frozen[to]);
+        require(!frozen[to], "Cannot transfer to frozen address");
         bytes memory empty;
         return _transferFrom_byProxy(messageSender, from, to, value, empty);
     }
@@ -134,7 +137,7 @@ contract Nomin is FeeToken {
         optionalProxy
         returns (bool)
     {
-        require(!frozen[to]);
+        require(!frozen[to], "Cannot transfer to frozen address");
         return _transferFrom_byProxy(messageSender, from, to, value, data);
     }
 
@@ -143,7 +146,7 @@ contract Nomin is FeeToken {
         optionalProxy
         returns (bool)
     {
-        require(!frozen[to]);
+        require(!frozen[to], "Cannot transfer to frozen address");
         bytes memory empty;
         return _transferSenderPaysFee_byProxy(messageSender, to, value, empty);
     }
@@ -153,7 +156,7 @@ contract Nomin is FeeToken {
         optionalProxy
         returns (bool)
     {
-        require(!frozen[to]);
+        require(!frozen[to], "Cannot transfer to frozen address");
         return _transferSenderPaysFee_byProxy(messageSender, to, value, data);
     }
 
@@ -162,7 +165,7 @@ contract Nomin is FeeToken {
         optionalProxy
         returns (bool)
     {
-        require(!frozen[to]);
+        require(!frozen[to], "Cannot transfer to frozen address");
         bytes memory empty;
         return _transferFromSenderPaysFee_byProxy(messageSender, from, to, value, empty);
     }
@@ -172,7 +175,7 @@ contract Nomin is FeeToken {
         optionalProxy
         returns (bool)
     {
-        require(!frozen[to]);
+        require(!frozen[to], "Cannot transfer to frozen address");
         return _transferFromSenderPaysFee_byProxy(messageSender, from, to, value, data);
     }
 
@@ -182,7 +185,7 @@ contract Nomin is FeeToken {
         external
         optionalProxy_onlyOwner
     {
-        require(frozen[target] && target != FEE_ADDRESS);
+        require(frozen[target] && target != FEE_ADDRESS, "Account must be frozen, and cannot be the fee address");
         frozen[target] = false;
         emitAccountUnfrozen(target);
     }
@@ -214,7 +217,7 @@ contract Nomin is FeeToken {
     /* ========== MODIFIERS ========== */
 
     modifier onlyHavven() {
-        require(Havven(msg.sender) == havven);
+        require(Havven(msg.sender) == havven, "Only the Havven contract can perform this action");
         _;
     }
 
