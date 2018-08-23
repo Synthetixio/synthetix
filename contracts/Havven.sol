@@ -122,10 +122,10 @@ even going above the initial wallet balance.
 pragma solidity 0.4.24;
 
 
-import "contracts/ExternStateToken.sol";
-import "contracts/Nomin.sol";
-import "contracts/HavvenEscrow.sol";
-import "contracts/TokenState.sol";
+import "./ExternStateToken.sol";
+import "./Nomin.sol";
+import "./HavvenEscrow.sol";
+import "./TokenState.sol";
 
 
 /**

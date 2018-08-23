@@ -1,6 +1,6 @@
 pragma solidity ^0.4.23;
 
-import "contracts/ExternStateToken.sol";
+import "./ExternStateToken.sol";
 
 contract PublicEST is ExternStateToken {
     constructor(address _proxy, TokenState _tokenState,

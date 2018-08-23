@@ -34,9 +34,9 @@ per fee period.
 pragma solidity 0.4.24;
 
 
-import "contracts/FeeToken.sol";
-import "contracts/TokenState.sol";
-import "contracts/Havven.sol";
+import "./FeeToken.sol";
+import "./TokenState.sol";
+import "./Havven.sol";
 
 contract Nomin is FeeToken {
 

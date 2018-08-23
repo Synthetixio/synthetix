@@ -34,11 +34,11 @@ main fee pool to be redistributed in the next fee period.
 pragma solidity 0.4.24;
 
 
-import "contracts/SafeDecimalMath.sol";
-import "contracts/Owned.sol";
-import "contracts/Havven.sol";
-import "contracts/Nomin.sol";
-import "contracts/LimitedSetup.sol";
+import "./SafeDecimalMath.sol";
+import "./Owned.sol";
+import "./Havven.sol";
+import "./Nomin.sol";
+import "./LimitedSetup.sol";
 
 /**
  * @title A contract to hold escrowed havvens and free them at given schedules.

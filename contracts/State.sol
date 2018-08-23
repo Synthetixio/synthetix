@@ -34,7 +34,7 @@ contract to the new one.
 pragma solidity 0.4.24;
 
 
-import "contracts/Owned.sol";
+import "./Owned.sol";
 
 
 contract State is Owned {

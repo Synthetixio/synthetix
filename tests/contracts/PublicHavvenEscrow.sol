@@ -4,8 +4,8 @@
 pragma solidity ^0.4.23;
 
 
-import "contracts/HavvenEscrow.sol";
-import "contracts/Havven.sol";
+import "./HavvenEscrow.sol";
+import "./Havven.sol";
 
 
 contract PublicHavvenEscrow is HavvenEscrow {

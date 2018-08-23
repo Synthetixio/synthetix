@@ -30,7 +30,7 @@ This contract utilises an external state for upgradeability.
 pragma solidity 0.4.24;
 
 
-import "contracts/ExternStateToken.sol";
+import "./ExternStateToken.sol";
 
 /**
  * @title ERC20 Token contract, with detached state.

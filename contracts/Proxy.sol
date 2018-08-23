@@ -33,8 +33,8 @@ into the underlying contract as the state parameter, messageSender.
 pragma solidity 0.4.24;
 
 
-import "contracts/Owned.sol";
-import "contracts/Proxyable.sol";
+import "./Owned.sol";
+import "./Proxyable.sol";
 
 
 contract Proxy is Owned {

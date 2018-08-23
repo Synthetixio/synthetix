@@ -25,7 +25,7 @@ on by both contracts.
 
 pragma solidity 0.4.24;
 
-import "contracts/ReentrancyPreventer.sol";
+import "./ReentrancyPreventer.sol";
 
 contract TokenFallbackCaller is ReentrancyPreventer {
     function callTokenFallbackIfNeeded(address sender, address recipient, uint amount, bytes data)

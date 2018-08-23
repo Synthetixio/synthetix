@@ -1,6 +1,6 @@
 pragma solidity ^0.4.23;
 
-import "contracts/FeeToken.sol";
+import "./FeeToken.sol";
 
 contract PublicFeeToken is FeeToken {
     constructor(address _proxy, TokenState _tokenState,

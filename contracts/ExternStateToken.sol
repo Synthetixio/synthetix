@@ -27,11 +27,11 @@ This contract utilises an external state for upgradeability.
 pragma solidity 0.4.24;
 
 
-import "contracts/SafeDecimalMath.sol";
-import "contracts/SelfDestructible.sol";
-import "contracts/TokenState.sol";
-import "contracts/Proxyable.sol";
-import "contracts/TokenFallbackCaller.sol";
+import "./SafeDecimalMath.sol";
+import "./SelfDestructible.sol";
+import "./TokenState.sol";
+import "./Proxyable.sol";
+import "./TokenFallbackCaller.sol";
 
 /**
  * @title ERC20 Token contract, with detached state and designed to operate behind a proxy.

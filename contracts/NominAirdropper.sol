@@ -41,8 +41,8 @@ limitations under the License.
 
 pragma solidity 0.4.24;
 
-import "contracts/Owned.sol";
-import "contracts/Nomin.sol";
+import "./Owned.sol";
+import "./Nomin.sol";
 
 contract NominAirdropper is Owned {
     /* ========== CONSTRUCTOR ========== */

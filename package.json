@@ -1,0 +1,32 @@
+{
+  "name": "havven",
+  "version": "2.0.0",
+  "description": "Havven smart contracts",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "compile": "truffle compile",
+    "build": "truffle build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Havven/havven.git"
+  },
+  "keywords": [
+    "Havven",
+    "Solidity",
+    "Truffle"
+  ],
+  "license": "MIT",
+  "author": "Havven",
+  "bugs": {
+    "url": "https://github.com/Havven/havven/issues"
+  },
+  "homepage": "https://github.com/Havven/havven#readme",
+  "dependencies": {
+    "truffle": "4.1.14",
+    "truffle-hdwallet-provider": "0.0.6"
+  }
+}

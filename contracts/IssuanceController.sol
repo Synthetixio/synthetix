@@ -30,11 +30,11 @@ if they have not yet been taken up by another user.
 
 pragma solidity 0.4.24;
 
-import "contracts/SelfDestructible.sol";
-import "contracts/Pausable.sol";
-import "contracts/SafeDecimalMath.sol";
-import "contracts/Havven.sol";
-import "contracts/Nomin.sol";
+import "./SelfDestructible.sol";
+import "./Pausable.sol";
+import "./SafeDecimalMath.sol";
+import "./Havven.sol";
+import "./Nomin.sol";
 
 /**
  * @title Issuance Controller Contract.

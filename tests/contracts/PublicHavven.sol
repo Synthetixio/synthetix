@@ -5,8 +5,8 @@
 pragma solidity ^0.4.23;
 
 
-import "contracts/Havven.sol";
-import "contracts/TokenState.sol";
+import "./Havven.sol";
+import "./TokenState.sol";
 
 
 // Public getters for all items in the Havven contract, used for debugging/testing

@@ -4,8 +4,8 @@
 pragma solidity ^0.4.23;
 
 
-import "contracts/Havven.sol";
-import "contracts/Nomin.sol";
+import "./Havven.sol";
+import "./Nomin.sol";
 
 
 contract PublicNomin is Nomin {

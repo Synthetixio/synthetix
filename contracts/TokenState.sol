@@ -35,7 +35,7 @@ contract to the new one.
 pragma solidity 0.4.24;
 
 
-import "contracts/State.sol";
+import "./State.sol";
 
 /**
  * @title ERC20 Token State
