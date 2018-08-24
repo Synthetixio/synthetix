@@ -18,16 +18,6 @@ contract("Owned - Test contract deployment", function (accounts) {
 
   // TODO check events on contract creation
   it("should set owner addrs on deployment", async function () {
-    // let ownerChangeEvent = Owned.OwnerChanged(function callback(error, event) {
-    //   if (!error) {
-    //     console.log(1);
-    //     assert.equal(event.returnValues.oldOwner, '0x');
-    //     assert.equal(event.returnValues.newOwner, acct1);
-    //   }
-    //   console.log(2);
-    //   ownerChangeEvent.unsubscribe();
-    //   console.log(3);
-    // });
     let ownedContractInstance = await Owned.new(acct1, {
       from: deployerAcct
     });

@@ -19,6 +19,8 @@ The code here will be under continual audit and improvement as the project progr
 
 ## Usage and requirements
 
+### For python tests
+
 Deployment and testing scripts require Python 3.6+, [web3.py](https://github.com/ethereum/web3.py) 4.0.0+, [py-solc](https://github.com/ethereum/py-solc) 2.1.0+, and [eth-utils](https://github.com/ethereum/eth-utils) 1.0.0+. To install these dependencies, ensure that python is up to date and run:
 
 ```pip3 install -r requirements.txt```
@@ -39,7 +41,27 @@ Run the test suite as follows:
 ```python3 run_tests.py```
 
 
-## Files
+### For truffle tests
+
+#### Dependencies
+
+* Nodejs > v10.7.0
+
+* Ganache > v1.2.1
+    * Use this mnemonic in Ganache `candy maple cake sugar pudding cream honey rich smooth crumble sweet treat` (configurable from truffle.js)
+    * Host is `127.0.0.1` (configurable from truffle.js)
+    * Port number is `8545` (configurable from truffle.js)
+
+* Truffle - to install truffle globally, `npm install truffle -g`
+
+#### Steps
+
+* Install project dependencies, `npm install`
+
+* Execute truffle tests, `truffle test`
+
+
+## Files - TODO update for truffle test / config files
 
 The following files should be sufficient for deploying and testing version 1.0
 of the havven system. We have leant heavily towards logical simplicity and
