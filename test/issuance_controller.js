@@ -141,7 +141,7 @@ contract('Issuance controller', async function(accounts) {
 
   it('should update prices when invoked by oracle', async function () {
     let timeInMillis = (new Date().getTime()) + (9 * 60 * 1000);
-    let time = Math.round(timeInMillis / 1000); // in seconds
+    let time = Math.trunc(timeInMillis / 1000); // in seconds
     let usdEth = 994957049546843687330;
     let usdHav = 157474638738934625;
 
@@ -167,7 +167,7 @@ contract('Issuance controller', async function(accounts) {
     const ethUSD = await instance.usdToEthPrice.call();
 
     let timeInMillis = (lastPriceUpdateTime * 1000) - (12 * 60 * 60 * 1000);
-    let time = Math.round(timeInMillis / 1000); // in seconds
+    let time = Math.trunc(timeInMillis / 1000); // in seconds
     let usdEth = 994957049546843687330;
     let usdHav = 157474638738934625;
 
@@ -193,8 +193,8 @@ contract('Issuance controller', async function(accounts) {
     const havUSD = await instance.usdToHavPrice.call();
     const ethUSD = await instance.usdToEthPrice.call();
 
-    let timeInMillis = (new Date().getTime()) + (9 * 60 * 1000);
-    let time = Math.round(timeInMillis / 1000); // in seconds
+    let timeInMillis = (new Date().getTime()) + (12 * 60 * 1000);
+    let time = Math.trunc(timeInMillis / 1000); // in seconds
 
     let usdEth = 994957049546843687330;
     let usdHav = 157474638738934625;
