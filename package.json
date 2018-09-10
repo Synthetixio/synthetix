@@ -1,32 +1,40 @@
 {
-  "name": "havven",
-  "version": "2.0.0",
-  "description": "Havven smart contracts",
-  "directories": {
-    "test": "test"
-  },
-  "scripts": {
-    "compile": "truffle compile",
-    "build": "truffle build",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Havven/havven.git"
-  },
-  "keywords": [
-    "Havven",
-    "Solidity",
-    "Truffle"
-  ],
-  "license": "MIT",
-  "author": "Havven",
-  "bugs": {
-    "url": "https://github.com/Havven/havven/issues"
-  },
-  "homepage": "https://github.com/Havven/havven#readme",
-  "dependencies": {
-    "truffle": "4.1.14",
-    "truffle-hdwallet-provider": "0.0.6"
-  }
+	"name": "havven",
+	"version": "2.0.0",
+	"description": "Havven smart contracts",
+	"directories": {
+		"test": "test"
+	},
+	"scripts": {
+		"compile": "truffle compile",
+		"build": "truffle build",
+		"ganache": "ganache-cli -a 150 -e 1000000000000 -l 0x7a213a",
+		"test": "truffle compile && truffle test"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Havven/havven.git"
+	},
+	"keywords": [
+		"Havven",
+		"Solidity",
+		"Truffle"
+	],
+	"license": "MIT",
+	"author": "Havven",
+	"bugs": {
+		"url": "https://github.com/Havven/havven/issues"
+	},
+	"homepage": "https://github.com/Havven/havven#readme",
+	"dependencies": {
+		"truffle": "^5.0.0-beta.0",
+		"truffle-hdwallet-provider": "^1.0.0-web3one.0"
+	},
+	"devDependencies": {
+		"ganache-cli": "^6.1.8",
+		"solc": "^0.4.24",
+		"table": "^5.0.2",
+		"truffle-core": "^5.0.0-beta.0",
+		"truffle-external-compile": "^1.0.0-beta.0"
+	}
 }
