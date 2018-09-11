@@ -1,4 +1,6 @@
+const Havven = artifacts.require('Havven');
 const IssuanceController = artifacts.require('IssuanceController');
+const Nomin = artifacts.require('Nomin');
 
 contract('Issuance Controller', async function(accounts) {
 	const [
@@ -13,14 +15,17 @@ contract('Issuance Controller', async function(accounts) {
 	] = accounts;
 
 	it('should set constructor params on deployment', async function() {
+		const havven = await Havven.deployed();
+		const nomin = await Nomin.deployed();
+
 		let usdEth = '274957049546843687330';
 		let usdHav = '127474638738934625';
 
 		const instance = await IssuanceController.new(
 			owner,
 			fundsWallet,
-			havven,
-			nomin,
+			havven.address,
+			nomin.address,
 			oracle,
 			usdEth,
 			usdHav,
@@ -30,10 +35,10 @@ contract('Issuance Controller', async function(accounts) {
 		);
 
 		const havvenFromContract = await instance.havven();
-		assert.equal(havvenFromContract, havven);
+		assert.equal(havvenFromContract, havven.address);
 
 		const nominFromContract = await instance.nomin();
-		assert.equal(nominFromContract, nomin);
+		assert.equal(nominFromContract, nomin.address);
 
 		const fundsWalletFromContract = await instance.fundsWallet();
 		assert.equal(fundsWalletFromContract, fundsWallet);
@@ -163,10 +168,10 @@ contract('Issuance Controller', async function(accounts) {
 	it('should update prices when invoked by oracle', async function() {
 		// The additional 1 is to ensure we are far enough away from the initial deploy that the
 		// contract will let us update the price
+		const issuanceController = await IssuanceController.deployed();
 		let now = Math.floor(Date.now() / 1000) + 1;
 		let usdEth = '994957049546843687330';
 		let usdHav = '157474638738934625';
-		const issuanceController = await IssuanceController.deployed();
 
 		let txn = await issuanceController.updatePrices(usdEth, usdHav, now, {
 			from: oracle,
@@ -188,14 +193,19 @@ contract('Issuance Controller', async function(accounts) {
 	});
 
 	it('should not update prices if time sent is lesser than last updated price time', async function() {
+		// Send a price update through, just like the above test so we know our values.
 		const issuanceController = await IssuanceController.deployed();
-		const lastPriceUpdateTime = await issuanceController.lastPriceUpdateTime();
-		const havUSD = await issuanceController.usdToHavPrice();
-		const ethUSD = await issuanceController.usdToEthPrice();
+		let now = Math.floor(Date.now() / 1000) + 2;
+		let usdEth = '100';
+		let usdHav = '200';
+
+		await issuanceController.updatePrices(usdEth, usdHav, now, {
+			from: oracle,
+		});
 
 		// Unsuccessful price update attempt
 		try {
-			await issuanceController.updatePrices(usdEth, usdHav, lastPriceUpdateTime - 1, {
+			await issuanceController.updatePrices('300', '400', now - 1, {
 				from: oracle,
 			});
 		} catch (error) {
@@ -206,23 +216,28 @@ contract('Issuance Controller', async function(accounts) {
 		const EthUSDFromContract = await issuanceController.usdToEthPrice();
 		const lastPriceUpdateTimeFromContract = await issuanceController.lastPriceUpdateTime();
 
-		assert.equal(havUSDFromContract.toNumber(), havUSD.toNumber());
-		assert.equal(EthUSDFromContract.toNumber(), ethUSD.toNumber());
-		assert.equal(lastPriceUpdateTimeFromContract.toNumber(), lastPriceUpdateTime.toNumber());
+		assert.equal(EthUSDFromContract.toString(), usdEth);
+		assert.equal(havUSDFromContract.toString(), usdHav);
+		assert.equal(lastPriceUpdateTimeFromContract.toNumber(), now);
 	});
 
 	it('should not update prices if time sent is more than (current time stamp + ORACLE_FUTURE_LIMIT)', async function() {
 		const issuanceController = await IssuanceController.deployed();
 		const lastPriceUpdateTime = await issuanceController.lastPriceUpdateTime();
-		const oracleFutureLimit = await issuanceController.ORACLE_FUTURE_LIMIT();
+		const oracleFutureLimit = 10 * 60; // 10 minutes. This is hard coded as a const in the contract
 		const havUSD = await issuanceController.usdToHavPrice();
 		const ethUSD = await issuanceController.usdToEthPrice();
 
 		// Unsuccessful price update attempt
 		try {
-			await instance.updatePrices(ethUSD, havUSD, lastPriceUpdateTime + oracleFutureLimit, {
-				from: oracle,
-			});
+			await issuanceController.updatePrices(
+				ethUSD,
+				havUSD,
+				lastPriceUpdateTime + oracleFutureLimit,
+				{
+					from: oracle,
+				}
+			);
 		} catch (error) {
 			assert.include(error.message, 'revert');
 		}
@@ -237,16 +252,17 @@ contract('Issuance Controller', async function(accounts) {
 	});
 
 	it('should not update prices when not invoked by oracle', async function() {
-		let currentTimeInMillis = new Date().getTime();
-		let usdEth = 774957049546843687330;
-		let usdHav = 227474638738934625;
+		const issuanceController = await IssuanceController.deployed();
+		let now = Math.floor(Date.now() / 1000) + 1;
+		let usdEth = '994957049546843687330';
+		let usdHav = '157474638738934625';
+
 		try {
-			await instance.updatePrices(usdEth, usdHav, currentTimeInMillis, {
-				from: oracle,
+			await issuanceController.updatePrices(usdEth, usdHav, now, {
+				from: address1,
 			});
 		} catch (error) {
 			assert.include(error.message, 'revert');
 		}
-		assert.equal(await instance.fundsWallet(), address1);
 	});
 });
