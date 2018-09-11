@@ -7,6 +7,7 @@
 	"description": "The smart contracts which make up the Havven system. (havven.io)",
 	"scripts": {
 		"compile": "truffle compile",
+		"coverage": "solidity-coverage",
 		"build": "truffle build",
 		"ganache": "ganache-cli -a 150 -e 1000000000000 -l 0x7a213a",
 		"test": "truffle compile && truffle test"
@@ -29,6 +30,7 @@
 	},
 	"devDependencies": {
 		"ganache-cli": "^6.1.8",
+		"solidity-coverage": "^0.5.11",
 		"table": "^5.0.2",
 		"truffle": "^5.0.0-beta.0",
 		"truffle-core": "^5.0.0-beta.0",
