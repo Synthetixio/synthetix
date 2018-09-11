@@ -1,4 +1,5 @@
 const { table } = require('table');
+const web3 = require('web3');
 
 const Havven = artifacts.require('./Havven.sol');
 const HavvenEscrow = artifacts.require('./HavvenEscrow.sol');
@@ -10,10 +11,10 @@ const TokenState = artifacts.require('./TokenState.sol');
 
 // Update values before deployment
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
-const ethUSD = 274411589120931162910;
-const havUSD = 116551110814936098;
+const ethUSD = '274411589120931162910';
+const havUSD = '116551110814936098';
 
-const totalSupplyNomin = 1241510914838889387806256;
+const totalSupplyNomin = '1241510914838889387806256';
 
 module.exports = async function(deployer, network, accounts) {
 	const [deployerAccount, owner, oracle, fundsWallet] = accounts;
@@ -71,7 +72,7 @@ module.exports = async function(deployer, network, accounts) {
 	const nomin = await Nomin.new(
 		nominProxy.address,
 		nominTokenState.address,
-		havvContInst.address,
+		havven.address,
 		totalSupplyNomin,
 		owner,
 		{ from: deployerAccount }
@@ -92,22 +93,48 @@ module.exports = async function(deployer, network, accounts) {
 		{ from: deployerAccount }
 	);
 
-	const data = [
-		['Contract', 'Address'],
+	// ----------------------
+	// Connect Token States
+	// ----------------------
+	await havvenTokenState.setAssociatedContract(havven.address, { from: owner });
+	await nominTokenState.setAssociatedContract(nomin.address, { from: owner });
 
-		['Owned', owned.address],
+	// ----------------------
+	// Connect Proxies
+	// ----------------------
+	await havvenProxy.setTarget(havven.address, { from: owner });
+	await nominProxy.setTarget(nomin.address, { from: owner });
 
-		['Havven Token State', havvenTokenState.address],
-		['Havven Proxy', havvenProxy.address],
-		['Havven', havven.address],
-		['Havven Escrow', havvenEscrow.address],
+	// ----------------------
+	// Connect Havven to Nomin
+	// ----------------------
+	await havven.setNomin(nomin.address, { from: owner });
 
-		['Nomin Token State', nominTokenState.address],
-		['Nomin Proxy', nominProxy.address],
-		['Nomin', nomin.address],
+	// ----------------------
+	// Connect Escrow
+	// ----------------------
+	await havven.setEscrow(havvenEscrow.address, { from: owner });
 
-		['Issuance Controller', issuanceController.address],
-	];
+	console.log();
+	console.log();
+	console.log(' Successfully deployed all contracts:');
+	console.log();
+	console.log(
+		table([
+			['Contract', 'Address'],
 
-	console.log(table(data));
+			['Owned', owned.address],
+
+			['Havven Token State', havvenTokenState.address],
+			['Havven Proxy', havvenProxy.address],
+			['Havven', havven.address],
+			['Havven Escrow', havvenEscrow.address],
+
+			['Nomin Token State', nominTokenState.address],
+			['Nomin Proxy', nominProxy.address],
+			['Nomin', nomin.address],
+
+			['Issuance Controller', issuanceController.address],
+		])
+	);
 };

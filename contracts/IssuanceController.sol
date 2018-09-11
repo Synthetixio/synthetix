@@ -214,8 +214,8 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     {
         /* Must be the most recently sent price, but not too far in the future.
          * (so we can't lock ourselves out of updating the oracle for longer than this) */
-        require(lastPriceUpdateTime < timeSent && timeSent < now + ORACLE_FUTURE_LIMIT, 
-            "Time sent must be bigger than the last update, and must be less than now + ORACLE_FUTURE_LIMIT");
+        require(lastPriceUpdateTime < timeSent, "Time must be later than last update");
+        require(timeSent < (now + ORACLE_FUTURE_LIMIT), "Time must be less than now + ORACLE_FUTURE_LIMIT");
 
         usdToEthPrice = newEthPrice;
         usdToHavPrice = newHavvenPrice;

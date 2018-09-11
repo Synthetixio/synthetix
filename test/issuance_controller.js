@@ -1,7 +1,5 @@
 const IssuanceController = artifacts.require('IssuanceController');
 
-console.log('HI');
-
 contract('Issuance controller', async function(accounts) {
 	const deployerAccount = accounts[0];
 
