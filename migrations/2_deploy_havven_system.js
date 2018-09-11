@@ -22,19 +22,25 @@ module.exports = async function(deployer, network, accounts) {
 	// ----------------
 	// Owned
 	// ----------------
-	console.log('Deploying Owned...');
+	console.log('Deploying Owned (standalone contract)...');
 	const owned = await Owned.new(owner, { from: deployerAccount });
 
 	// ----------------
 	// Havven
 	// ----------------
+	console.log('Deploying HavvenProxy...');
+	// constructor(address _owner)
+	const havvenProxy = await Proxy.new(owner, { from: deployerAccount });
+
 	console.log('Deploying HavvenTokenState...');
+	// constructor(address _owner, address _associatedContract)
 	const havvenTokenState = await TokenState.new(owner, ZERO_ADDRESS, {
 		from: deployerAccount,
 	});
-	console.log('Deploying HavvenProxy...');
-	const havvenProxy = await Proxy.new(owner, { from: deployerAccount });
+
 	console.log('Deploying Havven...');
+	// constructor(address _proxy, TokenState _tokenState, address _owner, address _oracle,
+	//             uint _price, address[] _issuers, Havven _oldHavven)
 	const havven = await Havven.new(
 		havvenProxy.address,
 		havvenTokenState.address,
@@ -45,7 +51,7 @@ module.exports = async function(deployer, network, accounts) {
 		ZERO_ADDRESS,
 		{
 			from: deployerAccount,
-			gasLimit: 6000000,
+			gas: 8000000,
 		}
 	);
 

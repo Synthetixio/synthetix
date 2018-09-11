@@ -1,10 +1,10 @@
 {
 	"name": "havven",
 	"version": "2.0.0",
-	"description": "Havven smart contracts",
-	"directories": {
-		"test": "test"
-	},
+	"private": true,
+	"license": "MIT",
+	"author": "Havven",
+	"description": "The smart contracts which make up the Havven system. (havven.io)",
 	"scripts": {
 		"compile": "truffle compile",
 		"build": "truffle build",
@@ -20,21 +20,21 @@
 		"Solidity",
 		"Truffle"
 	],
-	"license": "MIT",
-	"author": "Havven",
 	"bugs": {
 		"url": "https://github.com/Havven/havven/issues"
 	},
-	"homepage": "https://github.com/Havven/havven#readme",
-	"dependencies": {
-		"truffle": "^5.0.0-beta.0",
-		"truffle-hdwallet-provider": "^1.0.0-web3one.0"
+	"homepage": "https://havven.io",
+	"directories": {
+		"test": "test"
 	},
 	"devDependencies": {
 		"ganache-cli": "^6.1.8",
-		"solc": "^0.4.24",
 		"table": "^5.0.2",
+		"truffle": "^5.0.0-beta.0",
 		"truffle-core": "^5.0.0-beta.0",
+		"truffle-hdwallet-provider": "^1.0.0-web3one.0"
+	},
+	"dependencies": {
 		"truffle-external-compile": "^1.0.0-beta.0"
 	}
 }

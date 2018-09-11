@@ -8,18 +8,18 @@ module.exports = {
 			host: '127.0.0.1',
 			port: 8545,
 			network_id: '*',
-			gas: 6000000,
+			gas: 8000000,
 			gasPrice: 20000000000,
 		},
 		ropsten: {
 			network_id: '3',
-			gas: 4500000,
-			gasPrice: 10000000000,
+			gas: 8000000,
+			gasPrice: 20000000000,
 		},
 		mainnet: {
 			network_id: '1',
-			gas: 4500000,
-			gasPrice: 10000000000,
+			gas: 8000000,
+			gasPrice: 20000000000,
 		},
 	},
 	mocha: {
@@ -28,8 +28,10 @@ module.exports = {
 	compilers: {
 		solc: {
 			version: '0.4.24',
-			optimizer: {
-				enabled: true,
+			settings: {
+				optimizer: {
+					enabled: true,
+				},
 			},
 		},
 	},
