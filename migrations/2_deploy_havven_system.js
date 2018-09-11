@@ -23,8 +23,7 @@ module.exports = async function(deployer, network, accounts) {
 	// ----------------
 	// Owned
 	// ----------------
-	console.log('Deploying Owned (standalone contract)...');
-	const owned = await Owned.new(owner, { from: deployerAccount });
+	const owned = await deployer.deploy(Owned, owner, { from: deployerAccount });
 
 	// ----------------
 	// Havven
@@ -42,7 +41,8 @@ module.exports = async function(deployer, network, accounts) {
 	console.log('Deploying Havven...');
 	// constructor(address _proxy, TokenState _tokenState, address _owner, address _oracle,
 	//             uint _price, address[] _issuers, Havven _oldHavven)
-	const havven = await Havven.new(
+	const havven = await deployer.deploy(
+		Havven,
 		havvenProxy.address,
 		havvenTokenState.address,
 		owner,
@@ -57,7 +57,7 @@ module.exports = async function(deployer, network, accounts) {
 	);
 
 	console.log('Deploying HavvenEscrow...');
-	const havvenEscrow = await HavvenEscrow.new(owner, havven.address, {
+	const havvenEscrow = await deployer.deploy(HavvenEscrow, owner, havven.address, {
 		from: deployerAccount,
 	});
 
@@ -69,7 +69,8 @@ module.exports = async function(deployer, network, accounts) {
 	console.log('Deploying NominProxy...');
 	const nominProxy = await Proxy.new(owner, { from: deployerAccount });
 	console.log('Deploying Nomin...');
-	const nomin = await Nomin.new(
+	const nomin = await deployer.deploy(
+		Nomin,
 		nominProxy.address,
 		nominTokenState.address,
 		havven.address,
@@ -82,7 +83,8 @@ module.exports = async function(deployer, network, accounts) {
 	// Issuance Controller
 	// --------------------
 	console.log('Deploying IssuanceController...');
-	const issuanceController = await IssuanceController.new(
+	const issuanceController = await deployer.deploy(
+		IssuanceController,
 		owner,
 		fundsWallet,
 		havven.address,
@@ -123,18 +125,18 @@ module.exports = async function(deployer, network, accounts) {
 		table([
 			['Contract', 'Address'],
 
-			['Owned', owned.address],
+			['Owned', Owned.address],
 
 			['Havven Token State', havvenTokenState.address],
 			['Havven Proxy', havvenProxy.address],
-			['Havven', havven.address],
-			['Havven Escrow', havvenEscrow.address],
+			['Havven', Havven.address],
+			['Havven Escrow', HavvenEscrow.address],
 
 			['Nomin Token State', nominTokenState.address],
 			['Nomin Proxy', nominProxy.address],
-			['Nomin', nomin.address],
+			['Nomin', Nomin.address],
 
-			['Issuance Controller', issuanceController.address],
+			['Issuance Controller', IssuanceController.address],
 		])
 	);
 };
