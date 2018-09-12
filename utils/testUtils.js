@@ -97,11 +97,33 @@ const assertEventEqual = (actualEventOrTransaction, expectedEvent, expectedArgs)
 	// Ensure you pass in all the args you need to assert on.
 };
 
+/**
+ *  Convenience method to assert that two BN.js instances are equal.
+ *  @param actualBN The BN.js instance you received
+ *  @param expectedBN The BN.js amount you expected to receive
+ */
+const assertBNEqual = (actualBN, expectedBN) => {
+	assert.equal(actualBN.toString(), expectedBN.toString());
+};
+
+/**
+ *  Convenience method to assert that an amount of ether (or other 10^18 number) was received from a contract.
+ *  @param actualWei The value retrieved from a smart contract or wallet in wei
+ *  @param expectedAmount The amount you expect e.g. '1'
+ *  @param expectedUnit The unit you expect e.g. 'gwei'. Defaults to 'ether'
+ */
+const assertEtherEqual = (actualWei, expectedAmount, expectedUnit = 'ether') => {
+	assertBNEqual(actualWei, web3.utils.toWei(expectedAmount, expectedUnit));
+};
+
 module.exports = {
 	mineBlock,
 	fastForward,
 	fastForwardTo,
 	takeSnapshot,
 	restoreSnapshot,
+
 	assertEventEqual,
+	assertBNEqual,
+	assertEtherEqual,
 };

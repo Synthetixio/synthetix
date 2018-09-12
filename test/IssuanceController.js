@@ -34,23 +34,12 @@ contract('Issuance Controller', async function(accounts) {
 			}
 		);
 
-		const havvenFromContract = await instance.havven();
-		assert.equal(havvenFromContract, havven.address);
-
-		const nominFromContract = await instance.nomin();
-		assert.equal(nominFromContract, nomin.address);
-
-		const fundsWalletFromContract = await instance.fundsWallet();
-		assert.equal(fundsWalletFromContract, fundsWallet);
-
-		const oracleFromContract = await instance.oracle();
-		assert.equal(oracleFromContract, oracle);
-
-		const usdToHavFromContract = await instance.usdToHavPrice();
-		assert.equal(usdToHavFromContract.toString(), usdHav);
-
-		const usdToEthPriceFromContract = await instance.usdToEthPrice();
-		assert.equal(usdToEthPriceFromContract.toString(), usdEth);
+		assert.equal(havven.address, await instance.havven());
+		assert.equal(nomin.address, await instance.nomin());
+		assert.equal(fundsWallet, await instance.fundsWallet());
+		assert.equal(oracle, await instance.oracle());
+		assert.equal(usdHav, (await instance.usdToHavPrice()).toString());
+		assert.equal(usdEth, (await instance.usdToEthPrice()).toString());
 	});
 
 	it('should set funds wallet when invoked by owner', async function() {

@@ -1,6 +1,7 @@
 const { table } = require('table');
 const web3 = require('web3');
 
+const ExchangeRates = artifacts.require('./ExchangeRates.sol');
 const Havven = artifacts.require('./Havven.sol');
 const HavvenEscrow = artifacts.require('./HavvenEscrow.sol');
 const IssuanceController = artifacts.require('./IssuanceController.sol');
@@ -23,7 +24,20 @@ module.exports = async function(deployer, network, accounts) {
 	// ----------------
 	// Owned
 	// ----------------
-	const owned = await deployer.deploy(Owned, owner, { from: deployerAccount });
+	await deployer.deploy(Owned, owner, { from: deployerAccount });
+
+	// ----------------
+	// Exchange Rates
+	// ----------------
+	console.log('Deploying ExchangeRates...');
+	await deployer.deploy(
+		ExchangeRates,
+		owner,
+		oracle,
+		[web3.utils.asciiToHex('nUSD'), web3.utils.asciiToHex('HAV')],
+		[web3.utils.toWei('1', 'ether'), web3.utils.toWei('0.2', 'ether')],
+		{ from: deployerAccount }
+	);
 
 	// ----------------
 	// Havven
@@ -124,6 +138,8 @@ module.exports = async function(deployer, network, accounts) {
 	console.log(
 		table([
 			['Contract', 'Address'],
+
+			['Exchange Rates', ExchangeRates.address],
 
 			['Owned', Owned.address],
 
