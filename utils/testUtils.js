@@ -76,7 +76,8 @@ const restoreSnapshot = async id => {
 /**
  *  Convenience method to assert that an event matches a shape
  *  @param actualEventOrTransaction The transaction receipt, or event as returned in the event logs from web3
- *  @param expectedEvent The shape of the event you expect
+ *  @param expectedEvent The event name you expect
+ *  @param expectedArgs The args you expect in object notation, e.g. { newOracle: '0x...', updatedAt: '...' }
  */
 const assertEventEqual = (actualEventOrTransaction, expectedEvent, expectedArgs) => {
 	// If they pass in a whole transaction we need to extract the first log, otherwise we already have what we need
