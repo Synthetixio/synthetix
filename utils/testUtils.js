@@ -73,10 +73,34 @@ const restoreSnapshot = async id => {
 	await mineBlock();
 };
 
+/**
+ *  Convenience method to assert that an event matches a shape
+ *  @param actualEventOrTransaction The transaction receipt, or event as returned in the event logs from web3
+ *  @param expectedEvent The shape of the event you expect
+ */
+const assertEventEqual = (actualEventOrTransaction, expectedEvent, expectedArgs) => {
+	// If they pass in a whole transaction we need to extract the first log, otherwise we already have what we need
+	const event = Array.isArray(actualEventOrTransaction.logs)
+		? actualEventOrTransaction.logs[0]
+		: actualEventOrTransaction;
+
+	// Assert the names are the same.
+	assert.equal(event.event, expectedEvent);
+
+	// Assert the args that are expected all exist.
+	for (const arg of Object.keys(expectedArgs)) {
+		assert.equal(event.args[arg], expectedArgs[arg]);
+	}
+
+	// Note: this means that if you don't assert args they'll pass regardless.
+	// Ensure you pass in all the args you need to assert on.
+};
+
 module.exports = {
 	mineBlock,
 	fastForward,
 	fastForwardTo,
 	takeSnapshot,
 	restoreSnapshot,
+	assertEventEqual,
 };

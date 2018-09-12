@@ -57,8 +57,7 @@ contract('Issuance Controller', async function(accounts) {
 		const issuanceController = await IssuanceController.deployed();
 
 		let txn = await issuanceController.setFundsWallet(address1, { from: owner });
-		assert.equal(txn.logs[0].event, 'FundsWalletUpdated');
-		assert.equal(txn.logs[0].args.newFundsWallet, address1);
+		assert.eventEqual(txn, 'FundsWalletUpdated', { newFundsWallet: address1 });
 
 		assert.equal(await issuanceController.fundsWallet(), address1);
 	});
@@ -81,8 +80,7 @@ contract('Issuance Controller', async function(accounts) {
 		const issuanceController = await IssuanceController.deployed();
 
 		let txn = await issuanceController.setOracle(address2, { from: owner });
-		assert.equal(txn.logs[0].event, 'OracleUpdated');
-		assert.equal(txn.logs[0].args.newOracle, address2);
+		assert.eventEqual(txn, 'OracleUpdated', { newOracle: address2 });
 
 		assert.equal(await issuanceController.oracle(), address2);
 	});
@@ -102,8 +100,7 @@ contract('Issuance Controller', async function(accounts) {
 		const issuanceController = await IssuanceController.deployed();
 
 		let txn = await issuanceController.setNomin(address3, { from: owner });
-		assert.equal(txn.logs[0].event, 'NominUpdated');
-		assert.equal(txn.logs[0].args.newNominContract, address3);
+		assert.eventEqual(txn, 'NominUpdated', { newNominContract: address3 });
 
 		assert.equal(await issuanceController.nomin(), address3);
 	});
@@ -124,8 +121,7 @@ contract('Issuance Controller', async function(accounts) {
 		const issuanceController = await IssuanceController.deployed();
 
 		const txn = await issuanceController.setHavven(address4, { from: owner });
-		assert.equal(txn.logs[0].event, 'HavvenUpdated');
-		assert.equal(txn.logs[0].args.newHavvenContract, address4);
+		assert.eventEqual(txn, 'HavvenUpdated', { newHavvenContract: address4 });
 
 		assert.equal(await issuanceController.havven(), address4);
 	});
@@ -160,8 +156,7 @@ contract('Issuance Controller', async function(accounts) {
 		let stalePeriod = 5 * 60 * 60; // Five hours
 
 		let txn = await issuanceController.setPriceStalePeriod(stalePeriod, { from: owner });
-		assert.equal(txn.logs[0].event, 'PriceStalePeriodUpdated');
-		assert.equal(txn.logs[0].args.priceStalePeriod, stalePeriod);
+		assert.eventEqual(txn, 'PriceStalePeriodUpdated', { priceStalePeriod: stalePeriod });
 
 		const priceStalePeriod = await issuanceController.priceStalePeriod();
 		assert.equal(priceStalePeriod.toNumber(), stalePeriod);
@@ -179,11 +174,11 @@ contract('Issuance Controller', async function(accounts) {
 			from: oracle,
 		});
 
-		let log = txn.logs[0];
-		assert.equal(log.event, 'PricesUpdated');
-		assert.equal(log.args.newEthPrice, usdEth);
-		assert.equal(log.args.newHavvenPrice, usdHav);
-		assert.equal(log.args.timeSent, now);
+		assert.eventEqual(txn, 'PricesUpdated', {
+			newEthPrice: usdEth,
+			newHavvenPrice: usdHav,
+			timeSent: now,
+		});
 
 		const havUSDFromContract = await issuanceController.usdToHavPrice();
 		const ethUSDFromContract = await issuanceController.usdToEthPrice();

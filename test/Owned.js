@@ -40,11 +40,10 @@ contract('Owned - Pre deployed contract', async function(accounts) {
 		const nominatedOwner = account2;
 
 		const txn = await ownedContractInstance.nominateNewOwner(nominatedOwner, { from: account1 });
-		assert.equal(txn.logs[0].event, 'OwnerNominated');
-		assert.equal(txn.logs[0].args.newOwner, nominatedOwner);
+		assert.eventEqual(txn, 'OwnerNominated', { newOwner: nominatedOwner });
 
-		const nominatedOwnerFrmContract = await ownedContractInstance.nominatedOwner();
-		assert.equal(nominatedOwnerFrmContract, nominatedOwner);
+		const nominatedOwnerFromContract = await ownedContractInstance.nominatedOwner();
+		assert.equal(nominatedOwnerFromContract, nominatedOwner);
 	});
 
 	it('should not accept new owner nomination when not invoked by nominated owner', async function() {
@@ -65,16 +64,14 @@ contract('Owned - Pre deployed contract', async function(accounts) {
 		const nominatedOwner = account2;
 
 		let txn = await ownedContractInstance.nominateNewOwner(nominatedOwner, { from: account1 });
-		assert.equal(txn.logs[0].event, 'OwnerNominated');
-		assert.equal(txn.logs[0].args.newOwner, nominatedOwner);
+		assert.eventEqual(txn, 'OwnerNominated', { newOwner: nominatedOwner });
 
 		const nominatedOwnerFromContract = await ownedContractInstance.nominatedOwner();
 		assert.equal(nominatedOwnerFromContract, nominatedOwner);
 
 		txn = await ownedContractInstance.acceptOwnership({ from: account2 });
-		assert.equal(txn.logs[0].event, 'OwnerChanged');
-		assert.equal(txn.logs[0].args.oldOwner, account1);
-		assert.equal(txn.logs[0].args.newOwner, account2);
+
+		assert.eventEqual(txn, 'OwnerChanged', { oldOwner: account1, newOwner: account2 });
 
 		const owner = await ownedContractInstance.owner();
 		const nominatedOwnerFromContact = await ownedContractInstance.nominatedOwner();
