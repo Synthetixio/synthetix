@@ -66,12 +66,15 @@ contract('Issuance Controller', async function(accounts) {
 	it('should not set funds wallet when not invoked by owner', async function() {
 		const issuanceController = await IssuanceController.deployed();
 
+		const currentFundsWallet = await issuanceController.fundsWallet();
+
 		try {
 			await issuanceController.setFundsWallet(address2, { from: deployerAccount });
 		} catch (error) {
 			assert.include(error.message, 'revert');
 		}
-		assert.equal(await issuanceController.fundsWallet(), address1);
+
+		assert.equal(await issuanceController.fundsWallet(), currentFundsWallet);
 	});
 
 	it('should set oracle when invoked by owner', async function() {
@@ -82,9 +85,6 @@ contract('Issuance Controller', async function(accounts) {
 		assert.equal(txn.logs[0].args.newOracle, address2);
 
 		assert.equal(await issuanceController.oracle(), address2);
-
-		// Now reset the oracle address so the other tests don't depend on this test's behaviour
-		await issuanceController.setOracle(oracle, { from: owner });
 	});
 
 	it('should not set oracle when not invoked by owner', async function() {
@@ -110,13 +110,14 @@ contract('Issuance Controller', async function(accounts) {
 
 	it('should not set nomin when not invoked by owner', async function() {
 		const issuanceController = await IssuanceController.deployed();
+		const currentNomin = await issuanceController.nomin();
 
 		try {
 			await issuanceController.setNomin(address4, { from: deployerAccount });
 		} catch (error) {
 			assert.include(error.message, 'revert');
 		}
-		assert.equal(await issuanceController.nomin(), address3);
+		assert.equal(await issuanceController.nomin(), currentNomin);
 	});
 
 	it('should set havven when invoked by owner', async function() {
@@ -131,13 +132,14 @@ contract('Issuance Controller', async function(accounts) {
 
 	it('should not set havven when not invoked by owner', async function() {
 		const issuanceController = await IssuanceController.deployed();
+		const currentHavven = await issuanceController.havven();
 
 		try {
 			await issuanceController.setHavven(owner, { from: deployerAccount });
 		} catch (error) {
 			assert.include(error.message, 'revert');
 		}
-		assert.equal(await issuanceController.havven(), address4);
+		assert.equal(await issuanceController.havven(), currentHavven);
 	});
 
 	it('should not set price stale period when not invoked by owner', async function() {

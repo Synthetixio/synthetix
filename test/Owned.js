@@ -64,7 +64,14 @@ contract('Owned - Pre deployed contract', async function(accounts) {
 		let ownedContractInstance = await Owned.deployed();
 		const nominatedOwner = account2;
 
-		const txn = await ownedContractInstance.acceptOwnership({ from: account2 });
+		let txn = await ownedContractInstance.nominateNewOwner(nominatedOwner, { from: account1 });
+		assert.equal(txn.logs[0].event, 'OwnerNominated');
+		assert.equal(txn.logs[0].args.newOwner, nominatedOwner);
+
+		const nominatedOwnerFromContract = await ownedContractInstance.nominatedOwner();
+		assert.equal(nominatedOwnerFromContract, nominatedOwner);
+
+		txn = await ownedContractInstance.acceptOwnership({ from: account2 });
 		assert.equal(txn.logs[0].event, 'OwnerChanged');
 		assert.equal(txn.logs[0].args.oldOwner, account1);
 		assert.equal(txn.logs[0].args.newOwner, account2);
