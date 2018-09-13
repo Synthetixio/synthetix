@@ -1,0 +1,15 @@
+{
+	"env": {
+		"mocha": true
+	},
+	"globals": {
+		"artifacts": true,
+		"assert": true,
+		"contract": true,
+		"web3": true
+	},
+	"plugins": ["havven"],
+	"rules": {
+		"havven/no-assert-revert-without-await": "error"
+	}
+}
