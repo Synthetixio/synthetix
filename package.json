@@ -6,6 +6,7 @@
 	"author": "Havven",
 	"description": "The smart contracts which make up the Havven system. (havven.io)",
 	"scripts": {
+		"clean": "rm -rf build && rm -rf node_modules && yarn",
 		"compile": "truffle compile",
 		"coverage": "solidity-coverage",
 		"build": "truffle build",
