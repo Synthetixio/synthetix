@@ -36,6 +36,9 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
     /* Exchange rates stored by currency code, e.g. 'HAV', or 'nUSD' */
     mapping(bytes4 => uint) public rates;
 
+    /* Update times stored by currency code, e.g. 'HAV', or 'nUSD' */
+    mapping(bytes4 => uint) public lastRateUpdateTimes;
+
     /* The address of the oracle which pushes rate updates to this contract */
     address public oracle;
 
@@ -45,9 +48,6 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
 
     /* How long will the contract assume the rate of any asset is correct */
     uint public rateStalePeriod = 3 hours;
-
-    /* The time the rates were last updated */
-    uint public lastRateUpdateTime;
 
 /* ========== CONSTRUCTOR ========== */
 
@@ -80,10 +80,9 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
         
         while (i < _currencyKeys.length) {
             rates[_currencyKeys[i]] = _newRates[i];
+            lastRateUpdateTimes[_currencyKeys[i]] = now;
             i += 1;
         }
-
-        lastRateUpdateTime = now;
     }
 
     /* ========== SETTERS ========== */
@@ -93,17 +92,19 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
      * @param currencyKeys The currency keys you wish to update the rates for (in order)
      * @param newRates The rates for each currency (in order)
      */
-    function updateRates(bytes4[] currencyKeys, uint[] newRates)
+    function updateRates(bytes4[] currencyKeys, uint[] newRates, uint timeSent)
         external
         onlyOracle
     {
         require(currencyKeys.length == newRates.length, "Currency key array length must match rates array length.");
+        require(timeSent < (now + ORACLE_FUTURE_LIMIT), "Time is too far into the future");
 
         // Loop through each key and perform update.
         uint256 i = 0;
         
         while (i < currencyKeys.length) {
             rates[currencyKeys[i]] = newRates[i];
+            lastRateUpdateTimes[currencyKeys[i]] = timeSent;
             i += 1;
         }
 
@@ -119,6 +120,7 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
         onlyOracle
     {
         delete rates[currencyKey];
+        delete lastRateUpdateTimes[currencyKey];
 
         emit RateDeleted(currencyKey);
     }
@@ -161,14 +163,24 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
     }
 
     /**
-     * @notice Check if the rates haven't been updated for longer than the stale period.
+     * @notice Check if any of the currency rates passed in haven't been updated for longer than the stale period.
      */
-    function ratesAreStale()
+    function anyRateIsStale(bytes4[] currencyKeys)
         public
         view
         returns (bool)
     {
-        return safeAdd(lastRateUpdateTime, rateStalePeriod) < now;
+        // Loop through each key and check whether the data point is stale.
+        uint256 i = 0;
+        
+        while (i < currencyKeys.length) {
+            if (safeAdd(lastRateUpdateTimes[currencyKeys[i]], rateStalePeriod) < now) {
+                return true;
+            }
+            i += 1;
+        }
+
+        return false;
     }
 
     /* ========== MODIFIERS ========== */
@@ -179,9 +191,9 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
         _;
     }
 
-    modifier ratesNotStale
+    modifier ratesNotStale(bytes4[] currencyKeys)
     {
-        require(!ratesAreStale(), "Rates must not be stale to perform this action");
+        require(!anyRateIsStale(currencyKeys), "Rates must not be stale to perform this action");
         _;
     }
 
