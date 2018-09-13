@@ -28,13 +28,17 @@ contract('Exchange Rates', async function(accounts) {
 		assert.etherEqual(await instance.rateForCurrency(web3.utils.asciiToHex('OTHER')), '0');
 	});
 
-	it.only('should revert when currency keys > new rates length', async function() {
+	it('should revert when currency keys > new rates length', async function() {
 		await assert.revert(
 			ExchangeRates.new(
 				owner,
 				oracle,
 				[web3.utils.asciiToHex('nUSD'), web3.utils.asciiToHex('HAV')],
-				[web3.utils.toWei('1', 'ether'), web3.utils.toWei('0.2', 'ether')],
+				[
+					web3.utils.toWei('1', 'ether'),
+					web3.utils.toWei('0.2', 'ether'),
+					web3.utils.toWei('0', 'ether'),
+				],
 				{
 					from: deployerAccount,
 				}
@@ -44,7 +48,7 @@ contract('Exchange Rates', async function(accounts) {
 
 	// ?? Revert of truncate?
 	it('should revert if currency key > 4 bytes', async function() {
-		const instance = await ExchangeRates.deployed();
+		await ExchangeRates.deployed();
 	});
 
 	// it('should revert if at least one new rate negative', async function() {

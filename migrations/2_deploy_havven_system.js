@@ -88,7 +88,8 @@ module.exports = async function(deployer, network, accounts) {
 		nominProxy.address,
 		nominTokenState.address,
 		havven.address,
-		totalSupplyNomin,
+		'Nomin nUSD',
+		'nUSD',
 		owner,
 		{ from: deployerAccount }
 	);
