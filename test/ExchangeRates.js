@@ -2,8 +2,6 @@ const ExchangeRates = artifacts.require('ExchangeRates');
 
 // Helper functions
 
-
-
 contract('Exchange Rates', async function(accounts) {
 	const [deployerAccount, owner, oracle] = accounts;
 
@@ -31,7 +29,7 @@ contract('Exchange Rates', async function(accounts) {
 	});
 
 	it.only('should revert when currency keys > new rates length', async function() {
-		const result = assert.revert(
+		await assert.revert(
 			ExchangeRates.new(
 				owner,
 				oracle,
@@ -41,13 +39,12 @@ contract('Exchange Rates', async function(accounts) {
 					from: deployerAccount,
 				}
 			)
-		);	
+		);
 	});
 
 	// ?? Revert of truncate?
 	it('should revert if currency key > 4 bytes', async function() {
 		const instance = await ExchangeRates.deployed();
-
 	});
 
 	// it('should revert if at least one new rate negative', async function() {
@@ -97,14 +94,9 @@ contract('Exchange Rates', async function(accounts) {
 	// it('should emit rates updated event', async function() {
 	// });
 
-
-
-	// 
+	//
 
 	// Basic destructable features
 
-	it('', async function() {
-	});
-
-
+	it('', async function() {});
 });

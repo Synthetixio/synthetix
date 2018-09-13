@@ -126,7 +126,7 @@ const assertRevert = async blockOrPromise => {
 		errorCaught = true;
 	}
 
-	assert.ok(errorCaught, 'Operation did not revert');
+	assert.equal(errorCaught, true, 'Operation did not revert');
 };
 
 module.exports = {
