@@ -97,7 +97,7 @@ module.exports = async function(deployer, network, accounts) {
 	// Issuance Controller
 	// --------------------
 	console.log('Deploying IssuanceController...');
-	const issuanceController = await deployer.deploy(
+	await deployer.deploy(
 		IssuanceController,
 		owner,
 		fundsWallet,

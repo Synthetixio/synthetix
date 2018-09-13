@@ -21,7 +21,7 @@ contract('Owned - Test contract deployment', function(accounts) {
 });
 
 contract('Owned - Pre deployed contract', async function(accounts) {
-	const [deployerAccount, account1, account2, account3, account4] = accounts;
+	const [account1, account2, account3, account4] = accounts.slice(1); // The first account is the deployerAccount above
 
 	it('should not nominate new owner when not invoked by current contract owner', async function() {
 		let ownedContractInstance = await Owned.deployed();

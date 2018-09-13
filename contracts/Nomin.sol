@@ -4,13 +4,9 @@ FILE INFORMATION
 -----------------------------------------------------------------
 
 file:       Nomin.sol
-version:    1.2
-author:     Anton Jurisevic
-            Mike Spain
-            Dominic Romanowski
-            Kevin Brown
-
-date:       2018-05-29
+version:    2.0
+author:     Kevin Brown
+date:       2018-09-13
 
 -----------------------------------------------------------------
 MODULE DESCRIPTION
@@ -18,7 +14,8 @@ MODULE DESCRIPTION
 
 Havven-backed nomin stablecoin contract.
 
-This contract issues nomins, which are tokens worth 1 USD each.
+This contract issues nomins, which are tokens that mirror various
+flavours of fiat currency.
 
 Nomins are issuable by Havven holders who have to lock up some
 value of their havvens to issue H * Cmax nomins. Where Cmax is
@@ -32,7 +29,6 @@ per fee period.
 */
 
 pragma solidity 0.4.24;
-
 
 import "./FeeToken.sol";
 import "./TokenState.sol";
@@ -49,16 +45,13 @@ contract Nomin is FeeToken {
 
     // Nomin transfers incur a 15 bp fee by default.
     uint constant TRANSFER_FEE_RATE = 15 * UNIT / 10000;
-    string constant TOKEN_NAME = "Nomin USD";
-    string constant TOKEN_SYMBOL = "nUSD";
 
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _proxy, TokenState _tokenState, Havven _havven,
-                uint _totalSupply,
-                address _owner)
+                string _tokenName, string _tokenSymbol, address _owner)
         FeeToken(_proxy, _tokenState,
-                 TOKEN_NAME, TOKEN_SYMBOL, _totalSupply,
+                 _tokenName, _tokenSymbol, 0,
                  TRANSFER_FEE_RATE,
                  _havven, // The havven contract is the fee authority.
                  _owner)
@@ -185,7 +178,9 @@ contract Nomin is FeeToken {
         external
         optionalProxy_onlyOwner
     {
-        require(frozen[target] && target != FEE_ADDRESS, "Account must be frozen, and cannot be the fee address");
+        require(frozen[target], "Account must be frozen to unfreeze");
+        require(target != FEE_ADDRESS, "Cannot unfreeze the fee address");
+
         frozen[target] = false;
         emitAccountUnfrozen(target);
     }
