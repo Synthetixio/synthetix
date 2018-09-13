@@ -117,13 +117,16 @@ const assertEtherEqual = (actualWei, expectedAmount, expectedUnit = 'ether') => 
 };
 
 const assertRevert = async blockOrPromise => {
+	let errorCaught = false;
 	try {
 		const result = typeof blockOrPromise === 'function' ? blockOrPromise() : blockOrPromise;
 		await result;
-		assert.fail('The operation did not revert.');
 	} catch (error) {
 		assert.include(error.message, 'revert');
+		errorCaught = true;
 	}
+
+	assert.ok(errorCaught, 'Operation did not revert');
 };
 
 module.exports = {
