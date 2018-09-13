@@ -2,6 +2,7 @@ const {
 	assertEventEqual,
 	assertBNEqual,
 	assertEtherEqual,
+	assertRevert,
 	takeSnapshot,
 	restoreSnapshot,
 } = require('../utils/testUtils');
@@ -11,6 +12,7 @@ const {
 assert.eventEqual = assertEventEqual;
 assert.bnEqual = assertBNEqual;
 assert.etherEqual = assertEtherEqual;
+assert.revert = assertRevert;
 
 // And this is our test sandboxing. It snapshots and restores between each test.
 let lastSnapshotId;

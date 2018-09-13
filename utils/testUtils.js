@@ -116,6 +116,16 @@ const assertEtherEqual = (actualWei, expectedAmount, expectedUnit = 'ether') => 
 	assertBNEqual(actualWei, web3.utils.toWei(expectedAmount, expectedUnit));
 };
 
+const assertRevert = async blockOrPromise => {
+	try {
+		const result = typeof blockOrPromise === 'function' ? blockOrPromise() : blockOrPromise;
+		await result;
+		assert.fail('The operation did not revert.');
+	} catch (error) {
+		assert.include(error.message, 'revert');
+	}
+};
+
 module.exports = {
 	mineBlock,
 	fastForward,
@@ -126,4 +136,5 @@ module.exports = {
 	assertEventEqual,
 	assertBNEqual,
 	assertEtherEqual,
+	assertRevert,
 };

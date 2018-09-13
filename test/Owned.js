@@ -50,11 +50,8 @@ contract('Owned - Pre deployed contract', async function(accounts) {
 		let ownedContractInstance = await Owned.deployed();
 		const nominatedOwner = account3;
 
-		try {
-			await ownedContractInstance.acceptOwnership({ from: account4 });
-		} catch (error) {
-			assert.include(error.message, 'revert');
-		}
+		assert.revert(ownedContractInstance.acceptOwnership({ from: account4 }));
+
 		const owner = await ownedContractInstance.owner();
 		assert.notEqual(owner, nominatedOwner);
 	});
