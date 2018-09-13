@@ -34,7 +34,7 @@ import "./SelfDestructible.sol";
  */
 contract ExchangeRates is SafeDecimalMath, SelfDestructible {
     /* Exchange rates stored by currency code, e.g. 'HAV', or 'nUSD' */
-    mapping(bytes32 => uint) public rates;
+    mapping(bytes4 => uint) public rates;
 
     /* The address of the oracle which pushes rate updates to this contract */
     address public oracle;
@@ -64,7 +64,7 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
 
         // Oracle values - Allows for rate updates
         address _oracle,
-        bytes32[] _currencyKeys,
+        bytes4[] _currencyKeys,
         uint[] _newRates 
     )
         /* Owned is initialised in SelfDestructible */
@@ -93,7 +93,7 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
      * @param currencyKeys The currency keys you wish to update the rates for (in order)
      * @param newRates The rates for each currency (in order)
      */
-    function updateRates(bytes32[] currencyKeys, uint[] newRates)
+    function updateRates(bytes4[] currencyKeys, uint[] newRates)
         external
         onlyOracle
     {
@@ -108,6 +108,19 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
         }
 
         emit RatesUpdated(currencyKeys, newRates);
+    }
+
+    /**
+     * @notice Delete a rate stored in the contract
+     * @param currencyKey The currency key you wish to delete the rate for
+     */
+    function deleteRate(bytes4 currencyKey)
+        external
+        onlyOracle
+    {
+        delete rates[currencyKey];
+
+        emit RateDeleted(currencyKey);
     }
 
     /**
@@ -139,7 +152,7 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
     /**
      * @notice Retrieve the rate for a specific currency
      */
-    function rateForCurrency(bytes32 currencyKey)
+    function rateForCurrency(bytes4 currencyKey)
         public
         view
         returns (uint)
@@ -176,5 +189,6 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
 
     event OracleUpdated(address newOracle);
     event RateStalePeriodUpdated(uint rateStalePeriod);
-    event RatesUpdated(bytes32[] currencyKeys, uint[] newRates);
+    event RatesUpdated(bytes4[] currencyKeys, uint[] newRates);
+    event RateDeleted(bytes4 currencyKey);
 }
