@@ -34,9 +34,6 @@
 		"table": "^5.0.2",
 		"truffle": "^5.0.0-beta.0",
 		"truffle-core": "^5.0.0-beta.0",
-		"truffle-hdwallet-provider": "^1.0.0-web3one.0"
-	},
-	"dependencies": {
 		"truffle-external-compile": "^1.0.0-beta.0"
 	}
 }
