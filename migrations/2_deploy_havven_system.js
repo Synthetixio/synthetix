@@ -15,8 +15,6 @@ const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 const ethUSD = '274411589120931162910';
 const havUSD = '116551110814936098';
 
-const totalSupplyNomin = '1241510914838889387806256';
-
 module.exports = async function(deployer, network, accounts) {
 	const [deployerAccount, owner, oracle, fundsWallet] = accounts;
 
@@ -88,7 +86,8 @@ module.exports = async function(deployer, network, accounts) {
 		nominProxy.address,
 		nominTokenState.address,
 		havven.address,
-		totalSupplyNomin,
+		'Nomin nUSD',
+		'nUSD',
 		owner,
 		{ from: deployerAccount }
 	);
@@ -97,7 +96,7 @@ module.exports = async function(deployer, network, accounts) {
 	// Issuance Controller
 	// --------------------
 	console.log('Deploying IssuanceController...');
-	const issuanceController = await deployer.deploy(
+	await deployer.deploy(
 		IssuanceController,
 		owner,
 		fundsWallet,

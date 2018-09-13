@@ -11,6 +11,7 @@
 		"coverage": "solidity-coverage",
 		"develop": "truffle develop",
 		"ganache": "ganache-cli -a 150 -e 1000000000000 -l 0x7a213a",
+		"lint": "eslint \"**/*.js\"",
 		"test": "truffle compile && truffle test"
 	},
 	"repository": {
@@ -30,7 +31,17 @@
 		"test": "test"
 	},
 	"devDependencies": {
+		"eslint": "^5.5.0",
+		"eslint-config-prettier": "^3.0.1",
+		"eslint-config-standard": "^12.0.0",
+		"eslint-plugin-havven": "^1.0.0",
+		"eslint-plugin-import": "^2.14.0",
+		"eslint-plugin-node": "^7.0.1",
+		"eslint-plugin-prettier": "^2.6.2",
+		"eslint-plugin-promise": "^4.0.1",
+		"eslint-plugin-standard": "^4.0.0",
 		"ganache-cli": "^6.1.8",
+		"prettier": "^1.14.2",
 		"solidity-coverage": "^0.5.11",
 		"table": "^5.0.2",
 		"truffle": "^5.0.0-beta.0",

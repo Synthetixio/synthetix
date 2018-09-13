@@ -56,11 +56,7 @@ contract('Issuance Controller', async function(accounts) {
 
 		const currentFundsWallet = await issuanceController.fundsWallet();
 
-		try {
-			await issuanceController.setFundsWallet(address2, { from: deployerAccount });
-		} catch (error) {
-			assert.include(error.message, 'revert');
-		}
+		await assert.revert(issuanceController.setFundsWallet(address2, { from: deployerAccount }));
 
 		assert.equal(await issuanceController.fundsWallet(), currentFundsWallet);
 	});
@@ -77,11 +73,8 @@ contract('Issuance Controller', async function(accounts) {
 	it('should not set oracle when not invoked by owner', async function() {
 		const issuanceController = await IssuanceController.deployed();
 
-		try {
-			await issuanceController.setOracle(address3, { from: deployerAccount });
-		} catch (error) {
-			assert.include(error.message, 'revert');
-		}
+		await assert.revert(issuanceController.setOracle(address3, { from: deployerAccount }));
+
 		assert.equal(await issuanceController.oracle(), oracle);
 	});
 
@@ -98,11 +91,8 @@ contract('Issuance Controller', async function(accounts) {
 		const issuanceController = await IssuanceController.deployed();
 		const currentNomin = await issuanceController.nomin();
 
-		try {
-			await issuanceController.setNomin(address4, { from: deployerAccount });
-		} catch (error) {
-			assert.include(error.message, 'revert');
-		}
+		await assert.revert(issuanceController.setNomin(address4, { from: deployerAccount }));
+
 		assert.equal(await issuanceController.nomin(), currentNomin);
 	});
 
@@ -119,11 +109,8 @@ contract('Issuance Controller', async function(accounts) {
 		const issuanceController = await IssuanceController.deployed();
 		const currentHavven = await issuanceController.havven();
 
-		try {
-			await issuanceController.setHavven(owner, { from: deployerAccount });
-		} catch (error) {
-			assert.include(error.message, 'revert');
-		}
+		await assert.revert(issuanceController.setHavven(owner, { from: deployerAccount }));
+
 		assert.equal(await issuanceController.havven(), currentHavven);
 	});
 
@@ -131,11 +118,10 @@ contract('Issuance Controller', async function(accounts) {
 		const issuanceController = await IssuanceController.deployed();
 		let stalePeriod = 60; // One minute
 
-		try {
-			await issuanceController.setPriceStalePeriod(stalePeriod, { from: deployerAccount });
-		} catch (error) {
-			assert.include(error.message, 'revert');
-		}
+		await assert.revert(
+			issuanceController.setPriceStalePeriod(stalePeriod, { from: deployerAccount })
+		);
+
 		const priceStalePeriod = await issuanceController.priceStalePeriod();
 		assert.equal(priceStalePeriod.toNumber(), 3 * 60 * 60);
 	});
@@ -190,13 +176,11 @@ contract('Issuance Controller', async function(accounts) {
 		});
 
 		// Unsuccessful price update attempt
-		try {
-			await issuanceController.updatePrices('300', '400', now - 1, {
+		await assert.revert(
+			issuanceController.updatePrices('300', '400', now - 1, {
 				from: oracle,
-			});
-		} catch (error) {
-			assert.include(error.message, 'revert');
-		}
+			})
+		);
 
 		const havUSDFromContract = await issuanceController.usdToHavPrice();
 		const EthUSDFromContract = await issuanceController.usdToEthPrice();
@@ -215,18 +199,11 @@ contract('Issuance Controller', async function(accounts) {
 		const ethUSD = await issuanceController.usdToEthPrice();
 
 		// Unsuccessful price update attempt
-		try {
-			await issuanceController.updatePrices(
-				ethUSD,
-				havUSD,
-				lastPriceUpdateTime + oracleFutureLimit,
-				{
-					from: oracle,
-				}
-			);
-		} catch (error) {
-			assert.include(error.message, 'revert');
-		}
+		await assert.revert(
+			issuanceController.updatePrices(ethUSD, havUSD, lastPriceUpdateTime + oracleFutureLimit, {
+				from: oracle,
+			})
+		);
 
 		const havUSDFromContract = await issuanceController.usdToHavPrice();
 		const ethUSDFromContract = await issuanceController.usdToEthPrice();
@@ -243,12 +220,10 @@ contract('Issuance Controller', async function(accounts) {
 		let usdEth = '994957049546843687330';
 		let usdHav = '157474638738934625';
 
-		try {
-			await issuanceController.updatePrices(usdEth, usdHav, now, {
+		await assert.revert(
+			issuanceController.updatePrices(usdEth, usdHav, now, {
 				from: address1,
-			});
-		} catch (error) {
-			assert.include(error.message, 'revert');
-		}
+			})
+		);
 	});
 });

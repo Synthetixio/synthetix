@@ -5,11 +5,7 @@ contract('Owned - Test contract deployment', function(accounts) {
 	const [deployerAccount, account1] = accounts;
 
 	it('should revert when owner parameter is passed the zero address', async function() {
-		try {
-			await Owned.new(ZERO_ADDRESS, { from: deployerAccount });
-		} catch (error) {
-			assert.include(error.message, 'revert');
-		}
+		await assert.revert(Owned.new(ZERO_ADDRESS, { from: deployerAccount }));
 	});
 
 	// TODO check events on contract creation
@@ -21,16 +17,14 @@ contract('Owned - Test contract deployment', function(accounts) {
 });
 
 contract('Owned - Pre deployed contract', async function(accounts) {
-	const [deployerAccount, account1, account2, account3, account4] = accounts;
+	const [account1, account2, account3, account4] = accounts.slice(1); // The first account is the deployerAccount above
 
 	it('should not nominate new owner when not invoked by current contract owner', async function() {
 		let ownedContractInstance = await Owned.deployed();
 		const nominatedOwner = account3;
-		try {
-			await ownedContractInstance.nominateNewOwner(nominatedOwner, { from: account2 });
-		} catch (error) {
-			assert.include(error.message, 'revert');
-		}
+
+		await assert.revert(ownedContractInstance.nominateNewOwner(nominatedOwner, { from: account2 }));
+
 		const nominatedOwnerFrmContract = await ownedContractInstance.nominatedOwner();
 		assert.equal(nominatedOwnerFrmContract, ZERO_ADDRESS);
 	});
@@ -50,7 +44,7 @@ contract('Owned - Pre deployed contract', async function(accounts) {
 		let ownedContractInstance = await Owned.deployed();
 		const nominatedOwner = account3;
 
-		assert.revert(ownedContractInstance.acceptOwnership({ from: account4 }));
+		await assert.revert(ownedContractInstance.acceptOwnership({ from: account4 }));
 
 		const owner = await ownedContractInstance.owner();
 		assert.notEqual(owner, nominatedOwner);
