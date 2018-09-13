@@ -28,11 +28,11 @@ contract('Exchange Rates', async function(accounts) {
 		assert.equal(await instance.owner(), owner);
 		assert.equal(await instance.oracle(), oracle);
 
-		assert.etherEqual(await instance.rateForCurrency(web3.utils.asciiToHex('nUSD')), '1');
-		assert.etherEqual(await instance.rateForCurrency(web3.utils.asciiToHex('HAV')), '0.2');
+		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('nUSD')), '1');
+		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('HAV')), '0.2');
 
 		// Ensure that when the rate isn't found, 0 is returned as the exchange rate.
-		assert.etherEqual(await instance.rateForCurrency(web3.utils.asciiToHex('OTHER')), '0');
+		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('OTHER')), '0');
 	});
 
 	it('two of the same currencies in same array should mean that the second one overrides', async function() {
