@@ -150,11 +150,59 @@ contract('Exchange Rates', async function(accounts) {
 		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('lGHI')), '3.5');
 	});
 
-	// it('should be able to update rates of all currencies', async function() {
-	// });
+	it('should be able to update rates of all currencies', async function() {
+		const instance = await ExchangeRates.deployed();
 
-	// it('should emit RatesUpdated event when rate updated', async function() {
-	// });
+		await instance.updateRates(
+			[web3.utils.asciiToHex('lABC'), web3.utils.asciiToHex('lDEF'), web3.utils.asciiToHex('lGHI')],
+			[
+				web3.utils.toWei('1.3', 'ether'),
+				web3.utils.toWei('2.4', 'ether'),
+				web3.utils.toWei('3.5', 'ether'),
+			],
+			currentTime(),
+			{ from: oracle }
+		);
+
+		const updatedRate1 = '64.33';
+		const updatedRate2 = '2.54';
+		const updatedRate3 = '10.99';
+		await instance.updateRates(
+			[web3.utils.asciiToHex('lABC'), web3.utils.asciiToHex('lDEF'), web3.utils.asciiToHex('lGHI')],
+			[
+				web3.utils.toWei(updatedRate1, 'ether'),
+				web3.utils.toWei(updatedRate2, 'ether'),
+				web3.utils.toWei(updatedRate3, 'ether'),
+			],
+			currentTime(),
+			{ from: oracle }
+		);
+
+		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('lABC')), updatedRate);
+		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('lDEF')), updatedRate2);
+		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('lGHI')), updatedRate3);
+	});
+
+	it.only('should emit RatesUpdated event when rate updated', async function() {
+		const instance = await ExchangeRates.deployed();
+
+		const rates = [
+			web3.utils.toWei('1.3', 'ether'),
+			web3.utils.toWei('2.4', 'ether'),
+			web3.utils.toWei('3.5', 'ether'),
+		];
+		const currencyKeys = [
+			web3.utils.asciiToHex('lABC'),
+			web3.utils.asciiToHex('lDEF'),
+			web3.utils.asciiToHex('lGHI'),
+		];
+		const txn = await instance.updateRates(currencyKeys, rates, currentTime(), { from: oracle });
+
+		assert.eventEqual(txn, 'RatesUpdated', {
+			currencyKeys,
+			newRates: rates,
+		});
+	});
 
 	// it('should revert if currency keys not an array', async function() { // dup
 	// });
