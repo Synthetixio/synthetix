@@ -1,7 +1,9 @@
 const {
 	assertEventEqual,
 	assertBNEqual,
+	assertBNNotEqual,
 	assertEtherEqual,
+	assertEtherNotEqual,
 	assertRevert,
 	takeSnapshot,
 	restoreSnapshot,
@@ -11,7 +13,9 @@ const {
 // we'll just tag them onto the assert object for easy access.
 assert.eventEqual = assertEventEqual;
 assert.bnEqual = assertBNEqual;
+assert.bnNotEqual = assertBNNotEqual;
 assert.etherEqual = assertEtherEqual;
+assert.etherNotEqual = assertEtherNotEqual;
 assert.revert = assertRevert;
 
 // And this is our test sandboxing. It snapshots and restores between each test.

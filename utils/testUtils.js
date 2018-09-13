@@ -20,6 +20,11 @@ const send = payload => {
 const mineBlock = () => send({ method: 'evm_mine' });
 
 /**
+ *  Gets the current local time.
+ */
+const currentTime = () => Math.floor(Date.now() / 1000);
+
+/**
  *  Increases the time in the EVM.
  *  @param seconds Number of seconds to increase the time by
  */
@@ -107,6 +112,15 @@ const assertBNEqual = (actualBN, expectedBN) => {
 };
 
 /**
+ *  Convenience method to assert that two BN.js instances are NOT equal.
+ *  @param actualBN The BN.js instance you received
+ *  @param expectedBN The BN.js amount you expected NOT to receive
+ */
+const assertBNNotEqual = (actualBN, expectedBN) => {
+	assert.notEqual(actualBN.toString(), expectedBN.toString());
+};
+
+/**
  *  Convenience method to assert that an amount of ether (or other 10^18 number) was received from a contract.
  *  @param actualWei The value retrieved from a smart contract or wallet in wei
  *  @param expectedAmount The amount you expect e.g. '1'
@@ -114,6 +128,16 @@ const assertBNEqual = (actualBN, expectedBN) => {
  */
 const assertEtherEqual = (actualWei, expectedAmount, expectedUnit = 'ether') => {
 	assertBNEqual(actualWei, web3.utils.toWei(expectedAmount, expectedUnit));
+};
+
+/**
+ *  Convenience method to assert that an amount of ether (or other 10^18 number) was NOT received from a contract.
+ *  @param actualWei The value retrieved from a smart contract or wallet in wei
+ *  @param expectedAmount The amount you expect NOT to be equal to e.g. '1'
+ *  @param expectedUnit The unit you expect e.g. 'gwei'. Defaults to 'ether'
+ */
+const assertEtherNotEqual = (actualWei, expectedAmount, expectedUnit = 'ether') => {
+	assertBNNotEqual(actualWei, web3.utils.toWei(expectedAmount, expectedUnit));
 };
 
 const assertRevert = async blockOrPromise => {
@@ -135,9 +159,12 @@ module.exports = {
 	fastForwardTo,
 	takeSnapshot,
 	restoreSnapshot,
+	currentTime,
 
 	assertEventEqual,
 	assertBNEqual,
+	assertBNNotEqual,
 	assertEtherEqual,
+	assertEtherNotEqual,
 	assertRevert,
 };
