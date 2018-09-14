@@ -9,8 +9,21 @@ const getRandomCurrencyKey = () =>
 		.substring(2, 6)
 		.toUpperCase();
 
+const createRandomKeysAndRates = quantity => {
+	let rates = [];
+	let currencyKeys = [];
+	for (let i = 0; i < quantity; i++) {
+		const rate = Math.random() * 100;
+		rates[i] = web3.utils.toWei(rate.toString(), 'ether');
+		currencyKeys[i] = web3.utils.asciiToHex(getRandomCurrencyKey());
+	}
+	return { currencyKeys, rates };
+};
+
+// Contract tests
+
 contract('Exchange Rates', async function(accounts) {
-	const [deployerAccount, owner, oracle] = accounts;
+	const [deployerAccount, owner, oracle, accountOne] = accounts;
 
 	// Contract Creation
 
@@ -52,7 +65,7 @@ contract('Exchange Rates', async function(accounts) {
 		assert.etherNotEqual(await instance.rates.call(web3.utils.asciiToHex('CART')), firstAmount);
 	});
 
-	it('should revert when number of currency keys > new rates length', async function() {
+	it('should revert when number of currency keys > new rates length on create', async function() {
 		await assert.revert(
 			ExchangeRates.new(
 				owner,
@@ -70,7 +83,7 @@ contract('Exchange Rates', async function(accounts) {
 		);
 	});
 
-	it('should truncate to 4 bytes if currency key > 4 bytes', async function() {
+	it('should truncate to 4 bytes if currency key > 4 bytes on create', async function() {
 		const amount = '4.33';
 		const instance = await ExchangeRates.new(
 			owner,
@@ -87,13 +100,13 @@ contract('Exchange Rates', async function(accounts) {
 		assert.etherNotEqual(await instance.rates.call(web3.utils.asciiToHex('CAT')), amount);
 	});
 
-	it('shouldnt be able to set exchange rate to 0', async function() {
+	it('shouldnt be able to set exchange rate to 0 on create', async function() {
 		await assert.revert(
 			ExchangeRates.new(
 				owner,
 				oracle,
-				[web3.utils.asciiToHex('nUSD'), web3.utils.asciiToHex('HAV')],
-				[web3.utils.toWei('1', 'ether'), web3.utils.toWei('0', 'ether')],
+				[web3.utils.asciiToHex('HAV')],
+				[web3.utils.toWei('0', 'ether')],
 				{
 					from: deployerAccount,
 				}
@@ -101,22 +114,16 @@ contract('Exchange Rates', async function(accounts) {
 		);
 	});
 
-	it('should be able to handle lots of currencies', async function() {
-		let amounts = [];
-		let currencyKeys = [];
+	it('should be able to handle lots of currencies on creation', async function() {
 		const numberOfCurrencies = 100;
-		for (let i = 0; i < numberOfCurrencies; i++) {
-			const amount = Math.random() * 100;
-			amounts[i] = web3.utils.toWei(amount.toString(), 'ether');
-			currencyKeys[i] = web3.utils.asciiToHex(getRandomCurrencyKey());
-		}
+		const { currencyKeys, rates } = createRandomKeysAndRates(numberOfCurrencies);
 
-		const instance = await ExchangeRates.new(owner, oracle, currencyKeys, amounts, {
+		const instance = await ExchangeRates.new(owner, oracle, currencyKeys, rates, {
 			from: deployerAccount,
 		});
 
 		for (let i = 0; i < numberOfCurrencies; i++) {
-			assert.equal(await instance.rates.call(currencyKeys[i]), amounts[i]);
+			assert.equal(await instance.rates.call(currencyKeys[i]), rates[i]);
 		}
 	});
 
@@ -183,7 +190,7 @@ contract('Exchange Rates', async function(accounts) {
 		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('lGHI')), updatedRate3);
 	});
 
-	it.only('should emit RatesUpdated event when rate updated', async function() {
+	it('should emit RatesUpdated event when rate updated', async function() {
 		const instance = await ExchangeRates.deployed();
 
 		const rates = [
@@ -205,39 +212,125 @@ contract('Exchange Rates', async function(accounts) {
 		});
 	});
 
-	// it('should revert if currency keys not an array', async function() { // dup
-	// });
+	it('should be able to handle lots of currency updates', async function() {
+		const instance = await ExchangeRates.deployed();
+		const numberOfCurrencies = 150;
+		const { currencyKeys, rates } = createRandomKeysAndRates(numberOfCurrencies);
 
-	// it('should revert if new rates not an array', async function() { // dup
-	// });
+		await instance.updateRates(currencyKeys, rates, currentTime(), { from: oracle });
 
-	// it('should be able to handle 100 currencies', async function() { // dup
-	// });
+		for (let i = 0; i < numberOfCurrencies; i++) {
+			assert.equal(await instance.rates.call(currencyKeys[i]), rates[i]);
+		}
+	});
 
-	// it('should revert if at least one new rate negative', async function() { // dup
-	// });
+	it('should truncate to 4 bytes if currency key > 4 bytes on update', async function() {
+		const instance = await ExchangeRates.deployed();
+		const rate = '4.33';
+		await instance.updateRates(
+			[web3.utils.asciiToHex('CATHERINE')],
+			[web3.utils.toWei(rate, 'ether')],
+			currentTime(),
+			{ from: oracle }
+		);
 
-	// it('should revert if at least one new rate negative', async function() { // dup
-	// });
+		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('CATHERINE')), rate);
+		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('CATH')), rate);
+		assert.etherNotEqual(await instance.rates.call(web3.utils.asciiToHex('CAT')), rate);
+	});
 
-	// it('should revert if currency key > 4 bytes', async function() { // dup
-	// });
+	it('should revert when currency keys length != new rates length on update', async function() {
+		const instance = await ExchangeRates.deployed();
+		await assert.revert(
+			instance.updateRates(
+				[
+					web3.utils.asciiToHex('nUSD'),
+					web3.utils.asciiToHex('HAV'),
+					web3.utils.asciiToHex('GOLD'),
+				],
+				[web3.utils.toWei('1', 'ether'), web3.utils.toWei('0.2', 'ether')],
+				currentTime(),
+				{ from: oracle }
+			)
+		);
+	});
 
-	// it('should revert when currency keys length != new rates length', async function() { // dup
-	// });
+	it('should not be able to set exchange rate to 0 on update', async function() {
+		const instance = await ExchangeRates.deployed();
+		await assert.revert(
+			instance.updateRates(
+				[web3.utils.asciiToHex('ZERO')],
+				[web3.utils.toWei('0', 'ether')],
+				currentTime(),
+				{ from: oracle }
+			)
+		);
+	});
 
-	// it('exchange rate of currency not recorded is 0', async function() {
-	// });
+	it('only oracle can update exchange rates', async function() {
+		const instance = await ExchangeRates.deployed();
 
-	// it('only oracle can update exchange rates', async function() {
-	// });
+		// Check not allowed from deployer
+		await assert.revert(
+			instance.updateRates(
+				[web3.utils.asciiToHex('GOLD'), web3.utils.asciiToHex('FOOL')],
+				[web3.utils.toWei('10', 'ether'), web3.utils.toWei('0.9', 'ether')],
+				currentTime(),
+				{ from: deployerAccount }
+			)
+		);
+		// Check not allowed from owner
+		await assert.revert(
+			instance.updateRates(
+				[web3.utils.asciiToHex('GOLD'), web3.utils.asciiToHex('FOOL')],
+				[web3.utils.toWei('10', 'ether'), web3.utils.toWei('0.9', 'ether')],
+				currentTime(),
+				{ from: owner }
+			)
+		);
+		// Check not allowed from a random account
+		await assert.revert(
+			instance.updateRates(
+				[web3.utils.asciiToHex('GOLD'), web3.utils.asciiToHex('FOOL')],
+				[web3.utils.toWei('10', 'ether'), web3.utils.toWei('0.9', 'ether')],
+				currentTime(),
+				{ from: accountOne }
+			)
+		);
 
-	// it('should emit rates updated event', async function() {
-	// });
+		assert.etherNotEqual(await instance.rates.call(web3.utils.asciiToHex('GOLD')), '10');
+		assert.etherNotEqual(await instance.rates.call(web3.utils.asciiToHex('FOOL')), '0.9');
 
-	//
+		await instance.updateRates(
+			[web3.utils.asciiToHex('GOLD'), web3.utils.asciiToHex('FOOL')],
+			[web3.utils.toWei('10', 'ether'), web3.utils.toWei('0.9', 'ether')],
+			currentTime(),
+			{ from: oracle }
+		);
+		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('GOLD')), '10');
+		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('FOOL')), '0.9');
+	});
+
+	it('should not be able to update rates if they are too far in the future', async function() {
+		const instance = await ExchangeRates.deployed();
+		const timeTooFarInFuture = currentTime() + 10 * 61;
+		await assert.revert(
+			instance.updateRates(
+				[web3.utils.asciiToHex('GOLD')],
+				[web3.utils.toWei('1', 'ether')],
+				timeTooFarInFuture,
+				{ from: oracle }
+			)
+		);
+	});
+
+	// Removing rates
+
+	// Changing the rate stale period
+
+	// Changing the Oracle address
+
+	// Checking if a rate is stale
 
 	// Basic destructable features
-
-	it('', async function() {});
 });
