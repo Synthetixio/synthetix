@@ -191,6 +191,7 @@ contract('Exchange Rates', async function(accounts) {
 			web3.utils.toWei('2.4', 'ether'),
 			web3.utils.toWei('3.5', 'ether'),
 		];
+
 		const currencyKeys = [
 			web3.utils.asciiToHex('lABC'),
 			web3.utils.asciiToHex('lDEF'),

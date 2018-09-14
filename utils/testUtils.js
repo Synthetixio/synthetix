@@ -1,3 +1,5 @@
+const BN = require('bn.js');
+
 /**
  * Sets default properties on the jsonrpc object and promisifies it so we don't have to copy/paste everywhere.
  */
@@ -93,11 +95,7 @@ const assertEventEqual = (actualEventOrTransaction, expectedEvent, expectedArgs)
 	// Assert the names are the same.
 	assert.equal(event.event, expectedEvent);
 
-	// Assert the args that are expected all exist.
-	for (const arg of Object.keys(expectedArgs)) {
-		assert.equal(event.args[arg], expectedArgs[arg]);
-	}
-
+	assertDeepBNEqual(event.args, expectedArgs);
 	// Note: this means that if you don't assert args they'll pass regardless.
 	// Ensure you pass in all the args you need to assert on.
 };
@@ -118,6 +116,33 @@ const assertBNEqual = (actualBN, expectedBN) => {
  */
 const assertBNNotEqual = (actualBN, expectedBN) => {
 	assert.notEqual(actualBN.toString(), expectedBN.toString());
+};
+
+/**
+ *  Convenience method to assert that two objects or arrays which contain nested BN.js instances are equal.
+ *  @param actual What you received
+ *  @param expected The shape you expected
+ */
+const assertDeepBNEqual = (actual, expected) => {
+	// Check if it's a value type we can assert on straight away.
+	if (
+		typeof expected === 'string' ||
+		typeof actual === 'string' ||
+		typeof expected === 'number' ||
+		typeof actual === 'number' ||
+		BN.isBN(actual) ||
+		BN.isBN(expected)
+	) {
+		assertBNEqual(actual, expected);
+	} else if (Array.isArray(expected)) {
+		for (let i = 0; i < expected.length; i++) {
+			assertDeepBNEqual(actual[i], expected[i]);
+		}
+	} else {
+		for (const key of Object.keys(expected)) {
+			assertDeepBNEqual(actual[key], expected[key]);
+		}
+	}
 };
 
 /**
