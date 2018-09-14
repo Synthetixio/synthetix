@@ -41,7 +41,8 @@ const fastForward = async seconds => {
 
 /**
  *  Increases the time in the EVM to as close to a specific date as possible
- *  NOTE: Because this operation requires two EVM operations, sometimes the result can vary by a second or two
+ *  NOTE: Because this operation figures out the amount of seconds to jump then applies that to the EVM,
+ *  sometimes the result can vary by a second or two depending on how fast or slow ganache is responding.
  *  @param time Date object representing the desired time at the end of the operation
  */
 const fastForwardTo = async time => {
@@ -95,7 +96,7 @@ const assertEventEqual = (actualEventOrTransaction, expectedEvent, expectedArgs)
 	// Assert the names are the same.
 	assert.equal(event.event, expectedEvent);
 
-	assertDeepBNEqual(event.args, expectedArgs);
+	assertDeepEqual(event.args, expectedArgs);
 	// Note: this means that if you don't assert args they'll pass regardless.
 	// Ensure you pass in all the args you need to assert on.
 };
@@ -123,24 +124,28 @@ const assertBNNotEqual = (actualBN, expectedBN) => {
  *  @param actual What you received
  *  @param expected The shape you expected
  */
-const assertDeepBNEqual = (actual, expected) => {
+const assertDeepEqual = (actual, expected) => {
 	// Check if it's a value type we can assert on straight away.
-	if (
+	if (BN.isBN(actual) || BN.isBN(expected)) {
+		assertBNEqual(actual, expected);
+	} else if (
 		typeof expected === 'string' ||
 		typeof actual === 'string' ||
 		typeof expected === 'number' ||
 		typeof actual === 'number' ||
-		BN.isBN(actual) ||
-		BN.isBN(expected)
+		typeof expected === 'boolean' ||
+		typeof actual === 'boolean'
 	) {
-		assertBNEqual(actual, expected);
-	} else if (Array.isArray(expected)) {
+		assert.equal(actual, expected);
+	}
+	// Otherwise dig through the deeper object and recurse
+	else if (Array.isArray(expected)) {
 		for (let i = 0; i < expected.length; i++) {
-			assertDeepBNEqual(actual[i], expected[i]);
+			assertDeepEqual(actual[i], expected[i]);
 		}
 	} else {
 		for (const key of Object.keys(expected)) {
-			assertDeepBNEqual(actual[key], expected[key]);
+			assertDeepEqual(actual[key], expected[key]);
 		}
 	}
 };
