@@ -324,11 +324,53 @@ contract('Exchange Rates', async function(accounts) {
 		);
 	});
 
+	// TODO: Check that lastRateUpdateTimes has been updated
+
+	// Changing the Oracle address
+
+	it("should be able to change the oracle's address", async function() {
+		const instance = await ExchangeRates.deployed();
+
+		// Ensure oracle is set to oracle address originally
+		await instance.setOracle(oracle, { from: owner });
+		assert.equal(await instance.oracle.call(), oracle);
+
+		await instance.setOracle(accountOne, { from: owner });
+
+		assert.equal(await instance.oracle.call(), accountOne);
+		assert.notEqual(await instance.oracle.call(), oracle);
+	});
+
+	it("only owner can change the oracle's address", async function() {
+		const instance = await ExchangeRates.deployed();
+
+		// Ensure oracle is set to oracle address originally
+		await instance.setOracle(oracle, { from: owner });
+		assert.equal(await instance.oracle.call(), oracle);
+
+		// Check not allowed from deployer
+		await assert.revert(instance.setOracle(accountOne, { from: deployerAccount }));
+		await assert.revert(instance.setOracle(accountOne, { from: oracle }));
+		await assert.revert(instance.setOracle(accountOne, { from: accountOne }));
+		await instance.setOracle(accountOne, { from: owner });
+	});
+
+	it('should emit event on successful oracle address update', async function() {
+		const instance = await ExchangeRates.deployed();
+
+		// Ensure oracle is set to oracle address originally
+		await instance.setOracle(oracle, { from: owner });
+		assert.equal(await instance.oracle.call(), oracle);
+
+		const txn = await instance.setOracle(accountOne, { from: owner });
+		assert.eventEqual(txn, 'OracleUpdated', {
+			newOracle: accountOne,
+		});
+	});
+
 	// Removing rates
 
 	// Changing the rate stale period
-
-	// Changing the Oracle address
 
 	// Checking if a rate is stale
 
