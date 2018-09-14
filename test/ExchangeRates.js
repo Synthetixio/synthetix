@@ -105,7 +105,7 @@ contract('Exchange Rates', async function(accounts) {
 		let amounts = [];
 		let currencyKeys = [];
 		const numberOfCurrencies = 100;
-		for (i = 0; i < numberOfCurrencies; i++) {
+		for (let i = 0; i < numberOfCurrencies; i++) {
 			const amount = Math.random() * 100;
 			amounts[i] = web3.utils.toWei(amount.toString(), 'ether');
 			currencyKeys[i] = web3.utils.asciiToHex(getRandomCurrencyKey());
@@ -115,7 +115,7 @@ contract('Exchange Rates', async function(accounts) {
 			from: deployerAccount,
 		});
 
-		for (i = 0; i < numberOfCurrencies; i++) {
+		for (let i = 0; i < numberOfCurrencies; i++) {
 			assert.equal(await instance.rates.call(currencyKeys[i]), amounts[i]);
 		}
 	});
@@ -178,7 +178,7 @@ contract('Exchange Rates', async function(accounts) {
 			{ from: oracle }
 		);
 
-		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('lABC')), updatedRate);
+		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('lABC')), updatedRate1);
 		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('lDEF')), updatedRate2);
 		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('lGHI')), updatedRate3);
 	});
