@@ -22,9 +22,13 @@ const send = payload => {
 const mineBlock = () => send({ method: 'evm_mine' });
 
 /**
- *  Gets the current local time.
+ *  Gets the time of the last block.
  */
-const currentTime = () => Math.floor(Date.now() / 1000);
+const currentTime = async () => {
+	const { timestamp } = await web3.eth.getBlock('latest');
+
+	return timestamp;
+};
 
 /**
  *  Increases the time in the EVM.
