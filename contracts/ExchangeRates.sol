@@ -79,6 +79,8 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
         uint256 i = 0;
         
         while (i < _currencyKeys.length) {
+            require(_newRates[i] != 0, "Zero is not a valid rate");
+
             rates[_currencyKeys[i]] = _newRates[i];
             lastRateUpdateTimes[_currencyKeys[i]] = now;
             i += 1;
@@ -103,6 +105,11 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
         uint256 i = 0;
         
         while (i < currencyKeys.length) {
+            // Should not set any rate to zero ever, as no asset will ever be
+            // truely worthless and still valid. In this scenario, we should
+            // delete the rate and remove it from the system.
+            require(newRates[i] != 0, "Zero is not a valid rate, please call deleteRate instead.");
+
             rates[currencyKeys[i]] = newRates[i];
             lastRateUpdateTimes[currencyKeys[i]] = timeSent;
             i += 1;
@@ -119,6 +126,8 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
         external
         onlyOracle
     {
+        require(rates[currencyKey] > 0, "Rate is zero");
+
         delete rates[currencyKey];
         delete lastRateUpdateTimes[currencyKey];
 
