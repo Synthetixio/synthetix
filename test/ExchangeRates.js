@@ -40,6 +40,7 @@ contract.only('Exchange Rates', async function(accounts) {
 		);
 
 		assert.equal(await instance.owner(), owner);
+		assert.equal(await instance.selfDestructBeneficiary(), owner);
 		assert.equal(await instance.oracle(), oracle);
 
 		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('nUSD')), '1');
@@ -582,11 +583,168 @@ contract.only('Exchange Rates', async function(accounts) {
 
 	// Changing the rate stale period
 
-	// TODO
+	it('should be able to change the rate stale period', async function() {
+		const instance = await ExchangeRates.deployed();
+		const rateStalePeriod = 2010 * 2 * 60;
+
+		const originalRateStalePeriod = await instance.rateStalePeriod.call();
+		await instance.setRateStalePeriod(rateStalePeriod, { from: owner });
+		const newRateStalePeriod = await instance.rateStalePeriod.call();
+		assert.equal(newRateStalePeriod, rateStalePeriod);
+		assert.notEqual(newRateStalePeriod, originalRateStalePeriod);
+	});
+
+	it('only owner is permitted to change the rate stale period', async function() {
+		const instance = await ExchangeRates.deployed();
+		const rateStalePeriod = 2010 * 2 * 60;
+
+		// Check not allowed from deployer
+		await assert.revert(instance.setRateStalePeriod(rateStalePeriod, { from: deployerAccount }));
+		await assert.revert(instance.setRateStalePeriod(rateStalePeriod, { from: oracle }));
+		await assert.revert(instance.setRateStalePeriod(rateStalePeriod, { from: accountOne }));
+		await instance.setRateStalePeriod(rateStalePeriod, { from: owner });
+	});
+
+	it('should emit event on successful rate stale period change', async function() {
+		const instance = await ExchangeRates.deployed();
+		const rateStalePeriod = 2010 * 2 * 60;
+
+		// Ensure oracle is set to oracle address originally
+		const txn = await instance.setRateStalePeriod(rateStalePeriod, { from: owner });
+		assert.eventEqual(txn, 'RateStalePeriodUpdated', {
+			rateStalePeriod,
+		});
+	});
 
 	// Checking if a rate is stale
 
-	// TODO
+	it('should be able to confirm no rates are stale from a subset', async function() {
+		const instance = await ExchangeRates.deployed();
 
-	// Basic destructable features
+		// Set up rates for test
+		await instance.setRateStalePeriod(20, { from: owner });
+		const encodedRateKeys1 = [
+			web3.utils.asciiToHex('ABC'),
+			web3.utils.asciiToHex('DEF'),
+			web3.utils.asciiToHex('GHI'),
+			web3.utils.asciiToHex('LMN'),
+		];
+		const encodedRateKeys2 = [
+			web3.utils.asciiToHex('OPQ'),
+			web3.utils.asciiToHex('RST'),
+			web3.utils.asciiToHex('UVW'),
+			web3.utils.asciiToHex('XYZ'),
+		];
+		const encodedRateKeys3 = [
+			web3.utils.asciiToHex('123'),
+			web3.utils.asciiToHex('456'),
+			web3.utils.asciiToHex('789'),
+		];
+		const encodedRateValues1 = [
+			web3.utils.toWei('1', 'ether'),
+			web3.utils.toWei('2', 'ether'),
+			web3.utils.toWei('3', 'ether'),
+			web3.utils.toWei('4', 'ether'),
+		];
+		const encodedRateValues2 = [
+			web3.utils.toWei('5', 'ether'),
+			web3.utils.toWei('6', 'ether'),
+			web3.utils.toWei('7', 'ether'),
+			web3.utils.toWei('8', 'ether'),
+		];
+		const encodedRateValues3 = [
+			web3.utils.toWei('9', 'ether'),
+			web3.utils.toWei('10', 'ether'),
+			web3.utils.toWei('11', 'ether'),
+		];
+		const updatedTime1 = await currentTime();
+		await instance.updateRates(encodedRateKeys1, encodedRateValues1, updatedTime1, {
+			from: oracle,
+		});
+		await fastForward(5);
+		const updatedTime2 = await currentTime();
+		await instance.updateRates(encodedRateKeys2, encodedRateValues2, updatedTime2, {
+			from: oracle,
+		});
+		await fastForward(5);
+		const updatedTime3 = await currentTime();
+		await instance.updateRates(encodedRateKeys3, encodedRateValues3, updatedTime3, {
+			from: oracle,
+		});
+
+		await fastForward(15);
+		const rateIsStale = await instance.anyRateIsStale([...encodedRateKeys2, ...encodedRateKeys3]);
+		assert.equal(rateIsStale, false);
+	});
+
+	it('should be able to confirm a single rate is stale from a set of rates', async function() {
+		const instance = await ExchangeRates.deployed();
+
+		// Set up rates for test
+		await instance.setRateStalePeriod(40, { from: owner });
+		const encodedRateKeys1 = [
+			web3.utils.asciiToHex('ABC'),
+			web3.utils.asciiToHex('DEF'),
+			web3.utils.asciiToHex('GHI'),
+			web3.utils.asciiToHex('LMN'),
+		];
+		const encodedRateKeys2 = [web3.utils.asciiToHex('OPQ')];
+		const encodedRateKeys3 = [
+			web3.utils.asciiToHex('RST'),
+			web3.utils.asciiToHex('UVW'),
+			web3.utils.asciiToHex('XYZ'),
+		];
+		const encodedRateValues1 = [
+			web3.utils.toWei('1', 'ether'),
+			web3.utils.toWei('2', 'ether'),
+			web3.utils.toWei('3', 'ether'),
+			web3.utils.toWei('4', 'ether'),
+		];
+		const encodedRateValues2 = [web3.utils.toWei('5', 'ether')];
+		const encodedRateValues3 = [
+			web3.utils.toWei('6', 'ether'),
+			web3.utils.toWei('7', 'ether'),
+			web3.utils.toWei('8', 'ether'),
+		];
+
+		const updatedTime2 = await currentTime();
+		await instance.updateRates(encodedRateKeys2, encodedRateValues2, updatedTime2, {
+			from: oracle,
+		});
+		await fastForward(20);
+
+		const updatedTime1 = await currentTime();
+		await instance.updateRates(encodedRateKeys1, encodedRateValues1, updatedTime1, {
+			from: oracle,
+		});
+		await fastForward(15);
+		const updatedTime3 = await currentTime();
+		await instance.updateRates(encodedRateKeys3, encodedRateValues3, updatedTime3, {
+			from: oracle,
+		});
+
+		await fastForward(6);
+		const rateIsStale = await instance.anyRateIsStale([...encodedRateKeys2, ...encodedRateKeys3]);
+		assert.equal(rateIsStale, true);
+	});
+
+	it('should be able to confirm a single rate (from a set of 1) is stale', async function() {
+		const instance = await ExchangeRates.deployed();
+
+		// Set up rates for test
+		await instance.setRateStalePeriod(40, { from: owner });
+		const updatedTime = await currentTime();
+		await instance.updateRates(
+			[web3.utils.asciiToHex('ABC')],
+			[web3.utils.toWei('2', 'ether')],
+			updatedTime,
+			{
+				from: oracle,
+			}
+		);
+		await fastForward(41);
+
+		const rateIsStale = await instance.anyRateIsStale([web3.utils.asciiToHex('ABC')]);
+		assert.equal(rateIsStale, true);
+	});
 });
