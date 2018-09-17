@@ -86,6 +86,21 @@ const restoreSnapshot = async id => {
 };
 
 /**
+ *  Convenience method to assert that an event has not been published for that transaction
+ *  @param actualEventOrTransaction The transaction receipt, or event as returned in the event logs from web3
+ *  @param expectedEvent The event name you expect
+ */
+const assertEventNotEqual = (actualEventOrTransaction, expectedEvent) => {
+	// If they pass in a whole transaction we need to extract the first log, otherwise we already have what we need
+	const event = Array.isArray(actualEventOrTransaction.logs)
+		? actualEventOrTransaction.logs[0]
+		: actualEventOrTransaction;
+
+	// Assert the names are the same.
+	assert.notEqual(event.event, expectedEvent);
+};
+
+/**
  *  Convenience method to assert that an event matches a shape
  *  @param actualEventOrTransaction The transaction receipt, or event as returned in the event logs from web3
  *  @param expectedEvent The event name you expect
@@ -196,6 +211,7 @@ module.exports = {
 	currentTime,
 
 	assertEventEqual,
+	assertEventNotEqual,
 	assertBNEqual,
 	assertBNNotEqual,
 	assertEtherEqual,
