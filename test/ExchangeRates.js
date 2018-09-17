@@ -616,7 +616,74 @@ contract('Exchange Rates', async function(accounts) {
 		});
 	});
 
-	// Checking if a rate is stale
+	// Checking if a single rate is stale
+
+	it('check if a single rate is stale', async function() {
+		const instance = await ExchangeRates.deployed();
+
+		// Set up rates for test
+		await instance.setRateStalePeriod(30, { from: owner });
+		const updatedTime = await currentTime();
+		await instance.updateRates(
+			[web3.utils.asciiToHex('ABC')],
+			[web3.utils.toWei('2', 'ether')],
+			updatedTime,
+			{
+				from: oracle,
+			}
+		);
+		await fastForward(31);
+
+		const rateIsStale = await instance.rateIsStale(web3.utils.asciiToHex('ABC'));
+		assert.equal(rateIsStale, true);
+	});
+
+	it('check if a single rate is not stale', async function() {
+		const instance = await ExchangeRates.deployed();
+
+		// Set up rates for test
+		await instance.setRateStalePeriod(30, { from: owner });
+		const updatedTime = await currentTime();
+		await instance.updateRates(
+			[web3.utils.asciiToHex('ABC')],
+			[web3.utils.toWei('2', 'ether')],
+			updatedTime,
+			{
+				from: oracle,
+			}
+		);
+		await fastForward(29);
+
+		const rateIsStale = await instance.rateIsStale(web3.utils.asciiToHex('ABC'));
+		assert.equal(rateIsStale, false);
+	});
+
+	it('ensure rate is considered stale if not set', async function() {
+		const instance = await ExchangeRates.deployed();
+
+		// Set up rates for test
+		await instance.setRateStalePeriod(30, { from: owner });
+		const encodedRateKey = web3.utils.asciiToHex('GOLD');
+		const currentRate = await instance.rates.call(encodedRateKey);
+		if (currentRate > 0) {
+			await instance.deleteRate(encodedRateKey, { from: oracle });
+		}
+
+		const rateIsStale = await instance.rateIsStale(encodedRateKey);
+		assert.equal(rateIsStale, true);
+	});
+
+	it('make sure anyone can check if rate is stale', async function() {
+		const instance = await ExchangeRates.deployed();
+		const rateKey = web3.utils.asciiToHex('ABC');
+		await instance.rateIsStale(rateKey, { from: oracle });
+		await instance.rateIsStale(rateKey, { from: owner });
+		await instance.rateIsStale(rateKey, { from: deployerAccount });
+		await instance.rateIsStale(rateKey, { from: accountOne });
+		await instance.rateIsStale(rateKey, { from: accountTwo });
+	});
+
+	// Checking if any rate is stale
 
 	it('should be able to confirm no rates are stale from a subset', async function() {
 		const instance = await ExchangeRates.deployed();
@@ -745,6 +812,45 @@ contract('Exchange Rates', async function(accounts) {
 		await fastForward(41);
 
 		const rateIsStale = await instance.anyRateIsStale([web3.utils.asciiToHex('ABC')]);
+		assert.equal(rateIsStale, true);
+	});
+
+	it('make sure anyone can check if any rates are stale', async function() {
+		const instance = await ExchangeRates.deployed();
+		const rateKey = web3.utils.asciiToHex('ABC');
+		await instance.anyRateIsStale([rateKey], { from: oracle });
+		await instance.anyRateIsStale([rateKey], { from: owner });
+		await instance.anyRateIsStale([rateKey], { from: deployerAccount });
+		await instance.anyRateIsStale([rateKey], { from: accountOne });
+		await instance.anyRateIsStale([rateKey], { from: accountTwo });
+	});
+
+	it('ensure rates are considered stale if not set', async function() {
+		const instance = await ExchangeRates.deployed();
+
+		// Set up rates for test
+		await instance.setRateStalePeriod(40, { from: owner });
+		const encodedRateKeys1 = [
+			web3.utils.asciiToHex('ABC'),
+			web3.utils.asciiToHex('DEF'),
+			web3.utils.asciiToHex('GHI'),
+			web3.utils.asciiToHex('LMN'),
+		];
+		const encodedRateValues1 = [
+			web3.utils.toWei('1', 'ether'),
+			web3.utils.toWei('2', 'ether'),
+			web3.utils.toWei('3', 'ether'),
+			web3.utils.toWei('4', 'ether'),
+		];
+
+		const updatedTime1 = await currentTime();
+		await instance.updateRates(encodedRateKeys1, encodedRateValues1, updatedTime1, {
+			from: oracle,
+		});
+		const rateIsStale = await instance.anyRateIsStale([
+			...encodedRateKeys1,
+			web3.utils.asciiToHex('RST'),
+		]);
 		assert.equal(rateIsStale, true);
 	});
 
