@@ -175,7 +175,7 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
      * @notice Check if a specific currency's rate hasn't been updated for longer than the stale period.
      */
     function rateIsStale(bytes4 currencyKey)
-        public
+        external 
         view
         returns (bool)
     {
@@ -186,7 +186,7 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
      * @notice Check if any of the currency rates passed in haven't been updated for longer than the stale period.
      */
     function anyRateIsStale(bytes4[] currencyKeys)
-        public
+        external
         view
         returns (bool)
     {
@@ -208,12 +208,6 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
     modifier onlyOracle
     {
         require(msg.sender == oracle, "Only the oracle can perform this action");
-        _;
-    }
-
-    modifier ratesNotStale(bytes4[] currencyKeys)
-    {
-        require(!anyRateIsStale(currencyKeys), "Rates must not be stale to perform this action");
         _;
     }
 
