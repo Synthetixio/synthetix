@@ -22,7 +22,7 @@ const createRandomKeysAndRates = quantity => {
 
 // Contract tests
 
-contract.only('Exchange Rates', async function(accounts) {
+contract('Exchange Rates', async function(accounts) {
 	const [deployerAccount, owner, oracle, accountOne, accountTwo] = accounts;
 
 	// Contract Creation
@@ -672,7 +672,7 @@ contract.only('Exchange Rates', async function(accounts) {
 			from: oracle,
 		});
 
-		await fastForward(15);
+		await fastForward(14);
 		const rateIsStale = await instance.anyRateIsStale([...encodedRateKeys2, ...encodedRateKeys3]);
 		assert.equal(rateIsStale, false);
 	});
@@ -746,5 +746,20 @@ contract.only('Exchange Rates', async function(accounts) {
 
 		const rateIsStale = await instance.anyRateIsStale([web3.utils.asciiToHex('ABC')]);
 		assert.equal(rateIsStale, true);
+	});
+
+	// Ensure contract is destructable
+
+	it('should be destructable', async function() {
+		// Check if the instance adheres to the destructable interface
+		const instance = await ExchangeRates.deployed();
+		assert.exists(instance.initiateSelfDestruct);
+		assert.exists(instance.setSelfDestructBeneficiary);
+		assert.exists(instance.terminateSelfDestruct);
+		assert.exists(instance.selfDestruct);
+
+		assert.exists(instance.initiationTime);
+		assert.exists(instance.selfDestructInitiated);
+		assert.exists(instance.selfDestructBeneficiary);
 	});
 });
