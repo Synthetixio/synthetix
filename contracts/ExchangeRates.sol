@@ -172,6 +172,17 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
     }
 
     /**
+     * @notice Check if a specific currency's rate hasn't been updated for longer than the stale period.
+     */
+    function rateIsStale(bytes4 currencyKey)
+        public
+        view
+        returns (bool)
+    {
+        return safeAdd(lastRateUpdateTimes[currencyKey], rateStalePeriod) < now;
+    }
+
+    /**
      * @notice Check if any of the currency rates passed in haven't been updated for longer than the stale period.
      */
     function anyRateIsStale(bytes4[] currencyKeys)
