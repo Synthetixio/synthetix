@@ -21,7 +21,7 @@ is forwarded to a nominated beneficiary upon destruction.
 -----------------------------------------------------------------
 */
 
-pragma solidity 0.4.24;
+pragma solidity 0.4.25;
 
 
 import "./Owned.sol";

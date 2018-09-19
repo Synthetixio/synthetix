@@ -21,7 +21,7 @@ take action when you receive Havvens or Nomins.
 -----------------------------------------------------------------
 */
 
-pragma solidity 0.4.24;
+pragma solidity 0.4.25;
 
  /*
  * Contract that is working with Havvens or Nomins that wants to be notified on transfers

@@ -27,7 +27,7 @@ This contract utilises an external state for upgradeability.
 -----------------------------------------------------------------
 */
 
-pragma solidity 0.4.24;
+pragma solidity 0.4.25;
 
 
 import "./ExternStateToken.sol";
@@ -49,7 +49,7 @@ contract FeeToken is ExternStateToken {
     /* The address with the authority to distribute fees. */
     address public feeAuthority;
     /* The address that fees will be pooled in. */
-    address public constant FEE_ADDRESS = 0xfeefeefeefeefeefeefeefeefeefeefeefeefeef;
+    address public constant FEE_ADDRESS = 0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF;
 
 
     /* ========== CONSTRUCTOR ========== */

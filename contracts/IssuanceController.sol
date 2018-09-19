@@ -28,7 +28,7 @@ if they have not yet been taken up by another user.
 -----------------------------------------------------------------
 */
 
-pragma solidity 0.4.24;
+pragma solidity 0.4.25;
 
 import "./SelfDestructible.sol";
 import "./Pausable.sol";

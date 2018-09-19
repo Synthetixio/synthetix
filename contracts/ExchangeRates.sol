@@ -24,7 +24,7 @@ for all other assets.
 -----------------------------------------------------------------
 */
 
-pragma solidity 0.4.24;
+pragma solidity 0.4.25;
 
 import "./SafeDecimalMath.sol";
 import "./SelfDestructible.sol";
