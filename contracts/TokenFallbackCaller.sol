@@ -29,8 +29,8 @@ import "./ReentrancyPreventer.sol";
 
 contract TokenFallbackCaller is ReentrancyPreventer {
     function callTokenFallbackIfNeeded(address sender, address recipient, uint amount, bytes data)
-        preventReentrancy
         internal
+        preventReentrancy
     {
         /*
             If we're transferring to a contract and it implements the tokenFallback function, call it.

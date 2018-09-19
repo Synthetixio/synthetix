@@ -46,8 +46,8 @@ contract SafeDecimalMath {
      * @return True iff adding x and y will not overflow.
      */
     function addIsSafe(uint x, uint y)
-        pure
         internal
+        pure
         returns (bool)
     {
         return x + y >= y;
@@ -57,8 +57,8 @@ contract SafeDecimalMath {
      * @return The result of adding x and y, throwing an exception in case of overflow.
      */
     function safeAdd(uint x, uint y)
-        pure
         internal
+        pure
         returns (uint)
     {
         require(x + y >= y, "Safe add failed");
@@ -69,8 +69,8 @@ contract SafeDecimalMath {
      * @return True iff subtracting y from x will not overflow in the negative direction.
      */
     function subIsSafe(uint x, uint y)
-        pure
         internal
+        pure
         returns (bool)
     {
         return y <= x;
@@ -80,8 +80,8 @@ contract SafeDecimalMath {
      * @return The result of subtracting y from x, throwing an exception in case of overflow.
      */
     function safeSub(uint x, uint y)
-        pure
         internal
+        pure
         returns (uint)
     {
         require(y <= x, "Safe sub failed");
@@ -92,8 +92,8 @@ contract SafeDecimalMath {
      * @return True iff multiplying x and y would not overflow.
      */
     function mulIsSafe(uint x, uint y)
-        pure
         internal
+        pure
         returns (bool)
     {
         if (x == 0) {
@@ -106,8 +106,8 @@ contract SafeDecimalMath {
      * @return The result of multiplying x and y, throwing an exception in case of overflow.
      */
     function safeMul(uint x, uint y)
-        pure
         internal
+        pure
         returns (uint)
     {
         if (x == 0) {
@@ -131,8 +131,8 @@ contract SafeDecimalMath {
      * domain this function is defined upon. 
      */
     function safeMul_dec(uint x, uint y)
-        pure
         internal
+        pure
         returns (uint)
     {
         /* Divide by UNIT to remove the extra factor introduced by the product. */
@@ -144,8 +144,8 @@ contract SafeDecimalMath {
      * @return True iff the denominator of x/y is nonzero.
      */
     function divIsSafe(uint x, uint y)
-        pure
         internal
+        pure
         returns (bool)
     {
         return y != 0;
@@ -155,8 +155,8 @@ contract SafeDecimalMath {
      * @return The result of dividing x by y, throwing an exception if the divisor is zero.
      */
     function safeDiv(uint x, uint y)
-        pure
         internal
+        pure
         returns (uint)
     {
         /* Although a 0 denominator already throws an exception,
@@ -172,8 +172,8 @@ contract SafeDecimalMath {
      * Internal rounding is downward: a similar caveat holds as with safeDecMul().
      */
     function safeDiv_dec(uint x, uint y)
-        pure
         internal
+        pure
         returns (uint)
     {
         /* Reintroduce the UNIT factor that will be divided out by y. */
@@ -185,8 +185,8 @@ contract SafeDecimalMath {
      * Throw an exception if the result would be out of range.
      */
     function intToDec(uint i)
-        pure
         internal
+        pure
         returns (uint)
     {
         return safeMul(i, UNIT);

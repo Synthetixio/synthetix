@@ -62,9 +62,7 @@ contract Proxy is Owned {
         useDELEGATECALL = value;
     }
 
-    function _emit(bytes callData, uint numTopics,
-                   bytes32 topic1, bytes32 topic2,
-                   bytes32 topic3, bytes32 topic4)
+    function _emit(bytes callData, uint numTopics, bytes32 topic1, bytes32 topic2, bytes32 topic3, bytes32 topic4)
         external
         onlyTarget
     {

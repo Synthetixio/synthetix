@@ -358,7 +358,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         notPaused
         returns (uint) // Returns the number of Nomins (nUSD) received
     {
-        require(guaranteedRate == usdToEthPrice);
+        require(guaranteedRate == usdToEthPrice, "Guaranteed rate was not matched");
 
         return exchangeEtherForNomins();
     }
@@ -401,8 +401,8 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         notPaused
         returns (uint) // Returns the number of Havvens (HAV) received
     {
-        require(guaranteedEtherRate == usdToEthPrice);
-        require(guaranteedHavvenRate == usdToHavPrice);
+        require(guaranteedEtherRate == usdToEthPrice, "Guaranteed Ether rate was not matched");
+        require(guaranteedHavvenRate == usdToHavPrice, "Guaranteed Havven rate was not matched");
 
         return exchangeEtherForHavvens();
     }
@@ -446,7 +446,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         notPaused
         returns (uint) // Returns the number of Havvens (HAV) received
     {
-        require(guaranteedRate == usdToHavPrice);
+        require(guaranteedRate == usdToHavPrice, "Guaranteed rate was not matched");
 
         return exchangeNominsForHavvens(nominAmount);
     }

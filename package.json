@@ -12,6 +12,7 @@
 		"develop": "truffle develop",
 		"ganache": "ganache-cli -a 150 -e 1000000000000 -l 0x7a213a",
 		"lint": "eslint \"**/*.js\" && solium -d contracts/",
+		"lint:fix": "eslint --fix \"**/*.js\" && solium --fix -d contracts/",
 		"test": "truffle compile && truffle test"
 	},
 	"repository": {
