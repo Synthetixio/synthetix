@@ -11,7 +11,7 @@
 		"coverage": "solidity-coverage",
 		"develop": "truffle develop",
 		"ganache": "ganache-cli -a 150 -e 1000000000000 -l 0x7a213a",
-		"lint": "eslint \"**/*.js\"",
+		"lint": "eslint \"**/*.js\" && solium -d contracts/",
 		"test": "truffle compile && truffle test"
 	},
 	"repository": {
@@ -43,6 +43,7 @@
 		"ganache-cli": "^6.1.8",
 		"prettier": "^1.14.2",
 		"solidity-coverage": "^0.5.11",
+		"solium": "^1.1.8",
 		"table": "^5.0.2",
 		"truffle": "^5.0.0-beta.0",
 		"truffle-core": "^5.0.0-beta.0",

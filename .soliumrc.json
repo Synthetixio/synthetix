@@ -1,9 +1,10 @@
 {
-	"extends": "solium:all",
+	"extends": "solium:recommended",
 	"plugins": ["security"],
 	"rules": {
 		"quotes": ["error", "double"],
 		"indentation": ["error", 4],
-		"no-block-members": ["blockhash"]
+		"security/no-block-members": ["error", ["blockhash"]],
+		"security/no-inline-assembly": "off"
 	}
 }
