@@ -33,23 +33,28 @@ import "./SelfDestructible.sol";
  * @title The repository for exchange rates
  */
 contract ExchangeRates is SafeDecimalMath, SelfDestructible {
-    /* Exchange rates stored by currency code, e.g. 'HAV', or 'nUSD' */
+    // Exchange rates stored by currency code, e.g. 'HAV', or 'nUSD'
     mapping(bytes4 => uint) public rates;
 
-    /* Update times stored by currency code, e.g. 'HAV', or 'nUSD' */
+    // Update times stored by currency code, e.g. 'HAV', or 'nUSD'
     mapping(bytes4 => uint) public lastRateUpdateTimes;
 
-    /* The address of the oracle which pushes rate updates to this contract */
+    // The address of the oracle which pushes rate updates to this contract
     address public oracle;
 
-    /* Do not allow the oracle to submit times any further forward into the future than
-       this constant. */
+    // Do not allow the oracle to submit times any further forward into the future than this constant.
     uint constant ORACLE_FUTURE_LIMIT = 10 minutes;
 
-    /* How long will the contract assume the rate of any asset is correct */
+    // How long will the contract assume the rate of any asset is correct 
     uint public rateStalePeriod = 3 hours;
 
-/* ========== CONSTRUCTOR ========== */
+    // Each participating currency in the HDR basket is represented as a currency key with
+    // equal weighting.
+    // There are 5 participating currencies, so we'll declare that clearly.
+    bytes4[5] public hdrParticipants;
+
+    // 
+    // ========== CONSTRUCTOR ==========
 
     /**
      * @dev Constructor
@@ -75,16 +80,22 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
 
         oracle = _oracle;
 
-        // Loop through each currency key and perform the update.
-        uint256 i = 0;
+        // These are the currencies that make up the HDR basket.
+        // These are hard coded because:
+        //  - This way users can depend on the calculation and know it won't change for this deployment of the contract.
+        //  - Adding new currencies would likely introduce some kind of weighting factor, which
+        //    isn't worth preemptively adding when all of the currencies in the current basket are weighted at 1.
+        //  - The expectation is if this logic needs to be updated, we'll simply deploy a new version of this contract
+        //    then point the system at the new version.
+        hdrParticipants = [
+            bytes4("nUSD"),
+            bytes4("nAUD"),
+            bytes4("nCHF"),
+            bytes4("nEUR"),
+            bytes4("nGBP")
+        ];
         
-        while (i < _currencyKeys.length) {
-            require(_newRates[i] != 0, "Zero is not a valid rate");
-
-            rates[_currencyKeys[i]] = _newRates[i];
-            lastRateUpdateTimes[_currencyKeys[i]] = now;
-            i += 1;
-        }
+        internalUpdateRates(_currencyKeys, _newRates, now);
     }
 
     /* ========== SETTERS ========== */
@@ -93,18 +104,35 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
      * @notice Set the rates stored in this contract
      * @param currencyKeys The currency keys you wish to update the rates for (in order)
      * @param newRates The rates for each currency (in order)
+     * @param timeSent The timestamp of when the update was sent, specified in seconds since epoch (e.g. the same as the now keyword in solidity).contract
+     *                 This is useful because transactions can take a while to confirm, so this way we know how old the oracle's datapoint was exactly even
+     *                 if it takes a long time for the transaction to confirm.
      */
     function updateRates(bytes4[] currencyKeys, uint[] newRates, uint timeSent)
-        external
+        external 
         onlyOracle
+        returns(bool)
+    {
+        return internalUpdateRates(currencyKeys, newRates, timeSent);
+    }
+
+    /**
+     * @notice Internal function which sets the rates stored in this contract
+     * @param currencyKeys The currency keys you wish to update the rates for (in order)
+     * @param newRates The rates for each currency (in order)
+     * @param timeSent The timestamp of when the update was sent, specified in seconds since epoch (e.g. the same as the now keyword in solidity).contract
+     *                 This is useful because transactions can take a while to confirm, so this way we know how old the oracle's datapoint was exactly even
+     *                 if it takes a long time for the transaction to confirm.
+     */
+    function internalUpdateRates(bytes4[] currencyKeys, uint[] newRates, uint timeSent)
+        internal 
+        returns(bool)
     {
         require(currencyKeys.length == newRates.length, "Currency key array length must match rates array length.");
         require(timeSent < (now + ORACLE_FUTURE_LIMIT), "Time is too far into the future");
 
         // Loop through each key and perform update.
-        uint256 i = 0;
-        
-        while (i < currencyKeys.length) {
+        for (uint i = 0; i < currencyKeys.length; i++) {
             // Should not set any rate to zero ever, as no asset will ever be
             // truely worthless and still valid. In this scenario, we should
             // delete the rate and remove it from the system.
@@ -112,10 +140,44 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
 
             rates[currencyKeys[i]] = newRates[i];
             lastRateUpdateTimes[currencyKeys[i]] = timeSent;
-            i += 1;
         }
 
         emit RatesUpdated(currencyKeys, newRates);
+
+        // Now update our HDR rate.
+        updateHDRRate();
+
+        return true;
+    }
+
+    /**
+     * @notice Update the Havven Drawing Rights exchange rate based on other rates already updated.
+     */
+    function updateHDRRate()
+        internal
+    {
+        uint total = 0;
+
+        for (uint i = 0; i < hdrParticipants.length; i++) {
+            total = safeAdd(rates[hdrParticipants[i]], total);
+        }
+
+        // If we have a basis for calculating the HDR rate, do that.
+        if (total > 0) {
+            rates["HDR"] = safeDiv_dec(1 ether, total);
+        } else {
+            // Otherwise the rate is zero.
+            rates["HDR"] = 0;
+        }
+
+        // Emit our change event
+        bytes4[] memory eventCurrencyCode = new bytes4[](1);
+        eventCurrencyCode[0] = "HDR";
+
+        uint[] memory eventRate = new uint[](1);
+        eventRate[0] = rates["HDR"];
+
+        emit RatesUpdated(eventCurrencyCode, eventRate);
     }
 
     /**
@@ -169,6 +231,51 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
         returns (uint)
     {
         return rates[currencyKey];
+    }
+
+    /**
+     * @notice Retrieve the rates for a set of currencies
+     */
+    function ratesForCurrencies(bytes4[] currencyKeys)
+        public
+        view
+        returns (uint[])
+    {
+        uint[] memory _rates = new uint[](currencyKeys.length);
+
+        for (uint i = 0; i < currencyKeys.length; i++) {
+            _rates[i] = rates[currencyKeys[i]];
+        }
+
+        return _rates;
+    }
+
+    /**
+     * @notice Retrieve the last update time for a specific currency
+     */
+    function lastRateUpdateTimeForCurrency(bytes4 currencyKey)
+        public
+        view
+        returns (uint)
+    {
+        return rates[currencyKey];
+    }
+
+    /**
+     * @notice Retrieve the last update time for a specific currency
+     */
+    function lastRateUpdateTimesForCurrencies(bytes4[] currencyKeys)
+        public
+        view
+        returns (uint[])
+    {
+        uint[] memory lastUpdateTimes = new uint[](currencyKeys.length);
+
+        for (uint i = 0; i < currencyKeys.length; i++) {
+            lastUpdateTimes[i] = lastRateUpdateTimes[currencyKeys[i]];
+        }
+
+        return lastUpdateTimes;
     }
 
     /**
