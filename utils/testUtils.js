@@ -97,6 +97,15 @@ const assertEventEqual = (actualEventOrTransaction, expectedEvent, expectedArgs)
 	// Ensure you pass in all the args you need to assert on.
 };
 
+/**
+ *  Gets the ETH balance for the account address
+ * 	@param account Ethereum wallet address
+ */
+const getEthBalance = async account => {
+	const balance = await web3.eth.getBalance(account);
+	return balance;
+};
+
 module.exports = {
 	mineBlock,
 	fastForward,
@@ -104,4 +113,5 @@ module.exports = {
 	takeSnapshot,
 	restoreSnapshot,
 	assertEventEqual,
+	getEthBalance,
 };

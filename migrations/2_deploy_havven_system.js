@@ -15,6 +15,7 @@ const ethUSD = '274411589120931162910';
 const havUSD = '116551110814936098';
 
 const totalSupplyNomin = '1241510914838889387806256';
+const totalSupplyHavven = '100000000000000000000000000';
 
 module.exports = async function(deployer, network, accounts) {
 	const [deployerAccount, owner, oracle, fundsWallet] = accounts;
@@ -34,7 +35,7 @@ module.exports = async function(deployer, network, accounts) {
 
 	console.log('Deploying HavvenTokenState...');
 	// constructor(address _owner, address _associatedContract)
-	const havvenTokenState = await TokenState.new(owner, ZERO_ADDRESS, {
+	const havvenTokenState = await TokenState.new(owner, owner, {
 		from: deployerAccount,
 	});
 
@@ -95,6 +96,18 @@ module.exports = async function(deployer, network, accounts) {
 		{ from: deployerAccount }
 	);
 
+	// --------------------
+	// Create Initial Havven Tokens
+	// --------------------
+	console.log('Create Initial Havven Tokens...');
+
+	console.log('Assign 100% HAV Tokens to owner account');
+	await havvenTokenState.setBalanceOf(
+		owner,
+		totalSupplyHavven,
+		{ from: owner }
+	);
+
 	// ----------------------
 	// Connect Token States
 	// ----------------------
@@ -116,6 +129,14 @@ module.exports = async function(deployer, network, accounts) {
 	// Connect Escrow
 	// ----------------------
 	await havven.setEscrow(havvenEscrow.address, { from: owner });
+
+	// ----------------------
+	// Mint nUSD
+	// ----------------------	
+	console.log('Add owner to the isIssuer whitelist');
+	await havven.setIssuer(owner, true, { from: owner });
+	console.log('owner account to issueMaxNomins()', owner);
+	await havven.issueMaxNomins({ from: owner });
 
 	console.log();
 	console.log();

@@ -1,4 +1,4 @@
-const { assertEventEqual, takeSnapshot, restoreSnapshot } = require('../utils/testUtils');
+const { assertEventEqual, takeSnapshot, restoreSnapshot, fastForward } = require('../utils/testUtils');
 
 let lastSnapshotId;
 
