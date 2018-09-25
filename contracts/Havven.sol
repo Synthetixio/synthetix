@@ -4,11 +4,12 @@ FILE INFORMATION
 -----------------------------------------------------------------
 
 file:       Havven.sol
-version:    1.2
-author:     Anton Jurisevic
+version:    2.0
+author:     Kevin Brown
+            Anton Jurisevic
             Dominic Romanowski
 
-date:       2018-05-15
+date:       2018-09-14
 
 -----------------------------------------------------------------
 MODULE DESCRIPTION
@@ -16,9 +17,7 @@ MODULE DESCRIPTION
 
 Havven token contract. Havvens are transferable ERC20 tokens,
 and also give their holders the following privileges.
-An owner of havvens may participate in nomin confiscation votes, they
-may also have the right to issue nomins at the discretion of the
-foundation for this version of the contract.
+An owner of havvens has the right to issue nomins in all nomin flavours.
 
 After a fee period terminates, the duration and fees collected for that
 period are computed, and the next period begins. Thus an account may only
@@ -126,152 +125,189 @@ import "./ExternStateToken.sol";
 import "./Nomin.sol";
 import "./HavvenEscrow.sol";
 import "./TokenState.sol";
+import "./ExchangeRates.sol";
 
-
-/**
+/*
  * @title Havven ERC20 contract.
- * @notice The Havven contracts does not only facilitate transfers and track balances,
+ * @notice The Havven contracts not only facilitates transfers, exchanges, and tracks balances,
  * but it also computes the quantity of fees each havven holder is entitled to.
  */
 contract Havven is ExternStateToken {
 
-    /* ========== STATE VARIABLES ========== */
+    // ========== STATE VARIABLES ==========
 
-    /* A struct for handing values associated with average balance calculations */
+    // A struct for handing values associated with an individual user's debt position
     struct IssuanceData {
-        /* Sums of balances*duration in the current fee period.
-        /* range: decimals; units: havven-seconds */
-        uint currentBalanceSum;
-        /* The last period's average balance */
-        uint lastAverageBalance;
-        /* The last time the data was calculated */
-        uint lastModified;
+        // Percentage of the total debt owned at the time
+        // of issuance. This number is modified by the global debt
+        // delta array. You can figure out a user's exit price and
+        // collateralisation ratio using a combination of their initial
+        // debt and the slice of global debt delta which applies to them.
+        uint initialDebtOwnership;
+        // This lets us know when the user entered the debt pool so we can
+        // calculate their exit price and collateralistion ratio
+        uint debtEntryIndex;
     }
 
-    /* Issued nomin balances for individual fee entitlements */
-    mapping(address => IssuanceData) public issuanceData;
-    /* The total number of issued nomins for determining fee entitlements */
-    IssuanceData public totalIssuanceData;
+    // The total count of people that have outstanding issued nomins in any flavour
+    uint public totalIssuerCount;
 
-    /* The time the current fee period began */
+    // Issued nomin balances for individual fee entitlements and exit price calculations
+    mapping(address => IssuanceData) public issuanceData;
+
+    // Controls whether a particular address can issue nomins or not
+    mapping(address => bool) public isIssuer;
+
+    // Global debt pool tracking
+    uint[] public debtLedger;
+
+    // The time the current fee period began */
     uint public feePeriodStartTime;
-    /* The time the last fee period began */
+    // The time the last fee period began */
     uint public lastFeePeriodStartTime;
 
-    /* Fee periods will roll over in no shorter a time than this. 
-     * The fee period cannot actually roll over until a fee-relevant
-     * operation such as withdrawal or a fee period duration update occurs,
-     * so this is just a target, and the actual duration may be slightly longer. */
+    // Fee periods will roll over in no shorter a time than this. 
+    // The fee period cannot actually roll over until a fee-relevant
+    // operation such as withdrawal or a fee period duration update occurs,
+    // so this is just a target, and the actual duration may be slightly longer.
     uint public feePeriodDuration = 4 weeks;
-    /* ...and must target between 1 day and six months. */
+    // ...and must target between 1 day and six months.
     uint constant MIN_FEE_PERIOD_DURATION = 1 days;
     uint constant MAX_FEE_PERIOD_DURATION = 26 weeks;
 
-    /* The quantity of nomins that were in the fee pot at the time */
-    /* of the last fee rollover, at feePeriodStartTime. */
+    // The quantity of nomins that were in the fee pot at the time
+    // of the last fee rollover, at feePeriodStartTime, priced in HDRs.
     uint public lastFeesCollected;
 
-    /* Whether a user has withdrawn their last fees */
+    // Whether a user has withdrawn their last fees
     mapping(address => bool) public hasWithdrawnFees;
 
-    Nomin public nomin;
+    // Available Nomins which can be used with the system
+    Nomin[] public availableNomins;
+    mapping(bytes4 => Nomin) public nomins;
+
     HavvenEscrow public escrow;
+    ExchangeRates public exchangeRates;
 
-    /* The address of the oracle which pushes the havven price to this contract */
-    address public oracle;
-    /* The price of havvens written in UNIT */
-    uint public price;
-    /* The time the havven price was last updated */
-    uint public lastPriceUpdateTime;
-    /* How long will the contract assume the price of havvens is correct */
-    uint public priceStalePeriod = 3 hours;
-
-    /* A quantity of nomins greater than this ratio
-     * may not be issued against a given value of havvens. */
+    // A quantity of nomins greater than this ratio
+    // may not be issued against a given value of havvens.
     uint public issuanceRatio = UNIT / 5;
-    /* No more nomins may be issued than the value of havvens backing them. */
+    // No more nomins may be issued than the value of havvens backing them.
     uint constant MAX_ISSUANCE_RATIO = UNIT;
 
-    /* Whether the address can issue nomins or not. */
-    mapping(address => bool) public isIssuer;
-    /* The number of currently-outstanding nomins the user has issued. */
-    mapping(address => uint) public nominsIssued;
-
     uint constant HAVVEN_SUPPLY = 1e8 * UNIT;
-    uint constant ORACLE_FUTURE_LIMIT = 10 minutes;
     string constant TOKEN_NAME = "Havven";
     string constant TOKEN_SYMBOL = "HAV";
     
-    /* ========== CONSTRUCTOR ========== */
+    // ========== CONSTRUCTOR ==========
 
-    /**
+    /*
      * @dev Constructor
      * @param _tokenState A pre-populated contract containing token balances.
      * If the provided address is 0x0, then a fresh one will be constructed with the contract owning all tokens.
      * @param _owner The owner of this contract.
      */
-    constructor(address _proxy, TokenState _tokenState, address _owner, address _oracle,
-                uint _price, address[] _issuers, Havven _oldHavven)
+    constructor(address _proxy, TokenState _tokenState, address _owner, ExchangeRates _exchangeRates, Havven _oldHavven)
         ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, _owner)
         public
     {
-        oracle = _oracle;
-        price = _price;
-        lastPriceUpdateTime = now;
+        exchangeRates = _exchangeRates;
 
-        uint i;
         if (_oldHavven == address(0)) {
             feePeriodStartTime = now;
             lastFeePeriodStartTime = now - feePeriodDuration;
-            for (i = 0; i < _issuers.length; i++) {
-                isIssuer[_issuers[i]] = true;
-            }
         } else {
             feePeriodStartTime = _oldHavven.feePeriodStartTime();
             lastFeePeriodStartTime = _oldHavven.lastFeePeriodStartTime();
 
-            uint cbs;
-            uint lab;
-            uint lm;
-            (cbs, lab, lm) = _oldHavven.totalIssuanceData();
-            totalIssuanceData.currentBalanceSum = cbs;
-            totalIssuanceData.lastAverageBalance = lab;
-            totalIssuanceData.lastModified = lm;
+            // TODO: Need to handle contract upgrades correctly.
 
-            for (i = 0; i < _issuers.length; i++) {
-                address issuer = _issuers[i];
-                isIssuer[issuer] = true;
-                uint nomins = _oldHavven.nominsIssued(issuer);
-                if (nomins == 0) {
-                    // It is not valid in general to skip those with no currently-issued nomins.
-                    // But for this release, issuers with nonzero issuanceData have current issuance.
-                    continue;
-                }
-                (cbs, lab, lm) = _oldHavven.issuanceData(issuer);
-                nominsIssued[issuer] = nomins;
-                issuanceData[issuer].currentBalanceSum = cbs;
-                issuanceData[issuer].lastAverageBalance = lab;
-                issuanceData[issuer].lastModified = lm;
-            }
+            // uint i;
+            // uint cbs;
+            // uint lab;
+            // uint lm;
+            // (cbs, lab, lm) = _oldHavven.totalIssuanceData();
+            // totalIssuanceData.currentBalanceSum = cbs;
+            // totalIssuanceData.lastAverageBalance = lab;
+            // totalIssuanceData.lastModified = lm;
+
+            // for (i = 0; i < _issuers.length; i++) {
+            //     address issuer = _issuers[i];
+            //     isIssuer[issuer] = true;
+            //     uint nomins = _oldHavven.nominsIssued(issuer);
+            //     if (nomins == 0) {
+            //         // It is not valid in general to skip those with no currently-issued nomins.
+            //         // But for this release, issuers with nonzero issuanceData have current issuance.
+            //         continue;
+            //     }
+            //     (cbs, lab, lm) = _oldHavven.issuanceData(issuer);
+            //     nominsIssued[issuer] = nomins;
+            //     issuanceData[issuer].currentBalanceSum = cbs;
+            //     issuanceData[issuer].lastAverageBalance = lab;
+            //     issuanceData[issuer].lastModified = lm;
+            // }
         }
 
     }
 
-    /* ========== SETTERS ========== */
+    // ========== SETTERS ========== */
 
-    /**
-     * @notice Set the associated Nomin contract to collect fees from.
+    /*
+     * @notice Add an associated Nomin contract to the Havven system
      * @dev Only the contract owner may call this.
      */
-    function setNomin(Nomin _nomin)
+    function addNomin(Nomin nomin)
         external
         optionalProxy_onlyOwner
     {
-        nomin = _nomin;
-        emitNominUpdated(_nomin);
+        bytes4 currencyKey = nomin.currencyKey();
+
+        require(nomins[currencyKey] == Nomin(0), "Nomin already exists");
+
+        availableNomins.push(nomin);
+        nomins[currencyKey] = nomin;
+
+        emitNominAdded(currencyKey, nomin);
     }
 
-    /**
+    /*
+     * @notice Remove an associated Nomin contract from the Havven system
+     * @dev Only the contract owner may call this.
+     */
+    function removeNomin(bytes4 currencyKey)
+        external
+        optionalProxy_onlyOwner
+        nominExists(currencyKey)
+    {
+        require(nomins[currencyKey].totalSupply() == 0, "Nomin cannot be removed until its total supply is zero");
+
+        // Save the address we're removing for emitting the event at the end.
+        address nominToRemove = nomins[currencyKey];
+
+        // Remove the nomin from the availableNomins array.
+        for (uint i = 0; i < availableNomins.length; i++) {
+            if (availableNomins[i] == nominToRemove) {
+                delete availableNomins[i];
+
+                // Copy the last nomin into the place of the one we just deleted
+                // If there's only one nomin, this is nomins[0] = nomins[0].
+                // If we're deleting the last one, it's also a NOOP in the same way.
+                availableNomins[i] = availableNomins[availableNomins.length - 1];
+
+                // Decrease the size of the array by one.
+                availableNomins.length--;
+
+                break;
+            }
+        }
+
+        // And remove it from the nomins mapping
+        delete nomins[currencyKey];
+        
+        emitNominRemoved(currencyKey, nominToRemove);
+    }
+
+    /*
      * @notice Set the associated havven escrow contract.
      * @dev Only the contract owner may call this.
      */
@@ -283,7 +319,7 @@ contract Havven is ExternStateToken {
         emitEscrowUpdated(_escrow);
     }
 
-    /**
+    /*
      * @notice Set the targeted fee period duration.
      * @dev Only callable by the contract owner. The duration must fall within
      * acceptable bounds (1 day to 26 weeks). Upon resetting this the fee period
@@ -293,36 +329,29 @@ contract Havven is ExternStateToken {
         external
         optionalProxy_onlyOwner
     {
-        require(MIN_FEE_PERIOD_DURATION <= duration && duration <= MAX_FEE_PERIOD_DURATION,
-            "Duration must be between MIN_FEE_PERIOD_DURATION and MAX_FEE_PERIOD_DURATION");
+        require(
+            MIN_FEE_PERIOD_DURATION <= duration && duration <= MAX_FEE_PERIOD_DURATION,
+            "Duration must be between MIN_FEE_PERIOD_DURATION and MAX_FEE_PERIOD_DURATION"
+        );
+        
         feePeriodDuration = duration;
         emitFeePeriodDurationUpdated(duration);
-        rolloverFeePeriodIfElapsed();
+        // rolloverFeePeriodIfElapsed();
     }
 
-    /**
-     * @notice Set the Oracle that pushes the havven price to this contract
+    /*
+     * @notice Set the ExchangeRates contract address where rates are held.
+     * @dev Only callable by the contract owner.
      */
-    function setOracle(address _oracle)
+    function setExchangeRates(ExchangeRates _exchangeRates)
         external
         optionalProxy_onlyOwner
     {
-        oracle = _oracle;
-        emitOracleUpdated(_oracle);
+        exchangeRates = _exchangeRates;
+        emitExchangeRatesUpdated(_exchangeRates);
     }
 
-    /**
-     * @notice Set the stale period on the updated havven price
-     * @dev No max/minimum, as changing it wont influence anything but issuance by the foundation
-     */
-    function setPriceStalePeriod(uint time)
-        external
-        optionalProxy_onlyOwner
-    {
-        priceStalePeriod = time;
-    }
-
-    /**
+    /*
      * @notice Set the issuanceRatio for issuance calculations.
      * @dev Only callable by the contract owner.
      */
@@ -330,75 +359,135 @@ contract Havven is ExternStateToken {
         external
         optionalProxy_onlyOwner
     {
-        require(_issuanceRatio <= MAX_ISSUANCE_RATIO, "New issuance ratio must be less than or equal to MAX_ISSUANCE_RATIO");
+        require(_issuanceRatio <= MAX_ISSUANCE_RATIO, "New issuance ratio cannot exceed MAX_ISSUANCE_RATIO");
         issuanceRatio = _issuanceRatio;
         emitIssuanceRatioUpdated(_issuanceRatio);
     }
 
-    /**
-     * @notice Set whether the specified can issue nomins or not.
+    /*
+     * @notice Set whether the specified address can issue nomins or not.
+     * @dev Only callable by the contract owner.
      */
     function setIssuer(address account, bool value)
         external
         optionalProxy_onlyOwner
     {
         isIssuer[account] = value;
-        emitIssuersUpdated(account, value);
+        emitIssuerUpdated(account, value);
     }
 
-    /* ========== VIEWS ========== */
+    // ========== VIEWS ==========
 
-    function issuanceCurrentBalanceSum(address account)
-        external
+    /*
+     * @notice A function that lets you easily convert an amount in a source currency to an amount in the destination currency
+     * @param sourceCurrencyKey The currency the amount is specified in
+     * @param sourceAmount The source amount, specified in UNIT base
+     * @param destinationCurrencyKey The destination currency
+     */
+    function effectiveValue(bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey)
+        public
+        view
+        rateNotStale(sourceCurrencyKey)
+        rateNotStale(destinationCurrencyKey)
+        returns (uint)
+    {
+        // Calcuate the effective value by going from source -> USD -> destination
+        return safeMul_dec(
+            safeMul_dec(sourceAmount, exchangeRates.rateForCurrency(sourceCurrencyKey)), 
+            exchangeRates.rateForCurrency(destinationCurrencyKey)
+        );
+    }
+
+    /*
+     * @notice Total amount of nomins issued by the system, priced in currencyKey
+     * @param currencyKey The currency to value the nomins in
+     */
+    function totalIssuedNomins(bytes4 currencyKey)
+        public
+        view
+        rateNotStale(currencyKey)
+        returns (uint)
+    {
+        uint total = 0;
+        uint currencyRate = exchangeRates.rateForCurrency(currencyKey);
+
+        for (uint i = 0; i < availableNomins.length; i++) {
+            // What's the total issued value of that nomin in the destination currency?
+            // Note: We're not using our effectiveValue function because we don't want to go get the
+            //       rate for the destination currency repeatedly from our exchange rates contract on
+            //       every iteration of the loop
+            uint nominValue = safeMul_dec(
+                safeMul_dec(availableNomins[i].totalSupply(), exchangeRates.rateForCurrency(availableNomins[i].currencyKey())), 
+                currencyRate);
+
+            total = safeAdd(total, nominValue);
+        }
+
+        return total; 
+    }
+
+    /*
+     * @notice Returns the count of available nomins in the system, which you can use to iterate availableNomins
+     */
+    function availableNominCount()
+        public
         view
         returns (uint)
     {
-        return issuanceData[account].currentBalanceSum;
+        return availableNomins.length;
     }
 
-    function issuanceLastAverageBalance(address account)
-        external
-        view
-        returns (uint)
-    {
-        return issuanceData[account].lastAverageBalance;
-    }
+    // function issuanceCurrentBalanceSum(address account)
+    //     external
+    //     view
+    //     returns (uint)
+    // {
+    //     return issuanceData[account].currentBalanceSum;
+    // }
 
-    function issuanceLastModified(address account)
-        external
-        view
-        returns (uint)
-    {
-        return issuanceData[account].lastModified;
-    }
+    // function issuanceLastAverageBalance(address account)
+    //     external
+    //     view
+    //     returns (uint)
+    // {
+    //     return issuanceData[account].lastAverageBalance;
+    // }
 
-    function totalIssuanceCurrentBalanceSum()
-        external
-        view
-        returns (uint)
-    {
-        return totalIssuanceData.currentBalanceSum;
-    }
+    // function issuanceLastModified(address account)
+    //     external
+    //     view
+    //     returns (uint)
+    // {
+    //     return issuanceData[account].lastModified;
+    // }
 
-    function totalIssuanceLastAverageBalance()
-        external
-        view
-        returns (uint)
-    {
-        return totalIssuanceData.lastAverageBalance;
-    }
+    // function totalIssuanceCurrentBalanceSum()
+    //     external
+    //     view
+    //     returns (uint)
+    // {
+    //     return totalIssuanceData.currentBalanceSum;
+    // }
 
-    function totalIssuanceLastModified()
-        external
-        view
-        returns (uint)
-    {
-        return totalIssuanceData.lastModified;
-    }
+    // function totalIssuanceLastAverageBalance()
+    //     external
+    //     view
+    //     returns (uint)
+    // {
+    //     return totalIssuanceData.lastAverageBalance;
+    // }
 
-    /* ========== MUTATIVE FUNCTIONS ========== */
+    // function totalIssuanceLastModified()
+    //     external
+    //     view
+    //     returns (uint)
+    // {
+    //     return totalIssuanceData.lastModified;
+    // }
 
-    /**
+    // ========== MUTATIVE FUNCTIONS ==========
+
+    /*
      * @notice ERC20 transfer function.
      */
     function transfer(address to, uint value)
@@ -409,7 +498,7 @@ contract Havven is ExternStateToken {
         return transfer(to, value, empty);
     }
 
-    /**
+    /*
      * @notice ERC223 transfer function. Does not conform with the ERC223 spec, as:
      *         - Transaction doesn't revert if the recipient doesn't implement tokenFallback()
      *         - Emits a standard ERC20 event without the bytes data parameter so as not to confuse
@@ -420,16 +509,16 @@ contract Havven is ExternStateToken {
         optionalProxy
         returns (bool)
     {
-        address sender = messageSender;
-        require(nominsIssued[sender] == 0 || value <= transferableHavvens(sender), "Value to transfer exceeds available havvens");
-        /* Perform the transfer: if there is a problem,
-         * an exception will be thrown in this call. */
+        // Ensure they're not trying to exceed their locked amount
+        require(value <= transferableHavvens(messageSender), "Value to transfer exceeds available Havvens");
+
+        // Perform the transfer: if there is a problem an exception will be thrown in this call.
         _transfer_byProxy(messageSender, to, value, data);
 
         return true;
     }
 
-    /**
+    /*
      * @notice ERC20 transferFrom function.
      */
     function transferFrom(address from, address to, uint value)
@@ -440,7 +529,7 @@ contract Havven is ExternStateToken {
         return transferFrom(from, to, value, empty);
     }
 
-    /**
+    /*
      * @notice ERC223 transferFrom function. Does not conform with the ERC223 spec, as:
      *         - Transaction doesn't revert if the recipient doesn't implement tokenFallback()
      *         - Emits a standard ERC20 event without the bytes data parameter so as not to confuse
@@ -451,228 +540,353 @@ contract Havven is ExternStateToken {
         optionalProxy
         returns (bool)
     {
-        address sender = messageSender;
-        require(nominsIssued[from] == 0 || value <= transferableHavvens(from), "Value to transfer exceeds available havvens");
-        /* Perform the transfer: if there is a problem,
-         * an exception will be thrown in this call. */
+        // Ensure they're not trying to exceed their locked amount
+        require(value <= transferableHavvens(from), "Value to transfer exceeds available Havvens");
+
+        // Perform the transfer: if there is a problem,
+        // an exception will be thrown in this call.
         _transferFrom_byProxy(messageSender, from, to, value, data);
 
         return true;
     }
 
-    /**
-     * @notice Compute the last period's fee entitlement for the message sender
-     * and then deposit it into their nomin account.
-     */
-    function withdrawFees()
-        external
+    // /*
+    //  * @notice Compute the last period's fee entitlement for the message sender
+    //  * and then deposit it into their nomin account.
+    //  */
+    // function withdrawFees()
+    //     external
+    //     optionalProxy
+    // {
+    //     address sender = messageSender;
+    //     rolloverFeePeriodIfElapsed();
+    //     // Do not deposit fees into frozen accounts. */
+    //     require(!nomin.frozen(sender), "Cannot deposit fees into frozen accounts");
+
+    //     // Check the period has rolled over first. */
+    //     updateIssuanceData(sender, nominsIssued[sender], nomin.totalSupply());
+
+    //     // Only allow accounts to withdraw fees once per period. */
+    //     require(!hasWithdrawnFees[sender], "Fees have already been withdrawn in this period");
+
+    //     uint feesOwed;
+    //     uint lastTotalIssued = totalIssuanceData.lastAverageBalance;
+
+    //     if (lastTotalIssued > 0) {
+    //         // Sender receives a share of last period's collected fees proportional
+    //          * with their average fraction of the last period's issued nomins. */
+    //         feesOwed = safeDiv_dec(
+    //             safeMul_dec(issuanceData[sender].lastAverageBalance, lastFeesCollected),
+    //             lastTotalIssued
+    //         );
+    //     }
+
+    //     hasWithdrawnFees[sender] = true;
+
+    //     if (feesOwed != 0) {
+    //         nomin.withdrawFees(sender, feesOwed);
+    //     }
+    //     emitFeesWithdrawn(messageSender, feesOwed);
+    // }
+
+    // /*
+    //  * @notice Update the havven balance averages since the last transfer
+    //  * or entitlement adjustment.
+    //  * @dev Since this updates the last transfer timestamp, if invoked
+    //  * consecutively, this function will do nothing after the first call.
+    //  * Also, this will adjust the total issuance at the same time.
+    //  */
+    // function updateIssuanceData(address account, uint preBalance, uint lastTotalSupply)
+    //     internal
+    // {
+    //     // update the total balances first */
+    //     totalIssuanceData = computeIssuanceData(lastTotalSupply, totalIssuanceData);
+
+    //     if (issuanceData[account].lastModified < feePeriodStartTime) {
+    //         hasWithdrawnFees[account] = false;
+    //     }
+
+    //     issuanceData[account] = computeIssuanceData(preBalance, issuanceData[account]);
+    // }
+
+
+    // /*
+    //  * @notice Compute the new IssuanceData on the old balance
+    //  */
+    // function computeIssuanceData(uint preBalance, IssuanceData preIssuance)
+    //     internal
+    //     view
+    //     returns (IssuanceData)
+    // {
+
+    //     uint currentBalanceSum = preIssuance.currentBalanceSum;
+    //     uint lastAverageBalance = preIssuance.lastAverageBalance;
+    //     uint lastModified = preIssuance.lastModified;
+
+    //     if (lastModified < feePeriodStartTime) {
+    //         if (lastModified < lastFeePeriodStartTime) {
+    //             // The balance was last updated before the previous fee period, so the average
+    //              * balance in this period is their pre-transfer balance. */
+    //             lastAverageBalance = preBalance;
+    //         } else {
+    //             // The balance was last updated during the previous fee period. */
+    //             // No overflow or zero denominator problems, since lastFeePeriodStartTime < feePeriodStartTime < lastModified. 
+    //              * implies these quantities are strictly positive. */
+    //             uint timeUpToRollover = feePeriodStartTime - lastModified;
+    //             uint lastFeePeriodDuration = feePeriodStartTime - lastFeePeriodStartTime;
+    //             uint lastBalanceSum = safeAdd(currentBalanceSum, safeMul(preBalance, timeUpToRollover));
+    //             lastAverageBalance = lastBalanceSum / lastFeePeriodDuration;
+    //         }
+    //         // Roll over to the next fee period. */
+    //         currentBalanceSum = safeMul(preBalance, now - feePeriodStartTime);
+    //     } else {
+    //         // The balance was last updated during the current fee period. */
+    //         currentBalanceSum = safeAdd(
+    //             currentBalanceSum,
+    //             safeMul(preBalance, now - lastModified)
+    //         );
+    //     }
+
+    //     return IssuanceData(currentBalanceSum, lastAverageBalance, now);
+    // }
+
+    // /*
+    //  * @notice Recompute and return the given account's last average balance.
+    //  */
+    // function recomputeLastAverageBalance(address account)
+    //     external
+    //     returns (uint)
+    // {
+    //     updateIssuanceData(account, nominsIssued[account], nomin.totalSupply());
+    //     return issuanceData[account].lastAverageBalance;
+    // }
+
+    function addToDebtRegister(bytes4 currencyKey, uint amount) 
+        internal
         optionalProxy
     {
-        address sender = messageSender;
-        rolloverFeePeriodIfElapsed();
-        /* Do not deposit fees into frozen accounts. */
-        require(!nomin.frozen(sender), "Cannot deposit fees into frozen accounts");
+        // What is the value of the requested debt in HDRs?
+        uint hdrValue = effectiveValue(currencyKey, amount, "HDR");
 
-        /* Check the period has rolled over first. */
-        updateIssuanceData(sender, nominsIssued[sender], nomin.totalSupply());
+        // What is the value of all issued nomins of the system in HDR currently
+        uint totalDebtIssued = totalIssuedNomins("HDR");
 
-        /* Only allow accounts to withdraw fees once per period. */
-        require(!hasWithdrawnFees[sender], "Fees have already been withdrawn in this period");
+        // What is their debt percentage
+        uint debtPercentage = safeDiv_dec(hdrValue, totalDebtIssued);
 
-        uint feesOwed;
-        uint lastTotalIssued = totalIssuanceData.lastAverageBalance;
+        // And what effect does this percentage have on the global debt holding of other issuers?
+        uint delta = safeSub(UNIT, debtPercentage);
 
-        if (lastTotalIssued > 0) {
-            /* Sender receives a share of last period's collected fees proportional
-             * with their average fraction of the last period's issued nomins. */
-            feesOwed = safeDiv_dec(
-                safeMul_dec(issuanceData[sender].lastAverageBalance, lastFeesCollected),
-                lastTotalIssued
-            );
-        }
+        // Save the debt entry parameters
+        issuanceData[messageSender].initialDebtOwnership = debtPercentage;
+        issuanceData[messageSender].debtEntryIndex = debtLedger.length;
 
-        hasWithdrawnFees[sender] = true;
-
-        if (feesOwed != 0) {
-            nomin.withdrawFees(sender, feesOwed);
-        }
-        emitFeesWithdrawn(messageSender, feesOwed);
-    }
-
-    /**
-     * @notice Update the havven balance averages since the last transfer
-     * or entitlement adjustment.
-     * @dev Since this updates the last transfer timestamp, if invoked
-     * consecutively, this function will do nothing after the first call.
-     * Also, this will adjust the total issuance at the same time.
-     */
-    function updateIssuanceData(address account, uint preBalance, uint lastTotalSupply)
-        internal
-    {
-        /* update the total balances first */
-        totalIssuanceData = computeIssuanceData(lastTotalSupply, totalIssuanceData);
-
-        if (issuanceData[account].lastModified < feePeriodStartTime) {
-            hasWithdrawnFees[account] = false;
-        }
-
-        issuanceData[account] = computeIssuanceData(preBalance, issuanceData[account]);
-    }
-
-
-    /**
-     * @notice Compute the new IssuanceData on the old balance
-     */
-    function computeIssuanceData(uint preBalance, IssuanceData preIssuance)
-        internal
-        view
-        returns (IssuanceData)
-    {
-
-        uint currentBalanceSum = preIssuance.currentBalanceSum;
-        uint lastAverageBalance = preIssuance.lastAverageBalance;
-        uint lastModified = preIssuance.lastModified;
-
-        if (lastModified < feePeriodStartTime) {
-            if (lastModified < lastFeePeriodStartTime) {
-                /* The balance was last updated before the previous fee period, so the average
-                 * balance in this period is their pre-transfer balance. */
-                lastAverageBalance = preBalance;
-            } else {
-                /* The balance was last updated during the previous fee period. */
-                /* No overflow or zero denominator problems, since lastFeePeriodStartTime < feePeriodStartTime < lastModified. 
-                 * implies these quantities are strictly positive. */
-                uint timeUpToRollover = feePeriodStartTime - lastModified;
-                uint lastFeePeriodDuration = feePeriodStartTime - lastFeePeriodStartTime;
-                uint lastBalanceSum = safeAdd(currentBalanceSum, safeMul(preBalance, timeUpToRollover));
-                lastAverageBalance = lastBalanceSum / lastFeePeriodDuration;
-            }
-            /* Roll over to the next fee period. */
-            currentBalanceSum = safeMul(preBalance, now - feePeriodStartTime);
+        // And if we're the first, push 1 as there was no effect to any other holders, otherwise push 
+        // the change for the rest of the debt holders
+        if (debtLedger.length > 0) {
+            debtLedger.push(safeMul_dec(debtLedger[debtLedger.length - 1], delta));
         } else {
-            /* The balance was last updated during the current fee period. */
-            currentBalanceSum = safeAdd(
-                currentBalanceSum,
-                safeMul(preBalance, now - lastModified)
-            );
+            debtLedger.push(UNIT);
         }
-
-        return IssuanceData(currentBalanceSum, lastAverageBalance, now);
     }
 
-    /**
-     * @notice Recompute and return the given account's last average balance.
-     */
-    function recomputeLastAverageBalance(address account)
-        external
-        returns (uint)
-    {
-        updateIssuanceData(account, nominsIssued[account], nomin.totalSupply());
-        return issuanceData[account].lastAverageBalance;
-    }
-
-    /**
+    /*
      * @notice Issue nomins against the sender's havvens.
      * @dev Issuance is only allowed if the havven price isn't stale and the sender is an issuer.
+     * @param currencyKey The currency you wish to issue nomins in, for example nUSD or nAUD
+     * @param amount The amount of nomins you wish to issue with a base of UNIT
      */
-    function issueNomins(uint amount)
+    function issueNomins(bytes4 currencyKey, uint amount)
         public
         optionalProxy
-        requireIssuer(messageSender)
-        /* No need to check if price is stale, as it is checked in issuableNomins. */
+        onlyIssuer(messageSender)
+        nominExists(currencyKey)
+        // No need to check if price is stale, as it is checked in issuableNomins. */
     {
-        address sender = messageSender;
-        require(amount <= remainingIssuableNomins(sender), "Amount must be less than or equal to remaining issuable nomins");
-        uint lastTot = nomin.totalSupply();
-        uint preIssued = nominsIssued[sender];
-        nomin.issue(sender, amount);
-        nominsIssued[sender] = safeAdd(preIssued, amount);
-        updateIssuanceData(sender, preIssued, lastTot);
+        require(amount > 0, "Amount must be greater than zero");
+        require(amount <= remainingIssuableNomins(messageSender, currencyKey), "Amount exceeds remaining issuable nomins");
+
+        // Create their nomins
+        nomins[currencyKey].issue(messageSender, amount);
+
+        // And keep track of the debt they've created
+        addToDebtRegister(currencyKey, amount);
     }
 
-    function issueMaxNomins()
+    /*
+     * @notice Issue the maximum amount of Nomins possible against the sender's havvens.
+     * @dev Issuance is only allowed if the havven price isn't stale and the sender is an issuer.
+     * @param currencyKey The currency you wish to issue nomins in, for example nUSD or nAUD
+     */
+    function issueMaxNomins(bytes4 currencyKey)
         external
         optionalProxy
     {
-        issueNomins(remainingIssuableNomins(messageSender));
+        // Figure out the maximum we can issue in that currency
+        uint maxIssuable = remainingIssuableNomins(messageSender, currencyKey);
+
+        // And issue them
+        issueNomins(currencyKey, maxIssuable);
     }
 
-    /**
+    /*
      * @notice Burn nomins to clear issued nomins/free havvens.
+     * @param currencyKey The currency you're specifying to burn
+     * @param amount The amount (in UNIT base) you wish to burn
      */
-    function burnNomins(uint amount)
-        /* it doesn't matter if the price is stale or if the user is an issuer, as non-issuers have issued no nomins.*/
+    function burnNomins(bytes4 currencyKey, uint amount)
+        // It doesn't matter if any rates are stale or if the user is an issuer, as non-issuers have issued no nomins.
         external
         optionalProxy
+        nominExists(currencyKey)
     {
-        address sender = messageSender;
+        // If they're trying to burn more debt than they actually owe, rather than fail the transaction, let's just
+        // clear their debt and leave them be.
+        // How much debt do they have?
+        uint debt = debtBalanceOf(messageSender, currencyKey);
 
-        uint lastTot = nomin.totalSupply();
-        uint preIssued = nominsIssued[sender];
-        /* nomin.burn does a safeSub on balance (so it will revert if there are not enough nomins). */
-        nomin.burn(sender, amount);
-        /* This safe sub ensures amount <= number issued */
-        nominsIssued[sender] = safeSub(preIssued, amount);
-        updateIssuanceData(sender, preIssued, lastTot);
+        require(debt > 0, "No debt to forgive");
+
+        // If they're requesting to burn more than their debt, just burn their debt
+        uint amountToBurn = debt < amount ? debt : amount;
+
+        // Remove their debt from the ledger
+        removeFromDebtRegister(currencyKey, amountToBurn);
+
+        // nomin.burn does a safeSub on balance (so it will revert if there are not enough nomins).
+        nomins[currencyKey].burn(messageSender, amountToBurn);
     }
 
-    /**
-     * @notice Check if the fee period has rolled over. If it has, set the new fee period start
-     * time, and record the fees collected in the nomin contract.
+    /*
+     * @notice Remove a debt position from the register
+     * @param currencyKey The currency the user is presenting to forgive their debt
+     * @param amount The amount (in UNIT base) being presented
      */
-    function rolloverFeePeriodIfElapsed()
-        public
+    function removeFromDebtRegister(bytes4 currencyKey, uint amount) 
+        internal
+        optionalProxy
     {
-        /* If the fee period has rolled over... */
-        if (now >= feePeriodStartTime + feePeriodDuration) {
-            lastFeesCollected = nomin.feePool();
-            lastFeePeriodStartTime = feePeriodStartTime;
-            feePeriodStartTime = now;
-            emitFeePeriodRollover(now);
+        // How much debt are they trying to remove in HDRs?
+        uint debtToRemove = effectiveValue(currencyKey, amount, "HDR");
+        // How much debt do they have?
+        uint existingDebt = debtBalanceOf(messageSender, "HDR"); 
+
+        require(debtToRemove <= existingDebt, "Trying to forgive more debt than exists");
+
+        // What's the delta for everyone else?
+        uint delta = safeDiv_dec(debtToRemove, totalIssuedNomins("HDR"));
+
+        // Are they exiting the system, or are they just decreasing their debt position?
+        if (debtToRemove == existingDebt) {
+            delete issuanceData[messageSender];
+
+            totalIssuerCount = safeSub(totalIssuerCount, 1);
+        } else {
+            issuanceData[messageSender].initialDebtOwnership = safeSub(issuanceData[messageSender].initialDebtOwnership, delta);
+            issuanceData[messageSender].debtEntryIndex = debtLedger.length;
         }
+
+        // Update our cumulative ledger
+        debtLedger.push(delta);
     }
 
-    /* ========== Issuance/Burning ========== */
+    // /*
+    //  * @notice Check if the fee period has rolled over. If it has, set the new fee period start
+    //  * time, and record the fees collected in the nomin contract.
+    //  */
+    // function rolloverFeePeriodIfElapsed()
+    //     public
+    // {
+    //     // If the fee period has rolled over... */
+    //     if (now >= feePeriodStartTime + feePeriodDuration) {
+    //         lastFeesCollected = nomin.feePool();
+    //         lastFeePeriodStartTime = feePeriodStartTime;
+    //         feePeriodStartTime = now;
+    //         emitFeePeriodRollover(now);
+    //     }
+    // }
 
-    /**
-     * @notice The maximum nomins an issuer can issue against their total havven quantity. This ignores any
-     * already issued nomins.
+    // ========== Issuance/Burning ==========
+
+    /*
+     * @notice The maximum nomins an issuer can issue against their total havven quantity, priced in HDR.
+     * This ignores any already issued nomins, and is purely giving you the maximimum amount the user can issue.
      */
-    function maxIssuableNomins(address issuer)
-        view
+    function maxIssuableNomins(address issuer, bytes4 currencyKey)
         public
-        priceNotStale
+        view
+        rateNotStale("HAV")
+        rateNotStale(currencyKey)
         returns (uint)
     {
+        // If they're not on the whitelist then they can't issue.
         if (!isIssuer[issuer]) {
             return 0;
         }
-        if (escrow != HavvenEscrow(0)) {
-            uint totalOwnedHavvens = safeAdd(tokenState.balanceOf(issuer), escrow.balanceOf(issuer));
-            return safeMul_dec(HAVtoUSD(totalOwnedHavvens), issuanceRatio);
-        } else {
-            return safeMul_dec(HAVtoUSD(tokenState.balanceOf(issuer)), issuanceRatio);
-        }
+
+        // Ok, so how many HAV do they have?
+        uint totalOwnedHavvens = collateral(issuer);
+
+        // We'll need some exchange rates to do this calculation
+        uint havRate = exchangeRates.rateForCurrency("HAV");
+        uint currencyRate = exchangeRates.rateForCurrency(currencyKey);
+
+        // What is the value of their HAV balance in the destination currency?
+        uint havvenBalanceInDestinationCurrency = safeMul_dec(safeMul_dec(totalOwnedHavvens, havRate), currencyRate);
+
+        // They're allowed to issue up to issuanceRatio of that value
+        return safeMul_dec(havvenBalanceInDestinationCurrency, issuanceRatio);
     }
 
-    /**
-     * @notice The remaining nomins an issuer can issue against their total havven quantity.
-     */
-    function remainingIssuableNomins(address issuer)
-        view
+    function debtBalanceOf(address issuer, bytes4 currencyKey)
         public
+        view
+        optionalProxy
+        rateNotStale(currencyKey)
         returns (uint)
     {
-        uint issued = nominsIssued[issuer];
-        uint max = maxIssuableNomins(issuer);
-        if (issued > max) {
+        // What was their initial debt ownership?
+        uint initialDebtOwnership = issuanceData[messageSender].initialDebtOwnership;
+        uint debtEntryIndex = issuanceData[messageSender].debtEntryIndex;
+
+        // If it's zero, they haven't issued, and they have no debt.
+        if (initialDebtOwnership == 0) return 0;
+
+        // Figure out the global debt percentage delta from when they entered the system.
+        uint debtDelta = safeSub(debtLedger[debtLedger.length - 1], debtLedger[debtEntryIndex]);
+
+        // Their effective debt ownership percentage is their inital + delta.
+        uint currentDebtOwnership = safeAdd(initialDebtOwnership, debtDelta);
+
+        // What's the total value of the system in their requested currency?
+        uint totalSystemValue = totalIssuedNomins(currencyKey);
+
+        // Which means their debt balance is their portion of the total system value
+        return safeMul_dec(totalSystemValue, currentDebtOwnership);
+    }
+
+    /*
+     * @notice The remaining nomins an issuer can issue against their total havven balance.
+     * @param issuer The account that intends to issue
+     * @param currencyKey The currency to price issuable value in
+     */
+    function remainingIssuableNomins(address issuer, bytes4 currencyKey)
+        public
+        view
+        nominExists(currencyKey)
+        returns (uint)
+    {
+        uint alreadyIssued = debtBalanceOf(issuer, currencyKey);
+        uint max = maxIssuableNomins(issuer, currencyKey);
+
+        if (alreadyIssued >= max) {
             return 0;
         } else {
-            return safeSub(max, issued);
+            return safeSub(max, alreadyIssued);
         }
     }
 
-    /**
+    /*
      * @notice The total havvens owned by this account, both escrowed and unescrowed,
      * against which nomins can be issued.
      * This includes those already being used as collateral (locked), and those
@@ -683,163 +897,93 @@ contract Havven is ExternStateToken {
         view
         returns (uint)
     {
-        uint bal = tokenState.balanceOf(account);
+        uint balance = tokenState.balanceOf(account);
+
         if (escrow != address(0)) {
-            bal = safeAdd(bal, escrow.balanceOf(account));
+            balance = safeAdd(balance, escrow.balanceOf(account));
         }
-        return bal;
+
+        return balance;
     }
 
-    /**
-     * @notice The collateral that would be locked by issuance, which can exceed the account's actual collateral.
-     */
-    function issuanceDraft(address account)
-        public
-        view
-        returns (uint)
-    {
-        uint issued = nominsIssued[account];
-        if (issued == 0) {
-            return 0;
-        }
-        return USDtoHAV(safeDiv_dec(issued, issuanceRatio));
-    }
-
-    /**
-     * @notice Collateral that has been locked due to issuance, and cannot be
-     * transferred to other addresses. This is capped at the account's total collateral.
-     */
-    function lockedCollateral(address account)
-        public
-        view
-        returns (uint)
-    {
-        uint debt = issuanceDraft(account);
-        uint collat = collateral(account);
-        if (debt > collat) {
-            return collat;
-        }
-        return debt;
-    }
-
-    /**
-     * @notice Collateral that is not locked and available for issuance.
-     */
-    function unlockedCollateral(address account)
-        public
-        view
-        returns (uint)
-    {
-        uint locked = lockedCollateral(account);
-        uint collat = collateral(account);
-        return safeSub(collat, locked);
-    }
-
-    /**
+    /*
      * @notice The number of havvens that are free to be transferred by an account.
-     * @dev If they have enough available Havvens, it could be that
-     * their havvens are escrowed, however the transfer would then
-     * fail. This means that escrowed havvens are locked first,
-     * and then the actual transferable ones.
+     * @dev When issuing, escrowed havvens are locked first, then non-escrowed
+     * havvens are locked last, but escrowed havvens are not transferable, so they are not included
+     * in this calculation.
      */
     function transferableHavvens(address account)
         public
         view
+        rateNotStale("HAV")
         returns (uint)
     {
-        uint draft = issuanceDraft(account);
-        uint collat = collateral(account);
-        // In the case where the issuanceDraft exceeds the collateral, nothing is free
-        if (draft > collat) {
+        // How many havvens do they have, excluding escrow?
+        // Note: We're excluding escrow here because we're interested in their transferable amount
+        // and escrowed Havvens are not transferable.
+        uint balance = tokenState.balanceOf(account);
+
+        // How many of those will be locked by the amount they've issued?
+        // Assuming issuance ratio is 20%, then issuing 20 HAV of value would require 
+        // 100 HAV to be locked in their wallet to maintain their collateralisation ratio
+        // The locked havven value can exceed their balance.
+        uint lockedHavvenValue = safeDiv_dec(debtBalanceOf(account, "HAV"), issuanceRatio);
+
+        // If we exceed the balance, no Havvens are transferable, otherwise the difference is.
+        if (lockedHavvenValue >= balance) {
             return 0;
+        } else {
+            return safeSub(balance, lockedHavvenValue);
         }
-
-        uint bal = balanceOf(account);
-        // In the case where the draft exceeds the escrow, but not the whole collateral
-        //   return the fraction of the balance that remains free
-        if (draft > safeSub(collat, bal)) {
-            return safeSub(collat, draft);
-        }
-        // In the case where the draft doesn't exceed the escrow, return the entire balance
-        return bal;
     }
 
-    /**
-     * @notice The value in USD for a given amount of HAV
+    /*
+     * @notice Check if any of a list of rates haven't been updated for longer than the stale period.
+     * @param currencyKeys The currency keys you wish to check on stale state for.
      */
-    function HAVtoUSD(uint hav_dec)
-        public
-        view
-        priceNotStale
-        returns (uint)
-    {
-        return safeMul_dec(hav_dec, price);
-    }
-
-    /**
-     * @notice The value in HAV for a given amount of USD
-     */
-    function USDtoHAV(uint usd_dec)
-        public
-        view
-        priceNotStale
-        returns (uint)
-    {
-        return safeDiv_dec(usd_dec, price);
-    }
-
-    /**
-     * @notice Access point for the oracle to update the price of havvens.
-     */
-    function updatePrice(uint newPrice, uint timeSent)
-        external
-        onlyOracle  /* Should be callable only by the oracle. */
-    {
-        /* Must be the most recently sent price, but not too far in the future.
-         * (so we can't lock ourselves out of updating the oracle for longer than this) */
-        require(lastPriceUpdateTime < timeSent && timeSent < now + ORACLE_FUTURE_LIMIT,
-            "Time sent must be bigger than the last update, and must be less than now + ORACLE_FUTURE_LIMIT");
-
-        price = newPrice;
-        lastPriceUpdateTime = timeSent;
-        emitPriceUpdated(newPrice, timeSent);
-
-        /* Check the fee period rollover within this as the price should be pushed every 15min. */
-        rolloverFeePeriodIfElapsed();
-    }
-
-    /**
-     * @notice Check if the price of havvens hasn't been updated for longer than the stale period.
-     */
-    function priceIsStale()
+    function anyRateIsStale(bytes4[] currencyKeys)
         public
         view
         returns (bool)
     {
-        return safeAdd(lastPriceUpdateTime, priceStalePeriod) < now;
+        return exchangeRates.anyRateIsStale(currencyKeys);
     }
 
-    /* ========== MODIFIERS ========== */
-
-    modifier requireIssuer(address account)
+    /*
+     * @notice Check if a single rate hasn't been updated for longer than the stale period.
+     * @param currencyKey The currency key you wish to check on stale state for.
+     */
+    function rateIsStale(bytes4 currencyKey)
+        public
+        view
+        returns (bool)
     {
-        require(isIssuer[account], "Must be issuer to perform this action");
+        return exchangeRates.rateIsStale(currencyKey);
+    }
+
+    // ========== MODIFIERS ==========
+
+    modifier onlyIssuer(address account) {
+        require(isIssuer[account], "Only issuers can perform this action");
         _;
     }
 
-    modifier onlyOracle
-    {
-        require(msg.sender == oracle, "Must be oracle to perform this action");
+    modifier nominExists(bytes4 currencyKey) {
+        require(nomins[currencyKey] != Nomin(0), "Unknown nomin");
         _;
     }
 
-    modifier priceNotStale
-    {
-        require(!priceIsStale(), "Price must not be stale to perform this action");
+    modifier ratesNotStale(bytes4[] currencyKeys) {
+        require(!exchangeRates.anyRateIsStale(currencyKeys), "Rate is stale");
         _;
     }
 
-    /* ========== EVENTS ========== */
+    modifier rateNotStale(bytes4 currencyKey) {
+        require(!exchangeRates.rateIsStale(currencyKey), "Rate is stale");
+        _;
+    }
+
+    // ========== EVENTS ========== */
 
     event PriceUpdated(uint newPrice, uint timestamp);
     bytes32 constant PRICEUPDATED_SIG = keccak256("PriceUpdated(uint256,uint256)");
@@ -871,16 +1015,22 @@ contract Havven is ExternStateToken {
         proxy._emit(abi.encode(value), 2, FEESWITHDRAWN_SIG, bytes32(account), 0, 0);
     }
 
-    event OracleUpdated(address newOracle);
-    bytes32 constant ORACLEUPDATED_SIG = keccak256("OracleUpdated(address)");
-    function emitOracleUpdated(address newOracle) internal {
-        proxy._emit(abi.encode(newOracle), 1, ORACLEUPDATED_SIG, 0, 0, 0);
+    event ExchangeRatesUpdated(address newExchangeRates);
+    bytes32 constant EXCHANGERATESUPDATED_SIG = keccak256("ExchangeRatesUpdated(address)");
+    function emitExchangeRatesUpdated(address newExchangeRates) internal {
+        proxy._emit(abi.encode(newExchangeRates), 1, EXCHANGERATESUPDATED_SIG, 0, 0, 0);
     }
 
-    event NominUpdated(address newNomin);
-    bytes32 constant NOMINUPDATED_SIG = keccak256("NominUpdated(address)");
-    function emitNominUpdated(address newNomin) internal {
-        proxy._emit(abi.encode(newNomin), 1, NOMINUPDATED_SIG, 0, 0, 0);
+    event NominAdded(address newNomin);
+    bytes32 constant NOMINADDED_SIG = keccak256("NominAdded(bytes4,address)");
+    function emitNominAdded(bytes4 currencyKey, address newNomin) internal {
+        proxy._emit(abi.encode(newNomin), 2, NOMINADDED_SIG, currencyKey, 0, 0);
+    }
+
+    event NominRemoved(address removedNomin);
+    bytes32 constant NOMINREMOVED_SIG = keccak256("NominRemoved(bytes4,address)");
+    function emitNominRemoved(bytes4 currencyKey, address removedNomin) internal {
+        proxy._emit(abi.encode(removedNomin), 2, NOMINREMOVED_SIG, currencyKey, 0, 0);
     }
 
     event EscrowUpdated(address newEscrow);
@@ -889,10 +1039,10 @@ contract Havven is ExternStateToken {
         proxy._emit(abi.encode(newEscrow), 1, ESCROWUPDATED_SIG, 0, 0, 0);
     }
 
-    event IssuersUpdated(address indexed account, bool indexed value);
-    bytes32 constant ISSUERSUPDATED_SIG = keccak256("IssuersUpdated(address,bool)");
-    function emitIssuersUpdated(address account, bool value) internal {
-        proxy._emit(abi.encode(), 3, ISSUERSUPDATED_SIG, bytes32(account), bytes32(value ? 1 : 0), 0);
+    event IssuerUpdated(address indexed account, bool indexed value);
+    bytes32 constant ISSUERUPDATED_SIG = keccak256("IssuerUpdated(address,bool)");
+    function emitIssuerUpdated(address account, bool value) internal {
+        proxy._emit(abi.encode(), 3, ISSUERUPDATED_SIG, bytes32(account), bytes32(value ? 1 : 0), 0);
     }
 
 }

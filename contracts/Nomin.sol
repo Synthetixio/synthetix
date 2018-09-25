@@ -40,6 +40,9 @@ contract Nomin is FeeToken {
 
     Havven public havven;
 
+    // Currency key which identifies this Nomin to the Havven system
+    bytes4 public currencyKey;
+
     // Accounts which have lost the privilege to transact in nomins.
     mapping(address => bool) public frozen;
 
@@ -49,7 +52,7 @@ contract Nomin is FeeToken {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _proxy, TokenState _tokenState, Havven _havven,
-                string _tokenName, string _tokenSymbol, address _owner)
+                string _tokenName, string _tokenSymbol, address _owner, bytes4 _currencyKey)
         FeeToken(_proxy, _tokenState,
                  _tokenName, _tokenSymbol, 0,
                  TRANSFER_FEE_RATE,
@@ -60,10 +63,12 @@ contract Nomin is FeeToken {
         require(_proxy != 0, "_proxy cannot be 0");
         require(address(_havven) != 0, "_havven cannot be 0");
         require(_owner != 0, "_owner cannot be 0");
+        require(_havven.nomins(_currencyKey) == Nomin(0), "Currency key is already in use");
 
         // It should not be possible to transfer to the fee pool directly (or confiscate its balance).
         frozen[FEE_ADDRESS] = true;
         havven = _havven;
+        currencyKey = _currencyKey;
     }
 
     /* ========== SETTERS ========== */

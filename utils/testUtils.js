@@ -1,5 +1,7 @@
 const BN = require('bn.js');
 
+const ZERO_ADDRESS = '0x' + '0'.repeat(40);
+
 /**
  * Sets default properties on the jsonrpc object and promisifies it so we don't have to copy/paste everywhere.
  */
@@ -203,6 +205,8 @@ const assertRevert = async blockOrPromise => {
 };
 
 module.exports = {
+	ZERO_ADDRESS,
+
 	mineBlock,
 	fastForward,
 	fastForwardTo,

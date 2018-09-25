@@ -1,5 +1,5 @@
 const Owned = artifacts.require('Owned');
-const ZERO_ADDRESS = '0x' + '0'.repeat(40);
+const { ZERO_ADDRESS } = require('../utils/testUtils');
 
 contract('Owned - Test contract deployment', function(accounts) {
 	const [deployerAccount, account1] = accounts;

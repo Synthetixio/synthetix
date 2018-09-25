@@ -131,7 +131,7 @@ contract Proxy is Owned {
     }
 
     modifier onlyTarget {
-        require(Proxyable(msg.sender) == target, "This action can only be performed by the proxy target");
+        require(Proxyable(msg.sender) == target, "Must be proxy target");
         _;
     }
 

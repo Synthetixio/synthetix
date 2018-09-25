@@ -12,11 +12,9 @@ const TokenState = artifacts.require('./TokenState.sol');
 
 // Update values before deployment
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
-const ethUSD = '274411589120931162910';
-const havUSD = '116551110814936098';
 
 module.exports = async function(deployer, network, accounts) {
-	const [deployerAccount, owner, oracle, fundsWallet] = accounts;
+	const [deployerAccount, owner, oracle] = accounts;
 
 	// Note: This deployment script is not used on mainnet, it's only for testing deployments.
 	// ----------------
@@ -51,16 +49,13 @@ module.exports = async function(deployer, network, accounts) {
 	});
 
 	console.log('Deploying Havven...');
-	// constructor(address _proxy, TokenState _tokenState, address _owner, address _oracle,
-	//             uint _price, address[] _issuers, Havven _oldHavven)
+	// constructor(address _proxy, TokenState _tokenState, address _owner, ExchangeRates _exchangeRates, Havven _oldHavven)
 	const havven = await deployer.deploy(
 		Havven,
 		havvenProxy.address,
 		havvenTokenState.address,
 		owner,
-		oracle,
-		havUSD,
-		[],
+		ExchangeRates.address,
 		ZERO_ADDRESS,
 		{
 			from: deployerAccount,
@@ -73,85 +68,104 @@ module.exports = async function(deployer, network, accounts) {
 		from: deployerAccount,
 	});
 
-	// ----------------
-	// Nomin
-	// ----------------
-	console.log('Deploying NominTokenState...');
-	const nominTokenState = await TokenState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
-	console.log('Deploying NominProxy...');
-	const nominProxy = await Proxy.new(owner, { from: deployerAccount });
-	console.log('Deploying Nomin...');
-	const nomin = await deployer.deploy(
-		Nomin,
-		nominProxy.address,
-		nominTokenState.address,
-		havven.address,
-		'Nomin nUSD',
-		'nUSD',
-		owner,
-		{ from: deployerAccount }
-	);
-
-	// --------------------
-	// Issuance Controller
-	// --------------------
-	console.log('Deploying IssuanceController...');
-	await deployer.deploy(
-		IssuanceController,
-		owner,
-		fundsWallet,
-		havven.address,
-		nomin.address,
-		oracle,
-		ethUSD,
-		havUSD,
-		{ from: deployerAccount }
-	);
-
 	// ----------------------
 	// Connect Token States
 	// ----------------------
 	await havvenTokenState.setAssociatedContract(havven.address, { from: owner });
-	await nominTokenState.setAssociatedContract(nomin.address, { from: owner });
 
 	// ----------------------
 	// Connect Proxies
 	// ----------------------
 	await havvenProxy.setTarget(havven.address, { from: owner });
-	await nominProxy.setTarget(nomin.address, { from: owner });
-
-	// ----------------------
-	// Connect Havven to Nomin
-	// ----------------------
-	await havven.setNomin(nomin.address, { from: owner });
 
 	// ----------------------
 	// Connect Escrow
 	// ----------------------
 	await havven.setEscrow(havvenEscrow.address, { from: owner });
 
+	// ----------------
+	// Nomins
+	// ----------------
+	const currencyKeys = ['nUSD', 'nAUD', 'nEUR'];
+	const nomins = [];
+
+	for (const currencyKey of currencyKeys) {
+		console.log(`Deploying NominTokenState for ${currencyKey}...`);
+		const tokenState = await TokenState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
+		console.log(`Deploying NominProxy for ${currencyKey}...`);
+		const proxy = await Proxy.new(owner, { from: deployerAccount });
+		console.log(`Deploying ${currencyKey} Nomin...`);
+		const nomin = await Nomin.new(
+			proxy.address,
+			tokenState.address,
+			havven.address,
+			`Nomin ${currencyKey}`,
+			currencyKey,
+			owner,
+			web3.utils.asciiToHex(currencyKey),
+			{ from: deployerAccount }
+		);
+
+		console.log(`Setting associated contract for ${currencyKey} token state...`);
+		await tokenState.setAssociatedContract(nomin.address, { from: owner });
+
+		console.log(`Setting proxy target for ${currencyKey} proxy...`);
+		await proxy.setTarget(nomin.address, { from: owner });
+
+		// ----------------------
+		// Connect Havven to Nomin
+		// ----------------------
+		console.log(`Adding ${currencyKey} to Havven contract...`);
+		await havven.addNomin(nomin.address, { from: owner });
+
+		nomins.push({
+			currencyKey,
+			tokenState,
+			proxy,
+			nomin,
+		});
+	}
+
+	// --------------------
+	// Issuance Controller
+	// --------------------
+	// console.log('Deploying IssuanceController...');
+	// await deployer.deploy(
+	// 	IssuanceController,
+	// 	owner,
+	// 	fundsWallet,
+	// 	havven.address,
+	// 	nomin.address,
+	// 	oracle,
+	// 	ethUSD,
+	// 	havUSD,
+	// 	{ from: deployerAccount }
+	// );
+
+	const tableData = [
+		['Contract', 'Address'],
+
+		['Exchange Rates', ExchangeRates.address],
+
+		['Owned', Owned.address],
+
+		['Havven Token State', havvenTokenState.address],
+		['Havven Proxy', havvenProxy.address],
+		['Havven', Havven.address],
+		['Havven Escrow', HavvenEscrow.address],
+
+		// ['Issuance Controller', IssuanceController.address],
+	];
+
+	for (const nomin of nomins) {
+		tableData.push([`${nomin.currencyKey} Nomin`, nomin.nomin.address]);
+		tableData.push([`${nomin.currencyKey} Proxy`, nomin.proxy.address]);
+		tableData.push([`${nomin.currencyKey} Token State`, nomin.tokenState.address]);
+	}
+
 	console.log();
 	console.log();
 	console.log(' Successfully deployed all contracts:');
 	console.log();
-	console.log(
-		table([
-			['Contract', 'Address'],
-
-			['Exchange Rates', ExchangeRates.address],
-
-			['Owned', Owned.address],
-
-			['Havven Token State', havvenTokenState.address],
-			['Havven Proxy', havvenProxy.address],
-			['Havven', Havven.address],
-			['Havven Escrow', HavvenEscrow.address],
-
-			['Nomin Token State', nominTokenState.address],
-			['Nomin Proxy', nominProxy.address],
-			['Nomin', Nomin.address],
-
-			['Issuance Controller', IssuanceController.address],
-		])
-	);
+	console.log(table(tableData));
 };
