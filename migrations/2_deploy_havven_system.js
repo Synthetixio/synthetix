@@ -99,8 +99,6 @@ module.exports = async function(deployer, network, accounts) {
 	// --------------------
 	// Create Initial Havven Tokens
 	// --------------------
-	console.log('Create Initial Havven Tokens...');
-
 	console.log('Assign 100% HAV Tokens to owner account');
 	await havvenTokenState.setBalanceOf(
 		owner,
@@ -129,6 +127,22 @@ module.exports = async function(deployer, network, accounts) {
 	// Connect Escrow
 	// ----------------------
 	await havven.setEscrow(havvenEscrow.address, { from: owner });
+
+	// --------------------
+	// Havven System State settings
+	// --------------------
+
+	let now = Math.floor(Date.now() / 1000);
+	const usdEth = '500957049546843687330'; //$500
+	const usdHav = '157474638738934625'; 	//.15c
+	console.log('Set Havven contract with usd HAV price');
+	await havven.updatePrice(usdHav, now, {
+		from: oracle,
+	});
+	console.log('Set IssuanceController contract with price data');
+	await issuanceController.updatePrices(usdEth, usdHav, now, {
+		from: oracle,
+	});
 
 	// ----------------------
 	// Mint nUSD
