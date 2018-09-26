@@ -13,7 +13,7 @@
 		"ganache": "ganache-cli -a 150 -e 1000000000000 -l 0x7a213a",
 		"lint": "eslint \"**/*.js\" && solium -d contracts/",
 		"lint:fix": "eslint --fix \"**/*.js\" && solium --fix -d contracts/",
-		"test": "truffle compile && truffle test"
+		"test": "concurrently -k \"yarn ganache > /dev/null\" \"truffle compile && truffle test\""
 	},
 	"repository": {
 		"type": "git",
@@ -32,6 +32,7 @@
 		"test": "test"
 	},
 	"devDependencies": {
+		"concurrently": "^4.0.1",
 		"eslint": "^5.5.0",
 		"eslint-config-prettier": "^3.0.1",
 		"eslint-config-standard": "^12.0.0",
