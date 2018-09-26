@@ -9,11 +9,12 @@
 		"clean": "rm -rf build && rm -rf node_modules && yarn",
 		"compile": "truffle compile",
 		"coverage": "solidity-coverage",
+		"debug": "truffle debug",
 		"develop": "truffle develop",
 		"ganache": "ganache-cli -a 150 -e 1000000000000 -l 0x7a213a",
 		"lint": "eslint \"**/*.js\" && solium -d contracts/",
 		"lint:fix": "eslint --fix \"**/*.js\" && solium --fix -d contracts/",
-		"test": "concurrently -k \"yarn ganache > /dev/null\" \"truffle compile && truffle test\""
+		"test": "concurrently -k -s first \"yarn ganache > /dev/null\" \"truffle compile && truffle test\""
 	},
 	"repository": {
 		"type": "git",
