@@ -145,7 +145,7 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
         emit RatesUpdated(currencyKeys, newRates);
 
         // Now update our HDR rate.
-        updateHDRRate();
+        updateHDRRate(timeSent);
 
         return true;
     }
@@ -153,7 +153,7 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
     /**
      * @notice Update the Havven Drawing Rights exchange rate based on other rates already updated.
      */
-    function updateHDRRate()
+    function updateHDRRate(uint timeSent)
         internal
     {
         uint total = 0;
@@ -169,6 +169,9 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
             // Otherwise the rate is zero.
             rates["HDR"] = 0;
         }
+
+        // Record that we updated the HDR rate.
+        lastRateUpdateTimes["HDR"] = timeSent;
 
         // Emit our change event
         bytes4[] memory eventCurrencyCode = new bytes4[](1);
