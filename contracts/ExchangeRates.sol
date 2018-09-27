@@ -162,18 +162,14 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
             total = safeAdd(rates[hdrParticipants[i]], total);
         }
 
-        // If we have a basis for calculating the HDR rate, do that.
-        if (total > 0) {
-            rates["HDR"] = safeDiv_dec(1 ether, total);
-        } else {
-            // Otherwise the rate is zero.
-            rates["HDR"] = 0;
-        }
+        // Set the rate
+        rates["HDR"] = total;
 
         // Record that we updated the HDR rate.
         lastRateUpdateTimes["HDR"] = timeSent;
 
-        // Emit our change event
+        // Emit our updated event separate to the others to save
+        // moving data around between arrays.
         bytes4[] memory eventCurrencyCode = new bytes4[](1);
         eventCurrencyCode[0] = "HDR";
 

@@ -1,10 +1,26 @@
+const ExchangeRates = artifacts.require('ExchangeRates');
 const Havven = artifacts.require('Havven');
 const Nomin = artifacts.require('Nomin');
 
-const { ZERO_ADDRESS } = require('../utils/testUtils');
+const { currentTime, fastForward, ZERO_ADDRESS } = require('../utils/testUtils');
 
 contract.only('Havven', async function(accounts) {
 	const [deployerAccount, owner, account1, account2, account3, account4] = accounts;
+
+	beforeEach(async function() {
+		// Send a price update to guarantee we're not stale.
+		const exchangeRates = await ExchangeRates.deployed();
+
+		const oracle = await exchangeRates.oracle();
+		const { timestamp } = await web3.eth.getBlock('latest');
+
+		await exchangeRates.updateRates(
+			['nUSD', 'nAUD', 'nEUR', 'HAV'].map(web3.utils.asciiToHex),
+			['1', '0.5', '1.25', '0.1'].map(number => web3.utils.toWei(number, 'ether')),
+			timestamp,
+			{ from: oracle }
+		);
+	});
 
 	it('should set constructor params on deployment', async function() {
 		const instance = await Havven.new(account1, account2, account3, account4, ZERO_ADDRESS, {
@@ -79,32 +95,372 @@ contract.only('Havven', async function(accounts) {
 		await assert.revert(havven.addNomin(nomin.address, { from: owner }));
 	});
 
-	it('should disallow double adding a Nomin contract with the same currencyKey');
-	it('should allow removing a Nomin contract when it has no issued balance');
-	it('should disallow removing a Nomin contract when it has an issued balance');
-	it('should disallow removing a Nomin contract when requested by a non-owner');
-	it('should revert when requesting to remove a non-existent nomin');
+	it('should disallow double adding a Nomin contract with the same currencyKey', async function() {
+		const havven = await Havven.deployed();
 
-	it('should allow the owner to set an Escrow contract');
-	it('should disallow a non-owner from setting an Escrow contract');
+		const nomin1 = await Nomin.new(
+			account1,
+			account2,
+			Havven.address,
+			'Nomin XYZ',
+			'nXYZ',
+			owner,
+			web3.utils.asciiToHex('nXYZ'),
+			{ from: deployerAccount }
+		);
 
-	it('should allow the owner to set fee period duration');
-	it('should disallow a non-owner from setting the fee period duration');
-	it('should disallow setting the fee period duration outside the MIN / MAX range');
+		const nomin2 = await Nomin.new(
+			account1,
+			account2,
+			Havven.address,
+			'Nomin XYZ',
+			'nXYZ',
+			owner,
+			web3.utils.asciiToHex('nXYZ'),
+			{ from: deployerAccount }
+		);
 
-	it('should allow the owner to set an Exchange Rates contract');
-	it('should disallow a non-owner from setting an Exchange Rates contract');
+		await havven.addNomin(nomin1.address, { from: owner });
+		await assert.revert(havven.addNomin(nomin2.address, { from: owner }));
+	});
 
-	it('should allow the owner to set the issuance ratio');
-	it('should disallow a non-owner from setting the issuance ratio');
-	it('should disallow setting the issuance ratio above the MAX ratio');
+	it('should allow removing a Nomin contract when it has no issued balance', async function() {
+		// Note: This test depends on state in the migration script, that there are hooked up nomins
+		// without balances and we just remove one.
+		const havven = await Havven.deployed();
+		const nomin = await Nomin.at(await havven.availableNomins(0));
+		const currencyKey = await nomin.currencyKey();
+		const nominCount = await havven.availableNominCount();
 
-	it('should allow the owner add someone as a whitelisted issuer');
-	it('should disallow a non-owner from adding someone as a whitelisted issuer');
+		assert.notEqual(await havven.nomins(currencyKey), ZERO_ADDRESS);
 
-	it('should correctly calculate an exchange rate in effectiveValue()');
-	it('should error when relying on a stale exchange rate in effectiveValue()');
-	it('should return zero when relying on a non-existant exchange rate in effectiveValue()');
+		await havven.removeNomin(currencyKey, { from: owner });
+
+		// Assert that we have one less nomin, and that the specific currency key is gone.
+		assert.bnEqual(await havven.availableNominCount(), nominCount.sub(web3.utils.toBN(1)));
+		assert.equal(await havven.nomins(currencyKey), ZERO_ADDRESS);
+	});
+
+	it('should disallow removing a Nomin contract when it has an issued balance', async function() {
+		// Note: This test depends on state in the migration script, that there are hooked up nomins
+		// without balances
+		const havven = await Havven.deployed();
+		const currencyKey = web3.utils.asciiToHex('nUSD');
+		const nUSD = await havven.nomins(currencyKey);
+
+		// Assert that we can remove the nomin and add it back in before we do anything.
+		let transaction = await havven.removeNomin(currencyKey, { from: owner });
+		assert.eventEqual(transaction, 'NominRemoved', { currencyKey, removedNomin: nUSD });
+		transaction = await havven.addNomin(nUSD, { from: owner });
+		assert.eventEqual(transaction, 'NominAdded', { currencyKey, newNomin: nUSD });
+
+		// Issue one nUSD
+		await havven.issueNomins(currencyKey, web3.utils.toWei('1', 'ether'), {
+			from: owner,
+		});
+
+		// Assert that we can't remove the nomin now
+		await assert.revert(havven.removeNomin(currencyKey, { from: owner }));
+	});
+
+	it('should disallow removing a Nomin contract when requested by a non-owner', async function() {
+		// Note: This test depends on state in the migration script, that there are hooked up nomins
+		// without balances
+		const havven = await Havven.deployed();
+		const currencyKey = web3.utils.asciiToHex('nUSD');
+
+		await assert.revert(havven.removeNomin(currencyKey, { from: account1 }));
+	});
+
+	it('should revert when requesting to remove a non-existent nomin', async function() {
+		// Note: This test depends on state in the migration script, that there are hooked up nomins
+		// without balances
+		const havven = await Havven.deployed();
+		const currencyKey = web3.utils.asciiToHex('NOPE');
+
+		// Assert that we can't remove the nomin
+		await assert.revert(havven.removeNomin(currencyKey, { from: owner }));
+	});
+
+	it('should allow the owner to set an Escrow contract', async function() {
+		const havven = await Havven.deployed();
+
+		const transaction = await havven.setEscrow(account1, { from: owner });
+
+		assert.eventEqual(transaction, 'EscrowUpdated', { newEscrow: account1 });
+	});
+
+	it('should disallow a non-owner from setting an Escrow contract', async function() {
+		const havven = await Havven.deployed();
+
+		await assert.revert(havven.setEscrow(account1, { from: account1 }));
+	});
+
+	it('should allow the owner to set fee period duration', async function() {
+		const havven = await Havven.deployed();
+
+		// Set fee period to 5 days
+		const duration = 5 * 24 * 60 * 60;
+		const transaction = await havven.setFeePeriodDuration(web3.utils.toBN(duration), {
+			from: owner,
+		});
+
+		assert.eventEqual(transaction, 'FeePeriodDurationUpdated', { duration });
+	});
+
+	it('should disallow a non-owner from setting the fee period duration', async function() {
+		const havven = await Havven.deployed();
+
+		// Try to set fee period to 5 days
+		const duration = 5 * 24 * 60 * 60;
+		await assert.revert(
+			havven.setFeePeriodDuration(web3.utils.toBN(duration), {
+				from: account1,
+			})
+		);
+	});
+
+	it('should disallow setting the fee period duration below the minimum fee period duration', async function() {
+		const havven = await Havven.deployed();
+
+		// Minimum is currently 1 day in the contract
+		const minimum = 60 * 60 * 24;
+
+		// Setting to the minimum should succeed
+		const transaction = await havven.setFeePeriodDuration(web3.utils.toBN(minimum), {
+			from: owner,
+		});
+		assert.eventEqual(transaction, 'FeePeriodDurationUpdated', { duration: minimum });
+
+		// While setting to minimum - 1 should fail
+		await assert.revert(
+			havven.setFeePeriodDuration(web3.utils.toBN(minimum - 1), {
+				from: owner,
+			})
+		);
+	});
+
+	it('should disallow setting the fee period duration above the maximum fee period duration', async function() {
+		const havven = await Havven.deployed();
+
+		// Maximum is currently 26 weeks in the contract
+		const maximum = 60 * 60 * 24 * 7 * 26;
+
+		// Setting to the maximum should succeed
+		const transaction = await havven.setFeePeriodDuration(web3.utils.toBN(maximum), {
+			from: owner,
+		});
+		assert.eventEqual(transaction, 'FeePeriodDurationUpdated', { duration: maximum });
+
+		// While setting to maximum + 1 should fail
+		await assert.revert(
+			havven.setFeePeriodDuration(web3.utils.toBN(maximum + 1), {
+				from: owner,
+			})
+		);
+	});
+
+	it('should allow the owner to set an Exchange Rates contract', async function() {
+		const havven = await Havven.deployed();
+
+		const transaction = await havven.setExchangeRates(account1, { from: owner });
+
+		assert.eventEqual(transaction, 'ExchangeRatesUpdated', { newExchangeRates: account1 });
+	});
+
+	it('should disallow a non-owner from setting an Exchange Rates contract', async function() {
+		const havven = await Havven.deployed();
+
+		await assert.revert(havven.setExchangeRates(account1, { from: account1 }));
+	});
+
+	it('should allow the owner to set the issuance ratio', async function() {
+		const havven = await Havven.deployed();
+		const ratio = web3.utils.toWei('0.2', 'ether');
+
+		const transaction = await havven.setIssuanceRatio(ratio, {
+			from: owner,
+		});
+
+		assert.eventEqual(transaction, 'IssuanceRatioUpdated', { newRatio: ratio });
+	});
+
+	it('should allow the owner to set the issuance ratio to zero', async function() {
+		const havven = await Havven.deployed();
+		const ratio = web3.utils.toBN('0');
+
+		const transaction = await havven.setIssuanceRatio(ratio, {
+			from: owner,
+		});
+
+		assert.eventEqual(transaction, 'IssuanceRatioUpdated', { newRatio: ratio });
+	});
+
+	it('should disallow a non-owner from setting the issuance ratio', async function() {
+		const havven = await Havven.deployed();
+		const ratio = web3.utils.toWei('0.2', 'ether');
+
+		await assert.revert(
+			havven.setIssuanceRatio(ratio, {
+				from: account1,
+			})
+		);
+	});
+
+	it('should disallow setting the issuance ratio above the MAX ratio', async function() {
+		const havven = await Havven.deployed();
+		const max = web3.utils.toWei('1', 'ether');
+
+		// It should succeed when setting it to max
+		const transaction = await havven.setIssuanceRatio(max, {
+			from: owner,
+		});
+		assert.eventEqual(transaction, 'IssuanceRatioUpdated', { newRatio: max });
+
+		// But max + 1 should fail
+		await assert.revert(
+			havven.setIssuanceRatio(web3.utils.toBN(max).add(web3.utils.toBN('1')), {
+				from: account1,
+			})
+		);
+	});
+
+	it('should allow the owner add someone as a whitelisted issuer', async function() {
+		const havven = await Havven.deployed();
+
+		assert.equal(await havven.isIssuer(account1), false);
+
+		const transaction = await havven.setIssuer(account1, true, { from: owner });
+		assert.eventEqual(transaction, 'IssuerUpdated', { account: account1, value: true });
+
+		assert.equal(await havven.isIssuer(account1), true);
+	});
+
+	it('should disallow a non-owner from adding someone as a whitelisted issuer', async function() {
+		const havven = await Havven.deployed();
+
+		assert.equal(await havven.isIssuer(account1), false);
+
+		await assert.revert(havven.setIssuer(account1, true, { from: account1 }));
+	});
+
+	it('should correctly calculate an exchange rate in effectiveValue()', async function() {
+		// Send a price update to guarantee we're not stale.
+		const havven = await Havven.deployed();
+		const exchangeRates = await ExchangeRates.deployed();
+
+		const oracle = await exchangeRates.oracle();
+		const timestamp = await currentTime();
+
+		await exchangeRates.updateRates(
+			['nUSD', 'nAUD', 'nEUR', 'HAV'].map(web3.utils.asciiToHex),
+			['1', '0.5', '1.25', '0.1'].map(number => web3.utils.toWei(number, 'ether')),
+			timestamp,
+			{ from: oracle }
+		);
+
+		// 1 nUSD should be worth 2 nAUD.
+		assert.bnEqual(
+			await havven.effectiveValue(
+				web3.utils.asciiToHex('nUSD'),
+				web3.utils.toWei('1', 'ether'),
+				web3.utils.asciiToHex('nAUD')
+			),
+			web3.utils.toWei('2', 'ether')
+		);
+
+		// 10 HAV should be worth 1 nUSD.
+		assert.bnEqual(
+			await havven.effectiveValue(
+				web3.utils.asciiToHex('HAV'),
+				web3.utils.toWei('10', 'ether'),
+				web3.utils.asciiToHex('nUSD')
+			),
+			web3.utils.toWei('1', 'ether')
+		);
+
+		// 2 nEUR should be worth 2.50 nUSD
+		assert.bnEqual(
+			await havven.effectiveValue(
+				web3.utils.asciiToHex('nEUR'),
+				web3.utils.toWei('2', 'ether'),
+				web3.utils.asciiToHex('nUSD')
+			),
+			web3.utils.toWei('2.5', 'ether')
+		);
+	});
+
+	it('should error when relying on a stale exchange rate in effectiveValue()', async function() {
+		// Send a price update so we know what time we started with.
+		const havven = await Havven.deployed();
+		const exchangeRates = await ExchangeRates.deployed();
+
+		const oracle = await exchangeRates.oracle();
+		let timestamp = await currentTime();
+
+		await exchangeRates.updateRates(
+			['nUSD', 'nAUD', 'nEUR', 'HAV'].map(web3.utils.asciiToHex),
+			['1', '0.5', '1.25', '0.1'].map(number => web3.utils.toWei(number, 'ether')),
+			timestamp,
+			{ from: oracle }
+		);
+
+		// Add stale period to the time to ensure we go stale.
+		await fastForward(await exchangeRates.rateStalePeriod());
+
+		timestamp = await currentTime();
+
+		// Update all rates except nUSD.
+		await exchangeRates.updateRates(
+			['nAUD', 'nEUR', 'HAV'].map(web3.utils.asciiToHex),
+			['0.5', '1.25', '0.1'].map(number => web3.utils.toWei(number, 'ether')),
+			timestamp,
+			{ from: oracle }
+		);
+
+		// Should now be able to convert from HAV to nAUD
+		assert.bnEqual(
+			await havven.effectiveValue(
+				web3.utils.asciiToHex('HAV'),
+				web3.utils.toWei('10', 'ether'),
+				web3.utils.asciiToHex('nAUD')
+			),
+			web3.utils.toWei('2', 'ether')
+		);
+
+		// But trying to convert from HAV to nUSD should fail
+		await assert.revert(
+			havven.effectiveValue(
+				web3.utils.asciiToHex('HAV'),
+				web3.utils.toWei('10', 'ether'),
+				web3.utils.asciiToHex('nUSD')
+			)
+		);
+	});
+
+	it('should revert when relying on a non-existant exchange rate in effectiveValue()', async function() {
+		// Send a price update so we know what time we started with.
+		const havven = await Havven.deployed();
+		const exchangeRates = await ExchangeRates.deployed();
+
+		const oracle = await exchangeRates.oracle();
+		let timestamp = await currentTime();
+
+		await exchangeRates.updateRates(
+			['nUSD', 'nAUD', 'nEUR', 'HAV'].map(web3.utils.asciiToHex),
+			['1', '0.5', '1.25', '0.1'].map(number => web3.utils.toWei(number, 'ether')),
+			timestamp,
+			{ from: oracle }
+		);
+
+		await assert.revert(
+			havven.effectiveValue(
+				web3.utils.asciiToHex('HAV'),
+				web3.utils.toWei('10', 'ether'),
+				web3.utils.asciiToHex('XYZ')
+			)
+		);
+	});
 
 	it('should correctly calculate the total issued nomins in a single currency');
 	it('should correctly calculate the total issued nomins in multiple currencies');

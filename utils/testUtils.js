@@ -114,6 +114,10 @@ const assertEventEqual = (actualEventOrTransaction, expectedEvent, expectedArgs)
 		? actualEventOrTransaction.logs[0]
 		: actualEventOrTransaction;
 
+	if (!event) {
+		assert.fail(new Error('No event was generated from this transaction'));
+	}
+
 	// Assert the names are the same.
 	assert.equal(event.event, expectedEvent);
 

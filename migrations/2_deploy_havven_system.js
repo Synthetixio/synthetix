@@ -1,5 +1,4 @@
 const { table } = require('table');
-const web3 = require('web3');
 
 const ExchangeRates = artifacts.require('./ExchangeRates.sol');
 const Havven = artifacts.require('./Havven.sol');
@@ -26,7 +25,7 @@ module.exports = async function(deployer, network, accounts) {
 	// Exchange Rates
 	// ----------------
 	console.log('Deploying ExchangeRates...');
-	await deployer.deploy(
+	const exchangeRates = await deployer.deploy(
 		ExchangeRates,
 		owner,
 		oracle,
@@ -44,7 +43,7 @@ module.exports = async function(deployer, network, accounts) {
 
 	console.log('Deploying HavvenTokenState...');
 	// constructor(address _owner, address _associatedContract)
-	const havvenTokenState = await TokenState.new(owner, ZERO_ADDRESS, {
+	const havvenTokenState = await TokenState.new(owner, deployerAccount, {
 		from: deployerAccount,
 	});
 
@@ -69,12 +68,17 @@ module.exports = async function(deployer, network, accounts) {
 	});
 
 	// ----------------------
-	// Connect Token States
+	// Connect Token State
 	// ----------------------
+	// Set initial balance for the owner to have all Havvens.
+	await havvenTokenState.setBalanceOf(owner, web3.utils.toWei('100000000'), {
+		from: deployerAccount,
+	});
+
 	await havvenTokenState.setAssociatedContract(havven.address, { from: owner });
 
 	// ----------------------
-	// Connect Proxies
+	// Connect Proxy
 	// ----------------------
 	await havvenProxy.setTarget(havven.address, { from: owner });
 
@@ -82,6 +86,9 @@ module.exports = async function(deployer, network, accounts) {
 	// Connect Escrow
 	// ----------------------
 	await havven.setEscrow(havvenEscrow.address, { from: owner });
+
+	// Mark the owner as an issuer.
+	await havven.setIssuer(owner, true, { from: owner });
 
 	// ----------------
 	// Nomins
@@ -125,6 +132,20 @@ module.exports = async function(deployer, network, accounts) {
 			nomin,
 		});
 	}
+
+	// Initial prices
+	const { timestamp } = await web3.eth.getBlock('latest');
+
+	// nUSD: 1 USD
+	// nAUD: 0.5 USD
+	// nEUR: 1.25 USD
+	// HAV: 0.1 USD
+	await exchangeRates.updateRates(
+		currencyKeys.concat(['HAV']).map(web3.utils.asciiToHex),
+		['1', '0.5', '1.25', '0.1'].map(number => web3.utils.toWei(number, 'ether')),
+		timestamp,
+		{ from: oracle }
+	);
 
 	// --------------------
 	// Issuance Controller

@@ -392,7 +392,7 @@ contract Havven is ExternStateToken {
         returns (uint)
     {
         // Calcuate the effective value by going from source -> USD -> destination
-        return safeMul_dec(
+        return safeDiv_dec(
             safeMul_dec(sourceAmount, exchangeRates.rateForCurrency(sourceCurrencyKey)), 
             exchangeRates.rateForCurrency(destinationCurrencyKey)
         );
@@ -974,12 +974,12 @@ contract Havven is ExternStateToken {
     }
 
     modifier ratesNotStale(bytes4[] currencyKeys) {
-        require(!exchangeRates.anyRateIsStale(currencyKeys), "Rate is stale");
+        require(!exchangeRates.anyRateIsStale(currencyKeys), "Rate is stale or currency was not found");
         _;
     }
 
     modifier rateNotStale(bytes4 currencyKey) {
-        require(!exchangeRates.rateIsStale(currencyKey), "Rate is stale");
+        require(!exchangeRates.rateIsStale(currencyKey), "Rate is stale or currency was not found");
         _;
     }
 
@@ -1012,7 +1012,7 @@ contract Havven is ExternStateToken {
     event FeesWithdrawn(address indexed account, uint value);
     bytes32 constant FEESWITHDRAWN_SIG = keccak256("FeesWithdrawn(address,uint256)");
     function emitFeesWithdrawn(address account, uint value) internal {
-        proxy._emit(abi.encode(value), 2, FEESWITHDRAWN_SIG, bytes32(account), 0, 0);
+        proxy._emit(abi.encode(value), 1, FEESWITHDRAWN_SIG, 0, 0, 0);
     }
 
     event ExchangeRatesUpdated(address newExchangeRates);
@@ -1021,16 +1021,16 @@ contract Havven is ExternStateToken {
         proxy._emit(abi.encode(newExchangeRates), 1, EXCHANGERATESUPDATED_SIG, 0, 0, 0);
     }
 
-    event NominAdded(address newNomin);
+    event NominAdded(bytes4 currencyKey, address newNomin);
     bytes32 constant NOMINADDED_SIG = keccak256("NominAdded(bytes4,address)");
     function emitNominAdded(bytes4 currencyKey, address newNomin) internal {
-        proxy._emit(abi.encode(newNomin), 2, NOMINADDED_SIG, currencyKey, 0, 0);
+        proxy._emit(abi.encode(currencyKey, newNomin), 1, NOMINADDED_SIG, 0, 0, 0);
     }
 
-    event NominRemoved(address removedNomin);
+    event NominRemoved(bytes4 currencyKey, address removedNomin);
     bytes32 constant NOMINREMOVED_SIG = keccak256("NominRemoved(bytes4,address)");
     function emitNominRemoved(bytes4 currencyKey, address removedNomin) internal {
-        proxy._emit(abi.encode(removedNomin), 2, NOMINREMOVED_SIG, currencyKey, 0, 0);
+        proxy._emit(abi.encode(currencyKey, removedNomin), 1, NOMINREMOVED_SIG, 0, 0, 0);
     }
 
     event EscrowUpdated(address newEscrow);
