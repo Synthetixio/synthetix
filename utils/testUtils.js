@@ -20,6 +20,15 @@ const send = payload => {
 const mineBlock = () => send({ method: 'evm_mine' });
 
 /**
+ *  Gets the time of the last block.
+ */
+const currentTime = async () => {
+	const { timestamp } = await web3.eth.getBlock('latest');
+
+	return timestamp;
+};
+
+/**
  *  Increases the time in the EVM.
  *  @param seconds Number of seconds to increase the time by
  */
@@ -114,4 +123,5 @@ module.exports = {
 	restoreSnapshot,
 	assertEventEqual,
 	getEthBalance,
+	currentTime,
 };

@@ -11,11 +11,12 @@ const TokenState = artifacts.require('./TokenState.sol');
 
 // Update values before deployment
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
-const ethUSD = '274411589120931162910';
-const havUSD = '116551110814936098';
+const ethUSD = web3.utils.toWei('500');
+const havUSD = web3.utils.toWei('.10');
 
-const totalSupplyNomin = '1241510914838889387806256';
-const totalSupplyHavven = '100000000000000000000000000';
+const totalSupplyNomin = web3.utils.toWei('0'); //web3.utils.toWei('1241510914838889387806256');
+const totalSupplyHavven = web3.utils.toWei('100000000');
+
 
 module.exports = async function(deployer, network, accounts) {
 	const [deployerAccount, owner, oracle, fundsWallet] = accounts;
@@ -127,22 +128,6 @@ module.exports = async function(deployer, network, accounts) {
 	// Connect Escrow
 	// ----------------------
 	await havven.setEscrow(havvenEscrow.address, { from: owner });
-
-	// --------------------
-	// Havven System State settings
-	// --------------------
-
-	let now = Math.floor(Date.now() / 1000);
-	const usdEth = '500957049546843687330'; //$500
-	const usdHav = '157474638738934625'; 	//.15c
-	console.log('Set Havven contract with usd HAV price');
-	await havven.updatePrice(usdHav, now, {
-		from: oracle,
-	});
-	console.log('Set IssuanceController contract with price data');
-	await issuanceController.updatePrices(usdEth, usdHav, now, {
-		from: oracle,
-	});
 
 	// ----------------------
 	// Mint nUSD

@@ -265,44 +265,73 @@ contract('Issuance Controller', async function(accounts) {
 		}
 	});
 
-	it('should not exchange ether for nomins if the price is stale', async function() {
-		const issuanceController = await IssuanceController.deployed();
-		const nomin = await Nomin.deployed();
-		const fundsWalletFromContract = await issuanceController.fundsWallet();
-		const fundsWalletEthBalanceBefore = await getEthBalance(fundsWallet);
+	describe('should not exchange ether for nomins', async function() {
+		let issuanceController;
+		let nomin;
+		let fundsWalletFromContract;
+		let fundsWalletEthBalanceBefore;
+		let nominsBalance;
+		let feePoolBalanceBefore;
+		let issuanceControllerNominBalanceBefore;
 
-		const priceStalePeriod = await issuanceController.priceStalePeriod();
-		console.log('priceStalePeriod = ', priceStalePeriod.toString());
-		await fastForward(priceStalePeriod);
+		beforeEach(async function() {
+			issuanceController = await IssuanceController.deployed();
+			nomin = await Nomin.deployed();
+			fundsWalletFromContract = await issuanceController.fundsWallet();
+			fundsWalletEthBalanceBefore = await getEthBalance(fundsWallet);	
+			// Set up the issuanceController so it contains some nomins to convert Ether for
+			nominsBalance = await nomin.balanceOf(owner, { from: owner });
+			await nomin.transfer(issuanceController.address, nominsBalance.toString(), { from: owner });
+			feePoolBalanceBefore = await nomin.feePool();
+			issuanceControllerNominBalanceBefore = await nomin.balanceOf(issuanceController.address);
+		});
+		
+		it('if the price is stale', async function() {
+			const priceStalePeriod = await issuanceController.priceStalePeriod();
+			await fastForward(priceStalePeriod);
+			// Attempt exchange
+			try {
+				await issuanceController.exchangeEtherForNomins({
+					from: address1,
+					amount: 10
+				});
+			} catch (error) {
+				assert.include(error.message, 'revert');
+			}
+			const issuanceControllerNominBalanceCurrent = await nomin.balanceOf(issuanceController.address);
+			assert.equal(issuanceControllerNominBalanceCurrent.toString(), issuanceControllerNominBalanceBefore.toString());
+			const exchangerNominBalance = await nomin.balanceOf(address1);
+			assert.equal(exchangerNominBalance.toNumber(), 0);
+			const feePoolBalanceCurrent = await nomin.feePool();
+			assert.equal(feePoolBalanceCurrent.toString(), feePoolBalanceBefore.toString());
+			assert.equal(fundsWalletFromContract, fundsWallet);
+			const fundsWalletEthBalanceCurrent = await getEthBalance(fundsWallet);
+			assert.equal(fundsWalletEthBalanceCurrent.toString(), fundsWalletEthBalanceBefore.toString());
+		});
 
-		// Set up the issuanceController so it contains some nomins to convert Ether for
-		const nominsBalance = await nomin.balanceOf(owner, { from: owner });
-		await nomin.transfer(issuanceController.address, nominsBalance.toString(), { from: owner });
-		const ownerNominBalance = await nomin.balanceOf(owner);
-		assert.equal(ownerNominBalance.toNumber(), 0);
-		const feePoolBalanceBefore = await nomin.feePool();
-		const issuanceControllerNominBalanceBefore = await nomin.balanceOf(issuanceController.address);
-		// Attempt exchange
-		try {
-			await issuanceController.exchangeEtherForNomins({
-				from: address1,
-				amount: 10
-			});
-		} catch (error) {
-			assert.include(error.message, 'revert');
-		}
-		const issuanceControllerNominBalanceCurrent = await nomin.balanceOf(issuanceController.address);
-		assert.equal(issuanceControllerNominBalanceCurrent.toString(), issuanceControllerNominBalanceBefore.toString());
-		const exchangerNominBalance = await nomin.balanceOf(address1);
-		assert.equal(exchangerNominBalance.toNumber(), 0);
-		const feePoolBalanceCurrent = await nomin.feePool();
-		assert.equal(feePoolBalanceCurrent.toString(), feePoolBalanceBefore.toString());
-		assert.equal(fundsWalletFromContract, fundsWallet);
-		const fundsWalletEthBalanceCurrent = await getEthBalance(fundsWallet);
-		assert.equal(fundsWalletEthBalanceCurrent.toString(), fundsWalletEthBalanceBefore.toString());
+		it('if the contract is paused', async function() {
+			// Pause Contract
+			const pausedContract = await issuanceController.setPaused(true, { from: owner });
+			// Attempt exchange
+			try {
+				await issuanceController.exchangeEtherForNomins({
+					from: address1,
+					amount: 10
+				});
+			} catch (error) {
+				assert.include(error.message, 'revert');
+			}
+			const issuanceControllerNominBalanceCurrent = await nomin.balanceOf(issuanceController.address);
+			assert.equal(issuanceControllerNominBalanceCurrent.toString(), issuanceControllerNominBalanceBefore.toString());
+			const exchangerNominBalance = await nomin.balanceOf(address1);
+			assert.equal(exchangerNominBalance.toNumber(), 0);
+			const feePoolBalanceCurrent = await nomin.feePool();
+			assert.equal(feePoolBalanceCurrent.toString(), feePoolBalanceBefore.toString());
+			assert.equal(fundsWalletFromContract, fundsWallet);
+			const fundsWalletEthBalanceCurrent = await getEthBalance(fundsWallet);
+			assert.equal(fundsWalletEthBalanceCurrent.toString(), fundsWalletEthBalanceBefore.toString());
+		});
 	});
-
-	it('should not exchange ether for nomins the contract is paused');
 
 	it('Ensure user can exchange ETH for Nomins where the amount exactly matches one deposit (and that the queue is correctly updated)');	
 
