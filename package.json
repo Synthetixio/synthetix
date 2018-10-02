@@ -33,6 +33,7 @@
 		"test": "test"
 	},
 	"devDependencies": {
+		"bip39": "^2.5.0",
 		"concurrently": "^4.0.1",
 		"eslint": "^5.5.0",
 		"eslint-config-prettier": "^3.0.1",
@@ -45,6 +46,7 @@
 		"eslint-plugin-standard": "^4.0.0",
 		"ganache-cli": "^6.1.8",
 		"prettier": "^1.14.2",
+		"seedrandom": "^2.4.4",
 		"solidity-coverage": "^0.5.11",
 		"solium": "^1.1.8",
 		"table": "^5.0.2",
