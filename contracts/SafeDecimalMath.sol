@@ -61,12 +61,12 @@ contract SafeDecimalMath {
         pure
         returns (uint)
     {
-        require(x + y >= y, "Safe add failed");
+        require(x + y >= y, "Addition would cause overflow");
         return x + y;
     }
 
     /**
-     * @return True iff subtracting y from x will not overflow in the negative direction.
+     * @return True if subtracting y from x will not overflow in the negative direction.
      */
     function subIsSafe(uint x, uint y)
         internal
@@ -84,12 +84,12 @@ contract SafeDecimalMath {
         pure
         returns (uint)
     {
-        require(y <= x, "Safe sub failed");
+        require(y <= x, "Subtraction would cause overflow");
         return x - y;
     }
 
     /**
-     * @return True iff multiplying x and y would not overflow.
+     * @return True if multiplying x and y would not overflow.
      */
     function mulIsSafe(uint x, uint y)
         internal
