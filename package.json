@@ -47,6 +47,7 @@
 		"ganache-cli": "^6.1.8",
 		"prettier": "^1.14.2",
 		"seedrandom": "^2.4.4",
+		"solc": "^0.4.25",
 		"solidity-coverage": "^0.5.11",
 		"solium": "^1.1.8",
 		"table": "^5.0.2",

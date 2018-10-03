@@ -23,7 +23,7 @@ module.exports = {
 	},
 	compilers: {
 		solc: {
-			version: '0.4.25',
+			version: './node_modules/solc', // Version is managed in package.json as an NPM dependency.
 			settings: {
 				optimizer: {
 					enabled: true,
