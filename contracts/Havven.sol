@@ -697,6 +697,11 @@ contract Havven is ExternStateToken {
             debtPercentage = safeDiv_dec(safeAdd(hdrValue, existingDebt), newTotalDebtIssued);
         }
 
+        // Are they a new issuer? If so, record them.
+        if (issuanceData[messageSender].initialDebtOwnership == 0) {
+            totalIssuerCount = safeAdd(totalIssuerCount, 1);
+        }
+
         // Save the debt entry parameters
         issuanceData[messageSender].initialDebtOwnership = debtPercentage;
         issuanceData[messageSender].debtEntryIndex = debtLedger.length;
@@ -788,13 +793,18 @@ contract Havven is ExternStateToken {
     {
         // How much debt are they trying to remove in HDRs?
         uint debtToRemove = effectiveValue(currencyKey, amount, "HDR");
+
         // How much debt do they have?
         uint existingDebt = debtBalanceOf(messageSender, "HDR"); 
 
-        require(debtToRemove <= existingDebt, "Trying to forgive more debt than exists");
+        // What percentage of the total debt are they trying to remove?
+        uint totalDebtIssued = totalIssuedNomins("HDR");
+        uint debtPercentage = safeDiv_dec(debtToRemove, totalDebtIssued);
 
-        // What's the delta for everyone else?
-        uint delta = safeDiv_dec(UNIT, safeDiv_dec(debtToRemove, totalIssuedNomins("HDR")));
+        // And what effect does this percentage have on the global debt holding of other issuers?
+        // The delta specifically needs to not take into account any existing debt as it's already
+        // accounted for in the delta from when they issued previously.
+        uint delta = safeAdd(UNIT, debtPercentage);
 
         // Are they exiting the system, or are they just decreasing their debt position?
         if (debtToRemove == existingDebt) {
@@ -802,12 +812,17 @@ contract Havven is ExternStateToken {
 
             totalIssuerCount = safeSub(totalIssuerCount, 1);
         } else {
-            issuanceData[messageSender].initialDebtOwnership = safeSub(issuanceData[messageSender].initialDebtOwnership, delta);
+            // What percentage of the debt will they be left with?
+            uint newDebt = safeSub(existingDebt, debtToRemove);
+            uint newTotalDebtIssued = safeSub(totalDebtIssued, debtToRemove);
+            uint newDebtPercentage = safeDiv_dec(newDebt, newTotalDebtIssued);
+
+            issuanceData[messageSender].initialDebtOwnership = newDebtPercentage;
             issuanceData[messageSender].debtEntryIndex = debtLedger.length;
         }
 
         // Update our cumulative ledger
-        debtLedger.push(delta);
+        debtLedger.push(safeMul_dec(debtLedger[debtLedger.length - 1], delta));
     }
 
     // /*

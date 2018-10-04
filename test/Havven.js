@@ -2,19 +2,10 @@ const ExchangeRates = artifacts.require('ExchangeRates');
 const Havven = artifacts.require('Havven');
 const Nomin = artifacts.require('Nomin');
 
-const { currentTime, fastForward, fromUnit, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
-
-const logIssuanceData = issuanceData => {
-	const { initialDebtOwnership, debtEntryIndex } = issuanceData;
-
-	console.log('--------------------------');
-	console.log('Initial Debt Ownership', fromUnit(initialDebtOwnership));
-	console.log('Debt Entry Index', debtEntryIndex.toString());
-	console.log('--------------------------');
-};
+const { currentTime, fastForward, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 
 contract.only('Havven', async function(accounts) {
-	const [nUSD, nAUD, nEUR, HAV, HDR] = ['nUSD', 'nAUD', 'nEUR', 'HAV', 'HDR'].map(
+	const [nUSD, nAUD, nEUR, HAV, HDR, nXYZ] = ['nUSD', 'nAUD', 'nEUR', 'HAV', 'HDR', 'nXYZ'].map(
 		web3.utils.asciiToHex
 	);
 
@@ -706,10 +697,7 @@ contract.only('Havven', async function(accounts) {
 
 		// account1 should be able to issue nUSD and nAUD
 		await havven.issueNomins(nUSD, toUnit('10'), { from: account1 });
-		logIssuanceData(await havven.issuanceData(account1));
-
 		await havven.issueNomins(nAUD, toUnit('20'), { from: account1 });
-		logIssuanceData(await havven.issuanceData(account1));
 
 		// There should be 20 nUSD of value in the system
 		assert.bnEqual(await havven.totalIssuedNomins(nUSD), toUnit('20'));
@@ -743,48 +731,17 @@ contract.only('Havven', async function(accounts) {
 
 		// Issue
 		await havven.issueNomins(nUSD, toUnit('10'), { from: account1 });
-
-		console.log('-----------------------');
-		console.log('Account1 Debt', fromUnit(await havven.debtBalanceOf(account1, nUSD)));
-		console.log('Account2 Debt', fromUnit(await havven.debtBalanceOf(account2, nUSD)));
-		let debtLedger = [];
-		for (let i = 0; i < 1; i++) {
-			debtLedger.push(fromUnit(await havven.debtLedger(i)));
-		}
-		console.log(`debtLedger[${debtLedger.join(', ')}]`);
-
 		await havven.issueNomins(nUSD, toUnit('20'), { from: account2 });
 
-		console.log('-----------------------');
-		console.log('Account1 Debt', fromUnit(await havven.debtBalanceOf(account1, nUSD)));
-		console.log('Account2 Debt', fromUnit(await havven.debtBalanceOf(account2, nUSD)));
-		debtLedger = [];
-		for (let i = 0; i < 2; i++) {
-			debtLedger.push(fromUnit(await havven.debtLedger(i)));
-		}
-		console.log(`debtLedger[${debtLedger.join(', ')}]`);
-
-		await havven.issueNomins(nUSD, toUnit('10'), { from: account1 });
-
-		console.log('-----------------------');
-		console.log('Account1 Debt', fromUnit(await havven.debtBalanceOf(account1, nUSD)));
-		console.log('Account2 Debt', fromUnit(await havven.debtBalanceOf(account2, nUSD)));
-		debtLedger = [];
-		for (let i = 0; i < 3; i++) {
-			debtLedger.push(fromUnit(await havven.debtLedger(i)));
-		}
-		console.log(`debtLedger[${debtLedger.join(', ')}]`);
-
-		// There should be 40 nUSD of value in the system
-		assert.bnEqual(await havven.totalIssuedNomins(nUSD), toUnit('40'));
+		// There should be 30nUSD of value in the system
+		assert.bnEqual(await havven.totalIssuedNomins(nUSD), toUnit('30'));
 
 		// And the debt should be split 50/50.
-		assert.bnEqual(await havven.debtBalanceOf(account1, nUSD), toUnit('20'));
-
 		// But there's a small rounding error.
 		// This is ok, as when the last person exits the system, their debt percentage is always 100% so
 		// these rounding errors don't cause the system to be out of balance.
-		assert.bnEqual(await havven.debtBalanceOf(account2, nUSD), toUnit('19.99999999999999992'));
+		assert.bnEqual(await havven.debtBalanceOf(account1, nUSD), toUnit('10.00000000000000002'));
+		assert.bnEqual(await havven.debtBalanceOf(account2, nUSD), toUnit('19.99999999999999998'));
 	});
 
 	it('should allow multi-issuance in one flavour', async function() {
@@ -816,26 +773,248 @@ contract.only('Havven', async function(accounts) {
 		assert.bnEqual(await havven.totalIssuedNomins(nUSD), toUnit('40'));
 
 		// And the debt should be split 50/50.
-		assert.bnEqual(await havven.debtBalanceOf(account1, nUSD), toUnit('20'));
-
 		// But there's a small rounding error.
 		// This is ok, as when the last person exits the system, their debt percentage is always 100% so
 		// these rounding errors don't cause the system to be out of balance.
+		assert.bnEqual(await havven.debtBalanceOf(account1, nUSD), toUnit('20'));
 		assert.bnEqual(await havven.debtBalanceOf(account2, nUSD), toUnit('19.99999999999999992'));
 	});
 
-	it('should allow multiple issuers to issue nomins in multiple flavours', async function() {});
+	it('should allow multiple issuers to issue nomins in multiple flavours', async function() {
+		// Send a price update to guarantee we're not depending on values from outside this test.
+		const oracle = await exchangeRates.oracle();
+		const timestamp = await currentTime();
 
-	it('should allow a whitelisted issuer to issue max nomins in one flavour');
-	it('should allow a whitelisted issuer to issue max nomins via the standard issue call');
-	it('should disallow a non-whitelisted issuer from issuing nomins in a single flavour');
-	it('should disallow a whitelisted issuer from issuing nomins in a non-existant flavour');
-	it(
-		'should disallow a whitelisted issuer from issuing nomins beyond their remainingIssuableNomins'
-	);
+		await exchangeRates.updateRates(
+			[nUSD, nAUD, nEUR, HAV],
+			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			timestamp,
+			{ from: oracle }
+		);
 
-	it('should allow an issuer with outstanding debt to burn nomins and forgive debt');
+		// Give some HAV to account1 and account2
+		await havven.transfer(account1, toUnit('10000'), { from: owner });
+		await havven.transfer(account2, toUnit('10000'), { from: owner });
+
+		// Make accounts issuers
+		await havven.setIssuer(account1, true, { from: owner });
+		await havven.setIssuer(account2, true, { from: owner });
+
+		// Issue
+		await havven.issueNomins(nUSD, toUnit('10'), { from: account1 });
+		await havven.issueNomins(nAUD, toUnit('20'), { from: account2 });
+
+		// There should be 20 nUSD of value in the system
+		assert.bnEqual(await havven.totalIssuedNomins(nUSD), toUnit('20'));
+
+		// And the debt should be split 50/50.
+		// But there's a small rounding error.
+		// This is ok, as when the last person exits the system, their debt percentage is always 100% so
+		// these rounding errors don't cause the system to be out of balance.
+		assert.bnEqual(await havven.debtBalanceOf(account1, nUSD), toUnit('10'));
+		assert.bnEqual(await havven.debtBalanceOf(account2, nUSD), toUnit('10'));
+	});
+
+	it('should allow a whitelisted issuer to issue max nomins in one flavour', async function() {
+		// Send a price update to guarantee we're not depending on values from outside this test.
+		const oracle = await exchangeRates.oracle();
+		const timestamp = await currentTime();
+
+		await exchangeRates.updateRates(
+			[nUSD, nAUD, nEUR, HAV],
+			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			timestamp,
+			{ from: oracle }
+		);
+
+		// Give some HAV to account1
+		await havven.transfer(account1, toUnit('10000'), { from: owner });
+
+		// Make account an issuer
+		await havven.setIssuer(account1, true, { from: owner });
+
+		// Issue
+		await havven.issueMaxNomins(nUSD, { from: account1 });
+
+		// There should be 200 nUSD of value in the system
+		assert.bnEqual(await havven.totalIssuedNomins(nUSD), toUnit('200'));
+
+		// And account1 should own all of it.
+		assert.bnEqual(await havven.debtBalanceOf(account1, nUSD), toUnit('200'));
+	});
+
+	it('should allow a whitelisted issuer to issue max nomins via the standard issue call', async function() {
+		// Send a price update to guarantee we're not depending on values from outside this test.
+		const oracle = await exchangeRates.oracle();
+		const timestamp = await currentTime();
+
+		await exchangeRates.updateRates(
+			[nUSD, nAUD, nEUR, HAV],
+			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			timestamp,
+			{ from: oracle }
+		);
+
+		// Give some HAV to account1
+		await havven.transfer(account1, toUnit('10000'), { from: owner });
+
+		// Make account an issuer
+		await havven.setIssuer(account1, true, { from: owner });
+
+		// Determine maximum amount that can be issued.
+		const maxIssuable = await havven.maxIssuableNomins(account1, nUSD);
+
+		// Issue
+		await havven.issueNomins(nUSD, maxIssuable, { from: account1 });
+
+		// There should be 200 nUSD of value in the system
+		assert.bnEqual(await havven.totalIssuedNomins(nUSD), toUnit('200'));
+
+		// And account1 should own all of it.
+		assert.bnEqual(await havven.debtBalanceOf(account1, nUSD), toUnit('200'));
+	});
+
+	it('should report that a non-whitelisted user has zero maxIssuableNomins', async function() {
+		// Send a price update to guarantee we're not depending on values from outside this test.
+		const oracle = await exchangeRates.oracle();
+		const timestamp = await currentTime();
+
+		await exchangeRates.updateRates(
+			[nUSD, nAUD, nEUR, HAV],
+			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			timestamp,
+			{ from: oracle }
+		);
+
+		// Give some HAV to account1
+		await havven.transfer(account1, toUnit('10000'), { from: owner });
+
+		// They should have no issuable nomins.
+		assert.bnEqual(await havven.maxIssuableNomins(account1, nUSD), '0');
+
+		// Make account an issuer
+		await havven.setIssuer(account1, true, { from: owner });
+
+		// They should now be able to issue 200 nUSD
+		assert.bnEqual(await havven.maxIssuableNomins(account1, nUSD), toUnit('200'));
+	});
+
+	it('should disallow a non-whitelisted issuer from issuing nomins in a single flavour', async function() {
+		// Send a price update to guarantee we're not depending on values from outside this test.
+		const oracle = await exchangeRates.oracle();
+		const timestamp = await currentTime();
+
+		await exchangeRates.updateRates(
+			[nUSD, nAUD, nEUR, HAV],
+			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			timestamp,
+			{ from: oracle }
+		);
+
+		// Give some HAV to account1
+		await havven.transfer(account1, toUnit('10000'), { from: owner });
+
+		// They should not be able to issue because they aren't whitelisted.
+		await assert.revert(havven.issueNomins(nUSD, toUnit('10'), { from: account1 }));
+
+		// To just double check that that was the actual limitation that caused the revert, let's
+		// assert that they're able to issue after whitelisting.
+		await havven.setIssuer(account1, true, { from: owner });
+
+		// They should now be able to issue nUSD
+		await havven.issueNomins(nUSD, toUnit('10'), { from: account1 });
+	});
+
+	it('should disallow a whitelisted issuer from issuing nomins in a non-existant flavour', async function() {
+		// Send a price update to guarantee we're not depending on values from outside this test.
+		const oracle = await exchangeRates.oracle();
+		const timestamp = await currentTime();
+
+		await exchangeRates.updateRates(
+			[nUSD, nAUD, nEUR, HAV],
+			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			timestamp,
+			{ from: oracle }
+		);
+
+		// Give some HAV to account1
+		await havven.transfer(account1, toUnit('10000'), { from: owner });
+
+		// Set them as an issuer
+		await havven.setIssuer(account1, true, { from: owner });
+
+		// They should now be able to issue nUSD
+		await havven.issueNomins(nUSD, toUnit('10'), { from: account1 });
+
+		// But should not be able to issue nXYZ because it doesn't exist
+		await assert.revert(havven.issueNomins(nXYZ, toUnit('10')));
+	});
+
+	it('should disallow a whitelisted issuer from issuing nomins beyond their remainingIssuableNomins', async function() {
+		// Send a price update to guarantee we're not depending on values from outside this test.
+		const oracle = await exchangeRates.oracle();
+		const timestamp = await currentTime();
+
+		await exchangeRates.updateRates(
+			[nUSD, nAUD, nEUR, HAV],
+			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			timestamp,
+			{ from: oracle }
+		);
+
+		// Give some HAV to account1
+		await havven.transfer(account1, toUnit('10000'), { from: owner });
+
+		// Set them as an issuer
+		await havven.setIssuer(account1, true, { from: owner });
+
+		// They should now be able to issue nUSD
+		const issuableNomins = await havven.remainingIssuableNomins(account1, nUSD);
+		assert.bnEqual(issuableNomins, toUnit('200'));
+
+		// Issue that amount.
+		await havven.issueNomins(nUSD, issuableNomins, { from: account1 });
+
+		// They should now have 0 issuable nomins.
+		assert.bnEqual(await havven.remainingIssuableNomins(account1, nUSD), '0');
+
+		// And trying to issue the smallest possible unit of one should fail.
+		await assert.revert(havven.issueNomins(nUSD, '1', { from: account1 }));
+	});
+
+	it('should allow an issuer with outstanding debt to burn nomins and forgive debt', async function() {
+		// Send a price update to guarantee we're not depending on values from outside this test.
+		const oracle = await exchangeRates.oracle();
+		const timestamp = await currentTime();
+
+		await exchangeRates.updateRates(
+			[nUSD, nAUD, nEUR, HAV],
+			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			timestamp,
+			{ from: oracle }
+		);
+
+		// Give some HAV to account1
+		await havven.transfer(account1, toUnit('10000'), { from: owner });
+
+		// Make account an issuer
+		await havven.setIssuer(account1, true, { from: owner });
+
+		// Issue
+		await havven.issueMaxNomins(nUSD, { from: account1 });
+
+		// account1 should now have 200 nUSD of debt.
+		assert.bnEqual(await havven.debtBalanceOf(account1, nUSD), toUnit('200'));
+
+		// Burn 100 nUSD
+		await havven.burnNomins(nUSD, toUnit('100'), { from: account1 });
+
+		// account1 should now have 100 nUSD of debt.
+		assert.bnEqual(await havven.debtBalanceOf(account1, nUSD), toUnit('100'));
+	});
+
 	it('should disallow an issuer without outstanding debt from burning nomins');
+	it('should fail when trying to burn nomins that do not exist');
 
 	it('should correctly calculate debt in a multi-issuance scenario');
 	it('should correctly calculate debt in a multi-issuance multi-burn scenario');
