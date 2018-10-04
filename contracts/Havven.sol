@@ -144,16 +144,17 @@ contract Havven is ExternStateToken {
         // collateralisation ratio using a combination of their initial
         // debt and the slice of global debt delta which applies to them.
         uint initialDebtOwnership;
-        // This lets us know when the user entered the debt pool so we can
-        // calculate their exit price and collateralistion ratio
+        // This lets us know when (in relative terms) the user entered
+        // the debt pool so we can calculate their exit price and
+        // collateralistion ratio
         uint debtEntryIndex;
     }
 
-    // The total count of people that have outstanding issued nomins in any flavour
-    uint public totalIssuerCount;
-
     // Issued nomin balances for individual fee entitlements and exit price calculations
     mapping(address => IssuanceData) public issuanceData;
+
+    // The total count of people that have outstanding issued nomins in any flavour
+    uint public totalIssuerCount;
 
     // Controls whether a particular address can issue nomins or not
     mapping(address => bool) public isIssuer;
@@ -412,13 +413,19 @@ contract Havven is ExternStateToken {
         uint currencyRate = exchangeRates.rateForCurrency(currencyKey);
 
         for (uint i = 0; i < availableNomins.length; i++) {
+            // Ensure the rate isn't stale.
+            // TODO: Investigate gas cost optimisation of doing a single call with all keys in it vs
+            // individual calls like this.
+            require(!rateIsStale(availableNomins[i].currencyKey()), "Rate is stale");
+
             // What's the total issued value of that nomin in the destination currency?
             // Note: We're not using our effectiveValue function because we don't want to go get the
-            //       rate for the destination currency repeatedly from our exchange rates contract on
-            //       every iteration of the loop
-            uint nominValue = safeMul_dec(
+            //       rate for the destination currency and check if it's stale repeatedly on every
+            //       iteration of the loop
+            uint nominValue = safeDiv_dec(
                 safeMul_dec(availableNomins[i].totalSupply(), exchangeRates.rateForCurrency(availableNomins[i].currencyKey())), 
-                currencyRate);
+                currencyRate
+            );
 
             total = safeAdd(total, nominValue);
         }
@@ -667,15 +674,28 @@ contract Havven is ExternStateToken {
     {
         // What is the value of the requested debt in HDRs?
         uint hdrValue = effectiveValue(currencyKey, amount, "HDR");
-
-        // What is the value of all issued nomins of the system in HDR currently
+        
+        // What is the value of all issued nomins of the system (priced in HDRs)?
         uint totalDebtIssued = totalIssuedNomins("HDR");
 
-        // What is their debt percentage
-        uint debtPercentage = safeDiv_dec(hdrValue, totalDebtIssued);
+        // What will the new total be including the new value?
+        uint newTotalDebtIssued = safeAdd(hdrValue, totalDebtIssued);
+
+        // What is their percentage of the total debt?
+        uint debtPercentage = safeDiv_dec(hdrValue, newTotalDebtIssued);
 
         // And what effect does this percentage have on the global debt holding of other issuers?
+        // The delta specifically needs to not take into account any existing debt as it's already
+        // accounted for in the delta from when they issued previously.
         uint delta = safeSub(UNIT, debtPercentage);
+
+        // How much existing debt do they have?
+        uint existingDebt = debtBalanceOf(messageSender, "HDR");
+         
+        // And what does their debt ownership look like including this previous stake?
+        if (existingDebt > 0) {
+            debtPercentage = safeDiv_dec(safeAdd(hdrValue, existingDebt), newTotalDebtIssued);
+        }
 
         // Save the debt entry parameters
         issuanceData[messageSender].initialDebtOwnership = debtPercentage;
@@ -706,11 +726,11 @@ contract Havven is ExternStateToken {
         require(amount > 0, "Amount must be greater than zero");
         require(amount <= remainingIssuableNomins(messageSender, currencyKey), "Amount exceeds remaining issuable nomins");
 
+        // Keep track of the debt they're about to create
+        addToDebtRegister(currencyKey, amount);
+
         // Create their nomins
         nomins[currencyKey].issue(messageSender, amount);
-
-        // And keep track of the debt they've created
-        addToDebtRegister(currencyKey, amount);
     }
 
     /*
@@ -774,7 +794,7 @@ contract Havven is ExternStateToken {
         require(debtToRemove <= existingDebt, "Trying to forgive more debt than exists");
 
         // What's the delta for everyone else?
-        uint delta = safeDiv_dec(debtToRemove, totalIssuedNomins("HDR"));
+        uint delta = safeDiv_dec(UNIT, safeDiv_dec(debtToRemove, totalIssuedNomins("HDR")));
 
         // Are they exiting the system, or are they just decreasing their debt position?
         if (debtToRemove == existingDebt) {
@@ -832,7 +852,7 @@ contract Havven is ExternStateToken {
         uint currencyRate = exchangeRates.rateForCurrency(currencyKey);
 
         // What is the value of their HAV balance in the destination currency?
-        uint havvenBalanceInDestinationCurrency = safeMul_dec(safeMul_dec(totalOwnedHavvens, havRate), currencyRate);
+        uint havvenBalanceInDestinationCurrency = safeDiv_dec(safeMul_dec(totalOwnedHavvens, havRate), currencyRate);
 
         // They're allowed to issue up to issuanceRatio of that value
         return safeMul_dec(havvenBalanceInDestinationCurrency, issuanceRatio);
@@ -842,26 +862,29 @@ contract Havven is ExternStateToken {
         public
         view
         optionalProxy
-        rateNotStale(currencyKey)
+        // Don't need to check for stale rates here because totalIssuedNomins will do it for us
         returns (uint)
     {
         // What was their initial debt ownership?
-        uint initialDebtOwnership = issuanceData[messageSender].initialDebtOwnership;
-        uint debtEntryIndex = issuanceData[messageSender].debtEntryIndex;
+        uint initialDebtOwnership = issuanceData[issuer].initialDebtOwnership;
+        uint debtEntryIndex = issuanceData[issuer].debtEntryIndex;
 
         // If it's zero, they haven't issued, and they have no debt.
         if (initialDebtOwnership == 0) return 0;
 
         // Figure out the global debt percentage delta from when they entered the system.
-        uint debtDelta = safeSub(debtLedger[debtLedger.length - 1], debtLedger[debtEntryIndex]);
-
-        // Their effective debt ownership percentage is their inital + delta.
-        uint currentDebtOwnership = safeAdd(initialDebtOwnership, debtDelta);
+        uint currentDebtOwnership = safeMul_dec(
+            initialDebtOwnership, 
+            safeDiv_dec(
+                debtLedger[debtLedger.length - 1],
+                debtLedger[debtEntryIndex]
+            )
+        );
 
         // What's the total value of the system in their requested currency?
         uint totalSystemValue = totalIssuedNomins(currencyKey);
 
-        // Which means their debt balance is their portion of the total system value
+        // Their debt balance is their portion of the total system value.
         return safeMul_dec(totalSystemValue, currentDebtOwnership);
     }
 

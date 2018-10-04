@@ -88,6 +88,15 @@ const restoreSnapshot = async id => {
 };
 
 /**
+ *  Translates an amount to our cononical unit. We happen to use 10^18, which means we can
+ *  use the built in web3 method for convenience, but if unit ever changes in our contracts
+ *  we should be able to update the conversion factor here.
+ *  @param amount The amount you want to re-base to UNIT
+ */
+const toUnit = amount => web3.utils.toBN(web3.utils.toWei(amount, 'ether'));
+const fromUnit = amount => web3.utils.fromWei(amount, 'ether');
+
+/**
  *  Convenience method to assert that an event has not been published for that transaction
  *  @param actualEventOrTransaction The transaction receipt, or event as returned in the event logs from web3
  *  @param expectedEvent The event name you expect
@@ -181,7 +190,7 @@ const assertDeepEqual = (actual, expected) => {
  *  @param expectedAmount The amount you expect e.g. '1'
  *  @param expectedUnit The unit you expect e.g. 'gwei'. Defaults to 'ether'
  */
-const assertEtherEqual = (actualWei, expectedAmount, expectedUnit = 'ether') => {
+const assertUnitEqual = (actualWei, expectedAmount, expectedUnit = 'ether') => {
 	assertBNEqual(actualWei, web3.utils.toWei(expectedAmount, expectedUnit));
 };
 
@@ -191,7 +200,7 @@ const assertEtherEqual = (actualWei, expectedAmount, expectedUnit = 'ether') => 
  *  @param expectedAmount The amount you expect NOT to be equal to e.g. '1'
  *  @param expectedUnit The unit you expect e.g. 'gwei'. Defaults to 'ether'
  */
-const assertEtherNotEqual = (actualWei, expectedAmount, expectedUnit = 'ether') => {
+const assertUnitNotEqual = (actualWei, expectedAmount, expectedUnit = 'ether') => {
 	assertBNNotEqual(actualWei, web3.utils.toWei(expectedAmount, expectedUnit));
 };
 
@@ -218,11 +227,14 @@ module.exports = {
 	restoreSnapshot,
 	currentTime,
 
+	toUnit,
+	fromUnit,
+
 	assertEventEqual,
 	assertEventNotEqual,
 	assertBNEqual,
 	assertBNNotEqual,
-	assertEtherEqual,
-	assertEtherNotEqual,
+	assertUnitEqual,
+	assertUnitNotEqual,
 	assertRevert,
 };
