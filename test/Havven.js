@@ -11,17 +11,18 @@ contract.only('Havven', async function(accounts) {
 
 	const [deployerAccount, owner, account1, account2, account3, account4] = accounts;
 
-	let havven, exchangeRates;
+	let havven, exchangeRates, nUSDContract;
 
 	beforeEach(async function() {
 		// Save ourselves from having to await deployed() in every single test.
 		// We do this in a beforeEach instead of before to ensure we isolate
 		// contract interfaces to prevent test bleed.
-		havven = await Havven.deployed();
 		exchangeRates = await ExchangeRates.deployed();
 
-		// Send a price update to guarantee we're not stale.
+		havven = await Havven.deployed();
+		nUSDContract = await Nomin.at(await havven.nomins(nUSD));
 
+		// Send a price update to guarantee we're not stale.
 		const oracle = await exchangeRates.oracle();
 		const { timestamp } = await web3.eth.getBlock('latest');
 
@@ -149,16 +150,19 @@ contract.only('Havven', async function(accounts) {
 	it('should disallow removing a Nomin contract when it has an issued balance', async function() {
 		// Note: This test depends on state in the migration script, that there are hooked up nomins
 		// without balances
-		const nUSDContract = await havven.nomins(nUSD);
+		const nUSDContractAddress = await havven.nomins(nUSD);
 
 		// Assert that we can remove the nomin and add it back in before we do anything.
 		let transaction = await havven.removeNomin(nUSD, { from: owner });
 		assert.eventEqual(transaction, 'NominRemoved', {
 			currencyKey: nUSD,
-			removedNomin: nUSDContract,
+			removedNomin: nUSDContractAddress,
 		});
-		transaction = await havven.addNomin(nUSDContract, { from: owner });
-		assert.eventEqual(transaction, 'NominAdded', { currencyKey: nUSD, newNomin: nUSDContract });
+		transaction = await havven.addNomin(nUSDContractAddress, { from: owner });
+		assert.eventEqual(transaction, 'NominAdded', {
+			currencyKey: nUSD,
+			newNomin: nUSDContractAddress,
+		});
 
 		// Issue one nUSD
 		await havven.issueNomins(nUSD, toUnit('1'), { from: owner });
@@ -1013,8 +1017,95 @@ contract.only('Havven', async function(accounts) {
 		assert.bnEqual(await havven.debtBalanceOf(account1, nUSD), toUnit('100'));
 	});
 
-	it('should disallow an issuer without outstanding debt from burning nomins');
-	it('should fail when trying to burn nomins that do not exist');
+	it('should disallow an issuer without outstanding debt from burning nomins', async function() {
+		// Send a price update to guarantee we're not depending on values from outside this test.
+		const oracle = await exchangeRates.oracle();
+		const timestamp = await currentTime();
+
+		await exchangeRates.updateRates(
+			[nUSD, nAUD, nEUR, HAV],
+			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			timestamp,
+			{ from: oracle }
+		);
+
+		// Give some HAV to account1
+		await havven.transfer(account1, toUnit('10000'), { from: owner });
+
+		// Make account an issuer
+		await havven.setIssuer(account1, true, { from: owner });
+
+		// Issue
+		await havven.issueMaxNomins(nUSD, { from: account1 });
+
+		// account2 should not have anything and can't burn.
+		await assert.revert(havven.burnNomins(nUSD, toUnit('10'), { from: account2 }));
+
+		// And even when we give account2 nomins, it should not be able to burn.
+		await nUSDContract.transfer(account2, toUnit('100'), { from: account1 });
+		await assert.revert(havven.burnNomins(nUSD, toUnit('10'), { from: account2 }));
+	});
+
+	it('should fail when trying to burn nomins that do not exist', async function() {
+		// Send a price update to guarantee we're not depending on values from outside this test.
+		const oracle = await exchangeRates.oracle();
+		const timestamp = await currentTime();
+
+		await exchangeRates.updateRates(
+			[nUSD, nAUD, nEUR, HAV],
+			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			timestamp,
+			{ from: oracle }
+		);
+
+		// Give some HAV to account1
+		await havven.transfer(account1, toUnit('10000'), { from: owner });
+
+		// Make account an issuer
+		await havven.setIssuer(account1, true, { from: owner });
+
+		// Issue
+		await havven.issueMaxNomins(nUSD, { from: account1 });
+
+		// Transfer all newly issued nomins to account2
+		await nUSDContract.transfer(account2, toUnit('200'), { from: account1 });
+
+		// Burning any amount of nUSD from account1 should fail
+		await assert.revert(havven.burnNomins(nUSD, '1', { from: account1 }));
+	});
+
+	it("should only burn up to a user's actual debt level", async function() {
+		// Send a price update to guarantee we're not depending on values from outside this test.
+		const oracle = await exchangeRates.oracle();
+		const timestamp = await currentTime();
+
+		await exchangeRates.updateRates(
+			[nUSD, nAUD, nEUR, HAV],
+			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			timestamp,
+			{ from: oracle }
+		);
+
+		// Give some HAV to account1
+		await havven.transfer(account1, toUnit('10000'), { from: owner });
+		await havven.transfer(account2, toUnit('10000'), { from: owner });
+
+		// Make account an issuer
+		await havven.setIssuer(account1, true, { from: owner });
+		await havven.setIssuer(account2, true, { from: owner });
+
+		// Issue
+		await havven.issueNomins(nUSD, toUnit('10'), { from: account1 });
+		await havven.issueNomins(nUSD, toUnit('200'), { from: account2 });
+
+		// Transfer all of account2's nomins to account1
+		await nUSDContract.transfer(account1, toUnit('200'), { from: account2 });
+
+		// Then try to burn them all. Only 10 nomins (and fees) should be gone, but there is a slight rounding error on the calculation.
+		await havven.burnNomins(nUSD, await nUSDContract.balanceOf(account1), { from: account1 });
+
+		assert.bnEqual(await nUSDContract.balanceOf(account1), toUnit('199.700449326010983324'));
+	});
 
 	it('should correctly calculate debt in a multi-issuance scenario');
 	it('should correctly calculate debt in a multi-issuance multi-burn scenario');
