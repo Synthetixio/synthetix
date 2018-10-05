@@ -80,6 +80,9 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
 
         oracle = _oracle;
 
+        // The nUSD rate is always 1 and is never stale.
+        rates["nUSD"] = UNIT;
+
         // These are the currencies that make up the HDR basket.
         // These are hard coded because:
         //  - This way users can depend on the calculation and know it won't change for this deployment of the contract.
@@ -257,7 +260,7 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
         view
         returns (uint)
     {
-        return rates[currencyKey];
+        return lastRateUpdateTimes[currencyKey];
     }
 
     /**
@@ -285,6 +288,9 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
         view
         returns (bool)
     {
+        // nUSD is a special case and is never stale.
+        if (currencyKey == "nUSD") return false;
+
         return safeAdd(lastRateUpdateTimes[currencyKey], rateStalePeriod) < now;
     }
 
@@ -300,7 +306,8 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
         uint256 i = 0;
         
         while (i < currencyKeys.length) {
-            if (safeAdd(lastRateUpdateTimes[currencyKeys[i]], rateStalePeriod) < now) {
+            // nUSD is a special case and is never false
+            if (currencyKeys[i] != "nUSD" && safeAdd(lastRateUpdateTimes[currencyKeys[i]], rateStalePeriod) < now) {
                 return true;
             }
             i += 1;
