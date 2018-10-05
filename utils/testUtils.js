@@ -154,6 +154,20 @@ const assertBNNotEqual = (actualBN, expectedBN) => {
 };
 
 /**
+ *  Convenience method to assert that two BN.js instances are within 100 units of each other.
+ *  @param actualBN The BN.js instance you received
+ *  @param expectedBN The BN.js amount you expected to receive, allowing a varience of +/- 100 units
+ */
+const assertBNClose = (actualBN, expectedBN) => {
+	const actual = BN.isBN(actualBN) ? actualBN : new BN(actualBN);
+	const expected = BN.isBN(expectedBN) ? expectedBN : new BN(expectedBN);
+	const variance = new BN('100');
+
+	assert.ok(actual.gte(expected.sub(variance)), 'Number is too small to be close');
+	assert.ok(actual.lte(expected.add(variance)), 'Number is too large to be close');
+};
+
+/**
  *  Convenience method to assert that two objects or arrays which contain nested BN.js instances are equal.
  *  @param actual What you received
  *  @param expected The shape you expected
@@ -234,6 +248,7 @@ module.exports = {
 	assertEventNotEqual,
 	assertBNEqual,
 	assertBNNotEqual,
+	assertBNClose,
 	assertUnitEqual,
 	assertUnitNotEqual,
 	assertRevert,
