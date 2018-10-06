@@ -2,7 +2,16 @@ const ExchangeRates = artifacts.require('ExchangeRates');
 const Havven = artifacts.require('Havven');
 const Nomin = artifacts.require('Nomin');
 
-const { currentTime, fastForward, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
+const {
+	assertBNClose,
+	currentTime,
+	fastForward,
+	multiplyDecimal,
+	divideDecimal,
+	fromUnit,
+	toUnit,
+	ZERO_ADDRESS,
+} = require('../utils/testUtils');
 
 contract.only('Havven', async function(accounts) {
 	const [nUSD, nAUD, nEUR, HAV, HDR, nXYZ] = ['nUSD', 'nAUD', 'nEUR', 'HAV', 'HDR', 'nXYZ'].map(
@@ -24,7 +33,7 @@ contract.only('Havven', async function(accounts) {
 
 		// Send a price update to guarantee we're not stale.
 		const oracle = await exchangeRates.oracle();
-		const { timestamp } = await web3.eth.getBlock('latest');
+		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
 			[nUSD, nAUD, nEUR, HAV],
@@ -145,6 +154,8 @@ contract.only('Havven', async function(accounts) {
 		// Assert that we have one less nomin, and that the specific currency key is gone.
 		assert.bnEqual(await havven.availableNominCount(), nominCount.sub(web3.utils.toBN(1)));
 		assert.equal(await havven.nomins(currencyKey), ZERO_ADDRESS);
+
+		// TODO: Check that an event was successfully fired ?
 	});
 
 	it('should disallow removing a Nomin contract when it has an issued balance', async function() {
@@ -309,7 +320,7 @@ contract.only('Havven', async function(accounts) {
 		);
 	});
 
-	it('should allow the owner add someone as a whitelisted issuer', async function() {
+	it('should allow the owner to add someone as a whitelisted issuer', async function() {
 		assert.equal(await havven.isIssuer(account1), false);
 
 		const transaction = await havven.setIssuer(account1, true, { from: owner });
@@ -376,6 +387,7 @@ contract.only('Havven', async function(accounts) {
 
 		// But trying to convert from HAV to nUSD should fail
 		await assert.revert(havven.effectiveValue(HAV, toUnit('10'), nUSD));
+		await assert.revert(havven.effectiveValue(nUSD, toUnit('10'), HAV));
 	});
 
 	it('should revert when relying on a non-existant exchange rate in effectiveValue()', async function() {
@@ -1107,18 +1119,224 @@ contract.only('Havven', async function(accounts) {
 		assert.bnEqual(await nUSDContract.balanceOf(account1), toUnit('199.700449326010983324'));
 	});
 
-	it('should correctly calculate debt in a multi-issuance scenario');
-	it('should correctly calculate debt in a multi-issuance multi-burn scenario');
+	it.only('should correctly calculate debt in a multi-issuance scenario', async function() {
+		// Give some HAV to account1
+		await havven.transfer(account1, toUnit('200000'), { from: owner });
+		await havven.transfer(account2, toUnit('10000'), { from: owner });
 
-	it("should correctly calculate a user's maximum issuable nomins without prior issuance");
-	it("should correctly calculate a user's maximum issuable nomins with prior issuance");
-	it('should error when calculating maximum issuance when the HAV rate is stale');
-	it('should error when calculating maximum issuance when the currency rate is stale');
-	it('should always return zero maximum issuance if a user is not a whitelisted issuer');
+		// Make accounts issuers
+		await havven.setIssuer(account1, true, { from: owner });
+		await havven.setIssuer(account2, true, { from: owner });
 
-	it("should correctly calculate a user's debt balance without prior issuance");
-	it("should correctly calculate a user's debt balance with prior issuance");
+		// Issue
+		const issuedNominsPt1 = toUnit('2000');
+		const issuedNominsPt2 = toUnit('10');
+		await havven.issueNomins(nUSD, issuedNominsPt1, { from: account1 });
+		await havven.issueNomins(nUSD, issuedNominsPt2, { from: account1 });
+		await havven.issueNomins(nUSD, toUnit('200'), { from: account2 });
 
-	it("should correctly calculate a user's remaining issuable nomins without prior issuance");
-	it("should correctly calculate a user's remaining issuable nomins with prior issuance");
+		const debt = await havven.debtBalanceOf(account1, web3.utils.asciiToHex('nUSD'));
+
+		// TODO: Check with Kevin how this is supposed to work
+		assertBNClose(debt, issuedNominsPt1.add(issuedNominsPt2));
+	});
+
+	it.only('should correctly calculate debt in a multi-issuance multi-burn scenario', async function() {
+		// Give some HAV to account1
+		await havven.transfer(account1, toUnit('500000'), { from: owner });
+		await havven.transfer(account2, toUnit('14000'), { from: owner });
+
+		// Make accounts issuers
+		await havven.setIssuer(account1, true, { from: owner });
+		await havven.setIssuer(account2, true, { from: owner });
+
+		// Issue
+		const issuedNominsPt1 = toUnit('2000');
+		const burntNominsPt1 = toUnit('1500');
+		const issuedNominsPt2 = toUnit('1600');
+		const burntNominsPt2 = toUnit('500');
+
+		await havven.issueNomins(nUSD, issuedNominsPt1, { from: account1 });
+		await havven.burnNomins(nUSD, burntNominsPt1, { from: account1 });
+		await havven.issueNomins(nUSD, issuedNominsPt2, { from: account1 });
+
+		// const maxIssuableNomins = await havven.maxIssuableNomins(account2, nUSD);
+		// console.log('##### maxIssuableNomins: ', fromUnit(maxIssuableNomins).toString());
+
+		await havven.issueNomins(nUSD, toUnit('200'), { from: account2 });
+		await havven.issueNomins(nUSD, toUnit('51'), { from: account2 });
+		await havven.burnNomins(nUSD, burntNominsPt2, { from: account1 });
+
+		const debt = await havven.debtBalanceOf(account1, web3.utils.asciiToHex('nUSD'));
+		const expectedDebt = issuedNominsPt1
+			.add(issuedNominsPt2)
+			.sub(burntNominsPt1)
+			.sub(burntNominsPt2);
+
+		console.log('##### debt: ', debt.toString());
+		console.log('##### expectedDebt: ', expectedDebt.toString());
+
+		// TODO: Check with Kevin how this is supposed to work
+		assertBNClose(debt, expectedDebt, '10000');
+	});
+
+	it("should correctly calculate a user's maximum issuable nomins without prior issuance", async function() {
+		const rate = await exchangeRates.rateForCurrency(web3.utils.asciiToHex('HAV'));
+		const issuedHavvens = web3.utils.toBN('200000');
+		await havven.transfer(account1, toUnit(issuedHavvens), { from: owner });
+		await havven.setIssuer(account1, true, { from: owner });
+		const issuanceRatio = await havven.issuanceRatio.call();
+
+		const expectedIssuableNomins = multiplyDecimal(
+			toUnit(issuedHavvens),
+			multiplyDecimal(rate, issuanceRatio)
+		);
+		const maxIssuableNomins = await havven.maxIssuableNomins(account1, nUSD);
+
+		assert.bnEqual(expectedIssuableNomins, maxIssuableNomins);
+	});
+
+	it("should correctly calculate a user's maximum issuable nomins without any havens", async function() {
+		const maxIssuableNomins = await havven.maxIssuableNomins(account1, nEUR);
+		assert.bnEqual(0, maxIssuableNomins);
+	});
+
+	it("should correctly calculate a user's maximum issuable nomins with prior issuance", async function() {
+		const hav2usdRate = await exchangeRates.rateForCurrency(HAV);
+		const aud2usdRate = await exchangeRates.rateForCurrency(nAUD);
+		const hav2audRate = divideDecimal(hav2usdRate, aud2usdRate);
+
+		const issuedHavvens = web3.utils.toBN('320001');
+		await havven.transfer(account1, toUnit(issuedHavvens), { from: owner });
+		await havven.setIssuer(account1, true, { from: owner });
+
+		const issuanceRatio = await havven.issuanceRatio.call();
+		const nAUDIssued = web3.utils.toBN('1234');
+		await havven.issueNomins(nAUD, toUnit(nAUDIssued), { from: account1 });
+
+		const expectedIssuableNomins = multiplyDecimal(
+			toUnit(issuedHavvens),
+			multiplyDecimal(hav2audRate, issuanceRatio)
+		);
+
+		const maxIssuableNomins = await havven.maxIssuableNomins(account1, nAUD);
+		assert.bnEqual(expectedIssuableNomins, maxIssuableNomins);
+	});
+
+	it('should error when calculating maximum issuance when the HAV rate is stale', async function() {
+		// Add stale period to the time to ensure we go stale.
+		await fastForward(await exchangeRates.rateStalePeriod());
+		const oracle = await exchangeRates.oracle();
+		const timestamp = await currentTime();
+
+		await exchangeRates.updateRates(
+			[nUSD, nAUD, nEUR],
+			['1', '0.5', '1.25'].map(toUnit),
+			timestamp,
+			{ from: oracle }
+		);
+
+		// assert.revert(havven.maxIssuableNomins(account1, nAUD));
+
+		//
+		// ????? What the heck is going on here!?
+		// Why doesn't assertRevert work?
+
+		let errorCaught = false;
+		try {
+			await havven.maxIssuableNomins(account1, nAUD);
+		} catch (error) {
+			assert.include(error.message, 'revert');
+			errorCaught = true;
+		}
+		assert.equal(errorCaught, true, 'Operation did not revert');
+	});
+
+	it('should error when calculating maximum issuance when the currency rate is stale', async function() {
+		// Same test as above more or less. Just need to figure out what is going on with assert.revert.
+	});
+
+	it('should always return zero maximum issuance if a user is not a whitelisted issuer', async function() {
+		const havvens = web3.utils.toBN('321321');
+		await havven.transfer(account1, toUnit(havvens), { from: owner });
+
+		await havven.setIssuer(account1, false, { from: owner });
+		const maxIssuableNomins = await havven.maxIssuableNomins(account1, nAUD);
+		assert.bnEqual(maxIssuableNomins, 0);
+	});
+
+	it("should correctly calculate a user's debt balance without prior issuance", async function() {
+		await havven.transfer(account1, toUnit('200000'), { from: owner });
+		await havven.transfer(account2, toUnit('10000'), { from: owner });
+
+		const debt1 = await havven.debtBalanceOf(account1, web3.utils.asciiToHex('nUSD'));
+		const debt2 = await havven.debtBalanceOf(account2, web3.utils.asciiToHex('nUSD'));
+		assert.bnEqual(debt1, 0);
+		assert.bnEqual(debt2, 0);
+	});
+
+	it("should correctly calculate a user's debt balance with prior issuance", async function() {
+		// Give some HAV to account1
+		await havven.transfer(account1, toUnit('200000'), { from: owner });
+
+		// Make accounts issuers
+		await havven.setIssuer(account1, true, { from: owner });
+
+		// Issue
+		const issuedNomins = toUnit('1001');
+		await havven.issueNomins(nUSD, issuedNomins, { from: account1 });
+
+		const debt = await havven.debtBalanceOf(account1, web3.utils.asciiToHex('nUSD'));
+		assert.bnEqual(debt, issuedNomins);
+	});
+
+	it("should correctly calculate a user's remaining issuable nomins with prior issuance", async function() {
+		const hav2usdRate = await exchangeRates.rateForCurrency(HAV);
+		const eur2usdRate = await exchangeRates.rateForCurrency(nEUR);
+		const hav2eurRate = divideDecimal(hav2usdRate, eur2usdRate);
+		const issuanceRatio = await havven.issuanceRatio.call();
+
+		const issuedHavvens = web3.utils.toBN('200012');
+		await havven.transfer(account1, toUnit(issuedHavvens), { from: owner });
+
+		// Make account issuer
+		await havven.setIssuer(account1, true, { from: owner });
+
+		// Issue
+		const nEURIssued = toUnit('2011');
+		await havven.issueNomins(nEUR, nEURIssued, { from: account1 });
+
+		const expectedIssuableNomins = multiplyDecimal(
+			toUnit(issuedHavvens),
+			multiplyDecimal(hav2eurRate, issuanceRatio)
+		).sub(nEURIssued);
+
+		const remainingIssuable = await havven.remainingIssuableNomins(account1, nEUR);
+		assert.bnEqual(remainingIssuable, expectedIssuableNomins);
+	});
+
+	it("should correctly calculate a user's remaining issuable nomins without prior issuance", async function() {
+		const hav2usdRate = await exchangeRates.rateForCurrency(HAV);
+		const eur2usdRate = await exchangeRates.rateForCurrency(nEUR);
+		const hav2eurRate = divideDecimal(hav2usdRate, eur2usdRate);
+		const issuanceRatio = await havven.issuanceRatio.call();
+
+		const issuedHavvens = web3.utils.toBN('20');
+		await havven.transfer(account1, toUnit(issuedHavvens), { from: owner });
+
+		// Make account issuer
+		await havven.setIssuer(account1, true, { from: owner });
+
+		const expectedIssuableNomins = multiplyDecimal(
+			toUnit(issuedHavvens),
+			multiplyDecimal(hav2eurRate, issuanceRatio)
+		);
+
+		const remainingIssuable = await havven.remainingIssuableNomins(account1, nEUR);
+		assert.bnEqual(remainingIssuable, expectedIssuableNomins);
+	});
+
+	it('should not be able to exceed collatorisation ratio');
+	it('should be able to issue more when collatorisation ratio changes');
+	it('should be able to read collatorisation ratio for a user');
 });

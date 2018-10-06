@@ -868,4 +868,8 @@ contract('Exchange Rates', async function(accounts) {
 		assert.exists(instance.selfDestructInitiated);
 		assert.exists(instance.selfDestructBeneficiary);
 	});
+
+	it('should return correct last rate update time for a specific currency');
+
+	it('should return 1 for all nUSD rate stale checks');
 });

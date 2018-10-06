@@ -1,6 +1,7 @@
 const BN = require('bn.js');
 
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
+const UNIT = web3.utils.toWei(new BN('1'), 'ether');
 
 /**
  * Sets default properties on the jsonrpc object and promisifies it so we don't have to copy/paste everywhere.
@@ -96,6 +97,24 @@ const restoreSnapshot = async id => {
 const toUnit = amount => web3.utils.toBN(web3.utils.toWei(amount, 'ether'));
 const fromUnit = amount => web3.utils.fromWei(amount, 'ether');
 
+/*
+ * Multiplies x and y interpreting them as fixed point decimal numbers.
+ */
+const multiplyDecimal = (x, y) => {
+	const xBN = BN.isBN(x) ? x : new BN(x);
+	const yBN = BN.isBN(y) ? y : new BN(y);
+	return xBN.mul(yBN).div(UNIT);
+};
+
+/*
+ * Multiplies x and y interpreting them as fixed point decimal numbers.
+ */
+const divideDecimal = (x, y) => {
+	const xBN = BN.isBN(x) ? x : new BN(x);
+	const yBN = BN.isBN(y) ? y : new BN(y);
+	return xBN.mul(UNIT).div(yBN);
+};
+
 /**
  *  Convenience method to assert that an event has not been published for that transaction
  *  @param actualEventOrTransaction The transaction receipt, or event as returned in the event logs from web3
@@ -158,10 +177,12 @@ const assertBNNotEqual = (actualBN, expectedBN) => {
  *  @param actualBN The BN.js instance you received
  *  @param expectedBN The BN.js amount you expected to receive, allowing a varience of +/- 100 units
  */
-const assertBNClose = (actualBN, expectedBN) => {
+const assertBNClose = (actualBN, expectedBN, varianceParam) => {
 	const actual = BN.isBN(actualBN) ? actualBN : new BN(actualBN);
 	const expected = BN.isBN(expectedBN) ? expectedBN : new BN(expectedBN);
-	const variance = new BN('100');
+
+	const varianceParamRaw = varianceParam ? varianceParam : '1000';
+	const variance = BN.isBN(varianceParamRaw) ? varianceParamRaw : new BN(varianceParamRaw);
 
 	assert.ok(actual.gte(expected.sub(variance)), 'Number is too small to be close');
 	assert.ok(actual.lte(expected.add(variance)), 'Number is too large to be close');
@@ -223,10 +244,16 @@ const assertRevert = async blockOrPromise => {
 	try {
 		const result = typeof blockOrPromise === 'function' ? blockOrPromise() : blockOrPromise;
 		await result;
+		// const timeA = await currentTime();
+		// console.log('##### timeA: ', timeA);
+		// const a = await result;
+		// console.log('##### a: ', a.toString());
 	} catch (error) {
+		// console.log('#### error: ', error);
 		assert.include(error.message, 'revert');
 		errorCaught = true;
 	}
+	// console.log('#### errorCaught: ', errorCaught);
 
 	assert.equal(errorCaught, true, 'Operation did not revert');
 };
@@ -240,6 +267,8 @@ module.exports = {
 	takeSnapshot,
 	restoreSnapshot,
 	currentTime,
+	multiplyDecimal,
+	divideDecimal,
 
 	toUnit,
 	fromUnit,

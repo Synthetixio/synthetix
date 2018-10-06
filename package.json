@@ -8,6 +8,7 @@
 	"scripts": {
 		"clean": "rm -rf build && rm -rf node_modules && yarn",
 		"compile": "truffle compile",
+		"migrate": "truffle migrate",
 		"coverage": "solidity-coverage",
 		"debug": "truffle debug",
 		"develop": "truffle develop",
