@@ -1119,10 +1119,10 @@ contract.only('Havven', async function(accounts) {
 		assert.bnEqual(await nUSDContract.balanceOf(account1), toUnit('199.700449326010983324'));
 	});
 
-	it.only('should correctly calculate debt in a multi-issuance scenario', async function() {
+	it('should correctly calculate debt in a multi-issuance scenario', async function() {
 		// Give some HAV to account1
 		await havven.transfer(account1, toUnit('200000'), { from: owner });
-		await havven.transfer(account2, toUnit('10000'), { from: owner });
+		await havven.transfer(account2, toUnit('200000'), { from: owner });
 
 		// Make accounts issuers
 		await havven.setIssuer(account1, true, { from: owner });
@@ -1130,18 +1130,17 @@ contract.only('Havven', async function(accounts) {
 
 		// Issue
 		const issuedNominsPt1 = toUnit('2000');
-		const issuedNominsPt2 = toUnit('10');
+		const issuedNominsPt2 = toUnit('2000');
 		await havven.issueNomins(nUSD, issuedNominsPt1, { from: account1 });
 		await havven.issueNomins(nUSD, issuedNominsPt2, { from: account1 });
-		await havven.issueNomins(nUSD, toUnit('200'), { from: account2 });
+		await havven.issueNomins(nUSD, toUnit('1000'), { from: account2 });
 
-		const debt = await havven.debtBalanceOf(account1, web3.utils.asciiToHex('nUSD'));
+		const debt = await havven.debtBalanceOf(account1, nUSD);
 
-		// TODO: Check with Kevin how this is supposed to work
-		assertBNClose(debt, issuedNominsPt1.add(issuedNominsPt2));
+		assert.bnEqual(debt, toUnit('4000'));
 	});
 
-	it.only('should correctly calculate debt in a multi-issuance multi-burn scenario', async function() {
+	it('should correctly calculate debt in a multi-issuance multi-burn scenario', async function() {
 		// Give some HAV to account1
 		await havven.transfer(account1, toUnit('500000'), { from: owner });
 		await havven.transfer(account2, toUnit('14000'), { from: owner });
@@ -1160,10 +1159,7 @@ contract.only('Havven', async function(accounts) {
 		await havven.burnNomins(nUSD, burntNominsPt1, { from: account1 });
 		await havven.issueNomins(nUSD, issuedNominsPt2, { from: account1 });
 
-		// const maxIssuableNomins = await havven.maxIssuableNomins(account2, nUSD);
-		// console.log('##### maxIssuableNomins: ', fromUnit(maxIssuableNomins).toString());
-
-		await havven.issueNomins(nUSD, toUnit('200'), { from: account2 });
+		await havven.issueNomins(nUSD, toUnit('100'), { from: account2 });
 		await havven.issueNomins(nUSD, toUnit('51'), { from: account2 });
 		await havven.burnNomins(nUSD, burntNominsPt2, { from: account1 });
 
@@ -1173,11 +1169,56 @@ contract.only('Havven', async function(accounts) {
 			.sub(burntNominsPt1)
 			.sub(burntNominsPt2);
 
-		console.log('##### debt: ', debt.toString());
-		console.log('##### expectedDebt: ', expectedDebt.toString());
-
-		// TODO: Check with Kevin how this is supposed to work
+		// TODO: The variance we are getting here seems suspect. Let's investigate
 		assertBNClose(debt, expectedDebt, '10000');
+	});
+
+	it('should correctly calculate debt in a multi-issuance scenario', async function() {
+		await havven.transfer(account1, toUnit('5000000'), { from: owner });
+		await havven.transfer(account2, toUnit('5000000'), { from: owner });
+
+		// Make accounts issuers
+		await havven.setIssuer(account1, true, { from: owner });
+		await havven.setIssuer(account2, true, { from: owner });
+
+		const nominsIssuedEachTime = web3.utils.toBN('100');
+		const loopCount = 3;
+		for (let i = 0; i < loopCount; i++) {
+			await havven.issueNomins(nUSD, nominsIssuedEachTime, { from: account1 });
+			await havven.issueNomins(nUSD, nominsIssuedEachTime, { from: account2 });
+		}
+		const expectedDebt = nominsIssuedEachTime.mul(web3.utils.toBN(loopCount));
+		const account1Debt = await havven.debtBalanceOf(account1, nUSD);
+		const account2Debt = await havven.debtBalanceOf(account1, nUSD);
+
+		assert.bnEqual(account1Debt, expectedDebt);
+	});
+
+	it.skip('should correctly calculate debt in a high transaction scenario', async function() {
+		// TODO: Work in progress. Most likely won't run with restoreTransactions
+
+		await havven.transfer(account1, toUnit('5000000'), { from: owner });
+		await havven.transfer(account2, toUnit('5000000'), { from: owner });
+
+		// Make accounts issuers
+		await havven.setIssuer(account1, true, { from: owner });
+		await havven.setIssuer(account2, true, { from: owner });
+
+		const nominsIssuedEachTime = web3.utils.toBN('100');
+		const loopCount = 500;
+		for (let i = 0; i < loopCount; i++) {
+			console.log('##### loop: ', i);
+			await havven.issueNomins(nUSD, nominsIssuedEachTime, { from: account1 });
+			await havven.issueNomins(nUSD, nominsIssuedEachTime, { from: account2 });
+		}
+		const expectedDebt = nominsIssuedEachTime.mul(web3.utils.toBN(loopCount));
+		console.log('##### loop done. ');
+		const account1Debt = await havven.debtBalanceOf(account1, nUSD);
+		const account2Debt = await havven.debtBalanceOf(account1, nUSD);
+
+		console.log('##### expected debt1: ', expectedDebt.toString());
+		console.log('##### debt1: ', account1Debt.toString());
+		console.log('##### debt2: ', account2Debt.toString());
 	});
 
 	it("should correctly calculate a user's maximum issuable nomins without prior issuance", async function() {
@@ -1240,7 +1281,7 @@ contract.only('Havven', async function(accounts) {
 
 		//
 		// ????? What the heck is going on here!?
-		// Why doesn't assertRevert work?
+		// Why doesn't assertRevert work? Doing assert.revert manually here.
 
 		let errorCaught = false;
 		try {
@@ -1339,4 +1380,7 @@ contract.only('Havven', async function(accounts) {
 	it('should not be able to exceed collatorisation ratio');
 	it('should be able to issue more when collatorisation ratio changes');
 	it('should be able to read collatorisation ratio for a user');
+	it('should not be possible to transfer locked havvens');
+
+	// Changes in exchange rates
 });

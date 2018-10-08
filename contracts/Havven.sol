@@ -1083,4 +1083,5 @@ contract Havven is ExternStateToken {
         proxy._emit(abi.encode(), 3, ISSUERUPDATED_SIG, bytes32(account), bytes32(value ? 1 : 0), 0);
     }
 
+
 }
