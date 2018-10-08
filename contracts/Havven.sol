@@ -873,6 +873,17 @@ contract Havven is ExternStateToken {
         return safeMul_dec(havvenBalanceInDestinationCurrency, issuanceRatio);
     }
 
+    function collateralisationRatio(address issuer)
+        public
+        view
+        returns (uint)
+    {
+        uint debtBalance = debtBalanceOf(issuer, "HAV");
+        uint totalOwnedHavvens = collateral(issuer);
+
+        return safeDiv_dec(debtBalance, totalOwnedHavvens);
+    }
+
     function debtBalanceOf(address issuer, bytes4 currencyKey)
         public
         view
