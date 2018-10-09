@@ -244,16 +244,10 @@ const assertRevert = async blockOrPromise => {
 	try {
 		const result = typeof blockOrPromise === 'function' ? blockOrPromise() : blockOrPromise;
 		await result;
-		// const timeA = await currentTime();
-		// console.log('##### timeA: ', timeA);
-		// const a = await result;
-		// console.log('##### a: ', a.toString());
 	} catch (error) {
-		// console.log('#### error: ', error);
 		assert.include(error.message, 'revert');
 		errorCaught = true;
 	}
-	// console.log('#### errorCaught: ', errorCaught);
 
 	assert.equal(errorCaught, true, 'Operation did not revert');
 };

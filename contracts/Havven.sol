@@ -945,6 +945,23 @@ contract Havven is ExternStateToken {
     }
 
     /*
+     * @notice The collateralisation ratio for a specific user
+     */
+    function collateralisationRatio(address issuer)
+        public
+        view
+        returns (uint)
+    {
+        uint debtBalance = debtBalanceOf(issuer, "HAV");
+        uint totalOwnedHavvens = collateral(issuer);
+        if (totalOwnedHavvens == 0) {
+            return 0;
+        }
+
+        return safeDiv_dec(debtBalance, totalOwnedHavvens);
+    }
+
+    /*
      * @notice The number of havvens that are free to be transferred by an account.
      * @dev When issuing, escrowed havvens are locked first, then non-escrowed
      * havvens are locked last, but escrowed havvens are not transferable, so they are not included
@@ -1082,6 +1099,5 @@ contract Havven is ExternStateToken {
     function emitIssuerUpdated(address account, bool value) internal {
         proxy._emit(abi.encode(), 3, ISSUERUPDATED_SIG, bytes32(account), bytes32(value ? 1 : 0), 0);
     }
-
 
 }
