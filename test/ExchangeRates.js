@@ -618,11 +618,42 @@ contract('Exchange Rates', async function(accounts) {
 
 	// Checking if a single rate is stale
 
-	it('should never allow nUSD to go stale', async function() {
+	it('should never allow nUSD to go stale via rateIsStale', async function() {
 		const instance = await ExchangeRates.deployed();
 		await fastForward(await instance.rateStalePeriod());
 		const rateIsStale = await instance.rateIsStale(web3.utils.asciiToHex('nUSD'));
 		assert.equal(rateIsStale, false);
+	});
+
+	it('should never allow nUSD to go stale via anyRateIsStale', async function() {
+		const instance = await ExchangeRates.deployed();
+		const keysArray = [
+			web3.utils.asciiToHex('nUSD'),
+			web3.utils.asciiToHex('HAV'),
+			web3.utils.asciiToHex('GOLD'),
+		];
+		await instance.updateRates(
+			keysArray,
+			[
+				web3.utils.toWei('1', 'ether'),
+				web3.utils.toWei('0.1', 'ether'),
+				web3.utils.toWei('0.2', 'ether'),
+			],
+			await currentTime(),
+			{ from: oracle }
+		);
+		assert.equal(await instance.anyRateIsStale(keysArray), false);
+		await fastForward(await instance.rateStalePeriod());
+		await instance.updateRates(
+			[web3.utils.asciiToHex('HAV'), web3.utils.asciiToHex('GOLD')],
+			[web3.utils.toWei('0.1', 'ether'), web3.utils.toWei('0.2', 'ether')],
+			await currentTime(),
+			{ from: oracle }
+		);
+
+		// Even though nUSD hasn't been updated since the stale rate period has expired,
+		// we expect that nUSD remains "not stale"
+		assert.equal(await instance.anyRateIsStale(keysArray), false);
 	});
 
 	it('check if a single rate is stale', async function() {
@@ -876,7 +907,47 @@ contract('Exchange Rates', async function(accounts) {
 		assert.exists(instance.selfDestructBeneficiary);
 	});
 
-	it('should return correct last rate update time for a specific currency');
+	// Last rate update times
 
-	it('should return 1 for all nUSD rate stale checks');
+	it('should return correct last rate update time for specific currencies', async function() {
+		const abc = web3.utils.asciiToHex('lABC');
+		const instance = await ExchangeRates.deployed();
+		const timeSent = await currentTime();
+		await instance.updateRates(
+			[abc, web3.utils.asciiToHex('lDEF'), web3.utils.asciiToHex('lGHI')],
+			[
+				web3.utils.toWei('1.3', 'ether'),
+				web3.utils.toWei('2.4', 'ether'),
+				web3.utils.toWei('3.5', 'ether'),
+			],
+			timeSent,
+			{ from: oracle }
+		);
+
+		const lastUpdateTime = await instance.lastRateUpdateTimeForCurrency(abc);
+		assert.equal(lastUpdateTime, timeSent);
+	});
+
+	it('should return correct last rate update time for a specific currency', async function() {
+		const abc = web3.utils.asciiToHex('lABC');
+		const def = web3.utils.asciiToHex('lDEF');
+		const ghi = web3.utils.asciiToHex('lGHI');
+		const instance = await ExchangeRates.deployed();
+		const timeSent = await currentTime();
+		await instance.updateRates(
+			[abc, def],
+			[web3.utils.toWei('1.3', 'ether'), web3.utils.toWei('2.4', 'ether')],
+			timeSent,
+			{ from: oracle }
+		);
+		await fastForward(10000);
+		const timeSent2 = await currentTime();
+		await instance.updateRates([ghi], [web3.utils.toWei('2.4', 'ether')], timeSent2, {
+			from: oracle,
+		});
+
+		const lastUpdateTimes = await instance.lastRateUpdateTimesForCurrencies([abc, ghi]);
+		assert.equal(lastUpdateTimes[0], timeSent);
+		assert.equal(lastUpdateTimes[1], timeSent2);
+	});
 });

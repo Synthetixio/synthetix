@@ -15,7 +15,7 @@ const {
 	ZERO_ADDRESS,
 } = require('../utils/testUtils');
 
-contract.only('Havven', async function(accounts) {
+contract('Havven', async function(accounts) {
 	const [nUSD, nAUD, nEUR, HAV, HDR, nXYZ] = ['nUSD', 'nAUD', 'nEUR', 'HAV', 'HDR', 'nXYZ'].map(
 		web3.utils.asciiToHex
 	);
@@ -1924,7 +1924,7 @@ contract.only('Havven', async function(accounts) {
 		);
 	});
 
-	it.only('should allow the last user in the system to burn all their nomins to release their havvens', async function() {
+	it('should allow the last user in the system to burn all their nomins to release their havvens', async function() {
 		// Give some HAV to account1
 		await havven.transfer(account1, toUnit('500000'), { from: owner });
 		await havven.transfer(account2, toUnit('140000'), { from: owner });
@@ -1956,7 +1956,7 @@ contract.only('Havven', async function(accounts) {
 		assert.equal(debtBalance3, web3.utils.toBN('0'));
 	});
 
-	it.only('should allow user to burn all nomins issued even after other users have issued', async function() {
+	it('should allow user to burn all nomins issued even after other users have issued', async function() {
 		// Give some HAV to account1
 		await havven.transfer(account1, toUnit('500000'), { from: owner });
 		await havven.transfer(account2, toUnit('140000'), { from: owner });
