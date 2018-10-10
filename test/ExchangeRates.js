@@ -618,6 +618,13 @@ contract('Exchange Rates', async function(accounts) {
 
 	// Checking if a single rate is stale
 
+	it('should never allow nUSD to go stale', async function() {
+		const instance = await ExchangeRates.deployed();
+		await fastForward(await instance.rateStalePeriod());
+		const rateIsStale = await instance.rateIsStale(web3.utils.asciiToHex('nUSD'));
+		assert.equal(rateIsStale, false);
+	});
+
 	it('check if a single rate is stale', async function() {
 		const instance = await ExchangeRates.deployed();
 
