@@ -1,5 +1,5 @@
 const ExchangeRates = artifacts.require('ExchangeRates');
-const { currentTime, fastForward } = require('../utils/testUtils');
+const { currentTime, fastForward, toUnit } = require('../utils/testUtils');
 
 // Helper functions
 
@@ -63,6 +63,20 @@ contract('Exchange Rates', async function(accounts) {
 			web3.utils.asciiToHex('HAV')
 		);
 		assert.isAtLeast(lastUpdatedTimeHAV.toNumber(), creationTime);
+
+		const expectedHdrParticipants = ['nUSD', 'nAUD', 'nCHF', 'nEUR', 'nGBP'].map(
+			web3.utils.asciiToHex
+		);
+		let hdrParticipants = [];
+		for (let i = 0; i < 5; i++) {
+			hdrParticipants.push(await instance.hdrParticipants(i));
+		}
+		for (let i = 0; i < 5; i++) {
+			assert.equal(hdrParticipants[i], expectedHdrParticipants[i]);
+		}
+
+		const nUSDRate = await instance.rateForCurrency(web3.utils.asciiToHex('nUSD'));
+		assert.bnEqual(nUSDRate, toUnit('1'));
 	});
 
 	it('two of the same currencies in same array should mean that the second one overrides', async function() {
@@ -949,5 +963,48 @@ contract('Exchange Rates', async function(accounts) {
 		const lastUpdateTimes = await instance.lastRateUpdateTimesForCurrencies([abc, ghi]);
 		assert.equal(lastUpdateTimes[0], timeSent);
 		assert.equal(lastUpdateTimes[1], timeSent2);
+	});
+
+	it('should update the HDR rate correctly with all exchange rates', async function() {
+		const instance = await ExchangeRates.deployed();
+		const timeSent = await currentTime();
+		const keysArray = ['nUSD', 'nAUD', 'nEUR', 'nCHF', 'nGBP'].map(web3.utils.asciiToHex);
+		const rates = ['1.0', '0.4', '1.2', '3.3', '1.95'].map(toUnit);
+		await instance.updateRates(keysArray, rates, timeSent, {
+			from: oracle,
+		});
+
+		const lastUpdatedTimeHDR = await instance.lastRateUpdateTimes.call(
+			web3.utils.asciiToHex('HDR')
+		);
+		assert.equal(lastUpdatedTimeHDR, timeSent);
+
+		const lastUpdatedCurrencyHDR = await instance.rates.call(web3.utils.asciiToHex('HDR'));
+		let ratesTotal = web3.utils.toBN('0');
+		for (let rate of rates) {
+			ratesTotal = ratesTotal.add(rate);
+		}
+		assert.bnEqual(lastUpdatedCurrencyHDR, ratesTotal);
+	});
+
+	it('should update the HDR rates correctly with a subset of exchange rates', async function() {
+		const timeSent = await currentTime();
+		const keysArray = ['nUSD', 'nCHF', 'nGBP'].map(web3.utils.asciiToHex);
+		const rates = ['1', '3.3', '1.95'].map(toUnit);
+		const instance = await ExchangeRates.new(owner, oracle, keysArray, rates, {
+			from: deployerAccount,
+		});
+
+		const lastUpdatedTimeHDR = await instance.lastRateUpdateTimes.call(
+			web3.utils.asciiToHex('HDR')
+		);
+		assert.equal(lastUpdatedTimeHDR, timeSent);
+
+		const lastUpdatedCurrencyHDR = await instance.rates.call(web3.utils.asciiToHex('HDR'));
+		let ratesTotal = web3.utils.toBN('0');
+		for (let rate of rates) {
+			ratesTotal = ratesTotal.add(rate);
+		}
+		assert.bnEqual(lastUpdatedCurrencyHDR, ratesTotal);
 	});
 });
