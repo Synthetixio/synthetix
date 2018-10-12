@@ -11,7 +11,7 @@ contract.only('Havven', async function(accounts) {
 
 	const [deployerAccount, owner, account1, account2, account3, account4] = accounts;
 
-	let havven, exchangeRates, nUSDContract;
+	let havven, exchangeRates, nUSDContract, nAUDContract;
 
 	beforeEach(async function() {
 		// Save ourselves from having to await deployed() in every single test.
@@ -21,6 +21,7 @@ contract.only('Havven', async function(accounts) {
 
 		havven = await Havven.deployed();
 		nUSDContract = await Nomin.at(await havven.nomins(nUSD));
+		nAUDContract = await Nomin.at(await havven.nomins(nAUD));
 
 		// Send a price update to guarantee we're not stale.
 		const oracle = await exchangeRates.oracle();
@@ -1101,9 +1102,10 @@ contract.only('Havven', async function(accounts) {
 		// Transfer all of account2's nomins to account1
 		await nUSDContract.transfer(account1, toUnit('200'), { from: account2 });
 
-		// Then try to burn them all. Only 10 nomins (and fees) should be gone, but there is a slight rounding error on the calculation.
+		// Then try to burn them all.
 		await havven.burnNomins(nUSD, await nUSDContract.balanceOf(account1), { from: account1 });
 
+		// Only 10 nomins (and fees) should be gone, but there is a slight rounding error on the calculation.
 		assert.bnEqual(await nUSDContract.balanceOf(account1), toUnit('199.700449326010983324'));
 	});
 
@@ -1121,4 +1123,133 @@ contract.only('Havven', async function(accounts) {
 
 	it("should correctly calculate a user's remaining issuable nomins without prior issuance");
 	it("should correctly calculate a user's remaining issuable nomins with prior issuance");
+
+	it('should allow exchanges for an issuer');
+	it('should correctly calculate exchanges given changing exchange rates');
+	it('should correctly calculate debt for a user after exchanging');
+	it('should prevent exchanging when a user has an insufficient source balance');
+	it('should prevent exchanging when a user specifies a non-existent nomin destination currency');
+
+	it('should allow an exchange between two types of nomins', async function() {
+		// Send a price update to guarantee we're not depending on values from outside this test.
+		const oracle = await exchangeRates.oracle();
+		const timestamp = await currentTime();
+
+		await exchangeRates.updateRates(
+			[nUSD, nAUD, nEUR, HAV],
+			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			timestamp,
+			{ from: oracle }
+		);
+
+		// Give some HAV to account1
+		await havven.transfer(account1, toUnit('10000'), { from: owner });
+
+		// Make account an issuer
+		await havven.setIssuer(account1, true, { from: owner });
+
+		// Issue
+		await havven.issueNomins(nUSD, toUnit('100'), { from: account1 });
+
+		// Mark account2 as preferring nAUD
+		// await havven.setPreferredCurrency(nAUD, { from: account2 });
+
+		// Do the exchange
+		await havven.exchange(nUSD, toUnit('100'), nAUD, account2, { from: account1 });
+		// await nUSDContract.transfer(account2, toUnit('100'), { from: account1 });
+
+		// Account 2 should now have an amount of nAUD and no USD.
+		assert.bnEqual(await nUSDContract.balanceOf(account2), 0);
+		assert.bnEqual(await nAUDContract.balanceOf(account2), toUnit('199.700449326010983524'));
+	});
+
+	it('should revert when exchanging more nomins than are owned', async function() {
+		// Send a price update to guarantee we're not depending on values from outside this test.
+		const oracle = await exchangeRates.oracle();
+		const timestamp = await currentTime();
+
+		await exchangeRates.updateRates(
+			[nUSD, nAUD, nEUR, HAV],
+			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			timestamp,
+			{ from: oracle }
+		);
+
+		// Give some HAV to account1
+		await havven.transfer(account1, toUnit('10000'), { from: owner });
+
+		// Make account an issuer
+		await havven.setIssuer(account1, true, { from: owner });
+
+		// Issue
+		await havven.issueNomins(nUSD, toUnit('100'), { from: account1 });
+
+		// Exchange should fail because there's only 100nUSD
+		await assert.revert(havven.exchange(nUSD, toUnit('101'), nAUD, account2, { from: account1 }));
+	});
+
+	it('should charge a transfer fee for an exchange in the same address', async function() {
+		// Send a price update to guarantee we're not depending on values from outside this test.
+		const oracle = await exchangeRates.oracle();
+		const timestamp = await currentTime();
+
+		await exchangeRates.updateRates(
+			[nUSD, nAUD, nEUR, HAV],
+			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			timestamp,
+			{ from: oracle }
+		);
+
+		// Give some HAV to account1
+		await havven.transfer(account1, toUnit('10000'), { from: owner });
+
+		// Make account an issuer
+		await havven.setIssuer(account1, true, { from: owner });
+
+		// Issue
+		await havven.issueNomins(nUSD, toUnit('100'), { from: account1 });
+
+		// Do the exchange
+		await havven.exchange(nUSD, toUnit('100'), nAUD, account1, { from: account1 });
+
+		// Account 1 should now have an amount of nAUD and no USD.
+		assert.bnEqual(await nUSDContract.balanceOf(account1), 0);
+		assert.bnEqual(await nAUDContract.balanceOf(account1), toUnit('199.700449326010983524'));
+	});
+
+	it('should respect preferred currencies', async function() {
+		// Send a price update to guarantee we're not depending on values from outside this test.
+		const oracle = await exchangeRates.oracle();
+		const timestamp = await currentTime();
+
+		await exchangeRates.updateRates(
+			[nUSD, nAUD, nEUR, HAV],
+			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			timestamp,
+			{ from: oracle }
+		);
+
+		// Give some HAV to account1
+		await havven.transfer(account1, toUnit('10000'), { from: owner });
+
+		// Make account an issuer
+		await havven.setIssuer(account1, true, { from: owner });
+
+		// Issue
+		await havven.issueNomins(nUSD, toUnit('100'), { from: account1 });
+
+		// Mark account2 as preferring nAUD
+		await havven.setPreferredCurrency(nAUD, { from: account2 });
+
+		// Do a standard transfer
+		await nUSDContract.transfer(account2, toUnit('100'), { from: account1 });
+
+		// Account 1 should now have no nUSD or nAUD.
+		assert.bnEqual(await nUSDContract.balanceOf(account1), 0);
+		assert.bnEqual(await nAUDContract.balanceOf(account1), 0);
+
+		// Account 2 should now have an amount of nAUD and no nUSD.
+		assert.bnEqual(await nUSDContract.balanceOf(account2), 0);
+		assert.bnEqual(await nAUDContract.balanceOf(account2), toUnit('199.700449326010983524'));
+	});
 });

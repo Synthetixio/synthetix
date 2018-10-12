@@ -3,7 +3,7 @@ const { table } = require('table');
 const ExchangeRates = artifacts.require('./ExchangeRates.sol');
 const Havven = artifacts.require('./Havven.sol');
 const HavvenEscrow = artifacts.require('./HavvenEscrow.sol');
-const IssuanceController = artifacts.require('./IssuanceController.sol');
+// const IssuanceController = artifacts.require('./IssuanceController.sol');
 const Nomin = artifacts.require('./Nomin.sol');
 const Owned = artifacts.require('./Owned.sol');
 const Proxy = artifacts.require('./Proxy.sol');
@@ -16,6 +16,8 @@ module.exports = async function(deployer, network, accounts) {
 	const [deployerAccount, owner, oracle] = accounts;
 
 	// Note: This deployment script is not used on mainnet, it's only for testing deployments.
+
+	// The Owned contract is not used in a standalone way on mainnet, this is for testing
 	// ----------------
 	// Owned
 	// ----------------
@@ -48,17 +50,20 @@ module.exports = async function(deployer, network, accounts) {
 	});
 
 	console.log('Deploying Havven...');
-	// constructor(address _proxy, TokenState _tokenState, address _owner, ExchangeRates _exchangeRates, Havven _oldHavven)
+	// address _proxy, TokenState _tokenState, address _owner, ExchangeRates _exchangeRates, address _feeAuthority, uint _transferFeeRate, uint _exchangeFeeRate, Havven _oldHavven)
 	const havven = await deployer.deploy(
 		Havven,
 		havvenProxy.address,
 		havvenTokenState.address,
 		owner,
 		ExchangeRates.address,
+		oracle,
+		web3.utils.toWei('0.0015', 'ether'),
+		web3.utils.toWei('0.0015', 'ether'),
 		ZERO_ADDRESS,
 		{
 			from: deployerAccount,
-			gas: 8000000,
+			gas: 128062383,
 		}
 	);
 
@@ -93,7 +98,7 @@ module.exports = async function(deployer, network, accounts) {
 	// ----------------
 	// Nomins
 	// ----------------
-	const currencyKeys = ['nUSD', 'nAUD', 'nEUR'];
+	const currencyKeys = ['HDR', 'nUSD', 'nAUD', 'nEUR'];
 	const nomins = [];
 
 	for (const currencyKey of currencyKeys) {
@@ -142,7 +147,7 @@ module.exports = async function(deployer, network, accounts) {
 	// HAV: 0.1 USD
 	await exchangeRates.updateRates(
 		currencyKeys.concat(['HAV']).map(web3.utils.asciiToHex),
-		['1', '0.5', '1.25', '0.1'].map(number => web3.utils.toWei(number, 'ether')),
+		['1', '1', '0.5', '1.25', '0.1'].map(number => web3.utils.toWei(number, 'ether')),
 		timestamp,
 		{ from: oracle }
 	);
@@ -165,15 +170,13 @@ module.exports = async function(deployer, network, accounts) {
 
 	const tableData = [
 		['Contract', 'Address'],
-
 		['Exchange Rates', ExchangeRates.address],
-
-		['Owned', Owned.address],
-
+		['Fee Pool', FeePool.address],
 		['Havven Token State', havvenTokenState.address],
 		['Havven Proxy', havvenProxy.address],
 		['Havven', Havven.address],
 		['Havven Escrow', HavvenEscrow.address],
+		['Owned', Owned.address],
 
 		// ['Issuance Controller', IssuanceController.address],
 	];

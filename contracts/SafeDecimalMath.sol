@@ -141,9 +141,9 @@ contract SafeDecimalMath {
     }
 
     /**
-     * @return True iff the denominator of x/y is nonzero.
+     * @return True if the denominator of x/y is nonzero.
      */
-    function divIsSafe(uint x, uint y)
+    function divIsSafe(uint, uint y)
         internal
         pure
         returns (bool)
