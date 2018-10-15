@@ -1,5 +1,5 @@
 const ExchangeRates = artifacts.require('ExchangeRates');
-const { currentTime, fastForward } = require('../utils/testUtils');
+const { currentTime, fastForward, toUnit } = require('../utils/testUtils');
 
 // Helper functions
 
@@ -63,6 +63,20 @@ contract('Exchange Rates', async function(accounts) {
 			web3.utils.asciiToHex('HAV')
 		);
 		assert.isAtLeast(lastUpdatedTimeHAV.toNumber(), creationTime);
+
+		const expectedHdrParticipants = ['nUSD', 'nAUD', 'nCHF', 'nEUR', 'nGBP'].map(
+			web3.utils.asciiToHex
+		);
+		let hdrParticipants = [];
+		for (let i = 0; i < 5; i++) {
+			hdrParticipants.push(await instance.hdrParticipants(i));
+		}
+		for (let i = 0; i < 5; i++) {
+			assert.equal(hdrParticipants[i], expectedHdrParticipants[i]);
+		}
+
+		const nUSDRate = await instance.rateForCurrency(web3.utils.asciiToHex('nUSD'));
+		assert.bnEqual(nUSDRate, toUnit('1'));
 	});
 
 	it('two of the same currencies in same array should mean that the second one overrides', async function() {
@@ -618,6 +632,44 @@ contract('Exchange Rates', async function(accounts) {
 
 	// Checking if a single rate is stale
 
+	it('should never allow nUSD to go stale via rateIsStale', async function() {
+		const instance = await ExchangeRates.deployed();
+		await fastForward(await instance.rateStalePeriod());
+		const rateIsStale = await instance.rateIsStale(web3.utils.asciiToHex('nUSD'));
+		assert.equal(rateIsStale, false);
+	});
+
+	it('should never allow nUSD to go stale via anyRateIsStale', async function() {
+		const instance = await ExchangeRates.deployed();
+		const keysArray = [
+			web3.utils.asciiToHex('nUSD'),
+			web3.utils.asciiToHex('HAV'),
+			web3.utils.asciiToHex('GOLD'),
+		];
+		await instance.updateRates(
+			keysArray,
+			[
+				web3.utils.toWei('1', 'ether'),
+				web3.utils.toWei('0.1', 'ether'),
+				web3.utils.toWei('0.2', 'ether'),
+			],
+			await currentTime(),
+			{ from: oracle }
+		);
+		assert.equal(await instance.anyRateIsStale(keysArray), false);
+		await fastForward(await instance.rateStalePeriod());
+		await instance.updateRates(
+			[web3.utils.asciiToHex('HAV'), web3.utils.asciiToHex('GOLD')],
+			[web3.utils.toWei('0.1', 'ether'), web3.utils.toWei('0.2', 'ether')],
+			await currentTime(),
+			{ from: oracle }
+		);
+
+		// Even though nUSD hasn't been updated since the stale rate period has expired,
+		// we expect that nUSD remains "not stale"
+		assert.equal(await instance.anyRateIsStale(keysArray), false);
+	});
+
 	it('check if a single rate is stale', async function() {
 		const instance = await ExchangeRates.deployed();
 
@@ -867,5 +919,92 @@ contract('Exchange Rates', async function(accounts) {
 		assert.exists(instance.initiationTime);
 		assert.exists(instance.selfDestructInitiated);
 		assert.exists(instance.selfDestructBeneficiary);
+	});
+
+	// Last rate update times
+
+	it('should return correct last rate update time for specific currencies', async function() {
+		const abc = web3.utils.asciiToHex('lABC');
+		const instance = await ExchangeRates.deployed();
+		const timeSent = await currentTime();
+		await instance.updateRates(
+			[abc, web3.utils.asciiToHex('lDEF'), web3.utils.asciiToHex('lGHI')],
+			[
+				web3.utils.toWei('1.3', 'ether'),
+				web3.utils.toWei('2.4', 'ether'),
+				web3.utils.toWei('3.5', 'ether'),
+			],
+			timeSent,
+			{ from: oracle }
+		);
+
+		const lastUpdateTime = await instance.lastRateUpdateTimeForCurrency(abc);
+		assert.equal(lastUpdateTime, timeSent);
+	});
+
+	it('should return correct last rate update time for a specific currency', async function() {
+		const abc = web3.utils.asciiToHex('lABC');
+		const def = web3.utils.asciiToHex('lDEF');
+		const ghi = web3.utils.asciiToHex('lGHI');
+		const instance = await ExchangeRates.deployed();
+		const timeSent = await currentTime();
+		await instance.updateRates(
+			[abc, def],
+			[web3.utils.toWei('1.3', 'ether'), web3.utils.toWei('2.4', 'ether')],
+			timeSent,
+			{ from: oracle }
+		);
+		await fastForward(10000);
+		const timeSent2 = await currentTime();
+		await instance.updateRates([ghi], [web3.utils.toWei('2.4', 'ether')], timeSent2, {
+			from: oracle,
+		});
+
+		const lastUpdateTimes = await instance.lastRateUpdateTimesForCurrencies([abc, ghi]);
+		assert.equal(lastUpdateTimes[0], timeSent);
+		assert.equal(lastUpdateTimes[1], timeSent2);
+	});
+
+	it('should update the HDR rate correctly with all exchange rates', async function() {
+		const instance = await ExchangeRates.deployed();
+		const timeSent = await currentTime();
+		const keysArray = ['nUSD', 'nAUD', 'nEUR', 'nCHF', 'nGBP'].map(web3.utils.asciiToHex);
+		const rates = ['1.0', '0.4', '1.2', '3.3', '1.95'].map(toUnit);
+		await instance.updateRates(keysArray, rates, timeSent, {
+			from: oracle,
+		});
+
+		const lastUpdatedTimeHDR = await instance.lastRateUpdateTimes.call(
+			web3.utils.asciiToHex('HDR')
+		);
+		assert.equal(lastUpdatedTimeHDR, timeSent);
+
+		const lastUpdatedCurrencyHDR = await instance.rates.call(web3.utils.asciiToHex('HDR'));
+		let ratesTotal = web3.utils.toBN('0');
+		for (let rate of rates) {
+			ratesTotal = ratesTotal.add(rate);
+		}
+		assert.bnEqual(lastUpdatedCurrencyHDR, ratesTotal);
+	});
+
+	it('should update the HDR rates correctly with a subset of exchange rates', async function() {
+		const timeSent = await currentTime();
+		const keysArray = ['nUSD', 'nCHF', 'nGBP'].map(web3.utils.asciiToHex);
+		const rates = ['1', '3.3', '1.95'].map(toUnit);
+		const instance = await ExchangeRates.new(owner, oracle, keysArray, rates, {
+			from: deployerAccount,
+		});
+
+		const lastUpdatedTimeHDR = await instance.lastRateUpdateTimes.call(
+			web3.utils.asciiToHex('HDR')
+		);
+		assert.equal(lastUpdatedTimeHDR, timeSent);
+
+		const lastUpdatedCurrencyHDR = await instance.rates.call(web3.utils.asciiToHex('HDR'));
+		let ratesTotal = web3.utils.toBN('0');
+		for (let rate of rates) {
+			ratesTotal = ratesTotal.add(rate);
+		}
+		assert.bnEqual(lastUpdatedCurrencyHDR, ratesTotal);
 	});
 });
