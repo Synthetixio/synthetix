@@ -279,6 +279,7 @@ contract('Issuance Controller', async function(accounts) {
 			nomin = await Nomin.deployed();
 			fundsWalletFromContract = await issuanceController.fundsWallet();
 			fundsWalletEthBalanceBefore = await getEthBalance(fundsWallet);	
+
 			// Set up the issuanceController so it contains some nomins to convert Ether for
 			nominsBalance = await nomin.balanceOf(owner, { from: owner });
 			await nomin.transfer(issuanceController.address, nominsBalance.toString(), { from: owner });
@@ -289,6 +290,7 @@ contract('Issuance Controller', async function(accounts) {
 		it('if the price is stale', async function() {
 			const priceStalePeriod = await issuanceController.priceStalePeriod();
 			await fastForward(priceStalePeriod);
+
 			// Attempt exchange
 			try {
 				await issuanceController.exchangeEtherForNomins({
@@ -312,6 +314,7 @@ contract('Issuance Controller', async function(accounts) {
 		it('if the contract is paused', async function() {
 			// Pause Contract
 			const pausedContract = await issuanceController.setPaused(true, { from: owner });
+
 			// Attempt exchange
 			try {
 				await issuanceController.exchangeEtherForNomins({
@@ -321,6 +324,7 @@ contract('Issuance Controller', async function(accounts) {
 			} catch (error) {
 				assert.include(error.message, 'revert');
 			}
+
 			const issuanceControllerNominBalanceCurrent = await nomin.balanceOf(issuanceController.address);
 			assert.equal(issuanceControllerNominBalanceCurrent.toString(), issuanceControllerNominBalanceBefore.toString());
 			const exchangerNominBalance = await nomin.balanceOf(address1);
@@ -333,15 +337,84 @@ contract('Issuance Controller', async function(accounts) {
 		});
 	});
 
-	it('Ensure user can exchange ETH for Nomins where the amount exactly matches one deposit (and that the queue is correctly updated)');	
+	describe.only('Ensure user can exchange ETH for Nomins where the amount', async function() {
+		const depositor = address1;
+		const purchaser = address2;
+		let issuanceController;
+		let nomin;
+		let nominsBalance = web3.utils.toWei('1000');
+		let usdEth = web3.utils.toWei('500');
 
-	it('Ensure user can exchange ETH for Nomins where the amount exceeds one deposit (and that the queue is correctly updated)');	
+		beforeEach(async function() {
+			issuanceController = await IssuanceController.deployed();
+			nomin = await Nomin.deployed();
 
-	it('Ensure user can exchange ETH for Nomins where the amount exceeds available nomins (and that the remainder of the ETH is correctly refunded)');	
+			// Assert that there are no deposits already.
+			assert.equal(issuanceController.depositStartIndex(), 0);
+			assert.equal(issuanceController.depositEndIndex(), 0);
+
+			// Set up the depositor with an amount of nomins to deposit.
+			await nomin.transferSenderPaysFee(depositor, nominsBalance.toString(), { from: owner });
+		});
+
+		it('exactly matches one deposit (and that the queue is correctly updated)', async function() {
+			const nominsToDeposit = web3.utils.toWei('500');
+			const ethToSend = web3.utils.toWei('1');
+			const depositorStartingBalance = await getEthBalance(depositor);
+			
+			// Send the nomins to the issuance controller.
+			await nomin.transferSenderPaysFee(issuanceController.address, nominsToDeposit,  { from: depositor });
+			
+			// Assert that there is now one deposit in the queue.
+			assert.equal(issuanceController.depositStartIndex(), 0);
+			assert.equal(issuanceController.depositEndIndex(), 1);
+
+			// And assert that our total has increased by the right amount.
+        	assert.equal(issuanceController.totalSellableDeposits(), nominsToDeposit);
+
+			// Now purchase some.
+			const txn = await issuanceController.exchangeEtherForNomins({
+				from: purchaser,
+				amount: ethToSend
+			});
 	
-	it('Ensure user can exchange ETH for Nomins where the amount exceeds one deposit (and that the queue is correctly updated)');	
+			// Exchange("ETH", msg.value, "nUSD", fulfilled);
+			assert.eventEqual(txn, 'Exchange', {
+				ETH: ethToSend,
+				nUSD: nominsToDeposit,
+				fulfilled,
+			});
 
-	it('Ensure user can withdraw their Nomin deposit');	
+			// Ensure the result of the exchange is correct.
+			// Depositor should have received the ETH
+			assert.equal(getEthBalance(depositor), depositorStartingBalance + ethToSend);
+
+			// Purchaser should have received the Nomins
+			const purchaserNominBalance = await nomin.balanceOf(purchaser)
+			console.log('purchaserNominBalance', purchaserNominBalance); 
+			console.log('ethToSend * usdEth',web3.utils.toWei(ethToSend * usdEth));
+			assert.equal(purchaserNominBalance, web3.utils.toWei(ethToSend * usdEth)); 
+
+			// Assert state of queue
+			assert.equal(issuanceController.depositStartIndex(), 0);
+			assert.equal(issuanceController.depositEndIndex(), 0);
+
+			// And our total should have decreased by the amount purchased
+			assert.equal(issuanceController.totalSellableDeposits(), nominsToDeposit - ((ethToSend * usdToEthPrice)));
+
+
+		});	
+	
+		it('exceeds one deposit (and that the queue is correctly updated)');	
+	
+		it('exceeds available nomins (and that the remainder of the ETH is correctly refunded)');	
+		
+		it('exceeds one deposit (and that the queue is correctly updated)');	
+	
+		it('Ensure user can withdraw their Nomin deposit');	
+
+	});
+
 
 	it('Ensure user can exchange ETH for Nomins after a withdrawal and that the queue correctly skips the empty entry', async function() {
 		//   - e.g. Deposits of [1, 2, 3], user withdraws 2, so [1, (empty), 3], then
