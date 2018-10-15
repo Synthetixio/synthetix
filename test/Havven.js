@@ -1019,28 +1019,6 @@ contract('Havven', async function(accounts) {
 		assert.bnEqual(await havven.debtBalanceOf(account1, nUSD), toUnit('200'));
 	});
 
-	it('should report that a non-whitelisted user has zero maxIssuableNomins', async function() {
-		// Send a price update to guarantee we're not depending on values from outside this test.
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
-
-		await exchangeRates.updateRates(
-			[nUSD, nAUD, nEUR, HAV],
-			['1', '0.5', '1.25', '0.1'].map(toUnit),
-			timestamp,
-			{ from: oracle }
-		);
-
-		// Give some HAV to account1
-		await havven.transfer(account1, toUnit('10000'), { from: owner });
-
-		// They should have no issuable nomins.
-		assert.bnEqual(await havven.maxIssuableNomins(account1, nUSD), '0');
-
-		// They should now be able to issue 200 nUSD
-		assert.bnEqual(await havven.maxIssuableNomins(account1, nUSD), toUnit('200'));
-	});
-
 	it('should disallow an issuer from issuing nomins in a non-existant flavour', async function() {
 		// Send a price update to guarantee we're not depending on values from outside this test.
 		const oracle = await exchangeRates.oracle();

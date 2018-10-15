@@ -77,7 +77,7 @@ module.exports = async function(deployer, network, accounts) {
 		ZERO_ADDRESS,
 		{
 			from: deployerAccount,
-			gas: 128062383,
+			gas: 8000000,
 		}
 	);
 

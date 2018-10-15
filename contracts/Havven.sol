@@ -861,6 +861,8 @@ contract Havven is ExternStateToken {
         uint debtBalance = debtBalanceOf(issuer, "HAV");
         uint totalOwnedHavvens = collateral(issuer);
 
+        if (totalOwnedHavvens == 0) return 0;
+
         return safeDiv_dec(debtBalance, totalOwnedHavvens);
     }
 
