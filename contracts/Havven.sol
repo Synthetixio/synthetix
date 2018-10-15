@@ -190,8 +190,7 @@ contract Havven is ExternStateToken {
      * If the provided address is 0x0, then a fresh one will be constructed with the contract owning all tokens.
      * @param _owner The owner of this contract.
      */
-    constructor(address _proxy, TokenState _tokenState, address _owner, ExchangeRates _exchangeRates,
-        FeePool _feePool, Havven _oldHavven)
+    constructor(address _proxy, TokenState _tokenState, address _owner, ExchangeRates _exchangeRates, FeePool _feePool, Havven _oldHavven)
         ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, _owner)
         public
     {
