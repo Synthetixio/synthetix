@@ -1,6 +1,7 @@
 const { table } = require('table');
 
 const ExchangeRates = artifacts.require('./ExchangeRates.sol');
+const FeePool = artifacts.require('./FeePool.sol');
 const Havven = artifacts.require('./Havven.sol');
 const HavvenEscrow = artifacts.require('./HavvenEscrow.sol');
 // const IssuanceController = artifacts.require('./IssuanceController.sol');
@@ -37,6 +38,21 @@ module.exports = async function(deployer, network, accounts) {
 	);
 
 	// ----------------
+	// Fee Pool
+	// ----------------
+	console.log('Deploying FeePool...');
+	// constructor(address _owner, Havven _havven, address _feeAuthority, uint _transferFeeRate, uint _exchangeFeeRate)
+	const feePool = await deployer.deploy(
+		FeePool,
+		owner,
+		ZERO_ADDRESS,
+		oracle,
+		web3.utils.toWei('0.0015', 'ether'),
+		web3.utils.toWei('0.0015', 'ether'),
+		{ from: deployerAccount }
+	);
+
+	// ----------------
 	// Havven
 	// ----------------
 	console.log('Deploying HavvenProxy...');
@@ -50,16 +66,14 @@ module.exports = async function(deployer, network, accounts) {
 	});
 
 	console.log('Deploying Havven...');
-	// address _proxy, TokenState _tokenState, address _owner, ExchangeRates _exchangeRates, address _feeAuthority, uint _transferFeeRate, uint _exchangeFeeRate, Havven _oldHavven)
+	// constructor(address _proxy, TokenState _tokenState, address _owner, ExchangeRates _exchangeRates, FeePool _feePool, Havven _oldHavven)
 	const havven = await deployer.deploy(
 		Havven,
 		havvenProxy.address,
 		havvenTokenState.address,
 		owner,
 		ExchangeRates.address,
-		oracle,
-		web3.utils.toWei('0.0015', 'ether'),
-		web3.utils.toWei('0.0015', 'ether'),
+		FeePool.address,
 		ZERO_ADDRESS,
 		{
 			from: deployerAccount,
@@ -92,8 +106,10 @@ module.exports = async function(deployer, network, accounts) {
 	// ----------------------
 	await havven.setEscrow(havvenEscrow.address, { from: owner });
 
-	// Mark the owner as an issuer.
-	await havven.setIssuer(owner, true, { from: owner });
+	// ----------------------
+	// Connect FeePool
+	// ----------------------
+	await feePool.setHavven(havven.address, { from: owner });
 
 	// ----------------
 	// Nomins
@@ -104,13 +120,19 @@ module.exports = async function(deployer, network, accounts) {
 	for (const currencyKey of currencyKeys) {
 		console.log(`Deploying NominTokenState for ${currencyKey}...`);
 		const tokenState = await TokenState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
+
 		console.log(`Deploying NominProxy for ${currencyKey}...`);
 		const proxy = await Proxy.new(owner, { from: deployerAccount });
+
 		console.log(`Deploying ${currencyKey} Nomin...`);
+
+		// constructor(address _proxy, TokenState _tokenState, Havven _havven, FeePool _feePool,
+		//     string _tokenName, string _tokenSymbol, address _owner, bytes4 _currencyKey
 		const nomin = await Nomin.new(
 			proxy.address,
 			tokenState.address,
 			havven.address,
+			feePool.address,
 			`Nomin ${currencyKey}`,
 			currencyKey,
 			owner,

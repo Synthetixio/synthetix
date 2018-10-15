@@ -1,4 +1,4 @@
-/**
+/*
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
@@ -121,6 +121,7 @@ even going above the initial wallet balance.
 pragma solidity 0.4.25;
 
 
+import "./FeePool.sol";
 import "./ExternStateToken.sol";
 import "./Nomin.sol";
 import "./HavvenEscrow.sol";
@@ -167,21 +168,7 @@ contract Havven is ExternStateToken {
     Nomin[] public availableNomins;
     mapping(bytes4 => Nomin) public nomins;
 
-    // A percentage fee charged on each transfer.
-    uint public transferFeeRate;
-
-    // Transfer fee may not exceed 10%.
-    uint constant MAX_TRANSFER_FEE_RATE = UNIT / 10;
-
-    // A percentage fee charged on each exchange between currencies.
-    uint public exchangeFeeRate;
-
-    // Exchange fee may not exceed 10%.
-    uint constant MAX_EXCHANGE_FEE_RATE = UNIT / 10;
-    
-    // The address with the authority to distribute fees.
-    address public feeAuthority;
-
+    FeePool public feePool;
     HavvenEscrow public escrow;
     ExchangeRates public exchangeRates;
 
@@ -195,50 +182,6 @@ contract Havven is ExternStateToken {
     string constant TOKEN_NAME = "Havven";
     string constant TOKEN_SYMBOL = "HAV";
     
-    // Where fees are pooled in HDRs.
-    address public constant FEE_ADDRESS = 0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF;
-
-    // This struct represents the issuance activity that's happened in a fee period.
-    struct FeePeriod {
-        uint feePeriodId;
-        uint startingDebtIndex;
-        uint startTime;
-        uint feesToDistribute;
-        uint feesClaimed;
-    }
-
-    // The last 6 fee periods are all that you can claim from. 
-    // These are stored and managed from [0], such that [0] is always
-    // the most recent fee period, and [5] is always the oldest fee
-    // period that users can claim for.
-    uint8 constant FEE_PERIOD_LENGTH = 6;
-    FeePeriod[FEE_PERIOD_LENGTH] recentFeePeriods;
-
-    // The next fee period will have this ID.
-    uint public nextFeePeriodId;
-
-    // How long a fee period lasts at a minimum. It is required for the
-    // fee authority to roll over the periods, so they are not guaranteed
-    // to roll over at exactly this duration, but the contract enforces
-    // that they cannot roll over any quicker than this duration.
-    uint public feePeriodDuration = 1 weeks;
-
-    // The fee period must be between 1 day and 26 weeks.
-    uint constant MIN_FEE_PERIOD_DURATION = 1 days;
-    uint constant MAX_FEE_PERIOD_DURATION = 26 weeks;
-
-    // The last period a user has withdrawn their fees in, identified by the feePeriodId
-    mapping(address => uint) public lastFeeWithdrawal;
-
-    // Users receive penalties if their collateralisation ratio drifts out of our desired brackets
-    // We precompute the brackets and penalties to save gas.
-    uint constant TWENTY_PERCENT = (20 * UNIT) / 100;
-    uint constant TWENTY_FIVE_PERCENT = (25 * UNIT) / 100;
-    uint constant THIRTY_PERCENT = (30 * UNIT) / 100;
-    uint constant FOURTY_PERCENT = (40 * UNIT) / 100;
-    uint constant FIFTY_PERCENT = (50 * UNIT) / 100;
-    uint constant SEVENTY_FIVE_PERCENT = (75 * UNIT) / 100;
-
     // ========== CONSTRUCTOR ==========
 
     /**
@@ -248,20 +191,13 @@ contract Havven is ExternStateToken {
      * @param _owner The owner of this contract.
      */
     constructor(address _proxy, TokenState _tokenState, address _owner, ExchangeRates _exchangeRates,
-        address _feeAuthority, uint _transferFeeRate, uint _exchangeFeeRate, Havven _oldHavven)
+        FeePool _feePool, Havven _oldHavven)
         ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, _owner)
         public
     {
         exchangeRates = _exchangeRates;
-
-        // // Constructed fee rates should respect the maximum fee rates.
-        // require(_transferFeeRate <= MAX_TRANSFER_FEE_RATE, "Constructed transfer fee rate should respect the maximum fee rate");
-        // require(_exchangeFeeRate <= MAX_EXCHANGE_FEE_RATE, "Constructed exchange fee rate should respect the maximum fee rate");
-
-        // feeAuthority = _feeAuthority;
-        // transferFeeRate = _transferFeeRate;
-        // exchangeFeeRate = _exchangeFeeRate;
-
+        feePool = _feePool;
+        
         // if (_oldHavven != address(0)) {
         //     // TODO: Need to handle contract upgrades correctly.
 
@@ -410,140 +346,20 @@ contract Havven is ExternStateToken {
         emitPreferredCurrencyChanged(messageSender, currencyKey);
     }
 
-    /**
-     * @notice Set the transfer fee, anywhere within the range 0-10%.
-     * @dev The fee rate is in decimal format, with UNIT being the value of 100%.
-     */
-    function setExchangeFeeRate(uint _exchangeFeeRate)
-        external
-        onlyOwner
-    {
-        require(_exchangeFeeRate <= MAX_TRANSFER_FEE_RATE, "Exchange fee rate must be below MAX_EXCHANGE_FEE_RATE");
 
-        exchangeFeeRate = _exchangeFeeRate;
 
-        emitExchangeFeeUpdated(_exchangeFeeRate);
-    }
+    // ========== VIEWS ==========
 
     /**
-     * @notice Set the transfer fee, anywhere within the range 0-10%.
-     * @dev The fee rate is in decimal format, with UNIT being the value of 100%.
+     * @notice Lets you query the length of the debt ledger array
      */
-    function setTransferFeeRate(uint _transferFeeRate)
-        external
-        onlyOwner
+    function debtLedgerLength() 
+        public
+        view
+        returns (uint)
     {
-        require(_transferFeeRate <= MAX_TRANSFER_FEE_RATE, "Transfer fee rate must be below MAX_TRANSFER_FEE_RATE");
-
-        transferFeeRate = _transferFeeRate;
-
-        emitTransferFeeUpdated(_transferFeeRate);
+        return debtLedger.length;
     }
-
-//     /**
-//      * @notice Set the address of the user/contract responsible for collecting or
-//      * distributing fees.
-//      */
-//     function setFeeAuthority(address _feeAuthority)
-//         public
-//         onlyOwner
-//     {
-//         feeAuthority = _feeAuthority;
-
-//         emitFeeAuthorityUpdated(_feeAuthority);
-//     }
-
-//     /**
-//      * @notice Set the fee period duration
-//      */
-//     function setFeePeriodDuration(uint _feePeriodDuration)
-//         public
-//         onlyOwner
-//     {
-//         require(_feePeriodDuration >= MIN_FEE_PERIOD_DURATION, "New fee period cannot be less than minimum fee period duration");
-//         require(_feePeriodDuration <= MAX_FEE_PERIOD_DURATION, "New fee period cannot be greater than maximum fee period duration");
-
-//         feePeriodDuration = _feePeriodDuration;
-
-//         emitFeePeriodDurationUpdated(_feePeriodDuration);
-//     }
-    
-//     /**
-//      * @notice Close the current fee period and start a new one. Only callable by the fee authority.
-//      */
-//     function closeCurrentFeePeriod()
-//         external
-//         onlyFeeAuthority
-//     {
-//         require(recentFeePeriods[0].startTime <= (now - feePeriodDuration), "It is too early to close the current fee period");
-
-//         // FeePeriod memory secondLastFeePeriod = recentFeePeriods[FEE_PERIOD_LENGTH - 2];
-//         // FeePeriod memory lastFeePeriod = recentFeePeriods[FEE_PERIOD_LENGTH - 1];
-
-//         // // Any unclaimed fees from the last period in the array roll back one period.
-//         // recentFeePeriods[FEE_PERIOD_LENGTH - 2].feesToDistribute = safeAdd(
-//         //     safeSub(lastFeePeriod.feesToDistribute, lastFeePeriod.feesClaimed),
-//         //     secondLastFeePeriod.feesToDistribute
-//         // );
-
-//         // // Shift the previous fee periods across to make room for the new one.
-//         // for (uint8 i = FEE_PERIOD_LENGTH - 2; i >= 0; i--) {
-//         //     recentFeePeriods[i + 1].feePeriodId = recentFeePeriods[i].feePeriodId;
-//         //     recentFeePeriods[i + 1].startingDebtIndex = recentFeePeriods[i].startingDebtIndex;
-//         //     recentFeePeriods[i + 1].startTime = recentFeePeriods[i].startTime;
-//         //     recentFeePeriods[i + 1].feesToDistribute = recentFeePeriods[i].feesToDistribute;
-//         //     recentFeePeriods[i + 1].feesClaimed = recentFeePeriods[i].feesClaimed;
-//         // }
-
-//         // // Clear the first element of the array to make sure we don't have any stale values.
-//         // delete recentFeePeriods[0];
-
-//         // // Open up the new fee period
-//         // recentFeePeriods[0].feePeriodId = nextFeePeriodId;
-//         // recentFeePeriods[0].startingDebtIndex = debtLedger.length;
-//         // recentFeePeriods[0].startTime = now;
-
-//         // nextFeePeriodId++;
-//     }
-
-//     function claimFees(bytes4 currencyKey)
-//         external
-//         optionalProxy
-//         returns (bool)
-//     {
-//         require(lastFeeWithdrawal[messageSender] < recentFeePeriods[0].feePeriodId, "Fees already claimed");
-
-//         // // Add up the fees
-//         // uint[FEE_PERIOD_LENGTH] memory feesByPeriod = feesAvailableByPeriod(messageSender);
-//         // uint totalFees = 0;
-
-//         // for (uint8 i = 0; i < FEE_PERIOD_LENGTH; i++) {
-//         //     totalFees = safeAdd(totalFees, feesByPeriod[i]);
-//         //     recentFeePeriods[i].feesClaimed = safeAdd(recentFeePeriods[i].feesClaimed, feesByPeriod[i]);
-//         // }
-
-//         // lastFeeWithdrawal[msg.sender] = recentFeePeriods[0].feePeriodId;
-
-//         // // Send them their fees
-//         // _payFees(messageSender, totalFees, currencyKey);
-
-//         // emitFeesClaimed(messageSender, totalFees);
-
-//         return true;
-//     }
-
-//     // ========== VIEWS ==========
-
-//     /**
-//      * @notice Lets you query the length of the debt ledger array
-//      */
-//     function debtLedgerLength() 
-//         public
-//         view
-//         returns (uint)
-//     {
-//         return debtLedger.length;
-//     }
 
     /**
      * @notice A function that lets you easily convert an amount in a source currency to an amount in the destination currency
@@ -613,214 +429,9 @@ contract Havven is ExternStateToken {
         return availableNomins.length;
     }
 
-    /**
-     * @notice Calculate the Fee charged on top of a value being sent
-     * @return Return the fee charged
-     */
-    function transferFeeIncurred(uint value)
-        public
-        view
-        returns (uint)
-    {
-        return safeMul_dec(value, transferFeeRate);
 
-        // Transfers less than the reciprocal of transferFeeRate should be completely eaten up by fees.
-        // This is on the basis that transfers less than this value will result in a nil fee.
-        // Probably too insignificant to worry about, but the following code will achieve it. 
-        //      if (fee == 0 && transferFeeRate != 0) {
-        //          return _value;
-        //      }
-        //      return fee;
-    }
 
-    /**
-     * @notice The value that you would need to send so that the recipient receives
-     * a specified value.
-     * @param value The value you want the recipient to receive
-     */
-    function transferPlusFee(uint value)
-        external
-        view
-        returns (uint)
-    {
-        return safeAdd(value, transferFeeIncurred(value));
-    }
-
-    /**
-     * @notice The amount the recipient will receive if you send a certain number of tokens.
-     * @param value The amount of tokens you intend to send.
-     */
-    function amountReceivedFromTransfer(uint value)
-        public
-        view
-        returns (uint)
-    {
-        return safeDiv_dec(value, safeAdd(UNIT, transferFeeRate));
-    }
-
-    /**
-     * @notice Calculate the fee charged on top of a value being sent via an exchange
-     * @return Return the fee charged
-     */
-    function exchangeFeeIncurred(uint value)
-        public
-        view
-        returns (uint)
-    {
-        return safeMul_dec(value, exchangeFeeRate);
-
-        // Exchanges less than the reciprocal of exchangeFeeRate should be completely eaten up by fees.
-        // This is on the basis that exchanges less than this value will result in a nil fee.
-        // Probably too insignificant to worry about, but the following code will achieve it. 
-        //      if (fee == 0 && exchangeFeeRate != 0) {
-        //          return _value;
-        //      }
-        //      return fee;
-    }
-
-    /**
-     * @notice The value that you would need to get after currency exchange so that the recipient receives
-     * a specified value.
-     * @param value The value you want the recipient to receive
-     */
-    function exchangePlusFee(uint value)
-        external
-        view
-        returns (uint)
-    {
-        return safeAdd(value, exchangeFeeIncurred(value));
-    }
-
-    /**
-     * @notice The amount the recipient will receive if you are performing an exchange and the
-     * destination currency will be worth a certain number of tokens.
-     * @param value The amount of destination currency tokens they received after the exchange.
-     */
-    function amountReceivedFromExchange(uint value)
-        public
-        view
-        returns (uint)
-    {
-        return safeDiv_dec(value, safeAdd(UNIT, exchangeFeeRate));
-    }
-
-//     /**
-//      * @notice The total fees available in the system to be withdrawn, priced in currencyKey currency
-//      * @param currencyKey The currency you want to price the fees in
-//      */
-//     function totalFeesAvailable(bytes4 currencyKey)
-//         external
-//         view
-//         returns (uint)
-//     {
-//         uint totalFees = 0;
-
-//         for (uint8 i = 0; i < FEE_PERIOD_LENGTH; i++) {
-//             totalFees = safeAdd(totalFees, recentFeePeriods[i].feesToDistribute);
-//             totalFees = safeSub(totalFees, recentFeePeriods[i].feesClaimed);
-//         }
-
-//         return effectiveValue("HDR", totalFees, currencyKey);
-//     }
-
-//     /**
-//      * @notice The fees available to be withdrawn by a specific account, priced in currencyKey currency
-//      * @param currencyKey The currency you want to price the fees in
-//      */
-//     function feesAvailable(address account, bytes4 currencyKey)
-//         external
-//         view
-//         returns (uint)
-//     {
-//         // // Add up the fees
-//         // uint[FEE_PERIOD_LENGTH] memory feesByPeriod = feesAvailableByPeriod(account);
-
-//         // uint totalFees = 0;
-
-//         // for (uint8 i = 0; i < FEE_PERIOD_LENGTH; i++) {
-//         //     totalFees = safeAdd(totalFees, feesByPeriod[i]);
-//         // }
-
-//         // // And convert them to their desired currency
-//         // return effectiveValue("HDR", totalFees, currencyKey);
-
-//         return 0;
-//     }
-
-//     /**
-//      * @notice The penalty a particular address would incur if its fees were withdrawn right now
-//      * @param account The address you want to query the penalty for
-//      */
-//     function currentPenalty(address account)
-//         public
-//         view
-//         returns (uint)
-//     {
-//         uint ratio = collateralisationRatio(account);
-
-//         // Users receive a different amount of fees depending on how their collateralisation ratio looks right now.
-//         // 0% - 20%: Fee is calculated based on percentage of economy issued.
-//         // 20% - 30%: 25% reduction in fees
-//         // 30% - 40%: 50% reduction in fees
-//         // 40% - 50%: 75% reduction in fees
-//         // >50%: 75% reduction in fees, and other users can execute a direct redemption to better manage that user's Havvens
-//         if (ratio <= TWENTY_PERCENT) {
-//             return 0;
-//         } else if (ratio > TWENTY_PERCENT && ratio <= THIRTY_PERCENT) {
-//             return TWENTY_FIVE_PERCENT;
-//         } else if (ratio > THIRTY_PERCENT && ratio <= FOURTY_PERCENT) {
-//             return FIFTY_PERCENT;
-//         } 
-
-//         return SEVENTY_FIVE_PERCENT;
-//     }
-
-//     /**
-//      * @notice Calculates fees by period for an account, priced in HDRs
-//      * @param account The address you want to query the fees by penalty for
-//      */
-//     function feesAvailableByPeriod(address account)
-//         public
-//         view
-//         returns (uint[FEE_PERIOD_LENGTH])
-//     {
-//         // // What's the user's debt entry index and the debt they owe to the system
-//         // uint initialDebtOwnership = issuanceData[account].initialDebtOwnership;
-//         // uint debtEntryIndex = issuanceData[account].debtEntryIndex;
-//         // uint debtBalance = debtBalanceOf(account, "HDR");
-//         // uint totalNomins = totalIssuedNomins("HDR");
-//         // uint userOwnershipPercentage = safeDiv_dec(debtBalance, totalNomins);
-//         // uint penalty = currentPenalty(account);
-
-//         uint[FEE_PERIOD_LENGTH] memory feesByPeriod;
-
-//         // // If they don't have any debt ownership, they don't have any fees
-//         // if (initialDebtOwnership == 0) return feesByPeriod;
-
-//         // // Go through our fee periods and figure out what we owe them.
-//         // // We start at the second fee period because the first period is still accumulating fees.
-//         // for (uint8 i = 1; i < FEE_PERIOD_LENGTH; i++) {
-//         //     // Were they a part of this period in its entirety?
-//         //     // We don't allow pro-rata participation to reduce the ability to game the system by
-//         //     // issuing and burning multiple times in a period or close to the ends of periods.
-//         //     if (recentFeePeriods[i].startingDebtIndex >= debtEntryIndex &&
-//         //         lastFeeWithdrawal[account] < recentFeePeriods[i].feePeriodId) {
-
-//         //         // And since they were, they're entitled to their percentage of the fees in this period
-//         //         uint feesFromPeriodWithoutPenalty = safeMul_dec(recentFeePeriods[i].feesToDistribute, userOwnershipPercentage);
-
-//         //         // Less their penalty if they have one.
-//         //         uint penaltyFromPeriod = safeMul_dec(feesFromPeriodWithoutPenalty, penalty);
-//         //         uint feesFromPeriod = safeSub(feesFromPeriodWithoutPenalty, penaltyFromPeriod);
-
-//         //         feesByPeriod[i] = feesFromPeriod;
-//         //     }
-//         // }
-
-//         return feesByPeriod;
-//     }
-
-//     // ========== MUTATIVE FUNCTIONS ==========
+    // ========== MUTATIVE FUNCTIONS ==========
 
     /**
      * @notice ERC20 transfer function.
@@ -965,6 +576,8 @@ contract Havven is ExternStateToken {
             false // Don't charge a fee on the exchange
         );
     }
+
+
     
     function _internalExchange(
         address from,
@@ -996,7 +609,7 @@ contract Havven is ExternStateToken {
         uint fee = 0;
 
         if (chargeFee) {
-            amountReceived = amountReceivedFromExchange(destinationAmount);
+            amountReceived = feePool.amountReceivedFromExchange(destinationAmount);
             fee = safeSub(destinationAmount, amountReceived);
         } 
 
@@ -1006,7 +619,7 @@ contract Havven is ExternStateToken {
         // Remit the fee in HDRs
         if (fee > 0) {
             uint hdrFeeAmount = effectiveValue(destinationCurrencyKey, fee, "HDR");
-            nomins["HDR"].issue(FEE_ADDRESS, hdrFeeAmount);
+            nomins["HDR"].issue(feePool.FEE_ADDRESS(), hdrFeeAmount);
         }
 
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
@@ -1020,38 +633,44 @@ contract Havven is ExternStateToken {
         return true;
     }
 
-//     function _payFees(address account, uint hdrAmount, bytes4 destinationCurrencyKey)
-//         internal 
-//         notFeeAddress(account)
-//         returns (bool)
-//     {
-//         require(account != address(0), "Account cannot be zero");
-//         require(account != address(this), "Can't send fees to Havven");
-//         require(account != address(proxy), "Can't send fees to proxy");
+    function payFees(address account, uint hdrAmount, bytes4 destinationCurrencyKey)
+        external 
+    //     onlyFeePool
+    //     notFeeAddress(account)
+        returns (bool)
+    {
+        require(account != address(0), "Account cannot be zero");
+        require(account != address(this), "Can't send fees to Havven");
+        require(account != address(proxy), "Can't send fees to proxy");
 
-//         // Note: We don't need to check the fee pool balance as the burn() below will do a safeSub which requires 
-//         // the subtraction to not overflow, which would happen if the balance is not sufficient.
+        Nomin hdrNomin = nomins["HDR"];
+        Nomin destinationNomin = nomins[destinationCurrencyKey];
+        
+        address feeAddress = feePool.FEE_ADDRESS();
 
-//         // Burn the source amount
-//         // nomins["HDR"].burn(FEE_ADDRESS, hdrAmount);
+        // Note: We don't need to check the fee pool balance as the burn() below will do a safeSub which requires 
+        // the subtraction to not overflow, which would happen if the balance is not sufficient.
 
-//         // How much should they get in the destination currency?
-//         // uint destinationAmount = effectiveValue("HDR", hdrAmount, destinationCurrencyKey);
+        // Burn the source amount
+        hdrNomin.burn(feeAddress, hdrAmount);
 
-//         // There's no fee on withdrawing fees, as that'd be way too meta.
+        // How much should they get in the destination currency?
+        uint destinationAmount = effectiveValue("HDR", hdrAmount, destinationCurrencyKey);
 
-//         // Mint their new nomins
-//         // nomins[destinationCurrencyKey].issue(account, destinationAmount);
+        // There's no fee on withdrawing fees, as that'd be way too meta.
 
-//         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
+        // Mint their new nomins
+        destinationNomin.issue(account, destinationAmount);
 
-//         // Call the ERC223 transfer callback if needed
-//         // nomins[destinationCurrencyKey].triggerTokenFallbackIfNeeded(FEE_ADDRESS, account, destinationAmount);
+        // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
 
-//         // No event because the FeePool emits an event.
+        // Call the ERC223 transfer callback if needed
+        destinationNomin.triggerTokenFallbackIfNeeded(feeAddress, account, destinationAmount);
 
-//         return true;
-//     }
+        // No event because the FeePool emits an event.
+
+        return true;
+    }
 
     function _addToDebtRegister(bytes4 currencyKey, uint amount) 
         internal
@@ -1373,17 +992,6 @@ contract Havven is ExternStateToken {
 
     // ========== MODIFIERS ==========
 
-//     modifier onlyFeeAuthority
-//     {
-//         require(msg.sender == feeAuthority, "Only the fee authority can perform this action");
-//         _;
-//     }
-
-    modifier notFeeAddress(address account) {
-        require(account != FEE_ADDRESS, "You cannot perform this action from the fee address");
-        _;
-    }
-
     modifier ratesNotStale(bytes4[] currencyKeys) {
         require(!exchangeRates.anyRateIsStale(currencyKeys), "Rate is stale or currency was not found");
         _;
@@ -1393,6 +1001,16 @@ contract Havven is ExternStateToken {
         require(!exchangeRates.rateIsStale(currencyKey), "Rate is stale or currency was not found");
         _;
     }
+
+    modifier notFeeAddress(address account) {
+        require(account != feePool.FEE_ADDRESS(), "You cannot perform this action from the fee address");
+        _;
+    }
+
+    // modifier onlyFeePool() {
+    //     require(msg.sender == address(feePool), "Only the fee pool contract can perform this action");
+    //     _;
+    // }
 
     modifier onlyNomin() {
         bool isNomin = false;
@@ -1438,12 +1056,6 @@ contract Havven is ExternStateToken {
         proxy._emit(abi.encode(newPreferredCurrency), 2, PREFERREDCURRENCYCHANGED_SIG, bytes32(account), 0, 0);
     }
 
-    event FeesWithdrawn(address indexed account, uint value);
-    bytes32 constant FEESWITHDRAWN_SIG = keccak256("FeesWithdrawn(address,uint256)");
-    function emitFeesWithdrawn(address account, uint value) internal {
-        proxy._emit(abi.encode(value), 2, FEESWITHDRAWN_SIG, bytes32(account), 0, 0);
-    }
-
     event ExchangeRatesUpdated(address newExchangeRates);
     bytes32 constant EXCHANGERATESUPDATED_SIG = keccak256("ExchangeRatesUpdated(address)");
     function emitExchangeRatesUpdated(address newExchangeRates) internal {
@@ -1472,41 +1084,5 @@ contract Havven is ExternStateToken {
     bytes32 constant ESCROWUPDATED_SIG = keccak256("EscrowUpdated(address)");
     function emitEscrowUpdated(address newEscrow) internal {
         proxy._emit(abi.encode(newEscrow), 1, ESCROWUPDATED_SIG, 0, 0, 0);
-    }
-
-    event TransferFeeUpdated(uint newFeeRate);
-    bytes32 constant TRANSFERFEEUPDATED_SIG = keccak256("TransferFeeUpdated(uint256)");
-    function emitTransferFeeUpdated(uint newFeeRate) internal {
-        proxy._emit(abi.encode(newFeeRate), 1, TRANSFERFEEUPDATED_SIG, 0, 0, 0);
-    }
-
-    event ExchangeFeeRateUpdated(uint newFeeRate);
-    bytes32 constant EXCHANGEFEEUPDATED_SIG = keccak256("ExchangeFeeUpdated(uint256)");
-    function emitExchangeFeeUpdated(uint newFeeRate) internal {
-        proxy._emit(abi.encode(newFeeRate), 1, EXCHANGEFEEUPDATED_SIG, 0, 0, 0);
-    }
-
-    event FeePeriodDurationUpdated(uint newFeePeriodDuration);
-    bytes32 constant FEEPERIODDURATIONUPDATED_SIG = keccak256("FeePeriodDurationUpdated(uint256)");
-    function emitFeePeriodDurationUpdated(uint newFeePeriodDuration) internal {
-        proxy._emit(abi.encode(newFeePeriodDuration), 1, FEEPERIODDURATIONUPDATED_SIG, 0, 0, 0);
-    }
-
-    event FeeAuthorityUpdated(address newFeeAuthority);
-    bytes32 constant FEEAUTHORITYUPDATED_SIG = keccak256("FeeAuthorityUpdated(address)");
-    function emitFeeAuthorityUpdated(address newFeeAuthority) internal {
-        proxy._emit(abi.encode(newFeeAuthority), 1, FEEAUTHORITYUPDATED_SIG, 0, 0, 0);
-    }
-
-    event FeePeriodClosed(uint feePeriodId);
-    bytes32 constant FEEPERIODCLOSED_SIG = keccak256("FeePeriodClosed(uint256)");
-    function emitFeePeriodClosed(uint feePeriodId) internal {
-        proxy._emit(abi.encode(feePeriodId), 1, FEEPERIODCLOSED_SIG, 0, 0, 0);
-    }
-
-    event FeesClaimed(address account, uint hdrAmount);
-    bytes32 constant FEESCLAIMED_SIG = keccak256("FeesClaimed(address,uint256)");
-    function emitFeesClaimed(address account, uint hdrAmount) internal {
-        proxy._emit(abi.encode(account, hdrAmount), 1, FEESCLAIMED_SIG, 0, 0, 0);
     }
 }

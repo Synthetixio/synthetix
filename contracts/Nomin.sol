@@ -31,12 +31,14 @@ per fee period.
 pragma solidity 0.4.25;
 
 import "./ExternStateToken.sol";
+import "./FeePool.sol";
 import "./Havven.sol";
 
 contract Nomin is ExternStateToken {
 
     /* ========== STATE VARIABLES ========== */
 
+    FeePool public feePool;
     Havven public havven;
 
     // Currency key which identifies this Nomin to the Havven system
@@ -47,17 +49,19 @@ contract Nomin is ExternStateToken {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _proxy, TokenState _tokenState, Havven _havven, string _tokenName, 
-        string _tokenSymbol, address _owner, bytes4 _currencyKey
+    constructor(address _proxy, TokenState _tokenState, Havven _havven, FeePool _feePool,
+        string _tokenName, string _tokenSymbol, address _owner, bytes4 _currencyKey
     )
         ExternStateToken(_proxy, _tokenState, _tokenName, _tokenSymbol, 0, _owner)
         public
     {
         require(_proxy != 0, "_proxy cannot be 0");
         require(address(_havven) != 0, "_havven cannot be 0");
+        require(address(_feePool) != 0, "_feePool cannot be 0");
         require(_owner != 0, "_owner cannot be 0");
         require(_havven.nomins(_currencyKey) == Nomin(0), "Currency key is already in use");
 
+        feePool = _feePool;
         havven = _havven;
         currencyKey = _currencyKey;
     }
@@ -70,6 +74,14 @@ contract Nomin is ExternStateToken {
     {
         havven = _havven;
         emitHavvenUpdated(_havven);
+    }
+
+    function setFeePool(FeePool _feePool)
+        external
+        optionalProxy_onlyOwner
+    {
+        feePool = _feePool;
+        emitFeePoolUpdated(_feePool);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -86,11 +98,11 @@ contract Nomin is ExternStateToken {
         notFeeAddress(messageSender)
         returns (bool)
     {
-        uint amountReceived = havven.amountReceivedFromTransfer(value);
+        uint amountReceived = feePool.amountReceivedFromTransfer(value);
         uint fee = safeSub(value, amountReceived);
 
-        // Send the fee off to the fee pool, which we don't want to charge an additional fee on
-        havven.nominInitiatedExchangeWithoutFee(messageSender, currencyKey, fee, "HDR", havven.FEE_ADDRESS());
+        // Send the fee off to the fee pool, which we don't want to charge an additional fee on it
+        havven.nominInitiatedExchangeWithoutFee(messageSender, currencyKey, fee, "HDR", feePool.FEE_ADDRESS());
 
         // And send their result off to the destination address
         bytes memory empty;
@@ -108,11 +120,11 @@ contract Nomin is ExternStateToken {
         notFeeAddress(messageSender)
         returns (bool)
     {
-        uint amountReceived = havven.amountReceivedFromTransfer(value);
+        uint amountReceived = feePool.amountReceivedFromTransfer(value);
         uint fee = safeSub(value, amountReceived);
 
         // Send the fee off to the fee pool, which we don't want to charge an additional fee on
-        havven.nominInitiatedExchangeWithoutFee(messageSender, currencyKey, fee, "HDR", havven.FEE_ADDRESS());
+        havven.nominInitiatedExchangeWithoutFee(messageSender, currencyKey, fee, "HDR", feePool.FEE_ADDRESS());
 
         // And send their result off to the destination address
         return _internalTransfer(messageSender, to, value, data);
@@ -127,7 +139,7 @@ contract Nomin is ExternStateToken {
         returns (bool)
     {
         // The fee is deducted from the amount sent.
-        uint amountReceived = havven.amountReceivedFromTransfer(value);
+        uint amountReceived = feePool.amountReceivedFromTransfer(value);
         uint fee = safeSub(value, amountReceived);
 
         // Reduce the allowance by the amount we're transferring.
@@ -135,7 +147,7 @@ contract Nomin is ExternStateToken {
         tokenState.setAllowance(from, messageSender, safeSub(tokenState.allowance(from, messageSender), value));
 
         // Send the fee off to the fee pool, which we don't want to charge an additional fee on
-        havven.nominInitiatedExchangeWithoutFee(messageSender, currencyKey, fee, "HDR", havven.FEE_ADDRESS());
+        havven.nominInitiatedExchangeWithoutFee(messageSender, currencyKey, fee, "HDR", feePool.FEE_ADDRESS());
 
         bytes memory empty;
         return _internalTransfer(from, to, amountReceived, empty);
@@ -150,7 +162,7 @@ contract Nomin is ExternStateToken {
         returns (bool)
     {
         // The fee is deducted from the amount sent.
-        uint amountReceived = havven.amountReceivedFromTransfer(value);
+        uint amountReceived = feePool.amountReceivedFromTransfer(value);
         uint fee = safeSub(value, amountReceived);
 
         // Reduce the allowance by the amount we're transferring.
@@ -158,7 +170,7 @@ contract Nomin is ExternStateToken {
         tokenState.setAllowance(from, messageSender, safeSub(tokenState.allowance(from, messageSender), value));
 
         // Send the fee off to the fee pool, which we don't want to charge an additional fee on
-        havven.nominInitiatedExchangeWithoutFee(messageSender, currencyKey, fee, "HDR", havven.FEE_ADDRESS());
+        havven.nominInitiatedExchangeWithoutFee(messageSender, currencyKey, fee, "HDR", feePool.FEE_ADDRESS());
 
         return _internalTransfer(from, to, amountReceived, data);
     }
@@ -169,10 +181,10 @@ contract Nomin is ExternStateToken {
         notFeeAddress(messageSender)
         returns (bool)
     {
-        uint fee = havven.transferFeeIncurred(value);
+        uint fee = feePool.transferFeeIncurred(value);
 
         // Send the fee off to the fee pool, which we don't want to charge an additional fee on
-        havven.nominInitiatedExchangeWithoutFee(messageSender, currencyKey, fee, "HDR", havven.FEE_ADDRESS());
+        havven.nominInitiatedExchangeWithoutFee(messageSender, currencyKey, fee, "HDR", feePool.FEE_ADDRESS());
 
         // And send their transfer amount off to the destination address
         bytes memory empty;
@@ -185,10 +197,10 @@ contract Nomin is ExternStateToken {
         notFeeAddress(messageSender)
         returns (bool)
     {
-        uint fee = havven.transferFeeIncurred(value);
+        uint fee = feePool.transferFeeIncurred(value);
 
         // Send the fee off to the fee pool, which we don't want to charge an additional fee on
-        havven.nominInitiatedExchangeWithoutFee(messageSender, currencyKey, fee, "HDR", havven.FEE_ADDRESS());
+        havven.nominInitiatedExchangeWithoutFee(messageSender, currencyKey, fee, "HDR", feePool.FEE_ADDRESS());
 
         // And send their transfer amount off to the destination address
         return _internalTransfer(messageSender, to, value, data);
@@ -200,14 +212,14 @@ contract Nomin is ExternStateToken {
         notFeeAddress(from)
         returns (bool)
     {
-        uint fee = havven.transferFeeIncurred(value);
+        uint fee = feePool.transferFeeIncurred(value);
 
         // Reduce the allowance by the amount we're transferring.
         // The safeSub call will handle an insufficient allowance.
         tokenState.setAllowance(from, messageSender, safeSub(tokenState.allowance(from, messageSender), safeAdd(value, fee)));
 
         // Send the fee off to the fee pool, which we don't want to charge an additional fee on
-        havven.nominInitiatedExchangeWithoutFee(messageSender, currencyKey, fee, "HDR", havven.FEE_ADDRESS());
+        havven.nominInitiatedExchangeWithoutFee(messageSender, currencyKey, fee, "HDR", feePool.FEE_ADDRESS());
 
         bytes memory empty;
         return _internalTransfer(from, to, value, empty);
@@ -219,14 +231,14 @@ contract Nomin is ExternStateToken {
         notFeeAddress(from)
         returns (bool)
     {
-        uint fee = havven.transferFeeIncurred(value);
+        uint fee = feePool.transferFeeIncurred(value);
 
         // Reduce the allowance by the amount we're transferring.
         // The safeSub call will handle an insufficient allowance.
         tokenState.setAllowance(from, messageSender, safeSub(tokenState.allowance(from, messageSender), safeAdd(value, fee)));
 
         // Send the fee off to the fee pool, which we don't want to charge an additional fee on
-        havven.nominInitiatedExchangeWithoutFee(messageSender, currencyKey, fee, "HDR", havven.FEE_ADDRESS());
+        havven.nominInitiatedExchangeWithoutFee(messageSender, currencyKey, fee, "HDR", feePool.FEE_ADDRESS());
 
         return _internalTransfer(from, to, value, data);
     }
@@ -291,7 +303,7 @@ contract Nomin is ExternStateToken {
     }
 
     modifier notFeeAddress(address account) {
-        require(account != havven.FEE_ADDRESS(), "Cannot perform this action with the fee address");
+        require(account != feePool.FEE_ADDRESS(), "Cannot perform this action with the fee address");
         _;
     }
 
