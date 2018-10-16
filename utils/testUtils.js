@@ -181,7 +181,7 @@ const assertBNClose = (actualBN, expectedBN, varianceParam) => {
 	const actual = BN.isBN(actualBN) ? actualBN : new BN(actualBN);
 	const expected = BN.isBN(expectedBN) ? expectedBN : new BN(expectedBN);
 
-	const varianceParamRaw = varianceParam ? varianceParam : '1000';
+	const varianceParamRaw = varianceParam || '1000';
 	const variance = BN.isBN(varianceParamRaw) ? varianceParamRaw : new BN(varianceParamRaw);
 
 	assert.ok(actual.gte(expected.sub(variance)), 'Number is too small to be close');
@@ -272,6 +272,7 @@ module.exports = {
 	assertBNEqual,
 	assertBNNotEqual,
 	assertBNClose,
+	assertDeepEqual,
 	assertUnitEqual,
 	assertUnitNotEqual,
 	assertRevert,

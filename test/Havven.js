@@ -67,8 +67,6 @@ contract('Havven', async function(accounts) {
 		assert.equal(await instance.owner(), account3);
 		assert.equal(await instance.exchangeRates(), account4);
 		assert.equal(await instance.feePool(), account5);
-		// TODO: Fee period start time check
-		// TODO: Last fee period start time check
 	});
 
 	it('should correctly upgrade from the previous nUSD contract deployment');

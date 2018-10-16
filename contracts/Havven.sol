@@ -6,9 +6,6 @@ FILE INFORMATION
 file:       Havven.sol
 version:    2.0
 author:     Kevin Brown
-            Anton Jurisevic
-            Dominic Romanowski
-
 date:       2018-09-14
 
 -----------------------------------------------------------------
@@ -225,15 +222,6 @@ contract Havven is ExternStateToken {
         //     //     issuanceData[issuer].lastModified = lm;
         //     // }
         // }
-
-        // // Set our initial fee period
-        // recentFeePeriods[0].feePeriodId = 1;
-        // recentFeePeriods[0].startingDebtIndex = 0;
-        // recentFeePeriods[0].startTime = now;
-        // recentFeePeriods[0].feesToDistribute = 0;
-
-        // // And the next one starts at 2.
-        // nextFeePeriodId = 2;
     }
 
     // ========== SETTERS ========== */
@@ -427,8 +415,6 @@ contract Havven is ExternStateToken {
     {
         return availableNomins.length;
     }
-
-
 
     // ========== MUTATIVE FUNCTIONS ==========
 

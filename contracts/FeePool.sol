@@ -19,23 +19,24 @@ MODULE DESCRIPTION
 pragma solidity 0.4.25;
 
 import "./Havven.sol";
-import "./Owned.sol";
+import "./Proxyable.sol";
+import "./SelfDestructible.sol";
 import "./SafeDecimalMath.sol";
 
-contract FeePool is Owned, SafeDecimalMath {
+contract FeePool is SafeDecimalMath, Proxyable, SelfDestructible {
     Havven public havven;
 
     // A percentage fee charged on each transfer.
     uint public transferFeeRate;
 
     // Transfer fee may not exceed 10%.
-    uint constant MAX_TRANSFER_FEE_RATE = UNIT / 10;
+    uint constant public MAX_TRANSFER_FEE_RATE = UNIT / 10;
 
     // A percentage fee charged on each exchange between currencies.
     uint public exchangeFeeRate;
 
     // Exchange fee may not exceed 10%.
-    uint constant MAX_EXCHANGE_FEE_RATE = UNIT / 10;
+    uint constant public MAX_EXCHANGE_FEE_RATE = UNIT / 10;
     
     // The address with the authority to distribute fees.
     address public feeAuthority;
@@ -56,8 +57,8 @@ contract FeePool is Owned, SafeDecimalMath {
     // These are stored and managed from [0], such that [0] is always
     // the most recent fee period, and [5] is always the oldest fee
     // period that users can claim for.
-    uint8 constant FEE_PERIOD_LENGTH = 6;
-    FeePeriod[FEE_PERIOD_LENGTH] recentFeePeriods;
+    uint8 constant public FEE_PERIOD_LENGTH = 6;
+    FeePeriod[FEE_PERIOD_LENGTH] public recentFeePeriods;
 
     // The next fee period will have this ID.
     uint public nextFeePeriodId;
@@ -69,8 +70,8 @@ contract FeePool is Owned, SafeDecimalMath {
     uint public feePeriodDuration = 1 weeks;
 
     // The fee period must be between 1 day and 26 weeks.
-    uint constant MIN_FEE_PERIOD_DURATION = 1 days;
-    uint constant MAX_FEE_PERIOD_DURATION = 26 weeks;
+    uint public constant MIN_FEE_PERIOD_DURATION = 1 days;
+    uint public constant MAX_FEE_PERIOD_DURATION = 26 weeks;
 
     // The last period a user has withdrawn their fees in, identified by the feePeriodId
     mapping(address => uint) public lastFeeWithdrawal;
@@ -84,8 +85,9 @@ contract FeePool is Owned, SafeDecimalMath {
     uint constant FIFTY_PERCENT = (50 * UNIT) / 100;
     uint constant SEVENTY_FIVE_PERCENT = (75 * UNIT) / 100;
 
-    constructor(address _owner, Havven _havven, address _feeAuthority, uint _transferFeeRate, uint _exchangeFeeRate)
-        Owned(_owner)
+    constructor(address _proxy, address _owner, Havven _havven, address _feeAuthority, uint _transferFeeRate, uint _exchangeFeeRate)
+        SelfDestructible(_owner)
+        Proxyable(_proxy, _owner)
         public
     {
         // Constructed fee rates should respect the maximum fee rates.
@@ -107,20 +109,19 @@ contract FeePool is Owned, SafeDecimalMath {
         nextFeePeriodId = 2;
     }
 
-
     /**
      * @notice Set the exchange fee, anywhere within the range 0-10%.
      * @dev The fee rate is in decimal format, with UNIT being the value of 100%.
      */
     function setExchangeFeeRate(uint _exchangeFeeRate)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         require(_exchangeFeeRate <= MAX_TRANSFER_FEE_RATE, "Exchange fee rate must be below MAX_EXCHANGE_FEE_RATE");
 
         exchangeFeeRate = _exchangeFeeRate;
 
-        emit ExchangeFeeRateUpdated(_exchangeFeeRate);
+        emitExchangeFeeUpdated(_exchangeFeeRate);
     }
 
     /**
@@ -129,13 +130,13 @@ contract FeePool is Owned, SafeDecimalMath {
      */
     function setTransferFeeRate(uint _transferFeeRate)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         require(_transferFeeRate <= MAX_TRANSFER_FEE_RATE, "Transfer fee rate must be below MAX_TRANSFER_FEE_RATE");
 
         transferFeeRate = _transferFeeRate;
 
-        emit TransferFeeRateUpdated(_transferFeeRate);
+        emitTransferFeeUpdated(_transferFeeRate);
     }
 
     /**
@@ -144,11 +145,11 @@ contract FeePool is Owned, SafeDecimalMath {
      */
     function setFeeAuthority(address _feeAuthority)
         public
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         feeAuthority = _feeAuthority;
 
-        emit FeeAuthorityUpdated(_feeAuthority);
+        emitFeeAuthorityUpdated(_feeAuthority);
     }
 
     /**
@@ -156,14 +157,14 @@ contract FeePool is Owned, SafeDecimalMath {
      */
     function setFeePeriodDuration(uint _feePeriodDuration)
         public
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         require(_feePeriodDuration >= MIN_FEE_PERIOD_DURATION, "New fee period cannot be less than minimum fee period duration");
         require(_feePeriodDuration <= MAX_FEE_PERIOD_DURATION, "New fee period cannot be greater than maximum fee period duration");
 
         feePeriodDuration = _feePeriodDuration;
 
-        emit FeePeriodDurationUpdated(_feePeriodDuration);
+        emitFeePeriodDurationUpdated(_feePeriodDuration);
     }
 
     /**
@@ -171,13 +172,13 @@ contract FeePool is Owned, SafeDecimalMath {
      */
     function setHavven(Havven _havven)
         public
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         require(address(_havven) != address(0), "New Havven must be non-zero");
 
         havven = _havven;
 
-        emit HavvenUpdated(_havven);
+        emitHavvenUpdated(_havven);
     }
     
     /**
@@ -199,13 +200,20 @@ contract FeePool is Owned, SafeDecimalMath {
         );
 
         // Shift the previous fee periods across to make room for the new one.
-        for (uint8 i = FEE_PERIOD_LENGTH - 2; i >= 0; i--) {
-            recentFeePeriods[i + 1].feePeriodId = recentFeePeriods[i].feePeriodId;
-            recentFeePeriods[i + 1].startingDebtIndex = recentFeePeriods[i].startingDebtIndex;
-            recentFeePeriods[i + 1].startTime = recentFeePeriods[i].startTime;
-            recentFeePeriods[i + 1].feesToDistribute = recentFeePeriods[i].feesToDistribute;
-            recentFeePeriods[i + 1].feesClaimed = recentFeePeriods[i].feesClaimed;
+        // Condition checks for overflow when uint subtracts one from zero
+        // Could be written with int8 instead of uint8, but then we have to convert everywhere
+        // so it felt better to just change the condition to check for overflow after zero.
+        for (uint8 i = FEE_PERIOD_LENGTH - 2; i <= FEE_PERIOD_LENGTH; i--) {
+            uint8 next = i + 1;
+
+            recentFeePeriods[next].feePeriodId = recentFeePeriods[i].feePeriodId;
+            recentFeePeriods[next].startingDebtIndex = recentFeePeriods[i].startingDebtIndex;
+            recentFeePeriods[next].startTime = recentFeePeriods[i].startTime;
+            recentFeePeriods[next].feesToDistribute = recentFeePeriods[i].feesToDistribute;
+            recentFeePeriods[next].feesClaimed = recentFeePeriods[i].feesClaimed;
         }
+
+        emitFeePeriodClosed(recentFeePeriods[0].feePeriodId);
 
         // Clear the first element of the array to make sure we don't have any stale values.
         delete recentFeePeriods[0];
@@ -215,11 +223,12 @@ contract FeePool is Owned, SafeDecimalMath {
         recentFeePeriods[0].startingDebtIndex = havven.debtLedgerLength();
         recentFeePeriods[0].startTime = now;
 
-        nextFeePeriodId++;
+        nextFeePeriodId = safeAdd(nextFeePeriodId, 1);
     }
 
     function claimFees(bytes4 currencyKey)
         external
+        optionalProxy
         returns (bool)
     {
         require(lastFeeWithdrawal[msg.sender] < recentFeePeriods[0].feePeriodId, "Fees already claimed");
@@ -238,7 +247,7 @@ contract FeePool is Owned, SafeDecimalMath {
         // Send them their fees
         // _payFees(msg.sender, totalFees, currencyKey);
 
-        emit FeesClaimed(msg.sender, totalFees);
+        emitFeesClaimed(msg.sender, totalFees);
 
         return true;
     }
@@ -390,8 +399,7 @@ contract FeePool is Owned, SafeDecimalMath {
         // 0% - 20%: Fee is calculated based on percentage of economy issued.
         // 20% - 30%: 25% reduction in fees
         // 30% - 40%: 50% reduction in fees
-        // 40% - 50%: 75% reduction in fees
-        // >50%: 75% reduction in fees, and other users can execute a direct redemption to better manage that user's Havvens
+        // >40% - 75% reduction in fees
         if (ratio <= TWENTY_PERCENT) {
             return 0;
         } else if (ratio > TWENTY_PERCENT && ratio <= THIRTY_PERCENT) {
@@ -455,45 +463,45 @@ contract FeePool is Owned, SafeDecimalMath {
         _;
     }
 
-    event TransferFeeRateUpdated(uint newFeeRate);
-    // bytes32 constant TRANSFERFEEUPDATED_SIG = keccak256("TransferFeeUpdated(uint256)");
-    // function emitTransferFeeUpdated(uint newFeeRate) internal {
-    //     proxy._emit(abi.encode(newFeeRate), 1, TRANSFERFEEUPDATED_SIG, 0, 0, 0);
-    // }
+    event TransferFeeUpdated(uint newFeeRate);
+    bytes32 constant TRANSFERFEEUPDATED_SIG = keccak256("TransferFeeUpdated(uint256)");
+    function emitTransferFeeUpdated(uint newFeeRate) internal {
+        proxy._emit(abi.encode(newFeeRate), 1, TRANSFERFEEUPDATED_SIG, 0, 0, 0);
+    }
 
-    event ExchangeFeeRateUpdated(uint newFeeRate);
-    // bytes32 constant EXCHANGEFEEUPDATED_SIG = keccak256("ExchangeFeeUpdated(uint256)");
-    // function emitExchangeFeeUpdated(uint newFeeRate) internal {
-    //     proxy._emit(abi.encode(newFeeRate), 1, EXCHANGEFEEUPDATED_SIG, 0, 0, 0);
-    // }
+    event ExchangeFeeUpdated(uint newFeeRate);
+    bytes32 constant EXCHANGEFEEUPDATED_SIG = keccak256("ExchangeFeeUpdated(uint256)");
+    function emitExchangeFeeUpdated(uint newFeeRate) internal {
+        proxy._emit(abi.encode(newFeeRate), 1, EXCHANGEFEEUPDATED_SIG, 0, 0, 0);
+    }
 
     event FeePeriodDurationUpdated(uint newFeePeriodDuration);
-    // bytes32 constant FEEPERIODDURATIONUPDATED_SIG = keccak256("FeePeriodDurationUpdated(uint256)");
-    // function emitFeePeriodDurationUpdated(uint newFeePeriodDuration) internal {
-    //     proxy._emit(abi.encode(newFeePeriodDuration), 1, FEEPERIODDURATIONUPDATED_SIG, 0, 0, 0);
-    // }
+    bytes32 constant FEEPERIODDURATIONUPDATED_SIG = keccak256("FeePeriodDurationUpdated(uint256)");
+    function emitFeePeriodDurationUpdated(uint newFeePeriodDuration) internal {
+        proxy._emit(abi.encode(newFeePeriodDuration), 1, FEEPERIODDURATIONUPDATED_SIG, 0, 0, 0);
+    }
 
     event FeeAuthorityUpdated(address newFeeAuthority);
-    // bytes32 constant FEEAUTHORITYUPDATED_SIG = keccak256("FeeAuthorityUpdated(address)");
-    // function emitFeeAuthorityUpdated(address newFeeAuthority) internal {
-    //     proxy._emit(abi.encode(newFeeAuthority), 1, FEEAUTHORITYUPDATED_SIG, 0, 0, 0);
-    // }
+    bytes32 constant FEEAUTHORITYUPDATED_SIG = keccak256("FeeAuthorityUpdated(address)");
+    function emitFeeAuthorityUpdated(address newFeeAuthority) internal {
+        proxy._emit(abi.encode(newFeeAuthority), 1, FEEAUTHORITYUPDATED_SIG, 0, 0, 0);
+    }
 
     event FeePeriodClosed(uint feePeriodId);
-    // bytes32 constant FEEPERIODCLOSED_SIG = keccak256("FeePeriodClosed(uint256)");
-    // function emitFeePeriodClosed(uint feePeriodId) internal {
-    //     proxy._emit(abi.encode(feePeriodId), 1, FEEPERIODCLOSED_SIG, 0, 0, 0);
-    // }
+    bytes32 constant FEEPERIODCLOSED_SIG = keccak256("FeePeriodClosed(uint256)");
+    function emitFeePeriodClosed(uint feePeriodId) internal {
+        proxy._emit(abi.encode(feePeriodId), 1, FEEPERIODCLOSED_SIG, 0, 0, 0);
+    }
 
     event FeesClaimed(address account, uint hdrAmount);
-    // bytes32 constant FEESCLAIMED_SIG = keccak256("FeesClaimed(address,uint256)");
-    // function emitFeesClaimed(address account, uint hdrAmount) internal {
-    //     proxy._emit(abi.encode(account, hdrAmount), 1, FEESCLAIMED_SIG, 0, 0, 0);
-    // }
+    bytes32 constant FEESCLAIMED_SIG = keccak256("FeesClaimed(address,uint256)");
+    function emitFeesClaimed(address account, uint hdrAmount) internal {
+        proxy._emit(abi.encode(account, hdrAmount), 1, FEESCLAIMED_SIG, 0, 0, 0);
+    }
 
-    event HavvenUpdated(Havven newHavven);
-    // bytes32 constant FEESCLAIMED_SIG = keccak256("FeesClaimed(address,uint256)");
-    // function emitFeesClaimed(address account, uint hdrAmount) internal {
-    //     proxy._emit(abi.encode(account, hdrAmount), 1, FEESCLAIMED_SIG, 0, 0, 0);
-    // }
+    event HavvenUpdated(address newHavven);
+    bytes32 constant HAVVENUPDATED_SIG = keccak256("HavvenUpdated(address)");
+    function emitHavvenUpdated(address newHavven) internal {
+        proxy._emit(abi.encode(newHavven), 1, HAVVENUPDATED_SIG, 0, 0, 0);
+    }
 }

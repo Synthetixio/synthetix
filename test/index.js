@@ -4,6 +4,7 @@ const {
 	assertBNEqual,
 	assertBNNotEqual,
 	assertBNClose,
+	assertDeepEqual,
 	assertUnitEqual,
 	assertUnitNotEqual,
 	assertRevert,
@@ -19,6 +20,7 @@ assert.eventNotEqual = assertEventNotEqual;
 assert.bnEqual = assertBNEqual;
 assert.bnNotEqual = assertBNNotEqual;
 assert.bnClose = assertBNClose;
+assert.deepEqual = assertDeepEqual;
 assert.etherEqual = assertUnitEqual;
 assert.etherNotEqual = assertUnitNotEqual;
 assert.unitEqual = assertUnitEqual;
