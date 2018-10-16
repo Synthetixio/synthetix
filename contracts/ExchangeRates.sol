@@ -135,7 +135,7 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
         require(timeSent < (now + ORACLE_FUTURE_LIMIT), "Time is too far into the future");
 
         // Loop through each key and perform update.
-        for (uint i = 0; i < currencyKeys.length; i++) {
+        for (uint8 i = 0; i < currencyKeys.length; i++) {
             // Should not set any rate to zero ever, as no asset will ever be
             // truely worthless and still valid. In this scenario, we should
             // delete the rate and remove it from the system.
@@ -161,7 +161,7 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
     {
         uint total = 0;
 
-        for (uint i = 0; i < hdrParticipants.length; i++) {
+        for (uint8 i = 0; i < hdrParticipants.length; i++) {
             total = safeAdd(rates[hdrParticipants[i]], total);
         }
 
@@ -245,7 +245,7 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
     {
         uint[] memory _rates = new uint[](currencyKeys.length);
 
-        for (uint i = 0; i < currencyKeys.length; i++) {
+        for (uint8 i = 0; i < currencyKeys.length; i++) {
             _rates[i] = rates[currencyKeys[i]];
         }
 
@@ -273,7 +273,7 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
     {
         uint[] memory lastUpdateTimes = new uint[](currencyKeys.length);
 
-        for (uint i = 0; i < currencyKeys.length; i++) {
+        for (uint8 i = 0; i < currencyKeys.length; i++) {
             lastUpdateTimes[i] = lastRateUpdateTimes[currencyKeys[i]];
         }
 

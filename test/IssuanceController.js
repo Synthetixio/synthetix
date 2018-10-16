@@ -2,7 +2,7 @@ const Havven = artifacts.require('Havven');
 const IssuanceController = artifacts.require('IssuanceController');
 const Nomin = artifacts.require('Nomin');
 
-contract('Issuance Controller', async function(accounts) {
+contract.skip('Issuance Controller', async function(accounts) {
 	const [
 		deployerAccount,
 		owner,

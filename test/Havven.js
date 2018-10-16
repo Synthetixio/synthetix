@@ -1,5 +1,6 @@
 const ExchangeRates = artifacts.require('ExchangeRates');
 const Escrow = artifacts.require('HavvenEscrow');
+const FeePool = artifacts.require('FeePool');
 const Havven = artifacts.require('Havven');
 const Nomin = artifacts.require('Nomin');
 
@@ -10,7 +11,6 @@ const {
 	fastForward,
 	multiplyDecimal,
 	divideDecimal,
-	fromUnit,
 	toUnit,
 	ZERO_ADDRESS,
 } = require('../utils/testUtils');
@@ -20,7 +20,7 @@ contract.only('Havven', async function(accounts) {
 		web3.utils.asciiToHex
 	);
 
-	const [deployerAccount, owner, account1, account2, account3, account4] = accounts;
+	const [deployerAccount, owner, account1, account2, account3, account4, account5] = accounts;
 
 	let havven, exchangeRates, nUSDContract, nAUDContract;
 
@@ -49,14 +49,24 @@ contract.only('Havven', async function(accounts) {
 	});
 
 	it('should set constructor params on deployment', async function() {
-		const instance = await Havven.new(account1, account2, account3, account4, ZERO_ADDRESS, {
-			from: deployerAccount,
-		});
+		// constructor(address _proxy, TokenState _tokenState, address _owner, ExchangeRates _exchangeRates, FeePool _feePool, Havven _oldHavven)
+		const instance = await Havven.new(
+			account1,
+			account2,
+			account3,
+			account4,
+			account5,
+			ZERO_ADDRESS,
+			{
+				from: deployerAccount,
+			}
+		);
 
 		assert.equal(await instance.proxy(), account1);
 		assert.equal(await instance.tokenState(), account2);
 		assert.equal(await instance.owner(), account3);
 		assert.equal(await instance.exchangeRates(), account4);
+		assert.equal(await instance.feePool(), account5);
 		// TODO: Fee period start time check
 		// TODO: Last fee period start time check
 	});
@@ -70,6 +80,7 @@ contract.only('Havven', async function(accounts) {
 			account1,
 			account2,
 			Havven.address,
+			FeePool.address,
 			'Nomin XYZ',
 			'nXYZ',
 			owner,
@@ -92,6 +103,7 @@ contract.only('Havven', async function(accounts) {
 			account1,
 			account2,
 			Havven.address,
+			FeePool.address,
 			'Nomin XYZ',
 			'nXYZ',
 			owner,
@@ -107,6 +119,7 @@ contract.only('Havven', async function(accounts) {
 			account1,
 			account2,
 			Havven.address,
+			FeePool.address,
 			'Nomin XYZ',
 			'nXYZ',
 			owner,
@@ -123,6 +136,7 @@ contract.only('Havven', async function(accounts) {
 			account1,
 			account2,
 			Havven.address,
+			FeePool.address,
 			'Nomin XYZ',
 			'nXYZ',
 			owner,
@@ -134,6 +148,7 @@ contract.only('Havven', async function(accounts) {
 			account1,
 			account2,
 			Havven.address,
+			FeePool.address,
 			'Nomin XYZ',
 			'nXYZ',
 			owner,
@@ -216,61 +231,61 @@ contract.only('Havven', async function(accounts) {
 
 	// Set fees
 
-	it('should allow the owner to set fee period duration', async function() {
-		// Set fee period to 5 days
-		const duration = 5 * 24 * 60 * 60;
-		const transaction = await havven.setFeePeriodDuration(web3.utils.toBN(duration), {
-			from: owner,
-		});
+	// it('should allow the owner to set fee period duration', async function() {
+	// 	// Set fee period to 5 days
+	// 	const duration = 5 * 24 * 60 * 60;
+	// 	const transaction = await havven.setFeePeriodDuration(web3.utils.toBN(duration), {
+	// 		from: owner,
+	// 	});
 
-		assert.eventEqual(transaction, 'FeePeriodDurationUpdated', { duration });
-	});
+	// 	assert.eventEqual(transaction, 'FeePeriodDurationUpdated', { duration });
+	// });
 
-	it('should disallow a non-owner from setting the fee period duration', async function() {
-		// Try to set fee period to 5 days
-		const duration = 5 * 24 * 60 * 60;
-		await assert.revert(
-			havven.setFeePeriodDuration(web3.utils.toBN(duration), {
-				from: account1,
-			})
-		);
-	});
+	// it('should disallow a non-owner from setting the fee period duration', async function() {
+	// 	// Try to set fee period to 5 days
+	// 	const duration = 5 * 24 * 60 * 60;
+	// 	await assert.revert(
+	// 		havven.setFeePeriodDuration(web3.utils.toBN(duration), {
+	// 			from: account1,
+	// 		})
+	// 	);
+	// });
 
-	it('should disallow setting the fee period duration below the minimum fee period duration', async function() {
-		// Minimum is currently 1 day in the contract
-		const minimum = 60 * 60 * 24;
+	// it('should disallow setting the fee period duration below the minimum fee period duration', async function() {
+	// 	// Minimum is currently 1 day in the contract
+	// 	const minimum = 60 * 60 * 24;
 
-		// Setting to the minimum should succeed
-		const transaction = await havven.setFeePeriodDuration(web3.utils.toBN(minimum), {
-			from: owner,
-		});
-		assert.eventEqual(transaction, 'FeePeriodDurationUpdated', { duration: minimum });
+	// 	// Setting to the minimum should succeed
+	// 	const transaction = await havven.setFeePeriodDuration(web3.utils.toBN(minimum), {
+	// 		from: owner,
+	// 	});
+	// 	assert.eventEqual(transaction, 'FeePeriodDurationUpdated', { duration: minimum });
 
-		// While setting to minimum - 1 should fail
-		await assert.revert(
-			havven.setFeePeriodDuration(web3.utils.toBN(minimum - 1), {
-				from: owner,
-			})
-		);
-	});
+	// 	// While setting to minimum - 1 should fail
+	// 	await assert.revert(
+	// 		havven.setFeePeriodDuration(web3.utils.toBN(minimum - 1), {
+	// 			from: owner,
+	// 		})
+	// 	);
+	// });
 
-	it('should disallow setting the fee period duration above the maximum fee period duration', async function() {
-		// Maximum is currently 26 weeks in the contract
-		const maximum = 60 * 60 * 24 * 7 * 26;
+	// it('should disallow setting the fee period duration above the maximum fee period duration', async function() {
+	// 	// Maximum is currently 26 weeks in the contract
+	// 	const maximum = 60 * 60 * 24 * 7 * 26;
 
-		// Setting to the maximum should succeed
-		const transaction = await havven.setFeePeriodDuration(web3.utils.toBN(maximum), {
-			from: owner,
-		});
-		assert.eventEqual(transaction, 'FeePeriodDurationUpdated', { duration: maximum });
+	// 	// Setting to the maximum should succeed
+	// 	const transaction = await havven.setFeePeriodDuration(web3.utils.toBN(maximum), {
+	// 		from: owner,
+	// 	});
+	// 	assert.eventEqual(transaction, 'FeePeriodDurationUpdated', { duration: maximum });
 
-		// While setting to maximum + 1 should fail
-		await assert.revert(
-			havven.setFeePeriodDuration(web3.utils.toBN(maximum + 1), {
-				from: owner,
-			})
-		);
-	});
+	// 	// While setting to maximum + 1 should fail
+	// 	await assert.revert(
+	// 		havven.setFeePeriodDuration(web3.utils.toBN(maximum + 1), {
+	// 			from: owner,
+	// 		})
+	// 	);
+	// });
 
 	// Exchange Rates contract
 
@@ -331,23 +346,6 @@ contract.only('Havven', async function(accounts) {
 				from: account1,
 			})
 		);
-	});
-
-	// Whitelisting
-
-	it('should allow the owner to add someone as a whitelisted issuer', async function() {
-		assert.equal(await havven.isIssuer(account1), false);
-
-		const transaction = await havven.setIssuer(account1, true, { from: owner });
-		assert.eventEqual(transaction, 'IssuerUpdated', { account: account1, value: true });
-
-		assert.equal(await havven.isIssuer(account1), true);
-	});
-
-	it('should disallow a non-owner from adding someone as a whitelisted issuer', async function() {
-		assert.equal(await havven.isIssuer(account1), false);
-
-		await assert.revert(havven.setIssuer(account1, true, { from: account1 }));
 	});
 
 	// Effective value
@@ -445,10 +443,6 @@ contract.only('Havven', async function(accounts) {
 		await havven.transfer(account1, toUnit('1000'), { from: owner });
 		await havven.transfer(account2, toUnit('1000'), { from: owner });
 
-		// Make them issuers
-		await havven.setIssuer(account1, true, { from: owner });
-		await havven.setIssuer(account2, true, { from: owner });
-
 		// Issue 10 nUSD each
 		await havven.issueNomins(nUSD, toUnit('10'), { from: account1 });
 		await havven.issueNomins(nUSD, toUnit('10'), { from: account2 });
@@ -474,10 +468,6 @@ contract.only('Havven', async function(accounts) {
 		// Give some HAV to account1 and account2
 		await havven.transfer(account1, toUnit('1000'), { from: owner });
 		await havven.transfer(account2, toUnit('1000'), { from: owner });
-
-		// Make them issuers
-		await havven.setIssuer(account1, true, { from: owner });
-		await havven.setIssuer(account2, true, { from: owner });
 
 		// Issue 10 nUSD each
 		await havven.issueNomins(nUSD, toUnit('10'), { from: account1 });
@@ -508,10 +498,6 @@ contract.only('Havven', async function(accounts) {
 		// Give some HAV to account1 and account2
 		await havven.transfer(account1, toUnit('100000'), { from: owner });
 		await havven.transfer(account2, toUnit('100000'), { from: owner });
-
-		// Make them issuers
-		await havven.setIssuer(account1, true, { from: owner });
-		await havven.setIssuer(account2, true, { from: owner });
 
 		// Issue
 		const issueAmountAUD = toUnit('10');
@@ -839,9 +825,6 @@ contract.only('Havven', async function(accounts) {
 		// Give some HAV to account1
 		await havven.transfer(account1, toUnit('1000'), { from: owner });
 
-		// Make account1 an issuer
-		await havven.setIssuer(account1, true, { from: owner });
-
 		// account1 should be able to issue
 		await havven.issueNomins(nUSD, web3.utils.toBN('1'), { from: account1 });
 
@@ -864,15 +847,13 @@ contract.only('Havven', async function(accounts) {
 		// Give some HAV to account1
 		await havven.transfer(account1, toUnit('1000'), { from: owner });
 
-		// Make account1 an issuer
-		await havven.setIssuer(account1, true, { from: owner });
 		const maxNomins = await havven.maxIssuableNomins(account1, nUSD);
 
 		// account1 should be able to issue
 		await havven.issueNomins(nUSD, maxNomins, { from: account1 });
 	});
 
-	it('should allow a whitelisted issuer to issue nomins in one flavour', async function() {
+	it('should allow an issuer to issue nomins in one flavour', async function() {
 		// Send a price update to guarantee we're not depending on values from outside this test.
 		const oracle = await exchangeRates.oracle();
 		const timestamp = await currentTime();
@@ -886,9 +867,6 @@ contract.only('Havven', async function(accounts) {
 
 		// Give some HAV to account1
 		await havven.transfer(account1, toUnit('1000'), { from: owner });
-
-		// Make account1 an issuer
-		await havven.setIssuer(account1, true, { from: owner });
 
 		// account1 should be able to issue
 		await havven.issueNomins(nUSD, toUnit('10'), { from: account1 });
@@ -901,7 +879,7 @@ contract.only('Havven', async function(accounts) {
 		assert.bnEqual(await havven.debtBalanceOf(account1, nUSD), toUnit('10'));
 	});
 
-	it('should allow a whitelisted issuer to issue nomins in multiple flavours', async function() {
+	it('should allow an issuer to issue nomins in multiple flavours', async function() {
 		// Send a price update to guarantee we're not depending on values from outside this test.
 		const oracle = await exchangeRates.oracle();
 		const timestamp = await currentTime();
@@ -915,9 +893,6 @@ contract.only('Havven', async function(accounts) {
 
 		// Give some HAV to account1
 		await havven.transfer(account1, toUnit('1000'), { from: owner });
-
-		// Make account1 an issuer
-		await havven.setIssuer(account1, true, { from: owner });
 
 		// account1 should be able to issue nUSD and nAUD
 		await havven.issueNomins(nUSD, toUnit('10'), { from: account1 });
@@ -950,10 +925,6 @@ contract.only('Havven', async function(accounts) {
 		await havven.transfer(account1, toUnit('10000'), { from: owner });
 		await havven.transfer(account2, toUnit('10000'), { from: owner });
 
-		// Make accounts issuers
-		await havven.setIssuer(account1, true, { from: owner });
-		await havven.setIssuer(account2, true, { from: owner });
-
 		// Issue
 		await havven.issueNomins(nUSD, toUnit('10'), { from: account1 });
 		await havven.issueNomins(nUSD, toUnit('20'), { from: account2 });
@@ -984,10 +955,6 @@ contract.only('Havven', async function(accounts) {
 		// Give some HAV to account1 and account2
 		await havven.transfer(account1, toUnit('10000'), { from: owner });
 		await havven.transfer(account2, toUnit('10000'), { from: owner });
-
-		// Make accounts issuers
-		await havven.setIssuer(account1, true, { from: owner });
-		await havven.setIssuer(account2, true, { from: owner });
 
 		// Issue
 		await havven.issueNomins(nUSD, toUnit('10'), { from: account1 });
@@ -1021,10 +988,6 @@ contract.only('Havven', async function(accounts) {
 		await havven.transfer(account1, toUnit('10000'), { from: owner });
 		await havven.transfer(account2, toUnit('10000'), { from: owner });
 
-		// Make accounts issuers
-		await havven.setIssuer(account1, true, { from: owner });
-		await havven.setIssuer(account2, true, { from: owner });
-
 		// Issue
 		await havven.issueNomins(nUSD, toUnit('10'), { from: account1 });
 		await havven.issueNomins(nAUD, toUnit('20'), { from: account2 });
@@ -1040,7 +1003,7 @@ contract.only('Havven', async function(accounts) {
 		assert.bnEqual(await havven.debtBalanceOf(account2, nUSD), toUnit('10'));
 	});
 
-	it('should allow a whitelisted issuer to issue max nomins in one flavour', async function() {
+	it('should allow an issuer to issue max nomins in one flavour', async function() {
 		// Send a price update to guarantee we're not depending on values from outside this test.
 		const oracle = await exchangeRates.oracle();
 		const timestamp = await currentTime();
@@ -1054,9 +1017,6 @@ contract.only('Havven', async function(accounts) {
 
 		// Give some HAV to account1
 		await havven.transfer(account1, toUnit('10000'), { from: owner });
-
-		// Make account an issuer
-		await havven.setIssuer(account1, true, { from: owner });
 
 		// Issue
 		await havven.issueMaxNomins(nUSD, { from: account1 });
@@ -1068,7 +1028,7 @@ contract.only('Havven', async function(accounts) {
 		assert.bnEqual(await havven.debtBalanceOf(account1, nUSD), toUnit('200'));
 	});
 
-	it('should allow a whitelisted issuer to issue max nomins via the standard issue call', async function() {
+	it('should allow an issuer to issue max nomins via the standard issue call', async function() {
 		// Send a price update to guarantee we're not depending on values from outside this test.
 		const oracle = await exchangeRates.oracle();
 		const timestamp = await currentTime();
@@ -1082,9 +1042,6 @@ contract.only('Havven', async function(accounts) {
 
 		// Give some HAV to account1
 		await havven.transfer(account1, toUnit('10000'), { from: owner });
-
-		// Make account an issuer
-		await havven.setIssuer(account1, true, { from: owner });
 
 		// Determine maximum amount that can be issued.
 		const maxIssuable = await havven.maxIssuableNomins(account1, nUSD);
@@ -1099,7 +1056,7 @@ contract.only('Havven', async function(accounts) {
 		assert.bnEqual(await havven.debtBalanceOf(account1, nUSD), toUnit('200'));
 	});
 
-	it('should report that a non-whitelisted user has zero maxIssuableNomins', async function() {
+	it('should disallow an issuer from issuing nomins in a non-existant flavour', async function() {
 		// Send a price update to guarantee we're not depending on values from outside this test.
 		const oracle = await exchangeRates.oracle();
 		const timestamp = await currentTime();
@@ -1113,60 +1070,6 @@ contract.only('Havven', async function(accounts) {
 
 		// Give some HAV to account1
 		await havven.transfer(account1, toUnit('10000'), { from: owner });
-
-		// They should have no issuable nomins.
-		assert.bnEqual(await havven.maxIssuableNomins(account1, nUSD), '0');
-
-		// Make account an issuer
-		await havven.setIssuer(account1, true, { from: owner });
-
-		// They should now be able to issue 200 nUSD
-		assert.bnEqual(await havven.maxIssuableNomins(account1, nUSD), toUnit('200'));
-	});
-
-	it('should disallow a non-whitelisted issuer from issuing nomins in a single flavour', async function() {
-		// Send a price update to guarantee we're not depending on values from outside this test.
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
-
-		await exchangeRates.updateRates(
-			[nUSD, nAUD, nEUR, HAV],
-			['1', '0.5', '1.25', '0.1'].map(toUnit),
-			timestamp,
-			{ from: oracle }
-		);
-
-		// Give some HAV to account1
-		await havven.transfer(account1, toUnit('10000'), { from: owner });
-
-		// They should not be able to issue because they aren't whitelisted.
-		await assert.revert(havven.issueNomins(nUSD, toUnit('10'), { from: account1 }));
-
-		// To just double check that that was the actual limitation that caused the revert, let's
-		// assert that they're able to issue after whitelisting.
-		await havven.setIssuer(account1, true, { from: owner });
-
-		// They should now be able to issue nUSD
-		await havven.issueNomins(nUSD, toUnit('10'), { from: account1 });
-	});
-
-	it('should disallow a whitelisted issuer from issuing nomins in a non-existant flavour', async function() {
-		// Send a price update to guarantee we're not depending on values from outside this test.
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
-
-		await exchangeRates.updateRates(
-			[nUSD, nAUD, nEUR, HAV],
-			['1', '0.5', '1.25', '0.1'].map(toUnit),
-			timestamp,
-			{ from: oracle }
-		);
-
-		// Give some HAV to account1
-		await havven.transfer(account1, toUnit('10000'), { from: owner });
-
-		// Set them as an issuer
-		await havven.setIssuer(account1, true, { from: owner });
 
 		// They should now be able to issue nUSD
 		await havven.issueNomins(nUSD, toUnit('10'), { from: account1 });
@@ -1175,7 +1078,7 @@ contract.only('Havven', async function(accounts) {
 		await assert.revert(havven.issueNomins(nXYZ, toUnit('10')));
 	});
 
-	it('should disallow a whitelisted issuer from issuing nomins beyond their remainingIssuableNomins', async function() {
+	it('should disallow an issuer from issuing nomins beyond their remainingIssuableNomins', async function() {
 		// Send a price update to guarantee we're not depending on values from outside this test.
 		const oracle = await exchangeRates.oracle();
 		const timestamp = await currentTime();
@@ -1189,9 +1092,6 @@ contract.only('Havven', async function(accounts) {
 
 		// Give some HAV to account1
 		await havven.transfer(account1, toUnit('10000'), { from: owner });
-
-		// Set them as an issuer
-		await havven.setIssuer(account1, true, { from: owner });
 
 		// They should now be able to issue nUSD
 		const issuableNomins = await havven.remainingIssuableNomins(account1, nUSD);
@@ -1222,9 +1122,6 @@ contract.only('Havven', async function(accounts) {
 		// Give some HAV to account1
 		await havven.transfer(account1, toUnit('10000'), { from: owner });
 
-		// Make account an issuer
-		await havven.setIssuer(account1, true, { from: owner });
-
 		// Issue
 		await havven.issueMaxNomins(nUSD, { from: account1 });
 
@@ -1253,9 +1150,6 @@ contract.only('Havven', async function(accounts) {
 		// Give some HAV to account1
 		await havven.transfer(account1, toUnit('10000'), { from: owner });
 
-		// Make account an issuer
-		await havven.setIssuer(account1, true, { from: owner });
-
 		// Issue
 		await havven.issueMaxNomins(nUSD, { from: account1 });
 
@@ -1282,9 +1176,6 @@ contract.only('Havven', async function(accounts) {
 		// Give some HAV to account1
 		await havven.transfer(account1, toUnit('10000'), { from: owner });
 
-		// Make account an issuer
-		await havven.setIssuer(account1, true, { from: owner });
-
 		// Issue
 		await havven.issueMaxNomins(nUSD, { from: account1 });
 
@@ -1310,10 +1201,6 @@ contract.only('Havven', async function(accounts) {
 		// Give some HAV to account1
 		await havven.transfer(account1, toUnit('10000'), { from: owner });
 		await havven.transfer(account2, toUnit('10000'), { from: owner });
-
-		// Make account an issuer
-		await havven.setIssuer(account1, true, { from: owner });
-		await havven.setIssuer(account2, true, { from: owner });
 
 		// Issue
 		const fullAmount = toUnit('210');
@@ -1358,10 +1245,6 @@ contract.only('Havven', async function(accounts) {
 		await havven.transfer(account1, toUnit('200000'), { from: owner });
 		await havven.transfer(account2, toUnit('200000'), { from: owner });
 
-		// Make accounts issuers
-		await havven.setIssuer(account1, true, { from: owner });
-		await havven.setIssuer(account2, true, { from: owner });
-
 		// Issue
 		const issuedNominsPt1 = toUnit('2000');
 		const issuedNominsPt2 = toUnit('2000');
@@ -1378,10 +1261,6 @@ contract.only('Havven', async function(accounts) {
 		// Give some HAV to account1
 		await havven.transfer(account1, toUnit('500000'), { from: owner });
 		await havven.transfer(account2, toUnit('14000'), { from: owner });
-
-		// Make accounts issuers
-		await havven.setIssuer(account1, true, { from: owner });
-		await havven.setIssuer(account2, true, { from: owner });
 
 		// Issue
 		const issuedNominsPt1 = toUnit('2000');
@@ -1513,10 +1392,6 @@ contract.only('Havven', async function(accounts) {
 		await havven.transfer(account1, toUnit('5000000'), { from: owner });
 		await havven.transfer(account2, toUnit('5000000'), { from: owner });
 
-		// Make accounts issuers
-		await havven.setIssuer(account1, true, { from: owner });
-		await havven.setIssuer(account2, true, { from: owner });
-
 		const nominsIssuedEachTime = web3.utils.toBN('100');
 		const loopCount = 500;
 		for (let i = 0; i < loopCount; i++) {
@@ -1538,7 +1413,6 @@ contract.only('Havven', async function(accounts) {
 		const rate = await exchangeRates.rateForCurrency(web3.utils.asciiToHex('HAV'));
 		const issuedHavvens = web3.utils.toBN('200000');
 		await havven.transfer(account1, toUnit(issuedHavvens), { from: owner });
-		await havven.setIssuer(account1, true, { from: owner });
 		const issuanceRatio = await havven.issuanceRatio.call();
 
 		const expectedIssuableNomins = multiplyDecimal(
@@ -1562,7 +1436,6 @@ contract.only('Havven', async function(accounts) {
 
 		const issuedHavvens = web3.utils.toBN('320001');
 		await havven.transfer(account1, toUnit(issuedHavvens), { from: owner });
-		await havven.setIssuer(account1, true, { from: owner });
 
 		const issuanceRatio = await havven.issuanceRatio.call();
 		const nAUDIssued = web3.utils.toBN('1234');
@@ -1609,15 +1482,6 @@ contract.only('Havven', async function(accounts) {
 		await assert.revert(havven.maxIssuableNomins(account1, nAUD));
 	});
 
-	it('should always return zero maximum issuance if a user is not a whitelisted issuer', async function() {
-		const havvens = web3.utils.toBN('321321');
-		await havven.transfer(account1, toUnit(havvens), { from: owner });
-
-		await havven.setIssuer(account1, false, { from: owner });
-		const maxIssuableNomins = await havven.maxIssuableNomins(account1, nAUD);
-		assert.bnEqual(maxIssuableNomins, 0);
-	});
-
 	it("should correctly calculate a user's debt balance without prior issuance", async function() {
 		await havven.transfer(account1, toUnit('200000'), { from: owner });
 		await havven.transfer(account2, toUnit('10000'), { from: owner });
@@ -1631,9 +1495,6 @@ contract.only('Havven', async function(accounts) {
 	it("should correctly calculate a user's debt balance with prior issuance", async function() {
 		// Give some HAV to account1
 		await havven.transfer(account1, toUnit('200000'), { from: owner });
-
-		// Make accounts issuers
-		await havven.setIssuer(account1, true, { from: owner });
 
 		// Issue
 		const issuedNomins = toUnit('1001');
@@ -1651,9 +1512,6 @@ contract.only('Havven', async function(accounts) {
 
 		const issuedHavvens = web3.utils.toBN('200012');
 		await havven.transfer(account1, toUnit(issuedHavvens), { from: owner });
-
-		// Make account issuer
-		await havven.setIssuer(account1, true, { from: owner });
 
 		// Issue
 		const nEURIssued = toUnit('2011');
@@ -1677,9 +1535,6 @@ contract.only('Havven', async function(accounts) {
 		const issuedHavvens = web3.utils.toBN('20');
 		await havven.transfer(account1, toUnit(issuedHavvens), { from: owner });
 
-		// Make account issuer
-		await havven.setIssuer(account1, true, { from: owner });
-
 		const expectedIssuableNomins = multiplyDecimal(
 			toUnit(issuedHavvens),
 			multiplyDecimal(hav2eurRate, issuanceRatio)
@@ -1692,9 +1547,6 @@ contract.only('Havven', async function(accounts) {
 	it('should not be possible to transfer locked havvens', async function() {
 		const issuedHavvens = web3.utils.toBN('200000');
 		await havven.transfer(account1, toUnit(issuedHavvens), { from: owner });
-
-		// Make account issuer
-		await havven.setIssuer(account1, true, { from: owner });
 
 		// Issue
 		const nEURIssued = toUnit('2000');
@@ -1712,9 +1564,6 @@ contract.only('Havven', async function(accounts) {
 
 		const issuedHavvens = web3.utils.toBN('200000');
 		await havven.transfer(account1, toUnit(issuedHavvens), { from: owner });
-
-		// Make account issuer
-		await havven.setIssuer(account1, true, { from: owner });
 
 		const maxIssuableNomins = await havven.maxIssuableNomins(account1, nEUR);
 
@@ -1740,9 +1589,6 @@ contract.only('Havven', async function(accounts) {
 		const issuedHavvens = web3.utils.toBN('200000');
 		await havven.transfer(account1, toUnit(issuedHavvens), { from: owner });
 		await havven.transfer(account2, toUnit(issuedHavvens), { from: owner });
-
-		// Make account issuer
-		await havven.setIssuer(account1, true, { from: owner });
 
 		const maxIssuableNomins = await havven.maxIssuableNomins(account1, nEUR);
 
@@ -1772,9 +1618,6 @@ contract.only('Havven', async function(accounts) {
 		const issuedHavvens = web3.utils.toBN('200000');
 		await havven.transfer(account1, toUnit(issuedHavvens), { from: owner });
 
-		// Make account issuer
-		await havven.setIssuer(account1, true, { from: owner });
-
 		// Issue
 		const issuedNomins = await havven.maxIssuableNomins(account1, nAUD);
 		await havven.issueNomins(nAUD, issuedNomins, { from: account1 });
@@ -1803,9 +1646,6 @@ contract.only('Havven', async function(accounts) {
 		const issuedHavvens = web3.utils.toBN('320000');
 		await havven.transfer(account1, toUnit(issuedHavvens), { from: owner });
 
-		// Make account issuer
-		await havven.setIssuer(account1, true, { from: owner });
-
 		// Issue
 		const issuedNomins = toUnit(web3.utils.toBN('6400'));
 		await havven.issueNomins(nAUD, issuedNomins, { from: account1 });
@@ -1825,9 +1665,6 @@ contract.only('Havven', async function(accounts) {
 		const issuedHavvens = web3.utils.toBN('320000');
 		await havven.transfer(account1, toUnit(issuedHavvens), { from: owner });
 
-		// Make account issuer
-		await havven.setIssuer(account1, true, { from: owner });
-
 		// Issue
 		const issuedNomins = toUnit(web3.utils.toBN('6400'));
 		await havven.issueNomins(nAUD, issuedNomins, { from: account1 });
@@ -1841,8 +1678,6 @@ contract.only('Havven', async function(accounts) {
 		const issuedHavvens = web3.utils.toBN('320000');
 		await havven.transfer(account1, toUnit(issuedHavvens), { from: owner });
 		await havven.transfer(account2, toUnit(issuedHavvens), { from: owner });
-		await havven.setIssuer(account1, true, { from: owner });
-		await havven.setIssuer(account2, true, { from: owner });
 		const issuedNomins = toUnit(web3.utils.toBN('6400'));
 		await havven.issueNomins(nAUD, issuedNomins, { from: account1 });
 		await havven.issueNomins(nAUD, issuedNomins, { from: account2 });
@@ -1875,7 +1710,6 @@ contract.only('Havven', async function(accounts) {
 		});
 
 		// Issue
-		await havven.setIssuer(account1, true, { from: owner });
 		const maxIssuable = await havven.maxIssuableNomins(account1, nUSD);
 		await havven.issueNomins(nUSD, maxIssuable, { from: account1 });
 
@@ -1926,7 +1760,6 @@ contract.only('Havven', async function(accounts) {
 		await havven.transfer(account1, transferredHavvens, { from: owner });
 
 		// Issue
-		await havven.setIssuer(account1, true, { from: owner });
 		const maxIssuable = await havven.maxIssuableNomins(account1, nUSD);
 		const issued = maxIssuable.div(web3.utils.toBN(3));
 		await havven.issueNomins(nUSD, issued, { from: account1 });
@@ -1956,7 +1789,6 @@ contract.only('Havven', async function(accounts) {
 			from: owner,
 		});
 
-		await havven.setIssuer(account1, true, { from: owner });
 		const maxIssuable = await havven.maxIssuableNomins(account1, nUSD);
 		// await havven.issueNomins(nUSD, maxIssuable, { from: account1 });
 
@@ -1983,9 +1815,6 @@ contract.only('Havven', async function(accounts) {
 		// Give some HAV to account1
 		await havven.transfer(account1, toUnit('10000'), { from: owner });
 
-		// Make account an issuer
-		await havven.setIssuer(account1, true, { from: owner });
-
 		// Issue
 		await havven.issueNomins(nUSD, toUnit('199'), { from: account1 });
 
@@ -2006,9 +1835,6 @@ contract.only('Havven', async function(accounts) {
 		// Give some HAV to account1
 		await havven.transfer(account1, toUnit('400000'), { from: owner });
 
-		// Make account an issuer
-		await havven.setIssuer(account1, true, { from: owner });
-
 		// Issue
 		await havven.issueNomins(nAUD, toUnit('3987'), { from: account1 });
 
@@ -2028,9 +1854,6 @@ contract.only('Havven', async function(accounts) {
 
 		// Give some HAV to account1
 		await havven.transfer(account1, toUnit('300000'), { from: owner });
-
-		// Make account an issuer
-		await havven.setIssuer(account1, true, { from: owner });
 
 		// Issue
 		const amountIssued = toUnit('2000');
@@ -2067,11 +1890,6 @@ contract.only('Havven', async function(accounts) {
 		await havven.transfer(account2, toUnit('140000'), { from: owner });
 		await havven.transfer(account3, toUnit('1400000'), { from: owner });
 
-		// Make accounts issuers
-		await havven.setIssuer(account1, true, { from: owner });
-		await havven.setIssuer(account2, true, { from: owner });
-		await havven.setIssuer(account3, true, { from: owner });
-
 		// Issue
 		const issuedNomins1 = toUnit('2000');
 		const issuedNomins2 = toUnit('2000');
@@ -2098,11 +1916,6 @@ contract.only('Havven', async function(accounts) {
 		await havven.transfer(account1, toUnit('500000'), { from: owner });
 		await havven.transfer(account2, toUnit('140000'), { from: owner });
 		await havven.transfer(account3, toUnit('1400000'), { from: owner });
-
-		// Make accounts issuers
-		await havven.setIssuer(account1, true, { from: owner });
-		await havven.setIssuer(account2, true, { from: owner });
-		await havven.setIssuer(account3, true, { from: owner });
 
 		// Issue
 		const issuedNomins1 = toUnit('2000');

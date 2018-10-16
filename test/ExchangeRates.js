@@ -139,7 +139,7 @@ contract('Exchange Rates', async function(accounts) {
 		assert.isAtLeast(lastUpdatedTime.toNumber(), creationTime);
 	});
 
-	it('shouldnt be able to set exchange rate to 0 on create', async function() {
+	it("shouldn't be able to set exchange rate to 0 on create", async function() {
 		await assert.revert(
 			ExchangeRates.new(
 				owner,

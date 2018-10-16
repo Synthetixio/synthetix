@@ -1,9 +1,10 @@
 const { table } = require('table');
 
 const ExchangeRates = artifacts.require('./ExchangeRates.sol');
+const FeePool = artifacts.require('./FeePool.sol');
 const Havven = artifacts.require('./Havven.sol');
 const HavvenEscrow = artifacts.require('./HavvenEscrow.sol');
-const IssuanceController = artifacts.require('./IssuanceController.sol');
+// const IssuanceController = artifacts.require('./IssuanceController.sol');
 const Nomin = artifacts.require('./Nomin.sol');
 const Owned = artifacts.require('./Owned.sol');
 const Proxy = artifacts.require('./Proxy.sol');
@@ -16,6 +17,8 @@ module.exports = async function(deployer, network, accounts) {
 	const [deployerAccount, owner, oracle] = accounts;
 
 	// Note: This deployment script is not used on mainnet, it's only for testing deployments.
+
+	// The Owned contract is not used in a standalone way on mainnet, this is for testing
 	// ----------------
 	// Owned
 	// ----------------
@@ -35,6 +38,21 @@ module.exports = async function(deployer, network, accounts) {
 	);
 
 	// ----------------
+	// Fee Pool
+	// ----------------
+	console.log('Deploying FeePool...');
+	// constructor(address _owner, Havven _havven, address _feeAuthority, uint _transferFeeRate, uint _exchangeFeeRate)
+	const feePool = await deployer.deploy(
+		FeePool,
+		owner,
+		ZERO_ADDRESS,
+		oracle,
+		web3.utils.toWei('0.0015', 'ether'),
+		web3.utils.toWei('0.0015', 'ether'),
+		{ from: deployerAccount }
+	);
+
+	// ----------------
 	// Havven
 	// ----------------
 	console.log('Deploying HavvenProxy...');
@@ -48,13 +66,14 @@ module.exports = async function(deployer, network, accounts) {
 	});
 
 	console.log('Deploying Havven...');
-	// constructor(address _proxy, TokenState _tokenState, address _owner, ExchangeRates _exchangeRates, Havven _oldHavven)
+	// constructor(address _proxy, TokenState _tokenState, address _owner, ExchangeRates _exchangeRates, FeePool _feePool, Havven _oldHavven)
 	const havven = await deployer.deploy(
 		Havven,
 		havvenProxy.address,
 		havvenTokenState.address,
 		owner,
 		ExchangeRates.address,
+		FeePool.address,
 		ZERO_ADDRESS,
 		{
 			from: deployerAccount,
@@ -87,25 +106,33 @@ module.exports = async function(deployer, network, accounts) {
 	// ----------------------
 	await havven.setEscrow(havvenEscrow.address, { from: owner });
 
-	// Mark the owner as an issuer.
-	await havven.setIssuer(owner, true, { from: owner });
+	// ----------------------
+	// Connect FeePool
+	// ----------------------
+	await feePool.setHavven(havven.address, { from: owner });
 
 	// ----------------
 	// Nomins
 	// ----------------
-	const currencyKeys = ['nUSD', 'nAUD', 'nEUR'];
+	const currencyKeys = ['HDR', 'nUSD', 'nAUD', 'nEUR'];
 	const nomins = [];
 
 	for (const currencyKey of currencyKeys) {
 		console.log(`Deploying NominTokenState for ${currencyKey}...`);
 		const tokenState = await TokenState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
+
 		console.log(`Deploying NominProxy for ${currencyKey}...`);
 		const proxy = await Proxy.new(owner, { from: deployerAccount });
+
 		console.log(`Deploying ${currencyKey} Nomin...`);
+
+		// constructor(address _proxy, TokenState _tokenState, Havven _havven, FeePool _feePool,
+		//     string _tokenName, string _tokenSymbol, address _owner, bytes4 _currencyKey
 		const nomin = await Nomin.new(
 			proxy.address,
 			tokenState.address,
 			havven.address,
+			feePool.address,
 			`Nomin ${currencyKey}`,
 			currencyKey,
 			owner,
@@ -142,7 +169,7 @@ module.exports = async function(deployer, network, accounts) {
 	// HAV: 0.1 USD
 	await exchangeRates.updateRates(
 		currencyKeys.concat(['HAV']).map(web3.utils.asciiToHex),
-		['1', '0.5', '1.25', '0.1'].map(number => web3.utils.toWei(number, 'ether')),
+		['1', '1', '0.5', '1.25', '0.1'].map(number => web3.utils.toWei(number, 'ether')),
 		timestamp,
 		{ from: oracle }
 	);
@@ -165,15 +192,13 @@ module.exports = async function(deployer, network, accounts) {
 
 	const tableData = [
 		['Contract', 'Address'],
-
 		['Exchange Rates', ExchangeRates.address],
-
-		['Owned', Owned.address],
-
+		['Fee Pool', FeePool.address],
 		['Havven Token State', havvenTokenState.address],
 		['Havven Proxy', havvenProxy.address],
 		['Havven', Havven.address],
 		['Havven Escrow', HavvenEscrow.address],
+		['Owned', Owned.address],
 
 		// ['Issuance Controller', IssuanceController.address],
 	];

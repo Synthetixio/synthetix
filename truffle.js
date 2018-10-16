@@ -5,18 +5,17 @@ module.exports = {
 			port: 8545,
 			network_id: '*',
 			gas: 8000000,
-			gasPrice: 20000000000,
 		},
-		ropsten: {
-			network_id: '3',
-			gas: 8000000,
-			gasPrice: 20000000000,
-		},
-		mainnet: {
-			network_id: '1',
-			gas: 8000000,
-			gasPrice: 20000000000,
-		},
+		// ropsten: {
+		// 	network_id: '3',
+		// 	gas: 8000000,
+		// 	gasPrice: 20000000000,
+		// },
+		// mainnet: {
+		// 	network_id: '1',
+		// 	gas: 8000000,
+		// 	gasPrice: 20000000000,
+		// },
 	},
 	mocha: {
 		useColors: true,
