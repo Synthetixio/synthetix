@@ -1,6 +1,6 @@
 const {
 	assertEventEqual,
-	assertEventNotEqual,
+	assertEventsEqual,
 	assertBNEqual,
 	assertBNNotEqual,
 	assertBNClose,
@@ -16,7 +16,7 @@ const {
 // So we don't have to constantly import our assert helpers everywhere
 // we'll just tag them onto the assert object for easy access.
 assert.eventEqual = assertEventEqual;
-assert.eventNotEqual = assertEventNotEqual;
+assert.eventsEqual = assertEventsEqual;
 assert.bnEqual = assertBNEqual;
 assert.bnNotEqual = assertBNNotEqual;
 assert.bnClose = assertBNClose;

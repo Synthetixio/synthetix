@@ -182,6 +182,19 @@ contract FeePool is SafeDecimalMath, Proxyable, SelfDestructible {
     }
     
     /**
+     * @notice The Havven contract informs us when fees are paid.
+     */
+    function feePaid(bytes4 currencyKey, uint amount) 
+        external
+        onlyHavven
+    {
+        uint hdrAmount = havven.effectiveValue(currencyKey, amount, "HDR");
+
+        // Which we keep track of in HDRs in our fee pool.
+        recentFeePeriods[0].feesToDistribute = safeAdd(recentFeePeriods[0].feesToDistribute, hdrAmount);
+    }
+
+    /**
      * @notice Close the current fee period and start a new one. Only callable by the fee authority.
      */
     function closeCurrentFeePeriod()
@@ -213,8 +226,6 @@ contract FeePool is SafeDecimalMath, Proxyable, SelfDestructible {
             recentFeePeriods[next].feesClaimed = recentFeePeriods[i].feesClaimed;
         }
 
-        emitFeePeriodClosed(recentFeePeriods[0].feePeriodId);
-
         // Clear the first element of the array to make sure we don't have any stale values.
         delete recentFeePeriods[0];
 
@@ -224,6 +235,8 @@ contract FeePool is SafeDecimalMath, Proxyable, SelfDestructible {
         recentFeePeriods[0].startTime = now;
 
         nextFeePeriodId = safeAdd(nextFeePeriodId, 1);
+
+        emitFeePeriodClosed(recentFeePeriods[1].feePeriodId);
     }
 
     function claimFees(bytes4 currencyKey)
@@ -231,23 +244,17 @@ contract FeePool is SafeDecimalMath, Proxyable, SelfDestructible {
         optionalProxy
         returns (bool)
     {
-        require(lastFeeWithdrawal[msg.sender] < recentFeePeriods[0].feePeriodId, "Fees already claimed");
+        uint availableFees = feesAvailable(messageSender, currencyKey);
 
-        // Add up the fees
-        uint[FEE_PERIOD_LENGTH] memory feesByPeriod = feesAvailableByPeriod(msg.sender);
-        uint totalFees = 0;
+        require(availableFees > 0, "No fees available for period, or fees already claimed");
 
-        for (uint8 i = 0; i < FEE_PERIOD_LENGTH; i++) {
-            totalFees = safeAdd(totalFees, feesByPeriod[i]);
-            recentFeePeriods[i].feesClaimed = safeAdd(recentFeePeriods[i].feesClaimed, feesByPeriod[i]);
-        }
+        lastFeeWithdrawal[msg.sender] = recentFeePeriods[1].feePeriodId;
 
-        lastFeeWithdrawal[msg.sender] = recentFeePeriods[0].feePeriodId;
-
+        require(false, "NOT IMPLEMENTED");
         // Send them their fees
         // _payFees(msg.sender, totalFees, currencyKey);
 
-        emitFeesClaimed(msg.sender, totalFees);
+        emitFeesClaimed(msg.sender, availableFees);
 
         return true;
     }
@@ -354,7 +361,8 @@ contract FeePool is SafeDecimalMath, Proxyable, SelfDestructible {
     {
         uint totalFees = 0;
 
-        for (uint8 i = 0; i < FEE_PERIOD_LENGTH; i++) {
+        // Fees in fee period [0] are not yet available for withdrawal
+        for (uint8 i = 1; i < FEE_PERIOD_LENGTH; i++) {
             totalFees = safeAdd(totalFees, recentFeePeriods[i].feesToDistribute);
             totalFees = safeSub(totalFees, recentFeePeriods[i].feesClaimed);
         }
@@ -367,17 +375,18 @@ contract FeePool is SafeDecimalMath, Proxyable, SelfDestructible {
      * @param currencyKey The currency you want to price the fees in
      */
     function feesAvailable(address account, bytes4 currencyKey)
-        external
+        public 
         view
         returns (uint)
     {
         // Add up the fees
-        uint[FEE_PERIOD_LENGTH] memory feesByPeriod = feesAvailableByPeriod(account);
+        uint[FEE_PERIOD_LENGTH] memory userFees = feesByPeriod(account);
 
         uint totalFees = 0;
 
-        for (uint8 i = 0; i < FEE_PERIOD_LENGTH; i++) {
-            totalFees = safeAdd(totalFees, feesByPeriod[i]);
+        // Fees in fee period [0] are not yet available for withdrawal
+        for (uint8 i = 1; i < FEE_PERIOD_LENGTH; i++) {
+            totalFees = safeAdd(totalFees, userFees[i]);
         }
 
         // And convert them to their desired currency
@@ -415,7 +424,7 @@ contract FeePool is SafeDecimalMath, Proxyable, SelfDestructible {
      * @notice Calculates fees by period for an account, priced in HDRs
      * @param account The address you want to query the fees by penalty for
      */
-    function feesAvailableByPeriod(address account)
+    function feesByPeriod(address account)
         public
         view
         returns (uint[FEE_PERIOD_LENGTH])
@@ -429,14 +438,15 @@ contract FeePool is SafeDecimalMath, Proxyable, SelfDestructible {
         uint userOwnershipPercentage = safeDiv_dec(debtBalance, totalNomins);
         uint penalty = currentPenalty(account);
 
-        uint[FEE_PERIOD_LENGTH] memory feesByPeriod;
+        uint[FEE_PERIOD_LENGTH] memory result;
 
         // If they don't have any debt ownership, they don't have any fees
-        if (initialDebtOwnership == 0) return feesByPeriod;
+        if (initialDebtOwnership == 0) return result;
 
         // Go through our fee periods and figure out what we owe them.
-        // We start at the second fee period because the first period is still accumulating fees.
-        for (uint8 i = 1; i < FEE_PERIOD_LENGTH; i++) {
+        // The [0] fee period does is not yet ready to claim, but it is a fee period that they can have
+        // fees owing for.
+        for (uint8 i = 0; i < FEE_PERIOD_LENGTH; i++) {
             // Were they a part of this period in its entirety?
             // We don't allow pro-rata participation to reduce the ability to game the system by
             // issuing and burning multiple times in a period or close to the ends of periods.
@@ -450,16 +460,22 @@ contract FeePool is SafeDecimalMath, Proxyable, SelfDestructible {
                 uint penaltyFromPeriod = safeMul_dec(feesFromPeriodWithoutPenalty, penalty);
                 uint feesFromPeriod = safeSub(feesFromPeriodWithoutPenalty, penaltyFromPeriod);
 
-                feesByPeriod[i] = feesFromPeriod;
+                result[i] = feesFromPeriod;
             }
         }
 
-        return feesByPeriod;
+        return result;
     }
 
     modifier onlyFeeAuthority
     {
         require(msg.sender == feeAuthority, "Only the fee authority can perform this action");
+        _;
+    }
+
+    modifier onlyHavven
+    {
+        require(msg.sender == address(havven), "Only the havven contract can perform this action");
         _;
     }
 

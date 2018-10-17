@@ -441,7 +441,7 @@ contract Havven is ExternStateToken {
         returns (bool)
     {
         // Ensure they're not trying to exceed their locked amount
-        require(value <= transferableHavvens(messageSender), "Value to transfer exceeds available Havvens");
+        require(value <= transferableHavvens(messageSender), "Insufficient balance");
 
         // Perform the transfer: if there is a problem an exception will be thrown in this call.
         _transfer_byProxy(messageSender, to, value, data);
@@ -472,7 +472,7 @@ contract Havven is ExternStateToken {
         returns (bool)
     {
         // Ensure they're not trying to exceed their locked amount
-        require(value <= transferableHavvens(from), "Value to transfer exceeds available Havvens");
+        require(value <= transferableHavvens(from), "Insufficient balance");
 
         // Perform the transfer: if there is a problem,
         // an exception will be thrown in this call.
@@ -496,10 +496,10 @@ contract Havven is ExternStateToken {
         // Note: We don't need to insist on non-stale rates because effectiveValue will do it for us.
         returns (bool)
     {
-        require(sourceCurrencyKey != destinationCurrencyKey, "Exchange cannot be from and to the same nomin");
-        require(sourceAmount > 0, "Source amount must be greater than 0");
-        require(destinationAddress != address(this), "Cannot send nomins to the Havven contract");
-        require(destinationAddress != address(proxy), "Cannot send nomins to the Havven proxy");
+        require(sourceCurrencyKey != destinationCurrencyKey, "Exchange must use different nomins");
+        require(sourceAmount > 0, "Can't be 0");
+        require(destinationAddress != address(this), "Havven is invalid destination");
+        require(destinationAddress != address(proxy), "Proxy is invalid destination");
 
         // Pass it along, defaulting to the sender as the recipient.
         return _internalExchange(
@@ -523,8 +523,8 @@ contract Havven is ExternStateToken {
         onlyNomin
         returns (bool)
     {
-        require(sourceCurrencyKey != destinationCurrencyKey, "Exchange cannot be from and to the same nomin");
-        require(sourceAmount > 0, "Source amount must be greater than 0");
+        require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same nomin");
+        require(sourceAmount > 0, "Can't be 0");
 
         // Pass it along, defaulting to the sender as the recipient.
         return _internalExchange(
@@ -537,32 +537,34 @@ contract Havven is ExternStateToken {
         );
     }
 
-    function nominInitiatedExchangeWithoutFee(
+    function nominInitiatedFeePayment(
         address from,
         bytes4 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes4 destinationCurrencyKey,
-        address destinationAddress
+        uint sourceAmount
     )
         external
         onlyNomin
         returns (bool)
     {
-        require(sourceCurrencyKey != destinationCurrencyKey, "Exchange cannot be from and to the same nomin");
-        require(sourceAmount > 0, "Source amount must be greater than 0");
+        require(sourceAmount > 0, "Can't be 0");
 
         // Pass it along, defaulting to the sender as the recipient.
-        return _internalExchange(
+        bool result = _internalExchange(
             from,
             sourceCurrencyKey,
             sourceAmount,
-            destinationCurrencyKey,
-            destinationAddress,
-            false // Don't charge a fee on the exchange
+            "HDR",
+            feePool.FEE_ADDRESS(),
+            false // Don't charge a fee on the exchange because this is already a fee
         );
+
+        // Tell the fee pool about this.
+        if (result) {
+            feePool.feePaid(sourceCurrencyKey, sourceAmount);
+        }
+
+        return result;
     }
-
-
     
     function _internalExchange(
         address from,
@@ -576,9 +578,9 @@ contract Havven is ExternStateToken {
         notFeeAddress(from)
         returns (bool)
     {
-        require(destinationAddress != address(0), "Destination cannot be zero");
-        require(destinationAddress != address(this), "Destination cannot be Havven");
-        require(destinationAddress != address(proxy), "Destination cannot be proxy");
+        require(destinationAddress != address(0), "Zero destination");
+        require(destinationAddress != address(this), "Havven is invalid destination");
+        require(destinationAddress != address(proxy), "Proxy is invalid destination");
         
         // Note: We don't need to check their balance as the burn() below will do a safeSub which requires 
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
@@ -620,11 +622,11 @@ contract Havven is ExternStateToken {
 
     function payFees(address account, uint hdrAmount, bytes4 destinationCurrencyKey)
         external 
-    //     onlyFeePool
-    //     notFeeAddress(account)
+        onlyFeePool
+        notFeeAddress(account)
         returns (bool)
     {
-        require(account != address(0), "Account cannot be zero");
+        require(account != address(0), "Account can't be 0");
         require(account != address(this), "Can't send fees to Havven");
         require(account != address(proxy), "Can't send fees to proxy");
 
@@ -980,24 +982,24 @@ contract Havven is ExternStateToken {
     // ========== MODIFIERS ==========
 
     modifier ratesNotStale(bytes4[] currencyKeys) {
-        require(!exchangeRates.anyRateIsStale(currencyKeys), "Rate is stale or currency was not found");
+        require(!exchangeRates.anyRateIsStale(currencyKeys), "Rate stale or nonexistant currency");
         _;
     }
 
     modifier rateNotStale(bytes4 currencyKey) {
-        require(!exchangeRates.rateIsStale(currencyKey), "Rate is stale or currency was not found");
+        require(!exchangeRates.rateIsStale(currencyKey), "Rate stale or nonexistant currency");
         _;
     }
 
     modifier notFeeAddress(address account) {
-        require(account != feePool.FEE_ADDRESS(), "You cannot perform this action from the fee address");
+        require(account != feePool.FEE_ADDRESS(), "Fee address not allowed");
         _;
     }
 
-    // modifier onlyFeePool() {
-    //     require(msg.sender == address(feePool), "Only the fee pool contract can perform this action");
-    //     _;
-    // }
+    modifier onlyFeePool() {
+        require(msg.sender == address(feePool), "Only fee pool allowed");
+        _;
+    }
 
     modifier onlyNomin() {
         bool isNomin = false;
@@ -1010,7 +1012,7 @@ contract Havven is ExternStateToken {
             }
         }
 
-        require(isNomin, "Only the Nomin contracts can perform this action");
+        require(isNomin, "Only nomin allowed");
         _;
     }
 

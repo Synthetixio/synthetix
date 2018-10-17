@@ -3,10 +3,12 @@ const FeePool = artifacts.require('FeePool');
 const Havven = artifacts.require('Havven');
 const Nomin = artifacts.require('Nomin');
 
-const { currentTime, fastForward, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
+const { currentTime, fastForward, fromUnit, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 
 contract.only('FeePool', async function(accounts) {
-	const [nUSD, nAUD, nEUR, HAV] = ['nUSD', 'nAUD', 'nEUR', 'HAV', 'HDR'].map(web3.utils.asciiToHex);
+	const [nUSD, nAUD, nEUR, HAV, HDR] = ['nUSD', 'nAUD', 'nEUR', 'HAV', 'HDR'].map(
+		web3.utils.asciiToHex
+	);
 
 	const [
 		deployerAccount,
@@ -19,7 +21,7 @@ contract.only('FeePool', async function(accounts) {
 		account4,
 	] = accounts;
 
-	let feePool, havven, exchangeRates, nUSDContract;
+	let feePool, FEE_ADDRESS, havven, exchangeRates, nUSDContract, HDRContract;
 
 	beforeEach(async function() {
 		// Save ourselves from having to await deployed() in every single test.
@@ -27,9 +29,11 @@ contract.only('FeePool', async function(accounts) {
 		// contract interfaces to prevent test bleed.
 		exchangeRates = await ExchangeRates.deployed();
 		feePool = await FeePool.deployed();
+		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 
 		havven = await Havven.deployed();
 		nUSDContract = await Nomin.at(await havven.nomins(nUSD));
+		HDRContract = await Nomin.at(await havven.nomins(HDR));
 
 		// Send a price update to guarantee we're not stale.
 		const oracle = await exchangeRates.oracle();
@@ -247,36 +251,77 @@ contract.only('FeePool', async function(accounts) {
 		await assert.revert(feePool.setHavven(account2, { from: account1 }));
 	});
 
-	it.only('should allow the fee authority to close the current fee period', async function() {
+	it('should allow the fee authority to close the current fee period', async function() {
 		await fastForward(await feePool.feePeriodDuration());
 
 		const transaction = await feePool.closeCurrentFeePeriod({ from: feeAuthority });
 		assert.eventEqual(transaction, 'FeePeriodClosed', { feePeriodId: 1 });
 
-		// // Assert that our first period is new.
-		// assert.deepEqual(await feePool.recentFeePeriods(0), {
-		// 	feePeriodId: 2,
-		// 	startingDebtIndex: 0,
-		// 	feesToDistribute: 0,
-		// 	feesClaimed: 0,
-		// });
+		// Assert that our first period is new.
+		assert.deepEqual(await feePool.recentFeePeriods(0), {
+			feePeriodId: 2,
+			startingDebtIndex: 0,
+			feesToDistribute: 0,
+			feesClaimed: 0,
+		});
 
-		// // And that the second was the old one
-		// assert.deepEqual(await feePool.recentFeePeriods(0), {
-		// 	feePeriodId: 1,
-		// 	startingDebtIndex: 0,
-		// 	feesToDistribute: 0,
-		// 	feesClaimed: 0,
-		// });
+		// And that the second was the old one
+		assert.deepEqual(await feePool.recentFeePeriods(1), {
+			feePeriodId: 1,
+			startingDebtIndex: 0,
+			feesToDistribute: 0,
+			feesClaimed: 0,
+		});
 
-		// // And that the next one is 3
-		// assert.bnEqual(await feePool.nextFeePeriodId(), 3);
+		// And that the next one is 3
+		assert.bnEqual(await feePool.nextFeePeriodId(), 3);
 	});
-	it('should correctly roll over unclaimed fees when closing fee periods');
 
-	it(
-		'should correctly close the current fee period when there are more than FEE_PERIOD_LENGTH periods'
-	);
+	it('should correctly roll over unclaimed fees when closing fee periods', async function() {
+		// Issue 10,000 nUSD.
+		await havven.issueNomins(nUSD, toUnit('10000'), { from: owner });
+
+		// Do a single transfer of all our nomins to generate a fee.
+		await nUSDContract.transfer(account1, toUnit('10000'), { from: owner });
+
+		// Assert that the correct fee is in the fee pool.
+		const fee = await HDRContract.balanceOf(FEE_ADDRESS);
+		const [pendingFees] = await feePool.feesByPeriod(owner);
+
+		assert.bnEqual(pendingFees, fee);
+	});
+
+	it.only('should correctly close the current fee period when there are more than FEE_PERIOD_LENGTH periods', async function() {
+		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
+
+		// Set fee period duration to 1 day to ensure that we don't find the bug in truffle / ganache
+		// when we fast forward by many weeks and get Error: Number can only safely store up to 53 bits
+		const feePeriodDuration = await feePool.MIN_FEE_PERIOD_DURATION();
+		await feePool.setFeePeriodDuration(feePeriodDuration, { from: owner });
+
+		// Issue 10,000 nUSD.
+		await havven.issueNomins(nUSD, toUnit('10000'), { from: owner });
+
+		// Do a single transfer of all our nomins to generate a fee.
+		await nUSDContract.transfer(account1, toUnit('10000'), { from: owner });
+
+		// Assert that the correct fee is in the fee pool.
+		const fee = await HDRContract.balanceOf(FEE_ADDRESS);
+		const [pendingFees] = await feePool.feesByPeriod(owner);
+
+		assert.bnEqual(pendingFees, fee);
+
+		// // Now close FEE_PERIOD_LENGTH * 2 fee periods and assert that it is still in the last one.
+		// for (let i = 0; i < length + 1; i++) {
+		// 	await fastForward(feePeriodDuration);
+
+		// 	await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+		// }
+
+		// const feesByPeriod = await feePool.feesByPeriod(owner);
+		// assert.bnEqual(feesByPeriod[length - 1], fee);
+	});
+
 	it('should correctly close the current fee period when there is only one fee period open');
 	it('should disallow the fee authority from closing the current fee period too early');
 	it('should allow the fee authority to close the current fee period very late');

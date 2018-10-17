@@ -116,21 +116,6 @@ const divideDecimal = (x, y) => {
 };
 
 /**
- *  Convenience method to assert that an event has not been published for that transaction
- *  @param actualEventOrTransaction The transaction receipt, or event as returned in the event logs from web3
- *  @param expectedEvent The event name you expect
- */
-const assertEventNotEqual = (actualEventOrTransaction, expectedEvent) => {
-	// If they pass in a whole transaction we need to extract the first log, otherwise we already have what we need
-	const event = Array.isArray(actualEventOrTransaction.logs)
-		? actualEventOrTransaction.logs[0]
-		: actualEventOrTransaction;
-
-	// Assert the names are the same.
-	assert.notEqual(event.event, expectedEvent);
-};
-
-/**
  *  Convenience method to assert that an event matches a shape
  *  @param actualEventOrTransaction The transaction receipt, or event as returned in the event logs from web3
  *  @param expectedEvent The event name you expect
@@ -154,22 +139,40 @@ const assertEventEqual = (actualEventOrTransaction, expectedEvent, expectedArgs)
 	// Ensure you pass in all the args you need to assert on.
 };
 
+const assertEventsEqual = (transaction, ...expectedEventsAndArgs) => {
+	if (expectedEventsAndArgs.length % 2 > 0)
+		throw new Error('Please call assert.eventsEqual with names and args as pairs.');
+	if (expectedEventsAndArgs.length <= 2)
+		throw new Error(
+			"Expected events and args can be called with just assert.eventEqual as there's only one event."
+		);
+
+	for (let i = 0; i < expectedEventsAndArgs.length; i += 2) {
+		const log = transaction.logs[Math.floor(i / 2)];
+
+		assert.equal(log.event, expectedEventsAndArgs[i], 'Event name mismatch');
+		assertDeepEqual(log.args, expectedEventsAndArgs[i + 1], 'Event args mismatch');
+	}
+};
+
 /**
  *  Convenience method to assert that two BN.js instances are equal.
  *  @param actualBN The BN.js instance you received
  *  @param expectedBN The BN.js amount you expected to receive
+ *  @param context The description to log if we fail the assertion
  */
-const assertBNEqual = (actualBN, expectedBN) => {
-	assert.equal(actualBN.toString(), expectedBN.toString());
+const assertBNEqual = (actualBN, expectedBN, context) => {
+	assert.equal(actualBN.toString(), expectedBN.toString(), context);
 };
 
 /**
  *  Convenience method to assert that two BN.js instances are NOT equal.
  *  @param actualBN The BN.js instance you received
  *  @param expectedBN The BN.js amount you expected NOT to receive
+ *  @param context The description to log if we fail the assertion
  */
 const assertBNNotEqual = (actualBN, expectedBN) => {
-	assert.notEqual(actualBN.toString(), expectedBN.toString());
+	assert.notEqual(actualBN.toString(), expectedBN.toString(), context);
 };
 
 /**
@@ -193,10 +196,10 @@ const assertBNClose = (actualBN, expectedBN, varianceParam) => {
  *  @param actual What you received
  *  @param expected The shape you expected
  */
-const assertDeepEqual = (actual, expected) => {
+const assertDeepEqual = (actual, expected, context) => {
 	// Check if it's a value type we can assert on straight away.
 	if (BN.isBN(actual) || BN.isBN(expected)) {
-		assertBNEqual(actual, expected);
+		assertBNEqual(actual, expected, context);
 	} else if (
 		typeof expected === 'string' ||
 		typeof actual === 'string' ||
@@ -205,16 +208,16 @@ const assertDeepEqual = (actual, expected) => {
 		typeof expected === 'boolean' ||
 		typeof actual === 'boolean'
 	) {
-		assert.equal(actual, expected);
+		assert.equal(actual, expected, context);
 	}
 	// Otherwise dig through the deeper object and recurse
 	else if (Array.isArray(expected)) {
 		for (let i = 0; i < expected.length; i++) {
-			assertDeepEqual(actual[i], expected[i]);
+			assertDeepEqual(actual[i], expected[i], `(array index: ${i}) `);
 		}
 	} else {
 		for (const key of Object.keys(expected)) {
-			assertDeepEqual(actual[key], expected[key]);
+			assertDeepEqual(actual[key], expected[key], `(key: ${key}) `);
 		}
 	}
 };
@@ -268,7 +271,7 @@ module.exports = {
 	fromUnit,
 
 	assertEventEqual,
-	assertEventNotEqual,
+	assertEventsEqual,
 	assertBNEqual,
 	assertBNNotEqual,
 	assertBNClose,
