@@ -125,6 +125,7 @@ import "./Nomin.sol";
 import "./HavvenEscrow.sol";
 import "./TokenState.sol";
 import "./ExchangeRates.sol";
+// import "./SafeDecimalMath.sol";
 
 /**
  * @title Havven ERC20 contract.
@@ -132,6 +133,8 @@ import "./ExchangeRates.sol";
  * but it also computes the quantity of fees each havven holder is entitled to.
  */
 contract Havven is ExternStateToken {
+
+    // using SafeDecimalMath for uint;
 
     // ========== STATE VARIABLES ==========
 
@@ -172,11 +175,11 @@ contract Havven is ExternStateToken {
 
     // A quantity of nomins greater than this ratio
     // may not be issued against a given value of havvens.
-    uint public issuanceRatio = UNIT / 5;
+    uint public issuanceRatio = SafeDecimalMath.unit() / 5;
     // No more nomins may be issued than the value of havvens backing them.
-    uint constant MAX_ISSUANCE_RATIO = UNIT;
+    uint constant MAX_ISSUANCE_RATIO = SafeDecimalMath.unit();
 
-    uint constant HAVVEN_SUPPLY = 1e8 * UNIT;
+    uint constant HAVVEN_SUPPLY = 1e8 * SafeDecimalMath.unit();
     string constant TOKEN_NAME = "Havven";
     string constant TOKEN_SYMBOL = "HAV";
     
@@ -366,10 +369,8 @@ contract Havven is ExternStateToken {
         if (sourceCurrencyKey == destinationCurrencyKey) return sourceAmount;
 
         // Calcuate the effective value by going from source -> USD -> destination
-        return safeDiv_dec_round(
-            safeMul_dec_round(sourceAmount, exchangeRates.rateForCurrency(sourceCurrencyKey)),
-            exchangeRates.rateForCurrency(destinationCurrencyKey)
-        );
+        return sourceAmount.safeMul_dec_round(exchangeRates.rateForCurrency(sourceCurrencyKey))
+            .safeDiv_dec_round(exchangeRates.rateForCurrency(destinationCurrencyKey));
     }
 
     /**
@@ -395,12 +396,10 @@ contract Havven is ExternStateToken {
             // Note: We're not using our effectiveValue function because we don't want to go get the
             //       rate for the destination currency and check if it's stale repeatedly on every
             //       iteration of the loop
-            uint nominValue = safeDiv_dec_round(
-                safeMul_dec_round(availableNomins[i].totalSupply(), exchangeRates.rateForCurrency(availableNomins[i].currencyKey())),
-                currencyRate
-            );
-
-            total = safeAdd(total, nominValue);
+            uint nominValue = availableNomins[i].totalSupply()
+                .safeMul_dec_round(exchangeRates.rateForCurrency(availableNomins[i].currencyKey()))
+                .safeDiv_dec_round(currencyRate);
+            total = total.add(nominValue);
         }
 
         return total; 
@@ -482,36 +481,36 @@ contract Havven is ExternStateToken {
         return true;
     }
 
-    // /**
-    //  * @notice Function that allows you to exchange nomins you hold in one flavour for another.
-    //  * @param sourceCurrencyKey The source currency you wish to exchange from
-    //  * @param sourceAmount The amount, specified in UNIT of source currency you wish to exchange
-    //  * @param destinationCurrencyKey The destination currency you wish to obtain.
-    //  * @param destinationAddress Where the result should go. If this is address(0), or if it's the message sender, no fee
-    //  *        is deducted, otherwise the standard transfer fee is deducted.
-    //  * @return Boolean that indicates whether the transfer succeeded or failed.
-    //  */
-    // function exchange(bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey, address destinationAddress)
-    //     external
-    //     optionalProxy
-    //     // Note: We don't need to insist on non-stale rates because effectiveValue will do it for us.
-    //     returns (bool)
-    // {
-    //     require(sourceCurrencyKey != destinationCurrencyKey, "Exchange must use different nomins");
-    //     require(sourceAmount > 0, "Can't be 0");
-    //     require(destinationAddress != address(this), "Havven is invalid destination");
-    //     require(destinationAddress != address(proxy), "Proxy is invalid destination");
+    /**
+     * @notice Function that allows you to exchange nomins you hold in one flavour for another.
+     * @param sourceCurrencyKey The source currency you wish to exchange from
+     * @param sourceAmount The amount, specified in UNIT of source currency you wish to exchange
+     * @param destinationCurrencyKey The destination currency you wish to obtain.
+     * @param destinationAddress Where the result should go. If this is address(0), or if it's the message sender, no fee
+     *        is deducted, otherwise the standard transfer fee is deducted.
+     * @return Boolean that indicates whether the transfer succeeded or failed.
+     */
+    function exchange(bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey, address destinationAddress)
+        external
+        optionalProxy
+        // Note: We don't need to insist on non-stale rates because effectiveValue will do it for us.
+        returns (bool)
+    {
+        require(sourceCurrencyKey != destinationCurrencyKey, "Exchange must use different nomins");
+        require(sourceAmount > 0, "Can't be 0");
+        require(destinationAddress != address(this), "Havven is invalid destination");
+        require(destinationAddress != address(proxy), "Proxy is invalid destination");
 
-    //     // Pass it along, defaulting to the sender as the recipient.
-    //     return _internalExchange(
-    //         messageSender,
-    //         sourceCurrencyKey,
-    //         sourceAmount,
-    //         destinationCurrencyKey,
-    //         destinationAddress == address(0) ? messageSender : destinationAddress,
-    //         true // Charge fee on the exchange
-    //     );
-    // }
+        // Pass it along, defaulting to the sender as the recipient.
+        return _internalExchange(
+            messageSender,
+            sourceCurrencyKey,
+            sourceAmount,
+            destinationCurrencyKey,
+            destinationAddress == address(0) ? messageSender : destinationAddress,
+            true // Charge fee on the exchange
+        );
+    }
 
     function nominInitiatedExchange(
         address from,
@@ -598,7 +597,7 @@ contract Havven is ExternStateToken {
 
         if (chargeFee) {
             amountReceived = feePool.amountReceivedFromExchange(destinationAmount);
-            fee = safeSub(destinationAmount, amountReceived);
+            fee = destinationAmount.sub(amountReceived);
         } 
 
         // Issue their new nomins
@@ -671,34 +670,30 @@ contract Havven is ExternStateToken {
         uint totalDebtIssued = totalIssuedNomins("HDR");
 
         // What will the new total be including the new value?
-        uint newTotalDebtIssued = safeAdd(hdrValue, totalDebtIssued);
+        uint newTotalDebtIssued = hdrValue.add(totalDebtIssued);
 
         // What is their percentage (as a high precision int) of the total debt?
-        uint debtPercentage = safeDiv_dec_round_high_precision(
-            decToHighPrecisionDec(hdrValue),
-            decToHighPrecisionDec(newTotalDebtIssued)
-        );
+        uint debtPercentage = hdrValue.decToHighPrecisionDec()
+            .safeDiv_dec_round_high_precision(newTotalDebtIssued.decToHighPrecisionDec());
 
         // And what effect does this percentage have on the global debt holding of other issuers?
         // The delta specifically needs to not take into account any existing debt as it's already
         // accounted for in the delta from when they issued previously.
         // The delta is a high precision integer.
-        uint delta = safeSub(HIGH_PRECISION_UNIT, debtPercentage);
+        uint delta = SafeDecimalMath.highPrecisionUnit().sub(debtPercentage);
 
         // How much existing debt do they have?
         uint existingDebt = debtBalanceOf(messageSender, "HDR");
          
         // And what does their debt ownership look like including this previous stake?
         if (existingDebt > 0) {
-            debtPercentage = safeDiv_dec_round_high_precision(
-                decToHighPrecisionDec(safeAdd(hdrValue, existingDebt)),
-                decToHighPrecisionDec(newTotalDebtIssued)
-            );
+            debtPercentage = hdrValue.add(existingDebt).decToHighPrecisionDec()
+                .safeDiv_dec_round_high_precision(newTotalDebtIssued.decToHighPrecisionDec());
         }
 
         // Are they a new issuer? If so, record them.
         if (issuanceData[messageSender].initialDebtOwnership == 0) {
-            totalIssuerCount = safeAdd(totalIssuerCount, 1);
+            totalIssuerCount = totalIssuerCount.add(1);
         }
 
         // Save the debt entry parameters
@@ -708,12 +703,11 @@ contract Havven is ExternStateToken {
         // And if we're the first, push 1 as there was no effect to any other holders, otherwise push 
         // the change for the rest of the debt holders. The debt ledger holds high precision integers.
         if (debtLedger.length > 0) {
-            debtLedger.push(safeMul_dec_round_high_precision(
-                debtLedger[debtLedger.length - 1],
-                delta
-            ));
+            debtLedger.push(
+                debtLedger[debtLedger.length - 1].safeMul_dec_round_high_precision(delta)
+            );
         } else {
-            debtLedger.push(HIGH_PRECISION_UNIT);
+            debtLedger.push(SafeDecimalMath.highPrecisionUnit());
         }
     }
 
@@ -799,29 +793,25 @@ contract Havven is ExternStateToken {
 
         // What percentage of the total debt are they trying to remove?
         uint totalDebtIssued = totalIssuedNomins("HDR");
-        uint debtPercentage = safeDiv_dec_round_high_precision(
-            decToHighPrecisionDec(debtToRemove),
-            decToHighPrecisionDec(totalDebtIssued)
-        );
+        uint debtPercentage = debtToRemove.decToHighPrecisionDec()
+            .safeDiv_dec_round_high_precision(totalDebtIssued.decToHighPrecisionDec());
 
         // And what effect does this percentage have on the global debt holding of other issuers?
         // The delta specifically needs to not take into account any existing debt as it's already
         // accounted for in the delta from when they issued previously.
-        uint delta = safeAdd(HIGH_PRECISION_UNIT, debtPercentage);
+        uint delta = SafeDecimalMath.highPrecisionUnit().add(debtPercentage);
 
         // Are they exiting the system, or are they just decreasing their debt position?
         if (debtToRemove == existingDebt) {
             delete issuanceData[messageSender];
 
-            totalIssuerCount = safeSub(totalIssuerCount, 1);
+            totalIssuerCount = totalIssuerCount.sub(1);
         } else {
             // What percentage of the debt will they be left with?
-            uint newDebt = safeSub(existingDebt, debtToRemove);
-            uint newTotalDebtIssued = safeSub(totalDebtIssued, debtToRemove);
-            uint newDebtPercentage = safeDiv_dec_round_high_precision(
-                decToHighPrecisionDec(newDebt),
-                decToHighPrecisionDec(newTotalDebtIssued)
-            );
+            uint newDebt = existingDebt.sub(debtToRemove);
+            uint newTotalDebtIssued = totalDebtIssued.sub(debtToRemove);
+            uint newDebtPercentage = newDebt.decToHighPrecisionDec()
+                .safeDiv_dec_round_high_precision(newTotalDebtIssued.decToHighPrecisionDec());
 
             // Store the debt percentage and debt ledger as high precision integers
             issuanceData[messageSender].initialDebtOwnership = newDebtPercentage;
@@ -829,7 +819,7 @@ contract Havven is ExternStateToken {
         }
 
         // Update our cumulative ledger. This is also a high precision integer.
-        uint newDebtLedgerEntry = safeMul_dec_round_high_precision(debtLedger[debtLedger.length - 1], delta);
+        uint newDebtLedgerEntry = debtLedger[debtLedger.length - 1].safeMul_dec_round_high_precision(delta);
         debtLedger.push(newDebtLedgerEntry);
     }
 
@@ -854,10 +844,10 @@ contract Havven is ExternStateToken {
         uint currencyRate = exchangeRates.rateForCurrency(currencyKey);
 
         // What is the value of their HAV balance in the destination currency?
-        uint havvenBalanceInDestinationCurrency = safeDiv_dec_round(safeMul_dec_round(totalOwnedHavvens, havRate), currencyRate);
+        uint havvenBalanceInDestinationCurrency = totalOwnedHavvens.safeMul_dec_round(havRate).safeDiv_dec_round(currencyRate);
 
         // They're allowed to issue up to issuanceRatio of that value
-        return safeMul_dec_round(havvenBalanceInDestinationCurrency, issuanceRatio);
+        return havvenBalanceInDestinationCurrency.safeMul_dec_round(issuanceRatio);
     }
 
     function collateralisationRatio(address issuer)
@@ -870,7 +860,7 @@ contract Havven is ExternStateToken {
 
         if (totalOwnedHavvens == 0) return 0;
 
-        return safeDiv_dec_round(debtBalance, totalOwnedHavvens);
+        return debtBalance.safeDiv_dec_round(totalOwnedHavvens);
     }
 
     function debtBalanceOf(address issuer, bytes4 currencyKey)
@@ -888,23 +878,17 @@ contract Havven is ExternStateToken {
 
         // Figure out the global debt percentage delta from when they entered the system.
         // This is a high precision integer.
-        uint currentDebtOwnership = safeMul_dec_round_high_precision(
-            initialDebtOwnership, 
-            safeDiv_dec_round_high_precision(
-                debtLedger[debtLedger.length - 1],
-                debtLedger[debtEntryIndex]
-            )
-        );
+        uint currentDebtOwnership = debtLedger[debtLedger.length - 1]
+            .safeDiv_dec_round_high_precision(debtLedger[debtEntryIndex])
+            .safeMul_dec_round_high_precision(initialDebtOwnership);
 
         // What's the total value of the system in their requested currency?
         uint totalSystemValue = totalIssuedNomins(currencyKey);
 
         // Their debt balance is their portion of the total system value.
-        uint highPrecisionBalance = safeMul_dec_round_high_precision(
-            decToHighPrecisionDec(totalSystemValue),
-            currentDebtOwnership
-        );
-        return highPrecisionDecToDec(highPrecisionBalance);
+        uint highPrecisionBalance = totalSystemValue.decToHighPrecisionDec()
+            .safeMul_dec_round_high_precision(currentDebtOwnership);
+        return highPrecisionBalance.highPrecisionDecToDec();
     }
 
     /**
@@ -924,7 +908,7 @@ contract Havven is ExternStateToken {
         if (alreadyIssued >= max) {
             return 0;
         } else {
-            return safeSub(max, alreadyIssued);
+            return max.sub(alreadyIssued);
         }
     }
 
@@ -942,7 +926,7 @@ contract Havven is ExternStateToken {
         uint balance = tokenState.balanceOf(account);
 
         if (escrow != address(0)) {
-            balance = safeAdd(balance, escrow.balanceOf(account));
+            balance = balance.add(escrow.balanceOf(account));
         }
 
         return balance;
@@ -969,13 +953,13 @@ contract Havven is ExternStateToken {
         // Assuming issuance ratio is 20%, then issuing 20 HAV of value would require 
         // 100 HAV to be locked in their wallet to maintain their collateralisation ratio
         // The locked havven value can exceed their balance.
-        uint lockedHavvenValue = safeDiv_dec_round(debtBalanceOf(account, "HAV"), issuanceRatio);
+        uint lockedHavvenValue = debtBalanceOf(account, "HAV").safeDiv_dec_round(issuanceRatio);
 
         // If we exceed the balance, no Havvens are transferable, otherwise the difference is.
         if (lockedHavvenValue >= balance) {
             return 0;
         } else {
-            return safeSub(balance, lockedHavvenValue);
+            return balance.sub(lockedHavvenValue);
         }
     }
 

@@ -36,7 +36,7 @@ import "./SafeMath.sol";
  * @dev Functions accepting uints in this contract and derived contracts
  * are taken to be such fixed point decimals (including fiat, ether, and nomin quantities).
  */
-contract SafeDecimalMath {
+library SafeDecimalMath {
 
     using SafeMath for uint;
 
@@ -51,9 +51,24 @@ contract SafeDecimalMath {
     uint public constant HIGH_PRECISION_UNIT = 10 ** uint(highPrecisionDecimals);
     uint private constant UNIT_TO_HIGH_PRECISION_UNIT_CONVERTER = 10 ** uint(highPrecisionDecimals - decimals);
 
+    function unit()
+        external
+        view
+        returns (uint)
+    {
+        return UNIT;
+    }
+
+    function highPrecisionUnit()
+        external
+        view
+        returns (uint)
+    {
+        return HIGH_PRECISION_UNIT;
+    }
 
     // TODO: Replace with OpenZeppelin's implementation
-    /**
+    /** 
      * @return The result of adding x and y, throwing an exception in case of overflow.
      */
     function safeAdd(uint x, uint y)
@@ -99,14 +114,13 @@ contract SafeDecimalMath {
         return x.mul(y) / UNIT;
     }
 
-    function safeMul_dec_round_private(uint x, uint y, uint unit)
+    function safeMul_dec_round_private(uint x, uint y, uint precisionUnit)
         private
         pure
         returns (uint)
     {
         /* Divide by UNIT to remove the extra factor introduced by the product. */
-        // uint quotientTimesTen = safeMul(x, y) / (unit / 10);
-        uint quotientTimesTen = x.mul(y) / (unit / 10);
+        uint quotientTimesTen = x.mul(y) / (precisionUnit / 10);
 
         if (quotientTimesTen % 10 >= 5) {
             quotientTimesTen = quotientTimesTen + 10;
@@ -167,12 +181,12 @@ contract SafeDecimalMath {
         return x.mul(UNIT).div(y);
     }
 
-    function safeDiv_dec_round_private(uint x, uint y, uint unit)
+    function safeDiv_dec_round_private(uint x, uint y, uint precisionUnit)
         private
         pure
         returns (uint)
     {
-        uint resultTimesTen = x.mul(unit * 10).div(y);
+        uint resultTimesTen = x.mul(precisionUnit * 10).div(y);
 
         if (resultTimesTen % 10 >= 5) {
             resultTimesTen += 10;

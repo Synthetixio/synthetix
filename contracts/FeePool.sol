@@ -23,20 +23,24 @@ import "./Proxyable.sol";
 import "./SelfDestructible.sol";
 import "./SafeDecimalMath.sol";
 
-contract FeePool is SafeDecimalMath, Proxyable, SelfDestructible {
+contract FeePool is Proxyable, SelfDestructible {
+
+    using SafeMath for uint;
+    using SafeDecimalMath for uint;
+
     Havven public havven;
 
     // A percentage fee charged on each transfer.
     uint public transferFeeRate;
 
     // Transfer fee may not exceed 10%.
-    uint constant public MAX_TRANSFER_FEE_RATE = UNIT / 10;
+    uint constant public MAX_TRANSFER_FEE_RATE = SafeDecimalMath.unit() / 10;
 
     // A percentage fee charged on each exchange between currencies.
     uint public exchangeFeeRate;
 
     // Exchange fee may not exceed 10%.
-    uint constant public MAX_EXCHANGE_FEE_RATE = UNIT / 10;
+    uint constant public MAX_EXCHANGE_FEE_RATE = SafeDecimalMath.unit() / 10;
     
     // The address with the authority to distribute fees.
     address public feeAuthority;
@@ -78,12 +82,12 @@ contract FeePool is SafeDecimalMath, Proxyable, SelfDestructible {
 
     // Users receive penalties if their collateralisation ratio drifts out of our desired brackets
     // We precompute the brackets and penalties to save gas.
-    uint constant TWENTY_PERCENT = (20 * UNIT) / 100;
-    uint constant TWENTY_FIVE_PERCENT = (25 * UNIT) / 100;
-    uint constant THIRTY_PERCENT = (30 * UNIT) / 100;
-    uint constant FOURTY_PERCENT = (40 * UNIT) / 100;
-    uint constant FIFTY_PERCENT = (50 * UNIT) / 100;
-    uint constant SEVENTY_FIVE_PERCENT = (75 * UNIT) / 100;
+    uint constant TWENTY_PERCENT = (20 * SafeDecimalMath.unit()) / 100;
+    uint constant TWENTY_FIVE_PERCENT = (25 * SafeDecimalMath.unit()) / 100;
+    uint constant THIRTY_PERCENT = (30 * SafeDecimalMath.unit()) / 100;
+    uint constant FOURTY_PERCENT = (40 * SafeDecimalMath.unit()) / 100;
+    uint constant FIFTY_PERCENT = (50 * SafeDecimalMath.unit()) / 100;
+    uint constant SEVENTY_FIVE_PERCENT = (75 * SafeDecimalMath.unit()) / 100;
 
     constructor(address _proxy, address _owner, Havven _havven, address _feeAuthority, uint _transferFeeRate, uint _exchangeFeeRate)
         SelfDestructible(_owner)
@@ -191,7 +195,7 @@ contract FeePool is SafeDecimalMath, Proxyable, SelfDestructible {
         uint hdrAmount = havven.effectiveValue(currencyKey, amount, "HDR");
 
         // Which we keep track of in HDRs in our fee pool.
-        recentFeePeriods[0].feesToDistribute = safeAdd(recentFeePeriods[0].feesToDistribute, hdrAmount);
+        recentFeePeriods[0].feesToDistribute = recentFeePeriods[0].feesToDistribute.add(hdrAmount);
     }
 
     /**
@@ -207,10 +211,9 @@ contract FeePool is SafeDecimalMath, Proxyable, SelfDestructible {
         FeePeriod memory lastFeePeriod = recentFeePeriods[FEE_PERIOD_LENGTH - 1];
 
         // Any unclaimed fees from the last period in the array roll back one period.
-        recentFeePeriods[FEE_PERIOD_LENGTH - 2].feesToDistribute = safeAdd(
-            safeSub(lastFeePeriod.feesToDistribute, lastFeePeriod.feesClaimed),
-            secondLastFeePeriod.feesToDistribute
-        );
+        recentFeePeriods[FEE_PERIOD_LENGTH - 2].feesToDistribute = lastFeePeriod.feesToDistribute
+            .sub(lastFeePeriod.feesClaimed)
+            .add(secondLastFeePeriod.feesToDistribute);
 
         // Shift the previous fee periods across to make room for the new one.
         // Condition checks for overflow when uint subtracts one from zero
@@ -234,7 +237,7 @@ contract FeePool is SafeDecimalMath, Proxyable, SelfDestructible {
         recentFeePeriods[0].startingDebtIndex = havven.debtLedgerLength();
         recentFeePeriods[0].startTime = now;
 
-        nextFeePeriodId = safeAdd(nextFeePeriodId, 1);
+        nextFeePeriodId = nextFeePeriodId.add(1);
 
         emitFeePeriodClosed(recentFeePeriods[1].feePeriodId);
     }
@@ -268,7 +271,7 @@ contract FeePool is SafeDecimalMath, Proxyable, SelfDestructible {
         view
         returns (uint)
     {
-        return safeMul_dec(value, transferFeeRate);
+        return value.mul(transferFeeRate);
 
         // Transfers less than the reciprocal of transferFeeRate should be completely eaten up by fees.
         // This is on the basis that transfers less than this value will result in a nil fee.
@@ -289,7 +292,7 @@ contract FeePool is SafeDecimalMath, Proxyable, SelfDestructible {
         view
         returns (uint)
     {
-        return safeAdd(value, transferFeeIncurred(value));
+        return value.add(transferFeeIncurred(value));
     }
 
     /**
@@ -301,7 +304,7 @@ contract FeePool is SafeDecimalMath, Proxyable, SelfDestructible {
         view
         returns (uint)
     {
-        return safeDiv_dec(value, safeAdd(UNIT, transferFeeRate));
+        return value.safeDiv_dec(transferFeeRate.add(SafeDecimalMath.unit()));
     }
 
     /**
@@ -313,7 +316,7 @@ contract FeePool is SafeDecimalMath, Proxyable, SelfDestructible {
         view
         returns (uint)
     {
-        return safeMul_dec(value, exchangeFeeRate);
+        return value.safeMul_dec(exchangeFeeRate);
 
         // Exchanges less than the reciprocal of exchangeFeeRate should be completely eaten up by fees.
         // This is on the basis that exchanges less than this value will result in a nil fee.
@@ -334,7 +337,7 @@ contract FeePool is SafeDecimalMath, Proxyable, SelfDestructible {
         view
         returns (uint)
     {
-        return safeAdd(value, exchangeFeeIncurred(value));
+        return value.add(exchangeFeeIncurred(value));
     }
 
     /**
@@ -347,7 +350,7 @@ contract FeePool is SafeDecimalMath, Proxyable, SelfDestructible {
         view
         returns (uint)
     {
-        return safeDiv_dec(value, safeAdd(UNIT, exchangeFeeRate));
+        return value.safeDiv_dec(exchangeFeeRate.add(SafeDecimalMath.unit()));
     }
 
     /**
@@ -363,8 +366,8 @@ contract FeePool is SafeDecimalMath, Proxyable, SelfDestructible {
 
         // Fees in fee period [0] are not yet available for withdrawal
         for (uint8 i = 1; i < FEE_PERIOD_LENGTH; i++) {
-            totalFees = safeAdd(totalFees, recentFeePeriods[i].feesToDistribute);
-            totalFees = safeSub(totalFees, recentFeePeriods[i].feesClaimed);
+            totalFees = totalFees.add(recentFeePeriods[i].feesToDistribute);
+            totalFees = totalFees.sub(recentFeePeriods[i].feesClaimed);
         }
 
         return havven.effectiveValue("HDR", totalFees, currencyKey);
@@ -386,7 +389,7 @@ contract FeePool is SafeDecimalMath, Proxyable, SelfDestructible {
 
         // Fees in fee period [0] are not yet available for withdrawal
         for (uint8 i = 1; i < FEE_PERIOD_LENGTH; i++) {
-            totalFees = safeAdd(totalFees, userFees[i]);
+            totalFees = totalFees.add(userFees[i]);
         }
 
         // And convert them to their desired currency
@@ -435,7 +438,7 @@ contract FeePool is SafeDecimalMath, Proxyable, SelfDestructible {
         (initialDebtOwnership, debtEntryIndex) = havven.issuanceData(account);
         uint debtBalance = havven.debtBalanceOf(account, "HDR");
         uint totalNomins = havven.totalIssuedNomins("HDR");
-        uint userOwnershipPercentage = safeDiv_dec(debtBalance, totalNomins);
+        uint userOwnershipPercentage = debtBalance.safeDiv_dec(totalNomins);
         uint penalty = currentPenalty(account);
 
         uint[FEE_PERIOD_LENGTH] memory result;
@@ -454,11 +457,11 @@ contract FeePool is SafeDecimalMath, Proxyable, SelfDestructible {
                 lastFeeWithdrawal[account] < recentFeePeriods[i].feePeriodId) {
 
                 // And since they were, they're entitled to their percentage of the fees in this period
-                uint feesFromPeriodWithoutPenalty = safeMul_dec(recentFeePeriods[i].feesToDistribute, userOwnershipPercentage);
+                uint feesFromPeriodWithoutPenalty = recentFeePeriods[i].feesToDistribute.safeMul_dec(userOwnershipPercentage);
 
                 // Less their penalty if they have one.
-                uint penaltyFromPeriod = safeMul_dec(feesFromPeriodWithoutPenalty, penalty);
-                uint feesFromPeriod = safeSub(feesFromPeriodWithoutPenalty, penaltyFromPeriod);
+                uint penaltyFromPeriod = feesFromPeriodWithoutPenalty.safeMul_dec(penalty);
+                uint feesFromPeriod = feesFromPeriodWithoutPenalty.safeSub(penaltyFromPeriod);
 
                 result[i] = feesFromPeriod;
             }

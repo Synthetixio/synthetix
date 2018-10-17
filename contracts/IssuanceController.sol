@@ -39,7 +39,7 @@ import "./SafeDecimalMath.sol";
 /**
  * @title Issuance Controller Contract.
  */
-contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
+contract IssuanceController is SelfDestructible, Pausable {
 
 //     /* ========== STATE VARIABLES ========== */
 //     Havven public havven;
