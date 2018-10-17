@@ -150,20 +150,16 @@ contract SafeDecimalMath {
         returns (uint)
     {
         /* Divide by UNIT to remove the extra factor introduced by the product. */
-        uint product = safeMul(x, y);
-        uint modifiedUnit = UNIT / 10;
+        // uint product = safeMul(x, y);
+        // uint modifiedUnit = UNIT / 10;
 
-        uint quotientTen = product / modifiedUnit;
-        uint quotientTenTruncated = (quotientTen / 10) * 10;
-        uint quotient = product / UNIT;
+        uint quotientTen = safeMul(x, y) / (UNIT / 10);
 
-        uint difference = quotientTen - quotientTenTruncated;
-        
-        if (difference >= 5) {
-            return quotient + 1;
-        } else {
-            return quotient;
+        if (quotientTen % 10 >= 5) {
+            quotientTen = quotientTen + 10;
         }
+
+        return quotientTen / 10;
     }
 
     /**

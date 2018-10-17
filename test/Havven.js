@@ -1290,12 +1290,13 @@ contract.only('Havven', async function(accounts) {
 	it('maths', async function() {
 		const x = toUnit('2');
 		const y = toUnit('3');
-		const txn = await havven.happyGoGoTestWrite(x, y);
-		console.log('###### txn: ', txn);
-		// const result2 = await havven.happyGoGoTest2(toUnit('3'), toUnit('3'));
+		// const txn = await havven.happyGoGoTestWrite(x, y);
+		// console.log('###### txn: ', txn);
+		const result = await havven.happyGoGoTest(x, y);
+		const result2 = await havven.happyGoGoTest2(result, toUnit('3'));
 
-		// console.log(`#### result: ${fromUnit(result).toString()}`);
-		// console.log(`#### result2: ${fromUnit(result2).toString()}`);
+		console.log(`#### result: ${fromUnit(result).toString()}`);
+		console.log(`#### result2: ${fromUnit(result2).toString()}`);
 	});
 
 	it.only('should correctly calculate debt in a high volume issuance and burn scenario', async function() {

@@ -867,14 +867,14 @@ contract Havven is ExternStateToken {
     {
         return safeDiv_dec_round(x, y);
     }
-    // function happyGoGoTest2(uint x, uint y)
-    //     public
-    //     view
-    //     // Don't need to check for stale rates here because totalIssuedNomins will do it for us
-    //     returns (uint)
-    // {
-    //     return safeDiv_mul_round(x, y);
-    // }
+    function happyGoGoTest2(uint x, uint y)
+        public
+        view
+        // Don't need to check for stale rates here because totalIssuedNomins will do it for us
+        returns (uint)
+    {
+        return safeMul_dec_round(x, y);
+    }
 
     function happyGoGoTestWrite(uint x, uint y)
         public
