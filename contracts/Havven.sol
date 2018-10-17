@@ -6,6 +6,7 @@ FILE INFORMATION
 file:       Havven.sol
 version:    2.0
 author:     Kevin Brown
+            Gavin Conway
 date:       2018-09-14
 
 -----------------------------------------------------------------
@@ -366,7 +367,7 @@ contract Havven is ExternStateToken {
 
         // Calcuate the effective value by going from source -> USD -> destination
         return safeDiv_dec_round(
-            safeMul_dec_round(sourceAmount, exchangeRates.rateForCurrency(sourceCurrencyKey)), 
+            safeMul_dec_round(sourceAmount, exchangeRates.rateForCurrency(sourceCurrencyKey)),
             exchangeRates.rateForCurrency(destinationCurrencyKey)
         );
     }
@@ -395,7 +396,7 @@ contract Havven is ExternStateToken {
             //       rate for the destination currency and check if it's stale repeatedly on every
             //       iteration of the loop
             uint nominValue = safeDiv_dec_round(
-                safeMul_dec_round(availableNomins[i].totalSupply(), exchangeRates.rateForCurrency(availableNomins[i].currencyKey())), 
+                safeMul_dec_round(availableNomins[i].totalSupply(), exchangeRates.rateForCurrency(availableNomins[i].currencyKey())),
                 currencyRate
             );
 
@@ -633,31 +634,31 @@ contract Havven is ExternStateToken {
         Nomin hdrNomin = nomins["HDR"];
         Nomin destinationNomin = nomins[destinationCurrencyKey];
         
-    //     address feeAddress = feePool.FEE_ADDRESS();
+        address feeAddress = feePool.FEE_ADDRESS();
 
-    //     // Note: We don't need to check the fee pool balance as the burn() below will do a safeSub which requires 
-    //     // the subtraction to not overflow, which would happen if the balance is not sufficient.
+        // Note: We don't need to check the fee pool balance as the burn() below will do a safeSub which requires 
+        // the subtraction to not overflow, which would happen if the balance is not sufficient.
 
-    //     // Burn the source amount
-    //     hdrNomin.burn(feeAddress, hdrAmount);
+        // Burn the source amount
+        hdrNomin.burn(feeAddress, hdrAmount);
 
-    //     // How much should they get in the destination currency?
-    //     uint destinationAmount = effectiveValue("HDR", hdrAmount, destinationCurrencyKey);
+        // How much should they get in the destination currency?
+        uint destinationAmount = effectiveValue("HDR", hdrAmount, destinationCurrencyKey);
 
-    //     // There's no fee on withdrawing fees, as that'd be way too meta.
+        // There's no fee on withdrawing fees, as that'd be way too meta.
 
-    //     // Mint their new nomins
-    //     destinationNomin.issue(account, destinationAmount);
+        // Mint their new nomins
+        destinationNomin.issue(account, destinationAmount);
 
-    //     // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
+        // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
 
-    //     // Call the ERC223 transfer callback if needed
-    //     destinationNomin.triggerTokenFallbackIfNeeded(feeAddress, account, destinationAmount);
+        // Call the ERC223 transfer callback if needed
+        destinationNomin.triggerTokenFallbackIfNeeded(feeAddress, account, destinationAmount);
 
-    //     // No event because the FeePool emits an event.
+        // No event because the FeePool emits an event.
 
-    //     return true;
-    // }
+        return true;
+    }
 
     function _addToDebtRegister(bytes4 currencyKey, uint amount) 
         internal
@@ -672,8 +673,7 @@ contract Havven is ExternStateToken {
         // What will the new total be including the new value?
         uint newTotalDebtIssued = safeAdd(hdrValue, totalDebtIssued);
 
-        // What is their percentage of the total debt?
-        // TODO: Needs to be high accuracy
+        // What is their percentage (as a high precision int) of the total debt?
         uint debtPercentage = safeDiv_dec_round_high_precision(
             decToHighPrecisionDec(hdrValue),
             decToHighPrecisionDec(newTotalDebtIssued)
@@ -682,9 +682,7 @@ contract Havven is ExternStateToken {
         // And what effect does this percentage have on the global debt holding of other issuers?
         // The delta specifically needs to not take into account any existing debt as it's already
         // accounted for in the delta from when they issued previously.
-
-        // TODO: Needs to be high accuracy
-        // uint delta = safeSub(UNIT, debtPercentage);
+        // The delta is a high precision integer.
         uint delta = safeSub(HIGH_PRECISION_UNIT, debtPercentage);
 
         // How much existing debt do they have?
@@ -708,9 +706,8 @@ contract Havven is ExternStateToken {
         issuanceData[messageSender].debtEntryIndex = debtLedger.length;
 
         // And if we're the first, push 1 as there was no effect to any other holders, otherwise push 
-        // the change for the rest of the debt holders
+        // the change for the rest of the debt holders. The debt ledger holds high precision integers.
         if (debtLedger.length > 0) {
-            // TODO: Needs to be high accuracy
             debtLedger.push(safeMul_dec_round_high_precision(
                 debtLedger[debtLedger.length - 1],
                 delta
@@ -802,7 +799,6 @@ contract Havven is ExternStateToken {
 
         // What percentage of the total debt are they trying to remove?
         uint totalDebtIssued = totalIssuedNomins("HDR");
-        // TODO: Result needs to be high accuracy
         uint debtPercentage = safeDiv_dec_round_high_precision(
             decToHighPrecisionDec(debtToRemove),
             decToHighPrecisionDec(totalDebtIssued)
@@ -822,20 +818,19 @@ contract Havven is ExternStateToken {
             // What percentage of the debt will they be left with?
             uint newDebt = safeSub(existingDebt, debtToRemove);
             uint newTotalDebtIssued = safeSub(totalDebtIssued, debtToRemove);
-            // TODO: Result needs to be high accuracy
             uint newDebtPercentage = safeDiv_dec_round_high_precision(
                 decToHighPrecisionDec(newDebt),
                 decToHighPrecisionDec(newTotalDebtIssued)
             );
 
+            // Store the debt percentage and debt ledger as high precision integers
             issuanceData[messageSender].initialDebtOwnership = newDebtPercentage;
             issuanceData[messageSender].debtEntryIndex = debtLedger.length;
         }
 
-        // Update our cumulative ledger
-
-        // TODO: Needs to be high accuracy
-        debtLedger.push(safeMul_dec_round_high_precision(debtLedger[debtLedger.length - 1], delta));
+        // Update our cumulative ledger. This is also a high precision integer.
+        uint newDebtLedgerEntry = safeMul_dec_round_high_precision(debtLedger[debtLedger.length - 1], delta);
+        debtLedger.push(newDebtLedgerEntry);
     }
 
     // ========== Issuance/Burning ==========
@@ -892,11 +887,9 @@ contract Havven is ExternStateToken {
         if (initialDebtOwnership == 0) return 0;
 
         // Figure out the global debt percentage delta from when they entered the system.
-
-        // TODO: High accuracy
+        // This is a high precision integer.
         uint currentDebtOwnership = safeMul_dec_round_high_precision(
             initialDebtOwnership, 
-            // TODO: High accuracy
             safeDiv_dec_round_high_precision(
                 debtLedger[debtLedger.length - 1],
                 debtLedger[debtEntryIndex]
@@ -907,39 +900,11 @@ contract Havven is ExternStateToken {
         uint totalSystemValue = totalIssuedNomins(currencyKey);
 
         // Their debt balance is their portion of the total system value.
-        // TODO: High accuracy, but convert back to UNIT after calculated
         uint highPrecisionBalance = safeMul_dec_round_high_precision(
             decToHighPrecisionDec(totalSystemValue),
             currentDebtOwnership
         );
         return highPrecisionDecToDec(highPrecisionBalance);
-    }
-
-    // TODO: Remove
-    function happyGoGoTest(uint x, uint y)
-        public
-        view
-        // Don't need to check for stale rates here because totalIssuedNomins will do it for us
-        returns (uint)
-    {
-        return safeDiv_dec_round(x, y);
-    }
-    function happyGoGoTest2(uint x, uint y)
-        public
-        view
-        // Don't need to check for stale rates here because totalIssuedNomins will do it for us
-        returns (uint)
-    {
-        return safeMul_dec_round(x, y);
-    }
-
-    function happyGoGoTestWrite(uint x, uint y)
-        public
-        // Don't need to check for stale rates here because totalIssuedNomins will do it for us
-        returns (uint)
-    {
-        totalIssuerCount += 1;
-        uint a = safeDiv_dec_round(x, y);
     }
 
     /**

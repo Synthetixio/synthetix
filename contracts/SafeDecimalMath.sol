@@ -6,6 +6,7 @@ FILE INFORMATION
 file:       SafeDecimalMath.sol
 version:    1.0
 author:     Anton Jurisevic
+            Gavin Conway
 
 date:       2018-2-5
 
@@ -36,14 +37,15 @@ pragma solidity 0.4.25;
  */
 contract SafeDecimalMath {
 
-    /* Number of decimal places in the representation. */
+    /* Number of decimal places in the representations. */
     uint8 public constant decimals = 18;
     uint8 public constant highPrecisionDecimals = 27;
 
     /* The number representing 1.0. */
     uint public constant UNIT = 10 ** uint(decimals);
+
+    /* The number representing 1.0 for higher fidelity numbers. */
     uint public constant HIGH_PRECISION_UNIT = 10 ** uint(highPrecisionDecimals);
-    // uint private constant HIGH_PRECISION_UNIT_EXPANDED = HIGH_PRECISION_UNIT * 10;
     uint private constant UNIT_TO_HIGH_PRECISION_UNIT_CONVERTER = 10 ** uint(highPrecisionDecimals - decimals);
 
     /**
@@ -143,7 +145,6 @@ contract SafeDecimalMath {
         return safeMul(x, y) / UNIT;
     }
 
-    // TODO: Docs
     function safeMul_dec_round_private(uint x, uint y, uint unit)
         private
         pure
@@ -159,6 +160,17 @@ contract SafeDecimalMath {
         return quotientTimesTen / 10;
     }
 
+    /**
+     * @return The result of multiplying x and y, interpreting the operands as fixed-point
+     * decimals. Throws an exception in case of overflow.
+     *
+     * @dev The operands should be in the form of a HIGH_PRECISION_UNIT factor which will be
+     * divided out after the product of x and y is evaluated, so that product must be less than 2**256.
+     *
+     * Unlike safeMul_dec, this function is careful to round the result to the nearest integer.
+     * This is useful when you need to retain fidelity for small decimal numbers (eg. small
+     * fractions or percentages).
+     */
     function safeMul_dec_round_high_precision(uint x, uint y)
         internal
         pure
@@ -167,6 +179,17 @@ contract SafeDecimalMath {
         return safeMul_dec_round_private(x, y, HIGH_PRECISION_UNIT);
     }
 
+    /**
+     * @return The result of multiplying x and y, interpreting the operands as fixed-point
+     * decimals. Throws an exception in case of overflow.
+     *
+     * @dev The operands should be in the form of a standard UNIT factor which will be
+     * divided out after the product of x and y is evaluated, so that product must be less than 2**256.
+     *
+     * Unlike safeMul_dec, this function is careful to round the result to the nearest integer.
+     * This is useful when you need to retain fidelity for small decimal numbers (eg. small
+     * fractions or percentages).
+     */
     function safeMul_dec_round(uint x, uint y)
         internal
         pure
@@ -215,7 +238,6 @@ contract SafeDecimalMath {
         return safeDiv(safeMul(x, UNIT), y);
     }
 
-    // TODO: Docs
     function safeDiv_dec_round_private(uint x, uint y, uint unit)
         private
         pure
@@ -230,7 +252,11 @@ contract SafeDecimalMath {
         return resultTimesTen / 10;
     }
 
-    // TODO: Docs
+    /**
+     * @return The result of dividing x by y, interpreting the operands as fixed point decimal numbers.
+     * @dev Throws an exception in case of overflow or zero divisor; x must be less than 2^256 / UNIT.
+     * Internal rounding is to the nearest integer.
+     */
     function safeDiv_dec_round(uint x, uint y)
         internal
         pure
@@ -239,7 +265,11 @@ contract SafeDecimalMath {
         return safeDiv_dec_round_private(x, y, UNIT);
     }
 
-    // TODO: Docs
+    /**
+     * @return The result of dividing x by y, interpreting the operands as fixed point decimal numbers.
+     * @dev Throws an exception in case of overflow or zero divisor; x must be less than 2^256 / HIGH_PRECISION_UNIT.
+     * Internal rounding is to the nearest integer.
+     */
     function safeDiv_dec_round_high_precision(uint x, uint y)
         internal
         pure
@@ -260,7 +290,10 @@ contract SafeDecimalMath {
         return safeMul(i, UNIT);
     }
 
-    // TODO: Docs
+    /**
+     * @dev Convert a standard decimal representation to a high precision one.
+     * Throw an exception if the result would be out of range.
+     */
     function decToHighPrecisionDec(uint i)
         internal
         pure
@@ -269,6 +302,10 @@ contract SafeDecimalMath {
         return safeMul(i, UNIT_TO_HIGH_PRECISION_UNIT_CONVERTER);
     }
 
+    /**
+     * @dev Convert a high precision decimal to a standard decimal representation.
+     * Throw an exception if the result would be out of range.
+     */
     function highPrecisionDecToDec(uint i)
         internal
         pure

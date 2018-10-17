@@ -936,8 +936,6 @@ contract.only('Havven', async function(accounts) {
 		// But there's a small rounding error.
 		// This is ok, as when the last person exits the system, their debt percentage is always 100% so
 		// these rounding errors don't cause the system to be out of balance.
-		// assert.bnEqual(await havven.debtBalanceOf(account1, nUSD), toUnit('10.00000000000000002'));
-		// assert.bnEqual(await havven.debtBalanceOf(account2, nUSD), toUnit('19.99999999999999998'));
 		assertBNClose(await havven.debtBalanceOf(account1, nUSD), toUnit('10'), '3');
 		assertBNClose(await havven.debtBalanceOf(account2, nUSD), toUnit('20'), '3');
 	});
@@ -1285,19 +1283,6 @@ contract.only('Havven', async function(accounts) {
 
 		// TODO: The variance we are getting here seems suspect. Let's investigate
 		assertBNClose(debt, expectedDebt, '5');
-	});
-
-	// TODO: Delete. This is a throw away test.
-	it.skip('maths', async function() {
-		const x = toUnit('2');
-		const y = toUnit('3');
-		// const txn = await havven.happyGoGoTestWrite(x, y);
-		// console.log('###### txn: ', txn);
-		const result = await havven.happyGoGoTest(x, y);
-		const result2 = await havven.happyGoGoTest2(result, toUnit('3'));
-
-		console.log(`#### result: ${fromUnit(result).toString()}`);
-		console.log(`#### result2: ${fromUnit(result2).toString()}`);
 	});
 
 	// TODO: This test is a WIP but should pass.
