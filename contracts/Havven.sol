@@ -196,44 +196,7 @@ contract Havven is ExternStateToken {
     {
         exchangeRates = _exchangeRates;
         feePool = _feePool;
-        
-        // if (_oldHavven != address(0)) {
-        //     // TODO: Need to handle contract upgrades correctly.
 
-        //     // uint i;
-        //     // uint cbs;
-        //     // uint lab;
-        //     // uint lm;
-        //     // (cbs, lab, lm) = _oldHavven.totalIssuanceData();
-        //     // totalIssuanceData.currentBalanceSum = cbs;
-        //     // totalIssuanceData.lastAverageBalance = lab;
-        //     // totalIssuanceData.lastModified = lm;
-
-        //     // for (i = 0; i < _issuers.length; i++) {
-        //     //     address issuer = _issuers[i];
-        //     //     isIssuer[issuer] = true;
-        //     //     uint nomins = _oldHavven.nominsIssued(issuer);
-        //     //     if (nomins == 0) {
-        //     //         // It is not valid in general to skip those with no currently-issued nomins.
-        //     //         // But for this release, issuers with nonzero issuanceData have current issuance.
-        //     //         continue;
-        //     //     }
-        //     //     (cbs, lab, lm) = _oldHavven.issuanceData(issuer);
-        //     //     nominsIssued[issuer] = nomins;
-        //     //     issuanceData[issuer].currentBalanceSum = cbs;
-        //     //     issuanceData[issuer].lastAverageBalance = lab;
-        //     //     issuanceData[issuer].lastModified = lm;
-        //     // }
-        // }
-
-        // // Set our initial fee period
-        // recentFeePeriods[0].feePeriodId = 1;
-        // recentFeePeriods[0].startingDebtIndex = 0;
-        // recentFeePeriods[0].startTime = now;
-        // recentFeePeriods[0].feesToDistribute = 0;
-
-        // // And the next one starts at 2.
-        // nextFeePeriodId = 2;
     }
 
     // ========== SETTERS ========== */
@@ -305,17 +268,17 @@ contract Havven is ExternStateToken {
         emitEscrowUpdated(_escrow);
     }
 
-    /**
-     * @notice Set the ExchangeRates contract address where rates are held.
-     * @dev Only callable by the contract owner.
-     */
-    function setExchangeRates(ExchangeRates _exchangeRates)
-        external
-        optionalProxy_onlyOwner
-    {
-        exchangeRates = _exchangeRates;
-        emitExchangeRatesUpdated(_exchangeRates);
-    }
+    // /**
+    //  * @notice Set the ExchangeRates contract address where rates are held.
+    //  * @dev Only callable by the contract owner.
+    //  */
+    // function setExchangeRates(ExchangeRates _exchangeRates)
+    //     external
+    //     optionalProxy_onlyOwner
+    // {
+    //     exchangeRates = _exchangeRates;
+    //     emitExchangeRatesUpdated(_exchangeRates);
+    // }
 
     /**
      * @notice Set the issuanceRatio for issuance calculations.
@@ -377,8 +340,8 @@ contract Havven is ExternStateToken {
         if (sourceCurrencyKey == destinationCurrencyKey) return sourceAmount;
 
         // Calcuate the effective value by going from source -> USD -> destination
-        return safeDiv_dec(
-            safeMul_dec(sourceAmount, exchangeRates.rateForCurrency(sourceCurrencyKey)), 
+        return safeDiv_dec_round(
+            safeMul_dec_round(sourceAmount, exchangeRates.rateForCurrency(sourceCurrencyKey)), 
             exchangeRates.rateForCurrency(destinationCurrencyKey)
         );
     }
@@ -406,8 +369,8 @@ contract Havven is ExternStateToken {
             // Note: We're not using our effectiveValue function because we don't want to go get the
             //       rate for the destination currency and check if it's stale repeatedly on every
             //       iteration of the loop
-            uint nominValue = safeDiv_dec(
-                safeMul_dec(availableNomins[i].totalSupply(), exchangeRates.rateForCurrency(availableNomins[i].currencyKey())), 
+            uint nominValue = safeDiv_dec_round(
+                safeMul_dec_round(availableNomins[i].totalSupply(), exchangeRates.rateForCurrency(availableNomins[i].currencyKey())), 
                 currencyRate
             );
 
@@ -632,44 +595,44 @@ contract Havven is ExternStateToken {
         return true;
     }
 
-    function payFees(address account, uint hdrAmount, bytes4 destinationCurrencyKey)
-        external 
-    //     onlyFeePool
-    //     notFeeAddress(account)
-        returns (bool)
-    {
-        require(account != address(0), "Account cannot be zero");
-        require(account != address(this), "Can't send fees to Havven");
-        require(account != address(proxy), "Can't send fees to proxy");
+    // function payFees(address account, uint hdrAmount, bytes4 destinationCurrencyKey)
+    //     external 
+    // //     onlyFeePool
+    // //     notFeeAddress(account)
+    //     returns (bool)
+    // {
+    //     require(account != address(0), "Account cannot be zero");
+    //     require(account != address(this), "Can't send fees to Havven");
+    //     require(account != address(proxy), "Can't send fees to proxy");
 
-        Nomin hdrNomin = nomins["HDR"];
-        Nomin destinationNomin = nomins[destinationCurrencyKey];
+    //     Nomin hdrNomin = nomins["HDR"];
+    //     Nomin destinationNomin = nomins[destinationCurrencyKey];
         
-        address feeAddress = feePool.FEE_ADDRESS();
+    //     address feeAddress = feePool.FEE_ADDRESS();
 
-        // Note: We don't need to check the fee pool balance as the burn() below will do a safeSub which requires 
-        // the subtraction to not overflow, which would happen if the balance is not sufficient.
+    //     // Note: We don't need to check the fee pool balance as the burn() below will do a safeSub which requires 
+    //     // the subtraction to not overflow, which would happen if the balance is not sufficient.
 
-        // Burn the source amount
-        hdrNomin.burn(feeAddress, hdrAmount);
+    //     // Burn the source amount
+    //     hdrNomin.burn(feeAddress, hdrAmount);
 
-        // How much should they get in the destination currency?
-        uint destinationAmount = effectiveValue("HDR", hdrAmount, destinationCurrencyKey);
+    //     // How much should they get in the destination currency?
+    //     uint destinationAmount = effectiveValue("HDR", hdrAmount, destinationCurrencyKey);
 
-        // There's no fee on withdrawing fees, as that'd be way too meta.
+    //     // There's no fee on withdrawing fees, as that'd be way too meta.
 
-        // Mint their new nomins
-        destinationNomin.issue(account, destinationAmount);
+    //     // Mint their new nomins
+    //     destinationNomin.issue(account, destinationAmount);
 
-        // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
+    //     // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
 
-        // Call the ERC223 transfer callback if needed
-        destinationNomin.triggerTokenFallbackIfNeeded(feeAddress, account, destinationAmount);
+    //     // Call the ERC223 transfer callback if needed
+    //     destinationNomin.triggerTokenFallbackIfNeeded(feeAddress, account, destinationAmount);
 
-        // No event because the FeePool emits an event.
+    //     // No event because the FeePool emits an event.
 
-        return true;
-    }
+    //     return true;
+    // }
 
     function _addToDebtRegister(bytes4 currencyKey, uint amount) 
         internal
@@ -685,7 +648,7 @@ contract Havven is ExternStateToken {
         uint newTotalDebtIssued = safeAdd(hdrValue, totalDebtIssued);
 
         // What is their percentage of the total debt?
-        uint debtPercentage = safeDiv_dec(hdrValue, newTotalDebtIssued);
+        uint debtPercentage = safeDiv_dec_round(hdrValue, newTotalDebtIssued);
 
         // And what effect does this percentage have on the global debt holding of other issuers?
         // The delta specifically needs to not take into account any existing debt as it's already
@@ -697,7 +660,7 @@ contract Havven is ExternStateToken {
          
         // And what does their debt ownership look like including this previous stake?
         if (existingDebt > 0) {
-            debtPercentage = safeDiv_dec(safeAdd(hdrValue, existingDebt), newTotalDebtIssued);
+            debtPercentage = safeDiv_dec_round(safeAdd(hdrValue, existingDebt), newTotalDebtIssued);
         }
 
         // Are they a new issuer? If so, record them.
@@ -712,7 +675,7 @@ contract Havven is ExternStateToken {
         // And if we're the first, push 1 as there was no effect to any other holders, otherwise push 
         // the change for the rest of the debt holders
         if (debtLedger.length > 0) {
-            debtLedger.push(safeMul_dec(debtLedger[debtLedger.length - 1], delta));
+            debtLedger.push(safeMul_dec_round(debtLedger[debtLedger.length - 1], delta));
         } else {
             debtLedger.push(UNIT);
         }
@@ -800,7 +763,7 @@ contract Havven is ExternStateToken {
 
         // What percentage of the total debt are they trying to remove?
         uint totalDebtIssued = totalIssuedNomins("HDR");
-        uint debtPercentage = safeDiv_dec(debtToRemove, totalDebtIssued);
+        uint debtPercentage = safeDiv_dec_round(debtToRemove, totalDebtIssued);
 
         // And what effect does this percentage have on the global debt holding of other issuers?
         // The delta specifically needs to not take into account any existing debt as it's already
@@ -816,14 +779,14 @@ contract Havven is ExternStateToken {
             // What percentage of the debt will they be left with?
             uint newDebt = safeSub(existingDebt, debtToRemove);
             uint newTotalDebtIssued = safeSub(totalDebtIssued, debtToRemove);
-            uint newDebtPercentage = safeDiv_dec(newDebt, newTotalDebtIssued);
+            uint newDebtPercentage = safeDiv_dec_round(newDebt, newTotalDebtIssued);
 
             issuanceData[messageSender].initialDebtOwnership = newDebtPercentage;
             issuanceData[messageSender].debtEntryIndex = debtLedger.length;
         }
 
         // Update our cumulative ledger
-        debtLedger.push(safeMul_dec(debtLedger[debtLedger.length - 1], delta));
+        debtLedger.push(safeMul_dec_round(debtLedger[debtLedger.length - 1], delta));
     }
 
     // ========== Issuance/Burning ==========
@@ -847,10 +810,10 @@ contract Havven is ExternStateToken {
         uint currencyRate = exchangeRates.rateForCurrency(currencyKey);
 
         // What is the value of their HAV balance in the destination currency?
-        uint havvenBalanceInDestinationCurrency = safeDiv_dec(safeMul_dec(totalOwnedHavvens, havRate), currencyRate);
+        uint havvenBalanceInDestinationCurrency = safeDiv_dec_round(safeMul_dec_round(totalOwnedHavvens, havRate), currencyRate);
 
         // They're allowed to issue up to issuanceRatio of that value
-        return safeMul_dec(havvenBalanceInDestinationCurrency, issuanceRatio);
+        return safeMul_dec_round(havvenBalanceInDestinationCurrency, issuanceRatio);
     }
 
     function collateralisationRatio(address issuer)
@@ -863,7 +826,7 @@ contract Havven is ExternStateToken {
 
         if (totalOwnedHavvens == 0) return 0;
 
-        return safeDiv_dec(debtBalance, totalOwnedHavvens);
+        return safeDiv_dec_round(debtBalance, totalOwnedHavvens);
     }
 
     function debtBalanceOf(address issuer, bytes4 currencyKey)
@@ -880,9 +843,9 @@ contract Havven is ExternStateToken {
         if (initialDebtOwnership == 0) return 0;
 
         // Figure out the global debt percentage delta from when they entered the system.
-        uint currentDebtOwnership = safeMul_dec(
+        uint currentDebtOwnership = safeMul_dec_round(
             initialDebtOwnership, 
-            safeDiv_dec(
+            safeDiv_dec_round(
                 debtLedger[debtLedger.length - 1],
                 debtLedger[debtEntryIndex]
             )
@@ -892,7 +855,34 @@ contract Havven is ExternStateToken {
         uint totalSystemValue = totalIssuedNomins(currencyKey);
 
         // Their debt balance is their portion of the total system value.
-        return safeMul_dec(totalSystemValue, currentDebtOwnership);
+        return safeMul_dec_round(totalSystemValue, currentDebtOwnership);
+    }
+
+    // TODO: Remove
+    function happyGoGoTest(uint x, uint y)
+        public
+        view
+        // Don't need to check for stale rates here because totalIssuedNomins will do it for us
+        returns (uint)
+    {
+        return safeDiv_dec_round(x, y);
+    }
+    // function happyGoGoTest2(uint x, uint y)
+    //     public
+    //     view
+    //     // Don't need to check for stale rates here because totalIssuedNomins will do it for us
+    //     returns (uint)
+    // {
+    //     return safeDiv_mul_round(x, y);
+    // }
+
+    function happyGoGoTestWrite(uint x, uint y)
+        public
+        // Don't need to check for stale rates here because totalIssuedNomins will do it for us
+        returns (uint)
+    {
+        totalIssuerCount += 1;
+        uint a = safeDiv_dec_round(x, y);
     }
 
     /**
@@ -957,7 +947,7 @@ contract Havven is ExternStateToken {
         // Assuming issuance ratio is 20%, then issuing 20 HAV of value would require 
         // 100 HAV to be locked in their wallet to maintain their collateralisation ratio
         // The locked havven value can exceed their balance.
-        uint lockedHavvenValue = safeDiv_dec(debtBalanceOf(account, "HAV"), issuanceRatio);
+        uint lockedHavvenValue = safeDiv_dec_round(debtBalanceOf(account, "HAV"), issuanceRatio);
 
         // If we exceed the balance, no Havvens are transferable, otherwise the difference is.
         if (lockedHavvenValue >= balance) {

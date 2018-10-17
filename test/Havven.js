@@ -12,6 +12,7 @@ const {
 	multiplyDecimal,
 	divideDecimal,
 	toUnit,
+	fromUnit,
 	ZERO_ADDRESS,
 } = require('../utils/testUtils');
 
@@ -1286,33 +1287,57 @@ contract.only('Havven', async function(accounts) {
 		assertBNClose(debt, expectedDebt, '10000');
 	});
 
+	it('maths', async function() {
+		const x = toUnit('2');
+		const y = toUnit('3');
+		const txn = await havven.happyGoGoTestWrite(x, y);
+		console.log('###### txn: ', txn);
+		// const result2 = await havven.happyGoGoTest2(toUnit('3'), toUnit('3'));
+
+		// console.log(`#### result: ${fromUnit(result).toString()}`);
+		// console.log(`#### result2: ${fromUnit(result2).toString()}`);
+	});
+
 	it.only('should correctly calculate debt in a high volume issuance and burn scenario', async function() {
 		const getRandomInt = (min, max) => {
 			return min + Math.floor(Math.random() * Math.floor(max));
 		};
 
 		const getDebtLedgerArray = async () => {
-			const length = await havven.debtLedger.length.call();
+			const length = await havven.debtLedgerLength();
 			let results = [];
 			for (let i = 0; i < length; i++) {
-				results.push(await havven.debtLedger.call(i));
+				const result = await havven.debtLedger.call(i);
+				results.push(fromUnit(result).toString());
 			}
 			return results;
 		};
 
-		await havven.transfer(account1, toUnit('50000000'), { from: owner });
-		await havven.transfer(account2, toUnit('50000000'), { from: owner });
+		const getIssuanceData = async () => {
+			const issuanceData = await havven.issuanceData.call(account1);
+			// console.log(`#### issuanceData: ${issuanceData}`);
+			// return issuanceData;
+			return {
+				initialDebtOwnership: fromUnit(issuanceData.initialDebtOwnership).toString(),
+				debtEntryIndex: issuanceData.debtEntryIndex.toString(),
+			};
+			// console.log(`#### issuanceData: ${issuanceData}`);
+		};
+
+		await havven.transfer(account1, toUnit('50000000000'), { from: owner });
+		await havven.transfer(account2, toUnit('50000000000'), { from: owner });
 
 		// Make accounts issuers
-		await havven.setIssuer(account1, true, { from: owner });
-		await havven.setIssuer(account2, true, { from: owner });
+		// await havven.setIssuer(account1, true, { from: owner });
+		// await havven.setIssuer(account2, true, { from: owner });
 
 		// const nominsIssuedEachTime = web3.utils.toBN('10000');
-		const loopCount = 80;
+		const loopCount = 140;
 		// let expectedDebt = web3.utils.toBN(0);
-		let expectedDebt = toUnit('0');
-		// await havven.issueNomins(nUSD, expectedDebt, { from: account1 });
-		let timeBeforeLoopIssued = 0;
+		let expectedDebt = toUnit('900000');
+		await havven.issueNomins(nUSD, expectedDebt, { from: account1 });
+		// let timeBeforeLoopIssued = 0;
+		let highestVarianceYet = toUnit('0');
 
 		// let totalNominsIssued = 0;
 		for (let i = 0; i < loopCount; i++) {
@@ -1332,29 +1357,31 @@ contract.only('Havven', async function(accounts) {
 				timestamp,
 				{ from: oracle }
 			);
+			console.log(`#### HDR rate: ${fromUnit(await exchangeRates.rateForCurrency(HDR))}`);
 
 			// const amount = web3.utils.toBN(getRandomInt(100000, 800000000));
-			const amount = toUnit('5');
+			const amount = toUnit('0.00008');
+			console.log(`##### Adding: ${amount} ...`);
 			await havven.issueNomins(nUSD, amount, { from: account1 });
+			console.log(`##### debt array after account1 issued: ${await getDebtLedgerArray()}`);
 
-			let index = i * 2 + timeBeforeLoopIssued;
+			// let index = i * 2 + timeBeforeLoopIssued;
 			// let debtEntry = await havven.debtLedger.call(index);
 			// let totalIssuedNomins = await havven.totalIssuedNomins(nUSD);
 			// console.log(
 			// 	`###### debtEntry for account1 at index ${index}: ${debtEntry}\t\ttotal issued nomins (nUSD): ${totalIssuedNomins}`
 			// );
-			console.log('##### debt array: ', await getDebtLedgerArray());
 
 			await havven.issueNomins(nUSD, amount, { from: account2 });
-			index = i * 2 + timeBeforeLoopIssued + 1;
+			console.log(`##### debt array after account2 issued: ${await getDebtLedgerArray()}`);
+			// index = i * 2 + timeBeforeLoopIssued + 1;
 			// debtEntry = await havven.debtLedger.call(index);
 			// totalIssuedNomins = await havven.totalIssuedNomins(nUSD);
 			// console.log(
 			// 	`###### debtEntry for account1 at index ${index}: ${debtEntry}\t\ttotal issued nomins (nUSD): ${totalIssuedNomins}`
 			// );
-			console.log('##### debt array: ', await getDebtLedgerArray());
 
-			console.log(`##### Adding: ${amount}...`);
+			console.log(`#### Issuance Data: `, await getIssuanceData());
 			const account1nUSDBalance = await nUSDContract.balanceOf(account1);
 			const account2nUSDBalance = await nUSDContract.balanceOf(account2);
 			console.log(
@@ -1364,18 +1391,19 @@ contract.only('Havven', async function(accounts) {
 			// const expectedDebt = nominsIssuedEachTime.mul(web3.utils.toBN(i + 1));
 			const account1Debt = await havven.debtBalanceOf(account1, nUSD);
 			const variance = account1Debt.sub(expectedDebt);
+			highestVarianceYet = variance.abs().gte(highestVarianceYet)
+				? variance.abs()
+				: highestVarianceYet;
 			console.log(
-				`##### expectedDebt: ${expectedDebt}\t\taccount1Debt: ${account1Debt}\t\t variance: ${variance}`
+				`##### expectedDebt: ${expectedDebt}\t\taccount1Debt: ${account1Debt}\t\t variance: ${variance}\t\t highestVarianceYet: +/- ${highestVarianceYet}`
 			);
-			// const amountToBurn = web3.utils.toBN('1000000');
-			// const one = toUnit('1');
-			// if (i % 2 === 0) {
-			// 	const one = web3.utils.toBN(99999999999);
-			// 	const amountToBurn = (one.lte(account1Debt) ? one : account1Debt).sub(web3.utils.toBN(100));
-			// 	console.log(`##### Burning: ${fromUnit(amountToBurn)}`);
-			// 	await havven.burnNomins(nUSD, amountToBurn, { from: account1 });
-			// 	expectedDebt = expectedDebt.sub(amountToBurn);
-			// }
+			if (i % 2 === 0) {
+				const one = web3.utils.toBN(9999999);
+				const amountToBurn = (one.lte(account1Debt) ? one : account1Debt).sub(web3.utils.toBN(100));
+				console.log(`##### Burning: ${fromUnit(amountToBurn)}`);
+				await havven.burnNomins(nUSD, amountToBurn, { from: account1 });
+				expectedDebt = expectedDebt.sub(amountToBurn);
+			}
 			console.log('------------------------------------');
 		}
 		// const expectedDebt = nominsIssuedEachTime.mul(web3.utils.toBN(loopCount));
