@@ -29,6 +29,7 @@ occur.
 
 pragma solidity 0.4.25;
 
+import "./SafeMath.sol";
 
 /**
  * @title Safely manipulate unsigned fixed-point decimals at a given precision level.
@@ -36,6 +37,8 @@ pragma solidity 0.4.25;
  * are taken to be such fixed point decimals (including fiat, ether, and nomin quantities).
  */
 contract SafeDecimalMath {
+
+    using SafeMath for uint;
 
     /* Number of decimal places in the representations. */
     uint8 public constant decimals = 18;
@@ -48,17 +51,8 @@ contract SafeDecimalMath {
     uint public constant HIGH_PRECISION_UNIT = 10 ** uint(highPrecisionDecimals);
     uint private constant UNIT_TO_HIGH_PRECISION_UNIT_CONVERTER = 10 ** uint(highPrecisionDecimals - decimals);
 
-    /**
-     * @return True iff adding x and y will not overflow.
-     */
-    function addIsSafe(uint x, uint y)
-        internal
-        pure
-        returns (bool)
-    {
-        return x + y >= y;
-    }
 
+    // TODO: Replace with OpenZeppelin's implementation
     /**
      * @return The result of adding x and y, throwing an exception in case of overflow.
      */
@@ -71,17 +65,7 @@ contract SafeDecimalMath {
         return x + y;
     }
 
-    /**
-     * @return True if subtracting y from x will not overflow in the negative direction.
-     */
-    function subIsSafe(uint x, uint y)
-        internal
-        pure
-        returns (bool)
-    {
-        return y <= x;
-    }
-
+    // TODO: Replace with OpenZeppelin's implementation
     /**
      * @return The result of subtracting y from x, throwing an exception in case of overflow.
      */
@@ -92,36 +76,6 @@ contract SafeDecimalMath {
     {
         require(y <= x, "Subtraction would cause overflow");
         return x - y;
-    }
-
-    /**
-     * @return True if multiplying x and y would not overflow.
-     */
-    function mulIsSafe(uint x, uint y)
-        internal
-        pure
-        returns (bool)
-    {
-        if (x == 0) {
-            return true;
-        }
-        return (x * y) / x == y;
-    }
-
-    /**
-     * @return The result of multiplying x and y, throwing an exception in case of overflow.
-     */
-    function safeMul(uint x, uint y)
-        internal
-        pure
-        returns (uint)
-    {
-        if (x == 0) {
-            return 0;
-        }
-        uint p = x * y;
-        require(p / x == y, "Safe mul failed");
-        return p;
     }
 
     /**
@@ -142,7 +96,7 @@ contract SafeDecimalMath {
         returns (uint)
     {
         /* Divide by UNIT to remove the extra factor introduced by the product. */
-        return safeMul(x, y) / UNIT;
+        return x.mul(y) / UNIT;
     }
 
     function safeMul_dec_round_private(uint x, uint y, uint unit)
@@ -151,7 +105,8 @@ contract SafeDecimalMath {
         returns (uint)
     {
         /* Divide by UNIT to remove the extra factor introduced by the product. */
-        uint quotientTimesTen = safeMul(x, y) / (unit / 10);
+        // uint quotientTimesTen = safeMul(x, y) / (unit / 10);
+        uint quotientTimesTen = x.mul(y) / (unit / 10);
 
         if (quotientTimesTen % 10 >= 5) {
             quotientTimesTen = quotientTimesTen + 10;
@@ -199,32 +154,6 @@ contract SafeDecimalMath {
     }
 
     /**
-     * @return True if the denominator of x/y is nonzero.
-     */
-    function divIsSafe(uint, uint y)
-        internal
-        pure
-        returns (bool)
-    {
-        return y != 0;
-    }
-
-    /**
-     * @return The result of dividing x by y, throwing an exception if the divisor is zero.
-     */
-    function safeDiv(uint x, uint y)
-        internal
-        pure
-        returns (uint)
-    {
-        /* Although a 0 denominator already throws an exception,
-         * it is equivalent to a THROW operation, which consumes all gas.
-         * A require statement emits REVERT instead, which remits remaining gas. */
-        require(y != 0, "Denominator cannot be zero");
-        return x / y;
-    }
-
-    /**
      * @return The result of dividing x by y, interpreting the operands as fixed point decimal numbers.
      * @dev Throws an exception in case of overflow or zero divisor; x must be less than 2^256 / UNIT.
      * Internal rounding is downward: a similar caveat holds as with safeDecMul().
@@ -235,7 +164,7 @@ contract SafeDecimalMath {
         returns (uint)
     {
         /* Reintroduce the UNIT factor that will be divided out by y. */
-        return safeDiv(safeMul(x, UNIT), y);
+        return x.mul(UNIT).div(y);
     }
 
     function safeDiv_dec_round_private(uint x, uint y, uint unit)
@@ -243,7 +172,7 @@ contract SafeDecimalMath {
         pure
         returns (uint)
     {
-        uint resultTimesTen = safeDiv(safeMul(x, unit * 10), y);
+        uint resultTimesTen = x.mul(unit * 10).div(y);
 
         if (resultTimesTen % 10 >= 5) {
             resultTimesTen += 10;
@@ -279,18 +208,6 @@ contract SafeDecimalMath {
     }
 
     /**
-     * @dev Convert an unsigned integer to a unsigned fixed-point decimal.
-     * Throw an exception if the result would be out of range.
-     */
-    function intToDec(uint i)
-        internal
-        pure
-        returns (uint)
-    {
-        return safeMul(i, UNIT);
-    }
-
-    /**
      * @dev Convert a standard decimal representation to a high precision one.
      * Throw an exception if the result would be out of range.
      */
@@ -299,7 +216,7 @@ contract SafeDecimalMath {
         pure
         returns (uint)
     {
-        return safeMul(i, UNIT_TO_HIGH_PRECISION_UNIT_CONVERTER);
+        return i.mul(UNIT_TO_HIGH_PRECISION_UNIT_CONVERTER);
     }
 
     /**

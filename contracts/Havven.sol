@@ -482,36 +482,36 @@ contract Havven is ExternStateToken {
         return true;
     }
 
-    /**
-     * @notice Function that allows you to exchange nomins you hold in one flavour for another.
-     * @param sourceCurrencyKey The source currency you wish to exchange from
-     * @param sourceAmount The amount, specified in UNIT of source currency you wish to exchange
-     * @param destinationCurrencyKey The destination currency you wish to obtain.
-     * @param destinationAddress Where the result should go. If this is address(0), or if it's the message sender, no fee
-     *        is deducted, otherwise the standard transfer fee is deducted.
-     * @return Boolean that indicates whether the transfer succeeded or failed.
-     */
-    function exchange(bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey, address destinationAddress)
-        external
-        optionalProxy
-        // Note: We don't need to insist on non-stale rates because effectiveValue will do it for us.
-        returns (bool)
-    {
-        require(sourceCurrencyKey != destinationCurrencyKey, "Exchange must use different nomins");
-        require(sourceAmount > 0, "Can't be 0");
-        require(destinationAddress != address(this), "Havven is invalid destination");
-        require(destinationAddress != address(proxy), "Proxy is invalid destination");
+    // /**
+    //  * @notice Function that allows you to exchange nomins you hold in one flavour for another.
+    //  * @param sourceCurrencyKey The source currency you wish to exchange from
+    //  * @param sourceAmount The amount, specified in UNIT of source currency you wish to exchange
+    //  * @param destinationCurrencyKey The destination currency you wish to obtain.
+    //  * @param destinationAddress Where the result should go. If this is address(0), or if it's the message sender, no fee
+    //  *        is deducted, otherwise the standard transfer fee is deducted.
+    //  * @return Boolean that indicates whether the transfer succeeded or failed.
+    //  */
+    // function exchange(bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey, address destinationAddress)
+    //     external
+    //     optionalProxy
+    //     // Note: We don't need to insist on non-stale rates because effectiveValue will do it for us.
+    //     returns (bool)
+    // {
+    //     require(sourceCurrencyKey != destinationCurrencyKey, "Exchange must use different nomins");
+    //     require(sourceAmount > 0, "Can't be 0");
+    //     require(destinationAddress != address(this), "Havven is invalid destination");
+    //     require(destinationAddress != address(proxy), "Proxy is invalid destination");
 
-        // Pass it along, defaulting to the sender as the recipient.
-        return _internalExchange(
-            messageSender,
-            sourceCurrencyKey,
-            sourceAmount,
-            destinationCurrencyKey,
-            destinationAddress == address(0) ? messageSender : destinationAddress,
-            true // Charge fee on the exchange
-        );
-    }
+    //     // Pass it along, defaulting to the sender as the recipient.
+    //     return _internalExchange(
+    //         messageSender,
+    //         sourceCurrencyKey,
+    //         sourceAmount,
+    //         destinationCurrencyKey,
+    //         destinationAddress == address(0) ? messageSender : destinationAddress,
+    //         true // Charge fee on the exchange
+    //     );
+    // }
 
     function nominInitiatedExchange(
         address from,

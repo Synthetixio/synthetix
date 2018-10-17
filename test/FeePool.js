@@ -5,7 +5,7 @@ const Nomin = artifacts.require('Nomin');
 
 const { currentTime, fastForward, fromUnit, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 
-contract.only('FeePool', async function(accounts) {
+contract('FeePool', async function(accounts) {
 	const [nUSD, nAUD, nEUR, HAV, HDR] = ['nUSD', 'nAUD', 'nEUR', 'HAV', 'HDR'].map(
 		web3.utils.asciiToHex
 	);
@@ -291,7 +291,7 @@ contract.only('FeePool', async function(accounts) {
 		assert.bnEqual(pendingFees, fee);
 	});
 
-	it.only('should correctly close the current fee period when there are more than FEE_PERIOD_LENGTH periods', async function() {
+	it('should correctly close the current fee period when there are more than FEE_PERIOD_LENGTH periods', async function() {
 		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 
 		// Set fee period duration to 1 day to ensure that we don't find the bug in truffle / ganache
