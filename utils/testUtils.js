@@ -3,10 +3,6 @@ const BN = require('bn.js');
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 const UNIT = web3.utils.toWei(new BN('1'), 'ether');
 
-const toFortyPlaces = input => {
-	return;
-};
-
 /**
  * Sets default properties on the jsonrpc object and promisifies it so we don't have to copy/paste everywhere.
  */

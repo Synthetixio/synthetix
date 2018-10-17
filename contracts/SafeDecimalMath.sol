@@ -274,7 +274,13 @@ contract SafeDecimalMath {
         pure
         returns (uint)
     {
-        return i / UNIT_TO_HIGH_PRECISION_UNIT_CONVERTER;
+        uint quotientTimesTen = i / (UNIT_TO_HIGH_PRECISION_UNIT_CONVERTER / 10);
+
+        if (quotientTimesTen % 10 >= 5) {
+            quotientTimesTen += 10;
+        }
+
+        return quotientTimesTen / 10;
     }
 
 }

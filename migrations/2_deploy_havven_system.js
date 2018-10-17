@@ -90,7 +90,7 @@ module.exports = async function(deployer, network, accounts) {
 	// Connect Token State
 	// ----------------------
 	// Set initial balance for the owner to have all Havvens.
-	await havvenTokenState.setBalanceOf(owner, web3.utils.toWei('10000000000000000000000'), {
+	await havvenTokenState.setBalanceOf(owner, web3.utils.toWei('100000000'), {
 		from: deployerAccount,
 	});
 
