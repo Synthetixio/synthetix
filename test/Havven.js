@@ -1241,7 +1241,7 @@ contract.only('Havven', async function(accounts) {
 		assertBNClose(balanceOfAccount1AfterBurn, amountReceived, 1000);
 	});
 
-	it('should correctly calculate debt in a multi-issuance scenario', async function() {
+	it.only('should correctly calculate debt in a multi-issuance scenario', async function() {
 		// Give some HAV to account1
 		await havven.transfer(account1, toUnit('200000'), { from: owner });
 		await havven.transfer(account2, toUnit('200000'), { from: owner });
@@ -1299,7 +1299,7 @@ contract.only('Havven', async function(accounts) {
 		console.log(`#### result2: ${fromUnit(result2).toString()}`);
 	});
 
-	it.only('should correctly calculate debt in a high volume issuance and burn scenario', async function() {
+	it('should correctly calculate debt in a high volume issuance and burn scenario', async function() {
 		const getRandomInt = (min, max) => {
 			return min + Math.floor(Math.random() * Math.floor(max));
 		};
@@ -1333,7 +1333,7 @@ contract.only('Havven', async function(accounts) {
 		// await havven.setIssuer(account2, true, { from: owner });
 
 		// const nominsIssuedEachTime = web3.utils.toBN('10000');
-		const loopCount = 140;
+		const loopCount = 4;
 		// let expectedDebt = web3.utils.toBN(0);
 		let expectedDebt = toUnit('900000');
 		await havven.issueNomins(nUSD, expectedDebt, { from: account1 });
@@ -1361,7 +1361,7 @@ contract.only('Havven', async function(accounts) {
 			console.log(`#### HDR rate: ${fromUnit(await exchangeRates.rateForCurrency(HDR))}`);
 
 			// const amount = web3.utils.toBN(getRandomInt(100000, 800000000));
-			const amount = toUnit('0.00008');
+			const amount = toUnit('0.08');
 			console.log(`##### Adding: ${amount} ...`);
 			await havven.issueNomins(nUSD, amount, { from: account1 });
 			console.log(`##### debt array after account1 issued: ${await getDebtLedgerArray()}`);

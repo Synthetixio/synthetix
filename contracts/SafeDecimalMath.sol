@@ -38,13 +38,13 @@ contract SafeDecimalMath {
 
     /* Number of decimal places in the representation. */
     uint8 public constant decimals = 18;
-    // uint8 public constant highPrecisionDecimals = 27;
+    uint8 public constant highPrecisionDecimals = 27;
 
     /* The number representing 1.0. */
     uint public constant UNIT = 10 ** uint(decimals);
-    // uint private constant HIGH_PRECISION_UNIT = 10 ** uint(highPrecisionDecimals);
+    uint public constant HIGH_PRECISION_UNIT = 10 ** uint(highPrecisionDecimals);
     // uint private constant HIGH_PRECISION_UNIT_EXPANDED = HIGH_PRECISION_UNIT * 10;
-    // uint private constant UNIT_TO_HIGH_PRECISION_UNIT_CONVERTER = 10 ** uint(highPrecisionDecimals - decimals);
+    uint private constant UNIT_TO_HIGH_PRECISION_UNIT_CONVERTER = 10 ** uint(highPrecisionDecimals - decimals);
 
     /**
      * @return True iff adding x and y will not overflow.
@@ -144,22 +144,35 @@ contract SafeDecimalMath {
     }
 
     // TODO: Docs
+    function safeMul_dec_round_private(uint x, uint y, uint unit)
+        private
+        pure
+        returns (uint)
+    {
+        /* Divide by UNIT to remove the extra factor introduced by the product. */
+        uint quotientTimesTen = safeMul(x, y) / (unit / 10);
+
+        if (quotientTimesTen % 10 >= 5) {
+            quotientTimesTen = quotientTimesTen + 10;
+        }
+
+        return quotientTimesTen / 10;
+    }
+
+    function safeMul_dec_round_high_precision(uint x, uint y)
+        internal
+        pure
+        returns (uint)
+    {
+        return safeMul_dec_round_private(x, y, HIGH_PRECISION_UNIT);
+    }
+
     function safeMul_dec_round(uint x, uint y)
         internal
         pure
         returns (uint)
     {
-        /* Divide by UNIT to remove the extra factor introduced by the product. */
-        // uint product = safeMul(x, y);
-        // uint modifiedUnit = UNIT / 10;
-
-        uint quotientTen = safeMul(x, y) / (UNIT / 10);
-
-        if (quotientTen % 10 >= 5) {
-            quotientTen = quotientTen + 10;
-        }
-
-        return quotientTen / 10;
+        return safeMul_dec_round_private(x, y, UNIT);
     }
 
     /**
@@ -202,12 +215,13 @@ contract SafeDecimalMath {
         return safeDiv(safeMul(x, UNIT), y);
     }
 
-    function safeDiv_dec_round(uint x, uint y)
-        internal
+    // TODO: Docs
+    function safeDiv_dec_round_private(uint x, uint y, uint unit)
+        private
         pure
         returns (uint)
     {
-        uint resultTimesTen = safeDiv(safeMul(x, UNIT * 10), y);
+        uint resultTimesTen = safeDiv(safeMul(x, unit * 10), y);
 
         if (resultTimesTen % 10 >= 5) {
             resultTimesTen += 10;
@@ -216,34 +230,23 @@ contract SafeDecimalMath {
         return resultTimesTen / 10;
     }
 
-    // function safeDiv_dec_high_precision(uint x, uint y)
-    //     internal
-    //     pure
-    //     returns (uint)
-    // {
-    //     uint resultTimesTen = safeDiv(safeMul(x, HIGH_PRECISION_UNIT_EXPANDED), y);
+    // TODO: Docs
+    function safeDiv_dec_round(uint x, uint y)
+        internal
+        pure
+        returns (uint)
+    {
+        return safeDiv_dec_round_private(x, y, UNIT);
+    }
 
-    //     if (resultTimesTen % 10 >= 5) {
-    //         resultTimesTen += 10;
-    //     }
-
-    //     return resultTimesTen / 10;
-    // }
-
-    // function safeDiv_dec_round(uint x, uint y)
-    //     internal
-    //     pure
-    //     returns (uint)
-    // {
-    //     /* Reintroduce the UNIT factor that will be divided out by y. */
-    //     uint divResultTimesTen = safeDiv(safeMul(x, HIGH_PRECISION_UNIT), y);
-    //     uint divResultExtraZero = safeMul(safeDiv(divResultTimesTen, 10), 10);
-
-    //     uint divResult = safeDiv(safeMul(x, UNIT), y);
-
-    //     uint difference = divResultTimesTen - divResultExtraZero;
-    //     return difference >= 5 ? divResult + 1 : divResult;
-    // }
+    // TODO: Docs
+    function safeDiv_dec_round_high_precision(uint x, uint y)
+        internal
+        pure
+        returns (uint)
+    {
+        return safeDiv_dec_round_private(x, y, HIGH_PRECISION_UNIT);
+    }
 
     /**
      * @dev Convert an unsigned integer to a unsigned fixed-point decimal.
@@ -258,29 +261,20 @@ contract SafeDecimalMath {
     }
 
     // TODO: Docs
-    // function intToHighPrecisionDec(uint i)
-    //     internal
-    //     pure
-    //     returns (uint)
-    // {
-    //     return safeMul(i, HIGH_PRECISION_UNIT);
-    // }
+    function decToHighPrecisionDec(uint i)
+        internal
+        pure
+        returns (uint)
+    {
+        return safeMul(i, UNIT_TO_HIGH_PRECISION_UNIT_CONVERTER);
+    }
 
-    // // TODO: Docs
-    // function decToHighPrecisionDec(uint i)
-    //     internal
-    //     pure
-    //     returns (uint)
-    // {
-    //     return safeMul(i, UNIT_TO_HIGH_PRECISION_UNIT_CONVERTER);
-    // }
+    function highPrecisionDecToDec(uint i)
+        internal
+        pure
+        returns (uint)
+    {
+        return i / UNIT_TO_HIGH_PRECISION_UNIT_CONVERTER;
+    }
 
-    // /**
-    //  * @dev Divides two numbers and returns the remainder (unsigned integer modulo),
-    //  * reverts when dividing by zero.
-    //  */
-    // function mod(uint x, uint y) internal pure returns (uint256) {
-    //     require(y != 0);
-    //     return a % b;
-    // }
 }

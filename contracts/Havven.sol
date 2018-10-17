@@ -648,19 +648,29 @@ contract Havven is ExternStateToken {
         uint newTotalDebtIssued = safeAdd(hdrValue, totalDebtIssued);
 
         // What is their percentage of the total debt?
-        uint debtPercentage = safeDiv_dec_round(hdrValue, newTotalDebtIssued);
+        // TODO: Needs to be high accuracy
+        uint debtPercentage = safeDiv_dec_round_high_precision(
+            decToHighPrecisionDec(hdrValue),
+            decToHighPrecisionDec(newTotalDebtIssued)
+        );
 
         // And what effect does this percentage have on the global debt holding of other issuers?
         // The delta specifically needs to not take into account any existing debt as it's already
         // accounted for in the delta from when they issued previously.
-        uint delta = safeSub(UNIT, debtPercentage);
+
+        // TODO: Needs to be high accuracy
+        // uint delta = safeSub(UNIT, debtPercentage);
+        uint delta = safeSub(HIGH_PRECISION_UNIT, debtPercentage);
 
         // How much existing debt do they have?
         uint existingDebt = debtBalanceOf(messageSender, "HDR");
          
         // And what does their debt ownership look like including this previous stake?
         if (existingDebt > 0) {
-            debtPercentage = safeDiv_dec_round(safeAdd(hdrValue, existingDebt), newTotalDebtIssued);
+            debtPercentage = safeDiv_dec_round_high_precision(
+                decToHighPrecisionDec(safeAdd(hdrValue, existingDebt)),
+                decToHighPrecisionDec(newTotalDebtIssued)
+            );
         }
 
         // Are they a new issuer? If so, record them.
@@ -675,9 +685,13 @@ contract Havven is ExternStateToken {
         // And if we're the first, push 1 as there was no effect to any other holders, otherwise push 
         // the change for the rest of the debt holders
         if (debtLedger.length > 0) {
-            debtLedger.push(safeMul_dec_round(debtLedger[debtLedger.length - 1], delta));
+            // TODO: Needs to be high accuracy
+            debtLedger.push(safeMul_dec_round_high_precision(
+                debtLedger[debtLedger.length - 1],
+                delta
+            ));
         } else {
-            debtLedger.push(UNIT);
+            debtLedger.push(HIGH_PRECISION_UNIT);
         }
     }
 
@@ -763,12 +777,16 @@ contract Havven is ExternStateToken {
 
         // What percentage of the total debt are they trying to remove?
         uint totalDebtIssued = totalIssuedNomins("HDR");
-        uint debtPercentage = safeDiv_dec_round(debtToRemove, totalDebtIssued);
+        // TODO: Result needs to be high accuracy
+        uint debtPercentage = safeDiv_dec_round_high_precision(
+            decToHighPrecisionDec(debtToRemove),
+            decToHighPrecisionDec(totalDebtIssued)
+        );
 
         // And what effect does this percentage have on the global debt holding of other issuers?
         // The delta specifically needs to not take into account any existing debt as it's already
         // accounted for in the delta from when they issued previously.
-        uint delta = safeAdd(UNIT, debtPercentage);
+        uint delta = safeAdd(HIGH_PRECISION_UNIT, debtPercentage);
 
         // Are they exiting the system, or are they just decreasing their debt position?
         if (debtToRemove == existingDebt) {
@@ -779,14 +797,20 @@ contract Havven is ExternStateToken {
             // What percentage of the debt will they be left with?
             uint newDebt = safeSub(existingDebt, debtToRemove);
             uint newTotalDebtIssued = safeSub(totalDebtIssued, debtToRemove);
-            uint newDebtPercentage = safeDiv_dec_round(newDebt, newTotalDebtIssued);
+            // TODO: Result needs to be high accuracy
+            uint newDebtPercentage = safeDiv_dec_round_high_precision(
+                decToHighPrecisionDec(newDebt),
+                decToHighPrecisionDec(newTotalDebtIssued)
+            );
 
             issuanceData[messageSender].initialDebtOwnership = newDebtPercentage;
             issuanceData[messageSender].debtEntryIndex = debtLedger.length;
         }
 
         // Update our cumulative ledger
-        debtLedger.push(safeMul_dec_round(debtLedger[debtLedger.length - 1], delta));
+
+        // TODO: Needs to be high accuracy
+        debtLedger.push(safeMul_dec_round_high_precision(debtLedger[debtLedger.length - 1], delta));
     }
 
     // ========== Issuance/Burning ==========
@@ -843,9 +867,12 @@ contract Havven is ExternStateToken {
         if (initialDebtOwnership == 0) return 0;
 
         // Figure out the global debt percentage delta from when they entered the system.
-        uint currentDebtOwnership = safeMul_dec_round(
+
+        // TODO: High accuracy
+        uint currentDebtOwnership = safeMul_dec_round_high_precision(
             initialDebtOwnership, 
-            safeDiv_dec_round(
+            // TODO: High accuracy
+            safeDiv_dec_round_high_precision(
                 debtLedger[debtLedger.length - 1],
                 debtLedger[debtEntryIndex]
             )
@@ -855,7 +882,12 @@ contract Havven is ExternStateToken {
         uint totalSystemValue = totalIssuedNomins(currencyKey);
 
         // Their debt balance is their portion of the total system value.
-        return safeMul_dec_round(totalSystemValue, currentDebtOwnership);
+        // TODO: High accuracy, but convert back to UNIT after calculated
+        uint highPrecisionBalance = safeMul_dec_round_high_precision(
+            decToHighPrecisionDec(totalSystemValue),
+            currentDebtOwnership
+        );
+        return highPrecisionDecToDec(highPrecisionBalance);
     }
 
     // TODO: Remove
