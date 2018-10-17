@@ -14,7 +14,7 @@ const TokenState = artifacts.require('./TokenState.sol');
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 
 module.exports = async function(deployer, network, accounts) {
-	const [deployerAccount, owner, oracle] = accounts;
+	const [deployerAccount, owner, oracle, feeAuthority] = accounts;
 
 	// Note: This deployment script is not used on mainnet, it's only for testing deployments.
 
@@ -40,17 +40,24 @@ module.exports = async function(deployer, network, accounts) {
 	// ----------------
 	// Fee Pool
 	// ----------------
+	console.log('Deploying FeePoolProxy...');
+	// constructor(address _owner)
+	const feePoolProxy = await Proxy.new(owner, { from: deployerAccount });
+
 	console.log('Deploying FeePool...');
-	// constructor(address _owner, Havven _havven, address _feeAuthority, uint _transferFeeRate, uint _exchangeFeeRate)
+	// constructor(address _proxy, address _owner, Havven _havven, address _feeAuthority, uint _transferFeeRate, uint _exchangeFeeRate)
 	const feePool = await deployer.deploy(
 		FeePool,
+		feePoolProxy.address,
 		owner,
 		ZERO_ADDRESS,
-		oracle,
+		feeAuthority,
 		web3.utils.toWei('0.0015', 'ether'),
 		web3.utils.toWei('0.0015', 'ether'),
 		{ from: deployerAccount }
 	);
+
+	await feePoolProxy.setTarget(feePool.address, { from: owner });
 
 	// ----------------
 	// Havven
@@ -194,6 +201,7 @@ module.exports = async function(deployer, network, accounts) {
 		['Contract', 'Address'],
 		['Exchange Rates', ExchangeRates.address],
 		['Fee Pool', FeePool.address],
+		['Fee Pool Proxy', feePoolProxy.address],
 		['Havven Token State', havvenTokenState.address],
 		['Havven Proxy', havvenProxy.address],
 		['Havven', Havven.address],

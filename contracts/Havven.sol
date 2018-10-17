@@ -6,9 +6,6 @@ FILE INFORMATION
 file:       Havven.sol
 version:    2.0
 author:     Kevin Brown
-            Anton Jurisevic
-            Dominic Romanowski
-
 date:       2018-09-14
 
 -----------------------------------------------------------------
@@ -196,7 +193,35 @@ contract Havven is ExternStateToken {
     {
         exchangeRates = _exchangeRates;
         feePool = _feePool;
+        
+        // if (_oldHavven != address(0)) {
+        //     // TODO: Need to handle contract upgrades correctly.
 
+        //     // uint i;
+        //     // uint cbs;
+        //     // uint lab;
+        //     // uint lm;
+        //     // (cbs, lab, lm) = _oldHavven.totalIssuanceData();
+        //     // totalIssuanceData.currentBalanceSum = cbs;
+        //     // totalIssuanceData.lastAverageBalance = lab;
+        //     // totalIssuanceData.lastModified = lm;
+
+        //     // for (i = 0; i < _issuers.length; i++) {
+        //     //     address issuer = _issuers[i];
+        //     //     isIssuer[issuer] = true;
+        //     //     uint nomins = _oldHavven.nominsIssued(issuer);
+        //     //     if (nomins == 0) {
+        //     //         // It is not valid in general to skip those with no currently-issued nomins.
+        //     //         // But for this release, issuers with nonzero issuanceData have current issuance.
+        //     //         continue;
+        //     //     }
+        //     //     (cbs, lab, lm) = _oldHavven.issuanceData(issuer);
+        //     //     nominsIssued[issuer] = nomins;
+        //     //     issuanceData[issuer].currentBalanceSum = cbs;
+        //     //     issuanceData[issuer].lastAverageBalance = lab;
+        //     //     issuanceData[issuer].lastModified = lm;
+        //     // }
+        // }
     }
 
     // ========== SETTERS ========== */
@@ -268,17 +293,17 @@ contract Havven is ExternStateToken {
         emitEscrowUpdated(_escrow);
     }
 
-    // /**
-    //  * @notice Set the ExchangeRates contract address where rates are held.
-    //  * @dev Only callable by the contract owner.
-    //  */
-    // function setExchangeRates(ExchangeRates _exchangeRates)
-    //     external
-    //     optionalProxy_onlyOwner
-    // {
-    //     exchangeRates = _exchangeRates;
-    //     emitExchangeRatesUpdated(_exchangeRates);
-    // }
+    /**
+     * @notice Set the ExchangeRates contract address where rates are held.
+     * @dev Only callable by the contract owner.
+     */
+    function setExchangeRates(ExchangeRates _exchangeRates)
+        external
+        optionalProxy_onlyOwner
+    {
+        exchangeRates = _exchangeRates;
+        emitExchangeRatesUpdated(_exchangeRates);
+    }
 
     /**
      * @notice Set the issuanceRatio for issuance calculations.
@@ -391,8 +416,6 @@ contract Havven is ExternStateToken {
         return availableNomins.length;
     }
 
-
-
     // ========== MUTATIVE FUNCTIONS ==========
 
     /**
@@ -418,7 +441,7 @@ contract Havven is ExternStateToken {
         returns (bool)
     {
         // Ensure they're not trying to exceed their locked amount
-        require(value <= transferableHavvens(messageSender), "Value to transfer exceeds available Havvens");
+        require(value <= transferableHavvens(messageSender), "Insufficient balance");
 
         // Perform the transfer: if there is a problem an exception will be thrown in this call.
         _transfer_byProxy(messageSender, to, value, data);
@@ -449,7 +472,7 @@ contract Havven is ExternStateToken {
         returns (bool)
     {
         // Ensure they're not trying to exceed their locked amount
-        require(value <= transferableHavvens(from), "Value to transfer exceeds available Havvens");
+        require(value <= transferableHavvens(from), "Insufficient balance");
 
         // Perform the transfer: if there is a problem,
         // an exception will be thrown in this call.
@@ -473,10 +496,10 @@ contract Havven is ExternStateToken {
         // Note: We don't need to insist on non-stale rates because effectiveValue will do it for us.
         returns (bool)
     {
-        require(sourceCurrencyKey != destinationCurrencyKey, "Exchange cannot be from and to the same nomin");
-        require(sourceAmount > 0, "Source amount must be greater than 0");
-        require(destinationAddress != address(this), "Cannot send nomins to the Havven contract");
-        require(destinationAddress != address(proxy), "Cannot send nomins to the Havven proxy");
+        require(sourceCurrencyKey != destinationCurrencyKey, "Exchange must use different nomins");
+        require(sourceAmount > 0, "Can't be 0");
+        require(destinationAddress != address(this), "Havven is invalid destination");
+        require(destinationAddress != address(proxy), "Proxy is invalid destination");
 
         // Pass it along, defaulting to the sender as the recipient.
         return _internalExchange(
@@ -500,8 +523,8 @@ contract Havven is ExternStateToken {
         onlyNomin
         returns (bool)
     {
-        require(sourceCurrencyKey != destinationCurrencyKey, "Exchange cannot be from and to the same nomin");
-        require(sourceAmount > 0, "Source amount must be greater than 0");
+        require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same nomin");
+        require(sourceAmount > 0, "Can't be 0");
 
         // Pass it along, defaulting to the sender as the recipient.
         return _internalExchange(
@@ -514,32 +537,34 @@ contract Havven is ExternStateToken {
         );
     }
 
-    function nominInitiatedExchangeWithoutFee(
+    function nominInitiatedFeePayment(
         address from,
         bytes4 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes4 destinationCurrencyKey,
-        address destinationAddress
+        uint sourceAmount
     )
         external
         onlyNomin
         returns (bool)
     {
-        require(sourceCurrencyKey != destinationCurrencyKey, "Exchange cannot be from and to the same nomin");
-        require(sourceAmount > 0, "Source amount must be greater than 0");
+        require(sourceAmount > 0, "Can't be 0");
 
         // Pass it along, defaulting to the sender as the recipient.
-        return _internalExchange(
+        bool result = _internalExchange(
             from,
             sourceCurrencyKey,
             sourceAmount,
-            destinationCurrencyKey,
-            destinationAddress,
-            false // Don't charge a fee on the exchange
+            "HDR",
+            feePool.FEE_ADDRESS(),
+            false // Don't charge a fee on the exchange because this is already a fee
         );
+
+        // Tell the fee pool about this.
+        if (result) {
+            feePool.feePaid(sourceCurrencyKey, sourceAmount);
+        }
+
+        return result;
     }
-
-
     
     function _internalExchange(
         address from,
@@ -553,9 +578,9 @@ contract Havven is ExternStateToken {
         notFeeAddress(from)
         returns (bool)
     {
-        require(destinationAddress != address(0), "Destination cannot be zero");
-        require(destinationAddress != address(this), "Destination cannot be Havven");
-        require(destinationAddress != address(proxy), "Destination cannot be proxy");
+        require(destinationAddress != address(0), "Zero destination");
+        require(destinationAddress != address(this), "Havven is invalid destination");
+        require(destinationAddress != address(proxy), "Proxy is invalid destination");
         
         // Note: We don't need to check their balance as the burn() below will do a safeSub which requires 
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
@@ -595,18 +620,18 @@ contract Havven is ExternStateToken {
         return true;
     }
 
-    // function payFees(address account, uint hdrAmount, bytes4 destinationCurrencyKey)
-    //     external 
-    // //     onlyFeePool
-    // //     notFeeAddress(account)
-    //     returns (bool)
-    // {
-    //     require(account != address(0), "Account cannot be zero");
-    //     require(account != address(this), "Can't send fees to Havven");
-    //     require(account != address(proxy), "Can't send fees to proxy");
+    function payFees(address account, uint hdrAmount, bytes4 destinationCurrencyKey)
+        external 
+        onlyFeePool
+        notFeeAddress(account)
+        returns (bool)
+    {
+        require(account != address(0), "Account can't be 0");
+        require(account != address(this), "Can't send fees to Havven");
+        require(account != address(proxy), "Can't send fees to proxy");
 
-    //     Nomin hdrNomin = nomins["HDR"];
-    //     Nomin destinationNomin = nomins[destinationCurrencyKey];
+        Nomin hdrNomin = nomins["HDR"];
+        Nomin destinationNomin = nomins[destinationCurrencyKey];
         
     //     address feeAddress = feePool.FEE_ADDRESS();
 
@@ -1016,24 +1041,24 @@ contract Havven is ExternStateToken {
     // ========== MODIFIERS ==========
 
     modifier ratesNotStale(bytes4[] currencyKeys) {
-        require(!exchangeRates.anyRateIsStale(currencyKeys), "Rate is stale or currency was not found");
+        require(!exchangeRates.anyRateIsStale(currencyKeys), "Rate stale or nonexistant currency");
         _;
     }
 
     modifier rateNotStale(bytes4 currencyKey) {
-        require(!exchangeRates.rateIsStale(currencyKey), "Rate is stale or currency was not found");
+        require(!exchangeRates.rateIsStale(currencyKey), "Rate stale or nonexistant currency");
         _;
     }
 
     modifier notFeeAddress(address account) {
-        require(account != feePool.FEE_ADDRESS(), "You cannot perform this action from the fee address");
+        require(account != feePool.FEE_ADDRESS(), "Fee address not allowed");
         _;
     }
 
-    // modifier onlyFeePool() {
-    //     require(msg.sender == address(feePool), "Only the fee pool contract can perform this action");
-    //     _;
-    // }
+    modifier onlyFeePool() {
+        require(msg.sender == address(feePool), "Only fee pool allowed");
+        _;
+    }
 
     modifier onlyNomin() {
         bool isNomin = false;
@@ -1046,7 +1071,7 @@ contract Havven is ExternStateToken {
             }
         }
 
-        require(isNomin, "Only the Nomin contracts can perform this action");
+        require(isNomin, "Only nomin allowed");
         _;
     }
 
