@@ -33,8 +33,11 @@ pragma solidity 0.4.25;
 import "./ExternStateToken.sol";
 import "./FeePool.sol";
 import "./Havven.sol";
+// import "./SafeDecimalMath.sol";
 
 contract Nomin is ExternStateToken {
+
+    // using SafeDecimalMath for uint;
 
     /* ========== STATE VARIABLES ========== */
 
@@ -45,7 +48,8 @@ contract Nomin is ExternStateToken {
     bytes4 public currencyKey;
 
     // Nomin transfers incur a 15 bp fee by default.
-    uint constant TRANSFER_FEE_RATE = 15 * UNIT / 10000;
+    uint constant TRANSFER_FEE_RATE = 15 * 10 ** uint(18) / 10000;
+    // uint constant TRANSFER_FEE_RATE = 15 * UNIT / 10000;
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -99,7 +103,7 @@ contract Nomin is ExternStateToken {
         returns (bool)
     {
         uint amountReceived = feePool.amountReceivedFromTransfer(value);
-        uint fee = safeSub(value, amountReceived);
+        uint fee = value.sub(amountReceived);
 
         // Send the fee off to the fee pool.
         havven.nominInitiatedFeePayment(messageSender, currencyKey, fee);
@@ -121,7 +125,7 @@ contract Nomin is ExternStateToken {
         returns (bool)
     {
         uint amountReceived = feePool.amountReceivedFromTransfer(value);
-        uint fee = safeSub(value, amountReceived);
+        uint fee = value.sub(amountReceived);
 
         // Send the fee off to the fee pool, which we don't want to charge an additional fee on
         havven.nominInitiatedFeePayment(messageSender, currencyKey, fee);
@@ -140,11 +144,11 @@ contract Nomin is ExternStateToken {
     {
         // The fee is deducted from the amount sent.
         uint amountReceived = feePool.amountReceivedFromTransfer(value);
-        uint fee = safeSub(value, amountReceived);
+        uint fee = value.sub(amountReceived);
 
         // Reduce the allowance by the amount we're transferring.
         // The safeSub call will handle an insufficient allowance.
-        tokenState.setAllowance(from, messageSender, safeSub(tokenState.allowance(from, messageSender), value));
+        tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
 
         // Send the fee off to the fee pool.
         havven.nominInitiatedFeePayment(messageSender, currencyKey, fee);
@@ -163,11 +167,11 @@ contract Nomin is ExternStateToken {
     {
         // The fee is deducted from the amount sent.
         uint amountReceived = feePool.amountReceivedFromTransfer(value);
-        uint fee = safeSub(value, amountReceived);
+        uint fee = value.sub(amountReceived);
 
         // Reduce the allowance by the amount we're transferring.
         // The safeSub call will handle an insufficient allowance.
-        tokenState.setAllowance(from, messageSender, safeSub(tokenState.allowance(from, messageSender), value));
+        tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
 
         // Send the fee off to the fee pool, which we don't want to charge an additional fee on
         havven.nominInitiatedFeePayment(messageSender, currencyKey, fee);
@@ -216,7 +220,7 @@ contract Nomin is ExternStateToken {
 
         // Reduce the allowance by the amount we're transferring.
         // The safeSub call will handle an insufficient allowance.
-        tokenState.setAllowance(from, messageSender, safeSub(tokenState.allowance(from, messageSender), safeAdd(value, fee)));
+        tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value.add(fee)));
 
         // Send the fee off to the fee pool, which we don't want to charge an additional fee on
         havven.nominInitiatedFeePayment(messageSender, currencyKey, fee);
@@ -235,7 +239,7 @@ contract Nomin is ExternStateToken {
 
         // Reduce the allowance by the amount we're transferring.
         // The safeSub call will handle an insufficient allowance.
-        tokenState.setAllowance(from, messageSender, safeSub(tokenState.allowance(from, messageSender), safeAdd(value, fee)));
+        tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value.add(fee)));
 
         // Send the fee off to the fee pool, which we don't want to charge an additional fee on
         havven.nominInitiatedFeePayment(messageSender, currencyKey, fee);
@@ -248,8 +252,8 @@ contract Nomin is ExternStateToken {
         external
         onlyHavvenOrNomin
     {
-        tokenState.setBalanceOf(account, safeAdd(tokenState.balanceOf(account), amount));
-        totalSupply = safeAdd(totalSupply, amount);
+        tokenState.setBalanceOf(account, tokenState.balanceOf(account).add(amount));
+        totalSupply = totalSupply.add(amount);
         emitTransfer(address(0), account, amount);
         emitIssued(account, amount);
     }
@@ -259,8 +263,8 @@ contract Nomin is ExternStateToken {
         external
         onlyHavvenOrNomin
     {
-        tokenState.setBalanceOf(account, safeSub(tokenState.balanceOf(account), amount));
-        totalSupply = safeSub(totalSupply, amount);
+        tokenState.setBalanceOf(account, tokenState.balanceOf(account).sub(amount));
+        totalSupply = totalSupply.sub(amount);
         emitTransfer(account, address(0), amount);
         emitBurned(account, amount);
     }

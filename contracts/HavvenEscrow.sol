@@ -43,7 +43,10 @@ import "./LimitedSetup.sol";
 /**
  * @title A contract to hold escrowed havvens and free them at given schedules.
  */
-contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
+contract HavvenEscrow is Owned, LimitedSetup(8 weeks) {
+
+    using SafeMath for uint;
+
     /* The corresponding Havven contract. */
     Havven public havven;
 
@@ -221,7 +224,7 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
         onlyDuringSetup
     {
         delete vestingSchedules[account];
-        totalVestedBalance = safeSub(totalVestedBalance, totalVestedAccountBalance[account]);
+        totalVestedBalance = totalVestedBalance.sub(totalVestedAccountBalance[account]);
         delete totalVestedAccountBalance[account];
     }
 
@@ -248,7 +251,7 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
         require(quantity != 0, "Quantity cannot be zero");
 
         /* There must be enough balance in the contract to provide for the vesting entry. */
-        totalVestedBalance = safeAdd(totalVestedBalance, quantity);
+        totalVestedBalance = totalVestedBalance.add(quantity);
         require(totalVestedBalance <= havven.balanceOf(this), "Must be enough balance in the contract to provide for the vesting entry");
 
         /* Disallow arbitrarily long vesting schedules in light of the gas limit. */
@@ -261,7 +264,7 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
             /* Disallow adding new vested havvens earlier than the last one.
              * Since entries are only appended, this means that no vesting date can be repeated. */
             require(getVestingTime(account, numVestingEntries(account) - 1) < time, "Cannot add new vested entries earlier than the last one");
-            totalVestedAccountBalance[account] = safeAdd(totalVestedAccountBalance[account], quantity);
+            totalVestedAccountBalance[account] = totalVestedAccountBalance[account].add(quantity);
         }
 
         vestingSchedules[account].push([time, quantity]);
@@ -305,12 +308,12 @@ contract HavvenEscrow is SafeDecimalMath, Owned, LimitedSetup(8 weeks) {
             }
 
             vestingSchedules[msg.sender][i] = [0, 0];
-            total = safeAdd(total, qty);
+            total = total.add(qty);
         }
 
         if (total != 0) {
-            totalVestedBalance = safeSub(totalVestedBalance, total);
-            totalVestedAccountBalance[msg.sender] = safeSub(totalVestedAccountBalance[msg.sender], total);
+            totalVestedBalance = totalVestedBalance.sub(total);
+            totalVestedAccountBalance[msg.sender] = totalVestedAccountBalance[msg.sender].sub(total);
             havven.transfer(msg.sender, total);
             emit Vested(msg.sender, now, total);
         }

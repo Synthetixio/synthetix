@@ -27,6 +27,7 @@ This contract utilises an external state for upgradeability.
 pragma solidity 0.4.25;
 
 
+import "./SafeMath.sol";
 import "./SafeDecimalMath.sol";
 import "./SelfDestructible.sol";
 import "./TokenState.sol";
@@ -36,7 +37,10 @@ import "./TokenFallbackCaller.sol";
 /**
  * @title ERC20 Token contract, with detached state and designed to operate behind a proxy.
  */
-contract ExternStateToken is SafeDecimalMath, SelfDestructible, Proxyable, TokenFallbackCaller {
+contract ExternStateToken is SelfDestructible, Proxyable, TokenFallbackCaller {
+
+    using SafeMath for uint;
+    using SafeDecimalMath for uint;
 
     /* ========== STATE VARIABLES ========== */
 
@@ -122,8 +126,8 @@ contract ExternStateToken is SafeDecimalMath, SelfDestructible, Proxyable, Token
         require(to != address(proxy), "Cannot transfer to the proxy contract");
 
         // Insufficient balance will be handled by the safe subtraction.
-        tokenState.setBalanceOf(from, safeSub(tokenState.balanceOf(from), value));
-        tokenState.setBalanceOf(to, safeAdd(tokenState.balanceOf(to), value));
+        tokenState.setBalanceOf(from, tokenState.balanceOf(from).sub(value));
+        tokenState.setBalanceOf(to, tokenState.balanceOf(to).add(value));
 
         // If the recipient is a contract, we need to call tokenFallback on it so they can do ERC223
         // actions when receiving our tokens. Unlike the standard, however, we don't revert if the
@@ -156,7 +160,7 @@ contract ExternStateToken is SafeDecimalMath, SelfDestructible, Proxyable, Token
         returns (bool)
     {
         /* Insufficient allowance will be handled by the safe subtraction. */
-        tokenState.setAllowance(from, sender, safeSub(tokenState.allowance(from, sender), value));
+        tokenState.setAllowance(from, sender, tokenState.allowance(from, sender).sub(value));
         return _internalTransfer(from, to, value, data);
     }
 

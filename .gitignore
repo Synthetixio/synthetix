@@ -8,3 +8,4 @@ deploy_settings.py
 .idea/
 build/
 node_modules/
+yarn-error.log

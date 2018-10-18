@@ -6,6 +6,7 @@ FILE INFORMATION
 file:       SafeDecimalMath.sol
 version:    1.0
 author:     Anton Jurisevic
+            Gavin Conway
 
 date:       2018-2-5
 
@@ -28,32 +29,46 @@ occur.
 
 pragma solidity 0.4.25;
 
+import "./SafeMath.sol";
 
 /**
  * @title Safely manipulate unsigned fixed-point decimals at a given precision level.
  * @dev Functions accepting uints in this contract and derived contracts
  * are taken to be such fixed point decimals (including fiat, ether, and nomin quantities).
  */
-contract SafeDecimalMath {
+library SafeDecimalMath {
 
-    /* Number of decimal places in the representation. */
+    using SafeMath for uint;
+
+    /* Number of decimal places in the representations. */
     uint8 public constant decimals = 18;
+    uint8 public constant highPrecisionDecimals = 27;
 
     /* The number representing 1.0. */
     uint public constant UNIT = 10 ** uint(decimals);
 
-    /**
-     * @return True iff adding x and y will not overflow.
-     */
-    function addIsSafe(uint x, uint y)
-        internal
-        pure
-        returns (bool)
+    /* The number representing 1.0 for higher fidelity numbers. */
+    uint public constant HIGH_PRECISION_UNIT = 10 ** uint(highPrecisionDecimals);
+    uint private constant UNIT_TO_HIGH_PRECISION_CONVERSION_FACTOR = 10 ** uint(highPrecisionDecimals - decimals);
+
+    function unit()
+        external
+        view
+        returns (uint)
     {
-        return x + y >= y;
+        return UNIT;
     }
 
-    /**
+    function highPrecisionUnit()
+        external
+        view
+        returns (uint)
+    {
+        return HIGH_PRECISION_UNIT;
+    }
+
+    // TODO: Replace with OpenZeppelin's implementation
+    /** 
      * @return The result of adding x and y, throwing an exception in case of overflow.
      */
     function safeAdd(uint x, uint y)
@@ -65,17 +80,7 @@ contract SafeDecimalMath {
         return x + y;
     }
 
-    /**
-     * @return True if subtracting y from x will not overflow in the negative direction.
-     */
-    function subIsSafe(uint x, uint y)
-        internal
-        pure
-        returns (bool)
-    {
-        return y <= x;
-    }
-
+    // TODO: Replace with OpenZeppelin's implementation
     /**
      * @return The result of subtracting y from x, throwing an exception in case of overflow.
      */
@@ -86,36 +91,6 @@ contract SafeDecimalMath {
     {
         require(y <= x, "Subtraction would cause overflow");
         return x - y;
-    }
-
-    /**
-     * @return True if multiplying x and y would not overflow.
-     */
-    function mulIsSafe(uint x, uint y)
-        internal
-        pure
-        returns (bool)
-    {
-        if (x == 0) {
-            return true;
-        }
-        return (x * y) / x == y;
-    }
-
-    /**
-     * @return The result of multiplying x and y, throwing an exception in case of overflow.
-     */
-    function safeMul(uint x, uint y)
-        internal
-        pure
-        returns (uint)
-    {
-        if (x == 0) {
-            return 0;
-        }
-        uint p = x * y;
-        require(p / x == y, "Safe mul failed");
-        return p;
     }
 
     /**
@@ -136,34 +111,60 @@ contract SafeDecimalMath {
         returns (uint)
     {
         /* Divide by UNIT to remove the extra factor introduced by the product. */
-        return safeMul(x, y) / UNIT;
-
+        return x.mul(y) / UNIT;
     }
 
-    /**
-     * @return True if the denominator of x/y is nonzero.
-     */
-    function divIsSafe(uint, uint y)
-        internal
+    function safeMul_dec_round_private(uint x, uint y, uint precisionUnit)
+        private
         pure
-        returns (bool)
+        returns (uint)
     {
-        return y != 0;
+        /* Divide by UNIT to remove the extra factor introduced by the product. */
+        uint quotientTimesTen = x.mul(y) / (precisionUnit / 10);
+
+        if (quotientTimesTen % 10 >= 5) {
+            quotientTimesTen += 10;
+        }
+
+        return quotientTimesTen / 10;
     }
 
     /**
-     * @return The result of dividing x by y, throwing an exception if the divisor is zero.
+     * @return The result of multiplying x and y, interpreting the operands as fixed-point
+     * decimals. Throws an exception in case of overflow.
+     *
+     * @dev The operands should be in the form of a HIGH_PRECISION_UNIT factor which will be
+     * divided out after the product of x and y is evaluated, so that product must be less than 2**256.
+     *
+     * Unlike safeMul_dec, this function is careful to round the result to the nearest integer.
+     * This is useful when you need to retain fidelity for small decimal numbers (eg. small
+     * fractions or percentages).
      */
-    function safeDiv(uint x, uint y)
+    function safeMul_dec_round_high_precision(uint x, uint y)
         internal
         pure
         returns (uint)
     {
-        /* Although a 0 denominator already throws an exception,
-         * it is equivalent to a THROW operation, which consumes all gas.
-         * A require statement emits REVERT instead, which remits remaining gas. */
-        require(y != 0, "Denominator cannot be zero");
-        return x / y;
+        return safeMul_dec_round_private(x, y, HIGH_PRECISION_UNIT);
+    }
+
+    /**
+     * @return The result of multiplying x and y, interpreting the operands as fixed-point
+     * decimals. Throws an exception in case of overflow.
+     *
+     * @dev The operands should be in the form of a standard UNIT factor which will be
+     * divided out after the product of x and y is evaluated, so that product must be less than 2**256.
+     *
+     * Unlike safeMul_dec, this function is careful to round the result to the nearest integer.
+     * This is useful when you need to retain fidelity for small decimal numbers (eg. small
+     * fractions or percentages).
+     */
+    function safeMul_dec_round(uint x, uint y)
+        internal
+        pure
+        returns (uint)
+    {
+        return safeMul_dec_round_private(x, y, UNIT);
     }
 
     /**
@@ -177,18 +178,77 @@ contract SafeDecimalMath {
         returns (uint)
     {
         /* Reintroduce the UNIT factor that will be divided out by y. */
-        return safeDiv(safeMul(x, UNIT), y);
+        return x.mul(UNIT).div(y);
+    }
+
+    function safeDiv_dec_round_private(uint x, uint y, uint precisionUnit)
+        private
+        pure
+        returns (uint)
+    {
+        uint resultTimesTen = x.mul(precisionUnit * 10).div(y);
+
+        if (resultTimesTen % 10 >= 5) {
+            resultTimesTen += 10;
+        }
+
+        return resultTimesTen / 10;
     }
 
     /**
-     * @dev Convert an unsigned integer to a unsigned fixed-point decimal.
-     * Throw an exception if the result would be out of range.
+     * @return The result of dividing x by y, interpreting the operands as fixed point decimal numbers.
+     * @dev Throws an exception in case of overflow or zero divisor; x must be less than 2^256 / UNIT.
+     * Internal rounding is to the nearest integer.
      */
-    function intToDec(uint i)
+    function safeDiv_dec_round(uint x, uint y)
         internal
         pure
         returns (uint)
     {
-        return safeMul(i, UNIT);
+        return safeDiv_dec_round_private(x, y, UNIT);
     }
+
+    /**
+     * @return The result of dividing x by y, interpreting the operands as fixed point decimal numbers.
+     * @dev Throws an exception in case of overflow or zero divisor; x must be less than 2^256 / HIGH_PRECISION_UNIT.
+     * Internal rounding is to the nearest integer.
+     */
+    function safeDiv_dec_round_high_precision(uint x, uint y)
+        internal
+        pure
+        returns (uint)
+    {
+        return safeDiv_dec_round_private(x, y, HIGH_PRECISION_UNIT);
+    }
+
+    /**
+     * @dev Convert a standard decimal representation to a high precision one.
+     * Throw an exception if the result would be out of range.
+     */
+    function decToHighPrecisionDec(uint i)
+        internal
+        pure
+        returns (uint)
+    {
+        return i.mul(UNIT_TO_HIGH_PRECISION_CONVERSION_FACTOR);
+    }
+
+    /**
+     * @dev Convert a high precision decimal to a standard decimal representation.
+     * Throw an exception if the result would be out of range.
+     */
+    function highPrecisionDecToDec(uint i)
+        internal
+        pure
+        returns (uint)
+    {
+        uint quotientTimesTen = i / (UNIT_TO_HIGH_PRECISION_CONVERSION_FACTOR / 10);
+
+        if (quotientTimesTen % 10 >= 5) {
+            quotientTimesTen += 10;
+        }
+
+        return quotientTimesTen / 10;
+    }
+
 }

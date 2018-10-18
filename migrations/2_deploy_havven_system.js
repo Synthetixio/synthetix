@@ -1,5 +1,6 @@
 const { table } = require('table');
 
+const SafeDecimalMath = artifacts.require('./SafeDecimalMath.sol');
 const ExchangeRates = artifacts.require('./ExchangeRates.sol');
 const FeePool = artifacts.require('./FeePool.sol');
 const Havven = artifacts.require('./Havven.sol');
@@ -25,9 +26,17 @@ module.exports = async function(deployer, network, accounts) {
 	await deployer.deploy(Owned, owner, { from: deployerAccount });
 
 	// ----------------
+	// Safe Decimal Math library
+	// ----------------
+	console.log('Deploying SafeDecimalMath...');
+	const safeDecimalMath = await deployer.deploy(SafeDecimalMath, { from: deployerAccount });
+	// TODO: Understand why we don't need to deploy SafeMath.
+
+	// ----------------
 	// Exchange Rates
 	// ----------------
 	console.log('Deploying ExchangeRates...');
+	deployer.link(SafeDecimalMath, ExchangeRates);
 	const exchangeRates = await deployer.deploy(
 		ExchangeRates,
 		owner,
@@ -46,6 +55,7 @@ module.exports = async function(deployer, network, accounts) {
 
 	console.log('Deploying FeePool...');
 	// constructor(address _proxy, address _owner, Havven _havven, address _feeAuthority, uint _transferFeeRate, uint _exchangeFeeRate)
+	deployer.link(SafeDecimalMath, FeePool);
 	const feePool = await deployer.deploy(
 		FeePool,
 		feePoolProxy.address,
@@ -74,6 +84,7 @@ module.exports = async function(deployer, network, accounts) {
 
 	console.log('Deploying Havven...');
 	// constructor(address _proxy, TokenState _tokenState, address _owner, ExchangeRates _exchangeRates, FeePool _feePool, Havven _oldHavven)
+	deployer.link(SafeDecimalMath, Havven);
 	const havven = await deployer.deploy(
 		Havven,
 		havvenProxy.address,
@@ -207,6 +218,7 @@ module.exports = async function(deployer, network, accounts) {
 		['Havven', Havven.address],
 		['Havven Escrow', HavvenEscrow.address],
 		['Owned', Owned.address],
+		// ['SafeDecimalMath', safeDecimalMath.address],
 
 		// ['Issuance Controller', IssuanceController.address],
 	];

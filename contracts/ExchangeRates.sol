@@ -26,13 +26,17 @@ for all other assets.
 
 pragma solidity 0.4.25;
 
+import "./SafeMath.sol";
 import "./SafeDecimalMath.sol";
 import "./SelfDestructible.sol";
 
 /**
  * @title The repository for exchange rates
  */
-contract ExchangeRates is SafeDecimalMath, SelfDestructible {
+contract ExchangeRates is SelfDestructible {
+
+    using SafeMath for uint;
+
     // Exchange rates stored by currency code, e.g. 'HAV', or 'nUSD'
     mapping(bytes4 => uint) public rates;
 
@@ -81,7 +85,7 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
         oracle = _oracle;
 
         // The nUSD rate is always 1 and is never stale.
-        rates["nUSD"] = UNIT;
+        rates["nUSD"] = SafeDecimalMath.unit();
 
         // These are the currencies that make up the HDR basket.
         // These are hard coded because:
@@ -162,7 +166,7 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
         uint total = 0;
 
         for (uint8 i = 0; i < hdrParticipants.length; i++) {
-            total = safeAdd(rates[hdrParticipants[i]], total);
+            total = rates[hdrParticipants[i]].add(total);
         }
 
         // Set the rate
@@ -291,7 +295,7 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
         // nUSD is a special case and is never stale.
         if (currencyKey == "nUSD") return false;
 
-        return safeAdd(lastRateUpdateTimes[currencyKey], rateStalePeriod) < now;
+        return lastRateUpdateTimes[currencyKey].add(rateStalePeriod) < now;
     }
 
     /**
@@ -307,7 +311,7 @@ contract ExchangeRates is SafeDecimalMath, SelfDestructible {
         
         while (i < currencyKeys.length) {
             // nUSD is a special case and is never false
-            if (currencyKeys[i] != "nUSD" && safeAdd(lastRateUpdateTimes[currencyKeys[i]], rateStalePeriod) < now) {
+            if (currencyKeys[i] != "nUSD" && lastRateUpdateTimes[currencyKeys[i]].add(rateStalePeriod) < now) {
                 return true;
             }
             i += 1;
