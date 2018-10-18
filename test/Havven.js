@@ -807,10 +807,9 @@ contract('Havven', async function(accounts) {
 	// TODO: Adding the exchange rates together for the HDR exchange value increases the chance that the amount
 	//  to be issued will be < 1 (ie. the smallest unit possible). This means that the user will in effect end up issuing
 	//  0 as we can't do any amounts less than 1 in Solidity.
-	//  Also, it seems that SafeDecimalMath truncates and doesn't round. So, 0.78 becomes 0 instead of 1. Is this a problem?
 	//  Generally storing everything in HDRs means that some nomins that need smaller units becomes the victim of lost value
 	//  But then again, maybe that is why we use 18 decimal places, so we can ignore the lost value?
-	it.skip('should be possible to issue a small amount of nomins', async function() {
+	it('should be possible to issue a small amount of nomins', async function() {
 		// Send a price update to guarantee we're not depending on values from outside this test.
 		const oracle = await exchangeRates.oracle();
 		const timestamp = await currentTime();
@@ -826,7 +825,10 @@ contract('Havven', async function(accounts) {
 		await havven.transfer(account1, toUnit('1000'), { from: owner });
 
 		// account1 should be able to issue
-		await havven.issueNomins(nUSD, web3.utils.toBN('4'), { from: account1 });
+		await havven.issueNomins(nUSD, web3.utils.toBN('1'), { from: account1 });
+
+		const debt = await havven.debtBalanceOf(account1, nUSD);
+		assertBNClose(debt, toUnit('1'), '15');
 
 		// const txn = await havven.issueNomins(nUSD, web3.utils.toBN('1'), { from: account1 });
 		// console.log('##### txn', txn);
@@ -1253,7 +1255,7 @@ contract('Havven', async function(accounts) {
 		await havven.issueNomins(nUSD, toUnit('1000'), { from: account2 });
 
 		const debt = await havven.debtBalanceOf(account1, nUSD);
-		assertBNClose(debt, toUnit('4000'), '15');
+		assertBNClose(debt, toUnit('4000'), '5');
 	});
 
 	it('should correctly calculate debt in a multi-issuance multi-burn scenario', async function() {
@@ -1326,7 +1328,22 @@ contract('Havven', async function(accounts) {
 		const loopCount = 4;
 		// let expectedDebt = web3.utils.toBN(0);
 		let expectedDebt = toUnit('900000');
+
 		await havven.issueNomins(nUSD, expectedDebt, { from: account1 });
+		// const txn = await havven.issueNomins(nUSD, expectedDebt, { from: account1 });
+		// console.log('##### txn', txn);
+		// for (let i = 0; i < txn.logs.length; i++) {
+		// 	const result = txn.logs[i].args;
+		// 	console.log('##### txn ???', result);
+		// 	for (let j = 0; j < result.__length__; j++) {
+		// 		if (txn.logs[i].event === web3.utils.asciiToHex('SomethingElse') && j === 0) {
+		// 			console.log(`##### txn str ${i}`, web3.utils.hexToAscii(txn.logs[i].args[j]));
+		// 		} else {
+		// 			console.log(`##### txn ${i}`, txn.logs[i].args[j].toString());
+		// 		}
+		// 	}
+		// }
+
 		// let timeBeforeLoopIssued = 0;
 		let highestVarianceYet = toUnit('0');
 
@@ -1359,25 +1376,10 @@ contract('Havven', async function(accounts) {
 			await havven.issueNomins(nUSD, amount, { from: account1 });
 
 			const remainingIssuableNomins2 = await havven.remainingIssuableNomins(account1, nUSD);
-			console.log(`##### remainingIssuableNomins1: ${fromUnit(remainingIssuableNomins2)}`);
-
+			console.log(`##### remainingIssuableNomins2: ${fromUnit(remainingIssuableNomins2)}`);
 			console.log(`##### debt array after account1 issued: ${await getDebtLedgerArray()}`);
-
-			// let index = i * 2 + timeBeforeLoopIssued;
-			// let debtEntry = await havven.debtLedger.call(index);
-			// let totalIssuedNomins = await havven.totalIssuedNomins(nUSD);
-			// console.log(
-			// 	`###### debtEntry for account1 at index ${index}: ${debtEntry}\t\ttotal issued nomins (nUSD): ${totalIssuedNomins}`
-			// );
-
 			await havven.issueNomins(nUSD, amount, { from: account2 });
 			console.log(`##### debt array after account2 issued: ${await getDebtLedgerArray()}`);
-			// index = i * 2 + timeBeforeLoopIssued + 1;
-			// debtEntry = await havven.debtLedger.call(index);
-			// totalIssuedNomins = await havven.totalIssuedNomins(nUSD);
-			// console.log(
-			// 	`###### debtEntry for account1 at index ${index}: ${debtEntry}\t\ttotal issued nomins (nUSD): ${totalIssuedNomins}`
-			// );
 
 			console.log(`#### Issuance Data: `, await getIssuanceData());
 			const account1nUSDBalance = await nUSDContract.balanceOf(account1);
@@ -1396,7 +1398,7 @@ contract('Havven', async function(accounts) {
 				`##### expectedDebt: ${expectedDebt}\t\taccount1Debt: ${account1Debt}\t\t variance: ${variance}\t\t highestVarianceYet: +/- ${highestVarianceYet}`
 			);
 			if (i % 2 === 0) {
-				const one = web3.utils.toBN(9999999);
+				const one = web3.utils.toBN(9999);
 				const amountToBurn = (one.lte(account1Debt) ? one : account1Debt).sub(web3.utils.toBN(100));
 				console.log(`##### Burning: ${fromUnit(amountToBurn)}`);
 				await havven.burnNomins(nUSD, amountToBurn, { from: account1 });
@@ -1917,9 +1919,9 @@ contract('Havven', async function(accounts) {
 		const debtBalance2After = await havven.debtBalanceOf(account2, nUSD);
 		const debtBalance3After = await havven.debtBalanceOf(account3, nUSD);
 
-		assert.bnEqual(debtBalance1After, web3.utils.toBN('0'));
-		assert.bnEqual(debtBalance2After, web3.utils.toBN('0'));
-		assert.bnEqual(debtBalance3After, web3.utils.toBN('0'));
+		assert.bnEqual(debtBalance1After, '0');
+		assert.bnEqual(debtBalance2After, '0');
+		assert.bnEqual(debtBalance3After, '0');
 	});
 
 	it('should allow user to burn all nomins issued even after other users have issued', async function() {
@@ -1941,7 +1943,7 @@ contract('Havven', async function(accounts) {
 		await havven.burnNomins(nUSD, debtBalanceBefore, { from: account1 });
 		const debtBalanceAfter = await havven.debtBalanceOf(account1, nUSD);
 
-		assert.bnEqual(debtBalanceAfter, web3.utils.toBN('0'));
+		assert.bnEqual(debtBalanceAfter, '0');
 	});
 
 	// Changes in exchange rates tests

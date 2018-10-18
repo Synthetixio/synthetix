@@ -180,12 +180,11 @@ const assertBNNotEqual = (actualBN, expectedBN) => {
  *  @param actualBN The BN.js instance you received
  *  @param expectedBN The BN.js amount you expected to receive, allowing a varience of +/- 100 units
  */
-const assertBNClose = (actualBN, expectedBN, varianceParam) => {
+const assertBNClose = (actualBN, expectedBN, varianceParam = '5') => {
 	const actual = BN.isBN(actualBN) ? actualBN : new BN(actualBN);
 	const expected = BN.isBN(expectedBN) ? expectedBN : new BN(expectedBN);
 
-	const varianceParamRaw = varianceParam || '1000';
-	const variance = BN.isBN(varianceParamRaw) ? varianceParamRaw : new BN(varianceParamRaw);
+	const variance = BN.isBN(varianceParam) ? varianceParam : new BN(varianceParam);
 
 	assert.ok(actual.gte(expected.sub(variance)), 'Number is too small to be close');
 	assert.ok(actual.lte(expected.add(variance)), 'Number is too large to be close');

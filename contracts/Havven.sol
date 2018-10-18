@@ -512,30 +512,30 @@ contract Havven is ExternStateToken {
         );
     }
 
-    function nominInitiatedExchange(
-        address from,
-        bytes4 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes4 destinationCurrencyKey,
-        address destinationAddress
-    )
-        external
-        onlyNomin
-        returns (bool)
-    {
-        require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same nomin");
-        require(sourceAmount > 0, "Can't be 0");
+    // function nominInitiatedExchange(
+    //     address from,
+    //     bytes4 sourceCurrencyKey,
+    //     uint sourceAmount,
+    //     bytes4 destinationCurrencyKey,
+    //     address destinationAddress
+    // )
+    //     external
+    //     onlyNomin
+    //     returns (bool)
+    // {
+    //     require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same nomin");
+    //     require(sourceAmount > 0, "Can't be 0");
 
-        // Pass it along, defaulting to the sender as the recipient.
-        return _internalExchange(
-            from,
-            sourceCurrencyKey,
-            sourceAmount,
-            destinationCurrencyKey,
-            destinationAddress,
-            true // charge fee on the exchange
-        );
-    }
+    //     // Pass it along, defaulting to the sender as the recipient.
+    //     return _internalExchange(
+    //         from,
+    //         sourceCurrencyKey,
+    //         sourceAmount,
+    //         destinationCurrencyKey,
+    //         destinationAddress,
+    //         true // charge fee on the exchange
+    //     );
+    // }
 
     function nominInitiatedFeePayment(
         address from,
@@ -673,8 +673,7 @@ contract Havven is ExternStateToken {
         uint newTotalDebtIssued = hdrValue.add(totalDebtIssued);
 
         // What is their percentage (as a high precision int) of the total debt?
-        uint debtPercentage = hdrValue.decToHighPrecisionDec()
-            .safeDiv_dec_round_high_precision(newTotalDebtIssued.decToHighPrecisionDec());
+        uint debtPercentage = hdrValue.safeDiv_dec_round_high_precision(newTotalDebtIssued);
 
         // And what effect does this percentage have on the global debt holding of other issuers?
         // The delta specifically needs to not take into account any existing debt as it's already
@@ -687,8 +686,7 @@ contract Havven is ExternStateToken {
          
         // And what does their debt ownership look like including this previous stake?
         if (existingDebt > 0) {
-            debtPercentage = hdrValue.add(existingDebt).decToHighPrecisionDec()
-                .safeDiv_dec_round_high_precision(newTotalDebtIssued.decToHighPrecisionDec());
+            debtPercentage = hdrValue.add(existingDebt).safeDiv_dec_round_high_precision(newTotalDebtIssued);
         }
 
         // Are they a new issuer? If so, record them.
@@ -793,8 +791,7 @@ contract Havven is ExternStateToken {
 
         // What percentage of the total debt are they trying to remove?
         uint totalDebtIssued = totalIssuedNomins("HDR");
-        uint debtPercentage = debtToRemove.decToHighPrecisionDec()
-            .safeDiv_dec_round_high_precision(totalDebtIssued.decToHighPrecisionDec());
+        uint debtPercentage = debtToRemove.safeDiv_dec_round_high_precision(totalDebtIssued);
 
         // And what effect does this percentage have on the global debt holding of other issuers?
         // The delta specifically needs to not take into account any existing debt as it's already
@@ -810,8 +807,7 @@ contract Havven is ExternStateToken {
             // What percentage of the debt will they be left with?
             uint newDebt = existingDebt.sub(debtToRemove);
             uint newTotalDebtIssued = totalDebtIssued.sub(debtToRemove);
-            uint newDebtPercentage = newDebt.decToHighPrecisionDec()
-                .safeDiv_dec_round_high_precision(newTotalDebtIssued.decToHighPrecisionDec());
+            uint newDebtPercentage = newDebt.safeDiv_dec_round_high_precision(newTotalDebtIssued);
 
             // Store the debt percentage and debt ledger as high precision integers
             issuanceData[messageSender].initialDebtOwnership = newDebtPercentage;
@@ -819,8 +815,7 @@ contract Havven is ExternStateToken {
         }
 
         // Update our cumulative ledger. This is also a high precision integer.
-        uint newDebtLedgerEntry = debtLedger[debtLedger.length - 1].safeMul_dec_round_high_precision(delta);
-        debtLedger.push(newDebtLedgerEntry);
+        debtLedger.push(debtLedger[debtLedger.length - 1].safeMul_dec_round_high_precision(delta));
     }
 
     // ========== Issuance/Burning ==========
@@ -888,6 +883,7 @@ contract Havven is ExternStateToken {
         // Their debt balance is their portion of the total system value.
         uint highPrecisionBalance = totalSystemValue.decToHighPrecisionDec()
             .safeMul_dec_round_high_precision(currentDebtOwnership);
+
         return highPrecisionBalance.highPrecisionDecToDec();
     }
 

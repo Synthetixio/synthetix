@@ -49,7 +49,7 @@ library SafeDecimalMath {
 
     /* The number representing 1.0 for higher fidelity numbers. */
     uint public constant HIGH_PRECISION_UNIT = 10 ** uint(highPrecisionDecimals);
-    uint private constant UNIT_TO_HIGH_PRECISION_UNIT_CONVERTER = 10 ** uint(highPrecisionDecimals - decimals);
+    uint private constant UNIT_TO_HIGH_PRECISION_CONVERSION_FACTOR = 10 ** uint(highPrecisionDecimals - decimals);
 
     function unit()
         external
@@ -123,7 +123,7 @@ library SafeDecimalMath {
         uint quotientTimesTen = x.mul(y) / (precisionUnit / 10);
 
         if (quotientTimesTen % 10 >= 5) {
-            quotientTimesTen = quotientTimesTen + 10;
+            quotientTimesTen += 10;
         }
 
         return quotientTimesTen / 10;
@@ -230,7 +230,7 @@ library SafeDecimalMath {
         pure
         returns (uint)
     {
-        return i.mul(UNIT_TO_HIGH_PRECISION_UNIT_CONVERTER);
+        return i.mul(UNIT_TO_HIGH_PRECISION_CONVERSION_FACTOR);
     }
 
     /**
@@ -242,7 +242,7 @@ library SafeDecimalMath {
         pure
         returns (uint)
     {
-        uint quotientTimesTen = i / (UNIT_TO_HIGH_PRECISION_UNIT_CONVERTER / 10);
+        uint quotientTimesTen = i / (UNIT_TO_HIGH_PRECISION_CONVERSION_FACTOR / 10);
 
         if (quotientTimesTen % 10 >= 5) {
             quotientTimesTen += 10;
