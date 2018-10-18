@@ -73,9 +73,9 @@ contract FeePool is Proxyable, SelfDestructible {
     // that they cannot roll over any quicker than this duration.
     uint public feePeriodDuration = 1 weeks;
 
-    // The fee period must be between 1 day and 26 weeks.
+    // The fee period must be between 1 day and 60 days.
     uint public constant MIN_FEE_PERIOD_DURATION = 1 days;
-    uint public constant MAX_FEE_PERIOD_DURATION = 26 weeks;
+    uint public constant MAX_FEE_PERIOD_DURATION = 60 days;
 
     // The last period a user has withdrawn their fees in, identified by the feePeriodId
     mapping(address => uint) public lastFeeWithdrawal;

@@ -38,6 +38,14 @@ const currentTime = async () => {
  *  @param seconds Number of seconds to increase the time by
  */
 const fastForward = async seconds => {
+	// It's handy to be able to be able to pass big numbers in as we can just
+	// query them from the contract, then send them back. If not changed to
+	// a number, this causes much larger fast forwards than expected without error.
+	if (BN.isBN(seconds)) seconds = seconds.toNumber();
+
+	// And same with strings.
+	if (typeof seconds === 'string') seconds = parseFloat(seconds);
+
 	await send({
 		method: 'evm_increaseTime',
 		params: [seconds],
@@ -53,6 +61,8 @@ const fastForward = async seconds => {
  *  @param time Date object representing the desired time at the end of the operation
  */
 const fastForwardTo = async time => {
+	if (typeof time === 'string') time = parseInt(time);
+
 	const now = new Date();
 	if (time < now)
 		throw new Error(
