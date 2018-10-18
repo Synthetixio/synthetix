@@ -191,41 +191,12 @@ contract Havven is ExternStateToken {
      * If the provided address is 0x0, then a fresh one will be constructed with the contract owning all tokens.
      * @param _owner The owner of this contract.
      */
-    constructor(address _proxy, TokenState _tokenState, address _owner, ExchangeRates _exchangeRates, FeePool _feePool, Havven _oldHavven)
+    constructor(address _proxy, TokenState _tokenState, address _owner, ExchangeRates _exchangeRates, FeePool _feePool)
         ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, _owner)
         public
     {
         exchangeRates = _exchangeRates;
         feePool = _feePool;
-        
-        // if (_oldHavven != address(0)) {
-        //     // TODO: Need to handle contract upgrades correctly.
-
-        //     // uint i;
-        //     // uint cbs;
-        //     // uint lab;
-        //     // uint lm;
-        //     // (cbs, lab, lm) = _oldHavven.totalIssuanceData();
-        //     // totalIssuanceData.currentBalanceSum = cbs;
-        //     // totalIssuanceData.lastAverageBalance = lab;
-        //     // totalIssuanceData.lastModified = lm;
-
-        //     // for (i = 0; i < _issuers.length; i++) {
-        //     //     address issuer = _issuers[i];
-        //     //     isIssuer[issuer] = true;
-        //     //     uint nomins = _oldHavven.nominsIssued(issuer);
-        //     //     if (nomins == 0) {
-        //     //         // It is not valid in general to skip those with no currently-issued nomins.
-        //     //         // But for this release, issuers with nonzero issuanceData have current issuance.
-        //     //         continue;
-        //     //     }
-        //     //     (cbs, lab, lm) = _oldHavven.issuanceData(issuer);
-        //     //     nominsIssued[issuer] = nomins;
-        //     //     issuanceData[issuer].currentBalanceSum = cbs;
-        //     //     issuanceData[issuer].lastAverageBalance = lab;
-        //     //     issuanceData[issuer].lastModified = lm;
-        //     // }
-        // }
     }
 
     // ========== SETTERS ========== */

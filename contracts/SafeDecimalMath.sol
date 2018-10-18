@@ -53,7 +53,7 @@ library SafeDecimalMath {
 
     function unit()
         external
-        view
+        pure
         returns (uint)
     {
         return UNIT;
@@ -61,13 +61,12 @@ library SafeDecimalMath {
 
     function highPrecisionUnit()
         external
-        view
+        pure 
         returns (uint)
     {
         return HIGH_PRECISION_UNIT;
     }
 
-    // TODO: Replace with OpenZeppelin's implementation
     /** 
      * @return The result of adding x and y, throwing an exception in case of overflow.
      */
@@ -80,7 +79,6 @@ library SafeDecimalMath {
         return x + y;
     }
 
-    // TODO: Replace with OpenZeppelin's implementation
     /**
      * @return The result of subtracting y from x, throwing an exception in case of overflow.
      */

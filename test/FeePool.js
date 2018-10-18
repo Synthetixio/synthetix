@@ -293,11 +293,7 @@ contract('FeePool', async function(accounts) {
 
 	it('should correctly close the current fee period when there are more than FEE_PERIOD_LENGTH periods', async function() {
 		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
-
-		// Set fee period duration to 1 day to ensure that we don't find the bug in truffle / ganache
-		// when we fast forward by many weeks and get Error: Number can only safely store up to 53 bits
-		const feePeriodDuration = await feePool.MIN_FEE_PERIOD_DURATION();
-		await feePool.setFeePeriodDuration(feePeriodDuration, { from: owner });
+		const feePeriodDuration = await feePool.feePeriodDuration();
 
 		// Issue 10,000 nUSD.
 		await havven.issueNomins(nUSD, toUnit('10000'), { from: owner });
@@ -311,15 +307,35 @@ contract('FeePool', async function(accounts) {
 
 		assert.bnEqual(pendingFees, fee);
 
-		// // Now close FEE_PERIOD_LENGTH * 2 fee periods and assert that it is still in the last one.
-		// for (let i = 0; i < length + 1; i++) {
-		// 	await fastForward(feePeriodDuration);
+		// Now close FEE_PERIOD_LENGTH * 2 fee periods and assert that it is still in the last one.
+		for (let i = 0; i < length * 2; i++) {
+			console.log('Closing period ' + i);
+			await fastForward(feePeriodDuration);
 
-		// 	await feePool.closeCurrentFeePeriod({ from: feeAuthority });
-		// }
+			await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+		}
+		// In order to get the fees by period, we need the rates to not be stale.
+		const oracle = await exchangeRates.oracle();
+		const timestamp = await currentTime();
 
-		// const feesByPeriod = await feePool.feesByPeriod(owner);
-		// assert.bnEqual(feesByPeriod[length - 1], fee);
+		await exchangeRates.updateRates(
+			[nUSD, nAUD, nEUR, HAV],
+			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			timestamp,
+			{
+				from: oracle,
+			}
+		);
+
+		const feesByPeriod = await feePool.feesByPeriod(owner);
+
+		// Should be no fees for any period
+		for (const zeroFees of feesByPeriod.slice(0, length - 1)) {
+			assert.bnEqual(zeroFees, 0);
+		}
+
+		// Except the last one
+		assert.bnEqual(feesByPeriod[length - 1], fee);
 	});
 
 	it('should correctly close the current fee period when there is only one fee period open');

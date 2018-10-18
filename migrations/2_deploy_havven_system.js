@@ -1,15 +1,15 @@
 const { table } = require('table');
 
-const SafeDecimalMath = artifacts.require('./SafeDecimalMath.sol');
-const ExchangeRates = artifacts.require('./ExchangeRates.sol');
-const FeePool = artifacts.require('./FeePool.sol');
-const Havven = artifacts.require('./Havven.sol');
-const HavvenEscrow = artifacts.require('./HavvenEscrow.sol');
+const ExchangeRates = artifacts.require('ExchangeRates');
+const FeePool = artifacts.require('FeePool');
+const Havven = artifacts.require('Havven');
+const HavvenEscrow = artifacts.require('HavvenEscrow');
 // const IssuanceController = artifacts.require('./IssuanceController.sol');
-const Nomin = artifacts.require('./Nomin.sol');
-const Owned = artifacts.require('./Owned.sol');
-const Proxy = artifacts.require('./Proxy.sol');
-const TokenState = artifacts.require('./TokenState.sol');
+const Nomin = artifacts.require('Nomin');
+const Owned = artifacts.require('Owned');
+const Proxy = artifacts.require('Proxy');
+const SafeDecimalMath = artifacts.require('SafeDecimalMath');
+const TokenState = artifacts.require('TokenState');
 
 // Update values before deployment
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
@@ -29,8 +29,7 @@ module.exports = async function(deployer, network, accounts) {
 	// Safe Decimal Math library
 	// ----------------
 	console.log('Deploying SafeDecimalMath...');
-	const safeDecimalMath = await deployer.deploy(SafeDecimalMath, { from: deployerAccount });
-	// TODO: Understand why we don't need to deploy SafeMath.
+	await deployer.deploy(SafeDecimalMath, { from: deployerAccount });
 
 	// ----------------
 	// Exchange Rates
@@ -83,7 +82,7 @@ module.exports = async function(deployer, network, accounts) {
 	});
 
 	console.log('Deploying Havven...');
-	// constructor(address _proxy, TokenState _tokenState, address _owner, ExchangeRates _exchangeRates, FeePool _feePool, Havven _oldHavven)
+	// constructor(address _proxy, TokenState _tokenState, address _owner, ExchangeRates _exchangeRates, FeePool _feePool)
 	deployer.link(SafeDecimalMath, Havven);
 	const havven = await deployer.deploy(
 		Havven,
@@ -92,7 +91,6 @@ module.exports = async function(deployer, network, accounts) {
 		owner,
 		ExchangeRates.address,
 		FeePool.address,
-		ZERO_ADDRESS,
 		{
 			from: deployerAccount,
 			gas: 8000000,
