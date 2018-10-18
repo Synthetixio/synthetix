@@ -51,6 +51,9 @@ library SafeDecimalMath {
     uint public constant HIGH_PRECISION_UNIT = 10 ** uint(highPrecisionDecimals);
     uint private constant UNIT_TO_HIGH_PRECISION_CONVERSION_FACTOR = 10 ** uint(highPrecisionDecimals - decimals);
 
+    /** 
+     * @return Provides an interface to UNIT.
+     */
     function unit()
         external
         view
@@ -59,6 +62,9 @@ library SafeDecimalMath {
         return UNIT;
     }
 
+    /** 
+     * @return Provides an interface to HIGH_PRECISION_UNIT.
+     */
     function highPrecisionUnit()
         external
         view
