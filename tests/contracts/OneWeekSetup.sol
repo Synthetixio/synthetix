@@ -1,7 +1,7 @@
 pragma solidity ^0.4.23;
 
 
-import "./LimitedSetup.sol";
+import "contracts/LimitedSetup.sol";
 
 
 contract OneWeekSetup is LimitedSetup(1 weeks) {

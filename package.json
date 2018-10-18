@@ -8,8 +8,7 @@
 	"scripts": {
 		"clean": "rm -rf build && rm -rf node_modules && yarn",
 		"coverage": "solidity-coverage",
-		"ganache": "ganache-cli -l 0x7a213aF",
-		"ganache:proper": "ganache-cli -l 0x7a213a",
+		"ganache": "ganache-cli -a 500 -e 1000000000000 -l 0x7a213aF",
 		"lint": "eslint \"**/*.js\" && solium -d contracts/",
 		"lint:fix": "eslint --fix \"**/*.js\" && solium --fix -d contracts/",
 		"test": "concurrently -k -s first \"yarn ganache > /dev/null\" \"truffle compile && truffle test\"",

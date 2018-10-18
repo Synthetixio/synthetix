@@ -7,7 +7,7 @@ from utils.deployutils import (
 from utils.testutils import (
     HavvenTestCase, ZERO_ADDRESS,
 )
-from tests.contract_interfaces.nomin_interface import PublicNominInterface
+from tests.contract_interfaces.nomin_interface import NominInterface
 from tests.contract_interfaces.havven_interface import HavvenInterface
 from tests.contract_interfaces.nomin_airdropper_interface import NominAirdropperInterface
 
@@ -32,25 +32,30 @@ class TestNominAirdropper(HavvenTestCase):
 
     @classmethod
     def deployContracts(cls):
-        sources = ["tests/contracts/PublicNomin.sol", "contracts/NominAirdropper.sol", "contracts/Havven.sol"]
+        sources = ["contracts/Nomin.sol",
+                   "contracts/NominAirdropper.sol", "contracts/Havven.sol"]
 
         compiled, cls.event_maps = cls.compileAndMapEvents(sources)
 
         havven_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
         nomin_proxy, _ = attempt_deploy(compiled, 'Proxy', MASTER, [MASTER])
-        proxied_havven = W3.eth.contract(address=havven_proxy.address, abi=compiled['Havven']['abi'])
-        proxied_nomin = W3.eth.contract(address=nomin_proxy.address, abi=compiled['PublicNomin']['abi'])
+        proxied_havven = W3.eth.contract(
+            address=havven_proxy.address, abi=compiled['Havven']['abi'])
+        proxied_nomin = W3.eth.contract(
+            address=nomin_proxy.address, abi=compiled['Nomin']['abi'])
 
         nomin_state, txr = attempt_deploy(
             compiled, "TokenState", MASTER,
             [MASTER, MASTER]
         )
         nomin_contract, _ = attempt_deploy(
-            compiled, 'PublicNomin', MASTER, [nomin_proxy.address, nomin_state.address, MASTER, 0, MASTER]
+            compiled, 'Nomin', MASTER, [
+                nomin_proxy.address, nomin_state.address, MASTER, 0, MASTER]
         )
 
         havven_contract, _ = attempt_deploy(
-            compiled, "Havven", MASTER, [havven_proxy.address, ZERO_ADDRESS, MASTER, MASTER, UNIT//2, [], ZERO_ADDRESS]
+            compiled, "Havven", MASTER, [
+                havven_proxy.address, ZERO_ADDRESS, MASTER, MASTER, UNIT//2, [], ZERO_ADDRESS]
         )
 
         airdropper_contract, _ = attempt_deploy(
@@ -58,12 +63,18 @@ class TestNominAirdropper(HavvenTestCase):
         )
 
         mine_txs([
-            nomin_state.functions.setAssociatedContract(nomin_contract.address).transact({'from': MASTER}),
-            havven_proxy.functions.setTarget(havven_contract.address).transact({'from': MASTER}),
-            nomin_proxy.functions.setTarget(nomin_contract.address).transact({'from': MASTER}),
-            havven_contract.functions.setNomin(nomin_contract.address).transact({'from': MASTER}),
-            nomin_contract.functions.setHavven(havven_contract.address).transact({'from': MASTER}),
-            nomin_contract.functions.giveNomins(airdropper_contract.address, 1000 * UNIT).transact({'from': MASTER})
+            nomin_state.functions.setAssociatedContract(
+                nomin_contract.address).transact({'from': MASTER}),
+            havven_proxy.functions.setTarget(
+                havven_contract.address).transact({'from': MASTER}),
+            nomin_proxy.functions.setTarget(
+                nomin_contract.address).transact({'from': MASTER}),
+            havven_contract.functions.setNomin(
+                nomin_contract.address).transact({'from': MASTER}),
+            nomin_contract.functions.setHavven(
+                havven_contract.address).transact({'from': MASTER}),
+            nomin_contract.functions.giveNomins(
+                airdropper_contract.address, 1000 * UNIT).transact({'from': MASTER})
         ])
 
         return havven_proxy, proxied_havven, nomin_proxy, proxied_nomin, nomin_contract, havven_contract, nomin_state, airdropper_contract
@@ -74,25 +85,30 @@ class TestNominAirdropper(HavvenTestCase):
 
         cls.nomin_event_dict = cls.event_maps['Nomin']
 
-        cls.nomin = PublicNominInterface(cls.proxied_nomin, "Nomin")
+        cls.nomin = NominInterface(cls.proxied_nomin, "Nomin")
         cls.havven = HavvenInterface(cls.proxied_havven, "Havven")
-        cls.airdropper = NominAirdropperInterface(cls.airdropper_contract, "NominAirdropper")
+        cls.airdropper = NominAirdropperInterface(
+            cls.airdropper_contract, "NominAirdropper")
 
-        cls.unproxied_nomin = PublicNominInterface(cls.nomin_contract, "UnproxiedNomin")
+        cls.unproxied_nomin = NominInterface(
+            cls.nomin_contract, "UnproxiedNomin")
 
         cls.nomin.setFeeAuthority(MASTER, cls.havven_contract.address)
         cls.sd_duration = 4 * 7 * 24 * 60 * 60
 
     def test_assertLengthCheck(self):
         # Sending unequal length transactions should revert.
-        self.assertReverts(self.airdropper.multisend, MASTER, self.nomin_contract.address, [MASTER], [1, 2])
-    
+        self.assertReverts(self.airdropper.multisend, MASTER,
+                           self.nomin_contract.address, [MASTER], [1, 2])
+
     def test_assertIfUsedByNonOwner(self):
         # Only owner should be able to use.
-        self.assertReverts(self.airdropper.multisend, DUMMY, self.nomin_contract.address, [DUMMY, DUMMY], [50 * UNIT, 100 * UNIT])
+        self.assertReverts(self.airdropper.multisend, DUMMY, self.nomin_contract.address, [
+                           DUMMY, DUMMY], [50 * UNIT, 100 * UNIT])
 
     def test_correctlyAirdrops(self):
         # Sending multiple transactions should result in sender paying fees, and correct amount being received.
-        self.airdropper.multisend(MASTER, self.nomin_contract.address, [DUMMY, DUMMY], [50 * UNIT, 100 * UNIT])
+        self.airdropper.multisend(MASTER, self.nomin_contract.address, [
+                                  DUMMY, DUMMY], [50 * UNIT, 100 * UNIT])
 
         self.assertEqual(self.nomin.balanceOf(DUMMY), 150 * UNIT)

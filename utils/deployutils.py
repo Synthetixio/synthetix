@@ -69,11 +69,10 @@ def attempt(function, func_args, init_string, func_kwargs=None, print_status=Tru
         return None
 
 
-def compile_contracts(files, remappings=None):
-    if remappings is None:
-        remappings = []
+def compile_contracts(files, remappings=['/contracts/']):
     contract_interfaces = {}
-    compiled = compile_files(files, import_remappings=remappings, optimize=True)
+    compiled = compile_files(
+        files, import_remappings=remappings, optimize=True)
     for key in compiled:
         name = key.split(':')[-1]
         contract_interfaces[name] = compiled[key]
@@ -111,7 +110,8 @@ def update_performance_data(contract_name, function_name, gas):
     if contract_name in PERFORMANCE_DATA:
         if function_name in PERFORMANCE_DATA[contract_name]:
             values = PERFORMANCE_DATA[contract_name][function_name]
-            PERFORMANCE_DATA[contract_name][function_name] = (values[0] + gas, values[1] + 1, min([values[2], gas]), max([values[3], gas]))
+            PERFORMANCE_DATA[contract_name][function_name] = (
+                values[0] + gas, values[1] + 1, min([values[2], gas]), max([values[3], gas]))
         else:
             PERFORMANCE_DATA[contract_name][function_name] = (gas, 1, gas, gas)
     else:
@@ -129,7 +129,8 @@ def mine_tx(tx_hash, function_name, contract_name):
     if type(contract_name) != str:
         raise Exception(contract_name)
 
-    update_performance_data(contract_name, function_name, tx_receipt['gasUsed'])
+    update_performance_data(
+        contract_name, function_name, tx_receipt['gasUsed'])
     return tx_receipt
 
 
@@ -153,20 +154,24 @@ def deploy_contract(compiled_sol, contract_name, deploy_account, constructor_arg
     if constructor_args is None:
         constructor_args = []
     contract_interface = compiled_sol[contract_name]
-    contract = W3.eth.contract(abi=contract_interface['abi'], bytecode=contract_interface['bin'])
+    contract = W3.eth.contract(
+        abi=contract_interface['abi'], bytecode=contract_interface['bin'])
     tx_hash = contract.deploy(
         transaction={'from': deploy_account, 'gas': gas}, args=constructor_args
     )
     tx_receipt = mine_txs([tx_hash])[tx_hash]
-    contract_instance = W3.eth.contract(address=tx_receipt['contractAddress'], abi=contract_interface['abi'])
+    contract_instance = W3.eth.contract(
+        address=tx_receipt['contractAddress'], abi=contract_interface['abi'])
 
-    update_performance_data(contract_name, "<deployment>", tx_receipt['gasUsed'])
+    update_performance_data(
+        contract_name, "<deployment>", tx_receipt['gasUsed'])
     return contract_instance, tx_receipt
 
 
 def attempt_deploy(compiled_sol, contract_name, deploy_account, constructor_args, print_status=True,
                    print_exception=True):
     return attempt(
-        deploy_contract, [compiled_sol, contract_name, deploy_account, constructor_args],
+        deploy_contract, [compiled_sol, contract_name,
+                          deploy_account, constructor_args],
         f"Deploying {contract_name}... ", print_status=print_status, print_exception=print_exception
     )

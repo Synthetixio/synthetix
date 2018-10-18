@@ -3,7 +3,7 @@
  */
 pragma solidity ^0.4.23;
 
-import "./SafeDecimalMath.sol";
+import "contracts/SafeDecimalMath.sol";
 
 contract PublicMath is SafeDecimalMath {
     

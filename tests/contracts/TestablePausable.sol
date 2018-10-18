@@ -1,6 +1,6 @@
 pragma solidity 0.4.25;
 
-import "./Pausable.sol";
+import "contracts/Pausable.sol";
 
 /**
  * @title An implementation of Pausable. Used to test the features of the Pausable contract that can only be tested by an implementation.

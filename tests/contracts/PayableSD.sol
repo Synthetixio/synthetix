@@ -1,7 +1,7 @@
 pragma solidity ^0.4.23;
 
 
-import "./SelfDestructible.sol";
+import "contracts/SelfDestructible.sol";
 
 
 contract PayableSD is SelfDestructible {
