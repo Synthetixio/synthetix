@@ -21,13 +21,14 @@ contract('Havven', async function(accounts) {
 
 	const [deployerAccount, owner, account1, account2, account3, account4, account5] = accounts;
 
-	let havven, exchangeRates, nUSDContract, nAUDContract;
+	let havven, exchangeRates, feePool, nUSDContract, nAUDContract;
 
 	beforeEach(async function() {
 		// Save ourselves from having to await deployed() in every single test.
 		// We do this in a beforeEach instead of before to ensure we isolate
 		// contract interfaces to prevent test bleed.
 		exchangeRates = await ExchangeRates.deployed();
+		feePool = await FeePool.deployed();
 
 		havven = await Havven.deployed();
 		nUSDContract = await Nomin.at(await havven.nomins(nUSD));
@@ -1214,7 +1215,7 @@ contract('Havven', async function(accounts) {
 		// return;
 
 		// Calculate the amount that account1 should actually receive
-		const amountReceived = await nUSDContract.amountReceived(toUnit('200'));
+		const amountReceived = await feePool.amountReceivedFromTransfer(toUnit('200'));
 
 		const balanceOfAccount1 = await nUSDContract.balanceOf(account1);
 
@@ -1875,8 +1876,8 @@ contract('Havven', async function(accounts) {
 		});
 
 		// Calculate the amount that account1 should actually receive
-		const amountReceived = await nUSDContract.amountReceived(toUnit('1800'));
-		const amountReceived2 = await nUSDContract.amountReceived(amountReceived);
+		const amountReceived = await feePool.amountReceivedFromTransfer(toUnit('1800'));
+		const amountReceived2 = await feePool.amountReceivedFromTransfer(amountReceived);
 		const amountLostToFees = amountToTransfer.sub(amountReceived2);
 
 		// Check that the transfer worked ok.
