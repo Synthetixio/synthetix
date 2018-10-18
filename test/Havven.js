@@ -5,8 +5,6 @@ const Havven = artifacts.require('Havven');
 const Nomin = artifacts.require('Nomin');
 
 const {
-	assertBNClose,
-	assertUnitEqual,
 	currentTime,
 	fastForward,
 	multiplyDecimal,
@@ -828,7 +826,7 @@ contract('Havven', async function(accounts) {
 		await havven.issueNomins(nUSD, web3.utils.toBN('1'), { from: account1 });
 
 		const debt = await havven.debtBalanceOf(account1, nUSD);
-		assertBNClose(debt, toUnit('1'), '15');
+		assert.bnClose(debt, toUnit('1'), '15');
 
 		// const txn = await havven.issueNomins(nUSD, web3.utils.toBN('1'), { from: account1 });
 		// console.log('##### txn', txn);
@@ -938,8 +936,8 @@ contract('Havven', async function(accounts) {
 		// But there's a small rounding error.
 		// This is ok, as when the last person exits the system, their debt percentage is always 100% so
 		// these rounding errors don't cause the system to be out of balance.
-		assertBNClose(await havven.debtBalanceOf(account1, nUSD), toUnit('10'), '3');
-		assertBNClose(await havven.debtBalanceOf(account2, nUSD), toUnit('20'), '3');
+		assert.bnClose(await havven.debtBalanceOf(account1, nUSD), toUnit('10'));
+		assert.bnClose(await havven.debtBalanceOf(account2, nUSD), toUnit('20'));
 	});
 
 	it('should allow multi-issuance in one flavour', async function() {
@@ -970,8 +968,8 @@ contract('Havven', async function(accounts) {
 		// But there's a small rounding error.
 		// This is ok, as when the last person exits the system, their debt percentage is always 100% so
 		// these rounding errors don't cause the system to be out of balance.
-		assertBNClose(await havven.debtBalanceOf(account1, nUSD), toUnit('20'), '3');
-		assertBNClose(await havven.debtBalanceOf(account2, nUSD), toUnit('20'), '3');
+		assert.bnClose(await havven.debtBalanceOf(account1, nUSD), toUnit('20'));
+		assert.bnClose(await havven.debtBalanceOf(account2, nUSD), toUnit('20'));
 	});
 
 	it('should allow multiple issuers to issue nomins in multiple flavours', async function() {
@@ -1239,7 +1237,7 @@ contract('Havven', async function(accounts) {
 
 		// Recording debts in the debt ledger reduces accuracy.
 		//   Let's allow for a 1000 margin of error.
-		assertBNClose(balanceOfAccount1AfterBurn, amountReceived, 1000);
+		assert.bnClose(balanceOfAccount1AfterBurn, amountReceived, '1000');
 	});
 
 	it('should correctly calculate debt in a multi-issuance scenario', async function() {
@@ -1255,7 +1253,7 @@ contract('Havven', async function(accounts) {
 		await havven.issueNomins(nUSD, toUnit('1000'), { from: account2 });
 
 		const debt = await havven.debtBalanceOf(account1, nUSD);
-		assertBNClose(debt, toUnit('4000'), '5');
+		assert.bnClose(debt, toUnit('4000'));
 	});
 
 	it('should correctly calculate debt in a multi-issuance multi-burn scenario', async function() {
@@ -1284,7 +1282,7 @@ contract('Havven', async function(accounts) {
 			.sub(burntNominsPt2);
 
 		// TODO: The variance we are getting here seems suspect. Let's investigate
-		assertBNClose(debt, expectedDebt, '5');
+		assert.bnClose(debt, expectedDebt);
 	});
 
 	// TODO: This test is a WIP but should pass.
@@ -1650,7 +1648,7 @@ contract('Havven', async function(accounts) {
 		const issuedNomins = await havven.maxIssuableNomins(account1, nAUD);
 		await havven.issueNomins(nAUD, issuedNomins, { from: account1 });
 		const remainingIssuable = await havven.remainingIssuableNomins(account1, nAUD);
-		assertBNClose(remainingIssuable, '0', '1');
+		assert.bnClose(remainingIssuable, '0');
 
 		// Increase the value of nAUD relative to havvens
 		const timestamp2 = await currentTime();
@@ -1660,7 +1658,7 @@ contract('Havven', async function(accounts) {
 		const maxIssuableNomins2 = await havven.maxIssuableNomins(account1, nAUD);
 		const remainingIssuable2 = await havven.remainingIssuableNomins(account1, nAUD);
 		const expectedRemaining = maxIssuableNomins2.sub(issuedNomins);
-		assertBNClose(remainingIssuable2, expectedRemaining, '1');
+		assert.bnClose(remainingIssuable2, expectedRemaining);
 	});
 
 	// Check user's collaterisation ratio
@@ -1698,7 +1696,7 @@ contract('Havven', async function(accounts) {
 		await havven.issueNomins(nAUD, issuedNomins, { from: account1 });
 
 		const ratio = await havven.collateralisationRatio(account1, { from: account2 });
-		assertUnitEqual(ratio, '0.1');
+		assert.unitEqual(ratio, '0.1');
 	});
 
 	it("should include escrowed havvens when calculating a user's collaterisation ratio", async function() {
