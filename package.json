@@ -11,7 +11,7 @@
 		"ganache": "ganache-cli -a 500 -e 1000000000000 -l 0x7a213aF",
 		"lint": "eslint \"**/*.js\" && solium -d contracts/",
 		"lint:fix": "eslint --fix \"**/*.js\" && solium --fix -d contracts/",
-		"test": "concurrently -k -s first \"yarn ganache > /dev/null\" \"truffle compile && truffle test\"",
+		"test": "concurrently -k -s first \"yarn ganache > /dev/null\" \"wait-port 8545 && truffle test\"",
 		"truffle": "truffle"
 	},
 	"repository": {
@@ -51,6 +51,7 @@
 		"table": "^5.0.2",
 		"truffle": "^5.0.0-beta.0",
 		"truffle-core": "^5.0.0-beta.0",
-		"truffle-external-compile": "^1.0.0-beta.0"
+		"truffle-external-compile": "^1.0.0-beta.0",
+		"wait-port": "^0.2.2"
 	}
 }
