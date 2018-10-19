@@ -250,7 +250,7 @@ contract IssuanceController is SelfDestructible, Pausable {
 //     {
 //         // The multiplication works here because usdToEthPrice is specified in
 //         // 18 decimal places, just like our currency base.
-//         uint requestedToPurchase = safeMul_dec(msg.value, usdToEthPrice);
+//         uint requestedToPurchase = multiplyDecimal(msg.value, usdToEthPrice);
 //         emit LogInt("Requested to purchase", requestedToPurchase);
 //         uint remainingToFulfill = requestedToPurchase;
 //         emit LogInt("Remaining to fulfill", remainingToFulfill);
@@ -285,8 +285,8 @@ contract IssuanceController is SelfDestructible, Pausable {
 //                     emit LogInt("New total sellable", totalSellableDeposits);
                     
 //                     // Transfer the ETH to the depositor.
-//                     deposit.user.transfer(safeDiv_dec(remainingToFulfill, usdToEthPrice));
-//                     emit LogInt("Transferring ETH", safeDiv_dec(remainingToFulfill, usdToEthPrice));
+//                     deposit.user.transfer(divideDecimal(remainingToFulfill, usdToEthPrice));
+//                     emit LogInt("Transferring ETH", divideDecimal(remainingToFulfill, usdToEthPrice));
 //                     // And the Nomins to the recipient.
 //                     // Note: Fees are calculated by the Nomin contract, so when 
 //                     //       we request a specific transfer here, the fee is
@@ -314,8 +314,8 @@ contract IssuanceController is SelfDestructible, Pausable {
 //                     emit LogInt("New total", totalSellableDeposits);
 
 //                     // Now fulfill by transfering the ETH to the depositor.
-//                     deposit.user.transfer(safeDiv_dec(deposit.amount, usdToEthPrice));
-//                     emit LogInt("Transferring ETH", safeDiv_dec(deposit.amount, usdToEthPrice));
+//                     deposit.user.transfer(divideDecimal(deposit.amount, usdToEthPrice));
+//                     emit LogInt("Transferring ETH", divideDecimal(deposit.amount, usdToEthPrice));
 //                     // And the Nomins to the recipient.
 //                     // Note: Fees are calculated by the Nomin contract, so when 
 //                     //       we request a specific transfer here, the fee is
@@ -334,7 +334,7 @@ contract IssuanceController is SelfDestructible, Pausable {
 //         // Ok, if we're here and 'remainingToFulfill' isn't zero, then
 //         // we need to refund the remainder of their ETH back to them.
 //         if (remainingToFulfill > 0) {
-//             msg.sender.transfer(safeDiv_dec(remainingToFulfill, usdToEthPrice));
+//             msg.sender.transfer(divideDecimal(remainingToFulfill, usdToEthPrice));
 //         }
 
 //         // How many did we actually give them?
@@ -562,7 +562,7 @@ contract IssuanceController is SelfDestructible, Pausable {
 //         uint nominsReceived = nomin.amountReceived(amount);
 
 //         // And what would that be worth in havvens based on the current price?
-//         return safeDiv_dec(nominsReceived, usdToHavPrice);
+//         return divideDecimal(nominsReceived, usdToHavPrice);
 //     }
 
 //     /**
@@ -576,7 +576,7 @@ contract IssuanceController is SelfDestructible, Pausable {
 //         returns (uint)
 //     {
 //         // How much is the ETH they sent us worth in nUSD (ignoring the transfer fee)?
-//         uint valueSentInNomins = safeMul_dec(amount, usdToEthPrice); 
+//         uint valueSentInNomins = multiplyDecimal(amount, usdToEthPrice); 
 
 //         // Now, how many HAV will that USD amount buy?
 //         return havvensReceivedForNomins(valueSentInNomins);
@@ -593,7 +593,7 @@ contract IssuanceController is SelfDestructible, Pausable {
 //         returns (uint)
 //     {
 //         // How many nomins would that amount of ether be worth?
-//         uint nominsTransferred = safeMul_dec(amount, usdToEthPrice);
+//         uint nominsTransferred = multiplyDecimal(amount, usdToEthPrice);
 
 //         // And how many of those would you receive after a transfer (deducting the transfer fee)
 //         return nomin.amountReceived(nominsTransferred);
