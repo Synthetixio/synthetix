@@ -60,7 +60,7 @@ contract PublicMath is SafeDecimalMath {
         public
         returns (uint)
     {
-        return safeMul_dec(x, y);
+        return multiplyDecimal(x, y);
     }
 
     function pubDivIsSafe(uint x, uint y)
@@ -84,7 +84,7 @@ contract PublicMath is SafeDecimalMath {
         public
         returns (uint)
     {
-        return safeDiv_dec(x, y);
+        return divideDecimal(x, y);
     }
 
     function pubIntToDec(uint i)

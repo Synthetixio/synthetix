@@ -303,7 +303,7 @@ contract FeePool is Proxyable, SelfDestructible {
         view
         returns (uint)
     {
-        return value.safeDiv_dec(transferFeeRate.add(SafeDecimalMath.unit()));
+        return value.divideDecimal(transferFeeRate.add(SafeDecimalMath.unit()));
     }
 
     /**
@@ -315,7 +315,7 @@ contract FeePool is Proxyable, SelfDestructible {
         view
         returns (uint)
     {
-        return value.safeMul_dec(exchangeFeeRate);
+        return value.multiplyDecimal(exchangeFeeRate);
 
         // Exchanges less than the reciprocal of exchangeFeeRate should be completely eaten up by fees.
         // This is on the basis that exchanges less than this value will result in a nil fee.
@@ -349,7 +349,7 @@ contract FeePool is Proxyable, SelfDestructible {
         view
         returns (uint)
     {
-        return value.safeDiv_dec(exchangeFeeRate.add(SafeDecimalMath.unit()));
+        return value.divideDecimal(exchangeFeeRate.add(SafeDecimalMath.unit()));
     }
 
     /**
@@ -437,7 +437,7 @@ contract FeePool is Proxyable, SelfDestructible {
         (initialDebtOwnership, debtEntryIndex) = havven.havvenState().issuanceData(account);
         uint debtBalance = havven.debtBalanceOf(account, "HDR");
         uint totalNomins = havven.totalIssuedNomins("HDR");
-        uint userOwnershipPercentage = debtBalance.safeDiv_dec(totalNomins);
+        uint userOwnershipPercentage = debtBalance.divideDecimal(totalNomins);
         uint penalty = currentPenalty(account);
 
         uint[FEE_PERIOD_LENGTH] memory result;
@@ -456,11 +456,11 @@ contract FeePool is Proxyable, SelfDestructible {
                 lastFeeWithdrawal[account] < recentFeePeriods[i].feePeriodId) {
 
                 // And since they were, they're entitled to their percentage of the fees in this period
-                uint feesFromPeriodWithoutPenalty = recentFeePeriods[i].feesToDistribute.safeMul_dec(userOwnershipPercentage);
+                uint feesFromPeriodWithoutPenalty = recentFeePeriods[i].feesToDistribute.multiplyDecimal(userOwnershipPercentage);
 
                 // Less their penalty if they have one.
-                uint penaltyFromPeriod = feesFromPeriodWithoutPenalty.safeMul_dec(penalty);
-                uint feesFromPeriod = feesFromPeriodWithoutPenalty.safeSub(penaltyFromPeriod);
+                uint penaltyFromPeriod = feesFromPeriodWithoutPenalty.multiplyDecimal(penalty);
+                uint feesFromPeriod = feesFromPeriodWithoutPenalty.sub(penaltyFromPeriod);
 
                 result[i] = feesFromPeriod;
             }

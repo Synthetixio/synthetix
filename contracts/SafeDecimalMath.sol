@@ -1,28 +1,25 @@
 /*
+
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
 
 file:       SafeDecimalMath.sol
-version:    1.0
-author:     Anton Jurisevic
+version:    2.0
+author:     Kevin Brown
             Gavin Conway
-
-date:       2018-2-5
-
-checked:    Mike Spain
-approved:   Samuel Brooks
+date:       2018-10-18
 
 -----------------------------------------------------------------
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
-A fixed point decimal library that provides basic mathematical
-operations, and checks for unsafe arguments, for example that
-would lead to overflows.
-
-Exceptions are thrown whenever those unsafe operations
-occur.
+A library providing safe mathematical operations for division and
+multiplication with the capability to round or truncate the results
+to the nearest increment. Operations can return a standard precision
+or high precision decimal. High precision decimals are useful for
+example when attempting to calculate percentages or fractions
+accurately.
 
 -----------------------------------------------------------------
 */
@@ -34,7 +31,8 @@ import "./SafeMath.sol";
 /**
  * @title Safely manipulate unsigned fixed-point decimals at a given precision level.
  * @dev Functions accepting uints in this contract and derived contracts
- * are taken to be such fixed point decimals (including fiat, ether, and nomin quantities).
+ * are taken to be such fixed point decimals of a specified precision (either standard
+ * or high).
  */
 library SafeDecimalMath {
 
@@ -48,9 +46,12 @@ library SafeDecimalMath {
     uint public constant UNIT = 10 ** uint(decimals);
 
     /* The number representing 1.0 for higher fidelity numbers. */
-    uint public constant HIGH_PRECISION_UNIT = 10 ** uint(highPrecisionDecimals);
+    uint public constant PRECISE_UNIT = 10 ** uint(highPrecisionDecimals);
     uint private constant UNIT_TO_HIGH_PRECISION_CONVERSION_FACTOR = 10 ** uint(highPrecisionDecimals - decimals);
 
+    /** 
+     * @return Provides an interface to UNIT.
+     */
     function unit()
         external
         pure
@@ -59,51 +60,27 @@ library SafeDecimalMath {
         return UNIT;
     }
 
-    function highPrecisionUnit()
+    /** 
+     * @return Provides an interface to PRECISE_UNIT.
+     */
+    function preciseUnit()
         external
         pure 
         returns (uint)
     {
-        return HIGH_PRECISION_UNIT;
-    }
-
-    /** 
-     * @return The result of adding x and y, throwing an exception in case of overflow.
-     */
-    function safeAdd(uint x, uint y)
-        internal
-        pure
-        returns (uint)
-    {
-        require(x + y >= y, "Addition would cause overflow");
-        return x + y;
-    }
-
-    /**
-     * @return The result of subtracting y from x, throwing an exception in case of overflow.
-     */
-    function safeSub(uint x, uint y)
-        internal
-        pure
-        returns (uint)
-    {
-        require(y <= x, "Subtraction would cause overflow");
-        return x - y;
+        return PRECISE_UNIT;
     }
 
     /**
      * @return The result of multiplying x and y, interpreting the operands as fixed-point
-     * decimals. Throws an exception in case of overflow.
+     * decimals.
      * 
      * @dev A unit factor is divided out after the product of x and y is evaluated,
-     * so that product must be less than 2**256.
-     * Incidentally, the internal division always rounds down: one could have rounded to the nearest integer,
-     * but then one would be spending a significant fraction of a cent (of order a microether
-     * at present gas prices) in order to save less than one part in 0.5 * 10^18 per operation, if the operands
-     * contain small enough fractional components. It would also marginally diminish the 
-     * domain this function is defined upon. 
+     * so that product must be less than 2**256. As this is an integer division,
+     * the internal division always rounds down. This helps save on gas. Rounding
+     * is more expensive on gas.
      */
-    function safeMul_dec(uint x, uint y)
+    function multiplyDecimal(uint x, uint y)
         internal
         pure
         returns (uint)
@@ -112,7 +89,19 @@ library SafeDecimalMath {
         return x.mul(y) / UNIT;
     }
 
-    function safeMul_dec_round_private(uint x, uint y, uint precisionUnit)
+    /**
+     * @return The result of safely multiplying x and y, interpreting the operands
+     * as fixed-point decimals of the specified precision unit.
+     *
+     * @dev The operands should be in the form of a the specified unit factor which will be
+     * divided out after the product of x and y is evaluated, so that product must be
+     * less than 2**256.
+     *
+     * Unlike multiplyDecimal, this function rounds the result to the nearest increment.
+     * Rounding is useful when you need to retain fidelity for small decimal numbers
+     * (eg. small fractions or percentages).
+     */
+    function _multiplyDecimalRound(uint x, uint y, uint precisionUnit)
         private
         pure
         returns (uint)
@@ -128,49 +117,55 @@ library SafeDecimalMath {
     }
 
     /**
-     * @return The result of multiplying x and y, interpreting the operands as fixed-point
-     * decimals. Throws an exception in case of overflow.
+     * @return The result of safely multiplying x and y, interpreting the operands
+     * as fixed-point decimals of a precise unit.
      *
-     * @dev The operands should be in the form of a HIGH_PRECISION_UNIT factor which will be
-     * divided out after the product of x and y is evaluated, so that product must be less than 2**256.
+     * @dev The operands should be in the precise unit factor which will be
+     * divided out after the product of x and y is evaluated, so that product must be
+     * less than 2**256.
      *
-     * Unlike safeMul_dec, this function is careful to round the result to the nearest integer.
-     * This is useful when you need to retain fidelity for small decimal numbers (eg. small
-     * fractions or percentages).
+     * Unlike multiplyDecimal, this function rounds the result to the nearest increment.
+     * Rounding is useful when you need to retain fidelity for small decimal numbers
+     * (eg. small fractions or percentages).
      */
-    function safeMul_dec_round_high_precision(uint x, uint y)
+    function multiplyDecimalRoundPrecise(uint x, uint y)
         internal
         pure
         returns (uint)
     {
-        return safeMul_dec_round_private(x, y, HIGH_PRECISION_UNIT);
+        return _multiplyDecimalRound(x, y, PRECISE_UNIT);
     }
 
     /**
-     * @return The result of multiplying x and y, interpreting the operands as fixed-point
-     * decimals. Throws an exception in case of overflow.
+     * @return The result of safely multiplying x and y, interpreting the operands
+     * as fixed-point decimals of a standard unit.
      *
-     * @dev The operands should be in the form of a standard UNIT factor which will be
-     * divided out after the product of x and y is evaluated, so that product must be less than 2**256.
+     * @dev The operands should be in the standard unit factor which will be
+     * divided out after the product of x and y is evaluated, so that product must be
+     * less than 2**256.
      *
-     * Unlike safeMul_dec, this function is careful to round the result to the nearest integer.
-     * This is useful when you need to retain fidelity for small decimal numbers (eg. small
-     * fractions or percentages).
+     * Unlike multiplyDecimal, this function rounds the result to the nearest increment.
+     * Rounding is useful when you need to retain fidelity for small decimal numbers
+     * (eg. small fractions or percentages).
      */
-    function safeMul_dec_round(uint x, uint y)
+    function multiplyDecimalRound(uint x, uint y)
         internal
         pure
         returns (uint)
     {
-        return safeMul_dec_round_private(x, y, UNIT);
+        return _multiplyDecimalRound(x, y, UNIT);
     }
 
     /**
-     * @return The result of dividing x by y, interpreting the operands as fixed point decimal numbers.
-     * @dev Throws an exception in case of overflow or zero divisor; x must be less than 2^256 / UNIT.
-     * Internal rounding is downward: a similar caveat holds as with safeDecMul().
+     * @return The result of safely dividing x and y. The return value is a high
+     * precision decimal.
+     * 
+     * @dev y is divided after the product of x and the standard precision unit
+     * is evaluated, so the product of x and UNIT must be less than 2**256. As
+     * this is an integer division, the result is always rounded down.
+     * This helps save on gas. Rounding is more expensive on gas.
      */
-    function safeDiv_dec(uint x, uint y)
+    function divideDecimal(uint x, uint y)
         internal
         pure
         returns (uint)
@@ -179,7 +174,15 @@ library SafeDecimalMath {
         return x.mul(UNIT).div(y);
     }
 
-    function safeDiv_dec_round_private(uint x, uint y, uint precisionUnit)
+    /**
+     * @return The result of safely dividing x and y. The return value is as a rounded
+     * decimal in the precision unit specified in the parameter.
+     *
+     * @dev y is divided after the product of x and the specified precision unit
+     * is evaluated, so the product of x and the specified precision unit must
+     * be less than 2**256. The result is rounded to the nearest increment.
+     */
+    function _divideDecimalRound(uint x, uint y, uint precisionUnit)
         private
         pure
         returns (uint)
@@ -194,36 +197,41 @@ library SafeDecimalMath {
     }
 
     /**
-     * @return The result of dividing x by y, interpreting the operands as fixed point decimal numbers.
-     * @dev Throws an exception in case of overflow or zero divisor; x must be less than 2^256 / UNIT.
-     * Internal rounding is to the nearest integer.
+     * @return The result of safely dividing x and y. The return value is as a rounded
+     * standard precision decimal.
+     *
+     * @dev y is divided after the product of x and the standard precision unit
+     * is evaluated, so the product of x and the standard precision unit must
+     * be less than 2**256. The result is rounded to the nearest increment.
      */
-    function safeDiv_dec_round(uint x, uint y)
+    function divideDecimalRound(uint x, uint y)
         internal
         pure
         returns (uint)
     {
-        return safeDiv_dec_round_private(x, y, UNIT);
+        return _divideDecimalRound(x, y, UNIT);
     }
 
     /**
-     * @return The result of dividing x by y, interpreting the operands as fixed point decimal numbers.
-     * @dev Throws an exception in case of overflow or zero divisor; x must be less than 2^256 / HIGH_PRECISION_UNIT.
-     * Internal rounding is to the nearest integer.
+     * @return The result of safely dividing x and y. The return value is as a rounded
+     * high precision decimal.
+     *
+     * @dev y is divided after the product of x and the high precision unit
+     * is evaluated, so the product of x and the high precision unit must
+     * be less than 2**256. The result is rounded to the nearest increment.
      */
-    function safeDiv_dec_round_high_precision(uint x, uint y)
+    function divideDecimalRoundPrecise(uint x, uint y)
         internal
         pure
         returns (uint)
     {
-        return safeDiv_dec_round_private(x, y, HIGH_PRECISION_UNIT);
+        return _divideDecimalRound(x, y, PRECISE_UNIT);
     }
 
     /**
      * @dev Convert a standard decimal representation to a high precision one.
-     * Throw an exception if the result would be out of range.
      */
-    function decToHighPrecisionDec(uint i)
+    function decimalToPreciseDecimal(uint i)
         internal
         pure
         returns (uint)
@@ -233,9 +241,8 @@ library SafeDecimalMath {
 
     /**
      * @dev Convert a high precision decimal to a standard decimal representation.
-     * Throw an exception if the result would be out of range.
      */
-    function highPrecisionDecToDec(uint i)
+    function preciseDecimalToDecimal(uint i)
         internal
         pure
         returns (uint)

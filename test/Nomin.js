@@ -102,4 +102,7 @@ contract('Nomin', async function(accounts) {
 		// The fee pool should also have the correct amount
 		assert.bnEqual(await HDRContract.balanceOf(FEE_ADDRESS), hdrFee);
 	});
+
+	it('should allow updating minimum issuance');
+	it('should set constructor params on deployment');
 });
