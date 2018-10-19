@@ -234,7 +234,7 @@ contract FeePool is Proxyable, SelfDestructible {
 
         // Open up the new fee period
         recentFeePeriods[0].feePeriodId = nextFeePeriodId;
-        recentFeePeriods[0].startingDebtIndex = havven.debtLedgerLength();
+        recentFeePeriods[0].startingDebtIndex = havven.havvenState().debtLedgerLength();
         recentFeePeriods[0].startTime = now;
 
         nextFeePeriodId = nextFeePeriodId.add(1);
@@ -247,17 +247,16 @@ contract FeePool is Proxyable, SelfDestructible {
         optionalProxy
         returns (bool)
     {
-        uint availableFees = feesAvailable(messageSender, currencyKey);
+        uint availableFees = feesAvailable(messageSender, "HDR");
 
         require(availableFees > 0, "No fees available for period, or fees already claimed");
 
-        lastFeeWithdrawal[msg.sender] = recentFeePeriods[1].feePeriodId;
+        lastFeeWithdrawal[messageSender] = recentFeePeriods[1].feePeriodId;
 
-        require(false, "NOT IMPLEMENTED");
         // Send them their fees
-        // _payFees(msg.sender, totalFees, currencyKey);
+        havven.payFees(messageSender, availableFees, currencyKey);
 
-        emitFeesClaimed(msg.sender, availableFees);
+        emitFeesClaimed(messageSender, availableFees);
 
         return true;
     }
@@ -435,7 +434,7 @@ contract FeePool is Proxyable, SelfDestructible {
         // What's the user's debt entry index and the debt they owe to the system
         uint initialDebtOwnership;
         uint debtEntryIndex;
-        (initialDebtOwnership, debtEntryIndex) = havven.issuanceData(account);
+        (initialDebtOwnership, debtEntryIndex) = havven.havvenState().issuanceData(account);
         uint debtBalance = havven.debtBalanceOf(account, "HDR");
         uint totalNomins = havven.totalIssuedNomins("HDR");
         uint userOwnershipPercentage = debtBalance.safeDiv_dec(totalNomins);

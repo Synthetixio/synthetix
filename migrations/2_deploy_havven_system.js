@@ -4,6 +4,7 @@ const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
 const Havven = artifacts.require('Havven');
 const HavvenEscrow = artifacts.require('HavvenEscrow');
+const IssuanceState = artifacts.require('IssuanceState');
 // const IssuanceController = artifacts.require('./IssuanceController.sol');
 const Nomin = artifacts.require('Nomin');
 const Owned = artifacts.require('Owned');
@@ -69,6 +70,16 @@ module.exports = async function(deployer, network, accounts) {
 	await feePoolProxy.setTarget(feePool.address, { from: owner });
 
 	// ----------------
+	// Issuance State
+	// ----------------
+	console.log('Deploying IssuanceState...');
+	// constructor(address _owner, address _associatedContract)
+	deployer.link(SafeDecimalMath, IssuanceState);
+	const issuanceState = await deployer.deploy(IssuanceState, owner, ZERO_ADDRESS, {
+		from: deployerAccount,
+	});
+
+	// ----------------
 	// Havven
 	// ----------------
 	console.log('Deploying HavvenProxy...');
@@ -82,12 +93,15 @@ module.exports = async function(deployer, network, accounts) {
 	});
 
 	console.log('Deploying Havven...');
-	// constructor(address _proxy, TokenState _tokenState, address _owner, ExchangeRates _exchangeRates, FeePool _feePool)
+	// constructor(address _proxy, TokenState _tokenState, IssuanceState _issuanceState,
+	//     address _owner, ExchangeRates _exchangeRates, FeePool _feePool
+	// )
 	deployer.link(SafeDecimalMath, Havven);
 	const havven = await deployer.deploy(
 		Havven,
 		havvenProxy.address,
 		havvenTokenState.address,
+		issuanceState.address,
 		owner,
 		ExchangeRates.address,
 		FeePool.address,
@@ -111,6 +125,11 @@ module.exports = async function(deployer, network, accounts) {
 	});
 
 	await havvenTokenState.setAssociatedContract(havven.address, { from: owner });
+
+	// ----------------------
+	// Connect Issuance State
+	// ----------------------
+	await issuanceState.setAssociatedContract(havven.address, { from: owner });
 
 	// ----------------------
 	// Connect Proxy
@@ -211,6 +230,7 @@ module.exports = async function(deployer, network, accounts) {
 		['Exchange Rates', ExchangeRates.address],
 		['Fee Pool', FeePool.address],
 		['Fee Pool Proxy', feePoolProxy.address],
+		['Issuance State', issuanceState.address],
 		['Havven Token State', havvenTokenState.address],
 		['Havven Proxy', havvenProxy.address],
 		['Havven', Havven.address],
