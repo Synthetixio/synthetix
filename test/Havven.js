@@ -50,17 +50,9 @@ contract('Havven', async function(accounts) {
 
 	it('should set constructor params on deployment', async function() {
 		// constructor(address _proxy, TokenState _tokenState, address _owner, ExchangeRates _exchangeRates, FeePool _feePool, Havven _oldHavven)
-		const instance = await Havven.new(
-			account1,
-			account2,
-			account3,
-			account4,
-			account5,
-			ZERO_ADDRESS,
-			{
-				from: deployerAccount,
-			}
-		);
+		const instance = await Havven.new(account1, account2, account3, account4, account5, {
+			from: deployerAccount,
+		});
 
 		assert.equal(await instance.proxy(), account1);
 		assert.equal(await instance.tokenState(), account2);
@@ -383,7 +375,7 @@ contract('Havven', async function(accounts) {
 		);
 
 		// Add stale period to the time to ensure we go stale.
-		await fastForward(await exchangeRates.rateStalePeriod());
+		await fastForward((await exchangeRates.rateStalePeriod()) + 1);
 
 		timestamp = await currentTime();
 
@@ -398,10 +390,10 @@ contract('Havven', async function(accounts) {
 		const amountOfHavvens = toUnit('10');
 		const amountOfEur = toUnit('0.8');
 
-		// Should now be able to convert from HAV to nEUR
+		// Should now be able to convert from HAV to nEUR since they are both not stale.
 		assert.bnEqual(await havven.effectiveValue(HAV, amountOfHavvens, nEUR), amountOfEur);
 
-		// But trying to convert from HAV to nAUD should fail
+		// But trying to convert from HAV to nAUD should fail as nAUD should be stale.
 		await assert.revert(havven.effectiveValue(HAV, toUnit('10'), nAUD));
 		await assert.revert(havven.effectiveValue(nAUD, toUnit('10'), HAV));
 	});
@@ -691,7 +683,7 @@ contract('Havven', async function(accounts) {
 		await havven.transferFrom(account2, account1, value, data, { from: account3 });
 
 		// Now jump forward in time so the rates are stale
-		await fastForward(await exchangeRates.rateStalePeriod());
+		await fastForward((await exchangeRates.rateStalePeriod()) + 1);
 
 		// Send a price update to guarantee we're not depending on values from outside this test.
 		const oracle = await exchangeRates.oracle();
@@ -803,45 +795,24 @@ contract('Havven', async function(accounts) {
 
 	// Issuance
 
-	// TODO: Adding the exchange rates together for the HDR exchange value increases the chance that the amount
-	//  to be issued will be < 1 (ie. the smallest unit possible). This means that the user will in effect end up issuing
-	//  0 as we can't do any amounts less than 1 in Solidity.
-	//  Generally storing everything in HDRs means that some nomins that need smaller units becomes the victim of lost value
-	//  But then again, maybe that is why we use 18 decimal places, so we can ignore the lost value?
-	it('should be possible to issue a small amount of nomins', async function() {
-		// Send a price update to guarantee we're not depending on values from outside this test.
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
+	it('Issuing too small an amount of nomins should revert', async function() {
+		await havven.transfer(account1, toUnit('1000'), { from: owner });
 
-		await exchangeRates.updateRates(
-			[nUSD, nAUD, nEUR, HAV],
-			['1', '0.5', '1.25', '0.1'].map(toUnit),
-			timestamp,
-			{ from: oracle }
-		);
+		// Note: The amount will likely be rounded to 0 in the debt register. This will revert.
+		// The exact amount depends on the Nomin exchange rate and the total supply.
+		await assert.revert(havven.issueNomins(nAUD, web3.utils.toBN('1'), { from: account1 }));
+	});
 
+	it('should allow the issuance of a small amount of nomins', async function() {
 		// Give some HAV to account1
 		await havven.transfer(account1, toUnit('1000'), { from: owner });
 
 		// account1 should be able to issue
-		await havven.issueNomins(nUSD, web3.utils.toBN('1'), { from: account1 });
-
-		const debt = await havven.debtBalanceOf(account1, nUSD);
-		assert.bnClose(debt, toUnit('1'), '15');
-
-		// const txn = await havven.issueNomins(nUSD, web3.utils.toBN('1'), { from: account1 });
-		// console.log('##### txn', txn);
-		// for (let i = 0; i < txn.logs.length; i++) {
-		// 	const result = txn.logs[i].args;
-		// 	console.log('##### txn ???', result);
-		// 	for (let j = 0; j < result.__length__; j++) {
-		// 		if (txn.logs[i].event === web3.utils.asciiToHex('SomethingElse') && j === 0) {
-		// 			console.log(`##### txn str ${i}`, web3.utils.hexToAscii(txn.logs[i].args[j]));
-		// 		} else {
-		// 			console.log(`##### txn ${i}`, txn.logs[i].args[j].toString());
-		// 		}
-		// 	}
-		// }
+		// Note: If a too small amount of nomins are issued here, the amount may be
+		// rounded to 0 in the debt register. This will revert. As such, there is a minimum
+		// number of nomins that need to be issued each time issue is invoked. The exact
+		// amount depends on the Nomin exchange rate and the total supply.
+		await havven.issueNomins(nAUD, web3.utils.toBN('5'), { from: account1 });
 	});
 
 	it('should be possible to issue the maximum amount of nomins via issueNomins', async function() {
@@ -1479,7 +1450,7 @@ contract('Havven', async function(accounts) {
 
 	it('should error when calculating maximum issuance when the HAV rate is stale', async function() {
 		// Add stale period to the time to ensure we go stale.
-		await fastForward(await exchangeRates.rateStalePeriod());
+		await fastForward((await exchangeRates.rateStalePeriod()) + 1);
 		const oracle = await exchangeRates.oracle();
 		const timestamp = await currentTime();
 
@@ -1495,7 +1466,7 @@ contract('Havven', async function(accounts) {
 
 	it('should error when calculating maximum issuance when the currency rate is stale', async function() {
 		// Add stale period to the time to ensure we go stale.
-		await fastForward(await exchangeRates.rateStalePeriod());
+		await fastForward((await exchangeRates.rateStalePeriod()) + 1);
 		const oracle = await exchangeRates.oracle();
 		const timestamp = await currentTime();
 
