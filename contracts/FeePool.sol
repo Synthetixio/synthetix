@@ -253,6 +253,9 @@ contract FeePool is Proxyable, SelfDestructible {
 
         lastFeeWithdrawal[messageSender] = recentFeePeriods[1].feePeriodId;
 
+        // Record the fee payment in our recentFeePeriods
+        _recordFeePayment(availableFees);
+
         // Send them their fees
         _payFees(messageSender, availableFees, currencyKey);
 
@@ -261,10 +264,38 @@ contract FeePool is Proxyable, SelfDestructible {
         return true;
     }
 
+    function _recordFeePayment(uint hdrAmount)
+        internal
+    {
+        // Don't assign to the parameter
+        uint remainingToAllocate = hdrAmount;
+
+        // Start at the oldest period and record the amount, moving to newer periods
+        // until we've exhausted the amount.
+        // The condition checks for overflow because we're going to 0 with an unsigned int.
+        for (uint8 i = FEE_PERIOD_LENGTH - 1; i < FEE_PERIOD_LENGTH; i--) {
+            uint delta = recentFeePeriods[i].feesToDistribute.sub(recentFeePeriods[i].feesClaimed);
+
+            if (delta > 0) {
+                // Take the smaller of the amount left to claim in the period and the amount we need to allocate
+                uint amountInPeriod = delta < remainingToAllocate ? delta : remainingToAllocate;
+
+                recentFeePeriods[i].feesClaimed = recentFeePeriods[i].feesClaimed.add(amountInPeriod);
+                remainingToAllocate = remainingToAllocate.sub(amountInPeriod);
+
+                // No need to continue iterating if we've recorded the whole amount;
+                if (remainingToAllocate == 0) return;
+            }
+        }
+
+        // If we hit this line, we've exhausted our fee periods, but still have more to allocate. Wat?
+        // Using require instead of assert because we can specify an error message.
+        require(remainingToAllocate == 0, "Internal error: Could not allocate all fees being recorded");
+    }
+
     function _payFees(address account, uint hdrAmount, bytes4 destinationCurrencyKey)
         internal
         notFeeAddress(account)
-        returns (bool)
     {
         require(account != address(0), "Account can't be 0");
         require(account != address(this), "Can't send fees to fee pool");
@@ -292,8 +323,6 @@ contract FeePool is Proxyable, SelfDestructible {
 
         // Call the ERC223 transfer callback if needed
         destinationNomin.triggerTokenFallbackIfNeeded(FEE_ADDRESS, account, destinationAmount);
-
-        return true;
     }
 
     /**

@@ -6,6 +6,39 @@ const Nomin = artifacts.require('Nomin');
 const { currentTime, fastForward, fromUnit, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 
 contract.only('FeePool', async function(accounts) {
+	// Updates rates with defaults so they're not stale.
+	const updateRatesWithDefaults = async () => {
+		const timestamp = await currentTime();
+
+		await exchangeRates.updateRates(
+			[nUSD, nAUD, nEUR, HAV],
+			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			timestamp,
+			{
+				from: oracle,
+			}
+		);
+	};
+
+	const logFeePeriods = async () => {
+		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
+
+		console.log('------------------');
+		for (let i = 0; i < length; i++) {
+			console.log(`Fee Period [${i}]:`);
+			const period = await feePool.recentFeePeriods(i);
+
+			for (const key of Object.keys(period)) {
+				if (isNaN(parseInt(key))) {
+					console.log(`  ${key}: ${period[key]}`);
+				}
+			}
+
+			console.log();
+		}
+		console.log('------------------');
+	};
+
 	const [nUSD, nAUD, nEUR, HAV, HDR] = ['nUSD', 'nAUD', 'nEUR', 'HAV', 'HDR'].map(
 		web3.utils.asciiToHex
 	);
@@ -37,16 +70,7 @@ contract.only('FeePool', async function(accounts) {
 		HDRContract = await Nomin.at(await havven.nomins(HDR));
 
 		// Send a price update to guarantee we're not stale.
-		const timestamp = await currentTime();
-
-		await exchangeRates.updateRates(
-			[nUSD, nAUD, nEUR, HAV],
-			['1', '0.5', '1.25', '0.1'].map(toUnit),
-			timestamp,
-			{
-				from: oracle,
-			}
-		);
+		await updateRatesWithDefaults();
 	});
 
 	it('should set constructor params on deployment', async function() {
@@ -418,7 +442,7 @@ contract.only('FeePool', async function(accounts) {
 		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
 	});
 
-	it.only('should allow a user to claim their fees in nUSD', async function() {
+	it('should allow a user to claim their fees in nUSD', async function() {
 		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 		const feePeriodDuration = await feePool.feePeriodDuration();
 
@@ -445,16 +469,7 @@ contract.only('FeePool', async function(accounts) {
 			await feePool.closeCurrentFeePeriod({ from: feeAuthority });
 
 			// Update rates so they're not stale.
-			const timestamp = await currentTime();
-
-			await exchangeRates.updateRates(
-				[nUSD, nAUD, nEUR, HAV],
-				['1', '0.5', '1.25', '0.1'].map(toUnit),
-				timestamp,
-				{
-					from: oracle,
-				}
-			);
+			await updateRatesWithDefaults();
 		}
 
 		// Assert that we have correct values in the fee pool
@@ -497,23 +512,14 @@ contract.only('FeePool', async function(accounts) {
 			await feePool.closeCurrentFeePeriod({ from: feeAuthority });
 
 			// Update rates so they're not stale.
-			const timestamp = await currentTime();
-
-			await exchangeRates.updateRates(
-				[nUSD, nAUD, nEUR, HAV],
-				['1', '0.5', '1.25', '0.1'].map(toUnit),
-				timestamp,
-				{
-					from: oracle,
-				}
-			);
+			await updateRatesWithDefaults();
 		}
 
 		// Assert that we have correct values in the fee pool
 		const feesAvailable = await feePool.feesAvailable(owner, nAUD);
 		assert.bnClose(feesAvailable, totalFees.div(web3.utils.toBN('2')), '6');
 
-		const oldNominBalance = await nUSDContract.balanceOf(owner);
+		const oldNominBalance = await nAUDContract.balanceOf(owner);
 
 		// Now we should be able to claim them.
 		await feePool.claimFees(nAUD, { from: owner });
@@ -521,8 +527,113 @@ contract.only('FeePool', async function(accounts) {
 		// We should have our fees
 		assert.bnEqual(await nAUDContract.balanceOf(owner), oldNominBalance.add(feesAvailable));
 	});
-	it('should revert when a user tries to double claim their fees');
-	it('should track fee withdrawals correctly');
+
+	it('should revert when a user tries to double claim their fees', async function() {
+		// Issue 10,000 nUSD.
+		await havven.issueNomins(nUSD, toUnit('10000'), { from: owner });
+
+		// Do a single transfer of all our nomins to generate a fee.
+		await nUSDContract.transfer(account1, toUnit('10000'), { from: owner });
+
+		// Assert that the correct fee is in the fee pool.
+		const fee = await HDRContract.balanceOf(FEE_ADDRESS);
+		const [pendingFees] = await feePool.feesByPeriod(owner);
+
+		assert.bnEqual(pendingFees, fee);
+
+		// Claiming should revert because the fee period is still open
+		await assert.revert(feePool.claimFees(nUSD, { from: owner }));
+
+		// So close out the period
+		const feePeriodDuration = await feePool.feePeriodDuration();
+		await fastForward(feePeriodDuration);
+		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+		await updateRatesWithDefaults();
+
+		// Then claim them
+		await feePool.claimFees(nUSD, { from: owner });
+
+		// But claiming again should revert
+		await assert.revert(feePool.claimFees(nUSD, { from: owner }));
+	});
+
+	it('should revert when a user has no fees to claim but tries to claim them', async function() {
+		await assert.revert(feePool.claimFees(nUSD, { from: owner }));
+	});
+
+	it.only('should track fee withdrawals correctly', async function() {
+		const amount = toUnit('10000');
+
+		// Issue nUSD for two different accounts.
+		await havven.transfer(account1, toUnit('1000000'), { from: owner });
+
+		await havven.issueNomins(nUSD, amount, { from: owner });
+		await havven.issueNomins(nUSD, amount, { from: account1 });
+
+		// Generate a fee.
+		await nUSDContract.transfer(account2, amount, { from: owner });
+
+		// So close out the period
+		const feePeriodDuration = await feePool.feePeriodDuration();
+		await fastForward(feePeriodDuration);
+		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+		await updateRatesWithDefaults();
+
+		// Then claim the owner's fees
+		await feePool.claimFees(nUSD, { from: owner });
+
+		// At this stage there should be a single pending period, and one that's half claimed.
+		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
+		const feeInUSD = amount.sub(await feePool.amountReceivedFromTransfer(amount));
+		const hdrFee = await havven.effectiveValue(nUSD, feeInUSD, HDR);
+
+		// First period
+		const firstPeriod = await feePool.recentFeePeriods(0);
+
+		assert.bnEqual(firstPeriod.feePeriodId, 2);
+		assert.bnEqual(firstPeriod.startingDebtIndex, 2);
+		assert.bnEqual(firstPeriod.feesToDistribute, 0);
+		assert.bnEqual(firstPeriod.feesClaimed, 0);
+
+		// Second period
+		const secondPeriod = await feePool.recentFeePeriods(1);
+
+		assert.bnEqual(secondPeriod.feePeriodId, 1);
+		assert.bnEqual(secondPeriod.startingDebtIndex, 0);
+		assert.bnEqual(secondPeriod.feesToDistribute, hdrFee);
+		assert.bnEqual(secondPeriod.feesClaimed, hdrFee.div(web3.utils.toBN('2')));
+
+		// Everything else should be zero
+		for (let i = 2; i < length; i++) {
+			const period = await feePool.recentFeePeriods(i);
+
+			assert.bnEqual(period.feePeriodId, 0);
+			assert.bnEqual(period.startingDebtIndex, 0);
+			assert.bnEqual(period.feesToDistribute, 0);
+			assert.bnEqual(period.feesClaimed, 0);
+		}
+
+		// And once we roll the periods forward enough we should be able to see the correct
+		// roll over happening.
+		for (let i = 0; i < length * 2; i++) {
+			await fastForward(feePeriodDuration);
+			await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+		}
+
+		// All periods except last should now be 0
+		for (let i = 0; i < length - 1; i++) {
+			const period = await feePool.recentFeePeriods(i);
+
+			assert.bnEqual(period.feesToDistribute, 0);
+			assert.bnEqual(period.feesClaimed, 0);
+		}
+
+		// Last period should have rolled over fees to distribute
+		const period = await feePool.recentFeePeriods(length - 1);
+
+		assert.bnEqual(period.feesToDistribute, hdrFee.div(web3.utils.toBN('2')));
+		assert.bnEqual(period.feesClaimed, 0);
+	});
 	it('should correctly calculate the transferFeeIncurred using the transferFeeRate');
 	it('should correctly calculate the transferPlusFee using the transferFeeRate');
 	it('should correctly calculate the amountReceivedFromTransfer using the transferFeeRate');
