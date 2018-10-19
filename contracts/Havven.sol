@@ -553,45 +553,7 @@ contract Havven is ExternStateToken {
         return true;
     }
 
-    function payFees(address account, uint hdrAmount, bytes4 destinationCurrencyKey)
-        external 
-        onlyFeePool
-        notFeeAddress(account)
-        returns (bool)
-    {
-        require(account != address(0), "Account can't be 0");
-        require(account != address(this), "Can't send fees to Havven");
-        require(account != address(proxy), "Can't send fees to proxy");
-
-        Nomin hdrNomin = nomins["HDR"];
-        Nomin destinationNomin = nomins[destinationCurrencyKey];
-        
-        address feeAddress = feePool.FEE_ADDRESS();
-
-        // Note: We don't need to check the fee pool balance as the burn() below will do a safe subtraction which requires 
-        // the subtraction to not overflow, which would happen if the balance is not sufficient.
-
-        // Burn the source amount
-        hdrNomin.burn(feeAddress, hdrAmount);
-
-        // How much should they get in the destination currency?
-        uint destinationAmount = effectiveValue("HDR", hdrAmount, destinationCurrencyKey);
-
-        // There's no fee on withdrawing fees, as that'd be way too meta.
-
-        // Mint their new nomins
-        destinationNomin.issue(account, destinationAmount);
-
-        // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
-
-        // Call the ERC223 transfer callback if needed
-        destinationNomin.triggerTokenFallbackIfNeeded(feeAddress, account, destinationAmount);
-
-        // No event because the FeePool emits an event.
-
-        return true;
-    }
-
+   
     function _addToDebtRegister(bytes4 currencyKey, uint amount) 
         internal
         optionalProxy
@@ -889,13 +851,13 @@ contract Havven is ExternStateToken {
         _;
     }
 
-    modifier notFeeAddress(address account) {
-        require(account != feePool.FEE_ADDRESS(), "Fee address not allowed");
+    modifier onlyFeePool() {
+        require(msg.sender == address(feePool), "Only fee pool allowed");
         _;
     }
 
-    modifier onlyFeePool() {
-        require(msg.sender == address(feePool), "Only fee pool allowed");
+    modifier notFeeAddress(address account) {
+        require(account != feePool.FEE_ADDRESS(), "Fee address not allowed");
         _;
     }
 

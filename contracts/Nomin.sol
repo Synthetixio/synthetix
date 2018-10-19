@@ -250,7 +250,7 @@ contract Nomin is ExternStateToken {
     // Allow havven to issue a certain number of nomins from an account.
     function issue(address account, uint amount)
         external
-        onlyHavvenOrNomin
+        onlyHavvenOrFeePool
     {
         tokenState.setBalanceOf(account, tokenState.balanceOf(account).add(amount));
         totalSupply = totalSupply.add(amount);
@@ -261,7 +261,7 @@ contract Nomin is ExternStateToken {
     // Allow havven or another nomin contract to burn a certain number of nomins from an account.
     function burn(address account, uint amount)
         external
-        onlyHavvenOrNomin
+        onlyHavvenOrFeePool
     {
         tokenState.setBalanceOf(account, tokenState.balanceOf(account).sub(amount));
         totalSupply = totalSupply.sub(amount);
@@ -273,7 +273,7 @@ contract Nomin is ExternStateToken {
     // exchange as well as transfer
     function triggerTokenFallbackIfNeeded(address sender, address recipient, uint amount) 
         external
-        onlyHavven
+        onlyHavvenOrFeePool
     {
         bytes memory empty;
         callTokenFallbackIfNeeded(sender, recipient, amount, empty);
@@ -281,28 +281,11 @@ contract Nomin is ExternStateToken {
 
     /* ========== MODIFIERS ========== */
 
-    modifier onlyHavvenOrNomin() {
+    modifier onlyHavvenOrFeePool() {
         bool isHavven = msg.sender == address(havven);
-        bool isNomin = false;
+        bool isFeePool = msg.sender == address(feePool);
 
-        // Gas optimisation - No point iterating nomins if we've already found it.
-        if (!isHavven) {
-            // No need to repeatedly call this function either
-            uint availableNominCount = havven.availableNominCount();
-            for (uint8 i = 0; i < availableNominCount; i++) {
-                if (havven.availableNomins(i) == msg.sender) {
-                    isNomin = true;
-                    break;
-                }
-            }
-        }
-
-        require(isHavven || isNomin, "Only the Havven or Nomin contracts can perform this action");
-        _;
-    }
-
-    modifier onlyHavven() {
-        require(msg.sender == address(havven), "Only the Havven contract can perform this action");
+        require(isHavven || isFeePool, "Only the Havven or FeePool contracts can perform this action");
         _;
     }
 

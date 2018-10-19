@@ -254,9 +254,44 @@ contract FeePool is Proxyable, SelfDestructible {
         lastFeeWithdrawal[messageSender] = recentFeePeriods[1].feePeriodId;
 
         // Send them their fees
-        havven.payFees(messageSender, availableFees, currencyKey);
+        _payFees(messageSender, availableFees, currencyKey);
 
         emitFeesClaimed(messageSender, availableFees);
+
+        return true;
+    }
+
+    function _payFees(address account, uint hdrAmount, bytes4 destinationCurrencyKey)
+        internal
+        notFeeAddress(account)
+        returns (bool)
+    {
+        require(account != address(0), "Account can't be 0");
+        require(account != address(this), "Can't send fees to fee pool");
+        require(account != address(proxy), "Can't send fees to proxy");
+        require(account != address(havven), "Can't send fees to havven");
+
+        Nomin hdrNomin = havven.nomins("HDR");
+        Nomin destinationNomin = havven.nomins(destinationCurrencyKey);
+        
+        // Note: We don't need to check the fee pool balance as the burn() below will do a safe subtraction which requires 
+        // the subtraction to not overflow, which would happen if the balance is not sufficient.
+
+        // Burn the source amount
+        hdrNomin.burn(FEE_ADDRESS, hdrAmount);
+
+        // How much should they get in the destination currency?
+        uint destinationAmount = havven.effectiveValue("HDR", hdrAmount, destinationCurrencyKey);
+
+        // There's no fee on withdrawing fees, as that'd be way too meta.
+
+        // Mint their new nomins
+        destinationNomin.issue(account, destinationAmount);
+
+        // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
+
+        // Call the ERC223 transfer callback if needed
+        destinationNomin.triggerTokenFallbackIfNeeded(FEE_ADDRESS, account, destinationAmount);
 
         return true;
     }
@@ -478,6 +513,11 @@ contract FeePool is Proxyable, SelfDestructible {
     modifier onlyHavven
     {
         require(msg.sender == address(havven), "Only the havven contract can perform this action");
+        _;
+    }
+
+    modifier notFeeAddress(address account) {
+        require(account != FEE_ADDRESS, "Fee address not allowed");
         _;
     }
 
