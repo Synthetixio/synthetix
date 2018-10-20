@@ -154,16 +154,20 @@ module.exports = async function(deployer, network, accounts) {
 
 	for (const currencyKey of currencyKeys) {
 		console.log(`Deploying NominTokenState for ${currencyKey}...`);
-		const tokenState = await TokenState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
+		const tokenState = await deployer.deploy(TokenState, owner, ZERO_ADDRESS, {
+			from: deployerAccount,
+		});
 
 		console.log(`Deploying NominProxy for ${currencyKey}...`);
-		const proxy = await Proxy.new(owner, { from: deployerAccount });
+		const proxy = await deployer.deploy(Proxy, owner, { from: deployerAccount });
 
 		console.log(`Deploying ${currencyKey} Nomin...`);
 
 		// constructor(address _proxy, TokenState _tokenState, Havven _havven, FeePool _feePool,
-		//     string _tokenName, string _tokenSymbol, address _owner, bytes4 _currencyKey
-		const nomin = await Nomin.new(
+		//	string _tokenName, string _tokenSymbol, uint _decimals, address _owner, bytes4 _currencyKey
+		// )
+		const nomin = await deployer.deploy(
+			Nomin,
 			proxy.address,
 			tokenState.address,
 			havven.address,
