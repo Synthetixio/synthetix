@@ -211,6 +211,10 @@ contract FeePool is Proxyable, SelfDestructible {
         FeePeriod memory lastFeePeriod = recentFeePeriods[FEE_PERIOD_LENGTH - 1];
 
         // Any unclaimed fees from the last period in the array roll back one period.
+        // Because of the subtraction here, they're effectively proportionally redistributed to those who
+        // have already claimed from the old period, available in the new period.
+        // The subtraction is important so we don't create a ticking time bomb of an ever growing
+        // number of fees that can never decrease and will eventually overflow at the end of the fee pool.
         recentFeePeriods[FEE_PERIOD_LENGTH - 2].feesToDistribute = lastFeePeriod.feesToDistribute
             .sub(lastFeePeriod.feesClaimed)
             .add(secondLastFeePeriod.feesToDistribute);
@@ -218,8 +222,9 @@ contract FeePool is Proxyable, SelfDestructible {
         // Shift the previous fee periods across to make room for the new one.
         // Condition checks for overflow when uint subtracts one from zero
         // Could be written with int8 instead of uint8, but then we have to convert everywhere
-        // so it felt better to just change the condition to check for overflow after zero.
-        for (uint8 i = FEE_PERIOD_LENGTH - 2; i <= FEE_PERIOD_LENGTH; i--) {
+        // so it felt better from a gas perspective to just change the condition to check
+        // for overflow after subtracting one from zero.
+        for (uint8 i = FEE_PERIOD_LENGTH - 2; i < FEE_PERIOD_LENGTH; i--) {
             uint8 next = i + 1;
 
             recentFeePeriods[next].feePeriodId = recentFeePeriods[i].feePeriodId;
@@ -289,8 +294,8 @@ contract FeePool is Proxyable, SelfDestructible {
         }
 
         // If we hit this line, we've exhausted our fee periods, but still have more to allocate. Wat?
-        // Using require instead of assert because we can specify an error message.
-        require(remainingToAllocate == 0, "Internal error: Could not allocate all fees being recorded");
+        // If this happens it's a definite bug in the code, so assert instead of require.
+        assert(remainingToAllocate == 0);
     }
 
     function _payFees(address account, uint hdrAmount, bytes4 destinationCurrencyKey)
@@ -350,7 +355,7 @@ contract FeePool is Proxyable, SelfDestructible {
      * a specified value.
      * @param value The value you want the recipient to receive
      */
-    function transferPlusFee(uint value)
+    function transferredAmountToReceive(uint value)
         external
         view
         returns (uint)
@@ -395,7 +400,7 @@ contract FeePool is Proxyable, SelfDestructible {
      * a specified value.
      * @param value The value you want the recipient to receive
      */
-    function exchangePlusFee(uint value)
+    function exchangedAmountToReceive(uint value)
         external
         view
         returns (uint)
@@ -511,16 +516,17 @@ contract FeePool is Proxyable, SelfDestructible {
 
         // Go through our fee periods and figure out what we owe them.
         // The [0] fee period does is not yet ready to claim, but it is a fee period that they can have
-        // fees owing for.
+        // fees owing for, so we need to report on it anyway.
         for (uint8 i = 0; i < FEE_PERIOD_LENGTH; i++) {
             // Were they a part of this period in its entirety?
             // We don't allow pro-rata participation to reduce the ability to game the system by
             // issuing and burning multiple times in a period or close to the ends of periods.
-            if (recentFeePeriods[i].startingDebtIndex >= debtEntryIndex &&
+            if (recentFeePeriods[i].startingDebtIndex > debtEntryIndex &&
                 lastFeeWithdrawal[account] < recentFeePeriods[i].feePeriodId) {
 
                 // And since they were, they're entitled to their percentage of the fees in this period
-                uint feesFromPeriodWithoutPenalty = recentFeePeriods[i].feesToDistribute.multiplyDecimal(userOwnershipPercentage);
+                uint feesFromPeriodWithoutPenalty = recentFeePeriods[i].feesToDistribute
+                    .multiplyDecimal(userOwnershipPercentage);
 
                 // Less their penalty if they have one.
                 uint penaltyFromPeriod = feesFromPeriodWithoutPenalty.multiplyDecimal(penalty);
