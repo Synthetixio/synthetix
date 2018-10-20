@@ -1258,7 +1258,7 @@ contract('Havven', async function(accounts) {
 	});
 
 	// TODO: This test is a WIP but should pass.
-	it('should correctly calculate debt in a high volume issuance and burn scenario', async function() {
+	it.only('should correctly calculate debt in a high volume issuance and burn scenario', async function() {
 		const getRandomInt = (min, max) => {
 			return min + Math.floor(Math.random() * Math.floor(max));
 		};
@@ -1295,7 +1295,7 @@ contract('Havven', async function(accounts) {
 		// await havven.setIssuer(account2, true, { from: owner });
 
 		// const nominsIssuedEachTime = web3.utils.toBN('10000');
-		const loopCount = 4;
+		const loopCount = 140;
 		// let expectedDebt = web3.utils.toBN(0);
 		let expectedDebt = toUnit('900000');
 
@@ -1332,24 +1332,24 @@ contract('Havven', async function(accounts) {
 			// 	HAVRate
 			// )}\t\tnUSD: ${fromUnit(nUSDRate)}`;
 			// console.log(`#### Rates: ${rates}`);
-			await exchangeRates.updateRates(
-				[nUSD, nAUD, nEUR],
-				[nUSDRate, nAUDRate, nEURRate],
-				timestamp,
-				{ from: oracle }
-			);
+			// await exchangeRates.updateRates(
+			// 	[nUSD, nAUD, nEUR],
+			// 	[nUSDRate, nAUDRate, nEURRate],
+			// 	timestamp,
+			// 	{ from: oracle }
+			// );
 			console.log(`#### HDR rate: ${fromUnit(await exchangeRates.rateForCurrency(HDR))}`);
 
 			// const amount = web3.utils.toBN(getRandomInt(100000, 800000000));
-			const amount = toUnit('0.00000000000008');
+			const amount = toUnit('0.8');
 			console.log(`##### Adding: ${fromUnit(amount)} ...`);
 			await havven.issueNomins(nUSD, amount, { from: account1 });
 
 			const remainingIssuableNomins2 = await havven.remainingIssuableNomins(account1, nUSD);
 			console.log(`##### remainingIssuableNomins2: ${fromUnit(remainingIssuableNomins2)}`);
-			console.log(`##### debt array after account1 issued: ${await getDebtLedgerArray()}`);
-			await havven.issueNomins(nUSD, amount, { from: account2 });
-			console.log(`##### debt array after account2 issued: ${await getDebtLedgerArray()}`);
+			// console.log(`##### debt array after account1 issued: ${await getDebtLedgerArray()}`);
+			// await havven.issueNomins(nUSD, amount, { from: account2 });
+			// console.log(`##### debt array after account2 issued: ${await getDebtLedgerArray()}`);
 
 			console.log(`#### Issuance Data: `, await getIssuanceData());
 			const account1nUSDBalance = await nUSDContract.balanceOf(account1);
