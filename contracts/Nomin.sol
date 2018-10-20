@@ -33,11 +33,8 @@ pragma solidity 0.4.25;
 import "./ExternStateToken.sol";
 import "./FeePool.sol";
 import "./Havven.sol";
-// import "./SafeDecimalMath.sol";
 
 contract Nomin is ExternStateToken {
-
-    // using SafeDecimalMath for uint;
 
     /* ========== STATE VARIABLES ========== */
 
@@ -47,16 +44,14 @@ contract Nomin is ExternStateToken {
     // Currency key which identifies this Nomin to the Havven system
     bytes4 public currencyKey;
 
-    // Nomin transfers incur a 15 bp fee by default.
-    uint constant TRANSFER_FEE_RATE = 15 * 10 ** uint(18) / 10000;
-    // uint constant TRANSFER_FEE_RATE = 15 * UNIT / 10000;
+    uint constant DECIMALS = 18;
 
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _proxy, TokenState _tokenState, Havven _havven, FeePool _feePool,
         string _tokenName, string _tokenSymbol, address _owner, bytes4 _currencyKey
     )
-        ExternStateToken(_proxy, _tokenState, _tokenName, _tokenSymbol, 0, _owner)
+        ExternStateToken(_proxy, _tokenState, _tokenName, _tokenSymbol, 0, DECIMALS, _owner)
         public
     {
         require(_proxy != 0, "_proxy cannot be 0");

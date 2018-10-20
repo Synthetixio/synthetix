@@ -148,6 +148,7 @@ contract Havven is ExternStateToken {
     uint constant HAVVEN_SUPPLY = 1e8 * SafeDecimalMath.unit();
     string constant TOKEN_NAME = "Havven";
     string constant TOKEN_SYMBOL = "HAV";
+    uint constant DECIMALS = 18;
     
     // ========== CONSTRUCTOR ==========
 
@@ -160,7 +161,7 @@ contract Havven is ExternStateToken {
     constructor(address _proxy, TokenState _tokenState, HavvenState _havvenState, 
         address _owner, ExchangeRates _exchangeRates, FeePool _feePool
     )
-        ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, _owner)
+        ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, DECIMALS, _owner)
         public
     {
         havvenState = _havvenState;

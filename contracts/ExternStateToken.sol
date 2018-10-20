@@ -47,11 +47,11 @@ contract ExternStateToken is SelfDestructible, Proxyable, TokenFallbackCaller {
     /* Stores balances and allowances. */
     TokenState public tokenState;
 
-    /* Other ERC20 fields.
-     * Note that the decimals field is defined in SafeDecimalMath.*/
+    /* Other ERC20 fields. */
     string public name;
     string public symbol;
     uint public totalSupply;
+    uint public decimals;
 
     /**
      * @dev Constructor.
@@ -64,15 +64,17 @@ contract ExternStateToken is SelfDestructible, Proxyable, TokenFallbackCaller {
      */
     constructor(address _proxy, TokenState _tokenState,
                 string _name, string _symbol, uint _totalSupply,
-                address _owner)
+                uint _decimals, address _owner)
         SelfDestructible(_owner)
         Proxyable(_proxy, _owner)
         public
     {
+        tokenState = _tokenState;
+
         name = _name;
         symbol = _symbol;
         totalSupply = _totalSupply;
-        tokenState = _tokenState;
+        decimals = _decimals;
     }
 
     /* ========== VIEWS ========== */
