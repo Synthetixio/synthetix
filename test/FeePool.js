@@ -5,7 +5,7 @@ const Nomin = artifacts.require('Nomin');
 
 const { currentTime, fastForward, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 
-contract.only('FeePool', async function(accounts) {
+contract('FeePool', async function(accounts) {
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
 		const timestamp = await currentTime();
@@ -339,7 +339,6 @@ contract.only('FeePool', async function(accounts) {
 
 	it('should correctly close the current fee period when there are more than FEE_PERIOD_LENGTH periods', async function() {
 		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
-		const feePeriodDuration = await feePool.feePeriodDuration();
 
 		// Issue 10,000 nUSD.
 		await havven.issueNomins(nUSD, toUnit('10000'), { from: owner });

@@ -1259,9 +1259,9 @@ contract('Havven', async function(accounts) {
 
 	// TODO: This test is a WIP but should pass.
 	it('should correctly calculate debt in a high volume issuance and burn scenario', async function() {
-		const getRandomInt = (min, max) => {
-			return min + Math.floor(Math.random() * Math.floor(max));
-		};
+		// const getRandomInt = (min, max) => {
+		// 	return min + Math.floor(Math.random() * Math.floor(max));
+		// };
 
 		const getDebtLedgerArray = async () => {
 			const length = await havven.debtLedgerLength();
