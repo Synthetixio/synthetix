@@ -267,7 +267,20 @@ const assertRevert = async blockOrPromise => {
 		errorCaught = true;
 	}
 
-	assert.equal(errorCaught, true, 'Operation did not revert');
+	assert.equal(errorCaught, true, 'Operation did not revert as expected');
+};
+
+const assertInvalidOpcode = async blockOrPromise => {
+	let errorCaught = false;
+	try {
+		const result = typeof blockOrPromise === 'function' ? blockOrPromise() : blockOrPromise;
+		await result;
+	} catch (error) {
+		assert.include(error.message, 'invalid opcode');
+		errorCaught = true;
+	}
+
+	assert.equal(errorCaught, true, 'Operation did not cause an invalid opcode error as expected');
 };
 
 module.exports = {
@@ -291,6 +304,7 @@ module.exports = {
 	assertBNNotEqual,
 	assertBNClose,
 	assertDeepEqual,
+	assertInvalidOpcode,
 	assertUnitEqual,
 	assertUnitNotEqual,
 	assertRevert,

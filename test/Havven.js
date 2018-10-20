@@ -15,7 +15,7 @@ const {
 	ZERO_ADDRESS,
 } = require('../utils/testUtils');
 
-contract.only('Havven', async function(accounts) {
+contract('Havven', async function(accounts) {
 	const [nUSD, nAUD, nEUR, HAV, HDR, nXYZ] = ['nUSD', 'nAUD', 'nEUR', 'HAV', 'HDR', 'nXYZ'].map(
 		web3.utils.asciiToHex
 	);

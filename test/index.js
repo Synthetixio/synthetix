@@ -5,6 +5,7 @@ const {
 	assertBNNotEqual,
 	assertBNClose,
 	assertDeepEqual,
+	assertInvalidOpcode,
 	assertUnitEqual,
 	assertUnitNotEqual,
 	assertRevert,
@@ -23,6 +24,7 @@ assert.bnClose = assertBNClose;
 assert.deepEqual = assertDeepEqual;
 assert.etherEqual = assertUnitEqual;
 assert.etherNotEqual = assertUnitNotEqual;
+assert.invalidOpcode = assertInvalidOpcode;
 assert.unitEqual = assertUnitEqual;
 assert.unitNotEqual = assertUnitNotEqual;
 assert.revert = assertRevert;
