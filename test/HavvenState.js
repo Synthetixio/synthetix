@@ -1,13 +1,10 @@
-const ExchangeRates = artifacts.require('ExchangeRates');
-const Escrow = artifacts.require('HavvenEscrow');
-const FeePool = artifacts.require('FeePool');
 const Havven = artifacts.require('Havven');
 const HavvenState = artifacts.require('HavvenState');
 const Nomin = artifacts.require('Nomin');
 
 const { toUnit } = require('../utils/testUtils');
 
-contract.only('HavvenState', async function(accounts) {
+contract('HavvenState', async function(accounts) {
 	const nUSD = web3.utils.asciiToHex('nUSD');
 
 	const [deployerAccount, owner, account1, account2] = accounts;
