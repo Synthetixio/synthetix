@@ -110,19 +110,19 @@ const fromUnit = amount => web3.utils.fromWei(amount, 'ether');
 /*
  * Multiplies x and y interpreting them as fixed point decimal numbers.
  */
-const multiplyDecimal = (x, y) => {
+const multiplyDecimal = (x, y, unit = UNIT) => {
 	const xBN = BN.isBN(x) ? x : new BN(x);
 	const yBN = BN.isBN(y) ? y : new BN(y);
-	return xBN.mul(yBN).div(UNIT);
+	return xBN.mul(yBN).div(unit);
 };
 
 /*
  * Multiplies x and y interpreting them as fixed point decimal numbers.
  */
-const divideDecimal = (x, y) => {
+const divideDecimal = (x, y, unit = UNIT) => {
 	const xBN = BN.isBN(x) ? x : new BN(x);
 	const yBN = BN.isBN(y) ? y : new BN(y);
-	return xBN.mul(UNIT).div(yBN);
+	return xBN.mul(unit).div(yBN);
 };
 
 /**
@@ -196,8 +196,14 @@ const assertBNClose = (actualBN, expectedBN, varianceParam = '5') => {
 
 	const variance = BN.isBN(varianceParam) ? varianceParam : new BN(varianceParam);
 
-	assert.ok(actual.gte(expected.sub(variance)), 'Number is too small to be close');
-	assert.ok(actual.lte(expected.add(variance)), 'Number is too large to be close');
+	assert.ok(
+		actual.gte(expected.sub(variance)),
+		`Number is too small to be close. actual: ${actual} expected: ${expected}`
+	);
+	assert.ok(
+		actual.lte(expected.add(variance)),
+		`Number is too large to be close. actual: ${actual} expected: ${expected}`
+	);
 };
 
 /**

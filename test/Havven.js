@@ -1257,8 +1257,89 @@ contract('Havven', async function(accounts) {
 		assert.bnClose(debt, expectedDebt);
 	});
 
-	// TODO: This test is a WIP but should pass.
-	it.only('should correctly calculate debt in a high volume issuance and burn scenario', async function() {
+	// These tests take a long time to run
+	// ****************************************
+
+	it('should correctly calculate debt in a high volume issuance and burn scenario', async function() {
+		const totalSupply = await havven.totalSupply();
+
+		// Give only 100 Havvens to account2
+		const account2Havvens = toUnit('100');
+
+		// Give the vast majority to account1 (ie. 99,999,900)
+		const account1Havvens = totalSupply.sub(account2Havvens);
+
+		await havven.transfer(account1, account1Havvens, { from: owner }); // Issue the massive majority to account1
+		await havven.transfer(account2, account2Havvens, { from: owner }); // Issue a small amount to account2
+
+		const account1AmountToIssue = await havven.maxIssuableNomins(account1, nUSD);
+		await havven.issueMaxNomins(nUSD, { from: account1 });
+		const debtBalance1 = await havven.debtBalanceOf(account1, nUSD);
+		assert.bnEqual(debtBalance1, account1AmountToIssue);
+
+		let expectedDebtForAccount2 = web3.utils.toBN('0');
+		const totalTimesToIssue = 40;
+		for (let i = 0; i < totalTimesToIssue; i++) {
+			const amount = toUnit('0.000000000000000002');
+			await havven.issueNomins(nUSD, amount, { from: account2 });
+			expectedDebtForAccount2 = expectedDebtForAccount2.add(amount);
+		}
+		const debtBalance2 = await havven.debtBalanceOf(account2, nUSD);
+
+		// Allow '30'. This is an extreme scenario so we expect the difference to be greater than usual.
+		assert.bnClose(debtBalance2, expectedDebtForAccount2, '30');
+	});
+
+	it.only('should correctly calculate debt in a high issuance and burn scenario', async function() {
+		const getRandomInt = (min, max) => {
+			return min + Math.floor(Math.random() * Math.floor(max));
+		};
+
+		const totalSupply = await havven.totalSupply();
+		const account2Havvens = toUnit('120000');
+		const account1Havvens = totalSupply.sub(account2Havvens);
+
+		await havven.transfer(account1, account1Havvens, { from: owner }); // Issue the massive majority to account1
+		await havven.transfer(account2, account2Havvens, { from: owner }); // Issue a small amount to account2
+
+		const account1AmountToIssue = await havven.maxIssuableNomins(account1, nUSD);
+		await havven.issueMaxNomins(nUSD, { from: account1 });
+		const debtBalance1 = await havven.debtBalanceOf(account1, nUSD);
+		assert.bnClose(debtBalance1, account1AmountToIssue);
+
+		let expectedDebtForAccount2 = web3.utils.toBN('0');
+		const totalTimesToIssue = 40;
+		for (let i = 0; i < totalTimesToIssue; i++) {
+			// Seems that in this case, issuing 43 each time leads to increasing the variance regularly each time.
+			const amount = toUnit('43');
+			await havven.issueNomins(nUSD, amount, { from: account2 });
+			expectedDebtForAccount2 = expectedDebtForAccount2.add(amount);
+
+			const desiredAmountToBurn = toUnit(web3.utils.toBN(getRandomInt(4, 14)));
+			const amountToBurn = desiredAmountToBurn.lte(expectedDebtForAccount2)
+				? desiredAmountToBurn
+				: expectedDebtForAccount2;
+			await havven.burnNomins(nUSD, amountToBurn, { from: account2 });
+			expectedDebtForAccount2 = expectedDebtForAccount2.sub(amountToBurn);
+
+			const db = await havven.debtBalanceOf(account2, nUSD);
+			const variance = fromUnit(expectedDebtForAccount2.sub(db));
+			console.log(
+				`#### debtBalance: ${db}\t\t expectedDebtForAccount2: ${expectedDebtForAccount2}\t\tvariance: ${variance}`
+			);
+		}
+		const debtBalance = await havven.debtBalanceOf(account2, nUSD);
+
+		// Allow '20' because this is a high volume activity
+		assert.bnClose(
+			debtBalance,
+			expectedDebtForAccount2,
+			web3.utils.toBN(totalTimesToIssue).mul(web3.utils.toBN('2'))
+		);
+	});
+
+	// TODO: This is a sandpit test. Delete before final merge.
+	it.skip('should correctly calculate debt in a high volume issuance and burn scenario', async function() {
 		const getRandomInt = (min, max) => {
 			return min + Math.floor(Math.random() * Math.floor(max));
 		};
@@ -1382,29 +1463,50 @@ contract('Havven', async function(accounts) {
 		// assert.bnEqual(account1Debt, expectedDebt);
 	});
 
-	// TODO: Can't burn balance :-/
+	// ****************************************
 
-	it.skip('should correctly calculate debt in a high transaction scenario', async function() {
-		// TODO: Work in progress. Most likely won't run with restoreTransactions
+	it('should not change debt balance if exchange rates change', async function() {
+		const oracle = await exchangeRates.oracle();
+		let newAUDRate = toUnit('0.5');
+		let timestamp = await currentTime();
+		await exchangeRates.updateRates([nAUD], [newAUDRate], timestamp, { from: oracle });
 
-		await havven.transfer(account1, toUnit('5000000'), { from: owner });
-		await havven.transfer(account2, toUnit('5000000'), { from: owner });
+		await havven.transfer(account1, toUnit('2000'), { from: owner });
+		await havven.transfer(account2, toUnit('2000'), { from: owner });
 
-		const nominsIssuedEachTime = web3.utils.toBN('100');
-		const loopCount = 500;
-		for (let i = 0; i < loopCount; i++) {
-			console.log('##### loop: ', i);
-			await havven.issueNomins(nUSD, nominsIssuedEachTime, { from: account1 });
-			await havven.issueNomins(nUSD, nominsIssuedEachTime, { from: account2 });
-		}
-		const expectedDebt = nominsIssuedEachTime.mul(web3.utils.toBN(loopCount));
-		console.log('##### loop done. ');
-		const account1Debt = await havven.debtBalanceOf(account1, nUSD);
-		const account2Debt = await havven.debtBalanceOf(account1, nUSD);
+		const amountIssued = toUnit('30');
+		await havven.issueNomins(nUSD, amountIssued, { from: account1 });
+		await havven.issueNomins(nAUD, amountIssued, { from: account2 });
 
-		console.log('##### expected debt1: ', expectedDebt.toString());
-		console.log('##### debt1: ', account1Debt.toString());
-		console.log('##### debt2: ', account2Debt.toString());
+		const PRECISE_UNIT = web3.utils.toWei(web3.utils.toBN('1'), 'gether');
+		let totalIssuedNominsUSD = await havven.totalIssuedNomins(nUSD);
+		const account1DebtRatio = divideDecimal(amountIssued, totalIssuedNominsUSD, PRECISE_UNIT);
+		const audExchangeRate = await exchangeRates.rateForCurrency(nAUD);
+		const account2DebtRatio = divideDecimal(
+			multiplyDecimal(amountIssued, audExchangeRate),
+			totalIssuedNominsUSD,
+			PRECISE_UNIT
+		);
+
+		timestamp = await currentTime();
+		newAUDRate = toUnit('1.85');
+		await exchangeRates.updateRates([nAUD], [newAUDRate], timestamp, { from: oracle });
+
+		totalIssuedNominsUSD = await havven.totalIssuedNomins(nUSD);
+		const conversionFactor = web3.utils.toBN(1000000000);
+		const expectedDebtAccount1 = multiplyDecimal(
+			account1DebtRatio,
+			totalIssuedNominsUSD.mul(conversionFactor),
+			PRECISE_UNIT
+		).div(conversionFactor);
+		const expectedDebtAccount2 = multiplyDecimal(
+			account2DebtRatio,
+			totalIssuedNominsUSD.mul(conversionFactor),
+			PRECISE_UNIT
+		).div(conversionFactor);
+
+		assert.bnClose(expectedDebtAccount1, await havven.debtBalanceOf(account1, nUSD));
+		assert.bnClose(expectedDebtAccount2, await havven.debtBalanceOf(account2, nUSD));
 	});
 
 	it("should correctly calculate a user's maximum issuable nomins without prior issuance", async function() {
@@ -1916,5 +2018,22 @@ contract('Havven', async function(accounts) {
 		assert.bnEqual(debtBalanceAfter, '0');
 	});
 
-	// Changes in exchange rates tests
+	it('should allow a user to burn up to their balance if they try too burn too much', async function() {
+		// Give some HAV to account1
+		await havven.transfer(account1, toUnit('500000'), { from: owner });
+
+		// Issue
+		const issuedNomins1 = toUnit('10');
+
+		await havven.issueNomins(nUSD, issuedNomins1, { from: account1 });
+		await havven.burnNomins(nUSD, issuedNomins1.add(toUnit('9000')), {
+			from: account1,
+		});
+		const debtBalanceAfter = await havven.debtBalanceOf(account1, nUSD);
+
+		assert.bnEqual(debtBalanceAfter, '0');
+	});
+
+	// TODO: Changes in exchange rates tests
+	// TODO: Are we testing too much Nomin functionality here in Havven
 });
