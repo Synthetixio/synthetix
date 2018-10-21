@@ -4,7 +4,7 @@ const { toUnit, fromUnit, toPreciseUnit, fromPreciseUnit } = require('../utils/t
 
 const { toBN } = web3.utils;
 
-contract.only('SafeDecimalMath', async function() {
+contract('SafeDecimalMath', async function() {
 	let instance;
 
 	beforeEach(async function() {
