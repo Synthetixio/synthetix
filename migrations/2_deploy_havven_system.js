@@ -4,10 +4,12 @@ const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
 const Havven = artifacts.require('Havven');
 const HavvenEscrow = artifacts.require('HavvenEscrow');
+const HavvenState = artifacts.require('HavvenState');
 // const IssuanceController = artifacts.require('./IssuanceController.sol');
 const Nomin = artifacts.require('Nomin');
 const Owned = artifacts.require('Owned');
 const Proxy = artifacts.require('Proxy');
+const PublicSafeDecimalMath = artifacts.require('PublicSafeDecimalMath');
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 const TokenState = artifacts.require('TokenState');
 
@@ -30,6 +32,13 @@ module.exports = async function(deployer, network, accounts) {
 	// ----------------
 	console.log('Deploying SafeDecimalMath...');
 	await deployer.deploy(SafeDecimalMath, { from: deployerAccount });
+
+	// The PublicSafeDecimalMath contract is not used in a standalone way on mainnet, this is for testing
+	// ----------------
+	// Public Safe Decimal Math Library
+	// ----------------
+	deployer.link(SafeDecimalMath, PublicSafeDecimalMath);
+	await deployer.deploy(PublicSafeDecimalMath, { from: deployerAccount });
 
 	// ----------------
 	// Exchange Rates
@@ -69,6 +78,16 @@ module.exports = async function(deployer, network, accounts) {
 	await feePoolProxy.setTarget(feePool.address, { from: owner });
 
 	// ----------------
+	// Havven State
+	// ----------------
+	console.log('Deploying HavvenState...');
+	// constructor(address _owner, address _associatedContract)
+	deployer.link(SafeDecimalMath, HavvenState);
+	const havvenState = await deployer.deploy(HavvenState, owner, ZERO_ADDRESS, {
+		from: deployerAccount,
+	});
+
+	// ----------------
 	// Havven
 	// ----------------
 	console.log('Deploying HavvenProxy...');
@@ -82,12 +101,15 @@ module.exports = async function(deployer, network, accounts) {
 	});
 
 	console.log('Deploying Havven...');
-	// constructor(address _proxy, TokenState _tokenState, address _owner, ExchangeRates _exchangeRates, FeePool _feePool)
+	// constructor(address _proxy, TokenState _tokenState, Havven _havvenState,
+	//     address _owner, ExchangeRates _exchangeRates, FeePool _feePool
+	// )
 	deployer.link(SafeDecimalMath, Havven);
 	const havven = await deployer.deploy(
 		Havven,
 		havvenProxy.address,
 		havvenTokenState.address,
+		havvenState.address,
 		owner,
 		ExchangeRates.address,
 		FeePool.address,
@@ -113,6 +135,11 @@ module.exports = async function(deployer, network, accounts) {
 	await havvenTokenState.setAssociatedContract(havven.address, { from: owner });
 
 	// ----------------------
+	// Connect Havven State
+	// ----------------------
+	await havvenState.setAssociatedContract(havven.address, { from: owner });
+
+	// ----------------------
 	// Connect Proxy
 	// ----------------------
 	await havvenProxy.setTarget(havven.address, { from: owner });
@@ -135,16 +162,20 @@ module.exports = async function(deployer, network, accounts) {
 
 	for (const currencyKey of currencyKeys) {
 		console.log(`Deploying NominTokenState for ${currencyKey}...`);
-		const tokenState = await TokenState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
+		const tokenState = await deployer.deploy(TokenState, owner, ZERO_ADDRESS, {
+			from: deployerAccount,
+		});
 
 		console.log(`Deploying NominProxy for ${currencyKey}...`);
-		const proxy = await Proxy.new(owner, { from: deployerAccount });
+		const proxy = await deployer.deploy(Proxy, owner, { from: deployerAccount });
 
 		console.log(`Deploying ${currencyKey} Nomin...`);
 
 		// constructor(address _proxy, TokenState _tokenState, Havven _havven, FeePool _feePool,
-		//     string _tokenName, string _tokenSymbol, address _owner, bytes4 _currencyKey
-		const nomin = await Nomin.new(
+		//	string _tokenName, string _tokenSymbol, uint _decimals, address _owner, bytes4 _currencyKey
+		// )
+		const nomin = await deployer.deploy(
+			Nomin,
 			proxy.address,
 			tokenState.address,
 			havven.address,
@@ -211,12 +242,13 @@ module.exports = async function(deployer, network, accounts) {
 		['Exchange Rates', ExchangeRates.address],
 		['Fee Pool', FeePool.address],
 		['Fee Pool Proxy', feePoolProxy.address],
+		['Havven State', havvenState.address],
 		['Havven Token State', havvenTokenState.address],
 		['Havven Proxy', havvenProxy.address],
 		['Havven', Havven.address],
 		['Havven Escrow', HavvenEscrow.address],
 		['Owned', Owned.address],
-		// ['SafeDecimalMath', safeDecimalMath.address],
+		['SafeDecimalMath', SafeDecimalMath.address],
 
 		// ['Issuance Controller', IssuanceController.address],
 	];

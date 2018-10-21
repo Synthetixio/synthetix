@@ -211,6 +211,10 @@ contract FeePool is Proxyable, SelfDestructible {
         FeePeriod memory lastFeePeriod = recentFeePeriods[FEE_PERIOD_LENGTH - 1];
 
         // Any unclaimed fees from the last period in the array roll back one period.
+        // Because of the subtraction here, they're effectively proportionally redistributed to those who
+        // have already claimed from the old period, available in the new period.
+        // The subtraction is important so we don't create a ticking time bomb of an ever growing
+        // number of fees that can never decrease and will eventually overflow at the end of the fee pool.
         recentFeePeriods[FEE_PERIOD_LENGTH - 2].feesToDistribute = lastFeePeriod.feesToDistribute
             .sub(lastFeePeriod.feesClaimed)
             .add(secondLastFeePeriod.feesToDistribute);
@@ -218,8 +222,9 @@ contract FeePool is Proxyable, SelfDestructible {
         // Shift the previous fee periods across to make room for the new one.
         // Condition checks for overflow when uint subtracts one from zero
         // Could be written with int8 instead of uint8, but then we have to convert everywhere
-        // so it felt better to just change the condition to check for overflow after zero.
-        for (uint8 i = FEE_PERIOD_LENGTH - 2; i <= FEE_PERIOD_LENGTH; i--) {
+        // so it felt better from a gas perspective to just change the condition to check
+        // for overflow after subtracting one from zero.
+        for (uint8 i = FEE_PERIOD_LENGTH - 2; i < FEE_PERIOD_LENGTH; i--) {
             uint8 next = i + 1;
 
             recentFeePeriods[next].feePeriodId = recentFeePeriods[i].feePeriodId;
@@ -234,7 +239,7 @@ contract FeePool is Proxyable, SelfDestructible {
 
         // Open up the new fee period
         recentFeePeriods[0].feePeriodId = nextFeePeriodId;
-        recentFeePeriods[0].startingDebtIndex = havven.debtLedgerLength();
+        recentFeePeriods[0].startingDebtIndex = havven.havvenState().debtLedgerLength();
         recentFeePeriods[0].startTime = now;
 
         nextFeePeriodId = nextFeePeriodId.add(1);
@@ -247,19 +252,82 @@ contract FeePool is Proxyable, SelfDestructible {
         optionalProxy
         returns (bool)
     {
-        uint availableFees = feesAvailable(messageSender, currencyKey);
+        uint availableFees = feesAvailable(messageSender, "HDR");
 
         require(availableFees > 0, "No fees available for period, or fees already claimed");
 
-        lastFeeWithdrawal[msg.sender] = recentFeePeriods[1].feePeriodId;
+        lastFeeWithdrawal[messageSender] = recentFeePeriods[1].feePeriodId;
 
-        require(false, "NOT IMPLEMENTED");
+        // Record the fee payment in our recentFeePeriods
+        _recordFeePayment(availableFees);
+
         // Send them their fees
-        // _payFees(msg.sender, totalFees, currencyKey);
+        _payFees(messageSender, availableFees, currencyKey);
 
-        emitFeesClaimed(msg.sender, availableFees);
+        emitFeesClaimed(messageSender, availableFees);
 
         return true;
+    }
+
+    function _recordFeePayment(uint hdrAmount)
+        internal
+    {
+        // Don't assign to the parameter
+        uint remainingToAllocate = hdrAmount;
+
+        // Start at the oldest period and record the amount, moving to newer periods
+        // until we've exhausted the amount.
+        // The condition checks for overflow because we're going to 0 with an unsigned int.
+        for (uint8 i = FEE_PERIOD_LENGTH - 1; i < FEE_PERIOD_LENGTH; i--) {
+            uint delta = recentFeePeriods[i].feesToDistribute.sub(recentFeePeriods[i].feesClaimed);
+
+            if (delta > 0) {
+                // Take the smaller of the amount left to claim in the period and the amount we need to allocate
+                uint amountInPeriod = delta < remainingToAllocate ? delta : remainingToAllocate;
+
+                recentFeePeriods[i].feesClaimed = recentFeePeriods[i].feesClaimed.add(amountInPeriod);
+                remainingToAllocate = remainingToAllocate.sub(amountInPeriod);
+
+                // No need to continue iterating if we've recorded the whole amount;
+                if (remainingToAllocate == 0) return;
+            }
+        }
+
+        // If we hit this line, we've exhausted our fee periods, but still have more to allocate. Wat?
+        // If this happens it's a definite bug in the code, so assert instead of require.
+        assert(remainingToAllocate == 0);
+    }
+
+    function _payFees(address account, uint hdrAmount, bytes4 destinationCurrencyKey)
+        internal
+        notFeeAddress(account)
+    {
+        require(account != address(0), "Account can't be 0");
+        require(account != address(this), "Can't send fees to fee pool");
+        require(account != address(proxy), "Can't send fees to proxy");
+        require(account != address(havven), "Can't send fees to havven");
+
+        Nomin hdrNomin = havven.nomins("HDR");
+        Nomin destinationNomin = havven.nomins(destinationCurrencyKey);
+        
+        // Note: We don't need to check the fee pool balance as the burn() below will do a safe subtraction which requires 
+        // the subtraction to not overflow, which would happen if the balance is not sufficient.
+
+        // Burn the source amount
+        hdrNomin.burn(FEE_ADDRESS, hdrAmount);
+
+        // How much should they get in the destination currency?
+        uint destinationAmount = havven.effectiveValue("HDR", hdrAmount, destinationCurrencyKey);
+
+        // There's no fee on withdrawing fees, as that'd be way too meta.
+
+        // Mint their new nomins
+        destinationNomin.issue(account, destinationAmount);
+
+        // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
+
+        // Call the ERC223 transfer callback if needed
+        destinationNomin.triggerTokenFallbackIfNeeded(FEE_ADDRESS, account, destinationAmount);
     }
 
     /**
@@ -287,7 +355,7 @@ contract FeePool is Proxyable, SelfDestructible {
      * a specified value.
      * @param value The value you want the recipient to receive
      */
-    function transferPlusFee(uint value)
+    function transferredAmountToReceive(uint value)
         external
         view
         returns (uint)
@@ -332,7 +400,7 @@ contract FeePool is Proxyable, SelfDestructible {
      * a specified value.
      * @param value The value you want the recipient to receive
      */
-    function exchangePlusFee(uint value)
+    function exchangedAmountToReceive(uint value)
         external
         view
         returns (uint)
@@ -435,7 +503,7 @@ contract FeePool is Proxyable, SelfDestructible {
         // What's the user's debt entry index and the debt they owe to the system
         uint initialDebtOwnership;
         uint debtEntryIndex;
-        (initialDebtOwnership, debtEntryIndex) = havven.issuanceData(account);
+        (initialDebtOwnership, debtEntryIndex) = havven.havvenState().issuanceData(account);
         uint debtBalance = havven.debtBalanceOf(account, "HDR");
         uint totalNomins = havven.totalIssuedNomins("HDR");
         uint userOwnershipPercentage = debtBalance.divideDecimal(totalNomins);
@@ -448,16 +516,17 @@ contract FeePool is Proxyable, SelfDestructible {
 
         // Go through our fee periods and figure out what we owe them.
         // The [0] fee period does is not yet ready to claim, but it is a fee period that they can have
-        // fees owing for.
+        // fees owing for, so we need to report on it anyway.
         for (uint8 i = 0; i < FEE_PERIOD_LENGTH; i++) {
             // Were they a part of this period in its entirety?
             // We don't allow pro-rata participation to reduce the ability to game the system by
             // issuing and burning multiple times in a period or close to the ends of periods.
-            if (recentFeePeriods[i].startingDebtIndex >= debtEntryIndex &&
+            if (recentFeePeriods[i].startingDebtIndex > debtEntryIndex &&
                 lastFeeWithdrawal[account] < recentFeePeriods[i].feePeriodId) {
 
                 // And since they were, they're entitled to their percentage of the fees in this period
-                uint feesFromPeriodWithoutPenalty = recentFeePeriods[i].feesToDistribute.multiplyDecimal(userOwnershipPercentage);
+                uint feesFromPeriodWithoutPenalty = recentFeePeriods[i].feesToDistribute
+                    .multiplyDecimal(userOwnershipPercentage);
 
                 // Less their penalty if they have one.
                 uint penaltyFromPeriod = feesFromPeriodWithoutPenalty.multiplyDecimal(penalty);
@@ -479,6 +548,11 @@ contract FeePool is Proxyable, SelfDestructible {
     modifier onlyHavven
     {
         require(msg.sender == address(havven), "Only the havven contract can perform this action");
+        _;
+    }
+
+    modifier notFeeAddress(address account) {
+        require(account != FEE_ADDRESS, "Fee address not allowed");
         _;
     }
 

@@ -3,10 +3,12 @@ pragma solidity ^0.4.23;
 import "contracts/ExternStateToken.sol";
 
 contract PublicEST is ExternStateToken {
+    uint constant DECIMALS = 18;
+
     constructor(address _proxy, TokenState _tokenState,
                 string _name, string _symbol, uint _totalSupply,
                 address _owner)
-        ExternStateToken(_proxy, _tokenState, _name, _symbol, _totalSupply, _owner)
+        ExternStateToken(_proxy, _tokenState, _name, _symbol, _totalSupply, DECIMALS, _owner)
         public
     {}
 

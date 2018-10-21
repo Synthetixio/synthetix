@@ -33,11 +33,8 @@ pragma solidity 0.4.25;
 import "./ExternStateToken.sol";
 import "./FeePool.sol";
 import "./Havven.sol";
-// import "./SafeDecimalMath.sol";
 
 contract Nomin is ExternStateToken {
-
-    // using SafeDecimalMath for uint;
 
     /* ========== STATE VARIABLES ========== */
 
@@ -47,16 +44,14 @@ contract Nomin is ExternStateToken {
     // Currency key which identifies this Nomin to the Havven system
     bytes4 public currencyKey;
 
-    // Nomin transfers incur a 15 bp fee by default.
-    uint constant TRANSFER_FEE_RATE = 15 * 10 ** uint(18) / 10000;
-    // uint constant TRANSFER_FEE_RATE = 15 * UNIT / 10000;
+    uint constant DECIMALS = 18;
 
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _proxy, TokenState _tokenState, Havven _havven, FeePool _feePool,
         string _tokenName, string _tokenSymbol, address _owner, bytes4 _currencyKey
     )
-        ExternStateToken(_proxy, _tokenState, _tokenName, _tokenSymbol, 0, _owner)
+        ExternStateToken(_proxy, _tokenState, _tokenName, _tokenSymbol, 0, DECIMALS, _owner)
         public
     {
         require(_proxy != 0, "_proxy cannot be 0");
@@ -250,7 +245,7 @@ contract Nomin is ExternStateToken {
     // Allow havven to issue a certain number of nomins from an account.
     function issue(address account, uint amount)
         external
-        onlyHavvenOrNomin
+        onlyHavvenOrFeePool
     {
         tokenState.setBalanceOf(account, tokenState.balanceOf(account).add(amount));
         totalSupply = totalSupply.add(amount);
@@ -261,7 +256,7 @@ contract Nomin is ExternStateToken {
     // Allow havven or another nomin contract to burn a certain number of nomins from an account.
     function burn(address account, uint amount)
         external
-        onlyHavvenOrNomin
+        onlyHavvenOrFeePool
     {
         tokenState.setBalanceOf(account, tokenState.balanceOf(account).sub(amount));
         totalSupply = totalSupply.sub(amount);
@@ -273,7 +268,7 @@ contract Nomin is ExternStateToken {
     // exchange as well as transfer
     function triggerTokenFallbackIfNeeded(address sender, address recipient, uint amount) 
         external
-        onlyHavven
+        onlyHavvenOrFeePool
     {
         bytes memory empty;
         callTokenFallbackIfNeeded(sender, recipient, amount, empty);
@@ -281,28 +276,11 @@ contract Nomin is ExternStateToken {
 
     /* ========== MODIFIERS ========== */
 
-    modifier onlyHavvenOrNomin() {
+    modifier onlyHavvenOrFeePool() {
         bool isHavven = msg.sender == address(havven);
-        bool isNomin = false;
+        bool isFeePool = msg.sender == address(feePool);
 
-        // Gas optimisation - No point iterating nomins if we've already found it.
-        if (!isHavven) {
-            // No need to repeatedly call this function either
-            uint availableNominCount = havven.availableNominCount();
-            for (uint8 i = 0; i < availableNominCount; i++) {
-                if (havven.availableNomins(i) == msg.sender) {
-                    isNomin = true;
-                    break;
-                }
-            }
-        }
-
-        require(isHavven || isNomin, "Only the Havven or Nomin contracts can perform this action");
-        _;
-    }
-
-    modifier onlyHavven() {
-        require(msg.sender == address(havven), "Only the Havven contract can perform this action");
+        require(isHavven || isFeePool, "Only the Havven or FeePool contracts can perform this action");
         _;
     }
 

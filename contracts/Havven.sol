@@ -123,9 +123,9 @@ import "./FeePool.sol";
 import "./ExternStateToken.sol";
 import "./Nomin.sol";
 import "./HavvenEscrow.sol";
+import "./HavvenState.sol";
 import "./TokenState.sol";
 import "./ExchangeRates.sol";
-// import "./SafeDecimalMath.sol";
 
 /**
  * @title Havven ERC20 contract.
@@ -134,36 +134,7 @@ import "./ExchangeRates.sol";
  */
 contract Havven is ExternStateToken {
 
-    // using SafeDecimalMath for uint;
-
     // ========== STATE VARIABLES ==========
-
-    // A struct for handing values associated with an individual user's debt position
-    struct IssuanceData {
-        // Percentage of the total debt owned at the time
-        // of issuance. This number is modified by the global debt
-        // delta array. You can figure out a user's exit price and
-        // collateralisation ratio using a combination of their initial
-        // debt and the slice of global debt delta which applies to them.
-        uint initialDebtOwnership;
-        // This lets us know when (in relative terms) the user entered
-        // the debt pool so we can calculate their exit price and
-        // collateralistion ratio
-        uint debtEntryIndex;
-    }
-
-    // Issued nomin balances for individual fee entitlements and exit price calculations
-    mapping(address => IssuanceData) public issuanceData;
-
-    // Users can specify their preferred currency, in which case all nomins they receive
-    // will automatically exchange to that preferred currency upon receipt in their wallet
-    mapping(address => bytes4) public preferredCurrency;
-
-    // The total count of people that have outstanding issued nomins in any flavour
-    uint public totalIssuerCount;
-
-    // Global debt pool tracking
-    uint[] public debtLedger;
 
     // Available Nomins which can be used with the system
     Nomin[] public availableNomins;
@@ -172,16 +143,12 @@ contract Havven is ExternStateToken {
     FeePool public feePool;
     HavvenEscrow public escrow;
     ExchangeRates public exchangeRates;
-
-    // A quantity of nomins greater than this ratio
-    // may not be issued against a given value of havvens.
-    uint public issuanceRatio = SafeDecimalMath.unit() / 5;
-    // No more nomins may be issued than the value of havvens backing them.
-    uint constant MAX_ISSUANCE_RATIO = SafeDecimalMath.unit();
+    HavvenState public havvenState;
 
     uint constant HAVVEN_SUPPLY = 1e8 * SafeDecimalMath.unit();
     string constant TOKEN_NAME = "Havven";
     string constant TOKEN_SYMBOL = "HAV";
+    uint constant DECIMALS = 18;
     
     // ========== CONSTRUCTOR ==========
 
@@ -191,10 +158,13 @@ contract Havven is ExternStateToken {
      * If the provided address is 0x0, then a fresh one will be constructed with the contract owning all tokens.
      * @param _owner The owner of this contract.
      */
-    constructor(address _proxy, TokenState _tokenState, address _owner, ExchangeRates _exchangeRates, FeePool _feePool)
-        ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, _owner)
+    constructor(address _proxy, TokenState _tokenState, HavvenState _havvenState, 
+        address _owner, ExchangeRates _exchangeRates, FeePool _feePool
+    )
+        ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, DECIMALS, _owner)
         public
     {
+        havvenState = _havvenState;
         exchangeRates = _exchangeRates;
         feePool = _feePool;
     }
@@ -228,7 +198,7 @@ contract Havven is ExternStateToken {
         optionalProxy_onlyOwner
     {
         require(nomins[currencyKey] != address(0), "Nomin does not exist");
-        require(nomins[currencyKey].totalSupply() == 0, "Nomin cannot be removed until its total supply is zero");
+        require(nomins[currencyKey].totalSupply() == 0, "Nomin supply exists");
 
         // Save the address we're removing for emitting the event at the end.
         address nominToRemove = nomins[currencyKey];
@@ -265,7 +235,9 @@ contract Havven is ExternStateToken {
         optionalProxy_onlyOwner
     {
         escrow = _escrow;
-        emitEscrowUpdated(_escrow);
+        // Note: No event here as our contract exceeds max contract size
+        // with these events, and it's unlikely people will need to
+        // track these events specifically.
     }
 
     /**
@@ -277,20 +249,23 @@ contract Havven is ExternStateToken {
         optionalProxy_onlyOwner
     {
         exchangeRates = _exchangeRates;
-        emitExchangeRatesUpdated(_exchangeRates);
+        // Note: No event here as our contract exceeds max contract size
+        // with these events, and it's unlikely people will need to
+        // track these events specifically.
     }
 
     /**
-     * @notice Set the issuanceRatio for issuance calculations.
+     * @notice Set the havvenState contract address where issuance data is held.
      * @dev Only callable by the contract owner.
      */
-    function setIssuanceRatio(uint _issuanceRatio)
+    function sethavvenState(HavvenState _havvenState)
         external
         optionalProxy_onlyOwner
     {
-        require(_issuanceRatio <= MAX_ISSUANCE_RATIO, "New issuance ratio cannot exceed MAX_ISSUANCE_RATIO");
-        issuanceRatio = _issuanceRatio;
-        emitIssuanceRatioUpdated(_issuanceRatio);
+        havvenState = _havvenState;
+        // Note: No event here as our contract exceeds max contract size
+        // with these events, and it's unlikely people will need to
+        // track these events specifically.
     }
 
     /**
@@ -303,25 +278,12 @@ contract Havven is ExternStateToken {
     {
         require(currencyKey == 0 || !exchangeRates.rateIsStale(currencyKey), "Currency rate is stale or doesn't exist.");
 
-        preferredCurrency[messageSender] = currencyKey;
+        havvenState.setPreferredCurrency(messageSender, currencyKey);
 
         emitPreferredCurrencyChanged(messageSender, currencyKey);
     }
 
-
-
     // ========== VIEWS ==========
-
-    /**
-     * @notice Lets you query the length of the debt ledger array
-     */
-    function debtLedgerLength() 
-        public
-        view
-        returns (uint)
-    {
-        return debtLedger.length;
-    }
 
     /**
      * @notice A function that lets you easily convert an amount in a source currency to an amount in the destination currency
@@ -361,7 +323,7 @@ contract Havven is ExternStateToken {
             // Ensure the rate isn't stale.
             // TODO: Investigate gas cost optimisation of doing a single call with all keys in it vs
             // individual calls like this.
-            require(!rateIsStale(availableNomins[i].currencyKey()), "Rate is stale");
+            require(!exchangeRates.rateIsStale(availableNomins[i].currencyKey()), "Rate is stale");
 
             // What's the total issued value of that nomin in the destination currency?
             // Note: We're not using our effectiveValue function because we don't want to go get the
@@ -468,7 +430,7 @@ contract Havven is ExternStateToken {
         returns (bool)
     {
         require(sourceCurrencyKey != destinationCurrencyKey, "Exchange must use different nomins");
-        require(sourceAmount > 0, "Can't be 0");
+        require(sourceAmount > 0, "Zero amount");
         require(destinationAddress != address(this), "Havven is invalid destination");
         require(destinationAddress != address(proxy), "Proxy is invalid destination");
 
@@ -495,7 +457,7 @@ contract Havven is ExternStateToken {
         returns (bool)
     {
         require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same nomin");
-        require(sourceAmount > 0, "Can't be 0");
+        require(sourceAmount > 0, "Zero amount");
 
         // Pass it along, defaulting to the sender as the recipient.
         return _internalExchange(
@@ -517,7 +479,7 @@ contract Havven is ExternStateToken {
         onlyNomin
         returns (bool)
     {
-        require(sourceAmount > 0, "Can't be 0");
+        require(sourceAmount > 0, "Source can't be 0");
 
         // Pass it along, defaulting to the sender as the recipient.
         bool result = _internalExchange(
@@ -585,51 +547,14 @@ contract Havven is ExternStateToken {
         // Call the ERC223 transfer callback if needed
         nomins[destinationCurrencyKey].triggerTokenFallbackIfNeeded(from, destinationAddress, amountReceived);
 
-        // Emit an event for people to track this happening.
-        emitExchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, destinationAmount, destinationAddress);
+        // Gas optimisation:
+        // No event emitted as it's assumed users will be able to track transfers to the zero address, followed
+        // by a transfer on another nomin from the zero address and ascertain the info required here.
 
         return true;
     }
 
-    function payFees(address account, uint hdrAmount, bytes4 destinationCurrencyKey)
-        external 
-        onlyFeePool
-        notFeeAddress(account)
-        returns (bool)
-    {
-        require(account != address(0), "Account can't be 0");
-        require(account != address(this), "Can't send fees to Havven");
-        require(account != address(proxy), "Can't send fees to proxy");
-
-        Nomin hdrNomin = nomins["HDR"];
-        Nomin destinationNomin = nomins[destinationCurrencyKey];
-        
-        address feeAddress = feePool.FEE_ADDRESS();
-
-        // Note: We don't need to check the fee pool balance as the burn() below will do a safe subtraction which requires 
-        // the subtraction to not overflow, which would happen if the balance is not sufficient.
-
-        // Burn the source amount
-        hdrNomin.burn(feeAddress, hdrAmount);
-
-        // How much should they get in the destination currency?
-        uint destinationAmount = effectiveValue("HDR", hdrAmount, destinationCurrencyKey);
-
-        // There's no fee on withdrawing fees, as that'd be way too meta.
-
-        // Mint their new nomins
-        destinationNomin.issue(account, destinationAmount);
-
-        // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
-
-        // Call the ERC223 transfer callback if needed
-        destinationNomin.triggerTokenFallbackIfNeeded(feeAddress, account, destinationAmount);
-
-        // No event because the FeePool emits an event.
-
-        return true;
-    }
-
+   
     function _addToDebtRegister(bytes4 currencyKey, uint amount) 
         internal
         optionalProxy
@@ -661,22 +586,21 @@ contract Havven is ExternStateToken {
         }
 
         // Are they a new issuer? If so, record them.
-        if (issuanceData[messageSender].initialDebtOwnership == 0) {
-            totalIssuerCount = totalIssuerCount.add(1);
+        if (!havvenState.hasIssued(messageSender)) {
+            havvenState.incrementTotalIssuerCount();
         }
 
         // Save the debt entry parameters
-        issuanceData[messageSender].initialDebtOwnership = debtPercentage;
-        issuanceData[messageSender].debtEntryIndex = debtLedger.length;
+        havvenState.setCurrentIssuanceData(messageSender, debtPercentage);
 
         // And if we're the first, push 1 as there was no effect to any other holders, otherwise push 
         // the change for the rest of the debt holders. The debt ledger holds high precision integers.
-        if (debtLedger.length > 0) {
-            debtLedger.push(
-                debtLedger[debtLedger.length - 1].multiplyDecimalRoundPrecise(delta)
+        if (havvenState.debtLedgerLength() > 0) {
+            havvenState.appendDebtLedgerValue(
+                havvenState.lastDebtLedgerEntry().multiplyDecimalRoundPrecise(delta)
             );
         } else {
-            debtLedger.push(SafeDecimalMath.preciseUnit());
+            havvenState.appendDebtLedgerValue(SafeDecimalMath.preciseUnit());
         }
     }
 
@@ -691,8 +615,7 @@ contract Havven is ExternStateToken {
         optionalProxy
         // No need to check if price is stale, as it is checked in issuableNomins.
     {
-        require(amount > 0, "Amount must be greater than zero");
-        require(amount <= remainingIssuableNomins(messageSender, currencyKey), "Amount exceeds remaining issuable nomins");
+        require(amount <= remainingIssuableNomins(messageSender, currencyKey), "Amount too large");
 
         // Keep track of the debt they're about to create
         _addToDebtRegister(currencyKey, amount);
@@ -752,7 +675,6 @@ contract Havven is ExternStateToken {
      */
     function _removeFromDebtRegister(bytes4 currencyKey, uint amount) 
         internal
-        optionalProxy
     {
         // How much debt are they trying to remove in HDRs?
         uint debtToRemove = effectiveValue(currencyKey, amount, "HDR");
@@ -771,9 +693,8 @@ contract Havven is ExternStateToken {
 
         // Are they exiting the system, or are they just decreasing their debt position?
         if (debtToRemove == existingDebt) {
-            delete issuanceData[messageSender];
-
-            totalIssuerCount = totalIssuerCount.sub(1);
+            havvenState.clearIssuanceData(messageSender);
+            havvenState.decrementTotalIssuerCount();
         } else {
             // What percentage of the debt will they be left with?
             uint newDebt = existingDebt.sub(debtToRemove);
@@ -781,39 +702,32 @@ contract Havven is ExternStateToken {
             uint newDebtPercentage = newDebt.divideDecimalRoundPrecise(newTotalDebtIssued);
 
             // Store the debt percentage and debt ledger as high precision integers
-            issuanceData[messageSender].initialDebtOwnership = newDebtPercentage;
-            issuanceData[messageSender].debtEntryIndex = debtLedger.length;
+            havvenState.setCurrentIssuanceData(messageSender, newDebtPercentage);
         }
 
         // Update our cumulative ledger. This is also a high precision integer.
-        debtLedger.push(debtLedger[debtLedger.length - 1].multiplyDecimalRoundPrecise(delta));
+        havvenState.appendDebtLedgerValue(
+            havvenState.lastDebtLedgerEntry().multiplyDecimalRoundPrecise(delta)
+        );
     }
 
     // ========== Issuance/Burning ==========
 
     /**
-     * @notice The maximum nomins an issuer can issue against their total havven quantity, priced in HDR.
+     * @notice The maximum nomins an issuer can issue against their total havven quantity, priced in HDRs.
      * This ignores any already issued nomins, and is purely giving you the maximimum amount the user can issue.
      */
     function maxIssuableNomins(address issuer, bytes4 currencyKey)
         public
         view
-        rateNotStale("HAV")
-        rateNotStale(currencyKey)
+        // We don't need to check stale rates here as effectiveValue will do it for us.
         returns (uint)
     {
-        // Ok, so how many HAV do they have?
-        uint totalOwnedHavvens = collateral(issuer);
-
-        // We'll need some exchange rates to do this calculation
-        uint havRate = exchangeRates.rateForCurrency("HAV");
-        uint currencyRate = exchangeRates.rateForCurrency(currencyKey);
-
         // What is the value of their HAV balance in the destination currency?
-        uint havvenBalanceInDestinationCurrency = totalOwnedHavvens.multiplyDecimalRound(havRate).divideDecimalRound(currencyRate);
+        uint destinationValue = effectiveValue("HAV", collateral(issuer), currencyKey);
 
         // They're allowed to issue up to issuanceRatio of that value
-        return havvenBalanceInDestinationCurrency.multiplyDecimalRound(issuanceRatio);
+        return destinationValue.multiplyDecimal(havvenState.issuanceRatio());
     }
 
     function collateralisationRatio(address issuer)
@@ -836,16 +750,17 @@ contract Havven is ExternStateToken {
         returns (uint)
     {
         // What was their initial debt ownership?
-        uint initialDebtOwnership = issuanceData[issuer].initialDebtOwnership;
-        uint debtEntryIndex = issuanceData[issuer].debtEntryIndex;
+        uint initialDebtOwnership;
+        uint debtEntryIndex;
+        (initialDebtOwnership, debtEntryIndex) = havvenState.issuanceData(issuer);
 
         // If it's zero, they haven't issued, and they have no debt.
         if (initialDebtOwnership == 0) return 0;
 
         // Figure out the global debt percentage delta from when they entered the system.
         // This is a high precision integer.
-        uint currentDebtOwnership = debtLedger[debtLedger.length - 1]
-            .divideDecimalRoundPrecise(debtLedger[debtEntryIndex])
+        uint currentDebtOwnership = havvenState.lastDebtLedgerEntry()
+            .divideDecimalRoundPrecise(havvenState.debtLedger(debtEntryIndex))
             .multiplyDecimalRoundPrecise(initialDebtOwnership);
 
         // What's the total value of the system in their requested currency?
@@ -920,7 +835,7 @@ contract Havven is ExternStateToken {
         // Assuming issuance ratio is 20%, then issuing 20 HAV of value would require 
         // 100 HAV to be locked in their wallet to maintain their collateralisation ratio
         // The locked havven value can exceed their balance.
-        uint lockedHavvenValue = debtBalanceOf(account, "HAV").divideDecimalRound(issuanceRatio);
+        uint lockedHavvenValue = debtBalanceOf(account, "HAV").divideDecimalRound(havvenState.issuanceRatio());
 
         // If we exceed the balance, no Havvens are transferable, otherwise the difference is.
         if (lockedHavvenValue >= balance) {
@@ -930,49 +845,20 @@ contract Havven is ExternStateToken {
         }
     }
 
-    /**
-     * @notice Check if any of a list of rates haven't been updated for longer than the stale period.
-     * @param currencyKeys The currency keys you wish to check on stale state for.
-     */
-    function anyRateIsStale(bytes4[] currencyKeys)
-        public
-        view
-        returns (bool)
-    {
-        return exchangeRates.anyRateIsStale(currencyKeys);
-    }
-
-    /**
-     * @notice Check if a single rate hasn't been updated for longer than the stale period.
-     * @param currencyKey The currency key you wish to check on stale state for.
-     */
-    function rateIsStale(bytes4 currencyKey)
-        public
-        view
-        returns (bool)
-    {
-        return exchangeRates.rateIsStale(currencyKey);
-    }
-
     // ========== MODIFIERS ==========
-
-    modifier ratesNotStale(bytes4[] currencyKeys) {
-        require(!exchangeRates.anyRateIsStale(currencyKeys), "Rate stale or nonexistant currency");
-        _;
-    }
 
     modifier rateNotStale(bytes4 currencyKey) {
         require(!exchangeRates.rateIsStale(currencyKey), "Rate stale or nonexistant currency");
         _;
     }
 
-    modifier notFeeAddress(address account) {
-        require(account != feePool.FEE_ADDRESS(), "Fee address not allowed");
+    modifier onlyFeePool() {
+        require(msg.sender == address(feePool), "Only fee pool allowed");
         _;
     }
 
-    modifier onlyFeePool() {
-        require(msg.sender == address(feePool), "Only fee pool allowed");
+    modifier notFeeAddress(address account) {
+        require(account != feePool.FEE_ADDRESS(), "Fee address not allowed");
         _;
     }
 
@@ -993,43 +879,10 @@ contract Havven is ExternStateToken {
 
     // ========== EVENTS ==========
 
-    event IssuanceRatioUpdated(uint newRatio);
-    bytes32 constant ISSUANCERATIOUPDATED_SIG = keccak256("IssuanceRatioUpdated(uint256)");
-    function emitIssuanceRatioUpdated(uint newRatio) internal {
-        proxy._emit(abi.encode(newRatio), 1, ISSUANCERATIOUPDATED_SIG, 0, 0, 0);
-    }
-
-    event Exchange(address indexed sourceAddress, bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey,
-        uint destinationAmount, address destinationAddress
-    );
-    bytes32 constant EXCHANGE_SIG = keccak256("Exchange(address,bytes4,uint256,bytes4,uint256,address)");
-    function emitExchange(
-        address sourceAddress, bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey,
-        uint destinationAmount, address destinationAddress
-    )
-        internal
-    {
-        proxy._emit(abi.encode(sourceCurrencyKey, sourceAmount, destinationCurrencyKey, destinationAmount, destinationAddress),
-            2, EXCHANGE_SIG, bytes32(sourceAddress), 0, 0
-        );
-    }
-
     event PreferredCurrencyChanged(address indexed account, bytes4 newPreferredCurrency);
     bytes32 constant PREFERREDCURRENCYCHANGED_SIG = keccak256("PreferredCurrencyChanged(address,bytes4)");
     function emitPreferredCurrencyChanged(address account, bytes4 newPreferredCurrency) internal {
         proxy._emit(abi.encode(newPreferredCurrency), 2, PREFERREDCURRENCYCHANGED_SIG, bytes32(account), 0, 0);
-    }
-
-    event ExchangeRatesUpdated(address newExchangeRates);
-    bytes32 constant EXCHANGERATESUPDATED_SIG = keccak256("ExchangeRatesUpdated(address)");
-    function emitExchangeRatesUpdated(address newExchangeRates) internal {
-        proxy._emit(abi.encode(newExchangeRates), 1, EXCHANGERATESUPDATED_SIG, 0, 0, 0);
-    }
-
-    event FeePoolUpdated(address newFeePool);
-    bytes32 constant FEEPOOLUPDATED_SIG = keccak256("FeePoolUpdated(address)");
-    function emitFeePoolUpdated(address newFeePool) internal {
-        proxy._emit(abi.encode(newFeePool), 1, FEEPOOLUPDATED_SIG, 0, 0, 0);
     }
 
     event NominAdded(bytes4 currencyKey, address newNomin);
@@ -1042,11 +895,5 @@ contract Havven is ExternStateToken {
     bytes32 constant NOMINREMOVED_SIG = keccak256("NominRemoved(bytes4,address)");
     function emitNominRemoved(bytes4 currencyKey, address removedNomin) internal {
         proxy._emit(abi.encode(currencyKey, removedNomin), 1, NOMINREMOVED_SIG, 0, 0, 0);
-    }
-
-    event EscrowUpdated(address newEscrow);
-    bytes32 constant ESCROWUPDATED_SIG = keccak256("EscrowUpdated(address)");
-    function emitEscrowUpdated(address newEscrow) internal {
-        proxy._emit(abi.encode(newEscrow), 1, ESCROWUPDATED_SIG, 0, 0, 0);
     }
 }

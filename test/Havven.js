@@ -2,6 +2,7 @@ const ExchangeRates = artifacts.require('ExchangeRates');
 const Escrow = artifacts.require('HavvenEscrow');
 const FeePool = artifacts.require('FeePool');
 const Havven = artifacts.require('Havven');
+const HavvenState = artifacts.require('HavvenState');
 const Nomin = artifacts.require('Nomin');
 
 const {
@@ -19,9 +20,18 @@ contract('Havven', async function(accounts) {
 		web3.utils.asciiToHex
 	);
 
-	const [deployerAccount, owner, account1, account2, account3, account4, account5] = accounts;
+	const [
+		deployerAccount,
+		owner,
+		account1,
+		account2,
+		account3,
+		account4,
+		account5,
+		account6,
+	] = accounts;
 
-	let havven, exchangeRates, feePool, nUSDContract, nAUDContract;
+	let havven, havvenState, exchangeRates, feePool, nUSDContract, nAUDContract;
 
 	beforeEach(async function() {
 		// Save ourselves from having to await deployed() in every single test.
@@ -31,6 +41,7 @@ contract('Havven', async function(accounts) {
 		feePool = await FeePool.deployed();
 
 		havven = await Havven.deployed();
+		havvenState = await HavvenState.at(await havven.havvenState());
 		nUSDContract = await Nomin.at(await havven.nomins(nUSD));
 		nAUDContract = await Nomin.at(await havven.nomins(nAUD));
 
@@ -49,19 +60,20 @@ contract('Havven', async function(accounts) {
 	});
 
 	it('should set constructor params on deployment', async function() {
-		// constructor(address _proxy, TokenState _tokenState, address _owner, ExchangeRates _exchangeRates, FeePool _feePool, Havven _oldHavven)
-		const instance = await Havven.new(account1, account2, account3, account4, account5, {
+		// constructor(address _proxy, TokenState _tokenState, HavvenState _havvenState,
+		//     address _owner, ExchangeRates _exchangeRates, FeePool _feePool
+		// )
+		const instance = await Havven.new(account1, account2, account3, account4, account5, account6, {
 			from: deployerAccount,
 		});
 
 		assert.equal(await instance.proxy(), account1);
 		assert.equal(await instance.tokenState(), account2);
-		assert.equal(await instance.owner(), account3);
-		assert.equal(await instance.exchangeRates(), account4);
-		assert.equal(await instance.feePool(), account5);
+		assert.equal(await instance.havvenState(), account3);
+		assert.equal(await instance.owner(), account4);
+		assert.equal(await instance.exchangeRates(), account5);
+		assert.equal(await instance.feePool(), account6);
 	});
-
-	it('should correctly upgrade from the previous nUSD contract deployment');
 
 	it('should allow adding a Nomin contract', async function() {
 		const previousNominCount = await havven.availableNominCount();
@@ -210,132 +222,29 @@ contract('Havven', async function(accounts) {
 	// Escrow
 
 	it('should allow the owner to set an Escrow contract', async function() {
-		const transaction = await havven.setEscrow(account1, { from: owner });
+		assert.notEqual(await havven.escrow(), account1);
+		await havven.setEscrow(account1, { from: owner });
+		assert.equal(await havven.escrow(), account1);
 
-		assert.eventEqual(transaction, 'EscrowUpdated', { newEscrow: account1 });
+		// Note, there's no event for setting the Escrow contract
 	});
 
 	it('should disallow a non-owner from setting an Escrow contract', async function() {
 		await assert.revert(havven.setEscrow(account1, { from: account1 }));
 	});
 
-	// Set fees
-
-	// it('should allow the owner to set fee period duration', async function() {
-	// 	// Set fee period to 5 days
-	// 	const duration = 5 * 24 * 60 * 60;
-	// 	const transaction = await havven.setFeePeriodDuration(web3.utils.toBN(duration), {
-	// 		from: owner,
-	// 	});
-
-	// 	assert.eventEqual(transaction, 'FeePeriodDurationUpdated', { duration });
-	// });
-
-	// it('should disallow a non-owner from setting the fee period duration', async function() {
-	// 	// Try to set fee period to 5 days
-	// 	const duration = 5 * 24 * 60 * 60;
-	// 	await assert.revert(
-	// 		havven.setFeePeriodDuration(web3.utils.toBN(duration), {
-	// 			from: account1,
-	// 		})
-	// 	);
-	// });
-
-	// it('should disallow setting the fee period duration below the minimum fee period duration', async function() {
-	// 	// Minimum is currently 1 day in the contract
-	// 	const minimum = 60 * 60 * 24;
-
-	// 	// Setting to the minimum should succeed
-	// 	const transaction = await havven.setFeePeriodDuration(web3.utils.toBN(minimum), {
-	// 		from: owner,
-	// 	});
-	// 	assert.eventEqual(transaction, 'FeePeriodDurationUpdated', { duration: minimum });
-
-	// 	// While setting to minimum - 1 should fail
-	// 	await assert.revert(
-	// 		havven.setFeePeriodDuration(web3.utils.toBN(minimum - 1), {
-	// 			from: owner,
-	// 		})
-	// 	);
-	// });
-
-	// it('should disallow setting the fee period duration above the maximum fee period duration', async function() {
-	// 	// Maximum is currently 26 weeks in the contract
-	// 	const maximum = 60 * 60 * 24 * 7 * 26;
-
-	// 	// Setting to the maximum should succeed
-	// 	const transaction = await havven.setFeePeriodDuration(web3.utils.toBN(maximum), {
-	// 		from: owner,
-	// 	});
-	// 	assert.eventEqual(transaction, 'FeePeriodDurationUpdated', { duration: maximum });
-
-	// 	// While setting to maximum + 1 should fail
-	// 	await assert.revert(
-	// 		havven.setFeePeriodDuration(web3.utils.toBN(maximum + 1), {
-	// 			from: owner,
-	// 		})
-	// 	);
-	// });
-
 	// Exchange Rates contract
 
 	it('should allow the owner to set an Exchange Rates contract', async function() {
-		const transaction = await havven.setExchangeRates(account1, { from: owner });
+		assert.notEqual(await havven.exchangeRates(), account1);
+		await havven.setExchangeRates(account1, { from: owner });
+		assert.equal(await havven.exchangeRates(), account1);
 
-		assert.eventEqual(transaction, 'ExchangeRatesUpdated', { newExchangeRates: account1 });
+		// Note, there's no event for setting the ExchangeRates contract
 	});
 
 	it('should disallow a non-owner from setting an Exchange Rates contract', async function() {
 		await assert.revert(havven.setExchangeRates(account1, { from: account1 }));
-	});
-
-	it('should allow the owner to set the issuance ratio', async function() {
-		const ratio = toUnit('0.2');
-
-		const transaction = await havven.setIssuanceRatio(ratio, {
-			from: owner,
-		});
-
-		assert.eventEqual(transaction, 'IssuanceRatioUpdated', { newRatio: ratio });
-	});
-
-	// Issuance ratio
-
-	it('should allow the owner to set the issuance ratio to zero', async function() {
-		const ratio = web3.utils.toBN('0');
-
-		const transaction = await havven.setIssuanceRatio(ratio, {
-			from: owner,
-		});
-
-		assert.eventEqual(transaction, 'IssuanceRatioUpdated', { newRatio: ratio });
-	});
-
-	it('should disallow a non-owner from setting the issuance ratio', async function() {
-		const ratio = toUnit('0.2');
-
-		await assert.revert(
-			havven.setIssuanceRatio(ratio, {
-				from: account1,
-			})
-		);
-	});
-
-	it('should disallow setting the issuance ratio above the MAX ratio', async function() {
-		const max = toUnit('1');
-
-		// It should succeed when setting it to max
-		const transaction = await havven.setIssuanceRatio(max, {
-			from: owner,
-		});
-		assert.eventEqual(transaction, 'IssuanceRatioUpdated', { newRatio: max });
-
-		// But max + 1 should fail
-		await assert.revert(
-			havven.setIssuanceRatio(web3.utils.toBN(max).add(web3.utils.toBN('1')), {
-				from: account1,
-			})
-		);
 	});
 
 	// Effective value
@@ -1261,6 +1170,7 @@ contract('Havven', async function(accounts) {
 	// ****************************************
 
 	it('should correctly calculate debt in a high volume issuance and burn scenario', async function() {
+<<<<<<< HEAD
 		const totalSupply = await havven.totalSupply();
 
 		// Give only 100 Havvens to account2
@@ -1343,19 +1253,24 @@ contract('Havven', async function(accounts) {
 		const getRandomInt = (min, max) => {
 			return min + Math.floor(Math.random() * Math.floor(max));
 		};
+=======
+		// const getRandomInt = (min, max) => {
+		// 	return min + Math.floor(Math.random() * Math.floor(max));
+		// };
+>>>>>>> 6cb2e7c4bcd58eb82572f2a5c2ea38a7f371f1b3
 
 		const getDebtLedgerArray = async () => {
-			const length = await havven.debtLedgerLength();
+			const length = await havvenState.debtLedgerLength();
 			let results = [];
 			for (let i = 0; i < length; i++) {
-				const result = await havven.debtLedger.call(i);
+				const result = await havvenState.debtLedger(i);
 				results.push(fromUnit(result).toString());
 			}
 			return results;
 		};
 
 		const getIssuanceData = async () => {
-			const issuanceData = await havven.issuanceData.call(account1);
+			const issuanceData = await havvenState.issuanceData(account1);
 			// console.log(`#### issuanceData: ${issuanceData}`);
 			// return issuanceData;
 			return {
@@ -1513,7 +1428,7 @@ contract('Havven', async function(accounts) {
 		const rate = await exchangeRates.rateForCurrency(web3.utils.asciiToHex('HAV'));
 		const issuedHavvens = web3.utils.toBN('200000');
 		await havven.transfer(account1, toUnit(issuedHavvens), { from: owner });
-		const issuanceRatio = await havven.issuanceRatio.call();
+		const issuanceRatio = await havvenState.issuanceRatio();
 
 		const expectedIssuableNomins = multiplyDecimal(
 			toUnit(issuedHavvens),
@@ -1537,7 +1452,7 @@ contract('Havven', async function(accounts) {
 		const issuedHavvens = web3.utils.toBN('320001');
 		await havven.transfer(account1, toUnit(issuedHavvens), { from: owner });
 
-		const issuanceRatio = await havven.issuanceRatio.call();
+		const issuanceRatio = await havvenState.issuanceRatio();
 		const nAUDIssued = web3.utils.toBN('1234');
 		await havven.issueNomins(nAUD, toUnit(nAUDIssued), { from: account1 });
 
@@ -1608,7 +1523,7 @@ contract('Havven', async function(accounts) {
 		const hav2usdRate = await exchangeRates.rateForCurrency(HAV);
 		const eur2usdRate = await exchangeRates.rateForCurrency(nEUR);
 		const hav2eurRate = divideDecimal(hav2usdRate, eur2usdRate);
-		const issuanceRatio = await havven.issuanceRatio.call();
+		const issuanceRatio = await havvenState.issuanceRatio();
 
 		const issuedHavvens = web3.utils.toBN('200012');
 		await havven.transfer(account1, toUnit(issuedHavvens), { from: owner });
@@ -1630,7 +1545,7 @@ contract('Havven', async function(accounts) {
 		const hav2usdRate = await exchangeRates.rateForCurrency(HAV);
 		const eur2usdRate = await exchangeRates.rateForCurrency(nEUR);
 		const hav2eurRate = divideDecimal(hav2usdRate, eur2usdRate);
-		const issuanceRatio = await havven.issuanceRatio.call();
+		const issuanceRatio = await havvenState.issuanceRatio();
 
 		const issuedHavvens = web3.utils.toBN('20');
 		await havven.transfer(account1, toUnit(issuedHavvens), { from: owner });
@@ -1874,7 +1789,7 @@ contract('Havven', async function(accounts) {
 		// await havven.issueNomins(nUSD, maxIssuable, { from: account1 });
 
 		// Compare
-		const issuanceRatio = await havven.issuanceRatio.call();
+		const issuanceRatio = await havvenState.issuanceRatio();
 		const expectedMaxIssuable = multiplyDecimal(
 			multiplyDecimal(escrowedHavvens.add(transferredHavvens), hav2usdRate),
 			issuanceRatio

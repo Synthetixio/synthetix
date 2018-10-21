@@ -20,22 +20,16 @@ The code here will be under continual audit and improvement as the project progr
 
 ### For tests (in javascript)
 
-Install the dependencies for the project using [yarn](https://yarnpkg.com/en/docs/install):
+Install the dependencies for the project using npm
 
 ```
-$ yarn
+$ npm i
 ```
 
-You need a mock RPC blockchain running in order to test the system. We like using `ganache-cli`.
+To run the tests:
 
 ```
-$ yarn ganache
-```
-
-Then in a new console window you'll need to run the tests:
-
-```
-$ yarn test
+$ npm test
 ```
 
 ### For legacy tests (in python)
@@ -44,16 +38,13 @@ Deployment and testing scripts require Python 3.6+, [web3.py](https://github.com
 
 `pip3 install -r requirements.txt`
 
-In addition, the test and deployment scripts require [solc](https://github.com/ethereum/solidity) 0.4.21+ to be installed. The tests need [ganache](https://github.com/trufflesuite/ganache-cli) 6.1.0+, for speed and time fast-forwarding. It can be installed from the node package manager with:
+In addition, the test and deployment scripts require [solc](https://github.com/ethereum/solidity) 0.4.25 to be installed. The tests need [ganache](https://github.com/trufflesuite/ganache-cli) 6.1.0+, for speed and time fast-forwarding. It can be installed from the node package manager with:
 
 `npm install ganache-cli`
 
 Ensure `BLOCKCHAIN_ADDRESS` in `utils/deployutils.py` is pointing to a running
 Ethereum client or `ganache-cli` instance. Update other variables like
-the master address as appropriate. Then, from the root directory,
-deployment is as simple as:
-
-`python3 deploy.py`
+the master address as appropriate.
 
 Run the test suite as follows:
 

@@ -1,5 +1,10 @@
 pragma solidity ^0.4.24;
 
+// Note, this is a copy of SafeMath from OpenZeppelin here:
+// https://github.com/OpenZeppelin/openzeppelin-solidity/blob/master/contracts/math/SafeMath.sol
+
+// We plan to transition to EthPM but are currently blocked by this bug: https://github.com/trufflesuite/truffle/issues/1354
+
 /**
  * @title SafeMath
  * @dev Math operations with safety checks that revert on error
