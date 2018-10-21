@@ -1170,94 +1170,9 @@ contract('Havven', async function(accounts) {
 	// ****************************************
 
 	it('should correctly calculate debt in a high volume issuance and burn scenario', async function() {
-<<<<<<< HEAD
-		const totalSupply = await havven.totalSupply();
-
-		// Give only 100 Havvens to account2
-		const account2Havvens = toUnit('100');
-
-		// Give the vast majority to account1 (ie. 99,999,900)
-		const account1Havvens = totalSupply.sub(account2Havvens);
-
-		await havven.transfer(account1, account1Havvens, { from: owner }); // Issue the massive majority to account1
-		await havven.transfer(account2, account2Havvens, { from: owner }); // Issue a small amount to account2
-
-		const account1AmountToIssue = await havven.maxIssuableNomins(account1, nUSD);
-		await havven.issueMaxNomins(nUSD, { from: account1 });
-		const debtBalance1 = await havven.debtBalanceOf(account1, nUSD);
-		assert.bnEqual(debtBalance1, account1AmountToIssue);
-
-		let expectedDebtForAccount2 = web3.utils.toBN('0');
-		const totalTimesToIssue = 40;
-		for (let i = 0; i < totalTimesToIssue; i++) {
-			const amount = toUnit('0.000000000000000002');
-			await havven.issueNomins(nUSD, amount, { from: account2 });
-			expectedDebtForAccount2 = expectedDebtForAccount2.add(amount);
-		}
-		const debtBalance2 = await havven.debtBalanceOf(account2, nUSD);
-
-		// Allow '30'. This is an extreme scenario so we expect the difference to be greater than usual.
-		assert.bnClose(debtBalance2, expectedDebtForAccount2, '30');
-	});
-
-	it.only('should correctly calculate debt in a high issuance and burn scenario', async function() {
-		const getRandomInt = (min, max) => {
-			return min + Math.floor(Math.random() * Math.floor(max));
-		};
-
-		const totalSupply = await havven.totalSupply();
-		const account2Havvens = toUnit('120000');
-		const account1Havvens = totalSupply.sub(account2Havvens);
-
-		await havven.transfer(account1, account1Havvens, { from: owner }); // Issue the massive majority to account1
-		await havven.transfer(account2, account2Havvens, { from: owner }); // Issue a small amount to account2
-
-		const account1AmountToIssue = await havven.maxIssuableNomins(account1, nUSD);
-		await havven.issueMaxNomins(nUSD, { from: account1 });
-		const debtBalance1 = await havven.debtBalanceOf(account1, nUSD);
-		assert.bnClose(debtBalance1, account1AmountToIssue);
-
-		let expectedDebtForAccount2 = web3.utils.toBN('0');
-		const totalTimesToIssue = 40;
-		for (let i = 0; i < totalTimesToIssue; i++) {
-			// Seems that in this case, issuing 43 each time leads to increasing the variance regularly each time.
-			const amount = toUnit('43');
-			await havven.issueNomins(nUSD, amount, { from: account2 });
-			expectedDebtForAccount2 = expectedDebtForAccount2.add(amount);
-
-			const desiredAmountToBurn = toUnit(web3.utils.toBN(getRandomInt(4, 14)));
-			const amountToBurn = desiredAmountToBurn.lte(expectedDebtForAccount2)
-				? desiredAmountToBurn
-				: expectedDebtForAccount2;
-			await havven.burnNomins(nUSD, amountToBurn, { from: account2 });
-			expectedDebtForAccount2 = expectedDebtForAccount2.sub(amountToBurn);
-
-			const db = await havven.debtBalanceOf(account2, nUSD);
-			const variance = fromUnit(expectedDebtForAccount2.sub(db));
-			console.log(
-				`#### debtBalance: ${db}\t\t expectedDebtForAccount2: ${expectedDebtForAccount2}\t\tvariance: ${variance}`
-			);
-		}
-		const debtBalance = await havven.debtBalanceOf(account2, nUSD);
-
-		// Allow '20' because this is a high volume activity
-		assert.bnClose(
-			debtBalance,
-			expectedDebtForAccount2,
-			web3.utils.toBN(totalTimesToIssue).mul(web3.utils.toBN('2'))
-		);
-	});
-
-	// TODO: This is a sandpit test. Delete before final merge.
-	it.skip('should correctly calculate debt in a high volume issuance and burn scenario', async function() {
-		const getRandomInt = (min, max) => {
-			return min + Math.floor(Math.random() * Math.floor(max));
-		};
-=======
 		// const getRandomInt = (min, max) => {
 		// 	return min + Math.floor(Math.random() * Math.floor(max));
 		// };
->>>>>>> 6cb2e7c4bcd58eb82572f2a5c2ea38a7f371f1b3
 
 		const getDebtLedgerArray = async () => {
 			const length = await havvenState.debtLedgerLength();
