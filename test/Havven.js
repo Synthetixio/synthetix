@@ -1296,7 +1296,7 @@ contract('Havven', async function(accounts) {
 		};
 
 		const totalSupply = await havven.totalSupply();
-		const account2Havvens = toUnit('80000');
+		const account2Havvens = toUnit('120000');
 		const account1Havvens = totalSupply.sub(account2Havvens);
 
 		await havven.transfer(account1, account1Havvens, { from: owner }); // Issue the massive majority to account1
@@ -1308,18 +1308,19 @@ contract('Havven', async function(accounts) {
 		assert.bnClose(debtBalance1, account1AmountToIssue);
 
 		let expectedDebtForAccount2 = web3.utils.toBN('0');
-		const totalTimesToIssue = 240;
+		const totalTimesToIssue = 40;
 		for (let i = 0; i < totalTimesToIssue; i++) {
-			const amount = toUnit('13.0000332123');
+			// Seems that in this case, issuing 43 each time leads to increasing the variance regularly each time.
+			const amount = toUnit('43');
 			await havven.issueNomins(nUSD, amount, { from: account2 });
 			expectedDebtForAccount2 = expectedDebtForAccount2.add(amount);
 
-			const desiredAmountToBurn = toUnit(web3.utils.toBN(getRandomInt(4, 11)));
+			const desiredAmountToBurn = toUnit(web3.utils.toBN(getRandomInt(4, 14)));
 			const amountToBurn = desiredAmountToBurn.lte(expectedDebtForAccount2)
 				? desiredAmountToBurn
 				: expectedDebtForAccount2;
-			// await havven.burnNomins(nUSD, amountToBurn, { from: account2 });
-			// expectedDebtForAccount2 = expectedDebtForAccount2.sub(amountToBurn);
+			await havven.burnNomins(nUSD, amountToBurn, { from: account2 });
+			expectedDebtForAccount2 = expectedDebtForAccount2.sub(amountToBurn);
 
 			const db = await havven.debtBalanceOf(account2, nUSD);
 			const variance = fromUnit(expectedDebtForAccount2.sub(db));
@@ -1332,7 +1333,131 @@ contract('Havven', async function(accounts) {
 		console.log(`#### expectedDebtForAccount2: ${fromUnit(expectedDebtForAccount2)}`);
 
 		// Allow '20' because this is a high volume activity
-		assert.bnClose(debtBalance, expectedDebtForAccount2, '20');
+		assert.bnClose(debtBalance, expectedDebtForAccount2, '60');
+	});
+
+	it.skip('should correctly calculate debt in a high volume issuance and burn scenario', async function() {
+		const getRandomInt = (min, max) => {
+			return min + Math.floor(Math.random() * Math.floor(max));
+		};
+
+		const getDebtLedgerArray = async () => {
+			const length = await havven.debtLedgerLength();
+			let results = [];
+			for (let i = 0; i < length; i++) {
+				const result = await havven.debtLedger.call(i);
+				results.push(fromUnit(result).toString());
+			}
+			return results;
+		};
+
+		const getIssuanceData = async () => {
+			const issuanceData = await havven.issuanceData.call(account1);
+			// console.log(`#### issuanceData: ${issuanceData}`);
+			// return issuanceData;
+			return {
+				initialDebtOwnership: fromUnit(issuanceData.initialDebtOwnership).toString(),
+				debtEntryIndex: issuanceData.debtEntryIndex.toString(),
+			};
+			// console.log(`#### issuanceData: ${issuanceData}`);
+		};
+
+		const totalSupply = await havven.totalSupply();
+		console.log(`###### totalSupply: ${totalSupply}`);
+		console.log(`###### totalSupply.div('2'): ${totalSupply.div(web3.utils.toBN('2'))}`);
+		await havven.transfer(account1, totalSupply.div(web3.utils.toBN('2')), { from: owner });
+		await havven.transfer(account2, totalSupply.div(web3.utils.toBN('2')), { from: owner });
+
+		// Make accounts issuers
+		// await havven.setIssuer(account1, true, { from: owner });
+		// await havven.setIssuer(account2, true, { from: owner });
+
+		// const nominsIssuedEachTime = web3.utils.toBN('10000');
+		const loopCount = 140;
+		// let expectedDebt = web3.utils.toBN(0);
+		let expectedDebt = toUnit('900000');
+
+		await havven.issueNomins(nUSD, expectedDebt, { from: account1 });
+		// const txn = await havven.issueNomins(nUSD, expectedDebt, { from: account1 });
+		// console.log('##### txn', txn);
+		// for (let i = 0; i < txn.logs.length; i++) {
+		// 	const result = txn.logs[i].args;
+		// 	console.log('##### txn ???', result);
+		// 	for (let j = 0; j < result.__length__; j++) {
+		// 		if (txn.logs[i].event === web3.utils.asciiToHex('SomethingElse') && j === 0) {
+		// 			console.log(`##### txn str ${i}`, web3.utils.hexToAscii(txn.logs[i].args[j]));
+		// 		} else {
+		// 			console.log(`##### txn ${i}`, txn.logs[i].args[j].toString());
+		// 		}
+		// 	}
+		// }
+
+		// let timeBeforeLoopIssued = 0;
+		let highestVarianceYet = toUnit('0');
+
+		const remainingIssuableNomins1 = await havven.remainingIssuableNomins(account1, nUSD);
+		console.log(`##### remainingIssuableNomins1: ${fromUnit(remainingIssuableNomins1)}`);
+
+		// let totalNominsIssued = 0;
+		for (let i = 0; i < loopCount; i++) {
+			const oracle = await exchangeRates.oracle();
+			const timestamp = await currentTime();
+			const nUSDRate = toUnit('1');
+			const nAUDRate = toUnit(parseFloat((Math.random() * 2).toString()).toFixed(18));
+			const nEURRate = toUnit(parseFloat((Math.random() * 2).toString()).toFixed(18));
+			// const HAVRate = toUnit(parseFloat((Math.random() / 10).toString()).toFixed(18));
+			// const rates = `nAUD: ${fromUnit(nAUDRate)}\t\tnEUR: ${fromUnit(nEURRate)}\t\tHAV: ${fromUnit(
+			// 	HAVRate
+			// )}\t\tnUSD: ${fromUnit(nUSDRate)}`;
+			// console.log(`#### Rates: ${rates}`);
+			// await exchangeRates.updateRates(
+			// 	[nUSD, nAUD, nEUR],
+			// 	[nUSDRate, nAUDRate, nEURRate],
+			// 	timestamp,
+			// 	{ from: oracle }
+			// );
+			console.log(`#### HDR rate: ${fromUnit(await exchangeRates.rateForCurrency(HDR))}`);
+
+			// const amount = web3.utils.toBN(getRandomInt(100000, 800000000));
+			const amount = toUnit('0.8');
+			console.log(`##### Adding: ${fromUnit(amount)} ...`);
+			await havven.issueNomins(nUSD, amount, { from: account1 });
+
+			const remainingIssuableNomins2 = await havven.remainingIssuableNomins(account1, nUSD);
+			console.log(`##### remainingIssuableNomins2: ${fromUnit(remainingIssuableNomins2)}`);
+			// console.log(`##### debt array after account1 issued: ${await getDebtLedgerArray()}`);
+			// await havven.issueNomins(nUSD, amount, { from: account2 });
+			// console.log(`##### debt array after account2 issued: ${await getDebtLedgerArray()}`);
+
+			console.log(`#### Issuance Data: `, await getIssuanceData());
+			const account1nUSDBalance = await nUSDContract.balanceOf(account1);
+			const account2nUSDBalance = await nUSDContract.balanceOf(account2);
+			console.log(
+				`#### account1nUSDBalance: ${account1nUSDBalance}\t\taccount2nUSDBalance: ${account2nUSDBalance}`
+			);
+			expectedDebt = expectedDebt.add(amount);
+			// const expectedDebt = nominsIssuedEachTime.mul(web3.utils.toBN(i + 1));
+			const account1Debt = await havven.debtBalanceOf(account1, nUSD);
+			const variance = account1Debt.sub(expectedDebt);
+			highestVarianceYet = variance.abs().gte(highestVarianceYet)
+				? variance.abs()
+				: highestVarianceYet;
+			console.log(
+				`##### expectedDebt: ${expectedDebt}\t\taccount1Debt: ${account1Debt}\t\t variance: ${variance}\t\t highestVarianceYet: +/- ${highestVarianceYet}`
+			);
+			if (i % 2 === 0) {
+				const one = web3.utils.toBN(9999);
+				const amountToBurn = (one.lte(account1Debt) ? one : account1Debt).sub(web3.utils.toBN(100));
+				console.log(`##### Burning: ${fromUnit(amountToBurn)}`);
+				await havven.burnNomins(nUSD, amountToBurn, { from: account1 });
+				expectedDebt = expectedDebt.sub(amountToBurn);
+			}
+			console.log('------------------------------------');
+		}
+		// const expectedDebt = nominsIssuedEachTime.mul(web3.utils.toBN(loopCount));
+		// const account1Debt = await havven.debtBalanceOf(account1, nUSD);
+
+		// assert.bnEqual(account1Debt, expectedDebt);
 	});
 
 	// ****************************************
