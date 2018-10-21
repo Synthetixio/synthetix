@@ -1174,15 +1174,15 @@ contract('Havven', async function(accounts) {
 		// 	return min + Math.floor(Math.random() * Math.floor(max));
 		// };
 
-		const getDebtLedgerArray = async () => {
-			const length = await havvenState.debtLedgerLength();
-			let results = [];
-			for (let i = 0; i < length; i++) {
-				const result = await havvenState.debtLedger(i);
-				results.push(fromUnit(result).toString());
-			}
-			return results;
-		};
+		// const getDebtLedgerArray = async () => {
+		// 	const length = await havvenState.debtLedgerLength();
+		// 	let results = [];
+		// 	for (let i = 0; i < length; i++) {
+		// 		const result = await havvenState.debtLedger(i);
+		// 		results.push(fromUnit(result).toString());
+		// 	}
+		// 	return results;
+		// };
 
 		const getIssuanceData = async () => {
 			const issuanceData = await havvenState.issuanceData(account1);
@@ -1233,11 +1233,11 @@ contract('Havven', async function(accounts) {
 
 		// let totalNominsIssued = 0;
 		for (let i = 0; i < loopCount; i++) {
-			const oracle = await exchangeRates.oracle();
-			const timestamp = await currentTime();
-			const nUSDRate = toUnit('1');
-			const nAUDRate = toUnit(parseFloat((Math.random() * 2).toString()).toFixed(18));
-			const nEURRate = toUnit(parseFloat((Math.random() * 2).toString()).toFixed(18));
+			// const oracle = await exchangeRates.oracle();
+			// const timestamp = await currentTime();
+			// const nUSDRate = toUnit('1');
+			// const nAUDRate = toUnit(parseFloat((Math.random() * 2).toString()).toFixed(18));
+			// const nEURRate = toUnit(parseFloat((Math.random() * 2).toString()).toFixed(18));
 			// const HAVRate = toUnit(parseFloat((Math.random() / 10).toString()).toFixed(18));
 			// const rates = `nAUD: ${fromUnit(nAUDRate)}\t\tnEUR: ${fromUnit(nEURRate)}\t\tHAV: ${fromUnit(
 			// 	HAVRate

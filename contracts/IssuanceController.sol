@@ -30,16 +30,16 @@
 
 pragma solidity 0.4.25;
 
-import "./SelfDestructible.sol";
-import "./Pausable.sol";
-import "./SafeDecimalMath.sol";
+// import "./SelfDestructible.sol";
+// import "./Pausable.sol";
+// import "./SafeDecimalMath.sol";
 // import "./Havven.sol";
 // import "./Nomin.sol";
 
 /**
  * @title Issuance Controller Contract.
  */
-contract IssuanceController is SelfDestructible, Pausable {
+// contract IssuanceController is SelfDestructible, Pausable {
 
 //     /* ========== STATE VARIABLES ========== */
 //     Havven public havven;
@@ -630,4 +630,4 @@ contract IssuanceController is SelfDestructible, Pausable {
 //     event PricesUpdated(uint newEthPrice, uint newHavvenPrice, uint timeSent);
 //     event Exchange(string fromCurrency, uint fromAmount, string toCurrency, uint toAmount);
 //     event NominWithdrawal(address user, uint amount);
-}
+// }
