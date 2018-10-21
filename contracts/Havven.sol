@@ -459,14 +459,14 @@ contract Havven is ExternStateToken {
         require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same nomin");
         require(sourceAmount > 0, "Zero amount");
 
-        // Pass it along, defaulting to the sender as the recipient.
+        // Pass it along
         return _internalExchange(
             from,
             sourceCurrencyKey,
             sourceAmount,
             destinationCurrencyKey,
             destinationAddress,
-            true // charge fee on the exchange
+            false // Don't charge fee on the exchange, as they've already been charged a transfer fee in the nomin contract
         );
     }
 

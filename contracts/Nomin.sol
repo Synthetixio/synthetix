@@ -242,6 +242,22 @@ contract Nomin is ExternStateToken {
         return _internalTransfer(from, to, value, data);
     }
 
+    // Override our internal transfer to inject preferred currency support
+    function _internalTransfer(address from, address to, uint value, bytes data)
+        internal
+        returns (bool)
+    {
+        // Do they have a preferred currency that's not us? If so we need to exchange
+        bytes4 preferredCurrencyKey = havven.havvenState().preferredCurrency(to);
+
+        if (preferredCurrencyKey != currencyKey) {
+            return havven.nominInitiatedExchange(from, currencyKey, value, preferredCurrencyKey, to);
+        } else {
+            // Otherwise we just transfer
+            return super._internalTransfer(from, to, value, data);
+        }
+    }
+
     // Allow havven to issue a certain number of nomins from an account.
     function issue(address account, uint amount)
         external

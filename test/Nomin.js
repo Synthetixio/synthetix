@@ -19,7 +19,7 @@ contract('Nomin', async function(accounts) {
 		account2,
 	] = accounts;
 
-	let feePool, FEE_ADDRESS, havven, exchangeRates, nUSDContract, HDRContract;
+	let feePool, FEE_ADDRESS, havven, exchangeRates, nUSDContract, nAUDContract, HDRContract;
 
 	beforeEach(async function() {
 		// Save ourselves from having to await deployed() in every single test.
@@ -31,6 +31,7 @@ contract('Nomin', async function(accounts) {
 
 		havven = await Havven.deployed();
 		nUSDContract = await Nomin.at(await havven.nomins(nUSD));
+		nAUDContract = await Nomin.at(await havven.nomins(nAUD));
 		HDRContract = await Nomin.at(await havven.nomins(HDR));
 
 		// Send a price update to guarantee we're not stale.
@@ -140,6 +141,65 @@ contract('Nomin', async function(accounts) {
 
 		// The recipient should have the correct amount
 		assert.bnEqual(await nUSDContract.balanceOf(account1), received);
+
+		// The fee pool should also have the correct amount
+		assert.bnEqual(await HDRContract.balanceOf(FEE_ADDRESS), hdrFee);
+	});
+
+	it('should respect preferred currency when transferring', async function() {
+		// Issue 10,000 nUSD.
+		const amount = toUnit('10000');
+		await havven.issueNomins(nUSD, amount, { from: owner });
+
+		const nUSDReceived = await feePool.amountReceivedFromTransfer(amount);
+		const fee = amount.sub(nUSDReceived);
+		const hdrFee = await havven.effectiveValue(nUSD, fee, HDR);
+		const nAUDReceived = await havven.effectiveValue(nUSD, nUSDReceived, nAUD);
+
+		assert.eventEqual(
+			await havven.setPreferredCurrency(nAUD, { from: account1 }),
+			'PreferredCurrencyChanged',
+			{ account: account1, newPreferredCurrency: nAUD }
+		);
+
+		// Do a single transfer of all our nUSD.
+		const transaction = await nUSDContract.transfer(account1, amount, { from: owner });
+
+		// Events should be a fee exchange and a transfer to account1
+		assert.eventsEqual(
+			transaction,
+
+			// Fees get burned and exchanged to HDRs
+			'Transfer',
+			{ from: owner, to: ZERO_ADDRESS, value: fee },
+			'Burned',
+			{ account: owner, value: fee },
+			'Transfer',
+			{
+				from: ZERO_ADDRESS,
+				to: FEE_ADDRESS,
+				value: hdrFee,
+			},
+			'Issued',
+			{ account: FEE_ADDRESS, value: hdrFee },
+
+			// And finally the original nomin exchange
+			// from nUSD to nAUD
+			'Transfer',
+			{ from: owner, to: ZERO_ADDRESS, value: nUSDReceived },
+			'Burned',
+			{ account: owner, value: nUSDReceived },
+			'Transfer',
+			{ from: ZERO_ADDRESS, to: account1, value: nAUDReceived }
+		);
+
+		// Sender should have nothing
+		assert.bnEqual(await nUSDContract.balanceOf(owner), 0);
+		assert.bnEqual(await nAUDContract.balanceOf(owner), 0);
+
+		// The recipient should have the correct amount
+		assert.bnEqual(await nUSDContract.balanceOf(account1), 0);
+		assert.bnEqual(await nAUDContract.balanceOf(account1), nAUDReceived);
 
 		// The fee pool should also have the correct amount
 		assert.bnEqual(await HDRContract.balanceOf(FEE_ADDRESS), hdrFee);
