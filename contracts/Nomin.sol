@@ -247,10 +247,10 @@ contract Nomin is ExternStateToken {
         internal
         returns (bool)
     {
-        // Do they have a preferred currency that's not us? If so we need to exchange
         bytes4 preferredCurrencyKey = havven.havvenState().preferredCurrency(to);
 
-        if (preferredCurrencyKey != currencyKey) {
+        // Do they have a preferred currency that's not us? If so we need to exchange
+        if (preferredCurrencyKey != 0 && preferredCurrencyKey != currencyKey) {
             return havven.nominInitiatedExchange(from, currencyKey, value, preferredCurrencyKey, to);
         } else {
             // Otherwise we just transfer
