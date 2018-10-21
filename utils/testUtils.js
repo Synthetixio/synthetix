@@ -107,6 +107,89 @@ const restoreSnapshot = async id => {
 const toUnit = amount => web3.utils.toBN(web3.utils.toWei(amount, 'ether'));
 const fromUnit = amount => web3.utils.fromWei(amount, 'ether');
 
+/**
+ *  Translates an amount to our cononical precise unit. We happen to use 10^27, which means we can
+ *  use the built in web3 method for convenience, but if precise unit ever changes in our contracts
+ *  we should be able to update the conversion factor here.
+ *  @param amount The amount you want to re-base to PRECISE_UNIT
+ */
+const PRECISE_UNIT_STRING = '1000000000000000000000000000';
+const PRECISE_UNIT = web3.utils.toBN(PRECISE_UNIT_STRING);
+
+const toPreciseUnit = amount => {
+	// Code is largely lifted from the guts of web3 toWei here:
+	// https://github.com/ethjs/ethjs-unit/blob/master/src/index.js
+	let amountString = amount.toString();
+
+	// Is it negative?
+	var negative = amountString.substring(0, 1) === '-';
+	if (negative) {
+		amount = amount.substring(1);
+	}
+
+	if (amount === '.') {
+		throw new Error(`Error converting number ${amount} to precise unit, invalid value`);
+	}
+
+	// Split it into a whole and fractional part
+	let [whole, fraction, ...rest] = amount.split('.');
+	if (rest.length > 0) {
+		throw new Error(`Error converting number ${amount} to precise unit, too many decimal points`);
+	}
+
+	if (!whole) {
+		whole = '0';
+	}
+	if (!fraction) {
+		fraction = '0';
+	}
+	if (fraction.length > PRECISE_UNIT_STRING.length - 1) {
+		throw new Error(`Error converting number ${amount} to precise unit, too many decimal places`);
+	}
+
+	while (fraction.length < PRECISE_UNIT_STRING.length - 1) {
+		fraction += '0';
+	}
+
+	whole = new BN(whole);
+	fraction = new BN(fraction);
+	let result = whole.mul(PRECISE_UNIT).add(fraction); // eslint-disable-line
+
+	if (negative) {
+		result = result.mul(new BN('-1'));
+	}
+
+	return result;
+};
+
+const fromPreciseUnit = amount => {
+	// Code is largely lifted from the guts of web3 fromWei here:
+	// https://github.com/ethjs/ethjs-unit/blob/master/src/index.js
+	const negative = amount.lt(new BN('0'));
+
+	if (negative) {
+		amount = amount.mul(new BN('-1'));
+	}
+
+	let fraction = amount.mod(PRECISE_UNIT).toString();
+
+	while (fraction.length < PRECISE_UNIT_STRING.length - 1) {
+		fraction = `0${fraction}`;
+	}
+
+	// Chop zeros off the end if there are extras.
+	fraction = fraction.replace(/0+$/, '');
+
+	let whole = amount.div(PRECISE_UNIT).toString();
+	let value = `${whole}${fraction === '' ? '' : `.${fraction}`}`;
+
+	if (negative) {
+		value = `-${value}`;
+	}
+
+	return value;
+};
+
 /*
  * Multiplies x and y interpreting them as fixed point decimal numbers.
  */
@@ -297,6 +380,9 @@ module.exports = {
 
 	toUnit,
 	fromUnit,
+
+	toPreciseUnit,
+	fromPreciseUnit,
 
 	assertEventEqual,
 	assertEventsEqual,

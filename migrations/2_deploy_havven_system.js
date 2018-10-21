@@ -9,6 +9,7 @@ const HavvenState = artifacts.require('HavvenState');
 const Nomin = artifacts.require('Nomin');
 const Owned = artifacts.require('Owned');
 const Proxy = artifacts.require('Proxy');
+const PublicSafeDecimalMath = artifacts.require('PublicSafeDecimalMath');
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 const TokenState = artifacts.require('TokenState');
 
@@ -31,6 +32,13 @@ module.exports = async function(deployer, network, accounts) {
 	// ----------------
 	console.log('Deploying SafeDecimalMath...');
 	await deployer.deploy(SafeDecimalMath, { from: deployerAccount });
+
+	// The PublicSafeDecimalMath contract is not used in a standalone way on mainnet, this is for testing
+	// ----------------
+	// Public Safe Decimal Math Library
+	// ----------------
+	deployer.link(SafeDecimalMath, PublicSafeDecimalMath);
+	await deployer.deploy(PublicSafeDecimalMath, { from: deployerAccount });
 
 	// ----------------
 	// Exchange Rates
