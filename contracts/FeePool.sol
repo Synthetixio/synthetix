@@ -339,7 +339,7 @@ contract FeePool is Proxyable, SelfDestructible {
         view
         returns (uint)
     {
-        return value.mul(transferFeeRate);
+        return value.multiplyDecimal(transferFeeRate);
 
         // Transfers less than the reciprocal of transferFeeRate should be completely eaten up by fees.
         // This is on the basis that transfers less than this value will result in a nil fee.

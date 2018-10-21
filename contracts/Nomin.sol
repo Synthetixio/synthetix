@@ -146,7 +146,7 @@ contract Nomin is ExternStateToken {
         tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
 
         // Send the fee off to the fee pool.
-        havven.nominInitiatedFeePayment(messageSender, currencyKey, fee);
+        havven.nominInitiatedFeePayment(from, currencyKey, fee);
 
         bytes memory empty;
         return _internalTransfer(from, to, amountReceived, empty);
@@ -169,7 +169,7 @@ contract Nomin is ExternStateToken {
         tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
 
         // Send the fee off to the fee pool, which we don't want to charge an additional fee on
-        havven.nominInitiatedFeePayment(messageSender, currencyKey, fee);
+        havven.nominInitiatedFeePayment(from, currencyKey, fee);
 
         return _internalTransfer(from, to, amountReceived, data);
     }
