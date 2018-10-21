@@ -52,7 +52,7 @@ class TestHavvenEscrow(HavvenTestCase):
         nomin_proxy, _ = attempt_deploy(
             cls.compiled, 'Proxy', MASTER, [MASTER])
         proxied_havven = W3.eth.contract(
-            address=havven_proxy.address, abi=cls.compiled['PublicHavven']['abi'])
+            address=havven_proxy.address, abi=cls.compiled['Havven']['abi'])
         proxied_nomin = W3.eth.contract(
             address=nomin_proxy.address, abi=cls.compiled['Nomin']['abi'])
 
@@ -60,7 +60,7 @@ class TestHavvenEscrow(HavvenTestCase):
                                               MASTER, [MASTER, MASTER])
         nomin_tokenstate, _ = attempt_deploy(cls.compiled, 'TokenState',
                                              MASTER, [MASTER, MASTER])
-        havven_contract, hvn_txr = attempt_deploy(cls.compiled, 'PublicHavven', MASTER, [
+        havven_contract, hvn_txr = attempt_deploy(cls.compiled, 'Havven', MASTER, [
                                                   havven_proxy.address, havven_tokenstate.address, MASTER, MASTER, UNIT//2, [], ZERO_ADDRESS])
         hvn_block = W3.eth.blockNumber
 

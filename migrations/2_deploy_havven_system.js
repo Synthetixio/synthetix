@@ -248,7 +248,7 @@ module.exports = async function(deployer, network, accounts) {
 		['Havven', Havven.address],
 		['Havven Escrow', HavvenEscrow.address],
 		['Owned', Owned.address],
-		// ['SafeDecimalMath', safeDecimalMath.address],
+		['SafeDecimalMath', SafeDecimalMath.address],
 
 		// ['Issuance Controller', IssuanceController.address],
 	];
