@@ -3,9 +3,9 @@ const FeePool = artifacts.require('FeePool');
 const Havven = artifacts.require('Havven');
 const Nomin = artifacts.require('Nomin');
 
-const { currentTime, fastForward, fromUnit, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
+const { currentTime, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 
-contract.only('Nomin', async function(accounts) {
+contract('Nomin', async function(accounts) {
 	const [nUSD, nAUD, nEUR, HAV, HDR, nXYZ] = ['nUSD', 'nAUD', 'nEUR', 'HAV', 'HDR', 'nXYZ'].map(
 		web3.utils.asciiToHex
 	);
@@ -14,22 +14,12 @@ contract.only('Nomin', async function(accounts) {
 		deployerAccount,
 		owner, // Oracle next, is not needed
 		,
-		feeAuthority,
+		,
 		account1,
 		account2,
-		account3,
-		account4,
-		account5,
 	] = accounts;
 
-	let feePool,
-		FEE_ADDRESS,
-		havven,
-		exchangeRates,
-		nUSDContract,
-		nAUDContract,
-		nEURContract,
-		HDRContract;
+	let feePool, FEE_ADDRESS, havven, exchangeRates, nUSDContract, HDRContract;
 
 	beforeEach(async function() {
 		// Save ourselves from having to await deployed() in every single test.
@@ -41,8 +31,6 @@ contract.only('Nomin', async function(accounts) {
 
 		havven = await Havven.deployed();
 		nUSDContract = await Nomin.at(await havven.nomins(nUSD));
-		nAUDContract = await Nomin.at(await havven.nomins(nAUD));
-		nEURContract = await Nomin.at(await havven.nomins(nEUR));
 		HDRContract = await Nomin.at(await havven.nomins(HDR));
 
 		// Send a price update to guarantee we're not stale.
@@ -132,7 +120,7 @@ contract.only('Nomin', async function(accounts) {
 			'Transfer',
 			{ from: owner, to: ZERO_ADDRESS, value: fee },
 			'Burned',
-			{ account: owner, amount: fee },
+			{ account: owner, value: fee },
 			'Transfer',
 			{
 				from: ZERO_ADDRESS,
@@ -140,7 +128,7 @@ contract.only('Nomin', async function(accounts) {
 				value: hdrFee,
 			},
 			'Issued',
-			{ account: FEE_ADDRESS, amount: hdrFee },
+			{ account: FEE_ADDRESS, value: hdrFee },
 
 			// And finally the original nomin transfer
 			'Transfer',
@@ -193,7 +181,7 @@ contract.only('Nomin', async function(accounts) {
 			'Transfer',
 			{ from: owner, to: ZERO_ADDRESS, value: fee },
 			'Burned',
-			{ account: owner, amount: fee },
+			{ account: owner, value: fee },
 			'Transfer',
 			{
 				from: ZERO_ADDRESS,
@@ -201,7 +189,7 @@ contract.only('Nomin', async function(accounts) {
 				value: hdrFee,
 			},
 			'Issued',
-			{ account: FEE_ADDRESS, amount: hdrFee },
+			{ account: FEE_ADDRESS, value: hdrFee },
 
 			// And finally the original nomin transfer
 			'Transfer',
@@ -259,7 +247,7 @@ contract.only('Nomin', async function(accounts) {
 			'Transfer',
 			{ from: owner, to: ZERO_ADDRESS, value: fee },
 			'Burned',
-			{ account: owner, amount: fee },
+			{ account: owner, value: fee },
 			'Transfer',
 			{
 				from: ZERO_ADDRESS,
@@ -267,7 +255,7 @@ contract.only('Nomin', async function(accounts) {
 				value: hdrFee,
 			},
 			'Issued',
-			{ account: FEE_ADDRESS, amount: hdrFee },
+			{ account: FEE_ADDRESS, value: hdrFee },
 
 			// And finally the original nomin transfer
 			'Transfer',
@@ -342,7 +330,7 @@ contract.only('Nomin', async function(accounts) {
 			'Transfer',
 			{ from: owner, to: ZERO_ADDRESS, value: fee },
 			'Burned',
-			{ account: owner, amount: fee },
+			{ account: owner, value: fee },
 			'Transfer',
 			{
 				from: ZERO_ADDRESS,
@@ -350,7 +338,7 @@ contract.only('Nomin', async function(accounts) {
 				value: hdrFee,
 			},
 			'Issued',
-			{ account: FEE_ADDRESS, amount: hdrFee },
+			{ account: FEE_ADDRESS, value: hdrFee },
 
 			// And finally the original nomin transfer
 			'Transfer',
@@ -422,7 +410,7 @@ contract.only('Nomin', async function(accounts) {
 			'Transfer',
 			{ from: owner, to: ZERO_ADDRESS, value: fee },
 			'Burned',
-			{ account: owner, amount: fee },
+			{ account: owner, value: fee },
 			'Transfer',
 			{
 				from: ZERO_ADDRESS,
@@ -430,7 +418,7 @@ contract.only('Nomin', async function(accounts) {
 				value: hdrFee,
 			},
 			'Issued',
-			{ account: FEE_ADDRESS, amount: hdrFee },
+			{ account: FEE_ADDRESS, value: hdrFee },
 
 			// And finally the original nomin transfer
 			'Transfer',
@@ -447,14 +435,292 @@ contract.only('Nomin', async function(accounts) {
 		assert.bnEqual(await HDRContract.balanceOf(FEE_ADDRESS), hdrFee);
 	});
 
-	it('should transferSenderPaysFee with data without error');
-	it('should transferFromSenderPaysFee without error');
-	it('should transferFromSenderPaysFee with data without error');
-	it('should issue successfully when called by Havven');
-	it('should revert when issue is called by non-Havven address');
-	it('should burn successfully when called by Havven');
-	it('should revert when burn is called by non-Havven address');
-	it('should triggerTokenFallback successfully when called by Havven');
-	it('should triggerTokenFallback successfully when called by FeePool');
-	it('should revert on triggerTokenFallback when called by non-Havven and non-FeePool address');
+	it('should revert when calling transferSenderPaysFee with insufficient balance', async function() {
+		// Issue 10,000 nUSD.
+		const amount = toUnit('10000');
+		await havven.issueNomins(nUSD, amount, { from: owner });
+
+		// Try to send 1 more wei than we can.
+		const amountToSend = (await feePool.transferredAmountToReceive(amount)).add(
+			web3.utils.toBN('1')
+		);
+
+		// Try to transfer, which we don't have the balance for.
+		await assert.revert(
+			nUSDContract.transferSenderPaysFee(account1, amountToSend, { from: owner })
+		);
+	});
+
+	it('should transferSenderPaysFee with data without error', async function() {
+		const startingBalance = toUnit('12000');
+		const amount = toUnit('10000');
+		await havven.issueNomins(nUSD, startingBalance, { from: owner });
+
+		const fee = await feePool.transferFeeIncurred(amount);
+		const hdrFee = await havven.effectiveValue(nUSD, fee, HDR);
+
+		// Do a single transfer of all our nUSD.
+		const transaction = await nUSDContract.transferSenderPaysFee(
+			account1,
+			amount,
+			web3.utils.asciiToHex('This is a test'),
+			{ from: owner }
+		);
+
+		// Events should be a fee exchange and a transfer to account1
+		assert.eventsEqual(
+			transaction,
+
+			// Fees get burned and exchanged to HDRs
+			'Transfer',
+			{ from: owner, to: ZERO_ADDRESS, value: fee },
+			'Burned',
+			{ account: owner, value: fee },
+			'Transfer',
+			{
+				from: ZERO_ADDRESS,
+				to: FEE_ADDRESS,
+				value: hdrFee,
+			},
+			'Issued',
+			{ account: FEE_ADDRESS, value: hdrFee },
+
+			// And finally the original nomin transfer
+			'Transfer',
+			{ from: owner, to: account1, value: amount }
+		);
+
+		// Sender should have remainder
+		assert.bnEqual(await nUSDContract.balanceOf(owner), startingBalance.sub(amount).sub(fee));
+
+		// The recipient should have the correct amount
+		assert.bnEqual(await nUSDContract.balanceOf(account1), amount);
+
+		// The fee pool should also have the correct amount
+		assert.bnEqual(await HDRContract.balanceOf(FEE_ADDRESS), hdrFee);
+	});
+
+	it('should transferFromSenderPaysFee without error', async function() {
+		const startingBalance = toUnit('12000');
+		const amount = toUnit('10000');
+		await havven.issueNomins(nUSD, startingBalance, { from: owner });
+
+		const fee = await feePool.transferFeeIncurred(amount);
+		const hdrFee = await havven.effectiveValue(nUSD, fee, HDR);
+
+		await nUSDContract.approve(account1, startingBalance, { from: owner });
+
+		// Do a single transfer of all our nUSD.
+		const transaction = await nUSDContract.transferFromSenderPaysFee(owner, account1, amount, {
+			from: account1,
+		});
+
+		// Events should be a fee exchange and a transfer to account1
+		assert.eventsEqual(
+			transaction,
+
+			// Fees get burned and exchanged to HDRs
+			'Transfer',
+			{ from: owner, to: ZERO_ADDRESS, value: fee },
+			'Burned',
+			{ account: owner, value: fee },
+			'Transfer',
+			{
+				from: ZERO_ADDRESS,
+				to: FEE_ADDRESS,
+				value: hdrFee,
+			},
+			'Issued',
+			{ account: FEE_ADDRESS, value: hdrFee },
+
+			// And finally the original nomin transfer
+			'Transfer',
+			{ from: owner, to: account1, value: amount }
+		);
+
+		// Sender should have remainder
+		assert.bnEqual(await nUSDContract.balanceOf(owner), startingBalance.sub(amount).sub(fee));
+
+		// The recipient should have the correct amount
+		assert.bnEqual(await nUSDContract.balanceOf(account1), amount);
+
+		// The fee pool should also have the correct amount
+		assert.bnEqual(await HDRContract.balanceOf(FEE_ADDRESS), hdrFee);
+	});
+
+	it('should revert when calling transferFromSenderPaysFee with an insufficent allowance', async function() {
+		const startingBalance = toUnit('12000');
+		const amount = toUnit('10000');
+		await havven.issueNomins(nUSD, startingBalance, { from: owner });
+
+		await nUSDContract.approve(account1, amount, { from: owner });
+
+		// Trying to transfer will exceed our allowance.
+		await assert.revert(
+			nUSDContract.transferFromSenderPaysFee(owner, account1, amount, {
+				from: account1,
+			})
+		);
+	});
+
+	it('should revert when calling transferFromSenderPaysFee with an insufficent balance', async function() {
+		const approvalAmount = toUnit('12000');
+		const startingBalance = toUnit('10000');
+		await havven.issueNomins(nUSD, startingBalance, { from: owner });
+
+		await nUSDContract.approve(account1, approvalAmount, { from: owner });
+
+		// Trying to transfer will exceed our balance.
+		await assert.revert(
+			nUSDContract.transferFromSenderPaysFee(owner, account1, startingBalance, {
+				from: account1,
+			})
+		);
+	});
+
+	it('should transferFromSenderPaysFee with data without error', async function() {
+		const startingBalance = toUnit('12000');
+		const amount = toUnit('10000');
+		await havven.issueNomins(nUSD, startingBalance, { from: owner });
+
+		const fee = await feePool.transferFeeIncurred(amount);
+		const hdrFee = await havven.effectiveValue(nUSD, fee, HDR);
+
+		await nUSDContract.approve(account1, startingBalance, { from: owner });
+
+		// Do a single transfer of all our nUSD.
+		const transaction = await nUSDContract.transferFromSenderPaysFee(
+			owner,
+			account1,
+			amount,
+			web3.utils.asciiToHex('This is a test'),
+			{
+				from: account1,
+			}
+		);
+
+		// Events should be a fee exchange and a transfer to account1
+		assert.eventsEqual(
+			transaction,
+
+			// Fees get burned and exchanged to HDRs
+			'Transfer',
+			{ from: owner, to: ZERO_ADDRESS, value: fee },
+			'Burned',
+			{ account: owner, value: fee },
+			'Transfer',
+			{
+				from: ZERO_ADDRESS,
+				to: FEE_ADDRESS,
+				value: hdrFee,
+			},
+			'Issued',
+			{ account: FEE_ADDRESS, value: hdrFee },
+
+			// And finally the original nomin transfer
+			'Transfer',
+			{ from: owner, to: account1, value: amount }
+		);
+
+		// Sender should have remainder
+		assert.bnEqual(await nUSDContract.balanceOf(owner), startingBalance.sub(amount).sub(fee));
+
+		// The recipient should have the correct amount
+		assert.bnEqual(await nUSDContract.balanceOf(account1), amount);
+
+		// The fee pool should also have the correct amount
+		assert.bnEqual(await HDRContract.balanceOf(FEE_ADDRESS), hdrFee);
+	});
+
+	it('should issue successfully when called by Havven', async function() {
+		// Set it to us so we can call it easily
+		await HDRContract.setHavven(owner, { from: owner });
+
+		const transaction = await HDRContract.issue(account1, toUnit('10000'), { from: owner });
+		assert.eventsEqual(
+			transaction,
+			'Transfer',
+			{
+				from: ZERO_ADDRESS,
+				to: account1,
+				value: toUnit('10000'),
+			},
+			'Issued',
+			{
+				account: account1,
+				value: toUnit('10000'),
+			}
+		);
+	});
+
+	it('should revert when issue is called by non-Havven address', async function() {
+		await HDRContract.setHavven(havven.address, { from: owner });
+		await assert.revert(HDRContract.issue(account1, toUnit('10000'), { from: owner }));
+	});
+
+	it('should burn successfully when called by Havven', async function() {
+		// Issue a bunch of nomins so we can play with them.
+		await havven.issueNomins(HDR, toUnit('10000'), { from: owner });
+
+		// Set the havven reference to us so we can call it easily
+		await HDRContract.setHavven(owner, { from: owner });
+
+		const transaction = await HDRContract.burn(owner, toUnit('10000'), { from: owner });
+
+		assert.eventsEqual(
+			transaction,
+			'Transfer',
+			{ from: owner, to: ZERO_ADDRESS, value: toUnit('10000') },
+			'Burned',
+			{ account: owner, value: toUnit('10000') }
+		);
+	});
+
+	it('should revert when burn is called by non-Havven address', async function() {
+		// Issue a bunch of nomins so we can play with them.
+		await havven.issueNomins(HDR, toUnit('10000'), { from: owner });
+
+		// Set the havven reference to account1
+		await HDRContract.setHavven(account1, { from: owner });
+
+		// Burning should fail.
+		await assert.revert(HDRContract.burn(owner, toUnit('10000'), { from: owner }));
+	});
+
+	it('should revert when burning more nomins than exist', async function() {
+		// Issue a bunch of nomins so we can play with them.
+		await havven.issueNomins(HDR, toUnit('10000'), { from: owner });
+
+		// Set the havven reference to us so we can call it easily
+		await HDRContract.setHavven(owner, { from: owner });
+
+		// Burning 10000 + 1 wei should fail.
+		await assert.revert(
+			HDRContract.burn(owner, toUnit('10000').add(web3.utils.toBN('1')), { from: owner })
+		);
+	});
+
+	it('should triggerTokenFallback successfully when called by Havven', async function() {
+		// Set the havven reference to us so we can call it easily
+		await HDRContract.setHavven(owner, { from: owner });
+		await HDRContract.triggerTokenFallbackIfNeeded(ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1'), {
+			from: owner,
+		});
+	});
+
+	it('should triggerTokenFallback successfully when called by FeePool', async function() {
+		// Set the FeePool reference to us so we can call it easily
+		await HDRContract.setFeePool(owner, { from: owner });
+		await HDRContract.triggerTokenFallbackIfNeeded(ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1'), {
+			from: owner,
+		});
+	});
+
+	it('should revert on triggerTokenFallback when called by non-Havven and non-FeePool address', async function() {
+		await assert.revert(
+			HDRContract.triggerTokenFallbackIfNeeded(ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1'), {
+				from: owner,
+			})
+		);
+	});
 });

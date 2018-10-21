@@ -218,7 +218,7 @@ contract Nomin is ExternStateToken {
         tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value.add(fee)));
 
         // Send the fee off to the fee pool, which we don't want to charge an additional fee on
-        havven.nominInitiatedFeePayment(messageSender, currencyKey, fee);
+        havven.nominInitiatedFeePayment(from, currencyKey, fee);
 
         bytes memory empty;
         return _internalTransfer(from, to, value, empty);
@@ -237,7 +237,7 @@ contract Nomin is ExternStateToken {
         tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value.add(fee)));
 
         // Send the fee off to the fee pool, which we don't want to charge an additional fee on
-        havven.nominInitiatedFeePayment(messageSender, currencyKey, fee);
+        havven.nominInitiatedFeePayment(from, currencyKey, fee);
 
         return _internalTransfer(from, to, value, data);
     }
@@ -303,15 +303,15 @@ contract Nomin is ExternStateToken {
         proxy._emit(abi.encode(newFeePool), 1, FEEPOOLUPDATED_SIG, 0, 0, 0);
     }
 
-    event Issued(address indexed account, uint amount);
+    event Issued(address indexed account, uint value);
     bytes32 constant ISSUED_SIG = keccak256("Issued(address,uint256)");
-    function emitIssued(address account, uint amount) internal {
-        proxy._emit(abi.encode(amount), 2, ISSUED_SIG, bytes32(account), 0, 0);
+    function emitIssued(address account, uint value) internal {
+        proxy._emit(abi.encode(value), 2, ISSUED_SIG, bytes32(account), 0, 0);
     }
 
-    event Burned(address indexed account, uint amount);
+    event Burned(address indexed account, uint value);
     bytes32 constant BURNED_SIG = keccak256("Burned(address,uint256)");
-    function emitBurned(address account, uint amount) internal {
-        proxy._emit(abi.encode(amount), 2, BURNED_SIG, bytes32(account), 0, 0);
+    function emitBurned(address account, uint value) internal {
+        proxy._emit(abi.encode(value), 2, BURNED_SIG, bytes32(account), 0, 0);
     }
 }
