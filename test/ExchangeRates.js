@@ -163,7 +163,7 @@ contract('Exchange Rates', async function(accounts) {
 		});
 
 		for (let i = 0; i < numberOfCurrencies; i++) {
-			assert.equal(await instance.rates.call(currencyKeys[i]), rates[i]);
+			assert.bnEqual(await instance.rates.call(currencyKeys[i]), rates[i]);
 			const lastUpdatedTime = await instance.lastRateUpdateTimes.call(currencyKeys[i]);
 			assert.isAtLeast(lastUpdatedTime.toNumber(), creationTime);
 		}
