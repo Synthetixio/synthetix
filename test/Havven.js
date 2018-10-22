@@ -1162,14 +1162,169 @@ contract('Havven', async function(accounts) {
 			.sub(burntNominsPt1)
 			.sub(burntNominsPt2);
 
-		// TODO: The variance we are getting here seems suspect. Let's investigate
 		assert.bnClose(debt, expectedDebt);
+	});
+
+	it("should allow me to burn all nomins I've issued when there are other issuers", async function() {
+		const totalSupply = await havven.totalSupply();
+		const account2Havvens = toUnit('120000');
+		const account1Havvens = totalSupply.sub(account2Havvens);
+
+		await havven.transfer(account1, account1Havvens, { from: owner }); // Issue the massive majority to account1
+		await havven.transfer(account2, account2Havvens, { from: owner }); // Issue a small amount to account2
+
+		// Issue from account1
+		const account1AmountToIssue = await havven.maxIssuableNomins(account1, nUSD);
+		await havven.issueMaxNomins(nUSD, { from: account1 });
+		const debtBalance1 = await havven.debtBalanceOf(account1, nUSD);
+		assert.bnClose(debtBalance1, account1AmountToIssue);
+
+		// Issue and burn from account 2
+		await havven.issueNomins(nUSD, toUnit('43'), { from: account2 });
+		let debt = await havven.debtBalanceOf(account2, nUSD);
+		await havven.burnNomins(nUSD, debt, { from: account2 });
+		debt = await havven.debtBalanceOf(account2, nUSD);
+
+		assert.bnEqual(debt, web3.utils.toBN('0'));
 	});
 
 	// These tests take a long time to run
 	// ****************************************
 
-	it('should correctly calculate debt in a high volume issuance and burn scenario', async function() {
+	it('should correctly calculate debt in a high issuance and burn scenario', async function() {
+		const getRandomInt = (min, max) => {
+			return min + Math.floor(Math.random() * Math.floor(max));
+		};
+
+		const totalSupply = await havven.totalSupply();
+		const account2Havvens = toUnit('120000');
+		const account1Havvens = totalSupply.sub(account2Havvens);
+
+		await havven.transfer(account1, account1Havvens, { from: owner }); // Issue the massive majority to account1
+		await havven.transfer(account2, account2Havvens, { from: owner }); // Issue a small amount to account2
+
+		const account1AmountToIssue = await havven.maxIssuableNomins(account1, nUSD);
+		await havven.issueMaxNomins(nUSD, { from: account1 });
+		const debtBalance1 = await havven.debtBalanceOf(account1, nUSD);
+		assert.bnClose(debtBalance1, account1AmountToIssue);
+
+		let expectedDebtForAccount2 = web3.utils.toBN('0');
+		const totalTimesToIssue = 40;
+		for (let i = 0; i < totalTimesToIssue; i++) {
+			// Seems that in this case, issuing 43 each time leads to increasing the variance regularly each time.
+			const amount = toUnit('43');
+			await havven.issueNomins(nUSD, amount, { from: account2 });
+			expectedDebtForAccount2 = expectedDebtForAccount2.add(amount);
+
+			const desiredAmountToBurn = toUnit(web3.utils.toBN(getRandomInt(4, 14)));
+			const amountToBurn = desiredAmountToBurn.lte(expectedDebtForAccount2)
+				? desiredAmountToBurn
+				: expectedDebtForAccount2;
+			await havven.burnNomins(nUSD, amountToBurn, { from: account2 });
+			expectedDebtForAccount2 = expectedDebtForAccount2.sub(amountToBurn);
+
+			// Useful debug logging
+			// const db = await havven.debtBalanceOf(account2, nUSD);
+			// const variance = fromUnit(expectedDebtForAccount2.sub(db));
+			// console.log(
+			// 	`#### debtBalance: ${db}\t\t expectedDebtForAccount2: ${expectedDebtForAccount2}\t\tvariance: ${variance}`
+			// );
+		}
+		const debtBalance = await havven.debtBalanceOf(account2, nUSD);
+
+		// Here we make the variance a calculation of the number of times we issue/burn.
+		// This is less than ideal, but is the result of calculating the debt based on
+		// the results of the issue/burn each time.
+		const variance = web3.utils.toBN(totalTimesToIssue).mul(web3.utils.toBN('2'));
+		assert.bnClose(debtBalance, expectedDebtForAccount2, variance);
+	});
+
+	it('should correctly calculate debt in a high (random) issuance and burn scenario', async function() {
+		const getRandomInt = (min, max) => {
+			return min + Math.floor(Math.random() * Math.floor(max));
+		};
+
+		const totalSupply = await havven.totalSupply();
+		const account2Havvens = toUnit('120000');
+		const account1Havvens = totalSupply.sub(account2Havvens);
+
+		await havven.transfer(account1, account1Havvens, { from: owner }); // Issue the massive majority to account1
+		await havven.transfer(account2, account2Havvens, { from: owner }); // Issue a small amount to account2
+
+		const account1AmountToIssue = await havven.maxIssuableNomins(account1, nUSD);
+		await havven.issueMaxNomins(nUSD, { from: account1 });
+		const debtBalance1 = await havven.debtBalanceOf(account1, nUSD);
+		assert.bnClose(debtBalance1, account1AmountToIssue);
+
+		let expectedDebtForAccount2 = web3.utils.toBN('0');
+		const totalTimesToIssue = 40;
+		for (let i = 0; i < totalTimesToIssue; i++) {
+			// Seems that in this case, issuing 43 each time leads to increasing the variance regularly each time.
+			const amount = toUnit(web3.utils.toBN(getRandomInt(40, 49)));
+			await havven.issueNomins(nUSD, amount, { from: account2 });
+			expectedDebtForAccount2 = expectedDebtForAccount2.add(amount);
+
+			const desiredAmountToBurn = toUnit(web3.utils.toBN(getRandomInt(37, 46)));
+			const amountToBurn = desiredAmountToBurn.lte(expectedDebtForAccount2)
+				? desiredAmountToBurn
+				: expectedDebtForAccount2;
+			await havven.burnNomins(nUSD, amountToBurn, { from: account2 });
+			expectedDebtForAccount2 = expectedDebtForAccount2.sub(amountToBurn);
+
+			// Useful debug logging
+			// const db = await havven.debtBalanceOf(account2, nUSD);
+			// const variance = fromUnit(expectedDebtForAccount2.sub(db));
+			// console.log(
+			// 	`#### debtBalance: ${db}\t\t expectedDebtForAccount2: ${expectedDebtForAccount2}\t\tvariance: ${variance}`
+			// );
+		}
+		const debtBalance = await havven.debtBalanceOf(account2, nUSD);
+
+		// Here we make the variance a calculation of the number of times we issue/burn.
+		// This is less than ideal, but is the result of calculating the debt based on
+		// the results of the issue/burn each time.
+		const variance = web3.utils.toBN(totalTimesToIssue).mul(web3.utils.toBN('2'));
+		assert.bnClose(debtBalance, expectedDebtForAccount2, variance);
+	});
+
+	it('should correctly calculate debt in a high volume contrast issuance and burn scenario', async function() {
+		const totalSupply = await havven.totalSupply();
+
+		// Give only 100 Havvens to account2
+		const account2Havvens = toUnit('100');
+
+		// Give the vast majority to account1 (ie. 99,999,900)
+		const account1Havvens = totalSupply.sub(account2Havvens);
+
+		await havven.transfer(account1, account1Havvens, { from: owner }); // Issue the massive majority to account1
+		await havven.transfer(account2, account2Havvens, { from: owner }); // Issue a small amount to account2
+
+		const account1AmountToIssue = await havven.maxIssuableNomins(account1, nUSD);
+		await havven.issueMaxNomins(nUSD, { from: account1 });
+		const debtBalance1 = await havven.debtBalanceOf(account1, nUSD);
+		assert.bnEqual(debtBalance1, account1AmountToIssue);
+
+		let expectedDebtForAccount2 = web3.utils.toBN('0');
+		const totalTimesToIssue = 40;
+		for (let i = 0; i < totalTimesToIssue; i++) {
+			const amount = toUnit('0.000000000000000002');
+			await havven.issueNomins(nUSD, amount, { from: account2 });
+			expectedDebtForAccount2 = expectedDebtForAccount2.add(amount);
+		}
+		const debtBalance2 = await havven.debtBalanceOf(account2, nUSD);
+
+		// Here we make the variance a calculation of the number of times we issue/burn.
+		// This is less than ideal, but is the result of calculating the debt based on
+		// the results of the issue/burn each time.
+		const variance = web3.utils.toBN(totalTimesToIssue).mul(web3.utils.toBN('2'));
+		assert.bnClose(debtBalance2, expectedDebtForAccount2, variance);
+	});
+
+	// TODO: This is a sandpit test. Delete before final merge.
+	it.skip('should correctly calculate debt in a high volume issuance and burn scenario', async function() {
+		const getRandomInt = (min, max) => {
+			return min + Math.floor(Math.random() * Math.floor(max));
+		};
 		// const getRandomInt = (min, max) => {
 		// 	return min + Math.floor(Math.random() * Math.floor(max));
 		// };
@@ -1295,7 +1450,7 @@ contract('Havven', async function(accounts) {
 
 	// ****************************************
 
-	it('should not change debt balance if exchange rates change', async function() {
+	it.only('should not change debt balance if exchange rates change', async function() {
 		const oracle = await exchangeRates.oracle();
 		let newAUDRate = toUnit('0.5');
 		let timestamp = await currentTime();
