@@ -431,6 +431,14 @@ contract('Issuance Controller', async function(accounts) {
 
 			// And our total should be 0 as the purchase amount was equal to the deposit
 			assert.equal(await issuanceController.totalSellableDeposits(), 0);
+
+			// The depositor should have received the ETH
+			// KEV: that's the bug I told you about.
+			const depositorEndingBalance = await getEthBalance(depositor);
+			assertBNEqual(
+				web3.utils.toBN(depositorStartingBalance).add(web3.utils.toBN(ethToSend)), // we should also minus the txn fees
+				web3.utils.toBN(depositorEndingBalance)
+			);
 		});
 
 		it('exceeds one deposit (and that the queue is correctly updated)', async function() {
