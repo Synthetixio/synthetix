@@ -35,7 +35,8 @@ contract to the new one.
 
 pragma solidity 0.4.25;
 
-
+import "./Havven.sol";
+import "./LimitedSetup.sol";
 import "./SafeDecimalMath.sol";
 import "./State.sol";
 
@@ -43,8 +44,9 @@ import "./State.sol";
  * @title Havven State
  * @notice Stores issuance information and preferred currency information of the Havven contract.
  */
-contract HavvenState is State {
+contract HavvenState is State, LimitedSetup {
     using SafeMath for uint;
+    using SafeDecimalMath for uint;
 
     // A struct for handing values associated with an individual user's debt position
     struct IssuanceData {
@@ -86,6 +88,7 @@ contract HavvenState is State {
      */
     constructor(address _owner, address _associatedContract)
         State(_owner, _associatedContract)
+        LimitedSetup(1 weeks)
         public
     {}
 
@@ -176,6 +179,80 @@ contract HavvenState is State {
         issuanceRatio = _issuanceRatio;
         emit IssuanceRatioUpdated(_issuanceRatio);
     }
+
+    /**
+     * @notice Import issuer data from the old Havven contract before multicurrency
+     * @dev Only callable by the contract owner, and only for 1 week after deployment.
+     */
+    function importIssuerData(address[] accounts, uint[] nUSDAmounts)
+        external
+        onlyOwner
+        onlyDuringSetup
+    {
+        require(accounts.length == nUSDAmounts.length, "Length mismatch");
+
+        for (uint8 i = 0; i < accounts.length; i++) {
+            _addToDebtRegister(accounts[i], nUSDAmounts[i]);
+        }
+    }
+
+    /**
+     * @notice Import issuer data from the old Havven contract before multicurrency
+     * @dev Only used from importIssuerData above, meant to be disposable
+     */
+    function _addToDebtRegister(address account, uint amount)
+        internal
+    {
+        // This code is duplicated from Havven so that we can call it directly here
+        // during setup only.
+        Havven havven = Havven(associatedContract);
+
+        // What is the value of the requested debt in HDRs?
+        uint hdrValue = havven.effectiveValue("nUSD", amount, "HDR");
+        
+        // What is the value of all issued nomins of the system (priced in HDRs)?
+        uint totalDebtIssued = havven.totalIssuedNomins("HDR");
+
+        // What will the new total be including the new value?
+        uint newTotalDebtIssued = hdrValue.add(totalDebtIssued);
+
+        // What is their percentage (as a high precision int) of the total debt?
+        uint debtPercentage = hdrValue.divideDecimalRoundPrecise(newTotalDebtIssued);
+
+        // And what effect does this percentage have on the global debt holding of other issuers?
+        // The delta specifically needs to not take into account any existing debt as it's already
+        // accounted for in the delta from when they issued previously.
+        // The delta is a high precision integer.
+        uint delta = SafeDecimalMath.preciseUnit().sub(debtPercentage);
+
+        uint existingDebt = havven.debtBalanceOf(account, "HDR");
+         
+        // And what does their debt ownership look like including this previous stake?
+        if (existingDebt > 0) {
+            debtPercentage = hdrValue.add(existingDebt).divideDecimalRoundPrecise(newTotalDebtIssued);
+        }
+
+        // Are they a new issuer? If so, record them.
+        if (issuanceData[account].initialDebtOwnership == 0) {
+            totalIssuerCount = totalIssuerCount.add(1);
+        }
+
+        // Save the debt entry parameters
+        issuanceData[account].initialDebtOwnership = debtPercentage;
+        issuanceData[account].debtEntryIndex = debtLedger.length;
+
+        // And if we're the first, push 1 as there was no effect to any other holders, otherwise push 
+        // the change for the rest of the debt holders. The debt ledger holds high precision integers.
+        if (debtLedger.length > 0) {
+            debtLedger.push(
+                debtLedger[debtLedger.length - 1].multiplyDecimalRoundPrecise(delta)
+            );
+        } else {
+            debtLedger.push(SafeDecimalMath.preciseUnit());
+        }
+    }
+
+    /* ========== VIEWS ========== */
 
     /**
      * @notice Retrieve the length of the debt ledger array
