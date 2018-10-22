@@ -1182,10 +1182,15 @@ contract('Havven', async function(accounts) {
 		// Issue and burn from account 2
 		await havven.issueNomins(nUSD, toUnit('43'), { from: account2 });
 		let debt = await havven.debtBalanceOf(account2, nUSD);
-		await havven.burnNomins(nUSD, debt, { from: account2 });
+		await havven.burnNomins(nUSD, toUnit('43'), { from: account2 });
 		debt = await havven.debtBalanceOf(account2, nUSD);
 
-		assert.bnEqual(debt, web3.utils.toBN('0'));
+		assert.bnEqual(debt, 0);
+
+		assert.deepEqual(await havvenState.issuanceData(account2), {
+			initialDebtOwnership: 0,
+			debtEntryIndex: 0,
+		});
 	});
 
 	// These tests take a long time to run
@@ -1450,7 +1455,7 @@ contract('Havven', async function(accounts) {
 
 	// ****************************************
 
-	it.only('should not change debt balance if exchange rates change', async function() {
+	it('should not change debt balance if exchange rates change', async function() {
 		const oracle = await exchangeRates.oracle();
 		let newAUDRate = toUnit('0.5');
 		let timestamp = await currentTime();

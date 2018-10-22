@@ -153,7 +153,7 @@ const toPreciseUnit = amount => {
 
 	whole = new BN(whole);
 	fraction = new BN(fraction);
-	let result = whole.mul(PRECISE_UNIT).add(fraction); // eslint-disable-line
+	let result = whole.mul(PRECISE_UNIT).add(fraction);
 
 	if (negative) {
 		result = result.mul(new BN('-1'));
