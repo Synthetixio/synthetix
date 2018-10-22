@@ -1,4 +1,11 @@
-const { fastForward, getEthBalance } = require('../utils/testUtils');
+const {
+	fastForward,
+	getEthBalance,
+	toUnit,
+	fromUnit,
+	assertUnitEqual,
+	assertBNEqual,
+} = require('../utils/testUtils');
 
 const Havven = artifacts.require('Havven');
 const IssuanceController = artifacts.require('IssuanceController');
@@ -347,7 +354,7 @@ contract('Issuance Controller', async function(accounts) {
 		});
 	});
 
-	describe.only('Ensure user can exchange ETH for Nomins where the amount', async function() {
+	describe('Ensure user can exchange ETH for Nomins where the amount', async function() {
 		const depositor = address1;
 		const depositor2 = address2;
 		const purchaser = address3;
@@ -407,11 +414,6 @@ contract('Issuance Controller', async function(accounts) {
 				toCurrency: 'nUSD',
 				toAmount: nominsToDeposit,
 			});
-
-			// Ensure the result of the exchange is correct.
-			// Depositor should have received the ETH
-			// const depositorBalance = await getEthBalance(depositor);
-			// assert.equal(web3.utils.toBN(depositorBalance).toString(), web3.utils.toBN(depositorStartingBalance).add(web3.utils.toBN(ethToSend)).toString());
 
 			// We need to calculate the amount - fees the purchaser is supposed to get
 			const amountReceived = await nomin.amountReceived(nominsToDeposit);
@@ -499,15 +501,15 @@ contract('Issuance Controller', async function(accounts) {
 		});
 
 		it('exceeds available nomins (and that the remainder of the ETH is correctly refunded)', async function() {
-			const nominsToDeposit = web3.utils.toWei('600');
+			const nominsToDeposit = web3.utils.toWei('500');
 			const ethToSend = web3.utils.toWei('2');
-
+			const purchaserInitialBalance = await getEthBalance(purchaser);
 			// Send the nomins to the issuance controller.
 			await nomin.transferSenderPaysFee(issuanceController.address, nominsToDeposit, {
 				from: depositor,
 			});
 
-			// Assert that there is now two deposits in the queue.
+			// Assert that there is now one deposit in the queue.
 			assert.equal(await issuanceController.depositStartIndex(), 0);
 			assert.equal(await issuanceController.depositEndIndex(), 1);
 
@@ -523,36 +525,173 @@ contract('Issuance Controller', async function(accounts) {
 
 			// Exchange("ETH", msg.value, "nUSD", fulfilled);
 			const exchangeEvent = txn.logs.find(log => log.event === 'Exchange');
-			const nominsAmount = web3.utils.fromWei(ethToSend) * web3.utils.fromWei(usdEth);
+			const nominsPurchaseAmount = web3.utils.fromWei(ethToSend) * web3.utils.fromWei(usdEth);
+			// const availableAmount = nominsPurchaseAmount - web3.utils.fromWei(nominsToDeposit);
+
 			assert.eventEqual(exchangeEvent, 'Exchange', {
 				fromCurrency: 'ETH',
 				fromAmount: ethToSend,
 				toCurrency: 'nUSD',
-				toAmount: web3.utils.toWei(nominsAmount.toString()),
+				toAmount: nominsToDeposit,
 			});
 
 			// We need to calculate the amount - fees the purchaser is supposed to get
-			const amountReceived = await nomin.amountReceived(web3.utils.toWei(nominsAmount.toString()));
+			const amountReceived = await nomin.amountReceived(nominsToDeposit);
 
-			// // Purchaser should have received the total available nomins
-			// const purchaserNominBalance = await nomin.balanceOf(purchaser);
-			// const issuanceControllerNominBalance = await nomin.balanceOf(issuanceController.address);
-			// const remainingNomins = web3.utils.fromWei(totalNominsDeposit) - nominsAmount;
-			// assert.equal(purchaserNominBalance.toString(), amountReceived.toString());
+			// Purchaser should have received the total available nomins
+			const purchaserNominBalance = await nomin.balanceOf(purchaser);
+			assert.equal(amountReceived.toString(), purchaserNominBalance.toString());
+
+			// Issuance controller should have 0 nomins left
+			const issuanceControllerNominBalance = await nomin.balanceOf(issuanceController.address);
+			assert.equal(issuanceControllerNominBalance, 0);
+
+			// Purchaser should get a refund of the difference in ETH
+			// const purchaserBalance = await getEthBalance(purchaser);
+			// console.log("BALANCE", purchaserBalance, purchaserInitialBalance);
 		});
 
-		it('Ensure user can withdraw their Nomin deposit');
+		it('Ensure user can withdraw their Nomin deposit', async function() {
+			const nominsToDeposit = web3.utils.toWei('500');
+			// Send the nomins to the issuance controller.
+			await nomin.transferSenderPaysFee(issuanceController.address, nominsToDeposit, {
+				from: depositor,
+			});
+
+			// And assert that our total has increased by the right amount.
+			const totalSellableDeposits = await issuanceController.totalSellableDeposits();
+			assert.equal(totalSellableDeposits, nominsToDeposit);
+
+			// Wthdraw the deposited nomins
+			const txn = await issuanceController.withdrawMyDepositedNomins({ from: depositor });
+			const withdrawEvent = txn.logs[0];
+
+			// The sent nomins should be equal the initial deposit
+			assert.eventEqual(withdrawEvent, 'NominWithdrawal', {
+				user: depositor,
+				amount: nominsToDeposit,
+			});
+		});
+
+		it('Ensure user can exchange ETH for Nomins after a withdrawal and that the queue correctly skips the empty entry', async function() {
+			//   - e.g. Deposits of [1, 2, 3], user withdraws 2, so [1, (empty), 3], then
+			//      - User can exchange for 1, and queue is now [(empty), 3]
+			//      - User can exchange for 2 and queue is now [2]
+			const deposit1 = web3.utils.toWei('100');
+			const deposit2 = web3.utils.toWei('200');
+			const deposit3 = web3.utils.toWei('300');
+			const ethToSend = web3.utils.toWei('0.2');
+
+			// Send the nomins to the issuance controller.
+			await nomin.transferSenderPaysFee(issuanceController.address, deposit1, {
+				from: depositor,
+			});
+			await nomin.transferSenderPaysFee(issuanceController.address, deposit2, {
+				from: depositor2,
+			});
+			await nomin.transferSenderPaysFee(issuanceController.address, deposit3, {
+				from: depositor,
+			});
+
+			// Assert that there is now three deposits in the queue.
+			assert.equal(await issuanceController.depositStartIndex(), 0);
+			assert.equal(await issuanceController.depositEndIndex(), 3);
+
+			// Depositor 2 withdraws Nomins
+			await issuanceController.withdrawMyDepositedNomins({ from: depositor2 });
+
+			// Queue should be  [1, (empty), 3]
+			const queueResultForDeposit2 = await issuanceController.deposits(1);
+			assert.equal(queueResultForDeposit2.amount, 0);
+
+			// User exchange ETH for Nomins (same amount as first deposit)
+			await issuanceController.exchangeEtherForNomins({
+				from: purchaser,
+				value: ethToSend,
+			});
+
+			// Queue should now be [(empty), 3].
+			assert.equal(await issuanceController.depositStartIndex(), 1);
+			assert.equal(await issuanceController.depositEndIndex(), 3);
+			const queueResultForDeposit1 = await issuanceController.deposits(1);
+			assert.equal(queueResultForDeposit1.amount, 0);
+
+			// User exchange ETH for Nomins
+			await issuanceController.exchangeEtherForNomins({
+				from: purchaser,
+				value: ethToSend,
+			});
+
+			//Queue should now be [(deposit3 - nominsPurchasedAmount )]
+			const remainingNomins =
+				web3.utils.fromWei(deposit3) - web3.utils.fromWei(ethToSend) * web3.utils.fromWei(usdEth);
+			assert.equal(await issuanceController.depositStartIndex(), 2);
+			assert.equal(await issuanceController.depositEndIndex(), 3);
+			const totalSellableDeposits = await issuanceController.totalSellableDeposits();
+			assert.equal(totalSellableDeposits.toString(), web3.utils.toWei(remainingNomins.toString()));
+		});
+
+		it('Ensure multiple users can make multiple Nomin deposits', async function() {
+			const deposit1 = web3.utils.toWei('100');
+			const deposit2 = web3.utils.toWei('200');
+			const deposit3 = web3.utils.toWei('300');
+			const deposit4 = web3.utils.toWei('400');
+
+			// Send the nomins to the issuance controller.
+			await nomin.transferSenderPaysFee(issuanceController.address, deposit1, {
+				from: depositor,
+			});
+			await nomin.transferSenderPaysFee(issuanceController.address, deposit2, {
+				from: depositor2,
+			});
+			await nomin.transferSenderPaysFee(issuanceController.address, deposit3, {
+				from: depositor,
+			});
+			await nomin.transferSenderPaysFee(issuanceController.address, deposit4, {
+				from: depositor2,
+			});
+
+			// We should have now 4 deposits
+			assert.equal(await issuanceController.depositStartIndex(), 0);
+			assert.equal(await issuanceController.depositEndIndex(), 4);
+		});
+
+		it('Ensure multiple users can make multiple Nomin deposits and multiple withdrawals (and that the queue is correctly updated)', async function() {
+			const deposit1 = web3.utils.toWei('100');
+			const deposit2 = web3.utils.toWei('200');
+			const deposit3 = web3.utils.toWei('300');
+			const deposit4 = web3.utils.toWei('400');
+
+			// Send the nomins to the issuance controller.
+			await nomin.transferSenderPaysFee(issuanceController.address, deposit1, {
+				from: depositor,
+			});
+			await nomin.transferSenderPaysFee(issuanceController.address, deposit2, {
+				from: depositor,
+			});
+			await nomin.transferSenderPaysFee(issuanceController.address, deposit3, {
+				from: depositor2,
+			});
+			await nomin.transferSenderPaysFee(issuanceController.address, deposit4, {
+				from: depositor2,
+			});
+
+			// We should have now 4 deposits
+			assert.equal(await issuanceController.depositStartIndex(), 0);
+			assert.equal(await issuanceController.depositEndIndex(), 4);
+
+			// Depositors withdraws all his deposits
+			await issuanceController.withdrawMyDepositedNomins({ from: depositor });
+
+			// We should have now 4 deposits
+			assert.equal(await issuanceController.depositStartIndex(), 0);
+			assert.equal(await issuanceController.depositEndIndex(), 4);
+
+			// First two deposits should be 0
+			const firstDepositInQueue = await issuanceController.deposits(0);
+			const secondDepositInQueue = await issuanceController.deposits(1);
+			assert.equal(firstDepositInQueue.amount, 0);
+			assert.equal(secondDepositInQueue.amount, 0);
+		});
 	});
-
-	it('Ensure user can exchange ETH for Nomins after a withdrawal and that the queue correctly skips the empty entry', async function() {
-		//   - e.g. Deposits of [1, 2, 3], user withdraws 2, so [1, (empty), 3], then
-		//      - User can exchange for 1, and queue is now [(empty), 3]
-		//      - User can exchange for 2 and queue is now [2]
-	});
-
-	it('Ensure multiple users can make multiple Nomin deposits');
-
-	it(
-		'Ensure multiple users can make multiple Nomin deposits and multiple withdrawals (and that the queue is correctly updated)'
-	);
 });

@@ -115,6 +115,17 @@ const getEthBalance = async account => {
 	return balance;
 };
 
+const assertUnitEqual = (actualWei, expectedAmount, expectedUnit = 'ether') => {
+	assertBNEqual(actualWei, web3.utils.toWei(expectedAmount, expectedUnit));
+};
+
+const toUnit = amount => web3.utils.toBN(web3.utils.toWei(amount, 'ether'));
+const fromUnit = amount => web3.utils.fromWei(amount, 'ether');
+
+const assertBNEqual = (actualBN, expectedBN, context) => {
+	assert.equal(actualBN.toString(), expectedBN.toString(), context);
+};
+
 module.exports = {
 	mineBlock,
 	fastForward,
@@ -124,4 +135,8 @@ module.exports = {
 	assertEventEqual,
 	getEthBalance,
 	currentTime,
+	toUnit,
+	fromUnit,
+	assertUnitEqual,
+	assertBNEqual,
 };
