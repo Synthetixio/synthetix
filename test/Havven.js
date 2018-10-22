@@ -1327,9 +1327,6 @@ contract('Havven', async function(accounts) {
 
 	// TODO: This is a sandpit test. Delete before final merge.
 	it.skip('should correctly calculate debt in a high volume issuance and burn scenario', async function() {
-		const getRandomInt = (min, max) => {
-			return min + Math.floor(Math.random() * Math.floor(max));
-		};
 		// const getRandomInt = (min, max) => {
 		// 	return min + Math.floor(Math.random() * Math.floor(max));
 		// };
