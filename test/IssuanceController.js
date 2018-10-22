@@ -385,9 +385,15 @@ contract('Issuance Controller', async function(accounts) {
 			const depositorStartingBalance = await getEthBalance(depositor);
 
 			// Send the nomins to the issuance controller.
-			await nomin.transferSenderPaysFee(issuanceController.address, nominsToDeposit, {
-				from: depositor,
-			});
+			const depositTxn = await nomin.transferSenderPaysFee(
+				issuanceController.address,
+				nominsToDeposit,
+				{
+					from: depositor,
+				}
+			);
+
+			const gasPaid = web3.utils.toBN(depositTxn.receipt.gasUsed * 20000000000);
 
 			const depositStartIndex = await issuanceController.depositStartIndex();
 			const depositEndIndex = await issuanceController.depositEndIndex();
@@ -433,11 +439,10 @@ contract('Issuance Controller', async function(accounts) {
 			assert.equal(await issuanceController.totalSellableDeposits(), 0);
 
 			// The depositor should have received the ETH
-			// KEV: that's the bug I told you about.
 			const depositorEndingBalance = await getEthBalance(depositor);
 			assertBNEqual(
-				web3.utils.toBN(depositorStartingBalance).add(web3.utils.toBN(ethToSend)), // we should also minus the txn fees
-				web3.utils.toBN(depositorEndingBalance)
+				web3.utils.toBN(depositorStartingBalance).add(web3.utils.toBN(ethToSend)),
+				web3.utils.toBN(depositorEndingBalance).add(gasPaid)
 			);
 		});
 
