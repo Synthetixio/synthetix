@@ -136,6 +136,12 @@ const divideDecimal = (x, y, unit = UNIT) => {
 	return xBN.mul(unit).div(yBN);
 };
 
+const multiplyDecimal = (x, y, unit = UNIT) => {
+	const xBN = BN.isBN(x) ? x : new BN(x);
+	const yBN = BN.isBN(y) ? y : new BN(y);
+	return xBN.mul(yBN).div(unit);
+};
+
 module.exports = {
 	mineBlock,
 	fastForward,
@@ -150,4 +156,5 @@ module.exports = {
 	assertUnitEqual,
 	assertBNEqual,
 	divideDecimal,
+	multiplyDecimal,
 };

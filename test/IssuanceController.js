@@ -6,6 +6,7 @@ const {
 	assertUnitEqual,
 	assertBNEqual,
 	divideDecimal,
+	multiplyDecimal,
 } = require('../utils/testUtils');
 
 const Havven = artifacts.require('Havven');
@@ -716,6 +717,41 @@ contract('Issuance Controller', async function(accounts) {
 			const secondDepositInQueue = await issuanceController.deposits(1);
 			assert.equal(firstDepositInQueue.amount, 0);
 			assert.equal(secondDepositInQueue.amount, 0);
+		});
+	});
+
+	describe.only('Ensure user can exchange ETH for Havven', async function() {
+		const purchaser = address1;
+		let issuanceController;
+		let havven;
+		let usdHav = '157474638738934625';
+
+		this.beforeEach(async function() {
+			issuanceController = await IssuanceController.deployed();
+			havven = await Havven.deployed();
+		});
+
+		it('ensure user get the correct amount of HAV after sending ETH', async function() {
+			const ethToSend = web3.utils.toWei('1');
+			const purchaserHAVStartBalance = await havven.balanceOf(owner);
+			await havven.transfer(issuanceController.address, web3.utils.toWei('100'), {
+				from: owner,
+			});
+
+			console.log(await havven.balanceOf(issuanceController.address));
+
+			// // Purchaser should not have HAV yet
+			// assert.equal(purchaserHAVStartBalance, 0);
+
+			// // Purchaser sends ETH
+			// await issuanceController.exchangeEtherForHavvens({
+			// 	from: purchaser,
+			// 	value: ethToSend,
+			// });
+
+			// // const havAmount = multiplyDecimal(ethToSend, usdHav);
+
+			// const purchaserHAVEndBalance = await havven.balanceOf(purchaser);
 		});
 	});
 });
