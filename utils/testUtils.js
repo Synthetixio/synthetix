@@ -110,6 +110,19 @@ const assertEventEqual = (actualEventOrTransaction, expectedEvent, expectedArgs)
 	// Ensure you pass in all the args you need to assert on.
 };
 
+const assertRevert = async blockOrPromise => {
+	let errorCaught = false;
+	try {
+		const result = typeof blockOrPromise === 'function' ? blockOrPromise() : blockOrPromise;
+		await result;
+	} catch (error) {
+		assert.include(error.message, 'revert');
+		errorCaught = true;
+	}
+
+	assert.equal(errorCaught, true, 'Operation did not revert as expected');
+};
+
 /**
  *  Gets the ETH balance for the account address
  * 	@param account Ethereum wallet address
@@ -155,6 +168,7 @@ module.exports = {
 	fromUnit,
 	assertUnitEqual,
 	assertBNEqual,
+	assertRevert,
 	divideDecimal,
 	multiplyDecimal,
 };

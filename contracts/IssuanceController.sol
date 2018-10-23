@@ -54,7 +54,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     address public oracle;
     /* Do not allow the oracle to submit times any further forward into the future than
        this constant. */
-    uint constant ORACLE_FUTURE_LIMIT = 10 minutes;
+    uint public constant ORACLE_FUTURE_LIMIT = 10 minutes;
 
     /* How long will the contract assume the price of any asset is correct */
     uint public priceStalePeriod = 3 hours;
