@@ -17,7 +17,6 @@ const havUSD = web3.utils.toWei('.10');
 const totalSupplyNomin = web3.utils.toWei('0'); //web3.utils.toWei('1241510914838889387806256');
 const totalSupplyHavven = web3.utils.toWei('100000000');
 
-
 module.exports = async function(deployer, network, accounts) {
 	const [deployerAccount, owner, oracle, fundsWallet] = accounts;
 
@@ -101,11 +100,7 @@ module.exports = async function(deployer, network, accounts) {
 	// Create Initial Havven Tokens
 	// --------------------
 	console.log('Assign 100% HAV Tokens to owner account');
-	await havvenTokenState.setBalanceOf(
-		owner,
-		totalSupplyHavven,
-		{ from: owner }
-	);
+	await havvenTokenState.setBalanceOf(owner, totalSupplyHavven, { from: owner });
 
 	// ----------------------
 	// Connect Token States
@@ -131,11 +126,9 @@ module.exports = async function(deployer, network, accounts) {
 
 	// ----------------------
 	// Mint nUSD
-	// ----------------------	
+	// ----------------------
 	console.log('Add owner to the isIssuer whitelist');
 	await havven.setIssuer(owner, true, { from: owner });
-	console.log('owner account to issueMaxNomins()', owner);
-	await havven.issueMaxNomins({ from: owner });
 
 	console.log();
 	console.log();

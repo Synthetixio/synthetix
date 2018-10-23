@@ -199,8 +199,6 @@ contract('Issuance Controller', async function(accounts) {
 	});
 
 	describe('should not exchange ether for nomins', async function() {
-		let issuanceController;
-		let nomin;
 		let fundsWalletFromContract;
 		let fundsWalletEthBalanceBefore;
 		let nominsBalance;
@@ -618,35 +616,41 @@ contract('Issuance Controller', async function(accounts) {
 		const purchaser = address1;
 		let issuanceController;
 		let havven;
-		let usdHav = '157474638738934625';
+		let nomin;
+		const ethUSD = web3.utils.toWei('500');
+		const havUSD = web3.utils.toWei('.10');
 
 		this.beforeEach(async function() {
 			issuanceController = await IssuanceController.deployed();
 			havven = await Havven.deployed();
+			nomin = await Nomin.deployed();
+			// We need to send some HAV to the Issuance Controller contract
+			await havven.transfer(issuanceController.address, web3.utils.toWei('1000000'), {
+				from: owner,
+			});
 		});
 
 		it('ensure user get the correct amount of HAV after sending ETH', async function() {
-			const ethToSend = web3.utils.toWei('1');
-			const purchaserHAVStartBalance = await havven.balanceOf(owner);
-			console.log(fromUnit(purchaserHAVStartBalance));
-			await havven.transfer(issuanceController.address, purchaserHAVStartBalance, {
-				from: owner,
+			const ethToSend = toUnit('10');
+
+			const purchaserHAVStartBalance = await havven.balanceOf(purchaser);
+			// Purchaser should not have HAV yet
+			assert.equal(purchaserHAVStartBalance, 0);
+
+			// Purchaser sends ETH
+			await issuanceController.exchangeEtherForHavvens({
+				from: purchaser,
+				value: ethToSend,
 			});
 
-			console.log(await havven.balanceOf(issuanceController.address));
+			const purchaseValueInNomins = multiplyDecimal(ethToSend, ethUSD);
+			const purchaseValueInNominsAfterFees = await nomin.amountReceived(purchaseValueInNomins);
+			const purchaseValueInHavvens = divideDecimal(purchaseValueInNominsAfterFees, havUSD);
 
-			// // Purchaser should not have HAV yet
-			// assert.equal(purchaserHAVStartBalance, 0);
+			const purchaserHAVEndBalance = await havven.balanceOf(purchaser);
 
-			// // Purchaser sends ETH
-			// await issuanceController.exchangeEtherForHavvens({
-			// 	from: purchaser,
-			// 	value: ethToSend,
-			// });
-
-			// // const havAmount = multiplyDecimal(ethToSend, usdHav);
-
-			// const purchaserHAVEndBalance = await havven.balanceOf(purchaser);
+			// Purchaser HAV balance should be equal to the purchase value we calculated above
+			assert.bnEqual(purchaserHAVEndBalance, purchaseValueInHavvens);
 		});
 	});
 });

@@ -234,10 +234,6 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         exchangeEtherForNomins();
     }
 
-    event Log(string message);
-    event LogInt(string message, uint number);
-    event LogAddress(string message, address addr);
-
     /**
      * @notice Exchange ETH to nUSD.
      */
@@ -251,29 +247,21 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         // The multiplication works here because usdToEthPrice is specified in
         // 18 decimal places, just like our currency base.
         uint requestedToPurchase = safeMul_dec(msg.value, usdToEthPrice);
-        emit LogInt("Requested to purchase", requestedToPurchase);
         uint remainingToFulfill = requestedToPurchase;
-        emit LogInt("Remaining to fulfill", remainingToFulfill);
 
         // Iterate through our outstanding deposits and sell them one at a time.
         for (uint i = depositStartIndex; remainingToFulfill > 0 && i < depositEndIndex; i++) {
             nominDeposit memory deposit = deposits[i];
 
-            emit LogAddress("Deposit address", deposit.user);
-            emit LogInt("Deposit amount", deposit.amount);
-
             // If it's an empty spot in the queue from a previous withdrawal, just skip over it and
             // update the queue. It's already been deleted.
             if (deposit.user == address(0)) {
-                emit LogInt("Queue spot is already deleted, skipping", i);
 
                 depositStartIndex = safeAdd(depositStartIndex, 1);
-                emit LogInt("New start index", depositStartIndex);
             } else {
                 // If the deposit can more than fill the order, we can do this
                 // without touching the structure of our queue.
                 if (deposit.amount > remainingToFulfill) {
-                    emit Log("Fulfilling from first deposit");
 
                     // Ok, this deposit can fulfill the whole remainder. We don't need
                     // to change anything about our queue we can just fulfill it.
@@ -281,25 +269,18 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
                     deposit.amount = safeSub(deposit.amount, remainingToFulfill);
                     totalSellableDeposits = safeSub(totalSellableDeposits, remainingToFulfill);
 
-                    emit LogInt("New deposit amount", deposit.amount);
-                    emit LogInt("New total sellable", totalSellableDeposits);
-
                     // Transfer the ETH to the depositor.
                     deposit.user.transfer(safeDiv_dec(remainingToFulfill, usdToEthPrice));
-                    emit LogInt("Transferring ETH", safeDiv_dec(remainingToFulfill, usdToEthPrice));
+
                     // And the Nomins to the recipient.
                     // Note: Fees are calculated by the Nomin contract, so when
                     //       we request a specific transfer here, the fee is
                     //       automatically deducted and sent to the fee pool.
                     nomin.transfer(msg.sender, remainingToFulfill);
-                    emit LogInt("Amount of Nomins transferred", remainingToFulfill);
 
                     // And we have nothing left to fulfill on this order.
                     remainingToFulfill = 0;
                 } else if (deposit.amount <= remainingToFulfill) {
-                    emit LogInt("Deposit amount", deposit.amount);
-                    emit LogInt("Remaining to fulfill", remainingToFulfill);
-                    emit Log("Amount exceeds first deposit, consuming");
                     // We need to fulfill this one in its entirety and kick it out of the queue.
                     // Start by kicking it out of the queue.
                     // Free the storage because we can.
@@ -308,25 +289,19 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
                     depositStartIndex = safeAdd(depositStartIndex, 1);
                     // We also need to tell our total it's decreased
                     totalSellableDeposits = safeSub(totalSellableDeposits, deposit.amount);
-                    emit LogInt("New start index", depositStartIndex);
-                    emit LogInt("New end index", depositStartIndex);
-                    emit LogInt("New queue length", depositEndIndex - depositStartIndex);
-                    emit LogInt("New total", totalSellableDeposits);
 
                     // Now fulfill by transfering the ETH to the depositor.
                     deposit.user.transfer(safeDiv_dec(deposit.amount, usdToEthPrice));
-                    emit LogInt("Transferring ETH", safeDiv_dec(deposit.amount, usdToEthPrice));
+
                     // And the Nomins to the recipient.
                     // Note: Fees are calculated by the Nomin contract, so when
                     //       we request a specific transfer here, the fee is
                     //       automatically deducted and sent to the fee pool.
                     nomin.transfer(msg.sender, deposit.amount);
-                    emit LogInt("Transferring Nomins", deposit.amount);
 
                     // And subtract the order from our outstanding amount remaining
                     // for the next iteration of the loop.
                     remainingToFulfill = safeSub(remainingToFulfill, deposit.amount);
-                    emit LogInt("New remaining to fulfill", remainingToFulfill);
                 }
             }
         }
@@ -334,7 +309,6 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         // Ok, if we're here and 'remainingToFulfill' isn't zero, then
         // we need to refund the remainder of their ETH back to them.
         if (remainingToFulfill > 0) {
-            emit LogInt("Refunding ETH", safeDiv_dec(remainingToFulfill, usdToEthPrice));
             msg.sender.transfer(safeDiv_dec(remainingToFulfill, usdToEthPrice));
         }
 
