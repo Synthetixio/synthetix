@@ -5,6 +5,7 @@ const {
 	fromUnit,
 	assertUnitEqual,
 	assertBNEqual,
+	divideDecimal,
 } = require('../utils/testUtils');
 
 const Havven = artifacts.require('Havven');
@@ -514,7 +515,7 @@ contract('Issuance Controller', async function(accounts) {
 		});
 
 		it('exceeds available nomins (and that the remainder of the ETH is correctly refunded)', async function() {
-			const nominsToDeposit = web3.utils.toWei('500');
+			const nominsToDeposit = web3.utils.toWei('400');
 			const ethToSend = web3.utils.toWei('2');
 			const purchaserInitialBalance = await getEthBalance(purchaser);
 			// Send the nomins to the issuance controller.
@@ -536,6 +537,8 @@ contract('Issuance Controller', async function(accounts) {
 				value: ethToSend,
 			});
 
+			const gasPaid = web3.utils.toBN(txn.receipt.gasUsed * 20000000000);
+
 			// Exchange("ETH", msg.value, "nUSD", fulfilled);
 			const exchangeEvent = txn.logs.find(log => log.event === 'Exchange');
 			const nominsPurchaseAmount = web3.utils.fromWei(ethToSend) * web3.utils.fromWei(usdEth);
@@ -550,6 +553,7 @@ contract('Issuance Controller', async function(accounts) {
 
 			// We need to calculate the amount - fees the purchaser is supposed to get
 			const amountReceived = await nomin.amountReceived(nominsToDeposit);
+			const nominsAvailableInETH = divideDecimal(nominsToDeposit, usdEth);
 
 			// Purchaser should have received the total available nomins
 			const purchaserNominBalance = await nomin.balanceOf(purchaser);
@@ -559,9 +563,16 @@ contract('Issuance Controller', async function(accounts) {
 			const issuanceControllerNominBalance = await nomin.balanceOf(issuanceController.address);
 			assert.equal(issuanceControllerNominBalance, 0);
 
-			// Purchaser should get a refund of the difference in ETH
-			// const purchaserBalance = await getEthBalance(purchaser);
-			// console.log("BALANCE", purchaserBalance, purchaserInitialBalance);
+			// The purchaser should have received the refund
+			// which can be checked by initialBalance = endBalance + fees + amount of nomins bought in ETH
+			const purchaserEndingBalance = await getEthBalance(purchaser);
+			assertBNEqual(
+				web3.utils.toBN(purchaserInitialBalance),
+				web3.utils
+					.toBN(purchaserEndingBalance)
+					.add(gasPaid)
+					.add(nominsAvailableInETH)
+			);
 		});
 
 		it('Ensure user can withdraw their Nomin deposit', async function() {

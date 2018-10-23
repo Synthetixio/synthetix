@@ -65,7 +65,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
     uint public usdToHavPrice;
     /* The USD price of ETH denominated in UNIT */
     uint public usdToEthPrice;
-    
+
     /* Stores deposits from users. */
     struct nominDeposit {
         // The user that made the deposit
@@ -79,7 +79,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
        Conceptually this fits well in an array, but then when users fill an order we
        end up copying the whole array around, so better to use an index mapping instead
        for gas performance reasons.
-       
+
        The indexes are specified (inclusive, exclusive), so (0, 0) means there's nothing
        in the array, and (3, 6) means there are 3 elements at 3, 4, and 5. You can obtain
        the length of the "array" by querying depositEndIndex - depositStartIndex. All index
@@ -152,7 +152,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         fundsWallet = _fundsWallet;
         emit FundsWalletUpdated(fundsWallet);
     }
-    
+
     /**
      * @notice Set the Oracle that pushes the havven price to this contract
      * @param _oracle The new oracle address
@@ -195,7 +195,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
      */
     function setPriceStalePeriod(uint _time)
         external
-        onlyOwner 
+        onlyOwner
     {
         priceStalePeriod = _time;
         emit PriceStalePeriodUpdated(priceStalePeriod);
@@ -232,7 +232,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         payable
     {
         exchangeEtherForNomins();
-    } 
+    }
 
     event Log(string message);
     event LogInt(string message, uint number);
@@ -242,7 +242,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
      * @notice Exchange ETH to nUSD.
      */
     function exchangeEtherForNomins()
-        public 
+        public
         payable
         pricesNotStale
         notPaused
@@ -283,12 +283,12 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
 
                     emit LogInt("New deposit amount", deposit.amount);
                     emit LogInt("New total sellable", totalSellableDeposits);
-                    
+
                     // Transfer the ETH to the depositor.
                     deposit.user.transfer(safeDiv_dec(remainingToFulfill, usdToEthPrice));
                     emit LogInt("Transferring ETH", safeDiv_dec(remainingToFulfill, usdToEthPrice));
                     // And the Nomins to the recipient.
-                    // Note: Fees are calculated by the Nomin contract, so when 
+                    // Note: Fees are calculated by the Nomin contract, so when
                     //       we request a specific transfer here, the fee is
                     //       automatically deducted and sent to the fee pool.
                     nomin.transfer(msg.sender, remainingToFulfill);
@@ -317,7 +317,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
                     deposit.user.transfer(safeDiv_dec(deposit.amount, usdToEthPrice));
                     emit LogInt("Transferring ETH", safeDiv_dec(deposit.amount, usdToEthPrice));
                     // And the Nomins to the recipient.
-                    // Note: Fees are calculated by the Nomin contract, so when 
+                    // Note: Fees are calculated by the Nomin contract, so when
                     //       we request a specific transfer here, the fee is
                     //       automatically deducted and sent to the fee pool.
                     nomin.transfer(msg.sender, deposit.amount);
@@ -334,6 +334,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         // Ok, if we're here and 'remainingToFulfill' isn't zero, then
         // we need to refund the remainder of their ETH back to them.
         if (remainingToFulfill > 0) {
+            emit LogInt("Refunding ETH", safeDiv_dec(remainingToFulfill, usdToEthPrice));
             msg.sender.transfer(safeDiv_dec(remainingToFulfill, usdToEthPrice));
         }
 
@@ -368,7 +369,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
      * @notice Exchange ETH to HAV.
      */
     function exchangeEtherForHavvens()
-        public 
+        public
         payable
         pricesNotStale
         notPaused
@@ -413,14 +414,14 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
      * @param nominAmount The amount of nomins the user wishes to exchange.
      */
     function exchangeNominsForHavvens(uint nominAmount)
-        public 
+        public
         pricesNotStale
         notPaused
         returns (uint) // Returns the number of Havvens (HAV) received
     {
         // How many Havvens are they going to be receiving?
         uint havvensToSend = havvensReceivedForNomins(nominAmount);
-        
+
         // Ok, transfer the Nomins to our funds wallet.
         // These do not go in the deposit queue as they aren't for sale as such unless
         // they're sent back in from the funds wallet.
@@ -431,7 +432,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
 
         emit Exchange("nUSD", nominAmount, "HAV", havvensToSend);
 
-        return havvensToSend; 
+        return havvensToSend;
     }
 
     /**
@@ -441,7 +442,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
      * @param guaranteedRate A rate (havven price) the caller wishes to insist upon.
      */
     function exchangeNominsForHavvensAtRate(uint nominAmount, uint guaranteedRate)
-        public 
+        public
         pricesNotStale
         notPaused
         returns (uint) // Returns the number of Havvens (HAV) received
@@ -450,7 +451,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
 
         return exchangeNominsForHavvens(nominAmount);
     }
-    
+
     /**
      * @notice Allows the owner to withdraw havvens from this contract if needed.
      * @param amount The amount of havvens to attempt to withdraw (in 18 decimal places).
@@ -460,7 +461,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         onlyOwner
     {
         havven.transfer(owner, amount);
-        
+
         // We don't emit our own events here because we assume that anyone
         // who wants to watch what the Issuance Controller is doing can
         // just watch ERC20 events from the Nomin and/or Havven contracts
@@ -498,7 +499,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
 
         // Send their deposits back to them (minus fees)
         nomin.transfer(msg.sender, nominsToSend);
-        
+
         emit NominWithdrawal(msg.sender, nominsToSend);
     }
 
@@ -554,7 +555,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
      * @param amount The amount of nomins (in 18 decimal places) you want to ask about
      */
     function havvensReceivedForNomins(uint amount)
-        public 
+        public
         view
         returns (uint)
     {
@@ -571,12 +572,12 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
      * @param amount The amount of ether (in wei) you want to ask about
      */
     function havvensReceivedForEther(uint amount)
-        public 
+        public
         view
         returns (uint)
     {
         // How much is the ETH they sent us worth in nUSD (ignoring the transfer fee)?
-        uint valueSentInNomins = safeMul_dec(amount, usdToEthPrice); 
+        uint valueSentInNomins = safeMul_dec(amount, usdToEthPrice);
 
         // Now, how many HAV will that USD amount buy?
         return havvensReceivedForNomins(valueSentInNomins);
@@ -588,7 +589,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
      * @param amount The amount of ether (in wei) you want to ask about
      */
     function nominsReceivedForEther(uint amount)
-        public 
+        public
         view
         returns (uint)
     {
@@ -598,7 +599,7 @@ contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
         // And how many of those would you receive after a transfer (deducting the transfer fee)
         return nomin.amountReceived(nominsTransferred);
     }
-    
+
     /* ========== MODIFIERS ========== */
 
     modifier onlyOracle

@@ -1,3 +1,7 @@
+const BN = require('bn.js');
+
+const UNIT = web3.utils.toWei(new BN('1'), 'ether');
+
 /**
  * Sets default properties on the jsonrpc object and promisifies it so we don't have to copy/paste everywhere.
  */
@@ -126,6 +130,12 @@ const assertBNEqual = (actualBN, expectedBN, context) => {
 	assert.equal(actualBN.toString(), expectedBN.toString(), context);
 };
 
+const divideDecimal = (x, y, unit = UNIT) => {
+	const xBN = BN.isBN(x) ? x : new BN(x);
+	const yBN = BN.isBN(y) ? y : new BN(y);
+	return xBN.mul(unit).div(yBN);
+};
+
 module.exports = {
 	mineBlock,
 	fastForward,
@@ -139,4 +149,5 @@ module.exports = {
 	fromUnit,
 	assertUnitEqual,
 	assertBNEqual,
+	divideDecimal,
 };
