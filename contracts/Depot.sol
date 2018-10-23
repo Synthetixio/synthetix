@@ -3,23 +3,23 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 
-file:       IssuanceController.sol
-version:    2.0
+file:       Depot.sol
+version:    3.0
 author:     Kevin Brown
-date:       2018-07-18
+date:       2018-10-23
 
 -----------------------------------------------------------------
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
-Issuance controller contract. The issuance controller provides
+Depot contract. The Depot provides
 a way for users to acquire nomins (Nomin.sol) and havvens
 (Havven.sol) by paying ETH and a way for users to acquire havvens
 (Havven.sol) by paying nomins. Users can also deposit their nomins
 and allow other users to purchase them with ETH. The ETH is sent
 to the user who offered their nomins for sale.
 
-This smart contract contains a balance of each currency, and
+This smart contract contains a balance of each token, and
 allows the owner of the contract (the Havven Foundation) to
 manage the available balance of havven at their discretion, while
 users are allowed to deposit and withdraw their own nomin deposits
@@ -37,9 +37,9 @@ import "./Havven.sol";
 import "./Nomin.sol";
 
 /**
- * @title Issuance Controller Contract.
+ * @title Depot Contract.
  */
-contract IssuanceController is SafeDecimalMath, SelfDestructible, Pausable {
+contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
 
     /* ========== STATE VARIABLES ========== */
     Havven public havven;

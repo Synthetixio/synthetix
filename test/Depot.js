@@ -9,16 +9,16 @@ const {
 } = require('../utils/testUtils');
 
 const Havven = artifacts.require('Havven');
-const IssuanceController = artifacts.require('IssuanceController');
+const Depot = artifacts.require('Depot');
 const Nomin = artifacts.require('Nomin');
 
-contract('Issuance Controller', async function(accounts) {
-	let havven, nomin, issuanceController;
+contract('Depot', async function(accounts) {
+	let havven, nomin, depot;
 
 	beforeEach(async function() {
 		havven = await Havven.deployed();
 		nomin = await Nomin.deployed();
-		issuanceController = await IssuanceController.deployed();
+		depot = await Depot.deployed();
 	});
 
 	const [
@@ -36,7 +36,7 @@ contract('Issuance Controller', async function(accounts) {
 		let usdEth = '274957049546843687330';
 		let usdHav = '127474638738934625';
 
-		const instance = await IssuanceController.new(
+		const instance = await Depot.new(
 			owner,
 			fundsWallet,
 			havven.address,
@@ -58,60 +58,60 @@ contract('Issuance Controller', async function(accounts) {
 	});
 
 	it('should set funds wallet when invoked by owner', async function() {
-		const transaction = await issuanceController.setFundsWallet(address1, { from: owner });
+		const transaction = await depot.setFundsWallet(address1, { from: owner });
 		assert.eventEqual(transaction, 'FundsWalletUpdated', { newFundsWallet: address1 });
 
-		assert.equal(await issuanceController.fundsWallet(), address1);
+		assert.equal(await depot.fundsWallet(), address1);
 	});
 
 	it('should not set funds wallet when not invoked by owner', async function() {
-		await assert.revert(issuanceController.setFundsWallet(address2, { from: deployerAccount }));
+		await assert.revert(depot.setFundsWallet(address2, { from: deployerAccount }));
 	});
 
 	it('should set oracle when invoked by owner', async function() {
-		const txn = await issuanceController.setOracle(address2, { from: owner });
+		const txn = await depot.setOracle(address2, { from: owner });
 		assert.eventEqual(txn, 'OracleUpdated', { newOracle: address2 });
 
-		assert.equal(await issuanceController.oracle(), address2);
+		assert.equal(await depot.oracle(), address2);
 	});
 
 	it('should not set oracle when not invoked by owner', async function() {
-		await assert.revert(issuanceController.setOracle(address3, { from: deployerAccount }));
+		await assert.revert(depot.setOracle(address3, { from: deployerAccount }));
 	});
 
 	it('should set nomin when invoked by owner', async function() {
-		const transaction = await issuanceController.setNomin(address3, { from: owner });
+		const transaction = await depot.setNomin(address3, { from: owner });
 		assert.eventEqual(transaction, 'NominUpdated', { newNominContract: address3 });
 
-		assert.equal(await issuanceController.nomin(), address3);
+		assert.equal(await depot.nomin(), address3);
 	});
 
 	it('should not set nomin when not invoked by owner', async function() {
-		await assert.revert(issuanceController.setNomin(address4, { from: deployerAccount }));
+		await assert.revert(depot.setNomin(address4, { from: deployerAccount }));
 	});
 
 	it('should set havven when invoked by owner', async function() {
-		const transaction = await issuanceController.setHavven(address4, { from: owner });
+		const transaction = await depot.setHavven(address4, { from: owner });
 		assert.eventEqual(transaction, 'HavvenUpdated', { newHavvenContract: address4 });
 
-		assert.equal(await issuanceController.havven(), address4);
+		assert.equal(await depot.havven(), address4);
 	});
 
 	it('should not set havven when not invoked by owner', async function() {
-		await assert.revert(issuanceController.setHavven(owner, { from: deployerAccount }));
+		await assert.revert(depot.setHavven(owner, { from: deployerAccount }));
 	});
 
 	it('should not set price stale period when not invoked by owner', async function() {
-		await assert.revert(issuanceController.setPriceStalePeriod(60, { from: deployerAccount }));
+		await assert.revert(depot.setPriceStalePeriod(60, { from: deployerAccount }));
 	});
 
 	it('should set price stale period when invoked by owner', async function() {
 		let stalePeriod = 5 * 60 * 60; // Five hours
 
-		let txn = await issuanceController.setPriceStalePeriod(stalePeriod, { from: owner });
+		let txn = await depot.setPriceStalePeriod(stalePeriod, { from: owner });
 		assert.eventEqual(txn, 'PriceStalePeriodUpdated', { priceStalePeriod: stalePeriod });
 
-		assert.bnEqual(await issuanceController.priceStalePeriod(), stalePeriod);
+		assert.bnEqual(await depot.priceStalePeriod(), stalePeriod);
 	});
 
 	it('should update prices when invoked by oracle', async function() {
@@ -119,7 +119,7 @@ contract('Issuance Controller', async function(accounts) {
 		let usdEth = '994957049546843687330';
 		let usdHav = '157474638738934625';
 
-		let txn = await issuanceController.updatePrices(usdEth, usdHav, now, {
+		let txn = await depot.updatePrices(usdEth, usdHav, now, {
 			from: oracle,
 		});
 
@@ -129,9 +129,9 @@ contract('Issuance Controller', async function(accounts) {
 			timeSent: now,
 		});
 
-		const havUSDFromContract = await issuanceController.usdToHavPrice();
-		const ethUSDFromContract = await issuanceController.usdToEthPrice();
-		const lastPriceUpdateTimeFromContract = await issuanceController.lastPriceUpdateTime();
+		const havUSDFromContract = await depot.usdToHavPrice();
+		const ethUSDFromContract = await depot.usdToEthPrice();
+		const lastPriceUpdateTimeFromContract = await depot.lastPriceUpdateTime();
 
 		assert.equal(havUSDFromContract.toString(), usdHav);
 		assert.equal(ethUSDFromContract.toString(), usdEth);
@@ -144,20 +144,20 @@ contract('Issuance Controller', async function(accounts) {
 		let usdEth = '100';
 		let usdHav = '200';
 
-		await issuanceController.updatePrices(usdEth, usdHav, now, {
+		await depot.updatePrices(usdEth, usdHav, now, {
 			from: oracle,
 		});
 
 		// Unsuccessful price update attempt
 		await assert.revert(
-			issuanceController.updatePrices('300', '400', now - 1, {
+			depot.updatePrices('300', '400', now - 1, {
 				from: oracle,
 			})
 		);
 
-		const havUSDFromContract = await issuanceController.usdToHavPrice();
-		const EthUSDFromContract = await issuanceController.usdToEthPrice();
-		const lastPriceUpdateTimeFromContract = await issuanceController.lastPriceUpdateTime();
+		const havUSDFromContract = await depot.usdToHavPrice();
+		const EthUSDFromContract = await depot.usdToEthPrice();
+		const lastPriceUpdateTimeFromContract = await depot.lastPriceUpdateTime();
 
 		assert.bnEqual(EthUSDFromContract, usdEth);
 		assert.bnEqual(havUSDFromContract, usdHav);
@@ -165,21 +165,21 @@ contract('Issuance Controller', async function(accounts) {
 	});
 
 	it('should not update prices if time sent is more than (current time stamp + ORACLE_FUTURE_LIMIT)', async function() {
-		const lastPriceUpdateTime = await issuanceController.lastPriceUpdateTime();
-		const oracleFutureLimit = await issuanceController.ORACLE_FUTURE_LIMIT();
-		const havUSD = await issuanceController.usdToHavPrice();
-		const ethUSD = await issuanceController.usdToEthPrice();
+		const lastPriceUpdateTime = await depot.lastPriceUpdateTime();
+		const oracleFutureLimit = await depot.ORACLE_FUTURE_LIMIT();
+		const havUSD = await depot.usdToHavPrice();
+		const ethUSD = await depot.usdToEthPrice();
 
 		// Unsuccessful price update attempt
 		await assert.revert(
-			issuanceController.updatePrices(ethUSD, havUSD, lastPriceUpdateTime + oracleFutureLimit, {
+			depot.updatePrices(ethUSD, havUSD, lastPriceUpdateTime + oracleFutureLimit, {
 				from: oracle,
 			})
 		);
 
-		const havUSDFromContract = await issuanceController.usdToHavPrice();
-		const ethUSDFromContract = await issuanceController.usdToEthPrice();
-		const lastPriceUpdateTimeFromContract = await issuanceController.lastPriceUpdateTime();
+		const havUSDFromContract = await depot.usdToHavPrice();
+		const ethUSDFromContract = await depot.usdToEthPrice();
+		const lastPriceUpdateTimeFromContract = await depot.lastPriceUpdateTime();
 
 		assert.bnEqual(havUSDFromContract, havUSD);
 		assert.bnEqual(ethUSDFromContract, ethUSD);
@@ -192,7 +192,7 @@ contract('Issuance Controller', async function(accounts) {
 		let usdHav = '157474638738934625';
 
 		await assert.revert(
-			issuanceController.updatePrices(usdEth, usdHav, now, {
+			depot.updatePrices(usdEth, usdHav, now, {
 				from: address1,
 			})
 		);
@@ -203,36 +203,36 @@ contract('Issuance Controller', async function(accounts) {
 		let fundsWalletEthBalanceBefore;
 		let nominsBalance;
 		let feePoolBalanceBefore;
-		let issuanceControllerNominBalanceBefore;
+		let depotNominBalanceBefore;
 
 		beforeEach(async function() {
-			fundsWalletFromContract = await issuanceController.fundsWallet();
+			fundsWalletFromContract = await depot.fundsWallet();
 			fundsWalletEthBalanceBefore = await getEthBalance(fundsWallet);
 
-			// Set up the issuanceController so it contains some nomins to convert Ether for
+			// Set up the depot so it contains some nomins to convert Ether for
 			nominsBalance = await nomin.balanceOf(owner, { from: owner });
-			await nomin.transfer(issuanceController.address, nominsBalance.toString(), { from: owner });
+			await nomin.transfer(depot.address, nominsBalance.toString(), { from: owner });
 			feePoolBalanceBefore = await nomin.feePool();
-			issuanceControllerNominBalanceBefore = await nomin.balanceOf(issuanceController.address);
+			depotNominBalanceBefore = await nomin.balanceOf(depot.address);
 		});
 
 		it('if the price is stale', async function() {
-			const priceStalePeriod = await issuanceController.priceStalePeriod();
+			const priceStalePeriod = await depot.priceStalePeriod();
 			await fastForward(priceStalePeriod);
 
 			// Attempt exchange
 			try {
-				await issuanceController.exchangeEtherForNomins({
+				await depot.exchangeEtherForNomins({
 					from: address1,
 					amount: 10,
 				});
 			} catch (error) {
 				assert.include(error.message, 'revert');
 			}
-			const issuanceControllerNominBalanceCurrent = await nomin.balanceOf(
-				issuanceController.address
+			const depotNominBalanceCurrent = await nomin.balanceOf(
+				depot.address
 			);
-			assert.bnEqual(issuanceControllerNominBalanceCurrent, issuanceControllerNominBalanceBefore);
+			assert.bnEqual(depotNominBalanceCurrent, depotNominBalanceBefore);
 			assert.bnEqual(await nomin.balanceOf(address1), 0);
 			assert.bnEqual(await nomin.feePool(), feePoolBalanceBefore);
 			assert.equal(fundsWalletFromContract, fundsWallet);
@@ -241,20 +241,20 @@ contract('Issuance Controller', async function(accounts) {
 
 		it('if the contract is paused', async function() {
 			// Pause Contract
-			const pausedContract = await issuanceController.setPaused(true, { from: owner });
+			const pausedContract = await depot.setPaused(true, { from: owner });
 
 			// Attempt exchange
 			await assert.revert(
-				issuanceController.exchangeEtherForNomins({
+				depot.exchangeEtherForNomins({
 					from: address1,
 					amount: 10,
 				})
 			);
 
-			const issuanceControllerNominBalanceCurrent = await nomin.balanceOf(
-				issuanceController.address
+			const depotNominBalanceCurrent = await nomin.balanceOf(
+				depot.address
 			);
-			assert.bnEqual(issuanceControllerNominBalanceCurrent, issuanceControllerNominBalanceBefore);
+			assert.bnEqual(depotNominBalanceCurrent, depotNominBalanceBefore);
 			assert.bnEqual(await nomin.balanceOf(address1), 0);
 			assert.equal(await nomin.feePool(), feePoolBalanceBefore.toString());
 			assert.equal(fundsWalletFromContract, fundsWallet);
@@ -274,8 +274,8 @@ contract('Issuance Controller', async function(accounts) {
 			await havven.issueMaxNomins({ from: owner });
 
 			// Assert that there are no deposits already.
-			const depositStartIndex = await issuanceController.depositStartIndex();
-			const depositEndIndex = await issuanceController.depositEndIndex();
+			const depositStartIndex = await depot.depositStartIndex();
+			const depositEndIndex = await depot.depositEndIndex();
 
 			assert.equal(depositStartIndex, 0);
 			assert.equal(depositEndIndex, 0);
@@ -290,9 +290,9 @@ contract('Issuance Controller', async function(accounts) {
 			const ethToSend = toUnit('1');
 			const depositorStartingBalance = await getEthBalance(depositor);
 
-			// Send the nomins to the issuance controller.
+			// Send the nomins to the Token Depot.
 			const depositTxn = await nomin.transferSenderPaysFee(
-				issuanceController.address,
+				depot.address,
 				nominsToDeposit,
 				{
 					from: depositor,
@@ -301,19 +301,19 @@ contract('Issuance Controller', async function(accounts) {
 
 			const gasPaid = web3.utils.toBN(depositTxn.receipt.gasUsed * 20000000000);
 
-			const depositStartIndex = await issuanceController.depositStartIndex();
-			const depositEndIndex = await issuanceController.depositEndIndex();
+			const depositStartIndex = await depot.depositStartIndex();
+			const depositEndIndex = await depot.depositEndIndex();
 
 			// Assert that there is now one deposit in the queue.
 			assert.equal(depositStartIndex, 0);
 			assert.equal(depositEndIndex, 1);
 
 			// And assert that our total has increased by the right amount.
-			const totalSellableDeposits = await issuanceController.totalSellableDeposits();
+			const totalSellableDeposits = await depot.totalSellableDeposits();
 			assert.bnEqual(totalSellableDeposits, nominsToDeposit);
 
 			// Now purchase some.
-			const txn = await issuanceController.exchangeEtherForNomins({
+			const txn = await depot.exchangeEtherForNomins({
 				from: purchaser,
 				value: ethToSend,
 			});
@@ -332,17 +332,17 @@ contract('Issuance Controller', async function(accounts) {
 
 			// Purchaser should have received the Nomins
 			const purchaserNominBalance = await nomin.balanceOf(purchaser);
-			const issuanceControllerNominBalance = await nomin.balanceOf(issuanceController.address);
+			const depotNominBalance = await nomin.balanceOf(depot.address);
 
-			assert.equal(issuanceControllerNominBalance, 0);
+			assert.equal(depotNominBalance, 0);
 			assert.bnEqual(purchaserNominBalance, amountReceived);
 
 			// We should have no deposit in the queue anymore
-			assert.equal(await issuanceController.depositStartIndex(), 1);
-			assert.equal(await issuanceController.depositEndIndex(), 1);
+			assert.equal(await depot.depositStartIndex(), 1);
+			assert.equal(await depot.depositEndIndex(), 1);
 
 			// And our total should be 0 as the purchase amount was equal to the deposit
-			assert.equal(await issuanceController.totalSellableDeposits(), 0);
+			assert.equal(await depot.totalSellableDeposits(), 0);
 
 			// The depositor should have received the ETH
 			const depositorEndingBalance = await getEthBalance(depositor);
@@ -357,27 +357,27 @@ contract('Issuance Controller', async function(accounts) {
 			const totalNominsDeposit = web3.utils.toWei('1200');
 			const ethToSend = web3.utils.toWei('2');
 
-			// Send the nomins to the issuance controller.
-			await nomin.transferSenderPaysFee(issuanceController.address, nominsToDeposit, {
+			// Send the nomins to the Token Depot.
+			await nomin.transferSenderPaysFee(depot.address, nominsToDeposit, {
 				from: depositor,
 			});
-			await nomin.transferSenderPaysFee(issuanceController.address, nominsToDeposit, {
+			await nomin.transferSenderPaysFee(depot.address, nominsToDeposit, {
 				from: depositor2,
 			});
 
-			const depositStartIndex = await issuanceController.depositStartIndex();
-			const depositEndIndex = await issuanceController.depositEndIndex();
+			const depositStartIndex = await depot.depositStartIndex();
+			const depositEndIndex = await depot.depositEndIndex();
 
 			// Assert that there is now two deposits in the queue.
 			assert.equal(depositStartIndex, 0);
 			assert.equal(depositEndIndex, 2);
 
 			// And assert that our total has increased by the right amount.
-			const totalSellableDeposits = await issuanceController.totalSellableDeposits();
+			const totalSellableDeposits = await depot.totalSellableDeposits();
 			assert.bnEqual(totalSellableDeposits, totalNominsDeposit);
 
 			// Now purchase some.
-			const transaction = await issuanceController.exchangeEtherForNomins({
+			const transaction = await depot.exchangeEtherForNomins({
 				from: purchaser,
 				value: ethToSend,
 			});
@@ -398,39 +398,39 @@ contract('Issuance Controller', async function(accounts) {
 
 			// Purchaser should have received the Nomins
 			const purchaserNominBalance = await nomin.balanceOf(purchaser);
-			const issuanceControllerNominBalance = await nomin.balanceOf(issuanceController.address);
+			const depotNominBalance = await nomin.balanceOf(depot.address);
 			const remainingNomins = web3.utils.toBN(totalNominsDeposit).sub(nominsAmount);
 			assert.bnEqual(purchaserNominBalance, amountReceived);
 
-			assert.bnEqual(issuanceControllerNominBalance, remainingNomins);
+			assert.bnEqual(depotNominBalance, remainingNomins);
 
 			// We should have one deposit left in the queue
-			assert.equal(await issuanceController.depositStartIndex(), 1);
-			assert.equal(await issuanceController.depositEndIndex(), 2);
+			assert.equal(await depot.depositStartIndex(), 1);
+			assert.equal(await depot.depositEndIndex(), 2);
 
 			// And our total should be totalNominsDeposit - last purchase
-			assert.bnEqual(await issuanceController.totalSellableDeposits(), remainingNomins);
+			assert.bnEqual(await depot.totalSellableDeposits(), remainingNomins);
 		});
 
 		it('exceeds available nomins (and that the remainder of the ETH is correctly refunded)', async function() {
 			const nominsToDeposit = web3.utils.toWei('400');
 			const ethToSend = web3.utils.toWei('2');
 			const purchaserInitialBalance = await getEthBalance(purchaser);
-			// Send the nomins to the issuance controller.
-			await nomin.transferSenderPaysFee(issuanceController.address, nominsToDeposit, {
+			// Send the nomins to the Token Depot.
+			await nomin.transferSenderPaysFee(depot.address, nominsToDeposit, {
 				from: depositor,
 			});
 
 			// Assert that there is now one deposit in the queue.
-			assert.equal(await issuanceController.depositStartIndex(), 0);
-			assert.equal(await issuanceController.depositEndIndex(), 1);
+			assert.equal(await depot.depositStartIndex(), 0);
+			assert.equal(await depot.depositEndIndex(), 1);
 
 			// And assert that our total has increased by the right amount.
-			const totalSellableDeposits = await issuanceController.totalSellableDeposits();
+			const totalSellableDeposits = await depot.totalSellableDeposits();
 			assert.equal(totalSellableDeposits.toString(), nominsToDeposit);
 
 			// Now purchase some.
-			const txn = await issuanceController.exchangeEtherForNomins({
+			const txn = await depot.exchangeEtherForNomins({
 				from: purchaser,
 				value: ethToSend,
 			});
@@ -457,9 +457,9 @@ contract('Issuance Controller', async function(accounts) {
 			const purchaserNominBalance = await nomin.balanceOf(purchaser);
 			assert.equal(amountReceived.toString(), purchaserNominBalance.toString());
 
-			// Issuance controller should have 0 nomins left
-			const issuanceControllerNominBalance = await nomin.balanceOf(issuanceController.address);
-			assert.equal(issuanceControllerNominBalance, 0);
+			// Token Depot should have 0 nomins left
+			const depotNominBalance = await nomin.balanceOf(depot.address);
+			assert.equal(depotNominBalance, 0);
 
 			// The purchaser should have received the refund
 			// which can be checked by initialBalance = endBalance + fees + amount of nomins bought in ETH
@@ -475,17 +475,17 @@ contract('Issuance Controller', async function(accounts) {
 
 		it('Ensure user can withdraw their Nomin deposit', async function() {
 			const nominsToDeposit = web3.utils.toWei('500');
-			// Send the nomins to the issuance controller.
-			await nomin.transferSenderPaysFee(issuanceController.address, nominsToDeposit, {
+			// Send the nomins to the Token Depot.
+			await nomin.transferSenderPaysFee(depot.address, nominsToDeposit, {
 				from: depositor,
 			});
 
 			// And assert that our total has increased by the right amount.
-			const totalSellableDeposits = await issuanceController.totalSellableDeposits();
+			const totalSellableDeposits = await depot.totalSellableDeposits();
 			assert.equal(totalSellableDeposits, nominsToDeposit);
 
 			// Wthdraw the deposited nomins
-			const txn = await issuanceController.withdrawMyDepositedNomins({ from: depositor });
+			const txn = await depot.withdrawMyDepositedNomins({ from: depositor });
 			const withdrawEvent = txn.logs[0];
 
 			// The sent nomins should be equal the initial deposit
@@ -504,42 +504,42 @@ contract('Issuance Controller', async function(accounts) {
 			const deposit3 = web3.utils.toWei('300');
 			const ethToSend = web3.utils.toWei('0.2');
 
-			// Send the nomins to the issuance controller.
-			await nomin.transferSenderPaysFee(issuanceController.address, deposit1, {
+			// Send the nomins to the Token Depot.
+			await nomin.transferSenderPaysFee(depot.address, deposit1, {
 				from: depositor,
 			});
-			await nomin.transferSenderPaysFee(issuanceController.address, deposit2, {
+			await nomin.transferSenderPaysFee(depot.address, deposit2, {
 				from: depositor2,
 			});
-			await nomin.transferSenderPaysFee(issuanceController.address, deposit3, {
+			await nomin.transferSenderPaysFee(depot.address, deposit3, {
 				from: depositor,
 			});
 
 			// Assert that there is now three deposits in the queue.
-			assert.equal(await issuanceController.depositStartIndex(), 0);
-			assert.equal(await issuanceController.depositEndIndex(), 3);
+			assert.equal(await depot.depositStartIndex(), 0);
+			assert.equal(await depot.depositEndIndex(), 3);
 
 			// Depositor 2 withdraws Nomins
-			await issuanceController.withdrawMyDepositedNomins({ from: depositor2 });
+			await depot.withdrawMyDepositedNomins({ from: depositor2 });
 
 			// Queue should be  [1, (empty), 3]
-			const queueResultForDeposit2 = await issuanceController.deposits(1);
+			const queueResultForDeposit2 = await depot.deposits(1);
 			assert.equal(queueResultForDeposit2.amount, 0);
 
 			// User exchange ETH for Nomins (same amount as first deposit)
-			await issuanceController.exchangeEtherForNomins({
+			await depot.exchangeEtherForNomins({
 				from: purchaser,
 				value: ethToSend,
 			});
 
 			// Queue should now be [(empty), 3].
-			assert.equal(await issuanceController.depositStartIndex(), 1);
-			assert.equal(await issuanceController.depositEndIndex(), 3);
-			const queueResultForDeposit1 = await issuanceController.deposits(1);
+			assert.equal(await depot.depositStartIndex(), 1);
+			assert.equal(await depot.depositEndIndex(), 3);
+			const queueResultForDeposit1 = await depot.deposits(1);
 			assert.equal(queueResultForDeposit1.amount, 0);
 
 			// User exchange ETH for Nomins
-			await issuanceController.exchangeEtherForNomins({
+			await depot.exchangeEtherForNomins({
 				from: purchaser,
 				value: ethToSend,
 			});
@@ -547,9 +547,9 @@ contract('Issuance Controller', async function(accounts) {
 			//Queue should now be [(deposit3 - nominsPurchasedAmount )]
 			const remainingNomins =
 				web3.utils.fromWei(deposit3) - web3.utils.fromWei(ethToSend) * web3.utils.fromWei(usdEth);
-			assert.equal(await issuanceController.depositStartIndex(), 2);
-			assert.equal(await issuanceController.depositEndIndex(), 3);
-			const totalSellableDeposits = await issuanceController.totalSellableDeposits();
+			assert.equal(await depot.depositStartIndex(), 2);
+			assert.equal(await depot.depositEndIndex(), 3);
+			const totalSellableDeposits = await depot.totalSellableDeposits();
 			assert.equal(totalSellableDeposits.toString(), web3.utils.toWei(remainingNomins.toString()));
 		});
 
@@ -559,23 +559,23 @@ contract('Issuance Controller', async function(accounts) {
 			const deposit3 = web3.utils.toWei('300');
 			const deposit4 = web3.utils.toWei('400');
 
-			// Send the nomins to the issuance controller.
-			await nomin.transferSenderPaysFee(issuanceController.address, deposit1, {
+			// Send the nomins to the Token Depot.
+			await nomin.transferSenderPaysFee(depot.address, deposit1, {
 				from: depositor,
 			});
-			await nomin.transferSenderPaysFee(issuanceController.address, deposit2, {
+			await nomin.transferSenderPaysFee(depot.address, deposit2, {
 				from: depositor2,
 			});
-			await nomin.transferSenderPaysFee(issuanceController.address, deposit3, {
+			await nomin.transferSenderPaysFee(depot.address, deposit3, {
 				from: depositor,
 			});
-			await nomin.transferSenderPaysFee(issuanceController.address, deposit4, {
+			await nomin.transferSenderPaysFee(depot.address, deposit4, {
 				from: depositor2,
 			});
 
 			// We should have now 4 deposits
-			assert.equal(await issuanceController.depositStartIndex(), 0);
-			assert.equal(await issuanceController.depositEndIndex(), 4);
+			assert.equal(await depot.depositStartIndex(), 0);
+			assert.equal(await depot.depositEndIndex(), 4);
 		});
 
 		it('Ensure multiple users can make multiple Nomin deposits and multiple withdrawals (and that the queue is correctly updated)', async function() {
@@ -584,34 +584,34 @@ contract('Issuance Controller', async function(accounts) {
 			const deposit3 = web3.utils.toWei('300');
 			const deposit4 = web3.utils.toWei('400');
 
-			// Send the nomins to the issuance controller.
-			await nomin.transferSenderPaysFee(issuanceController.address, deposit1, {
+			// Send the nomins to the Token Depot.
+			await nomin.transferSenderPaysFee(depot.address, deposit1, {
 				from: depositor,
 			});
-			await nomin.transferSenderPaysFee(issuanceController.address, deposit2, {
+			await nomin.transferSenderPaysFee(depot.address, deposit2, {
 				from: depositor,
 			});
-			await nomin.transferSenderPaysFee(issuanceController.address, deposit3, {
+			await nomin.transferSenderPaysFee(depot.address, deposit3, {
 				from: depositor2,
 			});
-			await nomin.transferSenderPaysFee(issuanceController.address, deposit4, {
+			await nomin.transferSenderPaysFee(depot.address, deposit4, {
 				from: depositor2,
 			});
 
 			// We should have now 4 deposits
-			assert.equal(await issuanceController.depositStartIndex(), 0);
-			assert.equal(await issuanceController.depositEndIndex(), 4);
+			assert.equal(await depot.depositStartIndex(), 0);
+			assert.equal(await depot.depositEndIndex(), 4);
 
 			// Depositors withdraws all his deposits
-			await issuanceController.withdrawMyDepositedNomins({ from: depositor });
+			await depot.withdrawMyDepositedNomins({ from: depositor });
 
 			// We should have now 4 deposits
-			assert.equal(await issuanceController.depositStartIndex(), 0);
-			assert.equal(await issuanceController.depositEndIndex(), 4);
+			assert.equal(await depot.depositStartIndex(), 0);
+			assert.equal(await depot.depositEndIndex(), 4);
 
 			// First two deposits should be 0
-			const firstDepositInQueue = await issuanceController.deposits(0);
-			const secondDepositInQueue = await issuanceController.deposits(1);
+			const firstDepositInQueue = await depot.deposits(0);
+			const secondDepositInQueue = await depot.deposits(1);
 			assert.equal(firstDepositInQueue.amount, 0);
 			assert.equal(secondDepositInQueue.amount, 0);
 		});
@@ -619,18 +619,18 @@ contract('Issuance Controller', async function(accounts) {
 
 	describe('Ensure user can exchange ETH for Havven', async function() {
 		const purchaser = address1;
-		let issuanceController;
+		let depot;
 		let havven;
 		let nomin;
 		const ethUSD = web3.utils.toWei('500');
 		const havUSD = web3.utils.toWei('.10');
 
 		this.beforeEach(async function() {
-			issuanceController = await IssuanceController.deployed();
+			depot = await Depot.deployed();
 			havven = await Havven.deployed();
 			nomin = await Nomin.deployed();
-			// We need to send some HAV to the Issuance Controller contract
-			await havven.transfer(issuanceController.address, web3.utils.toWei('1000000'), {
+			// We need to send some HAV to the Token Depot contract
+			await havven.transfer(depot.address, web3.utils.toWei('1000000'), {
 				from: owner,
 			});
 		});
@@ -643,7 +643,7 @@ contract('Issuance Controller', async function(accounts) {
 			assert.equal(purchaserHAVStartBalance, 0);
 
 			// Purchaser sends ETH
-			await issuanceController.exchangeEtherForHavvens({
+			await depot.exchangeEtherForHavvens({
 				from: purchaser,
 				value: ethToSend,
 			});

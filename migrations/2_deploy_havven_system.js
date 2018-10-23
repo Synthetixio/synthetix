@@ -3,7 +3,7 @@ const web3 = require('web3');
 
 const Havven = artifacts.require('./Havven.sol');
 const HavvenEscrow = artifacts.require('./HavvenEscrow.sol');
-const IssuanceController = artifacts.require('./IssuanceController.sol');
+const Depot = artifacts.require('./Depot.sol');
 const Nomin = artifacts.require('./Nomin.sol');
 const Owned = artifacts.require('./Owned.sol');
 const Proxy = artifacts.require('./Proxy.sol');
@@ -81,11 +81,11 @@ module.exports = async function(deployer, network, accounts) {
 	);
 
 	// --------------------
-	// Issuance Controller
+	// Depot
 	// --------------------
-	console.log('Deploying IssuanceController...');
-	const issuanceController = await deployer.deploy(
-		IssuanceController,
+	console.log('Deploying Depot...');
+	const depot = await deployer.deploy(
+		Depot,
 		owner,
 		fundsWallet,
 		havven.address,
@@ -149,7 +149,7 @@ module.exports = async function(deployer, network, accounts) {
 			['Nomin Proxy', nominProxy.address],
 			['Nomin', Nomin.address],
 
-			['Issuance Controller', IssuanceController.address],
+			['Depot', depot.address],
 		])
 	);
 };
