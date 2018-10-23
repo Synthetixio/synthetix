@@ -270,6 +270,9 @@ contract('Issuance Controller', async function(accounts) {
 		let usdEth = web3.utils.toWei('500');
 
 		beforeEach(async function() {
+			// We need the owner to issue nomins
+			await havven.issueMaxNomins({ from: owner });
+
 			// Assert that there are no deposits already.
 			const depositStartIndex = await issuanceController.depositStartIndex();
 			const depositEndIndex = await issuanceController.depositEndIndex();
@@ -307,7 +310,7 @@ contract('Issuance Controller', async function(accounts) {
 
 			// And assert that our total has increased by the right amount.
 			const totalSellableDeposits = await issuanceController.totalSellableDeposits();
-			assert.equal(totalSellableDeposits, nominsToDeposit);
+			assert.bnEqual(totalSellableDeposits, nominsToDeposit);
 
 			// Now purchase some.
 			const txn = await issuanceController.exchangeEtherForNomins({
@@ -343,7 +346,10 @@ contract('Issuance Controller', async function(accounts) {
 
 			// The depositor should have received the ETH
 			const depositorEndingBalance = await getEthBalance(depositor);
-			assert.bnEqual(depositorStartingBalance.add(ethToSend), depositorEndingBalance.add(gasPaid));
+			assert.bnEqual(
+				web3.utils.toBN(depositorStartingBalance).add(ethToSend),
+				web3.utils.toBN(depositorEndingBalance).add(gasPaid)
+			);
 		});
 
 		it('exceeds one deposit (and that the queue is correctly updated)', async function() {
@@ -384,27 +390,26 @@ contract('Issuance Controller', async function(accounts) {
 				fromCurrency: 'ETH',
 				fromAmount: ethToSend,
 				toCurrency: 'nUSD',
-				toAmount: web3.utils.toWei(nominsAmount.toString()),
+				toAmount: nominsAmount,
 			});
 
 			// We need to calculate the amount - fees the purchaser is supposed to get
-			const amountReceived = await nomin.amountReceived(toUnit(nominsAmount));
+			const amountReceived = await nomin.amountReceived(nominsAmount);
 
 			// Purchaser should have received the Nomins
 			const purchaserNominBalance = await nomin.balanceOf(purchaser);
 			const issuanceControllerNominBalance = await nomin.balanceOf(issuanceController.address);
-			const remainingNomins = web3.utils.fromWei(totalNominsDeposit) - nominsAmount;
+			const remainingNomins = web3.utils.toBN(totalNominsDeposit).sub(nominsAmount);
 			assert.bnEqual(purchaserNominBalance, amountReceived);
 
-			assert.bnEqual(issuanceControllerNominBalance, toUnit(remainingNomins.toString()));
+			assert.bnEqual(issuanceControllerNominBalance, remainingNomins);
 
 			// We should have one deposit left in the queue
 			assert.equal(await issuanceController.depositStartIndex(), 1);
 			assert.equal(await issuanceController.depositEndIndex(), 2);
 
 			// And our total should be totalNominsDeposit - last purchase
-			const totalRemainingSellableDeposits = await issuanceController.totalSellableDeposits();
-			assert.bnEqual(totalRemainingSellableDeposits, toUnit(remainingNomins));
+			assert.bnEqual(await issuanceController.totalSellableDeposits(), remainingNomins);
 		});
 
 		it('exceeds available nomins (and that the remainder of the ETH is correctly refunded)', async function() {
