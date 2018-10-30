@@ -260,6 +260,8 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
         notPaused
         returns (uint) // Returns the number of Nomins (nUSD) received
     {
+        uint ethToSend;
+        
         // The multiplication works here because usdToEthPrice is specified in
         // 18 decimal places, just like our currency base.
         uint requestedToPurchase = safeMul_dec(msg.value, usdToEthPrice);
@@ -286,7 +288,10 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
                     totalSellableDeposits = safeSub(totalSellableDeposits, remainingToFulfill);
 
                     // Transfer the ETH to the depositor.
-                    deposit.user.transfer(safeDiv_dec(remainingToFulfill, usdToEthPrice));
+                    ethToSend = safeDiv_dec(remainingToFulfill, usdToEthPrice);
+                    if(!deposit.user.send(ethToSend)) {
+                        fundsWallet.transfer(ethToSend);
+                    }
 
                     // And the Nomins to the recipient.
                     // Note: Fees are calculated by the Nomin contract, so when
@@ -307,7 +312,10 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
                     totalSellableDeposits = safeSub(totalSellableDeposits, deposit.amount);
 
                     // Now fulfill by transfering the ETH to the depositor.
-                    deposit.user.transfer(safeDiv_dec(deposit.amount, usdToEthPrice));
+                    ethToSend = safeDiv_dec(deposit.amount, usdToEthPrice);
+                    if(!deposit.user.send(ethToSend)) {
+                        fundsWallet.transfer(ethToSend);
+                    }
 
                     // And the Nomins to the recipient.
                     // Note: Fees are calculated by the Nomin contract, so when
