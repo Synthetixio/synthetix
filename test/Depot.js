@@ -198,6 +198,115 @@ contract('Depot', async function(accounts) {
 		);
 	});
 
+	describe('should not accept nomin deposits and revert', async function() {
+		const nominsBalance = toUnit('100');
+		const depositor = address1;
+
+		beforeEach(async function() {
+			// We need the owner to issue nomins
+			await havven.issueMaxNomins({ from: owner });
+			// Set up the depositor with an amount of nomins to deposit.
+			await nomin.transferSenderPaysFee(depositor, nominsBalance.toString(), { from: owner });
+		});
+
+		it('if the deposit nomin amount is a zero amount', async function() {
+			const nominsToDeposit = toUnit('0');;
+
+			await assert.revert(
+				nomin.transferSenderPaysFee(
+					depot.address,
+					nominsToDeposit,
+					{
+						from: depositor,
+					}
+				)
+			);
+			const depositorBalance = await nomin.balanceOf(depositor);
+			assert.bnEqual(depositorBalance, nominsToDeposit);
+		});
+
+		it('if the deposit nomin of 10 amount is less than the minimumDepositAmount', async function() {
+			const nominsToDeposit = toUnit('10');
+
+			await assert.revert(
+				nomin.transferSenderPaysFee(
+					depot.address,
+					nominsToDeposit,
+					{
+						from: depositor,
+					}
+				)
+			);
+
+			const depositorBalance = await nomin.balanceOf(depositor);
+			assert.bnEqual(depositorBalance, nominsToDeposit);
+		});
+
+		it('if the deposit nomin amount of 49.99 is less than the minimumDepositAmount', async function() {
+			const nominsToDeposit = toUnit('49.99');
+
+			await assert.revert(
+				nomin.transferSenderPaysFee(
+					depot.address,
+					nominsToDeposit,
+					{
+						from: depositor,
+					}
+				)
+			);
+
+			const depositorBalance = await nomin.balanceOf(depositor);
+			assert.bnEqual(depositorBalance, nominsToDeposit);
+		});
+	});
+
+	describe('should accept nomin deposits', async function() {
+		const nominsBalance = toUnit('100');
+		const depositor = address1;
+
+		beforeEach(async function() {
+			// We need the owner to issue nomins
+			await havven.issueMaxNomins({ from: owner });
+			// Set up the depositor with an amount of nomins to deposit.
+			await nomin.transferSenderPaysFee(depositor, nominsBalance.toString(), { from: owner });
+		});
+
+		it('if the deposit nomin amount of 50 is the minimumDepositAmount', async function() {
+			const nominsToDeposit = toUnit('50');
+
+			await nomin.transferSenderPaysFee(
+				depot.address,
+				nominsToDeposit,
+				{
+					from: depositor,
+				}
+			)
+
+			const depotNominBalanceCurrent = await nomin.balanceOf(
+				depot.address
+			);
+			assert.bnEqual(depotNominBalanceCurrent, nominsToDeposit);
+
+		});
+
+		it('if the deposit nomin amount of 51 is more than the minimumDepositAmount', async function() {
+			const nominsToDeposit = toUnit('51');
+
+			await nomin.transferSenderPaysFee(
+				depot.address,
+				nominsToDeposit,
+				{
+					from: depositor,
+				}
+			)
+
+			const depotNominBalanceCurrent = await nomin.balanceOf(
+				depot.address
+			);
+			assert.bnEqual(depotNominBalanceCurrent, nominsToDeposit);
+		});
+	});
+
 	describe('should not exchange ether for nomins', async function() {
 		let fundsWalletFromContract;
 		let fundsWalletEthBalanceBefore;

@@ -96,6 +96,9 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
        O(n) amount of calls for something we'll probably want to display quite regularly. */
     uint public totalSellableDeposits;
 
+    // The minimum amount of nUSD required to enter the FiFo queue
+    uint public minimumDepositAmount = 50 * UNIT;
+
     /* ========== CONSTRUCTOR ========== */
 
     /**
@@ -199,6 +202,20 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
     {
         priceStalePeriod = _time;
         emit PriceStalePeriodUpdated(priceStalePeriod);
+    }
+
+    /**
+     * @notice Set the minimum deposit amount required to depoist nUSD into the FIFO queue
+     * @param _amount The new new minimum number of nUSD required to deposit
+     */
+    function setMinimumDepositAmount(uint _amount)
+        external
+        onlyOwner
+    {
+        require(_amount > 0, "Minimum deposit amount must be greater than 0"); 
+       
+        minimumDepositAmount = _amount;
+        emit MinimumDepositAmountUpdated(minimumDepositAmount);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -502,6 +519,8 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
         external
         onlyNomin
     {
+        require(minimumDepositAmount <= amount, "Amount sent is less than the minimumDepositAmount");
+
         // Ok, thanks for the deposit, let's queue it up.
         deposits[depositEndIndex] = nominDeposit({ user: from, amount: amount });
         // Walk our index forward as well.
@@ -509,6 +528,8 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
 
         // And add it to our total.
         totalSellableDeposits = safeAdd(totalSellableDeposits, amount);
+
+        emit NominDeposit(from, amount);
     }
 
     /* ========== VIEWS ========== */
@@ -605,4 +626,6 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
     event PricesUpdated(uint newEthPrice, uint newHavvenPrice, uint timeSent);
     event Exchange(string fromCurrency, uint fromAmount, string toCurrency, uint toAmount);
     event NominWithdrawal(address user, uint amount);
+    event NominDeposit(address user, uint amount);
+    event MinimumDepositAmountUpdated(uint amount);
 }
