@@ -139,7 +139,6 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
         usdToEthPrice = _usdToEthPrice;
         usdToHavPrice = _usdToHavPrice;
         lastPriceUpdateTime = now;
-        totalSellableDeposits = 0;
     }
 
     /* ========== SETTERS ========== */
