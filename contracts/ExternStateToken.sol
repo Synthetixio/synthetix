@@ -26,8 +26,7 @@ This contract utilises an external state for upgradeability.
 
 pragma solidity 0.4.25;
 
-
-import "./SafeMath.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./SafeDecimalMath.sol";
 import "./SelfDestructible.sol";
 import "./TokenState.sol";

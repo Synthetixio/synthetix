@@ -30,11 +30,11 @@
 
 pragma solidity 0.4.25;
 
-// import "./Havven.sol";
-// import "./Nomin.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./Pausable.sol";
 import "./SelfDestructible.sol";
-import "./SafeMath.sol";
+// import "./Havven.sol";
+// import "./Nomin.sol";
 
 /**
  * @title Issuance Controller Contract.

@@ -26,7 +26,7 @@ for all other assets.
 
 pragma solidity 0.4.25;
 
-import "./SafeMath.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./SafeDecimalMath.sol";
 import "./SelfDestructible.sol";
 
