@@ -211,8 +211,8 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
         external
         onlyOwner
     {
-        require(_amount > 0, "Minimum deposit amount must be greater than 0"); 
-       
+        require(_amount > 0, "Minimum deposit amount must be greater than 0");
+
         minimumDepositAmount = _amount;
         emit MinimumDepositAmountUpdated(minimumDepositAmount);
     }
@@ -261,7 +261,7 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
         returns (uint) // Returns the number of Nomins (nUSD) received
     {
         uint ethToSend;
-        
+
         // The multiplication works here because usdToEthPrice is specified in
         // 18 decimal places, just like our currency base.
         uint requestedToPurchase = safeMul_dec(msg.value, usdToEthPrice);
@@ -525,6 +525,7 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
     function tokenFallback(address from, uint amount, bytes data)
         external
         onlyNomin
+        returns (bool)
     {
         require(minimumDepositAmount <= amount, "Amount sent is less than the minimumDepositAmount");
 
@@ -537,6 +538,9 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
         totalSellableDeposits = safeAdd(totalSellableDeposits, amount);
 
         emit NominDeposit(from, amount);
+
+        return true;
+
     }
 
     /* ========== VIEWS ========== */

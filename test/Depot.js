@@ -210,53 +210,45 @@ contract('Depot', async function(accounts) {
 		});
 
 		it('if the deposit nomin amount is a zero amount', async function() {
-			const nominsToDeposit = toUnit('0');;
+			const nominsToDeposit = toUnit('0');
+			const depositorStartBalance = await nomin.balanceOf(depositor);
 
 			await assert.revert(
-				nomin.transferSenderPaysFee(
-					depot.address,
-					nominsToDeposit,
-					{
-						from: depositor,
-					}
-				)
+				nomin.transferSenderPaysFee(depot.address, nominsToDeposit, {
+					from: depositor,
+				})
 			);
+
 			const depositorBalance = await nomin.balanceOf(depositor);
-			assert.bnEqual(depositorBalance, nominsToDeposit);
+			assert.bnEqual(depositorStartBalance, depositorBalance);
 		});
 
 		it('if the deposit nomin of 10 amount is less than the minimumDepositAmount', async function() {
 			const nominsToDeposit = toUnit('10');
+			const depositorStartBalance = await nomin.balanceOf(depositor);
 
 			await assert.revert(
-				nomin.transferSenderPaysFee(
-					depot.address,
-					nominsToDeposit,
-					{
-						from: depositor,
-					}
-				)
+				nomin.transferSenderPaysFee(depot.address, nominsToDeposit, {
+					from: depositor,
+				})
 			);
 
 			const depositorBalance = await nomin.balanceOf(depositor);
-			assert.bnEqual(depositorBalance, nominsToDeposit);
+			assert.bnEqual(depositorStartBalance, depositorBalance);
 		});
 
 		it('if the deposit nomin amount of 49.99 is less than the minimumDepositAmount', async function() {
 			const nominsToDeposit = toUnit('49.99');
+			const depositorStartBalance = await nomin.balanceOf(depositor);
 
 			await assert.revert(
-				nomin.transferSenderPaysFee(
-					depot.address,
-					nominsToDeposit,
-					{
-						from: depositor,
-					}
-				)
+				nomin.transferSenderPaysFee(depot.address, nominsToDeposit, {
+					from: depositor,
+				})
 			);
 
 			const depositorBalance = await nomin.balanceOf(depositor);
-			assert.bnEqual(depositorBalance, nominsToDeposit);
+			assert.bnEqual(depositorStartBalance, depositorBalance);
 		});
 	});
 
@@ -274,35 +266,22 @@ contract('Depot', async function(accounts) {
 		it('if the deposit nomin amount of 50 is the minimumDepositAmount', async function() {
 			const nominsToDeposit = toUnit('50');
 
-			await nomin.transferSenderPaysFee(
-				depot.address,
-				nominsToDeposit,
-				{
-					from: depositor,
-				}
-			)
+			await nomin.transferSenderPaysFee(depot.address, nominsToDeposit, {
+				from: depositor,
+			});
 
-			const depotNominBalanceCurrent = await nomin.balanceOf(
-				depot.address
-			);
+			const depotNominBalanceCurrent = await nomin.balanceOf(depot.address);
 			assert.bnEqual(depotNominBalanceCurrent, nominsToDeposit);
-
 		});
 
 		it('if the deposit nomin amount of 51 is more than the minimumDepositAmount', async function() {
 			const nominsToDeposit = toUnit('51');
 
-			await nomin.transferSenderPaysFee(
-				depot.address,
-				nominsToDeposit,
-				{
-					from: depositor,
-				}
-			)
+			await nomin.transferSenderPaysFee(depot.address, nominsToDeposit, {
+				from: depositor,
+			});
 
-			const depotNominBalanceCurrent = await nomin.balanceOf(
-				depot.address
-			);
+			const depotNominBalanceCurrent = await nomin.balanceOf(depot.address);
 			assert.bnEqual(depotNominBalanceCurrent, nominsToDeposit);
 		});
 	});
@@ -338,9 +317,7 @@ contract('Depot', async function(accounts) {
 			} catch (error) {
 				assert.include(error.message, 'revert');
 			}
-			const depotNominBalanceCurrent = await nomin.balanceOf(
-				depot.address
-			);
+			const depotNominBalanceCurrent = await nomin.balanceOf(depot.address);
 			assert.bnEqual(depotNominBalanceCurrent, depotNominBalanceBefore);
 			assert.bnEqual(await nomin.balanceOf(address1), 0);
 			assert.bnEqual(await nomin.feePool(), feePoolBalanceBefore);
@@ -360,9 +337,7 @@ contract('Depot', async function(accounts) {
 				})
 			);
 
-			const depotNominBalanceCurrent = await nomin.balanceOf(
-				depot.address
-			);
+			const depotNominBalanceCurrent = await nomin.balanceOf(depot.address);
 			assert.bnEqual(depotNominBalanceCurrent, depotNominBalanceBefore);
 			assert.bnEqual(await nomin.balanceOf(address1), 0);
 			assert.equal(await nomin.feePool(), feePoolBalanceBefore.toString());
@@ -400,13 +375,9 @@ contract('Depot', async function(accounts) {
 			const depositorStartingBalance = await getEthBalance(depositor);
 
 			// Send the nomins to the Token Depot.
-			const depositTxn = await nomin.transferSenderPaysFee(
-				depot.address,
-				nominsToDeposit,
-				{
-					from: depositor,
-				}
-			);
+			const depositTxn = await nomin.transferSenderPaysFee(depot.address, nominsToDeposit, {
+				from: depositor,
+			});
 
 			const gasPaid = web3.utils.toBN(depositTxn.receipt.gasUsed * 20000000000);
 

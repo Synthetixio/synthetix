@@ -56,8 +56,9 @@ contract TokenFallbackCaller is ReentrancyPreventer {
             // We can't call it the normal way because that reverts when the recipient doesn't implement the function.
 
             // solium-disable-next-line security/no-low-level-calls
-            recipient.call(abi.encodeWithSignature("tokenFallback(address,uint256,bytes)", sender, amount, data));
+            bool fallbackSuccess = recipient.call(abi.encodeWithSignature("tokenFallback(address,uint256,bytes)", sender, amount, data));
 
+            require(fallbackSuccess, "Fallback function failed");
             // And yes, we specifically don't care if this call fails, so we're not checking the return value.
         }
     }
