@@ -339,8 +339,10 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
         // How many did we actually give them?
         uint fulfilled = safeSub(requestedToPurchase, remainingToFulfill);
 
-        // Now tell everyone that we gave them that many.
-        emit Exchange("ETH", msg.value, "nUSD", fulfilled);
+        if (fulfilled > 0) {
+            // Now tell everyone that we gave them that many (only if the amount is greater than 0).
+            emit Exchange("ETH", msg.value, "nUSD", fulfilled, usdToEthPrice);
+        }
 
         return fulfilled;
     }
@@ -382,7 +384,7 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
         // And send them the Havvens.
         havven.transfer(msg.sender, havvensToSend);
 
-        emit Exchange("ETH", msg.value, "HAV", havvensToSend);
+        emit Exchange("ETH", msg.value, "HAV", havvensToSend, usdToEthPrice);
 
         return havvensToSend;
     }
@@ -428,7 +430,7 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
         // And send them the Havvens.
         havven.transfer(msg.sender, havvensToSend);
 
-        emit Exchange("nUSD", nominAmount, "HAV", havvensToSend);
+        emit Exchange("nUSD", nominAmount, "HAV", havvensToSend, 1);
 
         return havvensToSend;
     }
@@ -634,7 +636,7 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
     event HavvenUpdated(Havven newHavvenContract);
     event PriceStalePeriodUpdated(uint priceStalePeriod);
     event PricesUpdated(uint newEthPrice, uint newHavvenPrice, uint timeSent);
-    event Exchange(string fromCurrency, uint fromAmount, string toCurrency, uint toAmount);
+    event Exchange(string fromCurrency, uint fromAmount, string toCurrency, uint toAmount, uint price);
     event NominWithdrawal(address user, uint amount);
     event NominDeposit(address user, uint amount);
     event MinimumDepositAmountUpdated(uint amount);
