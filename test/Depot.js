@@ -290,7 +290,7 @@ contract('Depot', async function(accounts) {
 			// We need the owner to issue nomins
 			await havven.issueMaxNomins({ from: owner });
 			// Set up the depositor with an amount of nomins to deposit.
-			await nomin.transferSenderPaysFee(depositor, nominsBalance.toString(), { from: owner });
+			await nomin.transferSenderPaysFee(depositor, nominsBalance, { from: owner });
 		});
 
 		it('if the deposit nomin amount of 50 is the minimumDepositAmount', async function() {
@@ -302,6 +302,11 @@ contract('Depot', async function(accounts) {
 
 			const depotNominBalanceCurrent = await nomin.balanceOf(depot.address);
 			assert.bnEqual(depotNominBalanceCurrent, nominsToDeposit);
+
+			const depositStartIndexAfter = await depot.depositStartIndex();
+			const nominDeposit = await depot.deposits.call(depositStartIndexAfter);
+			assert.equal(nominDeposit.user, depositor);
+			assert.bnEqual(nominDeposit.amount, nominsToDeposit);
 		});
 
 		it('if the deposit nomin amount of 51 is more than the minimumDepositAmount', async function() {
@@ -313,6 +318,11 @@ contract('Depot', async function(accounts) {
 
 			const depotNominBalanceCurrent = await nomin.balanceOf(depot.address);
 			assert.bnEqual(depotNominBalanceCurrent, nominsToDeposit);
+
+			const depositStartIndexAfter = await depot.depositStartIndex();
+			const nominDeposit = await depot.deposits.call(depositStartIndexAfter);
+			assert.equal(nominDeposit.user, depositor);
+			assert.bnEqual(nominDeposit.amount, nominsToDeposit);
 		});
 	});
 
