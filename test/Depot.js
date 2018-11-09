@@ -326,10 +326,10 @@ contract('Depot', async function(accounts) {
 		beforeEach(async function() {
 			fundsWalletFromContract = await depot.fundsWallet();
 			fundsWalletEthBalanceBefore = await getEthBalance(fundsWallet);
-
+			// We need the owner to issue nomins
+			await havven.issueMaxNomins({ from: owner });
 			// Set up the depot so it contains some nomins to convert Ether for
 			nominsBalance = await nomin.balanceOf(owner, { from: owner });
-
 			await nomin.transfer(depot.address, nominsBalance.toString(), { from: owner });
 			feePoolBalanceBefore = await nomin.feePool();
 			depotNominBalanceBefore = await nomin.balanceOf(depot.address);
@@ -340,14 +340,12 @@ contract('Depot', async function(accounts) {
 			await fastForward(priceStalePeriod);
 
 			// Attempt exchange
-			try {
-				await depot.exchangeEtherForNomins({
+			await assert.revert(
+				depot.exchangeEtherForNomins({
 					from: address1,
 					amount: 10,
-				});
-			} catch (error) {
-				assert.include(error.message, 'revert');
-			}
+				})
+			);
 			const depotNominBalanceCurrent = await nomin.balanceOf(depot.address);
 			assert.bnEqual(depotNominBalanceCurrent, depotNominBalanceBefore);
 			assert.bnEqual(await nomin.balanceOf(address1), 0);
