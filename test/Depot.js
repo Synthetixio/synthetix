@@ -296,8 +296,15 @@ contract('Depot', async function(accounts) {
 		it('if the deposit nomin amount of 50 is the minimumDepositAmount', async function() {
 			const nominsToDeposit = toUnit('50');
 
-			await nomin.transferSenderPaysFee(depot.address, nominsToDeposit, {
+			const txn = await nomin.transferSenderPaysFee(depot.address, nominsToDeposit, {
 				from: depositor,
+			});
+
+			const events = await depot.getPastEvents();
+			const nominDepositEvent = events.find(log => log.event === 'NominDeposit');
+			assert.eventEqual(nominDepositEvent, 'NominDeposit', {
+				user: depositor,
+				amount: nominsToDeposit,
 			});
 
 			const depotNominBalanceCurrent = await nomin.balanceOf(depot.address);
@@ -306,9 +313,15 @@ contract('Depot', async function(accounts) {
 
 		it('if the deposit nomin amount of 51 is more than the minimumDepositAmount', async function() {
 			const nominsToDeposit = toUnit('51');
-
-			await nomin.transferSenderPaysFee(depot.address, nominsToDeposit, {
+			const txn = await nomin.transferSenderPaysFee(depot.address, nominsToDeposit, {
 				from: depositor,
+			});
+
+			const events = await depot.getPastEvents();
+			const nominDepositEvent = events.find(log => log.event === 'NominDeposit');
+			assert.eventEqual(nominDepositEvent, 'NominDeposit', {
+				user: depositor,
+				amount: nominsToDeposit,
 			});
 
 			const depotNominBalanceCurrent = await nomin.balanceOf(depot.address);
