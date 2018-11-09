@@ -527,20 +527,19 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
         onlyNomin
         returns (bool)
     {
-        require(minimumDepositAmount <= amount, "Amount sent is less than the minimumDepositAmount");
+        if (amount < minimumDepositAmount) {
+            nomin.transfer(from, amount);
+        } else {
+            // Ok, thanks for the deposit, let's queue it up.
+            deposits[depositEndIndex] = nominDeposit({ user: from, amount: amount });
+            // Walk our index forward as well.
+            depositEndIndex = safeAdd(depositEndIndex, 1);
 
-        // Ok, thanks for the deposit, let's queue it up.
-        deposits[depositEndIndex] = nominDeposit({ user: from, amount: amount });
-        // Walk our index forward as well.
-        depositEndIndex = safeAdd(depositEndIndex, 1);
+            // And add it to our total.
+            totalSellableDeposits = safeAdd(totalSellableDeposits, amount);
 
-        // And add it to our total.
-        totalSellableDeposits = safeAdd(totalSellableDeposits, amount);
-
-        emit NominDeposit(from, amount);
-
-        return true;
-
+            emit NominDeposit(from, amount);
+        }
     }
 
     /* ========== VIEWS ========== */
