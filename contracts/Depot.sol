@@ -99,6 +99,15 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
     // The minimum amount of nUSD required to enter the FiFo queue
     uint public minimumDepositAmount = 50 * UNIT;
 
+    // If a user deposits a nomin amount < the minimumDepositAmount the contract will put
+    // it in this depositsToSmall queue which will not be sold on market and the sender
+    // must call withdrawMyDepositedNomins() to get them back.
+    mapping(uint => nominDeposit) public depositsToSmall;
+    // The starting index of our queue inclusive
+    uint public depositsToSmallStartIndex;
+    // The ending index of our queue exclusive
+    uint public depositsToSmallEndIndex;
+
     /* ========== CONSTRUCTOR ========== */
 
     /**
@@ -512,6 +521,37 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
     }
 
     /**
+     * @notice Allows a user who has deposited an amount < minimumDepositAmount to withdraw all of 
+     *         their deposited nomins from this contract. This is to protect normal actors from over
+     *         paying for gas to withdraw their nomins.
+     */
+    function withdrawMySmallDepositedNomins()
+        external
+    {
+        uint nominsToSend = 0;
+
+        //Check the depositsToSmall queue first
+        for (uint i = depositsToSmallStartIndex; i < depositsToSmallEndIndex; i++) {
+            nominDeposit memory depositToSmall = depositsToSmall[i];
+
+            if (depositToSmall.user == msg.sender) {
+                // The user is withdrawing this deposit. Remove it from our queue.
+                // We'll just leave a gap, which the purchasing logic can walk past.
+                nominsToSend = safeAdd(nominsToSend, depositToSmall.amount);
+                delete depositsToSmall[i];
+            }
+        }
+
+        // If there's nothing to do then go ahead and revert the transaction
+        require(nominsToSend > 0, "You have no deposits to withdraw.");
+
+        // Send their deposits back to them (minus fees)
+        nomin.transfer(msg.sender, nominsToSend);
+
+        emit NominWithdrawal(msg.sender, nominsToSend);
+    }
+
+    /**
      * @notice depositNomins: Allows users to deposit nomins via the approve / transferFrom workflow
      *         if they'd like. You can equally just transfer nomins to this contract and it will work
      *         exactly the same way but with one less call (and therefore cheaper transaction fees)
@@ -537,11 +577,16 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
         onlyNomin
         returns (bool)
     {
-        // A minimum deposit amount is designed to protect depositors from over paying
-        // gas for fullfilling multiple small nomin deposits
+        // A minimum deposit amount is designed to protect purchasers from over paying
+        // gas for fullfilling multiple small nomin deposits 
         if (amount < minimumDepositAmount) {
-            // Refund the sender their nomins
-            nomin.transfer(from, amount);
+            // We cant fail/revert the transaction or send the nomins back in a reentrant call. 
+            // So we will put your nomins in a seperate queue that you have to withdraw them from
+            depositsToSmall[depositsToSmallEndIndex] = nominDeposit({ user: from, amount: amount });
+            // Walk our index forward as well.
+            depositsToSmallEndIndex = safeAdd(depositsToSmallEndIndex, 1);
+
+            emit NominDepositNotAccepted(from, amount, minimumDepositAmount);
         } else {
             // Ok, thanks for the deposit, let's queue it up.
             deposits[depositEndIndex] = nominDeposit({ user: from, amount: amount });
@@ -650,5 +695,6 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
     event Exchange(string fromCurrency, uint fromAmount, string toCurrency, uint toAmount, uint price);
     event NominWithdrawal(address user, uint amount);
     event NominDeposit(address user, uint amount);
+    event NominDepositNotAccepted(address user, uint amount, uint minimum);
     event MinimumDepositAmountUpdated(uint amount);
 }
