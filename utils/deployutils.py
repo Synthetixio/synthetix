@@ -1,3 +1,4 @@
+import os
 import time
 
 from web3 import Web3, HTTPProvider
@@ -69,10 +70,10 @@ def attempt(function, func_args, init_string, func_kwargs=None, print_status=Tru
         return None
 
 
-def compile_contracts(files, remappings=['/contracts/']):
+def compile_contracts(files, remappings=[]):
     contract_interfaces = {}
     compiled = compile_files(
-        files, import_remappings=remappings, optimize=True)
+        files, import_remappings=remappings + ['openzeppelin-solidity=' + os.getcwd() + '/node_modules/openzeppelin-solidity/'], optimize=True)
     for key in compiled:
         name = key.split(':')[-1]
         contract_interfaces[name] = compiled[key]
