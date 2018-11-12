@@ -287,7 +287,11 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
                     deposit.amount = safeSub(deposit.amount, remainingToFulfill);
                     totalSellableDeposits = safeSub(totalSellableDeposits, remainingToFulfill);
 
-                    // Transfer the ETH to the depositor.
+                    // Transfer the ETH to the depositor. Send is used instead of transfer 
+                    // so a non payable contract wont block the FIFO queue on a failed 
+                    // ETH payable for nomins transaction. The proceeds to be sent to the 
+                    // havven foundation funds wallet. This is to protect all depositors 
+                    // in the queue in this rare case that may occur.
                     ethToSend = safeDiv_dec(remainingToFulfill, usdToEthPrice);
                     if(!deposit.user.send(ethToSend)) {
                         fundsWallet.transfer(ethToSend);
@@ -311,7 +315,11 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
                     // We also need to tell our total it's decreased
                     totalSellableDeposits = safeSub(totalSellableDeposits, deposit.amount);
 
-                    // Now fulfill by transfering the ETH to the depositor.
+                    // Now fulfill by transfering the ETH to the depositor. Send is used instead of transfer 
+                    // so a non payable contract wont block the FIFO queue on a failed 
+                    // ETH payable for nomins transaction. The proceeds to be sent to the 
+                    // havven foundation funds wallet. This is to protect all depositors 
+                    // in the queue in this rare case that may occur.
                     ethToSend = safeDiv_dec(deposit.amount, usdToEthPrice);
                     if(!deposit.user.send(ethToSend)) {
                         fundsWallet.transfer(ethToSend);
@@ -529,7 +537,10 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
         onlyNomin
         returns (bool)
     {
+        // A minimum deposit amount is designed to protect depositors from over paying
+        // gas for fullfilling multiple small nomin deposits
         if (amount < minimumDepositAmount) {
+            // Refund the sender their nomins
             nomin.transfer(from, amount);
         } else {
             // Ok, thanks for the deposit, let's queue it up.

@@ -199,21 +199,20 @@ contract('Depot', async function(accounts) {
 	});
 
 	it('should allow the owner to set the minimum deposit amount', async function() {
-		const min = toUnit('100');
-		const defaultMinDepositAmount = await depot.minimumDepositAmount();
-		assert.bnEqual(defaultMinDepositAmount, toUnit('50'));
-		await depot.setMinimumDepositAmount(min, { from: owner });
-		const newMinDepositAmount = await depot.minimumDepositAmount();
-		assert.bnEqual(newMinDepositAmount, min);
+		const minimumDepositAmount = toUnit('100');
+		const setMinimumDepositAmountTx = await depot.setMinimumDepositAmount(minimumDepositAmount, {
+			from: owner,
+		});
+		assert.eventEqual(setMinimumDepositAmountTx, 'MinimumDepositAmountUpdated', {
+			amount: minimumDepositAmount,
+		});
+		const newMinimumDepositAmount = await depot.minimumDepositAmount();
+		assert.bnEqual(newMinimumDepositAmount, minimumDepositAmount);
 	});
 
 	it('should not allow someone other than owner to set the minimum deposit amount', async function() {
-		const min = toUnit('100');
-		const defaultMinDepositAmount = await depot.minimumDepositAmount();
-		assert.bnEqual(defaultMinDepositAmount, toUnit('50'));
-		await assert.revert(depot.setMinimumDepositAmount(min, { from: address1 }));
-		const newMinDepositAmount = await depot.minimumDepositAmount();
-		assert.bnEqual(newMinDepositAmount, defaultMinDepositAmount);
+		const minimumDepositAmount = toUnit('100');
+		await assert.revert(depot.setMinimumDepositAmount(minimumDepositAmount, { from: address1 }));
 	});
 
 	describe('should not accept nomin deposits and refund', async function() {
