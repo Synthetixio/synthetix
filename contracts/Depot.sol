@@ -494,11 +494,6 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
     {
         uint nominsToSend = 0;
 
-        // First check if the user has tried to send deposit amounts < the minimumDepositAmount to the FIFO
-        // queue which would have been added to this mapping for withdrawal only
-        nominsToSend = safeAdd(nominsToSend, smallDeposits[msg.sender]);
-        smallDeposits[msg.sender] = 0;
-
         for (uint i = depositStartIndex; i < depositEndIndex; i++) {
             nominDeposit memory deposit = deposits[i];
 
@@ -510,11 +505,16 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
             }
         }
 
+        // Update our total
+        totalSellableDeposits = safeSub(totalSellableDeposits, nominsToSend);
+
         // If there's nothing to do then go ahead and revert the transaction
         require(nominsToSend > 0, "You have no deposits to withdraw.");
 
-        // Update our total
-        totalSellableDeposits = safeSub(totalSellableDeposits, nominsToSend);
+        // Check if the user has tried to send deposit amounts < the minimumDepositAmount to the FIFO
+        // queue which would have been added to this mapping for withdrawal only
+        nominsToSend = safeAdd(nominsToSend, smallDeposits[msg.sender]);
+        smallDeposits[msg.sender] = 0;
 
         // Send their deposits back to them (minus fees)
         nomin.transfer(msg.sender, nominsToSend);
