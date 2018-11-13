@@ -626,28 +626,27 @@ contract('Depot', async function(accounts) {
 			});
 		});
 
-		// it.only('Ensure user can withdraw their Nomin deposit even if they sent an amount smaller than the minimum required', async function() {
-		// 	const nominsToDeposit = toUnit('10');
+		it('Ensure user can withdraw their Nomin deposit even if they sent an amount smaller than the minimum required', async function() {
+			const nominsToDeposit = toUnit('10');
 
-		// 	await nomin.transfer(depot.address, nominsToDeposit, {
-		// 		from: depositor,
-		// 	});
+			await nomin.transferSenderPaysFee(depot.address, nominsToDeposit, {
+				from: depositor,
+			});
 
-		// 	// Now balance should be equal to the amount we just sent minus the fees
-		// 	const smallDepositsBalance = await depot.smallDeposits(depositor);
-		// 	const amountDepotReceived = await nomin.amountReceived(nominsToDeposit);
-		// 	assert.bnEqual(smallDepositsBalance, amountDepotReceived);
+			// Now balance should be equal to the amount we just sent minus the fees
+			const smallDepositsBalance = await depot.smallDeposits(depositor);
+			assert.bnEqual(smallDepositsBalance, nominsToDeposit);
 
-		// 	// Wthdraw the deposited nomins
-		// 	const txn = await depot.withdrawMyDepositedNomins({ from: depositor });
-		// 	// const withdrawEvent = txn.logs[0];
+			// Wthdraw the deposited nomins
+			const txn = await depot.withdrawMyDepositedNomins({ from: depositor });
+			const withdrawEvent = txn.logs[0];
 
-		// 	// // The sent nomins should be equal the initial deposit
-		// 	// assert.eventEqual(withdrawEvent, 'NominWithdrawal', {
-		// 	// 	user: depositor,
-		// 	// 	amount: nominsToDeposit,
-		// 	// });
-		// });
+			// The sent nomins should be equal the initial deposit
+			assert.eventEqual(withdrawEvent, 'NominWithdrawal', {
+				user: depositor,
+				amount: nominsToDeposit,
+			});
+		});
 
 		it('Ensure user can exchange ETH for Nomins after a withdrawal and that the queue correctly skips the empty entry', async function() {
 			//   - e.g. Deposits of [1, 2, 3], user withdraws 2, so [1, (empty), 3], then
