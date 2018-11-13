@@ -99,14 +99,11 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
     // The minimum amount of nUSD required to enter the FiFo queue
     uint public minimumDepositAmount = 50 * UNIT;
 
-    // If a user deposits a nomin amount < the minimumDepositAmount the contract will put
-    // it in this depositsToSmall queue which will not be sold on market and the sender
+    // If a user deposits a nomin amount < the minimumDepositAmount the contract will keep
+    // the total of small deposits which will not be sold on market and the sender
     // must call withdrawMyDepositedNomins() to get them back.
-    mapping(uint => nominDeposit) public depositsToSmall;
-    // The starting index of our queue inclusive
-    uint public depositsToSmallStartIndex;
-    // The ending index of our queue exclusive
-    uint public depositsToSmallEndIndex;
+    mapping(address => uint) public smallDeposits;
+
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -497,6 +494,11 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
     {
         uint nominsToSend = 0;
 
+        // First check if the user has tried to send deposit amounts < the minimumDepositAmount to the FIFO
+        // queue which would have been added to this mapping for withdrawal only
+        nominsToSend = safeAdd(nominsToSend, smallDeposits[msg.sender]);
+        smallDeposits[msg.sender] = 0;
+
         for (uint i = depositStartIndex; i < depositEndIndex; i++) {
             nominDeposit memory deposit = deposits[i];
 
@@ -513,37 +515,6 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
 
         // Update our total
         totalSellableDeposits = safeSub(totalSellableDeposits, nominsToSend);
-
-        // Send their deposits back to them (minus fees)
-        nomin.transfer(msg.sender, nominsToSend);
-
-        emit NominWithdrawal(msg.sender, nominsToSend);
-    }
-
-    /**
-     * @notice Allows a user who has deposited an amount < minimumDepositAmount to withdraw all of 
-     *         their deposited nomins from this contract. This is to protect normal actors from over
-     *         paying for gas to withdraw their nomins.
-     */
-    function withdrawMySmallDepositedNomins()
-        external
-    {
-        uint nominsToSend = 0;
-
-        //Check the depositsToSmall queue first
-        for (uint i = depositsToSmallStartIndex; i < depositsToSmallEndIndex; i++) {
-            nominDeposit memory depositToSmall = depositsToSmall[i];
-
-            if (depositToSmall.user == msg.sender) {
-                // The user is withdrawing this deposit. Remove it from our queue.
-                // We'll just leave a gap, which the purchasing logic can walk past.
-                nominsToSend = safeAdd(nominsToSend, depositToSmall.amount);
-                delete depositsToSmall[i];
-            }
-        }
-
-        // If there's nothing to do then go ahead and revert the transaction
-        require(nominsToSend > 0, "You have no deposits to withdraw.");
 
         // Send their deposits back to them (minus fees)
         nomin.transfer(msg.sender, nominsToSend);
@@ -581,10 +552,8 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
         // gas for fullfilling multiple small nomin deposits 
         if (amount < minimumDepositAmount) {
             // We cant fail/revert the transaction or send the nomins back in a reentrant call. 
-            // So we will put your nomins in a seperate queue that you have to withdraw them from
-            depositsToSmall[depositsToSmallEndIndex] = nominDeposit({ user: from, amount: amount });
-            // Walk our index forward as well.
-            depositsToSmallEndIndex = safeAdd(depositsToSmallEndIndex, 1);
+            // So we will keep your nomins balance seperate from the FIFO queue so you can withdraw them
+            smallDeposits[from] += safeAdd(smallDeposits[from], amount);
 
             emit NominDepositNotAccepted(from, amount, minimumDepositAmount);
         } else {
