@@ -215,7 +215,7 @@ contract('Depot', async function(accounts) {
 		await assert.revert(depot.setMinimumDepositAmount(minimumDepositAmount, { from: address1 }));
 	});
 
-	describe('should not accept nomin deposits and refund', async function() {
+	describe('should increment depositor smallDeposits balance', async function() {
 		const nominsBalance = toUnit('100');
 		const depositor = address1;
 
@@ -226,58 +226,58 @@ contract('Depot', async function(accounts) {
 			await nomin.transferSenderPaysFee(depositor, nominsBalance, { from: owner });
 		});
 
-		it('if the deposit nomin amount is a zero amount', async function() {
-			const nominsToDeposit = toUnit('0');
+		it('if the deposit nomin amount is a tiny amount', async function() {
+			const nominsToDeposit = toUnit('0.01');
 			const depositorStartBalance = await nomin.balanceOf(depositor);
+
+			// Depositor should initially have a smallDeposits balance of 0
+			const initialSmallDepositsBalance = await depot.smallDeposits(depositor);
+			assert.equal(initialSmallDepositsBalance, 0);
 
 			await nomin.transfer(depot.address, nominsToDeposit, {
 				from: depositor,
 			});
 
+			// Now balance should be equal to the amount we just sent minus the fees
+			const smallDepositsBalance = await depot.smallDeposits(depositor);
 			const amountDepotReceived = await nomin.amountReceived(nominsToDeposit);
-			const amountSenderReceived = await nomin.amountReceived(amountDepotReceived);
-
-			const depositorBalance = await nomin.balanceOf(depositor);
-			assert.bnEqual(
-				depositorStartBalance.sub(nominsToDeposit).add(amountSenderReceived),
-				depositorBalance
-			);
+			assert.bnEqual(smallDepositsBalance, amountDepotReceived);
 		});
 
 		it('if the deposit nomin of 10 amount is less than the minimumDepositAmount', async function() {
 			const nominsToDeposit = toUnit('10');
 			const depositorStartBalance = await nomin.balanceOf(depositor);
 
+			// Depositor should initially have a smallDeposits balance of 0
+			const initialSmallDepositsBalance = await depot.smallDeposits(depositor);
+			assert.equal(initialSmallDepositsBalance, 0);
+
 			await nomin.transfer(depot.address, nominsToDeposit, {
 				from: depositor,
 			});
 
+			// Now balance should be equal to the amount we just sent minus the fees
+			const smallDepositsBalance = await depot.smallDeposits(depositor);
 			const amountDepotReceived = await nomin.amountReceived(nominsToDeposit);
-			const amountSenderReceived = await nomin.amountReceived(amountDepotReceived);
-
-			const depositorBalance = await nomin.balanceOf(depositor);
-			assert.bnEqual(
-				depositorStartBalance.sub(nominsToDeposit).add(amountSenderReceived),
-				depositorBalance
-			);
+			assert.bnEqual(smallDepositsBalance, amountDepotReceived);
 		});
 
 		it('if the deposit nomin amount of 49.99 is less than the minimumDepositAmount', async function() {
 			const nominsToDeposit = toUnit('49.99');
 			const depositorStartBalance = await nomin.balanceOf(depositor);
 
+			// Depositor should initially have a smallDeposits balance of 0
+			const initialSmallDepositsBalance = await depot.smallDeposits(depositor);
+			assert.equal(initialSmallDepositsBalance, 0);
+
 			await nomin.transfer(depot.address, nominsToDeposit, {
 				from: depositor,
 			});
 
+			// Now balance should be equal to the amount we just sent minus the fees
+			const smallDepositsBalance = await depot.smallDeposits(depositor);
 			const amountDepotReceived = await nomin.amountReceived(nominsToDeposit);
-			const amountSenderReceived = await nomin.amountReceived(amountDepotReceived);
-
-			const depositorBalance = await nomin.balanceOf(depositor);
-			assert.bnEqual(
-				depositorStartBalance.sub(nominsToDeposit).add(amountSenderReceived),
-				depositorBalance
-			);
+			assert.bnEqual(smallDepositsBalance, amountDepotReceived);
 		});
 	});
 
@@ -625,6 +625,29 @@ contract('Depot', async function(accounts) {
 				amount: nominsToDeposit,
 			});
 		});
+
+		// it.only('Ensure user can withdraw their Nomin deposit even if they sent an amount smaller than the minimum required', async function() {
+		// 	const nominsToDeposit = toUnit('10');
+
+		// 	await nomin.transfer(depot.address, nominsToDeposit, {
+		// 		from: depositor,
+		// 	});
+
+		// 	// Now balance should be equal to the amount we just sent minus the fees
+		// 	const smallDepositsBalance = await depot.smallDeposits(depositor);
+		// 	const amountDepotReceived = await nomin.amountReceived(nominsToDeposit);
+		// 	assert.bnEqual(smallDepositsBalance, amountDepotReceived);
+
+		// 	// Wthdraw the deposited nomins
+		// 	const txn = await depot.withdrawMyDepositedNomins({ from: depositor });
+		// 	// const withdrawEvent = txn.logs[0];
+
+		// 	// // The sent nomins should be equal the initial deposit
+		// 	// assert.eventEqual(withdrawEvent, 'NominWithdrawal', {
+		// 	// 	user: depositor,
+		// 	// 	amount: nominsToDeposit,
+		// 	// });
+		// });
 
 		it('Ensure user can exchange ETH for Nomins after a withdrawal and that the queue correctly skips the empty entry', async function() {
 			//   - e.g. Deposits of [1, 2, 3], user withdraws 2, so [1, (empty), 3], then

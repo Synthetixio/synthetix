@@ -28,15 +28,9 @@ pragma solidity 0.4.24;
 import "./ReentrancyPreventer.sol";
 
 contract TokenFallbackCaller is ReentrancyPreventer {
-    function callTokenFallback(address sender, address recipient, uint amount, bytes data)
-        private
-        preventReentrancy
-    {
-        recipient.call(abi.encodeWithSignature("tokenFallback(address,uint256,bytes)", sender, amount, data));
-    }
-
     function callTokenFallbackIfNeeded(address sender, address recipient, uint amount, bytes data)
         internal
+        preventReentrancy
     {
         /*
             If we're transferring to a contract and it implements the tokenFallback function, call it.
@@ -62,7 +56,7 @@ contract TokenFallbackCaller is ReentrancyPreventer {
             // We can't call it the normal way because that reverts when the recipient doesn't implement the function.
 
             // solium-disable-next-line security/no-low-level-calls
-            callTokenFallback(sender, recipient, amount, data);
+            recipient.call(abi.encodeWithSignature("tokenFallback(address,uint256,bytes)", sender, amount, data));
 
             // And yes, we specifically don't care if this call fails, so we're not checking the return value.
         }
