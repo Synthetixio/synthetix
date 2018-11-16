@@ -291,10 +291,10 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
                     deposit.amount = safeSub(deposit.amount, remainingToFulfill);
                     totalSellableDeposits = safeSub(totalSellableDeposits, remainingToFulfill);
 
-                    // Transfer the ETH to the depositor. Send is used instead of transfer 
-                    // so a non payable contract won't block the FIFO queue on a failed 
-                    // ETH payable for nomins transaction. The proceeds to be sent to the 
-                    // havven foundation funds wallet. This is to protect all depositors 
+                    // Transfer the ETH to the depositor. Send is used instead of transfer
+                    // so a non payable contract won't block the FIFO queue on a failed
+                    // ETH payable for nomins transaction. The proceeds to be sent to the
+                    // havven foundation funds wallet. This is to protect all depositors
                     // in the queue in this rare case that may occur.
                     ethToSend = safeDiv_dec(remainingToFulfill, usdToEthPrice);
                     if(!deposit.user.send(ethToSend)) {
@@ -319,10 +319,10 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
                     // We also need to tell our total it's decreased
                     totalSellableDeposits = safeSub(totalSellableDeposits, deposit.amount);
 
-                    // Now fulfill by transfering the ETH to the depositor. Send is used instead of transfer 
-                    // so a non payable contract won't block the FIFO queue on a failed 
-                    // ETH payable for nomins transaction. The proceeds to be sent to the 
-                    // havven foundation funds wallet. This is to protect all depositors 
+                    // Now fulfill by transfering the ETH to the depositor. Send is used instead of transfer
+                    // so a non payable contract won't block the FIFO queue on a failed
+                    // ETH payable for nomins transaction. The proceeds to be sent to the
+                    // havven foundation funds wallet. This is to protect all depositors
                     // in the queue in this rare case that may occur.
                     ethToSend = safeDiv_dec(deposit.amount, usdToEthPrice);
                     if(!deposit.user.send(ethToSend)) {
@@ -506,13 +506,13 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
         // Update our total
         totalSellableDeposits = safeSub(totalSellableDeposits, nominsToSend);
 
-        // If there's nothing to do then go ahead and revert the transaction
-        require(nominsToSend > 0, "You have no deposits to withdraw.");
-
         // Check if the user has tried to send deposit amounts < the minimumDepositAmount to the FIFO
         // queue which would have been added to this mapping for withdrawal only
         nominsToSend = safeAdd(nominsToSend, smallDeposits[msg.sender]);
         smallDeposits[msg.sender] = 0;
+
+        // If there's nothing to do then go ahead and revert the transaction
+        require(nominsToSend > 0, "You have no deposits to withdraw.");
 
         // Send their deposits back to them (minus fees)
         nomin.transfer(msg.sender, nominsToSend);
@@ -547,9 +547,9 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
         returns (bool)
     {
         // A minimum deposit amount is designed to protect purchasers from over paying
-        // gas for fullfilling multiple small nomin deposits 
+        // gas for fullfilling multiple small nomin deposits
         if (amount < minimumDepositAmount) {
-            // We cant fail/revert the transaction or send the nomins back in a reentrant call. 
+            // We cant fail/revert the transaction or send the nomins back in a reentrant call.
             // So we will keep your nomins balance seperate from the FIFO queue so you can withdraw them
             smallDeposits[from] = safeAdd(smallDeposits[from], amount);
 
