@@ -217,6 +217,8 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
         external
         onlyOwner
     {
+        //Do not allow us to set it less than 1 dollar opening up to fractional desposits in the queue again
+        require(_amount > 1 * UNIT);
         minimumDepositAmount = _amount;
         emit MinimumDepositAmountUpdated(minimumDepositAmount);
     }

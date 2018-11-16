@@ -215,6 +215,16 @@ contract('Depot', async function(accounts) {
 		await assert.revert(depot.setMinimumDepositAmount(minimumDepositAmount, { from: address1 }));
 	});
 
+	it('should not allow the owner to set the minimum deposit amount to be less than 1 nUSD', async function() {
+		const minimumDepositAmount = toUnit('.5');
+		await assert.revert(depot.setMinimumDepositAmount(minimumDepositAmount, { from: address1 }));
+	});
+
+	it('should not allow the owner to set the minimum deposit amount to be zero', async function() {
+		const minimumDepositAmount = toUnit('0');
+		await assert.revert(depot.setMinimumDepositAmount(minimumDepositAmount, { from: address1 }));
+	});
+
 	describe('should increment depositor smallDeposits balance', async function() {
 		const nominsBalance = toUnit('100');
 		const depositor = address1;
@@ -645,6 +655,34 @@ contract('Depot', async function(accounts) {
 			assert.eventEqual(withdrawEvent, 'NominWithdrawal', {
 				user: depositor,
 				amount: nominsToDeposit,
+			});
+		});
+
+		it('Ensure user can withdraw their multiple Nomin deposits when they sent amounts smaller than the minimum required', async function() {
+			const nominsToDeposit1 = toUnit('10');
+			const nominsToDeposit2 = toUnit('15');
+			const totalNominDeposits = nominsToDeposit1.add(nominsToDeposit2);
+
+			await nomin.transferSenderPaysFee(depot.address, nominsToDeposit1, {
+				from: depositor,
+			});
+
+			await nomin.transferSenderPaysFee(depot.address, nominsToDeposit2, {
+				from: depositor,
+			});
+
+			// Now balance should be equal to the amount we just sent minus the fees
+			const smallDepositsBalance = await depot.smallDeposits(depositor);
+			assert.bnEqual(smallDepositsBalance, nominsToDeposit1.add(nominsToDeposit2));
+
+			// Wthdraw the deposited nomins
+			const txn = await depot.withdrawMyDepositedNomins({ from: depositor });
+			const withdrawEvent = txn.logs[0];
+
+			// The sent nomins should be equal the initial deposit
+			assert.eventEqual(withdrawEvent, 'NominWithdrawal', {
+				user: depositor,
+				amount: totalNominDeposits,
 			});
 		});
 
