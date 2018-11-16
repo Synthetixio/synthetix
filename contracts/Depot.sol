@@ -217,8 +217,6 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
         external
         onlyOwner
     {
-        require(_amount > 0, "Minimum deposit amount must be greater than 0");
-
         minimumDepositAmount = _amount;
         emit MinimumDepositAmountUpdated(minimumDepositAmount);
     }
@@ -294,7 +292,7 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
                     totalSellableDeposits = safeSub(totalSellableDeposits, remainingToFulfill);
 
                     // Transfer the ETH to the depositor. Send is used instead of transfer 
-                    // so a non payable contract wont block the FIFO queue on a failed 
+                    // so a non payable contract won't block the FIFO queue on a failed 
                     // ETH payable for nomins transaction. The proceeds to be sent to the 
                     // havven foundation funds wallet. This is to protect all depositors 
                     // in the queue in this rare case that may occur.
@@ -322,7 +320,7 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
                     totalSellableDeposits = safeSub(totalSellableDeposits, deposit.amount);
 
                     // Now fulfill by transfering the ETH to the depositor. Send is used instead of transfer 
-                    // so a non payable contract wont block the FIFO queue on a failed 
+                    // so a non payable contract won't block the FIFO queue on a failed 
                     // ETH payable for nomins transaction. The proceeds to be sent to the 
                     // havven foundation funds wallet. This is to protect all depositors 
                     // in the queue in this rare case that may occur.
@@ -553,7 +551,7 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
         if (amount < minimumDepositAmount) {
             // We cant fail/revert the transaction or send the nomins back in a reentrant call. 
             // So we will keep your nomins balance seperate from the FIFO queue so you can withdraw them
-            smallDeposits[from] += safeAdd(smallDeposits[from], amount);
+            smallDeposits[from] = safeAdd(smallDeposits[from], amount);
 
             emit NominDepositNotAccepted(from, amount, minimumDepositAmount);
         } else {
