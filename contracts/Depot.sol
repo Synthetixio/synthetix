@@ -444,7 +444,7 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
         // And send them the Havvens.
         havven.transfer(msg.sender, havvensToSend);
 
-        emit Exchange("nUSD", nominAmount, "HAV", havvensToSend, 1);
+        emit Exchange("nUSD", nominAmount, "HAV", havvensToSend, 1 * UNIT);
 
         return havvensToSend;
     }
