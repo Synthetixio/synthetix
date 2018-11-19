@@ -9,3 +9,5 @@ deploy_settings.py
 build/
 node_modules/
 yarn-error.log
+
+.env
