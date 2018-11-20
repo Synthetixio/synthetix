@@ -10,7 +10,7 @@ before_install:
   - npm i
   - sudo add-apt-repository ppa:ethereum/ethereum -y
   - sudo apt-get update
-  - sudo apt-get install solc
+  - sudo apt-get install solc=0.4.25
 install:
   - pip install -r requirements.txt
 script:
