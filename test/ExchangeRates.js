@@ -32,7 +32,7 @@ contract('Exchange Rates', async function(accounts) {
 		const instance = await ExchangeRates.new(
 			owner,
 			oracle,
-			[web3.utils.asciiToHex('nUSD'), web3.utils.asciiToHex('HAV')],
+			[web3.utils.asciiToHex('nUSD'), web3.utils.asciiToHex('SNX')],
 			[web3.utils.toWei('1', 'ether'), web3.utils.toWei('0.2', 'ether')],
 			{
 				from: deployerAccount,
@@ -44,7 +44,7 @@ contract('Exchange Rates', async function(accounts) {
 		assert.equal(await instance.oracle(), oracle);
 
 		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('nUSD')), '1');
-		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('HAV')), '0.2');
+		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('SNX')), '0.2');
 
 		// Ensure that when the rate isn't found, 0 is returned as the exchange rate.
 		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('OTHER')), '0');
@@ -59,10 +59,10 @@ contract('Exchange Rates', async function(accounts) {
 		);
 		assert.equal(lastUpdatedTimeOTHER.toNumber(), 0);
 
-		const lastUpdatedTimeHAV = await instance.lastRateUpdateTimes.call(
-			web3.utils.asciiToHex('HAV')
+		const lastUpdatedTimeSNX = await instance.lastRateUpdateTimes.call(
+			web3.utils.asciiToHex('SNX')
 		);
-		assert.isAtLeast(lastUpdatedTimeHAV.toNumber(), creationTime);
+		assert.isAtLeast(lastUpdatedTimeSNX.toNumber(), creationTime);
 
 		const expectedHdrParticipants = ['nUSD', 'nAUD', 'nCHF', 'nEUR', 'nGBP'].map(
 			web3.utils.asciiToHex
@@ -107,7 +107,7 @@ contract('Exchange Rates', async function(accounts) {
 				oracle,
 				[
 					web3.utils.asciiToHex('nUSD'),
-					web3.utils.asciiToHex('HAV'),
+					web3.utils.asciiToHex('SNX'),
 					web3.utils.asciiToHex('GOLD'),
 				],
 				[web3.utils.toWei('1', 'ether'), web3.utils.toWei('0.2', 'ether')],
@@ -144,7 +144,7 @@ contract('Exchange Rates', async function(accounts) {
 			ExchangeRates.new(
 				owner,
 				oracle,
-				[web3.utils.asciiToHex('HAV')],
+				[web3.utils.asciiToHex('SNX')],
 				[web3.utils.toWei('0', 'ether')],
 				{
 					from: deployerAccount,
@@ -343,7 +343,7 @@ contract('Exchange Rates', async function(accounts) {
 			instance.updateRates(
 				[
 					web3.utils.asciiToHex('nUSD'),
-					web3.utils.asciiToHex('HAV'),
+					web3.utils.asciiToHex('SNX'),
 					web3.utils.asciiToHex('GOLD'),
 				],
 				[web3.utils.toWei('1', 'ether'), web3.utils.toWei('0.2', 'ether')],
@@ -643,7 +643,7 @@ contract('Exchange Rates', async function(accounts) {
 		const instance = await ExchangeRates.deployed();
 		const keysArray = [
 			web3.utils.asciiToHex('nUSD'),
-			web3.utils.asciiToHex('HAV'),
+			web3.utils.asciiToHex('SNX'),
 			web3.utils.asciiToHex('GOLD'),
 		];
 		await instance.updateRates(
@@ -659,7 +659,7 @@ contract('Exchange Rates', async function(accounts) {
 		assert.equal(await instance.anyRateIsStale(keysArray), false);
 		await fastForward(await instance.rateStalePeriod());
 		await instance.updateRates(
-			[web3.utils.asciiToHex('HAV'), web3.utils.asciiToHex('GOLD')],
+			[web3.utils.asciiToHex('SNX'), web3.utils.asciiToHex('GOLD')],
 			[web3.utils.toWei('0.1', 'ether'), web3.utils.toWei('0.2', 'ether')],
 			await currentTime(),
 			{ from: oracle }

@@ -3,7 +3,7 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 
-file:       HavvenState.sol
+file:       SynthetixState.sol
 version:    1.0
 author:     Kevin Brown
 date:       2018-10-19
@@ -12,14 +12,14 @@ date:       2018-10-19
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
-A contract that holds issuance state and preferred currency of 
-users in the Havven system.
+A contract that holds issuance state and preferred currency of
+users in the Synthetix system.
 
-This contract is used side by side with the Havven contract
+This contract is used side by side with the Synthetix contract
 to make it easier to upgrade the contract logic while maintaining
 issuance state.
 
-The Havven contract is also quite large and on the edge of
+The Synthetix contract is also quite large and on the edge of
 being beyond the contract size limit without moving this information
 out to another contract.
 
@@ -35,16 +35,16 @@ contract to the new one.
 
 pragma solidity 0.4.25;
 
-import "./Havven.sol";
+import "./Synthetix.sol";
 import "./LimitedSetup.sol";
 import "./SafeDecimalMath.sol";
 import "./State.sol";
 
 /**
- * @title Havven State
- * @notice Stores issuance information and preferred currency information of the Havven contract.
+ * @title Synthetix State
+ * @notice Stores issuance information and preferred currency information of the Synthetix contract.
  */
-contract HavvenState is State, LimitedSetup {
+contract SynthetixState is State, LimitedSetup {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -72,9 +72,9 @@ contract HavvenState is State, LimitedSetup {
     uint[] public debtLedger;
 
     // A quantity of nomins greater than this ratio
-    // may not be issued against a given value of havvens.
+    // may not be issued against a given value of SNX.
     uint public issuanceRatio = SafeDecimalMath.unit() / 5;
-    // No more nomins may be issued than the value of havvens backing them.
+    // No more nomins may be issued than the value of SNX backing them.
     uint constant MAX_ISSUANCE_RATIO = SafeDecimalMath.unit();
 
     // Users can specify their preferred currency, in which case all nomins they receive
@@ -181,7 +181,7 @@ contract HavvenState is State, LimitedSetup {
     }
 
     /**
-     * @notice Import issuer data from the old Havven contract before multicurrency
+     * @notice Import issuer data from the old Synthetix contract before multicurrency
      * @dev Only callable by the contract owner, and only for 1 week after deployment.
      */
     function importIssuerData(address[] accounts, uint[] nUSDAmounts)
@@ -197,21 +197,21 @@ contract HavvenState is State, LimitedSetup {
     }
 
     /**
-     * @notice Import issuer data from the old Havven contract before multicurrency
+     * @notice Import issuer data from the old Synthetix contract before multicurrency
      * @dev Only used from importIssuerData above, meant to be disposable
      */
     function _addToDebtRegister(address account, uint amount)
         internal
     {
-        // This code is duplicated from Havven so that we can call it directly here
+        // This code is duplicated from Synthetix so that we can call it directly here
         // during setup only.
-        Havven havven = Havven(associatedContract);
+        Synthetix synthetix = Synthetix(associatedContract);
 
         // What is the value of the requested debt in HDRs?
-        uint hdrValue = havven.effectiveValue("nUSD", amount, "HDR");
-        
+        uint hdrValue = synthetix.effectiveValue("nUSD", amount, "HDR");
+
         // What is the value of all issued nomins of the system (priced in HDRs)?
-        uint totalDebtIssued = havven.totalIssuedNomins("HDR");
+        uint totalDebtIssued = synthetix.totalIssuedNomins("HDR");
 
         // What will the new total be including the new value?
         uint newTotalDebtIssued = hdrValue.add(totalDebtIssued);
@@ -225,8 +225,8 @@ contract HavvenState is State, LimitedSetup {
         // The delta is a high precision integer.
         uint delta = SafeDecimalMath.preciseUnit().sub(debtPercentage);
 
-        uint existingDebt = havven.debtBalanceOf(account, "HDR");
-         
+        uint existingDebt = synthetix.debtBalanceOf(account, "HDR");
+
         // And what does their debt ownership look like including this previous stake?
         if (existingDebt > 0) {
             debtPercentage = hdrValue.add(existingDebt).divideDecimalRoundPrecise(newTotalDebtIssued);
@@ -241,7 +241,7 @@ contract HavvenState is State, LimitedSetup {
         issuanceData[account].initialDebtOwnership = debtPercentage;
         issuanceData[account].debtEntryIndex = debtLedger.length;
 
-        // And if we're the first, push 1 as there was no effect to any other holders, otherwise push 
+        // And if we're the first, push 1 as there was no effect to any other holders, otherwise push
         // the change for the rest of the debt holders. The debt ledger holds high precision integers.
         if (debtLedger.length > 0) {
             debtLedger.push(

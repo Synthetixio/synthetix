@@ -12,13 +12,13 @@ date:       2018-09-12
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
-A contract that any other contract in the Havven system can query
+A contract that any other contract in the Synthetix system can query
 for the current market value of various assets, including
 crypto assets as well as various fiat assets.
 
 This contract assumes that rate updates will completely update
 all rates to their current values. If a rate shock happens
-on a single asset, the oracle will still push updated rates 
+on a single asset, the oracle will still push updated rates
 for all other assets.
 
 -----------------------------------------------------------------
@@ -37,10 +37,10 @@ contract ExchangeRates is SelfDestructible {
 
     using SafeMath for uint;
 
-    // Exchange rates stored by currency code, e.g. 'HAV', or 'nUSD'
+    // Exchange rates stored by currency code, e.g. 'SNX', or 'nUSD'
     mapping(bytes4 => uint) public rates;
 
-    // Update times stored by currency code, e.g. 'HAV', or 'nUSD'
+    // Update times stored by currency code, e.g. 'SNX', or 'nUSD'
     mapping(bytes4 => uint) public lastRateUpdateTimes;
 
     // The address of the oracle which pushes rate updates to this contract
@@ -49,7 +49,7 @@ contract ExchangeRates is SelfDestructible {
     // Do not allow the oracle to submit times any further forward into the future than this constant.
     uint constant ORACLE_FUTURE_LIMIT = 10 minutes;
 
-    // How long will the contract assume the rate of any asset is correct 
+    // How long will the contract assume the rate of any asset is correct
     uint public rateStalePeriod = 3 hours;
 
     // Each participating currency in the HDR basket is represented as a currency key with
@@ -57,7 +57,7 @@ contract ExchangeRates is SelfDestructible {
     // There are 5 participating currencies, so we'll declare that clearly.
     bytes4[5] public hdrParticipants;
 
-    // 
+    //
     // ========== CONSTRUCTOR ==========
 
     /**
@@ -74,7 +74,7 @@ contract ExchangeRates is SelfDestructible {
         // Oracle values - Allows for rate updates
         address _oracle,
         bytes4[] _currencyKeys,
-        uint[] _newRates 
+        uint[] _newRates
     )
         /* Owned is initialised in SelfDestructible */
         SelfDestructible(_owner)
@@ -101,7 +101,7 @@ contract ExchangeRates is SelfDestructible {
             bytes4("nEUR"),
             bytes4("nGBP")
         ];
-        
+
         internalUpdateRates(_currencyKeys, _newRates, now);
     }
 
@@ -116,7 +116,7 @@ contract ExchangeRates is SelfDestructible {
      *                 if it takes a long time for the transaction to confirm.
      */
     function updateRates(bytes4[] currencyKeys, uint[] newRates, uint timeSent)
-        external 
+        external
         onlyOracle
         returns(bool)
     {
@@ -132,7 +132,7 @@ contract ExchangeRates is SelfDestructible {
      *                 if it takes a long time for the transaction to confirm.
      */
     function internalUpdateRates(bytes4[] currencyKeys, uint[] newRates, uint timeSent)
-        internal 
+        internal
         returns(bool)
     {
         require(currencyKeys.length == newRates.length, "Currency key array length must match rates array length.");
@@ -158,7 +158,7 @@ contract ExchangeRates is SelfDestructible {
     }
 
     /**
-     * @notice Update the Havven Drawing Rights exchange rate based on other rates already updated.
+     * @notice Update the Synthetix Drawing Rights exchange rate based on other rates already updated.
      */
     function updateHDRRate(uint timeSent)
         internal
@@ -220,7 +220,7 @@ contract ExchangeRates is SelfDestructible {
      */
     function setRateStalePeriod(uint _time)
         external
-        onlyOwner 
+        onlyOwner
     {
         rateStalePeriod = _time;
         emit RateStalePeriodUpdated(rateStalePeriod);
@@ -288,7 +288,7 @@ contract ExchangeRates is SelfDestructible {
      * @notice Check if a specific currency's rate hasn't been updated for longer than the stale period.
      */
     function rateIsStale(bytes4 currencyKey)
-        external 
+        external
         view
         returns (bool)
     {
@@ -308,7 +308,7 @@ contract ExchangeRates is SelfDestructible {
     {
         // Loop through each key and check whether the data point is stale.
         uint256 i = 0;
-        
+
         while (i < currencyKeys.length) {
             // nUSD is a special case and is never false
             if (currencyKeys[i] != "nUSD" && lastRateUpdateTimes[currencyKeys[i]].add(rateStalePeriod) < now) {

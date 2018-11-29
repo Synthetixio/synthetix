@@ -18,7 +18,7 @@ MODULE DESCRIPTION
 
 pragma solidity 0.4.25;
 
-import "./Havven.sol";
+import "./Synthetix.sol";
 import "./Proxyable.sol";
 import "./SelfDestructible.sol";
 import "./SafeDecimalMath.sol";
@@ -28,7 +28,7 @@ contract FeePool is Proxyable, SelfDestructible {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    Havven public havven;
+    Synthetix public synthetix;
 
     // A percentage fee charged on each transfer.
     uint public transferFeeRate;
@@ -41,7 +41,7 @@ contract FeePool is Proxyable, SelfDestructible {
 
     // Exchange fee may not exceed 10%.
     uint constant public MAX_EXCHANGE_FEE_RATE = SafeDecimalMath.unit() / 10;
-    
+
     // The address with the authority to distribute fees.
     address public feeAuthority;
 
@@ -57,7 +57,7 @@ contract FeePool is Proxyable, SelfDestructible {
         uint feesClaimed;
     }
 
-    // The last 6 fee periods are all that you can claim from. 
+    // The last 6 fee periods are all that you can claim from.
     // These are stored and managed from [0], such that [0] is always
     // the most recent fee period, and [5] is always the oldest fee
     // period that users can claim for.
@@ -89,7 +89,7 @@ contract FeePool is Proxyable, SelfDestructible {
     uint constant FIFTY_PERCENT = (50 * SafeDecimalMath.unit()) / 100;
     uint constant SEVENTY_FIVE_PERCENT = (75 * SafeDecimalMath.unit()) / 100;
 
-    constructor(address _proxy, address _owner, Havven _havven, address _feeAuthority, uint _transferFeeRate, uint _exchangeFeeRate)
+    constructor(address _proxy, address _owner, Synthetix _synthetix, address _feeAuthority, uint _transferFeeRate, uint _exchangeFeeRate)
         SelfDestructible(_owner)
         Proxyable(_proxy, _owner)
         public
@@ -98,7 +98,7 @@ contract FeePool is Proxyable, SelfDestructible {
         require(_transferFeeRate <= MAX_TRANSFER_FEE_RATE, "Constructed transfer fee rate should respect the maximum fee rate");
         require(_exchangeFeeRate <= MAX_EXCHANGE_FEE_RATE, "Constructed exchange fee rate should respect the maximum fee rate");
 
-        havven = _havven;
+        synthetix = _synthetix;
         feeAuthority = _feeAuthority;
         transferFeeRate = _transferFeeRate;
         exchangeFeeRate = _exchangeFeeRate;
@@ -172,27 +172,27 @@ contract FeePool is Proxyable, SelfDestructible {
     }
 
     /**
-     * @notice Set the havven contract
+     * @notice Set the synthetix contract
      */
-    function setHavven(Havven _havven)
+    function setSynthetix(Synthetix _synthetix)
         public
         optionalProxy_onlyOwner
     {
-        require(address(_havven) != address(0), "New Havven must be non-zero");
+        require(address(_synthetix) != address(0), "New Synthetix must be non-zero");
 
-        havven = _havven;
+        synthetix = _synthetix;
 
-        emitHavvenUpdated(_havven);
+        emitSynthetixUpdated(_synthetix);
     }
-    
+
     /**
-     * @notice The Havven contract informs us when fees are paid.
+     * @notice The Synthetix contract informs us when fees are paid.
      */
-    function feePaid(bytes4 currencyKey, uint amount) 
+    function feePaid(bytes4 currencyKey, uint amount)
         external
-        onlyHavven
+        onlySynthetix
     {
-        uint hdrAmount = havven.effectiveValue(currencyKey, amount, "HDR");
+        uint hdrAmount = synthetix.effectiveValue(currencyKey, amount, "HDR");
 
         // Which we keep track of in HDRs in our fee pool.
         recentFeePeriods[0].feesToDistribute = recentFeePeriods[0].feesToDistribute.add(hdrAmount);
@@ -239,7 +239,7 @@ contract FeePool is Proxyable, SelfDestructible {
 
         // Open up the new fee period
         recentFeePeriods[0].feePeriodId = nextFeePeriodId;
-        recentFeePeriods[0].startingDebtIndex = havven.havvenState().debtLedgerLength();
+        recentFeePeriods[0].startingDebtIndex = synthetix.synthetixState().debtLedgerLength();
         recentFeePeriods[0].startTime = now;
 
         nextFeePeriodId = nextFeePeriodId.add(1);
@@ -305,19 +305,19 @@ contract FeePool is Proxyable, SelfDestructible {
         require(account != address(0), "Account can't be 0");
         require(account != address(this), "Can't send fees to fee pool");
         require(account != address(proxy), "Can't send fees to proxy");
-        require(account != address(havven), "Can't send fees to havven");
+        require(account != address(synthetix), "Can't send fees to synthetix");
 
-        Nomin hdrNomin = havven.nomins("HDR");
-        Nomin destinationNomin = havven.nomins(destinationCurrencyKey);
-        
-        // Note: We don't need to check the fee pool balance as the burn() below will do a safe subtraction which requires 
+        Nomin hdrNomin = synthetix.nomins("HDR");
+        Nomin destinationNomin = synthetix.nomins(destinationCurrencyKey);
+
+        // Note: We don't need to check the fee pool balance as the burn() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if the balance is not sufficient.
 
         // Burn the source amount
         hdrNomin.burn(FEE_ADDRESS, hdrAmount);
 
         // How much should they get in the destination currency?
-        uint destinationAmount = havven.effectiveValue("HDR", hdrAmount, destinationCurrencyKey);
+        uint destinationAmount = synthetix.effectiveValue("HDR", hdrAmount, destinationCurrencyKey);
 
         // There's no fee on withdrawing fees, as that'd be way too meta.
 
@@ -343,7 +343,7 @@ contract FeePool is Proxyable, SelfDestructible {
 
         // Transfers less than the reciprocal of transferFeeRate should be completely eaten up by fees.
         // This is on the basis that transfers less than this value will result in a nil fee.
-        // Probably too insignificant to worry about, but the following code will achieve it. 
+        // Probably too insignificant to worry about, but the following code will achieve it.
         //      if (fee == 0 && transferFeeRate != 0) {
         //          return _value;
         //      }
@@ -388,7 +388,7 @@ contract FeePool is Proxyable, SelfDestructible {
 
         // Exchanges less than the reciprocal of exchangeFeeRate should be completely eaten up by fees.
         // This is on the basis that exchanges less than this value will result in a nil fee.
-        // Probably too insignificant to worry about, but the following code will achieve it. 
+        // Probably too insignificant to worry about, but the following code will achieve it.
         //      if (fee == 0 && exchangeFeeRate != 0) {
         //          return _value;
         //      }
@@ -438,7 +438,7 @@ contract FeePool is Proxyable, SelfDestructible {
             totalFees = totalFees.sub(recentFeePeriods[i].feesClaimed);
         }
 
-        return havven.effectiveValue("HDR", totalFees, currencyKey);
+        return synthetix.effectiveValue("HDR", totalFees, currencyKey);
     }
 
     /**
@@ -446,7 +446,7 @@ contract FeePool is Proxyable, SelfDestructible {
      * @param currencyKey The currency you want to price the fees in
      */
     function feesAvailable(address account, bytes4 currencyKey)
-        public 
+        public
         view
         returns (uint)
     {
@@ -461,7 +461,7 @@ contract FeePool is Proxyable, SelfDestructible {
         }
 
         // And convert them to their desired currency
-        return havven.effectiveValue("HDR", totalFees, currencyKey);
+        return synthetix.effectiveValue("HDR", totalFees, currencyKey);
     }
 
     /**
@@ -473,7 +473,7 @@ contract FeePool is Proxyable, SelfDestructible {
         view
         returns (uint)
     {
-        uint ratio = havven.collateralisationRatio(account);
+        uint ratio = synthetix.collateralisationRatio(account);
 
         // Users receive a different amount of fees depending on how their collateralisation ratio looks right now.
         // 0% - 20%: Fee is calculated based on percentage of economy issued.
@@ -486,7 +486,7 @@ contract FeePool is Proxyable, SelfDestructible {
             return TWENTY_FIVE_PERCENT;
         } else if (ratio > THIRTY_PERCENT && ratio <= FOURTY_PERCENT) {
             return FIFTY_PERCENT;
-        } 
+        }
 
         return SEVENTY_FIVE_PERCENT;
     }
@@ -503,9 +503,9 @@ contract FeePool is Proxyable, SelfDestructible {
         // What's the user's debt entry index and the debt they owe to the system
         uint initialDebtOwnership;
         uint debtEntryIndex;
-        (initialDebtOwnership, debtEntryIndex) = havven.havvenState().issuanceData(account);
-        uint debtBalance = havven.debtBalanceOf(account, "HDR");
-        uint totalNomins = havven.totalIssuedNomins("HDR");
+        (initialDebtOwnership, debtEntryIndex) = synthetix.synthetixState().issuanceData(account);
+        uint debtBalance = synthetix.debtBalanceOf(account, "HDR");
+        uint totalNomins = synthetix.totalIssuedNomins("HDR");
         uint userOwnershipPercentage = debtBalance.divideDecimal(totalNomins);
         uint penalty = currentPenalty(account);
 
@@ -545,9 +545,9 @@ contract FeePool is Proxyable, SelfDestructible {
         _;
     }
 
-    modifier onlyHavven
+    modifier onlySynthetix
     {
-        require(msg.sender == address(havven), "Only the havven contract can perform this action");
+        require(msg.sender == address(synthetix), "Only the synthetix contract can perform this action");
         _;
     }
 
@@ -592,9 +592,9 @@ contract FeePool is Proxyable, SelfDestructible {
         proxy._emit(abi.encode(account, hdrAmount), 1, FEESCLAIMED_SIG, 0, 0, 0);
     }
 
-    event HavvenUpdated(address newHavven);
-    bytes32 constant HAVVENUPDATED_SIG = keccak256("HavvenUpdated(address)");
-    function emitHavvenUpdated(address newHavven) internal {
-        proxy._emit(abi.encode(newHavven), 1, HAVVENUPDATED_SIG, 0, 0, 0);
+    event SynthetixUpdated(address newSynthetix);
+    bytes32 constant SYNTHETIXUPDATED_SIG = keccak256("SynthetixUpdated(address)");
+    function emitSynthetixUpdated(address newSynthetix) internal {
+        proxy._emit(abi.encode(newSynthetix), 1, SYNTHETIXUPDATED_SIG, 0, 0, 0);
     }
 }

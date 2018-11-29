@@ -1,6 +1,6 @@
 const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
-const Havven = artifacts.require('Havven');
+const Synthetix = artifacts.require('Synthetix');
 const Nomin = artifacts.require('Nomin');
 
 const { currentTime, fastForward, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
@@ -11,7 +11,7 @@ contract('FeePool', async function(accounts) {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[nUSD, nAUD, nEUR, HAV],
+			[nUSD, nAUD, nEUR, SNX],
 			['1', '0.5', '1.25', '0.1'].map(toUnit),
 			timestamp,
 			{
@@ -46,7 +46,7 @@ contract('FeePool', async function(accounts) {
 	// 	console.log('------------------');
 	// };
 
-	const [nUSD, nAUD, nEUR, HAV, HDR] = ['nUSD', 'nAUD', 'nEUR', 'HAV', 'HDR'].map(
+	const [nUSD, nAUD, nEUR, SNX, HDR] = ['nUSD', 'nAUD', 'nEUR', 'SNX', 'HDR'].map(
 		web3.utils.asciiToHex
 	);
 
@@ -61,7 +61,7 @@ contract('FeePool', async function(accounts) {
 		account4,
 	] = accounts;
 
-	let feePool, FEE_ADDRESS, havven, exchangeRates, nUSDContract, nAUDContract, HDRContract;
+	let feePool, FEE_ADDRESS, synthetix, exchangeRates, nUSDContract, nAUDContract, HDRContract;
 
 	beforeEach(async function() {
 		// Save ourselves from having to await deployed() in every single test.
@@ -71,10 +71,10 @@ contract('FeePool', async function(accounts) {
 		feePool = await FeePool.deployed();
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 
-		havven = await Havven.deployed();
-		nUSDContract = await Nomin.at(await havven.nomins(nUSD));
-		nAUDContract = await Nomin.at(await havven.nomins(nAUD));
-		HDRContract = await Nomin.at(await havven.nomins(HDR));
+		synthetix = await Synthetix.deployed();
+		nUSDContract = await Nomin.at(await synthetix.nomins(nUSD));
+		nAUDContract = await Nomin.at(await synthetix.nomins(nAUD));
+		HDRContract = await Nomin.at(await synthetix.nomins(HDR));
 
 		// Send a price update to guarantee we're not stale.
 		await updateRatesWithDefaults();
@@ -84,7 +84,7 @@ contract('FeePool', async function(accounts) {
 		const transferFeeRate = toUnit('0.0015');
 		const exchangeFeeRate = toUnit('0.0030');
 
-		// constructor(address _proxy, address _owner, Havven _havven, address _feeAuthority, uint _transferFeeRate, uint _exchangeFeeRate)
+		// constructor(address _proxy, address _owner, Synthetix _synthetix, address _feeAuthority, uint _transferFeeRate, uint _exchangeFeeRate)
 		const instance = await FeePool.new(
 			account1,
 			account2,
@@ -99,7 +99,7 @@ contract('FeePool', async function(accounts) {
 
 		assert.equal(await instance.proxy(), account1);
 		assert.equal(await instance.owner(), account2);
-		assert.equal(await instance.havven(), account3);
+		assert.equal(await instance.synthetix(), account3);
 		assert.equal(await instance.feeAuthority(), account4);
 		assert.bnEqual(await instance.transferFeeRate(), transferFeeRate);
 		assert.bnEqual(await instance.exchangeFeeRate(), exchangeFeeRate);
@@ -271,15 +271,15 @@ contract('FeePool', async function(accounts) {
 		);
 	});
 
-	it('should allow the owner to set the havven instance', async function() {
-		let transaction = await feePool.setHavven(account1, { from: owner });
+	it('should allow the owner to set the synthetix instance', async function() {
+		let transaction = await feePool.setSynthetix(account1, { from: owner });
 
-		assert.eventEqual(transaction, 'HavvenUpdated', { newHavven: account1 });
-		assert.bnEqual(await feePool.havven(), account1);
+		assert.eventEqual(transaction, 'SynthetixUpdated', { newSynthetix: account1 });
+		assert.bnEqual(await feePool.synthetix(), account1);
 	});
 
-	it('should disallow a non-owner from setting the havven instance', async function() {
-		await assert.revert(feePool.setHavven(account2, { from: account1 }));
+	it('should disallow a non-owner from setting the synthetix instance', async function() {
+		await assert.revert(feePool.setSynthetix(account2, { from: account1 }));
 	});
 
 	it('should allow the fee authority to close the current fee period', async function() {
@@ -312,7 +312,7 @@ contract('FeePool', async function(accounts) {
 		const feePeriodLength = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 
 		// Issue 10,000 nUSD.
-		await havven.issueNomins(nUSD, toUnit('10000'), { from: owner });
+		await synthetix.issueNomins(nUSD, toUnit('10000'), { from: owner });
 
 		// Users are only entitled to fees when they've participated in a fee period in its
 		// entirety. Roll over the fee period so fees generated below count for owner.
@@ -341,7 +341,7 @@ contract('FeePool', async function(accounts) {
 		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 
 		// Issue 10,000 nUSD.
-		await havven.issueNomins(nUSD, toUnit('10000'), { from: owner });
+		await synthetix.issueNomins(nUSD, toUnit('10000'), { from: owner });
 
 		// Users have to be in the fee period in its entirety to be owed fees. Close that fee period
 		// so that future fees are available for the owner.
@@ -386,7 +386,7 @@ contract('FeePool', async function(accounts) {
 		}
 
 		// Now create the first fee
-		await havven.issueNomins(nUSD, toUnit('10000'), { from: owner });
+		await synthetix.issueNomins(nUSD, toUnit('10000'), { from: owner });
 		await nUSDContract.transfer(account1, toUnit('10000'), { from: owner });
 		const fee = await HDRContract.balanceOf(FEE_ADDRESS);
 
@@ -456,10 +456,10 @@ contract('FeePool', async function(accounts) {
 		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 
 		// Issue 10,000 nUSD for two different accounts.
-		await havven.transfer(account1, toUnit('1000000'), { from: owner });
+		await synthetix.transfer(account1, toUnit('1000000'), { from: owner });
 
-		await havven.issueNomins(nUSD, toUnit('10000'), { from: owner });
-		await havven.issueNomins(nUSD, toUnit('10000'), { from: account1 });
+		await synthetix.issueNomins(nUSD, toUnit('10000'), { from: owner });
+		await synthetix.issueNomins(nUSD, toUnit('10000'), { from: account1 });
 
 		// For each fee period (with one extra to test rollover), do two transfers, then close it off.
 		let totalFees = web3.utils.toBN('0');
@@ -494,10 +494,10 @@ contract('FeePool', async function(accounts) {
 		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 
 		// Issue 10,000 nAUD for two different accounts.
-		await havven.transfer(account1, toUnit('1000000'), { from: owner });
+		await synthetix.transfer(account1, toUnit('1000000'), { from: owner });
 
-		await havven.issueNomins(nAUD, toUnit('10000'), { from: owner });
-		await havven.issueNomins(nAUD, toUnit('10000'), { from: account1 });
+		await synthetix.issueNomins(nAUD, toUnit('10000'), { from: owner });
+		await synthetix.issueNomins(nAUD, toUnit('10000'), { from: account1 });
 
 		// For each fee period (with one extra to test rollover), do two transfers, then close it off.
 		let totalFees = web3.utils.toBN('0');
@@ -530,7 +530,7 @@ contract('FeePool', async function(accounts) {
 
 	it('should revert when a user tries to double claim their fees', async function() {
 		// Issue 10,000 nUSD.
-		await havven.issueNomins(nUSD, toUnit('10000'), { from: owner });
+		await synthetix.issueNomins(nUSD, toUnit('10000'), { from: owner });
 
 		// Users are only allowed to claim fees in periods they had an issued balance
 		// for the entire period.
@@ -565,10 +565,10 @@ contract('FeePool', async function(accounts) {
 		const amount = toUnit('10000');
 
 		// Issue nUSD for two different accounts.
-		await havven.transfer(account1, toUnit('1000000'), { from: owner });
+		await synthetix.transfer(account1, toUnit('1000000'), { from: owner });
 
-		await havven.issueNomins(nUSD, amount, { from: owner });
-		await havven.issueNomins(nUSD, amount, { from: account1 });
+		await synthetix.issueNomins(nUSD, amount, { from: owner });
+		await synthetix.issueNomins(nUSD, amount, { from: account1 });
 
 		await closeFeePeriod();
 
@@ -583,7 +583,7 @@ contract('FeePool', async function(accounts) {
 		// At this stage there should be a single pending period, one that's half claimed, and an empty one.
 		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 		const feeInUSD = amount.sub(await feePool.amountReceivedFromTransfer(amount));
-		const hdrFee = await havven.effectiveValue(nUSD, feeInUSD, HDR);
+		const hdrFee = await synthetix.effectiveValue(nUSD, feeInUSD, HDR);
 
 		// First period
 		assert.deepEqual(await feePool.recentFeePeriods(0), {
@@ -727,10 +727,10 @@ contract('FeePool', async function(accounts) {
 		const fee = amount.sub(await feePool.amountReceivedFromTransfer(amount));
 
 		// Issue nUSD for two different accounts.
-		await havven.transfer(account1, toUnit('1000000'), { from: owner });
+		await synthetix.transfer(account1, toUnit('1000000'), { from: owner });
 
-		await havven.issueNomins(nUSD, amount, { from: owner });
-		await havven.issueNomins(nUSD, amount.mul(web3.utils.toBN('2')), { from: account1 });
+		await synthetix.issueNomins(nUSD, amount, { from: owner });
+		await synthetix.issueNomins(nUSD, amount.mul(web3.utils.toBN('2')), { from: account1 });
 
 		// Generate a fee.
 		await nUSDContract.transfer(account2, amount, { from: owner });
@@ -751,10 +751,10 @@ contract('FeePool', async function(accounts) {
 		const fee1 = amount1.sub(await feePool.amountReceivedFromTransfer(amount1));
 
 		// Issue nUSD for two different accounts.
-		await havven.transfer(account1, toUnit('1000000'), { from: owner });
+		await synthetix.transfer(account1, toUnit('1000000'), { from: owner });
 
-		await havven.issueNomins(nUSD, amount1, { from: owner });
-		await havven.issueNomins(nUSD, amount2, { from: account1 });
+		await synthetix.issueNomins(nUSD, amount1, { from: owner });
+		await synthetix.issueNomins(nUSD, amount2, { from: account1 });
 
 		// Generate a fee.
 		await nUSDContract.transfer(account2, amount1, { from: owner });
@@ -789,10 +789,10 @@ contract('FeePool', async function(accounts) {
 		const fee = amount.sub(await feePool.amountReceivedFromTransfer(amount));
 
 		// Issue nUSD for two different accounts.
-		await havven.transfer(account1, toUnit('1000000'), { from: owner });
+		await synthetix.transfer(account1, toUnit('1000000'), { from: owner });
 
-		await havven.issueNomins(nUSD, amount, { from: owner });
-		await havven.issueNomins(nUSD, amount.mul(web3.utils.toBN('2')), { from: account1 });
+		await synthetix.issueNomins(nUSD, amount, { from: owner });
+		await synthetix.issueNomins(nUSD, amount.mul(web3.utils.toBN('2')), { from: account1 });
 
 		// Close out the period to allow both users to be part of the whole fee period.
 		await closeFeePeriod();
@@ -830,10 +830,10 @@ contract('FeePool', async function(accounts) {
 		const FEE_PERIOD_LENGTH = await feePool.FEE_PERIOD_LENGTH();
 
 		// Issue nUSD for two different accounts.
-		await havven.transfer(account1, toUnit('1000000'), { from: owner });
+		await synthetix.transfer(account1, toUnit('1000000'), { from: owner });
 
-		await havven.issueNomins(nUSD, amount, { from: owner });
-		await havven.issueNomins(nUSD, amount.mul(web3.utils.toBN('2')), { from: account1 });
+		await synthetix.issueNomins(nUSD, amount, { from: owner });
+		await synthetix.issueNomins(nUSD, amount.mul(web3.utils.toBN('2')), { from: account1 });
 
 		// Close out the period to allow both users to be part of the whole fee period.
 		await closeFeePeriod();
@@ -875,19 +875,19 @@ contract('FeePool', async function(accounts) {
 
 	it('should correctly calculate the penalties at specific issuance ratios', async function() {
 		const step = toUnit('0.005');
-		await havven.issueMaxNomins(nUSD, { from: owner });
+		await synthetix.issueMaxNomins(nUSD, { from: owner });
 
 		// Increase the price so we start well and truly within our 20% ratio.
-		const newRate = (await exchangeRates.rateForCurrency(HAV)).add(step.mul(web3.utils.toBN('5')));
+		const newRate = (await exchangeRates.rateForCurrency(SNX)).add(step.mul(web3.utils.toBN('5')));
 		const timestamp = await currentTime();
-		await exchangeRates.updateRates([HAV], [newRate], timestamp, {
+		await exchangeRates.updateRates([SNX], [newRate], timestamp, {
 			from: oracle,
 		});
 
-		// Start from the current price of havven and slowly decrease the price until
+		// Start from the current price of synthetix and slowly decrease the price until
 		// we hit almost zero. Assert the correct penalty at each point.
-		while ((await exchangeRates.rateForCurrency(HAV)).gt(step.mul(web3.utils.toBN('2')))) {
-			const ratio = await havven.collateralisationRatio(owner);
+		while ((await exchangeRates.rateForCurrency(SNX)).gt(step.mul(web3.utils.toBN('2')))) {
+			const ratio = await synthetix.collateralisationRatio(owner);
 
 			if (ratio.lte(toUnit('0.2'))) {
 				// Should be 0% penalty
@@ -904,9 +904,9 @@ contract('FeePool', async function(accounts) {
 			}
 
 			// Bump the rate down.
-			const newRate = (await exchangeRates.rateForCurrency(HAV)).sub(step);
+			const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(step);
 			const timestamp = await currentTime();
-			await exchangeRates.updateRates([HAV], [newRate], timestamp, {
+			await exchangeRates.updateRates([SNX], [newRate], timestamp, {
 				from: oracle,
 			});
 		}
@@ -916,11 +916,11 @@ contract('FeePool', async function(accounts) {
 		const threeQuarters = amount => amount.div(web3.utils.toBN('4')).mul(web3.utils.toBN('3'));
 
 		// Issue 10,000 nUSD for two different accounts.
-		await havven.transfer(account1, toUnit('1000000'), { from: owner });
+		await synthetix.transfer(account1, toUnit('1000000'), { from: owner });
 
-		await havven.issueMaxNomins(nUSD, { from: account1 });
+		await synthetix.issueMaxNomins(nUSD, { from: account1 });
 		const amount = await nUSDContract.balanceOf(account1);
-		await havven.issueNomins(nUSD, amount, { from: owner });
+		await synthetix.issueNomins(nUSD, amount, { from: owner });
 		await closeFeePeriod();
 
 		// Do a transfer to generate fees
@@ -935,12 +935,12 @@ contract('FeePool', async function(accounts) {
 		await closeFeePeriod();
 		assert.bnClose(await feePool.feesAvailable(account1, nUSD), fee.div(web3.utils.toBN('2')));
 
-		// But if the price of HAV decreases a bit, we will fall into the 20-30% bracket and lose
+		// But if the price of SNX decreases a bit, we will fall into the 20-30% bracket and lose
 		// 25% of those fees.
-		const newRate = (await exchangeRates.rateForCurrency(HAV)).sub(toUnit('0.0001'));
+		const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.0001'));
 
 		const timestamp = await currentTime();
-		await exchangeRates.updateRates([HAV], [newRate], timestamp, {
+		await exchangeRates.updateRates([SNX], [newRate], timestamp, {
 			from: oracle,
 		});
 
@@ -963,11 +963,11 @@ contract('FeePool', async function(accounts) {
 		const half = amount => amount.div(web3.utils.toBN('2'));
 
 		// Issue 10,000 nUSD for two different accounts.
-		await havven.transfer(account1, toUnit('1000000'), { from: owner });
+		await synthetix.transfer(account1, toUnit('1000000'), { from: owner });
 
-		await havven.issueMaxNomins(nUSD, { from: account1 });
+		await synthetix.issueMaxNomins(nUSD, { from: account1 });
 		const amount = await nUSDContract.balanceOf(account1);
-		await havven.issueNomins(nUSD, amount, { from: owner });
+		await synthetix.issueNomins(nUSD, amount, { from: owner });
 		await closeFeePeriod();
 
 		// Do a transfer to generate fees
@@ -982,11 +982,11 @@ contract('FeePool', async function(accounts) {
 		await closeFeePeriod();
 		assert.bnClose(await feePool.feesAvailable(account1, nUSD), half(fee));
 
-		// But if the price of HAV decreases a bit, we will fall into the 30-40% bracket and lose
+		// But if the price of SNX decreases a bit, we will fall into the 30-40% bracket and lose
 		// 50% of those fees.
-		const newRate = (await exchangeRates.rateForCurrency(HAV)).sub(toUnit('0.045'));
+		const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.045'));
 		const timestamp = await currentTime();
-		await exchangeRates.updateRates([HAV], [newRate], timestamp, {
+		await exchangeRates.updateRates([SNX], [newRate], timestamp, {
 			from: oracle,
 		});
 
@@ -1004,11 +1004,11 @@ contract('FeePool', async function(accounts) {
 		const quarter = amount => amount.div(web3.utils.toBN('4'));
 
 		// Issue 10,000 nUSD for two different accounts.
-		await havven.transfer(account1, toUnit('1000000'), { from: owner });
+		await synthetix.transfer(account1, toUnit('1000000'), { from: owner });
 
-		await havven.issueMaxNomins(nUSD, { from: account1 });
+		await synthetix.issueMaxNomins(nUSD, { from: account1 });
 		const amount = await nUSDContract.balanceOf(account1);
-		await havven.issueNomins(nUSD, amount, { from: owner });
+		await synthetix.issueNomins(nUSD, amount, { from: owner });
 		await closeFeePeriod();
 
 		// Do a transfer to generate fees
@@ -1023,11 +1023,11 @@ contract('FeePool', async function(accounts) {
 		await closeFeePeriod();
 		assert.bnClose(await feePool.feesAvailable(account1, nUSD), half(fee));
 
-		// But if the price of HAV decreases a lot, we will fall into the 40%+ bracket and lose
+		// But if the price of SNX decreases a lot, we will fall into the 40%+ bracket and lose
 		// 75% of those fees.
-		const newRate = (await exchangeRates.rateForCurrency(HAV)).sub(toUnit('0.06'));
+		const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.06'));
 		const timestamp = await currentTime();
-		await exchangeRates.updateRates([HAV], [newRate], timestamp, {
+		await exchangeRates.updateRates([SNX], [newRate], timestamp, {
 			from: oracle,
 		});
 

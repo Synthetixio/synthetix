@@ -12,17 +12,17 @@ date:       2018-09-13
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
-Havven-backed nomin stablecoin contract.
+Synthetix-backed nomin stablecoin contract.
 
 This contract issues nomins, which are tokens that mirror various
 flavours of fiat currency.
 
-Nomins are issuable by Havven holders who have to lock up some
-value of their havvens to issue H * Cmax nomins. Where Cmax is
+Nomins are issuable by Synthetix holders who have to lock up some
+value of their SNX to issue H * Cmax nomins. Where Cmax is
 some value less than 1.
 
 A configurable fee is charged on nomin transfers and deposited
-into a common pot, which havven holders may withdraw from once
+into a common pot, which synthetix holders may withdraw from once
 per fee period.
 
 -----------------------------------------------------------------
@@ -32,47 +32,47 @@ pragma solidity 0.4.25;
 
 import "./ExternStateToken.sol";
 import "./FeePool.sol";
-import "./Havven.sol";
+import "./Synthetix.sol";
 
 contract Nomin is ExternStateToken {
 
     /* ========== STATE VARIABLES ========== */
 
     FeePool public feePool;
-    Havven public havven;
+    Synthetix public synthetix;
 
-    // Currency key which identifies this Nomin to the Havven system
+    // Currency key which identifies this Nomin to the Synthetix system
     bytes4 public currencyKey;
 
     uint constant DECIMALS = 18;
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _proxy, TokenState _tokenState, Havven _havven, FeePool _feePool,
+    constructor(address _proxy, TokenState _tokenState, Synthetix _synthetix, FeePool _feePool,
         string _tokenName, string _tokenSymbol, address _owner, bytes4 _currencyKey
     )
         ExternStateToken(_proxy, _tokenState, _tokenName, _tokenSymbol, 0, DECIMALS, _owner)
         public
     {
         require(_proxy != 0, "_proxy cannot be 0");
-        require(address(_havven) != 0, "_havven cannot be 0");
+        require(address(_synthetix) != 0, "_synthetix cannot be 0");
         require(address(_feePool) != 0, "_feePool cannot be 0");
         require(_owner != 0, "_owner cannot be 0");
-        require(_havven.nomins(_currencyKey) == Nomin(0), "Currency key is already in use");
+        require(_synthetix.nomins(_currencyKey) == Nomin(0), "Currency key is already in use");
 
         feePool = _feePool;
-        havven = _havven;
+        synthetix = _synthetix;
         currencyKey = _currencyKey;
     }
 
     /* ========== SETTERS ========== */
 
-    function setHavven(Havven _havven)
+    function setSynthetix(Synthetix _synthetix)
         external
         optionalProxy_onlyOwner
     {
-        havven = _havven;
-        emitHavvenUpdated(_havven);
+        synthetix = _synthetix;
+        emitSynthetixUpdated(_synthetix);
     }
 
     function setFeePool(FeePool _feePool)
@@ -101,7 +101,7 @@ contract Nomin is ExternStateToken {
         uint fee = value.sub(amountReceived);
 
         // Send the fee off to the fee pool.
-        havven.nominInitiatedFeePayment(messageSender, currencyKey, fee);
+        synthetix.nominInitiatedFeePayment(messageSender, currencyKey, fee);
 
         // And send their result off to the destination address
         bytes memory empty;
@@ -123,7 +123,7 @@ contract Nomin is ExternStateToken {
         uint fee = value.sub(amountReceived);
 
         // Send the fee off to the fee pool, which we don't want to charge an additional fee on
-        havven.nominInitiatedFeePayment(messageSender, currencyKey, fee);
+        synthetix.nominInitiatedFeePayment(messageSender, currencyKey, fee);
 
         // And send their result off to the destination address
         return _internalTransfer(messageSender, to, amountReceived, data);
@@ -146,7 +146,7 @@ contract Nomin is ExternStateToken {
         tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
 
         // Send the fee off to the fee pool.
-        havven.nominInitiatedFeePayment(from, currencyKey, fee);
+        synthetix.nominInitiatedFeePayment(from, currencyKey, fee);
 
         bytes memory empty;
         return _internalTransfer(from, to, amountReceived, empty);
@@ -169,7 +169,7 @@ contract Nomin is ExternStateToken {
         tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
 
         // Send the fee off to the fee pool, which we don't want to charge an additional fee on
-        havven.nominInitiatedFeePayment(from, currencyKey, fee);
+        synthetix.nominInitiatedFeePayment(from, currencyKey, fee);
 
         return _internalTransfer(from, to, amountReceived, data);
     }
@@ -183,7 +183,7 @@ contract Nomin is ExternStateToken {
         uint fee = feePool.transferFeeIncurred(value);
 
         // Send the fee off to the fee pool, which we don't want to charge an additional fee on
-        havven.nominInitiatedFeePayment(messageSender, currencyKey, fee);
+        synthetix.nominInitiatedFeePayment(messageSender, currencyKey, fee);
 
         // And send their transfer amount off to the destination address
         bytes memory empty;
@@ -199,7 +199,7 @@ contract Nomin is ExternStateToken {
         uint fee = feePool.transferFeeIncurred(value);
 
         // Send the fee off to the fee pool, which we don't want to charge an additional fee on
-        havven.nominInitiatedFeePayment(messageSender, currencyKey, fee);
+        synthetix.nominInitiatedFeePayment(messageSender, currencyKey, fee);
 
         // And send their transfer amount off to the destination address
         return _internalTransfer(messageSender, to, value, data);
@@ -218,7 +218,7 @@ contract Nomin is ExternStateToken {
         tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value.add(fee)));
 
         // Send the fee off to the fee pool, which we don't want to charge an additional fee on
-        havven.nominInitiatedFeePayment(from, currencyKey, fee);
+        synthetix.nominInitiatedFeePayment(from, currencyKey, fee);
 
         bytes memory empty;
         return _internalTransfer(from, to, value, empty);
@@ -237,7 +237,7 @@ contract Nomin is ExternStateToken {
         tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value.add(fee)));
 
         // Send the fee off to the fee pool, which we don't want to charge an additional fee on
-        havven.nominInitiatedFeePayment(from, currencyKey, fee);
+        synthetix.nominInitiatedFeePayment(from, currencyKey, fee);
 
         return _internalTransfer(from, to, value, data);
     }
@@ -247,21 +247,21 @@ contract Nomin is ExternStateToken {
         internal
         returns (bool)
     {
-        bytes4 preferredCurrencyKey = havven.havvenState().preferredCurrency(to);
+        bytes4 preferredCurrencyKey = synthetix.synthetixState().preferredCurrency(to);
 
         // Do they have a preferred currency that's not us? If so we need to exchange
         if (preferredCurrencyKey != 0 && preferredCurrencyKey != currencyKey) {
-            return havven.nominInitiatedExchange(from, currencyKey, value, preferredCurrencyKey, to);
+            return synthetix.nominInitiatedExchange(from, currencyKey, value, preferredCurrencyKey, to);
         } else {
             // Otherwise we just transfer
             return super._internalTransfer(from, to, value, data);
         }
     }
 
-    // Allow havven to issue a certain number of nomins from an account.
+    // Allow synthetix to issue a certain number of nomins from an account.
     function issue(address account, uint amount)
         external
-        onlyHavvenOrFeePool
+        onlySynthetixOrFeePool
     {
         tokenState.setBalanceOf(account, tokenState.balanceOf(account).add(amount));
         totalSupply = totalSupply.add(amount);
@@ -269,10 +269,10 @@ contract Nomin is ExternStateToken {
         emitIssued(account, amount);
     }
 
-    // Allow havven or another nomin contract to burn a certain number of nomins from an account.
+    // Allow synthetix or another nomin contract to burn a certain number of nomins from an account.
     function burn(address account, uint amount)
         external
-        onlyHavvenOrFeePool
+        onlySynthetixOrFeePool
     {
         tokenState.setBalanceOf(account, tokenState.balanceOf(account).sub(amount));
         totalSupply = totalSupply.sub(amount);
@@ -280,11 +280,11 @@ contract Nomin is ExternStateToken {
         emitBurned(account, amount);
     }
 
-    // Allow havven to trigger a token fallback call from our nomins so users get notified on
+    // Allow synthetix to trigger a token fallback call from our nomins so users get notified on
     // exchange as well as transfer
-    function triggerTokenFallbackIfNeeded(address sender, address recipient, uint amount) 
+    function triggerTokenFallbackIfNeeded(address sender, address recipient, uint amount)
         external
-        onlyHavvenOrFeePool
+        onlySynthetixOrFeePool
     {
         bytes memory empty;
         callTokenFallbackIfNeeded(sender, recipient, amount, empty);
@@ -292,11 +292,11 @@ contract Nomin is ExternStateToken {
 
     /* ========== MODIFIERS ========== */
 
-    modifier onlyHavvenOrFeePool() {
-        bool isHavven = msg.sender == address(havven);
+    modifier onlySynthetixOrFeePool() {
+        bool isSynthetix = msg.sender == address(synthetix);
         bool isFeePool = msg.sender == address(feePool);
 
-        require(isHavven || isFeePool, "Only the Havven or FeePool contracts can perform this action");
+        require(isSynthetix || isFeePool, "Only the Synthetix or FeePool contracts can perform this action");
         _;
     }
 
@@ -307,10 +307,10 @@ contract Nomin is ExternStateToken {
 
     /* ========== EVENTS ========== */
 
-    event HavvenUpdated(address newHavven);
-    bytes32 constant HAVVENUPDATED_SIG = keccak256("HavvenUpdated(address)");
-    function emitHavvenUpdated(address newHavven) internal {
-        proxy._emit(abi.encode(newHavven), 1, HAVVENUPDATED_SIG, 0, 0, 0);
+    event SynthetixUpdated(address newSynthetix);
+    bytes32 constant SYNTHETIXUPDATED_SIG = keccak256("SynthetixUpdated(address)");
+    function emitSynthetixUpdated(address newSynthetix) internal {
+        proxy._emit(abi.encode(newSynthetix), 1, SYNTHETIXUPDATED_SIG, 0, 0, 0);
     }
 
     event FeePoolUpdated(address newFeePool);
