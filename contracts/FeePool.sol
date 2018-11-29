@@ -307,27 +307,27 @@ contract FeePool is Proxyable, SelfDestructible {
         require(account != address(proxy), "Can't send fees to proxy");
         require(account != address(synthetix), "Can't send fees to synthetix");
 
-        Nomin hdrNomin = synthetix.nomins("HDR");
-        Nomin destinationNomin = synthetix.nomins(destinationCurrencyKey);
+        Synth hdrSynth = synthetix.synths("HDR");
+        Synth destinationSynth = synthetix.synths(destinationCurrencyKey);
 
         // Note: We don't need to check the fee pool balance as the burn() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if the balance is not sufficient.
 
         // Burn the source amount
-        hdrNomin.burn(FEE_ADDRESS, hdrAmount);
+        hdrSynth.burn(FEE_ADDRESS, hdrAmount);
 
         // How much should they get in the destination currency?
         uint destinationAmount = synthetix.effectiveValue("HDR", hdrAmount, destinationCurrencyKey);
 
         // There's no fee on withdrawing fees, as that'd be way too meta.
 
-        // Mint their new nomins
-        destinationNomin.issue(account, destinationAmount);
+        // Mint their new synths
+        destinationSynth.issue(account, destinationAmount);
 
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
 
         // Call the ERC223 transfer callback if needed
-        destinationNomin.triggerTokenFallbackIfNeeded(FEE_ADDRESS, account, destinationAmount);
+        destinationSynth.triggerTokenFallbackIfNeeded(FEE_ADDRESS, account, destinationAmount);
     }
 
     /**
@@ -505,8 +505,8 @@ contract FeePool is Proxyable, SelfDestructible {
         uint debtEntryIndex;
         (initialDebtOwnership, debtEntryIndex) = synthetix.synthetixState().issuanceData(account);
         uint debtBalance = synthetix.debtBalanceOf(account, "HDR");
-        uint totalNomins = synthetix.totalIssuedNomins("HDR");
-        uint userOwnershipPercentage = debtBalance.divideDecimal(totalNomins);
+        uint totalSynths = synthetix.totalIssuedSynths("HDR");
+        uint userOwnershipPercentage = debtBalance.divideDecimal(totalSynths);
         uint penalty = currentPenalty(account);
 
         uint[FEE_PERIOD_LENGTH] memory result;

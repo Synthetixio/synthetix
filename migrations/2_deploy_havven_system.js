@@ -6,7 +6,7 @@ const Synthetix = artifacts.require('Synthetix');
 const SynthetixEscrow = artifacts.require('SynthetixEscrow');
 const SynthetixState = artifacts.require('SynthetixState');
 // const IssuanceController = artifacts.require('./IssuanceController.sol');
-const Nomin = artifacts.require('Nomin');
+const Synth = artifacts.require('Synth');
 const Owned = artifacts.require('Owned');
 const Proxy = artifacts.require('Proxy');
 const PublicSafeDecimalMath = artifacts.require('PublicSafeDecimalMath');
@@ -49,7 +49,7 @@ module.exports = async function(deployer, network, accounts) {
 		ExchangeRates,
 		owner,
 		oracle,
-		[web3.utils.asciiToHex('nUSD'), web3.utils.asciiToHex('SNX')],
+		[web3.utils.asciiToHex('sUSD'), web3.utils.asciiToHex('SNX')],
 		[web3.utils.toWei('1', 'ether'), web3.utils.toWei('0.2', 'ether')],
 		{ from: deployerAccount }
 	);
@@ -155,32 +155,32 @@ module.exports = async function(deployer, network, accounts) {
 	await feePool.setSynthetix(synthetix.address, { from: owner });
 
 	// ----------------
-	// Nomins
+	// Synths
 	// ----------------
-	const currencyKeys = ['HDR', 'nUSD', 'nAUD', 'nEUR'];
-	const nomins = [];
+	const currencyKeys = ['HDR', 'sUSD', 'sAUD', 'sEUR'];
+	const synths = [];
 
 	for (const currencyKey of currencyKeys) {
-		console.log(`Deploying NominTokenState for ${currencyKey}...`);
+		console.log(`Deploying SynthTokenState for ${currencyKey}...`);
 		const tokenState = await deployer.deploy(TokenState, owner, ZERO_ADDRESS, {
 			from: deployerAccount,
 		});
 
-		console.log(`Deploying NominProxy for ${currencyKey}...`);
+		console.log(`Deploying SynthProxy for ${currencyKey}...`);
 		const proxy = await deployer.deploy(Proxy, owner, { from: deployerAccount });
 
-		console.log(`Deploying ${currencyKey} Nomin...`);
+		console.log(`Deploying ${currencyKey} Synth...`);
 
 		// constructor(address _proxy, TokenState _tokenState, Synthetix _synthetix, FeePool _feePool,
 		//	string _tokenName, string _tokenSymbol, uint _decimals, address _owner, bytes4 _currencyKey
 		// )
-		const nomin = await deployer.deploy(
-			Nomin,
+		const synth = await deployer.deploy(
+			Synth,
 			proxy.address,
 			tokenState.address,
 			synthetix.address,
 			feePool.address,
-			`Nomin ${currencyKey}`,
+			`Synth ${currencyKey}`,
 			currencyKey,
 			owner,
 			web3.utils.asciiToHex(currencyKey),
@@ -188,31 +188,31 @@ module.exports = async function(deployer, network, accounts) {
 		);
 
 		console.log(`Setting associated contract for ${currencyKey} token state...`);
-		await tokenState.setAssociatedContract(nomin.address, { from: owner });
+		await tokenState.setAssociatedContract(synth.address, { from: owner });
 
 		console.log(`Setting proxy target for ${currencyKey} proxy...`);
-		await proxy.setTarget(nomin.address, { from: owner });
+		await proxy.setTarget(synth.address, { from: owner });
 
 		// ----------------------
-		// Connect Synthetix to Nomin
+		// Connect Synthetix to Synth
 		// ----------------------
 		console.log(`Adding ${currencyKey} to Synthetix contract...`);
-		await synthetix.addNomin(nomin.address, { from: owner });
+		await synthetix.addSynthNomin(synth.address, { from: owner });
 
-		nomins.push({
+		synths.push({
 			currencyKey,
 			tokenState,
 			proxy,
-			nomin,
+			synth,
 		});
 	}
 
 	// Initial prices
 	const { timestamp } = await web3.eth.getBlock('latest');
 
-	// nUSD: 1 USD
-	// nAUD: 0.5 USD
-	// nEUR: 1.25 USD
+	// sUSD: 1 USD
+	// sAUD: 0.5 USD
+	// sEUR: 1.25 USD
 	// SNX: 0.1 USD
 	await exchangeRates.updateRates(
 		currencyKeys.concat(['SNX']).map(web3.utils.asciiToHex),
@@ -230,7 +230,7 @@ module.exports = async function(deployer, network, accounts) {
 	// 	owner,
 	// 	fundsWallet,
 	// 	synthetix.address,
-	// 	nomin.address,
+	// 	synth.address,
 	// 	oracle,
 	// 	ethUSD,
 	// 	snxUSD,
@@ -253,10 +253,10 @@ module.exports = async function(deployer, network, accounts) {
 		// ['Issuance Controller', IssuanceController.address],
 	];
 
-	for (const nomin of nomins) {
-		tableData.push([`${nomin.currencyKey} Nomin`, nomin.nomin.address]);
-		tableData.push([`${nomin.currencyKey} Proxy`, nomin.proxy.address]);
-		tableData.push([`${nomin.currencyKey} Token State`, nomin.tokenState.address]);
+	for (const synth of synths) {
+		tableData.push([`${synth.currencyKey} Synth`, synth.synth.address]);
+		tableData.push([`${synth.currencyKey} Proxy`, synth.proxy.address]);
+		tableData.push([`${synth.currencyKey} Token State`, synth.tokenState.address]);
 	}
 
 	console.log();

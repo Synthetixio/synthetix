@@ -15,7 +15,7 @@ MODULE DESCRIPTION
 
 Synthetix token contract. SNX is a transferable ERC20 token,
 and also give its holders the following privileges.
-An owner of SNX has the right to issue nomins in all nomin flavours.
+An owner of SNX has the right to issue synths in all synth flavours.
 
 After a fee period terminates, the duration and fees collected for that
 period are computed, and the next period begins. Thus an account may only
@@ -26,13 +26,13 @@ the next period.
 == Average Balance Calculations ==
 
 The fee entitlement of a synthetix holder is proportional to their average
-issued nomin balance over the last fee period. This is computed by
-measuring the area under the graph of a user's issued nomin balance over
+issued synth balance over the last fee period. This is computed by
+measuring the area under the graph of a user's issued synth balance over
 time, and then when a new fee period begins, dividing through by the
 duration of the fee period.
 
 We need only update values when the balances of an account is modified.
-This occurs when issuing or burning for issued nomin balances,
+This occurs when issuing or burning for issued synth balances,
 and when transferring for synthetix balances. This is for efficiency,
 and adds an implicit friction to interacting with SNX.
 A synthetix holder pays for his own recomputation whenever he wants to change
@@ -94,14 +94,14 @@ operations are performed.
 
 == Issuance and Burning ==
 
-In this version of the synthetix contract, nomins can only be issued by
-those that have been nominated by the synthetix foundation. Nomins are assumed
+In this version of the synthetix contract, synths can only be issued by
+those that have been nominated by the synthetix foundation. Synths are assumed
 to be valued at $1, as they are a stable unit of account.
 
-All nomins issued require a proportional value of SNX to be locked,
+All synths issued require a proportional value of SNX to be locked,
 where the proportion is governed by the current issuance ratio. This
-means for every $1 of SNX locked up, $(issuanceRatio) nomins can be issued.
-i.e. to issue 100 nomins, 100/issuanceRatio dollars of SNX need to be locked up.
+means for every $1 of SNX locked up, $(issuanceRatio) synths can be issued.
+i.e. to issue 100 synths, 100/issuanceRatio dollars of SNX need to be locked up.
 
 To determine the value of some amount of SNX(H), an oracle is used to push
 the price of SNX (P_H) in dollars to the contract. The value of H
@@ -121,7 +121,7 @@ pragma solidity 0.4.25;
 
 import "./FeePool.sol";
 import "./ExternStateToken.sol";
-import "./Nomin.sol";
+import "./Synth.sol";
 import "./SynthetixEscrow.sol";
 import "./SynthetixState.sol";
 import "./TokenState.sol";
@@ -136,9 +136,9 @@ contract Synthetix is ExternStateToken {
 
     // ========== STATE VARIABLES ==========
 
-    // Available Nomins which can be used with the system
-    Nomin[] public availableNomins;
-    mapping(bytes4 => Nomin) public nomins;
+    // Available Synths which can be used with the system
+    Synth[] public availableSynths;
+    mapping(bytes4 => Synth) public synths;
 
     FeePool public feePool;
     SynthetixEscrow public escrow;
@@ -172,58 +172,58 @@ contract Synthetix is ExternStateToken {
     // ========== SETTERS ========== */
 
     /**
-     * @notice Add an associated Nomin contract to the Synthetix system
+     * @notice Add an associated Synth contract to the Synthetix system
      * @dev Only the contract owner may call this.
      */
-    function addNomin(Nomin nomin)
+    function addSynth(Synth synth)
         external
         optionalProxy_onlyOwner
     {
-        bytes4 currencyKey = nomin.currencyKey();
+        bytes4 currencyKey = synth.currencyKey();
 
-        require(nomins[currencyKey] == Nomin(0), "Nomin already exists");
+        require(synths[currencyKey] == Synth(0), "Synth already exists");
 
-        availableNomins.push(nomin);
-        nomins[currencyKey] = nomin;
+        availableSynths.push(synth);
+        synths[currencyKey] = synth;
 
-        emitNominAdded(currencyKey, nomin);
+        emitSynthAdded(currencyKey, synth);
     }
 
     /**
-     * @notice Remove an associated Nomin contract from the Synthetix system
+     * @notice Remove an associated Synth contract from the Synthetix system
      * @dev Only the contract owner may call this.
      */
-    function removeNomin(bytes4 currencyKey)
+    function removeSynth(bytes4 currencyKey)
         external
         optionalProxy_onlyOwner
     {
-        require(nomins[currencyKey] != address(0), "Nomin does not exist");
-        require(nomins[currencyKey].totalSupply() == 0, "Nomin supply exists");
+        require(synths[currencyKey] != address(0), "Synth does not exist");
+        require(synths[currencyKey].totalSupply() == 0, "Synth supply exists");
 
         // Save the address we're removing for emitting the event at the end.
-        address nominToRemove = nomins[currencyKey];
+        address synthToRemove = synths[currencyKey];
 
-        // Remove the nomin from the availableNomins array.
-        for (uint8 i = 0; i < availableNomins.length; i++) {
-            if (availableNomins[i] == nominToRemove) {
-                delete availableNomins[i];
+        // Remove the synth from the availableSynths array.
+        for (uint8 i = 0; i < availableSynths.length; i++) {
+            if (availableSynths[i] == synthToRemove) {
+                delete availableSynths[i];
 
-                // Copy the last nomin into the place of the one we just deleted
-                // If there's only one nomin, this is nomins[0] = nomins[0].
+                // Copy the last synth into the place of the one we just deleted
+                // If there's only one synth, this is synths[0] = synths[0].
                 // If we're deleting the last one, it's also a NOOP in the same way.
-                availableNomins[i] = availableNomins[availableNomins.length - 1];
+                availableSynths[i] = availableSynths[availableSynths.length - 1];
 
                 // Decrease the size of the array by one.
-                availableNomins.length--;
+                availableSynths.length--;
 
                 break;
             }
         }
 
-        // And remove it from the nomins mapping
-        delete nomins[currencyKey];
+        // And remove it from the synths mapping
+        delete synths[currencyKey];
 
-        emitNominRemoved(currencyKey, nominToRemove);
+        emitSynthRemoved(currencyKey, synthToRemove);
     }
 
     /**
@@ -270,7 +270,7 @@ contract Synthetix is ExternStateToken {
 
     /**
      * @notice Set your preferred currency. Note: This does not automatically exchange any balances you've held previously in
-     * other nomin currencies in this address, it will apply for any new payments you receive at this address.
+     * other synth currencies in this address, it will apply for any new payments you receive at this address.
      */
     function setPreferredCurrency(bytes4 currencyKey)
         external
@@ -307,10 +307,10 @@ contract Synthetix is ExternStateToken {
     }
 
     /**
-     * @notice Total amount of nomins issued by the system, priced in currencyKey
-     * @param currencyKey The currency to value the nomins in
+     * @notice Total amount of synths issued by the system, priced in currencyKey
+     * @param currencyKey The currency to value the synths in
      */
-    function totalIssuedNomins(bytes4 currencyKey)
+    function totalIssuedSynths(bytes4 currencyKey)
         public
         view
         rateNotStale(currencyKey)
@@ -319,34 +319,34 @@ contract Synthetix is ExternStateToken {
         uint total = 0;
         uint currencyRate = exchangeRates.rateForCurrency(currencyKey);
 
-        for (uint8 i = 0; i < availableNomins.length; i++) {
+        for (uint8 i = 0; i < availableSynths.length; i++) {
             // Ensure the rate isn't stale.
             // TODO: Investigate gas cost optimisation of doing a single call with all keys in it vs
             // individual calls like this.
-            require(!exchangeRates.rateIsStale(availableNomins[i].currencyKey()), "Rate is stale");
+            require(!exchangeRates.rateIsStale(availableSynths[i].currencyKey()), "Rate is stale");
 
-            // What's the total issued value of that nomin in the destination currency?
+            // What's the total issued value of that synth in the destination currency?
             // Note: We're not using our effectiveValue function because we don't want to go get the
             //       rate for the destination currency and check if it's stale repeatedly on every
             //       iteration of the loop
-            uint nominValue = availableNomins[i].totalSupply()
-                .multiplyDecimalRound(exchangeRates.rateForCurrency(availableNomins[i].currencyKey()))
+            uint synthValue = availableSynths[i].totalSupply()
+                .multiplyDecimalRound(exchangeRates.rateForCurrency(availableSynths[i].currencyKey()))
                 .divideDecimalRound(currencyRate);
-            total = total.add(nominValue);
+            total = total.add(synthValue);
         }
 
         return total;
     }
 
     /**
-     * @notice Returns the count of available nomins in the system, which you can use to iterate availableNomins
+     * @notice Returns the count of available synths in the system, which you can use to iterate availableSynths
      */
-    function availableNominCount()
+    function availableSynthCount()
         public
         view
         returns (uint)
     {
-        return availableNomins.length;
+        return availableSynths.length;
     }
 
     // ========== MUTATIVE FUNCTIONS ==========
@@ -415,7 +415,7 @@ contract Synthetix is ExternStateToken {
     }
 
     /**
-     * @notice Function that allows you to exchange nomins you hold in one flavour for another.
+     * @notice Function that allows you to exchange synths you hold in one flavour for another.
      * @param sourceCurrencyKey The source currency you wish to exchange from
      * @param sourceAmount The amount, specified in UNIT of source currency you wish to exchange
      * @param destinationCurrencyKey The destination currency you wish to obtain.
@@ -429,7 +429,7 @@ contract Synthetix is ExternStateToken {
         // Note: We don't need to insist on non-stale rates because effectiveValue will do it for us.
         returns (bool)
     {
-        require(sourceCurrencyKey != destinationCurrencyKey, "Exchange must use different nomins");
+        require(sourceCurrencyKey != destinationCurrencyKey, "Exchange must use different synths");
         require(sourceAmount > 0, "Zero amount");
         require(destinationAddress != address(this), "Synthetix is invalid destination");
         require(destinationAddress != address(proxy), "Proxy is invalid destination");
@@ -445,7 +445,7 @@ contract Synthetix is ExternStateToken {
         );
     }
 
-    function nominInitiatedExchange(
+    function synthInitiatedExchange(
         address from,
         bytes4 sourceCurrencyKey,
         uint sourceAmount,
@@ -453,10 +453,10 @@ contract Synthetix is ExternStateToken {
         address destinationAddress
     )
         external
-        onlyNomin
+        onlySynth
         returns (bool)
     {
-        require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same nomin");
+        require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
         require(sourceAmount > 0, "Zero amount");
 
         // Pass it along
@@ -466,17 +466,17 @@ contract Synthetix is ExternStateToken {
             sourceAmount,
             destinationCurrencyKey,
             destinationAddress,
-            false // Don't charge fee on the exchange, as they've already been charged a transfer fee in the nomin contract
+            false // Don't charge fee on the exchange, as they've already been charged a transfer fee in the synth contract
         );
     }
 
-    function nominInitiatedFeePayment(
+    function synthInitiatedFeePayment(
         address from,
         bytes4 sourceCurrencyKey,
         uint sourceAmount
     )
         external
-        onlyNomin
+        onlySynth
         returns (bool)
     {
         require(sourceAmount > 0, "Source can't be 0");
@@ -519,7 +519,7 @@ contract Synthetix is ExternStateToken {
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
 
         // Burn the source amount
-        nomins[sourceCurrencyKey].burn(from, sourceAmount);
+        synths[sourceCurrencyKey].burn(from, sourceAmount);
 
         // How much should they get in the destination currency?
         uint destinationAmount = effectiveValue(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
@@ -533,23 +533,23 @@ contract Synthetix is ExternStateToken {
             fee = destinationAmount.sub(amountReceived);
         }
 
-        // Issue their new nomins
-        nomins[destinationCurrencyKey].issue(destinationAddress, amountReceived);
+        // Issue their new synths
+        synths[destinationCurrencyKey].issue(destinationAddress, amountReceived);
 
         // Remit the fee in HDRs
         if (fee > 0) {
             uint hdrFeeAmount = effectiveValue(destinationCurrencyKey, fee, "HDR");
-            nomins["HDR"].issue(feePool.FEE_ADDRESS(), hdrFeeAmount);
+            synths["HDR"].issue(feePool.FEE_ADDRESS(), hdrFeeAmount);
         }
 
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
 
         // Call the ERC223 transfer callback if needed
-        nomins[destinationCurrencyKey].triggerTokenFallbackIfNeeded(from, destinationAddress, amountReceived);
+        synths[destinationCurrencyKey].triggerTokenFallbackIfNeeded(from, destinationAddress, amountReceived);
 
         // Gas optimisation:
         // No event emitted as it's assumed users will be able to track transfers to the zero address, followed
-        // by a transfer on another nomin from the zero address and ascertain the info required here.
+        // by a transfer on another synth from the zero address and ascertain the info required here.
 
         return true;
     }
@@ -562,8 +562,8 @@ contract Synthetix is ExternStateToken {
         // What is the value of the requested debt in HDRs?
         uint hdrValue = effectiveValue(currencyKey, amount, "HDR");
 
-        // What is the value of all issued nomins of the system (priced in HDRs)?
-        uint totalDebtIssued = totalIssuedNomins("HDR");
+        // What is the value of all issued synths of the system (priced in HDRs)?
+        uint totalDebtIssued = totalIssuedSynths("HDR");
 
         // What will the new total be including the new value?
         uint newTotalDebtIssued = hdrValue.add(totalDebtIssued);
@@ -605,47 +605,47 @@ contract Synthetix is ExternStateToken {
     }
 
     /**
-     * @notice Issue nomins against the sender's SNX.
+     * @notice Issue synths against the sender's SNX.
      * @dev Issuance is only allowed if the synthetix price isn't stale and the sender is an issuer.
-     * @param currencyKey The currency you wish to issue nomins in, for example nUSD or nAUD
-     * @param amount The amount of nomins you wish to issue with a base of UNIT
+     * @param currencyKey The currency you wish to issue synths in, for example sUSD or sAUD
+     * @param amount The amount of synths you wish to issue with a base of UNIT
      */
-    function issueNomins(bytes4 currencyKey, uint amount)
+    function issueSynths(bytes4 currencyKey, uint amount)
         public
         optionalProxy
-        // No need to check if price is stale, as it is checked in issuableNomins.
+        // No need to check if price is stale, as it is checked in issuableSynths.
     {
-        require(amount <= remainingIssuableNomins(messageSender, currencyKey), "Amount too large");
+        require(amount <= remainingIssuableSynths(messageSender, currencyKey), "Amount too large");
 
         // Keep track of the debt they're about to create
         _addToDebtRegister(currencyKey, amount);
 
-        // Create their nomins
-        nomins[currencyKey].issue(messageSender, amount);
+        // Create their synths
+        synths[currencyKey].issue(messageSender, amount);
     }
 
     /**
-     * @notice Issue the maximum amount of Nomins possible against the sender's SNX.
+     * @notice Issue the maximum amount of Synths possible against the sender's SNX.
      * @dev Issuance is only allowed if the synthetix price isn't stale and the sender is an issuer.
-     * @param currencyKey The currency you wish to issue nomins in, for example nUSD or nAUD
+     * @param currencyKey The currency you wish to issue synths in, for example sUSD or sAUD
      */
-    function issueMaxNomins(bytes4 currencyKey)
+    function issueMaxSynths(bytes4 currencyKey)
         external
         optionalProxy
     {
         // Figure out the maximum we can issue in that currency
-        uint maxIssuable = remainingIssuableNomins(messageSender, currencyKey);
+        uint maxIssuable = remainingIssuableSynths(messageSender, currencyKey);
 
         // And issue them
-        issueNomins(currencyKey, maxIssuable);
+        issueSynths(currencyKey, maxIssuable);
     }
 
     /**
-     * @notice Burn nomins to clear issued nomins/free SNX.
+     * @notice Burn synths to clear issued synths/free SNX.
      * @param currencyKey The currency you're specifying to burn
      * @param amount The amount (in UNIT base) you wish to burn
      */
-    function burnNomins(bytes4 currencyKey, uint amount)
+    function burnSynths(bytes4 currencyKey, uint amount)
         external
         optionalProxy
         // No need to check for stale rates as _removeFromDebtRegister calls effectiveValue
@@ -664,8 +664,8 @@ contract Synthetix is ExternStateToken {
         // Remove their debt from the ledger
         _removeFromDebtRegister(currencyKey, amountToBurn);
 
-        // nomin.burn does a safe subtraction on balance (so it will revert if there are not enough nomins).
-        nomins[currencyKey].burn(messageSender, amountToBurn);
+        // synth.burn does a safe subtraction on balance (so it will revert if there are not enough synths).
+        synths[currencyKey].burn(messageSender, amountToBurn);
     }
 
     /**
@@ -683,7 +683,7 @@ contract Synthetix is ExternStateToken {
         uint existingDebt = debtBalanceOf(messageSender, "HDR");
 
         // What percentage of the total debt are they trying to remove?
-        uint totalDebtIssued = totalIssuedNomins("HDR");
+        uint totalDebtIssued = totalIssuedSynths("HDR");
         uint debtPercentage = debtToRemove.divideDecimalRoundPrecise(totalDebtIssued);
 
         // And what effect does this percentage have on the global debt holding of other issuers?
@@ -714,10 +714,10 @@ contract Synthetix is ExternStateToken {
     // ========== Issuance/Burning ==========
 
     /**
-     * @notice The maximum nomins an issuer can issue against their total synthetix quantity, priced in HDRs.
-     * This ignores any already issued nomins, and is purely giving you the maximimum amount the user can issue.
+     * @notice The maximum synths an issuer can issue against their total synthetix quantity, priced in HDRs.
+     * This ignores any already issued synths, and is purely giving you the maximimum amount the user can issue.
      */
-    function maxIssuableNomins(address issuer, bytes4 currencyKey)
+    function maxIssuableSynths(address issuer, bytes4 currencyKey)
         public
         view
         // We don't need to check stale rates here as effectiveValue will do it for us.
@@ -746,7 +746,7 @@ contract Synthetix is ExternStateToken {
     function debtBalanceOf(address issuer, bytes4 currencyKey)
         public
         view
-        // Don't need to check for stale rates here because totalIssuedNomins will do it for us
+        // Don't need to check for stale rates here because totalIssuedSynths will do it for us
         returns (uint)
     {
         // What was their initial debt ownership?
@@ -764,7 +764,7 @@ contract Synthetix is ExternStateToken {
             .multiplyDecimalRoundPrecise(initialDebtOwnership);
 
         // What's the total value of the system in their requested currency?
-        uint totalSystemValue = totalIssuedNomins(currencyKey);
+        uint totalSystemValue = totalIssuedSynths(currencyKey);
 
         // Their debt balance is their portion of the total system value.
         uint highPrecisionBalance = totalSystemValue.decimalToPreciseDecimal()
@@ -774,18 +774,18 @@ contract Synthetix is ExternStateToken {
     }
 
     /**
-     * @notice The remaining nomins an issuer can issue against their total synthetix balance.
+     * @notice The remaining synths an issuer can issue against their total synthetix balance.
      * @param issuer The account that intends to issue
      * @param currencyKey The currency to price issuable value in
      */
-    function remainingIssuableNomins(address issuer, bytes4 currencyKey)
+    function remainingIssuableSynths(address issuer, bytes4 currencyKey)
         public
         view
-        // Don't need to check for nomin existing or stale rates because maxIssuableNomins will do it for us.
+        // Don't need to check for synth existing or stale rates because maxIssuableSynths will do it for us.
         returns (uint)
     {
         uint alreadyIssued = debtBalanceOf(issuer, currencyKey);
-        uint max = maxIssuableNomins(issuer, currencyKey);
+        uint max = maxIssuableSynths(issuer, currencyKey);
 
         if (alreadyIssued >= max) {
             return 0;
@@ -796,7 +796,7 @@ contract Synthetix is ExternStateToken {
 
     /**
      * @notice The total SNX owned by this account, both escrowed and unescrowed,
-     * against which nomins can be issued.
+     * against which synths can be issued.
      * This includes those already being used as collateral (locked), and those
      * available for further issuance (unlocked).
      */
@@ -862,18 +862,18 @@ contract Synthetix is ExternStateToken {
         _;
     }
 
-    modifier onlyNomin() {
-        bool isNomin = false;
+    modifier onlySynth() {
+        bool isSynth = false;
 
         // No need to repeatedly call this function either
-        for (uint8 i = 0; i < availableNomins.length; i++) {
-            if (availableNomins[i] == msg.sender) {
-                isNomin = true;
+        for (uint8 i = 0; i < availableSynths.length; i++) {
+            if (availableSynths[i] == msg.sender) {
+                isSynth = true;
                 break;
             }
         }
 
-        require(isNomin, "Only nomin allowed");
+        require(isSynth, "Only synth allowed");
         _;
     }
 
@@ -885,15 +885,15 @@ contract Synthetix is ExternStateToken {
         proxy._emit(abi.encode(newPreferredCurrency), 2, PREFERREDCURRENCYCHANGED_SIG, bytes32(account), 0, 0);
     }
 
-    event NominAdded(bytes4 currencyKey, address newNomin);
-    bytes32 constant NOMINADDED_SIG = keccak256("NominAdded(bytes4,address)");
-    function emitNominAdded(bytes4 currencyKey, address newNomin) internal {
-        proxy._emit(abi.encode(currencyKey, newNomin), 1, NOMINADDED_SIG, 0, 0, 0);
+    event SynthAdded(bytes4 currencyKey, address newSynth);
+    bytes32 constant SYNTHADDED_SIG = keccak256("SynthAdded(bytes4,address)");
+    function emitSynthAdded(bytes4 currencyKey, address newSynth) internal {
+        proxy._emit(abi.encode(currencyKey, newSynth), 1, SYNTHADDED_SIG, 0, 0, 0);
     }
 
-    event NominRemoved(bytes4 currencyKey, address removedNomin);
-    bytes32 constant NOMINREMOVED_SIG = keccak256("NominRemoved(bytes4,address)");
-    function emitNominRemoved(bytes4 currencyKey, address removedNomin) internal {
-        proxy._emit(abi.encode(currencyKey, removedNomin), 1, NOMINREMOVED_SIG, 0, 0, 0);
+    event SynthRemoved(bytes4 currencyKey, address removedSynth);
+    bytes32 constant SYNTHREMOVED_SIG = keccak256("SynthRemoved(bytes4,address)");
+    function emitSynthRemoved(bytes4 currencyKey, address removedSynth) internal {
+        proxy._emit(abi.encode(currencyKey, removedSynth), 1, SYNTHREMOVED_SIG, 0, 0, 0);
     }
 }

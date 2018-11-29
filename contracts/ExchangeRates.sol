@@ -37,10 +37,10 @@ contract ExchangeRates is SelfDestructible {
 
     using SafeMath for uint;
 
-    // Exchange rates stored by currency code, e.g. 'SNX', or 'nUSD'
+    // Exchange rates stored by currency code, e.g. 'SNX', or 'sUSD'
     mapping(bytes4 => uint) public rates;
 
-    // Update times stored by currency code, e.g. 'SNX', or 'nUSD'
+    // Update times stored by currency code, e.g. 'SNX', or 'sUSD'
     mapping(bytes4 => uint) public lastRateUpdateTimes;
 
     // The address of the oracle which pushes rate updates to this contract
@@ -84,8 +84,8 @@ contract ExchangeRates is SelfDestructible {
 
         oracle = _oracle;
 
-        // The nUSD rate is always 1 and is never stale.
-        rates["nUSD"] = SafeDecimalMath.unit();
+        // The sUSD rate is always 1 and is never stale.
+        rates["sUSD"] = SafeDecimalMath.unit();
 
         // These are the currencies that make up the HDR basket.
         // These are hard coded because:
@@ -95,11 +95,11 @@ contract ExchangeRates is SelfDestructible {
         //  - The expectation is if this logic needs to be updated, we'll simply deploy a new version of this contract
         //    then point the system at the new version.
         hdrParticipants = [
-            bytes4("nUSD"),
-            bytes4("nAUD"),
-            bytes4("nCHF"),
-            bytes4("nEUR"),
-            bytes4("nGBP")
+            bytes4("sUSD"),
+            bytes4("sAUD"),
+            bytes4("sCHF"),
+            bytes4("sEUR"),
+            bytes4("sGBP")
         ];
 
         internalUpdateRates(_currencyKeys, _newRates, now);
@@ -292,8 +292,8 @@ contract ExchangeRates is SelfDestructible {
         view
         returns (bool)
     {
-        // nUSD is a special case and is never stale.
-        if (currencyKey == "nUSD") return false;
+        // sUSD is a special case and is never stale.
+        if (currencyKey == "sUSD") return false;
 
         return lastRateUpdateTimes[currencyKey].add(rateStalePeriod) < now;
     }
@@ -310,8 +310,8 @@ contract ExchangeRates is SelfDestructible {
         uint256 i = 0;
 
         while (i < currencyKeys.length) {
-            // nUSD is a special case and is never false
-            if (currencyKeys[i] != "nUSD" && lastRateUpdateTimes[currencyKeys[i]].add(rateStalePeriod) < now) {
+            // sUSD is a special case and is never false
+            if (currencyKeys[i] != "sUSD" && lastRateUpdateTimes[currencyKeys[i]].add(rateStalePeriod) < now) {
                 return true;
             }
             i += 1;

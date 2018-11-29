@@ -3,7 +3,7 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 
-file:       Nomin.sol
+file:       Synth.sol
 version:    2.0
 author:     Kevin Brown
 date:       2018-09-13
@@ -12,16 +12,16 @@ date:       2018-09-13
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
-Synthetix-backed nomin stablecoin contract.
+Synthetix-backed stablecoin contract.
 
-This contract issues nomins, which are tokens that mirror various
+This contract issues synths, which are tokens that mirror various
 flavours of fiat currency.
 
-Nomins are issuable by Synthetix holders who have to lock up some
-value of their SNX to issue H * Cmax nomins. Where Cmax is
+Synths are issuable by Synthetix holders who have to lock up some
+value of their SNX to issue H * Cmax synths. Where Cmax is
 some value less than 1.
 
-A configurable fee is charged on nomin transfers and deposited
+A configurable fee is charged on synth transfers and deposited
 into a common pot, which synthetix holders may withdraw from once
 per fee period.
 
@@ -34,14 +34,14 @@ import "./ExternStateToken.sol";
 import "./FeePool.sol";
 import "./Synthetix.sol";
 
-contract Nomin is ExternStateToken {
+contract Synth is ExternStateToken {
 
     /* ========== STATE VARIABLES ========== */
 
     FeePool public feePool;
     Synthetix public synthetix;
 
-    // Currency key which identifies this Nomin to the Synthetix system
+    // Currency key which identifies this Synth to the Synthetix system
     bytes4 public currencyKey;
 
     uint constant DECIMALS = 18;
@@ -58,7 +58,7 @@ contract Nomin is ExternStateToken {
         require(address(_synthetix) != 0, "_synthetix cannot be 0");
         require(address(_feePool) != 0, "_feePool cannot be 0");
         require(_owner != 0, "_owner cannot be 0");
-        require(_synthetix.nomins(_currencyKey) == Nomin(0), "Currency key is already in use");
+        require(_synthetix.synths(_currencyKey) == Synth(0), "Currency key is already in use");
 
         feePool = _feePool;
         synthetix = _synthetix;
@@ -101,7 +101,7 @@ contract Nomin is ExternStateToken {
         uint fee = value.sub(amountReceived);
 
         // Send the fee off to the fee pool.
-        synthetix.nominInitiatedFeePayment(messageSender, currencyKey, fee);
+        synthetix.synthInitiatedFeePayment(messageSender, currencyKey, fee);
 
         // And send their result off to the destination address
         bytes memory empty;
@@ -123,7 +123,7 @@ contract Nomin is ExternStateToken {
         uint fee = value.sub(amountReceived);
 
         // Send the fee off to the fee pool, which we don't want to charge an additional fee on
-        synthetix.nominInitiatedFeePayment(messageSender, currencyKey, fee);
+        synthetix.synthInitiatedFeePayment(messageSender, currencyKey, fee);
 
         // And send their result off to the destination address
         return _internalTransfer(messageSender, to, amountReceived, data);
@@ -146,7 +146,7 @@ contract Nomin is ExternStateToken {
         tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
 
         // Send the fee off to the fee pool.
-        synthetix.nominInitiatedFeePayment(from, currencyKey, fee);
+        synthetix.synthInitiatedFeePayment(from, currencyKey, fee);
 
         bytes memory empty;
         return _internalTransfer(from, to, amountReceived, empty);
@@ -169,7 +169,7 @@ contract Nomin is ExternStateToken {
         tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
 
         // Send the fee off to the fee pool, which we don't want to charge an additional fee on
-        synthetix.nominInitiatedFeePayment(from, currencyKey, fee);
+        synthetix.synthInitiatedFeePayment(from, currencyKey, fee);
 
         return _internalTransfer(from, to, amountReceived, data);
     }
@@ -183,7 +183,7 @@ contract Nomin is ExternStateToken {
         uint fee = feePool.transferFeeIncurred(value);
 
         // Send the fee off to the fee pool, which we don't want to charge an additional fee on
-        synthetix.nominInitiatedFeePayment(messageSender, currencyKey, fee);
+        synthetix.synthInitiatedFeePayment(messageSender, currencyKey, fee);
 
         // And send their transfer amount off to the destination address
         bytes memory empty;
@@ -199,7 +199,7 @@ contract Nomin is ExternStateToken {
         uint fee = feePool.transferFeeIncurred(value);
 
         // Send the fee off to the fee pool, which we don't want to charge an additional fee on
-        synthetix.nominInitiatedFeePayment(messageSender, currencyKey, fee);
+        synthetix.synthInitiatedFeePayment(messageSender, currencyKey, fee);
 
         // And send their transfer amount off to the destination address
         return _internalTransfer(messageSender, to, value, data);
@@ -218,7 +218,7 @@ contract Nomin is ExternStateToken {
         tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value.add(fee)));
 
         // Send the fee off to the fee pool, which we don't want to charge an additional fee on
-        synthetix.nominInitiatedFeePayment(from, currencyKey, fee);
+        synthetix.synthInitiatedFeePayment(from, currencyKey, fee);
 
         bytes memory empty;
         return _internalTransfer(from, to, value, empty);
@@ -237,7 +237,7 @@ contract Nomin is ExternStateToken {
         tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value.add(fee)));
 
         // Send the fee off to the fee pool, which we don't want to charge an additional fee on
-        synthetix.nominInitiatedFeePayment(from, currencyKey, fee);
+        synthetix.synthInitiatedFeePayment(from, currencyKey, fee);
 
         return _internalTransfer(from, to, value, data);
     }
@@ -251,14 +251,14 @@ contract Nomin is ExternStateToken {
 
         // Do they have a preferred currency that's not us? If so we need to exchange
         if (preferredCurrencyKey != 0 && preferredCurrencyKey != currencyKey) {
-            return synthetix.nominInitiatedExchange(from, currencyKey, value, preferredCurrencyKey, to);
+            return synthetix.synthInitiatedExchange(from, currencyKey, value, preferredCurrencyKey, to);
         } else {
             // Otherwise we just transfer
             return super._internalTransfer(from, to, value, data);
         }
     }
 
-    // Allow synthetix to issue a certain number of nomins from an account.
+    // Allow synthetix to issue a certain number of synths from an account.
     function issue(address account, uint amount)
         external
         onlySynthetixOrFeePool
@@ -269,7 +269,7 @@ contract Nomin is ExternStateToken {
         emitIssued(account, amount);
     }
 
-    // Allow synthetix or another nomin contract to burn a certain number of nomins from an account.
+    // Allow synthetix or another synth contract to burn a certain number of synths from an account.
     function burn(address account, uint amount)
         external
         onlySynthetixOrFeePool
@@ -280,7 +280,7 @@ contract Nomin is ExternStateToken {
         emitBurned(account, amount);
     }
 
-    // Allow synthetix to trigger a token fallback call from our nomins so users get notified on
+    // Allow synthetix to trigger a token fallback call from our synths so users get notified on
     // exchange as well as transfer
     function triggerTokenFallbackIfNeeded(address sender, address recipient, uint amount)
         external

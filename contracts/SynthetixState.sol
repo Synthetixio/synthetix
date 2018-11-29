@@ -62,22 +62,22 @@ contract SynthetixState is State, LimitedSetup {
         uint debtEntryIndex;
     }
 
-    // Issued nomin balances for individual fee entitlements and exit price calculations
+    // Issued synth balances for individual fee entitlements and exit price calculations
     mapping(address => IssuanceData) public issuanceData;
 
-    // The total count of people that have outstanding issued nomins in any flavour
+    // The total count of people that have outstanding issued synths in any flavour
     uint public totalIssuerCount;
 
     // Global debt pool tracking
     uint[] public debtLedger;
 
-    // A quantity of nomins greater than this ratio
+    // A quantity of synths greater than this ratio
     // may not be issued against a given value of SNX.
     uint public issuanceRatio = SafeDecimalMath.unit() / 5;
-    // No more nomins may be issued than the value of SNX backing them.
+    // No more synths may be issued than the value of SNX backing them.
     uint constant MAX_ISSUANCE_RATIO = SafeDecimalMath.unit();
 
-    // Users can specify their preferred currency, in which case all nomins they receive
+    // Users can specify their preferred currency, in which case all synths they receive
     // will automatically exchange to that preferred currency upon receipt in their wallet
     mapping(address => bytes4) public preferredCurrency;
 
@@ -184,15 +184,15 @@ contract SynthetixState is State, LimitedSetup {
      * @notice Import issuer data from the old Synthetix contract before multicurrency
      * @dev Only callable by the contract owner, and only for 1 week after deployment.
      */
-    function importIssuerData(address[] accounts, uint[] nUSDAmounts)
+    function importIssuerData(address[] accounts, uint[] sUSDAmounts)
         external
         onlyOwner
         onlyDuringSetup
     {
-        require(accounts.length == nUSDAmounts.length, "Length mismatch");
+        require(accounts.length == sUSDAmounts.length, "Length mismatch");
 
         for (uint8 i = 0; i < accounts.length; i++) {
-            _addToDebtRegister(accounts[i], nUSDAmounts[i]);
+            _addToDebtRegister(accounts[i], sUSDAmounts[i]);
         }
     }
 
@@ -208,10 +208,10 @@ contract SynthetixState is State, LimitedSetup {
         Synthetix synthetix = Synthetix(associatedContract);
 
         // What is the value of the requested debt in HDRs?
-        uint hdrValue = synthetix.effectiveValue("nUSD", amount, "HDR");
+        uint hdrValue = synthetix.effectiveValue("sUSD", amount, "HDR");
 
-        // What is the value of all issued nomins of the system (priced in HDRs)?
-        uint totalDebtIssued = synthetix.totalIssuedNomins("HDR");
+        // What is the value of all issued synths of the system (priced in HDRs)?
+        uint totalDebtIssued = synthetix.totalIssuedSynths("HDR");
 
         // What will the new total be including the new value?
         uint newTotalDebtIssued = hdrValue.add(totalDebtIssued);
