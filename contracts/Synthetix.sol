@@ -486,7 +486,7 @@ contract Synthetix is ExternStateToken {
             from,
             sourceCurrencyKey,
             sourceAmount,
-            "HDR",
+            "XDR",
             feePool.FEE_ADDRESS(),
             false // Don't charge a fee on the exchange because this is already a fee
         );
@@ -536,10 +536,10 @@ contract Synthetix is ExternStateToken {
         // Issue their new synths
         synths[destinationCurrencyKey].issue(destinationAddress, amountReceived);
 
-        // Remit the fee in HDRs
+        // Remit the fee in XDRs
         if (fee > 0) {
-            uint hdrFeeAmount = effectiveValue(destinationCurrencyKey, fee, "HDR");
-            synths["HDR"].issue(feePool.FEE_ADDRESS(), hdrFeeAmount);
+            uint xdrFeeAmount = effectiveValue(destinationCurrencyKey, fee, "XDR");
+            synths["XDR"].issue(feePool.FEE_ADDRESS(), xdrFeeAmount);
         }
 
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
@@ -559,17 +559,17 @@ contract Synthetix is ExternStateToken {
         internal
         optionalProxy
     {
-        // What is the value of the requested debt in HDRs?
-        uint hdrValue = effectiveValue(currencyKey, amount, "HDR");
+        // What is the value of the requested debt in XDRs?
+        uint xdrValue = effectiveValue(currencyKey, amount, "XDR");
 
-        // What is the value of all issued synths of the system (priced in HDRs)?
-        uint totalDebtIssued = totalIssuedSynths("HDR");
+        // What is the value of all issued synths of the system (priced in XDRs)?
+        uint totalDebtIssued = totalIssuedSynths("XDR");
 
         // What will the new total be including the new value?
-        uint newTotalDebtIssued = hdrValue.add(totalDebtIssued);
+        uint newTotalDebtIssued = xdrValue.add(totalDebtIssued);
 
         // What is their percentage (as a high precision int) of the total debt?
-        uint debtPercentage = hdrValue.divideDecimalRoundPrecise(newTotalDebtIssued);
+        uint debtPercentage = xdrValue.divideDecimalRoundPrecise(newTotalDebtIssued);
 
         // And what effect does this percentage have on the global debt holding of other issuers?
         // The delta specifically needs to not take into account any existing debt as it's already
@@ -578,11 +578,11 @@ contract Synthetix is ExternStateToken {
         uint delta = SafeDecimalMath.preciseUnit().sub(debtPercentage);
 
         // How much existing debt do they have?
-        uint existingDebt = debtBalanceOf(messageSender, "HDR");
+        uint existingDebt = debtBalanceOf(messageSender, "XDR");
 
         // And what does their debt ownership look like including this previous stake?
         if (existingDebt > 0) {
-            debtPercentage = hdrValue.add(existingDebt).divideDecimalRoundPrecise(newTotalDebtIssued);
+            debtPercentage = xdrValue.add(existingDebt).divideDecimalRoundPrecise(newTotalDebtIssued);
         }
 
         // Are they a new issuer? If so, record them.
@@ -676,14 +676,14 @@ contract Synthetix is ExternStateToken {
     function _removeFromDebtRegister(bytes4 currencyKey, uint amount)
         internal
     {
-        // How much debt are they trying to remove in HDRs?
-        uint debtToRemove = effectiveValue(currencyKey, amount, "HDR");
+        // How much debt are they trying to remove in XDRs?
+        uint debtToRemove = effectiveValue(currencyKey, amount, "XDR");
 
         // How much debt do they have?
-        uint existingDebt = debtBalanceOf(messageSender, "HDR");
+        uint existingDebt = debtBalanceOf(messageSender, "XDR");
 
         // What percentage of the total debt are they trying to remove?
-        uint totalDebtIssued = totalIssuedSynths("HDR");
+        uint totalDebtIssued = totalIssuedSynths("XDR");
         uint debtPercentage = debtToRemove.divideDecimalRoundPrecise(totalDebtIssued);
 
         // And what effect does this percentage have on the global debt holding of other issuers?
@@ -714,7 +714,7 @@ contract Synthetix is ExternStateToken {
     // ========== Issuance/Burning ==========
 
     /**
-     * @notice The maximum synths an issuer can issue against their total synthetix quantity, priced in HDRs.
+     * @notice The maximum synths an issuer can issue against their total synthetix quantity, priced in XDRs.
      * This ignores any already issued synths, and is purely giving you the maximimum amount the user can issue.
      */
     function maxIssuableSynths(address issuer, bytes4 currencyKey)

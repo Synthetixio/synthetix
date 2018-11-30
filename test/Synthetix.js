@@ -16,7 +16,7 @@ const {
 } = require('../utils/testUtils');
 
 contract('Synthetix', async function(accounts) {
-	const [sUSD, sAUD, sEUR, SNX, HDR, sXYZ] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'HDR', 'sXYZ'].map(
+	const [sUSD, sAUD, sEUR, SNX, XDR, sXYZ] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'XDR', 'sXYZ'].map(
 		web3.utils.asciiToHex
 	);
 
@@ -1424,7 +1424,7 @@ contract('Synthetix', async function(accounts) {
 			// 	timestamp,
 			// 	{ from: oracle }
 			// );
-			console.log(`#### HDR rate: ${fromUnit(await exchangeRates.rateForCurrency(HDR))}`);
+			console.log(`#### XDR rate: ${fromUnit(await exchangeRates.rateForCurrency(XDR))}`);
 
 			// const amount = web3.utils.toBN(getRandomInt(100000, 800000000));
 			const amount = toUnit('0.8');

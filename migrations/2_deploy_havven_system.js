@@ -157,7 +157,7 @@ module.exports = async function(deployer, network, accounts) {
 	// ----------------
 	// Synths
 	// ----------------
-	const currencyKeys = ['HDR', 'sUSD', 'sAUD', 'sEUR'];
+	const currencyKeys = ['XDR', 'sUSD', 'sAUD', 'sEUR'];
 	const synths = [];
 
 	for (const currencyKey of currencyKeys) {

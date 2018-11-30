@@ -52,10 +52,10 @@ contract ExchangeRates is SelfDestructible {
     // How long will the contract assume the rate of any asset is correct
     uint public rateStalePeriod = 3 hours;
 
-    // Each participating currency in the HDR basket is represented as a currency key with
+    // Each participating currency in the XDR basket is represented as a currency key with
     // equal weighting.
     // There are 5 participating currencies, so we'll declare that clearly.
-    bytes4[5] public hdrParticipants;
+    bytes4[5] public xdrParticipants;
 
     //
     // ========== CONSTRUCTOR ==========
@@ -87,14 +87,14 @@ contract ExchangeRates is SelfDestructible {
         // The sUSD rate is always 1 and is never stale.
         rates["sUSD"] = SafeDecimalMath.unit();
 
-        // These are the currencies that make up the HDR basket.
+        // These are the currencies that make up the XDR basket.
         // These are hard coded because:
         //  - This way users can depend on the calculation and know it won't change for this deployment of the contract.
         //  - Adding new currencies would likely introduce some kind of weighting factor, which
         //    isn't worth preemptively adding when all of the currencies in the current basket are weighted at 1.
         //  - The expectation is if this logic needs to be updated, we'll simply deploy a new version of this contract
         //    then point the system at the new version.
-        hdrParticipants = [
+        xdrParticipants = [
             bytes4("sUSD"),
             bytes4("sAUD"),
             bytes4("sCHF"),
@@ -151,8 +151,8 @@ contract ExchangeRates is SelfDestructible {
 
         emit RatesUpdated(currencyKeys, newRates);
 
-        // Now update our HDR rate.
-        updateHDRRate(timeSent);
+        // Now update our XDR rate.
+        updateXDRRate(timeSent);
 
         return true;
     }
@@ -160,28 +160,28 @@ contract ExchangeRates is SelfDestructible {
     /**
      * @notice Update the Synthetix Drawing Rights exchange rate based on other rates already updated.
      */
-    function updateHDRRate(uint timeSent)
+    function updateXDRRate(uint timeSent)
         internal
     {
         uint total = 0;
 
-        for (uint8 i = 0; i < hdrParticipants.length; i++) {
-            total = rates[hdrParticipants[i]].add(total);
+        for (uint8 i = 0; i < xdrParticipants.length; i++) {
+            total = rates[xdrParticipants[i]].add(total);
         }
 
         // Set the rate
-        rates["HDR"] = total;
+        rates["XDR"] = total;
 
-        // Record that we updated the HDR rate.
-        lastRateUpdateTimes["HDR"] = timeSent;
+        // Record that we updated the XDR rate.
+        lastRateUpdateTimes["XDR"] = timeSent;
 
         // Emit our updated event separate to the others to save
         // moving data around between arrays.
         bytes4[] memory eventCurrencyCode = new bytes4[](1);
-        eventCurrencyCode[0] = "HDR";
+        eventCurrencyCode[0] = "XDR";
 
         uint[] memory eventRate = new uint[](1);
-        eventRate[0] = rates["HDR"];
+        eventRate[0] = rates["XDR"];
 
         emit RatesUpdated(eventCurrencyCode, eventRate);
     }

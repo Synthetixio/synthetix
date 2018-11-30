@@ -6,7 +6,7 @@ const Synth = artifacts.require('Synth');
 const { currentTime, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 
 contract('Synth', async function(accounts) {
-	const [sUSD, sAUD, sEUR, SNX, HDR, sXYZ] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'HDR', 'sXYZ'].map(
+	const [sUSD, sAUD, sEUR, SNX, XDR, sXYZ] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'XDR', 'sXYZ'].map(
 		web3.utils.asciiToHex
 	);
 
@@ -19,7 +19,7 @@ contract('Synth', async function(accounts) {
 		account2,
 	] = accounts;
 
-	let feePool, FEE_ADDRESS, synthetix, exchangeRates, sUSDContract, sAUDContract, HDRContract;
+	let feePool, FEE_ADDRESS, synthetix, exchangeRates, sUSDContract, sAUDContract, XDRContract;
 
 	beforeEach(async function() {
 		// Save ourselves from having to await deployed() in every single test.
@@ -32,7 +32,7 @@ contract('Synth', async function(accounts) {
 		synthetix = await Synthetix.deployed();
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
 		sAUDContract = await Synth.at(await synthetix.synths(sAUD));
-		HDRContract = await Synth.at(await synthetix.synths(HDR));
+		XDRContract = await Synth.at(await synthetix.synths(XDR));
 
 		// Send a price update to guarantee we're not stale.
 		const oracle = await exchangeRates.oracle();
@@ -76,29 +76,29 @@ contract('Synth', async function(accounts) {
 	});
 
 	it('should allow the owner to set the Synthetix contract', async function() {
-		assert.notEqual(await HDRContract.synthetix(), account1);
+		assert.notEqual(await XDRContract.synthetix(), account1);
 
-		const transaction = await HDRContract.setSynthetix(account1, { from: owner });
+		const transaction = await XDRContract.setSynthetix(account1, { from: owner });
 		assert.eventEqual(transaction, 'SynthetixUpdated', { newSynthetix: account1 });
 
-		assert.equal(await HDRContract.synthetix(), account1);
+		assert.equal(await XDRContract.synthetix(), account1);
 	});
 
 	it('should disallow a non-owner from setting the Synthetix contract', async function() {
-		await assert.revert(HDRContract.setSynthetix(account1, { from: account1 }));
+		await assert.revert(XDRContract.setSynthetix(account1, { from: account1 }));
 	});
 
 	it('should allow the owner to set the FeePool contract', async function() {
-		assert.notEqual(await HDRContract.feePool(), account1);
+		assert.notEqual(await XDRContract.feePool(), account1);
 
-		const transaction = await HDRContract.setFeePool(account1, { from: owner });
+		const transaction = await XDRContract.setFeePool(account1, { from: owner });
 		assert.eventEqual(transaction, 'FeePoolUpdated', { newFeePool: account1 });
 
-		assert.equal(await HDRContract.feePool(), account1);
+		assert.equal(await XDRContract.feePool(), account1);
 	});
 
 	it('should disallow a non-owner from setting the FeePool contract', async function() {
-		await assert.revert(HDRContract.setFeePool(account1, { from: account1 }));
+		await assert.revert(XDRContract.setFeePool(account1, { from: account1 }));
 	});
 
 	it('should transfer (ERC20) without error', async function() {
@@ -108,7 +108,7 @@ contract('Synth', async function(accounts) {
 
 		const received = await feePool.amountReceivedFromTransfer(amount);
 		const fee = amount.sub(received);
-		const hdrFee = await synthetix.effectiveValue(sUSD, fee, HDR);
+		const xdrFee = await synthetix.effectiveValue(sUSD, fee, XDR);
 
 		// Do a single transfer of all our sUSD.
 		const transaction = await sUSDContract.transfer(account1, amount, { from: owner });
@@ -117,7 +117,7 @@ contract('Synth', async function(accounts) {
 		assert.eventsEqual(
 			transaction,
 
-			// Fees get burned and exchanged to HDRs
+			// Fees get burned and exchanged to XDRs
 			'Transfer',
 			{ from: owner, to: ZERO_ADDRESS, value: fee },
 			'Burned',
@@ -126,10 +126,10 @@ contract('Synth', async function(accounts) {
 			{
 				from: ZERO_ADDRESS,
 				to: FEE_ADDRESS,
-				value: hdrFee,
+				value: xdrFee,
 			},
 			'Issued',
-			{ account: FEE_ADDRESS, value: hdrFee },
+			{ account: FEE_ADDRESS, value: xdrFee },
 
 			// And finally the original synth transfer
 			'Transfer',
@@ -143,7 +143,7 @@ contract('Synth', async function(accounts) {
 		assert.bnEqual(await sUSDContract.balanceOf(account1), received);
 
 		// The fee pool should also have the correct amount
-		assert.bnEqual(await HDRContract.balanceOf(FEE_ADDRESS), hdrFee);
+		assert.bnEqual(await XDRContract.balanceOf(FEE_ADDRESS), xdrFee);
 	});
 
 	it('should respect preferred currency when transferring', async function() {
@@ -153,7 +153,7 @@ contract('Synth', async function(accounts) {
 
 		const sUSDReceived = await feePool.amountReceivedFromTransfer(amount);
 		const fee = amount.sub(sUSDReceived);
-		const hdrFee = await synthetix.effectiveValue(sUSD, fee, HDR);
+		const xdrFee = await synthetix.effectiveValue(sUSD, fee, XDR);
 		const sAUDReceived = await synthetix.effectiveValue(sUSD, sUSDReceived, sAUD);
 
 		assert.eventEqual(
@@ -169,7 +169,7 @@ contract('Synth', async function(accounts) {
 		assert.eventsEqual(
 			transaction,
 
-			// Fees get burned and exchanged to HDRs
+			// Fees get burned and exchanged to XDRs
 			'Transfer',
 			{ from: owner, to: ZERO_ADDRESS, value: fee },
 			'Burned',
@@ -178,10 +178,10 @@ contract('Synth', async function(accounts) {
 			{
 				from: ZERO_ADDRESS,
 				to: FEE_ADDRESS,
-				value: hdrFee,
+				value: xdrFee,
 			},
 			'Issued',
-			{ account: FEE_ADDRESS, value: hdrFee },
+			{ account: FEE_ADDRESS, value: xdrFee },
 
 			// And finally the original synth exchange
 			// from sUSD to sAUD
@@ -202,7 +202,7 @@ contract('Synth', async function(accounts) {
 		assert.bnEqual(await sAUDContract.balanceOf(account1), sAUDReceived);
 
 		// The fee pool should also have the correct amount
-		assert.bnEqual(await HDRContract.balanceOf(FEE_ADDRESS), hdrFee);
+		assert.bnEqual(await XDRContract.balanceOf(FEE_ADDRESS), xdrFee);
 	});
 
 	it('should revert when transferring (ERC20) with insufficient balance', async function() {
@@ -223,7 +223,7 @@ contract('Synth', async function(accounts) {
 
 		const received = await feePool.amountReceivedFromTransfer(amount);
 		const fee = amount.sub(received);
-		const hdrFee = await synthetix.effectiveValue(sUSD, fee, HDR);
+		const xdrFee = await synthetix.effectiveValue(sUSD, fee, XDR);
 
 		// Do a single transfer of all our sUSD.
 		const transaction = await sUSDContract.transfer(
@@ -237,7 +237,7 @@ contract('Synth', async function(accounts) {
 		assert.eventsEqual(
 			transaction,
 
-			// Fees get burned and exchanged to HDRs
+			// Fees get burned and exchanged to XDRs
 			'Transfer',
 			{ from: owner, to: ZERO_ADDRESS, value: fee },
 			'Burned',
@@ -246,10 +246,10 @@ contract('Synth', async function(accounts) {
 			{
 				from: ZERO_ADDRESS,
 				to: FEE_ADDRESS,
-				value: hdrFee,
+				value: xdrFee,
 			},
 			'Issued',
-			{ account: FEE_ADDRESS, value: hdrFee },
+			{ account: FEE_ADDRESS, value: xdrFee },
 
 			// And finally the original synth transfer
 			'Transfer',
@@ -263,7 +263,7 @@ contract('Synth', async function(accounts) {
 		assert.bnEqual(await sUSDContract.balanceOf(account1), received);
 
 		// The fee pool should also have the correct amount
-		assert.bnEqual(await HDRContract.balanceOf(FEE_ADDRESS), hdrFee);
+		assert.bnEqual(await XDRContract.balanceOf(FEE_ADDRESS), xdrFee);
 	});
 
 	it('should revert when transferring (ERC223) with insufficient balance', async function() {
@@ -289,7 +289,7 @@ contract('Synth', async function(accounts) {
 
 		const received = await feePool.amountReceivedFromTransfer(amount);
 		const fee = amount.sub(received);
-		const hdrFee = await synthetix.effectiveValue(sUSD, fee, HDR);
+		const xdrFee = await synthetix.effectiveValue(sUSD, fee, XDR);
 
 		// Give account1 permission to act on our behalf
 		await sUSDContract.approve(account1, amount, { from: owner });
@@ -303,7 +303,7 @@ contract('Synth', async function(accounts) {
 		assert.eventsEqual(
 			transaction,
 
-			// Fees get burned and exchanged to HDRs
+			// Fees get burned and exchanged to XDRs
 			'Transfer',
 			{ from: owner, to: ZERO_ADDRESS, value: fee },
 			'Burned',
@@ -312,10 +312,10 @@ contract('Synth', async function(accounts) {
 			{
 				from: ZERO_ADDRESS,
 				to: FEE_ADDRESS,
-				value: hdrFee,
+				value: xdrFee,
 			},
 			'Issued',
-			{ account: FEE_ADDRESS, value: hdrFee },
+			{ account: FEE_ADDRESS, value: xdrFee },
 
 			// And finally the original synth transfer
 			'Transfer',
@@ -329,7 +329,7 @@ contract('Synth', async function(accounts) {
 		assert.bnEqual(await sUSDContract.balanceOf(account1), received);
 
 		// The fee pool should also have the correct amount
-		assert.bnEqual(await HDRContract.balanceOf(FEE_ADDRESS), hdrFee);
+		assert.bnEqual(await XDRContract.balanceOf(FEE_ADDRESS), xdrFee);
 
 		// And allowance should be exhausted
 		assert.bnEqual(await sUSDContract.allowance(owner, account1), 0);
@@ -366,7 +366,7 @@ contract('Synth', async function(accounts) {
 
 		const received = await feePool.amountReceivedFromTransfer(amount);
 		const fee = amount.sub(received);
-		const hdrFee = await synthetix.effectiveValue(sUSD, fee, HDR);
+		const xdrFee = await synthetix.effectiveValue(sUSD, fee, XDR);
 
 		// Give account1 permission to act on our behalf
 		await sUSDContract.approve(account1, amount, { from: owner });
@@ -386,7 +386,7 @@ contract('Synth', async function(accounts) {
 		assert.eventsEqual(
 			transaction,
 
-			// Fees get burned and exchanged to HDRs
+			// Fees get burned and exchanged to XDRs
 			'Transfer',
 			{ from: owner, to: ZERO_ADDRESS, value: fee },
 			'Burned',
@@ -395,10 +395,10 @@ contract('Synth', async function(accounts) {
 			{
 				from: ZERO_ADDRESS,
 				to: FEE_ADDRESS,
-				value: hdrFee,
+				value: xdrFee,
 			},
 			'Issued',
-			{ account: FEE_ADDRESS, value: hdrFee },
+			{ account: FEE_ADDRESS, value: xdrFee },
 
 			// And finally the original synth transfer
 			'Transfer',
@@ -412,7 +412,7 @@ contract('Synth', async function(accounts) {
 		assert.bnEqual(await sUSDContract.balanceOf(account1), received);
 
 		// The fee pool should also have the correct amount
-		assert.bnEqual(await HDRContract.balanceOf(FEE_ADDRESS), hdrFee);
+		assert.bnEqual(await XDRContract.balanceOf(FEE_ADDRESS), xdrFee);
 
 		// And allowance should be exhausted
 		assert.bnEqual(await sUSDContract.allowance(owner, account1), 0);
@@ -457,7 +457,7 @@ contract('Synth', async function(accounts) {
 		await synthetix.issueSynths(sUSD, startingBalance, { from: owner });
 
 		const fee = await feePool.transferFeeIncurred(amount);
-		const hdrFee = await synthetix.effectiveValue(sUSD, fee, HDR);
+		const xdrFee = await synthetix.effectiveValue(sUSD, fee, XDR);
 
 		// Do a single transfer of all our sUSD.
 		const transaction = await sUSDContract.transferSenderPaysFee(account1, amount, { from: owner });
@@ -466,7 +466,7 @@ contract('Synth', async function(accounts) {
 		assert.eventsEqual(
 			transaction,
 
-			// Fees get burned and exchanged to HDRs
+			// Fees get burned and exchanged to XDRs
 			'Transfer',
 			{ from: owner, to: ZERO_ADDRESS, value: fee },
 			'Burned',
@@ -475,10 +475,10 @@ contract('Synth', async function(accounts) {
 			{
 				from: ZERO_ADDRESS,
 				to: FEE_ADDRESS,
-				value: hdrFee,
+				value: xdrFee,
 			},
 			'Issued',
-			{ account: FEE_ADDRESS, value: hdrFee },
+			{ account: FEE_ADDRESS, value: xdrFee },
 
 			// And finally the original synth transfer
 			'Transfer',
@@ -492,7 +492,7 @@ contract('Synth', async function(accounts) {
 		assert.bnEqual(await sUSDContract.balanceOf(account1), amount);
 
 		// The fee pool should also have the correct amount
-		assert.bnEqual(await HDRContract.balanceOf(FEE_ADDRESS), hdrFee);
+		assert.bnEqual(await XDRContract.balanceOf(FEE_ADDRESS), xdrFee);
 	});
 
 	it('should revert when calling transferSenderPaysFee with insufficient balance', async function() {
@@ -517,7 +517,7 @@ contract('Synth', async function(accounts) {
 		await synthetix.issueSynths(sUSD, startingBalance, { from: owner });
 
 		const fee = await feePool.transferFeeIncurred(amount);
-		const hdrFee = await synthetix.effectiveValue(sUSD, fee, HDR);
+		const xdrFee = await synthetix.effectiveValue(sUSD, fee, XDR);
 
 		// Do a single transfer of all our sUSD.
 		const transaction = await sUSDContract.transferSenderPaysFee(
@@ -531,7 +531,7 @@ contract('Synth', async function(accounts) {
 		assert.eventsEqual(
 			transaction,
 
-			// Fees get burned and exchanged to HDRs
+			// Fees get burned and exchanged to XDRs
 			'Transfer',
 			{ from: owner, to: ZERO_ADDRESS, value: fee },
 			'Burned',
@@ -540,10 +540,10 @@ contract('Synth', async function(accounts) {
 			{
 				from: ZERO_ADDRESS,
 				to: FEE_ADDRESS,
-				value: hdrFee,
+				value: xdrFee,
 			},
 			'Issued',
-			{ account: FEE_ADDRESS, value: hdrFee },
+			{ account: FEE_ADDRESS, value: xdrFee },
 
 			// And finally the original synth transfer
 			'Transfer',
@@ -557,7 +557,7 @@ contract('Synth', async function(accounts) {
 		assert.bnEqual(await sUSDContract.balanceOf(account1), amount);
 
 		// The fee pool should also have the correct amount
-		assert.bnEqual(await HDRContract.balanceOf(FEE_ADDRESS), hdrFee);
+		assert.bnEqual(await XDRContract.balanceOf(FEE_ADDRESS), xdrFee);
 	});
 
 	it('should transferFromSenderPaysFee without error', async function() {
@@ -566,7 +566,7 @@ contract('Synth', async function(accounts) {
 		await synthetix.issueSynths(sUSD, startingBalance, { from: owner });
 
 		const fee = await feePool.transferFeeIncurred(amount);
-		const hdrFee = await synthetix.effectiveValue(sUSD, fee, HDR);
+		const xdrFee = await synthetix.effectiveValue(sUSD, fee, XDR);
 
 		await sUSDContract.approve(account1, startingBalance, { from: owner });
 
@@ -579,7 +579,7 @@ contract('Synth', async function(accounts) {
 		assert.eventsEqual(
 			transaction,
 
-			// Fees get burned and exchanged to HDRs
+			// Fees get burned and exchanged to XDRs
 			'Transfer',
 			{ from: owner, to: ZERO_ADDRESS, value: fee },
 			'Burned',
@@ -588,10 +588,10 @@ contract('Synth', async function(accounts) {
 			{
 				from: ZERO_ADDRESS,
 				to: FEE_ADDRESS,
-				value: hdrFee,
+				value: xdrFee,
 			},
 			'Issued',
-			{ account: FEE_ADDRESS, value: hdrFee },
+			{ account: FEE_ADDRESS, value: xdrFee },
 
 			// And finally the original synth transfer
 			'Transfer',
@@ -605,7 +605,7 @@ contract('Synth', async function(accounts) {
 		assert.bnEqual(await sUSDContract.balanceOf(account1), amount);
 
 		// The fee pool should also have the correct amount
-		assert.bnEqual(await HDRContract.balanceOf(FEE_ADDRESS), hdrFee);
+		assert.bnEqual(await XDRContract.balanceOf(FEE_ADDRESS), xdrFee);
 	});
 
 	it('should revert when calling transferFromSenderPaysFee with an insufficent allowance', async function() {
@@ -644,7 +644,7 @@ contract('Synth', async function(accounts) {
 		await synthetix.issueSynths(sUSD, startingBalance, { from: owner });
 
 		const fee = await feePool.transferFeeIncurred(amount);
-		const hdrFee = await synthetix.effectiveValue(sUSD, fee, HDR);
+		const xdrFee = await synthetix.effectiveValue(sUSD, fee, XDR);
 
 		await sUSDContract.approve(account1, startingBalance, { from: owner });
 
@@ -663,7 +663,7 @@ contract('Synth', async function(accounts) {
 		assert.eventsEqual(
 			transaction,
 
-			// Fees get burned and exchanged to HDRs
+			// Fees get burned and exchanged to XDRs
 			'Transfer',
 			{ from: owner, to: ZERO_ADDRESS, value: fee },
 			'Burned',
@@ -672,10 +672,10 @@ contract('Synth', async function(accounts) {
 			{
 				from: ZERO_ADDRESS,
 				to: FEE_ADDRESS,
-				value: hdrFee,
+				value: xdrFee,
 			},
 			'Issued',
-			{ account: FEE_ADDRESS, value: hdrFee },
+			{ account: FEE_ADDRESS, value: xdrFee },
 
 			// And finally the original synth transfer
 			'Transfer',
@@ -689,14 +689,14 @@ contract('Synth', async function(accounts) {
 		assert.bnEqual(await sUSDContract.balanceOf(account1), amount);
 
 		// The fee pool should also have the correct amount
-		assert.bnEqual(await HDRContract.balanceOf(FEE_ADDRESS), hdrFee);
+		assert.bnEqual(await XDRContract.balanceOf(FEE_ADDRESS), xdrFee);
 	});
 
 	it('should issue successfully when called by Synthetix', async function() {
 		// Set it to us so we can call it easily
-		await HDRContract.setSynthetix(owner, { from: owner });
+		await XDRContract.setSynthetix(owner, { from: owner });
 
-		const transaction = await HDRContract.issue(account1, toUnit('10000'), { from: owner });
+		const transaction = await XDRContract.issue(account1, toUnit('10000'), { from: owner });
 		assert.eventsEqual(
 			transaction,
 			'Transfer',
@@ -714,18 +714,18 @@ contract('Synth', async function(accounts) {
 	});
 
 	it('should revert when issue is called by non-Synthetix address', async function() {
-		await HDRContract.setSynthetix(synthetix.address, { from: owner });
-		await assert.revert(HDRContract.issue(account1, toUnit('10000'), { from: owner }));
+		await XDRContract.setSynthetix(synthetix.address, { from: owner });
+		await assert.revert(XDRContract.issue(account1, toUnit('10000'), { from: owner }));
 	});
 
 	it('should burn successfully when called by Synthetix', async function() {
 		// Issue a bunch of synths so we can play with them.
-		await synthetix.issueSynths(HDR, toUnit('10000'), { from: owner });
+		await synthetix.issueSynths(XDR, toUnit('10000'), { from: owner });
 
 		// Set the synthetix reference to us so we can call it easily
-		await HDRContract.setSynthetix(owner, { from: owner });
+		await XDRContract.setSynthetix(owner, { from: owner });
 
-		const transaction = await HDRContract.burn(owner, toUnit('10000'), { from: owner });
+		const transaction = await XDRContract.burn(owner, toUnit('10000'), { from: owner });
 
 		assert.eventsEqual(
 			transaction,
@@ -738,47 +738,47 @@ contract('Synth', async function(accounts) {
 
 	it('should revert when burn is called by non-Synthetix address', async function() {
 		// Issue a bunch of synths so we can play with them.
-		await synthetix.issueSynths(HDR, toUnit('10000'), { from: owner });
+		await synthetix.issueSynths(XDR, toUnit('10000'), { from: owner });
 
 		// Set the synthetix reference to account1
-		await HDRContract.setSynthetix(account1, { from: owner });
+		await XDRContract.setSynthetix(account1, { from: owner });
 
 		// Burning should fail.
-		await assert.revert(HDRContract.burn(owner, toUnit('10000'), { from: owner }));
+		await assert.revert(XDRContract.burn(owner, toUnit('10000'), { from: owner }));
 	});
 
 	it('should revert when burning more synths than exist', async function() {
 		// Issue a bunch of synths so we can play with them.
-		await synthetix.issueSynths(HDR, toUnit('10000'), { from: owner });
+		await synthetix.issueSynths(XDR, toUnit('10000'), { from: owner });
 
 		// Set the synthetix reference to us so we can call it easily
-		await HDRContract.setSynthetix(owner, { from: owner });
+		await XDRContract.setSynthetix(owner, { from: owner });
 
 		// Burning 10000 + 1 wei should fail.
 		await assert.revert(
-			HDRContract.burn(owner, toUnit('10000').add(web3.utils.toBN('1')), { from: owner })
+			XDRContract.burn(owner, toUnit('10000').add(web3.utils.toBN('1')), { from: owner })
 		);
 	});
 
 	it('should triggerTokenFallback successfully when called by Synthetix', async function() {
 		// Set the synthetix reference to us so we can call it easily
-		await HDRContract.setSynthetix(owner, { from: owner });
-		await HDRContract.triggerTokenFallbackIfNeeded(ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1'), {
+		await XDRContract.setSynthetix(owner, { from: owner });
+		await XDRContract.triggerTokenFallbackIfNeeded(ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1'), {
 			from: owner,
 		});
 	});
 
 	it('should triggerTokenFallback successfully when called by FeePool', async function() {
 		// Set the FeePool reference to us so we can call it easily
-		await HDRContract.setFeePool(owner, { from: owner });
-		await HDRContract.triggerTokenFallbackIfNeeded(ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1'), {
+		await XDRContract.setFeePool(owner, { from: owner });
+		await XDRContract.triggerTokenFallbackIfNeeded(ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1'), {
 			from: owner,
 		});
 	});
 
 	it('should revert on triggerTokenFallback when called by non-Synthetix and non-FeePool address', async function() {
 		await assert.revert(
-			HDRContract.triggerTokenFallbackIfNeeded(ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1'), {
+			XDRContract.triggerTokenFallbackIfNeeded(ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1'), {
 				from: owner,
 			})
 		);

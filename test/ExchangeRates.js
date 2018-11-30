@@ -64,15 +64,15 @@ contract('Exchange Rates', async function(accounts) {
 		);
 		assert.isAtLeast(lastUpdatedTimeSNX.toNumber(), creationTime);
 
-		const expectedHdrParticipants = ['sUSD', 'sAUD', 'sCHF', 'sEUR', 'sGBP'].map(
+		const expectedXdrParticipants = ['sUSD', 'sAUD', 'sCHF', 'sEUR', 'sGBP'].map(
 			web3.utils.asciiToHex
 		);
-		let hdrParticipants = [];
+		let xdrParticipants = [];
 		for (let i = 0; i < 5; i++) {
-			hdrParticipants.push(await instance.hdrParticipants(i));
+			xdrParticipants.push(await instance.xdrParticipants(i));
 		}
 		for (let i = 0; i < 5; i++) {
-			assert.equal(hdrParticipants[i], expectedHdrParticipants[i]);
+			assert.equal(xdrParticipants[i], expectedXdrParticipants[i]);
 		}
 
 		const sUSDRate = await instance.rateForCurrency(web3.utils.asciiToHex('sUSD'));
@@ -965,7 +965,7 @@ contract('Exchange Rates', async function(accounts) {
 		assert.equal(lastUpdateTimes[1], timeSent2);
 	});
 
-	it('should update the HDR rate correctly with all exchange rates', async function() {
+	it('should update the XDR rate correctly with all exchange rates', async function() {
 		const instance = await ExchangeRates.deployed();
 		const timeSent = await currentTime();
 		const keysArray = ['sUSD', 'sAUD', 'sEUR', 'sCHF', 'sGBP'].map(web3.utils.asciiToHex);
@@ -974,20 +974,20 @@ contract('Exchange Rates', async function(accounts) {
 			from: oracle,
 		});
 
-		const lastUpdatedTimeHDR = await instance.lastRateUpdateTimes.call(
-			web3.utils.asciiToHex('HDR')
+		const lastUpdatedTimeXDR = await instance.lastRateUpdateTimes.call(
+			web3.utils.asciiToHex('XDR')
 		);
-		assert.equal(lastUpdatedTimeHDR, timeSent);
+		assert.equal(lastUpdatedTimeXDR, timeSent);
 
-		const lastUpdatedCurrencyHDR = await instance.rates.call(web3.utils.asciiToHex('HDR'));
+		const lastUpdatedCurrencyXDR = await instance.rates.call(web3.utils.asciiToHex('XDR'));
 		let ratesTotal = web3.utils.toBN('0');
 		for (let rate of rates) {
 			ratesTotal = ratesTotal.add(rate);
 		}
-		assert.bnEqual(lastUpdatedCurrencyHDR, ratesTotal);
+		assert.bnEqual(lastUpdatedCurrencyXDR, ratesTotal);
 	});
 
-	it('should update the HDR rates correctly with a subset of exchange rates', async function() {
+	it('should update the XDR rates correctly with a subset of exchange rates', async function() {
 		const timeSent = await currentTime();
 		const keysArray = ['sUSD', 'sCHF', 'sGBP'].map(web3.utils.asciiToHex);
 		const rates = ['1', '3.3', '1.95'].map(toUnit);
@@ -995,16 +995,16 @@ contract('Exchange Rates', async function(accounts) {
 			from: deployerAccount,
 		});
 
-		const lastUpdatedTimeHDR = await instance.lastRateUpdateTimes.call(
-			web3.utils.asciiToHex('HDR')
+		const lastUpdatedTimeXDR = await instance.lastRateUpdateTimes.call(
+			web3.utils.asciiToHex('XDR')
 		);
-		assert.equal(lastUpdatedTimeHDR, timeSent);
+		assert.equal(lastUpdatedTimeXDR, timeSent);
 
-		const lastUpdatedCurrencyHDR = await instance.rates.call(web3.utils.asciiToHex('HDR'));
+		const lastUpdatedCurrencyXDR = await instance.rates.call(web3.utils.asciiToHex('XDR'));
 		let ratesTotal = web3.utils.toBN('0');
 		for (let rate of rates) {
 			ratesTotal = ratesTotal.add(rate);
 		}
-		assert.bnEqual(lastUpdatedCurrencyHDR, ratesTotal);
+		assert.bnEqual(lastUpdatedCurrencyXDR, ratesTotal);
 	});
 });

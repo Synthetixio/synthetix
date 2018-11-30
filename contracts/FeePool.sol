@@ -45,7 +45,7 @@ contract FeePool is Proxyable, SelfDestructible {
     // The address with the authority to distribute fees.
     address public feeAuthority;
 
-    // Where fees are pooled in HDRs.
+    // Where fees are pooled in XDRs.
     address public constant FEE_ADDRESS = 0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF;
 
     // This struct represents the issuance activity that's happened in a fee period.
@@ -192,10 +192,10 @@ contract FeePool is Proxyable, SelfDestructible {
         external
         onlySynthetix
     {
-        uint hdrAmount = synthetix.effectiveValue(currencyKey, amount, "HDR");
+        uint xdrAmount = synthetix.effectiveValue(currencyKey, amount, "XDR");
 
-        // Which we keep track of in HDRs in our fee pool.
-        recentFeePeriods[0].feesToDistribute = recentFeePeriods[0].feesToDistribute.add(hdrAmount);
+        // Which we keep track of in XDRs in our fee pool.
+        recentFeePeriods[0].feesToDistribute = recentFeePeriods[0].feesToDistribute.add(xdrAmount);
     }
 
     /**
@@ -252,7 +252,7 @@ contract FeePool is Proxyable, SelfDestructible {
         optionalProxy
         returns (bool)
     {
-        uint availableFees = feesAvailable(messageSender, "HDR");
+        uint availableFees = feesAvailable(messageSender, "XDR");
 
         require(availableFees > 0, "No fees available for period, or fees already claimed");
 
@@ -269,11 +269,11 @@ contract FeePool is Proxyable, SelfDestructible {
         return true;
     }
 
-    function _recordFeePayment(uint hdrAmount)
+    function _recordFeePayment(uint xdrAmount)
         internal
     {
         // Don't assign to the parameter
-        uint remainingToAllocate = hdrAmount;
+        uint remainingToAllocate = xdrAmount;
 
         // Start at the oldest period and record the amount, moving to newer periods
         // until we've exhausted the amount.
@@ -298,7 +298,7 @@ contract FeePool is Proxyable, SelfDestructible {
         assert(remainingToAllocate == 0);
     }
 
-    function _payFees(address account, uint hdrAmount, bytes4 destinationCurrencyKey)
+    function _payFees(address account, uint xdrAmount, bytes4 destinationCurrencyKey)
         internal
         notFeeAddress(account)
     {
@@ -307,17 +307,17 @@ contract FeePool is Proxyable, SelfDestructible {
         require(account != address(proxy), "Can't send fees to proxy");
         require(account != address(synthetix), "Can't send fees to synthetix");
 
-        Synth hdrSynth = synthetix.synths("HDR");
+        Synth xdrSynth = synthetix.synths("XDR");
         Synth destinationSynth = synthetix.synths(destinationCurrencyKey);
 
         // Note: We don't need to check the fee pool balance as the burn() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if the balance is not sufficient.
 
         // Burn the source amount
-        hdrSynth.burn(FEE_ADDRESS, hdrAmount);
+        xdrSynth.burn(FEE_ADDRESS, xdrAmount);
 
         // How much should they get in the destination currency?
-        uint destinationAmount = synthetix.effectiveValue("HDR", hdrAmount, destinationCurrencyKey);
+        uint destinationAmount = synthetix.effectiveValue("XDR", xdrAmount, destinationCurrencyKey);
 
         // There's no fee on withdrawing fees, as that'd be way too meta.
 
@@ -438,7 +438,7 @@ contract FeePool is Proxyable, SelfDestructible {
             totalFees = totalFees.sub(recentFeePeriods[i].feesClaimed);
         }
 
-        return synthetix.effectiveValue("HDR", totalFees, currencyKey);
+        return synthetix.effectiveValue("XDR", totalFees, currencyKey);
     }
 
     /**
@@ -461,7 +461,7 @@ contract FeePool is Proxyable, SelfDestructible {
         }
 
         // And convert them to their desired currency
-        return synthetix.effectiveValue("HDR", totalFees, currencyKey);
+        return synthetix.effectiveValue("XDR", totalFees, currencyKey);
     }
 
     /**
@@ -492,7 +492,7 @@ contract FeePool is Proxyable, SelfDestructible {
     }
 
     /**
-     * @notice Calculates fees by period for an account, priced in HDRs
+     * @notice Calculates fees by period for an account, priced in XDRs
      * @param account The address you want to query the fees by penalty for
      */
     function feesByPeriod(address account)
@@ -504,8 +504,8 @@ contract FeePool is Proxyable, SelfDestructible {
         uint initialDebtOwnership;
         uint debtEntryIndex;
         (initialDebtOwnership, debtEntryIndex) = synthetix.synthetixState().issuanceData(account);
-        uint debtBalance = synthetix.debtBalanceOf(account, "HDR");
-        uint totalSynths = synthetix.totalIssuedSynths("HDR");
+        uint debtBalance = synthetix.debtBalanceOf(account, "XDR");
+        uint totalSynths = synthetix.totalIssuedSynths("XDR");
         uint userOwnershipPercentage = debtBalance.divideDecimal(totalSynths);
         uint penalty = currentPenalty(account);
 
@@ -586,10 +586,10 @@ contract FeePool is Proxyable, SelfDestructible {
         proxy._emit(abi.encode(feePeriodId), 1, FEEPERIODCLOSED_SIG, 0, 0, 0);
     }
 
-    event FeesClaimed(address account, uint hdrAmount);
+    event FeesClaimed(address account, uint xdrAmount);
     bytes32 constant FEESCLAIMED_SIG = keccak256("FeesClaimed(address,uint256)");
-    function emitFeesClaimed(address account, uint hdrAmount) internal {
-        proxy._emit(abi.encode(account, hdrAmount), 1, FEESCLAIMED_SIG, 0, 0, 0);
+    function emitFeesClaimed(address account, uint xdrAmount) internal {
+        proxy._emit(abi.encode(account, xdrAmount), 1, FEESCLAIMED_SIG, 0, 0, 0);
     }
 
     event SynthetixUpdated(address newSynthetix);

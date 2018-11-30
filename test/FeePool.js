@@ -46,7 +46,7 @@ contract('FeePool', async function(accounts) {
 	// 	console.log('------------------');
 	// };
 
-	const [sUSD, sAUD, sEUR, SNX, HDR] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'HDR'].map(
+	const [sUSD, sAUD, sEUR, SNX, XDR] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'XDR'].map(
 		web3.utils.asciiToHex
 	);
 
@@ -61,7 +61,7 @@ contract('FeePool', async function(accounts) {
 		account4,
 	] = accounts;
 
-	let feePool, FEE_ADDRESS, synthetix, exchangeRates, sUSDContract, sAUDContract, HDRContract;
+	let feePool, FEE_ADDRESS, synthetix, exchangeRates, sUSDContract, sAUDContract, XDRContract;
 
 	beforeEach(async function() {
 		// Save ourselves from having to await deployed() in every single test.
@@ -74,7 +74,7 @@ contract('FeePool', async function(accounts) {
 		synthetix = await Synthetix.deployed();
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
 		sAUDContract = await Synth.at(await synthetix.synths(sAUD));
-		HDRContract = await Synth.at(await synthetix.synths(HDR));
+		XDRContract = await Synth.at(await synthetix.synths(XDR));
 
 		// Send a price update to guarantee we're not stale.
 		await updateRatesWithDefaults();
@@ -322,7 +322,7 @@ contract('FeePool', async function(accounts) {
 		await sUSDContract.transfer(account1, toUnit('10000'), { from: owner });
 
 		// Assert that the correct fee is in the fee pool.
-		const fee = await HDRContract.balanceOf(FEE_ADDRESS);
+		const fee = await XDRContract.balanceOf(FEE_ADDRESS);
 		const [pendingFees] = await feePool.feesByPeriod(owner);
 
 		assert.bnEqual(pendingFees, fee);
@@ -351,7 +351,7 @@ contract('FeePool', async function(accounts) {
 		await sUSDContract.transfer(account1, toUnit('10000'), { from: owner });
 
 		// Assert that the correct fee is in the fee pool.
-		const fee = await HDRContract.balanceOf(FEE_ADDRESS);
+		const fee = await XDRContract.balanceOf(FEE_ADDRESS);
 		const [pendingFees] = await feePool.feesByPeriod(owner);
 
 		assert.bnEqual(pendingFees, fee);
@@ -388,7 +388,7 @@ contract('FeePool', async function(accounts) {
 		// Now create the first fee
 		await synthetix.issueSynths(sUSD, toUnit('10000'), { from: owner });
 		await sUSDContract.transfer(account1, toUnit('10000'), { from: owner });
-		const fee = await HDRContract.balanceOf(FEE_ADDRESS);
+		const fee = await XDRContract.balanceOf(FEE_ADDRESS);
 
 		// And walk it forward one fee period.
 		await closeFeePeriod();
@@ -540,7 +540,7 @@ contract('FeePool', async function(accounts) {
 		await sUSDContract.transfer(account1, toUnit('10000'), { from: owner });
 
 		// Assert that the correct fee is in the fee pool.
-		const fee = await HDRContract.balanceOf(FEE_ADDRESS);
+		const fee = await XDRContract.balanceOf(FEE_ADDRESS);
 		const [pendingFees] = await feePool.feesByPeriod(owner);
 
 		assert.bnEqual(pendingFees, fee);
@@ -583,7 +583,7 @@ contract('FeePool', async function(accounts) {
 		// At this stage there should be a single pending period, one that's half claimed, and an empty one.
 		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 		const feeInUSD = amount.sub(await feePool.amountReceivedFromTransfer(amount));
-		const hdrFee = await synthetix.effectiveValue(sUSD, feeInUSD, HDR);
+		const xdrFee = await synthetix.effectiveValue(sUSD, feeInUSD, XDR);
 
 		// First period
 		assert.deepEqual(await feePool.recentFeePeriods(0), {
@@ -597,8 +597,8 @@ contract('FeePool', async function(accounts) {
 		assert.deepEqual(await feePool.recentFeePeriods(1), {
 			feePeriodId: 2,
 			startingDebtIndex: 2,
-			feesToDistribute: hdrFee,
-			feesClaimed: hdrFee.div(web3.utils.toBN('2')),
+			feesToDistribute: xdrFee,
+			feesClaimed: xdrFee.div(web3.utils.toBN('2')),
 		});
 
 		// Third period
@@ -635,7 +635,7 @@ contract('FeePool', async function(accounts) {
 
 		// Last period should have rolled over fees to distribute
 		assert.deepEqual(await feePool.recentFeePeriods(length - 1), {
-			feesToDistribute: hdrFee.div(web3.utils.toBN('2')),
+			feesToDistribute: xdrFee.div(web3.utils.toBN('2')),
 			feesClaimed: 0,
 		});
 	});

@@ -207,17 +207,17 @@ contract SynthetixState is State, LimitedSetup {
         // during setup only.
         Synthetix synthetix = Synthetix(associatedContract);
 
-        // What is the value of the requested debt in HDRs?
-        uint hdrValue = synthetix.effectiveValue("sUSD", amount, "HDR");
+        // What is the value of the requested debt in XDRs?
+        uint xdrValue = synthetix.effectiveValue("sUSD", amount, "XDR");
 
-        // What is the value of all issued synths of the system (priced in HDRs)?
-        uint totalDebtIssued = synthetix.totalIssuedSynths("HDR");
+        // What is the value of all issued synths of the system (priced in XDRs)?
+        uint totalDebtIssued = synthetix.totalIssuedSynths("XDR");
 
         // What will the new total be including the new value?
-        uint newTotalDebtIssued = hdrValue.add(totalDebtIssued);
+        uint newTotalDebtIssued = xdrValue.add(totalDebtIssued);
 
         // What is their percentage (as a high precision int) of the total debt?
-        uint debtPercentage = hdrValue.divideDecimalRoundPrecise(newTotalDebtIssued);
+        uint debtPercentage = xdrValue.divideDecimalRoundPrecise(newTotalDebtIssued);
 
         // And what effect does this percentage have on the global debt holding of other issuers?
         // The delta specifically needs to not take into account any existing debt as it's already
@@ -225,11 +225,11 @@ contract SynthetixState is State, LimitedSetup {
         // The delta is a high precision integer.
         uint delta = SafeDecimalMath.preciseUnit().sub(debtPercentage);
 
-        uint existingDebt = synthetix.debtBalanceOf(account, "HDR");
+        uint existingDebt = synthetix.debtBalanceOf(account, "XDR");
 
         // And what does their debt ownership look like including this previous stake?
         if (existingDebt > 0) {
-            debtPercentage = hdrValue.add(existingDebt).divideDecimalRoundPrecise(newTotalDebtIssued);
+            debtPercentage = xdrValue.add(existingDebt).divideDecimalRoundPrecise(newTotalDebtIssued);
         }
 
         // Are they a new issuer? If so, record them.
