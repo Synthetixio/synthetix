@@ -18,7 +18,7 @@ This contract issues synths, which are tokens that mirror various
 flavours of fiat currency.
 
 Synths are issuable by Synthetix holders who have to lock up some
-value of their SNX to issue H * Cmax synths. Where Cmax is
+value of their SNX to issue S * Cmax synths. Where Cmax is
 some value less than 1.
 
 A configurable fee is charged on synth transfers and deposited

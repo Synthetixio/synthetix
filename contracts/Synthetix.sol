@@ -103,9 +103,9 @@ where the proportion is governed by the current issuance ratio. This
 means for every $1 of SNX locked up, $(issuanceRatio) synths can be issued.
 i.e. to issue 100 synths, 100/issuanceRatio dollars of SNX need to be locked up.
 
-To determine the value of some amount of SNX(H), an oracle is used to push
-the price of SNX (P_H) in dollars to the contract. The value of H
-would then be: H * P_H.
+To determine the value of some amount of SNX(S), an oracle is used to push
+the price of SNX (P_S) in dollars to the contract. The value of S
+would then be: S * P_S.
 
 Any SNX that are locked up by this issuance process cannot be transferred.
 The amount that is locked floats based on the price of SNX. If the price
