@@ -1,10 +1,10 @@
 {
-	"name": "havven",
+	"name": "synthetix",
 	"version": "2.0.0",
 	"private": true,
 	"license": "MIT",
-	"author": "Havven",
-	"description": "The smart contracts which make up the Havven system. (havven.io)",
+	"author": "Synthetix",
+	"description": "The smart contracts which make up the Synthetix system. (synthetix.io)",
 	"scripts": {
 		"clean": "rm -rf build && rm -rf node_modules && npm i",
 		"coverage": "solidity-coverage",
@@ -19,14 +19,14 @@
 		"url": "git+https://github.com/Havven/havven.git"
 	},
 	"keywords": [
-		"Havven",
+		"Synthetix",
 		"Solidity",
 		"Truffle"
 	],
 	"bugs": {
 		"url": "https://github.com/Havven/havven/issues"
 	},
-	"homepage": "https://havven.io",
+	"homepage": "https://synthetix.io",
 	"directories": {
 		"test": "test"
 	},
