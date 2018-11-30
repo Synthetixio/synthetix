@@ -16,4 +16,4 @@ install:
 script:
   - npm run lint
   - npm test
-  - python3 run_tests.py
+  # - python3 run_tests.py  
