@@ -5,7 +5,7 @@ const FeePool = artifacts.require('FeePool');
 const Synthetix = artifacts.require('Synthetix');
 const SynthetixEscrow = artifacts.require('SynthetixEscrow');
 const SynthetixState = artifacts.require('SynthetixState');
-// const IssuanceController = artifacts.require('./IssuanceController.sol');
+// const Depot = artifacts.require('./Depot.sol');
 const Synth = artifacts.require('Synth');
 const Owned = artifacts.require('Owned');
 const Proxy = artifacts.require('Proxy');
@@ -222,18 +222,18 @@ module.exports = async function(deployer, network, accounts) {
 	);
 
 	// --------------------
-	// Issuance Controller
+	// Depot
 	// --------------------
-	// console.log('Deploying IssuanceController...');
+	// console.log('Deploying Depot...');
 	// await deployer.deploy(
-	// 	IssuanceController,
+	// 	Depot,
 	// 	owner,
 	// 	fundsWallet,
 	// 	synthetix.address,
 	// 	synth.address,
 	// 	oracle,
 	// 	ethUSD,
-	// 	snxUSD,
+	// 	sUSD,
 	// 	{ from: deployerAccount }
 	// );
 
@@ -250,7 +250,7 @@ module.exports = async function(deployer, network, accounts) {
 		['Owned', Owned.address],
 		['SafeDecimalMath', SafeDecimalMath.address],
 
-		// ['Issuance Controller', IssuanceController.address],
+		// ['Depot', Depot.address],
 	];
 
 	for (const synth of synths) {
