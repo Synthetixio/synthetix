@@ -1,15 +1,15 @@
 const Synthetix = artifacts.require('Synthetix');
 const SynthetixState = artifacts.require('SynthetixState');
-const Nomin = artifacts.require('Nomin');
+const Synth = artifacts.require('Synth');
 
 const { toUnit } = require('../utils/testUtils');
 
 contract('SynthetixState', async function(accounts) {
-	const nUSD = web3.utils.asciiToHex('nUSD');
+	const sUSD = web3.utils.asciiToHex('sUSD');
 
 	const [deployerAccount, owner, account1, account2] = accounts;
 
-	let synthetix, synthetixState, nUSDContract;
+	let synthetix, synthetixState, sUSDContract;
 
 	beforeEach(async function() {
 		// Save ourselves from having to await deployed() in every single test.
@@ -17,7 +17,7 @@ contract('SynthetixState', async function(accounts) {
 		// contract interfaces to prevent test bleed.
 		synthetix = await Synthetix.deployed();
 		synthetixState = await SynthetixState.at(await synthetix.synthetixState());
-		nUSDContract = await Nomin.at(await synthetix.nomins(nUSD));
+		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
 	});
 
 	it('should set constructor params on deployment', async function() {
@@ -146,14 +146,14 @@ contract('SynthetixState', async function(accounts) {
 	it('should allow the associated contract to setPreferredCurrency', async function() {
 		await synthetixState.setAssociatedContract(account1, { from: owner });
 
-		await synthetixState.setPreferredCurrency(account2, nUSD, { from: account1 });
-		assert.equal(await synthetixState.preferredCurrency(account2), nUSD);
+		await synthetixState.setPreferredCurrency(account2, sUSD, { from: account1 });
+		assert.equal(await synthetixState.preferredCurrency(account2), sUSD);
 	});
 
 	it('should disallow another address from calling setPreferredCurrency', async function() {
 		await synthetixState.setAssociatedContract(account1, { from: owner });
 
-		await assert.revert(synthetixState.setPreferredCurrency(account2, nUSD, { from: account2 }));
+		await assert.revert(synthetixState.setPreferredCurrency(account2, sUSD, { from: account2 }));
 	});
 
 	it('should correctly report debtLedgerLength', async function() {
@@ -176,12 +176,12 @@ contract('SynthetixState', async function(accounts) {
 	it('should correctly report hasIssued for an address', async function() {
 		assert.equal(await synthetixState.hasIssued(owner), false);
 
-		await synthetix.issueMaxNomins(nUSD, { from: owner });
-		const nominBalance = await nUSDContract.balanceOf(owner);
+		await synthetix.issueMaxSynths(sUSD, { from: owner });
+		const synthBalance = await sUSDContract.balanceOf(owner);
 
 		assert.equal(await synthetixState.hasIssued(owner), true);
 
-		await synthetix.burnNomins(nUSD, nominBalance, { from: owner });
+		await synthetix.burnSynths(sUSD, synthBalance, { from: owner });
 
 		assert.equal(await synthetixState.hasIssued(owner), false);
 	});

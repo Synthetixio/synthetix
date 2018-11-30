@@ -197,7 +197,7 @@ module.exports = async function(deployer, network, accounts) {
 		// Connect Synthetix to Synth
 		// ----------------------
 		console.log(`Adding ${currencyKey} to Synthetix contract...`);
-		await synthetix.addSynthNomin(synth.address, { from: owner });
+		await synthetix.addSynth(synth.address, { from: owner });
 
 		synths.push({
 			currencyKey,
