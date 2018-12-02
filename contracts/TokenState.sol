@@ -17,7 +17,7 @@ MODULE DESCRIPTION
 A contract that holds the state of an ERC20 compliant token.
 
 This contract is used side by side with external state token
-contracts, such as Havven and Nomin.
+contracts, such as Synthetix and Synth.
 It provides an easy way to upgrade contract logic while
 maintaining all user balances and allowances. This is designed
 to make the changeover as easy as possible, since mappings

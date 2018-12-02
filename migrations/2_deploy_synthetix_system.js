@@ -2,11 +2,11 @@ const { table } = require('table');
 
 const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
-const Havven = artifacts.require('Havven');
-const HavvenEscrow = artifacts.require('HavvenEscrow');
-const HavvenState = artifacts.require('HavvenState');
-// const IssuanceController = artifacts.require('./IssuanceController.sol');
-const Nomin = artifacts.require('Nomin');
+const Synthetix = artifacts.require('Synthetix');
+const SynthetixEscrow = artifacts.require('SynthetixEscrow');
+const SynthetixState = artifacts.require('SynthetixState');
+// const Depot = artifacts.require('./Depot.sol');
+const Synth = artifacts.require('Synth');
 const Owned = artifacts.require('Owned');
 const Proxy = artifacts.require('Proxy');
 const PublicSafeDecimalMath = artifacts.require('PublicSafeDecimalMath');
@@ -49,7 +49,7 @@ module.exports = async function(deployer, network, accounts) {
 		ExchangeRates,
 		owner,
 		oracle,
-		[web3.utils.asciiToHex('nUSD'), web3.utils.asciiToHex('HAV')],
+		[web3.utils.asciiToHex('sUSD'), web3.utils.asciiToHex('SNX')],
 		[web3.utils.toWei('1', 'ether'), web3.utils.toWei('0.2', 'ether')],
 		{ from: deployerAccount }
 	);
@@ -62,7 +62,7 @@ module.exports = async function(deployer, network, accounts) {
 	const feePoolProxy = await Proxy.new(owner, { from: deployerAccount });
 
 	console.log('Deploying FeePool...');
-	// constructor(address _proxy, address _owner, Havven _havven, address _feeAuthority, uint _transferFeeRate, uint _exchangeFeeRate)
+	// constructor(address _proxy, address _owner, Synthetix _synthetix, address _feeAuthority, uint _transferFeeRate, uint _exchangeFeeRate)
 	deployer.link(SafeDecimalMath, FeePool);
 	const feePool = await deployer.deploy(
 		FeePool,
@@ -78,38 +78,38 @@ module.exports = async function(deployer, network, accounts) {
 	await feePoolProxy.setTarget(feePool.address, { from: owner });
 
 	// ----------------
-	// Havven State
+	// Synthetix State
 	// ----------------
-	console.log('Deploying HavvenState...');
+	console.log('Deploying SynthetixState...');
 	// constructor(address _owner, address _associatedContract)
-	deployer.link(SafeDecimalMath, HavvenState);
-	const havvenState = await deployer.deploy(HavvenState, owner, ZERO_ADDRESS, {
+	deployer.link(SafeDecimalMath, SynthetixState);
+	const synthetixState = await deployer.deploy(SynthetixState, owner, ZERO_ADDRESS, {
 		from: deployerAccount,
 	});
 
 	// ----------------
-	// Havven
+	// Synthetix
 	// ----------------
-	console.log('Deploying HavvenProxy...');
+	console.log('Deploying SynthetixProxy...');
 	// constructor(address _owner)
-	const havvenProxy = await Proxy.new(owner, { from: deployerAccount });
+	const synthetixProxy = await Proxy.new(owner, { from: deployerAccount });
 
-	console.log('Deploying HavvenTokenState...');
+	console.log('Deploying SynthetixTokenState...');
 	// constructor(address _owner, address _associatedContract)
-	const havvenTokenState = await TokenState.new(owner, deployerAccount, {
+	const synthetixTokenState = await TokenState.new(owner, deployerAccount, {
 		from: deployerAccount,
 	});
 
-	console.log('Deploying Havven...');
-	// constructor(address _proxy, TokenState _tokenState, Havven _havvenState,
+	console.log('Deploying Synthetix...');
+	// constructor(address _proxy, TokenState _tokenState, Synthetix _synthetixState,
 	//     address _owner, ExchangeRates _exchangeRates, FeePool _feePool
 	// )
-	deployer.link(SafeDecimalMath, Havven);
-	const havven = await deployer.deploy(
-		Havven,
-		havvenProxy.address,
-		havvenTokenState.address,
-		havvenState.address,
+	deployer.link(SafeDecimalMath, Synthetix);
+	const synthetix = await deployer.deploy(
+		Synthetix,
+		synthetixProxy.address,
+		synthetixTokenState.address,
+		synthetixState.address,
 		owner,
 		ExchangeRates.address,
 		FeePool.address,
@@ -119,8 +119,8 @@ module.exports = async function(deployer, network, accounts) {
 		}
 	);
 
-	console.log('Deploying HavvenEscrow...');
-	const havvenEscrow = await deployer.deploy(HavvenEscrow, owner, havven.address, {
+	console.log('Deploying SynthetixEscrow...');
+	const synthetixEscrow = await deployer.deploy(SynthetixEscrow, owner, synthetix.address, {
 		from: deployerAccount,
 	});
 
@@ -128,59 +128,59 @@ module.exports = async function(deployer, network, accounts) {
 	// Connect Token State
 	// ----------------------
 	// Set initial balance for the owner to have all Havvens.
-	await havvenTokenState.setBalanceOf(owner, web3.utils.toWei('100000000'), {
+	await synthetixTokenState.setBalanceOf(owner, web3.utils.toWei('100000000'), {
 		from: deployerAccount,
 	});
 
-	await havvenTokenState.setAssociatedContract(havven.address, { from: owner });
+	await synthetixTokenState.setAssociatedContract(synthetix.address, { from: owner });
 
 	// ----------------------
-	// Connect Havven State
+	// Connect Synthetix State
 	// ----------------------
-	await havvenState.setAssociatedContract(havven.address, { from: owner });
+	await synthetixState.setAssociatedContract(synthetix.address, { from: owner });
 
 	// ----------------------
 	// Connect Proxy
 	// ----------------------
-	await havvenProxy.setTarget(havven.address, { from: owner });
+	await synthetixProxy.setTarget(synthetix.address, { from: owner });
 
 	// ----------------------
 	// Connect Escrow
 	// ----------------------
-	await havven.setEscrow(havvenEscrow.address, { from: owner });
+	await synthetix.setEscrow(SynthetixEscrow.address, { from: owner });
 
 	// ----------------------
 	// Connect FeePool
 	// ----------------------
-	await feePool.setHavven(havven.address, { from: owner });
+	await feePool.setSynthetix(synthetix.address, { from: owner });
 
 	// ----------------
-	// Nomins
+	// Synths
 	// ----------------
-	const currencyKeys = ['HDR', 'nUSD', 'nAUD', 'nEUR'];
-	const nomins = [];
+	const currencyKeys = ['XDR', 'sUSD', 'sAUD', 'sEUR'];
+	const synths = [];
 
 	for (const currencyKey of currencyKeys) {
-		console.log(`Deploying NominTokenState for ${currencyKey}...`);
+		console.log(`Deploying SynthTokenState for ${currencyKey}...`);
 		const tokenState = await deployer.deploy(TokenState, owner, ZERO_ADDRESS, {
 			from: deployerAccount,
 		});
 
-		console.log(`Deploying NominProxy for ${currencyKey}...`);
+		console.log(`Deploying SynthProxy for ${currencyKey}...`);
 		const proxy = await deployer.deploy(Proxy, owner, { from: deployerAccount });
 
-		console.log(`Deploying ${currencyKey} Nomin...`);
+		console.log(`Deploying ${currencyKey} Synth...`);
 
-		// constructor(address _proxy, TokenState _tokenState, Havven _havven, FeePool _feePool,
+		// constructor(address _proxy, TokenState _tokenState, Synthetix _synthetix, FeePool _feePool,
 		//	string _tokenName, string _tokenSymbol, uint _decimals, address _owner, bytes4 _currencyKey
 		// )
-		const nomin = await deployer.deploy(
-			Nomin,
+		const synth = await deployer.deploy(
+			Synth,
 			proxy.address,
 			tokenState.address,
-			havven.address,
+			synthetix.address,
 			feePool.address,
-			`Nomin ${currencyKey}`,
+			`Synth ${currencyKey}`,
 			currencyKey,
 			owner,
 			web3.utils.asciiToHex(currencyKey),
@@ -188,52 +188,52 @@ module.exports = async function(deployer, network, accounts) {
 		);
 
 		console.log(`Setting associated contract for ${currencyKey} token state...`);
-		await tokenState.setAssociatedContract(nomin.address, { from: owner });
+		await tokenState.setAssociatedContract(synth.address, { from: owner });
 
 		console.log(`Setting proxy target for ${currencyKey} proxy...`);
-		await proxy.setTarget(nomin.address, { from: owner });
+		await proxy.setTarget(synth.address, { from: owner });
 
 		// ----------------------
-		// Connect Havven to Nomin
+		// Connect Synthetix to Synth
 		// ----------------------
-		console.log(`Adding ${currencyKey} to Havven contract...`);
-		await havven.addNomin(nomin.address, { from: owner });
+		console.log(`Adding ${currencyKey} to Synthetix contract...`);
+		await synthetix.addSynth(synth.address, { from: owner });
 
-		nomins.push({
+		synths.push({
 			currencyKey,
 			tokenState,
 			proxy,
-			nomin,
+			synth,
 		});
 	}
 
 	// Initial prices
 	const { timestamp } = await web3.eth.getBlock('latest');
 
-	// nUSD: 1 USD
-	// nAUD: 0.5 USD
-	// nEUR: 1.25 USD
-	// HAV: 0.1 USD
+	// sUSD: 1 USD
+	// sAUD: 0.5 USD
+	// sEUR: 1.25 USD
+	// SNX: 0.1 USD
 	await exchangeRates.updateRates(
-		currencyKeys.concat(['HAV']).map(web3.utils.asciiToHex),
+		currencyKeys.concat(['SNX']).map(web3.utils.asciiToHex),
 		['1', '1', '0.5', '1.25', '0.1'].map(number => web3.utils.toWei(number, 'ether')),
 		timestamp,
 		{ from: oracle }
 	);
 
 	// --------------------
-	// Issuance Controller
+	// Depot
 	// --------------------
-	// console.log('Deploying IssuanceController...');
+	// console.log('Deploying Depot...');
 	// await deployer.deploy(
-	// 	IssuanceController,
+	// 	Depot,
 	// 	owner,
 	// 	fundsWallet,
-	// 	havven.address,
-	// 	nomin.address,
+	// 	synthetix.address,
+	// 	synth.address,
 	// 	oracle,
 	// 	ethUSD,
-	// 	havUSD,
+	// 	sUSD,
 	// 	{ from: deployerAccount }
 	// );
 
@@ -242,21 +242,21 @@ module.exports = async function(deployer, network, accounts) {
 		['Exchange Rates', ExchangeRates.address],
 		['Fee Pool', FeePool.address],
 		['Fee Pool Proxy', feePoolProxy.address],
-		['Havven State', havvenState.address],
-		['Havven Token State', havvenTokenState.address],
-		['Havven Proxy', havvenProxy.address],
-		['Havven', Havven.address],
-		['Havven Escrow', HavvenEscrow.address],
+		['Synthetix State', synthetixState.address],
+		['Synthetix Token State', synthetixTokenState.address],
+		['Synthetix Proxy', synthetixProxy.address],
+		['Synthetix', Synthetix.address],
+		['Synthetix Escrow', SynthetixEscrow.address],
 		['Owned', Owned.address],
 		['SafeDecimalMath', SafeDecimalMath.address],
 
-		// ['Issuance Controller', IssuanceController.address],
+		// ['Depot', Depot.address],
 	];
 
-	for (const nomin of nomins) {
-		tableData.push([`${nomin.currencyKey} Nomin`, nomin.nomin.address]);
-		tableData.push([`${nomin.currencyKey} Proxy`, nomin.proxy.address]);
-		tableData.push([`${nomin.currencyKey} Token State`, nomin.tokenState.address]);
+	for (const synth of synths) {
+		tableData.push([`${synth.currencyKey} Synth`, synth.synth.address]);
+		tableData.push([`${synth.currencyKey} Proxy`, synth.proxy.address]);
+		tableData.push([`${synth.currencyKey} Token State`, synth.tokenState.address]);
 	}
 
 	console.log();

@@ -3,7 +3,7 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 
-file:       Havven.sol
+file:       Synthetix.sol
 version:    2.0
 author:     Kevin Brown
             Gavin Conway
@@ -13,9 +13,9 @@ date:       2018-09-14
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
-Havven token contract. Havvens are transferable ERC20 tokens,
-and also give their holders the following privileges.
-An owner of havvens has the right to issue nomins in all nomin flavours.
+Synthetix token contract. SNX is a transferable ERC20 token,
+and also give its holders the following privileges.
+An owner of SNX has the right to issue synths in all synth flavours.
 
 After a fee period terminates, the duration and fees collected for that
 period are computed, and the next period begins. Thus an account may only
@@ -25,17 +25,17 @@ the next period.
 
 == Average Balance Calculations ==
 
-The fee entitlement of a havven holder is proportional to their average
-issued nomin balance over the last fee period. This is computed by
-measuring the area under the graph of a user's issued nomin balance over
+The fee entitlement of a synthetix holder is proportional to their average
+issued synth balance over the last fee period. This is computed by
+measuring the area under the graph of a user's issued synth balance over
 time, and then when a new fee period begins, dividing through by the
 duration of the fee period.
 
 We need only update values when the balances of an account is modified.
-This occurs when issuing or burning for issued nomin balances,
-and when transferring for havven balances. This is for efficiency,
-and adds an implicit friction to interacting with havvens.
-A havven holder pays for his own recomputation whenever he wants to change
+This occurs when issuing or burning for issued synth balances,
+and when transferring for synthetix balances. This is for efficiency,
+and adds an implicit friction to interacting with SNX.
+A synthetix holder pays for his own recomputation whenever he wants to change
 his position, which saves the foundation having to maintain a pot dedicated
 to resourcing this.
 
@@ -56,17 +56,17 @@ we must:
   - Update the last transfer time to n
 
 So if this graph represents the entire current fee period,
-the average havvens held so far is ((t-f)*s + (n-t)*p) / (n-f).
+the average SNX held so far is ((t-f)*s + (n-t)*p) / (n-f).
 The complementary computations must be performed for both sender and
 recipient.
 
-Note that a transfer keeps global supply of havvens invariant.
+Note that a transfer keeps global supply of SNX invariant.
 The sum of all balances is constant, and unmodified by any transfer.
 So the sum of all balances multiplied by the duration of a fee period is also
 constant, and this is equivalent to the sum of the area of every user's
 time/balance graph. Dividing through by that duration yields back the total
-havven supply. So, at the end of a fee period, we really do yield a user's
-average share in the havven supply over that period.
+synthetix supply. So, at the end of a fee period, we really do yield a user's
+average share in the synthetix supply over that period.
 
 A slight wrinkle is introduced if we consider the time r when the fee period
 rolls over. Then the previous fee period k-1 is before r, and the current fee
@@ -89,28 +89,28 @@ previous period will be finalised at the time of their first transfer during the
 current fee period, or when they query or withdraw their fee entitlement.
 
 In the implementation, the duration of different fee periods may be slightly irregular,
-as the check that they have rolled over occurs only when state-changing havven
+as the check that they have rolled over occurs only when state-changing synthetix
 operations are performed.
 
 == Issuance and Burning ==
 
-In this version of the havven contract, nomins can only be issued by
-those that have been nominated by the havven foundation. Nomins are assumed
+In this version of the synthetix contract, synths can only be issued by
+those that have been nominated by the synthetix foundation. Synths are assumed
 to be valued at $1, as they are a stable unit of account.
 
-All nomins issued require a proportional value of havvens to be locked,
+All synths issued require a proportional value of SNX to be locked,
 where the proportion is governed by the current issuance ratio. This
-means for every $1 of Havvens locked up, $(issuanceRatio) nomins can be issued.
-i.e. to issue 100 nomins, 100/issuanceRatio dollars of havvens need to be locked up.
+means for every $1 of SNX locked up, $(issuanceRatio) synths can be issued.
+i.e. to issue 100 synths, 100/issuanceRatio dollars of SNX need to be locked up.
 
-To determine the value of some amount of havvens(H), an oracle is used to push
-the price of havvens (P_H) in dollars to the contract. The value of H
-would then be: H * P_H.
+To determine the value of some amount of SNX(S), an oracle is used to push
+the price of SNX (P_S) in dollars to the contract. The value of S
+would then be: S * P_S.
 
-Any havvens that are locked up by this issuance process cannot be transferred.
-The amount that is locked floats based on the price of havvens. If the price
-of havvens moves up, less havvens are locked, so they can be issued against,
-or transferred freely. If the price of havvens moves down, more havvens are locked,
+Any SNX that are locked up by this issuance process cannot be transferred.
+The amount that is locked floats based on the price of SNX. If the price
+of SNX moves up, less SNX are locked, so they can be issued against,
+or transferred freely. If the price of SNX moves down, more SNX are locked,
 even going above the initial wallet balance.
 
 -----------------------------------------------------------------
@@ -121,35 +121,35 @@ pragma solidity 0.4.25;
 
 import "./FeePool.sol";
 import "./ExternStateToken.sol";
-import "./Nomin.sol";
-import "./HavvenEscrow.sol";
-import "./HavvenState.sol";
+import "./Synth.sol";
+import "./SynthetixEscrow.sol";
+import "./SynthetixState.sol";
 import "./TokenState.sol";
 import "./ExchangeRates.sol";
 
 /**
- * @title Havven ERC20 contract.
- * @notice The Havven contracts not only facilitates transfers, exchanges, and tracks balances,
- * but it also computes the quantity of fees each havven holder is entitled to.
+ * @title Synthetix ERC20 contract.
+ * @notice The Synthetix contracts not only facilitates transfers, exchanges, and tracks balances,
+ * but it also computes the quantity of fees each synthetix holder is entitled to.
  */
-contract Havven is ExternStateToken {
+contract Synthetix is ExternStateToken {
 
     // ========== STATE VARIABLES ==========
 
-    // Available Nomins which can be used with the system
-    Nomin[] public availableNomins;
-    mapping(bytes4 => Nomin) public nomins;
+    // Available Synths which can be used with the system
+    Synth[] public availableSynths;
+    mapping(bytes4 => Synth) public synths;
 
     FeePool public feePool;
-    HavvenEscrow public escrow;
+    SynthetixEscrow public escrow;
     ExchangeRates public exchangeRates;
-    HavvenState public havvenState;
+    SynthetixState public synthetixState;
 
-    uint constant HAVVEN_SUPPLY = 1e8 * SafeDecimalMath.unit();
-    string constant TOKEN_NAME = "Havven";
-    string constant TOKEN_SYMBOL = "HAV";
+    uint constant SYNTHETIX_SUPPLY = 1e8 * SafeDecimalMath.unit();
+    string constant TOKEN_NAME = "Synthetix";
+    string constant TOKEN_SYMBOL = "SNX";
     uint constant DECIMALS = 18;
-    
+
     // ========== CONSTRUCTOR ==========
 
     /**
@@ -158,13 +158,13 @@ contract Havven is ExternStateToken {
      * If the provided address is 0x0, then a fresh one will be constructed with the contract owning all tokens.
      * @param _owner The owner of this contract.
      */
-    constructor(address _proxy, TokenState _tokenState, HavvenState _havvenState, 
+    constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
         address _owner, ExchangeRates _exchangeRates, FeePool _feePool
     )
-        ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, HAVVEN_SUPPLY, DECIMALS, _owner)
+        ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, SYNTHETIX_SUPPLY, DECIMALS, _owner)
         public
     {
-        havvenState = _havvenState;
+        synthetixState = _synthetixState;
         exchangeRates = _exchangeRates;
         feePool = _feePool;
     }
@@ -172,65 +172,65 @@ contract Havven is ExternStateToken {
     // ========== SETTERS ========== */
 
     /**
-     * @notice Add an associated Nomin contract to the Havven system
+     * @notice Add an associated Synth contract to the Synthetix system
      * @dev Only the contract owner may call this.
      */
-    function addNomin(Nomin nomin)
+    function addSynth(Synth synth)
         external
         optionalProxy_onlyOwner
     {
-        bytes4 currencyKey = nomin.currencyKey();
+        bytes4 currencyKey = synth.currencyKey();
 
-        require(nomins[currencyKey] == Nomin(0), "Nomin already exists");
+        require(synths[currencyKey] == Synth(0), "Synth already exists");
 
-        availableNomins.push(nomin);
-        nomins[currencyKey] = nomin;
+        availableSynths.push(synth);
+        synths[currencyKey] = synth;
 
-        emitNominAdded(currencyKey, nomin);
+        emitSynthAdded(currencyKey, synth);
     }
 
     /**
-     * @notice Remove an associated Nomin contract from the Havven system
+     * @notice Remove an associated Synth contract from the Synthetix system
      * @dev Only the contract owner may call this.
      */
-    function removeNomin(bytes4 currencyKey)
+    function removeSynth(bytes4 currencyKey)
         external
         optionalProxy_onlyOwner
     {
-        require(nomins[currencyKey] != address(0), "Nomin does not exist");
-        require(nomins[currencyKey].totalSupply() == 0, "Nomin supply exists");
+        require(synths[currencyKey] != address(0), "Synth does not exist");
+        require(synths[currencyKey].totalSupply() == 0, "Synth supply exists");
 
         // Save the address we're removing for emitting the event at the end.
-        address nominToRemove = nomins[currencyKey];
+        address synthToRemove = synths[currencyKey];
 
-        // Remove the nomin from the availableNomins array.
-        for (uint8 i = 0; i < availableNomins.length; i++) {
-            if (availableNomins[i] == nominToRemove) {
-                delete availableNomins[i];
+        // Remove the synth from the availableSynths array.
+        for (uint8 i = 0; i < availableSynths.length; i++) {
+            if (availableSynths[i] == synthToRemove) {
+                delete availableSynths[i];
 
-                // Copy the last nomin into the place of the one we just deleted
-                // If there's only one nomin, this is nomins[0] = nomins[0].
+                // Copy the last synth into the place of the one we just deleted
+                // If there's only one synth, this is synths[0] = synths[0].
                 // If we're deleting the last one, it's also a NOOP in the same way.
-                availableNomins[i] = availableNomins[availableNomins.length - 1];
+                availableSynths[i] = availableSynths[availableSynths.length - 1];
 
                 // Decrease the size of the array by one.
-                availableNomins.length--;
+                availableSynths.length--;
 
                 break;
             }
         }
 
-        // And remove it from the nomins mapping
-        delete nomins[currencyKey];
-        
-        emitNominRemoved(currencyKey, nominToRemove);
+        // And remove it from the synths mapping
+        delete synths[currencyKey];
+
+        emitSynthRemoved(currencyKey, synthToRemove);
     }
 
     /**
-     * @notice Set the associated havven escrow contract.
+     * @notice Set the associated synthetix escrow contract.
      * @dev Only the contract owner may call this.
      */
-    function setEscrow(HavvenEscrow _escrow)
+    function setEscrow(SynthetixEscrow _escrow)
         external
         optionalProxy_onlyOwner
     {
@@ -255,14 +255,14 @@ contract Havven is ExternStateToken {
     }
 
     /**
-     * @notice Set the havvenState contract address where issuance data is held.
+     * @notice Set the synthetixState contract address where issuance data is held.
      * @dev Only callable by the contract owner.
      */
-    function sethavvenState(HavvenState _havvenState)
+    function setSynthetixState(SynthetixState _synthetixState)
         external
         optionalProxy_onlyOwner
     {
-        havvenState = _havvenState;
+        synthetixState = _synthetixState;
         // Note: No event here as our contract exceeds max contract size
         // with these events, and it's unlikely people will need to
         // track these events specifically.
@@ -270,7 +270,7 @@ contract Havven is ExternStateToken {
 
     /**
      * @notice Set your preferred currency. Note: This does not automatically exchange any balances you've held previously in
-     * other nomin currencies in this address, it will apply for any new payments you receive at this address.
+     * other synth currencies in this address, it will apply for any new payments you receive at this address.
      */
     function setPreferredCurrency(bytes4 currencyKey)
         external
@@ -278,7 +278,7 @@ contract Havven is ExternStateToken {
     {
         require(currencyKey == 0 || !exchangeRates.rateIsStale(currencyKey), "Currency rate is stale or doesn't exist.");
 
-        havvenState.setPreferredCurrency(messageSender, currencyKey);
+        synthetixState.setPreferredCurrency(messageSender, currencyKey);
 
         emitPreferredCurrencyChanged(messageSender, currencyKey);
     }
@@ -307,10 +307,10 @@ contract Havven is ExternStateToken {
     }
 
     /**
-     * @notice Total amount of nomins issued by the system, priced in currencyKey
-     * @param currencyKey The currency to value the nomins in
+     * @notice Total amount of synths issued by the system, priced in currencyKey
+     * @param currencyKey The currency to value the synths in
      */
-    function totalIssuedNomins(bytes4 currencyKey)
+    function totalIssuedSynths(bytes4 currencyKey)
         public
         view
         rateNotStale(currencyKey)
@@ -319,34 +319,34 @@ contract Havven is ExternStateToken {
         uint total = 0;
         uint currencyRate = exchangeRates.rateForCurrency(currencyKey);
 
-        for (uint8 i = 0; i < availableNomins.length; i++) {
+        for (uint8 i = 0; i < availableSynths.length; i++) {
             // Ensure the rate isn't stale.
             // TODO: Investigate gas cost optimisation of doing a single call with all keys in it vs
             // individual calls like this.
-            require(!exchangeRates.rateIsStale(availableNomins[i].currencyKey()), "Rate is stale");
+            require(!exchangeRates.rateIsStale(availableSynths[i].currencyKey()), "Rate is stale");
 
-            // What's the total issued value of that nomin in the destination currency?
+            // What's the total issued value of that synth in the destination currency?
             // Note: We're not using our effectiveValue function because we don't want to go get the
             //       rate for the destination currency and check if it's stale repeatedly on every
             //       iteration of the loop
-            uint nominValue = availableNomins[i].totalSupply()
-                .multiplyDecimalRound(exchangeRates.rateForCurrency(availableNomins[i].currencyKey()))
+            uint synthValue = availableSynths[i].totalSupply()
+                .multiplyDecimalRound(exchangeRates.rateForCurrency(availableSynths[i].currencyKey()))
                 .divideDecimalRound(currencyRate);
-            total = total.add(nominValue);
+            total = total.add(synthValue);
         }
 
-        return total; 
+        return total;
     }
 
     /**
-     * @notice Returns the count of available nomins in the system, which you can use to iterate availableNomins
+     * @notice Returns the count of available synths in the system, which you can use to iterate availableSynths
      */
-    function availableNominCount()
+    function availableSynthCount()
         public
         view
         returns (uint)
     {
-        return availableNomins.length;
+        return availableSynths.length;
     }
 
     // ========== MUTATIVE FUNCTIONS ==========
@@ -374,7 +374,7 @@ contract Havven is ExternStateToken {
         returns (bool)
     {
         // Ensure they're not trying to exceed their locked amount
-        require(value <= transferableHavvens(messageSender), "Insufficient balance");
+        require(value <= transferableSynthetix(messageSender), "Insufficient balance");
 
         // Perform the transfer: if there is a problem an exception will be thrown in this call.
         _transfer_byProxy(messageSender, to, value, data);
@@ -405,7 +405,7 @@ contract Havven is ExternStateToken {
         returns (bool)
     {
         // Ensure they're not trying to exceed their locked amount
-        require(value <= transferableHavvens(from), "Insufficient balance");
+        require(value <= transferableSynthetix(from), "Insufficient balance");
 
         // Perform the transfer: if there is a problem,
         // an exception will be thrown in this call.
@@ -415,7 +415,7 @@ contract Havven is ExternStateToken {
     }
 
     /**
-     * @notice Function that allows you to exchange nomins you hold in one flavour for another.
+     * @notice Function that allows you to exchange synths you hold in one flavour for another.
      * @param sourceCurrencyKey The source currency you wish to exchange from
      * @param sourceAmount The amount, specified in UNIT of source currency you wish to exchange
      * @param destinationCurrencyKey The destination currency you wish to obtain.
@@ -429,9 +429,9 @@ contract Havven is ExternStateToken {
         // Note: We don't need to insist on non-stale rates because effectiveValue will do it for us.
         returns (bool)
     {
-        require(sourceCurrencyKey != destinationCurrencyKey, "Exchange must use different nomins");
+        require(sourceCurrencyKey != destinationCurrencyKey, "Exchange must use different synths");
         require(sourceAmount > 0, "Zero amount");
-        require(destinationAddress != address(this), "Havven is invalid destination");
+        require(destinationAddress != address(this), "Synthetix is invalid destination");
         require(destinationAddress != address(proxy), "Proxy is invalid destination");
 
         // Pass it along, defaulting to the sender as the recipient.
@@ -445,7 +445,7 @@ contract Havven is ExternStateToken {
         );
     }
 
-    function nominInitiatedExchange(
+    function synthInitiatedExchange(
         address from,
         bytes4 sourceCurrencyKey,
         uint sourceAmount,
@@ -453,10 +453,10 @@ contract Havven is ExternStateToken {
         address destinationAddress
     )
         external
-        onlyNomin
+        onlySynth
         returns (bool)
     {
-        require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same nomin");
+        require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
         require(sourceAmount > 0, "Zero amount");
 
         // Pass it along
@@ -466,17 +466,17 @@ contract Havven is ExternStateToken {
             sourceAmount,
             destinationCurrencyKey,
             destinationAddress,
-            false // Don't charge fee on the exchange, as they've already been charged a transfer fee in the nomin contract
+            false // Don't charge fee on the exchange, as they've already been charged a transfer fee in the synth contract
         );
     }
 
-    function nominInitiatedFeePayment(
+    function synthInitiatedFeePayment(
         address from,
         bytes4 sourceCurrencyKey,
         uint sourceAmount
     )
         external
-        onlyNomin
+        onlySynth
         returns (bool)
     {
         require(sourceAmount > 0, "Source can't be 0");
@@ -486,7 +486,7 @@ contract Havven is ExternStateToken {
             from,
             sourceCurrencyKey,
             sourceAmount,
-            "HDR",
+            "XDR",
             feePool.FEE_ADDRESS(),
             false // Don't charge a fee on the exchange because this is already a fee
         );
@@ -498,7 +498,7 @@ contract Havven is ExternStateToken {
 
         return result;
     }
-    
+
     function _internalExchange(
         address from,
         bytes4 sourceCurrencyKey,
@@ -512,14 +512,14 @@ contract Havven is ExternStateToken {
         returns (bool)
     {
         require(destinationAddress != address(0), "Zero destination");
-        require(destinationAddress != address(this), "Havven is invalid destination");
+        require(destinationAddress != address(this), "Synthetix is invalid destination");
         require(destinationAddress != address(proxy), "Proxy is invalid destination");
-        
-        // Note: We don't need to check their balance as the burn() below will do a safe subtraction which requires 
+
+        // Note: We don't need to check their balance as the burn() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
 
         // Burn the source amount
-        nomins[sourceCurrencyKey].burn(from, sourceAmount);
+        synths[sourceCurrencyKey].burn(from, sourceAmount);
 
         // How much should they get in the destination currency?
         uint destinationAmount = effectiveValue(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
@@ -531,45 +531,45 @@ contract Havven is ExternStateToken {
         if (chargeFee) {
             amountReceived = feePool.amountReceivedFromExchange(destinationAmount);
             fee = destinationAmount.sub(amountReceived);
-        } 
+        }
 
-        // Issue their new nomins
-        nomins[destinationCurrencyKey].issue(destinationAddress, amountReceived);
+        // Issue their new synths
+        synths[destinationCurrencyKey].issue(destinationAddress, amountReceived);
 
-        // Remit the fee in HDRs
+        // Remit the fee in XDRs
         if (fee > 0) {
-            uint hdrFeeAmount = effectiveValue(destinationCurrencyKey, fee, "HDR");
-            nomins["HDR"].issue(feePool.FEE_ADDRESS(), hdrFeeAmount);
+            uint xdrFeeAmount = effectiveValue(destinationCurrencyKey, fee, "XDR");
+            synths["XDR"].issue(feePool.FEE_ADDRESS(), xdrFeeAmount);
         }
 
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
 
         // Call the ERC223 transfer callback if needed
-        nomins[destinationCurrencyKey].triggerTokenFallbackIfNeeded(from, destinationAddress, amountReceived);
+        synths[destinationCurrencyKey].triggerTokenFallbackIfNeeded(from, destinationAddress, amountReceived);
 
         // Gas optimisation:
         // No event emitted as it's assumed users will be able to track transfers to the zero address, followed
-        // by a transfer on another nomin from the zero address and ascertain the info required here.
+        // by a transfer on another synth from the zero address and ascertain the info required here.
 
         return true;
     }
 
-   
-    function _addToDebtRegister(bytes4 currencyKey, uint amount) 
+
+    function _addToDebtRegister(bytes4 currencyKey, uint amount)
         internal
         optionalProxy
     {
-        // What is the value of the requested debt in HDRs?
-        uint hdrValue = effectiveValue(currencyKey, amount, "HDR");
-        
-        // What is the value of all issued nomins of the system (priced in HDRs)?
-        uint totalDebtIssued = totalIssuedNomins("HDR");
+        // What is the value of the requested debt in XDRs?
+        uint xdrValue = effectiveValue(currencyKey, amount, "XDR");
+
+        // What is the value of all issued synths of the system (priced in XDRs)?
+        uint totalDebtIssued = totalIssuedSynths("XDR");
 
         // What will the new total be including the new value?
-        uint newTotalDebtIssued = hdrValue.add(totalDebtIssued);
+        uint newTotalDebtIssued = xdrValue.add(totalDebtIssued);
 
         // What is their percentage (as a high precision int) of the total debt?
-        uint debtPercentage = hdrValue.divideDecimalRoundPrecise(newTotalDebtIssued);
+        uint debtPercentage = xdrValue.divideDecimalRoundPrecise(newTotalDebtIssued);
 
         // And what effect does this percentage have on the global debt holding of other issuers?
         // The delta specifically needs to not take into account any existing debt as it's already
@@ -578,74 +578,74 @@ contract Havven is ExternStateToken {
         uint delta = SafeDecimalMath.preciseUnit().sub(debtPercentage);
 
         // How much existing debt do they have?
-        uint existingDebt = debtBalanceOf(messageSender, "HDR");
-         
+        uint existingDebt = debtBalanceOf(messageSender, "XDR");
+
         // And what does their debt ownership look like including this previous stake?
         if (existingDebt > 0) {
-            debtPercentage = hdrValue.add(existingDebt).divideDecimalRoundPrecise(newTotalDebtIssued);
+            debtPercentage = xdrValue.add(existingDebt).divideDecimalRoundPrecise(newTotalDebtIssued);
         }
 
         // Are they a new issuer? If so, record them.
-        if (!havvenState.hasIssued(messageSender)) {
-            havvenState.incrementTotalIssuerCount();
+        if (!synthetixState.hasIssued(messageSender)) {
+            synthetixState.incrementTotalIssuerCount();
         }
 
         // Save the debt entry parameters
-        havvenState.setCurrentIssuanceData(messageSender, debtPercentage);
+        synthetixState.setCurrentIssuanceData(messageSender, debtPercentage);
 
-        // And if we're the first, push 1 as there was no effect to any other holders, otherwise push 
+        // And if we're the first, push 1 as there was no effect to any other holders, otherwise push
         // the change for the rest of the debt holders. The debt ledger holds high precision integers.
-        if (havvenState.debtLedgerLength() > 0) {
-            havvenState.appendDebtLedgerValue(
-                havvenState.lastDebtLedgerEntry().multiplyDecimalRoundPrecise(delta)
+        if (synthetixState.debtLedgerLength() > 0) {
+            synthetixState.appendDebtLedgerValue(
+                synthetixState.lastDebtLedgerEntry().multiplyDecimalRoundPrecise(delta)
             );
         } else {
-            havvenState.appendDebtLedgerValue(SafeDecimalMath.preciseUnit());
+            synthetixState.appendDebtLedgerValue(SafeDecimalMath.preciseUnit());
         }
     }
 
     /**
-     * @notice Issue nomins against the sender's havvens.
-     * @dev Issuance is only allowed if the havven price isn't stale and the sender is an issuer.
-     * @param currencyKey The currency you wish to issue nomins in, for example nUSD or nAUD
-     * @param amount The amount of nomins you wish to issue with a base of UNIT
+     * @notice Issue synths against the sender's SNX.
+     * @dev Issuance is only allowed if the synthetix price isn't stale and the sender is an issuer.
+     * @param currencyKey The currency you wish to issue synths in, for example sUSD or sAUD
+     * @param amount The amount of synths you wish to issue with a base of UNIT
      */
-    function issueNomins(bytes4 currencyKey, uint amount)
+    function issueSynths(bytes4 currencyKey, uint amount)
         public
         optionalProxy
-        // No need to check if price is stale, as it is checked in issuableNomins.
+        // No need to check if price is stale, as it is checked in issuableSynths.
     {
-        require(amount <= remainingIssuableNomins(messageSender, currencyKey), "Amount too large");
+        require(amount <= remainingIssuableSynths(messageSender, currencyKey), "Amount too large");
 
         // Keep track of the debt they're about to create
         _addToDebtRegister(currencyKey, amount);
 
-        // Create their nomins
-        nomins[currencyKey].issue(messageSender, amount);
+        // Create their synths
+        synths[currencyKey].issue(messageSender, amount);
     }
 
     /**
-     * @notice Issue the maximum amount of Nomins possible against the sender's havvens.
-     * @dev Issuance is only allowed if the havven price isn't stale and the sender is an issuer.
-     * @param currencyKey The currency you wish to issue nomins in, for example nUSD or nAUD
+     * @notice Issue the maximum amount of Synths possible against the sender's SNX.
+     * @dev Issuance is only allowed if the synthetix price isn't stale and the sender is an issuer.
+     * @param currencyKey The currency you wish to issue synths in, for example sUSD or sAUD
      */
-    function issueMaxNomins(bytes4 currencyKey)
+    function issueMaxSynths(bytes4 currencyKey)
         external
         optionalProxy
     {
         // Figure out the maximum we can issue in that currency
-        uint maxIssuable = remainingIssuableNomins(messageSender, currencyKey);
+        uint maxIssuable = remainingIssuableSynths(messageSender, currencyKey);
 
         // And issue them
-        issueNomins(currencyKey, maxIssuable);
+        issueSynths(currencyKey, maxIssuable);
     }
 
     /**
-     * @notice Burn nomins to clear issued nomins/free havvens.
+     * @notice Burn synths to clear issued synths/free SNX.
      * @param currencyKey The currency you're specifying to burn
      * @param amount The amount (in UNIT base) you wish to burn
      */
-    function burnNomins(bytes4 currencyKey, uint amount)
+    function burnSynths(bytes4 currencyKey, uint amount)
         external
         optionalProxy
         // No need to check for stale rates as _removeFromDebtRegister calls effectiveValue
@@ -664,8 +664,8 @@ contract Havven is ExternStateToken {
         // Remove their debt from the ledger
         _removeFromDebtRegister(currencyKey, amountToBurn);
 
-        // nomin.burn does a safe subtraction on balance (so it will revert if there are not enough nomins).
-        nomins[currencyKey].burn(messageSender, amountToBurn);
+        // synth.burn does a safe subtraction on balance (so it will revert if there are not enough synths).
+        synths[currencyKey].burn(messageSender, amountToBurn);
     }
 
     /**
@@ -673,17 +673,17 @@ contract Havven is ExternStateToken {
      * @param currencyKey The currency the user is presenting to forgive their debt
      * @param amount The amount (in UNIT base) being presented
      */
-    function _removeFromDebtRegister(bytes4 currencyKey, uint amount) 
+    function _removeFromDebtRegister(bytes4 currencyKey, uint amount)
         internal
     {
-        // How much debt are they trying to remove in HDRs?
-        uint debtToRemove = effectiveValue(currencyKey, amount, "HDR");
+        // How much debt are they trying to remove in XDRs?
+        uint debtToRemove = effectiveValue(currencyKey, amount, "XDR");
 
         // How much debt do they have?
-        uint existingDebt = debtBalanceOf(messageSender, "HDR"); 
+        uint existingDebt = debtBalanceOf(messageSender, "XDR");
 
         // What percentage of the total debt are they trying to remove?
-        uint totalDebtIssued = totalIssuedNomins("HDR");
+        uint totalDebtIssued = totalIssuedSynths("XDR");
         uint debtPercentage = debtToRemove.divideDecimalRoundPrecise(totalDebtIssued);
 
         // And what effect does this percentage have on the global debt holding of other issuers?
@@ -693,8 +693,8 @@ contract Havven is ExternStateToken {
 
         // Are they exiting the system, or are they just decreasing their debt position?
         if (debtToRemove == existingDebt) {
-            havvenState.clearIssuanceData(messageSender);
-            havvenState.decrementTotalIssuerCount();
+            synthetixState.clearIssuanceData(messageSender);
+            synthetixState.decrementTotalIssuerCount();
         } else {
             // What percentage of the debt will they be left with?
             uint newDebt = existingDebt.sub(debtToRemove);
@@ -702,32 +702,32 @@ contract Havven is ExternStateToken {
             uint newDebtPercentage = newDebt.divideDecimalRoundPrecise(newTotalDebtIssued);
 
             // Store the debt percentage and debt ledger as high precision integers
-            havvenState.setCurrentIssuanceData(messageSender, newDebtPercentage);
+            synthetixState.setCurrentIssuanceData(messageSender, newDebtPercentage);
         }
 
         // Update our cumulative ledger. This is also a high precision integer.
-        havvenState.appendDebtLedgerValue(
-            havvenState.lastDebtLedgerEntry().multiplyDecimalRoundPrecise(delta)
+        synthetixState.appendDebtLedgerValue(
+            synthetixState.lastDebtLedgerEntry().multiplyDecimalRoundPrecise(delta)
         );
     }
 
     // ========== Issuance/Burning ==========
 
     /**
-     * @notice The maximum nomins an issuer can issue against their total havven quantity, priced in HDRs.
-     * This ignores any already issued nomins, and is purely giving you the maximimum amount the user can issue.
+     * @notice The maximum synths an issuer can issue against their total synthetix quantity, priced in XDRs.
+     * This ignores any already issued synths, and is purely giving you the maximimum amount the user can issue.
      */
-    function maxIssuableNomins(address issuer, bytes4 currencyKey)
+    function maxIssuableSynths(address issuer, bytes4 currencyKey)
         public
         view
         // We don't need to check stale rates here as effectiveValue will do it for us.
         returns (uint)
     {
-        // What is the value of their HAV balance in the destination currency?
-        uint destinationValue = effectiveValue("HAV", collateral(issuer), currencyKey);
+        // What is the value of their SNX balance in the destination currency?
+        uint destinationValue = effectiveValue("SNX", collateral(issuer), currencyKey);
 
         // They're allowed to issue up to issuanceRatio of that value
-        return destinationValue.multiplyDecimal(havvenState.issuanceRatio());
+        return destinationValue.multiplyDecimal(synthetixState.issuanceRatio());
     }
 
     function collateralisationRatio(address issuer)
@@ -735,36 +735,36 @@ contract Havven is ExternStateToken {
         view
         returns (uint)
     {
-        uint debtBalance = debtBalanceOf(issuer, "HAV");
-        uint totalOwnedHavvens = collateral(issuer);
+        uint debtBalance = debtBalanceOf(issuer, "SNX");
+        uint totalOwnedSynthetix = collateral(issuer);
 
-        if (totalOwnedHavvens == 0) return 0;
+        if (totalOwnedSynthetix == 0) return 0;
 
-        return debtBalance.divideDecimalRound(totalOwnedHavvens);
+        return debtBalance.divideDecimalRound(totalOwnedSynthetix);
     }
 
     function debtBalanceOf(address issuer, bytes4 currencyKey)
         public
         view
-        // Don't need to check for stale rates here because totalIssuedNomins will do it for us
+        // Don't need to check for stale rates here because totalIssuedSynths will do it for us
         returns (uint)
     {
         // What was their initial debt ownership?
         uint initialDebtOwnership;
         uint debtEntryIndex;
-        (initialDebtOwnership, debtEntryIndex) = havvenState.issuanceData(issuer);
+        (initialDebtOwnership, debtEntryIndex) = synthetixState.issuanceData(issuer);
 
         // If it's zero, they haven't issued, and they have no debt.
         if (initialDebtOwnership == 0) return 0;
 
         // Figure out the global debt percentage delta from when they entered the system.
         // This is a high precision integer.
-        uint currentDebtOwnership = havvenState.lastDebtLedgerEntry()
-            .divideDecimalRoundPrecise(havvenState.debtLedger(debtEntryIndex))
+        uint currentDebtOwnership = synthetixState.lastDebtLedgerEntry()
+            .divideDecimalRoundPrecise(synthetixState.debtLedger(debtEntryIndex))
             .multiplyDecimalRoundPrecise(initialDebtOwnership);
 
         // What's the total value of the system in their requested currency?
-        uint totalSystemValue = totalIssuedNomins(currencyKey);
+        uint totalSystemValue = totalIssuedSynths(currencyKey);
 
         // Their debt balance is their portion of the total system value.
         uint highPrecisionBalance = totalSystemValue.decimalToPreciseDecimal()
@@ -774,18 +774,18 @@ contract Havven is ExternStateToken {
     }
 
     /**
-     * @notice The remaining nomins an issuer can issue against their total havven balance.
+     * @notice The remaining synths an issuer can issue against their total synthetix balance.
      * @param issuer The account that intends to issue
      * @param currencyKey The currency to price issuable value in
      */
-    function remainingIssuableNomins(address issuer, bytes4 currencyKey)
+    function remainingIssuableSynths(address issuer, bytes4 currencyKey)
         public
         view
-        // Don't need to check for nomin existing or stale rates because maxIssuableNomins will do it for us.
+        // Don't need to check for synth existing or stale rates because maxIssuableSynths will do it for us.
         returns (uint)
     {
         uint alreadyIssued = debtBalanceOf(issuer, currencyKey);
-        uint max = maxIssuableNomins(issuer, currencyKey);
+        uint max = maxIssuableSynths(issuer, currencyKey);
 
         if (alreadyIssued >= max) {
             return 0;
@@ -795,8 +795,8 @@ contract Havven is ExternStateToken {
     }
 
     /**
-     * @notice The total havvens owned by this account, both escrowed and unescrowed,
-     * against which nomins can be issued.
+     * @notice The total SNX owned by this account, both escrowed and unescrowed,
+     * against which synths can be issued.
      * This includes those already being used as collateral (locked), and those
      * available for further issuance (unlocked).
      */
@@ -815,33 +815,33 @@ contract Havven is ExternStateToken {
     }
 
     /**
-     * @notice The number of havvens that are free to be transferred by an account.
-     * @dev When issuing, escrowed havvens are locked first, then non-escrowed
-     * havvens are locked last, but escrowed havvens are not transferable, so they are not included
+     * @notice The number of SNX that are free to be transferred by an account.
+     * @dev When issuing, escrowed SNX are locked first, then non-escrowed
+     * SNX are locked last, but escrowed SNX are not transferable, so they are not included
      * in this calculation.
      */
-    function transferableHavvens(address account)
+    function transferableSynthetix(address account)
         public
         view
-        rateNotStale("HAV")
+        rateNotStale("SNX")
         returns (uint)
     {
-        // How many havvens do they have, excluding escrow?
+        // How many SNX do they have, excluding escrow?
         // Note: We're excluding escrow here because we're interested in their transferable amount
-        // and escrowed Havvens are not transferable.
+        // and escrowed SNX are not transferable.
         uint balance = tokenState.balanceOf(account);
 
         // How many of those will be locked by the amount they've issued?
-        // Assuming issuance ratio is 20%, then issuing 20 HAV of value would require 
-        // 100 HAV to be locked in their wallet to maintain their collateralisation ratio
-        // The locked havven value can exceed their balance.
-        uint lockedHavvenValue = debtBalanceOf(account, "HAV").divideDecimalRound(havvenState.issuanceRatio());
+        // Assuming issuance ratio is 20%, then issuing 20 SNX of value would require
+        // 100 SNX to be locked in their wallet to maintain their collateralisation ratio
+        // The locked synthetix value can exceed their balance.
+        uint lockedSynthetixValue = debtBalanceOf(account, "SNX").divideDecimalRound(synthetixState.issuanceRatio());
 
-        // If we exceed the balance, no Havvens are transferable, otherwise the difference is.
-        if (lockedHavvenValue >= balance) {
+        // If we exceed the balance, no SNX are transferable, otherwise the difference is.
+        if (lockedSynthetixValue >= balance) {
             return 0;
         } else {
-            return balance.sub(lockedHavvenValue);
+            return balance.sub(lockedSynthetixValue);
         }
     }
 
@@ -862,18 +862,18 @@ contract Havven is ExternStateToken {
         _;
     }
 
-    modifier onlyNomin() {
-        bool isNomin = false;
+    modifier onlySynth() {
+        bool isSynth = false;
 
         // No need to repeatedly call this function either
-        for (uint8 i = 0; i < availableNomins.length; i++) {
-            if (availableNomins[i] == msg.sender) {
-                isNomin = true;
+        for (uint8 i = 0; i < availableSynths.length; i++) {
+            if (availableSynths[i] == msg.sender) {
+                isSynth = true;
                 break;
             }
         }
 
-        require(isNomin, "Only nomin allowed");
+        require(isSynth, "Only synth allowed");
         _;
     }
 
@@ -885,15 +885,15 @@ contract Havven is ExternStateToken {
         proxy._emit(abi.encode(newPreferredCurrency), 2, PREFERREDCURRENCYCHANGED_SIG, bytes32(account), 0, 0);
     }
 
-    event NominAdded(bytes4 currencyKey, address newNomin);
-    bytes32 constant NOMINADDED_SIG = keccak256("NominAdded(bytes4,address)");
-    function emitNominAdded(bytes4 currencyKey, address newNomin) internal {
-        proxy._emit(abi.encode(currencyKey, newNomin), 1, NOMINADDED_SIG, 0, 0, 0);
+    event SynthAdded(bytes4 currencyKey, address newSynth);
+    bytes32 constant SYNTHADDED_SIG = keccak256("SynthAdded(bytes4,address)");
+    function emitSynthAdded(bytes4 currencyKey, address newSynth) internal {
+        proxy._emit(abi.encode(currencyKey, newSynth), 1, SYNTHADDED_SIG, 0, 0, 0);
     }
 
-    event NominRemoved(bytes4 currencyKey, address removedNomin);
-    bytes32 constant NOMINREMOVED_SIG = keccak256("NominRemoved(bytes4,address)");
-    function emitNominRemoved(bytes4 currencyKey, address removedNomin) internal {
-        proxy._emit(abi.encode(currencyKey, removedNomin), 1, NOMINREMOVED_SIG, 0, 0, 0);
+    event SynthRemoved(bytes4 currencyKey, address removedSynth);
+    bytes32 constant SYNTHREMOVED_SIG = keccak256("SynthRemoved(bytes4,address)");
+    function emitSynthRemoved(bytes4 currencyKey, address removedSynth) internal {
+        proxy._emit(abi.encode(currencyKey, removedSynth), 1, SYNTHREMOVED_SIG, 0, 0, 0);
     }
 }

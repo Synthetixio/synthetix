@@ -12,13 +12,13 @@ date:       2018-09-12
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
-A contract that any other contract in the Havven system can query
+A contract that any other contract in the Synthetix system can query
 for the current market value of various assets, including
 crypto assets as well as various fiat assets.
 
 This contract assumes that rate updates will completely update
 all rates to their current values. If a rate shock happens
-on a single asset, the oracle will still push updated rates 
+on a single asset, the oracle will still push updated rates
 for all other assets.
 
 -----------------------------------------------------------------
@@ -37,10 +37,10 @@ contract ExchangeRates is SelfDestructible {
 
     using SafeMath for uint;
 
-    // Exchange rates stored by currency code, e.g. 'HAV', or 'nUSD'
+    // Exchange rates stored by currency code, e.g. 'SNX', or 'sUSD'
     mapping(bytes4 => uint) public rates;
 
-    // Update times stored by currency code, e.g. 'HAV', or 'nUSD'
+    // Update times stored by currency code, e.g. 'SNX', or 'sUSD'
     mapping(bytes4 => uint) public lastRateUpdateTimes;
 
     // The address of the oracle which pushes rate updates to this contract
@@ -49,15 +49,15 @@ contract ExchangeRates is SelfDestructible {
     // Do not allow the oracle to submit times any further forward into the future than this constant.
     uint constant ORACLE_FUTURE_LIMIT = 10 minutes;
 
-    // How long will the contract assume the rate of any asset is correct 
+    // How long will the contract assume the rate of any asset is correct
     uint public rateStalePeriod = 3 hours;
 
-    // Each participating currency in the HDR basket is represented as a currency key with
+    // Each participating currency in the XDR basket is represented as a currency key with
     // equal weighting.
     // There are 5 participating currencies, so we'll declare that clearly.
-    bytes4[5] public hdrParticipants;
+    bytes4[5] public xdrParticipants;
 
-    // 
+    //
     // ========== CONSTRUCTOR ==========
 
     /**
@@ -74,7 +74,7 @@ contract ExchangeRates is SelfDestructible {
         // Oracle values - Allows for rate updates
         address _oracle,
         bytes4[] _currencyKeys,
-        uint[] _newRates 
+        uint[] _newRates
     )
         /* Owned is initialised in SelfDestructible */
         SelfDestructible(_owner)
@@ -84,24 +84,24 @@ contract ExchangeRates is SelfDestructible {
 
         oracle = _oracle;
 
-        // The nUSD rate is always 1 and is never stale.
-        rates["nUSD"] = SafeDecimalMath.unit();
+        // The sUSD rate is always 1 and is never stale.
+        rates["sUSD"] = SafeDecimalMath.unit();
 
-        // These are the currencies that make up the HDR basket.
+        // These are the currencies that make up the XDR basket.
         // These are hard coded because:
         //  - This way users can depend on the calculation and know it won't change for this deployment of the contract.
         //  - Adding new currencies would likely introduce some kind of weighting factor, which
         //    isn't worth preemptively adding when all of the currencies in the current basket are weighted at 1.
         //  - The expectation is if this logic needs to be updated, we'll simply deploy a new version of this contract
         //    then point the system at the new version.
-        hdrParticipants = [
-            bytes4("nUSD"),
-            bytes4("nAUD"),
-            bytes4("nCHF"),
-            bytes4("nEUR"),
-            bytes4("nGBP")
+        xdrParticipants = [
+            bytes4("sUSD"),
+            bytes4("sAUD"),
+            bytes4("sCHF"),
+            bytes4("sEUR"),
+            bytes4("sGBP")
         ];
-        
+
         internalUpdateRates(_currencyKeys, _newRates, now);
     }
 
@@ -116,7 +116,7 @@ contract ExchangeRates is SelfDestructible {
      *                 if it takes a long time for the transaction to confirm.
      */
     function updateRates(bytes4[] currencyKeys, uint[] newRates, uint timeSent)
-        external 
+        external
         onlyOracle
         returns(bool)
     {
@@ -132,7 +132,7 @@ contract ExchangeRates is SelfDestructible {
      *                 if it takes a long time for the transaction to confirm.
      */
     function internalUpdateRates(bytes4[] currencyKeys, uint[] newRates, uint timeSent)
-        internal 
+        internal
         returns(bool)
     {
         require(currencyKeys.length == newRates.length, "Currency key array length must match rates array length.");
@@ -151,37 +151,37 @@ contract ExchangeRates is SelfDestructible {
 
         emit RatesUpdated(currencyKeys, newRates);
 
-        // Now update our HDR rate.
-        updateHDRRate(timeSent);
+        // Now update our XDR rate.
+        updateXDRRate(timeSent);
 
         return true;
     }
 
     /**
-     * @notice Update the Havven Drawing Rights exchange rate based on other rates already updated.
+     * @notice Update the Synthetix Drawing Rights exchange rate based on other rates already updated.
      */
-    function updateHDRRate(uint timeSent)
+    function updateXDRRate(uint timeSent)
         internal
     {
         uint total = 0;
 
-        for (uint8 i = 0; i < hdrParticipants.length; i++) {
-            total = rates[hdrParticipants[i]].add(total);
+        for (uint8 i = 0; i < xdrParticipants.length; i++) {
+            total = rates[xdrParticipants[i]].add(total);
         }
 
         // Set the rate
-        rates["HDR"] = total;
+        rates["XDR"] = total;
 
-        // Record that we updated the HDR rate.
-        lastRateUpdateTimes["HDR"] = timeSent;
+        // Record that we updated the XDR rate.
+        lastRateUpdateTimes["XDR"] = timeSent;
 
         // Emit our updated event separate to the others to save
         // moving data around between arrays.
         bytes4[] memory eventCurrencyCode = new bytes4[](1);
-        eventCurrencyCode[0] = "HDR";
+        eventCurrencyCode[0] = "XDR";
 
         uint[] memory eventRate = new uint[](1);
-        eventRate[0] = rates["HDR"];
+        eventRate[0] = rates["XDR"];
 
         emit RatesUpdated(eventCurrencyCode, eventRate);
     }
@@ -220,7 +220,7 @@ contract ExchangeRates is SelfDestructible {
      */
     function setRateStalePeriod(uint _time)
         external
-        onlyOwner 
+        onlyOwner
     {
         rateStalePeriod = _time;
         emit RateStalePeriodUpdated(rateStalePeriod);
@@ -288,12 +288,12 @@ contract ExchangeRates is SelfDestructible {
      * @notice Check if a specific currency's rate hasn't been updated for longer than the stale period.
      */
     function rateIsStale(bytes4 currencyKey)
-        external 
+        external
         view
         returns (bool)
     {
-        // nUSD is a special case and is never stale.
-        if (currencyKey == "nUSD") return false;
+        // sUSD is a special case and is never stale.
+        if (currencyKey == "sUSD") return false;
 
         return lastRateUpdateTimes[currencyKey].add(rateStalePeriod) < now;
     }
@@ -308,10 +308,10 @@ contract ExchangeRates is SelfDestructible {
     {
         // Loop through each key and check whether the data point is stale.
         uint256 i = 0;
-        
+
         while (i < currencyKeys.length) {
-            // nUSD is a special case and is never false
-            if (currencyKeys[i] != "nUSD" && lastRateUpdateTimes[currencyKeys[i]].add(rateStalePeriod) < now) {
+            // sUSD is a special case and is never false
+            if (currencyKeys[i] != "sUSD" && lastRateUpdateTimes[currencyKeys[i]].add(rateStalePeriod) < now) {
                 return true;
             }
             i += 1;
