@@ -370,10 +370,7 @@ const assertInvalidOpcode = async blockOrPromise => {
  *  Gets the ETH balance for the account address
  * 	@param account Ethereum wallet address
  */
-const getEthBalance = async account => {
-	const balance = await web3.eth.getBalance(account);
-	return balance;
-};
+const getEthBalance = account => web3.eth.getBalance(account);
 
 module.exports = {
 	ZERO_ADDRESS,
