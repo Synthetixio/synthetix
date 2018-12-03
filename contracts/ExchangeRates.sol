@@ -144,6 +144,7 @@ contract ExchangeRates is SelfDestructible {
             // truely worthless and still valid. In this scenario, we should
             // delete the rate and remove it from the system.
             require(newRates[i] != 0, "Zero is not a valid rate, please call deleteRate instead.");
+            require(currencyKeys[i] != "sUSD", "sUSD cannot be updated, it's always UNIT.");
 
             rates[currencyKeys[i]] = newRates[i];
             lastRateUpdateTimes[currencyKeys[i]] = timeSent;
