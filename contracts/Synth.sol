@@ -17,12 +17,12 @@ Synthetix-backed stablecoin contract.
 This contract issues synths, which are tokens that mirror various
 flavours of fiat currency.
 
-Synths are issuable by Synthetix holders who have to lock up some
-value of their SNX to issue S * Cmax synths. Where Cmax is
-some value less than 1.
+Synths are issuable by Synthetix Network Token (SNX) holders who 
+have to lock up some value of their SNX to issue S * Cmax synths. 
+Where Cmax issome value less than 1.
 
 A configurable fee is charged on synth transfers and deposited
-into a common pot, which synthetix holders may withdraw from once
+into a common pot, which Synthetix holders may withdraw from once
 per fee period.
 
 -----------------------------------------------------------------
@@ -86,11 +86,9 @@ contract Synth is ExternStateToken {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
-     * @notice Override ERC20 transfer function in order to check
-     * whether the recipient account is frozen. Note that there is
-     * no need to check whether the sender has a frozen account,
-     * since their funds have already been confiscated,
-     * and no new funds can be transferred to it.*/
+     * @notice Override ERC20 transfer function in order to 
+     * subtract the transaction fee and send it to the fee pool
+     * for SNX holders to claim. */
     function transfer(address to, uint value)
         public
         optionalProxy
@@ -108,11 +106,10 @@ contract Synth is ExternStateToken {
         return _internalTransfer(messageSender, to, amountReceived, empty);
     }
 
-    /* Override ERC223 transfer function in order to check
-     * whether the recipient account is frozen. Note that there is
-     * no need to check whether the sender has a frozen account,
-     * since their funds have already been confiscated,
-     * and no new funds can be transferred to it.*/
+    /**
+     * @notice Override ERC223 transfer function in order to 
+     * subtract the transaction fee and send it to the fee pool
+     * for SNX holders to claim. */
     function transfer(address to, uint value, bytes data)
         public
         optionalProxy
@@ -129,8 +126,10 @@ contract Synth is ExternStateToken {
         return _internalTransfer(messageSender, to, amountReceived, data);
     }
 
-    /* Override ERC20 transferFrom function in order to check
-     * whether the recipient account is frozen. */
+    /**
+     * @notice Override ERC20 transferFrom function in order to 
+     * subtract the transaction fee and send it to the fee pool
+     * for SNX holders to claim. */
     function transferFrom(address from, address to, uint value)
         public
         optionalProxy
@@ -152,8 +151,10 @@ contract Synth is ExternStateToken {
         return _internalTransfer(from, to, amountReceived, empty);
     }
 
-    /* Override ERC223 transferFrom function in order to check
-     * whether the recipient account is frozen. */
+    /**
+     * @notice Override ERC223 transferFrom function in order to 
+     * subtract the transaction fee and send it to the fee pool
+     * for SNX holders to claim. */
     function transferFrom(address from, address to, uint value, bytes data)
         public
         optionalProxy
@@ -174,6 +175,8 @@ contract Synth is ExternStateToken {
         return _internalTransfer(from, to, amountReceived, data);
     }
 
+    /* Subtract the transfer fee from the senders account so the 
+     * receiver gets the exact amount specified to send. */
     function transferSenderPaysFee(address to, uint value)
         public
         optionalProxy
@@ -190,6 +193,8 @@ contract Synth is ExternStateToken {
         return _internalTransfer(messageSender, to, value, empty);
     }
 
+    /* Subtract the transfer fee from the senders account so the 
+     * receiver gets the exact amount specified to send. */
     function transferSenderPaysFee(address to, uint value, bytes data)
         public
         optionalProxy
@@ -205,6 +210,8 @@ contract Synth is ExternStateToken {
         return _internalTransfer(messageSender, to, value, data);
     }
 
+    /* Subtract the transfer fee from the senders account so the 
+     * to address receives the exact amount specified to send. */
     function transferFromSenderPaysFee(address from, address to, uint value)
         public
         optionalProxy
@@ -224,6 +231,8 @@ contract Synth is ExternStateToken {
         return _internalTransfer(from, to, value, empty);
     }
 
+    /* Subtract the transfer fee from the senders account so the 
+     * to address receives the exact amount specified to send. */
     function transferFromSenderPaysFee(address from, address to, uint value, bytes data)
         public
         optionalProxy
