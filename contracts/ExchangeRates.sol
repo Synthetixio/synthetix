@@ -240,7 +240,7 @@ contract ExchangeRates is SelfDestructible {
     }
 
     /**
-     * @notice Retrieve the rates for a set of currencies
+     * @notice Retrieve the rates for a list of currencies
      */
     function ratesForCurrencies(bytes4[] currencyKeys)
         public
@@ -257,7 +257,7 @@ contract ExchangeRates is SelfDestructible {
     }
 
     /**
-     * @notice Retrieve the last update time for a specific currency
+     * @notice Retrieve a list of last update times for specific currencies
      */
     function lastRateUpdateTimeForCurrency(bytes4 currencyKey)
         public
