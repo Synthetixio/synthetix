@@ -64,7 +64,7 @@ contract ExchangeRates is SelfDestructible {
      * @dev Constructor
      * @param _owner The owner of this contract.
      * @param _oracle The address which is able to update rate information.
-     * @param _currencyKeys The initial currency rates to store (in order).
+     * @param _currencyKeys The initial currency keys to store (in order).
      * @param _newRates The initial currency amounts for each currency (in order).
      */
     constructor(
