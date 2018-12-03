@@ -445,6 +445,16 @@ contract Synthetix is ExternStateToken {
         );
     }
 
+    /**
+     * @notice Function that allows synth contract to delegate exchanging of a synth that is not the same sourceCurrency
+     * @dev Only the synth contract can call this function
+     * @param from The address to exchange / burn synth from
+     * @param sourceCurrencyKey The source currency you wish to exchange from
+     * @param sourceAmount The amount, specified in UNIT of source currency you wish to exchange
+     * @param destinationCurrencyKey The destination currency you wish to obtain.
+     * @param destinationAddress Where the result should go.
+     * @return Boolean that indicates whether the transfer succeeded or failed.
+     */
     function synthInitiatedExchange(
         address from,
         bytes4 sourceCurrencyKey,
@@ -470,6 +480,14 @@ contract Synthetix is ExternStateToken {
         );
     }
 
+    /**
+     * @notice Function that allows synth contract to delegate sending fee to the fee Pool.
+     * @dev Only the synth contract can call this function
+     * @param from The address to 
+     * @param sourceCurrencyKey source currency fee from.
+     * @param sourceAmount The amount, specified in UNIT of source currency.
+     * @return Boolean that indicates whether the transfer succeeded or failed.
+     */
     function synthInitiatedFeePayment(
         address from,
         bytes4 sourceCurrencyKey,
@@ -499,6 +517,17 @@ contract Synthetix is ExternStateToken {
         return result;
     }
 
+    /**
+     * @notice Function that allows synth contract to delegate sending fee to the fee Pool.
+     * @dev fee pool contract address is not allowed to call function  
+     * @param from The address to move synth from
+     * @param sourceCurrencyKey source currency from.
+     * @param sourceAmount The amount, specified in UNIT of source currency.
+     * @param destinationCurrencyKey The destination currency to obtain.
+     * @param destinationAddress Where the result should go.
+     * @param chargeFee Boolean to charge a fee for transaction.
+     * @return Boolean that indicates whether the transfer succeeded or failed.
+     */
     function _internalExchange(
         address from,
         bytes4 sourceCurrencyKey,
@@ -554,7 +583,12 @@ contract Synthetix is ExternStateToken {
         return true;
     }
 
-
+    /**
+     * @notice Function that registers new synth as they are isseud. Calculate delta to append to synthetixState.
+     * @dev Only internal calls from synthetix address.
+     * @param currencyKey The currency to register synths in, for example sUSD or sAUD
+     * @param amount The amount of synths to register with a base of UNIT
+     */
     function _addToDebtRegister(bytes4 currencyKey, uint amount)
         internal
         optionalProxy
@@ -735,11 +769,10 @@ contract Synthetix is ExternStateToken {
         view
         returns (uint)
     {
-        uint debtBalance = debtBalanceOf(issuer, "SNX");
         uint totalOwnedSynthetix = collateral(issuer);
-
         if (totalOwnedSynthetix == 0) return 0;
 
+        uint debtBalance = debtBalanceOf(issuer, "SNX");
         return debtBalance.divideDecimalRound(totalOwnedSynthetix);
     }
 
