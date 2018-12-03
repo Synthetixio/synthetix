@@ -366,6 +366,15 @@ const assertInvalidOpcode = async blockOrPromise => {
 	assert.equal(errorCaught, true, 'Operation did not cause an invalid opcode error as expected');
 };
 
+/**
+ *  Gets the ETH balance for the account address
+ * 	@param account Ethereum wallet address
+ */
+const getEthBalance = async account => {
+	const balance = await web3.eth.getBalance(account);
+	return balance;
+};
+
 module.exports = {
 	ZERO_ADDRESS,
 
@@ -394,4 +403,6 @@ module.exports = {
 	assertUnitEqual,
 	assertUnitNotEqual,
 	assertRevert,
+
+	getEthBalance,
 };
