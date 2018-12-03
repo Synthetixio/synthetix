@@ -239,6 +239,20 @@ const deployContract = async (contractIdentifier, constructorArguments) => {
 
 	const { action, existingInstance } = contractSettings;
 
+	// Any contract after SafeDecimalMath can automatically get linked.
+	// Doing this with bytecode that doesn't require the library is a no-op.
+	let bytecode = artifacts[contractName].evm.bytecode.object;
+
+	if (deployedContracts.SafeDecimalMath) {
+		bytecode = linker.linkBytecode(bytecode, {
+			[contractName + '.sol']: {
+				SafeDecimalMath: deployedContracts.SafeDecimalMath.options.address,
+			},
+		});
+	}
+
+	artifacts[contractName].evm.bytecode.linkedObject = bytecode;
+
 	if (action === 'use-existing') {
 		console.log('   - Using existing instance');
 
@@ -254,18 +268,6 @@ const deployContract = async (contractIdentifier, constructorArguments) => {
 		);
 	} else if (action === 'deploy') {
 		console.log('   - Deploying new instance...');
-
-		// Any contract after SafeDecimalMath can automatically get linked.
-		// Doing this with bytecode that doesn't require the library is a no-op.
-		let bytecode = artifacts[contractName].evm.bytecode.object;
-
-		if (deployedContracts.SafeDecimalMath) {
-			bytecode = linker.linkBytecode(bytecode, {
-				[contractName + '.sol']: {
-					SafeDecimalMath: deployedContracts.SafeDecimalMath.options.address,
-				},
-			});
-		}
 
 		const newContract = new web3.eth.Contract(artifacts[contractName].abi);
 		deployedContracts[contractIdentifier] = await newContract
@@ -307,22 +309,44 @@ const verifyContracts = async () => {
 			const [contractName] = contract.split('.');
 
 			console.log(`Contract ${contract} not yet verified. Verifying...`);
-			// console.log(
-			// 	'Sending ',
-			// 	qs.stringify({
-			// 		module: 'contract',
-			// 		action: 'verifysourcecode',
-			// 		contractaddress: deployedContracts[contract].options.address,
-			// 		sourceCode: flattenedContracts[`${contractName}.sol`].content,
-			// 		contractname: contractName,
-			// 		compilerversion: 'v' + solc.version().replace('.Emscripten.clang', ''), // The version reported by solc-js is too verbose and needs a v at the front
-			// 		optimizationUsed: 1,
-			// 		runs: 200,
-			// 		libraryname1: 'SafeDecimalMath',
-			// 		libraryaddress1: deployedContracts.SafeDecimalMath.options.address,
-			// 		apikey: process.env.ETHERSCAN_KEY,
-			// 	})
+
+			// Get the transaction that created the contract with its resulting bytecode.
+			result = await axios.get(etherscanUrl, {
+				params: {
+					module: 'account',
+					action: 'txlist',
+					address: deployedContracts[contract].options.address,
+					sort: 'asc',
+					apikey: process.env.ETHERSCAN_KEY,
+				},
+			});
+
+			// Get the bytecode that was in that transaction.
+			const deployedBytecode = result.data.result[0].input;
+
+			// Grab the last 50 characters of the compiled bytecode
+			const compiledBytecode = artifacts[contractName].evm.bytecode.linkedObject.slice(-50);
+			const pattern = new RegExp(`${compiledBytecode}(.+)$`);
+
+			const constructorArguments = pattern.exec(deployedBytecode)[1];
+
+			// // Figure out how many constructor args there are.
+			// const constructorABI = artifacts[contractName].abi.find(
+			// 	method => method.type === 'constructor'
 			// );
+
+			// // Encode each parameter with '' as a way of getting the length of the params.
+			// let totalBytes = 0;
+
+			// for (const input of constructorABI.inputs) {
+			// 	if (input.type === 'address') {
+			// 		totalBytes += 32;
+			// 	} else {
+			// 		throw new Error(`Unknown type: ${input.type}`);
+			// 	}
+			// }
+
+			// const constructorArguments = deployedBytecode.slice(-(totalBytes * 2));
 
 			result = await axios.post(
 				etherscanUrl,
@@ -332,6 +356,7 @@ const verifyContracts = async () => {
 					contractaddress: deployedContracts[contract].options.address,
 					sourceCode: flattenedContracts[`${contractName}.sol`].content,
 					contractname: contractName,
+					constructorArguements: constructorArguments,
 					compilerversion: 'v' + solc.version().replace('.Emscripten.clang', ''), // The version reported by solc-js is too verbose and needs a v at the front
 					optimizationUsed: 1,
 					runs: 200,
