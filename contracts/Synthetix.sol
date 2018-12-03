@@ -885,11 +885,6 @@ contract Synthetix is ExternStateToken {
         _;
     }
 
-    modifier onlyFeePool() {
-        require(msg.sender == address(feePool), "Only fee pool allowed");
-        _;
-    }
-
     modifier notFeeAddress(address account) {
         require(account != feePool.FEE_ADDRESS(), "Fee address not allowed");
         _;
