@@ -32,132 +32,132 @@ const settings = {
 	methodCallGasLimit: 150000,
 	gasPrice: '0.1', // In gwei
 	verifyContracts: true,
-	nomins: ['HDR', 'nUSD', 'nEUR', 'nJPY', 'nAUD', 'nKRW', 'nXAU'],
+	synths: ['XDR', 'sUSD', 'sEUR', 'sJPY', 'sAUD', 'sKRW', 'sXAU'],
 	contracts: {
 		ExchangeRates: {
-			action: 'use-existing',
-			existingInstance: '0xd9c19368d3cE48dB78Ebdbea95699f3f2291E2d1',
+			action: 'deploy',
+			// existingInstance: '0xd9c19368d3cE48dB78Ebdbea95699f3f2291E2d1',
 		},
 		FeePool: {
-			action: 'use-existing',
-			existingInstance: '0x8d3B277B66F0A6baBaB566b104B52a6B0459b6b2',
+			action: 'deploy',
+			// existingInstance: '0x8d3B277B66F0A6baBaB566b104B52a6B0459b6b2',
 		},
-		Havven: {
-			action: 'use-existing',
-			existingInstance: '0x6Fb1d15aBAE4205050A74Df887C0832AE9AcB9b9',
+		Synthetix: {
+			action: 'deploy',
+			// existingInstance: '0x6Fb1d15aBAE4205050A74Df887C0832AE9AcB9b9',
 		},
-		HavvenEscrow: {
-			action: 'use-existing',
-			existingInstance: '0xE6fFb8a5F954E4473276B4A50506AD76AeF906E3',
+		SynthetixEscrow: {
+			action: 'deploy',
+			// existingInstance: '0xE6fFb8a5F954E4473276B4A50506AD76AeF906E3',
 		},
-		HavvenState: {
-			action: 'use-existing',
-			existingInstance: '0xcB579e80cbFc7e50388Da5bc507187b1Cb620620',
+		SynthetixState: {
+			action: 'deploy',
+			// existingInstance: '0xcB579e80cbFc7e50388Da5bc507187b1Cb620620',
 		},
-		Nomin: {
-			HDR: {
-				action: 'use-existing',
-				existingInstance: '0x8EfAc1173c63B4feCe34C1A6Ff9484249d7da17B',
+		Synth: {
+			XDR: {
+				action: 'deploy',
+				// existingInstance: '0x8EfAc1173c63B4feCe34C1A6Ff9484249d7da17B',
 			},
-			nUSD: {
-				action: 'use-existing',
-				existingInstance: '0x6C127031976F3E3195D9669F37D0748554D374AB',
+			sUSD: {
+				action: 'deploy',
+				// existingInstance: '0x6C127031976F3E3195D9669F37D0748554D374AB',
 			},
-			nEUR: {
-				action: 'use-existing',
-				existingInstance: '0x39B0df0b4B051DAc4c39AAaD750E7166BdDF6632',
+			sEUR: {
+				action: 'deploy',
+				// existingInstance: '0x39B0df0b4B051DAc4c39AAaD750E7166BdDF6632',
 			},
-			nJPY: {
-				action: 'use-existing',
-				existingInstance: '0xEE06cb93F88ba08A2a608F8a9B51485906584Ee8',
+			sJPY: {
+				action: 'deploy',
+				// existingInstance: '0xEE06cb93F88ba08A2a608F8a9B51485906584Ee8',
 			},
-			nAUD: {
-				action: 'use-existing',
-				existingInstance: '0x4a3EcF6a282BD90d0a5d54b4621Ea17fB63D4f71',
+			sAUD: {
+				action: 'deploy',
+				// existingInstance: '0x4a3EcF6a282BD90d0a5d54b4621Ea17fB63D4f71',
 			},
-			nKRW: {
-				action: 'use-existing',
-				existingInstance: '0x5DF32526Ef74CfF66c3C3BF501dbfF46AAE03CbA',
+			sKRW: {
+				action: 'deploy',
+				// existingInstance: '0x5DF32526Ef74CfF66c3C3BF501dbfF46AAE03CbA',
 			},
-			nXAU: {
-				action: 'use-existing',
-				existingInstance: '0x45Fd6190e8059bF21ffBC1bb09a72d4aFEba99a0',
+			sXAU: {
+				action: 'deploy',
+				// existingInstance: '0x45Fd6190e8059bF21ffBC1bb09a72d4aFEba99a0',
 			},
 		},
 		Proxy: {
 			FeePool: {
-				action: 'use-existing',
-				existingInstance: '0x46208405b17000331dA99F6BC29697d709e396d3',
+				action: 'deploy',
+				// existingInstance: '0x46208405b17000331dA99F6BC29697d709e396d3',
 			},
-			Havven: {
-				action: 'use-existing',
-				existingInstance: '0xA018Afa45F97E4692b7cba2b8FF19D11dcF0337B',
+			Synthetix: {
+				action: 'deploy',
+				// existingInstance: '0xA018Afa45F97E4692b7cba2b8FF19D11dcF0337B',
 			},
-			HDR: {
-				action: 'use-existing',
-				existingInstance: '0xe239E2bdC7B4eEce218e66511E31aC857D3F568F',
+			XDR: {
+				action: 'deploy',
+				// existingInstance: '0xe239E2bdC7B4eEce218e66511E31aC857D3F568F',
 			},
-			nUSD: {
-				action: 'use-existing',
-				existingInstance: '0x8DAE1b5Db3dAC2e973375B3Cb96a9Cb55ad90a08',
+			sUSD: {
+				action: 'deploy',
+				// existingInstance: '0x8DAE1b5Db3dAC2e973375B3Cb96a9Cb55ad90a08',
 			},
-			nEUR: {
-				action: 'use-existing',
-				existingInstance: '0x37989ac036F6106dC5770CC320Ea8D85c45FCc93',
+			sEUR: {
+				action: 'deploy',
+				// existingInstance: '0x37989ac036F6106dC5770CC320Ea8D85c45FCc93',
 			},
-			nJPY: {
-				action: 'use-existing',
-				existingInstance: '0x9b814d1cf94B9307026F83E797AF5bc46cB54Ee6',
+			sJPY: {
+				action: 'deploy',
+				// existingInstance: '0x9b814d1cf94B9307026F83E797AF5bc46cB54Ee6',
 			},
-			nAUD: {
-				action: 'use-existing',
-				existingInstance: '0x6dcDE527a0A65B1517Cd510D93DD8135Ae127184',
+			sAUD: {
+				action: 'deploy',
+				// existingInstance: '0x6dcDE527a0A65B1517Cd510D93DD8135Ae127184',
 			},
-			nKRW: {
-				action: 'use-existing',
-				existingInstance: '0x33b14EC4Ab8dA71F00F240c91Efc72ab631b0670',
+			sKRW: {
+				action: 'deploy',
+				// existingInstance: '0x33b14EC4Ab8dA71F00F240c91Efc72ab631b0670',
 			},
-			nXAU: {
-				action: 'use-existing',
-				existingInstance: '0xdbA75834fFaBD665e96170dB7be8e86Fc54601C3',
+			sXAU: {
+				action: 'deploy',
+				// existingInstance: '0xdbA75834fFaBD665e96170dB7be8e86Fc54601C3',
 			},
 		},
 		SafeDecimalMath: {
-			action: 'use-existing',
-			existingInstance: '0xecDCbD4C5948FaCbD93E47792B7d2fEC3E7166f6',
+			action: 'deploy',
+			// existingInstance: '0xecDCbD4C5948FaCbD93E47792B7d2fEC3E7166f6',
 		},
 		TokenState: {
-			Havven: {
-				action: 'use-existing',
-				existingInstance: '0xDfBA72F2cCacA496a3012A27351D610eb88677Aa',
+			Synthetix: {
+				action: 'deploy',
+				// existingInstance: '0xDfBA72F2cCacA496a3012A27351D610eb88677Aa',
 			},
-			HDR: {
-				action: 'use-existing',
-				existingInstance: '0x7730940cab2F63645eCd80c98b5e30448715A3B3',
+			XDR: {
+				action: 'deploy',
+				// existingInstance: '0x7730940cab2F63645eCd80c98b5e30448715A3B3',
 			},
-			nUSD: {
-				action: 'use-existing',
-				existingInstance: '0xD739F98B36F53D1511AB7d1e12aA11D9985D4242',
+			sUSD: {
+				action: 'deploy',
+				// existingInstance: '0xD739F98B36F53D1511AB7d1e12aA11D9985D4242',
 			},
-			nEUR: {
-				action: 'use-existing',
-				existingInstance: '0x723C9C73bDA0C3d4A5487845425c2d32b8658c30',
+			sEUR: {
+				action: 'deploy',
+				// existingInstance: '0x723C9C73bDA0C3d4A5487845425c2d32b8658c30',
 			},
-			nJPY: {
-				action: 'use-existing',
-				existingInstance: '0xA904c561939164a350a26a817d9e9620fE41c6DE',
+			sJPY: {
+				action: 'deploy',
+				// existingInstance: '0xA904c561939164a350a26a817d9e9620fE41c6DE',
 			},
-			nAUD: {
-				action: 'use-existing',
-				existingInstance: '0x33e9b09243B07369fEb107D4B56EcD85732368BF',
+			sAUD: {
+				action: 'deploy',
+				// existingInstance: '0x33e9b09243B07369fEb107D4B56EcD85732368BF',
 			},
-			nKRW: {
-				action: 'use-existing',
-				existingInstance: '0x4dfE0232291B1bD6e010dd2e24BF743b3C66843D',
+			sKRW: {
+				action: 'deploy',
+				// existingInstance: '0x4dfE0232291B1bD6e010dd2e24BF743b3C66843D',
 			},
-			nXAU: {
-				action: 'use-existing',
-				existingInstance: '0x27B3173557f03ED855961eF3e916F23aAA85b0E4',
+			sXAU: {
+				action: 'deploy',
+				// existingInstance: '0x27B3173557f03ED855961eF3e916F23aAA85b0E4',
 			},
 		},
 	},
@@ -490,7 +490,7 @@ const deploy = async () => {
 	const exchangeRates = await deployContract('ExchangeRates', [
 		account,
 		account,
-		[web3.utils.asciiToHex('nUSD'), web3.utils.asciiToHex('HAV')],
+		[web3.utils.asciiToHex('sUSD'), web3.utils.asciiToHex('SNX')],
 		[web3.utils.toWei('1', 'ether'), web3.utils.toWei('0.2', 'ether')],
 	]);
 
@@ -512,104 +512,109 @@ const deploy = async () => {
 		await feePoolProxy.methods.setTarget(feePool.address).send(sendParameters());
 	}
 
-	const havvenState = await deployContract('HavvenState', [account, account]);
-	const havvenProxy = await deployContract('Proxy.Havven', [account]);
-	const havvenTokenState = await deployContract('TokenState.Havven', [account, account]);
-	const havven = await deployContract('Havven', [
-		havvenProxy.options.address,
-		havvenTokenState.options.address,
-		havvenState.options.address,
+	const synthetixState = await deployContract('SynthetixState', [account, account]);
+	const synthetixProxy = await deployContract('Proxy.Synthetix', [account]);
+	const synthetixTokenState = await deployContract('TokenState.Synthetix', [account, account]);
+	const synthetix = await deployContract('Synthetix', [
+		synthetixProxy.options.address,
+		synthetixTokenState.options.address,
+		synthetixState.options.address,
 		account,
 		exchangeRates.options.address,
 		feePool.options.address,
 	]);
 
 	if (
-		settings.contracts.Proxy.Havven.action === 'deploy' ||
-		settings.contracts.Havven.action === 'deploy'
+		settings.contracts.Proxy.Synthetix.action === 'deploy' ||
+		settings.contracts.Synthetix.action === 'deploy'
 	) {
-		console.log('Setting target on Havven Proxy...');
-		await havvenProxy.methods.setTarget(havven.options.address).send(sendParameters());
+		console.log('Setting target on Synthetix Proxy...');
+		await synthetixProxy.methods.setTarget(synthetix.options.address).send(sendParameters());
 	}
 
-	if (settings.contracts.TokenState.Havven.action === 'deploy') {
-		console.log('Setting balance on Havven Token State...');
-		await havvenTokenState.methods
+	if (settings.contracts.TokenState.Synthetix.action === 'deploy') {
+		console.log('Setting balance on Synthetix Token State...');
+		await synthetixTokenState.methods
 			.setBalanceOf(account, web3.utils.toWei('100000000'))
 			.send(sendParameters());
 	}
 
 	if (
-		settings.contracts.TokenState.Havven.action === 'deploy' ||
-		settings.contracts.Havven.action === 'deploy'
+		settings.contracts.TokenState.Synthetix.action === 'deploy' ||
+		settings.contracts.Synthetix.action === 'deploy'
 	) {
-		console.log('Setting associated contract on Havven Token State...');
-		await havvenTokenState.methods
-			.setAssociatedContract(havven.options.address)
+		console.log('Setting associated contract on Synthetix Token State...');
+		await synthetixTokenState.methods
+			.setAssociatedContract(synthetix.options.address)
 			.send(sendParameters());
-		console.log('Setting associated contract on Havven State...');
-		await havvenState.methods.setAssociatedContract(havven.options.address).send(sendParameters());
+		console.log('Setting associated contract on Synthetix State...');
+		await synthetixState.methods
+			.setAssociatedContract(synthetix.options.address)
+			.send(sendParameters());
 	}
 
-	const havvenEscrow = await deployContract('HavvenEscrow', [account, havven.options.address]);
+	const synthetixEscrow = await deployContract('SynthetixEscrow', [
+		account,
+		synthetix.options.address,
+	]);
 
 	if (
-		settings.contracts.Havven.action === 'deploy' ||
-		settings.contracts.HavvenEscrow.action === 'deploy'
+		settings.contracts.Synthetix.action === 'deploy' ||
+		settings.contracts.synthetixEscrow.action === 'deploy'
 	) {
-		console.log('Setting escrow on Havven...');
-		await havven.methods.setEscrow(havvenEscrow.options.address).send(sendParameters());
+		console.log('Setting escrow on Synthetix...');
+		await synthetix.methods.setEscrow(synthetixEscrow.options.address).send(sendParameters());
 	}
 
 	if (
 		settings.contracts.FeePool.action === 'deploy' ||
-		settings.contracts.Havven.action === 'deploy'
+		settings.contracts.Synthetix.action === 'deploy'
 	) {
-		console.log('Setting Havven on Fee Pool...');
-		await feePool.methods.setHavven(havven.options.address).send(sendParameters());
+		console.log('Setting Synthetix on Fee Pool...');
+		await feePool.methods.setSynthetix(synthetix.options.address).send(sendParameters());
 	}
 
 	// ----------------
-	// Nomins
+	// Synths
 	// ----------------
-	for (const currencyKey of settings.nomins) {
+	for (const currencyKey of settings.synths) {
 		const tokenState = await deployContract(`TokenState.${currencyKey}`, [account, ZERO_ADDRESS]);
 		const tokenProxy = await deployContract(`Proxy.${currencyKey}`, [account]);
-		const nomin = await deployContract(`Nomin.${currencyKey}`, [
+		const synth = await deployContract(`Synth.${currencyKey}`, [
 			tokenProxy.options.address,
 			tokenState.options.address,
-			havven.options.address,
+			synthetix.options.address,
 			feePool.options.address,
-			`Nomin ${currencyKey}`,
+			`Synth ${currencyKey}`,
 			currencyKey,
 			account,
 			web3.utils.asciiToHex(currencyKey),
 		]);
 
 		if (
-			settings.contracts.Nomin[currencyKey].action === 'deploy' ||
+			settings.contracts.Synth[currencyKey].action === 'deploy' ||
 			settings.contracts.TokenState[currencyKey].action === 'deploy'
 		) {
 			console.log(`Setting associated contract for ${currencyKey} TokenState...`);
 
-			await tokenState.methods.setAssociatedContract(nomin.options.address).send(sendParameters());
+			await tokenState.methods.setAssociatedContract(synth.options.address).send(sendParameters());
 		}
 		if (
 			settings.contracts.Proxy[currencyKey].action === 'deploy' ||
-			settings.contracts.Nomin[currencyKey].action === 'deploy'
+			settings.contracts.Synth[currencyKey].action === 'deploy'
 		) {
 			console.log(`Setting proxy target for ${currencyKey} Proxy...`);
 
-			await tokenProxy.methods.setTarget(nomin.options.address).send(sendParameters());
+			await tokenProxy.methods.setTarget(synth.options.address).send(sendParameters());
 		}
 
 		if (
-			settings.contracts.Nomin[currencyKey].action === 'deploy' ||
-			settings.contracts.Havven.action === 'deploy'
+			settings.contracts.Synth[currencyKey].action === 'deploy' ||
+			settings.contracts.Synthetix.action === 'deploy'
 		) {
-			console.log(`Adding ${currencyKey} to Havven contract...`);
+			console.log(`Adding ${currencyKey} to Synthetix contract...`);
 
-			await havven.methods.addNomin(nomin.options.address).send(sendParameters());
+			await synthetix.methods.addSynth(synth.options.address).send(sendParameters());
 		}
 	}
 
