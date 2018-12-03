@@ -13,44 +13,49 @@ MODULE DESCRIPTION
 -----------------------------------------------------------------
 
 Depot contract. The Depot provides
-a way for users to acquire nomins (Nomin.sol) and havvens
-(Havven.sol) by paying ETH and a way for users to acquire havvens
-(Havven.sol) by paying nomins. Users can also deposit their nomins
+a way for users to acquire synths (Synth.sol) and SNX
+(Synthetix.sol) by paying ETH and a way for users to acquire SNX
+(Synthetix.sol) by paying synths. Users can also deposit their synths
 and allow other users to purchase them with ETH. The ETH is sent
-to the user who offered their nomins for sale.
+to the user who offered their synths for sale.
 
 This smart contract contains a balance of each token, and
-allows the owner of the contract (the Havven Foundation) to
-manage the available balance of havven at their discretion, while
-users are allowed to deposit and withdraw their own nomin deposits
+allows the owner of the contract (the Synthetix Foundation) to
+manage the available balance of synthetix at their discretion, while
+users are allowed to deposit and withdraw their own synth deposits
 if they have not yet been taken up by another user.
 
 -----------------------------------------------------------------
 */
 
-pragma solidity 0.4.24;
+pragma solidity 0.4.25;
 
 import "./SelfDestructible.sol";
 import "./Pausable.sol";
 import "./SafeDecimalMath.sol";
-import "./Havven.sol";
-import "./Nomin.sol";
+import "./Synthetix.sol";
+import "./Synth.sol";
+import "./FeePool.sol";
 
 /**
  * @title Depot Contract.
  */
-contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
+contract Depot is SelfDestructible, Pausable {
+		using SafeMath for uint;
+    using SafeDecimalMath for uint;
 
     /* ========== STATE VARIABLES ========== */
-    Havven public havven;
-    Nomin public nomin;
+    Synthetix public synthetix;
+    Synth public synth;
+		FeePool public feePool;
 
-    // Address where the ether and Nomins raised for selling HAV is transfered to
-    // Any ether raised for selling Nomins gets sent back to whoever deposited the Nomins,
+
+    // Address where the ether and Synths raised for selling SNX is transfered to
+    // Any ether raised for selling Synths gets sent back to whoever deposited the Synths,
     // and doesn't have anything to do with this address.
     address public fundsWallet;
 
-    /* The address of the oracle which pushes the USD price havvens and ether to this contract */
+    /* The address of the oracle which pushes the USD price SNX and ether to this contract */
     address public oracle;
     /* Do not allow the oracle to submit times any further forward into the future than
        this constant. */
@@ -61,21 +66,21 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
 
     /* The time the prices were last updated */
     uint public lastPriceUpdateTime;
-    /* The USD price of havvens denominated in UNIT */
-    uint public usdToHavPrice;
+    /* The USD price of SNX denominated in UNIT */
+    uint public usdToSnxPrice;
     /* The USD price of ETH denominated in UNIT */
     uint public usdToEthPrice;
 
     /* Stores deposits from users. */
-    struct nominDeposit {
+    struct synthDeposit {
         // The user that made the deposit
         address user;
-        // The amount (in Nomins) that they deposited
+        // The amount (in Synths) that they deposited
         uint amount;
     }
 
     /* User deposits are sold on a FIFO (First in First out) basis. When users deposit
-       nomins with us, they get added this queue, which then gets fulfilled in order.
+       synths with us, they get added this queue, which then gets fulfilled in order.
        Conceptually this fits well in an array, but then when users fill an order we
        end up copying the whole array around, so better to use an index mapping instead
        for gas performance reasons.
@@ -85,23 +90,23 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
        the length of the "array" by querying depositEndIndex - depositStartIndex. All index
        operations use safeAdd, so there is no way to overflow, so that means there is a
        very large but finite amount of deposits this contract can handle before it fills up. */
-    mapping(uint => nominDeposit) public deposits;
+    mapping(uint => synthDeposit) public deposits;
     // The starting index of our queue inclusive
     uint public depositStartIndex;
     // The ending index of our queue exclusive
     uint public depositEndIndex;
 
-    /* This is a convenience variable so users and dApps can just query how much nUSD
+    /* This is a convenience variable so users and dApps can just query how much sUSD
        we have available for purchase without having to iterate the mapping with a
        O(n) amount of calls for something we'll probably want to display quite regularly. */
     uint public totalSellableDeposits;
 
-    // The minimum amount of nUSD required to enter the FiFo queue
-    uint public minimumDepositAmount = 50 * UNIT;
+    // The minimum amount of sUSD required to enter the FiFo queue
+    uint public minimumDepositAmount = 50 * SafeDecimalMath.unit();
 
-    // If a user deposits a nomin amount < the minimumDepositAmount the contract will keep
+    // If a user deposits a synth amount < the minimumDepositAmount the contract will keep
     // the total of small deposits which will not be sold on market and the sender
-    // must call withdrawMyDepositedNomins() to get them back.
+    // must call withdrawMyDepositedSynths() to get them back.
     mapping(address => uint) public smallDeposits;
 
 
@@ -110,12 +115,12 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
     /**
      * @dev Constructor
      * @param _owner The owner of this contract.
-     * @param _fundsWallet The recipient of ETH and Nomins that are sent to this contract while exchanging.
-     * @param _havven The Havven contract we'll interact with for balances and sending.
-     * @param _nomin The Nomin contract we'll interact with for balances and sending.
+     * @param _fundsWallet The recipient of ETH and Synths that are sent to this contract while exchanging.
+     * @param _synthetix The Synthetix contract we'll interact with for balances and sending.
+     * @param _synth The Synth contract we'll interact with for balances and sending.
      * @param _oracle The address which is able to update price information.
      * @param _usdToEthPrice The current price of ETH in USD, expressed in UNIT.
-     * @param _usdToHavPrice The current price of Havven in USD, expressed in UNIT.
+     * @param _usdToSnxPrice The current price of Synthetix in USD, expressed in UNIT.
      */
     constructor(
         // Ownable
@@ -125,13 +130,14 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
         address _fundsWallet,
 
         // Other contracts needed
-        Havven _havven,
-        Nomin _nomin,
+        Synthetix _synthetix,
+        Synth _synth,
+				FeePool _feePool,
 
         // Oracle values - Allows for price updates
         address _oracle,
         uint _usdToEthPrice,
-        uint _usdToHavPrice
+        uint _usdToSnxPrice
     )
         /* Owned is initialised in SelfDestructible */
         SelfDestructible(_owner)
@@ -139,11 +145,12 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
         public
     {
         fundsWallet = _fundsWallet;
-        havven = _havven;
-        nomin = _nomin;
+        synthetix = _synthetix;
+        synth = _synth;
+				feePool = _feePool;
         oracle = _oracle;
         usdToEthPrice = _usdToEthPrice;
-        usdToHavPrice = _usdToHavPrice;
+        usdToSnxPrice = _usdToSnxPrice;
         lastPriceUpdateTime = now;
     }
 
@@ -151,7 +158,7 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
 
     /**
      * @notice Set the funds wallet where ETH raised is held
-     * @param _fundsWallet The new address to forward ETH and Nomins to
+     * @param _fundsWallet The new address to forward ETH and Synths to
      */
     function setFundsWallet(address _fundsWallet)
         external
@@ -162,7 +169,7 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
     }
 
     /**
-     * @notice Set the Oracle that pushes the havven price to this contract
+     * @notice Set the Oracle that pushes the synthetix price to this contract
      * @param _oracle The new oracle address
      */
     function setOracle(address _oracle)
@@ -174,27 +181,27 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
     }
 
     /**
-     * @notice Set the Nomin contract that the issuance controller uses to issue Nomins.
-     * @param _nomin The new nomin contract target
+     * @notice Set the Synth contract that the issuance controller uses to issue Synths.
+     * @param _synth The new synth contract target
      */
-    function setNomin(Nomin _nomin)
+    function setSynth(Synth _synth)
         external
         onlyOwner
     {
-        nomin = _nomin;
-        emit NominUpdated(_nomin);
+        synth = _synth;
+        emit SynthUpdated(_synth);
     }
 
     /**
-     * @notice Set the Havven contract that the issuance controller uses to issue Havvens.
-     * @param _havven The new havven contract target
+     * @notice Set the Synthetix contract that the issuance controller uses to issue SNX.
+     * @param _synthetix The new synthetix contract target
      */
-    function setHavven(Havven _havven)
+    function setSynthetix(Synthetix _synthetix)
         external
         onlyOwner
     {
-        havven = _havven;
-        emit HavvenUpdated(_havven);
+        synthetix = _synthetix;
+        emit SynthetixUpdated(_synthetix);
     }
 
     /**
@@ -210,27 +217,27 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
     }
 
     /**
-     * @notice Set the minimum deposit amount required to depoist nUSD into the FIFO queue
-     * @param _amount The new new minimum number of nUSD required to deposit
+     * @notice Set the minimum deposit amount required to depoist sUSD into the FIFO queue
+     * @param _amount The new new minimum number of sUSD required to deposit
      */
     function setMinimumDepositAmount(uint _amount)
         external
         onlyOwner
     {
         //Do not allow us to set it less than 1 dollar opening up to fractional desposits in the queue again
-        require(_amount > 1 * UNIT);
+        require(_amount > 1 * SafeDecimalMath.unit());
         minimumDepositAmount = _amount;
         emit MinimumDepositAmountUpdated(minimumDepositAmount);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
     /**
-     * @notice Access point for the oracle to update the prices of havvens / eth.
+     * @notice Access point for the oracle to update the prices of SNX / eth.
      * @param newEthPrice The current price of ether in USD, specified to 18 decimal places.
-     * @param newHavvenPrice The current price of havvens in USD, specified to 18 decimal places.
+     * @param newSynthetixPrice The current price of SNX in USD, specified to 18 decimal places.
      * @param timeSent The timestamp from the oracle when the transaction was created. This ensures we don't consider stale prices as current in times of heavy network congestion.
      */
-    function updatePrices(uint newEthPrice, uint newHavvenPrice, uint timeSent)
+    function updatePrices(uint newEthPrice, uint newSynthetixPrice, uint timeSent)
         external
         onlyOracle
     {
@@ -240,48 +247,48 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
         require(timeSent < (now + ORACLE_FUTURE_LIMIT), "Time must be less than now + ORACLE_FUTURE_LIMIT");
 
         usdToEthPrice = newEthPrice;
-        usdToHavPrice = newHavvenPrice;
+        usdToSnxPrice = newSynthetixPrice;
         lastPriceUpdateTime = timeSent;
 
-        emit PricesUpdated(usdToEthPrice, usdToHavPrice, lastPriceUpdateTime);
+        emit PricesUpdated(usdToEthPrice, usdToSnxPrice, lastPriceUpdateTime);
     }
 
     /**
-     * @notice Fallback function (exchanges ETH to nUSD)
+     * @notice Fallback function (exchanges ETH to sUSD)
      */
     function ()
         external
         payable
     {
-        exchangeEtherForNomins();
+        exchangeEtherForSynths();
     }
 
     /**
-     * @notice Exchange ETH to nUSD.
+     * @notice Exchange ETH to sUSD.
      */
-    function exchangeEtherForNomins()
+    function exchangeEtherForSynths()
         public
         payable
         pricesNotStale
         notPaused
-        returns (uint) // Returns the number of Nomins (nUSD) received
+        returns (uint) // Returns the number of Synths (sUSD) received
     {
         uint ethToSend;
 
         // The multiplication works here because usdToEthPrice is specified in
         // 18 decimal places, just like our currency base.
-        uint requestedToPurchase = safeMul_dec(msg.value, usdToEthPrice);
+        uint requestedToPurchase = msg.value.multiplyDecimal(usdToEthPrice);
         uint remainingToFulfill = requestedToPurchase;
 
         // Iterate through our outstanding deposits and sell them one at a time.
         for (uint i = depositStartIndex; remainingToFulfill > 0 && i < depositEndIndex; i++) {
-            nominDeposit memory deposit = deposits[i];
+            synthDeposit memory deposit = deposits[i];
 
             // If it's an empty spot in the queue from a previous withdrawal, just skip over it and
             // update the queue. It's already been deleted.
             if (deposit.user == address(0)) {
 
-                depositStartIndex = safeAdd(depositStartIndex, 1);
+                depositStartIndex = depositStartIndex.add(1);
             } else {
                 // If the deposit can more than fill the order, we can do this
                 // without touching the structure of our queue.
@@ -290,15 +297,15 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
                     // Ok, this deposit can fulfill the whole remainder. We don't need
                     // to change anything about our queue we can just fulfill it.
                     // Subtract the amount from our deposit and total.
-                    deposit.amount = safeSub(deposit.amount, remainingToFulfill);
-                    totalSellableDeposits = safeSub(totalSellableDeposits, remainingToFulfill);
+                    deposit.amount = deposit.amount.sub(remainingToFulfill);
+                    totalSellableDeposits = totalSellableDeposits.sub(remainingToFulfill);
 
                     // Transfer the ETH to the depositor. Send is used instead of transfer
                     // so a non payable contract won't block the FIFO queue on a failed
-                    // ETH payable for nomins transaction. The proceeds to be sent to the
-                    // havven foundation funds wallet. This is to protect all depositors
+                    // ETH payable for synths transaction. The proceeds to be sent to the
+                    // synthetix foundation funds wallet. This is to protect all depositors
                     // in the queue in this rare case that may occur.
-                    ethToSend = safeDiv_dec(remainingToFulfill, usdToEthPrice);
+                    ethToSend = remainingToFulfill.divideDecimal(usdToEthPrice);
                     if(!deposit.user.send(ethToSend)) {
                         fundsWallet.transfer(ethToSend);
                         emit NonPayableContract(deposit.user, ethToSend);
@@ -306,11 +313,11 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
                         emit ClearedDeposit(msg.sender, deposit.user, ethToSend, remainingToFulfill, i);
                     }
 
-                    // And the Nomins to the recipient.
-                    // Note: Fees are calculated by the Nomin contract, so when
+                    // And the Synths to the recipient.
+                    // Note: Fees are calculated by the Synth contract, so when
                     //       we request a specific transfer here, the fee is
                     //       automatically deducted and sent to the fee pool.
-                    nomin.transfer(msg.sender, remainingToFulfill);
+                    synth.transfer(msg.sender, remainingToFulfill);
 
                     // And we have nothing left to fulfill on this order.
                     remainingToFulfill = 0;
@@ -320,16 +327,16 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
                     // Free the storage because we can.
                     delete deposits[i];
                     // Bump our start index forward one.
-                    depositStartIndex = safeAdd(depositStartIndex, 1);
+                    depositStartIndex = depositStartIndex.add(1);
                     // We also need to tell our total it's decreased
-                    totalSellableDeposits = safeSub(totalSellableDeposits, deposit.amount);
+                    totalSellableDeposits = totalSellableDeposits.sub(deposit.amount);
 
                     // Now fulfill by transfering the ETH to the depositor. Send is used instead of transfer
                     // so a non payable contract won't block the FIFO queue on a failed
-                    // ETH payable for nomins transaction. The proceeds to be sent to the
-                    // havven foundation funds wallet. This is to protect all depositors
+                    // ETH payable for synths transaction. The proceeds to be sent to the
+                    // synthetix foundation funds wallet. This is to protect all depositors
                     // in the queue in this rare case that may occur.
-                    ethToSend = safeDiv_dec(deposit.amount, usdToEthPrice);
+                    ethToSend = deposit.amount.divideDecimal(usdToEthPrice);
                     if(!deposit.user.send(ethToSend)) {
                         fundsWallet.transfer(ethToSend);
                         emit NonPayableContract(deposit.user, ethToSend);
@@ -337,15 +344,15 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
                         emit ClearedDeposit(msg.sender, deposit.user, ethToSend, deposit.amount, i);
                     }
 
-                    // And the Nomins to the recipient.
-                    // Note: Fees are calculated by the Nomin contract, so when
+                    // And the Synths to the recipient.
+                    // Note: Fees are calculated by the Synth contract, so when
                     //       we request a specific transfer here, the fee is
                     //       automatically deducted and sent to the fee pool.
-                    nomin.transfer(msg.sender, deposit.amount);
+                    synth.transfer(msg.sender, deposit.amount);
 
                     // And subtract the order from our outstanding amount remaining
                     // for the next iteration of the loop.
-                    remainingToFulfill = safeSub(remainingToFulfill, deposit.amount);
+                    remainingToFulfill = remainingToFulfill.sub(deposit.amount);
                 }
             }
         }
@@ -353,227 +360,227 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
         // Ok, if we're here and 'remainingToFulfill' isn't zero, then
         // we need to refund the remainder of their ETH back to them.
         if (remainingToFulfill > 0) {
-            msg.sender.transfer(safeDiv_dec(remainingToFulfill, usdToEthPrice));
+            msg.sender.transfer(remainingToFulfill.divideDecimal(usdToEthPrice));
         }
 
         // How many did we actually give them?
-        uint fulfilled = safeSub(requestedToPurchase, remainingToFulfill);
+        uint fulfilled = requestedToPurchase.sub(remainingToFulfill);
 
         if (fulfilled > 0) {
             // Now tell everyone that we gave them that many (only if the amount is greater than 0).
-            emit Exchange("ETH", msg.value, "nUSD", fulfilled);
+            emit Exchange("ETH", msg.value, "sUSD", fulfilled);
         }
 
         return fulfilled;
     }
 
     /**
-     * @notice Exchange ETH to nUSD while insisting on a particular rate. This allows a user to
+     * @notice Exchange ETH to sUSD while insisting on a particular rate. This allows a user to
      *         exchange while protecting against frontrunning by the contract owner on the exchange rate.
      * @param guaranteedRate The exchange rate (ether price) which must be honored or the call will revert.
      */
-    function exchangeEtherForNominsAtRate(uint guaranteedRate)
+    function exchangeEtherForSynthsAtRate(uint guaranteedRate)
         public
         payable
         pricesNotStale
         notPaused
-        returns (uint) // Returns the number of Nomins (nUSD) received
+        returns (uint) // Returns the number of Synths (sUSD) received
     {
         require(guaranteedRate == usdToEthPrice);
 
-        return exchangeEtherForNomins();
+        return exchangeEtherForSynths();
     }
 
 
     /**
-     * @notice Exchange ETH to HAV.
+     * @notice Exchange ETH to SNX.
      */
-    function exchangeEtherForHavvens()
+    function exchangeEtherForSynthetix()
         public
         payable
         pricesNotStale
         notPaused
-        returns (uint) // Returns the number of Havvens (HAV) received
+        returns (uint) // Returns the number of SNX received
     {
-        // How many Havvens are they going to be receiving?
-        uint havvensToSend = havvensReceivedForEther(msg.value);
+        // How many SNX are they going to be receiving?
+        uint synthetixToSend = synthetixReceivedForEther(msg.value);
 
         // Store the ETH in our funds wallet
         fundsWallet.transfer(msg.value);
 
-        // And send them the Havvens.
-        havven.transfer(msg.sender, havvensToSend);
+        // And send them the SNX.
+        synthetix.transfer(msg.sender, synthetixToSend);
 
-        emit Exchange("ETH", msg.value, "HAV", havvensToSend);
+        emit Exchange("ETH", msg.value, "SNX", synthetixToSend);
 
-        return havvensToSend;
+        return synthetixToSend;
     }
 
     /**
-     * @notice Exchange ETH to HAV while insisting on a particular set of rates. This allows a user to
+     * @notice Exchange ETH to SNX while insisting on a particular set of rates. This allows a user to
      *         exchange while protecting against frontrunning by the contract owner on the exchange rates.
      * @param guaranteedEtherRate The ether exchange rate which must be honored or the call will revert.
-     * @param guaranteedHavvenRate The havven exchange rate which must be honored or the call will revert.
+     * @param guaranteedSynthetixRate The synthetix exchange rate which must be honored or the call will revert.
      */
-    function exchangeEtherForHavvensAtRate(uint guaranteedEtherRate, uint guaranteedHavvenRate)
+    function exchangeEtherForSynthetixAtRate(uint guaranteedEtherRate, uint guaranteedSynthetixRate)
         public
         payable
         pricesNotStale
         notPaused
-        returns (uint) // Returns the number of Havvens (HAV) received
+        returns (uint) // Returns the number of SNX received
     {
         require(guaranteedEtherRate == usdToEthPrice);
-        require(guaranteedHavvenRate == usdToHavPrice);
+        require(guaranteedSynthetixRate == usdToSnxPrice);
 
-        return exchangeEtherForHavvens();
+        return exchangeEtherForSynthetix();
     }
 
 
     /**
-     * @notice Exchange nUSD for Havvens
-     * @param nominAmount The amount of nomins the user wishes to exchange.
+     * @notice Exchange sUSD for SNX
+     * @param synthAmount The amount of synths the user wishes to exchange.
      */
-    function exchangeNominsForHavvens(uint nominAmount)
+    function exchangeSynthsForSynthetix(uint synthAmount)
         public
         pricesNotStale
         notPaused
-        returns (uint) // Returns the number of Havvens (HAV) received
+        returns (uint) // Returns the number of SNX received
     {
-        // How many Havvens are they going to be receiving?
-        uint havvensToSend = havvensReceivedForNomins(nominAmount);
+        // How many SNX are they going to be receiving?
+        uint synthetixToSend = synthetixReceivedForSynths(synthAmount);
 
-        // Ok, transfer the Nomins to our funds wallet.
+        // Ok, transfer the Synths to our funds wallet.
         // These do not go in the deposit queue as they aren't for sale as such unless
         // they're sent back in from the funds wallet.
-        nomin.transferFrom(msg.sender, fundsWallet, nominAmount);
+        synth.transferFrom(msg.sender, fundsWallet, synthAmount);
 
-        // And send them the Havvens.
-        havven.transfer(msg.sender, havvensToSend);
+        // And send them the SNX.
+        synthetix.transfer(msg.sender, synthetixToSend);
 
-        emit Exchange("nUSD", nominAmount, "HAV", havvensToSend);
+        emit Exchange("sUSD", synthAmount, "SNX", synthetixToSend);
 
-        return havvensToSend;
+        return synthetixToSend;
     }
 
     /**
-     * @notice Exchange nUSD for Havvens while insisting on a particular rate. This allows a user to
+     * @notice Exchange sUSD for SNX while insisting on a particular rate. This allows a user to
      *         exchange while protecting against frontrunning by the contract owner on the exchange rate.
-     * @param nominAmount The amount of nomins the user wishes to exchange.
-     * @param guaranteedRate A rate (havven price) the caller wishes to insist upon.
+     * @param synthAmount The amount of synths the user wishes to exchange.
+     * @param guaranteedRate A rate (synthetix price) the caller wishes to insist upon.
      */
-    function exchangeNominsForHavvensAtRate(uint nominAmount, uint guaranteedRate)
+    function exchangeSynthsForSynthetixAtRate(uint synthAmount, uint guaranteedRate)
         public
         pricesNotStale
         notPaused
-        returns (uint) // Returns the number of Havvens (HAV) received
+        returns (uint) // Returns the number of SNX received
     {
-        require(guaranteedRate == usdToHavPrice);
+        require(guaranteedRate == usdToSnxPrice);
 
-        return exchangeNominsForHavvens(nominAmount);
+        return exchangeSynthsForSynthetix(synthAmount);
     }
 
     /**
-     * @notice Allows the owner to withdraw havvens from this contract if needed.
-     * @param amount The amount of havvens to attempt to withdraw (in 18 decimal places).
+     * @notice Allows the owner to withdraw SNX from this contract if needed.
+     * @param amount The amount of SNX to attempt to withdraw (in 18 decimal places).
      */
-    function withdrawHavvens(uint amount)
+    function withdrawSynthetix(uint amount)
         external
         onlyOwner
     {
-        havven.transfer(owner, amount);
+        synthetix.transfer(owner, amount);
 
         // We don't emit our own events here because we assume that anyone
         // who wants to watch what the Issuance Controller is doing can
-        // just watch ERC20 events from the Nomin and/or Havven contracts
+        // just watch ERC20 events from the Synth and/or Synthetix contracts
         // filtered to our address.
     }
 
     /**
-     * @notice Allows a user to withdraw all of their previously deposited nomins from this contract if needed.
+     * @notice Allows a user to withdraw all of their previously deposited synths from this contract if needed.
      *         Developer note: We could keep an index of address to deposits to make this operation more efficient
      *         but then all the other operations on the queue become less efficient. It's expected that this
      *         function will be very rarely used, so placing the inefficiency here is intentional. The usual
      *         use case does not involve a withdrawal.
      */
-    function withdrawMyDepositedNomins()
+    function withdrawMyDepositedSynths()
         external
     {
-        uint nominsToSend = 0;
+        uint synthsToSend = 0;
 
         for (uint i = depositStartIndex; i < depositEndIndex; i++) {
-            nominDeposit memory deposit = deposits[i];
+            synthDeposit memory deposit = deposits[i];
 
             if (deposit.user == msg.sender) {
                 // The user is withdrawing this deposit. Remove it from our queue.
                 // We'll just leave a gap, which the purchasing logic can walk past.
-                nominsToSend = safeAdd(nominsToSend, deposit.amount);
+                synthsToSend = synthsToSend.add(deposit.amount);
                 delete deposits[i];
                 //Let the DApps know we've removed this deposit
-                emit NominDepositRemoved(deposit.user, deposit.amount, i);
+                emit SynthDepositRemoved(deposit.user, deposit.amount, i);
             }
         }
 
         // Update our total
-        totalSellableDeposits = safeSub(totalSellableDeposits, nominsToSend);
+        totalSellableDeposits = totalSellableDeposits.sub(synthsToSend);
 
         // Check if the user has tried to send deposit amounts < the minimumDepositAmount to the FIFO
         // queue which would have been added to this mapping for withdrawal only
-        nominsToSend = safeAdd(nominsToSend, smallDeposits[msg.sender]);
+        synthsToSend = synthsToSend.add(smallDeposits[msg.sender]);
         smallDeposits[msg.sender] = 0;
 
         // If there's nothing to do then go ahead and revert the transaction
-        require(nominsToSend > 0, "You have no deposits to withdraw.");
+        require(synthsToSend > 0, "You have no deposits to withdraw.");
 
         // Send their deposits back to them (minus fees)
-        nomin.transfer(msg.sender, nominsToSend);
+        synth.transfer(msg.sender, synthsToSend);
 
-        emit NominWithdrawal(msg.sender, nominsToSend);
+        emit SynthWithdrawal(msg.sender, synthsToSend);
     }
 
     /**
-     * @notice depositNomins: Allows users to deposit nomins via the approve / transferFrom workflow
-     *         if they'd like. You can equally just transfer nomins to this contract and it will work
+     * @notice depositSynths: Allows users to deposit synths via the approve / transferFrom workflow
+     *         if they'd like. You can equally just transfer synths to this contract and it will work
      *         exactly the same way but with one less call (and therefore cheaper transaction fees)
-     * @param amount The amount of nUSD you wish to deposit (must have been approved first)
+     * @param amount The amount of sUSD you wish to deposit (must have been approved first)
      */
-    function depositNomins(uint amount)
+    function depositSynths(uint amount)
         external
     {
-        // Grab the amount of nomins
-        nomin.transferFrom(msg.sender, this, amount);
+        // Grab the amount of synths
+        synth.transferFrom(msg.sender, this, amount);
 
-        // Note, we don't need to add them to the deposit list below, as the Nomin contract itself will
+        // Note, we don't need to add them to the deposit list below, as the Synth contract itself will
         // call tokenFallback when the transfer happens, adding their deposit to the queue.
     }
 
     /**
-     * @notice Triggers when users send us HAV or nUSD, but the modifier only allows nUSD calls to proceed.
-     * @param from The address sending the nUSD
-     * @param amount The amount of nUSD
+     * @notice Triggers when users send us SNX or sUSD, but the modifier only allows sUSD calls to proceed.
+     * @param from The address sending the sUSD
+     * @param amount The amount of sUSD
      */
     function tokenFallback(address from, uint amount, bytes data)
         external
-        onlyNomin
+        onlySynth
         returns (bool)
     {
         // A minimum deposit amount is designed to protect purchasers from over paying
-        // gas for fullfilling multiple small nomin deposits
+        // gas for fullfilling multiple small synth deposits
         if (amount < minimumDepositAmount) {
-            // We cant fail/revert the transaction or send the nomins back in a reentrant call.
-            // So we will keep your nomins balance seperate from the FIFO queue so you can withdraw them
-            smallDeposits[from] = safeAdd(smallDeposits[from], amount);
+            // We cant fail/revert the transaction or send the synths back in a reentrant call.
+            // So we will keep your synths balance seperate from the FIFO queue so you can withdraw them
+            smallDeposits[from] = smallDeposits[from].add(amount);
 
-            emit NominDepositNotAccepted(from, amount, minimumDepositAmount);
+            emit SynthDepositNotAccepted(from, amount, minimumDepositAmount);
         } else {
             // Ok, thanks for the deposit, let's queue it up.
-            deposits[depositEndIndex] = nominDeposit({ user: from, amount: amount });
-            emit NominDeposit(from, amount, depositEndIndex);
+            deposits[depositEndIndex] = synthDeposit({ user: from, amount: amount });
+            emit SynthDeposit(from, amount, depositEndIndex);
 
             // Walk our index forward as well.
-            depositEndIndex = safeAdd(depositEndIndex, 1);
+            depositEndIndex = depositEndIndex.add(1);
 
             // And add it to our total.
-            totalSellableDeposits = safeAdd(totalSellableDeposits, amount);
+            totalSellableDeposits = totalSellableDeposits.add(amount);
         }
     }
 
@@ -586,58 +593,58 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
         view
         returns (bool)
     {
-        return safeAdd(lastPriceUpdateTime, priceStalePeriod) < now;
+        return lastPriceUpdateTime.add(priceStalePeriod) < now;
     }
 
     /**
-     * @notice Calculate how many havvens you will receive if you transfer
-     *         an amount of nomins.
-     * @param amount The amount of nomins (in 18 decimal places) you want to ask about
+     * @notice Calculate how many SNX you will receive if you transfer
+     *         an amount of synths.
+     * @param amount The amount of synths (in 18 decimal places) you want to ask about
      */
-    function havvensReceivedForNomins(uint amount)
+    function synthetixReceivedForSynths(uint amount)
         public
         view
         returns (uint)
     {
-        // How many nomins would we receive after the transfer fee?
-        uint nominsReceived = nomin.amountReceived(amount);
+        // How many synths would we receive after the transfer fee?
+        uint synthsReceived = feePool.amountReceivedFromTransfer(amount);
 
-        // And what would that be worth in havvens based on the current price?
-        return safeDiv_dec(nominsReceived, usdToHavPrice);
+        // And what would that be worth in SNX based on the current price?
+        return synthsReceived.divideDecimal(usdToSnxPrice);
     }
 
     /**
-     * @notice Calculate how many havvens you will receive if you transfer
+     * @notice Calculate how many SNX you will receive if you transfer
      *         an amount of ether.
      * @param amount The amount of ether (in wei) you want to ask about
      */
-    function havvensReceivedForEther(uint amount)
+    function synthetixReceivedForEther(uint amount)
         public
         view
         returns (uint)
     {
-        // How much is the ETH they sent us worth in nUSD (ignoring the transfer fee)?
-        uint valueSentInNomins = safeMul_dec(amount, usdToEthPrice);
+        // How much is the ETH they sent us worth in sUSD (ignoring the transfer fee)?
+        uint valueSentInSynths = amount.multiplyDecimal(usdToEthPrice);
 
-        // Now, how many HAV will that USD amount buy?
-        return havvensReceivedForNomins(valueSentInNomins);
+        // Now, how many SNX will that USD amount buy?
+        return synthetixReceivedForSynths(valueSentInSynths);
     }
 
     /**
-     * @notice Calculate how many nomins you will receive if you transfer
+     * @notice Calculate how many synths you will receive if you transfer
      *         an amount of ether.
      * @param amount The amount of ether (in wei) you want to ask about
      */
-    function nominsReceivedForEther(uint amount)
+    function synthsReceivedForEther(uint amount)
         public
         view
         returns (uint)
     {
-        // How many nomins would that amount of ether be worth?
-        uint nominsTransferred = safeMul_dec(amount, usdToEthPrice);
+        // How many synths would that amount of ether be worth?
+        uint synthsTransferred = amount.multiplyDecimal(usdToEthPrice);
 
         // And how many of those would you receive after a transfer (deducting the transfer fee)
-        return nomin.amountReceived(nominsTransferred);
+        return feePool.amountReceivedFromTransfer(synthsTransferred);
     }
 
     /* ========== MODIFIERS ========== */
@@ -648,10 +655,10 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
         _;
     }
 
-    modifier onlyNomin
+    modifier onlySynth
     {
-        // We're only interested in doing anything on receiving nUSD.
-        require(msg.sender == address(nomin), "Only the nomin contract can perform this action");
+        // We're only interested in doing anything on receiving sUSD.
+        require(msg.sender == address(synth), "Only the synth contract can perform this action");
         _;
     }
 
@@ -665,15 +672,15 @@ contract Depot is SafeDecimalMath, SelfDestructible, Pausable {
 
     event FundsWalletUpdated(address newFundsWallet);
     event OracleUpdated(address newOracle);
-    event NominUpdated(Nomin newNominContract);
-    event HavvenUpdated(Havven newHavvenContract);
+    event SynthUpdated(Synth newSynthContract);
+    event SynthetixUpdated(Synthetix newSynthetixContract);
     event PriceStalePeriodUpdated(uint priceStalePeriod);
-    event PricesUpdated(uint newEthPrice, uint newHavvenPrice, uint timeSent);
+    event PricesUpdated(uint newEthPrice, uint newSynthetixPrice, uint timeSent);
     event Exchange(string fromCurrency, uint fromAmount, string toCurrency, uint toAmount);
-    event NominWithdrawal(address user, uint amount);
-    event NominDeposit(address indexed user, uint amount, uint indexed depositIndex);
-    event NominDepositRemoved(address indexed user, uint amount, uint indexed depositIndex);
-    event NominDepositNotAccepted(address user, uint amount, uint minimum);
+    event SynthWithdrawal(address user, uint amount);
+    event SynthDeposit(address indexed user, uint amount, uint indexed depositIndex);
+    event SynthDepositRemoved(address indexed user, uint amount, uint indexed depositIndex);
+    event SynthDepositNotAccepted(address user, uint amount, uint minimum);
     event MinimumDepositAmountUpdated(uint amount);
     event NonPayableContract(address indexed receiver, uint amount);
     event ClearedDeposit(address indexed fromAddress, address indexed toAddress, uint fromETHAmount, uint toAmount, uint indexed depositIndex);

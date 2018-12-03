@@ -5,19 +5,19 @@ const FeePool = artifacts.require('FeePool');
 const Synthetix = artifacts.require('Synthetix');
 const SynthetixEscrow = artifacts.require('SynthetixEscrow');
 const SynthetixState = artifacts.require('SynthetixState');
-// const Depot = artifacts.require('./Depot.sol');
 const Synth = artifacts.require('Synth');
 const Owned = artifacts.require('Owned');
 const Proxy = artifacts.require('Proxy');
 const PublicSafeDecimalMath = artifacts.require('PublicSafeDecimalMath');
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 const TokenState = artifacts.require('TokenState');
+const Depot = artifacts.require('Depot');
 
 // Update values before deployment
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 
 module.exports = async function(deployer, network, accounts) {
-	const [deployerAccount, owner, oracle, feeAuthority] = accounts;
+	const [deployerAccount, owner, oracle, feeAuthority, fundsWallet] = accounts;
 
 	// Note: This deployment script is not used on mainnet, it's only for testing deployments.
 
@@ -224,18 +224,21 @@ module.exports = async function(deployer, network, accounts) {
 	// --------------------
 	// Depot
 	// --------------------
-	// console.log('Deploying Depot...');
-	// await deployer.deploy(
-	// 	Depot,
-	// 	owner,
-	// 	fundsWallet,
-	// 	synthetix.address,
-	// 	synth.address,
-	// 	oracle,
-	// 	ethUSD,
-	// 	sUSD,
-	// 	{ from: deployerAccount }
-	// );
+	console.log('Deploying Depot...');
+	const sUSDSynth = synths.find(synth => synth.currencyKey === 'sUSD');
+	deployer.link(SafeDecimalMath, Depot);
+	const depot = await deployer.deploy(
+		Depot,
+		owner,
+		fundsWallet,
+		synthetix.address,
+		sUSDSynth.synth.address,
+		feePool.address,
+		oracle,
+		web3.utils.toWei('500'),
+		web3.utils.toWei('.10'),
+		{ from: deployerAccount }
+	);
 
 	const tableData = [
 		['Contract', 'Address'],
@@ -247,10 +250,9 @@ module.exports = async function(deployer, network, accounts) {
 		['Synthetix Proxy', synthetixProxy.address],
 		['Synthetix', Synthetix.address],
 		['Synthetix Escrow', SynthetixEscrow.address],
+		['Depot', Depot.address],
 		['Owned', Owned.address],
 		['SafeDecimalMath', SafeDecimalMath.address],
-
-		// ['Depot', Depot.address],
 	];
 
 	for (const synth of synths) {

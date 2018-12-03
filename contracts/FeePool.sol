@@ -22,6 +22,7 @@ import "./Synthetix.sol";
 import "./Proxyable.sol";
 import "./SelfDestructible.sol";
 import "./SafeDecimalMath.sol";
+import "./Synth.sol";
 
 contract FeePool is Proxyable, SelfDestructible {
 
