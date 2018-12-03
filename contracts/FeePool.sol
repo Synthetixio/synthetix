@@ -516,7 +516,7 @@ contract FeePool is Proxyable, SelfDestructible {
         if (initialDebtOwnership == 0) return result;
 
         // Go through our fee periods and figure out what we owe them.
-        // The [0] fee period does is not yet ready to claim, but it is a fee period that they can have
+        // The [0] fee period is not yet ready to claim, but it is a fee period that they can have
         // fees owing for, so we need to report on it anyway.
         for (uint i = 0; i < FEE_PERIOD_LENGTH; i++) {
             // Were they a part of this period in its entirety?
