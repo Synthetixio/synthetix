@@ -50,7 +50,7 @@ contract ExternStateToken is SelfDestructible, Proxyable, TokenFallbackCaller {
     string public name;
     string public symbol;
     uint public totalSupply;
-    uint public decimals;
+    uint8 public decimals;
 
     /**
      * @dev Constructor.

@@ -44,7 +44,7 @@ contract Synth is ExternStateToken {
     // Currency key which identifies this Synth to the Synthetix system
     bytes4 public currencyKey;
 
-    uint constant DECIMALS = 18;
+    uint8 constant DECIMALS = 18;
 
     /* ========== CONSTRUCTOR ========== */
 
