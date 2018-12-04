@@ -12,6 +12,7 @@ const PublicSafeDecimalMath = artifacts.require('PublicSafeDecimalMath');
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 const TokenState = artifacts.require('TokenState');
 const Depot = artifacts.require('Depot');
+const SelfDestructible = artifacts.require('SelfDestructible');
 
 // Update values before deployment
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
@@ -242,6 +243,12 @@ module.exports = async function(deployer, network, accounts) {
 		{ from: deployerAccount }
 	);
 
+	// ----------------
+	// Self Destructible
+	// ----------------
+	console.log('Deploying SelfDestructible...');
+	await deployer.deploy(SelfDestructible, owner, { from: deployerAccount });
+
 	const tableData = [
 		['Contract', 'Address'],
 		['Exchange Rates', ExchangeRates.address],
@@ -255,6 +262,7 @@ module.exports = async function(deployer, network, accounts) {
 		['Depot', Depot.address],
 		['Owned', Owned.address],
 		['SafeDecimalMath', SafeDecimalMath.address],
+		['SelfDestructible', SelfDestructible.address],
 	];
 
 	for (const synth of synths) {
