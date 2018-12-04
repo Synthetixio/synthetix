@@ -50,8 +50,8 @@ contract('Synthetix', async function(accounts) {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sUSD, sAUD, sEUR, SNX],
-			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			[sAUD, sEUR, SNX],
+			['0.5', '1.25', '0.1'].map(toUnit),
 			timestamp,
 			{
 				from: oracle,
@@ -266,8 +266,8 @@ contract('Synthetix', async function(accounts) {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sUSD, sAUD, sEUR, SNX],
-			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			[sAUD, sEUR, SNX],
+			['0.5', '1.25', '0.1'].map(toUnit),
 			timestamp,
 			{ from: oracle }
 		);
@@ -288,8 +288,8 @@ contract('Synthetix', async function(accounts) {
 		let timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sUSD, sAUD, sEUR, SNX],
-			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			[sAUD, sEUR, SNX],
+			['0.5', '1.25', '0.1'].map(toUnit),
 			timestamp,
 			{ from: oracle }
 		);
@@ -300,12 +300,9 @@ contract('Synthetix', async function(accounts) {
 		timestamp = await currentTime();
 
 		// Update all rates except sUSD.
-		await exchangeRates.updateRates(
-			[sUSD, sEUR, SNX],
-			['1', '1.25', '0.1'].map(toUnit),
-			timestamp,
-			{ from: oracle }
-		);
+		await exchangeRates.updateRates([sEUR, SNX], ['1.25', '0.1'].map(toUnit), timestamp, {
+			from: oracle,
+		});
 
 		const amountOfSynthetixs = toUnit('10');
 		const amountOfEur = toUnit('0.8');
@@ -324,8 +321,8 @@ contract('Synthetix', async function(accounts) {
 		let timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sUSD, sAUD, sEUR, SNX],
-			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			[sAUD, sEUR, SNX],
+			['0.5', '1.25', '0.1'].map(toUnit),
 			timestamp,
 			{ from: oracle }
 		);
@@ -343,8 +340,8 @@ contract('Synthetix', async function(accounts) {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sUSD, sAUD, sEUR, SNX],
-			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			[sAUD, sEUR, SNX],
+			['0.5', '1.25', '0.1'].map(toUnit),
 			timestamp,
 			{ from: oracle }
 		);
@@ -369,8 +366,8 @@ contract('Synthetix', async function(accounts) {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sUSD, sAUD, sEUR, SNX],
-			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			[sAUD, sEUR, SNX],
+			['0.5', '1.25', '0.1'].map(toUnit),
 			timestamp,
 			{ from: oracle }
 		);
@@ -395,9 +392,9 @@ contract('Synthetix', async function(accounts) {
 		const oracle = await exchangeRates.oracle();
 		const timestamp = await currentTime();
 
-		const rates = [toUnit('1'), toUnit('0.5'), toUnit('1.25'), toUnit('0.1')];
+		const rates = ['0.5', '1.25', '0.1'].map(toUnit);
 
-		await exchangeRates.updateRates([sUSD, sAUD, sEUR, SNX], rates, timestamp, { from: oracle });
+		await exchangeRates.updateRates([sAUD, sEUR, SNX], rates, timestamp, { from: oracle });
 
 		// const snx2usdRate = await exchangeRates.rateForCurrency(SNX);
 		const aud2usdRate = await exchangeRates.rateForCurrency(sAUD);
@@ -435,12 +432,9 @@ contract('Synthetix', async function(accounts) {
 		const oracle = await exchangeRates.oracle();
 		const timestamp = await currentTime();
 
-		await exchangeRates.updateRates(
-			[SNX, sUSD, sAUD],
-			['0.1', '1', '0.78'].map(toUnit),
-			timestamp,
-			{ from: oracle }
-		);
+		await exchangeRates.updateRates([SNX, sAUD], ['0.1', '0.78'].map(toUnit), timestamp, {
+			from: oracle,
+		});
 		await assert.revert(synthetix.totalIssuedSynths(sAUD));
 	});
 
@@ -449,12 +443,9 @@ contract('Synthetix', async function(accounts) {
 		const oracle = await exchangeRates.oracle();
 		const timestamp = await currentTime();
 
-		await exchangeRates.updateRates(
-			[SNX, sUSD, sEUR],
-			['0.1', '1', '1.25'].map(toUnit),
-			timestamp,
-			{ from: oracle }
-		);
+		await exchangeRates.updateRates([SNX, sEUR], ['0.1', '1.25'].map(toUnit), timestamp, {
+			from: oracle,
+		});
 		await assert.revert(synthetix.totalIssuedSynths(sAUD));
 	});
 
@@ -528,8 +519,8 @@ contract('Synthetix', async function(accounts) {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sUSD, sAUD, sEUR, SNX],
-			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			[sAUD, sEUR, SNX],
+			['0.5', '1.25', '0.1'].map(toUnit),
 			timestamp,
 			{ from: oracle }
 		);
@@ -609,12 +600,9 @@ contract('Synthetix', async function(accounts) {
 		const oracle = await exchangeRates.oracle();
 		const timestamp = await currentTime();
 
-		await exchangeRates.updateRates(
-			[sUSD, sAUD, sEUR],
-			['1', '0.5', '1.25'].map(toUnit),
-			timestamp,
-			{ from: oracle }
-		);
+		await exchangeRates.updateRates([sAUD, sEUR], ['0.5', '1.25'].map(toUnit), timestamp, {
+			from: oracle,
+		});
 
 		// Subsequent transfers fail
 		await assert.revert(synthetix.transfer(account2, value, { from: account1 }));
@@ -695,8 +683,8 @@ contract('Synthetix', async function(accounts) {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sUSD, sAUD, sEUR, SNX],
-			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			[sAUD, sEUR, SNX],
+			['0.5', '1.25', '0.1'].map(toUnit),
 			timestamp,
 			{ from: oracle }
 		);
@@ -758,8 +746,8 @@ contract('Synthetix', async function(accounts) {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sUSD, sAUD, sEUR, SNX],
-			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			[sAUD, sEUR, SNX],
+			['0.5', '1.25', '0.1'].map(toUnit),
 			timestamp,
 			{ from: oracle }
 		);
@@ -784,8 +772,8 @@ contract('Synthetix', async function(accounts) {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sUSD, sAUD, sEUR, SNX],
-			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			[sAUD, sEUR, SNX],
+			['0.5', '1.25', '0.1'].map(toUnit),
 			timestamp,
 			{ from: oracle }
 		);
@@ -814,8 +802,8 @@ contract('Synthetix', async function(accounts) {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sUSD, sAUD, sEUR, SNX],
-			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			[sAUD, sEUR, SNX],
+			['0.5', '1.25', '0.1'].map(toUnit),
 			timestamp,
 			{ from: oracle }
 		);
@@ -845,8 +833,8 @@ contract('Synthetix', async function(accounts) {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sUSD, sAUD, sEUR, SNX],
-			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			[sAUD, sEUR, SNX],
+			['0.5', '1.25', '0.1'].map(toUnit),
 			timestamp,
 			{ from: oracle }
 		);
@@ -877,8 +865,8 @@ contract('Synthetix', async function(accounts) {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sUSD, sAUD, sEUR, SNX],
-			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			[sAUD, sEUR, SNX],
+			['0.5', '1.25', '0.1'].map(toUnit),
 			timestamp,
 			{ from: oracle }
 		);
@@ -908,8 +896,8 @@ contract('Synthetix', async function(accounts) {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sUSD, sAUD, sEUR, SNX],
-			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			[sAUD, sEUR, SNX],
+			['0.5', '1.25', '0.1'].map(toUnit),
 			timestamp,
 			{ from: oracle }
 		);
@@ -933,8 +921,8 @@ contract('Synthetix', async function(accounts) {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sUSD, sAUD, sEUR, SNX],
-			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			[sAUD, sEUR, SNX],
+			['0.5', '1.25', '0.1'].map(toUnit),
 			timestamp,
 			{ from: oracle }
 		);
@@ -961,8 +949,8 @@ contract('Synthetix', async function(accounts) {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sUSD, sAUD, sEUR, SNX],
-			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			[sAUD, sEUR, SNX],
+			['0.5', '1.25', '0.1'].map(toUnit),
 			timestamp,
 			{ from: oracle }
 		);
@@ -983,8 +971,8 @@ contract('Synthetix', async function(accounts) {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sUSD, sAUD, sEUR, SNX],
-			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			[sAUD, sEUR, SNX],
+			['0.5', '1.25', '0.1'].map(toUnit),
 			timestamp,
 			{ from: oracle }
 		);
@@ -1012,8 +1000,8 @@ contract('Synthetix', async function(accounts) {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sUSD, sAUD, sEUR, SNX],
-			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			[sAUD, sEUR, SNX],
+			['0.5', '1.25', '0.1'].map(toUnit),
 			timestamp,
 			{ from: oracle }
 		);
@@ -1040,8 +1028,8 @@ contract('Synthetix', async function(accounts) {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sUSD, sAUD, sEUR, SNX],
-			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			[sAUD, sEUR, SNX],
+			['0.5', '1.25', '0.1'].map(toUnit),
 			timestamp,
 			{ from: oracle }
 		);
@@ -1066,8 +1054,8 @@ contract('Synthetix', async function(accounts) {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sUSD, sAUD, sEUR, SNX],
-			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			[sAUD, sEUR, SNX],
+			['0.5', '1.25', '0.1'].map(toUnit),
 			timestamp,
 			{ from: oracle }
 		);
@@ -1091,8 +1079,8 @@ contract('Synthetix', async function(accounts) {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sUSD, sAUD, sEUR, SNX],
-			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			[sAUD, sEUR, SNX],
+			['0.5', '1.25', '0.1'].map(toUnit),
 			timestamp,
 			{ from: oracle }
 		);
@@ -1343,131 +1331,6 @@ contract('Synthetix', async function(accounts) {
 		assert.bnClose(debtBalance2, expectedDebtForAccount2, variance);
 	});
 
-	// TODO: This is a sandpit test. Delete before final merge.
-	it.skip('should correctly calculate debt in a high volume issuance and burn scenario', async function() {
-		// const getRandomInt = (min, max) => {
-		// 	return min + Math.floor(Math.random() * Math.floor(max));
-		// };
-
-		// const getDebtLedgerArray = async () => {
-		// 	const length = await synthetixState.debtLedgerLength();
-		// 	let results = [];
-		// 	for (let i = 0; i < length; i++) {
-		// 		const result = await synthetixState.debtLedger(i);
-		// 		results.push(fromUnit(result).toString());
-		// 	}
-		// 	return results;
-		// };
-
-		const getIssuanceData = async () => {
-			const issuanceData = await synthetixState.issuanceData(account1);
-			// console.log(`#### issuanceData: ${issuanceData}`);
-			// return issuanceData;
-			return {
-				initialDebtOwnership: fromUnit(issuanceData.initialDebtOwnership).toString(),
-				debtEntryIndex: issuanceData.debtEntryIndex.toString(),
-			};
-			// console.log(`#### issuanceData: ${issuanceData}`);
-		};
-
-		const totalSupply = await synthetix.totalSupply();
-		console.log(`###### totalSupply: ${totalSupply}`);
-		console.log(`###### totalSupply.div('2'): ${totalSupply.div(web3.utils.toBN('2'))}`);
-		await synthetix.transfer(account1, totalSupply.div(web3.utils.toBN('2')), { from: owner });
-		await synthetix.transfer(account2, totalSupply.div(web3.utils.toBN('2')), { from: owner });
-
-		// Make accounts issuers
-		// await synthetix.setIssuer(account1, true, { from: owner });
-		// await synthetix.setIssuer(account2, true, { from: owner });
-
-		// const synthsIssuedEachTime = web3.utils.toBN('10000');
-		const loopCount = 140;
-		// let expectedDebt = web3.utils.toBN(0);
-		let expectedDebt = toUnit('900000');
-
-		await synthetix.issueSynths(sUSD, expectedDebt, { from: account1 });
-		// const txn = await synthetix.issueSynths(sUSD, expectedDebt, { from: account1 });
-		// console.log('##### txn', txn);
-		// for (let i = 0; i < txn.logs.length; i++) {
-		// 	const result = txn.logs[i].args;
-		// 	console.log('##### txn ???', result);
-		// 	for (let j = 0; j < result.__length__; j++) {
-		// 		if (txn.logs[i].event === web3.utils.asciiToHex('SomethingElse') && j === 0) {
-		// 			console.log(`##### txn str ${i}`, web3.utils.hexToAscii(txn.logs[i].args[j]));
-		// 		} else {
-		// 			console.log(`##### txn ${i}`, txn.logs[i].args[j].toString());
-		// 		}
-		// 	}
-		// }
-
-		// let timeBeforeLoopIssued = 0;
-		let highestVarianceYet = toUnit('0');
-
-		const remainingIssuableSynths1 = await synthetix.remainingIssuableSynths(account1, sUSD);
-		console.log(`##### remainingIssuableSynths1: ${fromUnit(remainingIssuableSynths1)}`);
-
-		// let totalSynthsIssued = 0;
-		for (let i = 0; i < loopCount; i++) {
-			// const oracle = await exchangeRates.oracle();
-			// const timestamp = await currentTime();
-			// const sUSDRate = toUnit('1');
-			// const sAUDRate = toUnit(parseFloat((Math.random() * 2).toString()).toFixed(18));
-			// const sEURRate = toUnit(parseFloat((Math.random() * 2).toString()).toFixed(18));
-			// const SNXRate = toUnit(parseFloat((Math.random() / 10).toString()).toFixed(18));
-			// const rates = `sAUD: ${fromUnit(sAUDRate)}\t\tsEUR: ${fromUnit(sEURRate)}\t\tSNX: ${fromUnit(
-			// 	SNXRate
-			// )}\t\tsUSD: ${fromUnit(sUSDRate)}`;
-			// console.log(`#### Rates: ${rates}`);
-			// await exchangeRates.updateRates(
-			// 	[sUSD, sAUD, sEUR],
-			// 	[sUSDRate, sAUDRate, sEURRate],
-			// 	timestamp,
-			// 	{ from: oracle }
-			// );
-			console.log(`#### XDR rate: ${fromUnit(await exchangeRates.rateForCurrency(XDR))}`);
-
-			// const amount = web3.utils.toBN(getRandomInt(100000, 800000000));
-			const amount = toUnit('0.8');
-			console.log(`##### Adding: ${fromUnit(amount)} ...`);
-			await synthetix.issueSynths(sUSD, amount, { from: account1 });
-
-			const remainingIssuableSynths2 = await synthetix.remainingIssuableSynths(account1, sUSD);
-			console.log(`##### remainingIssuableSynths2: ${fromUnit(remainingIssuableSynths2)}`);
-			// console.log(`##### debt array after account1 issued: ${await getDebtLedgerArray()}`);
-			// await synthetix.issueSynths(sUSD, amount, { from: account2 });
-			// console.log(`##### debt array after account2 issued: ${await getDebtLedgerArray()}`);
-
-			console.log(`#### Issuance Data: `, await getIssuanceData());
-			const account1sUSDBalance = await sUSDContract.balanceOf(account1);
-			const account2sUSDBalance = await sUSDContract.balanceOf(account2);
-			console.log(
-				`#### account1sUSDBalance: ${account1sUSDBalance}\t\taccount2sUSDBalance: ${account2sUSDBalance}`
-			);
-			expectedDebt = expectedDebt.add(amount);
-			// const expectedDebt = synthsIssuedEachTime.mul(web3.utils.toBN(i + 1));
-			const account1Debt = await synthetix.debtBalanceOf(account1, sUSD);
-			const variance = account1Debt.sub(expectedDebt);
-			highestVarianceYet = variance.abs().gte(highestVarianceYet)
-				? variance.abs()
-				: highestVarianceYet;
-			console.log(
-				`##### expectedDebt: ${expectedDebt}\t\taccount1Debt: ${account1Debt}\t\t variance: ${variance}\t\t highestVarianceYet: +/- ${highestVarianceYet}`
-			);
-			if (i % 2 === 0) {
-				const one = web3.utils.toBN(9999);
-				const amountToBurn = (one.lte(account1Debt) ? one : account1Debt).sub(web3.utils.toBN(100));
-				console.log(`##### Burning: ${fromUnit(amountToBurn)}`);
-				await synthetix.burnSynths(sUSD, amountToBurn, { from: account1 });
-				expectedDebt = expectedDebt.sub(amountToBurn);
-			}
-			console.log('------------------------------------');
-		}
-		// const expectedDebt = synthsIssuedEachTime.mul(web3.utils.toBN(loopCount));
-		// const account1Debt = await synthetix.debtBalanceOf(account1, sUSD);
-
-		// assert.bnEqual(account1Debt, expectedDebt);
-	});
-
 	// ****************************************
 
 	it('should not change debt balance if exchange rates change', async function() {
@@ -1561,12 +1424,9 @@ contract('Synthetix', async function(accounts) {
 		const oracle = await exchangeRates.oracle();
 		const timestamp = await currentTime();
 
-		await exchangeRates.updateRates(
-			[sUSD, sAUD, sEUR],
-			['1', '0.5', '1.25'].map(toUnit),
-			timestamp,
-			{ from: oracle }
-		);
+		await exchangeRates.updateRates([sAUD, sEUR], ['0.5', '1.25'].map(toUnit), timestamp, {
+			from: oracle,
+		});
 
 		await assert.revert(synthetix.maxIssuableSynths(account1, sAUD));
 	});
@@ -1577,12 +1437,9 @@ contract('Synthetix', async function(accounts) {
 		const oracle = await exchangeRates.oracle();
 		const timestamp = await currentTime();
 
-		await exchangeRates.updateRates(
-			[sUSD, sEUR, SNX],
-			['1', '1.25', '0.12'].map(toUnit),
-			timestamp,
-			{ from: oracle }
-		);
+		await exchangeRates.updateRates([sEUR, SNX], ['1.25', '0.12'].map(toUnit), timestamp, {
+			from: oracle,
+		});
 
 		await assert.revert(synthetix.maxIssuableSynths(account1, sAUD));
 	});
@@ -1904,7 +1761,7 @@ contract('Synthetix', async function(accounts) {
 		const oracle = await exchangeRates.oracle();
 		const timestamp = await currentTime();
 
-		await exchangeRates.updateRates([sUSD, SNX], ['1', '0.1'].map(toUnit), timestamp, {
+		await exchangeRates.updateRates([SNX], [toUnit('0.1')], timestamp, {
 			from: oracle,
 		});
 
@@ -1944,7 +1801,7 @@ contract('Synthetix', async function(accounts) {
 		const oracle = await exchangeRates.oracle();
 		const timestamp = await currentTime();
 
-		await exchangeRates.updateRates([sUSD, SNX], ['1', '0.1'].map(toUnit), timestamp, {
+		await exchangeRates.updateRates([SNX], [toUnit('0.1')], timestamp, {
 			from: oracle,
 		});
 

@@ -11,8 +11,8 @@ contract('FeePool', async function(accounts) {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sUSD, sAUD, sEUR, SNX],
-			['1', '0.5', '1.25', '0.1'].map(toUnit),
+			[sAUD, sEUR, SNX],
+			['0.5', '1.25', '0.1'].map(toUnit),
 			timestamp,
 			{
 				from: oracle,
