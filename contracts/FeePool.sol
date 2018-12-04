@@ -507,18 +507,18 @@ contract FeePool is Proxyable, SelfDestructible {
         uint initialDebtOwnership;
         uint debtEntryIndex;
         (initialDebtOwnership, debtEntryIndex) = synthetix.synthetixState().issuanceData(account);
-        uint totalSynths = synthetix.totalIssuedSynths("XDR");
+
+        // If they don't have any debt ownership, they don't have any fees
+        if (initialDebtOwnership == 0) return result;
 
         // If there are no XDR synths, then they don't have any fees
+        uint totalSynths = synthetix.totalIssuedSynths("XDR");
         if (totalSynths == 0) return result;
 
         uint debtBalance = synthetix.debtBalanceOf(account, "XDR");
         uint userOwnershipPercentage = debtBalance.divideDecimal(totalSynths);
         uint penalty = currentPenalty(account);
-
-        // If they don't have any debt ownership, they don't have any fees
-        if (initialDebtOwnership == 0) return result;
-
+        
         // Go through our fee periods and figure out what we owe them.
         // The [0] fee period does is not yet ready to claim, but it is a fee period that they can have
         // fees owing for, so we need to report on it anyway.
