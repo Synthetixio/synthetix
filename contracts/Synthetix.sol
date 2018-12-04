@@ -482,8 +482,8 @@ contract Synthetix is ExternStateToken {
 
     /**
      * @notice Function that allows synth contract to delegate sending fee to the fee Pool.
-     * @dev Only the synth contract can call this function
-     * @param from The address to 
+     * @dev Only the synth contract can call this function.
+     * @param from The address fee is coming from.
      * @param sourceCurrencyKey source currency fee from.
      * @param sourceAmount The amount, specified in UNIT of source currency.
      * @return Boolean that indicates whether the transfer succeeded or failed.
@@ -510,9 +510,7 @@ contract Synthetix is ExternStateToken {
         );
 
         // Tell the fee pool about this.
-        if (result) {
-            feePool.feePaid(sourceCurrencyKey, sourceAmount);
-        }
+        feePool.feePaid(sourceCurrencyKey, sourceAmount);
 
         return result;
     }
