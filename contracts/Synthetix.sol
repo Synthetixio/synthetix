@@ -301,7 +301,7 @@ contract Synthetix is ExternStateToken {
         // If there's no change in the currency, then just return the amount they gave us
         if (sourceCurrencyKey == destinationCurrencyKey) return sourceAmount;
 
-        // Calcuate the effective value by going from source -> USD -> destination
+        // Calculate the effective value by going from source -> USD -> destination
         return sourceAmount.multiplyDecimalRound(exchangeRates.rateForCurrency(sourceCurrencyKey))
             .divideDecimalRound(exchangeRates.rateForCurrency(destinationCurrencyKey));
     }
