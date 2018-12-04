@@ -517,7 +517,7 @@ contract Synthetix is ExternStateToken {
 
     /**
      * @notice Function that allows synth contract to delegate sending fee to the fee Pool.
-     * @dev fee pool contract address is not allowed to call function  
+     * @dev fee pool contract address is not allowed to call function
      * @param from The address to move synth from
      * @param sourceCurrencyKey source currency from.
      * @param sourceAmount The amount, specified in UNIT of source currency.
@@ -638,7 +638,7 @@ contract Synthetix is ExternStateToken {
 
     /**
      * @notice Issue synths against the sender's SNX.
-     * @dev Issuance is only allowed if the synthetix price isn't stale and the sender is an issuer.
+     * @dev Issuance is only allowed if the synthetix price isn't stale.
      * @param currencyKey The currency you wish to issue synths in, for example sUSD or sAUD
      * @param amount The amount of synths you wish to issue with a base of UNIT
      */
@@ -658,7 +658,7 @@ contract Synthetix is ExternStateToken {
 
     /**
      * @notice Issue the maximum amount of Synths possible against the sender's SNX.
-     * @dev Issuance is only allowed if the synthetix price isn't stale and the sender is an issuer.
+     * @dev Issuance is only allowed if the synthetix price isn't stale.
      * @param currencyKey The currency you wish to issue synths in, for example sUSD or sAUD
      */
     function issueMaxSynths(bytes4 currencyKey)
