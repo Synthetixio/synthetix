@@ -41,14 +41,13 @@ import "./FeePool.sol";
  * @title Depot Contract.
  */
 contract Depot is SelfDestructible, Pausable {
-		using SafeMath for uint;
+    using SafeMath for uint;
     using SafeDecimalMath for uint;
 
     /* ========== STATE VARIABLES ========== */
     Synthetix public synthetix;
     Synth public synth;
-		FeePool public feePool;
-
+    FeePool public feePool;
 
     // Address where the ether and Synths raised for selling SNX is transfered to
     // Any ether raised for selling Synths gets sent back to whoever deposited the Synths,
@@ -147,7 +146,7 @@ contract Depot is SelfDestructible, Pausable {
         fundsWallet = _fundsWallet;
         synthetix = _synthetix;
         synth = _synth;
-				feePool = _feePool;
+        feePool = _feePool;
         oracle = _oracle;
         usdToEthPrice = _usdToEthPrice;
         usdToSnxPrice = _usdToSnxPrice;
@@ -224,8 +223,8 @@ contract Depot is SelfDestructible, Pausable {
         external
         onlyOwner
     {
-        //Do not allow us to set it less than 1 dollar opening up to fractional desposits in the queue again
-        require(_amount > 1 * SafeDecimalMath.unit());
+        // Do not allow us to set it less than 1 dollar opening up to fractional desposits in the queue again
+        require(_amount > SafeDecimalMath.unit(), "Minimum deposit amount must be greater than UNIT");
         minimumDepositAmount = _amount;
         emit MinimumDepositAmountUpdated(minimumDepositAmount);
     }
@@ -306,6 +305,11 @@ contract Depot is SelfDestructible, Pausable {
                     // synthetix foundation funds wallet. This is to protect all depositors
                     // in the queue in this rare case that may occur.
                     ethToSend = remainingToFulfill.divideDecimal(usdToEthPrice);
+
+                    // We need to use send here instead of transfer because transfer reverts
+                    // if the recipient is a non-payable contract. Send will just tell us it
+                    // failed by returning false at which point we can continue.
+                    // solium-disable-next-line security/no-send
                     if(!deposit.user.send(ethToSend)) {
                         fundsWallet.transfer(ethToSend);
                         emit NonPayableContract(deposit.user, ethToSend);
@@ -337,6 +341,11 @@ contract Depot is SelfDestructible, Pausable {
                     // synthetix foundation funds wallet. This is to protect all depositors
                     // in the queue in this rare case that may occur.
                     ethToSend = deposit.amount.divideDecimal(usdToEthPrice);
+
+                    // We need to use send here instead of transfer because transfer reverts
+                    // if the recipient is a non-payable contract. Send will just tell us it
+                    // failed by returning false at which point we can continue.
+                    // solium-disable-next-line security/no-send
                     if(!deposit.user.send(ethToSend)) {
                         fundsWallet.transfer(ethToSend);
                         emit NonPayableContract(deposit.user, ethToSend);
@@ -386,7 +395,7 @@ contract Depot is SelfDestructible, Pausable {
         notPaused
         returns (uint) // Returns the number of Synths (sUSD) received
     {
-        require(guaranteedRate == usdToEthPrice);
+        require(guaranteedRate == usdToEthPrice, "Guaranteed rate would not be received");
 
         return exchangeEtherForSynths();
     }
@@ -429,8 +438,8 @@ contract Depot is SelfDestructible, Pausable {
         notPaused
         returns (uint) // Returns the number of SNX received
     {
-        require(guaranteedEtherRate == usdToEthPrice);
-        require(guaranteedSynthetixRate == usdToSnxPrice);
+        require(guaranteedEtherRate == usdToEthPrice, "Guaranteed ether rate would not be received");
+        require(guaranteedSynthetixRate == usdToSnxPrice, "Guaranteed synthetix rate would not be received");
 
         return exchangeEtherForSynthetix();
     }
@@ -474,7 +483,7 @@ contract Depot is SelfDestructible, Pausable {
         notPaused
         returns (uint) // Returns the number of SNX received
     {
-        require(guaranteedRate == usdToSnxPrice);
+        require(guaranteedRate == usdToSnxPrice, "Guaranteed rate would not be received");
 
         return exchangeSynthsForSynthetix(synthAmount);
     }
