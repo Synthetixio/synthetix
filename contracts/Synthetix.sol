@@ -680,14 +680,13 @@ contract Synthetix is ExternStateToken {
         // No need to check for stale rates as _removeFromDebtRegister calls effectiveValue
         // which does this for us
     {
-        // If they're trying to burn more debt than they actually owe, rather than fail the transaction, let's just
-        // clear their debt and leave them be.
         // How much debt do they have?
         uint debt = debtBalanceOf(messageSender, currencyKey);
 
         require(debt > 0, "No debt to forgive");
 
-        // If they're requesting to burn more than their debt, just burn their debt
+        // If they're trying to burn more debt than they actually owe, rather than fail the transaction, let's just
+        // clear their debt and leave them be.
         uint amountToBurn = debt < amount ? debt : amount;
 
         // Remove their debt from the ledger
