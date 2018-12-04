@@ -487,6 +487,9 @@ const saveFlattenedContracts = async () => {
 			console.log(`Saving ${contract} to ${settings.flattenedContractsFolder}.`);
 			fs.writeFileSync(filename, flattenedContracts[contract].content);
 		}
+
+		console.log('Successfully saved flattened contracts.');
+		console.log();
 	}
 };
 

@@ -17,7 +17,7 @@ const {
 const shouldFail = require('openzeppelin-solidity/test/helpers/shouldFail');
 
 contract('Synthetix', async function(accounts) {
-	const [sUSD, sAUD, sEUR, SNX, sXYZ] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'sXYZ'].map(
+	const [sUSD, sAUD, sEUR, SNX, XDR, sXYZ] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'XDR', 'sXYZ'].map(
 		web3.utils.asciiToHex
 	);
 
@@ -254,7 +254,7 @@ contract('Synthetix', async function(accounts) {
 
 	it('should allow the owner to set a TokenState contract', async function() {
 		const transaction = await synthetix.setSynthetixState(account1, { from: owner });
-		
+
 		assert.equal(await synthetix.synthetixState(), account1);
 
 		assert.eventEqual(transaction, 'StateContractChanged', {
