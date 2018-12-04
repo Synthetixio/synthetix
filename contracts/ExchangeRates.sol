@@ -147,8 +147,12 @@ contract ExchangeRates is SelfDestructible {
             require(newRates[i] != 0, "Zero is not a valid rate, please call deleteRate instead.");
             require(currencyKeys[i] != "sUSD", "Rate of sUSD cannot be updated, it's always UNIT.");
 
-            rates[currencyKeys[i]] = newRates[i];
-            lastRateUpdateTimes[currencyKeys[i]] = timeSent;
+            // We should only update the rate if it's newer than the last rate we've got.
+            if (timeSent > lastRateUpdateTimes[currencyKeys[i]]) {
+                // Ok, go ahead with the update.
+                rates[currencyKeys[i]] = newRates[i];
+                lastRateUpdateTimes[currencyKeys[i]] = timeSent;
+            }
         }
 
         emit RatesUpdated(currencyKeys, newRates);
