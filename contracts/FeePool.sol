@@ -248,6 +248,9 @@ contract FeePool is Proxyable, SelfDestructible {
         emitFeePeriodClosed(recentFeePeriods[1].feePeriodId);
     }
 
+    /**
+    * @notice Claim fees for last period when available or not already withdrawn.
+    */
     function claimFees(bytes4 currencyKey)
         external
         optionalProxy
@@ -270,6 +273,9 @@ contract FeePool is Proxyable, SelfDestructible {
         return true;
     }
 
+    /**
+     * @notice Record the fee payment in our recentFeePeriods.
+     */
     function _recordFeePayment(uint xdrAmount)
         internal
     {
@@ -299,6 +305,9 @@ contract FeePool is Proxyable, SelfDestructible {
         assert(remainingToAllocate == 0);
     }
 
+    /**
+    * @notice Send the fees to claiming address.
+    */
     function _payFees(address account, uint xdrAmount, bytes4 destinationCurrencyKey)
         internal
         notFeeAddress(account)
