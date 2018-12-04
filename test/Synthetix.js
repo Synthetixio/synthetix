@@ -176,8 +176,7 @@ contract('Synthetix', async function(accounts) {
 	it('should allow removing a Synth contract when it has no issued balance', async function() {
 		// Note: This test depends on state in the migration script, that there are hooked up synths
 		// without balances and we just remove one.
-		const synth = await Synth.at(await synthetix.availableSynths(0));
-		const currencyKey = await synth.currencyKey();
+		const currencyKey = sUSD;
 		const synthCount = await synthetix.availableSynthCount();
 
 		assert.notEqual(await synthetix.synths(currencyKey), ZERO_ADDRESS);
@@ -189,6 +188,12 @@ contract('Synthetix', async function(accounts) {
 		assert.equal(await synthetix.synths(currencyKey), ZERO_ADDRESS);
 
 		// TODO: Check that an event was successfully fired ?
+	});
+
+	it('should reject removing the XDR Synth even when it has no issued balance', async function() {
+		// Note: This test depends on state in the migration script, that there are hooked up synths
+		// without balances and we just remove one.
+		await assert.revert(synthetix.removeSynth(XDR, { from: owner }));
 	});
 
 	it('should disallow removing a Synth contract when it has an issued balance', async function() {
