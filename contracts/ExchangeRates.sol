@@ -140,15 +140,15 @@ contract ExchangeRates is SelfDestructible {
         require(timeSent < (now + ORACLE_FUTURE_LIMIT), "Time is too far into the future");
 
         // Loop through each key and perform update.
-        for (uint8 i = 0; i < currencyKeys.length; i++) {
+        for (uint i = 0; i < currencyKeys.length; i++) {
             // Should not set any rate to zero ever, as no asset will ever be
             // truely worthless and still valid. In this scenario, we should
             // delete the rate and remove it from the system.
             require(newRates[i] != 0, "Zero is not a valid rate, please call deleteRate instead.");
             require(currencyKeys[i] != "sUSD", "Rate of sUSD cannot be updated, it's always UNIT.");
 
-            // We should only update the rate if it's newer than the last rate we've got.
-            if (timeSent > lastRateUpdateTimes[currencyKeys[i]]) {
+            // We should only update the rate if it's at least the same age as the last rate we've got.
+            if (timeSent >= lastRateUpdateTimes[currencyKeys[i]]) {
                 // Ok, go ahead with the update.
                 rates[currencyKeys[i]] = newRates[i];
                 lastRateUpdateTimes[currencyKeys[i]] = timeSent;
