@@ -489,7 +489,7 @@ contract FeePool is Proxyable, SelfDestructible {
         // 0% - 20%: Fee is calculated based on percentage of economy issued.
         // 20% - 30%: 25% reduction in fees
         // 30% - 40%: 50% reduction in fees
-        // >40% - 75% reduction in fees
+        // >40%: 75% reduction in fees
         if (ratio <= TWENTY_PERCENT) {
             return 0;
         } else if (ratio > TWENTY_PERCENT && ratio <= THIRTY_PERCENT) {
