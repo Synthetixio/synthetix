@@ -31,136 +31,139 @@ const settings = {
 	contractDeploymentGasLimit: 6500000,
 	methodCallGasLimit: 150000,
 	gasPrice: '0.1', // In gwei
+	saveFlattenedContracts: true,
+	flattenedContractsFolder: './flattened-contracts',
 	verifyContracts: true,
 	synths: ['XDR', 'sUSD', 'sEUR', 'sJPY', 'sAUD', 'sKRW', 'sXAU'],
 	contracts: {
 		Depot: {
-			action: 'deploy',
+			action: 'use-existing',
+			existingInstance: '0x6B7Ef9C1EF15631F68FB0A92A3be10403710053E',
 		},
 		ExchangeRates: {
-			action: 'deploy',
-			// existingInstance: '0xd9c19368d3cE48dB78Ebdbea95699f3f2291E2d1',
+			action: 'use-existing',
+			existingInstance: '0x73b172756BD5DDf0110Ba8D7b88816Eb639Eb21c',
 		},
 		FeePool: {
-			action: 'deploy',
-			// existingInstance: '0x8d3B277B66F0A6baBaB566b104B52a6B0459b6b2',
+			action: 'use-existing',
+			existingInstance: '0xEBdBac38835A1105851e80C7Fa1f1E6e25A86e32',
 		},
 		Synthetix: {
-			action: 'deploy',
-			// existingInstance: '0x6Fb1d15aBAE4205050A74Df887C0832AE9AcB9b9',
+			action: 'use-existing',
+			existingInstance: '0x457cD14f384E7D103B17feEb01d2a42Ad2ecA529',
 		},
 		SynthetixEscrow: {
-			action: 'deploy',
-			// existingInstance: '0xE6fFb8a5F954E4473276B4A50506AD76AeF906E3',
+			action: 'use-existing',
+			existingInstance: '0xC557379F98d45f22853C5cF3fD1A830e11F083D6',
 		},
 		SynthetixState: {
-			action: 'deploy',
-			// existingInstance: '0xcB579e80cbFc7e50388Da5bc507187b1Cb620620',
+			action: 'use-existing',
+			existingInstance: '0x9dE2f60d70e1F6A044f4e07C8CD0C2B42D947bbE',
 		},
 		Synth: {
 			XDR: {
-				action: 'deploy',
-				// existingInstance: '0x8EfAc1173c63B4feCe34C1A6Ff9484249d7da17B',
+				action: 'use-existing',
+				existingInstance: '0x6568D9e750fC44AF00f857885Dfb8281c00529c4',
 			},
 			sUSD: {
-				action: 'deploy',
-				// existingInstance: '0x6C127031976F3E3195D9669F37D0748554D374AB',
+				action: 'use-existing',
+				existingInstance: '0xD9E5A009Ec07dE76616d7361Ed713eF434d71325',
 			},
 			sEUR: {
-				action: 'deploy',
-				// existingInstance: '0x39B0df0b4B051DAc4c39AAaD750E7166BdDF6632',
+				action: 'use-existing',
+				existingInstance: '0x249A10c68AfA9827571cb73f29ab5Af57Ee5A596',
 			},
 			sJPY: {
-				action: 'deploy',
-				// existingInstance: '0xEE06cb93F88ba08A2a608F8a9B51485906584Ee8',
+				action: 'use-existing',
+				existingInstance: '0x1b619A6fB6b5D0c9F1067f8F3E24B0308907D8bB',
 			},
 			sAUD: {
-				action: 'deploy',
-				// existingInstance: '0x4a3EcF6a282BD90d0a5d54b4621Ea17fB63D4f71',
+				action: 'use-existing',
+				existingInstance: '0x09Fabbf00CeDd6E8E715738a854461D56938c3BE',
 			},
 			sKRW: {
-				action: 'deploy',
-				// existingInstance: '0x5DF32526Ef74CfF66c3C3BF501dbfF46AAE03CbA',
+				action: 'use-existing',
+				existingInstance: '0x4A17840Db4757d239FeB3e7398f918337508286e',
 			},
 			sXAU: {
-				action: 'deploy',
-				// existingInstance: '0x45Fd6190e8059bF21ffBC1bb09a72d4aFEba99a0',
+				action: 'use-existing',
+				existingInstance: '0x1D79Dc0a657550d3831dC134b2651C38F0612854',
 			},
 		},
 		Proxy: {
 			FeePool: {
-				action: 'deploy',
-				// existingInstance: '0x46208405b17000331dA99F6BC29697d709e396d3',
+				action: 'use-existing',
+				existingInstance: '0xb440DD674e1243644791a4AdfE3A2AbB0A92d309',
 			},
 			Synthetix: {
-				action: 'deploy',
-				// existingInstance: '0xA018Afa45F97E4692b7cba2b8FF19D11dcF0337B',
+				action: 'use-existing',
+				existingInstance: '0x44D0bbe7E344D0dA45D3b60d5038607b2c596365',
 			},
 			XDR: {
-				action: 'deploy',
-				// existingInstance: '0xe239E2bdC7B4eEce218e66511E31aC857D3F568F',
+				action: 'use-existing',
+				existingInstance: '0x48414e5b7ed589956070DFfEBe6e4877DAE35EA6',
 			},
 			sUSD: {
-				action: 'deploy',
-				// existingInstance: '0x8DAE1b5Db3dAC2e973375B3Cb96a9Cb55ad90a08',
+				action: 'use-existing',
+				existingInstance: '0x559E848A1b6a7AfC69Ee27F8d20280A42628b2cf',
 			},
 			sEUR: {
-				action: 'deploy',
-				// existingInstance: '0x37989ac036F6106dC5770CC320Ea8D85c45FCc93',
+				action: 'use-existing',
+				existingInstance: '0xB03dFc4b9C9756B6D4Fbc12DAde7732149Fcf00d',
 			},
 			sJPY: {
-				action: 'deploy',
-				// existingInstance: '0x9b814d1cf94B9307026F83E797AF5bc46cB54Ee6',
+				action: 'use-existing',
+				existingInstance: '0x112D5fA64e4902B6ff1a35495a0f878c210A5601',
 			},
 			sAUD: {
-				action: 'deploy',
-				// existingInstance: '0x6dcDE527a0A65B1517Cd510D93DD8135Ae127184',
+				action: 'use-existing',
+				existingInstance: '0xf02a45263BB74685D72668568a200C843Aee69a2',
 			},
 			sKRW: {
-				action: 'deploy',
-				// existingInstance: '0x33b14EC4Ab8dA71F00F240c91Efc72ab631b0670',
+				action: 'use-existing',
+				existingInstance: '0x051158081c0Cfa293e38Eaf5df245785dAC7fd29',
 			},
 			sXAU: {
-				action: 'deploy',
-				// existingInstance: '0xdbA75834fFaBD665e96170dB7be8e86Fc54601C3',
+				action: 'use-existing',
+				existingInstance: '0x7097e9E1e75194A29434128d4BdAFb49d4a87153',
 			},
 		},
 		SafeDecimalMath: {
-			action: 'deploy',
-			// existingInstance: '0xecDCbD4C5948FaCbD93E47792B7d2fEC3E7166f6',
+			action: 'use-existing',
+			existingInstance: '0x84D626B2BB4D0F064067e4BF80FCe7055d8F3E7B',
 		},
 		TokenState: {
 			Synthetix: {
-				action: 'deploy',
-				// existingInstance: '0xDfBA72F2cCacA496a3012A27351D610eb88677Aa',
+				action: 'use-existing',
+				existingInstance: '0x7E295884F3f5e2ea462620018E9193a1C305C185',
 			},
 			XDR: {
-				action: 'deploy',
-				// existingInstance: '0x7730940cab2F63645eCd80c98b5e30448715A3B3',
+				action: 'use-existing',
+				existingInstance: '0xc25dD122c6dcbE5390bd23b90e5605fC34Ad0D14',
 			},
 			sUSD: {
-				action: 'deploy',
-				// existingInstance: '0xD739F98B36F53D1511AB7d1e12aA11D9985D4242',
+				action: 'use-existing',
+				existingInstance: '0x4dFACfB15514C21c991ff75Bc7Bf6Fb1F98361ed',
 			},
 			sEUR: {
-				action: 'deploy',
-				// existingInstance: '0x723C9C73bDA0C3d4A5487845425c2d32b8658c30',
+				action: 'use-existing',
+				existingInstance: '0xED4699f180a14B5974c26f494483F9c327Fd381a',
 			},
 			sJPY: {
-				action: 'deploy',
-				// existingInstance: '0xA904c561939164a350a26a817d9e9620fE41c6DE',
+				action: 'use-existing',
+				existingInstance: '0xe05D803fa0c5832Fa2262465290abB25d6C2bFA3',
 			},
 			sAUD: {
-				action: 'deploy',
-				// existingInstance: '0x33e9b09243B07369fEb107D4B56EcD85732368BF',
+				action: 'use-existing',
+				existingInstance: '0x2F8aa243760edC8fFC56C064EeAf4B11938BA8B7',
 			},
 			sKRW: {
-				action: 'deploy',
-				// existingInstance: '0x4dfE0232291B1bD6e010dd2e24BF743b3C66843D',
+				action: 'use-existing',
+				existingInstance: '0x39f0f8eD1DB9Ba3894cC402EC964432f30364e81',
 			},
 			sXAU: {
-				action: 'deploy',
-				// existingInstance: '0x27B3173557f03ED855961eF3e916F23aAA85b0E4',
+				action: 'use-existing',
+				existingInstance: '0x468833D3eeAF9Cf905521a34A66Dff704fDe9dcA',
 			},
 		},
 	},
@@ -171,8 +174,10 @@ const settings = {
 const axios = require('axios');
 const fs = require('fs');
 const linker = require('solc/linker');
+const mkdirp = require('mkdirp');
 const path = require('path');
 const qs = require('querystring');
+const rimraf = require('rimraf');
 const solc = require('solc');
 const solidifier = require('solidifier');
 const { table } = require('table');
@@ -333,23 +338,7 @@ const verifyContracts = async () => {
 
 			const constructorArguments = pattern.exec(deployedBytecode)[1];
 
-			// // Figure out how many constructor args there are.
-			// const constructorABI = artifacts[contractName].abi.find(
-			// 	method => method.type === 'constructor'
-			// );
-
-			// // Encode each parameter with '' as a way of getting the length of the params.
-			// let totalBytes = 0;
-
-			// for (const input of constructorABI.inputs) {
-			// 	if (input.type === 'address') {
-			// 		totalBytes += 32;
-			// 	} else {
-			// 		throw new Error(`Unknown type: ${input.type}`);
-			// 	}
-			// }
-
-			// const constructorArguments = deployedBytecode.slice(-(totalBytes * 2));
+			console.log('Constructor arguments', constructorArguments);
 
 			result = await axios.post(
 				etherscanUrl,
@@ -487,6 +476,20 @@ const build = async () => {
 	// We're built!
 };
 
+const saveFlattenedContracts = async () => {
+	if (settings.saveFlattenedContracts) {
+		rimraf.sync(settings.flattenedContractsFolder);
+
+		for (const contract of Object.keys(flattenedContracts)) {
+			const filename = path.join(settings.flattenedContractsFolder, contract);
+			mkdirp.sync(path.dirname(filename));
+
+			console.log(`Saving ${contract} to ${filename}.`);
+			fs.writeFileSync(filename, flattenedContracts[filename]);
+		}
+	}
+};
+
 const deploy = async () => {
 	await deployContract('SafeDecimalMath');
 
@@ -512,7 +515,7 @@ const deploy = async () => {
 		settings.contracts.Proxy.FeePool.action === 'deploy' ||
 		settings.contracts.FeePool.action === 'deploy'
 	) {
-		await feePoolProxy.methods.setTarget(feePool.address).send(sendParameters());
+		await feePoolProxy.methods.setTarget(feePool.options.address).send(sendParameters());
 	}
 
 	const synthetixState = await deployContract('SynthetixState', [account, account]);
@@ -563,7 +566,7 @@ const deploy = async () => {
 
 	if (
 		settings.contracts.Synthetix.action === 'deploy' ||
-		settings.contracts.synthetixEscrow.action === 'deploy'
+		settings.contracts.SynthetixEscrow.action === 'deploy'
 	) {
 		console.log('Setting escrow on Synthetix...');
 		await synthetix.methods.setEscrow(synthetixEscrow.options.address).send(sendParameters());
@@ -580,8 +583,6 @@ const deploy = async () => {
 	// ----------------
 	// Synths
 	// ----------------
-	const synths = {};
-
 	for (const currencyKey of settings.synths) {
 		const tokenState = await deployContract(`TokenState.${currencyKey}`, [account, ZERO_ADDRESS]);
 		const tokenProxy = await deployContract(`Proxy.${currencyKey}`, [account]);
@@ -595,8 +596,6 @@ const deploy = async () => {
 			account,
 			web3.utils.asciiToHex(currencyKey),
 		]);
-
-		synths[currencyKey] = synth;
 
 		if (
 			settings.contracts.Synth[currencyKey].action === 'deploy' ||
@@ -629,7 +628,7 @@ const deploy = async () => {
 		account,
 		account,
 		synthetix.options.address,
-		synths.sUSD.options.address,
+		deployedContracts['Synth.sUSD'].options.address,
 		feePool.options.address,
 		account,
 		web3.utils.toWei('500'),
@@ -652,4 +651,5 @@ const deploy = async () => {
 // Build and deploy and clean that build directory again.
 build()
 	.then(() => deploy())
+	.then(() => saveFlattenedContracts())
 	.then(() => verifyContracts());
