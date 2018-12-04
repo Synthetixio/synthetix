@@ -250,6 +250,18 @@ contract('Synthetix', async function(accounts) {
 		await assert.revert(synthetix.setEscrow(account1, { from: account1 }));
 	});
 
+	// Token State contract
+
+	it('should allow the owner to set a TokenState contract', async function() {
+		const transaction = await synthetix.setSynthetixState(account1, { from: owner });
+		
+		assert.equal(await synthetix.synthetixState(), account1);
+
+		assert.eventEqual(transaction, 'StateContractChanged', {
+			stateContract: account1,
+		});
+	});
+
 	// Exchange Rates contract
 
 	it('should allow the owner to set an Exchange Rates contract', async function() {

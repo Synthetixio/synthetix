@@ -264,9 +264,8 @@ contract Synthetix is ExternStateToken {
         optionalProxy_onlyOwner
     {
         synthetixState = _synthetixState;
-        // Note: No event here as our contract exceeds max contract size
-        // with these events, and it's unlikely people will need to
-        // track these events specifically.
+
+        emitStateContractChanged(_synthetixState);
     }
 
     /**
@@ -926,6 +925,12 @@ contract Synthetix is ExternStateToken {
     bytes32 constant PREFERREDCURRENCYCHANGED_SIG = keccak256("PreferredCurrencyChanged(address,bytes4)");
     function emitPreferredCurrencyChanged(address account, bytes4 newPreferredCurrency) internal {
         proxy._emit(abi.encode(newPreferredCurrency), 2, PREFERREDCURRENCYCHANGED_SIG, bytes32(account), 0, 0);
+    }
+
+    event StateContractChanged(address stateContract);
+    bytes32 constant STATECONTRACTCHANGED_SIG = keccak256("StateContractChanged(address)");
+    function emitStateContractChanged(address stateContract) internal {
+        proxy._emit(abi.encode(stateContract), 1, STATECONTRACTCHANGED_SIG, 0, 0, 0);
     }
 
     event SynthAdded(bytes4 currencyKey, address newSynth);
