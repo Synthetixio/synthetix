@@ -1906,6 +1906,26 @@ contract('Synthetix', async function(accounts) {
 		assert.bnEqual(debtBalanceAfter, '0');
 	});
 
+	it('should allow a user to exchange the synths they hold in one flavour for another', async function() {
+		// Give some SNX to account1
+		await synthetix.transfer(account1, toUnit('300000'), { from: owner });
+		// Issue
+		const amountIssued = toUnit('2000');
+		await synthetix.issueSynths(sUSD, amountIssued, { from: account1 });
+
+		// Exchange sUSD to sAUD
+		await synthetix.exchange(sUSD, amountIssued, sAUD, account1, { from: account1 });
+
+		// how much sAUD the user is supposed to get
+		const effectiveValue = await synthetix.effectiveValue(sUSD, amountIssued, sAUD);
+
+		// chargeFee = true so we need to minus the fees for this exchange
+		const effectiveValueMinusFees = await feePool.amountReceivedFromExchange(effectiveValue);
+
+		const sAUDBalance = await sAUDContract.balanceOf(account1);
+		assert.bnEqual(effectiveValueMinusFees, sAUDBalance);
+	});
+
 	// TODO: Changes in exchange rates tests
 	// TODO: Are we testing too much Synth functionality here in Synthetix
 });
