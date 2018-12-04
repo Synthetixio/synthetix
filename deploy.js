@@ -34,6 +34,9 @@ const settings = {
 	verifyContracts: true,
 	synths: ['XDR', 'sUSD', 'sEUR', 'sJPY', 'sAUD', 'sKRW', 'sXAU'],
 	contracts: {
+		Depot: {
+			action: 'deploy',
+		},
 		ExchangeRates: {
 			action: 'deploy',
 			// existingInstance: '0xd9c19368d3cE48dB78Ebdbea95699f3f2291E2d1',
@@ -490,8 +493,8 @@ const deploy = async () => {
 	const exchangeRates = await deployContract('ExchangeRates', [
 		account,
 		account,
-		[web3.utils.asciiToHex('sUSD'), web3.utils.asciiToHex('SNX')],
-		[web3.utils.toWei('1', 'ether'), web3.utils.toWei('0.2', 'ether')],
+		[web3.utils.asciiToHex('SNX')],
+		[web3.utils.toWei('0.2', 'ether')],
 	]);
 
 	const feePoolProxy = await deployContract('Proxy.FeePool', [account]);
@@ -577,6 +580,8 @@ const deploy = async () => {
 	// ----------------
 	// Synths
 	// ----------------
+	const synths = {};
+
 	for (const currencyKey of settings.synths) {
 		const tokenState = await deployContract(`TokenState.${currencyKey}`, [account, ZERO_ADDRESS]);
 		const tokenProxy = await deployContract(`Proxy.${currencyKey}`, [account]);
@@ -590,6 +595,8 @@ const deploy = async () => {
 			account,
 			web3.utils.asciiToHex(currencyKey),
 		]);
+
+		synths[currencyKey] = synth;
 
 		if (
 			settings.contracts.Synth[currencyKey].action === 'deploy' ||
@@ -617,6 +624,17 @@ const deploy = async () => {
 			await synthetix.methods.addSynth(synth.options.address).send(sendParameters());
 		}
 	}
+
+	await deployContract('Depot', [
+		account,
+		account,
+		synthetix.options.address,
+		synths.sUSD.options.address,
+		feePool.options.address,
+		account,
+		web3.utils.toWei('500'),
+		web3.utils.toWei('.10'),
+	]);
 
 	console.log();
 	console.log();
