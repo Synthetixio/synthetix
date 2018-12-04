@@ -12,6 +12,25 @@ date:       2018-10-15
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
+The FeePool is a place for users to interact with the fees that
+have been generated from the Synthetix system if they've helped
+to create the economy.
+
+Users stake Synthetix to create Synths. As Synth users transact,
+a small fee is deducted from each transaction, which collects
+in the fee pool. Fees are immediately converted to XDRs, a type
+of reserve currency similar to SDRs used by the IMF:
+https://www.imf.org/en/About/Factsheets/Sheets/2016/08/01/14/51/Special-Drawing-Right-SDR
+
+Users are entitled to withdraw fees from periods that they participated
+in fully, e.g. they have to stake before the period starts. They
+can withdraw fees for the last 6 periods as a single lump sum.
+Currently fee periods are 7 days long, meaning it's assumed
+users will withdraw their fees approximately once a month. Fees
+which are not withdrawn are redistributed to the whole pool,
+enabling these non-claimed fees to go back to the rest of the commmunity.
+
+Fees can be withdrawn in any synth currency.
 
 -----------------------------------------------------------------
 */
@@ -251,6 +270,7 @@ contract FeePool is Proxyable, SelfDestructible {
 
     /**
     * @notice Claim fees for last period when available or not already withdrawn.
+    * @param currencyKey Synth currency you wish to receive the fees in.
     */
     function claimFees(bytes4 currencyKey)
         external
@@ -276,6 +296,7 @@ contract FeePool is Proxyable, SelfDestructible {
 
     /**
      * @notice Record the fee payment in our recentFeePeriods.
+     * @param xdrAmount The amout of fees priced in XDRs.
      */
     function _recordFeePayment(uint xdrAmount)
         internal
@@ -308,6 +329,9 @@ contract FeePool is Proxyable, SelfDestructible {
 
     /**
     * @notice Send the fees to claiming address.
+    * @param account The address to send the fees to.
+    * @param xdrAmount The amount of fees priced in XDRs.
+    * @param destinationCurrencyKey The synth currency the user wishes to receive their fees in (convert to this currency).
     */
     function _payFees(address account, uint xdrAmount, bytes4 destinationCurrencyKey)
         internal
