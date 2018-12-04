@@ -302,7 +302,7 @@ contract Synthetix is ExternStateToken {
         // If there's no change in the currency, then just return the amount they gave us
         if (sourceCurrencyKey == destinationCurrencyKey) return sourceAmount;
 
-        // Calcuate the effective value by going from source -> USD -> destination
+        // Calculate the effective value by going from source -> USD -> destination
         return sourceAmount.multiplyDecimalRound(exchangeRates.rateForCurrency(sourceCurrencyKey))
             .divideDecimalRound(exchangeRates.rateForCurrency(destinationCurrencyKey));
     }
@@ -420,8 +420,7 @@ contract Synthetix is ExternStateToken {
      * @param sourceCurrencyKey The source currency you wish to exchange from
      * @param sourceAmount The amount, specified in UNIT of source currency you wish to exchange
      * @param destinationCurrencyKey The destination currency you wish to obtain.
-     * @param destinationAddress Where the result should go. If this is address(0), or if it's the message sender, no fee
-     *        is deducted, otherwise the standard transfer fee is deducted.
+     * @param destinationAddress Where the result should go. If this is address(0) then it sends back to the message sender.
      * @return Boolean that indicates whether the transfer succeeded or failed.
      */
     function exchange(bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey, address destinationAddress)
@@ -432,8 +431,6 @@ contract Synthetix is ExternStateToken {
     {
         require(sourceCurrencyKey != destinationCurrencyKey, "Exchange must use different synths");
         require(sourceAmount > 0, "Zero amount");
-        require(destinationAddress != address(this), "Synthetix is invalid destination");
-        require(destinationAddress != address(proxy), "Proxy is invalid destination");
 
         // Pass it along, defaulting to the sender as the recipient.
         return _internalExchange(
@@ -446,6 +443,16 @@ contract Synthetix is ExternStateToken {
         );
     }
 
+    /**
+     * @notice Function that allows synth contract to delegate exchanging of a synth that is not the same sourceCurrency
+     * @dev Only the synth contract can call this function
+     * @param from The address to exchange / burn synth from
+     * @param sourceCurrencyKey The source currency you wish to exchange from
+     * @param sourceAmount The amount, specified in UNIT of source currency you wish to exchange
+     * @param destinationCurrencyKey The destination currency you wish to obtain.
+     * @param destinationAddress Where the result should go.
+     * @return Boolean that indicates whether the transfer succeeded or failed.
+     */
     function synthInitiatedExchange(
         address from,
         bytes4 sourceCurrencyKey,
@@ -471,6 +478,14 @@ contract Synthetix is ExternStateToken {
         );
     }
 
+    /**
+     * @notice Function that allows synth contract to delegate sending fee to the fee Pool.
+     * @dev Only the synth contract can call this function.
+     * @param from The address fee is coming from.
+     * @param sourceCurrencyKey source currency fee from.
+     * @param sourceAmount The amount, specified in UNIT of source currency.
+     * @return Boolean that indicates whether the transfer succeeded or failed.
+     */
     function synthInitiatedFeePayment(
         address from,
         bytes4 sourceCurrencyKey,
@@ -493,13 +508,22 @@ contract Synthetix is ExternStateToken {
         );
 
         // Tell the fee pool about this.
-        if (result) {
-            feePool.feePaid(sourceCurrencyKey, sourceAmount);
-        }
+        feePool.feePaid(sourceCurrencyKey, sourceAmount);
 
         return result;
     }
 
+    /**
+     * @notice Function that allows synth contract to delegate sending fee to the fee Pool.
+     * @dev fee pool contract address is not allowed to call function
+     * @param from The address to move synth from
+     * @param sourceCurrencyKey source currency from.
+     * @param sourceAmount The amount, specified in UNIT of source currency.
+     * @param destinationCurrencyKey The destination currency to obtain.
+     * @param destinationAddress Where the result should go.
+     * @param chargeFee Boolean to charge a fee for transaction.
+     * @return Boolean that indicates whether the transfer succeeded or failed.
+     */
     function _internalExchange(
         address from,
         bytes4 sourceCurrencyKey,
@@ -555,7 +579,12 @@ contract Synthetix is ExternStateToken {
         return true;
     }
 
-
+    /**
+     * @notice Function that registers new synth as they are isseud. Calculate delta to append to synthetixState.
+     * @dev Only internal calls from synthetix address.
+     * @param currencyKey The currency to register synths in, for example sUSD or sAUD
+     * @param amount The amount of synths to register with a base of UNIT
+     */
     function _addToDebtRegister(bytes4 currencyKey, uint amount)
         internal
         optionalProxy
@@ -607,13 +636,14 @@ contract Synthetix is ExternStateToken {
 
     /**
      * @notice Issue synths against the sender's SNX.
-     * @dev Issuance is only allowed if the synthetix price isn't stale and the sender is an issuer.
+     * @dev Issuance is only allowed if the synthetix price isn't stale. Amount should be larger than 0.
      * @param currencyKey The currency you wish to issue synths in, for example sUSD or sAUD
      * @param amount The amount of synths you wish to issue with a base of UNIT
      */
     function issueSynths(bytes4 currencyKey, uint amount)
         public
         optionalProxy
+        nonZeroAmount(amount)
         // No need to check if price is stale, as it is checked in issuableSynths.
     {
         require(amount <= remainingIssuableSynths(messageSender, currencyKey), "Amount too large");
@@ -627,7 +657,7 @@ contract Synthetix is ExternStateToken {
 
     /**
      * @notice Issue the maximum amount of Synths possible against the sender's SNX.
-     * @dev Issuance is only allowed if the synthetix price isn't stale and the sender is an issuer.
+     * @dev Issuance is only allowed if the synthetix price isn't stale.
      * @param currencyKey The currency you wish to issue synths in, for example sUSD or sAUD
      */
     function issueMaxSynths(bytes4 currencyKey)
@@ -652,14 +682,13 @@ contract Synthetix is ExternStateToken {
         // No need to check for stale rates as _removeFromDebtRegister calls effectiveValue
         // which does this for us
     {
-        // If they're trying to burn more debt than they actually owe, rather than fail the transaction, let's just
-        // clear their debt and leave them be.
         // How much debt do they have?
         uint debt = debtBalanceOf(messageSender, currencyKey);
 
         require(debt > 0, "No debt to forgive");
 
-        // If they're requesting to burn more than their debt, just burn their debt
+        // If they're trying to burn more debt than they actually owe, rather than fail the transaction, let's just
+        // clear their debt and leave them be.
         uint amountToBurn = debt < amount ? debt : amount;
 
         // Remove their debt from the ledger
@@ -744,11 +773,10 @@ contract Synthetix is ExternStateToken {
         view
         returns (uint)
     {
-        uint debtBalance = debtBalanceOf(issuer, "SNX");
         uint totalOwnedSynthetix = collateral(issuer);
-
         if (totalOwnedSynthetix == 0) return 0;
 
+        uint debtBalance = debtBalanceOf(issuer, "SNX");
         return debtBalance.divideDecimalRound(totalOwnedSynthetix);
     }
 
@@ -867,11 +895,6 @@ contract Synthetix is ExternStateToken {
         _;
     }
 
-    modifier onlyFeePool() {
-        require(msg.sender == address(feePool), "Only fee pool allowed");
-        _;
-    }
-
     modifier notFeeAddress(address account) {
         require(account != feePool.FEE_ADDRESS(), "Fee address not allowed");
         _;
@@ -889,6 +912,11 @@ contract Synthetix is ExternStateToken {
         }
 
         require(isSynth, "Only synth allowed");
+        _;
+    }
+
+    modifier nonZeroAmount(uint _amount) {
+        require(_amount > 0, "Amount needs to be larger than 0");
         _;
     }
 
