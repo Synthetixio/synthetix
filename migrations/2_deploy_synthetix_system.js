@@ -120,7 +120,7 @@ module.exports = async function(deployer, network, accounts) {
 	);
 
 	console.log('Deploying SynthetixEscrow...');
-	const synthetixEscrow = await deployer.deploy(SynthetixEscrow, owner, synthetix.address, {
+	await deployer.deploy(SynthetixEscrow, owner, synthetix.address, {
 		from: deployerAccount,
 	});
 
@@ -229,7 +229,7 @@ module.exports = async function(deployer, network, accounts) {
 	console.log('Deploying Depot...');
 	const sUSDSynth = synths.find(synth => synth.currencyKey === 'sUSD');
 	deployer.link(SafeDecimalMath, Depot);
-	const depot = await deployer.deploy(
+	await deployer.deploy(
 		Depot,
 		owner,
 		fundsWallet,

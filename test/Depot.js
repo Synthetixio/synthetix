@@ -27,7 +27,7 @@ contract('Depot', async function(accounts) {
 		deployerAccount,
 		owner,
 		oracle,
-		feeAuthority,
+		,
 		fundsWallet,
 		address1,
 		address2,
@@ -301,7 +301,7 @@ contract('Depot', async function(accounts) {
 		it('if the deposit synth amount of 50 is the minimumDepositAmount', async function() {
 			const synthsToDeposit = toUnit('50');
 
-			const txn = await synth.transferSenderPaysFee(depot.address, synthsToDeposit, {
+			await synth.transferSenderPaysFee(depot.address, synthsToDeposit, {
 				from: depositor,
 			});
 
@@ -326,7 +326,7 @@ contract('Depot', async function(accounts) {
 
 		it('if the deposit synth amount of 51 is more than the minimumDepositAmount', async function() {
 			const synthsToDeposit = toUnit('51');
-			const txn = await synth.transferSenderPaysFee(depot.address, synthsToDeposit, {
+			await synth.transferSenderPaysFee(depot.address, synthsToDeposit, {
 				from: depositor,
 			});
 
@@ -390,7 +390,7 @@ contract('Depot', async function(accounts) {
 
 		it('if the contract is paused', async function() {
 			// Pause Contract
-			const pausedContract = await depot.setPaused(true, { from: owner });
+			await depot.setPaused(true, { from: owner });
 
 			// Attempt exchange
 			await assert.revert(
@@ -617,7 +617,7 @@ contract('Depot', async function(accounts) {
 		it('Ensure user can withdraw their Synth deposit', async function() {
 			const synthsToDeposit = web3.utils.toWei('500');
 			// Send the synths to the Token Depot.
-			const depositTx = await synth.transferSenderPaysFee(depot.address, synthsToDeposit, {
+			await synth.transferSenderPaysFee(depot.address, synthsToDeposit, {
 				from: depositor,
 			});
 
@@ -747,7 +747,7 @@ contract('Depot', async function(accounts) {
 				value: ethToSend,
 			});
 
-			//Queue should now be [(deposit3 - synthsPurchasedAmount )]
+			// Queue should now be [(deposit3 - synthsPurchasedAmount )]
 			const remainingSynths =
 				web3.utils.fromWei(deposit3) - web3.utils.fromWei(ethToSend) * web3.utils.fromWei(usdEth);
 			assert.equal(await depot.depositStartIndex(), 2);
@@ -824,7 +824,6 @@ contract('Depot', async function(accounts) {
 		const purchaser = address1;
 		let depot;
 		let synthetix;
-		let synth;
 		const ethUSD = web3.utils.toWei('500');
 		const snxUSD = web3.utils.toWei('.10');
 
