@@ -167,7 +167,7 @@ contract ExchangeRates is SelfDestructible {
     {
         uint total = 0;
 
-        for (uint8 i = 0; i < xdrParticipants.length; i++) {
+        for (uint i = 0; i < xdrParticipants.length; i++) {
             total = rates[xdrParticipants[i]].add(total);
         }
 
