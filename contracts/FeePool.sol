@@ -106,9 +106,10 @@ contract FeePool is Proxyable, SelfDestructible {
 
         // Set our initial fee period
         recentFeePeriods[0].feePeriodId = 1;
-        recentFeePeriods[0].startingDebtIndex = 0;
         recentFeePeriods[0].startTime = now;
-        recentFeePeriods[0].feesToDistribute = 0;
+        // Gas optimisation: These do not need to be initialised. They start at 0.
+        // recentFeePeriods[0].startingDebtIndex = 0;
+        // recentFeePeriods[0].feesToDistribute = 0;
 
         // And the next one starts at 2.
         nextFeePeriodId = 2;
