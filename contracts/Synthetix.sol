@@ -419,8 +419,7 @@ contract Synthetix is ExternStateToken {
      * @param sourceCurrencyKey The source currency you wish to exchange from
      * @param sourceAmount The amount, specified in UNIT of source currency you wish to exchange
      * @param destinationCurrencyKey The destination currency you wish to obtain.
-     * @param destinationAddress Where the result should go. If this is address(0), or if it's the message sender, no fee
-     *        is deducted, otherwise the standard transfer fee is deducted.
+     * @param destinationAddress Where the result should go. If this is address(0) then it sends back to the message sender.
      * @return Boolean that indicates whether the transfer succeeded or failed.
      */
     function exchange(bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey, address destinationAddress)
