@@ -149,7 +149,7 @@ contract FeePool is Proxyable, SelfDestructible {
      * distributing fees.
      */
     function setFeeAuthority(address _feeAuthority)
-        public
+        external
         optionalProxy_onlyOwner
     {
         feeAuthority = _feeAuthority;
@@ -161,7 +161,7 @@ contract FeePool is Proxyable, SelfDestructible {
      * @notice Set the fee period duration
      */
     function setFeePeriodDuration(uint _feePeriodDuration)
-        public
+        external
         optionalProxy_onlyOwner
     {
         require(_feePeriodDuration >= MIN_FEE_PERIOD_DURATION, "New fee period cannot be less than minimum fee period duration");
@@ -176,7 +176,7 @@ contract FeePool is Proxyable, SelfDestructible {
      * @notice Set the synthetix contract
      */
     function setSynthetix(Synthetix _synthetix)
-        public
+        external
         optionalProxy_onlyOwner
     {
         require(address(_synthetix) != address(0), "New Synthetix must be non-zero");
@@ -369,7 +369,7 @@ contract FeePool is Proxyable, SelfDestructible {
      * @param value The amount of tokens you intend to send.
      */
     function amountReceivedFromTransfer(uint value)
-        public
+        external
         view
         returns (uint)
     {
@@ -415,7 +415,7 @@ contract FeePool is Proxyable, SelfDestructible {
      * @param value The amount of destination currency tokens they received after the exchange.
      */
     function amountReceivedFromExchange(uint value)
-        public
+        external
         view
         returns (uint)
     {
