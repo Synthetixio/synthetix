@@ -247,11 +247,12 @@ contract('Synthetix', async function(accounts) {
 	// Token State contract
 
 	it('should allow the owner to set a TokenState contract', async function() {
-		const transaction = await synthetix.setSynthetixState(account3, { from: owner });
-		assert.equal(await synthetix.synthetixState(), account3);
+		const transaction = await synthetix.setSynthetixState(account1, { from: owner });
+		
+		assert.equal(await synthetix.synthetixState(), account1);
 
 		assert.eventEqual(transaction, 'StateContractChanged', {
-			stateContract: account3,
+			stateContract: account1,
 		});
 	});
 

@@ -884,7 +884,7 @@ contract Synthetix is ExternStateToken {
         proxy._emit(abi.encode(newPreferredCurrency), 2, PREFERREDCURRENCYCHANGED_SIG, bytes32(account), 0, 0);
     }
 
-    event StateContractChanged(address indexed stateContract);
+    event StateContractChanged(address stateContract);
     bytes32 constant STATECONTRACTCHANGED_SIG = keccak256("StateContractChanged(address)");
     function emitStateContractChanged(address stateContract) internal {
         proxy._emit(abi.encode(stateContract), 1, STATECONTRACTCHANGED_SIG, 0, 0, 0);
