@@ -150,7 +150,7 @@ contract FeePool is Proxyable, SelfDestructible {
      * distributing fees.
      */
     function setFeeAuthority(address _feeAuthority)
-        public
+        external
         optionalProxy_onlyOwner
     {
         feeAuthority = _feeAuthority;
@@ -162,7 +162,7 @@ contract FeePool is Proxyable, SelfDestructible {
      * @notice Set the fee period duration
      */
     function setFeePeriodDuration(uint _feePeriodDuration)
-        public
+        external
         optionalProxy_onlyOwner
     {
         require(_feePeriodDuration >= MIN_FEE_PERIOD_DURATION, "New fee period cannot be less than minimum fee period duration");
@@ -177,7 +177,7 @@ contract FeePool is Proxyable, SelfDestructible {
      * @notice Set the synthetix contract
      */
     function setSynthetix(Synthetix _synthetix)
-        public
+        external
         optionalProxy_onlyOwner
     {
         require(address(_synthetix) != address(0), "New Synthetix must be non-zero");
@@ -223,11 +223,11 @@ contract FeePool is Proxyable, SelfDestructible {
 
         // Shift the previous fee periods across to make room for the new one.
         // Condition checks for overflow when uint subtracts one from zero
-        // Could be written with int8 instead of uint8, but then we have to convert everywhere
+        // Could be written with int instead of uint, but then we have to convert everywhere
         // so it felt better from a gas perspective to just change the condition to check
         // for overflow after subtracting one from zero.
-        for (uint8 i = FEE_PERIOD_LENGTH - 2; i < FEE_PERIOD_LENGTH; i--) {
-            uint8 next = i + 1;
+        for (uint i = FEE_PERIOD_LENGTH - 2; i < FEE_PERIOD_LENGTH; i--) {
+            uint next = i + 1;
 
             recentFeePeriods[next].feePeriodId = recentFeePeriods[i].feePeriodId;
             recentFeePeriods[next].startingDebtIndex = recentFeePeriods[i].startingDebtIndex;
@@ -249,6 +249,9 @@ contract FeePool is Proxyable, SelfDestructible {
         emitFeePeriodClosed(recentFeePeriods[1].feePeriodId);
     }
 
+    /**
+    * @notice Claim fees for last period when available or not already withdrawn.
+    */
     function claimFees(bytes4 currencyKey)
         external
         optionalProxy
@@ -271,6 +274,9 @@ contract FeePool is Proxyable, SelfDestructible {
         return true;
     }
 
+    /**
+     * @notice Record the fee payment in our recentFeePeriods.
+     */
     function _recordFeePayment(uint xdrAmount)
         internal
     {
@@ -280,7 +286,7 @@ contract FeePool is Proxyable, SelfDestructible {
         // Start at the oldest period and record the amount, moving to newer periods
         // until we've exhausted the amount.
         // The condition checks for overflow because we're going to 0 with an unsigned int.
-        for (uint8 i = FEE_PERIOD_LENGTH - 1; i < FEE_PERIOD_LENGTH; i--) {
+        for (uint i = FEE_PERIOD_LENGTH - 1; i < FEE_PERIOD_LENGTH; i--) {
             uint delta = recentFeePeriods[i].feesToDistribute.sub(recentFeePeriods[i].feesClaimed);
 
             if (delta > 0) {
@@ -300,6 +306,9 @@ contract FeePool is Proxyable, SelfDestructible {
         assert(remainingToAllocate == 0);
     }
 
+    /**
+    * @notice Send the fees to claiming address.
+    */
     function _payFees(address account, uint xdrAmount, bytes4 destinationCurrencyKey)
         internal
         notFeeAddress(account)
@@ -370,7 +379,7 @@ contract FeePool is Proxyable, SelfDestructible {
      * @param value The amount of tokens you intend to send.
      */
     function amountReceivedFromTransfer(uint value)
-        public
+        external
         view
         returns (uint)
     {
@@ -416,7 +425,7 @@ contract FeePool is Proxyable, SelfDestructible {
      * @param value The amount of destination currency tokens they received after the exchange.
      */
     function amountReceivedFromExchange(uint value)
-        public
+        external
         view
         returns (uint)
     {
@@ -435,7 +444,7 @@ contract FeePool is Proxyable, SelfDestructible {
         uint totalFees = 0;
 
         // Fees in fee period [0] are not yet available for withdrawal
-        for (uint8 i = 1; i < FEE_PERIOD_LENGTH; i++) {
+        for (uint i = 1; i < FEE_PERIOD_LENGTH; i++) {
             totalFees = totalFees.add(recentFeePeriods[i].feesToDistribute);
             totalFees = totalFees.sub(recentFeePeriods[i].feesClaimed);
         }
@@ -458,7 +467,7 @@ contract FeePool is Proxyable, SelfDestructible {
         uint totalFees = 0;
 
         // Fees in fee period [0] are not yet available for withdrawal
-        for (uint8 i = 1; i < FEE_PERIOD_LENGTH; i++) {
+        for (uint i = 1; i < FEE_PERIOD_LENGTH; i++) {
             totalFees = totalFees.add(userFees[i]);
         }
 
@@ -481,7 +490,7 @@ contract FeePool is Proxyable, SelfDestructible {
         // 0% - 20%: Fee is calculated based on percentage of economy issued.
         // 20% - 30%: 25% reduction in fees
         // 30% - 40%: 50% reduction in fees
-        // >40% - 75% reduction in fees
+        // >40%: 75% reduction in fees
         if (ratio <= TWENTY_PERCENT) {
             return 0;
         } else if (ratio > TWENTY_PERCENT && ratio <= THIRTY_PERCENT) {
@@ -521,9 +530,9 @@ contract FeePool is Proxyable, SelfDestructible {
         uint penalty = currentPenalty(account);
         
         // Go through our fee periods and figure out what we owe them.
-        // The [0] fee period does is not yet ready to claim, but it is a fee period that they can have
+        // The [0] fee period is not yet ready to claim, but it is a fee period that they can have
         // fees owing for, so we need to report on it anyway.
-        for (uint8 i = 0; i < FEE_PERIOD_LENGTH; i++) {
+        for (uint i = 0; i < FEE_PERIOD_LENGTH; i++) {
             // Were they a part of this period in its entirety?
             // We don't allow pro-rata participation to reduce the ability to game the system by
             // issuing and burning multiple times in a period or close to the ends of periods.
