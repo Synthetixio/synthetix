@@ -635,13 +635,14 @@ contract Synthetix is ExternStateToken {
 
     /**
      * @notice Issue synths against the sender's SNX.
-     * @dev Issuance is only allowed if the synthetix price isn't stale.
+     * @dev Issuance is only allowed if the synthetix price isn't stale. Amount should be larger than 0.
      * @param currencyKey The currency you wish to issue synths in, for example sUSD or sAUD
      * @param amount The amount of synths you wish to issue with a base of UNIT
      */
     function issueSynths(bytes4 currencyKey, uint amount)
         public
         optionalProxy
+        nonZeroAmount(amount)
         // No need to check if price is stale, as it is checked in issuableSynths.
     {
         require(amount <= remainingIssuableSynths(messageSender, currencyKey), "Amount too large");
@@ -896,6 +897,11 @@ contract Synthetix is ExternStateToken {
         }
 
         require(isSynth, "Only synth allowed");
+        _;
+    }
+
+    modifier nonZeroAmount(uint _amount) {
+        require(_amount > 0, "Amount needs to be larger than 0");
         _;
     }
 
