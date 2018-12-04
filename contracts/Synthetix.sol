@@ -431,8 +431,6 @@ contract Synthetix is ExternStateToken {
     {
         require(sourceCurrencyKey != destinationCurrencyKey, "Exchange must use different synths");
         require(sourceAmount > 0, "Zero amount");
-        require(destinationAddress != address(this), "Synthetix is invalid destination");
-        require(destinationAddress != address(proxy), "Proxy is invalid destination");
 
         // Pass it along, defaulting to the sender as the recipient.
         return _internalExchange(
