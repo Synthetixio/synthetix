@@ -730,6 +730,14 @@ contract Synthetix is ExternStateToken {
         return destinationValue.multiplyDecimal(synthetixState.issuanceRatio());
     }
 
+    /**
+     * @notice The current collateralisation ratio for a user. Collateralisation ratio varies over time
+     * as the value of the underlying Synthetix asset changes, e.g. if a user issues their maximum available
+     * synths when they hold $10 worth of Synthetix, they will have issued $2 worth of synths. If the value
+     * of Synthetix changes, the ratio returned by this function will adjust accordlingly. Users are
+     * incentivised to maintain a collateralisation ratio as close to the issuance ratio as possible by
+     * altering the amount of fees they're able to claim from the system.
+     */
     function collateralisationRatio(address issuer)
         public
         view
@@ -743,6 +751,12 @@ contract Synthetix is ExternStateToken {
         return debtBalance.divideDecimalRound(totalOwnedSynthetix);
     }
 
+/**
+     * @notice If a user issues synths backed by SNX in their wallet, the SNX become locked. This function
+     * will tell you how many synths a user has to give back to the system in order to unlock their original
+     * debt position. This is priced in whichever synth is passed in as a currency key, e.g. you can price
+     * the debt in sUSD, XDR, or any other synth you wish.
+     */
     function debtBalanceOf(address issuer, bytes4 currencyKey)
         public
         view

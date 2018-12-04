@@ -270,6 +270,7 @@ contract FeePool is Proxyable, SelfDestructible {
 
     /**
     * @notice Claim fees for last period when available or not already withdrawn.
+    * @param currencyKey Synth currency you wish to receive the fees in.
     */
     function claimFees(bytes4 currencyKey)
         external
@@ -295,6 +296,7 @@ contract FeePool is Proxyable, SelfDestructible {
 
     /**
      * @notice Record the fee payment in our recentFeePeriods.
+     * @param xdrAmount The amout of fees priced in XDRs.
      */
     function _recordFeePayment(uint xdrAmount)
         internal
@@ -327,6 +329,9 @@ contract FeePool is Proxyable, SelfDestructible {
 
     /**
     * @notice Send the fees to claiming address.
+    * @param account The address to send the fees to.
+    * @param xdrAmount The amount of fees priced in XDRs.
+    * @param destinationCurrencyKey The synth currency the user wishes to receive their fees in (convert to this currency).
     */
     function _payFees(address account, uint xdrAmount, bytes4 destinationCurrencyKey)
         internal
