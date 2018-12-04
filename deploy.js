@@ -484,8 +484,8 @@ const saveFlattenedContracts = async () => {
 			const filename = path.join(settings.flattenedContractsFolder, contract);
 			mkdirp.sync(path.dirname(filename));
 
-			console.log(`Saving ${contract} to ${filename}.`);
-			fs.writeFileSync(filename, flattenedContracts[filename]);
+			console.log(`Saving ${contract} to ${settings.flattenedContractsFolder}.`);
+			fs.writeFileSync(filename, flattenedContracts[contract].content);
 		}
 	}
 };
