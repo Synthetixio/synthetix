@@ -501,16 +501,20 @@ contract FeePool is Proxyable, SelfDestructible {
         view
         returns (uint[FEE_PERIOD_LENGTH])
     {
+        uint[FEE_PERIOD_LENGTH] memory result;
+
         // What's the user's debt entry index and the debt they owe to the system
         uint initialDebtOwnership;
         uint debtEntryIndex;
         (initialDebtOwnership, debtEntryIndex) = synthetix.synthetixState().issuanceData(account);
-        uint debtBalance = synthetix.debtBalanceOf(account, "XDR");
         uint totalSynths = synthetix.totalIssuedSynths("XDR");
+
+        // If there are no XDR synths, then they don't have any fees
+        if (totalSynths == 0) return result;
+
+        uint debtBalance = synthetix.debtBalanceOf(account, "XDR");
         uint userOwnershipPercentage = debtBalance.divideDecimal(totalSynths);
         uint penalty = currentPenalty(account);
-
-        uint[FEE_PERIOD_LENGTH] memory result;
 
         // If they don't have any debt ownership, they don't have any fees
         if (initialDebtOwnership == 0) return result;
