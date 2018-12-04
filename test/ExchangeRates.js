@@ -32,8 +32,8 @@ contract('Exchange Rates', async function(accounts) {
 		const instance = await ExchangeRates.new(
 			owner,
 			oracle,
-			[web3.utils.asciiToHex('sUSD'), web3.utils.asciiToHex('SNX')],
-			[web3.utils.toWei('1', 'ether'), web3.utils.toWei('0.2', 'ether')],
+			[web3.utils.asciiToHex('SNX')],
+			[web3.utils.toWei('0.2', 'ether')],
 			{
 				from: deployerAccount,
 			}
@@ -105,12 +105,8 @@ contract('Exchange Rates', async function(accounts) {
 			ExchangeRates.new(
 				owner,
 				oracle,
-				[
-					web3.utils.asciiToHex('sUSD'),
-					web3.utils.asciiToHex('SNX'),
-					web3.utils.asciiToHex('GOLD'),
-				],
-				[web3.utils.toWei('1', 'ether'), web3.utils.toWei('0.2', 'ether')],
+				[web3.utils.asciiToHex('SNX'), web3.utils.asciiToHex('GOLD')],
+				[web3.utils.toWei('0.2', 'ether')],
 				{
 					from: deployerAccount,
 				}
@@ -270,6 +266,22 @@ contract('Exchange Rates', async function(accounts) {
 			web3.utils.asciiToHex('lGHI')
 		);
 		assert.equal(lastUpdatedTimeLGHI.toNumber(), updatedTime);
+	});
+
+	it('should revert when trying to set sUSD price', async function() {
+		const instance = await ExchangeRates.deployed();
+		const timeSent = await currentTime();
+
+		await fastForward(1);
+
+		await assert.revert(
+			instance.updateRates(
+				[web3.utils.asciiToHex('sUSD')],
+				[web3.utils.toWei('1.0', 'ether')],
+				timeSent,
+				{ from: oracle }
+			)
+		);
 	});
 
 	it('should emit RatesUpdated event when rate updated', async function() {
@@ -641,23 +653,18 @@ contract('Exchange Rates', async function(accounts) {
 
 	it('should never allow sUSD to go stale via anyRateIsStale', async function() {
 		const instance = await ExchangeRates.deployed();
-		const keysArray = [
-			web3.utils.asciiToHex('sUSD'),
-			web3.utils.asciiToHex('SNX'),
-			web3.utils.asciiToHex('GOLD'),
-		];
+		const keysArray = [web3.utils.asciiToHex('SNX'), web3.utils.asciiToHex('GOLD')];
+
 		await instance.updateRates(
 			keysArray,
-			[
-				web3.utils.toWei('1', 'ether'),
-				web3.utils.toWei('0.1', 'ether'),
-				web3.utils.toWei('0.2', 'ether'),
-			],
+			[web3.utils.toWei('0.1', 'ether'), web3.utils.toWei('0.2', 'ether')],
 			await currentTime(),
 			{ from: oracle }
 		);
 		assert.equal(await instance.anyRateIsStale(keysArray), false);
+
 		await fastForward(await instance.rateStalePeriod());
+
 		await instance.updateRates(
 			[web3.utils.asciiToHex('SNX'), web3.utils.asciiToHex('GOLD')],
 			[web3.utils.toWei('0.1', 'ether'), web3.utils.toWei('0.2', 'ether')],
@@ -968,8 +975,8 @@ contract('Exchange Rates', async function(accounts) {
 	it('should update the XDR rate correctly with all exchange rates', async function() {
 		const instance = await ExchangeRates.deployed();
 		const timeSent = await currentTime();
-		const keysArray = ['sUSD', 'sAUD', 'sEUR', 'sCHF', 'sGBP'].map(web3.utils.asciiToHex);
-		const rates = ['1.0', '0.4', '1.2', '3.3', '1.95'].map(toUnit);
+		const keysArray = ['sAUD', 'sEUR', 'sCHF', 'sGBP'].map(web3.utils.asciiToHex);
+		const rates = ['0.4', '1.2', '3.3', '1.95'].map(toUnit);
 		await instance.updateRates(keysArray, rates, timeSent, {
 			from: oracle,
 		});
@@ -980,8 +987,8 @@ contract('Exchange Rates', async function(accounts) {
 		assert.equal(lastUpdatedTimeXDR, timeSent);
 
 		const lastUpdatedCurrencyXDR = await instance.rates.call(web3.utils.asciiToHex('XDR'));
-		let ratesTotal = web3.utils.toBN('0');
-		for (let rate of rates) {
+		let ratesTotal = toUnit('1'); // sUSD is always UNIT
+		for (const rate of rates) {
 			ratesTotal = ratesTotal.add(rate);
 		}
 		assert.bnEqual(lastUpdatedCurrencyXDR, ratesTotal);
@@ -989,8 +996,8 @@ contract('Exchange Rates', async function(accounts) {
 
 	it('should update the XDR rates correctly with a subset of exchange rates', async function() {
 		const timeSent = await currentTime();
-		const keysArray = ['sUSD', 'sCHF', 'sGBP'].map(web3.utils.asciiToHex);
-		const rates = ['1', '3.3', '1.95'].map(toUnit);
+		const keysArray = ['sCHF', 'sGBP'].map(web3.utils.asciiToHex);
+		const rates = ['3.3', '1.95'].map(toUnit);
 		const instance = await ExchangeRates.new(owner, oracle, keysArray, rates, {
 			from: deployerAccount,
 		});
@@ -1001,7 +1008,7 @@ contract('Exchange Rates', async function(accounts) {
 		assert.equal(lastUpdatedTimeXDR, timeSent);
 
 		const lastUpdatedCurrencyXDR = await instance.rates.call(web3.utils.asciiToHex('XDR'));
-		let ratesTotal = web3.utils.toBN('0');
+		let ratesTotal = toUnit('1'); // sUSD is always UNIT
 		for (let rate of rates) {
 			ratesTotal = ratesTotal.add(rate);
 		}
