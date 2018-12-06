@@ -131,7 +131,7 @@ contract Depot is SelfDestructible, Pausable {
         // Other contracts needed
         Synthetix _synthetix,
         Synth _synth,
-				FeePool _feePool,
+		FeePool _feePool,
 
         // Oracle values - Allows for price updates
         address _oracle,
