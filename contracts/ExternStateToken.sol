@@ -7,6 +7,7 @@ file:       ExternStateToken.sol
 version:    1.3
 author:     Anton Jurisevic
             Dominic Romanowski
+            Kevin Brown
 
 date:       2018-05-29
 
@@ -23,30 +24,33 @@ This contract utilises an external state for upgradeability.
 -----------------------------------------------------------------
 */
 
-pragma solidity 0.4.24;
+pragma solidity 0.4.25;
 
-
-import "contracts/SafeDecimalMath.sol";
-import "contracts/SelfDestructible.sol";
-import "contracts/TokenState.sol";
-import "contracts/Proxyable.sol";
-import "contracts/ReentrancyPreventer.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "./SafeDecimalMath.sol";
+import "./SelfDestructible.sol";
+import "./TokenState.sol";
+import "./Proxyable.sol";
+import "./TokenFallbackCaller.sol";
 
 /**
  * @title ERC20 Token contract, with detached state and designed to operate behind a proxy.
  */
-contract ExternStateToken is SafeDecimalMath, SelfDestructible, Proxyable, ReentrancyPreventer {
+contract ExternStateToken is SelfDestructible, Proxyable, TokenFallbackCaller {
+
+    using SafeMath for uint;
+    using SafeDecimalMath for uint;
 
     /* ========== STATE VARIABLES ========== */
 
     /* Stores balances and allowances. */
     TokenState public tokenState;
 
-    /* Other ERC20 fields.
-     * Note that the decimals field is defined in SafeDecimalMath.*/
+    /* Other ERC20 fields. */
     string public name;
     string public symbol;
     uint public totalSupply;
+    uint8 public decimals;
 
     /**
      * @dev Constructor.
@@ -59,15 +63,17 @@ contract ExternStateToken is SafeDecimalMath, SelfDestructible, Proxyable, Reent
      */
     constructor(address _proxy, TokenState _tokenState,
                 string _name, string _symbol, uint _totalSupply,
-                address _owner)
+                uint8 _decimals, address _owner)
         SelfDestructible(_owner)
         Proxyable(_proxy, _owner)
         public
     {
+        tokenState = _tokenState;
+
         name = _name;
         symbol = _symbol;
         totalSupply = _totalSupply;
-        tokenState = _tokenState;
+        decimals = _decimals;
     }
 
     /* ========== VIEWS ========== */
@@ -111,9 +117,8 @@ contract ExternStateToken is SafeDecimalMath, SelfDestructible, Proxyable, Reent
         emitTokenStateUpdated(_tokenState);
     }
 
-    function _internalTransfer(address from, address to, uint value) 
+    function _internalTransfer(address from, address to, uint value, bytes data) 
         internal
-        preventReentrancy
         returns (bool)
     { 
         /* Disallow transfers to irretrievable-addresses. */
@@ -121,48 +126,15 @@ contract ExternStateToken is SafeDecimalMath, SelfDestructible, Proxyable, Reent
         require(to != address(this), "Cannot transfer to the underlying contract");
         require(to != address(proxy), "Cannot transfer to the proxy contract");
 
-        /* Insufficient balance will be handled by the safe subtraction. */
-        tokenState.setBalanceOf(from, safeSub(tokenState.balanceOf(from), value));
-        tokenState.setBalanceOf(to, safeAdd(tokenState.balanceOf(to), value));
+        // Insufficient balance will be handled by the safe subtraction.
+        tokenState.setBalanceOf(from, tokenState.balanceOf(from).sub(value));
+        tokenState.setBalanceOf(to, tokenState.balanceOf(to).add(value));
 
-        /*
-        If we're transferring to a contract and it implements the havvenTokenFallback function, call it.
-        This isn't ERC223 compliant because:
-           1. We don't revert if the contract doesn't implement havvenTokenFallback.
-              This is because many DEXes and other contracts that expect to work with the standard
-              approve / transferFrom workflow don't implement tokenFallback but can still process our tokens as
-              usual, so it feels very harsh and likely to cause trouble if we add this restriction after having
-              previously gone live with a vanilla ERC20.
-           2. We don't pass the bytes parameter.
-              This is because of this solidity bug: https://github.com/ethereum/solidity/issues/2884
-           3. We also don't let the user use a custom tokenFallback. We figure as we're already not standards
-              compliant, there won't be a use case where users can't just implement our specific function.
-
-        As such we've called the function havvenTokenFallback to be clear that we are not following the standard.
-        */
-
-        // Is the to address a contract? We can check the code size on that address and know.
-        uint length;
-
-        // solium-disable-next-line security/no-inline-assembly
-        assembly {
-            // Retrieve the size of the code on the recipient address
-            length := extcodesize(to)
-        }
-
-        // If there's code there, it's a contract
-        if (length > 0) {
-            // Now we need to optionally call havvenTokenFallback(address from, uint value).
-            // We can't call it the normal way because that reverts when the recipient doesn't implement the function.
-            // We'll use .call(), which means we need the function selector. We've pre-computed
-            // abi.encodeWithSignature("havvenTokenFallback(address,uint256)"), to save some gas.
-
-            // solium-disable-next-line security/no-low-level-calls
-            to.call(0xcbff5d96, messageSender, value);
-
-            // And yes, we specifically don't care if this call fails, so we're not checking the return value.
-        }
-
+        // If the recipient is a contract, we need to call tokenFallback on it so they can do ERC223
+        // actions when receiving our tokens. Unlike the standard, however, we don't revert if the
+        // recipient contract doesn't implement tokenFallback.
+        callTokenFallbackIfNeeded(from, to, value, data);
+        
         // Emit a standard ERC20 transfer event
         emitTransfer(from, to, value);
 
@@ -173,24 +145,24 @@ contract ExternStateToken is SafeDecimalMath, SelfDestructible, Proxyable, Reent
      * @dev Perform an ERC20 token transfer. Designed to be called by transfer functions possessing
      * the onlyProxy or optionalProxy modifiers.
      */
-    function _transfer_byProxy(address from, address to, uint value)
+    function _transfer_byProxy(address from, address to, uint value, bytes data)
         internal
         returns (bool)
     {
-        return _internalTransfer(from, to, value);
+        return _internalTransfer(from, to, value, data);
     }
 
     /**
      * @dev Perform an ERC20 token transferFrom. Designed to be called by transferFrom functions
      * possessing the optionalProxy or optionalProxy modifiers.
      */
-    function _transferFrom_byProxy(address sender, address from, address to, uint value)
+    function _transferFrom_byProxy(address sender, address from, address to, uint value, bytes data)
         internal
         returns (bool)
     {
         /* Insufficient allowance will be handled by the safe subtraction. */
-        tokenState.setAllowance(from, sender, safeSub(tokenState.allowance(from, sender), value));
-        return _internalTransfer(from, to, value);
+        tokenState.setAllowance(from, sender, tokenState.allowance(from, sender).sub(value));
+        return _internalTransfer(from, to, value, data);
     }
 
     /**

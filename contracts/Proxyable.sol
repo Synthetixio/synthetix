@@ -24,10 +24,10 @@ directly and through the proxy.
 */
 
 
-pragma solidity 0.4.24;
+pragma solidity 0.4.25;
 
-import "contracts/Owned.sol";
-import "contracts/Proxy.sol";
+import "./Owned.sol";
+import "./Proxy.sol";
 
 // This contract should be treated like an abstract contract
 contract Proxyable is Owned {

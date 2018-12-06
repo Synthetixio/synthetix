@@ -30,11 +30,11 @@ into the underlying contract as the state parameter, messageSender.
 */
 
 
-pragma solidity 0.4.24;
+pragma solidity 0.4.25;
 
 
-import "contracts/Owned.sol";
-import "contracts/Proxyable.sol";
+import "./Owned.sol";
+import "./Proxyable.sol";
 
 
 contract Proxy is Owned {
@@ -62,9 +62,7 @@ contract Proxy is Owned {
         useDELEGATECALL = value;
     }
 
-    function _emit(bytes callData, uint numTopics,
-                   bytes32 topic1, bytes32 topic2,
-                   bytes32 topic3, bytes32 topic4)
+    function _emit(bytes callData, uint numTopics, bytes32 topic1, bytes32 topic2, bytes32 topic3, bytes32 topic4)
         external
         onlyTarget
     {
@@ -133,7 +131,7 @@ contract Proxy is Owned {
     }
 
     modifier onlyTarget {
-        require(Proxyable(msg.sender) == target, "This action can only be performed by the proxy target");
+        require(Proxyable(msg.sender) == target, "Must be proxy target");
         _;
     }
 

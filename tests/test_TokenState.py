@@ -1,5 +1,5 @@
 from utils.deployutils import (
-    UNIT, MASTER, DUMMY, 
+    UNIT, MASTER, DUMMY,
     compile_contracts, attempt_deploy,
     take_snapshot, restore_snapshot
 )
@@ -9,7 +9,8 @@ from tests.contract_interfaces.token_state_interface import TokenStateInterface
 
 def deploy_state(name, compiled, sender, owner, supply, beneficiary, associated_contract):
     state_contract, construction_tx = attempt_deploy(
-        compiled, name, sender, [owner, supply, beneficiary, associated_contract]
+        compiled, name, sender, [owner, supply,
+                                 beneficiary, associated_contract]
     )
     return state_contract
 
@@ -36,7 +37,8 @@ class TestTokenState(HavvenTestCase):
     def deployContracts(cls):
         cls.owner = MASTER
         cls.associate = DUMMY
-        tokenstate, cls.deploy_tx = attempt_deploy(cls.compiled, 'TokenState', MASTER, [cls.owner, cls.associate])
+        tokenstate, cls.deploy_tx = attempt_deploy(
+            cls.compiled, 'TokenState', MASTER, [cls.owner, cls.associate])
         return tokenstate
 
     @classmethod
@@ -47,7 +49,8 @@ class TestTokenState(HavvenTestCase):
         cls.event_map = cls.event_maps['TokenState']
 
         cls.tokenstate_contract = cls.deployContracts()
-        cls.tokenstate = TokenStateInterface(cls.tokenstate_contract, 'TokenState')
+        cls.tokenstate = TokenStateInterface(
+            cls.tokenstate_contract, 'TokenState')
         cls.owner = MASTER
         cls.associate = DUMMY
 
@@ -66,7 +69,8 @@ class TestTokenState(HavvenTestCase):
         self.assertNotEqual(self.tokenstate.associatedContract(), new_token)
 
         # Non-owner can't set the associated contract
-        self.assertReverts(self.tokenstate.setAssociatedContract, DUMMY, new_token)
+        self.assertReverts(
+            self.tokenstate.setAssociatedContract, DUMMY, new_token)
 
         self.assertEqual(self.tokenstate.balanceOf(DUMMY), 0)
         self.tokenstate.setBalanceOf(self.associate, DUMMY, UNIT)
@@ -85,7 +89,8 @@ class TestTokenState(HavvenTestCase):
 
         # Only the associated contract should be able to set allowances.
         self.assertNotEqual(self.associate, MASTER)
-        self.assertReverts(self.tokenstate.setAllowance, MASTER, MASTER, DUMMY, UNIT)
+        self.assertReverts(self.tokenstate.setAllowance,
+                           MASTER, MASTER, DUMMY, UNIT)
 
     def test_setBalanceOf(self):
         self.assertEqual(self.tokenstate.balanceOf(MASTER), 0)
@@ -94,4 +99,5 @@ class TestTokenState(HavvenTestCase):
 
         # Only the associated contract should be able to set allowances.
         self.assertNotEqual(self.associate, MASTER)
-        self.assertReverts(self.tokenstate.setBalanceOf, MASTER, MASTER, 2*UNIT)
+        self.assertReverts(self.tokenstate.setBalanceOf,
+                           MASTER, MASTER, 2*UNIT)

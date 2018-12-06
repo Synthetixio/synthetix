@@ -21,7 +21,7 @@ conclusion of the configurable-length post-construction setup period.
 */
 
 
-pragma solidity 0.4.24;
+pragma solidity 0.4.25;
 
 /**
  * @title Any function decorated with the modifier this contract provides

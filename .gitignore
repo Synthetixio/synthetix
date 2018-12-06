@@ -2,3 +2,15 @@
 test_settings.py
 deploy_settings.py
 *.pyc
+
+# gitignore - Truffle proj
+.idea/
+build/
+node_modules/
+yarn-error.log
+
+# Our environment settings
+.env
+
+# Build artifacts
+flattened-contracts/

@@ -20,6 +20,8 @@ external entry points to the contract with the modifier only.
 -----------------------------------------------------------------
 */
 
+pragma solidity 0.4.25;
+
 contract ReentrancyPreventer {
     /* ========== MODIFIERS ========== */
     bool isInFunctionBody = false;
