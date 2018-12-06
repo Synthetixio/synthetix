@@ -14,6 +14,13 @@ Please note that this repository is under development.
 
 The code here will be under continual audit and improvement as the project progresses.
 
+## DApps
+
+* https://mintr.synthetix.io
+* https://synthetix.exchange
+* https://dashboard.synthetix.io
+* https://swappr.io
+
 ## Usage and requirements
 
 ### For tests (in javascript)
@@ -30,54 +37,44 @@ To run the tests:
 $ npm test
 ```
 
-### For legacy tests (in python)
 
-Deployment and testing scripts require Python 3.6+, [web3.py](https://github.com/ethereum/web3.py) 4.0.0+, [py-solc](https://github.com/ethereum/py-solc) 2.1.0+, and [eth-utils](https://github.com/ethereum/eth-utils) 1.0.0+. To install these dependencies, ensure that python is up to date and run:
+## System Summary
 
-`pip3 install -r requirements.txt`
+Traditionally gold was used as a reserve store of value by various governments around the world to prove that there was value to back their currency. The Synthetix system replicates this setup, but completely on-chain, and with multiple flavours of stablecoin (Synths), and a store of value backing them up (SNX - Synthetix Network Token).
 
-In addition, the test and deployment scripts require [solc](https://github.com/ethereum/solidity) 0.4.25 to be installed. The tests need [ganache](https://github.com/trufflesuite/ganache-cli) 6.1.0+, for speed and time fast-forwarding. It can be installed from the node package manager with:
+As users transact in the system, small fees are remitted, which get sent to SNX holders that enable the economy to exist. Multicurrency is the latest piece of work on the system. 
 
-`npm install ganache-cli`
+Users are able to withdraw their fees in any nomin currency that we support. Users are entitled to fees once they've issued synths (to help create the economy generating the fees) and waited for a complete fee period to elapse (currently 7 days). Issuers are incentivised to maintain the ratio of collateral (SNX) to Synths such that the Synths in circulation are generally only worth 20% of the value of the Synthetix Network Tokens backing them up via a penalty for being over 20% collateralised. This allows pretty severe price shocks to SNX without threatening the value of the Synths. 
 
-Ensure `BLOCKCHAIN_ADDRESS` in `utils/deployutils.py` is pointing to a running
-Ethereum client or `ganache-cli` instance. Update other variables like
-the master address as appropriate.
+We have also invented a nomin currency called XDRs (Synthetix Drawing Rights, loosely modeled on SDRs from the UN). Its exchange rate is derived by looking at a basket aggregate of currencies to avoid biasing towards any particular fiat currency. Fees are stored in this currency, and users can hold these Synths if they want to lessen the impact on their holdings from a particular fiat currency changing in value.
 
-Run the test suite as follows:
+Now that we have an `exchange()` mechanism that allows users to switch between Synth currencies, it made sense to move the fee logic out the Synth token into its own standalone contract. This allows us to have more complex fee collection logic as well.
 
-`python3 run_tests.py`
+Also it's worth noting that there's a decimal library being used for "floating point" math with 10^18 as the base. Also many of the contracts are provided behind a proxy contract for easy upgradability.
 
-## Files - TODO update for truffle test / config files
+We have also implemented what I'm going to call almost-ERC223 since the last audit. This allows you as a contract to implement a `tokenFallback` function which gets called by our contracts whenever transfers or exchanges happen. Unlike ERC223, it is not a requirement that contracts implement this function, as we're already listed on a number of DEXes that do not implement this functionality, and we need to preserve full backwards compatibility for them. Users can also pass a `bytes[]` memo when they transfer, but we implement the standard ERC20 transfer event, again for backwards compatibility with tooling such as Etherscan.
 
-The following files should be sufficient for deploying and testing version 1.0
-of the havven system. We have leant heavily towards logical simplicity and
-explicitness where possible; while in documentation and naming conventions,
-verbosity and descriptiveness even to the point of [excess](https://en.wikipedia.org/wiki/Literate_programming).
-Some consideration has been given to efficiency, but typically architecturally,
-in determining how to allow operations to pay for themselves as they go.
-We have mostly forgone local and machine optimisations whenever they would
-come at the expense of clarity or simplicity.
+---
 
-- `deploy.py` For deploying Havven contracts to the blockchain.
-- `run_tests.py` Runs the test suite, which additionally generates a `test_settings.py` file, which can be used to activate or deactivate particular tests.
-- `contracts/` Contains smart contract code to be deployed.
-- `contracts/abis/` Contains abis for each smart contract in `contracts/`.
-- `contracts/Owned.sol` A contract with an owner.
-- `contracts/SelfDestructible.sol` A contract which can be destroyed by its owner after a delay.
-- `contracts/LimitedSetup.sol` An abstract contract which provides a modifier which disables functions except during a short period after construction.
-- `contracts/Pausable.sol` A contract that allows contract functions to be paused by the owner.
-- `contracts/SafeDecimalMath.sol` a math library for unsigned fixed point decimal arithmetic, with built-in safety checking.
-- `contracts/State.sol` A generic external state contract that can be attached to another contract for storage purposes.
-- `contracts/TokenState.sol` The balances of ERC20 token contracts, inherits from State.
-- `contracts/ExternStateToken.sol` A foundation for generic ERC20 tokens with external state.
-- `contracts/FeeToken.sol` A foundation for generic ERC20 tokens which also charge fees on transfers, with external state.
-- `contracts/Nomin.sol` The nomin contract.
-- `contracts/Havven.sol` The havven contract issuance functions are performed from here, as the Nomin and Havven contracts integrate together as a complex.
-- `contracts/Proxy.sol` A contract that allows functions to be called on the proxy, and pushed to an underlying implementation so that contract logic can be upgraded. Can operate in one of two modes, providing either a `CALL` or a `DELEGATECALL` proxy style.
-- `contracts/Proxyable.sol` An interface to allow underlying contracts to be used with a proxy operating in `CALL` style.
-- `contracts/HavvenEscrow.sol` vesting schedule manager, allows vested havvens to be freed up after certain dates.
-- `contracts/IssuanceController.sol` A contract that allows the foundation to buy and sell nomins in exchange for ether and havvens.
-- `tests/` test cases.
-- `tests/contracts` contracts used by the test suite.
-- `utils/` helper functions for testing and deployment.
+## Contracts
+
+* **ExchangeRates.sol:** A key value store (bytes4 -> uint) of currency exchange rates, all priced in USD. Understands the concept of whether a rate is stale (as in hasn't been updated frequently enough), and only allows a single annointed oracle address to do price updates.
+* **ExternStateToken.sol:** The concept of an ERC20/ERC223(ish) token which stores its allowances and balances outside of the contract for upgradability.
+* **FeePool.sol:** Understands fee information for Synthetix. As users transact, their fees are kept in `0xfeefeefee...` and stored in XDRs. Allows users to claim fees they're entitled to.
+* **Synthetix.sol:** Has a list of Synths and understands issuance data for users to be able to mint and burn Synths.
+* **SynthetixEscrow.sol:** During the crowdsale, users were asked to escrow their Havvens to insulate against price shocks on the token. Users are able to unlock their SNX on a vesting schedule.
+* **Depot.sol:** Allows users to exchange ETH for sUSD and SNX (has not yet been updated for multicurrency).
+* **LimitedSetup.sol:** Some contracts have actions that should only be able to be performed during a specific limited setup period. After this period elapses, any functions using the `onlyDuringSetup` modifier should no longer be callable.
+* **Migrations.sol:** Truffle's migrations contract.
+* **Synth.sol:** Synth token contract which remits fees on transfers, and directs the Synthetix contract to do exchanges when appropriate.
+* **SynthAirdropper.sol:** Used to optimise gas during our initial airdrop of Synth.
+* **Owned.sol:** Allows us to leverage the concept of a contract owner that is specially priviledged and can perform certain actions.
+* **Pausable.sol:** Implements the concept of a pause button on a contract. Methods that should be paused use a particular modifier.
+* **Proxy.sol:** Our proxy contracts which forward all calls they receive to their target. Events are always emitted at the proxy, not within the target, even if you call the target directly.
+* **Proxyable.sol:** Implemented on a contract so it can be the target of a proxy contract.
+* **ReentryancyPreventer.sol:** Specific logic to try to prevent reentrancy when calling the ERC223 `tokenFallback()` function.
+* **SafeDecimalMath.sol:** Safe math + decimal math. Using `_dec` on an operation makes it operate "on decimals" by either dividing out the extra UNIT after a multiplication, or multiplying it in before a division.
+* **SelfDestructible.sol:** Allows an owner of a contract to set a self destruct timer on it, then once the timer has expired, to kill the contract with `selfdestruct`.
+* **State.sol:** Implements the concept of an associated contract which can be changed by the owner.
+* **TokenFallbackCaller.sol:** Implements a reusable function which can be pulled into the token contracts to trigger an optional call to `tokenFallback` if the destination address is a contract.
+* **TokenState.sol:** Holds approval and balance information for tokens.
