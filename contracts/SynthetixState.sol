@@ -71,6 +71,9 @@ contract SynthetixState is State, LimitedSetup {
     // Global debt pool tracking
     uint[] public debtLedger;
 
+    // Import state
+    uint public importedXDRAmount;
+
     // A quantity of synths greater than this ratio
     // may not be issued against a given value of SNX.
     uint public issuanceRatio = SafeDecimalMath.unit() / 5;
@@ -210,11 +213,14 @@ contract SynthetixState is State, LimitedSetup {
         // What is the value of the requested debt in XDRs?
         uint xdrValue = synthetix.effectiveValue("sUSD", amount, "XDR");
 
-        // What is the value of all issued synths of the system (priced in XDRs)?
-        uint totalDebtIssued = synthetix.totalIssuedSynths("XDR");
+        // What is the value that we've previously imported?
+        uint totalDebtIssued = importedXDRAmount;
 
         // What will the new total be including the new value?
         uint newTotalDebtIssued = xdrValue.add(totalDebtIssued);
+
+        // Save that for the next import.
+        importedXDRAmount = newTotalDebtIssued;
 
         // What is their percentage (as a high precision int) of the total debt?
         uint debtPercentage = xdrValue.divideDecimalRoundPrecise(newTotalDebtIssued);

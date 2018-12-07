@@ -289,6 +289,14 @@ contract Synth is ExternStateToken {
         emitBurned(account, amount);
     }
 
+    // Allow owner to set the total supply on import.
+    function setTotalSupply(uint amount)
+        external
+        optionalProxy_onlyOwner
+    {
+        totalSupply = amount;
+    }
+
     // Allow synthetix to trigger a token fallback call from our synths so users get notified on
     // exchange as well as transfer
     function triggerTokenFallbackIfNeeded(address sender, address recipient, uint amount)
