@@ -1,19 +1,17 @@
-# Havven
+# Synthetix
 
 [![Build Status](https://travis-ci.org/Havven/havven.svg?branch=master)](https://travis-ci.org/Havven/havven)
 
-Havven is a decentralised payment network and stablecoin.
-It is critical to the system's viability that functionality is phased in over time, which is why we've opted for upgradable smart contracts.
+Synthetix is a crypto-backed synthetic asset platform.
 
-The system uses a proxy system so that upgrades will not be disruptive to the functionality of the contract. This smooths user interaction, since new functionality will become available without any interruption in their experience. It is also transparent to the community at large, since each upgrade is accompanied by events announcing those upgrades.
+It is a multitoken system, powered by SNX, the Synthetix Network Token. SNX holders can lock SNX to issue Synths, on-chain synthetic assets. The network currently supports seven synthetic assets, sUSD (Synthetic USD), sAUD, sEUR, sGBP, sJPY, sKRW, sXAU (a synthetic gold ounce) and sXDR (a basket of synthetic currencies).
 
-- **System A**: All issuance is performed by the foundation at a static collateralisation ratio. USD Nomins (nUSD) are issued directly into the foundation's wallet. This is the system that is currently operating.
-- **System B**: Issuance is opened up to the market. As such, all incentive mechanisms will be activated, with nomins issued directly into market. This system will be complete in so far as the mechanisms in the white paper will be operating, but the nomin price will still be tracking USD only.
-- **System C**: This version will issue new flavours of nomins tracking currencies other than the US dollar.
+Synthetix uses a proxy system so that upgrades will not be disruptive to the functionality of the contract. This smooths user interaction, since new functionality will become available without any interruption in their experience. It is also transparent to the community at large, since each upgrade is accompanied by events announcing those upgrades.
 
-At first, prices will be introduced into the blockchain by a trusted oracle. A parallel avenue of research is the ongoing decentralisation of this price oracle.
+Prices are currently introduced into the blockchain by a trusted oracle. A parallel avenue of research is the ongoing decentralisation of this price oracle.
 
 Please note that this repository is under development.
+
 The code here will be under continual audit and improvement as the project progresses.
 
 ## Usage and requirements
