@@ -146,7 +146,7 @@ contract Synthetix is ExternStateToken {
     SynthetixState public synthetixState;
 
     uint constant SYNTHETIX_SUPPLY = 1e8 * SafeDecimalMath.unit();
-    string constant TOKEN_NAME = "Synthetix";
+    string constant TOKEN_NAME = "Synthetix Network Token";
     string constant TOKEN_SYMBOL = "SNX";
     uint8 constant DECIMALS = 18;
 
