@@ -296,7 +296,9 @@ contract Depot is SelfDestructible, Pausable {
                     // Ok, this deposit can fulfill the whole remainder. We don't need
                     // to change anything about our queue we can just fulfill it.
                     // Subtract the amount from our deposit and total.
-                    deposit.amount = deposit.amount.sub(remainingToFulfill);
+                    uint newAmount = deposit.amount.sub(remainingToFulfill);
+                    deposits[i] = synthDeposit({ user: deposit.user, amount: newAmount});
+                    
                     totalSellableDeposits = totalSellableDeposits.sub(remainingToFulfill);
 
                     // Transfer the ETH to the depositor. Send is used instead of transfer

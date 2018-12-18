@@ -495,6 +495,55 @@ contract('Depot', async function(accounts) {
 			);
 		});
 
+		it('is less than one deposit (and that the queue is correctly updated)', async function() {
+			const synthsToDeposit = toUnit('500');
+			const ethToSend = toUnit('0.5');
+
+			// Send the synths to the Token Depot.
+			await synth.transferSenderPaysFee(depot.address, synthsToDeposit, {
+				from: depositor,
+			});
+
+			const depositStartIndex = await depot.depositStartIndex();
+			const depositEndIndex = await depot.depositEndIndex();
+
+			// Assert that there is now one deposit in the queue.
+			assert.equal(depositStartIndex, 0);
+			assert.equal(depositEndIndex, 1);
+
+			// And assert that our total has increased by the right amount.
+			const totalSellableDeposits = await depot.totalSellableDeposits();
+			assert.bnEqual(totalSellableDeposits, synthsToDeposit);
+
+			assert.bnEqual(await depot.totalSellableDeposits(), (await depot.deposits(0)).amount);
+
+			// Now purchase some.
+			const txn = await depot.exchangeEtherForSynths({
+				from: purchaser,
+				value: ethToSend,
+			});
+
+			// Exchange("ETH", msg.value, "sUSD", fulfilled);
+			const exchangeEvent = txn.logs.find(log => log.event === 'Exchange');
+			assert.eventEqual(exchangeEvent, 'Exchange', {
+				fromCurrency: 'ETH',
+				fromAmount: ethToSend,
+				toCurrency: 'sUSD',
+				toAmount: synthsToDeposit.div(web3.utils.toBN('2')),
+			});
+
+			// We should have one deposit in the queue with half the amount
+			assert.equal(await depot.depositStartIndex(), 0);
+			assert.equal(await depot.depositEndIndex(), 1);
+
+			assert.bnEqual(await depot.totalSellableDeposits(), (await depot.deposits(0)).amount);
+
+			assert.bnEqual(
+				await depot.totalSellableDeposits(),
+				synthsToDeposit.div(web3.utils.toBN('2'))
+			);
+		});
+
 		it('exceeds one deposit (and that the queue is correctly updated)', async function() {
 			const synthsToDeposit = web3.utils.toWei('600');
 			const totalSynthsDeposit = web3.utils.toWei('1200');
