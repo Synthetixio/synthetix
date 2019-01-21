@@ -636,8 +636,7 @@ const deploy = async () => {
 			await tokenProxy.methods.setTarget(synth.options.address).send(sendParameters());
 		}
 
-		// Comment out if deploying on mainnet - Needs to be owner of Synthetix contract 
-		
+		// Comment out if deploying on mainnet - Needs to be owner of Synthetix contract
 		if (
 			settings.contracts.Synth[currencyKey].action === 'deploy' ||
 			settings.contracts.Synthetix.action === 'deploy'
