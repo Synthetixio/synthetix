@@ -34,15 +34,15 @@ const settings = {
 	saveFlattenedContracts: true,
 	flattenedContractsFolder: './flattened-contracts',
 	verifyContracts: true,
-	synths: ['XDR', 'sUSD', 'sEUR', 'sJPY', 'sAUD', 'sKRW', 'sXAU'],
+	synths: ['XDR', 'sUSD', 'sEUR', 'sJPY', 'sAUD', 'sKRW', 'sXAU', 'sGBP', 'sCHF'],
 	contracts: {
 		Depot: {
 			action: 'use-existing',
-			existingInstance: '0x6B7Ef9C1EF15631F68FB0A92A3be10403710053E',
+			existingInstance: '0x1920e29ea7b83d8769be04d28481f43b6619f26d',
 		},
 		ExchangeRates: {
 			action: 'use-existing',
-			existingInstance: '0x73b172756BD5DDf0110Ba8D7b88816Eb639Eb21c',
+			existingInstance: '0xfcd4d688fa40bd4abc2f9c8db4e1735f14094c42',
 		},
 		FeePool: {
 			action: 'use-existing',
@@ -89,6 +89,12 @@ const settings = {
 				action: 'use-existing',
 				existingInstance: '0x1D79Dc0a657550d3831dC134b2651C38F0612854',
 			},
+			sGBP: {
+				action: 'deploy',
+			},
+			sCHF: {
+				action: 'deploy',
+			},
 		},
 		Proxy: {
 			FeePool: {
@@ -126,6 +132,12 @@ const settings = {
 			sXAU: {
 				action: 'use-existing',
 				existingInstance: '0x7097e9E1e75194A29434128d4BdAFb49d4a87153',
+			},
+			sGBP: {
+				action: 'deploy',
+			},
+			sCHF: {
+				action: 'deploy',
 			},
 		},
 		SafeDecimalMath: {
@@ -165,6 +177,12 @@ const settings = {
 				action: 'use-existing',
 				existingInstance: '0x468833D3eeAF9Cf905521a34A66Dff704fDe9dcA',
 			},
+			sGBP: {
+				action: 'deploy',
+			},
+			sCHF: {
+				action: 'deploy',
+			},
 		},
 	},
 };
@@ -189,6 +207,7 @@ const web3 = new Web3(
 );
 web3.eth.accounts.wallet.add(process.env.PRIVATE_KEY);
 web3.eth.defaultAccount = web3.eth.accounts.wallet[0].address;
+
 const account = web3.eth.defaultAccount;
 const sendParameters = (type = 'method-call') => ({
 	from: web3.eth.defaultAccount, // Ugh, what's the point of a defaultAccount if we have to set it anyway?
@@ -617,6 +636,7 @@ const deploy = async () => {
 			await tokenProxy.methods.setTarget(synth.options.address).send(sendParameters());
 		}
 
+		// Comment out if deploying on mainnet - Needs to be owner of Synthetix contract
 		if (
 			settings.contracts.Synth[currencyKey].action === 'deploy' ||
 			settings.contracts.Synthetix.action === 'deploy'
