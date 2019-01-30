@@ -237,9 +237,7 @@ module.exports = async function(deployer, network, accounts) {
 		synthetix.address,
 		sUSDSynth.synth.address,
 		feePool.address,
-		oracle,
-		web3.utils.toWei('500'),
-		web3.utils.toWei('.10'),
+		exchangeRates.address,
 		{ from: deployerAccount }
 	);
 

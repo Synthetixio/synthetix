@@ -36,6 +36,8 @@ import "./SafeDecimalMath.sol";
 import "./Synthetix.sol";
 import "./Synth.sol";
 import "./FeePool.sol";
+import "./ExchangeRates.sol";
+
 
 /**
  * @title Depot Contract.
@@ -48,27 +50,12 @@ contract Depot is SelfDestructible, Pausable {
     Synthetix public synthetix;
     Synth public synth;
     FeePool public feePool;
+    ExchangeRates public exchangeRates;
 
     // Address where the ether and Synths raised for selling SNX is transfered to
     // Any ether raised for selling Synths gets sent back to whoever deposited the Synths,
     // and doesn't have anything to do with this address.
     address public fundsWallet;
-
-    /* The address of the oracle which pushes the USD price SNX and ether to this contract */
-    address public oracle;
-    /* Do not allow the oracle to submit times any further forward into the future than
-       this constant. */
-    uint public constant ORACLE_FUTURE_LIMIT = 10 minutes;
-
-    /* How long will the contract assume the price of any asset is correct */
-    uint public priceStalePeriod = 3 hours;
-
-    /* The time the prices were last updated */
-    uint public lastPriceUpdateTime;
-    /* The USD price of SNX denominated in UNIT */
-    uint public usdToSnxPrice;
-    /* The USD price of ETH denominated in UNIT */
-    uint public usdToEthPrice;
 
     /* Stores deposits from users. */
     struct synthDeposit {
@@ -108,6 +95,9 @@ contract Depot is SelfDestructible, Pausable {
     // must call withdrawMyDepositedSynths() to get them back.
     mapping(address => uint) public smallDeposits;
 
+    // bytes4 constant sUSD = keccak256("sUSD");
+    bytes4 constant SNX = "SNX";
+    bytes4 constant ETH = "ETH";
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -117,9 +107,8 @@ contract Depot is SelfDestructible, Pausable {
      * @param _fundsWallet The recipient of ETH and Synths that are sent to this contract while exchanging.
      * @param _synthetix The Synthetix contract we'll interact with for balances and sending.
      * @param _synth The Synth contract we'll interact with for balances and sending.
-     * @param _oracle The address which is able to update price information.
-     * @param _usdToEthPrice The current price of ETH in USD, expressed in UNIT.
-     * @param _usdToSnxPrice The current price of Synthetix in USD, expressed in UNIT.
+     * @param _feePool The FeePool contract we'll interact with for fees.
+     * @param _exchangeRates The exchangeRates contract address we'll interact with for rates.
      */
     constructor(
         // Ownable
@@ -132,11 +121,7 @@ contract Depot is SelfDestructible, Pausable {
         Synthetix _synthetix,
         Synth _synth,
 		FeePool _feePool,
-
-        // Oracle values - Allows for price updates
-        address _oracle,
-        uint _usdToEthPrice,
-        uint _usdToSnxPrice
+        ExchangeRates _exchangeRates
     )
         /* Owned is initialised in SelfDestructible */
         SelfDestructible(_owner)
@@ -147,10 +132,7 @@ contract Depot is SelfDestructible, Pausable {
         synthetix = _synthetix;
         synth = _synth;
         feePool = _feePool;
-        oracle = _oracle;
-        usdToEthPrice = _usdToEthPrice;
-        usdToSnxPrice = _usdToSnxPrice;
-        lastPriceUpdateTime = now;
+        exchangeRates = _exchangeRates;
     }
 
     /* ========== SETTERS ========== */
@@ -168,15 +150,15 @@ contract Depot is SelfDestructible, Pausable {
     }
 
     /**
-     * @notice Set the Oracle that pushes the synthetix price to this contract
-     * @param _oracle The new oracle address
+     * @notice Set the ExchangeRates contract address
+     * @param _exchangeRates The new ExchangeRates address
      */
-    function setOracle(address _oracle)
+    function setExchangeRates(ExchangeRates _exchangeRates)
         external
         onlyOwner
     {
-        oracle = _oracle;
-        emit OracleUpdated(oracle);
+        exchangeRates = _exchangeRates;
+        emit ExchangeRatesUpdated(exchangeRates);
     }
 
     /**
@@ -204,18 +186,6 @@ contract Depot is SelfDestructible, Pausable {
     }
 
     /**
-     * @notice Set the stale period on the updated price variables
-     * @param _time The new priceStalePeriod
-     */
-    function setPriceStalePeriod(uint _time)
-        external
-        onlyOwner
-    {
-        priceStalePeriod = _time;
-        emit PriceStalePeriodUpdated(priceStalePeriod);
-    }
-
-    /**
      * @notice Set the minimum deposit amount required to depoist sUSD into the FIFO queue
      * @param _amount The new new minimum number of sUSD required to deposit
      */
@@ -230,28 +200,6 @@ contract Depot is SelfDestructible, Pausable {
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
-    /**
-     * @notice Access point for the oracle to update the prices of SNX / eth.
-     * @param newEthPrice The current price of ether in USD, specified to 18 decimal places.
-     * @param newSynthetixPrice The current price of SNX in USD, specified to 18 decimal places.
-     * @param timeSent The timestamp from the oracle when the transaction was created. This ensures we don't consider stale prices as current in times of heavy network congestion.
-     */
-    function updatePrices(uint newEthPrice, uint newSynthetixPrice, uint timeSent)
-        external
-        onlyOracle
-    {
-        /* Must be the most recently sent price, but not too far in the future.
-         * (so we can't lock ourselves out of updating the oracle for longer than this) */
-        require(lastPriceUpdateTime < timeSent, "Time must be later than last update");
-        require(timeSent < (now + ORACLE_FUTURE_LIMIT), "Time must be less than now + ORACLE_FUTURE_LIMIT");
-
-        usdToEthPrice = newEthPrice;
-        usdToSnxPrice = newSynthetixPrice;
-        lastPriceUpdateTime = timeSent;
-
-        emit PricesUpdated(usdToEthPrice, usdToSnxPrice, lastPriceUpdateTime);
-    }
-
     /**
      * @notice Fallback function (exchanges ETH to sUSD)
      */
@@ -276,7 +224,7 @@ contract Depot is SelfDestructible, Pausable {
 
         // The multiplication works here because usdToEthPrice is specified in
         // 18 decimal places, just like our currency base.
-        uint requestedToPurchase = msg.value.multiplyDecimal(usdToEthPrice);
+        uint requestedToPurchase = msg.value.multiplyDecimal(exchangeRates.rateForCurrency(ETH));
         uint remainingToFulfill = requestedToPurchase;
 
         // Iterate through our outstanding deposits and sell them one at a time.
@@ -306,7 +254,7 @@ contract Depot is SelfDestructible, Pausable {
                     // ETH payable for synths transaction. The proceeds to be sent to the
                     // synthetix foundation funds wallet. This is to protect all depositors
                     // in the queue in this rare case that may occur.
-                    ethToSend = remainingToFulfill.divideDecimal(usdToEthPrice);
+                    ethToSend = remainingToFulfill.divideDecimal(exchangeRates.rateForCurrency(ETH));
 
                     // We need to use send here instead of transfer because transfer reverts
                     // if the recipient is a non-payable contract. Send will just tell us it
@@ -342,7 +290,7 @@ contract Depot is SelfDestructible, Pausable {
                     // ETH payable for synths transaction. The proceeds to be sent to the
                     // synthetix foundation funds wallet. This is to protect all depositors
                     // in the queue in this rare case that may occur.
-                    ethToSend = deposit.amount.divideDecimal(usdToEthPrice);
+                    ethToSend = deposit.amount.divideDecimal(exchangeRates.rateForCurrency(ETH));
 
                     // We need to use send here instead of transfer because transfer reverts
                     // if the recipient is a non-payable contract. Send will just tell us it
@@ -371,7 +319,7 @@ contract Depot is SelfDestructible, Pausable {
         // Ok, if we're here and 'remainingToFulfill' isn't zero, then
         // we need to refund the remainder of their ETH back to them.
         if (remainingToFulfill > 0) {
-            msg.sender.transfer(remainingToFulfill.divideDecimal(usdToEthPrice));
+            msg.sender.transfer(remainingToFulfill.divideDecimal(exchangeRates.rateForCurrency(ETH)));
         }
 
         // How many did we actually give them?
@@ -397,7 +345,7 @@ contract Depot is SelfDestructible, Pausable {
         notPaused
         returns (uint) // Returns the number of Synths (sUSD) received
     {
-        require(guaranteedRate == usdToEthPrice, "Guaranteed rate would not be received");
+        require(guaranteedRate == exchangeRates.rateForCurrency(ETH), "Guaranteed rate would not be received");
 
         return exchangeEtherForSynths();
     }
@@ -440,8 +388,8 @@ contract Depot is SelfDestructible, Pausable {
         notPaused
         returns (uint) // Returns the number of SNX received
     {
-        require(guaranteedEtherRate == usdToEthPrice, "Guaranteed ether rate would not be received");
-        require(guaranteedSynthetixRate == usdToSnxPrice, "Guaranteed synthetix rate would not be received");
+        require(guaranteedEtherRate == exchangeRates.rateForCurrency(ETH), "Guaranteed ether rate would not be received");
+        require(guaranteedSynthetixRate == exchangeRates.rateForCurrency(SNX), "Guaranteed synthetix rate would not be received");
 
         return exchangeEtherForSynthetix();
     }
@@ -485,7 +433,7 @@ contract Depot is SelfDestructible, Pausable {
         notPaused
         returns (uint) // Returns the number of SNX received
     {
-        require(guaranteedRate == usdToSnxPrice, "Guaranteed rate would not be received");
+        require(guaranteedRate == exchangeRates.rateForCurrency(SNX), "Guaranteed rate would not be received");
 
         return exchangeSynthsForSynthetix(synthAmount);
     }
@@ -604,7 +552,11 @@ contract Depot is SelfDestructible, Pausable {
         view
         returns (bool)
     {
-        return lastPriceUpdateTime.add(priceStalePeriod) < now;
+        bytes4[] memory currencyKeys = new bytes4[](2);
+        currencyKeys[0] = SNX;
+        currencyKeys[1] = ETH;
+        
+        return exchangeRates.anyRateIsStale(currencyKeys);
     }
 
     /**
@@ -619,9 +571,9 @@ contract Depot is SelfDestructible, Pausable {
     {
         // How many synths would we receive after the transfer fee?
         uint synthsReceived = feePool.amountReceivedFromTransfer(amount);
-
+    
         // And what would that be worth in SNX based on the current price?
-        return synthsReceived.divideDecimal(usdToSnxPrice);
+        return synthsReceived.divideDecimal(exchangeRates.rateForCurrency(SNX));
     }
 
     /**
@@ -635,7 +587,7 @@ contract Depot is SelfDestructible, Pausable {
         returns (uint)
     {
         // How much is the ETH they sent us worth in sUSD (ignoring the transfer fee)?
-        uint valueSentInSynths = amount.multiplyDecimal(usdToEthPrice);
+        uint valueSentInSynths = amount.multiplyDecimal(exchangeRates.rateForCurrency(ETH));
 
         // Now, how many SNX will that USD amount buy?
         return synthetixReceivedForSynths(valueSentInSynths);
@@ -652,20 +604,13 @@ contract Depot is SelfDestructible, Pausable {
         returns (uint)
     {
         // How many synths would that amount of ether be worth?
-        uint synthsTransferred = amount.multiplyDecimal(usdToEthPrice);
+        uint synthsTransferred = amount.multiplyDecimal(exchangeRates.rateForCurrency(ETH));
 
         // And how many of those would you receive after a transfer (deducting the transfer fee)
         return feePool.amountReceivedFromTransfer(synthsTransferred);
     }
 
     /* ========== MODIFIERS ========== */
-
-    modifier onlyOracle
-    {
-        require(msg.sender == oracle, "Only the oracle can perform this action");
-        _;
-    }
-
     modifier onlySynth
     {
         // We're only interested in doing anything on receiving sUSD.
@@ -675,18 +620,25 @@ contract Depot is SelfDestructible, Pausable {
 
     modifier pricesNotStale
     {
-        require(!pricesAreStale(), "Prices must not be stale to perform this action");
+        bytes4[] memory currencyKeys = new bytes4[](2);
+        currencyKeys[0] = SNX;
+        currencyKeys[1] = ETH;
+
+        require(!exchangeRates.anyRateIsStale(currencyKeys), "Prices must not be stale to perform this action");
+        _;
+    }
+
+    modifier rateNotStale(bytes4 currencyKey) {
+        require(!exchangeRates.rateIsStale(currencyKey), "Rate stale or nonexistant currency");
         _;
     }
 
     /* ========== EVENTS ========== */
 
     event FundsWalletUpdated(address newFundsWallet);
-    event OracleUpdated(address newOracle);
+    event ExchangeRatesUpdated(address newExchangeRates);
     event SynthUpdated(Synth newSynthContract);
     event SynthetixUpdated(Synthetix newSynthetixContract);
-    event PriceStalePeriodUpdated(uint priceStalePeriod);
-    event PricesUpdated(uint newEthPrice, uint newSynthetixPrice, uint timeSent);
     event Exchange(string fromCurrency, uint fromAmount, string toCurrency, uint toAmount);
     event SynthWithdrawal(address user, uint amount);
     event SynthDeposit(address indexed user, uint amount, uint indexed depositIndex);
