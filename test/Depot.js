@@ -16,10 +16,7 @@ const ExchangeRates = artifacts.require('ExchangeRates');
 contract('Depot', async function(accounts) {
 	let synthetix, synth, depot, feePool, exchangeRates;
 	const sUsdHex = web3.utils.asciiToHex('sUSD');
-	
-	const [sUSD, sAUD, sEUR, SNX, XDR, sXYZ, ETH] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'XDR', 'sXYZ', 'ETH'].map(
-		web3.utils.asciiToHex
-	);
+	const [sAUD, sEUR, SNX, ETH] = ['sAUD', 'sEUR', 'SNX', 'ETH'].map(web3.utils.asciiToHex);
 
 	beforeEach(async function() {
 		synthetix = await Synthetix.deployed();
@@ -45,7 +42,7 @@ contract('Depot', async function(accounts) {
 	const [
 		deployerAccount,
 		owner,
-		oracle,
+		,
 		,
 		fundsWallet,
 		address1,
@@ -116,7 +113,7 @@ contract('Depot', async function(accounts) {
 	it('should not set synthetix when not invoked by owner', async function() {
 		await assert.revert(depot.setSynthetix(owner, { from: deployerAccount }));
 	});
-	
+
 	it('should allow the owner to set the minimum deposit amount', async function() {
 		const minimumDepositAmount = toUnit('100');
 		const setMinimumDepositAmountTx = await depot.setMinimumDepositAmount(minimumDepositAmount, {
