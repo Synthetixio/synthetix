@@ -286,7 +286,7 @@ contract('Depot', async function(accounts) {
 
 		it('if the price is stale', async function() {
 			const priceStalePeriod = await exchangeRates.rateStalePeriod();
-			await fastForward(priceStalePeriod);
+			await fastForward(priceStalePeriod + 10);
 
 			// Attempt exchange
 			await assert.revert(
