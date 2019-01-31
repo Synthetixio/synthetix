@@ -1,6 +1,6 @@
 # Synthetix
 
-[![Build Status](https://travis-ci.org/Havven/havven.svg?branch=master)](https://travis-ci.org/Havven/havven)
+[![Build Status](https://travis-ci.org/Synthetixio/synthetix.svg?branch=master)](https://travis-ci.org/Synthetixio/synthetix)
 
 Synthetix is a crypto-backed synthetic asset platform.
 

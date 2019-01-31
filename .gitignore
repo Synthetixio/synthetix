@@ -6,7 +6,7 @@ deploy_settings.py
 # gitignore - Truffle proj
 .idea/
 build/
-node_modules/
+node_modules
 yarn-error.log
 
 # Our environment settings
