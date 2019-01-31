@@ -55,6 +55,7 @@ contract('Depot', async function(accounts) {
 		const instance = await Depot.new(
 			owner,
 			fundsWallet,
+			address1,
 			synthetix.address,
 			synth.address,
 			feePool.address,
@@ -65,6 +66,7 @@ contract('Depot', async function(accounts) {
 		);
 
 		assert.equal(await instance.synthetix(), synthetix.address);
+		assert.equal(await instance.proxy(), address1);
 		assert.equal(await instance.synth(), synth.address);
 		assert.equal(await instance.fundsWallet(), fundsWallet);
 		assert.equal(await instance.exchangeRates(), exchangeRates.address);

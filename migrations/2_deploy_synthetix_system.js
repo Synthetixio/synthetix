@@ -228,12 +228,18 @@ module.exports = async function(deployer, network, accounts) {
 	// Depot
 	// --------------------
 	console.log('Deploying Depot...');
+
+	console.log('Deploying DepotProxy...');
+	// constructor(address _owner)
+	const depotProxy = await Proxy.new(owner, { from: deployerAccount });
+
 	const sUSDSynth = synths.find(synth => synth.currencyKey === 'sUSD');
 	deployer.link(SafeDecimalMath, Depot);
 	await deployer.deploy(
 		Depot,
 		owner,
 		fundsWallet,
+		depotProxy.address,
 		synthetix.address,
 		sUSDSynth.synth.address,
 		feePool.address,

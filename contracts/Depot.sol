@@ -32,6 +32,7 @@ pragma solidity 0.4.25;
 
 import "./SelfDestructible.sol";
 import "./Pausable.sol";
+import "./Proxyable.sol";
 import "./SafeDecimalMath.sol";
 import "./Synthetix.sol";
 import "./Synth.sol";
@@ -42,7 +43,7 @@ import "./ExchangeRates.sol";
 /**
  * @title Depot Contract.
  */
-contract Depot is SelfDestructible, Pausable {
+contract Depot is Proxyable, SelfDestructible, Pausable {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -95,7 +96,6 @@ contract Depot is SelfDestructible, Pausable {
     // must call withdrawMyDepositedSynths() to get them back.
     mapping(address => uint) public smallDeposits;
 
-    // bytes4 constant sUSD = keccak256("sUSD");
     bytes4 constant SNX = "SNX";
     bytes4 constant ETH = "ETH";
 
@@ -117,6 +117,9 @@ contract Depot is SelfDestructible, Pausable {
         // Funds Wallet
         address _fundsWallet,
 
+        // Proxyable
+        address _proxy,
+
         // Other contracts needed
         Synthetix _synthetix,
         Synth _synth,
@@ -126,6 +129,7 @@ contract Depot is SelfDestructible, Pausable {
         /* Owned is initialised in SelfDestructible */
         SelfDestructible(_owner)
         Pausable(_owner)
+        Proxyable(_proxy, _owner)
         public
     {
         fundsWallet = _fundsWallet;
@@ -143,7 +147,7 @@ contract Depot is SelfDestructible, Pausable {
      */
     function setFundsWallet(address _fundsWallet)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         fundsWallet = _fundsWallet;
         emit FundsWalletUpdated(fundsWallet);
@@ -155,7 +159,7 @@ contract Depot is SelfDestructible, Pausable {
      */
     function setExchangeRates(ExchangeRates _exchangeRates)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         exchangeRates = _exchangeRates;
         emit ExchangeRatesUpdated(exchangeRates);
@@ -167,7 +171,7 @@ contract Depot is SelfDestructible, Pausable {
      */
     function setSynth(Synth _synth)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         synth = _synth;
         emit SynthUpdated(_synth);
@@ -179,7 +183,7 @@ contract Depot is SelfDestructible, Pausable {
      */
     function setSynthetix(Synthetix _synthetix)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         synthetix = _synthetix;
         emit SynthetixUpdated(_synthetix);
@@ -191,7 +195,7 @@ contract Depot is SelfDestructible, Pausable {
      */
     function setMinimumDepositAmount(uint _amount)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         // Do not allow us to set it less than 1 dollar opening up to fractional desposits in the queue again
         require(_amount > SafeDecimalMath.unit(), "Minimum deposit amount must be greater than UNIT");
@@ -210,6 +214,13 @@ contract Depot is SelfDestructible, Pausable {
         exchangeEtherForSynths();
     }
 
+
+    function exchangeERC20Token() public {
+        // require DAI exchange rate for sUSD (DAI/USD price)
+    }
+
+    // exchangeEtherForSynths(byte32 currencyKey) { deposits[currencyKey]}
+    
     /**
      * @notice Exchange ETH to sUSD.
      */
@@ -444,7 +455,7 @@ contract Depot is SelfDestructible, Pausable {
      */
     function withdrawSynthetix(uint amount)
         external
-        onlyOwner
+        optionalProxy_onlyOwner
     {
         synthetix.transfer(owner, amount);
 
