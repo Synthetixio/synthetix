@@ -51,7 +51,6 @@
 		"prettier": "^1.14.2",
 		"rimraf": "^2.6.2",
 		"seedrandom": "^2.4.4",
-		"solc": "^0.4.25",
 		"solidifier": "^2.0.0",
 		"solidity-coverage": "^0.5.11",
 		"solium": "^1.1.8",
