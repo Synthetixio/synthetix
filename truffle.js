@@ -12,6 +12,15 @@ module.exports = {
 		slow: 3000, // We only consider tests slow when they take more than 3 seconds.
 	},
 	compilers: {
+		// solc: {
+		// 	version: '0.4.25',
+		// 	settings: {
+		// 		optimizer: {
+		// 			enabled: true,
+		// 			runs: 200,
+		// 		},
+		// 	},
+		// },
 		solc: {
 			version: './node_modules/solc', // Version is managed in package.json as an NPM dependency.
 			settings: {
