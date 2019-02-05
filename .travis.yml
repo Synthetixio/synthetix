@@ -11,7 +11,7 @@ before_install:
   - sudo apt-get install -y dpkg
   - sudo add-apt-repository ppa:ethereum/ethereum -y
   - sudo apt-get update
-  - sudo apt-get install solc
+  # - sudo apt-get install solc
 install:
   - pip install -r requirements.txt
 script:
