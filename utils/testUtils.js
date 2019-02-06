@@ -29,7 +29,6 @@ const mineBlock = () => send({ method: 'evm_mine' });
  */
 const currentTime = async () => {
 	const { timestamp } = await web3.eth.getBlock('latest');
-
 	return timestamp;
 };
 
@@ -401,5 +400,17 @@ module.exports = {
 	assertUnitNotEqual,
 	assertRevert,
 
+	solAssert: {
+		eventEqual: assertEventEqual,
+		eventsEqual: assertEventsEqual,
+		bnEqual: assertBNEqual,
+		bnNotEqual: assertBNNotEqual,
+		bnClose: assertBNClose,
+		deepEqual: assertDeepEqual,
+		invalidOpcode: assertInvalidOpcode,
+		unitEqual: assertUnitEqual,
+		unitNotEqual: assertUnitNotEqual,
+		revert: assertRevert,
+	},
 	getEthBalance,
 };
