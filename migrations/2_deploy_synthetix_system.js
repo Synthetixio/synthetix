@@ -12,6 +12,7 @@ const PublicSafeDecimalMath = artifacts.require('PublicSafeDecimalMath');
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 const TokenState = artifacts.require('TokenState');
 const Depot = artifacts.require('Depot');
+const DepotState = artifacts.require('DepotState');
 const SelfDestructible = artifacts.require('SelfDestructible');
 
 // Update values before deployment
@@ -224,6 +225,17 @@ module.exports = async function(deployer, network, accounts) {
 		{ from: oracle }
 	);
 
+
+	// ----------------
+	// Depot State
+	// ----------------
+	console.log('Deploying DepotState...');
+	// constructor(address _owner, address _associatedContract)
+	deployer.link(SafeDecimalMath, DepotState);
+	const depotState = await deployer.deploy(DepotState, owner, ZERO_ADDRESS, {
+		from: deployerAccount,
+	});
+
 	// --------------------
 	// Depot
 	// --------------------
@@ -235,7 +247,7 @@ module.exports = async function(deployer, network, accounts) {
 
 	const sUSDSynth = synths.find(synth => synth.currencyKey === 'sUSD');
 	deployer.link(SafeDecimalMath, Depot);
-	await deployer.deploy(
+	const depot = await deployer.deploy(
 		Depot,
 		owner,
 		fundsWallet,
@@ -246,6 +258,11 @@ module.exports = async function(deployer, network, accounts) {
 		exchangeRates.address,
 		{ from: deployerAccount }
 	);
+
+	// ----------------------
+	// Connect Depot State
+	// ----------------------
+	await depotState.setAssociatedContract(depot.address, { from: owner });
 
 	// ----------------
 	// Self Destructible

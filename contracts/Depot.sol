@@ -38,12 +38,12 @@ import "./Synthetix.sol";
 import "./Synth.sol";
 import "./FeePool.sol";
 import "./ExchangeRates.sol";
-
+import "./DepotState.sol";
 
 /**
  * @title Depot Contract.
  */
-contract Depot is Proxyable, SelfDestructible, Pausable {
+contract Depot is SelfDestructible, Proxyable, Pausable {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -52,6 +52,7 @@ contract Depot is Proxyable, SelfDestructible, Pausable {
     Synth public synth;
     FeePool public feePool;
     ExchangeRates public exchangeRates;
+    DepotState public depotState;
 
     // Address where the ether and Synths raised for selling SNX is transfered to
     // Any ether raised for selling Synths gets sent back to whoever deposited the Synths,
@@ -109,6 +110,7 @@ contract Depot is Proxyable, SelfDestructible, Pausable {
      * @param _synth The Synth contract we'll interact with for balances and sending.
      * @param _feePool The FeePool contract we'll interact with for fees.
      * @param _exchangeRates The exchangeRates contract address we'll interact with for rates.
+     * @param _depotState The depotState contract address we'll interact with for storage.
      */
     constructor(
         // Ownable
@@ -124,7 +126,8 @@ contract Depot is Proxyable, SelfDestructible, Pausable {
         Synthetix _synthetix,
         Synth _synth,
 		FeePool _feePool,
-        ExchangeRates _exchangeRates
+        ExchangeRates _exchangeRates,
+        DepotState _depotState
     )
         /* Owned is initialised in SelfDestructible */
         SelfDestructible(_owner)
@@ -137,6 +140,7 @@ contract Depot is Proxyable, SelfDestructible, Pausable {
         synth = _synth;
         feePool = _feePool;
         exchangeRates = _exchangeRates;
+        depotState = _depotState;
     }
 
     /* ========== SETTERS ========== */
@@ -203,6 +207,19 @@ contract Depot is Proxyable, SelfDestructible, Pausable {
         emit MinimumDepositAmountUpdated(minimumDepositAmount);
     }
 
+    /**
+     * @notice Set the depotState contract address where depot data is held.
+     * @dev Only callable by the contract owner.
+     */
+    function setDepotState(DepotState _depotState)
+        external
+        optionalProxy_onlyOwner
+    {
+        depotState = _depotState;
+        emitStateContractChanged(_depotState);
+    }
+
+
     /* ========== MUTATIVE FUNCTIONS ========== */
     /**
      * @notice Fallback function (exchanges ETH to sUSD)
@@ -246,6 +263,7 @@ contract Depot is Proxyable, SelfDestructible, Pausable {
             // update the queue. It's already been deleted.
             if (deposit.user == address(0)) {
 
+                // incrementDepositStartIndex 
                 depositStartIndex = depositStartIndex.add(1);
             } else {
                 // If the deposit can more than fill the order, we can do this
@@ -658,4 +676,10 @@ contract Depot is Proxyable, SelfDestructible, Pausable {
     event MinimumDepositAmountUpdated(uint amount);
     event NonPayableContract(address indexed receiver, uint amount);
     event ClearedDeposit(address indexed fromAddress, address indexed toAddress, uint fromETHAmount, uint toAmount, uint indexed depositIndex);
+
+    event StateContractChanged(address stateContract);
+    bytes32 constant STATECONTRACTCHANGED_SIG = keccak256("StateContractChanged(address)");
+    function emitStateContractChanged(address stateContract) internal {
+        proxy._emit(abi.encode(stateContract), 1, STATECONTRACTCHANGED_SIG, 0, 0, 0);
+    }
 }
