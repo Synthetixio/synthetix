@@ -27,10 +27,10 @@ if (!process.env.PRIVATE_KEY || !process.env.INFURA_KEY || !process.env.ETHERSCA
 // 		}
 
 const settings = {
-	network: 'kovan',
+	network: 'rinkeby',
 	contractDeploymentGasLimit: 6500000,
 	methodCallGasLimit: 150000,
-	gasPrice: '0.1', // In gwei
+	gasPrice: '1.0', // In gwei
 	saveFlattenedContracts: true,
 	flattenedContractsFolder: './flattened-contracts',
 	verifyContracts: true,
@@ -38,150 +38,156 @@ const settings = {
 	contracts: {
 		Depot: {
 			action: 'use-existing',
-			existingInstance: '0x1920e29ea7b83d8769be04d28481f43b6619f26d',
+			existingInstance: '0x1959F9e81A2195E4ADdbE2c7D00FbB4a391f5a5D',
 		},
 		ExchangeRates: {
 			action: 'use-existing',
-			existingInstance: '0xfcd4d688fa40bd4abc2f9c8db4e1735f14094c42',
+			existingInstance: '0x1A61b686Ad77b6aCF87a394048ed03399433a027',
 		},
 		FeePool: {
 			action: 'use-existing',
-			existingInstance: '0xEBdBac38835A1105851e80C7Fa1f1E6e25A86e32',
+			existingInstance: '0x0E3dFdD58bC0E88443877135aF085aa111df06E3',
 		},
 		Synthetix: {
 			action: 'use-existing',
-			existingInstance: '0x457cD14f384E7D103B17feEb01d2a42Ad2ecA529',
+			existingInstance: '0x00d0Cbf196097Ddb3B29947729f2105ef9b399Bd',
 		},
 		SynthetixEscrow: {
 			action: 'use-existing',
-			existingInstance: '0xC557379F98d45f22853C5cF3fD1A830e11F083D6',
+			existingInstance: '0x9B7d73333413395f346C6f872b50686D219953E0',
 		},
 		SynthetixState: {
 			action: 'use-existing',
-			existingInstance: '0x9dE2f60d70e1F6A044f4e07C8CD0C2B42D947bbE',
+			existingInstance: '0x34cD3b61596F19f79b5CDbB20f5eeD081C51C082',
 		},
 		Synth: {
 			XDR: {
 				action: 'use-existing',
-				existingInstance: '0x6568D9e750fC44AF00f857885Dfb8281c00529c4',
+				existingInstance: '0x41e8160F72af87DD078Bf0046CD06dC586867448',
 			},
 			sUSD: {
 				action: 'use-existing',
-				existingInstance: '0xD9E5A009Ec07dE76616d7361Ed713eF434d71325',
+				existingInstance: '0x99d2301579B7f1eA9fed495bAa082b88e3e6FDe1',
 			},
 			sEUR: {
 				action: 'use-existing',
-				existingInstance: '0x249A10c68AfA9827571cb73f29ab5Af57Ee5A596',
+				existingInstance: '0x4cb50666CD68385e52a129060569A3cF0C32c0Dd',
 			},
 			sJPY: {
 				action: 'use-existing',
-				existingInstance: '0x1b619A6fB6b5D0c9F1067f8F3E24B0308907D8bB',
+				existingInstance: '0x6134F07C0aB24D9E3dc03d803Eb8f9B2556cE53d',
 			},
 			sAUD: {
 				action: 'use-existing',
-				existingInstance: '0x09Fabbf00CeDd6E8E715738a854461D56938c3BE',
+				existingInstance: '0x21768c10e6ac535d5B8FBa6cA28FEc043D04ae19',
 			},
 			sKRW: {
 				action: 'use-existing',
-				existingInstance: '0x4A17840Db4757d239FeB3e7398f918337508286e',
+				existingInstance: '0x2c0235f338e4A170Cef57f7F8A8aa8C6CF9dEdE0',
 			},
 			sXAU: {
 				action: 'use-existing',
-				existingInstance: '0x1D79Dc0a657550d3831dC134b2651C38F0612854',
+				existingInstance: '0xF688e8447eeD39917100C5F24823bF546A332237',
 			},
 			sGBP: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0x39dDDddacb1F97aD4230cD4a09D560c0345980c1',
 			},
 			sCHF: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0xB42ad119f9977269C50dc6961B142b6C37B70AB9',
 			},
 		},
 		Proxy: {
 			FeePool: {
 				action: 'use-existing',
-				existingInstance: '0xb440DD674e1243644791a4AdfE3A2AbB0A92d309',
+				existingInstance: '0x9d9A7152f23EcdDE5eBb2c52c2090bbefCa6A8a5',
 			},
 			Synthetix: {
 				action: 'use-existing',
-				existingInstance: '0x44D0bbe7E344D0dA45D3b60d5038607b2c596365',
+				existingInstance: '0x3224908ba459Cb3EEeE35e95b9Dd3de7a9e39598',
 			},
 			XDR: {
 				action: 'use-existing',
-				existingInstance: '0x48414e5b7ed589956070DFfEBe6e4877DAE35EA6',
+				existingInstance: '0x25b1C6f37499f74364A8d974C44be765f1074E90',
 			},
 			sUSD: {
 				action: 'use-existing',
-				existingInstance: '0x559E848A1b6a7AfC69Ee27F8d20280A42628b2cf',
+				existingInstance: '0x5cD55899568e9A3f414519691543fc6F9B1857C1',
 			},
 			sEUR: {
 				action: 'use-existing',
-				existingInstance: '0xB03dFc4b9C9756B6D4Fbc12DAde7732149Fcf00d',
+				existingInstance: '0x88851C4E1692289F3A830106A63f4043e1D7935A',
 			},
 			sJPY: {
 				action: 'use-existing',
-				existingInstance: '0x112D5fA64e4902B6ff1a35495a0f878c210A5601',
+				existingInstance: '0x9Cf8D3C3A86dCda299D8885eB0071Cb8aDb36bF3',
 			},
 			sAUD: {
 				action: 'use-existing',
-				existingInstance: '0xf02a45263BB74685D72668568a200C843Aee69a2',
+				existingInstance: '0x334b77619A28B6735FD4dB12c78BAd3891378817',
 			},
 			sKRW: {
 				action: 'use-existing',
-				existingInstance: '0x051158081c0Cfa293e38Eaf5df245785dAC7fd29',
+				existingInstance: '0xD0BD4F807549b79888D9e64ff4e4662BB25F6d28',
 			},
 			sXAU: {
 				action: 'use-existing',
-				existingInstance: '0x7097e9E1e75194A29434128d4BdAFb49d4a87153',
+				existingInstance: '0xaaB7A0cC5Ad68D562eeBEc9e42A12E9d7A7881e2',
 			},
 			sGBP: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0xCD57cc0daD907F24fd564861acAD48bb039A4baA',
 			},
 			sCHF: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0x2f7Ab1D143D3A86173020427F69A6B0088aC03Ad',
 			},
 		},
 		SafeDecimalMath: {
 			action: 'use-existing',
-			existingInstance: '0x84D626B2BB4D0F064067e4BF80FCe7055d8F3E7B',
+			existingInstance: '0xb8a0f476f0C4791F63A64786334059E98E8e640C',
 		},
 		TokenState: {
 			Synthetix: {
 				action: 'use-existing',
-				existingInstance: '0x7E295884F3f5e2ea462620018E9193a1C305C185',
+				existingInstance: '0x3f163A8Ef6495C15A10bA15950DBfba279665837',
 			},
 			XDR: {
 				action: 'use-existing',
-				existingInstance: '0xc25dD122c6dcbE5390bd23b90e5605fC34Ad0D14',
+				existingInstance: '0x8B57b42d31d5600278E9B1404d6d3AB5fA81E489',
 			},
 			sUSD: {
 				action: 'use-existing',
-				existingInstance: '0x4dFACfB15514C21c991ff75Bc7Bf6Fb1F98361ed',
+				existingInstance: '0xDd710d668dF4d8871468C91C6366458E77ef7c38',
 			},
 			sEUR: {
 				action: 'use-existing',
-				existingInstance: '0xED4699f180a14B5974c26f494483F9c327Fd381a',
+				existingInstance: '0xB790bab31d3e94b48F45D52538Ad8D91ED6057E0',
 			},
 			sJPY: {
 				action: 'use-existing',
-				existingInstance: '0xe05D803fa0c5832Fa2262465290abB25d6C2bFA3',
+				existingInstance: '0x636C1d24Ce56D5Dc4bdeca5058Aee31FcCD09f00',
 			},
 			sAUD: {
 				action: 'use-existing',
-				existingInstance: '0x2F8aa243760edC8fFC56C064EeAf4B11938BA8B7',
+				existingInstance: '0x6F2A7625161265964B129910c85049D38e2c8069',
 			},
 			sKRW: {
 				action: 'use-existing',
-				existingInstance: '0x39f0f8eD1DB9Ba3894cC402EC964432f30364e81',
+				existingInstance: '0xCCca07f15B86F5FaA1f917A6D75FB6184EfC66D0',
 			},
 			sXAU: {
 				action: 'use-existing',
-				existingInstance: '0x468833D3eeAF9Cf905521a34A66Dff704fDe9dcA',
+				existingInstance: '0xBd588746903Eba254D033a47F3dc305D295ED21E',
 			},
 			sGBP: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0x71f2a399B5C19C4CD07c2BE610DBBE93BC1f4523',
 			},
 			sCHF: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0xe4DC9483E269a17e2e3b8404815e0C1526ec3132',
 			},
 		},
 	},
@@ -322,6 +328,12 @@ const verifyContracts = async () => {
 
 	for (const contract of Object.keys(deployedContracts)) {
 		// Check if this contract already has been verified.
+
+		// ExchangeRates is unable to verify via API
+		if (contract === 'ExchangeRates') {
+			tableData.push([deployedContracts[contract].options.address, 'Skipped Verification']);
+			continue;
+		}
 
 		let result = await axios.get(etherscanUrl, {
 			params: {

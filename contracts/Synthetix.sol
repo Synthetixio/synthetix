@@ -318,13 +318,10 @@ contract Synthetix is ExternStateToken {
     {
         uint total = 0;
         uint currencyRate = exchangeRates.rateForCurrency(currencyKey);
-
+        
+        require(!exchangeRates.anyRateIsStale(availableCurrencyKeys()), "Rates are stale");
+        
         for (uint8 i = 0; i < availableSynths.length; i++) {
-            // Ensure the rate isn't stale.
-            // TODO: Investigate gas cost optimisation of doing a single call with all keys in it vs
-            // individual calls like this.
-            require(!exchangeRates.rateIsStale(availableSynths[i].currencyKey()), "Rate is stale");
-
             // What's the total issued value of that synth in the destination currency?
             // Note: We're not using our effectiveValue function because we don't want to go get the
             //       rate for the destination currency and check if it's stale repeatedly on every
@@ -336,6 +333,23 @@ contract Synthetix is ExternStateToken {
         }
 
         return total;
+    }
+
+    /**
+     * @notice Returns the currencyKeys of availableSynths for rate checking 
+     */
+    function availableCurrencyKeys()
+        internal
+        view
+        returns (bytes4[])
+    {
+        bytes4[] memory availableCurrencyKeys = new bytes4[](availableSynths.length);
+
+        for (uint8 i = 0; i < availableSynths.length; i++) {
+            availableCurrencyKeys[i] = availableSynths[i].currencyKey();
+        }
+
+        return availableCurrencyKeys;
     }
 
     /**

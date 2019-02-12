@@ -787,6 +787,7 @@ contract('Synth', async function(accounts) {
 	it('should transfer (ERC20) with no fee', async function() {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
+
 		await synthetix.issueSynths(sUSD, amount, { from: owner });
 
 		// set transferFee on feepool to 0
