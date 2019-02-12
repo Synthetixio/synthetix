@@ -576,9 +576,8 @@ contract Synthetix is ExternStateToken {
         // Call the ERC223 transfer callback if needed
         synths[destinationCurrencyKey].triggerTokenFallbackIfNeeded(from, destinationAddress, amountReceived);
 
-        // Gas optimisation:
-        // No event emitted as it's assumed users will be able to track transfers to the zero address, followed
-        // by a transfer on another synth from the zero address and ascertain the info required here.
+        //Let the DApps know there was a Synth exchange
+        emitSynthExchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, amountReceived);
 
         return true;
     }
@@ -925,6 +924,12 @@ contract Synthetix is ExternStateToken {
     }
 
     // ========== EVENTS ==========
+
+    event SynthExchange(address indexed account, bytes4 fromCurrencyKey, uint fromAmount, bytes4 toCurrencyKey, uint toAmount);
+    bytes32 constant SYNTHEXCHANGE_SIG = keccak256("SynthExchange(address,bytes4,uint,bytes4,uint)");
+    function emitSynthExchange(address account, bytes4 fromCurrencyKey, uint fromAmount, bytes4 toCurrencyKey, uint toAmount) internal {
+        proxy._emit(abi.encode(account, fromCurrencyKey, fromAmount, toCurrencyKey, toAmount), 2, SYNTHEXCHANGE_SIG, bytes32(account), 0, 0);
+    }
 
     event PreferredCurrencyChanged(address indexed account, bytes4 newPreferredCurrency);
     bytes32 constant PREFERREDCURRENCYCHANGED_SIG = keccak256("PreferredCurrencyChanged(address,bytes4)");
