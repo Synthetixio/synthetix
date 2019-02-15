@@ -16,22 +16,21 @@ const Depot = artifacts.require('Depot');
 const Synth = artifacts.require('Synth');
 const FeePool = artifacts.require('FeePool');
 
-let lastSnapshotId;
-
-beforeEach(async function() {
-	lastSnapshotId = await takeSnapshot();
-});
-
-afterEach(async function() {
-	await restoreSnapshot(lastSnapshotId);
-});
-
-
-contract('Depot', function(accounts) {
+contract('Depot', async function(accounts) {
 	let synthetix, synth, depot, feePool;
 	const sUsdHex = web3.utils.asciiToHex('sUSD');
 
+	let lastSnapshotId;
+	// beforeEach(async function() {
+	// lastSnapshotId = await takeSnapshot();
+	// });
+
+	afterEach(async function() {
+		await restoreSnapshot(lastSnapshotId);
+	});
+
 	beforeEach(async function() {
+		lastSnapshotId = await takeSnapshot();
 		synthetix = await Synthetix.deployed();
 		synth = await Synth.at(await synthetix.synths(sUsdHex));
 		depot = await Depot.deployed();
@@ -156,7 +155,7 @@ contract('Depot', function(accounts) {
 
 	it('should not update prices if time sent is lesser than last updated price time', async function() {
 		// Send a price update through, just like the above test so we know our values.
-		let now = await currentTime() + 1; // prevent clash with previous update
+		let now = (await currentTime()) + 1; // prevent clash with previous update
 		let usdEth = '100';
 		let usdSnx = '200';
 
@@ -165,8 +164,8 @@ contract('Depot', function(accounts) {
 		});
 
 		// Unsuccessful price update attempt
-		await solAssert.revert(
-			() => depot.updatePrices('300', '400', now - 1, {
+		await solAssert.revert(() =>
+			depot.updatePrices('300', '400', now - 1, {
 				from: oracle,
 			})
 		);
@@ -179,7 +178,7 @@ contract('Depot', function(accounts) {
 		solAssert.bnEqual(snxUSDFromContract, usdSnx);
 		solAssert.bnEqual(lastPriceUpdateTimeFromContract, now);
 	});
-	
+
 	it('should not update prices if time sent is more than (current time stamp + ORACLE_FUTURE_LIMIT)', async function() {
 		const lastPriceUpdateTime = await depot.lastPriceUpdateTime();
 		const oracleFutureLimit = await depot.ORACLE_FUTURE_LIMIT();
@@ -242,55 +241,64 @@ contract('Depot', function(accounts) {
 	});
 
 	describe.only('should increment depositor smallDeposits balance', async function() {
-		const synthsBalance = toUnit('100');
 		const depositor = address1;
-
+		
 		beforeEach(async function() {
+			const synthsBalance = toUnit(100);
+			console.log(depositor, synthsBalance);
 			// We need the owner to issue synths
 			await synthetix.issueMaxSynths(sUsdHex, { from: owner });
 			// Set up the depositor with an amount of synths to deposit.
 			await synth.transferSenderPaysFee(depositor, synthsBalance, { from: owner });
 		});
 
-		it('if the deposit synth amount is a tiny amount', async function() {
-			const synthsToDeposit = toUnit('0.01');
-			// Depositor should initially have a smallDeposits balance of 0
-			console.log('0')
-			const initialSmallDepositsBalance = await depot.smallDeposits(depositor);
-			assert.equal(initialSmallDepositsBalance, 0);
-			console.log('1', depositor)
-			await synth.transfer(depot.address, synthsToDeposit, web3.utils.asciiToHex(''), { from: depositor });
-			console.log('2')
-			// Now balance should be equal to the amount we just sent minus the fees
-			const smallDepositsBalance = await depot.smallDeposits(depositor);
-			console.log('3')
-			const amountDepotReceived = await feePool.amountReceivedFromTransfer(synthsToDeposit);
-			solAssert.bnEqual(smallDepositsBalance, amountDepotReceived);
-		});
+	
 
 		it('if the deposit synth of 10 amount is less than the minimumDepositAmount', async function() {
-			const synthsToDeposit = toUnit('10');
+			const synthsToDeposit = toUnit(10);
 			// Depositor should initially have a smallDeposits balance of 0
 			const initialSmallDepositsBalance = await depot.smallDeposits(depositor);
 			assert.equal(initialSmallDepositsBalance, 0);
 
-			await synth.transfer(depot.address, synthsToDeposit,  web3.utils.asciiToHex(''), {
+			await synth.transfer(depot.address, synthsToDeposit, {
 				from: depositor,
 			});
 
+
 			// Now balance should be equal to the amount we just sent minus the fees
 			const smallDepositsBalance = await depot.smallDeposits(depositor);
 			const amountDepotReceived = await feePool.amountReceivedFromTransfer(synthsToDeposit);
+			console.log(fromUnit(smallDepositsBalance), fromUnit(amountDepotReceived));
+
 			solAssert.bnEqual(smallDepositsBalance, amountDepotReceived);
 		});
+		it('if the deposit synth amount is a tiny amount', async function() {
+			const synthsToDeposit = toUnit(0.01);
+			// Depositor should initially have a smallDeposits balance of 0
+			const initialSmallDepositsBalance = await depot.smallDeposits(depositor);
+			assert.equal(initialSmallDepositsBalance, 0);
 
-		it('if the deposit synth amount of 49.99 is less than the minimumDepositAmount', async function() {
+			console.log('1')
+			await synth.transfer(depot.address, synthsToDeposit, {
+				from: depositor,
+			});
+			console.log('2')
+
+			// Now balance should be equal to the amount we just sent minus the fees
+			const smallDepositsBalance = await depot.smallDeposits(depositor);
+			console.log('3')
+
+			const amountDepotReceived = await feePool.amountReceivedFromTransfer(synthsToDeposit);
+			console.log(fromUnit(amountDepotReceived));
+			solAssert.bnEqual(smallDepositsBalance, amountDepotReceived);
+		});
+		xit('if the deposit synth amount of 49.99 is less than the minimumDepositAmount', async function() {
 			const synthsToDeposit = toUnit('49.99');
 			// Depositor should initially have a smallDeposits balance of 0
 			const initialSmallDepositsBalance = await depot.smallDeposits(depositor);
 			assert.equal(initialSmallDepositsBalance, 0);
 
-			await synth.transfer(depot.address, synthsToDeposit,  web3.utils.asciiToHex(''), {
+			await synth.transfer(depot.address, synthsToDeposit, web3.utils.asciiToHex(''), {
 				from: depositor,
 			});
 
