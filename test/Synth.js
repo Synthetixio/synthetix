@@ -783,4 +783,39 @@ contract('Synth', async function(accounts) {
 			})
 		);
 	});
+
+	it('should transfer (ERC20) with no fee', async function() {
+		// Issue 10,000 sUSD.
+		const amount = toUnit('10000');
+		await synthetix.issueSynths(sUSD, amount, { from: owner });
+
+		// set transferFee on feepool to 0
+		await feePool.setTransferFeeRate(0, { from: owner });
+
+		const received = await feePool.amountReceivedFromTransfer(amount);
+		const fee = amount.sub(received);
+
+		// Do a single transfer of all our sUSD.
+		const transaction = await sUSDContract.transfer(account1, amount, { from: owner });
+
+		// Event should be only a transfer to account1
+		assert.eventEqual(
+			transaction,
+
+			// The original synth transfer
+			'Transfer',
+			{ from: owner, to: account1, value: received }
+		);
+
+		// Sender should have nothing
+		assert.bnEqual(fee, 0);
+		// Sender should have nothing
+		assert.bnEqual(await sUSDContract.balanceOf(owner), 0);
+
+		// The recipient should have the correct amount
+		assert.bnEqual(await sUSDContract.balanceOf(account1), received);
+
+		// The fee pool should have zero balance
+		assert.bnEqual(await XDRContract.balanceOf(FEE_ADDRESS), 0);
+	});
 });

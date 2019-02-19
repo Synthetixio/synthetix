@@ -494,6 +494,11 @@ contract Synthetix is ExternStateToken {
         onlySynth
         returns (bool)
     {
+        // Allow fee to be 0 and skip minting XDRs to feePool 
+        if (sourceAmount == 0) {
+            return true;
+        }
+
         require(sourceAmount > 0, "Source can't be 0");
 
         // Pass it along, defaulting to the sender as the recipient.
