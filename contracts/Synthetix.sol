@@ -577,7 +577,7 @@ contract Synthetix is ExternStateToken {
         synths[destinationCurrencyKey].triggerTokenFallbackIfNeeded(from, destinationAddress, amountReceived);
 
         //Let the DApps know there was a Synth exchange
-        emitSynthExchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, amountReceived);
+        emitSynthExchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, amountReceived, destinationAddress);
 
         return true;
     }
@@ -925,10 +925,10 @@ contract Synthetix is ExternStateToken {
 
     // ========== EVENTS ==========
 
-    event SynthExchange(address indexed account, bytes4 fromCurrencyKey, uint fromAmount, bytes4 toCurrencyKey, uint toAmount);
-    bytes32 constant SYNTHEXCHANGE_SIG = keccak256("SynthExchange(address,bytes4,uint,bytes4,uint)");
-    function emitSynthExchange(address account, bytes4 fromCurrencyKey, uint fromAmount, bytes4 toCurrencyKey, uint toAmount) internal {
-        proxy._emit(abi.encode(account, fromCurrencyKey, fromAmount, toCurrencyKey, toAmount), 2, SYNTHEXCHANGE_SIG, bytes32(account), 0, 0);
+    event SynthExchange(address indexed account, bytes4 fromCurrencyKey, uint256 fromAmount, bytes4 toCurrencyKey, uint256 toAmount, address toAddress);
+    bytes32 constant SYNTHEXCHANGE_SIG = keccak256("SynthExchange(address,bytes4,uint256,bytes4,uint256,address)");
+    function emitSynthExchange(address account, bytes4 fromCurrencyKey, uint256 fromAmount, bytes4 toCurrencyKey, uint256 toAmount, address toAddress) internal {
+        proxy._emit(abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, toAddress), 2, SYNTHEXCHANGE_SIG, bytes32(account), 0, 0);
     }
 
     event PreferredCurrencyChanged(address indexed account, bytes4 newPreferredCurrency);

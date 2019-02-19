@@ -1944,7 +1944,7 @@ contract('Synthetix', async function(accounts) {
 		assert.bnEqual(effectiveValueMinusFees, sAUDBalance);
 	});
 
-	it.only('should emit a SynthExchange event', async function() {
+	it('should emit a SynthExchange event', async function() {
 		// Give some SNX to account1
 		await synthetix.transfer(account1, toUnit('300000'), { from: owner });
 		// Issue
@@ -1952,18 +1952,20 @@ contract('Synthetix', async function(accounts) {
 		await synthetix.issueSynths(sUSD, amountIssued, { from: account1 });
 
 		// Exchange sUSD to sAUD
-		const transaction = await synthetix.exchange(sUSD, amountIssued, sAUD, account1, {
+		const txn = await synthetix.exchange(sUSD, amountIssued, sAUD, account1, {
 			from: account1,
 		});
 
 		const sAUDBalance = await sAUDContract.balanceOf(account1);
 
-		assert.eventEqual(transaction, 'SynthExchange', {
+		const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
+		assert.eventEqual(synthExchangeEvent, 'SynthExchange', {
 			account: account1,
 			fromCurrencyKey: sUSD,
 			fromAmount: amountIssued,
 			toCurrencyKey: sAUD,
 			toAmount: sAUDBalance,
+			toAddress: account1,
 		});
 	});
 
