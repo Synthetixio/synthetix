@@ -6,15 +6,8 @@ language: node_js
 node_js:
   - '8.9.1'
 before_install:
-  - wget -qO- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash
-  - source ~/.nvm/nvm.sh
-  - nvm install node
   - npm install -g ganache-cli
   - npm i
-  - sudo apt-get install -y dpkg
-  - sudo add-apt-repository ppa:ethereum/ethereum -y
-  - sudo apt-get update
-  - sudo apt-get install solc
 script:
   - npm run lint
   - npm test
