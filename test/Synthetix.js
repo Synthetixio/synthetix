@@ -14,8 +14,6 @@ const {
 	ZERO_ADDRESS,
 } = require('../utils/testUtils');
 
-const shouldFail = require('openzeppelin-solidity/test/helpers/shouldFail');
-
 contract('Synthetix', async function(accounts) {
 	const [sUSD, sAUD, sEUR, SNX, XDR, sXYZ] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'XDR', 'sXYZ'].map(
 		web3.utils.asciiToHex
@@ -1976,6 +1974,6 @@ contract('Synthetix', async function(accounts) {
 		// Issue 0 amount of synth
 		const issuedSynths1 = toUnit('0');
 
-		await shouldFail.reverting(synthetix.issueSynths(sUSD, issuedSynths1, { from: account1 }));
+		await assert.revert(synthetix.issueSynths(sUSD, issuedSynths1, { from: account1 }));
 	});
 });
