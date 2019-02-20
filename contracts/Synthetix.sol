@@ -938,6 +938,7 @@ contract Synthetix is ExternStateToken {
     }
 
     // ========== EVENTS ==========
+    /* solium-disable */
 
     event SynthExchange(address indexed account, bytes4 fromCurrencyKey, uint256 fromAmount, bytes4 toCurrencyKey,  uint256 toAmount, address toAddress);
     bytes32 constant SYNTHEXCHANGE_SIG = keccak256("SynthExchange(address,bytes4,uint256,bytes4,uint256,address)");
@@ -968,4 +969,5 @@ contract Synthetix is ExternStateToken {
     function emitSynthRemoved(bytes4 currencyKey, address removedSynth) internal {
         proxy._emit(abi.encode(currencyKey, removedSynth), 1, SYNTHREMOVED_SIG, 0, 0, 0);
     }
+    /* solium-enable */
 }
