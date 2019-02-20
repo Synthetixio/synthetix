@@ -323,6 +323,12 @@ const verifyContracts = async () => {
 	for (const contract of Object.keys(deployedContracts)) {
 		// Check if this contract already has been verified.
 
+		// ExchangeRates is unable to verify via API
+		if (contract === 'ExchangeRates') {
+			tableData.push([deployedContracts[contract].options.address, 'Skipped Verification']);
+			continue;
+		}
+
 		let result = await axios.get(etherscanUrl, {
 			params: {
 				module: 'contract',
