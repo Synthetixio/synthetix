@@ -4,7 +4,6 @@ python:
   - '3.6'
 language: node_js
 node_js:
-  - 'iojs'
   - '10'
 before_install:
   - wget -qO- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash
