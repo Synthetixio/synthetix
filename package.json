@@ -50,19 +50,19 @@
 		"prettier": "^1.14.2",
 		"rimraf": "^2.6.2",
 		"seedrandom": "^2.4.4",
-		"solc": "^0.4.25",
+		"solc": "0.4.25",
 		"solidifier": "^2.0.0",
 		"solidity-coverage": "^0.5.11",
-		"solium": "^1.1.8",
+		"solium": "1.1.8",
 		"table": "^5.0.2",
-		"truffle": "^5.0.0-beta.1",
-		"truffle-core": "^5.0.0-beta.0",
-		"truffle-external-compile": "^1.0.0-beta.0",
+		"truffle": "5.0.0-beta.1",
+		"truffle-core": "5.0.0-beta.0",
+		"truffle-external-compile": "1.0.0-beta.0",
 		"typedarray-to-buffer": "^3.1.5",
 		"wait-port": "^0.2.2",
 		"web3": "^1.0.0-beta.36"
 	},
 	"dependencies": {
-		"openzeppelin-solidity": "^2.0.0"
+		"openzeppelin-solidity": "2.0.0"
 	}
 }
