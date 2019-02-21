@@ -2,7 +2,7 @@ require('dotenv').config();
 
 if (!process.env.PRIVATE_KEY || !process.env.INFURA_KEY || !process.env.ETHERSCAN_KEY) {
 	console.log(
-		'You must pass a configuration using a .env file. Copy .env.example to .env and add appropriate variables.'
+		'You must pass a configuration using a .env file. Copy .env.example to .env and add appropriate variables. Make sure the PRIVATE_KEY begins with 0x'
 	);
 	process.exit(1);
 }
@@ -25,16 +25,40 @@ if (!process.env.PRIVATE_KEY || !process.env.INFURA_KEY || !process.env.ETHERSCA
 //			action: 'use-existing',
 //			existingInstance: '0xd9c19368d3cE48dB78Ebdbea95699f3f2291E2d1',
 // 		}
+//
+// If you're not seeing your account and getting insufficent funds make sure you
+// add 0x to the start of the private key
+//
 
 const settings = {
 	network: 'kovan',
 	contractDeploymentGasLimit: 6500000,
 	methodCallGasLimit: 150000,
-	gasPrice: '0.1', // In gwei
+	gasPrice: '10.1', // In gwei
 	saveFlattenedContracts: true,
 	flattenedContractsFolder: './flattened-contracts',
 	verifyContracts: true,
-	synths: ['XDR', 'sUSD', 'sEUR', 'sJPY', 'sAUD', 'sKRW', 'sXAU', 'sGBP', 'sCHF'],
+	synths: [
+		'XDR',
+		'sUSD',
+		'sEUR',
+		'sJPY',
+		'sAUD',
+		'sKRW',
+		'sGBP',
+		'sCHF',
+		'sCNY',
+		'sSGD',
+		'sCAD',
+		'sRUB',
+		'sINR',
+		'sBRL',
+		'sNZD',
+		'sPLN',
+		'sXAU',
+		'sAUG',
+		'sBTC',
+	],
 	contracts: {
 		Depot: {
 			action: 'use-existing',
@@ -85,14 +109,46 @@ const settings = {
 				action: 'use-existing',
 				existingInstance: '0x4A17840Db4757d239FeB3e7398f918337508286e',
 			},
+			sGBP: {
+				action: 'use-existing',
+				existingInstance: '0xFd503dE0988062Bc46f87969B9b0036B9B1c23bF',
+			},
+			sCHF: {
+				action: 'use-existing',
+				existingInstance: '0x13ee05c5344AaD4ead53867F874ea28BAd3e95E4',
+			},
+			sCNY: {
+				action: 'deploy',
+			},
+			sSGD: {
+				action: 'deploy',
+			},
+			sCAD: {
+				action: 'deploy',
+			},
+			sRUB: {
+				action: 'deploy',
+			},
+			sINR: {
+				action: 'deploy',
+			},
+			sBRL: {
+				action: 'deploy',
+			},
+			sNZD: {
+				action: 'deploy',
+			},
+			sPLN: {
+				action: 'deploy',
+			},
 			sXAU: {
 				action: 'use-existing',
 				existingInstance: '0x1D79Dc0a657550d3831dC134b2651C38F0612854',
 			},
-			sGBP: {
+			sAUG: {
 				action: 'deploy',
 			},
-			sCHF: {
+			sBTC: {
 				action: 'deploy',
 			},
 		},
@@ -129,14 +185,46 @@ const settings = {
 				action: 'use-existing',
 				existingInstance: '0x051158081c0Cfa293e38Eaf5df245785dAC7fd29',
 			},
+			sGBP: {
+				action: 'use-existing',
+				existingInstance: '0xa10d76871fe5Fe55dB1502A2003C28092dfcB310',
+			},
+			sCHF: {
+				action: 'use-existing',
+				existingInstance: '0x1e57BefE49b5F02f91be0d3bF4407d70BD2E0DA4',
+			},
+			sCNY: {
+				action: 'deploy',
+			},
+			sSGD: {
+				action: 'deploy',
+			},
+			sCAD: {
+				action: 'deploy',
+			},
+			sRUB: {
+				action: 'deploy',
+			},
+			sINR: {
+				action: 'deploy',
+			},
+			sBRL: {
+				action: 'deploy',
+			},
+			sNZD: {
+				action: 'deploy',
+			},
+			sPLN: {
+				action: 'deploy',
+			},
 			sXAU: {
 				action: 'use-existing',
 				existingInstance: '0x7097e9E1e75194A29434128d4BdAFb49d4a87153',
 			},
-			sGBP: {
+			sAUG: {
 				action: 'deploy',
 			},
-			sCHF: {
+			sBTC: {
 				action: 'deploy',
 			},
 		},
@@ -173,14 +261,46 @@ const settings = {
 				action: 'use-existing',
 				existingInstance: '0x39f0f8eD1DB9Ba3894cC402EC964432f30364e81',
 			},
+			sGBP: {
+				action: 'use-existing',
+				existingInstance: '0x953Cb51942084edd0e1E6BdCBa9e19eCDfC3BdFd',
+			},
+			sCHF: {
+				action: 'use-existing',
+				existingInstance: '0x8AD7e3C48eb697F0EbD474283Cd53088a253161d',
+			},
+			sCNY: {
+				action: 'deploy',
+			},
+			sSGD: {
+				action: 'deploy',
+			},
+			sCAD: {
+				action: 'deploy',
+			},
+			sRUB: {
+				action: 'deploy',
+			},
+			sINR: {
+				action: 'deploy',
+			},
+			sBRL: {
+				action: 'deploy',
+			},
+			sNZD: {
+				action: 'deploy',
+			},
+			sPLN: {
+				action: 'deploy',
+			},
 			sXAU: {
 				action: 'use-existing',
 				existingInstance: '0x468833D3eeAF9Cf905521a34A66Dff704fDe9dcA',
 			},
-			sGBP: {
+			sAUG: {
 				action: 'deploy',
 			},
-			sCHF: {
+			sBTC: {
 				action: 'deploy',
 			},
 		},
@@ -207,6 +327,7 @@ const web3 = new Web3(
 );
 web3.eth.accounts.wallet.add(process.env.PRIVATE_KEY);
 web3.eth.defaultAccount = web3.eth.accounts.wallet[0].address;
+console.log('defaultAccount', web3.eth.defaultAccount);
 
 const account = web3.eth.defaultAccount;
 const sendParameters = (type = 'method-call') => ({
