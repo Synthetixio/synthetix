@@ -598,6 +598,11 @@ const deploy = async () => {
 	) {
 		console.log('Setting escrow on Synthetix...');
 		await synthetix.methods.setEscrow(synthetixEscrow.options.address).send(sendParameters());
+
+		if (settings.contracts.SynthetixEscrow.action !== 'deploy') {
+			console.log('Setting deployed Synthetix on escrow...');
+			await synthetixEscrow.methods.setSynthetix(synthetix.options.address).send(sendParameters());
+		}
 	}
 
 	if (
