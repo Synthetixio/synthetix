@@ -656,6 +656,16 @@ const deploy = async () => {
 
 			await synthetix.methods.addSynth(synth.options.address).send(sendParameters());
 		}
+
+		// Comment out if deploying on mainnet - Needs to be owner of existing Synths contract
+		if (
+			settings.contracts.Synth[currencyKey].action === 'use-existing' &&
+			settings.contracts.Synthetix.action === 'deploy'
+		) {
+			console.log(`Adding Synthetix contract on ${currencyKey} contract...`);
+
+			await synth.methods.setSynthetix(synthetix.options.address).send(sendParameters());
+		}
 	}
 
 	await deployContract('Depot', [
