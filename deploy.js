@@ -668,17 +668,6 @@ const deploy = async () => {
 		}
 	}
 
-	await deployContract('Depot', [
-		account,
-		account,
-		synthetix.options.address,
-		deployedContracts['Synth.sUSD'].options.address,
-		feePool.options.address,
-		account,
-		web3.utils.toWei('500'),
-		web3.utils.toWei('.10'),
-	]);
-
 	const depot = await deployContract('Depot', [
 		account,
 		account,
