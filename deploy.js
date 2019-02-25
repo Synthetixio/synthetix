@@ -709,13 +709,13 @@ const deploy = async () => {
 		feePool.options.address,
 	]);
 
-	// if (
-	// 	settings.contracts.Proxy.Synthetix.action === 'deploy' ||
-	// 	settings.contracts.Synthetix.action === 'deploy'
-	// ) {
-	// 	console.log('Setting target on Synthetix Proxy...');
-	// 	await synthetixProxy.methods.setTarget(synthetix.options.address).send(sendParameters());
-	// }
+	if (
+		settings.contracts.Proxy.Synthetix.action === 'deploy' ||
+		settings.contracts.Synthetix.action === 'deploy'
+	) {
+		console.log('Setting target on Synthetix Proxy...');
+		await synthetixProxy.methods.setTarget(synthetix.options.address).send(sendParameters());
+	}
 
 	if (settings.contracts.TokenState.Synthetix.action === 'deploy') {
 		console.log('Setting balance on Synthetix Token State...');
@@ -724,19 +724,19 @@ const deploy = async () => {
 			.send(sendParameters());
 	}
 
-	// if (
-	// 	settings.contracts.TokenState.Synthetix.action === 'deploy' ||
-	// 	settings.contracts.Synthetix.action === 'deploy'
-	// ) {
-	// 	console.log('Setting associated contract on Synthetix Token State...');
-	// 	await synthetixTokenState.methods
-	// 		.setAssociatedContract(synthetix.options.address)
-	// 		.send(sendParameters());
-	// 	console.log('Setting associated contract on Synthetix State...');
-	// 	await synthetixState.methods
-	// 		.setAssociatedContract(synthetix.options.address)
-	// 		.send(sendParameters());
-	// }
+	if (
+		settings.contracts.TokenState.Synthetix.action === 'deploy' ||
+		settings.contracts.Synthetix.action === 'deploy'
+	) {
+		console.log('Setting associated contract on Synthetix Token State...');
+		await synthetixTokenState.methods
+			.setAssociatedContract(synthetix.options.address)
+			.send(sendParameters());
+		console.log('Setting associated contract on Synthetix State...');
+		await synthetixState.methods
+			.setAssociatedContract(synthetix.options.address)
+			.send(sendParameters());
+	}
 
 	const synthetixEscrow = await deployContract('SynthetixEscrow', [
 		account,
@@ -751,20 +751,20 @@ const deploy = async () => {
 		await synthetix.methods.setEscrow(synthetixEscrow.options.address).send(sendParameters());
 
 		// Comment out if deploying on mainnet - Needs to be owner of synthetixEscrow contract
-		// if (settings.contracts.SynthetixEscrow.action !== 'deploy') {
-		// 	console.log('Setting deployed Synthetix on escrow...');
-		// 	await synthetixEscrow.methods.setSynthetix(synthetix.options.address).send(sendParameters());
-		// }
+		if (settings.contracts.SynthetixEscrow.action !== 'deploy') {
+			console.log('Setting deployed Synthetix on escrow...');
+			await synthetixEscrow.methods.setSynthetix(synthetix.options.address).send(sendParameters());
+		}
 	}
 
 	// Comment out if deploying on mainnet - Needs to be owner of feePool contract
-	// if (
-	// 	settings.contracts.FeePool.action === 'deploy' ||
-	// 	settings.contracts.Synthetix.action === 'deploy'
-	// ) {
-	// 	console.log('Setting Synthetix on Fee Pool...');
-	// 	await feePool.methods.setSynthetix(synthetix.options.address).send(sendParameters());
-	// }
+	if (
+		settings.contracts.FeePool.action === 'deploy' ||
+		settings.contracts.Synthetix.action === 'deploy'
+	) {
+		console.log('Setting Synthetix on Fee Pool...');
+		await feePool.methods.setSynthetix(synthetix.options.address).send(sendParameters());
+	}
 
 	// ----------------
 	// Synths
@@ -801,27 +801,27 @@ const deploy = async () => {
 		}
 
 		// Comment out if deploying on mainnet - Needs to be owner of Synthetix contract
-		// if (
-		// 	settings.contracts.Synth[currencyKey].action === 'deploy' ||
-		// 	settings.contracts.Synthetix.action === 'deploy'
-		// ) {
-		// 	console.log(`Adding ${currencyKey} to Synthetix contract...`);
-		//
-		// 	await synthetix.methods.addSynth(synth.options.address).send(sendParameters());
-		// }
+		if (
+			settings.contracts.Synth[currencyKey].action === 'deploy' ||
+			settings.contracts.Synthetix.action === 'deploy'
+		) {
+			console.log(`Adding ${currencyKey} to Synthetix contract...`);
+
+			await synthetix.methods.addSynth(synth.options.address).send(sendParameters());
+		}
 
 		// Comment out if deploying on mainnet - Needs to be owner of existing Synths contract
-		// if (
-		// 	settings.contracts.Synth[currencyKey].action === 'use-existing' &&
-		// 	settings.contracts.Synthetix.action === 'deploy'
-		// ) {
-		// 	console.log(`Adding Synthetix contract on ${currencyKey} contract...`);
+		if (
+			settings.contracts.Synth[currencyKey].action === 'use-existing' &&
+			settings.contracts.Synthetix.action === 'deploy'
+		) {
+			console.log(`Adding Synthetix contract on ${currencyKey} contract...`);
 
-		// 	await synth.methods.setSynthetix(synthetix.options.address).send(sendParameters());
-		// }
+			await synth.methods.setSynthetix(synthetix.options.address).send(sendParameters());
+		}
 	}
 
-	await deployContract('Depot', [
+	const depot = await deployContract('Depot', [
 		account,
 		account,
 		synthetix.options.address,
@@ -831,26 +831,16 @@ const deploy = async () => {
 		web3.utils.toWei('500'),
 		web3.utils.toWei('.10'),
 	]);
-	// const depot = await deployContract('Depot', [
-	// 	account,
-	// 	account,
-	// 	synthetix.options.address,
-	// 	deployedContracts['Synth.sUSD'].options.address,
-	// 	feePool.options.address,
-	// 	account,
-	// 	web3.utils.toWei('500'),
-	// 	web3.utils.toWei('.10'),
-	// ]);
 
 	// Comment out if deploying on mainnet - Needs to be owner of Depot contract
-	// if (
-	// 	settings.contracts.Synthetix.action === 'deploy' &&
-	// 	settings.contracts.Depot.action !== 'deploy'
-	// ) {
-	// 	console.log(`setting synthetix on depot contract...`);
+	if (
+		settings.contracts.Synthetix.action === 'deploy' &&
+		settings.contracts.Depot.action !== 'deploy'
+	) {
+		console.log(`setting synthetix on depot contract...`);
 
-	// 	await depot.methods.setSynthetix(synthetix.options.address).send(sendParameters());
-	// }
+		await depot.methods.setSynthetix(synthetix.options.address).send(sendParameters());
+	}
 
 	console.log();
 	console.log();
