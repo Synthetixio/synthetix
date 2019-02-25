@@ -2,7 +2,7 @@ require('dotenv').config();
 
 if (!process.env.PRIVATE_KEY || !process.env.INFURA_KEY || !process.env.ETHERSCAN_KEY) {
 	console.log(
-		'You must pass a configuration using a .env file. Copy .env.example to .env and add appropriate variables.'
+		'You must pass a configuration using a .env file. Copy .env.example to .env and add appropriate variables. Make sure the PRIVATE_KEY begins with 0x'
 	);
 	process.exit(1);
 }
@@ -25,24 +25,48 @@ if (!process.env.PRIVATE_KEY || !process.env.INFURA_KEY || !process.env.ETHERSCA
 //			action: 'use-existing',
 //			existingInstance: '0xd9c19368d3cE48dB78Ebdbea95699f3f2291E2d1',
 // 		}
+//
+// If you're not seeing your account and getting insufficent funds make sure you
+// add 0x to the start of the private key
+//
 
 const settings = {
-	network: 'kovan',
+	network: 'mainnet',
 	contractDeploymentGasLimit: 6500000,
 	methodCallGasLimit: 150000,
-	gasPrice: '0.1', // In gwei
+	gasPrice: '10.1', // In gwei
 	saveFlattenedContracts: true,
 	flattenedContractsFolder: './flattened-contracts',
 	verifyContracts: true,
-	synths: ['XDR', 'sUSD', 'sEUR', 'sJPY', 'sAUD', 'sKRW', 'sXAU', 'sGBP', 'sCHF'],
+	synths: [
+		'XDR',
+		'sUSD',
+		'sEUR',
+		'sJPY',
+		'sAUD',
+		'sKRW',
+		'sGBP',
+		'sCHF',
+		'sCNY',
+		'sSGD',
+		'sCAD',
+		'sRUB',
+		'sINR',
+		'sBRL',
+		'sNZD',
+		'sPLN',
+		'sXAU',
+		'sXAG',
+		'sBTC',
+	],
 	contracts: {
 		Depot: {
 			action: 'use-existing',
-			existingInstance: '0x1920e29ea7b83d8769be04d28481f43b6619f26d',
+			existingInstance: '0x172E09691DfBbC035E37c73B62095caa16Ee2388',
 		},
 		ExchangeRates: {
 			action: 'use-existing',
-			existingInstance: '0xfcd4d688fa40bd4abc2f9c8db4e1735f14094c42',
+			existingInstance: '0x73b172756BD5DDf0110Ba8D7b88816Eb639Eb21c',
 		},
 		FeePool: {
 			action: 'use-existing',
@@ -50,49 +74,81 @@ const settings = {
 		},
 		Synthetix: {
 			action: 'use-existing',
-			existingInstance: '0x457cD14f384E7D103B17feEb01d2a42Ad2ecA529',
+			existingInstance: '0x58a4cdba423a4d143426951512f066a995527bff',
 		},
 		SynthetixEscrow: {
 			action: 'use-existing',
-			existingInstance: '0xC557379F98d45f22853C5cF3fD1A830e11F083D6',
+			existingInstance: '0x971e78e0C92392A4E39099835cF7E6aB535b2227',
 		},
 		SynthetixState: {
 			action: 'use-existing',
-			existingInstance: '0x9dE2f60d70e1F6A044f4e07C8CD0C2B42D947bbE',
+			existingInstance: '0x7E295884F3f5e2ea462620018E9193a1C305C185',
 		},
 		Synth: {
 			XDR: {
 				action: 'use-existing',
-				existingInstance: '0x6568D9e750fC44AF00f857885Dfb8281c00529c4',
+				existingInstance: '0x2972705AF18c66c14CDd27AD412961E01944A9C3',
 			},
 			sUSD: {
 				action: 'use-existing',
-				existingInstance: '0xD9E5A009Ec07dE76616d7361Ed713eF434d71325',
+				existingInstance: '0x48414e5b7ed589956070DFfEBe6e4877DAE35EA6',
 			},
 			sEUR: {
 				action: 'use-existing',
-				existingInstance: '0x249A10c68AfA9827571cb73f29ab5Af57Ee5A596',
+				existingInstance: '0xC2bb52457D81FBD223CC92b44cd372d36b338A10',
 			},
 			sJPY: {
 				action: 'use-existing',
-				existingInstance: '0x1b619A6fB6b5D0c9F1067f8F3E24B0308907D8bB',
+				existingInstance: '0xD9E5A009Ec07dE76616d7361Ed713eF434d71325',
 			},
 			sAUD: {
 				action: 'use-existing',
-				existingInstance: '0x09Fabbf00CeDd6E8E715738a854461D56938c3BE',
+				existingInstance: '0xB03dFc4b9C9756B6D4Fbc12DAde7732149Fcf00d',
 			},
 			sKRW: {
 				action: 'use-existing',
-				existingInstance: '0x4A17840Db4757d239FeB3e7398f918337508286e',
+				existingInstance: '0xdF846D3ded30A0590319f8A7ECD4e233B0e9188C',
+			},
+			sGBP: {
+				action: 'use-existing',
+				existingInstance: '0xdB36B8f25bB1f289d97aeE8f87BAcCaC58fA8883',
+			},
+			sCHF: {
+				action: 'use-existing',
+				existingInstance: '0x9270D9970D6ACA773e2FA01633CDc091a46714c9',
+			},
+			sCNY: {
+				action: 'deploy',
+			},
+			sSGD: {
+				action: 'deploy',
+			},
+			sCAD: {
+				action: 'deploy',
+			},
+			sRUB: {
+				action: 'deploy',
+			},
+			sINR: {
+				action: 'deploy',
+			},
+			sBRL: {
+				action: 'deploy',
+			},
+			sNZD: {
+				action: 'deploy',
+			},
+			sPLN: {
+				action: 'deploy',
 			},
 			sXAU: {
 				action: 'use-existing',
-				existingInstance: '0x1D79Dc0a657550d3831dC134b2651C38F0612854',
+				existingInstance: '0x112D5fA64e4902B6ff1a35495a0f878c210A5601',
 			},
-			sGBP: {
+			sXAG: {
 				action: 'deploy',
 			},
-			sCHF: {
+			sBTC: {
 				action: 'deploy',
 			},
 		},
@@ -103,40 +159,72 @@ const settings = {
 			},
 			Synthetix: {
 				action: 'use-existing',
-				existingInstance: '0x44D0bbe7E344D0dA45D3b60d5038607b2c596365',
+				existingInstance: '0xC011A72400E58ecD99Ee497CF89E3775d4bd732F',
 			},
 			XDR: {
 				action: 'use-existing',
-				existingInstance: '0x48414e5b7ed589956070DFfEBe6e4877DAE35EA6',
+				existingInstance: '0x62492F15cF60c5847d3053e482cAde8C5c29af88',
 			},
 			sUSD: {
 				action: 'use-existing',
-				existingInstance: '0x559E848A1b6a7AfC69Ee27F8d20280A42628b2cf',
+				existingInstance: '0x57Ab1E02fEE23774580C119740129eAC7081e9D3',
 			},
 			sEUR: {
 				action: 'use-existing',
-				existingInstance: '0xB03dFc4b9C9756B6D4Fbc12DAde7732149Fcf00d',
+				existingInstance: '0x3EB064766109D150e4362222df80638BcE00e037',
 			},
 			sJPY: {
 				action: 'use-existing',
-				existingInstance: '0x112D5fA64e4902B6ff1a35495a0f878c210A5601',
+				existingInstance: '0x559E848A1b6a7AfC69Ee27F8d20280A42628b2cf',
 			},
 			sAUD: {
 				action: 'use-existing',
-				existingInstance: '0xf02a45263BB74685D72668568a200C843Aee69a2',
+				existingInstance: '0xED4699f180a14B5974c26f494483F9c327Fd381a',
 			},
 			sKRW: {
 				action: 'use-existing',
-				existingInstance: '0x051158081c0Cfa293e38Eaf5df245785dAC7fd29',
+				existingInstance: '0xdCE506b196B0dF677d07e718f872CAc9Bc368A33',
+			},
+			sGBP: {
+				action: 'use-existing',
+				existingInstance: '0x0C8A7D55ef593A2cAd34894c1523162eE2ffB9aC',
+			},
+			sCHF: {
+				action: 'use-existing',
+				existingInstance: '0x28AF5a2f0cC12F2f19dd946608c945456b52b3F6',
+			},
+			sCNY: {
+				action: 'deploy',
+			},
+			sSGD: {
+				action: 'deploy',
+			},
+			sCAD: {
+				action: 'deploy',
+			},
+			sRUB: {
+				action: 'deploy',
+			},
+			sINR: {
+				action: 'deploy',
+			},
+			sBRL: {
+				action: 'deploy',
+			},
+			sNZD: {
+				action: 'deploy',
+			},
+			sPLN: {
+				action: 'deploy',
 			},
 			sXAU: {
 				action: 'use-existing',
-				existingInstance: '0x7097e9E1e75194A29434128d4BdAFb49d4a87153',
+				existingInstance: '0xe05D803fa0c5832Fa2262465290abB25d6C2bFA3',
 			},
-			sGBP: {
+			sXAG: {
 				action: 'deploy',
 			},
-			sCHF: {
+			sBTC: {
 				action: 'deploy',
 			},
 		},
@@ -147,40 +235,72 @@ const settings = {
 		TokenState: {
 			Synthetix: {
 				action: 'use-existing',
-				existingInstance: '0x7E295884F3f5e2ea462620018E9193a1C305C185',
+				existingInstance: '0x5b1b5fEa1b99D83aD479dF0C222F0492385381dD',
 			},
 			XDR: {
 				action: 'use-existing',
-				existingInstance: '0xc25dD122c6dcbE5390bd23b90e5605fC34Ad0D14',
+				existingInstance: '0xBF093390d8046ae2d0f5465DEC7001d65DC159d5',
 			},
 			sUSD: {
 				action: 'use-existing',
-				existingInstance: '0x4dFACfB15514C21c991ff75Bc7Bf6Fb1F98361ed',
+				existingInstance: '0x05a9CBe762B36632b3594DA4F082340E0e5343e8',
 			},
 			sEUR: {
 				action: 'use-existing',
-				existingInstance: '0xED4699f180a14B5974c26f494483F9c327Fd381a',
+				existingInstance: '0x6568D9e750fC44AF00f857885Dfb8281c00529c4',
 			},
 			sJPY: {
 				action: 'use-existing',
-				existingInstance: '0xe05D803fa0c5832Fa2262465290abB25d6C2bFA3',
+				existingInstance: '0x4dFACfB15514C21c991ff75Bc7Bf6Fb1F98361ed',
 			},
 			sAUD: {
 				action: 'use-existing',
-				existingInstance: '0x2F8aa243760edC8fFC56C064EeAf4B11938BA8B7',
+				existingInstance: '0xCb29D2cf2C65d3Be1d00F07f3441390432D55203',
 			},
 			sKRW: {
 				action: 'use-existing',
-				existingInstance: '0x39f0f8eD1DB9Ba3894cC402EC964432f30364e81',
+				existingInstance: '0x249A10c68AfA9827571cb73f29ab5Af57Ee5A596',
+			},
+			sGBP: {
+				action: 'use-existing',
+				existingInstance: '0x7e88D19A79b291cfE5696d496055f7e57F537A75',
+			},
+			sCHF: {
+				action: 'use-existing',
+				existingInstance: '0x52496fE8a4feaEFe14d9433E00D48E6929c13deC',
+			},
+			sCNY: {
+				action: 'deploy',
+			},
+			sSGD: {
+				action: 'deploy',
+			},
+			sCAD: {
+				action: 'deploy',
+			},
+			sRUB: {
+				action: 'deploy',
+			},
+			sINR: {
+				action: 'deploy',
+			},
+			sBRL: {
+				action: 'deploy',
+			},
+			sNZD: {
+				action: 'deploy',
+			},
+			sPLN: {
+				action: 'deploy',
 			},
 			sXAU: {
 				action: 'use-existing',
-				existingInstance: '0x468833D3eeAF9Cf905521a34A66Dff704fDe9dcA',
+				existingInstance: '0x20569B49d74c1EDE765382574F7F3fdC2a078A4f',
 			},
-			sGBP: {
+			sXAG: {
 				action: 'deploy',
 			},
-			sCHF: {
+			sBTC: {
 				action: 'deploy',
 			},
 		},
@@ -207,6 +327,7 @@ const web3 = new Web3(
 );
 web3.eth.accounts.wallet.add(process.env.PRIVATE_KEY);
 web3.eth.defaultAccount = web3.eth.accounts.wallet[0].address;
+console.log('defaultAccount', web3.eth.defaultAccount);
 
 const account = web3.eth.defaultAccount;
 const sendParameters = (type = 'method-call') => ({
