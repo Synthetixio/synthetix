@@ -145,7 +145,7 @@ const settings = {
 				action: 'use-existing',
 				existingInstance: '0x112D5fA64e4902B6ff1a35495a0f878c210A5601',
 			},
-			sAUG: {
+			sXAG: {
 				action: 'deploy',
 			},
 			sBTC: {
@@ -221,7 +221,7 @@ const settings = {
 				action: 'use-existing',
 				existingInstance: '0xe05D803fa0c5832Fa2262465290abB25d6C2bFA3',
 			},
-			sAUG: {
+			sXAG: {
 				action: 'deploy',
 			},
 			sBTC: {
