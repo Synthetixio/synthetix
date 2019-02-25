@@ -31,7 +31,7 @@ if (!process.env.PRIVATE_KEY || !process.env.INFURA_KEY || !process.env.ETHERSCA
 //
 
 const settings = {
-	network: 'homestead',
+	network: 'mainnet',
 	contractDeploymentGasLimit: 6500000,
 	methodCallGasLimit: 150000,
 	gasPrice: '10.1', // In gwei
@@ -56,7 +56,7 @@ const settings = {
 		'sNZD',
 		'sPLN',
 		'sXAU',
-		'sAUG',
+		'sXAG',
 		'sBTC',
 	],
 	contracts: {
@@ -297,7 +297,7 @@ const settings = {
 				action: 'use-existing',
 				existingInstance: '0x20569B49d74c1EDE765382574F7F3fdC2a078A4f',
 			},
-			sAUG: {
+			sXAG: {
 				action: 'deploy',
 			},
 			sBTC: {
