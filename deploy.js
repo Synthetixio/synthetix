@@ -90,10 +90,12 @@ const settings = {
 				existingInstance: '0x1D79Dc0a657550d3831dC134b2651C38F0612854',
 			},
 			sGBP: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0x5F9a6d7FEB19A78ECFda0F76AEb2C512D6b09fd7',
 			},
 			sCHF: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0x939e6c08cdd77DBA2B6a6463790220c366E2Ba52',
 			},
 		},
 		Proxy: {
@@ -134,10 +136,12 @@ const settings = {
 				existingInstance: '0x7097e9E1e75194A29434128d4BdAFb49d4a87153',
 			},
 			sGBP: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0x958332ACb1F9dF866157EE47e36Cd6077249c664',
 			},
 			sCHF: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0x2fbe9f09ae3fe9a4835990313E3696A799FCb762',
 			},
 		},
 		SafeDecimalMath: {
@@ -178,10 +182,12 @@ const settings = {
 				existingInstance: '0x468833D3eeAF9Cf905521a34A66Dff704fDe9dcA',
 			},
 			sGBP: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0xeDe76a696Ab2Cae36bB6DF5eF0f79837FE04Bc6B',
 			},
 			sCHF: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0x0f3a54b8D5D542eDa81A30515F218FD142532926',
 			},
 		},
 	},
@@ -699,7 +705,35 @@ const deploy = async () => {
 		deployedContracts[key].options.address,
 	]);
 
+	await deployedContractsToJSON();
+
 	console.log(table(tableData));
+};
+
+const deployedContractsToJSON = async () => {
+	console.log();
+	console.log('Successfully deployed all contracts: Logging JSON to file deployContracts.json ...');
+
+	const contracts = Object.keys(deployedContracts).reduce((result, key) => {
+		result[key] = deployedContracts[key].options.address;
+		return result;
+	}, {});
+
+	console.log('Logging deployedContract object', contracts);
+
+	try {
+		const filename = path.join(settings.network, 'contracts.json');
+		mkdirp.sync(path.dirname(filename));
+
+		console.log(`Saving to ${settings.network}.`);
+		fs.writeFileSync(filename, JSON.stringify(contracts));
+	} catch (error) {
+		console.log('error saving contracts to file', error);
+	}
+
+	console.log();
+	console.log(' Successfully saved json output');
+	console.log();
 };
 
 // Build and deploy and clean that build directory again.
