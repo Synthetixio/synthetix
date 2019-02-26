@@ -34,7 +34,7 @@ const settings = {
 	network: 'mainnet',
 	contractDeploymentGasLimit: 6500000,
 	methodCallGasLimit: 150000,
-	gasPrice: '10.1', // In gwei
+	gasPrice: '10', // In gwei
 	saveFlattenedContracts: true,
 	flattenedContractsFolder: './flattened-contracts',
 	verifyContracts: true,
@@ -74,7 +74,7 @@ const settings = {
 		},
 		Synthetix: {
 			action: 'use-existing',
-			existingInstance: '0x58a4cdba423a4d143426951512f066a995527bff',
+			existingInstance: '0x3772f9716cf6d7a09ede3587738aa2af5577483a',
 		},
 		SynthetixEscrow: {
 			action: 'use-existing',
@@ -118,38 +118,48 @@ const settings = {
 				existingInstance: '0x9270D9970D6ACA773e2FA01633CDc091a46714c9',
 			},
 			sCNY: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0x60C34eB93AFCd1B701fF8C036B128441C68A8A70',
 			},
 			sSGD: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0x2aE393C18b6Aa62D6a2250aF7b803Fa6973bC981',
 			},
 			sCAD: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0x8f69c9Ee79Bf9320E1A5C19e559108E1cb3d002B',
 			},
 			sRUB: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0x8a8DcbBa6038c6Fc6D192F5cf5C5dD83B98591bc',
 			},
 			sINR: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0x51671B7556EbEB4c43180e983F5569973e15cAc9',
 			},
 			sBRL: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0xa5A4ccCCcAa26Cea096F6E493839423F4D66c63F',
 			},
 			sNZD: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0xCF401f31c63F58DEbfC76F441731dfa945cd0Bde',
 			},
 			sPLN: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0x1943dBd2A793c588B5170188Ee6fb62E02AfdfF7',
 			},
 			sXAU: {
 				action: 'use-existing',
 				existingInstance: '0x112D5fA64e4902B6ff1a35495a0f878c210A5601',
 			},
 			sXAG: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0x4D57A8212BDb8bdca049365BCE8afA0244a0E3FC',
 			},
 			sBTC: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0xf8AD89091B2724bdb7528c50B282B565Db4635bb',
 			},
 		},
 		Proxy: {
@@ -194,38 +204,48 @@ const settings = {
 				existingInstance: '0x28AF5a2f0cC12F2f19dd946608c945456b52b3F6',
 			},
 			sCNY: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0x60feeeD05004476518281D43185fB7F52d9722c0',
 			},
 			sSGD: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0x632dB1c25C03dCAc8d23Ff2c9A4cEa34cbEffa1B',
 			},
 			sCAD: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0x0Bc209fB72390AF12bD6Fd775355ea0856864B31',
 			},
 			sRUB: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0xDcB5821fcFDAB5553307b8f99591fC9DaA3C4be3',
 			},
 			sINR: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0x74C80bB51Da1EAc2d40074c647CbD0ab6920063f',
 			},
 			sBRL: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0x5D609C25adAafd856021F92296C66dB602A0fcE8',
 			},
 			sNZD: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0x26C0cb14470803120321b70aE85405ac298e5A42',
 			},
 			sPLN: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0xD9553f0fDa012224141AeCc1ECa0e29868fF7FE8',
 			},
 			sXAU: {
 				action: 'use-existing',
 				existingInstance: '0xe05D803fa0c5832Fa2262465290abB25d6C2bFA3',
 			},
 			sXAG: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0x6e5709515C767c907e43a03388cc816Bd65e797C',
 			},
 			sBTC: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0x9073Ee83b6CE96C444547DdCAf777b9352163581',
 			},
 		},
 		SafeDecimalMath: {
@@ -270,38 +290,48 @@ const settings = {
 				existingInstance: '0x52496fE8a4feaEFe14d9433E00D48E6929c13deC',
 			},
 			sCNY: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0x5cCA1f0c514C0624d3BA7585d56fD2d72CbeFd80',
 			},
 			sSGD: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0x000F49FD739d4023B0A6C87eE8705eF1Ffb55C87',
 			},
 			sCAD: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0xdDf91Fc27087e076574Df31483Db5C21A85E47b6',
 			},
 			sRUB: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0xF1eF8ee7DfEE4BD0e06B0fCed1d299387B78Cb09',
 			},
 			sINR: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0xf8F2f8001fca737eFA2bC26217Fc20C1F8267fbA',
 			},
 			sBRL: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0x0985de52896fC4C9A84d108F5582ec02fdF91605',
 			},
 			sNZD: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0x3FDa286F354a3318534026dBAcf021c84A71B03c',
 			},
 			sPLN: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0xdb957f324Be2dE9BdAB01A3dbb50228569FDEe1B',
 			},
 			sXAU: {
 				action: 'use-existing',
 				existingInstance: '0x20569B49d74c1EDE765382574F7F3fdC2a078A4f',
 			},
 			sXAG: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0x53d244Fb46357568DBeF082225cCC87cBD94aAE8',
 			},
 			sBTC: {
-				action: 'deploy',
+				action: 'use-existing',
+				existingInstance: '0x4F6296455F8d754c19821cF1EC8FeBF2cD456E67',
 			},
 		},
 	},
@@ -719,8 +749,15 @@ const deploy = async () => {
 	) {
 		console.log('Setting escrow on Synthetix...');
 		await synthetix.methods.setEscrow(synthetixEscrow.options.address).send(sendParameters());
+
+		// Comment out if deploying on mainnet - Needs to be owner of synthetixEscrow contract
+		if (settings.contracts.SynthetixEscrow.action !== 'deploy') {
+			console.log('Setting deployed Synthetix on escrow...');
+			await synthetixEscrow.methods.setSynthetix(synthetix.options.address).send(sendParameters());
+		}
 	}
 
+	// Comment out if deploying on mainnet - Needs to be owner of feePool contract
 	if (
 		settings.contracts.FeePool.action === 'deploy' ||
 		settings.contracts.Synthetix.action === 'deploy'
@@ -772,9 +809,19 @@ const deploy = async () => {
 
 			await synthetix.methods.addSynth(synth.options.address).send(sendParameters());
 		}
+
+		// Comment out if deploying on mainnet - Needs to be owner of existing Synths contract
+		if (
+			settings.contracts.Synth[currencyKey].action === 'use-existing' &&
+			settings.contracts.Synthetix.action === 'deploy'
+		) {
+			console.log(`Adding Synthetix contract on ${currencyKey} contract...`);
+
+			await synth.methods.setSynthetix(synthetix.options.address).send(sendParameters());
+		}
 	}
 
-	await deployContract('Depot', [
+	const depot = await deployContract('Depot', [
 		account,
 		account,
 		synthetix.options.address,
@@ -784,6 +831,16 @@ const deploy = async () => {
 		web3.utils.toWei('500'),
 		web3.utils.toWei('.10'),
 	]);
+
+	// Comment out if deploying on mainnet - Needs to be owner of Depot contract
+	if (
+		settings.contracts.Synthetix.action === 'deploy' &&
+		settings.contracts.Depot.action !== 'deploy'
+	) {
+		console.log(`setting synthetix on depot contract...`);
+
+		await depot.methods.setSynthetix(synthetix.options.address).send(sendParameters());
+	}
 
 	console.log();
 	console.log();
@@ -795,7 +852,35 @@ const deploy = async () => {
 		deployedContracts[key].options.address,
 	]);
 
+	await deployedContractsToJSON();
+
 	console.log(table(tableData));
+};
+
+const deployedContractsToJSON = async () => {
+	console.log();
+	console.log('Successfully deployed all contracts: Logging JSON to file deployContracts.json ...');
+
+	const contracts = Object.keys(deployedContracts).reduce((result, key) => {
+		result[key] = deployedContracts[key].options.address;
+		return result;
+	}, {});
+
+	console.log('Logging deployedContract object', contracts);
+
+	try {
+		const filename = path.join(settings.network, 'contracts.json');
+		mkdirp.sync(path.dirname(filename));
+
+		console.log(`Saving to ${settings.network}.`);
+		fs.writeFileSync(filename, JSON.stringify(contracts));
+	} catch (error) {
+		console.log('error saving contracts to file', error);
+	}
+
+	console.log();
+	console.log(' Successfully saved json output');
+	console.log();
 };
 
 // Build and deploy and clean that build directory again.
