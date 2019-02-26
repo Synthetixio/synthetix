@@ -876,12 +876,12 @@ const deployedContractsToJSON = async () => {
 	console.log('Saving JSON to file contracts.json ...');
 
 	const contracts = Object.keys(deployedContracts).reduce((result, key) => {
-		const [contractName, contractNamespace] = key.split('.');
-		if (!contractNamespace) {
-			result[contractName] = deployedContracts[key].options.address;
-		} else {
-			const name = contractName + contractNamespace;
+		const [contractType, contractName] = key.split('.');
+		if (contractName && contractType) {
+			const name = contractType + contractName;
 			result[name] = deployedContracts[key].options.address;
+		} else {
+			result[contractType] = deployedContracts[key].options.address;
 		}
 
 		return result;
