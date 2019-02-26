@@ -82,7 +82,7 @@ const settings = {
 		},
 		SynthetixState: {
 			action: 'use-existing',
-			existingInstance: '0x7E295884F3f5e2ea462620018E9193a1C305C185',
+			existingInstance: '0x4b9ca5607f1ff8019c1c6a3c2f0cc8de622d5b82',
 		},
 		Synth: {
 			XDR: {
@@ -91,7 +91,7 @@ const settings = {
 			},
 			sUSD: {
 				action: 'use-existing',
-				existingInstance: '0x48414e5b7ed589956070DFfEBe6e4877DAE35EA6',
+				existingInstance: '0x0cbe2df57ca9191b64a7af3baa3f946fa7df2f25',
 			},
 			sEUR: {
 				action: 'use-existing',
