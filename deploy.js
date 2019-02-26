@@ -91,7 +91,7 @@ const settings = {
 			},
 			sUSD: {
 				action: 'use-existing',
-				existingInstance: '0x48414e5b7ed589956070DFfEBe6e4877DAE35EA6',
+				existingInstance: '0x0cbe2df57ca9191b64a7af3baa3f946fa7df2f25',
 			},
 			sEUR: {
 				action: 'use-existing',
