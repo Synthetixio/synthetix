@@ -859,30 +859,53 @@ const deploy = async () => {
 
 const deployedContractsToJSON = async () => {
 	console.log();
-	console.log('Successfully deployed all contracts: Logging JSON to file deployContracts.json ...');
+	console.log('Saving ABI JSON to file contractsABI.json...');
+
+	const contractsWithAbi = Object.keys(deployedContracts).reduce((result, key) => {
+		const [contractName] = key.split('.');
+		result.push({
+			name: key,
+			address: deployedContracts[key].options.address,
+			abi: artifacts[contractName].abi,
+		});
+		return result;
+	}, []);
+
+	await writeFile(contractsWithAbi, 'contractsABI.json');
+
+	console.log('Saving JSON to file contracts.json ...');
 
 	const contracts = Object.keys(deployedContracts).reduce((result, key) => {
-		result[key] = deployedContracts[key].options.address;
+		const [contractType, contractName] = key.split('.');
+		if (contractName && contractType) {
+			const name = contractType + contractName;
+			result[name] = deployedContracts[key].options.address;
+		} else {
+			result[contractType] = deployedContracts[key].options.address;
+		}
+
 		return result;
 	}, {});
 
-	console.log('Logging deployedContract object', contracts);
+	console.log('Logging deployedContracts', contracts);
+	await writeFile(contracts, 'contracts.json');
+};
 
+const writeFile = async (contracts, name) => {
 	try {
-		const filename = path.join(settings.network, 'contracts.json');
+		const filename = path.join(settings.network, name);
 		mkdirp.sync(path.dirname(filename));
 
 		console.log(`Saving to ${settings.network}.`);
 		fs.writeFileSync(filename, JSON.stringify(contracts));
+
+		console.log();
+		console.log(' Successfully saved json output');
+		console.log();
 	} catch (error) {
 		console.log('error saving contracts to file', error);
 	}
-
-	console.log();
-	console.log(' Successfully saved json output');
-	console.log();
 };
-
 // Build and deploy and clean that build directory again.
 build()
 	.then(() => deploy())
