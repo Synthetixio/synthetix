@@ -126,13 +126,14 @@ import "./SynthetixEscrow.sol";
 import "./SynthetixState.sol";
 import "./TokenState.sol";
 import "./ExchangeRates.sol";
+import "./InflationarySupply.sol";
 
 /**
  * @title Synthetix ERC20 contract.
  * @notice The Synthetix contracts not only facilitates transfers, exchanges, and tracks balances,
  * but it also computes the quantity of fees each synthetix holder is entitled to.
  */
-contract Synthetix is ExternStateToken {
+contract Synthetix is ExternStateToken, InflationarySupply {
 
     // ========== STATE VARIABLES ==========
 
@@ -162,6 +163,7 @@ contract Synthetix is ExternStateToken {
         address _owner, ExchangeRates _exchangeRates, FeePool _feePool
     )
         ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, SYNTHETIX_SUPPLY, DECIMALS, _owner)
+        InflationarySupply()
         public
     {
         synthetixState = _synthetixState;
