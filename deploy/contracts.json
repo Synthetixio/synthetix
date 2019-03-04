@@ -1,0 +1,209 @@
+{
+	"Depot": {
+		"action": "use-existing"
+	},
+	"ExchangeRates": {
+		"action": "use-existing"
+	},
+	"FeePool": {
+		"action": "use-existing"
+	},
+	"Synthetix": {
+		"action": "use-existing"
+	},
+	"SynthetixEscrow": {
+		"action": "use-existing"
+	},
+	"SynthetixState": {
+		"action": "use-existing"
+	},
+	"Synth": {
+		"XDR": {
+			"action": "use-existing"
+		},
+		"sUSD": {
+			"action": "use-existing"
+		},
+		"sEUR": {
+			"action": "use-existing"
+		},
+		"sJPY": {
+			"action": "use-existing"
+		},
+		"sAUD": {
+			"action": "use-existing"
+		},
+		"sKRW": {
+			"action": "use-existing"
+		},
+		"sGBP": {
+			"action": "use-existing"
+		},
+		"sCHF": {
+			"action": "use-existing"
+		},
+		"sCNY": {
+			"action": "use-existing"
+		},
+		"sSGD": {
+			"action": "use-existing"
+		},
+		"sCAD": {
+			"action": "use-existing"
+		},
+		"sRUB": {
+			"action": "use-existing"
+		},
+		"sINR": {
+			"action": "use-existing"
+		},
+		"sBRL": {
+			"action": "use-existing"
+		},
+		"sNZD": {
+			"action": "use-existing"
+		},
+		"sPLN": {
+			"action": "use-existing"
+		},
+		"sXAU": {
+			"action": "use-existing"
+		},
+		"sXAG": {
+			"action": "use-existing"
+		},
+		"sBTC": {
+			"action": "use-existing"
+		}
+	},
+	"Proxy": {
+		"FeePool": {
+			"action": "use-existing"
+		},
+		"Synthetix": {
+			"action": "use-existing"
+		},
+		"XDR": {
+			"action": "use-existing"
+		},
+		"sUSD": {
+			"action": "use-existing"
+		},
+		"sEUR": {
+			"action": "use-existing"
+		},
+		"sJPY": {
+			"action": "use-existing"
+		},
+		"sAUD": {
+			"action": "use-existing"
+		},
+		"sKRW": {
+			"action": "use-existing"
+		},
+		"sGBP": {
+			"action": "use-existing"
+		},
+		"sCHF": {
+			"action": "use-existing"
+		},
+		"sCNY": {
+			"action": "use-existing"
+		},
+		"sSGD": {
+			"action": "use-existing"
+		},
+		"sCAD": {
+			"action": "use-existing"
+		},
+		"sRUB": {
+			"action": "use-existing"
+		},
+		"sINR": {
+			"action": "use-existing"
+		},
+		"sBRL": {
+			"action": "use-existing"
+		},
+		"sNZD": {
+			"action": "use-existing"
+		},
+		"sPLN": {
+			"action": "use-existing"
+		},
+		"sXAU": {
+			"action": "use-existing"
+		},
+		"sXAG": {
+			"action": "use-existing"
+		},
+		"sBTC": {
+			"action": "use-existing"
+		}
+	},
+	"SafeDecimalMath": {
+		"action": "use-existing"
+	},
+	"TokenState": {
+		"Synthetix": {
+			"action": "use-existing"
+		},
+		"XDR": {
+			"action": "use-existing"
+		},
+		"sUSD": {
+			"action": "use-existing"
+		},
+		"sEUR": {
+			"action": "use-existing"
+		},
+		"sJPY": {
+			"action": "use-existing"
+		},
+		"sAUD": {
+			"action": "use-existing"
+		},
+		"sKRW": {
+			"action": "use-existing"
+		},
+		"sGBP": {
+			"action": "use-existing"
+		},
+		"sCHF": {
+			"action": "use-existing"
+		},
+		"sCNY": {
+			"action": "use-existing"
+		},
+		"sSGD": {
+			"action": "use-existing"
+		},
+		"sCAD": {
+			"action": "use-existing"
+		},
+		"sRUB": {
+			"action": "use-existing"
+		},
+		"sINR": {
+			"action": "use-existing"
+		},
+		"sBRL": {
+			"action": "use-existing"
+		},
+		"sNZD": {
+			"action": "use-existing"
+		},
+		"sPLN": {
+			"action": "use-existing"
+		},
+		"sXAU": {
+			"action": "use-existing"
+		},
+		"sXAG": {
+			"action": "use-existing"
+		},
+		"sBTC": {
+			"action": "use-existing"
+		}
+	}
+}

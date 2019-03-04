@@ -33,6 +33,7 @@
 	"devDependencies": {
 		"axios": "^0.18.0",
 		"bip39": "^2.5.0",
+		"commander": "^2.19.0",
 		"concurrently": "^4.0.1",
 		"dotenv": "^6.1.0",
 		"eslint": "^5.5.0",
