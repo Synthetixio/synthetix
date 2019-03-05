@@ -1976,4 +1976,8 @@ contract('Synthetix', async function(accounts) {
 
 		await assert.revert(synthetix.issueSynths(sUSD, issuedSynths1, { from: account1 }));
 	});
+
+	it('should allow any user to publicly call mint() for increasing the supply', async function() {});
+
+	it('should send user the mint reward for minting the new supply', async function() {});
 });
