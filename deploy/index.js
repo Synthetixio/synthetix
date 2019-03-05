@@ -13,6 +13,7 @@ const Deployer = require('./deployer');
 
 const COMPILED_FOLDER = 'compiled';
 const FLATTENED_FOLDER = 'flattened';
+const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 
 program
 	.command('build')
@@ -83,7 +84,11 @@ program
 	)
 	.option('-m, --method-call-gas-limit <value>', 'Method call gas limit', parseInt, 15e4)
 	.option('-g, --gas-price <value>', 'Gas price', parseInt, 1)
-	.option('-s, --synth-list <value>', 'Path to a list of synths', './synths.json')
+	.option(
+		'-s, --synth-list <value>',
+		'Path to a list of synths',
+		path.join(__dirname, 'synths.json')
+	)
 	.option(
 		'-f, --contract-flag-source <value>',
 		'Path to a list of contract flags - this is a mapping of full contract names to a deploy flag and the source solidity file. Only files in this mapping will be deployed.',
@@ -108,6 +113,7 @@ program
 			network,
 			buildPath,
 			outputPath,
+			synthList,
 		}) => {
 			console.log(gray(`Starting deployment to ${network.toUpperCase()} via Infura...`));
 
@@ -164,7 +170,7 @@ program
 			});
 
 			const { account, web3 } = deployer;
-			console.log(gray(`Using account with public key ${deployer.account}`));
+			console.log(gray(`Using account with public key ${account}`));
 
 			await deployer.deploy({
 				name: 'SafeDecimalMath',
@@ -279,100 +285,130 @@ program
 				}
 			}
 
-			// // ----------------
-			// // Synths
-			// // ----------------
-			// for (const currencyKey of settings.synths) {
-			// 	const tokenState = await deployContract(`TokenState.${currencyKey}`, [
-			// 		account,
-			// 		ZERO_ADDRESS,
-			// 	]);
-			// 	const tokenProxy = await deployContract(`Proxy.${currencyKey}`, [account]);
-			// 	const synth = await deployContract(`Synth.${currencyKey}`, [
-			// 		tokenProxy.options.address,
-			// 		tokenState.options.address,
-			// 		synthetix.options.address,
-			// 		feePool.options.address,
-			// 		`Synth ${currencyKey}`,
-			// 		currencyKey,
-			// 		account,
-			// 		web3.utils.asciiToHex(currencyKey),
-			// 	]);
+			// ----------------
+			// Synths
+			// ----------------
+			const synths = JSON.parse(synthList);
+			for (const currencyKey of synths) {
+				const tokenState = await deployer.deploy({
+					name: `TokenState${currencyKey}`,
+					args: [account, ZERO_ADDRESS],
+				});
+				const tokenProxy = await deployer.deploy({ name: `Proxy${currencyKey}`, args: [account] });
+				const synth = await deployer.deploy({
+					name: `Synth.${currencyKey}`,
+					args: [
+						tokenProxy.options.address,
+						tokenState.options.address,
+						synthetix.options.address,
+						feePool.options.address,
+						`Synth ${currencyKey}`,
+						currencyKey,
+						account,
+						web3.utils.asciiToHex(currencyKey),
+					],
+				});
 
-			// 	if (
-			// 		settings.contracts.Synth[currencyKey].action === 'deploy' ||
-			// 		settings.contracts.TokenState[currencyKey].action === 'deploy'
-			// 	) {
-			// 		console.log(`Setting associated contract for ${currencyKey} TokenState...`);
+				if (
+					contractFlags[`Synth${currencyKey}`].deploy ||
+					contractFlags[`TokenState${currencyKey}`].deploy
+				) {
+					console.log(yellow(`Setting associated contract for ${currencyKey} TokenState...`));
 
-			// 		await tokenState.methods
-			// 			.setAssociatedContract(synth.options.address)
-			// 			.send(sendParameters());
-			// 	}
-			// 	if (
-			// 		settings.contracts.Proxy[currencyKey].action === 'deploy' ||
-			// 		settings.contracts.Synth[currencyKey].action === 'deploy'
-			// 	) {
-			// 		console.log(`Setting proxy target for ${currencyKey} Proxy...`);
+					await tokenState.methods
+						.setAssociatedContract(synth.options.address)
+						.send(deployer.sendParameters());
+				}
+				if (
+					contractFlags[`Proxy${currencyKey}`].deploy ||
+					contractFlags[`Synth${currencyKey}`].deploy
+				) {
+					console.log(yellow(`Setting proxy target for ${currencyKey} Proxy...`));
 
-			// 		await tokenProxy.methods.setTarget(synth.options.address).send(sendParameters());
-			// 	}
+					await tokenProxy.methods.setTarget(synth.options.address).send(deployer.sendParameters());
+				}
 
-			// 	// Comment out if deploying on mainnet - Needs to be owner of Synthetix contract
-			// 	if (
-			// 		settings.contracts.Synth[currencyKey].action === 'deploy' ||
-			// 		settings.contracts.Synthetix.action === 'deploy'
-			// 	) {
-			// 		console.log(`Adding ${currencyKey} to Synthetix contract...`);
+				// Cannot run on mainnet, as it needs to be owner of existing Synthetix & Synth contracts
+				if (network !== 'mainnet') {
+					if (contractFlags[`Synth${currencyKey}`].deploy || contractFlags['Synthetix'].deploy) {
+						console.log(yellow(`Adding ${currencyKey} to Synthetix contract...`));
 
-			// 		await synthetix.methods.addSynth(synth.options.address).send(sendParameters());
-			// 	}
+						await synthetix.methods.addSynth(synth.options.address).send(deployer.sendParameters());
+					}
 
-			// 	// Comment out if deploying on mainnet - Needs to be owner of existing Synths contract
-			// 	if (
-			// 		settings.contracts.Synth[currencyKey].action === 'use-existing' &&
-			// 		settings.contracts.Synthetix.action === 'deploy'
-			// 	) {
-			// 		console.log(`Adding Synthetix contract on ${currencyKey} contract...`);
+					if (!contractFlags[`Synth${currencyKey}`].deploy && contractFlags['Synthetix'].deploy) {
+						console.log(yellow(`Adding Synthetix contract on ${currencyKey} contract...`));
 
-			// 		await synth.methods.setSynthetix(synthetix.options.address).send(sendParameters());
-			// 	}
-			// }
+						await synth.methods
+							.setSynthetix(synthetix.options.address)
+							.send(deployer.sendParameters());
+					}
+				}
+			}
 
-			// const depot = await deployContract('Depot', [
-			// 	account,
-			// 	account,
-			// 	synthetix.options.address,
-			// 	deployedContracts['Synth.sUSD'].options.address,
-			// 	feePool.options.address,
-			// 	account,
-			// 	web3.utils.toWei('500'),
-			// 	web3.utils.toWei('.10'),
-			// ]);
+			const depot = await deployer.deploy({
+				name: 'Depot',
+				args: [
+					account,
+					account,
+					synthetix.options.address,
+					deployer.deployedContracts['SynthsUSD'].options.address,
+					feePool.options.address,
+					account,
+					web3.utils.toWei('500'),
+					web3.utils.toWei('.10'),
+				],
+			});
 
-			// // Comment out if deploying on mainnet - Needs to be owner of Depot contract
-			// if (
-			// 	settings.contracts.Synthetix.action === 'deploy' &&
-			// 	settings.contracts.Depot.action !== 'deploy'
-			// ) {
-			// 	console.log(`setting synthetix on depot contract...`);
+			// Comment out if deploying on mainnet - Needs to be owner of Depot contract
+			if (network !== 'mainnet') {
+				if (contractFlags['Synthetix'].deploy && !contractFlags['Depot'].deploy) {
+					console.log(yellow(`setting synthetix on depot contract...`));
 
-			// 	await depot.methods.setSynthetix(synthetix.options.address).send(sendParameters());
-			// }
+					await depot.methods
+						.setSynthetix(synthetix.options.address)
+						.send(deployer.sendParameters());
+				}
+			}
 
-			// console.log();
-			// console.log();
-			// console.log(' Successfully deployed all contracts:');
-			// console.log();
+			console.log();
+			console.log(green('Successfully deployed all contracts!'));
+			console.log();
 
-			// const tableData = Object.keys(deployedContracts).map(key => [
-			// 	key,
-			// 	deployedContracts[key].options.address,
-			// ]);
+			console.log(gray('Overwriting ABIs to file contracts.abi.json under network folder'));
+			const abiFile = path.join(outputPath, network, 'contracts.abi.json');
+			const abiData = Object.keys(deployer.deployedContracts)
+				.sort()
+				.map(name => {
+					return {
+						name,
+						address: deployer.deployedContracts[name].options.address,
+						source: contractFlags[name].contract,
+						network,
+						timestamp: new Date(),
+						abi: compiled[name].abi,
+					};
+				});
+			fs.writeFileSync(abiFile, JSON.stringify(abiData));
 
-			// await deployedContractsToJSON();
+			// JJM: Honestly this can be combined with the ABIs file in the future
+			console.log(gray('Overwriting addresses to file contracts.json under network folder'));
+			const contractAddressesFile = path.join(outputPath, network, 'contracts.json');
+			const contractAddresses = Object.keys(deployer.deployedContracts)
+				.sort()
+				.reduce((memo, name) => {
+					memo[name] = deployer.deployedContracts[name].options.address;
+					return memo;
+				}, {});
+			fs.writeFileSync(contractAddressesFile, JSON.stringify(contractAddresses));
 
-			// console.log(table(tableData));
+			const tableData = Object.keys(deployer.deployedContracts).map(key => [
+				key,
+				deployer.deployedContracts[key].options.address,
+			]);
+			console.log();
+			console.log(gray(`Tabular data of all contracts on ${network}`));
+			console.log(table(tableData));
 		}
 	);
 

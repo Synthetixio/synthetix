@@ -2,7 +2,7 @@
 
 const linker = require('solc/linker');
 const Web3 = require('web3');
-const { gray, green, yellow, red } = require('chalk');
+const { gray, green } = require('chalk');
 
 /**
  *
