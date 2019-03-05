@@ -5,6 +5,7 @@ const FeePool = artifacts.require('FeePool');
 const Synthetix = artifacts.require('Synthetix');
 const SynthetixEscrow = artifacts.require('SynthetixEscrow');
 const SynthetixState = artifacts.require('SynthetixState');
+const InflationarySupply = artifacts.require('InflationarySupply');
 const Synth = artifacts.require('Synth');
 const Owned = artifacts.require('Owned');
 const Proxy = artifacts.require('Proxy');
@@ -101,6 +102,13 @@ module.exports = async function(deployer, network, accounts) {
 		from: deployerAccount,
 	});
 
+	console.log('Deploying InflationarySupply...');
+	// constructor(address _owner)
+	deployer.link(SafeDecimalMath, InflationarySupply);
+	const inflationarySupply = await deployer.deploy(InflationarySupply, owner, {
+		from: deployerAccount,
+	});
+
 	console.log('Deploying Synthetix...');
 	// constructor(address _proxy, TokenState _tokenState, Synthetix _synthetixState,
 	//     address _owner, ExchangeRates _exchangeRates, FeePool _feePool
@@ -114,6 +122,7 @@ module.exports = async function(deployer, network, accounts) {
 		owner,
 		ExchangeRates.address,
 		FeePool.address,
+		inflationarySupply.address,
 		{
 			from: deployerAccount,
 			gas: 8000000,
@@ -154,6 +163,11 @@ module.exports = async function(deployer, network, accounts) {
 	// Connect FeePool
 	// ----------------------
 	await feePool.setSynthetix(synthetix.address, { from: owner });
+
+	// ----------------------
+	// Connect InflationarySupply
+	// ----------------------
+	await inflationarySupply.setSynthetix(synthetix.address, { from: owner });
 
 	// ----------------
 	// Synths

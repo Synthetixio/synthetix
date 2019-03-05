@@ -202,7 +202,6 @@ contract RewardEscrow is Owned {
      */
     function appendVestingEntry(address account, uint time, uint quantity)
     public
-    onlyRewardPool
     {
         /* No empty or already-passed vesting entries allowed. */
         require(now < time, "Time must be in the future");
@@ -238,7 +237,6 @@ contract RewardEscrow is Owned {
     function addVestingSchedule(address account, uint[] times, uint[] quantities)
     external
     onlyOwner
-    onlyDuringSetup
     {
         for (uint i = 0; i < times.length; i++) {
             appendVestingEntry(account, times[i], quantities[i]);

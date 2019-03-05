@@ -1976,4 +1976,18 @@ contract('Synthetix', async function(accounts) {
 
 		await assert.revert(synthetix.issueSynths(sUSD, issuedSynths1, { from: account1 }));
 	});
+
+	// Inflationary supply of Synthetix
+	it.only('should allow synthetix contract to mint new supply based on inflationary schedule', async function() {
+		// Issue
+		const supplyToMint = toUnit('100000000');
+
+		const existingSupply = await synthetix.totalSupply();
+
+		await synthetix.mint();
+
+		const newTotalSupply = await synthetix.totalSupply();
+
+		assert.bnEqual(newTotalSupply, existingSupply.add(web3.utils.toBN(supplyToMint)));
+	});
 });
