@@ -48,7 +48,7 @@ class Deployer {
 		};
 	}
 
-	async deploy({ name, args, deps = [] }) {
+	async deploy({ name, args = [], deps = [] }) {
 		if (!this.contractFlags[name]) {
 			console.log(yellow(`Skipping ${name} as it is NOT in contract flags file for deployment.`));
 			return;
