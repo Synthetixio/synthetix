@@ -8,6 +8,7 @@ const Synth = artifacts.require('Synth');
 const {
 	currentTime,
 	fastForward,
+	fastForwardTo,
 	multiplyDecimal,
 	divideDecimal,
 	toUnit,
@@ -1980,7 +1981,10 @@ contract('Synthetix', async function(accounts) {
 	// Inflationary supply of Synthetix
 	it.only('should allow synthetix contract to mint new supply based on inflationary schedule', async function() {
 		// Issue
-		const supplyToMint = toUnit('100000000');
+		const expectedSupplyToMint = toUnit('100000000');
+
+		// fast forward EVM to Year 1 schedule at UNIX 1552435200+
+		await fastForwardTo(new Date(1552435210 * 1000));
 
 		const existingSupply = await synthetix.totalSupply();
 
@@ -1988,6 +1992,6 @@ contract('Synthetix', async function(accounts) {
 
 		const newTotalSupply = await synthetix.totalSupply();
 
-		assert.bnEqual(newTotalSupply, existingSupply.add(web3.utils.toBN(supplyToMint)));
+		assert.bnEqual(newTotalSupply, existingSupply.add(web3.utils.toBN(expectedSupplyToMint)));
 	});
 });

@@ -59,9 +59,6 @@ contract InflationarySupply is Owned {
         uint totalSupplyMinted;
     }
 
-    // Current schedule index for quick retrieval
-    uint public currentScheduleIndex;
-
     // How long each mint period is
     uint public mintPeriodDuration = 1 weeks;
 
@@ -82,8 +79,6 @@ contract InflationarySupply is Owned {
         Owned(_owner)
         public
     {
-        currentScheduleIndex = 1;
-
         // Year 0 - Total supply 100,000,000
         schedules[0] = ScheduleData(1e8 * SafeDecimalMath.unit(), 1520899200, 1552435200, 1e8 * SafeDecimalMath.unit());
 
@@ -111,6 +106,7 @@ contract InflationarySupply is Owned {
 
     // ========== VIEWS ==========
     function getInflationSchedule(uint index)
+        external
         view
         returns (uint, uint, uint, uint)
     {
@@ -118,11 +114,11 @@ contract InflationarySupply is Owned {
     }
 
     function getMintableSupply()
-        external
         view
         returns (uint)
     {
-        return schedules[currentScheduleIndex].totalSupply.sub(schedules[currentScheduleIndex].totalSupplyMinted);
+        uint index = getCurrentSchedule();
+        return schedules[index].totalSupply.sub(schedules[index].totalSupplyMinted);
     }
 
     function isMintable()
@@ -145,10 +141,6 @@ contract InflationarySupply is Owned {
         view
         returns (uint)
     {
-        if (schedules[currentScheduleIndex].startPeriod < now && schedules[currentScheduleIndex].endPeriod > now) {
-            return currentScheduleIndex;
-        }
-
         for (uint i = 0; i < INFLATION_SCHEDULES_LENGTH; i++) {
             if (schedules[i].startPeriod < now && schedules[i].endPeriod > now) {
                 return i;
@@ -172,26 +164,19 @@ contract InflationarySupply is Owned {
     // ========== MUTATIVE FUNCTIONS ==========
     function updateMintValues()
         onlySynthetix
-        updateSchedule
         external
         returns (bool)
     {
-        uint supplyMinted = this.getMintableSupply();
+        uint supplyMinted = getMintableSupply();
+        uint currentIndex = getCurrentSchedule();
 
         // Update schedule.totalSupplyMinted for currentSchedule
-        schedules[currentScheduleIndex].totalSupplyMinted = schedules[currentScheduleIndex].totalSupplyMinted.add(supplyMinted);
+        schedules[currentIndex].totalSupplyMinted = schedules[currentIndex].totalSupplyMinted.add(supplyMinted);
         // Lastly update minted event to track minted values
         lastMintEvent = now;
     }
 
     // ========== MODIFIERS ==========
-    modifier updateSchedule() {
-        uint newSchedule = getCurrentSchedule();
-        if (currentScheduleIndex != newSchedule) {
-            currentScheduleIndex = newSchedule;
-        }
-        _;
-    }
 
     modifier onlySynthetix() {
         require(msg.sender == address(synthetix), "Only the synthetix contract can perform this action");
