@@ -1996,11 +1996,14 @@ contract('Synthetix', async function(accounts) {
 		const newTotalSupply = await synthetix.totalSupply();
 
 		// Expect supply schedule is updated with new values
-		// const currentSchedule = await supplySchedule.getCurrentSchedule();
+		const currentSchedule = await supplySchedule.getCurrentSchedule();
 		// const schedule = await supplySchedule.schedules[toUnit(currentSchedule)];
 
-		// console.log("supplySchedule", schedule);
+		console.log("supplySchedule", currentSchedule);
 		assert.bnEqual(newTotalSupply, existingSupply.add(web3.utils.toBN(expectedSupplyToMint)));
-		assert.bnEqual(await synthetix.balanceOf(feePool.address), currentFeePoolBalance.add(web3.utils.toBN(expectedSupplyToMint)));
+		assert.bnEqual(
+			await synthetix.balanceOf(feePool.address),
+			currentFeePoolBalance.add(web3.utils.toBN(expectedSupplyToMint))
+		);
 	});
 });
