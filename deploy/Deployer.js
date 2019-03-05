@@ -2,7 +2,7 @@
 
 const linker = require('solc/linker');
 const Web3 = require('web3');
-const { gray, green } = require('chalk');
+const { gray, green, yellow } = require('chalk');
 
 /**
  *
@@ -48,7 +48,15 @@ class Deployer {
 		};
 	}
 
-	async deploy({ name, args }) {
+	async deploy({ name, args, deps = [] }) {
+		if (!this.contractFlags[name]) {
+			console.log(yellow(`Skipping ${name} as it is NOT in contract flags file for deployment.`));
+			return;
+		}
+		const missingDeps = deps.filter(d => !this.deployedContracts[d]);
+		if (missingDeps.length) {
+			throw Error(`Cannot deploy ${name} as it is missing dependencies: ${missingDeps.join(',')}`);
+		}
 		const { deploy, contract } = this.contractFlags[name];
 		const compiled = this.compiled[name];
 		const existingAddress = this.deployedContractAddresses[name];
