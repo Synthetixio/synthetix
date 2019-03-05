@@ -133,7 +133,7 @@ import "./InflationarySupply.sol";
  * @notice The Synthetix contracts not only facilitates transfers, exchanges, and tracks balances,
  * but it also computes the quantity of fees each synthetix holder is entitled to.
  */
-contract Synthetix is ExternStateToken, InflationarySupply {
+contract Synthetix is ExternStateToken {
 
     // ========== STATE VARIABLES ==========
 
@@ -145,12 +145,14 @@ contract Synthetix is ExternStateToken, InflationarySupply {
     SynthetixEscrow public escrow;
     ExchangeRates public exchangeRates;
     SynthetixState public synthetixState;
+    InflationarySupply public inflationarySupply;
 
     uint constant SYNTHETIX_SUPPLY = 1e8 * SafeDecimalMath.unit();
     string constant TOKEN_NAME = "Synthetix Network Token";
     string constant TOKEN_SYMBOL = "SNX";
     uint8 constant DECIMALS = 18;
 
+    uint minterReward = 200 * SafeDecimalMath.unit();
     // ========== CONSTRUCTOR ==========
 
     /**
@@ -160,15 +162,15 @@ contract Synthetix is ExternStateToken, InflationarySupply {
      * @param _owner The owner of this contract.
      */
     constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
-        address _owner, ExchangeRates _exchangeRates, FeePool _feePool
+        address _owner, ExchangeRates _exchangeRates, FeePool _feePool, InflationarySupply _inflationarySupply
     )
         ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, SYNTHETIX_SUPPLY, DECIMALS, _owner)
-        InflationarySupply()
         public
     {
         synthetixState = _synthetixState;
         exchangeRates = _exchangeRates;
         feePool = _feePool;
+        inflationarySupply = _inflationarySupply;
     }
 
     // ========== SETTERS ========== */
@@ -191,6 +193,12 @@ contract Synthetix is ExternStateToken, InflationarySupply {
         emitSynthAdded(currencyKey, synth);
     }
 
+    function setMinterReward(uint256 tokens)
+        external
+        optionalProxy_onlyOwner
+    {
+        minterReward = tokens;
+    }
     /**
      * @notice Remove an associated Synth contract from the Synthetix system
      * @dev Only the contract owner may call this.
@@ -905,6 +913,21 @@ contract Synthetix is ExternStateToken, InflationarySupply {
         } else {
             return balance.sub(lockedSynthetixValue);
         }
+    }
+
+    // Strip this all back to only mint a set amount I want and increase TotalSupply + compile and test first
+    // Lean!!!!
+    function mint()
+        external
+        returns (bool)
+    {
+        require(inflationarySupply.isMintable(), "Last mint event is less than mintPeriodDuration");
+
+        totalSupply = totalSupply.add(inflationarySupply.getMintableSupply());
+        // check supply schedule / unminted schedules that date's have vested
+        // Increase supply
+        // transfer supply to balances[RewardPool]
+        // mint
     }
 
     // ========== MODIFIERS ==========

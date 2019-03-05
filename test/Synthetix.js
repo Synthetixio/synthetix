@@ -8,6 +8,7 @@ const Synth = artifacts.require('Synth');
 const {
 	currentTime,
 	fastForward,
+	fastForwardTo,
 	multiplyDecimal,
 	divideDecimal,
 	toUnit,
@@ -1977,7 +1978,20 @@ contract('Synthetix', async function(accounts) {
 		await assert.revert(synthetix.issueSynths(sUSD, issuedSynths1, { from: account1 }));
 	});
 
-	it('should allow any user to publicly call mint() for increasing the supply', async function() {});
+	// Inflationary supply of Synthetix
+	it.only('should allow synthetix contract to mint new supply based on inflationary schedule', async function() {
+		// Issue
+		const expectedSupplyToMint = toUnit('100000000');
 
-	it('should send user the mint reward for minting the new supply', async function() {});
+		// fast forward EVM to Year 1 schedule at UNIX 1552435200+
+		await fastForwardTo(new Date(1552435210 * 1000));
+
+		const existingSupply = await synthetix.totalSupply();
+
+		await synthetix.mint();
+
+		const newTotalSupply = await synthetix.totalSupply();
+
+		assert.bnEqual(newTotalSupply, existingSupply.add(web3.utils.toBN(expectedSupplyToMint)));
+	});
 });
