@@ -1,6 +1,7 @@
 const ExchangeRates = artifacts.require('ExchangeRates');
 const Escrow = artifacts.require('SynthetixEscrow');
 const FeePool = artifacts.require('FeePool');
+const SupplySchedule = artifacts.require('SupplySchedule');
 const Synthetix = artifacts.require('Synthetix');
 const SynthetixState = artifacts.require('SynthetixState');
 const Synth = artifacts.require('Synth');
@@ -31,7 +32,7 @@ contract('Synthetix', async function(accounts) {
 		account6,
 	] = accounts;
 
-	let synthetix, synthetixState, exchangeRates, feePool, sUSDContract, sAUDContract;
+	let synthetix, synthetixState, exchangeRates, feePool, supplySchedule, sUSDContract, sAUDContract;
 
 	beforeEach(async function() {
 		// Save ourselves from having to await deployed() in every single test.
@@ -39,6 +40,7 @@ contract('Synthetix', async function(accounts) {
 		// contract interfaces to prevent test bleed.
 		exchangeRates = await ExchangeRates.deployed();
 		feePool = await FeePool.deployed();
+		supplySchedule = await SupplySchedule.deployed();
 
 		synthetix = await Synthetix.deployed();
 		synthetixState = await SynthetixState.at(await synthetix.synthetixState());
@@ -1987,11 +1989,18 @@ contract('Synthetix', async function(accounts) {
 		await fastForwardTo(new Date(1552435210 * 1000));
 
 		const existingSupply = await synthetix.totalSupply();
+		const currentFeePoolBalance = await synthetix.balanceOf(feePool.address);
 
 		await synthetix.mint();
 
 		const newTotalSupply = await synthetix.totalSupply();
 
+		// Expect supply schedule is updated with new values
+		// const currentSchedule = await supplySchedule.getCurrentSchedule();
+		// const schedule = await supplySchedule.schedules[toUnit(currentSchedule)];
+
+		// console.log("supplySchedule", schedule);
 		assert.bnEqual(newTotalSupply, existingSupply.add(web3.utils.toBN(expectedSupplyToMint)));
+		assert.bnEqual(await synthetix.balanceOf(feePool.address), currentFeePoolBalance.add(web3.utils.toBN(expectedSupplyToMint)));
 	});
 });

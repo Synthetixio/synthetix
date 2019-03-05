@@ -126,7 +126,7 @@ import "./SynthetixEscrow.sol";
 import "./SynthetixState.sol";
 import "./TokenState.sol";
 import "./ExchangeRates.sol";
-import "./InflationarySupply.sol";
+import "./SupplySchedule.sol";
 
 /**
  * @title Synthetix ERC20 contract.
@@ -145,7 +145,7 @@ contract Synthetix is ExternStateToken {
     SynthetixEscrow public escrow;
     ExchangeRates public exchangeRates;
     SynthetixState public synthetixState;
-    InflationarySupply public inflationarySupply;
+    SupplySchedule public supplySchedule;
 
     uint constant SYNTHETIX_SUPPLY = 1e8 * SafeDecimalMath.unit();
     string constant TOKEN_NAME = "Synthetix Network Token";
@@ -162,7 +162,7 @@ contract Synthetix is ExternStateToken {
      * @param _owner The owner of this contract.
      */
     constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
-        address _owner, ExchangeRates _exchangeRates, FeePool _feePool, InflationarySupply _inflationarySupply
+        address _owner, ExchangeRates _exchangeRates, FeePool _feePool, SupplySchedule _supplySchedule
     )
         ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, SYNTHETIX_SUPPLY, DECIMALS, _owner)
         public
@@ -170,7 +170,7 @@ contract Synthetix is ExternStateToken {
         synthetixState = _synthetixState;
         exchangeRates = _exchangeRates;
         feePool = _feePool;
-        inflationarySupply = _inflationarySupply;
+        supplySchedule = _supplySchedule;
     }
 
     // ========== SETTERS ========== */
@@ -915,19 +915,19 @@ contract Synthetix is ExternStateToken {
         }
     }
 
-    // Strip this all back to only mint a set amount I want and increase TotalSupply + compile and test first
-    // Lean!!!!
     function mint()
         external
         returns (bool)
     {
-        require(inflationarySupply.isMintable(), "Last mint event is less than mintPeriodDuration");
+        require(supplySchedule.isMintable(), "Last mint event is less than mintPeriodDuration");
 
-        totalSupply = totalSupply.add(inflationarySupply.getMintableSupply());
-        // check supply schedule / unminted schedules that date's have vested
-        // Increase supply
-        // transfer supply to balances[RewardPool]
-        // mint
+        uint supplyToMint = supplySchedule.mintableSupply();
+
+        supplySchedule.updateMintValues();
+
+        // Set minted SNX balance to feePool's balance
+        tokenState.setBalanceOf(feePool, tokenState.balanceOf(feePool).add(supplyToMint));
+        totalSupply = totalSupply.add(supplyToMint);
     }
 
     // ========== MODIFIERS ==========
