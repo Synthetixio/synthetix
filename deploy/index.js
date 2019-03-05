@@ -433,12 +433,18 @@ program
 						name,
 						address: deployer.deployedContracts[name].options.address,
 						source: contractFlags[name].contract,
+						link: `https://${network !== 'mainnet' ? network + '.' : ''}etherscan.io/address/${
+							deployer.deployedContracts[name].options.address
+						}`,
 						network,
-						timestamp: new Date(),
+						// Note: we can add a timestamp during the verification phase
+						// timestamp: contractFlags[name].deploy
+						// 	? new Date()
+						// 	: '(unknown from previous deployment)', // Note: we can overright these during the verification phase
 						abi: compiled[name].abi,
 					};
 				});
-			fs.writeFileSync(abiFile, JSON.stringify(abiData));
+			fs.writeFileSync(abiFile, JSON.stringify(abiData, undefined, 2));
 
 			// JJM: Honestly this can be combined with the ABIs file in the future
 			console.log(gray('Overwriting addresses to file contracts.json under network folder'));
@@ -449,7 +455,7 @@ program
 					memo[name] = deployer.deployedContracts[name].options.address;
 					return memo;
 				}, {});
-			fs.writeFileSync(contractAddressesFile, JSON.stringify(contractAddresses));
+			fs.writeFileSync(contractAddressesFile, JSON.stringify(contractAddresses, undefined, 2));
 
 			const tableData = Object.keys(deployer.deployedContracts).map(key => [
 				key,
