@@ -40,9 +40,11 @@ const loadAndCheckRequiredSources = ({ contractFlagSource, buildPath, outputPath
 	console.log(gray('Loading the compiled contracts locally...'));
 	const compiledSourcePath = path.join(buildPath, COMPILED_FOLDER);
 
+	let firstTimestamp = Infinity;
 	const compiled = Object.entries(contractFlags).reduce(
 		(memo, [contractName, { deploy, contract }]) => {
 			const sourceFile = path.join(compiledSourcePath, `${contract}.json`);
+			firstTimestamp = Math.min(firstTimestamp, fs.statSync(sourceFile).mtimeMs);
 			if (!fs.existsSync(sourceFile)) {
 				throw Error(
 					`Cannot find compiled contract code for: ${contract}. Did you run the "build" step first?`
@@ -52,6 +54,14 @@ const loadAndCheckRequiredSources = ({ contractFlagSource, buildPath, outputPath
 			return memo;
 		},
 		{}
+	);
+
+	console.log(
+		yellow(
+			`Note: using build files of which, the earlist was modified on ${new Date(
+				firstTimestamp
+			)}. This is roughly ${((new Date().getTime() - firstTimestamp) / 60000).toFixed(2)} mins ago.`
+		)
 	);
 
 	return { compiled, contractFlags, deployedContractAddresses, deployedContractAddressFile };
@@ -65,7 +75,8 @@ program
 		'Build path for built files',
 		path.join(__dirname, '..', 'build')
 	)
-	.action(async ({ buildPath }) => {
+	.option('-w, --show-warnings', 'Show warnings')
+	.action(async ({ buildPath, showWarnings }) => {
 		console.log(gray('Starting build...'));
 
 		// Flatten all the contracts.
@@ -75,7 +86,13 @@ program
 		const libraries = findSolFiles('node_modules');
 		const contracts = findSolFiles('contracts');
 		const allSolFiles = { ...libraries, ...contracts };
-
+		console.log(
+			gray(
+				`Found ${Object.keys(contracts).length} sources, and ${
+					Object.keys(libraries).length
+				} possible libraries`
+			)
+		);
 		console.log(gray('Flattening contracts...'));
 		const sources = await flatten({ files: allSolFiles, contracts });
 
@@ -108,6 +125,10 @@ program
 			console.error();
 			console.error(gray('Exiting because of compile errors.'));
 			process.exit(1);
+		}
+
+		if (warnings.length && showWarnings) {
+			console.log(gray(warnings.map(({ formattedMessage }) => formattedMessage).join('\n')));
 		}
 
 		// We're built!

@@ -1,4 +1,4 @@
-# Deploy Script
+# Publisher
 
 This script can `build` (compiled and flatten), `deploy` and `verify` (on Etherscan) the Synthetix code to a testnet or mainnet.
 
@@ -8,12 +8,13 @@ Will compile bytecode and ABIs for all `.sol` files found in `node_modules` and 
 
 ```bash
 # build (flatten and compile all .SOL sources)
-node deploy build
+node publish build
 ```
 
 ### CLI Options
 
 - `-b, --build-path [value]` Path for built files to go. (default of `./build`). The folders `compiled` and `flattened` will be made under this path and the respective files will go in there.
+- `-w, --show-warnings` Include this option to see any warnings from compilation logged to screen.
 
 ## 2. Deploy
 
@@ -25,7 +26,7 @@ Will attempt to deploy (or reuse) all of the contracts listed in the given `cont
 
 ```bash
 # deploy (take compiled SOL files and deploy)
-node deploy deploy
+node publish deploy
 ```
 
 ### CLI Options
@@ -43,7 +44,7 @@ node deploy deploy
 
 ```bash
 # deploy to rinkeby with 8 gwei gas
-node deploy deploy -n rinkeby -g 8
+node publish deploy -n rinkeby -g 8
 ```
 
 ## 3. Verify
@@ -54,7 +55,7 @@ Will attempt to verify the contracts on Etherscan (by uploading the flattened so
 
 ```bash
 # verify (verify compiled sources by uploading flattened source to Etherscan via their API)
-node deploy verify
+node publish verify
 ```
 
 ### CLI Options
