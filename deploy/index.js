@@ -44,7 +44,9 @@ const loadAndCheckRequiredSources = ({ contractFlagSource, buildPath, outputPath
 		(memo, [contractName, { deploy, contract }]) => {
 			const sourceFile = path.join(compiledSourcePath, `${contract}.json`);
 			if (!fs.existsSync(sourceFile)) {
-				throw Error(`Cannot find compiled contract code for: ${contract}`);
+				throw Error(
+					`Cannot find compiled contract code for: ${contract}. Did you run the "build" step first?`
+				);
 			}
 			memo[contractName] = JSON.parse(fs.readFileSync(sourceFile));
 			return memo;
