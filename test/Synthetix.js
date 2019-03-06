@@ -1981,7 +1981,7 @@ contract('Synthetix', async function(accounts) {
 	});
 
 	// Inflationary supply of Synthetix
-	it('should allow synthetix contract to mint new supply based on inflationary schedule', async function() {
+	it.only('should allow synthetix contract to mint new supply based on inflationary schedule', async function() {
 		// Issue
 		const expectedSupplyToMint = toUnit('100000000');
 
@@ -1999,7 +1999,7 @@ contract('Synthetix', async function(accounts) {
 		const currentSchedule = await supplySchedule.getCurrentSchedule();
 		// const schedule = await supplySchedule.schedules[toUnit(currentSchedule)];
 
-		console.log("supplySchedule", currentSchedule);
+		console.log('supplySchedule', currentSchedule);
 		assert.bnEqual(newTotalSupply, existingSupply.add(web3.utils.toBN(expectedSupplyToMint)));
 		assert.bnEqual(
 			await synthetix.balanceOf(feePool.address),

@@ -138,8 +138,8 @@ contract('RewardEscrow', async function(accounts) {
 		// });
 	});
 
-	describe.only('Vesting Schedule Writes', async function() {
-		it.only('should not create a vesting entry with a zero amount', async function() {
+	describe('Vesting Schedule Writes', async function() {
+		it('should not create a vesting entry with a zero amount', async function() {
 			// transfers of SNX to the escrow must occur before creating an entry
 			await synthetix.transfer(RewardEscrow.address, toUnit('1'));
 
