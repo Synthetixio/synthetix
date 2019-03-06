@@ -21,7 +21,7 @@ Will attempt to deploy (or reuse) all of the contracts listed in the given `cont
 
 :warning: **This step requires the `build` step having been run to compile the sources into ABIs and bytecode.**
 
-> Note: this action will update in place both the [contract-flag input file](deploy/contract-flags.json) and the contract addresses output ([here's the rinkeby one for example](deploy/out/rinkeby/contracts.json)) in real time so that if any transactions fail, it can be restarted at the same place.
+> Note: this action will update in place both the [contract-flag input file](contract-flags.json) and the contract addresses output ([here's the rinkeby one for example](out/rinkeby/contracts.json)) in real time so that if any transactions fail, it can be restarted at the same place.
 
 ```bash
 # deploy (take compiled SOL files and deploy)
@@ -30,15 +30,15 @@ node deploy deploy
 
 ### CLI Options
 
-- `-b, --build-path [value]` Path for built files to go. (default of `./build`). The folders `compiled` and `flattened` will be made under this path and the respective files will go in there.
+- `-b, --build-path [value]` Path for built files to go. (default of `./build` - relative to the root of this repo). The folders `compiled` and `flattened` will be made under this path and the respective files will go in there.
 - `-c, --contract-deployment-gas-limit <value>` Contract deployment gas limit (default: 7000000 (7m))
 - `-f, --contract-flag-source <value>`Path to a JSON file containing a list of contract flags - this is a mapping of full contract names to a deploy flag and the source solidity file. Only files in this mapping will be deployed.
 - `-g, --gas-price <value>` Gas price in GWEI (default: "1")
 - `-m, --method-call-gas-limit <value>` Method call gas limit (default: 150000)
 - `-n, --network <value>` The network to run off. One of mainnet, kovan, rinkeby, rospen. (default: "kovan")
-- `-o, --output-path <value>` Path to a folder hosting network-foldered deployed contract addresses (default: [deploy/out](deploy/out))
+- `-o, --output-path <value>` Path to a folder hosting network-foldered deployed contract addresses (default: [out](out))
 - `-s, --synth-list <value>` Path to a JSON file containing a list of synths (default: `./deploy/synths.json`)
-  (default: [deploy/contract-flags.json](deploy/contract-flags.json))
+  (default: [contract-flags.json](contract-flags.json))
 
 ### Examples
 
