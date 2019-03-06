@@ -8,12 +8,12 @@ contract('RewardEscrow', async function(accounts) {
 	const [
 		deployerAccount,
 		owner,
+		feePoolAccount,
 		account1,
 		account2,
 		account3,
 		account4,
 		account5,
-		account6,
 	] = accounts;
 
 	let feePool, rewardEscrow, synthetix;
@@ -30,12 +30,12 @@ contract('RewardEscrow', async function(accounts) {
 	describe.only('settings ', async function() {
 		it('should set synthetix on contructor', async function() {
 			const synthetixAddress = await rewardEscrow.synthetix();
-			assert.equal(synthetixAddress, synthetix.address);
+			assert.equal(synthetixAddress, Synthetix.address);
 		});
 
 		it('should set feePool on contructor', async function() {
-			const feePoolAddress = await rewardEscrow.synthetix();
-			assert.equal(feePoolAddress, feePool.address);
+			const feePoolAddress = await rewardEscrow.feePool();
+			assert.equal(feePoolAddress, FeePool.address);
 		});
 
 		it('should set owner on contructor', async function() {
@@ -44,31 +44,42 @@ contract('RewardEscrow', async function(accounts) {
 		});
 
 		it('should allow owner to set synthetix', async function() {
-			await rewardEscrow.setSynthetix(account1);
+			await rewardEscrow.setSynthetix(ZERO_ADDRESS, { from: owner });
 			const synthetixAddress = await rewardEscrow.synthetix();
-			assert.equal(synthetixAddress, account1);
+			assert.equal(synthetixAddress, ZERO_ADDRESS);
 		});
 
 		it('should allow owner to set feePool', async function() {
-			await rewardEscrow.setFeePool(account1);
+			await rewardEscrow.setFeePool(ZERO_ADDRESS, { from: owner });
 			const feePoolAddress = await rewardEscrow.feePool();
-			assert.equal(feePoolAddress, account1);
+			assert.equal(feePoolAddress, ZERO_ADDRESS);
 		});
 	});
 
-	describe('Vesting Schedult Reads ', async function() {
+	describe.only('Vesting Schedule Reads ', async function() {
 		beforeEach(async function() {
-			// transfers of SNX to the escrow must occur before creating an entry
-			await synthetix.transfer(rewardEscrow.address, toUnit('6000'));
+			feePool = await FeePool.deployed();
+			synthetix = await Synthetix.deployed();
+			rewardEscrow = await RewardEscrow.deployed();
+
+			// Ensure only FeePool Address can call rewardEscrow.appendVestingEntry()
+			await rewardEscrow.setFeePool(feePoolAccount, { from: owner });
+			const feePoolAddress = await rewardEscrow.feePool();
+			assert.equal(feePoolAddress, feePoolAccount);
+
+			// transfers of SNX to the escrow must occur before creating a vestinng entry
+			await synthetix.transfer(RewardEscrow.address, toUnit('6000'), { from: owner });
 
 			// add a few vesting entries as the feepool address
-			await rewardEscrow.appendVestingEntry(account1, toUnit('1000'), { from: feePool.address });
-			await rewardEscrow.appendVestingEntry(account1, toUnit('2000'), { from: feePool.address });
-			await rewardEscrow.appendVestingEntry(account1, toUnit('3000'), { from: feePool.address });
+			await rewardEscrow.appendVestingEntry(account1, toUnit('1000'), { from: feePoolAccount });
+			await fastForward(1000);
+			await rewardEscrow.appendVestingEntry(account1, toUnit('2000'), { from: feePoolAccount });
+			await fastForward(1000);
+			await rewardEscrow.appendVestingEntry(account1, toUnit('3000'), { from: feePoolAccount });
 		});
 
 		it('should append a vesting entry and increase the contracts balance', async function() {
-			const balanceOfRewardEscrow = await synthetix.balanceOf(rewardEscrow.address);
+			const balanceOfRewardEscrow = await synthetix.balanceOf(RewardEscrow.address);
 			assert.bnEqual(balanceOfRewardEscrow, toUnit('6000'));
 		});
 
@@ -95,19 +106,19 @@ contract('RewardEscrow', async function(accounts) {
 		});
 
 		it('should get an accounts vesting time for a vesting entry index', async function() {
-			let vestingScheduleEntry;
+			let vestingTime;
 			const now = await currentTime();
-			const yearInMilliseconds = 31556926;
-			let oneYearAhead = now + yearInMilliseconds;
+			const dayInMilliseconds = 86400;
+			const oneYearAhead = now + dayInMilliseconds * 363;
 
-			vestingScheduleEntry = await rewardEscrow.getVestingTime(account1, 0);
-			assert.equal(vestingScheduleEntry[0], oneYearAhead);
+			vestingTime = await rewardEscrow.getVestingTime(account1, 0);
+			assert.isAtLeast(parseInt(vestingTime), oneYearAhead);
 
-			vestingScheduleEntry = await rewardEscrow.getVestingTime(account1, 1);
-			assert.equal(vestingScheduleEntry[0], oneYearAhead);
+			vestingTime = await rewardEscrow.getVestingTime(account1, 1);
+			assert.isAtLeast(parseInt(vestingTime), oneYearAhead);
 
-			vestingScheduleEntry = await rewardEscrow.getVestingTime(account1, 2);
-			assert.equal(vestingScheduleEntry[0], oneYearAhead);
+			vestingTime = await rewardEscrow.getVestingTime(account1, 2);
+			assert.isAtLeast(parseInt(vestingTime), oneYearAhead);
 		});
 
 		// it('should get an accounts vesting quantity for a vesting entry index', async function() {
@@ -127,36 +138,36 @@ contract('RewardEscrow', async function(accounts) {
 		// });
 	});
 
-	describe('Vesting Schedule Writes', async function() {
-		it('should not create a vesting entry with a zero amount', async function() {
+	describe.only('Vesting Schedule Writes', async function() {
+		it.only('should not create a vesting entry with a zero amount', async function() {
 			// transfers of SNX to the escrow must occur before creating an entry
-			await synthetix.transfer(rewardEscrow.address, toUnit('1'));
+			await synthetix.transfer(RewardEscrow.address, toUnit('1'));
 
 			await assert.revert(
-				rewardEscrow.appendVestingEntry(account1, toUnit('0'), { from: feePool.address })
+				rewardEscrow.appendVestingEntry(account1, toUnit('0'), { from: feePoolAccount })
 			);
 		});
 
 		it('should not create a vesting entry if there is not enough SNX in the contracts balance', async function() {
 			// transfers of SNX to the escrow must occur before creating an entry
-			await synthetix.transfer(rewardEscrow.address, toUnit('1'));
+			await synthetix.transfer(RewardEscrow.address, toUnit('1'));
 			await assert.revert(
-				rewardEscrow.appendVestingEntry(account1, toUnit('10'), { from: feePool.address })
+				rewardEscrow.appendVestingEntry(account1, toUnit('10'), { from: feePoolAccount })
 			);
 		});
 
 		it('should not create more than 52 * 4 vesting entries', async function() {
-			const MAX_VESTING_ENTRIES = await rewardEscrow.MAX_VESTING_ENTRIES();
+			const MAX_VESTING_ENTRIES = await rewardEscrow.MAX_VESTING_ENTRIES;
 
 			// transfers of SNX to the escrow must occur before creating an entry
-			await synthetix.transfer(rewardEscrow.address, toUnit('209'));
+			await synthetix.transfer(RewardEscrow.address, toUnit('209'));
 			// append the MAX_VESTING_ENTRIES to the schedule
 			for (let i = 0; i < MAX_VESTING_ENTRIES; i++) {
-				rewardEscrow.appendVestingEntry(account1, toUnit('1'), { from: feePool.address });
+				rewardEscrow.appendVestingEntry(account1, toUnit('1'), { from: feePoolAccount });
 			}
 			// assert adding 1 more above the MAX_VESTING_ENTRIES fails
 			await assert.revert(
-				rewardEscrow.appendVestingEntry(account1, toUnit('1'), { from: feePool.address })
+				rewardEscrow.appendVestingEntry(account1, toUnit('1'), { from: feePoolAccount })
 			);
 		});
 	});
@@ -176,7 +187,7 @@ contract('RewardEscrow', async function(accounts) {
 		// });
 	});
 
-	describe('Transfering', async function() {
+	describe.only('Transfering', async function() {
 		it('should not allow transfer of synthetix in escrow', async function() {
 			// Ensure the transfer fails as all the synthetix are in escrow
 			await assert.revert(synthetix.transfer(account2, toUnit('1000'), { from: account1 }));

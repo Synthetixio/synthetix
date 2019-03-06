@@ -4,6 +4,7 @@ const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
 const Synthetix = artifacts.require('Synthetix');
 const SynthetixEscrow = artifacts.require('SynthetixEscrow');
+const RewardEscrow = artifacts.require('RewardEscrow');
 const SynthetixState = artifacts.require('SynthetixState');
 const InflationarySupply = artifacts.require('InflationarySupply');
 const Synth = artifacts.require('Synth');
@@ -131,6 +132,11 @@ module.exports = async function(deployer, network, accounts) {
 
 	console.log('Deploying SynthetixEscrow...');
 	await deployer.deploy(SynthetixEscrow, owner, synthetix.address, {
+		from: deployerAccount,
+	});
+
+	console.log('Deploying RewardEscrow...');
+	await deployer.deploy(RewardEscrow, owner, synthetix.address, feePool.address, {
 		from: deployerAccount,
 	});
 
@@ -273,6 +279,7 @@ module.exports = async function(deployer, network, accounts) {
 		['Synthetix Proxy', synthetixProxy.address],
 		['Synthetix', Synthetix.address],
 		['Synthetix Escrow', SynthetixEscrow.address],
+		['Reward Escrow', RewardEscrow.address],
 		['Depot', Depot.address],
 		['Owned', Owned.address],
 		['SafeDecimalMath', SafeDecimalMath.address],
