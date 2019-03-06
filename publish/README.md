@@ -64,3 +64,9 @@ node publish verify
 - `-f, --contract-flag-source <value>` Path to a JSON file containing a list of contract flags - this is a mapping of full contract names to a deploy flag and the source solidity file. Only files in this mapping will be deployed. (default: [contract-flags.json](contract-flags.json))
 - `-n, --network <value>` The network to run off. One of mainnet, kovan, rinkeby, rospen. (default: "kovan")
 - `-o, --output-path <value>` Path to a folder hosting network-foldered deployed contract addresses (default: [deploy/out](deploy/out))
+
+## When adding new synths
+
+1. First off, add the synth key to the [synths.json](synths.json) file
+2. Then you'll need to add entries to the [contract-flags.json](contract-flags.json) file with `deploy: true` and make sure the `contract` entry reflects the name of the contract source. Whichever other contracts you want to deploy again, you'll need to change `deploy` to `true`, otherwise keep it as `false` and use the existing deployed contract for that environment.
+3. Run `build` if you've changed any source files, if not you can skip that step. Then run the `deploy` and `verify` steps.
