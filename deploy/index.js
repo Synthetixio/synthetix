@@ -7,6 +7,9 @@ const { gray, green, yellow, red } = require('chalk');
 const { table } = require('table');
 require('pretty-error').start();
 require('dotenv').config();
+const axios = require('axios');
+const qs = require('querystring');
+const solc = require('solc');
 
 const { findSolFiles, flatten, compile } = require('./solidity');
 const Deployer = require('./deployer');
@@ -14,6 +17,43 @@ const Deployer = require('./deployer');
 const COMPILED_FOLDER = 'compiled';
 const FLATTENED_FOLDER = 'flattened';
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
+
+const ensureNetwork = network => {
+	if (!/^(kovan|rinkeby|ropsten|mainnet)$/.test(network)) {
+		throw Error(
+			`Invalid network name of "${network}" supplied. Must be one of kovan, rinkeby, ropsten or mainnet`
+		);
+	}
+};
+
+// Load up all contracts in the flagged source, get their deployed addresses (if any) and compiled sources
+const loadAndCheckRequiredSources = ({ contractFlagSource, buildPath, outputPath, network }) => {
+	console.log(gray(`Loading the list of contracts to deploy on ${network.toUpperCase()}...`));
+	const contractFlags = JSON.parse(fs.readFileSync(contractFlagSource));
+
+	console.log(
+		gray(`Loading the list of contracts already deployed for ${network.toUpperCase()}...`)
+	);
+	const deployedContractAddressFile = path.join(outputPath, network, 'contracts.json');
+	const deployedContractAddresses = JSON.parse(fs.readFileSync(deployedContractAddressFile));
+
+	console.log(gray('Loading the compiled contracts locally...'));
+	const compiledSourcePath = path.join(buildPath, COMPILED_FOLDER);
+
+	const compiled = Object.entries(contractFlags).reduce(
+		(memo, [contractName, { deploy, contract }]) => {
+			const sourceFile = path.join(compiledSourcePath, `${contract}.json`);
+			if (!fs.existsSync(sourceFile)) {
+				throw Error(`Cannot find compiled contract code for: ${contract}`);
+			}
+			memo[contractName] = JSON.parse(fs.readFileSync(sourceFile));
+			return memo;
+		},
+		{}
+	);
+
+	return { compiled, contractFlags, deployedContractAddresses, deployedContractAddressFile };
+};
 
 program
 	.command('build')
@@ -57,7 +97,7 @@ program
 				// try make path for sub-folders (note: recursive flag only from nodejs 10.12.0)
 				fs.mkdirSync(path.dirname(toWrite), { recursive: true });
 			} catch (e) {}
-			fs.writeFileSync(`${toWrite}.json`, JSON.stringify(value));
+			fs.writeFileSync(`${toWrite}.json`, JSON.stringify(value, null, 2));
 		});
 
 		console.log(yellow(`Compiled with ${warnings.length} warnings and ${errors.length} errors`));
@@ -86,22 +126,22 @@ program
 	.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
 	.option(
 		'-s, --synth-list <value>',
-		'Path to a list of synths',
+		'Path to a JSON file containing a list of synths',
 		path.join(__dirname, 'synths.json')
 	)
 	.option(
 		'-f, --contract-flag-source <value>',
-		'Path to a list of contract flags - this is a mapping of full contract names to a deploy flag and the source solidity file. Only files in this mapping will be deployed.',
+		'Path to a JSON file containing a list of contract flags - this is a mapping of full contract names to a deploy flag and the source solidity file. Only files in this mapping will be deployed.',
 		path.join(__dirname, 'contract-flags.json')
 	)
 	.option(
 		'-o, --output-path <value>',
-		'Path to a list of deployed contract addresses',
+		'Path to a folder hosting network-foldered deployed contract addresses',
 		path.join(__dirname, 'out')
 	)
 	.option(
 		'-b, --build-path [value]',
-		'Build path for built files',
+		'Path to a folder hosting compiled files from the "build" step in this script',
 		path.join(__dirname, '..', 'build')
 	)
 	.action(
@@ -115,24 +155,23 @@ program
 			outputPath,
 			synthList,
 		}) => {
-			if (!/^(kovan|rinkeby|ropsten|mainnet)$/.test(network)) {
-				throw Error(
-					`Invalid network name of "${network}" supplied. Must be one of kovan, rinkeby, ropsten or mainnet`
-				);
-			}
+			ensureNetwork(network);
 
-			console.log(gray(`Starting deployment to ${network.toUpperCase()} via Infura...`));
+			const {
+				compiled,
+				contractFlags,
+				deployedContractAddresses,
+				deployedContractAddressFile,
+			} = loadAndCheckRequiredSources({
+				contractFlagSource,
+				buildPath,
+				outputPath,
+				network,
+			});
 
-			const contractFlags = JSON.parse(fs.readFileSync(contractFlagSource));
-			// now clone these so we can update and write them after each deployment but keep the original
-			// flags available
-			const updatedContractFlags = JSON.parse(JSON.stringify(contractFlags));
 			console.log(
 				gray('Checking all contracts not flagged for deployment have addresses in this network...')
 			);
-			const deployedContractAddressFile = path.join(outputPath, network, 'contracts.json');
-			const deployedContractAddresses = JSON.parse(fs.readFileSync(deployedContractAddressFile));
-
 			const missingDeployments = Object.keys(contractFlags).filter(contractName => {
 				return !contractFlags[contractName].deploy && !deployedContractAddresses[contractName];
 			});
@@ -146,20 +185,11 @@ program
 				);
 			}
 
-			console.log(gray('Loading the compiled contracts locally...'));
-			const compiledSourcePath = path.join(buildPath, COMPILED_FOLDER);
+			// now clone these so we can update and write them after each deployment but keep the original
+			// flags available
+			const updatedContractFlags = JSON.parse(JSON.stringify(contractFlags));
 
-			const compiled = Object.entries(contractFlags).reduce(
-				(memo, [contractName, { deploy, contract }]) => {
-					const sourceFile = path.join(compiledSourcePath, `${contract}.json`);
-					if (!fs.existsSync(sourceFile)) {
-						throw Error(`Cannot find compiled contract code for: ${contract}`);
-					}
-					memo[contractName] = JSON.parse(fs.readFileSync(sourceFile));
-					return memo;
-				},
-				{}
-			);
+			console.log(gray(`Starting deployment to ${network.toUpperCase()} via Infura...`));
 
 			const providerUrl = process.env.INFURA_PROJECT_ID
 				? `https://${network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`
@@ -463,7 +493,7 @@ program
 						abi: compiled[name].abi,
 					};
 				});
-			fs.writeFileSync(abiFile, JSON.stringify(abiData, undefined, 2));
+			fs.writeFileSync(abiFile, JSON.stringify(abiData, null, 2));
 
 			// JJM: Honestly this can be combined with the ABIs file in the future
 			console.log(gray('Overwriting addresses to file contracts.json under network folder'));
@@ -474,7 +504,7 @@ program
 					memo[name] = deployer.deployedContracts[name].options.address;
 					return memo;
 				}, {});
-			fs.writeFileSync(contractAddressesFile, JSON.stringify(contractAddresses, undefined, 2));
+			fs.writeFileSync(contractAddressesFile, JSON.stringify(contractAddresses, null, 2));
 
 			const tableData = Object.keys(deployer.deployedContracts).map(key => [
 				key,
@@ -485,5 +515,199 @@ program
 			console.log(table(tableData));
 		}
 	);
+
+program
+	.command('verify')
+	.description('Verify deployed sources on etherscan')
+	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
+	.option(
+		'-f, --contract-flag-source <value>',
+		'Path to a JSON file containing a list of contract flags - this is a mapping of full contract names to a deploy flag and the source solidity file. Only files in this mapping will be deployed.',
+		path.join(__dirname, 'contract-flags.json')
+	)
+	.option(
+		'-o, --output-path <value>',
+		'Path to a folder hosting network-foldered deployed contract addresses',
+		path.join(__dirname, 'out')
+	)
+	.option(
+		'-b, --build-path [value]',
+		'Path to a folder hosting compiled files from the "build" step in this script',
+		path.join(__dirname, '..', 'build')
+	)
+	.action(async ({ contractFlagSource, network, outputPath, buildPath }) => {
+		ensureNetwork(network);
+
+		const {
+			compiled,
+			contractFlags,
+			deployedContractAddresses,
+			deployedContractAddressFile,
+		} = loadAndCheckRequiredSources({
+			contractFlagSource,
+			buildPath,
+			outputPath,
+			network,
+		});
+
+		// ensure that every contract in the flag file has a matching deployed address
+		const missingDeployments = Object.keys(contractFlags).filter(contractName => {
+			return !deployedContractAddresses[contractName];
+		});
+
+		if (missingDeployments.length) {
+			throw Error(
+				`Cannot use existing contracts for verification as addresses not found for the following contracts on ${network}:\n` +
+					missingDeployments.join('\n') +
+					'\n' +
+					gray(`Used: ${deployedContractAddressFile} as source`)
+			);
+		}
+
+		const etherscanUrl =
+			network === 'mainnet'
+				? 'https://api.etherscan.io/api'
+				: `https://api-${network}.etherscan.io/api`;
+		console.log(gray(`Starting ${network.toUpperCase()} contract verification on Etherscan...`));
+
+		const tableData = [];
+
+		for (const name of Object.keys(contractFlags)) {
+			const address = deployedContractAddresses[name];
+			// Check if this contract already has been verified.
+
+			let result = await axios.get(etherscanUrl, {
+				params: {
+					module: 'contract',
+					action: 'getabi',
+					address,
+					apikey: process.env.ETHERSCAN_KEY,
+				},
+			});
+
+			if (result.data.result === 'Contract source code not verified') {
+				const contractName = contractFlags[name].contract;
+				console.log(
+					gray(
+						` - Contract ${name} not yet verified (source of "${contractName}.sol"). Verifying...`
+					)
+				);
+
+				// Get the transaction that created the contract with its resulting bytecode.
+				result = await axios.get(etherscanUrl, {
+					params: {
+						module: 'account',
+						action: 'txlist',
+						address,
+						sort: 'asc',
+						apikey: process.env.ETHERSCAN_KEY,
+					},
+				});
+
+				// Get the bytecode that was in that transaction.
+				const deployedBytecode = result.data.result[0].input;
+
+				// TODO - add these to the JSON file for the deployment
+				const deployedAt = new Date(result.data.result[0].timeStamp * 1000);
+				const deployedTxn = `https://${network}.etherscan.io/tx/${result.data.result[0].hash}`;
+
+				console.log(gray(` - Deployed at ${deployedAt}, see ${deployedTxn}`));
+
+				// Grab the last 50 characters of the compiled bytecode
+				const compiledBytecode = compiled[name].evm.bytecode.object.slice(-50);
+
+				const pattern = new RegExp(`${compiledBytecode}(.*)$`);
+				const constructorArguments = pattern.exec(deployedBytecode)[1];
+
+				console.log(gray(' - Constructor arguments', constructorArguments));
+
+				const readFlattened = () => {
+					const flattenedFilename = path.join(buildPath, FLATTENED_FOLDER, `${contractName}.sol`);
+					try {
+						return fs.readFileSync(flattenedFilename).toString();
+					} catch (err) {
+						throw Error(
+							`Cannot read file ${flattenedFilename} - have you run the build step yet???`
+						);
+					}
+				};
+				result = await axios.post(
+					etherscanUrl,
+					qs.stringify({
+						module: 'contract',
+						action: 'verifysourcecode',
+						contractaddress: address,
+						sourceCode: readFlattened(),
+						contractname: contractName,
+						// note: spelling mistake is on etherscan's side
+						constructorArguements: constructorArguments,
+						compilerversion: 'v' + solc.version().replace('.Emscripten.clang', ''), // The version reported by solc-js is too verbose and needs a v at the front
+						optimizationUsed: 1,
+						runs: 200,
+						libraryname1: 'SafeDecimalMath',
+						libraryaddress1: deployedContractAddresses['SafeDecimalMath'],
+						apikey: process.env.ETHERSCAN_KEY,
+					}),
+					{
+						headers: {
+							'Content-Type': 'application/x-www-form-urlencoded',
+						},
+					}
+				);
+
+				console.log(gray(' - Got result:', result.data.result));
+
+				if (result.data.result === 'Contract source code already verified') {
+					console.log(green(` - Verified ${name}`));
+					// Ugh, ok, you lie, but fine, skip and continue.
+					tableData.push([name, address, 'Successfully verified']);
+					continue;
+				}
+				const guid = result.data.result;
+
+				if (!result.data.status) {
+					tableData.push([name, address, `Unable to verify, Etherscan returned "${guid}`]);
+					continue;
+				}
+
+				let status = '';
+				while (status !== 'Pass - Verified') {
+					console.log(gray(' - Checking verification status...'));
+
+					result = await axios.get(etherscanUrl, {
+						params: {
+							module: 'contract',
+							action: 'checkverifystatus',
+							guid,
+						},
+					});
+					status = result.data.result;
+
+					console.log(gray(` - "${status}" response from Etherscan`));
+
+					if (status === 'Fail - Unable to verify') {
+						console.log(red(` - Unable to verify ${name}.`));
+						tableData.push([name, address, 'Unable to verify']);
+
+						break;
+					}
+
+					if (status !== 'Pass - Verified') {
+						console.log(gray(' - Sleeping for 5 seconds and re-checking.'));
+						await new Promise(resolve => setTimeout(resolve, 5000));
+					} else {
+						console.log(green(` - Verified ${name}`));
+						tableData.push([name, address, 'Successfully verified']);
+					}
+				}
+			} else {
+				console.log(gray(` - Already verified ${name}`));
+				tableData.push([name, address, 'Already verified']);
+			}
+		}
+
+		console.log(gray('Verification state'));
+		console.log(table(tableData));
+	});
 
 program.parse(process.argv);
