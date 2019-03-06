@@ -6,7 +6,6 @@ const program = require('commander');
 const { gray, green, yellow, red } = require('chalk');
 const { table } = require('table');
 require('pretty-error').start();
-
 require('dotenv').config();
 
 const { findSolFiles, flatten, compile } = require('./solidity');
@@ -81,10 +80,10 @@ program
 		'-c, --contract-deployment-gas-limit <value>',
 		'Contract deployment gas limit',
 		parseInt,
-		65e5
+		7e6
 	)
 	.option('-m, --method-call-gas-limit <value>', 'Method call gas limit', parseInt, 15e4)
-	.option('-g, --gas-price <value>', 'Gas price', parseInt, 1)
+	.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
 	.option(
 		'-s, --synth-list <value>',
 		'Path to a list of synths',
@@ -125,7 +124,9 @@ program
 			console.log(gray(`Starting deployment to ${network.toUpperCase()} via Infura...`));
 
 			const contractFlags = JSON.parse(fs.readFileSync(contractFlagSource));
-
+			// now clone these so we can update and write them after each deployment but keep the original
+			// flags available
+			const updatedContractFlags = JSON.parse(JSON.stringify(contractFlags));
 			console.log(
 				gray('Checking all contracts not flagged for deployment have addresses in this network...')
 			);
@@ -160,7 +161,9 @@ program
 				{}
 			);
 
-			const providerUrl = `https://${network}.infura.io/${process.env.INFURA_KEY}`;
+			const providerUrl = process.env.INFURA_PROJECT_ID
+				? `https://${network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`
+				: `https://${network}.infura.io/${process.env.INFURA_KEY}`;
 			const privateKey = process.env.DEPLOY_PRIVATE_KEY;
 			const deployer = new Deployer({
 				compiled,
@@ -176,11 +179,27 @@ program
 			const { account, web3 } = deployer;
 			console.log(gray(`Using account with public key ${account}`));
 
-			await deployer.deploy({
+			const deployContract = async ({ name, args, deps }) => {
+				const deployedContract = await deployer.deploy({ name, args, deps });
+
+				// now update the deployed contract addresses
+				deployedContractAddresses[name] = deployedContract.options.address;
+				fs.writeFileSync(
+					deployedContractAddressFile,
+					JSON.stringify(deployedContractAddresses, null, 2)
+				);
+
+				// now update the flags to indicate it no longer needs deployment
+				updatedContractFlags[name].deploy = false;
+				fs.writeFileSync(contractFlagSource, JSON.stringify(updatedContractFlags, null, 2));
+				return deployedContract;
+			};
+
+			await deployContract({
 				name: 'SafeDecimalMath',
 			});
 
-			const exchangeRates = await deployer.deploy({
+			const exchangeRates = await deployContract({
 				name: 'ExchangeRates',
 				args: [
 					account,
@@ -190,12 +209,12 @@ program
 				],
 			});
 
-			const proxyFeePool = await deployer.deploy({
+			const proxyFeePool = await deployContract({
 				name: 'ProxyFeePool',
 				args: [account],
 			});
 
-			const feePool = await deployer.deploy({
+			const feePool = await deployContract({
 				name: 'FeePool',
 				deps: ['ProxyFeePool'],
 				args: [
@@ -208,25 +227,28 @@ program
 				],
 			});
 
-			if (
-				(proxyFeePool && contractFlags['ProxyFeePool'].deploy) ||
-				(feePool && contractFlags['FeePool'].deploy)
-			) {
-				await proxyFeePool.methods
-					.setTarget(feePool.options.address)
-					.send(deployer.sendParameters());
+			if (proxyFeePool && feePool) {
+				const target = await proxyFeePool.methods.target().call();
+
+				if (target !== feePool.options.address) {
+					console.log(yellow('Setting target on ProxyFeePool...'));
+
+					await proxyFeePool.methods
+						.setTarget(feePool.options.address)
+						.send(deployer.sendParameters());
+				}
 			}
 
-			const synthetixState = await deployer.deploy({
+			const synthetixState = await deployContract({
 				name: 'SynthetixState',
 				args: [account, account],
 			});
-			const proxySynthetix = await deployer.deploy({ name: 'ProxySynthetix', args: [account] });
-			const tokenStateSynthetix = await deployer.deploy({
+			const proxySynthetix = await deployContract({ name: 'ProxySynthetix', args: [account] });
+			const tokenStateSynthetix = await deployContract({
 				name: 'TokenStateSynthetix',
 				args: [account, account],
 			});
-			const synthetix = await deployer.deploy({
+			const synthetix = await deployContract({
 				name: 'Synthetix',
 				deps: [
 					'ProxySynthetix',
@@ -244,72 +266,78 @@ program
 					feePool ? feePool.options.address : '',
 				],
 			});
+			const synthetixAddress = synthetix.options.address;
 
-			if (
-				(proxySynthetix && contractFlags['ProxySynthetix'].deploy) ||
-				(synthetix && contractFlags['Synthetix'].deploy)
-			) {
-				console.log(yellow('Setting target on ProxySynthetix...'));
-				await proxySynthetix.methods
-					.setTarget(synthetix.options.address)
-					.send(deployer.sendParameters());
+			if (proxySynthetix && synthetix) {
+				const target = await proxySynthetix.methods.target().call();
+				if (target !== synthetixAddress) {
+					console.log(yellow('Setting target on ProxySynthetix...'));
+					await proxySynthetix.methods.setTarget(synthetixAddress).send(deployer.sendParameters());
+				}
 			}
 
-			if (tokenStateSynthetix && contractFlags['TokenStateSynthetix'].deploy) {
-				console.log(yellow('Setting balance on TokenStateSynthetix...'));
-				await tokenStateSynthetix.methods
-					.setBalanceOf(account, web3.utils.toWei('100000000'))
-					.send(deployer.sendParameters());
+			if (tokenStateSynthetix) {
+				const balance = await tokenStateSynthetix.methods.balanceOf(account).call();
+				const initialIssuance = web3.utils.toWei('100000000');
+				if (balance !== initialIssuance) {
+					console.log(yellow('Setting initial 100M balance on TokenStateSynthetix...'));
+					await tokenStateSynthetix.methods
+						.setBalanceOf(account, initialIssuance)
+						.send(deployer.sendParameters());
+				}
 			}
 
-			if (
-				(tokenStateSynthetix && contractFlags['TokenStateSynthetix'].deploy) ||
-				(synthetix && contractFlags['Synthetix'].deploy)
-			) {
-				console.log(yellow('Setting associated contract on TokenStateSynthetix...'));
-				await tokenStateSynthetix.methods
-					.setAssociatedContract(synthetix.options.address)
-					.send(deployer.sendParameters());
-				console.log(yellow('Setting associated contract on Synthetix State...'));
-				await synthetixState.methods
-					.setAssociatedContract(synthetix.options.address)
-					.send(deployer.sendParameters());
+			if (tokenStateSynthetix && synthetix) {
+				const associatedTSContract = await tokenStateSynthetix.methods.associatedContract().call();
+				if (associatedTSContract !== synthetixAddress) {
+					console.log(yellow('Setting associated contract on TokenStateSynthetix...'));
+					await tokenStateSynthetix.methods
+						.setAssociatedContract(synthetixAddress)
+						.send(deployer.sendParameters());
+				}
+				const associatedSSContract = await synthetixState.methods.associatedContract().call();
+				if (associatedSSContract !== synthetixAddress) {
+					console.log(yellow('Setting associated contract on Synthetix State...'));
+					await synthetixState.methods
+						.setAssociatedContract(synthetixAddress)
+						.send(deployer.sendParameters());
+				}
 			}
 
-			const synthetixEscrow = await deployer.deploy({
+			const synthetixEscrow = await deployContract({
 				name: 'SynthetixEscrow',
 				deps: ['Synthetix'],
-				args: [account, synthetix ? synthetix.options.address : ''],
+				args: [account, synthetix ? synthetixAddress : ''],
 			});
 
-			if (
-				(synthetix && contractFlags['Synthetix'].deploy) ||
-				(synthetixEscrow && contractFlags['SynthetixEscrow'].deploy)
-			) {
-				console.log(yellow('Setting escrow on Synthetix...'));
-				await synthetix.methods
-					.setEscrow(synthetixEscrow.options.address)
-					.send(deployer.sendParameters());
-
-				// Cannot run on mainnet, as it needs to be run by the owner of synthetixEscrow contract
-				if (network !== 'mainnet' && contractFlags['SynthetixEscrow'].deploy) {
-					console.log(yellow('Setting deployed Synthetix on escrow...'));
-					await synthetixEscrow.methods
-						.setSynthetix(synthetix.options.address)
+			if (synthetix && synthetixEscrow) {
+				const escrowAddress = await synthetix.methods.escrow().call();
+				if (escrowAddress !== synthetixEscrow.options.address) {
+					console.log(yellow('Setting escrow on Synthetix...'));
+					await synthetix.methods
+						.setEscrow(synthetixEscrow.options.address)
 						.send(deployer.sendParameters());
+				}
+				// Cannot run on mainnet, as it needs to be run by the owner of synthetixEscrow contract
+				if (network !== 'mainnet') {
+					const escrowSNXAddress = await synthetixEscrow.methods.synthetix().call();
+					if (escrowSNXAddress !== synthetixAddress) {
+						console.log(yellow('Setting deployed Synthetix on escrow...'));
+						await synthetixEscrow.methods
+							.setSynthetix(synthetixAddress)
+							.send(deployer.sendParameters());
+					}
 				}
 			}
 
 			// Cannot run on mainnet, as it needs to be run by the owner of feePool contract
 			if (network !== 'mainnet') {
-				if (
-					(feePool && contractFlags['FeePool'].deploy) ||
-					(synthetix && contractFlags['Synthetix'].deploy)
-				) {
-					console.log(yellow('Setting Synthetix on Fee Pool...'));
-					await feePool.methods
-						.setSynthetix(synthetix.options.address)
-						.send(deployer.sendParameters());
+				if (feePool && synthetix) {
+					const fpSNXAddress = await feePool.methods.synthetix().call();
+					if (fpSNXAddress !== synthetixAddress) {
+						console.log(yellow('Setting Synthetix on Fee Pool...'));
+						await feePool.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
+					}
 				}
 			}
 
@@ -318,21 +346,21 @@ program
 			// ----------------
 			const synths = JSON.parse(fs.readFileSync(synthList));
 			for (const currencyKey of synths) {
-				const tokenStateForSynth = await deployer.deploy({
+				const tokenStateForSynth = await deployContract({
 					name: `TokenState${currencyKey}`,
 					args: [account, ZERO_ADDRESS],
 				});
-				const proxyForSynth = await deployer.deploy({
+				const proxyForSynth = await deployContract({
 					name: `Proxy${currencyKey}`,
 					args: [account],
 				});
-				const synth = await deployer.deploy({
+				const synth = await deployContract({
 					name: `Synth${currencyKey}`,
 					deps: [`TokenState${currencyKey}`, `Proxy${currencyKey}`, 'Synthetix', 'FeePool'],
 					args: [
 						proxyForSynth ? proxyForSynth.options.address : '',
 						tokenStateForSynth ? tokenStateForSynth.options.address : '',
-						synthetix ? synthetix.options.address : '',
+						synthetix ? synthetixAddress : '',
 						feePool ? feePool.options.address : '',
 						`Synth ${currencyKey}`,
 						currencyKey,
@@ -340,60 +368,54 @@ program
 						web3.utils.asciiToHex(currencyKey),
 					],
 				});
+				const synthAddress = synth.options.address;
+				if (synth && tokenStateForSynth) {
+					const tsAssociatedContract = await tokenStateForSynth.methods.associatedContract().call();
+					if (tsAssociatedContract !== synthAddress) {
+						console.log(yellow(`Setting associated contract for ${currencyKey} TokenState...`));
 
-				if (
-					(synth && contractFlags[`Synth${currencyKey}`].deploy) ||
-					(tokenStateForSynth && contractFlags[`TokenState${currencyKey}`].deploy)
-				) {
-					console.log(yellow(`Setting associated contract for ${currencyKey} TokenState...`));
-
-					await tokenStateForSynth.methods
-						.setAssociatedContract(synth.options.address)
-						.send(deployer.sendParameters());
+						await tokenStateForSynth.methods
+							.setAssociatedContract(synthAddress)
+							.send(deployer.sendParameters());
+					}
 				}
-				if (
-					(proxyForSynth && contractFlags[`Proxy${currencyKey}`].deploy) ||
-					(synth && contractFlags[`Synth${currencyKey}`].deploy)
-				) {
-					console.log(yellow(`Setting proxy target for ${currencyKey} Proxy...`));
+				if (proxyForSynth && synth) {
+					const target = await proxyForSynth.methods.target().call();
+					if (target !== synthAddress) {
+						console.log(yellow(`Setting proxy target for ${currencyKey} Proxy...`));
 
-					await proxyForSynth.methods
-						.setTarget(synth.options.address)
-						.send(deployer.sendParameters());
+						await proxyForSynth.methods.setTarget(synthAddress).send(deployer.sendParameters());
+					}
 				}
 
 				// Cannot run on mainnet, as it needs to be owner of existing Synthetix & Synth contracts
 				if (network !== 'mainnet') {
-					if (
-						(synth && contractFlags[`Synth${currencyKey}`].deploy) ||
-						(synthetix && contractFlags['Synthetix'].deploy)
-					) {
-						console.log(yellow(`Adding ${currencyKey} to Synthetix contract...`));
+					if (synth && synthetix) {
+						const currentSynthInSNX = await synthetix.methods
+							.synths(web3.utils.asciiToHex(currencyKey))
+							.call();
+						if (!currentSynthInSNX) {
+							console.log(yellow(`Adding ${currencyKey} to Synthetix contract...`));
+							await synthetix.methods.addSynth(synthAddress).send(deployer.sendParameters());
+						}
 
-						await synthetix.methods.addSynth(synth.options.address).send(deployer.sendParameters());
-					}
+						const synthSNXAddress = await synth.methods.synthetix().call();
 
-					if (
-						synth &&
-						!contractFlags[`Synth${currencyKey}`].deploy &&
-						(synthetix && contractFlags['Synthetix'].deploy)
-					) {
-						console.log(yellow(`Adding Synthetix contract on ${currencyKey} contract...`));
-
-						await synth.methods
-							.setSynthetix(synthetix.options.address)
-							.send(deployer.sendParameters());
+						if (synthSNXAddress !== synthetixAddress) {
+							console.log(yellow(`Adding Synthetix contract on ${currencyKey} contract...`));
+							await synth.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
+						}
 					}
 				}
 			}
 
-			const depot = await deployer.deploy({
+			const depot = await deployContract({
 				name: 'Depot',
 				deps: ['Synthetix', 'SynthsUSD', 'FeePool'],
 				args: [
 					account,
 					account,
-					synthetix ? synthetix.options.address : '',
+					synthetix ? synthetixAddress : '',
 					deployer.deployedContracts['SynthsUSD']
 						? deployer.deployedContracts['SynthsUSD'].options.address
 						: '',
@@ -406,17 +428,13 @@ program
 
 			// Comment out if deploying on mainnet - Needs to be owner of Depot contract
 			if (network !== 'mainnet') {
-				if (
-					synthetix &&
-					contractFlags['Synthetix'].deploy &&
-					depot &&
-					!contractFlags['Depot'].deploy
-				) {
-					console.log(yellow(`Setting synthetix on depot contract...`));
+				if (synthetix && depot) {
+					const depotSNXAddress = await depot.methods.synthetix().call();
+					if (depotSNXAddress !== synthetixAddress) {
+						console.log(yellow(`Setting synthetix on depot contract...`));
 
-					await depot.methods
-						.setSynthetix(synthetix.options.address)
-						.send(deployer.sendParameters());
+						await depot.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
+					}
 				}
 			}
 
