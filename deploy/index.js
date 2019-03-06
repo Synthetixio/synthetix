@@ -266,6 +266,7 @@ program
 					feePool ? feePool.options.address : '',
 				],
 			});
+
 			const synthetixAddress = synthetix.options.address;
 
 			if (proxySynthetix && synthetix) {
@@ -394,7 +395,7 @@ program
 						const currentSynthInSNX = await synthetix.methods
 							.synths(web3.utils.asciiToHex(currencyKey))
 							.call();
-						if (!currentSynthInSNX) {
+						if (currentSynthInSNX !== synthAddress) {
 							console.log(yellow(`Adding ${currencyKey} to Synthetix contract...`));
 							await synthetix.methods.addSynth(synthAddress).send(deployer.sendParameters());
 						}

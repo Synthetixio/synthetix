@@ -92,7 +92,7 @@ class Deployer {
 			console.log(green(` - Deployed ${name} to ${deployedContract.options.address}`));
 		} else if (existingAddress) {
 			deployedContract = new this.web3.eth.Contract(compiled.abi, existingAddress);
-			console.log(gray(` - Reusing instance of ${name}`));
+			console.log(gray(` - Reusing instance of ${name} at ${existingAddress}`));
 		} else {
 			throw new Error(
 				`Settings for contract: ${name} specify an existing contract, but do not give an address.`
