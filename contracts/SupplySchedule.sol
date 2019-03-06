@@ -3,7 +3,7 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 
-file:       InflationarySupply.sol
+file:       SupplySchedule.sol
 version:    1.0
 author:     Jackson Chan
             Clinton Ennis
@@ -13,8 +13,7 @@ date:       2019-03-01
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
-Inflationary Supply contract. SNX is a transferable ERC20 token,
-and also give its holders the following privileges.
+Inflationary Supply contract. SNX is a transferable ERC20 token.
 
 +------+-------------+--------------+----------+
 | Year |  Increase   | Total Supply | Increase |
@@ -37,10 +36,9 @@ import "./Owned.sol";
 import "./Synthetix.sol";
 
 /**
- * @title Any function decorated with the modifier this contract provides
- * deactivates after a specified setup period.
+ * @title SupplySchedule contract
  */
-contract InflationarySupply is Owned {
+contract SupplySchedule is Owned {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -113,12 +111,19 @@ contract InflationarySupply is Owned {
         return (schedules[index].totalSupply, schedules[index].startPeriod, schedules[index].endPeriod, schedules[index].totalSupplyMinted);
     }
 
-    function getMintableSupply()
+    function mintableSupply()
         view
         returns (uint)
     {
         uint index = getCurrentSchedule();
-        return schedules[index].totalSupply.sub(schedules[index].totalSupplyMinted);
+        uint previousPeriod = _remainingSupplyFromPreviousPeriod(index);
+
+        // Get mintable supply ratio from the difference in (now - lastMintEvent) seconds
+
+        uint currentPeriod = schedules[index].totalSupply.sub(schedules[index].totalSupplyMinted);
+
+
+        return currentPeriod.add(previousPeriod);
     }
 
     function isMintable()
@@ -148,7 +153,7 @@ contract InflationarySupply is Owned {
         }
     }
 
-    function getRemainingSupplyFromPreviousYear(uint currentSchedule)
+    function _remainingSupplyFromPreviousPeriod(uint currentSchedule)
         internal
         view
         returns (uint)
@@ -158,8 +163,9 @@ contract InflationarySupply is Owned {
         if (currentSchedule == 0 || lastMintEvent > schedules[currentSchedule - 1].endPeriod) {
             return 0;
         }
-        uint totalSupplyMinted = schedules[currentSchedule - 1].totalSupplyMinted;
-        return schedules[currentSchedule - 1].totalSupply.sub(totalSupplyMinted);
+
+        // return the remaining supply to be minted for previous period missed
+        return schedules[currentSchedule - 1].totalSupply.sub(schedules[currentSchedule - 1].totalSupplyMinted);
     }
     // ========== MUTATIVE FUNCTIONS ==========
     function updateMintValues()
@@ -167,13 +173,14 @@ contract InflationarySupply is Owned {
         external
         returns (bool)
     {
-        uint supplyMinted = getMintableSupply();
         uint currentIndex = getCurrentSchedule();
 
         // Update schedule.totalSupplyMinted for currentSchedule
-        schedules[currentIndex].totalSupplyMinted = schedules[currentIndex].totalSupplyMinted.add(supplyMinted);
+        schedules[currentIndex].totalSupplyMinted = schedules[currentIndex].totalSupplyMinted.add(mintableSupply());
         // Lastly update minted event to track minted values
         lastMintEvent = now;
+
+        return true;
     }
 
     // ========== MODIFIERS ==========
