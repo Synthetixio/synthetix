@@ -71,26 +71,27 @@ contract SupplySchedule is Owned {
     uint8 constant public INFLATION_SCHEDULES_LENGTH = 5;
     ScheduleData[INFLATION_SCHEDULES_LENGTH] public schedules;
 
-//    uint[] public mintedSchedules;
-
     constructor(address _owner)
         Owned(_owner)
         public
     {
-        // Year 0 - Total supply 100,000,000
+        // Year 1 - Total supply 100,000,000
         schedules[0] = ScheduleData(1e8 * SafeDecimalMath.unit(), 1520899200, 1552435200, 1e8 * SafeDecimalMath.unit());
 
-        // Year 1 - Total supply 200,000,000
-        schedules[1] = ScheduleData(1e8 * SafeDecimalMath.unit(), 1552435200, 1584057600, 0);
+        // Year 2 - Total supply 175,000,000
+        schedules[1] = ScheduleData(75e6 * SafeDecimalMath.unit(), 1552435200, 1584057600, 0);
 
-        // Year 2 - Total supply 250,000,000
-        schedules[2] = ScheduleData(5e7 * SafeDecimalMath.unit(), 1584057600, 1615593600, 0);
+        // Year 3 - Total supply 212,500,000
+        schedules[2] = ScheduleData(37.5e6 * SafeDecimalMath.unit(), 1584057600, 1615593600, 0);
 
-        // Year 3 - Total supply 280,000,000
-        schedules[3] = ScheduleData(3e7 * SafeDecimalMath.unit(), 1615593600, 1647129600, 0);
+        // Year 4 - Total supply 231,250,000
+        schedules[3] = ScheduleData(18.75e6 * SafeDecimalMath.unit(), 1615593600, 1647129600, 0);
 
-        // Year 4 - Total supply 300,000,000
-        schedules[4] = ScheduleData(2e7 * SafeDecimalMath.unit(), 1647129600, 1678665600, 0);
+        // Year 5 - Total supply 240,625,000
+        schedules[4] = ScheduleData(9.375e6 * SafeDecimalMath.unit(), 1647129600, 1678665600, 0);
+
+        // Year 6 - Total supply 245,312,500
+        schedules[4] = ScheduleData(4.6875e6 * SafeDecimalMath.unit(), 1647129600, 1678665600, 0);
     }
 
     // ========== SETTERS ========== */
@@ -112,18 +113,21 @@ contract SupplySchedule is Owned {
     }
 
     function mintableSupply()
+        public
         view
         returns (uint)
     {
         uint index = getCurrentSchedule();
-        uint previousPeriod = _remainingSupplyFromPreviousPeriod(index);
+
+        // Calculate previous period's mintable supply
+        uint amountPreviousPeriod = _remainingSupplyFromPreviousPeriod(index);
 
         // Get mintable supply ratio from the difference in (now - lastMintEvent) seconds
+        // Last mint event within current period will use difference in (now - lastMintEvent)
+        // Last mint event not set (0) / outside of current Period will use (now - schedules[index].startPeriod)
+        uint amountInPeriod = lastMintEvent > schedules[index].startPeriod ? (schedules[index].totalSupply).mul(now - lastMintEvent) : schedules[index].totalSupply.mul(now - schedules[index].startPeriod);
 
-        uint currentPeriod = schedules[index].totalSupply.sub(schedules[index].totalSupplyMinted);
-
-
-        return currentPeriod.add(previousPeriod);
+        return amountInPeriod.add(previousPeriod);
     }
 
     function isMintable()

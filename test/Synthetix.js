@@ -1985,7 +1985,7 @@ contract('Synthetix', async function(accounts) {
 		// Issue
 		const expectedSupplyToMint = toUnit('100000000');
 
-		// fast forward EVM to Year 1 schedule at UNIX 1552435200+
+		// fast forward EVM to Year 1 schedule starting at UNIX 1552435200+
 		await fastForwardTo(new Date(1552435210 * 1000));
 
 		const existingSupply = await synthetix.totalSupply();
@@ -1999,7 +1999,7 @@ contract('Synthetix', async function(accounts) {
 		const currentSchedule = await supplySchedule.getCurrentSchedule();
 		// const schedule = await supplySchedule.schedules[toUnit(currentSchedule)];
 
-		console.log("supplySchedule", currentSchedule);
+		console.log('supplySchedule', currentSchedule);
 		assert.bnEqual(newTotalSupply, existingSupply.add(web3.utils.toBN(expectedSupplyToMint)));
 		assert.bnEqual(
 			await synthetix.balanceOf(feePool.address),
