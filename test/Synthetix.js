@@ -1981,7 +1981,7 @@ contract('Synthetix', async function(accounts) {
 	});
 
 	// Inflationary supply of Synthetix
-	it.only('should allow synthetix contract to mint new supply based on inflationary schedule', async function() {
+	it('should allow synthetix contract to mint new supply based on inflationary schedule', async function() {
 		// Issue
 		const weeklyIssuance = (75000000 / 52).toPrecision(18);
 		const expectedSupplyToMint = toUnit(weeklyIssuance);

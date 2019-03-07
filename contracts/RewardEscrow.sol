@@ -44,17 +44,21 @@ contract RewardEscrow is Owned {
      * These are the times at which each given quantity of SNX vests. */
     mapping(address => uint[2][]) public vestingSchedules;
 
-    /* An account's total vested synthetix balance to save recomputing this for fee extraction purposes. */
+    /* An account's total escrowed synthetix balance to save recomputing this for fee extraction purposes. */
+    mapping(address => uint) public totalEscrowedAccountBalance;
+
+    /* An account's total vested reward synthetix. */
     mapping(address => uint) public totalVestedAccountBalance;
 
-    /* The total remaining vested balance, for verifying the actual synthetix balance of this contract against. */
-    uint public totalVestedBalance;
+    /* The total remaining escrowed balance, for verifying the actual synthetix balance of this contract against. */
+    uint public totalEscrowedBalance;
 
     uint constant TIME_INDEX = 0;
     uint constant QUANTITY_INDEX = 1;
 
-    /* Limit vesting entries to disallow unbounded iteration over vesting schedules. */
-    uint constant MAX_VESTING_ENTRIES = 52*4;
+    /* Limit vesting entries to disallow unbounded iteration over vesting schedules. 
+    * There are 5 years of the supply scedule */
+    uint constant public MAX_VESTING_ENTRIES = 52*5;
 
 
     /* ========== CONSTRUCTOR ========== */
@@ -97,14 +101,14 @@ contract RewardEscrow is Owned {
     /* ========== VIEW FUNCTIONS ========== */
 
     /**
-     * @notice A simple alias to totalVestedAccountBalance: provides ERC20 balance integration.
+     * @notice A simple alias to totalEscrowedAccountBalance: provides ERC20 balance integration.
      */
     function balanceOf(address account)
     public
     view
     returns (uint)
     {
-        return totalVestedAccountBalance[account];
+        return totalEscrowedAccountBalance[account];
     }
 
     /**
@@ -212,9 +216,9 @@ contract RewardEscrow is Owned {
     function checkAccountSchedule(address account)
         public
         view
-        returns (uint[])
+        returns (uint[260])
     {
-        uint[] memory _result;
+        uint[260] memory _result;
         uint schedules = numVestingEntries(account);
         for (uint i = 0; i < schedules; i++) {
             uint[2] memory pair = getVestingScheduleEntry(account, i);
@@ -244,8 +248,8 @@ contract RewardEscrow is Owned {
         require(quantity != 0, "Quantity cannot be zero");
 
         /* There must be enough balance in the contract to provide for the vesting entry. */
-        totalVestedBalance = totalVestedBalance.add(quantity);
-        require(totalVestedBalance <= synthetix.balanceOf(this), "Must be enough balance in the contract to provide for the vesting entry");
+        totalEscrowedBalance = totalEscrowedBalance.add(quantity);
+        require(totalEscrowedBalance <= synthetix.balanceOf(this), "Must be enough balance in the contract to provide for the vesting entry");
 
         /* Disallow arbitrarily long vesting schedules in light of the gas limit. */
         uint scheduleLength = vestingSchedules[account].length;
@@ -255,15 +259,17 @@ contract RewardEscrow is Owned {
         uint time = now + 52 weeks;
 
         if (scheduleLength == 0) {
-            totalVestedAccountBalance[account] = quantity;
+            totalEscrowedAccountBalance[account] = quantity;
         } else {
             /* Disallow adding new vested SNX earlier than the last one.
              * Since entries are only appended, this means that no vesting date can be repeated. */
             require(getVestingTime(account, numVestingEntries(account) - 1) < time, "Cannot add new vested entries earlier than the last one");
-            totalVestedAccountBalance[account] = totalVestedAccountBalance[account].add(quantity);
+            totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(quantity);
         }
 
         vestingSchedules[account].push([time, quantity]);
+
+        emit VestingEntryCreated(account, now, quantity);
     }
 
     /**
@@ -290,8 +296,9 @@ contract RewardEscrow is Owned {
         }
 
         if (total != 0) {
-            totalVestedBalance = totalVestedBalance.sub(total);
-            totalVestedAccountBalance[msg.sender] = totalVestedAccountBalance[msg.sender].sub(total);
+            totalEscrowedBalance = totalEscrowedBalance.sub(total);
+            totalEscrowedAccountBalance[msg.sender] = totalEscrowedAccountBalance[msg.sender].sub(total);
+            totalVestedAccountBalance[msg.sender] = totalVestedAccountBalance[msg.sender].add(total);
             synthetix.transfer(msg.sender, total);
             emit Vested(msg.sender, now, total);
         }
@@ -314,4 +321,9 @@ contract RewardEscrow is Owned {
     event FeePoolUpdated(address newFeePool);
 
     event Vested(address indexed beneficiary, uint time, uint value);
+
+    event VestingEntryCreated(address indexed beneficiary, uint time, uint value);
+
+    event LogString(string message, string value);
+    event LogInt(string message, uint value);
 }
