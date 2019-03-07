@@ -920,9 +920,9 @@ contract Synthetix is ExternStateToken {
         returns (bool)
     {
         require(supplySchedule.isMintable(), "Last mint event is less than mintPeriodDuration");
+//        require(supplySchedule.mintableSupply() > 0, "No supply is mintable");
 
         uint supplyToMint = supplySchedule.mintableSupply();
-
         supplySchedule.updateMintValues();
 
         // Set minted SNX balance to feePool's balance

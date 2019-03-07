@@ -19,8 +19,8 @@ Inflationary Supply contract. SNX is a transferable ERC20 token.
 | Year |  Increase   | Total Supply | Increase |
 +------+-------------+--------------+----------+
 |    1 |           0 |  100,000,000 |          |
-|    2 | 100,000,000 |  200,000,000 | 100%     |
-|    3 |  50,000,000 |  250,000,000 | 25%      |
+|    2 | 100,000,000 |  175,000,000 | 75%     |
+|    3 |  50,000,000 |  212,500,000 | 25%      |
 |    4 |  30,000,000 |  280,000,000 | 12%      |
 |    5 |  20,000,000 |  300,000,000 | 7%       |
 +------+-------------+--------------+----------+
@@ -68,30 +68,30 @@ contract SupplySchedule is Owned {
 
     Synthetix public synthetix;
 
-    uint8 constant public INFLATION_SCHEDULES_LENGTH = 5;
+    uint constant SECONDS_IN_YEAR = 60 * 60 * 24 * 365;
+
+    uint public constant START_DATE = 1520899200; // 2018-03-13T00:00:00+00:00
+    uint public constant YEAR_ONE = START_DATE + SECONDS_IN_YEAR.mul(1);
+    uint public constant YEAR_TWO = START_DATE + SECONDS_IN_YEAR.mul(2);
+    uint public constant YEAR_THREE = START_DATE + SECONDS_IN_YEAR.mul(3);
+    uint public constant YEAR_FOUR = START_DATE + SECONDS_IN_YEAR.mul(4);
+    uint public constant YEAR_FIVE = START_DATE + SECONDS_IN_YEAR.mul(5);
+    uint public constant YEAR_SIX = START_DATE + SECONDS_IN_YEAR.mul(6);
+
+    uint8 constant public INFLATION_SCHEDULES_LENGTH = 6;
     ScheduleData[INFLATION_SCHEDULES_LENGTH] public schedules;
 
     constructor(address _owner)
         Owned(_owner)
         public
     {
-        // Year 1 - Total supply 100,000,000
-        schedules[0] = ScheduleData(1e8 * SafeDecimalMath.unit(), 1520899200, 1552435200, 1e8 * SafeDecimalMath.unit());
-
-        // Year 2 - Total supply 175,000,000
-        schedules[1] = ScheduleData(75e6 * SafeDecimalMath.unit(), 1552435200, 1584057600, 0);
-
-        // Year 3 - Total supply 212,500,000
-        schedules[2] = ScheduleData(37.5e6 * SafeDecimalMath.unit(), 1584057600, 1615593600, 0);
-
-        // Year 4 - Total supply 231,250,000
-        schedules[3] = ScheduleData(18.75e6 * SafeDecimalMath.unit(), 1615593600, 1647129600, 0);
-
-        // Year 5 - Total supply 240,625,000
-        schedules[4] = ScheduleData(9.375e6 * SafeDecimalMath.unit(), 1647129600, 1678665600, 0);
-
-        // Year 6 - Total supply 245,312,500
-        schedules[4] = ScheduleData(4.6875e6 * SafeDecimalMath.unit(), 1647129600, 1678665600, 0);
+        // ScheduleData(totalSupply, startPeriod, endPeriod, totalSupplyMinted)
+        schedules[0] = ScheduleData(1e8 * SafeDecimalMath.unit(), START_DATE, YEAR_ONE, 1e8 * SafeDecimalMath.unit()); // Year 1 - Total supply 100,000,000
+        schedules[1] = ScheduleData(75e6 * SafeDecimalMath.unit(), YEAR_ONE, YEAR_TWO, 0); // Year 2 - Total supply 175,000,000
+        schedules[2] = ScheduleData(37.5e6 * SafeDecimalMath.unit(), YEAR_TWO, YEAR_THREE, 0); // Year 3 - Total supply 212,500,000
+        schedules[3] = ScheduleData(18.75e6 * SafeDecimalMath.unit(), YEAR_THREE, YEAR_FOUR, 0); // Year 4 - Total supply 231,250,000
+        schedules[4] = ScheduleData(9.375e6 * SafeDecimalMath.unit(), YEAR_FOUR, YEAR_FIVE, 0); // Year 5 - Total supply 240,625,000
+        schedules[5] = ScheduleData(4.6875e6 * SafeDecimalMath.unit(), YEAR_FIVE, YEAR_SIX, 0); // Year 6 - Total supply 245,312,500
     }
 
     // ========== SETTERS ========== */
@@ -123,14 +123,28 @@ contract SupplySchedule is Owned {
         uint amountPreviousPeriod = _remainingSupplyFromPreviousPeriod(index);
 
         /* solium-disable */
-        // Get mintable supply ratio from the difference in (now - lastMintEvent) seconds
+        // Get mintable supply ratio from the difference in (now - lastMintEvent) / mintPeriodDuration periods
         // Last mint event within current period will use difference in (now - lastMintEvent)
         // Last mint event not set (0) / outside of current Period will use (now - schedules[index].startPeriod)
-        uint amountInPeriod = lastMintEvent > schedules[index].startPeriod ? (schedules[index].totalSupply).mul(now - lastMintEvent) : schedules[index].totalSupply.mul(now - schedules[index].startPeriod);
+        uint weeksInPeriod = (schedules[index].endPeriod - schedules[index].startPeriod).div(mintPeriodDuration);
 
+        uint supplyPerWeek = schedules[index].totalSupply.divideDecimal(weeksInPeriod);
+
+        uint weeksToMint = lastMintEvent > schedules[index].startPeriod ? (now - lastMintEvent).div(mintPeriodDuration) : (now - schedules[index].startPeriod).divideDecimal(mintPeriodDuration);
         /* solium-enable */
 
-        return amountInPeriod.add(amountPreviousPeriod);
+        return weeksToMint;
+//        return _ceil(weeksToMint);
+//        uint amountInPeriod = supplyPerWeek.multiplyDecimal(_ceil(weeksToMint, 1));
+
+//        return amountInPeriod.add(amountPreviousPeriod);
+    }
+
+    function _ceil(uint a, uint m)
+        constant
+        returns (uint )
+    {
+        return ((a + m - 1) / m) * m;
     }
 
     function isMintable()
