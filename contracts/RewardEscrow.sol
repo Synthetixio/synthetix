@@ -13,7 +13,11 @@ date:       2019-03-01
 -----------------------------------------------------------------
 MODULE DESCRIPTION
 -----------------------------------------------------------------
+Escrows the SNX rewards from the inflationary supply awarded to 
+users for staking their SNX and maintaining the c-rationn target. 
 
+SNW rewards are escrowed for 1 year from the claim date and users
+can call vest in 12 months time. 
 -----------------------------------------------------------------
 */
 
@@ -34,6 +38,8 @@ contract RewardEscrow is Owned {
     /* The corresponding Synthetix contract. */
     Synthetix public synthetix;
 
+    FeePool public feePool;
+
     /* Lists of (timestamp, quantity) pairs per account, sorted in ascending time order.
      * These are the times at which each given quantity of SNX vests. */
     mapping(address => uint[2][]) public vestingSchedules;
@@ -48,27 +54,43 @@ contract RewardEscrow is Owned {
     uint constant QUANTITY_INDEX = 1;
 
     /* Limit vesting entries to disallow unbounded iteration over vesting schedules. */
-    uint constant MAX_VESTING_ENTRIES = 20;
+    uint constant MAX_VESTING_ENTRIES = 52*4;
 
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, Synthetix _synthetix)
+    constructor(address _owner, Synthetix _synthetix, FeePool _feePool)
     Owned(_owner)
     public
     {
         synthetix = _synthetix;
+        feePool = _feePool;
     }
 
 
     /* ========== SETTERS ========== */
 
+    /**
+     * @notice set the synthetix contract address as we need to transfer SNX when the user vests
+     */
     function setSynthetix(Synthetix _synthetix)
     external
     onlyOwner
     {
         synthetix = _synthetix;
         emit SynthetixUpdated(_synthetix);
+    }
+
+    /**
+     * @notice set the FeePool contract as it is the only authority to be able to call 
+     * appendVestingEntry with the onlyFeePool modifer
+     */
+    function setFeePool(FeePool _feePool)
+        external
+        onlyOwner
+    {
+        feePool = _feePool;
+        emit FeePoolUpdated(_feePool);
     }
 
 
@@ -184,27 +206,41 @@ contract RewardEscrow is Owned {
         return getNextVestingEntry(account)[QUANTITY_INDEX];
     }
 
+    /**
+     * @notice return the full vesting schedule entries vest for a given user.
+     */
+    function checkAccountSchedule(address account)
+        public
+        view
+        returns (uint[])
+    {
+        uint[] memory _result;
+        uint schedules = numVestingEntries(account);
+        for (uint i = 0; i < schedules; i++) {
+            uint[2] memory pair = getVestingScheduleEntry(account, i);
+            _result[i*2] = pair[0];
+            _result[i*2 + 1] = pair[1];
+        }
+        return _result;
+    }
+
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
      * @notice Add a new vesting entry at a given time and quantity to an account's schedule.
-     * @dev A call to this should be accompanied by either enough balance already available
-     * in this contract, or a corresponding call to synthetix.endow(), to ensure that when
-     * the funds are withdrawn, there is enough balance, as well as correctly calculating
-     * the fees.
-     * This may only be called by the owner during the contract's setup period.
+     * @dev A call to this should accompany a previous successfull call to synthetix.transfer(tewardEscrow, amount), 
+     * to ensure that when the funds are withdrawn, there is enough balance.
      * Note; although this function could technically be used to produce unbounded
-     * arrays, it's only in the foundation's command to add to these lists.
+     * arrays, it's only withinn the 4 year period of the weekly inflation schedule.
      * @param account The account to append a new vesting entry to.
-     * @param time The absolute unix timestamp after which the vested quantity may be withdrawn.
-     * @param quantity The quantity of SNX that will vest.
+     * @param quantity The quantity of SNX that will be escrowed.
      */
-    function appendVestingEntry(address account, uint time, uint quantity)
+    function appendVestingEntry(address account, uint quantity)
     public
+    onlyFeePool
     {
         /* No empty or already-passed vesting entries allowed. */
-        require(now < time, "Time must be in the future");
         require(quantity != 0, "Quantity cannot be zero");
 
         /* There must be enough balance in the contract to provide for the vesting entry. */
@@ -214,6 +250,9 @@ contract RewardEscrow is Owned {
         /* Disallow arbitrarily long vesting schedules in light of the gas limit. */
         uint scheduleLength = vestingSchedules[account].length;
         require(scheduleLength <= MAX_VESTING_ENTRIES, "Vesting schedule is too long");
+
+        /* Escrow the tokens for 1 year. */
+        uint time = now + 52 weeks;
 
         if (scheduleLength == 0) {
             totalVestedAccountBalance[account] = quantity;
@@ -225,23 +264,6 @@ contract RewardEscrow is Owned {
         }
 
         vestingSchedules[account].push([time, quantity]);
-    }
-
-    /**
-     * @notice Construct a vesting schedule to release a quantities of SNX
-     * over a series of intervals.
-     * @dev Assumes that the quantities are nonzero
-     * and that the sequence of timestamps is strictly increasing.
-     * This may only be called by the owner during the contract's setup period.
-     */
-    function addVestingSchedule(address account, uint[] times, uint[] quantities)
-    external
-    onlyOwner
-    {
-        for (uint i = 0; i < times.length; i++) {
-            appendVestingEntry(account, times[i], quantities[i]);
-        }
-
     }
 
     /**
@@ -275,10 +297,21 @@ contract RewardEscrow is Owned {
         }
     }
 
+    /* ========== MODIFIERS ========== */
+
+    modifier onlyFeePool() {
+        bool isFeePool = msg.sender == address(feePool);
+
+        require(isFeePool, "Only the FeePool contracts can perform this action");
+        _;
+    }
+
 
     /* ========== EVENTS ========== */
 
     event SynthetixUpdated(address newSynthetix);
+
+    event FeePoolUpdated(address newFeePool);
 
     event Vested(address indexed beneficiary, uint time, uint value);
 }

@@ -17,7 +17,7 @@ have been generated from the Synthetix system if they've helped
 to create the economy.
 
 Users stake Synthetix to create Synths. As Synth users transact,
-a small fee is deducted from each transaction, which collects
+a small fee is deducted from exchange transactions, which collects
 in the fee pool. Fees are immediately converted to XDRs, a type
 of reserve currency similar to SDRs used by the IMF:
 https://www.imf.org/en/About/Factsheets/Sheets/2016/08/01/14/51/Special-Drawing-Right-SDR
@@ -296,7 +296,7 @@ contract FeePool is Proxyable, SelfDestructible {
 
     /**
      * @notice Record the fee payment in our recentFeePeriods.
-     * @param xdrAmount The amout of fees priced in XDRs.
+     * @param xdrAmount The amount of fees priced in XDRs.
      */
     function _recordFeePayment(uint xdrAmount)
         internal
