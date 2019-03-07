@@ -96,8 +96,8 @@ contract SupplySchedule is Owned {
 
     // ========== SETTERS ========== */
     function setSynthetix(Synthetix _synthetix)
-        onlyOwner
         external
+        onlyOwner
     {
         synthetix = _synthetix;
         // emit event
@@ -122,12 +122,15 @@ contract SupplySchedule is Owned {
         // Calculate previous period's mintable supply
         uint amountPreviousPeriod = _remainingSupplyFromPreviousPeriod(index);
 
+        /* solium-disable */
         // Get mintable supply ratio from the difference in (now - lastMintEvent) seconds
         // Last mint event within current period will use difference in (now - lastMintEvent)
         // Last mint event not set (0) / outside of current Period will use (now - schedules[index].startPeriod)
         uint amountInPeriod = lastMintEvent > schedules[index].startPeriod ? (schedules[index].totalSupply).mul(now - lastMintEvent) : schedules[index].totalSupply.mul(now - schedules[index].startPeriod);
 
-        return amountInPeriod.add(previousPeriod);
+        /* solium-enable */
+
+        return amountInPeriod.add(amountPreviousPeriod);
     }
 
     function isMintable()
@@ -173,8 +176,8 @@ contract SupplySchedule is Owned {
     }
     // ========== MUTATIVE FUNCTIONS ==========
     function updateMintValues()
-        onlySynthetix
         external
+        onlySynthetix
         returns (bool)
     {
         uint currentIndex = getCurrentSchedule();
