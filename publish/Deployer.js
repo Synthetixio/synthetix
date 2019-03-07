@@ -11,13 +11,13 @@ class Deployer {
 	/**
 	 *
 	 * @param {object} compiled An object with full combined contract name keys mapping to ABIs and bytecode
-	 * @param {object} contractFlags An object with full combined contract name keys mapping to a deploy flag and the contract source file name
-	 * @param {object} deployedContractAddresses An object with full combined contract name keys mapping to existing deployment addresses (if any)
+	 * @param {object} config An object with full combined contract name keys mapping to a deploy flag and the contract source file name
+	 * @param {object} deployment An object with full combined contract name keys mapping to existing deployment addresses (if any)
 	 */
 	constructor({
 		compiled,
-		contractFlags,
-		deployedContractAddresses,
+		config,
+		deployment,
 		gasPrice,
 		methodCallGasLimit,
 		contractDeploymentGasLimit,
@@ -25,8 +25,8 @@ class Deployer {
 		privateKey,
 	}) {
 		this.compiled = compiled;
-		this.contractFlags = contractFlags;
-		this.deployedContractAddresses = deployedContractAddresses;
+		this.config = config;
+		this.deployment = deployment;
 		this.gasPrice = gasPrice;
 		this.methodCallGasLimit = methodCallGasLimit;
 		this.contractDeploymentGasLimit = contractDeploymentGasLimit;
@@ -49,7 +49,7 @@ class Deployer {
 	}
 
 	async deploy({ name, args = [], deps = [] }) {
-		if (!this.contractFlags[name]) {
+		if (!this.config[name]) {
 			console.log(yellow(`Skipping ${name} as it is NOT in contract flags file for deployment.`));
 			return;
 		}
@@ -57,9 +57,9 @@ class Deployer {
 		if (missingDeps.length) {
 			throw Error(`Cannot deploy ${name} as it is missing dependencies: ${missingDeps.join(',')}`);
 		}
-		const { deploy, contract } = this.contractFlags[name];
+		const { deploy, contract } = this.config[name];
 		const compiled = this.compiled[name];
-		const existingAddress = this.deployedContractAddresses[name];
+		const existingAddress = this.deployment[name] ? this.deployment[name].address : '';
 
 		if (!compiled) throw new Error(`No compiled source for: ${name}`);
 

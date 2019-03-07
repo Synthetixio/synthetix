@@ -16,6 +16,8 @@ const Deployer = require('./deployer');
 
 const COMPILED_FOLDER = 'compiled';
 const FLATTENED_FOLDER = 'flattened';
+const CONFIG_FILENAME = 'config.json';
+const DEPLOYMENT_FILENAME = 'deployment.json';
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 
 const ensureNetwork = network => {
@@ -25,46 +27,35 @@ const ensureNetwork = network => {
 		);
 	}
 };
+const ensureDeploymentPath = deploymentPath => {
+	if (!fs.existsSync(deploymentPath)) {
+		throw Error(
+			`Invalid deployment path. Please provide a folder with a compatible ${CONFIG_FILENAME}`
+		);
+	}
+};
 
 // Load up all contracts in the flagged source, get their deployed addresses (if any) and compiled sources
-const loadAndCheckRequiredSources = ({ contractFlagSource, buildPath, outputPath, network }) => {
+const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 	console.log(gray(`Loading the list of contracts to deploy on ${network.toUpperCase()}...`));
-	const contractFlags = JSON.parse(fs.readFileSync(contractFlagSource));
+	const configFile = path.join(deploymentPath, CONFIG_FILENAME);
+	const config = JSON.parse(fs.readFileSync(configFile));
 
 	console.log(
 		gray(`Loading the list of contracts already deployed for ${network.toUpperCase()}...`)
 	);
-	const deployedContractAddressFile = path.join(outputPath, network, 'contracts.json');
-	const deployedContractAddresses = JSON.parse(fs.readFileSync(deployedContractAddressFile));
+	const deploymentFile = path.join(deploymentPath, DEPLOYMENT_FILENAME);
+	if (!fs.existsSync(deploymentFile)) {
+		fs.writeFileSync(deploymentFile, '{}');
+	}
+	const deployment = JSON.parse(fs.readFileSync(deploymentFile));
 
-	console.log(gray('Loading the compiled contracts locally...'));
-	const compiledSourcePath = path.join(buildPath, COMPILED_FOLDER);
-
-	let firstTimestamp = Infinity;
-	const compiled = Object.entries(contractFlags).reduce(
-		(memo, [contractName, { deploy, contract }]) => {
-			const sourceFile = path.join(compiledSourcePath, `${contract}.json`);
-			firstTimestamp = Math.min(firstTimestamp, fs.statSync(sourceFile).mtimeMs);
-			if (!fs.existsSync(sourceFile)) {
-				throw Error(
-					`Cannot find compiled contract code for: ${contract}. Did you run the "build" step first?`
-				);
-			}
-			memo[contractName] = JSON.parse(fs.readFileSync(sourceFile));
-			return memo;
-		},
-		{}
-	);
-
-	console.log(
-		yellow(
-			`Note: using build files of which, the earlist was modified on ${new Date(
-				firstTimestamp
-			)}. This is roughly ${((new Date().getTime() - firstTimestamp) / 60000).toFixed(2)} mins ago.`
-		)
-	);
-
-	return { compiled, contractFlags, deployedContractAddresses, deployedContractAddressFile };
+	return {
+		config,
+		configFile,
+		deployment,
+		deploymentFile,
+	};
 };
 
 program
@@ -138,65 +129,52 @@ program
 program
 	.command('deploy')
 	.description('Deploy compiled solidity files')
-	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
+	.option(
+		'-b, --build-path [value]',
+		'Path to a folder hosting compiled files from the "build" step in this script',
+		path.join(__dirname, '..', 'build')
+	)
 	.option(
 		'-c, --contract-deployment-gas-limit <value>',
 		'Contract deployment gas limit',
 		parseInt,
 		7e6
 	)
-	.option('-m, --method-call-gas-limit <value>', 'Method call gas limit', parseInt, 15e4)
+	.option(
+		'-d, --deployment-path <value>',
+		`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
+	)
 	.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
+	.option('-m, --method-call-gas-limit <value>', 'Method call gas limit', parseInt, 15e4)
+	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 	.option(
 		'-s, --synth-list <value>',
 		'Path to a JSON file containing a list of synths',
 		path.join(__dirname, 'synths.json')
 	)
-	.option(
-		'-f, --contract-flag-source <value>',
-		'Path to a JSON file containing a list of contract flags - this is a mapping of full contract names to a deploy flag and the source solidity file. Only files in this mapping will be deployed.',
-		path.join(__dirname, 'contract-flags.json')
-	)
-	.option(
-		'-o, --output-path <value>',
-		'Path to a folder hosting network-foldered deployed contract addresses',
-		path.join(__dirname, 'out')
-	)
-	.option(
-		'-b, --build-path [value]',
-		'Path to a folder hosting compiled files from the "build" step in this script',
-		path.join(__dirname, '..', 'build')
-	)
 	.action(
 		async ({
-			contractFlagSource,
 			gasPrice,
 			methodCallGasLimit,
 			contractDeploymentGasLimit,
 			network,
 			buildPath,
-			outputPath,
+			deploymentPath,
 			synthList,
 		}) => {
 			ensureNetwork(network);
+			ensureDeploymentPath(deploymentPath);
 
-			const {
-				compiled,
-				contractFlags,
-				deployedContractAddresses,
-				deployedContractAddressFile,
-			} = loadAndCheckRequiredSources({
-				contractFlagSource,
-				buildPath,
-				outputPath,
+			const { config, configFile, deployment, deploymentFile } = loadAndCheckRequiredSources({
+				deploymentPath,
 				network,
 			});
 
 			console.log(
 				gray('Checking all contracts not flagged for deployment have addresses in this network...')
 			);
-			const missingDeployments = Object.keys(contractFlags).filter(contractName => {
-				return !contractFlags[contractName].deploy && !deployedContractAddresses[contractName];
+			const missingDeployments = Object.keys(config).filter(name => {
+				return !config[name].deploy && (!deployment[name] || !deployment[name].address);
 			});
 
 			if (missingDeployments.length) {
@@ -204,13 +182,40 @@ program
 					`Cannot use existing contracts for deployment as addresses not found for the following contracts on ${network}:\n` +
 						missingDeployments.join('\n') +
 						'\n' +
-						gray(`Used: ${deployedContractAddressFile} as source`)
+						gray(`Used: ${deploymentFile} as source`)
 				);
 			}
 
+			console.log(gray('Loading the compiled contracts locally...'));
+			const compiledSourcePath = path.join(buildPath, COMPILED_FOLDER);
+
+			let firstTimestamp = Infinity;
+			const compiled = Object.entries(config).reduce((memo, [contractName, { contract }]) => {
+				const sourceFile = path.join(compiledSourcePath, `${contract}.json`);
+				firstTimestamp = Math.min(firstTimestamp, fs.statSync(sourceFile).mtimeMs);
+				if (!fs.existsSync(sourceFile)) {
+					throw Error(
+						`Cannot find compiled contract code for: ${contract}. Did you run the "build" step first?`
+					);
+				}
+				memo[contractName] = JSON.parse(fs.readFileSync(sourceFile));
+				return memo;
+			}, {});
+
+			// JJM: We could easily add an error here if the earlist build is before the latest SOL contract modification
+			console.log(
+				yellow(
+					`Note: using build files of which, the earlist was modified on ${new Date(
+						firstTimestamp
+					)}. This is roughly ${((new Date().getTime() - firstTimestamp) / 60000).toFixed(
+						2
+					)} mins ago.`
+				)
+			);
+
 			// now clone these so we can update and write them after each deployment but keep the original
 			// flags available
-			const updatedContractFlags = JSON.parse(JSON.stringify(contractFlags));
+			const updatedConfig = JSON.parse(JSON.stringify(config));
 
 			console.log(gray(`Starting deployment to ${network.toUpperCase()} via Infura...`));
 
@@ -218,13 +223,14 @@ program
 				? `https://${network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`
 				: `https://${network}.infura.io/${process.env.INFURA_KEY}`;
 			const privateKey = process.env.DEPLOY_PRIVATE_KEY;
+
 			const deployer = new Deployer({
 				compiled,
-				contractFlags,
+				config,
 				gasPrice,
 				methodCallGasLimit,
 				contractDeploymentGasLimit,
-				deployedContractAddresses,
+				deployment,
 				privateKey,
 				providerUrl,
 			});
@@ -234,17 +240,30 @@ program
 
 			const deployContract = async ({ name, args, deps }) => {
 				const deployedContract = await deployer.deploy({ name, args, deps });
+				const { address } = deployedContract.options;
 
-				// now update the deployed contract addresses
-				deployedContractAddresses[name] = deployedContract.options.address;
-				fs.writeFileSync(
-					deployedContractAddressFile,
-					JSON.stringify(deployedContractAddresses, null, 2)
-				);
+				// in case we've already been verified, keep info from then
+				const { timestamp, txn } = deployment[name] || {};
+
+				// now update the deployed contract information
+				deployment[name] = {
+					name,
+					address,
+					source: config[name].contract,
+					link: `https://${network !== 'mainnet' ? network + '.' : ''}etherscan.io/address/${
+						deployer.deployedContracts[name].options.address
+					}`,
+					timestamp: timestamp || new Date(),
+					txn: txn || '',
+					network,
+					bytecode: compiled[name].evm.bytecode.object,
+					abi: compiled[name].abi,
+				};
+				fs.writeFileSync(deploymentFile, JSON.stringify(deployment, null, 2));
 
 				// now update the flags to indicate it no longer needs deployment
-				updatedContractFlags[name].deploy = false;
-				fs.writeFileSync(contractFlagSource, JSON.stringify(updatedContractFlags, null, 2));
+				updatedConfig[name].deploy = false;
+				fs.writeFileSync(configFile, JSON.stringify(updatedConfig, null, 2));
 				return deployedContract;
 			};
 
@@ -496,39 +515,6 @@ program
 			console.log(green('Successfully deployed all contracts!'));
 			console.log();
 
-			console.log(gray('Overwriting ABIs to file contracts.abi.json under network folder'));
-			const abiFile = path.join(outputPath, network, 'contracts.abi.json');
-			const abiData = Object.keys(deployer.deployedContracts)
-				.sort()
-				.map(name => {
-					return {
-						name,
-						address: deployer.deployedContracts[name].options.address,
-						source: contractFlags[name].contract,
-						link: `https://${network !== 'mainnet' ? network + '.' : ''}etherscan.io/address/${
-							deployer.deployedContracts[name].options.address
-						}`,
-						network,
-						// Note: we can add a timestamp during the verification phase
-						// timestamp: contractFlags[name].deploy
-						// 	? new Date()
-						// 	: '(unknown from previous deployment)', // Note: we can overright these during the verification phase
-						abi: compiled[name].abi,
-					};
-				});
-			fs.writeFileSync(abiFile, JSON.stringify(abiData, null, 2));
-
-			// JJM: Honestly this can be combined with the ABIs file in the future
-			console.log(gray('Overwriting addresses to file contracts.json under network folder'));
-			const contractAddressesFile = path.join(outputPath, network, 'contracts.json');
-			const contractAddresses = Object.keys(deployer.deployedContracts)
-				.sort()
-				.reduce((memo, name) => {
-					memo[name] = deployer.deployedContracts[name].options.address;
-					return memo;
-				}, {});
-			fs.writeFileSync(contractAddressesFile, JSON.stringify(contractAddresses, null, 2));
-
 			const tableData = Object.keys(deployer.deployedContracts).map(key => [
 				key,
 				deployer.deployedContracts[key].options.address,
@@ -542,40 +528,27 @@ program
 program
 	.command('verify')
 	.description('Verify deployed sources on etherscan')
-	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
-	.option(
-		'-f, --contract-flag-source <value>',
-		'Path to a JSON file containing a list of contract flags - this is a mapping of full contract names to a deploy flag and the source solidity file. Only files in this mapping will be deployed.',
-		path.join(__dirname, 'contract-flags.json')
-	)
-	.option(
-		'-o, --output-path <value>',
-		'Path to a folder hosting network-foldered deployed contract addresses',
-		path.join(__dirname, 'out')
-	)
 	.option(
 		'-b, --build-path [value]',
 		'Path to a folder hosting compiled files from the "build" step in this script',
 		path.join(__dirname, '..', 'build')
 	)
-	.action(async ({ contractFlagSource, network, outputPath, buildPath }) => {
+	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
+	.option(
+		'-d, --deployment-path <value>',
+		`Path to a folder that has your input configuration file (config.json) and where your ${DEPLOYMENT_FILENAME} files will go`
+	)
+	.action(async ({ buildPath, network, deploymentPath }) => {
 		ensureNetwork(network);
 
-		const {
-			compiled,
-			contractFlags,
-			deployedContractAddresses,
-			deployedContractAddressFile,
-		} = loadAndCheckRequiredSources({
-			contractFlagSource,
-			buildPath,
-			outputPath,
+		const { config, deployment, deploymentFile } = loadAndCheckRequiredSources({
+			deploymentPath,
 			network,
 		});
 
 		// ensure that every contract in the flag file has a matching deployed address
-		const missingDeployments = Object.keys(contractFlags).filter(contractName => {
-			return !deployedContractAddresses[contractName];
+		const missingDeployments = Object.keys(config).filter(contractName => {
+			return !deployment[contractName] || !deployment[contractName].address;
 		});
 
 		if (missingDeployments.length) {
@@ -583,7 +556,7 @@ program
 				`Cannot use existing contracts for verification as addresses not found for the following contracts on ${network}:\n` +
 					missingDeployments.join('\n') +
 					'\n' +
-					gray(`Used: ${deployedContractAddressFile} as source`)
+					gray(`Used: ${deploymentFile} as source`)
 			);
 		}
 
@@ -595,8 +568,8 @@ program
 
 		const tableData = [];
 
-		for (const name of Object.keys(contractFlags)) {
-			const address = deployedContractAddresses[name];
+		for (const name of Object.keys(config)) {
+			const { address } = deployment[name];
 			// Check if this contract already has been verified.
 
 			let result = await axios.get(etherscanUrl, {
@@ -609,7 +582,7 @@ program
 			});
 
 			if (result.data.result === 'Contract source code not verified') {
-				const contractName = contractFlags[name].contract;
+				const contractName = config[name].contract;
 				console.log(
 					gray(
 						` - Contract ${name} not yet verified (source of "${contractName}.sol"). Verifying...`
@@ -630,14 +603,14 @@ program
 				// Get the bytecode that was in that transaction.
 				const deployedBytecode = result.data.result[0].input;
 
-				// TODO - add these to the JSON file for the deployment
-				const deployedAt = new Date(result.data.result[0].timeStamp * 1000);
-				const deployedTxn = `https://${network}.etherscan.io/tx/${result.data.result[0].hash}`;
+				// add the transacton and timestamp to the json file
+				deployment[name].txn = `https://${network}.etherscan.io/tx/${result.data.result[0].hash}`;
+				deployment[name].timestamp = new Date(result.data.result[0].timeStamp * 1000);
 
-				console.log(gray(` - Deployed at ${deployedAt}, see ${deployedTxn}`));
+				fs.writeFileSync(deploymentFile, JSON.stringify(deployment, null, 2));
 
 				// Grab the last 50 characters of the compiled bytecode
-				const compiledBytecode = compiled[name].evm.bytecode.object.slice(-50);
+				const compiledBytecode = deployment[name].bytecode.slice(-50);
 
 				const pattern = new RegExp(`${compiledBytecode}(.*)$`);
 				const constructorArguments = pattern.exec(deployedBytecode)[1];
@@ -668,7 +641,7 @@ program
 						optimizationUsed: 1,
 						runs: 200,
 						libraryname1: 'SafeDecimalMath',
-						libraryaddress1: deployedContractAddresses['SafeDecimalMath'],
+						libraryaddress1: deployment['SafeDecimalMath'].address,
 						apikey: process.env.ETHERSCAN_KEY,
 					}),
 					{

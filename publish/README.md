@@ -1,6 +1,6 @@
 # Publisher
 
-This script can `build` (compiled and flatten), `deploy` and `verify` (on Etherscan) the Synthetix code to a testnet or mainnet.
+This script can `build` (compile and flatten), `deploy` and `verify` (on Etherscan) the Synthetix code to a testnet or mainnet.
 
 ## 1. Build
 
@@ -33,18 +33,32 @@ node publish deploy
 
 - `-b, --build-path [value]` Path for built files to go. (default of `./build` - relative to the root of this repo). The folders `compiled` and `flattened` will be made under this path and the respective files will go in there.
 - `-c, --contract-deployment-gas-limit <value>` Contract deployment gas limit (default: 7000000 (7m))
-- `-f, --contract-flag-source <value>`Path to a JSON file containing a list of contract flags - this is a mapping of full contract names to a deploy flag and the source solidity file. Only files in this mapping will be deployed. (default: [contract-flags.json](contract-flags.json))
-- `-g, --gas-price <value>` Gas price in GWEI (default: "1")
-- `-m, --method-call-gas-limit <value>` Method call gas limit (default: 150000)
-- `-n, --network <value>` The network to run off. One of mainnet, kovan, rinkeby, rospen. (default: "kovan")
-- `-o, --output-path <value>` Path to a folder hosting network-foldered deployed contract addresses (default: [out](out))
-- `-s, --synth-list <value>` Path to a JSON file containing a list of synths (default: [synths.json](synths.json))
+- `-d, --deployment-path <value>` Path to a folder that has your input configuration file (`config.json`) and where your `deployment.json` file will be written (and read from if it currently exists). The `config.json` should be in the following format ([here's an example](deployed/rinkeby/config.json)):
+
+  ```javascript
+  // config.json
+  {
+    "ProxysUSD": {
+      "deploy": true, // whether or not to deploy this or use existing instance from any deployment.json file
+      "contract": "Proxy" // the source Solidity file for this contract
+    },
+
+    ...
+  }
+  ```
+
+  > Note: the advantage of supplying this folder over just using the network name is that you can have multiple deployments on the same network in different folders
+
+* `-g, --gas-price <value>` Gas price in GWEI (default: "1")
+* `-m, --method-call-gas-limit <value>` Method call gas limit (default: 150000)
+* `-n, --network <value>` The network to run off. One of mainnet, kovan, rinkeby, rospen. (default: "kovan")
+* `-s, --synth-list <value>` Path to a JSON file containing a list of synths (default: [synths.json](synths.json))
 
 ### Examples
 
 ```bash
 # deploy to rinkeby with 8 gwei gas
-node publish deploy -n rinkeby -g 8
+node publish deploy -n rinkeby -d publish/deployed/rinkeby -g 8
 ```
 
 ## 3. Verify
@@ -61,9 +75,8 @@ node publish verify
 ### CLI Options
 
 - `-b, --build-path [value]` Path for built files to come from. (default of `./build`). The folders `compiled` and `flattened` will be made under this path and the respective files will go in there.
-- `-f, --contract-flag-source <value>` Path to a JSON file containing a list of contract flags - this is a mapping of full contract names to a deploy flag and the source solidity file. Only files in this mapping will be deployed. (default: [contract-flags.json](contract-flags.json))
+- `-d, --deployment-path <value>` Same as `deploy` step above.
 - `-n, --network <value>` The network to run off. One of mainnet, kovan, rinkeby, rospen. (default: "kovan")
-- `-o, --output-path <value>` Path to a folder hosting network-foldered deployed contract addresses (default: [deploy/out](deploy/out))
 
 ## When adding new synths
 
