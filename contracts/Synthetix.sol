@@ -124,32 +124,9 @@ import "./Synth.sol";
 import "./SynthetixState.sol";
 import "./TokenState.sol";
 import "./SupplySchedule.sol";
-
-contract IFeePool {
-    address public FEE_ADDRESS;
-    function feePaid(bytes4 currencyKey, uint amount) external;
-    function amountReceivedFromExchange(uint value) external view returns (uint);
-}
-
-/**
- * @title ExchangeRates interface
- */
-interface IExchangeRates {
-    function rateIsStale(bytes4 currencyKey) external view returns (bool);
-
-    function rateForCurrency(bytes4 currencyKey) public view returns (uint);
-
-    function anyRateIsStale(bytes4[] currencyKeys) external view returns (bool);
-
-    function rateIsStale(bytes4 currencyKey) external view returns (bool);
-}
-
-/**
- * @title SynthetixEscrow interface
- */
-interface ISynthetixEscrow {
-    function balanceOf(bytes4 currencyKey) external view returns (bool);
-}
+import "./IExchangeRates.sol";
+import "./IFeePool.sol";
+import "./ISynthetixEscrow.sol"; 
 
 /**
  * @title Synthetix ERC20 contract.
