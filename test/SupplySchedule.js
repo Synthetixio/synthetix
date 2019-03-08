@@ -47,7 +47,7 @@ contract('SupplySchedule', async function(accounts) {
 	describe.only('linking synthetix', async function() {
 		it('should have set synthetix', async function() {
 			const synthetixAddress = await supplySchedule.synthetix();
-			assert.equal(synthetixAddress, synthetix.address);
+			assert.equal(synthetixAddress, synthetix);
 		});
 	});
 });
