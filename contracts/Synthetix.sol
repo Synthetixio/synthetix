@@ -119,7 +119,6 @@ even going above the initial wallet balance.
 pragma solidity 0.4.25;
 
 
-import "./FeePool.sol";
 import "./ExternStateToken.sol";
 import "./Synth.sol";
 import "./SynthetixEscrow.sol";
@@ -128,6 +127,11 @@ import "./TokenState.sol";
 import "./ExchangeRates.sol";
 import "./SupplySchedule.sol";
 
+contract IFeePool {
+    address public FEE_ADDRESS;
+    function feePaid(bytes4 currencyKey, uint amount) external;
+    function amountReceivedFromExchange(uint value) external view returns (uint);
+}
 /**
  * @title Synthetix ERC20 contract.
  * @notice The Synthetix contracts not only facilitates transfers, exchanges, and tracks balances,
@@ -141,7 +145,7 @@ contract Synthetix is ExternStateToken {
     Synth[] public availableSynths;
     mapping(bytes4 => Synth) public synths;
 
-    FeePool public feePool;
+    IFeePool public feePool;
     SynthetixEscrow public escrow;
     ExchangeRates public exchangeRates;
     SynthetixState public synthetixState;
@@ -162,14 +166,14 @@ contract Synthetix is ExternStateToken {
      * @param _owner The owner of this contract.
      */
     constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
-        address _owner, ExchangeRates _exchangeRates, FeePool _feePool, SupplySchedule _supplySchedule
+        address _owner, ExchangeRates _exchangeRates, address _feePool, SupplySchedule _supplySchedule
     )
         ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, SYNTHETIX_SUPPLY, DECIMALS, _owner)
         public
     {
         synthetixState = _synthetixState;
         exchangeRates = _exchangeRates;
-        feePool = _feePool;
+        feePool = IFeePool(_feePool);
         supplySchedule = _supplySchedule;
     }
 

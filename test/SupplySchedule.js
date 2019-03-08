@@ -32,7 +32,7 @@ contract('SupplySchedule', async function(accounts) {
 		assert.equal(await instance.owner(), account1);
 	});
 
-	describe.only('linking synthetix', async function() {
+	describe('linking synthetix', async function() {
 		it('should have set synthetix', async function() {
 			const synthetixAddress = await supplySchedule.synthetix();
 			assert.equal(synthetixAddress, synthetix);
