@@ -240,6 +240,9 @@ program
 
 			const deployContract = async ({ name, args, deps }) => {
 				const deployedContract = await deployer.deploy({ name, args, deps });
+				if (!deployedContract) {
+					return;
+				}
 				const { address } = deployedContract.options;
 
 				// in case we've already been verified, keep info from then
@@ -571,6 +574,11 @@ program
 		for (const name of Object.keys(config)) {
 			const { address } = deployment[name];
 			// Check if this contract already has been verified.
+
+			if (name === 'ExchangeRates') {
+				tableData.push([name, address, 'Skipped Verification']);
+				continue;
+			}
 
 			let result = await axios.get(etherscanUrl, {
 				params: {
