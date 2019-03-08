@@ -122,11 +122,29 @@ pragma solidity 0.4.25;
 import "./FeePool.sol";
 import "./ExternStateToken.sol";
 import "./Synth.sol";
-import "./SynthetixEscrow.sol";
 import "./SynthetixState.sol";
 import "./TokenState.sol";
-import "./ExchangeRates.sol";
 import "./SupplySchedule.sol";
+
+/**
+ * @title ExchangeRates interface
+ */
+interface IExchangeRates {
+    function rateIsStale(bytes4 currencyKey) external view returns (bool);
+
+    function rateForCurrency(bytes4 currencyKey) public view returns (uint);
+
+    function anyRateIsStale(bytes4[] currencyKeys) external view returns (bool);
+
+    function rateIsStale(bytes4 currencyKey) external view returns (bool);
+}
+
+/**
+ * @title SynthetixEscrow interface
+ */
+interface ISynthetixEscrow {
+    function balanceOf(bytes4 currencyKey) external view returns (bool);
+}
 
 /**
  * @title Synthetix ERC20 contract.
@@ -142,8 +160,8 @@ contract Synthetix is ExternStateToken {
     mapping(bytes4 => Synth) public synths;
 
     FeePool public feePool;
-    SynthetixEscrow public escrow;
-    ExchangeRates public exchangeRates;
+    ISynthetixEscrow public escrow;
+    IExchangeRates public exchangeRates;
     SynthetixState public synthetixState;
     SupplySchedule public supplySchedule;
 
@@ -162,7 +180,7 @@ contract Synthetix is ExternStateToken {
      * @param _owner The owner of this contract.
      */
     constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
-        address _owner, ExchangeRates _exchangeRates, FeePool _feePool, SupplySchedule _supplySchedule
+        address _owner, IExchangeRates _exchangeRates, FeePool _feePool, SupplySchedule _supplySchedule
     )
         ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, SYNTHETIX_SUPPLY, DECIMALS, _owner)
         public
@@ -241,7 +259,7 @@ contract Synthetix is ExternStateToken {
      * @notice Set the associated synthetix escrow contract.
      * @dev Only the contract owner may call this.
      */
-    function setEscrow(SynthetixEscrow _escrow)
+    function setEscrow(ISynthetixEscrow _escrow)
         external
         optionalProxy_onlyOwner
     {
@@ -255,7 +273,7 @@ contract Synthetix is ExternStateToken {
      * @notice Set the ExchangeRates contract address where rates are held.
      * @dev Only callable by the contract owner.
      */
-    function setExchangeRates(ExchangeRates _exchangeRates)
+    function setExchangeRates(IExchangeRates _exchangeRates)
         external
         optionalProxy_onlyOwner
     {
