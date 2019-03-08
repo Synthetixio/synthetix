@@ -30,6 +30,7 @@ contract('Synthetix', async function(accounts) {
 		account4,
 		account5,
 		account6,
+		account7,
 	] = accounts;
 
 	let synthetix, synthetixState, exchangeRates, feePool, supplySchedule, sUSDContract, sAUDContract;
@@ -72,6 +73,7 @@ contract('Synthetix', async function(accounts) {
 			account4,
 			account5,
 			account6,
+			account7,
 			{
 				from: deployerAccount,
 			}
@@ -83,6 +85,7 @@ contract('Synthetix', async function(accounts) {
 		assert.equal(await instance.owner(), account4);
 		assert.equal(await instance.exchangeRates(), account5);
 		assert.equal(await instance.feePool(), account6);
+		assert.equal(await instance.supplySchedule(), account7);
 	});
 
 	it('should allow adding a Synth contract', async function() {
@@ -1998,7 +2001,6 @@ contract('Synthetix', async function(accounts) {
 
 		// Expect supply schedule is updated with new values
 		const currentSchedule = await supplySchedule.getCurrentSchedule();
-		// const schedule = await supplySchedule.schedules[toUnit(currentSchedule)];
 
 		console.log('supplySchedule', currentSchedule);
 		assert.bnEqual(newTotalSupply, existingSupply.add(web3.utils.toBN(expectedSupplyToMint)));

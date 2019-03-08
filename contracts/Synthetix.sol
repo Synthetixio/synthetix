@@ -119,12 +119,17 @@ even going above the initial wallet balance.
 pragma solidity 0.4.25;
 
 
-import "./FeePool.sol";
 import "./ExternStateToken.sol";
 import "./Synth.sol";
 import "./SynthetixState.sol";
 import "./TokenState.sol";
 import "./SupplySchedule.sol";
+
+contract IFeePool {
+    address public FEE_ADDRESS;
+    function feePaid(bytes4 currencyKey, uint amount) external;
+    function amountReceivedFromExchange(uint value) external view returns (uint);
+}
 
 /**
  * @title ExchangeRates interface
@@ -159,7 +164,7 @@ contract Synthetix is ExternStateToken {
     Synth[] public availableSynths;
     mapping(bytes4 => Synth) public synths;
 
-    FeePool public feePool;
+    IFeePool public feePool;
     ISynthetixEscrow public escrow;
     IExchangeRates public exchangeRates;
     SynthetixState public synthetixState;
@@ -180,14 +185,14 @@ contract Synthetix is ExternStateToken {
      * @param _owner The owner of this contract.
      */
     constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
-        address _owner, IExchangeRates _exchangeRates, FeePool _feePool, SupplySchedule _supplySchedule
+        address _owner, IExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule
     )
         ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, SYNTHETIX_SUPPLY, DECIMALS, _owner)
         public
     {
         synthetixState = _synthetixState;
         exchangeRates = _exchangeRates;
-        feePool = _feePool;
+        feePool = IFeePool(_feePool);
         supplySchedule = _supplySchedule;
     }
 

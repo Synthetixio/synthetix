@@ -27,7 +27,7 @@ contract('RewardEscrow', async function(accounts) {
 		oracle = await exchangeRates.oracle();
 	});
 
-	describe.only('Constructor & Settings ', async function() {
+	describe('Constructor & Settings ', async function() {
 		it('should set synthetix on contructor', async function() {
 			const synthetixAddress = await rewardEscrow.synthetix();
 			assert.equal(synthetixAddress, Synthetix.address);
@@ -56,7 +56,7 @@ contract('RewardEscrow', async function(accounts) {
 		});
 	});
 
-	describe.only('Functions', async function() {
+	describe('Functions', async function() {
 		beforeEach(async function() {
 			// Ensure only FeePool Address can call rewardEscrow.appendVestingEntry()
 			await rewardEscrow.setFeePool(feePoolAccount, { from: owner });
