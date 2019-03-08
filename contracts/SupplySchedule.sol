@@ -86,7 +86,8 @@ contract SupplySchedule is Owned {
         public
     {
         // ScheduleData(totalSupply, startPeriod, endPeriod, totalSupplyMinted)
-        schedules[0] = ScheduleData(1e8 * SafeDecimalMath.unit(), START_DATE, YEAR_ONE, 1e8 * SafeDecimalMath.unit()); // Year 1 - Total supply 100,000,000
+        // Year 1 - Total supply 100,000,000
+        schedules[0] = ScheduleData(1e8 * SafeDecimalMath.unit(), START_DATE, YEAR_ONE, 1e8 * SafeDecimalMath.unit());
         schedules[1] = ScheduleData(75e6 * SafeDecimalMath.unit(), YEAR_ONE, YEAR_TWO, 0); // Year 2 - Total supply 175,000,000
         schedules[2] = ScheduleData(37.5e6 * SafeDecimalMath.unit(), YEAR_TWO, YEAR_THREE, 0); // Year 3 - Total supply 212,500,000
         schedules[3] = ScheduleData(18.75e6 * SafeDecimalMath.unit(), YEAR_THREE, YEAR_FOUR, 0); // Year 4 - Total supply 231,250,000
@@ -120,7 +121,7 @@ contract SupplySchedule is Owned {
         uint index = getCurrentSchedule();
 
         // Calculate previous period's mintable supply
-        uint amountPreviousPeriod = _remainingSupplyFromPreviousPeriod(index);
+//        uint amountPreviousPeriod = _remainingSupplyFromPreviousPeriod(index);
 
         /* solium-disable */
         // Get mintable supply ratio from the difference in (now - lastMintEvent) / mintPeriodDuration periods

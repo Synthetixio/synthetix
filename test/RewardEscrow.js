@@ -13,16 +13,7 @@ contract('RewardEscrow', async function(accounts) {
 
 	const [SNX] = ['SNX'].map(web3.utils.asciiToHex);
 
-	const [
-		deployerAccount,
-		owner,
-		feePoolAccount,
-		account1,
-		account2,
-		account3,
-		account4,
-		account5,
-	] = accounts;
+	const [owner, feePoolAccount, account1, account2] = accounts;
 
 	let rewardEscrow, synthetix, exchangeRates, oracle;
 
