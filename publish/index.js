@@ -76,7 +76,21 @@ program
 		console.log(gray('Finding .sol files...'));
 		const libraries = findSolFiles('node_modules');
 		const contracts = findSolFiles('contracts');
-		const allSolFiles = { ...libraries, ...contracts };
+
+		// The flattener isn't smart enough to handle relative links inside third-party libraries, so
+		// we need to extract all paths and add them.
+		// This is necessary to flatten Chainlink
+		const librariesByName = Object.keys(libraries)
+			// sort to ensure longer paths come first and get overwritten
+			.sort((a, b) => ((a.match(/\//g) || []).length > (b.match(/\//g) || []).length ? -1 : 1))
+			.reduce((memo, key) => {
+				const contractPathPieces = key.split('/');
+				for (let i = 1; i < contractPathPieces.length; i++) {
+					memo[contractPathPieces.slice(i).join('/')] = libraries[key];
+				}
+				return memo;
+			}, {});
+		const allSolFiles = { ...libraries, ...librariesByName, ...contracts };
 		console.log(
 			gray(
 				`Found ${Object.keys(contracts).length} sources, and ${
@@ -112,7 +126,7 @@ program
 
 		console.log(yellow(`Compiled with ${warnings.length} warnings and ${errors.length} errors`));
 		if (errors.length > 0) {
-			console.error(red(errors));
+			console.error(red(errors.map(({ formattedMessage }) => formattedMessage)));
 			console.error();
 			console.error(gray('Exiting because of compile errors.'));
 			process.exit(1);

@@ -29,13 +29,16 @@ pragma solidity 0.4.25;
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./SafeDecimalMath.sol";
 import "./SelfDestructible.sol";
+import "chainlink/solidity/contracts/Chainlinked.sol"; // technically this is all we need
+
 
 /**
  * @title The repository for exchange rates
  */
-contract ExchangeRates is SelfDestructible {
+contract ExchangeRates is Chainlinked, SelfDestructible {
 
     using SafeMath for uint;
+    using SafeDecimalMath for uint;
 
     // Exchange rates stored by currency code, e.g. 'SNX', or 'sUSD'
     mapping(bytes4 => uint) public rates;
@@ -43,11 +46,11 @@ contract ExchangeRates is SelfDestructible {
     // Update times stored by currency code, e.g. 'SNX', or 'sUSD'
     mapping(bytes4 => uint) public lastRateUpdateTimes;
 
-    // The address of the oracle which pushes rate updates to this contract
-    address public oracle;
+    // The address of the SNX oracle which pushes rate updates to this contract
+    address public snxOracle;
 
     // Do not allow the oracle to submit times any further forward into the future than this constant.
-    uint constant ORACLE_FUTURE_LIMIT = 10 minutes;
+    uint constant SNX_ORACLE_FUTURE_LIMIT = 10 minutes;
 
     // How long will the contract assume the rate of any asset is correct
     uint public rateStalePeriod = 3 hours;
@@ -56,6 +59,19 @@ contract ExchangeRates is SelfDestructible {
     // equal weighting.
     // There are 5 participating currencies, so we'll declare that clearly.
     bytes4[5] public xdrParticipants;
+
+    // -----------------
+    // Chainlink properties
+    struct Request {
+        uint256 timestamp;
+        string asset;
+    }
+
+    bytes32 constant ORACLE_JOB_ID;
+    uint256 constant private ORACLE_PAYMENT = 1 * LINK; // solium-disable-line zeppelin/no-arithmetic-operations
+    mapping(bytes32 => Request) private requests;
+    uint constant ORACLE_PRECISION = 100000;
+    // ------------------
 
     //
     // ========== CONSTRUCTOR ==========
@@ -72,9 +88,14 @@ contract ExchangeRates is SelfDestructible {
         address _owner,
 
         // Oracle values - Allows for rate updates
-        address _oracle,
+        address _snxOracle,
         bytes4[] _currencyKeys,
-        uint[] _newRates
+        uint[] _newRates,
+
+        // Chainlink requirementss
+        address _chainlinkToken,
+        address _chainlinkOracle,
+        bytes32 _chainlinkJobId
     )
         /* Owned is initialised in SelfDestructible */
         SelfDestructible(_owner)
@@ -82,7 +103,7 @@ contract ExchangeRates is SelfDestructible {
     {
         require(_currencyKeys.length == _newRates.length, "Currency key length and rate length must match.");
 
-        oracle = _oracle;
+        snxOracle = _snxOracle;
 
         // The sUSD rate is always 1 and is never stale.
         rates["sUSD"] = SafeDecimalMath.unit();
@@ -104,6 +125,13 @@ contract ExchangeRates is SelfDestructible {
         ];
 
         internalUpdateRates(_currencyKeys, _newRates, now);
+
+        // Setup Chainlink props
+        // These are hard-coded for KOVAN
+        setLinkToken(_chainlinkToken); // 0xa36085F69e2889c224210F603D836748e7dC0088
+        setOracle(_chainlinkOracle); // 0x2f90A6D021db21e1B2A077c5a37B3C7E75D15b7e
+        ORACLE_JOB_ID = _chainlinkJobId;
+
     }
 
     /* ========== SETTERS ========== */
@@ -118,7 +146,7 @@ contract ExchangeRates is SelfDestructible {
      */
     function updateRates(bytes4[] currencyKeys, uint[] newRates, uint timeSent)
         external
-        onlyOracle
+        onlySNXOracle
         returns(bool)
     {
         return internalUpdateRates(currencyKeys, newRates, timeSent);
@@ -137,7 +165,7 @@ contract ExchangeRates is SelfDestructible {
         returns(bool)
     {
         require(currencyKeys.length == newRates.length, "Currency key array length must match rates array length.");
-        require(timeSent < (now + ORACLE_FUTURE_LIMIT), "Time is too far into the future");
+        require(timeSent < (now + SNX_ORACLE_FUTURE_LIMIT), "Time is too far into the future");
 
         // Loop through each key and perform update.
         for (uint i = 0; i < currencyKeys.length; i++) {
@@ -198,7 +226,7 @@ contract ExchangeRates is SelfDestructible {
      */
     function deleteRate(bytes4 currencyKey)
         external
-        onlyOracle
+        onlySNXOracle
     {
         require(rates[currencyKey] > 0, "Rate is zero");
 
@@ -212,12 +240,12 @@ contract ExchangeRates is SelfDestructible {
      * @notice Set the Oracle that pushes the rate information to this contract
      * @param _oracle The new oracle address
      */
-    function setOracle(address _oracle)
+    function setSNXOracle(address _snxOracle)
         external
         onlyOwner
     {
-        oracle = _oracle;
-        emit OracleUpdated(oracle);
+        snxOracle = _snxOracle;
+        emit OracleUpdated(snxOracle);
     }
 
     /**
@@ -243,6 +271,17 @@ contract ExchangeRates is SelfDestructible {
         returns (uint)
     {
         return rates[currencyKey];
+    }
+
+    /**
+     * @notice Retrieve the rate for a specific currency using it's string code
+     */
+    function rateForCurrencyString(string currencyKey)
+        public
+        view
+        returns (uint)
+    {
+        return rates[bytes4(keccak256(abi.encodePacked(currencyKey)))];
     }
 
     /**
@@ -326,11 +365,66 @@ contract ExchangeRates is SelfDestructible {
         return false;
     }
 
+
+    // CHAINLINK ///
+    function requestCryptoPrice(string _coin)
+    public
+    onlyOwner
+    {
+        Chainlink.Request memory req = newRequest(ORACLE_JOB_ID, this, this.fulfill.selector);
+        req.add("sym", _coin);
+        req.add("convert", "USD");
+        string[] memory path = new string[](5);
+        path[0] = "data";
+        path[1] = _coin;
+        path[2] = "quote";
+        path[3] = "USD";
+        path[4] = "price";
+        req.addStringArray("copyPath", path);
+        req.addInt("times", ORACLE_PRECISION);
+        requests[chainlinkRequest(req, ORACLE_PAYMENT)] = Request(now, _coin);
+    }
+
+    function fulfill(bytes32 _requestId, uint256 _price)
+      public
+      validateTimestamp(_requestId)
+      recordChainlinkFulfillment(_requestId)
+    {
+        bytes32 asset = keccak256(abi.encodePacked(requests[_requestId].asset));
+        uint256 ts = requests[_requestId].timestamp;
+        delete requests[_requestId];
+        prices[asset] = _price;
+        bytes4[] memory ccy = new bytes4[](1);
+        ccy[0] = bytes4(asset);
+        uint[] memory newRates = new uint[](1);
+        newRates[0] = _price.div(ORACLE_PRECISION0);
+        internalUpdateRates(ccy, newRates, ts);
+    }
+
+    function getChainlinkToken() public view returns (address) {
+      return chainlinkToken();
+    }
+
+    function getOracle() public view returns (address) {
+      return oracleAddress();
+    }
+
+    function withdrawLink() public onlyOwner {
+      LinkTokenInterface link = LinkTokenInterface(chainlinkToken());
+      require(link.transfer(msg.sender, link.balanceOf(address(this))), "Unable to transfer");
+    }
+
+    modifier validateTimestamp(bytes32 _requestId) {
+        require(requests[_requestId].timestamp > now - ORACLE_FUTURE_LIMIT, "Request has expired");
+        _;
+    }
+    ////////////
+
     /* ========== MODIFIERS ========== */
 
-    modifier onlyOracle
+    modifier onlySNXOracle
     {
-        require(msg.sender == oracle, "Only the oracle can perform this action");
+        require(msg.sender == snxOracle, "Only the oracle can perform this action");
         _;
     }
 

@@ -1,0 +1,10 @@
+{
+	"ExchangeRates": {
+		"deploy": true,
+		"contract": "ExchangeRates"
+	},
+	"SafeDecimalMath": {
+		"deploy": true,
+		"contract": "SafeDecimalMath"
+	}
+}

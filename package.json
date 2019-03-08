@@ -66,6 +66,7 @@
 		"web3": "1.0.0-beta.36"
 	},
 	"dependencies": {
+		"chainlink": "github:smartcontractkit/chainlink#79742bb",
 		"openzeppelin-solidity": "2.0.0"
 	}
 }
