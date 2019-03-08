@@ -169,7 +169,7 @@ contract Synthetix is ExternStateToken {
     {
         synthetixState = _synthetixState;
         exchangeRates = _exchangeRates;
-        feePool = IFeePool(_feePool);
+        feePool = _feePool;
         supplySchedule = _supplySchedule;
     }
 
