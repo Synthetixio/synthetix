@@ -1,5 +1,6 @@
 const ExchangeRates = artifacts.require('ExchangeRates');
 const Escrow = artifacts.require('SynthetixEscrow');
+const RewardEscrow = artifacts.require('RewardEscrow');
 const FeePool = artifacts.require('FeePool');
 const SupplySchedule = artifacts.require('SupplySchedule');
 const Synthetix = artifacts.require('Synthetix');
@@ -252,6 +253,20 @@ contract('Synthetix', async function(accounts) {
 
 	it('should disallow a non-owner from setting an Escrow contract', async function() {
 		await assert.revert(synthetix.setEscrow(account1, { from: account1 }));
+	});
+
+	// Reward Escrow
+
+	it('should allow the owner to set an RewardEscrow contract', async function() {
+		assert.notEqual(await synthetix.rewardEscrow(), account1);
+		await synthetix.setRewardEscrow(account1, { from: owner });
+		assert.equal(await synthetix.rewardEscrow(), account1);
+
+		// Note, there's no event for setting the RewardEscrow contract
+	});
+
+	it('should disallow a non-owner from setting an Escrow contract', async function() {
+		await assert.revert(synthetix.setRewardEscrow(account1, { from: account1 }));
 	});
 
 	// Token State contract
@@ -1692,6 +1707,44 @@ contract('Synthetix', async function(accounts) {
 		assert.bnEqual(collaterisationRatio, expectedCollaterisationRatio);
 	});
 
+	it("should include escrowed reward synthetix when calculating a user's collaterisation ratio", async function() {
+		const snx2usdRate = await exchangeRates.rateForCurrency(SNX);
+		const transferredSynthetixs = toUnit('60000');
+		await synthetix.transfer(account1, transferredSynthetixs, { from: owner });
+
+		// Setup reward escrow
+		const feePoolAccount = account6;
+		const rewardEscrow = await RewardEscrow.new(owner, synthetix.address, feePoolAccount, {
+			from: owner,
+		});
+		await synthetix.setRewardEscrow(rewardEscrow.address, { from: owner });
+		const oneWeek = 60 * 60 * 24 * 7;
+		const twelveMonths = oneWeek * 52;
+		const now = await currentTime();
+		const escrowedSynthetixs = toUnit('30000');
+		await synthetix.transfer(rewardEscrow.address, escrowedSynthetixs, { from: owner });
+		await rewardEscrow.appendVestingEntry(
+			account1,
+			web3.utils.toBN(now + twelveMonths),
+			escrowedSynthetixs,
+			{
+				from: owner,
+			}
+		);
+
+		// Issue
+		const maxIssuable = await synthetix.maxIssuableSynths(account1, sUSD);
+		await synthetix.issueSynths(sUSD, maxIssuable, { from: account1 });
+
+		// Compare
+		const collaterisationRatio = await synthetix.collateralisationRatio(account1);
+		const expectedCollaterisationRatio = divideDecimal(
+			maxIssuable,
+			multiplyDecimal(escrowedSynthetixs.add(transferredSynthetixs), snx2usdRate)
+		);
+		assert.bnEqual(collaterisationRatio, expectedCollaterisationRatio);
+	});
+
 	it("should permit anyone checking another user's collateral", async function() {
 		const amount = toUnit('60000');
 		await synthetix.transfer(account1, amount, { from: owner });
@@ -1711,6 +1764,31 @@ contract('Synthetix', async function(accounts) {
 			from: owner,
 		});
 
+		const amount = toUnit('60000');
+		await synthetix.transfer(account1, amount, { from: owner });
+		const collateral = await synthetix.collateral(account1, { from: account2 });
+		assert.bnEqual(collateral, amount.add(escrowedAmount));
+	});
+
+	it("should include escrowed Reward synthetix when checking a user's collateral", async function() {
+		const feePoolAccount = account6;
+		const rewardEscrow = await RewardEscrow.new(owner, synthetix.address, feePoolAccount, {
+			from: owner,
+		});
+		await synthetix.setRewardEscrow(rewardEscrow.address, { from: owner });
+		const oneWeek = 60 * 60 * 24 * 7;
+		const twelveMonths = oneWeek * 52;
+		const now = await currentTime();
+		const escrowedAmount = toUnit('15000');
+		await synthetix.transfer(rewardEscrow.address, escrowedAmount, { from: owner });
+		await rewardEscrow.appendVestingEntry(
+			account1,
+			web3.utils.toBN(now + twelveMonths),
+			escrowedAmount,
+			{
+				from: owner,
+			}
+		);
 		const amount = toUnit('60000');
 		await synthetix.transfer(account1, amount, { from: owner });
 		const collateral = await synthetix.collateral(account1, { from: account2 });

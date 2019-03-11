@@ -31,8 +31,8 @@ if (!process.env.PRIVATE_KEY || !process.env.INFURA_KEY || !process.env.ETHERSCA
 //
 
 const settings = {
-	network: 'mainnet',
-	contractDeploymentGasLimit: 6500000,
+	network: 'kovan',
+	contractDeploymentGasLimit: 8500000,
 	methodCallGasLimit: 150000,
 	gasPrice: '10', // In gwei
 	saveFlattenedContracts: true,
@@ -884,7 +884,7 @@ const deployedContractsToJSON = async () => {
 };
 
 // Build and deploy and clean that build directory again.
-build()
-	.then(() => deploy())
-	.then(() => saveFlattenedContracts())
-	.then(() => verifyContracts());
+build();
+// .then(() => deploy())
+// .then(() => saveFlattenedContracts())
+// .then(() => verifyContracts());

@@ -164,6 +164,7 @@ module.exports = async function(deployer, network, accounts) {
 	// Connect Escrow
 	// ----------------------
 	await synthetix.setEscrow(SynthetixEscrow.address, { from: owner });
+	await synthetix.setRewardEscrow(RewardEscrow.address, { from: owner });
 
 	// ----------------------
 	// Connect FeePool
