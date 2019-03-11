@@ -1718,19 +1718,9 @@ contract('Synthetix', async function(accounts) {
 			from: owner,
 		});
 		await synthetix.setRewardEscrow(rewardEscrow.address, { from: owner });
-		const oneWeek = 60 * 60 * 24 * 7;
-		const twelveMonths = oneWeek * 52;
-		const now = await currentTime();
 		const escrowedSynthetixs = toUnit('30000');
 		await synthetix.transfer(rewardEscrow.address, escrowedSynthetixs, { from: owner });
-		await rewardEscrow.appendVestingEntry(
-			account1,
-			web3.utils.toBN(now + twelveMonths),
-			escrowedSynthetixs,
-			{
-				from: owner,
-			}
-		);
+		await rewardEscrow.appendVestingEntry(account1, escrowedSynthetixs, { from: owner });
 
 		// Issue
 		const maxIssuable = await synthetix.maxIssuableSynths(account1, sUSD);
@@ -1770,25 +1760,15 @@ contract('Synthetix', async function(accounts) {
 		assert.bnEqual(collateral, amount.add(escrowedAmount));
 	});
 
-	it("should include escrowed Reward synthetix when checking a user's collateral", async function() {
+	it("should include escrowed reward synthetix when checking a user's collateral", async function() {
 		const feePoolAccount = account6;
 		const rewardEscrow = await RewardEscrow.new(owner, synthetix.address, feePoolAccount, {
 			from: owner,
 		});
 		await synthetix.setRewardEscrow(rewardEscrow.address, { from: owner });
-		const oneWeek = 60 * 60 * 24 * 7;
-		const twelveMonths = oneWeek * 52;
-		const now = await currentTime();
 		const escrowedAmount = toUnit('15000');
 		await synthetix.transfer(rewardEscrow.address, escrowedAmount, { from: owner });
-		await rewardEscrow.appendVestingEntry(
-			account1,
-			web3.utils.toBN(now + twelveMonths),
-			escrowedAmount,
-			{
-				from: owner,
-			}
-		);
+		await rewardEscrow.appendVestingEntry(account1, escrowedAmount, { from: owner });
 		const amount = toUnit('60000');
 		await synthetix.transfer(account1, amount, { from: owner });
 		const collateral = await synthetix.collateral(account1, { from: account2 });
