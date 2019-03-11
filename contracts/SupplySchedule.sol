@@ -134,18 +134,18 @@ contract SupplySchedule is Owned {
         uint weeksToMint = lastMintEvent > schedules[index].startPeriod ? (now - lastMintEvent).div(mintPeriodDuration) : (now - schedules[index].startPeriod).divideDecimal(mintPeriodDuration);
         /* solium-enable */
 
-        return weeksToMint;
+        return _weekRoundedUp(weeksToMint);
 //        return _ceil(weeksToMint);
 //        uint amountInPeriod = supplyPerWeek.multiplyDecimal(_ceil(weeksToMint, 1));
 
 //        return amountInPeriod.add(amountPreviousPeriod);
     }
 
-    function _ceil(uint a, uint m)
+    function _weekRoundedUp(uint _input)
         constant
-        returns (uint )
+        returns (uint)
     {
-        return ((a + m - 1) / m) * m;
+        return _input + (1 - (_input % mintPeriodDuration));
     }
 
     function isMintable()
@@ -187,7 +187,14 @@ contract SupplySchedule is Owned {
         }
 
         // return the remaining supply to be minted for previous period missed
-        return schedules[currentSchedule - 1].totalSupply.sub(schedules[currentSchedule - 1].totalSupplyMinted);
+        uint amountInPeriod = schedules[currentSchedule - 1].totalSupply.sub(schedules[currentSchedule - 1].totalSupplyMinted);
+
+        // Ensure previous period remaining amount is not less than 0
+        if (amountInPeriod < 0) {
+            return 0;
+        }
+
+        return amountInPeriod;
     }
     // ========== MUTATIVE FUNCTIONS ==========
     function updateMintValues()

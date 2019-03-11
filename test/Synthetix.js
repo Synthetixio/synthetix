@@ -1984,13 +1984,13 @@ contract('Synthetix', async function(accounts) {
 	});
 
 	// Inflationary supply of Synthetix
-	it('should allow synthetix contract to mint new supply based on inflationary schedule', async function() {
+	it.only('should allow synthetix contract to mint new supply based on inflationary schedule', async function() {
 		// Issue
 		const weeklyIssuance = (75000000 / 52).toPrecision(18);
 		const expectedSupplyToMint = toUnit(weeklyIssuance);
 
 		// fast forward EVM to Week 1 in Year 2 schedule starting at UNIX 1552435200+
-		await fastForwardTo(new Date(1552435210 * 1000));
+		await fastForwardTo(new Date(1552435220 * 1000));
 
 		const existingSupply = await synthetix.totalSupply();
 		const currentFeePoolBalance = await synthetix.balanceOf(feePool.address);
