@@ -112,7 +112,7 @@ program
 
 		console.log(yellow(`Compiled with ${warnings.length} warnings and ${errors.length} errors`));
 		if (errors.length > 0) {
-			console.error(red(errors));
+			console.error(red(errors.map(({ formattedMessage }) => formattedMessage)));
 			console.error();
 			console.error(gray('Exiting because of compile errors.'));
 			process.exit(1);
@@ -342,7 +342,7 @@ program
 				],
 			});
 
-			const synthetixAddress = synthetix.options.address;
+			const synthetixAddress = synthetix ? synthetix.options.address : '';
 
 			if (proxySynthetix && synthetix) {
 				const target = await proxySynthetix.methods.target().call();
@@ -444,7 +444,7 @@ program
 						web3.utils.asciiToHex(currencyKey),
 					],
 				});
-				const synthAddress = synth.options.address;
+				const synthAddress = synth ? synth.options.address : '';
 				if (synth && tokenStateForSynth) {
 					const tsAssociatedContract = await tokenStateForSynth.methods.associatedContract().call();
 					if (tsAssociatedContract !== synthAddress) {
