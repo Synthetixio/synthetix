@@ -1,0 +1,201 @@
+{
+	"Depot": {
+		"address": "0x0ec3c77166C5f42d60Ef7AB8871c50A14A82fb8f"
+	},
+	"ExchangeRates": {
+		"address": "0xfcd4d688fa40bd4abc2f9c8db4e1735f14094c42"
+	},
+	"FeePool": {
+		"address": "0x3720a2D52BAa5BB51D4db9e9C753603024EB1Eb6"
+	},
+	"ProxyFeePool": {
+		"address": "0x39A9bBBaBad927eBEf8932f9BF25fff8da73D39d"
+	},
+	"ProxysAUD": {
+		"address": "0xc6752DB1651dde8471e17B79A058BFf80c36f4F8"
+	},
+	"ProxysBRL": {
+		"address": "0x2F73a52828559ECA8aa4ba2Bc9194FB1fB6B936a"
+	},
+	"ProxysBTC": {
+		"address": "0xc52084D522aDfc1B7e6f90e8d1e8C6805D29AD85"
+	},
+	"ProxysCAD": {
+		"address": "0x4A4155F0AdD37b715b2f83509fCc24128b44EAb0"
+	},
+	"ProxysCHF": {
+		"address": "0x2fbe9f09ae3fe9a4835990313E3696A799FCb762"
+	},
+	"ProxysCNY": {
+		"address": "0x3D8A4220acb7Bfb4Df352Eb1D3f678e84e58FDa7"
+	},
+	"ProxysEUR": {
+		"address": "0x34865886F7F2bFc65b22A628f5176aB2167E52F6"
+	},
+	"ProxysGBP": {
+		"address": "0x958332ACb1F9dF866157EE47e36Cd6077249c664"
+	},
+	"ProxysINR": {
+		"address": "0xc6bF1A415aaB79DaA51c2f86f1F1c49f5516f736"
+	},
+	"ProxysJPY": {
+		"address": "0xdA9790250f188D97F89fB05d64A74947bb2B8689"
+	},
+	"ProxysKRW": {
+		"address": "0xAf2F7992987A8662b7f56a66C8563397b9A4EDE5"
+	},
+	"ProxysNZD": {
+		"address": "0x001Df8Af6c00462c81EB6818E66F3D1b99B552C5"
+	},
+	"ProxysPLN": {
+		"address": "0x6fa3A68760bBC83a24F541d2CA9495339c4FFEF8"
+	},
+	"ProxysRUB": {
+		"address": "0x907aAD44A8fb441d2CAA32055a4032201f941Be7"
+	},
+	"ProxysSGD": {
+		"address": "0x403c67B039bef1210Ea8169D06a5d806195116C5"
+	},
+	"ProxysUSD": {
+		"address": "0x7EFDDAF6057FD1CfdE8227e199EACca12971c760"
+	},
+	"ProxysXAG": {
+		"address": "0x6e8BcDc6F127E1bc913624918cdE5358790E6449"
+	},
+	"ProxysXAU": {
+		"address": "0x31c67585D01a6c7926C0d7E1DC99F59f1F1f590a"
+	},
+	"ProxySynthetix": {
+		"address": "0xb5aD6f707dff298F56B4504d0001fcFCCA8c2ED6"
+	},
+	"ProxyXDR": {
+		"address": "0xAbAc34B51cc28A648Fe5BBF3087aeb24Bf7C24Ec"
+	},
+	"SafeDecimalMath": {
+		"address": "0x84D626B2BB4D0F064067e4BF80FCe7055d8F3E7B"
+	},
+	"Synthetix": {
+		"address": "0x11748b9Ff45d46430B0316df1dA8f78E62e770a2"
+	},
+	"SynthetixEscrow": {
+		"address": "0xd18bbD8C822a824366CC7712cbEc7B5B526D47ba"
+	},
+	"SynthetixState": {
+		"address": "0xe1ba8F67582976c8Be14C31304d5AD9A61f1E80b"
+	},
+	"SynthsAUD": {
+		"address": "0xef96513B126898c370d7e1c73e9A069202c0c18B"
+	},
+	"SynthsBRL": {
+		"address": "0x942337F160009E67E151db0b775dDc0BaDD49080"
+	},
+	"SynthsBTC": {
+		"address": "0x5227692b0c08bb75A1C6f62169AE489F898e180A"
+	},
+	"SynthsCAD": {
+		"address": "0x1c6E01a6C658b113B45b0791d7A043317350FbE4"
+	},
+	"SynthsCHF": {
+		"address": "0x939e6c08cdd77DBA2B6a6463790220c366E2Ba52"
+	},
+	"SynthsCNY": {
+		"address": "0xDbcB261d399E20897bC75b3f87Ac30E2493C3412"
+	},
+	"SynthsEUR": {
+		"address": "0x40e62f811a448f2fcE3bc276a47D2e3FfaEcFe77"
+	},
+	"SynthsGBP": {
+		"address": "0x5F9a6d7FEB19A78ECFda0F76AEb2C512D6b09fd7"
+	},
+	"SynthsINR": {
+		"address": "0x87a874A5721452cecd211b99F64CB9Bd8EfA0CAc"
+	},
+	"SynthsJPY": {
+		"address": "0x9a98aBF9Bc3ABB6381750131fBc10d1680bfb489"
+	},
+	"SynthsKRW": {
+		"address": "0x5bAc2A92DEbc9f4E8A9CC8Be37940DDe77A07063"
+	},
+	"SynthsNZD": {
+		"address": "0x0D8d985BDb82CC5976eCB18Fdc2BEAd4E74b3778"
+	},
+	"SynthsPLN": {
+		"address": "0xA7fD047d694dD0a2cAc799BA8f49098BA218f142"
+	},
+	"SynthsRUB": {
+		"address": "0xe681319a209e34E57AE6653E752bD852055E3572"
+	},
+	"SynthsSGD": {
+		"address": "0xf09Fb6257C8e91Cc217c91AEb0d3f7f3A4b7d054"
+	},
+	"SynthsUSD": {
+		"address": "0xdC703901cdc5a6BFCE0BaACae4FC5937C03AC247"
+	},
+	"SynthsXAG": {
+		"address": "0xa1F4AD87C3AAA5367bd92061FEa2919f5Ee75249"
+	},
+	"SynthsXAU": {
+		"address": "0xf13f22E5e9505b21F6623c16aa4EeeD0EB62c741"
+	},
+	"SynthXDR": {
+		"address": "0xBFb0ae6e090662cD64B1913806023bA403b35D58"
+	},
+	"TokenStatesAUD": {
+		"address": "0xC9cAB39352420a5844963e075AE2c6c60F342B87"
+	},
+	"TokenStatesBRL": {
+		"address": "0x9aeD02415353749e32B39a3e190b7Af81A4c84eA"
+	},
+	"TokenStatesBTC": {
+		"address": "0x943C90b01D0BbE0799CEaA8Da85e3a845ee34861"
+	},
+	"TokenStatesCAD": {
+		"address": "0x7e6d512e464bbfbFacce426e8a289d0F532389FA"
+	},
+	"TokenStatesCHF": {
+		"address": "0x0f3a54b8D5D542eDa81A30515F218FD142532926"
+	},
+	"TokenStatesCNY": {
+		"address": "0xdBE2aCea6d9eAA297dA9b2C19912aa264F94E2f2"
+	},
+	"TokenStatesEUR": {
+		"address": "0xCE8eC36576B83D60e12E4c69FfC08A979b515692"
+	},
+	"TokenStatesGBP": {
+		"address": "0xeDe76a696Ab2Cae36bB6DF5eF0f79837FE04Bc6B"
+	},
+	"TokenStatesINR": {
+		"address": "0x30d4aaAd21A7F97C35901bf468bC7cCE6158e6ED"
+	},
+	"TokenStatesJPY": {
+		"address": "0xb817D6935f2127653A1A9D35B037930d375E60db"
+	},
+	"TokenStatesKRW": {
+		"address": "0xcFF638bc6C62b652dA29dAaa7858897e83d5401f"
+	},
+	"TokenStatesNZD": {
+		"address": "0x708236E4e37dB4A0c2fD2528766ac02C4fd3065c"
+	},
+	"TokenStatesPLN": {
+		"address": "0x0ADfA3Ef39adbcCE1918066becB686cf6fFbb6E0"
+	},
+	"TokenStatesRUB": {
+		"address": "0x6aC5371ae9D82f2CCc1cfe232203643d483f17b5"
+	},
+	"TokenStatesSGD": {
+		"address": "0xBeBDDbdADe3C588debAc3cC187BC1Cd79f6D5087"
+	},
+	"TokenStatesUSD": {
+		"address": "0x2e3E3b35112c3971fdf0F50b57Fc6BCf2F37c16b"
+	},
+	"TokenStatesXAG": {
+		"address": "0x7a1B0c13A778c1e4fB366717602fcf1E0CB532c2"
+	},
+	"TokenStatesXAU": {
+		"address": "0x77b0AD540e882cBd1DcbdDc281F8E47174dBaD60"
+	},
+	"TokenStateSynthetix": {
+		"address": "0x63912845ed7aF853B4F8E4a1DEB2E25341a5c5F8"
+	},
+	"TokenStateXDR": "0x6e9A07573FC918A92F5E77Aed08CFa24E22F727F"
+}

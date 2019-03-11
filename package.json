@@ -33,6 +33,8 @@
 	"devDependencies": {
 		"axios": "^0.18.0",
 		"bip39": "^2.5.0",
+		"chalk": "^2.4.2",
+		"commander": "^2.19.0",
 		"concurrently": "^4.0.1",
 		"dotenv": "^6.1.0",
 		"eslint": "^5.5.0",
@@ -48,6 +50,7 @@
 		"glob": "^7.1.3",
 		"mkdirp": "^0.5.1",
 		"prettier": "^1.14.2",
+		"pretty-error": "^2.1.1",
 		"rimraf": "^2.6.2",
 		"seedrandom": "^2.4.4",
 		"solc": "0.4.25",
@@ -60,7 +63,7 @@
 		"truffle-external-compile": "1.0.0-beta.0",
 		"typedarray-to-buffer": "^3.1.5",
 		"wait-port": "^0.2.2",
-		"web3": "^1.0.0-beta.36"
+		"web3": "1.0.0-beta.36"
 	},
 	"dependencies": {
 		"openzeppelin-solidity": "2.0.0"
