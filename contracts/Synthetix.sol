@@ -143,6 +143,7 @@ contract Synthetix is ExternStateToken {
 
     IFeePool public feePool;
     ISynthetixEscrow public escrow;
+    ISynthetixEscrow public rewardEscrow;
     IExchangeRates public exchangeRates;
     SynthetixState public synthetixState;
     SupplySchedule public supplySchedule;
@@ -246,6 +247,20 @@ contract Synthetix is ExternStateToken {
         optionalProxy_onlyOwner
     {
         escrow = _escrow;
+        // Note: No event here as our contract exceeds max contract size
+        // with these events, and it's unlikely people will need to
+        // track these events specifically.
+    }
+
+    /**
+     * @notice Set the associated synthetix rewards escrow contract.
+     * @dev Only the contract owner may call this.
+     */
+    function setRewardEscrow(ISynthetixEscrow _rewardEscrow)
+        external
+        optionalProxy_onlyOwner
+    {
+        rewardEscrow = _rewardEscrow;
         // Note: No event here as our contract exceeds max contract size
         // with these events, and it's unlikely people will need to
         // track these events specifically.
@@ -879,6 +894,10 @@ contract Synthetix is ExternStateToken {
 
         if (escrow != address(0)) {
             balance = balance.add(escrow.balanceOf(account));
+        }
+
+        if (rewardEscrow != address(0)) {
+            balance = balance.add(rewardEscrow.balanceOf(account));
         }
 
         return balance;
