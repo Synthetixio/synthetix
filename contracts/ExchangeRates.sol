@@ -50,7 +50,7 @@ contract ExchangeRates is Chainlinked, SelfDestructible {
     address public snxOracle;
 
     // Do not allow the oracle to submit times any further forward into the future than this constant.
-    uint constant SNX_ORACLE_FUTURE_LIMIT = 10 minutes;
+    uint constant ORACLE_FUTURE_LIMIT = 10 minutes;
 
     // How long will the contract assume the rate of any asset is correct
     uint public rateStalePeriod = 3 hours;
@@ -165,7 +165,7 @@ contract ExchangeRates is Chainlinked, SelfDestructible {
         returns(bool)
     {
         require(currencyKeys.length == newRates.length, "Currency key array length must match rates array length.");
-        require(timeSent < (now + SNX_ORACLE_FUTURE_LIMIT), "Time is too far into the future");
+        require(timeSent < (now + ORACLE_FUTURE_LIMIT), "Time is too far into the future");
 
         // Loop through each key and perform update.
         for (uint i = 0; i < currencyKeys.length; i++) {
@@ -393,11 +393,10 @@ contract ExchangeRates is Chainlinked, SelfDestructible {
         bytes32 asset = keccak256(abi.encodePacked(requests[_requestId].asset));
         uint256 ts = requests[_requestId].timestamp;
         delete requests[_requestId];
-        prices[asset] = _price;
         bytes4[] memory ccy = new bytes4[](1);
         ccy[0] = bytes4(asset);
         uint[] memory newRates = new uint[](1);
-        newRates[0] = _price.div(ORACLE_PRECISION0);
+        newRates[0] = _price.div(ORACLE_PRECISION);
         internalUpdateRates(ccy, newRates, ts);
     }
 
