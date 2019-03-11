@@ -97,19 +97,19 @@ program
 		const price = await ExchangeRates.methods.rateForCurrencyString(symbol).call();
 		console.log(green(`${symbol} ${web3.utils.asciiToHex(symbol)} is ${price} (${price / 1e18})`));
 
-		// const lastUpdate = await ExchangeRates.methods
-		// 	.lastRateUpdateTimes(web3.utils.asciiToHex(symbol))
-		// 	.call();
+		const lastUpdate = await ExchangeRates.methods
+			.lastRateUpdateTimes(web3.utils.asciiToHex(symbol))
+			.call();
 		// Note: due to our contract code, only "currencyKeys" provided at instantiation have last updated, and of these, only SNX
 		// gets updated and only during initiation.
-		// if (Number(lastUpdate) > 0) {
-		// 	console.log(gray(`Last updated ${new Date(lastUpdate * 1000)} ${lastUpdate}`));
-		// } else {
-		// 	console.log(
-		// 		gray(
-		// 			`No last update timestamp - only supported for symbols added during contract initialization`
-		// 		)
-		// 	);
-		// }
+		if (Number(lastUpdate) > 0) {
+			console.log(gray(`Last updated ${new Date(lastUpdate * 1000)} ${lastUpdate}`));
+		} else {
+			console.log(
+				gray(
+					`No last update timestamp - only supported for symbols added during contract initialization`
+				)
+			);
+		}
 	});
 program.parse(process.argv);

@@ -391,13 +391,12 @@ contract ExchangeRates is Chainlinked, SelfDestructible {
       recordChainlinkFulfillment(_requestId)
     {
         bytes32 asset = keccak256(abi.encodePacked(requests[_requestId].asset));
-        uint256 ts = requests[_requestId].timestamp;
         delete requests[_requestId];
         bytes4[] memory ccy = new bytes4[](1);
         ccy[0] = bytes4(asset);
         uint[] memory newRates = new uint[](1);
         newRates[0] = _price;
-        internalUpdateRates(ccy, newRates, ts);
+        internalUpdateRates(ccy, newRates, now);
     }
 
     function getChainlinkToken() public view returns (address) {
