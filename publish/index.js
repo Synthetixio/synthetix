@@ -575,11 +575,6 @@ program
 			const { address } = deployment[name];
 			// Check if this contract already has been verified.
 
-			if (name === 'ExchangeRates') {
-				tableData.push([name, address, 'Skipped Verification']);
-				continue;
-			}
-
 			let result = await axios.get(etherscanUrl, {
 				params: {
 					module: 'contract',
@@ -618,7 +613,7 @@ program
 				fs.writeFileSync(deploymentFile, JSON.stringify(deployment, null, 2));
 
 				// Grab the last 50 characters of the compiled bytecode
-				const compiledBytecode = deployment[name].bytecode.slice(-50);
+				const compiledBytecode = deployment[name].bytecode.slice(-100);
 
 				const pattern = new RegExp(`${compiledBytecode}(.*)$`);
 				const constructorArguments = pattern.exec(deployedBytecode)[1];
@@ -671,6 +666,10 @@ program
 
 				if (!result.data.status) {
 					tableData.push([name, address, `Unable to verify, Etherscan returned "${guid}`]);
+					continue;
+				} else if (!guid || guid.length !== 50) {
+					console.log(red(`Invalid GUID from Etherscan (see response above).`));
+					tableData.push([name, address, 'Unable to verify (invalid GUID)']);
 					continue;
 				}
 
