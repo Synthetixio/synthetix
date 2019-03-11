@@ -78,8 +78,36 @@ node publish verify
 - `-d, --deployment-path <value>` Same as `deploy` step above.
 - `-n, --network <value>` The network to run off. One of mainnet, kovan, rinkeby, rospen. (default: "kovan")
 
+### Examples
+
+```bash
+# verify on rinkeby.etherscan
+node publish verify -n rinkeby -d publish/deployed/rinkeby
+```
+
 ## When adding new synths
 
 1. First off, add the synth key to the [synths.json](synths.json) file
 2. Then you'll need to add entries to the [contract-flags.json](contract-flags.json) file with `deploy: true` and make sure the `contract` entry reflects the name of the contract source. Whichever other contracts you want to deploy again, you'll need to change `deploy` to `true`, otherwise keep it as `false` and use the existing deployed contract for that environment.
 3. Run `build` if you've changed any source files, if not you can skip that step. Then run the `deploy` and `verify` steps.
+
+# Additional functionality
+
+## Generate token file
+
+Th `generate-token-list` command will generate an array of token proxy addresses for the given deployment to be used in the Synthetix website. The command outputs a JSON array to the console.
+
+```bash
+# output a list of token addresses, decimals and symbol names for all the token proxy contracts
+node publish generate-token-file
+```
+
+### CLI Options
+
+- `-d, --deployment-path <value>` Same as `deploy` step above.
+
+### Example
+
+```bash
+node publish generate-token-list -d publish/deployed/rinkeby/ > token-list.json
+```
