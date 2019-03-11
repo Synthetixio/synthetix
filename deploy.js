@@ -884,7 +884,7 @@ const deployedContractsToJSON = async () => {
 };
 
 // Build and deploy and clean that build directory again.
-build();
+build()
 	.then(() => deploy())
 	.then(() => saveFlattenedContracts())
 	.then(() => verifyContracts());
