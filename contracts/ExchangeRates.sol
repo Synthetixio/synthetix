@@ -67,10 +67,10 @@ contract ExchangeRates is Chainlinked, SelfDestructible {
         string asset;
     }
 
-    bytes32 oracleJobId;
+    bytes32 public oracleJobId;
     uint256 constant private ORACLE_PAYMENT = 1 * LINK; // solium-disable-line zeppelin/no-arithmetic-operations
     mapping(bytes32 => Request) private requests;
-    uint256 constant ORACLE_PRECISION = 100000;
+    uint256 constant ORACLE_PRECISION = 1000000000000000000;
     // ------------------
 
     //
@@ -396,7 +396,7 @@ contract ExchangeRates is Chainlinked, SelfDestructible {
         bytes4[] memory ccy = new bytes4[](1);
         ccy[0] = bytes4(asset);
         uint[] memory newRates = new uint[](1);
-        newRates[0] = _price.div(ORACLE_PRECISION);
+        newRates[0] = _price;
         internalUpdateRates(ccy, newRates, ts);
     }
 

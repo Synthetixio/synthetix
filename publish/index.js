@@ -20,6 +20,14 @@ const CONFIG_FILENAME = 'config.json';
 const DEPLOYMENT_FILENAME = 'deployment.json';
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 
+const CHAINLINK = {
+	kovan: {
+		linkToken: '0xa36085F69e2889c224210F603D836748e7dC0088',
+		oracle: '0x2f90A6D021db21e1B2A077c5a37B3C7E75D15b7e',
+		jobId: '0xcbb45ecb040340389e49b77704184e5a', // CMC JobID for Kovan
+	},
+};
+
 const ensureNetwork = network => {
 	if (!/^(kovan|rinkeby|ropsten|mainnet)$/.test(network)) {
 		throw Error(
@@ -295,6 +303,11 @@ program
 					account,
 					[web3.utils.asciiToHex('SNX')],
 					[web3.utils.toWei('0.2', 'ether')],
+
+					// chainlink props
+					CHAINLINK[network].linkToken,
+					CHAINLINK[network].oracle,
+					CHAINLINK[network].jobId,
 				],
 			});
 
@@ -356,7 +369,7 @@ program
 				],
 			});
 
-			const synthetixAddress = synthetix.options.address;
+			const synthetixAddress = synthetix ? synthetix.options.address : '';
 
 			if (proxySynthetix && synthetix) {
 				const target = await proxySynthetix.methods.target().call();
@@ -458,7 +471,7 @@ program
 						web3.utils.asciiToHex(currencyKey),
 					],
 				});
-				const synthAddress = synth.options.address;
+				const synthAddress = synth ? synth.options.address : '';
 				if (synth && tokenStateForSynth) {
 					const tsAssociatedContract = await tokenStateForSynth.methods.associatedContract().call();
 					if (tsAssociatedContract !== synthAddress) {
@@ -589,11 +602,6 @@ program
 			const { address } = deployment[name];
 			// Check if this contract already has been verified.
 
-			if (name === 'ExchangeRates') {
-				tableData.push([name, address, 'Skipped Verification']);
-				continue;
-			}
-
 			let result = await axios.get(etherscanUrl, {
 				params: {
 					module: 'contract',
@@ -632,7 +640,7 @@ program
 				fs.writeFileSync(deploymentFile, JSON.stringify(deployment, null, 2));
 
 				// Grab the last 50 characters of the compiled bytecode
-				const compiledBytecode = deployment[name].bytecode.slice(-50);
+				const compiledBytecode = deployment[name].bytecode.slice(-100);
 
 				const pattern = new RegExp(`${compiledBytecode}(.*)$`);
 				const constructorArguments = pattern.exec(deployedBytecode)[1];
@@ -685,6 +693,14 @@ program
 
 				if (!result.data.status) {
 					tableData.push([name, address, `Unable to verify, Etherscan returned "${guid}`]);
+					continue;
+				} else if (!guid || guid.length !== 50) {
+					console.log(
+						red(
+							`Invalid GUID from Etherscan (see response above). (Known to happen with ExchangeRates).`
+						)
+					);
+					tableData.push([name, address, 'Unable to verify (invalid GUID)']);
 					continue;
 				}
 
