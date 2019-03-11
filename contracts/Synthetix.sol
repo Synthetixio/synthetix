@@ -191,7 +191,7 @@ contract Synthetix is ExternStateToken {
         availableSynths.push(synth);
         synths[currencyKey] = synth;
 
-        emitSynthAdded(currencyKey, synth);
+        // emitSynthAdded(currencyKey, synth);
     }
 
     function setMinterReward(uint256 tokens)
@@ -235,7 +235,9 @@ contract Synthetix is ExternStateToken {
         // And remove it from the synths mapping
         delete synths[currencyKey];
 
-        emitSynthRemoved(currencyKey, synthToRemove);
+        // Note: No event here as our contract exceeds max contract size
+        // with these events, and it's unlikely people will need to
+        // track these events specifically.
     }
 
     /**
@@ -290,7 +292,9 @@ contract Synthetix is ExternStateToken {
     {
         synthetixState = _synthetixState;
 
-        emitStateContractChanged(_synthetixState);
+        // Note: No event here as our contract exceeds max contract size
+        // with these events, and it's unlikely people will need to
+        // track these events specifically.
     }
 
     /**
@@ -996,22 +1000,5 @@ contract Synthetix is ExternStateToken {
         proxy._emit(abi.encode(newPreferredCurrency), 2, PREFERREDCURRENCYCHANGED_SIG, bytes32(account), 0, 0);
     }
 
-    event StateContractChanged(address stateContract);
-    bytes32 constant STATECONTRACTCHANGED_SIG = keccak256("StateContractChanged(address)");
-    function emitStateContractChanged(address stateContract) internal {
-        proxy._emit(abi.encode(stateContract), 1, STATECONTRACTCHANGED_SIG, 0, 0, 0);
-    }
-
-    event SynthAdded(bytes4 currencyKey, address newSynth);
-    bytes32 constant SYNTHADDED_SIG = keccak256("SynthAdded(bytes4,address)");
-    function emitSynthAdded(bytes4 currencyKey, address newSynth) internal {
-        proxy._emit(abi.encode(currencyKey, newSynth), 1, SYNTHADDED_SIG, 0, 0, 0);
-    }
-
-    event SynthRemoved(bytes4 currencyKey, address removedSynth);
-    bytes32 constant SYNTHREMOVED_SIG = keccak256("SynthRemoved(bytes4,address)");
-    function emitSynthRemoved(bytes4 currencyKey, address removedSynth) internal {
-        proxy._emit(abi.encode(currencyKey, removedSynth), 1, SYNTHREMOVED_SIG, 0, 0, 0);
-    }
     /* solium-enable */
 }
