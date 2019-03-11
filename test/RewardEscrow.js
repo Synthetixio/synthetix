@@ -309,6 +309,41 @@ contract('RewardEscrow', async function(accounts) {
 				// This account should have vested its whole amount
 				assert.bnEqual(await rewardEscrow.totalVestedAccountBalance(account1), toUnit('260'));
 			});
+			it('should be able to vest 52 week * 5 years vesting entries', async function() {
+				// Transfer of SNX to the escrow must occur before creating an entry
+				await synthetix.transfer(RewardEscrow.address, toUnit('260'), { from: owner });
+
+				const MAX_VESTING_ENTRIES = 260; // await rewardEscrow.MAX_VESTING_ENTRIES();
+
+				// Append the MAX_VESTING_ENTRIES to the schedule
+				for (let i = 0; i < MAX_VESTING_ENTRIES; i++) {
+					rewardEscrow.appendVestingEntry(account1, toUnit('1'), { from: feePoolAccount });
+					await fastForward(SECOND);
+				}
+
+				// Need to go into the future to vest
+				await fastForward(YEAR + DAY);
+
+				// Update the rates as they will be stale now we're a year into the future
+				await exchangeRates.updateRates([SNX], ['0.1'].map(toUnit), await currentTime(), {
+					from: oracle,
+				});
+
+				// Vest
+				await rewardEscrow.vest({ from: account1 });
+
+				// Check user has all their vested SNX
+				assert.bnEqual(await synthetix.balanceOf(account1), toUnit('260'));
+
+				// Check rewardEscrow does not have any SNX
+				assert.bnEqual(await synthetix.balanceOf(RewardEscrow.address), toUnit('0'));
+
+				// This account should have vested its whole amount
+				assert.bnEqual(await rewardEscrow.totalEscrowedAccountBalance(account1), toUnit('0'));
+
+				// This account should have vested its whole amount
+				assert.bnEqual(await rewardEscrow.totalVestedAccountBalance(account1), toUnit('260'));
+			});
 		});
 
 		describe('Transfering', async function() {
