@@ -208,16 +208,8 @@ contract('Synthetix', async function(accounts) {
 		const sUSDContractAddress = await synthetix.synths(sUSD);
 
 		// Assert that we can remove the synth and add it back in before we do anything.
-		let transaction = await synthetix.removeSynth(sUSD, { from: owner });
-		// assert.eventEqual(transaction, 'SynthRemoved', {
-		// 	currencyKey: sUSD,
-		// 	removedSynth: sUSDContractAddress,
-		// });
-		transaction = await synthetix.addSynth(sUSDContractAddress, { from: owner });
-		// assert.eventEqual(transaction, 'SynthAdded', {
-		// 	currencyKey: sUSD,
-		// 	newSynth: sUSDContractAddress,
-		// });
+		await synthetix.removeSynth(sUSD, { from: owner });
+		await synthetix.addSynth(sUSDContractAddress, { from: owner });
 
 		// Issue one sUSD
 		await synthetix.issueSynths(sUSD, toUnit('1'), { from: owner });
