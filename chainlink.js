@@ -10,7 +10,7 @@ const { gray, red, green } = require('chalk');
 const program = require('commander');
 
 // // Configure Web3 so we can sign transactions and connect to the network.
-const initiateWeb3 = network => {
+const initiateWeb3 = ({ network }) => {
 	console.log(gray(`Connecting to ${network.toUpperCase()}...`));
 	const providerUrl = process.env.INFURA_PROJECT_ID
 		? `https://${network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`
@@ -55,8 +55,9 @@ program
 
 	.action(async ({ deploymentPath, gasPrice, methodCallGasLimit, network, symbol }) => {
 		const { abi, address } = loadContract({ deploymentPath, name: 'ExchangeRates' });
-		const { account, web3 } = initiateWeb3(network);
+		const { account, web3 } = initiateWeb3({ network });
 		const ExchangeRates = new web3.eth.Contract(abi, address);
+		console.log(gray(`Connecting to ExchangeRates at ${address}`));
 
 		console.log(gray(`Requesting update of price of ${symbol} from the Chainlink oracle...`));
 		const link = `https://${network !== 'mainnet' ? network + '.' : ''}etherscan.io`;
@@ -91,25 +92,21 @@ program
 	)
 	.action(async ({ deploymentPath, network, symbol }) => {
 		const { abi, address } = loadContract({ deploymentPath, name: 'ExchangeRates' });
-		const { web3 } = initiateWeb3(network);
+		const { web3 } = initiateWeb3({ network });
 		const ExchangeRates = new web3.eth.Contract(abi, address);
-
+		console.log(gray(`Connecting to ExchangeRates at ${address}`));
 		const price = await ExchangeRates.methods.rateForCurrencyString(symbol).call();
 		console.log(green(`${symbol} ${web3.utils.asciiToHex(symbol)} is ${price} (${price / 1e18})`));
 
 		const lastUpdate = await ExchangeRates.methods
-			.lastRateUpdateTimes(web3.utils.asciiToHex(symbol))
+			.lastRateUpdateTimeForCurrency(web3.utils.asciiToHex(symbol))
 			.call();
 		// Note: due to our contract code, only "currencyKeys" provided at instantiation have last updated, and of these, only SNX
 		// gets updated and only during initiation.
 		if (Number(lastUpdate) > 0) {
 			console.log(gray(`Last updated ${new Date(lastUpdate * 1000)} ${lastUpdate}`));
 		} else {
-			console.log(
-				gray(
-					`No last update timestamp - only supported for symbols added during contract initialization`
-				)
-			);
+			console.log(gray(`No last update timestamp.`));
 		}
 	});
 program.parse(process.argv);

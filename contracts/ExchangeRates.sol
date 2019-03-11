@@ -400,16 +400,16 @@ contract ExchangeRates is Chainlinked, SelfDestructible {
     }
 
     function getChainlinkToken() public view returns (address) {
-      return chainlinkToken();
+        return chainlinkToken();
     }
 
     function getOracle() public view returns (address) {
-      return oracleAddress();
+        return oracleAddress();
     }
 
     function withdrawLink() public onlyOwner {
-      LinkTokenInterface link = LinkTokenInterface(chainlinkToken());
-      require(link.transfer(msg.sender, link.balanceOf(address(this))), "Unable to transfer");
+        LinkTokenInterface link = LinkTokenInterface(chainlinkToken());
+        require(link.transfer(msg.sender, link.balanceOf(address(this))), "Unable to transfer");
     }
 
     modifier validateTimestamp(bytes32 _requestId) {
