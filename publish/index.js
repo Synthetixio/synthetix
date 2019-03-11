@@ -695,11 +695,7 @@ program
 					tableData.push([name, address, `Unable to verify, Etherscan returned "${guid}`]);
 					continue;
 				} else if (!guid || guid.length !== 50) {
-					console.log(
-						red(
-							`Invalid GUID from Etherscan (see response above). (Known to happen with ExchangeRates).`
-						)
-					);
+					console.log(red(`Invalid GUID from Etherscan (see response above).`));
 					tableData.push([name, address, 'Unable to verify (invalid GUID)']);
 					continue;
 				}
