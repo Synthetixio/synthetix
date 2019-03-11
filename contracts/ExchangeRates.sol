@@ -67,10 +67,10 @@ contract ExchangeRates is Chainlinked, SelfDestructible {
         string asset;
     }
 
-    bytes32 constant ORACLE_JOB_ID;
+    bytes32 oracleJobId;
     uint256 constant private ORACLE_PAYMENT = 1 * LINK; // solium-disable-line zeppelin/no-arithmetic-operations
     mapping(bytes32 => Request) private requests;
-    uint constant ORACLE_PRECISION = 100000;
+    uint256 constant ORACLE_PRECISION = 100000;
     // ------------------
 
     //
@@ -79,7 +79,7 @@ contract ExchangeRates is Chainlinked, SelfDestructible {
     /**
      * @dev Constructor
      * @param _owner The owner of this contract.
-     * @param _oracle The address which is able to update rate information.
+     * @param _snxOracle The address which is able to update rate information.
      * @param _currencyKeys The initial currency keys to store (in order).
      * @param _newRates The initial currency amounts for each currency (in order).
      */
@@ -130,7 +130,7 @@ contract ExchangeRates is Chainlinked, SelfDestructible {
         // These are hard-coded for KOVAN
         setLinkToken(_chainlinkToken); // 0xa36085F69e2889c224210F603D836748e7dC0088
         setOracle(_chainlinkOracle); // 0x2f90A6D021db21e1B2A077c5a37B3C7E75D15b7e
-        ORACLE_JOB_ID = _chainlinkJobId;
+        oracleJobId = _chainlinkJobId;
 
     }
 
@@ -238,7 +238,7 @@ contract ExchangeRates is Chainlinked, SelfDestructible {
 
     /**
      * @notice Set the Oracle that pushes the rate information to this contract
-     * @param _oracle The new oracle address
+     * @param _snxOracle The new oracle address
      */
     function setSNXOracle(address _snxOracle)
         external
@@ -371,7 +371,7 @@ contract ExchangeRates is Chainlinked, SelfDestructible {
     public
     onlyOwner
     {
-        Chainlink.Request memory req = newRequest(ORACLE_JOB_ID, this, this.fulfill.selector);
+        Chainlink.Request memory req = newRequest(oracleJobId, this, this.fulfill.selector);
         req.add("sym", _coin);
         req.add("convert", "USD");
         string[] memory path = new string[](5);
@@ -381,7 +381,7 @@ contract ExchangeRates is Chainlinked, SelfDestructible {
         path[3] = "USD";
         path[4] = "price";
         req.addStringArray("copyPath", path);
-        req.addInt("times", ORACLE_PRECISION);
+        req.addInt("times", int256(ORACLE_PRECISION));
         requests[chainlinkRequest(req, ORACLE_PAYMENT)] = Request(now, _coin);
     }
 
