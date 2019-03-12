@@ -268,7 +268,13 @@ program
 				const { address } = deployedContract.options;
 
 				// in case we've already been verified, keep info from then
-				const { timestamp, txn } = deployment[name] || {};
+				let timestamp = new Date();
+				let txn = '';
+				if (!config[name].deploy) {
+					// since we reused a deployment, lets grab the details that already exist
+					timestamp = deployment[name].timestamp;
+					txn = deployment[name].txn;
+				}
 
 				// now update the deployed contract information
 				deployment[name] = {
@@ -278,8 +284,8 @@ program
 					link: `https://${network !== 'mainnet' ? network + '.' : ''}etherscan.io/address/${
 						deployer.deployedContracts[name].options.address
 					}`,
-					timestamp: timestamp || new Date(),
-					txn: txn || '',
+					timestamp,
+					txn,
 					network,
 					bytecode: compiled[name].evm.bytecode.object,
 					abi: compiled[name].abi,

@@ -59,15 +59,20 @@ program
 		const ExchangeRates = new web3.eth.Contract(abi, address);
 		console.log(gray(`Connecting to ExchangeRates at ${address}`));
 
-		console.log(gray(`Requesting update of price of ${symbol} from the Chainlink oracle...`));
+		const symbolAsHex = web3.utils.asciiToHex(symbol);
+		console.log(
+			gray(`Requesting update of price of ${symbol} (${symbolAsHex}) from the Chainlink oracle...`)
+		);
 		const link = `https://${network !== 'mainnet' ? network + '.' : ''}etherscan.io`;
 
 		try {
-			const { transactionHash: txn } = await ExchangeRates.methods.requestCryptoPrice(symbol).send({
-				from: account,
-				gas: methodCallGasLimit,
-				gasPrice: web3.utils.toWei(gasPrice, 'gwei'),
-			});
+			const { transactionHash: txn } = await ExchangeRates.methods
+				.requestCryptoPrice(symbolAsHex)
+				.send({
+					from: account,
+					gas: methodCallGasLimit,
+					gasPrice: web3.utils.toWei(gasPrice, 'gwei'),
+				});
 
 			console.log(green(`Txn created. See ${link}/tx/${txn}`));
 		} catch (err) {
@@ -76,6 +81,7 @@ program
 					`Transaction failed. Does the contract at have sufficient LINK for that environment? See  ${link}/address/${address}`
 				)
 			);
+			console.error(err);
 			process.exit(1);
 		}
 	});
@@ -95,11 +101,13 @@ program
 		const { web3 } = initiateWeb3({ network });
 		const ExchangeRates = new web3.eth.Contract(abi, address);
 		console.log(gray(`Connecting to ExchangeRates at ${address}`));
-		const price = await ExchangeRates.methods.rateForCurrencyString(symbol).call();
-		console.log(green(`${symbol} ${web3.utils.asciiToHex(symbol)} is ${price} (${price / 1e18})`));
+		const symbolAsHex = web3.utils.asciiToHex(symbol);
+
+		const price = await ExchangeRates.methods.rateForCurrency(symbolAsHex).call();
+		console.log(green(`${symbol} ${symbolAsHex} is ${price} (${price / 1e18})`));
 
 		const lastUpdate = await ExchangeRates.methods
-			.lastRateUpdateTimeForCurrency(web3.utils.asciiToHex(symbol))
+			.lastRateUpdateTimeForCurrency(symbolAsHex)
 			.call();
 		// Note: due to our contract code, only "currencyKeys" provided at instantiation have last updated, and of these, only SNX
 		// gets updated and only during initiation.

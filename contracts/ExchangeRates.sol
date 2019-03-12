@@ -64,7 +64,7 @@ contract ExchangeRates is Chainlinked, SelfDestructible {
     // Chainlink properties
     struct Request {
         uint256 timestamp;
-        string asset;
+        bytes4 currencyKey;
     }
 
     bytes32 public oracleJobId;
@@ -274,17 +274,6 @@ contract ExchangeRates is Chainlinked, SelfDestructible {
     }
 
     /**
-     * @notice Retrieve the rate for a specific currency using it's string code
-     */
-    function rateForCurrencyString(string currencyKey)
-        public
-        view
-        returns (uint)
-    {
-        return rates[bytes4(keccak256(abi.encodePacked(currencyKey)))];
-    }
-
-    /**
      * @notice Retrieve the rates for a list of currencies
      */
     function ratesForCurrencies(bytes4[] currencyKeys)
@@ -365,24 +354,42 @@ contract ExchangeRates is Chainlinked, SelfDestructible {
         return false;
     }
 
-
     // CHAINLINK ///
-    function requestCryptoPrice(string _coin)
+    function strForBytes4(bytes4 currencyKey) public view returns (string) {
+        string memory asset = new string(4);
+        bytes memory assetInBytes = bytes(asset);
+        uint c = 0;
+        for (uint i=0; i<4; i++) {
+            // ignore anything which is < 0x20 (this happens when < 4 character currency strings
+            // are converted to hex)
+            if (currencyKey[i] > 0x20) {
+                assetInBytes[c] = currencyKey[i];
+                c++;
+            }
+        }
+
+        return string(assetInBytes);
+    }
+
+    function requestCryptoPrice(bytes4 currencyKey)
     public
     onlyOwner
     {
+        // convert bytes4 to string for use with Chainlink
+        string memory asset = strForBytes4(currencyKey);
         Chainlink.Request memory req = newRequest(oracleJobId, this, this.fulfill.selector);
-        req.add("sym", _coin);
+        req.add("sym", asset);
         req.add("convert", "USD");
         string[] memory path = new string[](5);
         path[0] = "data";
-        path[1] = _coin;
+        path[1] = asset;
         path[2] = "quote";
         path[3] = "USD";
         path[4] = "price";
         req.addStringArray("copyPath", path);
         req.addInt("times", int256(ORACLE_PRECISION));
-        requests[chainlinkRequest(req, ORACLE_PAYMENT)] = Request(now, _coin);
+
+        requests[chainlinkRequest(req, ORACLE_PAYMENT)] = Request(now, currencyKey);
     }
 
     function fulfill(bytes32 _requestId, uint256 _price)
@@ -390,13 +397,14 @@ contract ExchangeRates is Chainlinked, SelfDestructible {
       validateTimestamp(_requestId)
       recordChainlinkFulfillment(_requestId)
     {
-        bytes32 asset = keccak256(abi.encodePacked(requests[_requestId].asset));
-        delete requests[_requestId];
+        bytes4 currencyKey = requests[_requestId].currencyKey;
+        uint timestamp = requests[_requestId].timestamp;
         bytes4[] memory ccy = new bytes4[](1);
-        ccy[0] = bytes4(asset);
+        ccy[0] = currencyKey;
         uint[] memory newRates = new uint[](1);
         newRates[0] = _price;
-        internalUpdateRates(ccy, newRates, now);
+        internalUpdateRates(ccy, newRates, timestamp);
+        delete requests[_requestId];
     }
 
     function getChainlinkToken() public view returns (address) {
