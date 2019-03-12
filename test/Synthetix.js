@@ -2061,11 +2061,11 @@ contract('Synthetix', async function(accounts) {
 		await assert.revert(synthetix.issueSynths(sUSD, issuedSynths1, { from: account1 }));
 	});
 
-	// Inflationary supply of Synthetix
-	it.only('should allow synthetix contract to mint new supply based on inflationary schedule', async function() {
+	// TODO - Inflationary supply of Synthetix - failing
+	it('should allow synthetix contract to mint new supply based on inflationary schedule', async function() {
 		// Issue
 		const weeklyIssuance = (75000000 / 52).toPrecision(18);
-		const expectedSupplyToMint = toUnit(weeklyIssuance);
+		const expectedSupplyToMint = weeklyIssuance;
 
 		// fast forward EVM to Week 1 in Year 2 schedule starting at UNIX 1552435200+
 		await fastForwardTo(new Date(1552435220 * 1000));

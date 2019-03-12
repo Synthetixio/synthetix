@@ -124,6 +124,7 @@ contract SupplySchedule is Owned {
 //        uint amountPreviousPeriod = _remainingSupplyFromPreviousPeriod(index);
 
         /* solium-disable */
+
         // Get mintable supply ratio from the difference in (now - lastMintEvent) / mintPeriodDuration periods
         // Last mint event within current period will use difference in (now - lastMintEvent)
         // Last mint event not set (0) / outside of current Period will use (now - schedules[index].startPeriod)
@@ -131,21 +132,27 @@ contract SupplySchedule is Owned {
 
         uint supplyPerWeek = schedules[index].totalSupply.divideDecimal(weeksInPeriod);
 
-        uint weeksToMint = lastMintEvent > schedules[index].startPeriod ? (now - lastMintEvent).div(mintPeriodDuration) : (now - schedules[index].startPeriod).divideDecimal(mintPeriodDuration);
+        uint weeksToMint = lastMintEvent > schedules[index].startPeriod ? _numWeeksRoundedUp(now.sub(lastMintEvent)) : _numWeeksRoundedUp(now.sub(schedules[index].startPeriod));
         /* solium-enable */
 
-        return _weekRoundedUp(weeksToMint);
-//        return _ceil(weeksToMint);
+        uint amountInPeriod = supplyPerWeek.multiplyDecimal(weeksToMint);
 //        uint amountInPeriod = supplyPerWeek.multiplyDecimal(_ceil(weeksToMint, 1));
-
+        return amountInPeriod;
 //        return amountInPeriod.add(amountPreviousPeriod);
     }
 
-    function _weekRoundedUp(uint _input)
+    function _numWeeksRoundedUp(uint _timeDiff)
         constant
         returns (uint)
     {
-        return _input + (1 - (_input % mintPeriodDuration));
+        // Take timeDiff in seconds (Dividend) and mintPeriodDuration as (Divisor)
+        // Calculate the numberOfWeeks since last mint rounded up to 1 week
+        // Fraction of a week will return a min of 1 week
+        if (_timeDiff.divideDecimal(mintPeriodDuration) <= 1) {
+            return 1;
+        } else {
+            return (_timeDiff.add(mintPeriodDuration).sub(_timeDiff % mintPeriodDuration)).div(mintPeriodDuration);
+        }
     }
 
     function isMintable()

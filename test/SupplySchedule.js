@@ -1,14 +1,6 @@
 const SupplySchedule = artifacts.require('SupplySchedule');
 
-// const {
-// 	currentTime,
-// 	fastForward,
-// 	fastForwardTo,
-// 	multiplyDecimal,
-// 	divideDecimal,
-// 	toUnit,
-// 	ZERO_ADDRESS,
-// } = require('../utils/testUtils');
+const { divideDecimal, fastForwardTo } = require('../utils/testUtils');
 
 contract('SupplySchedule', async function(accounts) {
 	const [deployerAccount, owner, account1, synthetix] = accounts;
@@ -36,6 +28,40 @@ contract('SupplySchedule', async function(accounts) {
 		it('should have set synthetix', async function() {
 			const synthetixAddress = await supplySchedule.synthetix();
 			assert.equal(synthetixAddress, synthetix);
+		});
+	});
+
+	describe.only('functions and modifiers', async function() {
+		it('should calculate weeks to mint and roundup to full week', async function() {
+			const expectedResult = web3.utils.toBN(1);
+			const secondsSinceLastWeek = 300; // 604,800 seconds in 7 day week
+
+			assert.bnEqual(await supplySchedule._numWeeksRoundedUp(secondsSinceLastWeek), expectedResult);
+		});
+
+		it('should calculate 2 weeks to mint and roundup to full week', async function() {
+			const expectedWeeks = web3.utils.toBN(2);
+			const secondsSinceLastWeek = 604800 * 1.5; // 604,800 seconds in 7 day week
+
+			assert.bnEqual(await supplySchedule._numWeeksRoundedUp(secondsSinceLastWeek), expectedWeeks);
+		});
+
+		it('should calculate 2 weeks to mint and roundup to full week given 678767', async function() {
+			const expectedWeeks = web3.utils.toBN(2);
+			const secondsSinceLastWeek = 678767; // 604,800 seconds in 7 day week
+
+			assert.bnEqual(await supplySchedule._numWeeksRoundedUp(secondsSinceLastWeek), expectedWeeks);
+		});
+
+		describe('mintable supply', async function() {
+			it('should calculate the mintable supply for one week in year 2 - 75M supply', async function() {
+				const weeklyIssuance = divideDecimal(75000000, 52);
+
+				// fast forward EVM to Week 1 in Year 2 schedule starting at UNIX 1552435200+
+				await fastForwardTo(new Date(1552435220 * 1000));
+
+				assert.bnEqual(await supplySchedule.mintableSupply(), weeklyIssuance);
+			});
 		});
 	});
 });
