@@ -5,7 +5,7 @@ const ExchangeRates = artifacts.require('ExchangeRates');
 
 const { currentTime, fastForward, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 
-contract.only('RewardEscrow', async function(accounts) {
+contract('RewardEscrow', async function(accounts) {
 	const SECOND = 1000;
 	const DAY = 86400;
 	const WEEK = 604800;
