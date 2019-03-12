@@ -5,7 +5,7 @@ const ExchangeRates = artifacts.require('ExchangeRates');
 
 const { currentTime, fastForward, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 
-contract('RewardEscrow', async function(accounts) {
+contract.only('RewardEscrow', async function(accounts) {
 	const SECOND = 1000;
 	const DAY = 86400;
 	const WEEK = 604800;
@@ -309,7 +309,32 @@ contract('RewardEscrow', async function(accounts) {
 				// This account should have vested its whole amount
 				assert.bnEqual(await rewardEscrow.totalVestedAccountBalance(account1), toUnit('260'));
 			});
-			it('should be able to vest 52 week * 5 years vesting entries', async function() {
+
+			it('should be able to read an accounts schedule of 5 vesting entries', async function() {
+				// Transfer of SNX to the escrow must occur before creating an entry
+				await synthetix.transfer(RewardEscrow.address, toUnit('5'), { from: owner });
+
+				const VESTING_ENTRIES = 5;
+
+				// Append the VESTING_ENTRIES to the schedule
+				for (let i = 0; i < VESTING_ENTRIES; i++) {
+					rewardEscrow.appendVestingEntry(account1, toUnit('1'), { from: feePoolAccount });
+					await fastForward(SECOND);
+				}
+
+				// Get the vesting Schedule
+				const accountSchedule = await rewardEscrow.checkAccountSchedule(account1);
+
+				// Check accountSchedule entries
+				for (let i = 1; i < VESTING_ENTRIES; i += 2) {
+					if (accountSchedule[i]) {
+						assert.bnEqual(accountSchedule[i], toUnit('1'));
+					}
+					break;
+				}
+			});
+
+			it('should be able to read the full account schedule 52 week * 5 years vesting entries', async function() {
 				// Transfer of SNX to the escrow must occur before creating an entry
 				await synthetix.transfer(RewardEscrow.address, toUnit('260'), { from: owner });
 
@@ -321,28 +346,13 @@ contract('RewardEscrow', async function(accounts) {
 					await fastForward(SECOND);
 				}
 
-				// Need to go into the future to vest
-				await fastForward(YEAR + DAY);
+				// Get the vesting Schedule
+				const accountSchedule = await rewardEscrow.checkAccountSchedule(account1);
 
-				// Update the rates as they will be stale now we're a year into the future
-				await exchangeRates.updateRates([SNX], ['0.1'].map(toUnit), await currentTime(), {
-					from: oracle,
-				});
-
-				// Vest
-				await rewardEscrow.vest({ from: account1 });
-
-				// Check user has all their vested SNX
-				assert.bnEqual(await synthetix.balanceOf(account1), toUnit('260'));
-
-				// Check rewardEscrow does not have any SNX
-				assert.bnEqual(await synthetix.balanceOf(RewardEscrow.address), toUnit('0'));
-
-				// This account should have vested its whole amount
-				assert.bnEqual(await rewardEscrow.totalEscrowedAccountBalance(account1), toUnit('0'));
-
-				// This account should have vested its whole amount
-				assert.bnEqual(await rewardEscrow.totalVestedAccountBalance(account1), toUnit('260'));
+				// Check accountSchedule entries
+				for (let i = 1; i < MAX_VESTING_ENTRIES; i += 2) {
+					assert.bnEqual(accountSchedule[i], toUnit('1'));
+				}
 			});
 		});
 

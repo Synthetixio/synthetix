@@ -216,9 +216,9 @@ contract RewardEscrow is Owned {
     function checkAccountSchedule(address account)
         public
         view
-        returns (uint[260])
+        returns (uint[520])
     {
-        uint[260] memory _result;
+        uint[520] memory _result;
         uint schedules = numVestingEntries(account);
         for (uint i = 0; i < schedules; i++) {
             uint[2] memory pair = getVestingScheduleEntry(account, i);
@@ -324,6 +324,4 @@ contract RewardEscrow is Owned {
 
     event VestingEntryCreated(address indexed beneficiary, uint time, uint value);
 
-    event LogString(string message, string value);
-    event LogInt(string message, uint value);
 }
