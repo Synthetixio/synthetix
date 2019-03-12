@@ -5,7 +5,7 @@ const ExchangeRates = artifacts.require('ExchangeRates');
 
 const { currentTime, fastForward, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 
-contract('RewardEscrow', async function(accounts) {
+contract.only('RewardEscrow', async function(accounts) {
 	const SECOND = 1000;
 	const DAY = 86400;
 	const WEEK = 604800;
@@ -308,6 +308,51 @@ contract('RewardEscrow', async function(accounts) {
 
 				// This account should have vested its whole amount
 				assert.bnEqual(await rewardEscrow.totalVestedAccountBalance(account1), toUnit('260'));
+			});
+
+			it('should be able to read an accounts schedule of 5 vesting entries', async function() {
+				// Transfer of SNX to the escrow must occur before creating an entry
+				await synthetix.transfer(RewardEscrow.address, toUnit('5'), { from: owner });
+
+				const VESTING_ENTRIES = 5;
+
+				// Append the VESTING_ENTRIES to the schedule
+				for (let i = 0; i < VESTING_ENTRIES; i++) {
+					rewardEscrow.appendVestingEntry(account1, toUnit('1'), { from: feePoolAccount });
+					await fastForward(SECOND);
+				}
+
+				// Get the vesting Schedule
+				const accountSchedule = await rewardEscrow.checkAccountSchedule(account1);
+
+				// Check accountSchedule entries
+				for (let i = 1; i < VESTING_ENTRIES; i += 2) {
+					if (accountSchedule[i]) {
+						assert.bnEqual(accountSchedule[i], toUnit('1'));
+					}
+					break;
+				}
+			});
+
+			it('should be able to read the full account schedule 52 week * 5 years vesting entries', async function() {
+				// Transfer of SNX to the escrow must occur before creating an entry
+				await synthetix.transfer(RewardEscrow.address, toUnit('260'), { from: owner });
+
+				const MAX_VESTING_ENTRIES = 260; // await rewardEscrow.MAX_VESTING_ENTRIES();
+
+				// Append the MAX_VESTING_ENTRIES to the schedule
+				for (let i = 0; i < MAX_VESTING_ENTRIES; i++) {
+					rewardEscrow.appendVestingEntry(account1, toUnit('1'), { from: feePoolAccount });
+					await fastForward(SECOND);
+				}
+
+				// Get the vesting Schedule
+				const accountSchedule = await rewardEscrow.checkAccountSchedule(account1);
+
+				// Check accountSchedule entries
+				for (let i = 1; i < MAX_VESTING_ENTRIES; i += 2) {
+					assert.bnEqual(accountSchedule[i], toUnit('1'));
+				}
 			});
 		});
 

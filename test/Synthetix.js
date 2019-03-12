@@ -208,16 +208,8 @@ contract('Synthetix', async function(accounts) {
 		const sUSDContractAddress = await synthetix.synths(sUSD);
 
 		// Assert that we can remove the synth and add it back in before we do anything.
-		let transaction = await synthetix.removeSynth(sUSD, { from: owner });
-		assert.eventEqual(transaction, 'SynthRemoved', {
-			currencyKey: sUSD,
-			removedSynth: sUSDContractAddress,
-		});
-		transaction = await synthetix.addSynth(sUSDContractAddress, { from: owner });
-		assert.eventEqual(transaction, 'SynthAdded', {
-			currencyKey: sUSD,
-			newSynth: sUSDContractAddress,
-		});
+		await synthetix.removeSynth(sUSD, { from: owner });
+		await synthetix.addSynth(sUSDContractAddress, { from: owner });
 
 		// Issue one sUSD
 		await synthetix.issueSynths(sUSD, toUnit('1'), { from: owner });
@@ -272,13 +264,13 @@ contract('Synthetix', async function(accounts) {
 	// Token State contract
 
 	it('should allow the owner to set a TokenState contract', async function() {
-		const transaction = await synthetix.setSynthetixState(account1, { from: owner });
+		await synthetix.setSynthetixState(account1, { from: owner });
 
 		assert.equal(await synthetix.synthetixState(), account1);
 
-		assert.eventEqual(transaction, 'StateContractChanged', {
-			stateContract: account1,
-		});
+		// assert.eventEqual(transaction, 'StateContractChanged', {
+		// 	stateContract: account1,
+		// });
 	});
 
 	// Exchange Rates contract
@@ -1710,7 +1702,9 @@ contract('Synthetix', async function(accounts) {
 	it("should include escrowed reward synthetix when calculating a user's collaterisation ratio", async function() {
 		const snx2usdRate = await exchangeRates.rateForCurrency(SNX);
 		const transferredSynthetixs = toUnit('60000');
-		await synthetix.transfer(account1, transferredSynthetixs, { from: owner });
+		await synthetix.transfer(account1, transferredSynthetixs, {
+			from: owner,
+		});
 
 		// Setup reward escrow
 		const feePoolAccount = account6;
@@ -1718,19 +1712,9 @@ contract('Synthetix', async function(accounts) {
 			from: owner,
 		});
 		await synthetix.setRewardEscrow(rewardEscrow.address, { from: owner });
-		const oneWeek = 60 * 60 * 24 * 7;
-		const twelveMonths = oneWeek * 52;
-		const now = await currentTime();
 		const escrowedSynthetixs = toUnit('30000');
 		await synthetix.transfer(rewardEscrow.address, escrowedSynthetixs, { from: owner });
-		await rewardEscrow.appendVestingEntry(
-			account1,
-			web3.utils.toBN(now + twelveMonths),
-			escrowedSynthetixs,
-			{
-				from: owner,
-			}
-		);
+		await rewardEscrow.appendVestingEntry(account1, escrowedSynthetixs, { from: feePoolAccount });
 
 		// Issue
 		const maxIssuable = await synthetix.maxIssuableSynths(account1, sUSD);
@@ -1770,25 +1754,15 @@ contract('Synthetix', async function(accounts) {
 		assert.bnEqual(collateral, amount.add(escrowedAmount));
 	});
 
-	it("should include escrowed Reward synthetix when checking a user's collateral", async function() {
+	it("should include escrowed reward synthetix when checking a user's collateral", async function() {
 		const feePoolAccount = account6;
 		const rewardEscrow = await RewardEscrow.new(owner, synthetix.address, feePoolAccount, {
 			from: owner,
 		});
 		await synthetix.setRewardEscrow(rewardEscrow.address, { from: owner });
-		const oneWeek = 60 * 60 * 24 * 7;
-		const twelveMonths = oneWeek * 52;
-		const now = await currentTime();
 		const escrowedAmount = toUnit('15000');
 		await synthetix.transfer(rewardEscrow.address, escrowedAmount, { from: owner });
-		await rewardEscrow.appendVestingEntry(
-			account1,
-			web3.utils.toBN(now + twelveMonths),
-			escrowedAmount,
-			{
-				from: owner,
-			}
-		);
+		await rewardEscrow.appendVestingEntry(account1, escrowedAmount, { from: feePoolAccount });
 		const amount = toUnit('60000');
 		await synthetix.transfer(account1, amount, { from: owner });
 		const collateral = await synthetix.collateral(account1, { from: account2 });
