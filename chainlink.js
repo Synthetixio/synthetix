@@ -67,7 +67,7 @@ program
 
 		try {
 			const { transactionHash: txn } = await ExchangeRates.methods
-				.requestCryptoPrice(symbolAsHex)
+				.requestCryptoPrice(symbolAsHex, symbol)
 				.send({
 					from: account,
 					gas: methodCallGasLimit,

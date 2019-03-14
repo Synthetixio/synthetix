@@ -355,28 +355,14 @@ contract ExchangeRates is Chainlinked, SelfDestructible {
     }
 
     // CHAINLINK ///
-    function strForBytes4(bytes4 currencyKey) public view returns (string) {
-        string memory asset = new string(4);
-        bytes memory assetInBytes = bytes(asset);
-        uint c = 0;
-        for (uint i=0; i<4; i++) {
-            // ignore anything which is < 0x20 (this happens when < 4 character currency strings
-            // are converted to hex)
-            if (currencyKey[i] > 0x20) {
-                assetInBytes[c] = currencyKey[i];
-                c++;
-            }
-        }
-
-        return string(assetInBytes);
-    }
-
-    function requestCryptoPrice(bytes4 currencyKey)
+    /**
+     * @notice Initiatiate a price request via chainlink. Provide both the
+     * bytes4 currencyKey (for SNX) and the string representation (for Chainlink)
+     */
+    function requestCryptoPrice(bytes4 currencyKey, string asset)
     public
     onlyOwner
     {
-        // convert bytes4 to string for use with Chainlink
-        string memory asset = strForBytes4(currencyKey);
         Chainlink.Request memory req = newRequest(oracleJobId, this, this.fulfill.selector);
         req.add("sym", asset);
         req.add("convert", "USD");
