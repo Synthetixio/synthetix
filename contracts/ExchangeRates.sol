@@ -127,11 +127,9 @@ contract ExchangeRates is Chainlinked, SelfDestructible {
         internalUpdateRates(_currencyKeys, _newRates, now);
 
         // Setup Chainlink props
-        // These are hard-coded for KOVAN
-        setLinkToken(_chainlinkToken); // 0xa36085F69e2889c224210F603D836748e7dC0088
-        setOracle(_chainlinkOracle); // 0x2f90A6D021db21e1B2A077c5a37B3C7E75D15b7e
+        setLinkToken(_chainlinkToken);
+        setOracle(_chainlinkOracle);
         oracleJobId = _chainlinkJobId;
-
     }
 
     /* ========== SETTERS ========== */
