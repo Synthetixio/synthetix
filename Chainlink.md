@@ -4,7 +4,7 @@ We have an example of our pricing engine being updated by a Chainlink oracle on 
 
 The example integrates Chainlink into our pricing contract [ExchangeRates.sol](contracts/ExchangeRates.sol).
 
-https://kovan.etherscan.io/address/0x9f6268d0ebc015165251470429e0148cc0821aa5
+https://kovan.etherscan.io/address/0x56000B741EC31C11acB10390404A9190F8E62EcB
 
 To invoke a price update using Chainlink, run:
 
