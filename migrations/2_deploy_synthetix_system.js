@@ -110,6 +110,16 @@ module.exports = async function(deployer, network, accounts) {
 		from: deployerAccount,
 	});
 
+	console.log('Deploying SynthetixEscrow...');
+	const escrow = await deployer.deploy(SynthetixEscrow, owner, ZERO_ADDRESS, {
+		from: deployerAccount,
+	});
+
+	console.log('Deploying RewardEscrow...');
+	const rewardEscrow = await deployer.deploy(RewardEscrow, owner, ZERO_ADDRESS, feePool.address, {
+		from: deployerAccount,
+	});
+
 	console.log('Deploying Synthetix...');
 	// constructor(address _proxy, TokenState _tokenState, Synthetix _synthetixState,
 	//     address _owner, ExchangeRates _exchangeRates, FeePool _feePool
@@ -124,6 +134,8 @@ module.exports = async function(deployer, network, accounts) {
 		ExchangeRates.address,
 		FeePool.address,
 		supplySchedule.address,
+		rewardEscrow.address,
+		escrow.address,
 		{
 			from: deployerAccount,
 			gas: 8000000,
@@ -161,10 +173,10 @@ module.exports = async function(deployer, network, accounts) {
 	await synthetixProxy.setTarget(synthetix.address, { from: owner });
 
 	// ----------------------
-	// Connect Escrow
+	// Connect Escrow to Synthetix
 	// ----------------------
-	await synthetix.setEscrow(SynthetixEscrow.address, { from: owner });
-	await synthetix.setRewardEscrow(RewardEscrow.address, { from: owner });
+	await escrow.setSynthetix(synthetix.address, { from: owner });
+	await rewardEscrow.setSynthetix(synthetix.address, { from: owner });
 
 	// ----------------------
 	// Connect FeePool
