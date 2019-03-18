@@ -107,6 +107,7 @@ contract FeePool is Proxyable, SelfDestructible {
     // Users receive penalties if their collateralisation ratio drifts out of our desired brackets
     // We precompute the brackets and penalties to save gas.
     uint constant TWENTY_PERCENT = (20 * SafeDecimalMath.unit()) / 100;
+    uint constant TWENTY_TWO_PERCENT = (22 * SafeDecimalMath.unit()) / 100;
     uint constant TWENTY_FIVE_PERCENT = (25 * SafeDecimalMath.unit()) / 100;
     uint constant THIRTY_PERCENT = (30 * SafeDecimalMath.unit()) / 100;
     uint constant FOURTY_PERCENT = (40 * SafeDecimalMath.unit()) / 100;
@@ -513,12 +514,15 @@ contract FeePool is Proxyable, SelfDestructible {
 
         // Users receive a different amount of fees depending on how their collateralisation ratio looks right now.
         // 0% - 20%: Fee is calculated based on percentage of economy issued.
-        // 20% - 30%: 25% reduction in fees
+        // 20% - 22%: 0% reduction in fees
+        // 22% - 30%: 25% reduction in fees
         // 30% - 40%: 50% reduction in fees
         // >40%: 75% reduction in fees
         if (ratio <= TWENTY_PERCENT) {
             return 0;
-        } else if (ratio > TWENTY_PERCENT && ratio <= THIRTY_PERCENT) {
+        } else if (ratio > TWENTY_PERCENT && ratio <= TWENTY_TWO_PERCENT) {
+            return 0; 
+        } else if (ratio > TWENTY_TWO_PERCENT && ratio <= THIRTY_PERCENT) {
             return TWENTY_FIVE_PERCENT;
         } else if (ratio > THIRTY_PERCENT && ratio <= FOURTY_PERCENT) {
             return FIFTY_PERCENT;
