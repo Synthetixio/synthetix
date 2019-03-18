@@ -75,13 +75,15 @@ contract FeePool is Proxyable, SelfDestructible {
         uint startTime;
         uint feesToDistribute;
         uint feesClaimed;
+        uint rewardsToDistribute;
+        uint rewardsClaimed;
     }
 
-    // The last 6 fee periods are all that you can claim from.
+    // The last 4 fee periods are all that you can claim from.
     // These are stored and managed from [0], such that [0] is always
-    // the most recent fee period, and [5] is always the oldest fee
+    // the most recent fee period, and [3] is always the oldest fee
     // period that users can claim for.
-    uint8 constant public FEE_PERIOD_LENGTH = 6;
+    uint8 constant public FEE_PERIOD_LENGTH = 4;
     FeePeriod[FEE_PERIOD_LENGTH] public recentFeePeriods;
 
     // The next fee period will have this ID.
@@ -99,6 +101,8 @@ contract FeePool is Proxyable, SelfDestructible {
 
     // The last period a user has withdrawn their fees in, identified by the feePeriodId
     mapping(address => uint) public lastFeeWithdrawal;
+
+    mapping(address => uint[6]) public accountDebtLedger;
 
     // Users receive penalties if their collateralisation ratio drifts out of our desired brackets
     // We precompute the brackets and penalties to save gas.
@@ -126,9 +130,6 @@ contract FeePool is Proxyable, SelfDestructible {
         // Set our initial fee period
         recentFeePeriods[0].feePeriodId = 1;
         recentFeePeriods[0].startTime = now;
-        // Gas optimisation: These do not need to be initialised. They start at 0.
-        // recentFeePeriods[0].startingDebtIndex = 0;
-        // recentFeePeriods[0].feesToDistribute = 0;
 
         // And the next one starts at 2.
         nextFeePeriodId = 2;
