@@ -7,7 +7,7 @@ contract('SupplySchedule', async function(accounts) {
 	const DAY = 86400;
 	const WEEK = 604800;
 	const YEAR = 31556926;
-	
+
 	const [deployerAccount, owner, account1, synthetix] = accounts;
 
 	let supplySchedule;
@@ -64,7 +64,7 @@ contract('SupplySchedule', async function(accounts) {
 			it('should calculate the mintable supply for one week in year 2 - 75M supply', async function() {
 				const expectedIssuance = weeklyIssuance;
 
-				// fast forward EVM to Week 1 in Year 2 schedule starting at UNIX 1552435200+
+				// fast forward EVM to Week 2 in Year 2 schedule starting at UNIX 1552435200+
 				await fastForwardTo(new Date(1552435220 * 1000));
 
 				assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);

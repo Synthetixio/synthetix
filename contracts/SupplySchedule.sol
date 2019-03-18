@@ -118,16 +118,20 @@ contract SupplySchedule is Owned {
         view
         returns (uint)
     {
+        if (!isMintable()) {
+            return 0;
+        }
+        
         uint index = getCurrentSchedule();
 
         // Calculate previous period's mintable supply
-//        uint amountPreviousPeriod = _remainingSupplyFromPreviousPeriod(index);
+    //    uint amountPreviousPeriod = _remainingSupplyFromPreviousPeriod(index);
 
         /* solium-disable */
 
-        // Get mintable supply ratio from the difference in (now - lastMintEvent) / mintPeriodDuration periods
         // Last mint event within current period will use difference in (now - lastMintEvent)
-        // Last mint event not set (0) / outside of current Period will use (now - schedules[index].startPeriod)
+        // Last mint event not set (0) / outside of current Period will use current Period 
+        // start time resolved in (now - schedules[index].startPeriod)
         uint weeksInPeriod = (schedules[index].endPeriod - schedules[index].startPeriod).div(mintPeriodDuration);
 
         uint supplyPerWeek = schedules[index].totalSupply.divideDecimal(weeksInPeriod);
@@ -136,7 +140,6 @@ contract SupplySchedule is Owned {
         /* solium-enable */
 
         uint amountInPeriod = supplyPerWeek.multiplyDecimal(weeksToMint);
-//        uint amountInPeriod = supplyPerWeek.multiplyDecimal(_ceil(weeksToMint, 1));
         return amountInPeriod;
 //        return amountInPeriod.add(amountPreviousPeriod);
     }
@@ -156,7 +159,7 @@ contract SupplySchedule is Owned {
     }
 
     function isMintable()
-        external
+        public
         view
         returns (bool)
     {
@@ -203,6 +206,7 @@ contract SupplySchedule is Owned {
 
         return amountInPeriod;
     }
+
     // ========== MUTATIVE FUNCTIONS ==========
     function updateMintValues()
         external
@@ -213,7 +217,7 @@ contract SupplySchedule is Owned {
 
         // Update schedule.totalSupplyMinted for currentSchedule
         schedules[currentIndex].totalSupplyMinted = schedules[currentIndex].totalSupplyMinted.add(mintableSupply());
-        // Lastly update minted event to track minted values
+        // Update mint event to now
         lastMintEvent = now;
 
         return true;

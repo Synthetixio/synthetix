@@ -163,7 +163,8 @@ contract Synthetix is ExternStateToken {
      * @param _owner The owner of this contract.
      */
     constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
-        address _owner, IExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule
+        address _owner, IExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule, 
+        ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow
     )
         ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, SYNTHETIX_SUPPLY, DECIMALS, _owner)
         public
@@ -172,6 +173,8 @@ contract Synthetix is ExternStateToken {
         exchangeRates = _exchangeRates;
         feePool = _feePool;
         supplySchedule = _supplySchedule;
+        rewardEscrow = _rewardEscrow;
+        escrow = _escrow;
     }
 
     // ========== SETTERS ========== */
@@ -241,63 +244,6 @@ contract Synthetix is ExternStateToken {
     }
 
     /**
-     * @notice Set the associated synthetix escrow contract.
-     * @dev Only the contract owner may call this.
-     */
-    function setEscrow(ISynthetixEscrow _escrow)
-        external
-        optionalProxy_onlyOwner
-    {
-        escrow = _escrow;
-        // Note: No event here as our contract exceeds max contract size
-        // with these events, and it's unlikely people will need to
-        // track these events specifically.
-    }
-
-    /**
-     * @notice Set the associated synthetix rewards escrow contract.
-     * @dev Only the contract owner may call this.
-     */
-    function setRewardEscrow(ISynthetixEscrow _rewardEscrow)
-        external
-        optionalProxy_onlyOwner
-    {
-        rewardEscrow = _rewardEscrow;
-        // Note: No event here as our contract exceeds max contract size
-        // with these events, and it's unlikely people will need to
-        // track these events specifically.
-    }
-
-    /**
-     * @notice Set the ExchangeRates contract address where rates are held.
-     * @dev Only callable by the contract owner.
-     */
-    function setExchangeRates(IExchangeRates _exchangeRates)
-        external
-        optionalProxy_onlyOwner
-    {
-        exchangeRates = _exchangeRates;
-        // Note: No event here as our contract exceeds max contract size
-        // with these events, and it's unlikely people will need to
-        // track these events specifically.
-    }
-
-    /**
-     * @notice Set the synthetixState contract address where issuance data is held.
-     * @dev Only callable by the contract owner.
-     */
-    function setSynthetixState(SynthetixState _synthetixState)
-        external
-        optionalProxy_onlyOwner
-    {
-        synthetixState = _synthetixState;
-
-        // Note: No event here as our contract exceeds max contract size
-        // with these events, and it's unlikely people will need to
-        // track these events specifically.
-    }
-
-    /**
      * @notice Set your preferred currency. Note: This does not automatically exchange any balances you've held previously in
      * other synth currencies in this address, it will apply for any new payments you receive at this address.
      */
@@ -309,7 +255,7 @@ contract Synthetix is ExternStateToken {
 
         synthetixState.setPreferredCurrency(messageSender, currencyKey);
 
-        emitPreferredCurrencyChanged(messageSender, currencyKey);
+        // emitPreferredCurrencyChanged(messageSender, currencyKey);
     }
 
     // ========== VIEWS ==========
@@ -689,7 +635,6 @@ contract Synthetix is ExternStateToken {
     function issueSynths(bytes4 currencyKey, uint amount)
         public
         optionalProxy
-        nonZeroAmount(amount)
         // No need to check if price is stale, as it is checked in issuableSynths.
     {
         require(amount <= remainingIssuableSynths(messageSender, currencyKey), "Amount too large");
@@ -942,16 +887,15 @@ contract Synthetix is ExternStateToken {
         external
         returns (bool)
     {
-        require(supplySchedule.isMintable(), "Last mint event is less than mintPeriodDuration");
-
         uint supplyToMint = supplySchedule.mintableSupply();
-        supplySchedule.updateMintValues();
         require(supplyToMint > 0, "No supply is mintable");
+        
+        supplySchedule.updateMintValues();
 
-        // TODO - Minus minterReward from balance going to feePool
-
-        // Set minted SNX balance to feePool's balance
-        tokenState.setBalanceOf(feePool, tokenState.balanceOf(feePool).add(supplyToMint));
+        // Set minted SNX balance to RewardEscrow's balance
+        tokenState.setBalanceOf(rewardEscrow, tokenState.balanceOf(rewardEscrow).add(supplyToMint.sub(minterReward)));
+        tokenState.setBalanceOf(msg.sender, tokenState.balanceOf(msg.sender).add(minterReward));
+        
         totalSupply = totalSupply.add(supplyToMint);
     }
 
@@ -995,12 +939,5 @@ contract Synthetix is ExternStateToken {
     function emitSynthExchange(address account, bytes4 fromCurrencyKey, uint256 fromAmount, bytes4 toCurrencyKey, uint256 toAmount, address toAddress) internal {
         proxy._emit(abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, toAddress), 2, SYNTHEXCHANGE_SIG, bytes32(account), 0, 0);
     }
-    
-    event PreferredCurrencyChanged(address indexed account, bytes4 newPreferredCurrency);
-    bytes32 constant PREFERREDCURRENCYCHANGED_SIG = keccak256("PreferredCurrencyChanged(address,bytes4)");
-    function emitPreferredCurrencyChanged(address account, bytes4 newPreferredCurrency) internal {
-        proxy._emit(abi.encode(newPreferredCurrency), 2, PREFERREDCURRENCYCHANGED_SIG, bytes32(account), 0, 0);
-    }
-
     /* solium-enable */
 }
