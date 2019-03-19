@@ -102,7 +102,13 @@ contract FeePool is Proxyable, SelfDestructible {
     // The last period a user has withdrawn their fees in, identified by the feePeriodId
     mapping(address => uint) public lastFeeWithdrawal;
 
-    mapping(address => uint[6]) public accountDebtLedger;
+    // This struct represents the issuance activity that's happened in a fee period.
+    struct IssuanceData {
+        uint lockedSNX;
+        uint lastDebtEntryIndex;
+    }
+
+    mapping(address => IssuanceData[4]) public accountIssuanceLedger;
 
     // Users receive penalties if their collateralisation ratio drifts out of our desired brackets
     // We precompute the brackets and penalties to save gas.
@@ -134,6 +140,24 @@ contract FeePool is Proxyable, SelfDestructible {
 
         // And the next one starts at 2.
         nextFeePeriodId = 2;
+    }
+
+    /**
+     * @notice Logs an accounts issuance data per fee period
+     * @dev Synthetix to call me on user issue & burn functions
+     */
+    function setAccountIssuanceRecord(address account, uint lockedAmount, uint debtEntryIndex) 
+        external
+        onlySynthetix
+    {
+        // Store the amount accounts locked SNX and when they locked it
+        IssuanceData issuanceData = new IssuanceData({
+            lockedSNX: lockedAmount,
+            debtEntryIndex: debtEntryIndex
+        });
+
+        // Keep this is the current period aligned with the fee periods
+        accountIssuanceLedger[account][0] = issuanceData;
     }
 
     /**
