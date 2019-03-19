@@ -36,7 +36,15 @@ contract('Synthetix', async function(accounts) {
 		account9,
 	] = accounts;
 
-	let synthetix, synthetixState, exchangeRates, feePool, supplySchedule, sUSDContract, sAUDContract, escrow, rewardEscrow;
+	let synthetix,
+		synthetixState,
+		exchangeRates,
+		feePool,
+		supplySchedule,
+		sUSDContract,
+		sAUDContract,
+		escrow,
+		rewardEscrow;
 
 	beforeEach(async function() {
 		// Save ourselves from having to await deployed() in every single test.

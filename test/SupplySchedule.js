@@ -75,7 +75,7 @@ contract('SupplySchedule', async function(accounts) {
 				console.log(expectedIssuance.toString());
 				// fast forward EVM to Week 1 in Year 2 schedule starting at UNIX 1552435200+
 				// await fastForwardTo(new Date(1552435220 * 1000));
-			
+
 				// assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
 			});
 		});
