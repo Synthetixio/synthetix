@@ -36,7 +36,7 @@ contract('SupplySchedule', async function(accounts) {
 		});
 	});
 
-	describe.only('functions and modifiers', async function() {
+	describe('functions and modifiers', async function() {
 		it('should calculate weeks to mint and roundup to full week', async function() {
 			const expectedResult = web3.utils.toBN(1);
 			const secondsSinceLastWeek = 300; // 604,800 seconds in 7 day week
@@ -64,7 +64,7 @@ contract('SupplySchedule', async function(accounts) {
 			it('should calculate the mintable supply for one week in year 2 - 75M supply', async function() {
 				const expectedIssuance = weeklyIssuance;
 
-				// fast forward EVM to Week 2 in Year 2 schedule starting at UNIX 1552435200+
+				// fast forward EVM to Week 1 in Year 2 schedule starting at UNIX 1552435200+
 				await fastForwardTo(new Date(1552435220 * 1000));
 
 				assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);

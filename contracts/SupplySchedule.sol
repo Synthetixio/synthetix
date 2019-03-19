@@ -19,10 +19,11 @@ Inflationary Supply contract. SNX is a transferable ERC20 token.
 | Year |  Increase   | Total Supply | Increase |
 +------+-------------+--------------+----------+
 |    1 |           0 |  100,000,000 |          |
-|    2 | 100,000,000 |  175,000,000 | 75%     |
+|    2 | 100,000,000 |  175,000,000 | 75%      |
 |    3 |  50,000,000 |  212,500,000 | 25%      |
-|    4 |  30,000,000 |  280,000,000 | 12%      |
-|    5 |  20,000,000 |  300,000,000 | 7%       |
+|    4 |  50,000,000 |  231,250,000 | 25%      |
+|    5 |  30,000,000 |  240,625,000 | 12%      |
+|    6 |  20,000,000 |  245,312,500 | 7%       |
 +------+-------------+--------------+----------+
 
 
@@ -131,12 +132,14 @@ contract SupplySchedule is Owned {
 
         // Last mint event within current period will use difference in (now - lastMintEvent)
         // Last mint event not set (0) / outside of current Period will use current Period 
-        // start time resolved in (now - schedules[index].startPeriod)
-        uint weeksInPeriod = (schedules[index].endPeriod - schedules[index].startPeriod).div(mintPeriodDuration);
+        // start time resolved in (now - schedule.startPeriod)
+        ScheduleData memory schedule = schedules[index];
+        
+        uint weeksInPeriod = (schedule.endPeriod - schedule.startPeriod).div(mintPeriodDuration);
 
-        uint supplyPerWeek = schedules[index].totalSupply.divideDecimal(weeksInPeriod);
+        uint supplyPerWeek = schedule.totalSupply.divideDecimal(weeksInPeriod);
 
-        uint weeksToMint = lastMintEvent > schedules[index].startPeriod ? _numWeeksRoundedUp(now.sub(lastMintEvent)) : _numWeeksRoundedUp(now.sub(schedules[index].startPeriod));
+        uint weeksToMint = lastMintEvent > schedule.startPeriod ? _numWeeksRoundedUp(now.sub(lastMintEvent)) : _numWeeksRoundedUp(now.sub(schedule.startPeriod));
         /* solium-enable */
 
         uint amountInPeriod = supplyPerWeek.multiplyDecimal(weeksToMint);
@@ -145,6 +148,7 @@ contract SupplySchedule is Owned {
     }
 
     function _numWeeksRoundedUp(uint _timeDiff)
+        public
         constant
         returns (uint)
     {

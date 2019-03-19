@@ -156,11 +156,7 @@ contract('Synth', async function(accounts) {
 		const xdrFee = await synthetix.effectiveValue(sUSD, fee, XDR);
 		const sAUDReceived = await synthetix.effectiveValue(sUSD, sUSDReceived, sAUD);
 
-		assert.eventEqual(
-			await synthetix.setPreferredCurrency(sAUD, { from: account1 }),
-			'PreferredCurrencyChanged',
-			{ account: account1, newPreferredCurrency: sAUD }
-		);
+		await synthetix.setPreferredCurrency(sAUD, { from: account1 });
 
 		// Do a single transfer of all our sUSD.
 		const transaction = await sUSDContract.transfer(account1, amount, { from: owner });
