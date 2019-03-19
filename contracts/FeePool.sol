@@ -75,13 +75,15 @@ contract FeePool is Proxyable, SelfDestructible {
         uint startTime;
         uint feesToDistribute;
         uint feesClaimed;
+        uint rewardsToDistribute;
+        uint rewardsClaimed;
     }
 
-    // The last 6 fee periods are all that you can claim from.
+    // The last 4 fee periods are all that you can claim from.
     // These are stored and managed from [0], such that [0] is always
-    // the most recent fee period, and [5] is always the oldest fee
+    // the most recent fee period, and [3] is always the oldest fee
     // period that users can claim for.
-    uint8 constant public FEE_PERIOD_LENGTH = 6;
+    uint8 constant public FEE_PERIOD_LENGTH = 4;
     FeePeriod[FEE_PERIOD_LENGTH] public recentFeePeriods;
 
     // The next fee period will have this ID.
@@ -100,9 +102,18 @@ contract FeePool is Proxyable, SelfDestructible {
     // The last period a user has withdrawn their fees in, identified by the feePeriodId
     mapping(address => uint) public lastFeeWithdrawal;
 
+    // This struct represents the issuance activity that's happened in a fee period.
+    struct IssuanceData {
+        uint lockedSNX;
+        uint lastDebtEntryIndex;
+    }
+
+    mapping(address => IssuanceData[4]) public accountIssuanceLedger;
+
     // Users receive penalties if their collateralisation ratio drifts out of our desired brackets
     // We precompute the brackets and penalties to save gas.
     uint constant TWENTY_PERCENT = (20 * SafeDecimalMath.unit()) / 100;
+    uint constant TWENTY_TWO_PERCENT = (22 * SafeDecimalMath.unit()) / 100;
     uint constant TWENTY_FIVE_PERCENT = (25 * SafeDecimalMath.unit()) / 100;
     uint constant THIRTY_PERCENT = (30 * SafeDecimalMath.unit()) / 100;
     uint constant FOURTY_PERCENT = (40 * SafeDecimalMath.unit()) / 100;
@@ -126,12 +137,27 @@ contract FeePool is Proxyable, SelfDestructible {
         // Set our initial fee period
         recentFeePeriods[0].feePeriodId = 1;
         recentFeePeriods[0].startTime = now;
-        // Gas optimisation: These do not need to be initialised. They start at 0.
-        // recentFeePeriods[0].startingDebtIndex = 0;
-        // recentFeePeriods[0].feesToDistribute = 0;
 
         // And the next one starts at 2.
         nextFeePeriodId = 2;
+    }
+
+    /**
+     * @notice Logs an accounts issuance data per fee period
+     * @dev Synthetix to call me on user issue & burn functions
+     */
+    function setAccountIssuanceRecord(address account, uint lockedAmount, uint debtEntryIndex) 
+        external
+        onlySynthetix
+    {
+        // Store the amount accounts locked SNX and when they locked it
+        IssuanceData issuanceData = new IssuanceData({
+            lockedSNX: lockedAmount,
+            debtEntryIndex: debtEntryIndex
+        });
+
+        // Keep this is the current period aligned with the fee periods
+        accountIssuanceLedger[account][0] = issuanceData;
     }
 
     /**
@@ -512,12 +538,15 @@ contract FeePool is Proxyable, SelfDestructible {
 
         // Users receive a different amount of fees depending on how their collateralisation ratio looks right now.
         // 0% - 20%: Fee is calculated based on percentage of economy issued.
-        // 20% - 30%: 25% reduction in fees
+        // 20% - 22%: 0% reduction in fees
+        // 22% - 30%: 25% reduction in fees
         // 30% - 40%: 50% reduction in fees
         // >40%: 75% reduction in fees
         if (ratio <= TWENTY_PERCENT) {
             return 0;
-        } else if (ratio > TWENTY_PERCENT && ratio <= THIRTY_PERCENT) {
+        } else if (ratio > TWENTY_PERCENT && ratio <= TWENTY_TWO_PERCENT) {
+            return 0; 
+        } else if (ratio > TWENTY_TWO_PERCENT && ratio <= THIRTY_PERCENT) {
             return TWENTY_FIVE_PERCENT;
         } else if (ratio > THIRTY_PERCENT && ratio <= FOURTY_PERCENT) {
             return FIFTY_PERCENT;
