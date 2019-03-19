@@ -150,14 +150,10 @@ contract FeePool is Proxyable, SelfDestructible {
         external
         onlySynthetix
     {
-        // Store the amount accounts locked SNX and when they locked it
-        IssuanceData issuanceData = new IssuanceData({
-            lockedSNX: lockedAmount,
-            debtEntryIndex: debtEntryIndex
-        });
-
         // Keep this is the current period aligned with the fee periods
-        accountIssuanceLedger[account][0] = issuanceData;
+        // IssuanceData storage data = accountIssuanceLedger[account][0];
+
+        accountIssuanceLedger[account][0] = IssuanceData(lockedAmount, debtEntryIndex);
     }
 
     /**

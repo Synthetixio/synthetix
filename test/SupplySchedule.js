@@ -2,7 +2,7 @@ const SupplySchedule = artifacts.require('SupplySchedule');
 
 const { multiplyDecimal, divideDecimal, fastForwardTo } = require('../utils/testUtils');
 
-contract('SupplySchedule', async function(accounts) {
+contract.only('SupplySchedule', async function(accounts) {
 	const SECOND = 1000;
 	const DAY = 86400;
 	const WEEK = 604800;
@@ -71,7 +71,7 @@ contract('SupplySchedule', async function(accounts) {
 			});
 
 			it('should calculate the mintable supply for two week in year 2 - 75M supply', async function() {
-				const expectedIssuance = multiplyDecimal(weeklyIssuance, 2);
+				const expectedIssuance = weeklyIssuance * 2;
 				console.log(expectedIssuance.toString());
 				// fast forward EVM to Week 1 in Year 2 schedule starting at UNIX 1552435200+
 				// await fastForwardTo(new Date(1552435220 * 1000));
