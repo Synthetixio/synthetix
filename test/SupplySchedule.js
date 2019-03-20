@@ -1,5 +1,5 @@
 const SupplySchedule = artifacts.require('SupplySchedule');
-
+const BN = require('bn.js');
 const { multiplyDecimal, divideDecimal, fastForwardTo } = require('../utils/testUtils');
 
 contract.only('SupplySchedule', async function(accounts) {
@@ -59,24 +59,26 @@ contract.only('SupplySchedule', async function(accounts) {
 		});
 
 		describe('mintable supply', async function() {
-			const weeklyIssuance = divideDecimal(75000000, 52);
+			const firstYearSupply = 75000000;
+			const weeklyIssuance = divideDecimal(firstYearSupply, 52);
+			const secondsInWeek = 604800;
 
 			it('should calculate the mintable supply for one week in year 2 - 75M supply', async function() {
 				const expectedIssuance = weeklyIssuance;
-
+				const weekOne = 1552435220;
 				// fast forward EVM to Week 1 in Year 2 schedule starting at UNIX 1552435200+
-				await fastForwardTo(new Date(1552435220 * 1000));
+				await fastForwardTo(new Date(weekOne * 1000));
 
 				assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
 			});
 
-			it('should calculate the mintable supply for two week in year 2 - 75M supply', async function() {
-				const expectedIssuance = weeklyIssuance * 2;
-				console.log(expectedIssuance.toString());
-				// fast forward EVM to Week 1 in Year 2 schedule starting at UNIX 1552435200+
-				// await fastForwardTo(new Date(1552435220 * 1000));
+			it('should calculate the mintable supply for two weeks in year 2 if minting first time - 75M supply', async function() {
+				const expectedIssuance = divideDecimal(firstYearSupply, 52 / 2);
+				const weekTwo = 1552435220 + secondsInWeek;
+				// fast forward EVM to Week 2 in Year 2 schedule starting at UNIX 1552435200+
+				await fastForwardTo(new Date(weekTwo * 1000));
 
-				// assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
+				assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
 			});
 		});
 	});
