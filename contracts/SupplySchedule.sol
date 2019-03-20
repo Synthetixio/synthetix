@@ -126,7 +126,7 @@ contract SupplySchedule is Owned {
         uint index = getCurrentSchedule();
 
         // Calculate previous period's mintable supply
-    //    uint amountPreviousPeriod = _remainingSupplyFromPreviousPeriod(index);
+        uint amountPreviousPeriod = _remainingSupplyFromPreviousPeriod(index);
 
         /* solium-disable */
 
@@ -143,8 +143,7 @@ contract SupplySchedule is Owned {
         /* solium-enable */
 
         uint amountInPeriod = supplyPerWeek.multiplyDecimal(weeksToMint);
-        return amountInPeriod;
-//        return amountInPeriod.add(amountPreviousPeriod);
+        return amountInPeriod.add(amountPreviousPeriod);
     }
 
     function _numWeeksRoundedUp(uint _timeDiff)
