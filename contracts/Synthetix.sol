@@ -203,6 +203,7 @@ contract Synthetix is ExternStateToken {
     {
         minterReward = tokens;
     }
+
     /**
      * @notice Remove an associated Synth contract from the Synthetix system
      * @dev Only the contract owner may call this.
@@ -251,7 +252,7 @@ contract Synthetix is ExternStateToken {
         external
         optionalProxy
     {
-        require(currencyKey == 0 || !exchangeRates.rateIsStale(currencyKey), "Currency rate is stale or doesn't exist.");
+        //require(currencyKey == 0 || !exchangeRates.rateIsStale(currencyKey), "Currency rate is stale or doesn't exist.");
 
         synthetixState.setPreferredCurrency(messageSender, currencyKey);
 
@@ -646,11 +647,7 @@ contract Synthetix is ExternStateToken {
         synths[currencyKey].issue(messageSender, amount);
 
         // Store their locked SNX amount to determine their fee % for the period
-        feePool.appendAccountIssuanceRecord(
-            messageSender, 
-            debtBalanceOf(messageSender, "SNX").divideDecimalRound(synthetixState.issuanceRatio()),
-            synthetixState.lastDebtLedgerEntry()
-        );
+        _appendAccountIssuanceRecord();
     }
 
     /**
@@ -696,6 +693,12 @@ contract Synthetix is ExternStateToken {
         synths[currencyKey].burn(messageSender, amountToBurn);
 
         // Store their locked SNX amount to determine their fee % for the period
+        _appendAccountIssuanceRecord();
+    }
+
+    function _appendAccountIssuanceRecord()
+        internal
+    {
         feePool.appendAccountIssuanceRecord(
             messageSender, 
             debtBalanceOf(messageSender, "SNX").divideDecimalRound(synthetixState.issuanceRatio()),
