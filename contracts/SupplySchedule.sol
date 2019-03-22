@@ -19,11 +19,11 @@ Inflationary Supply contract. SNX is a transferable ERC20 token.
 | Year |  Increase   | Total Supply | Increase |
 +------+-------------+--------------+----------+
 |    1 |           0 |  100,000,000 |          |
-|    2 | 100,000,000 |  175,000,000 | 75%      |
-|    3 |  50,000,000 |  212,500,000 | 25%      |
-|    4 |  50,000,000 |  231,250,000 | 25%      |
-|    5 |  30,000,000 |  240,625,000 | 12%      |
-|    6 |  20,000,000 |  245,312,500 | 7%       |
+|    2 |  75,000,000 |  175,000,000 | 75%      |
+|    3 |  37,500,000 |  212,500,000 | 21%      |
+|    4 |  18,750,000 |  231,250,000 | 9%       |
+|    5 |   9,375,000 |  240,625,000 | 4%       |
+|    6 |   4,687,500 |  245,312,500 | 2%       |
 +------+-------------+--------------+----------+
 
 
@@ -63,9 +63,6 @@ contract SupplySchedule is Owned {
 
     // time supply last minted
     uint public lastMintEvent;
-
-    // Reward for minter calling mint
-    uint public minterReward;
 
     Synthetix public synthetix;
 
@@ -139,26 +136,22 @@ contract SupplySchedule is Owned {
 
         uint supplyPerWeek = schedule.totalSupply.divideDecimal(weeksInPeriod);
 
-        uint weeksToMint = lastMintEvent > schedule.startPeriod ? _numWeeksRoundedUp(now.sub(lastMintEvent)) : _numWeeksRoundedUp(now.sub(schedule.startPeriod));
+        uint weeksToMint = lastMintEvent > schedule.startPeriod ? _numWeeksRoundedDown(now.sub(lastMintEvent)) : _numWeeksRoundedDown(now.sub(schedule.startPeriod));
         /* solium-enable */
 
         uint amountInPeriod = supplyPerWeek.multiplyDecimal(weeksToMint);
         return amountInPeriod.add(amountPreviousPeriod);
     }
 
-    function _numWeeksRoundedUp(uint _timeDiff)
+    function _numWeeksRoundedDown(uint _timeDiff)
         public
         constant
         returns (uint)
     {
         // Take timeDiff in seconds (Dividend) and mintPeriodDuration as (Divisor)
-        // Calculate the numberOfWeeks since last mint rounded up to 1 week
-        // Fraction of a week will return a min of 1 week
-        if (_timeDiff.divideDecimal(mintPeriodDuration) <= 1) {
-            return 1;
-        } else {
-            return (_timeDiff.add(mintPeriodDuration).sub(_timeDiff % mintPeriodDuration)).div(mintPeriodDuration);
-        }
+        // Calculate the numberOfWeeks since last mint rounded down to 1 week
+        // Fraction of a week will return 0
+        return _timeDiff.div(mintPeriodDuration);
     }
 
     function isMintable()
