@@ -644,6 +644,13 @@ contract Synthetix is ExternStateToken {
 
         // Create their synths
         synths[currencyKey].issue(messageSender, amount);
+
+        // Store their locked SNX amount to determine their fee % for the period
+        feePool.appendAccountIssuanceRecord(
+            messageSender, 
+            debtBalanceOf(messageSender, "SNX").divideDecimalRound(synthetixState.issuanceRatio()),
+            synthetixState.lastDebtLedgerEntry()
+        );
     }
 
     /**
@@ -687,6 +694,13 @@ contract Synthetix is ExternStateToken {
 
         // synth.burn does a safe subtraction on balance (so it will revert if there are not enough synths).
         synths[currencyKey].burn(messageSender, amountToBurn);
+
+        // Store their locked SNX amount to determine their fee % for the period
+        feePool.appendAccountIssuanceRecord(
+            messageSender, 
+            debtBalanceOf(messageSender, "SNX").divideDecimalRound(synthetixState.issuanceRatio()),
+            synthetixState.lastDebtLedgerEntry()
+        );
     }
 
     /**
