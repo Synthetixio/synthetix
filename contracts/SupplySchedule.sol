@@ -124,8 +124,8 @@ contract SupplySchedule is Owned {
         
         uint index = getCurrentSchedule();
 
-        // Calculate previous period's mintable supply
-        uint amountPreviousPeriod = _remainingSupplyFromPreviousPeriod(index);
+        // Calculate previous year's mintable supply
+        uint amountPreviousPeriod = _remainingSupplyFromPreviousYear(index);
 
         /* solium-disable */
 
@@ -147,7 +147,7 @@ contract SupplySchedule is Owned {
 
     function _numWeeksRoundedDown(uint _timeDiff)
         public
-        constant
+        view
         returns (uint)
     {
         // Take timeDiff in seconds (Dividend) and mintPeriodDuration as (Divisor)
@@ -185,7 +185,7 @@ contract SupplySchedule is Owned {
         }
     }
 
-    function _remainingSupplyFromPreviousPeriod(uint currentSchedule)
+    function _remainingSupplyFromPreviousYear(uint currentSchedule)
         internal
         view
         returns (uint)
@@ -213,10 +213,18 @@ contract SupplySchedule is Owned {
         onlySynthetix
         returns (bool)
     {
+        // Will fail if the time is outside of schedules
         uint currentIndex = getCurrentSchedule();
+        uint lastPeriodAmount = _remainingSupplyFromPreviousYear(currentIndex);
+        uint currentPeriodAmount = mintableSupply().sub(lastPeriodAmount);
+
+        // Update schedule[n - 1].totalSupplyMinted
+        if (lastPeriodAmount > 0) {
+            schedules[currentIndex - 1].totalSupplyMinted = schedules[currentIndex - 1].totalSupplyMinted.add(lastPeriodAmount);
+        }
 
         // Update schedule.totalSupplyMinted for currentSchedule
-        schedules[currentIndex].totalSupplyMinted = schedules[currentIndex].totalSupplyMinted.add(mintableSupply());
+        schedules[currentIndex].totalSupplyMinted = schedules[currentIndex].totalSupplyMinted.add(currentPeriodAmount);
         // Update mint event to now
         lastMintEvent = now;
 
