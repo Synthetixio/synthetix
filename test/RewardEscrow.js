@@ -83,6 +83,8 @@ contract('RewardEscrow', async function(accounts) {
 			});
 
 			it('should not create more than MAX_VESTING_ENTRIES vesting entries', async function() {
+				this.timeout(40000);
+
 				const MAX_VESTING_ENTRIES = 260; // await rewardEscrow.MAX_VESTING_ENTRIES();
 
 				// Transfer of SNX to the escrow must occur before creating an entry

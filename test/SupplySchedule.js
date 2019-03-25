@@ -2,7 +2,7 @@ const SupplySchedule = artifacts.require('SupplySchedule');
 const { toUnit, currentTime, divideDecimal, fastForwardTo } = require('../utils/testUtils');
 const BN = require('bn.js');
 
-contract.only('SupplySchedule', async function(accounts) {
+contract('SupplySchedule', async function(accounts) {
 	const DAY = 86400;
 	const WEEK = 604800;
 	const YEAR = 31536000;
@@ -159,7 +159,7 @@ contract.only('SupplySchedule', async function(accounts) {
 
 				assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
 			});
-			
+
 			it('should calculate the unminted supply for previous year in year 4 week 1', async function() {
 				const expectedIssuance = toUnit(supplySchedules.thirdYearSupply.toString());
 				const yearFourStart = YEAR_TWO_START + 2 * YEAR; // UNIX 1615507200
@@ -345,7 +345,7 @@ contract.only('SupplySchedule', async function(accounts) {
 				// 	const yearTwoStart = 1552435200;
 				// 	const supplyYearTwo = supplySchedules.secondYearSupply.toString();
 				// 	const supplyYearThree = supplySchedules.thirdYearSupply.toString();
-					
+
 				// 	// fast forward 49 weeks to within week 51
 				// 	const weekFiftyOne = weekTwo + 49 * WEEK + 1 * DAY; // Sometime within week 51
 				// 	// // Expect 49 week is mintable after first week minted
