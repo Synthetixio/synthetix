@@ -105,7 +105,7 @@ contract FeePool is Proxyable, SelfDestructible {
     // This struct represents the issuance activity that's happened in a fee period.
     struct IssuanceData {
         uint lockedSNX;
-        uint lastDebtEntryIndex;
+        uint debtEntryIndex;
     }
 
     mapping(address => IssuanceData[4]) public accountIssuanceLedger;
@@ -144,16 +144,42 @@ contract FeePool is Proxyable, SelfDestructible {
 
     /**
      * @notice Logs an accounts issuance data per fee period
-     * @dev Synthetix to call me on user issue & burn functions
+     * @param account Message.Senders account address
+     * @param lockedAmount Amount of SNX this account has locked after minting or burning their synth
+     * @param debtEntryIndex The index in the global debt ledger. synthetix.synthetixState().issuanceData(account)
+     * @dev onlySynthetix to call me on synthetix.issue() & synthetix.burn() calls to store the locked SNX 
+     * per fee period so we know to allocate the correct proportions of fees and rewards per period
+      accountIssuanceLedger[account][0] has the latest locked amount for the current period. This can be update as many time
+      accountIssuanceLedger[account][1] has the last locked amount for the previous period
+      accountIssuanceLedger[account][2] 
+      accountIssuanceLedger[account][3]
      */
-    function setAccountIssuanceRecord(address account, uint lockedAmount, uint debtEntryIndex) 
+    function appendAccountIssuanceRecord(address account, uint lockedAmount, uint debtEntryIndex) 
         external
         onlySynthetix
     {
-        // Keep this is the current period aligned with the fee periods
-        // IssuanceData storage data = accountIssuanceLedger[account][0];
+        // Is there a current issuanceData entry then ensure they're ordered
+        if (accountIssuanceLedger[account][0].lockedSNX > 0) {
+            issuanceEntryOrderIndexUpdate(accountIssuanceLedger[account]);            
+        }
+        
+        // Always store the latest IssuanceData entry at [0]
+        accountIssuanceLedger[account][0].lockedSNX = lockedAmount;
+        accountIssuanceLedger[account][0].debtEntryIndex = debtEntryIndex;
+    }
 
-        accountIssuanceLedger[account][0] = IssuanceData(lockedAmount, debtEntryIndex);
+    function issuanceEntryOrderIndexUpdate(IssuanceData[4] issuanceData) 
+        private 
+    {
+        // Is the current debtEntryIndex within this fee period then do nothing and return
+        if (issuanceData[0].debtEntryIndex < recentFeePeriods[next].startingDebtIndex) {
+            // If its older then shift the previous IssuanceData entries periods down to make room for the new one.
+            for (uint i = FEE_PERIOD_LENGTH - 2; i < FEE_PERIOD_LENGTH; i--) {
+                uint next = i + 1;
+                issuanceData[next].lockedSNX = issuanceData[i].lockedSNX;
+                issuanceData[next].debtEntryIndex = issuanceData[i].debtEntryIndex;
+            }    
+        }
     }
 
     /**
