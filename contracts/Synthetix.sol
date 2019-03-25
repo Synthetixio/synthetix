@@ -559,6 +559,8 @@ contract Synthetix is ExternStateToken {
         if (fee > 0) {
             uint xdrFeeAmount = effectiveValue(destinationCurrencyKey, fee, "XDR");
             synths["XDR"].issue(feePool.FEE_ADDRESS(), xdrFeeAmount);
+             // Tell the fee pool about this.
+            feePool.feePaid(sourceCurrencyKey, sourceAmount);
         }
 
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
