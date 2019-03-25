@@ -75,8 +75,9 @@ contract SupplySchedule is Owned {
     uint public constant YEAR_FOUR = START_DATE + SECONDS_IN_YEAR.mul(4);
     uint public constant YEAR_FIVE = START_DATE + SECONDS_IN_YEAR.mul(5);
     uint public constant YEAR_SIX = START_DATE + SECONDS_IN_YEAR.mul(6);
+    uint public constant YEAR_SEVEN = START_DATE + SECONDS_IN_YEAR.mul(7);
 
-    uint8 constant public INFLATION_SCHEDULES_LENGTH = 6;
+    uint8 constant public INFLATION_SCHEDULES_LENGTH = 7;
     ScheduleData[INFLATION_SCHEDULES_LENGTH] public schedules;
 
     constructor(address _owner)
@@ -85,12 +86,13 @@ contract SupplySchedule is Owned {
     {
         // ScheduleData(totalSupply, startPeriod, endPeriod, totalSupplyMinted)
         // Year 1 - Total supply 100,000,000
-        schedules[0] = ScheduleData(1e8 * SafeDecimalMath.unit(), START_DATE, YEAR_ONE, 1e8 * SafeDecimalMath.unit());
-        schedules[1] = ScheduleData(75e6 * SafeDecimalMath.unit(), YEAR_ONE, YEAR_TWO, 0); // Year 2 - Total supply 175,000,000
-        schedules[2] = ScheduleData(37.5e6 * SafeDecimalMath.unit(), YEAR_TWO, YEAR_THREE, 0); // Year 3 - Total supply 212,500,000
-        schedules[3] = ScheduleData(18.75e6 * SafeDecimalMath.unit(), YEAR_THREE, YEAR_FOUR, 0); // Year 4 - Total supply 231,250,000
-        schedules[4] = ScheduleData(9.375e6 * SafeDecimalMath.unit(), YEAR_FOUR, YEAR_FIVE, 0); // Year 5 - Total supply 240,625,000
-        schedules[5] = ScheduleData(4.6875e6 * SafeDecimalMath.unit(), YEAR_FIVE, YEAR_SIX, 0); // Year 6 - Total supply 245,312,500
+        schedules[0] = ScheduleData(1e8 * SafeDecimalMath.unit(), START_DATE, YEAR_ONE - 1, 1e8 * SafeDecimalMath.unit());
+        schedules[1] = ScheduleData(75e6 * SafeDecimalMath.unit(), YEAR_ONE, YEAR_TWO - 1, 0); // Year 2 - Total supply 175,000,000
+        schedules[2] = ScheduleData(37.5e6 * SafeDecimalMath.unit(), YEAR_TWO, YEAR_THREE - 1, 0); // Year 3 - Total supply 212,500,000
+        schedules[3] = ScheduleData(18.75e6 * SafeDecimalMath.unit(), YEAR_THREE, YEAR_FOUR - 1, 0); // Year 4 - Total supply 231,250,000
+        schedules[4] = ScheduleData(9.375e6 * SafeDecimalMath.unit(), YEAR_FOUR, YEAR_FIVE - 1, 0); // Year 5 - Total supply 240,625,000
+        schedules[5] = ScheduleData(4.6875e6 * SafeDecimalMath.unit(), YEAR_FIVE, YEAR_SIX - 1, 0); // Year 6 - Total supply 245,312,500
+        schedules[6] = ScheduleData(0, YEAR_SIX, YEAR_SEVEN - 1, 0); // Year 7 - Total supply 245,312,500
     }
 
     // ========== SETTERS ========== */
@@ -136,8 +138,8 @@ contract SupplySchedule is Owned {
 
         uint supplyPerWeek = schedule.totalSupply.divideDecimal(weeksInPeriod);
 
-        uint weeksToMint = lastMintEvent > schedule.startPeriod ? _numWeeksRoundedDown(now.sub(lastMintEvent)) : _numWeeksRoundedDown(now.sub(schedule.startPeriod));
-        /* solium-enable */
+        uint weeksToMint = lastMintEvent >= schedule.startPeriod ? _numWeeksRoundedDown(now.sub(lastMintEvent)) : _numWeeksRoundedDown(now.sub(schedule.startPeriod));
+        // /* solium-enable */
 
         uint amountInPeriod = supplyPerWeek.multiplyDecimal(weeksToMint);
         return amountInPeriod.add(amountPreviousPeriod);
@@ -160,7 +162,7 @@ contract SupplySchedule is Owned {
         returns (bool)
     {
         bool mintable = false;
-        if (now - lastMintEvent > mintPeriodDuration)
+        if (now - lastMintEvent > mintPeriodDuration && now <= schedules[6].endPeriod) // Ensure time is not after end of Year 7
         {
             mintable = true;
         }
@@ -174,8 +176,10 @@ contract SupplySchedule is Owned {
         view
         returns (uint)
     {
+        require(now <= schedules[6].endPeriod, "Mintable periods have ended");
+
         for (uint i = 0; i < INFLATION_SCHEDULES_LENGTH; i++) {
-            if (schedules[i].startPeriod < now && schedules[i].endPeriod > now) {
+            if (schedules[i].startPeriod <= now && schedules[i].endPeriod >= now) {
                 return i;
             }
         }
