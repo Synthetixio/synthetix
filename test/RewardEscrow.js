@@ -81,25 +81,6 @@ contract('RewardEscrow', async function(accounts) {
 					rewardEscrow.appendVestingEntry(account1, toUnit('10'), { from: feePoolAccount })
 				);
 			});
-
-			it('should not create more than MAX_VESTING_ENTRIES vesting entries', async function() {
-				this.timeout(40000);
-
-				const MAX_VESTING_ENTRIES = 260; // await rewardEscrow.MAX_VESTING_ENTRIES();
-
-				// Transfer of SNX to the escrow must occur before creating an entry
-				await synthetix.transfer(RewardEscrow.address, toUnit('260'), { from: owner });
-
-				// append the MAX_VESTING_ENTRIES to the schedule
-				for (let i = 0; i < MAX_VESTING_ENTRIES; i++) {
-					rewardEscrow.appendVestingEntry(account1, toUnit('1'), { from: feePoolAccount });
-					await fastForward(WEEK);
-				}
-				// assert adding 1 more above the MAX_VESTING_ENTRIES fails
-				await assert.revert(
-					rewardEscrow.appendVestingEntry(account1, toUnit('1'), { from: feePoolAccount })
-				);
-			});
 		});
 
 		describe('Vesting Schedule Reads ', async function() {
@@ -276,6 +257,23 @@ contract('RewardEscrow', async function(accounts) {
 		});
 
 		describe('Stress Test', async function() {
+			it('should not create more than MAX_VESTING_ENTRIES vesting entries', async function() {
+				const MAX_VESTING_ENTRIES = 260; // await rewardEscrow.MAX_VESTING_ENTRIES();
+
+				// Transfer of SNX to the escrow must occur before creating an entry
+				await synthetix.transfer(RewardEscrow.address, toUnit('260'), { from: owner });
+
+				// append the MAX_VESTING_ENTRIES to the schedule
+				for (let i = 0; i < MAX_VESTING_ENTRIES; i++) {
+					rewardEscrow.appendVestingEntry(account1, toUnit('1'), { from: feePoolAccount });
+					await fastForward(WEEK);
+				}
+				// assert adding 1 more above the MAX_VESTING_ENTRIES fails
+				await assert.revert(
+					rewardEscrow.appendVestingEntry(account1, toUnit('1'), { from: feePoolAccount })
+				);
+			});
+
 			it('should be able to vest 52 week * 5 years vesting entries', async function() {
 				// Transfer of SNX to the escrow must occur before creating an entry
 				await synthetix.transfer(RewardEscrow.address, toUnit('260'), { from: owner });
