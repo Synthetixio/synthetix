@@ -89,6 +89,31 @@ contract.only('SupplySchedule', async function(accounts) {
 			const weeklyIssuance = divideDecimal(supplySchedules.secondYearSupply, 52);
 			const weekOne = 1552435220; // first week Year 2 schedule
 
+			async function checkMintedValues(index, previousAmount, currentAmount = new BN(0)) {
+				const scheduleBefore = await supplySchedule.schedules(index);
+				const lastYearScheduleBefore = await supplySchedule.schedules(index - 1);
+				const now = await currentTime();
+
+				await supplySchedule.updateMintValues({ from: synthetix });
+
+				const currentSchedule = await supplySchedule.schedules(index);
+				const lastMintEvent = await supplySchedule.lastMintEvent();
+
+				if (previousAmount) {
+					const lastYearSchedule = await supplySchedule.schedules(index - 1);
+					assert.bnEqual(
+						lastYearSchedule.totalSupplyMinted,
+						lastYearScheduleBefore.totalSupplyMinted.add(previousAmount)
+					);
+				}
+
+				assert.bnEqual(
+					currentSchedule.totalSupplyMinted,
+					scheduleBefore.totalSupplyMinted.add(currentAmount)
+				);
+				assert.ok(lastMintEvent.toNumber() >= now); // lastMintEvent is updated to >= now
+			}
+
 			it('should calculate the mintable supply as 0 for 1st week in year 2 - 75M supply', async function() {
 				const expectedIssuance = web3.utils.toBN(0);
 				// fast forward EVM to Week 1 in Year 2 schedule starting at UNIX 1552435200+
@@ -158,8 +183,9 @@ contract.only('SupplySchedule', async function(accounts) {
 				await fastForwardTo(new Date(yearThreeStart * 1000));
 
 				assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
+				await checkMintedValues(2, expectedIssuance);
 			});
-			
+
 			it('should calculate the unminted supply for previous year in year 4 week 1', async function() {
 				const expectedIssuance = toUnit(supplySchedules.thirdYearSupply.toString());
 				const yearFourStart = YEAR_TWO_START + 2 * YEAR; // UNIX 1615507200
@@ -169,6 +195,7 @@ contract.only('SupplySchedule', async function(accounts) {
 				await fastForwardTo(new Date(yearFourStart * 1000));
 
 				assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
+				await checkMintedValues(3, expectedIssuance);
 			});
 
 			it('should calculate the unminted supply for previous year in year 5 week 1', async function() {
@@ -176,10 +203,11 @@ contract.only('SupplySchedule', async function(accounts) {
 				const yearFiveStart = YEAR_TWO_START + 3 * YEAR; // UNIX 1647043200
 
 				// fast forward EVM to Year 5 schedule starting at UNIX 1647043200+
-				// No previous minting in Year 3
+				// No previous minting in Year 4
 				await fastForwardTo(new Date(yearFiveStart * 1000));
 
 				assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
+				await checkMintedValues(4, expectedIssuance);
 			});
 
 			it('should calculate the unminted supply for previous year in year 6 week 1', async function() {
@@ -187,21 +215,23 @@ contract.only('SupplySchedule', async function(accounts) {
 				const yearSixStart = YEAR_TWO_START + 4 * YEAR; // UNIX 1678579200
 
 				// fast forward EVM to Year 6 schedule starting at UNIX 1678579200+
-				// No previous minting in Year 3
+				// No previous minting in Year 5
 				await fastForwardTo(new Date(yearSixStart * 1000));
 
 				assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
+				await checkMintedValues(5, expectedIssuance);
 			});
 
 			it('should calculate the unminted supply for previous year in year 7 week 1', async function() {
 				const expectedIssuance = toUnit(supplySchedules.sixthYearSupply.toString());
-				const yearSevenStart = YEAR_TWO_START + 5 * YEAR; // UNIX 1615507200
+				const yearSevenStart = YEAR_TWO_START + 5 * YEAR; // UNIX 1710115200
 
-				// fast forward EVM to Year 4 schedule starting at UNIX 1615507200+
-				// No previous minting in Year 3
+				// fast forward EVM to Year 7 schedule starting at UNIX 1710115200+
+				// No previous minting in Year 6
 				await fastForwardTo(new Date(yearSevenStart * 1000));
 
 				assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
+				await checkMintedValues(6, expectedIssuance);
 			});
 
 			it('should update the Year 2 schedule for 1 week after minting', async function() {
@@ -341,32 +371,131 @@ contract.only('SupplySchedule', async function(accounts) {
 					assert.ok(lastMintEvent.toNumber() >= now); // lastMintEvent is updated to >= now
 				});
 
-				// it('should calculate mintable supply of 2 weeks from Year 2, in Year 3 week 1', async function() {
-				// 	const yearTwoStart = 1552435200;
-				// 	const supplyYearTwo = supplySchedules.secondYearSupply.toString();
-				// 	const supplyYearThree = supplySchedules.thirdYearSupply.toString();
-					
-				// 	// fast forward 49 weeks to within week 51
-				// 	const weekFiftyOne = weekTwo + 49 * WEEK + 1 * DAY; // Sometime within week 51
-				// 	// // Expect 49 week is mintable after first week minted
-				// 	const expectedIssuance = toUnit(supplyYearTwo).sub(weeklyIssuance.mul(new BN(3))); // 52 - 3 = 49 weeks
-				// 	await fastForwardTo(new Date(weekFiftyOne * 1000));
+				it('should calculate mintable supply of 2 weeks from end of Year 2, in Year 3 week 1', async function() {
+					const yearTwoStart = 1552435200;
+					const supplyYearTwo = supplySchedules.secondYearSupply.toString();
 
-				// 	assert.bnClose(await supplySchedule.mintableSupply(), expectedIssuance);
+					// fast forward 49 weeks to within week 51
+					const weekFiftyOne = weekTwo + 49 * WEEK + 1 * DAY; // Sometime within week 51
+					// // Expect 49 week is mintable after first week minted
+					let expectedIssuance = toUnit(supplyYearTwo).sub(weeklyIssuance.mul(new BN(3))); // 52 - 3 = 49 weeks
+					await fastForwardTo(new Date(weekFiftyOne * 1000));
 
-				// 	// Update the supply minted
-				// 	const mintedSupply = await supplySchedule.mintableSupply();
-				// 	const now = await currentTime();
-				// 	await supplySchedule.updateMintValues({ from: synthetix });
+					assert.bnClose(await supplySchedule.mintableSupply(), expectedIssuance);
 
-				// 	const schedule = await supplySchedule.schedules(1);
-				// 	console.log(
-				// 		'schedule',
-				// 		schedule.totalSupply.toString(),
-				// 		schedule.totalSupplyMinted.toString()
-				// 	);
-				// 	assert.bnEqual(schedule.totalSupplyMinted, mintedSupply.add(weeklyIssuance));
-				// });
+					// Update the supply minted
+					const mintedSupply = await supplySchedule.mintableSupply();
+					const now = await currentTime();
+					await supplySchedule.updateMintValues({ from: synthetix });
+
+					let lastMintEvent;
+					const schedule = await supplySchedule.schedules(1);
+					lastMintEvent = await supplySchedule.lastMintEvent();
+
+					assert.bnEqual(schedule.totalSupplyMinted, mintedSupply.add(weeklyIssuance));
+					assert.ok(lastMintEvent.toNumber() >= now); // lastMintEvent is updated to >= now
+
+					// fast forward 1 week to within week 1 in Year 3
+					const weekFiftyThree = yearTwoStart + 52 * WEEK + 1 * DAY; // Sometime within week 1, Year 3
+					await fastForwardTo(new Date(weekFiftyThree * 1000));
+
+					// Expect two weeks of Year 2 mintable - none from Year 3 schedule in week 1 of Year 3
+					expectedIssuance = divideDecimal(supplySchedules.secondYearSupply, 52 / 2);
+
+					assert.bnClose(await supplySchedule.mintableSupply(), expectedIssuance);
+
+					// Update the supply minted again
+					const blockTime = await currentTime();
+					await supplySchedule.updateMintValues({ from: synthetix });
+
+					// Get Year 2 schedule again
+					const scheduleYear2 = await supplySchedule.schedules(1);
+					const scheduleYear3 = await supplySchedule.schedules(2);
+					lastMintEvent = await supplySchedule.lastMintEvent();
+
+					// Check Year 2 schedule is fully minted & Year 3 schedule hasn't been updated
+					// lastMintEvent is updated to >= now
+					assert.ok(lastMintEvent.toNumber() >= blockTime);
+					assert.bnEqual(scheduleYear2.totalSupply, scheduleYear2.totalSupplyMinted);
+
+					// Check Year 3 schedule
+					assert.bnEqual(scheduleYear3.totalSupplyMinted, toUnit('0'));
+				});
+
+				it('should calculate mintable supply of 2 weeks from end of Year 2 + 1 week from Year 3, in Year 3 week 2', async function() {
+					const yearTwoStart = 1552435200;
+					const supplyYearTwo = supplySchedules.secondYearSupply.toString();
+
+					// fast forward 49 weeks to within week 51
+					const weekFiftyOne = weekTwo + 49 * WEEK + 1 * DAY; // Sometime within week 51
+					// // Expect 49 week is mintable after first week minted
+					let expectedIssuance = toUnit(supplyYearTwo).sub(weeklyIssuance.mul(new BN(3))); // 52 - 3 = 49 weeks
+					await fastForwardTo(new Date(weekFiftyOne * 1000));
+
+					assert.bnClose(await supplySchedule.mintableSupply(), expectedIssuance);
+
+					// Update the supply minted
+					const mintedSupply = await supplySchedule.mintableSupply();
+					const now = await currentTime();
+					await supplySchedule.updateMintValues({ from: synthetix });
+
+					let lastMintEvent;
+					const schedule = await supplySchedule.schedules(1);
+					lastMintEvent = await supplySchedule.lastMintEvent();
+
+					assert.bnEqual(schedule.totalSupplyMinted, mintedSupply.add(weeklyIssuance));
+					assert.ok(lastMintEvent.toNumber() >= now); // lastMintEvent is updated to >= now
+
+					// fast forward 2 weeks to within week 2 in Year 3
+					const weekFiftyFour = yearTwoStart + 53 * WEEK + 1 * DAY; // Sometime within week 2, Year 3
+					await fastForwardTo(new Date(weekFiftyFour * 1000));
+
+					// Expect two weeks of Year 2 mintable + one week from Year 3 schedule in week 2 of Year 3
+					const expectedIssuanceFromYear2 = divideDecimal(supplySchedules.secondYearSupply, 52 / 2);
+					const expectedIssuanceFromYear3 = divideDecimal(supplySchedules.thirdYearSupply, 52);
+
+					assert.bnClose(
+						await supplySchedule.mintableSupply(),
+						expectedIssuanceFromYear2.add(expectedIssuanceFromYear3)
+					);
+
+					// Update the supply minted again
+					const blockTime = await currentTime();
+					await supplySchedule.updateMintValues({ from: synthetix });
+
+					// Get Year 2 schedule again
+					const scheduleYear2 = await supplySchedule.schedules(1);
+					const scheduleYear3 = await supplySchedule.schedules(2);
+					lastMintEvent = await supplySchedule.lastMintEvent();
+
+					// Check Year 2 schedule is fully minted
+					// lastMintEvent is updated to >= now
+					assert.ok(lastMintEvent.toNumber() >= blockTime);
+					assert.bnEqual(scheduleYear2.totalSupply, scheduleYear2.totalSupplyMinted);
+
+					// Check Year 3 schedule
+					assert.bnEqual(scheduleYear3.totalSupplyMinted, expectedIssuanceFromYear3);
+				});
+			});
+
+			describe('Error handling', async function() {
+				it('should revert when getCurrentSchedule and time is greater than Year 7 schedule', async function() {
+					const yearSevenStart = YEAR_TWO_START + 6 * YEAR; // UNIX 1741651200
+
+					// fast forward EVM to Year 8 schedule starting at UNIX 1741651200+
+					await fastForwardTo(new Date(yearSevenStart * 1000));
+
+					await assert.revert(supplySchedule.getCurrentSchedule());
+				});
+				it('should return 0 mintable when time is greater than Year 7 schedule', async function() {
+					const yearSevenStart = YEAR_TWO_START + 6 * YEAR; // UNIX 1741651200
+
+					// fast forward EVM to Year 8 schedule starting at UNIX 1741651200+
+					await fastForwardTo(new Date(yearSevenStart * 1000));
+
+					await assert.bnEqual(await supplySchedule.mintableSupply(), toUnit('0'));
+					await assert.bnEqual(await supplySchedule.isMintable(), false);
+				});
 			});
 		});
 	});
