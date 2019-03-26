@@ -889,7 +889,7 @@ contract('FeePool', async function(accounts) {
 		while ((await exchangeRates.rateForCurrency(SNX)).gt(step.mul(web3.utils.toBN('2')))) {
 			const ratio = await synthetix.collateralisationRatio(owner);
 
-			if (ratio.lte(toUnit('0.2'))) {
+			if (ratio.lte(toUnit('0.22'))) {
 				// Should be 0% penalty
 				assert.bnEqual(await feePool.currentPenalty(owner), 0);
 			} else if (ratio.lte(toUnit('0.3'))) {
@@ -912,7 +912,7 @@ contract('FeePool', async function(accounts) {
 		}
 	});
 
-	it('should apply a collateralisation ratio penalty when users claim fees between 20%-30%', async function() {
+	it('should apply a collateralisation ratio penalty when users claim fees between 22%-30%', async function() {
 		const threeQuarters = amount => amount.div(web3.utils.toBN('4')).mul(web3.utils.toBN('3'));
 
 		// Issue 10,000 sUSD for two different accounts.
@@ -935,9 +935,9 @@ contract('FeePool', async function(accounts) {
 		await closeFeePeriod();
 		assert.bnClose(await feePool.feesAvailable(account1, sUSD), fee.div(web3.utils.toBN('2')));
 
-		// But if the price of SNX decreases a bit, we will fall into the 20-30% bracket and lose
+		// But if the price of SNX decreases a bit, we will fall into the 22-30% bracket and lose
 		// 25% of those fees.
-		const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.0001'));
+		const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.01'));
 
 		const timestamp = await currentTime();
 		await exchangeRates.updateRates([SNX], [newRate], timestamp, {

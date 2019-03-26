@@ -686,8 +686,8 @@ const deploy = async () => {
 		account,
 		account,
 		account,
-		web3.utils.toWei('0.0015', 'ether'),
-		web3.utils.toWei('0.0015', 'ether'),
+		web3.utils.toWei('0.0', 'ether'),
+		web3.utils.toWei('0.003', 'ether'),
 	]);
 
 	if (

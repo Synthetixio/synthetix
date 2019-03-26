@@ -10,6 +10,7 @@ module.exports = {
 	mocha: {
 		useColors: true,
 		slow: 3000, // We only consider tests slow when they take more than 3 seconds.
+		enableTimeouts: false,
 	},
 	compilers: {
 		solc: {
