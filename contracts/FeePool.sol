@@ -268,6 +268,17 @@ contract FeePool is Proxyable, SelfDestructible {
     }
 
     /**
+     * @notice The Synthetix contract informs us when SNX Rewards are minted to RewardEscrow to be claimed.
+     */
+    function rewardsMinted(uint amount)
+        external
+        onlySynthetix
+    {
+        // Add the newly minted SNX rewards on top of the rolling unclaimed amount
+        recentFeePeriods[0].rewardsToDistribute = recentFeePeriods[0].rewardsToDistribute.add(amount);
+    }
+
+    /**
      * @notice Close the current fee period and start a new one. Only callable by the fee authority.
      */
     function closeCurrentFeePeriod()

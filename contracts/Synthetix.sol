@@ -197,12 +197,12 @@ contract Synthetix is ExternStateToken {
         // emitSynthAdded(currencyKey, synth);
     }
 
-    function setMinterReward(uint256 tokens)
-        external
-        optionalProxy_onlyOwner
-    {
-        minterReward = tokens;
-    }
+    // function setMinterReward(uint256 tokens)
+    //     external
+    //     optionalProxy_onlyOwner
+    // {
+    //     minterReward = tokens;
+    // }
 
     /**
      * @notice Remove an associated Synth contract from the Synthetix system
@@ -916,7 +916,12 @@ contract Synthetix is ExternStateToken {
         // Set minted SNX balance to RewardEscrow's balance
         // Minus the minterReward and set balance of minter to add reward
         tokenState.setBalanceOf(rewardEscrow, tokenState.balanceOf(rewardEscrow).add(supplyToMint.sub(minterReward)));
+        // Tell the FeePool how much it has to distribute
+        feePool.rewardsMinted(supplyToMint.sub(minterReward));
+
+        // Assign the minters reward.
         tokenState.setBalanceOf(msg.sender, tokenState.balanceOf(msg.sender).add(minterReward));
+        super.emitTransfer(this, msg.sender, minterReward);
         
         totalSupply = totalSupply.add(supplyToMint);
     }
