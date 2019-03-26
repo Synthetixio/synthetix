@@ -153,7 +153,7 @@ contract Synthetix is ExternStateToken {
     string constant TOKEN_SYMBOL = "SNX";
     uint8 constant DECIMALS = 18;
 
-    uint minterReward = 200 * SafeDecimalMath.unit();
+    uint public minterReward = 200 * SafeDecimalMath.unit();
     // ========== CONSTRUCTOR ==========
 
     /**
@@ -906,9 +906,10 @@ contract Synthetix is ExternStateToken {
         external
         returns (bool)
     {
+        require(rewardEscrow != address(0), "Reward Escrow destination missing");
+        
         uint supplyToMint = supplySchedule.mintableSupply();
         require(supplyToMint > 0, "No supply is mintable");
-        require(rewardEscrow != address(0), "Reward Escrow destination missing");
         
         supplySchedule.updateMintValues();
 
@@ -961,7 +962,4 @@ contract Synthetix is ExternStateToken {
         proxy._emit(abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, toAddress), 2, SYNTHEXCHANGE_SIG, bytes32(account), 0, 0);
     }
     /* solium-enable */
-
-    event LogInt(string message, uint value);
-    event LogAddress(string message, address value);
 }
