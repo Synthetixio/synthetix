@@ -501,7 +501,7 @@ contract FeePool is Proxyable, SelfDestructible {
         view
         returns (uint)
     {
-        return value.divideDecimal(exchangeFeeRate.add(SafeDecimalMath.unit()));
+        return value.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
     }
 
     /**
