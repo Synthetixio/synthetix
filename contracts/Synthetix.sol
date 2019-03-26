@@ -153,7 +153,7 @@ contract Synthetix is ExternStateToken {
     string constant TOKEN_SYMBOL = "SNX";
     uint8 constant DECIMALS = 18;
 
-    uint minterReward = 200 * SafeDecimalMath.unit();
+    uint public minterReward = 200 * SafeDecimalMath.unit();
     // ========== CONSTRUCTOR ==========
 
     /**
