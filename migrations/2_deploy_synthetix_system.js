@@ -142,16 +142,6 @@ module.exports = async function(deployer, network, accounts) {
 		}
 	);
 
-	console.log('Deploying SynthetixEscrow...');
-	await deployer.deploy(SynthetixEscrow, owner, synthetix.address, {
-		from: deployerAccount,
-	});
-
-	console.log('Deploying RewardEscrow...');
-	await deployer.deploy(RewardEscrow, owner, synthetix.address, feePool.address, {
-		from: deployerAccount,
-	});
-
 	// ----------------------
 	// Connect Token State
 	// ----------------------

@@ -13,8 +13,9 @@ date:       2019-03-01
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
-Inflationary Supply contract. SNX is a transferable ERC20 token.
+Supply Schedule contract. SNX is a transferable ERC20 token.
 
+User's get staking rewards as part of the incentives of     
 +------+-------------+--------------+----------+
 | Year |  Increase   | Total Supply | Increase |
 +------+-------------+--------------+----------+

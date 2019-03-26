@@ -234,6 +234,18 @@ contract.only('SupplySchedule', async function(accounts) {
 				await checkMintedValues(6, expectedIssuance);
 			});
 
+			it('should calculate the unminted supply for previous year 6 in year 7 week 3', async function() {
+				const expectedIssuance = toUnit(supplySchedules.sixthYearSupply.toString());
+				const yearSevenStart = YEAR_TWO_START + 5 * YEAR + 3 * WEEK; // UNIX 1711929600
+
+				// fast forward EVM to Week 3, Year 7 schedule starting at UNIX 1710115200+
+				await fastForwardTo(new Date(yearSevenStart * 1000));
+
+				// Expect Year 6 to be mintable and no supply in Year 7
+				assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
+				await checkMintedValues(6, expectedIssuance);
+			});
+
 			it('should update the Year 2 schedule for 1 week after minting', async function() {
 				// fast forward EVM to Week 1 in Year 2 schedule starting at UNIX 1552435200+
 				const weekTwo = weekOne + 1 * WEEK;

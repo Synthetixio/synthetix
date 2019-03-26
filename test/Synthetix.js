@@ -1981,29 +1981,53 @@ contract('Synthetix', async function(accounts) {
 	});
 
 	// TODO - Inflationary supply of Synthetix - failing
-	// it('should allow synthetix contract to mint new supply based on inflationary schedule', async function() {
-	// 	// Issue
-	// 	const weeklyIssuance = (75000000 / 52).toPrecision(18);
-	// 	const expectedSupplyToMint = weeklyIssuance;
 
-	// 	// fast forward EVM to Week 1 in Year 2 schedule starting at UNIX 1552435200+
-	// 	await fastForwardTo(new Date(1552435220 * 1000));
+	describe.only('supply minting', async function() {
+		const [
+			secondYearSupply,
+			thirdYearSupply,
+			fourthYearSupply,
+			fifthYearSupply,
+			sixthYearSupply,
+		] = ['75000000', '37500000', '18750000', '9375000', '4687500'];
 
-	// 	const existingSupply = await synthetix.totalSupply();
-	// 	const currentFeePoolBalance = await synthetix.balanceOf(feePool.address);
+		const DAY = 86400;
+		const WEEK = 604800;
+		const YEAR = 31536000;
 
-	// 	await synthetix.mint();
+		it('should allow synthetix contract to mint new supply based on inflationary schedule', async function() {
+			// Issue
+			const YEAR_TWO_START = 1552435200;
 
-	// 	const newTotalSupply = await synthetix.totalSupply();
+			const weeklyIssuance = divideDecimal(secondYearSupply, 52);
+			const expectedSupplyToMint = weeklyIssuance;
 
-	// 	// Expect supply schedule is updated with new values
-	// 	const currentSchedule = await supplySchedule.getCurrentSchedule();
+			// fast forward EVM to Week 1 in Year 2 schedule starting at UNIX 1553040000+
+			const weekTwo = YEAR_TWO_START + 1 * WEEK + 1 * DAY;
+			await fastForwardTo(new Date(weekTwo * 1000));
 
-	// 	console.log('supplySchedule', currentSchedule);
-	// 	assert.bnEqual(newTotalSupply, existingSupply.add(web3.utils.toBN(expectedSupplyToMint)));
-	// 	assert.bnEqual(
-	// 		await synthetix.balanceOf(feePool.address),
-	// 		currentFeePoolBalance.add(web3.utils.toBN(expectedSupplyToMint))
-	// 	);
-	// });
+			const existingSupply = await synthetix.totalSupply();
+			const currentRewardEscrowBalance = await synthetix.balanceOf(RewardEscrow.address);
+
+			await synthetix.mint();
+
+			const newTotalSupply = await synthetix.totalSupply();
+
+			// Expect supply schedule is updated with new values
+			const currentSchedule = await supplySchedule.schedules(1);
+
+			console.log('supplySchedule', currentSchedule.totalSupplyMinted.toString());
+			console.log('address of RewardEscrow', RewardEscrow.address);
+			console.log(
+				'existing Supply , new total supply',
+				existingSupply.toString(),
+				newTotalSupply.toString()
+			);
+			assert.bnEqual(newTotalSupply, existingSupply.add(expectedSupplyToMint));
+			assert.bnEqual(
+				await synthetix.balanceOf(RewardEscrow.address),
+				currentRewardEscrowBalance.add(expectedSupplyToMint)
+			);
+		});
+	});
 });

@@ -908,10 +908,12 @@ contract Synthetix is ExternStateToken {
     {
         uint supplyToMint = supplySchedule.mintableSupply();
         require(supplyToMint > 0, "No supply is mintable");
+        require(rewardEscrow != address(0), "Reward Escrow destination missing");
         
         supplySchedule.updateMintValues();
 
         // Set minted SNX balance to RewardEscrow's balance
+        // Minus the minterReward and set balance of minter to add reward
         tokenState.setBalanceOf(rewardEscrow, tokenState.balanceOf(rewardEscrow).add(supplyToMint.sub(minterReward)));
         tokenState.setBalanceOf(msg.sender, tokenState.balanceOf(msg.sender).add(minterReward));
         
@@ -959,4 +961,7 @@ contract Synthetix is ExternStateToken {
         proxy._emit(abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, toAddress), 2, SYNTHEXCHANGE_SIG, bytes32(account), 0, 0);
     }
     /* solium-enable */
+
+    event LogInt(string message, uint value);
+    event LogAddress(string message, address value);
 }
