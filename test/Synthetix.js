@@ -1664,6 +1664,7 @@ contract('Synthetix', async function(accounts) {
 
 		// Setup reward escrow
 		const feePoolAccount = account6;
+		await rewardEscrow.setFeePool(feePoolAccount, { from: owner });
 
 		const escrowedSynthetixs = toUnit('30000');
 		await synthetix.transfer(rewardEscrow.address, escrowedSynthetixs, { from: owner });
@@ -1709,6 +1710,7 @@ contract('Synthetix', async function(accounts) {
 		const feePoolAccount = account6;
 		const escrowedAmount = toUnit('15000');
 		await synthetix.transfer(rewardEscrow.address, escrowedAmount, { from: owner });
+		await rewardEscrow.setFeePool(feePoolAccount, { from: owner });
 		await rewardEscrow.appendVestingEntry(account1, escrowedAmount, { from: feePoolAccount });
 		const amount = toUnit('60000');
 		await synthetix.transfer(account1, amount, { from: owner });
@@ -1932,6 +1934,10 @@ contract('Synthetix', async function(accounts) {
 		const amountIssued = toUnit('2000');
 		await synthetix.issueSynths(sUSD, amountIssued, { from: account1 });
 
+		// Get the exchange fee in USD
+		const exchangeFeeUSD = await feePool.exchangeFeeIncurred(amountIssued);
+		const exchangeFeeXDR = await synthetix.effectiveValue(sUSD, exchangeFeeUSD, XDR);
+
 		// Exchange sUSD to sAUD
 		await synthetix.exchange(sUSD, amountIssued, sAUD, account1, { from: account1 });
 
@@ -1941,8 +1947,13 @@ contract('Synthetix', async function(accounts) {
 		// chargeFee = true so we need to minus the fees for this exchange
 		const effectiveValueMinusFees = await feePool.amountReceivedFromExchange(effectiveValue);
 
+		// Assert we have the correct AUD value - exchange fee
 		const sAUDBalance = await sAUDContract.balanceOf(account1);
 		assert.bnEqual(effectiveValueMinusFees, sAUDBalance);
+
+		// Assert we have the exchange fee to distribute
+		const feePeriodZero = await feePool.recentFeePeriods(0);
+		assert.bnEqual(exchangeFeeXDR, feePeriodZero.feesToDistribute);
 	});
 
 	it('should emit a SynthExchange event', async function() {
@@ -1981,53 +1992,29 @@ contract('Synthetix', async function(accounts) {
 	});
 
 	// TODO - Inflationary supply of Synthetix - failing
+	it('should allow synthetix contract to mint new supply based on inflationary schedule', async function() {
+		// Issue
+		const weeklyIssuance = (75000000 / 52).toPrecision(18);
+		const expectedSupplyToMint = weeklyIssuance;
 
-	describe.only('supply minting', async function() {
-		const [
-			secondYearSupply,
-			thirdYearSupply,
-			fourthYearSupply,
-			fifthYearSupply,
-			sixthYearSupply,
-		] = ['75000000', '37500000', '18750000', '9375000', '4687500'];
+		// fast forward EVM to Week 1 in Year 2 schedule starting at UNIX 1552435200+
+		await fastForwardTo(new Date(1552435220 * 1000));
 
-		const DAY = 86400;
-		const WEEK = 604800;
-		const YEAR = 31536000;
+		const existingSupply = await synthetix.totalSupply();
+		const currentFeePoolBalance = await synthetix.balanceOf(feePool.address);
 
-		it('should allow synthetix contract to mint new supply based on inflationary schedule', async function() {
-			// Issue
-			const YEAR_TWO_START = 1552435200;
+		await synthetix.mint();
 
-			const weeklyIssuance = divideDecimal(secondYearSupply, 52);
-			const expectedSupplyToMint = weeklyIssuance;
+		const newTotalSupply = await synthetix.totalSupply();
 
-			// fast forward EVM to Week 1 in Year 2 schedule starting at UNIX 1553040000+
-			const weekTwo = YEAR_TWO_START + 1 * WEEK + 1 * DAY;
-			await fastForwardTo(new Date(weekTwo * 1000));
+		// Expect supply schedule is updated with new values
+		const currentSchedule = await supplySchedule.getCurrentSchedule();
 
-			const existingSupply = await synthetix.totalSupply();
-			const currentRewardEscrowBalance = await synthetix.balanceOf(RewardEscrow.address);
-
-			await synthetix.mint();
-
-			const newTotalSupply = await synthetix.totalSupply();
-
-			// Expect supply schedule is updated with new values
-			const currentSchedule = await supplySchedule.schedules(1);
-
-			console.log('supplySchedule', currentSchedule.totalSupplyMinted.toString());
-			console.log('address of RewardEscrow', RewardEscrow.address);
-			console.log(
-				'existing Supply , new total supply',
-				existingSupply.toString(),
-				newTotalSupply.toString()
-			);
-			assert.bnEqual(newTotalSupply, existingSupply.add(expectedSupplyToMint));
-			assert.bnEqual(
-				await synthetix.balanceOf(RewardEscrow.address),
-				currentRewardEscrowBalance.add(expectedSupplyToMint)
-			);
-		});
+		console.log('supplySchedule', currentSchedule);
+		assert.bnEqual(newTotalSupply, existingSupply.add(web3.utils.toBN(expectedSupplyToMint)));
+		assert.bnEqual(
+			await synthetix.balanceOf(feePool.address),
+			currentFeePoolBalance.add(web3.utils.toBN(expectedSupplyToMint))
+		);
 	});
 });
