@@ -1991,20 +1991,8 @@ contract('Synthetix', async function(accounts) {
 		await assert.revert(synthetix.issueSynths(sUSD, issuedSynths1, { from: account1 }));
 	});
 
-	// TODO - Inflationary supply of Synthetix - failing
-	it('should allow synthetix contract to mint new supply based on inflationary schedule', async function() {
-		// Issue
-		const weeklyIssuance = (75000000 / 52).toPrecision(18);
-		const expectedSupplyToMint = weeklyIssuance;
-
 	describe.only('supply minting', async function() {
-		const [
-			secondYearSupply,
-			thirdYearSupply,
-			fourthYearSupply,
-			fifthYearSupply,
-			sixthYearSupply,
-		] = ['75000000', '37500000', '18750000', '9375000', '4687500'];
+		const [secondYearSupply, thirdYearSupply] = ['75000000', '37500000'];
 
 		const DAY = 86400;
 		const WEEK = 604800;
