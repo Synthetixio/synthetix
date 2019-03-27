@@ -928,7 +928,7 @@ contract Synthetix is ExternStateToken {
 
         // Assign the minters reward.
         tokenState.setBalanceOf(msg.sender, tokenState.balanceOf(msg.sender).add(minterReward));
-        super.emitTransfer(this, msg.sender, minterReward);
+        emitTransfer(this, msg.sender, minterReward);
         
         totalSupply = totalSupply.add(supplyToMint);
     }

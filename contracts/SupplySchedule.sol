@@ -229,6 +229,7 @@ contract SupplySchedule is Owned {
         // Update mint event to now
         lastMintEvent = now;
 
+        emit SupplyMinted(lastPeriodAmount, currentPeriodAmount, currentIndex, now);
         return true;
     }
 
@@ -238,4 +239,8 @@ contract SupplySchedule is Owned {
         require(msg.sender == address(synthetix), "Only the synthetix contract can perform this action");
         _;
     }
+
+    /* ========== EVENTS ========== */
+
+    event SupplyMinted(uint previousPeriodAmount, uint currentAmount, uint indexed schedule, uint timestamp);
 }
