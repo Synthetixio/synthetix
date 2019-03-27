@@ -77,6 +77,7 @@ contract FeePool is Proxyable, SelfDestructible {
         uint feesClaimed;
         uint rewardsToDistribute;
         uint rewardsClaimed;
+        uint totalIssuedSynths;
     }
 
     // The last 4 fee periods are all that you can claim from.
@@ -289,6 +290,9 @@ contract FeePool is Proxyable, SelfDestructible {
 
         FeePeriod memory secondLastFeePeriod = recentFeePeriods[FEE_PERIOD_LENGTH - 2];
         FeePeriod memory lastFeePeriod = recentFeePeriods[FEE_PERIOD_LENGTH - 1];
+
+        // Take a snapshot of the totalIssuedSynths for the fee period
+        recentFeePeriods[0].totalIssuedSynths = recentFeePeriods[next].synthetix.totalIssuedSynths("XDR");
 
         // Any unclaimed fees from the last period in the array roll back one period.
         // Because of the subtraction here, they're effectively proportionally redistributed to those who
