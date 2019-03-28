@@ -611,8 +611,9 @@ contract FeePool is Proxyable, SelfDestructible {
         uint totalSynths = synthetix.totalIssuedSynths("XDR");
         if (totalSynths == 0) return result;
 
+        // Change to use the accountIssuanceLedger from the records 
         uint debtBalance = synthetix.debtBalanceOf(account, "XDR");
-        uint userOwnershipPercentage = debtBalance.divideDecimal(totalSynths);
+        uint userOwnershipPercentage = debtBalance.divideDecimal(totalSynths); // remove this 
         uint penalty = currentPenalty(account);
         
         // Go through our fee periods and figure out what we owe them.

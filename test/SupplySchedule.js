@@ -234,6 +234,18 @@ contract.only('SupplySchedule', async function(accounts) {
 				await checkMintedValues(6, expectedIssuance);
 			});
 
+			it('should calculate the unminted supply for year 6 at end of Year 7 period', async function() {
+				const expectedIssuance = toUnit(supplySchedules.sixthYearSupply.toString());
+				const yearSevenEnd = YEAR_TWO_START + 5 * YEAR + 52 * WEEK - 1; // UNIX 1710115200
+
+				// fast forward EVM to End of Year 7 schedule starting at UNIX 1710115200+
+				// No previous minting in Year 6
+				await fastForwardTo(new Date(yearSevenEnd * 1000));
+
+				assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
+				await checkMintedValues(6, expectedIssuance);
+			});
+
 			it('should calculate the unminted supply for previous year 6 in year 7 week 3', async function() {
 				const expectedIssuance = toUnit(supplySchedules.sixthYearSupply.toString());
 				const yearSevenStart = YEAR_TWO_START + 5 * YEAR + 3 * WEEK; // UNIX 1711929600
