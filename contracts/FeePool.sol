@@ -613,38 +613,50 @@ contract FeePool is Proxyable, SelfDestructible {
 
         uint penalty = currentPenalty(account);
         
-        // Go through our fee periods and figure out what we owe them.
         // The [0] fee period is not yet ready to claim, but it is a fee period that they can have
         // fees owing for, so we need to report on it anyway.
-        for (uint i = FEE_PERIOD_LENGTH - 1; i <= 0; i--) {
-            // If current debt entry index is before the feePeriod start we can use the recent issuanceData
-            // Else find the applicableIssuanceData for the feePeriod based on the StartingDebtIndex of the period  
-            if (recentFeePeriods[i + 1].startingDebtIndex < debtEntryIndex) {
-                (userOwnershipPercentage, debtEntryIndex) = applicableIssuanceData(account, recentFeePeriods[i].startingDebtIndex);
+        result[0] = _feesFromPeriod(0, userOwnershipPercentage, penalty);
+
+        // Go through our fee periods from the oldest feePeriod [3] and figure out what we owe them.
+        // Condition checks for periods > 0 
+        for (uint i = FEE_PERIOD_LENGTH - 1; i > 0; i--) {
+            // If issuanceData[0].DebtEntryIndex is before the i - 1 feePeriod startDebtIndex 
+            // we can use the most recent issuanceData[0] for recentFeePeriods[i] 
+            // else find the applicableIssuanceData for the feePeriod based on the StartingDebtIndex of the period  
+            if (recentFeePeriods[i - 1].startingDebtIndex < debtEntryIndex) {
+                (userOwnershipPercentage, debtEntryIndex) = applicableIssuanceData(account, recentFeePeriods[i - 1].startingDebtIndex);
             }
                 
-            // Calculate their percentage of the fees / rewards in this period
-            uint feesFromPeriodWithoutPenalty = recentFeePeriods[i].feesToDistribute
-                .multiplyDecimal(userOwnershipPercentage);
-            
-            // Less their penalty if they have one.
-            uint penaltyFromPeriod = feesFromPeriodWithoutPenalty.multiplyDecimal(penalty);
-            uint feesFromPeriod = feesFromPeriodWithoutPenalty.sub(penaltyFromPeriod);
-
-            result[i] = feesFromPeriod;
+            result[i] = _feesFromPeriod(i, userOwnershipPercentage, penalty);
         }
 
         return result;
     }
 
-    function applicableIssuanceData(address account, uint startingDebtIndex)
+    function _feesFromPeriod(uint period, uint ownershipPercentage, uint penalty)
+        internal
+        returns (uint) 
+    {
+        // Calculate their percentage of the fees / rewards in this period
+        uint feesFromPeriodWithoutPenalty = recentFeePeriods[period].feesToDistribute
+            .multiplyDecimal(ownershipPercentage);
+        
+        // Less their penalty if they have one.
+        uint penaltyFromPeriod = feesFromPeriodWithoutPenalty.multiplyDecimal(penalty);
+        uint feesFromPeriod = feesFromPeriodWithoutPenalty.sub(penaltyFromPeriod);
+
+        return feesFromPeriod;
+    }
+
+    function applicableIssuanceData(address account, uint closingDebtIndex)
         internal
         returns (IssuanceData) 
     {
         IssuanceData[FEE_PERIOD_LENGTH] memory issuanceData = accountIssuanceLedger[account];
-        // we can start from issuanceData[1] as issuanceData[0] is not applicable for FeePeriod
+        // we can start from issuanceData[1] as issuanceData[0] was checked
+        // find the most recent issuanceData for the feePeriod before it was closed
         for (uint i = 1; i < FEE_PERIOD_LENGTH; i++) {
-            if (startingDebtIndex > issuanceData[i].debtEntryIndex) {
+            if (closingDebtIndex >= issuanceData[i].debtEntryIndex) {
                 return issuanceData[i];
             }
         }
