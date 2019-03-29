@@ -120,6 +120,8 @@ contract FeePool is Proxyable, SelfDestructible {
     uint constant FOURTY_PERCENT = (40 * SafeDecimalMath.unit()) / 100;
     uint constant FIFTY_PERCENT = (50 * SafeDecimalMath.unit()) / 100;
     uint constant SEVENTY_FIVE_PERCENT = (75 * SafeDecimalMath.unit()) / 100;
+    uint constant NINETY_PERCENT = (90 * SafeDecimalMath.unit()) / 100;
+    uint constant ONE_HUNDRED_PERCENT = (100 * SafeDecimalMath.unit()) / 100;
 
     constructor(address _proxy, address _owner, Synthetix _synthetix, address _feeAuthority, uint _transferFeeRate, uint _exchangeFeeRate)
         SelfDestructible(_owner)
@@ -574,11 +576,13 @@ contract FeePool is Proxyable, SelfDestructible {
         uint ratio = synthetix.collateralisationRatio(account);
 
         // Users receive a different amount of fees depending on how their collateralisation ratio looks right now.
-        // 0% - 20%: Fee is calculated based on percentage of economy issued.
-        // 20% - 22%: 0% reduction in fees
-        // 22% - 30%: 25% reduction in fees
-        // 30% - 40%: 50% reduction in fees
-        // >40%: 75% reduction in fees
+        //  0% < 20% (∞ - 500%):    Fee is calculated based on percentage of economy issued. 
+        // 20% - 22% (500% - 454%):  0% reduction in fees
+        // 22% - 30% (454% - 333%): 25% reduction in fees
+        // 30% - 40% (333% - 250%): 50% reduction in fees
+        // 40% - 50% (250% - 200%): 75% reduction in fees
+        //     > 50% (200% - 100%): 90% reduction in fees
+        //     > 100%(100% -   0%):100% reduction in fees
         if (ratio <= TWENTY_PERCENT) {
             return 0;
         } else if (ratio > TWENTY_PERCENT && ratio <= TWENTY_TWO_PERCENT) {
@@ -587,9 +591,12 @@ contract FeePool is Proxyable, SelfDestructible {
             return TWENTY_FIVE_PERCENT;
         } else if (ratio > THIRTY_PERCENT && ratio <= FOURTY_PERCENT) {
             return FIFTY_PERCENT;
+        } else if (ratio > FOURTY_PERCENT && ratio <= FIFTY_PERCENT) {
+            return SEVENTY_FIVE_PERCENT;    
+        } else if (ratio > FIFTY_PERCENT && ratio < ONE_HUNDRED_PERCENT) {
+            return NINETY_PERCENT;    
         }
-
-        return SEVENTY_FIVE_PERCENT;
+        return ONE_HUNDRED_PERCENT;
     }
 
     /**
