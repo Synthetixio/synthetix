@@ -610,7 +610,7 @@ contract FeePool is Proxyable, SelfDestructible {
             return FIFTY_PERCENT;
         } else if (ratio > FOURTY_PERCENT && ratio <= FIFTY_PERCENT) {
             return SEVENTY_FIVE_PERCENT;    
-        } else if (ratio > FIFTY_PERCENT && ratio < ONE_HUNDRED_PERCENT) {
+        } else if (ratio > FIFTY_PERCENT && ratio <= ONE_HUNDRED_PERCENT) {
             return NINETY_PERCENT;    
         }
         return ONE_HUNDRED_PERCENT;

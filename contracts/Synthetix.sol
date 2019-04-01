@@ -706,11 +706,15 @@ contract Synthetix is ExternStateToken {
     function _appendAccountIssuanceRecord()
         internal
     {
+        uint initialDebtOwnership;
+        uint debtEntryIndex;
+        (initialDebtOwnership, debtEntryIndex) = synthetixState.issuanceData(messageSender);
+
         feePool.appendAccountIssuanceRecord(
             messageSender, 
             // debtBalanceOf(messageSender, "SNX").divideDecimalRound(synthetixState.issuanceRatio()), // NOT LOCKED SNX
             // debtBalanceOf(messageSender, "XDR"), // NOT in XDRs becuase of multi-currency e.g. sBTC pumps
-            synthetixState.issuanceData(messageSender).initialDebtOwnership, // MUST BE DEBT OWNERSHIP
+            initialDebtOwnership, // MUST BE DEBT OWNERSHIP
             synthetixState.lastDebtLedgerEntry()
         );
     }

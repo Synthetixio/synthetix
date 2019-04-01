@@ -898,9 +898,15 @@ contract.only('FeePool', async function(accounts) {
 			} else if (ratio.lte(toUnit('0.4'))) {
 				// Should be 50% penalty
 				assert.bnEqual(await feePool.currentPenalty(owner), toUnit('0.5'));
-			} else {
+			} else if (ratio.lte(toUnit('0.5'))) {
 				// Should be 75% penalty
 				assert.bnEqual(await feePool.currentPenalty(owner), toUnit('0.75'));
+			} else if (ratio.lte(toUnit('1'))) {
+				// Should be 90% penalty
+				assert.bnEqual(await feePool.currentPenalty(owner), toUnit('0.9'));
+			} else {
+				// Should be 100% penalty
+				assert.bnEqual(await feePool.currentPenalty(owner), toUnit('1'));
 			}
 
 			// Bump the rate down.
