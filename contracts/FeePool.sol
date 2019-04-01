@@ -630,8 +630,9 @@ contract FeePool is Proxyable, SelfDestructible {
         // What's the user's debt entry index and the debt they owe to the system at current feePeriod
         uint userOwnershipPercentage;
         uint debtEntryIndex;
-        userOwnershipPercentage = accountIssuanceLedger[account][0].debtPercentage;
-        debtEntryIndex = accountIssuanceLedger[account][0].debtEntryIndex;
+        (userOwnershipPercentage, debtEntryIndex) = accountIssuanceLedger[account][0];
+        // userOwnershipPercentage = accountIssuanceLedger[account][0].debtPercentage;
+        // debtEntryIndex = accountIssuanceLedger[account][0].debtEntryIndex;
 
         // If they don't have any debt ownership and they haven't minted, they don't have any fees
         if (debtEntryIndex == 0 && userOwnershipPercentage == 0) return result;
@@ -653,7 +654,7 @@ contract FeePool is Proxyable, SelfDestructible {
             // we can use the most recent issuanceData[0] for recentFeePeriods[i] 
             // else find the applicableIssuanceData for the feePeriod based on the StartingDebtIndex of the period  
             if (recentFeePeriods[i - 1].startingDebtIndex < debtEntryIndex) {
-                IssuanceData issuanceData = applicableIssuanceData(account, recentFeePeriods[i - 1].startingDebtIndex);
+                (userOwnershipPercentage, debtEntryIndex) = applicableIssuanceData(account, recentFeePeriods[i - 1].startingDebtIndex);
             }
                 
             result[i] = _feesFromPeriod(i, userOwnershipPercentage, penalty);
@@ -662,10 +663,20 @@ contract FeePool is Proxyable, SelfDestructible {
         return result;
     }
 
-    /**
-     * @notice Calculates rewards by period for an account
-     * @param account The address you want to query the rewards by penalty for
-     */
+    function applicableIssuanceData(address account, uint closingDebtIndex)
+        internal
+        view
+        returns (uint, uint)
+    {
+        IssuanceData[FEE_PERIOD_LENGTH] memory issuanceData = accountIssuanceLedger[account];
+        // we can start from issuanceData[1] as issuanceData[0] was checked
+        // find the most recent issuanceData for the feePeriod before it was closed
+        for (uint i = 1; i < FEE_PERIOD_LENGTH; i++) {
+            if (closingDebtIndex >= issuanceData[i].debtEntryIndex) {
+                return (issuanceData[i].debtPercentage, issuanceData[i].debtEntryIndex);
+            }
+        }
+    }
     // function rewardsByPeriod(address account)
     //     public
     //     view
@@ -720,20 +731,6 @@ contract FeePool is Proxyable, SelfDestructible {
         uint feesFromPeriod = feesFromPeriodWithoutPenalty.sub(penaltyFromPeriod);
 
         return feesFromPeriod;
-    }
-
-    function applicableIssuanceData(address account, uint closingDebtIndex)
-        internal
-        returns (uint, uint) 
-    {
-        IssuanceData[FEE_PERIOD_LENGTH] memory issuanceData = accountIssuanceLedger[account];
-        // we can start from issuanceData[1] as issuanceData[0] was checked
-        // find the most recent issuanceData for the feePeriod before it was closed
-        for (uint i = 1; i < FEE_PERIOD_LENGTH; i++) {
-            if (closingDebtIndex >= issuanceData[i].debtEntryIndex) {
-                return (issuanceData[i].debtPercentage, issuanceData[i].debtEntryIndex);
-            }
-        }
     }
 
     modifier onlyFeeAuthority
