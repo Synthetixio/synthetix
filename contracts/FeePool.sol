@@ -170,7 +170,7 @@ contract FeePool is Proxyable, SelfDestructible {
         accountIssuanceLedger[account][0].debtEntryIndex = debtEntryIndex;
     }
 
-    function issuanceEntryOrderIndexUpdate(IssuanceDat[FEE_PERIOD_LENGTH] issuanceData) 
+    function issuanceEntryOrderIndexUpdate(IssuanceData[FEE_PERIOD_LENGTH] issuanceData) 
         private 
     {
         // Is the current debtEntryIndex within this fee period then do nothing and return
@@ -379,7 +379,7 @@ contract FeePool is Proxyable, SelfDestructible {
                 remainingToAllocate = remainingToAllocate.sub(amountInPeriod);
 
                 // No need to continue iterating if we've recorded the whole amount;
-                // if (remainingToAllocate == 0) return;
+                if (remainingToAllocate == 0) return;
             }
         }
 
@@ -561,6 +561,27 @@ contract FeePool is Proxyable, SelfDestructible {
     }
 
     /**
+     * @notice The rewards available to be withdrawn by a specific account
+     */
+    // function rewardsAvailable(address account)
+    //     public
+    //     view
+    //     returns (uint)
+    // {
+    //     // Add up the rewards
+    //     uint[FEE_PERIOD_LENGTH] memory userRewards = rewardsByPeriod(account);
+
+    //     uint totalRewards = 0;
+
+    //     // Rewards in fee period [0] are not yet available for withdrawal
+    //     for (uint i = 1; i < FEE_PERIOD_LENGTH; i++) {
+    //         totalRewards = totalRewards.add(userRewards[i]);
+    //     }
+
+    //     return totalRewards;
+    // }
+
+    /**
      * @notice The penalty a particular address would incur if its fees were withdrawn right now
      * @param account The address you want to query the penalty for
      */
@@ -609,7 +630,8 @@ contract FeePool is Proxyable, SelfDestructible {
         // What's the user's debt entry index and the debt they owe to the system at current feePeriod
         uint userOwnershipPercentage;
         uint debtEntryIndex;
-        (userOwnershipPercentage, debtEntryIndex) = accountIssuanceLedger[account][0];
+        userOwnershipPercentage = accountIssuanceLedger[account][0].debtPercentage;
+        debtEntryIndex = accountIssuanceLedger[account][0].debtEntryIndex;
 
         // If they don't have any debt ownership and they haven't minted, they don't have any fees
         if (debtEntryIndex == 0 && userOwnershipPercentage == 0) return result;
@@ -639,6 +661,51 @@ contract FeePool is Proxyable, SelfDestructible {
 
         return result;
     }
+
+    /**
+     * @notice Calculates rewards by period for an account
+     * @param account The address you want to query the rewards by penalty for
+     */
+    // function rewardsByPeriod(address account)
+    //     public
+    //     view
+    //     returns (uint[FEE_PERIOD_LENGTH])
+    // {
+    //     uint[FEE_PERIOD_LENGTH] memory result;
+
+    //     // What's the user's debt entry index and the debt they owe to the system at current feePeriod
+    //     uint userOwnershipPercentage;
+    //     uint debtEntryIndex;
+    //     (userOwnershipPercentage, debtEntryIndex) = accountIssuanceLedger[account][0];
+
+    //     // If they don't have any debt ownership and they haven't minted, they don't have any rewards
+    //     if (debtEntryIndex == 0 && userOwnershipPercentage == 0) return result;
+
+    //     // If there are no XDR synths, then they don't have any fees 
+    //     uint totalSynths = synthetix.totalIssuedSynths("XDR");
+    //     if (totalSynths == 0) return result;
+
+    //     uint penalty = currentPenalty(account);
+        
+    //     // The [0] fee period is not yet ready to claim, but it is a fee period that they can have
+    //     // fees owing for, so we need to report on it anyway.
+    //     result[0] = _feesFromPeriod(0, userOwnershipPercentage, penalty);
+
+    //     // Go through our fee periods from the oldest feePeriod [3] and figure out what we owe them.
+    //     // Condition checks for periods > 0 
+    //     for (uint i = FEE_PERIOD_LENGTH - 1; i > 0; i--) {
+    //         // If issuanceData[0].DebtEntryIndex is before the i - 1 feePeriod startDebtIndex 
+    //         // we can use the most recent issuanceData[0] for recentFeePeriods[i] 
+    //         // else find the applicableIssuanceData for the feePeriod based on the StartingDebtIndex of the period  
+    //         if (recentFeePeriods[i - 1].startingDebtIndex < debtEntryIndex) {
+    //             (userOwnershipPercentage, debtEntryIndex) = applicableIssuanceData(account, recentFeePeriods[i - 1].startingDebtIndex);
+    //         }
+                
+    //         result[i] = _feesFromPeriod(i, userOwnershipPercentage, penalty);
+    //     }
+
+    //     return result;
+    // }
 
     function _feesFromPeriod(uint period, uint ownershipPercentage, uint penalty)
         internal
