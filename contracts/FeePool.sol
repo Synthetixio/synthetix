@@ -653,7 +653,7 @@ contract FeePool is Proxyable, SelfDestructible {
             // we can use the most recent issuanceData[0] for recentFeePeriods[i] 
             // else find the applicableIssuanceData for the feePeriod based on the StartingDebtIndex of the period  
             if (recentFeePeriods[i - 1].startingDebtIndex < debtEntryIndex) {
-                (userOwnershipPercentage, debtEntryIndex) = applicableIssuanceData(account, recentFeePeriods[i - 1].startingDebtIndex);
+                IssuanceData issuanceData = applicableIssuanceData(account, recentFeePeriods[i - 1].startingDebtIndex);
             }
                 
             result[i] = _feesFromPeriod(i, userOwnershipPercentage, penalty);
@@ -724,14 +724,14 @@ contract FeePool is Proxyable, SelfDestructible {
 
     function applicableIssuanceData(address account, uint closingDebtIndex)
         internal
-        returns (IssuanceData) 
+        returns (uint, uint) 
     {
         IssuanceData[FEE_PERIOD_LENGTH] memory issuanceData = accountIssuanceLedger[account];
         // we can start from issuanceData[1] as issuanceData[0] was checked
         // find the most recent issuanceData for the feePeriod before it was closed
         for (uint i = 1; i < FEE_PERIOD_LENGTH; i++) {
             if (closingDebtIndex >= issuanceData[i].debtEntryIndex) {
-                return issuanceData[i];
+                return (issuanceData[i].debtPercentage, issuanceData[i].debtEntryIndex);
             }
         }
     }
