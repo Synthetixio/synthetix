@@ -19,8 +19,8 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sAUD, sEUR, SNX],
-			['0.5', '1.25', '0.1'].map(toUnit),
+			[sAUD, sEUR, SNX, sBTC],
+			['0.5', '1.25', '0.1', '4000'].map(toUnit),
 			timestamp,
 			{
 				from: oracle,
@@ -54,7 +54,7 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 	// 	console.log('------------------');
 	// };
 
-	const [sUSD, sAUD, sEUR, SNX, XDR] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'XDR'].map(
+	const [sUSD, sAUD, sEUR, sBTC, SNX, XDR] = ['sUSD', 'sAUD', 'sEUR', 'sBTC', 'SNX', 'XDR'].map(
 		web3.utils.asciiToHex
 	);
 
@@ -102,42 +102,37 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 	describe('3 accounts with 33.33% SNX all issue MAX', async function() {
 		beforeEach(async function() {
 			// Fastforward a year into the staking rewards supply
-			console.log('Fastforward a year into the staking rewards supply');
 			await fastForward(YEAR + MINUTE);
+
+			// Send a price update to guarantee we're not stale.
+			await updateRatesWithDefaults();
 
 			// Assign 1/3 of total SNX to 3 accounts
 			const thirdOfSNX = toUnit('33333333.3333333');
-			console.log('Assign 1/3 of total SNX to 3 accounts');
 			await synthetix.transfer(account1, thirdOfSNX, { from: owner });
 			await synthetix.transfer(account2, thirdOfSNX, { from: owner });
 			await synthetix.transfer(account3, thirdOfSNX, { from: owner });
 
 			// All accounts Issue MAX sUSD
-			console.log('All accounts Issue MAX sUSD');
 			await synthetix.issueMaxSynths(sUSD, { from: account1 });
 			await synthetix.issueMaxSynths(sUSD, { from: account2 });
 			await synthetix.issueMaxSynths(sUSD, { from: account3 });
 		});
 
-		describe('Rewards Claiming', async function() {
+		describe.only('Rewards Claiming', async function() {
 			it('should allocate the 3 accounts a third of the rewards for 1 period', async function() {
-				console.log('fastForward');
 				// FastForward into the first mintable week
 				await fastForward(WEEK + MINUTE);
 
 				// Get the SNX mintableSupply
-				const mintableSupply = supplySchedule.mintableSupply();
-				console.log('mintableSupply', mintableSupply.toString());
+				const mintableSupply = await supplySchedule.mintableSupply();
 
-				console.log('Mint the staking rewards');
 				// Mint the staking rewards
 				await synthetix.mint({ from: owner });
 
-				console.log('Close Fee Period');
 				// Close Fee Period
 				await feePool.closeCurrentFeePeriod({ from: feeAuthority });
 
-				console.log('All 3 accounts claim rewards');
 				// All 3 accounts claim rewards
 				await feePool.claimFees({ from: account1 });
 				await feePool.claimFees({ from: account2 });
@@ -163,7 +158,7 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 				}
 
 				// Get the SNX mintableSupply
-				const mintableSupply = supplySchedule.mintableSupply();
+				const mintableSupply = await supplySchedule.mintableSupply();
 
 				// Mint the staking rewards
 				await synthetix.mint({ from: owner });
@@ -190,7 +185,7 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 				await fastForward(WEEK + MINUTE);
 
 				// Get the SNX mintableSupply
-				const periodOneMintableSupply = supplySchedule.mintableSupply();
+				const periodOneMintableSupply = await supplySchedule.mintableSupply();
 
 				// Mint the staking rewards
 				await synthetix.mint({ from: owner });
