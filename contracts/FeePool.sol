@@ -77,7 +77,6 @@ contract FeePool is Proxyable, SelfDestructible {
         uint feesClaimed;
         uint rewardsToDistribute;
         uint rewardsClaimed;
-        uint totalIssuedSynths;
     }
 
     // The last 4 fee periods are all that you can claim from.
@@ -105,11 +104,11 @@ contract FeePool is Proxyable, SelfDestructible {
 
     // This struct represents the issuance activity that's happened in a fee period.
     struct IssuanceData {
-        uint lockedSNX;
+        uint debtPercentage;
         uint debtEntryIndex;
     }
 
-    mapping(address => IssuanceData[4]) public accountIssuanceLedger;
+    mapping(address => IssuanceData[FEE_PERIOD_LENGTH]) public accountIssuanceLedger;
 
     // Users receive penalties if their collateralisation ratio drifts out of our desired brackets
     // We precompute the brackets and penalties to save gas.
@@ -148,7 +147,7 @@ contract FeePool is Proxyable, SelfDestructible {
     /**
      * @notice Logs an accounts issuance data per fee period
      * @param account Message.Senders account address
-     * @param lockedAmount Amount of SNX this account has locked after minting or burning their synth
+     * @param debtRatio Debt percentage this account has locked after minting or burning their synth
      * @param debtEntryIndex The index in the global debt ledger. synthetix.synthetixState().issuanceData(account)
      * @dev onlySynthetix to call me on synthetix.issue() & synthetix.burn() calls to store the locked SNX 
      * per fee period so we know to allocate the correct proportions of fees and rewards per period
@@ -157,21 +156,21 @@ contract FeePool is Proxyable, SelfDestructible {
       accountIssuanceLedger[account][2] 
       accountIssuanceLedger[account][3]
      */
-    function appendAccountIssuanceRecord(address account, uint lockedAmount, uint debtEntryIndex) 
+    function appendAccountIssuanceRecord(address account, uint debtRatio, uint debtEntryIndex) 
         external
         onlySynthetix
     {
         // Is there a current issuanceData entry then ensure they're ordered
-        if (accountIssuanceLedger[account][0].lockedSNX > 0) {
+        if (accountIssuanceLedger[account][0].debtPercentage > 0) {
             issuanceEntryOrderIndexUpdate(accountIssuanceLedger[account]);            
         }
         
         // Always store the latest IssuanceData entry at [0]
-        accountIssuanceLedger[account][0].lockedSNX = lockedAmount;
+        accountIssuanceLedger[account][0].debtPercentage = debtRatio;
         accountIssuanceLedger[account][0].debtEntryIndex = debtEntryIndex;
     }
 
-    function issuanceEntryOrderIndexUpdate(IssuanceData[4] issuanceData) 
+    function issuanceEntryOrderIndexUpdate(IssuanceDat[FEE_PERIOD_LENGTH] issuanceData) 
         private 
     {
         // Is the current debtEntryIndex within this fee period then do nothing and return
@@ -179,7 +178,7 @@ contract FeePool is Proxyable, SelfDestructible {
             // If its older then shift the previous IssuanceData entries periods down to make room for the new one.
             for (uint i = FEE_PERIOD_LENGTH - 2; i < FEE_PERIOD_LENGTH; i--) {
                 uint next = i + 1;
-                issuanceData[next].lockedSNX = issuanceData[i].lockedSNX;
+                issuanceData[next].debtPercentage = issuanceData[i].debtPercentage;
                 issuanceData[next].debtEntryIndex = issuanceData[i].debtEntryIndex;
             }    
         }
@@ -293,9 +292,6 @@ contract FeePool is Proxyable, SelfDestructible {
         FeePeriod memory secondLastFeePeriod = recentFeePeriods[FEE_PERIOD_LENGTH - 2];
         FeePeriod memory lastFeePeriod = recentFeePeriods[FEE_PERIOD_LENGTH - 1];
 
-        // Take a snapshot of the totalIssuedSynths for the fee period
-        recentFeePeriods[0].totalIssuedSynths = synthetix.totalIssuedSynths("XDR");
-
         // Any unclaimed fees from the last period in the array roll back one period.
         // Because of the subtraction here, they're effectively proportionally redistributed to those who
         // have already claimed from the old period, available in the new period.
@@ -383,7 +379,7 @@ contract FeePool is Proxyable, SelfDestructible {
                 remainingToAllocate = remainingToAllocate.sub(amountInPeriod);
 
                 // No need to continue iterating if we've recorded the whole amount;
-                if (remainingToAllocate == 0) return;
+                // if (remainingToAllocate == 0) return;
             }
         }
 
@@ -610,46 +606,67 @@ contract FeePool is Proxyable, SelfDestructible {
     {
         uint[FEE_PERIOD_LENGTH] memory result;
 
-        // What's the user's debt entry index and the debt they owe to the system
-        uint initialDebtOwnership;
+        // What's the user's debt entry index and the debt they owe to the system at current feePeriod
+        uint userOwnershipPercentage;
         uint debtEntryIndex;
-        (initialDebtOwnership, debtEntryIndex) = synthetix.synthetixState().issuanceData(account);
+        (userOwnershipPercentage, debtEntryIndex) = accountIssuanceLedger[account][0];
 
-        // If they don't have any debt ownership, they don't have any fees
-        if (initialDebtOwnership == 0) return result;
+        // If they don't have any debt ownership and they haven't minted, they don't have any fees
+        if (debtEntryIndex == 0 && userOwnershipPercentage == 0) return result;
 
-        // If there are no XDR synths, then they don't have any fees
+        // If there are no XDR synths, then they don't have any fees 
         uint totalSynths = synthetix.totalIssuedSynths("XDR");
         if (totalSynths == 0) return result;
 
-        // Change to use the accountIssuanceLedger from the records 
-        uint debtBalance = synthetix.debtBalanceOf(account, "XDR");
-        uint userOwnershipPercentage = debtBalance.divideDecimal(totalSynths); // remove this 
         uint penalty = currentPenalty(account);
         
-        // Go through our fee periods and figure out what we owe them.
         // The [0] fee period is not yet ready to claim, but it is a fee period that they can have
         // fees owing for, so we need to report on it anyway.
-        for (uint i = 0; i < FEE_PERIOD_LENGTH; i++) {
-            // Were they a part of this period in its entirety?
-            // We don't allow pro-rata participation to reduce the ability to game the system by
-            // issuing and burning multiple times in a period or close to the ends of periods.
-            if (recentFeePeriods[i].startingDebtIndex > debtEntryIndex &&
-                lastFeeWithdrawal[account] < recentFeePeriods[i].feePeriodId) {
+        result[0] = _feesFromPeriod(0, userOwnershipPercentage, penalty);
 
-                // And since they were, they're entitled to their percentage of the fees in this period
-                uint feesFromPeriodWithoutPenalty = recentFeePeriods[i].feesToDistribute
-                    .multiplyDecimal(userOwnershipPercentage);
-
-                // Less their penalty if they have one.
-                uint penaltyFromPeriod = feesFromPeriodWithoutPenalty.multiplyDecimal(penalty);
-                uint feesFromPeriod = feesFromPeriodWithoutPenalty.sub(penaltyFromPeriod);
-
-                result[i] = feesFromPeriod;
+        // Go through our fee periods from the oldest feePeriod [3] and figure out what we owe them.
+        // Condition checks for periods > 0 
+        for (uint i = FEE_PERIOD_LENGTH - 1; i > 0; i--) {
+            // If issuanceData[0].DebtEntryIndex is before the i - 1 feePeriod startDebtIndex 
+            // we can use the most recent issuanceData[0] for recentFeePeriods[i] 
+            // else find the applicableIssuanceData for the feePeriod based on the StartingDebtIndex of the period  
+            if (recentFeePeriods[i - 1].startingDebtIndex < debtEntryIndex) {
+                (userOwnershipPercentage, debtEntryIndex) = applicableIssuanceData(account, recentFeePeriods[i - 1].startingDebtIndex);
             }
+                
+            result[i] = _feesFromPeriod(i, userOwnershipPercentage, penalty);
         }
 
         return result;
+    }
+
+    function _feesFromPeriod(uint period, uint ownershipPercentage, uint penalty)
+        internal
+        returns (uint) 
+    {
+        // Calculate their percentage of the fees / rewards in this period
+        uint feesFromPeriodWithoutPenalty = recentFeePeriods[period].feesToDistribute
+            .multiplyDecimal(ownershipPercentage);
+        
+        // Less their penalty if they have one.
+        uint penaltyFromPeriod = feesFromPeriodWithoutPenalty.multiplyDecimal(penalty);
+        uint feesFromPeriod = feesFromPeriodWithoutPenalty.sub(penaltyFromPeriod);
+
+        return feesFromPeriod;
+    }
+
+    function applicableIssuanceData(address account, uint closingDebtIndex)
+        internal
+        returns (IssuanceData) 
+    {
+        IssuanceData[FEE_PERIOD_LENGTH] memory issuanceData = accountIssuanceLedger[account];
+        // we can start from issuanceData[1] as issuanceData[0] was checked
+        // find the most recent issuanceData for the feePeriod before it was closed
+        for (uint i = 1; i < FEE_PERIOD_LENGTH; i++) {
+            if (closingDebtIndex >= issuanceData[i].debtEntryIndex) {
+                return issuanceData[i];
+            }
+        }
     }
 
     modifier onlyFeeAuthority
