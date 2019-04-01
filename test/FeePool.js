@@ -308,7 +308,7 @@ contract.only('FeePool', async function(accounts) {
 		assert.bnEqual(await feePool.nextFeePeriodId(), 3);
 	});
 
-	it('should correctly roll over unclaimed fees when closing fee periods', async function() {
+	it.only('should correctly roll over unclaimed fees when closing fee periods', async function() {
 		const feePeriodLength = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 
 		// Issue 10,000 sUSD.

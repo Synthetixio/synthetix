@@ -539,15 +539,21 @@ contract FeePool is Proxyable, SelfDestructible {
 
     /**
      * @notice The fees available to be withdrawn by a specific account, priced in currencyKey currency
+     * @dev Returns two amounts, one for fees and one for SNX rewards
      * @param currencyKey The currency you want to price the fees in
      */
     function feesAvailable(address account, bytes4 currencyKey)
         public
         view
+        // returns (uint, uint)
         returns (uint)
     {
         // Add up the fees
         uint[FEE_PERIOD_LENGTH] memory userFees = feesByPeriod(account);
+        // Add up the SNX rewards
+        // uint[FEE_PERIOD_LENGTH] memory userRewards;
+
+        // (userFees, userRewards) = feesByPeriod(account);
 
         uint totalFees = 0;
 
@@ -623,44 +629,48 @@ contract FeePool is Proxyable, SelfDestructible {
     function feesByPeriod(address account)
         public
         view
+        // returns (uint[FEE_PERIOD_LENGTH], uint[FEE_PERIOD_LENGTH])
         returns (uint[FEE_PERIOD_LENGTH])
     {
-        uint[FEE_PERIOD_LENGTH] memory result;
+        uint[FEE_PERIOD_LENGTH] memory resultFees;
+        uint[FEE_PERIOD_LENGTH] memory resultRewards;
 
         // What's the user's debt entry index and the debt they owe to the system at current feePeriod
         uint userOwnershipPercentage;
         uint debtEntryIndex;
-        (userOwnershipPercentage, debtEntryIndex) = accountIssuanceLedger[account][0];
-        // userOwnershipPercentage = accountIssuanceLedger[account][0].debtPercentage;
-        // debtEntryIndex = accountIssuanceLedger[account][0].debtEntryIndex;
+        userOwnershipPercentage = accountIssuanceLedger[account][0].debtPercentage;
+        debtEntryIndex = accountIssuanceLedger[account][0].debtEntryIndex;
 
         // If they don't have any debt ownership and they haven't minted, they don't have any fees
-        if (debtEntryIndex == 0 && userOwnershipPercentage == 0) return result;
+        // if (debtEntryIndex == 0 && userOwnershipPercentage == 0) return (resultFees, resultRewards);
+        if (debtEntryIndex == 0 && userOwnershipPercentage == 0) return resultFees;
 
         // If there are no XDR synths, then they don't have any fees 
         uint totalSynths = synthetix.totalIssuedSynths("XDR");
-        if (totalSynths == 0) return result;
+        // if (totalSynths == 0) return (resultFees, resultRewards);
+        if (totalSynths == 0) return resultFees;
 
         uint penalty = currentPenalty(account);
         
         // The [0] fee period is not yet ready to claim, but it is a fee period that they can have
         // fees owing for, so we need to report on it anyway.
-        result[0] = _feesFromPeriod(0, userOwnershipPercentage, penalty);
+        resultFees[0] = _feesFromPeriod(0, userOwnershipPercentage, penalty);
 
         // Go through our fee periods from the oldest feePeriod [3] and figure out what we owe them.
         // Condition checks for periods > 0 
-        for (uint i = FEE_PERIOD_LENGTH - 1; i > 0; i--) {
-            // If issuanceData[0].DebtEntryIndex is before the i - 1 feePeriod startDebtIndex 
-            // we can use the most recent issuanceData[0] for recentFeePeriods[i] 
-            // else find the applicableIssuanceData for the feePeriod based on the StartingDebtIndex of the period  
-            if (recentFeePeriods[i - 1].startingDebtIndex < debtEntryIndex) {
-                (userOwnershipPercentage, debtEntryIndex) = applicableIssuanceData(account, recentFeePeriods[i - 1].startingDebtIndex);
-            }
+        // for (uint i = FEE_PERIOD_LENGTH - 1; i > 0; i--) {
+        //     // If issuanceData[0].DebtEntryIndex is before the i - 1 feePeriod startDebtIndex 
+        //     // we can use the most recent issuanceData[0] for recentFeePeriods[i] 
+        //     // else find the applicableIssuanceData for the feePeriod based on the StartingDebtIndex of the period  
+        //     if (recentFeePeriods[i - 1].startingDebtIndex < debtEntryIndex) {
+        //         (userOwnershipPercentage, debtEntryIndex) = applicableIssuanceData(account, recentFeePeriods[i - 1].startingDebtIndex);
+        //     }
                 
-            result[i] = _feesFromPeriod(i, userOwnershipPercentage, penalty);
-        }
+        //     result[i] = _feesFromPeriod(i, userOwnershipPercentage, penalty);
+        // }
 
-        return result;
+        // return (resultFees, resultRewards);
+        return resultFees;
     }
 
     function applicableIssuanceData(address account, uint closingDebtIndex)
@@ -669,6 +679,7 @@ contract FeePool is Proxyable, SelfDestructible {
         returns (uint, uint)
     {
         IssuanceData[FEE_PERIOD_LENGTH] memory issuanceData = accountIssuanceLedger[account];
+        
         // we can start from issuanceData[1] as issuanceData[0] was checked
         // find the most recent issuanceData for the feePeriod before it was closed
         for (uint i = 1; i < FEE_PERIOD_LENGTH; i++) {
@@ -718,11 +729,18 @@ contract FeePool is Proxyable, SelfDestructible {
     //     return result;
     // }
 
+    /**
+     * @notice ownershipPercentage is a high precision decimals uint based on 
+     * wallet's debtPercentage. Gives a precise amount of the feesToDistribute
+     * for fees in the period. Precision factor is removed before results are 
+     * returned.
+     */
     function _feesFromPeriod(uint period, uint ownershipPercentage, uint penalty)
         internal
         returns (uint) 
     {
         // Calculate their percentage of the fees / rewards in this period
+        // This is a high precision integer.
         uint feesFromPeriodWithoutPenalty = recentFeePeriods[period].feesToDistribute
             .multiplyDecimal(ownershipPercentage);
         
@@ -730,7 +748,7 @@ contract FeePool is Proxyable, SelfDestructible {
         uint penaltyFromPeriod = feesFromPeriodWithoutPenalty.multiplyDecimal(penalty);
         uint feesFromPeriod = feesFromPeriodWithoutPenalty.sub(penaltyFromPeriod);
 
-        return feesFromPeriod;
+        return feesFromPeriod.preciseDecimalToDecimal();
     }
 
     modifier onlyFeeAuthority
