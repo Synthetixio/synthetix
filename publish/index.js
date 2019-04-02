@@ -502,7 +502,7 @@ program
 						? deployer.deployedContracts['SynthsUSD'].options.address
 						: '',
 					feePool ? feePool.options.address : '',
-					account,
+					oracle,
 					web3.utils.toWei('500'),
 					web3.utils.toWei('.10'),
 				],
