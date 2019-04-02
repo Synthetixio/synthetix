@@ -144,6 +144,11 @@ program
 		'-d, --deployment-path <value>',
 		`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 	)
+	.option(
+		'-o, --oracle <value>',
+		'The address of the oracle for this network',
+		'0xac1e8b385230970319906c03a1d8567e3996d1d5' // the oracle for testnets
+	)
 	.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
 	.option('-m, --method-call-gas-limit <value>', 'Method call gas limit', parseInt, 15e4)
 	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
@@ -161,6 +166,7 @@ program
 			buildPath,
 			deploymentPath,
 			synthList,
+			oracle,
 		}) => {
 			ensureNetwork(network);
 			ensureDeploymentPath(deploymentPath);
@@ -281,12 +287,7 @@ program
 
 			const exchangeRates = await deployContract({
 				name: 'ExchangeRates',
-				args: [
-					account,
-					account,
-					[web3.utils.asciiToHex('SNX')],
-					[web3.utils.toWei('0.2', 'ether')],
-				],
+				args: [account, oracle, [web3.utils.asciiToHex('SNX')], [web3.utils.toWei('0.2', 'ether')]],
 			});
 
 			const proxyFeePool = await deployContract({
