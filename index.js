@@ -7,7 +7,7 @@ const program = require('commander');
 require('pretty-error').start();
 
 const getDeployment = ({ network = 'mainnet', contract }) => {
-	const pathToDeployment = path.join('publish', 'deployed', network, 'deployment.json');
+	const pathToDeployment = path.join(__dirname, 'publish', 'deployed', network, 'deployment.json');
 	if (!fs.existsSync(pathToDeployment)) {
 		throw Error(`Cannot find deployment for network: ${network}.`);
 	}
