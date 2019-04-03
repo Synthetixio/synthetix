@@ -25,23 +25,34 @@ The code here will be under continual audit and improvement as the project progr
 
 ### As an npm module
 
-Run the `getDeployment` function to retrieve an object detailing the contract deployed to the given `network`.
-
 ```javascript
 const snx = require('synthetix');
 
-snx.getDeployment({ network: 'rinkeby', contract: 'Synthetix' });
-
+// retrieve an object detailing the contract deployed to the given network.
+snx.getTarget({ network: 'rinkeby', contract: 'ProxySynthetix' });
 /*
 {
-  name: 'Synthetix',
-  address: '0x90560cc253fF6E77953da6640859D7e3eA8F3d8B',
-  source: 'Synthetix',
-  link: 'https://rinkeby.etherscan.io/address/0x90560cc253fF6E77953da6640859D7e3eA8F3d8B',
-  network: 'rinkeby',
-  ...
+  name: 'ProxySynthetix',
+  address: '0x322A3346bf24363f451164d96A5b5cd5A7F4c337',
+  source: 'Proxy',
+  link: 'https://rinkeby.etherscan.io/address/0x322A3346bf24363f451164d96A5b5cd5A7F4c337',
+  timestamp: '2019-03-06T23:05:43.914Z',
+  network: 'rinkeby'
 }
 */
+
+// retrieve an object detailing the contract ABI and bytecode
+snx.getSource({ network: 'rinkeby', contract: 'Proxy' });
+/*
+{
+  bytecode: '0..0',
+  abi: [ ... ]
+}
+*/
+
+// retrieve the array of synths used
+snx.getSynths();
+// ['XDR', 'sUSD', 'sEUR', ...]
 ```
 
 ### As an npm CLI tool
@@ -49,13 +60,24 @@ snx.getDeployment({ network: 'rinkeby', contract: 'Synthetix' });
 Same as above but as a CLI tool that outputs JSON:
 
 ```bash
-npx synthetix -- get --network mainnet --contract ExchangeRates
-
+npx synthetix -- target --network rinkeby --contract ProxySynthetix
 # {
-#  "name": "ExchangeRates",
-#  "address": "0x73b172756BD5DDf0110Ba8D7b88816Eb639Eb21c",
-#  ...
+#   "name": "ProxySynthetix",
+#   "address": "0x322A3346bf24363f451164d96A5b5cd5A7F4c337",
+#   "source": "Proxy",
+#   "link": "https://rinkeby.etherscan.io/address/0x322A3346bf24363f451164d96A5b5cd5A7F4c337",
+#   "timestamp": "2019-03-06T23:05:43.914Z",
+#   "network": "rinkeby"
 # }
+
+npx synthetix -- source --network rinkeby --contract Proxy
+# {
+#   "bytecode": "0..0",
+#   "abi": [ ... ]
+# }
+
+npx synthetix -- synths
+# ["XDR", "sUSD", "sEUR", ... ]
 ```
 
 ### For tests (in JavaScript)
