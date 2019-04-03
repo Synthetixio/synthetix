@@ -17,7 +17,15 @@ const getDeployment = ({ network = 'mainnet', contract }) => {
 	else return deployment;
 };
 
-module.exports = { getDeployment };
+const getSynths = () => {
+	const pathToSynthList = path.join(__dirname, 'publish', 'synths.json');
+	if (!fs.existsSync(pathToSynthList)) {
+		throw Error(`Cannot find synth list.`);
+	}
+	return JSON.parse(fs.readFileSync(pathToSynthList));
+};
+
+module.exports = { getDeployment, getSynths };
 
 program
 	.command('get')

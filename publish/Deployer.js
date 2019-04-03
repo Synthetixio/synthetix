@@ -59,7 +59,9 @@ class Deployer {
 		}
 		const { deploy, contract } = this.config[name];
 		const compiled = this.compiled[name];
-		const existingAddress = this.deployment[name] ? this.deployment[name].address : '';
+		const existingAddress = this.deployment.targets[name]
+			? this.deployment.targets[name].address
+			: '';
 
 		if (!compiled) throw new Error(`No compiled source for: ${name}`);
 

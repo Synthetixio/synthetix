@@ -46,7 +46,7 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 	);
 	const deploymentFile = path.join(deploymentPath, DEPLOYMENT_FILENAME);
 	if (!fs.existsSync(deploymentFile)) {
-		fs.writeFileSync(deploymentFile, '{}');
+		fs.writeFileSync(deploymentFile, JSON.stringify({ targets: {}, sources: {} }, null, 2));
 	}
 	const deployment = JSON.parse(fs.readFileSync(deploymentFile));
 
@@ -70,6 +70,9 @@ program
 	.action(async ({ buildPath, showWarnings }) => {
 		console.log(gray('Starting build...'));
 
+		if (!fs.existsSync(buildPath)) {
+			fs.mkdirSync(buildPath);
+		}
 		// Flatten all the contracts.
 		// Start with the libraries, then copy our own contracts on top to ensure
 		// if there's a naming clash our code wins.
@@ -180,7 +183,9 @@ program
 				gray('Checking all contracts not flagged for deployment have addresses in this network...')
 			);
 			const missingDeployments = Object.keys(config).filter(name => {
-				return !config[name].deploy && (!deployment[name] || !deployment[name].address);
+				return (
+					!config[name].deploy && (!deployment.targets[name] || !deployment.targets[name].address)
+				);
 			});
 
 			if (missingDeployments.length) {
@@ -255,21 +260,23 @@ program
 				let txn = '';
 				if (!config[name].deploy) {
 					// deploy is false, so we reused a deployment, thus lets grab the details that already exist
-					timestamp = deployment[name].timestamp;
-					txn = deployment[name].txn;
+					timestamp = deployment.targets[name].timestamp;
+					txn = deployment.targets[name].txn;
 				}
-
+				const source = config[name].contract;
 				// now update the deployed contract information
-				deployment[name] = {
+				deployment.targets[name] = {
 					name,
 					address,
-					source: config[name].contract,
+					source,
 					link: `https://${network !== 'mainnet' ? network + '.' : ''}etherscan.io/address/${
 						deployer.deployedContracts[name].options.address
 					}`,
 					timestamp,
 					txn,
 					network,
+				};
+				deployment.sources[source] = {
 					bytecode: compiled[name].evm.bytecode.object,
 					abi: compiled[name].abi,
 				};
@@ -557,7 +564,7 @@ program
 
 		// ensure that every contract in the flag file has a matching deployed address
 		const missingDeployments = Object.keys(config).filter(contractName => {
-			return !deployment[contractName] || !deployment[contractName].address;
+			return !deployment.targets[contractName] || !deployment.targets[contractName].address;
 		});
 
 		if (missingDeployments.length) {
@@ -578,7 +585,7 @@ program
 		const tableData = [];
 
 		for (const name of Object.keys(config)) {
-			const { address } = deployment[name];
+			const { address } = deployment.targets[name];
 			// Check if this contract already has been verified.
 
 			let result = await axios.get(etherscanUrl, {
@@ -613,13 +620,16 @@ program
 				const deployedBytecode = result.data.result[0].input;
 
 				// add the transacton and timestamp to the json file
-				deployment[name].txn = `https://${network}.etherscan.io/tx/${result.data.result[0].hash}`;
-				deployment[name].timestamp = new Date(result.data.result[0].timeStamp * 1000);
+				deployment.targets[name].txn = `https://${network}.etherscan.io/tx/${
+					result.data.result[0].hash
+				}`;
+				deployment.targets[name].timestamp = new Date(result.data.result[0].timeStamp * 1000);
 
 				fs.writeFileSync(deploymentFile, JSON.stringify(deployment, null, 2));
 
+				const source = config[name].contract;
 				// Grab the last 50 characters of the compiled bytecode
-				const compiledBytecode = deployment[name].bytecode.slice(-100);
+				const compiledBytecode = deployment.sources[source].bytecode.slice(-100);
 
 				const pattern = new RegExp(`${compiledBytecode}(.*)$`);
 				const constructorArguments = pattern.exec(deployedBytecode)[1];
@@ -650,7 +660,7 @@ program
 						optimizationUsed: 1,
 						runs: 200,
 						libraryname1: 'SafeDecimalMath',
-						libraryaddress1: deployment['SafeDecimalMath'].address,
+						libraryaddress1: deployment.targets['SafeDecimalMath'].address,
 						apikey: process.env.ETHERSCAN_KEY,
 					}),
 					{
@@ -734,7 +744,7 @@ program
 			.map(key => {
 				return {
 					symbol: /Synthetix$/.test(key) ? 'SNX' : key.replace(/^Proxy/, ''),
-					address: deployment[key].address,
+					address: deployment.targets[key].address,
 					decimals: 18,
 				};
 			});
