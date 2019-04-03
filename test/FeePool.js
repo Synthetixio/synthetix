@@ -328,9 +328,7 @@ contract.only('FeePool', async function(accounts) {
 		// Assert that the correct fee is in the fee pool.
 		const fee = await XDRContract.balanceOf(FEE_ADDRESS);
 		const pendingFees = await feePool.methods.feesByPeriod(owner).call();
-		// console.log("feePool obj", feePool);
-		console.log('pendingFees', pendingFees);
-		// assert.bnEqual(pendingFees, fee);
+		assert.bnEqual(web3.utils.toBN(pendingFees[0][0]), fee);
 
 		// Now we roll over the fee periods double FEE_PERIOD_LENGTH more times
 		// and should have exactly the same fee available because nobody else
@@ -339,7 +337,7 @@ contract.only('FeePool', async function(accounts) {
 			await closeFeePeriod();
 		}
 
-		// assert.bnEqual(pendingFees, fee);
+		assert.bnEqual(web3.utils.toBN(pendingFees[0][0]), fee);
 	});
 
 	it('should correctly close the current fee period when there are more than FEE_PERIOD_LENGTH periods', async function() {

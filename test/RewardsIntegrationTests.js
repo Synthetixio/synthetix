@@ -119,7 +119,7 @@ contract('Rewards Integration Tests', async function(accounts) {
 			await synthetix.issueMaxSynths(sUSD, { from: account3 });
 		});
 
-		describe.only('Rewards Claiming', async function() {
+		describe('Rewards Claiming', async function() {
 			it('should allocate the 3 accounts a third of the rewards for 1 period', async function() {
 				// FastForward into the first mintable week
 				await fastForward(WEEK + MINUTE);
@@ -171,7 +171,7 @@ contract('Rewards Integration Tests', async function(accounts) {
 				// All 3 accounts have 1/3 of the rewards
 				let vestingScheduleEntry;
 				vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-				assert.bnEqual(vestingScheduleEntry[1], mintableSupply.div(web3.utils.toBN('3'));
+				assert.bnEqual(vestingScheduleEntry[1], mintableSupply.div(web3.utils.toBN('3')));
 
 				vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account2, 0);
 				assert.bnEqual(vestingScheduleEntry[1], mintableSupply.div(web3.utils.toBN('3')));
@@ -227,7 +227,7 @@ contract('Rewards Integration Tests', async function(accounts) {
 
 			describe('c-ratio penalties', async function() {
 				const third = amount => amount.div(web3.utils.toBN('3'));
-				const periodOneMintableSupply;
+				let periodOneMintableSupply;
 
 				beforeEach(async function() {
 					// FastForward into the first mintable week
@@ -245,13 +245,13 @@ contract('Rewards Integration Tests', async function(accounts) {
 					let synthFees, snxRewards;
 
 					// We should have zero rewards available because the period is still open.
-					(synthFees, snxRewards) = await feePool.feesAvailable(account1, sUSD);
+					[synthFees, snxRewards] = await feePool.feesAvailable(account1, sUSD);
 					assert.bnEqual(snxRewards, 0);
 			
 					// Once the fee period is closed we should have 1/3 the rewards available because we have
 					// 1/3 the collateral backing up the system.
 					await closeFeePeriod();
-					(synthFees, snxRewards) = await feePool.feesAvailable(account1, sUSD);
+					[synthFees, snxRewards] = await feePool.feesAvailable(account1, sUSD);
 					assert.bnClose(snxRewards, third(periodOneMintableSupply));
 			
 					// But if the price of SNX decreases a bit...
@@ -262,7 +262,7 @@ contract('Rewards Integration Tests', async function(accounts) {
 					});
 					
 					// we will fall into the 22-30% bracket and lose 25% of those rewards.
-					(synthFees, snxRewards) = await feePool.feesAvailable(account1, sUSD);
+					[synthFees, snxRewards] = await feePool.feesAvailable(account1, sUSD);
 					assert.bnClose(
 						snxRewards,
 						threeQuarters(third(periodOneMintableSupply))
@@ -281,13 +281,13 @@ contract('Rewards Integration Tests', async function(accounts) {
 					let synthFees, snxRewards;
 
 					// We should have zero rewards available because the period is still open.
-					(synthFees, snxRewards) = await feePool.feesAvailable(account1, sUSD);
+					[synthFees, snxRewards] = await feePool.feesAvailable(account1, sUSD);
 					assert.bnEqual(snxRewards, 0);
 			
 					// Once the fee period is closed we should have 1/3 the rewards available because we have
 					// 1/3 the collateral backing up the system.
 					await closeFeePeriod();
-					(synthFees, snxRewards) = await feePool.feesAvailable(account1, sUSD);
+					[synthFees, snxRewards] = await feePool.feesAvailable(account1, sUSD);
 					assert.bnClose(snxRewards, third(periodOneMintableSupply));
 			
 					// But if the price of SNX decreases a bit...
@@ -298,7 +298,7 @@ contract('Rewards Integration Tests', async function(accounts) {
 					});
 					
 					// we will fall into the 30-40% bracket and lose 50% of those rewards.
-					(synthFees, snxRewards) = await feePool.feesAvailable(account1, sUSD);
+					[synthFees, snxRewards] = await feePool.feesAvailable(account1, sUSD);
 					assert.bnClose(
 						snxRewards,
 						half(third(periodOneMintableSupply))
