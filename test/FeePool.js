@@ -2,8 +2,11 @@ const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
 const Synthetix = artifacts.require('Synthetix');
 const Synth = artifacts.require('Synth');
+const { getWeb3, getContractInstance, sendParameters } = require('../utils/web3Helper');
 
 const { currentTime, fastForward, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
+const web3 = getWeb3();
+const getInstance = getContractInstance(web3);
 
 contract.only('FeePool', async function(accounts) {
 	// Updates rates with defaults so they're not stale.
@@ -21,9 +24,9 @@ contract.only('FeePool', async function(accounts) {
 	};
 
 	const closeFeePeriod = async () => {
-		const feePeriodDuration = await feePool.feePeriodDuration();
+		const feePeriodDuration = await feePool.methods.feePeriodDuration().call();
 		await fastForward(feePeriodDuration);
-		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+		await feePool.methods.closeCurrentFeePeriod().send(sendParameters(feeAuthority));
 		await updateRatesWithDefaults();
 	};
 
@@ -68,8 +71,9 @@ contract.only('FeePool', async function(accounts) {
 		// We do this in a beforeEach instead of before to ensure we isolate
 		// contract interfaces to prevent test bleed.
 		exchangeRates = await ExchangeRates.deployed();
-		feePool = await FeePool.deployed();
-		FEE_ADDRESS = await feePool.FEE_ADDRESS();
+		// feePool = await FeePool.deployed();
+		feePool = getInstance(FeePool);
+		FEE_ADDRESS = await feePool.methods.FEE_ADDRESS().call();
 
 		synthetix = await Synthetix.deployed();
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
@@ -309,7 +313,7 @@ contract.only('FeePool', async function(accounts) {
 	});
 
 	it.only('should correctly roll over unclaimed fees when closing fee periods', async function() {
-		const feePeriodLength = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
+		const feePeriodLength = await feePool.methods.FEE_PERIOD_LENGTH().call();
 
 		// Issue 10,000 sUSD.
 		await synthetix.issueSynths(sUSD, toUnit('10000'), { from: owner });
@@ -323,11 +327,9 @@ contract.only('FeePool', async function(accounts) {
 
 		// Assert that the correct fee is in the fee pool.
 		const fee = await XDRContract.balanceOf(FEE_ADDRESS);
-		const pendingFees = feePool.methods.feesByPeriod.call(owner).then(result => {
-			return result;
-		});
+		const pendingFees = await feePool.methods.feesByPeriod(owner).call();
 		// console.log("feePool obj", feePool);
-		console.log("pendingFees", pendingFees);
+		console.log('pendingFees', pendingFees);
 		// assert.bnEqual(pendingFees, fee);
 
 		// Now we roll over the fee periods double FEE_PERIOD_LENGTH more times
@@ -358,7 +360,7 @@ contract.only('FeePool', async function(accounts) {
 		// const [pendingFees, pendingRewards] = await feePool.feesByPeriod(owner);
 		const pendingFees = await feePool.feesByPeriod(owner)[0];
 
-		console.log("pendingFees", pendingFees);
+		console.log('pendingFees', pendingFees);
 		assert.bnEqual(pendingFees, fee);
 
 		// Now close FEE_PERIOD_LENGTH * 2 fee periods and assert that it is still in the last one.
