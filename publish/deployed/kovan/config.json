@@ -1,0 +1,270 @@
+{
+  "Depot": {
+    "deploy": false,
+    "contract": "Depot"
+  },
+  "ExchangeRates": {
+    "deploy": false,
+    "contract": "ExchangeRates"
+  },
+  "FeePool": {
+    "deploy": false,
+    "contract": "FeePool"
+  },
+  "Synthetix": {
+    "deploy": false,
+    "contract": "Synthetix"
+  },
+  "SynthetixEscrow": {
+    "deploy": false,
+    "contract": "SynthetixEscrow"
+  },
+  "SynthetixState": {
+    "deploy": false,
+    "contract": "SynthetixState"
+  },
+  "SynthXDR": {
+    "deploy": false,
+    "contract": "Synth"
+  },
+  "SynthsUSD": {
+    "deploy": false,
+    "contract": "Synth"
+  },
+  "SynthsEUR": {
+    "deploy": false,
+    "contract": "Synth"
+  },
+  "SynthsJPY": {
+    "deploy": false,
+    "contract": "Synth"
+  },
+  "SynthsAUD": {
+    "deploy": false,
+    "contract": "Synth"
+  },
+  "SynthsKRW": {
+    "deploy": false,
+    "contract": "Synth"
+  },
+  "SynthsGBP": {
+    "deploy": false,
+    "contract": "Synth"
+  },
+  "SynthsCHF": {
+    "deploy": false,
+    "contract": "Synth"
+  },
+  "SynthsCNY": {
+    "deploy": false,
+    "contract": "Synth"
+  },
+  "SynthsSGD": {
+    "deploy": false,
+    "contract": "Synth"
+  },
+  "SynthsCAD": {
+    "deploy": false,
+    "contract": "Synth"
+  },
+  "SynthsRUB": {
+    "deploy": false,
+    "contract": "Synth"
+  },
+  "SynthsINR": {
+    "deploy": false,
+    "contract": "Synth"
+  },
+  "SynthsBRL": {
+    "deploy": false,
+    "contract": "Synth"
+  },
+  "SynthsNZD": {
+    "deploy": false,
+    "contract": "Synth"
+  },
+  "SynthsPLN": {
+    "deploy": false,
+    "contract": "Synth"
+  },
+  "SynthsXAU": {
+    "deploy": false,
+    "contract": "Synth"
+  },
+  "SynthsXAG": {
+    "deploy": false,
+    "contract": "Synth"
+  },
+  "SynthsBTC": {
+    "deploy": false,
+    "contract": "Synth"
+  },
+  "ProxyFeePool": {
+    "deploy": false,
+    "contract": "Proxy"
+  },
+  "ProxySynthetix": {
+    "deploy": false,
+    "contract": "Proxy"
+  },
+  "ProxyXDR": {
+    "deploy": false,
+    "contract": "Proxy"
+  },
+  "ProxysUSD": {
+    "deploy": false,
+    "contract": "Proxy"
+  },
+  "ProxysEUR": {
+    "deploy": false,
+    "contract": "Proxy"
+  },
+  "ProxysJPY": {
+    "deploy": false,
+    "contract": "Proxy"
+  },
+  "ProxysAUD": {
+    "deploy": false,
+    "contract": "Proxy"
+  },
+  "ProxysKRW": {
+    "deploy": false,
+    "contract": "Proxy"
+  },
+  "ProxysGBP": {
+    "deploy": false,
+    "contract": "Proxy"
+  },
+  "ProxysCHF": {
+    "deploy": false,
+    "contract": "Proxy"
+  },
+  "ProxysCNY": {
+    "deploy": false,
+    "contract": "Proxy"
+  },
+  "ProxysSGD": {
+    "deploy": false,
+    "contract": "Proxy"
+  },
+  "ProxysCAD": {
+    "deploy": false,
+    "contract": "Proxy"
+  },
+  "ProxysRUB": {
+    "deploy": false,
+    "contract": "Proxy"
+  },
+  "ProxysINR": {
+    "deploy": false,
+    "contract": "Proxy"
+  },
+  "ProxysBRL": {
+    "deploy": false,
+    "contract": "Proxy"
+  },
+  "ProxysNZD": {
+    "deploy": false,
+    "contract": "Proxy"
+  },
+  "ProxysPLN": {
+    "deploy": false,
+    "contract": "Proxy"
+  },
+  "ProxysXAU": {
+    "deploy": false,
+    "contract": "Proxy"
+  },
+  "ProxysXAG": {
+    "deploy": false,
+    "contract": "Proxy"
+  },
+  "ProxysBTC": {
+    "deploy": false,
+    "contract": "Proxy"
+  },
+  "SafeDecimalMath": {
+    "deploy": false,
+    "contract": "SafeDecimalMath"
+  },
+  "TokenStateSynthetix": {
+    "deploy": false,
+    "contract": "TokenState"
+  },
+  "TokenStateXDR": {
+    "deploy": false,
+    "contract": "TokenState"
+  },
+  "TokenStatesUSD": {
+    "deploy": false,
+    "contract": "TokenState"
+  },
+  "TokenStatesEUR": {
+    "deploy": false,
+    "contract": "TokenState"
+  },
+  "TokenStatesJPY": {
+    "deploy": false,
+    "contract": "TokenState"
+  },
+  "TokenStatesAUD": {
+    "deploy": false,
+    "contract": "TokenState"
+  },
+  "TokenStatesKRW": {
+    "deploy": false,
+    "contract": "TokenState"
+  },
+  "TokenStatesGBP": {
+    "deploy": false,
+    "contract": "TokenState"
+  },
+  "TokenStatesCHF": {
+    "deploy": false,
+    "contract": "TokenState"
+  },
+  "TokenStatesCNY": {
+    "deploy": false,
+    "contract": "TokenState"
+  },
+  "TokenStatesSGD": {
+    "deploy": false,
+    "contract": "TokenState"
+  },
+  "TokenStatesCAD": {
+    "deploy": false,
+    "contract": "TokenState"
+  },
+  "TokenStatesRUB": {
+    "deploy": false,
+    "contract": "TokenState"
+  },
+  "TokenStatesINR": {
+    "deploy": false,
+    "contract": "TokenState"
+  },
+  "TokenStatesBRL": {
+    "deploy": false,
+    "contract": "TokenState"
+  },
+  "TokenStatesNZD": {
+    "deploy": false,
+    "contract": "TokenState"
+  },
+  "TokenStatesPLN": {
+    "deploy": false,
+    "contract": "TokenState"
+  },
+  "TokenStatesXAU": {
+    "deploy": false,
+    "contract": "TokenState"
+  },
+  "TokenStatesXAG": {
+    "deploy": false,
+    "contract": "TokenState"
+  },
+  "TokenStatesBTC": {
+    "deploy": false,
+    "contract": "TokenState"
+  }
+}
