@@ -7,7 +7,7 @@ const SupplySchedule = artifacts.require('SupplySchedule');
 
 const { currentTime, fastForward, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 
-contract.only('Rewards Integration Tests', async function(accounts) {
+contract('Rewards Integration Tests', async function(accounts) {
 	const SECOND = 1000;
 	const MINUTE = 1000 * 60;
 	const DAY = 86400;

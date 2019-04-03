@@ -16,7 +16,18 @@
 			"name": "truffle test (debuggable)",
 			"cwd": "${workspaceFolder}",
 			"program": "${workspaceFolder}/node_modules/truffle-core/cli.js",
-			"args": ["test"]
+			"args": ["test"],
+			"runtimeExecutable": "${env:HOME}/.nvm/versions/node/v8.15.0/bin/node"
+		},
+		{
+			"name": "Launch via npm (debuggable)",
+			"type": "node",
+			"request": "launch",
+			"cwd": "${workspaceFolder}",
+			"runtimeArgs": [
+				"run-script", "test"
+			],
+			"runtimeExecutable": "${env:HOME}/.nvm/versions/node/v8.15.0/bin/npm/"
 		}
 	]
 }
