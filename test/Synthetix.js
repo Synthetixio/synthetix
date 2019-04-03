@@ -1379,7 +1379,7 @@ contract('Synthetix', async function(accounts) {
 		assert.bnEqual(expectedIssuableSynths, maxIssuableSynths);
 	});
 
-	it("should correctly calculate a user's maximum issuable synths without any havens", async function() {
+	it("should correctly calculate a user's maximum issuable synths without any SNX", async function() {
 		const maxIssuableSynths = await synthetix.maxIssuableSynths(account1, sEUR);
 		assert.bnEqual(0, maxIssuableSynths);
 	});
