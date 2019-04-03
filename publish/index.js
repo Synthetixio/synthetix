@@ -315,17 +315,17 @@ program
 				],
 			});
 
-			// if (proxyFeePool && feePool) {
-			// 	const target = await proxyFeePool.methods.target().call();
+			if (proxyFeePool && feePool) {
+				const target = await proxyFeePool.methods.target().call();
 
-			// 	if (target !== feePool.options.address) {
-			// 		console.log(yellow('Setting target on ProxyFeePool...'));
+				if (target !== feePool.options.address) {
+					console.log(yellow('Setting target on ProxyFeePool...'));
 
-			// 		await proxyFeePool.methods
-			// 			.setTarget(feePool.options.address)
-			// 			.send(deployer.sendParameters());
-			// 	}
-			// }
+					await proxyFeePool.methods
+						.setTarget(feePool.options.address)
+						.send(deployer.sendParameters());
+				}
+			}
 
 			const synthetixState = await deployContract({
 				name: 'SynthetixState',
@@ -357,41 +357,41 @@ program
 
 			const synthetixAddress = synthetix ? synthetix.options.address : '';
 
-			// if (proxySynthetix && synthetix) {
-			// 	const target = await proxySynthetix.methods.target().call();
-			// 	if (target !== synthetixAddress) {
-			// 		console.log(yellow('Setting target on ProxySynthetix...'));
-			// 		await proxySynthetix.methods.setTarget(synthetixAddress).send(deployer.sendParameters());
-			// 	}
-			// }
+			if (proxySynthetix && synthetix) {
+				const target = await proxySynthetix.methods.target().call();
+				if (target !== synthetixAddress) {
+					console.log(yellow('Setting target on ProxySynthetix...'));
+					await proxySynthetix.methods.setTarget(synthetixAddress).send(deployer.sendParameters());
+				}
+			}
 
-			// if (tokenStateSynthetix) {
-			// 	const balance = await tokenStateSynthetix.methods.balanceOf(account).call();
-			// 	const initialIssuance = web3.utils.toWei('100000000');
-			// 	if (balance !== initialIssuance) {
-			// 		console.log(yellow('Setting initial 100M balance on TokenStateSynthetix...'));
-			// 		await tokenStateSynthetix.methods
-			// 			.setBalanceOf(account, initialIssuance)
-			// 			.send(deployer.sendParameters());
-			// 	}
-			// }
+			if (tokenStateSynthetix) {
+				const balance = await tokenStateSynthetix.methods.balanceOf(account).call();
+				const initialIssuance = web3.utils.toWei('100000000');
+				if (balance !== initialIssuance) {
+					console.log(yellow('Setting initial 100M balance on TokenStateSynthetix...'));
+					await tokenStateSynthetix.methods
+						.setBalanceOf(account, initialIssuance)
+						.send(deployer.sendParameters());
+				}
+			}
 
-			// if (tokenStateSynthetix && synthetix) {
-			// 	const associatedTSContract = await tokenStateSynthetix.methods.associatedContract().call();
-			// 	if (associatedTSContract !== synthetixAddress) {
-			// 		console.log(yellow('Setting associated contract on TokenStateSynthetix...'));
-			// 		await tokenStateSynthetix.methods
-			// 			.setAssociatedContract(synthetixAddress)
-			// 			.send(deployer.sendParameters());
-			// 	}
-			// 	const associatedSSContract = await synthetixState.methods.associatedContract().call();
-			// 	if (associatedSSContract !== synthetixAddress) {
-			// 		console.log(yellow('Setting associated contract on Synthetix State...'));
-			// 		await synthetixState.methods
-			// 			.setAssociatedContract(synthetixAddress)
-			// 			.send(deployer.sendParameters());
-			// 	}
-			// }
+			if (tokenStateSynthetix && synthetix) {
+				const associatedTSContract = await tokenStateSynthetix.methods.associatedContract().call();
+				if (associatedTSContract !== synthetixAddress) {
+					console.log(yellow('Setting associated contract on TokenStateSynthetix...'));
+					await tokenStateSynthetix.methods
+						.setAssociatedContract(synthetixAddress)
+						.send(deployer.sendParameters());
+				}
+				const associatedSSContract = await synthetixState.methods.associatedContract().call();
+				if (associatedSSContract !== synthetixAddress) {
+					console.log(yellow('Setting associated contract on Synthetix State...'));
+					await synthetixState.methods
+						.setAssociatedContract(synthetixAddress)
+						.send(deployer.sendParameters());
+				}
+			}
 
 			const synthetixEscrow = await deployContract({
 				name: 'SynthetixEscrow',
@@ -399,36 +399,42 @@ program
 				args: [account, synthetix ? synthetixAddress : ''],
 			});
 
-			// if (synthetix && synthetixEscrow) {
-			// 	const escrowAddress = await synthetix.methods.escrow().call();
-			// 	if (escrowAddress !== synthetixEscrow.options.address) {
-			// 		console.log(yellow('Setting escrow on Synthetix...'));
-			// 		await synthetix.methods
-			// 			.setEscrow(synthetixEscrow.options.address)
-			// 			.send(deployer.sendParameters());
-			// 	}
-			// 	// Cannot run on mainnet, as it needs to be run by the owner of synthetixEscrow contract
-			// 	if (network !== 'mainnet') {
-			// 		const escrowSNXAddress = await synthetixEscrow.methods.synthetix().call();
-			// 		if (escrowSNXAddress !== synthetixAddress) {
-			// 			console.log(yellow('Setting deployed Synthetix on escrow...'));
-			// 			await synthetixEscrow.methods
-			// 				.setSynthetix(synthetixAddress)
-			// 				.send(deployer.sendParameters());
-			// 		}
-			// 	}
-			// }
+			await deployContract({
+				name: 'EscrowChecker',
+				deps: ['SynthetixEscrow'],
+				args: [synthetixEscrow.options.address],
+			});
+
+			if (synthetix && synthetixEscrow) {
+				const escrowAddress = await synthetix.methods.escrow().call();
+				if (escrowAddress !== synthetixEscrow.options.address) {
+					console.log(yellow('Setting escrow on Synthetix...'));
+					await synthetix.methods
+						.setEscrow(synthetixEscrow.options.address)
+						.send(deployer.sendParameters());
+				}
+				// Cannot run on mainnet, as it needs to be run by the owner of synthetixEscrow contract
+				if (network !== 'mainnet') {
+					const escrowSNXAddress = await synthetixEscrow.methods.synthetix().call();
+					if (escrowSNXAddress !== synthetixAddress) {
+						console.log(yellow('Setting deployed Synthetix on escrow...'));
+						await synthetixEscrow.methods
+							.setSynthetix(synthetixAddress)
+							.send(deployer.sendParameters());
+					}
+				}
+			}
 
 			// Cannot run on mainnet, as it needs to be run by the owner of feePool contract
-			// if (network !== 'mainnet') {
-			// 	if (feePool && synthetix) {
-			// 		const fpSNXAddress = await feePool.methods.synthetix().call();
-			// 		if (fpSNXAddress !== synthetixAddress) {
-			// 			console.log(yellow('Setting Synthetix on Fee Pool...'));
-			// 			await feePool.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
-			// 		}
-			// 	}
-			// }
+			if (network !== 'mainnet') {
+				if (feePool && synthetix) {
+					const fpSNXAddress = await feePool.methods.synthetix().call();
+					if (fpSNXAddress !== synthetixAddress) {
+						console.log(yellow('Setting Synthetix on Fee Pool...'));
+						await feePool.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
+					}
+				}
+			}
 
 			// ----------------
 			// Synths
@@ -458,44 +464,44 @@ program
 					],
 				});
 				const synthAddress = synth ? synth.options.address : '';
-				// if (synth && tokenStateForSynth) {
-				// 	const tsAssociatedContract = await tokenStateForSynth.methods.associatedContract().call();
-				// 	if (tsAssociatedContract !== synthAddress) {
-				// 		console.log(yellow(`Setting associated contract for ${currencyKey} TokenState...`));
+				if (synth && tokenStateForSynth) {
+					const tsAssociatedContract = await tokenStateForSynth.methods.associatedContract().call();
+					if (tsAssociatedContract !== synthAddress) {
+						console.log(yellow(`Setting associated contract for ${currencyKey} TokenState...`));
 
-				// 		await tokenStateForSynth.methods
-				// 			.setAssociatedContract(synthAddress)
-				// 			.send(deployer.sendParameters());
-				// 	}
-				// }
-				// if (proxyForSynth && synth) {
-				// 	const target = await proxyForSynth.methods.target().call();
-				// 	if (target !== synthAddress) {
-				// 		console.log(yellow(`Setting proxy target for ${currencyKey} Proxy...`));
+						await tokenStateForSynth.methods
+							.setAssociatedContract(synthAddress)
+							.send(deployer.sendParameters());
+					}
+				}
+				if (proxyForSynth && synth) {
+					const target = await proxyForSynth.methods.target().call();
+					if (target !== synthAddress) {
+						console.log(yellow(`Setting proxy target for ${currencyKey} Proxy...`));
 
-				// 		await proxyForSynth.methods.setTarget(synthAddress).send(deployer.sendParameters());
-				// 	}
-				// }
+						await proxyForSynth.methods.setTarget(synthAddress).send(deployer.sendParameters());
+					}
+				}
 
 				// Cannot run on mainnet, as it needs to be owner of existing Synthetix & Synth contracts
-				// if (network !== 'mainnet') {
-				// 	if (synth && synthetix) {
-				// 		const currentSynthInSNX = await synthetix.methods
-				// 			.synths(web3.utils.asciiToHex(currencyKey))
-				// 			.call();
-				// 		if (currentSynthInSNX !== synthAddress) {
-				// 			console.log(yellow(`Adding ${currencyKey} to Synthetix contract...`));
-				// 			await synthetix.methods.addSynth(synthAddress).send(deployer.sendParameters());
-				// 		}
+				if (network !== 'mainnet') {
+					if (synth && synthetix) {
+						const currentSynthInSNX = await synthetix.methods
+							.synths(web3.utils.asciiToHex(currencyKey))
+							.call();
+						if (currentSynthInSNX !== synthAddress) {
+							console.log(yellow(`Adding ${currencyKey} to Synthetix contract...`));
+							await synthetix.methods.addSynth(synthAddress).send(deployer.sendParameters());
+						}
 
-				// 		const synthSNXAddress = await synth.methods.synthetix().call();
+						const synthSNXAddress = await synth.methods.synthetix().call();
 
-				// 		if (synthSNXAddress !== synthetixAddress) {
-				// 			console.log(yellow(`Adding Synthetix contract on ${currencyKey} contract...`));
-				// 			await synth.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
-				// 		}
-				// 	}
-				// }
+						if (synthSNXAddress !== synthetixAddress) {
+							console.log(yellow(`Adding Synthetix contract on ${currencyKey} contract...`));
+							await synth.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
+						}
+					}
+				}
 			}
 
 			const depot = await deployContract({
@@ -515,17 +521,17 @@ program
 				],
 			});
 
-			// Comment out if deploying on mainnet - Needs to be owner of Depot contract
-			// if (network !== 'mainnet') {
-			// 	if (synthetix && depot) {
-			// 		const depotSNXAddress = await depot.methods.synthetix().call();
-			// 		if (depotSNXAddress !== synthetixAddress) {
-			// 			console.log(yellow(`Setting synthetix on depot contract...`));
+			// Cannot run on mainnet as it needs to be owner of Depot contract
+			if (network !== 'mainnet') {
+				if (synthetix && depot) {
+					const depotSNXAddress = await depot.methods.synthetix().call();
+					if (depotSNXAddress !== synthetixAddress) {
+						console.log(yellow(`Setting synthetix on depot contract...`));
 
-			// 			await depot.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
-			// 		}
-			// 	}
-			// }
+						await depot.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
+					}
+				}
+			}
 
 			console.log();
 			console.log(green('Successfully deployed all contracts!'));

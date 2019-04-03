@@ -7,6 +7,13 @@
       "link": "https://etherscan.io/address/0x172E09691DfBbC035E37c73B62095caa16Ee2388",
       "network": "mainnet"
     },
+    "EscrowChecker": {
+      "name": "EscrowChecker",
+      "address": "0x3c9dF924b16b321847096a47d2d57D4A3259D060",
+      "source": "EscrowChecker",
+      "link": "https://etherscan.io/address/0x3c9dF924b16b321847096a47d2d57D4A3259D060",
+      "network": "mainnet"
+    },
     "ExchangeRates": {
       "name": "ExchangeRates",
       "address": "0x73b172756BD5DDf0110Ba8D7b88816Eb639Eb21c",
@@ -7096,6 +7103,57 @@
           "name": "OwnerChanged",
           "type": "event",
           "signature": "0xb532073b38c83145e3e5135377a08bf9aab55bc0fd7c1179cd4fb995d2a5159c"
+        }
+      ]
+    },
+    "EscrowChecker": {
+      "bytecode": "608060405234801561001057600080fd5b50604051602080610399833981016040525160008054600160a060020a03909216600160a060020a0319909216919091179055610347806100526000396000f30060806040526004361061004b5763ffffffff7c0100000000000000000000000000000000000000000000000000000000600035041663449d0eb181146100505780639514c232146100b7575b600080fd5b34801561005c57600080fd5b5061007e73ffffffffffffffffffffffffffffffffffffffff600435166100f5565b604051808261020080838360005b838110156100a457818101518382015260200161008c565b5050505090500191505060405180910390f35b3480156100c357600080fd5b506100cc6102c4565b6040805173ffffffffffffffffffffffffffffffffffffffff9092168252519081900360200190f35b6100fd6102e0565b6101056102e0565b600080610110610300565b60008054604080517f204b676a00000000000000000000000000000000000000000000000000000000815273ffffffffffffffffffffffffffffffffffffffff8a811660048301529151919092169263204b676a92602480820193602093909283900390910190829087803b15801561018857600080fd5b505af115801561019c573d6000803e3d6000fd5b505050506040513d60208110156101b257600080fd5b50519250600091505b828210156102ba5760008054604080517fda7bd3e900000000000000000000000000000000000000000000000000000000815273ffffffffffffffffffffffffffffffffffffffff8a8116600483015260248201879052825193169363da7bd3e993604480840194939192918390030190829087803b15801561023d57600080fd5b505af1158015610251573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250604081101561027657600080fd5b50805190915084600284026010811061028b57fe5b602002015280600160200201518460016002850201601081106102aa57fe5b60200201526001909101906101bb565b5091949350505050565b60005473ffffffffffffffffffffffffffffffffffffffff1681565b610200604051908101604052806010906020820280388339509192915050565b604080518082018252906002908290803883395091929150505600a165627a7a72305820c77bfa085f78cdc7114693bdca32f970365e55056a5a5301808eb842f6c8f43a0029",
+      "abi": [
+        {
+          "constant": true,
+          "inputs": [
+            {
+              "name": "account",
+              "type": "address"
+            }
+          ],
+          "name": "checkAccountSchedule",
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256[16]"
+            }
+          ],
+          "payable": false,
+          "stateMutability": "view",
+          "type": "function",
+          "signature": "0x449d0eb1"
+        },
+        {
+          "constant": true,
+          "inputs": [],
+          "name": "synthetix_escrow",
+          "outputs": [
+            {
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "payable": false,
+          "stateMutability": "view",
+          "type": "function",
+          "signature": "0x9514c232"
+        },
+        {
+          "inputs": [
+            {
+              "name": "_esc",
+              "type": "address"
+            }
+          ],
+          "payable": false,
+          "stateMutability": "nonpayable",
+          "type": "constructor"
         }
       ]
     }

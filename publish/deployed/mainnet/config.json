@@ -3,6 +3,10 @@
     "deploy": false,
     "contract": "Depot"
   },
+  "EscrowChecker": {
+    "deploy": false,
+    "contract": "EscrowChecker"
+  },
   "ExchangeRates": {
     "deploy": false,
     "contract": "ExchangeRates"
