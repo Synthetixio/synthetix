@@ -1379,7 +1379,7 @@ contract('Synthetix', async function(accounts) {
 		assert.bnEqual(expectedIssuableSynths, maxIssuableSynths);
 	});
 
-	it("should correctly calculate a user's maximum issuable synths without any havens", async function() {
+	it("should correctly calculate a user's maximum issuable synths without any SNX", async function() {
 		const maxIssuableSynths = await synthetix.maxIssuableSynths(account1, sEUR);
 		assert.bnEqual(0, maxIssuableSynths);
 	});
@@ -1991,7 +1991,7 @@ contract('Synthetix', async function(accounts) {
 		await assert.revert(synthetix.issueSynths(sUSD, issuedSynths1, { from: account1 }));
 	});
 
-	describe.only('supply minting', async function() {
+	describe('supply minting', async function() {
 		const [secondYearSupply, thirdYearSupply] = ['75000000', '37500000'];
 
 		const DAY = 86400;

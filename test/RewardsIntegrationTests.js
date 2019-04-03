@@ -171,13 +171,13 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 				// All 3 accounts have 1/3 of the rewards
 				let vestingScheduleEntry;
 				vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-				assert.bnEqual(vestingScheduleEntry[1], mintableSupply.div(3));
+				assert.bnEqual(vestingScheduleEntry[1], mintableSupply.div(web3.utils.toBN('3'));
 
 				vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account2, 0);
-				assert.bnEqual(vestingScheduleEntry[1], mintableSupply.div(3));
+				assert.bnEqual(vestingScheduleEntry[1], mintableSupply.div(web3.utils.toBN('3')));
 
 				vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account3, 0);
-				assert.bnEqual(vestingScheduleEntry[1], mintableSupply.div(3));
+				assert.bnEqual(vestingScheduleEntry[1], mintableSupply.div(web3.utils.toBN('3')));
 			});
 
 			it('should allocate correct SNX rewards as others leave the system', async function() {
@@ -199,7 +199,7 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 				// All Account 1 has 1/3 of the rewards
 				let vestingScheduleEntry;
 				vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-				assert.bnEqual(vestingScheduleEntry[1], periodOneMintableSupply.div(3));
+				assert.bnEqual(vestingScheduleEntry[1], periodOneMintableSupply.div(web3.utils.toBN('3')));
 
 				// Account 1 leaves the system
 				const burnableTotal = synthetix.debtBalanceOf(account1);
@@ -216,13 +216,105 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 				await feePool.claimFees({ from: account3 });
 
 				// Accounts 2 & 3 now have 33% of period 1 and 50% of period 2
-				const rewardsAmount = periodOneMintableSupply.div(3).add(periodTwoMintableSupply.div(2));
+				const rewardsAmount = periodOneMintableSupply.div(web3.utils.toBN('3')).add(periodTwoMintableSupply.div(web3.utils.toBN('2')));
 
 				vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account2, 0);
 				assert.bnEqual(vestingScheduleEntry[1], rewardsAmount);
 
 				vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account3, 0);
 				assert.bnEqual(vestingScheduleEntry[1], rewardsAmount);
+			});
+
+			describe('c-ratio penalties', async function() {
+				const third = amount => amount.div(web3.utils.toBN('3'));
+				const periodOneMintableSupply;
+
+				beforeEach(async function() {
+					// FastForward into the first mintable week
+					await fastForward(WEEK + MINUTE);
+
+					// Get the SNX mintableSupply
+					periodOneMintableSupply = await supplySchedule.mintableSupply();
+	
+					// Mint the staking rewards
+					await synthetix.mint({ from: owner });
+				});
+				
+				it('should apply a penalty of 25% when users claim rewards between 22%-30% collateralisation ratio', async function() {
+					const threeQuarters = amount => amount.div(web3.utils.toBN('4')).mul(web3.utils.toBN('3'));
+					let synthFees, snxRewards;
+
+					// We should have zero rewards available because the period is still open.
+					(synthFees, snxRewards) = await feePool.feesAvailable(account1, sUSD);
+					assert.bnEqual(snxRewards, 0);
+			
+					// Once the fee period is closed we should have 1/3 the rewards available because we have
+					// 1/3 the collateral backing up the system.
+					await closeFeePeriod();
+					(synthFees, snxRewards) = await feePool.feesAvailable(account1, sUSD);
+					assert.bnClose(snxRewards, third(periodOneMintableSupply));
+			
+					// But if the price of SNX decreases a bit...
+					const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.01'));
+					const timestamp = await currentTime();
+					await exchangeRates.updateRates([SNX], [newRate], timestamp, {
+						from: oracle,
+					});
+					
+					// we will fall into the 22-30% bracket and lose 25% of those rewards.
+					(synthFees, snxRewards) = await feePool.feesAvailable(account1, sUSD);
+					assert.bnClose(
+						snxRewards,
+						threeQuarters(third(periodOneMintableSupply))
+					);
+			
+					// And if we claim them
+					await feePool.claimFees(sUSD, { from: account1 });
+			
+					// We should have our decreased rewards amount in escrow
+					vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account1, 0);
+					assert.bnEqual(vestingScheduleEntry[1], threeQuarters(third(periodOneMintableSupply)));
+				});
+
+				it('should apply a penalty of 50% when users claim rewards between 30%-40% collateralisation ratio', async function() {
+					const half = amount => amount.div(web3.utils.toBN('2'));
+					let synthFees, snxRewards;
+
+					// We should have zero rewards available because the period is still open.
+					(synthFees, snxRewards) = await feePool.feesAvailable(account1, sUSD);
+					assert.bnEqual(snxRewards, 0);
+			
+					// Once the fee period is closed we should have 1/3 the rewards available because we have
+					// 1/3 the collateral backing up the system.
+					await closeFeePeriod();
+					(synthFees, snxRewards) = await feePool.feesAvailable(account1, sUSD);
+					assert.bnClose(snxRewards, third(periodOneMintableSupply));
+			
+					// But if the price of SNX decreases a bit...
+					const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.045'));
+					const timestamp = await currentTime();
+					await exchangeRates.updateRates([SNX], [newRate], timestamp, {
+						from: oracle,
+					});
+					
+					// we will fall into the 30-40% bracket and lose 50% of those rewards.
+					(synthFees, snxRewards) = await feePool.feesAvailable(account1, sUSD);
+					assert.bnClose(
+						snxRewards,
+						half(third(periodOneMintableSupply))
+					);
+			
+					// And if we claim them
+					await feePool.claimFees(sUSD, { from: account1 });
+			
+					// We should have our decreased rewards amount in escrow
+					vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account1, 0);
+					assert.bnEqual(vestingScheduleEntry[1], threeQuarters(third(periodOneMintableSupply)));
+				});
+
+				it('should apply a penalty of 75% when users claim rewards between 40%-50% collateralisation ratio');
+				it('should apply a penalty of 90% when users claim rewards between >50% collateralisation ratio');
+				it('should apply a penalty of 100% when users claim rewards between >100% collateralisation ratio');
 			});
 		});
 	});
