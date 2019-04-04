@@ -302,13 +302,6 @@ contract FeePool is Proxyable, SelfDestructible {
             .sub(lastFeePeriod.feesClaimed)
             .add(secondLastFeePeriod.feesToDistribute);
 
-        emitLogInt("lastFeePeriod", lastFeePeriod.feesToDistribute);
-        emitLogInt("lastFeePeriodID", lastFeePeriod.feePeriodId);
-        emitLogInt("lastFeePeriodstartingDebtIndex", lastFeePeriod.startingDebtIndex);
-        emitLogInt("secondLastFeePeriod", secondLastFeePeriod.feesToDistribute);
-        emitLogInt("secondLastID", secondLastFeePeriod.feePeriodId);
-        emitLogInt("secondLastFeePeriodstartingDebtIndex", secondLastFeePeriod.startingDebtIndex);
-
         // Shift the previous fee periods across to make room for the new one.
         // Condition checks for overflow when uint subtracts one from zero
         // Could be written with int instead of uint, but then we have to convert everywhere
@@ -650,7 +643,6 @@ contract FeePool is Proxyable, SelfDestructible {
         debtEntryIndex = accountIssuanceLedger[account][0].debtEntryIndex;
 
         // If they don't have any debt ownership and they haven't minted, they don't have any fees
-        // if (debtEntryIndex == 0 && userOwnershipPercentage == 0) return (resultFees, resultRewards);
         if (debtEntryIndex == 0 && userOwnershipPercentage == 0) return results;
 
         // If there are no XDR synths, then they don't have any fees 
@@ -663,22 +655,33 @@ contract FeePool is Proxyable, SelfDestructible {
         // The [0] fee period is not yet ready to claim, but it is a fee period that they can have
         // fees owing for, so we need to report on it anyway.
         results[0][0] = _feesFromPeriod(0, userOwnershipPercentage, penalty);
+        results[0][1] = recentFeePeriods[0].startingDebtIndex;
 
-        // Go through our fee periods from the oldest feePeriod [3] and figure out what we owe them.
+        // Go through our fee periods from the oldest feePeriod[FEE_PERIOD_LENGTH - 1] and figure out what we owe them.
         // Condition checks for periods > 0 
         for (uint i = FEE_PERIOD_LENGTH - 1; i > 0; i--) {
+            uint next = i - 1; 
+            FeePeriod memory nextPeriod = recentFeePeriods[next];
+
             // We calculate a feePeriod's closingDebtIndex by looking at the next feePeriod's startingDebtIndex 
             // If issuanceData[0].DebtEntryIndex was before the current feePeriod's closingDebtIndex 
             // we can use the most recent issuanceData[0] for the current feePeriod 
             // else find the applicableIssuanceData for the feePeriod based on the StartingDebtIndex of the period  
-            uint previous = i - 1; 
 
-            if (recentFeePeriods[previous].startingDebtIndex < debtEntryIndex) {
-                results[i][1] = 1234;
-                (userOwnershipPercentage, debtEntryIndex) = applicableIssuanceData(account, recentFeePeriods[i - 1].startingDebtIndex);
+            // nextPeriod.startingDebtIndex == 0 we can skip as no debt minted during period
+            if (nextPeriod.startingDebtIndex == 0) {
+                continue;
+            }
+
+            if (nextPeriod.startingDebtIndex < debtEntryIndex)
+            {
+                results[i][1] = debtEntryIndex;
+                results[i][0] = nextPeriod.startingDebtIndex;
+                (userOwnershipPercentage, debtEntryIndex) = applicableIssuanceData(account, nextPeriod.startingDebtIndex);
+                // results[i][1] = nextPeriod.startingDebtIndex;
             }
                 
-            results[i][0] = _feesFromPeriod(i, userOwnershipPercentage, penalty);
+            // results[i][0] = _feesFromPeriod(i, userOwnershipPercentage, penalty);
         }
 
         return results;

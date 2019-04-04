@@ -715,7 +715,7 @@ contract Synthetix is ExternStateToken {
             // debtBalanceOf(messageSender, "SNX").divideDecimalRound(synthetixState.issuanceRatio()), // NOT LOCKED SNX
             // debtBalanceOf(messageSender, "XDR"), // NOT in XDRs becuase of multi-currency e.g. sBTC pumps
             initialDebtOwnership, // MUST BE DEBT OWNERSHIP
-            synthetixState.lastDebtLedgerEntry()
+            debtEntryIndex
         );
     }
 

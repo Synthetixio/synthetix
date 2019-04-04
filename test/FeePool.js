@@ -8,7 +8,7 @@ const { currentTime, fastForward, toUnit, ZERO_ADDRESS } = require('../utils/tes
 const web3 = getWeb3();
 const getInstance = getContractInstance(web3);
 
-contract.only('FeePool', async function(accounts) {
+contract('FeePool', async function(accounts) {
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
 		const timestamp = await currentTime();
@@ -64,7 +64,14 @@ contract.only('FeePool', async function(accounts) {
 		account4,
 	] = accounts;
 
-	let feePool, feePoolWeb3, FEE_ADDRESS, synthetix, exchangeRates, sUSDContract, sAUDContract, XDRContract;
+	let feePool,
+		feePoolWeb3,
+		FEE_ADDRESS,
+		synthetix,
+		exchangeRates,
+		sUSDContract,
+		sAUDContract,
+		XDRContract;
 
 	beforeEach(async function() {
 		// Save ourselves from having to await deployed() in every single test.
@@ -341,7 +348,7 @@ contract.only('FeePool', async function(accounts) {
 		assert.bnEqual(web3.utils.toBN(pendingFees[0]), fee);
 	});
 
-	it.only('should correctly close the current fee period when there are more than FEE_PERIOD_LENGTH periods', async function() {
+	it('should correctly close the current fee period when there are more than FEE_PERIOD_LENGTH periods', async function() {
 		const length = await feePool.FEE_PERIOD_LENGTH();
 
 		// Issue 10,000 sUSD.
@@ -368,12 +375,12 @@ contract.only('FeePool', async function(accounts) {
 		const feesByPeriod = await feePoolWeb3.methods.feesByPeriod(owner).call();
 
 		// Should be no fees for any period
-		// for (const zeroFees of feesByPeriod.slice(0, length - 1)) {
-		// 	assert.bnEqual(zeroFees, 0);
-		// }
+		for (const zeroFees of feesByPeriod.slice(0, length - 1)) {
+			assert.bnEqual(zeroFees[0], 0);
+		}
 
 		// Except the last one
-		assert.bnEqual(feesByPeriod[length - 1], fee);
+		assert.bnEqual(feesByPeriod[length - 1][0], fee);
 	});
 
 	it('should correctly close the current fee period when there is only one fee period open', async function() {

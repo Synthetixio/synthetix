@@ -12,8 +12,13 @@ const getWeb3 = () => {
 
 // assumes passed-in web3 is v1.0 and creates a function to receive artifacts helper
 const getContractInstance = web3 => artifact => {
-	const deployedAddress = artifact.networks[artifact.network_id].address;
-	const instance = new web3.eth.Contract(artifact.abi, deployedAddress);
+	const artifactObj =
+		typeof artifact === 'string' || artifact instanceof String
+			? artifacts.require(artifact)
+			: artifact;
+
+	const deployedAddress = artifactObj.networks[artifact.network_id].address;
+	const instance = new web3.eth.Contract(artifactObj.abi, deployedAddress);
 
 	// copy all methods() to instance level
 	return instance;
