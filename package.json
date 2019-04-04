@@ -23,12 +23,13 @@
 		"Truffle"
 	],
 	"files": [
-		"./index.js",
-		"./publish/deployed/*/deployment.json"
+		"index.js",
+		"publish/deployed/*/deployment.json"
 	],
 	"bin": {
-		"snx": "./index.js"
+		"snx": "index.js"
 	},
+	"main": "index.js",
 	"bugs": {
 		"url": "https://github.com/Synthetixio/synthetix/issues"
 	},
