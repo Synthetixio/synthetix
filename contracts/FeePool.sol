@@ -302,6 +302,13 @@ contract FeePool is Proxyable, SelfDestructible {
             .sub(lastFeePeriod.feesClaimed)
             .add(secondLastFeePeriod.feesToDistribute);
 
+        emitLogInt("lastFeePeriod", lastFeePeriod.feesToDistribute);
+        emitLogInt("lastFeePeriodID", lastFeePeriod.feePeriodId);
+        emitLogInt("lastFeePeriodstartingDebtIndex", lastFeePeriod.startingDebtIndex);
+        emitLogInt("secondLastFeePeriod", secondLastFeePeriod.feesToDistribute);
+        emitLogInt("secondLastID", secondLastFeePeriod.feePeriodId);
+        emitLogInt("secondLastFeePeriodstartingDebtIndex", secondLastFeePeriod.startingDebtIndex);
+
         // Shift the previous fee periods across to make room for the new one.
         // Condition checks for overflow when uint subtracts one from zero
         // Could be written with int instead of uint, but then we have to convert everywhere
@@ -632,12 +639,9 @@ contract FeePool is Proxyable, SelfDestructible {
     function feesByPeriod(address account)
         public
         view
-        // returns (uint[FEE_PERIOD_LENGTH], uint[FEE_PERIOD_LENGTH])
         returns (uint[2][FEE_PERIOD_LENGTH])
     {
         uint[2][FEE_PERIOD_LENGTH] memory results;
-        // uint[FEE_PERIOD_LENGTH] memory resultFees;
-        // uint[FEE_PERIOD_LENGTH] memory resultRewards;
 
         // What's the user's debt entry index and the debt they owe to the system at current feePeriod
         uint userOwnershipPercentage;
@@ -663,17 +667,20 @@ contract FeePool is Proxyable, SelfDestructible {
         // Go through our fee periods from the oldest feePeriod [3] and figure out what we owe them.
         // Condition checks for periods > 0 
         for (uint i = FEE_PERIOD_LENGTH - 1; i > 0; i--) {
-            // If issuanceData[0].DebtEntryIndex is before the i - 1 feePeriod startDebtIndex 
-            // we can use the most recent issuanceData[0] for recentFeePeriods[i] 
+            // We calculate a feePeriod's closingDebtIndex by looking at the next feePeriod's startingDebtIndex 
+            // If issuanceData[0].DebtEntryIndex was before the current feePeriod's closingDebtIndex 
+            // we can use the most recent issuanceData[0] for the current feePeriod 
             // else find the applicableIssuanceData for the feePeriod based on the StartingDebtIndex of the period  
-            if (recentFeePeriods[i - 1].startingDebtIndex < debtEntryIndex) {
+            uint previous = i - 1; 
+
+            if (recentFeePeriods[previous].startingDebtIndex < debtEntryIndex) {
+                results[i][1] = 1234;
                 (userOwnershipPercentage, debtEntryIndex) = applicableIssuanceData(account, recentFeePeriods[i - 1].startingDebtIndex);
             }
                 
             results[i][0] = _feesFromPeriod(i, userOwnershipPercentage, penalty);
         }
 
-        // return (resultFees, resultRewards);
         return results;
     }
 
@@ -686,11 +693,12 @@ contract FeePool is Proxyable, SelfDestructible {
         
         // we can start from issuanceData[1] as issuanceData[0] was checked
         // find the most recent issuanceData for the feePeriod before it was closed
-        for (uint i = 1; i < FEE_PERIOD_LENGTH; i++) {
-            if (closingDebtIndex >= issuanceData[i].debtEntryIndex) {
-                return (issuanceData[i].debtPercentage, issuanceData[i].debtEntryIndex);
-            }
-        }
+        // for (uint i = 1; i < FEE_PERIOD_LENGTH; i++) {
+        //     if (closingDebtIndex >= issuanceData[i].debtEntryIndex) {
+        //         return (issuanceData[i].debtPercentage, issuanceData[i].debtEntryIndex);
+        //     }
+        // }
+        return (1,1);
     }
 
     /**
@@ -730,6 +738,12 @@ contract FeePool is Proxyable, SelfDestructible {
     modifier notFeeAddress(address account) {
         require(account != FEE_ADDRESS, "Fee address not allowed");
         _;
+    }
+
+    event LogInt(string message, uint value);
+    bytes32 constant LOGINT_SIG = keccak256("LogInt(string,uint256)");
+    function emitLogInt(string message, uint value) internal {
+        proxy._emit(abi.encode(message, value), 1, LOGINT_SIG, 0, 0, 0);
     }
 
     event TransferFeeUpdated(uint newFeeRate);

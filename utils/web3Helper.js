@@ -19,8 +19,8 @@ const getContractInstance = web3 => artifact => {
 	return instance;
 };
 
-const sendParameters = (fromAddress, type = 'method-call') => ({
-	from: fromAddress || web3.eth.defaultAccount,
+const sendParameters = (options, type = 'method-call') => ({
+	from: options.from || web3.eth.defaultAccount,
 	gas: type === 'method-call' ? methodCallGasLimit : contractDeploymentGasLimit,
 	gasPrice: web3.utils.toWei('5', 'gwei'),
 });
