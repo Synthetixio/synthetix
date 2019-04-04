@@ -1,6 +1,6 @@
 {
 	"name": "synthetix",
-	"version": "2.1.6",
+	"version": "2.1.8",
 	"license": "MIT",
 	"author": "Synthetix",
 	"description": "The smart contracts which make up the Synthetix system. (synthetix.io)",
@@ -23,7 +23,8 @@
 		"Truffle"
 	],
 	"files": [
-		"index.js",
+		"./index.js",
+		"publish/synths.json",
 		"publish/deployed/*/deployment.json"
 	],
 	"bin": {

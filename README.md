@@ -60,7 +60,7 @@ snx.getSynths();
 Same as above but as a CLI tool that outputs JSON:
 
 ```bash
-npx synthetix -- target --network rinkeby --contract ProxySynthetix
+npx synthetix target --network rinkeby --contract ProxySynthetix
 # {
 #   "name": "ProxySynthetix",
 #   "address": "0x322A3346bf24363f451164d96A5b5cd5A7F4c337",
@@ -70,13 +70,13 @@ npx synthetix -- target --network rinkeby --contract ProxySynthetix
 #   "network": "rinkeby"
 # }
 
-npx synthetix -- source --network rinkeby --contract Proxy
+npx synthetix source --network rinkeby --contract Proxy
 # {
 #   "bytecode": "0..0",
 #   "abi": [ ... ]
 # }
 
-npx synthetix -- synths
+npx synthetix synths
 # ["XDR", "sUSD", "sEUR", ... ]
 ```
 
