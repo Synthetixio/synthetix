@@ -1,6 +1,6 @@
 {
 	"name": "synthetix",
-	"version": "2.0.0",
+	"version": "2.1.4",
 	"private": true,
 	"license": "MIT",
 	"author": "Synthetix",
@@ -16,15 +16,22 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/Havven/havven.git"
+		"url": "git+https://github.com/Synthetixio/synthetix.git"
 	},
 	"keywords": [
 		"Synthetix",
 		"Solidity",
 		"Truffle"
 	],
+	"files": [
+		"./index.js",
+		"./publish/deployed/*/deployment.json"
+	],
+	"bin": {
+		"snx": "./index.js"
+	},
 	"bugs": {
-		"url": "https://github.com/Havven/havven/issues"
+		"url": "https://github.com/Synthetixio/synthetix/issues"
 	},
 	"homepage": "https://synthetix.io",
 	"directories": {

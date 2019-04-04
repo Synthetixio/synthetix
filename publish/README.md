@@ -52,6 +52,7 @@ node publish deploy
 * `-g, --gas-price <value>` Gas price in GWEI (default: "1")
 * `-m, --method-call-gas-limit <value>` Method call gas limit (default: 150000)
 * `-n, --network <value>` The network to run off. One of mainnet, kovan, rinkeby, rospen. (default: "kovan")
+* `-o, --oracle <value>` The address of the oracle to use. (default: `0xac1e8b385230970319906c03a1d8567e3996d1d5` - used for all testnets)
 * `-s, --synth-list <value>` Path to a JSON file containing a list of synths (default: [synths.json](synths.json))
 
 ### Examples
