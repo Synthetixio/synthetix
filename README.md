@@ -1,6 +1,6 @@
 # Synthetix
 
-[![Build Status](https://travis-ci.org/Synthetixio/synthetix.svg?branch=master)](https://travis-ci.org/Synthetixio/synthetix)
+[![npm version](https://badge.fury.io/js/synthetix.svg)](https://badge.fury.io/js/synthetix) [![Build Status](https://travis-ci.org/Synthetixio/synthetix.svg?branch=master)](https://travis-ci.org/Synthetixio/synthetix)
 
 Synthetix is a crypto-backed synthetic asset platform.
 
