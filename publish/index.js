@@ -399,11 +399,13 @@ program
 				args: [account, synthetix ? synthetixAddress : ''],
 			});
 
-			await deployContract({
-				name: 'EscrowChecker',
-				deps: ['SynthetixEscrow'],
-				args: [synthetixEscrow.options.address],
-			});
+			if (synthetixEscrow) {
+				await deployContract({
+					name: 'EscrowChecker',
+					deps: ['SynthetixEscrow'],
+					args: [synthetixEscrow.options.address],
+				});
+			}
 
 			if (synthetix && synthetixEscrow) {
 				const escrowAddress = await synthetix.methods.escrow().call();
