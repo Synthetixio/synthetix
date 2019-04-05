@@ -185,12 +185,9 @@ contract('Rewards Integration Tests', async function(accounts) {
 			// Assert (1,2,3) have (40%,40%,20%) of the debt in the recently closed period
 			const twentyPercent = toPreciseUnit('0.2');
 			const fortyPercent = toPreciseUnit('0.4');
-			const debtRatioAcc1 = await FeePool.effectiveDebtRatioForPeriod(account1, 1);
-			const debtRatioAcc2 = await FeePool.effectiveDebtRatioForPeriod(account2, 1);
-			const debtRatioAcc3 = await FeePool.effectiveDebtRatioForPeriod(account3, 1);
-			assert.bnEqual(debtRatioAcc1, fortyPercent);
-			assert.bnEqual(debtRatioAcc2, fortyPercent);
-			assert.bnEqual(debtRatioAcc3, twentyPercent);
+			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account1, 1), fortyPercent);
+			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account2, 1), fortyPercent);
+			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account3, 1), twentyPercent);
 
 			// All 3 accounts claim rewards
 			await feePool.claimFees({ from: account1 });

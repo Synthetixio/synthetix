@@ -13,15 +13,14 @@
 - [x] all issueMAX sUSD, claim in p1, all get 33.33 of rewards
 - [x] all issueMAX sUSD, all claim in p6, all get 33.33 of rewards
 - [x] all issueMAX sUSD, Acc1 claims in p1 and then leaves, then Acc2&3 claim, all get 33.33 of rewards
-- [ ] p1: Acc1 & 2 issue sUSD & Acc3 issues sBTC then shift rate up 20% then leaves then calc rewards, close p.
-- [ ] p1: Acc1 & 2 mints 10K and converts all to BTC which increases 50% then Acc3 mints 10K sUSD and now Acc3 has 20% of the debt/rewards
+- [x] p1: Acc1 & 2 mints 10K and converts all to BTC which increases 50% then Acc3 mints 10K sUSD and now Acc3 has 20% of the debt/rewards
 
-- [ ] now in p2 Acc1 burns all and leaves (-40%) and Acc2 has 67% and Acc3 33% rewards allocated as such
+- [ ] ctd now in p3 Acc1 burns all and leaves (-40%) and Acc2 has 67% and Acc3 33% rewards allocated as such
 - [ ] p3: Acc1 mints 20K (40%) close p (40,40,20)
 
-- [ ] Issue sBTC then shift rate down 20% then calc rewards
+- [ ] (Inverse) Issue sBTC then shift rate down 50% then calc rewards
 
-### 3 accounts issue 33.33 10K suSD each a
+### 3 accounts issue 33.33 10K suSD eacch in p1
 
 - [ ] p2 Acc1 Issues 20K sUSD now has 50% debt/rewards Acc2&3 25%
 - [ ] p3 Acc1 Burns all then mints 10K then mint 10K debt/rewards 50%
