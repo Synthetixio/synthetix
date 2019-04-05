@@ -36,6 +36,7 @@ import "./SelfDestructible.sol";
 contract ExchangeRates is SelfDestructible {
 
     using SafeMath for uint;
+    using SafeDecimalMath for uint;
 
     // Exchange rates stored by currency code, e.g. 'SNX', or 'sUSD'
     mapping(bytes4 => uint) public rates;
@@ -235,6 +236,27 @@ contract ExchangeRates is SelfDestructible {
     /* ========== VIEWS ========== */
 
     /**
+     * @notice A function that lets you easily convert an amount in a source currency to an amount in the destination currency
+     * @param sourceCurrencyKey The currency the amount is specified in
+     * @param sourceAmount The source amount, specified in UNIT base
+     * @param destinationCurrencyKey The destination currency
+     */
+    function effectiveValue(bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey)
+        public
+        view
+        rateNotStale(sourceCurrencyKey)
+        rateNotStale(destinationCurrencyKey)
+        returns (uint)
+    {
+        // If there's no change in the currency, then just return the amount they gave us
+        if (sourceCurrencyKey == destinationCurrencyKey) return sourceAmount;
+
+        // Calculate the effective value by going from source -> USD -> destination
+        return sourceAmount.multiplyDecimalRound(rateForCurrency(sourceCurrencyKey))
+            .divideDecimalRound(rateForCurrency(destinationCurrencyKey));
+    }
+
+    /**
      * @notice Retrieve the rate for a specific currency
      */
     function rateForCurrency(bytes4 currencyKey)
@@ -294,7 +316,7 @@ contract ExchangeRates is SelfDestructible {
      * @notice Check if a specific currency's rate hasn't been updated for longer than the stale period.
      */
     function rateIsStale(bytes4 currencyKey)
-        external
+        public
         view
         returns (bool)
     {
@@ -327,6 +349,11 @@ contract ExchangeRates is SelfDestructible {
     }
 
     /* ========== MODIFIERS ========== */
+
+    modifier rateNotStale(bytes4 currencyKey) {
+        require(!rateIsStale(currencyKey), "Rate stale or nonexistant currency");
+        _;
+    }
 
     modifier onlyOracle
     {

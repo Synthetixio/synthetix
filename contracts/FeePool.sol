@@ -77,6 +77,7 @@ contract FeePool is Proxyable, SelfDestructible {
         uint feesClaimed;
         uint rewardsToDistribute;
         uint rewardsClaimed;
+        uint totalIssuedSynths;
     }
 
     // The last 4 fee periods are all that you can claim from.
@@ -264,9 +265,15 @@ contract FeePool is Proxyable, SelfDestructible {
         external
         onlySynthetix
     {
-        uint xdrAmount = synthetix.effectiveValue(currencyKey, amount, "XDR");
+        uint xdrAmount;
 
-        // Which we keep track of in XDRs in our fee pool.
+        if (currencyKey != "XDR") {
+            xdrAmount = synthetix.effectiveValue(currencyKey, amount, "XDR");
+        } else {
+            xdrAmount = amount;
+        }
+
+        // Keep track of in XDRs in our fee pool.
         recentFeePeriods[0].feesToDistribute = recentFeePeriods[0].feesToDistribute.add(xdrAmount);
     }
 
@@ -309,21 +316,24 @@ contract FeePool is Proxyable, SelfDestructible {
         // for overflow after subtracting one from zero.
         for (uint i = FEE_PERIOD_LENGTH - 2; i < FEE_PERIOD_LENGTH; i--) {
             uint next = i + 1;
-
             recentFeePeriods[next].feePeriodId = recentFeePeriods[i].feePeriodId;
             recentFeePeriods[next].startingDebtIndex = recentFeePeriods[i].startingDebtIndex;
             recentFeePeriods[next].startTime = recentFeePeriods[i].startTime;
             recentFeePeriods[next].feesToDistribute = recentFeePeriods[i].feesToDistribute;
             recentFeePeriods[next].feesClaimed = recentFeePeriods[i].feesClaimed;
+            recentFeePeriods[next].rewardsToDistribute = recentFeePeriods[i].rewardsToDistribute;
+            recentFeePeriods[next].rewardsClaimed = recentFeePeriods[i].rewardsClaimed;
+            recentFeePeriods[next].totalIssuedSynths = recentFeePeriods[i].totalIssuedSynths;
         }
 
         // Clear the first element of the array to make sure we don't have any stale values.
         delete recentFeePeriods[0];
 
-        // Open up the new fee period
+        // Open up the new fee period. Take a snapshot of the total value of the system. 
         recentFeePeriods[0].feePeriodId = nextFeePeriodId;
         recentFeePeriods[0].startingDebtIndex = synthetix.synthetixState().debtLedgerLength();
         recentFeePeriods[0].startTime = now;
+        recentFeePeriods[0].totalIssuedSynths = synthetix.totalIssuedSynths("XDR");
 
         nextFeePeriodId = nextFeePeriodId.add(1);
 
