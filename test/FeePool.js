@@ -8,7 +8,7 @@ const { currentTime, fastForward, toUnit, ZERO_ADDRESS } = require('../utils/tes
 const web3 = getWeb3();
 const getInstance = getContractInstance(web3);
 
-contract.only('FeePool', async function(accounts) {
+contract('FeePool', async function(accounts) {
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
 		const timestamp = await currentTime();
@@ -24,9 +24,9 @@ contract.only('FeePool', async function(accounts) {
 	};
 
 	const closeFeePeriod = async () => {
-		const feePeriodDuration = await feePool.methods.feePeriodDuration().call();
+		const feePeriodDuration = await feePool.feePeriodDuration();
 		await fastForward(feePeriodDuration);
-		await feePool.methods.closeCurrentFeePeriod().send(sendParameters(feeAuthority));
+		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
 		await updateRatesWithDefaults();
 	};
 
@@ -64,16 +64,23 @@ contract.only('FeePool', async function(accounts) {
 		account4,
 	] = accounts;
 
-	let feePool, FEE_ADDRESS, synthetix, exchangeRates, sUSDContract, sAUDContract, XDRContract;
+	let feePool,
+		feePoolWeb3,
+		FEE_ADDRESS,
+		synthetix,
+		exchangeRates,
+		sUSDContract,
+		sAUDContract,
+		XDRContract;
 
 	beforeEach(async function() {
 		// Save ourselves from having to await deployed() in every single test.
 		// We do this in a beforeEach instead of before to ensure we isolate
 		// contract interfaces to prevent test bleed.
 		exchangeRates = await ExchangeRates.deployed();
-		// feePool = await FeePool.deployed();
-		feePool = getInstance(FeePool);
-		FEE_ADDRESS = await feePool.methods.FEE_ADDRESS().call();
+		feePool = await FeePool.deployed();
+		feePoolWeb3 = getInstance(FeePool);
+		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 
 		synthetix = await Synthetix.deployed();
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
@@ -312,8 +319,8 @@ contract.only('FeePool', async function(accounts) {
 		assert.bnEqual(await feePool.nextFeePeriodId(), 3);
 	});
 
-	it.only('should correctly roll over unclaimed fees when closing fee periods', async function() {
-		const feePeriodLength = await feePool.methods.FEE_PERIOD_LENGTH().call();
+	it('should correctly roll over unclaimed fees when closing fee periods', async function() {
+		const feePeriodLength = await feePool.FEE_PERIOD_LENGTH();
 
 		// Issue 10,000 sUSD.
 		await synthetix.issueSynths(sUSD, toUnit('10000'), { from: owner });
@@ -327,8 +334,8 @@ contract.only('FeePool', async function(accounts) {
 
 		// Assert that the correct fee is in the fee pool.
 		const fee = await XDRContract.balanceOf(FEE_ADDRESS);
-		const pendingFees = await feePool.methods.feesByPeriod(owner).call();
-		assert.bnEqual(web3.utils.toBN(pendingFees[0][0]), fee);
+		const [pendingFees] = await feePoolWeb3.methods.feesByPeriod(owner).call();
+		assert.bnEqual(web3.utils.toBN(pendingFees[0]), fee);
 
 		// Now we roll over the fee periods double FEE_PERIOD_LENGTH more times
 		// and should have exactly the same fee available because nobody else
@@ -337,17 +344,18 @@ contract.only('FeePool', async function(accounts) {
 			await closeFeePeriod();
 		}
 
-		assert.bnEqual(web3.utils.toBN(pendingFees[0][0]), fee);
+		// AND WHAT DOES THIS TEST THE SAME THING?
+		assert.bnEqual(web3.utils.toBN(pendingFees[0]), fee);
 	});
 
 	it('should correctly close the current fee period when there are more than FEE_PERIOD_LENGTH periods', async function() {
-		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
+		const length = await feePool.FEE_PERIOD_LENGTH();
 
 		// Issue 10,000 sUSD.
 		await synthetix.issueSynths(sUSD, toUnit('10000'), { from: owner });
 
-		// Users have to be in the fee period in its entirety to be owed fees. Close that fee period
-		// so that future fees are available for the owner.
+		// Users have to have minted before the close of period. Close that fee period
+		// so that there won't be any fees in period. future fees are available.
 		await closeFeePeriod();
 
 		// Do a single transfer of all our synths to generate a fee.
@@ -355,26 +363,24 @@ contract.only('FeePool', async function(accounts) {
 
 		// Assert that the correct fee is in the fee pool.
 		const fee = await XDRContract.balanceOf(FEE_ADDRESS);
-		// const [pendingFees, pendingRewards] = await feePool.feesByPeriod(owner);
-		const pendingFees = await feePool.feesByPeriod(owner)[0];
+		const pendingFees = await feePoolWeb3.methods.feesByPeriod(owner).call();
 
-		console.log('pendingFees', pendingFees);
-		assert.bnEqual(pendingFees, fee);
+		assert.bnEqual(pendingFees[0][0], fee);
 
 		// Now close FEE_PERIOD_LENGTH * 2 fee periods and assert that it is still in the last one.
 		for (let i = 0; i < length * 2; i++) {
 			await closeFeePeriod();
 		}
 
-		const feesByPeriod = await feePool.feesByPeriod(owner);
+		const feesByPeriod = await feePoolWeb3.methods.feesByPeriod(owner).call();
 
 		// Should be no fees for any period
 		for (const zeroFees of feesByPeriod.slice(0, length - 1)) {
-			assert.bnEqual(zeroFees, 0);
+			assert.bnEqual(zeroFees[0], 0);
 		}
 
 		// Except the last one
-		assert.bnEqual(feesByPeriod[length - 1], fee);
+		assert.bnEqual(feesByPeriod[length - 1][0], fee);
 	});
 
 	it('should correctly close the current fee period when there is only one fee period open', async function() {

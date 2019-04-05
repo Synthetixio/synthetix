@@ -5,7 +5,13 @@ const Synth = artifacts.require('Synth');
 const RewardEscrow = artifacts.require('RewardEscrow');
 const SupplySchedule = artifacts.require('SupplySchedule');
 
-const { currentTime, fastForward, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
+const {
+	currentTime,
+	fastForward,
+	toUnit,
+	toPreciseUnit,
+	ZERO_ADDRESS,
+} = require('../utils/testUtils');
 
 contract('Rewards Integration Tests', async function(accounts) {
 	const SECOND = 1000;
@@ -126,9 +132,8 @@ contract('Rewards Integration Tests', async function(accounts) {
 			await synthetix.mint({ from: owner });
 		});
 
-		// p1: which increases 50% then Acc3 mints 10K sUSD and now Acc3 has 20% of the debt/rewards
-
-		it('should assign Account3 20% debt ownership after a sBTC pump of 50%', async function() {
+		it('should assign accounts (1,2,3) to have (40%,40%,20%) of the debt/rewards', async function() {
+			let vestingScheduleEntry;
 			// Account 1&2 issue 10K USD in sBTC each, holding 50% of the total debt.
 			const tenK = toUnit('10000');
 			const sBTCAmount = synthetix.effectiveExchangeValue(sUSD, tenK, sBTC);
@@ -137,13 +142,22 @@ contract('Rewards Integration Tests', async function(accounts) {
 
 			await closeFeePeriod();
 
-			// Assert 1, 2 have 50% each
-			const accountIssuanceRecord1 = await FeePool.accountIssuanceLedger[account1][0];
-			const accountIssuanceRecord2 = await FeePool.accountIssuanceLedger[account2][0];
-			const 
+			// Assert 1, 2 have 50% each of the effectiveDebtRatioForPeriod
+			const fiftyPercent = toPreciseUnit('0.5');
+			const debtRatioAccount1 = await FeePool.effectiveDebtRatioForPeriod(account1, 1);
+			const debtRatioAccount2 = await FeePool.effectiveDebtRatioForPeriod(account2, 1);
+			assert.bnEqual(debtRatioAccount1, fiftyPercent);
+			assert.bnEqual(debtRatioAccount2, fiftyPercent);
 
-			assert.bnEqual(accountIssuanceRecord, accountIssuanceRecord1);
-			assert.bnEqual(accountIssuanceRecord, rewardsAmount);
+			// Both accounts claim rewards
+			await feePool.claimFees({ from: account1 });
+			await feePool.claimFees({ from: account2 });
+
+			// Assert both accounts have 50% of the minted rewards in their initial escrow entry
+			vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account1, 0);
+			assert.bnEqual(vestingScheduleEntry[1], periodOneMintableSupply.div(2));
+			vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account2, 0);
+			assert.bnEqual(vestingScheduleEntry[1], periodOneMintableSupply.div(2));
 
 			// Increase BTC price by 50%
 			const timestamp = await currentTime();
@@ -156,16 +170,42 @@ contract('Rewards Integration Tests', async function(accounts) {
 				}
 			);
 
-			// Account 3 mints 10K sUSD and should have 20% of the debt not 33.33%
+			// Account 3 (enters the system and) mints 10K sUSD and should have 20% of the debt not 33.33%
 			await synthetix.issueSynths(sUSD, tenK, { from: account1 });
 
-			// Get the SNX mintableSupply
-			const mintableSupply = await supplySchedule.mintableSupply();
+			// Get the SNX mintableSupply for week 2
+			const periodTwoMintableSupply = await supplySchedule.mintableSupply();
 
 			// Mint the staking rewards
 			await synthetix.mint({ from: owner });
 
-			// Assert 1,2,3 have 40%,40%,20% of the debt/rewards
+			// Close so we can claim
+			await closeFeePeriod();
+
+			// Assert (1,2,3) have (40%,40%,20%) of the debt in the recently closed period
+			const twentyPercent = toPreciseUnit('0.2');
+			const fortyPercent = toPreciseUnit('0.4');
+			const debtRatioAcc1 = await FeePool.effectiveDebtRatioForPeriod(account1, 1);
+			const debtRatioAcc2 = await FeePool.effectiveDebtRatioForPeriod(account2, 1);
+			const debtRatioAcc3 = await FeePool.effectiveDebtRatioForPeriod(account3, 1);
+			assert.bnEqual(debtRatioAcc1, fortyPercent);
+			assert.bnEqual(debtRatioAcc2, fortyPercent);
+			assert.bnEqual(debtRatioAcc3, twentyPercent);
+
+			// All 3 accounts claim rewards
+			await feePool.claimFees({ from: account1 });
+			await feePool.claimFees({ from: account2 });
+			await feePool.claimFees({ from: account3 });
+
+			// Assert (1,2,3) have (40%,40%,20%) of the rewards
+			vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account1, 1);
+			assert.bnEqual(vestingScheduleEntry[1], periodTwoMintableSupply.div(5).mul(2));
+
+			vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account2, 1);
+			assert.bnEqual(vestingScheduleEntry[1], periodTwoMintableSupply.div(5).mul(2));
+
+			vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account3, 0); // Its this accounts first escrow entry
+			assert.bnEqual(vestingScheduleEntry[1], periodTwoMintableSupply.div(5).mul(1));
 		});
 	});
 

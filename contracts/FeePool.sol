@@ -642,12 +642,9 @@ contract FeePool is Proxyable, SelfDestructible {
     function feesByPeriod(address account)
         public
         view
-        // returns (uint[FEE_PERIOD_LENGTH], uint[FEE_PERIOD_LENGTH])
         returns (uint[2][FEE_PERIOD_LENGTH])
     {
         uint[2][FEE_PERIOD_LENGTH] memory results;
-        // uint[FEE_PERIOD_LENGTH] memory resultFees;
-        // uint[FEE_PERIOD_LENGTH] memory resultRewards;
 
         // What's the user's debt entry index and the debt they owe to the system at current feePeriod
         uint userOwnershipPercentage;
@@ -656,7 +653,6 @@ contract FeePool is Proxyable, SelfDestructible {
         debtEntryIndex = accountIssuanceLedger[account][0].debtEntryIndex;
 
         // If they don't have any debt ownership and they haven't minted, they don't have any fees
-        // if (debtEntryIndex == 0 && userOwnershipPercentage == 0) return (resultFees, resultRewards);
         if (debtEntryIndex == 0 && userOwnershipPercentage == 0) return results;
 
         // If there are no XDR synths, then they don't have any fees 
@@ -669,21 +665,35 @@ contract FeePool is Proxyable, SelfDestructible {
         // The [0] fee period is not yet ready to claim, but it is a fee period that they can have
         // fees owing for, so we need to report on it anyway.
         results[0][0] = _feesFromPeriod(0, userOwnershipPercentage, penalty);
+        results[0][1] = recentFeePeriods[0].startingDebtIndex;
 
-        // Go through our fee periods from the oldest feePeriod [3] and figure out what we owe them.
+        // Go through our fee periods from the oldest feePeriod[FEE_PERIOD_LENGTH - 1] and figure out what we owe them.
         // Condition checks for periods > 0 
         for (uint i = FEE_PERIOD_LENGTH - 1; i > 0; i--) {
-            // If issuanceData[0].DebtEntryIndex is before the i - 1 feePeriod startDebtIndex 
-            // we can use the most recent issuanceData[0] for recentFeePeriods[i] 
+            uint next = i - 1; 
+            FeePeriod memory nextPeriod = recentFeePeriods[next];
+
+            // We calculate a feePeriod's closingDebtIndex by looking at the next feePeriod's startingDebtIndex 
+            // If issuanceData[0].DebtEntryIndex was before the current feePeriod's closingDebtIndex 
+            // we can use the most recent issuanceData[0] for the current feePeriod 
             // else find the applicableIssuanceData for the feePeriod based on the StartingDebtIndex of the period  
-            if (recentFeePeriods[i - 1].startingDebtIndex < debtEntryIndex) {
-                (userOwnershipPercentage, debtEntryIndex) = applicableIssuanceData(account, recentFeePeriods[i - 1].startingDebtIndex);
+
+            // nextPeriod.startingDebtIndex == 0 we can skip as no debt minted during period
+            if (nextPeriod.startingDebtIndex == 0) {
+                continue;
+            }
+
+            if (nextPeriod.startingDebtIndex < debtEntryIndex)
+            {
+                results[i][1] = debtEntryIndex;
+                results[i][0] = nextPeriod.startingDebtIndex;
+                (userOwnershipPercentage, debtEntryIndex) = applicableIssuanceData(account, nextPeriod.startingDebtIndex);
+                // results[i][1] = nextPeriod.startingDebtIndex;
             }
                 
-            results[i][0] = _feesFromPeriod(i, userOwnershipPercentage, penalty);
+            // results[i][0] = _feesFromPeriod(i, userOwnershipPercentage, penalty);
         }
 
-        // return (resultFees, resultRewards);
         return results;
     }
 
@@ -696,11 +706,12 @@ contract FeePool is Proxyable, SelfDestructible {
         
         // we can start from issuanceData[1] as issuanceData[0] was checked
         // find the most recent issuanceData for the feePeriod before it was closed
-        for (uint i = 1; i < FEE_PERIOD_LENGTH; i++) {
-            if (closingDebtIndex >= issuanceData[i].debtEntryIndex) {
-                return (issuanceData[i].debtPercentage, issuanceData[i].debtEntryIndex);
-            }
-        }
+        // for (uint i = 1; i < FEE_PERIOD_LENGTH; i++) {
+        //     if (closingDebtIndex >= issuanceData[i].debtEntryIndex) {
+        //         return (issuanceData[i].debtPercentage, issuanceData[i].debtEntryIndex);
+        //     }
+        // }
+        return (1,1);
     }
 
     /**
@@ -740,6 +751,12 @@ contract FeePool is Proxyable, SelfDestructible {
     modifier notFeeAddress(address account) {
         require(account != FEE_ADDRESS, "Fee address not allowed");
         _;
+    }
+
+    event LogInt(string message, uint value);
+    bytes32 constant LOGINT_SIG = keccak256("LogInt(string,uint256)");
+    function emitLogInt(string message, uint value) internal {
+        proxy._emit(abi.encode(message, value), 1, LOGINT_SIG, 0, 0, 0);
     }
 
     event TransferFeeUpdated(uint newFeeRate);
