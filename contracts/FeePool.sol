@@ -665,7 +665,6 @@ contract FeePool is Proxyable, SelfDestructible {
         // The [0] fee period is not yet ready to claim, but it is a fee period that they can have
         // fees owing for, so we need to report on it anyway.
         results[0][0] = _feesFromPeriod(0, userOwnershipPercentage, penalty);
-        results[0][1] = recentFeePeriods[0].startingDebtIndex;
 
         // Go through our fee periods from the oldest feePeriod[FEE_PERIOD_LENGTH - 1] and figure out what we owe them.
         // Condition checks for periods > 0 
@@ -685,13 +684,10 @@ contract FeePool is Proxyable, SelfDestructible {
 
             if (nextPeriod.startingDebtIndex < debtEntryIndex)
             {
-                results[i][1] = debtEntryIndex;
-                results[i][0] = nextPeriod.startingDebtIndex;
                 (userOwnershipPercentage, debtEntryIndex) = applicableIssuanceData(account, nextPeriod.startingDebtIndex);
-                // results[i][1] = nextPeriod.startingDebtIndex;
             }
                 
-            // results[i][0] = _feesFromPeriod(i, userOwnershipPercentage, penalty);
+            results[i][0] = _feesFromPeriod(i, userOwnershipPercentage, penalty);
         }
 
         return results;
@@ -706,12 +702,11 @@ contract FeePool is Proxyable, SelfDestructible {
         
         // we can start from issuanceData[1] as issuanceData[0] was checked
         // find the most recent issuanceData for the feePeriod before it was closed
-        // for (uint i = 1; i < FEE_PERIOD_LENGTH; i++) {
-        //     if (closingDebtIndex >= issuanceData[i].debtEntryIndex) {
-        //         return (issuanceData[i].debtPercentage, issuanceData[i].debtEntryIndex);
-        //     }
-        // }
-        return (1,1);
+        for (uint i = 1; i < FEE_PERIOD_LENGTH; i++) {
+            if (closingDebtIndex >= issuanceData[i].debtEntryIndex) {
+                return (issuanceData[i].debtPercentage, issuanceData[i].debtEntryIndex);
+            }
+        }
     }
 
     /**

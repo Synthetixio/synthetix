@@ -31,8 +31,8 @@ contract('FeePool', async function(accounts) {
 	const closeFeePeriod = async () => {
 		const feePeriodDuration = await feePool.feePeriodDuration();
 		await fastForward(feePeriodDuration);
-		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
 		await updateRatesWithDefaults();
+		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
 	};
 
 	// const logFeePeriods = async () => {
@@ -325,8 +325,6 @@ contract('FeePool', async function(accounts) {
 	});
 
 	it('should correctly roll over unclaimed fees when closing fee periods', async function() {
-		const feePeriodLength = await feePool.FEE_PERIOD_LENGTH();
-
 		// Issue 10,000 sUSD.
 		await synthetix.issueSynths(sUSD, toUnit('10000'), { from: owner });
 
@@ -341,19 +339,9 @@ contract('FeePool', async function(accounts) {
 		const fee = await XDRContract.balanceOf(FEE_ADDRESS);
 		const [pendingFees] = await feePoolWeb3.methods.feesByPeriod(owner).call();
 		assert.bnEqual(web3.utils.toBN(pendingFees[0]), fee);
-
-		// Now we roll over the fee periods double FEE_PERIOD_LENGTH more times
-		// and should have exactly the same fee available because nobody else
-		// has claimed
-		for (let i = 0; i < feePeriodLength * 2; i++) {
-			await closeFeePeriod();
-		}
-
-		// AND WHAT DOES THIS TEST THE SAME THING?
-		assert.bnEqual(web3.utils.toBN(pendingFees[0]), fee);
 	});
 
-	it('should correctly close the current fee period when there are more than FEE_PERIOD_LENGTH periods', async function() {
+	it.only('should correctly close the current fee period when there are more than FEE_PERIOD_LENGTH periods', async function() {
 		const length = await feePool.FEE_PERIOD_LENGTH();
 
 		// Issue 10,000 sUSD.
@@ -388,7 +376,7 @@ contract('FeePool', async function(accounts) {
 		assert.bnEqual(feesByPeriod[length - 1][0], fee);
 	});
 
-	it('should correctly close the current fee period when there is only one fee period open', async function() {
+	it.only('should correctly close the current fee period when there is only one fee period open', async function() {
 		// Assert all the IDs and values are 0.
 		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 
