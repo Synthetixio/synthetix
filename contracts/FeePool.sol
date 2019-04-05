@@ -561,10 +561,6 @@ contract FeePool is Proxyable, SelfDestructible {
     {
         // Add up the fees
         uint[2][FEE_PERIOD_LENGTH] memory userFees = feesByPeriod(account);
-        // Add up the SNX rewards
-        // uint[FEE_PERIOD_LENGTH] memory userRewards;
-
-        // (userFees, userRewards) = feesByPeriod(account);
 
         uint totalFees = 0;
 
