@@ -8,13 +8,13 @@
 - [ ] penalty of 90% when users claim rewards between > 50% collateralisation ratio
 - [ ] penalty of 100% when users claim rewards between > 100% collateralisation ratio
 
-### 3 accounts with 33.33 SNX all issueMAX sUSD
+### 3 accounts with 33.33 SNX
 
-- [x] all Claim in p1 all get 33.33 of rewards
-- [x] all claim in p6 all get 33.33 of rewards
-- [x] Acc1 claims in p1 and then leaves, then Acc2&3 claim
-- [ ] 1&2 issue sUSD & 3 issues sBTC then shift rate up 20% then leaves then calc rewards
-      p1: Acc1 mints 10K Acc2 mints 10K and convert all to BTC which increases 50% then Acc3 mints 10K sUSD and now Acc3 has 20% of the debt/rewards
+- [x] all issueMAX sUSD, claim in p1, all get 33.33 of rewards
+- [x] all issueMAX sUSD, all claim in p6, all get 33.33 of rewards
+- [x] all issueMAX sUSD, Acc1 claims in p1 and then leaves, then Acc2&3 claim, all get 33.33 of rewards
+- [ ] p1: Acc1 & 2 issue sUSD & Acc3 issues sBTC then shift rate up 20% then leaves then calc rewards, close p.
+- [ ] p1: Acc1 & 2 mints 10K and converts all to BTC which increases 50% then Acc3 mints 10K sUSD and now Acc3 has 20% of the debt/rewards
 
 - [ ] now in p2 Acc1 burns all and leaves (-40%) and Acc2 has 67% and Acc3 33% rewards allocated as such
 - [ ] p3: Acc1 mints 20K (40%) close p (40,40,20)

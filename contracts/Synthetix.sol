@@ -244,21 +244,6 @@ contract Synthetix is ExternStateToken {
         // track these events specifically.
     }
 
-    /**
-     * @notice Set your preferred currency. Note: This does not automatically exchange any balances you've held previously in
-     * other synth currencies in this address, it will apply for any new payments you receive at this address.
-     */
-    function setPreferredCurrency(bytes4 currencyKey)
-        external
-        optionalProxy
-    {
-        //require(currencyKey == 0 || !exchangeRates.rateIsStale(currencyKey), "Currency rate is stale or doesn't exist.");
-
-        synthetixState.setPreferredCurrency(messageSender, currencyKey);
-
-        // emitPreferredCurrencyChanged(messageSender, currencyKey);
-    }
-
     // ========== VIEWS ==========
 
     /**
@@ -712,10 +697,8 @@ contract Synthetix is ExternStateToken {
 
         feePool.appendAccountIssuanceRecord(
             messageSender, 
-            // debtBalanceOf(messageSender, "SNX").divideDecimalRound(synthetixState.issuanceRatio()), // NOT LOCKED SNX
-            // debtBalanceOf(messageSender, "XDR"), // NOT in XDRs becuase of multi-currency e.g. sBTC pumps
-            initialDebtOwnership, // MUST BE DEBT OWNERSHIP
-            synthetixState.lastDebtLedgerEntry()
+            initialDebtOwnership,
+            debtEntryIndex
         );
     }
 
