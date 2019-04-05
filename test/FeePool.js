@@ -4,7 +4,12 @@ const Synthetix = artifacts.require('Synthetix');
 const Synth = artifacts.require('Synth');
 const { getWeb3, getContractInstance, sendParameters } = require('../utils/web3Helper');
 
-const { currentTime, fastForward, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
+const {
+	currentTime,
+	fastForward,
+	toUnit,
+	ZERO_ADDRESS,
+} = require('../utils/testUtils');
 const web3 = getWeb3();
 const getInstance = getContractInstance(web3);
 
