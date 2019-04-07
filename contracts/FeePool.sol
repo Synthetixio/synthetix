@@ -683,7 +683,7 @@ contract FeePool is Proxyable, SelfDestructible {
                 (userOwnershipPercentage, debtEntryIndex) = applicableIssuanceData(account, nextPeriod.startingDebtIndex);
             }
                 
-            results[i][0] = _feesFromPeriod(i, userOwnershipPercentage, penalty);
+            results[i][0] = _feesFromPeriod(i, userOwnershipPercentage, debtEntryIndex, penalty);
         }
 
         return results;
@@ -711,20 +711,31 @@ contract FeePool is Proxyable, SelfDestructible {
      * for fees in the period. Precision factor is removed before results are 
      * returned.
      */
-    function _feesFromPeriod(uint period, uint ownershipPercentage, uint penalty)
+    function _feesFromPeriod(uint period, uint ownershipPercentage, uint debtEntryIndex, uint penalty)
         internal
         returns (uint) 
     {
+        // Calculate the effectiveDebtPercentageAtPeriodEnd
+        uint debtOwnershipForPeriod = effectiveDebtPercentageAtPeriodEnd(period, ownershipPercentage, debtEntryIndex);
+
         // Calculate their percentage of the fees / rewards in this period
         // This is a high precision integer.
         uint feesFromPeriodWithoutPenalty = recentFeePeriods[period].feesToDistribute
-            .multiplyDecimal(ownershipPercentage);
+            .multiplyDecimal(debtOwnershipForPeriod);
         
         // Less their penalty if they have one.
         uint penaltyFromPeriod = feesFromPeriodWithoutPenalty.multiplyDecimal(penalty);
         uint feesFromPeriod = feesFromPeriodWithoutPenalty.sub(penaltyFromPeriod);
 
         return feesFromPeriod.preciseDecimalToDecimal();
+    }
+
+    function effectiveDebtPercentageAtPeriodEnd(uint period, uint ownershipPercentage, uint debtEntryIndex)
+        public
+        view
+        returns (uint)
+    {
+        return 1;
     }
 
     modifier onlyFeeAuthority
