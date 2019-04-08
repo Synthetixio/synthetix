@@ -270,7 +270,7 @@ program
 
 				let timestamp = new Date();
 				let txn = '';
-				if (!config[name].deploy) {
+				if (config[name] && !config[name].deploy) {
 					// deploy is false, so we reused a deployment, thus lets grab the details that already exist
 					timestamp = deployment.targets[name].timestamp;
 					txn = deployment.targets[name].txn;
@@ -294,7 +294,8 @@ program
 				fs.writeFileSync(deploymentFile, JSON.stringify(deployment, null, 2));
 
 				// now update the flags to indicate it no longer needs deployment
-				updatedConfig[name].deploy = false;
+				updatedConfig[name] = { deploy: false };
+
 				fs.writeFileSync(configFile, JSON.stringify(updatedConfig, null, 2));
 				return deployedContract;
 			};
