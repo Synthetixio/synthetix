@@ -48,8 +48,8 @@ class Deployer {
 		};
 	}
 
-	async deploy({ name, args = [], deps = [] }) {
-		if (!this.config[name]) {
+	async deploy({ name, source, args = [], deps = [], force = false }) {
+		if (!this.config[name] && !force) {
 			console.log(yellow(`Skipping ${name} as it is NOT in contract flags file for deployment.`));
 			return;
 		}
@@ -57,7 +57,12 @@ class Deployer {
 		if (missingDeps.length) {
 			throw Error(`Cannot deploy ${name} as it is missing dependencies: ${missingDeps.join(',')}`);
 		}
-		const { deploy, contract } = this.config[name];
+		// by default, we deploy if force tells us to
+		let deploy = force;
+		// though use what's in the config if it exists
+		if (this.config[name]) {
+			deploy = this.config[name].deploy;
+		}
 		const compiled = this.compiled[name];
 		const existingAddress = this.deployment.targets[name]
 			? this.deployment.targets[name].address
@@ -70,7 +75,7 @@ class Deployer {
 		let bytecode = compiled.evm.bytecode.object;
 		if (this.deployedContracts.SafeDecimalMath) {
 			bytecode = linker.linkBytecode(bytecode, {
-				[contract + '.sol']: {
+				[source + '.sol']: {
 					SafeDecimalMath: this.deployedContracts.SafeDecimalMath.options.address,
 				},
 			});

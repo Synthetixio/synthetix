@@ -255,8 +255,9 @@ program
 			const { account, web3 } = deployer;
 			console.log(gray(`Using account with public key ${account}`));
 
-			const deployContract = async ({ name, args, deps }) => {
-				const deployedContract = await deployer.deploy({ name, args, deps });
+			const deployContract = async ({ name, source = name, args, deps, force }) => {
+				// force flag indicates to deploy even when no config for the entry (useful for new synths)
+				const deployedContract = await deployer.deploy({ name, source, args, deps, force });
 				if (!deployedContract) {
 					return;
 				}
@@ -269,7 +270,6 @@ program
 					timestamp = deployment.targets[name].timestamp;
 					txn = deployment.targets[name].txn;
 				}
-				const source = config[name].contract;
 				// now update the deployed contract information
 				deployment.targets[name] = {
 					name,
@@ -305,6 +305,7 @@ program
 
 			const proxyFeePool = await deployContract({
 				name: 'ProxyFeePool',
+				source: 'Proxy',
 				args: [account],
 			});
 
@@ -340,6 +341,7 @@ program
 			const proxySynthetix = await deployContract({ name: 'ProxySynthetix', args: [account] });
 			const tokenStateSynthetix = await deployContract({
 				name: 'TokenStateSynthetix',
+				source: 'TokenState',
 				args: [account, account],
 			});
 			const synthetix = await deployContract({
@@ -451,14 +453,19 @@ program
 			for (const currencyKey of synths) {
 				const tokenStateForSynth = await deployContract({
 					name: `TokenState${currencyKey}`,
+					source: 'TokenState',
 					args: [account, ZERO_ADDRESS],
+					force: addNewSynths,
 				});
 				const proxyForSynth = await deployContract({
 					name: `Proxy${currencyKey}`,
+					source: 'Proxy',
 					args: [account],
+					force: addNewSynths,
 				});
 				const synth = await deployContract({
 					name: `Synth${currencyKey}`,
+					sourdce: 'Synth',
 					deps: [`TokenState${currencyKey}`, `Proxy${currencyKey}`, 'Synthetix', 'FeePool'],
 					args: [
 						proxyForSynth ? proxyForSynth.options.address : '',
@@ -470,6 +477,7 @@ program
 						account,
 						web3.utils.asciiToHex(currencyKey),
 					],
+					force: addNewSynths,
 				});
 				const synthAddress = synth ? synth.options.address : '';
 				if (synth && tokenStateForSynth) {
