@@ -175,6 +175,7 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
         for (uint8 i = 0; i < accounts.length; i++) {
             accountIssuanceLedger[accounts[i]][periodToInsert].debtPercentage = ratios[i];
             accountIssuanceLedger[accounts[i]][periodToInsert].debtEntryIndex = feePeriodCloseIndex;
+            emit IssuanceDebtRatioEntry(accounts[i], ratios[i], feePeriodCloseIndex, feePeriodCloseIndex);
         }
     }
 
@@ -185,4 +186,7 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
         require(msg.sender == address(feePool), "Only the FeePool contract can perform this action");
         _;
     }
+
+    /* ========== Events ========== */
+    event IssuanceDebtRatioEntry(address indexed account, uint debtRatio, uint debtEntryIndex, uint feePeriodStartingDebtIndex);
 }

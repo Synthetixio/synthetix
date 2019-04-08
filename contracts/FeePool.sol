@@ -163,6 +163,8 @@ contract FeePool is Proxyable, SelfDestructible {
         onlySynthetix
     {
         feePoolState.appendAccountIssuanceRecord(account, debtRatio, debtEntryIndex, recentFeePeriods[0].startingDebtIndex);
+        
+        emitIssuanceDebtRatioEntry(account, debtRatio, debtEntryIndex, recentFeePeriods[0].startingDebtIndex);
     }
 
     /**
@@ -720,10 +722,14 @@ contract FeePool is Proxyable, SelfDestructible {
         _;
     }
 
-    event LogInt(string message, uint value);
-    bytes32 constant LOGINT_SIG = keccak256("LogInt(string,uint256)");
-    function emitLogInt(string message, uint value) internal {
-        proxy._emit(abi.encode(message, value), 1, LOGINT_SIG, 0, 0, 0);
+    /* ========== Events ========== */
+    
+    event LogInt(string message, uint value); //TODO: REMOVE - For logging
+
+    event IssuanceDebtRatioEntry(address indexed account, uint debtRatio, uint debtEntryIndex, uint feePeriodStartingDebtIndex);
+    bytes32 constant ISSUANCEDEBTRATIOENTRY_SIG = keccak256("IssuanceDebtRatioEntry(address, uint256, uint256, uint256)");
+    function emitIssuanceDebtRatioEntry(address account, uint debtRatio, uint debtEntryIndex, uint feePeriodStartingDebtIndex) internal {
+        proxy._emit(abi.encode(debtRatio, debtEntryIndex, feePeriodStartingDebtIndex), 2, ISSUANCEDEBTRATIOENTRY_SIG, bytes32(account), 0, 0);
     }
 
     event TransferFeeUpdated(uint newFeeRate);
