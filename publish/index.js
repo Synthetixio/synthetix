@@ -207,17 +207,22 @@ program
 			const compiledSourcePath = path.join(buildPath, COMPILED_FOLDER);
 
 			let firstTimestamp = Infinity;
-			const compiled = Object.entries(config).reduce((memo, [contractName, { contract }]) => {
-				const sourceFile = path.join(compiledSourcePath, `${contract}.json`);
-				firstTimestamp = Math.min(firstTimestamp, fs.statSync(sourceFile).mtimeMs);
-				if (!fs.existsSync(sourceFile)) {
-					throw Error(
-						`Cannot find compiled contract code for: ${contract}. Did you run the "build" step first?`
-					);
-				}
-				memo[contractName] = JSON.parse(fs.readFileSync(sourceFile));
-				return memo;
-			}, {});
+
+			const compiled = fs
+				.readdirSync(compiledSourcePath)
+				.filter(name => /^.+\.json$/.test(name))
+				.reduce((memo, contractFilename) => {
+					const contract = contractFilename.replace(/\.json$/, '');
+					const sourceFile = path.join(compiledSourcePath, contractFilename);
+					firstTimestamp = Math.min(firstTimestamp, fs.statSync(sourceFile).mtimeMs);
+					if (!fs.existsSync(sourceFile)) {
+						throw Error(
+							`Cannot find compiled contract code for: ${contract}. Did you run the "build" step first?`
+						);
+					}
+					memo[contract] = JSON.parse(fs.readFileSync(sourceFile));
+					return memo;
+				}, {});
 
 			// JJM: We could easily add an error here if the earlist build is before the latest SOL contract modification
 			console.log(
@@ -255,7 +260,7 @@ program
 			const { account, web3 } = deployer;
 			console.log(gray(`Using account with public key ${account}`));
 
-			const deployContract = async ({ name, source = name, args, deps, force }) => {
+			const deployContract = async ({ name, source = name, args, deps, force = false }) => {
 				// force flag indicates to deploy even when no config for the entry (useful for new synths)
 				const deployedContract = await deployer.deploy({ name, source, args, deps, force });
 				if (!deployedContract) {
@@ -283,8 +288,8 @@ program
 					network,
 				};
 				deployment.sources[source] = {
-					bytecode: compiled[name].evm.bytecode.object,
-					abi: compiled[name].abi,
+					bytecode: compiled[source].evm.bytecode.object,
+					abi: compiled[source].abi,
 				};
 				fs.writeFileSync(deploymentFile, JSON.stringify(deployment, null, 2));
 
@@ -338,7 +343,11 @@ program
 				name: 'SynthetixState',
 				args: [account, account],
 			});
-			const proxySynthetix = await deployContract({ name: 'ProxySynthetix', args: [account] });
+			const proxySynthetix = await deployContract({
+				name: 'ProxySynthetix',
+				source: 'Proxy',
+				args: [account],
+			});
 			const tokenStateSynthetix = await deployContract({
 				name: 'TokenStateSynthetix',
 				source: 'TokenState',
@@ -465,7 +474,7 @@ program
 				});
 				const synth = await deployContract({
 					name: `Synth${currencyKey}`,
-					sourdce: 'Synth',
+					source: 'Synth',
 					deps: [`TokenState${currencyKey}`, `Proxy${currencyKey}`, 'Synthetix', 'FeePool'],
 					args: [
 						proxyForSynth ? proxyForSynth.options.address : '',

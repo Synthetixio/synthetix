@@ -63,12 +63,16 @@ class Deployer {
 		if (this.config[name]) {
 			deploy = this.config[name].deploy;
 		}
-		const compiled = this.compiled[name];
+		const compiled = this.compiled[source];
 		const existingAddress = this.deployment.targets[name]
 			? this.deployment.targets[name].address
 			: '';
 
-		if (!compiled) throw new Error(`No compiled source for: ${name}`);
+		if (!compiled) {
+			throw new Error(
+				`No compiled source for: ${name}. The source file is set to ${source}.sol - is that correct?`
+			);
+		}
 
 		// Any contract after SafeDecimalMath can automatically get linked.
 		// Doing this with bytecode that doesn't require the library is a no-op.
