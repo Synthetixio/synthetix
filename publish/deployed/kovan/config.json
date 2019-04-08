@@ -1,206 +1,242 @@
 {
-	"Depot": {
-		"deploy": true
-	},
-	"EscrowChecker": {
-		"deploy": true
-	},
-	"ExchangeRates": {
-		"deploy": true
-	},
-	"FeePool": {
-		"deploy": true
-	},
-	"Synthetix": {
-		"deploy": true
-	},
-	"SynthetixEscrow": {
-		"deploy": true
-	},
-	"SynthetixState": {
-		"deploy": true
-	},
-	"SynthXDR": {
-		"deploy": true
-	},
-	"SynthsUSD": {
-		"deploy": true
-	},
-	"SynthsEUR": {
-		"deploy": true
-	},
-	"SynthsJPY": {
-		"deploy": true
-	},
-	"SynthsAUD": {
-		"deploy": true
-	},
-	"SynthsKRW": {
-		"deploy": true
-	},
-	"SynthsGBP": {
-		"deploy": true
-	},
-	"SynthsCHF": {
-		"deploy": true
-	},
-	"SynthsCNY": {
-		"deploy": true
-	},
-	"SynthsSGD": {
-		"deploy": true
-	},
-	"SynthsCAD": {
-		"deploy": true
-	},
-	"SynthsRUB": {
-		"deploy": true
-	},
-	"SynthsINR": {
-		"deploy": true
-	},
-	"SynthsBRL": {
-		"deploy": true
-	},
-	"SynthsNZD": {
-		"deploy": true
-	},
-	"SynthsPLN": {
-		"deploy": true
-	},
-	"SynthsXAU": {
-		"deploy": true
-	},
-	"SynthsXAG": {
-		"deploy": true
-	},
-	"SynthsBTC": {
-		"deploy": true
-	},
-	"ProxyFeePool": {
-		"deploy": true
-	},
-	"ProxySynthetix": {
-		"deploy": true
-	},
-	"ProxyXDR": {
-		"deploy": true
-	},
-	"ProxysUSD": {
-		"deploy": true
-	},
-	"ProxysEUR": {
-		"deploy": true
-	},
-	"ProxysJPY": {
-		"deploy": true
-	},
-	"ProxysAUD": {
-		"deploy": true
-	},
-	"ProxysKRW": {
-		"deploy": true
-	},
-	"ProxysGBP": {
-		"deploy": true
-	},
-	"ProxysCHF": {
-		"deploy": true
-	},
-	"ProxysCNY": {
-		"deploy": true
-	},
-	"ProxysSGD": {
-		"deploy": true
-	},
-	"ProxysCAD": {
-		"deploy": true
-	},
-	"ProxysRUB": {
-		"deploy": true
-	},
-	"ProxysINR": {
-		"deploy": true
-	},
-	"ProxysBRL": {
-		"deploy": true
-	},
-	"ProxysNZD": {
-		"deploy": true
-	},
-	"ProxysPLN": {
-		"deploy": true
-	},
-	"ProxysXAU": {
-		"deploy": true
-	},
-	"ProxysXAG": {
-		"deploy": true
-	},
-	"ProxysBTC": {
-		"deploy": true
-	},
-	"SafeDecimalMath": {
-		"deploy": true
-	},
-	"TokenStateSynthetix": {
-		"deploy": true
-	},
-	"TokenStateXDR": {
-		"deploy": true
-	},
-	"TokenStatesUSD": {
-		"deploy": true
-	},
-	"TokenStatesEUR": {
-		"deploy": true
-	},
-	"TokenStatesJPY": {
-		"deploy": true
-	},
-	"TokenStatesAUD": {
-		"deploy": true
-	},
-	"TokenStatesKRW": {
-		"deploy": true
-	},
-	"TokenStatesGBP": {
-		"deploy": true
-	},
-	"TokenStatesCHF": {
-		"deploy": true
-	},
-	"TokenStatesCNY": {
-		"deploy": true
-	},
-	"TokenStatesSGD": {
-		"deploy": true
-	},
-	"TokenStatesCAD": {
-		"deploy": true
-	},
-	"TokenStatesRUB": {
-		"deploy": true
-	},
-	"TokenStatesINR": {
-		"deploy": true
-	},
-	"TokenStatesBRL": {
-		"deploy": true
-	},
-	"TokenStatesNZD": {
-		"deploy": true
-	},
-	"TokenStatesPLN": {
-		"deploy": true
-	},
-	"TokenStatesXAU": {
-		"deploy": true
-	},
-	"TokenStatesXAG": {
-		"deploy": true
-	},
-	"TokenStatesBTC": {
-		"deploy": true
-	}
+  "Depot": {
+    "deploy": false
+  },
+  "EscrowChecker": {
+    "deploy": false
+  },
+  "ExchangeRates": {
+    "deploy": false
+  },
+  "FeePool": {
+    "deploy": false
+  },
+  "Synthetix": {
+    "deploy": false
+  },
+  "SynthetixEscrow": {
+    "deploy": false
+  },
+  "SynthetixState": {
+    "deploy": false
+  },
+  "SynthXDR": {
+    "deploy": false
+  },
+  "SynthsUSD": {
+    "deploy": false
+  },
+  "SynthsEUR": {
+    "deploy": false
+  },
+  "SynthsJPY": {
+    "deploy": false
+  },
+  "SynthsAUD": {
+    "deploy": false
+  },
+  "SynthsKRW": {
+    "deploy": false
+  },
+  "SynthsGBP": {
+    "deploy": false
+  },
+  "SynthsCHF": {
+    "deploy": false
+  },
+  "SynthsCNY": {
+    "deploy": false
+  },
+  "SynthsSGD": {
+    "deploy": false
+  },
+  "SynthsCAD": {
+    "deploy": false
+  },
+  "SynthsRUB": {
+    "deploy": false
+  },
+  "SynthsINR": {
+    "deploy": false
+  },
+  "SynthsBRL": {
+    "deploy": false
+  },
+  "SynthsNZD": {
+    "deploy": false
+  },
+  "SynthsPLN": {
+    "deploy": false
+  },
+  "SynthsXAU": {
+    "deploy": false
+  },
+  "SynthsXAG": {
+    "deploy": false
+  },
+  "SynthsBTC": {
+    "deploy": false
+  },
+  "ProxyFeePool": {
+    "deploy": false
+  },
+  "ProxySynthetix": {
+    "deploy": false
+  },
+  "ProxyXDR": {
+    "deploy": false
+  },
+  "ProxysUSD": {
+    "deploy": false
+  },
+  "ProxysEUR": {
+    "deploy": false
+  },
+  "ProxysJPY": {
+    "deploy": false
+  },
+  "ProxysAUD": {
+    "deploy": false
+  },
+  "ProxysKRW": {
+    "deploy": false
+  },
+  "ProxysGBP": {
+    "deploy": false
+  },
+  "ProxysCHF": {
+    "deploy": false
+  },
+  "ProxysCNY": {
+    "deploy": false
+  },
+  "ProxysSGD": {
+    "deploy": false
+  },
+  "ProxysCAD": {
+    "deploy": false
+  },
+  "ProxysRUB": {
+    "deploy": false
+  },
+  "ProxysINR": {
+    "deploy": false
+  },
+  "ProxysBRL": {
+    "deploy": false
+  },
+  "ProxysNZD": {
+    "deploy": false
+  },
+  "ProxysPLN": {
+    "deploy": false
+  },
+  "ProxysXAU": {
+    "deploy": false
+  },
+  "ProxysXAG": {
+    "deploy": false
+  },
+  "ProxysBTC": {
+    "deploy": false
+  },
+  "SafeDecimalMath": {
+    "deploy": false
+  },
+  "TokenStateSynthetix": {
+    "deploy": false
+  },
+  "TokenStateXDR": {
+    "deploy": false
+  },
+  "TokenStatesUSD": {
+    "deploy": false
+  },
+  "TokenStatesEUR": {
+    "deploy": false
+  },
+  "TokenStatesJPY": {
+    "deploy": false
+  },
+  "TokenStatesAUD": {
+    "deploy": false
+  },
+  "TokenStatesKRW": {
+    "deploy": false
+  },
+  "TokenStatesGBP": {
+    "deploy": false
+  },
+  "TokenStatesCHF": {
+    "deploy": false
+  },
+  "TokenStatesCNY": {
+    "deploy": false
+  },
+  "TokenStatesSGD": {
+    "deploy": false
+  },
+  "TokenStatesCAD": {
+    "deploy": false
+  },
+  "TokenStatesRUB": {
+    "deploy": false
+  },
+  "TokenStatesINR": {
+    "deploy": false
+  },
+  "TokenStatesBRL": {
+    "deploy": false
+  },
+  "TokenStatesNZD": {
+    "deploy": false
+  },
+  "TokenStatesPLN": {
+    "deploy": false
+  },
+  "TokenStatesXAU": {
+    "deploy": false
+  },
+  "TokenStatesXAG": {
+    "deploy": false
+  },
+  "TokenStatesBTC": {
+    "deploy": false
+  },
+  "TokenStatesETH": {
+    "deploy": false
+  },
+  "ProxysETH": {
+    "deploy": false
+  },
+  "SynthsETH": {
+    "deploy": false
+  },
+  "TokenStatesBNB": {
+    "deploy": false
+  },
+  "ProxysBNB": {
+    "deploy": false
+  },
+  "SynthsBNB": {
+    "deploy": false
+  },
+  "TokenStatesS&P": {
+    "deploy": false
+  },
+  "ProxysS&P": {
+    "deploy": false
+  },
+  "SynthsS&P": {
+    "deploy": false
+  },
+  "TokenStatesDOW": {
+    "deploy": false
+  },
+  "ProxysDOW": {
+    "deploy": false
+  },
+  "SynthsDOW": {
+    "deploy": false
+  }
 }
