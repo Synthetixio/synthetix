@@ -87,6 +87,9 @@ module.exports = async function(deployer, network, accounts) {
 
 	await feePoolProxy.setTarget(feePool.address, { from: owner });
 
+	// Set feePool on feePoolState
+	await feePoolState.setFeePool(feePool.address, { from: owner });
+
 	// ----------------
 	// Synthetix State
 	// ----------------

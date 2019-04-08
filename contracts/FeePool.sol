@@ -81,7 +81,7 @@ contract FeePool is Proxyable, SelfDestructible {
         uint feesClaimed;
         uint rewardsToDistribute;
         uint rewardsClaimed;
-        uint totalIssuedSynths;
+        // uint totalIssuedSynths;
     }
 
     // The last 6 fee periods are all that you can claim from.
@@ -209,6 +209,18 @@ contract FeePool is Proxyable, SelfDestructible {
 
         emitFeeAuthorityUpdated(_feeAuthority);
     }
+    
+    /**
+     * @notice Set the address of the contract for feePool state
+     */
+    function setFeePoolState(FeePoolState _feePoolState)
+        external
+        optionalProxy_onlyOwner
+    {
+        feePoolState = _feePoolState;
+
+        emitFeePoolStateUpdated(_feePoolState);
+    }
 
     /**
      * @notice Set the fee period duration
@@ -304,7 +316,7 @@ contract FeePool is Proxyable, SelfDestructible {
             recentFeePeriods[next].feesClaimed = recentFeePeriods[i].feesClaimed;
             recentFeePeriods[next].rewardsToDistribute = recentFeePeriods[i].rewardsToDistribute;
             recentFeePeriods[next].rewardsClaimed = recentFeePeriods[i].rewardsClaimed;
-            recentFeePeriods[next].totalIssuedSynths = recentFeePeriods[i].totalIssuedSynths;
+            // recentFeePeriods[next].totalIssuedSynths = recentFeePeriods[i].totalIssuedSynths;
         }
 
         // Clear the first element of the array to make sure we don't have any stale values.
@@ -314,7 +326,7 @@ contract FeePool is Proxyable, SelfDestructible {
         recentFeePeriods[0].feePeriodId = nextFeePeriodId;
         recentFeePeriods[0].startingDebtIndex = synthetix.synthetixState().debtLedgerLength();
         recentFeePeriods[0].startTime = now;
-        recentFeePeriods[0].totalIssuedSynths = synthetix.totalIssuedSynths("XDR");
+        // recentFeePeriods[0].totalIssuedSynths = synthetix.totalIssuedSynths("XDR");
 
         nextFeePeriodId = nextFeePeriodId.add(1);
 
@@ -622,7 +634,6 @@ contract FeePool is Proxyable, SelfDestructible {
         returns (uint[2][FEE_PERIOD_LENGTH])
     {
         uint[2][FEE_PERIOD_LENGTH] memory results;
-
         // What's the user's debt entry index and the debt they owe to the system at current feePeriod
         uint userOwnershipPercentage;
         uint debtEntryIndex;
@@ -633,11 +644,12 @@ contract FeePool is Proxyable, SelfDestructible {
 
         // If there are no XDR synths, then they don't have any fees 
         uint totalSynths = synthetix.totalIssuedSynths("XDR");
+
         // if (totalSynths == 0) return (resultFees, resultRewards);
         if (totalSynths == 0) return results;
 
         uint penalty = currentPenalty(account);
-        
+
         // The [0] fee period is not yet ready to claim, but it is a fee period that they can have
         // fees owing for, so we need to report on it anyway.
         results[0][0] = _feesFromPeriod(0, userOwnershipPercentage, debtEntryIndex, penalty);
@@ -648,22 +660,17 @@ contract FeePool is Proxyable, SelfDestructible {
             uint next = i - 1; 
             FeePeriod memory nextPeriod = recentFeePeriods[next];
 
+            // We can skip period as no debt minted yet during period
+            if (nextPeriod.startingDebtIndex == 0) continue;
+
             // We calculate a feePeriod's closingDebtIndex by looking at the next feePeriod's startingDebtIndex 
             // If issuanceData[0].DebtEntryIndex was before the current feePeriod's closingDebtIndex 
             // we can use the most recent issuanceData[0] for the current feePeriod 
             // else find the applicableIssuanceData for the feePeriod based on the StartingDebtIndex of the period  
 
-            // nextPeriod.startingDebtIndex == 0 we can skip as no debt minted during period
-            if (nextPeriod.startingDebtIndex == 0) {
-                continue;
-            }
-
             if (nextPeriod.startingDebtIndex < debtEntryIndex)
             {
-                results[i][1] = debtEntryIndex;
-                results[i][0] = nextPeriod.startingDebtIndex;
                 (userOwnershipPercentage, debtEntryIndex) = feePoolState.applicableIssuanceData(account, nextPeriod.startingDebtIndex);
-                // results[i][1] = nextPeriod.startingDebtIndex;
             }
                 
             results[i][0] = _feesFromPeriod(i, userOwnershipPercentage, debtEntryIndex, penalty);
@@ -682,8 +689,14 @@ contract FeePool is Proxyable, SelfDestructible {
         internal
         returns (uint) 
     {
+        uint debtOwnershipForPeriod = ownershipPercentage;
+        // If period has closed we want to calculate debtPercentage at periodClose
         // Calculate the effectiveDebtPercentageAtPeriodEnd
-        uint debtOwnershipForPeriod = effectiveDebtPercentageAtPeriodEnd(period, ownershipPercentage, debtEntryIndex);
+        if (period > 0) {
+            debtOwnershipForPeriod = effectiveDebtPercentageAtPeriodEnd(period, ownershipPercentage, debtEntryIndex);
+        }
+
+        return debtOwnershipForPeriod;
 
         // Calculate their percentage of the fees / rewards in this period
         // This is a high precision integer.
@@ -702,7 +715,20 @@ contract FeePool is Proxyable, SelfDestructible {
         view
         returns (uint)
     {
-        return 1;
+        // If it's zero, they haven't issued, and they have no debt.
+        if (ownershipPercentage == 0) return 0;
+
+        return 0;
+        
+        // Figure out their global debt percentage delta at end of fee Period. 
+        // Based on debtLdeger at the period's closingDebtIndex (recentFeePeriods[period - 1].startingDebtIndex) 
+        // This is a high precision integer.
+        uint closingDebtIndex = recentFeePeriods[period - 1].startingDebtIndex;
+        uint feePeriodDebtOwnership = synthetix.synthetixState().debtLedger(closingDebtIndex)
+            .divideDecimalRoundPrecise(synthetix.synthetixState().debtLedger(debtEntryIndex))
+            .multiplyDecimalRoundPrecise(ownershipPercentage);
+        
+        return feePeriodDebtOwnership;
     }
 
     modifier onlyFeeAuthority
@@ -754,6 +780,12 @@ contract FeePool is Proxyable, SelfDestructible {
     bytes32 constant FEEAUTHORITYUPDATED_SIG = keccak256("FeeAuthorityUpdated(address)");
     function emitFeeAuthorityUpdated(address newFeeAuthority) internal {
         proxy._emit(abi.encode(newFeeAuthority), 1, FEEAUTHORITYUPDATED_SIG, 0, 0, 0);
+    }
+
+    event FeePoolStateUpdated(address newFeePoolState);
+    bytes32 constant FEEPOOLSTATEUPDATED_SIG = keccak256("FeePoolStateUpdated(address)");
+    function emitFeePoolStateUpdated(address newFeePoolState) internal {
+        proxy._emit(abi.encode(newFeePoolState), 1, FEEPOOLSTATEUPDATED_SIG, 0, 0, 0);
     }
 
     event FeePeriodClosed(uint feePeriodId);
