@@ -40,8 +40,7 @@ node publish deploy
   // config.json
   {
     "ProxysUSD": {
-      "deploy": true, // whether or not to deploy this or use existing instance from any deployment.json file
-      "contract": "Proxy" // the source Solidity file for this contract
+      "deploy": true // whether or not to deploy this or use existing instance from any deployment.json file
     },
 
     ...

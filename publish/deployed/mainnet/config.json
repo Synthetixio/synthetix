@@ -1,274 +1,206 @@
 {
 	"Depot": {
-		"deploy": false,
-		"contract": "Depot"
+		"deploy": false
 	},
 	"EscrowChecker": {
-		"deploy": false,
-		"contract": "EscrowChecker"
+		"deploy": false
 	},
 	"ExchangeRates": {
-		"deploy": false,
-		"contract": "ExchangeRates"
+		"deploy": false
 	},
 	"FeePool": {
-		"deploy": false,
-		"contract": "FeePool"
+		"deploy": false
 	},
 	"Synthetix": {
-		"deploy": false,
-		"contract": "Synthetix"
+		"deploy": false
 	},
 	"SynthetixEscrow": {
-		"deploy": false,
-		"contract": "SynthetixEscrow"
+		"deploy": false
 	},
 	"SynthetixState": {
-		"deploy": false,
-		"contract": "SynthetixState"
+		"deploy": false
 	},
 	"SynthXDR": {
-		"deploy": false,
-		"contract": "Synth"
+		"deploy": false
 	},
 	"SynthsUSD": {
-		"deploy": false,
-		"contract": "Synth"
+		"deploy": false
 	},
 	"SynthsEUR": {
-		"deploy": false,
-		"contract": "Synth"
+		"deploy": false
 	},
 	"SynthsJPY": {
-		"deploy": false,
-		"contract": "Synth"
+		"deploy": false
 	},
 	"SynthsAUD": {
-		"deploy": false,
-		"contract": "Synth"
+		"deploy": false
 	},
 	"SynthsKRW": {
-		"deploy": false,
-		"contract": "Synth"
+		"deploy": false
 	},
 	"SynthsGBP": {
-		"deploy": false,
-		"contract": "Synth"
+		"deploy": false
 	},
 	"SynthsCHF": {
-		"deploy": false,
-		"contract": "Synth"
+		"deploy": false
 	},
 	"SynthsCNY": {
-		"deploy": false,
-		"contract": "Synth"
+		"deploy": false
 	},
 	"SynthsSGD": {
-		"deploy": false,
-		"contract": "Synth"
+		"deploy": false
 	},
 	"SynthsCAD": {
-		"deploy": false,
-		"contract": "Synth"
+		"deploy": false
 	},
 	"SynthsRUB": {
-		"deploy": false,
-		"contract": "Synth"
+		"deploy": false
 	},
 	"SynthsINR": {
-		"deploy": false,
-		"contract": "Synth"
+		"deploy": false
 	},
 	"SynthsBRL": {
-		"deploy": false,
-		"contract": "Synth"
+		"deploy": false
 	},
 	"SynthsNZD": {
-		"deploy": false,
-		"contract": "Synth"
+		"deploy": false
 	},
 	"SynthsPLN": {
-		"deploy": false,
-		"contract": "Synth"
+		"deploy": false
 	},
 	"SynthsXAU": {
-		"deploy": false,
-		"contract": "Synth"
+		"deploy": false
 	},
 	"SynthsXAG": {
-		"deploy": false,
-		"contract": "Synth"
+		"deploy": false
 	},
 	"SynthsBTC": {
-		"deploy": false,
-		"contract": "Synth"
+		"deploy": false
 	},
 	"ProxyFeePool": {
-		"deploy": false,
-		"contract": "Proxy"
+		"deploy": false
 	},
 	"ProxySynthetix": {
-		"deploy": false,
-		"contract": "Proxy"
+		"deploy": false
 	},
 	"ProxyXDR": {
-		"deploy": false,
-		"contract": "Proxy"
+		"deploy": false
 	},
 	"ProxysUSD": {
-		"deploy": false,
-		"contract": "Proxy"
+		"deploy": false
 	},
 	"ProxysEUR": {
-		"deploy": false,
-		"contract": "Proxy"
+		"deploy": false
 	},
 	"ProxysJPY": {
-		"deploy": false,
-		"contract": "Proxy"
+		"deploy": false
 	},
 	"ProxysAUD": {
-		"deploy": false,
-		"contract": "Proxy"
+		"deploy": false
 	},
 	"ProxysKRW": {
-		"deploy": false,
-		"contract": "Proxy"
+		"deploy": false
 	},
 	"ProxysGBP": {
-		"deploy": false,
-		"contract": "Proxy"
+		"deploy": false
 	},
 	"ProxysCHF": {
-		"deploy": false,
-		"contract": "Proxy"
+		"deploy": false
 	},
 	"ProxysCNY": {
-		"deploy": false,
-		"contract": "Proxy"
+		"deploy": false
 	},
 	"ProxysSGD": {
-		"deploy": false,
-		"contract": "Proxy"
+		"deploy": false
 	},
 	"ProxysCAD": {
-		"deploy": false,
-		"contract": "Proxy"
+		"deploy": false
 	},
 	"ProxysRUB": {
-		"deploy": false,
-		"contract": "Proxy"
+		"deploy": false
 	},
 	"ProxysINR": {
-		"deploy": false,
-		"contract": "Proxy"
+		"deploy": false
 	},
 	"ProxysBRL": {
-		"deploy": false,
-		"contract": "Proxy"
+		"deploy": false
 	},
 	"ProxysNZD": {
-		"deploy": false,
-		"contract": "Proxy"
+		"deploy": false
 	},
 	"ProxysPLN": {
-		"deploy": false,
-		"contract": "Proxy"
+		"deploy": false
 	},
 	"ProxysXAU": {
-		"deploy": false,
-		"contract": "Proxy"
+		"deploy": false
 	},
 	"ProxysXAG": {
-		"deploy": false,
-		"contract": "Proxy"
+		"deploy": false
 	},
 	"ProxysBTC": {
-		"deploy": false,
-		"contract": "Proxy"
+		"deploy": false
 	},
 	"SafeDecimalMath": {
-		"deploy": false,
-		"contract": "SafeDecimalMath"
+		"deploy": false
 	},
 	"TokenStateSynthetix": {
-		"deploy": false,
-		"contract": "TokenState"
+		"deploy": false
 	},
 	"TokenStateXDR": {
-		"deploy": false,
-		"contract": "TokenState"
+		"deploy": false
 	},
 	"TokenStatesUSD": {
-		"deploy": false,
-		"contract": "TokenState"
+		"deploy": false
 	},
 	"TokenStatesEUR": {
-		"deploy": false,
-		"contract": "TokenState"
+		"deploy": false
 	},
 	"TokenStatesJPY": {
-		"deploy": false,
-		"contract": "TokenState"
+		"deploy": false
 	},
 	"TokenStatesAUD": {
-		"deploy": false,
-		"contract": "TokenState"
+		"deploy": false
 	},
 	"TokenStatesKRW": {
-		"deploy": false,
-		"contract": "TokenState"
+		"deploy": false
 	},
 	"TokenStatesGBP": {
-		"deploy": false,
-		"contract": "TokenState"
+		"deploy": false
 	},
 	"TokenStatesCHF": {
-		"deploy": false,
-		"contract": "TokenState"
+		"deploy": false
 	},
 	"TokenStatesCNY": {
-		"deploy": false,
-		"contract": "TokenState"
+		"deploy": false
 	},
 	"TokenStatesSGD": {
-		"deploy": false,
-		"contract": "TokenState"
+		"deploy": false
 	},
 	"TokenStatesCAD": {
-		"deploy": false,
-		"contract": "TokenState"
+		"deploy": false
 	},
 	"TokenStatesRUB": {
-		"deploy": false,
-		"contract": "TokenState"
+		"deploy": false
 	},
 	"TokenStatesINR": {
-		"deploy": false,
-		"contract": "TokenState"
+		"deploy": false
 	},
 	"TokenStatesBRL": {
-		"deploy": false,
-		"contract": "TokenState"
+		"deploy": false
 	},
 	"TokenStatesNZD": {
-		"deploy": false,
-		"contract": "TokenState"
+		"deploy": false
 	},
 	"TokenStatesPLN": {
-		"deploy": false,
-		"contract": "TokenState"
+		"deploy": false
 	},
 	"TokenStatesXAU": {
-		"deploy": false,
-		"contract": "TokenState"
+		"deploy": false
 	},
 	"TokenStatesXAG": {
-		"deploy": false,
-		"contract": "TokenState"
+		"deploy": false
 	},
 	"TokenStatesBTC": {
-		"deploy": false,
-		"contract": "TokenState"
+		"deploy": false
 	}
 }
