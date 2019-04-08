@@ -319,7 +319,7 @@ contract('FeePool', async function(accounts) {
 		assert.bnEqual(await feePool.nextFeePeriodId(), 3);
 	});
 
-	it.only('should correctly roll over unclaimed fees when closing fee periods', async function() {
+	it('should correctly roll over unclaimed fees when closing fee periods', async function() {
 		// Issue 10,000 sUSD.
 		await synthetix.issueSynths(sUSD, toUnit('10000'), { from: owner });
 

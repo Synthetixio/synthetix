@@ -20,6 +20,7 @@ contract.only('FeePoolState', async function(accounts) {
 		owner,
 		oracle,
 		feeAuthority,
+		feePoolAccount,
 		account1,
 		account2,
 		account3,
@@ -81,12 +82,12 @@ contract.only('FeePoolState', async function(accounts) {
 			expectedDebtPercentage
 		) {
 			const accountLedger = await feePoolState.accountIssuanceLedger(address, issuanceLedgerIndex); // accountIssuanceLedger[address][index]
-			console.log(
-				'ledger from feepool',
-				issuanceLedgerIndex,
-				accountLedger.debtEntryIndex.toString(),
-				accountLedger.debtPercentage.toString()
-			);
+			// console.log(
+			// 	'debtEntryIndex, debtPercentage',
+			// 	issuanceLedgerIndex,
+			// 	accountLedger.debtEntryIndex.toString(),
+			// 	accountLedger.debtPercentage.toString()
+			// );
 			assert.bnEqual(accountLedger.debtEntryIndex, expectedEntryIndex);
 			assert.bnEqual(accountLedger.debtPercentage, expectedDebtPercentage);
 		}
@@ -100,15 +101,30 @@ contract.only('FeePoolState', async function(accounts) {
 			{ address: account3, debtRatio: '0.5', debtEntryIndex: '5' },
 		];
 
-		it.only('should append account issuance record for curent feePeriod', async function() {
-			await feePool.setSynthetix(account1, { from: owner });
+		beforeEach(async function() {
+			// set to the Fee Pool Account
+			await feePoolState.setFeePool(feePoolAccount, { from: owner });
+		});
 
-			// mint more synths and append to ledger in Period[0]
-			await feePool.appendAccountIssuanceRecord(
+		afterEach(async function() {
+			// reset to Fee Pool
+			await feePoolState.setFeePool(FeePool.address, { from: owner });
+		});
+
+		it('should return the issuanceData for an account given an index');
+		it('should return the issuanceData that exists that is within the closingDebtIndex');
+		it('should importIssuerData');
+
+		it('should append account issuance record for curent feePeriod', async function() {
+			let currentPeriodStartDebtIndex = 0;
+
+			// simulate a mint and append debtRatio to ledger in Period[0]
+			await feePoolState.appendAccountIssuanceRecord(
 				issuanceData[0].address,
 				toPreciseUnit(issuanceData[0].debtRatio),
 				issuanceData[0].debtEntryIndex,
-				{ from: account1 }
+				currentPeriodStartDebtIndex,
+				{ from: feePoolAccount }
 			);
 
 			// check the latest accountIssuance for account1
@@ -119,19 +135,13 @@ contract.only('FeePoolState', async function(accounts) {
 				toPreciseUnit(issuanceData[0].debtRatio)
 			);
 
-			// reset synthetix to Synthetix
-			await feePool.setSynthetix(Synthetix.address, { from: owner });
-
-			await closeFeePeriod();
-
-			await feePool.setSynthetix(account1, { from: owner });
-
-			// mint more synths and append to ledger in Period[1]
-			await feePool.appendAccountIssuanceRecord(
+			// simulate a mint and append to ledger in Period[0]
+			await feePoolState.appendAccountIssuanceRecord(
 				issuanceData[1].address,
 				toPreciseUnit(issuanceData[1].debtRatio),
 				issuanceData[1].debtEntryIndex,
-				{ from: account1 }
+				currentPeriodStartDebtIndex,
+				{ from: feePoolAccount }
 			);
 
 			// accountIssuanceLedger[0] has new issuanceData
@@ -144,43 +154,44 @@ contract.only('FeePoolState', async function(accounts) {
 		});
 
 		it('should append account issuance record twice for each feePeriod, up to feePeriod length', async function() {
-			const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
+			const FEE_PERIOD_LENGTH = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 			const initialDebtRatio = toUnit('1');
 			const secondDebtRatio = toUnit('.5');
 			let entryIndexCounter = 0;
+			let currentPeriodStartDebtIndex = 0;
 
 			// loop through the feePeriods
-			for (let i = 0; i < length; i++) {
-				await feePool.setSynthetix(account1, { from: owner });
-
+			for (let i = 0; i < FEE_PERIOD_LENGTH; i++) {
 				// write an entry to debt ledger in Period[0]
-				console.log(
-					'appending data, debt ratio, debtEntryIndex',
+				// console.log('init data entry,', initialDebtRatio.toString(), entryIndexCounter);
+				await feePoolState.appendAccountIssuanceRecord(
+					account3,
 					initialDebtRatio,
-					entryIndexCounter
+					entryIndexCounter,
+					currentPeriodStartDebtIndex,
+					{
+						from: feePoolAccount,
+					}
 				);
-				await feePool.appendAccountIssuanceRecord(account3, initialDebtRatio, entryIndexCounter, {
-					from: account1,
-				});
 				entryIndexCounter++;
 				// overwrite the previous entry to debt ledger in Period[0]
-				console.log(
-					'appending data, debt ratio, debtEntryIndex',
+				// console.log('overwrite data,', secondDebtRatio.toString(), entryIndexCounter);
+				await feePoolState.appendAccountIssuanceRecord(
+					account3,
 					secondDebtRatio,
-					entryIndexCounter
+					entryIndexCounter,
+					i + 1,
+					{
+						from: feePoolAccount,
+					}
 				);
-				await feePool.appendAccountIssuanceRecord(account3, secondDebtRatio, entryIndexCounter, {
-					from: account1,
-				});
 				entryIndexCounter++;
-
-				// reset synthetix to Synthetix
-				await feePool.setSynthetix(Synthetix.address, { from: owner });
-
-				// Close the period to lock in this entry and start writing to [0]
-				await closeFeePeriod();
+				// Simulate the closing of this period (closeFeePeriod)
+				currentPeriodStartDebtIndex = entryIndexCounter + 1;
 			}
-			// address, issuanceLedgerIndex, expectedEntryIndex, expectedDebtPercentage
+
+			// Assert that we always have the Last issuance data for each fee period
+			// The latest debtEntryIndex will be in the current Fee Period index [0]
 			await checkIssuanceLedgerData(account3, 0, '11', secondDebtRatio);
 
 			await checkIssuanceLedgerData(account3, 1, '9', secondDebtRatio);
@@ -192,6 +203,58 @@ contract.only('FeePoolState', async function(accounts) {
 			await checkIssuanceLedgerData(account3, 4, '3', secondDebtRatio);
 
 			await checkIssuanceLedgerData(account3, 5, '1', secondDebtRatio);
+		});
+
+		it('should append account issuance record twice for each feePeriod, beyond the fee period length', async function() {
+			const FEE_PERIOD_LENGTH = 12;
+			const initialDebtRatio = toUnit('1');
+			const secondDebtRatio = toUnit('.5');
+			let entryIndexCounter = 0;
+			let currentPeriodStartDebtIndex = 0;
+
+			// loop through the feePeriods
+			for (let i = 0; i < FEE_PERIOD_LENGTH; i++) {
+				// write an entry to debt ledger in Period[0]
+				// console.log('init data entry,', initialDebtRatio.toString(), entryIndexCounter);
+				await feePoolState.appendAccountIssuanceRecord(
+					account3,
+					initialDebtRatio,
+					entryIndexCounter,
+					currentPeriodStartDebtIndex,
+					{
+						from: feePoolAccount,
+					}
+				);
+				entryIndexCounter++;
+				// overwrite the previous entry to debt ledger in Period[0]
+				// console.log('overwrite data,', secondDebtRatio.toString(), entryIndexCounter);
+				await feePoolState.appendAccountIssuanceRecord(
+					account3,
+					secondDebtRatio,
+					entryIndexCounter,
+					i + 1,
+					{
+						from: feePoolAccount,
+					}
+				);
+				entryIndexCounter++;
+				// Simulate the closing of this period (closeFeePeriod)
+				currentPeriodStartDebtIndex = entryIndexCounter + 1;
+			}
+
+			// Assert that we always have the Last issuance data for each fee period
+			// The latest debtEntryIndex will be in the current Fee Period index [0]
+			await checkIssuanceLedgerData(account3, 0, '23', secondDebtRatio);
+
+			await checkIssuanceLedgerData(account3, 1, '21', secondDebtRatio);
+
+			await checkIssuanceLedgerData(account3, 2, '19', secondDebtRatio);
+
+			await checkIssuanceLedgerData(account3, 3, '17', secondDebtRatio);
+
+			await checkIssuanceLedgerData(account3, 4, '15', secondDebtRatio);
+
+			await checkIssuanceLedgerData(account3, 5, '13', secondDebtRatio);
 		});
 	});
 });

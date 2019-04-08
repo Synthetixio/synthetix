@@ -91,8 +91,7 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
     }
 
     /**
-     * @notice set the FeePool contract as it is the only authority to be able to call 
-     * appendAccountIssuanceRecord with the onlyFeePool modifer
+     * @notice 
      * @param account users account
      * @param closingDebtIndex the last periods debt index on close
      */
