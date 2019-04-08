@@ -660,7 +660,7 @@ contract FeePool is Proxyable, SelfDestructible {
         
         // The [0] fee period is not yet ready to claim, but it is a fee period that they can have
         // fees owing for, so we need to report on it anyway.
-        results[0][0] = _feesFromPeriod(0, userOwnershipPercentage, penalty);
+        results[0][0] = _feesFromPeriod(0, userOwnershipPercentage, debtEntryIndex, penalty);
 
         // Go through our fee periods from the oldest feePeriod[FEE_PERIOD_LENGTH - 1] and figure out what we owe them.
         // Condition checks for periods > 0 
@@ -715,8 +715,13 @@ contract FeePool is Proxyable, SelfDestructible {
         internal
         returns (uint) 
     {
+        uint debtOwnershipForPeriod = ownershipPercentage;
+
+        // If period has closed we want to calculate debtPercentage at periodClose
         // Calculate the effectiveDebtPercentageAtPeriodEnd
-        uint debtOwnershipForPeriod = effectiveDebtPercentageAtPeriodEnd(period, ownershipPercentage, debtEntryIndex);
+        if (period > 0) {
+            debtOwnershipForPeriod = effectiveDebtPercentageAtPeriodEnd(period, ownershipPercentage, debtEntryIndex);
+        }
 
         // Calculate their percentage of the fees / rewards in this period
         // This is a high precision integer.
@@ -735,7 +740,17 @@ contract FeePool is Proxyable, SelfDestructible {
         view
         returns (uint)
     {
-        return 1;
+        // If it's zero, they haven't issued, and they have no debt.
+        if (ownershipPercentage == 0) return 0;
+
+        // Figure out their global debt percentage delta at end of fee Period. 
+        // Based on debtLdeger at the period's closingDebtIndex (recentFeePeriods[period - 1].startingDebtIndex) 
+        // This is a high precision integer.
+        uint feePeriodDebtOwnership = synthetix.synthetixState().debtLedger(recentFeePeriods[period - 1].startingDebtIndex)
+            .divideDecimalRoundPrecise(synthetix.synthetixState().debtLedger(debtEntryIndex))
+            .multiplyDecimalRoundPrecise(ownershipPercentage);
+        
+        return feePeriodDebtOwnership;
     }
 
     modifier onlyFeeAuthority

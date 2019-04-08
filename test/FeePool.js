@@ -319,7 +319,7 @@ contract('FeePool', async function(accounts) {
 		assert.bnEqual(await feePool.nextFeePeriodId(), 3);
 	});
 
-	it('should correctly roll over unclaimed fees when closing fee periods', async function() {
+	it.only('should correctly roll over unclaimed fees when closing fee periods', async function() {
 		// Issue 10,000 sUSD.
 		await synthetix.issueSynths(sUSD, toUnit('10000'), { from: owner });
 
@@ -336,7 +336,7 @@ contract('FeePool', async function(accounts) {
 		assert.bnEqual(web3.utils.toBN(pendingFees[0]), fee);
 	});
 
-	it.only('should correctly close the current fee period when there are more than FEE_PERIOD_LENGTH periods', async function() {
+	it('should correctly close the current fee period when there are more than FEE_PERIOD_LENGTH periods', async function() {
 		const length = await feePool.FEE_PERIOD_LENGTH();
 
 		// Issue 10,000 sUSD.
@@ -371,7 +371,7 @@ contract('FeePool', async function(accounts) {
 		assert.bnEqual(feesByPeriod[length - 1][0], fee);
 	});
 
-	it.only('should correctly close the current fee period when there is only one fee period open', async function() {
+	it('should correctly close the current fee period when there is only one fee period open', async function() {
 		// Assert all the IDs and values are 0.
 		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 
@@ -421,7 +421,7 @@ contract('FeePool', async function(accounts) {
 		}
 	});
 
-	it.only('should disallow the fee authority from closing the current fee period too early', async function() {
+	it('should disallow the fee authority from closing the current fee period too early', async function() {
 		const feePeriodDuration = await feePool.feePeriodDuration();
 
 		// Close the current one so we know exactly what we're dealing with
@@ -432,7 +432,7 @@ contract('FeePool', async function(accounts) {
 		await assert.revert(feePool.closeCurrentFeePeriod({ from: feeAuthority }));
 	});
 
-	it.only('should allow the fee authority to close the current fee period very late', async function() {
+	it('should allow the fee authority to close the current fee period very late', async function() {
 		// Close it 500 times later than prescribed by feePeriodDuration
 		// which should still succeed.
 		const feePeriodDuration = await feePool.feePeriodDuration();
@@ -441,7 +441,7 @@ contract('FeePool', async function(accounts) {
 		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
 	});
 
-	it.only('should disallow a non-fee-authority from closing the current fee period', async function() {
+	it('should disallow a non-fee-authority from closing the current fee period', async function() {
 		const feePeriodDuration = await feePool.feePeriodDuration();
 		await fastForward(feePeriodDuration);
 		await updateRatesWithDefaults();
@@ -453,7 +453,7 @@ contract('FeePool', async function(accounts) {
 		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
 	});
 
-	it.only('should allow a user to claim their fees in sUSD', async function() {
+	it('should allow a user to claim their fees in sUSD', async function() {
 		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 
 		// Issue 10,000 sUSD for two different accounts.
