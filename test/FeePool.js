@@ -1,5 +1,6 @@
 const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
+const FeePoolState = artifacts.require('FeePoolState');
 const Synthetix = artifacts.require('Synthetix');
 const Synth = artifacts.require('Synth');
 const { getWeb3, getContractInstance, sendParameters } = require('../utils/web3Helper');
@@ -8,7 +9,7 @@ const { currentTime, fastForward, toUnit, ZERO_ADDRESS } = require('../utils/tes
 const web3 = getWeb3();
 const getInstance = getContractInstance(web3);
 
-contract('FeePool', async function(accounts) {
+contract.only('FeePool', async function(accounts) {
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
 		const timestamp = await currentTime();
@@ -62,6 +63,7 @@ contract('FeePool', async function(accounts) {
 		account2,
 		account3,
 		account4,
+		account5,
 	] = accounts;
 
 	let feePool,
@@ -69,6 +71,7 @@ contract('FeePool', async function(accounts) {
 		FEE_ADDRESS,
 		synthetix,
 		exchangeRates,
+		feePoolState,
 		sUSDContract,
 		sAUDContract,
 		XDRContract;
@@ -78,6 +81,7 @@ contract('FeePool', async function(accounts) {
 		// We do this in a beforeEach instead of before to ensure we isolate
 		// contract interfaces to prevent test bleed.
 		exchangeRates = await ExchangeRates.deployed();
+		feePoolState = await FeePoolState.deployed();
 		feePool = await FeePool.deployed();
 		feePoolWeb3 = getInstance(FeePool);
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
@@ -101,6 +105,7 @@ contract('FeePool', async function(accounts) {
 			account2,
 			account3,
 			account4,
+			account5,
 			transferFeeRate,
 			exchangeFeeRate,
 			{
@@ -111,7 +116,8 @@ contract('FeePool', async function(accounts) {
 		assert.equal(await instance.proxy(), account1);
 		assert.equal(await instance.owner(), account2);
 		assert.equal(await instance.synthetix(), account3);
-		assert.equal(await instance.feeAuthority(), account4);
+		assert.equal(await instance.feePoolState(), account4);
+		assert.equal(await instance.feeAuthority(), account5);
 		assert.bnEqual(await instance.transferFeeRate(), transferFeeRate);
 		assert.bnEqual(await instance.exchangeFeeRate(), exchangeFeeRate);
 
@@ -319,7 +325,7 @@ contract('FeePool', async function(accounts) {
 		assert.bnEqual(await feePool.nextFeePeriodId(), 3);
 	});
 
-	it.only('should correctly roll over unclaimed fees when closing fee periods', async function() {
+	it('should correctly roll over unclaimed fees when closing fee periods', async function() {
 		// Issue 10,000 sUSD.
 		await synthetix.issueSynths(sUSD, toUnit('10000'), { from: owner });
 
@@ -332,8 +338,8 @@ contract('FeePool', async function(accounts) {
 
 		// Assert that the correct fee is in the fee pool.
 		const fee = await XDRContract.balanceOf(FEE_ADDRESS);
-		const [pendingFees] = await feePoolWeb3.methods.feesByPeriod(owner).call();
-		assert.bnEqual(web3.utils.toBN(pendingFees[0]), fee);
+		const pendingFees = await feePoolWeb3.methods.feesByPeriod(owner).call();
+		assert.bnEqual(web3.utils.toBN(pendingFees[0][0]), fee);
 	});
 
 	it('should correctly close the current fee period when there are more than FEE_PERIOD_LENGTH periods', async function() {
@@ -453,7 +459,7 @@ contract('FeePool', async function(accounts) {
 		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
 	});
 
-	it('should allow a user to claim their fees in sUSD', async function() {
+	it.only('should allow a user to claim their fees in sUSD', async function() {
 		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 
 		// Issue 10,000 sUSD for two different accounts.
@@ -480,7 +486,7 @@ contract('FeePool', async function(accounts) {
 
 		// Assert that we have correct values in the fee pool
 		const feesAvailable = await feePool.feesAvailable(owner, sUSD);
-		assert.bnClose(feesAvailable, totalFees.div(web3.utils.toBN('2')), '6');
+		assert.bnClose(feesAvailable, totalFees.div(web3.utils.toBN('2')), '8');
 
 		const oldSynthBalance = await sUSDContract.balanceOf(owner);
 

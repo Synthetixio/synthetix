@@ -81,7 +81,6 @@ contract FeePool is Proxyable, SelfDestructible {
         uint feesClaimed;
         uint rewardsToDistribute;
         uint rewardsClaimed;
-        // uint totalIssuedSynths;
     }
 
     // The last 6 fee periods are all that you can claim from.
@@ -316,7 +315,6 @@ contract FeePool is Proxyable, SelfDestructible {
             recentFeePeriods[next].feesClaimed = recentFeePeriods[i].feesClaimed;
             recentFeePeriods[next].rewardsToDistribute = recentFeePeriods[i].rewardsToDistribute;
             recentFeePeriods[next].rewardsClaimed = recentFeePeriods[i].rewardsClaimed;
-            // recentFeePeriods[next].totalIssuedSynths = recentFeePeriods[i].totalIssuedSynths;
         }
 
         // Clear the first element of the array to make sure we don't have any stale values.
@@ -326,7 +324,6 @@ contract FeePool is Proxyable, SelfDestructible {
         recentFeePeriods[0].feePeriodId = nextFeePeriodId;
         recentFeePeriods[0].startingDebtIndex = synthetix.synthetixState().debtLedgerLength();
         recentFeePeriods[0].startTime = now;
-        // recentFeePeriods[0].totalIssuedSynths = synthetix.totalIssuedSynths("XDR");
 
         nextFeePeriodId = nextFeePeriodId.add(1);
 
@@ -660,17 +657,17 @@ contract FeePool is Proxyable, SelfDestructible {
             uint next = i - 1; 
             FeePeriod memory nextPeriod = recentFeePeriods[next];
 
-            // We can skip period as no debt minted yet during period
+            // We can skip period as no debt minted during period
             if (nextPeriod.startingDebtIndex == 0) continue;
-
+            
             // We calculate a feePeriod's closingDebtIndex by looking at the next feePeriod's startingDebtIndex 
             // If issuanceData[0].DebtEntryIndex was before the current feePeriod's closingDebtIndex 
             // we can use the most recent issuanceData[0] for the current feePeriod 
             // else find the applicableIssuanceData for the feePeriod based on the StartingDebtIndex of the period  
-
-            if (nextPeriod.startingDebtIndex < debtEntryIndex)
+            uint closingDebtIndex = nextPeriod.startingDebtIndex - 1;
+            if (closingDebtIndex < debtEntryIndex)
             {
-                (userOwnershipPercentage, debtEntryIndex) = feePoolState.applicableIssuanceData(account, nextPeriod.startingDebtIndex);
+                (userOwnershipPercentage, debtEntryIndex) = feePoolState.applicableIssuanceData(account, closingDebtIndex);
             }
                 
             results[i][0] = _feesFromPeriod(i, userOwnershipPercentage, debtEntryIndex, penalty);
@@ -689,14 +686,17 @@ contract FeePool is Proxyable, SelfDestructible {
         internal
         returns (uint) 
     {
+        // If it's zero, they haven't issued, and they have no fees.
+        if (ownershipPercentage == 0) return 0;
+
         uint debtOwnershipForPeriod = ownershipPercentage;
+        
         // If period has closed we want to calculate debtPercentage at periodClose
         // Calculate the effectiveDebtPercentageAtPeriodEnd
         if (period > 0) {
+            // return debtEntryIndex;
             debtOwnershipForPeriod = effectiveDebtPercentageAtPeriodEnd(period, ownershipPercentage, debtEntryIndex);
         }
-
-        return debtOwnershipForPeriod;
 
         // Calculate their percentage of the fees / rewards in this period
         // This is a high precision integer.
@@ -715,15 +715,13 @@ contract FeePool is Proxyable, SelfDestructible {
         view
         returns (uint)
     {
-        // If it's zero, they haven't issued, and they have no debt.
-        if (ownershipPercentage == 0) return 0;
-
-        return 0;
-        
         // Figure out their global debt percentage delta at end of fee Period. 
-        // Based on debtLdeger at the period's closingDebtIndex (recentFeePeriods[period - 1].startingDebtIndex) 
         // This is a high precision integer.
-        uint closingDebtIndex = recentFeePeriods[period - 1].startingDebtIndex;
+        uint closingDebtIndex = recentFeePeriods[period - 1].startingDebtIndex - 1;
+
+        // // Condition to check if debtLedger[] has value otherwise return 0
+        if (closingDebtIndex > synthetix.synthetixState().debtLedgerLength()) return 0;
+
         uint feePeriodDebtOwnership = synthetix.synthetixState().debtLedger(closingDebtIndex)
             .divideDecimalRoundPrecise(synthetix.synthetixState().debtLedger(debtEntryIndex))
             .multiplyDecimalRoundPrecise(ownershipPercentage);
