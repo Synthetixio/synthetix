@@ -42,6 +42,7 @@ import "./Proxyable.sol";
 import "./SelfDestructible.sol";
 import "./SafeDecimalMath.sol";
 import "./Synth.sol";
+import "./FeePoolState.sol";
 
 contract FeePool is Proxyable, SelfDestructible {
 
@@ -65,6 +66,9 @@ contract FeePool is Proxyable, SelfDestructible {
     // The address with the authority to distribute fees.
     address public feeAuthority;
 
+    // The address to the FeePoolState Contract.
+    FeePoolState public feePoolState;
+
     // Where fees are pooled in XDRs.
     address public constant FEE_ADDRESS = 0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF;
 
@@ -80,11 +84,12 @@ contract FeePool is Proxyable, SelfDestructible {
         uint totalIssuedSynths;
     }
 
-    // The last 4 fee periods are all that you can claim from.
+    // The last 6 fee periods are all that you can claim from.
     // These are stored and managed from [0], such that [0] is always
-    // the most recent fee period, and [3] is always the oldest fee
+    // the most recent fee period, and [5] is always the oldest fee
     // period that users can claim for.
-    uint8 constant public FEE_PERIOD_LENGTH = 4;
+    uint8 constant public FEE_PERIOD_LENGTH = 6;
+
     FeePeriod[FEE_PERIOD_LENGTH] public recentFeePeriods;
 
     // The next fee period will have this ID.
@@ -102,15 +107,6 @@ contract FeePool is Proxyable, SelfDestructible {
 
     // The last period a user has withdrawn their fees in, identified by the feePeriodId
     mapping(address => uint) public lastFeeWithdrawal;
-    
-    // TODO - Move issuanceData to external state
-    // This struct represents the issuance activity that's happened in a fee period.
-    struct IssuanceData {
-        uint debtPercentage;
-        uint debtEntryIndex;
-    }
-
-    mapping(address => IssuanceData[FEE_PERIOD_LENGTH]) public accountIssuanceLedger;
 
     // Users receive penalties if their collateralisation ratio drifts out of our desired brackets
     // We precompute the brackets and penalties to save gas.
@@ -124,7 +120,14 @@ contract FeePool is Proxyable, SelfDestructible {
     uint constant NINETY_PERCENT = (90 * SafeDecimalMath.unit()) / 100;
     uint constant ONE_HUNDRED_PERCENT = (100 * SafeDecimalMath.unit()) / 100;
 
-    constructor(address _proxy, address _owner, Synthetix _synthetix, address _feeAuthority, uint _transferFeeRate, uint _exchangeFeeRate)
+    constructor(
+        address _proxy, 
+        address _owner, 
+        Synthetix _synthetix, 
+        FeePoolState _feePoolState, 
+        address _feeAuthority, 
+        uint _transferFeeRate, 
+        uint _exchangeFeeRate)
         SelfDestructible(_owner)
         Proxyable(_proxy, _owner)
         public
@@ -134,6 +137,7 @@ contract FeePool is Proxyable, SelfDestructible {
         require(_exchangeFeeRate <= MAX_EXCHANGE_FEE_RATE, "Constructed exchange fee rate should respect the maximum fee rate");
 
         synthetix = _synthetix;
+        feePoolState = _feePoolState;
         feeAuthority = _feeAuthority;
         transferFeeRate = _transferFeeRate;
         exchangeFeeRate = _exchangeFeeRate;
@@ -153,37 +157,12 @@ contract FeePool is Proxyable, SelfDestructible {
      * @param debtEntryIndex The index in the global debt ledger. synthetix.synthetixState().issuanceData(account)
      * @dev onlySynthetix to call me on synthetix.issue() & synthetix.burn() calls to store the locked SNX 
      * per fee period so we know to allocate the correct proportions of fees and rewards per period
-      accountIssuanceLedger[account][0] has the latest locked amount for the current period. This can be update as many time
-      accountIssuanceLedger[account][1] has the last locked amount for the previous period
-      accountIssuanceLedger[account][2] 
-      accountIssuanceLedger[account][3]
      */
     function appendAccountIssuanceRecord(address account, uint debtRatio, uint debtEntryIndex) 
         external
         onlySynthetix
     {
-        // Is there a current issuanceData entry then ensure they're ordered
-        if (accountIssuanceLedger[account][0].debtPercentage > 0) {
-            issuanceEntryOrderIndexUpdate(accountIssuanceLedger[account]);            
-        }
-        
-        // Always store the latest IssuanceData entry at [0]
-        accountIssuanceLedger[account][0].debtPercentage = debtRatio;
-        accountIssuanceLedger[account][0].debtEntryIndex = debtEntryIndex;
-    }
-
-    function issuanceEntryOrderIndexUpdate(IssuanceData[FEE_PERIOD_LENGTH] issuanceData) 
-        private 
-    {
-        // Is the current debtEntryIndex within this fee period then do nothing and return
-        if (issuanceData[0].debtEntryIndex < recentFeePeriods[next].startingDebtIndex) {
-            // If its older then shift the previous IssuanceData entries periods down to make room for the new one.
-            for (uint i = FEE_PERIOD_LENGTH - 2; i < FEE_PERIOD_LENGTH; i--) {
-                uint next = i + 1;
-                issuanceData[next].debtPercentage = issuanceData[i].debtPercentage;
-                issuanceData[next].debtEntryIndex = issuanceData[i].debtEntryIndex;
-            }    
-        }
+        feePoolState.appendAccountIssuanceRecord(account, debtRatio, debtEntryIndex, recentFeePeriods[0].startingDebtIndex);
     }
 
     /**
@@ -649,8 +628,7 @@ contract FeePool is Proxyable, SelfDestructible {
         // What's the user's debt entry index and the debt they owe to the system at current feePeriod
         uint userOwnershipPercentage;
         uint debtEntryIndex;
-        userOwnershipPercentage = accountIssuanceLedger[account][0].debtPercentage;
-        debtEntryIndex = accountIssuanceLedger[account][0].debtEntryIndex;
+        (userOwnershipPercentage, debtEntryIndex) = feePoolState.getAccountsDebtEntry(account, 0);
 
         // If they don't have any debt ownership and they haven't minted, they don't have any fees
         if (debtEntryIndex == 0 && userOwnershipPercentage == 0) return results;
@@ -687,7 +665,7 @@ contract FeePool is Proxyable, SelfDestructible {
             {
                 results[i][1] = debtEntryIndex;
                 results[i][0] = nextPeriod.startingDebtIndex;
-                (userOwnershipPercentage, debtEntryIndex) = applicableIssuanceData(account, nextPeriod.startingDebtIndex);
+                (userOwnershipPercentage, debtEntryIndex) = feePoolState.applicableIssuanceData(account, nextPeriod.startingDebtIndex);
                 // results[i][1] = nextPeriod.startingDebtIndex;
             }
                 
@@ -695,23 +673,6 @@ contract FeePool is Proxyable, SelfDestructible {
         }
 
         return results;
-    }
-
-    function applicableIssuanceData(address account, uint closingDebtIndex)
-        internal
-        view
-        returns (uint, uint)
-    {
-        IssuanceData[FEE_PERIOD_LENGTH] memory issuanceData = accountIssuanceLedger[account];
-        
-        // we can start from issuanceData[1] as issuanceData[0] was checked
-        // find the most recent issuanceData for the feePeriod before it was closed
-        // for (uint i = 1; i < FEE_PERIOD_LENGTH; i++) {
-        //     if (closingDebtIndex >= issuanceData[i].debtEntryIndex) {
-        //         return (issuanceData[i].debtPercentage, issuanceData[i].debtEntryIndex);
-        //     }
-        // }
-        return (1,1);
     }
 
     /**
