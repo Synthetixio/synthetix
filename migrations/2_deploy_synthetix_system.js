@@ -2,6 +2,7 @@ const { table } = require('table');
 
 const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
+const FeePoolState = artifacts.require('FeePoolState');
 const Synthetix = artifacts.require('Synthetix');
 const SynthetixEscrow = artifacts.require('SynthetixEscrow');
 const RewardEscrow = artifacts.require('RewardEscrow');
@@ -64,17 +65,23 @@ module.exports = async function(deployer, network, accounts) {
 	// constructor(address _owner)
 	const feePoolProxy = await Proxy.new(owner, { from: deployerAccount });
 
+	console.log('Deploying FeePoolState...');
+	deployer.link(SafeDecimalMath, FeePoolState);
+	const feePoolState = await deployer.deploy(FeePoolState, owner, ZERO_ADDRESS, {
+		from: deployerAccount,
+	});
+
 	console.log('Deploying FeePool...');
-	// constructor(address _proxy, address _owner, Synthetix _synthetix, address _feeAuthority, uint _transferFeeRate, uint _exchangeFeeRate)
 	deployer.link(SafeDecimalMath, FeePool);
 	const feePool = await deployer.deploy(
 		FeePool,
 		feePoolProxy.address,
 		owner,
 		ZERO_ADDRESS,
+		feePoolState.address,
 		feeAuthority,
 		web3.utils.toWei('0.0015', 'ether'),
-		web3.utils.toWei('0.0015', 'ether'),
+		web3.utils.toWei('0.0030', 'ether'),
 		{ from: deployerAccount }
 	);
 
