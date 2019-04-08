@@ -31,6 +31,7 @@ node publish deploy
 
 ### CLI Options
 
+- `-a, --add-new-synths` Whether or not any new synths in the synths.json file should be deployed if there is no entry in the config file.
 - `-b, --build-path [value]` Path for built files to go. (default of `./build` - relative to the root of this repo). The folders `compiled` and `flattened` will be made under this path and the respective files will go in there.
 - `-c, --contract-deployment-gas-limit <value>` Contract deployment gas limit (default: 7000000 (7m))
 - `-d, --deployment-path <value>` Path to a folder that has your input configuration file (`config.json`) and where your `deployment.json` file will be written (and read from if it currently exists). The `config.json` should be in the following format ([here's an example](deployed/rinkeby/config.json)):

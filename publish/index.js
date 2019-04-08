@@ -133,6 +133,11 @@ program
 	.command('deploy')
 	.description('Deploy compiled solidity files')
 	.option(
+		'-a, --add-new-synths',
+		'Whether or not any new synths in the synths.json file should be deployed if there is no entry in the config file',
+		false
+	)
+	.option(
 		'-b, --build-path [value]',
 		'Path to a folder hosting compiled files from the "build" step in this script',
 		path.join(__dirname, '..', 'build')
@@ -162,6 +167,7 @@ program
 	)
 	.action(
 		async ({
+			addNewSynths,
 			gasPrice,
 			methodCallGasLimit,
 			contractDeploymentGasLimit,
