@@ -26,8 +26,8 @@ contract('FeePool', async function(accounts) {
 	const closeFeePeriod = async () => {
 		const feePeriodDuration = await feePool.feePeriodDuration();
 		await fastForward(feePeriodDuration);
-		await updateRatesWithDefaults();
 		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+		await updateRatesWithDefaults();
 	};
 
 	// const logFeePeriods = async () => {
