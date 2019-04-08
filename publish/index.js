@@ -630,11 +630,9 @@ program
 			});
 
 			if (result.data.result === 'Contract source code not verified') {
-				const contractName = config[name].contract;
+				const { source } = deployment.targets[name];
 				console.log(
-					gray(
-						` - Contract ${name} not yet verified (source of "${contractName}.sol"). Verifying...`
-					)
+					gray(` - Contract ${name} not yet verified (source of "${source}.sol"). Verifying...`)
 				);
 
 				// Get the transaction that created the contract with its resulting bytecode.
@@ -659,7 +657,6 @@ program
 
 				fs.writeFileSync(deploymentFile, JSON.stringify(deployment, null, 2));
 
-				const source = config[name].contract;
 				// Grab the last 50 characters of the compiled bytecode
 				const compiledBytecode = deployment.sources[source].bytecode.slice(-100);
 
@@ -669,7 +666,7 @@ program
 				console.log(gray(' - Constructor arguments', constructorArguments));
 
 				const readFlattened = () => {
-					const flattenedFilename = path.join(buildPath, FLATTENED_FOLDER, `${contractName}.sol`);
+					const flattenedFilename = path.join(buildPath, FLATTENED_FOLDER, `${source}.sol`);
 					try {
 						return fs.readFileSync(flattenedFilename).toString();
 					} catch (err) {
@@ -685,7 +682,7 @@ program
 						action: 'verifysourcecode',
 						contractaddress: address,
 						sourceCode: readFlattened(),
-						contractname: contractName,
+						contractname: source,
 						// note: spelling mistake is on etherscan's side
 						constructorArguements: constructorArguments,
 						compilerversion: 'v' + solc.version().replace('.Emscripten.clang', ''), // The version reported by solc-js is too verbose and needs a v at the front
