@@ -540,10 +540,6 @@ contract FeePool is Proxyable, SelfDestructible {
     {
         // Add up the fees
         uint[2][FEE_PERIOD_LENGTH] memory userFees = feesByPeriod(account);
-        // Add up the SNX rewards
-        // uint[FEE_PERIOD_LENGTH] memory userRewards;
-
-        // (userFees, userRewards) = feesByPeriod(account);
 
         uint totalFees = 0;
 
@@ -642,8 +638,7 @@ contract FeePool is Proxyable, SelfDestructible {
         
         // The [0] fee period is not yet ready to claim, but it is a fee period that they can have
         // fees owing for, so we need to report on it anyway.
-        results[0][0] = _feesFromPeriod(0, userOwnershipPercentage, penalty);
-        results[0][1] = recentFeePeriods[0].startingDebtIndex;
+        results[0][0] = _feesFromPeriod(0, userOwnershipPercentage, debtEntryIndex, penalty);
 
         // Go through our fee periods from the oldest feePeriod[FEE_PERIOD_LENGTH - 1] and figure out what we owe them.
         // Condition checks for periods > 0 
@@ -669,7 +664,7 @@ contract FeePool is Proxyable, SelfDestructible {
                 // results[i][1] = nextPeriod.startingDebtIndex;
             }
                 
-            // results[i][0] = _feesFromPeriod(i, userOwnershipPercentage, penalty);
+            results[i][0] = _feesFromPeriod(i, userOwnershipPercentage, debtEntryIndex, penalty);
         }
 
         return results;
@@ -681,20 +676,31 @@ contract FeePool is Proxyable, SelfDestructible {
      * for fees in the period. Precision factor is removed before results are 
      * returned.
      */
-    function _feesFromPeriod(uint period, uint ownershipPercentage, uint penalty)
+    function _feesFromPeriod(uint period, uint ownershipPercentage, uint debtEntryIndex, uint penalty)
         internal
         returns (uint) 
     {
+        // Calculate the effectiveDebtPercentageAtPeriodEnd
+        uint debtOwnershipForPeriod = effectiveDebtPercentageAtPeriodEnd(period, ownershipPercentage, debtEntryIndex);
+
         // Calculate their percentage of the fees / rewards in this period
         // This is a high precision integer.
         uint feesFromPeriodWithoutPenalty = recentFeePeriods[period].feesToDistribute
-            .multiplyDecimal(ownershipPercentage);
+            .multiplyDecimal(debtOwnershipForPeriod);
         
         // Less their penalty if they have one.
         uint penaltyFromPeriod = feesFromPeriodWithoutPenalty.multiplyDecimal(penalty);
         uint feesFromPeriod = feesFromPeriodWithoutPenalty.sub(penaltyFromPeriod);
 
         return feesFromPeriod.preciseDecimalToDecimal();
+    }
+
+    function effectiveDebtPercentageAtPeriodEnd(uint period, uint ownershipPercentage, uint debtEntryIndex)
+        public
+        view
+        returns (uint)
+    {
+        return 1;
     }
 
     modifier onlyFeeAuthority
