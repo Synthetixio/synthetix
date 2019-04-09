@@ -5,7 +5,7 @@ const Synthetix = artifacts.require('Synthetix');
 const Synth = artifacts.require('Synth');
 const { getWeb3, getContractInstance, sendParameters } = require('../utils/web3Helper');
 
-const { currentTime, fastForward, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
+const { currentTime, fastForward, toUnit, toPreciseUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 const web3 = getWeb3();
 const getInstance = getContractInstance(web3);
 
@@ -522,12 +522,21 @@ contract.only('FeePool', async function(accounts) {
 			await closeFeePeriod();
 		}
 
-		// Last period should hold all the fees claimable
-		const issuanceData0 = await feePoolState.getAccountsDebtEntry(owner, 0);
-		const issuanceData1 = await feePoolState.getAccountsDebtEntry(owner, 1);
-		const issuanceData2 = await feePoolState.getAccountsDebtEntry(owner, 2);
-		const issuanceData3 = await feePoolState.getAccountsDebtEntry(owner, 3);
-		// const debtRatioForPeriod = await feePool.effectiveDebtRatioForPeriod(1)
+		// issuanceData for Owner and Account1 should hold order of minting
+		const issuanceDataOwner = await feePoolState.getAccountsDebtEntry(owner, 0);
+		assert.bnEqual(issuanceDataOwner.debtPercentage, toPreciseUnit('1'));
+		assert.bnEqual(issuanceDataOwner.debtEntryIndex, '0');
+
+		const issuanceDataAccount1 = await feePoolState.getAccountsDebtEntry(account1, 0);
+		assert.bnEqual(issuanceDataAccount1.debtPercentage, toPreciseUnit('0.5'));
+		assert.bnEqual(issuanceDataAccount1.debtEntryIndex, '1');
+
+		// Period One checks
+		const ownerDebtRatioForPeriod = await feePool.effectiveDebtRatioForPeriod(owner, 1);
+		const account1DebtRatioForPeriod = await feePool.effectiveDebtRatioForPeriod(account1, 1);
+
+		assert.bnEqual(ownerDebtRatioForPeriod, toPreciseUnit('0.5'));
+		assert.bnEqual(account1DebtRatioForPeriod, toPreciseUnit('0.5'));
 
 		// Assert that we have correct values in the fee pool
 		const feesAvailable = await feePool.feesAvailable(owner, sAUD);
@@ -542,7 +551,7 @@ contract.only('FeePool', async function(accounts) {
 		assert.bnEqual(await sAUDContract.balanceOf(owner), oldSynthBalance.add(feesAvailable));
 	});
 
-	it('should revert when a user tries to double claim their fees', async function() {
+	it.only('should revert when a user tries to double claim their fees', async function() {
 		// Issue 10,000 sUSD.
 		await synthetix.issueSynths(sUSD, toUnit('10000'), { from: owner });
 

@@ -688,11 +688,12 @@ contract FeePool is Proxyable, SelfDestructible {
         if (ownershipPercentage == 0) return 0;
 
         uint debtOwnershipForPeriod = ownershipPercentage;
-        
+
         // If period has closed we want to calculate debtPercentage at periodClose
         // Calculate the effectiveDebtRatioForPeriod
         if (period > 0) {
-            debtOwnershipForPeriod = _effectiveDebtRatioForPeriod(period, ownershipPercentage, debtEntryIndex);
+            uint closingDebtIndex = recentFeePeriods[period - 1].startingDebtIndex.sub(1);
+            debtOwnershipForPeriod = _effectiveDebtRatioForPeriod(closingDebtIndex, ownershipPercentage, debtEntryIndex);
         }
 
         // Calculate their percentage of the fees / rewards in this period
@@ -707,14 +708,11 @@ contract FeePool is Proxyable, SelfDestructible {
         return feesFromPeriod.preciseDecimalToDecimal();
     }
 
-    function _effectiveDebtRatioForPeriod(uint period, uint ownershipPercentage, uint debtEntryIndex)
+    function _effectiveDebtRatioForPeriod(uint closingDebtIndex, uint ownershipPercentage, uint debtEntryIndex)
         internal
         view
         returns (uint)
     {   
-        require(period < FEE_PERIOD_LENGTH, "Period exceeds the FEE_PERIOD_LENGTH");
-        uint closingDebtIndex = recentFeePeriods[period - 1].startingDebtIndex.sub(1);
-
         // Condition to check if debtLedger[] has value otherwise return 0
         if (closingDebtIndex > synthetix.synthetixState().debtLedgerLength()) return 0;
 
@@ -740,15 +738,9 @@ contract FeePool is Proxyable, SelfDestructible {
 
         uint ownershipPercentage;
         uint debtEntryIndex;
-        (ownershipPercentage, debtEntryIndex) = feePoolState.getAccountsDebtEntry(account, period);
+        (ownershipPercentage, debtEntryIndex) = feePoolState.applicableIssuanceData(account, closingDebtIndex);
 
-        // Figure out their global debt percentage delta at end of fee Period.
-        // This is a high precision integer.
-        uint feePeriodDebtOwnership = synthetix.synthetixState().debtLedger(closingDebtIndex)
-            .divideDecimalRoundPrecise(synthetix.synthetixState().debtLedger(debtEntryIndex))
-            .multiplyDecimalRoundPrecise(ownershipPercentage);
-        
-        return feePeriodDebtOwnership;
+        return _effectiveDebtRatioForPeriod(closingDebtIndex, ownershipPercentage, debtEntryIndex);
     }
 
     modifier onlyFeeAuthority

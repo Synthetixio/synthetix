@@ -91,7 +91,7 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
     }
 
     /**
-     * @notice 
+     * @notice Find the oldest debtEntryIndex for the corresponding closingDebtIndex
      * @param account users account
      * @param closingDebtIndex the last periods debt index on close
      */
@@ -102,14 +102,13 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
     {
         IssuanceData[FEE_PERIOD_LENGTH] memory issuanceData = accountIssuanceLedger[account];
         
-        // we can start from issuanceData[1] as issuanceData[0] was checked
-        // find the most recent issuanceData for the feePeriod before it was closed
-        for (uint i = 1; i < FEE_PERIOD_LENGTH; i++) {
+        // We want to use the user's debtEntryIndex at when the period closed
+        // Find the oldest debtEntryIndex for the corresponding closingDebtIndex
+        for (uint i = 0; i < FEE_PERIOD_LENGTH; i++) {
             if (closingDebtIndex >= issuanceData[i].debtEntryIndex) {
                 return (issuanceData[i].debtPercentage, issuanceData[i].debtEntryIndex);
             }
         }
-        return (1,1); // TODO: Remove Here for testing
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
