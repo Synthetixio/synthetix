@@ -459,7 +459,7 @@ contract.only('FeePool', async function(accounts) {
 		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
 	});
 
-	it.only('should allow a user to claim their fees in sUSD', async function() {
+	it('should allow a user to claim their fees in sUSD', async function() {
 		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 
 		// Issue 10,000 sUSD for two different accounts.
@@ -497,7 +497,7 @@ contract.only('FeePool', async function(accounts) {
 		assert.bnEqual(await sUSDContract.balanceOf(owner), oldSynthBalance.add(feesAvailable));
 	});
 
-	it.only('should allow a user to claim their fees in sAUD', async function() {
+	it('should allow a user to claim their fees in sAUD', async function() {
 		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 
 		// Issue 10,000 sAUD for two different accounts.
@@ -551,7 +551,7 @@ contract.only('FeePool', async function(accounts) {
 		assert.bnEqual(await sAUDContract.balanceOf(owner), oldSynthBalance.add(feesAvailable));
 	});
 
-	it.only('should revert when a user tries to double claim their fees', async function() {
+	it('should revert when a user tries to double claim their fees', async function() {
 		// Issue 10,000 sUSD.
 		await synthetix.issueSynths(sUSD, toUnit('10000'), { from: owner });
 
@@ -564,9 +564,9 @@ contract.only('FeePool', async function(accounts) {
 
 		// Assert that the correct fee is in the fee pool.
 		const fee = await XDRContract.balanceOf(FEE_ADDRESS);
-		const [pendingFees] = await feePool.feesByPeriod(owner);
+		const pendingFees = await feePoolWeb3.methods.feesByPeriod(owner).call();
 
-		assert.bnEqual(pendingFees, fee);
+		assert.bnEqual(pendingFees[0][0], fee);
 
 		// Claiming should revert because the fee period is still open
 		await assert.revert(feePool.claimFees(sUSD, { from: owner }));
@@ -577,6 +577,9 @@ contract.only('FeePool', async function(accounts) {
 		await feePool.claimFees(sUSD, { from: owner });
 
 		// But claiming again should revert
+		const feesAvailable = await feePool.feesAvailable(owner, sUSD);
+		assert.bnEqual(feesAvailable, '0');
+
 		await assert.revert(feePool.claimFees(sUSD, { from: owner }));
 	});
 
@@ -584,7 +587,7 @@ contract.only('FeePool', async function(accounts) {
 		await assert.revert(feePool.claimFees(sUSD, { from: owner }));
 	});
 
-	it('should track fee withdrawals correctly', async function() {
+	it.only('should track fee withdrawals correctly', async function() {
 		const amount = toUnit('10000');
 
 		// Issue sUSD for two different accounts.

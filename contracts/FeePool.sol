@@ -655,20 +655,20 @@ contract FeePool is Proxyable, SelfDestructible {
             uint next = i - 1; 
             FeePeriod memory nextPeriod = recentFeePeriods[next];
 
-            // We can skip period as no debt minted during period
-            if (nextPeriod.startingDebtIndex == 0) continue;
+            // We can skip period if no debt minted during period
+            if (nextPeriod.startingDebtIndex > 0 && 
+            lastFeeWithdrawal[account] < recentFeePeriods[i].feePeriodId) {
             
-            // We calculate a feePeriod's closingDebtIndex by looking at the next feePeriod's startingDebtIndex 
-            // If issuanceData[0].DebtEntryIndex was before the current feePeriod's closingDebtIndex 
-            // we can use the most recent issuanceData[0] for the current feePeriod 
-            // else find the applicableIssuanceData for the feePeriod based on the StartingDebtIndex of the period  
-            uint closingDebtIndex = nextPeriod.startingDebtIndex - 1;
-            if (closingDebtIndex < debtEntryIndex)
-            {
-                (userOwnershipPercentage, debtEntryIndex) = feePoolState.applicableIssuanceData(account, closingDebtIndex);
+                // We calculate a feePeriod's closingDebtIndex by looking at the next feePeriod's startingDebtIndex 
+                // we can use the most recent issuanceData[0] for the current feePeriod 
+                // else find the applicableIssuanceData for the feePeriod based on the StartingDebtIndex of the period  
+                uint closingDebtIndex = nextPeriod.startingDebtIndex - 1;
+                if (closingDebtIndex < debtEntryIndex) {
+                    (userOwnershipPercentage, debtEntryIndex) = feePoolState.applicableIssuanceData(account, closingDebtIndex);
+                }
+                    
+                results[i][0] = _feesFromPeriod(i, userOwnershipPercentage, debtEntryIndex, penalty);
             }
-                
-            results[i][0] = _feesFromPeriod(i, userOwnershipPercentage, debtEntryIndex, penalty);
         }
 
         return results;
@@ -689,8 +689,7 @@ contract FeePool is Proxyable, SelfDestructible {
 
         uint debtOwnershipForPeriod = ownershipPercentage;
 
-        // If period has closed we want to calculate debtPercentage at periodClose
-        // Calculate the effectiveDebtRatioForPeriod
+        // If period has closed we want to calculate debtPercentage for the period
         if (period > 0) {
             uint closingDebtIndex = recentFeePeriods[period - 1].startingDebtIndex.sub(1);
             debtOwnershipForPeriod = _effectiveDebtRatioForPeriod(closingDebtIndex, ownershipPercentage, debtEntryIndex);
