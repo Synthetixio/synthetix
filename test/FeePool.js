@@ -3,9 +3,16 @@ const FeePool = artifacts.require('FeePool');
 const FeePoolState = artifacts.require('FeePoolState');
 const Synthetix = artifacts.require('Synthetix');
 const Synth = artifacts.require('Synth');
-const { getWeb3, getContractInstance, sendParameters } = require('../utils/web3Helper');
+const { getWeb3, getContractInstance } = require('../utils/web3Helper');
 
-const { currentTime, fastForward, toUnit, toPreciseUnit, ZERO_ADDRESS, fromUnit } = require('../utils/testUtils');
+const {
+	currentTime,
+	fastForward,
+	toUnit,
+	toPreciseUnit,
+	ZERO_ADDRESS,
+	fromUnit,
+} = require('../utils/testUtils');
 const web3 = getWeb3();
 const getInstance = getContractInstance(web3);
 
