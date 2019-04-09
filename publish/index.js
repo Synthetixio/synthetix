@@ -17,6 +17,7 @@ const Deployer = require('./deployer');
 const COMPILED_FOLDER = 'compiled';
 const FLATTENED_FOLDER = 'flattened';
 const CONFIG_FILENAME = 'config.json';
+const SYNTHS_FILENAME = 'synths.json';
 const DEPLOYMENT_FILENAME = 'deployment.json';
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 
@@ -37,6 +38,9 @@ const ensureDeploymentPath = deploymentPath => {
 
 // Load up all contracts in the flagged source, get their deployed addresses (if any) and compiled sources
 const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
+	console.log(gray(`Loading the list of synths for ${network.toUpperCase()}...`));
+	const synthsFile = path.join(deploymentPath, SYNTHS_FILENAME);
+	const synths = JSON.parse(fs.readFileSync(synthsFile)).map(({ name }) => name);
 	console.log(gray(`Loading the list of contracts to deploy on ${network.toUpperCase()}...`));
 	const configFile = path.join(deploymentPath, CONFIG_FILENAME);
 	const config = JSON.parse(fs.readFileSync(configFile));
@@ -53,6 +57,7 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 	return {
 		config,
 		configFile,
+		synths,
 		deployment,
 		deploymentFile,
 	};
@@ -134,7 +139,7 @@ program
 	.description('Deploy compiled solidity files')
 	.option(
 		'-a, --add-new-synths',
-		'Whether or not any new synths in the synths.json file should be deployed if there is no entry in the config file',
+		`Whether or not any new synths in the ${SYNTHS_FILENAME} file should be deployed if there is no entry in the config file`,
 		false
 	)
 	.option(
@@ -150,7 +155,7 @@ program
 	)
 	.option(
 		'-d, --deployment-path <value>',
-		`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
+		`Path to a folder that has your input configuration file ${CONFIG_FILENAME}, the synth list ${SYNTHS_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 	)
 	.option(
 		'-o, --oracle <value>',
@@ -160,11 +165,6 @@ program
 	.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
 	.option('-m, --method-call-gas-limit <value>', 'Method call gas limit', parseInt, 15e4)
 	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
-	.option(
-		'-s, --synth-list <value>',
-		'Path to a JSON file containing a list of synths',
-		path.join(__dirname, 'synths.json')
-	)
 	.action(
 		async ({
 			addNewSynths,
@@ -174,13 +174,18 @@ program
 			network,
 			buildPath,
 			deploymentPath,
-			synthList,
 			oracle,
 		}) => {
 			ensureNetwork(network);
 			ensureDeploymentPath(deploymentPath);
 
-			const { config, configFile, deployment, deploymentFile } = loadAndCheckRequiredSources({
+			const {
+				config,
+				configFile,
+				synths,
+				deployment,
+				deploymentFile,
+			} = loadAndCheckRequiredSources({
 				deploymentPath,
 				network,
 			});
@@ -459,7 +464,6 @@ program
 			// ----------------
 			// Synths
 			// ----------------
-			const synths = JSON.parse(fs.readFileSync(synthList));
 			for (const currencyKey of synths) {
 				const tokenStateForSynth = await deployContract({
 					name: `TokenState${currencyKey}`,

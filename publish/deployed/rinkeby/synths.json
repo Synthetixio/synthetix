@@ -1,0 +1,21 @@
+[
+	{ "name": "XDR", "category": "internal" },
+	{ "name": "sEUR", "category": "forex" },
+	{ "name": "sJPY", "category": "forex" },
+	{ "name": "sUSD", "category": "forex" },
+	{ "name": "sAUD", "category": "forex" },
+	{ "name": "sKRW", "category": "forex" },
+	{ "name": "sGBP", "category": "forex" },
+	{ "name": "sCHF", "category": "forex" },
+	{ "name": "sCNY", "category": "forex" },
+	{ "name": "sSGD", "category": "forex" },
+	{ "name": "sCAD", "category": "forex" },
+	{ "name": "sRUB", "category": "forex" },
+	{ "name": "sINR", "category": "forex" },
+	{ "name": "sBRL", "category": "forex" },
+	{ "name": "sNZD", "category": "forex" },
+	{ "name": "sPLN", "category": "forex" },
+	{ "name": "sXAU", "category": "commodity" },
+	{ "name": "sXAG", "category": "commodity" },
+	{ "name": "sBTC", "category": "crypto" }
+]
