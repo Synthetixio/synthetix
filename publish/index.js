@@ -17,6 +17,7 @@ const Deployer = require('./deployer');
 const COMPILED_FOLDER = 'compiled';
 const FLATTENED_FOLDER = 'flattened';
 const CONFIG_FILENAME = 'config.json';
+const SYNTHS_FILENAME = 'synths.json';
 const DEPLOYMENT_FILENAME = 'deployment.json';
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 
@@ -37,6 +38,9 @@ const ensureDeploymentPath = deploymentPath => {
 
 // Load up all contracts in the flagged source, get their deployed addresses (if any) and compiled sources
 const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
+	console.log(gray(`Loading the list of synths for ${network.toUpperCase()}...`));
+	const synthsFile = path.join(deploymentPath, SYNTHS_FILENAME);
+	const synths = JSON.parse(fs.readFileSync(synthsFile)).map(({ name }) => name);
 	console.log(gray(`Loading the list of contracts to deploy on ${network.toUpperCase()}...`));
 	const configFile = path.join(deploymentPath, CONFIG_FILENAME);
 	const config = JSON.parse(fs.readFileSync(configFile));
@@ -53,6 +57,7 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 	return {
 		config,
 		configFile,
+		synths,
 		deployment,
 		deploymentFile,
 	};
@@ -133,6 +138,11 @@ program
 	.command('deploy')
 	.description('Deploy compiled solidity files')
 	.option(
+		'-a, --add-new-synths',
+		`Whether or not any new synths in the ${SYNTHS_FILENAME} file should be deployed if there is no entry in the config file`,
+		false
+	)
+	.option(
 		'-b, --build-path [value]',
 		'Path to a folder hosting compiled files from the "build" step in this script',
 		path.join(__dirname, '..', 'build')
@@ -145,7 +155,7 @@ program
 	)
 	.option(
 		'-d, --deployment-path <value>',
-		`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
+		`Path to a folder that has your input configuration file ${CONFIG_FILENAME}, the synth list ${SYNTHS_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 	)
 	.option(
 		'-o, --oracle <value>',
@@ -155,26 +165,27 @@ program
 	.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
 	.option('-m, --method-call-gas-limit <value>', 'Method call gas limit', parseInt, 15e4)
 	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
-	.option(
-		'-s, --synth-list <value>',
-		'Path to a JSON file containing a list of synths',
-		path.join(__dirname, 'synths.json')
-	)
 	.action(
 		async ({
+			addNewSynths,
 			gasPrice,
 			methodCallGasLimit,
 			contractDeploymentGasLimit,
 			network,
 			buildPath,
 			deploymentPath,
-			synthList,
 			oracle,
 		}) => {
 			ensureNetwork(network);
 			ensureDeploymentPath(deploymentPath);
 
-			const { config, configFile, deployment, deploymentFile } = loadAndCheckRequiredSources({
+			const {
+				config,
+				configFile,
+				synths,
+				deployment,
+				deploymentFile,
+			} = loadAndCheckRequiredSources({
 				deploymentPath,
 				network,
 			});
@@ -201,17 +212,22 @@ program
 			const compiledSourcePath = path.join(buildPath, COMPILED_FOLDER);
 
 			let firstTimestamp = Infinity;
-			const compiled = Object.entries(config).reduce((memo, [contractName, { contract }]) => {
-				const sourceFile = path.join(compiledSourcePath, `${contract}.json`);
-				firstTimestamp = Math.min(firstTimestamp, fs.statSync(sourceFile).mtimeMs);
-				if (!fs.existsSync(sourceFile)) {
-					throw Error(
-						`Cannot find compiled contract code for: ${contract}. Did you run the "build" step first?`
-					);
-				}
-				memo[contractName] = JSON.parse(fs.readFileSync(sourceFile));
-				return memo;
-			}, {});
+
+			const compiled = fs
+				.readdirSync(compiledSourcePath)
+				.filter(name => /^.+\.json$/.test(name))
+				.reduce((memo, contractFilename) => {
+					const contract = contractFilename.replace(/\.json$/, '');
+					const sourceFile = path.join(compiledSourcePath, contractFilename);
+					firstTimestamp = Math.min(firstTimestamp, fs.statSync(sourceFile).mtimeMs);
+					if (!fs.existsSync(sourceFile)) {
+						throw Error(
+							`Cannot find compiled contract code for: ${contract}. Did you run the "build" step first?`
+						);
+					}
+					memo[contract] = JSON.parse(fs.readFileSync(sourceFile));
+					return memo;
+				}, {});
 
 			// JJM: We could easily add an error here if the earlist build is before the latest SOL contract modification
 			console.log(
@@ -249,8 +265,9 @@ program
 			const { account, web3 } = deployer;
 			console.log(gray(`Using account with public key ${account}`));
 
-			const deployContract = async ({ name, args, deps }) => {
-				const deployedContract = await deployer.deploy({ name, args, deps });
+			const deployContract = async ({ name, source = name, args, deps, force = false }) => {
+				// force flag indicates to deploy even when no config for the entry (useful for new synths)
+				const deployedContract = await deployer.deploy({ name, source, args, deps, force });
 				if (!deployedContract) {
 					return;
 				}
@@ -258,12 +275,11 @@ program
 
 				let timestamp = new Date();
 				let txn = '';
-				if (!config[name].deploy) {
+				if (config[name] && !config[name].deploy) {
 					// deploy is false, so we reused a deployment, thus lets grab the details that already exist
 					timestamp = deployment.targets[name].timestamp;
 					txn = deployment.targets[name].txn;
 				}
-				const source = config[name].contract;
 				// now update the deployed contract information
 				deployment.targets[name] = {
 					name,
@@ -277,13 +293,14 @@ program
 					network,
 				};
 				deployment.sources[source] = {
-					bytecode: compiled[name].evm.bytecode.object,
-					abi: compiled[name].abi,
+					bytecode: compiled[source].evm.bytecode.object,
+					abi: compiled[source].abi,
 				};
 				fs.writeFileSync(deploymentFile, JSON.stringify(deployment, null, 2));
 
 				// now update the flags to indicate it no longer needs deployment
-				updatedConfig[name].deploy = false;
+				updatedConfig[name] = { deploy: false };
+
 				fs.writeFileSync(configFile, JSON.stringify(updatedConfig, null, 2));
 				return deployedContract;
 			};
@@ -299,6 +316,7 @@ program
 
 			const proxyFeePool = await deployContract({
 				name: 'ProxyFeePool',
+				source: 'Proxy',
 				args: [account],
 			});
 
@@ -331,9 +349,14 @@ program
 				name: 'SynthetixState',
 				args: [account, account],
 			});
-			const proxySynthetix = await deployContract({ name: 'ProxySynthetix', args: [account] });
+			const proxySynthetix = await deployContract({
+				name: 'ProxySynthetix',
+				source: 'Proxy',
+				args: [account],
+			});
 			const tokenStateSynthetix = await deployContract({
 				name: 'TokenStateSynthetix',
+				source: 'TokenState',
 				args: [account, account],
 			});
 			const synthetix = await deployContract({
@@ -441,18 +464,22 @@ program
 			// ----------------
 			// Synths
 			// ----------------
-			const synths = JSON.parse(fs.readFileSync(synthList));
 			for (const currencyKey of synths) {
 				const tokenStateForSynth = await deployContract({
 					name: `TokenState${currencyKey}`,
+					source: 'TokenState',
 					args: [account, ZERO_ADDRESS],
+					force: addNewSynths,
 				});
 				const proxyForSynth = await deployContract({
 					name: `Proxy${currencyKey}`,
+					source: 'Proxy',
 					args: [account],
+					force: addNewSynths,
 				});
 				const synth = await deployContract({
 					name: `Synth${currencyKey}`,
+					source: 'Synth',
 					deps: [`TokenState${currencyKey}`, `Proxy${currencyKey}`, 'Synthetix', 'FeePool'],
 					args: [
 						proxyForSynth ? proxyForSynth.options.address : '',
@@ -464,6 +491,7 @@ program
 						account,
 						web3.utils.asciiToHex(currencyKey),
 					],
+					force: addNewSynths,
 				});
 				const synthAddress = synth ? synth.options.address : '';
 				if (synth && tokenStateForSynth) {
@@ -606,11 +634,9 @@ program
 			});
 
 			if (result.data.result === 'Contract source code not verified') {
-				const contractName = config[name].contract;
+				const { source } = deployment.targets[name];
 				console.log(
-					gray(
-						` - Contract ${name} not yet verified (source of "${contractName}.sol"). Verifying...`
-					)
+					gray(` - Contract ${name} not yet verified (source of "${source}.sol"). Verifying...`)
 				);
 
 				// Get the transaction that created the contract with its resulting bytecode.
@@ -635,7 +661,6 @@ program
 
 				fs.writeFileSync(deploymentFile, JSON.stringify(deployment, null, 2));
 
-				const source = config[name].contract;
 				// Grab the last 50 characters of the compiled bytecode
 				const compiledBytecode = deployment.sources[source].bytecode.slice(-100);
 
@@ -645,7 +670,7 @@ program
 				console.log(gray(' - Constructor arguments', constructorArguments));
 
 				const readFlattened = () => {
-					const flattenedFilename = path.join(buildPath, FLATTENED_FOLDER, `${contractName}.sol`);
+					const flattenedFilename = path.join(buildPath, FLATTENED_FOLDER, `${source}.sol`);
 					try {
 						return fs.readFileSync(flattenedFilename).toString();
 					} catch (err) {
@@ -661,7 +686,7 @@ program
 						action: 'verifysourcecode',
 						contractaddress: address,
 						sourceCode: readFlattened(),
-						contractname: contractName,
+						contractname: source,
 						// note: spelling mistake is on etherscan's side
 						constructorArguements: constructorArguments,
 						compilerversion: 'v' + solc.version().replace('.Emscripten.clang', ''), // The version reported by solc-js is too verbose and needs a v at the front

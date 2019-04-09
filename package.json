@@ -24,7 +24,7 @@
 	],
 	"files": [
 		"./index.js",
-		"publish/synths.json",
+		"publish/deployed/*/synths.json",
 		"publish/deployed/*/deployment.json"
 	],
 	"bin": {

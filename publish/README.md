@@ -31,16 +31,16 @@ node publish deploy
 
 ### CLI Options
 
+- `-a, --add-new-synths` Whether or not any new synths in the synths.json file should be deployed if there is no entry in the config file.
 - `-b, --build-path [value]` Path for built files to go. (default of `./build` - relative to the root of this repo). The folders `compiled` and `flattened` will be made under this path and the respective files will go in there.
 - `-c, --contract-deployment-gas-limit <value>` Contract deployment gas limit (default: 7000000 (7m))
-- `-d, --deployment-path <value>` Path to a folder that has your input configuration file (`config.json`) and where your `deployment.json` file will be written (and read from if it currently exists). The `config.json` should be in the following format ([here's an example](deployed/rinkeby/config.json)):
+- `-d, --deployment-path <value>` Path to a folder that has your input configuration file (`config.json`), the synths list (`synths.json`) and where your `deployment.json` file will be written (and read from if it currently exists). The `config.json` should be in the following format ([here's an example](deployed/rinkeby/config.json)):
 
   ```javascript
   // config.json
   {
     "ProxysUSD": {
-      "deploy": true, // whether or not to deploy this or use existing instance from any deployment.json file
-      "contract": "Proxy" // the source Solidity file for this contract
+      "deploy": true // whether or not to deploy this or use existing instance from any deployment.json file
     },
 
     ...
@@ -53,7 +53,6 @@ node publish deploy
 * `-m, --method-call-gas-limit <value>` Method call gas limit (default: 150000)
 * `-n, --network <value>` The network to run off. One of mainnet, kovan, rinkeby, rospen. (default: "kovan")
 * `-o, --oracle <value>` The address of the oracle to use. (default: `0xac1e8b385230970319906c03a1d8567e3996d1d5` - used for all testnets)
-* `-s, --synth-list <value>` Path to a JSON file containing a list of synths (default: [synths.json](synths.json))
 
 ### Examples
 
@@ -88,9 +87,10 @@ node publish verify -n rinkeby -d publish/deployed/rinkeby
 
 ## When adding new synths
 
-1. First off, add the synth key to the [synths.json](synths.json) file
-2. Then you'll need to add entries to the [contract-flags.json](contract-flags.json) file with `deploy: true` and make sure the `contract` entry reflects the name of the contract source. Whichever other contracts you want to deploy again, you'll need to change `deploy` to `true`, otherwise keep it as `false` and use the existing deployed contract for that environment.
-3. Run `build` if you've changed any source files, if not you can skip that step. Then run the `deploy` and `verify` steps.
+1. In the environment folder you are deploying to, add the synth key to the `synths.json` file
+2. [Optional] Run `build` if you've changed any source files, if not you can skip this step.
+3. Run `deploy` as usual but add the `--add-new-synths` flag
+4. Run `verify` as usual.
 
 # Additional functionality
 
