@@ -623,8 +623,6 @@ contract FeePool is Proxyable, SelfDestructible {
      * @notice Calculates fees by period for an account, priced in XDRs
      * @param account The address you want to query the fees by penalty for
      */
-
-     // TODO - Move issuanceData to external state
     function feesByPeriod(address account)
         public
         view
@@ -692,10 +690,9 @@ contract FeePool is Proxyable, SelfDestructible {
         uint debtOwnershipForPeriod = ownershipPercentage;
         
         // If period has closed we want to calculate debtPercentage at periodClose
-        // Calculate the effectiveDebtPercentageAtPeriodEnd
+        // Calculate the effectiveDebtRatioForPeriod
         if (period > 0) {
-            // return debtEntryIndex;
-            debtOwnershipForPeriod = effectiveDebtPercentageAtPeriodEnd(period, ownershipPercentage, debtEntryIndex);
+            debtOwnershipForPeriod = _effectiveDebtRatioForPeriod(period, ownershipPercentage, debtEntryIndex);
         }
 
         // Calculate their percentage of the fees / rewards in this period
@@ -710,18 +707,43 @@ contract FeePool is Proxyable, SelfDestructible {
         return feesFromPeriod.preciseDecimalToDecimal();
     }
 
-    function effectiveDebtPercentageAtPeriodEnd(uint period, uint ownershipPercentage, uint debtEntryIndex)
+    function _effectiveDebtRatioForPeriod(uint period, uint ownershipPercentage, uint debtEntryIndex)
+        internal
+        view
+        returns (uint)
+    {   
+        require(period < FEE_PERIOD_LENGTH, "Period exceeds the FEE_PERIOD_LENGTH");
+        uint closingDebtIndex = recentFeePeriods[period - 1].startingDebtIndex.sub(1);
+
+        // Condition to check if debtLedger[] has value otherwise return 0
+        if (closingDebtIndex > synthetix.synthetixState().debtLedgerLength()) return 0;
+
+        // Figure out their global debt percentage delta at end of fee Period.
+        // This is a high precision integer.
+        uint feePeriodDebtOwnership = synthetix.synthetixState().debtLedger(closingDebtIndex)
+            .divideDecimalRoundPrecise(synthetix.synthetixState().debtLedger(debtEntryIndex))
+            .multiplyDecimalRoundPrecise(ownershipPercentage);
+        
+        return feePeriodDebtOwnership;
+    }
+
+    function effectiveDebtRatioForPeriod(address account, uint period)
         public
         view
         returns (uint)
-    {
-        // Figure out their global debt percentage delta at end of fee Period. 
-        // This is a high precision integer.
-        uint closingDebtIndex = recentFeePeriods[period - 1].startingDebtIndex - 1;
+    {   
+        require(period < FEE_PERIOD_LENGTH, "Period exceeds the FEE_PERIOD_LENGTH");
+        uint closingDebtIndex = recentFeePeriods[period - 1].startingDebtIndex.sub(1);
 
-        // // Condition to check if debtLedger[] has value otherwise return 0
+        // Condition to check if debtLedger[] has value otherwise return 0
         if (closingDebtIndex > synthetix.synthetixState().debtLedgerLength()) return 0;
 
+        uint ownershipPercentage;
+        uint debtEntryIndex;
+        (ownershipPercentage, debtEntryIndex) = feePoolState.getAccountsDebtEntry(account, period);
+
+        // Figure out their global debt percentage delta at end of fee Period.
+        // This is a high precision integer.
         uint feePeriodDebtOwnership = synthetix.synthetixState().debtLedger(closingDebtIndex)
             .divideDecimalRoundPrecise(synthetix.synthetixState().debtLedger(debtEntryIndex))
             .multiplyDecimalRoundPrecise(ownershipPercentage);

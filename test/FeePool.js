@@ -497,7 +497,7 @@ contract.only('FeePool', async function(accounts) {
 		assert.bnEqual(await sUSDContract.balanceOf(owner), oldSynthBalance.add(feesAvailable));
 	});
 
-	it('should allow a user to claim their fees in sAUD', async function() {
+	it.only('should allow a user to claim their fees in sAUD', async function() {
 		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 
 		// Issue 10,000 sAUD for two different accounts.
@@ -522,9 +522,16 @@ contract.only('FeePool', async function(accounts) {
 			await closeFeePeriod();
 		}
 
+		// Last period should hold all the fees claimable
+		const issuanceData0 = await feePoolState.getAccountsDebtEntry(owner, 0);
+		const issuanceData1 = await feePoolState.getAccountsDebtEntry(owner, 1);
+		const issuanceData2 = await feePoolState.getAccountsDebtEntry(owner, 2);
+		const issuanceData3 = await feePoolState.getAccountsDebtEntry(owner, 3);
+		// const debtRatioForPeriod = await feePool.effectiveDebtRatioForPeriod(1)
+
 		// Assert that we have correct values in the fee pool
 		const feesAvailable = await feePool.feesAvailable(owner, sAUD);
-		assert.bnClose(feesAvailable, totalFees.div(web3.utils.toBN('2')), '6');
+		assert.bnClose(feesAvailable, totalFees.div(web3.utils.toBN('2')), '19');
 
 		const oldSynthBalance = await sAUDContract.balanceOf(owner);
 

@@ -15,7 +15,7 @@
 - [x] all issueMAX sUSD, Acc1 claims in p1 and then leaves, then Acc2&3 claim, all get 33.33 of rewards
 - [x] p1: Acc1 & 2 mints 10K and converts all to BTC which increases 50% then Acc3 mints 10K sUSD and now Acc3 has 20% of the debt/rewards
 
-- [ ] ctd now in p3 Acc1 burns all and leaves (-40%) and Acc2 has 67% and Acc3 33% rewards allocated as such
+- [XXX] ctd now in p3 Acc1 burns all and leaves (-40%) and Acc2 has 67% and Acc3 33% rewards allocated as such
 - [ ] p3: Acc1 mints 20K (40%) close p (40,40,20)
 
 - [ ] (Inverse) Issue sBTC then shift rate down 50% then calc rewards
@@ -30,3 +30,4 @@
 
 - [ ] Acc 1 doesnt claim and rewards roll over
 - [ ] Acc2 & 3 should get the extra amount
+- [ ] Acc1 doesn't claim and leaves p0, 2 & 3 should get the extra amount at period close
