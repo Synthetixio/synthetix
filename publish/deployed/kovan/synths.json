@@ -17,9 +17,5 @@
 	{ "name": "sPLN", "category": "forex" },
 	{ "name": "sXAU", "category": "commodity" },
 	{ "name": "sXAG", "category": "commodity" },
-	{ "name": "sBTC", "category": "crypto" },
-	{ "name": "sETH", "category": "crypto" },
-	{ "name": "sBNB", "category": "crypto" },
-	{ "name": "sS&P", "category": "equity" },
-	{ "name": "sDOW", "category": "equity" }
+	{ "name": "sBTC", "category": "crypto" }
 ]
