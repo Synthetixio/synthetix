@@ -5,7 +5,7 @@ const Synthetix = artifacts.require('Synthetix');
 const Synth = artifacts.require('Synth');
 const { getWeb3, getContractInstance, sendParameters } = require('../utils/web3Helper');
 
-const { currentTime, fastForward, toUnit, toPreciseUnit, ZERO_ADDRESS } = require('../utils/testUtils');
+const { currentTime, fastForward, toUnit, toPreciseUnit, ZERO_ADDRESS, fromUnit } = require('../utils/testUtils');
 const web3 = getWeb3();
 const getInstance = getContractInstance(web3);
 
@@ -587,7 +587,7 @@ contract.only('FeePool', async function(accounts) {
 		await assert.revert(feePool.claimFees(sUSD, { from: owner }));
 	});
 
-	it.only('should track fee withdrawals correctly', async function() {
+	it('should track fee withdrawals correctly', async function() {
 		const amount = toUnit('10000');
 
 		// Issue sUSD for two different accounts.
@@ -743,9 +743,9 @@ contract.only('FeePool', async function(accounts) {
 		await feePool.setExchangeFeeRate(originalFeeRate.mul(factor), { from: owner });
 
 		const UNIT = toUnit('1');
-		const expected = amount.mul(UNIT).div(originalFeeRate.mul(factor).add(UNIT));
+		const expected = amount.mul(UNIT.sub(originalFeeRate.mul(factor)));
 
-		assert.bnEqual(await feePool.amountReceivedFromExchange(amount), expected);
+		assert.bnEqual(await feePool.amountReceivedFromExchange(amount), fromUnit(expected));
 	});
 
 	it('should correctly calculate the totalFeesAvailable for a single open period', async function() {
