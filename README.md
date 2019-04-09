@@ -51,7 +51,7 @@ snx.getSource({ network: 'rinkeby', contract: 'Proxy' });
 */
 
 // retrieve the array of synths used
-snx.getSynths();
+snx.getSynths({ network: 'rinkeby' }).map(({ name }) => name);
 // ['XDR', 'sUSD', 'sEUR', ...]
 ```
 
@@ -76,7 +76,7 @@ npx synthetix source --network rinkeby --contract Proxy
 #   "abi": [ ... ]
 # }
 
-npx synthetix synths
+npx synthetix synths --network rinkeby --key name
 # ["XDR", "sUSD", "sEUR", ... ]
 ```
 
