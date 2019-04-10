@@ -427,4 +427,54 @@ contract('FeePoolState', async function(accounts) {
 	// 	assert.bnEqual(feePoolLedger.debtPercentage, toPreciseUnit('1'));
 	// 	assert.bnEqual(feePoolLedger.debtPercentage, issuanceDataFromState.initialDebtOwnership);
 	// });
+
+	// it('should allow an issuer to issue synths many times and track debt issuance in feePool', async function() {
+	// 	// Send a price update to guarantee we're not depending on values from outside this test.
+	// 	const oracle = await exchangeRates.oracle();
+	// 	const timestamp = await currentTime();
+
+	// 	await exchangeRates.updateRates(
+	// 		[sAUD, sEUR, SNX],
+	// 		['0.5', '1.25', '0.1'].map(toUnit),
+	// 		timestamp,
+	// 		{ from: oracle }
+	// 	);
+
+	// 	// Give some SNX to account1
+	// 	await synthetix.transfer(account1, toUnit('20000'), { from: owner });
+
+	// 	// Issue
+	// 	await synthetix.issueSynths(sUSD, toUnit('200'), { from: account1 });
+
+	// 	// There should be 200 sUSD of value in the system
+	// 	assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('200'));
+
+	// 	// And account1 should own all of it.
+	// 	assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('200'));
+
+	// 	// And feePool.accountIssuanceLedger[account1] should record debt minted
+	// 	let issuanceDataFromState, feePoolLedger;
+	// 	issuanceDataFromState = await synthetixState.issuanceData(account1);
+	// 	feePoolLedger = await feePool.accountIssuanceLedger(account1, 0);
+
+	// 	assert.bnEqual(feePoolLedger.debtEntryIndex, 0);
+	// 	assert.bnEqual(feePoolLedger.debtEntryIndex, issuanceDataFromState.debtEntryIndex);
+	// 	assert.bnEqual(feePoolLedger.debtPercentage, toPreciseUnit('1'));
+	// 	assert.bnEqual(feePoolLedger.debtPercentage, issuanceDataFromState.initialDebtOwnership);
+
+	// 	// Issue
+	// 	await synthetix.issueSynths(sUSD, toUnit('200'), { from: account1 });
+
+	// 	// And account1 should own all of it.
+	// 	assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('400'));
+
+	// 	issuanceDataFromState = await synthetixState.issuanceData(account1);
+	// 	feePoolLedger = await feePool.accountIssuanceLedger(account1, 0);
+
+	// 	// debtEntryIndex is updated to 1 and still own whole system
+	// 	assert.bnEqual(feePoolLedger.debtEntryIndex, 1);
+	// 	assert.bnEqual(feePoolLedger.debtEntryIndex, issuanceDataFromState.debtEntryIndex);
+	// 	assert.bnEqual(feePoolLedger.debtPercentage, toPreciseUnit('1'));
+	// 	assert.bnEqual(feePoolLedger.debtPercentage, issuanceDataFromState.initialDebtOwnership);
+	// });
 });
