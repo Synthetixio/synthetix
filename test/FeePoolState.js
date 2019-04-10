@@ -142,14 +142,29 @@ contract.only('FeePoolState', async function(accounts) {
 			assert.bnEqual(accountsDebtEntry[0], toPreciseUnit('.3125'));
 			assert.bnEqual(accountsDebtEntry[1], 5);
 
-			// TODO FINISH ALL TESTS
-			// accountsDebtEntry = await feePoolState.applicableIssuanceData(account3, 5);
-			// assert.bnEqual(accountsDebtEntry[0], toPreciseUnit('.625'));
-			// assert.bnEqual(accountsDebtEntry[1], 4);
+			accountsDebtEntry = await feePoolState.applicableIssuanceData(account3, 5);
+			assert.bnEqual(accountsDebtEntry[0], toPreciseUnit('.3125'));
+			assert.bnEqual(accountsDebtEntry[1], 5);
 
 			accountsDebtEntry = await feePoolState.applicableIssuanceData(account3, 4);
+			assert.bnEqual(accountsDebtEntry[0], toPreciseUnit('.625'));
+			assert.bnEqual(accountsDebtEntry[1], 4);
+
+			accountsDebtEntry = await feePoolState.applicableIssuanceData(account3, 3);
 			assert.bnEqual(accountsDebtEntry[0], toPreciseUnit('.125'));
 			assert.bnEqual(accountsDebtEntry[1], 3);
+
+			accountsDebtEntry = await feePoolState.applicableIssuanceData(account3, 2);
+			assert.bnEqual(accountsDebtEntry[0], toPreciseUnit('.25'));
+			assert.bnEqual(accountsDebtEntry[1], 2);
+
+			accountsDebtEntry = await feePoolState.applicableIssuanceData(account3, 1);
+			assert.bnEqual(accountsDebtEntry[0], toPreciseUnit('.5'));
+			assert.bnEqual(accountsDebtEntry[1], 1);
+
+			accountsDebtEntry = await feePoolState.applicableIssuanceData(account3, 0);
+			assert.bnEqual(accountsDebtEntry[0], toPreciseUnit('1'));
+			assert.bnEqual(accountsDebtEntry[1], 0);
 		});
 
 		it('should return the issuanceData for an account given an index', async function() {
