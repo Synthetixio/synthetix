@@ -146,60 +146,64 @@ contract('Synth', async function(accounts) {
 		assert.bnEqual(await XDRContract.balanceOf(FEE_ADDRESS), xdrFee);
 	});
 
-	it('should respect preferred currency when transferring', async function() {
-		// Issue 10,000 sUSD.
-		const amount = toUnit('10000');
-		await synthetix.issueSynths(sUSD, amount, { from: owner });
+	//
+	// NOTICE: setPreferredCurrency has been deprecated from synthetix to reduce contract size
+	//
+	// it('should respect preferred currency when transferring', async function() {
+	// 	// Issue 10,000 sUSD.
+	// 	const amount = toUnit('10000');
+	// 	await synthetix.issueSynths(sUSD, amount, { from: owner });
 
-		const sUSDReceived = await feePool.amountReceivedFromTransfer(amount);
-		const fee = amount.sub(sUSDReceived);
-		const xdrFee = await synthetix.effectiveValue(sUSD, fee, XDR);
-		const sAUDReceived = await synthetix.effectiveValue(sUSD, sUSDReceived, sAUD);
+	// 	const sUSDReceived = await feePool.amountReceivedFromTransfer(amount);
+	// 	const fee = amount.sub(sUSDReceived);
+	// 	const xdrFee = await synthetix.effectiveValue(sUSD, fee, XDR);
+	// 	const sAUDReceived = await synthetix.effectiveValue(sUSD, sUSDReceived, sAUD);
 
-		await synthetix.setPreferredCurrency(sAUD, { from: account1 });
+	// 	// Deprecated
+	// 	await synthetix.setPreferredCurrency(sAUD, { from: account1 });
 
-		// Do a single transfer of all our sUSD.
-		const transaction = await sUSDContract.transfer(account1, amount, { from: owner });
+	// 	// Do a single transfer of all our sUSD.
+	// 	const transaction = await sUSDContract.transfer(account1, amount, { from: owner });
 
-		// Events should be a fee exchange and a transfer to account1
-		assert.eventsEqual(
-			transaction,
+	// 	// Events should be a fee exchange and a transfer to account1
+	// 	assert.eventsEqual(
+	// 		transaction,
 
-			// Fees get burned and exchanged to XDRs
-			'Transfer',
-			{ from: owner, to: ZERO_ADDRESS, value: fee },
-			'Burned',
-			{ account: owner, value: fee },
-			'Transfer',
-			{
-				from: ZERO_ADDRESS,
-				to: FEE_ADDRESS,
-				value: xdrFee,
-			},
-			'Issued',
-			{ account: FEE_ADDRESS, value: xdrFee },
+	// 		// Fees get burned and exchanged to XDRs
+	// 		'Transfer',
+	// 		{ from: owner, to: ZERO_ADDRESS, value: fee },
+	// 		'Burned',
+	// 		{ account: owner, value: fee },
+	// 		'Transfer',
+	// 		{
+	// 			from: ZERO_ADDRESS,
+	// 			to: FEE_ADDRESS,
+	// 			value: xdrFee,
+	// 		},
+	// 		'Issued',
+	// 		{ account: FEE_ADDRESS, value: xdrFee },
 
-			// And finally the original synth exchange
-			// from sUSD to sAUD
-			'Transfer',
-			{ from: owner, to: ZERO_ADDRESS, value: sUSDReceived },
-			'Burned',
-			{ account: owner, value: sUSDReceived },
-			'Transfer',
-			{ from: ZERO_ADDRESS, to: account1, value: sAUDReceived }
-		);
+	// 		// And finally the original synth exchange
+	// 		// from sUSD to sAUD
+	// 		'Transfer',
+	// 		{ from: owner, to: ZERO_ADDRESS, value: sUSDReceived },
+	// 		'Burned',
+	// 		{ account: owner, value: sUSDReceived },
+	// 		'Transfer',
+	// 		{ from: ZERO_ADDRESS, to: account1, value: sAUDReceived }
+	// 	);
 
-		// Sender should have nothing
-		assert.bnEqual(await sUSDContract.balanceOf(owner), 0);
-		assert.bnEqual(await sAUDContract.balanceOf(owner), 0);
+	// 	// Sender should have nothing
+	// 	assert.bnEqual(await sUSDContract.balanceOf(owner), 0);
+	// 	assert.bnEqual(await sAUDContract.balanceOf(owner), 0);
 
-		// The recipient should have the correct amount
-		assert.bnEqual(await sUSDContract.balanceOf(account1), 0);
-		assert.bnEqual(await sAUDContract.balanceOf(account1), sAUDReceived);
+	// 	// The recipient should have the correct amount
+	// 	assert.bnEqual(await sUSDContract.balanceOf(account1), 0);
+	// 	assert.bnEqual(await sAUDContract.balanceOf(account1), sAUDReceived);
 
-		// The fee pool should also have the correct amount
-		assert.bnEqual(await XDRContract.balanceOf(FEE_ADDRESS), xdrFee);
-	});
+	// 	// The fee pool should also have the correct amount
+	// 	assert.bnEqual(await XDRContract.balanceOf(FEE_ADDRESS), xdrFee);
+	// });
 
 	it('should revert when transferring (ERC20) with insufficient balance', async function() {
 		// Issue 10,000 sUSD.
