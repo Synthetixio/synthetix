@@ -719,6 +719,7 @@ contract FeePool is Proxyable, SelfDestructible {
         uint feesFromPeriod;
         uint rewardsFromPeriod;
         (feesFromPeriod, rewardsFromPeriod) = _feesAndRewardsFromPeriod(0, userOwnershipPercentage, debtEntryIndex, penalty);
+        
         results[0][0] = feesFromPeriod;
         results[0][1] = rewardsFromPeriod;
 
@@ -736,11 +737,13 @@ contract FeePool is Proxyable, SelfDestructible {
                 // we can use the most recent issuanceData[0] for the current feePeriod 
                 // else find the applicableIssuanceData for the feePeriod based on the StartingDebtIndex of the period  
                 uint closingDebtIndex = nextPeriod.startingDebtIndex - 1;
+                
                 if (closingDebtIndex < debtEntryIndex) {
                     (userOwnershipPercentage, debtEntryIndex) = feePoolState.applicableIssuanceData(account, closingDebtIndex);
                 }
                 
                 (feesFromPeriod, rewardsFromPeriod) = _feesAndRewardsFromPeriod(i, userOwnershipPercentage, debtEntryIndex, penalty);
+
                 results[i][0] = feesFromPeriod;
                 results[i][1] = rewardsFromPeriod;
             }
@@ -779,11 +782,9 @@ contract FeePool is Proxyable, SelfDestructible {
             .multiplyDecimal(debtOwnershipForPeriod);
         
         // Less their penalty if they have one.
-        uint feePenaltyFromPeriod = feesFromPeriodWithoutPenalty.multiplyDecimal(penalty);
-        uint feesFromPeriod = feesFromPeriodWithoutPenalty.sub(feePenaltyFromPeriod);
+        uint feesFromPeriod = feesFromPeriodWithoutPenalty.sub(feesFromPeriodWithoutPenalty.multiplyDecimal(penalty));
 
-        uint rewardPenaltyFromPeriod = rewardsFromPeriodWithoutPenalty.multiplyDecimal(penalty);
-        uint rewardsFromPeriod = rewardPenaltyFromPeriod.sub(rewardPenaltyFromPeriod);
+        uint rewardsFromPeriod = rewardsFromPeriodWithoutPenalty.sub(rewardsFromPeriodWithoutPenalty.multiplyDecimal(penalty));
 
         return (
             feesFromPeriod.preciseDecimalToDecimal(), 
