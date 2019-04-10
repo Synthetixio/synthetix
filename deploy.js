@@ -32,9 +32,9 @@ if (!process.env.PRIVATE_KEY || !process.env.INFURA_KEY || !process.env.ETHERSCA
 
 const settings = {
 	network: 'kovan',
-	contractDeploymentGasLimit: 8500000,
+	contractDeploymentGasLimit: 7900000,
 	methodCallGasLimit: 150000,
-	gasPrice: '10', // In gwei
+	gasPrice: '15', // In gwei
 	saveFlattenedContracts: true,
 	flattenedContractsFolder: './flattened-contracts',
 	verifyContracts: true,
