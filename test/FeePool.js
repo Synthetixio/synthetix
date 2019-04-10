@@ -1,14 +1,22 @@
 const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
+const FeePoolState = artifacts.require('FeePoolState');
 const Synthetix = artifacts.require('Synthetix');
 const Synth = artifacts.require('Synth');
-const { getWeb3, getContractInstance, sendParameters } = require('../utils/web3Helper');
+const { getWeb3, getContractInstance } = require('../utils/web3Helper');
 
-const { currentTime, fastForward, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
+const {
+	currentTime,
+	fastForward,
+	toUnit,
+	toPreciseUnit,
+	ZERO_ADDRESS,
+	fromUnit,
+} = require('../utils/testUtils');
 const web3 = getWeb3();
 const getInstance = getContractInstance(web3);
 
-contract('FeePool', async function(accounts) {
+contract.only('FeePool', async function(accounts) {
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
 		const timestamp = await currentTime();
@@ -62,6 +70,7 @@ contract('FeePool', async function(accounts) {
 		account2,
 		account3,
 		account4,
+		account5,
 	] = accounts;
 
 	let feePool,
@@ -69,6 +78,7 @@ contract('FeePool', async function(accounts) {
 		FEE_ADDRESS,
 		synthetix,
 		exchangeRates,
+		feePoolState,
 		sUSDContract,
 		sAUDContract,
 		XDRContract;
@@ -78,6 +88,7 @@ contract('FeePool', async function(accounts) {
 		// We do this in a beforeEach instead of before to ensure we isolate
 		// contract interfaces to prevent test bleed.
 		exchangeRates = await ExchangeRates.deployed();
+		feePoolState = await FeePoolState.deployed();
 		feePool = await FeePool.deployed();
 		feePoolWeb3 = getInstance(FeePool);
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
@@ -101,6 +112,7 @@ contract('FeePool', async function(accounts) {
 			account2,
 			account3,
 			account4,
+			account5,
 			transferFeeRate,
 			exchangeFeeRate,
 			{
@@ -111,7 +123,8 @@ contract('FeePool', async function(accounts) {
 		assert.equal(await instance.proxy(), account1);
 		assert.equal(await instance.owner(), account2);
 		assert.equal(await instance.synthetix(), account3);
-		assert.equal(await instance.feeAuthority(), account4);
+		assert.equal(await instance.feePoolState(), account4);
+		assert.equal(await instance.feeAuthority(), account5);
 		assert.bnEqual(await instance.transferFeeRate(), transferFeeRate);
 		assert.bnEqual(await instance.exchangeFeeRate(), exchangeFeeRate);
 
@@ -332,8 +345,8 @@ contract('FeePool', async function(accounts) {
 
 		// Assert that the correct fee is in the fee pool.
 		const fee = await XDRContract.balanceOf(FEE_ADDRESS);
-		const [pendingFees] = await feePoolWeb3.methods.feesByPeriod(owner).call();
-		assert.bnEqual(web3.utils.toBN(pendingFees[0]), fee);
+		const pendingFees = await feePoolWeb3.methods.feesByPeriod(owner).call();
+		assert.bnEqual(web3.utils.toBN(pendingFees[0][0]), fee);
 	});
 
 	it('should correctly close the current fee period when there are more than FEE_PERIOD_LENGTH periods', async function() {
@@ -480,7 +493,7 @@ contract('FeePool', async function(accounts) {
 
 		// Assert that we have correct values in the fee pool
 		const feesAvailable = await feePool.feesAvailable(owner, sUSD);
-		assert.bnClose(feesAvailable, totalFees.div(web3.utils.toBN('2')), '6');
+		assert.bnClose(feesAvailable, totalFees.div(web3.utils.toBN('2')), '8');
 
 		const oldSynthBalance = await sUSDContract.balanceOf(owner);
 
@@ -516,9 +529,25 @@ contract('FeePool', async function(accounts) {
 			await closeFeePeriod();
 		}
 
+		// issuanceData for Owner and Account1 should hold order of minting
+		const issuanceDataOwner = await feePoolState.getAccountsDebtEntry(owner, 0);
+		assert.bnEqual(issuanceDataOwner.debtPercentage, toPreciseUnit('1'));
+		assert.bnEqual(issuanceDataOwner.debtEntryIndex, '0');
+
+		const issuanceDataAccount1 = await feePoolState.getAccountsDebtEntry(account1, 0);
+		assert.bnEqual(issuanceDataAccount1.debtPercentage, toPreciseUnit('0.5'));
+		assert.bnEqual(issuanceDataAccount1.debtEntryIndex, '1');
+
+		// Period One checks
+		const ownerDebtRatioForPeriod = await feePool.effectiveDebtRatioForPeriod(owner, 1);
+		const account1DebtRatioForPeriod = await feePool.effectiveDebtRatioForPeriod(account1, 1);
+
+		assert.bnEqual(ownerDebtRatioForPeriod, toPreciseUnit('0.5'));
+		assert.bnEqual(account1DebtRatioForPeriod, toPreciseUnit('0.5'));
+
 		// Assert that we have correct values in the fee pool
 		const feesAvailable = await feePool.feesAvailable(owner, sAUD);
-		assert.bnClose(feesAvailable, totalFees.div(web3.utils.toBN('2')), '6');
+		assert.bnClose(feesAvailable, totalFees.div(web3.utils.toBN('2')), '19');
 
 		const oldSynthBalance = await sAUDContract.balanceOf(owner);
 
@@ -542,9 +571,9 @@ contract('FeePool', async function(accounts) {
 
 		// Assert that the correct fee is in the fee pool.
 		const fee = await XDRContract.balanceOf(FEE_ADDRESS);
-		const [pendingFees] = await feePool.feesByPeriod(owner);
+		const pendingFees = await feePoolWeb3.methods.feesByPeriod(owner).call();
 
-		assert.bnEqual(pendingFees, fee);
+		assert.bnEqual(pendingFees[0][0], fee);
 
 		// Claiming should revert because the fee period is still open
 		await assert.revert(feePool.claimFees(sUSD, { from: owner }));
@@ -555,6 +584,9 @@ contract('FeePool', async function(accounts) {
 		await feePool.claimFees(sUSD, { from: owner });
 
 		// But claiming again should revert
+		const feesAvailable = await feePool.feesAvailable(owner, sUSD);
+		assert.bnEqual(feesAvailable, '0');
+
 		await assert.revert(feePool.claimFees(sUSD, { from: owner }));
 	});
 
@@ -718,9 +750,9 @@ contract('FeePool', async function(accounts) {
 		await feePool.setExchangeFeeRate(originalFeeRate.mul(factor), { from: owner });
 
 		const UNIT = toUnit('1');
-		const expected = amount.mul(UNIT).div(originalFeeRate.mul(factor).add(UNIT));
+		const expected = amount.mul(UNIT.sub(originalFeeRate.mul(factor)));
 
-		assert.bnEqual(await feePool.amountReceivedFromExchange(amount), expected);
+		assert.bnEqual(await feePool.amountReceivedFromExchange(amount), fromUnit(expected));
 	});
 
 	it('should correctly calculate the totalFeesAvailable for a single open period', async function() {

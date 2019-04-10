@@ -6,7 +6,6 @@ const SupplySchedule = artifacts.require('SupplySchedule');
 const Synthetix = artifacts.require('Synthetix');
 const SynthetixState = artifacts.require('SynthetixState');
 const Synth = artifacts.require('Synth');
-const { getWeb3, getContractInstance } = require('../utils/web3Helper');
 
 const {
 	currentTime,
@@ -18,8 +17,6 @@ const {
 	toPreciseUnit,
 	ZERO_ADDRESS,
 } = require('../utils/testUtils');
-
-const getInstance = getContractInstance(getWeb3());
 
 contract('Synthetix', async function(accounts) {
 	const [sUSD, sAUD, sEUR, SNX, XDR, sXYZ] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'XDR', 'sXYZ'].map(

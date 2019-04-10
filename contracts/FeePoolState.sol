@@ -93,9 +93,9 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
     }
 
     /**
-     * @notice 
-     * @param account users account to get their array of IssuanceData[FEE_PERIOD_LENGTH]
-     * @param closingDebtIndex the debtIndex on a closed fee period
+     * @notice Find the oldest debtEntryIndex for the corresponding closingDebtIndex
+     * @param account users account
+     * @param closingDebtIndex the last periods debt index on close
      */
     function applicableIssuanceData(address account, uint closingDebtIndex)
         external
@@ -104,14 +104,13 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
     {
         IssuanceData[FEE_PERIOD_LENGTH] memory issuanceData = accountIssuanceLedger[account];
         
-        // we can start from issuanceData[1] as issuanceData[0] was checked
-        // find the most recent issuanceData for the feePeriod before it was closed
+        // We want to use the user's debtEntryIndex at when the period closed
+        // Find the oldest debtEntryIndex for the corresponding closingDebtIndex
         for (uint i = 0; i < FEE_PERIOD_LENGTH; i++) {
             if (closingDebtIndex >= issuanceData[i].debtEntryIndex) {
                 return (issuanceData[i].debtPercentage, issuanceData[i].debtEntryIndex);
             }
         }
-        return (0,0); 
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
