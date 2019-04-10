@@ -333,6 +333,8 @@ program
 				],
 			});
 
+			const feePoolAddress = feePool ? feePool.options.address : '';
+
 			if (proxyFeePool && feePool) {
 				const target = await proxyFeePool.methods.target().call();
 
@@ -344,6 +346,36 @@ program
 						.send(deployer.sendParameters());
 				}
 			}
+
+			const feePoolState = await deployContract({
+				name: 'FeePoolState',
+				deps: ['FeePool'],
+				args: [account, feePoolAddress],
+			});
+
+			if (feePool && feePoolState) {
+				console.log(yellow('Setting feePoolState on FeePool...'));
+
+				await feePool.methods
+					.setFeePoolState(feePoolState.options.address)
+					.send(deployer.sendParameters());
+			}
+
+			const rewardEscrow = await deployContract({
+				name: 'RewardEscrow',
+				deps: ['FeePool'],
+				args: [account, account, feePoolAddress],
+			});
+
+			const synthetixEscrow = await deployContract({
+				name: 'SynthetixEscrow',
+				args: [account, account],
+			});
+
+			const supplySchedule = await deployContract({
+				name: 'SupplySchedule',
+				args: [account],
+			});
 
 			const synthetixState = await deployContract({
 				name: 'SynthetixState',
@@ -367,6 +399,9 @@ program
 					'SynthetixState',
 					'ExchangeRates',
 					'FeePool',
+					'SupplySchedule',
+					'RewardEscrow',
+					'SynthetixEscrow',
 				],
 				args: [
 					proxySynthetix ? proxySynthetix.options.address : '',
@@ -375,6 +410,9 @@ program
 					account,
 					exchangeRates ? exchangeRates.options.address : '',
 					feePool ? feePool.options.address : '',
+					supplySchedule.options.address,
+					rewardEscrow.options.address,
+					synthetixEscrow.options.address,
 				],
 			});
 
@@ -409,18 +447,12 @@ program
 				}
 				const associatedSSContract = await synthetixState.methods.associatedContract().call();
 				if (associatedSSContract !== synthetixAddress) {
-					console.log(yellow('Setting associated contract on Synthetix State...'));
+					console.log(yellow('Setting associated contract on SynthetixState...'));
 					await synthetixState.methods
 						.setAssociatedContract(synthetixAddress)
 						.send(deployer.sendParameters());
 				}
 			}
-
-			const synthetixEscrow = await deployContract({
-				name: 'SynthetixEscrow',
-				deps: ['Synthetix'],
-				args: [account, synthetix ? synthetixAddress : ''],
-			});
 
 			if (synthetixEscrow) {
 				await deployContract({
@@ -428,6 +460,12 @@ program
 					deps: ['SynthetixEscrow'],
 					args: [synthetixEscrow.options.address],
 				});
+			}
+
+			// Only owner?
+			if (rewardEscrow && synthetix) {
+				console.log(yellow('Setting synthetix on RewardEscrow...'));
+				await rewardEscrow.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
 			}
 
 			if (synthetix && synthetixEscrow) {
@@ -442,7 +480,7 @@ program
 				if (network !== 'mainnet') {
 					const escrowSNXAddress = await synthetixEscrow.methods.synthetix().call();
 					if (escrowSNXAddress !== synthetixAddress) {
-						console.log(yellow('Setting deployed Synthetix on escrow...'));
+						console.log(yellow('Setting synthetix on SynthetixEscrow...'));
 						await synthetixEscrow.methods
 							.setSynthetix(synthetixAddress)
 							.send(deployer.sendParameters());
@@ -459,6 +497,12 @@ program
 						await feePool.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
 					}
 				}
+			}
+
+			// Only owner
+			if (supplySchedule && synthetix) {
+				console.log(yellow('Setting synthetix on SupplySchedule...'));
+				await supplySchedule.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
 			}
 
 			// ----------------
