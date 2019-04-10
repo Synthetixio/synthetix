@@ -86,6 +86,8 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
         view
         returns (uint debtPercentage, uint debtEntryIndex)
     {
+        require(index < FEE_PERIOD_LENGTH, "index exceeds the FEE_PERIOD_LENGTH");
+
         debtPercentage = accountIssuanceLedger[account][index].debtPercentage;
         debtEntryIndex = accountIssuanceLedger[account][index].debtEntryIndex;
     }
@@ -153,8 +155,8 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
     }
 
     /**
-     * @notice Import issuer data from the old Synthetix contract before multicurrency
-     * @dev Only callable by the contract owner, and only for 1 week after deployment.
+     * @notice Import issuer data from synthetixState.issuerData on FeePeriodClose() block #
+     * @dev Only callable by the contract owner, and only for 6 weeks after deployment.
      * @param accounts Array of issuing addresses
      * @param ratios Array of debt ratios
      * @param periodToInsert The Fee Period to insert the historical records into

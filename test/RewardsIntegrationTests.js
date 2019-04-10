@@ -204,8 +204,23 @@ contract('Rewards Integration Tests', async function(accounts) {
 			vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account3, 0); // Its this accounts first escrow entry
 			assert.bnEqual(vestingScheduleEntry[1], periodTwoMintableSupply.div(5).mul(1));
 		});
+
+		it(
+			'ctd now in p3 Acc1 burns all and leaves (-40%) and Acc2 has 67% and Acc3 33% rewards allocated as such'
+		);
+		it('p3: Acc1 mints 20K (40%) close p (40,40,20)');
+		it('(Inverse) Issue sBTC then shift rate down 50% then calc rewards');
 	});
 
+	describe('3 accounts with 33.33% SNX all issue 10K suSD each in p1', async function() {
+		it('p2 Acc1 Issues 20K sUSD now has 50% debt/rewards Acc2&3 25%');
+		it('p3 Acc1 Burns all then mints 10K then mint 10K debt/rewards 50%');
+		it('duplicate previous tests but wait till end of 6 weeks claimable is the same');
+	});
+	describe('accounts not claiming', async function() {
+		it('Acc 1 doesnt claim and rewards roll over');
+		it('ctd Acc2 & 3 should get the extra amount');
+	});
 	describe('3 accounts with 33.33% SNX all issue MAX', async function() {
 		beforeEach(async function() {
 			// Fastforward a year into the staking rewards supply

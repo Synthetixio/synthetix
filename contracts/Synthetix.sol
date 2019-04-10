@@ -679,7 +679,7 @@ contract Synthetix is ExternStateToken {
         // synth.burn does a safe subtraction on balance (so it will revert if there are not enough synths).
         synths[currencyKey].burn(messageSender, amountToBurn);
 
-        // Store their locked SNX amount to determine their fee % for the period
+        // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
         _appendAccountIssuanceRecord();
     }
 

@@ -20,7 +20,7 @@
 
 - [ ] (Inverse) Issue sBTC then shift rate down 50% then calc rewards
 
-### 3 accounts issue 33.33 10K suSD eacch in p1
+### 3 accounts issue 33.33 10K suSD each in p1
 
 - [ ] p2 Acc1 Issues 20K sUSD now has 50% debt/rewards Acc2&3 25%
 - [ ] p3 Acc1 Burns all then mints 10K then mint 10K debt/rewards 50%
