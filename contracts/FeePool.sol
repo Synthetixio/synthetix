@@ -339,19 +339,33 @@ contract FeePool is Proxyable, SelfDestructible {
         optionalProxy
         returns (bool)
     {
-        uint availableFees = feesAvailable(messageSender, "XDR");
+        uint availableFees; 
+        uint availableRewards; 
+        (availableFees, availableRewards) = feesAvailable(messageSender, "XDR");
 
-        require(availableFees > 0, "No fees available for period, or fees already claimed");
+        require(availableFees > 0 || availableRewards > 0, "No fees or rewards available for period, or fees already claimed");
 
         lastFeeWithdrawal[messageSender] = recentFeePeriods[1].feePeriodId;
 
-        // Record the fee payment in our recentFeePeriods
-        _recordFeePayment(availableFees);
+        if (availableFees > 0) {
+            // Record the fee payment in our recentFeePeriods
+            _recordFeePayment(availableFees);
+            
+            // Send them their fees
+            _payFees(messageSender, availableFees, currencyKey);
 
-        // Send them their fees
-        _payFees(messageSender, availableFees, currencyKey);
+            emitFeesClaimed(messageSender, availableFees);
+        }
 
-        emitFeesClaimed(messageSender, availableFees);
+        if (availableRewards > 0) {
+            // Record the reward payment in our recentFeePeriods
+            _recordRewardPayment(availableRewards);
+            
+            // Send them their rewards
+            _payRewards(messageSender, availableRewards);
+
+            emitRewardsClaimed(messageSender, availableRewards);
+        }
 
         return true;
     }
@@ -377,6 +391,39 @@ contract FeePool is Proxyable, SelfDestructible {
                 uint amountInPeriod = delta < remainingToAllocate ? delta : remainingToAllocate;
 
                 recentFeePeriods[i].feesClaimed = recentFeePeriods[i].feesClaimed.add(amountInPeriod);
+                remainingToAllocate = remainingToAllocate.sub(amountInPeriod);
+
+                // No need to continue iterating if we've recorded the whole amount;
+                if (remainingToAllocate == 0) return;
+            }
+        }
+
+        // If we hit this line, we've exhausted our fee periods, but still have more to allocate. Wat?
+        // If this happens it's a definite bug in the code, so assert instead of require.
+        assert(remainingToAllocate == 0);
+    }
+
+    /**
+     * @notice Record the reward payment in our recentFeePeriods.
+     * @param snxAmount The amount of SNX tokens.
+     */
+    function _recordRewardPayment(uint snxAmount)
+        internal
+    {
+        // Don't assign to the parameter
+        uint remainingToAllocate = snxAmount;
+
+        // Start at the oldest period and record the amount, moving to newer periods
+        // until we've exhausted the amount.
+        // The condition checks for overflow because we're going to 0 with an unsigned int.
+        for (uint i = FEE_PERIOD_LENGTH - 1; i < FEE_PERIOD_LENGTH; i--) {
+            uint toDistribute = recentFeePeriods[i].rewardsToDistribute.sub(recentFeePeriods[i].rewardsClaimed);
+
+            if (toDistribute > 0) {
+                // Take the smaller of the amount left to claim in the period and the amount we need to allocate
+                uint amountInPeriod = toDistribute < remainingToAllocate ? toDistribute : remainingToAllocate;
+
+                recentFeePeriods[i].rewardsClaimed = recentFeePeriods[i].rewardsClaimed.add(amountInPeriod);
                 remainingToAllocate = remainingToAllocate.sub(amountInPeriod);
 
                 // No need to continue iterating if we've recorded the whole amount;
@@ -425,6 +472,25 @@ contract FeePool is Proxyable, SelfDestructible {
 
         // Call the ERC223 transfer callback if needed
         destinationSynth.triggerTokenFallbackIfNeeded(FEE_ADDRESS, account, destinationAmount);
+    }
+
+    /**
+    * @notice Send the rewards to claiming address - will be locked in rewardEscrow.
+    * @param account The address to send the fees to.
+    * @param snxAmount The amount of SNX.
+    */
+    function _payRewards(address account, uint snxAmount)
+        internal
+        notFeeAddress(account)
+    {
+        require(account != address(0), "Account can't be 0");
+        require(account != address(this), "Can't send rewards to fee pool");
+        require(account != address(proxy), "Can't send rewards to proxy");
+        require(account != address(synthetix), "Can't send rewards to synthetix");
+
+        // Record vesting entry for claiming address and amount
+        // SNX already minted to rewardEscrow balance
+        synthetix.rewardEscrow().appendVestingEntry(account, snxAmount);
     }
 
     /**
@@ -539,6 +605,25 @@ contract FeePool is Proxyable, SelfDestructible {
     }
 
     /**
+     * @notice The total SNX rewards available in the system to be withdrawn
+     */
+    function totalRewardsAvailable()
+        external
+        view
+        returns (uint)
+    {
+        uint totalRewards = 0;
+
+        // Rewards in fee period [0] are not yet available for withdrawal
+        for (uint i = 1; i < FEE_PERIOD_LENGTH; i++) {
+            totalRewards = totalRewards.add(recentFeePeriods[i].rewardsToDistribute);
+            totalRewards = totalRewards.sub(recentFeePeriods[i].rewardsClaimed);
+        }
+
+        return totalRewards;
+    }
+
+    /**
      * @notice The fees available to be withdrawn by a specific account, priced in currencyKey currency
      * @dev Returns two amounts, one for fees and one for SNX rewards
      * @param currencyKey The currency you want to price the fees in
@@ -546,43 +631,27 @@ contract FeePool is Proxyable, SelfDestructible {
     function feesAvailable(address account, bytes4 currencyKey)
         public
         view
-        // returns (uint, uint)
-        returns (uint)
+        returns (uint, uint)
     {
         // Add up the fees
         uint[2][FEE_PERIOD_LENGTH] memory userFees = feesByPeriod(account);
 
         uint totalFees = 0;
+        uint totalRewards = 0;
 
-        // Fees in fee period [0] are not yet available for withdrawal
+        // Fees & Rewards in fee period [0] are not yet available for withdrawal
         for (uint i = 1; i < FEE_PERIOD_LENGTH; i++) {
             totalFees = totalFees.add(userFees[i][0]);
+            totalRewards = totalRewards.add(userFees[i][1]);
         }
 
-        // And convert them to their desired currency
-        return synthetix.effectiveValue("XDR", totalFees, currencyKey);
+        // And convert totalFees to their desired currency
+        // Return totalRewards as is in SNX amount
+        return (
+            synthetix.effectiveValue("XDR", totalFees, currencyKey),
+            totalRewards
+        );
     }
-
-    /**
-     * @notice The rewards available to be withdrawn by a specific account
-     */
-    // function rewardsAvailable(address account)
-    //     public
-    //     view
-    //     returns (uint)
-    // {
-    //     // Add up the rewards
-    //     uint[FEE_PERIOD_LENGTH] memory userRewards = rewardsByPeriod(account);
-
-    //     uint totalRewards = 0;
-
-    //     // Rewards in fee period [0] are not yet available for withdrawal
-    //     for (uint i = 1; i < FEE_PERIOD_LENGTH; i++) {
-    //         totalRewards = totalRewards.add(userRewards[i]);
-    //     }
-
-    //     return totalRewards;
-    // }
 
     /**
      * @notice The penalty a particular address would incur if its fees were withdrawn right now
@@ -647,7 +716,11 @@ contract FeePool is Proxyable, SelfDestructible {
 
         // The [0] fee period is not yet ready to claim, but it is a fee period that they can have
         // fees owing for, so we need to report on it anyway.
-        results[0][0] = _feesFromPeriod(0, userOwnershipPercentage, debtEntryIndex, penalty);
+        uint feesFromPeriod;
+        uint rewardsFromPeriod;
+        (feesFromPeriod, rewardsFromPeriod) = _feesAndRewardsFromPeriod(0, userOwnershipPercentage, debtEntryIndex, penalty);
+        results[0][0] = feesFromPeriod;
+        results[0][1] = rewardsFromPeriod;
 
         // Go through our fee periods from the oldest feePeriod[FEE_PERIOD_LENGTH - 1] and figure out what we owe them.
         // Condition checks for periods > 0 
@@ -658,7 +731,7 @@ contract FeePool is Proxyable, SelfDestructible {
             // We can skip period if no debt minted during period
             if (nextPeriod.startingDebtIndex > 0 && 
             lastFeeWithdrawal[account] < recentFeePeriods[i].feePeriodId) {
-            
+
                 // We calculate a feePeriod's closingDebtIndex by looking at the next feePeriod's startingDebtIndex 
                 // we can use the most recent issuanceData[0] for the current feePeriod 
                 // else find the applicableIssuanceData for the feePeriod based on the StartingDebtIndex of the period  
@@ -666,8 +739,10 @@ contract FeePool is Proxyable, SelfDestructible {
                 if (closingDebtIndex < debtEntryIndex) {
                     (userOwnershipPercentage, debtEntryIndex) = feePoolState.applicableIssuanceData(account, closingDebtIndex);
                 }
-                    
-                results[i][0] = _feesFromPeriod(i, userOwnershipPercentage, debtEntryIndex, penalty);
+                
+                (feesFromPeriod, rewardsFromPeriod) = _feesAndRewardsFromPeriod(i, userOwnershipPercentage, debtEntryIndex, penalty);
+                results[i][0] = feesFromPeriod;
+                results[i][1] = rewardsFromPeriod;
             }
         }
 
@@ -680,18 +755,18 @@ contract FeePool is Proxyable, SelfDestructible {
      * for fees in the period. Precision factor is removed before results are 
      * returned.
      */
-    function _feesFromPeriod(uint period, uint ownershipPercentage, uint debtEntryIndex, uint penalty)
+    function _feesAndRewardsFromPeriod(uint period, uint ownershipPercentage, uint debtEntryIndex, uint penalty)
         internal
-        returns (uint) 
+        returns (uint, uint) 
     {
-        // If it's zero, they haven't issued, and they have no fees.
-        if (ownershipPercentage == 0) return 0;
+        // If it's zero, they haven't issued, and they have no fees OR rewards.
+        if (ownershipPercentage == 0) return (0, 0);
 
         uint debtOwnershipForPeriod = ownershipPercentage;
 
         // If period has closed we want to calculate debtPercentage for the period
         if (period > 0) {
-            uint closingDebtIndex = recentFeePeriods[period - 1].startingDebtIndex.sub(1);
+            uint closingDebtIndex = recentFeePeriods[period - 1].startingDebtIndex - 1;
             debtOwnershipForPeriod = _effectiveDebtRatioForPeriod(closingDebtIndex, ownershipPercentage, debtEntryIndex);
         }
 
@@ -699,12 +774,21 @@ contract FeePool is Proxyable, SelfDestructible {
         // This is a high precision integer.
         uint feesFromPeriodWithoutPenalty = recentFeePeriods[period].feesToDistribute
             .multiplyDecimal(debtOwnershipForPeriod);
+
+        uint rewardsFromPeriodWithoutPenalty = recentFeePeriods[period].rewardsToDistribute
+            .multiplyDecimal(debtOwnershipForPeriod);
         
         // Less their penalty if they have one.
-        uint penaltyFromPeriod = feesFromPeriodWithoutPenalty.multiplyDecimal(penalty);
-        uint feesFromPeriod = feesFromPeriodWithoutPenalty.sub(penaltyFromPeriod);
+        uint feePenaltyFromPeriod = feesFromPeriodWithoutPenalty.multiplyDecimal(penalty);
+        uint feesFromPeriod = feesFromPeriodWithoutPenalty.sub(feePenaltyFromPeriod);
 
-        return feesFromPeriod.preciseDecimalToDecimal();
+        uint rewardPenaltyFromPeriod = rewardsFromPeriodWithoutPenalty.multiplyDecimal(penalty);
+        uint rewardsFromPeriod = rewardPenaltyFromPeriod.sub(rewardPenaltyFromPeriod);
+
+        return (
+            feesFromPeriod.preciseDecimalToDecimal(), 
+            rewardsFromPeriod.preciseDecimalToDecimal()
+        );
     }
 
     function _effectiveDebtRatioForPeriod(uint closingDebtIndex, uint ownershipPercentage, uint debtEntryIndex)
@@ -725,20 +809,19 @@ contract FeePool is Proxyable, SelfDestructible {
     }
 
     function effectiveDebtRatioForPeriod(address account, uint period)
-        public
+        external
         view
         returns (uint)
     {   
+        require(period != 0, "Current period has not closed yet");
         require(period < FEE_PERIOD_LENGTH, "Period exceeds the FEE_PERIOD_LENGTH");
         uint closingDebtIndex = recentFeePeriods[period - 1].startingDebtIndex.sub(1);
-
-        // Condition to check if debtLedger[] has value otherwise return 0
-        if (closingDebtIndex > synthetix.synthetixState().debtLedgerLength()) return 0;
 
         uint ownershipPercentage;
         uint debtEntryIndex;
         (ownershipPercentage, debtEntryIndex) = feePoolState.applicableIssuanceData(account, closingDebtIndex);
 
+        // internal function will check closingDebtIndex has corresponding debtLedger entry
         return _effectiveDebtRatioForPeriod(closingDebtIndex, ownershipPercentage, debtEntryIndex);
     }
 
@@ -809,6 +892,12 @@ contract FeePool is Proxyable, SelfDestructible {
     bytes32 constant FEESCLAIMED_SIG = keccak256("FeesClaimed(address,uint256)");
     function emitFeesClaimed(address account, uint xdrAmount) internal {
         proxy._emit(abi.encode(account, xdrAmount), 1, FEESCLAIMED_SIG, 0, 0, 0);
+    }
+
+    event RewardsClaimed(address account, uint snxAmount);
+    bytes32 constant REWARDSCLAIMED_SIG = keccak256("RewardsClaimed(address,uint256)");
+    function emitRewardsClaimed(address account, uint snxAmount) internal {
+        proxy._emit(abi.encode(account, snxAmount), 1, REWARDSCLAIMED_SIG, 0, 0, 0);
     }
 
     event SynthetixUpdated(address newSynthetix);

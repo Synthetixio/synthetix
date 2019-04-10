@@ -1078,4 +1078,18 @@ contract.only('FeePool', async function(accounts) {
 		// We should have our decreased fee amount
 		assert.bnClose(await sUSDContract.balanceOf(account1), quarter(half(fee)));
 	});
+
+	describe('effectiveDebtRatioForPeriod', async function() {
+		it('should revert if period is > than FEE_PERIOD_LENGTH', async function() {
+			// returns length of periods
+			const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
+
+			// adding an extra period should revert as not available (period rollsover at last one)
+			await assert.revert(feePool.effectiveDebtRatioForPeriod(owner, length + 1));
+		});
+
+		it('should revert if checking current unclosed period ', async function() {
+			await assert.revert(feePool.effectiveDebtRatioForPeriod(owner, 0));
+		});
+	});
 });
