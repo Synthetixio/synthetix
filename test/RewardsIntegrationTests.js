@@ -41,28 +41,38 @@ contract('Rewards Integration Tests', async function(accounts) {
 		await updateRatesWithDefaults();
 	};
 
-	// const logFeePeriods = async () => {
-	// 	const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
+	const logFeePeriods = async () => {
+		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 
-	// 	console.log('------------------');
-	// 	for (let i = 0; i < length; i++) {
-	// 		console.log(`Fee Period [${i}]:`);
-	// 		const period = await feePool.recentFeePeriods(i);
+		console.log('------------------');
+		for (let i = 0; i < length; i++) {
+			console.log(`Fee Period [${i}]:`);
+			const period = await feePool.recentFeePeriods(i);
 
-	// 		for (const key of Object.keys(period)) {
-	// 			if (isNaN(parseInt(key))) {
-	// 				console.log(`  ${key}: ${period[key]}`);
-	// 			}
-	// 		}
+			for (const key of Object.keys(period)) {
+				if (isNaN(parseInt(key))) {
+					console.log(`  ${key}: ${period[key]}`);
+				}
+			}
 
-	// 		console.log();
-	// 	}
-	// 	console.log('------------------');
-	// };
+			console.log();
+		}
+		console.log('------------------');
+	};
 
 	const [sUSD, sAUD, sEUR, sBTC, SNX, XDR] = ['sUSD', 'sAUD', 'sEUR', 'sBTC', 'SNX', 'XDR'].map(
 		web3.utils.asciiToHex
 	);
+
+	const half = amount => amount.div(web3.utils.toBN('2'));
+	const third = amount => amount.div(web3.utils.toBN('3'));
+	const threeQuarters = amount => amount.div(web3.utils.toBN('4')).mul(web3.utils.toBN('3'));
+
+	const twentyPercent = toPreciseUnit('0.2');
+	const twentyFivePercent = toPreciseUnit('0.25');
+	const thirtyThreePercent = toPreciseUnit('0.33');
+	const fortyPercent = toPreciseUnit('0.4');
+	const fiftyPercent = toPreciseUnit('0.5');
 
 	const [
 		deployerAccount,
@@ -106,10 +116,6 @@ contract('Rewards Integration Tests', async function(accounts) {
 	});
 
 	describe('Debt ownership tests', async function() {
-		const half = amount => amount.div(web3.utils.toBN('2'));
-		const third = amount => amount.div(web3.utils.toBN('3'));
-		const threeQuarters = amount => amount.div(web3.utils.toBN('4')).mul(web3.utils.toBN('3'));
-
 		let periodOneMintableSupply;
 
 		beforeEach(async function() {
@@ -143,7 +149,6 @@ contract('Rewards Integration Tests', async function(accounts) {
 			await closeFeePeriod();
 
 			// Assert 1, 2 have 50% each of the effectiveDebtRatioForPeriod
-			const fiftyPercent = toPreciseUnit('0.5');
 			const debtRatioAccount1 = await FeePool.effectiveDebtRatioForPeriod(account1, 1);
 			const debtRatioAccount2 = await FeePool.effectiveDebtRatioForPeriod(account2, 1);
 			assert.bnEqual(debtRatioAccount1, fiftyPercent);
@@ -183,8 +188,6 @@ contract('Rewards Integration Tests', async function(accounts) {
 			await closeFeePeriod();
 
 			// Assert (1,2,3) have (40%,40%,20%) of the debt in the recently closed period
-			const twentyPercent = toPreciseUnit('0.2');
-			const fortyPercent = toPreciseUnit('0.4');
 			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account1, 1), fortyPercent);
 			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account2, 1), fortyPercent);
 			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account3, 1), twentyPercent);
@@ -212,10 +215,75 @@ contract('Rewards Integration Tests', async function(accounts) {
 		it('(Inverse) Issue sBTC then shift rate down 50% then calc rewards');
 	});
 
-	describe('3 accounts with 33.33% SNX all issue 10K suSD each in p1', async function() {
-		it('p2 Acc1 Issues 20K sUSD now has 50% debt/rewards Acc2&3 25%');
-		it('p3 Acc1 Burns all then mints 10K then mint 10K debt/rewards 50%');
-		it('duplicate previous tests but wait till end of 6 weeks claimable is the same');
+	describe('3 accounts with 33.33% SNX all issue 10K sUSD each in p(0)', async function() {
+		let periodOneMintableSupply;
+		const tenK = toUnit('10000');
+		const twentyK = toUnit('20000');
+
+		beforeEach(async function() {
+			// 3 Accounts issue 10K USD in sUSD each in p1
+			await synthetix.issueSynths(sUSD, twentyK, { from: account1 });
+			await synthetix.issueSynths(sUSD, twentyK, { from: account2 });
+			await synthetix.issueSynths(sUSD, twentyK, { from: account3 });
+
+			// Close p1
+			await closeFeePeriod();
+
+			// Assert Accounts have 33% each
+			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account1, 1), thirtyThreePercent);
+			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account2, 1), thirtyThreePercent);
+			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account3, 1), thirtyThreePercent);
+		});
+
+		it('p2 Acc1 Issues 20K sUSD should now has 50% debt/rewards Acc2&3 25%', async function() {
+			// Acc 1 Issues another 20K sUSD
+			await synthetix.issueSynths(sUSD, twentyK, { from: account1 });
+
+			// Close p2
+			await closeFeePeriod();
+
+			// Assert Acc 1 has 50% debt
+			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account1, 1), fiftyPercent);
+
+			// Assert Acc 2&3 has 25% debt each
+			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account2, 1), twentyFivePercent);
+			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account3, 1), twentyFivePercent);
+		});
+
+		it('p3 Acc1 Burns all then mints 10K, then mints 10K again should have debt/rewards 50%', async function() {
+			// Acc 1 Issues 20K sUSD
+			await synthetix.issueSynths(sUSD, twentyK, { from: account1 });
+
+			// Close p2
+			await closeFeePeriod();
+
+			// Assert Acc 1 has 50% debt
+			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account1, 1), fiftyPercent);
+
+			// Assert Acc 2&3 has 25% debt each
+			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account2, 1), twentyFivePercent);
+			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account3, 1), twentyFivePercent);
+
+			// p3
+			// Acc1 Burns all
+			await synthetix.burnSynths(sUSD, twentyK, { from: account1 });
+			// Acc 1 Issues 10K sUSD
+			await synthetix.issueSynths(sUSD, tenK, { from: account1 });
+			// Acc 1 Issues 10K sUSD
+			await synthetix.issueSynths(sUSD, tenK, { from: account1 });
+
+			// Close p3
+			await closeFeePeriod();
+
+			// Assert Acc 1 has 50% debt
+			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account1, 1), fiftyPercent);
+
+			// Assert Acc 2&3 has 25% debt each
+			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account2, 1), twentyFivePercent);
+			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account3, 1), twentyFivePercent);
+		});
+
+		it('duplicate previous tests but wait till end of 6 weeks claimable is the same', async function() {});
 	});
 	describe('accounts not claiming', async function() {
 		it('Acc 1 doesnt claim and rewards roll over');
