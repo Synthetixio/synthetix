@@ -38,6 +38,11 @@ contract.only('FeePool', async function(accounts) {
 		await updateRatesWithDefaults();
 	};
 
+	async function getFeesAvailable(account, key) {
+		const result = await feePool.feesAvailable(account, key);
+		return result[0];
+	}
+
 	// const logFeePeriods = async () => {
 	// 	const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 
@@ -466,7 +471,7 @@ contract.only('FeePool', async function(accounts) {
 		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
 	});
 
-	it.only('should allow a user to claim their fees in sUSD', async function() {
+	it('should allow a user to claim their fees in sUSD', async function() {
 		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 
 		// Issue 10,000 sUSD for two different accounts.
@@ -834,24 +839,31 @@ contract.only('FeePool', async function(accounts) {
 		await sUSDContract.transfer(account2, amount, { from: owner });
 
 		// Should be no fees available yet because the period is still pending.
-		assert.bnEqual(await feePool.feesAvailable(owner, sUSD)[0], 0);
-		assert.bnEqual(await feePool.feesAvailable(account1, sUSD)[0], 0);
-		assert.bnEqual(await feePool.feesAvailable(account2, sUSD)[0], 0);
+		let feesAvailable;
+		feesAvailable = await feePool.feesAvailable(owner, sUSD);
+		assert.bnEqual(feesAvailable[0], 0);
+
+		feesAvailable = await feePool.feesAvailable(account1, sUSD);
+		assert.bnEqual(feesAvailable[0], 0);
+
+		feesAvailable = await feePool.feesAvailable(account2, sUSD);
+		assert.bnEqual(feesAvailable[0], 0);
 
 		// Make the period no longer pending
 		await closeFeePeriod();
 
 		// Now we should have some fees.
-		assert.bnClose(await feePool.feesAvailable(owner, sUSD)[0], fee.div(web3.utils.toBN('3')));
+		feesAvailable = await feePool.feesAvailable(owner, sUSD);
+		assert.bnClose(feesAvailable[0], fee.div(web3.utils.toBN('3')));
 
-		assert.bnClose(
-			await feePool.feesAvailable(account1, sUSD)[0],
-			fee.div(web3.utils.toBN('3')).mul(web3.utils.toBN('2')),
+		feesAvailable = await feePool.feesAvailable(account1, sUSD);
+		assert.bnClose(feesAvailable[0], fee.div(web3.utils.toBN('3')).mul(web3.utils.toBN('2')),
 			'11'
 		);
 
 		// But account2 shouldn't be entitled to anything.
-		assert.bnEqual(await feePool.feesAvailable(account2, sUSD)[0], 0);
+		feesAvailable = await feePool.feesAvailable(account2, sUSD);
+		assert.bnEqual(feesAvailable[0], 0);
 	});
 
 	it('should correctly calculate the feesAvailable for a single user in multiple periods when fees are partially claimed', async function() {
@@ -874,23 +886,30 @@ contract.only('FeePool', async function(accounts) {
 		// Generate a fee.
 		await sUSDContract.transfer(account2, amount, { from: owner });
 
+		let feesAvailable;
 		// Should be no fees available yet because the period is still pending.
-		assert.bnEqual(await feePool.feesAvailable(owner, sUSD)[0], 0);
-		assert.bnEqual(await feePool.feesAvailable(account1, sUSD)[0], 0);
-		assert.bnEqual(await feePool.feesAvailable(account2, sUSD)[0], 0);
+		feesAvailable = await feePool.feesAvailable(owner, sUSD);
+		assert.bnEqual(feesAvailable[0], 0);
+		feesAvailable = await feePool.feesAvailable(account1, sUSD);
+		assert.bnEqual(feesAvailable[0], 0);
+		feesAvailable = await feePool.feesAvailable(account2, sUSD);
+		assert.bnEqual(feesAvailable[0], 0);
 
 		// Make the period no longer pending
 		await closeFeePeriod();
 
 		// Now we should have some fees.
-		assert.bnClose(await feePool.feesAvailable(owner, sUSD)[0], oneThird(fee));
-		assert.bnClose(await feePool.feesAvailable(account1, sUSD)[0], twoThirds(fee), '11');
+		feesAvailable = await feePool.feesAvailable(owner, sUSD);
+		assert.bnClose(feesAvailable[0], oneThird(fee));
+		feesAvailable = await feePool.feesAvailable(account1, sUSD); 
+		assert.bnClose(feesAvailable[0], twoThirds(fee), '11');
 
 		// The owner decides to claim their fees.
 		await feePool.claimFees(sUSD, { from: owner });
 
 		// account1 should still have the same amount of fees available.
-		assert.bnClose(await feePool.feesAvailable(account1, sUSD)[0], twoThirds(fee), '11');
+		feesAvailable = await feePool.feesAvailable(account1, sUSD); 
+		assert.bnClose(feesAvailable[0], twoThirds(fee), '11');
 
 		// If we close the next FEE_PERIOD_LENGTH fee periods off without claiming, their
 		// fee amount that was unclaimed will roll forward, but will get proportionally
@@ -899,11 +918,13 @@ contract.only('FeePool', async function(accounts) {
 			await closeFeePeriod();
 		}
 
-		assert.bnClose(await feePool.feesAvailable(account1, sUSD)[0], twoThirds(twoThirds(fee)));
+		feesAvailable = await feePool.feesAvailable(account1, sUSD); 
+		assert.bnClose(feesAvailable[0], twoThirds(twoThirds(fee)));
 
 		// But once they claim they should have zero.
 		await feePool.claimFees(sUSD, { from: account1 });
-		assert.bnEqual(await feePool.feesAvailable(account1, sUSD)[0], 0);
+		feesAvailable = await feePool.feesAvailable(account1, sUSD); 
+		assert.bnEqual(feesAvailable[0], 0);
 	});
 
 	it('should correctly calculate the penalties at specific issuance ratios', async function() {
@@ -967,12 +988,12 @@ contract.only('FeePool', async function(accounts) {
 		const fee = amount.sub(await feePool.amountReceivedFromTransfer(amount));
 
 		// We should have zero fees available because the period is still open.
-		assert.bnEqual(await feePool.feesAvailable(account1, sUSD)[0], 0);
+		assert.bnEqual(await getFeesAvailable(account1, sUSD), 0);
 
 		// Once the fee period is closed we should have half the fee available because we have
 		// half the collateral backing up the system.
 		await closeFeePeriod();
-		assert.bnClose(await feePool.feesAvailable(account1, sUSD)[0], fee.div(web3.utils.toBN('2')));
+		assert.bnClose(await getFeesAvailable(account1, sUSD), fee.div(web3.utils.toBN('2')));
 
 		// But if the price of SNX decreases a bit, we will fall into the 22-30% bracket and lose
 		// 25% of those fees.
@@ -984,7 +1005,7 @@ contract.only('FeePool', async function(accounts) {
 		});
 
 		assert.bnClose(
-			await feePool.feesAvailable(account1, sUSD)[0],
+			await getFeesAvailable(account1, sUSD),
 			threeQuarters(fee.div(web3.utils.toBN('2')))
 		);
 
@@ -1014,12 +1035,12 @@ contract.only('FeePool', async function(accounts) {
 		const fee = amount.sub(await feePool.amountReceivedFromTransfer(amount));
 
 		// We should have zero fees available because the period is still open.
-		assert.bnEqual(await feePool.feesAvailable(account1, sUSD)[0], 0);
+		assert.bnEqual(await getFeesAvailable(account1, sUSD), 0);
 
 		// Once the fee period is closed we should have half the fee available because we have
 		// half the collateral backing up the system.
 		await closeFeePeriod();
-		assert.bnClose(await feePool.feesAvailable(account1, sUSD)[0], half(fee));
+		assert.bnClose(await getFeesAvailable(account1, sUSD), half(fee));
 
 		// But if the price of SNX decreases a bit, we will fall into the 30-40% bracket and lose
 		// 50% of those fees.
@@ -1029,7 +1050,7 @@ contract.only('FeePool', async function(accounts) {
 			from: oracle,
 		});
 
-		assert.bnClose(await feePool.feesAvailable(account1, sUSD)[0], half(half(fee)));
+		assert.bnClose(await getFeesAvailable(account1, sUSD), half(half(fee)));
 
 		// And if we claim them
 		await feePool.claimFees(sUSD, { from: account1 });
@@ -1055,12 +1076,12 @@ contract.only('FeePool', async function(accounts) {
 		const fee = amount.sub(await feePool.amountReceivedFromTransfer(amount));
 
 		// We should have zero fees available because the period is still open.
-		assert.bnEqual(await feePool.feesAvailable(account1, sUSD)[0], 0);
+		assert.bnEqual(await getFeesAvailable(account1, sUSD), 0);
 
 		// Once the fee period is closed we should have half the fee available because we have
 		// half the collateral backing up the system.
 		await closeFeePeriod();
-		assert.bnClose(await feePool.feesAvailable(account1, sUSD)[0], half(fee));
+		assert.bnClose(await getFeesAvailable(account1, sUSD), half(fee));
 
 		// But if the price of SNX decreases a lot, we will fall into the 40%+ bracket and lose
 		// 75% of those fees.
@@ -1070,7 +1091,7 @@ contract.only('FeePool', async function(accounts) {
 			from: oracle,
 		});
 
-		assert.bnClose(await feePool.feesAvailable(account1, sUSD)[0], quarter(half(fee)));
+		assert.bnClose(await getFeesAvailable(account1, sUSD), quarter(half(fee)));
 
 		// And if we claim them
 		await feePool.claimFees(sUSD, { from: account1 });
