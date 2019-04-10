@@ -25,6 +25,8 @@ contract.only('FeePoolState', async function(accounts) {
 		account2,
 		account3,
 		account4,
+		account5,
+		account6,
 	] = accounts;
 
 	const [sUSD, sEUR, sAUD, sBTC, SNX] = ['sUSD', 'sEUR', 'sAUD', 'sBTC', 'SNX'].map(
@@ -82,23 +84,23 @@ contract.only('FeePoolState', async function(accounts) {
 			expectedDebtPercentage
 		) {
 			const accountLedger = await feePoolState.accountIssuanceLedger(address, issuanceLedgerIndex); // accountIssuanceLedger[address][index]
-			// console.log(
-			// 	'debtEntryIndex, debtPercentage',
-			// 	issuanceLedgerIndex,
-			// 	accountLedger.debtEntryIndex.toString(),
-			// 	accountLedger.debtPercentage.toString()
-			// );
+			console.log(
+				'debtEntryIndex, debtPercentage',
+				issuanceLedgerIndex,
+				accountLedger.debtEntryIndex.toString(),
+				accountLedger.debtPercentage.toString()
+			);
 			assert.bnEqual(accountLedger.debtEntryIndex, expectedEntryIndex);
 			assert.bnEqual(accountLedger.debtPercentage, expectedDebtPercentage);
 		}
 
 		const issuanceData = [
-			{ address: account3, debtRatio: '1', debtEntryIndex: '0' },
-			{ address: account3, debtRatio: '1', debtEntryIndex: '1' },
-			{ address: account3, debtRatio: '1', debtEntryIndex: '2' },
-			{ address: account3, debtRatio: '1', debtEntryIndex: '3' },
-			{ address: account3, debtRatio: '1', debtEntryIndex: '4' },
-			{ address: account3, debtRatio: '0.5', debtEntryIndex: '5' },
+			{ address: account3, debtRatio: toPreciseUnit('1'), debtEntryIndex: '0' },
+			{ address: account3, debtRatio: toPreciseUnit('0.5'), debtEntryIndex: '1' },
+			{ address: account3, debtRatio: toPreciseUnit('0.25'), debtEntryIndex: '2' },
+			{ address: account3, debtRatio: toPreciseUnit('0.125'), debtEntryIndex: '3' },
+			{ address: account3, debtRatio: toPreciseUnit('0.625'), debtEntryIndex: '4' },
+			{ address: account3, debtRatio: toPreciseUnit('0.3125'), debtEntryIndex: '5' },
 		];
 
 		beforeEach(async function() {
@@ -111,9 +113,124 @@ contract.only('FeePoolState', async function(accounts) {
 			await feePoolState.setFeePool(FeePool.address, { from: owner });
 		});
 
-		it('should return the issuanceData for an account given an index');
-		it('should return the issuanceData that exists that is within the closingDebtIndex');
-		it('should importIssuerData');
+		it.only('should return the issuanceData that exists that is within the closingDebtIndex via applicableIssuanceData', async function() {
+			// Fill the accountIssuanceLedger with debt entries per period
+			for (var i = 0; i < issuanceData.length; i++) {
+				await feePoolState.appendAccountIssuanceRecord(
+					issuanceData[i].address,
+					issuanceData[i].debtRatio,
+					issuanceData[i].debtEntryIndex,
+					i + 1,
+					{
+						from: feePoolAccount,
+					}
+				);
+			}
+
+			// check the latest accountIssuance for account3
+			// address, issuanceLedgerIndex, expectedEntryIndex, expectedDebtPercentage
+			await checkIssuanceLedgerData(account3, 0, '5', toPreciseUnit('0.3125'));
+			await checkIssuanceLedgerData(account3, 1, '4', toPreciseUnit('0.625'));
+			await checkIssuanceLedgerData(account3, 2, '3', toPreciseUnit('0.125'));
+			await checkIssuanceLedgerData(account3, 3, '2', toPreciseUnit('0.25'));
+			await checkIssuanceLedgerData(account3, 4, '1', toPreciseUnit('0.5'));
+			await checkIssuanceLedgerData(account3, 5, '0', toPreciseUnit('1'));
+
+			let accountsDebtEntry;
+			// Assert that applicableIssuanceData returns the correct data
+			accountsDebtEntry = await feePoolState.applicableIssuanceData(account3, 6);
+			assert.bnEqual(accountsDebtEntry[0], toPreciseUnit('.3125'));
+			assert.bnEqual(accountsDebtEntry[1], 5);
+
+			// TODO FINISH ALL TESTS
+			// accountsDebtEntry = await feePoolState.applicableIssuanceData(account3, 5);
+			// assert.bnEqual(accountsDebtEntry[0], toPreciseUnit('.625'));
+			// assert.bnEqual(accountsDebtEntry[1], 4);
+
+			accountsDebtEntry = await feePoolState.applicableIssuanceData(account3, 4);
+			assert.bnEqual(accountsDebtEntry[0], toPreciseUnit('.125'));
+			assert.bnEqual(accountsDebtEntry[1], 3);
+		});
+
+		it('should return the issuanceData for an account given an index', async function() {
+			let accountsDebtEntry;
+
+			// simulate a mint and append debtRatio to ledger in Period[0]
+			const firstIndex = 1;
+			await feePoolState.appendAccountIssuanceRecord(account1, toPreciseUnit('1'), firstIndex, 0, {
+				from: feePoolAccount,
+			});
+
+			// check the latest accountIssuance for account1
+			accountsDebtEntry = await feePoolState.getAccountsDebtEntry(account1, 0);
+
+			// Assert they have their matching inputs
+			assert.bnEqual(accountsDebtEntry[0], toPreciseUnit('1'));
+			assert.bnEqual(accountsDebtEntry[1], firstIndex);
+
+			// simulate a mint and append debtRatio to ledger in Period[0]
+			const secondIndex = 1;
+			await feePoolState.appendAccountIssuanceRecord(
+				account1,
+				toPreciseUnit('.5'),
+				secondIndex,
+				0,
+				{
+					from: feePoolAccount,
+				}
+			);
+
+			// check the latest accountIssuance for account1
+			accountsDebtEntry = await feePoolState.getAccountsDebtEntry(account1, 0);
+
+			// Assert they have their matching inputs
+			assert.bnEqual(accountsDebtEntry[0], toPreciseUnit('.5'));
+			assert.bnEqual(accountsDebtEntry[1], secondIndex);
+		});
+
+		it('should importIssuerData', async function() {
+			const accounts = [account1, account2, account3, account4, account5, account6];
+			const ratios = [
+				toPreciseUnit('1'),
+				toPreciseUnit('0.5'),
+				toPreciseUnit('0.25'),
+				toPreciseUnit('0.125'),
+				toPreciseUnit('0.625'),
+				toPreciseUnit('0.3125'),
+			];
+			const issuanceLedgerIndex = 1;
+			const dummyDebtEntryIndex = 5555;
+
+			// Import issuser data into the last closed period and 5555 as the feePeriodCloseIndex
+			const importTX = await feePoolState.importIssuerData(
+				accounts,
+				ratios,
+				issuanceLedgerIndex,
+				dummyDebtEntryIndex,
+				{
+					from: owner,
+				}
+			);
+
+			// Iterate the accounts
+			for (let i = 0; i < accounts.length; i++) {
+				// accountIssuanceLedger[address][index]
+				const accountLedger = await feePoolState.accountIssuanceLedger(
+					accounts[i],
+					issuanceLedgerIndex
+				);
+				// console.log(
+				// 	'debtEntryIndex, debtPercentage',
+				// 	issuanceLedgerIndex,
+				// 	accountLedger.debtEntryIndex.toString(),
+				// 	accountLedger.debtPercentage.toString()
+				// );
+
+				// Assert they have their matching ratios
+				assert.bnEqual(accountLedger.debtPercentage, ratios[i]);
+				assert.bnEqual(accountLedger.debtEntryIndex, dummyDebtEntryIndex);
+			}
+		});
 
 		it('should append account issuance record for curent feePeriod', async function() {
 			let currentPeriodStartDebtIndex = 0;
@@ -121,7 +238,7 @@ contract.only('FeePoolState', async function(accounts) {
 			// simulate a mint and append debtRatio to ledger in Period[0]
 			await feePoolState.appendAccountIssuanceRecord(
 				issuanceData[0].address,
-				toPreciseUnit(issuanceData[0].debtRatio),
+				issuanceData[0].debtRatio,
 				issuanceData[0].debtEntryIndex,
 				currentPeriodStartDebtIndex,
 				{ from: feePoolAccount }
@@ -132,13 +249,13 @@ contract.only('FeePoolState', async function(accounts) {
 				issuanceData[0].address,
 				0,
 				issuanceData[0].debtEntryIndex,
-				toPreciseUnit(issuanceData[0].debtRatio)
+				issuanceData[0].debtRatio
 			);
 
 			// simulate a mint and append to ledger in Period[0]
 			await feePoolState.appendAccountIssuanceRecord(
 				issuanceData[1].address,
-				toPreciseUnit(issuanceData[1].debtRatio),
+				issuanceData[1].debtRatio,
 				issuanceData[1].debtEntryIndex,
 				currentPeriodStartDebtIndex,
 				{ from: feePoolAccount }
@@ -149,7 +266,7 @@ contract.only('FeePoolState', async function(accounts) {
 				issuanceData[1].address,
 				0,
 				issuanceData[1].debtEntryIndex,
-				toPreciseUnit(issuanceData[1].debtRatio)
+				issuanceData[1].debtRatio
 			);
 		});
 

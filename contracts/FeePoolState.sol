@@ -86,14 +86,16 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
         view
         returns (uint debtPercentage, uint debtEntryIndex)
     {
+        require(index < FEE_PERIOD_LENGTH, "index exceeds the FEE_PERIOD_LENGTH");
+
         debtPercentage = accountIssuanceLedger[account][index].debtPercentage;
         debtEntryIndex = accountIssuanceLedger[account][index].debtEntryIndex;
     }
 
     /**
      * @notice 
-     * @param account users account
-     * @param closingDebtIndex the last periods debt index on close
+     * @param account users account to get their array of IssuanceData[FEE_PERIOD_LENGTH]
+     * @param closingDebtIndex the debtIndex on a closed fee period
      */
     function applicableIssuanceData(address account, uint closingDebtIndex)
         external
@@ -104,12 +106,12 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
         
         // we can start from issuanceData[1] as issuanceData[0] was checked
         // find the most recent issuanceData for the feePeriod before it was closed
-        for (uint i = 1; i < FEE_PERIOD_LENGTH; i++) {
+        for (uint i = 0; i < FEE_PERIOD_LENGTH; i++) {
             if (closingDebtIndex >= issuanceData[i].debtEntryIndex) {
                 return (issuanceData[i].debtPercentage, issuanceData[i].debtEntryIndex);
             }
         }
-        return (1,1); // TODO: Remove Here for testing
+        return (0,0); 
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -154,8 +156,8 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
     }
 
     /**
-     * @notice Import issuer data from the old Synthetix contract before multicurrency
-     * @dev Only callable by the contract owner, and only for 1 week after deployment.
+     * @notice Import issuer data from synthetixState.issuerData on FeePeriodClose() block #
+     * @dev Only callable by the contract owner, and only for 6 weeks after deployment.
      * @param accounts Array of issuing addresses
      * @param ratios Array of debt ratios
      * @param periodToInsert The Fee Period to insert the historical records into
