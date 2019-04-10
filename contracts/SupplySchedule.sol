@@ -15,7 +15,7 @@ MODULE DESCRIPTION
 
 Supply Schedule contract. SNX is a transferable ERC20 token.
 
-User's get staking rewards as part of the incentives of     
+User's get staking rewards as part of the incentives of
 +------+-------------+--------------+----------+
 | Year |  Increase   | Total Supply | Increase |
 +------+-------------+--------------+----------+
@@ -32,10 +32,9 @@ User's get staking rewards as part of the incentives of
 */
 pragma solidity 0.4.25;
 
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./SafeDecimalMath.sol";
 import "./Owned.sol";
-import "./Synthetix.sol";
+import "./ISynthetix.sol";
 
 /**
  * @title SupplySchedule contract
@@ -65,7 +64,7 @@ contract SupplySchedule is Owned {
     // time supply last minted
     uint public lastMintEvent;
 
-    Synthetix public synthetix;
+    ISynthetix public synthetix;
 
     uint constant SECONDS_IN_YEAR = 60 * 60 * 24 * 365;
 
@@ -97,7 +96,7 @@ contract SupplySchedule is Owned {
     }
 
     // ========== SETTERS ========== */
-    function setSynthetix(Synthetix _synthetix)
+    function setSynthetix(ISynthetix _synthetix)
         external
         onlyOwner
     {
@@ -122,7 +121,7 @@ contract SupplySchedule is Owned {
         if (!isMintable()) {
             return 0;
         }
-        
+
         uint index = getCurrentSchedule();
 
         // Calculate previous year's mintable supply
@@ -131,10 +130,10 @@ contract SupplySchedule is Owned {
         /* solium-disable */
 
         // Last mint event within current period will use difference in (now - lastMintEvent)
-        // Last mint event not set (0) / outside of current Period will use current Period 
+        // Last mint event not set (0) / outside of current Period will use current Period
         // start time resolved in (now - schedule.startPeriod)
         ScheduleData memory schedule = schedules[index];
-        
+
         uint weeksInPeriod = (schedule.endPeriod - schedule.startPeriod).div(mintPeriodDuration);
 
         uint supplyPerWeek = schedule.totalSupply.divideDecimal(weeksInPeriod);

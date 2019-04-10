@@ -35,7 +35,8 @@ contract to the new one.
 
 pragma solidity 0.4.25;
 
-import "./Synthetix.sol";
+import "./ISynthetix.sol";
+import "./ISynthetixState.sol";
 import "./LimitedSetup.sol";
 import "./SafeDecimalMath.sol";
 import "./State.sol";
@@ -44,10 +45,7 @@ import "./State.sol";
  * @title Synthetix State
  * @notice Stores issuance information and preferred currency information of the Synthetix contract.
  */
-contract SynthetixState is State, LimitedSetup {
-    using SafeMath for uint;
-    using SafeDecimalMath for uint;
-
+contract SynthetixState is State, LimitedSetup, ISynthetixState {
     // A struct for handing values associated with an individual user's debt position
     struct IssuanceData {
         // Percentage of the total debt owned at the time
@@ -61,6 +59,9 @@ contract SynthetixState is State, LimitedSetup {
         // collateralistion ratio
         uint debtEntryIndex;
     }
+
+    using SafeMath for uint;
+    using SafeDecimalMath for uint;
 
     // Issued synth balances for individual fee entitlements and exit price calculations
     mapping(address => IssuanceData) public issuanceData;
@@ -95,6 +96,22 @@ contract SynthetixState is State, LimitedSetup {
         public
     {}
 
+    function getPreferredCurrency(address to) public view returns(bytes4) {
+        return preferredCurrency[to];
+    }
+
+    function getDebtLedgerAt(uint index) public view returns (uint) {
+        return debtLedger[index];
+    }
+
+    function getIssuanceData(address from) public view returns (uint, uint) {
+        IssuanceData _issuanceData = issuanceData[from];
+        return (_issuanceData.initialDebtOwnership, _issuanceData.debtEntryIndex);
+    }
+
+    function getIssuanceRatio() public view returns (uint) {
+        return issuanceRatio;
+    }
     /* ========== SETTERS ========== */
 
     /**
@@ -208,7 +225,7 @@ contract SynthetixState is State, LimitedSetup {
     {
         // This code is duplicated from Synthetix so that we can call it directly here
         // during setup only.
-        Synthetix synthetix = Synthetix(associatedContract);
+        ISynthetix synthetix = ISynthetix(associatedContract);
 
         // What is the value of the requested debt in XDRs?
         uint xdrValue = synthetix.effectiveValue("sUSD", amount, "XDR");

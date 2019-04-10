@@ -13,11 +13,11 @@ date:       2019-03-01
 -----------------------------------------------------------------
 MODULE DESCRIPTION
 -----------------------------------------------------------------
-Escrows the SNX rewards from the inflationary supply awarded to 
-users for staking their SNX and maintaining the c-rationn target. 
+Escrows the SNX rewards from the inflationary supply awarded to
+users for staking their SNX and maintaining the c-rationn target.
 
 SNW rewards are escrowed for 1 year from the claim date and users
-can call vest in 12 months time. 
+can call vest in 12 months time.
 -----------------------------------------------------------------
 */
 
@@ -26,7 +26,8 @@ pragma solidity 0.4.25;
 
 import "./SafeDecimalMath.sol";
 import "./Owned.sol";
-import "./Synthetix.sol";
+import "./IFeePool.sol";
+import "./ISynthetix.sol";
 
 /**
  * @title A contract to hold escrowed SNX and free them at given schedules.
@@ -36,9 +37,9 @@ contract RewardEscrow is Owned {
     using SafeMath for uint;
 
     /* The corresponding Synthetix contract. */
-    Synthetix public synthetix;
+    ISynthetix public synthetix;
 
-    FeePool public feePool;
+    IFeePool public feePool;
 
     /* Lists of (timestamp, quantity) pairs per account, sorted in ascending time order.
      * These are the times at which each given quantity of SNX vests. */
@@ -56,14 +57,14 @@ contract RewardEscrow is Owned {
     uint constant TIME_INDEX = 0;
     uint constant QUANTITY_INDEX = 1;
 
-    /* Limit vesting entries to disallow unbounded iteration over vesting schedules. 
+    /* Limit vesting entries to disallow unbounded iteration over vesting schedules.
     * There are 5 years of the supply scedule */
     uint constant public MAX_VESTING_ENTRIES = 52*5;
 
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, Synthetix _synthetix, FeePool _feePool)
+    constructor(address _owner, ISynthetix _synthetix, IFeePool _feePool)
     Owned(_owner)
     public
     {
@@ -77,7 +78,7 @@ contract RewardEscrow is Owned {
     /**
      * @notice set the synthetix contract address as we need to transfer SNX when the user vests
      */
-    function setSynthetix(Synthetix _synthetix)
+    function setSynthetix(ISynthetix _synthetix)
     external
     onlyOwner
     {
@@ -86,10 +87,10 @@ contract RewardEscrow is Owned {
     }
 
     /**
-     * @notice set the FeePool contract as it is the only authority to be able to call 
+     * @notice set the FeePool contract as it is the only authority to be able to call
      * appendVestingEntry with the onlyFeePool modifer
      */
-    function setFeePool(FeePool _feePool)
+    function setFeePool(IFeePool _feePool)
         external
         onlyOwner
     {
@@ -233,7 +234,7 @@ contract RewardEscrow is Owned {
 
     /**
      * @notice Add a new vesting entry at a given time and quantity to an account's schedule.
-     * @dev A call to this should accompany a previous successfull call to synthetix.transfer(tewardEscrow, amount), 
+     * @dev A call to this should accompany a previous successfull call to synthetix.transfer(tewardEscrow, amount),
      * to ensure that when the funds are withdrawn, there is enough balance.
      * Note; although this function could technically be used to produce unbounded
      * arrays, it's only withinn the 4 year period of the weekly inflation schedule.

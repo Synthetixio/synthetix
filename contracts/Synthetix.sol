@@ -120,13 +120,13 @@ pragma solidity 0.4.25;
 
 
 import "./ExternStateToken.sol";
-import "./Synth.sol";
-import "./SynthetixState.sol";
+import "./ISynth.sol";
+import "./ISynthetixState.sol";
 import "./TokenState.sol";
 import "./SupplySchedule.sol";
 import "./IExchangeRates.sol";
 import "./IFeePool.sol";
-import "./ISynthetixEscrow.sol"; 
+import "./ISynthetixEscrow.sol";
 
 /**
  * @title Synthetix ERC20 contract.
@@ -138,14 +138,14 @@ contract Synthetix is ExternStateToken {
     // ========== STATE VARIABLES ==========
 
     // Available Synths which can be used with the system
-    Synth[] public availableSynths;
-    mapping(bytes4 => Synth) public synths;
+    ISynth[] public availableSynths;
+    mapping(bytes4 => ISynth) public synths;
 
     IFeePool public feePool;
     ISynthetixEscrow public escrow;
     ISynthetixEscrow public rewardEscrow;
     IExchangeRates public exchangeRates;
-    SynthetixState public synthetixState;
+    ISynthetixState public synthetixState;
     SupplySchedule public supplySchedule;
 
     uint constant SYNTHETIX_SUPPLY = 1e8 * SafeDecimalMath.unit();
@@ -162,8 +162,8 @@ contract Synthetix is ExternStateToken {
      * If the provided address is 0x0, then a fresh one will be constructed with the contract owning all tokens.
      * @param _owner The owner of this contract.
      */
-    constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
-        address _owner, IExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule, 
+    constructor(address _proxy, TokenState _tokenState, ISynthetixState _synthetixState,
+        address _owner, IExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule,
         ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow
     )
         ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, SYNTHETIX_SUPPLY, DECIMALS, _owner)
@@ -177,19 +177,27 @@ contract Synthetix is ExternStateToken {
         escrow = _escrow;
     }
 
+    function getSynth(bytes4 currencyKey) public view returns (ISynth) {
+        return synths[currencyKey];
+    }
+
+    function getRewardEscrow() public view returns (ISynthetixEscrow) {
+        return rewardEscrow;
+    }
+
     // ========== SETTERS ========== */
 
     /**
      * @notice Add an associated Synth contract to the Synthetix system
      * @dev Only the contract owner may call this.
      */
-    function addSynth(Synth synth)
+    function addSynth(ISynth synth)
         external
         optionalProxy_onlyOwner
     {
-        bytes4 currencyKey = synth.currencyKey();
+        bytes4 currencyKey = synth.getCurrencyKey();
 
-        require(synths[currencyKey] == Synth(0), "Synth already exists");
+        require(synths[currencyKey] == ISynth(0), "Synth already exists");
 
         availableSynths.push(synth);
         synths[currencyKey] = synth;
@@ -213,7 +221,7 @@ contract Synthetix is ExternStateToken {
         optionalProxy_onlyOwner
     {
         require(synths[currencyKey] != address(0), "Synth does not exist");
-        require(synths[currencyKey].totalSupply() == 0, "Synth supply exists");
+        require(synths[currencyKey].getTotalSupply() == 0, "Synth supply exists");
         require(currencyKey != "XDR", "Cannot remove XDR synth");
 
         // Save the address we're removing for emitting the event at the end.
@@ -279,16 +287,16 @@ contract Synthetix is ExternStateToken {
     {
         uint total = 0;
         uint currencyRate = exchangeRates.rateForCurrency(currencyKey);
-        
+
         require(!exchangeRates.anyRateIsStale(availableCurrencyKeys()), "Rates are stale");
-        
+
         for (uint8 i = 0; i < availableSynths.length; i++) {
             // What's the total issued value of that synth in the destination currency?
             // Note: We're not using our effectiveValue function because we don't want to go get the
             //       rate for the destination currency and check if it's stale repeatedly on every
             //       iteration of the loop
-            uint synthValue = availableSynths[i].totalSupply()
-                .multiplyDecimalRound(exchangeRates.rateForCurrency(availableSynths[i].currencyKey()))
+            uint synthValue = availableSynths[i].getTotalSupply()
+                .multiplyDecimalRound(exchangeRates.rateForCurrency(availableSynths[i].getCurrencyKey()))
                 .divideDecimalRound(currencyRate);
             total = total.add(synthValue);
         }
@@ -297,7 +305,7 @@ contract Synthetix is ExternStateToken {
     }
 
     /**
-     * @notice Returns the currencyKeys of availableSynths for rate checking 
+     * @notice Returns the currencyKeys of availableSynths for rate checking
      */
     function availableCurrencyKeys()
         internal
@@ -307,7 +315,7 @@ contract Synthetix is ExternStateToken {
         bytes4[] memory availableCurrencyKeys = new bytes4[](availableSynths.length);
 
         for (uint8 i = 0; i < availableSynths.length; i++) {
-            availableCurrencyKeys[i] = availableSynths[i].currencyKey();
+            availableCurrencyKeys[i] = availableSynths[i].getCurrencyKey();
         }
 
         return availableCurrencyKeys;
@@ -469,7 +477,7 @@ contract Synthetix is ExternStateToken {
         onlySynth
         returns (bool)
     {
-        // Allow fee to be 0 and skip minting XDRs to feePool 
+        // Allow fee to be 0 and skip minting XDRs to feePool
         if (sourceAmount == 0) {
             return true;
         }
@@ -492,6 +500,9 @@ contract Synthetix is ExternStateToken {
         return result;
     }
 
+    function getSynthetixState() public view returns (ISynthetixState) {
+        return synthetixState;
+    }
     /**
      * @notice Function that allows synth contract to delegate sending fee to the fee Pool.
      * @dev fee pool contract address is not allowed to call function
@@ -684,8 +695,8 @@ contract Synthetix is ExternStateToken {
     }
 
     /**
-     * @notice Store in the FeePool the users current debt value in the system in XDRs. 
-     * @dev debtBalanceOf(messageSender, "XDR") to be used with totalIssuedSynths("XDR") to get 
+     * @notice Store in the FeePool the users current debt value in the system in XDRs.
+     * @dev debtBalanceOf(messageSender, "XDR") to be used with totalIssuedSynths("XDR") to get
      *  users % of the system within a feePeriod.
      */
     function _appendAccountIssuanceRecord()
@@ -693,10 +704,10 @@ contract Synthetix is ExternStateToken {
     {
         uint initialDebtOwnership;
         uint debtEntryIndex;
-        (initialDebtOwnership, debtEntryIndex) = synthetixState.issuanceData(messageSender);
+        (initialDebtOwnership, debtEntryIndex) = synthetixState.getIssuanceData(messageSender);
 
         feePool.appendAccountIssuanceRecord(
-            messageSender, 
+            messageSender,
             initialDebtOwnership,
             debtEntryIndex
         );
@@ -761,7 +772,7 @@ contract Synthetix is ExternStateToken {
         uint destinationValue = effectiveValue("SNX", collateral(issuer), currencyKey);
 
         // They're allowed to issue up to issuanceRatio of that value
-        return destinationValue.multiplyDecimal(synthetixState.issuanceRatio());
+        return destinationValue.multiplyDecimal(synthetixState.getIssuanceRatio());
     }
 
     /**
@@ -799,7 +810,7 @@ contract Synthetix is ExternStateToken {
         // What was their initial debt ownership?
         uint initialDebtOwnership;
         uint debtEntryIndex;
-        (initialDebtOwnership, debtEntryIndex) = synthetixState.issuanceData(issuer);
+        (initialDebtOwnership, debtEntryIndex) = synthetixState.getIssuanceData(issuer);
 
         // If it's zero, they haven't issued, and they have no debt.
         if (initialDebtOwnership == 0) return 0;
@@ -807,7 +818,7 @@ contract Synthetix is ExternStateToken {
         // Figure out the global debt percentage delta from when they entered the system.
         // This is a high precision integer.
         uint currentDebtOwnership = synthetixState.lastDebtLedgerEntry()
-            .divideDecimalRoundPrecise(synthetixState.debtLedger(debtEntryIndex))
+            .divideDecimalRoundPrecise(synthetixState.getDebtLedgerAt(debtEntryIndex))
             .multiplyDecimalRoundPrecise(initialDebtOwnership);
 
         // What's the total value of the system in their requested currency?
@@ -886,7 +897,7 @@ contract Synthetix is ExternStateToken {
         // Assuming issuance ratio is 20%, then issuing 20 SNX of value would require
         // 100 SNX to be locked in their wallet to maintain their collateralisation ratio
         // The locked synthetix value can exceed their balance.
-        uint lockedSynthetixValue = debtBalanceOf(account, "SNX").divideDecimalRound(synthetixState.issuanceRatio());
+        uint lockedSynthetixValue = debtBalanceOf(account, "SNX").divideDecimalRound(synthetixState.getIssuanceRatio());
 
         // If we exceed the balance, no SNX are transferable, otherwise the difference is.
         if (lockedSynthetixValue >= balance) {
@@ -901,10 +912,10 @@ contract Synthetix is ExternStateToken {
         returns (bool)
     {
         require(rewardEscrow != address(0), "Reward Escrow destination missing");
-        
+
         uint supplyToMint = supplySchedule.mintableSupply();
         require(supplyToMint > 0, "No supply is mintable");
-        
+
         supplySchedule.updateMintValues();
 
         // Set minted SNX balance to RewardEscrow's balance
@@ -916,7 +927,7 @@ contract Synthetix is ExternStateToken {
         // Assign the minters reward.
         tokenState.setBalanceOf(msg.sender, tokenState.balanceOf(msg.sender).add(minterReward));
         emitTransfer(this, msg.sender, minterReward);
-        
+
         totalSupply = totalSupply.add(supplyToMint);
     }
 
