@@ -1342,7 +1342,8 @@
 					],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "constructor"
+					"type": "constructor",
+					"signature": "constructor"
 				},
 				{
 					"payable": true,
@@ -3016,7 +3017,8 @@
 					],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "constructor"
+					"type": "constructor",
+					"signature": "constructor"
 				},
 				{
 					"anonymous": false,
@@ -5654,7 +5656,8 @@
 					],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "constructor"
+					"type": "constructor",
+					"signature": "constructor"
 				},
 				{
 					"anonymous": false,
@@ -6742,7 +6745,8 @@
 					],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "constructor"
+					"type": "constructor",
+					"signature": "constructor"
 				},
 				{
 					"payable": true,
