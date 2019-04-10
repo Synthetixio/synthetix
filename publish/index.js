@@ -410,9 +410,9 @@ program
 					account,
 					exchangeRates ? exchangeRates.options.address : '',
 					feePool ? feePool.options.address : '',
-					supplySchedule.options.address,
-					rewardEscrow.options.address,
-					synthetixEscrow.options.address,
+					supplySchedule ? supplySchedule.options.address : '',
+					rewardEscrow ? rewardEscrow.options.address : '',
+					synthetixEscrow ? synthetixEscrow.options.address : '',
 				],
 			});
 
