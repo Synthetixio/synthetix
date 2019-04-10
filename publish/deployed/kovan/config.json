@@ -6,16 +6,25 @@
 		"deploy": false
 	},
 	"ExchangeRates": {
-		"deploy": false
+		"deploy": true
 	},
 	"FeePool": {
-		"deploy": false
+		"deploy": true
+	},
+	"FeePoolState": {
+		"deploy": true
+	},
+	"SupplySchedule": {
+		"deploy": true
 	},
 	"Synthetix": {
-		"deploy": false
+		"deploy": true
 	},
 	"SynthetixEscrow": {
 		"deploy": false
+	},
+	"RewardEscrow": {
+		"deploy": true
 	},
 	"SynthetixState": {
 		"deploy": false
