@@ -69,16 +69,23 @@ const settings = {
 			existingInstance: '0x73b172756BD5DDf0110Ba8D7b88816Eb639Eb21c',
 		},
 		FeePool: {
-			action: 'use-existing',
-			existingInstance: '0xEBdBac38835A1105851e80C7Fa1f1E6e25A86e32',
+			action: 'deploy',
+		},
+		FeePoolState: {
+			action: 'deploy',
+		},
+		SupplySchedule: {
+			action: 'deploy',
 		},
 		Synthetix: {
-			action: 'use-existing',
-			existingInstance: '0x3772f9716cf6d7a09ede3587738aa2af5577483a',
+			action: 'deploy',
 		},
 		SynthetixEscrow: {
 			action: 'use-existing',
 			existingInstance: '0x971e78e0C92392A4E39099835cF7E6aB535b2227',
+		},
+		RewardEscrow: {
+			action: 'deploy',
 		},
 		SynthetixState: {
 			action: 'use-existing',
@@ -690,12 +697,38 @@ const deploy = async () => {
 		web3.utils.toWei('0.003', 'ether'),
 	]);
 
+	const feePoolState = await deployContract('FeePoolState', [
+		account,
+		feePool.options.address,
+	]);
+
 	if (
 		settings.contracts.Proxy.FeePool.action === 'deploy' ||
 		settings.contracts.FeePool.action === 'deploy'
 	) {
 		await feePoolProxy.methods.setTarget(feePool.options.address).send(sendParameters());
 	}
+
+	if (
+		settings.contracts.FeePoolState.action === 'deploy' ||
+		settings.contracts.FeePool.action === 'deploy'
+	) {
+		await feePool.methods.setFeePoolState(feePoolState.options.address).send(sendParameters());
+	}
+
+
+	const rewardEscrow = await deployContract('RewardEscrow', [
+		account,
+		account,
+		feePool.options.address
+	]);
+
+	const supplySchedule = await deployContract('SupplySchedule', [account]);
+
+	const synthetixEscrow = await deployContract('SynthetixEscrow', [
+		account,
+		account,
+	]);
 
 	const synthetixState = await deployContract('SynthetixState', [account, account]);
 	const synthetixProxy = await deployContract('Proxy.Synthetix', [account]);
@@ -707,6 +740,9 @@ const deploy = async () => {
 		account,
 		exchangeRates.options.address,
 		feePool.options.address,
+		supplySchedule.options.address,
+		rewardEscrow.options.address,
+		escrow.options.address,
 	]);
 
 	if (
@@ -738,22 +774,28 @@ const deploy = async () => {
 			.send(sendParameters());
 	}
 
-	const synthetixEscrow = await deployContract('SynthetixEscrow', [
-		account,
-		synthetix.options.address,
-	]);
-
 	if (
 		settings.contracts.Synthetix.action === 'deploy' ||
 		settings.contracts.SynthetixEscrow.action === 'deploy'
 	) {
-		console.log('Setting escrow on Synthetix...');
-		await synthetix.methods.setEscrow(synthetixEscrow.options.address).send(sendParameters());
-
 		// Comment out if deploying on mainnet - Needs to be owner of synthetixEscrow contract
 		if (settings.contracts.SynthetixEscrow.action !== 'deploy') {
 			console.log('Setting deployed Synthetix on escrow...');
 			await synthetixEscrow.methods.setSynthetix(synthetix.options.address).send(sendParameters());
+		}
+	}
+
+	if (
+		settings.contracts.Synthetix.action === 'deploy' ||
+		settings.contracts.RewardEscrow.action === 'deploy'
+	) {
+		console.log('Setting deployed Synthetix on Rewardescrow...');
+		await rewardEscrow.methods.setSynthetix(synthetix.options.address).send(sendParameters());
+
+		// Comment out if deploying on mainnet - Needs to be owner of synthetixEscrow contract
+		if (settings.contracts.RewardEscrow.action !== 'deploy') {
+			console.log('Setting deployed Synthetix on Rewardescrow...');
+			await rewardEscrow.methods.setSynthetix(synthetix.options.address).send(sendParameters());
 		}
 	}
 
@@ -764,6 +806,15 @@ const deploy = async () => {
 	) {
 		console.log('Setting Synthetix on Fee Pool...');
 		await feePool.methods.setSynthetix(synthetix.options.address).send(sendParameters());
+	}
+
+	// Comment out if deploying on mainnet - Needs to be owner of supplySchedule contract
+	if (
+		settings.contracts.SupplySchedule.action === 'deploy' ||
+		settings.contracts.Synthetix.action === 'deploy'
+	) {
+		console.log('Setting SupplySchedule on SupplySchedule...');
+		await supplySchedule.methods.setSynthetix(synthetix.options.address).send(sendParameters());
 	}
 
 	// ----------------
