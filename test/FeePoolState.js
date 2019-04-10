@@ -14,7 +14,7 @@ const {
 } = require('../utils/testUtils');
 const web3 = getWeb3();
 
-contract.only('FeePoolState', async function(accounts) {
+contract('FeePoolState', async function(accounts) {
 	const [
 		deployerAccount,
 		owner,
@@ -113,7 +113,7 @@ contract.only('FeePoolState', async function(accounts) {
 			await feePoolState.setFeePool(FeePool.address, { from: owner });
 		});
 
-		it.only('should return the issuanceData that exists that is within the closingDebtIndex via applicableIssuanceData', async function() {
+		it('should return the issuanceData that exists that is within the closingDebtIndex via applicableIssuanceData', async function() {
 			// Fill the accountIssuanceLedger with debt entries per period
 			for (var i = 0; i < issuanceData.length; i++) {
 				await feePoolState.appendAccountIssuanceRecord(

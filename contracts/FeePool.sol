@@ -695,22 +695,18 @@ contract FeePool is Proxyable, SelfDestructible {
     function feesByPeriod(address account)
         public
         view
-        returns (uint[2][FEE_PERIOD_LENGTH])
+        returns (uint[2][FEE_PERIOD_LENGTH] memory results)
     {
-        uint[2][FEE_PERIOD_LENGTH] memory results;
         // What's the user's debt entry index and the debt they owe to the system at current feePeriod
         uint userOwnershipPercentage;
         uint debtEntryIndex;
         (userOwnershipPercentage, debtEntryIndex) = feePoolState.getAccountsDebtEntry(account, 0);
 
         // If they don't have any debt ownership and they haven't minted, they don't have any fees
-        if (debtEntryIndex == 0 && userOwnershipPercentage == 0) return results;
+        if (debtEntryIndex == 0 && userOwnershipPercentage == 0) return;
 
         // If there are no XDR synths, then they don't have any fees 
-        uint totalSynths = synthetix.totalIssuedSynths("XDR");
-
-        // if (totalSynths == 0) return (resultFees, resultRewards);
-        if (totalSynths == 0) return results;
+        if (synthetix.totalIssuedSynths("XDR") == 0) return;
 
         uint penalty = currentPenalty(account);
 
@@ -748,8 +744,6 @@ contract FeePool is Proxyable, SelfDestructible {
                 results[i][1] = rewardsFromPeriod;
             }
         }
-
-        return results;
     }
 
     /**
@@ -769,7 +763,7 @@ contract FeePool is Proxyable, SelfDestructible {
 
         // If period has closed we want to calculate debtPercentage for the period
         if (period > 0) {
-            uint closingDebtIndex = recentFeePeriods[period - 1].startingDebtIndex - 1;
+            uint closingDebtIndex = recentFeePeriods[period - 1].startingDebtIndex.sub(1);
             debtOwnershipForPeriod = _effectiveDebtRatioForPeriod(closingDebtIndex, ownershipPercentage, debtEntryIndex);
         }
 
