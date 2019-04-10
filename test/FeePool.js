@@ -857,9 +857,7 @@ contract('FeePool', async function(accounts) {
 		assert.bnClose(feesAvailable[0], fee.div(web3.utils.toBN('3')));
 
 		feesAvailable = await feePool.feesAvailable(account1, sUSD);
-		assert.bnClose(feesAvailable[0], fee.div(web3.utils.toBN('3')).mul(web3.utils.toBN('2')),
-			'11'
-		);
+		assert.bnClose(feesAvailable[0], fee.div(web3.utils.toBN('3')).mul(web3.utils.toBN('2')), '11');
 
 		// But account2 shouldn't be entitled to anything.
 		feesAvailable = await feePool.feesAvailable(account2, sUSD);
@@ -901,14 +899,14 @@ contract('FeePool', async function(accounts) {
 		// Now we should have some fees.
 		feesAvailable = await feePool.feesAvailable(owner, sUSD);
 		assert.bnClose(feesAvailable[0], oneThird(fee));
-		feesAvailable = await feePool.feesAvailable(account1, sUSD); 
+		feesAvailable = await feePool.feesAvailable(account1, sUSD);
 		assert.bnClose(feesAvailable[0], twoThirds(fee), '11');
 
 		// The owner decides to claim their fees.
 		await feePool.claimFees(sUSD, { from: owner });
 
 		// account1 should still have the same amount of fees available.
-		feesAvailable = await feePool.feesAvailable(account1, sUSD); 
+		feesAvailable = await feePool.feesAvailable(account1, sUSD);
 		assert.bnClose(feesAvailable[0], twoThirds(fee), '11');
 
 		// If we close the next FEE_PERIOD_LENGTH fee periods off without claiming, their
@@ -918,12 +916,12 @@ contract('FeePool', async function(accounts) {
 			await closeFeePeriod();
 		}
 
-		feesAvailable = await feePool.feesAvailable(account1, sUSD); 
+		feesAvailable = await feePool.feesAvailable(account1, sUSD);
 		assert.bnClose(feesAvailable[0], twoThirds(twoThirds(fee)));
 
 		// But once they claim they should have zero.
 		await feePool.claimFees(sUSD, { from: account1 });
-		feesAvailable = await feePool.feesAvailable(account1, sUSD); 
+		feesAvailable = await feePool.feesAvailable(account1, sUSD);
 		assert.bnEqual(feesAvailable[0], 0);
 	});
 
