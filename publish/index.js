@@ -161,6 +161,10 @@ program
 		'-o, --oracle <value>',
 		'The address of the oracle for this network',
 		'0xac1e8b385230970319906c03a1d8567e3996d1d5' // the oracle for testnets
+	).option(
+		'-f, --fee-auth <value>',
+		'The address of the fee authority for this network',
+		'0xfee056f4d9d63a63d6cf16707d49ffae7ff3ff01' // the fee authority for testnets
 	)
 	.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
 	.option('-m, --method-call-gas-limit <value>', 'Method call gas limit', parseInt, 15e4)
@@ -175,6 +179,7 @@ program
 			buildPath,
 			deploymentPath,
 			oracle,
+			feeAuth
 		}) => {
 			ensureNetwork(network);
 			ensureDeploymentPath(deploymentPath);
@@ -328,6 +333,7 @@ program
 					account,
 					account,
 					account,
+					feeAuth,
 					web3.utils.toWei('0.0015', 'ether'),
 					web3.utils.toWei('0.0015', 'ether'),
 				],
