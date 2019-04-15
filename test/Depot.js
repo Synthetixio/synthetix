@@ -240,9 +240,9 @@ contract('Depot', async function(accounts) {
 		await solAssert.revert(depot.setMinimumDepositAmount(minimumDepositAmount, { from: address1 }));
 	});
 
-	describe.only('should increment depositor smallDeposits balance', async function() {
+	describe('should increment depositor smallDeposits balance', async function() {
 		const depositor = address1;
-		
+
 		beforeEach(async function() {
 			const synthsBalance = toUnit(100);
 			console.log(depositor, synthsBalance);
@@ -251,8 +251,6 @@ contract('Depot', async function(accounts) {
 			// Set up the depositor with an amount of synths to deposit.
 			await synth.transferSenderPaysFee(depositor, synthsBalance, { from: owner });
 		});
-
-	
 
 		it('if the deposit synth of 10 amount is less than the minimumDepositAmount', async function() {
 			const synthsToDeposit = toUnit(10);
@@ -263,7 +261,6 @@ contract('Depot', async function(accounts) {
 			await synth.transfer(depot.address, synthsToDeposit, {
 				from: depositor,
 			});
-
 
 			// Now balance should be equal to the amount we just sent minus the fees
 			const smallDepositsBalance = await depot.smallDeposits(depositor);
@@ -278,15 +275,15 @@ contract('Depot', async function(accounts) {
 			const initialSmallDepositsBalance = await depot.smallDeposits(depositor);
 			assert.equal(initialSmallDepositsBalance, 0);
 
-			console.log('1')
+			console.log('1');
 			await synth.transfer(depot.address, synthsToDeposit, {
 				from: depositor,
 			});
-			console.log('2')
+			console.log('2');
 
 			// Now balance should be equal to the amount we just sent minus the fees
 			const smallDepositsBalance = await depot.smallDeposits(depositor);
-			console.log('3')
+			console.log('3');
 
 			const amountDepotReceived = await feePool.amountReceivedFromTransfer(synthsToDeposit);
 			console.log(fromUnit(amountDepotReceived));

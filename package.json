@@ -70,8 +70,10 @@
 		"web3": "1.0.0-beta.52"
 	},
 	"dependencies": {
+		"bn.js": "4.11.8",
 		"commander": "^2.19.0",
 		"openzeppelin-solidity": "2.0.0",
-		"pretty-error": "^2.1.1"
+		"pretty-error": "^2.1.1",
+		"truffle-legacy-system": "1.0.6"
 	}
 }
