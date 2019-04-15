@@ -5,7 +5,6 @@ const {
 	toUnit,
 	multiplyDecimal,
 	divideDecimal,
-	fromUnit,
 } = require('../utils/testUtils');
 
 const Synthetix = artifacts.require('Synthetix');
