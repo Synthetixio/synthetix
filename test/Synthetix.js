@@ -14,7 +14,6 @@ const {
 	multiplyDecimal,
 	divideDecimal,
 	toUnit,
-	toPreciseUnit,
 	ZERO_ADDRESS,
 } = require('../utils/testUtils');
 

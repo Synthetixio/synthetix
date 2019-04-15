@@ -19,7 +19,7 @@ contract('Synth', async function(accounts) {
 		account2,
 	] = accounts;
 
-	let feePool, FEE_ADDRESS, synthetix, exchangeRates, sUSDContract, sAUDContract, XDRContract;
+	let feePool, FEE_ADDRESS, synthetix, exchangeRates, sUSDContract, XDRContract;
 
 	beforeEach(async function() {
 		// Save ourselves from having to await deployed() in every single test.
@@ -31,7 +31,6 @@ contract('Synth', async function(accounts) {
 
 		synthetix = await Synthetix.deployed();
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
-		sAUDContract = await Synth.at(await synthetix.synths(sAUD));
 		XDRContract = await Synth.at(await synthetix.synths(XDR));
 
 		// Send a price update to guarantee we're not stale.
