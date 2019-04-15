@@ -41,6 +41,7 @@
 	"devDependencies": {
 		"axios": "^0.18.0",
 		"bip39": "^2.5.0",
+		"bn.js": "4.11.8",
 		"chalk": "^2.4.2",
 		"concurrently": "^4.0.1",
 		"dotenv": "^6.1.0",
@@ -71,7 +72,6 @@
 		"web3": "1.0.0-beta.52"
 	},
 	"dependencies": {
-		"bn.js": "4.11.8",
 		"commander": "^2.19.0",
 		"openzeppelin-solidity": "2.0.0",
 		"pretty-error": "^2.1.1"

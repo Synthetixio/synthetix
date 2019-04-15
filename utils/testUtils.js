@@ -78,7 +78,6 @@ const fastForwardTo = async time => {
  */
 const takeSnapshot = async () => {
 	const { result } = await send({ method: 'evm_snapshot' });
-	// console.log('snapshotting')
 	await mineBlock();
 
 	return result;
@@ -93,7 +92,6 @@ const restoreSnapshot = async id => {
 		method: 'evm_revert',
 		params: [id],
 	});
-	// console.log('reverting')
 	await mineBlock();
 };
 
