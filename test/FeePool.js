@@ -5,7 +5,7 @@ const Synth = artifacts.require('Synth');
 
 const { currentTime, fastForward, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 
-contract.only('FeePool', async function(accounts) {
+contract('FeePool', async function(accounts) {
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
 		const timestamp = await currentTime();
