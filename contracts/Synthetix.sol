@@ -318,13 +318,10 @@ contract Synthetix is ExternStateToken {
     {
         uint total = 0;
         uint currencyRate = exchangeRates.rateForCurrency(currencyKey);
-
+        
+        require(!exchangeRates.anyRateIsStale(availableCurrencyKeys()), "Rates are stale");
+        
         for (uint8 i = 0; i < availableSynths.length; i++) {
-            // Ensure the rate isn't stale.
-            // TODO: Investigate gas cost optimisation of doing a single call with all keys in it vs
-            // individual calls like this.
-            require(!exchangeRates.rateIsStale(availableSynths[i].currencyKey()), "Rate is stale");
-
             // What's the total issued value of that synth in the destination currency?
             // Note: We're not using our effectiveValue function because we don't want to go get the
             //       rate for the destination currency and check if it's stale repeatedly on every
@@ -336,6 +333,23 @@ contract Synthetix is ExternStateToken {
         }
 
         return total;
+    }
+
+    /**
+     * @notice Returns the currencyKeys of availableSynths for rate checking 
+     */
+    function availableCurrencyKeys()
+        internal
+        view
+        returns (bytes4[])
+    {
+        bytes4[] memory availableCurrencyKeys = new bytes4[](availableSynths.length);
+
+        for (uint8 i = 0; i < availableSynths.length; i++) {
+            availableCurrencyKeys[i] = availableSynths[i].currencyKey();
+        }
+
+        return availableCurrencyKeys;
     }
 
     /**
@@ -494,6 +508,11 @@ contract Synthetix is ExternStateToken {
         onlySynth
         returns (bool)
     {
+        // Allow fee to be 0 and skip minting XDRs to feePool 
+        if (sourceAmount == 0) {
+            return true;
+        }
+
         require(sourceAmount > 0, "Source can't be 0");
 
         // Pass it along, defaulting to the sender as the recipient.
@@ -571,9 +590,8 @@ contract Synthetix is ExternStateToken {
         // Call the ERC223 transfer callback if needed
         synths[destinationCurrencyKey].triggerTokenFallbackIfNeeded(from, destinationAddress, amountReceived);
 
-        // Gas optimisation:
-        // No event emitted as it's assumed users will be able to track transfers to the zero address, followed
-        // by a transfer on another synth from the zero address and ascertain the info required here.
+        //Let the DApps know there was a Synth exchange
+        emitSynthExchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, amountReceived, destinationAddress);
 
         return true;
     }
@@ -920,7 +938,14 @@ contract Synthetix is ExternStateToken {
     }
 
     // ========== EVENTS ==========
+    /* solium-disable */
 
+    event SynthExchange(address indexed account, bytes4 fromCurrencyKey, uint256 fromAmount, bytes4 toCurrencyKey,  uint256 toAmount, address toAddress);
+    bytes32 constant SYNTHEXCHANGE_SIG = keccak256("SynthExchange(address,bytes4,uint256,bytes4,uint256,address)");
+    function emitSynthExchange(address account, bytes4 fromCurrencyKey, uint256 fromAmount, bytes4 toCurrencyKey, uint256 toAmount, address toAddress) internal {
+        proxy._emit(abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, toAddress), 2, SYNTHEXCHANGE_SIG, bytes32(account), 0, 0);
+    }
+    
     event PreferredCurrencyChanged(address indexed account, bytes4 newPreferredCurrency);
     bytes32 constant PREFERREDCURRENCYCHANGED_SIG = keccak256("PreferredCurrencyChanged(address,bytes4)");
     function emitPreferredCurrencyChanged(address account, bytes4 newPreferredCurrency) internal {
@@ -944,4 +969,5 @@ contract Synthetix is ExternStateToken {
     function emitSynthRemoved(bytes4 currencyKey, address removedSynth) internal {
         proxy._emit(abi.encode(currencyKey, removedSynth), 1, SYNTHREMOVED_SIG, 0, 0, 0);
     }
+    /* solium-enable */
 }

@@ -14,8 +14,6 @@ const {
 	ZERO_ADDRESS,
 } = require('../utils/testUtils');
 
-const shouldFail = require('openzeppelin-solidity/test/helpers/shouldFail');
-
 contract('Synthetix', async function(accounts) {
 	const [sUSD, sAUD, sEUR, SNX, XDR, sXYZ] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'XDR', 'sXYZ'].map(
 		web3.utils.asciiToHex
@@ -1944,6 +1942,31 @@ contract('Synthetix', async function(accounts) {
 		assert.bnEqual(effectiveValueMinusFees, sAUDBalance);
 	});
 
+	it('should emit a SynthExchange event', async function() {
+		// Give some SNX to account1
+		await synthetix.transfer(account1, toUnit('300000'), { from: owner });
+		// Issue
+		const amountIssued = toUnit('2000');
+		await synthetix.issueSynths(sUSD, amountIssued, { from: account1 });
+
+		// Exchange sUSD to sAUD
+		const txn = await synthetix.exchange(sUSD, amountIssued, sAUD, account1, {
+			from: account1,
+		});
+
+		const sAUDBalance = await sAUDContract.balanceOf(account1);
+
+		const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
+		assert.eventEqual(synthExchangeEvent, 'SynthExchange', {
+			account: account1,
+			fromCurrencyKey: sUSD,
+			fromAmount: amountIssued,
+			toCurrencyKey: sAUD,
+			toAmount: sAUDBalance,
+			toAddress: account1,
+		});
+	});
+
 	// TODO: Changes in exchange rates tests
 	// TODO: Are we testing too much Synth functionality here in Synthetix
 
@@ -1951,6 +1974,6 @@ contract('Synthetix', async function(accounts) {
 		// Issue 0 amount of synth
 		const issuedSynths1 = toUnit('0');
 
-		await shouldFail.reverting(synthetix.issueSynths(sUSD, issuedSynths1, { from: account1 }));
+		await assert.revert(synthetix.issueSynths(sUSD, issuedSynths1, { from: account1 }));
 	});
 });

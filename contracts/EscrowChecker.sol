@@ -7,7 +7,7 @@ contract SynthetixEscrow {
 
 contract EscrowChecker {
     SynthetixEscrow public synthetix_escrow;
-    function EscrowChecker(SynthetixEscrow _esc) public {
+    constructor(SynthetixEscrow _esc) public {
         synthetix_escrow = _esc;
     }
 
