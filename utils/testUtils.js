@@ -103,7 +103,7 @@ const restoreSnapshot = async id => {
  *  we should be able to update the conversion factor here.
  *  @param amount The amount you want to re-base to UNIT
  */
-const toUnit = amount => web3.utils.toBN(web3.utils.toWei(amount, 'ether'));
+const toUnit = amount => web3.utils.toBN(web3.utils.toWei(amount.toString(), 'ether'));
 const fromUnit = amount => web3.utils.fromWei(amount, 'ether');
 
 /**
@@ -400,17 +400,5 @@ module.exports = {
 	assertUnitNotEqual,
 	assertRevert,
 
-	solAssert: {
-		eventEqual: assertEventEqual,
-		eventsEqual: assertEventsEqual,
-		bnEqual: assertBNEqual,
-		bnNotEqual: assertBNNotEqual,
-		bnClose: assertBNClose,
-		deepEqual: assertDeepEqual,
-		invalidOpcode: assertInvalidOpcode,
-		unitEqual: assertUnitEqual,
-		unitNotEqual: assertUnitNotEqual,
-		revert: assertRevert,
-	},
 	getEthBalance,
 };

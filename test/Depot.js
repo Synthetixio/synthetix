@@ -5,10 +5,7 @@ const {
 	toUnit,
 	multiplyDecimal,
 	divideDecimal,
-	solAssert,
 	fromUnit,
-	takeSnapshot,
-	restoreSnapshot,
 } = require('../utils/testUtils');
 
 const Synthetix = artifacts.require('Synthetix');
@@ -20,17 +17,7 @@ contract('Depot', async function(accounts) {
 	let synthetix, synth, depot, feePool;
 	const sUsdHex = web3.utils.asciiToHex('sUSD');
 
-	let lastSnapshotId;
-	// beforeEach(async function() {
-	// lastSnapshotId = await takeSnapshot();
-	// });
-
-	afterEach(async function() {
-		await restoreSnapshot(lastSnapshotId);
-	});
-
 	beforeEach(async function() {
-		lastSnapshotId = await takeSnapshot();
 		synthetix = await Synthetix.deployed();
 		synth = await Synth.at(await synthetix.synths(sUsdHex));
 		depot = await Depot.deployed();
@@ -41,6 +28,7 @@ contract('Depot', async function(accounts) {
 		deployerAccount,
 		owner,
 		oracle,
+		,
 		fundsWallet,
 		address1,
 		address2,
@@ -70,64 +58,64 @@ contract('Depot', async function(accounts) {
 		assert.equal(await instance.synth(), synth.address);
 		assert.equal(await instance.fundsWallet(), fundsWallet);
 		assert.equal(await instance.oracle(), oracle);
-		solAssert.bnEqual(await instance.usdToSnxPrice(), usdSnx);
-		solAssert.bnEqual(await instance.usdToEthPrice(), usdEth);
+		assert.bnEqual(await instance.usdToSnxPrice(), usdSnx);
+		assert.bnEqual(await instance.usdToEthPrice(), usdEth);
 	});
 
 	it('should set funds wallet when invoked by owner', async function() {
 		const transaction = await depot.setFundsWallet(address1, { from: owner });
-		solAssert.eventEqual(transaction, 'FundsWalletUpdated', { newFundsWallet: address1 });
+		assert.eventEqual(transaction, 'FundsWalletUpdated', { newFundsWallet: address1 });
 
 		assert.equal(await depot.fundsWallet(), address1);
 	});
 
 	it('should not set funds wallet when not invoked by owner', async function() {
-		await solAssert.revert(depot.setFundsWallet(address2, { from: deployerAccount }));
+		await assert.revert(depot.setFundsWallet(address2, { from: deployerAccount }));
 	});
 
 	it('should set oracle when invoked by owner', async function() {
 		const txn = await depot.setOracle(address2, { from: owner });
-		solAssert.eventEqual(txn, 'OracleUpdated', { newOracle: address2 });
+		assert.eventEqual(txn, 'OracleUpdated', { newOracle: address2 });
 
 		assert.equal(await depot.oracle(), address2);
 	});
 
 	it('should not set oracle when not invoked by owner', async function() {
-		await solAssert.revert(depot.setOracle(address3, { from: deployerAccount }));
+		await assert.revert(depot.setOracle(address3, { from: deployerAccount }));
 	});
 
 	it('should set synth when invoked by owner', async function() {
 		const transaction = await depot.setSynth(address3, { from: owner });
-		solAssert.eventEqual(transaction, 'SynthUpdated', { newSynthContract: address3 });
+		assert.eventEqual(transaction, 'SynthUpdated', { newSynthContract: address3 });
 
 		assert.equal(await depot.synth(), address3);
 	});
 
 	it('should not set synth when not invoked by owner', async function() {
-		await solAssert.revert(depot.setSynth(address4, { from: deployerAccount }));
+		await assert.revert(depot.setSynth(address4, { from: deployerAccount }));
 	});
 
 	it('should set synthetix when invoked by owner', async function() {
 		const transaction = await depot.setSynthetix(address4, { from: owner });
-		solAssert.eventEqual(transaction, 'SynthetixUpdated', { newSynthetixContract: address4 });
+		assert.eventEqual(transaction, 'SynthetixUpdated', { newSynthetixContract: address4 });
 
 		assert.equal(await depot.synthetix(), address4);
 	});
 
 	it('should not set synthetix when not invoked by owner', async function() {
-		await solAssert.revert(() => depot.setSynthetix(owner, { from: deployerAccount }));
+		await assert.revert(() => depot.setSynthetix(owner, { from: deployerAccount }));
 	});
 
 	it('should not set price stale period when not invoked by owner', async function() {
-		await solAssert.revert(depot.setPriceStalePeriod(60, { from: deployerAccount }));
+		await assert.revert(depot.setPriceStalePeriod(60, { from: deployerAccount }));
 	});
 	it('should set price stale period when invoked by owner', async function() {
 		let stalePeriod = 5 * 60 * 60; // Five hours
 
 		let txn = await depot.setPriceStalePeriod(stalePeriod, { from: owner });
-		solAssert.eventEqual(txn, 'PriceStalePeriodUpdated', { priceStalePeriod: stalePeriod });
+		assert.eventEqual(txn, 'PriceStalePeriodUpdated', { priceStalePeriod: stalePeriod });
 
-		solAssert.bnEqual(await depot.priceStalePeriod(), stalePeriod);
+		assert.bnEqual(await depot.priceStalePeriod(), stalePeriod);
 	});
 	it('should update prices when invoked by oracle', async function() {
 		let now = await currentTime();
@@ -138,7 +126,7 @@ contract('Depot', async function(accounts) {
 			from: oracle,
 		});
 
-		solAssert.eventEqual(txn, 'PricesUpdated', {
+		assert.eventEqual(txn, 'PricesUpdated', {
 			newEthPrice: usdEth,
 			newSynthetixPrice: usdSnx,
 			timeSent: now,
@@ -164,7 +152,7 @@ contract('Depot', async function(accounts) {
 		});
 
 		// Unsuccessful price update attempt
-		await solAssert.revert(() =>
+		await assert.revert(() =>
 			depot.updatePrices('300', '400', now - 1, {
 				from: oracle,
 			})
@@ -174,9 +162,9 @@ contract('Depot', async function(accounts) {
 		const EthUSDFromContract = await depot.usdToEthPrice();
 		const lastPriceUpdateTimeFromContract = await depot.lastPriceUpdateTime();
 
-		solAssert.bnEqual(EthUSDFromContract, usdEth);
-		solAssert.bnEqual(snxUSDFromContract, usdSnx);
-		solAssert.bnEqual(lastPriceUpdateTimeFromContract, now);
+		assert.bnEqual(EthUSDFromContract, usdEth);
+		assert.bnEqual(snxUSDFromContract, usdSnx);
+		assert.bnEqual(lastPriceUpdateTimeFromContract, now);
 	});
 
 	it('should not update prices if time sent is more than (current time stamp + ORACLE_FUTURE_LIMIT)', async function() {
@@ -186,7 +174,7 @@ contract('Depot', async function(accounts) {
 		const ethUSD = await depot.usdToEthPrice();
 
 		// Unsuccessful price update attempt
-		await solAssert.revert(
+		await assert.revert(
 			depot.updatePrices(ethUSD, snxUSD, lastPriceUpdateTime + oracleFutureLimit, {
 				from: oracle,
 			})
@@ -196,9 +184,9 @@ contract('Depot', async function(accounts) {
 		const ethUSDFromContract = await depot.usdToEthPrice();
 		const lastPriceUpdateTimeFromContract = await depot.lastPriceUpdateTime();
 
-		solAssert.bnEqual(snxUSDFromContract, snxUSD);
-		solAssert.bnEqual(ethUSDFromContract, ethUSD);
-		solAssert.bnEqual(lastPriceUpdateTimeFromContract, lastPriceUpdateTime);
+		assert.bnEqual(snxUSDFromContract, snxUSD);
+		assert.bnEqual(ethUSDFromContract, ethUSD);
+		assert.bnEqual(lastPriceUpdateTimeFromContract, lastPriceUpdateTime);
 	});
 
 	it('should not update prices when not invoked by oracle', async function() {
@@ -206,7 +194,7 @@ contract('Depot', async function(accounts) {
 		let usdEth = '994957049546843687330';
 		let usdSnx = '157474638738934625';
 
-		await solAssert.revert(
+		await assert.revert(
 			depot.updatePrices(usdEth, usdSnx, now, {
 				from: address1,
 			})
@@ -218,26 +206,26 @@ contract('Depot', async function(accounts) {
 		const setMinimumDepositAmountTx = await depot.setMinimumDepositAmount(minimumDepositAmount, {
 			from: owner,
 		});
-		solAssert.eventEqual(setMinimumDepositAmountTx, 'MinimumDepositAmountUpdated', {
+		assert.eventEqual(setMinimumDepositAmountTx, 'MinimumDepositAmountUpdated', {
 			amount: minimumDepositAmount,
 		});
 		const newMinimumDepositAmount = await depot.minimumDepositAmount();
-		solAssert.bnEqual(newMinimumDepositAmount, minimumDepositAmount);
+		assert.bnEqual(newMinimumDepositAmount, minimumDepositAmount);
 	});
 
 	it('should not allow someone other than owner to set the minimum deposit amount', async function() {
 		const minimumDepositAmount = toUnit('100');
-		await solAssert.revert(depot.setMinimumDepositAmount(minimumDepositAmount, { from: address1 }));
+		await assert.revert(depot.setMinimumDepositAmount(minimumDepositAmount, { from: address1 }));
 	});
 
 	it('should not allow the owner to set the minimum deposit amount to be less than 1 sUSD', async function() {
 		const minimumDepositAmount = toUnit('.5');
-		await solAssert.revert(depot.setMinimumDepositAmount(minimumDepositAmount, { from: address1 }));
+		await assert.revert(depot.setMinimumDepositAmount(minimumDepositAmount, { from: address1 }));
 	});
 
 	it('should not allow the owner to set the minimum deposit amount to be zero', async function() {
 		const minimumDepositAmount = toUnit('0');
-		await solAssert.revert(depot.setMinimumDepositAmount(minimumDepositAmount, { from: address1 }));
+		await assert.revert(depot.setMinimumDepositAmount(minimumDepositAmount, { from: address1 }));
 	});
 
 	describe('should increment depositor smallDeposits balance', async function() {
@@ -245,7 +233,6 @@ contract('Depot', async function(accounts) {
 
 		beforeEach(async function() {
 			const synthsBalance = toUnit(100);
-			console.log(depositor, synthsBalance);
 			// We need the owner to issue synths
 			await synthetix.issueMaxSynths(sUsdHex, { from: owner });
 			// Set up the depositor with an amount of synths to deposit.
@@ -258,16 +245,15 @@ contract('Depot', async function(accounts) {
 			const initialSmallDepositsBalance = await depot.smallDeposits(depositor);
 			assert.equal(initialSmallDepositsBalance, 0);
 
-			await synth.transfer(depot.address, synthsToDeposit, {
+			await synth.transfer(depot.address, synthsToDeposit, '0x0', {
 				from: depositor,
 			});
 
 			// Now balance should be equal to the amount we just sent minus the fees
 			const smallDepositsBalance = await depot.smallDeposits(depositor);
 			const amountDepotReceived = await feePool.amountReceivedFromTransfer(synthsToDeposit);
-			console.log(fromUnit(smallDepositsBalance), fromUnit(amountDepotReceived));
 
-			solAssert.bnEqual(smallDepositsBalance, amountDepotReceived);
+			assert.bnEqual(smallDepositsBalance, amountDepotReceived);
 		});
 		it('if the deposit synth amount is a tiny amount', async function() {
 			const synthsToDeposit = toUnit(0.01);
@@ -275,34 +261,30 @@ contract('Depot', async function(accounts) {
 			const initialSmallDepositsBalance = await depot.smallDeposits(depositor);
 			assert.equal(initialSmallDepositsBalance, 0);
 
-			console.log('1');
-			await synth.transfer(depot.address, synthsToDeposit, {
+			await synth.transfer(depot.address, synthsToDeposit, '0x0', {
 				from: depositor,
 			});
-			console.log('2');
 
 			// Now balance should be equal to the amount we just sent minus the fees
 			const smallDepositsBalance = await depot.smallDeposits(depositor);
-			console.log('3');
 
 			const amountDepotReceived = await feePool.amountReceivedFromTransfer(synthsToDeposit);
-			console.log(fromUnit(amountDepotReceived));
-			solAssert.bnEqual(smallDepositsBalance, amountDepotReceived);
+			assert.bnEqual(smallDepositsBalance, amountDepotReceived);
 		});
-		xit('if the deposit synth amount of 49.99 is less than the minimumDepositAmount', async function() {
+		it('if the deposit synth amount of 49.99 is less than the minimumDepositAmount', async function() {
 			const synthsToDeposit = toUnit('49.99');
 			// Depositor should initially have a smallDeposits balance of 0
 			const initialSmallDepositsBalance = await depot.smallDeposits(depositor);
 			assert.equal(initialSmallDepositsBalance, 0);
 
-			await synth.transfer(depot.address, synthsToDeposit, web3.utils.asciiToHex(''), {
+			await synth.transfer(depot.address, synthsToDeposit, '0x0', {
 				from: depositor,
 			});
 
 			// Now balance should be equal to the amount we just sent minus the fees
 			const smallDepositsBalance = await depot.smallDeposits(depositor);
 			const amountDepotReceived = await feePool.amountReceivedFromTransfer(synthsToDeposit);
-			solAssert.bnEqual(smallDepositsBalance, amountDepotReceived);
+			assert.bnEqual(smallDepositsBalance, amountDepotReceived);
 		});
 	});
 
@@ -328,19 +310,19 @@ contract('Depot', async function(accounts) {
 			const synthDepositEvent = events.find(log => log.event === 'SynthDeposit');
 			const synthDepositIndex = synthDepositEvent.args.depositIndex.toString();
 
-			solAssert.eventEqual(synthDepositEvent, 'SynthDeposit', {
+			assert.eventEqual(synthDepositEvent, 'SynthDeposit', {
 				user: depositor,
 				amount: synthsToDeposit,
 				depositIndex: synthDepositIndex,
 			});
 
 			const depotSynthBalanceCurrent = await synth.balanceOf(depot.address);
-			solAssert.bnEqual(depotSynthBalanceCurrent, synthsToDeposit);
+			assert.bnEqual(depotSynthBalanceCurrent, synthsToDeposit);
 
 			const depositStartIndexAfter = await depot.depositStartIndex();
 			const synthDeposit = await depot.deposits.call(depositStartIndexAfter);
 			assert.equal(synthDeposit.user, depositor);
-			solAssert.bnEqual(synthDeposit.amount, synthsToDeposit);
+			assert.bnEqual(synthDeposit.amount, synthsToDeposit);
 		});
 
 		it('if the deposit synth amount of 51 is more than the minimumDepositAmount', async function() {
@@ -353,19 +335,19 @@ contract('Depot', async function(accounts) {
 			const synthDepositEvent = events.find(log => log.event === 'SynthDeposit');
 			const synthDepositIndex = synthDepositEvent.args.depositIndex.toString();
 
-			solAssert.eventEqual(synthDepositEvent, 'SynthDeposit', {
+			assert.eventEqual(synthDepositEvent, 'SynthDeposit', {
 				user: depositor,
 				amount: synthsToDeposit,
 				depositIndex: synthDepositIndex,
 			});
 
 			const depotSynthBalanceCurrent = await synth.balanceOf(depot.address);
-			solAssert.bnEqual(depotSynthBalanceCurrent, synthsToDeposit);
+			assert.bnEqual(depotSynthBalanceCurrent, synthsToDeposit);
 
 			const depositStartIndexAfter = await depot.depositStartIndex();
 			const synthDeposit = await depot.deposits.call(depositStartIndexAfter);
 			assert.equal(synthDeposit.user, depositor);
-			solAssert.bnEqual(synthDeposit.amount, synthsToDeposit);
+			assert.bnEqual(synthDeposit.amount, synthsToDeposit);
 		});
 	});
 
@@ -383,7 +365,7 @@ contract('Depot', async function(accounts) {
 			await synthetix.issueMaxSynths(sUsdHex, { from: owner });
 			// Set up the depot so it contains some synths to convert Ether for
 			synthsBalance = await synth.balanceOf(owner, { from: owner });
-			await synth.transfer(depot.address, synthsBalance.toString(), { from: owner });
+			await synth.transfer(depot.address, synthsBalance.toString(), '0x0', { from: owner });
 			feePoolBalanceBefore = await synth.feePool();
 			depotSynthBalanceBefore = await synth.balanceOf(depot.address);
 		});
@@ -393,18 +375,22 @@ contract('Depot', async function(accounts) {
 			await fastForward(priceStalePeriod);
 
 			// Attempt exchange
-			await solAssert.revert(
+			await assert.revert(
 				depot.exchangeEtherForSynths({
 					from: address1,
 					amount: 10,
 				})
 			);
 			const depotSynthBalanceCurrent = await synth.balanceOf(depot.address);
-			solAssert.bnEqual(depotSynthBalanceCurrent, depotSynthBalanceBefore);
-			solAssert.bnEqual(await synth.balanceOf(address1), 0);
-			solAssert.bnEqual(await synth.feePool(), feePoolBalanceBefore);
-			assert.equal(fundsWalletFromContract, fundsWallet);
-			solAssert.bnEqual(await getEthBalance(fundsWallet), fundsWalletEthBalanceBefore);
+			assert.bnEqual(depotSynthBalanceCurrent, depotSynthBalanceBefore);
+			assert.bnEqual(await synth.balanceOf(address1), 0);
+			assert.bnEqual(await synth.feePool(), feePoolBalanceBefore);
+			assert.equal(
+				fundsWalletFromContract,
+				fundsWallet,
+				'Wallet and wallet from contract must equal'
+			);
+			assert.bnEqual(await getEthBalance(fundsWallet), fundsWalletEthBalanceBefore);
 		});
 
 		it('if the contract is paused', async function() {
@@ -412,7 +398,7 @@ contract('Depot', async function(accounts) {
 			await depot.setPaused(true, { from: owner });
 
 			// Attempt exchange
-			await solAssert.revert(
+			await assert.revert(
 				depot.exchangeEtherForSynths({
 					from: address1,
 					amount: 10,
@@ -420,11 +406,11 @@ contract('Depot', async function(accounts) {
 			);
 
 			const depotSynthBalanceCurrent = await synth.balanceOf(depot.address);
-			solAssert.bnEqual(depotSynthBalanceCurrent, depotSynthBalanceBefore);
-			solAssert.bnEqual(await synth.balanceOf(address1), 0);
+			assert.bnEqual(depotSynthBalanceCurrent, depotSynthBalanceBefore);
+			assert.bnEqual(await synth.balanceOf(address1), 0);
 			assert.equal(await synth.feePool(), feePoolBalanceBefore.toString());
 			assert.equal(fundsWalletFromContract, fundsWallet);
-			solAssert.bnEqual(await getEthBalance(fundsWallet), fundsWalletEthBalanceBefore.toString());
+			assert.bnEqual(await getEthBalance(fundsWallet), fundsWalletEthBalanceBefore.toString());
 		});
 	});
 
@@ -472,7 +458,7 @@ contract('Depot', async function(accounts) {
 
 			// And assert that our total has increased by the right amount.
 			const totalSellableDeposits = await depot.totalSellableDeposits();
-			solAssert.bnEqual(totalSellableDeposits, synthsToDeposit);
+			assert.bnEqual(totalSellableDeposits, synthsToDeposit);
 
 			// Now purchase some.
 			const txn = await depot.exchangeEtherForSynths({
@@ -482,7 +468,7 @@ contract('Depot', async function(accounts) {
 
 			// Exchange("ETH", msg.value, "sUSD", fulfilled);
 			const exchangeEvent = txn.logs.find(log => log.event === 'Exchange');
-			solAssert.eventEqual(exchangeEvent, 'Exchange', {
+			assert.eventEqual(exchangeEvent, 'Exchange', {
 				fromCurrency: 'ETH',
 				fromAmount: ethToSend,
 				toCurrency: 'sUSD',
@@ -497,7 +483,7 @@ contract('Depot', async function(accounts) {
 			const depotSynthBalance = await synth.balanceOf(depot.address);
 
 			assert.equal(depotSynthBalance, 0);
-			solAssert.bnEqual(purchaserSynthBalance, amountReceived);
+			assert.bnEqual(purchaserSynthBalance, amountReceived);
 
 			// We should have no deposit in the queue anymore
 			assert.equal(await depot.depositStartIndex(), 1);
@@ -508,7 +494,7 @@ contract('Depot', async function(accounts) {
 
 			// The depositor should have received the ETH
 			const depositorEndingBalance = await getEthBalance(depositor);
-			solAssert.bnEqual(
+			assert.bnEqual(
 				web3.utils.toBN(depositorStartingBalance).add(ethToSend),
 				web3.utils.toBN(depositorEndingBalance).add(gasPaid)
 			);
@@ -532,9 +518,9 @@ contract('Depot', async function(accounts) {
 
 			// And assert that our total has increased by the right amount.
 			const totalSellableDeposits = await depot.totalSellableDeposits();
-			solAssert.bnEqual(totalSellableDeposits, synthsToDeposit);
+			assert.bnEqual(totalSellableDeposits, synthsToDeposit);
 
-			solAssert.bnEqual(await depot.totalSellableDeposits(), (await depot.deposits(0)).amount);
+			assert.bnEqual(await depot.totalSellableDeposits(), (await depot.deposits(0)).amount);
 
 			// Now purchase some.
 			const txn = await depot.exchangeEtherForSynths({
@@ -544,7 +530,7 @@ contract('Depot', async function(accounts) {
 
 			// Exchange("ETH", msg.value, "sUSD", fulfilled);
 			const exchangeEvent = txn.logs.find(log => log.event === 'Exchange');
-			solAssert.eventEqual(exchangeEvent, 'Exchange', {
+			assert.eventEqual(exchangeEvent, 'Exchange', {
 				fromCurrency: 'ETH',
 				fromAmount: ethToSend,
 				toCurrency: 'sUSD',
@@ -555,9 +541,9 @@ contract('Depot', async function(accounts) {
 			assert.equal(await depot.depositStartIndex(), 0);
 			assert.equal(await depot.depositEndIndex(), 1);
 
-			solAssert.bnEqual(await depot.totalSellableDeposits(), (await depot.deposits(0)).amount);
+			assert.bnEqual(await depot.totalSellableDeposits(), (await depot.deposits(0)).amount);
 
-			solAssert.bnEqual(
+			assert.bnEqual(
 				await depot.totalSellableDeposits(),
 				synthsToDeposit.div(web3.utils.toBN('2'))
 			);
@@ -585,7 +571,7 @@ contract('Depot', async function(accounts) {
 
 			// And assert that our total has increased by the right amount.
 			const totalSellableDeposits = await depot.totalSellableDeposits();
-			solAssert.bnEqual(totalSellableDeposits, totalSynthsDeposit);
+			assert.bnEqual(totalSellableDeposits, totalSynthsDeposit);
 
 			// Now purchase some.
 			const transaction = await depot.exchangeEtherForSynths({
@@ -597,7 +583,7 @@ contract('Depot', async function(accounts) {
 			const exchangeEvent = transaction.logs.find(log => log.event === 'Exchange');
 			const synthsAmount = multiplyDecimal(ethToSend, usdEth);
 
-			solAssert.eventEqual(exchangeEvent, 'Exchange', {
+			assert.eventEqual(exchangeEvent, 'Exchange', {
 				fromCurrency: 'ETH',
 				fromAmount: ethToSend,
 				toCurrency: 'sUSD',
@@ -611,16 +597,16 @@ contract('Depot', async function(accounts) {
 			const purchaserSynthBalance = await synth.balanceOf(purchaser);
 			const depotSynthBalance = await synth.balanceOf(depot.address);
 			const remainingSynths = web3.utils.toBN(totalSynthsDeposit).sub(synthsAmount);
-			solAssert.bnEqual(purchaserSynthBalance, amountReceived);
+			assert.bnEqual(purchaserSynthBalance, amountReceived);
 
-			solAssert.bnEqual(depotSynthBalance, remainingSynths);
+			assert.bnEqual(depotSynthBalance, remainingSynths);
 
 			// We should have one deposit left in the queue
 			assert.equal(await depot.depositStartIndex(), 1);
 			assert.equal(await depot.depositEndIndex(), 2);
 
 			// And our total should be totalSynthsDeposit - last purchase
-			solAssert.bnEqual(await depot.totalSellableDeposits(), remainingSynths);
+			assert.bnEqual(await depot.totalSellableDeposits(), remainingSynths);
 		});
 
 		it('exceeds available synths (and that the remainder of the ETH is correctly refunded)', async function() {
@@ -651,7 +637,7 @@ contract('Depot', async function(accounts) {
 			// Exchange("ETH", msg.value, "sUSD", fulfilled);
 			const exchangeEvent = txn.logs.find(log => log.event === 'Exchange');
 
-			solAssert.eventEqual(exchangeEvent, 'Exchange', {
+			assert.eventEqual(exchangeEvent, 'Exchange', {
 				fromCurrency: 'ETH',
 				fromAmount: ethToSend,
 				toCurrency: 'sUSD',
@@ -673,7 +659,7 @@ contract('Depot', async function(accounts) {
 			// The purchaser should have received the refund
 			// which can be checked by initialBalance = endBalance + fees + amount of synths bought in ETH
 			const purchaserEndingBalance = await getEthBalance(purchaser);
-			solAssert.bnEqual(
+			assert.bnEqual(
 				web3.utils.toBN(purchaserInitialBalance),
 				web3.utils
 					.toBN(purchaserEndingBalance)
@@ -703,14 +689,14 @@ contract('Depot', async function(accounts) {
 			const withdrawEvent = txn.logs[1];
 
 			// The sent synths should be equal the initial deposit
-			solAssert.eventEqual(depositRemovedEvent, 'SynthDepositRemoved', {
+			assert.eventEqual(depositRemovedEvent, 'SynthDepositRemoved', {
 				user: depositor,
 				amount: synthsToDeposit,
 				depositIndex: synthDepositIndex,
 			});
 
 			// Tells the DApps the deposit is removed from the fifi queue
-			solAssert.eventEqual(withdrawEvent, 'SynthWithdrawal', {
+			assert.eventEqual(withdrawEvent, 'SynthWithdrawal', {
 				user: depositor,
 				amount: synthsToDeposit,
 			});
@@ -725,14 +711,14 @@ contract('Depot', async function(accounts) {
 
 			// Now balance should be equal to the amount we just sent minus the fees
 			const smallDepositsBalance = await depot.smallDeposits(depositor);
-			solAssert.bnEqual(smallDepositsBalance, synthsToDeposit);
+			assert.bnEqual(smallDepositsBalance, synthsToDeposit);
 
 			// Wthdraw the deposited synths
 			const txn = await depot.withdrawMyDepositedSynths({ from: depositor });
 			const withdrawEvent = txn.logs[0];
 
 			// The sent synths should be equal the initial deposit
-			solAssert.eventEqual(withdrawEvent, 'SynthWithdrawal', {
+			assert.eventEqual(withdrawEvent, 'SynthWithdrawal', {
 				user: depositor,
 				amount: synthsToDeposit,
 			});
@@ -753,14 +739,14 @@ contract('Depot', async function(accounts) {
 
 			// Now balance should be equal to the amount we just sent minus the fees
 			const smallDepositsBalance = await depot.smallDeposits(depositor);
-			solAssert.bnEqual(smallDepositsBalance, synthsToDeposit1.add(synthsToDeposit2));
+			assert.bnEqual(smallDepositsBalance, synthsToDeposit1.add(synthsToDeposit2));
 
 			// Wthdraw the deposited synths
 			const txn = await depot.withdrawMyDepositedSynths({ from: depositor });
 			const withdrawEvent = txn.logs[0];
 
 			// The sent synths should be equal the initial deposit
-			solAssert.eventEqual(withdrawEvent, 'SynthWithdrawal', {
+			assert.eventEqual(withdrawEvent, 'SynthWithdrawal', {
 				user: depositor,
 				amount: totalSynthDeposits,
 			});
@@ -927,7 +913,7 @@ contract('Depot', async function(accounts) {
 			const purchaserSNXEndBalance = await synthetix.balanceOf(purchaser);
 
 			// Purchaser SNX balance should be equal to the purchase value we calculated above
-			solAssert.bnEqual(purchaserSNXEndBalance, purchaseValueInSynthetix);
+			assert.bnEqual(purchaserSNXEndBalance, purchaseValueInSynthetix);
 		});
 	});
 
@@ -959,8 +945,8 @@ contract('Depot', async function(accounts) {
 
 			const depotSNXBalance = await synthetix.balanceOf(depot.address);
 			const purchaserSynthBalance = await synth.balanceOf(purchaser);
-			solAssert.bnEqual(depotSNXBalance, depotSNXAmount);
-			solAssert.bnEqual(purchaserSynthBalance, purchaserSynthAmount);
+			assert.bnEqual(depotSNXBalance, depotSNXAmount);
+			assert.bnEqual(purchaserSynthBalance, purchaserSynthAmount);
 		});
 
 		it('ensure user gets the correct amount of SNX after sending 10 sUSD', async function() {
@@ -979,12 +965,12 @@ contract('Depot', async function(accounts) {
 			const purchaserSNXEndBalance = await synthetix.balanceOf(purchaser);
 
 			// Purchaser SNX balance should be equal to the purchase value we calculated above
-			solAssert.bnEqual(purchaserSNXEndBalance, purchaseValueInSynthetix);
+			assert.bnEqual(purchaserSNXEndBalance, purchaseValueInSynthetix);
 
 			// assert the exchange event
 			const exchangeEvent = txn.logs.find(log => log.event === 'Exchange');
 
-			solAssert.eventEqual(exchangeEvent, 'Exchange', {
+			assert.eventEqual(exchangeEvent, 'Exchange', {
 				fromCurrency: 'sUSD',
 				fromAmount: synthsToSend,
 				toCurrency: 'SNX',
