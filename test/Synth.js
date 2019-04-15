@@ -5,7 +5,7 @@ const Synth = artifacts.require('Synth');
 
 const { currentTime, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 
-contract.only('Synth', async function(accounts) {
+contract('Synth', async function(accounts) {
 	const [sUSD, sAUD, sEUR, SNX, XDR, sXYZ] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'XDR', 'sXYZ'].map(
 		web3.utils.asciiToHex
 	);
