@@ -5,7 +5,7 @@ const Synth = artifacts.require('Synth');
 
 const { currentTime, fastForward, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 
-contract('FeePool', async function(accounts) {
+contract.only('FeePool', async function(accounts) {
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
 		const timestamp = await currentTime();
@@ -319,7 +319,7 @@ contract('FeePool', async function(accounts) {
 		await closeFeePeriod();
 
 		// Do a single transfer of all our synths to generate a fee.
-		await sUSDContract.transfer(account1, toUnit('10000'), { from: owner });
+		await sUSDContract.transfer(account1, toUnit('10000'), '0x0', { from: owner });
 
 		// Assert that the correct fee is in the fee pool.
 		const fee = await XDRContract.balanceOf(FEE_ADDRESS);
@@ -348,7 +348,7 @@ contract('FeePool', async function(accounts) {
 		await closeFeePeriod();
 
 		// Do a single transfer of all our synths to generate a fee.
-		await sUSDContract.transfer(account1, toUnit('10000'), { from: owner });
+		await sUSDContract.transfer(account1, toUnit('10000'), '0x0', { from: owner });
 
 		// Assert that the correct fee is in the fee pool.
 		const fee = await XDRContract.balanceOf(FEE_ADDRESS);
@@ -387,7 +387,7 @@ contract('FeePool', async function(accounts) {
 
 		// Now create the first fee
 		await synthetix.issueSynths(sUSD, toUnit('10000'), { from: owner });
-		await sUSDContract.transfer(account1, toUnit('10000'), { from: owner });
+		await sUSDContract.transfer(account1, toUnit('10000'), '0x0', { from: owner });
 		const fee = await XDRContract.balanceOf(FEE_ADDRESS);
 
 		// And walk it forward one fee period.
@@ -468,8 +468,8 @@ contract('FeePool', async function(accounts) {
 			const transfer1 = toUnit(((i + 1) * 10).toString());
 			const transfer2 = toUnit(((i + 1) * 15).toString());
 
-			await sUSDContract.transfer(account1, transfer1, { from: owner });
-			await sUSDContract.transfer(account1, transfer2, { from: owner });
+			await sUSDContract.transfer(account1, transfer1, '0x0', { from: owner });
+			await sUSDContract.transfer(account1, transfer2, '0x0', { from: owner });
 
 			totalFees = totalFees.add(transfer1.sub(await feePool.amountReceivedFromTransfer(transfer1)));
 			totalFees = totalFees.add(transfer2.sub(await feePool.amountReceivedFromTransfer(transfer2)));
@@ -506,8 +506,8 @@ contract('FeePool', async function(accounts) {
 			const transfer1 = toUnit(((i + 1) * 10).toString());
 			const transfer2 = toUnit(((i + 1) * 15).toString());
 
-			await sAUDContract.transfer(account1, transfer1, { from: owner });
-			await sAUDContract.transfer(account1, transfer2, { from: owner });
+			await sAUDContract.transfer(account1, transfer1, '0x0', { from: owner });
+			await sAUDContract.transfer(account1, transfer2, '0x0', { from: owner });
 
 			totalFees = totalFees.add(transfer1.sub(await feePool.amountReceivedFromTransfer(transfer1)));
 			totalFees = totalFees.add(transfer2.sub(await feePool.amountReceivedFromTransfer(transfer2)));
@@ -537,7 +537,7 @@ contract('FeePool', async function(accounts) {
 		await closeFeePeriod();
 
 		// Do a single transfer of all our synths to generate a fee.
-		await sUSDContract.transfer(account1, toUnit('10000'), { from: owner });
+		await sUSDContract.transfer(account1, toUnit('10000'), '0x0', { from: owner });
 
 		// Assert that the correct fee is in the fee pool.
 		const fee = await XDRContract.balanceOf(FEE_ADDRESS);
@@ -573,7 +573,7 @@ contract('FeePool', async function(accounts) {
 		await closeFeePeriod();
 
 		// Generate a fee.
-		await sUSDContract.transfer(account2, amount, { from: owner });
+		await sUSDContract.transfer(account2, amount, '0x0', { from: owner });
 
 		await closeFeePeriod();
 
@@ -733,7 +733,7 @@ contract('FeePool', async function(accounts) {
 		await synthetix.issueSynths(sUSD, amount.mul(web3.utils.toBN('2')), { from: account1 });
 
 		// Generate a fee.
-		await sUSDContract.transfer(account2, amount, { from: owner });
+		await sUSDContract.transfer(account2, amount, '0x0', { from: owner });
 
 		// Should be no fees available yet because the period is still pending.
 		assert.bnEqual(await feePool.totalFeesAvailable(sUSD), 0);
@@ -757,7 +757,7 @@ contract('FeePool', async function(accounts) {
 		await synthetix.issueSynths(sUSD, amount2, { from: account1 });
 
 		// Generate a fee.
-		await sUSDContract.transfer(account2, amount1, { from: owner });
+		await sUSDContract.transfer(account2, amount1, '0x0', { from: owner });
 
 		// Should be no fees available yet because the period is still pending.
 		assert.bnEqual(await feePool.totalFeesAvailable(sUSD), 0);
@@ -772,7 +772,7 @@ contract('FeePool', async function(accounts) {
 		const fee2 = amount2.sub(await feePool.amountReceivedFromTransfer(amount2));
 
 		// Generate a fee.
-		await sUSDContract.transfer(account3, amount2, { from: account1 });
+		await sUSDContract.transfer(account3, amount2, '0x0', { from: account1 });
 
 		// Should be only the previous fees available because the period is still pending.
 		assert.bnEqual(await feePool.totalFeesAvailable(sUSD), fee1);
@@ -798,7 +798,7 @@ contract('FeePool', async function(accounts) {
 		await closeFeePeriod();
 
 		// Generate a fee.
-		await sUSDContract.transfer(account2, amount, { from: owner });
+		await sUSDContract.transfer(account2, amount, '0x0', { from: owner });
 
 		// Should be no fees available yet because the period is still pending.
 		assert.bnEqual(await feePool.feesAvailable(owner, sUSD), 0);
@@ -839,7 +839,7 @@ contract('FeePool', async function(accounts) {
 		await closeFeePeriod();
 
 		// Generate a fee.
-		await sUSDContract.transfer(account2, amount, { from: owner });
+		await sUSDContract.transfer(account2, amount, '0x0', { from: owner });
 
 		// Should be no fees available yet because the period is still pending.
 		assert.bnEqual(await feePool.feesAvailable(owner, sUSD), 0);
@@ -924,7 +924,7 @@ contract('FeePool', async function(accounts) {
 		await closeFeePeriod();
 
 		// Do a transfer to generate fees
-		await sUSDContract.transfer(account2, amount, { from: account1 });
+		await sUSDContract.transfer(account2, amount, '0x0', { from: account1 });
 		const fee = amount.sub(await feePool.amountReceivedFromTransfer(amount));
 
 		// We should have zero fees available because the period is still open.
@@ -971,7 +971,7 @@ contract('FeePool', async function(accounts) {
 		await closeFeePeriod();
 
 		// Do a transfer to generate fees
-		await sUSDContract.transfer(account2, amount, { from: account1 });
+		await sUSDContract.transfer(account2, amount, '0x0', { from: account1 });
 		const fee = amount.sub(await feePool.amountReceivedFromTransfer(amount));
 
 		// We should have zero fees available because the period is still open.
@@ -1012,7 +1012,7 @@ contract('FeePool', async function(accounts) {
 		await closeFeePeriod();
 
 		// Do a transfer to generate fees
-		await sUSDContract.transfer(account2, amount, { from: account1 });
+		await sUSDContract.transfer(account2, amount, '0x0', { from: account1 });
 		const fee = amount.sub(await feePool.amountReceivedFromTransfer(amount));
 
 		// We should have zero fees available because the period is still open.
