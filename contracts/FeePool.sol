@@ -37,11 +37,11 @@ Fees can be withdrawn in any synth currency.
 
 pragma solidity 0.4.25;
 
-import "./ISynthetix.sol";
 import "./Proxyable.sol";
 import "./SelfDestructible.sol";
 import "./SafeDecimalMath.sol";
 import "./ISynth.sol";
+import "./Synthetix.sol";
 import "./FeePoolState.sol";
 import "./IFeePool.sol";
 
@@ -50,7 +50,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, IFeePool {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    ISynthetix public synthetix;
+    Synthetix public synthetix;
 
     // A percentage fee charged on each transfer.
     uint public transferFeeRate;
@@ -125,7 +125,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, IFeePool {
     constructor(
         address _proxy,
         address _owner,
-        ISynthetix _synthetix,
+        Synthetix _synthetix,
         FeePoolState _feePoolState,
         address _feeAuthority,
         uint _transferFeeRate,
@@ -243,7 +243,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, IFeePool {
     /**
      * @notice Set the synthetix contract
      */
-    function setSynthetix(ISynthetix _synthetix)
+    function setSynthetix(Synthetix _synthetix)
         external
         optionalProxy_onlyOwner
     {
@@ -326,7 +326,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, IFeePool {
 
         // Open up the new fee period. Take a snapshot of the total value of the system.
         recentFeePeriods[0].feePeriodId = nextFeePeriodId;
-        recentFeePeriods[0].startingDebtIndex = synthetix.getSynthetixState().debtLedgerLength();
+        recentFeePeriods[0].startingDebtIndex = synthetix.synthetixState().debtLedgerLength();
         recentFeePeriods[0].startTime = now;
 
         nextFeePeriodId = nextFeePeriodId.add(1);
@@ -511,7 +511,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, IFeePool {
 
         // Record vesting entry for claiming address and amount
         // SNX already minted to rewardEscrow balance
-        synthetix.getRewardEscrow().appendVestingEntry(account, snxAmount);
+        synthetix.rewardEscrow().appendVestingEntry(account, snxAmount);
     }
 
     /**
@@ -813,12 +813,12 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, IFeePool {
         returns (uint)
     {
         // Condition to check if debtLedger[] has value otherwise return 0
-        if (closingDebtIndex > synthetix.getSynthetixState().debtLedgerLength()) return 0;
+        if (closingDebtIndex > synthetix.synthetixState().debtLedgerLength()) return 0;
 
         // Figure out their global debt percentage delta at end of fee Period.
         // This is a high precision integer.
-        uint feePeriodDebtOwnership = synthetix.getSynthetixState().getDebtLedgerAt(closingDebtIndex)
-            .divideDecimalRoundPrecise(synthetix.getSynthetixState().getDebtLedgerAt(debtEntryIndex))
+        uint feePeriodDebtOwnership = synthetix.synthetixState().getDebtLedgerAt(closingDebtIndex)
+            .divideDecimalRoundPrecise(synthetix.synthetixState().getDebtLedgerAt(debtEntryIndex))
             .multiplyDecimalRoundPrecise(ownershipPercentage);
 
         return feePeriodDebtOwnership;

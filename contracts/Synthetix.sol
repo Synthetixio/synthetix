@@ -121,9 +121,9 @@ pragma solidity 0.4.25;
 
 import "./ExternStateToken.sol";
 import "./ISynth.sol";
-import "./ISynthetixState.sol";
 import "./TokenState.sol";
 import "./SupplySchedule.sol";
+import "./SynthetixState.sol";
 import "./IExchangeRates.sol";
 import "./IFeePool.sol";
 import "./ISynthetixEscrow.sol";
@@ -145,7 +145,7 @@ contract Synthetix is ExternStateToken {
     ISynthetixEscrow public escrow;
     ISynthetixEscrow public rewardEscrow;
     IExchangeRates public exchangeRates;
-    ISynthetixState public synthetixState;
+    SynthetixState public synthetixState;
     SupplySchedule public supplySchedule;
 
     uint constant SYNTHETIX_SUPPLY = 1e8 * SafeDecimalMath.unit();
@@ -162,7 +162,7 @@ contract Synthetix is ExternStateToken {
      * If the provided address is 0x0, then a fresh one will be constructed with the contract owning all tokens.
      * @param _owner The owner of this contract.
      */
-    constructor(address _proxy, TokenState _tokenState, ISynthetixState _synthetixState,
+    constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
         address _owner, IExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule,
         ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow
     )

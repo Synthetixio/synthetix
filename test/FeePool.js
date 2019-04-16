@@ -311,7 +311,7 @@ contract.only('FeePool', async function(accounts) {
 		await assert.revert(feePool.setSynthetix(account2, { from: account1 }));
 	});
 
-	it.only('should allow the fee authority to close the current fee period', async function() {
+	it('should allow the fee authority to close the current fee period', async function() {
 		await fastForward(await feePool.feePeriodDuration());
 
 		const transaction = await feePool.closeCurrentFeePeriod({ from: feeAuthority });
@@ -337,7 +337,7 @@ contract.only('FeePool', async function(accounts) {
 		assert.bnEqual(await feePool.nextFeePeriodId(), 3);
 	});
 
-	it('should correctly roll over unclaimed fees when closing fee periods', async function() {
+	it.only('should correctly roll over unclaimed fees when closing fee periods', async function() {
 		// Issue 10,000 sUSD.
 		await synthetix.issueSynths(sUSD, toUnit('10000'), { from: owner });
 
