@@ -14,11 +14,10 @@ const {
 	multiplyDecimal,
 	divideDecimal,
 	toUnit,
-	toPreciseUnit,
 	ZERO_ADDRESS,
 } = require('../utils/testUtils');
 
-contract('Synthetix', async function(accounts) {
+contract.only('Synthetix', async function(accounts) {
 	const [sUSD, sAUD, sEUR, SNX, XDR, sXYZ] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'XDR', 'sXYZ'].map(
 		web3.utils.asciiToHex
 	);

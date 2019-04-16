@@ -1,22 +1,14 @@
-const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
 const Synthetix = artifacts.require('Synthetix');
-const Synth = artifacts.require('Synth');
 const RewardEscrow = artifacts.require('RewardEscrow');
 const SupplySchedule = artifacts.require('SupplySchedule');
 
-const {
-	currentTime,
-	fastForward,
-	toUnit,
-	toPreciseUnit,
-	ZERO_ADDRESS,
-} = require('../utils/testUtils');
+const { currentTime, fastForward, toUnit, toPreciseUnit } = require('../utils/testUtils');
 
 contract('Rewards Integration Tests', async function(accounts) {
-	const SECOND = 1000;
+	// const SECOND = 1000;
 	const MINUTE = 1000 * 60;
-	const DAY = 86400;
+	// const DAY = 86400;
 	const WEEK = 604800;
 	const YEAR = 31556926;
 
@@ -41,32 +33,32 @@ contract('Rewards Integration Tests', async function(accounts) {
 		await updateRatesWithDefaults();
 	};
 
-	const logFeePeriods = async () => {
-		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
+	// const logFeePeriods = async () => {
+	// 	const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 
-		console.log('------------------');
-		for (let i = 0; i < length; i++) {
-			console.log(`Fee Period [${i}]:`);
-			const period = await feePool.recentFeePeriods(i);
+	// 	console.log('------------------');
+	// 	for (let i = 0; i < length; i++) {
+	// 		console.log(`Fee Period [${i}]:`);
+	// 		const period = await feePool.recentFeePeriods(i);
 
-			for (const key of Object.keys(period)) {
-				if (isNaN(parseInt(key))) {
-					console.log(`  ${key}: ${period[key]}`);
-				}
-			}
+	// 		for (const key of Object.keys(period)) {
+	// 			if (isNaN(parseInt(key))) {
+	// 				console.log(`  ${key}: ${period[key]}`);
+	// 			}
+	// 		}
 
-			console.log();
-		}
-		console.log('------------------');
-	};
+	// 		console.log();
+	// 	}
+	// 	console.log('------------------');
+	// };
 
-	const [sUSD, sAUD, sEUR, sBTC, SNX, XDR] = ['sUSD', 'sAUD', 'sEUR', 'sBTC', 'SNX', 'XDR'].map(
+	const [sUSD, sAUD, sEUR, sBTC, SNX] = ['sUSD', 'sAUD', 'sEUR', 'sBTC', 'SNX'].map(
 		web3.utils.asciiToHex
 	);
 
-	const half = amount => amount.div(web3.utils.toBN('2'));
-	const third = amount => amount.div(web3.utils.toBN('3'));
-	const threeQuarters = amount => amount.div(web3.utils.toBN('4')).mul(web3.utils.toBN('3'));
+	// const half = amount => amount.div(web3.utils.toBN('2'));
+	// const third = amount => amount.div(web3.utils.toBN('3'));
+	// const threeQuarters = amount => amount.div(web3.utils.toBN('4')).mul(web3.utils.toBN('3'));
 
 	const twentyPercent = toPreciseUnit('0.2');
 	const twentyFivePercent = toPreciseUnit('0.25');
@@ -75,38 +67,38 @@ contract('Rewards Integration Tests', async function(accounts) {
 	const fiftyPercent = toPreciseUnit('0.5');
 
 	const [
-		deployerAccount,
+		// deployerAccount,
 		owner,
 		oracle,
 		feeAuthority,
 		account1,
 		account2,
 		account3,
-		account4,
+		// account4,
 	] = accounts;
 
 	let feePool,
-		FEE_ADDRESS,
+		// FEE_ADDRESS,
 		synthetix,
 		exchangeRates,
 		supplySchedule,
-		rewardEscrow,
-		sUSDContract,
-		sAUDContract,
-		XDRContract;
+		rewardEscrow;
+	// sUSDContract,
+	// sAUDContract,
+	// XDRContract;
 
 	beforeEach(async function() {
 		// Save ourselves from having to await deployed() in every single test.
 		// We do this in a beforeEach instead of before to ensure we isolate
 		// contract interfaces to prevent test bleed.
-		exchangeRates = await ExchangeRates.deployed();
-		feePool = await FeePool.deployed();
-		FEE_ADDRESS = await feePool.FEE_ADDRESS();
+		// exchangeRates = await ExchangeRates.deployed();
+		// feePool = await FeePool.deployed();
+		// FEE_ADDRESS = await feePool.FEE_ADDRESS();
 
 		synthetix = await Synthetix.deployed();
-		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
-		sAUDContract = await Synth.at(await synthetix.synths(sAUD));
-		XDRContract = await Synth.at(await synthetix.synths(XDR));
+		// sUSDContract = await Synth.at(await synthetix.synths(sUSD));
+		// sAUDContract = await Synth.at(await synthetix.synths(sAUD));
+		// XDRContract = await Synth.at(await synthetix.synths(XDR));
 
 		supplySchedule = await SupplySchedule.deployed();
 		rewardEscrow = await RewardEscrow.deployed();
@@ -216,7 +208,6 @@ contract('Rewards Integration Tests', async function(accounts) {
 	});
 
 	describe('3 accounts with 33.33% SNX all issue 10K sUSD each in p(0)', async function() {
-		let periodOneMintableSupply;
 		const tenK = toUnit('10000');
 		const twentyK = toUnit('20000');
 
@@ -436,16 +427,16 @@ contract('Rewards Integration Tests', async function(accounts) {
 				});
 
 				it('should apply a penalty of 25% when users claim rewards between 22%-30% collateralisation ratio', async function() {
-					let synthFees, snxRewards;
+					let snxRewards;
 
 					// We should have zero rewards available because the period is still open.
-					[synthFees, snxRewards] = await feePool.feesAvailable(account1, sUSD);
+					[, snxRewards] = await feePool.feesAvailable(account1, sUSD);
 					assert.bnEqual(snxRewards, 0);
 
 					// Once the fee period is closed we should have 1/3 the rewards available because we have
 					// 1/3 the collateral backing up the system.
 					await closeFeePeriod();
-					[synthFees, snxRewards] = await feePool.feesAvailable(account1, sUSD);
+					[, snxRewards] = await feePool.feesAvailable(account1, sUSD);
 					assert.bnClose(snxRewards, third(periodOneMintableSupply));
 
 					// But if the price of SNX decreases a bit...
@@ -456,7 +447,7 @@ contract('Rewards Integration Tests', async function(accounts) {
 					});
 
 					// we will fall into the 22-30% bracket and lose 25% of those rewards.
-					[synthFees, snxRewards] = await feePool.feesAvailable(account1, sUSD);
+					[, snxRewards] = await feePool.feesAvailable(account1, sUSD);
 					assert.bnClose(snxRewards, threeQuarters(third(periodOneMintableSupply)));
 
 					// And if we claim them
@@ -468,16 +459,16 @@ contract('Rewards Integration Tests', async function(accounts) {
 				});
 
 				it('should apply a penalty of 50% when users claim rewards between 30%-40% collateralisation ratio', async function() {
-					let synthFees, snxRewards;
+					let snxRewards;
 
 					// We should have zero rewards available because the period is still open.
-					[synthFees, snxRewards] = await feePool.feesAvailable(account1, sUSD);
+					[, snxRewards] = await feePool.feesAvailable(account1, sUSD);
 					assert.bnEqual(snxRewards, 0);
 
 					// Once the fee period is closed we should have 1/3 the rewards available because we have
 					// 1/3 the collateral backing up the system.
 					await closeFeePeriod();
-					[synthFees, snxRewards] = await feePool.feesAvailable(account1, sUSD);
+					[, snxRewards] = await feePool.feesAvailable(account1, sUSD);
 					assert.bnClose(snxRewards, third(periodOneMintableSupply));
 
 					// But if the price of SNX decreases a bit...
@@ -488,7 +479,7 @@ contract('Rewards Integration Tests', async function(accounts) {
 					});
 
 					// we will fall into the 30-40% bracket and lose 50% of those rewards.
-					[synthFees, snxRewards] = await feePool.feesAvailable(account1, sUSD);
+					[, snxRewards] = await feePool.feesAvailable(account1, sUSD);
 					assert.bnClose(snxRewards, half(third(periodOneMintableSupply)));
 
 					// And if we claim them

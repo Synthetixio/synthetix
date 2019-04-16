@@ -13,6 +13,19 @@
 		{
 			"type": "node",
 			"request": "launch",
+			"name": "Debug Verify Script",
+			"args": [
+				"verify",
+				"-n",
+				"kovan",
+				"-d",
+				"publish/deployed/kovan"
+			],
+			"program": "${workspaceFolder}/publish/index.js"
+		},
+		{
+			"type": "node",
+			"request": "launch",
 			"name": "truffle test (debuggable)",
 			"cwd": "${workspaceFolder}",
 			"program": "${workspaceFolder}/node_modules/truffle-core/cli.js",

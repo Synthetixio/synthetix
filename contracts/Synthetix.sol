@@ -585,7 +585,7 @@ contract Synthetix is ExternStateToken {
         // What is their percentage (as a high precision int) of the total debt?
         uint debtPercentage = xdrValue.divideDecimalRoundPrecise(newTotalDebtIssued);
 
-        // And what effect does this percentage have on the global debt holding of other issuers?
+        // And what effect does this percentage change have on the global debt holding of other issuers?
         // The delta specifically needs to not take into account any existing debt as it's already
         // accounted for in the delta from when they issued previously.
         // The delta is a high precision integer.
@@ -715,16 +715,21 @@ contract Synthetix is ExternStateToken {
         internal
     {
         // How much debt are they trying to remove in XDRs?
-        uint debtToRemove = effectiveValue(currencyKey, amount, "XDR");
+        uint debtToRemove = effectiveValue(currencyKey, amount, "XDR"); // 100
 
         // How much debt do they have?
-        uint existingDebt = debtBalanceOf(messageSender, "XDR");
+        uint existingDebt = debtBalanceOf(messageSender, "XDR"); // 200
 
-        // What percentage of the total debt are they trying to remove?
+        // What is the value of all issued synths of the system (priced in XDRs)?
         uint totalDebtIssued = totalIssuedSynths("XDR");
-        uint debtPercentage = debtToRemove.divideDecimalRoundPrecise(totalDebtIssued);
 
-        // And what effect does this percentage have on the global debt holding of other issuers?
+        // What will the new total after taking out the withdrawn amount
+        uint newTotalDebtIssued = totalDebtIssued.sub(debtToRemove);
+
+        // What is the percentage of the withdrawn debt (as a high precision int) of the total debt after?
+        uint debtPercentage = debtToRemove.divideDecimalRoundPrecise(newTotalDebtIssued);
+
+        // And what effect does this percentage change have on the global debt holding of other issuers?
         // The delta specifically needs to not take into account any existing debt as it's already
         // accounted for in the delta from when they issued previously.
         uint delta = SafeDecimalMath.preciseUnit().add(debtPercentage);
@@ -736,7 +741,6 @@ contract Synthetix is ExternStateToken {
         } else {
             // What percentage of the debt will they be left with?
             uint newDebt = existingDebt.sub(debtToRemove);
-            uint newTotalDebtIssued = totalDebtIssued.sub(debtToRemove);
             uint newDebtPercentage = newDebt.divideDecimalRoundPrecise(newTotalDebtIssued);
 
             // Store the debt percentage and debt ledger as high precision integers

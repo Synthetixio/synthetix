@@ -1,17 +1,10 @@
 const FeePool = artifacts.require('FeePool');
 const FeePoolState = artifacts.require('FeePoolState');
-const Synthetix = artifacts.require('Synthetix');
 const ExchangeRates = artifacts.require('ExchangeRates');
 
-const { getWeb3, getContractInstance, sendParameters } = require('../utils/web3Helper');
+const { getWeb3 } = require('../utils/web3Helper');
 
-const {
-	currentTime,
-	fastForward,
-	toPreciseUnit,
-	toUnit,
-	ZERO_ADDRESS,
-} = require('../utils/testUtils');
+const { currentTime, toPreciseUnit, toUnit } = require('../utils/testUtils');
 const web3 = getWeb3();
 
 contract('FeePoolState', async function(accounts) {
@@ -19,7 +12,6 @@ contract('FeePoolState', async function(accounts) {
 		deployerAccount,
 		owner,
 		oracle,
-		feeAuthority,
 		feePoolAccount,
 		account1,
 		account2,
@@ -29,11 +21,9 @@ contract('FeePoolState', async function(accounts) {
 		account6,
 	] = accounts;
 
-	const [sUSD, sEUR, sAUD, sBTC, SNX] = ['sUSD', 'sEUR', 'sAUD', 'sBTC', 'SNX'].map(
-		web3.utils.asciiToHex
-	);
+	const [sEUR, sAUD, sBTC, SNX] = ['sEUR', 'sAUD', 'sBTC', 'SNX'].map(web3.utils.asciiToHex);
 
-	let feePool, feePoolState, synthetix, exchangeRates;
+	let feePool, feePoolState, exchangeRates;
 
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
@@ -50,12 +40,12 @@ contract('FeePoolState', async function(accounts) {
 	};
 
 	// fastForward to the next period, close the current and update the rates as they will be stale
-	const closeFeePeriod = async () => {
-		const feePeriodDuration = await feePool.feePeriodDuration();
-		await fastForward(feePeriodDuration);
-		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
-		await updateRatesWithDefaults();
-	};
+	// const closeFeePeriod = async () => {
+	// 	const feePeriodDuration = await feePool.feePeriodDuration();
+	// 	await fastForward(feePeriodDuration);
+	// 	await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+	// 	await updateRatesWithDefaults();
+	// };
 
 	beforeEach(async function() {
 		// Save ourselves from having to await deployed() in every single test.
@@ -64,7 +54,7 @@ contract('FeePoolState', async function(accounts) {
 		feePoolState = await FeePoolState.deployed();
 		feePool = await FeePool.deployed();
 		exchangeRates = await ExchangeRates.deployed();
-		synthetix = await Synthetix.deployed();
+		// synthetix = await Synthetix.deployed();
 
 		// Send a price update to guarantee we're not stale.
 		await updateRatesWithDefaults();
@@ -217,15 +207,15 @@ contract('FeePoolState', async function(accounts) {
 			const dummyDebtEntryIndex = 5555;
 
 			// Import issuser data into the last closed period and 5555 as the feePeriodCloseIndex
-			const importTX = await feePoolState.importIssuerData(
-				accounts,
-				ratios,
-				issuanceLedgerIndex,
-				dummyDebtEntryIndex,
-				{
-					from: owner,
-				}
-			);
+			// const importTX = await feePoolState.importIssuerData(
+			// 	accounts,
+			// 	ratios,
+			// 	issuanceLedgerIndex,
+			// 	dummyDebtEntryIndex,
+			// 	{
+			// 		from: owner,
+			// 	}
+			// );
 
 			// Iterate the accounts
 			for (let i = 0; i < accounts.length; i++) {

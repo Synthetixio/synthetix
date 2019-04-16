@@ -14,8 +14,8 @@
       "address": "0x5Eb0eF1E9f2921f1a849cc5719A9708e461ef74d",
       "source": "Depot",
       "link": "https://kovan.etherscan.io/address/0x5Eb0eF1E9f2921f1a849cc5719A9708e461ef74d",
-      "timestamp": "2019-04-11T05:55:09.736Z",
-      "txn": "",
+      "timestamp": "2019-04-11T05:55:08.000Z",
+      "txn": "https://kovan.etherscan.io/tx/0x7a04c7eec61d6421c447f331c2038522996319d1dedbc2950fa44bc94e91029b",
       "network": "kovan"
     },
     "ExchangeRates": {
@@ -230,8 +230,8 @@
       "address": "0x6E5Bc3e877CFaa06eF97dfA12e63EfbB8FCbb03e",
       "source": "SafeDecimalMath",
       "link": "https://kovan.etherscan.io/address/0x6E5Bc3e877CFaa06eF97dfA12e63EfbB8FCbb03e",
-      "timestamp": "2019-04-11T04:25:29.539Z",
-      "txn": "",
+      "timestamp": "2019-04-11T04:25:28.000Z",
+      "txn": "https://kovan.etherscan.io/tx/0xd2eca5043c6db991615d3eb1da43a8caf2a96840675f4a04aece2f0e8f7c842d",
       "network": "kovan"
     },
     "Synthetix": {
@@ -239,8 +239,8 @@
       "address": "0x701E1D199e59bCe46DEd7A252dc89729de717bEB",
       "source": "Synthetix",
       "link": "https://kovan.etherscan.io/address/0x701E1D199e59bCe46DEd7A252dc89729de717bEB",
-      "timestamp": "2019-04-11T04:56:21.880Z",
-      "txn": "",
+      "timestamp": "2019-04-11T04:56:20.000Z",
+      "txn": "https://kovan.etherscan.io/tx/0x6d1644879b858b927403b0f4bc1d6c9157898392beabf3cb8ed295724dfbcd81",
       "network": "kovan"
     },
     "SynthetixEscrow": {
@@ -248,8 +248,8 @@
       "address": "0x4ed25008D551c849876078b81d5E77bB30622278",
       "source": "SynthetixEscrow",
       "link": "https://kovan.etherscan.io/address/0x4ed25008D551c849876078b81d5E77bB30622278",
-      "timestamp": "2019-04-11T04:54:52.878Z",
-      "txn": "",
+      "timestamp": "2019-04-11T04:54:52.000Z",
+      "txn": "https://kovan.etherscan.io/tx/0x97c56af3414a4c4d7aadbbf9e285c4c5956b8dd648a200ed98d6ceeb6f5e31c2",
       "network": "kovan"
     },
     "SynthetixState": {
@@ -257,8 +257,8 @@
       "address": "0x4FE66700Bbb5f56dB8676B6a89d17bBBeCE2055E",
       "source": "SynthetixState",
       "link": "https://kovan.etherscan.io/address/0x4FE66700Bbb5f56dB8676B6a89d17bBBeCE2055E",
-      "timestamp": "2019-04-11T04:55:28.718Z",
-      "txn": "",
+      "timestamp": "2019-04-11T04:55:28.000Z",
+      "txn": "https://kovan.etherscan.io/tx/0x4d29436b96f5fd5d47b9c6d0e46eaec9858982ef6e6ffd95f639ce996d52296a",
       "network": "kovan"
     },
     "SynthsAUD": {
@@ -428,8 +428,8 @@
       "address": "0x56a71Fe44D9516646d4719DfBeE94076B77b4b12",
       "source": "Synth",
       "link": "https://kovan.etherscan.io/address/0x56a71Fe44D9516646d4719DfBeE94076B77b4b12",
-      "timestamp": "2019-04-11T05:15:33.582Z",
-      "txn": "",
+      "timestamp": "2019-04-11T05:15:32.000Z",
+      "txn": "https://kovan.etherscan.io/tx/0xda81e8d6b34a750e571dbfe67a16156a87b55d391fda0f5dd1a9123b4598ff53",
       "network": "kovan"
     },
     "TokenStatesAUD": {
@@ -617,8 +617,8 @@
       "address": "0xA9928b7fDe6E38aA365d12f8b2bD2D725a83C376",
       "source": "FeePoolState",
       "link": "https://kovan.etherscan.io/address/0xA9928b7fDe6E38aA365d12f8b2bD2D725a83C376",
-      "timestamp": "2019-04-11T04:53:57.549Z",
-      "txn": "",
+      "timestamp": "2019-04-11T04:53:56.000Z",
+      "txn": "https://kovan.etherscan.io/tx/0xb414acdb8c97b92d9909d7eaeecb51ec921ca8af9da16fdaa76581d6600acde3",
       "network": "kovan"
     },
     "RewardEscrow": {
@@ -626,8 +626,8 @@
       "address": "0x2c219A0563842b78D4B8F710e3f799BC3b7fd402",
       "source": "RewardEscrow",
       "link": "https://kovan.etherscan.io/address/0x2c219A0563842b78D4B8F710e3f799BC3b7fd402",
-      "timestamp": "2019-04-11T04:54:33.517Z",
-      "txn": "",
+      "timestamp": "2019-04-11T04:54:32.000Z",
+      "txn": "https://kovan.etherscan.io/tx/0x9ca42406199a00de168ea6f06c4d80f62b7b8057c99bfb27cc5ea9eacb42b60f",
       "network": "kovan"
     },
     "SupplySchedule": {
@@ -635,8 +635,8 @@
       "address": "0xBEDbE8d6BF16a2b75639cf10aA2331c8b4613139",
       "source": "SupplySchedule",
       "link": "https://kovan.etherscan.io/address/0xBEDbE8d6BF16a2b75639cf10aA2331c8b4613139",
-      "timestamp": "2019-04-11T04:55:09.497Z",
-      "txn": "",
+      "timestamp": "2019-04-11T04:55:08.000Z",
+      "txn": "https://kovan.etherscan.io/tx/0x33902afc68943f0f6fd8a818406a1c3ac0606af4199b9a06cf936a5eec489ccb",
       "network": "kovan"
     }
   },
