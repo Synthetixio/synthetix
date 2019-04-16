@@ -105,14 +105,6 @@ contract SupplySchedule is Owned {
     }
 
     // ========== VIEWS ==========
-    function getInflationSchedule(uint index)
-        external
-        view
-        returns (uint, uint, uint, uint)
-    {
-        return (schedules[index].totalSupply, schedules[index].startPeriod, schedules[index].endPeriod, schedules[index].totalSupplyMinted);
-    }
-
     function mintableSupply()
         public
         view
