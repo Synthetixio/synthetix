@@ -181,10 +181,6 @@ contract Synthetix is ExternStateToken {
         return synths[currencyKey];
     }
 
-    function getRewardEscrow() public view returns (ISynthetixEscrow) {
-        return rewardEscrow;
-    }
-
     // ========== SETTERS ========== */
 
     /**
@@ -500,9 +496,6 @@ contract Synthetix is ExternStateToken {
         return result;
     }
 
-    function getSynthetixState() public view returns (ISynthetixState) {
-        return synthetixState;
-    }
     /**
      * @notice Function that allows synth contract to delegate sending fee to the fee Pool.
      * @dev fee pool contract address is not allowed to call function
