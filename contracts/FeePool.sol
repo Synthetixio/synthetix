@@ -45,7 +45,7 @@ import "./ISynth.sol";
 import "./FeePoolState.sol";
 import "./IFeePool.sol";
 
-contract FeePool is Proxyable, SelfDestructible, IFeePool {
+contract FeePool is Proxyable, SelfDestructible, LimitedSetup, IFeePool {
 
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -132,6 +132,7 @@ contract FeePool is Proxyable, SelfDestructible, IFeePool {
         uint _exchangeFeeRate)
         SelfDestructible(_owner)
         Proxyable(_proxy, _owner)
+        LimitedSetup(3 weeks)
         public
     {
         // Constructed fee rates should respect the maximum fee rates.
@@ -378,6 +379,7 @@ contract FeePool is Proxyable, SelfDestructible, IFeePool {
         uint feesToDistribute, uint feesClaimed, uint rewardsToDistribute, uint rewardsClaimed)
         public
         optionalProxy_onlyOwner
+        onlyDuringSetup
     {
         recentFeePeriods[feePeriodIndex].feePeriodId = feePeriodId;
         recentFeePeriods[feePeriodIndex].startingDebtIndex = startingDebtIndex;
