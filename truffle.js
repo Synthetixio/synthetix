@@ -13,7 +13,7 @@ module.exports = {
 	},
 	compilers: {
 		solc: {
-			version: './node_modules/solc', // Version is managed in package.json as an NPM dependency.
+			version: '0.4.25',
 			settings: {
 				optimizer: {
 					enabled: true,

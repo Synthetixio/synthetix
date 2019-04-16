@@ -29,7 +29,6 @@ const mineBlock = () => send({ method: 'evm_mine' });
  */
 const currentTime = async () => {
 	const { timestamp } = await web3.eth.getBlock('latest');
-
 	return timestamp;
 };
 
@@ -79,7 +78,6 @@ const fastForwardTo = async time => {
  */
 const takeSnapshot = async () => {
 	const { result } = await send({ method: 'evm_snapshot' });
-
 	await mineBlock();
 
 	return result;
@@ -94,7 +92,6 @@ const restoreSnapshot = async id => {
 		method: 'evm_revert',
 		params: [id],
 	});
-
 	await mineBlock();
 };
 
@@ -104,7 +101,7 @@ const restoreSnapshot = async id => {
  *  we should be able to update the conversion factor here.
  *  @param amount The amount you want to re-base to UNIT
  */
-const toUnit = amount => web3.utils.toBN(web3.utils.toWei(amount, 'ether'));
+const toUnit = amount => web3.utils.toBN(web3.utils.toWei(amount.toString(), 'ether'));
 const fromUnit = amount => web3.utils.fromWei(amount, 'ether');
 
 /**

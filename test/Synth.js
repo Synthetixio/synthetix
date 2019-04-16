@@ -111,7 +111,9 @@ contract('Synth', async function(accounts) {
 		const xdrFee = await synthetix.effectiveValue(sUSD, fee, XDR);
 
 		// Do a single transfer of all our sUSD.
-		const transaction = await sUSDContract.transfer(account1, amount, { from: owner });
+		const transaction = await sUSDContract.methods['transfer(address,uint256)'](account1, amount, {
+			from: owner,
+		});
 
 		// Events should be a fee exchange and a transfer to account1
 		assert.eventsEqual(
@@ -163,7 +165,9 @@ contract('Synth', async function(accounts) {
 		);
 
 		// Do a single transfer of all our sUSD.
-		const transaction = await sUSDContract.transfer(account1, amount, { from: owner });
+		const transaction = await sUSDContract.methods['transfer(address,uint256)'](account1, amount, {
+			from: owner,
+		});
 
 		// Events should be a fee exchange and a transfer to account1
 		assert.eventsEqual(
@@ -212,7 +216,11 @@ contract('Synth', async function(accounts) {
 
 		// Try to transfer 10,000 + 1 wei, which we don't have the balance for.
 		await assert.revert(
-			sUSDContract.transfer(account1, amount.add(web3.utils.toBN('1')), { from: owner })
+			sUSDContract.methods['transfer(address,uint256)'](
+				account1,
+				amount.add(web3.utils.toBN('1')),
+				{ from: owner }
+			)
 		);
 	});
 
@@ -226,7 +234,7 @@ contract('Synth', async function(accounts) {
 		const xdrFee = await synthetix.effectiveValue(sUSD, fee, XDR);
 
 		// Do a single transfer of all our sUSD.
-		const transaction = await sUSDContract.transfer(
+		const transaction = await sUSDContract.methods['transfer(address,uint256,bytes)'](
 			account1,
 			amount,
 			web3.utils.asciiToHex('This is a test'),
@@ -273,7 +281,7 @@ contract('Synth', async function(accounts) {
 
 		// Try to transfer 10,000 + 1 wei, which we don't have the balance for.
 		await assert.revert(
-			sUSDContract.transfer(
+			sUSDContract.methods['transfer(address,uint256,bytes)'](
 				account1,
 				amount.add(web3.utils.toBN('1')),
 				web3.utils.asciiToHex('This is a test'),
@@ -295,9 +303,14 @@ contract('Synth', async function(accounts) {
 		await sUSDContract.approve(account1, amount, { from: owner });
 
 		// Do a single transfer of all our sUSD.
-		const transaction = await sUSDContract.transferFrom(owner, account1, amount, {
-			from: account1,
-		});
+		const transaction = await sUSDContract.methods['transferFrom(address,address,uint256)'](
+			owner,
+			account1,
+			amount,
+			{
+				from: account1,
+			}
+		);
 
 		// Events should be a fee exchange and a transfer to account1
 		assert.eventsEqual(
@@ -344,7 +357,11 @@ contract('Synth', async function(accounts) {
 		await sUSDContract.approve(account1, amount.sub(web3.utils.toBN('1')), { from: owner });
 
 		// Try to transfer 10,000, which we don't have the allowance for.
-		await assert.revert(sUSDContract.transferFrom(owner, account1, amount, { from: account1 }));
+		await assert.revert(
+			sUSDContract.methods['transferFrom(address,address,uint256)'](owner, account1, amount, {
+				from: account1,
+			})
+		);
 	});
 
 	it('should revert when calling transferFrom (ERC20) with insufficient balance', async function() {
@@ -356,7 +373,11 @@ contract('Synth', async function(accounts) {
 		await sUSDContract.approve(account1, amount, { from: owner });
 
 		// Try to transfer 10,000, which we don't have the balance for.
-		await assert.revert(sUSDContract.transferFrom(owner, account1, amount, { from: account1 }));
+		await assert.revert(
+			sUSDContract.methods['transferFrom(address,address,uint256)'](owner, account1, amount, {
+				from: account1,
+			})
+		);
 	});
 
 	it('should transferFrom (ERC223) without error', async function() {
@@ -372,7 +393,7 @@ contract('Synth', async function(accounts) {
 		await sUSDContract.approve(account1, amount, { from: owner });
 
 		// Do a single transfer of all our sUSD.
-		const transaction = await sUSDContract.transferFrom(
+		const transaction = await sUSDContract.methods['transferFrom(address,address,uint256,bytes)'](
 			owner,
 			account1,
 			amount,
@@ -428,9 +449,15 @@ contract('Synth', async function(accounts) {
 
 		// Try to transfer 10,000, which we don't have the allowance for.
 		await assert.revert(
-			sUSDContract.transferFrom(owner, account1, amount, web3.utils.asciiToHex('This is a test'), {
-				from: account1,
-			})
+			sUSDContract.methods['transferFrom(address,address,uint256,bytes)'](
+				owner,
+				account1,
+				amount,
+				web3.utils.asciiToHex('This is a test'),
+				{
+					from: account1,
+				}
+			)
 		);
 	});
 
@@ -444,9 +471,15 @@ contract('Synth', async function(accounts) {
 
 		// Try to transfer 10,000, which we don't have the balance for.
 		await assert.revert(
-			sUSDContract.transferFrom(owner, account1, amount, web3.utils.asciiToHex('This is a test'), {
-				from: account1,
-			})
+			sUSDContract.methods['transferFrom(address,address,uint256,bytes)'](
+				owner,
+				account1,
+				amount,
+				web3.utils.asciiToHex('This is a test'),
+				{
+					from: account1,
+				}
+			)
 		);
 	});
 
@@ -460,7 +493,11 @@ contract('Synth', async function(accounts) {
 		const xdrFee = await synthetix.effectiveValue(sUSD, fee, XDR);
 
 		// Do a single transfer of all our sUSD.
-		const transaction = await sUSDContract.transferSenderPaysFee(account1, amount, { from: owner });
+		const transaction = await sUSDContract.methods['transferSenderPaysFee(address,uint256)'](
+			account1,
+			amount,
+			{ from: owner }
+		);
 
 		// Events should be a fee exchange and a transfer to account1
 		assert.eventsEqual(
@@ -507,7 +544,9 @@ contract('Synth', async function(accounts) {
 
 		// Try to transfer, which we don't have the balance for.
 		await assert.revert(
-			sUSDContract.transferSenderPaysFee(account1, amountToSend, { from: owner })
+			sUSDContract.methods['transferSenderPaysFee(address,uint256)'](account1, amountToSend, {
+				from: owner,
+			})
 		);
 	});
 
@@ -520,7 +559,7 @@ contract('Synth', async function(accounts) {
 		const xdrFee = await synthetix.effectiveValue(sUSD, fee, XDR);
 
 		// Do a single transfer of all our sUSD.
-		const transaction = await sUSDContract.transferSenderPaysFee(
+		const transaction = await sUSDContract.methods['transferSenderPaysFee(address,uint256,bytes)'](
 			account1,
 			amount,
 			web3.utils.asciiToHex('This is a test'),
@@ -571,7 +610,10 @@ contract('Synth', async function(accounts) {
 		await sUSDContract.approve(account1, startingBalance, { from: owner });
 
 		// Do a single transfer of all our sUSD.
-		const transaction = await sUSDContract.transferFromSenderPaysFee(owner, account1, amount, {
+		// eslint-disable-next-line standard/computed-property-even-spacing
+		const transaction = await sUSDContract.methods[
+			'transferFromSenderPaysFee(address,address,uint256)'
+		](owner, account1, amount, {
 			from: account1,
 		});
 
@@ -617,9 +659,14 @@ contract('Synth', async function(accounts) {
 
 		// Trying to transfer will exceed our allowance.
 		await assert.revert(
-			sUSDContract.transferFromSenderPaysFee(owner, account1, amount, {
-				from: account1,
-			})
+			sUSDContract.methods['transferFromSenderPaysFee(address,address,uint256)'](
+				owner,
+				account1,
+				amount,
+				{
+					from: account1,
+				}
+			)
 		);
 	});
 
@@ -632,9 +679,14 @@ contract('Synth', async function(accounts) {
 
 		// Trying to transfer will exceed our balance.
 		await assert.revert(
-			sUSDContract.transferFromSenderPaysFee(owner, account1, startingBalance, {
-				from: account1,
-			})
+			sUSDContract.methods['transferFromSenderPaysFee(address,address,uint256)'](
+				owner,
+				account1,
+				startingBalance,
+				{
+					from: account1,
+				}
+			)
 		);
 	});
 
@@ -649,15 +701,12 @@ contract('Synth', async function(accounts) {
 		await sUSDContract.approve(account1, startingBalance, { from: owner });
 
 		// Do a single transfer of all our sUSD.
-		const transaction = await sUSDContract.transferFromSenderPaysFee(
-			owner,
-			account1,
-			amount,
-			web3.utils.asciiToHex('This is a test'),
-			{
-				from: account1,
-			}
-		);
+		// eslint-disable-next-line standard/computed-property-even-spacing
+		const transaction = await sUSDContract.methods[
+			'transferFromSenderPaysFee(address,address,uint256,bytes)'
+		](owner, account1, amount, web3.utils.asciiToHex('This is a test'), {
+			from: account1,
+		});
 
 		// Events should be a fee exchange and a transfer to account1
 		assert.eventsEqual(
@@ -797,7 +846,9 @@ contract('Synth', async function(accounts) {
 		const fee = amount.sub(received);
 
 		// Do a single transfer of all our sUSD.
-		const transaction = await sUSDContract.transfer(account1, amount, { from: owner });
+		const transaction = await sUSDContract.methods['transfer(address,uint256)'](account1, amount, {
+			from: owner,
+		});
 
 		// Event should be only a transfer to account1
 		assert.eventEqual(
