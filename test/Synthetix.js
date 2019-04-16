@@ -17,7 +17,7 @@ const {
 	ZERO_ADDRESS,
 } = require('../utils/testUtils');
 
-contract.only('Synthetix', async function(accounts) {
+contract('Synthetix', async function(accounts) {
 	const [sUSD, sAUD, sEUR, SNX, XDR, sXYZ] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'XDR', 'sXYZ'].map(
 		web3.utils.asciiToHex
 	);
