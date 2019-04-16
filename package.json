@@ -74,6 +74,7 @@
 	"dependencies": {
 		"commander": "^2.19.0",
 		"openzeppelin-solidity": "2.0.0",
-		"pretty-error": "^2.1.1"
+		"pretty-error": "^2.1.1",
+		"solc": "0.4.25"
 	}
 }
