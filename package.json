@@ -10,7 +10,7 @@
 		"ganache": "ganache-cli -e 1000000000000 -l 0x7a1200",
 		"lint": "eslint \"**/*.js\" && solium -d contracts/",
 		"lint:fix": "eslint --fix \"**/*.js\" && solium --fix -d contracts/",
-		"test": "concurrently -k -s first \"npm run ganache > /dev/null\" \"truffle compile && wait-port 8545 && truffle test\"",
+		"test": "concurrently --kill-others --success first \"npm run ganache > /dev/null\" \"truffle compile && wait-port 8545 && truffle test\"",
 		"truffle": "truffle"
 	},
 	"repository": {
@@ -43,7 +43,7 @@
 		"bip39": "^2.5.0",
 		"bn.js": "4.11.8",
 		"chalk": "^2.4.2",
-		"concurrently": "^4.0.1",
+		"concurrently": "4.1.0",
 		"dotenv": "^6.1.0",
 		"eslint": "^5.5.0",
 		"eslint-config-prettier": "^3.0.1",
