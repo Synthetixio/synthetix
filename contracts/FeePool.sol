@@ -377,6 +377,7 @@ contract FeePool is Proxyable, SelfDestructible, IFeePool {
         uint feePeriodIndex, uint feePeriodId, uint startingDebtIndex, uint startTime,
         uint feesToDistribute, uint feesClaimed, uint rewardsToDistribute, uint rewardsClaimed)
         public
+        optionalProxy_onlyOwner
     {
         recentFeePeriods[feePeriodIndex].feePeriodId = feePeriodId;
         recentFeePeriods[feePeriodIndex].startingDebtIndex = startingDebtIndex;

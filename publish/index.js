@@ -335,8 +335,8 @@ program
 					account,
 					account,
 					feeAuth,
-					web3.utils.toWei('0.0015', 'ether'),
-					web3.utils.toWei('0.0015', 'ether'),
+					web3.utils.toWei('0.0', 'ether'),
+					web3.utils.toWei('0.0030', 'ether'),
 				],
 			});
 
@@ -438,7 +438,7 @@ program
 			if (tokenStateSynthetix) {
 				const balance = await tokenStateSynthetix.methods.balanceOf(account).call();
 				const initialIssuance = web3.utils.toWei('100000000');
-				if (balance !== initialIssuance) {
+				if (balance !== initialIssuance && config['TokenStateSynthetix'].deploy) {
 					console.log(yellow('Invoking TokenStateSynthetix.setBalanceOf(100M)...'));
 					await tokenStateSynthetix.methods
 						.setBalanceOf(account, initialIssuance)
