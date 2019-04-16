@@ -33,9 +33,12 @@ import "./SelfDestructible.sol";
 /**
  * @title The repository for exchange rates
  */
+
 contract ExchangeRates is SelfDestructible {
 
+
     using SafeMath for uint;
+    using SafeDecimalMath for uint;
 
     // Exchange rates stored by currency code, e.g. 'SNX', or 'sUSD'
     mapping(bytes4 => uint) public rates;
@@ -56,6 +59,16 @@ contract ExchangeRates is SelfDestructible {
     // equal weighting.
     // There are 5 participating currencies, so we'll declare that clearly.
     bytes4[5] public xdrParticipants;
+
+    // For inverted synths, keep a mapping of their price points
+    struct InversePricing {
+        uint entryPoint;
+        uint upperLimit;
+        uint lowerLimit;
+        bool frozen;
+    }
+    mapping(bytes4 => InversePricing) public inversePricing;
+
 
     //
     // ========== CONSTRUCTOR ==========
@@ -148,11 +161,26 @@ contract ExchangeRates is SelfDestructible {
             require(currencyKeys[i] != "sUSD", "Rate of sUSD cannot be updated, it's always UNIT.");
 
             // We should only update the rate if it's at least the same age as the last rate we've got.
-            if (timeSent >= lastRateUpdateTimes[currencyKeys[i]]) {
-                // Ok, go ahead with the update.
-                rates[currencyKeys[i]] = newRates[i];
-                lastRateUpdateTimes[currencyKeys[i]] = timeSent;
+            if (timeSent < lastRateUpdateTimes[currencyKeys[i]]) {
+                continue;
             }
+
+            // if an inverse mapping exists, adjust the price accordingly
+            InversePricing storage inverse = inversePricing[currencyKeys[i]];
+            if (inverse.entryPoint > 0) {
+                // get the new inverted rate if not frozen
+                uint newInverseRate = inverse.frozen ? rates[currencyKeys[i]] : inverse.entryPoint.multiplyDecimal(2).sub(newRates[i]);
+                // set to frozen if necessary
+                if (newInverseRate >= inverse.upperLimit || newInverseRate <= inverse.lowerLimit) {
+                    inverse.frozen = true;
+                }
+
+                // now mutate the new rate to reflect
+                newRates[i] = newInverseRate;
+            }
+            // Ok, go ahead with the update.
+            rates[currencyKeys[i]] = newRates[i];
+            lastRateUpdateTimes[currencyKeys[i]] = timeSent;
         }
 
         emit RatesUpdated(currencyKeys, newRates);
@@ -232,6 +260,25 @@ contract ExchangeRates is SelfDestructible {
         emit RateStalePeriodUpdated(rateStalePeriod);
     }
 
+    /**
+     * @notice Set an inverse price up for the currency key
+     * @param currencyKey The currency to update
+     * @param entryPoint The entry price point of the inverted synth
+     * @param upperLimit The upper limit, at or above which the synth will be frozen
+     * @param lowerLimit The lower limit, at or below which the synth will be frozen
+     */
+    function setInversePricing(bytes4 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit)
+        external onlyOwner
+    {
+        require(entryPoint > 0, "entryPoint must be above 0");
+        require(upperLimit > entryPoint, "upperLimit must be above the entryPoint");
+        require(lowerLimit < entryPoint, "lowerLimit must be below the entryPoint");
+
+        inversePricing[currencyKey].entryPoint = entryPoint;
+        inversePricing[currencyKey].upperLimit = upperLimit;
+        inversePricing[currencyKey].lowerLimit = lowerLimit;
+        inversePricing[currencyKey].frozen = false;
+    }
     /* ========== VIEWS ========== */
 
     /**
@@ -305,6 +352,18 @@ contract ExchangeRates is SelfDestructible {
     }
 
     /**
+     * @notice Check if any rate is frozen (cannot be exchanged into)
+     */
+    function rateIsFrozen(bytes4 currencyKey)
+        external
+        view
+        returns (bool)
+    {
+        return inversePricing[currencyKey].frozen;
+    }
+
+
+    /**
      * @notice Check if any of the currency rates passed in haven't been updated for longer than the stale period.
      */
     function anyRateIsStale(bytes4[] currencyKeys)
@@ -340,4 +399,6 @@ contract ExchangeRates is SelfDestructible {
     event RateStalePeriodUpdated(uint rateStalePeriod);
     event RatesUpdated(bytes4[] currencyKeys, uint[] newRates);
     event RateDeleted(bytes4 currencyKey);
+
+
 }
