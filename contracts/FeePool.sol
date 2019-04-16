@@ -99,10 +99,12 @@ contract FeePool is Proxyable, SelfDestructible, IFeePool {
     // fee authority to roll over the periods, so they are not guaranteed
     // to roll over at exactly this duration, but the contract enforces
     // that they cannot roll over any quicker than this duration.
-    uint public feePeriodDuration = 1 weeks;
+    // uint public feePeriodDuration = 1 weeks;
+    uint public feePeriodDuration = 60 seconds; // TODO: REMOVE ON DELPLOYMENT JUST FOR TESTNET TESTING
 
     // The fee period must be between 1 day and 60 days.
-    uint public constant MIN_FEE_PERIOD_DURATION = 1 days;
+    //uint public constant MIN_FEE_PERIOD_DURATION = 1 days;
+    uint public constant MIN_FEE_PERIOD_DURATION = 60 seconds;  // TODO: REMOVE ON DELPLOYMENT JUST FOR TESTNET TESTING
     uint public constant MAX_FEE_PERIOD_DURATION = 60 days;
 
     // The last period a user has withdrawn their fees in, identified by the feePeriodId
@@ -309,13 +311,13 @@ contract FeePool is Proxyable, SelfDestructible, IFeePool {
         // for overflow after subtracting one from zero.
         for (uint i = FEE_PERIOD_LENGTH - 2; i < FEE_PERIOD_LENGTH; i--) {
             uint next = i + 1;
-            recentFeePeriods[next].feePeriodId = recentFeePeriods[i].feePeriodId;
-            recentFeePeriods[next].startingDebtIndex = recentFeePeriods[i].startingDebtIndex;
-            recentFeePeriods[next].startTime = recentFeePeriods[i].startTime;
-            recentFeePeriods[next].feesToDistribute = recentFeePeriods[i].feesToDistribute;
-            recentFeePeriods[next].feesClaimed = recentFeePeriods[i].feesClaimed;
-            recentFeePeriods[next].rewardsToDistribute = recentFeePeriods[i].rewardsToDistribute;
-            recentFeePeriods[next].rewardsClaimed = recentFeePeriods[i].rewardsClaimed;
+            recentFeePeriods[next].feePeriodId = feePeriodId;
+            recentFeePeriods[next].startingDebtIndex = startingDebtIndex;
+            recentFeePeriods[next].startTime = startTime;
+            recentFeePeriods[next].feesToDistribute = feesToDistribute;
+            recentFeePeriods[next].feesClaimed = feesClaimed;
+            recentFeePeriods[next].rewardsToDistribute = rewardsToDistribute;
+            recentFeePeriods[next].rewardsClaimed = rewardsClaimed;
         }
 
         // Clear the first element of the array to make sure we don't have any stale values.
@@ -385,13 +387,13 @@ contract FeePool is Proxyable, SelfDestructible, IFeePool {
         // until we've exhausted the amount.
         // The condition checks for overflow because we're going to 0 with an unsigned int.
         for (uint i = FEE_PERIOD_LENGTH - 1; i < FEE_PERIOD_LENGTH; i--) {
-            uint delta = recentFeePeriods[i].feesToDistribute.sub(recentFeePeriods[i].feesClaimed);
+            uint delta = feesToDistribute.sub(feesClaimed);
 
             if (delta > 0) {
                 // Take the smaller of the amount left to claim in the period and the amount we need to allocate
                 uint amountInPeriod = delta < remainingToAllocate ? delta : remainingToAllocate;
 
-                recentFeePeriods[i].feesClaimed = recentFeePeriods[i].feesClaimed.add(amountInPeriod);
+                feesClaimed = feesClaimed.add(amountInPeriod);
                 remainingToAllocate = remainingToAllocate.sub(amountInPeriod);
 
                 // No need to continue iterating if we've recorded the whole amount;
@@ -418,13 +420,13 @@ contract FeePool is Proxyable, SelfDestructible, IFeePool {
         // until we've exhausted the amount.
         // The condition checks for overflow because we're going to 0 with an unsigned int.
         for (uint i = FEE_PERIOD_LENGTH - 1; i < FEE_PERIOD_LENGTH; i--) {
-            uint toDistribute = recentFeePeriods[i].rewardsToDistribute.sub(recentFeePeriods[i].rewardsClaimed);
+            uint toDistribute = rewardsToDistribute.sub(rewardsClaimed);
 
             if (toDistribute > 0) {
                 // Take the smaller of the amount left to claim in the period and the amount we need to allocate
                 uint amountInPeriod = toDistribute < remainingToAllocate ? toDistribute : remainingToAllocate;
 
-                recentFeePeriods[i].rewardsClaimed = recentFeePeriods[i].rewardsClaimed.add(amountInPeriod);
+                rewardsClaimed = rewardsClaimed.add(amountInPeriod);
                 remainingToAllocate = remainingToAllocate.sub(amountInPeriod);
 
                 // No need to continue iterating if we've recorded the whole amount;
@@ -598,8 +600,8 @@ contract FeePool is Proxyable, SelfDestructible, IFeePool {
 
         // Fees in fee period [0] are not yet available for withdrawal
         for (uint i = 1; i < FEE_PERIOD_LENGTH; i++) {
-            totalFees = totalFees.add(recentFeePeriods[i].feesToDistribute);
-            totalFees = totalFees.sub(recentFeePeriods[i].feesClaimed);
+            totalFees = totalFees.add(feesToDistribute);
+            totalFees = totalFees.sub(feesClaimed);
         }
 
         return synthetix.effectiveValue("XDR", totalFees, currencyKey);
@@ -617,8 +619,8 @@ contract FeePool is Proxyable, SelfDestructible, IFeePool {
 
         // Rewards in fee period [0] are not yet available for withdrawal
         for (uint i = 1; i < FEE_PERIOD_LENGTH; i++) {
-            totalRewards = totalRewards.add(recentFeePeriods[i].rewardsToDistribute);
-            totalRewards = totalRewards.sub(recentFeePeriods[i].rewardsClaimed);
+            totalRewards = totalRewards.add(rewardsToDistribute);
+            totalRewards = totalRewards.sub(rewardsClaimed);
         }
 
         return totalRewards;
@@ -728,7 +730,7 @@ contract FeePool is Proxyable, SelfDestructible, IFeePool {
 
             // We can skip period if no debt minted during period
             if (nextPeriod.startingDebtIndex > 0 &&
-            lastFeeWithdrawal[account] < recentFeePeriods[i].feePeriodId) {
+            lastFeeWithdrawal[account] < feePeriodId) {
 
                 // We calculate a feePeriod's closingDebtIndex by looking at the next feePeriod's startingDebtIndex
                 // we can use the most recent issuanceData[0] for the current feePeriod
@@ -745,6 +747,20 @@ contract FeePool is Proxyable, SelfDestructible, IFeePool {
                 results[i][1] = rewardsFromPeriod;
             }
         }
+    }
+
+    function importFeePeriod(
+        uint feePeriodIndex, uint feePeriodId, uint startingDebtIndex, uint startTime,
+        uint feesToDistribute, uint feesClaimed, uint rewardsToDistribute, uint rewardsClaimed)
+        public
+    {
+        recentFeePeriods[feePeriodIndex].feePeriodId = feePeriodId;
+        recentFeePeriods[feePeriodIndex].startingDebtIndex = startingDebtIndex;
+        recentFeePeriods[feePeriodIndex].startTime = startTime;
+        recentFeePeriods[feePeriodIndex].feesToDistribute = feesToDistribute;
+        recentFeePeriods[feePeriodIndex].feesClaimed = feesClaimed;
+        recentFeePeriods[feePeriodIndex].rewardsToDistribute = rewardsToDistribute;
+        recentFeePeriods[feePeriodIndex].rewardsClaimed = rewardsClaimed;
     }
 
     /**
