@@ -31,16 +31,15 @@ per fee period.
 pragma solidity 0.4.25;
 
 import "./ExternStateToken.sol";
-import "./IFeePool.sol";
-import "./ISynthetix.sol";
-import "./ISynth.sol";
+import "./FeePool.sol";
+import "./Synthetix.sol";
 
-contract Synth is ExternStateToken, ISynth {
+contract Synth is ExternStateToken {
 
     /* ========== STATE VARIABLES ========== */
 
-    IFeePool public feePool;
-    ISynthetix public synthetix;
+    FeePool public feePool;
+    Synthetix public synthetix;
 
     // Currency key which identifies this Synth to the Synthetix system
     bytes4 public currencyKey;
@@ -49,7 +48,7 @@ contract Synth is ExternStateToken, ISynth {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _proxy, TokenState _tokenState, ISynthetix _synthetix, IFeePool _feePool,
+    constructor(address _proxy, TokenState _tokenState, Synthetix _synthetix, FeePool _feePool,
         string _tokenName, string _tokenSymbol, address _owner, bytes4 _currencyKey
     )
         ExternStateToken(_proxy, _tokenState, _tokenName, _tokenSymbol, 0, DECIMALS, _owner)
@@ -76,7 +75,7 @@ contract Synth is ExternStateToken, ISynth {
 
     /* ========== SETTERS ========== */
 
-    function setSynthetix(ISynthetix _synthetix)
+    function setSynthetix(Synthetix _synthetix)
         external
         optionalProxy_onlyOwner
     {
@@ -84,7 +83,7 @@ contract Synth is ExternStateToken, ISynth {
         emitSynthetixUpdated(_synthetix);
     }
 
-    function setFeePool(IFeePool _feePool)
+    function setFeePool(FeePool _feePool)
         external
         optionalProxy_onlyOwner
     {
@@ -265,7 +264,7 @@ contract Synth is ExternStateToken, ISynth {
         internal
         returns (bool)
     {
-        bytes4 preferredCurrencyKey = synthetix.getSynthetixState().getPreferredCurrency(to);
+        bytes4 preferredCurrencyKey = synthetix.synthetixState().getPreferredCurrency(to);
 
         // Do they have a preferred currency that's not us? If so we need to exchange
         if (preferredCurrencyKey != 0 && preferredCurrencyKey != currencyKey) {

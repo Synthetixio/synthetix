@@ -1,4 +1,4 @@
-/*
+\/*
 -----------------------------------------------------------------
 FILE INFORMATION
 -----------------------------------------------------------------
@@ -34,7 +34,7 @@ pragma solidity 0.4.25;
 
 import "./SafeDecimalMath.sol";
 import "./Owned.sol";
-import "./ISynthetix.sol";
+import "./Synthetix.sol";
 
 /**
  * @title SupplySchedule contract
@@ -64,7 +64,7 @@ contract SupplySchedule is Owned {
     // time supply last minted
     uint public lastMintEvent;
 
-    ISynthetix public synthetix;
+    Synthetix public synthetix;
 
     uint constant SECONDS_IN_YEAR = 60 * 60 * 24 * 365;
 
@@ -96,7 +96,7 @@ contract SupplySchedule is Owned {
     }
 
     // ========== SETTERS ========== */
-    function setSynthetix(ISynthetix _synthetix)
+    function setSynthetix(Synthetix _synthetix)
         external
         onlyOwner
     {

@@ -40,12 +40,11 @@ pragma solidity 0.4.25;
 import "./Proxyable.sol";
 import "./SelfDestructible.sol";
 import "./SafeDecimalMath.sol";
-import "./ISynth.sol";
+import "./Synth.sol";
 import "./Synthetix.sol";
 import "./FeePoolState.sol";
-import "./IFeePool.sol";
 
-contract FeePool is Proxyable, SelfDestructible, LimitedSetup, IFeePool {
+contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -472,8 +471,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, IFeePool {
         require(account != address(proxy), "Can't send fees to proxy");
         require(account != address(synthetix), "Can't send fees to synthetix");
 
-        ISynth xdrSynth = synthetix.getSynth("XDR");
-        ISynth destinationSynth = synthetix.getSynth(destinationCurrencyKey);
+        Synth xdrSynth = synthetix.synths("XDR");
+        Synth destinationSynth = synthetix.synths(destinationCurrencyKey);
 
         // Note: We don't need to check the fee pool balance as the burn() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if the balance is not sufficient.

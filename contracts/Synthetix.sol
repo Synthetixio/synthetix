@@ -176,11 +176,6 @@ contract Synthetix is ExternStateToken {
         rewardEscrow = _rewardEscrow;
         escrow = _escrow;
     }
-
-    function getSynth(bytes4 currencyKey) public view returns (ISynth) {
-        return synths[currencyKey];
-    }
-
     // ========== SETTERS ========== */
 
     /**
