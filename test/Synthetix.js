@@ -74,7 +74,7 @@ contract('Synthetix', async function(accounts) {
 		);
 	});
 
-	it.only('should set constructor params on deployment', async function() {
+	it('should set constructor params on deployment', async function() {
 		// constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
 		// 	address _owner, IExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule,
 		// 	ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow
