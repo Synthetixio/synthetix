@@ -657,6 +657,7 @@
           "payable": false,
           "stateMutability": "view",
           "type": "function",
+          "funcName": "decimals()",
           "signature": "0x313ce567"
         },
         {
@@ -672,6 +673,7 @@
           "payable": false,
           "stateMutability": "view",
           "type": "function",
+          "funcName": "PRECISE_UNIT()",
           "signature": "0x864029e7"
         },
         {
@@ -687,6 +689,7 @@
           "payable": false,
           "stateMutability": "pure",
           "type": "function",
+          "funcName": "unit()",
           "signature": "0x907af6c0"
         },
         {
@@ -702,6 +705,7 @@
           "payable": false,
           "stateMutability": "view",
           "type": "function",
+          "funcName": "UNIT()",
           "signature": "0x9d8e2177"
         },
         {
@@ -717,6 +721,7 @@
           "payable": false,
           "stateMutability": "pure",
           "type": "function",
+          "funcName": "preciseUnit()",
           "signature": "0xd5e5e6e6"
         },
         {
@@ -732,6 +737,7 @@
           "payable": false,
           "stateMutability": "view",
           "type": "function",
+          "funcName": "highPrecisionDecimals()",
           "signature": "0xdef4419d"
         }
       ]
@@ -752,6 +758,7 @@
           "payable": false,
           "stateMutability": "view",
           "type": "function",
+          "funcName": "rateStalePeriod()",
           "signature": "0x0ee4951b"
         },
         {
@@ -767,6 +774,7 @@
           "payable": false,
           "stateMutability": "nonpayable",
           "type": "function",
+          "funcName": "nominateNewOwner(address)",
           "signature": "0x1627540c"
         },
         {
@@ -782,6 +790,7 @@
           "payable": false,
           "stateMutability": "view",
           "type": "function",
+          "funcName": "initiationTime()",
           "signature": "0x17c70de4"
         },
         {
@@ -810,6 +819,7 @@
           "payable": false,
           "stateMutability": "nonpayable",
           "type": "function",
+          "funcName": "updateRates(bytes4[],uint256[],uint256)",
           "signature": "0x1d2fed16"
         },
         {
@@ -825,6 +835,7 @@
           "payable": false,
           "stateMutability": "nonpayable",
           "type": "function",
+          "funcName": "setSelfDestructBeneficiary(address)",
           "signature": "0x20714f88"
         },
         {
@@ -835,6 +846,7 @@
           "payable": false,
           "stateMutability": "nonpayable",
           "type": "function",
+          "funcName": "terminateSelfDestruct()",
           "signature": "0x3278c960"
         },
         {
@@ -850,6 +862,7 @@
           "payable": false,
           "stateMutability": "nonpayable",
           "type": "function",
+          "funcName": "deleteRate(bytes4)",
           "signature": "0x36080694"
         },
         {
@@ -870,6 +883,7 @@
           "payable": false,
           "stateMutability": "view",
           "type": "function",
+          "funcName": "anyRateIsStale(bytes4[])",
           "signature": "0x370d62ad"
         },
         {
@@ -898,6 +912,7 @@
           "payable": false,
           "stateMutability": "view",
           "type": "function",
+          "funcName": "effectiveValue(bytes4,uint256,bytes4)",
           "signature": "0x39d66fc0"
         },
         {
@@ -913,6 +928,7 @@
           "payable": false,
           "stateMutability": "view",
           "type": "function",
+          "funcName": "nominatedOwner()",
           "signature": "0x53a47bb7"
         },
         {
@@ -933,6 +949,7 @@
           "payable": false,
           "stateMutability": "view",
           "type": "function",
+          "funcName": "ratesForCurrencies(bytes4[])",
           "signature": "0x5dc2944a"
         },
         {
@@ -943,6 +960,7 @@
           "payable": false,
           "stateMutability": "nonpayable",
           "type": "function",
+          "funcName": "acceptOwnership()",
           "signature": "0x79ba5097"
         },
         {
@@ -958,6 +976,7 @@
           "payable": false,
           "stateMutability": "nonpayable",
           "type": "function",
+          "funcName": "setRateStalePeriod(uint256)",
           "signature": "0x79cb657a"
         },
         {
@@ -973,6 +992,7 @@
           "payable": false,
           "stateMutability": "nonpayable",
           "type": "function",
+          "funcName": "setOracle(address)",
           "signature": "0x7adbf973"
         },
         {
@@ -988,6 +1008,7 @@
           "payable": false,
           "stateMutability": "view",
           "type": "function",
+          "funcName": "oracle()",
           "signature": "0x7dc0d1d0"
         },
         {
@@ -1008,6 +1029,7 @@
           "payable": false,
           "stateMutability": "view",
           "type": "function",
+          "funcName": "lastRateUpdateTimesForCurrencies(bytes4[])",
           "signature": "0x89f8ab94"
         },
         {
@@ -1023,6 +1045,7 @@
           "payable": false,
           "stateMutability": "view",
           "type": "function",
+          "funcName": "owner()",
           "signature": "0x8da5cb5b"
         },
         {
@@ -1033,6 +1056,7 @@
           "payable": false,
           "stateMutability": "nonpayable",
           "type": "function",
+          "funcName": "selfDestruct()",
           "signature": "0x9cb8a26a"
         },
         {
@@ -1048,6 +1072,7 @@
           "payable": false,
           "stateMutability": "view",
           "type": "function",
+          "funcName": "SELFDESTRUCT_DELAY()",
           "signature": "0xa461fc82"
         },
         {
@@ -1068,6 +1093,7 @@
           "payable": false,
           "stateMutability": "view",
           "type": "function",
+          "funcName": "xdrParticipants(uint256)",
           "signature": "0xaa687daf"
         },
         {
@@ -1088,6 +1114,7 @@
           "payable": false,
           "stateMutability": "view",
           "type": "function",
+          "funcName": "rateForCurrency(bytes4)",
           "signature": "0xaf1ff972"
         },
         {
@@ -1103,6 +1130,7 @@
           "payable": false,
           "stateMutability": "view",
           "type": "function",
+          "funcName": "selfDestructInitiated()",
           "signature": "0xb8225dec"
         },
         {
@@ -1113,6 +1141,7 @@
           "payable": false,
           "stateMutability": "nonpayable",
           "type": "function",
+          "funcName": "initiateSelfDestruct()",
           "signature": "0xbd32aa44"
         },
         {
@@ -1133,6 +1162,7 @@
           "payable": false,
           "stateMutability": "view",
           "type": "function",
+          "funcName": "lastRateUpdateTimeForCurrency(bytes4)",
           "signature": "0xc0e59e4d"
         },
         {
@@ -1148,6 +1178,7 @@
           "payable": false,
           "stateMutability": "view",
           "type": "function",
+          "funcName": "selfDestructBeneficiary()",
           "signature": "0xc58aaae6"
         },
         {
@@ -1168,6 +1199,7 @@
           "payable": false,
           "stateMutability": "view",
           "type": "function",
+          "funcName": "rates(bytes4)",
           "signature": "0xde5eb832"
         },
         {
@@ -1188,6 +1220,7 @@
           "payable": false,
           "stateMutability": "view",
           "type": "function",
+          "funcName": "lastRateUpdateTimes(bytes4)",
           "signature": "0xe1686e72"
         },
         {
@@ -1208,6 +1241,7 @@
           "payable": false,
           "stateMutability": "view",
           "type": "function",
+          "funcName": "rateIsStale(bytes4)",
           "signature": "0xea3d4109"
         },
         {
@@ -1231,7 +1265,8 @@
           ],
           "payable": false,
           "stateMutability": "nonpayable",
-          "type": "constructor"
+          "type": "constructor",
+          "signature": "constructor"
         },
         {
           "anonymous": false,
@@ -1244,6 +1279,7 @@
           ],
           "name": "OracleUpdated",
           "type": "event",
+          "funcName": "OracleUpdated(address)",
           "signature": "0x3df77beb5db05fcdd70a30fc8adf3f83f9501b68579455adbd100b8180940394"
         },
         {
@@ -1257,6 +1293,7 @@
           ],
           "name": "RateStalePeriodUpdated",
           "type": "event",
+          "funcName": "RateStalePeriodUpdated(uint256)",
           "signature": "0x16529d8c407b08938da67de7fa4319199baffce4f5d1971f812cc770b0237e66"
         },
         {
@@ -1275,6 +1312,7 @@
           ],
           "name": "RatesUpdated",
           "type": "event",
+          "funcName": "RatesUpdated(bytes4[],uint256[])",
           "signature": "0x7a72efae5f6b256f1ca71728b01f9dd7004ff3770dcaef4c44872b94d9f9e91b"
         },
         {
@@ -1288,6 +1326,7 @@
           ],
           "name": "RateDeleted",
           "type": "event",
+          "funcName": "RateDeleted(bytes4)",
           "signature": "0x2cefb058ca1556b021b67f710e3df89c564650f01fef8cd944cbb14d7358680b"
         },
         {
@@ -1295,6 +1334,7 @@
           "inputs": [],
           "name": "SelfDestructTerminated",
           "type": "event",
+          "funcName": "SelfDestructTerminated()",
           "signature": "0x6adcc7125002935e0aa31697538ebbd65cfddf20431eb6ecdcfc3e238bfd082c"
         },
         {
@@ -1308,6 +1348,7 @@
           ],
           "name": "SelfDestructed",
           "type": "event",
+          "funcName": "SelfDestructed(address)",
           "signature": "0x8a09e1677ced846cb537dc2b172043bd05a1a81ad7e0033a7ef8ba762df990b7"
         },
         {
@@ -1321,6 +1362,7 @@
           ],
           "name": "SelfDestructInitiated",
           "type": "event",
+          "funcName": "SelfDestructInitiated(uint256)",
           "signature": "0xcbd94ca75b8dc45c9d80c77e851670e78843c0d75180cb81db3e2158228fa9a6"
         },
         {
@@ -1334,6 +1376,7 @@
           ],
           "name": "SelfDestructBeneficiaryUpdated",
           "type": "event",
+          "funcName": "SelfDestructBeneficiaryUpdated(address)",
           "signature": "0xd5da63a0b864b315bc04128dedbc93888c8529ee6cf47ce664dc204339228c53"
         },
         {
@@ -1347,6 +1390,7 @@
           ],
           "name": "OwnerNominated",
           "type": "event",
+          "funcName": "OwnerNominated(address)",
           "signature": "0x906a1c6bd7e3091ea86693dd029a831c19049ce77f1dce2ce0bab1cacbabce22"
         },
         {
@@ -1365,6 +1409,7 @@
           ],
           "name": "OwnerChanged",
           "type": "event",
+          "funcName": "OwnerChanged(address,address)",
           "signature": "0xb532073b38c83145e3e5135377a08bf9aab55bc0fd7c1179cd4fb995d2a5159c"
         }
       ]

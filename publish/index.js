@@ -322,13 +322,12 @@ program
 
 			const rewardEscrow = await deployContract({
 				name: 'RewardEscrow',
-				deps: ['FeePool'],
-				args: [account, account],
+				args: [account, ZERO_ADDRESS, ZERO_ADDRESS],
 			});
 
 			const synthetixEscrow = await deployContract({
 				name: 'SynthetixEscrow',
-				args: [account, account],
+				args: [account, ZERO_ADDRESS],
 			});
 
 			const synthetixState = await deployContract({
