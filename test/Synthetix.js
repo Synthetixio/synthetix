@@ -33,7 +33,6 @@ contract('Synthetix', async function(accounts) {
 		account6,
 		account7,
 		account8,
-		account9,
 	] = accounts;
 
 	let synthetix,
@@ -75,20 +74,21 @@ contract('Synthetix', async function(accounts) {
 		);
 	});
 
-	it('should set constructor params on deployment', async function() {
+	it.only('should set constructor params on deployment', async function() {
 		// constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
-		//     address _owner, ExchangeRates _exchangeRates, FeePool _feePool
+		// 	address _owner, IExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule,
+		// 	ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow
 		// )
 		const instance = await Synthetix.new(
 			account1,
 			account2,
 			account3,
+			owner,
 			account4,
 			account5,
 			account6,
 			account7,
 			account8,
-			account9,
 			{
 				from: deployerAccount,
 			}
@@ -97,10 +97,12 @@ contract('Synthetix', async function(accounts) {
 		assert.equal(await instance.proxy(), account1);
 		assert.equal(await instance.tokenState(), account2);
 		assert.equal(await instance.synthetixState(), account3);
-		assert.equal(await instance.owner(), account4);
-		assert.equal(await instance.exchangeRates(), account5);
-		assert.equal(await instance.feePool(), account6);
-		assert.equal(await instance.supplySchedule(), account7);
+		assert.equal(await instance.owner(), owner);
+		assert.equal(await instance.exchangeRates(), account4);
+		assert.equal(await instance.feePool(), account5);
+		assert.equal(await instance.supplySchedule(), account6);
+		assert.equal(await instance.rewardEscrow(), account7);
+		assert.equal(await instance.escrow(), account8);
 	});
 
 	it('should allow adding a Synth contract', async function() {
