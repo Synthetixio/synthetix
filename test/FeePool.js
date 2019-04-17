@@ -16,7 +16,7 @@ const {
 const web3 = getWeb3();
 const getInstance = getContractInstance(web3);
 
-contract.only('FeePool', async function(accounts) {
+contract('FeePool', async function(accounts) {
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
 		const timestamp = await currentTime();
@@ -337,7 +337,7 @@ contract.only('FeePool', async function(accounts) {
 		assert.bnEqual(await feePool.nextFeePeriodId(), 3);
 	});
 
-	it.only('should correctly roll over unclaimed fees when closing fee periods', async function() {
+	it('should correctly roll over unclaimed fees when closing fee periods', async function() {
 		// Issue 10,000 sUSD.
 		await synthetix.issueSynths(sUSD, toUnit('10000'), { from: owner });
 
