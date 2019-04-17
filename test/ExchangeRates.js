@@ -1015,7 +1015,7 @@ contract('Exchange Rates', async accounts => {
 		assert.bnEqual(lastUpdatedCurrencyXDR, ratesTotal);
 	});
 
-	describe('inverted synths', async () => {
+	describe('inverted synths', () => {
 		const [iBTC, iETH, sEUR, sBTC] = ['iBTC', 'iETH', 'sEUR', 'sBTC'].map(web3.utils.asciiToHex);
 		let instance;
 		describe('when instance ready', () => {
@@ -1098,6 +1098,7 @@ contract('Exchange Rates', async accounts => {
 						from: owner,
 					});
 				});
+				xdescribe('rateIsFrozen must be false for both', () => {});
 				describe('when updateRates is called with an in-bounds update', () => {
 					let txn;
 					beforeEach(async () => {
@@ -1114,6 +1115,7 @@ contract('Exchange Rates', async accounts => {
 							expectedRates: [3499.447, 175, 1.12, 4500.553].map(toUnit),
 						});
 					});
+					xdescribe('rateIsFrozen must be false for both', () => {});
 				});
 				describe('when updateRates is called with a lower out-of-bounds update', () => {
 					let txn;
@@ -1131,6 +1133,7 @@ contract('Exchange Rates', async accounts => {
 							expectedRates: [2300, 75, 1.12, 8050].map(toUnit),
 						});
 					});
+					xdescribe('rateIsFrozen must be true for both', () => {});
 
 					describe('when another updateRates is called with an in bounds update', () => {
 						beforeEach(async () => {
@@ -1147,6 +1150,7 @@ contract('Exchange Rates', async accounts => {
 								expectedRates: [2300, 75, 2.12, 3500].map(toUnit),
 							});
 						});
+						xdescribe('rateIsFrozen must be true for both', () => {});
 					});
 					describe('when another updateRates is called with an out of bounds update the other way', () => {
 						beforeEach(async () => {
@@ -1163,6 +1167,7 @@ contract('Exchange Rates', async accounts => {
 								expectedRates: [2300, 75, 2.3, 1000].map(toUnit),
 							});
 						});
+						xdescribe('rateIsFrozen must be true for both', () => {});
 					});
 					describe('when setInversePricing is called again for one of the frozen synths', () => {
 						beforeEach(async () => {
@@ -1176,6 +1181,8 @@ contract('Exchange Rates', async accounts => {
 								}
 							);
 						});
+						xdescribe('rateIsFrozen must be false', () => {});
+
 						describe('when a price is received within bounds', () => {
 							let txn;
 							beforeEach(async () => {
@@ -1192,6 +1199,8 @@ contract('Exchange Rates', async accounts => {
 									expectedRates: [8750, 75, 1.12, 1250].map(toUnit),
 								});
 							});
+							xdescribe('rateIsFrozen must be false', () => {});
+
 							describe('when a price is received out of bounds bounds', () => {
 								let txn;
 								beforeEach(async () => {
@@ -1208,6 +1217,7 @@ contract('Exchange Rates', async accounts => {
 										expectedRates: [8900, 75, 1.12, 1250].map(toUnit),
 									});
 								});
+								xdescribe('rateIsFrozen must be true', () => {});
 							});
 						});
 					});
@@ -1228,6 +1238,7 @@ contract('Exchange Rates', async accounts => {
 							expectedRates: [6500, 350, 1.12, 1200].map(toUnit),
 						});
 					});
+					xdescribe('rateIsFrozen must be true', () => {});
 
 					describe('when another updateRates is called with an in bounds update', () => {
 						beforeEach(async () => {
@@ -1244,6 +1255,7 @@ contract('Exchange Rates', async accounts => {
 								expectedRates: [6500, 350, 2.12, 3500].map(toUnit),
 							});
 						});
+						xdescribe('rateIsFrozen must be true', () => {});
 					});
 				});
 			});

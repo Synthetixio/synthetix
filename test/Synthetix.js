@@ -15,9 +15,15 @@ const {
 } = require('../utils/testUtils');
 
 contract('Synthetix', async accounts => {
-	const [sUSD, sAUD, sEUR, SNX, XDR, sXYZ] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'XDR', 'sXYZ'].map(
-		web3.utils.asciiToHex
-	);
+	const [sUSD, sAUD, sEUR, SNX, XDR, sXYZ, iBTC] = [
+		'sUSD',
+		'sAUD',
+		'sEUR',
+		'SNX',
+		'XDR',
+		'sXYZ',
+		'iBTC',
+	].map(web3.utils.asciiToHex);
 
 	const [
 		deployerAccount,
@@ -30,7 +36,14 @@ contract('Synthetix', async accounts => {
 		account6,
 	] = accounts;
 
-	let synthetix, synthetixState, exchangeRates, feePool, sUSDContract, sAUDContract;
+	let synthetix,
+		synthetixState,
+		exchangeRates,
+		feePool,
+		sUSDContract,
+		sAUDContract,
+		oracle,
+		timestamp;
 
 	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
@@ -45,8 +58,8 @@ contract('Synthetix', async accounts => {
 		sAUDContract = await Synth.at(await synthetix.synths(sAUD));
 
 		// Send a price update to guarantee we're not stale.
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
+		oracle = await exchangeRates.oracle();
+		timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
 			[sAUD, sEUR, SNX],
@@ -278,8 +291,6 @@ contract('Synthetix', async accounts => {
 
 	it('should correctly calculate an exchange rate in effectiveValue()', async () => {
 		// Send a price update to guarantee we're not depending on values from outside this test.
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
 			[sAUD, sEUR, SNX],
@@ -300,7 +311,6 @@ contract('Synthetix', async accounts => {
 
 	it('should error when relying on a stale exchange rate in effectiveValue()', async () => {
 		// Send a price update so we know what time we started with.
-		const oracle = await exchangeRates.oracle();
 		let timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
@@ -333,8 +343,6 @@ contract('Synthetix', async accounts => {
 
 	it('should revert when relying on a non-existant exchange rate in effectiveValue()', async () => {
 		// Send a price update so we know what time we started with.
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
 			[sAUD, sEUR, SNX],
@@ -352,8 +360,6 @@ contract('Synthetix', async accounts => {
 		// Two people issue 10 sUSD each. Assert that total issued value is 20 sUSD.
 
 		// Send a price update to guarantee we're not depending on values from outside this test.
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
 			[sAUD, sEUR, SNX],
@@ -378,8 +384,6 @@ contract('Synthetix', async accounts => {
 		// Alice issues 10 sUSD. Bob issues 20 sAUD. Assert that total issued value is 20 sUSD, and 40 sAUD.
 
 		// Send a price update to guarantee we're not depending on values from outside this test.
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
 			[sAUD, sEUR, SNX],
@@ -405,8 +409,6 @@ contract('Synthetix', async accounts => {
 
 	it('should return the correct value for the different quantity of total issued synths', async () => {
 		// Send a price update to guarantee we're not depending on values from outside this test.
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
 
 		const rates = ['0.5', '1.25', '0.1'].map(toUnit);
 
@@ -449,8 +451,6 @@ contract('Synthetix', async accounts => {
 
 	it('should not allow checking total issued synths when a rate other than the priced currency is stale', async () => {
 		await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates([SNX, sAUD], ['0.1', '0.78'].map(toUnit), timestamp, {
 			from: oracle,
@@ -460,8 +460,6 @@ contract('Synthetix', async accounts => {
 
 	it('should not allow checking total issued synths when the priced currency is stale', async () => {
 		await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates([SNX, sEUR], ['0.1', '1.25'].map(toUnit), timestamp, {
 			from: oracle,
@@ -550,8 +548,6 @@ contract('Synthetix', async accounts => {
 		assert.bnEqual(await synthetix.totalSupply(), await synthetix.balanceOf(owner));
 
 		// Send a price update to guarantee we're not depending on values from outside this test.
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
 			[sAUD, sEUR, SNX],
@@ -655,8 +651,6 @@ contract('Synthetix', async accounts => {
 		await fastForward((await exchangeRates.rateStalePeriod()) + 1);
 
 		// Send a price update to guarantee we're not depending on values from outside this test.
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates([sAUD, sEUR], ['0.5', '1.25'].map(toUnit), timestamp, {
 			from: oracle,
@@ -762,8 +756,6 @@ contract('Synthetix', async accounts => {
 		assert.bnEqual(await synthetix.totalSupply(), await synthetix.balanceOf(owner));
 
 		// Send a price update to guarantee we're not depending on values from outside this test.
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
 			[sAUD, sEUR, SNX],
@@ -831,8 +823,6 @@ contract('Synthetix', async accounts => {
 
 	it('should allow an issuer to issue synths in one flavour', async () => {
 		// Send a price update to guarantee we're not depending on values from outside this test.
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
 			[sAUD, sEUR, SNX],
@@ -857,8 +847,6 @@ contract('Synthetix', async accounts => {
 
 	it('should allow an issuer to issue synths in multiple flavours', async () => {
 		// Send a price update to guarantee we're not depending on values from outside this test.
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
 			[sAUD, sEUR, SNX],
@@ -887,8 +875,6 @@ contract('Synthetix', async accounts => {
 	// TODO: Check that the rounding errors are acceptable
 	it('should allow two issuers to issue synths in one flavour', async () => {
 		// Send a price update to guarantee we're not depending on values from outside this test.
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
 			[sAUD, sEUR, SNX],
@@ -922,8 +908,6 @@ contract('Synthetix', async accounts => {
 
 	it('should allow multi-issuance in one flavour', async () => {
 		// Send a price update to guarantee we're not depending on values from outside this test.
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
 			[sAUD, sEUR, SNX],
@@ -958,8 +942,6 @@ contract('Synthetix', async accounts => {
 
 	it('should allow multiple issuers to issue synths in multiple flavours', async () => {
 		// Send a price update to guarantee we're not depending on values from outside this test.
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
 			[sAUD, sEUR, SNX],
@@ -993,8 +975,6 @@ contract('Synthetix', async accounts => {
 
 	it('should allow an issuer to issue max synths in one flavour', async () => {
 		// Send a price update to guarantee we're not depending on values from outside this test.
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
 			[sAUD, sEUR, SNX],
@@ -1020,8 +1000,6 @@ contract('Synthetix', async accounts => {
 
 	it('should allow an issuer to issue max synths via the standard issue call', async () => {
 		// Send a price update to guarantee we're not depending on values from outside this test.
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
 			[sAUD, sEUR, SNX],
@@ -1050,8 +1028,6 @@ contract('Synthetix', async accounts => {
 
 	it('should disallow an issuer from issuing synths in a non-existant flavour', async () => {
 		// Send a price update to guarantee we're not depending on values from outside this test.
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
 			[sAUD, sEUR, SNX],
@@ -1074,8 +1050,6 @@ contract('Synthetix', async accounts => {
 
 	it('should disallow an issuer from issuing synths beyond their remainingIssuableSynths', async () => {
 		// Send a price update to guarantee we're not depending on values from outside this test.
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
 			[sAUD, sEUR, SNX],
@@ -1105,8 +1079,6 @@ contract('Synthetix', async accounts => {
 
 	it('should allow an issuer with outstanding debt to burn synths and decrease debt', async () => {
 		// Send a price update to guarantee we're not depending on values from outside this test.
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
 			[sAUD, sEUR, SNX],
@@ -1135,8 +1107,6 @@ contract('Synthetix', async accounts => {
 
 	it('should disallow an issuer without outstanding debt from burning synths', async () => {
 		// Send a price update to guarantee we're not depending on values from outside this test.
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
 			[sAUD, sEUR, SNX],
@@ -1165,8 +1135,6 @@ contract('Synthetix', async accounts => {
 
 	it('should fail when trying to burn synths that do not exist', async () => {
 		// Send a price update to guarantee we're not depending on values from outside this test.
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
 			[sAUD, sEUR, SNX],
@@ -1194,8 +1162,6 @@ contract('Synthetix', async accounts => {
 
 	it("should only burn up to a user's actual debt level", async () => {
 		// Send a price update to guarantee we're not depending on values from outside this test.
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
 			[sAUD, sEUR, SNX],
@@ -1483,7 +1449,6 @@ contract('Synthetix', async accounts => {
 	// ****************************************
 
 	it('should not change debt balance if exchange rates change', async () => {
-		const oracle = await exchangeRates.oracle();
 		let newAUDRate = toUnit('0.5');
 		let timestamp = await currentTime();
 		await exchangeRates.updateRates([sAUD], [newAUDRate], timestamp, { from: oracle });
@@ -1574,8 +1539,6 @@ contract('Synthetix', async accounts => {
 	it('should error when calculating maximum issuance when the SNX rate is stale', async () => {
 		// Add stale period to the time to ensure we go stale.
 		await fastForward((await exchangeRates.rateStalePeriod()) + 1);
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates([sAUD, sEUR], ['0.5', '1.25'].map(toUnit), timestamp, {
 			from: oracle,
@@ -1587,8 +1550,6 @@ contract('Synthetix', async accounts => {
 	it('should error when calculating maximum issuance when the currency rate is stale', async () => {
 		// Add stale period to the time to ensure we go stale.
 		await fastForward((await exchangeRates.rateStalePeriod()) + 1);
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates([sEUR, SNX], ['1.25', '0.12'].map(toUnit), timestamp, {
 			from: oracle,
@@ -1687,8 +1648,6 @@ contract('Synthetix', async accounts => {
 	});
 
 	it("should lock synthetix if the user's collaterisation changes to be insufficient", async () => {
-		const oracle = await exchangeRates.oracle();
-
 		// Set sEUR for purposes of this test
 		const timestamp1 = await currentTime();
 		await exchangeRates.updateRates([sEUR], [toUnit('0.75')], timestamp1, { from: oracle });
@@ -1713,8 +1672,6 @@ contract('Synthetix', async accounts => {
 	});
 
 	it("should lock newly received synthetix if the user's collaterisation is too high", async () => {
-		const oracle = await exchangeRates.oracle();
-
 		// Set sEUR for purposes of this test
 		const timestamp1 = await currentTime();
 		await exchangeRates.updateRates([sEUR], [toUnit('0.75')], timestamp1, { from: oracle });
@@ -1754,8 +1711,6 @@ contract('Synthetix', async accounts => {
 	});
 
 	it('should unlock synthetix when collaterisation ratio changes', async () => {
-		const oracle = await exchangeRates.oracle();
-
 		// Set sAUD for purposes of this test
 		const timestamp1 = await currentTime();
 		await exchangeRates.updateRates([sAUD], [toUnit('1.7655')], timestamp1, { from: oracle });
@@ -1961,8 +1916,6 @@ contract('Synthetix', async accounts => {
 
 	it("should successfully burn all user's synths", async () => {
 		// Send a price update to guarantee we're not depending on values from outside this test.
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates([SNX], [toUnit('0.1')], timestamp, {
 			from: oracle,
@@ -1983,8 +1936,6 @@ contract('Synthetix', async accounts => {
 
 	it('should burn the correct amount of synths', async () => {
 		// Send a price update to guarantee we're not depending on values from outside this test.
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates([sAUD, SNX], ['0.9', '0.1'].map(toUnit), timestamp, {
 			from: oracle,
@@ -2005,8 +1956,6 @@ contract('Synthetix', async accounts => {
 
 	it("should successfully burn all user's synths even with transfer", async () => {
 		// Send a price update to guarantee we're not depending on values from outside this test.
-		const oracle = await exchangeRates.oracle();
-		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates([SNX], [toUnit('0.1')], timestamp, {
 			from: oracle,
@@ -2192,5 +2141,89 @@ contract('Synthetix', async accounts => {
 		const issuedSynths1 = toUnit('0');
 
 		await assert.revert(synthetix.issueSynths(sUSD, issuedSynths1, { from: account1 }));
+	});
+
+	describe('when dealing with inverted synths', () => {
+		let iBTCContract;
+		beforeEach(async () => {
+			iBTCContract = await Synth.at(await synthetix.synths(iBTC));
+		});
+		describe('when the iBTC synth is set with inverse pricing', () => {
+			const iBTCEntryPoint = toUnit('4000');
+			beforeEach(async () => {
+				exchangeRates.setInversePricing(iBTC, iBTCEntryPoint, toUnit('6500'), toUnit('1000'), {
+					from: owner,
+				});
+			});
+			describe('when a user holds holds 100,000 SNX', () => {
+				beforeEach(async () => {
+					await synthetix.methods['transfer(address,uint256)'](account1, toUnit(1e5), {
+						from: owner,
+					});
+				});
+				describe('when the user tries to mints 1% of that value', () => {
+					it('then it fails as iBTC rate is stale and totalIssuedSynths cannot return', async () => {
+						await assert.revert(synthetix.issueSynths(sUSD, toUnit(1), { from: account1 }));
+					});
+					describe('when a price within bounds for iBTC is received', () => {
+						const sBTCPrice = toUnit(6000);
+						beforeEach(async () => {
+							await exchangeRates.updateRates([iBTC], [sBTCPrice], timestamp, {
+								from: oracle,
+							});
+						});
+						describe('when the user tries to mints 1% of their SNX value', () => {
+							const amountIssued = toUnit(1e3);
+							beforeEach(async () => {
+								// Issue
+								await synthetix.issueSynths(sUSD, amountIssued, { from: account1 });
+							});
+							describe('when the user tries to exchange some sUSD into iBTC', () => {
+								const amountExchanged = toUnit(1e2);
+								beforeEach(async () => {
+									await synthetix.exchange(sUSD, amountExchanged, iBTC, account1, {
+										from: account1,
+									});
+								});
+								it('then it exchanges correctly', async () => {
+									const iBTCBalance = await iBTCContract.balanceOf(account1);
+
+									const effectiveValue = await synthetix.effectiveValue(
+										sUSD,
+										amountExchanged,
+										iBTC
+									);
+
+									// chargeFee = true so we need to minus the fees for this exchange
+									const effectiveValueMinusFees = await feePool.amountReceivedFromExchange(
+										effectiveValue
+									);
+
+									assert.bnEqual(iBTCBalance, effectiveValueMinusFees);
+									// TODO check logs
+								});
+							});
+						});
+					});
+
+					xdescribe('when a price within bounds for iBTC is received', () => {
+						describe('when the user tries to exchange some sUSD into iBTC', () => {
+							it('then it allows them to', () => {});
+							describe('when the user tries to exchange some iBTC into another synth', () => {
+								it('then it exchanges correctly', () => {});
+							});
+							describe('when a price outside of bounds for iBTC is received', () => {
+								describe('when the user tries to exchange more sUSD into iBTC', () => {
+									it('then it fails to exchange in as iBTC is frozen', () => {});
+								});
+								describe('when the user tries to exchange iBTC into another synth', () => {
+									it('then it exchanges out correctly, even while frozen', () => {});
+								});
+							});
+						});
+					});
+				});
+			});
+		});
 	});
 });
