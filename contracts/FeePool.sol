@@ -43,8 +43,7 @@ import "./SafeDecimalMath.sol";
 import "./Synthetix.sol";
 import "./ISynthetixEscrow.sol";
 import "./ISynthetixState.sol";
-import "./ISynth.sol";
-import "./IFeePool.sol";
+import "./Synth.sol";
 import "./FeePoolState.sol";
 
 contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
@@ -480,8 +479,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         require(account != address(proxy), "Can't send fees to proxy");
         require(account != address(synthetix), "Can't send fees to synthetix");
 
-        ISynth xdrSynth = synthetix.synths("XDR");
-        ISynth destinationSynth = synthetix.synths(destinationCurrencyKey);
+        Synth xdrSynth = synthetix.synths("XDR");
+        Synth destinationSynth = synthetix.synths(destinationCurrencyKey);
 
         // Note: We don't need to check the fee pool balance as the burn() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if the balance is not sufficient.

@@ -124,7 +124,7 @@ import "./TokenState.sol";
 import "./SupplySchedule.sol";
 import "./ExchangeRates.sol";
 import "./SynthetixState.sol";
-import "./ISynth.sol";
+import "./Synth.sol";
 import "./ISynthetixEscrow.sol";
 import "./IFeePool.sol";
 
@@ -138,8 +138,8 @@ contract Synthetix is ExternStateToken {
     // ========== STATE VARIABLES ==========
 
     // Available Synths which can be used with the system
-    ISynth[] public availableSynths;
-    mapping(bytes4 => ISynth) public synths;
+    Synth[] public availableSynths;
+    mapping(bytes4 => Synth) public synths;
 
     IFeePool public feePool;
     ISynthetixEscrow public escrow;
@@ -182,13 +182,13 @@ contract Synthetix is ExternStateToken {
      * @notice Add an associated Synth contract to the Synthetix system
      * @dev Only the contract owner may call this.
      */
-    function addSynth(ISynth synth)
+    function addSynth(Synth synth)
         external
         optionalProxy_onlyOwner
     {
         bytes4 currencyKey = synth.getCurrencyKey();
 
-        require(synths[currencyKey] == ISynth(0), "Synth already exists");
+        require(synths[currencyKey] == Synth(0), "Synth already exists");
 
         availableSynths.push(synth);
         synths[currencyKey] = synth;
