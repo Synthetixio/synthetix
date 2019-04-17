@@ -198,14 +198,14 @@ contract ExchangeRates is SelfDestructible {
         // get the new inverted rate if not frozen
         if (!inverse.frozen) {
             uint doubleEntryPoint = inverse.entryPoint.mul(2);
-            // if a negative number would be possible, then set to 0
             if (doubleEntryPoint <= rate) {
+                // avoid negative numbers
                 newInverseRate = 0;
             } else {
                 newInverseRate = doubleEntryPoint.sub(rate);
             }
-            // uint newInverseRate = inverse.frozen ? rates[currencyKeys[i]] : uint(doubleEntryPoint - newRates[i]);
-            // set to frozen if necessary
+
+            // now if new rate hits our limits, set it to the limit and freeze
             if (newInverseRate >= inverse.upperLimit) {
                 newInverseRate = inverse.upperLimit;
                 inverse.frozen = true;
