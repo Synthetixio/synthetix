@@ -59,6 +59,29 @@ module.exports = async function(deployer, network, accounts) {
 	);
 
 	// ----------------
+	// Escrow
+	// ----------------
+	console.log('Deploying SynthetixEscrow...');
+	const escrow = await deployer.deploy(SynthetixEscrow, owner, ZERO_ADDRESS, {
+		from: deployerAccount,
+	});
+
+	console.log('Deploying RewardEscrow...');
+	const rewardEscrow = await deployer.deploy(RewardEscrow, owner, ZERO_ADDRESS, ZERO_ADDRESS, {
+		from: deployerAccount,
+	});
+
+	// ----------------
+	// Synthetix State
+	// ----------------
+	console.log('Deploying SynthetixState...');
+	// constructor(address _owner, address _associatedContract)
+	deployer.link(SafeDecimalMath, SynthetixState);
+	const synthetixState = await deployer.deploy(SynthetixState, owner, ZERO_ADDRESS, {
+		from: deployerAccount,
+	});
+
+	// ----------------
 	// Fee Pool
 	// ----------------
 	console.log('Deploying FeePoolProxy...');
@@ -79,40 +102,23 @@ module.exports = async function(deployer, network, accounts) {
 		owner,
 		ZERO_ADDRESS,
 		feePoolState.address,
+		synthetixState.address,
+		rewardEscrow.address,
 		feeAuthority,
-		web3.utils.toWei('0.0015', 'ether'),
+		web3.utils.toWei('0.0015', 'ether'), // TODO must change this to 0 to match MAINNET after tests are updated
 		web3.utils.toWei('0.0030', 'ether'),
 		{ from: deployerAccount }
 	);
 
 	await feePoolProxy.setTarget(feePool.address, { from: owner });
 
-	// Set feePool on feePoolState
+	// Set feePool on feePoolState & rewardEscrow
 	await feePoolState.setFeePool(feePool.address, { from: owner });
-
-	// ----------------
-	// Synthetix State
-	// ----------------
-	console.log('Deploying SynthetixState...');
-	// constructor(address _owner, address _associatedContract)
-	deployer.link(SafeDecimalMath, SynthetixState);
-	const synthetixState = await deployer.deploy(SynthetixState, owner, ZERO_ADDRESS, {
-		from: deployerAccount,
-	});
+	await rewardEscrow.setFeePool(feePool.address, { from: owner });
 
 	// ----------------
 	// Synthetix
 	// ----------------
-	console.log('Deploying SynthetixProxy...');
-	// constructor(address _owner)
-	const synthetixProxy = await Proxy.new(owner, { from: deployerAccount });
-
-	console.log('Deploying SynthetixTokenState...');
-	// constructor(address _owner, address _associatedContract)
-	const synthetixTokenState = await TokenState.new(owner, deployerAccount, {
-		from: deployerAccount,
-	});
-
 	console.log('Deploying SupplySchedule...');
 	// constructor(address _owner)
 	deployer.link(SafeDecimalMath, SupplySchedule);
@@ -120,13 +126,13 @@ module.exports = async function(deployer, network, accounts) {
 		from: deployerAccount,
 	});
 
-	console.log('Deploying SynthetixEscrow...');
-	const escrow = await deployer.deploy(SynthetixEscrow, owner, ZERO_ADDRESS, {
-		from: deployerAccount,
-	});
+	console.log('Deploying SynthetixProxy...');
+	// constructor(address _owner)
+	const synthetixProxy = await Proxy.new(owner, { from: deployerAccount });
 
-	console.log('Deploying RewardEscrow...');
-	const rewardEscrow = await deployer.deploy(RewardEscrow, owner, ZERO_ADDRESS, feePool.address, {
+	console.log('Deploying SynthetixTokenState...');
+	// constructor(address _owner, address _associatedContract)
+	const synthetixTokenState = await TokenState.new(owner, deployerAccount, {
 		from: deployerAccount,
 	});
 

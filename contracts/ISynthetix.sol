@@ -1,13 +1,27 @@
 pragma solidity 0.4.25;
 
 /**
- * @title Synthetix interface
+ * @title Synthetix interface contract
+ * @dev pseudo interface, actually declared as contract to hold the public getters 
  */
 import "./ISynthetixState.sol";
 import "./ISynth.sol";
 import "./ISynthetixEscrow.sol";
+import "./IFeePool.sol";
+import "./IExchangeRates.sol";
 
-interface ISynthetix {
+contract ISynthetix {
+
+    // ========== PUBLIC STATE VARIABLES ==========
+
+    IFeePool public feePool;
+    ISynthetixEscrow public escrow;
+    ISynthetixEscrow public rewardEscrow;
+    ISynthetixState public synthetixState;
+    IExchangeRates public exchangeRates;
+
+    // ========== PUBLIC FUNCTIONS ==========
+
     function balanceOf(address account) public view returns (uint);
     function transfer(address to, uint value) public returns (bool);
     function effectiveValue(bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey) public view returns (uint);
@@ -24,8 +38,6 @@ interface ISynthetix {
         public
         view
         returns (uint);
-    function getSynthetixState() public view returns (ISynthetixState);
     function getSynth(bytes4 currencyKey) public view returns (ISynth);
-    function getRewardEscrow() public view returns (ISynthetixEscrow);
     function debtBalanceOf(address issuer, bytes4 currencyKey) public view returns (uint);
 }

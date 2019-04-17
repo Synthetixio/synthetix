@@ -40,8 +40,11 @@ pragma solidity 0.4.25;
 import "./Proxyable.sol";
 import "./SelfDestructible.sol";
 import "./SafeDecimalMath.sol";
-import "./Synth.sol";
 import "./Synthetix.sol";
+import "./ISynthetixEscrow.sol";
+import "./ISynthetixState.sol";
+import "./ISynth.sol";
+import "./IFeePool.sol";
 import "./FeePoolState.sol";
 
 contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
@@ -50,6 +53,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     using SafeDecimalMath for uint;
 
     Synthetix public synthetix;
+    ISynthetixState public synthetixState;
+    ISynthetixEscrow public rewardEscrow;
 
     // A percentage fee charged on each transfer.
     uint public transferFeeRate;
@@ -126,6 +131,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         address _owner,
         Synthetix _synthetix,
         FeePoolState _feePoolState,
+        ISynthetixState _synthetixState,
+        ISynthetixEscrow _rewardEscrow,
         address _feeAuthority,
         uint _transferFeeRate,
         uint _exchangeFeeRate)
@@ -140,6 +147,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
         synthetix = _synthetix;
         feePoolState = _feePoolState;
+        rewardEscrow = _rewardEscrow;
+        synthetixState = _synthetixState;
         feeAuthority = _feeAuthority;
         transferFeeRate = _transferFeeRate;
         exchangeFeeRate = _exchangeFeeRate;
@@ -471,8 +480,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         require(account != address(proxy), "Can't send fees to proxy");
         require(account != address(synthetix), "Can't send fees to synthetix");
 
-        Synth xdrSynth = synthetix.synths("XDR");
-        Synth destinationSynth = synthetix.synths(destinationCurrencyKey);
+        ISynth xdrSynth = synthetix.synths("XDR");
+        ISynth destinationSynth = synthetix.synths(destinationCurrencyKey);
 
         // Note: We don't need to check the fee pool balance as the burn() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if the balance is not sufficient.
@@ -510,7 +519,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
         // Record vesting entry for claiming address and amount
         // SNX already minted to rewardEscrow balance
-        synthetix.rewardEscrow().appendVestingEntry(account, snxAmount);
+        rewardEscrow.appendVestingEntry(account, snxAmount);
     }
 
     /**
@@ -812,12 +821,12 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         returns (uint)
     {
         // Condition to check if debtLedger[] has value otherwise return 0
-        if (closingDebtIndex > synthetix.synthetixState().debtLedgerLength()) return 0;
+        if (closingDebtIndex > synthetixState.debtLedgerLength()) return 0;
 
         // Figure out their global debt percentage delta at end of fee Period.
         // This is a high precision integer.
-        uint feePeriodDebtOwnership = synthetix.synthetixState().getDebtLedgerAt(closingDebtIndex)
-            .divideDecimalRoundPrecise(synthetix.synthetixState().getDebtLedgerAt(debtEntryIndex))
+        uint feePeriodDebtOwnership = synthetixState.getDebtLedgerAt(closingDebtIndex)
+            .divideDecimalRoundPrecise(synthetixState.getDebtLedgerAt(debtEntryIndex))
             .multiplyDecimalRoundPrecise(ownershipPercentage);
 
         return feePeriodDebtOwnership;

@@ -320,6 +320,22 @@ program
 				args: [account, oracle, [web3.utils.asciiToHex('SNX')], [web3.utils.toWei('0.2', 'ether')]],
 			});
 
+			const rewardEscrow = await deployContract({
+				name: 'RewardEscrow',
+				deps: ['FeePool'],
+				args: [account, account],
+			});
+
+			const synthetixEscrow = await deployContract({
+				name: 'SynthetixEscrow',
+				args: [account, account],
+			});
+
+			const synthetixState = await deployContract({
+				name: 'SynthetixState',
+				args: [account, account],
+			});
+
 			const proxyFeePool = await deployContract({
 				name: 'ProxyFeePool',
 				source: 'Proxy',
@@ -335,6 +351,8 @@ program
 					account,
 					account,
 					feeAuth,
+					synthetixState,
+					rewardEscrow,
 					web3.utils.toWei('0.0', 'ether'),
 					web3.utils.toWei('0.0030', 'ether'),
 				],
@@ -368,26 +386,11 @@ program
 					.send(deployer.sendParameters());
 			}
 
-			const rewardEscrow = await deployContract({
-				name: 'RewardEscrow',
-				deps: ['FeePool'],
-				args: [account, account, feePoolAddress],
-			});
-
-			const synthetixEscrow = await deployContract({
-				name: 'SynthetixEscrow',
-				args: [account, account],
-			});
-
 			const supplySchedule = await deployContract({
 				name: 'SupplySchedule',
 				args: [account],
 			});
 
-			const synthetixState = await deployContract({
-				name: 'SynthetixState',
-				args: [account, account],
-			});
 			const proxySynthetix = await deployContract({
 				name: 'ProxySynthetix',
 				source: 'Proxy',
@@ -494,6 +497,18 @@ program
 					await rewardEscrow.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
 				} else {
 					console.log(cyan('Cannot call RewardEscrow.setSynthetix() as not owner.'));
+				}
+			}
+			if (rewardEscrow && feePool) {
+				const feePoolAddress = feePool ? feePool.options.address : '';
+				// only the owner can do this
+				const rewardEscrowOwner = await rewardEscrow.methods.owner().call();
+
+				if (rewardEscrowOwner === account) {
+					console.log(yellow('Invoking RewardEscrow.setFeePool()...'));
+					await rewardEscrow.methods.setFeePool(feePoolAddress).send(deployer.sendParameters());
+				} else {
+					console.log(cyan('Cannot call RewardEscrow.setFeePool() as not owner.'));
 				}
 			}
 

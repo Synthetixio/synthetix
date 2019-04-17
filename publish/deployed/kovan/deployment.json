@@ -239,8 +239,8 @@
       "address": "0xD15Fa4C369B567f30EA47B6fE676972EFaaf8B41",
       "source": "Synthetix",
       "link": "https://kovan.etherscan.io/address/0xD15Fa4C369B567f30EA47B6fE676972EFaaf8B41",
-      "timestamp": "2019-04-16T04:50:26.056Z",
-      "txn": "",
+      "timestamp": "2019-04-16T04:50:24.000Z",
+      "txn": "https://kovan.etherscan.io/tx/0x9a4bf4de4a833bac3960e684120fe00ad5a8cfd580750012073c1c9e982b0853",
       "network": "kovan"
     },
     "SynthetixEscrow": {
