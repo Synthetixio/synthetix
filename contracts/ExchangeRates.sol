@@ -168,11 +168,26 @@ contract ExchangeRates is SelfDestructible {
             // if an inverse mapping exists, adjust the price accordingly
             InversePricing storage inverse = inversePricing[currencyKeys[i]];
             if (inverse.entryPoint > 0) {
+                uint newInverseRate = rates[currencyKeys[i]];
+
                 // get the new inverted rate if not frozen
-                uint newInverseRate = inverse.frozen ? rates[currencyKeys[i]] : inverse.entryPoint.multiplyDecimal(2).sub(newRates[i]);
-                // set to frozen if necessary
-                if (newInverseRate >= inverse.upperLimit || newInverseRate <= inverse.lowerLimit) {
-                    inverse.frozen = true;
+                if (!inverse.frozen) {
+                    uint doubleEntryPoint = inverse.entryPoint.mul(2);
+                    // if a negative number would be possible, then set to 0
+                    if (doubleEntryPoint <= newRates[i]) {
+                        newInverseRate = 0;
+                    } else {
+                        newInverseRate = doubleEntryPoint.sub(newRates[i]);
+                    }
+                    // uint newInverseRate = inverse.frozen ? rates[currencyKeys[i]] : uint(doubleEntryPoint - newRates[i]);
+                    // set to frozen if necessary
+                    if (newInverseRate >= inverse.upperLimit) {
+                        newInverseRate = inverse.upperLimit;
+                        inverse.frozen = true;
+                    } else if (newInverseRate <= inverse.lowerLimit) {
+                        newInverseRate = inverse.lowerLimit;
+                        inverse.frozen = true;
+                    }
                 }
 
                 // now mutate the new rate to reflect
