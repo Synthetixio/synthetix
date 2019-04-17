@@ -21,13 +21,13 @@
     "deploy": true
   },
   "SynthetixEscrow": {
-    "deploy": true
+    "deploy": false
   },
   "RewardEscrow": {
-    "deploy": true
+    "deploy": false
   },
   "SynthetixState": {
-    "deploy": true
+    "deploy": false
   },
   "SynthXDR": {
     "deploy": true
@@ -87,7 +87,7 @@
     "deploy": true
   },
   "ProxyFeePool": {
-    "deploy": true
+    "deploy": false
   },
   "ProxySynthetix": {
     "deploy": true

@@ -99,7 +99,6 @@ class Deployer {
 					arguments: args,
 				})
 				.send(this.sendParameters('contract-deployment'));
-
 			console.log(green(` - Deployed ${name} to ${deployedContract.options.address}`));
 		} else if (existingAddress) {
 			deployedContract = new this.web3.eth.Contract(compiled.abi, existingAddress);
