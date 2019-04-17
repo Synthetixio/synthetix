@@ -116,7 +116,7 @@ const PRECISE_UNIT = web3.utils.toBN(PRECISE_UNIT_STRING);
 const toPreciseUnit = amount => {
 	// Code is largely lifted from the guts of web3 toWei here:
 	// https://github.com/ethjs/ethjs-unit/blob/master/src/index.js
-	let amountString = amount.toString();
+	const amountString = amount.toString();
 
 	// Is it negative?
 	var negative = amountString.substring(0, 1) === '-';
@@ -129,6 +129,7 @@ const toPreciseUnit = amount => {
 	}
 
 	// Split it into a whole and fractional part
+	// eslint-disable-next-line prefer-const
 	let [whole, fraction, ...rest] = amount.split('.');
 	if (rest.length > 0) {
 		throw new Error(`Error converting number ${amount} to precise unit, too many decimal points`);
@@ -177,7 +178,7 @@ const fromPreciseUnit = amount => {
 	// Chop zeros off the end if there are extras.
 	fraction = fraction.replace(/0+$/, '');
 
-	let whole = amount.div(PRECISE_UNIT).toString();
+	const whole = amount.div(PRECISE_UNIT).toString();
 	let value = `${whole}${fraction === '' ? '' : `.${fraction}`}`;
 
 	if (negative) {

@@ -2,15 +2,15 @@ const SelfDestructible = artifacts.require('SelfDestructible');
 
 const { fastForward } = require('../utils/testUtils');
 
-contract('SelfDestructible', async function(accounts) {
+contract('SelfDestructible', async accounts => {
 	const [, owner] = accounts;
 	let selfDestructible;
 	const SELFDESTRUCT_DELAY = 2419200;
 
-	beforeEach(async function() {
+	beforeEach(async () => {
 		selfDestructible = await SelfDestructible.deployed();
 	});
-	it('should only be terminated after we reach the SELFDESTRUCT_DELAY', async function() {
+	it('should only be terminated after we reach the SELFDESTRUCT_DELAY', async () => {
 		// We initiate the self destruction of the contract
 		await selfDestructible.initiateSelfDestruct({ from: owner });
 

@@ -334,7 +334,7 @@ contract('Synthetix', async accounts => {
 	it('should revert when relying on a non-existant exchange rate in effectiveValue()', async () => {
 		// Send a price update so we know what time we started with.
 		const oracle = await exchangeRates.oracle();
-		let timestamp = await currentTime();
+		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
 			[sAUD, sEUR, SNX],
@@ -561,7 +561,7 @@ contract('Synthetix', async accounts => {
 		);
 
 		// Approve account1 to act on our behalf for 10 SNX.
-		let transaction = await synthetix.approve(account1, toUnit('10'), { from: owner });
+		const transaction = await synthetix.approve(account1, toUnit('10'), { from: owner });
 		assert.eventEqual(transaction, 'Approval', {
 			owner,
 			spender: account1,
@@ -773,7 +773,7 @@ contract('Synthetix', async accounts => {
 		);
 
 		// Approve account1 to act on our behalf for 10 SNX.
-		let transaction = await synthetix.approve(account1, toUnit('10'), { from: owner });
+		const transaction = await synthetix.approve(account1, toUnit('10'), { from: owner });
 		assert.eventEqual(transaction, 'Approval', {
 			owner,
 			spender: account1,

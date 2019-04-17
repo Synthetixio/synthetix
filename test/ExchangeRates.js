@@ -1,5 +1,5 @@
 const ExchangeRates = artifacts.require('ExchangeRates');
-const { currentTime, fastForward, toUnit, fromUnit } = require('../utils/testUtils');
+const { currentTime, fastForward, toUnit } = require('../utils/testUtils');
 
 // Helper functions
 
