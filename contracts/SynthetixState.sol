@@ -35,17 +35,16 @@ contract to the new one.
 
 pragma solidity 0.4.25;
 
-import "./ISynthetix.sol";
-import "./ISynthetixState.sol";
+import "./Synthetix.sol";
 import "./LimitedSetup.sol";
 import "./SafeDecimalMath.sol";
 import "./State.sol";
 
-/**
+/**\
  * @title Synthetix State
  * @notice Stores issuance information and preferred currency information of the Synthetix contract.
  */
-contract SynthetixState is State, LimitedSetup, ISynthetixState {
+contract SynthetixState is State, LimitedSetup {
     // A struct for handing values associated with an individual user's debt position
     struct IssuanceData {
         // Percentage of the total debt owned at the time
@@ -225,7 +224,7 @@ contract SynthetixState is State, LimitedSetup, ISynthetixState {
     {
         // This code is duplicated from Synthetix so that we can call it directly here
         // during setup only.
-        ISynthetix synthetix = ISynthetix(associatedContract);
+        Synthetix synthetix = Synthetix(associatedContract);
 
         // What is the value of the requested debt in XDRs?
         uint xdrValue = synthetix.effectiveValue("sUSD", amount, "XDR");

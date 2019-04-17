@@ -122,10 +122,10 @@ pragma solidity 0.4.25;
 import "./ExternStateToken.sol";
 import "./TokenState.sol";
 import "./SupplySchedule.sol";
-import "./ISynth.sol";
+import "./ExchangeRates.sol";
 import "./SynthetixState.sol";
+import "./ISynth.sol";
 import "./ISynthetixEscrow.sol";
-import "./IExchangeRates.sol";
 import "./IFeePool.sol";
 
 /**
@@ -144,7 +144,7 @@ contract Synthetix is ExternStateToken {
     IFeePool public feePool;
     ISynthetixEscrow public escrow;
     ISynthetixEscrow public rewardEscrow;
-    IExchangeRates public exchangeRates;
+    ExchangeRates public exchangeRates;
     SynthetixState public synthetixState;
     SupplySchedule public supplySchedule;
 
@@ -163,7 +163,7 @@ contract Synthetix is ExternStateToken {
      * @param _owner The owner of this contract.
      */
     constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
-        address _owner, IExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule,
+        address _owner, ExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule,
         ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow
     )
         ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, SYNTHETIX_SUPPLY, DECIMALS, _owner)

@@ -33,7 +33,6 @@ pragma solidity 0.4.25;
 import "./ExternStateToken.sol";
 import "./IFeePool.sol";
 import "./Synthetix.sol";
-import "./ISynthetixState.sol";
 import "./ISynth.sol";
 
 contract Synth is ExternStateToken {

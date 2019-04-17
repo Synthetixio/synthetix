@@ -334,7 +334,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
         // Open up the new fee period. Take a snapshot of the total value of the system.
         recentFeePeriods[0].feePeriodId = nextFeePeriodId;
-        recentFeePeriods[0].startingDebtIndex = synthetix.synthetixState().debtLedgerLength();
+        recentFeePeriods[0].startingDebtIndex = synthetixState.debtLedgerLength();
         recentFeePeriods[0].startTime = now;
 
         nextFeePeriodId = nextFeePeriodId.add(1);
