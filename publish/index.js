@@ -349,8 +349,8 @@ program
 					account,
 					ZERO_ADDRESS, // Synthetix
 					ZERO_ADDRESS, // FeePoolState
-					synthetixState,
-					rewardEscrow,
+					synthetixState ? synthetixState.options.address : '',
+					rewardEscrow ? rewardEscrow.options.address : '',
 					feeAuth,
 					web3.utils.toWei('0.0', 'ether'),
 					web3.utils.toWei('0.0030', 'ether'),

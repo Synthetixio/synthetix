@@ -1,24 +1,24 @@
 {
   "Depot": {
-    "deploy": true
+    "deploy": false
   },
   "EscrowChecker": {
-    "deploy": true
+    "deploy": false
   },
   "ExchangeRates": {
     "deploy": false
   },
   "FeePool": {
-    "deploy": true
+    "deploy": false
   },
   "FeePoolState": {
-    "deploy": true
+    "deploy": false
   },
   "SupplySchedule": {
-    "deploy": true
+    "deploy": false
   },
   "Synthetix": {
-    "deploy": true
+    "deploy": false
   },
   "SynthetixEscrow": {
     "deploy": false
@@ -30,186 +30,186 @@
     "deploy": false
   },
   "SynthXDR": {
-    "deploy": true
+    "deploy": false
   },
   "SynthsUSD": {
-    "deploy": true
+    "deploy": false
   },
   "SynthsEUR": {
-    "deploy": true
+    "deploy": false
   },
   "SynthsJPY": {
-    "deploy": true
+    "deploy": false
   },
   "SynthsAUD": {
-    "deploy": true
+    "deploy": false
   },
   "SynthsKRW": {
-    "deploy": true
+    "deploy": false
   },
   "SynthsGBP": {
-    "deploy": true
+    "deploy": false
   },
   "SynthsCHF": {
-    "deploy": true
+    "deploy": false
   },
   "SynthsCNY": {
-    "deploy": true
+    "deploy": false
   },
   "SynthsSGD": {
-    "deploy": true
+    "deploy": false
   },
   "SynthsCAD": {
-    "deploy": true
+    "deploy": false
   },
   "SynthsRUB": {
-    "deploy": true
+    "deploy": false
   },
   "SynthsINR": {
-    "deploy": true
+    "deploy": false
   },
   "SynthsBRL": {
-    "deploy": true
+    "deploy": false
   },
   "SynthsNZD": {
-    "deploy": true
+    "deploy": false
   },
   "SynthsPLN": {
-    "deploy": true
+    "deploy": false
   },
   "SynthsXAU": {
-    "deploy": true
+    "deploy": false
   },
   "SynthsXAG": {
-    "deploy": true
+    "deploy": false
   },
   "SynthsBTC": {
-    "deploy": true
+    "deploy": false
   },
   "ProxyFeePool": {
     "deploy": false
   },
   "ProxySynthetix": {
-    "deploy": true
+    "deploy": false
   },
   "ProxyXDR": {
-    "deploy": true
+    "deploy": false
   },
   "ProxysUSD": {
-    "deploy": true
+    "deploy": false
   },
   "ProxysEUR": {
-    "deploy": true
+    "deploy": false
   },
   "ProxysJPY": {
-    "deploy": true
+    "deploy": false
   },
   "ProxysAUD": {
-    "deploy": true
+    "deploy": false
   },
   "ProxysKRW": {
-    "deploy": true
+    "deploy": false
   },
   "ProxysGBP": {
-    "deploy": true
+    "deploy": false
   },
   "ProxysCHF": {
-    "deploy": true
+    "deploy": false
   },
   "ProxysCNY": {
-    "deploy": true
+    "deploy": false
   },
   "ProxysSGD": {
-    "deploy": true
+    "deploy": false
   },
   "ProxysCAD": {
-    "deploy": true
+    "deploy": false
   },
   "ProxysRUB": {
-    "deploy": true
+    "deploy": false
   },
   "ProxysINR": {
-    "deploy": true
+    "deploy": false
   },
   "ProxysBRL": {
-    "deploy": true
+    "deploy": false
   },
   "ProxysNZD": {
-    "deploy": true
+    "deploy": false
   },
   "ProxysPLN": {
-    "deploy": true
+    "deploy": false
   },
   "ProxysXAU": {
-    "deploy": true
+    "deploy": false
   },
   "ProxysXAG": {
-    "deploy": true
+    "deploy": false
   },
   "ProxysBTC": {
-    "deploy": true
+    "deploy": false
   },
   "SafeDecimalMath": {
     "deploy": false
   },
   "TokenStateSynthetix": {
-    "deploy": true
+    "deploy": false
   },
   "TokenStateXDR": {
-    "deploy": true
+    "deploy": false
   },
   "TokenStatesUSD": {
-    "deploy": true
+    "deploy": false
   },
   "TokenStatesEUR": {
-    "deploy": true
+    "deploy": false
   },
   "TokenStatesJPY": {
-    "deploy": true
+    "deploy": false
   },
   "TokenStatesAUD": {
-    "deploy": true
+    "deploy": false
   },
   "TokenStatesKRW": {
-    "deploy": true
+    "deploy": false
   },
   "TokenStatesGBP": {
-    "deploy": true
+    "deploy": false
   },
   "TokenStatesCHF": {
-    "deploy": true
+    "deploy": false
   },
   "TokenStatesCNY": {
-    "deploy": true
+    "deploy": false
   },
   "TokenStatesSGD": {
-    "deploy": true
+    "deploy": false
   },
   "TokenStatesCAD": {
-    "deploy": true
+    "deploy": false
   },
   "TokenStatesRUB": {
-    "deploy": true
+    "deploy": false
   },
   "TokenStatesINR": {
-    "deploy": true
+    "deploy": false
   },
   "TokenStatesBRL": {
-    "deploy": true
+    "deploy": false
   },
   "TokenStatesNZD": {
-    "deploy": true
+    "deploy": false
   },
   "TokenStatesPLN": {
-    "deploy": true
+    "deploy": false
   },
   "TokenStatesXAU": {
-    "deploy": true
+    "deploy": false
   },
   "TokenStatesXAG": {
-    "deploy": true
+    "deploy": false
   },
   "TokenStatesBTC": {
-    "deploy": true
+    "deploy": false
   }
 }
