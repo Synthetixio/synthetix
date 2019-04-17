@@ -7,7 +7,7 @@ const { getWeb3 } = require('../utils/web3Helper');
 const { currentTime, toPreciseUnit, toUnit } = require('../utils/testUtils');
 const web3 = getWeb3();
 
-contract.only('FeePoolState', async function(accounts) {
+contract('FeePoolState', async function(accounts) {
 	const [
 		deployerAccount,
 		owner,
