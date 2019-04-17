@@ -7,7 +7,7 @@ const { getWeb3 } = require('../utils/web3Helper');
 const { currentTime, toPreciseUnit, toUnit } = require('../utils/testUtils');
 const web3 = getWeb3();
 
-contract('FeePoolState', async function(accounts) {
+contract.only('FeePoolState', async function(accounts) {
 	const [
 		deployerAccount,
 		owner,
@@ -207,15 +207,15 @@ contract('FeePoolState', async function(accounts) {
 			const dummyDebtEntryIndex = 5555;
 
 			// Import issuser data into the last closed period and 5555 as the feePeriodCloseIndex
-			// const importTX = await feePoolState.importIssuerData(
-			// 	accounts,
-			// 	ratios,
-			// 	issuanceLedgerIndex,
-			// 	dummyDebtEntryIndex,
-			// 	{
-			// 		from: owner,
-			// 	}
-			// );
+			await feePoolState.importIssuerData(
+				accounts,
+				ratios,
+				issuanceLedgerIndex,
+				dummyDebtEntryIndex,
+				{
+					from: owner,
+				}
+			);
 
 			// Iterate the accounts
 			for (let i = 0; i < accounts.length; i++) {
