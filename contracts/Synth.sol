@@ -58,7 +58,7 @@ contract Synth is ExternStateToken {
         require(address(_synthetix) != 0, "_synthetix cannot be 0");
         require(address(_feePool) != 0, "_feePool cannot be 0");
         require(_owner != 0, "_owner cannot be 0");
-        require(_synthetix.getSynth(_currencyKey) == Synth(0), "Currency key is already in use");
+        require(_synthetix.synths(_currencyKey) == Synth(0), "Currency key is already in use");
 
         feePool = _feePool;
         synthetix = _synthetix;
