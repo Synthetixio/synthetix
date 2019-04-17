@@ -2161,47 +2161,39 @@ contract('Synthetix', async accounts => {
 						from: owner,
 					});
 				});
-				describe('when the user tries to mints 1% of that value', () => {
-					it('then it fails as iBTC rate is stale and totalIssuedSynths cannot return', async () => {
-						await assert.revert(synthetix.issueSynths(sUSD, toUnit(1), { from: account1 }));
-					});
-					describe('when a price within bounds for iBTC is received', () => {
-						const sBTCPrice = toUnit(6000);
-						beforeEach(async () => {
-							await exchangeRates.updateRates([iBTC], [sBTCPrice], timestamp, {
-								from: oracle,
-							});
+
+				describe('when a price within bounds for iBTC is received', () => {
+					const sBTCPrice = toUnit(6000);
+					beforeEach(async () => {
+						await exchangeRates.updateRates([iBTC], [sBTCPrice], timestamp, {
+							from: oracle,
 						});
-						describe('when the user tries to mints 1% of their SNX value', () => {
-							const amountIssued = toUnit(1e3);
+					});
+					describe('when the user tries to mints 1% of their SNX value', () => {
+						const amountIssued = toUnit(1e3);
+						beforeEach(async () => {
+							// Issue
+							await synthetix.issueSynths(sUSD, amountIssued, { from: account1 });
+						});
+						describe('when the user tries to exchange some sUSD into iBTC', () => {
+							const amountExchanged = toUnit(1e2);
 							beforeEach(async () => {
-								// Issue
-								await synthetix.issueSynths(sUSD, amountIssued, { from: account1 });
+								await synthetix.exchange(sUSD, amountExchanged, iBTC, account1, {
+									from: account1,
+								});
 							});
-							describe('when the user tries to exchange some sUSD into iBTC', () => {
-								const amountExchanged = toUnit(1e2);
-								beforeEach(async () => {
-									await synthetix.exchange(sUSD, amountExchanged, iBTC, account1, {
-										from: account1,
-									});
-								});
-								it('then it exchanges correctly', async () => {
-									const iBTCBalance = await iBTCContract.balanceOf(account1);
+							it('then it exchanges correctly', async () => {
+								const iBTCBalance = await iBTCContract.balanceOf(account1);
 
-									const effectiveValue = await synthetix.effectiveValue(
-										sUSD,
-										amountExchanged,
-										iBTC
-									);
+								const effectiveValue = await synthetix.effectiveValue(sUSD, amountExchanged, iBTC);
 
-									// chargeFee = true so we need to minus the fees for this exchange
-									const effectiveValueMinusFees = await feePool.amountReceivedFromExchange(
-										effectiveValue
-									);
+								// chargeFee = true so we need to minus the fees for this exchange
+								const effectiveValueMinusFees = await feePool.amountReceivedFromExchange(
+									effectiveValue
+								);
 
-									assert.bnEqual(iBTCBalance, effectiveValueMinusFees);
-									// TODO check logs
-								});
+								assert.bnEqual(iBTCBalance, effectiveValueMinusFees);
+								// TODO check logs
 							});
 						});
 					});
