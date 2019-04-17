@@ -165,34 +165,8 @@ contract ExchangeRates is SelfDestructible {
                 continue;
             }
 
-            // if an inverse mapping exists, adjust the price accordingly
-            InversePricing storage inverse = inversePricing[currencyKeys[i]];
-            if (inverse.entryPoint > 0) {
-                uint newInverseRate = rates[currencyKeys[i]];
+            newRates[i] = rateOrInverted(currencyKeys[i], newRates[i]);
 
-                // get the new inverted rate if not frozen
-                if (!inverse.frozen) {
-                    uint doubleEntryPoint = inverse.entryPoint.mul(2);
-                    // if a negative number would be possible, then set to 0
-                    if (doubleEntryPoint <= newRates[i]) {
-                        newInverseRate = 0;
-                    } else {
-                        newInverseRate = doubleEntryPoint.sub(newRates[i]);
-                    }
-                    // uint newInverseRate = inverse.frozen ? rates[currencyKeys[i]] : uint(doubleEntryPoint - newRates[i]);
-                    // set to frozen if necessary
-                    if (newInverseRate >= inverse.upperLimit) {
-                        newInverseRate = inverse.upperLimit;
-                        inverse.frozen = true;
-                    } else if (newInverseRate <= inverse.lowerLimit) {
-                        newInverseRate = inverse.lowerLimit;
-                        inverse.frozen = true;
-                    }
-                }
-
-                // now mutate the new rate to reflect
-                newRates[i] = newInverseRate;
-            }
             // Ok, go ahead with the update.
             rates[currencyKeys[i]] = newRates[i];
             lastRateUpdateTimes[currencyKeys[i]] = timeSent;
@@ -204,6 +178,44 @@ contract ExchangeRates is SelfDestructible {
         updateXDRRate(timeSent);
 
         return true;
+    }
+
+    /**
+     * @notice Internal function to get the inverted rate, if any, and mark an inverted
+     *  synth as frozen if either limits are reached.
+     * @param currencyKey The synth key to lookup
+     * @param rate The rate for the given synth key
+     */
+    function rateOrInverted(bytes4 currencyKey, uint rate) internal returns (uint) {
+        // if an inverse mapping exists, adjust the price accordingly
+        InversePricing storage inverse = inversePricing[currencyKey];
+        if (inverse.entryPoint <= 0) {
+            return rate;
+        }
+
+        uint newInverseRate = rates[currencyKey];
+
+        // get the new inverted rate if not frozen
+        if (!inverse.frozen) {
+            uint doubleEntryPoint = inverse.entryPoint.mul(2);
+            // if a negative number would be possible, then set to 0
+            if (doubleEntryPoint <= rate) {
+                newInverseRate = 0;
+            } else {
+                newInverseRate = doubleEntryPoint.sub(rate);
+            }
+            // uint newInverseRate = inverse.frozen ? rates[currencyKeys[i]] : uint(doubleEntryPoint - newRates[i]);
+            // set to frozen if necessary
+            if (newInverseRate >= inverse.upperLimit) {
+                newInverseRate = inverse.upperLimit;
+                inverse.frozen = true;
+            } else if (newInverseRate <= inverse.lowerLimit) {
+                newInverseRate = inverse.lowerLimit;
+                inverse.frozen = true;
+            }
+        }
+
+        return newInverseRate;
     }
 
     /**
@@ -286,7 +298,9 @@ contract ExchangeRates is SelfDestructible {
         external onlyOwner
     {
         require(entryPoint > 0, "entryPoint must be above 0");
+        require(lowerLimit > 0, "lowerLimit must be above 0");
         require(upperLimit > entryPoint, "upperLimit must be above the entryPoint");
+        require(upperLimit < entryPoint.mul(2), "upperLimit must be less than double entryPoint");
         require(lowerLimit < entryPoint, "lowerLimit must be below the entryPoint");
 
         inversePricing[currencyKey].entryPoint = entryPoint;

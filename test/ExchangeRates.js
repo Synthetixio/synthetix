@@ -1016,130 +1016,233 @@ contract('Exchange Rates', async accounts => {
 	});
 
 	describe('inverted synths', async () => {
-		describe('when two inverted synths are added', () => {
-			const [iBTC, iETH, sEUR, sBTC] = ['iBTC', 'iETH', 'sEUR', 'sBTC'].map(web3.utils.asciiToHex);
-			let instance;
-			// helper function to check rates are correct
-			const assertRatesAreCorrect = async ({ currencyKeys, expectedRates, txn }) => {
-				// ensure all rates returned from contract are as expected
-				const rates = await instance.ratesForCurrencies(currencyKeys);
-				expectedRates.forEach((rate, i) => assert.bnEqual(rates[i], rate));
-
-				// ensure transaction emitted a RatesUpdated event with the correct numbers
-				assert.eventEqual(txn, 'RatesUpdated', {
-					currencyKeys,
-					newRates: expectedRates,
-				});
-			};
+		const [iBTC, iETH, sEUR, sBTC] = ['iBTC', 'iETH', 'sEUR', 'sBTC'].map(web3.utils.asciiToHex);
+		let instance;
+		describe('when instance ready', () => {
 			beforeEach(async () => {
 				instance = await ExchangeRates.deployed();
-				await instance.setInversePricing(iBTC, toUnit('4000'), toUnit('6500'), toUnit('2300'), {
-					from: owner,
+			});
+			describe('when attempting to add inverse synths', () => {
+				it('ensure only the owner can invoke', async () => {
+					await assert.revert(
+						instance.setInversePricing(iBTC, toUnit('100'), toUnit('150'), toUnit('10'), {
+							from: deployerAccount,
+						})
+					);
+					await assert.revert(
+						instance.setInversePricing(iBTC, toUnit('100'), toUnit('150'), toUnit('10'), {
+							from: oracle,
+						})
+					);
+					await assert.revert(
+						instance.setInversePricing(iBTC, toUnit('100'), toUnit('150'), toUnit('10'), {
+							from: accountOne,
+						})
+					);
 				});
-				await instance.setInversePricing(iETH, toUnit('200'), toUnit('350'), toUnit('75'), {
-					from: owner,
+				it('ensure entryPoint be greater than 0', async () => {
+					await assert.revert(
+						instance.setInversePricing(iBTC, toUnit('0'), toUnit('150'), toUnit('10'), {
+							from: owner,
+						})
+					);
+				});
+				it('ensure lowerLimit be greater than 0', async () => {
+					await assert.revert(
+						instance.setInversePricing(iBTC, toUnit('100'), toUnit('150'), toUnit('0'), {
+							from: owner,
+						})
+					);
+				});
+				it('ensure upperLimit be greater than the entryPoint', async () => {
+					await assert.revert(
+						instance.setInversePricing(iBTC, toUnit('100'), toUnit('100'), toUnit('10'), {
+							from: owner,
+						})
+					);
+				});
+				it('ensure upperLimit be less than double the entryPoint', async () => {
+					await assert.revert(
+						instance.setInversePricing(iBTC, toUnit('100'), toUnit('200'), toUnit('10'), {
+							from: owner,
+						})
+					);
+				});
+				it('ensure lowerLimit be less than the entryPoint', async () => {
+					await assert.revert(
+						instance.setInversePricing(iBTC, toUnit('100'), toUnit('150'), toUnit('100'), {
+							from: owner,
+						})
+					);
 				});
 			});
-			describe('when updateRates is called with an in-bounds update', () => {
-				let txn;
-				beforeEach(async () => {
-					const rates = [4500.553, 225, 1.12, 4500.553].map(toUnit);
-					const timeSent = await currentTime();
-					txn = await instance.updateRates([iBTC, iETH, sEUR, sBTC], rates, timeSent, {
-						from: oracle,
-					});
-				});
-				it('regular and inverted rates should be updated correctly', async () => {
-					await assertRatesAreCorrect({
-						txn,
-						currencyKeys: [iBTC, iETH, sEUR, sBTC],
-						expectedRates: [3499.447, 175, 1.12, 4500.553].map(toUnit),
-					});
-				});
-			});
-			describe('when updateRates is called with a lower out-of-bounds update', () => {
-				let txn;
-				beforeEach(async () => {
-					const rates = [8050, 400, 1.12, 8050].map(toUnit);
-					const timeSent = await currentTime();
-					txn = await instance.updateRates([iBTC, iETH, sEUR, sBTC], rates, timeSent, {
-						from: oracle,
-					});
-				});
-				it('inverted rates must be set to the lower bounds', async () => {
-					await assertRatesAreCorrect({
-						txn,
-						currencyKeys: [iBTC, iETH, sEUR, sBTC],
-						expectedRates: [2300, 75, 1.12, 8050].map(toUnit),
-					});
-				});
 
-				describe('when another updateRates is called with an in bounds update', () => {
-					beforeEach(async () => {
-						const rates = [3500, 300, 2.12, 3500].map(toUnit);
-						const timeSent = await currentTime();
-						txn = await instance.updateRates([iBTC, iETH, sEUR, sBTC], rates, timeSent, {
-							from: oracle,
-						});
-					});
-					it('inverted rates must remain frozen at the lower bounds', async () => {
-						await assertRatesAreCorrect({
-							txn,
-							currencyKeys: [iBTC, iETH, sEUR, sBTC],
-							expectedRates: [2300, 75, 2.12, 3500].map(toUnit),
-						});
-					});
-				});
-				describe('when another updateRates is called with an out of bounds update the other way', () => {
-					beforeEach(async () => {
-						const rates = [1000, 50, 2.3, 1000].map(toUnit);
-						const timeSent = await currentTime();
-						txn = await instance.updateRates([iBTC, iETH, sEUR, sBTC], rates, timeSent, {
-							from: oracle,
-						});
-					});
-					it('inverted rates must remain frozen at the lower bounds', async () => {
-						await assertRatesAreCorrect({
-							txn,
-							currencyKeys: [iBTC, iETH, sEUR, sBTC],
-							expectedRates: [2300, 75, 2.3, 1000].map(toUnit),
-						});
-					});
-				});
-				describe('when setInversePricing is called again for the currency key', () => {
-					describe('when a price is received within bounds', () => {});
-				});
-			});
-			describe('when updateRates is called with an upper out-of-bounds update', () => {
-				let txn;
-				beforeEach(async () => {
-					const rates = [1200, 45, 1.12, 1200].map(toUnit);
-					const timeSent = await currentTime();
-					txn = await instance.updateRates([iBTC, iETH, sEUR, sBTC], rates, timeSent, {
-						from: oracle,
-					});
-				});
-				it('inverted rates must be set to the upper bounds', async () => {
-					await assertRatesAreCorrect({
-						txn,
-						currencyKeys: [iBTC, iETH, sEUR, sBTC],
-						expectedRates: [6500, 350, 1.12, 1200].map(toUnit),
-					});
-				});
+			describe('when two inverted synths are added', () => {
+				// helper function to check rates are correct
+				const assertRatesAreCorrect = async ({ currencyKeys, expectedRates, txn }) => {
+					// ensure all rates returned from contract are as expected
+					const rates = await instance.ratesForCurrencies(currencyKeys);
+					expectedRates.forEach((rate, i) => assert.bnEqual(rates[i], rate));
 
-				describe('when another updateRates is called with an in bounds update', () => {
+					// ensure transaction emitted a RatesUpdated event with the correct numbers
+					assert.eventEqual(txn, 'RatesUpdated', {
+						currencyKeys,
+						newRates: expectedRates,
+					});
+				};
+				beforeEach(async () => {
+					await instance.setInversePricing(iBTC, toUnit('4000'), toUnit('6500'), toUnit('2300'), {
+						from: owner,
+					});
+					await instance.setInversePricing(iETH, toUnit('200'), toUnit('350'), toUnit('75'), {
+						from: owner,
+					});
+				});
+				describe('when updateRates is called with an in-bounds update', () => {
+					let txn;
 					beforeEach(async () => {
-						const rates = [3500, 300, 2.12, 3500].map(toUnit);
+						const rates = [4500.553, 225, 1.12, 4500.553].map(toUnit);
 						const timeSent = await currentTime();
 						txn = await instance.updateRates([iBTC, iETH, sEUR, sBTC], rates, timeSent, {
 							from: oracle,
 						});
 					});
-					it('inverted rates must remain frozen at the upper bounds', async () => {
+					it('regular and inverted rates should be updated correctly', async () => {
 						await assertRatesAreCorrect({
 							txn,
 							currencyKeys: [iBTC, iETH, sEUR, sBTC],
-							expectedRates: [6500, 350, 2.12, 3500].map(toUnit),
+							expectedRates: [3499.447, 175, 1.12, 4500.553].map(toUnit),
+						});
+					});
+				});
+				describe('when updateRates is called with a lower out-of-bounds update', () => {
+					let txn;
+					beforeEach(async () => {
+						const rates = [8050, 400, 1.12, 8050].map(toUnit);
+						const timeSent = await currentTime();
+						txn = await instance.updateRates([iBTC, iETH, sEUR, sBTC], rates, timeSent, {
+							from: oracle,
+						});
+					});
+					it('inverted rates must be set to the lower bounds', async () => {
+						await assertRatesAreCorrect({
+							txn,
+							currencyKeys: [iBTC, iETH, sEUR, sBTC],
+							expectedRates: [2300, 75, 1.12, 8050].map(toUnit),
+						});
+					});
+
+					describe('when another updateRates is called with an in bounds update', () => {
+						beforeEach(async () => {
+							const rates = [3500, 300, 2.12, 3500].map(toUnit);
+							const timeSent = await currentTime();
+							txn = await instance.updateRates([iBTC, iETH, sEUR, sBTC], rates, timeSent, {
+								from: oracle,
+							});
+						});
+						it('inverted rates must remain frozen at the lower bounds', async () => {
+							await assertRatesAreCorrect({
+								txn,
+								currencyKeys: [iBTC, iETH, sEUR, sBTC],
+								expectedRates: [2300, 75, 2.12, 3500].map(toUnit),
+							});
+						});
+					});
+					describe('when another updateRates is called with an out of bounds update the other way', () => {
+						beforeEach(async () => {
+							const rates = [1000, 50, 2.3, 1000].map(toUnit);
+							const timeSent = await currentTime();
+							txn = await instance.updateRates([iBTC, iETH, sEUR, sBTC], rates, timeSent, {
+								from: oracle,
+							});
+						});
+						it('inverted rates must remain frozen at the lower bounds', async () => {
+							await assertRatesAreCorrect({
+								txn,
+								currencyKeys: [iBTC, iETH, sEUR, sBTC],
+								expectedRates: [2300, 75, 2.3, 1000].map(toUnit),
+							});
+						});
+					});
+					describe('when setInversePricing is called again for one of the frozen synths', () => {
+						beforeEach(async () => {
+							await instance.setInversePricing(
+								iBTC,
+								toUnit('5000'),
+								toUnit('8900'),
+								toUnit('3000'),
+								{
+									from: owner,
+								}
+							);
+						});
+						describe('when a price is received within bounds', () => {
+							let txn;
+							beforeEach(async () => {
+								const rates = [1250, 201, 1.12, 1250].map(toUnit);
+								const timeSent = await currentTime();
+								txn = await instance.updateRates([iBTC, iETH, sEUR, sBTC], rates, timeSent, {
+									from: oracle,
+								});
+							});
+							it('then the inverted synth updates as it is no longer frozen and respects new entryPoint and limits', async () => {
+								await assertRatesAreCorrect({
+									txn,
+									currencyKeys: [iBTC, iETH, sEUR, sBTC],
+									expectedRates: [8750, 75, 1.12, 1250].map(toUnit),
+								});
+							});
+							describe('when a price is received out of bounds bounds', () => {
+								let txn;
+								beforeEach(async () => {
+									const rates = [1000, 201, 1.12, 1250].map(toUnit);
+									const timeSent = await currentTime();
+									txn = await instance.updateRates([iBTC, iETH, sEUR, sBTC], rates, timeSent, {
+										from: oracle,
+									});
+								});
+								it('then the inverted freezes at new upper limit', async () => {
+									await assertRatesAreCorrect({
+										txn,
+										currencyKeys: [iBTC, iETH, sEUR, sBTC],
+										expectedRates: [8900, 75, 1.12, 1250].map(toUnit),
+									});
+								});
+							});
+						});
+					});
+				});
+				describe('when updateRates is called with an upper out-of-bounds update', () => {
+					let txn;
+					beforeEach(async () => {
+						const rates = [1200, 45, 1.12, 1200].map(toUnit);
+						const timeSent = await currentTime();
+						txn = await instance.updateRates([iBTC, iETH, sEUR, sBTC], rates, timeSent, {
+							from: oracle,
+						});
+					});
+					it('inverted rates must be set to the upper bounds', async () => {
+						await assertRatesAreCorrect({
+							txn,
+							currencyKeys: [iBTC, iETH, sEUR, sBTC],
+							expectedRates: [6500, 350, 1.12, 1200].map(toUnit),
+						});
+					});
+
+					describe('when another updateRates is called with an in bounds update', () => {
+						beforeEach(async () => {
+							const rates = [3500, 300, 2.12, 3500].map(toUnit);
+							const timeSent = await currentTime();
+							txn = await instance.updateRates([iBTC, iETH, sEUR, sBTC], rates, timeSent, {
+								from: oracle,
+							});
+						});
+						it('inverted rates must remain frozen at the upper bounds', async () => {
+							await assertRatesAreCorrect({
+								txn,
+								currencyKeys: [iBTC, iETH, sEUR, sBTC],
+								expectedRates: [6500, 350, 2.12, 3500].map(toUnit),
+							});
 						});
 					});
 				});
