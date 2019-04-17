@@ -32,7 +32,7 @@ pragma solidity 0.4.25;
 
 import "./ExternStateToken.sol";
 import "./IFeePool.sol";
-import "./ISynthetix.sol";
+import "./Synthetix.sol";
 import "./ISynthetixState.sol";
 import "./ISynth.sol";
 
@@ -41,7 +41,7 @@ contract Synth is ExternStateToken {
     /* ========== STATE VARIABLES ========== */
 
     IFeePool public feePool;
-    ISynthetix public synthetix;
+    Synthetix public synthetix;
 
     // Currency key which identifies this Synth to the Synthetix system
     bytes4 public currencyKey;
@@ -50,7 +50,7 @@ contract Synth is ExternStateToken {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _proxy, TokenState _tokenState, ISynthetix _synthetix, IFeePool _feePool,
+    constructor(address _proxy, TokenState _tokenState, Synthetix _synthetix, IFeePool _feePool,
         string _tokenName, string _tokenSymbol, address _owner, bytes4 _currencyKey
     )
         ExternStateToken(_proxy, _tokenState, _tokenName, _tokenSymbol, 0, DECIMALS, _owner)
@@ -60,7 +60,7 @@ contract Synth is ExternStateToken {
         require(address(_synthetix) != 0, "_synthetix cannot be 0");
         require(address(_feePool) != 0, "_feePool cannot be 0");
         require(_owner != 0, "_owner cannot be 0");
-        require(_synthetix.getSynth(_currencyKey) == ISynth(0), "Currency key is already in use");
+        require(_synthetix.synths(_currencyKey) == ISynth(0), "Currency key is already in use");
 
         feePool = _feePool;
         synthetix = _synthetix;
@@ -77,7 +77,7 @@ contract Synth is ExternStateToken {
 
     /* ========== SETTERS ========== */
 
-    function setSynthetix(ISynthetix _synthetix)
+    function setSynthetix(Synthetix _synthetix)
         external
         optionalProxy_onlyOwner
     {
