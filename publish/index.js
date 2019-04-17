@@ -347,11 +347,11 @@ program
 				args: [
 					proxyFeePool ? proxyFeePool.options.address : '',
 					account,
-					account,
-					account,
-					feeAuth,
+					ZERO_ADDRESS, // Synthetix
+					ZERO_ADDRESS, // FeePoolState
 					synthetixState,
 					rewardEscrow,
+					feeAuth,
 					web3.utils.toWei('0.0', 'ether'),
 					web3.utils.toWei('0.0030', 'ether'),
 				],
