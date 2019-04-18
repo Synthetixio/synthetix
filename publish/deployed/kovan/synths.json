@@ -1,5 +1,11 @@
 [
-	{ "name": "XDR", "category": "internal", "sign": "", "desc": "Synthetix Drawing Rights" },
+	{
+		"name": "XDR",
+		"asset": "",
+		"category": "internal",
+		"sign": "",
+		"desc": "Synthetix Drawing Rights"
+	},
 	{ "name": "sEUR", "asset": "EUR", "category": "forex", "sign": "€", "desc": "Euros" },
 	{ "name": "sJPY", "asset": "JPY", "category": "forex", "sign": "¥", "desc": "Japanese Yen" },
 	{ "name": "sUSD", "asset": "USD", "category": "forex", "sign": "$", "desc": "US Dollars" },
@@ -36,12 +42,36 @@
 		"name": "iBTC",
 		"asset": "BTC",
 		"category": "crypto",
-		"sign": "₿",
+		"sign": "i₿",
 		"desc": "Inverted Bitcoin",
 		"inverted": {
 			"entryPrice": 4000,
 			"upperLimit": 6500,
 			"lowerLimit": 2000
+		}
+	},
+	{
+		"name": "iETH",
+		"asset": "ETH",
+		"category": "crypto",
+		"sign": "iΞ",
+		"desc": "Inverted Ether",
+		"inverted": {
+			"entryPrice": 200,
+			"upperLimit": 320,
+			"lowerLimit": 75
+		}
+	},
+	{
+		"name": "iBNB",
+		"asset": "BNB",
+		"category": "crypto",
+		"sign": "i",
+		"desc": "Inverted Binance Coin",
+		"inverted": {
+			"entryPrice": 20,
+			"upperLimit": 32,
+			"lowerLimit": 8
 		}
 	}
 ]
