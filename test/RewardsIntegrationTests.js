@@ -6,7 +6,7 @@ const ExchangeRates = artifacts.require('ExchangeRates');
 
 const { currentTime, fastForward, toUnit, toPreciseUnit } = require('../utils/testUtils');
 
-contract.only('Rewards Integration Tests', async function(accounts) {
+contract('Rewards Integration Tests', async function(accounts) {
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
 		const timestamp = await currentTime();
@@ -384,13 +384,14 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 				// All 3 accounts have 1/3 of the rewards
 				let vestingScheduleEntry;
 				vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-				assert.bnEqual(vestingScheduleEntry[1], thirdOfMintableSupplyMinusMinterReward);
+				assert.bnClose(vestingScheduleEntry[1], thirdOfMintableSupplyMinusMinterReward, '1');
 
 				vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account2, 0);
-				assert.bnEqual(vestingScheduleEntry[1], thirdOfMintableSupplyMinusMinterReward);
+				assert.bnClose(vestingScheduleEntry[1], thirdOfMintableSupplyMinusMinterReward, '1');
 
+				// Last to claim will get slashed a rounding up error of feesAvailable
 				vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account3, 0);
-				assert.bnEqual(vestingScheduleEntry[1], thirdOfMintableSupplyMinusMinterReward);
+				assert.bnClose(vestingScheduleEntry[1], thirdOfMintableSupplyMinusMinterReward, '1');
 			});
 
 			it.only('should allocate correct SNX rewards as others leave the system', async function() {
