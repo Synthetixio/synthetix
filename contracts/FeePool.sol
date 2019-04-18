@@ -360,22 +360,22 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
         if (availableFees > 0) {
             // Record the fee payment in our recentFeePeriods
-            _recordFeePayment(availableFees);
+            uint feesPaid = _recordFeePayment(availableFees);
 
             // Send them their fees
-            _payFees(messageSender, availableFees, currencyKey);
+            _payFees(messageSender, feesPaid, currencyKey);
 
-            emitFeesClaimed(messageSender, availableFees);
+            emitFeesClaimed(messageSender, feesPaid);
         }
 
         if (availableRewards > 0) {
             // Record the reward payment in our recentFeePeriods
-            _recordRewardPayment(availableRewards);
+            uint rewardPaid = _recordRewardPayment(availableRewards);
 
             // Send them their rewards
-            _payRewards(messageSender, availableRewards);
+            _payRewards(messageSender, rewardPaid);
 
-            emitRewardsClaimed(messageSender, availableRewards);
+            emitRewardsClaimed(messageSender, rewardPaid);
         }
 
         return true;
@@ -404,10 +404,12 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
      */
     function _recordFeePayment(uint xdrAmount)
         internal
+        returns (uint)
     {
         // Don't assign to the parameter
         uint remainingToAllocate = xdrAmount;
 
+        uint feesPaid;
         // Start at the oldest period and record the amount, moving to newer periods
         // until we've exhausted the amount.
         // The condition checks for overflow because we're going to 0 with an unsigned int.
@@ -420,9 +422,10 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
                 recentFeePeriods[i].feesClaimed = recentFeePeriods[i].feesClaimed.add(amountInPeriod);
                 remainingToAllocate = remainingToAllocate.sub(amountInPeriod);
+                feesPaid = feesPaid.add(amountInPeriod);
 
                 // No need to continue iterating if we've recorded the whole amount;
-                if (remainingToAllocate == 0) return;
+                if (remainingToAllocate == 0) return feesPaid;
 
                 // We've exhausted feePeriods to distribute and no fees remain in last period
                 // User last to claim would in this scenario have their remainder slashed
@@ -432,9 +435,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
             }
         }
 
-        // If we hit this line, we've exhausted our fee periods, but still have more to allocate. Wat?
-        // If this happens it's a definite bug in the code, so assert instead of require.
-        assert(remainingToAllocate == 0);
+        return feesPaid;
     }
 
     /**
@@ -443,9 +444,12 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
      */
     function _recordRewardPayment(uint snxAmount)
         internal
+        returns (uint)
     {
         // Don't assign to the parameter
         uint remainingToAllocate = snxAmount;
+        
+        uint rewardPaid;
 
         // Start at the oldest period and record the amount, moving to newer periods
         // until we've exhausted the amount.
@@ -459,21 +463,20 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
                 recentFeePeriods[i].rewardsClaimed = recentFeePeriods[i].rewardsClaimed.add(amountInPeriod);
                 remainingToAllocate = remainingToAllocate.sub(amountInPeriod);
+                rewardPaid = rewardPaid.add(amountInPeriod);
 
                 // No need to continue iterating if we've recorded the whole amount;
-                if (remainingToAllocate == 0) return;
+                if (remainingToAllocate == 0) return rewardPaid;
 
-                // We've ran out of feePeriods to distribute and no rewards remain in last period
-                // User last to claim would in this scenario have their remainder slashed
+                // We've exhausted feePeriods to distribute and no rewards remain in last period
+                // User last to claim would in this scenario have their remainder slashed 
+                // due to rounding up of PreciseDecimal
                 if (i == 0 && remainingToAllocate > 0) {
                     remainingToAllocate = 0;
                 }
             }
         }
-
-        // If we hit this line, we've exhausted our fee periods, but still have more to allocate. Wat?
-        // If this happens it's a definite bug in the code, so assert instead of require.
-        assert(remainingToAllocate == 0);
+        return rewardPaid;
     }
 
     /**

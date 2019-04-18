@@ -6,7 +6,7 @@ const ExchangeRates = artifacts.require('ExchangeRates');
 
 const { currentTime, fastForward, toUnit, toPreciseUnit } = require('../utils/testUtils');
 
-contract.only('Rewards Integration Tests', async function(accounts) {
+contract('Rewards Integration Tests', async function(accounts) {
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
 		const timestamp = await currentTime();
@@ -298,7 +298,7 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 		it('Acc 1 doesnt claim and rewards roll over');
 		it('ctd Acc2 & 3 should get the extra amount');
 	});
-	describe.only('3 accounts with 33.33% SNX all issue MAX', async function() {
+	describe('3 accounts with 33.33% SNX all issue MAX', async function() {
 		beforeEach(async function() {
 			// Fastforward a year into the staking rewards supply
 			console.log('Fastforward a year into the staking rewards supply');
@@ -355,7 +355,7 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 				assert.bnEqual(vestingScheduleEntry[1], thirdOfMintableSupplyMinusMinterReward);
 			});
 
-			it.only('should mint SNX for the 6 fee periods then all 3 accounts claim at the end of the 6 week claimable period', async function() {
+			it('should mint SNX for the 6 fee periods then all 3 accounts claim at the end of the 6 week claimable period', async function() {
 				// Close all six periods
 				const FEE_PERIOD_LENGTH = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 				for (let i = 0; i <= FEE_PERIOD_LENGTH - 1; i++) {
@@ -384,13 +384,14 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 				// All 3 accounts have 1/3 of the rewards
 				let vestingScheduleEntry;
 				vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-				assert.bnEqual(vestingScheduleEntry[1], thirdOfMintableSupplyMinusMinterReward);
+				assert.bnClose(vestingScheduleEntry[1], thirdOfMintableSupplyMinusMinterReward, '1');
 
 				vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account2, 0);
-				assert.bnEqual(vestingScheduleEntry[1], thirdOfMintableSupplyMinusMinterReward);
+				assert.bnClose(vestingScheduleEntry[1], thirdOfMintableSupplyMinusMinterReward, '1');
 
+				// Last to claim will get slashed a rounding up error of feesAvailable
 				vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account3, 0);
-				assert.bnEqual(vestingScheduleEntry[1], thirdOfMintableSupplyMinusMinterReward);
+				assert.bnClose(vestingScheduleEntry[1], thirdOfMintableSupplyMinusMinterReward, '1');
 			});
 
 			it('should allocate correct SNX rewards as others leave the system', async function() {

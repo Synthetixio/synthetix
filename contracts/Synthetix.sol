@@ -721,10 +721,11 @@ contract Synthetix is ExternStateToken {
         // What will the new total after taking out the withdrawn amount
         uint newTotalDebtIssued = totalDebtIssued.sub(debtToRemove);
 
-        if (newTotalDebtIssued == 0) {
-            // Remove users issuanceData 
-            // Set delta to 0 as no more debt left in system
-        }
+        // if (newTotalDebtIssued == 0) {
+
+        //     // Remove users issuanceData 
+        //     // Set delta to 0 as no more debt left in system
+        // }
 
         // What is the percentage of the withdrawn debt (as a high precision int) of the total debt after?
         uint debtPercentage = debtToRemove.divideDecimalRoundPrecise(newTotalDebtIssued);
