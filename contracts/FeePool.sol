@@ -853,6 +853,10 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     {
         require(period != 0, "Current period has not closed yet");
         require(period < FEE_PERIOD_LENGTH, "Period exceeds the FEE_PERIOD_LENGTH");
+        
+        // No debt minted during period as next period starts at 0  
+        if (recentFeePeriods[period - 1].startingDebtIndex == 0) return; 
+
         uint closingDebtIndex = recentFeePeriods[period - 1].startingDebtIndex.sub(1);
 
         uint ownershipPercentage;
