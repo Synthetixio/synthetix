@@ -60,7 +60,7 @@ contract ExchangeRates is SelfDestructible {
     // There are 5 participating currencies, so we'll declare that clearly.
     bytes4[5] public xdrParticipants;
 
-    // For inverted synths, keep a mapping of their price points
+    // For inverted prices, keep a mapping of their entry, limits and frozen status
     struct InversePricing {
         uint entryPoint;
         uint upperLimit;
@@ -68,7 +68,7 @@ contract ExchangeRates is SelfDestructible {
         bool frozen;
     }
     mapping(bytes4 => InversePricing) public inversePricing;
-
+    bytes4[] public invertedKeys;
 
     //
     // ========== CONSTRUCTOR ==========
@@ -182,9 +182,9 @@ contract ExchangeRates is SelfDestructible {
 
     /**
      * @notice Internal function to get the inverted rate, if any, and mark an inverted
-     *  synth as frozen if either limits are reached.
-     * @param currencyKey The synth key to lookup
-     * @param rate The rate for the given synth key
+     *  key as frozen if either limits are reached.
+     * @param currencyKey The price key to lookup
+     * @param rate The rate for the given price key
      */
     function rateOrInverted(bytes4 currencyKey, uint rate) internal returns (uint) {
         // if an inverse mapping exists, adjust the price accordingly
@@ -199,7 +199,9 @@ contract ExchangeRates is SelfDestructible {
         if (!inverse.frozen) {
             uint doubleEntryPoint = inverse.entryPoint.mul(2);
             if (doubleEntryPoint <= rate) {
-                // avoid negative numbers
+                // avoid negative numbers for unsigned ints, so set this to 0
+                // which by the requirement that lowerLimit be > 0 will
+                // cause this to freeze the price to the lowerLimit
                 newInverseRate = 0;
             } else {
                 newInverseRate = doubleEntryPoint.sub(rate);
@@ -208,10 +210,13 @@ contract ExchangeRates is SelfDestructible {
             // now if new rate hits our limits, set it to the limit and freeze
             if (newInverseRate >= inverse.upperLimit) {
                 newInverseRate = inverse.upperLimit;
-                inverse.frozen = true;
             } else if (newInverseRate <= inverse.lowerLimit) {
                 newInverseRate = inverse.lowerLimit;
+            }
+
+            if (newInverseRate == inverse.upperLimit || newInverseRate  == inverse.lowerLimit) {
                 inverse.frozen = true;
+                emit InversePriceFrozen(currencyKey);
             }
         }
 
@@ -290,9 +295,9 @@ contract ExchangeRates is SelfDestructible {
     /**
      * @notice Set an inverse price up for the currency key
      * @param currencyKey The currency to update
-     * @param entryPoint The entry price point of the inverted synth
-     * @param upperLimit The upper limit, at or above which the synth will be frozen
-     * @param lowerLimit The lower limit, at or below which the synth will be frozen
+     * @param entryPoint The entry price point of the inverted price
+     * @param upperLimit The upper limit, at or above which the price will be frozen
+     * @param lowerLimit The lower limit, at or below which the price will be frozen
      */
     function setInversePricing(bytes4 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit)
         external onlyOwner
@@ -303,10 +308,46 @@ contract ExchangeRates is SelfDestructible {
         require(upperLimit < entryPoint.mul(2), "upperLimit must be less than double entryPoint");
         require(lowerLimit < entryPoint, "lowerLimit must be below the entryPoint");
 
+        if (inversePricing[currencyKey].entryPoint <= 0) {
+            // then we are adding a new inverse pricing, so add this
+            invertedKeys.push(currencyKey);
+        }
         inversePricing[currencyKey].entryPoint = entryPoint;
         inversePricing[currencyKey].upperLimit = upperLimit;
         inversePricing[currencyKey].lowerLimit = lowerLimit;
         inversePricing[currencyKey].frozen = false;
+
+        emit InversePriceConfigured(currencyKey, entryPoint, upperLimit, lowerLimit);
+    }
+
+    /**
+     * @notice Remove an inverse price for the currency key
+     * @param currencyKey The currency to remove inverse pricing for
+     */
+    function removeInversePricing(bytes4 currencyKey) external onlyOwner {
+        inversePricing[currencyKey].entryPoint = 0;
+        inversePricing[currencyKey].upperLimit = 0;
+        inversePricing[currencyKey].lowerLimit = 0;
+        inversePricing[currencyKey].frozen = false;
+
+        // now remove inverted key from array
+        for (uint8 i = 0; i < invertedKeys.length; i++) {
+            if (invertedKeys[i] == currencyKey) {
+                delete invertedKeys[i];
+
+                // Copy the last key into the place of the one we just deleted
+                // If there's only one key, this is array[0] = array[0].
+                // If we're deleting the last one, it's also a NOOP in the same way.
+                invertedKeys[i] = invertedKeys[invertedKeys.length - 1];
+
+                // Decrease the size of the array by one.
+                invertedKeys.length--;
+
+                break;
+            }
+        }
+
+        emit InversePriceConfigured(currencyKey, 0, 0, 0);
     }
     /* ========== VIEWS ========== */
 
@@ -428,6 +469,6 @@ contract ExchangeRates is SelfDestructible {
     event RateStalePeriodUpdated(uint rateStalePeriod);
     event RatesUpdated(bytes4[] currencyKeys, uint[] newRates);
     event RateDeleted(bytes4 currencyKey);
-
-
+    event InversePriceConfigured(bytes4 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit);
+    event InversePriceFrozen(bytes4 currencyKey);
 }

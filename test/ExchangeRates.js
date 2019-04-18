@@ -1017,7 +1017,7 @@ contract('Exchange Rates', async accounts => {
 		assert.bnEqual(lastUpdatedCurrencyXDR, ratesTotal);
 	});
 
-	describe('inverted synths', () => {
+	describe('inverted prices', () => {
 		const [iBTC, iETH, sEUR, sBTC] = ['iBTC', 'iETH', 'sEUR', 'sBTC'].map(web3.utils.asciiToHex);
 		let instance;
 		describe('when instance ready', () => {
@@ -1027,20 +1027,23 @@ contract('Exchange Rates', async accounts => {
 			it('rateIsFrozen for a regular synth returns false', async () => {
 				assert.equal(false, await instance.rateIsFrozen(sEUR));
 			});
+			it('and list of invertedKeys is empty', async () => {
+				await assert.invalidOpcode(instance.invertedKeys(0));
+			});
 			describe('when attempting to add inverse synths', () => {
 				it('ensure only the owner can invoke', async () => {
 					await assert.revert(
-						instance.setInversePricing(iBTC, toUnit('100'), toUnit('150'), toUnit('10'), {
+						instance.removeInversePricing(iBTC, {
 							from: deployerAccount,
 						})
 					);
 					await assert.revert(
-						instance.setInversePricing(iBTC, toUnit('100'), toUnit('150'), toUnit('10'), {
+						instance.removeInversePricing(iBTC, {
 							from: oracle,
 						})
 					);
 					await assert.revert(
-						instance.setInversePricing(iBTC, toUnit('100'), toUnit('150'), toUnit('10'), {
+						instance.removeInversePricing(iBTC, {
 							from: accountOne,
 						})
 					);
@@ -1084,24 +1087,59 @@ contract('Exchange Rates', async accounts => {
 
 			describe('when two inverted synths are added', () => {
 				// helper function to check rates are correct
-				const assertRatesAreCorrect = async ({ currencyKeys, expectedRates, txn }) => {
+				const assertRatesAreCorrect = async ({ currencyKeys, expectedRates, txn, frozen = [] }) => {
 					// ensure all rates returned from contract are as expected
 					const rates = await instance.ratesForCurrencies(currencyKeys);
 					expectedRates.forEach((rate, i) => assert.bnEqual(rates[i], rate));
 
-					// ensure transaction emitted a RatesUpdated event with the correct numbers
-					assert.eventEqual(txn, 'RatesUpdated', {
-						currencyKeys,
-						newRates: expectedRates,
-					});
+					const ratesUpdatedEvent = [
+						'RatesUpdated',
+						{
+							currencyKeys,
+							newRates: expectedRates,
+						},
+					];
+
+					const possibleFrozenEvents = frozen.reduce((memo, currencyKey) => {
+						return memo.concat('InversePriceFrozen', { currencyKey });
+					}, []);
+
+					const allEvents = possibleFrozenEvents.concat(ratesUpdatedEvent);
+
+					// ensure transaction emitted a RatesUpdated event and a list of possible frozen events
+					assert.eventEqual(txn, ...allEvents);
 				};
+				const setTxns = [];
 				beforeEach(async () => {
-					await instance.setInversePricing(iBTC, toUnit('4000'), toUnit('6500'), toUnit('2300'), {
-						from: owner,
+					setTxns.push(
+						await instance.setInversePricing(iBTC, toUnit(4000), toUnit(6500), toUnit(2300), {
+							from: owner,
+						})
+					);
+					setTxns.push(
+						await instance.setInversePricing(iETH, toUnit(200), toUnit(350), toUnit(75), {
+							from: owner,
+						})
+					);
+				});
+				it('both emit InversePriceConfigured events', async () => {
+					assert.eventEqual(setTxns[0], 'InversePriceConfigured', {
+						currencyKey: iBTC,
+						entryPoint: toUnit(4000),
+						upperLimit: toUnit(6500),
+						lowerLimit: toUnit(2300),
 					});
-					await instance.setInversePricing(iETH, toUnit('200'), toUnit('350'), toUnit('75'), {
-						from: owner,
+					assert.eventEqual(setTxns[1], 'InversePriceConfigured', {
+						currencyKey: iETH,
+						entryPoint: toUnit(200),
+						upperLimit: toUnit(350),
+						lowerLimit: toUnit(75),
 					});
+				});
+				it('and the list of invertedKeys lists them both', async () => {
+					assert.equal(iBTC, await instance.invertedKeys(0));
+					assert.equal(iETH, await instance.invertedKeys(1));
+					await assert.invalidOpcode(instance.invertedKeys(2));
 				});
 				it('rateIsFrozen must be false for both', async () => {
 					assert.equal(false, await instance.rateIsFrozen(iBTC));
@@ -1142,6 +1180,7 @@ contract('Exchange Rates', async accounts => {
 							txn,
 							currencyKeys: [iBTC, iETH, sEUR, sBTC],
 							expectedRates: [2300, 75, 1.12, 8050].map(toUnit),
+							frozen: [iBTC, iETH],
 						});
 					});
 					it('rateIsFrozen must be true for both', async () => {
@@ -1190,12 +1229,13 @@ contract('Exchange Rates', async accounts => {
 						});
 					});
 					describe('when setInversePricing is called again for one of the frozen synths', () => {
+						let setTxn;
 						beforeEach(async () => {
-							await instance.setInversePricing(
+							setTxn = await instance.setInversePricing(
 								iBTC,
-								toUnit('5000'),
-								toUnit('8900'),
-								toUnit('3000'),
+								toUnit(5000),
+								toUnit(8900),
+								toUnit(3000),
 								{
 									from: owner,
 								}
@@ -1204,6 +1244,20 @@ contract('Exchange Rates', async accounts => {
 						it('rateIsFrozen must be false for the updated one and true for the previously frozen one', async () => {
 							assert.equal(false, await instance.rateIsFrozen(iBTC));
 							assert.equal(true, await instance.rateIsFrozen(iETH));
+						});
+
+						it('it emits a InversePriceConfigured event', async () => {
+							assert.eventEqual(setTxn, 'InversePriceConfigured', {
+								currencyKey: iBTC,
+								entryPoint: toUnit(5000),
+								upperLimit: toUnit(8900),
+								lowerLimit: toUnit(3000),
+							});
+						});
+						it('and the list of invertedKeys still lists them both', async () => {
+							assert.equal(iBTC, await instance.invertedKeys(0));
+							assert.equal(iETH, await instance.invertedKeys(1));
+							await assert.invalidOpcode(instance.invertedKeys(2));
 						});
 
 						describe('when a price is received within bounds', () => {
@@ -1240,6 +1294,7 @@ contract('Exchange Rates', async accounts => {
 										txn,
 										currencyKeys: [iBTC, iETH, sEUR, sBTC],
 										expectedRates: [8900, 75, 1.12, 1250].map(toUnit),
+										frozen: [iBTC],
 									});
 								});
 								it('rateIsFrozen must be true', async () => {
@@ -1263,6 +1318,7 @@ contract('Exchange Rates', async accounts => {
 							txn,
 							currencyKeys: [iBTC, iETH, sEUR, sBTC],
 							expectedRates: [6500, 350, 1.12, 1200].map(toUnit),
+							frozen: [iBTC, iETH],
 						});
 					});
 					it('rateIsFrozen must be true for both', async () => {
@@ -1287,6 +1343,51 @@ contract('Exchange Rates', async accounts => {
 						});
 						it('rateIsFrozen must be true for both', async () => {
 							assert.equal(true, await instance.rateIsFrozen(iBTC));
+							assert.equal(true, await instance.rateIsFrozen(iETH));
+						});
+					});
+
+					describe('when iBTC is attempted removal by a non owner', () => {
+						it('ensure only the owner can invoke', async () => {
+							await assert.revert(
+								instance.removeInversePricing(iBTC, {
+									from: deployerAccount,
+								})
+							);
+							await assert.revert(
+								instance.removeInversePricing(iBTC, {
+									from: oracle,
+								})
+							);
+							await assert.revert(
+								instance.removeInversePricing(iBTC, {
+									from: accountOne,
+								})
+							);
+						});
+					});
+
+					describe('when iBTC is removed by the owner', () => {
+						let removeTxn;
+						beforeEach(async () => {
+							removeTxn = await instance.removeInversePricing(iBTC, {
+								from: owner,
+							});
+						});
+						it('it emits a InversePriceConfigured event', async () => {
+							assert.eventEqual(removeTxn, 'InversePriceConfigured', {
+								currencyKey: iBTC,
+								entryPoint: 0,
+								upperLimit: 0,
+								lowerLimit: 0,
+							});
+						});
+						it('and the list of invertedKeys contains only iETH', async () => {
+							assert.equal(iETH, await instance.invertedKeys(0));
+							await assert.invalidOpcode(instance.invertedKeys(1));
+						});
+						it('rateIsFrozen must be false for iBTC but still true for iETH', async () => {
+							assert.equal(false, await instance.rateIsFrozen(iBTC));
 							assert.equal(true, await instance.rateIsFrozen(iETH));
 						});
 					});
