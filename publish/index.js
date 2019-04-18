@@ -40,7 +40,7 @@ const ensureDeploymentPath = deploymentPath => {
 const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 	console.log(gray(`Loading the list of synths for ${network.toUpperCase()}...`));
 	const synthsFile = path.join(deploymentPath, SYNTHS_FILENAME);
-	const synths = JSON.parse(fs.readFileSync(synthsFile)).map(({ name }) => name);
+	const synths = JSON.parse(fs.readFileSync(synthsFile));
 	console.log(gray(`Loading the list of contracts to deploy on ${network.toUpperCase()}...`));
 	const configFile = path.join(deploymentPath, CONFIG_FILENAME);
 	const config = JSON.parse(fs.readFileSync(configFile));
@@ -312,7 +312,7 @@ program
 
 			const exchangeRates = await deployContract({
 				name: 'ExchangeRates',
-				args: [account, oracle, [web3.utils.asciiToHex('SNX')], [web3.utils.toWei('0.2', 'ether')]],
+				args: [account, oracle, [web3.utils.asciiToHex('SNX')], [web3.utils.toWei('0.2')]],
 			});
 
 			const proxyFeePool = await deployContract({
@@ -329,8 +329,8 @@ program
 					account,
 					account,
 					account,
-					web3.utils.toWei('0.0015', 'ether'),
-					web3.utils.toWei('0.0015', 'ether'),
+					web3.utils.toWei('0.0015'),
+					web3.utils.toWei('0.0015'),
 				],
 			});
 
@@ -489,7 +489,7 @@ program
 			// ----------------
 			// Synths
 			// ----------------
-			for (const currencyKey of synths) {
+			for (const { currencyKey, inverted } of synths) {
 				const tokenStateForSynth = await deployContract({
 					name: `TokenState${currencyKey}`,
 					source: 'TokenState',
@@ -566,6 +566,34 @@ program
 						} else {
 							console.log(
 								cyan(`Cannot call Synth.setSynthetix() for ${currencyKey} as not owner.`)
+							);
+						}
+					}
+
+					// now configure inverse synths in exchange rates
+					if (inverted) {
+						const { entryPrice, upperLimit, lowerLimit } = inverted;
+
+						const exchangeRatesOwner = await exchangeRates.methods.owner().call();
+						if (exchangeRatesOwner === account) {
+							console.log(
+								yellow(
+									`Invoking ExchangeRates.setInversePricing(${currencyKey}, ${entryPrice}, ${upperLimit}, ${lowerLimit})...`
+								)
+							);
+							await exchangeRates.methods
+								.setInversePricing(
+									web3.utils.asciiToHex(currencyKey),
+									web3.utils.toWei(entryPrice),
+									web3.utils.toWei(upperLimit),
+									web3.utils.toWei(lowerLimit)
+								)
+								.send(deployer.sendParameters());
+						} else {
+							console.log(
+								cyan(
+									`Cannot call ExchangeRates.setInversePricing() for ${currencyKey} as not owner.`
+								)
 							);
 						}
 					}
