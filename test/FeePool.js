@@ -11,8 +11,8 @@ contract('FeePool', async accounts => {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sAUD, sEUR, SNX],
-			['0.5', '1.25', '0.1'].map(toUnit),
+			[sAUD, sEUR, SNX, iBTC],
+			['0.5', '1.25', '0.1', '4000'].map(toUnit),
 			timestamp,
 			{
 				from: oracle,
@@ -46,7 +46,7 @@ contract('FeePool', async accounts => {
 	// 	console.log('------------------');
 	// };
 
-	const [sUSD, sAUD, sEUR, SNX, XDR] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'XDR'].map(
+	const [sUSD, sAUD, sEUR, SNX, XDR, iBTC] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'XDR', 'iBTC'].map(
 		web3.utils.asciiToHex
 	);
 
