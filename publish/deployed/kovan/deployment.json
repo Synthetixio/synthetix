@@ -14,8 +14,8 @@
       "address": "0x3Ab7DF2446f73C2eC0E39F36F34d1963a8419c18",
       "source": "Depot",
       "link": "https://kovan.etherscan.io/address/0x3Ab7DF2446f73C2eC0E39F36F34d1963a8419c18",
-      "timestamp": "2019-04-17T09:15:01.019Z",
-      "txn": "",
+      "timestamp": "2019-04-17T09:15:00.000Z",
+      "txn": "https://kovan.etherscan.io/tx/0x39f3d9f536aa74f943ba622efc6743435b6e98cb0d43c74c53948f9a6b7e4d7a",
       "network": "kovan"
     },
     "ExchangeRates": {
@@ -32,8 +32,8 @@
       "address": "0x11Dfa1Bf994Ea47e361eC474519Afd627e932eb0",
       "source": "FeePool",
       "link": "https://kovan.etherscan.io/address/0x11Dfa1Bf994Ea47e361eC474519Afd627e932eb0",
-      "timestamp": "2019-04-17T08:44:21.071Z",
-      "txn": "",
+      "timestamp": "2019-04-17T08:44:20.000Z",
+      "txn": "https://kovan.etherscan.io/tx/0x2b539b8c8879c79b1bee3dc2bcf57cac3f243b7f32b0e6a7a2278a6985bdde1c",
       "network": "kovan"
     },
     "ProxyFeePool": {
@@ -239,8 +239,8 @@
       "address": "0x893953E8f84afcC32a12074f9f727F980B76b979",
       "source": "Synthetix",
       "link": "https://kovan.etherscan.io/address/0x893953E8f84afcC32a12074f9f727F980B76b979",
-      "timestamp": "2019-04-17T08:45:36.897Z",
-      "txn": "",
+      "timestamp": "2019-04-17T08:45:36.000Z",
+      "txn": "https://kovan.etherscan.io/tx/0x93a5e6c19f99acbd8957cfc99dec3c43d17d2f3edadcd906df455889e15187ad",
       "network": "kovan"
     },
     "SynthetixEscrow": {
@@ -248,8 +248,8 @@
       "address": "0x056767Bd610049E6192D32FB098972a6EbC21179",
       "source": "SynthetixEscrow",
       "link": "https://kovan.etherscan.io/address/0x056767Bd610049E6192D32FB098972a6EbC21179",
-      "timestamp": "2019-04-17T08:11:05.159Z",
-      "txn": "",
+      "timestamp": "2019-04-17T08:11:04.000Z",
+      "txn": "https://kovan.etherscan.io/tx/0x05b82b4efc4660e5db78e9e7a0e9eac495defe3f36f9d471eb2facc4fd1a71da",
       "network": "kovan"
     },
     "SynthetixState": {
@@ -257,8 +257,8 @@
       "address": "0x382F7Ce581D576aE5c7cC7Dd0B3d9A9d3076032d",
       "source": "SynthetixState",
       "link": "https://kovan.etherscan.io/address/0x382F7Ce581D576aE5c7cC7Dd0B3d9A9d3076032d",
-      "timestamp": "2019-04-17T08:11:20.886Z",
-      "txn": "",
+      "timestamp": "2019-04-17T08:11:20.000Z",
+      "txn": "https://kovan.etherscan.io/tx/0x8d7e78aeb1c28c1f312603a242665ee17d6c9ba587f5dd7fb7f1596237196983",
       "network": "kovan"
     },
     "SynthsAUD": {
@@ -428,8 +428,8 @@
       "address": "0xC5a315c2D702c4a28d25d7473Ee49259950D0C4F",
       "source": "Synth",
       "link": "https://kovan.etherscan.io/address/0xC5a315c2D702c4a28d25d7473Ee49259950D0C4F",
-      "timestamp": "2019-04-17T08:48:17.316Z",
-      "txn": "",
+      "timestamp": "2019-04-17T08:48:16.000Z",
+      "txn": "https://kovan.etherscan.io/tx/0x0dd25ea918475032f2cc2b634ba7e3a065f30b80465db3e6c6aefa93d50ac912",
       "network": "kovan"
     },
     "TokenStatesAUD": {
@@ -626,8 +626,8 @@
       "address": "0x45AA2F706C3d695aCC1DA9698Fb803b8Ef5157ba",
       "source": "RewardEscrow",
       "link": "https://kovan.etherscan.io/address/0x45AA2F706C3d695aCC1DA9698Fb803b8Ef5157ba",
-      "timestamp": "2019-04-17T08:10:49.311Z",
-      "txn": "",
+      "timestamp": "2019-04-17T08:10:48.000Z",
+      "txn": "https://kovan.etherscan.io/tx/0xe08264b8eef60e48a2da73c3e63a35041f7abf429c53b1cb40ea337074746be6",
       "network": "kovan"
     },
     "SupplySchedule": {
@@ -635,8 +635,8 @@
       "address": "0x33e31a1B4F75b3645941eF241a0c90fb7839fD9b",
       "source": "SupplySchedule",
       "link": "https://kovan.etherscan.io/address/0x33e31a1B4F75b3645941eF241a0c90fb7839fD9b",
-      "timestamp": "2019-04-17T08:45:01.018Z",
-      "txn": "",
+      "timestamp": "2019-04-17T08:45:00.000Z",
+      "txn": "https://kovan.etherscan.io/tx/0x6e652e179d2e35108060d625546d8b5a91c3842d3ee2b9aae64bd5ff92fa3f17",
       "network": "kovan"
     }
   },
