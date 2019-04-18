@@ -394,12 +394,14 @@ contract('Rewards Integration Tests', async function(accounts) {
 				assert.bnClose(vestingScheduleEntry[1], thirdOfMintableSupplyMinusMinterReward, '1');
 			});
 
-			it('should allocate correct SNX rewards as others leave the system', async function() {
+			it.only('should allocate correct SNX rewards as others leave the system', async function() {
 				// FastForward into the first mintable week
-				await fastForward(WEEK + MINUTE);
+				await fastForwardAndUpdateRates(WEEK + MINUTE);
 
-				// Get the SNX mintableSupply
-				const periodOneMintableSupply = await supplySchedule.mintableSupply();
+				// Get the SNX mintableSupply - the minter reward of 200 SNX
+				const mintableSupply = await supplySchedule.mintableSupply();
+				const mintableSupplyMinusMinterReward = mintableSupply.sub(MINTER_SNX_REWARD);
+				const thirdOfMintableSupplyMinusMinterReward = third(mintableSupplyMinusMinterReward);
 
 				// Mint the staking rewards
 				await synthetix.mint({ from: owner });
@@ -413,31 +415,45 @@ contract('Rewards Integration Tests', async function(accounts) {
 				// All Account 1 has 1/3 of the rewards
 				let vestingScheduleEntry;
 				vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-				assert.bnEqual(vestingScheduleEntry[1], periodOneMintableSupply.div(web3.utils.toBN('3')));
+				assert.bnEqual(vestingScheduleEntry[1], thirdOfMintableSupplyMinusMinterReward);
 
 				// Account 1 leaves the system
-				const burnableTotal = synthetix.debtBalanceOf(account1);
+				console.log('Account 1 leaves the system');
+				const burnableTotal = synthetix.debtBalanceOf(account1, sUSD);
+				console.log('burnableTotal', burnableTotal.toString());
 				synthetix.burnSynths(sUSD, burnableTotal);
 
 				// Close the period after user leaves system
+				console.log('Close the period after user leaves system');
 				closeFeePeriodAndFastForward();
 
-				// Get the SNX mintableSupply
-				const periodTwoMintableSupply = supplySchedule.mintableSupply();
+				// Get the SNX mintableSupply for period 2
+				const periodTwoMintableSupply = await supplySchedule.mintableSupply();
+				const periodTwoMintableSupplyMinusMinterReward = periodTwoMintableSupply.sub(
+					MINTER_SNX_REWARD
+				);
+				// const halfOfP2MintableSupplyMinusMinterReward = half(
+				// 	periodTwoMintableSupplyMinusMinterReward
+				// );
 
 				// Accounts 2 & 3 claim
+				console.log('Accounts 2 claim');
 				await feePool.claimFees(sUSD, { from: account2 });
+				console.log('Accounts 3 claim');
 				await feePool.claimFees(sUSD, { from: account3 });
 
 				// Accounts 2 & 3 now have 33% of period 1 and 50% of period 2
-				const rewardsAmount = periodOneMintableSupply
+				console.log('Accounts 2 & 3 now have 33% of period 1 and 50% of period 2');
+				const rewardsAmount = mintableSupplyMinusMinterReward
 					.div(web3.utils.toBN('3'))
-					.add(periodTwoMintableSupply.div(web3.utils.toBN('2')));
+					.add(periodTwoMintableSupplyMinusMinterReward.div(web3.utils.toBN('2')));
+				console.log('rewardsAmount', rewardsAmount);
 
 				vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account2, 0);
+				console.log('Accounts2 vestingScheduleEntry[1]', vestingScheduleEntry[1]);
 				assert.bnEqual(vestingScheduleEntry[1], rewardsAmount);
-
 				vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account3, 0);
+				console.log('Accounts3 vestingScheduleEntry[1]', vestingScheduleEntry[1]);
 				assert.bnEqual(vestingScheduleEntry[1], rewardsAmount);
 			});
 
