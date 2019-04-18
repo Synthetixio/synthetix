@@ -423,6 +423,12 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
                 // No need to continue iterating if we've recorded the whole amount;
                 if (remainingToAllocate == 0) return;
+
+                // We've exhausted feePeriods to distribute and no fees remain in last period
+                // User last to claim would in this scenario have their remainder slashed
+                if (i == 0 && remainingToAllocate > 0) {
+                    remainingToAllocate = 0;
+                }
             }
         }
 
@@ -456,6 +462,12 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
                 // No need to continue iterating if we've recorded the whole amount;
                 if (remainingToAllocate == 0) return;
+
+                // We've ran out of feePeriods to distribute and no rewards remain in last period
+                // User last to claim would in this scenario have their remainder slashed
+                if (i == 0 && remainingToAllocate > 0) {
+                    remainingToAllocate = 0;
+                }
             }
         }
 
