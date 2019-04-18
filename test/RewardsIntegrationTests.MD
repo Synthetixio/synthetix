@@ -31,3 +31,8 @@
 - [ ] Acc 1 doesnt claim and rewards roll over
 - [ ] Acc2 & 3 should get the extra amount
 - [ ] Acc1 doesn't claim and leaves p0, 2 & 3 should get the extra amount at period close
+
+### 3 way iussuance game
+- owner to allocate 3 accounts with 33333333.333333333333333333 SNX
+- set FeePool.feePeriodDuration to 60 seconds
+- 3 accounts issueMax sUSD 0x73555344 in p0
