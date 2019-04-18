@@ -7,12 +7,6 @@ const ExchangeRates = artifacts.require('ExchangeRates');
 const { currentTime, fastForward, toUnit, toPreciseUnit } = require('../utils/testUtils');
 
 contract.only('Rewards Integration Tests', async function(accounts) {
-	// const SECOND = 1000;
-	const MINUTE = 1000 * 60;
-	// const DAY = 86400;
-	const WEEK = 604800;
-	const YEAR = 31556926;
-
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
 		const timestamp = await currentTime();
@@ -27,7 +21,7 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 		);
 	};
 
-	const closeFeePeriod = async () => {
+	const closeFeePeriodAndFastForward = async () => {
 		const feePeriodDuration = await feePool.feePeriodDuration();
 		await fastForward(feePeriodDuration);
 		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
@@ -58,20 +52,32 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 	// 	console.log('------------------');
 	// };
 
+	// CURRENCIES
 	const [sUSD, sAUD, sEUR, sBTC, SNX] = ['sUSD', 'sAUD', 'sEUR', 'sBTC', 'SNX'].map(
 		web3.utils.asciiToHex
 	);
 
+	// DIVISIONS
 	// const half = amount => amount.div(web3.utils.toBN('2'));
 	const third = amount => amount.div(web3.utils.toBN('3'));
 	// const threeQuarters = amount => amount.div(web3.utils.toBN('4')).mul(web3.utils.toBN('3'));
 
+	// PERCENTAGES
 	const twentyPercent = toPreciseUnit('0.2');
 	const twentyFivePercent = toPreciseUnit('0.25');
 	const thirtyThreePercent = toPreciseUnit('0.33');
 	const fortyPercent = toPreciseUnit('0.4');
 	const fiftyPercent = toPreciseUnit('0.5');
 
+	// TIME IN SECONDS
+	const SECOND = 1000;
+	const MINUTE = SECOND * 60;
+	// const HOUR = MINUTE * 60;
+	// const DAY = 86400;
+	const WEEK = 604800;
+	const YEAR = 31556926;
+
+	// ACCOUNTS
 	const [
 		deployerAccount,
 		owner,
@@ -83,15 +89,10 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 		// account4,
 	] = accounts;
 
-	let feePool,
-		// FEE_ADDRESS,
-		synthetix,
-		exchangeRates,
-		supplySchedule,
-		rewardEscrow;
-	// sUSDContract,
-	// sAUDContract,
-	// XDRContract;
+	// CONTRACTS
+	let feePool, synthetix, exchangeRates, supplySchedule, rewardEscrow;
+
+	const MINTER_SNX_REWARD = toUnit('200');
 
 	beforeEach(async function() {
 		// Save ourselves from having to await deployed() in every single test.
@@ -99,12 +100,7 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 		// contract interfaces to prevent test bleed.
 		exchangeRates = await ExchangeRates.deployed();
 		feePool = await FeePool.deployed();
-		// FEE_ADDRESS = await feePool.FEE_ADDRESS();
-
 		synthetix = await Synthetix.deployed();
-		// sUSDContract = await Synth.at(await synthetix.synths(sUSD));
-		// sAUDContract = await Synth.at(await synthetix.synths(sAUD));
-		// XDRContract = await Synth.at(await synthetix.synths(XDR));
 
 		supplySchedule = await SupplySchedule.deployed();
 		rewardEscrow = await RewardEscrow.deployed();
@@ -144,7 +140,7 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 			await synthetix.issueSynths(sBTC, sBTCAmount, { from: account1 });
 			await synthetix.issueSynths(sBTC, sBTCAmount, { from: account2 });
 
-			await closeFeePeriod();
+			await closeFeePeriodAndFastForward();
 
 			// Assert 1, 2 have 50% each of the effectiveDebtRatioForPeriod
 			const debtRatioAccount1 = await FeePool.effectiveDebtRatioForPeriod(account1, 1);
@@ -183,7 +179,7 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 			await synthetix.mint({ from: owner });
 
 			// Close so we can claim
-			await closeFeePeriod();
+			await closeFeePeriodAndFastForward();
 
 			// Assert (1,2,3) have (40%,40%,20%) of the debt in the recently closed period
 			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account1, 1), fortyPercent);
@@ -235,7 +231,7 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 
 			// Close p1
 			console.log('Close p1');
-			await closeFeePeriod();
+			await closeFeePeriodAndFastForward();
 
 			// Assert Accounts have 33% each
 			console.log('Assert Accounts have 33% each');
@@ -251,7 +247,7 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 
 			// Close p2
 			console.log('Close p2');
-			await closeFeePeriod();
+			await closeFeePeriodAndFastForward();
 
 			// Assert Acc 1 has 50% debt
 			console.log('Assert Acc 1 has 50% debt');
@@ -268,7 +264,7 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 			await synthetix.issueSynths(sUSD, twentyK, { from: account1 });
 
 			// Close p2
-			await closeFeePeriod();
+			await closeFeePeriodAndFastForward();
 
 			// Assert Acc 1 has 50% debt
 			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account1, 1), fiftyPercent);
@@ -286,7 +282,7 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 			await synthetix.issueSynths(sUSD, tenK, { from: account1 });
 
 			// Close p3
-			await closeFeePeriod();
+			await closeFeePeriodAndFastForward();
 
 			// Assert Acc 1 has 50% debt
 			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account1, 1), fiftyPercent);
@@ -327,15 +323,14 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 		});
 
 		describe('Rewards Claiming', async function() {
-			it.only('should allocate the 3 accounts a third of the rewards for 1 period', async function() {
+			it('should allocate the 3 accounts a third of the rewards for 1 period', async function() {
 				// FastForward into the first mintable week
 				await fastForwardAndUpdateRates(WEEK + MINUTE);
 
-				// Get the SNX mintableSupply
+				// Get the SNX mintableSupply - the minter reward of 200 SNX
 				const mintableSupply = await supplySchedule.mintableSupply();
-				console.log('mintableSupply', mintableSupply.toString());
-				const thirdOfMintableSupply = third(mintableSupply);
-				console.log('thirdOfMintableSupply', thirdOfMintableSupply.toString());
+				const mintableSupplyMinusMinterReward = mintableSupply.sub(MINTER_SNX_REWARD);
+				const thirdOfMintableSupplyMinusMinterReward = third(mintableSupplyMinusMinterReward);
 
 				// Mint the staking rewards
 				await synthetix.mint({ from: owner });
@@ -349,35 +344,37 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 				await feePool.claimFees(sUSD, { from: account3 });
 
 				// All 3 accounts have 1/3 of the rewards
-				console.log('All 3 accounts have 1/3 of the rewards');
 				let vestingScheduleEntry;
 				vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-				console.log('vestingScheduleEntry', vestingScheduleEntry);
-				console.log('1vestingScheduleEntry[1]', vestingScheduleEntry[1].toString());
-				console.log('480769230769230769230769-480702564102564102564102=6.666666667e19');
-				assert.bnEqual(vestingScheduleEntry[1], thirdOfMintableSupply);
+				assert.bnEqual(vestingScheduleEntry[1], thirdOfMintableSupplyMinusMinterReward);
 
 				vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account2, 0);
-				console.log('2vestingScheduleEntry[1]', vestingScheduleEntry[1].toString());
-				assert.bnEqual(vestingScheduleEntry[1], thirdOfMintableSupply);
+				assert.bnEqual(vestingScheduleEntry[1], thirdOfMintableSupplyMinusMinterReward);
 
 				vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account3, 0);
-				console.log('3vestingScheduleEntry[1]', vestingScheduleEntry[1].toString());
-				assert.bnEqual(vestingScheduleEntry[1], thirdOfMintableSupply);
+				assert.bnEqual(vestingScheduleEntry[1], thirdOfMintableSupplyMinusMinterReward);
 			});
 
-			it('should mint SNX for the 6 fee periods then all 3 accounts claim at the end of the 6 week claimable period', async function() {
+			it.only('should mint SNX for the 6 fee periods then all 3 accounts claim at the end of the 6 week claimable period', async function() {
+				// Close all six periods
 				const FEE_PERIOD_LENGTH = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
-
-				for (let i = 0; i < FEE_PERIOD_LENGTH - 1; i++) {
-					await closeFeePeriod();
+				for (let i = 0; i <= FEE_PERIOD_LENGTH - 1; i++) {
+					await closeFeePeriodAndFastForward();
 				}
 
-				// Get the SNX mintableSupply
+				// Get the SNX mintableSupply - the minter reward of 200 SNX
 				const mintableSupply = await supplySchedule.mintableSupply();
+				const mintableSupplyMinusMinterReward = mintableSupply.sub(MINTER_SNX_REWARD);
+				const thirdOfMintableSupplyMinusMinterReward = third(mintableSupplyMinusMinterReward);
 
 				// Mint the staking rewards
 				await synthetix.mint({ from: owner });
+
+				// FastForward into the next week to be able to Close Fee Period
+				await fastForwardAndUpdateRates(WEEK + MINUTE);
+
+				// Close Fee Period
+				await feePool.closeCurrentFeePeriod({ from: feeAuthority });
 
 				// All 3 accounts claim rewards
 				await feePool.claimFees(sUSD, { from: account1 });
@@ -387,13 +384,13 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 				// All 3 accounts have 1/3 of the rewards
 				let vestingScheduleEntry;
 				vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-				assert.bnEqual(vestingScheduleEntry[1], mintableSupply.div(web3.utils.toBN('3')));
+				assert.bnEqual(vestingScheduleEntry[1], thirdOfMintableSupplyMinusMinterReward);
 
 				vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account2, 0);
-				assert.bnEqual(vestingScheduleEntry[1], mintableSupply.div(web3.utils.toBN('3')));
+				assert.bnEqual(vestingScheduleEntry[1], thirdOfMintableSupplyMinusMinterReward);
 
 				vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account3, 0);
-				assert.bnEqual(vestingScheduleEntry[1], mintableSupply.div(web3.utils.toBN('3')));
+				assert.bnEqual(vestingScheduleEntry[1], thirdOfMintableSupplyMinusMinterReward);
 			});
 
 			it('should allocate correct SNX rewards as others leave the system', async function() {
@@ -422,7 +419,7 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 				synthetix.burnSynths(sUSD, burnableTotal);
 
 				// Close the period after user leaves system
-				closeFeePeriod();
+				closeFeePeriodAndFastForward();
 
 				// Get the SNX mintableSupply
 				const periodTwoMintableSupply = supplySchedule.mintableSupply();
@@ -470,7 +467,7 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 
 					// Once the fee period is closed we should have 1/3 the rewards available because we have
 					// 1/3 the collateral backing up the system.
-					await closeFeePeriod();
+					await closeFeePeriodAndFastForward();
 					[, snxRewards] = await feePool.feesAvailable(account1, sUSD);
 					assert.bnClose(snxRewards, third(periodOneMintableSupply));
 
@@ -502,7 +499,7 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 
 					// Once the fee period is closed we should have 1/3 the rewards available because we have
 					// 1/3 the collateral backing up the system.
-					await closeFeePeriod();
+					await closeFeePeriodAndFastForward();
 					[, snxRewards] = await feePool.feesAvailable(account1, sUSD);
 					assert.bnClose(snxRewards, third(periodOneMintableSupply));
 
