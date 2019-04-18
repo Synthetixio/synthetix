@@ -38,7 +38,6 @@ contract ExchangeRates is SelfDestructible {
 
 
     using SafeMath for uint;
-    using SafeDecimalMath for uint;
 
     // Exchange rates stored by currency code, e.g. 'SNX', or 'sUSD'
     mapping(bytes4 => uint) public rates;
