@@ -193,6 +193,7 @@ contract ExchangeRates is SelfDestructible {
             return rate;
         }
 
+        // set the rate to the current rate initially (if it's frozen, this is what will be returned)
         uint newInverseRate = rates[currencyKey];
 
         // get the new inverted rate if not frozen
