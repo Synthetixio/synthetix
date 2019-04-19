@@ -329,8 +329,8 @@ program
 					account,
 					account,
 					account,
-					web3.utils.toWei('0.0015'),
-					web3.utils.toWei('0.0015'),
+					web3.utils.toWei('0'), // transfer fee
+					web3.utils.toWei('0.003'), // exchange fee
 				],
 			});
 
