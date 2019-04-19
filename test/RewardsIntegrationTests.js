@@ -437,6 +437,9 @@ contract('Rewards Integration Tests', async function(accounts) {
 				// );
 
 				// Accounts 2 & 3 claim
+				console.log('feesAvailable');
+				const feesAvailable = await feePool.feesAvailable(account2, sUSD);
+				console.log('feesAvailable', feesAvailable);
 				console.log('Accounts 2 claim');
 				await feePool.claimFees(sUSD, { from: account2 });
 				console.log('Accounts 3 claim');
