@@ -21,6 +21,17 @@ The code here will be under continual audit and improvement as the project progr
 - https://dashboard.synthetix.io
 - https://swappr.io
 
+## Branching
+
+A note on the branches used in this repo.
+
+- `master` represents the contracts live on `mainnet` and all testnets.
+- `alpha` is for the newest version of contracts, and is reserved for deploys to `kovan`
+- `beta` is for promoted alpha contracts, and is reserved for deploys to `rinkeby`
+- `release-candidate` is for promoted beta contracts, and is reserved for deploys to `ropsten`
+
+When a new version of the contracts makes its way through all testnets, it eventually becomes promoted in `master`, with [semver](https://semver.org/) reflecting contract changes in the `major` or `minor` portion of the version (depending on backwards compatibility). `patch` changes are simply for changes to the JavaScript interface.
+
 ## Usage and requirements
 
 ### As an npm module
