@@ -995,17 +995,19 @@ contract('Exchange Rates', async function(accounts) {
 	});
 
 	it('should update the XDR rates correctly with a subset of exchange rates', async function() {
-		const timeSent = await currentTime();
 		const keysArray = ['sCHF', 'sGBP'].map(web3.utils.asciiToHex);
 		const rates = ['3.3', '1.95'].map(toUnit);
 		const instance = await ExchangeRates.new(owner, oracle, keysArray, rates, {
 			from: deployerAccount,
 		});
 
+		const { blockNumber } = await web3.eth.getTransaction(instance.transactionHash);
+		const { timestamp } = await web3.eth.getBlock(blockNumber);
+
 		const lastUpdatedTimeXDR = await instance.lastRateUpdateTimes.call(
 			web3.utils.asciiToHex('XDR')
 		);
-		assert.equal(lastUpdatedTimeXDR, timeSent);
+		assert.bnEqual(lastUpdatedTimeXDR, web3.utils.toBN(timestamp));
 
 		const lastUpdatedCurrencyXDR = await instance.rates.call(web3.utils.asciiToHex('XDR'));
 		let ratesTotal = toUnit('1'); // sUSD is always UNIT
