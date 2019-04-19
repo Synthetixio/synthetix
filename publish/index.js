@@ -494,7 +494,7 @@ program
 			// ----------------
 			// Synths
 			// ----------------
-			for (const { currencyKey, inverted } of synths) {
+			for (const { name: currencyKey, inverted } of synths) {
 				const tokenStateForSynth = await deployContract({
 					name: `TokenState${currencyKey}`,
 					source: 'TokenState',
