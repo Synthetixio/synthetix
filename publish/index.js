@@ -587,9 +587,9 @@ program
 							await exchangeRates.methods
 								.setInversePricing(
 									toBytes4(currencyKey),
-									w3utils.toWei(entryPrice),
-									w3utils.toWei(upperLimit),
-									w3utils.toWei(lowerLimit)
+									w3utils.toWei(entryPrice.toString()),
+									w3utils.toWei(upperLimit.toString()),
+									w3utils.toWei(lowerLimit.toString())
 								)
 								.send(deployer.sendParameters());
 						} else {
