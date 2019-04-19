@@ -10,6 +10,7 @@ require('dotenv').config();
 const axios = require('axios');
 const qs = require('querystring');
 const solc = require('solc');
+const w3utils = require('web3-utils');
 
 const { findSolFiles, flatten, compile } = require('./solidity');
 const Deployer = require('./deployer');
@@ -20,6 +21,8 @@ const CONFIG_FILENAME = 'config.json';
 const SYNTHS_FILENAME = 'synths.json';
 const DEPLOYMENT_FILENAME = 'deployment.json';
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
+
+const toBytes4 = str => w3utils.asciiToHex(str, 4);
 
 const ensureNetwork = network => {
 	if (!/^(kovan|rinkeby|ropsten|mainnet)$/.test(network)) {
@@ -263,11 +266,11 @@ program
 				providerUrl,
 			});
 
-			const { account, web3 } = deployer;
+			const { account } = deployer;
 			console.log(gray(`Using account with public key ${account}`));
 
+			// force flag indicates to deploy even when no config for the entry (useful for new synths)
 			const deployContract = async ({ name, source = name, args, deps, force = false }) => {
-				// force flag indicates to deploy even when no config for the entry (useful for new synths)
 				const deployedContract = await deployer.deploy({ name, source, args, deps, force });
 				if (!deployedContract) {
 					return;
@@ -312,7 +315,7 @@ program
 
 			const exchangeRates = await deployContract({
 				name: 'ExchangeRates',
-				args: [account, oracle, [web3.utils.asciiToHex('SNX')], [web3.utils.toWei('0.2')]],
+				args: [account, oracle, [toBytes4('SNX')], [w3utils.toWei('0.2')]],
 			});
 
 			const proxyFeePool = await deployContract({
@@ -329,8 +332,8 @@ program
 					account,
 					account,
 					account,
-					web3.utils.toWei('0'), // transfer fee
-					web3.utils.toWei('0.003'), // exchange fee
+					w3utils.toWei('0'), // transfer fee
+					w3utils.toWei('0.003'), // exchange fee
 				],
 			});
 
@@ -391,9 +394,11 @@ program
 				}
 			}
 
-			if (tokenStateSynthetix) {
+			// only reset token state if redeploying
+			if (tokenStateSynthetix && config['TokenStateSynthetix'].deploy) {
 				const balance = await tokenStateSynthetix.methods.balanceOf(account).call();
-				const initialIssuance = web3.utils.toWei('100000000');
+
+				const initialIssuance = w3utils.toWei('100000000');
 				if (balance !== initialIssuance) {
 					console.log(yellow('Invoking TokenStateSynthetix.setBalanceOf(100M)...'));
 					await tokenStateSynthetix.methods
@@ -514,7 +519,7 @@ program
 						`Synth ${currencyKey}`,
 						currencyKey,
 						account,
-						web3.utils.asciiToHex(currencyKey),
+						toBytes4(currencyKey),
 					],
 					force: addNewSynths,
 				});
@@ -541,9 +546,7 @@ program
 				}
 
 				if (synth && synthetix) {
-					const currentSynthInSNX = await synthetix.methods
-						.synths(web3.utils.asciiToHex(currencyKey))
-						.call();
+					const currentSynthInSNX = await synthetix.methods.synths(toBytes4(currencyKey)).call();
 					if (currentSynthInSNX !== synthAddress) {
 						// only owner of Synthetix can do this
 						if (synthetixOwner === account) {
@@ -583,10 +586,10 @@ program
 							);
 							await exchangeRates.methods
 								.setInversePricing(
-									web3.utils.asciiToHex(currencyKey),
-									web3.utils.toWei(entryPrice),
-									web3.utils.toWei(upperLimit),
-									web3.utils.toWei(lowerLimit)
+									toBytes4(currencyKey),
+									w3utils.toWei(entryPrice),
+									w3utils.toWei(upperLimit),
+									w3utils.toWei(lowerLimit)
 								)
 								.send(deployer.sendParameters());
 						} else {
@@ -612,8 +615,8 @@ program
 						: '',
 					feePool ? feePool.options.address : '',
 					oracle,
-					web3.utils.toWei('500'),
-					web3.utils.toWei('.10'),
+					w3utils.toWei('500'),
+					w3utils.toWei('.10'),
 				],
 			});
 
