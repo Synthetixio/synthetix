@@ -350,9 +350,11 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         optionalProxy
         returns (bool)
     {
+        emit LogInt("claimFees", 0);
         uint availableFees;
         uint availableRewards;
         (availableFees, availableRewards) = feesAvailable(messageSender, "XDR");
+        emit LogInt("availableRewards", availableRewards);
 
         require(availableFees > 0 || availableRewards > 0, "No fees or rewards available for period, or fees already claimed");
 
@@ -371,6 +373,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         if (availableRewards > 0) {
             // Record the reward payment in our recentFeePeriods
             uint rewardPaid = _recordRewardPayment(availableRewards);
+            emit LogInt("rewardToPaid", rewardPaid);
 
             // Send them their rewards
             _payRewards(messageSender, rewardPaid);
@@ -533,6 +536,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
         // Record vesting entry for claiming address and amount
         // SNX already minted to rewardEscrow balance
+        emit LogInt("rewardEscrow.appendVestingEntry(snxAmount)", snxAmount);
         rewardEscrow.appendVestingEntry(account, snxAmount);
     }
 
@@ -687,6 +691,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
             totalFees = totalFees.add(userFees[i][0]);
             totalRewards = totalRewards.add(userFees[i][1]);
         }
+        emit LogInt("feesByPeriod(totalRewards)", totalRewards);
 
         // And convert totalFees to their desired currency
         // Return totalRewards as is in SNX amount

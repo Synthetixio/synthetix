@@ -1,19 +1,11 @@
 ## Tests to cover
 
-### Ratio Penalties
-
-- [x] penalty of 25% when users claim rewards between 22%-30% collateralisation ratio
-- [x] penalty of 50% when users claim rewards between 30%-40% collateralisation ratio
-- [ ] penalty of 75% when users claim rewards between 40%-50% collateralisation ratio
-- [ ] penalty of 90% when users claim rewards between > 50% collateralisation ratio
-- [ ] penalty of 100% when users claim rewards between > 100% collateralisation ratio
-
 ### 3 accounts with 33.33 SNX
 
 - [x] all issueMAX sUSD, claim in p1, all get 33.33 of rewards
 - [x] all issueMAX sUSD, all claim in p6, all get 33.33 of rewards
-- [x] all issueMAX sUSD, Acc1 claims in p1 and then leaves, then Acc2&3 claim, all get 33.33 of rewards
-- [x] p1: Acc1 & 2 mints 10K and converts all to BTC which increases 50% then Acc3 mints 10K sUSD and now Acc3 has 20% of the debt/rewards
+- [x] all issueMAX sUSD, Acc1 claims in p1 and then leaves, then Acc2&3 claim 33% of p1 & 50% of p2
+- [-] p1: Acc1 & 2 mints 10K and converts all to BTC which increases 50% then Acc3 mints 10K sUSD and now Acc3 has 20% of the debt/rewards
 
 - [ ] ctd now in p3 Acc1 burns all and leaves (-40%) and Acc2 has 67% and Acc3 33% rewards allocated as such
 - [ ] p3: Acc1 mints 20K (40%) close p (40,40,20)
@@ -32,7 +24,21 @@
 - [ ] Acc2 & 3 should get the extra amount
 - [ ] Acc1 doesn't claim and leaves p0, 2 & 3 should get the extra amount at period close
 
-### 3 way iussuance game
+### Ratio Penalties
+
+- [x] penalty of 25% when users claim rewards between 22%-30% collateralisation ratio
+- [x] penalty of 50% when users claim rewards between 30%-40% collateralisation ratio
+- [x] penalty of 75% when users claim rewards between 40%-50% collateralisation ratio
+- [x] penalty of 90% when users claim rewards between > 50% collateralisation ratio
+- [x] penalty of 100% when users claim rewards between > 100% collateralisation ratio
+
+### 3 way issuance game
+
 - owner to allocate 3 accounts with 33333333.333333333333333333 SNX
 - set FeePool.feePeriodDuration to 60 seconds
 - 3 accounts issueMax sUSD 0x73555344 in p0
+
+### Release
+
+- [ ] Import into period 1 aggregated issuance data
+- [ ] Import into period 0 current issuance data
