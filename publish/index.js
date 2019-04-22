@@ -262,8 +262,6 @@ program
 			// flags available
 			const updatedConfig = JSON.parse(JSON.stringify(config));
 
-			console.log(gray(`Starting deployment to ${network.toUpperCase()} via Infura...`));
-
 			const { providerUrl, privateKey } = loadConnections({ network });
 
 			const deployer = new Deployer({
@@ -280,6 +278,26 @@ program
 			const { account } = deployer;
 			console.log(gray(`Using account with public key ${account}`));
 
+			try {
+				await confirmAction(
+					cyan(
+						`${yellow(
+							'WARNING'
+						)}: This action will deploy the following contracts to ${network}:\n- ${Object.entries(
+							config
+						)
+							.filter(([, { deploy }]) => deploy)
+							.map(([contract]) => contract)
+							.join('\n- ')}`
+					) +
+						'\nIt will also set proxy targets and add synths to Synthetix.\n Do you want to continue? (y/n) '
+				);
+			} catch (err) {
+				console.log(gray('Operation cancelled'));
+				process.exit();
+			}
+
+			console.log(gray(`Starting deployment to ${network.toUpperCase()} via Infura...`));
 			// force flag indicates to deploy even when no config for the entry (useful for new synths)
 			const deployContract = async ({ name, source = name, args, deps, force = false }) => {
 				const deployedContract = await deployer.deploy({ name, source, args, deps, force });
