@@ -85,7 +85,7 @@ node publish verify
 node publish verify -n rinkeby -d publish/deployed/rinkeby
 ```
 
-### 4. Nominate New Owner
+## 4. Nominate New Owner
 
 For all given contracts, will invoke `nominateNewOwner` for the given new owner;
 
