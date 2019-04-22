@@ -42,36 +42,36 @@
 		"name": "iBTC",
 		"asset": "BTC",
 		"category": "crypto",
-		"sign": "i₿",
+		"sign": "₿",
 		"desc": "Inverted Bitcoin",
 		"inverted": {
-			"entryPrice": 4000,
-			"upperLimit": 6500,
-			"lowerLimit": 2000
+			"entryPrice": 5300,
+			"upperLimit": 7950,
+			"lowerLimit": 2650
 		}
 	},
 	{
 		"name": "iETH",
 		"asset": "ETH",
 		"category": "crypto",
-		"sign": "iΞ",
+		"sign": "Ξ",
 		"desc": "Inverted Ether",
 		"inverted": {
-			"entryPrice": 200,
-			"upperLimit": 320,
-			"lowerLimit": 75
+			"entryPrice": 180,
+			"upperLimit": 270,
+			"lowerLimit": 90
 		}
 	},
 	{
 		"name": "iBNB",
 		"asset": "BNB",
 		"category": "crypto",
-		"sign": "i",
+		"sign": "",
 		"desc": "Inverted Binance Coin",
 		"inverted": {
-			"entryPrice": 20,
-			"upperLimit": 32,
-			"lowerLimit": 8
+			"entryPrice": 25,
+			"upperLimit": 38,
+			"lowerLimit": 13
 		}
 	}
 ]
