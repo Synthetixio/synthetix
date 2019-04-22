@@ -214,7 +214,7 @@ contract ExchangeRates is SelfDestructible {
                 newInverseRate = inverse.lowerLimit;
             }
 
-            if (newInverseRate == inverse.upperLimit || newInverseRate  == inverse.lowerLimit) {
+            if (newInverseRate == inverse.upperLimit || newInverseRate == inverse.lowerLimit) {
                 inverse.frozen = true;
                 emit InversePriceFrozen(currencyKey);
             }
