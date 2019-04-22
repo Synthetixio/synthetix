@@ -5,7 +5,7 @@
 - [x] all issueMAX sUSD, claim in p1, all get 33.33 of rewards
 - [x] all issueMAX sUSD, all claim in p6, all get 33.33 of rewards
 - [x] all issueMAX sUSD, Acc1 claims in p1 and then leaves, then Acc2&3 claim 33% of p1 & 50% of p2
-- [-] p1: Acc1 & 2 mints 10K and converts all to BTC which increases 50% then Acc3 mints 10K sUSD and now Acc3 has 20% of the debt/rewards
+- [-] p1: Acc1 & 2 mints 10K in BTC which increases 50% then Acc3 mints 10K sUSD and now Acc3 has 20% of the debt/rewards
 
 - [ ] ctd now in p3 Acc1 burns all and leaves (-40%) and Acc2 has 67% and Acc3 33% rewards allocated as such
 - [ ] p3: Acc1 mints 20K (40%) close p (40,40,20)
