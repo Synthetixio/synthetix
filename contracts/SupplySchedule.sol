@@ -69,7 +69,8 @@ contract SupplySchedule is Owned {
 
     uint constant SECONDS_IN_YEAR = 60 * 60 * 24 * 365;
 
-    uint public constant START_DATE = 1520899200; // 2018-03-13T00:00:00+00:00
+    //uint public constant START_DATE = 1520899200; // 2018-03-13T00:00:00+00:00
+    uint public constant START_DATE = 1520294400; // 2018-03-06T00:00:00+00:00
     uint public constant YEAR_ONE = START_DATE + SECONDS_IN_YEAR.mul(1);
     uint public constant YEAR_TWO = START_DATE + SECONDS_IN_YEAR.mul(2);
     uint public constant YEAR_THREE = START_DATE + SECONDS_IN_YEAR.mul(3);
