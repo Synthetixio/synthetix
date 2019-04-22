@@ -2,7 +2,7 @@ const SupplySchedule = artifacts.require('SupplySchedule');
 const { toUnit, currentTime, divideDecimal, fastForwardTo } = require('../utils/testUtils');
 const BN = require('bn.js');
 
-contract('SupplySchedule', async function(accounts) {
+contract.only('SupplySchedule', async function(accounts) {
 	const DAY = 86400;
 	const WEEK = 604800;
 	const YEAR = 31536000;
@@ -85,9 +85,9 @@ contract('SupplySchedule', async function(accounts) {
 				sixthYearSupply: 4687500,
 			};
 
-			const YEAR_TWO_START = 1552435200;
+			const YEAR_TWO_START = 1551830400;
 			const weeklyIssuance = divideDecimal(supplySchedules.secondYearSupply, 52);
-			const weekOne = 1552435220; // first week Year 2 schedule
+			const weekOne = 1551830420; // first week Year 2 schedule
 
 			async function checkMintedValues(index, previousAmount, currentAmount = new BN(0)) {
 				const scheduleBefore = await supplySchedule.schedules(index);
@@ -396,7 +396,6 @@ contract('SupplySchedule', async function(accounts) {
 				});
 
 				it('should calculate mintable supply of 2 weeks from end of Year 2, in Year 3 week 1', async function() {
-					const yearTwoStart = 1552435200;
 					const supplyYearTwo = supplySchedules.secondYearSupply.toString();
 
 					// fast forward 49 weeks to within week 51
@@ -420,7 +419,7 @@ contract('SupplySchedule', async function(accounts) {
 					assert.ok(lastMintEvent.toNumber() >= now); // lastMintEvent is updated to >= now
 
 					// fast forward 1 week to within week 1 in Year 3
-					const weekFiftyThree = yearTwoStart + 52 * WEEK + 1 * DAY; // Sometime within week 1, Year 3
+					const weekFiftyThree = YEAR_TWO_START + 52 * WEEK + 1 * DAY; // Sometime within week 1, Year 3
 					await fastForwardTo(new Date(weekFiftyThree * 1000));
 
 					// Expect two weeks of Year 2 mintable - none from Year 3 schedule in week 1 of Year 3
@@ -447,7 +446,6 @@ contract('SupplySchedule', async function(accounts) {
 				});
 
 				it('should calculate mintable supply of 2 weeks from end of Year 2 + 1 week from Year 3, in Year 3 week 2', async function() {
-					const yearTwoStart = 1552435200;
 					const supplyYearTwo = supplySchedules.secondYearSupply.toString();
 
 					// fast forward 49 weeks to within week 51
@@ -471,7 +469,7 @@ contract('SupplySchedule', async function(accounts) {
 					assert.ok(lastMintEvent.toNumber() >= now); // lastMintEvent is updated to >= now
 
 					// fast forward 2 weeks to within week 2 in Year 3
-					const weekFiftyFour = yearTwoStart + 53 * WEEK + 1 * DAY; // Sometime within week 2, Year 3
+					const weekFiftyFour = YEAR_TWO_START + 53 * WEEK + 1 * DAY; // Sometime within week 2, Year 3
 					await fastForwardTo(new Date(weekFiftyFour * 1000));
 
 					// Expect two weeks of Year 2 mintable + one week from Year 3 schedule in week 2 of Year 3
