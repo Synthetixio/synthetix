@@ -56,10 +56,10 @@ console.logTransaction = transaction => {
 // And this is our test sandboxing. It snapshots and restores between each test.
 let lastSnapshotId;
 
-beforeEach(async function() {
+beforeEach(async () => {
 	lastSnapshotId = await takeSnapshot();
 });
 
-afterEach(async function() {
+afterEach(async () => {
 	await restoreSnapshot(lastSnapshotId);
 });

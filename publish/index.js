@@ -2,15 +2,17 @@
 
 const path = require('path');
 const fs = require('fs');
+const readline = require('readline');
 const program = require('commander');
-const { gray, green, yellow, red } = require('chalk');
+const { gray, green, yellow, red, cyan } = require('chalk');
 const { table } = require('table');
 require('pretty-error').start();
 require('dotenv').config();
 const axios = require('axios');
 const qs = require('querystring');
 const solc = require('solc');
-
+const w3utils = require('web3-utils');
+const Web3 = require('web3');
 const { findSolFiles, flatten, compile } = require('./solidity');
 const Deployer = require('./deployer');
 
@@ -20,6 +22,8 @@ const CONFIG_FILENAME = 'config.json';
 const SYNTHS_FILENAME = 'synths.json';
 const DEPLOYMENT_FILENAME = 'deployment.json';
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
+
+const toBytes4 = str => w3utils.asciiToHex(str, 4);
 
 const ensureNetwork = network => {
 	if (!/^(kovan|rinkeby|ropsten|mainnet)$/.test(network)) {
@@ -40,7 +44,7 @@ const ensureDeploymentPath = deploymentPath => {
 const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 	console.log(gray(`Loading the list of synths for ${network.toUpperCase()}...`));
 	const synthsFile = path.join(deploymentPath, SYNTHS_FILENAME);
-	const synths = JSON.parse(fs.readFileSync(synthsFile)).map(({ name }) => name);
+	const synths = JSON.parse(fs.readFileSync(synthsFile));
 	console.log(gray(`Loading the list of contracts to deploy on ${network.toUpperCase()}...`));
 	const configFile = path.join(deploymentPath, CONFIG_FILENAME);
 	const config = JSON.parse(fs.readFileSync(configFile));
@@ -61,6 +65,20 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 		deployment,
 		deploymentFile,
 	};
+};
+
+const loadConnections = ({ network }) => {
+	if (!process.env.INFURA_PROJECT_ID) {
+		throw Error('Missing .env key of INFURA_PROJECT_ID. Please add and retry.');
+	}
+	const providerUrl = `https://${network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`;
+	const privateKey = process.env.DEPLOY_PRIVATE_KEY;
+	const etherscanUrl =
+		network === 'mainnet'
+			? 'https://api.etherscan.io/api'
+			: `https://api-${network}.etherscan.io/api`;
+
+	return { providerUrl, privateKey, etherscanUrl };
 };
 
 program
@@ -244,12 +262,7 @@ program
 			// flags available
 			const updatedConfig = JSON.parse(JSON.stringify(config));
 
-			console.log(gray(`Starting deployment to ${network.toUpperCase()} via Infura...`));
-
-			const providerUrl = process.env.INFURA_PROJECT_ID
-				? `https://${network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`
-				: `https://${network}.infura.io/${process.env.INFURA_KEY}`;
-			const privateKey = process.env.DEPLOY_PRIVATE_KEY;
+			const { providerUrl, privateKey } = loadConnections({ network });
 
 			const deployer = new Deployer({
 				compiled,
@@ -262,11 +275,31 @@ program
 				providerUrl,
 			});
 
-			const { account, web3 } = deployer;
+			const { account } = deployer;
 			console.log(gray(`Using account with public key ${account}`));
 
+			try {
+				await confirmAction(
+					cyan(
+						`${yellow(
+							'WARNING'
+						)}: This action will deploy the following contracts to ${network}:\n- ${Object.entries(
+							config
+						)
+							.filter(([, { deploy }]) => deploy)
+							.map(([contract]) => contract)
+							.join('\n- ')}`
+					) +
+						'\nIt will also set proxy targets and add synths to Synthetix.\n Do you want to continue? (y/n) '
+				);
+			} catch (err) {
+				console.log(gray('Operation cancelled'));
+				process.exit();
+			}
+
+			console.log(gray(`Starting deployment to ${network.toUpperCase()} via Infura...`));
+			// force flag indicates to deploy even when no config for the entry (useful for new synths)
 			const deployContract = async ({ name, source = name, args, deps, force = false }) => {
-				// force flag indicates to deploy even when no config for the entry (useful for new synths)
 				const deployedContract = await deployer.deploy({ name, source, args, deps, force });
 				if (!deployedContract) {
 					return;
@@ -311,7 +344,7 @@ program
 
 			const exchangeRates = await deployContract({
 				name: 'ExchangeRates',
-				args: [account, oracle, [web3.utils.asciiToHex('SNX')], [web3.utils.toWei('0.2', 'ether')]],
+				args: [account, oracle, [toBytes4('SNX')], [w3utils.toWei('0.2')]],
 			});
 
 			const proxyFeePool = await deployContract({
@@ -328,8 +361,8 @@ program
 					account,
 					account,
 					account,
-					web3.utils.toWei('0.0015', 'ether'),
-					web3.utils.toWei('0.0015', 'ether'),
+					w3utils.toWei('0'), // transfer fee
+					w3utils.toWei('0.003'), // exchange fee
 				],
 			});
 
@@ -337,7 +370,7 @@ program
 				const target = await proxyFeePool.methods.target().call();
 
 				if (target !== feePool.options.address) {
-					console.log(yellow('Setting target on ProxyFeePool...'));
+					console.log(yellow('Invoking ProxyFeePool.setTarget(FeePool)...'));
 
 					await proxyFeePool.methods
 						.setTarget(feePool.options.address)
@@ -379,20 +412,24 @@ program
 			});
 
 			const synthetixAddress = synthetix ? synthetix.options.address : '';
+			// get the owner (might not be us if we didn't just do a deploy)
+			const synthetixOwner = await synthetix.methods.owner().call();
 
 			if (proxySynthetix && synthetix) {
 				const target = await proxySynthetix.methods.target().call();
 				if (target !== synthetixAddress) {
-					console.log(yellow('Setting target on ProxySynthetix...'));
+					console.log(yellow('Invoking ProxySynthetix.setTarget()...'));
 					await proxySynthetix.methods.setTarget(synthetixAddress).send(deployer.sendParameters());
 				}
 			}
 
-			if (tokenStateSynthetix) {
+			// only reset token state if redeploying
+			if (tokenStateSynthetix && config['TokenStateSynthetix'].deploy) {
 				const balance = await tokenStateSynthetix.methods.balanceOf(account).call();
-				const initialIssuance = web3.utils.toWei('100000000');
+
+				const initialIssuance = w3utils.toWei('100000000');
 				if (balance !== initialIssuance) {
-					console.log(yellow('Setting initial 100M balance on TokenStateSynthetix...'));
+					console.log(yellow('Invoking TokenStateSynthetix.setBalanceOf(100M)...'));
 					await tokenStateSynthetix.methods
 						.setBalanceOf(account, initialIssuance)
 						.send(deployer.sendParameters());
@@ -402,17 +439,31 @@ program
 			if (tokenStateSynthetix && synthetix) {
 				const associatedTSContract = await tokenStateSynthetix.methods.associatedContract().call();
 				if (associatedTSContract !== synthetixAddress) {
-					console.log(yellow('Setting associated contract on TokenStateSynthetix...'));
-					await tokenStateSynthetix.methods
-						.setAssociatedContract(synthetixAddress)
-						.send(deployer.sendParameters());
+					const tokenStateSynthetixOwner = await tokenStateSynthetix.methods.owner().call();
+
+					if (tokenStateSynthetixOwner === account) {
+						console.log(yellow('Invoking TokenStateSynthetix.setAssociatedContract(Synthetix)...'));
+						await tokenStateSynthetix.methods
+							.setAssociatedContract(synthetixAddress)
+							.send(deployer.sendParameters());
+					} else {
+						console.log(
+							cyan('Cannot call TokenStateSynthetix.setAssociatedContract() as not owner.')
+						);
+					}
 				}
 				const associatedSSContract = await synthetixState.methods.associatedContract().call();
 				if (associatedSSContract !== synthetixAddress) {
-					console.log(yellow('Setting associated contract on Synthetix State...'));
-					await synthetixState.methods
-						.setAssociatedContract(synthetixAddress)
-						.send(deployer.sendParameters());
+					const synthetixStateOwner = await synthetixState.methods.owner().call();
+
+					if (synthetixStateOwner === account) {
+						console.log(yellow('Invoking SynthetixState.setAssociatedContract(Synthetix)...'));
+						await synthetixState.methods
+							.setAssociatedContract(synthetixAddress)
+							.send(deployer.sendParameters());
+					} else {
+						console.log(cyan('Cannot call SynthetixState.setAssociatedContract() as not owner.'));
+					}
 				}
 			}
 
@@ -433,30 +484,38 @@ program
 			if (synthetix && synthetixEscrow) {
 				const escrowAddress = await synthetix.methods.escrow().call();
 				if (escrowAddress !== synthetixEscrow.options.address) {
-					console.log(yellow('Setting escrow on Synthetix...'));
+					console.log(yellow('Invoking Synthetix.setEscrow on Synthetix...'));
 					await synthetix.methods
 						.setEscrow(synthetixEscrow.options.address)
 						.send(deployer.sendParameters());
 				}
-				// Cannot run on mainnet, as it needs to be run by the owner of synthetixEscrow contract
-				if (network !== 'mainnet') {
-					const escrowSNXAddress = await synthetixEscrow.methods.synthetix().call();
-					if (escrowSNXAddress !== synthetixAddress) {
-						console.log(yellow('Setting deployed Synthetix on escrow...'));
+
+				const escrowSNXAddress = await synthetixEscrow.methods.synthetix().call();
+				if (escrowSNXAddress !== synthetixAddress) {
+					// only the owner can do this
+					const synthetixEscrowOwner = await synthetixEscrow.methods.owner().call();
+
+					if (synthetixEscrowOwner === account) {
+						console.log(yellow('Invoking SynthetixEscrow.setSynthetix()...'));
 						await synthetixEscrow.methods
 							.setSynthetix(synthetixAddress)
 							.send(deployer.sendParameters());
+					} else {
+						console.log(cyan('Cannot call SynthetixEscrow.setSynthetix() as not owner.'));
 					}
 				}
 			}
 
-			// Cannot run on mainnet, as it needs to be run by the owner of feePool contract
-			if (network !== 'mainnet') {
-				if (feePool && synthetix) {
-					const fpSNXAddress = await feePool.methods.synthetix().call();
-					if (fpSNXAddress !== synthetixAddress) {
-						console.log(yellow('Setting Synthetix on Fee Pool...'));
+			if (feePool && synthetix) {
+				const fpSNXAddress = await feePool.methods.synthetix().call();
+				if (fpSNXAddress !== synthetixAddress) {
+					const feePoolOwner = await feePool.methods.owner().call();
+					// only the owner can do this
+					if (feePoolOwner === account) {
+						console.log(yellow('Invoking FeePool.setSynthetix()...'));
 						await feePool.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
+					} else {
+						console.log(cyan('Cannot call FeePool.setSynthetix() as not owner.'));
 					}
 				}
 			}
@@ -464,7 +523,7 @@ program
 			// ----------------
 			// Synths
 			// ----------------
-			for (const currencyKey of synths) {
+			for (const { name: currencyKey, inverted } of synths) {
 				const tokenStateForSynth = await deployContract({
 					name: `TokenState${currencyKey}`,
 					source: 'TokenState',
@@ -489,7 +548,7 @@ program
 						`Synth ${currencyKey}`,
 						currencyKey,
 						account,
-						web3.utils.asciiToHex(currencyKey),
+						toBytes4(currencyKey),
 					],
 					force: addNewSynths,
 				});
@@ -497,7 +556,9 @@ program
 				if (synth && tokenStateForSynth) {
 					const tsAssociatedContract = await tokenStateForSynth.methods.associatedContract().call();
 					if (tsAssociatedContract !== synthAddress) {
-						console.log(yellow(`Setting associated contract for ${currencyKey} TokenState...`));
+						console.log(
+							yellow(`Invoking TokenState${currencyKey}.setAssociatedContract(${currencyKey})`)
+						);
 
 						await tokenStateForSynth.methods
 							.setAssociatedContract(synthAddress)
@@ -507,28 +568,65 @@ program
 				if (proxyForSynth && synth) {
 					const target = await proxyForSynth.methods.target().call();
 					if (target !== synthAddress) {
-						console.log(yellow(`Setting proxy target for ${currencyKey} Proxy...`));
+						console.log(yellow(`Invoking Proxy${currencyKey}.setTarget(${currencyKey})`));
 
 						await proxyForSynth.methods.setTarget(synthAddress).send(deployer.sendParameters());
 					}
 				}
 
-				// Cannot run on mainnet, as it needs to be owner of existing Synthetix & Synth contracts
-				if (network !== 'mainnet') {
-					if (synth && synthetix) {
-						const currentSynthInSNX = await synthetix.methods
-							.synths(web3.utils.asciiToHex(currencyKey))
-							.call();
-						if (currentSynthInSNX !== synthAddress) {
-							console.log(yellow(`Adding ${currencyKey} to Synthetix contract...`));
+				if (synth && synthetix) {
+					const currentSynthInSNX = await synthetix.methods.synths(toBytes4(currencyKey)).call();
+					if (currentSynthInSNX !== synthAddress) {
+						// only owner of Synthetix can do this
+						if (synthetixOwner === account) {
+							console.log(yellow(`Invoking Synthetix.addSynth(${currencyKey})...`));
 							await synthetix.methods.addSynth(synthAddress).send(deployer.sendParameters());
+						} else {
+							console.log(cyan('Cannot call Synthetix.addSynth() as not owner.'));
 						}
+					}
 
-						const synthSNXAddress = await synth.methods.synthetix().call();
+					const synthSNXAddress = await synth.methods.synthetix().call();
 
-						if (synthSNXAddress !== synthetixAddress) {
-							console.log(yellow(`Adding Synthetix contract on ${currencyKey} contract...`));
+					if (synthSNXAddress !== synthetixAddress) {
+						// only synth owner can do this
+						const synthOwner = await synth.methods.owner().call();
+
+						if (synthOwner === account) {
+							console.log(yellow(`Invoking Synth${currencyKey}.setSynthetix()...`));
 							await synth.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
+						} else {
+							console.log(
+								cyan(`Cannot call Synth.setSynthetix() for ${currencyKey} as not owner.`)
+							);
+						}
+					}
+
+					// now configure inverse synths in exchange rates
+					if (inverted) {
+						const { entryPrice, upperLimit, lowerLimit } = inverted;
+
+						const exchangeRatesOwner = await exchangeRates.methods.owner().call();
+						if (exchangeRatesOwner === account) {
+							console.log(
+								yellow(
+									`Invoking ExchangeRates.setInversePricing(${currencyKey}, ${entryPrice}, ${upperLimit}, ${lowerLimit})...`
+								)
+							);
+							await exchangeRates.methods
+								.setInversePricing(
+									toBytes4(currencyKey),
+									w3utils.toWei(entryPrice.toString()),
+									w3utils.toWei(upperLimit.toString()),
+									w3utils.toWei(lowerLimit.toString())
+								)
+								.send(deployer.sendParameters());
+						} else {
+							console.log(
+								cyan(
+									`Cannot call ExchangeRates.setInversePricing() for ${currencyKey} as not owner.`
+								)
+							);
 						}
 					}
 				}
@@ -546,26 +644,25 @@ program
 						: '',
 					feePool ? feePool.options.address : '',
 					oracle,
-					web3.utils.toWei('500'),
-					web3.utils.toWei('.10'),
+					w3utils.toWei('500'),
+					w3utils.toWei('.10'),
 				],
 			});
 
-			// Cannot run on mainnet as it needs to be owner of Depot contract
-			if (network !== 'mainnet') {
-				if (synthetix && depot) {
-					const depotSNXAddress = await depot.methods.synthetix().call();
-					if (depotSNXAddress !== synthetixAddress) {
-						console.log(yellow(`Setting synthetix on depot contract...`));
-
+			if (synthetix && depot) {
+				const depotSNXAddress = await depot.methods.synthetix().call();
+				if (depotSNXAddress !== synthetixAddress) {
+					const depotOwner = await depot.methods.owner().call();
+					if (depotOwner === account) {
+						console.log(yellow(`Invoking Depot.setSynthetix()...`));
 						await depot.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
+					} else {
+						console.log(cyan('Cannot call Depot.setSynthetix() as not owner.'));
 					}
 				}
 			}
 
-			console.log();
-			console.log(green('Successfully deployed all contracts!'));
-			console.log();
+			console.log(green('\nSuccessfully deployed all contracts!\n'));
 
 			const tableData = Object.keys(deployer.deployedContracts).map(key => [
 				key,
@@ -576,6 +673,108 @@ program
 			console.log(table(tableData));
 		}
 	);
+
+const confirmAction = prompt =>
+	new Promise((resolve, reject) => {
+		const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+
+		rl.question(prompt, answer => {
+			if (/y|Y/.test(answer)) resolve();
+			else reject(Error('Not confirmed'));
+			rl.close();
+		});
+	});
+
+program
+	.command('nominate')
+	.description('Nominate a new owner for one or more contracts')
+	.option(
+		'-d, --deployment-path <value>',
+		`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
+	)
+	.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
+	.option('-l, --gas-limit <value>', 'Gas limit', parseInt, 15e4)
+	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
+	.option('-o, --new-owner <value>', 'The address of the new owner (please include the 0x prefix)')
+	.option(
+		'-c, --contracts [value]',
+		'The list of contracts. Applies to all contract by default',
+		(val, memo) => {
+			memo.push(val);
+			return memo;
+		},
+		[]
+	)
+	.action(async ({ network, newOwner, contracts, deploymentPath, gasPrice, gasLimit }) => {
+		ensureNetwork(network);
+
+		if (!newOwner || !w3utils.isAddress(newOwner)) {
+			console.error(red('Invalid new owner to nominate. Please check the option and try again.'));
+			process.exit(1);
+		}
+		const { config, deployment } = loadAndCheckRequiredSources({
+			deploymentPath,
+			network,
+		});
+
+		contracts.forEach(contract => {
+			if (!(contract in config)) {
+				console.error(red(`Contract ${contract} isn't in the config for this deployment!`));
+				process.exit(1);
+			}
+		});
+		if (!contracts.length) {
+			contracts = Object.keys(config);
+		}
+
+		const { providerUrl, privateKey } = loadConnections({ network });
+		const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
+		web3.eth.accounts.wallet.add(privateKey);
+		const account = web3.eth.accounts.wallet[0].address;
+		console.log(gray(`Using account with public key ${account}`));
+
+		try {
+			await confirmAction(
+				cyan(
+					`${yellow(
+						'WARNING'
+					)}: This action will nominate ${newOwner} as the owner in ${network} of the following contracts:\n- ${contracts.join(
+						'\n- '
+					)}`
+				) + '\nDo you want to continue? (y/n) '
+			);
+		} catch (err) {
+			console.log(gray('Operation cancelled'));
+			process.exit();
+		}
+
+		for (const contract of contracts) {
+			const { address, source } = deployment.targets[contract];
+			const { abi } = deployment.sources[source];
+			const deployedContract = new web3.eth.Contract(abi, address);
+
+			const currentOwner = await deployedContract.methods.owner().call();
+			const nominatedOwner = await deployedContract.methods.nominatedOwner().call();
+
+			console.log(
+				gray(
+					`${contract} current owner is ${currentOwner}.\nCurrent nominated owner is ${nominatedOwner}.`
+				)
+			);
+			if (account !== currentOwner) {
+				console.log(cyan(`Cannot nominateNewOwner for ${contract} as you aren't the owner!`));
+			} else if (currentOwner !== newOwner && nominatedOwner !== newOwner) {
+				console.log(yellow(`Invoking ${contract}.nominateNewOwner(${newOwner})`));
+				await deployedContract.methods.nominateNewOwner(newOwner).send({
+					from: account,
+					gas: gasLimit,
+					gasPrice,
+				});
+			} else {
+				console.log(gray('No change required.'));
+			}
+		}
+	});
 
 program
 	.command('verify')
@@ -612,10 +811,7 @@ program
 			);
 		}
 
-		const etherscanUrl =
-			network === 'mainnet'
-				? 'https://api.etherscan.io/api'
-				: `https://api-${network}.etherscan.io/api`;
+		const { etherscanUrl } = loadConnections({ network });
 		console.log(gray(`Starting ${network.toUpperCase()} contract verification on Etherscan...`));
 
 		const tableData = [];

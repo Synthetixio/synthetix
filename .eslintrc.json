@@ -13,6 +13,8 @@
 	"plugins": ["havven"],
 	"rules": {
 		"havven/no-assert-revert-without-await": "error",
-		"havven/no-assert-invalid-opcode-without-await": "error"
+		"havven/no-assert-invalid-opcode-without-await": "error",
+		"prefer-arrow-callback": "error",
+		"prefer-const": "error"
 	}
 }

@@ -85,6 +85,28 @@ node publish verify
 node publish verify -n rinkeby -d publish/deployed/rinkeby
 ```
 
+### 4. Nominate New Owner
+
+For all given contracts, will invoke `nominateNewOwner` for the given new owner;
+
+```bash
+node publish nominate
+```
+
+### CLI Options
+
+- `-c, --contracts [value]` One or more contracts to invoke. Leave empty to nominate all contracts in the `config.json` file. Call multiple by invoking `-c First -c Second -c Third` for example.
+- `-d, --deployment-path <value>` Path to a folder that has your input configuration file (`config.json`), the synths list (`synths.json`) and where your `deployment.json` file will be written (and read from if it currently exists
+
+* `-g, --gas-price <value>` Gas price in GWEI (default: "1")
+* `-m, --method-call-gas-limit <value>` Method call gas limit (default: 150000)
+* `-n, --network <value>` The network to run off. One of mainnet, kovan, rinkeby, rospen. (default: "kovan")
+* `-o, --new-owner <value>` The address (with `0x` prefix included) of the new owner to nominate.
+
+```bash
+node publish nominate -n rinkeby -d publish/deployed/rinkeby -g 3 -c Synthetix -c ProxysUSD -o 0x0000000000000000000000000000000000000000
+```
+
 ## When adding new synths
 
 1. In the environment folder you are deploying to, add the synth key to the `synths.json` file

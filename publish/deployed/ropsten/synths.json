@@ -1,21 +1,39 @@
 [
-	{ "name": "XDR", "category": "internal", "sign": "", "desc": "Synthetix Drawing Rights" },
-	{ "name": "sEUR", "category": "forex", "sign": "€", "desc": "Euros" },
-	{ "name": "sJPY", "category": "forex", "sign": "¥", "desc": "Japanese Yen" },
-	{ "name": "sUSD", "category": "forex", "sign": "$", "desc": "US Dollars" },
-	{ "name": "sAUD", "category": "forex", "sign": "$", "desc": "Australian Dollars" },
-	{ "name": "sKRW", "category": "forex", "sign": "₩", "desc": "South Korean Won" },
-	{ "name": "sGBP", "category": "forex", "sign": "£", "desc": "Pound Sterling" },
-	{ "name": "sCHF", "category": "forex", "sign": "Fr", "desc": "Swiss Franc" },
-	{ "name": "sCNY", "category": "forex", "sign": "¥", "desc": "Chinese Yuan" },
-	{ "name": "sSGD", "category": "forex", "sign": "$", "desc": "Singapore Dollar" },
-	{ "name": "sCAD", "category": "forex", "sign": "$", "desc": "Canadian Dollar" },
-	{ "name": "sRUB", "category": "forex", "sign": "₽", "desc": "Russian Ruble" },
-	{ "name": "sINR", "category": "forex", "sign": "₹", "desc": "Indian Rupee" },
-	{ "name": "sBRL", "category": "forex", "sign": "R$", "desc": "Brazilian Real" },
-	{ "name": "sNZD", "category": "forex", "sign": "$", "desc": "New Zealand Dollar" },
-	{ "name": "sPLN", "category": "forex", "sign": "zł", "desc": "Poland Złoty" },
-	{ "name": "sXAU", "category": "commodity", "sign": "oz", "desc": "Gold Ounce" },
-	{ "name": "sXAG", "category": "commodity", "sign": "oz", "desc": "Silver Ounce" },
-	{ "name": "sBTC", "category": "crypto", "sign": "₿", "desc": "Bitcoin" }
+	{
+		"name": "XDR",
+		"asset": "",
+		"category": "internal",
+		"sign": "",
+		"desc": "Synthetix Drawing Rights"
+	},
+	{ "name": "sEUR", "asset": "EUR", "category": "forex", "sign": "€", "desc": "Euros" },
+	{ "name": "sJPY", "asset": "JPY", "category": "forex", "sign": "¥", "desc": "Japanese Yen" },
+	{ "name": "sUSD", "asset": "USD", "category": "forex", "sign": "$", "desc": "US Dollars" },
+	{
+		"name": "sAUD",
+		"asset": "AUD",
+		"category": "forex",
+		"sign": "$",
+		"desc": "Australian Dollars"
+	},
+	{ "name": "sKRW", "asset": "KRW", "category": "forex", "sign": "₩", "desc": "South Korean Won" },
+	{ "name": "sGBP", "asset": "GBP", "category": "forex", "sign": "£", "desc": "Pound Sterling" },
+	{ "name": "sCHF", "asset": "CHF", "category": "forex", "sign": "Fr", "desc": "Swiss Franc" },
+	{ "name": "sCNY", "asset": "CNY", "category": "forex", "sign": "¥", "desc": "Chinese Yuan" },
+	{ "name": "sSGD", "asset": "SGD", "category": "forex", "sign": "$", "desc": "Singapore Dollar" },
+	{ "name": "sCAD", "asset": "CAD", "category": "forex", "sign": "$", "desc": "Canadian Dollar" },
+	{ "name": "sRUB", "asset": "RUB", "category": "forex", "sign": "₽", "desc": "Russian Ruble" },
+	{ "name": "sINR", "asset": "INR", "category": "forex", "sign": "₹", "desc": "Indian Rupee" },
+	{ "name": "sBRL", "asset": "BRL", "category": "forex", "sign": "R$", "desc": "Brazilian Real" },
+	{
+		"name": "sNZD",
+		"asset": "NZD",
+		"category": "forex",
+		"sign": "$",
+		"desc": "New Zealand Dollar"
+	},
+	{ "name": "sPLN", "asset": "PLN", "category": "forex", "sign": "zł", "desc": "Poland Złoty" },
+	{ "name": "sXAU", "asset": "XAU", "category": "commodity", "sign": "oz", "desc": "Gold Ounce" },
+	{ "name": "sXAG", "asset": "XAG", "category": "commodity", "sign": "oz", "desc": "Silver Ounce" },
+	{ "name": "sBTC", "asset": "BTC", "category": "crypto", "sign": "₿", "desc": "Bitcoin" }
 ]

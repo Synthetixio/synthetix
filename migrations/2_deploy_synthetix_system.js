@@ -158,7 +158,7 @@ module.exports = async function(deployer, network, accounts) {
 	// ----------------
 	// Synths
 	// ----------------
-	const currencyKeys = ['XDR', 'sUSD', 'sAUD', 'sEUR'];
+	const currencyKeys = ['XDR', 'sUSD', 'sAUD', 'sEUR', 'iBTC'];
 	const synths = [];
 
 	for (const currencyKey of currencyKeys) {
@@ -219,7 +219,7 @@ module.exports = async function(deployer, network, accounts) {
 			.filter(currency => currency !== 'sUSD')
 			.concat(['SNX'])
 			.map(web3.utils.asciiToHex),
-		['1', '0.5', '1.25', '0.1'].map(number => web3.utils.toWei(number, 'ether')),
+		['1', '0.5', '1.25', '0.1', '4000'].map(number => web3.utils.toWei(number, 'ether')),
 		timestamp,
 		{ from: oracle }
 	);
