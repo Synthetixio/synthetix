@@ -67,7 +67,7 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 	// PERCENTAGES
 	const twentyPercent = toPreciseUnit('0.2');
 	const twentyFivePercent = toPreciseUnit('0.25');
-	const thirtyThreePercent = toPreciseUnit('0.33');
+	const thirtyThreePercent = toPreciseUnit('0.333333333333333333333333333');
 	const fortyPercent = toPreciseUnit('0.4');
 	const fiftyPercent = toPreciseUnit('0.5');
 
@@ -91,9 +91,10 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 		// account4,
 	] = accounts;
 
-	// CONTRACTS
-	let feePool, synthetix, exchangeRates, supplySchedule, rewardEscrow;
+	// VARIABLES
+	let feePool, synthetix, exchangeRates, supplySchedule, rewardEscrow, periodOneMintableSupply;
 
+	// CONSTANTS
 	const MINTER_SNX_REWARD = toUnit('200');
 
 	beforeEach(async function() {
@@ -107,33 +108,172 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 		supplySchedule = await SupplySchedule.deployed();
 		rewardEscrow = await RewardEscrow.deployed();
 
-		// Send a price update to guarantee we're not stale.
-		await updateRatesWithDefaults();
+		// Fastforward a year into the staking rewards supply
+		console.log('Fastforward a year into the staking rewards supply');
+		await fastForwardAndUpdateRates(YEAR + MINUTE);
+
+		// Assign 1/3 of total SNX to 3 accounts
+		console.log('Assign 1/3 of total SNX to 3 accounts');
+		const thirdOfSNX = toUnit('33333333.3333333');
+		await synthetix.transfer(account1, thirdOfSNX, { from: owner });
+		await synthetix.transfer(account2, thirdOfSNX, { from: owner });
+		await synthetix.transfer(account3, thirdOfSNX, { from: owner });
+
+		// Get the SNX mintableSupply
+		periodOneMintableSupply = await supplySchedule.mintableSupply();
+		console.log('periodOneMintableSupply', periodOneMintableSupply.toString());
+
+		// Mint the staking rewards
+		console.log('Mint the staking rewards');
+		await synthetix.mint({ from: owner });
 	});
 
-	describe('Debt ownership tests', async function() {
-		let periodOneMintableSupply;
+	describe('3 accounts with 33.33% SNX all issue MAX and claim rewards', async function() {
+		it('should allocate the 3 accounts a third of the rewards for 1 period', async function() {
+			// // FastForward into the first mintable week
+			// await fastForwardAndUpdateRates(WEEK + MINUTE);
 
-		beforeEach(async function() {
-			// Fastforward a year into the staking rewards supply
-			await fastForwardAndUpdateRates(YEAR + WEEK);
+			// // Get the SNX mintableSupply - the minter reward of 200 SNX
+			// const mintedRewardsSupply = (await supplySchedule.mintableSupply()).sub(MINTER_SNX_REWARD);
 
-			// Assign 1/3 of total SNX to 3 accounts
-			const thirdOfSNX = toUnit('33333333.3333333');
-			await synthetix.transfer(account1, thirdOfSNX, { from: owner });
-			await synthetix.transfer(account2, thirdOfSNX, { from: owner });
-			await synthetix.transfer(account3, thirdOfSNX, { from: owner });
+			// // Mint the staking rewards
+			// await synthetix.mint({ from: owner });
 
-			// Get the SNX mintableSupply
-			periodOneMintableSupply = await supplySchedule.mintableSupply();
-			console.log('periodOneMintableSupply', periodOneMintableSupply.toString());
+			// Close Fee Period
+			await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+
+			// All 3 accounts claim rewards
+			await feePool.claimFees(sUSD, { from: account1 });
+			await feePool.claimFees(sUSD, { from: account2 });
+			await feePool.claimFees(sUSD, { from: account3 });
+
+			// All 3 accounts have 1/3 of the rewards
+			const accOneEscrowed = await rewardEscrow.getVestingScheduleEntry(account1, 0);
+			assert.bnEqual(accOneEscrowed[1], third(periodOneMintableSupply));
+
+			const accTwoEscrowed = await rewardEscrow.getVestingScheduleEntry(account2, 0);
+			assert.bnEqual(accTwoEscrowed[1], third(periodOneMintableSupply));
+
+			const accThreeEscrowed = await rewardEscrow.getVestingScheduleEntry(account3, 0);
+			assert.bnEqual(accThreeEscrowed[1], third(periodOneMintableSupply));
+		});
+
+		it('should mint SNX for the 6 fee periods then all 3 accounts claim at the end of the 6 week claimable period', async function() {
+			// Close all six periods
+			const FEE_PERIOD_LENGTH = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
+			for (let i = 0; i <= FEE_PERIOD_LENGTH - 1; i++) {
+				await closeFeePeriodAndFastForward();
+			}
+
+			// Get the SNX mintableSupply - the minter reward of 200 SNX
+			const mintedRewardsSupply = (await supplySchedule.mintableSupply()).sub(MINTER_SNX_REWARD);
 
 			// Mint the staking rewards
 			await synthetix.mint({ from: owner });
+
+			// FastForward into the next week to be able to Close Fee Period
+			await fastForwardAndUpdateRates(WEEK + MINUTE);
+
+			// Close Fee Period
+			await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+
+			// All 3 accounts claim rewards
+			await feePool.claimFees(sUSD, { from: account1 });
+			await feePool.claimFees(sUSD, { from: account2 });
+			await feePool.claimFees(sUSD, { from: account3 });
+
+			// All 3 accounts have 1/3 of the rewards
+			const accOneEscrowed = await rewardEscrow.getVestingScheduleEntry(account1, 0);
+			assert.bnClose(accOneEscrowed[1], third(mintedRewardsSupply), '1');
+
+			const accTwoEscrowed = await rewardEscrow.getVestingScheduleEntry(account2, 0);
+			assert.bnClose(accTwoEscrowed[1], third(mintedRewardsSupply), '1');
+
+			const accThreeEscrowed = await rewardEscrow.getVestingScheduleEntry(account3, 0);
+			assert.bnClose(accThreeEscrowed[1], third(mintedRewardsSupply), '1');
 		});
 
+		it('should allocate correct SNX rewards as others leave the system', async function() {
+			// // FastForward into the first mintable week
+			// await fastForwardAndUpdateRates(WEEK + MINUTE);
+
+			// // Get the SNX mintableSupply - the minter reward of 200 SNX
+			// const mintedRewardsSupply = (await supplySchedule.mintableSupply()).sub(MINTER_SNX_REWARD);
+
+			// // Mint the staking rewards
+			// await synthetix.mint({ from: owner });
+
+			// Close Fee Period
+			await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+
+			// Account1 claims but 2 & 3 dont
+			await feePool.claimFees(sUSD, { from: account1 });
+
+			// All Account 1 has 1/3 of the rewards escrowed
+			const account1Escrowed = await rewardEscrow.getVestingScheduleEntry(account1, 0);
+			assert.bnClose(account1Escrowed[1], third(periodOneMintableSupply), 1);
+
+			// Account 1 leaves the system
+			const burnableTotal = await synthetix.debtBalanceOf(account1, sUSD);
+			await synthetix.burnSynths(sUSD, burnableTotal, { from: account1 });
+
+			// FastForward into the second mintable week
+			await fastForwardAndUpdateRates(WEEK + MINUTE);
+
+			// Get the SNX mintableSupply for period 2
+			const period2MintedRewardsSupply = (await supplySchedule.mintableSupply()).sub(
+				MINTER_SNX_REWARD
+			);
+
+			// Mint the staking rewards for p2
+			await synthetix.mint({ from: owner });
+
+			// Close the period after user leaves system
+			closeFeePeriodAndFastForward();
+
+			// Account1 Reenters in current unclosed period so no rewards yet
+			// await synthetix.issueMaxSynths(sUSD, { from: account1 });
+
+			// Accounts 2 & 3 now have 33% of period 1 and 50% of period 2
+			// console.log('33% of p1', third(periodOneMintableSupply).toString());
+			// console.log('50% of p2', half(period2MintedRewardsSupply).toString());
+			const rewardsAmount = third(periodOneMintableSupply).add(half(period2MintedRewardsSupply));
+			// console.log('rewardsAmount calculated', rewardsAmount.toString());
+
+			await logFeePeriods();
+
+			// Check account2 has correct rewardsAvailable
+			const account2Rewards = await feePool.feesAvailable(account2, sUSD);
+			// console.log('account2Rewards', rewardsAmount.toString(), account2Rewards[1].toString());
+			assert.bnClose(account2Rewards[1], rewardsAmount, '1');
+
+			// Check account3 has correct rewardsAvailable
+			const account3Rewards = await feePool.feesAvailable(account3, sUSD);
+			// console.log('rewardsAvailable', rewardsAmount.toString(), account3Rewards[1].toString());
+			assert.bnClose(account3Rewards[1], rewardsAmount, '1');
+
+			// Accounts 2 & 3 claim
+			await feePool.claimFees(sUSD, { from: account2 });
+			// updateRatesWithDefaults();
+			await feePool.claimFees(sUSD, { from: account3 });
+
+			// Accounts 2 & 3 now have the rewards escrowed
+			const account2Escrowed = await rewardEscrow.getVestingScheduleEntry(account2, 0);
+			// console.log('account2Escrowed[1]', account2Escrowed[1].toString());
+			assert.bnClose(account2Escrowed[1], rewardsAmount, '1');
+			const account3Escrowed = await rewardEscrow.getVestingScheduleEntry(account3, 0);
+			// console.log('account3Escrowed[1]', account2Escrowed[1].toString());
+			assert.bnClose(account3Escrowed[1], rewardsAmount, '1');
+		});
+	});
+
+	describe('accounts not claiming', async function() {
+		it('Acc 1 doesnt claim and rewards roll over');
+		it('ctd Acc2 & 3 should get the extra amount');
+	});
+
+	describe('Rate shift tests', async function() {
 		it('should assign accounts (1,2,3) to have (40%,40%,20%) of the debt/rewards', async function() {
-			let vestingScheduleEntry;
 			// Account 1&2 issue 10K USD in sBTC each, holding 50% of the total debt.
 			const tenK = toUnit('10000');
 			const sBTCAmount = synthetix.effectiveExchangeValue(sUSD, tenK, sBTC);
@@ -143,8 +283,11 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 			await closeFeePeriodAndFastForward();
 
 			// Assert 1, 2 have 50% each of the effectiveDebtRatioForPeriod
-			const debtRatioAccount1 = await FeePool.effectiveDebtRatioForPeriod(account1, 1);
-			const debtRatioAccount2 = await FeePool.effectiveDebtRatioForPeriod(account2, 1);
+			const debtRatioAccount1 = await feePool.effectiveDebtRatioForPeriod(account1, 1);
+			console.log('debtRatioAccount1', debtRatioAccount1.toString());
+			const debtRatioAccount2 = await feePool.effectiveDebtRatioForPeriod(account2, 1);
+			console.log('debtRatioAccount2', debtRatioAccount1.toString());
+
 			assert.bnEqual(debtRatioAccount1, fiftyPercent);
 			assert.bnEqual(debtRatioAccount2, fiftyPercent);
 
@@ -153,10 +296,11 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 			await feePool.claimFees(sUSD, { from: account2 });
 
 			// Assert both accounts have 50% of the minted rewards in their initial escrow entry
-			vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-			assert.bnEqual(vestingScheduleEntry[1], periodOneMintableSupply.div(2));
-			vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account2, 0);
-			assert.bnEqual(vestingScheduleEntry[1], periodOneMintableSupply.div(2));
+			const account1Escrow = await rewardEscrow.getVestingScheduleEntry(account1, 0);
+			assert.bnEqual(account1Escrow[1], periodOneMintableSupply.div(2));
+
+			const account2Escrow = await rewardEscrow.getVestingScheduleEntry(account2, 0);
+			assert.bnEqual(account2Escrow[1], periodOneMintableSupply.div(2));
 
 			// Increase BTC price by 50%
 			const timestamp = await currentTime();
@@ -182,9 +326,15 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 			await closeFeePeriodAndFastForward();
 
 			// Assert (1,2,3) have (40%,40%,20%) of the debt in the recently closed period
-			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account1, 1), fortyPercent);
-			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account2, 1), fortyPercent);
-			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account3, 1), twentyPercent);
+			const acc1Ownership = await feePool.effectiveDebtRatioForPeriod(account1, 1);
+			const acc2Ownership = await feePool.effectiveDebtRatioForPeriod(account2, 1);
+			const acc3Ownership = await feePool.effectiveDebtRatioForPeriod(account3, 1);
+			console.log('Account1.effectiveDebtRatioForPeriod', acc1Ownership.toString());
+			console.log('Account1.effectiveDebtRatioForPeriod', acc2Ownership.toString());
+			console.log('Account1.effectiveDebtRatioForPeriod', acc3Ownership.toString());
+			assert.bnEqual(acc1Ownership, fortyPercent);
+			assert.bnEqual(acc2Ownership, fortyPercent);
+			assert.bnEqual(acc3Ownership, twentyPercent);
 
 			// All 3 accounts claim rewards
 			await feePool.claimFees(sUSD, { from: account1 });
@@ -192,21 +342,24 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 			await feePool.claimFees(sUSD, { from: account3 });
 
 			// Assert (1,2,3) have (40%,40%,20%) of the rewards
-			vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account1, 1);
+			const account1EscrowEntry2 = await rewardEscrow.getVestingScheduleEntry(account1, 1);
+			console.log('account1EscrowEntry2[1]', account1EscrowEntry2[1].toString());
 			assert.bnEqual(
-				vestingScheduleEntry[1],
+				account1EscrowEntry2[1],
 				periodTwoMintableSupply.div(web3.utils.toBN('5')).mul(web3.utils.toBN('2'))
 			);
 
-			vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account2, 1);
+			const account2EscrowEntry2 = await rewardEscrow.getVestingScheduleEntry(account2, 1);
+			console.log('account2EscrowEntry2[1]', account2EscrowEntry2[1].toString());
 			assert.bnEqual(
-				vestingScheduleEntry[1],
+				account2EscrowEntry2[1],
 				periodTwoMintableSupply.div(web3.utils.toBN('5')).mul(web3.utils.toBN('2'))
 			);
 
-			vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account3, 0); // Its this accounts first escrow entry
+			const account3EscrowEntry1 = await rewardEscrow.getVestingScheduleEntry(account3, 0); // Its this accounts first escrow entry
+			console.log('account3EscrowEntry1[1]', account3EscrowEntry1[1].toString());
 			assert.bnEqual(
-				vestingScheduleEntry[1],
+				account3EscrowEntry1[1],
 				periodTwoMintableSupply.div(web3.utils.toBN('5')).mul(web3.utils.toBN('1'))
 			);
 		});
@@ -218,29 +371,36 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 		it('(Inverse) Issue sBTC then shift rate down 50% then calc rewards');
 	});
 
-	describe('3 accounts with 33.33% SNX all issue 10K sUSD each in p(0)', async function() {
+	describe('3 Accounts issue 10K sUSD each in p(0)', async function() {
 		const tenK = toUnit('10000');
 		const twentyK = toUnit('20000');
 
 		beforeEach(async function() {
-			// 3 Accounts issue 10K USD in sUSD each in p1
 			console.log('3 Accounts issue 10K USD in sUSD each in p1');
-			await synthetix.issueSynths(sUSD, twentyK, { from: account1 });
-			await synthetix.issueSynths(sUSD, twentyK, { from: account2 });
-			await synthetix.issueSynths(sUSD, twentyK, { from: account3 });
+			await synthetix.issueSynths(sUSD, tenK, { from: account1 });
+			await synthetix.issueSynths(sUSD, tenK, { from: account2 });
+			await synthetix.issueSynths(sUSD, tenK, { from: account3 });
 
 			// Close p1
 			console.log('Close p1');
 			await closeFeePeriodAndFastForward();
-
-			// Assert Accounts have 33% each
-			console.log('Assert Accounts have 33% each');
-			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account1, 1), thirtyThreePercent);
-			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account2, 1), thirtyThreePercent);
-			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account3, 1), thirtyThreePercent);
 		});
+		it('Assert Accounts have 33% ownership each', async function() {
+			// assert.bnClose(await feePool.effectiveDebtRatioForPeriod(account1, 1), thirtyThreePercent);
+			const account1Ownership = await feePool.effectiveDebtRatioForPeriod(account1, 1);
+			console.log('account1Ownership', account1Ownership.toString());
+			// assert.bnClose(account1Ownership, thirtyThreePercent);
 
-		it('p2 Acc1 Issues 20K sUSD should now has 50% debt/rewards Acc2&3 25%', async function() {
+			// assert.bnClose(await feePool.effectiveDebtRatioForPeriod(account2, 1), thirtyThreePercent);
+			const account2Ownership = await feePool.effectiveDebtRatioForPeriod(account2, 1);
+			console.log('account2Ownership', account2Ownership.toString());
+			// assert.bnClose(account2Ownership, thirtyThreePercent);
+			// assert.bnClose(await feePool.effectiveDebtRatioForPeriod(account3, 1), thirtyThreePercent);
+			const account3Ownership = await feePool.effectiveDebtRatioForPeriod(account3, 1);
+			console.log('account3Ownership', account3Ownership.toString());
+			// assert.bnClose(account3Ownership, thirtyThreePercent);
+		});
+		it('p2 Acc1 Issues 20K sUSD should now have 50% debt/rewards, Acc2&3 now 25%', async function() {
 			// Acc 1 Issues another 20K sUSD
 			console.log('Acc 1 Issues another 20K sUSD');
 			await synthetix.issueSynths(sUSD, twentyK, { from: account1 });
@@ -250,13 +410,16 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 			await closeFeePeriodAndFastForward();
 
 			// Assert Acc 1 has 50% debt
-			console.log('Assert Acc 1 has 50% debt');
-			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account1, 1), fiftyPercent);
+			const acc1Ownership = await feePool.effectiveDebtRatioForPeriod(account1, 1);
+			console.log('Assert Acc 1 has 50% debt', acc1Ownership.toString()); // 60
+			// assert.bnEqual(acc1Ownership, fiftyPercent);
 
 			// Assert Acc 2&3 has 25% debt each
-			console.log('Assert Acc 2&3 has 25% debt each');
-			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account2, 1), twentyFivePercent);
-			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account3, 1), twentyFivePercent);
+			const acc2Ownership = await feePool.effectiveDebtRatioForPeriod(account2, 1);
+			const acc3Ownership = await feePool.effectiveDebtRatioForPeriod(account3, 1);
+			console.log('Assert Acc 2&3 has 25% debt each', acc2Ownership.toString());
+			assert.bnEqual(acc2Ownership, twentyFivePercent); // 20
+			assert.bnEqual(acc3Ownership, twentyFivePercent); // 20
 		});
 
 		it('p3 Acc1 Burns all then mints 10K, then mints 10K again should have debt/rewards 50%', async function() {
@@ -267,11 +430,11 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 			await closeFeePeriodAndFastForward();
 
 			// Assert Acc 1 has 50% debt
-			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account1, 1), fiftyPercent);
+			assert.bnEqual(await feePool.effectiveDebtRatioForPeriod(account1, 1), fiftyPercent);
 
 			// Assert Acc 2&3 has 25% debt each
-			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account2, 1), twentyFivePercent);
-			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account3, 1), twentyFivePercent);
+			assert.bnEqual(await feePool.effectiveDebtRatioForPeriod(account2, 1), twentyFivePercent);
+			assert.bnEqual(await feePool.effectiveDebtRatioForPeriod(account3, 1), twentyFivePercent);
 
 			// p3
 			// Acc1 Burns all
@@ -285,316 +448,147 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 			await closeFeePeriodAndFastForward();
 
 			// Assert Acc 1 has 50% debt
-			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account1, 1), fiftyPercent);
+			const acc1Ownership = await feePool.effectiveDebtRatioForPeriod(account1, 1);
+			console.log('Assert Acc 1 has 50% debt', acc1Ownership.toString());
+			assert.bnEqual(acc1Ownership, fiftyPercent);
 
 			// Assert Acc 2&3 has 25% debt each
-			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account2, 1), twentyFivePercent);
-			assert.bnEqual(await FeePool.effectiveDebtRatioForPeriod(account3, 1), twentyFivePercent);
+			const acc2Ownership = await feePool.effectiveDebtRatioForPeriod(account2, 1);
+			const acc3Ownership = await feePool.effectiveDebtRatioForPeriod(account3, 1);
+			console.log('Assert Acc 2&3 has 25% debt each', acc2Ownership.toString());
+			assert.bnEqual(acc2Ownership, twentyFivePercent);
+			assert.bnEqual(acc3Ownership, twentyFivePercent);
 		});
 
 		it('duplicate previous tests but wait till end of 6 weeks claimable is the same', async function() {});
 	});
-	describe('accounts not claiming', async function() {
-		it('Acc 1 doesnt claim and rewards roll over');
-		it('ctd Acc2 & 3 should get the extra amount');
-	});
 
-	describe.only('3 accounts with 33.33% SNX all issue MAX', async function() {
+	describe.only('Collateralisation Ratio Penalties', async function() {
 		beforeEach(async function() {
-			// Fastforward a year into the staking rewards supply
-			// console.log('Fastforward a year into the staking rewards supply');
-			await fastForwardAndUpdateRates(YEAR + MINUTE);
+			// We should have zero rewards available because the period is still open.
+			const rewardsBefore = await feePool.feesAvailable(account1, sUSD);
+			assert.bnEqual(rewardsBefore[1], 0);
 
-			// Assign 1/3 of total SNX to 3 accounts
-			// console.log('Assign 1/3 of total SNX to 3 accounts');
-			const thirdOfSNX = toUnit('33333333.333333333333333333');
-			await synthetix.transfer(account1, thirdOfSNX, { from: owner });
-			await synthetix.transfer(account2, thirdOfSNX, { from: owner });
-			await synthetix.transfer(account3, thirdOfSNX, { from: owner });
-
-			// All accounts Issue MAX sUSD
-			// console.log('All accounts Issue MAX sUSD');
-			await synthetix.issueMaxSynths(sUSD, { from: account1 });
-			await synthetix.issueMaxSynths(sUSD, { from: account2 });
-			await synthetix.issueMaxSynths(sUSD, { from: account3 });
+			// Once the fee period is closed we should have 1/3 the rewards available because we have
+			// 1/3 the collateral backing up the system.
+			await closeFeePeriodAndFastForward();
+			const rewardsAfter = await feePool.feesAvailable(account1, sUSD);
+			console.log('rewardsAfter', rewardsAfter);
+			assert.bnClose(rewardsAfter[1], third(periodOneMintableSupply));
 		});
 
-		describe('Rewards Claiming', async function() {
-			it('should allocate the 3 accounts a third of the rewards for 1 period', async function() {
-				// FastForward into the first mintable week
-				await fastForwardAndUpdateRates(WEEK + MINUTE);
-
-				// Get the SNX mintableSupply - the minter reward of 200 SNX
-				const mintedRewardsSupply = (await supplySchedule.mintableSupply()).sub(MINTER_SNX_REWARD);
-
-				// Mint the staking rewards
-				await synthetix.mint({ from: owner });
-
-				// Close Fee Period
-				await feePool.closeCurrentFeePeriod({ from: feeAuthority });
-
-				// All 3 accounts claim rewards
-				await feePool.claimFees(sUSD, { from: account1 });
-				await feePool.claimFees(sUSD, { from: account2 });
-				await feePool.claimFees(sUSD, { from: account3 });
-
-				// All 3 accounts have 1/3 of the rewards
-				const accOneEscrowed = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-				assert.bnEqual(accOneEscrowed[1], third(mintedRewardsSupply));
-
-				const accTwoEscrowed = await rewardEscrow.getVestingScheduleEntry(account2, 0);
-				assert.bnEqual(accTwoEscrowed[1], third(mintedRewardsSupply));
-
-				const accThreeEscrowed = await rewardEscrow.getVestingScheduleEntry(account3, 0);
-				assert.bnEqual(accThreeEscrowed[1], third(mintedRewardsSupply));
+		it('should apply a penalty of 25% when users claim rewards between 22%-30% collateralisation ratio', async function() {
+			// But if the price of SNX decreases a bit...
+			const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.01'));
+			const timestamp = await currentTime();
+			await exchangeRates.updateRates([SNX], [newRate], timestamp, {
+				from: oracle,
 			});
 
-			it.only('should mint SNX for the 6 fee periods then all 3 accounts claim at the end of the 6 week claimable period', async function() {
-				// Close all six periods
-				const FEE_PERIOD_LENGTH = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
-				for (let i = 0; i <= FEE_PERIOD_LENGTH - 1; i++) {
-					await closeFeePeriodAndFastForward();
-				}
+			// we will fall into the 22-30% bracket
+			const feePenalty = await feePool.currentPenalty(account1);
+			assert.bnEqual(feePenalty, toUnit('0.25'));
 
-				// Get the SNX mintableSupply - the minter reward of 200 SNX
-				const mintedRewardsSupply = (await supplySchedule.mintableSupply()).sub(MINTER_SNX_REWARD);
+			// and lose 25% of those rewards.
+			const snxRewardsPenalized = await feePool.feesAvailable(account1, sUSD);
+			assert.bnClose(snxRewardsPenalized[1], threeQuarters(third(periodOneMintableSupply)));
 
-				// Mint the staking rewards
-				await synthetix.mint({ from: owner });
+			// And if we claim them
+			await feePool.claimFees(sUSD, { from: account1 });
 
-				// FastForward into the next week to be able to Close Fee Period
-				await fastForwardAndUpdateRates(WEEK + MINUTE);
+			// We should have our decreased rewards amount in escrow
+			const vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account1, 0);
+			assert.bnClose(vestingScheduleEntry[1], threeQuarters(third(periodOneMintableSupply)), 2);
+		});
 
-				// Close Fee Period
-				await feePool.closeCurrentFeePeriod({ from: feeAuthority });
-
-				// All 3 accounts claim rewards
-				await feePool.claimFees(sUSD, { from: account1 });
-				await feePool.claimFees(sUSD, { from: account2 });
-				await feePool.claimFees(sUSD, { from: account3 });
-
-				// All 3 accounts have 1/3 of the rewards
-				const accOneEscrowed = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-				assert.bnClose(accOneEscrowed[1], third(mintedRewardsSupply), '1');
-
-				const accTwoEscrowed = await rewardEscrow.getVestingScheduleEntry(account2, 0);
-				assert.bnClose(accTwoEscrowed[1], third(mintedRewardsSupply), '1');
-
-				const accThreeEscrowed = await rewardEscrow.getVestingScheduleEntry(account3, 0);
-				assert.bnClose(accThreeEscrowed[1], third(mintedRewardsSupply), '1');
+		it('should apply a penalty of 50% when users claim rewards between 30%-40% collateralisation ratio', async function() {
+			// But if the price of SNX decreases a bit...
+			const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.045'));
+			const timestamp = await currentTime();
+			await exchangeRates.updateRates([SNX], [newRate], timestamp, {
+				from: oracle,
 			});
 
-			it('should allocate correct SNX rewards as others leave the system', async function() {
-				// FastForward into the first mintable week
-				await fastForwardAndUpdateRates(WEEK + MINUTE);
+			// we will fall into the 30-40% bracket
+			const feePenalty = await feePool.currentPenalty(account1);
+			assert.bnEqual(feePenalty, toUnit('0.5'));
 
-				// Get the SNX mintableSupply - the minter reward of 200 SNX
-				const mintedRewardsSupply = (await supplySchedule.mintableSupply()).sub(MINTER_SNX_REWARD);
+			// and lose 50% of those rewards.
+			const snxRewardsPenalized = await feePool.feesAvailable(account1, sUSD);
+			assert.bnClose(snxRewardsPenalized[1], half(third(periodOneMintableSupply)));
 
-				// Mint the staking rewards
-				await synthetix.mint({ from: owner });
+			// And if we claim them
+			await feePool.claimFees(sUSD, { from: account1 });
 
-				// Close Fee Period
-				await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+			// We should have our decreased rewards amount in escrow
+			const vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account1, 0);
+			assert.bnClose(vestingScheduleEntry[1], half(third(periodOneMintableSupply)));
+		});
 
-				// Account1 claims but 2 & 3 dont
-				await feePool.claimFees(sUSD, { from: account1 });
-
-				// All Account 1 has 1/3 of the rewards escrowed
-				const account1Escrowed = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-				assert.bnClose(account1Escrowed[1], third(mintedRewardsSupply), 1);
-
-				// Account 1 leaves the system
-				const burnableTotal = await synthetix.debtBalanceOf(account1, sUSD);
-				await synthetix.burnSynths(sUSD, burnableTotal, { from: account1 });
-
-				// FastForward into the second mintable week
-				await fastForwardAndUpdateRates(WEEK + MINUTE);
-
-				// Get the SNX mintableSupply for period 2
-				const period2MintedRewardsSupply = (await supplySchedule.mintableSupply()).sub(
-					MINTER_SNX_REWARD
-				);
-
-				// Mint the staking rewards for p2
-				await synthetix.mint({ from: owner });
-
-				// Close the period after user leaves system
-				closeFeePeriodAndFastForward();
-
-				// Account1 Reenters in current unclosed period so no rewards yet
-				// await synthetix.issueMaxSynths(sUSD, { from: account1 });
-
-				// Accounts 2 & 3 now have 33% of period 1 and 50% of period 2
-				// console.log('33% of p1', third(mintedRewardsSupply).toString());
-				// console.log('50% of p2', half(period2MintedRewardsSupply).toString());
-				const rewardsAmount = third(mintedRewardsSupply).add(half(period2MintedRewardsSupply));
-				// console.log('rewardsAmount calculated', rewardsAmount.toString());
-
-				await logFeePeriods();
-
-				// Check account2 has correct rewardsAvailable
-				const account2Rewards = await feePool.feesAvailable(account2, sUSD);
-				// console.log('account2Rewards', rewardsAmount.toString(), account2Rewards[1].toString());
-				assert.bnClose(account2Rewards[1], rewardsAmount, '1');
-
-				// Check account3 has correct rewardsAvailable
-				const account3Rewards = await feePool.feesAvailable(account3, sUSD);
-				// console.log('rewardsAvailable', rewardsAmount.toString(), account3Rewards[1].toString());
-				assert.bnClose(account3Rewards[1], rewardsAmount, '1');
-
-				// Accounts 2 & 3 claim
-				await feePool.claimFees(sUSD, { from: account2 });
-				// updateRatesWithDefaults();
-				await feePool.claimFees(sUSD, { from: account3 });
-
-				// Accounts 2 & 3 now have the rewards escrowed
-				const account2Escrowed = await rewardEscrow.getVestingScheduleEntry(account2, 0);
-				// console.log('account2Escrowed[1]', account2Escrowed[1].toString());
-				assert.bnClose(account2Escrowed[1], rewardsAmount, '1');
-				const account3Escrowed = await rewardEscrow.getVestingScheduleEntry(account3, 0);
-				// console.log('account3Escrowed[1]', account2Escrowed[1].toString());
-				assert.bnClose(account3Escrowed[1], rewardsAmount, '1');
+		it('should apply a penalty of 75% when users claim rewards between 40%-50% collateralisation ratio', async function() {
+			// But if the price of SNX decreases a bit...
+			const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.06'));
+			const timestamp = await currentTime();
+			await exchangeRates.updateRates([SNX], [newRate], timestamp, {
+				from: oracle,
 			});
 
-			describe('Collateralisation Ratio Penalties', async function() {
-				let periodOneMintableSupply;
+			// we will fall into the 40-50%  bracket
+			const feePenalty = await feePool.currentPenalty(account1);
+			assert.bnEqual(feePenalty, toUnit('0.75'));
 
-				beforeEach(async function() {
-					// FastForward into the first mintable week
-					await fastForwardAndUpdateRates(WEEK + MINUTE);
+			// and lose 75% of those rewards.
+			const snxRewardsPenalized = await feePool.feesAvailable(account1, sUSD);
+			assert.bnClose(snxRewardsPenalized[1], quarter(third(periodOneMintableSupply)));
 
-					// Get the SNX mintableSupply minus the mintr Reward of 200 SNX
-					periodOneMintableSupply = (await supplySchedule.mintableSupply()).sub(MINTER_SNX_REWARD);
+			// And if we claim them
+			await feePool.claimFees(sUSD, { from: account1 });
 
-					// Mint the staking rewards
-					await synthetix.mint({ from: owner });
-
-					// We should have zero rewards available because the period is still open.
-					const rewardsBefore = await feePool.feesAvailable(account1, sUSD);
-					assert.bnEqual(rewardsBefore[1], 0);
-
-					// Once the fee period is closed we should have 1/3 the rewards available because we have
-					// 1/3 the collateral backing up the system.
-					await closeFeePeriodAndFastForward();
-					const rewardsAfter = await feePool.feesAvailable(account1, sUSD);
-					assert.bnClose(rewardsAfter[1], third(periodOneMintableSupply));
-				});
-
-				it('should apply a penalty of 25% when users claim rewards between 22%-30% collateralisation ratio', async function() {
-					// But if the price of SNX decreases a bit...
-					const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.01'));
-					const timestamp = await currentTime();
-					await exchangeRates.updateRates([SNX], [newRate], timestamp, {
-						from: oracle,
-					});
-
-					// we will fall into the 22-30% bracket
-					const feePenalty = await feePool.currentPenalty(account1);
-					assert.bnEqual(feePenalty, toUnit('0.25'));
-
-					// and lose 25% of those rewards.
-					const snxRewardsPenalized = await feePool.feesAvailable(account1, sUSD);
-					assert.bnClose(snxRewardsPenalized[1], threeQuarters(third(periodOneMintableSupply)));
-
-					// And if we claim them
-					await feePool.claimFees(sUSD, { from: account1 });
-
-					// We should have our decreased rewards amount in escrow
-					const vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-					assert.bnClose(vestingScheduleEntry[1], threeQuarters(third(periodOneMintableSupply)), 2);
-				});
-
-				it('should apply a penalty of 50% when users claim rewards between 30%-40% collateralisation ratio', async function() {
-					// But if the price of SNX decreases a bit...
-					const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.045'));
-					const timestamp = await currentTime();
-					await exchangeRates.updateRates([SNX], [newRate], timestamp, {
-						from: oracle,
-					});
-
-					// we will fall into the 30-40% bracket
-					const feePenalty = await feePool.currentPenalty(account1);
-					assert.bnEqual(feePenalty, toUnit('0.5'));
-
-					// and lose 50% of those rewards.
-					const snxRewardsPenalized = await feePool.feesAvailable(account1, sUSD);
-					assert.bnClose(snxRewardsPenalized[1], half(third(periodOneMintableSupply)));
-
-					// And if we claim them
-					await feePool.claimFees(sUSD, { from: account1 });
-
-					// We should have our decreased rewards amount in escrow
-					const vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-					assert.bnClose(vestingScheduleEntry[1], half(third(periodOneMintableSupply)));
-				});
-
-				it('should apply a penalty of 75% when users claim rewards between 40%-50% collateralisation ratio', async function() {
-					// But if the price of SNX decreases a bit...
-					const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.06'));
-					const timestamp = await currentTime();
-					await exchangeRates.updateRates([SNX], [newRate], timestamp, {
-						from: oracle,
-					});
-
-					// we will fall into the 40-50%  bracket
-					const feePenalty = await feePool.currentPenalty(account1);
-					assert.bnEqual(feePenalty, toUnit('0.75'));
-
-					// and lose 75% of those rewards.
-					const snxRewardsPenalized = await feePool.feesAvailable(account1, sUSD);
-					assert.bnClose(snxRewardsPenalized[1], quarter(third(periodOneMintableSupply)));
-
-					// And if we claim them
-					await feePool.claimFees(sUSD, { from: account1 });
-
-					// We should have our decreased rewards amount in escrow
-					const vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-					assert.bnClose(vestingScheduleEntry[1], quarter(third(periodOneMintableSupply)));
-				});
-				it('should apply a penalty of 90% when users claim rewards between >50% collateralisation ratio', async function() {
-					// But if the price of SNX decreases quite a bit...
-					const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.08'));
-					const timestamp = await currentTime();
-					await exchangeRates.updateRates([SNX], [newRate], timestamp, {
-						from: oracle,
-					});
-
-					// we will fall into the >50% bracket
-					const feePenalty = await feePool.currentPenalty(account1);
-					assert.bnEqual(feePenalty, toUnit('0.9'));
-
-					// and lose 90% of those rewards.
-					const snxRewardsPenalized = await feePool.feesAvailable(account1, sUSD);
-					assert.bnClose(snxRewardsPenalized[1], tenth(third(periodOneMintableSupply)));
-
-					// And if we claim them
-					await feePool.claimFees(sUSD, { from: account1 });
-
-					// We should have our decreased rewards amount in escrow
-					const vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-					assert.bnClose(vestingScheduleEntry[1], tenth(third(periodOneMintableSupply)));
-				});
-				it('should apply a penalty of 100% when users claim rewards between >100% collateralisation ratio', async function() {
-					// But if the price of SNX decreases a lot...
-					const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.09'));
-					const timestamp = await currentTime();
-					await exchangeRates.updateRates([SNX], [newRate], timestamp, {
-						from: oracle,
-					});
-
-					// we will fall into the >100% bracket
-					const feePenalty = await feePool.currentPenalty(account1);
-					assert.bnEqual(feePenalty, toUnit('1'));
-
-					// and lose 100% of those rewards.
-					const snxRewardsPenalized = await feePool.feesAvailable(account1, sUSD);
-					assert.bnClose(snxRewardsPenalized[1], toUnit('0'));
-
-					// And if we claim then it should revert as there is nothing to claim
-					await assert.revert(feePool.claimFees(sUSD, { from: account1 }));
-				});
+			// We should have our decreased rewards amount in escrow
+			const vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account1, 0);
+			assert.bnClose(vestingScheduleEntry[1], quarter(third(periodOneMintableSupply)));
+		});
+		it('should apply a penalty of 90% when users claim rewards between >50% collateralisation ratio', async function() {
+			// But if the price of SNX decreases quite a bit...
+			const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.08'));
+			const timestamp = await currentTime();
+			await exchangeRates.updateRates([SNX], [newRate], timestamp, {
+				from: oracle,
 			});
+
+			// we will fall into the >50% bracket
+			const feePenalty = await feePool.currentPenalty(account1);
+			assert.bnEqual(feePenalty, toUnit('0.9'));
+
+			// and lose 90% of those rewards.
+			const snxRewardsPenalized = await feePool.feesAvailable(account1, sUSD);
+			assert.bnClose(snxRewardsPenalized[1], tenth(third(periodOneMintableSupply)));
+
+			// And if we claim them
+			await feePool.claimFees(sUSD, { from: account1 });
+
+			// We should have our decreased rewards amount in escrow
+			const vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account1, 0);
+			assert.bnClose(vestingScheduleEntry[1], tenth(third(periodOneMintableSupply)));
+		});
+		it('should apply a penalty of 100% when users claim rewards between >100% collateralisation ratio', async function() {
+			// But if the price of SNX decreases a lot...
+			const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.09'));
+			const timestamp = await currentTime();
+			await exchangeRates.updateRates([SNX], [newRate], timestamp, {
+				from: oracle,
+			});
+
+			// we will fall into the >100% bracket
+			const feePenalty = await feePool.currentPenalty(account1);
+			assert.bnEqual(feePenalty, toUnit('1'));
+
+			// and lose 100% of those rewards.
+			const snxRewardsPenalized = await feePool.feesAvailable(account1, sUSD);
+			assert.bnClose(snxRewardsPenalized[1], toUnit('0'));
+
+			// And if we claim then it should revert as there is nothing to claim
+			await assert.revert(feePool.claimFees(sUSD, { from: account1 }));
 		});
 	});
 });

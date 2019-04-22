@@ -12,17 +12,17 @@
 
 - [ ] (Inverse) Issue sBTC then shift rate down 50% then calc rewards
 
-### 3 accounts issue 33.33 10K suSD each in p1
-
-- [x] p2 Acc1 Issues 20K sUSD now has 50% debt/rewards Acc2&3 25%
-- [x] p3 Acc1 Burns all then mints 10K then mint 10K debt/rewards 50%
-- [ ] duplicate previous tests but wait till end of 6 weeks claimable is the same
-
 ### accounts not claiming
 
 - [ ] Acc 1 doesnt claim and rewards roll over
 - [ ] Acc2 & 3 should get the extra amount
 - [ ] Acc1 doesn't claim and leaves p0, 2 & 3 should get the extra amount at period close
+
+### 3 accounts issue 10K suSD each in p1
+
+- [-] p2 Acc1 Issues 20K sUSD now has 50% debt/rewards Acc2&3 25%
+- [-] p3 Acc1 Burns all then mints 10K then mint 10K debt/rewards 50%
+- [ ] duplicate previous tests but wait till end of 6 weeks claimable is the same
 
 ### Ratio Penalties
 
