@@ -75,7 +75,7 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 	const SECOND = 1000;
 	const MINUTE = SECOND * 60;
 	// const HOUR = MINUTE * 60;
-	const DAY = 86400;
+	// const DAY = 86400;
 	const WEEK = 604800;
 	const YEAR = 31556926;
 
@@ -270,16 +270,17 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 		});
 	});
 
-	describe('accounts not claiming', async function() {
-		it('Acc 1 doesnt claim and rewards roll over');
+	describe('Accounts not claiming', async function() {
+		it('Acc 1 doesnt claim and rewards should roll over');
 		it('ctd Acc2 & 3 should get the extra amount');
 	});
 
-	describe('Rate shift tests', async function() {
+	describe('Exchange Rate Shift tests', async function() {
 		it('should assign accounts (1,2,3) to have (40%,40%,20%) of the debt/rewards', async function() {
 			// Account 1&2 issue 10K USD in sBTC each, holding 50% of the total debt.
 			const tenK = toUnit('10000');
-			const sBTCAmount = synthetix.effectiveExchangeValue(sUSD, tenK, sBTC);
+			const sBTCAmount = await synthetix.effectiveValue(sUSD, tenK, sBTC);
+			console.log('sBTCAmount', sBTCAmount.toString());
 			await synthetix.issueSynths(sBTC, sBTCAmount, { from: account1 });
 			await synthetix.issueSynths(sBTC, sBTCAmount, { from: account2 });
 
@@ -294,11 +295,11 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 			assert.bnEqual(debtRatioAccount1, fiftyPercent);
 			assert.bnEqual(debtRatioAccount2, fiftyPercent);
 
-			// Both accounts claim rewards
+			// Accounts 1&2 claim rewards
 			await feePool.claimFees(sUSD, { from: account1 });
 			await feePool.claimFees(sUSD, { from: account2 });
 
-			// Assert both accounts have 50% of the minted rewards in their initial escrow entry
+			// Assert both Accounts 1&2 have 50% of the minted rewards in their initial escrow entry
 			const account1Escrow = await rewardEscrow.getVestingScheduleEntry(account1, 0);
 			assert.bnEqual(account1Escrow[1], periodOneMintableSupplyMinusMinterReward.div(2));
 
@@ -374,7 +375,7 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 		it('(Inverse) Issue sBTC then shift rate down 50% then calc rewards');
 	});
 
-	describe('3 Accounts issue 10K sUSD each in p(0)', async function() {
+	describe.only('3 Accounts issue 10K sUSD each in p(1)', async function() {
 		const tenK = toUnit('10000');
 		const twentyK = toUnit('20000');
 
@@ -463,10 +464,10 @@ contract.only('Rewards Integration Tests', async function(accounts) {
 			assert.bnEqual(acc3Ownership, twentyFivePercent);
 		});
 
-		it('duplicate previous tests but wait till end of 6 weeks claimable is the same', async function() {});
+		it('should duplicate previous tests but wait till end of 6 weeks claimable is the same');
 	});
 
-	describe.only('Collateralisation Ratio Penalties', async function() {
+	describe('Collateralisation Ratio Penalties', async function() {
 		beforeEach(async function() {
 			// console.log('3 accounts issueMaxSynths in p1');
 			await synthetix.issueMaxSynths(sUSD, { from: account1 });
