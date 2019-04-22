@@ -2,6 +2,7 @@
 
 const path = require('path');
 const fs = require('fs');
+const readline = require('readline');
 const program = require('commander');
 const { gray, green, yellow, red, cyan } = require('chalk');
 const { table } = require('table');
@@ -11,7 +12,7 @@ const axios = require('axios');
 const qs = require('querystring');
 const solc = require('solc');
 const w3utils = require('web3-utils');
-
+const Web3 = require('web3');
 const { findSolFiles, flatten, compile } = require('./solidity');
 const Deployer = require('./deployer');
 
@@ -64,6 +65,20 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 		deployment,
 		deploymentFile,
 	};
+};
+
+const loadConnections = ({ network }) => {
+	if (!process.env.INFURA_PROJECT_ID) {
+		throw Error('Missing .env key of INFURA_PROJECT_ID. Please add and retry.');
+	}
+	const providerUrl = `https://${network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`;
+	const privateKey = process.env.DEPLOY_PRIVATE_KEY;
+	const etherscanUrl =
+		network === 'mainnet'
+			? 'https://api.etherscan.io/api'
+			: `https://api-${network}.etherscan.io/api`;
+
+	return { providerUrl, privateKey, etherscanUrl };
 };
 
 program
@@ -249,11 +264,7 @@ program
 
 			console.log(gray(`Starting deployment to ${network.toUpperCase()} via Infura...`));
 
-			if (!process.env.INFURA_PROJECT_ID) {
-				throw Error('Missing .env key of INFURA_PROJECT_ID. Please add and retry.');
-			}
-			const providerUrl = `https://${network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`;
-			const privateKey = process.env.DEPLOY_PRIVATE_KEY;
+			const { providerUrl, privateKey } = loadConnections({ network });
 
 			const deployer = new Deployer({
 				compiled,
@@ -645,6 +656,108 @@ program
 		}
 	);
 
+const confirmAction = prompt =>
+	new Promise((resolve, reject) => {
+		const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+
+		rl.question(prompt, answer => {
+			if (/y|Y/.test(answer)) resolve();
+			else reject(Error('Not confirmed'));
+			rl.close();
+		});
+	});
+
+program
+	.command('nominate')
+	.description('Nominate a new owner for one or more contracts')
+	.option(
+		'-d, --deployment-path <value>',
+		`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
+	)
+	.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
+	.option('-l, --gas-limit <value>', 'Gas limit', parseInt, 15e4)
+	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
+	.option('-o, --new-owner <value>', 'The address of the new owner (please include the 0x prefix)')
+	.option(
+		'-c, --contracts [value]',
+		'The list of contracts. Applies to all contract by default',
+		(val, memo) => {
+			memo.push(val);
+			return memo;
+		},
+		[]
+	)
+	.action(async ({ network, newOwner, contracts, deploymentPath, gasPrice, gasLimit }) => {
+		ensureNetwork(network);
+
+		if (!newOwner || !w3utils.isAddress(newOwner)) {
+			console.error(red('Invalid new owner to nominate. Please check the option and try again.'));
+			process.exit(1);
+		}
+		const { config, deployment } = loadAndCheckRequiredSources({
+			deploymentPath,
+			network,
+		});
+
+		contracts.forEach(contract => {
+			if (!(contract in config)) {
+				console.error(red(`Contract ${contract} isn't in the config for this deployment!`));
+				process.exit(1);
+			}
+		});
+		if (!contracts.length) {
+			contracts = Object.keys(config);
+		}
+
+		const { providerUrl, privateKey } = loadConnections({ network });
+		const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
+		web3.eth.accounts.wallet.add(privateKey);
+		const account = web3.eth.accounts.wallet[0].address;
+		console.log(gray(`Using account with public key ${account}`));
+
+		try {
+			await confirmAction(
+				cyan(
+					`${yellow(
+						'WARNING'
+					)}: This action will nominate ${newOwner} as the owner in ${network} of the following contracts:\n- ${contracts.join(
+						'\n- '
+					)}`
+				) + '\nDo you want to continue? (y/n) '
+			);
+		} catch (err) {
+			console.log(gray('Operation cancelled'));
+			process.exit();
+		}
+
+		for (const contract of contracts) {
+			const { address, source } = deployment.targets[contract];
+			const { abi } = deployment.sources[source];
+			const deployedContract = new web3.eth.Contract(abi, address);
+
+			const currentOwner = await deployedContract.methods.owner().call();
+			const nominatedOwner = await deployedContract.methods.nominatedOwner().call();
+
+			console.log(
+				gray(
+					`${contract} current owner is ${currentOwner}.\nCurrent nominated owner is ${nominatedOwner}.`
+				)
+			);
+			if (account !== currentOwner) {
+				console.log(cyan(`Cannot nominateNewOwner for ${contract} as you aren't the owner!`));
+			} else if (currentOwner !== newOwner && nominatedOwner !== newOwner) {
+				console.log(yellow(`Invoking ${contract}.nominateNewOwner(${newOwner})`));
+				await deployedContract.methods.nominateNewOwner(newOwner).send({
+					from: account,
+					gas: gasLimit,
+					gasPrice,
+				});
+			} else {
+				console.log(gray('No change required.'));
+			}
+		}
+	});
+
 program
 	.command('verify')
 	.description('Verify deployed sources on etherscan')
@@ -680,10 +793,7 @@ program
 			);
 		}
 
-		const etherscanUrl =
-			network === 'mainnet'
-				? 'https://api.etherscan.io/api'
-				: `https://api-${network}.etherscan.io/api`;
+		const { etherscanUrl } = loadConnections({ network });
 		console.log(gray(`Starting ${network.toUpperCase()} contract verification on Etherscan...`));
 
 		const tableData = [];
