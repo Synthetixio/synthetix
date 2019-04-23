@@ -346,6 +346,7 @@ program
 				name: 'ExchangeRates',
 				args: [account, oracle, [toBytes4('SNX')], [w3utils.toWei('0.2')]],
 			});
+			const exchangeRatesAddress = exchangeRates ? exchangeRates.options.address : '';
 
 			const proxyFeePool = await deployContract({
 				name: 'ProxyFeePool',
@@ -464,6 +465,17 @@ program
 					} else {
 						console.log(cyan('Cannot call SynthetixState.setAssociatedContract() as not owner.'));
 					}
+				}
+			}
+
+			if (exchangeRates && synthetix) {
+				if (synthetixOwner === account) {
+					console.log(yellow('Invoking Synthetix.setExchangeRates()...'));
+					await synthetix.methods
+						.setExchangeRates(exchangeRatesAddress)
+						.send(deployer.sendParameters());
+				} else {
+					console.log(cyan('Cannot call Synthetix.setExchangeRates() as not owner.'));
 				}
 			}
 
@@ -774,61 +786,6 @@ program
 				console.log(gray('No change required.'));
 			}
 		}
-	});
-
-program
-	.command('owner')
-	.description('Owner script - a list of transactions required by the owner.')
-	.option(
-		'-d, --deployment-path <value>',
-		`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
-	)
-	.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
-	.option('-l, --gas-limit <value>', 'Gas limit', parseInt, 15e4)
-	.option('-o, --new-owner <value>', 'The address of you as owner (please include the 0x prefix)')
-	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
-	.action(async ({ network, ownerAddress, deploymentPath, gasPrice, gasLimit }) => {
-		ensureNetwork(network);
-
-		// for all contracts in config
-		// 		load up contract
-		//			if nominatedOwner === ownerAddress
-		//					instruct user to do transaction
-		//
-		// for all synths
-		//		load up contract
-		//			if (synth.synthetix !== synthetix)
-		//				instruct user to transact synth.setSynthetix
-		//			if (synthetix.synths(currencyKey) !== synth)
-		//				instruct user to transact synthetix.addSynth
-		//			if (tokenstate[key].associatedContract !== synth)
-		//				instruct user
-		//			if (proxy[key].target !== synth)
-		//				instruct user
-		//			if inverted synth and inversePricing !== expected
-		//				instruct user
-		//
-		// if ProxyFeePool.target !== feePool
-		//		instruct user to transact
-		//
-		// if ProxySynthetix.target !== synthetix
-		//		instruct user to transact
-		//
-		// if TokenStateSynthetix.associatedContract !== synthetix
-		//		instruct user to transact
-		//
-		// if SynthetixState.associatedContract !== synthetix
-		//		instruct user to transact
-		//
-		// if SynthetixEscrow.synthetix !== synthetix
-		//		instruct user to transact
-		//
-		// if FeePool.synthetix !== synthetix
-		//		instruct user to transact
-		//
-		// if Depot.synthetix !== synthetix
-		//		instruct user to transact
-		//
 	});
 
 program

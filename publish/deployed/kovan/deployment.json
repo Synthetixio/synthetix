@@ -236,11 +236,11 @@
     },
     "Synthetix": {
       "name": "Synthetix",
-      "address": "0x50668b1C11F9E70fEfed0b9f14f554C79df46239",
+      "address": "0x5a4aDe4f3E934a0885f42884F7077261C3F4f66F",
       "source": "Synthetix",
-      "link": "https://kovan.etherscan.io/address/0x50668b1C11F9E70fEfed0b9f14f554C79df46239",
-      "timestamp": "2019-04-19T16:06:00.000Z",
-      "txn": "https://kovan.etherscan.io/tx/0x8e9c8c4fa20f4b7976c729ca985cabe4cd9d5c36e5eb0e71dfa6a79a46fe8098",
+      "link": "https://kovan.etherscan.io/address/0x5a4aDe4f3E934a0885f42884F7077261C3F4f66F",
+      "timestamp": "2019-04-08T20:18:32.000Z",
+      "txn": "https://kovan.etherscan.io/tx/0xe15ce50fc11b6e73fc68051ba7a353d14d2e180a2b3fc9acdf9d1fd55719c752",
       "network": "kovan"
     },
     "SynthetixEscrow": {
