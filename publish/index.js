@@ -643,7 +643,7 @@ program
 				if (synth && tokenStateForSynth) {
 					const tsAssociatedContract = await tokenStateForSynth.methods.associatedContract().call();
 					if (tsAssociatedContract !== synthAddress) {
-						const tsOwner = await tokenStateForSynth.methods.owner().all();
+						const tsOwner = await tokenStateForSynth.methods.owner().call();
 
 						if (tsOwner === account) {
 							console.log(

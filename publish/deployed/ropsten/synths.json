@@ -35,5 +35,43 @@
 	{ "name": "sPLN", "asset": "PLN", "category": "forex", "sign": "zł", "desc": "Poland Złoty" },
 	{ "name": "sXAU", "asset": "XAU", "category": "commodity", "sign": "oz", "desc": "Gold Ounce" },
 	{ "name": "sXAG", "asset": "XAG", "category": "commodity", "sign": "oz", "desc": "Silver Ounce" },
-	{ "name": "sBTC", "asset": "BTC", "category": "crypto", "sign": "₿", "desc": "Bitcoin" }
+	{ "name": "sBTC", "asset": "BTC", "category": "crypto", "sign": "₿", "desc": "Bitcoin" },
+	{ "name": "sETH", "asset": "ETH", "category": "crypto", "sign": "Ξ", "desc": "Ether" },
+	{ "name": "sBNB", "asset": "BNB", "category": "crypto", "sign": "", "desc": "Binance Coin" },
+	{
+		"name": "iBTC",
+		"asset": "BTC",
+		"category": "crypto",
+		"sign": "₿",
+		"desc": "Inverted Bitcoin",
+		"inverted": {
+			"entryPoint": 5300,
+			"upperLimit": 7950,
+			"lowerLimit": 2650
+		}
+	},
+	{
+		"name": "iETH",
+		"asset": "ETH",
+		"category": "crypto",
+		"sign": "Ξ",
+		"desc": "Inverted Ether",
+		"inverted": {
+			"entryPoint": 180,
+		"upperLimit": 270,
+			"lowerLimit": 90
+		}
+	},
+	{
+		"name": "iBNB",
+		"asset": "BNB",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Inverted Binance Coin",
+		"inverted": {
+			"entryPoint": 25,
+			"upperLimit": 38,
+			"lowerLimit": 13
+		}
+	}
 ]
