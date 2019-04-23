@@ -616,29 +616,44 @@ program
 
 					// now configure inverse synths in exchange rates
 					if (inverted) {
-						const { entryPrice, upperLimit, lowerLimit } = inverted;
+						const {
+							entryPoint: currentEP,
+							upperLimit: currentUL,
+							lowerLimit: currentLL,
+							frozen,
+						} = await exchangeRates.methods.inversePricing(toBytes4(currencyKey)).call();
 
-						const exchangeRatesOwner = await exchangeRates.methods.owner().call();
-						if (exchangeRatesOwner === account) {
-							console.log(
-								yellow(
-									`Invoking ExchangeRates.setInversePricing(${currencyKey}, ${entryPrice}, ${upperLimit}, ${lowerLimit})...`
-								)
-							);
-							await exchangeRates.methods
-								.setInversePricing(
-									toBytes4(currencyKey),
-									w3utils.toWei(entryPrice.toString()),
-									w3utils.toWei(upperLimit.toString()),
-									w3utils.toWei(lowerLimit.toString())
-								)
-								.send(deployer.sendParameters());
-						} else {
-							console.log(
-								cyan(
-									`Cannot call ExchangeRates.setInversePricing() for ${currencyKey} as not owner.`
-								)
-							);
+						const { entryPoint, upperLimit, lowerLimit } = inverted;
+
+						// only do if not already set
+						if (
+							w3utils.fromWei(currentEP) !== entryPoint.toString() ||
+							w3utils.fromWei(currentUL) !== upperLimit.toString() ||
+							w3utils.fromWei(currentLL) !== lowerLimit.toString() ||
+							frozen
+						) {
+							const exchangeRatesOwner = await exchangeRates.methods.owner().call();
+							if (exchangeRatesOwner === account) {
+								console.log(
+									yellow(
+										`Invoking ExchangeRates.setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})...`
+									)
+								);
+								await exchangeRates.methods
+									.setInversePricing(
+										toBytes4(currencyKey),
+										w3utils.toWei(entryPoint.toString()),
+										w3utils.toWei(upperLimit.toString()),
+										w3utils.toWei(lowerLimit.toString())
+									)
+									.send(deployer.sendParameters());
+							} else {
+								console.log(
+									cyan(
+										`Cannot call ExchangeRates.setInversePricing() for ${currencyKey} as not owner.`
+									)
+								);
+							}
 						}
 					}
 				}

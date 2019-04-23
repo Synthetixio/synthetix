@@ -45,7 +45,7 @@
 		"sign": "₿",
 		"desc": "Inverted Bitcoin",
 		"inverted": {
-			"entryPrice": 5300,
+			"entryPoint": 5300,
 			"upperLimit": 7950,
 			"lowerLimit": 2650
 		}
@@ -57,7 +57,7 @@
 		"sign": "Ξ",
 		"desc": "Inverted Ether",
 		"inverted": {
-			"entryPrice": 180,
+			"entryPoint": 180,
 			"upperLimit": 270,
 			"lowerLimit": 90
 		}
@@ -69,7 +69,7 @@
 		"sign": "",
 		"desc": "Inverted Binance Coin",
 		"inverted": {
-			"entryPrice": 25,
+			"entryPoint": 25,
 			"upperLimit": 38,
 			"lowerLimit": 13
 		}
