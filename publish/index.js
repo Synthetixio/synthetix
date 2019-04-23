@@ -943,9 +943,6 @@ program
 
 		const { providerUrl, privateKey, etherscanLinkPrefix } = loadConnections({ network });
 		const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
-		web3.eth.accounts.wallet.add(privateKey);
-		const account = web3.eth.accounts.wallet[0].address;
-		console.log(gray(`Using account with public key ${account}`));
 
 		const confirmOrEnd = async message => {
 			try {
