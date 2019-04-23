@@ -34,11 +34,5 @@
     "action": "addSynth(0x56751D5Ac7D2B614C79d22e6b52D3285cFA8a293)",
     "complete": false,
     "link": "https://etherscan.io/address/0x3772f9716Cf6D7a09edE3587738AA2af5577483a#writeContract"
-  },
-  "Depot.setSynthetix(Synthetix)": {
-    "target": "0x172E09691DfBbC035E37c73B62095caa16Ee2388",
-    "action": "setSynthetix(0x3772f9716Cf6D7a09edE3587738AA2af5577483a)",
-    "complete": false,
-    "link": "https://etherscan.io/address/0x172E09691DfBbC035E37c73B62095caa16Ee2388#writeContract"
   }
 }

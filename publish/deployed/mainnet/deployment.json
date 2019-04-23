@@ -21,8 +21,8 @@
       "address": "0xba34e436C9383aa8FA1e3659D2807ae040592498",
       "source": "ExchangeRates",
       "link": "https://etherscan.io/address/0xba34e436C9383aa8FA1e3659D2807ae040592498",
-      "timestamp": "2019-04-23T22:34:22.089Z",
-      "txn": "",
+      "timestamp": "2019-04-23T22:34:08.000Z",
+      "txn": "https://mainnet.etherscan.io/tx/0xea3364c296e01bf747494f6683b0119453a19b8663ea451dea84ac995fe5e88e",
       "network": "mainnet"
     },
     "FeePool": {
@@ -503,8 +503,8 @@
       "address": "0x42456D7084eacF4083f1140d3229471bbA2949A8",
       "source": "Synth",
       "link": "https://etherscan.io/address/0x42456D7084eacF4083f1140d3229471bbA2949A8",
-      "timestamp": "2019-04-23T22:49:07.149Z",
-      "txn": "",
+      "timestamp": "2019-04-23T22:49:01.000Z",
+      "txn": "https://mainnet.etherscan.io/tx/0x846002916cc074a882eb1367e0a7798465dba45bdf1a509d2fbd646d75352f05",
       "network": "mainnet"
     },
     "TokenStatesBNB": {
@@ -530,8 +530,8 @@
       "address": "0xC906de7f8b4C1a4787023F50F49CE98F9F67c4b8",
       "source": "Synth",
       "link": "https://etherscan.io/address/0xC906de7f8b4C1a4787023F50F49CE98F9F67c4b8",
-      "timestamp": "2019-04-23T22:51:31.392Z",
-      "txn": "",
+      "timestamp": "2019-04-23T22:51:26.000Z",
+      "txn": "https://mainnet.etherscan.io/tx/0x3c2935bcd3dea032b37803702f0c7dabd0fba56bd42d1dfe1f00cf552657ee66",
       "network": "mainnet"
     },
     "TokenStateiBTC": {
@@ -557,8 +557,8 @@
       "address": "0xd8f6B6b6782632275B2B51230654f687f5b12Cde",
       "source": "Synth",
       "link": "https://etherscan.io/address/0xd8f6B6b6782632275B2B51230654f687f5b12Cde",
-      "timestamp": "2019-04-23T22:55:19.755Z",
-      "txn": "",
+      "timestamp": "2019-04-23T22:54:24.000Z",
+      "txn": "https://mainnet.etherscan.io/tx/0xd727e4aee782c991e0bc46e2322b173ebe64ee9673fe5eb1f9a64a6ca4f799ea",
       "network": "mainnet"
     },
     "TokenStateiETH": {
@@ -584,8 +584,8 @@
       "address": "0x51Fe40e6292dbC44623b298a4086ffA6f5976ba1",
       "source": "Synth",
       "link": "https://etherscan.io/address/0x51Fe40e6292dbC44623b298a4086ffA6f5976ba1",
-      "timestamp": "2019-04-23T22:58:34.606Z",
-      "txn": "",
+      "timestamp": "2019-04-23T22:58:31.000Z",
+      "txn": "https://mainnet.etherscan.io/tx/0xf2717aa69f2b955b87e809e9f421953fe6ccc2530821625cc87367f5c0585688",
       "network": "mainnet"
     },
     "TokenStateiBNB": {
@@ -611,8 +611,8 @@
       "address": "0x56751D5Ac7D2B614C79d22e6b52D3285cFA8a293",
       "source": "Synth",
       "link": "https://etherscan.io/address/0x56751D5Ac7D2B614C79d22e6b52D3285cFA8a293",
-      "timestamp": "2019-04-23T23:01:40.469Z",
-      "txn": "",
+      "timestamp": "2019-04-23T23:01:32.000Z",
+      "txn": "https://mainnet.etherscan.io/tx/0x72f0f75dc1a9f7532ebfb2700c55df86cf7d41161203ee62270202c3703bf4cd",
       "network": "mainnet"
     }
   },
