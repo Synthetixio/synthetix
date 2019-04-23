@@ -17,7 +17,7 @@ const {
 	ZERO_ADDRESS,
 } = require('../utils/testUtils');
 
-contract('Synthetix', async function(accounts) {
+contract.only('Synthetix', async function(accounts) {
 	const [sUSD, sAUD, sEUR, SNX, XDR, sXYZ] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'XDR', 'sXYZ'].map(
 		web3.utils.asciiToHex
 	);
@@ -2217,10 +2217,10 @@ contract('Synthetix', async function(accounts) {
 		const WEEK = 604800;
 		const YEAR = 31536000;
 
+		const YEAR_TWO_START = 1551830400;
+
 		it('should allow synthetix contract to mint new supply based on inflationary schedule', async function() {
 			// Issue
-			const YEAR_TWO_START = 1552435200;
-
 			const weeklyIssuance = divideDecimal(secondYearSupply, 52);
 			const expectedSupplyToMint = weeklyIssuance;
 
@@ -2250,8 +2250,6 @@ contract('Synthetix', async function(accounts) {
 
 		it('should allow synthetix contract to mint 2 weeks of supply and minus minterReward', async function() {
 			// Issue
-			const YEAR_TWO_START = 1552435200;
-
 			const expectedSupplyToMint = divideDecimal(secondYearSupply, 52 / 2);
 
 			// fast forward EVM to Week 3 in Year 2 schedule starting at UNIX 1553040000+
@@ -2280,8 +2278,6 @@ contract('Synthetix', async function(accounts) {
 
 		it('should allow synthetix contract to mint year 2 supply and 1 week in Year 3, minus minterReward', async function() {
 			// Issue
-			const YEAR_TWO_START = 1552435200;
-
 			const supplyFromYear2 = toUnit(secondYearSupply);
 			const supplyFromYear3 = divideDecimal(thirdYearSupply, 52);
 			const expectedSupplyToMint = supplyFromYear2.add(supplyFromYear3);
@@ -2314,8 +2310,6 @@ contract('Synthetix', async function(accounts) {
 
 		it('should be able to mint again after another 7 days period', async function() {
 			// Issue
-			const YEAR_TWO_START = 1552435200;
-
 			const expectedSupplyToMint = divideDecimal(secondYearSupply, 52 / 2);
 
 			// fast forward EVM to Week 3 in Year 2 schedule starting at UNIX 1553040000+
@@ -2370,8 +2364,6 @@ contract('Synthetix', async function(accounts) {
 
 		it('should revert when trying to mint again within the 7 days period', async function() {
 			// Issue
-			const YEAR_TWO_START = 1552435200;
-
 			const weeklyIssuance = divideDecimal(secondYearSupply, 52 / 2);
 			const expectedSupplyToMint = weeklyIssuance;
 
@@ -2404,7 +2396,7 @@ contract('Synthetix', async function(accounts) {
 
 		it('should revert when time is after Year 7 endPeriod', async function() {
 			// FastForward to after Year 7
-			const YEAR_EIGHT_START = 1741651200;
+			const YEAR_EIGHT_START = 1741046400;
 
 			await fastForwardTo(new Date(YEAR_EIGHT_START * 1000));
 

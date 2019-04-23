@@ -186,7 +186,7 @@ contract Synthetix is ExternStateToken {
         external
         optionalProxy_onlyOwner
     {
-        bytes4 currencyKey = synth.getCurrencyKey();
+        bytes4 currencyKey = synth.currencyKey();
 
         require(synths[currencyKey] == Synth(0), "Synth already exists");
 
@@ -212,7 +212,7 @@ contract Synthetix is ExternStateToken {
         optionalProxy_onlyOwner
     {
         require(synths[currencyKey] != address(0), "Synth does not exist");
-        require(synths[currencyKey].getTotalSupply() == 0, "Synth supply exists");
+        require(synths[currencyKey].totalSupply() == 0, "Synth supply exists");
         require(currencyKey != "XDR", "Cannot remove XDR synth");
 
         // Save the address we're removing for emitting the event at the end.
@@ -286,8 +286,8 @@ contract Synthetix is ExternStateToken {
             // Note: We're not using our effectiveValue function because we don't want to go get the
             //       rate for the destination currency and check if it's stale repeatedly on every
             //       iteration of the loop
-            uint synthValue = availableSynths[i].getTotalSupply()
-                .multiplyDecimalRound(exchangeRates.rateForCurrency(availableSynths[i].getCurrencyKey()))
+            uint synthValue = availableSynths[i].totalSupply()
+                .multiplyDecimalRound(exchangeRates.rateForCurrency(availableSynths[i].currencyKey()))
                 .divideDecimalRound(currencyRate);
             total = total.add(synthValue);
         }
@@ -306,7 +306,7 @@ contract Synthetix is ExternStateToken {
         bytes4[] memory availableCurrencyKeys = new bytes4[](availableSynths.length);
 
         for (uint8 i = 0; i < availableSynths.length; i++) {
-            availableCurrencyKeys[i] = availableSynths[i].getCurrencyKey();
+            availableCurrencyKeys[i] = availableSynths[i].currencyKey();
         }
 
         return availableCurrencyKeys;

@@ -65,14 +65,6 @@ contract Synth is ExternStateToken {
         currencyKey = _currencyKey;
     }
 
-    function getCurrencyKey() public view returns (bytes4) {
-        return currencyKey;
-    }
-
-    function getTotalSupply() public view returns (uint) {
-        return totalSupply;
-    }
-
     /* ========== SETTERS ========== */
 
     function setSynthetix(Synthetix _synthetix)
