@@ -849,7 +849,10 @@ program
 		if (!newOwner || !w3utils.isAddress(newOwner)) {
 			console.error(red('Invalid new owner to nominate. Please check the option and try again.'));
 			process.exit(1);
+		} else {
+			newOwner = newOwner.toLowerCase();
 		}
+
 		const { config, deployment } = loadAndCheckRequiredSources({
 			deploymentPath,
 			network,
@@ -896,8 +899,8 @@ program
 				continue;
 			}
 
-			const currentOwner = await deployedContract.methods.owner().call();
-			const nominatedOwner = await deployedContract.methods.nominatedOwner().call();
+			const currentOwner = (await deployedContract.methods.owner().call()).toLowerCase();
+			const nominatedOwner = (await deployedContract.methods.nominatedOwner().call()).toLowerCase();
 
 			console.log(
 				gray(
@@ -934,6 +937,8 @@ program
 		if (!newOwner || !w3utils.isAddress(newOwner)) {
 			console.error(red('Invalid new owner to nominate. Please check the option and try again.'));
 			process.exit(1);
+		} else {
+			newOwner = newOwner.toLowerCase();
 		}
 		// ensure all nominated owners are accepted
 		const { config, deployment, ownerActions, ownerActionsFile } = loadAndCheckRequiredSources({
@@ -941,7 +946,7 @@ program
 			network,
 		});
 
-		const { providerUrl, privateKey, etherscanLinkPrefix } = loadConnections({ network });
+		const { providerUrl, etherscanLinkPrefix } = loadConnections({ network });
 		const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
 
 		const confirmOrEnd = async message => {
@@ -985,8 +990,8 @@ program
 			if (!deployedContract.methods.owner) {
 				continue;
 			}
-			const currentOwner = await deployedContract.methods.owner().call();
-			const nominatedOwner = await deployedContract.methods.nominatedOwner().call();
+			const currentOwner = (await deployedContract.methods.owner().call()).toLowerCase();
+			const nominatedOwner = (await deployedContract.methods.nominatedOwner().call()).toLowerCase();
 
 			if (currentOwner === newOwner) {
 				console.log(gray(`${newOwner} is already the owner of ${contract}`));
