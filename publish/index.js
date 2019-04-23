@@ -346,6 +346,7 @@ program
 				name: 'ExchangeRates',
 				args: [account, oracle, [toBytes4('SNX')], [w3utils.toWei('0.2')]],
 			});
+			const exchangeRatesAddress = exchangeRates ? exchangeRates.options.address : '';
 
 			const proxyFeePool = await deployContract({
 				name: 'ProxyFeePool',
@@ -464,6 +465,17 @@ program
 					} else {
 						console.log(cyan('Cannot call SynthetixState.setAssociatedContract() as not owner.'));
 					}
+				}
+			}
+
+			if (exchangeRates && synthetix) {
+				if (synthetixOwner === account) {
+					console.log(yellow('Invoking Synthetix.setExchangeRates()...'));
+					await synthetix.methods
+						.setExchangeRates(exchangeRatesAddress)
+						.send(deployer.sendParameters());
+				} else {
+					console.log(cyan('Cannot call Synthetix.setExchangeRates() as not owner.'));
 				}
 			}
 

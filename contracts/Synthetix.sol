@@ -318,9 +318,9 @@ contract Synthetix is ExternStateToken {
     {
         uint total = 0;
         uint currencyRate = exchangeRates.rateForCurrency(currencyKey);
-
+        
         require(!exchangeRates.anyRateIsStale(availableCurrencyKeys()), "Rates are stale");
-
+        
         for (uint8 i = 0; i < availableSynths.length; i++) {
             // What's the total issued value of that synth in the destination currency?
             // Note: We're not using our effectiveValue function because we don't want to go get the
@@ -336,7 +336,7 @@ contract Synthetix is ExternStateToken {
     }
 
     /**
-     * @notice Returns the currencyKeys of availableSynths for rate checking
+     * @notice Returns the currencyKeys of availableSynths for rate checking 
      */
     function availableCurrencyKeys()
         internal
@@ -508,7 +508,7 @@ contract Synthetix is ExternStateToken {
         onlySynth
         returns (bool)
     {
-        // Allow fee to be 0 and skip minting XDRs to feePool
+        // Allow fee to be 0 and skip minting XDRs to feePool 
         if (sourceAmount == 0) {
             return true;
         }
@@ -552,7 +552,6 @@ contract Synthetix is ExternStateToken {
     )
         internal
         notFeeAddress(from)
-        rateNotFrozen(destinationCurrencyKey)
         returns (bool)
     {
         require(destinationAddress != address(0), "Zero destination");
@@ -913,11 +912,6 @@ contract Synthetix is ExternStateToken {
         _;
     }
 
-    modifier rateNotFrozen(bytes4 currencyKey) {
-        require(!exchangeRates.rateIsFrozen(currencyKey), "Rate frozen");
-        _;
-    }
-
     modifier notFeeAddress(address account) {
         require(account != feePool.FEE_ADDRESS(), "Fee address not allowed");
         _;
@@ -951,7 +945,7 @@ contract Synthetix is ExternStateToken {
     function emitSynthExchange(address account, bytes4 fromCurrencyKey, uint256 fromAmount, bytes4 toCurrencyKey, uint256 toAmount, address toAddress) internal {
         proxy._emit(abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, toAddress), 2, SYNTHEXCHANGE_SIG, bytes32(account), 0, 0);
     }
-
+    
     event PreferredCurrencyChanged(address indexed account, bytes4 newPreferredCurrency);
     bytes32 constant PREFERREDCURRENCYCHANGED_SIG = keccak256("PreferredCurrencyChanged(address,bytes4)");
     function emitPreferredCurrencyChanged(address account, bytes4 newPreferredCurrency) internal {
