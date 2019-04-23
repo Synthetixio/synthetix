@@ -911,7 +911,7 @@ program
 				await deployedContract.methods.nominateNewOwner(newOwner).send({
 					from: account,
 					gas: gasLimit,
-					gasPrice,
+					gasPrice: w3utils.toWei(gasPrice, 'gwei'),
 				});
 			} else {
 				console.log(gray('No change required.'));
