@@ -2247,13 +2247,22 @@ contract('Synthetix', async accounts => {
 											from: oracle,
 										});
 									});
-									describe('when the user tries to exchange sUSD into iBTC', () => {
-										it('then it fails to exchange in as iBTC is frozen', async () => {
-											await assert.revert(
-												synthetix.exchange(sUSD, toUnit(10), iBTC, ZERO_ADDRESS, {
+									describe('when the user tries to exchange some iBTC again', () => {
+										beforeEach(async () => {
+											exchangeTxns.push(
+												await synthetix.exchange(iBTC, toUnit(0.001), sEUR, ZERO_ADDRESS, {
 													from: account1,
 												})
 											);
+										});
+										it('then it still exchanges correctly into iBTC even when frozen', async () => {
+											await assertExchangeSucceeded({
+												amountExchanged: toUnit(0.001),
+												txn: exchangeTxns[2],
+												from: iBTC,
+												to: sEUR,
+												toContract: sEURContract,
+											});
 										});
 									});
 									describe('when the user tries to exchange iBTC into another synth', () => {
