@@ -1,0 +1,38 @@
+{
+  "Synthetix.setExchangeRates(ExchangeRates)": {
+    "target": "0x90560cc253fF6E77953da6640859D7e3eA8F3d8B",
+    "action": "setExchangeRates(0xE62462B7A4DC777D285782bdCe398fe4ad76900D)",
+    "complete": true,
+    "link": "https://rinkeby.etherscan.io/address/0x90560cc253fF6E77953da6640859D7e3eA8F3d8B#writeContract"
+  },
+  "Synthetix.addSynth(SynthsETH)": {
+    "target": "0x90560cc253fF6E77953da6640859D7e3eA8F3d8B",
+    "action": "addSynth(0x3731ab0E9FeEE3Ef0C427E874265E8F9a9111e27)",
+    "complete": true,
+    "link": "https://rinkeby.etherscan.io/address/0x90560cc253fF6E77953da6640859D7e3eA8F3d8B#writeContract"
+  },
+  "Synthetix.addSynth(SynthsBNB)": {
+    "target": "0x90560cc253fF6E77953da6640859D7e3eA8F3d8B",
+    "action": "addSynth(0xeB082E1B4a79a97bA352DC77489C8594d12eFff0)",
+    "complete": true,
+    "link": "https://rinkeby.etherscan.io/address/0x90560cc253fF6E77953da6640859D7e3eA8F3d8B#writeContract"
+  },
+  "Synthetix.addSynth(SynthiBTC)": {
+    "target": "0x90560cc253fF6E77953da6640859D7e3eA8F3d8B",
+    "action": "addSynth(0x1820094fD61E8055809EE0975968BdFa214B3dBa)",
+    "complete": true,
+    "link": "https://rinkeby.etherscan.io/address/0x90560cc253fF6E77953da6640859D7e3eA8F3d8B#writeContract"
+  },
+  "Synthetix.addSynth(SynthiETH)": {
+    "target": "0x90560cc253fF6E77953da6640859D7e3eA8F3d8B",
+    "action": "addSynth(0x549500BF4FEf8206B0cee3a0a8a6A521cCF81560)",
+    "complete": true,
+    "link": "https://rinkeby.etherscan.io/address/0x90560cc253fF6E77953da6640859D7e3eA8F3d8B#writeContract"
+  },
+  "Synthetix.addSynth(SynthiBNB)": {
+    "target": "0x90560cc253fF6E77953da6640859D7e3eA8F3d8B",
+    "action": "addSynth(0x1Fe140DC23965164357943eD39714aB71d531A3E)",
+    "complete": true,
+    "link": "https://rinkeby.etherscan.io/address/0x90560cc253fF6E77953da6640859D7e3eA8F3d8B#writeContract"
+  }
+}
