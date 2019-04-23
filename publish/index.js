@@ -887,6 +887,11 @@ program
 			const { abi } = deployment.sources[source];
 			const deployedContract = new web3.eth.Contract(abi, address);
 
+			// ignore contracts that don't support Owned
+			if (!deployedContract.methods.owner) {
+				continue;
+			}
+
 			const currentOwner = await deployedContract.methods.owner().call();
 			const nominatedOwner = await deployedContract.methods.nominatedOwner().call();
 
