@@ -6,7 +6,7 @@
 		"deploy": false
 	},
 	"ExchangeRates": {
-		"deploy": false
+		"deploy": true
 	},
 	"FeePool": {
 		"deploy": false

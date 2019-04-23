@@ -943,8 +943,6 @@ program
 		const account = web3.eth.accounts.wallet[0].address;
 		console.log(gray(`Using account with public key ${account}`));
 
-		console.log(gray('Looking for contracts whose ownership we should accept'));
-
 		const confirmOrEnd = async message => {
 			try {
 				await confirmAction(
@@ -958,6 +956,25 @@ program
 				process.exit();
 			}
 		};
+
+		console.log(
+			gray('Running through operations during deployment that couldnt complete as not owner.')
+		);
+
+		for (const [key, entry] of Object.entries(ownerActions)) {
+			const { action, link, complete } = entry;
+			if (complete) continue;
+
+			await confirmOrEnd(
+				yellow('YOUR TASK: ') + `Invoke ${bgYellow(black(action))} (${key}) via ${cyan(link)}`
+			);
+
+			entry.complete = true;
+			fs.writeFileSync(ownerActionsFile, JSON.stringify(ownerActions, null, 2));
+		}
+
+		console.log(gray('Looking for contracts whose ownership we should accept'));
+
 		for (const contract of Object.keys(config)) {
 			const { address, source } = deployment.targets[contract];
 			const { abi } = deployment.sources[source];
@@ -985,22 +1002,6 @@ program
 					)
 				);
 			}
-		}
-
-		console.log(
-			gray('Running through operations during deployment that couldnt complete as not owner.')
-		);
-
-		for (const [key, entry] of Object.entries(ownerActions)) {
-			const { action, link, complete } = entry;
-			if (complete) continue;
-
-			await confirmOrEnd(
-				yellow('YOUR TASK: ') + `Invoke ${bgYellow(black(action))} (${key}) via ${cyan(link)}`
-			);
-
-			entry.complete = true;
-			fs.writeFileSync(ownerActionsFile, JSON.stringify(ownerActions, null, 2));
 		}
 	});
 
