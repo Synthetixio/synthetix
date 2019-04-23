@@ -20,6 +20,8 @@ const COMPILED_FOLDER = 'compiled';
 const FLATTENED_FOLDER = 'flattened';
 const CONFIG_FILENAME = 'config.json';
 const SYNTHS_FILENAME = 'synths.json';
+const OWNER_ACTIONS_FILENAME = 'owner-actions.json';
+
 const DEPLOYMENT_FILENAME = 'deployment.json';
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 
@@ -78,7 +80,8 @@ const loadConnections = ({ network }) => {
 			? 'https://api.etherscan.io/api'
 			: `https://api-${network}.etherscan.io/api`;
 
-	return { providerUrl, privateKey, etherscanUrl };
+	const etherscanLinkPrefix = `https://${network !== 'mainnet' ? network + '.' : ''}etherscan.io`;
+	return { providerUrl, privateKey, etherscanUrl, etherscanLinkPrefix };
 };
 
 program
@@ -262,7 +265,7 @@ program
 			// flags available
 			const updatedConfig = JSON.parse(JSON.stringify(config));
 
-			const { providerUrl, privateKey } = loadConnections({ network });
+			const { providerUrl, privateKey, etherscanLinkPrefix } = loadConnections({ network });
 
 			const deployer = new Deployer({
 				compiled,
@@ -338,6 +341,23 @@ program
 				return deployedContract;
 			};
 
+			// track an action we cannot perform because we aren't an OWNER (so we can iterate later in the owner step)
+			const appendOwnerAction = ({ key, action, target }) => {
+				const ownerActionsFilename = path.join(deploymentPath, OWNER_ACTIONS_FILENAME);
+				if (!fs.existsSync(ownerActionsFilename)) {
+					fs.writeFileSync(ownerActionsFilename, JSON.stringify({}, null, 2));
+				}
+				const ownerActions = JSON.parse(fs.readFileSync(ownerActionsFilename));
+				ownerActions[key] = {
+					target,
+					action,
+					complete: false,
+					link: `${etherscanLinkPrefix}/address/${target}#writeContract`,
+				};
+				fs.writeFileSync(ownerActionsFilename, JSON.stringify(ownerActions, null, 2));
+				console.log(cyan(`Cannot invoke ${key} as not owner. Appended to actions.`));
+			};
+
 			await deployContract({
 				name: 'SafeDecimalMath',
 			});
@@ -371,11 +391,21 @@ program
 				const target = await proxyFeePool.methods.target().call();
 
 				if (target !== feePool.options.address) {
-					console.log(yellow('Invoking ProxyFeePool.setTarget(FeePool)...'));
+					const proxyFeePoolOwner = await proxyFeePool.methods.owner().call();
 
-					await proxyFeePool.methods
-						.setTarget(feePool.options.address)
-						.send(deployer.sendParameters());
+					if (proxyFeePoolOwner === account) {
+						console.log(yellow('Invoking ProxyFeePool.setTarget(FeePool)...'));
+
+						await proxyFeePool.methods
+							.setTarget(feePool.options.address)
+							.send(deployer.sendParameters());
+					} else {
+						appendOwnerAction({
+							key: `ProxyFeePool.setTarget(FeePool)`,
+							target: proxyFeePool.options.address,
+							action: `setTarget(${feePool.options.address})`,
+						});
+					}
 				}
 			}
 
@@ -419,8 +449,20 @@ program
 			if (proxySynthetix && synthetix) {
 				const target = await proxySynthetix.methods.target().call();
 				if (target !== synthetixAddress) {
-					console.log(yellow('Invoking ProxySynthetix.setTarget()...'));
-					await proxySynthetix.methods.setTarget(synthetixAddress).send(deployer.sendParameters());
+					const proxyOwner = await proxySynthetix.methods.owner().call();
+
+					if (proxyOwner === account) {
+						console.log(yellow('Invoking ProxySynthetix.setTarget(Synthetix)...'));
+						await proxySynthetix.methods
+							.setTarget(synthetixAddress)
+							.send(deployer.sendParameters());
+					} else {
+						appendOwnerAction({
+							key: `ProxySynthetix.setTarget(Synthetix)`,
+							target: proxySynthetix.options.address,
+							action: `setTarget(${synthetixAddress})`,
+						});
+					}
 				}
 			}
 
@@ -448,9 +490,11 @@ program
 							.setAssociatedContract(synthetixAddress)
 							.send(deployer.sendParameters());
 					} else {
-						console.log(
-							cyan('Cannot call TokenStateSynthetix.setAssociatedContract() as not owner.')
-						);
+						appendOwnerAction({
+							key: `TokenStateSynthetix.setAssociatedContract(Synthetix)`,
+							target: tokenStateSynthetix.options.address,
+							action: `setAssociatedContract(${synthetixAddress})`,
+						});
 					}
 				}
 				const associatedSSContract = await synthetixState.methods.associatedContract().call();
@@ -463,19 +507,27 @@ program
 							.setAssociatedContract(synthetixAddress)
 							.send(deployer.sendParameters());
 					} else {
-						console.log(cyan('Cannot call SynthetixState.setAssociatedContract() as not owner.'));
+						appendOwnerAction({
+							key: `SynthetixState.setAssociatedContract(Synthetix)`,
+							target: synthetixState.options.address,
+							action: `setAssociatedContract(${synthetixAddress})`,
+						});
 					}
 				}
 			}
 
 			if (exchangeRates && synthetix) {
 				if (synthetixOwner === account) {
-					console.log(yellow('Invoking Synthetix.setExchangeRates()...'));
+					console.log(yellow('Invoking Synthetix.setExchangeRates(ExchangeRates)...'));
 					await synthetix.methods
 						.setExchangeRates(exchangeRatesAddress)
 						.send(deployer.sendParameters());
 				} else {
-					console.log(cyan('Cannot call Synthetix.setExchangeRates() as not owner.'));
+					appendOwnerAction({
+						key: `Synthetix.setExchangeRates(ExchangeRates)`,
+						target: synthetixAddress,
+						action: `setExchangeRates(${exchangeRatesAddress})`,
+					});
 				}
 			}
 
@@ -496,10 +548,20 @@ program
 			if (synthetix && synthetixEscrow) {
 				const escrowAddress = await synthetix.methods.escrow().call();
 				if (escrowAddress !== synthetixEscrow.options.address) {
-					console.log(yellow('Invoking Synthetix.setEscrow on Synthetix...'));
-					await synthetix.methods
-						.setEscrow(synthetixEscrow.options.address)
-						.send(deployer.sendParameters());
+					const escrowOwner = await synthetixEscrow.methods.owner().call();
+
+					if (escrowOwner === account) {
+						console.log(yellow('Invoking Synthetix.setEscrow(SynthetixEscrow)'));
+						await synthetix.methods
+							.setEscrow(synthetixEscrow.options.address)
+							.send(deployer.sendParameters());
+					} else {
+						appendOwnerAction({
+							key: `Synthetix.setEscrow(SynthetixEscrow)`,
+							target: synthetixAddress,
+							action: `setEscrow(${synthetixEscrow.options.address})`,
+						});
+					}
 				}
 
 				const escrowSNXAddress = await synthetixEscrow.methods.synthetix().call();
@@ -508,12 +570,16 @@ program
 					const synthetixEscrowOwner = await synthetixEscrow.methods.owner().call();
 
 					if (synthetixEscrowOwner === account) {
-						console.log(yellow('Invoking SynthetixEscrow.setSynthetix()...'));
+						console.log(yellow('Invoking SynthetixEscrow.setSynthetix(Synthetix)...'));
 						await synthetixEscrow.methods
 							.setSynthetix(synthetixAddress)
 							.send(deployer.sendParameters());
 					} else {
-						console.log(cyan('Cannot call SynthetixEscrow.setSynthetix() as not owner.'));
+						appendOwnerAction({
+							key: `SynthetixEscrow.setSynthetix(Synthetix)`,
+							target: synthetixEscrow.options.address,
+							action: `setSynthetix(${synthetixAddress})`,
+						});
 					}
 				}
 			}
@@ -524,10 +590,14 @@ program
 					const feePoolOwner = await feePool.methods.owner().call();
 					// only the owner can do this
 					if (feePoolOwner === account) {
-						console.log(yellow('Invoking FeePool.setSynthetix()...'));
+						console.log(yellow('Invoking FeePool.setSynthetix(Synthetix)...'));
 						await feePool.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
 					} else {
-						console.log(cyan('Cannot call FeePool.setSynthetix() as not owner.'));
+						appendOwnerAction({
+							key: `FeePool.setSynthetix(Synthetix)`,
+							target: feePool.options.address,
+							action: `setSynthetix(${synthetixAddress})`,
+						});
 					}
 				}
 			}
@@ -568,21 +638,43 @@ program
 				if (synth && tokenStateForSynth) {
 					const tsAssociatedContract = await tokenStateForSynth.methods.associatedContract().call();
 					if (tsAssociatedContract !== synthAddress) {
-						console.log(
-							yellow(`Invoking TokenState${currencyKey}.setAssociatedContract(${currencyKey})`)
-						);
+						const tsOwner = await tokenStateForSynth.methods.owner().all();
 
-						await tokenStateForSynth.methods
-							.setAssociatedContract(synthAddress)
-							.send(deployer.sendParameters());
+						if (tsOwner === account) {
+							console.log(
+								yellow(
+									`Invoking TokenState${currencyKey}.setAssociatedContract(Synth${currencyKey})`
+								)
+							);
+
+							await tokenStateForSynth.methods
+								.setAssociatedContract(synthAddress)
+								.send(deployer.sendParameters());
+						} else {
+							appendOwnerAction({
+								key: `TokenState${currencyKey}.setAssociatedContract(Synth${currencyKey})`,
+								target: tokenStateForSynth.options.address,
+								action: `setAssociatedContract(${synthAddress})`,
+							});
+						}
 					}
 				}
 				if (proxyForSynth && synth) {
 					const target = await proxyForSynth.methods.target().call();
 					if (target !== synthAddress) {
-						console.log(yellow(`Invoking Proxy${currencyKey}.setTarget(${currencyKey})`));
+						const proxyForSynthOwner = await proxyForSynth.methods.owner().call();
 
-						await proxyForSynth.methods.setTarget(synthAddress).send(deployer.sendParameters());
+						if (proxyForSynthOwner === account) {
+							console.log(yellow(`Invoking Proxy${currencyKey}.setTarget(Synth${currencyKey})`));
+
+							await proxyForSynth.methods.setTarget(synthAddress).send(deployer.sendParameters());
+						} else {
+							appendOwnerAction({
+								key: `Proxy${currencyKey}.setTarget(Synth${currencyKey})`,
+								target: proxyForSynth.options.address,
+								action: `setTarget(${synthAddress})`,
+							});
+						}
 					}
 				}
 
@@ -591,10 +683,14 @@ program
 					if (currentSynthInSNX !== synthAddress) {
 						// only owner of Synthetix can do this
 						if (synthetixOwner === account) {
-							console.log(yellow(`Invoking Synthetix.addSynth(${currencyKey})...`));
+							console.log(yellow(`Invoking Synthetix.addSynth(Synth${currencyKey})...`));
 							await synthetix.methods.addSynth(synthAddress).send(deployer.sendParameters());
 						} else {
-							console.log(cyan('Cannot call Synthetix.addSynth() as not owner.'));
+							appendOwnerAction({
+								key: `Synthetix.addSynth(Synth${currencyKey})`,
+								target: synthetixAddress,
+								action: `addSynth(${synthAddress})`,
+							});
 						}
 					}
 
@@ -605,12 +701,14 @@ program
 						const synthOwner = await synth.methods.owner().call();
 
 						if (synthOwner === account) {
-							console.log(yellow(`Invoking Synth${currencyKey}.setSynthetix()...`));
+							console.log(yellow(`Invoking Synth${currencyKey}.setSynthetix(Synthetix)...`));
 							await synth.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
 						} else {
-							console.log(
-								cyan(`Cannot call Synth.setSynthetix() for ${currencyKey} as not owner.`)
-							);
+							appendOwnerAction({
+								key: `Synth${currencyKey}.setSynthetix(Synth${currencyKey})`,
+								target: synthAddress,
+								action: `setSynthetix(${synthetixAddress})`,
+							});
 						}
 					}
 
@@ -648,11 +746,11 @@ program
 									)
 									.send(deployer.sendParameters());
 							} else {
-								console.log(
-									cyan(
-										`Cannot call ExchangeRates.setInversePricing() for ${currencyKey} as not owner.`
-									)
-								);
+								appendOwnerAction({
+									key: `ExchangeRates.setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})`,
+									target: exchangeRatesAddress,
+									action: `setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})`,
+								});
 							}
 						}
 					}
@@ -684,7 +782,11 @@ program
 						console.log(yellow(`Invoking Depot.setSynthetix()...`));
 						await depot.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
 					} else {
-						console.log(cyan('Cannot call Depot.setSynthetix() as not owner.'));
+						appendOwnerAction({
+							key: `Depot.setSynthetix(Synthetix)`,
+							target: depot.options.address,
+							action: `setSynthetix(${synthetixAddress})`,
+						});
 					}
 				}
 			}

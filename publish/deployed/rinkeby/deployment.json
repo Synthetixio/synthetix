@@ -1766,8 +1766,7 @@
           ],
           "payable": false,
           "stateMutability": "nonpayable",
-          "type": "constructor",
-          "signature": "constructor"
+          "type": "constructor"
         },
         {
           "payable": true,
@@ -6079,8 +6078,7 @@
           ],
           "payable": false,
           "stateMutability": "nonpayable",
-          "type": "constructor",
-          "signature": "constructor"
+          "type": "constructor"
         },
         {
           "anonymous": false,
