@@ -107,6 +107,26 @@ node publish nominate
 node publish nominate -n rinkeby -d publish/deployed/rinkeby -g 3 -c Synthetix -c ProxysUSD -o 0x0000000000000000000000000000000000000000
 ```
 
+
+## 5. Owner Actions
+
+Helps the owner take ownership of nominated contracts and run any deployment tasks deferred to them.
+
+```bash
+node publish owner
+```
+
+### CLI Options
+
+- `-d, --deployment-path <value>` Path to a folder that has your input configuration file (`config.json`), the synths list (`synths.json`) and where your `deployment.json` file will be written (and read from if it currently exists
+
+* `-n, --network <value>` The network to run off. One of mainnet, kovan, rinkeby, rospen. (default: "kovan")
+* `-o, --new-owner <value>` The address (with `0x` prefix included) of the new owner to nominate.
+
+```bash
+node publish owner -n rinkeby -d publish/deployed/rinkeby -o 0x0000000000000000000000000000000000000001
+```
+
 ## When adding new synths
 
 1. In the environment folder you are deploying to, add the synth key to the `synths.json` file
