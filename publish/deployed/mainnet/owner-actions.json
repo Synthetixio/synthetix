@@ -1,0 +1,38 @@
+{
+  "Synthetix.setExchangeRates(ExchangeRates)": {
+    "target": "0x3772f9716Cf6D7a09edE3587738AA2af5577483a",
+    "action": "setExchangeRates(0xba34e436C9383aa8FA1e3659D2807ae040592498)",
+    "complete": true,
+    "link": "https://etherscan.io/address/0x3772f9716Cf6D7a09edE3587738AA2af5577483a#writeContract"
+  },
+  "Synthetix.addSynth(SynthsETH)": {
+    "target": "0x3772f9716Cf6D7a09edE3587738AA2af5577483a",
+    "action": "addSynth(0x42456D7084eacF4083f1140d3229471bbA2949A8)",
+    "complete": true,
+    "link": "https://etherscan.io/address/0x3772f9716Cf6D7a09edE3587738AA2af5577483a#writeContract"
+  },
+  "Synthetix.addSynth(SynthsBNB)": {
+    "target": "0x3772f9716Cf6D7a09edE3587738AA2af5577483a",
+    "action": "addSynth(0xC906de7f8b4C1a4787023F50F49CE98F9F67c4b8)",
+    "complete": true,
+    "link": "https://etherscan.io/address/0x3772f9716Cf6D7a09edE3587738AA2af5577483a#writeContract"
+  },
+  "Synthetix.addSynth(SynthiBTC)": {
+    "target": "0x3772f9716Cf6D7a09edE3587738AA2af5577483a",
+    "action": "addSynth(0xd8f6B6b6782632275B2B51230654f687f5b12Cde)",
+    "complete": true,
+    "link": "https://etherscan.io/address/0x3772f9716Cf6D7a09edE3587738AA2af5577483a#writeContract"
+  },
+  "Synthetix.addSynth(SynthiETH)": {
+    "target": "0x3772f9716Cf6D7a09edE3587738AA2af5577483a",
+    "action": "addSynth(0x51Fe40e6292dbC44623b298a4086ffA6f5976ba1)",
+    "complete": true,
+    "link": "https://etherscan.io/address/0x3772f9716Cf6D7a09edE3587738AA2af5577483a#writeContract"
+  },
+  "Synthetix.addSynth(SynthiBNB)": {
+    "target": "0x3772f9716Cf6D7a09edE3587738AA2af5577483a",
+    "action": "addSynth(0x56751D5Ac7D2B614C79d22e6b52D3285cFA8a293)",
+    "complete": true,
+    "link": "https://etherscan.io/address/0x3772f9716Cf6D7a09edE3587738AA2af5577483a#writeContract"
+  }
+}

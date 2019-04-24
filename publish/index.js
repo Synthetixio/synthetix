@@ -549,7 +549,6 @@ program
 					args: [synthetixEscrow.options.address],
 				});
 			}
-
 			if (synthetix && synthetixEscrow) {
 				const escrowAddress = await synthetix.methods.escrow().call();
 				if (escrowAddress !== synthetixEscrow.options.address) {
@@ -569,22 +568,27 @@ program
 					}
 				}
 
-				const escrowSNXAddress = await synthetixEscrow.methods.synthetix().call();
-				if (escrowSNXAddress !== synthetixAddress) {
-					// only the owner can do this
-					const synthetixEscrowOwner = await synthetixEscrow.methods.owner().call();
+				// Skip setting unless redeploying either of these, as
+				if (config['Synthetix'].deploy || config['SynthetixEscrow'].deploy) {
+					// Note: currently on mainnet SynthetixEscrow.methods.synthetix() does NOT exist
+					// it is "havven" and the ABI we have here is not sufficient
+					const escrowSNXAddress = await synthetixEscrow.methods.synthetix().call();
+					if (escrowSNXAddress !== synthetixAddress) {
+						// only the owner can do this
+						const synthetixEscrowOwner = await synthetixEscrow.methods.owner().call();
 
-					if (synthetixEscrowOwner === account) {
-						console.log(yellow('Invoking SynthetixEscrow.setSynthetix(Synthetix)...'));
-						await synthetixEscrow.methods
-							.setSynthetix(synthetixAddress)
-							.send(deployer.sendParameters());
-					} else {
-						appendOwnerAction({
-							key: `SynthetixEscrow.setSynthetix(Synthetix)`,
-							target: synthetixEscrow.options.address,
-							action: `setSynthetix(${synthetixAddress})`,
-						});
+						if (synthetixEscrowOwner === account) {
+							console.log(yellow('Invoking SynthetixEscrow.setSynthetix(Synthetix)...'));
+							await synthetixEscrow.methods
+								.setSynthetix(synthetixAddress)
+								.send(deployer.sendParameters());
+						} else {
+							appendOwnerAction({
+								key: `SynthetixEscrow.setSynthetix(Synthetix)`,
+								target: synthetixEscrow.options.address,
+								action: `setSynthetix(${synthetixAddress})`,
+							});
+						}
 					}
 				}
 			}
@@ -845,7 +849,10 @@ program
 		if (!newOwner || !w3utils.isAddress(newOwner)) {
 			console.error(red('Invalid new owner to nominate. Please check the option and try again.'));
 			process.exit(1);
+		} else {
+			newOwner = newOwner.toLowerCase();
 		}
+
 		const { config, deployment } = loadAndCheckRequiredSources({
 			deploymentPath,
 			network,
@@ -892,8 +899,8 @@ program
 				continue;
 			}
 
-			const currentOwner = await deployedContract.methods.owner().call();
-			const nominatedOwner = await deployedContract.methods.nominatedOwner().call();
+			const currentOwner = (await deployedContract.methods.owner().call()).toLowerCase();
+			const nominatedOwner = (await deployedContract.methods.nominatedOwner().call()).toLowerCase();
 
 			console.log(
 				gray(
@@ -907,7 +914,7 @@ program
 				await deployedContract.methods.nominateNewOwner(newOwner).send({
 					from: account,
 					gas: gasLimit,
-					gasPrice,
+					gasPrice: w3utils.toWei(gasPrice, 'gwei'),
 				});
 			} else {
 				console.log(gray('No change required.'));
@@ -930,6 +937,8 @@ program
 		if (!newOwner || !w3utils.isAddress(newOwner)) {
 			console.error(red('Invalid new owner to nominate. Please check the option and try again.'));
 			process.exit(1);
+		} else {
+			newOwner = newOwner.toLowerCase();
 		}
 		// ensure all nominated owners are accepted
 		const { config, deployment, ownerActions, ownerActionsFile } = loadAndCheckRequiredSources({
@@ -937,13 +946,8 @@ program
 			network,
 		});
 
-		const { providerUrl, privateKey, etherscanLinkPrefix } = loadConnections({ network });
+		const { providerUrl, etherscanLinkPrefix } = loadConnections({ network });
 		const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
-		web3.eth.accounts.wallet.add(privateKey);
-		const account = web3.eth.accounts.wallet[0].address;
-		console.log(gray(`Using account with public key ${account}`));
-
-		console.log(gray('Looking for contracts whose ownership we should accept'));
 
 		const confirmOrEnd = async message => {
 			try {
@@ -958,6 +962,25 @@ program
 				process.exit();
 			}
 		};
+
+		console.log(
+			gray('Running through operations during deployment that couldnt complete as not owner.')
+		);
+
+		for (const [key, entry] of Object.entries(ownerActions)) {
+			const { action, link, complete } = entry;
+			if (complete) continue;
+
+			await confirmOrEnd(
+				yellow('YOUR TASK: ') + `Invoke ${bgYellow(black(action))} (${key}) via ${cyan(link)}`
+			);
+
+			entry.complete = true;
+			fs.writeFileSync(ownerActionsFile, JSON.stringify(ownerActions, null, 2));
+		}
+
+		console.log(gray('Looking for contracts whose ownership we should accept'));
+
 		for (const contract of Object.keys(config)) {
 			const { address, source } = deployment.targets[contract];
 			const { abi } = deployment.sources[source];
@@ -967,8 +990,8 @@ program
 			if (!deployedContract.methods.owner) {
 				continue;
 			}
-			const currentOwner = await deployedContract.methods.owner().call();
-			const nominatedOwner = await deployedContract.methods.nominatedOwner().call();
+			const currentOwner = (await deployedContract.methods.owner().call()).toLowerCase();
+			const nominatedOwner = (await deployedContract.methods.nominatedOwner().call()).toLowerCase();
 
 			if (currentOwner === newOwner) {
 				console.log(gray(`${newOwner} is already the owner of ${contract}`));
@@ -985,22 +1008,6 @@ program
 					)
 				);
 			}
-		}
-
-		console.log(
-			gray('Running through operations during deployment that couldnt complete as not owner.')
-		);
-
-		for (const [key, entry] of Object.entries(ownerActions)) {
-			const { action, link, complete } = entry;
-			if (complete) continue;
-
-			await confirmOrEnd(
-				yellow('YOUR TASK: ') + `Invoke ${bgYellow(black(action))} (${key}) via ${cyan(link)}`
-			);
-
-			entry.complete = true;
-			fs.writeFileSync(ownerActionsFile, JSON.stringify(ownerActions, null, 2));
 		}
 	});
 
