@@ -6,6 +6,4 @@ interface ISynth {
   function transfer(address to, uint value) public returns (bool);
   function triggerTokenFallbackIfNeeded(address sender, address recipient, uint amount) external;
   function transferFrom(address from, address to, uint value) public returns (bool);
-  function getCurrencyKey() public view returns (bytes4);
-  function getTotalSupply() public view returns (uint);
 }

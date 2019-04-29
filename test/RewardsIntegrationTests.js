@@ -11,7 +11,7 @@ const { currentTime, fastForward, toUnit, toPreciseUnit } = require('../utils/te
 const web3 = getWeb3();
 const getInstance = getContractInstance(web3);
 
-contract.only('Rewards Integration Tests', async function(accounts) {
+contract('Rewards Integration Tests', async function(accounts) {
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
 		const timestamp = await currentTime();
