@@ -924,6 +924,7 @@ contract Synthetix is ExternStateToken {
         // Set minted SNX balance to RewardEscrow's balance
         // Minus the minterReward and set balance of minter to add reward
         tokenState.setBalanceOf(rewardEscrow, tokenState.balanceOf(rewardEscrow).add(supplyToMint.sub(minterReward)));
+        emitTransfer(this, rewardEscrow, supplyToMint.sub(minterReward));
         // Tell the FeePool how much it has to distribute
         feePool.rewardsMinted(supplyToMint.sub(minterReward));
 
@@ -968,9 +969,6 @@ contract Synthetix is ExternStateToken {
 
     // ========== EVENTS ==========
     /* solium-disable */
-
-    event LogInt(string message, uint value); //TODO: REMOVE - For logging
-
     event SynthExchange(address indexed account, bytes4 fromCurrencyKey, uint256 fromAmount, bytes4 toCurrencyKey,  uint256 toAmount, address toAddress);
     bytes32 constant SYNTHEXCHANGE_SIG = keccak256("SynthExchange(address,bytes4,uint256,bytes4,uint256,address)");
     function emitSynthExchange(address account, bytes4 fromCurrencyKey, uint256 fromAmount, bytes4 toCurrencyKey, uint256 toAmount, address toAddress) internal {
