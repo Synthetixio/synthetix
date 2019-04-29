@@ -919,6 +919,7 @@ contract Synthetix is ExternStateToken {
         // Set minted SNX balance to RewardEscrow's balance
         // Minus the minterReward and set balance of minter to add reward
         tokenState.setBalanceOf(rewardEscrow, tokenState.balanceOf(rewardEscrow).add(supplyToMint.sub(minterReward)));
+        emitTransfer(this, rewardEscrow, supplyToMint.sub(minterReward));
         // Tell the FeePool how much it has to distribute
         feePool.rewardsMinted(supplyToMint.sub(minterReward));
 
