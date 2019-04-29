@@ -2075,17 +2075,18 @@ contract.only('Synthetix', async function(accounts) {
 		const issuedSynths1 = toUnit('2000');
 		const issuedSynths2 = toUnit('2000');
 		const issuedSynths3 = toUnit('2000');
+		const burnAllSynths = toUnit('2050');
 
 		await synthetix.issueSynths(sUSD, issuedSynths1, { from: account1 });
 		await synthetix.issueSynths(sUSD, issuedSynths2, { from: account2 });
 		await synthetix.issueSynths(sUSD, issuedSynths3, { from: account3 });
 
 		const debtBalance1 = await synthetix.debtBalanceOf(account1, sUSD);
-		await synthetix.burnSynths(sUSD, debtBalance1, { from: account1 });
+		await synthetix.burnSynths(sUSD, burnAllSynths, { from: account1 });
 		const debtBalance2 = await synthetix.debtBalanceOf(account2, sUSD);
-		await synthetix.burnSynths(sUSD, debtBalance2, { from: account2 });
+		await synthetix.burnSynths(sUSD, burnAllSynths, { from: account2 });
 		const debtBalance3 = await synthetix.debtBalanceOf(account3, sUSD);
-		await synthetix.burnSynths(sUSD, debtBalance3, { from: account3 });
+		await synthetix.burnSynths(sUSD, burnAllSynths, { from: account3 });
 
 		const debtBalance1After = await synthetix.debtBalanceOf(account1, sUSD);
 		const debtBalance2After = await synthetix.debtBalanceOf(account2, sUSD);

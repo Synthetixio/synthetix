@@ -275,7 +275,7 @@ contract('Rewards Integration Tests', async function(accounts) {
 		it('ctd Acc2 & 3 should get the extra amount');
 	});
 
-	describe.only('Exchange Rate Shift tests', async function() {
+	describe('Exchange Rate Shift tests', async function() {
 		it('should assign accounts (1,2,3) to have (40%,40%,20%) of the debt/rewards', async function() {
 			// Account 1&2 issue 10K USD in sBTC each, holding 50% of the total debt.
 			const tenK = toUnit('10000');
@@ -380,7 +380,7 @@ contract('Rewards Integration Tests', async function(accounts) {
 		it('(Inverse) Issue sBTC then shift rate down 50% then calc rewards');
 	});
 
-	describe.only('3 Accounts issue 10K sUSD each in p(1)', async function() {
+	describe('3 Accounts issue 10K sUSD each in p(1)', async function() {
 		const tenK = toUnit('10000');
 		const twentyK = toUnit('20000');
 
