@@ -356,7 +356,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         (availableFees, availableRewards) = feesAvailable(messageSender, "XDR");
         emit LogInt("availableRewards", availableRewards);
 
-        require(availableFees > 0 || availableRewards > 0, "No fees or rewards available for period, or fees already claimed");
+        // require(availableFees > 0 || availableRewards > 0, "No fees or rewards available for period, or fees already claimed");
 
         lastFeeWithdrawal[messageSender] = recentFeePeriods[1].feePeriodId;
 
@@ -758,6 +758,9 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
         uint penalty = currentPenalty(account);
 
+        emit LogInt("userOwnershipPercentage", userOwnershipPercentage);
+        emit LogInt("debtEntryIndex", debtEntryIndex);
+
         // The [0] fee period is not yet ready to claim, but it is a fee period that they can have
         // fees owing for, so we need to report on it anyway.
         uint feesFromPeriod;
@@ -780,16 +783,20 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
                 // We calculate a feePeriod's closingDebtIndex by looking at the next feePeriod's startingDebtIndex
                 // we can use the most recent issuanceData[0] for the current feePeriod
                 // else find the applicableIssuanceData for the feePeriod based on the StartingDebtIndex of the period
-                uint closingDebtIndex = nextPeriod.startingDebtIndex - 1;
+                uint closingDebtIndex = nextPeriod.startingDebtIndex.sub(1);
 
-                if (closingDebtIndex < debtEntryIndex) {
-                    (userOwnershipPercentage, debtEntryIndex) = feePoolState.applicableIssuanceData(account, closingDebtIndex);
-                }
+                // Gas optimisation required to reuse debtEntryIndex if found new applicable one 
+                // or 0,0 we keep most recent one
+                (userOwnershipPercentage, debtEntryIndex) = feePoolState.applicableIssuanceData(account, closingDebtIndex);
 
+                emit LogInt("updated userOwnershipPercentage", userOwnershipPercentage);
+                emit LogInt("updated debtEntryIndex", debtEntryIndex);
                 (feesFromPeriod, rewardsFromPeriod) = _feesAndRewardsFromPeriod(i, userOwnershipPercentage, debtEntryIndex, penalty);
 
                 results[i][0] = feesFromPeriod;
                 results[i][1] = rewardsFromPeriod;
+                emit LogInt("updated feesFromPeriod", feesFromPeriod);
+                emit LogInt("updated rewardsFromPeriod", rewardsFromPeriod);
             }
         }
     }
@@ -813,7 +820,11 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         if (period > 0) {
             uint closingDebtIndex = recentFeePeriods[period - 1].startingDebtIndex.sub(1);
             debtOwnershipForPeriod = _effectiveDebtRatioForPeriod(closingDebtIndex, ownershipPercentage, debtEntryIndex);
+            emit LogInt("feesAndRewardsFromPeriod closingDebtIndex", closingDebtIndex);
         }
+        
+        emit LogInt("feesAndRewardsFromPeriod debtOwnershipForPeriod", debtOwnershipForPeriod);
+        emit LogInt("feesAndRewardsFromPeriod debtEntryIndex", debtEntryIndex);
 
         // Calculate their percentage of the fees / rewards in this period
         // This is a high precision integer.
@@ -858,9 +869,9 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     {
         require(period != 0, "Current period has not closed yet");
         require(period < FEE_PERIOD_LENGTH, "Period exceeds the FEE_PERIOD_LENGTH");
-        
-        // No debt minted during period as next period starts at 0  
-        if (recentFeePeriods[period - 1].startingDebtIndex == 0) return; 
+
+        // No debt minted during period as next period starts at 0
+        if (recentFeePeriods[period - 1].startingDebtIndex == 0) return;
 
         uint closingDebtIndex = recentFeePeriods[period - 1].startingDebtIndex.sub(1);
 
