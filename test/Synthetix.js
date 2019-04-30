@@ -17,7 +17,7 @@ const {
 	ZERO_ADDRESS,
 } = require('../utils/testUtils');
 
-contract.only('Synthetix', async function(accounts) {
+contract('Synthetix', async function(accounts) {
 	const [sUSD, sAUD, sEUR, SNX, XDR, sXYZ] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'XDR', 'sXYZ'].map(
 		web3.utils.asciiToHex
 	);
@@ -2142,7 +2142,7 @@ contract.only('Synthetix', async function(accounts) {
 		assert.bnEqual(debtBalanceAfter, '0');
 	});
 
-	it.only('should allow users to burn their debt and adjust the debtBalanceOf correctly for remaining users', async function() {
+	it('should allow users to burn their debt and adjust the debtBalanceOf correctly for remaining users', async function() {
 		// Give some SNX to account1
 		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('40000000'), {
 			from: owner,

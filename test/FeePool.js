@@ -524,6 +524,54 @@ contract('FeePool', async function(accounts) {
 		assert.bnEqual(await sUSDContract.balanceOf(owner), oldSynthBalance.add(feesAvailable[0]));
 	});
 
+	it.only('should allow a user to claim their fees if they minted debt during period', async function() {
+		// Issue 10,000 sUSD for two different accounts.
+		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('1000000'), {
+			from: owner,
+		});
+
+		await synthetix.issueSynths(sUSD, toUnit('10000'), { from: owner });
+
+		// For first fee period, do two transfers, then close it off.
+		let totalFees = web3.utils.toBN('0');
+
+		const transfer1 = toUnit((10).toString());
+
+		await sUSDContract.methods['transfer(address,uint256)'](account1, transfer1, { from: owner });
+
+		totalFees = totalFees.add(transfer1.sub(await feePool.amountReceivedFromTransfer(transfer1)));
+
+		await closeFeePeriod();
+
+		// Assert that we have correct values in the fee pool
+		// Owner should have all fees as only minted during period
+		const feesAvailable = await feePool.feesAvailable(owner, sUSD);
+		assert.bnClose(feesAvailable[0], totalFees, '8');
+
+		const oldSynthBalance = await sUSDContract.balanceOf(owner);
+
+		// Now we should be able to claim them.
+		await feePool.claimFees(sUSD, { from: owner });
+
+		// We should have our fees
+		assert.bnEqual(await sUSDContract.balanceOf(owner), oldSynthBalance.add(feesAvailable[0]));
+
+		// FeePeriod 2 - account 1 joins and mints 50% of the debt
+		totalFees = web3.utils.toBN('0');
+		await synthetix.issueSynths(sUSD, toUnit('10000'), { from: account1 });
+
+		await sUSDContract.methods['transfer(address,uint256)'](account1, transfer1, { from: owner });
+		totalFees = totalFees.add(transfer1.sub(await feePool.amountReceivedFromTransfer(transfer1)));
+		
+		await closeFeePeriod();
+		
+		const feesAvailableOwner = await feePool.feesAvailable(owner, sUSD);
+		const feesAvailableAcc1 = await feePool.feesAvailable(account1, sUSD);
+
+		assert.bnClose(feesAvailableOwner[0], totalFees.div(web3.utils.toBN('2')), '8');
+		assert.bnClose(feesAvailableAcc1[0], totalFees.div(web3.utils.toBN('2')), '8');
+	});
+
 	it('should allow a user to claim their fees in sAUD', async function() {
 		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 

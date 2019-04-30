@@ -367,10 +367,6 @@ contract('Rewards Integration Tests', async function(accounts) {
 			await synthetix.exchange(sBTC, sBTCAmount, sUSD, account1, { from: account1 });
 			await synthetix.exchange(sBTC, sBTCAmount, sUSD, account2, { from: account2 });
 
-			// TEMP ACC1&2 leave
-			// await synthetix.burnSynths(sBTC, sBTCAmount, { from: account1 });
-			// await synthetix.burnSynths(sBTC, sBTCAmount, { from: account2 });
-
 			// Close so we can claim
 			await closeFeePeriodAndFastForward();
 
