@@ -1,6 +1,7 @@
 const FeePool = artifacts.require('FeePool');
 // const FeePoolState = artifacts.require('FeePoolState');
 const Synthetix = artifacts.require('Synthetix');
+const Synth = artifacts.require('Synth');
 const RewardEscrow = artifacts.require('RewardEscrow');
 const SupplySchedule = artifacts.require('SupplySchedule');
 const ExchangeRates = artifacts.require('ExchangeRates');
@@ -10,14 +11,14 @@ const { currentTime, fastForward, toUnit, toPreciseUnit } = require('../utils/te
 const web3 = getWeb3();
 const getInstance = getContractInstance(web3);
 
-contract('Rewards Integration Tests', async accounts => {
+contract.only('Rewards Integration Tests', async accounts => {
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sAUD, sEUR, SNX, sBTC],
-			['0.5', '1.25', '0.1', '5000'].map(toUnit),
+			[sAUD, sEUR, SNX, sBTC, iBTC],
+			['0.5', '1.25', '0.1', '5000', '4000'].map(toUnit),
 			timestamp,
 			{
 				from: oracle,
@@ -69,7 +70,7 @@ contract('Rewards Integration Tests', async accounts => {
 	};
 
 	// CURRENCIES
-	const [sUSD, sAUD, sEUR, sBTC, SNX] = ['sUSD', 'sAUD', 'sEUR', 'sBTC', 'SNX'].map(
+	const [sUSD, sAUD, sEUR, sBTC, SNX, iBTC] = ['sUSD', 'sAUD', 'sEUR', 'sBTC', 'SNX', 'iBTC'].map(
 		web3.utils.asciiToHex
 	);
 
@@ -179,7 +180,6 @@ contract('Rewards Integration Tests', async accounts => {
 
 	describe('3 accounts with 33.33% SNX all issue MAX and claim rewards', async () => {
 		beforeEach(async () => {
-			console.log('3 Accounts issueMaxSynths in p1');
 			await synthetix.issueMaxSynths(sUSD, { from: account1 });
 			await synthetix.issueMaxSynths(sUSD, { from: account2 });
 			await synthetix.issueMaxSynths(sUSD, { from: account3 });
@@ -187,7 +187,7 @@ contract('Rewards Integration Tests', async accounts => {
 
 		it('should allocate the 3 accounts a third of the rewards for 1 period', async () => {
 			// Close Fee Period
-			console.log('Close Fee Period');
+			// console.log('Close Fee Period');
 			await closeFeePeriodAndFastForward();
 
 			// All 3 accounts claim rewards
@@ -243,7 +243,7 @@ contract('Rewards Integration Tests', async accounts => {
 
 		it('should allocate correct SNX rewards as others leave the system', async () => {
 			// Close Fee Period
-			console.log('Close Fee Period');
+			// console.log('Close Fee Period');
 			await closeFeePeriodAndFastForward();
 
 			// Account1 claims but 2 & 3 dont
@@ -515,62 +515,19 @@ contract('Rewards Integration Tests', async accounts => {
 		it('(Inverse) Issue sBTC then shift rate down 50% then calc rewards');
 	});
 
-	describe('3 Accounts issue 10K sUSD each in p(1)', async () => {
+	describe('3 Accounts issue 10K sUSD each in week 1', async () => {
 		const tenK = toUnit('10000');
 		const twentyK = toUnit('20000');
 
 		beforeEach(async () => {
-			console.log('3 Accounts issue 10K USD in sUSD each in p1');
 			await synthetix.issueSynths(sUSD, tenK, { from: account1 });
 			await synthetix.issueSynths(sUSD, tenK, { from: account2 });
 			await synthetix.issueSynths(sUSD, tenK, { from: account3 });
 		});
-		it('Assert Accounts have 33% ownership each', async () => {
-			// assert.bnClose(await feePool.effectiveDebtRatioForPeriod(account1, 1), thirtyThreePercent);
-			const account1Ownership = await feePool.effectiveDebtRatioForPeriod(account1, 1);
-			// console.log('account1Ownership', account1Ownership.toString());
-			// const account1DebtBalanceOf = await synthetix.debtBalanceOf(account1, sUSD);
-			// console.log('account1DebtBalanceOf', account1DebtBalanceOf.toString());
-			assert.bnClose(account1Ownership, thirtyThreePercent, 48611); // Rounding to 27 places
 
-			// assert.bnClose(await feePool.effectiveDebtRatioForPeriod(account2, 1), thirtyThreePercent);
-			const account2Ownership = await feePool.effectiveDebtRatioForPeriod(account2, 1);
-			// console.log('account2Ownership', account2Ownership.toString());
-			// const account2DebtBalanceOf = await synthetix.debtBalanceOf(account2, sUSD);
-			// console.log('account2DebtBalanceOf', account2DebtBalanceOf.toString());
-			assert.bnClose(account2Ownership, thirtyThreePercent, 48611); // Rounding to 27 places
-			// assert.bnClose(await feePool.effectiveDebtRatioForPeriod(account3, 1), thirtyThreePercent);
-			const account3Ownership = await feePool.effectiveDebtRatioForPeriod(account3, 1);
-			// console.log('account3Ownership', account3Ownership.toString());
-			// const account3DebtBalanceOf = await synthetix.debtBalanceOf(account3, sUSD);
-			// console.log('account3DebtBalanceOf', account3DebtBalanceOf.toString());
-			assert.bnClose(account3Ownership, thirtyThreePercent, 30555); // Rounding to 27 places
-		});
-		it('p2 Acc1 Issues 20K sUSD should now have 50% debt/rewards, Acc2&3 now 25%', async () => {
-			// Acc 1 Issues another 20K sUSD
-			console.log('Acc 1 Issues another 20K sUSD');
-			await synthetix.issueSynths(sUSD, twentyK, { from: account1 });
-
-			// Close p2
-			console.log('Close p2');
-			await closeFeePeriodAndFastForward();
-
-			// Assert Acc 1 has 50% debt
-			const acc1Ownership = await feePool.effectiveDebtRatioForPeriod(account1, 1);
-			console.log('Assert Acc 1 has 50% debt', acc1Ownership.toString()); // 60
-			// assert.bnEqual(acc1Ownership, fiftyPercent);
-
-			// Assert Acc 2&3 has 25% debt each
-			const acc2Ownership = await feePool.effectiveDebtRatioForPeriod(account2, 1);
-			const acc3Ownership = await feePool.effectiveDebtRatioForPeriod(account3, 1);
-			console.log('Assert Acc 2&3 has 25% debt each', acc2Ownership.toString());
-			assert.bnEqual(acc2Ownership, twentyFivePercent); // 20
-			assert.bnEqual(acc3Ownership, twentyFivePercent); // 20
-		});
-
-		it('p3 Acc1 Burns all then mints 10K, then mints 10K again should have debt/rewards 50%', async () => {
+		it('Acc1 issues and burns multiple times and should have accounts 1,2,3 rewards 50%,25%,25%', async () => {
 			// Acc 1 Issues 20K sUSD
-			await synthetix.issueSynths(sUSD, twentyK, { from: account1 });
+			await synthetix.issueSynths(sUSD, tenK, { from: account1 });
 
 			// Close week 2
 			await closeFeePeriodAndFastForward();
@@ -584,7 +541,7 @@ contract('Rewards Integration Tests', async accounts => {
 			await feePool.claimFees(sUSD, { from: account2 });
 			await feePool.claimFees(sUSD, { from: account3 });
 
-			// Assert Accounts 2&3 have 25% of the minted rewards in their initial escrow entry
+			// Assert Accounts 1 has 50% & 2&3 have 25% of the minted rewards in their initial escrow entry
 			const account1Escrow = await rewardEscrow.getVestingScheduleEntry(account1, 0);
 			const account2Escrow = await rewardEscrow.getVestingScheduleEntry(account2, 0);
 			const account3Escrow = await rewardEscrow.getVestingScheduleEntry(account3, 0);
