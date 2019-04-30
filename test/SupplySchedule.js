@@ -2,7 +2,7 @@ const SupplySchedule = artifacts.require('SupplySchedule');
 const { toUnit, currentTime, divideDecimal, fastForwardTo } = require('../utils/testUtils');
 const BN = require('bn.js');
 
-contract.only('SupplySchedule', async function(accounts) {
+contract('SupplySchedule', async function(accounts) {
 	const DAY = 86400;
 	const WEEK = 604800;
 	const YEAR = 31536000;

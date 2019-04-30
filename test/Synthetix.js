@@ -17,10 +17,16 @@ const {
 	ZERO_ADDRESS,
 } = require('../utils/testUtils');
 
-contract.only('Synthetix', async function(accounts) {
-	const [sUSD, sAUD, sEUR, SNX, XDR, sXYZ] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'XDR', 'sXYZ'].map(
-		web3.utils.asciiToHex
-	);
+contract('Synthetix', async function(accounts) {
+	const [sUSD, sAUD, sEUR, SNX, XDR, sXYZ, sBTC] = [
+		'sUSD',
+		'sAUD',
+		'sEUR',
+		'SNX',
+		'XDR',
+		'sXYZ',
+		'sBTC',
+	].map(web3.utils.asciiToHex);
 
 	const [
 		deployerAccount,
@@ -65,8 +71,8 @@ contract.only('Synthetix', async function(accounts) {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sAUD, sEUR, SNX],
-			['0.5', '1.25', '0.1'].map(toUnit),
+			[sAUD, sEUR, SNX, sBTC],
+			['0.5', '1.25', '0.1', '5000'].map(toUnit),
 			timestamp,
 			{
 				from: oracle,

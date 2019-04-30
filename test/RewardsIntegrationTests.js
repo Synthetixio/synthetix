@@ -82,10 +82,10 @@ contract('Rewards Integration Tests', async function(accounts) {
 	const tenth = amount => amount.div(web3.utils.toBN('10'));
 
 	// PERCENTAGES
-	const twentyPercent = toPreciseUnit('0.2');
+	// const twentyPercent = toPreciseUnit('0.2');
 	const twentyFivePercent = toPreciseUnit('0.25');
 	const thirtyThreePercent = toPreciseUnit('0.333333333333333333333333333');
-	const fortyPercent = toPreciseUnit('0.4');
+	// const fortyPercent = toPreciseUnit('0.4');
 	const fiftyPercent = toPreciseUnit('0.5');
 
 	// TIME IN SECONDS
@@ -113,7 +113,7 @@ contract('Rewards Integration Tests', async function(accounts) {
 		feePoolWeb3,
 		feePoolState,
 		synthetix,
-		sUSDContract,
+		// sUSDContract,
 		exchangeRates,
 		supplySchedule,
 		rewardEscrow,
@@ -131,7 +131,7 @@ contract('Rewards Integration Tests', async function(accounts) {
 		feePoolWeb3 = getInstance(FeePool);
 		feePoolState = await FeePoolState.deployed();
 		synthetix = await Synthetix.deployed();
-		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
+		// sUSDContract = await Synth.at(await synthetix.synths(sUSD));
 
 		supplySchedule = await SupplySchedule.deployed();
 		rewardEscrow = await RewardEscrow.deployed();
@@ -305,8 +305,8 @@ contract('Rewards Integration Tests', async function(accounts) {
 		it('ctd Acc2 & 3 should get the extra amount');
 	});
 
-	describe.only('Exchange Rate Shift tests', async function() {
-		it.only('should assign accounts (1,2,3) to have (40%,40%,20%) of the debt/rewards', async function() {
+	describe('Exchange Rate Shift tests', async function() {
+		it('should assign accounts (1,2,3) to have (40%,40%,20%) of the debt/rewards', async function() {
 			// Account 1&2 issue 10K USD in sBTC each, holding 50% of the total debt.
 			const tenK = toUnit('10000');
 			const sBTCAmount = await synthetix.effectiveValue(sUSD, tenK, sBTC);
@@ -323,8 +323,8 @@ contract('Rewards Integration Tests', async function(accounts) {
 			const debtRatioAccount2 = await feePool.effectiveDebtRatioForPeriod(account2, 1);
 			// console.log('debtRatioAccount2', debtRatioAccount1.toString());
 
-			// assert.bnEqual(debtRatioAccount1, fiftyPercent);
-			// assert.bnEqual(debtRatioAccount2, fiftyPercent);
+			assert.bnEqual(debtRatioAccount1, fiftyPercent);
+			assert.bnEqual(debtRatioAccount2, fiftyPercent);
 
 			// Accounts 1&2 claim rewards
 			await feePool.claimFees(sUSD, { from: account1 });
@@ -351,9 +351,7 @@ contract('Rewards Integration Tests', async function(accounts) {
 			);
 
 			// Account 3 (enters the system and) mints 10K sUSD and should have 20% of the debt not 33.33%
-			await synthetix.issueSynths(sUSD, toUnit('10000'), { from: account3 });
-			const sUSDBalance = await sUSDContract.balanceOf(account3, { from: account3 });
-			console.log('sUSDBalance', sUSDBalance.toString());
+			await synthetix.issueSynths(sUSD, toUnit('5000'), { from: account3 });
 
 			// Get the SNX mintableSupply for week 2
 			const periodTwoMintableSupply = (await supplySchedule.mintableSupply()).sub(
@@ -366,10 +364,6 @@ contract('Rewards Integration Tests', async function(accounts) {
 			// Do some exchanging to generateFees
 			await synthetix.exchange(sBTC, sBTCAmount, sUSD, account1, { from: account1 });
 			await synthetix.exchange(sBTC, sBTCAmount, sUSD, account2, { from: account2 });
-
-			// TEMP ACC1&2 leave
-			// await synthetix.burnSynths(sBTC, sBTCAmount, { from: account1 });
-			// await synthetix.burnSynths(sBTC, sBTCAmount, { from: account2 });
 
 			// Close so we can claim
 			await closeFeePeriodAndFastForward();
@@ -394,6 +388,8 @@ contract('Rewards Integration Tests', async function(accounts) {
 			const account3Rewards = await feePool.feesAvailable(account3, sUSD, { from: account3 });
 			console.log('account3Rewards', account3Rewards[1].toString());
 
+			// feePoolState.applicableIssuanceData(account3, closingDebtIndex);
+
 			// All 3 accounts claim rewards
 			await feePool.claimFees(sUSD, { from: account1 });
 			const rewardsToDistributeAfter1Claim = await feePool.recentFeePeriods(1);
@@ -417,6 +413,12 @@ contract('Rewards Integration Tests', async function(accounts) {
 			});
 			console.log('account3IssuanceData.debtRatio', account3IssuanceData[0].toString());
 			console.log('account3IssuanceData.debtEntryIndex', account3IssuanceData[1].toString());
+
+			const account3IssuanceData2 = await feePoolState.accountIssuanceLedger(account3, 1, {
+				from: account3,
+			});
+			console.log('account3IssuanceData2.debtRatio', account3IssuanceData2[0].toString());
+			console.log('account3IssuanceData2.debtEntryIndex', account3IssuanceData2[1].toString());
 
 			await logFeePeriods();
 
