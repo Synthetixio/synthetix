@@ -656,24 +656,28 @@ contract Synthetix is ExternStateToken {
      * @notice Burn synths to clear issued synths/free SNX.
      * @param currencyKey The currency you're specifying to burn
      * @param amount The amount (in UNIT base) you wish to burn
+     * @dev The amount to burn is debased to XDR's
      */
     function burnSynths(bytes4 currencyKey, uint amount)
         external
         optionalProxy
-        // No need to check for stale rates as _removeFromDebtRegister calls effectiveValue
-        // which does this for us
+        // No need to check for stale rates as effectiveValue checks rates
     {
         // How much debt do they have?
-        uint debt = debtBalanceOf(messageSender, currencyKey);
+        uint debtToRemove = effectiveValue(currencyKey, amount, "XDR");
+        uint debt = debtBalanceOf(messageSender, "XDR");
+        uint debtInCurrencyKey = debtBalanceOf(messageSender, currencyKey);
 
         require(debt > 0, "No debt to forgive");
 
         // If they're trying to burn more debt than they actually owe, rather than fail the transaction, let's just
         // clear their debt and leave them be.
-        uint amountToBurn = debt < amount ? debt : amount;
+        uint amountToRemove = debt < debtToRemove ? debt : debtToRemove;
 
         // Remove their debt from the ledger
-        _removeFromDebtRegister(currencyKey, amountToBurn);
+        _removeFromDebtRegister(amountToRemove);
+
+        uint amountToBurn = debtInCurrencyKey < amount ? debtInCurrencyKey : amount;
 
         // synth.burn does a safe subtraction on balance (so it will revert if there are not enough synths).
         synths[currencyKey].burn(messageSender, amountToBurn);
@@ -703,17 +707,15 @@ contract Synthetix is ExternStateToken {
 
     /**
      * @notice Remove a debt position from the register
-     * @param currencyKey The currency the user is presenting to forgive their debt
-     * @param amount The amount (in UNIT base) being presented
+     * @param amount The amount (in UNIT base) being presented in XDRs
      */
-    function _removeFromDebtRegister(bytes4 currencyKey, uint amount)
+    function _removeFromDebtRegister(uint amount)
         internal
     {
-        // How much debt are they trying to remove in XDRs?
-        uint debtToRemove = effectiveValue(currencyKey, amount, "XDR"); // 100
+        uint debtToRemove = amount;
 
         // How much debt do they have?
-        uint existingDebt = debtBalanceOf(messageSender, "XDR"); // 200
+        uint existingDebt = debtBalanceOf(messageSender, "XDR");
 
         // What is the value of all issued synths of the system (priced in XDRs)?
         uint totalDebtIssued = totalIssuedSynths("XDR");
@@ -721,19 +723,22 @@ contract Synthetix is ExternStateToken {
         // What will the new total after taking out the withdrawn amount
         uint newTotalDebtIssued = totalDebtIssued.sub(debtToRemove);
 
-        // if (newTotalDebtIssued == 0) {
+        uint delta;
+        
+        // What will the debt delta be if there is any debt left?
+        // Set delta to 0 if no more debt left in system after user
+        if (newTotalDebtIssued > 0) {
 
-        //     // Remove users issuanceData 
-        //     // Set delta to 0 as no more debt left in system
-        // }
+            // What is the percentage of the withdrawn debt (as a high precision int) of the total debt after?
+            uint debtPercentage = debtToRemove.divideDecimalRoundPrecise(newTotalDebtIssued);
 
-        // What is the percentage of the withdrawn debt (as a high precision int) of the total debt after?
-        uint debtPercentage = debtToRemove.divideDecimalRoundPrecise(newTotalDebtIssued);
-
-        // And what effect does this percentage change have on the global debt holding of other issuers?
-        // The delta specifically needs to not take into account any existing debt as it's already
-        // accounted for in the delta from when they issued previously.
-        uint delta = SafeDecimalMath.preciseUnit().add(debtPercentage);
+            // And what effect does this percentage change have on the global debt holding of other issuers?
+            // The delta specifically needs to not take into account any existing debt as it's already
+            // accounted for in the delta from when they issued previously.
+            delta = SafeDecimalMath.preciseUnit().add(debtPercentage);
+        } else {
+            delta = 0;
+        }
 
         // Are they exiting the system, or are they just decreasing their debt position?
         if (debtToRemove == existingDebt) {
@@ -964,7 +969,6 @@ contract Synthetix is ExternStateToken {
 
     // ========== EVENTS ==========
     /* solium-disable */
-
     event SynthExchange(address indexed account, bytes4 fromCurrencyKey, uint256 fromAmount, bytes4 toCurrencyKey,  uint256 toAmount, address toAddress);
     bytes32 constant SYNTHEXCHANGE_SIG = keccak256("SynthExchange(address,bytes4,uint256,bytes4,uint256,address)");
     function emitSynthExchange(address account, bytes4 fromCurrencyKey, uint256 fromAmount, bytes4 toCurrencyKey, uint256 toAmount, address toAddress) internal {
