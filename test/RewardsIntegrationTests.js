@@ -77,6 +77,7 @@ contract('Rewards Integration Tests', async function(accounts) {
 	// DIVISIONS
 	const half = amount => amount.div(web3.utils.toBN('2'));
 	const third = amount => amount.div(web3.utils.toBN('3'));
+	const twoThirds = amount => amount.div(web3.utils.toBN('3')).mul(web3.utils.toBN('2'));
 	const threeQuarters = amount => amount.div(web3.utils.toBN('4')).mul(web3.utils.toBN('3'));
 	const quarter = amount => amount.div(web3.utils.toBN('4'));
 	const tenth = amount => amount.div(web3.utils.toBN('10'));
@@ -114,6 +115,7 @@ contract('Rewards Integration Tests', async function(accounts) {
 		feePoolState,
 		synthetix,
 		// sUSDContract,
+		sBTCContract,
 		exchangeRates,
 		supplySchedule,
 		rewardEscrow,
@@ -132,6 +134,7 @@ contract('Rewards Integration Tests', async function(accounts) {
 		feePoolState = await FeePoolState.deployed();
 		synthetix = await Synthetix.deployed();
 		// sUSDContract = await Synth.at(await synthetix.synths(sUSD));
+		sBTCContract = await Synth.at(await synthetix.synths(sBTC));
 
 		supplySchedule = await SupplySchedule.deployed();
 		rewardEscrow = await RewardEscrow.deployed();
@@ -305,17 +308,25 @@ contract('Rewards Integration Tests', async function(accounts) {
 		it('ctd Acc2 & 3 should get the extra amount');
 	});
 
-	describe('Exchange Rate Shift tests', async function() {
-		it('should assign accounts (1,2,3) to have (40%,40%,20%) of the debt/rewards', async function() {
-			// Account 1&2 issue 10K USD in sBTC each, holding 50% of the total debt.
+	describe.only('Exchange Rate Shift tests', async function() {
+		it.only('should assign accounts (1,2,3) to have (40%,40%,20%) of the debt/rewards', async function() {
 			const tenK = toUnit('10000');
+			const twentyK = toUnit('20000');
+
+			// //////////////////////////////////////////////
+			// 1st Week
+			// //////////////////////////////////////////////
+
+			// Account 1&2 issue 10K USD in sBTC each, holding 50% of the total debt.
 			const sBTCAmount = await synthetix.effectiveValue(sUSD, tenK, sBTC);
 			// console.log('sBTCAmount', sBTCAmount.toString());
 			await synthetix.issueSynths(sBTC, sBTCAmount, { from: account1 });
 			await synthetix.issueSynths(sBTC, sBTCAmount, { from: account2 });
-			// await synthetix.issueSynths(sUSD, toUnit('1'), { from: account3 });
 
 			await closeFeePeriodAndFastForward();
+			// //////////////////////////////////////////////
+			// 2nd Week
+			// //////////////////////////////////////////////
 
 			// Assert 1, 2 have 50% each of the effectiveDebtRatioForPeriod
 			const debtRatioAccount1 = await feePool.effectiveDebtRatioForPeriod(account1, 1);
@@ -367,6 +378,9 @@ contract('Rewards Integration Tests', async function(accounts) {
 
 			// Close so we can claim
 			await closeFeePeriodAndFastForward();
+			// //////////////////////////////////////////////
+			// 3rd Week
+			// //////////////////////////////////////////////
 
 			await logFeePeriods();
 
@@ -424,13 +438,89 @@ contract('Rewards Integration Tests', async function(accounts) {
 
 			await feePool.claimFees(sUSD, { from: account3 }); // revert No fees or rewards available for period, or fees already claimed
 
-			// Assert (1,2,3) have (40%,40%,20%) of the rewards
+			// Assert (1,2,3) have (40%,40%,20%) of the rewards in their 2nd escrow entry
 			const account1EscrowEntry2 = await rewardEscrow.getVestingScheduleEntry(account1, 1);
 			console.log('account1EscrowEntry2[1]', account1EscrowEntry2[1].toString());
 			const account2EscrowEntry2 = await rewardEscrow.getVestingScheduleEntry(account2, 1);
 			console.log('account2EscrowEntry2[1]', account2EscrowEntry2[1].toString());
-			const account3EscrowEntry1 = await rewardEscrow.getVestingScheduleEntry(account3, 0); // Its this accounts first escrow entry
+			const account3EscrowEntry1 = await rewardEscrow.getVestingScheduleEntry(account3, 0); // Account3's first escrow entry
 			console.log('account3EscrowEntry1[1]', account3EscrowEntry1[1].toString());
+
+			assert.bnEqual(
+				account1EscrowEntry2[1],
+				periodTwoMintableSupply.div(web3.utils.toBN('4')).mul(web3.utils.toBN('2'))
+			);
+			assert.bnEqual(
+				account2EscrowEntry2[1],
+				periodTwoMintableSupply.div(web3.utils.toBN('4')).mul(web3.utils.toBN('2'))
+			);
+			assert.bnEqual(
+				account3EscrowEntry1[1],
+				periodTwoMintableSupply.div(web3.utils.toBN('4')).mul(web3.utils.toBN('1'))
+			);
+
+			// now in p3 Acc1 burns all and leaves (-40%) and Acc2 has 67% and Acc3 33% rewards allocated as such
+
+			// Account 1 Burns all sBTC
+			const acc1sBTCBalance = await sBTCContract.balanceOf(account1, { from: account1 });
+			await synthetix.burnSynths(sBTC, acc1sBTCBalance, { from: account1 });
+
+			// Get the SNX mintableSupply for week 3
+			const periodThreeMintableSupply = (await supplySchedule.mintableSupply()).sub(
+				MINTER_SNX_REWARD
+			);
+
+			// Mint the staking rewards
+			await synthetix.mint({ from: owner });
+
+			// Close so we can claim
+			await closeFeePeriodAndFastForward();
+			// //////////////////////////////////////////////
+			// 4th Week
+			// //////////////////////////////////////////////
+
+			// Accounts 2&3 claim rewards
+			await feePool.claimFees(sUSD, { from: account2 });
+			await feePool.claimFees(sUSD, { from: account3 });
+
+			// Account2 should have 67% of the minted rewards
+			const account2Escrow3 = await rewardEscrow.getVestingScheduleEntry(account1, 2); // Account2's 3rd escrow entry
+			console.log('account2Escrow3[1]', account2Escrow3[1].toString());
+			console.log(
+				'twoThirds(periodThreeMintableSupply)',
+				twoThirds(periodThreeMintableSupply).toString()
+			);
+			// assert.bnClose(account1Escrow[1], twoThirds(periodThreeMintableSupply), 1);
+
+			// Account3 should have 33% of the minted rewards
+			const account3Escrow2 = await rewardEscrow.getVestingScheduleEntry(account2, 1); // Account3's 2nd escrow entry
+			console.log('account3Escrow3[1]', account3Escrow2[1].toString());
+			// assert.bnClose(account2Escrow[1], third(periodThreeMintableSupply), 1);
+
+			// Acc1 mints 20K (40%) close p (40,40,20)');
+			await synthetix.issueSynths(sUSD, twentyK, { from: account1 });
+
+			// Mint the staking rewards
+			await synthetix.mint({ from: owner });
+
+			// Close so we can claim
+			await closeFeePeriodAndFastForward();
+			// //////////////////////////////////////////////
+			// 5th Week
+			// //////////////////////////////////////////////
+
+			// Accounts 1,2,3 claim rewards
+			await feePool.claimFees(sUSD, { from: account1 });
+			await feePool.claimFees(sUSD, { from: account2 });
+			await feePool.claimFees(sUSD, { from: account3 });
+
+			// Assert (1,2,3) have (40%,40%,20%) of the rewards in their 2nd escrow entry
+			const account1EscrowEntry4 = await rewardEscrow.getVestingScheduleEntry(account1, 1);
+			console.log('account1EscrowEntry4[1]', account1EscrowEntry2[1].toString());
+			const account2EscrowEntry4 = await rewardEscrow.getVestingScheduleEntry(account2, 1);
+			console.log('account1EscrowEntry4[1]', account2EscrowEntry2[1].toString());
+			const account3EscrowEntry3 = await rewardEscrow.getVestingScheduleEntry(account3, 0); // Account3's first escrow entry
+			console.log('account1EscrowEntry4[1]', account3EscrowEntry1[1].toString());
 
 			assert.bnEqual(
 				account1EscrowEntry2[1],
@@ -446,10 +536,6 @@ contract('Rewards Integration Tests', async function(accounts) {
 			);
 		});
 
-		it(
-			'ctd now in p3 Acc1 burns all and leaves (-40%) and Acc2 has 67% and Acc3 33% rewards allocated as such'
-		);
-		it('p3: Acc1 mints 20K (40%) close p (40,40,20)');
 		it('(Inverse) Issue sBTC then shift rate down 50% then calc rewards');
 	});
 

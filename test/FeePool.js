@@ -525,7 +525,7 @@ contract('FeePool', async function(accounts) {
 		assert.bnEqual(await sUSDContract.balanceOf(owner), oldSynthBalance.add(feesAvailable[0]));
 	});
 
-	it.only('should allow a user to claim their fees if they minted debt during period', async function() {
+	it('should allow a user to claim their fees if they minted debt during period', async function() {
 		// Issue 10,000 sUSD for two different accounts.
 		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('1000000'), {
 			from: owner,
@@ -563,9 +563,9 @@ contract('FeePool', async function(accounts) {
 
 		await sUSDContract.methods['transfer(address,uint256)'](account1, transfer1, { from: owner });
 		totalFees = totalFees.add(transfer1.sub(await feePool.amountReceivedFromTransfer(transfer1)));
-		
+
 		await closeFeePeriod();
-		
+
 		const feesAvailableOwner = await feePool.feesAvailable(owner, sUSD);
 		const feesAvailableAcc1 = await feePool.feesAvailable(account1, sUSD);
 
