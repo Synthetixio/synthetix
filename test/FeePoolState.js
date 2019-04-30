@@ -7,7 +7,7 @@ const { getWeb3 } = require('../utils/web3Helper');
 const { currentTime, toPreciseUnit, toUnit } = require('../utils/testUtils');
 const web3 = getWeb3();
 
-contract('FeePoolState', async function(accounts) {
+contract('FeePoolState', async accounts => {
 	const [
 		deployerAccount,
 		owner,
@@ -47,7 +47,7 @@ contract('FeePoolState', async function(accounts) {
 	// 	await updateRatesWithDefaults();
 	// };
 
-	beforeEach(async function() {
+	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
 		// We do this in a beforeEach instead of before to ensure we isolate
 		// contract interfaces to prevent test bleed.
@@ -60,13 +60,13 @@ contract('FeePoolState', async function(accounts) {
 		await updateRatesWithDefaults();
 	});
 
-	it('should set constructor params on deployment', async function() {
+	it('should set constructor params on deployment', async () => {
 		const instance = await FeePoolState.new(owner, feePool.address, { from: deployerAccount });
 		assert.equal(await instance.feePool(), feePool.address);
 		assert.equal(await instance.owner(), owner);
 	});
 
-	describe('Appending Account issuance record', async function() {
+	describe('Appending Account issuance record', async () => {
 		async function checkIssuanceLedgerData(
 			address,
 			issuanceLedgerIndex,
@@ -93,17 +93,17 @@ contract('FeePoolState', async function(accounts) {
 			{ address: account3, debtRatio: toPreciseUnit('0.3125'), debtEntryIndex: '5' },
 		];
 
-		beforeEach(async function() {
+		beforeEach(async () => {
 			// set to the Fee Pool Account
 			await feePoolState.setFeePool(feePoolAccount, { from: owner });
 		});
 
-		afterEach(async function() {
+		afterEach(async () => {
 			// reset to Fee Pool
 			await feePoolState.setFeePool(FeePool.address, { from: owner });
 		});
 
-		it('should return the issuanceData that exists that is within the closingDebtIndex via applicableIssuanceData', async function() {
+		it('should return the issuanceData that exists that is within the closingDebtIndex via applicableIssuanceData', async () => {
 			// Fill the accountIssuanceLedger with debt entries per period
 			for (var i = 0; i < issuanceData.length; i++) {
 				await feePoolState.appendAccountIssuanceRecord(
@@ -157,7 +157,7 @@ contract('FeePoolState', async function(accounts) {
 			assert.bnEqual(accountsDebtEntry[1], 0);
 		});
 
-		it('should return the issuanceData for an account given an index', async function() {
+		it('should return the issuanceData for an account given an index', async () => {
 			let accountsDebtEntry;
 
 			// simulate a mint and append debtRatio to ledger in Period[0]
@@ -193,7 +193,7 @@ contract('FeePoolState', async function(accounts) {
 			assert.bnEqual(accountsDebtEntry[1], secondIndex);
 		});
 
-		it('should importIssuerData', async function() {
+		it('should importIssuerData', async () => {
 			const accounts = [account1, account2, account3, account4, account5, account6];
 			const ratios = [
 				toPreciseUnit('1'),
@@ -237,8 +237,8 @@ contract('FeePoolState', async function(accounts) {
 			}
 		});
 
-		it('should append account issuance record for curent feePeriod', async function() {
-			let currentPeriodStartDebtIndex = 0;
+		it('should append account issuance record for curent feePeriod', async () => {
+			const currentPeriodStartDebtIndex = 0;
 
 			// simulate a mint and append debtRatio to ledger in Period[0]
 			await feePoolState.appendAccountIssuanceRecord(
@@ -275,7 +275,7 @@ contract('FeePoolState', async function(accounts) {
 			);
 		});
 
-		it('should append account issuance record twice for each feePeriod, up to feePeriod length', async function() {
+		it('should append account issuance record twice for each feePeriod, up to feePeriod length', async () => {
 			const FEE_PERIOD_LENGTH = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 			const initialDebtRatio = toUnit('1');
 			const secondDebtRatio = toUnit('.5');
@@ -327,7 +327,7 @@ contract('FeePoolState', async function(accounts) {
 			await checkIssuanceLedgerData(account3, 5, '1', secondDebtRatio);
 		});
 
-		it('should append account issuance record twice for each feePeriod, beyond the fee period length', async function() {
+		it('should append account issuance record twice for each feePeriod, beyond the fee period length', async () => {
 			const FEE_PERIOD_LENGTH = 12;
 			const initialDebtRatio = toUnit('1');
 			const secondDebtRatio = toUnit('.5');

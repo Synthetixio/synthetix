@@ -1,7 +1,6 @@
 const FeePool = artifacts.require('FeePool');
 const FeePoolState = artifacts.require('FeePoolState');
 const Synthetix = artifacts.require('Synthetix');
-const Synth = artifacts.require('Synth');
 const RewardEscrow = artifacts.require('RewardEscrow');
 const SupplySchedule = artifacts.require('SupplySchedule');
 const ExchangeRates = artifacts.require('ExchangeRates');
@@ -11,7 +10,7 @@ const { currentTime, fastForward, toUnit, toPreciseUnit } = require('../utils/te
 const web3 = getWeb3();
 const getInstance = getContractInstance(web3);
 
-contract('Rewards Integration Tests', async function(accounts) {
+contract('Rewards Integration Tests', async accounts => {
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
 		const timestamp = await currentTime();
@@ -122,7 +121,7 @@ contract('Rewards Integration Tests', async function(accounts) {
 	// CONSTANTS
 	const MINTER_SNX_REWARD = toUnit('200');
 
-	beforeEach(async function() {
+	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
 		// We do this in a beforeEach instead of before to ensure we isolate
 		// contract interfaces to prevent test bleed.
@@ -168,15 +167,15 @@ contract('Rewards Integration Tests', async function(accounts) {
 		await synthetix.mint({ from: owner });
 	});
 
-	describe('3 accounts with 33.33% SNX all issue MAX and claim rewards', async function() {
-		beforeEach(async function() {
+	describe('3 accounts with 33.33% SNX all issue MAX and claim rewards', async () => {
+		beforeEach(async () => {
 			console.log('3 Accounts issueMaxSynths in p1');
 			await synthetix.issueMaxSynths(sUSD, { from: account1 });
 			await synthetix.issueMaxSynths(sUSD, { from: account2 });
 			await synthetix.issueMaxSynths(sUSD, { from: account3 });
 		});
 
-		it('should allocate the 3 accounts a third of the rewards for 1 period', async function() {
+		it('should allocate the 3 accounts a third of the rewards for 1 period', async () => {
 			// Close Fee Period
 			console.log('Close Fee Period');
 			await closeFeePeriodAndFastForward();
@@ -197,7 +196,7 @@ contract('Rewards Integration Tests', async function(accounts) {
 			assert.bnEqual(accThreeEscrowed[1], third(periodOneMintableSupplyMinusMinterReward));
 		});
 
-		it('should mint SNX for the 6 fee periods then all 3 accounts claim at the end of the 6 week claimable period', async function() {
+		it('should mint SNX for the 6 fee periods then all 3 accounts claim at the end of the 6 week claimable period', async () => {
 			// Close all six periods
 			const FEE_PERIOD_LENGTH = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 			for (let i = 0; i <= FEE_PERIOD_LENGTH - 1; i++) {
@@ -232,7 +231,7 @@ contract('Rewards Integration Tests', async function(accounts) {
 			assert.bnClose(accThreeEscrowed[1], third(mintedRewardsSupply), '1');
 		});
 
-		it('should allocate correct SNX rewards as others leave the system', async function() {
+		it('should allocate correct SNX rewards as others leave the system', async () => {
 			// Close Fee Period
 			console.log('Close Fee Period');
 			await closeFeePeriodAndFastForward();
@@ -300,13 +299,13 @@ contract('Rewards Integration Tests', async function(accounts) {
 		});
 	});
 
-	describe('Accounts not claiming', async function() {
+	describe('Accounts not claiming', async () => {
 		it('Acc 1 doesnt claim and rewards should roll over');
 		it('ctd Acc2 & 3 should get the extra amount');
 	});
 
-	describe('Exchange Rate Shift tests', async function() {
-		it('should assign accounts (1,2,3) to have (40%,40%,20%) of the debt/rewards', async function() {
+	describe('Exchange Rate Shift tests', async () => {
+		it('should assign accounts (1,2,3) to have (40%,40%,20%) of the debt/rewards', async () => {
 			// Account 1&2 issue 10K USD in sBTC each, holding 50% of the total debt.
 			const tenK = toUnit('10000');
 			const sBTCAmount = await synthetix.effectiveValue(sUSD, tenK, sBTC);
@@ -453,11 +452,11 @@ contract('Rewards Integration Tests', async function(accounts) {
 		it('(Inverse) Issue sBTC then shift rate down 50% then calc rewards');
 	});
 
-	describe('3 Accounts issue 10K sUSD each in p(1)', async function() {
+	describe('3 Accounts issue 10K sUSD each in p(1)', async () => {
 		const tenK = toUnit('10000');
 		const twentyK = toUnit('20000');
 
-		beforeEach(async function() {
+		beforeEach(async () => {
 			console.log('3 Accounts issue 10K USD in sUSD each in p1');
 			await synthetix.issueSynths(sUSD, tenK, { from: account1 });
 			await synthetix.issueSynths(sUSD, tenK, { from: account2 });
@@ -467,7 +466,7 @@ contract('Rewards Integration Tests', async function(accounts) {
 			console.log('Close p1');
 			await closeFeePeriodAndFastForward();
 		});
-		it('Assert Accounts have 33% ownership each', async function() {
+		it('Assert Accounts have 33% ownership each', async () => {
 			// assert.bnClose(await feePool.effectiveDebtRatioForPeriod(account1, 1), thirtyThreePercent);
 			const account1Ownership = await feePool.effectiveDebtRatioForPeriod(account1, 1);
 			// console.log('account1Ownership', account1Ownership.toString());
@@ -488,7 +487,7 @@ contract('Rewards Integration Tests', async function(accounts) {
 			// console.log('account3DebtBalanceOf', account3DebtBalanceOf.toString());
 			assert.bnClose(account3Ownership, thirtyThreePercent, 30555); // Rounding to 27 places
 		});
-		it('p2 Acc1 Issues 20K sUSD should now have 50% debt/rewards, Acc2&3 now 25%', async function() {
+		it('p2 Acc1 Issues 20K sUSD should now have 50% debt/rewards, Acc2&3 now 25%', async () => {
 			// Acc 1 Issues another 20K sUSD
 			console.log('Acc 1 Issues another 20K sUSD');
 			await synthetix.issueSynths(sUSD, twentyK, { from: account1 });
@@ -510,7 +509,7 @@ contract('Rewards Integration Tests', async function(accounts) {
 			assert.bnEqual(acc3Ownership, twentyFivePercent); // 20
 		});
 
-		it('p3 Acc1 Burns all then mints 10K, then mints 10K again should have debt/rewards 50%', async function() {
+		it('p3 Acc1 Burns all then mints 10K, then mints 10K again should have debt/rewards 50%', async () => {
 			// Acc 1 Issues 20K sUSD
 			await synthetix.issueSynths(sUSD, twentyK, { from: account1 });
 
@@ -551,8 +550,8 @@ contract('Rewards Integration Tests', async function(accounts) {
 		it('should duplicate previous tests but wait till end of 6 weeks claimable is the same');
 	});
 
-	describe('Collateralisation Ratio Penalties', async function() {
-		beforeEach(async function() {
+	describe('Collateralisation Ratio Penalties', async () => {
+		beforeEach(async () => {
 			// console.log('3 accounts issueMaxSynths in p1');
 			await synthetix.issueMaxSynths(sUSD, { from: account1 });
 			await synthetix.issueMaxSynths(sUSD, { from: account2 });
@@ -570,7 +569,7 @@ contract('Rewards Integration Tests', async function(accounts) {
 			assert.bnEqual(rewardsAfter[1], third(periodOneMintableSupplyMinusMinterReward));
 		});
 
-		it('should apply a penalty of 25% when users claim rewards between 22%-30% collateralisation ratio', async function() {
+		it('should apply a penalty of 25% when users claim rewards between 22%-30% collateralisation ratio', async () => {
 			// But if the price of SNX decreases a bit...
 			const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.01'));
 			const timestamp = await currentTime();
@@ -601,7 +600,7 @@ contract('Rewards Integration Tests', async function(accounts) {
 			);
 		});
 
-		it('should apply a penalty of 50% when users claim rewards between 30%-40% collateralisation ratio', async function() {
+		it('should apply a penalty of 50% when users claim rewards between 30%-40% collateralisation ratio', async () => {
 			// But if the price of SNX decreases a bit...
 			const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.045'));
 			const timestamp = await currentTime();
@@ -628,7 +627,7 @@ contract('Rewards Integration Tests', async function(accounts) {
 			);
 		});
 
-		it('should apply a penalty of 75% when users claim rewards between 40%-50% collateralisation ratio', async function() {
+		it('should apply a penalty of 75% when users claim rewards between 40%-50% collateralisation ratio', async () => {
 			// But if the price of SNX decreases a bit...
 			const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.06'));
 			const timestamp = await currentTime();
@@ -657,7 +656,7 @@ contract('Rewards Integration Tests', async function(accounts) {
 				quarter(third(periodOneMintableSupplyMinusMinterReward))
 			);
 		});
-		it('should apply a penalty of 90% when users claim rewards between >50% collateralisation ratio', async function() {
+		it('should apply a penalty of 90% when users claim rewards between >50% collateralisation ratio', async () => {
 			// But if the price of SNX decreases quite a bit...
 			const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.08'));
 			const timestamp = await currentTime();
@@ -686,7 +685,7 @@ contract('Rewards Integration Tests', async function(accounts) {
 				tenth(third(periodOneMintableSupplyMinusMinterReward))
 			);
 		});
-		it('should apply a penalty of 100% when users claim rewards between >100% collateralisation ratio', async function() {
+		it('should apply a penalty of 100% when users claim rewards between >100% collateralisation ratio', async () => {
 			// But if the price of SNX decreases a lot...
 			const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.09'));
 			const timestamp = await currentTime();
