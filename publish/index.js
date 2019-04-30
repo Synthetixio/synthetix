@@ -568,20 +568,22 @@ program
 				}
 			}
 
-			if (exchangeRates && synthetix) {
-				if (synthetixOwner === account) {
-					console.log(yellow('Invoking Synthetix.setExchangeRates(ExchangeRates)...'));
-					await synthetix.methods
-						.setExchangeRates(exchangeRatesAddress)
-						.send(deployer.sendParameters());
-				} else {
-					appendOwnerAction({
-						key: `Synthetix.setExchangeRates(ExchangeRates)`,
-						target: synthetixAddress,
-						action: `setExchangeRates(${exchangeRatesAddress})`,
-					});
-				}
-			}
+			// no longer able to setExchangeRates on Synthetix. Has to be in Synthetix constructor
+
+			// if (exchangeRates && synthetix) {
+			// 	if (synthetixOwner === account) {
+			// 		console.log(yellow('Invoking Synthetix.setExchangeRates(ExchangeRates)...'));
+			// 		await synthetix.methods
+			// 			.setExchangeRates(exchangeRatesAddress)
+			// 			.send(deployer.sendParameters());
+			// 	} else {
+			// 		appendOwnerAction({
+			// 			key: `Synthetix.setExchangeRates(ExchangeRates)`,
+			// 			target: synthetixAddress,
+			// 			action: `setExchangeRates(${exchangeRatesAddress})`,
+			// 		});
+			// 	}
+			// }
 
 			if (synthetixEscrow) {
 				await deployContract({
@@ -602,6 +604,7 @@ program
 					console.log(cyan('Cannot call RewardEscrow.setSynthetix() as not owner.'));
 				}
 			}
+
 			if (rewardEscrow && feePool) {
 				const feePoolAddress = feePool ? feePool.options.address : '';
 				// only the owner can do this
@@ -615,24 +618,24 @@ program
 				}
 			}
 
-			if (synthetix && synthetixEscrow) {
-				const escrowAddress = await synthetix.methods.escrow().call();
-				if (escrowAddress !== synthetixEscrow.options.address) {
-					const escrowOwner = await synthetixEscrow.methods.owner().call();
-
-					if (escrowOwner === account) {
-						console.log(yellow('Invoking Synthetix.setEscrow(SynthetixEscrow)'));
-						await synthetix.methods
-							.setEscrow(synthetixEscrow.options.address)
-							.send(deployer.sendParameters());
-					} else {
-						appendOwnerAction({
-							key: `Synthetix.setEscrow(SynthetixEscrow)`,
-							target: synthetixAddress,
-							action: `setEscrow(${synthetixEscrow.options.address})`,
-						});
-					}
-				}
+			// if (synthetix && synthetixEscrow) {
+			// 	const escrowAddress = await synthetix.methods.escrow().call();
+			// 	if (escrowAddress !== synthetixEscrow.options.address) {
+			// 		const escrowOwner = await synthetixEscrow.methods.owner().call();
+			//
+			// 		if (escrowOwner === account) {
+			// 			console.log(yellow('Invoking Synthetix.setEscrow(SynthetixEscrow)'));
+			// 			await synthetix.methods
+			// 				.setEscrow(synthetixEscrow.options.address)
+			// 				.send(deployer.sendParameters());
+			// 		} else {
+			// 			appendOwnerAction({
+			// 				key: `Synthetix.setEscrow(SynthetixEscrow)`,
+			// 				target: synthetixAddress,
+			// 				action: `setEscrow(${synthetixEscrow.options.address})`,
+			// 			});
+			// 		}
+			// 	}
 
 				// Skip setting unless redeploying either of these, as
 				if (config['Synthetix'].deploy || config['SynthetixEscrow'].deploy) {
@@ -657,7 +660,6 @@ program
 						}
 					}
 				}
-			}
 
 			if (feePool && synthetix) {
 				const fpSNXAddress = await feePool.methods.synthetix().call();
