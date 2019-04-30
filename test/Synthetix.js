@@ -2075,17 +2075,16 @@ contract.only('Synthetix', async function(accounts) {
 		const issuedSynths1 = toUnit('2000');
 		const issuedSynths2 = toUnit('2000');
 		const issuedSynths3 = toUnit('2000');
+
+		// Send more than their synth balance to burn all
 		const burnAllSynths = toUnit('2050');
 
 		await synthetix.issueSynths(sUSD, issuedSynths1, { from: account1 });
 		await synthetix.issueSynths(sUSD, issuedSynths2, { from: account2 });
 		await synthetix.issueSynths(sUSD, issuedSynths3, { from: account3 });
 
-		const debtBalance1 = await synthetix.debtBalanceOf(account1, sUSD);
 		await synthetix.burnSynths(sUSD, burnAllSynths, { from: account1 });
-		const debtBalance2 = await synthetix.debtBalanceOf(account2, sUSD);
 		await synthetix.burnSynths(sUSD, burnAllSynths, { from: account2 });
-		const debtBalance3 = await synthetix.debtBalanceOf(account3, sUSD);
 		await synthetix.burnSynths(sUSD, burnAllSynths, { from: account3 });
 
 		const debtBalance1After = await synthetix.debtBalanceOf(account1, sUSD);
@@ -2141,6 +2140,39 @@ contract.only('Synthetix', async function(accounts) {
 		const debtBalanceAfter = await synthetix.debtBalanceOf(account1, sUSD);
 
 		assert.bnEqual(debtBalanceAfter, '0');
+	});
+
+	it.only('should allow users to burn their debt and adjust the debtBalanceOf correctly for remaining users', async function() {
+		// Give some SNX to account1
+		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('40000000'), {
+			from: owner,
+		});
+		await synthetix.methods['transfer(address,uint256)'](account2, toUnit('40000000'), {
+			from: owner,
+		});
+
+		// Issue
+		const issuedSynths1 = toUnit('150000');
+		const issuedSynths2 = toUnit('50000');
+		
+		await synthetix.issueSynths(sUSD, issuedSynths1, { from: account1 });
+		await synthetix.issueSynths(sUSD, issuedSynths2, { from: account2 });
+
+		let debtBalance1After = await synthetix.debtBalanceOf(account1, sUSD);
+		let debtBalance2After = await synthetix.debtBalanceOf(account2, sUSD);
+
+		// debtBalanceOf has rounding error but is within tolerance
+		assert.bnClose(debtBalance1After, toUnit('150000'));
+		assert.bnClose(debtBalance2After, toUnit('50000'));
+
+		// Account 1 burns 100,000
+		await synthetix.burnSynths(sUSD, toUnit('100000'), { from: account1 });
+
+		debtBalance1After = await synthetix.debtBalanceOf(account1, sUSD);
+		debtBalance2After = await synthetix.debtBalanceOf(account2, sUSD);
+
+		assert.bnClose(debtBalance1After, toUnit('50000'));
+		assert.bnClose(debtBalance2After, toUnit('50000'));
 	});
 
 	it('should allow a user to exchange the synths they hold in one flavour for another', async function() {
