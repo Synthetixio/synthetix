@@ -907,7 +907,7 @@ program
 					`${contract} current owner is ${currentOwner}.\nCurrent nominated owner is ${nominatedOwner}.`
 				)
 			);
-			if (account !== currentOwner) {
+			if (account.toLowerCase() !== currentOwner) {
 				console.log(cyan(`Cannot nominateNewOwner for ${contract} as you aren't the owner!`));
 			} else if (currentOwner !== newOwner && nominatedOwner !== newOwner) {
 				console.log(yellow(`Invoking ${contract}.nominateNewOwner(${newOwner})`));
