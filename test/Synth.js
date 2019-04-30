@@ -5,7 +5,7 @@ const Synth = artifacts.require('Synth');
 
 const { currentTime, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 
-contract('Synth', async function(accounts) {
+contract('Synth', async accounts => {
 	const [sUSD, sAUD, sEUR, SNX, XDR, sXYZ] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'XDR', 'sXYZ'].map(
 		web3.utils.asciiToHex
 	);
@@ -19,9 +19,9 @@ contract('Synth', async function(accounts) {
 		account2,
 	] = accounts;
 
-	let feePool, FEE_ADDRESS, synthetix, exchangeRates, sUSDContract, sAUDContract, XDRContract;
+	let feePool, FEE_ADDRESS, synthetix, exchangeRates, sUSDContract, XDRContract;
 
-	beforeEach(async function() {
+	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
 		// We do this in a beforeEach instead of before to ensure we isolate
 		// contract interfaces to prevent test bleed.
@@ -31,7 +31,6 @@ contract('Synth', async function(accounts) {
 
 		synthetix = await Synthetix.deployed();
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
-		sAUDContract = await Synth.at(await synthetix.synths(sAUD));
 		XDRContract = await Synth.at(await synthetix.synths(XDR));
 
 		// Send a price update to guarantee we're not stale.
@@ -48,7 +47,7 @@ contract('Synth', async function(accounts) {
 		);
 	});
 
-	it('should set constructor params on deployment', async function() {
+	it('should set constructor params on deployment', async () => {
 		// constructor(address _proxy, TokenState _tokenState, Synthetix _synthetix, FeePool _feePool,
 		// 	string _tokenName, string _tokenSymbol, address _owner, bytes4 _currencyKey
 		// )
@@ -75,7 +74,7 @@ contract('Synth', async function(accounts) {
 		assert.equal(await synth.currencyKey(), sXYZ);
 	});
 
-	it('should allow the owner to set the Synthetix contract', async function() {
+	it('should allow the owner to set the Synthetix contract', async () => {
 		assert.notEqual(await XDRContract.synthetix(), account1);
 
 		const transaction = await XDRContract.setSynthetix(account1, { from: owner });
@@ -84,11 +83,11 @@ contract('Synth', async function(accounts) {
 		assert.equal(await XDRContract.synthetix(), account1);
 	});
 
-	it('should disallow a non-owner from setting the Synthetix contract', async function() {
+	it('should disallow a non-owner from setting the Synthetix contract', async () => {
 		await assert.revert(XDRContract.setSynthetix(account1, { from: account1 }));
 	});
 
-	it('should allow the owner to set the FeePool contract', async function() {
+	it('should allow the owner to set the FeePool contract', async () => {
 		assert.notEqual(await XDRContract.feePool(), account1);
 
 		const transaction = await XDRContract.setFeePool(account1, { from: owner });
@@ -97,11 +96,11 @@ contract('Synth', async function(accounts) {
 		assert.equal(await XDRContract.feePool(), account1);
 	});
 
-	it('should disallow a non-owner from setting the FeePool contract', async function() {
+	it('should disallow a non-owner from setting the FeePool contract', async () => {
 		await assert.revert(XDRContract.setFeePool(account1, { from: account1 }));
 	});
 
-	it('should transfer (ERC20) without error', async function() {
+	it('should transfer (ERC20) without error', async () => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
 		await synthetix.issueSynths(sUSD, amount, { from: owner });
@@ -207,7 +206,7 @@ contract('Synth', async function(accounts) {
 	// 	assert.bnEqual(await XDRContract.balanceOf(FEE_ADDRESS), xdrFee);
 	// });
 
-	it('should revert when transferring (ERC20) with insufficient balance', async function() {
+	it('should revert when transferring (ERC20) with insufficient balance', async () => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
 		await synthetix.issueSynths(sUSD, amount, { from: owner });
@@ -222,7 +221,7 @@ contract('Synth', async function(accounts) {
 		);
 	});
 
-	it('should transfer (ERC223) without error', async function() {
+	it('should transfer (ERC223) without error', async () => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
 		await synthetix.issueSynths(sUSD, amount, { from: owner });
@@ -272,7 +271,7 @@ contract('Synth', async function(accounts) {
 		assert.bnEqual(await XDRContract.balanceOf(FEE_ADDRESS), xdrFee);
 	});
 
-	it('should revert when transferring (ERC223) with insufficient balance', async function() {
+	it('should revert when transferring (ERC223) with insufficient balance', async () => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
 		await synthetix.issueSynths(sUSD, amount, { from: owner });
@@ -288,7 +287,7 @@ contract('Synth', async function(accounts) {
 		);
 	});
 
-	it('should transferFrom (ERC20) without error', async function() {
+	it('should transferFrom (ERC20) without error', async () => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
 		await synthetix.issueSynths(sUSD, amount, { from: owner });
@@ -346,7 +345,7 @@ contract('Synth', async function(accounts) {
 		assert.bnEqual(await sUSDContract.allowance(owner, account1), 0);
 	});
 
-	it('should revert when calling transferFrom (ERC20) with insufficient allowance', async function() {
+	it('should revert when calling transferFrom (ERC20) with insufficient allowance', async () => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
 		await synthetix.issueSynths(sUSD, amount, { from: owner });
@@ -362,7 +361,7 @@ contract('Synth', async function(accounts) {
 		);
 	});
 
-	it('should revert when calling transferFrom (ERC20) with insufficient balance', async function() {
+	it('should revert when calling transferFrom (ERC20) with insufficient balance', async () => {
 		// Issue 10,000 - 1 wei sUSD.
 		const amount = toUnit('10000');
 		await synthetix.issueSynths(sUSD, amount.sub(web3.utils.toBN('1')), { from: owner });
@@ -378,7 +377,7 @@ contract('Synth', async function(accounts) {
 		);
 	});
 
-	it('should transferFrom (ERC223) without error', async function() {
+	it('should transferFrom (ERC223) without error', async () => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
 		await synthetix.issueSynths(sUSD, amount, { from: owner });
@@ -437,7 +436,7 @@ contract('Synth', async function(accounts) {
 		assert.bnEqual(await sUSDContract.allowance(owner, account1), 0);
 	});
 
-	it('should revert when calling transferFrom (ERC223) with insufficient allowance', async function() {
+	it('should revert when calling transferFrom (ERC223) with insufficient allowance', async () => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
 		await synthetix.issueSynths(sUSD, amount, { from: owner });
@@ -459,7 +458,7 @@ contract('Synth', async function(accounts) {
 		);
 	});
 
-	it('should revert when calling transferFrom (ERC223) with insufficient balance', async function() {
+	it('should revert when calling transferFrom (ERC223) with insufficient balance', async () => {
 		// Issue 10,000 - 1 wei sUSD.
 		const amount = toUnit('10000');
 		await synthetix.issueSynths(sUSD, amount.sub(web3.utils.toBN('1')), { from: owner });
@@ -481,7 +480,7 @@ contract('Synth', async function(accounts) {
 		);
 	});
 
-	it('should transferSenderPaysFee without error', async function() {
+	it('should transferSenderPaysFee without error', async () => {
 		// Issue 10,000 sUSD.
 		const startingBalance = toUnit('12000');
 		const amount = toUnit('10000');
@@ -530,7 +529,7 @@ contract('Synth', async function(accounts) {
 		assert.bnEqual(await XDRContract.balanceOf(FEE_ADDRESS), xdrFee);
 	});
 
-	it('should revert when calling transferSenderPaysFee with insufficient balance', async function() {
+	it('should revert when calling transferSenderPaysFee with insufficient balance', async () => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
 		await synthetix.issueSynths(sUSD, amount, { from: owner });
@@ -548,7 +547,7 @@ contract('Synth', async function(accounts) {
 		);
 	});
 
-	it('should transferSenderPaysFee with data without error', async function() {
+	it('should transferSenderPaysFee with data without error', async () => {
 		const startingBalance = toUnit('12000');
 		const amount = toUnit('10000');
 		await synthetix.issueSynths(sUSD, startingBalance, { from: owner });
@@ -597,7 +596,7 @@ contract('Synth', async function(accounts) {
 		assert.bnEqual(await XDRContract.balanceOf(FEE_ADDRESS), xdrFee);
 	});
 
-	it('should transferFromSenderPaysFee without error', async function() {
+	it('should transferFromSenderPaysFee without error', async () => {
 		const startingBalance = toUnit('12000');
 		const amount = toUnit('10000');
 		await synthetix.issueSynths(sUSD, startingBalance, { from: owner });
@@ -648,7 +647,7 @@ contract('Synth', async function(accounts) {
 		assert.bnEqual(await XDRContract.balanceOf(FEE_ADDRESS), xdrFee);
 	});
 
-	it('should revert when calling transferFromSenderPaysFee with an insufficent allowance', async function() {
+	it('should revert when calling transferFromSenderPaysFee with an insufficent allowance', async () => {
 		const startingBalance = toUnit('12000');
 		const amount = toUnit('10000');
 		await synthetix.issueSynths(sUSD, startingBalance, { from: owner });
@@ -668,7 +667,7 @@ contract('Synth', async function(accounts) {
 		);
 	});
 
-	it('should revert when calling transferFromSenderPaysFee with an insufficent balance', async function() {
+	it('should revert when calling transferFromSenderPaysFee with an insufficent balance', async () => {
 		const approvalAmount = toUnit('12000');
 		const startingBalance = toUnit('10000');
 		await synthetix.issueSynths(sUSD, startingBalance, { from: owner });
@@ -688,7 +687,7 @@ contract('Synth', async function(accounts) {
 		);
 	});
 
-	it('should transferFromSenderPaysFee with data without error', async function() {
+	it('should transferFromSenderPaysFee with data without error', async () => {
 		const startingBalance = toUnit('12000');
 		const amount = toUnit('10000');
 		await synthetix.issueSynths(sUSD, startingBalance, { from: owner });
@@ -739,7 +738,7 @@ contract('Synth', async function(accounts) {
 		assert.bnEqual(await XDRContract.balanceOf(FEE_ADDRESS), xdrFee);
 	});
 
-	it('should issue successfully when called by Synthetix', async function() {
+	it('should issue successfully when called by Synthetix', async () => {
 		// Set it to us so we can call it easily
 		await XDRContract.setSynthetix(owner, { from: owner });
 
@@ -760,12 +759,12 @@ contract('Synth', async function(accounts) {
 		);
 	});
 
-	it('should revert when issue is called by non-Synthetix address', async function() {
+	it('should revert when issue is called by non-Synthetix address', async () => {
 		await XDRContract.setSynthetix(synthetix.address, { from: owner });
 		await assert.revert(XDRContract.issue(account1, toUnit('10000'), { from: owner }));
 	});
 
-	it('should burn successfully when called by Synthetix', async function() {
+	it('should burn successfully when called by Synthetix', async () => {
 		// Issue a bunch of synths so we can play with them.
 		await synthetix.issueSynths(XDR, toUnit('10000'), { from: owner });
 
@@ -783,7 +782,7 @@ contract('Synth', async function(accounts) {
 		);
 	});
 
-	it('should revert when burn is called by non-Synthetix address', async function() {
+	it('should revert when burn is called by non-Synthetix address', async () => {
 		// Issue a bunch of synths so we can play with them.
 		await synthetix.issueSynths(XDR, toUnit('10000'), { from: owner });
 
@@ -794,7 +793,7 @@ contract('Synth', async function(accounts) {
 		await assert.revert(XDRContract.burn(owner, toUnit('10000'), { from: owner }));
 	});
 
-	it('should revert when burning more synths than exist', async function() {
+	it('should revert when burning more synths than exist', async () => {
 		// Issue a bunch of synths so we can play with them.
 		await synthetix.issueSynths(XDR, toUnit('10000'), { from: owner });
 
@@ -807,7 +806,7 @@ contract('Synth', async function(accounts) {
 		);
 	});
 
-	it('should triggerTokenFallback successfully when called by Synthetix', async function() {
+	it('should triggerTokenFallback successfully when called by Synthetix', async () => {
 		// Set the synthetix reference to us so we can call it easily
 		await XDRContract.setSynthetix(owner, { from: owner });
 		await XDRContract.triggerTokenFallbackIfNeeded(ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1'), {
@@ -815,7 +814,7 @@ contract('Synth', async function(accounts) {
 		});
 	});
 
-	it('should triggerTokenFallback successfully when called by FeePool', async function() {
+	it('should triggerTokenFallback successfully when called by FeePool', async () => {
 		// Set the FeePool reference to us so we can call it easily
 		await XDRContract.setFeePool(owner, { from: owner });
 		await XDRContract.triggerTokenFallbackIfNeeded(ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1'), {
@@ -823,7 +822,7 @@ contract('Synth', async function(accounts) {
 		});
 	});
 
-	it('should revert on triggerTokenFallback when called by non-Synthetix and non-FeePool address', async function() {
+	it('should revert on triggerTokenFallback when called by non-Synthetix and non-FeePool address', async () => {
 		await assert.revert(
 			XDRContract.triggerTokenFallbackIfNeeded(ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1'), {
 				from: owner,
@@ -831,7 +830,7 @@ contract('Synth', async function(accounts) {
 		);
 	});
 
-	it('should transfer (ERC20) with no fee', async function() {
+	it('should transfer (ERC20) with no fee', async () => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
 

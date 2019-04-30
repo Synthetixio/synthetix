@@ -4,14 +4,14 @@ const Synth = artifacts.require('Synth');
 
 const { toUnit } = require('../utils/testUtils');
 
-contract('SynthetixState', async function(accounts) {
+contract('SynthetixState', async accounts => {
 	const sUSD = web3.utils.asciiToHex('sUSD');
 
 	const [deployerAccount, owner, account1, account2] = accounts;
 
 	let synthetix, synthetixState, sUSDContract;
 
-	beforeEach(async function() {
+	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
 		// We do this in a beforeEach instead of before to ensure we isolate
 		// contract interfaces to prevent test bleed.
@@ -20,7 +20,7 @@ contract('SynthetixState', async function(accounts) {
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
 	});
 
-	it('should set constructor params on deployment', async function() {
+	it('should set constructor params on deployment', async () => {
 		// constructor(address _owner, address _associatedContract)
 		const instance = await SynthetixState.new(account1, account2, {
 			from: deployerAccount,
@@ -30,7 +30,7 @@ contract('SynthetixState', async function(accounts) {
 		assert.equal(await instance.associatedContract(), account2);
 	});
 
-	it('should allow the owner to set the issuance ratio', async function() {
+	it('should allow the owner to set the issuance ratio', async () => {
 		const ratio = toUnit('0.2');
 
 		const transaction = await synthetixState.setIssuanceRatio(ratio, {
@@ -40,7 +40,7 @@ contract('SynthetixState', async function(accounts) {
 		assert.eventEqual(transaction, 'IssuanceRatioUpdated', { newRatio: ratio });
 	});
 
-	it('should allow the owner to set the issuance ratio to zero', async function() {
+	it('should allow the owner to set the issuance ratio to zero', async () => {
 		const ratio = web3.utils.toBN('0');
 
 		const transaction = await synthetixState.setIssuanceRatio(ratio, {
@@ -50,7 +50,7 @@ contract('SynthetixState', async function(accounts) {
 		assert.eventEqual(transaction, 'IssuanceRatioUpdated', { newRatio: ratio });
 	});
 
-	it('should disallow a non-owner from setting the issuance ratio', async function() {
+	it('should disallow a non-owner from setting the issuance ratio', async () => {
 		const ratio = toUnit('0.2');
 
 		await assert.revert(
@@ -60,7 +60,7 @@ contract('SynthetixState', async function(accounts) {
 		);
 	});
 
-	it('should disallow setting the issuance ratio above the MAX ratio', async function() {
+	it('should disallow setting the issuance ratio above the MAX ratio', async () => {
 		const max = toUnit('1');
 
 		// It should succeed when setting it to max
@@ -77,43 +77,43 @@ contract('SynthetixState', async function(accounts) {
 		);
 	});
 
-	it('should allow the associated contract to setCurrentIssuanceData', async function() {
+	it('should allow the associated contract to setCurrentIssuanceData', async () => {
 		await synthetixState.setAssociatedContract(account1, { from: owner });
 		await synthetixState.setCurrentIssuanceData(account2, toUnit('0.1'), { from: account1 });
 	});
 
-	it('should disallow another address from calling setCurrentIssuanceData', async function() {
+	it('should disallow another address from calling setCurrentIssuanceData', async () => {
 		await synthetixState.setAssociatedContract(account1, { from: owner });
 		await assert.revert(
 			synthetixState.setCurrentIssuanceData(account2, toUnit('0.1'), { from: account2 })
 		);
 	});
 
-	it('should allow the associated contract to clearIssuanceData', async function() {
+	it('should allow the associated contract to clearIssuanceData', async () => {
 		await synthetixState.setAssociatedContract(account1, { from: owner });
 		await synthetixState.setCurrentIssuanceData(account2, toUnit('0.1'), { from: account1 });
 		await synthetixState.clearIssuanceData(account2, { from: account1 });
 		assert.bnEqual((await synthetixState.issuanceData(account2)).initialDebtOwnership, 0);
 	});
 
-	it('should disallow another address from calling clearIssuanceData', async function() {
+	it('should disallow another address from calling clearIssuanceData', async () => {
 		await synthetixState.setAssociatedContract(account1, { from: owner });
 		await assert.revert(synthetixState.clearIssuanceData(account2, { from: account2 }));
 	});
 
-	it('should allow the associated contract to incrementTotalIssuerCount', async function() {
+	it('should allow the associated contract to incrementTotalIssuerCount', async () => {
 		await synthetixState.setAssociatedContract(account1, { from: owner });
 
 		await synthetixState.incrementTotalIssuerCount({ from: account1 });
 		assert.bnEqual(await synthetixState.totalIssuerCount(), 1);
 	});
 
-	it('should disallow another address from calling incrementTotalIssuerCount', async function() {
+	it('should disallow another address from calling incrementTotalIssuerCount', async () => {
 		await synthetixState.setAssociatedContract(account1, { from: owner });
 		await assert.revert(synthetixState.incrementTotalIssuerCount({ from: account2 }));
 	});
 
-	it('should allow the associated contract to decrementTotalIssuerCount', async function() {
+	it('should allow the associated contract to decrementTotalIssuerCount', async () => {
 		await synthetixState.setAssociatedContract(account1, { from: owner });
 
 		// We need to increment first or we'll overflow on subtracting from zero and revert that way
@@ -122,7 +122,7 @@ contract('SynthetixState', async function(accounts) {
 		assert.bnEqual(await synthetixState.totalIssuerCount(), 0);
 	});
 
-	it('should disallow another address from calling decrementTotalIssuerCount', async function() {
+	it('should disallow another address from calling decrementTotalIssuerCount', async () => {
 		await synthetixState.setAssociatedContract(account1, { from: owner });
 
 		// We need to increment first or we'll overflow on subtracting from zero and revert that way
@@ -130,33 +130,33 @@ contract('SynthetixState', async function(accounts) {
 		await assert.revert(synthetixState.decrementTotalIssuerCount({ from: account2 }));
 	});
 
-	it('should allow the associated contract to appendDebtLedgerValue', async function() {
+	it('should allow the associated contract to appendDebtLedgerValue', async () => {
 		await synthetixState.setAssociatedContract(account1, { from: owner });
 
 		await synthetixState.appendDebtLedgerValue(toUnit('0.1'), { from: account1 });
 		assert.bnEqual(await synthetixState.lastDebtLedgerEntry(), toUnit('0.1'));
 	});
 
-	it('should disallow another address from calling appendDebtLedgerValue', async function() {
+	it('should disallow another address from calling appendDebtLedgerValue', async () => {
 		await synthetixState.setAssociatedContract(account1, { from: owner });
 
 		await assert.revert(synthetixState.appendDebtLedgerValue(toUnit('0.1'), { from: account2 }));
 	});
 
-	it('should allow the associated contract to setPreferredCurrency', async function() {
+	it('should allow the associated contract to setPreferredCurrency', async () => {
 		await synthetixState.setAssociatedContract(account1, { from: owner });
 
 		await synthetixState.setPreferredCurrency(account2, sUSD, { from: account1 });
 		assert.equal(await synthetixState.preferredCurrency(account2), sUSD);
 	});
 
-	it('should disallow another address from calling setPreferredCurrency', async function() {
+	it('should disallow another address from calling setPreferredCurrency', async () => {
 		await synthetixState.setAssociatedContract(account1, { from: owner });
 
 		await assert.revert(synthetixState.setPreferredCurrency(account2, sUSD, { from: account2 }));
 	});
 
-	it('should correctly report debtLedgerLength', async function() {
+	it('should correctly report debtLedgerLength', async () => {
 		await synthetixState.setAssociatedContract(account1, { from: owner });
 
 		assert.bnEqual(await synthetixState.debtLedgerLength(), 0);
@@ -164,7 +164,7 @@ contract('SynthetixState', async function(accounts) {
 		assert.bnEqual(await synthetixState.debtLedgerLength(), 1);
 	});
 
-	it('should correctly report lastDebtLedgerEntry', async function() {
+	it('should correctly report lastDebtLedgerEntry', async () => {
 		await synthetixState.setAssociatedContract(account1, { from: owner });
 
 		// Nothing in the array, so we should revert on invalid opcode
@@ -173,7 +173,7 @@ contract('SynthetixState', async function(accounts) {
 		assert.bnEqual(await synthetixState.lastDebtLedgerEntry(), toUnit('0.1'));
 	});
 
-	it('should correctly report hasIssued for an address', async function() {
+	it('should correctly report hasIssued for an address', async () => {
 		assert.equal(await synthetixState.hasIssued(owner), false);
 
 		await synthetix.issueMaxSynths(sUSD, { from: owner });

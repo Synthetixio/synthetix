@@ -11,19 +11,10 @@
   "FeePool": {
     "deploy": false
   },
-  "FeePoolState": {
-    "deploy": false
-  },
-  "SupplySchedule": {
-    "deploy": false
-  },
   "Synthetix": {
     "deploy": false
   },
   "SynthetixEscrow": {
-    "deploy": false
-  },
-  "RewardEscrow": {
     "deploy": false
   },
   "SynthetixState": {
@@ -210,6 +201,51 @@
     "deploy": false
   },
   "TokenStatesBTC": {
+    "deploy": false
+  },
+  "TokenStatesETH": {
+    "deploy": false
+  },
+  "ProxysETH": {
+    "deploy": false
+  },
+  "SynthsETH": {
+    "deploy": false
+  },
+  "TokenStatesBNB": {
+    "deploy": false
+  },
+  "ProxysBNB": {
+    "deploy": false
+  },
+  "SynthsBNB": {
+    "deploy": false
+  },
+  "TokenStateiBTC": {
+    "deploy": false
+  },
+  "ProxyiBTC": {
+    "deploy": false
+  },
+  "SynthiBTC": {
+    "deploy": false
+  },
+  "TokenStateiETH": {
+    "deploy": false
+  },
+  "ProxyiETH": {
+    "deploy": false
+  },
+  "SynthiETH": {
+    "deploy": false
+  },
+  "TokenStateiBNB": {
+    "deploy": false
+  },
+  "ProxyiBNB": {
+    "deploy": false
+  },
+  "SynthiBNB": {
     "deploy": false
   }
 }

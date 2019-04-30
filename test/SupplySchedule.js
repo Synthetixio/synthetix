@@ -2,7 +2,7 @@ const SupplySchedule = artifacts.require('SupplySchedule');
 const { toUnit, currentTime, divideDecimal, fastForwardTo } = require('../utils/testUtils');
 const BN = require('bn.js');
 
-contract('SupplySchedule', async function(accounts) {
+contract('SupplySchedule', async accounts => {
 	const DAY = 86400;
 	const WEEK = 604800;
 	const YEAR = 31536000;
@@ -11,7 +11,7 @@ contract('SupplySchedule', async function(accounts) {
 
 	let supplySchedule;
 
-	beforeEach(async function() {
+	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
 		// We do this in a beforeEach instead of before to ensure we isolate
 		// contract interfaces to prevent test bleed.
@@ -19,7 +19,7 @@ contract('SupplySchedule', async function(accounts) {
 		await supplySchedule.setSynthetix(synthetix, { from: owner });
 	});
 
-	it('should set constructor params on deployment', async function() {
+	it('should set constructor params on deployment', async () => {
 		// constructor(address _owner) //
 		const instance = await SupplySchedule.new(account1, {
 			from: deployerAccount,
@@ -28,15 +28,15 @@ contract('SupplySchedule', async function(accounts) {
 		assert.equal(await instance.owner(), account1);
 	});
 
-	describe('linking synthetix', async function() {
-		it('should have set synthetix', async function() {
+	describe('linking synthetix', async () => {
+		it('should have set synthetix', async () => {
 			const synthetixAddress = await supplySchedule.synthetix();
 			assert.equal(synthetixAddress, synthetix);
 		});
 	});
 
-	describe('functions and modifiers', async function() {
-		it('should calculate weeks to mint and round down to full week', async function() {
+	describe('functions and modifiers', async () => {
+		it('should calculate weeks to mint and round down to full week', async () => {
 			const expectedResult = web3.utils.toBN(0);
 			const secondsSinceLastWeek = 300; // 604,800 seconds in 7 day week
 
@@ -46,7 +46,7 @@ contract('SupplySchedule', async function(accounts) {
 			);
 		});
 
-		it('should calculate 1 weeks to mint and round down to full week', async function() {
+		it('should calculate 1 weeks to mint and round down to full week', async () => {
 			const expectedWeeks = web3.utils.toBN(1);
 			const secondsSinceLastWeek = WEEK * 1.5; // 604,800 seconds in 7 day week
 
@@ -56,7 +56,7 @@ contract('SupplySchedule', async function(accounts) {
 			);
 		});
 
-		it('should calculate 1 weeks to mint and round down to full week given 678767', async function() {
+		it('should calculate 1 weeks to mint and round down to full week given 678767', async () => {
 			const expectedWeeks = web3.utils.toBN(1);
 			const secondsSinceLastWeek = 678767; // 604,800 seconds in 7 day week
 
@@ -66,7 +66,7 @@ contract('SupplySchedule', async function(accounts) {
 			);
 		});
 
-		it('should calculate 2 weeks to mint and round down to full week given 2.5 weeks', async function() {
+		it('should calculate 2 weeks to mint and round down to full week given 2.5 weeks', async () => {
 			const expectedWeeks = web3.utils.toBN(2);
 			const secondsSinceLastWeek = WEEK * 2.5;
 
@@ -76,7 +76,7 @@ contract('SupplySchedule', async function(accounts) {
 			);
 		});
 
-		describe('mintable supply', async function() {
+		describe('mintable supply', async () => {
 			const supplySchedules = {
 				secondYearSupply: 75000000,
 				thirdYearSupply: 37500000,
@@ -114,7 +114,7 @@ contract('SupplySchedule', async function(accounts) {
 				assert.ok(lastMintEvent.toNumber() >= now); // lastMintEvent is updated to >= now
 			}
 
-			it('should calculate the mintable supply as 0 for 1st week in year 2 - 75M supply', async function() {
+			it('should calculate the mintable supply as 0 for 1st week in year 2 - 75M supply', async () => {
 				const expectedIssuance = web3.utils.toBN(0);
 				// fast forward EVM to Week 1 in Year 2 schedule starting at UNIX 1552435200+
 				await fastForwardTo(new Date(weekOne * 1000));
@@ -122,7 +122,7 @@ contract('SupplySchedule', async function(accounts) {
 				assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
 			});
 
-			it('should calculate the mintable supply for one weeks in year 2 in week 2 - 75M supply', async function() {
+			it('should calculate the mintable supply for one weeks in year 2 in week 2 - 75M supply', async () => {
 				const expectedIssuance = divideDecimal(supplySchedules.secondYearSupply, 52);
 				const weekTwo = weekOne + WEEK;
 				// fast forward EVM to Week 2 in Year 2 schedule starting at UNIX 1552435200+
@@ -131,7 +131,7 @@ contract('SupplySchedule', async function(accounts) {
 				assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
 			});
 
-			it('should calculate the mintable supply for two weeks in year 2 in week 3 - 75M supply', async function() {
+			it('should calculate the mintable supply for two weeks in year 2 in week 3 - 75M supply', async () => {
 				const expectedIssuance = divideDecimal(supplySchedules.secondYearSupply, 52 / 2);
 				const weekThree = weekOne + 2 * WEEK;
 				// fast forward EVM to within Week 3 in Year 2 schedule starting at UNIX 1552435200+
@@ -141,7 +141,7 @@ contract('SupplySchedule', async function(accounts) {
 				assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
 			});
 
-			it('should calculate the mintable supply for three weeks in year 2 in week 4 - 75M supply', async function() {
+			it('should calculate the mintable supply for three weeks in year 2 in week 4 - 75M supply', async () => {
 				const expectedIssuance = weeklyIssuance.mul(new BN(3));
 				const weekThree = weekOne + 3 * WEEK;
 				// fast forward EVM to within Week 3 in Year 2 schedule starting at UNIX 1552435200+
@@ -151,7 +151,7 @@ contract('SupplySchedule', async function(accounts) {
 				assert.bnClose(await supplySchedule.mintableSupply(), expectedIssuance);
 			});
 
-			it('should calculate the mintable supply for 49 weeks in year 2 in week 50 - 75M supply', async function() {
+			it('should calculate the mintable supply for 49 weeks in year 2 in week 50 - 75M supply', async () => {
 				const supply = supplySchedules.secondYearSupply.toString();
 				const expectedIssuance = toUnit(supply).sub(weeklyIssuance.mul(new BN(3))); // 52 - 3 = 49 weeks
 
@@ -163,7 +163,7 @@ contract('SupplySchedule', async function(accounts) {
 				assert.bnClose(await supplySchedule.mintableSupply(), expectedIssuance);
 			});
 
-			it('should calculate the mintable supply for 50 weeks in year 2 in week 51 - 75M supply', async function() {
+			it('should calculate the mintable supply for 50 weeks in year 2 in week 51 - 75M supply', async () => {
 				const supply = supplySchedules.secondYearSupply.toString();
 				const expectedIssuance = toUnit(supply).sub(weeklyIssuance.mul(new BN(2))); // 52 - 2 = 50 weeks
 
@@ -174,7 +174,7 @@ contract('SupplySchedule', async function(accounts) {
 				assert.bnClose(await supplySchedule.mintableSupply(), expectedIssuance);
 			});
 
-			it('should calculate the unminted supply for previous year in year 3 week 1', async function() {
+			it('should calculate the unminted supply for previous year in year 3 week 1', async () => {
 				const expectedIssuance = toUnit(supplySchedules.secondYearSupply.toString());
 				const yearThreeStart = YEAR_TWO_START + YEAR; // UNIX 1583971200
 
@@ -186,7 +186,7 @@ contract('SupplySchedule', async function(accounts) {
 				await checkMintedValues(2, expectedIssuance);
 			});
 
-			it('should calculate the unminted supply for previous year in year 4 week 1', async function() {
+			it('should calculate the unminted supply for previous year in year 4 week 1', async () => {
 				const expectedIssuance = toUnit(supplySchedules.thirdYearSupply.toString());
 				const yearFourStart = YEAR_TWO_START + 2 * YEAR; // UNIX 1615507200
 
@@ -198,7 +198,7 @@ contract('SupplySchedule', async function(accounts) {
 				await checkMintedValues(3, expectedIssuance);
 			});
 
-			it('should calculate the unminted supply for previous year in year 5 week 1', async function() {
+			it('should calculate the unminted supply for previous year in year 5 week 1', async () => {
 				const expectedIssuance = toUnit(supplySchedules.fourthYearSupply.toString());
 				const yearFiveStart = YEAR_TWO_START + 3 * YEAR; // UNIX 1647043200
 
@@ -210,7 +210,7 @@ contract('SupplySchedule', async function(accounts) {
 				await checkMintedValues(4, expectedIssuance);
 			});
 
-			it('should calculate the unminted supply for previous year in year 6 week 1', async function() {
+			it('should calculate the unminted supply for previous year in year 6 week 1', async () => {
 				const expectedIssuance = toUnit(supplySchedules.fifthYearSupply.toString());
 				const yearSixStart = YEAR_TWO_START + 4 * YEAR; // UNIX 1678579200
 
@@ -222,7 +222,7 @@ contract('SupplySchedule', async function(accounts) {
 				await checkMintedValues(5, expectedIssuance);
 			});
 
-			it('should calculate the unminted supply for previous year in year 7 week 1', async function() {
+			it('should calculate the unminted supply for previous year in year 7 week 1', async () => {
 				const expectedIssuance = toUnit(supplySchedules.sixthYearSupply.toString());
 				const yearSevenStart = YEAR_TWO_START + 5 * YEAR; // UNIX 1710115200
 
@@ -234,7 +234,7 @@ contract('SupplySchedule', async function(accounts) {
 				await checkMintedValues(6, expectedIssuance);
 			});
 
-			it('should calculate the unminted supply for year 6 at end of Year 7 period', async function() {
+			it('should calculate the unminted supply for year 6 at end of Year 7 period', async () => {
 				const expectedIssuance = toUnit(supplySchedules.sixthYearSupply.toString());
 				const yearSevenEnd = YEAR_TWO_START + 5 * YEAR + 52 * WEEK - 1; // UNIX 1710115200
 
@@ -246,7 +246,7 @@ contract('SupplySchedule', async function(accounts) {
 				await checkMintedValues(6, expectedIssuance);
 			});
 
-			it('should calculate the unminted supply for previous year 6 in year 7 week 3', async function() {
+			it('should calculate the unminted supply for previous year 6 in year 7 week 3', async () => {
 				const expectedIssuance = toUnit(supplySchedules.sixthYearSupply.toString());
 				const yearSevenStart = YEAR_TWO_START + 5 * YEAR + 3 * WEEK; // UNIX 1711929600
 
@@ -258,7 +258,7 @@ contract('SupplySchedule', async function(accounts) {
 				await checkMintedValues(6, expectedIssuance);
 			});
 
-			it('should update the Year 2 schedule for 1 week after minting', async function() {
+			it('should update the Year 2 schedule for 1 week after minting', async () => {
 				// fast forward EVM to Week 1 in Year 2 schedule starting at UNIX 1552435200+
 				const weekTwo = weekOne + 1 * WEEK;
 				await fastForwardTo(new Date(weekTwo * 1000));
@@ -274,7 +274,7 @@ contract('SupplySchedule', async function(accounts) {
 				assert.ok(lastMintEvent.toNumber() >= now); // lastMintEvent is updated to >= now
 			});
 
-			it('should calculate mintable supply of 1 week after minting', async function() {
+			it('should calculate mintable supply of 1 week after minting', async () => {
 				// fast forward EVM to Week 2 in Year 2 schedule starting at UNIX 1552435200+
 				const weekTwo = weekOne + 1 * WEEK;
 				await fastForwardTo(new Date(weekTwo * 1000));
@@ -297,7 +297,7 @@ contract('SupplySchedule', async function(accounts) {
 				assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
 			});
 
-			it('should calculate mintable supply of 2 weeks if 2+ weeks passed, after minting', async function() {
+			it('should calculate mintable supply of 2 weeks if 2+ weeks passed, after minting', async () => {
 				// fast forward EVM to Week 2 in Year 2 schedule starting at UNIX 1552435200+
 				const weekTwo = weekOne + 1 * WEEK;
 				await fastForwardTo(new Date(weekTwo * 1000));
@@ -322,7 +322,7 @@ contract('SupplySchedule', async function(accounts) {
 				assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
 			});
 
-			it('should calculate mintable supply of 4 weeks if 4+ weeks passed, after minting', async function() {
+			it('should calculate mintable supply of 4 weeks if 4+ weeks passed, after minting', async () => {
 				// fast forward EVM to Week 2 in Year 2 schedule starting at UNIX 1552435200+
 				const weekTwo = weekOne + 1 * WEEK;
 				await fastForwardTo(new Date(weekTwo * 1000));
@@ -347,10 +347,10 @@ contract('SupplySchedule', async function(accounts) {
 				assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
 			});
 
-			describe('mintable supply at the Year 2 / Year 3 cross over', async function() {
+			describe('mintable supply at the Year 2 / Year 3 cross over', async () => {
 				const weekTwo = weekOne + 1 * WEEK;
 
-				beforeEach(async function() {
+				beforeEach(async () => {
 					// Save ourselves from having to fast forward to the end of the year
 					// We do this in a beforeEach instead of before to ensure we isolate
 					// contract interfaces to prevent test bleed.
@@ -371,7 +371,7 @@ contract('SupplySchedule', async function(accounts) {
 					assert.ok(lastMintEvent.toNumber() >= now); // lastMintEvent is updated to >= now
 				});
 
-				it('should calculate mintable supply of 49 weeks in week 51, after minting in week 2', async function() {
+				it('should calculate mintable supply of 49 weeks in week 51, after minting in week 2', async () => {
 					const supply = supplySchedules.secondYearSupply.toString();
 
 					// fast forward 49 weeks to within week 51
@@ -395,7 +395,7 @@ contract('SupplySchedule', async function(accounts) {
 					assert.ok(lastMintEvent.toNumber() >= now); // lastMintEvent is updated to >= now
 				});
 
-				it('should calculate mintable supply of 2 weeks from end of Year 2, in Year 3 week 1', async function() {
+				it('should calculate mintable supply of 2 weeks from end of Year 2, in Year 3 week 1', async () => {
 					const supplyYearTwo = supplySchedules.secondYearSupply.toString();
 
 					// fast forward 49 weeks to within week 51
@@ -445,13 +445,13 @@ contract('SupplySchedule', async function(accounts) {
 					assert.bnEqual(scheduleYear3.totalSupplyMinted, toUnit('0'));
 				});
 
-				it('should calculate mintable supply of 2 weeks from end of Year 2 + 1 week from Year 3, in Year 3 week 2', async function() {
+				it('should calculate mintable supply of 2 weeks from end of Year 2 + 1 week from Year 3, in Year 3 week 2', async () => {
 					const supplyYearTwo = supplySchedules.secondYearSupply.toString();
 
 					// fast forward 49 weeks to within week 51
 					const weekFiftyOne = weekTwo + 49 * WEEK + 1 * DAY; // Sometime within week 51
 					// // Expect 49 week is mintable after first week minted
-					let expectedIssuance = toUnit(supplyYearTwo).sub(weeklyIssuance.mul(new BN(3))); // 52 - 3 = 49 weeks
+					const expectedIssuance = toUnit(supplyYearTwo).sub(weeklyIssuance.mul(new BN(3))); // 52 - 3 = 49 weeks
 					await fastForwardTo(new Date(weekFiftyOne * 1000));
 
 					assert.bnClose(await supplySchedule.mintableSupply(), expectedIssuance);
@@ -500,8 +500,8 @@ contract('SupplySchedule', async function(accounts) {
 				});
 			});
 
-			describe('Error handling', async function() {
-				it('should revert when getCurrentSchedule and time is greater than Year 7 schedule', async function() {
+			describe('Error handling', async () => {
+				it('should revert when getCurrentSchedule and time is greater than Year 7 schedule', async () => {
 					const yearSevenStart = YEAR_TWO_START + 6 * YEAR; // UNIX 1741651200
 
 					// fast forward EVM to Year 8 schedule starting at UNIX 1741651200+
@@ -509,7 +509,7 @@ contract('SupplySchedule', async function(accounts) {
 
 					await assert.revert(supplySchedule.getCurrentSchedule());
 				});
-				it('should return 0 mintable when time is greater than Year 7 schedule', async function() {
+				it('should return 0 mintable when time is greater than Year 7 schedule', async () => {
 					const yearSevenStart = YEAR_TWO_START + 6 * YEAR; // UNIX 1741651200
 
 					// fast forward EVM to Year 8 schedule starting at UNIX 1741651200+
