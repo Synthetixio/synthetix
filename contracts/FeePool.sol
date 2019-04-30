@@ -350,13 +350,11 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         optionalProxy
         returns (bool)
     {
-        emit LogInt("claimFees", 0);
         uint availableFees;
         uint availableRewards;
         (availableFees, availableRewards) = feesAvailable(messageSender, "XDR");
-        emit LogInt("availableRewards", availableRewards);
 
-        // require(availableFees > 0 || availableRewards > 0, "No fees or rewards available for period, or fees already claimed");
+        require(availableFees > 0 || availableRewards > 0, "No fees or rewards available for period, or fees already claimed");
 
         lastFeeWithdrawal[messageSender] = recentFeePeriods[1].feePeriodId;
 
@@ -373,7 +371,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         if (availableRewards > 0) {
             // Record the reward payment in our recentFeePeriods
             uint rewardPaid = _recordRewardPayment(availableRewards);
-            emit LogInt("rewardToPaid", rewardPaid);
 
             // Send them their rewards
             _payRewards(messageSender, rewardPaid);
@@ -536,7 +533,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
         // Record vesting entry for claiming address and amount
         // SNX already minted to rewardEscrow balance
-        emit LogInt("rewardEscrow.appendVestingEntry(snxAmount)", snxAmount);
         rewardEscrow.appendVestingEntry(account, snxAmount);
     }
 
@@ -691,7 +687,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
             totalFees = totalFees.add(userFees[i][0]);
             totalRewards = totalRewards.add(userFees[i][1]);
         }
-        emit LogInt("feesByPeriod(totalRewards)", totalRewards);
 
         // And convert totalFees to their desired currency
         // Return totalRewards as is in SNX amount
@@ -758,9 +753,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
         uint penalty = currentPenalty(account);
 
-        emit LogInt("userOwnershipPercentage", userOwnershipPercentage);
-        emit LogInt("debtEntryIndex", debtEntryIndex);
-
         // The [0] fee period is not yet ready to claim, but it is a fee period that they can have
         // fees owing for, so we need to report on it anyway.
         uint feesFromPeriod;
@@ -785,18 +777,15 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
                 // else find the applicableIssuanceData for the feePeriod based on the StartingDebtIndex of the period
                 uint closingDebtIndex = nextPeriod.startingDebtIndex.sub(1);
 
-                // Gas optimisation required to reuse debtEntryIndex if found new applicable one 
-                // or 0,0 we keep most recent one
+                // Gas optimisation - to reuse debtEntryIndex if found new applicable one 
+                // if applicable is 0,0 (none found) we keep most recent one from issuanceData[0]
+                // return if userOwnershipPercentage = 0)
                 (userOwnershipPercentage, debtEntryIndex) = feePoolState.applicableIssuanceData(account, closingDebtIndex);
 
-                emit LogInt("updated userOwnershipPercentage", userOwnershipPercentage);
-                emit LogInt("updated debtEntryIndex", debtEntryIndex);
                 (feesFromPeriod, rewardsFromPeriod) = _feesAndRewardsFromPeriod(i, userOwnershipPercentage, debtEntryIndex, penalty);
 
                 results[i][0] = feesFromPeriod;
                 results[i][1] = rewardsFromPeriod;
-                emit LogInt("updated feesFromPeriod", feesFromPeriod);
-                emit LogInt("updated rewardsFromPeriod", rewardsFromPeriod);
             }
         }
     }
@@ -820,11 +809,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         if (period > 0) {
             uint closingDebtIndex = recentFeePeriods[period - 1].startingDebtIndex.sub(1);
             debtOwnershipForPeriod = _effectiveDebtRatioForPeriod(closingDebtIndex, ownershipPercentage, debtEntryIndex);
-            emit LogInt("feesAndRewardsFromPeriod closingDebtIndex", closingDebtIndex);
         }
-        
-        emit LogInt("feesAndRewardsFromPeriod debtOwnershipForPeriod", debtOwnershipForPeriod);
-        emit LogInt("feesAndRewardsFromPeriod debtEntryIndex", debtEntryIndex);
 
         // Calculate their percentage of the fees / rewards in this period
         // This is a high precision integer.
@@ -901,8 +886,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     }
 
     /* ========== Events ========== */
-
-    event LogInt(string message, uint value); //TODO: REMOVE - For logging
 
     event IssuanceDebtRatioEntry(address indexed account, uint debtRatio, uint debtEntryIndex, uint feePeriodStartingDebtIndex);
     bytes32 constant ISSUANCEDEBTRATIOENTRY_SIG = keccak256("IssuanceDebtRatioEntry(address, uint256, uint256, uint256)");
