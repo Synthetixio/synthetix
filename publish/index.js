@@ -568,21 +568,6 @@ program
 				}
 			}
 
-			if (exchangeRates && synthetix) {
-				if (synthetixOwner === account) {
-					console.log(yellow('Invoking Synthetix.setExchangeRates(ExchangeRates)...'));
-					await synthetix.methods
-						.setExchangeRates(exchangeRatesAddress)
-						.send(deployer.sendParameters());
-				} else {
-					appendOwnerAction({
-						key: `Synthetix.setExchangeRates(ExchangeRates)`,
-						target: synthetixAddress,
-						action: `setExchangeRates(${exchangeRatesAddress})`,
-					});
-				}
-			}
-
 			if (synthetixEscrow) {
 				await deployContract({
 					name: 'EscrowChecker',
@@ -602,6 +587,7 @@ program
 					console.log(cyan('Cannot call RewardEscrow.setSynthetix() as not owner.'));
 				}
 			}
+
 			if (rewardEscrow && feePool) {
 				const feePoolAddress = feePool ? feePool.options.address : '';
 				// only the owner can do this
@@ -615,46 +601,26 @@ program
 				}
 			}
 
-			if (synthetix && synthetixEscrow) {
-				const escrowAddress = await synthetix.methods.escrow().call();
-				if (escrowAddress !== synthetixEscrow.options.address) {
-					const escrowOwner = await synthetixEscrow.methods.owner().call();
+			// Skip setting unless redeploying either of these, as
+			if (config['Synthetix'].deploy || config['SynthetixEscrow'].deploy) {
+				// Note: currently on mainnet SynthetixEscrow.methods.synthetix() does NOT exist
+				// it is "havven" and the ABI we have here is not sufficient
+				const escrowSNXAddress = await synthetixEscrow.methods.synthetix().call();
+				if (escrowSNXAddress !== synthetixAddress) {
+					// only the owner can do this
+					const synthetixEscrowOwner = await synthetixEscrow.methods.owner().call();
 
-					if (escrowOwner === account) {
-						console.log(yellow('Invoking Synthetix.setEscrow(SynthetixEscrow)'));
-						await synthetix.methods
-							.setEscrow(synthetixEscrow.options.address)
+					if (synthetixEscrowOwner === account) {
+						console.log(yellow('Invoking SynthetixEscrow.setSynthetix(Synthetix)...'));
+						await synthetixEscrow.methods
+							.setSynthetix(synthetixAddress)
 							.send(deployer.sendParameters());
 					} else {
 						appendOwnerAction({
-							key: `Synthetix.setEscrow(SynthetixEscrow)`,
-							target: synthetixAddress,
-							action: `setEscrow(${synthetixEscrow.options.address})`,
+							key: `SynthetixEscrow.setSynthetix(Synthetix)`,
+							target: synthetixEscrow.options.address,
+							action: `setSynthetix(${synthetixAddress})`,
 						});
-					}
-				}
-
-				// Skip setting unless redeploying either of these, as
-				if (config['Synthetix'].deploy || config['SynthetixEscrow'].deploy) {
-					// Note: currently on mainnet SynthetixEscrow.methods.synthetix() does NOT exist
-					// it is "havven" and the ABI we have here is not sufficient
-					const escrowSNXAddress = await synthetixEscrow.methods.synthetix().call();
-					if (escrowSNXAddress !== synthetixAddress) {
-						// only the owner can do this
-						const synthetixEscrowOwner = await synthetixEscrow.methods.owner().call();
-
-						if (synthetixEscrowOwner === account) {
-							console.log(yellow('Invoking SynthetixEscrow.setSynthetix(Synthetix)...'));
-							await synthetixEscrow.methods
-								.setSynthetix(synthetixAddress)
-								.send(deployer.sendParameters());
-						} else {
-							appendOwnerAction({
-								key: `SynthetixEscrow.setSynthetix(Synthetix)`,
-								target: synthetixEscrow.options.address,
-								action: `setSynthetix(${synthetixAddress})`,
-							});
-						}
 					}
 				}
 			}
@@ -681,12 +647,16 @@ program
 				const supplyScheduleOwner = await supplySchedule.methods.owner().call();
 				// Only owner
 				if (supplyScheduleOwner === account) {
-					console.log(yellow('Invoking SupplySchedule.setSynthetix()'));
+					console.log(yellow('Invoking SupplySchedule.setSynthetix(Synthetix)'));
 					await supplySchedule.methods
 						.setSynthetix(synthetixAddress)
 						.send(deployer.sendParameters());
 				} else {
-					console.log(cyan('Cannot call SupplySchedule.setSynthetix() as not owner.'));
+					appendOwnerAction({
+						key: `SupplySchedule.setSynthetix(Synthetix)`,
+						target: supplySchedule.options.address,
+						action: `setSynthetix(${synthetixAddress})`,
+					});
 				}
 			}
 
@@ -986,7 +956,7 @@ program
 					`${contract} current owner is ${currentOwner}.\nCurrent nominated owner is ${nominatedOwner}.`
 				)
 			);
-			if (account !== currentOwner) {
+			if (account.toLowerCase() !== currentOwner) {
 				console.log(cyan(`Cannot nominateNewOwner for ${contract} as you aren't the owner!`));
 			} else if (currentOwner !== newOwner && nominatedOwner !== newOwner) {
 				console.log(yellow(`Invoking ${contract}.nominateNewOwner(${newOwner})`));
