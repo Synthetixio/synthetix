@@ -39,24 +39,24 @@ contract('Rewards Integration Tests', async accounts => {
 		await updateRatesWithDefaults();
 	};
 
-	const logFeePeriods = async () => {
-		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
+	// const logFeePeriods = async () => {
+	// 	const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 
-		console.log('------------------');
-		for (let i = 0; i < length; i++) {
-			console.log(`Fee Period [${i}]:`);
-			const period = await feePool.recentFeePeriods(i);
+	// 	console.log('------------------');
+	// 	for (let i = 0; i < length; i++) {
+	// 		console.log(`Fee Period [${i}]:`);
+	// 		const period = await feePool.recentFeePeriods(i);
 
-			for (const key of Object.keys(period)) {
-				if (isNaN(parseInt(key))) {
-					console.log(`  ${key}: ${period[key]}`);
-				}
-			}
+	// 		for (const key of Object.keys(period)) {
+	// 			if (isNaN(parseInt(key))) {
+	// 				console.log(`  ${key}: ${period[key]}`);
+	// 			}
+	// 		}
 
-			console.log();
-		}
-		console.log('------------------');
-	};
+	// 		console.log();
+	// 	}
+	// 	console.log('------------------');
+	// };
 
 	// const logFeesByPeriod = async account => {
 	// 	const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
@@ -242,72 +242,72 @@ contract('Rewards Integration Tests', async accounts => {
 			assert.bnClose(accThreeEscrowed[1], third(mintedRewardsSupply), '1');
 		});
 
-		it('should allocate correct SNX rewards as others leave the system', async () => {
-			// Close Fee Period
-			// console.log('Close Fee Period');
-			await closeFeePeriodAndFastForward();
+		// it('should allocate correct SNX rewards as others leave the system', async () => {
+		// 	// Close Fee Period
+		// 	// console.log('Close Fee Period');
+		// 	await closeFeePeriodAndFastForward();
 
-			// Account1 claims but 2 & 3 dont
-			await feePool.claimFees(sUSD, { from: account1 });
+		// 	// Account1 claims but 2 & 3 dont
+		// 	await feePool.claimFees(sUSD, { from: account1 });
 
-			// All Account 1 has 1/3 of the rewards escrowed
-			const account1Escrowed = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-			assert.bnClose(account1Escrowed[1], third(periodOneMintableSupplyMinusMinterReward), 1);
+		// 	// All Account 1 has 1/3 of the rewards escrowed
+		// 	const account1Escrowed = await rewardEscrow.getVestingScheduleEntry(account1, 0);
+		// 	assert.bnClose(account1Escrowed[1], third(periodOneMintableSupplyMinusMinterReward), 1);
 
-			// Account 1 leaves the system
-			const burnableTotal = await synthetix.debtBalanceOf(account1, sUSD);
-			await synthetix.burnSynths(sUSD, burnableTotal, { from: account1 });
+		// 	// Account 1 leaves the system
+		// 	const burnableTotal = await synthetix.debtBalanceOf(account1, sUSD);
+		// 	await synthetix.burnSynths(sUSD, burnableTotal, { from: account1 });
 
-			// FastForward into the second mintable week
-			await fastForwardAndUpdateRates(WEEK + MINUTE);
+		// 	// FastForward into the second mintable week
+		// 	await fastForwardAndUpdateRates(WEEK + MINUTE);
 
-			// Get the SNX mintableSupply for period 2
-			const period2MintedRewardsSupply = (await supplySchedule.mintableSupply()).sub(
-				MINTER_SNX_REWARD
-			);
+		// 	// Get the SNX mintableSupply for period 2
+		// 	const period2MintedRewardsSupply = (await supplySchedule.mintableSupply()).sub(
+		// 		MINTER_SNX_REWARD
+		// 	);
 
-			// Mint the staking rewards for p2
-			await synthetix.mint({ from: owner });
+		// 	// Mint the staking rewards for p2
+		// 	await synthetix.mint({ from: owner });
 
-			// Close the period after user leaves system
-			closeFeePeriodAndFastForward();
+		// 	// Close the period after user leaves system
+		// 	closeFeePeriodAndFastForward();
 
-			// Account1 Reenters in current unclosed period so no rewards yet
-			// await synthetix.issueMaxSynths(sUSD, { from: account1 });
+		// 	// Account1 Reenters in current unclosed period so no rewards yet
+		// 	// await synthetix.issueMaxSynths(sUSD, { from: account1 });
 
-			// Accounts 2 & 3 now have 33% of period 1 and 50% of period 2
-			console.log('33% of p1', third(periodOneMintableSupplyMinusMinterReward).toString());
-			console.log('50% of p2', half(period2MintedRewardsSupply).toString());
-			const rewardsAmount = third(periodOneMintableSupplyMinusMinterReward).add(
-				half(period2MintedRewardsSupply)
-			);
-			// console.log('rewardsAmount calculated', rewardsAmount.toString());
+		// 	// Accounts 2 & 3 now have 33% of period 1 and 50% of period 2
+		// 	// console.log('33% of p1', third(periodOneMintableSupplyMinusMinterReward).toString());
+		// 	// console.log('50% of p2', half(period2MintedRewardsSupply).toString());
+		// 	const rewardsAmount = third(periodOneMintableSupplyMinusMinterReward).add(
+		// 		half(period2MintedRewardsSupply)
+		// 	);
+		// 	// console.log('rewardsAmount calculated', rewardsAmount.toString());
 
-			await logFeePeriods();
+		// 	await logFeePeriods();
 
-			// Check account2 has correct rewardsAvailable
-			const account2Rewards = await feePool.feesAvailable(account2, sUSD);
-			console.log('account2Rewards', rewardsAmount.toString(), account2Rewards[1].toString());
-			assert.bnClose(account2Rewards[1], rewardsAmount, '2');
+		// 	// Check account2 has correct rewardsAvailable
+		// 	const account2Rewards = await feePool.feesAvailable(account2, sUSD);
+		// 	console.log('account2Rewards', rewardsAmount.toString(), account2Rewards[1].toString());
+		// 	assert.bnClose(account2Rewards[1], rewardsAmount, '2');
 
-			// Check account3 has correct rewardsAvailable
-			const account3Rewards = await feePool.feesAvailable(account3, sUSD);
-			console.log('rewardsAvailable', rewardsAmount.toString(), account3Rewards[1].toString());
-			assert.bnClose(account3Rewards[1], rewardsAmount, '1');
+		// 	// Check account3 has correct rewardsAvailable
+		// 	const account3Rewards = await feePool.feesAvailable(account3, sUSD);
+		// 	console.log('rewardsAvailable', rewardsAmount.toString(), account3Rewards[1].toString());
+		// 	assert.bnClose(account3Rewards[1], rewardsAmount, '1');
 
-			// Accounts 2 & 3 claim
-			await feePool.claimFees(sUSD, { from: account2 });
-			// updateRatesWithDefaults();
-			await feePool.claimFees(sUSD, { from: account3 });
+		// 	// Accounts 2 & 3 claim
+		// 	await feePool.claimFees(sUSD, { from: account2 });
+		// 	// updateRatesWithDefaults();
+		// 	await feePool.claimFees(sUSD, { from: account3 });
 
-			// Accounts 2 & 3 now have the rewards escrowed
-			const account2Escrowed = await rewardEscrow.getVestingScheduleEntry(account2, 0);
-			// console.log('account2Escrowed[1]', account2Escrowed[1].toString());
-			assert.bnClose(account2Escrowed[1], rewardsAmount, '1');
-			const account3Escrowed = await rewardEscrow.getVestingScheduleEntry(account3, 0);
-			// console.log('account3Escrowed[1]', account2Escrowed[1].toString());
-			assert.bnClose(account3Escrowed[1], rewardsAmount, '1');
-		});
+		// 	// Accounts 2 & 3 now have the rewards escrowed
+		// 	const account2Escrowed = await rewardEscrow.getVestingScheduleEntry(account2, 0);
+		// 	// console.log('account2Escrowed[1]', account2Escrowed[1].toString());
+		// 	assert.bnClose(account2Escrowed[1], rewardsAmount, '1');
+		// 	const account3Escrowed = await rewardEscrow.getVestingScheduleEntry(account3, 0);
+		// 	// console.log('account3Escrowed[1]', account2Escrowed[1].toString());
+		// 	assert.bnClose(account3Escrowed[1], rewardsAmount, '1');
+		// });
 	});
 
 	describe('Accounts not claiming', async () => {
