@@ -256,7 +256,7 @@ contract Synth is ExternStateToken {
         internal
         returns (bool)
     {
-        bytes4 preferredCurrencyKey = synthetix.synthetixState().getPreferredCurrency(to);
+        bytes4 preferredCurrencyKey = synthetix.synthetixState().preferredCurrency(to);
 
         // Do they have a preferred currency that's not us? If so we need to exchange
         if (preferredCurrencyKey != 0 && preferredCurrencyKey != currencyKey) {
