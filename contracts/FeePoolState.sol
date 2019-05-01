@@ -175,7 +175,7 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
         for (uint8 i = 0; i < accounts.length; i++) {
             accountIssuanceLedger[accounts[i]][periodToInsert].debtPercentage = ratios[i];
             accountIssuanceLedger[accounts[i]][periodToInsert].debtEntryIndex = feePeriodCloseIndex;
-            emit IssuanceDebtRatioEntry(accounts[i], ratios[i], feePeriodCloseIndex, feePeriodCloseIndex);
+            emit IssuanceDebtRatioEntry(accounts[i], ratios[i], feePeriodCloseIndex);
         }
     }
 
