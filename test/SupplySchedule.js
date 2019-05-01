@@ -76,7 +76,7 @@ contract('SupplySchedule', async accounts => {
 			);
 		});
 
-		it.only('should allow owner to update the minter reward amount', async () => {
+		it('should allow owner to update the minter reward amount', async () => {
 			const existingReward = await supplySchedule.minterReward();
 			const newReward = existingReward.add(toUnit('100'));
 
