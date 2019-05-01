@@ -69,7 +69,6 @@ contract SupplySchedule is Owned {
 
     uint constant SECONDS_IN_YEAR = 60 * 60 * 24 * 365;
 
-    //uint public constant START_DATE = 1520899200; // 2018-03-13T00:00:00+00:00
     uint public constant START_DATE = 1520294400; // 2018-03-06T00:00:00+00:00
     uint public constant YEAR_ONE = START_DATE + SECONDS_IN_YEAR.mul(1);
     uint public constant YEAR_TWO = START_DATE + SECONDS_IN_YEAR.mul(2);
@@ -81,6 +80,8 @@ contract SupplySchedule is Owned {
 
     uint8 constant public INFLATION_SCHEDULES_LENGTH = 7;
     ScheduleData[INFLATION_SCHEDULES_LENGTH] public schedules;
+
+    uint public minterReward = 200 * SafeDecimalMath.unit();
 
     constructor(address _owner)
         Owned(_owner)
@@ -226,6 +227,14 @@ contract SupplySchedule is Owned {
         return true;
     }
 
+    function setMinterReward(uint _amount)
+        external
+        onlyOwner
+    {
+        minterReward = _amount;
+        emit MinterRewardUpdated(_amount);
+    }
+
     // ========== MODIFIERS ==========
 
     modifier onlySynthetix() {
@@ -236,4 +245,5 @@ contract SupplySchedule is Owned {
     /* ========== EVENTS ========== */
 
     event SupplyMinted(uint previousPeriodAmount, uint currentAmount, uint indexed schedule, uint timestamp);
+    event MinterRewardUpdated(uint newRewardAmount);
 }

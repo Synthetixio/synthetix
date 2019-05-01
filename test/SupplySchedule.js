@@ -76,6 +76,27 @@ contract('SupplySchedule', async accounts => {
 			);
 		});
 
+		it('should allow owner to update the minter reward amount', async () => {
+			const existingReward = await supplySchedule.minterReward();
+			const newReward = existingReward.add(toUnit('100'));
+
+			const transaction = await supplySchedule.setMinterReward(newReward, {
+				from: owner,
+			});
+
+			assert.eventEqual(transaction, 'MinterRewardUpdated', { newReward });
+
+			assert.bnEqual(await supplySchedule.minterReward(), newReward);
+		});
+
+		it('should disallow a non-owner from setting the  minter reward amount', async () => {
+			await assert.revert(
+				supplySchedule.setMinterReward(toUnit('0'), {
+					from: account1,
+				})
+			);
+		});
+
 		describe('mintable supply', async () => {
 			const supplySchedules = {
 				secondYearSupply: 75000000,
