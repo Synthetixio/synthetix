@@ -152,8 +152,6 @@ contract Synthetix is ExternStateToken {
     string constant TOKEN_NAME = "Synthetix Network Token";
     string constant TOKEN_SYMBOL = "SNX";
     uint8 constant DECIMALS = 18;
-
-    uint public minterReward = 200 * SafeDecimalMath.unit();
     // ========== CONSTRUCTOR ==========
 
     /**
@@ -195,13 +193,6 @@ contract Synthetix is ExternStateToken {
 
         // emitSynthAdded(currencyKey, synth);
     }
-
-    // function setMinterReward(uint256 tokens)
-    //     external
-    //     optionalProxy_onlyOwner
-    // {
-    //     minterReward = tokens;
-    // }
 
     /**
      * @notice Remove an associated Synth contract from the Synthetix system
@@ -923,8 +914,11 @@ contract Synthetix is ExternStateToken {
 
         // Set minted SNX balance to RewardEscrow's balance
         // Minus the minterReward and set balance of minter to add reward
+        uint minterReward = supplySchedule.minterReward();
+
         tokenState.setBalanceOf(rewardEscrow, tokenState.balanceOf(rewardEscrow).add(supplyToMint.sub(minterReward)));
         emitTransfer(this, rewardEscrow, supplyToMint.sub(minterReward));
+        
         // Tell the FeePool how much it has to distribute
         feePool.rewardsMinted(supplyToMint.sub(minterReward));
 

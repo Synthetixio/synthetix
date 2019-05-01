@@ -2215,7 +2215,7 @@ contract('Synthetix', async accounts => {
 			await synthetix.mint();
 
 			const newTotalSupply = await synthetix.totalSupply();
-			const minterReward = await synthetix.minterReward();
+			const minterReward = await supplySchedule.minterReward();
 			const expectedEscrowBalance = currentRewardEscrowBalance
 				.add(expectedSupplyToMint)
 				.sub(minterReward);
@@ -2243,7 +2243,7 @@ contract('Synthetix', async accounts => {
 			await synthetix.mint();
 
 			const newTotalSupply = await synthetix.totalSupply();
-			const minterReward = await synthetix.minterReward();
+			const minterReward = await supplySchedule.minterReward();
 			const expectedEscrowBalance = currentRewardEscrowBalance
 				.add(expectedSupplyToMint)
 				.sub(minterReward);
@@ -2273,7 +2273,7 @@ contract('Synthetix', async accounts => {
 			await synthetix.mint();
 
 			const newTotalSupply = await synthetix.totalSupply();
-			const minterReward = await synthetix.minterReward();
+			const minterReward = await supplySchedule.minterReward();
 			const expectedEscrowBalance = currentRewardEscrowBalance
 				.add(expectedSupplyToMint)
 				.sub(minterReward);
@@ -2304,7 +2304,7 @@ contract('Synthetix', async accounts => {
 			await synthetix.mint();
 
 			let newTotalSupply, expectedEscrowBalance;
-			const minterReward = await synthetix.minterReward();
+			const minterReward = await supplySchedule.minterReward();
 			newTotalSupply = await synthetix.totalSupply();
 			expectedEscrowBalance = currentRewardEscrowBalance
 				.add(expectedSupplyToMint)
@@ -2358,7 +2358,7 @@ contract('Synthetix', async accounts => {
 			await synthetix.mint();
 
 			const newTotalSupply = await synthetix.totalSupply();
-			const minterReward = await synthetix.minterReward();
+			const minterReward = await supplySchedule.minterReward();
 			const expectedEscrowBalance = currentRewardEscrowBalance
 				.add(expectedSupplyToMint)
 				.sub(minterReward);
