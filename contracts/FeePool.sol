@@ -102,12 +102,9 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     // fee authority to roll over the periods, so they are not guaranteed
     // to roll over at exactly this duration, but the contract enforces
     // that they cannot roll over any quicker than this duration.
-    // uint public feePeriodDuration = 60 seconds; // TODO: REMOVE ON DELPLOYMENT JUST FOR TESTNET TESTING
-    uint public feePeriodDuration = 1 weeks; // TODO: PUTBACK AFTER ISSUANCE GAME TESTING
-
+    uint public feePeriodDuration = 1 weeks; 
     // The fee period must be between 1 day and 60 days.
-    uint public constant MIN_FEE_PERIOD_DURATION = 60 seconds;  // TODO: REMOVE ON DELPLOYMENT JUST FOR TESTNET TESTING
-    //uint public constant MIN_FEE_PERIOD_DURATION = 1 days; // TODO: PUTBACK AFTER ISSUANCE GAME TESTING
+    uint public constant MIN_FEE_PERIOD_DURATION = 1 days; 
     uint public constant MAX_FEE_PERIOD_DURATION = 60 days;
 
     // The last period a user has withdrawn their fees in, identified by the feePeriodId
