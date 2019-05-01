@@ -637,29 +637,29 @@ program
 			// 		}
 			// 	}
 
-				// Skip setting unless redeploying either of these, as
-				if (config['Synthetix'].deploy || config['SynthetixEscrow'].deploy) {
-					// Note: currently on mainnet SynthetixEscrow.methods.synthetix() does NOT exist
-					// it is "havven" and the ABI we have here is not sufficient
-					const escrowSNXAddress = await synthetixEscrow.methods.synthetix().call();
-					if (escrowSNXAddress !== synthetixAddress) {
-						// only the owner can do this
-						const synthetixEscrowOwner = await synthetixEscrow.methods.owner().call();
+			// Skip setting unless redeploying either of these, as
+			if (config['Synthetix'].deploy || config['SynthetixEscrow'].deploy) {
+				// Note: currently on mainnet SynthetixEscrow.methods.synthetix() does NOT exist
+				// it is "havven" and the ABI we have here is not sufficient
+				const escrowSNXAddress = await synthetixEscrow.methods.synthetix().call();
+				if (escrowSNXAddress !== synthetixAddress) {
+					// only the owner can do this
+					const synthetixEscrowOwner = await synthetixEscrow.methods.owner().call();
 
-						if (synthetixEscrowOwner === account) {
-							console.log(yellow('Invoking SynthetixEscrow.setSynthetix(Synthetix)...'));
-							await synthetixEscrow.methods
-								.setSynthetix(synthetixAddress)
-								.send(deployer.sendParameters());
-						} else {
-							appendOwnerAction({
-								key: `SynthetixEscrow.setSynthetix(Synthetix)`,
-								target: synthetixEscrow.options.address,
-								action: `setSynthetix(${synthetixAddress})`,
-							});
-						}
+					if (synthetixEscrowOwner === account) {
+						console.log(yellow('Invoking SynthetixEscrow.setSynthetix(Synthetix)...'));
+						await synthetixEscrow.methods
+							.setSynthetix(synthetixAddress)
+							.send(deployer.sendParameters());
+					} else {
+						appendOwnerAction({
+							key: `SynthetixEscrow.setSynthetix(Synthetix)`,
+							target: synthetixEscrow.options.address,
+							action: `setSynthetix(${synthetixAddress})`,
+						});
 					}
 				}
+			}
 
 			if (feePool && synthetix) {
 				const fpSNXAddress = await feePool.methods.synthetix().call();
