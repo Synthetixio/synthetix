@@ -683,12 +683,16 @@ program
 				const supplyScheduleOwner = await supplySchedule.methods.owner().call();
 				// Only owner
 				if (supplyScheduleOwner === account) {
-					console.log(yellow('Invoking SupplySchedule.setSynthetix()'));
+					console.log(yellow('Invoking SupplySchedule.setSynthetix(Synthetix)'));
 					await supplySchedule.methods
 						.setSynthetix(synthetixAddress)
 						.send(deployer.sendParameters());
 				} else {
-					console.log(cyan('Cannot call SupplySchedule.setSynthetix() as not owner.'));
+					appendOwnerAction({
+						key: `SupplySchedule.setSynthetix(Synthetix)`,
+						target: supplySchedule.options.address,
+						action: `setSynthetix(${synthetixAddress})`,
+					});
 				}
 			}
 
