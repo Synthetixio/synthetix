@@ -188,5 +188,5 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
     }
 
     /* ========== Events ========== */
-    event IssuanceDebtRatioEntry(address indexed account, uint debtRatio, uint debtEntryIndex, uint feePeriodStartingDebtIndex);
+    event IssuanceDebtRatioEntry(address indexed account, uint debtRatio, uint feePeriodCloseIndex);
 }
