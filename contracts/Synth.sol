@@ -17,8 +17,8 @@ Synthetix-backed stablecoin contract.
 This contract issues synths, which are tokens that mirror various
 flavours of fiat currency.
 
-Synths are issuable by Synthetix Network Token (SNX) holders who 
-have to lock up some value of their SNX to issue S * Cmax synths. 
+Synths are issuable by Synthetix Network Token (SNX) holders who
+have to lock up some value of their SNX to issue S * Cmax synths.
 Where Cmax issome value less than 1.
 
 A configurable fee is charged on synth transfers and deposited
@@ -31,14 +31,14 @@ per fee period.
 pragma solidity 0.4.25;
 
 import "./ExternStateToken.sol";
-import "./FeePool.sol";
+import "./IFeePool.sol";
 import "./Synthetix.sol";
 
 contract Synth is ExternStateToken {
 
     /* ========== STATE VARIABLES ========== */
 
-    FeePool public feePool;
+    IFeePool public feePool;
     Synthetix public synthetix;
 
     // Currency key which identifies this Synth to the Synthetix system
@@ -48,7 +48,7 @@ contract Synth is ExternStateToken {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _proxy, TokenState _tokenState, Synthetix _synthetix, FeePool _feePool,
+    constructor(address _proxy, TokenState _tokenState, Synthetix _synthetix, IFeePool _feePool,
         string _tokenName, string _tokenSymbol, address _owner, bytes4 _currencyKey
     )
         ExternStateToken(_proxy, _tokenState, _tokenName, _tokenSymbol, 0, DECIMALS, _owner)
@@ -75,7 +75,7 @@ contract Synth is ExternStateToken {
         emitSynthetixUpdated(_synthetix);
     }
 
-    function setFeePool(FeePool _feePool)
+    function setFeePool(IFeePool _feePool)
         external
         optionalProxy_onlyOwner
     {
@@ -86,7 +86,7 @@ contract Synth is ExternStateToken {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
-     * @notice Override ERC20 transfer function in order to 
+     * @notice Override ERC20 transfer function in order to
      * subtract the transaction fee and send it to the fee pool
      * for SNX holders to claim. */
     function transfer(address to, uint value)
@@ -107,7 +107,7 @@ contract Synth is ExternStateToken {
     }
 
     /**
-     * @notice Override ERC223 transfer function in order to 
+     * @notice Override ERC223 transfer function in order to
      * subtract the transaction fee and send it to the fee pool
      * for SNX holders to claim. */
     function transfer(address to, uint value, bytes data)
@@ -127,7 +127,7 @@ contract Synth is ExternStateToken {
     }
 
     /**
-     * @notice Override ERC20 transferFrom function in order to 
+     * @notice Override ERC20 transferFrom function in order to
      * subtract the transaction fee and send it to the fee pool
      * for SNX holders to claim. */
     function transferFrom(address from, address to, uint value)
@@ -152,7 +152,7 @@ contract Synth is ExternStateToken {
     }
 
     /**
-     * @notice Override ERC223 transferFrom function in order to 
+     * @notice Override ERC223 transferFrom function in order to
      * subtract the transaction fee and send it to the fee pool
      * for SNX holders to claim. */
     function transferFrom(address from, address to, uint value, bytes data)
@@ -175,7 +175,7 @@ contract Synth is ExternStateToken {
         return _internalTransfer(from, to, amountReceived, data);
     }
 
-    /* Subtract the transfer fee from the senders account so the 
+    /* Subtract the transfer fee from the senders account so the
      * receiver gets the exact amount specified to send. */
     function transferSenderPaysFee(address to, uint value)
         public
@@ -193,7 +193,7 @@ contract Synth is ExternStateToken {
         return _internalTransfer(messageSender, to, value, empty);
     }
 
-    /* Subtract the transfer fee from the senders account so the 
+    /* Subtract the transfer fee from the senders account so the
      * receiver gets the exact amount specified to send. */
     function transferSenderPaysFee(address to, uint value, bytes data)
         public
@@ -210,7 +210,7 @@ contract Synth is ExternStateToken {
         return _internalTransfer(messageSender, to, value, data);
     }
 
-    /* Subtract the transfer fee from the senders account so the 
+    /* Subtract the transfer fee from the senders account so the
      * to address receives the exact amount specified to send. */
     function transferFromSenderPaysFee(address from, address to, uint value)
         public
@@ -231,7 +231,7 @@ contract Synth is ExternStateToken {
         return _internalTransfer(from, to, value, empty);
     }
 
-    /* Subtract the transfer fee from the senders account so the 
+    /* Subtract the transfer fee from the senders account so the
      * to address receives the exact amount specified to send. */
     function transferFromSenderPaysFee(address from, address to, uint value, bytes data)
         public
@@ -256,7 +256,7 @@ contract Synth is ExternStateToken {
         internal
         returns (bool)
     {
-        bytes4 preferredCurrencyKey = synthetix.synthetixState().preferredCurrency(to);
+        bytes4 preferredCurrencyKey = synthetix.synthetixState().getPreferredCurrency(to);
 
         // Do they have a preferred currency that's not us? If so we need to exchange
         if (preferredCurrencyKey != 0 && preferredCurrencyKey != currencyKey) {

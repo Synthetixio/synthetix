@@ -119,13 +119,14 @@ even going above the initial wallet balance.
 pragma solidity 0.4.25;
 
 
-import "./FeePool.sol";
 import "./ExternStateToken.sol";
-import "./Synth.sol";
-import "./SynthetixEscrow.sol";
-import "./SynthetixState.sol";
 import "./TokenState.sol";
+import "./SupplySchedule.sol";
 import "./ExchangeRates.sol";
+import "./SynthetixState.sol";
+import "./Synth.sol";
+import "./ISynthetixEscrow.sol";
+import "./IFeePool.sol";
 
 /**
  * @title Synthetix ERC20 contract.
@@ -140,16 +141,19 @@ contract Synthetix is ExternStateToken {
     Synth[] public availableSynths;
     mapping(bytes4 => Synth) public synths;
 
-    FeePool public feePool;
-    SynthetixEscrow public escrow;
+    IFeePool public feePool;
+    ISynthetixEscrow public escrow;
+    ISynthetixEscrow public rewardEscrow;
     ExchangeRates public exchangeRates;
     SynthetixState public synthetixState;
+    SupplySchedule public supplySchedule;
 
     uint constant SYNTHETIX_SUPPLY = 1e8 * SafeDecimalMath.unit();
     string constant TOKEN_NAME = "Synthetix Network Token";
     string constant TOKEN_SYMBOL = "SNX";
     uint8 constant DECIMALS = 18;
 
+    uint public minterReward = 200 * SafeDecimalMath.unit();
     // ========== CONSTRUCTOR ==========
 
     /**
@@ -159,7 +163,8 @@ contract Synthetix is ExternStateToken {
      * @param _owner The owner of this contract.
      */
     constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
-        address _owner, ExchangeRates _exchangeRates, FeePool _feePool
+        address _owner, ExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule,
+        ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow
     )
         ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, SYNTHETIX_SUPPLY, DECIMALS, _owner)
         public
@@ -167,8 +172,10 @@ contract Synthetix is ExternStateToken {
         synthetixState = _synthetixState;
         exchangeRates = _exchangeRates;
         feePool = _feePool;
+        supplySchedule = _supplySchedule;
+        rewardEscrow = _rewardEscrow;
+        escrow = _escrow;
     }
-
     // ========== SETTERS ========== */
 
     /**
@@ -186,8 +193,15 @@ contract Synthetix is ExternStateToken {
         availableSynths.push(synth);
         synths[currencyKey] = synth;
 
-        emitSynthAdded(currencyKey, synth);
+        // emitSynthAdded(currencyKey, synth);
     }
+
+    // function setMinterReward(uint256 tokens)
+    //     external
+    //     optionalProxy_onlyOwner
+    // {
+    //     minterReward = tokens;
+    // }
 
     /**
      * @notice Remove an associated Synth contract from the Synthetix system
@@ -224,63 +238,9 @@ contract Synthetix is ExternStateToken {
         // And remove it from the synths mapping
         delete synths[currencyKey];
 
-        emitSynthRemoved(currencyKey, synthToRemove);
-    }
-
-    /**
-     * @notice Set the associated synthetix escrow contract.
-     * @dev Only the contract owner may call this.
-     */
-    function setEscrow(SynthetixEscrow _escrow)
-        external
-        optionalProxy_onlyOwner
-    {
-        escrow = _escrow;
         // Note: No event here as our contract exceeds max contract size
         // with these events, and it's unlikely people will need to
         // track these events specifically.
-    }
-
-    /**
-     * @notice Set the ExchangeRates contract address where rates are held.
-     * @dev Only callable by the contract owner.
-     */
-    function setExchangeRates(ExchangeRates _exchangeRates)
-        external
-        optionalProxy_onlyOwner
-    {
-        exchangeRates = _exchangeRates;
-        // Note: No event here as our contract exceeds max contract size
-        // with these events, and it's unlikely people will need to
-        // track these events specifically.
-    }
-
-    /**
-     * @notice Set the synthetixState contract address where issuance data is held.
-     * @dev Only callable by the contract owner.
-     */
-    function setSynthetixState(SynthetixState _synthetixState)
-        external
-        optionalProxy_onlyOwner
-    {
-        synthetixState = _synthetixState;
-
-        emitStateContractChanged(_synthetixState);
-    }
-
-    /**
-     * @notice Set your preferred currency. Note: This does not automatically exchange any balances you've held previously in
-     * other synth currencies in this address, it will apply for any new payments you receive at this address.
-     */
-    function setPreferredCurrency(bytes4 currencyKey)
-        external
-        optionalProxy
-    {
-        require(currencyKey == 0 || !exchangeRates.rateIsStale(currencyKey), "Currency rate is stale or doesn't exist.");
-
-        synthetixState.setPreferredCurrency(messageSender, currencyKey);
-
-        emitPreferredCurrencyChanged(messageSender, currencyKey);
     }
 
     // ========== VIEWS ==========
@@ -318,9 +278,9 @@ contract Synthetix is ExternStateToken {
     {
         uint total = 0;
         uint currencyRate = exchangeRates.rateForCurrency(currencyKey);
-        
+
         require(!exchangeRates.anyRateIsStale(availableCurrencyKeys()), "Rates are stale");
-        
+
         for (uint8 i = 0; i < availableSynths.length; i++) {
             // What's the total issued value of that synth in the destination currency?
             // Note: We're not using our effectiveValue function because we don't want to go get the
@@ -336,7 +296,7 @@ contract Synthetix is ExternStateToken {
     }
 
     /**
-     * @notice Returns the currencyKeys of availableSynths for rate checking 
+     * @notice Returns the currencyKeys of availableSynths for rate checking
      */
     function availableCurrencyKeys()
         internal
@@ -508,7 +468,7 @@ contract Synthetix is ExternStateToken {
         onlySynth
         returns (bool)
     {
-        // Allow fee to be 0 and skip minting XDRs to feePool 
+        // Allow fee to be 0 and skip minting XDRs to feePool
         if (sourceAmount == 0) {
             return true;
         }
@@ -583,6 +543,8 @@ contract Synthetix is ExternStateToken {
         if (fee > 0) {
             uint xdrFeeAmount = effectiveValue(destinationCurrencyKey, fee, "XDR");
             synths["XDR"].issue(feePool.FEE_ADDRESS(), xdrFeeAmount);
+            // Tell the fee pool about this.
+            feePool.feePaid("XDR", xdrFeeAmount);
         }
 
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
@@ -618,7 +580,7 @@ contract Synthetix is ExternStateToken {
         // What is their percentage (as a high precision int) of the total debt?
         uint debtPercentage = xdrValue.divideDecimalRoundPrecise(newTotalDebtIssued);
 
-        // And what effect does this percentage have on the global debt holding of other issuers?
+        // And what effect does this percentage change have on the global debt holding of other issuers?
         // The delta specifically needs to not take into account any existing debt as it's already
         // accounted for in the delta from when they issued previously.
         // The delta is a high precision integer.
@@ -660,7 +622,6 @@ contract Synthetix is ExternStateToken {
     function issueSynths(bytes4 currencyKey, uint amount)
         public
         optionalProxy
-        nonZeroAmount(amount)
         // No need to check if price is stale, as it is checked in issuableSynths.
     {
         require(amount <= remainingIssuableSynths(messageSender, currencyKey), "Amount too large");
@@ -670,6 +631,9 @@ contract Synthetix is ExternStateToken {
 
         // Create their synths
         synths[currencyKey].issue(messageSender, amount);
+
+        // Store their locked SNX amount to determine their fee % for the period
+        _appendAccountIssuanceRecord();
     }
 
     /**
@@ -692,51 +656,89 @@ contract Synthetix is ExternStateToken {
      * @notice Burn synths to clear issued synths/free SNX.
      * @param currencyKey The currency you're specifying to burn
      * @param amount The amount (in UNIT base) you wish to burn
+     * @dev The amount to burn is debased to XDR's
      */
     function burnSynths(bytes4 currencyKey, uint amount)
         external
         optionalProxy
-        // No need to check for stale rates as _removeFromDebtRegister calls effectiveValue
-        // which does this for us
+        // No need to check for stale rates as effectiveValue checks rates
     {
         // How much debt do they have?
-        uint debt = debtBalanceOf(messageSender, currencyKey);
+        uint debtToRemove = effectiveValue(currencyKey, amount, "XDR");
+        uint debt = debtBalanceOf(messageSender, "XDR");
+        uint debtInCurrencyKey = debtBalanceOf(messageSender, currencyKey);
 
         require(debt > 0, "No debt to forgive");
 
         // If they're trying to burn more debt than they actually owe, rather than fail the transaction, let's just
         // clear their debt and leave them be.
-        uint amountToBurn = debt < amount ? debt : amount;
+        uint amountToRemove = debt < debtToRemove ? debt : debtToRemove;
 
         // Remove their debt from the ledger
-        _removeFromDebtRegister(currencyKey, amountToBurn);
+        _removeFromDebtRegister(amountToRemove);
+
+        uint amountToBurn = debtInCurrencyKey < amount ? debtInCurrencyKey : amount;
 
         // synth.burn does a safe subtraction on balance (so it will revert if there are not enough synths).
         synths[currencyKey].burn(messageSender, amountToBurn);
+
+        // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
+        _appendAccountIssuanceRecord();
+    }
+
+    /**
+     * @notice Store in the FeePool the users current debt value in the system in XDRs.
+     * @dev debtBalanceOf(messageSender, "XDR") to be used with totalIssuedSynths("XDR") to get
+     *  users % of the system within a feePeriod.
+     */
+    function _appendAccountIssuanceRecord()
+        internal
+    {
+        uint initialDebtOwnership;
+        uint debtEntryIndex;
+        (initialDebtOwnership, debtEntryIndex) = synthetixState.getIssuanceData(messageSender);
+
+        feePool.appendAccountIssuanceRecord(
+            messageSender,
+            initialDebtOwnership,
+            debtEntryIndex
+        );
     }
 
     /**
      * @notice Remove a debt position from the register
-     * @param currencyKey The currency the user is presenting to forgive their debt
-     * @param amount The amount (in UNIT base) being presented
+     * @param amount The amount (in UNIT base) being presented in XDRs
      */
-    function _removeFromDebtRegister(bytes4 currencyKey, uint amount)
+    function _removeFromDebtRegister(uint amount)
         internal
     {
-        // How much debt are they trying to remove in XDRs?
-        uint debtToRemove = effectiveValue(currencyKey, amount, "XDR");
+        uint debtToRemove = amount;
 
         // How much debt do they have?
         uint existingDebt = debtBalanceOf(messageSender, "XDR");
 
-        // What percentage of the total debt are they trying to remove?
+        // What is the value of all issued synths of the system (priced in XDRs)?
         uint totalDebtIssued = totalIssuedSynths("XDR");
-        uint debtPercentage = debtToRemove.divideDecimalRoundPrecise(totalDebtIssued);
 
-        // And what effect does this percentage have on the global debt holding of other issuers?
-        // The delta specifically needs to not take into account any existing debt as it's already
-        // accounted for in the delta from when they issued previously.
-        uint delta = SafeDecimalMath.preciseUnit().add(debtPercentage);
+        // What will the new total after taking out the withdrawn amount
+        uint newTotalDebtIssued = totalDebtIssued.sub(debtToRemove);
+
+        uint delta;
+        
+        // What will the debt delta be if there is any debt left?
+        // Set delta to 0 if no more debt left in system after user
+        if (newTotalDebtIssued > 0) {
+
+            // What is the percentage of the withdrawn debt (as a high precision int) of the total debt after?
+            uint debtPercentage = debtToRemove.divideDecimalRoundPrecise(newTotalDebtIssued);
+
+            // And what effect does this percentage change have on the global debt holding of other issuers?
+            // The delta specifically needs to not take into account any existing debt as it's already
+            // accounted for in the delta from when they issued previously.
+            delta = SafeDecimalMath.preciseUnit().add(debtPercentage);
+        } else {
+            delta = 0;
+        }
 
         // Are they exiting the system, or are they just decreasing their debt position?
         if (debtToRemove == existingDebt) {
@@ -745,7 +747,6 @@ contract Synthetix is ExternStateToken {
         } else {
             // What percentage of the debt will they be left with?
             uint newDebt = existingDebt.sub(debtToRemove);
-            uint newTotalDebtIssued = totalDebtIssued.sub(debtToRemove);
             uint newDebtPercentage = newDebt.divideDecimalRoundPrecise(newTotalDebtIssued);
 
             // Store the debt percentage and debt ledger as high precision integers
@@ -774,7 +775,7 @@ contract Synthetix is ExternStateToken {
         uint destinationValue = effectiveValue("SNX", collateral(issuer), currencyKey);
 
         // They're allowed to issue up to issuanceRatio of that value
-        return destinationValue.multiplyDecimal(synthetixState.issuanceRatio());
+        return destinationValue.multiplyDecimal(synthetixState.getIssuanceRatio());
     }
 
     /**
@@ -797,7 +798,7 @@ contract Synthetix is ExternStateToken {
         return debtBalance.divideDecimalRound(totalOwnedSynthetix);
     }
 
-/**
+    /**
      * @notice If a user issues synths backed by SNX in their wallet, the SNX become locked. This function
      * will tell you how many synths a user has to give back to the system in order to unlock their original
      * debt position. This is priced in whichever synth is passed in as a currency key, e.g. you can price
@@ -812,7 +813,7 @@ contract Synthetix is ExternStateToken {
         // What was their initial debt ownership?
         uint initialDebtOwnership;
         uint debtEntryIndex;
-        (initialDebtOwnership, debtEntryIndex) = synthetixState.issuanceData(issuer);
+        (initialDebtOwnership, debtEntryIndex) = synthetixState.getIssuanceData(issuer);
 
         // If it's zero, they haven't issued, and they have no debt.
         if (initialDebtOwnership == 0) return 0;
@@ -820,7 +821,7 @@ contract Synthetix is ExternStateToken {
         // Figure out the global debt percentage delta from when they entered the system.
         // This is a high precision integer.
         uint currentDebtOwnership = synthetixState.lastDebtLedgerEntry()
-            .divideDecimalRoundPrecise(synthetixState.debtLedger(debtEntryIndex))
+            .divideDecimalRoundPrecise(synthetixState.getDebtLedgerAt(debtEntryIndex))
             .multiplyDecimalRoundPrecise(initialDebtOwnership);
 
         // What's the total value of the system in their requested currency?
@@ -871,6 +872,10 @@ contract Synthetix is ExternStateToken {
             balance = balance.add(escrow.balanceOf(account));
         }
 
+        if (rewardEscrow != address(0)) {
+            balance = balance.add(rewardEscrow.balanceOf(account));
+        }
+
         return balance;
     }
 
@@ -895,7 +900,7 @@ contract Synthetix is ExternStateToken {
         // Assuming issuance ratio is 20%, then issuing 20 SNX of value would require
         // 100 SNX to be locked in their wallet to maintain their collateralisation ratio
         // The locked synthetix value can exceed their balance.
-        uint lockedSynthetixValue = debtBalanceOf(account, "SNX").divideDecimalRound(synthetixState.issuanceRatio());
+        uint lockedSynthetixValue = debtBalanceOf(account, "SNX").divideDecimalRound(synthetixState.getIssuanceRatio());
 
         // If we exceed the balance, no SNX are transferable, otherwise the difference is.
         if (lockedSynthetixValue >= balance) {
@@ -903,6 +908,31 @@ contract Synthetix is ExternStateToken {
         } else {
             return balance.sub(lockedSynthetixValue);
         }
+    }
+
+    function mint()
+        external
+        returns (bool)
+    {
+        require(rewardEscrow != address(0), "Reward Escrow destination missing");
+
+        uint supplyToMint = supplySchedule.mintableSupply();
+        require(supplyToMint > 0, "No supply is mintable");
+
+        supplySchedule.updateMintValues();
+
+        // Set minted SNX balance to RewardEscrow's balance
+        // Minus the minterReward and set balance of minter to add reward
+        tokenState.setBalanceOf(rewardEscrow, tokenState.balanceOf(rewardEscrow).add(supplyToMint.sub(minterReward)));
+        emitTransfer(this, rewardEscrow, supplyToMint.sub(minterReward));
+        // Tell the FeePool how much it has to distribute
+        feePool.rewardsMinted(supplyToMint.sub(minterReward));
+
+        // Assign the minters reward.
+        tokenState.setBalanceOf(msg.sender, tokenState.balanceOf(msg.sender).add(minterReward));
+        emitTransfer(this, msg.sender, minterReward);
+
+        totalSupply = totalSupply.add(supplyToMint);
     }
 
     // ========== MODIFIERS ==========
@@ -939,35 +969,10 @@ contract Synthetix is ExternStateToken {
 
     // ========== EVENTS ==========
     /* solium-disable */
-
     event SynthExchange(address indexed account, bytes4 fromCurrencyKey, uint256 fromAmount, bytes4 toCurrencyKey,  uint256 toAmount, address toAddress);
     bytes32 constant SYNTHEXCHANGE_SIG = keccak256("SynthExchange(address,bytes4,uint256,bytes4,uint256,address)");
     function emitSynthExchange(address account, bytes4 fromCurrencyKey, uint256 fromAmount, bytes4 toCurrencyKey, uint256 toAmount, address toAddress) internal {
         proxy._emit(abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, toAddress), 2, SYNTHEXCHANGE_SIG, bytes32(account), 0, 0);
-    }
-    
-    event PreferredCurrencyChanged(address indexed account, bytes4 newPreferredCurrency);
-    bytes32 constant PREFERREDCURRENCYCHANGED_SIG = keccak256("PreferredCurrencyChanged(address,bytes4)");
-    function emitPreferredCurrencyChanged(address account, bytes4 newPreferredCurrency) internal {
-        proxy._emit(abi.encode(newPreferredCurrency), 2, PREFERREDCURRENCYCHANGED_SIG, bytes32(account), 0, 0);
-    }
-
-    event StateContractChanged(address stateContract);
-    bytes32 constant STATECONTRACTCHANGED_SIG = keccak256("StateContractChanged(address)");
-    function emitStateContractChanged(address stateContract) internal {
-        proxy._emit(abi.encode(stateContract), 1, STATECONTRACTCHANGED_SIG, 0, 0, 0);
-    }
-
-    event SynthAdded(bytes4 currencyKey, address newSynth);
-    bytes32 constant SYNTHADDED_SIG = keccak256("SynthAdded(bytes4,address)");
-    function emitSynthAdded(bytes4 currencyKey, address newSynth) internal {
-        proxy._emit(abi.encode(currencyKey, newSynth), 1, SYNTHADDED_SIG, 0, 0, 0);
-    }
-
-    event SynthRemoved(bytes4 currencyKey, address removedSynth);
-    bytes32 constant SYNTHREMOVED_SIG = keccak256("SynthRemoved(bytes4,address)");
-    function emitSynthRemoved(bytes4 currencyKey, address removedSynth) internal {
-        proxy._emit(abi.encode(currencyKey, removedSynth), 1, SYNTHREMOVED_SIG, 0, 0, 0);
     }
     /* solium-enable */
 }

@@ -1,6 +1,8 @@
 const ExchangeRates = artifacts.require('ExchangeRates');
 const Escrow = artifacts.require('SynthetixEscrow');
+const RewardEscrow = artifacts.require('RewardEscrow');
 const FeePool = artifacts.require('FeePool');
+const SupplySchedule = artifacts.require('SupplySchedule');
 const Synthetix = artifacts.require('Synthetix');
 const SynthetixState = artifacts.require('SynthetixState');
 const Synth = artifacts.require('Synth');
@@ -8,6 +10,7 @@ const Synth = artifacts.require('Synth');
 const {
 	currentTime,
 	fastForward,
+	fastForwardTo,
 	multiplyDecimal,
 	divideDecimal,
 	toUnit,
@@ -15,13 +18,14 @@ const {
 } = require('../utils/testUtils');
 
 contract('Synthetix', async accounts => {
-	const [sUSD, sAUD, sEUR, SNX, XDR, sXYZ, iBTC] = [
+	const [sUSD, sAUD, sEUR, SNX, XDR, sXYZ, sBTC, iBTC] = [
 		'sUSD',
 		'sAUD',
 		'sEUR',
 		'SNX',
 		'XDR',
 		'sXYZ',
+		'sBTC',
 		'iBTC',
 	].map(web3.utils.asciiToHex);
 
@@ -34,14 +38,19 @@ contract('Synthetix', async accounts => {
 		account4,
 		account5,
 		account6,
+		account7,
+		account8,
 	] = accounts;
 
 	let synthetix,
 		synthetixState,
 		exchangeRates,
 		feePool,
+		supplySchedule,
 		sUSDContract,
 		sAUDContract,
+		escrow,
+		rewardEscrow,
 		sEURContract,
 		oracle,
 		timestamp;
@@ -52,6 +61,9 @@ contract('Synthetix', async accounts => {
 		// contract interfaces to prevent test bleed.
 		exchangeRates = await ExchangeRates.deployed();
 		feePool = await FeePool.deployed();
+		supplySchedule = await SupplySchedule.deployed();
+		escrow = await Escrow.deployed();
+		rewardEscrow = await RewardEscrow.deployed();
 
 		synthetix = await Synthetix.deployed();
 		synthetixState = await SynthetixState.at(await synthetix.synthetixState());
@@ -64,8 +76,8 @@ contract('Synthetix', async accounts => {
 		timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sAUD, sEUR, SNX],
-			['0.5', '1.25', '0.1'].map(toUnit),
+			[sAUD, sEUR, SNX, sBTC, iBTC],
+			['0.5', '1.25', '0.1', '5000', '4000'].map(toUnit),
 			timestamp,
 			{
 				from: oracle,
@@ -75,15 +87,19 @@ contract('Synthetix', async accounts => {
 
 	it('should set constructor params on deployment', async () => {
 		// constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
-		//     address _owner, ExchangeRates _exchangeRates, FeePool _feePool
+		// 	address _owner, IExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule,
+		// 	ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow
 		// )
 		const instance = await Synthetix.new(
 			account1,
 			account2,
 			account3,
+			owner,
 			account4,
 			account5,
 			account6,
+			account7,
+			account8,
 			{
 				from: deployerAccount,
 			}
@@ -92,9 +108,12 @@ contract('Synthetix', async accounts => {
 		assert.equal(await instance.proxy(), account1);
 		assert.equal(await instance.tokenState(), account2);
 		assert.equal(await instance.synthetixState(), account3);
-		assert.equal(await instance.owner(), account4);
-		assert.equal(await instance.exchangeRates(), account5);
-		assert.equal(await instance.feePool(), account6);
+		assert.equal(await instance.owner(), owner);
+		assert.equal(await instance.exchangeRates(), account4);
+		assert.equal(await instance.feePool(), account5);
+		assert.equal(await instance.supplySchedule(), account6);
+		assert.equal(await instance.rewardEscrow(), account7);
+		assert.equal(await instance.escrow(), account8);
 	});
 
 	it('should allow adding a Synth contract', async () => {
@@ -216,16 +235,8 @@ contract('Synthetix', async accounts => {
 		const sUSDContractAddress = await synthetix.synths(sUSD);
 
 		// Assert that we can remove the synth and add it back in before we do anything.
-		let transaction = await synthetix.removeSynth(sUSD, { from: owner });
-		assert.eventEqual(transaction, 'SynthRemoved', {
-			currencyKey: sUSD,
-			removedSynth: sUSDContractAddress,
-		});
-		transaction = await synthetix.addSynth(sUSDContractAddress, { from: owner });
-		assert.eventEqual(transaction, 'SynthAdded', {
-			currencyKey: sUSD,
-			newSynth: sUSDContractAddress,
-		});
+		await synthetix.removeSynth(sUSD, { from: owner });
+		await synthetix.addSynth(sUSDContractAddress, { from: owner });
 
 		// Issue one sUSD
 		await synthetix.issueSynths(sUSD, toUnit('1'), { from: owner });
@@ -247,46 +258,6 @@ contract('Synthetix', async accounts => {
 
 		// Assert that we can't remove the synth
 		await assert.revert(synthetix.removeSynth(currencyKey, { from: owner }));
-	});
-
-	// Escrow
-
-	it('should allow the owner to set an Escrow contract', async () => {
-		assert.notEqual(await synthetix.escrow(), account1);
-		await synthetix.setEscrow(account1, { from: owner });
-		assert.equal(await synthetix.escrow(), account1);
-
-		// Note, there's no event for setting the Escrow contract
-	});
-
-	it('should disallow a non-owner from setting an Escrow contract', async () => {
-		await assert.revert(synthetix.setEscrow(account1, { from: account1 }));
-	});
-
-	// Token State contract
-
-	it('should allow the owner to set a TokenState contract', async () => {
-		const transaction = await synthetix.setSynthetixState(account1, { from: owner });
-
-		assert.equal(await synthetix.synthetixState(), account1);
-
-		assert.eventEqual(transaction, 'StateContractChanged', {
-			stateContract: account1,
-		});
-	});
-
-	// Exchange Rates contract
-
-	it('should allow the owner to set an Exchange Rates contract', async () => {
-		assert.notEqual(await synthetix.exchangeRates(), account1);
-		await synthetix.setExchangeRates(account1, { from: owner });
-		assert.equal(await synthetix.exchangeRates(), account1);
-
-		// Note, there's no event for setting the ExchangeRates contract
-	});
-
-	it('should disallow a non-owner from setting an Exchange Rates contract', async () => {
-		await assert.revert(synthetix.setExchangeRates(account1, { from: account1 }));
 	});
 
 	// Effective value
@@ -688,8 +659,6 @@ contract('Synthetix', async accounts => {
 
 	it('should not allow transfer of synthetix in escrow', async () => {
 		// Setup escrow
-		const escrow = await Escrow.new(owner, synthetix.address, { from: owner });
-		await synthetix.setEscrow(escrow.address, { from: owner });
 		const oneWeek = 60 * 60 * 24 * 7;
 		const twelveWeeks = oneWeek * 12;
 		const now = await currentTime();
@@ -1510,7 +1479,7 @@ contract('Synthetix', async accounts => {
 		assert.bnEqual(expectedIssuableSynths, maxIssuableSynths);
 	});
 
-	it("should correctly calculate a user's maximum issuable synths without any havens", async () => {
+	it("should correctly calculate a user's maximum issuable synths without any SNX", async () => {
 		const maxIssuableSynths = await synthetix.maxIssuableSynths(account1, sEUR);
 		assert.bnEqual(0, maxIssuableSynths);
 	});
@@ -1791,8 +1760,6 @@ contract('Synthetix', async accounts => {
 		});
 
 		// Setup escrow
-		const escrow = await Escrow.new(owner, synthetix.address, { from: owner });
-		await synthetix.setEscrow(escrow.address, { from: owner });
 		const oneWeek = 60 * 60 * 24 * 7;
 		const twelveWeeks = oneWeek * 12;
 		const now = await currentTime();
@@ -1822,6 +1789,34 @@ contract('Synthetix', async accounts => {
 		assert.bnEqual(collaterisationRatio, expectedCollaterisationRatio);
 	});
 
+	it("should include escrowed reward synthetix when calculating a user's collaterisation ratio", async () => {
+		const snx2usdRate = await exchangeRates.rateForCurrency(SNX);
+		const transferredSynthetixs = toUnit('60000');
+		await synthetix.transfer(account1, transferredSynthetixs, {
+			from: owner,
+		});
+
+		// Setup reward escrow
+		const feePoolAccount = account6;
+		await rewardEscrow.setFeePool(feePoolAccount, { from: owner });
+
+		const escrowedSynthetixs = toUnit('30000');
+		await synthetix.transfer(rewardEscrow.address, escrowedSynthetixs, { from: owner });
+		await rewardEscrow.appendVestingEntry(account1, escrowedSynthetixs, { from: feePoolAccount });
+
+		// Issue
+		const maxIssuable = await synthetix.maxIssuableSynths(account1, sUSD);
+		await synthetix.issueSynths(sUSD, maxIssuable, { from: account1 });
+
+		// Compare
+		const collaterisationRatio = await synthetix.collateralisationRatio(account1);
+		const expectedCollaterisationRatio = divideDecimal(
+			maxIssuable,
+			multiplyDecimal(escrowedSynthetixs.add(transferredSynthetixs), snx2usdRate)
+		);
+		assert.bnEqual(collaterisationRatio, expectedCollaterisationRatio);
+	});
+
 	it("should permit anyone checking another user's collateral", async () => {
 		const amount = toUnit('60000');
 		await synthetix.methods['transfer(address,uint256)'](account1, amount, { from: owner });
@@ -1830,8 +1825,6 @@ contract('Synthetix', async accounts => {
 	});
 
 	it("should include escrowed synthetix when checking a user's collateral", async () => {
-		const escrow = await Escrow.new(owner, synthetix.address, { from: owner });
-		await synthetix.setEscrow(escrow.address, { from: owner });
 		const oneWeek = 60 * 60 * 24 * 7;
 		const twelveWeeks = oneWeek * 12;
 		const now = await currentTime();
@@ -1845,6 +1838,18 @@ contract('Synthetix', async accounts => {
 
 		const amount = toUnit('60000');
 		await synthetix.methods['transfer(address,uint256)'](account1, amount, { from: owner });
+		const collateral = await synthetix.collateral(account1, { from: account2 });
+		assert.bnEqual(collateral, amount.add(escrowedAmount));
+	});
+
+	it("should include escrowed reward synthetix when checking a user's collateral", async () => {
+		const feePoolAccount = account6;
+		const escrowedAmount = toUnit('15000');
+		await synthetix.transfer(rewardEscrow.address, escrowedAmount, { from: owner });
+		await rewardEscrow.setFeePool(feePoolAccount, { from: owner });
+		await rewardEscrow.appendVestingEntry(account1, escrowedAmount, { from: feePoolAccount });
+		const amount = toUnit('60000');
+		await synthetix.transfer(account1, amount, { from: owner });
 		const collateral = await synthetix.collateral(account1, { from: account2 });
 		assert.bnEqual(collateral, amount.add(escrowedAmount));
 	});
@@ -1884,8 +1889,6 @@ contract('Synthetix', async accounts => {
 		});
 
 		// Setup escrow
-		const escrow = await Escrow.new(owner, synthetix.address, { from: owner });
-		await synthetix.setEscrow(escrow.address, { from: owner });
 		const oneWeek = 60 * 60 * 24 * 7;
 		const twelveWeeks = oneWeek * 12;
 		const now = await currentTime();
@@ -2020,16 +2023,16 @@ contract('Synthetix', async accounts => {
 		const issuedSynths2 = toUnit('2000');
 		const issuedSynths3 = toUnit('2000');
 
+		// Send more than their synth balance to burn all
+		const burnAllSynths = toUnit('2050');
+
 		await synthetix.issueSynths(sUSD, issuedSynths1, { from: account1 });
 		await synthetix.issueSynths(sUSD, issuedSynths2, { from: account2 });
 		await synthetix.issueSynths(sUSD, issuedSynths3, { from: account3 });
 
-		const debtBalance1 = await synthetix.debtBalanceOf(account1, sUSD);
-		await synthetix.burnSynths(sUSD, debtBalance1, { from: account1 });
-		const debtBalance2 = await synthetix.debtBalanceOf(account2, sUSD);
-		await synthetix.burnSynths(sUSD, debtBalance2, { from: account2 });
-		const debtBalance3 = await synthetix.debtBalanceOf(account3, sUSD);
-		await synthetix.burnSynths(sUSD, debtBalance3, { from: account3 });
+		await synthetix.burnSynths(sUSD, burnAllSynths, { from: account1 });
+		await synthetix.burnSynths(sUSD, burnAllSynths, { from: account2 });
+		await synthetix.burnSynths(sUSD, burnAllSynths, { from: account3 });
 
 		const debtBalance1After = await synthetix.debtBalanceOf(account1, sUSD);
 		const debtBalance2After = await synthetix.debtBalanceOf(account2, sUSD);
@@ -2086,6 +2089,39 @@ contract('Synthetix', async accounts => {
 		assert.bnEqual(debtBalanceAfter, '0');
 	});
 
+	it('should allow users to burn their debt and adjust the debtBalanceOf correctly for remaining users', async () => {
+		// Give some SNX to account1
+		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('40000000'), {
+			from: owner,
+		});
+		await synthetix.methods['transfer(address,uint256)'](account2, toUnit('40000000'), {
+			from: owner,
+		});
+
+		// Issue
+		const issuedSynths1 = toUnit('150000');
+		const issuedSynths2 = toUnit('50000');
+
+		await synthetix.issueSynths(sUSD, issuedSynths1, { from: account1 });
+		await synthetix.issueSynths(sUSD, issuedSynths2, { from: account2 });
+
+		let debtBalance1After = await synthetix.debtBalanceOf(account1, sUSD);
+		let debtBalance2After = await synthetix.debtBalanceOf(account2, sUSD);
+
+		// debtBalanceOf has rounding error but is within tolerance
+		assert.bnClose(debtBalance1After, toUnit('150000'));
+		assert.bnClose(debtBalance2After, toUnit('50000'));
+
+		// Account 1 burns 100,000
+		await synthetix.burnSynths(sUSD, toUnit('100000'), { from: account1 });
+
+		debtBalance1After = await synthetix.debtBalanceOf(account1, sUSD);
+		debtBalance2After = await synthetix.debtBalanceOf(account2, sUSD);
+
+		assert.bnClose(debtBalance1After, toUnit('50000'));
+		assert.bnClose(debtBalance2After, toUnit('50000'));
+	});
+
 	it('should allow a user to exchange the synths they hold in one flavour for another', async () => {
 		// Give some SNX to account1
 		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('300000'), {
@@ -2094,6 +2130,10 @@ contract('Synthetix', async accounts => {
 		// Issue
 		const amountIssued = toUnit('2000');
 		await synthetix.issueSynths(sUSD, amountIssued, { from: account1 });
+
+		// Get the exchange fee in USD
+		const exchangeFeeUSD = await feePool.exchangeFeeIncurred(amountIssued);
+		const exchangeFeeXDR = await synthetix.effectiveValue(sUSD, exchangeFeeUSD, XDR);
 
 		// Exchange sUSD to sAUD
 		await synthetix.exchange(sUSD, amountIssued, sAUD, account1, { from: account1 });
@@ -2104,8 +2144,13 @@ contract('Synthetix', async accounts => {
 		// chargeFee = true so we need to minus the fees for this exchange
 		const effectiveValueMinusFees = await feePool.amountReceivedFromExchange(effectiveValue);
 
+		// Assert we have the correct AUD value - exchange fee
 		const sAUDBalance = await sAUDContract.balanceOf(account1);
 		assert.bnEqual(effectiveValueMinusFees, sAUDBalance);
+
+		// Assert we have the exchange fee to distribute
+		const feePeriodZero = await feePool.recentFeePeriods(0);
+		assert.bnEqual(exchangeFeeXDR, feePeriodZero.feesToDistribute);
 	});
 
 	it('should emit a SynthExchange event', async () => {
@@ -2143,6 +2188,201 @@ contract('Synthetix', async accounts => {
 		const issuedSynths1 = toUnit('0');
 
 		await assert.revert(synthetix.issueSynths(sUSD, issuedSynths1, { from: account1 }));
+	});
+
+	describe('supply minting', async () => {
+		const [secondYearSupply, thirdYearSupply] = ['75000000', '37500000'];
+
+		const DAY = 86400;
+		const WEEK = 604800;
+		const YEAR = 31536000;
+
+		const YEAR_TWO_START = 1551830400;
+
+		it('should allow synthetix contract to mint new supply based on inflationary schedule', async () => {
+			// Issue
+			const weeklyIssuance = divideDecimal(secondYearSupply, 52);
+			const expectedSupplyToMint = weeklyIssuance;
+
+			// fast forward EVM to Week 2 in Year 2 schedule starting at UNIX 1553040000+
+			const weekTwo = YEAR_TWO_START + 1 * WEEK + 1 * DAY;
+			await fastForwardTo(new Date(weekTwo * 1000));
+
+			const existingSupply = await synthetix.totalSupply();
+			const currentRewardEscrowBalance = await synthetix.balanceOf(RewardEscrow.address);
+
+			// call mint on Synthetix
+			await synthetix.mint();
+
+			const newTotalSupply = await synthetix.totalSupply();
+			const minterReward = await synthetix.minterReward();
+			const expectedEscrowBalance = currentRewardEscrowBalance
+				.add(expectedSupplyToMint)
+				.sub(minterReward);
+
+			// Expect supply schedule is updated with new values
+			const currentSchedule = await supplySchedule.schedules(1);
+
+			assert.bnEqual(currentSchedule.totalSupplyMinted, expectedSupplyToMint);
+			assert.bnEqual(newTotalSupply, existingSupply.add(expectedSupplyToMint));
+			assert.bnEqual(await synthetix.balanceOf(RewardEscrow.address), expectedEscrowBalance);
+		});
+
+		it('should allow synthetix contract to mint 2 weeks of supply and minus minterReward', async () => {
+			// Issue
+			const expectedSupplyToMint = divideDecimal(secondYearSupply, 52 / 2);
+
+			// fast forward EVM to Week 3 in Year 2 schedule starting at UNIX 1553040000+
+			const weekThree = YEAR_TWO_START + 2 * WEEK + 1 * DAY;
+			await fastForwardTo(new Date(weekThree * 1000));
+
+			const existingSupply = await synthetix.totalSupply();
+			const currentRewardEscrowBalance = await synthetix.balanceOf(RewardEscrow.address);
+
+			// call mint on Synthetix
+			await synthetix.mint();
+
+			const newTotalSupply = await synthetix.totalSupply();
+			const minterReward = await synthetix.minterReward();
+			const expectedEscrowBalance = currentRewardEscrowBalance
+				.add(expectedSupplyToMint)
+				.sub(minterReward);
+
+			// Expect supply schedule is updated with new values
+			const currentSchedule = await supplySchedule.schedules(1);
+
+			assert.bnEqual(currentSchedule.totalSupplyMinted, expectedSupplyToMint);
+			assert.bnEqual(newTotalSupply, existingSupply.add(expectedSupplyToMint));
+			assert.bnEqual(await synthetix.balanceOf(RewardEscrow.address), expectedEscrowBalance);
+		});
+
+		it('should allow synthetix contract to mint year 2 supply and 1 week in Year 3, minus minterReward', async () => {
+			// Issue
+			const supplyFromYear2 = toUnit(secondYearSupply);
+			const supplyFromYear3 = divideDecimal(thirdYearSupply, 52);
+			const expectedSupplyToMint = supplyFromYear2.add(supplyFromYear3);
+
+			// fast forward EVM to Week 2 in Year 3 schedule starting at UNIX 1583971200+
+			const weekTwoYearThree = YEAR_TWO_START + YEAR + WEEK + DAY;
+			await fastForwardTo(new Date(weekTwoYearThree * 1000));
+
+			const existingSupply = await synthetix.totalSupply();
+			const currentRewardEscrowBalance = await synthetix.balanceOf(RewardEscrow.address);
+
+			// call mint on Synthetix
+			await synthetix.mint();
+
+			const newTotalSupply = await synthetix.totalSupply();
+			const minterReward = await synthetix.minterReward();
+			const expectedEscrowBalance = currentRewardEscrowBalance
+				.add(expectedSupplyToMint)
+				.sub(minterReward);
+
+			// Expect supply schedule is updated with new values
+			const yearTwoSchedule = await supplySchedule.schedules(1);
+			const yearThreeSchedule = await supplySchedule.schedules(2);
+
+			assert.bnEqual(yearTwoSchedule.totalSupplyMinted, supplyFromYear2);
+			assert.bnEqual(yearThreeSchedule.totalSupplyMinted, supplyFromYear3);
+			assert.bnEqual(newTotalSupply, existingSupply.add(expectedSupplyToMint));
+			assert.bnEqual(await synthetix.balanceOf(RewardEscrow.address), expectedEscrowBalance);
+		});
+
+		it('should be able to mint again after another 7 days period', async () => {
+			// Issue
+			const expectedSupplyToMint = divideDecimal(secondYearSupply, 52 / 2);
+
+			// fast forward EVM to Week 3 in Year 2 schedule starting at UNIX 1553040000+
+			const weekThree = YEAR_TWO_START + 2 * WEEK + 1 * DAY;
+			await fastForwardTo(new Date(weekThree * 1000));
+
+			let existingSupply, currentRewardEscrowBalance;
+			existingSupply = await synthetix.totalSupply();
+			currentRewardEscrowBalance = await synthetix.balanceOf(RewardEscrow.address);
+
+			// call mint on Synthetix
+			await synthetix.mint();
+
+			let newTotalSupply, expectedEscrowBalance;
+			const minterReward = await synthetix.minterReward();
+			newTotalSupply = await synthetix.totalSupply();
+			expectedEscrowBalance = currentRewardEscrowBalance
+				.add(expectedSupplyToMint)
+				.sub(minterReward);
+
+			// Expect supply schedule is updated with new values
+			const scheduleInWeekThree = await supplySchedule.schedules(1);
+
+			assert.bnEqual(scheduleInWeekThree.totalSupplyMinted, expectedSupplyToMint);
+			assert.bnEqual(newTotalSupply, existingSupply.add(expectedSupplyToMint));
+			assert.bnEqual(await synthetix.balanceOf(RewardEscrow.address), expectedEscrowBalance);
+
+			const supplyWeekFour = divideDecimal(secondYearSupply, 52);
+			// fast forward EVM to Week 4 in Year 2 schedule starting at UNIX 1553644800+
+			const weekFour = weekThree + 1 * WEEK + 1 * DAY;
+			await fastForwardTo(new Date(weekFour * 1000));
+
+			existingSupply = await synthetix.totalSupply();
+			currentRewardEscrowBalance = await synthetix.balanceOf(RewardEscrow.address);
+
+			// call mint on Synthetix
+			await synthetix.mint();
+
+			newTotalSupply = await synthetix.totalSupply();
+			expectedEscrowBalance = currentRewardEscrowBalance.add(supplyWeekFour).sub(minterReward);
+
+			// Expect supply schedule is updated with new values
+			const scheduleInWeekFour = await supplySchedule.schedules(1);
+
+			assert.bnEqual(
+				scheduleInWeekFour.totalSupplyMinted,
+				scheduleInWeekThree.totalSupplyMinted.add(supplyWeekFour)
+			);
+			assert.bnEqual(newTotalSupply, existingSupply.add(supplyWeekFour));
+			assert.bnEqual(await synthetix.balanceOf(RewardEscrow.address), expectedEscrowBalance);
+		});
+
+		it('should revert when trying to mint again within the 7 days period', async () => {
+			// Issue
+			const weeklyIssuance = divideDecimal(secondYearSupply, 52 / 2);
+			const expectedSupplyToMint = weeklyIssuance;
+
+			// fast forward EVM to Week 3 in Year 2 schedule starting at UNIX 1553040000+
+			const weekThree = YEAR_TWO_START + 2 * WEEK + 1 * DAY;
+			await fastForwardTo(new Date(weekThree * 1000));
+
+			const existingSupply = await synthetix.totalSupply();
+			const currentRewardEscrowBalance = await synthetix.balanceOf(RewardEscrow.address);
+
+			// call mint on Synthetix
+			await synthetix.mint();
+
+			const newTotalSupply = await synthetix.totalSupply();
+			const minterReward = await synthetix.minterReward();
+			const expectedEscrowBalance = currentRewardEscrowBalance
+				.add(expectedSupplyToMint)
+				.sub(minterReward);
+
+			// Expect supply schedule is updated with new values
+			const currentSchedule = await supplySchedule.schedules(1);
+
+			assert.bnEqual(currentSchedule.totalSupplyMinted, expectedSupplyToMint);
+			assert.bnEqual(newTotalSupply, existingSupply.add(expectedSupplyToMint));
+			assert.bnEqual(await synthetix.balanceOf(RewardEscrow.address), expectedEscrowBalance);
+
+			// should revert if try to mint again within 7 day period / mintable supply is 0
+			await assert.revert(synthetix.mint());
+		});
+
+		it('should revert when time is after Year 7 endPeriod', async () => {
+			// FastForward to after Year 7
+			const YEAR_EIGHT_START = 1741046400;
+
+			await fastForwardTo(new Date(YEAR_EIGHT_START * 1000));
+
+			// should revert as the mintable amount is 0
+			await assert.revert(synthetix.mint());
+		});
 	});
 
 	describe('when dealing with inverted synths', () => {
