@@ -102,9 +102,9 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     // fee authority to roll over the periods, so they are not guaranteed
     // to roll over at exactly this duration, but the contract enforces
     // that they cannot roll over any quicker than this duration.
-    uint public feePeriodDuration = 1 weeks; 
+    uint public feePeriodDuration = 1 weeks;
     // The fee period must be between 1 day and 60 days.
-    uint public constant MIN_FEE_PERIOD_DURATION = 1 days; 
+    uint public constant MIN_FEE_PERIOD_DURATION = 1 days;
     uint public constant MAX_FEE_PERIOD_DURATION = 60 days;
 
     // The last period a user has withdrawn their fees in, identified by the feePeriodId
@@ -445,7 +445,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     {
         // Don't assign to the parameter
         uint remainingToAllocate = snxAmount;
-        
+
         uint rewardPaid;
 
         // Start at the oldest period and record the amount, moving to newer periods
@@ -466,7 +466,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
                 if (remainingToAllocate == 0) return rewardPaid;
 
                 // We've exhausted feePeriods to distribute and no rewards remain in last period
-                // User last to claim would in this scenario have their remainder slashed 
+                // User last to claim would in this scenario have their remainder slashed
                 // due to rounding up of PreciseDecimal
                 if (i == 0 && remainingToAllocate > 0) {
                     remainingToAllocate = 0;
@@ -774,7 +774,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
                 // else find the applicableIssuanceData for the feePeriod based on the StartingDebtIndex of the period
                 uint closingDebtIndex = nextPeriod.startingDebtIndex.sub(1);
 
-                // Gas optimisation - to reuse debtEntryIndex if found new applicable one 
+                // Gas optimisation - to reuse debtEntryIndex if found new applicable one
                 // if applicable is 0,0 (none found) we keep most recent one from issuanceData[0]
                 // return if userOwnershipPercentage = 0)
                 (userOwnershipPercentage, debtEntryIndex) = feePoolState.applicableIssuanceData(account, closingDebtIndex);
@@ -837,8 +837,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
         // Figure out their global debt percentage delta at end of fee Period.
         // This is a high precision integer.
-        uint feePeriodDebtOwnership = synthetixState.getDebtLedgerAt(closingDebtIndex)
-            .divideDecimalRoundPrecise(synthetixState.getDebtLedgerAt(debtEntryIndex))
+        uint feePeriodDebtOwnership = synthetixState.debtLedger(closingDebtIndex)
+            .divideDecimalRoundPrecise(synthetixState.debtLedger(debtEntryIndex))
             .multiplyDecimalRoundPrecise(ownershipPercentage);
 
         return feePeriodDebtOwnership;

@@ -687,7 +687,7 @@ contract Synthetix is ExternStateToken {
     {
         uint initialDebtOwnership;
         uint debtEntryIndex;
-        (initialDebtOwnership, debtEntryIndex) = synthetixState.getIssuanceData(messageSender);
+        (initialDebtOwnership, debtEntryIndex) = synthetixState.issuanceData(messageSender);
 
         feePool.appendAccountIssuanceRecord(
             messageSender,
@@ -715,7 +715,7 @@ contract Synthetix is ExternStateToken {
         uint newTotalDebtIssued = totalDebtIssued.sub(debtToRemove);
 
         uint delta;
-        
+
         // What will the debt delta be if there is any debt left?
         // Set delta to 0 if no more debt left in system after user
         if (newTotalDebtIssued > 0) {
@@ -766,7 +766,7 @@ contract Synthetix is ExternStateToken {
         uint destinationValue = effectiveValue("SNX", collateral(issuer), currencyKey);
 
         // They're allowed to issue up to issuanceRatio of that value
-        return destinationValue.multiplyDecimal(synthetixState.getIssuanceRatio());
+        return destinationValue.multiplyDecimal(synthetixState.issuanceRatio());
     }
 
     /**
@@ -804,7 +804,7 @@ contract Synthetix is ExternStateToken {
         // What was their initial debt ownership?
         uint initialDebtOwnership;
         uint debtEntryIndex;
-        (initialDebtOwnership, debtEntryIndex) = synthetixState.getIssuanceData(issuer);
+        (initialDebtOwnership, debtEntryIndex) = synthetixState.issuanceData(issuer);
 
         // If it's zero, they haven't issued, and they have no debt.
         if (initialDebtOwnership == 0) return 0;
@@ -812,7 +812,7 @@ contract Synthetix is ExternStateToken {
         // Figure out the global debt percentage delta from when they entered the system.
         // This is a high precision integer.
         uint currentDebtOwnership = synthetixState.lastDebtLedgerEntry()
-            .divideDecimalRoundPrecise(synthetixState.getDebtLedgerAt(debtEntryIndex))
+            .divideDecimalRoundPrecise(synthetixState.debtLedger(debtEntryIndex))
             .multiplyDecimalRoundPrecise(initialDebtOwnership);
 
         // What's the total value of the system in their requested currency?
@@ -891,7 +891,7 @@ contract Synthetix is ExternStateToken {
         // Assuming issuance ratio is 20%, then issuing 20 SNX of value would require
         // 100 SNX to be locked in their wallet to maintain their collateralisation ratio
         // The locked synthetix value can exceed their balance.
-        uint lockedSynthetixValue = debtBalanceOf(account, "SNX").divideDecimalRound(synthetixState.getIssuanceRatio());
+        uint lockedSynthetixValue = debtBalanceOf(account, "SNX").divideDecimalRound(synthetixState.issuanceRatio());
 
         // If we exceed the balance, no SNX are transferable, otherwise the difference is.
         if (lockedSynthetixValue >= balance) {
@@ -918,7 +918,7 @@ contract Synthetix is ExternStateToken {
 
         tokenState.setBalanceOf(rewardEscrow, tokenState.balanceOf(rewardEscrow).add(supplyToMint.sub(minterReward)));
         emitTransfer(this, rewardEscrow, supplyToMint.sub(minterReward));
-        
+
         // Tell the FeePool how much it has to distribute
         feePool.rewardsMinted(supplyToMint.sub(minterReward));
 
