@@ -2,9 +2,12 @@ const { table } = require('table');
 
 const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
+const FeePoolState = artifacts.require('FeePoolState');
 const Synthetix = artifacts.require('Synthetix');
 const SynthetixEscrow = artifacts.require('SynthetixEscrow');
+const RewardEscrow = artifacts.require('RewardEscrow');
 const SynthetixState = artifacts.require('SynthetixState');
+const SupplySchedule = artifacts.require('SupplySchedule');
 const Synth = artifacts.require('Synth');
 const Owned = artifacts.require('Owned');
 const Proxy = artifacts.require('Proxy');
@@ -56,27 +59,17 @@ module.exports = async function(deployer, network, accounts) {
 	);
 
 	// ----------------
-	// Fee Pool
+	// Escrow
 	// ----------------
-	console.log('Deploying FeePoolProxy...');
-	// constructor(address _owner)
-	const feePoolProxy = await Proxy.new(owner, { from: deployerAccount });
+	console.log('Deploying SynthetixEscrow...');
+	const escrow = await deployer.deploy(SynthetixEscrow, owner, ZERO_ADDRESS, {
+		from: deployerAccount,
+	});
 
-	console.log('Deploying FeePool...');
-	// constructor(address _proxy, address _owner, Synthetix _synthetix, address _feeAuthority, uint _transferFeeRate, uint _exchangeFeeRate)
-	deployer.link(SafeDecimalMath, FeePool);
-	const feePool = await deployer.deploy(
-		FeePool,
-		feePoolProxy.address,
-		owner,
-		ZERO_ADDRESS,
-		feeAuthority,
-		web3.utils.toWei('0.0015', 'ether'),
-		web3.utils.toWei('0.0015', 'ether'),
-		{ from: deployerAccount }
-	);
-
-	await feePoolProxy.setTarget(feePool.address, { from: owner });
+	console.log('Deploying RewardEscrow...');
+	const rewardEscrow = await deployer.deploy(RewardEscrow, owner, ZERO_ADDRESS, ZERO_ADDRESS, {
+		from: deployerAccount,
+	});
 
 	// ----------------
 	// Synthetix State
@@ -89,8 +82,50 @@ module.exports = async function(deployer, network, accounts) {
 	});
 
 	// ----------------
+	// Fee Pool
+	// ----------------
+	console.log('Deploying FeePoolProxy...');
+	// constructor(address _owner)
+	const feePoolProxy = await Proxy.new(owner, { from: deployerAccount });
+
+	console.log('Deploying FeePoolState...');
+	deployer.link(SafeDecimalMath, FeePoolState);
+	const feePoolState = await deployer.deploy(FeePoolState, owner, ZERO_ADDRESS, {
+		from: deployerAccount,
+	});
+
+	console.log('Deploying FeePool...');
+	deployer.link(SafeDecimalMath, FeePool);
+	const feePool = await deployer.deploy(
+		FeePool,
+		feePoolProxy.address,
+		owner,
+		ZERO_ADDRESS,
+		feePoolState.address,
+		synthetixState.address,
+		rewardEscrow.address,
+		feeAuthority,
+		web3.utils.toWei('0.0015', 'ether'), // TODO must change this to 0 to match MAINNET after tests are updated
+		web3.utils.toWei('0.0030', 'ether'),
+		{ from: deployerAccount }
+	);
+
+	await feePoolProxy.setTarget(feePool.address, { from: owner });
+
+	// Set feePool on feePoolState & rewardEscrow
+	await feePoolState.setFeePool(feePool.address, { from: owner });
+	await rewardEscrow.setFeePool(feePool.address, { from: owner });
+
+	// ----------------
 	// Synthetix
 	// ----------------
+	console.log('Deploying SupplySchedule...');
+	// constructor(address _owner)
+	deployer.link(SafeDecimalMath, SupplySchedule);
+	const supplySchedule = await deployer.deploy(SupplySchedule, owner, {
+		from: deployerAccount,
+	});
+
 	console.log('Deploying SynthetixProxy...');
 	// constructor(address _owner)
 	const synthetixProxy = await Proxy.new(owner, { from: deployerAccount });
@@ -114,16 +149,14 @@ module.exports = async function(deployer, network, accounts) {
 		owner,
 		ExchangeRates.address,
 		FeePool.address,
+		supplySchedule.address,
+		rewardEscrow.address,
+		escrow.address,
 		{
 			from: deployerAccount,
 			gas: 8000000,
 		}
 	);
-
-	console.log('Deploying SynthetixEscrow...');
-	await deployer.deploy(SynthetixEscrow, owner, synthetix.address, {
-		from: deployerAccount,
-	});
 
 	// ----------------------
 	// Connect Token State
@@ -146,19 +179,25 @@ module.exports = async function(deployer, network, accounts) {
 	await synthetixProxy.setTarget(synthetix.address, { from: owner });
 
 	// ----------------------
-	// Connect Escrow
+	// Connect Escrow to Synthetix
 	// ----------------------
-	await synthetix.setEscrow(SynthetixEscrow.address, { from: owner });
+	await escrow.setSynthetix(synthetix.address, { from: owner });
+	await rewardEscrow.setSynthetix(synthetix.address, { from: owner });
 
 	// ----------------------
 	// Connect FeePool
 	// ----------------------
 	await feePool.setSynthetix(synthetix.address, { from: owner });
 
+	// ----------------------
+	// Connect InflationarySupply
+	// ----------------------
+	await supplySchedule.setSynthetix(synthetix.address, { from: owner });
+
 	// ----------------
 	// Synths
 	// ----------------
-	const currencyKeys = ['XDR', 'sUSD', 'sAUD', 'sEUR', 'iBTC'];
+	const currencyKeys = ['XDR', 'sUSD', 'sAUD', 'sEUR', 'sBTC', 'iBTC'];
 	const synths = [];
 
 	for (const currencyKey of currencyKeys) {
@@ -214,12 +253,14 @@ module.exports = async function(deployer, network, accounts) {
 	// sAUD: 0.5 USD
 	// sEUR: 1.25 USD
 	// SNX: 0.1 USD
+	// sBTC: 5000 USD
+	// iBTC: 4000 USD
 	await exchangeRates.updateRates(
 		currencyKeys
 			.filter(currency => currency !== 'sUSD')
 			.concat(['SNX'])
 			.map(web3.utils.asciiToHex),
-		['1', '0.5', '1.25', '0.1', '4000'].map(number => web3.utils.toWei(number, 'ether')),
+		['1', '0.5', '1.25', '0.1', '5000', '4000'].map(number => web3.utils.toWei(number, 'ether')),
 		timestamp,
 		{ from: oracle }
 	);
@@ -259,6 +300,7 @@ module.exports = async function(deployer, network, accounts) {
 		['Synthetix Proxy', synthetixProxy.address],
 		['Synthetix', Synthetix.address],
 		['Synthetix Escrow', SynthetixEscrow.address],
+		['Reward Escrow', RewardEscrow.address],
 		['Depot', Depot.address],
 		['Owned', Owned.address],
 		['SafeDecimalMath', SafeDecimalMath.address],

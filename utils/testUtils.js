@@ -62,7 +62,8 @@ const fastForward = async seconds => {
 const fastForwardTo = async time => {
 	if (typeof time === 'string') time = parseInt(time);
 
-	const now = new Date();
+	const timestamp = await currentTime();
+	const now = new Date(timestamp * 1000);
 	if (time < now)
 		throw new Error(
 			`Time parameter (${time}) is less than now ${now}. You can only fast forward to times in the future.`

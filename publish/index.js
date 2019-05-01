@@ -191,6 +191,11 @@ program
 		'The address of the oracle for this network',
 		'0xac1e8b385230970319906c03a1d8567e3996d1d5' // the oracle for testnets
 	)
+	.option(
+		'-f, --fee-auth <value>',
+		'The address of the fee authority for this network',
+		'0xfee056f4d9d63a63d6cf16707d49ffae7ff3ff01' // the fee authority for testnets
+	)
 	.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
 	.option('-m, --method-call-gas-limit <value>', 'Method call gas limit', parseInt, 15e4)
 	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
@@ -204,6 +209,7 @@ program
 			buildPath,
 			deploymentPath,
 			oracle,
+			feeAuth,
 		}) => {
 			ensureNetwork(network);
 			ensureDeploymentPath(deploymentPath);
@@ -373,6 +379,21 @@ program
 			});
 			const exchangeRatesAddress = exchangeRates ? exchangeRates.options.address : '';
 
+			const rewardEscrow = await deployContract({
+				name: 'RewardEscrow',
+				args: [account, ZERO_ADDRESS, ZERO_ADDRESS],
+			});
+
+			const synthetixEscrow = await deployContract({
+				name: 'SynthetixEscrow',
+				args: [account, ZERO_ADDRESS],
+			});
+
+			const synthetixState = await deployContract({
+				name: 'SynthetixState',
+				args: [account, account],
+			});
+
 			const proxyFeePool = await deployContract({
 				name: 'ProxyFeePool',
 				source: 'Proxy',
@@ -385,12 +406,17 @@ program
 				args: [
 					proxyFeePool ? proxyFeePool.options.address : '',
 					account,
-					account,
-					account,
+					ZERO_ADDRESS, // Synthetix
+					ZERO_ADDRESS, // FeePoolState
+					synthetixState ? synthetixState.options.address : '',
+					rewardEscrow ? rewardEscrow.options.address : '',
+					feeAuth,
 					w3utils.toWei('0'), // transfer fee
 					w3utils.toWei('0.003'), // exchange fee
 				],
 			});
+
+			const feePoolAddress = feePool ? feePool.options.address : '';
 
 			if (proxyFeePool && feePool) {
 				const target = await proxyFeePool.methods.target().call();
@@ -414,10 +440,25 @@ program
 				}
 			}
 
-			const synthetixState = await deployContract({
-				name: 'SynthetixState',
-				args: [account, account],
+			const feePoolState = await deployContract({
+				name: 'FeePoolState',
+				deps: ['FeePool'],
+				args: [account, feePoolAddress],
 			});
+
+			if (feePool && feePoolState) {
+				console.log(yellow('Invoking FeePool.setFeePoolState(FeePoolState)...'));
+
+				await feePool.methods
+					.setFeePoolState(feePoolState.options.address)
+					.send(deployer.sendParameters());
+			}
+
+			const supplySchedule = await deployContract({
+				name: 'SupplySchedule',
+				args: [account],
+			});
+
 			const proxySynthetix = await deployContract({
 				name: 'ProxySynthetix',
 				source: 'Proxy',
@@ -436,6 +477,9 @@ program
 					'SynthetixState',
 					'ExchangeRates',
 					'FeePool',
+					'SupplySchedule',
+					'RewardEscrow',
+					'SynthetixEscrow',
 				],
 				args: [
 					proxySynthetix ? proxySynthetix.options.address : '',
@@ -444,6 +488,9 @@ program
 					account,
 					exchangeRates ? exchangeRates.options.address : '',
 					feePool ? feePool.options.address : '',
+					supplySchedule ? supplySchedule.options.address : '',
+					rewardEscrow ? rewardEscrow.options.address : '',
+					synthetixEscrow ? synthetixEscrow.options.address : '',
 				],
 			});
 
@@ -521,27 +568,6 @@ program
 				}
 			}
 
-			if (exchangeRates && synthetix) {
-				if (synthetixOwner === account) {
-					console.log(yellow('Invoking Synthetix.setExchangeRates(ExchangeRates)...'));
-					await synthetix.methods
-						.setExchangeRates(exchangeRatesAddress)
-						.send(deployer.sendParameters());
-				} else {
-					appendOwnerAction({
-						key: `Synthetix.setExchangeRates(ExchangeRates)`,
-						target: synthetixAddress,
-						action: `setExchangeRates(${exchangeRatesAddress})`,
-					});
-				}
-			}
-
-			const synthetixEscrow = await deployContract({
-				name: 'SynthetixEscrow',
-				deps: ['Synthetix'],
-				args: [account, synthetix ? synthetixAddress : ''],
-			});
-
 			if (synthetixEscrow) {
 				await deployContract({
 					name: 'EscrowChecker',
@@ -549,46 +575,52 @@ program
 					args: [synthetixEscrow.options.address],
 				});
 			}
-			if (synthetix && synthetixEscrow) {
-				const escrowAddress = await synthetix.methods.escrow().call();
-				if (escrowAddress !== synthetixEscrow.options.address) {
-					const escrowOwner = await synthetixEscrow.methods.owner().call();
 
-					if (escrowOwner === account) {
-						console.log(yellow('Invoking Synthetix.setEscrow(SynthetixEscrow)'));
-						await synthetix.methods
-							.setEscrow(synthetixEscrow.options.address)
+			if (rewardEscrow && synthetix) {
+				// only the owner can do this
+				const rewardEscrowOwner = await rewardEscrow.methods.owner().call();
+
+				if (rewardEscrowOwner === account) {
+					console.log(yellow('Invoking RewardEscrow.setSynthetix()...'));
+					await rewardEscrow.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
+				} else {
+					console.log(cyan('Cannot call RewardEscrow.setSynthetix() as not owner.'));
+				}
+			}
+
+			if (rewardEscrow && feePool) {
+				const feePoolAddress = feePool ? feePool.options.address : '';
+				// only the owner can do this
+				const rewardEscrowOwner = await rewardEscrow.methods.owner().call();
+
+				if (rewardEscrowOwner === account) {
+					console.log(yellow('Invoking RewardEscrow.setFeePool()...'));
+					await rewardEscrow.methods.setFeePool(feePoolAddress).send(deployer.sendParameters());
+				} else {
+					console.log(cyan('Cannot call RewardEscrow.setFeePool() as not owner.'));
+				}
+			}
+
+			// Skip setting unless redeploying either of these, as
+			if (config['Synthetix'].deploy || config['SynthetixEscrow'].deploy) {
+				// Note: currently on mainnet SynthetixEscrow.methods.synthetix() does NOT exist
+				// it is "havven" and the ABI we have here is not sufficient
+				const escrowSNXAddress = await synthetixEscrow.methods.synthetix().call();
+				if (escrowSNXAddress !== synthetixAddress) {
+					// only the owner can do this
+					const synthetixEscrowOwner = await synthetixEscrow.methods.owner().call();
+
+					if (synthetixEscrowOwner === account) {
+						console.log(yellow('Invoking SynthetixEscrow.setSynthetix(Synthetix)...'));
+						await synthetixEscrow.methods
+							.setSynthetix(synthetixAddress)
 							.send(deployer.sendParameters());
 					} else {
 						appendOwnerAction({
-							key: `Synthetix.setEscrow(SynthetixEscrow)`,
-							target: synthetixAddress,
-							action: `setEscrow(${synthetixEscrow.options.address})`,
+							key: `SynthetixEscrow.setSynthetix(Synthetix)`,
+							target: synthetixEscrow.options.address,
+							action: `setSynthetix(${synthetixAddress})`,
 						});
-					}
-				}
-
-				// Skip setting unless redeploying either of these, as
-				if (config['Synthetix'].deploy || config['SynthetixEscrow'].deploy) {
-					// Note: currently on mainnet SynthetixEscrow.methods.synthetix() does NOT exist
-					// it is "havven" and the ABI we have here is not sufficient
-					const escrowSNXAddress = await synthetixEscrow.methods.synthetix().call();
-					if (escrowSNXAddress !== synthetixAddress) {
-						// only the owner can do this
-						const synthetixEscrowOwner = await synthetixEscrow.methods.owner().call();
-
-						if (synthetixEscrowOwner === account) {
-							console.log(yellow('Invoking SynthetixEscrow.setSynthetix(Synthetix)...'));
-							await synthetixEscrow.methods
-								.setSynthetix(synthetixAddress)
-								.send(deployer.sendParameters());
-						} else {
-							appendOwnerAction({
-								key: `SynthetixEscrow.setSynthetix(Synthetix)`,
-								target: synthetixEscrow.options.address,
-								action: `setSynthetix(${synthetixAddress})`,
-							});
-						}
 					}
 				}
 			}
@@ -608,6 +640,23 @@ program
 							action: `setSynthetix(${synthetixAddress})`,
 						});
 					}
+				}
+			}
+
+			if (supplySchedule && synthetix) {
+				const supplyScheduleOwner = await supplySchedule.methods.owner().call();
+				// Only owner
+				if (supplyScheduleOwner === account) {
+					console.log(yellow('Invoking SupplySchedule.setSynthetix(Synthetix)'));
+					await supplySchedule.methods
+						.setSynthetix(synthetixAddress)
+						.send(deployer.sendParameters());
+				} else {
+					appendOwnerAction({
+						key: `SupplySchedule.setSynthetix(Synthetix)`,
+						target: supplySchedule.options.address,
+						action: `setSynthetix(${synthetixAddress})`,
+					});
 				}
 			}
 
@@ -907,7 +956,7 @@ program
 					`${contract} current owner is ${currentOwner}.\nCurrent nominated owner is ${nominatedOwner}.`
 				)
 			);
-			if (account !== currentOwner) {
+			if (account.toLowerCase() !== currentOwner) {
 				console.log(cyan(`Cannot nominateNewOwner for ${contract} as you aren't the owner!`));
 			} else if (currentOwner !== newOwner && nominatedOwner !== newOwner) {
 				console.log(yellow(`Invoking ${contract}.nominateNewOwner(${newOwner})`));

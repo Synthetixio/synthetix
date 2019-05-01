@@ -64,7 +64,7 @@ module.exports = {
 		const errors = output.errors.filter(e => e.severity === 'error');
 
 		// Ok, now pull the contract we care about out of each file's output.
-		for (const contract of Object.keys(output.contracts)) {
+		for (const contract of Object.keys(output.contracts || {})) {
 			const name = path.basename(contract, '.sol');
 			artifacts[name] = output.contracts[contract][name];
 		}
