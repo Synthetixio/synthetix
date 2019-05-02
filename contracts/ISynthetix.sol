@@ -4,7 +4,7 @@ pragma solidity 0.4.25;
  * @title Synthetix interface contract
  * @dev pseudo interface, actually declared as contract to hold the public getters 
  */
-import "./ISynthetixState.sol";
+import "./SynthetixState.sol";
 import "./ISynth.sol";
 import "./ISynthetixEscrow.sol";
 import "./IFeePool.sol";
@@ -17,7 +17,7 @@ contract ISynthetix {
     IFeePool public feePool;
     ISynthetixEscrow public escrow;
     ISynthetixEscrow public rewardEscrow;
-    ISynthetixState public synthetixState;
+    SynthetixState public synthetixState;
     IExchangeRates public exchangeRates;
 
     // ========== PUBLIC FUNCTIONS ==========
