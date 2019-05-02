@@ -236,11 +236,11 @@
     },
     "Synthetix": {
       "name": "Synthetix",
-      "address": "0x0B7e1DC538e1A8Db415Ab1D4c5107325Dd4BD705",
+      "address": "0xFc6f67223d30d5158a78fC3FB64F931A3653F964",
       "source": "Synthetix",
-      "link": "https://kovan.etherscan.io/address/0x0B7e1DC538e1A8Db415Ab1D4c5107325Dd4BD705",
-      "timestamp": "2019-05-02T04:26:20.000Z",
-      "txn": "https://kovan.etherscan.io/tx/0x92f3684d72eaed626ce0c291ac594b9c528eaf125df03a8892e375b27977f246",
+      "link": "https://kovan.etherscan.io/address/0xFc6f67223d30d5158a78fC3FB64F931A3653F964",
+      "timestamp": "2019-05-02T04:57:35.227Z",
+      "txn": "",
       "network": "kovan"
     },
     "SynthetixEscrow": {
@@ -767,11 +767,11 @@
     },
     "SupplySchedule": {
       "name": "SupplySchedule",
-      "address": "0x3FdF819c3665D6866b5Bb0F56E1EDA0D7f69B714",
+      "address": "0x244eD0655838f2f645fa4D80DBD0d445C7b06EB0",
       "source": "SupplySchedule",
-      "link": "https://kovan.etherscan.io/address/0x3FdF819c3665D6866b5Bb0F56E1EDA0D7f69B714",
-      "timestamp": "2019-04-30T12:09:00.000Z",
-      "txn": "https://kovan.etherscan.io/tx/0x349aea5c3cab79126be5ffc0d6380176d50026c451caf571a75f0f351f7a2af5",
+      "link": "https://kovan.etherscan.io/address/0x244eD0655838f2f645fa4D80DBD0d445C7b06EB0",
+      "timestamp": "2019-05-02T04:57:30.877Z",
+      "txn": "",
       "network": "kovan"
     }
   },
@@ -2879,8 +2879,7 @@
           ],
           "payable": false,
           "stateMutability": "nonpayable",
-          "type": "constructor",
-          "signature": "constructor"
+          "type": "constructor"
         },
         {
           "anonymous": false,
@@ -3511,8 +3510,7 @@
           ],
           "payable": false,
           "stateMutability": "nonpayable",
-          "type": "constructor",
-          "signature": "constructor"
+          "type": "constructor"
         },
         {
           "anonymous": false,
@@ -9282,7 +9280,8 @@
           ],
           "payable": false,
           "stateMutability": "nonpayable",
-          "type": "constructor"
+          "type": "constructor",
+          "signature": "constructor"
         },
         {
           "anonymous": false,
