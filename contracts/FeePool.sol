@@ -42,7 +42,7 @@ import "./SelfDestructible.sol";
 import "./SafeDecimalMath.sol";
 import "./Synthetix.sol";
 import "./ISynthetixEscrow.sol";
-import "./SynthetixState.sol";
+import "./ISynthetixState.sol";
 import "./Synth.sol";
 import "./FeePoolState.sol";
 
@@ -52,7 +52,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     using SafeDecimalMath for uint;
 
     Synthetix public synthetix;
-    SynthetixState public synthetixState;
+    ISynthetixState public synthetixState;
     ISynthetixEscrow public rewardEscrow;
 
     // A percentage fee charged on each transfer.
@@ -127,7 +127,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         address _owner,
         Synthetix _synthetix,
         FeePoolState _feePoolState,
-        SynthetixState _synthetixState,
+        ISynthetixState _synthetixState,
         ISynthetixEscrow _rewardEscrow,
         address _feeAuthority,
         uint _transferFeeRate,
