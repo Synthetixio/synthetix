@@ -53,12 +53,14 @@ node publish deploy
 * `-m, --method-call-gas-limit <value>` Method call gas limit (default: 150000)
 * `-n, --network <value>` The network to run off. One of mainnet, kovan, rinkeby, rospen. (default: "kovan")
 * `-o, --oracle <value>` The address of the oracle to use. (default: `0xac1e8b385230970319906c03a1d8567e3996d1d5` - used for all testnets)
+* `-f, --fee-auth <value>` The address of the fee Authority to use for feePool. (default: `0xfee056f4d9d63a63d6cf16707d49ffae7ff3ff01` - used for all testnets)
 
 ### Examples
 
 ```bash
 # deploy to rinkeby with 8 gwei gas
 node publish deploy -n rinkeby -d publish/deployed/rinkeby -g 8
+node publish deploy -n kovan -d publish/deployed/kovan -g 8
 ```
 
 ## 3. Verify
@@ -83,6 +85,7 @@ node publish verify
 ```bash
 # verify on rinkeby.etherscan
 node publish verify -n rinkeby -d publish/deployed/rinkeby
+node publish verify -n kovan -d publish/deployed/kovan
 ```
 
 ## 4. Nominate New Owner
