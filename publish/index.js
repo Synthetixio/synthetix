@@ -446,6 +446,8 @@ program
 				args: [account, feePoolAddress],
 			});
 
+			// TODO this will fail becuase owner needs to set the target on FeePoolProxy first
+
 			if (feePool && feePoolState) {
 				console.log(yellow('Invoking FeePool.setFeePoolState(FeePoolState)...'));
 
