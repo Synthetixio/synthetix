@@ -773,6 +773,15 @@
       "timestamp": "2019-05-02T05:28:49.711Z",
       "txn": "",
       "network": "kovan"
+    },
+    "SupplySchedule": {
+      "name": "SupplySchedule",
+      "address": "0x3FdF819c3665D6866b5Bb0F56E1EDA0D7f69B714",
+      "source": "SupplySchedule",
+      "link": "https://kovan.etherscan.io/address/0x3FdF819c3665D6866b5Bb0F56E1EDA0D7f69B714",
+      "timestamp": "2019-04-30T12:09:00.000Z",
+      "txn": "https://kovan.etherscan.io/tx/0x349aea5c3cab79126be5ffc0d6380176d50026c451caf571a75f0f351f7a2af5",
+      "network": "kovan"
     }
   },
   "sources": {
@@ -1821,7 +1830,8 @@
           ],
           "payable": false,
           "stateMutability": "nonpayable",
-          "type": "constructor"
+          "type": "constructor",
+          "signature": "constructor"
         },
         {
           "payable": true,
@@ -2914,6 +2924,34 @@
           "anonymous": false,
           "inputs": [
             {
+              "indexed": true,
+              "name": "account",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "name": "debtRatio",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "name": "debtEntryIndex",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "name": "feePeriodStartingDebtIndex",
+              "type": "uint256"
+            }
+          ],
+          "name": "IssuanceDebtRatioEntry",
+          "type": "event",
+          "signature": "0x28dcdf40e6b6196065d54760038ab1a8c0c1d9cfa58a99e6b0cb6022f7e24775"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
               "indexed": false,
               "name": "newFeeRate",
               "type": "uint256"
@@ -3012,6 +3050,24 @@
             {
               "indexed": false,
               "name": "account",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "name": "snxAmount",
+              "type": "uint256"
+            }
+          ],
+          "name": "RewardsClaimed",
+          "type": "event",
+          "signature": "0xfc30cddea38e2bf4d6ea7d3f9ed3b6ad7f176419f4963bd81318067a4aee73fe"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "name": "newSynthetix",
               "type": "address"
             },
             {
@@ -3151,6 +3207,26 @@
           "constant": true,
           "inputs": [
             {
+              "name": "to",
+              "type": "address"
+            }
+          ],
+          "name": "getPreferredCurrency",
+          "outputs": [
+            {
+              "name": "",
+              "type": "bytes4"
+            }
+          ],
+          "payable": false,
+          "stateMutability": "view",
+          "type": "function",
+          "signature": "0x06b137c2"
+        },
+        {
+          "constant": true,
+          "inputs": [
+            {
               "name": "",
               "type": "uint256"
             }
@@ -3206,6 +3282,30 @@
           "stateMutability": "nonpayable",
           "type": "function",
           "signature": "0x1bfba595"
+        },
+        {
+          "constant": true,
+          "inputs": [
+            {
+              "name": "from",
+              "type": "address"
+            }
+          ],
+          "name": "getIssuanceData",
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256"
+            },
+            {
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "payable": false,
+          "stateMutability": "view",
+          "type": "function",
+          "signature": "0x392a5f6c"
         },
         {
           "constant": false,
@@ -3285,6 +3385,26 @@
           "stateMutability": "view",
           "type": "function",
           "signature": "0x53a47bb7"
+        },
+        {
+          "constant": true,
+          "inputs": [
+            {
+              "name": "index",
+              "type": "uint256"
+            }
+          ],
+          "name": "getDebtLedgerAt",
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "payable": false,
+          "stateMutability": "view",
+          "type": "function",
+          "signature": "0x616b020e"
         },
         {
           "constant": false,
@@ -3462,6 +3582,21 @@
           "stateMutability": "nonpayable",
           "type": "function",
           "signature": "0xba08f299"
+        },
+        {
+          "constant": true,
+          "inputs": [],
+          "name": "getIssuanceRatio",
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "payable": false,
+          "stateMutability": "view",
+          "type": "function",
+          "signature": "0xbe336e86"
         },
         {
           "constant": true,
@@ -3759,7 +3894,8 @@
           ],
           "payable": false,
           "stateMutability": "nonpayable",
-          "type": "constructor"
+          "type": "constructor",
+          "signature": "constructor"
         },
         {
           "anonymous": false,
@@ -4318,6 +4454,21 @@
           "stateMutability": "nonpayable",
           "type": "function",
           "signature": "0x97107d6d"
+        },
+        {
+          "constant": true,
+          "inputs": [],
+          "name": "minterReward",
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "payable": false,
+          "stateMutability": "view",
+          "type": "function",
+          "signature": "0x9bdd7ac7"
         },
         {
           "constant": false,
@@ -5926,12 +6077,14 @@
           "name": "SELFDESTRUCT_DELAY",
           "outputs": [
             {
-              "name": "",
-              "type": "uint256"
+              "name": "_tokenState",
+              "type": "address"
             }
           ],
+          "name": "setTokenState",
+          "outputs": [],
           "payable": false,
-          "stateMutability": "view",
+          "stateMutability": "nonpayable",
           "type": "function",
           "signature": "0xa461fc82"
         },
@@ -6045,7 +6198,7 @@
             }
           ],
           "payable": false,
-          "stateMutability": "view",
+          "stateMutability": "nonpayable",
           "type": "function",
           "signature": "0xb8225dec"
         },
@@ -6326,6 +6479,8 @@
               "type": "bytes4"
             }
           ],
+          "name": "setSynthetix",
+          "outputs": [],
           "payable": false,
           "stateMutability": "nonpayable",
           "type": "constructor"
@@ -8918,7 +9073,7 @@
           "signature": "0x11b92f80"
         },
         {
-          "constant": false,
+          "anonymous": false,
           "inputs": [
             {
               "name": "_owner",
@@ -8938,8 +9093,9 @@
           "name": "YEAR_SEVEN",
           "outputs": [
             {
-              "name": "",
-              "type": "uint256"
+              "indexed": false,
+              "name": "newFeePool",
+              "type": "address"
             }
           ],
           "payable": false,
@@ -8968,7 +9124,8 @@
           "name": "YEAR_FOUR",
           "outputs": [
             {
-              "name": "",
+              "indexed": false,
+              "name": "value",
               "type": "uint256"
             }
           ],
@@ -9287,7 +9444,6 @@
           "signature": "constructor"
         },
         {
-          "anonymous": false,
           "inputs": [
             {
               "indexed": false,
