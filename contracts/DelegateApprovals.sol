@@ -3,7 +3,7 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 
-file:       DelegateApproval.sol
+file:       DelegateApprovals.sol
 version:    1.0
 author:     Jackson Chan
 
@@ -14,13 +14,16 @@ MODULE DESCRIPTION
 -----------------------------------------------------------------
 
 The approval state contract is designed to allow a wallet to
-authorised another address/es to perform actions, on a contract, 
+authorised another address to perform actions, on a contract, 
 on their behalf. This could be an automated service
 that would help a wallet claim fees / rewards on their behalf.
 
 The concept is similar to the ERC20 interface where a wallet can 
 approve an authorised party to spend on the authorising party's 
-behalf in the allowance mapping.
+behalf in allowance mapping.
+
+Withdrawing approval sets the delegate as false instead of
+removing from the approvals list for auditability.
 
 This contract inherits state for upgradeability / associated
 contract.
@@ -32,9 +35,10 @@ pragma solidity 0.4.25;
 
 import "./State.sol";
 
-contract DelegateApproval is State {
+contract DelegateApprovals is State {
 
-    // Approvals
+    // Approvals - [authoriser][delegate]
+    // Each authoriser can have multiple delegates
     mapping(address => mapping(address => bool)) public approval;
 
     /**
@@ -53,7 +57,7 @@ contract DelegateApproval is State {
     {
         approval[authoriser][delegate] = true;
     }
-    
+
     function withdrawApproval(address authoriser, address delegate)
         external
         onlyAssociatedContract

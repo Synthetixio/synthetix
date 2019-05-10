@@ -45,6 +45,7 @@ import "./ISynthetixEscrow.sol";
 import "./ISynthetixState.sol";
 import "./Synth.sol";
 import "./FeePoolState.sol";
+import "./DelegateApprovals.sol";
 
 contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
@@ -72,6 +73,9 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
     // The address to the FeePoolState Contract.
     FeePoolState public feePoolState;
+
+    // The address to the DelegateApproval contract.
+    DelegateApprovals public delegates;
 
     // Where fees are pooled in XDRs.
     address public constant FEE_ADDRESS = 0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF;
@@ -230,6 +234,18 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     }
 
     /**
+     * @notice Set the address of the contract for delegate approvals
+     */
+    function setDelegateApprovals(DelegateApprovals _delegates)
+        external
+        optionalProxy_onlyOwner
+    {
+        delegates = _delegates;
+
+        emitDelegateApprovalsUpdated(_delegates);
+    }
+
+    /**
      * @notice Set the fee period duration
      */
     function setFeePeriodDuration(uint _feePeriodDuration)
@@ -350,14 +366,14 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         return _claimFees(messageSender, currencyKey);
     }
 
-    function claimOnBehalf(address addressToClaim, bytes4 currencyKey)
+    function claimOnBehalf(address claimingForAddress, bytes4 currencyKey)
         external
         optionalProxy
         returns (bool)
     {
-        require(delegates.approval[addressToClaim][messageSender] == true, "Not approved to claim on behalf of this address");
+        require(delegates.approval(claimingForAddress, messageSender), "Not approved to claim on behalf of this address");
 
-        return _claimFees(addressToClaim, currencyKey);
+        return _claimFees(claimingForAddress, currencyKey);
     }
 
     function _claimFees(address claimingAddress, bytes4 currencyKey)
@@ -411,18 +427,21 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         recentFeePeriods[feePeriodIndex].rewardsClaimed = rewardsClaimed;
     }
 
-    function approveClaimOnBehalf(address delegate)
+    function approveClaimOnBehalf(address account)
         public
+        optionalProxy
     {
-        // set approvedList on another state contract
-        // detachable
+        require(delegates != address(0), "Delegates Approval destination missing");
+        require(account != address(0), "Can't delegate to address(0)");
+        delegates.setApproval(messageSender, account);
     }
 
-    function removeClaimOnBehalf(address delegate)
+    function removeClaimOnBehalf(address account)
         public
+        optionalProxy
     {
-        // set approvedList on another state contract
-        // detachable
+        require(delegates != address(0), "Delegates Approval destination missing");
+        delegates.withdrawApproval(messageSender, account);
     }
 
     /**
@@ -948,6 +967,12 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     bytes32 constant FEEPOOLSTATEUPDATED_SIG = keccak256("FeePoolStateUpdated(address)");
     function emitFeePoolStateUpdated(address newFeePoolState) internal {
         proxy._emit(abi.encode(newFeePoolState), 1, FEEPOOLSTATEUPDATED_SIG, 0, 0, 0);
+    }
+
+    event DelegateApprovalsUpdated(address newDelegateApprovals);
+    bytes32 constant DELEGATEAPPROVALSUPDATED_SIG = keccak256("DelegateApprovalsUpdated(address)");
+    function emitDelegateApprovalsUpdated(address newDelegateApprovals) internal {
+        proxy._emit(abi.encode(newDelegateApprovals), 1, DELEGATEAPPROVALSUPDATED_SIG, 0, 0, 0);
     }
 
     event FeePeriodClosed(uint feePeriodId);
