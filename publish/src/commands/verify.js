@@ -15,7 +15,12 @@ const {
 	DEPLOYMENT_FILENAME,
 } = require('../constants');
 
-const { ensureNetwork, loadAndCheckRequiredSources, loadConnections } = require('../util');
+const {
+	ensureNetwork,
+	loadAndCheckRequiredSources,
+	loadConnections,
+	stringify,
+} = require('../util');
 
 module.exports = program =>
 	program
@@ -97,12 +102,17 @@ module.exports = program =>
 					}`;
 					deployment.targets[name].timestamp = new Date(result.data.result[0].timeStamp * 1000);
 
-					fs.writeFileSync(deploymentFile, JSON.stringify(deployment, null, 2));
+					fs.writeFileSync(deploymentFile, stringify(deployment));
 
 					// Grab the last 50 characters of the compiled bytecode
 					const compiledBytecode = deployment.sources[source].bytecode.slice(-100);
 
 					const pattern = new RegExp(`${compiledBytecode}(.*)$`);
+					if (!pattern.test(deployedBytecode)) {
+						console.log(red(` - Unable to verify ${name} (deployed bytecode doesn't match local)`));
+						tableData.push([name, address, 'Deployed bytecode doesnt match local']);
+						continue;
+					}
 					const constructorArguments = pattern.exec(deployedBytecode)[1];
 
 					console.log(gray(' - Constructor arguments', constructorArguments));

@@ -15,6 +15,8 @@ const {
 
 const toBytes4 = str => w3utils.asciiToHex(str, 4);
 
+const stringify = input => JSON.stringify(input, null, '\t') + '\n';
+
 const ensureNetwork = network => {
 	if (!/^(kovan|rinkeby|ropsten|mainnet)$/.test(network)) {
 		throw Error(
@@ -44,13 +46,13 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 	);
 	const deploymentFile = path.join(deploymentPath, DEPLOYMENT_FILENAME);
 	if (!fs.existsSync(deploymentFile)) {
-		fs.writeFileSync(deploymentFile, JSON.stringify({ targets: {}, sources: {} }, null, 2));
+		fs.writeFileSync(deploymentFile, stringify({ targets: {}, sources: {} }));
 	}
 	const deployment = JSON.parse(fs.readFileSync(deploymentFile));
 
 	const ownerActionsFile = path.join(deploymentPath, OWNER_ACTIONS_FILENAME);
 	if (!fs.existsSync(ownerActionsFile)) {
-		fs.writeFileSync(ownerActionsFile, JSON.stringify({}, null, 2));
+		fs.writeFileSync(ownerActionsFile, stringify({}));
 	}
 	const ownerActions = JSON.parse(fs.readFileSync(ownerActionsFile));
 
@@ -58,6 +60,7 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 		config,
 		configFile,
 		synths,
+		synthsFile,
 		deployment,
 		deploymentFile,
 		ownerActions,
@@ -102,7 +105,7 @@ const appendOwnerActionGenerator = ({ ownerActions, ownerActionsFile, etherscanL
 		complete: false,
 		link: `${etherscanLinkPrefix}/address/${target}#writeContract`,
 	};
-	fs.writeFileSync(ownerActionsFile, JSON.stringify(ownerActions, null, 2));
+	fs.writeFileSync(ownerActionsFile, stringify(ownerActions));
 	console.log(cyan(`Cannot invoke ${key} as not owner. Appended to actions.`));
 };
 
@@ -114,4 +117,5 @@ module.exports = {
 	loadConnections,
 	confirmAction,
 	appendOwnerActionGenerator,
+	stringify,
 };

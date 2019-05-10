@@ -24,6 +24,7 @@ const {
 	loadConnections,
 	confirmAction,
 	appendOwnerActionGenerator,
+	stringify,
 } = require('../util');
 
 module.exports = program =>
@@ -214,12 +215,12 @@ module.exports = program =>
 						bytecode: compiled[source].evm.bytecode.object,
 						abi: compiled[source].abi,
 					};
-					fs.writeFileSync(deploymentFile, JSON.stringify(deployment, null, 2));
+					fs.writeFileSync(deploymentFile, stringify(deployment));
 
 					// now update the flags to indicate it no longer needs deployment
 					updatedConfig[name] = { deploy: false };
 
-					fs.writeFileSync(configFile, JSON.stringify(updatedConfig, null, 2));
+					fs.writeFileSync(configFile, stringify(updatedConfig));
 					return deployedContract;
 				};
 

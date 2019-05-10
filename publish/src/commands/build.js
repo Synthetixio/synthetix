@@ -7,6 +7,8 @@ const { findSolFiles, flatten, compile } = require('../solidity');
 
 const { COMPILED_FOLDER, FLATTENED_FOLDER, BUILD_FOLDER } = require('../constants');
 
+const { stringify } = require('../util');
+
 module.exports = program =>
 	program
 		.command('build')
@@ -60,7 +62,7 @@ module.exports = program =>
 					// try make path for sub-folders (note: recursive flag only from nodejs 10.12.0)
 					fs.mkdirSync(path.dirname(toWrite), { recursive: true });
 				} catch (e) {}
-				fs.writeFileSync(`${toWrite}.json`, JSON.stringify(value, null, 2));
+				fs.writeFileSync(`${toWrite}.json`, stringify(value));
 			});
 
 			console.log(yellow(`Compiled with ${warnings.length} warnings and ${errors.length} errors`));

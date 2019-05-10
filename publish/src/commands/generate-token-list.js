@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 
 const { CONFIG_FILENAME, DEPLOYMENT_FILENAME } = require('../constants');
+const { stringify } = require('../util');
 
 module.exports = program =>
 	program
@@ -28,5 +29,5 @@ module.exports = program =>
 					};
 				});
 
-			console.log(JSON.stringify(output, null, 2));
+			console.log(stringify(output));
 		});

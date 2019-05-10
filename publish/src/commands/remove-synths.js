@@ -1,5 +1,6 @@
 'use strict';
 
+const fs = require('fs');
 const { gray, yellow, red, cyan } = require('chalk');
 const Web3 = require('web3');
 const w3utils = require('web3-utils');
@@ -13,6 +14,7 @@ const {
 	loadConnections,
 	confirmAction,
 	appendOwnerActionGenerator,
+	stringify,
 } = require('../util');
 
 module.exports = program =>
@@ -23,8 +25,8 @@ module.exports = program =>
 			'-d, --deployment-path <value>',
 			`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 		)
-		.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
-		.option('-l, --gas-limit <value>', 'Gas limit', parseInt, 15e4)
+		.option('-g, --gas-price <value>', 'Gas price in GWEI', 1)
+		.option('-l, --gas-limit <value>', 'Gas limit', 15e4)
 		.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 		.option(
 			'-s, --synths-to-remove <value>',
@@ -40,8 +42,10 @@ module.exports = program =>
 
 			const {
 				synths,
+				synthsFile,
 				deployment,
 				config,
+				configFile,
 				ownerActions,
 				ownerActionsFile,
 			} = loadAndCheckRequiredSources({
@@ -67,6 +71,20 @@ module.exports = program =>
 				}
 			}
 
+			const { providerUrl, privateKey, etherscanLinkPrefix } = loadConnections({ network });
+
+			const appendOwnerAction = appendOwnerActionGenerator({
+				ownerActions,
+				ownerActionsFile,
+				etherscanLinkPrefix,
+			});
+
+			const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
+			web3.eth.accounts.wallet.add(privateKey);
+			const account = web3.eth.accounts.wallet[0].address;
+			console.log(gray(`Using account with public key ${account}`));
+			console.log(gray(`Using gas of ${gasPrice} GWEI with a max of ${gasLimit}`));
+
 			try {
 				await confirmAction(
 					cyan(
@@ -82,19 +100,6 @@ module.exports = program =>
 				return;
 			}
 
-			const { providerUrl, privateKey, etherscanLinkPrefix } = loadConnections({ network });
-
-			const appendOwnerAction = appendOwnerActionGenerator({
-				ownerActions,
-				ownerActionsFile,
-				etherscanLinkPrefix,
-			});
-
-			const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
-			web3.eth.accounts.wallet.add(privateKey);
-			const account = web3.eth.accounts.wallet[0].address;
-			console.log(gray(`Using account with public key ${account}`));
-
 			const { address: synthetixAddress, source } = deployment.targets['Synthetix'];
 			const { abi: synthetixABI } = deployment.sources[source];
 			const Synthetix = new web3.eth.Contract(synthetixABI, synthetixAddress);
@@ -102,7 +107,12 @@ module.exports = program =>
 			const synthetixOwner = await Synthetix.methods.owner().call();
 
 			for (const currencyKey of synthsToRemove) {
-				const { address: synthAddress } = deployment.targets[`Synth${currencyKey}`];
+				// eslint-disable-next-line standard/computed-property-even-spacing
+				const { address: synthAddress, source: synthSource } = deployment.targets[
+					`Synth${currencyKey}`
+				];
+				const { abi: synthABI } = deployment.sources[synthSource];
+				const Synth = new web3.eth.Contract(synthABI, synthAddress);
 
 				const currentSynthInSNX = await Synthetix.methods.synths(toBytes4(currencyKey)).call();
 
@@ -118,16 +128,25 @@ module.exports = program =>
 					return;
 				}
 
-				// now check total supply
-				// const totalSupply = await
+				// now check total supply (is required in Synthetix.removeSynth)
+				const totalSupply = w3utils.fromWei(await Synth.methods.totalSupply().call());
+				if (Number(totalSupply) > 0) {
+					console.error(
+						red(
+							`Cannot remove as Synth${currencyKey}.totalSupply is non-zero: ${yellow(totalSupply)}`
+						)
+					);
+					process.exitCode = 1;
+					return;
+				}
 
 				if (synthetixOwner === account) {
 					console.log(yellow(`Invoking Synthetix.removeSynth(Synth${currencyKey})...`));
-					// await Synthetix.methods.removeSynth(synthAddress).send({
-					// 	from: account,
-					// 	gas: gasLimit,
-					// 	gasPrice: w3utils.toWei(gasPrice, 'gwei'),
-					// });
+					await Synthetix.methods.removeSynth(synthAddress).send({
+						from: account,
+						gas: Number(gasLimit),
+						gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
+					});
 				} else {
 					appendOwnerAction({
 						key: `Synthetix.removeSynth(Synth${currencyKey})`,
@@ -137,8 +156,14 @@ module.exports = program =>
 				}
 
 				// now update the config.json file
-				// const contracts = ['Proxy', 'TokenState', 'Synth'].map(name => `${name}${currencyKey}`);
+				const contracts = ['Proxy', 'TokenState', 'Synth'].map(name => `${name}${currencyKey}`);
+				for (const contract of contracts) {
+					delete config[contract];
+				}
+				fs.writeFileSync(configFile, stringify(config));
 
 				// and update the synths.json file
+				const updatedSynthList = synths.filter(({ name }) => name !== currencyKey);
+				fs.writeFileSync(synthsFile, stringify(updatedSynthList));
 			}
 		});

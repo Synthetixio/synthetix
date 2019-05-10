@@ -12,6 +12,7 @@ const {
 	loadAndCheckRequiredSources,
 	loadConnections,
 	confirmAction,
+	stringify,
 } = require('../util');
 
 module.exports = program =>
@@ -69,7 +70,7 @@ module.exports = program =>
 				);
 
 				entry.complete = true;
-				fs.writeFileSync(ownerActionsFile, JSON.stringify(ownerActions, null, 2));
+				fs.writeFileSync(ownerActionsFile, stringify(ownerActions));
 			}
 
 			console.log(gray('Looking for contracts whose ownership we should accept'));
