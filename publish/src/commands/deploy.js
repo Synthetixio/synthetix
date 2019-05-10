@@ -282,6 +282,7 @@ module.exports = program =>
 				});
 
 				const feePoolAddress = feePool ? feePool.options.address : '';
+				const feePoolOwner = feePool ? await feePool.methods.owner().call() : '';
 
 				if (proxyFeePool && feePool) {
 					const target = await proxyFeePool.methods.target().call();
@@ -311,14 +312,25 @@ module.exports = program =>
 					args: [account, feePoolAddress],
 				});
 
-				// TODO this will fail becuase owner needs to set the target on FeePoolProxy first
-
 				if (feePool && feePoolState) {
-					console.log(yellow('Invoking FeePool.setFeePoolState(FeePoolState)...'));
+					const deployedFeePoolState = await feePool.methods.feePoolState().call();
+					const feePoolStateAddress = feePoolState.options.address;
 
-					await feePool.methods
-						.setFeePoolState(feePoolState.options.address)
-						.send(deployer.sendParameters());
+					if (deployedFeePoolState !== feePoolStateAddress) {
+						if (feePoolOwner === account) {
+							console.log(yellow('Invoking FeePool.setFeePoolState(FeePoolState)...'));
+
+							await feePool.methods
+								.setFeePoolState(feePoolStateAddress)
+								.send(deployer.sendParameters());
+						} else {
+							appendOwnerAction({
+								key: 'FeePool.setFeePoolState(FeePoolState)',
+								target: feePoolAddress,
+								action: `setFeePoolState(${feePoolStateAddress})`,
+							});
+						}
+					}
 				}
 
 				const supplySchedule = await deployContract({
@@ -501,7 +513,6 @@ module.exports = program =>
 				if (feePool && synthetix) {
 					const fpSNXAddress = await feePool.methods.synthetix().call();
 					if (fpSNXAddress !== synthetixAddress) {
-						const feePoolOwner = await feePool.methods.owner().call();
 						// only the owner can do this
 						if (feePoolOwner === account) {
 							console.log(yellow('Invoking FeePool.setSynthetix(Synthetix)...'));
