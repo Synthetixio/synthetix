@@ -8,7 +8,12 @@ const axios = require('axios');
 const qs = require('querystring');
 const solc = require('solc');
 
-const { FLATTENED_FOLDER, CONFIG_FILENAME, DEPLOYMENT_FILENAME } = require('../constants');
+const {
+	BUILD_FOLDER,
+	FLATTENED_FOLDER,
+	CONFIG_FILENAME,
+	DEPLOYMENT_FILENAME,
+} = require('../constants');
 
 const { ensureNetwork, loadAndCheckRequiredSources, loadConnections } = require('../util');
 
@@ -19,7 +24,7 @@ module.exports = program =>
 		.option(
 			'-b, --build-path [value]',
 			'Path to a folder hosting compiled files from the "build" step in this script',
-			path.join(__dirname, '..', 'build')
+			path.join(__dirname, '..', '..', '..', BUILD_FOLDER)
 		)
 		.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 		.option(

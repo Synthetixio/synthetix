@@ -6,11 +6,12 @@ const readline = require('readline');
 const { gray } = require('chalk');
 const w3utils = require('web3-utils');
 
-const CONFIG_FILENAME = 'config.json';
-const SYNTHS_FILENAME = 'synths.json';
-const OWNER_ACTIONS_FILENAME = 'owner-actions.json';
-
-const DEPLOYMENT_FILENAME = 'deployment.json';
+const {
+	CONFIG_FILENAME,
+	DEPLOYMENT_FILENAME,
+	OWNER_ACTIONS_FILENAME,
+	SYNTHS_FILENAME,
+} = require('./constants');
 
 const toBytes4 = str => w3utils.asciiToHex(str, 4);
 

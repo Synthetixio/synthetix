@@ -8,6 +8,7 @@ const w3utils = require('web3-utils');
 const Deployer = require('../Deployer');
 
 const {
+	BUILD_FOLDER,
 	COMPILED_FOLDER,
 	CONFIG_FILENAME,
 	SYNTHS_FILENAME,
@@ -36,7 +37,7 @@ module.exports = program =>
 		.option(
 			'-b, --build-path [value]',
 			'Path to a folder hosting compiled files from the "build" step in this script',
-			path.join(__dirname, '..', 'build')
+			path.join(__dirname, '..', '..', '..', BUILD_FOLDER)
 		)
 		.option(
 			'-c, --contract-deployment-gas-limit <value>',

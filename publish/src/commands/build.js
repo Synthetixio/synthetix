@@ -5,7 +5,7 @@ const fs = require('fs');
 const { gray, green, yellow, red } = require('chalk');
 const { findSolFiles, flatten, compile } = require('../solidity');
 
-const { COMPILED_FOLDER, FLATTENED_FOLDER } = require('../constants');
+const { COMPILED_FOLDER, FLATTENED_FOLDER, BUILD_FOLDER } = require('../constants');
 
 module.exports = program =>
 	program
@@ -14,7 +14,7 @@ module.exports = program =>
 		.option(
 			'-b, --build-path [value]',
 			'Build path for built files',
-			path.join(__dirname, '..', 'build')
+			path.join(__dirname, '..', '..', '..', BUILD_FOLDER)
 		)
 		.option('-w, --show-warnings', 'Show warnings')
 		.action(async ({ buildPath, showWarnings }) => {

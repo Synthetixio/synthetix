@@ -1,6 +1,7 @@
 'use strict';
 
 module.exports = {
+	BUILD_FOLDER: 'build',
 	COMPILED_FOLDER: 'compiled',
 	FLATTENED_FOLDER: 'flattened',
 	CONFIG_FILENAME: 'config.json',
