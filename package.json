@@ -5,7 +5,7 @@
 	"author": "Synthetix",
 	"description": "The smart contracts which make up the Synthetix system. (synthetix.io)",
 	"scripts": {
-		"clean": "rm -rf build && rm -rf node_modules && npm i",
+		"clean-install": "rm -rf build && rm ./package-lock.json && rm -rf node_modules/* && npm install",
 		"coverage": "solidity-coverage",
 		"ganache": "ganache-cli -e 1000000000000 -l 0x7a1200 -t 2018-03-13T00:00:00",
 		"lint": "eslint \"**/*.js\" && solium -d contracts/",
@@ -22,6 +22,9 @@
 		"Solidity",
 		"Truffle"
 	],
+	"engines": {
+		"node": ">=8.10.0"
+	},
 	"files": [
 		"./index.js",
 		"publish/deployed/*/synths.json",
