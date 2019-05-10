@@ -23,6 +23,7 @@ const {
 	loadAndCheckRequiredSources,
 	loadConnections,
 	confirmAction,
+	appendOwnerActionGenerator,
 } = require('../util');
 
 module.exports = program =>
@@ -223,16 +224,11 @@ module.exports = program =>
 				};
 
 				// track an action we cannot perform because we aren't an OWNER (so we can iterate later in the owner step)
-				const appendOwnerAction = ({ key, action, target }) => {
-					ownerActions[key] = {
-						target,
-						action,
-						complete: false,
-						link: `${etherscanLinkPrefix}/address/${target}#writeContract`,
-					};
-					fs.writeFileSync(ownerActionsFile, JSON.stringify(ownerActions, null, 2));
-					console.log(cyan(`Cannot invoke ${key} as not owner. Appended to actions.`));
-				};
+				const appendOwnerAction = appendOwnerActionGenerator({
+					ownerActions,
+					ownerActionsFile,
+					etherscanLinkPrefix,
+				});
 
 				await deployContract({
 					name: 'SafeDecimalMath',

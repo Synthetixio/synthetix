@@ -3,7 +3,7 @@
 const path = require('path');
 const fs = require('fs');
 const readline = require('readline');
-const { gray } = require('chalk');
+const { gray, cyan } = require('chalk');
 const w3utils = require('web3-utils');
 
 const {
@@ -91,6 +91,21 @@ const confirmAction = prompt =>
 		});
 	});
 
+const appendOwnerActionGenerator = ({ ownerActions, ownerActionsFile, etherscanLinkPrefix }) => ({
+	key,
+	action,
+	target,
+}) => {
+	ownerActions[key] = {
+		target,
+		action,
+		complete: false,
+		link: `${etherscanLinkPrefix}/address/${target}#writeContract`,
+	};
+	fs.writeFileSync(ownerActionsFile, JSON.stringify(ownerActions, null, 2));
+	console.log(cyan(`Cannot invoke ${key} as not owner. Appended to actions.`));
+};
+
 module.exports = {
 	toBytes4,
 	ensureNetwork,
@@ -98,4 +113,5 @@ module.exports = {
 	loadAndCheckRequiredSources,
 	loadConnections,
 	confirmAction,
+	appendOwnerActionGenerator,
 };

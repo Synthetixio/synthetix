@@ -767,15 +767,6 @@
     },
     "SupplySchedule": {
       "name": "SupplySchedule",
-      "address": "0x51d1d0771d29d21F82b8592E327Cf9D66Cdd5b1E",
-      "source": "SupplySchedule",
-      "link": "https://kovan.etherscan.io/address/0x51d1d0771d29d21F82b8592E327Cf9D66Cdd5b1E",
-      "timestamp": "2019-05-02T05:28:49.711Z",
-      "txn": "",
-      "network": "kovan"
-    },
-    "SupplySchedule": {
-      "name": "SupplySchedule",
       "address": "0x3FdF819c3665D6866b5Bb0F56E1EDA0D7f69B714",
       "source": "SupplySchedule",
       "link": "https://kovan.etherscan.io/address/0x3FdF819c3665D6866b5Bb0F56E1EDA0D7f69B714",
@@ -6074,13 +6065,6 @@
         {
           "constant": true,
           "inputs": [],
-          "name": "SELFDESTRUCT_DELAY",
-          "outputs": [
-            {
-              "name": "_tokenState",
-              "type": "address"
-            }
-          ],
           "name": "setTokenState",
           "outputs": [],
           "payable": false,
