@@ -147,6 +147,11 @@ module.exports = program =>
 						gas: Number(gasLimit),
 						gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
 					});
+					console.log(
+						gray(
+							`Removed ${currencyKey} from Synthetix. Verify via ${etherscanLinkPrefix}/address/${synthetixAddress}#readContract`
+						)
+					);
 				} else {
 					appendOwnerAction({
 						key: `Synthetix.removeSynth(Synth${currencyKey})`,
