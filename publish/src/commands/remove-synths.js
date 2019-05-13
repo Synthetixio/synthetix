@@ -142,7 +142,7 @@ module.exports = program =>
 
 				if (synthetixOwner === account) {
 					console.log(yellow(`Invoking Synthetix.removeSynth(Synth${currencyKey})...`));
-					await Synthetix.methods.removeSynth(synthAddress).send({
+					await Synthetix.methods.removeSynth(toBytes4(currencyKey)).send({
 						from: account,
 						gas: Number(gasLimit),
 						gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
@@ -151,7 +151,7 @@ module.exports = program =>
 					appendOwnerAction({
 						key: `Synthetix.removeSynth(Synth${currencyKey})`,
 						target: synthetixAddress,
-						action: `removeSynth(${synthAddress})`,
+						action: `removeSynth(${currencyKey})`,
 					});
 				}
 
