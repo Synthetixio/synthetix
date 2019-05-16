@@ -6,7 +6,6 @@ FILE INFORMATION
 file:       DelegateApprovals.sol
 version:    1.0
 author:     Jackson Chan
-
 date:       2019-05-01
 
 -----------------------------------------------------------------
@@ -14,13 +13,13 @@ MODULE DESCRIPTION
 -----------------------------------------------------------------
 
 The approval state contract is designed to allow a wallet to
-authorised another address to perform actions, on a contract, 
+authorise another address to perform actions, on a contract, 
 on their behalf. This could be an automated service
 that would help a wallet claim fees / rewards on their behalf.
 
 The concept is similar to the ERC20 interface where a wallet can 
 approve an authorised party to spend on the authorising party's 
-behalf in allowance mapping.
+behalf in the allowance interface.
 
 Withdrawing approval sets the delegate as false instead of
 removing from the approvals list for auditability.
@@ -56,6 +55,7 @@ contract DelegateApprovals is State {
         onlyAssociatedContract
     {
         approval[authoriser][delegate] = true;
+        emit Approval(authoriser, delegate);
     }
 
     function withdrawApproval(address authoriser, address delegate)
@@ -63,5 +63,11 @@ contract DelegateApprovals is State {
         onlyAssociatedContract
     {
         approval[authoriser][delegate] = false;
+        emit WithdrawApproval(authoriser, delegate);
     }
+
+     /* ========== EVENTS ========== */
+
+    event Approval(address indexed authoriser, address delegate);
+    event WithdrawApproval(address indexed authoriser, address delegate);
 }
