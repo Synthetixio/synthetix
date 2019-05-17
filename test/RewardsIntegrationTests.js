@@ -242,6 +242,38 @@ contract('Rewards Integration Tests', async accounts => {
 			assert.bnClose(accThreeEscrowed[1], third(mintedRewardsSupply), '1');
 		});
 
+		it('should rollover the unclaimed SNX rewards', async () => {
+			// Get the SNX mintableSupply - the minter reward of 200 SNX
+			const mintedRewardsSupply = (await supplySchedule.mintableSupply()).sub(MINTER_SNX_REWARD);
+			let totalMintedRewardsSupply;
+
+			// Close all six periods
+			const FEE_PERIOD_LENGTH = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
+			for (let i = 0; i <= FEE_PERIOD_LENGTH - 1; i++) {
+				await closeFeePeriodAndFastForward();
+
+				// Add up the rewards minted
+				totalMintedRewardsSupply = mintedRewardsSupply
+					.add(await supplySchedule.mintableSupply())
+					.sub(MINTER_SNX_REWARD);
+
+				// Mint the staking rewards
+				await synthetix.mint({ from: owner });
+
+				// Only 1 accounts claim rewards
+				// feePool.claimFees(sUSD, { from: account1 });
+			}
+
+			// Move into the 7th week
+			closeFeePeriodAndFastForward();
+
+			// Get last FeePeriod
+			const lastFeePeriod = await feePool.recentFeePeriods(5);
+
+			// Assert rewards have rolled over
+			assert.bnEqual(lastFeePeriod.rewardsToDistribute, mintedRewardsSupply);
+		});
+
 		// it('should allocate correct SNX rewards as others leave the system', async () => {
 		// 	// Close Fee Period
 		// 	// console.log('Close Fee Period');
