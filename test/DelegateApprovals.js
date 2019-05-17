@@ -1,6 +1,6 @@
 const DelegateApprovals = artifacts.require('DelegateApprovals');
 
-contract('DelegateApprovals', async accounts => {
+contract.only('DelegateApprovals', async accounts => {
 	const [deployerAccount, owner, account1, account2] = accounts;
 
 	let delegateApprovals;
@@ -24,6 +24,13 @@ contract('DelegateApprovals', async accounts => {
 	});
 
 	describe('adding approvals', async () => {
+		it('should return false if no approval for account1', async () => {
+			const authoriser = account1;
+			const delegate = account2;
+
+			const result = await delegateApprovals.approval(authoriser, delegate);
+			assert.isNotTrue(result);
+		});
 		it('should set approval for account1', async () => {
 			const authoriser = account1;
 			const delegate = account2;

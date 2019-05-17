@@ -1,5 +1,6 @@
 const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
+const DelegateApprovals = artifacts.require('DelegateApprovals');
 const FeePoolState = artifacts.require('FeePoolState');
 const Synthetix = artifacts.require('Synthetix');
 const Synth = artifacts.require('Synth');
@@ -92,6 +93,7 @@ contract('FeePool', async accounts => {
 		synthetix,
 		exchangeRates,
 		feePoolState,
+		delegates,
 		sUSDContract,
 		sAUDContract,
 		XDRContract;
@@ -103,6 +105,7 @@ contract('FeePool', async accounts => {
 		exchangeRates = await ExchangeRates.deployed();
 		feePoolState = await FeePoolState.deployed();
 		feePool = await FeePool.deployed();
+		delegates = await DelegateApprovals.deployed();
 		feePoolWeb3 = getInstance(FeePool);
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 
@@ -1205,6 +1208,78 @@ contract('FeePool', async accounts => {
 
 		it('should revert if checking current unclosed period ', async () => {
 			await assert.revert(feePool.effectiveDebtRatioForPeriod(owner, 0));
+		});
+	});
+
+	describe.only('claimOnBehalf and approveClaimOnBehalf', async () => {
+		it('should approve a claim on behalf for account1', async () => {
+			const authoriser = account1;
+			const delegate = account2;
+
+			// approve account2 to claim on behalf of account1
+			await feePool.approveClaimOnBehalf(delegate, { from: authoriser });
+			const result = await delegates.approval(authoriser, delegate);
+			
+			assert.isTrue(result);
+		});
+
+		it('should approve a claim on behalf and allow withdrawing the authorisation', async () => {
+			const authoriser = account1;
+			const delegate = account2;
+
+			// approve account2 to claim on behalf of account1
+			await feePool.approveClaimOnBehalf(delegate, { from: authoriser });
+			const result = await delegates.approval(authoriser, delegate);
+			
+			assert.isTrue(result);
+
+			// withdraw approval of account1
+			await feePool.removeClaimOnBehalf(delegate, { from: authoriser });
+			const resultAfter = await delegates.approval(authoriser, delegate);
+			
+			assert.isNotTrue(resultAfter);
+		});
+		it('should approve a claim on behalf for account1 by account2 and have fees in wallet', async () => {
+			const authoriser = account1;
+			const delegate = account2;
+
+			// approve account2 to claim on behalf of account1
+			await feePool.approveClaimOnBehalf(delegate, { from: authoriser });
+			const result = await delegates.approval(authoriser, delegate);
+			
+			assert.isTrue(result);
+
+			// Issue 10,000 sUSD.
+			await synthetix.methods['transfer(address,uint256)'](account1, toUnit('1000000'), {
+				from: owner,
+			});
+
+			await synthetix.issueSynths(sUSD, toUnit('10000'), { from: account1 });
+			
+			// For first fee period, do two transfers, then close it off.
+			let totalFees = web3.utils.toBN('0');
+
+			const transfer1 = toUnit((10).toString());
+
+			await sUSDContract.methods['transfer(address,uint256)'](owner, transfer1, { from: account1 });
+	
+			totalFees = totalFees.add(transfer1.sub(await feePool.amountReceivedFromTransfer(transfer1)));
+	
+			await closeFeePeriod();
+
+			// Assert that we have correct values in the fee pool
+			// account1 should have all fees as only minted during period
+			const feesAvailable = await feePool.feesAvailable(account1, sUSD);
+			assert.bnClose(feesAvailable[0], totalFees, '8');
+
+			// old balance of account1 (authoriser)
+			const oldSynthBalance = await sUSDContract.balanceOf(account1);
+
+			// Now we should be able to claim them on behalf of account1.
+			await feePool.claimOnBehalf(account1, sUSD, { from: account2 });
+
+			// We should have our fees for account1
+			assert.bnEqual(await sUSDContract.balanceOf(account1), oldSynthBalance.add(feesAvailable[0]));
 		});
 	});
 });
