@@ -332,7 +332,7 @@ contract('FeePool', async accounts => {
 		const transaction = await feePool.closeCurrentFeePeriod({ from: feeAuthority });
 		assert.eventEqual(transaction, 'FeePeriodClosed', { feePeriodId: 1 });
 
-		// Assert that our first period is new.
+		// // Assert that our first period is new.
 		assert.deepEqual(await feePool.recentFeePeriods(0), {
 			feePeriodId: 2,
 			startingDebtIndex: 0,
@@ -340,7 +340,7 @@ contract('FeePool', async accounts => {
 			feesClaimed: 0,
 		});
 
-		// And that the second was the old one
+		// // And that the second was the old one
 		assert.deepEqual(await feePool.recentFeePeriods(1), {
 			feePeriodId: 1,
 			startingDebtIndex: 0,
@@ -348,8 +348,11 @@ contract('FeePool', async accounts => {
 			feesClaimed: 0,
 		});
 
-		// And that the next one is 3
-		assert.bnEqual(await feePool.nextFeePeriodId(), 3);
+		// fast forward and close another fee Period
+		await fastForward(await feePool.feePeriodDuration());
+
+		const secondPeriodClose = await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+		assert.eventEqual(secondPeriodClose, 'FeePeriodClosed', { feePeriodId: 2 });
 	});
 
 	it('should correctly roll over unclaimed fees when closing fee periods', async () => {
