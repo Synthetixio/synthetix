@@ -1212,6 +1212,22 @@ contract('FeePool', async accounts => {
 	});
 
 	describe.only('claimOnBehalf and approveClaimOnBehalf', async () => {
+		async function generateFees() {
+			// Issue 10,000 sUSD.
+			await synthetix.methods['transfer(address,uint256)'](account1, toUnit('1000000'), {
+				from: owner,
+			});
+
+			await synthetix.issueSynths(sUSD, toUnit('10000'), { from: account1 });
+
+			// For first fee period, do two transfers, then close it off.
+			const transfer1 = toUnit((10).toString());
+
+			await sUSDContract.methods['transfer(address,uint256)'](owner, transfer1, { from: account1 });
+
+			await closeFeePeriod();
+		}
+
 		it('should approve a claim on behalf for account1', async () => {
 			const authoriser = account1;
 			const delegate = account2;
@@ -1219,8 +1235,40 @@ contract('FeePool', async accounts => {
 			// approve account2 to claim on behalf of account1
 			await feePool.approveClaimOnBehalf(delegate, { from: authoriser });
 			const result = await delegates.approval(authoriser, delegate);
-			
+
 			assert.isTrue(result);
+		});
+		it('should approve a claim on behalf for account1 and then withdraw permission', async () => {
+			const authoriser = account1;
+			const delegate = account2;
+
+			// approve account2 to claim on behalf of account1
+			await feePool.approveClaimOnBehalf(delegate, { from: authoriser });
+			const result = await delegates.approval(authoriser, delegate);
+
+			assert.isTrue(result);
+
+			await feePool.removeClaimOnBehalf(delegate, { from: authoriser });
+			const withdrawnResult = await delegates.approval(authoriser, delegate);
+
+			assert.isNotTrue(withdrawnResult);
+		});
+		it('should allow any account to withdraw approval if not set before', async () => {
+			const authoriser = account1;
+			const delegate = account2;
+
+			// approve account2 to claim on behalf of account1
+			await feePool.removeClaimOnBehalf(delegate, { from: authoriser });
+			const result = await delegates.approval(authoriser, delegate);
+
+			assert.isNotTrue(result);
+		});
+		it('should revert if account is being set to ZERO_ADDRESS', async () => {
+			const authoriser = account1;
+			const delegate = ZERO_ADDRESS;
+
+			// should revert setting delegate to ZERO_ADDRESS
+			await assert.revert(feePool.approveClaimOnBehalf(delegate, { from: authoriser }));
 		});
 
 		it('should approve a claim on behalf and allow withdrawing the authorisation', async () => {
@@ -1230,13 +1278,13 @@ contract('FeePool', async accounts => {
 			// approve account2 to claim on behalf of account1
 			await feePool.approveClaimOnBehalf(delegate, { from: authoriser });
 			const result = await delegates.approval(authoriser, delegate);
-			
+
 			assert.isTrue(result);
 
 			// withdraw approval of account1
 			await feePool.removeClaimOnBehalf(delegate, { from: authoriser });
 			const resultAfter = await delegates.approval(authoriser, delegate);
-			
+
 			assert.isNotTrue(resultAfter);
 		});
 		it('should approve a claim on behalf for account1 by account2 and have fees in wallet', async () => {
@@ -1246,31 +1294,14 @@ contract('FeePool', async accounts => {
 			// approve account2 to claim on behalf of account1
 			await feePool.approveClaimOnBehalf(delegate, { from: authoriser });
 			const result = await delegates.approval(authoriser, delegate);
-			
+
 			assert.isTrue(result);
-
-			// Issue 10,000 sUSD.
-			await synthetix.methods['transfer(address,uint256)'](account1, toUnit('1000000'), {
-				from: owner,
-			});
-
-			await synthetix.issueSynths(sUSD, toUnit('10000'), { from: account1 });
-			
-			// For first fee period, do two transfers, then close it off.
-			let totalFees = web3.utils.toBN('0');
-
-			const transfer1 = toUnit((10).toString());
-
-			await sUSDContract.methods['transfer(address,uint256)'](owner, transfer1, { from: account1 });
-	
-			totalFees = totalFees.add(transfer1.sub(await feePool.amountReceivedFromTransfer(transfer1)));
-	
-			await closeFeePeriod();
 
 			// Assert that we have correct values in the fee pool
 			// account1 should have all fees as only minted during period
+			await generateFees();
+
 			const feesAvailable = await feePool.feesAvailable(account1, sUSD);
-			assert.bnClose(feesAvailable[0], totalFees, '8');
 
 			// old balance of account1 (authoriser)
 			const oldSynthBalance = await sUSDContract.balanceOf(account1);
@@ -1280,6 +1311,22 @@ contract('FeePool', async accounts => {
 
 			// We should have our fees for account1
 			assert.bnEqual(await sUSDContract.balanceOf(account1), oldSynthBalance.add(feesAvailable[0]));
+		});
+		it('should revert if account2 tries to claimOnBehalf without approval', async () => {
+			const authoriser = account1;
+			const delegate = account2;
+
+			// account2 doesn't have approval to claim on behalf of account1
+			const result = await delegates.approval(authoriser, delegate);
+
+			assert.isNotTrue(result);
+
+			// Assert that we have correct values in the fee pool
+			// account1 should have all fees as only minted during period
+			await generateFees();
+
+			// Now we should be able to claim them on behalf of account1.
+			await assert.revert(feePool.claimOnBehalf(account1, sUSD, { from: account2 }));
 		});
 	});
 });

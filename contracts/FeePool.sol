@@ -371,7 +371,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         optionalProxy
         returns (bool)
     {
-        require(delegates.approval(claimingForAddress, messageSender), "Not approved to claim on behalf of this address");
+        require(delegates.approval(claimingForAddress, messageSender), "Not approved to claim on behalf this address");
 
         return _claimFees(claimingForAddress, currencyKey);
     }
