@@ -1211,7 +1211,7 @@ contract('FeePool', async accounts => {
 		});
 	});
 
-	describe.only('claimOnBehalf and approveClaimOnBehalf', async () => {
+	describe('claimOnBehalf and approveClaimOnBehalf', async () => {
 		async function generateFees() {
 			// Issue 10,000 sUSD.
 			await synthetix.methods['transfer(address,uint256)'](account1, toUnit('1000000'), {
