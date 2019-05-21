@@ -100,7 +100,7 @@ contract('Rewards Integration Tests', async accounts => {
 	// TIME IN SECONDS
 	const SECOND = 1000;
 	const MINUTE = SECOND * 60;
-	const HOUR = MINUTE * 60;
+	// const HOUR = MINUTE * 60;
 	// const DAY = 86400;
 	const WEEK = 604800;
 	const YEAR = 31556926;
