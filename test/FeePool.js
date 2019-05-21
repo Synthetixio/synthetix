@@ -351,8 +351,88 @@ contract('FeePool', async accounts => {
 			feesClaimed: 0,
 		});
 
-		// And that the next one is 3
-		assert.bnEqual(await feePool.nextFeePeriodId(), 3);
+		// fast forward and close another fee Period
+		await fastForward(await feePool.feePeriodDuration());
+
+		const secondPeriodClose = await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+		assert.eventEqual(secondPeriodClose, 'FeePeriodClosed', { feePeriodId: 2 });
+	});
+	it('should import feePeriods and close the current fee period correctly', async () => {
+		// startTime for most recent period is mocked to start same time as the 2018-03-13T00:00:00 datetime
+		const feePeriodsImport = [
+			{
+				// recentPeriod 0
+				index: 0,
+				feePeriodId: 22,
+				startingDebtIndex: 2272,
+				startTime: 1520859600,
+				feesToDistribute: '5800660797674490860',
+				feesClaimed: '0',
+				rewardsToDistribute: '0',
+				rewardsClaimed: '0',
+			},
+			{
+				// recentPeriod 1
+				index: 1,
+				feePeriodId: 21,
+				startingDebtIndex: 1969,
+				startTime: 1520254800,
+				feesToDistribute: '934419341128642893704',
+				feesClaimed: '0',
+				rewardsToDistribute: '1442107692307692307692307',
+				rewardsClaimed: '0',
+			},
+		];
+
+		// import fee period data
+		for (const period of feePeriodsImport) {
+			await feePool.importFeePeriod(
+				period.index,
+				period.feePeriodId,
+				period.startingDebtIndex,
+				period.startTime,
+				period.feesToDistribute,
+				period.feesClaimed,
+				period.rewardsToDistribute,
+				period.rewardsClaimed,
+				{ from: owner }
+			);
+		}
+
+		await fastForward(await feePool.feePeriodDuration());
+
+		const transaction = await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+		assert.eventEqual(transaction, 'FeePeriodClosed', { feePeriodId: 22 });
+
+		// Assert that our first period is new.
+		assert.deepEqual(await feePool.recentFeePeriods(0), {
+			feePeriodId: 23,
+			startingDebtIndex: 0,
+			feesToDistribute: 0,
+			feesClaimed: 0,
+		});
+
+		// And that the second was the old one
+		assert.deepEqual(await feePool.recentFeePeriods(1), {
+			feePeriodId: 22,
+			startingDebtIndex: 2272,
+			startTime: 1520859600,
+			feesToDistribute: '5800660797674490860',
+			feesClaimed: '0',
+			rewardsToDistribute: '0',
+			rewardsClaimed: '0',
+		});
+
+		// And that the third was the oldest one imported
+		assert.deepEqual(await feePool.recentFeePeriods(2), {
+			feePeriodId: 21,
+			startingDebtIndex: 1969,
+			startTime: 1520254800,
+			feesToDistribute: '934419341128642893704',
+			feesClaimed: '0',
+			rewardsToDistribute: '1442107692307692307692307',
+			rewardsClaimed: '0',
+		});
 	});
 
 	it('should allow the feePoolProxy to close feePeriod', async () => {
@@ -376,9 +456,6 @@ contract('FeePool', async accounts => {
 			feesToDistribute: 0,
 			feesClaimed: 0,
 		});
-
-		// And that the next one is 3
-		assert.bnEqual(await feePool.nextFeePeriodId(), 3);
 	});
 	it('should correctly roll over unclaimed fees when closing fee periods', async () => {
 		// Issue 10,000 sUSD.

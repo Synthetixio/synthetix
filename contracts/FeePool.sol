@@ -99,9 +99,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
     FeePeriod[FEE_PERIOD_LENGTH] public recentFeePeriods;
 
-    // The next fee period will have this ID.
-    uint public nextFeePeriodId;
-
     // How long a fee period lasts at a minimum. It is required for the
     // fee authority to roll over the periods, so they are not guaranteed
     // to roll over at exactly this duration, but the contract enforces
@@ -156,9 +153,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         // Set our initial fee period
         recentFeePeriods[0].feePeriodId = 1;
         recentFeePeriods[0].startTime = now;
-
-        // And the next one starts at 2.
-        nextFeePeriodId = 2;
     }
 
     /**
@@ -345,11 +339,10 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         delete recentFeePeriods[0];
 
         // Open up the new fee period. Take a snapshot of the total value of the system.
-        recentFeePeriods[0].feePeriodId = nextFeePeriodId;
+        // Increment periodId from the recent closed period feePeriodId
+        recentFeePeriods[0].feePeriodId = recentFeePeriods[1].feePeriodId.add(1);
         recentFeePeriods[0].startingDebtIndex = synthetixState.debtLedgerLength();
         recentFeePeriods[0].startTime = now;
-
-        nextFeePeriodId = nextFeePeriodId.add(1);
 
         emitFeePeriodClosed(recentFeePeriods[1].feePeriodId);
     }
