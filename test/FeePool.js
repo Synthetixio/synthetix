@@ -456,9 +456,6 @@ contract('FeePool', async accounts => {
 			feesToDistribute: 0,
 			feesClaimed: 0,
 		});
-
-		// And that the next one is 3
-		assert.bnEqual(await feePool.nextFeePeriodId(), 3);
 	});
 	it('should correctly roll over unclaimed fees when closing fee periods', async () => {
 		// Issue 10,000 sUSD.
