@@ -2,7 +2,6 @@ const DelegateApprovals = artifacts.require('DelegateApprovals');
 const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
 const FeePoolProxy = artifacts.require('FeePool');
-const ProxyContract = artifacts.require('Proxy');
 const FeePoolState = artifacts.require('FeePoolState');
 const Synthetix = artifacts.require('Synthetix');
 const Synth = artifacts.require('Synth');
@@ -91,7 +90,6 @@ contract('FeePool', async accounts => {
 
 	let feePool,
 		feePoolProxy,
-		proxyContract,
 		feePoolWeb3,
 		FEE_ADDRESS,
 		synthetix,
@@ -110,7 +108,6 @@ contract('FeePool', async accounts => {
 		feePoolState = await FeePoolState.deployed();
 		feePool = await FeePool.deployed();
 		feePoolProxy = await FeePoolProxy.deployed();
-		proxyContract = await ProxyContract.at(await feePool.proxy());
 		delegates = await DelegateApprovals.deployed();
 		feePoolWeb3 = getInstance(FeePool);
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
