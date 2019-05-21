@@ -1,6 +1,7 @@
+const DelegateApprovals = artifacts.require('DelegateApprovals');
 const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
-const DelegateApprovals = artifacts.require('DelegateApprovals');
+const FeePoolProxy = artifacts.require('FeePool');
 const FeePoolState = artifacts.require('FeePoolState');
 const Synthetix = artifacts.require('Synthetix');
 const Synth = artifacts.require('Synth');
@@ -88,6 +89,7 @@ contract('FeePool', async accounts => {
 	] = accounts;
 
 	let feePool,
+		feePoolProxy,
 		feePoolWeb3,
 		FEE_ADDRESS,
 		synthetix,
@@ -105,6 +107,7 @@ contract('FeePool', async accounts => {
 		exchangeRates = await ExchangeRates.deployed();
 		feePoolState = await FeePoolState.deployed();
 		feePool = await FeePool.deployed();
+		feePoolProxy = await FeePoolProxy.deployed();
 		delegates = await DelegateApprovals.deployed();
 		feePoolWeb3 = getInstance(FeePool);
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
@@ -432,6 +435,31 @@ contract('FeePool', async accounts => {
 		});
 	});
 
+	it('should allow the feePoolProxy to close feePeriod', async () => {
+		await fastForward(await feePool.feePeriodDuration());
+
+		const transaction = await feePoolProxy.closeCurrentFeePeriod({ from: feeAuthority });
+		assert.eventEqual(transaction, 'FeePeriodClosed', { feePeriodId: 1 });
+
+		// Assert that our first period is new.
+		assert.deepEqual(await feePool.recentFeePeriods(0), {
+			feePeriodId: 2,
+			startingDebtIndex: 0,
+			feesToDistribute: 0,
+			feesClaimed: 0,
+		});
+
+		// And that the second was the old one
+		assert.deepEqual(await feePool.recentFeePeriods(1), {
+			feePeriodId: 1,
+			startingDebtIndex: 0,
+			feesToDistribute: 0,
+			feesClaimed: 0,
+		});
+
+		// And that the next one is 3
+		assert.bnEqual(await feePool.nextFeePeriodId(), 3);
+	});
 	it('should correctly roll over unclaimed fees when closing fee periods', async () => {
 		// Issue 10,000 sUSD.
 		await synthetix.issueSynths(sUSD, toUnit('10000'), { from: owner });
