@@ -318,6 +318,9 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         recentFeePeriods[FEE_PERIOD_LENGTH - 2].feesToDistribute = lastFeePeriod.feesToDistribute
             .sub(lastFeePeriod.feesClaimed)
             .add(secondLastFeePeriod.feesToDistribute);
+        recentFeePeriods[FEE_PERIOD_LENGTH - 2].rewardsToDistribute = lastFeePeriod.rewardsToDistribute
+            .sub(lastFeePeriod.rewardsClaimed)
+            .add(secondLastFeePeriod.rewardsToDistribute);
 
         // Shift the previous fee periods across to make room for the new one.
         // Condition checks for overflow when uint subtracts one from zero
