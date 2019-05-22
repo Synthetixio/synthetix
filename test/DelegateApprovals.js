@@ -55,15 +55,7 @@ contract('DelegateApprovals', async accounts => {
 		it('should revert if called by non associatedAccount', async () => {
 			const authoriser = account1;
 			const delegate = account2;
-			await delegateApprovals.setApproval(authoriser, delegate, { from: owner });
-
-			const result = await delegateApprovals.approval(authoriser, delegate);
-			assert.isTrue(result);
-
-			// remove approval
-			await delegateApprovals.withdrawApproval(authoriser, delegate, { from: owner });
-			const newResult = await delegateApprovals.approval(authoriser, delegate);
-			assert.isNotTrue(newResult);
+			await assert.revert(delegateApprovals.setApproval(authoriser, delegate, { from: account1 }));
 		});
 		it('should add approval and emit an Approval event', async () => {
 			const authoriser = account1;
