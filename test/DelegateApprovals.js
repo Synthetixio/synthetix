@@ -1,6 +1,6 @@
 const DelegateApprovals = artifacts.require('DelegateApprovals');
 
-contract.only('DelegateApprovals', async accounts => {
+contract('DelegateApprovals', async accounts => {
 	const [deployerAccount, owner, account1, account2] = accounts;
 
 	let delegateApprovals;
