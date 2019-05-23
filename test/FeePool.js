@@ -1123,7 +1123,7 @@ contract('FeePool', async accounts => {
 		assert.bnEqual(feesAvailable[0], 0);
 	});
 
-	it('should correctly calculate the penalties at specific issuance ratios', async () => {
+	it.only('should correctly calculate the penalties at specific issuance ratios', async () => {
 		const step = toUnit('0.005');
 		await synthetix.issueMaxSynths(sUSD, { from: owner });
 

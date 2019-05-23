@@ -113,15 +113,13 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
     // Users receive penalties if their collateralisation ratio drifts out of our desired brackets
     // We precompute the brackets and penalties to save gas.
-    uint constant TWENTY_PERCENT = (20 * SafeDecimalMath.unit()) / 100;
-    uint constant TWENTY_TWO_PERCENT = (22 * SafeDecimalMath.unit()) / 100;
-    uint constant TWENTY_FIVE_PERCENT = (25 * SafeDecimalMath.unit()) / 100;
-    uint constant THIRTY_PERCENT = (30 * SafeDecimalMath.unit()) / 100;
-    uint constant FOURTY_PERCENT = (40 * SafeDecimalMath.unit()) / 100;
+    uint constant TEN_PERCENT = (10 * SafeDecimalMath.unit()) / 100;
     uint constant FIFTY_PERCENT = (50 * SafeDecimalMath.unit()) / 100;
     uint constant SEVENTY_FIVE_PERCENT = (75 * SafeDecimalMath.unit()) / 100;
     uint constant NINETY_PERCENT = (90 * SafeDecimalMath.unit()) / 100;
     uint constant ONE_HUNDRED_PERCENT = (100 * SafeDecimalMath.unit()) / 100;
+    uint constant ONE_HUNDRED_FIFTY_PERCENT = (150 * SafeDecimalMath.unit()) / 100;
+    uint constant FOUR_HUNDRED_PERCENT = (400 * SafeDecimalMath.unit()) / 100;
 
     constructor(
         address _proxy,
@@ -747,27 +745,38 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         view
         returns (uint)
     {
-        uint ratio = synthetix.collateralisationRatio(account);
-
         // Users receive a different amount of fees depending on how their collateralisation ratio looks right now.
-        //  0% < 20% (∞ - 500%):    Fee is calculated based on percentage of economy issued.
-        // 20% - 22% (500% - 454%):  0% reduction in fees
-        // 22% - 30% (454% - 333%): 25% reduction in fees
-        // 30% - 40% (333% - 250%): 50% reduction in fees
-        // 40% - 50% (250% - 200%): 75% reduction in fees
-        //     > 50% (200% - 100%): 90% reduction in fees
-        //     > 100%(100% -   0%):100% reduction in fees
-        if (ratio <= TWENTY_PERCENT) {
+        // Penalty is calculated from actual ratio % above the target ratio (issuanceRatio).
+        //  0  <  10%:   0% reduction in fees
+        // 10  -  50%:  25% reduction in fees
+        // 50  - 100%:  50% reduction in fees
+        // 100 - 150%:  75% reduction in fees
+        // 150 - 400%:  90% reduction in fees
+        //     > 400%: 100% reduction in fees
+        uint ratio = synthetix.collateralisationRatio(account);
+        uint targetRatio = synthetix.synthetixState().issuanceRatio();
+
+        // If collateralisation ratio > 100% apply max penalty
+        if (ratio > ONE_HUNDRED_PERCENT) {
+            return ONE_HUNDRED_PERCENT;
+        }
+
+        // Ratio below target ratio no penalty
+        if (ratio < targetRatio) {
             return 0;
-        } else if (ratio > TWENTY_PERCENT && ratio <= TWENTY_TWO_PERCENT) {
+        }
+
+        uint deltaPercent = (ratio.sub(targetRatio)).divideDecimal(targetRatio);
+
+        if (deltaPercent <= TEN_PERCENT) {
             return 0;
-        } else if (ratio > TWENTY_TWO_PERCENT && ratio <= THIRTY_PERCENT) {
+        } else if (deltaPercent > TEN_PERCENT && deltaPercent <= FIFTY_PERCENT) {
             return TWENTY_FIVE_PERCENT;
-        } else if (ratio > THIRTY_PERCENT && ratio <= FOURTY_PERCENT) {
+        } else if (ddeltaPercentelta > FIFTY_PERCENT && deltaPercent <= ONE_HUNDRED_PERCENT) {
             return FIFTY_PERCENT;
-        } else if (ratio > FOURTY_PERCENT && ratio <= FIFTY_PERCENT) {
+        } else if (deltaPercent > ONE_HUNDRED_PERCENT && deltaPercent <= ONE_HUNDRED_FIFTY_PERCENT) {
             return SEVENTY_FIVE_PERCENT;
-        } else if (ratio > FIFTY_PERCENT && ratio <= ONE_HUNDRED_PERCENT) {
+        } else if (deltaPercent > ONE_HUNDRED_FIFTY_PERCENT && deltaPercent <= FOUR_HUNDRED_PERCENT) {
             return NINETY_PERCENT;
         }
         return ONE_HUNDRED_PERCENT;
