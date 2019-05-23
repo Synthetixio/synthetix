@@ -3,6 +3,7 @@ const { table } = require('table');
 const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
 const FeePoolState = artifacts.require('FeePoolState');
+const FeePoolEternalStorage = artifacts.require('FeePoolEternalStorage');
 const DelegateApprovals = artifacts.require('DelegateApprovals');
 const Synthetix = artifacts.require('Synthetix');
 const SynthetixEscrow = artifacts.require('SynthetixEscrow');
@@ -103,6 +104,12 @@ module.exports = async function(deployer, network, accounts) {
 		from: deployerAccount,
 	});
 
+	console.log('Deploying FeePoolEternalStorage...');
+	deployer.link(SafeDecimalMath, FeePoolEternalStorage);
+	const feePoolEternalStorage = await deployer.deploy(FeePoolEternalStorage, owner, ZERO_ADDRESS, {
+		from: deployerAccount,
+	});
+
 	console.log('Deploying FeePool...');
 
 	deployer.link(SafeDecimalMath, FeePool);
@@ -112,6 +119,7 @@ module.exports = async function(deployer, network, accounts) {
 		owner,
 		ZERO_ADDRESS,
 		feePoolState.address,
+		feePoolEternalStorage.address,
 		synthetixState.address,
 		rewardEscrow.address,
 		feeAuthority,
