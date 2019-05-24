@@ -55,7 +55,6 @@ contract FeePoolEternalStorage is EternalStorage, LimitedSetup {
         require(accounts.length == feePeriodIDs.length, "Length mismatch");
 
         for (uint8 i = 0; i < accounts.length; i++) {
-            //lastFeeWithdrawal[accounts[i]] = feePeriodIDs[i];
             this.setUIntValue(keccak256(abi.encodePacked(LAST_FEE_WITHDRAWAL, accounts[i])), feePeriodIDs[i]);
         }
     }
