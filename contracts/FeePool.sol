@@ -387,7 +387,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
         require(availableFees > 0 || availableRewards > 0, "No fees or rewards available for period, or fees already claimed");
 
-        //lastFeeWithdrawal[claimingAddress] = recentFeePeriods[1].feePeriodId;
         _setLastFeeWithdrawal(claimingAddress, recentFeePeriods[1].feePeriodId);
 
         if (availableFees > 0) {
@@ -819,7 +818,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
             // We can skip period if no debt minted during period
             if (nextPeriod.startingDebtIndex > 0 &&
             _getLastFeeWithdrawal(account) < recentFeePeriods[i].feePeriodId) {
-            //lastFeeWithdrawal[account] < recentFeePeriods[i].feePeriodId) {
 
                 // We calculate a feePeriod's closingDebtIndex by looking at the next feePeriod's startingDebtIndex
                 // we can use the most recent issuanceData[0] for the current feePeriod
