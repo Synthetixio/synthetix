@@ -41,12 +41,9 @@ import "./State.sol";
  */
 contract EternalStorage is State {
 
-    /**
-     * @dev Constructor
-     */
     constructor(address _owner, address _associatedContract)
         State(_owner, _associatedContract)
-        public 
+        public
     {
     }
 
@@ -65,13 +62,13 @@ contract EternalStorage is State {
     }
 
     function setUIntValue(bytes32 record, uint value) external
-    onlyAssociatedContract
+        onlyAssociatedContract
     {
         UIntStorage[record] = value;
     }
 
     function deleteUIntValue(bytes32 record) external
-    onlyAssociatedContract
+        onlyAssociatedContract
     {
         delete UIntStorage[record];
     }
@@ -82,13 +79,13 @@ contract EternalStorage is State {
     }
 
     function setStringValue(bytes32 record, string value) external
-    onlyAssociatedContract
+        onlyAssociatedContract
     {
         StringStorage[record] = value;
     }
 
     function deleteStringValue(bytes32 record) external
-    onlyAssociatedContract
+        onlyAssociatedContract
     {
         delete StringStorage[record];
     }
@@ -99,57 +96,68 @@ contract EternalStorage is State {
     }
 
     function setAddressValue(bytes32 record, address value) external
+        onlyAssociatedContract
     {
         AddressStorage[record] = value;
     }
 
     function deleteAddressValue(bytes32 record) external
+        onlyAssociatedContract
     {
         delete AddressStorage[record];
     }
 
 
     // BytesStorage
-    function getBytesValue(bytes32 record) external view returns (bytes memory){
+    function getBytesValue(bytes32 record) external view returns
+    (bytes memory){
         return BytesStorage[record];
     }
 
     function setBytesValue(bytes32 record, bytes value) external
+        onlyAssociatedContract
     {
         BytesStorage[record] = value;
     }
 
     function deleteBytesValue(bytes32 record) external
+        onlyAssociatedContract
     {
         delete BytesStorage[record];
     }
 
     // Bytes32Storage
-    function getBytes32Value(bytes32 record) external view returns (bytes32){
+    function getBytes32Value(bytes32 record) external view returns (bytes32)
+    {
         return Bytes32Storage[record];
     }
 
     function setBytes32Value(bytes32 record, bytes32 value) external
+        onlyAssociatedContract
     {
         Bytes32Storage[record] = value;
     }
 
     function deleteBytes32Value(bytes32 record) external
+        onlyAssociatedContract
     {
         delete Bytes32Storage[record];
     }
 
     // BooleanStorage
-    function getBooleanValue(bytes32 record) external view returns (bool){
+    function getBooleanValue(bytes32 record) external view returns (bool)
+    {
         return BooleanStorage[record];
     }
 
     function setBooleanValue(bytes32 record, bool value) external
+        onlyAssociatedContract
     {
         BooleanStorage[record] = value;
     }
 
     function deleteBooleanValue(bytes32 record) external
+        onlyAssociatedContract
     {
         delete BooleanStorage[record];
     }
@@ -160,11 +168,13 @@ contract EternalStorage is State {
     }
 
     function setIntValue(bytes32 record, int value) external
+        onlyAssociatedContract
     {
         IntStorage[record] = value;
     }
 
     function deleteIntValue(bytes32 record) external
+        onlyAssociatedContract
     {
         delete IntStorage[record];
     }
