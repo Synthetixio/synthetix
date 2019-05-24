@@ -14,7 +14,7 @@ MODULE DESCRIPTION
 -----------------------------------------------------------------
 
 The FeePoolEternalStorage is for any state the FeePool contract
-needs to persist between upgrades to the FeePool Logic.
+needs to persist between upgrades to the FeePool logic.
 
 Please see EternalStorage.sol
 
@@ -59,6 +59,4 @@ contract FeePoolEternalStorage is EternalStorage, LimitedSetup {
             this.setUIntValue(keccak256(abi.encodePacked(LAST_FEE_WITHDRAWAL, accounts[i])), feePeriodIDs[i]);
         }
     }
-
-    /* ========== Events ========== */
 }

@@ -135,9 +135,10 @@ module.exports = async function(deployer, network, accounts) {
 	await rewardEscrow.setFeePool(feePool.address, { from: owner });
 
 	// Set delegate approval on feePool
-	// Set feePool as associatedContract on delegateApprovals
+	// Set feePool as associatedContract on delegateApprovals & feePoolEternalStorage
 	await feePool.setDelegateApprovals(delegateApprovals.address, { from: owner });
 	await delegateApprovals.setAssociatedContract(feePool.address, { from: owner });
+	await feePoolEternalStorage.setAssociatedContract(feePool.address, { from: owner });
 
 	// ----------------
 	// Synthetix
