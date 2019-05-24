@@ -207,7 +207,7 @@ contract('Rewards Integration Tests', async accounts => {
 			assert.bnEqual(accThreeEscrowed[1], third(periodOneMintableSupplyMinusMinterReward));
 		});
 
-		it.only('should mint SNX for the 5 claimable fee periods then all 3 accounts claim at the end of the 6 week claimable period', async () => {
+		it('should mint SNX for the 5 claimable fee periods then all 3 accounts claim at the end of the 6 week claimable period', async () => {
 			let mintedRewardsSupply;
 
 			// We are currently in the 2nd week so close the next 3 leaving 0 as open and no rolling fees

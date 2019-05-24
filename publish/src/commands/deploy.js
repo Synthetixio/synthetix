@@ -262,6 +262,11 @@ module.exports = program =>
 					args: [account],
 				});
 
+				const feePoolEternalStorage = await deployContract({
+					name: 'FeePoolEternalStorage',
+					args: [account, ZERO_ADDRESS],
+				});
+
 				const feePool = await deployContract({
 					name: 'FeePool',
 					deps: ['ProxyFeePool'],
@@ -270,6 +275,7 @@ module.exports = program =>
 						account,
 						ZERO_ADDRESS, // Synthetix
 						ZERO_ADDRESS, // FeePoolState
+						feePoolEternalStorage ? feePoolEternalStorage.options.address : '',
 						synthetixState ? synthetixState.options.address : '',
 						rewardEscrow ? rewardEscrow.options.address : '',
 						feeAuth,
@@ -298,6 +304,33 @@ module.exports = program =>
 								key: `ProxyFeePool.setTarget(FeePool)`,
 								target: proxyFeePool.options.address,
 								action: `setTarget(${feePool.options.address})`,
+							});
+						}
+					}
+				}
+
+				if (feePoolEternalStorage && feePool) {
+					const feePoolAddress = feePool.options.address;
+					const associatedFPContract = await feePoolEternalStorage.methods
+						.associatedContract()
+						.call();
+
+					if (associatedFPContract !== feePoolAddress) {
+						const feePoolEternalStorageOwner = await feePoolEternalStorage.methods.owner().call();
+
+						if (feePoolEternalStorageOwner === account) {
+							console.log(
+								yellow('Invoking feePoolEternalStorage.setAssociatedContract(FeePool)...')
+							);
+
+							await feePoolEternalStorage.methods
+								.setAssociatedContract(feePoolAddress)
+								.send(deployer.sendParameters());
+						} else {
+							appendOwnerAction({
+								key: `FeePoolEternalStorage.setAssociatedContract(FeePool)`,
+								target: feePoolEternalStorage.options.address,
+								action: `setAssociatedContract(${feePoolAddress})`,
 							});
 						}
 					}
