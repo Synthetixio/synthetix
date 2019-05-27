@@ -17,6 +17,9 @@
 	"FeePoolEternalStorage": {
 		"deploy": true
 	},
+	"DelegateApprovals": {
+		"deploy": true
+	},
 	"SupplySchedule": {
 		"deploy": false
 	},
