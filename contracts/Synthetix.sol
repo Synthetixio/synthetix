@@ -745,7 +745,7 @@ contract Synthetix is ExternStateToken {
 
         // Are they exiting the system, or are they just decreasing their debt position?
         if (debtToRemove == existingDebt) {
-            synthetixState.clearIssuanceData(messageSender);
+            synthetixState.setCurrentIssuanceData(messageSender, 0);
             synthetixState.decrementTotalIssuerCount();
         } else {
             // What percentage of the debt will they be left with?
