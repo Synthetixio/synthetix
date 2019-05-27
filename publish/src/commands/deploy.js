@@ -262,6 +262,11 @@ module.exports = program =>
 					args: [account],
 				});
 
+				const feePoolDelegateApprovals = await deployContract({
+					name: 'DelegateApprovals',
+					args: [account, ZERO_ADDRESS],
+				});
+
 				const feePoolEternalStorage = await deployContract({
 					name: 'FeePoolEternalStorage',
 					args: [account, ZERO_ADDRESS],
@@ -330,6 +335,51 @@ module.exports = program =>
 							appendOwnerAction({
 								key: `FeePoolEternalStorage.setAssociatedContract(FeePool)`,
 								target: feePoolEternalStorage.options.address,
+								action: `setAssociatedContract(${feePoolAddress})`,
+							});
+						}
+					}
+				}
+
+				if (feePoolDelegateApprovals && feePool) {
+					const feePoolAddress = feePool.options.address;
+					const delegateApprovalsAddress = feePoolDelegateApprovals.options.address;
+					const feePoolOwner = await feePool.methods.owner().call();
+
+					const associatedContract = await feePoolDelegateApprovals.methods
+						.associatedContract()
+						.call();
+
+					if (feePoolOwner === account) {
+						console.log(yellow('Invoking feePool.setDelegateApprovals(DelegateApproval)...'));
+						await feePool.methods
+							.setDelegateApprovals(delegateApprovalsAddress)
+							.send(deployer.sendParameters());
+					} else {
+						appendOwnerAction({
+							key: `FeePool.setDelegateApprovals(DelegateApprovals)`,
+							target: feePool.options.address,
+							action: `setDelegateApprovals(${delegateApprovalsAddress})`,
+						});
+					}
+
+					if (associatedContract !== feePoolAddress) {
+						const feePoolDelegateApprovalsOwner = await feePoolDelegateApprovals.methods
+							.owner()
+							.call();
+
+						if (feePoolDelegateApprovalsOwner === account) {
+							console.log(
+								yellow('Invoking feePoolDelegateApprovals.setAssociatedContract(FeePool)...')
+							);
+
+							await feePoolDelegateApprovals.methods
+								.setAssociatedContract(feePoolAddress)
+								.send(deployer.sendParameters());
+						} else {
+							appendOwnerAction({
+								key: `DelegateApprovals.setAssociatedContract(FeePool)`,
+								target: feePoolDelegateApprovals.options.address,
 								action: `setAssociatedContract(${feePoolAddress})`,
 							});
 						}
