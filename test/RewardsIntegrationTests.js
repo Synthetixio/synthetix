@@ -5,12 +5,12 @@ const Synth = artifacts.require('Synth');
 const RewardEscrow = artifacts.require('RewardEscrow');
 const SupplySchedule = artifacts.require('SupplySchedule');
 const ExchangeRates = artifacts.require('ExchangeRates');
-// const { getWeb3 } = require('../utils/web3Helper');
-// const { getContractInstance } = require('../utils/web3Helper');
+const { getWeb3 } = require('../utils/web3Helper');
+const { getContractInstance } = require('../utils/web3Helper');
 
 const { currentTime, fastForward, toUnit, toPreciseUnit } = require('../utils/testUtils');
-// const web3 = getWeb3();
-// const getInstance = getContractInstance(web3);
+const web3 = getWeb3();
+const getInstance = getContractInstance(web3);
 
 contract('Rewards Integration Tests', async accounts => {
 	// Updates rates with defaults so they're not stale.
@@ -119,7 +119,7 @@ contract('Rewards Integration Tests', async accounts => {
 
 	// VARIABLES
 	let feePool,
-		// feePoolWeb3,
+		feePoolWeb3,
 		// feePoolState,
 		synthetix,
 		// sUSDContract,
@@ -138,7 +138,7 @@ contract('Rewards Integration Tests', async accounts => {
 		// contract interfaces to prevent test bleed.
 		exchangeRates = await ExchangeRates.deployed();
 		feePool = await FeePool.deployed();
-		// feePoolWeb3 = getInstance(FeePool);
+		feePoolWeb3 = getInstance(FeePool);
 		// feePoolState = await FeePoolState.deployed();
 		synthetix = await Synthetix.deployed();
 		// sUSDContract = await Synth.at(await synthetix.synths(sUSD));
@@ -330,6 +330,42 @@ contract('Rewards Integration Tests', async accounts => {
 			const lastFeePeriod = await feePool.recentFeePeriods(5);
 			// Assert rewards have rolled over
 			assert.bnEqual(lastFeePeriod.rewardsClaimed, third(periodOneMintableSupplyMinusMinterReward));
+		});
+
+		it('should allow a user to leave the system and return and still claim rewards', async () => {
+			// First week is already closed
+			// Close 2 periods
+			for (let i = 0; i <= 2; i++) {
+				await closeFeePeriodAndFastForward();
+				await fastForwardAndUpdateRates(MINUTE);
+				await synthetix.mint({ from: owner });
+			}
+
+			// Account 1 leaves the system for week 4
+			const burnableTotal = await synthetix.debtBalanceOf(account1, sUSD);
+			await synthetix.burnSynths(sUSD, burnableTotal, { from: account1 });
+
+			await closeFeePeriodAndFastForward();
+			await fastForwardAndUpdateRates(MINUTE);
+			await synthetix.mint({ from: owner });
+
+			// Account 1 comes back into the system
+			await synthetix.issueMaxSynths(sUSD, { from: account1 });
+
+			await closeFeePeriodAndFastForward();
+			await fastForwardAndUpdateRates(MINUTE);
+			await synthetix.mint({ from: owner });
+
+			// Only Account 1 claims rewards
+			// await logFeesByPeriod(account1);
+			const rewardsAmount = third(periodOneMintableSupplyMinusMinterReward);
+			const feesByPeriod = await feePoolWeb3.methods.feesByPeriod(account1).call();
+
+			assert.bnEqual(feesByPeriod[0][1], rewardsAmount);
+			assert.bnEqual(feesByPeriod[1][1], rewardsAmount);
+			assert.bnEqual(feesByPeriod[2][1], 0, '1');
+			assert.bnEqual(feesByPeriod[3][1], rewardsAmount);
+			assert.bnEqual(feesByPeriod[4][1], rewardsAmount);
 		});
 
 		// it('should allocate correct SNX rewards as others leave the system', async () => {
