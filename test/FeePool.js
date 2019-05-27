@@ -1,6 +1,7 @@
+const DelegateApprovals = artifacts.require('DelegateApprovals');
 const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
-const DelegateApprovals = artifacts.require('DelegateApprovals');
+const FeePoolProxy = artifacts.require('FeePool');
 const FeePoolState = artifacts.require('FeePoolState');
 const Synthetix = artifacts.require('Synthetix');
 const Synth = artifacts.require('Synth');
@@ -88,6 +89,7 @@ contract('FeePool', async accounts => {
 	] = accounts;
 
 	let feePool,
+		feePoolProxy,
 		feePoolWeb3,
 		FEE_ADDRESS,
 		synthetix,
@@ -105,6 +107,7 @@ contract('FeePool', async accounts => {
 		exchangeRates = await ExchangeRates.deployed();
 		feePoolState = await FeePoolState.deployed();
 		feePool = await FeePool.deployed();
+		feePoolProxy = await FeePoolProxy.deployed();
 		delegates = await DelegateApprovals.deployed();
 		feePoolWeb3 = getInstance(FeePool);
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
@@ -121,15 +124,17 @@ contract('FeePool', async accounts => {
 	it('should set constructor params on deployment', async () => {
 		const transferFeeRate = toUnit('0.0015');
 		const exchangeFeeRate = toUnit('0.0030');
+		const rewardEscrowAccount = deployerAccount;
 
-		// constructor(address _proxy, address _owner, Synthetix _synthetix, FeePoolState _feePoolState, ISynthetixState _synthetixState, ISynthetixEscrow _rewardEscrow,address _feeAuthority, uint _transferFeeRate, uint _exchangeFeeRate)
+		// constructor(address _proxy, address _owner, Synthetix _synthetix, FeePoolState _feePoolState, FeePoolEternalStorage _feePoolEternalStorage, ISynthetixState _synthetixState, ISynthetixEscrow _rewardEscrow,address _feeAuthority, uint _transferFeeRate, uint _exchangeFeeRate)
 		const instance = await FeePool.new(
-			account1,
-			account2,
-			account3,
-			account4,
-			account5,
-			account6,
+			account1, // proxy
+			account2, // owner
+			account3, // synthetix
+			account4, // feePoolState
+			account5, // feePoolEternalStorage
+			account6, // synthetixState
+			rewardEscrowAccount,
 			feeAuthority,
 			transferFeeRate,
 			exchangeFeeRate,
@@ -142,8 +147,8 @@ contract('FeePool', async accounts => {
 		assert.equal(await instance.owner(), account2);
 		assert.equal(await instance.synthetix(), account3);
 		assert.equal(await instance.feePoolState(), account4);
-		assert.equal(await instance.synthetixState(), account5);
-		assert.equal(await instance.rewardEscrow(), account6);
+		assert.equal(await instance.feePoolEternalStorage(), account5);
+		assert.equal(await instance.synthetixState(), account6);
 		assert.equal(await instance.feeAuthority(), feeAuthority);
 		assert.bnEqual(await instance.transferFeeRate(), transferFeeRate);
 		assert.bnEqual(await instance.exchangeFeeRate(), exchangeFeeRate);
@@ -348,10 +353,112 @@ contract('FeePool', async accounts => {
 			feesClaimed: 0,
 		});
 
-		// And that the next one is 3
-		assert.bnEqual(await feePool.nextFeePeriodId(), 3);
+		// fast forward and close another fee Period
+		await fastForward(await feePool.feePeriodDuration());
+
+		const secondPeriodClose = await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+		assert.eventEqual(secondPeriodClose, 'FeePeriodClosed', { feePeriodId: 2 });
+	});
+	it('should import feePeriods and close the current fee period correctly', async () => {
+		// startTime for most recent period is mocked to start same time as the 2018-03-13T00:00:00 datetime
+		const feePeriodsImport = [
+			{
+				// recentPeriod 0
+				index: 0,
+				feePeriodId: 22,
+				startingDebtIndex: 2272,
+				startTime: 1520859600,
+				feesToDistribute: '5800660797674490860',
+				feesClaimed: '0',
+				rewardsToDistribute: '0',
+				rewardsClaimed: '0',
+			},
+			{
+				// recentPeriod 1
+				index: 1,
+				feePeriodId: 21,
+				startingDebtIndex: 1969,
+				startTime: 1520254800,
+				feesToDistribute: '934419341128642893704',
+				feesClaimed: '0',
+				rewardsToDistribute: '1442107692307692307692307',
+				rewardsClaimed: '0',
+			},
+		];
+
+		// import fee period data
+		for (const period of feePeriodsImport) {
+			await feePool.importFeePeriod(
+				period.index,
+				period.feePeriodId,
+				period.startingDebtIndex,
+				period.startTime,
+				period.feesToDistribute,
+				period.feesClaimed,
+				period.rewardsToDistribute,
+				period.rewardsClaimed,
+				{ from: owner }
+			);
+		}
+
+		await fastForward(await feePool.feePeriodDuration());
+
+		const transaction = await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+		assert.eventEqual(transaction, 'FeePeriodClosed', { feePeriodId: 22 });
+
+		// Assert that our first period is new.
+		assert.deepEqual(await feePool.recentFeePeriods(0), {
+			feePeriodId: 23,
+			startingDebtIndex: 0,
+			feesToDistribute: 0,
+			feesClaimed: 0,
+		});
+
+		// And that the second was the old one
+		assert.deepEqual(await feePool.recentFeePeriods(1), {
+			feePeriodId: 22,
+			startingDebtIndex: 2272,
+			startTime: 1520859600,
+			feesToDistribute: '5800660797674490860',
+			feesClaimed: '0',
+			rewardsToDistribute: '0',
+			rewardsClaimed: '0',
+		});
+
+		// And that the third was the oldest one imported
+		assert.deepEqual(await feePool.recentFeePeriods(2), {
+			feePeriodId: 21,
+			startingDebtIndex: 1969,
+			startTime: 1520254800,
+			feesToDistribute: '934419341128642893704',
+			feesClaimed: '0',
+			rewardsToDistribute: '1442107692307692307692307',
+			rewardsClaimed: '0',
+		});
 	});
 
+	it('should allow the feePoolProxy to close feePeriod', async () => {
+		await fastForward(await feePool.feePeriodDuration());
+
+		const transaction = await feePoolProxy.closeCurrentFeePeriod({ from: feeAuthority });
+		assert.eventEqual(transaction, 'FeePeriodClosed', { feePeriodId: 1 });
+
+		// Assert that our first period is new.
+		assert.deepEqual(await feePool.recentFeePeriods(0), {
+			feePeriodId: 2,
+			startingDebtIndex: 0,
+			feesToDistribute: 0,
+			feesClaimed: 0,
+		});
+
+		// And that the second was the old one
+		assert.deepEqual(await feePool.recentFeePeriods(1), {
+			feePeriodId: 1,
+			startingDebtIndex: 0,
+			feesToDistribute: 0,
+			feesClaimed: 0,
+		});
+	});
 	it('should correctly roll over unclaimed fees when closing fee periods', async () => {
 		// Issue 10,000 sUSD.
 		await synthetix.issueSynths(sUSD, toUnit('10000'), { from: owner });

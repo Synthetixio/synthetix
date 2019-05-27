@@ -5,11 +5,11 @@ const Synth = artifacts.require('Synth');
 const RewardEscrow = artifacts.require('RewardEscrow');
 const SupplySchedule = artifacts.require('SupplySchedule');
 const ExchangeRates = artifacts.require('ExchangeRates');
-const { getWeb3 } = require('../utils/web3Helper');
+// const { getWeb3 } = require('../utils/web3Helper');
 // const { getContractInstance } = require('../utils/web3Helper');
 
 const { currentTime, fastForward, toUnit, toPreciseUnit } = require('../utils/testUtils');
-const web3 = getWeb3();
+// const web3 = getWeb3();
 // const getInstance = getContractInstance(web3);
 
 contract('Rewards Integration Tests', async accounts => {
@@ -102,7 +102,7 @@ contract('Rewards Integration Tests', async accounts => {
 	const MINUTE = SECOND * 60;
 	// const HOUR = MINUTE * 60;
 	// const DAY = 86400;
-	const WEEK = 604800;
+	// const WEEK = 604800;
 	const YEAR = 31556926;
 
 	// ACCOUNTS
@@ -207,39 +207,129 @@ contract('Rewards Integration Tests', async accounts => {
 			assert.bnEqual(accThreeEscrowed[1], third(periodOneMintableSupplyMinusMinterReward));
 		});
 
-		it('should mint SNX for the 6 fee periods then all 3 accounts claim at the end of the 6 week claimable period', async () => {
-			// Close all six periods
-			const FEE_PERIOD_LENGTH = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
-			for (let i = 0; i <= FEE_PERIOD_LENGTH - 1; i++) {
+		it('should mint SNX for the 5 claimable fee periods then all 3 accounts claim at the end of the 6 week claimable period', async () => {
+			let mintedRewardsSupply;
+
+			// We are currently in the 2nd week so close the next 3 leaving 0 as open and no rolling fees
+			const FEE_PERIOD_LENGTH = 3;
+			for (let i = 0; i <= FEE_PERIOD_LENGTH; i++) {
 				await closeFeePeriodAndFastForward();
+
+				// FastForward a little for minting
+				await fastForwardAndUpdateRates(MINUTE);
+
+				// Get the SNX mintableSupply - the minter reward of 200 SNX
+				mintedRewardsSupply = (await supplySchedule.mintableSupply()).sub(MINTER_SNX_REWARD);
+
+				// Mint the staking rewards
+				await synthetix.mint({ from: owner });
 			}
 
-			// Get the SNX mintableSupply - the minter reward of 200 SNX
-			const mintedRewardsSupply = (await supplySchedule.mintableSupply()).sub(MINTER_SNX_REWARD);
-
-			// Mint the staking rewards
-			await synthetix.mint({ from: owner });
-
-			// FastForward into the next week to be able to Close Fee Period
-			await fastForwardAndUpdateRates(WEEK + MINUTE);
-
 			// Close Fee Period
-			await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+			await closeFeePeriodAndFastForward();
 
 			// All 3 accounts claim rewards
 			await feePool.claimFees(sUSD, { from: account1 });
 			await feePool.claimFees(sUSD, { from: account2 });
 			await feePool.claimFees(sUSD, { from: account3 });
 
+			const fiveWeeksRewards = third(mintedRewardsSupply).mul(web3.utils.toBN('5'));
+
 			// All 3 accounts have 1/3 of the rewards
 			const accOneEscrowed = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-			assert.bnClose(accOneEscrowed[1], third(mintedRewardsSupply), '1');
+			assert.bnEqual(accOneEscrowed[1], fiveWeeksRewards, '1');
 
 			const accTwoEscrowed = await rewardEscrow.getVestingScheduleEntry(account2, 0);
-			assert.bnClose(accTwoEscrowed[1], third(mintedRewardsSupply), '1');
+			assert.bnEqual(accTwoEscrowed[1], fiveWeeksRewards, '1');
 
 			const accThreeEscrowed = await rewardEscrow.getVestingScheduleEntry(account3, 0);
-			assert.bnClose(accThreeEscrowed[1], third(mintedRewardsSupply), '1');
+			assert.bnEqual(accThreeEscrowed[1], fiveWeeksRewards, '1');
+		});
+
+		it('should rollover the unclaimed SNX rewards on week 7', async () => {
+			// First week is already closed
+			// Close only 5 periods
+			const FEE_PERIOD_LENGTH = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
+			for (let i = 0; i <= FEE_PERIOD_LENGTH - 2; i++) {
+				await closeFeePeriodAndFastForward();
+				// FastForward a bit to be able to mint
+				await fastForwardAndUpdateRates(MINUTE);
+
+				// Mint the staking rewards
+				await synthetix.mint({ from: owner });
+			}
+			// Get the Rewards to RollOver
+			const periodToRollOver = await feePool.recentFeePeriods(5);
+			const rollOverRewards = periodToRollOver.rewardsToDistribute;
+
+			// Close the 7th Week
+			await closeFeePeriodAndFastForward();
+			// FastForward a bit to be able to mint
+			await fastForwardAndUpdateRates(MINUTE);
+			// Mint the staking rewards
+			await synthetix.mint({ from: owner });
+
+			// Get last FeePeriod
+			const lastFeePeriod = await feePool.recentFeePeriods(5);
+			// Assert rewards have rolled over
+			assert.bnEqual(
+				lastFeePeriod.rewardsToDistribute,
+				periodOneMintableSupplyMinusMinterReward.add(rollOverRewards)
+			);
+		});
+
+		it('should rollover the unclaimed SNX rewards on week 13', async () => {
+			// First week is already closed
+			// Close only 5 periods
+			const FEE_PERIOD_LENGTH = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
+			for (let i = 0; i <= FEE_PERIOD_LENGTH * 2; i++) {
+				await closeFeePeriodAndFastForward();
+				// FastForward a bit to be able to mint
+				await fastForwardAndUpdateRates(MINUTE);
+
+				// Mint the staking rewards
+				await synthetix.mint({ from: owner });
+			}
+			// Get the Rewards to RollOver
+			const periodToRollOver = await feePool.recentFeePeriods(5);
+			const rollOverRewards = periodToRollOver.rewardsToDistribute;
+
+			// Close the 13th Week
+			await closeFeePeriodAndFastForward();
+			// FastForward a bit to be able to mint
+			await fastForwardAndUpdateRates(MINUTE);
+			// Mint the staking rewards
+			await synthetix.mint({ from: owner });
+
+			// Get last FeePeriod
+			const lastFeePeriod = await feePool.recentFeePeriods(5);
+			// Assert rewards have rolled over
+			assert.bnEqual(
+				lastFeePeriod.rewardsToDistribute,
+				periodOneMintableSupplyMinusMinterReward.add(rollOverRewards)
+			);
+		});
+
+		it('should rollover the partial unclaimed SNX rewards', async () => {
+			// First week is already closed
+			// Close 6 periods periods
+			const FEE_PERIOD_LENGTH = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
+			for (let i = 0; i <= FEE_PERIOD_LENGTH; i++) {
+				await closeFeePeriodAndFastForward();
+				// FastForward a bit to be able to mint
+				await fastForwardAndUpdateRates(MINUTE);
+
+				// Mint the staking rewards
+				await synthetix.mint({ from: owner });
+
+				// Only 1 account claims rewards
+				feePool.claimFees(sUSD, { from: account1 });
+			}
+
+			// Get last FeePeriod
+			const lastFeePeriod = await feePool.recentFeePeriods(5);
+			// Assert rewards have rolled over
+			assert.bnEqual(lastFeePeriod.rewardsClaimed, third(periodOneMintableSupplyMinusMinterReward));
 		});
 
 		// it('should allocate correct SNX rewards as others leave the system', async () => {
