@@ -176,6 +176,20 @@ contract Synthetix is ExternStateToken {
     }
     // ========== SETTERS ========== */
 
+    function setFeePool(address _feePool)
+        external
+        optionalProxy_onlyOwner
+    {
+        feePool = IFeePool(_feePool);
+    }
+
+    function setExchangeRates(ExchangeRates _exchangeRates)
+        external
+        optionalProxy_onlyOwner
+    {
+        exchangeRates = _exchangeRates;
+    }
+
     /**
      * @notice Add an associated Synth contract to the Synthetix system
      * @dev Only the contract owner may call this.
@@ -190,8 +204,6 @@ contract Synthetix is ExternStateToken {
 
         availableSynths.push(synth);
         synths[currencyKey] = synth;
-
-        // emitSynthAdded(currencyKey, synth);
     }
 
     /**
