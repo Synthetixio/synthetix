@@ -9,10 +9,13 @@
 		"deploy": false
 	},
 	"FeePool": {
-		"deploy": false
+		"deploy": true
 	},
 	"FeePoolState": {
 		"deploy": false
+	},
+	"FeePoolEternalStorage": {
+		"deploy": true
 	},
 	"SupplySchedule": {
 		"deploy": false
