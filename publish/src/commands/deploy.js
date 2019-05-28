@@ -315,7 +315,6 @@ module.exports = program =>
 				}
 
 				if (feePoolEternalStorage && feePool) {
-					const feePoolAddress = feePool.options.address;
 					const associatedFPContract = await feePoolEternalStorage.methods
 						.associatedContract()
 						.call();
@@ -342,7 +341,6 @@ module.exports = program =>
 				}
 
 				if (feePoolDelegateApprovals && feePool) {
-					const feePoolAddress = feePool.options.address;
 					const delegateApprovalsAddress = feePoolDelegateApprovals.options.address;
 					const feePoolOwner = await feePool.methods.owner().call();
 
@@ -572,7 +570,6 @@ module.exports = program =>
 				}
 
 				if (rewardEscrow && feePool) {
-					const feePoolAddress = feePool ? feePool.options.address : '';
 					// only the owner can do this
 					const rewardEscrowOwner = await rewardEscrow.methods.owner().call();
 
