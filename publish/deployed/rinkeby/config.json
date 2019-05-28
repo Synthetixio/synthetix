@@ -14,6 +14,12 @@
 	"FeePoolState": {
 		"deploy": false
 	},
+	"FeePoolEternalStorage": {
+		"deploy": false
+	},
+	"DelegateApprovals": {
+		"deploy": false
+	},
 	"SupplySchedule": {
 		"deploy": false
 	},
@@ -56,7 +62,25 @@
 	"SynthsCNY": {
 		"deploy": false
 	},
+	"SynthsSGD": {
+		"deploy": false
+	},
+	"SynthsCAD": {
+		"deploy": false
+	},
+	"SynthsRUB": {
+		"deploy": false
+	},
 	"SynthsINR": {
+		"deploy": false
+	},
+	"SynthsBRL": {
+		"deploy": false
+	},
+	"SynthsNZD": {
+		"deploy": false
+	},
+	"SynthsPLN": {
 		"deploy": false
 	},
 	"SynthsXAU": {
@@ -101,7 +125,25 @@
 	"ProxysCNY": {
 		"deploy": false
 	},
+	"ProxysSGD": {
+		"deploy": false
+	},
+	"ProxysCAD": {
+		"deploy": false
+	},
+	"ProxysRUB": {
+		"deploy": false
+	},
 	"ProxysINR": {
+		"deploy": false
+	},
+	"ProxysBRL": {
+		"deploy": false
+	},
+	"ProxysNZD": {
+		"deploy": false
+	},
+	"ProxysPLN": {
 		"deploy": false
 	},
 	"ProxysXAU": {
@@ -146,7 +188,25 @@
 	"TokenStatesCNY": {
 		"deploy": false
 	},
+	"TokenStatesSGD": {
+		"deploy": false
+	},
+	"TokenStatesCAD": {
+		"deploy": false
+	},
+	"TokenStatesRUB": {
+		"deploy": false
+	},
 	"TokenStatesINR": {
+		"deploy": false
+	},
+	"TokenStatesBRL": {
+		"deploy": false
+	},
+	"TokenStatesNZD": {
+		"deploy": false
+	},
+	"TokenStatesPLN": {
 		"deploy": false
 	},
 	"TokenStatesXAU": {
