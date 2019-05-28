@@ -193,8 +193,8 @@
 			"address": "0xD76C5B71ba091C785aEc1A5c1c901b04876d073B",
 			"source": "Synthetix",
 			"link": "https://etherscan.io/address/0xD76C5B71ba091C785aEc1A5c1c901b04876d073B",
-			"timestamp": "2019-05-28T08:30:44.693Z",
-			"txn": "",
+			"timestamp": "2019-05-28T08:30:13.000Z",
+			"txn": "https://mainnet.etherscan.io/tx/0xa70d12b3814cfad84a27daff10016a115ab9c392a734b1579ebd681646674921",
 			"network": "mainnet"
 		},
 		"SynthetixEscrow": {
