@@ -13,10 +13,10 @@ date:       2019-04-05
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
-The FeePoolState simply stores the accounts issuance ratio for 
+The FeePoolState simply stores the accounts issuance ratio for
 each fee period in the FeePool.
 
-This is use to caclulate the correct allocation of fees/rewards 
+This is use to caclulate the correct allocation of fees/rewards
 owed to minters of the stablecoin total supply
 
 -----------------------------------------------------------------
@@ -63,7 +63,7 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
     /* ========== SETTERS ========== */
 
     /**
-     * @notice set the FeePool contract as it is the only authority to be able to call 
+     * @notice set the FeePool contract as it is the only authority to be able to call
      * appendAccountIssuanceRecord with the onlyFeePool modifer
      * @dev Must be set by owner when FeePool logic is upgraded
      */
@@ -77,9 +77,9 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
     /* ========== VIEWS ========== */
 
     /**
-     * @notice Get an accounts issuanceData for 
+     * @notice Get an accounts issuanceData for
      * @param account users account
-     * @param index Index in the array to retrieve. Upto FEE_PERIOD_LENGTH 
+     * @param index Index in the array to retrieve. Upto FEE_PERIOD_LENGTH
      */
     function getAccountsDebtEntry(address account, uint index)
         public
@@ -121,19 +121,19 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
      * @param debtRatio Debt percentage this account has locked after minting or burning their synth
      * @param debtEntryIndex The index in the global debt ledger. synthetix.synthetixState().issuanceData(account)
      * @param currentPeriodStartDebtIndex The startingDebtIndex of the current fee period
-     * @dev onlyFeePool to call me on synthetix.issue() & synthetix.burn() calls to store the locked SNX 
+     * @dev onlyFeePool to call me on synthetix.issue() & synthetix.burn() calls to store the locked SNX
      * per fee period so we know to allocate the correct proportions of fees and rewards per period
       accountIssuanceLedger[account][0] has the latest locked amount for the current period. This can be update as many time
       accountIssuanceLedger[account][1-3] has the last locked amount for a previous period they minted or burned
      */
-    function appendAccountIssuanceRecord(address account, uint debtRatio, uint debtEntryIndex, uint currentPeriodStartDebtIndex) 
+    function appendAccountIssuanceRecord(address account, uint debtRatio, uint debtEntryIndex, uint currentPeriodStartDebtIndex)
         external
         onlyFeePool
     {
-        // Is the current debtEntryIndex within this fee period 
+        // Is the current debtEntryIndex within this fee period
         if (accountIssuanceLedger[account][0].debtEntryIndex < currentPeriodStartDebtIndex) {
              // If its older then shift the previous IssuanceData entries periods down to make room for the new one.
-            issuanceDataIndexOrder(account);            
+            issuanceDataIndexOrder(account);
         }
         
         // Always store the latest IssuanceData entry at [0]
@@ -144,14 +144,14 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
     /**
      * @notice Pushes down the entire array of debt ratios per fee period
      */
-    function issuanceDataIndexOrder(address account) 
-        private 
+    function issuanceDataIndexOrder(address account)
+        private
     {
         for (uint i = FEE_PERIOD_LENGTH - 2; i < FEE_PERIOD_LENGTH; i--) {
             uint next = i + 1;
             accountIssuanceLedger[account][next].debtPercentage = accountIssuanceLedger[account][i].debtPercentage;
             accountIssuanceLedger[account][next].debtEntryIndex = accountIssuanceLedger[account][i].debtEntryIndex;
-        }    
+        }
     }
 
     /**
@@ -161,9 +161,9 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
      * @param ratios Array of debt ratios
      * @param periodToInsert The Fee Period to insert the historical records into
      * @param feePeriodCloseIndex An accounts debtEntryIndex is valid when within the fee peroid,
-     * since the input ratio will be an average of the pervious periods it just needs to be 
-     * > recentFeePeriods[periodToInsert].startingDebtIndex 
-     * < recentFeePeriods[periodToInsert - 1].startingDebtIndex 
+     * since the input ratio will be an average of the pervious periods it just needs to be
+     * > recentFeePeriods[periodToInsert].startingDebtIndex
+     * < recentFeePeriods[periodToInsert - 1].startingDebtIndex
      */
     function importIssuerData(address[] accounts, uint[] ratios, uint periodToInsert, uint feePeriodCloseIndex)
         external

@@ -1259,7 +1259,7 @@ contract('Synthetix', async accounts => {
 		const debtBalance1 = await synthetix.debtBalanceOf(account1, sUSD);
 		assert.bnClose(debtBalance1, account1AmountToIssue);
 
-		// Issue and burn from account 2
+		// Issue and burn from account 2 all debt
 		await synthetix.issueSynths(sUSD, toUnit('43'), { from: account2 });
 		let debt = await synthetix.debtBalanceOf(account2, sUSD);
 		await synthetix.burnSynths(sUSD, toUnit('43'), { from: account2 });
@@ -1267,9 +1267,10 @@ contract('Synthetix', async accounts => {
 
 		assert.bnEqual(debt, 0);
 
+		// Should set user issuanceData to 0 debtOwnership and retain debtEntryIndex of last action
 		assert.deepEqual(await synthetixState.issuanceData(account2), {
 			initialDebtOwnership: 0,
-			debtEntryIndex: 0,
+			debtEntryIndex: 2,
 		});
 	});
 
