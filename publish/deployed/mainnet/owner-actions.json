@@ -37,26 +37,26 @@
 	},
 	"ProxyFeePool.setTarget(FeePool)": {
 		"target": "0xb440DD674e1243644791a4AdfE3A2AbB0A92d309",
-		"action": "setTarget(0x9B7E40031f7d4f6AB6e5D36bBF2Fea3bCCcc75a5)",
-		"complete": true,
+		"action": "setTarget(0x3D32f1404deacE2A43B08211E4662275045b495b)",
+		"complete": false,
 		"link": "https://etherscan.io/address/0xb440DD674e1243644791a4AdfE3A2AbB0A92d309#writeContract"
 	},
 	"ProxySynthetix.setTarget(Synthetix)": {
 		"target": "0xC011A72400E58ecD99Ee497CF89E3775d4bd732F",
-		"action": "setTarget(0xEf8a2c1BC94e630463293F71bF5414d13e80F62D)",
+		"action": "setTarget(0xD76C5B71ba091C785aEc1A5c1c901b04876d073B)",
 		"complete": false,
 		"link": "https://etherscan.io/address/0xC011A72400E58ecD99Ee497CF89E3775d4bd732F#writeContract"
 	},
 	"TokenStateSynthetix.setAssociatedContract(Synthetix)": {
 		"target": "0x5b1b5fEa1b99D83aD479dF0C222F0492385381dD",
-		"action": "setAssociatedContract(0xEf8a2c1BC94e630463293F71bF5414d13e80F62D)",
+		"action": "setAssociatedContract(0xD76C5B71ba091C785aEc1A5c1c901b04876d073B)",
 		"complete": false,
 		"link": "https://etherscan.io/address/0x5b1b5fEa1b99D83aD479dF0C222F0492385381dD#writeContract"
 	},
 	"SynthetixState.setAssociatedContract(Synthetix)": {
 		"target": "0x4b9Ca5607f1fF8019c1C6A3c2f0CC8de622D5B82",
-		"action": "setAssociatedContract(0xEf8a2c1BC94e630463293F71bF5414d13e80F62D)",
-		"complete": true,
+		"action": "setAssociatedContract(0xD76C5B71ba091C785aEc1A5c1c901b04876d073B)",
+		"complete": false,
 		"link": "https://etherscan.io/address/0x4b9Ca5607f1fF8019c1C6A3c2f0CC8de622D5B82#writeContract"
 	},
 	"SynthXDR.setSynthetix(SynthXDR)": {

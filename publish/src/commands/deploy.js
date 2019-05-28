@@ -350,18 +350,18 @@ module.exports = program =>
 						.associatedContract()
 						.call();
 
-					if (feePoolOwner === account) {
-						console.log(yellow('Invoking feePool.setDelegateApprovals(DelegateApproval)...'));
-						await feePool.methods
-							.setDelegateApprovals(delegateApprovalsAddress)
-							.send(deployer.sendParameters());
-					} else {
-						appendOwnerAction({
-							key: `FeePool.setDelegateApprovals(DelegateApprovals)`,
-							target: feePool.options.address,
-							action: `setDelegateApprovals(${delegateApprovalsAddress})`,
-						});
-					}
+					// if (feePoolOwner === account) {
+					// 	console.log(yellow('Invoking feePool.setDelegateApprovals(DelegateApproval)...'));
+					// 	await feePool.methods
+					// 		.setDelegateApprovals(delegateApprovalsAddress)
+					// 		.send(deployer.sendParameters());
+					// } else {
+					// 	appendOwnerAction({
+					// 		key: `FeePool.setDelegateApprovals(DelegateApprovals)`,
+					// 		target: feePool.options.address,
+					// 		action: `setDelegateApprovals(${delegateApprovalsAddress})`,
+					// 	});
+					// }
 
 					if (associatedContract !== feePoolAddress) {
 						const feePoolDelegateApprovalsOwner = await feePoolDelegateApprovals.methods
@@ -396,21 +396,21 @@ module.exports = program =>
 					const deployedFeePoolState = await feePool.methods.feePoolState().call();
 					const feePoolStateAddress = feePoolState.options.address;
 
-					if (deployedFeePoolState !== feePoolStateAddress) {
-						if (feePoolOwner === account) {
-							console.log(yellow('Invoking FeePool.setFeePoolState(FeePoolState)...'));
+					// if (deployedFeePoolState !== feePoolStateAddress) {
+					// 	if (feePoolOwner === account) {
+					// 		console.log(yellow('Invoking FeePool.setFeePoolState(FeePoolState)...'));
 
-							await feePool.methods
-								.setFeePoolState(feePoolStateAddress)
-								.send(deployer.sendParameters());
-						} else {
-							appendOwnerAction({
-								key: 'FeePool.setFeePoolState(FeePoolState)',
-								target: feePoolStateAddress,
-								action: `setFeePoolState(${feePoolStateAddress})`,
-							});
-						}
-					}
+					// 		await feePool.methods
+					// 			.setFeePoolState(feePoolStateAddress)
+					// 			.send(deployer.sendParameters());
+					// 	} else {
+					// 		appendOwnerAction({
+					// 			key: 'FeePool.setFeePoolState(FeePoolState)',
+					// 			target: feePoolStateAddress,
+					// 			action: `setFeePoolState(${feePoolStateAddress})`,
+					// 		});
+					// 	}
+					// }
 					// Rewire feePoolState if there is a feePool upgrade
 					const configuredFeePoolAddress = await feePoolState.methods.feePool().call();
 					if (configuredFeePoolAddress !== feePool.options.address) {
