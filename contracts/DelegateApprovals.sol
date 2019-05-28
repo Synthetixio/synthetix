@@ -63,7 +63,7 @@ contract DelegateApprovals is State {
         external
         onlyAssociatedContract
     {
-        approval[authoriser][delegate] = false;
+        delete approval[authoriser][delegate];
         emit WithdrawApproval(authoriser, delegate);
     }
 
