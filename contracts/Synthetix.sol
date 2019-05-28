@@ -176,6 +176,20 @@ contract Synthetix is ExternStateToken {
     }
     // ========== SETTERS ========== */
 
+    function setFeePool(IFeePool _feePool)
+        external
+        optionalProxy_onlyOwner
+    {
+        feePool = _feePool;
+    }
+
+    function setExchangeRates(ExchangeRates _exchangeRates)
+        external
+        optionalProxy_onlyOwner
+    {
+        exchangeRates = _exchangeRates;
+    }
+
     /**
      * @notice Add an associated Synth contract to the Synthetix system
      * @dev Only the contract owner may call this.
@@ -190,8 +204,6 @@ contract Synthetix is ExternStateToken {
 
         availableSynths.push(synth);
         synths[currencyKey] = synth;
-
-        // emitSynthAdded(currencyKey, synth);
     }
 
     /**
@@ -733,7 +745,7 @@ contract Synthetix is ExternStateToken {
 
         // Are they exiting the system, or are they just decreasing their debt position?
         if (debtToRemove == existingDebt) {
-            synthetixState.clearIssuanceData(messageSender);
+            synthetixState.setCurrentIssuanceData(messageSender, 0);
             synthetixState.decrementTotalIssuerCount();
         } else {
             // What percentage of the debt will they be left with?

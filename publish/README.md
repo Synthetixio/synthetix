@@ -49,17 +49,18 @@ node publish deploy
 
   > Note: the advantage of supplying this folder over just using the network name is that you can have multiple deployments on the same network in different folders
 
-* `-g, --gas-price <value>` Gas price in GWEI (default: "1")
-* `-m, --method-call-gas-limit <value>` Method call gas limit (default: 150000)
-* `-n, --network <value>` The network to run off. One of mainnet, kovan, rinkeby, rospen. (default: "kovan")
-* `-o, --oracle <value>` The address of the oracle to use. (default: `0xac1e8b385230970319906c03a1d8567e3996d1d5` - used for all testnets)
-* `-f, --fee-auth <value>` The address of the fee Authority to use for feePool. (default: `0xfee056f4d9d63a63d6cf16707d49ffae7ff3ff01` - used for all testnets)
+- `-g, --gas-price <value>` Gas price in GWEI (default: "1")
+- `-m, --method-call-gas-limit <value>` Method call gas limit (default: 150000)
+- `-n, --network <value>` The network to run off. One of mainnet, kovan, rinkeby, rospen. (default: "kovan")
+- `-o, --oracle <value>` The address of the oracle to use. (default: `0xac1e8b385230970319906c03a1d8567e3996d1d5` - used for all testnets)
+- `-f, --fee-auth <value>` The address of the fee Authority to use for feePool. (default: `0xfee056f4d9d63a63d6cf16707d49ffae7ff3ff01` - used for all testnets)
 
 ### Examples
 
 ```bash
 # deploy to rinkeby with 8 gwei gas
-node publish deploy -n rinkeby -d publish/deployed/rinkeby -g 8
+node publish deploy -n ropsten -d publish/deployed/ropsten -g 20
+node publish deploy -n rinkeby -d publish/deployed/rinkeby -g 20
 node publish deploy -n kovan -d publish/deployed/kovan -g 8
 ```
 
@@ -84,6 +85,7 @@ node publish verify
 
 ```bash
 # verify on rinkeby.etherscan
+node publish verify -n ropsten -d publish/deployed/ropsten
 node publish verify -n rinkeby -d publish/deployed/rinkeby
 node publish verify -n kovan -d publish/deployed/kovan
 ```
@@ -101,15 +103,14 @@ node publish nominate
 - `-c, --contracts [value]` One or more contracts to invoke. Leave empty to nominate all contracts in the `config.json` file. Call multiple by invoking `-c First -c Second -c Third` for example.
 - `-d, --deployment-path <value>` Path to a folder that has your input configuration file (`config.json`), the synths list (`synths.json`) and where your `deployment.json` file will be written (and read from if it currently exists
 
-* `-g, --gas-price <value>` Gas price in GWEI (default: "1")
-* `-m, --method-call-gas-limit <value>` Method call gas limit (default: 150000)
-* `-n, --network <value>` The network to run off. One of mainnet, kovan, rinkeby, rospen. (default: "kovan")
-* `-o, --new-owner <value>` The address (with `0x` prefix included) of the new owner to nominate.
+- `-g, --gas-price <value>` Gas price in GWEI (default: "1")
+- `-m, --method-call-gas-limit <value>` Method call gas limit (default: 150000)
+- `-n, --network <value>` The network to run off. One of mainnet, kovan, rinkeby, rospen. (default: -kovan")
+- `-o, --new-owner <value>` The address (with `0x` prefix included) of the new owner to nominate.
 
 ```bash
 node publish nominate -n rinkeby -d publish/deployed/rinkeby -g 3 -c Synthetix -c ProxysUSD -o 0x0000000000000000000000000000000000000000
 ```
-
 
 ## 5. Owner Actions
 
@@ -123,14 +124,34 @@ node publish owner
 
 - `-d, --deployment-path <value>` Path to a folder that has your input configuration file (`config.json`), the synths list (`synths.json`) and where your `deployment.json` file will be written (and read from if it currently exists
 
-* `-n, --network <value>` The network to run off. One of mainnet, kovan, rinkeby, rospen. (default: "kovan")
-* `-o, --new-owner <value>` The address (with `0x` prefix included) of the new owner to nominate.
+- `-n, --network <value>` The network to run off. One of mainnet, kovan, rinkeby, rospen. (default: "kovan")
+- `-o, --new-owner <value>` The address (with `0x` prefix included) of the new owner to nominate.
 
 ```bash
 node publish owner -n rinkeby -d publish/deployed/rinkeby -o 0x0000000000000000000000000000000000000001
 ```
 
-## When adding new synths
+## 6. Remove Synths
+
+Will attempt to remove all given synths from the `Synthetix` contract (as long as they have `totalSupply` of `0`) and update the `config.json` and `synths.json` for the deployment folder.
+
+```bash
+node publish remove-synths
+```
+
+### CLI Options
+
+- `-d, --deployment-path <value>` Path to a folder that has your input configuration file (`config.json`), the synths list (`synths.json`) and where your `deployment.json` file will be written (and read from if it currently exists
+- `-g, --gas-price <value>` Gas price in GWEI (default: "1")
+- `-l, --gas-limit <value>` Method call gas limit (default: 150000)
+- `-n, --network <value>` The network to run off. One of mainnet, kovan, rinkeby, rospen. (default: "kovan")
+- `-s, --synths-to-remove [value]...` One or more synth keys to remove. Call multiple by invoking `-s First -s Second -s Third` for example.
+
+```bash
+node publish remove-synths -n rinkeby -d publish/deployed/rinkeby -g 3 -s sRUB -s sETH
+```
+
+# When adding new synths
 
 1. In the environment folder you are deploying to, add the synth key to the `synths.json` file
 2. [Optional] Run `build` if you've changed any source files, if not you can skip this step.
