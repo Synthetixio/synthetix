@@ -406,8 +406,26 @@ module.exports = program =>
 						} else {
 							appendOwnerAction({
 								key: 'FeePool.setFeePoolState(FeePoolState)',
-								target: feePoolAddress,
+								target: feePoolStateAddress,
 								action: `setFeePoolState(${feePoolStateAddress})`,
+							});
+						}
+					}
+					// Rewire feePoolState if there is a feePool upgrade
+					const configuredFeePoolAddress = await feePoolState.methods.feePool().call();
+					if (configuredFeePoolAddress !== feePool.options.address) {
+						const feePoolStateOwner = await feePoolState.methods.owner().call();
+						if (feePoolStateOwner === account) {
+							console.log(yellow('Invoking FeePoolState.setFeePool(FeePool)...'));
+
+							await feePoolState.methods
+								.setFeePool(feePool.options.address)
+								.send(deployer.sendParameters());
+						} else {
+							appendOwnerAction({
+								key: 'FeePoolState.setFeePool(FeePool)',
+								target: feePool.options.address,
+								action: `setFeePool(${feePool.options.address})`,
 							});
 						}
 					}
