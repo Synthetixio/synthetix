@@ -59,6 +59,7 @@ node publish deploy
 
 ```bash
 # deploy to rinkeby with 8 gwei gas
+node publish deploy -n ropsten -d publish/deployed/ropsten -g 8
 node publish deploy -n rinkeby -d publish/deployed/rinkeby -g 8
 node publish deploy -n kovan -d publish/deployed/kovan -g 8
 ```
@@ -84,6 +85,7 @@ node publish verify
 
 ```bash
 # verify on rinkeby.etherscan
+node publish verify -n ropsten -d publish/deployed/ropsten
 node publish verify -n rinkeby -d publish/deployed/rinkeby
 node publish verify -n kovan -d publish/deployed/kovan
 ```
