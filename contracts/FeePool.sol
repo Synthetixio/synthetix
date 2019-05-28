@@ -817,7 +817,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
             // We can skip period if no debt minted during period
             if (nextPeriod.startingDebtIndex > 0 &&
-            _getLastFeeWithdrawal(account) < recentFeePeriods[i].feePeriodId) {
+            getLastFeeWithdrawal(account) < recentFeePeriods[i].feePeriodId) {
 
                 // We calculate a feePeriod's closingDebtIndex by looking at the next feePeriod's startingDebtIndex
                 // we can use the most recent issuanceData[0] for the current feePeriod
@@ -920,8 +920,9 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
      * @param _claimingAddress account to check the last fee period ID claim for
      * @return uint of the feePeriodID this account last claimed
      */
-    function _getLastFeeWithdrawal(address _claimingAddress)
-        internal
+    function getLastFeeWithdrawal(address _claimingAddress)
+        public
+        view
         returns (uint)
     {
         return feePoolEternalStorage.getUIntValue(keccak256(abi.encodePacked(LAST_FEE_WITHDRAWAL, _claimingAddress)));
