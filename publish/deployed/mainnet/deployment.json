@@ -13,7 +13,7 @@
 			"source": "EscrowChecker",
 			"link": "https://etherscan.io/address/0x3b399e00AFd8201ACf8A5a0EcCF1C47d8D5E41da",
 			"timestamp": "2019-04-03T21:22:54.000Z",
-			"txn": "https://mainnet.etherscan.io/tx/0xa582498dfb84e432ce0e8d0f1e61e4874169337b68ef38a35afd9bee23f00b84",
+			"txn": "https://etherscan.io/tx/0xa582498dfb84e432ce0e8d0f1e61e4874169337b68ef38a35afd9bee23f00b84",
 			"network": "mainnet"
 		},
 		"ExchangeRates": {
@@ -22,7 +22,7 @@
 			"source": "ExchangeRates",
 			"link": "https://etherscan.io/address/0xba34e436C9383aa8FA1e3659D2807ae040592498",
 			"timestamp": "2019-04-23T22:34:08.000Z",
-			"txn": "https://mainnet.etherscan.io/tx/0xea3364c296e01bf747494f6683b0119453a19b8663ea451dea84ac995fe5e88e",
+			"txn": "https://etherscan.io/tx/0xea3364c296e01bf747494f6683b0119453a19b8663ea451dea84ac995fe5e88e",
 			"network": "mainnet"
 		},
 		"FeePool": {
@@ -31,7 +31,7 @@
 			"source": "FeePool",
 			"link": "https://etherscan.io/address/0x3D32f1404deacE2A43B08211E4662275045b495b",
 			"timestamp": "2019-05-28T08:18:40.000Z",
-			"txn": "https://mainnet.etherscan.io/tx/0x67d3bd022d9b4720a1d8453d8602a559017acac27b934cdbf652045b3cd3ab83",
+			"txn": "https://etherscan.io/tx/0x67d3bd022d9b4720a1d8453d8602a559017acac27b934cdbf652045b3cd3ab83",
 			"network": "mainnet"
 		},
 		"ProxyFeePool": {
@@ -194,7 +194,7 @@
 			"source": "Synthetix",
 			"link": "https://etherscan.io/address/0xD76C5B71ba091C785aEc1A5c1c901b04876d073B",
 			"timestamp": "2019-05-28T08:30:13.000Z",
-			"txn": "https://mainnet.etherscan.io/tx/0xa70d12b3814cfad84a27daff10016a115ab9c392a734b1579ebd681646674921",
+			"txn": "https://etherscan.io/tx/0xa70d12b3814cfad84a27daff10016a115ab9c392a734b1579ebd681646674921",
 			"network": "mainnet"
 		},
 		"SynthetixEscrow": {
@@ -508,7 +508,7 @@
 			"source": "Synth",
 			"link": "https://etherscan.io/address/0x42456D7084eacF4083f1140d3229471bbA2949A8",
 			"timestamp": "2019-04-23T22:49:01.000Z",
-			"txn": "https://mainnet.etherscan.io/tx/0x846002916cc074a882eb1367e0a7798465dba45bdf1a509d2fbd646d75352f05",
+			"txn": "https://etherscan.io/tx/0x846002916cc074a882eb1367e0a7798465dba45bdf1a509d2fbd646d75352f05",
 			"network": "mainnet"
 		},
 		"TokenStatesBNB": {
@@ -535,7 +535,7 @@
 			"source": "Synth",
 			"link": "https://etherscan.io/address/0xC906de7f8b4C1a4787023F50F49CE98F9F67c4b8",
 			"timestamp": "2019-04-23T22:51:26.000Z",
-			"txn": "https://mainnet.etherscan.io/tx/0x3c2935bcd3dea032b37803702f0c7dabd0fba56bd42d1dfe1f00cf552657ee66",
+			"txn": "https://etherscan.io/tx/0x3c2935bcd3dea032b37803702f0c7dabd0fba56bd42d1dfe1f00cf552657ee66",
 			"network": "mainnet"
 		},
 		"TokenStateiBTC": {
@@ -562,7 +562,7 @@
 			"source": "Synth",
 			"link": "https://etherscan.io/address/0xd8f6B6b6782632275B2B51230654f687f5b12Cde",
 			"timestamp": "2019-04-23T22:54:24.000Z",
-			"txn": "https://mainnet.etherscan.io/tx/0xd727e4aee782c991e0bc46e2322b173ebe64ee9673fe5eb1f9a64a6ca4f799ea",
+			"txn": "https://etherscan.io/tx/0xd727e4aee782c991e0bc46e2322b173ebe64ee9673fe5eb1f9a64a6ca4f799ea",
 			"network": "mainnet"
 		},
 		"TokenStateiETH": {
@@ -589,7 +589,7 @@
 			"source": "Synth",
 			"link": "https://etherscan.io/address/0x51Fe40e6292dbC44623b298a4086ffA6f5976ba1",
 			"timestamp": "2019-04-23T22:58:31.000Z",
-			"txn": "https://mainnet.etherscan.io/tx/0xf2717aa69f2b955b87e809e9f421953fe6ccc2530821625cc87367f5c0585688",
+			"txn": "https://etherscan.io/tx/0xf2717aa69f2b955b87e809e9f421953fe6ccc2530821625cc87367f5c0585688",
 			"network": "mainnet"
 		},
 		"TokenStateiBNB": {
@@ -616,7 +616,7 @@
 			"source": "Synth",
 			"link": "https://etherscan.io/address/0x56751D5Ac7D2B614C79d22e6b52D3285cFA8a293",
 			"timestamp": "2019-04-23T23:01:32.000Z",
-			"txn": "https://mainnet.etherscan.io/tx/0x72f0f75dc1a9f7532ebfb2700c55df86cf7d41161203ee62270202c3703bf4cd",
+			"txn": "https://etherscan.io/tx/0x72f0f75dc1a9f7532ebfb2700c55df86cf7d41161203ee62270202c3703bf4cd",
 			"network": "mainnet"
 		},
 		"RewardEscrow": {
@@ -625,7 +625,7 @@
 			"source": "RewardEscrow",
 			"link": "https://etherscan.io/address/0xb671F2210B1F6621A2607EA63E6B2DC3e2464d1F",
 			"timestamp": "2019-05-02T07:55:24.000Z",
-			"txn": "https://mainnet.etherscan.io/tx/0xd2b722dd4a70fa6be957d59f58bfeea37634be82672a33430256f2452a353cfe",
+			"txn": "https://etherscan.io/tx/0xd2b722dd4a70fa6be957d59f58bfeea37634be82672a33430256f2452a353cfe",
 			"network": "mainnet"
 		},
 		"FeePoolState": {
@@ -634,7 +634,7 @@
 			"source": "FeePoolState",
 			"link": "https://etherscan.io/address/0x11164F6a47C3f8472D19b9aDd516Fc780cb7Ee02",
 			"timestamp": "2019-05-02T07:57:10.000Z",
-			"txn": "https://mainnet.etherscan.io/tx/0x25bec289bff971dde31fafa71168a5482a02ce3bb2cca5186c033cba355502a7",
+			"txn": "https://etherscan.io/tx/0x25bec289bff971dde31fafa71168a5482a02ce3bb2cca5186c033cba355502a7",
 			"network": "mainnet"
 		},
 		"SupplySchedule": {
@@ -643,7 +643,7 @@
 			"source": "SupplySchedule",
 			"link": "https://etherscan.io/address/0xA3de830b5208851539De8e4FF158D635E8f36FCb",
 			"timestamp": "2019-05-02T08:03:16.000Z",
-			"txn": "https://mainnet.etherscan.io/tx/0x6491203321855d63f42a12c161c44c53828b47e27740785edbd17dce680ee764",
+			"txn": "https://etherscan.io/tx/0x6491203321855d63f42a12c161c44c53828b47e27740785edbd17dce680ee764",
 			"network": "mainnet"
 		},
 		"DelegateApprovals": {
@@ -652,7 +652,7 @@
 			"source": "DelegateApprovals",
 			"link": "https://etherscan.io/address/0x97A853e9536Cf7CF123AA14Da726b71a848290cE",
 			"timestamp": "2019-05-28T08:18:14.000Z",
-			"txn": "https://mainnet.etherscan.io/tx/0x57be5687d750c6e73c2a8931415bf1ff5b1f0f5c862e2b932eb088f338c73bdb",
+			"txn": "https://etherscan.io/tx/0x57be5687d750c6e73c2a8931415bf1ff5b1f0f5c862e2b932eb088f338c73bdb",
 			"network": "mainnet"
 		},
 		"FeePoolEternalStorage": {
@@ -661,7 +661,7 @@
 			"source": "FeePoolEternalStorage",
 			"link": "https://etherscan.io/address/0xC9DFff5fA5605fd94F8B7927b892F2B57391e8bB",
 			"timestamp": "2019-05-28T08:18:15.000Z",
-			"txn": "https://mainnet.etherscan.io/tx/0x6c4cfdae798e1aa656db42c421e6e34749b5b9e8312820aebfefa7de530387d0",
+			"txn": "https://etherscan.io/tx/0x6c4cfdae798e1aa656db42c421e6e34749b5b9e8312820aebfefa7de530387d0",
 			"network": "mainnet"
 		}
 	},
