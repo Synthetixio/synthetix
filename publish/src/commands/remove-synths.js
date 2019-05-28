@@ -105,6 +105,8 @@ module.exports = program =>
 			const Synthetix = new web3.eth.Contract(synthetixABI, synthetixAddress);
 
 			const synthetixOwner = await Synthetix.methods.owner().call();
+			const updatedConfig = JSON.parse(JSON.stringify(config));
+			let updatedSynths = JSON.parse(JSON.stringify(synths));
 
 			for (const currencyKey of synthsToRemove) {
 				// eslint-disable-next-line standard/computed-property-even-spacing
@@ -163,12 +165,12 @@ module.exports = program =>
 				// now update the config.json file
 				const contracts = ['Proxy', 'TokenState', 'Synth'].map(name => `${name}${currencyKey}`);
 				for (const contract of contracts) {
-					delete config[contract];
+					delete updatedConfig[contract];
 				}
-				fs.writeFileSync(configFile, stringify(config));
+				fs.writeFileSync(configFile, stringify(updatedConfig));
 
 				// and update the synths.json file
-				const updatedSynthList = synths.filter(({ name }) => name !== currencyKey);
-				fs.writeFileSync(synthsFile, stringify(updatedSynthList));
+				updatedSynths = updatedSynths.filter(({ name }) => name !== currencyKey);
+				fs.writeFileSync(synthsFile, stringify(updatedSynths));
 			}
 		});
