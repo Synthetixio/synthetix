@@ -208,17 +208,5 @@
 		"action": "setSynthetix(0xD76C5B71ba091C785aEc1A5c1c901b04876d073B)",
 		"complete": false,
 		"link": "https://etherscan.io/address/0x172E09691DfBbC035E37c73B62095caa16Ee2388#writeContract"
-	},
-	"ExchangeRates.setInversePricing(iBTC, 5300, 7950, 2650)": {
-		"target": "0xba34e436C9383aa8FA1e3659D2807ae040592498",
-		"action": "setInversePricing(iBTC, 5300, 7950, 2650)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xba34e436C9383aa8FA1e3659D2807ae040592498#writeContract"
-	},
-	"ExchangeRates.setInversePricing(iETH, 180, 270, 90)": {
-		"target": "0xba34e436C9383aa8FA1e3659D2807ae040592498",
-		"action": "setInversePricing(iETH, 180, 270, 90)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xba34e436C9383aa8FA1e3659D2807ae040592498#writeContract"
 	}
 }
