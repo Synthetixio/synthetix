@@ -176,11 +176,11 @@ contract Synthetix is ExternStateToken {
     }
     // ========== SETTERS ========== */
 
-    function setFeePool(address _feePool)
+    function setFeePool(IFeePool _feePool)
         external
         optionalProxy_onlyOwner
     {
-        feePool = IFeePool(_feePool);
+        feePool = _feePool;
     }
 
     function setExchangeRates(ExchangeRates _exchangeRates)
