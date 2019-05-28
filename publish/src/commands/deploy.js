@@ -734,20 +734,37 @@ module.exports = program =>
 						}
 
 						const synthSNXAddress = await synth.methods.synthetix().call();
+						const synthOwner = await synth.methods.owner().call();
 
+						// ensure synth has correct Synthetix
 						if (synthSNXAddress !== synthetixAddress) {
-							// only synth owner can do this
-							const synthOwner = await synth.methods.owner().call();
-
 							if (synthOwner === account) {
 								console.log(yellow(`Invoking Synth${currencyKey}.setSynthetix(Synthetix)...`));
 								await synth.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
 							} else {
 								appendOwnerAction({
-									key: `Synth${currencyKey}.setSynthetix(Synth${currencyKey})`,
+									key: `Synth${currencyKey}.setSynthetix(Synthetix)`,
 									target: synthAddress,
 									action: `setSynthetix(${synthetixAddress})`,
 								});
+							}
+						}
+
+						// ensure synth has correct FeePool
+						if (synth && feePool) {
+							const synthFeePoolAddress = await synth.methods.feePool().call();
+
+							if (synthFeePoolAddress !== feePoolAddress) {
+								if (synthOwner === account) {
+									console.log(yellow(`Invoking Synth${currencyKey}.setFeePool(FeePool)...`));
+									await synth.methods.setFeePool(feePoolAddress).send(deployer.sendParameters());
+								} else {
+									appendOwnerAction({
+										key: `Synth${currencyKey}.setFeePool(FeePool)`,
+										target: synthAddress,
+										action: `setFeePool(${feePoolAddress})`,
+									});
+								}
 							}
 						}
 
