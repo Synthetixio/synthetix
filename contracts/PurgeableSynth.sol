@@ -47,6 +47,7 @@ contract PurgeableSynth is Synth {
         maxSupplyToPurge = _maxSupplyToPurge;
     }
 
+
     /**
      * @notice Function that allows owner to exchange any number of holders back to sUSD (for frozen or deprecated synths)
      * @param addresses The list of holders to purge
@@ -55,8 +56,10 @@ contract PurgeableSynth is Synth {
         external
         optionalProxy_onlyOwner
     {
+        uint maxSupplyToPurgeInCurrency = getMaxSupplyToPurgeInCurrency();
+
         // Only allow purge when total supply is lte the max or the rate is frozen in ExchangeRates
-        require(totalSupply <= maxSupplyToPurge || exchangeRates.rateIsFrozen(currencyKey), "Cannot purge due to restrictions.");
+        require(totalSupply <= maxSupplyToPurgeInCurrency || exchangeRates.rateIsFrozen(currencyKey), "Cannot purge due to restrictions.");
 
         for (uint8 i = 0; i < addresses.length; i++) {
             address holder = addresses[i];
@@ -70,6 +73,13 @@ contract PurgeableSynth is Synth {
 
         }
 
+    }
+
+    /* ========== GETTERS ========== */
+
+    function getMaxSupplyToPurgeInCurrency() public view returns (uint) {
+        return maxSupplyToPurge.multiplyDecimalRound(exchangeRates.rateForCurrency("sUSD"))
+            .divideDecimalRound(exchangeRates.rateForCurrency(currencyKey));
     }
 
     /* ========== SETTERS ========== */
