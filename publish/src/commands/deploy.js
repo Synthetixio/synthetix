@@ -608,22 +608,30 @@ module.exports = program =>
 				if (config['Synthetix'].deploy || config['SynthetixEscrow'].deploy) {
 					// Note: currently on mainnet SynthetixEscrow.methods.synthetix() does NOT exist
 					// it is "havven" and the ABI we have here is not sufficient
-					const escrowSNXAddress = await synthetixEscrow.methods.synthetix().call();
-					if (escrowSNXAddress !== synthetixAddress) {
-						// only the owner can do this
-						const synthetixEscrowOwner = await synthetixEscrow.methods.owner().call();
+					if (network === 'mainnet') {
+						appendOwnerAction({
+							key: `SynthetixEscrow.setHavven(Synthetix)`,
+							target: synthetixEscrow.options.address,
+							action: `setHavven(${synthetixAddress})`,
+						});
+					} else {
+						const escrowSNXAddress = await synthetixEscrow.methods.synthetix().call();
+						if (escrowSNXAddress !== synthetixAddress) {
+							// only the owner can do this
+							const synthetixEscrowOwner = await synthetixEscrow.methods.owner().call();
 
-						if (synthetixEscrowOwner === account) {
-							console.log(yellow('Invoking SynthetixEscrow.setSynthetix(Synthetix)...'));
-							await synthetixEscrow.methods
-								.setSynthetix(synthetixAddress)
-								.send(deployer.sendParameters());
-						} else {
-							appendOwnerAction({
-								key: `SynthetixEscrow.setSynthetix(Synthetix)`,
-								target: synthetixEscrow.options.address,
-								action: `setSynthetix(${synthetixAddress})`,
-							});
+							if (synthetixEscrowOwner === account) {
+								console.log(yellow('Invoking SynthetixEscrow.setSynthetix(Synthetix)...'));
+								await synthetixEscrow.methods
+									.setSynthetix(synthetixAddress)
+									.send(deployer.sendParameters());
+							} else {
+								appendOwnerAction({
+									key: `SynthetixEscrow.setSynthetix(Synthetix)`,
+									target: synthetixEscrow.options.address,
+									action: `setSynthetix(${synthetixAddress})`,
+								});
+							}
 						}
 					}
 				}
