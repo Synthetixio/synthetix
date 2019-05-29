@@ -15,6 +15,7 @@ module.exports = {
 		reporterOptions: {
 			showTimeSpent: true,
 			currency: 'USD',
+			outputFile: 'test-gas-used.log',
 		},
 	},
 	compilers: {
