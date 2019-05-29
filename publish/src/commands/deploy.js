@@ -170,8 +170,7 @@ module.exports = program =>
 					address: deployment.targets['Synthetix'].address,
 				});
 
-				let currentSynthetixSupply = await oldSynthetix.methods.totalSupply().call();
-				currentSynthetixSupply = '115865384615384615384615382'; // TEMP to remove after 2.5.5 deployment
+				const currentSynthetixSupply = await oldSynthetix.methods.totalSupply().call();
 				console.log(magenta('WARNING: using hard coded totalSupply!'));
 				console.log(
 					gray(
@@ -365,18 +364,18 @@ module.exports = program =>
 						.associatedContract()
 						.call();
 
-					// if (feePoolOwner === account) {
-					// 	console.log(yellow('Invoking feePool.setDelegateApprovals(DelegateApproval)...'));
-					// 	await feePool.methods
-					// 		.setDelegateApprovals(delegateApprovalsAddress)
-					// 		.send(deployer.sendParameters());
-					// } else {
-					// 	appendOwnerAction({
-					// 		key: `FeePool.setDelegateApprovals(DelegateApprovals)`,
-					// 		target: feePool.options.address,
-					// 		action: `setDelegateApprovals(${delegateApprovalsAddress})`,
-					// 	});
-					// }
+					if (feePoolOwner === account) {
+						console.log(yellow('Invoking feePool.setDelegateApprovals(DelegateApproval)...'));
+						await feePool.methods
+							.setDelegateApprovals(delegateApprovalsAddress)
+							.send(deployer.sendParameters());
+					} else {
+						appendOwnerAction({
+							key: `FeePool.setDelegateApprovals(DelegateApprovals)`,
+							target: feePool.options.address,
+							action: `setDelegateApprovals(${delegateApprovalsAddress})`,
+						});
+					}
 
 					if (associatedContract !== feePoolAddress) {
 						const feePoolDelegateApprovalsOwner = await feePoolDelegateApprovals.methods
@@ -574,31 +573,31 @@ module.exports = program =>
 					});
 				}
 
-				// if (rewardEscrow && synthetix) {
-				// 	// only the owner can do this
-				// 	const rewardEscrowOwner = await rewardEscrow.methods.owner().call();
+				if (rewardEscrow && synthetix) {
+					// only the owner can do this
+					const rewardEscrowOwner = await rewardEscrow.methods.owner().call();
 
-				// 	if (rewardEscrowOwner === account) {
-				// 		console.log(yellow('Invoking RewardEscrow.setSynthetix()...'));
-				// 		await rewardEscrow.methods
-				// 			.setSynthetix(synthetixAddress)
-				// 			.send(deployer.sendParameters());
-				// 	} else {
-				// 		console.log(cyan('Cannot call RewardEscrow.setSynthetix() as not owner.'));
-				// 	}
-				// }
+					if (rewardEscrowOwner === account) {
+						console.log(yellow('Invoking RewardEscrow.setSynthetix()...'));
+						await rewardEscrow.methods
+							.setSynthetix(synthetixAddress)
+							.send(deployer.sendParameters());
+					} else {
+						console.log(cyan('Cannot call RewardEscrow.setSynthetix() as not owner.'));
+					}
+				}
 
-				// if (rewardEscrow && feePool) {
-				// 	// only the owner can do this
-				// 	const rewardEscrowOwner = await rewardEscrow.methods.owner().call();
+				if (rewardEscrow && feePool) {
+					// only the owner can do this
+					const rewardEscrowOwner = await rewardEscrow.methods.owner().call();
 
-				// 	if (rewardEscrowOwner === account) {
-				// 		console.log(yellow('Invoking RewardEscrow.setFeePool()...'));
-				// 		await rewardEscrow.methods.setFeePool(feePoolAddress).send(deployer.sendParameters());
-				// 	} else {
-				// 		console.log(cyan('Cannot call RewardEscrow.setFeePool() as not owner.'));
-				// 	}
-				// }
+					if (rewardEscrowOwner === account) {
+						console.log(yellow('Invoking RewardEscrow.setFeePool()...'));
+						await rewardEscrow.methods.setFeePool(feePoolAddress).send(deployer.sendParameters());
+					} else {
+						console.log(cyan('Cannot call RewardEscrow.setFeePool() as not owner.'));
+					}
+				}
 
 				// Skip setting unless redeploying either of these, as
 				if (config['Synthetix'].deploy || config['SynthetixEscrow'].deploy) {
@@ -652,18 +651,18 @@ module.exports = program =>
 				if (supplySchedule && synthetix) {
 					const supplyScheduleOwner = await supplySchedule.methods.owner().call();
 					// Only owner
-					// if (supplyScheduleOwner === account) {
-					// 	console.log(yellow('Invoking SupplySchedule.setSynthetix(Synthetix)'));
-					// 	await supplySchedule.methods
-					// 		.setSynthetix(synthetixAddress)
-					// 		.send(deployer.sendParameters());
-					// } else {
-					// 	appendOwnerAction({
-					// 		key: `SupplySchedule.setSynthetix(Synthetix)`,
-					// 		target: supplySchedule.options.address,
-					// 		action: `setSynthetix(${synthetixAddress})`,
-					// 	});
-					// }
+					if (supplyScheduleOwner === account) {
+						console.log(yellow('Invoking SupplySchedule.setSynthetix(Synthetix)'));
+						await supplySchedule.methods
+							.setSynthetix(synthetixAddress)
+							.send(deployer.sendParameters());
+					} else {
+						appendOwnerAction({
+							key: `SupplySchedule.setSynthetix(Synthetix)`,
+							target: supplySchedule.options.address,
+							action: `setSynthetix(${synthetixAddress})`,
+						});
+					}
 				}
 
 				// ----------------
