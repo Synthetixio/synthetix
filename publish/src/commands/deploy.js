@@ -14,7 +14,6 @@ const {
 	SYNTHS_FILENAME,
 	DEPLOYMENT_FILENAME,
 	ZERO_ADDRESS,
-	OWNER_ACTIONS_FILENAME,
 } = require('../constants');
 
 const {
@@ -200,9 +199,6 @@ module.exports = program =>
 					console.log(gray('Operation cancelled'));
 					process.exit();
 				}
-
-				console.log(gray(`Resetting ${OWNER_ACTIONS_FILENAME}`));
-				fs.writeFileSync(ownerActionsFile, stringify({}));
 
 				console.log(gray(`Starting deployment to ${network.toUpperCase()} via Infura...`));
 				// force flag indicates to deploy even when no config for the entry (useful for new synths)
