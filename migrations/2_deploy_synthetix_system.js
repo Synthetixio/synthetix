@@ -21,6 +21,7 @@ const SelfDestructible = artifacts.require('SelfDestructible');
 
 // Update values before deployment
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
+const SYNTHETIX_TOTAL_SUPPLY = web3.utils.toWei('100000000');
 
 module.exports = async function(deployer, network, accounts) {
 	const [deployerAccount, owner, oracle, feeAuthority, fundsWallet] = accounts;
@@ -176,6 +177,7 @@ module.exports = async function(deployer, network, accounts) {
 		supplySchedule.address,
 		rewardEscrow.address,
 		escrow.address,
+		SYNTHETIX_TOTAL_SUPPLY,
 		{
 			from: deployerAccount,
 			gas: 8000000,
