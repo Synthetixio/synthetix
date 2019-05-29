@@ -88,8 +88,9 @@ contract('Synthetix', async accounts => {
 	it('should set constructor params on deployment', async () => {
 		// constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
 		// 	address _owner, IExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule,
-		// 	ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow
+		// 	ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow, uint _totalSupply
 		// )
+		const SYNTHETIX_TOTAL_SUPPLY = web3.utils.toWei('100000000');
 		const instance = await Synthetix.new(
 			account1,
 			account2,
@@ -100,6 +101,7 @@ contract('Synthetix', async accounts => {
 			account6,
 			account7,
 			account8,
+			SYNTHETIX_TOTAL_SUPPLY,
 			{
 				from: deployerAccount,
 			}
@@ -114,6 +116,41 @@ contract('Synthetix', async accounts => {
 		assert.equal(await instance.supplySchedule(), account6);
 		assert.equal(await instance.rewardEscrow(), account7);
 		assert.equal(await instance.escrow(), account8);
+		assert.equal(await instance.totalSupply(), SYNTHETIX_TOTAL_SUPPLY);
+	});
+
+	it('should set constructor params on upgrade to new totalSupply', async () => {
+		// constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
+		// 	address _owner, IExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule,
+		// 	ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow, uint _totalSupply
+		// )
+		const YEAR_2_SYNTHETIX_TOTAL_SUPPLY = web3.utils.toWei('175000000');
+		const instance = await Synthetix.new(
+			account1,
+			account2,
+			account3,
+			owner,
+			account4,
+			account5,
+			account6,
+			account7,
+			account8,
+			YEAR_2_SYNTHETIX_TOTAL_SUPPLY,
+			{
+				from: deployerAccount,
+			}
+		);
+
+		assert.equal(await instance.proxy(), account1);
+		assert.equal(await instance.tokenState(), account2);
+		assert.equal(await instance.synthetixState(), account3);
+		assert.equal(await instance.owner(), owner);
+		assert.equal(await instance.exchangeRates(), account4);
+		assert.equal(await instance.feePool(), account5);
+		assert.equal(await instance.supplySchedule(), account6);
+		assert.equal(await instance.rewardEscrow(), account7);
+		assert.equal(await instance.escrow(), account8);
+		assert.equal(await instance.totalSupply(), YEAR_2_SYNTHETIX_TOTAL_SUPPLY);
 	});
 
 	it('should allow adding a Synth contract', async () => {

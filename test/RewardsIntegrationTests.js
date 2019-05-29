@@ -357,15 +357,45 @@ contract('Rewards Integration Tests', async accounts => {
 			await synthetix.mint({ from: owner });
 
 			// Only Account 1 claims rewards
-			// await logFeesByPeriod(account1);
 			const rewardsAmount = third(periodOneMintableSupplyMinusMinterReward);
 			const feesByPeriod = await feePoolWeb3.methods.feesByPeriod(account1).call();
 
+			// await logFeesByPeriod(account1);
+			// [1] ---------------------feesByPeriod----------------------
+			// [1] Account 0xa4E5a88e601847Be0021582fC8fa4E760B342f4e
+			// [1] Fee Period[0] Fees: 0 Rewards: 480702564102564102564102
+			// [1] Fee Period[1] Fees: 0 Rewards: 480702564102564102564102
+			// [1] Fee Period[2] Fees: 0 Rewards: 0
+			// [1] Fee Period[3] Fees: 0 Rewards: 480702564102564102564102
+			// [1] Fee Period[4] Fees: 0 Rewards: 480702564102564102564102
+			// [1] Fee Period[5] Fees: 0 Rewards: 480702564102564102564102
+			// [1] --------------------------------------------------------
+
 			assert.bnEqual(feesByPeriod[0][1], rewardsAmount);
 			assert.bnEqual(feesByPeriod[1][1], rewardsAmount);
-			assert.bnEqual(feesByPeriod[2][1], 0, '1');
+			assert.bnEqual(feesByPeriod[2][1], 0);
 			assert.bnEqual(feesByPeriod[3][1], rewardsAmount);
 			assert.bnEqual(feesByPeriod[4][1], rewardsAmount);
+			assert.bnEqual(feesByPeriod[5][1], rewardsAmount);
+
+			// Only 1 account claims rewards
+			feePool.claimFees(sUSD, { from: account1 });
+
+			// await logFeesByPeriod(account1);
+			// ] ---------------------feesByPeriod----------------------
+			// [1] Account 0xa4E5a88e601847Be0021582fC8fa4E760B342f4e
+			// [1] Fee Period[0] Fees: 0 Rewards: 480702564102564102564102
+			// [1] Fee Period[1] Fees: 0 Rewards: 0
+			// [1] Fee Period[2] Fees: 0 Rewards: 0
+			// [1] Fee Period[3] Fees: 0 Rewards: 0
+			// [1] Fee Period[4] Fees: 0 Rewards: 0
+			// [1] Fee Period[5] Fees: 0 Rewards: 0
+			// [1] --------------------------------------------------------
+
+			// Assert account 1 has all their rewards minus the week they left the system
+			const totalRewardsClaimable = rewardsAmount.mul(web3.utils.toBN('4'));
+			const account1EscrowEntry = await rewardEscrow.getVestingScheduleEntry(account1, 0);
+			assert.bnEqual(account1EscrowEntry[1], totalRewardsClaimable);
 		});
 
 		// it('should allocate correct SNX rewards as others leave the system', async () => {

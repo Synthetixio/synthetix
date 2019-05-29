@@ -148,7 +148,6 @@ contract Synthetix is ExternStateToken {
     SynthetixState public synthetixState;
     SupplySchedule public supplySchedule;
 
-    uint constant SYNTHETIX_SUPPLY = 1e8 * SafeDecimalMath.unit();
     string constant TOKEN_NAME = "Synthetix Network Token";
     string constant TOKEN_SYMBOL = "SNX";
     uint8 constant DECIMALS = 18;
@@ -162,9 +161,9 @@ contract Synthetix is ExternStateToken {
      */
     constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
         address _owner, ExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule,
-        ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow
+        ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow, uint _totalSupply
     )
-        ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, SYNTHETIX_SUPPLY, DECIMALS, _owner)
+        ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, _totalSupply, DECIMALS, _owner)
         public
     {
         synthetixState = _synthetixState;
