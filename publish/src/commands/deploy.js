@@ -2,7 +2,7 @@
 
 const path = require('path');
 const fs = require('fs');
-const { gray, green, yellow, cyan } = require('chalk');
+const { gray, green, yellow, cyan, magenta } = require('chalk');
 const { table } = require('table');
 const w3utils = require('web3-utils');
 const Deployer = require('../Deployer');
@@ -163,6 +163,23 @@ module.exports = program =>
 
 				const { account } = deployer;
 				console.log(gray(`Using account with public key ${account}`));
+
+				// get the current supply as it changes as we mint after each period
+				const oldSynthetix = deployer.getContract({
+					abi: deployment.sources['Synthetix'].abi,
+					address: deployment.targets['Synthetix'].address,
+				});
+
+				let currentSynthetixSupply = await oldSynthetix.methods.totalSupply().call();
+				currentSynthetixSupply = '115865384615384615384615382'; // TEMP to remove after 2.5.5 deployment
+				console.log(magenta('WARNING: using hard coded totalSupply!'));
+				console.log(
+					gray(
+						`Synthetix totalSupply is currently ${Math.round(
+							w3utils.fromWei(currentSynthetixSupply) / 1e6
+						)}m`
+					)
+				);
 
 				try {
 					await confirmAction(
@@ -444,6 +461,7 @@ module.exports = program =>
 					source: 'TokenState',
 					args: [account, account],
 				});
+
 				const synthetix = await deployContract({
 					name: 'Synthetix',
 					deps: [
@@ -466,6 +484,7 @@ module.exports = program =>
 						supplySchedule ? supplySchedule.options.address : '',
 						rewardEscrow ? rewardEscrow.options.address : '',
 						synthetixEscrow ? synthetixEscrow.options.address : '',
+						currentSynthetixSupply,
 					],
 				});
 
