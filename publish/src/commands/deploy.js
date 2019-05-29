@@ -315,7 +315,6 @@ module.exports = program =>
 				}
 
 				if (feePoolEternalStorage && feePool) {
-					const feePoolAddress = feePool.options.address;
 					const associatedFPContract = await feePoolEternalStorage.methods
 						.associatedContract()
 						.call();
@@ -342,7 +341,6 @@ module.exports = program =>
 				}
 
 				if (feePoolDelegateApprovals && feePool) {
-					const feePoolAddress = feePool.options.address;
 					const delegateApprovalsAddress = feePoolDelegateApprovals.options.address;
 					const feePoolOwner = await feePool.methods.owner().call();
 
@@ -572,7 +570,6 @@ module.exports = program =>
 				}
 
 				if (rewardEscrow && feePool) {
-					const feePoolAddress = feePool ? feePool.options.address : '';
 					// only the owner can do this
 					const rewardEscrowOwner = await rewardEscrow.methods.owner().call();
 
@@ -737,63 +734,90 @@ module.exports = program =>
 						}
 
 						const synthSNXAddress = await synth.methods.synthetix().call();
+						const synthOwner = await synth.methods.owner().call();
 
+						// ensure synth has correct Synthetix
 						if (synthSNXAddress !== synthetixAddress) {
-							// only synth owner can do this
-							const synthOwner = await synth.methods.owner().call();
-
 							if (synthOwner === account) {
 								console.log(yellow(`Invoking Synth${currencyKey}.setSynthetix(Synthetix)...`));
 								await synth.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
 							} else {
 								appendOwnerAction({
-									key: `Synth${currencyKey}.setSynthetix(Synth${currencyKey})`,
+									key: `Synth${currencyKey}.setSynthetix(Synthetix)`,
 									target: synthAddress,
 									action: `setSynthetix(${synthetixAddress})`,
 								});
 							}
 						}
 
-						// now configure inverse synths in exchange rates
-						if (inverted) {
-							const {
-								entryPoint: currentEP,
-								upperLimit: currentUL,
-								lowerLimit: currentLL,
-								frozen,
-							} = await exchangeRates.methods.inversePricing(toBytes4(currencyKey)).call();
+						// ensure synth has correct FeePool
+						if (synth && feePool) {
+							const synthFeePoolAddress = await synth.methods.feePool().call();
 
-							const { entryPoint, upperLimit, lowerLimit } = inverted;
-
-							// only do if not already set
-							if (
-								w3utils.fromWei(currentEP) !== entryPoint.toString() ||
-								w3utils.fromWei(currentUL) !== upperLimit.toString() ||
-								w3utils.fromWei(currentLL) !== lowerLimit.toString() ||
-								frozen
-							) {
-								const exchangeRatesOwner = await exchangeRates.methods.owner().call();
-								if (exchangeRatesOwner === account) {
-									console.log(
-										yellow(
-											`Invoking ExchangeRates.setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})...`
-										)
-									);
-									await exchangeRates.methods
-										.setInversePricing(
-											toBytes4(currencyKey),
-											w3utils.toWei(entryPoint.toString()),
-											w3utils.toWei(upperLimit.toString()),
-											w3utils.toWei(lowerLimit.toString())
-										)
-										.send(deployer.sendParameters());
+							if (synthFeePoolAddress !== feePoolAddress) {
+								if (synthOwner === account) {
+									console.log(yellow(`Invoking Synth${currencyKey}.setFeePool(FeePool)...`));
+									await synth.methods.setFeePool(feePoolAddress).send(deployer.sendParameters());
 								} else {
 									appendOwnerAction({
-										key: `ExchangeRates.setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})`,
-										target: exchangeRatesAddress,
-										action: `setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})`,
+										key: `Synth${currencyKey}.setFeePool(FeePool)`,
+										target: synthAddress,
+										action: `setFeePool(${feePoolAddress})`,
 									});
 								}
+							}
+						}
+
+						// now configure inverse synths in exchange rates
+						if (inverted) {
+							// check total supply
+							const totalSynthSupply = await synth.methods.totalSupply().call();
+							if (Number(totalSynthSupply) === 0) {
+								const {
+									entryPoint: currentEP,
+									upperLimit: currentUL,
+									lowerLimit: currentLL,
+								} = await exchangeRates.methods.inversePricing(toBytes4(currencyKey)).call();
+
+								const { entryPoint, upperLimit, lowerLimit } = inverted;
+
+								// only do if not already set
+								if (
+									w3utils.fromWei(currentEP) !== entryPoint.toString() ||
+									w3utils.fromWei(currentUL) !== upperLimit.toString() ||
+									w3utils.fromWei(currentLL) !== lowerLimit.toString()
+								) {
+									const exchangeRatesOwner = await exchangeRates.methods.owner().call();
+									if (exchangeRatesOwner === account) {
+										console.log(
+											yellow(
+												`Invoking ExchangeRates.setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})...`
+											)
+										);
+										await exchangeRates.methods
+											.setInversePricing(
+												toBytes4(currencyKey),
+												w3utils.toWei(entryPoint.toString()),
+												w3utils.toWei(upperLimit.toString()),
+												w3utils.toWei(lowerLimit.toString())
+											)
+											.send(deployer.sendParameters());
+									} else {
+										appendOwnerAction({
+											key: `ExchangeRates.setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})`,
+											target: exchangeRatesAddress,
+											action: `setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})`,
+										});
+									}
+								}
+							} else {
+								console.log(
+									gray(
+										`Not setting inverse pricing on ${currencyKey} as totalSupply is > 0 (${w3utils.fromWei(
+											totalSynthSupply
+										)})`
+									)
+								);
 							}
 						}
 					}
