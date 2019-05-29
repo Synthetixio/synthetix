@@ -2,7 +2,7 @@
 
 const path = require('path');
 const fs = require('fs');
-const { gray, green, yellow, cyan, magenta } = require('chalk');
+const { gray, green, yellow, cyan } = require('chalk');
 const { table } = require('table');
 const w3utils = require('web3-utils');
 const Deployer = require('../Deployer');
@@ -171,7 +171,6 @@ module.exports = program =>
 				});
 
 				const currentSynthetixSupply = await oldSynthetix.methods.totalSupply().call();
-				console.log(magenta('WARNING: using hard coded totalSupply!'));
 				console.log(
 					gray(
 						`Synthetix totalSupply is currently ${Math.round(
