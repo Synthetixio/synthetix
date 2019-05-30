@@ -8,7 +8,7 @@ const Proxy = artifacts.require('Proxy');
 
 const { currentTime, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 
-contract.only('PurgeableSynth', accounts => {
+contract('PurgeableSynth', accounts => {
 	const [sUSD, SNX, , sAUD, iETH] = ['sUSD', 'SNX', 'XDR', 'sAUD', 'iETH'].map(
 		web3.utils.asciiToHex
 	);
@@ -19,7 +19,7 @@ contract.only('PurgeableSynth', accounts => {
 		,
 		,
 		account1,
-		// account2,
+		account2,
 	] = accounts;
 
 	let feePool,
@@ -199,6 +199,7 @@ contract.only('PurgeableSynth', accounts => {
 				describe('when the user exchanges 1000 of their sUSD into the purgeable synth', () => {
 					let amountToExchange;
 					let usersEffectiveBalanceInUSD;
+					let balanceBeforePurge;
 					beforeEach(async () => {
 						amountToExchange = toUnit(1000);
 						await synthetix.exchange(sUSD, amountToExchange, iETH, ZERO_ADDRESS, {
@@ -209,6 +210,7 @@ contract.only('PurgeableSynth', accounts => {
 						const amountExchangedInUSDLessFees = await feePool.amountReceivedFromExchange(
 							amountToExchange
 						);
+						balanceBeforePurge = await this.synth.balanceOf(account1);
 						usersEffectiveBalanceInUSD = usersUSDBalance.add(amountExchangedInUSDLessFees);
 					});
 					it('then the exchange works as expected', async () => {
@@ -232,9 +234,7 @@ contract.only('PurgeableSynth', accounts => {
 					});
 					describe('when purge is called for the synth', () => {
 						let txn;
-						let balanceBeforePurge;
 						beforeEach(async () => {
-							balanceBeforePurge = await this.synth.balanceOf(account1);
 							txn = await this.synth.purge([account1], { from: owner });
 						});
 						it('then the user is at 0 balance', async () => {
@@ -264,6 +264,63 @@ contract.only('PurgeableSynth', accounts => {
 							assert.eventEqual(purgedEvent, 'Purged', {
 								account: account1,
 								value: balanceBeforePurge,
+							});
+						});
+					});
+
+					describe('when purge is invoked with no accounts', () => {
+						let txn;
+						let totalSupplyBeforePurge;
+						beforeEach(async () => {
+							totalSupplyBeforePurge = await this.synth.totalSupply();
+							txn = await this.synth.purge([], { from: owner });
+						});
+						it('then no change occurs', async () => {
+							const userBalance = await this.synth.balanceOf(account1);
+							assert.bnEqual(
+								userBalance,
+								balanceBeforePurge,
+								'The user must not be impacted by an empty purge'
+							);
+						});
+						it('and the totalSupply must be unchanged', async () => {
+							const iETHTotalSupply = await this.synth.totalSupply();
+							assert.bnEqual(
+								iETHTotalSupply,
+								totalSupplyBeforePurge,
+								'Total supply must be unchanged'
+							);
+						});
+						it('and no events are emitted', async () => {
+							assert.equal(txn.logs.length, 0, 'No purged event must be emitted');
+						});
+					});
+
+					describe('and there exists another user with 2000 sUSD ', () => {
+						beforeEach(async () => {
+							await issueSynths({ account: account2, amount: 10000 });
+						});
+						describe('when the user exchanges 20 of their sUSD into the purgeable synth', () => {
+							beforeEach(async () => {
+								await synthetix.exchange(sUSD, toUnit(20), iETH, ZERO_ADDRESS, {
+									from: account1,
+								});
+							});
+							describe('when purge is invoked with both accounts', () => {
+								it('then it reverts as the totalSupply exceeds the 1000USD max', async () => {
+									await assert.revert(this.synth.purge([account1, account2], { from: owner }));
+								});
+							});
+							describe('when purge is invoked with just one account', () => {
+								it('then it reverts as the totalSupply exceeds the 1000USD max', async () => {
+									await assert.revert(this.synth.purge([account2], { from: owner }));
+								});
+							});
+							describe('when the exchange rates has the synth as frozen', () => {
+								// TODO
+								// when setInversePricing and a price comes outside range
+								// when purge is invoked
+								// then it works
 							});
 						});
 					});
