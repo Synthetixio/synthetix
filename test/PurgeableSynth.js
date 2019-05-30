@@ -52,7 +52,7 @@ contract.only('PurgeableSynth', accounts => {
 		await feePool.setTransferFeeRate('0', { from: owner });
 	});
 
-	const deploySynth = async ({ currencyKey, maxSupplyToPurge }) => {
+	const deploySynth = async ({ currencyKey, maxSupplyToPurgeInUSD }) => {
 		const synthTokenState = await TokenState.new(owner, ZERO_ADDRESS, {
 			from: deployerAccount,
 		});
@@ -68,7 +68,7 @@ contract.only('PurgeableSynth', accounts => {
 			owner,
 			web3.utils.asciiToHex(currencyKey),
 			exchangeRates.address,
-			maxSupplyToPurge,
+			maxSupplyToPurgeInUSD,
 			{
 				from: deployerAccount,
 			}
@@ -89,31 +89,34 @@ contract.only('PurgeableSynth', accounts => {
 
 	describe('when a Purgeable synth is added', () => {
 		beforeEach(async () => {
-			const { synth } = await deploySynth({ currencyKey: 'iETH', maxSupplyToPurge: toUnit(1000) });
+			const { synth } = await deploySynth({
+				currencyKey: 'iETH',
+				maxSupplyToPurgeInUSD: toUnit(1000),
+			});
 			this.synth = synth;
 		});
 		it('it sets its max supply correctly', async () => {
-			const maxSupply = await this.synth.maxSupplyToPurge();
+			const maxSupply = await this.synth.maxSupplyToPurgeInUSD();
 			assert.bnEqual(maxSupply, toUnit(1000));
 		});
 		it('it sets exchangerates correctly', async () => {
 			const exRates = await this.synth.exchangeRates();
 			assert.equal(exRates, exchangeRates.address);
 		});
-		describe('setMaxSupplyToPurge', () => {
+		describe('setMaxSupplyToPurgeInUSD', () => {
 			describe('when a non-owner tries to invoke', () => {
 				it('then it fails', async () => {
 					await assert.revert(
-						this.synth.setMaxSupplyToPurge(toUnit(10), { from: deployerAccount })
+						this.synth.setMaxSupplyToPurgeInUSD(toUnit(10), { from: deployerAccount })
 					);
-					await assert.revert(this.synth.setMaxSupplyToPurge(toUnit(100), { from: oracle }));
-					await assert.revert(this.synth.setMaxSupplyToPurge(toUnit(99), { from: account1 }));
+					await assert.revert(this.synth.setMaxSupplyToPurgeInUSD(toUnit(100), { from: oracle }));
+					await assert.revert(this.synth.setMaxSupplyToPurgeInUSD(toUnit(99), { from: account1 }));
 				});
 			});
 			describe('when an owner invokes', () => {
 				it('then it succeeds', async () => {
-					await this.synth.setMaxSupplyToPurge(toUnit(99), { from: owner });
-					const newMaxSupply = await this.synth.maxSupplyToPurge();
+					await this.synth.setMaxSupplyToPurgeInUSD(toUnit(99), { from: owner });
+					const newMaxSupply = await this.synth.maxSupplyToPurgeInUSD();
 					assert.bnEqual(newMaxSupply, toUnit(99));
 				});
 			});
@@ -159,11 +162,11 @@ contract.only('PurgeableSynth', accounts => {
 				);
 			});
 
-			it('then getMaxSupplyToPurgeInCurrency returns the value at the current exchange rate', async () => {
-				const maxSupplyToPurgeInCurrency = await this.synth.getMaxSupplyToPurgeInCurrency();
+			it('then getMaxSupplyToPurge returns the value at the current exchange rate', async () => {
+				const getMaxSupplyToPurge = await this.synth.getMaxSupplyToPurge();
 
 				assert.bnEqual(
-					maxSupplyToPurgeInCurrency,
+					getMaxSupplyToPurge,
 					toUnit(1000 / 0.1),
 					'Max supply in purge currency must be converted via current exchange rate'
 				);
@@ -175,11 +178,11 @@ contract.only('PurgeableSynth', accounts => {
 					});
 				});
 
-				it('then getMaxSupplyToPurgeInCurrency returns the value at the new exchange rate', async () => {
-					const maxSupplyToPurgeInCurrency = await this.synth.getMaxSupplyToPurgeInCurrency();
+				it('then getMaxSupplyToPurge returns the value at the new exchange rate', async () => {
+					const getMaxSupplyToPurge = await this.synth.getMaxSupplyToPurge();
 
 					assert.bnEqual(
-						maxSupplyToPurgeInCurrency,
+						getMaxSupplyToPurge,
 						toUnit(1000 / 0.25),
 						'Max supply in purge currency must be converted via current exchange rate'
 					);
@@ -228,8 +231,11 @@ contract.only('PurgeableSynth', accounts => {
 						);
 					});
 					describe('when purge is called for the synth', () => {
+						let txn;
+						let balanceBeforePurge;
 						beforeEach(async () => {
-							await this.synth.purge([account1], { from: owner });
+							balanceBeforePurge = await this.synth.balanceOf(account1);
+							txn = await this.synth.purge([account1], { from: owner });
 						});
 						it('then the user is at 0 balance', async () => {
 							const userBalance = await this.synth.balanceOf(account1);
@@ -252,7 +258,14 @@ contract.only('PurgeableSynth', accounts => {
 							assert.bnEqual(iETHTotalSupply, toUnit(0), 'Total supply must be 0 after the purge');
 						});
 
-						it('must issue the correct events');
+						it('must issue the Purged event', () => {
+							const purgedEvent = txn.logs.find(log => log.event === 'Purged');
+
+							assert.eventEqual(purgedEvent, 'Purged', {
+								account: account1,
+								value: balanceBeforePurge,
+							});
+						});
 					});
 				});
 			});

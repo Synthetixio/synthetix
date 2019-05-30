@@ -31,20 +31,20 @@ contract PurgeableSynth is Synth {
 
     using SafeDecimalMath for uint;
 
-    uint public maxSupplyToPurge;
+    uint public maxSupplyToPurgeInUSD;
     ExchangeRates public exchangeRates;
 
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _proxy, TokenState _tokenState, Synthetix _synthetix, IFeePool _feePool,
         string _tokenName, string _tokenSymbol, address _owner, bytes4 _currencyKey, ExchangeRates _exchangeRates,
-        uint _maxSupplyToPurge
+        uint _maxSupplyToPurgeInUSD
     )
         Synth(_proxy, _tokenState, _synthetix, _feePool, _tokenName, _tokenSymbol, _owner, _currencyKey)
         public
     {
         exchangeRates = _exchangeRates;
-        maxSupplyToPurge = _maxSupplyToPurge;
+        maxSupplyToPurgeInUSD = _maxSupplyToPurgeInUSD;
     }
 
 
@@ -56,10 +56,11 @@ contract PurgeableSynth is Synth {
         external
         optionalProxy_onlyOwner
     {
-        uint maxSupplyToPurgeInCurrency = getMaxSupplyToPurgeInCurrency();
+        uint maxSupplyToPurge = getMaxSupplyToPurge();
 
         // Only allow purge when total supply is lte the max or the rate is frozen in ExchangeRates
-        require(totalSupply <= maxSupplyToPurgeInCurrency || exchangeRates.rateIsFrozen(currencyKey), "Cannot purge due to restrictions.");
+        require(totalSupply <= maxSupplyToPurge || exchangeRates.rateIsFrozen(currencyKey),
+            "Cannot purge as total supply is above threshold and rate is not frozen.");
 
         for (uint8 i = 0; i < addresses.length; i++) {
             address holder = addresses[i];
@@ -77,18 +78,18 @@ contract PurgeableSynth is Synth {
 
     /* ========== GETTERS ========== */
 
-    function getMaxSupplyToPurgeInCurrency() public view returns (uint) {
-        return maxSupplyToPurge.multiplyDecimalRound(exchangeRates.rateForCurrency("sUSD"))
+    function getMaxSupplyToPurge() public view returns (uint) {
+        return maxSupplyToPurgeInUSD.multiplyDecimalRound(exchangeRates.rateForCurrency("sUSD"))
             .divideDecimalRound(exchangeRates.rateForCurrency(currencyKey));
     }
 
     /* ========== SETTERS ========== */
 
-    function setMaxSupplyToPurge(uint _maxSupplyToPurge)
+    function setMaxSupplyToPurgeInUSD(uint _maxSupplyToPurgeInUSD)
         external
         optionalProxy_onlyOwner
     {
-        maxSupplyToPurge = _maxSupplyToPurge;
+        maxSupplyToPurgeInUSD = _maxSupplyToPurgeInUSD;
     }
 
     function setExchangeRates(ExchangeRates _exchangeRates)
