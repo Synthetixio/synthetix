@@ -1855,6 +1855,46 @@ contract('Synthetix', async accounts => {
 		assert.bnEqual(collaterisationRatio, expectedCollaterisationRatio);
 	});
 
+	it('should permit user to issue sUSD debt with only escrowed SNX as collateral (no SNX in wallet)', async () => {
+		const oneWeek = 60 * 60 * 24 * 7;
+		const twelveWeeks = oneWeek * 12;
+		const now = await currentTime();
+
+		// Send a price update to guarantee we're not depending on values from outside this test.
+		await exchangeRates.updateRates(
+			[sAUD, sEUR, SNX],
+			['0.5', '1.25', '0.1'].map(toUnit),
+			timestamp,
+			{ from: oracle }
+		);
+
+		// ensure collateral of account1 is empty
+		// ensure account1 has no SNX balance
+		let collateral = await synthetix.collateral(account1, { from: account1 });
+		assert.bnEqual(collateral, 0);
+
+		const snxBalance = await synthetix.balanceOf(account1);
+		assert.bnEqual(snxBalance, 0);
+
+		const escrowedAmount = toUnit('15000');
+		await synthetix.methods['transfer(address,uint256)'](escrow.address, escrowedAmount, {
+			from: owner,
+		});
+		await escrow.appendVestingEntry(account1, web3.utils.toBN(now + twelveWeeks), escrowedAmount, {
+			from: owner,
+		});
+
+		// collateral should include escrowed amount
+		collateral = await synthetix.collateral(account1, { from: account1 });
+		assert.bnEqual(collateral, escrowedAmount);
+
+		// Issue max synths. (300 sUSD)
+		await synthetix.issueMaxSynths(sUSD, { from: account1 });
+
+		// There should be 300 sUSD of value for account1
+		assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('300'));
+	});
+
 	it("should permit anyone checking another user's collateral", async () => {
 		const amount = toUnit('60000');
 		await synthetix.methods['transfer(address,uint256)'](account1, amount, { from: owner });
