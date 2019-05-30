@@ -1869,13 +1869,14 @@ contract('Synthetix', async accounts => {
 		);
 
 		// ensure collateral of account1 is empty
-		// ensure account1 has no SNX balance
 		let collateral = await synthetix.collateral(account1, { from: account1 });
 		assert.bnEqual(collateral, 0);
 
+		// ensure account1 has no SNX balance
 		const snxBalance = await synthetix.balanceOf(account1);
 		assert.bnEqual(snxBalance, 0);
 
+		// Append escrow amount to account1
 		const escrowedAmount = toUnit('15000');
 		await synthetix.methods['transfer(address,uint256)'](escrow.address, escrowedAmount, {
 			from: owner,
