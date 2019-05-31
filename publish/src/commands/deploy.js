@@ -580,27 +580,37 @@ module.exports = program =>
 				if (rewardEscrow && synthetix) {
 					// only the owner can do this
 					const rewardEscrowOwner = await rewardEscrow.methods.owner().call();
+					const rewardEscrowSynthetix = await rewardEscrow.methods.synthetix().call();
 
-					if (rewardEscrowOwner === account) {
-						console.log(yellow('Invoking RewardEscrow.setSynthetix()...'));
-						await rewardEscrow.methods
-							.setSynthetix(synthetixAddress)
-							.send(deployer.sendParameters());
-					} else {
-						console.log(cyan('Cannot call RewardEscrow.setSynthetix() as not owner.'));
+					if (rewardEscrowSynthetix !== synthetix.options.address) {
+						if (rewardEscrowOwner === account) {
+							console.log(yellow('Invoking RewardEscrow.setSynthetix()...'));
+							await rewardEscrow.methods
+								.setSynthetix(synthetixAddress)
+								.send(deployer.sendParameters());
+						} else {
+							console.log(cyan('Cannot call RewardEscrow.setSynthetix() as not owner.'));
+						}
 					}
+
+					console.log(cyan('Synthetix already set on rewardEscrow, skipping'));
 				}
 
 				if (rewardEscrow && feePool) {
 					// only the owner can do this
 					const rewardEscrowOwner = await rewardEscrow.methods.owner().call();
+					const rewardEscrowFeePool = await rewardEscrow.methods.feePool().call();
 
-					if (rewardEscrowOwner === account) {
-						console.log(yellow('Invoking RewardEscrow.setFeePool()...'));
-						await rewardEscrow.methods.setFeePool(feePoolAddress).send(deployer.sendParameters());
-					} else {
-						console.log(cyan('Cannot call RewardEscrow.setFeePool() as not owner.'));
+					if (rewardEscrowFeePool !== feePool.options.address) {
+						if (rewardEscrowOwner === account) {
+							console.log(yellow('Invoking RewardEscrow.setFeePool()...'));
+							await rewardEscrow.methods.setFeePool(feePoolAddress).send(deployer.sendParameters());
+						} else {
+							console.log(cyan('Cannot call RewardEscrow.setFeePool() as not owner.'));
+						}
 					}
+
+					console.log(cyan('FeePool already set on rewardEscrow, skipping'));
 				}
 
 				// Skip setting unless redeploying either of these, as
