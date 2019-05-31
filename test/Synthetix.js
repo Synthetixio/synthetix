@@ -1855,6 +1855,86 @@ contract('Synthetix', async accounts => {
 		assert.bnEqual(collaterisationRatio, expectedCollaterisationRatio);
 	});
 
+	it('should permit user to issue sUSD debt with only escrowed SNX as collateral (no SNX in wallet)', async () => {
+		const oneWeek = 60 * 60 * 24 * 7;
+		const twelveWeeks = oneWeek * 12;
+		const now = await currentTime();
+
+		// Send a price update to guarantee we're not depending on values from outside this test.
+		await exchangeRates.updateRates(
+			[sAUD, sEUR, SNX],
+			['0.5', '1.25', '0.1'].map(toUnit),
+			timestamp,
+			{ from: oracle }
+		);
+
+		// ensure collateral of account1 is empty
+		let collateral = await synthetix.collateral(account1, { from: account1 });
+		assert.bnEqual(collateral, 0);
+
+		// ensure account1 has no SNX balance
+		const snxBalance = await synthetix.balanceOf(account1);
+		assert.bnEqual(snxBalance, 0);
+
+		// Append escrow amount to account1
+		const escrowedAmount = toUnit('15000');
+		await synthetix.methods['transfer(address,uint256)'](escrow.address, escrowedAmount, {
+			from: owner,
+		});
+		await escrow.appendVestingEntry(account1, web3.utils.toBN(now + twelveWeeks), escrowedAmount, {
+			from: owner,
+		});
+
+		// collateral should include escrowed amount
+		collateral = await synthetix.collateral(account1, { from: account1 });
+		assert.bnEqual(collateral, escrowedAmount);
+
+		// Issue max synths. (300 sUSD)
+		await synthetix.issueMaxSynths(sUSD, { from: account1 });
+
+		// There should be 300 sUSD of value for account1
+		assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('300'));
+	});
+
+	it('should permit user to issue sUSD debt with only reward escrow as collateral (no SNX in wallet)', async () => {
+		// Setup reward escrow
+		const feePoolAccount = account6;
+		await rewardEscrow.setFeePool(feePoolAccount, { from: owner });
+
+		// Send a price update to guarantee we're not depending on values from outside this test.
+		await exchangeRates.updateRates(
+			[sAUD, sEUR, SNX],
+			['0.5', '1.25', '0.1'].map(toUnit),
+			timestamp,
+			{ from: oracle }
+		);
+
+		// ensure collateral of account1 is empty
+		let collateral = await synthetix.collateral(account1, { from: account1 });
+		assert.bnEqual(collateral, 0);
+
+		// ensure account1 has no SNX balance
+		const snxBalance = await synthetix.balanceOf(account1);
+		assert.bnEqual(snxBalance, 0);
+
+		// Append escrow amount to account1
+		const escrowedAmount = toUnit('15000');
+		await synthetix.methods['transfer(address,uint256)'](RewardEscrow.address, escrowedAmount, {
+			from: owner,
+		});
+		await rewardEscrow.appendVestingEntry(account1, escrowedAmount, { from: feePoolAccount });
+
+		// collateral now should include escrowed amount
+		collateral = await synthetix.collateral(account1, { from: account1 });
+		assert.bnEqual(collateral, escrowedAmount);
+
+		// Issue max synths. (300 sUSD)
+		await synthetix.issueMaxSynths(sUSD, { from: account1 });
+
+		// There should be 300 sUSD of value for account1
+		assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('300'));
+	});
+
 	it("should permit anyone checking another user's collateral", async () => {
 		const amount = toUnit('60000');
 		await synthetix.methods['transfer(address,uint256)'](account1, amount, { from: owner });
