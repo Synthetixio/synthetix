@@ -358,14 +358,9 @@ module.exports = program =>
 				if (feePoolDelegateApprovals && feePool) {
 					const delegateApprovalsAddress = feePoolDelegateApprovals.options.address;
 					const feePoolOwner = await feePool.methods.owner().call();
-					const feePoolDelegateAddress = await feePool.methods.delegates().call();
+					const currentDelegateApprovals = await feePool.methods.delegates().call();
 
-					const associatedContract = await feePoolDelegateApprovals.methods
-						.associatedContract()
-						.call();
-
-					// Check if delegates set on feePool
-					if (feePoolDelegateAddress !== delegateApprovalsAddress) {
+					if (currentDelegateApprovals !== delegateApprovalsAddress) {
 						if (feePoolOwner === account) {
 							console.log(yellow('Invoking feePool.setDelegateApprovals(DelegateApproval)...'));
 							await feePool.methods
@@ -380,7 +375,10 @@ module.exports = program =>
 						}
 					}
 
-					// check associatedContract set on Delegates
+					const associatedContract = await feePoolDelegateApprovals.methods
+						.associatedContract()
+						.call();
+
 					if (associatedContract !== feePoolAddress) {
 						const feePoolDelegateApprovalsOwner = await feePoolDelegateApprovals.methods
 							.owner()
@@ -578,18 +576,23 @@ module.exports = program =>
 				}
 
 				if (rewardEscrow && synthetix) {
-					// only the owner can do this
-					const rewardEscrowOwner = await rewardEscrow.methods.owner().call();
 					const rewardEscrowSynthetix = await rewardEscrow.methods.synthetix().call();
 
-					if (rewardEscrowSynthetix !== synthetix.options.address) {
+					if (rewardEscrowSynthetix !== synthetixAddress) {
+						// only the owner can do this
+						const rewardEscrowOwner = await rewardEscrow.methods.owner().call();
+
 						if (rewardEscrowOwner === account) {
 							console.log(yellow('Invoking RewardEscrow.setSynthetix()...'));
 							await rewardEscrow.methods
 								.setSynthetix(synthetixAddress)
 								.send(deployer.sendParameters());
 						} else {
-							console.log(cyan('Cannot call RewardEscrow.setSynthetix() as not owner.'));
+							appendOwnerAction({
+								key: `RewardEscrow.setSynthetix(Synthetix)`,
+								target: rewardEscrow.options.address,
+								action: `setSynthetix(${synthetixAddress})`,
+							});
 						}
 					}
 
@@ -597,16 +600,21 @@ module.exports = program =>
 				}
 
 				if (rewardEscrow && feePool) {
-					// only the owner can do this
-					const rewardEscrowOwner = await rewardEscrow.methods.owner().call();
 					const rewardEscrowFeePool = await rewardEscrow.methods.feePool().call();
 
-					if (rewardEscrowFeePool !== feePool.options.address) {
+					if (rewardEscrowFeePool !== feePoolAddress) {
+						// only the owner can do this
+						const rewardEscrowOwner = await rewardEscrow.methods.owner().call();
+
 						if (rewardEscrowOwner === account) {
-							console.log(yellow('Invoking RewardEscrow.setFeePool()...'));
+							console.log(yellow('Invoking RewardEscrow.setFeePool(FeePool)...'));
 							await rewardEscrow.methods.setFeePool(feePoolAddress).send(deployer.sendParameters());
 						} else {
-							console.log(cyan('Cannot call RewardEscrow.setFeePool() as not owner.'));
+							appendOwnerAction({
+								key: `RewardEscrow.setFeePool(FeePool)`,
+								target: rewardEscrow.options.address,
+								action: `setFeePool(${feePoolAddress})`,
+							});
 						}
 					}
 
@@ -663,10 +671,10 @@ module.exports = program =>
 				}
 
 				if (supplySchedule && synthetix) {
-					const supplyScheduleOwner = await supplySchedule.methods.owner().call();
 					const supplyScheduleSynthetix = await supplySchedule.methods.synthetix().call();
 
-					if (supplyScheduleSynthetix !== synthetix.options.address) {
+					if (supplyScheduleSynthetix !== synthetixAddress) {
+						const supplyScheduleOwner = await supplySchedule.methods.owner().call();
 						// Only owner
 						if (supplyScheduleOwner === account) {
 							console.log(yellow('Invoking SupplySchedule.setSynthetix(Synthetix)'));
