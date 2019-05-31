@@ -186,7 +186,7 @@ contract('Rewards Integration Tests', async accounts => {
 			await synthetix.issueMaxSynths(sUSD, { from: account3 });
 		});
 
-		it.only('should allocate the 3 accounts a third of the rewards for 1 period', async () => {
+		it('should allocate the 3 accounts a third of the rewards for 1 period', async () => {
 			// Close Fee Period
 			// console.log('Close Fee Period');
 			await closeFeePeriodAndFastForward();
