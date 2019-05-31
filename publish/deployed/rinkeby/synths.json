@@ -111,9 +111,9 @@
 		"sign": "₿",
 		"desc": "Inverted Bitcoin",
 		"inverted": {
-			"entryPoint": 5300,
-			"upperLimit": 7950,
-			"lowerLimit": 2650
+			"entryPoint": 8400,
+			"upperLimit": 12600,
+			"lowerLimit": 4200
 		}
 	},
 	{
@@ -123,9 +123,9 @@
 		"sign": "Ξ",
 		"desc": "Inverted Ether",
 		"inverted": {
-			"entryPoint": 180,
-			"upperLimit": 270,
-			"lowerLimit": 90
+			"entryPoint": 260,
+			"upperLimit": 390,
+			"lowerLimit": 130
 		}
 	},
 	{
