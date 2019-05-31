@@ -358,24 +358,29 @@ module.exports = program =>
 				if (feePoolDelegateApprovals && feePool) {
 					const delegateApprovalsAddress = feePoolDelegateApprovals.options.address;
 					const feePoolOwner = await feePool.methods.owner().call();
+					const feePoolDelegateAddress = await feePool.methods.delegates().call();
 
 					const associatedContract = await feePoolDelegateApprovals.methods
 						.associatedContract()
 						.call();
-
-					if (feePoolOwner === account) {
-						console.log(yellow('Invoking feePool.setDelegateApprovals(DelegateApproval)...'));
-						await feePool.methods
-							.setDelegateApprovals(delegateApprovalsAddress)
-							.send(deployer.sendParameters());
-					} else {
-						appendOwnerAction({
-							key: `FeePool.setDelegateApprovals(DelegateApprovals)`,
-							target: feePool.options.address,
-							action: `setDelegateApprovals(${delegateApprovalsAddress})`,
-						});
+					
+					// Check if delegates set on feePool
+					if (feePoolDelegateAddress !== delegateApprovalsAddress) {
+						if (feePoolOwner === account) {
+							console.log(yellow('Invoking feePool.setDelegateApprovals(DelegateApproval)...'));
+							await feePool.methods
+								.setDelegateApprovals(delegateApprovalsAddress)
+								.send(deployer.sendParameters());
+						} else {
+							appendOwnerAction({
+								key: `FeePool.setDelegateApprovals(DelegateApprovals)`,
+								target: feePool.options.address,
+								action: `setDelegateApprovals(${delegateApprovalsAddress})`,
+							});
+						}
 					}
 
+					// check associatedContract set on Delegates
 					if (associatedContract !== feePoolAddress) {
 						const feePoolDelegateApprovalsOwner = await feePoolDelegateApprovals.methods
 							.owner()
