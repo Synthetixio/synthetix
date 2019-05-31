@@ -216,8 +216,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         optionalProxy_onlyOwner
     {
         feeAuthority = _feeAuthority;
-
-        emitFeeAuthorityUpdated(_feeAuthority);
     }
 
     /**
@@ -228,8 +226,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         optionalProxy_onlyOwner
     {
         feePoolState = _feePoolState;
-
-        emitFeePoolStateUpdated(_feePoolState);
     }
 
     /**
@@ -240,8 +236,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         optionalProxy_onlyOwner
     {
         delegates = _delegates;
-
-        emitDelegateApprovalsUpdated(_delegates);
     }
 
     /**
@@ -269,8 +263,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         require(address(_synthetix) != address(0), "New Synthetix must be non-zero");
 
         synthetix = _synthetix;
-
-        emitSynthetixUpdated(_synthetix);
     }
 
     /**
@@ -381,6 +373,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         internal
         returns (bool)
     {
+        uint rewardsPaid;
+        uint feesPaid;
         uint availableFees;
         uint availableRewards;
         (availableFees, availableRewards) = feesAvailable(claimingAddress, "XDR");
@@ -391,23 +385,21 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
         if (availableFees > 0) {
             // Record the fee payment in our recentFeePeriods
-            uint feesPaid = _recordFeePayment(availableFees);
+            feesPaid = _recordFeePayment(availableFees);
 
             // Send them their fees
             _payFees(claimingAddress, feesPaid, currencyKey);
-
-            emitFeesClaimed(claimingAddress, feesPaid);
         }
 
         if (availableRewards > 0) {
             // Record the reward payment in our recentFeePeriods
-            uint rewardPaid = _recordRewardPayment(availableRewards);
+            rewardsPaid = _recordRewardPayment(availableRewards);
 
             // Send them their rewards
-            _payRewards(claimingAddress, rewardPaid);
-
-            emitRewardsClaimed(claimingAddress, rewardPaid);
+            _payRewards(claimingAddress, rewardsPaid);
         }
+
+        emitFeesClaimed(claimingAddress, feesPaid, rewardsPaid);
 
         return true;
     }
@@ -961,7 +953,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         _;
     }
 
-    /* ========== Events ========== */
+    /* ========== Proxy Events ========== */
 
     event IssuanceDebtRatioEntry(address indexed account, uint debtRatio, uint debtEntryIndex, uint feePeriodStartingDebtIndex);
     bytes32 constant ISSUANCEDEBTRATIOENTRY_SIG = keccak256("IssuanceDebtRatioEntry(address,uint256,uint256,uint256)");
@@ -987,45 +979,15 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         proxy._emit(abi.encode(newFeePeriodDuration), 1, FEEPERIODDURATIONUPDATED_SIG, 0, 0, 0);
     }
 
-    event FeeAuthorityUpdated(address newFeeAuthority);
-    bytes32 constant FEEAUTHORITYUPDATED_SIG = keccak256("FeeAuthorityUpdated(address)");
-    function emitFeeAuthorityUpdated(address newFeeAuthority) internal {
-        proxy._emit(abi.encode(newFeeAuthority), 1, FEEAUTHORITYUPDATED_SIG, 0, 0, 0);
-    }
-
-    event FeePoolStateUpdated(address newFeePoolState);
-    bytes32 constant FEEPOOLSTATEUPDATED_SIG = keccak256("FeePoolStateUpdated(address)");
-    function emitFeePoolStateUpdated(address newFeePoolState) internal {
-        proxy._emit(abi.encode(newFeePoolState), 1, FEEPOOLSTATEUPDATED_SIG, 0, 0, 0);
-    }
-
-    event DelegateApprovalsUpdated(address newDelegateApprovals);
-    bytes32 constant DELEGATEAPPROVALSUPDATED_SIG = keccak256("DelegateApprovalsUpdated(address)");
-    function emitDelegateApprovalsUpdated(address newDelegateApprovals) internal {
-        proxy._emit(abi.encode(newDelegateApprovals), 1, DELEGATEAPPROVALSUPDATED_SIG, 0, 0, 0);
-    }
-
     event FeePeriodClosed(uint feePeriodId);
     bytes32 constant FEEPERIODCLOSED_SIG = keccak256("FeePeriodClosed(uint256)");
     function emitFeePeriodClosed(uint feePeriodId) internal {
         proxy._emit(abi.encode(feePeriodId), 1, FEEPERIODCLOSED_SIG, 0, 0, 0);
     }
 
-    event FeesClaimed(address account, uint xdrAmount);
-    bytes32 constant FEESCLAIMED_SIG = keccak256("FeesClaimed(address,uint256)");
-    function emitFeesClaimed(address account, uint xdrAmount) internal {
+    event FeesClaimed(address account, uint xdrAmount, uint snxRewards);
+    bytes32 constant FEESCLAIMED_SIG = keccak256("FeesClaimed(address,uint256,uint256)");
+    function emitFeesClaimed(address account, uint xdrAmount, uint snxRewards) internal {
         proxy._emit(abi.encode(account, xdrAmount), 1, FEESCLAIMED_SIG, 0, 0, 0);
-    }
-
-    event RewardsClaimed(address account, uint snxAmount);
-    bytes32 constant REWARDSCLAIMED_SIG = keccak256("RewardsClaimed(address,uint256)");
-    function emitRewardsClaimed(address account, uint snxAmount) internal {
-        proxy._emit(abi.encode(account, snxAmount), 1, REWARDSCLAIMED_SIG, 0, 0, 0);
-    }
-
-    event SynthetixUpdated(address newSynthetix);
-    bytes32 constant SYNTHETIXUPDATED_SIG = keccak256("SynthetixUpdated(address)");
-    function emitSynthetixUpdated(address newSynthetix) internal {
-        proxy._emit(abi.encode(newSynthetix), 1, SYNTHETIXUPDATED_SIG, 0, 0, 0);
     }
 }

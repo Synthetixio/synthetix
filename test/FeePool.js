@@ -246,9 +246,7 @@ contract('FeePool', async accounts => {
 	});
 
 	it('should allow the owner to set a fee authority', async () => {
-		const transaction = await feePool.setFeeAuthority(ZERO_ADDRESS, { from: owner });
-
-		assert.eventEqual(transaction, 'FeeAuthorityUpdated', { newFeeAuthority: ZERO_ADDRESS });
+		await feePool.setFeeAuthority(ZERO_ADDRESS, { from: owner });
 		assert.bnEqual(await feePool.feeAuthority(), ZERO_ADDRESS);
 	});
 
@@ -321,9 +319,6 @@ contract('FeePool', async accounts => {
 	});
 
 	it('should allow the owner to set the synthetix instance', async () => {
-		const transaction = await feePool.setSynthetix(account1, { from: owner });
-
-		assert.eventEqual(transaction, 'SynthetixUpdated', { newSynthetix: account1 });
 		assert.bnEqual(await feePool.synthetix(), account1);
 	});
 
@@ -599,7 +594,7 @@ contract('FeePool', async accounts => {
 		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
 	});
 
-	it('should allow a user to claim their fees in sUSD', async () => {
+	it.only('should allow a user to claim their fees in sUSD', async () => {
 		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 
 		// Issue 10,000 sUSD for two different accounts.
@@ -633,7 +628,11 @@ contract('FeePool', async accounts => {
 		const oldSynthBalance = await sUSDContract.balanceOf(owner);
 
 		// Now we should be able to claim them.
-		await feePool.claimFees(sUSD, { from: owner });
+		const claimFeesTx = await feePool.claimFees(sUSD, { from: owner });
+		assert.eventEqual(claimFeesTx, 'FeesClaimed', {
+			xdrAmount: feesAvailable[0],
+			snxRewards: feesAvailable[1],
+		});
 
 		// We should have our fees
 		assert.bnEqual(await sUSDContract.balanceOf(owner), oldSynthBalance.add(feesAvailable[0]));
