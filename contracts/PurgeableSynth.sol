@@ -59,8 +59,10 @@ contract PurgeableSynth is Synth {
         uint maxSupplyToPurge = getMaxSupplyToPurge();
 
         // Only allow purge when total supply is lte the max or the rate is frozen in ExchangeRates
-        require(totalSupply <= maxSupplyToPurge || exchangeRates.rateIsFrozen(currencyKey),
-            "Cannot purge as total supply is above threshold and rate is not frozen.");
+        require(
+            totalSupply <= maxSupplyToPurge || exchangeRates.rateIsFrozen(currencyKey),
+            "Cannot purge as total supply is above threshold and rate is not frozen."
+        );
 
         for (uint8 i = 0; i < addresses.length; i++) {
             address holder = addresses[i];
