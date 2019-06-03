@@ -303,7 +303,7 @@ contract('PurgeableSynth', accounts => {
 						describe('when the user exchanges 20 of their sUSD into the purgeable synth', () => {
 							beforeEach(async () => {
 								await synthetix.exchange(sUSD, toUnit(20), iETH, ZERO_ADDRESS, {
-									from: account1,
+									from: account2,
 								});
 							});
 							describe('when purge is invoked with both accounts', () => {
@@ -317,8 +317,55 @@ contract('PurgeableSynth', accounts => {
 								});
 							});
 							describe('when the exchange rates has the synth as frozen', () => {
-								// TODO
-								// when setInversePricing and a price comes outside range
+								beforeEach(async () => {
+									await exchangeRates.setInversePricing(
+										iETH,
+										toUnit(100),
+										toUnit(150),
+										toUnit(50),
+										{ from: owner }
+									);
+									await exchangeRates.updateRates([iETH], ['160'].map(toUnit), timestamp, {
+										from: oracle,
+									});
+								});
+								describe('when purge is invoked with just one account', () => {
+									let balanceBeforePurgeUser2;
+									let txn;
+
+									beforeEach(async () => {
+										balanceBeforePurgeUser2 = await this.synth.balanceOf(account2);
+										txn = await this.synth.purge([account2], { from: owner });
+									});
+
+									it('then it must issue the Purged event', () => {
+										const purgedEvent = txn.logs.find(log => log.event === 'Purged');
+
+										assert.eventEqual(purgedEvent, 'Purged', {
+											account: account2,
+											value: balanceBeforePurgeUser2,
+										});
+									});
+
+									it('and the second user is at 0 balance', async () => {
+										const userBalance = await this.synth.balanceOf(account2);
+										assert.bnEqual(
+											userBalance,
+											toUnit(0),
+											'The second user must no longer have a balance after the purge'
+										);
+									});
+
+									it('and no change occurs for the other user', async () => {
+										const userBalance = await this.synth.balanceOf(account1);
+										assert.bnEqual(
+											userBalance,
+											balanceBeforePurge,
+											'The first user must not be impacted by a purge for another user'
+										);
+									});
+								});
+
 								// when purge is invoked
 								// then it works
 							});
