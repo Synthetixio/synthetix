@@ -297,6 +297,7 @@ contract('PurgeableSynth', accounts => {
 					});
 
 					describe('and there exists another user with 2000 sUSD ', () => {
+						let balanceBeforePurgeUser2;
 						beforeEach(async () => {
 							await issueSynths({ account: account2, amount: 10000 });
 						});
@@ -305,6 +306,7 @@ contract('PurgeableSynth', accounts => {
 								await synthetix.exchange(sUSD, toUnit(20), iETH, ZERO_ADDRESS, {
 									from: account2,
 								});
+								balanceBeforePurgeUser2 = await this.synth.balanceOf(account2);
 							});
 							describe('when purge is invoked with both accounts', () => {
 								it('then it reverts as the totalSupply exceeds the 1000USD max', async () => {
@@ -330,11 +332,9 @@ contract('PurgeableSynth', accounts => {
 									});
 								});
 								describe('when purge is invoked with just one account', () => {
-									let balanceBeforePurgeUser2;
 									let txn;
 
 									beforeEach(async () => {
-										balanceBeforePurgeUser2 = await this.synth.balanceOf(account2);
 										txn = await this.synth.purge([account2], { from: owner });
 									});
 
@@ -365,6 +365,33 @@ contract('PurgeableSynth', accounts => {
 										);
 									});
 								});
+
+								describe('when purge is invoked with both accounts', () => {
+									let txn;
+									beforeEach(async () => {
+										txn = await this.synth.purge([account2, account1], { from: owner });
+									});
+									it('then it must issue two purged events', () => {
+										const events = txn.logs.filter(log => log.event === 'Purged');
+
+										assert.eventEqual(events[0], 'Purged', {
+											account: account2,
+											value: balanceBeforePurgeUser2,
+										});
+										assert.eventEqual(events[1], 'Purged', {
+											account: account1,
+											value: balanceBeforePurge,
+										});
+									});
+									it('and the total supply of the synth must be 0', async () => {
+										const totalSupply = await this.synth.totalSupply();
+										assert.bnEqual(
+											totalSupply,
+											toUnit('0'),
+											'Total supply must be 0 after full purge'
+										);
+									});
+								});
 							});
 						});
 					});
@@ -373,7 +400,7 @@ contract('PurgeableSynth', accounts => {
 		});
 	});
 
-	describe('reconnecting TokenState to a purgable synth', () => {
+	describe('Replacing an existing Synth with a Purgeable one to purge and remove it', () => {
 		describe('when sAUD has a price', () => {
 			beforeEach(async () => {
 				await exchangeRates.updateRates([sAUD], ['0.776845993'].map(toUnit), timestamp, {
@@ -445,6 +472,11 @@ contract('PurgeableSynth', accounts => {
 											userBalanceOfOldSynth,
 											'The balance after connecting TokenState must not have changed'
 										);
+									});
+									describe('when owner attemps to remove new synth from the system', () => {
+										it('then it reverts', async () => {
+											await assert.revert(synthetix.removeSynth(sAUD, { from: owner }));
+										});
 									});
 									describe('and purge is called on the replacement sAUD contract', () => {
 										let txn;
