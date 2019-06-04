@@ -210,6 +210,14 @@ module.exports = program =>
 					process.exitCode = 1;
 				}
 
+				for (const address of [account, oracleExrates, oracleDepot]) {
+					if (!w3utils.isAddress(address)) {
+						console.error(red('Invalid address:', address));
+						process.exitCode = 1;
+						return;
+					}
+				}
+
 				parameterNotice({
 					Network: network,
 					'Gas price to use': `${gasPrice} GWEI`,
