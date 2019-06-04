@@ -215,7 +215,7 @@ module.exports = program =>
 					'Gas price to use': `${gasPrice} GWEI`,
 					'Deployment Path': new RegExp(network, 'gi').test(deploymentPath)
 						? deploymentPath
-						: yellow('⚠️ cant find network name in path. Please double check this! ') +
+						: yellow('⚠⚠⚠ cant find network name in path. Please double check this! ') +
 						  deploymentPath,
 					'Local build last modified': `${new Date(earliestCompiledTimestamp)} ${yellow(
 						((new Date().getTime() - earliestCompiledTimestamp) / 60000).toFixed(2) + ' mins ago'
@@ -223,9 +223,9 @@ module.exports = program =>
 					'Last Solidity update':
 						new Date(latestSolTimestamp) +
 						(latestSolTimestamp > earliestCompiledTimestamp
-							? yellow(' ⚠️ this is later than the last build! Is this intentional?')
+							? yellow(' ⚠⚠⚠ this is later than the last build! Is this intentional?')
 							: green(' ✅')),
-					'Add any new synths found?': addNewSynths ? green('✅ YES') : yellow('⚠️  NO'),
+					'Add any new synths found?': addNewSynths ? green('✅ YES') : yellow('⚠ NO'),
 					'Deployer account:': account,
 					'Synthetix totalSupply': `${Math.round(w3utils.fromWei(currentSynthetixSupply) / 1e6)}m`,
 					'ExchangeRates Oracle': oracleExrates,
@@ -235,7 +235,7 @@ module.exports = program =>
 				try {
 					await confirmAction(
 						yellow(
-							`⚠️ WARNING: This action will deploy the following contracts to ${network}:\n- ${Object.entries(
+							`⚠⚠⚠ WARNING: This action will deploy the following contracts to ${network}:\n- ${Object.entries(
 								config
 							)
 								.filter(([, { deploy }]) => deploy)
