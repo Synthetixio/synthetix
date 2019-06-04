@@ -10,6 +10,7 @@ const { CONFIG_FILENAME, DEPLOYMENT_FILENAME } = require('../constants');
 const {
 	toBytes4,
 	ensureNetwork,
+	ensureDeploymentPath,
 	loadAndCheckRequiredSources,
 	loadConnections,
 	confirmAction,
@@ -39,6 +40,7 @@ module.exports = program =>
 		)
 		.action(async ({ network, deploymentPath, gasPrice, gasLimit, synthsToRemove }) => {
 			ensureNetwork(network);
+			ensureDeploymentPath(deploymentPath);
 
 			const {
 				synths,
