@@ -113,13 +113,9 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
     // Users receive penalties if their collateralisation ratio drifts out of our desired brackets
     // We precompute the brackets and penalties to save gas.
-    uint constant TEN_PERCENT = (10 * SafeDecimalMath.unit()) / 100;
-    uint constant FIFTY_PERCENT = (50 * SafeDecimalMath.unit()) / 100;
-    uint constant SEVENTY_FIVE_PERCENT = (75 * SafeDecimalMath.unit()) / 100;
-    uint constant NINETY_PERCENT = (90 * SafeDecimalMath.unit()) / 100;
+    uint public PENALTY_THRESHOLD = (10 * SafeDecimalMath.unit()) / 100;
     uint constant ONE_HUNDRED_PERCENT = (100 * SafeDecimalMath.unit()) / 100;
-    uint constant ONE_HUNDRED_FIFTY_PERCENT = (150 * SafeDecimalMath.unit()) / 100;
-    uint constant FOUR_HUNDRED_PERCENT = (400 * SafeDecimalMath.unit()) / 100;
+
 
     constructor(
         address _proxy,
@@ -266,6 +262,15 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         emitSynthetixUpdated(_synthetix);
     }
 
+    function setPenaltyThreshold(uint _percent)
+        external
+        optional
+        optionalProxy_onlyOwner
+    {
+        require(_percent >= 0, "Threshold should be positive"); 
+        PENALTY_THRESHOLD = (_percent * SafeDecimalMath.unit()) / 100;
+    }
+
     /**
      * @notice The Synthetix contract informs us when fees are paid.
      */
@@ -374,6 +379,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         internal
         returns (bool)
     {
+        require(currentPenalty(claimingAddress) == 0, "C-Ratio below penalty threshold");
+
         uint availableFees;
         uint availableRewards;
         (availableFees, availableRewards) = feesAvailable(claimingAddress, "XDR");
@@ -745,41 +752,26 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         view
         returns (uint)
     {
-        // Users receive a different amount of fees depending on how their collateralisation ratio looks right now.
-        // Penalty is calculated from actual ratio % above the target ratio (issuanceRatio).
+        // Penalty is calculated from ratio % above the target ratio (issuanceRatio).
         //  0  <  10%:   0% reduction in fees
-        // 10  -  50%:  25% reduction in fees
-        // 50  - 100%:  50% reduction in fees
-        // 100 - 150%:  75% reduction in fees
-        // 150 - 400%:  90% reduction in fees
-        //     > 400%: 100% reduction in fees
+        // 10% > above:  100% reduction in fees
         uint ratio = synthetix.collateralisationRatio(account);
         uint targetRatio = synthetix.synthetixState().issuanceRatio();
 
-        // If collateralisation ratio > 100% apply max penalty
-        if (ratio > ONE_HUNDRED_PERCENT) {
-            return ONE_HUNDRED_PERCENT;
-        }
-
-        // Ratio below target ratio no penalty
+        // no penalty debt ratio below target ratio
         if (ratio < targetRatio) {
             return 0;
         }
 
-        uint deltaPercent = (ratio.sub(targetRatio)).divideDecimal(targetRatio);
+        // Calculate the threshold for collateral ratio before penalty applies
+        uint ratio_threshold = targetRatio.multiplyDecimal(SafeDecimalMath.unit().add(PENALTY_THRESHOLD));
 
-        if (deltaPercent <= TEN_PERCENT) {
-            return 0;
-        } else if (deltaPercent > TEN_PERCENT && deltaPercent <= FIFTY_PERCENT) {
-            return TWENTY_FIVE_PERCENT;
-        } else if (ddeltaPercentelta > FIFTY_PERCENT && deltaPercent <= ONE_HUNDRED_PERCENT) {
-            return FIFTY_PERCENT;
-        } else if (deltaPercent > ONE_HUNDRED_PERCENT && deltaPercent <= ONE_HUNDRED_FIFTY_PERCENT) {
-            return SEVENTY_FIVE_PERCENT;
-        } else if (deltaPercent > ONE_HUNDRED_FIFTY_PERCENT && deltaPercent <= FOUR_HUNDRED_PERCENT) {
-            return NINETY_PERCENT;
+        // Collateral ratio above threshold attracts max penalty
+        if (ratio > ratio_threshold) {
+            return ONE_HUNDRED_PERCENT;
         }
-        return ONE_HUNDRED_PERCENT;
+
+        return 0;
     }
 
     /**
