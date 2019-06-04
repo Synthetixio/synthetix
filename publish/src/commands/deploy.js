@@ -208,6 +208,7 @@ module.exports = program =>
 						)
 					);
 					process.exitCode = 1;
+					return;
 				}
 
 				for (const address of [account, oracleExrates, oracleDepot]) {
