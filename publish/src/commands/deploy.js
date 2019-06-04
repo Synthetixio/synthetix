@@ -2,7 +2,7 @@
 
 const path = require('path');
 const fs = require('fs');
-const { gray, green, yellow, cyan } = require('chalk');
+const { gray, green, yellow, redBright, red } = require('chalk');
 const { table } = require('table');
 const w3utils = require('web3-utils');
 const Deployer = require('../Deployer');
@@ -26,6 +26,18 @@ const {
 	appendOwnerActionGenerator,
 	stringify,
 } = require('../util');
+
+const parameterNotice = props => {
+	console.log(gray('-'.repeat(50)));
+	console.log('Please check the following parameters are correct:');
+	console.log(gray('-'.repeat(50)));
+
+	Object.entries(props).forEach(([key, val]) => {
+		console.log(gray(key) + ' '.repeat(30 - key.length) + redBright(val));
+	});
+
+	console.log(gray('-'.repeat(50)));
+};
 
 module.exports = program =>
 	program
@@ -52,11 +64,6 @@ module.exports = program =>
 			`Path to a folder that has your input configuration file ${CONFIG_FILENAME}, the synth list ${SYNTHS_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 		)
 		.option(
-			'-o, --oracle <value>',
-			'The address of the oracle for this network',
-			'0xac1e8b385230970319906c03a1d8567e3996d1d5' // the oracle for testnets
-		)
-		.option(
 			'-f, --fee-auth <value>',
 			'The address of the fee authority for this network',
 			'0xfee056f4d9d63a63d6cf16707d49ffae7ff3ff01' // the fee authority for testnets
@@ -64,6 +71,14 @@ module.exports = program =>
 		.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
 		.option('-m, --method-call-gas-limit <value>', 'Method call gas limit', parseInt, 15e4)
 		.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
+		.option(
+			'-o, --oracle-exrates <value>',
+			'The address of the oracle for this network (default is use existing)'
+		)
+		.option(
+			'-p, --oracle-depot <value>',
+			'The address of the depot oracle for this network (default is use existing)'
+		)
 		.action(
 			async ({
 				addNewSynths,
@@ -73,7 +88,8 @@ module.exports = program =>
 				network,
 				buildPath,
 				deploymentPath,
-				oracle,
+				oracleExrates,
+				oracleDepot,
 				feeAuth,
 			}) => {
 				ensureNetwork(network);
@@ -133,17 +149,6 @@ module.exports = program =>
 						return memo;
 					}, {});
 
-				// JJM: We could easily add an error here if the earlist build is before the latest SOL contract modification
-				console.log(
-					yellow(
-						`Note: using build files of which, the earlist was modified on ${new Date(
-							firstTimestamp
-						)}. This is roughly ${((new Date().getTime() - firstTimestamp) / 60000).toFixed(
-							2
-						)} mins ago.`
-					)
-				);
-
 				// now clone these so we can update and write them after each deployment but keep the original
 				// flags available
 				const updatedConfig = JSON.parse(JSON.stringify(config));
@@ -162,36 +167,70 @@ module.exports = program =>
 				});
 
 				const { account } = deployer;
-				console.log(gray(`Using account with public key ${account}`));
 
 				// get the current supply as it changes as we mint after each period
-				const oldSynthetix = deployer.getContract({
-					abi: deployment.sources['Synthetix'].abi,
-					address: deployment.targets['Synthetix'].address,
-				});
+				const getExistingContract = ({ contract }) =>
+					deployer.getContract({
+						abi: deployment.sources[contract].abi,
+						address: deployment.targets[contract].address,
+					});
 
-				const currentSynthetixSupply = await oldSynthetix.methods.totalSupply().call();
-				console.log(
-					gray(
-						`Synthetix totalSupply is currently ${Math.round(
-							w3utils.fromWei(currentSynthetixSupply) / 1e6
-						)}m`
-					)
-				);
+				const oldSynthetix = getExistingContract({ contract: 'Synthetix' });
+				let currentSynthetixSupply;
+				try {
+					currentSynthetixSupply = await oldSynthetix.methods.totalSupply().call();
+
+					if (!oracleExrates) {
+						const currentExrates = getExistingContract({ contract: 'ExchangeRates' });
+						oracleExrates = await currentExrates.methods.oracle().call();
+					}
+
+					if (!oracleDepot) {
+						const currentDepot = getExistingContract({ contract: 'Depot' });
+						oracleDepot = await currentDepot.methods.oracle().call();
+					}
+				} catch (err) {
+					console.error(
+						red(
+							'Cannot connect to existing contracts. Please double check the deploymentPath is correct for the network allocated'
+						)
+					);
+					process.exitCode = 1;
+					return;
+				}
+
+				// JJM: We could easily add an error here if the earlist build is before the latest SOL contract modification
+
+				parameterNotice({
+					Network: network,
+					'Gas price to use': `${gasPrice} GWEI`,
+					'Deployment Path': new RegExp(network, 'gi').test(deploymentPath)
+						? deploymentPath
+						: yellow('WARNING: cant find network name in path. Please double check this! ') +
+						  deploymentPath,
+					'Local build last modified': `${new Date(firstTimestamp)}. This is roughly ${(
+						(new Date().getTime() - firstTimestamp) /
+						60000
+					).toFixed(2)} mins ago.`,
+					'Add any new synths found?': addNewSynths ? green('YES') : yellow('NO'),
+					'Deployer account:': account,
+					'Synthetix totalSupply': `${Math.round(w3utils.fromWei(currentSynthetixSupply) / 1e6)}m`,
+					'ExchangeRates Oracle': oracleExrates,
+					'Depot Oracle': oracleDepot,
+				});
 
 				try {
 					await confirmAction(
-						cyan(
-							`${yellow(
-								'WARNING'
-							)}: This action will deploy the following contracts to ${network}:\n- ${Object.entries(
+						yellow(
+							`WARNING: This action will deploy the following contracts to ${network}:\n- ${Object.entries(
 								config
 							)
 								.filter(([, { deploy }]) => deploy)
 								.map(([contract]) => contract)
-								.join('\n- ')}`
+								.join('\n- ')}` + `\nIt will also set proxy targets and add synths to Synthetix.\n`
 						) +
-							'\nIt will also set proxy targets and add synths to Synthetix.\n Do you want to continue? (y/n) '
+							gray('-'.repeat(50)) +
+							'\nDo you want to continue? (y/n)'
 					);
 				} catch (err) {
 					console.log(gray('Operation cancelled'));
@@ -252,7 +291,7 @@ module.exports = program =>
 
 				const exchangeRates = await deployContract({
 					name: 'ExchangeRates',
-					args: [account, oracle, [toBytes4('SNX')], [w3utils.toWei('0.2')]],
+					args: [account, oracleExrates, [toBytes4('SNX')], [w3utils.toWei('0.2')]],
 				});
 				const exchangeRatesAddress = exchangeRates ? exchangeRates.options.address : '';
 
@@ -882,7 +921,7 @@ module.exports = program =>
 							? deployer.deployedContracts['SynthsUSD'].options.address
 							: '',
 						feePool ? feePool.options.address : '',
-						oracle,
+						oracleDepot,
 						w3utils.toWei('500'),
 						w3utils.toWei('.10'),
 					],
