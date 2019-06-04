@@ -8,7 +8,7 @@ const Proxy = artifacts.require('Proxy');
 
 const { currentTime, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 
-contract.only('PurgeableSynth', accounts => {
+contract('PurgeableSynth', accounts => {
 	const [sUSD, SNX, , sAUD, iETH] = ['sUSD', 'SNX', 'XDR', 'sAUD', 'iETH'].map(
 		web3.utils.asciiToHex
 	);
@@ -457,10 +457,9 @@ contract.only('PurgeableSynth', accounts => {
 										});
 										it('and their balance must have gone back into sUSD', async () => {
 											const balance = await sUSDContract.balanceOf(account1);
-											assert.bnClose(
+											assert.bnEqual(
 												balance,
 												usersEffectiveBalanceInUSD,
-												'1', // 1 unit of rounding allowed
 												'The sUSD balance after purge must return to the initial amount, less fees'
 											);
 										});
@@ -470,6 +469,19 @@ contract.only('PurgeableSynth', accounts => {
 											assert.eventEqual(purgedEvent, 'Purged', {
 												account: account1,
 												value: userBalanceOfOldSynth,
+											});
+										});
+										describe('when the purged synth is removed from the system', () => {
+											beforeEach(async () => {
+												await synthetix.removeSynth(sAUD, { from: owner });
+											});
+											it('then the balance remains in USD (and no errors occur)', async () => {
+												const balance = await sUSDContract.balanceOf(account1);
+												assert.bnEqual(
+													balance,
+													usersEffectiveBalanceInUSD,
+													'The sUSD balance after purge must return to the initial amount, less fees'
+												);
 											});
 										});
 									});
