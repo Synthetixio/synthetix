@@ -6,10 +6,12 @@ const { gray, green, yellow, redBright, red } = require('chalk');
 const { table } = require('table');
 const w3utils = require('web3-utils');
 const Deployer = require('../Deployer');
+const { findSolFiles } = require('../solidity');
 
 const {
 	BUILD_FOLDER,
 	COMPILED_FOLDER,
+	CONTRACTS_FOLDER,
 	CONFIG_FILENAME,
 	SYNTHS_FILENAME,
 	DEPLOYMENT_FILENAME,
@@ -131,7 +133,7 @@ module.exports = program =>
 				console.log(gray('Loading the compiled contracts locally...'));
 				const compiledSourcePath = path.join(buildPath, COMPILED_FOLDER);
 
-				let firstTimestamp = Infinity;
+				let earliestCompiledTimestamp = Infinity;
 
 				const compiled = fs
 					.readdirSync(compiledSourcePath)
@@ -139,7 +141,10 @@ module.exports = program =>
 					.reduce((memo, contractFilename) => {
 						const contract = contractFilename.replace(/\.json$/, '');
 						const sourceFile = path.join(compiledSourcePath, contractFilename);
-						firstTimestamp = Math.min(firstTimestamp, fs.statSync(sourceFile).mtimeMs);
+						earliestCompiledTimestamp = Math.min(
+							earliestCompiledTimestamp,
+							fs.statSync(sourceFile).mtimeMs
+						);
 						if (!fs.existsSync(sourceFile)) {
 							throw Error(
 								`Cannot find compiled contract code for: ${contract}. Did you run the "build" step first?`
@@ -148,6 +153,13 @@ module.exports = program =>
 						memo[contract] = JSON.parse(fs.readFileSync(sourceFile));
 						return memo;
 					}, {});
+
+				// now get the latest time a Solidity file was edited
+				let latestSolTimestamp = 0;
+				Object.keys(findSolFiles(CONTRACTS_FOLDER)).forEach(file => {
+					const sourceFilePath = path.join(CONTRACTS_FOLDER, file);
+					latestSolTimestamp = Math.max(latestSolTimestamp, fs.statSync(sourceFilePath).mtimeMs);
+				});
 
 				// now clone these so we can update and write them after each deployment but keep the original
 				// flags available
@@ -196,23 +208,24 @@ module.exports = program =>
 						)
 					);
 					process.exitCode = 1;
-					return;
 				}
-
-				// JJM: We could easily add an error here if the earlist build is before the latest SOL contract modification
 
 				parameterNotice({
 					Network: network,
 					'Gas price to use': `${gasPrice} GWEI`,
 					'Deployment Path': new RegExp(network, 'gi').test(deploymentPath)
 						? deploymentPath
-						: yellow('WARNING: cant find network name in path. Please double check this! ') +
+						: yellow('⚠️ cant find network name in path. Please double check this! ') +
 						  deploymentPath,
-					'Local build last modified': `${new Date(firstTimestamp)}. This is roughly ${(
-						(new Date().getTime() - firstTimestamp) /
-						60000
-					).toFixed(2)} mins ago.`,
-					'Add any new synths found?': addNewSynths ? green('YES') : yellow('NO'),
+					'Local build last modified': `${new Date(earliestCompiledTimestamp)} ${yellow(
+						((new Date().getTime() - earliestCompiledTimestamp) / 60000).toFixed(2) + ' mins ago'
+					)}`,
+					'Last Solidity update':
+						new Date(latestSolTimestamp) +
+						(latestSolTimestamp > earliestCompiledTimestamp
+							? yellow(' ⚠️ this is later than the last build! Is this intentional?')
+							: green(' ✅')),
+					'Add any new synths found?': addNewSynths ? green('✅ YES') : yellow('⚠️  NO'),
 					'Deployer account:': account,
 					'Synthetix totalSupply': `${Math.round(w3utils.fromWei(currentSynthetixSupply) / 1e6)}m`,
 					'ExchangeRates Oracle': oracleExrates,
@@ -222,7 +235,7 @@ module.exports = program =>
 				try {
 					await confirmAction(
 						yellow(
-							`WARNING: This action will deploy the following contracts to ${network}:\n- ${Object.entries(
+							`⚠️ WARNING: This action will deploy the following contracts to ${network}:\n- ${Object.entries(
 								config
 							)
 								.filter(([, { deploy }]) => deploy)
@@ -230,7 +243,7 @@ module.exports = program =>
 								.join('\n- ')}` + `\nIt will also set proxy targets and add synths to Synthetix.\n`
 						) +
 							gray('-'.repeat(50)) +
-							'\nDo you want to continue? (y/n)'
+							'\nDo you want to continue? (y/n) '
 					);
 				} catch (err) {
 					console.log(gray('Operation cancelled'));

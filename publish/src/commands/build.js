@@ -5,7 +5,12 @@ const fs = require('fs');
 const { gray, green, yellow, red } = require('chalk');
 const { findSolFiles, flatten, compile } = require('../solidity');
 
-const { COMPILED_FOLDER, FLATTENED_FOLDER, BUILD_FOLDER } = require('../constants');
+const {
+	COMPILED_FOLDER,
+	CONTRACTS_FOLDER,
+	FLATTENED_FOLDER,
+	BUILD_FOLDER,
+} = require('../constants');
 
 const { stringify } = require('../util');
 
@@ -30,7 +35,7 @@ module.exports = program =>
 			// if there's a naming clash our code wins.
 			console.log(gray('Finding .sol files...'));
 			const libraries = findSolFiles('node_modules');
-			const contracts = findSolFiles('contracts');
+			const contracts = findSolFiles(CONTRACTS_FOLDER);
 			const allSolFiles = { ...libraries, ...contracts };
 			console.log(
 				gray(
