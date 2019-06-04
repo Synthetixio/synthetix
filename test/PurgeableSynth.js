@@ -52,15 +52,18 @@ contract('PurgeableSynth', accounts => {
 		await feePool.setTransferFeeRate('0', { from: owner });
 	});
 
-	const deploySynth = async ({ currencyKey, maxSupplyToPurgeInUSD }) => {
-		const synthTokenState = await TokenState.new(owner, ZERO_ADDRESS, {
-			from: deployerAccount,
-		});
+	const deploySynth = async ({ currencyKey, maxSupplyToPurgeInUSD, proxy, tokenState }) => {
+		tokenState =
+			tokenState ||
+			(await TokenState.new(owner, ZERO_ADDRESS, {
+				from: deployerAccount,
+			}));
 
-		const synthProxy = await Proxy.new(owner, { from: deployerAccount });
+		proxy = proxy || (await Proxy.new(owner, { from: deployerAccount }));
+
 		const synth = await PurgeableSynth.new(
-			synthProxy.address,
-			synthTokenState.address,
+			proxy.address,
+			tokenState.address,
 			synthetix.address,
 			feePool.address,
 			`Synth ${currencyKey}`,
@@ -73,10 +76,7 @@ contract('PurgeableSynth', accounts => {
 				from: deployerAccount,
 			}
 		);
-		await synthTokenState.setAssociatedContract(synth.address, { from: owner });
-		await synthProxy.setTarget(synth.address, { from: owner });
-
-		return { synth, synthTokenState, synthProxy };
+		return { synth, tokenState, proxy };
 	};
 
 	const issueSynths = async ({ account, amount }) => {
@@ -88,10 +88,12 @@ contract('PurgeableSynth', accounts => {
 
 	describe('when a Purgeable synth is added and connected to Synthetix', () => {
 		beforeEach(async () => {
-			const { synth } = await deploySynth({
+			const { synth, tokenState, proxy } = await deploySynth({
 				currencyKey: 'iETH',
 				maxSupplyToPurgeInUSD: toUnit(1000),
 			});
+			await tokenState.setAssociatedContract(synth.address, { from: owner });
+			await proxy.setTarget(synth.address, { from: owner });
 			await synthetix.addSynth(synth.address, { from: owner });
 			this.synth = synth;
 		});
@@ -433,6 +435,8 @@ contract('PurgeableSynth', accounts => {
 				describe('when the sAUD synth has its totalSupply set to 0 by the owner', () => {
 					beforeEach(async () => {
 						this.totalSupply = await this.oldSynth.totalSupply();
+						this.oldTokenState = await TokenState.at(await this.oldSynth.tokenState());
+						this.oldProxy = await Proxy.at(await this.oldSynth.proxy());
 						this.oldSynth.setTotalSupply(toUnit('0'), { from: owner });
 					});
 					describe('and the old sAUD synth is removed from Synthetix', () => {
@@ -441,27 +445,25 @@ contract('PurgeableSynth', accounts => {
 						});
 						describe('when a Purgeable synth is added to replace the existing sAUD', () => {
 							beforeEach(async () => {
-								const { synth, synthTokenState } = await deploySynth({
+								const { synth } = await deploySynth({
 									currencyKey: 'sAUD',
 									maxSupplyToPurgeInUSD: toUnit(1000),
+									proxy: this.oldProxy,
+									tokenState: this.oldTokenState,
 								});
 								this.replacement = synth;
-								this.newTokenState = synthTokenState;
 							});
 							describe('and it is added to Synthetix', () => {
 								beforeEach(async () => {
 									await synthetix.addSynth(this.replacement.address, { from: owner });
 								});
 
-								describe('and the old sAUD TokenState is connected to the replacement synth', () => {
+								describe('and the old sAUD TokenState and Proxy is connected to the replacement synth', () => {
 									beforeEach(async () => {
-										this.oldTokenState = await TokenState.at(await this.oldSynth.tokenState());
 										await this.oldTokenState.setAssociatedContract(this.replacement.address, {
 											from: owner,
 										});
-										await this.replacement.setTokenState(this.oldTokenState.address, {
-											from: owner,
-										});
+										await this.oldProxy.setTarget(this.replacement.address, { from: owner });
 										// now reconnect total supply
 										await this.replacement.setTotalSupply(this.totalSupply, { from: owner });
 									});

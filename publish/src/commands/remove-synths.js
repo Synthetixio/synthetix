@@ -91,7 +91,7 @@ module.exports = program =>
 				await confirmAction(
 					cyan(
 						`${yellow(
-							'WARNING'
+							'⚠ WARNING'
 						)}: This action will remove the following synths from the Synthetix contract on ${network}:\n- ${synthsToRemove.join(
 							'\n- '
 						)}`
