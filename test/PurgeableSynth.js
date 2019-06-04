@@ -8,7 +8,7 @@ const Proxy = artifacts.require('Proxy');
 
 const { currentTime, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 
-contract('PurgeableSynth', accounts => {
+contract.only('PurgeableSynth', accounts => {
 	const [sUSD, SNX, , sAUD, iETH] = ['sUSD', 'SNX', 'XDR', 'sAUD', 'iETH'].map(
 		web3.utils.asciiToHex
 	);
@@ -27,7 +27,7 @@ contract('PurgeableSynth', accounts => {
 		synthetix,
 		exchangeRates,
 		sUSDContract,
-		// sAUDContract,
+		sAUDContract,
 		// XDRContract,
 		oracle,
 		timestamp;
@@ -42,7 +42,7 @@ contract('PurgeableSynth', accounts => {
 
 		synthetix = await Synthetix.deployed();
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
-		// sAUDContract = await Synth.at(await synthetix.synths(sAUD));
+		sAUDContract = await Synth.at(await synthetix.synths(sAUD));
 		// XDRContract = await Synth.at(await synthetix.synths(XDR));
 
 		oracle = await exchangeRates.oracle();
@@ -75,7 +75,6 @@ contract('PurgeableSynth', accounts => {
 		);
 		await synthTokenState.setAssociatedContract(synth.address, { from: owner });
 		await synthProxy.setTarget(synth.address, { from: owner });
-		await synthetix.addSynth(synth.address, { from: owner });
 
 		return { synth, synthTokenState, synthProxy };
 	};
@@ -87,12 +86,13 @@ contract('PurgeableSynth', accounts => {
 		await synthetix.issueMaxSynths(sUSD, { from: account });
 	};
 
-	describe('when a Purgeable synth is added', () => {
+	describe('when a Purgeable synth is added and connected to Synthetix', () => {
 		beforeEach(async () => {
 			const { synth } = await deploySynth({
 				currencyKey: 'iETH',
 				maxSupplyToPurgeInUSD: toUnit(1000),
 			});
+			await synthetix.addSynth(synth.address, { from: owner });
 			this.synth = synth;
 		});
 		it('it sets its max supply correctly', async () => {
@@ -150,7 +150,7 @@ contract('PurgeableSynth', accounts => {
 			});
 		});
 
-		describe('when theres a price for the purgeable synth', () => {
+		describe("when there's a price for the purgeable synth", () => {
 			beforeEach(async () => {
 				await exchangeRates.updateRates(
 					[sAUD, SNX, iETH],
@@ -365,18 +365,120 @@ contract('PurgeableSynth', accounts => {
 										);
 									});
 								});
-
-								// when purge is invoked
-								// then it works
 							});
 						});
 					});
 				});
 			});
 		});
-
-		describe('when the purgeable synth is frozen', () => {});
 	});
 
-	describe('when a regular synth is frozen', () => {});
+	describe('reconnecting TokenState to a purgable synth', () => {
+		describe('when sAUD has a price', () => {
+			beforeEach(async () => {
+				await exchangeRates.updateRates([sAUD], ['0.776845993'].map(toUnit), timestamp, {
+					from: oracle,
+				});
+			});
+			describe('when a user holds some sAUD', () => {
+				let userBalanceOfOldSynth;
+				let usersEffectiveBalanceInUSD;
+				beforeEach(async () => {
+					await issueSynths({ account: account1, amount: 100000 });
+					const amountToExchange = toUnit('100');
+					await synthetix.exchange(sUSD, amountToExchange, sAUD, ZERO_ADDRESS, {
+						from: account1,
+					});
+					const amountExchangedInUSDLessFees = await feePool.amountReceivedFromExchange(
+						amountToExchange
+					);
+					const usersUSDBalance = await sUSDContract.balanceOf(account1);
+					usersEffectiveBalanceInUSD = usersUSDBalance.add(amountExchangedInUSDLessFees);
+					this.oldSynth = sAUDContract;
+					userBalanceOfOldSynth = await this.oldSynth.balanceOf(account1);
+					assert.equal(
+						userBalanceOfOldSynth.gt(toUnit('0')),
+						true,
+						'The sAUD balance is greater than zero after exchange'
+					);
+				});
+
+				describe('when the sAUD synth has its totalSupply set to 0 by the owner', () => {
+					beforeEach(async () => {
+						this.totalSupply = await this.oldSynth.totalSupply();
+						this.oldSynth.setTotalSupply(toUnit('0'), { from: owner });
+					});
+					describe('and the old sAUD synth is removed from Synthetix', () => {
+						beforeEach(async () => {
+							await synthetix.removeSynth(sAUD, { from: owner });
+						});
+						describe('when a Purgeable synth is added to replace the existing sAUD', () => {
+							beforeEach(async () => {
+								const { synth, synthTokenState } = await deploySynth({
+									currencyKey: 'sAUD',
+									maxSupplyToPurgeInUSD: toUnit(1000),
+								});
+								this.replacement = synth;
+								this.newTokenState = synthTokenState;
+							});
+							describe('and it is added to Synthetix', () => {
+								beforeEach(async () => {
+									await synthetix.addSynth(this.replacement.address, { from: owner });
+								});
+
+								describe('and the old sAUD TokenState is connected to the replacement synth', () => {
+									beforeEach(async () => {
+										this.oldTokenState = await TokenState.at(await this.oldSynth.tokenState());
+										await this.oldTokenState.setAssociatedContract(this.replacement.address, {
+											from: owner,
+										});
+										await this.replacement.setTokenState(this.oldTokenState.address, {
+											from: owner,
+										});
+										// now reconnect total supply
+										await this.replacement.setTotalSupply(this.totalSupply, { from: owner });
+									});
+									it('then the user balance has transferred', async () => {
+										const balance = await this.replacement.balanceOf(account1);
+										assert.bnEqual(
+											balance,
+											userBalanceOfOldSynth,
+											'The balance after connecting TokenState must not have changed'
+										);
+									});
+									describe('and purge is called on the replacement sAUD contract', () => {
+										let txn;
+										beforeEach(async () => {
+											txn = await this.replacement.purge([account1], { from: owner });
+										});
+										it('then the user now has a 0 balance in the replacement', async () => {
+											const balance = await this.replacement.balanceOf(account1);
+											assert.bnEqual(balance, toUnit('0'), 'The balance after purge must be 0');
+										});
+										it('and their balance must have gone back into sUSD', async () => {
+											const balance = await sUSDContract.balanceOf(account1);
+											assert.bnClose(
+												balance,
+												usersEffectiveBalanceInUSD,
+												'1', // 1 unit of rounding allowed
+												'The sUSD balance after purge must return to the initial amount, less fees'
+											);
+										});
+										it('and the purge event is issued', async () => {
+											const purgedEvent = txn.logs.find(log => log.event === 'Purged');
+
+											assert.eventEqual(purgedEvent, 'Purged', {
+												account: account1,
+												value: userBalanceOfOldSynth,
+											});
+										});
+									});
+								});
+							});
+						});
+					});
+				});
+			});
+		});
+	});
 });
