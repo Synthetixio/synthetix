@@ -80,6 +80,10 @@ module.exports = program =>
 			'-p, --oracle-depot <value>',
 			'The address of the depot oracle for this network (default is use existing)'
 		)
+		.option(
+			'-v, --private-key [value]',
+			'The private key to deploy with (only works in local mode, otherwise set in .env).'
+		)
 		.action(
 			async ({
 				addNewSynths,
@@ -92,6 +96,7 @@ module.exports = program =>
 				oracleExrates,
 				oracleDepot,
 				feeAuth,
+				privateKey,
 			}) => {
 				ensureNetwork(network);
 				ensureDeploymentPath(deploymentPath);
@@ -143,7 +148,14 @@ module.exports = program =>
 				// flags available
 				const updatedConfig = JSON.parse(JSON.stringify(config));
 
-				const { providerUrl, privateKey, etherscanLinkPrefix } = loadConnections({ network });
+				const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
+					network,
+				});
+
+				// allow local deployments to use the private key passed as a CLI option
+				if (network !== 'local' || !privateKey) {
+					privateKey = envPrivateKey;
+				}
 
 				const deployer = new Deployer({
 					compiled,
