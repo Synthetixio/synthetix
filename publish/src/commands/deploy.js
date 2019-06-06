@@ -739,7 +739,7 @@ module.exports = program =>
 				// ----------------
 				// Synths
 				// ----------------
-				for (const { name: currencyKey, inverted } of synths) {
+				for (const { name: currencyKey, inverted, subclass } of synths) {
 					const tokenStateForSynth = await deployContract({
 						name: `TokenState${currencyKey}`,
 						source: 'TokenState',
@@ -752,9 +752,13 @@ module.exports = program =>
 						args: [account],
 						force: addNewSynths,
 					});
+					const additionalConstructorArgsMap = {
+						PurgeableSynth: [exchangeRatesAddress, w3utils.toWei('1000')],
+						// future subclasses...
+					};
 					const synth = await deployContract({
 						name: `Synth${currencyKey}`,
-						source: 'Synth',
+						source: subclass || 'Synth',
 						deps: [`TokenState${currencyKey}`, `Proxy${currencyKey}`, 'Synthetix', 'FeePool'],
 						args: [
 							proxyForSynth ? proxyForSynth.options.address : '',
@@ -765,7 +769,7 @@ module.exports = program =>
 							currencyKey,
 							account,
 							toBytes4(currencyKey),
-						],
+						].concat(additionalConstructorArgsMap[subclass] || []),
 						force: addNewSynths,
 					});
 					const synthAddress = synth ? synth.options.address : '';

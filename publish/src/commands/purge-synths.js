@@ -18,8 +18,8 @@ const {
 
 module.exports = program =>
 	program
-		.command('remove-synths')
-		.description('Remove a number of synths from the system')
+		.command('purge-synths')
+		.description('Purge a number of synths from the system')
 		.option(
 			'-d, --deployment-path <value>',
 			`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
