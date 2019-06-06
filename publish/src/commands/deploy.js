@@ -10,7 +10,6 @@ const { findSolFiles, loadCompiledFiles } = require('../solidity');
 
 const {
 	BUILD_FOLDER,
-	COMPILED_FOLDER,
 	CONTRACTS_FOLDER,
 	CONFIG_FILENAME,
 	SYNTHS_FILENAME,
@@ -166,28 +165,35 @@ module.exports = program =>
 						address: deployment.targets[contract].address,
 					});
 
-				const oldSynthetix = getExistingContract({ contract: 'Synthetix' });
 				let currentSynthetixSupply;
-				try {
-					currentSynthetixSupply = await oldSynthetix.methods.totalSupply().call();
+				if (network === 'local') {
+					currentSynthetixSupply = w3utils.toWei((100e6).toString());
+					oracleExrates = account;
+					oracleDepot = account;
+				} else {
+					// do requisite checks
+					try {
+						const oldSynthetix = getExistingContract({ contract: 'Synthetix' });
+						currentSynthetixSupply = await oldSynthetix.methods.totalSupply().call();
 
-					if (!oracleExrates) {
-						const currentExrates = getExistingContract({ contract: 'ExchangeRates' });
-						oracleExrates = await currentExrates.methods.oracle().call();
-					}
+						if (!oracleExrates) {
+							const currentExrates = getExistingContract({ contract: 'ExchangeRates' });
+							oracleExrates = await currentExrates.methods.oracle().call();
+						}
 
-					if (!oracleDepot) {
-						const currentDepot = getExistingContract({ contract: 'Depot' });
-						oracleDepot = await currentDepot.methods.oracle().call();
+						if (!oracleDepot) {
+							const currentDepot = getExistingContract({ contract: 'Depot' });
+							oracleDepot = await currentDepot.methods.oracle().call();
+						}
+					} catch (err) {
+						console.error(
+							red(
+								'Cannot connect to existing contracts. Please double check the deploymentPath is correct for the network allocated'
+							)
+						);
+						process.exitCode = 1;
+						return;
 					}
-				} catch (err) {
-					console.error(
-						red(
-							'Cannot connect to existing contracts. Please double check the deploymentPath is correct for the network allocated'
-						)
-					);
-					process.exitCode = 1;
-					return;
 				}
 
 				for (const address of [account, oracleExrates, oracleDepot]) {
@@ -223,19 +229,19 @@ module.exports = program =>
 				try {
 					await confirmAction(
 						yellow(
-							`⚠⚠⚠ WARNING: This action will deploy the following contracts to ${network}:\n- ${Object.entries(
+							`⚠⚠⚠ WARNING: This action will deploy the following contracts to ${network}:\n${Object.entries(
 								config
 							)
 								.filter(([, { deploy }]) => deploy)
 								.map(([contract]) => contract)
-								.join('\n- ')}` + `\nIt will also set proxy targets and add synths to Synthetix.\n`
+								.join(', ')}` + `\nIt will also set proxy targets and add synths to Synthetix.\n`
 						) +
 							gray('-'.repeat(50)) +
 							'\nDo you want to continue? (y/n) '
 					);
 				} catch (err) {
 					console.log(gray('Operation cancelled'));
-					process.exit();
+					return;
 				}
 
 				console.log(gray(`Starting deployment to ${network.toUpperCase()} via Infura...`));

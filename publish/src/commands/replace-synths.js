@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { gray, yellow, red, cyan } = require('chalk');
+const { gray, yellow, red, cyan, redBright } = require('chalk');
 const w3utils = require('web3-utils');
 
 const { loadCompiledFiles } = require('../solidity');
@@ -13,6 +13,7 @@ const {
 	COMPILED_FOLDER,
 	DEPLOYMENT_FILENAME,
 	BUILD_FOLDER,
+	ZERO_ADDRESS,
 } = require('../constants');
 
 const {
@@ -24,56 +25,6 @@ const {
 	confirmAction,
 	stringify,
 } = require('../util');
-
-/**
- * Run a single transaction step, first checking to see if the value needs
- * changing at all, and then whether or not its the owner running it.
- */
-const runStep = async ({
-	action,
-	target,
-	read,
-	readArg,
-	expected,
-	write,
-	writeArg,
-	account,
-	gasLimit,
-	gasPrice,
-	etherscanLinkPrefix,
-}) => {
-	// check to see if action required
-	const response = await target.methods[read](readArg).call();
-
-	console.log(gray(`Attempting action: ${action}`));
-
-	if (expected(response)) {
-		console.log(gray(`Nothing required for this action.`));
-		return;
-	}
-
-	// otherwuse check the owner
-	const owner = await target.methods.owner().call();
-	if (owner === account) {
-		// perform action
-		await target.methods[write](writeArg).send({
-			from: account,
-			gas: Number(gasLimit),
-			gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
-		});
-
-		console.log(gray(`Successfully completed ${action}`));
-	} else {
-		// wait for user to perform it
-		await confirmAction(
-			yellow(
-				`YOUR TASK: Invoke ${write}(${writeArg}) via ${etherscanLinkPrefix}/address/${
-					target.options.address
-				}#writeContract`
-			) + '\nPlease enter Y when the transaction has been mined and not earlier. '
-		);
-	}
-};
 
 module.exports = program =>
 	program
@@ -94,7 +45,7 @@ module.exports = program =>
 			'-d, --deployment-path <value>',
 			`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 		)
-		.option('-g, --gas-price <value>', 'Gas price in GWEI', 1)
+		.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
 		.option('-m, --method-call-gas-limit <value>', 'Method call gas limit', parseInt, 15e4)
 		.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 		.option(
@@ -129,7 +80,7 @@ module.exports = program =>
 				});
 
 				if (synthsToReplace.length < 1) {
-					console.log(yellow('No synths provided. Please use --synths-to-remove option'));
+					console.log(yellow('No synths provided. Please use --synths-to-replace option'));
 					return;
 				}
 
@@ -173,7 +124,7 @@ module.exports = program =>
 				const deployer = new Deployer({
 					compiled,
 					config: {}, // we don't care what config we pass the deployer - we will force override
-					deployment: {}, // we don't need our deployer to lookup existing contracts when deploying
+					deployment,
 					gasPrice,
 					methodCallGasLimit,
 					contractDeploymentGasLimit,
@@ -197,7 +148,9 @@ module.exports = program =>
 
 				// convert the list of synths into a list of deployed contracts
 				const deployedSynths = synthsToReplace.map(currencyKey => {
-					const { address: synthAddress } = deployment.targets[`Synth${currencyKey}`];
+					const { address: synthAddress, source: synthSource } = deployment.targets[
+						`Synth${currencyKey}`
+					];
 					const { address: proxyAddress, source: proxySource } = deployment.targets[
 						`Proxy${currencyKey}`
 					];
@@ -205,16 +158,16 @@ module.exports = program =>
 						`TokenState${currencyKey}`
 					];
 
-					// const { abi: synthABI } = deployment.sources[synthSource];
+					const { abi: synthABI } = deployment.sources[synthSource];
 					const { abi: tokenStateABI } = deployment.sources[tokenStateSource];
 					const { abi: proxyABI } = deployment.sources[proxySource];
 
-					// const Synth = new web3.eth.Contract(synthABI, synthAddress);
+					const Synth = new web3.eth.Contract(synthABI, synthAddress);
 					const TokenState = new web3.eth.Contract(tokenStateABI, tokenStateAddress);
 					const Proxy = new web3.eth.Contract(proxyABI, proxyAddress);
 
 					return {
-						// Synth,
+						Synth,
 						TokenState,
 						Proxy,
 						currencyKey,
@@ -266,59 +219,86 @@ module.exports = program =>
 				const updatedDeployment = JSON.parse(JSON.stringify(deployment));
 				const updatedSynths = JSON.parse(JSON.stringify(synths));
 
-				for (const { currencyKey, synthAddress, Proxy, TokenState } of deployedSynths) {
-					const synthContractName = `Synth${currencyKey}`;
+				/**
+				 * Run a single transaction step, first checking to see if the value needs
+				 * changing at all, and then whether or not its the owner running it.
+				 */
+				const runStep = async ({ contract, target, read, readArg, expected, write, writeArg }) => {
+					// check to see if action required
+					const action = `${contract}.${write}(${writeArg})`;
 
-					const currentSynthInSNX = await Synthetix.methods.synths(toBytes4(currencyKey)).call();
+					// web3 counts provided arguments - even undefined ones - and they must match the expected args, hence the below
+					const argumentsForReadFunction = readArg ? [readArg] : [];
+					const response = await target.methods[read](...argumentsForReadFunction).call();
 
-					if (synthAddress !== currentSynthInSNX) {
-						console.error(
-							red(
-								`Synth address in Synthetix for ${currencyKey} is different from what's deployed in Synthetix to the local ${DEPLOYMENT_FILENAME} of ${network} \ndeployed: ${yellow(
-									currentSynthInSNX
-								)}\nlocal:    ${yellow(synthAddress)}`
-							)
-						);
-						process.exitCode = 1;
+					console.log(yellow(`Attempting action: ${action}`));
+
+					if (expected(response)) {
+						console.log(gray(`Nothing required for this action.`));
 						return;
 					}
 
+					// otherwuse check the owner
+					const owner = await target.methods.owner().call();
+					if (owner === account) {
+						// perform action
+						const argumentsForWriteFunction = writeArg ? [writeArg] : [];
+						await target.methods[write](...argumentsForWriteFunction).send({
+							from: account,
+							gas: Number(methodCallGasLimit),
+							gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
+						});
+
+						console.log(gray(`Successfully completed ${action}`));
+					} else {
+						try {
+							// wait for user to perform it
+							await confirmAction(
+								redBright(
+									`YOUR TASK: Invoke ${write}(${writeArg}) via ${etherscanLinkPrefix}/address/${
+										target.options.address
+									}#writeContract`
+								) + '\nPlease enter Y when the transaction has been mined and not earlier. '
+							);
+						} catch (err) {
+							console.log(gray('Cancelled'));
+							process.exit(1);
+						}
+					}
+				};
+
+				for (const { currencyKey, Synth, Proxy, TokenState } of deployedSynths) {
+					const currencyKeyInBytes = toBytes4(currencyKey);
+					const synthContractName = `Synth${currencyKey}`;
+
 					// STEPS
 					// 1. set old TokenState.setTotalSupply(0) // owner
-					runStep({
-						contract: `TokenState${currencyKey}`,
-						target: TokenState,
+					await runStep({
+						contract: synthContractName,
+						target: Synth,
 						read: 'totalSupply',
 						expected: input => input === '0',
 						write: 'setTotalSupply',
 						writeArg: '0',
-						owner: account,
-						gasPrice,
-						gasLimit: methodCallGasLimit,
-						etherscanLinkPrefix,
 					});
 
-					// 2. invoke Synthetix.removeSynth(currencyKey) // owner
-					runStep({
+					// // 2. invoke Synthetix.removeSynth(currencyKey) // owner
+					await runStep({
 						contract: 'Synthetix',
 						target: Synthetix,
 						read: 'synths',
-						readArg: currencyKey,
-						expected: input => !w3utils.isAddress(input),
+						readArg: currencyKeyInBytes,
+						expected: input => input === ZERO_ADDRESS,
 						write: 'removeSynth',
-						writeArg: currencyKey,
-						owner: account,
-						gasPrice,
-						gasLimit: methodCallGasLimit,
-						etherscanLinkPrefix,
+						writeArg: currencyKeyInBytes,
 					});
 
-					// 3. use Deployer to deploy
+					// // 3. use Deployer to deploy
 					const additionalConstructorArgsMap = {
-						PurgeableSynth: [exchangeRatesAddress, w3utils.toWei(maxSupplyToPurgeInUsd)],
+						PurgeableSynth: [exchangeRatesAddress, w3utils.toWei(maxSupplyToPurgeInUsd.toString())],
 						// future subclasses...
 					};
-					const replacementSynth = deployer.deploy({
+					const replacementSynth = await deployer.deploy({
 						name: `Synth${currencyKey}`,
 						source: subclass,
 						force: true,
@@ -330,65 +310,49 @@ module.exports = program =>
 							`Synth ${currencyKey}`,
 							currencyKey,
 							account,
-							toBytes4(currencyKey),
+							currencyKeyInBytes,
 						].concat(additionalConstructorArgsMap[subclass]),
 					});
 
-					// 4. Synthetix.addSynth(newone) // owner
-					runStep({
+					// // 4. Synthetix.addSynth(newone) // owner
+					await runStep({
 						contract: 'Synthetix',
 						target: Synthetix,
 						read: 'synths',
-						readArg: currencyKey,
+						readArg: currencyKeyInBytes,
 						expected: input => input === replacementSynth.options.address,
 						write: 'addSynth',
 						writeArg: replacementSynth.options.address,
-						owner: account,
-						gasPrice,
-						gasLimit: methodCallGasLimit,
-						etherscanLinkPrefix,
 					});
 
-					// 5. old TokenState.setAssociatedContract(newone) // owner
-					runStep({
+					// // 5. old TokenState.setAssociatedContract(newone) // owner
+					await runStep({
 						contract: `TokenState${currencyKey}`,
 						target: TokenState,
 						read: 'associatedContract',
 						expected: input => input === replacementSynth.options.address,
 						write: 'setAssociatedContract',
 						writeArg: replacementSynth.options.address,
-						owner: account,
-						gasPrice,
-						gasLimit: methodCallGasLimit,
-						etherscanLinkPrefix,
 					});
 
-					// 6. old Proxy.setTarget(newone) // owner
-					runStep({
+					// // 6. old Proxy.setTarget(newone) // owner
+					await runStep({
 						contract: `Proxy${currencyKey}`,
 						target: Proxy,
 						read: 'target',
 						expected: input => input === replacementSynth.options.address,
 						write: 'setTarget',
 						writeArg: replacementSynth.options.address,
-						owner: account,
-						gasPrice,
-						gasLimit: methodCallGasLimit,
-						etherscanLinkPrefix,
 					});
 
 					// 7. newone.setTotalSupply(totalSupplyList[...])
-					runStep({
+					await runStep({
 						contract: synthContractName,
 						target: replacementSynth,
 						read: 'totalSupply',
 						expected: input => input === totalSupplies[currencyKey],
 						write: 'setTotalSupply',
 						writeArg: totalSupplies[currencyKey],
-						owner: account,
-						gasPrice,
-						gasLimit: methodCallGasLimit,
-						etherscanLinkPrefix,
 					});
 
 					// update the deployment.json file for new Synth target

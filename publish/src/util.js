@@ -18,9 +18,9 @@ const toBytes4 = str => w3utils.asciiToHex(str, 4);
 const stringify = input => JSON.stringify(input, null, '\t') + '\n';
 
 const ensureNetwork = network => {
-	if (!/^(kovan|rinkeby|ropsten|mainnet)$/.test(network)) {
+	if (!/^(local|kovan|rinkeby|ropsten|mainnet)$/.test(network)) {
 		throw Error(
-			`Invalid network name of "${network}" supplied. Must be one of kovan, rinkeby, ropsten or mainnet`
+			`Invalid network name of "${network}" supplied. Must be one of local, kovan, rinkeby, ropsten or mainnet`
 		);
 	}
 };
@@ -72,7 +72,11 @@ const loadConnections = ({ network }) => {
 	if (!process.env.INFURA_PROJECT_ID) {
 		throw Error('Missing .env key of INFURA_PROJECT_ID. Please add and retry.');
 	}
-	const providerUrl = `https://${network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`;
+
+	const providerUrl =
+		network === 'local'
+			? 'http://127.0.0.1:8545'
+			: `https://${network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`;
 	const privateKey = process.env.DEPLOY_PRIVATE_KEY;
 	const etherscanUrl =
 		network === 'mainnet'
