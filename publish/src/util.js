@@ -131,6 +131,8 @@ const performTransactionalStep = async ({
 	gasLimit,
 	gasPrice,
 	etherscanLinkPrefix,
+	ownerActions,
+	ownerActionsFile,
 }) => {
 	// check to see if action required
 	const action = `${contract}.${write}(${writeArg})`;
@@ -161,9 +163,25 @@ const performTransactionalStep = async ({
 		console.log(gray(`Successfully completed ${action} in hash: ${hash}`));
 
 		return hash;
+	}
+
+	if (ownerActions && ownerActionsFile) {
+		// append to owner actions if supplied
+		const appendOwnerAction = appendOwnerActionGenerator({
+			ownerActions,
+			ownerActionsFile,
+			etherscanLinkPrefix,
+		});
+
+		appendOwnerAction({
+			key: action,
+			target: target.options.address,
+			action: `${write}(${writeArg})`,
+		});
+		return true;
 	} else {
+		// otherwise wait for owner in real time
 		try {
-			// wait for user to perform it
 			await confirmAction(
 				redBright(
 					`YOUR TASK: Invoke ${write}(${writeArg}) via ${etherscanLinkPrefix}/address/${
