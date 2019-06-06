@@ -12,5 +12,6 @@ require('./src/commands/nominate')(program);
 require('./src/commands/owner')(program);
 require('./src/commands/generate-token-list')(program);
 require('./src/commands/remove-synths')(program);
+require('./src/commands/replace-synths')(program);
 
 program.parse(process.argv);

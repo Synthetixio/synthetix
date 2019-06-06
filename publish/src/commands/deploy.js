@@ -6,7 +6,7 @@ const { gray, green, yellow, redBright, red } = require('chalk');
 const { table } = require('table');
 const w3utils = require('web3-utils');
 const Deployer = require('../Deployer');
-const { findSolFiles } = require('../solidity');
+const { findSolFiles, loadCompiledFiles } = require('../solidity');
 
 const {
 	BUILD_FOLDER,
@@ -131,28 +131,7 @@ module.exports = program =>
 				}
 
 				console.log(gray('Loading the compiled contracts locally...'));
-				const compiledSourcePath = path.join(buildPath, COMPILED_FOLDER);
-
-				let earliestCompiledTimestamp = Infinity;
-
-				const compiled = fs
-					.readdirSync(compiledSourcePath)
-					.filter(name => /^.+\.json$/.test(name))
-					.reduce((memo, contractFilename) => {
-						const contract = contractFilename.replace(/\.json$/, '');
-						const sourceFile = path.join(compiledSourcePath, contractFilename);
-						earliestCompiledTimestamp = Math.min(
-							earliestCompiledTimestamp,
-							fs.statSync(sourceFile).mtimeMs
-						);
-						if (!fs.existsSync(sourceFile)) {
-							throw Error(
-								`Cannot find compiled contract code for: ${contract}. Did you run the "build" step first?`
-							);
-						}
-						memo[contract] = JSON.parse(fs.readFileSync(sourceFile));
-						return memo;
-					}, {});
+				const { earliestCompiledTimestamp, compiled } = loadCompiledFiles({ buildPath });
 
 				// now get the latest time a Solidity file was edited
 				let latestSolTimestamp = 0;
