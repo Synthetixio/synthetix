@@ -143,7 +143,7 @@ module.exports = program =>
 					console.log(
 						yellow(
 							`⚠⚠⚠ WARNING: totalSupply is not 0 after purge of ${currencyKey}. It is ${totalSupply}. ` +
-								`Were there 100 or 1000 holders above? If so then we have likely hit the tokenHolder ` +
+								`Were there 100 or 1000 holders noted above? If so then we have likely hit the tokenHolder ` +
 								`API limit; another purge is required for this synth.`
 						)
 					);
