@@ -46,6 +46,7 @@ module.exports = program =>
 				synths,
 				synthsFile,
 				deployment,
+				deploymentFile,
 				config,
 				configFile,
 				ownerActions,
@@ -107,7 +108,10 @@ module.exports = program =>
 			const Synthetix = new web3.eth.Contract(synthetixABI, synthetixAddress);
 
 			const synthetixOwner = await Synthetix.methods.owner().call();
+
+			// deep clone these configurations so we can mutate and persist them
 			const updatedConfig = JSON.parse(JSON.stringify(config));
+			const updatedDeployment = JSON.parse(JSON.stringify(deployment));
 			let updatedSynths = JSON.parse(JSON.stringify(synths));
 
 			for (const currencyKey of synthsToRemove) {
@@ -164,12 +168,14 @@ module.exports = program =>
 					});
 				}
 
-				// now update the config.json file
+				// now update the config and deployment JSON files
 				const contracts = ['Proxy', 'TokenState', 'Synth'].map(name => `${name}${currencyKey}`);
 				for (const contract of contracts) {
 					delete updatedConfig[contract];
+					delete updatedDeployment.targets[contract];
 				}
 				fs.writeFileSync(configFile, stringify(updatedConfig));
+				fs.writeFileSync(deploymentFile, stringify(updatedDeployment));
 
 				// and update the synths.json file
 				updatedSynths = updatedSynths.filter(({ name }) => name !== currencyKey);
