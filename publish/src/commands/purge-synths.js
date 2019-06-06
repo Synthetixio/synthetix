@@ -3,6 +3,7 @@
 const { gray, yellow, red, cyan } = require('chalk');
 const Web3 = require('web3');
 const w3utils = require('web3-utils');
+const axios = require('axios');
 
 const { CONFIG_FILENAME, DEPLOYMENT_FILENAME } = require('../constants');
 
@@ -40,7 +41,7 @@ module.exports = program =>
 			ensureNetwork(network);
 			ensureDeploymentPath(deploymentPath);
 
-			const { synths, deployment, ownerActions, ownerActionsFile } = loadAndCheckRequiredSources({
+			const { synths, deployment } = loadAndCheckRequiredSources({
 				deploymentPath,
 				network,
 			});
