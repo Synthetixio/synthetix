@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { gray, yellow, red, cyan, redBright } = require('chalk');
+const { gray, yellow, red, cyan } = require('chalk');
 const w3utils = require('web3-utils');
 
 const { loadCompiledFiles } = require('../solidity');
@@ -24,6 +24,7 @@ const {
 	loadConnections,
 	confirmAction,
 	stringify,
+	performTransactionalStep,
 } = require('../util');
 
 module.exports = program =>
@@ -219,53 +220,14 @@ module.exports = program =>
 				const updatedDeployment = JSON.parse(JSON.stringify(deployment));
 				const updatedSynths = JSON.parse(JSON.stringify(synths));
 
-				/**
-				 * Run a single transaction step, first checking to see if the value needs
-				 * changing at all, and then whether or not its the owner running it.
-				 */
-				const runStep = async ({ contract, target, read, readArg, expected, write, writeArg }) => {
-					// check to see if action required
-					const action = `${contract}.${write}(${writeArg})`;
-
-					// web3 counts provided arguments - even undefined ones - and they must match the expected args, hence the below
-					const argumentsForReadFunction = readArg ? [readArg] : [];
-					const response = await target.methods[read](...argumentsForReadFunction).call();
-
-					console.log(yellow(`Attempting action: ${action}`));
-
-					if (expected(response)) {
-						console.log(gray(`Nothing required for this action.`));
-						return;
-					}
-
-					// otherwuse check the owner
-					const owner = await target.methods.owner().call();
-					if (owner === account) {
-						// perform action
-						const argumentsForWriteFunction = writeArg ? [writeArg] : [];
-						await target.methods[write](...argumentsForWriteFunction).send({
-							from: account,
-							gas: Number(methodCallGasLimit),
-							gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
-						});
-
-						console.log(gray(`Successfully completed ${action}`));
-					} else {
-						try {
-							// wait for user to perform it
-							await confirmAction(
-								redBright(
-									`YOUR TASK: Invoke ${write}(${writeArg}) via ${etherscanLinkPrefix}/address/${
-										target.options.address
-									}#writeContract`
-								) + '\nPlease enter Y when the transaction has been mined and not earlier. '
-							);
-						} catch (err) {
-							console.log(gray('Cancelled'));
-							process.exit(1);
-						}
-					}
-				};
+				const runStep = async opts =>
+					performTransactionalStep({
+						...opts,
+						account,
+						gasLimit: methodCallGasLimit,
+						gasPrice,
+						etherscanLinkPrefix,
+					});
 
 				for (const { currencyKey, Synth, Proxy, TokenState } of deployedSynths) {
 					const currencyKeyInBytes = toBytes4(currencyKey);

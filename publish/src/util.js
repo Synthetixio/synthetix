@@ -3,7 +3,7 @@
 const path = require('path');
 const fs = require('fs');
 const readline = require('readline');
-const { gray, cyan } = require('chalk');
+const { gray, cyan, yellow, redBright } = require('chalk');
 const w3utils = require('web3-utils');
 
 const {
@@ -113,6 +113,72 @@ const appendOwnerActionGenerator = ({ ownerActions, ownerActionsFile, etherscanL
 	console.log(cyan(`Cannot invoke ${key} as not owner. Appended to actions.`));
 };
 
+/**
+ * Run a single transaction step, first checking to see if the value needs
+ * changing at all, and then whether or not its the owner running it.
+ *
+ * @returns transaction hash if successful, true if user completed, or falsy otherwise
+ */
+const performTransactionalStep = async ({
+	account,
+	contract,
+	target,
+	read,
+	readArg,
+	expected,
+	write,
+	writeArg,
+	gasLimit,
+	gasPrice,
+	etherscanLinkPrefix,
+}) => {
+	// check to see if action required
+	const action = `${contract}.${write}(${writeArg})`;
+
+	// web3 counts provided arguments - even undefined ones - and they must match the expected args, hence the below
+	const argumentsForReadFunction = readArg ? [readArg] : [];
+	const response = await target.methods[read](...argumentsForReadFunction).call();
+
+	console.log(yellow(`Attempting action: ${action}`));
+
+	if (expected(response)) {
+		console.log(gray(`Nothing required for this action.`));
+		return;
+	}
+
+	// otherwuse check the owner
+	const owner = await target.methods.owner().call();
+	if (owner === account) {
+		// perform action
+		const argumentsForWriteFunction = writeArg ? [writeArg] : [];
+		const txn = await target.methods[write](...argumentsForWriteFunction).send({
+			from: account,
+			gas: Number(gasLimit),
+			gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
+		});
+
+		const { transactionHash: hash } = txn;
+		console.log(gray(`Successfully completed ${action} in hash: ${hash}`));
+
+		return hash;
+	} else {
+		try {
+			// wait for user to perform it
+			await confirmAction(
+				redBright(
+					`YOUR TASK: Invoke ${write}(${writeArg}) via ${etherscanLinkPrefix}/address/${
+						target.options.address
+					}#writeContract`
+				) + '\nPlease enter Y when the transaction has been mined and not earlier. '
+			);
+
+			return true;
+		} catch (err) {
+			console.log(gray('Cancelled'));
+		}
+	}
+};
+
 module.exports = {
 	toBytes4,
 	ensureNetwork,
@@ -122,4 +188,5 @@ module.exports = {
 	confirmAction,
 	appendOwnerActionGenerator,
 	stringify,
+	performTransactionalStep,
 };

@@ -141,7 +141,9 @@ module.exports = program =>
 				if (Number(totalSupply) > 0) {
 					console.error(
 						red(
-							`Cannot remove as Synth${currencyKey}.totalSupply is non-zero: ${yellow(totalSupply)}`
+							`Cannot remove as Synth${currencyKey}.totalSupply is non-zero: ${yellow(
+								totalSupply
+							)}\nThe Synth must be purged of holders.`
 						)
 					);
 					process.exitCode = 1;
