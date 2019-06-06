@@ -66,8 +66,7 @@ module.exports = program =>
 		)
 		.option(
 			'-f, --fee-auth <value>',
-			'The address of the fee authority for this network',
-			'0xfee056f4d9d63a63d6cf16707d49ffae7ff3ff01' // the fee authority for testnets
+			'The address of the fee authority for this network (default is to use existing)'
 		)
 		.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
 		.option('-m, --method-call-gas-limit <value>', 'Method call gas limit', parseInt, 15e4)
@@ -182,6 +181,7 @@ module.exports = program =>
 					currentSynthetixSupply = w3utils.toWei((100e6).toString());
 					oracleExrates = account;
 					oracleDepot = account;
+					feeAuth = account;
 				} else {
 					// do requisite checks
 					try {
@@ -197,6 +197,11 @@ module.exports = program =>
 							const currentDepot = getExistingContract({ contract: 'Depot' });
 							oracleDepot = await currentDepot.methods.oracle().call();
 						}
+
+						if (!feeAuth) {
+							const currentFeePool = getExistingContract({ contract: 'FeePool' });
+							feeAuth = await currentFeePool.methods.feeAuthority().call();
+						}
 					} catch (err) {
 						console.error(
 							red(
@@ -208,7 +213,7 @@ module.exports = program =>
 					}
 				}
 
-				for (const address of [account, oracleExrates, oracleDepot]) {
+				for (const address of [account, oracleExrates, oracleDepot, feeAuth]) {
 					if (!w3utils.isAddress(address)) {
 						console.error(red('Invalid address detected (please check your inputs):', address));
 						process.exitCode = 1;
