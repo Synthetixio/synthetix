@@ -278,10 +278,13 @@ module.exports = program =>
 					};
 					fs.writeFileSync(deploymentFile, stringify(deployment));
 
-					// now update the flags to indicate it no longer needs deployment
-					updatedConfig[name] = { deploy: false };
+					// now update the flags to indicate it no longer needs deployment,
+					// ignoring this step for local, which wants a full deployment by default
+					if (network !== 'local') {
+						updatedConfig[name] = { deploy: false };
+						fs.writeFileSync(configFile, stringify(updatedConfig));
+					}
 
-					fs.writeFileSync(configFile, stringify(updatedConfig));
 					return deployedContract;
 				};
 
