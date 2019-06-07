@@ -770,7 +770,7 @@ module.exports = program =>
 						force: addNewSynths,
 					});
 					const additionalConstructorArgsMap = {
-						PurgeableSynth: [exchangeRatesAddress, w3utils.toWei('1000')],
+						PurgeableSynth: [exchangeRatesAddress],
 						// future subclasses...
 					};
 					const synth = await deployContract({

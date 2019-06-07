@@ -14,6 +14,7 @@ const Synth = artifacts.require('Synth');
 const Owned = artifacts.require('Owned');
 const Proxy = artifacts.require('Proxy');
 const PublicSafeDecimalMath = artifacts.require('PublicSafeDecimalMath');
+const PurgeableSynth = artifacts.require('PurgeableSynth');
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 const TokenState = artifacts.require('TokenState');
 const Depot = artifacts.require('Depot');
@@ -225,6 +226,8 @@ module.exports = async function(deployer, network, accounts) {
 	// ----------------
 	const currencyKeys = ['XDR', 'sUSD', 'sAUD', 'sEUR', 'sBTC', 'iBTC'];
 	const synths = [];
+
+	deployer.link(SafeDecimalMath, PurgeableSynth);
 
 	for (const currencyKey of currencyKeys) {
 		console.log(`Deploying SynthTokenState for ${currencyKey}...`);
