@@ -17,3 +17,6 @@ flattened-contracts/
 
 # For eth-gas-reporter in tests
 test-gas-used.log
+
+# For integration testing
+keys.json

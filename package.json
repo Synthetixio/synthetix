@@ -8,6 +8,7 @@
 		"clean-install": "rm -rf build && rm ./package-lock.json && rm -rf node_modules/* && npm install",
 		"coverage": "solidity-coverage",
 		"ganache": "ganache-cli -e 1000000000000 -l 0x7a1200 -t 2018-03-13T00:00:00",
+		"ganache:int": "npm run ganache -- --acctKeys keys.json",
 		"lint": "eslint \"**/*.js\" && solium -d contracts/",
 		"lint:fix": "eslint --fix \"**/*.js\" && solium --fix -d contracts/",
 		"test": "concurrently --kill-others --success first \"npm run ganache > /dev/null\" \"truffle compile && wait-port 8545 && truffle test\"",
