@@ -264,10 +264,9 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
     function setPenaltyThreshold(uint _percent)
         external
-        optional
         optionalProxy_onlyOwner
     {
-        require(_percent >= 0, "Threshold should be positive"); 
+        require(_percent >= 0, "Threshold should be positive");
         PENALTY_THRESHOLD = (_percent * SafeDecimalMath.unit()) / 100;
     }
 

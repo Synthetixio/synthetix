@@ -4,6 +4,7 @@ const FeePool = artifacts.require('FeePool');
 const FeePoolProxy = artifacts.require('FeePool');
 const FeePoolState = artifacts.require('FeePoolState');
 const Synthetix = artifacts.require('Synthetix');
+const SynthetixState = artifacts.require('SynthetixState');
 const Synth = artifacts.require('Synth');
 const { getWeb3, getContractInstance } = require('../utils/web3Helper');
 
@@ -14,6 +15,7 @@ const {
 	toPreciseUnit,
 	ZERO_ADDRESS,
 	fromUnit,
+	multiplyDecimal,
 } = require('../utils/testUtils');
 const web3 = getWeb3();
 const getInstance = getContractInstance(web3);
@@ -93,6 +95,7 @@ contract('FeePool', async accounts => {
 		feePoolWeb3,
 		FEE_ADDRESS,
 		synthetix,
+		synthetixState,
 		exchangeRates,
 		feePoolState,
 		delegates,
@@ -113,6 +116,8 @@ contract('FeePool', async accounts => {
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 
 		synthetix = await Synthetix.deployed();
+		synthetixState = await SynthetixState.at(await synthetix.synthetixState());
+
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
 		sAUDContract = await Synth.at(await synthetix.synths(sAUD));
 		XDRContract = await Synth.at(await synthetix.synths(XDR));
@@ -1123,37 +1128,29 @@ contract('FeePool', async accounts => {
 		assert.bnEqual(feesAvailable[0], 0);
 	});
 
-	it.only('should correctly calculate the penalties at specific issuance ratios', async () => {
+	it.only('should correctly calculate the 10% buffer for penalties at specific issuance ratios', async () => {
 		const step = toUnit('0.005');
 		await synthetix.issueMaxSynths(sUSD, { from: owner });
 
 		// Increase the price so we start well and truly within our 20% ratio.
-		const newRate = (await exchangeRates.rateForCurrency(SNX)).add(step.mul(web3.utils.toBN('5')));
+		const newRate = (await exchangeRates.rateForCurrency(SNX)).add(step.mul(web3.utils.toBN('1')));
 		const timestamp = await currentTime();
 		await exchangeRates.updateRates([SNX], [newRate], timestamp, {
 			from: oracle,
 		});
 
+		const issuanceRatio = fromUnit(await synthetixState.issuanceRatio());
+		const penaltyThreshold = fromUnit(await feePool.PENALTY_THRESHOLD());
+
+		const threshold = Number(issuanceRatio) * (1 + Number(penaltyThreshold));
 		// Start from the current price of synthetix and slowly decrease the price until
 		// we hit almost zero. Assert the correct penalty at each point.
 		while ((await exchangeRates.rateForCurrency(SNX)).gt(step.mul(web3.utils.toBN('2')))) {
 			const ratio = await synthetix.collateralisationRatio(owner);
 
-			if (ratio.lte(toUnit('0.22'))) {
+			if (ratio.lte(toUnit(threshold))) {
 				// Should be 0% penalty
 				assert.bnEqual(await feePool.currentPenalty(owner), 0);
-			} else if (ratio.lte(toUnit('0.3'))) {
-				// Should be 25% penalty
-				assert.bnEqual(await feePool.currentPenalty(owner), toUnit('0.25'));
-			} else if (ratio.lte(toUnit('0.4'))) {
-				// Should be 50% penalty
-				assert.bnEqual(await feePool.currentPenalty(owner), toUnit('0.5'));
-			} else if (ratio.lte(toUnit('0.5'))) {
-				// Should be 75% penalty
-				assert.bnEqual(await feePool.currentPenalty(owner), toUnit('0.75'));
-			} else if (ratio.lte(toUnit('1'))) {
-				// Should be 90% penalty
-				assert.bnEqual(await feePool.currentPenalty(owner), toUnit('0.9'));
 			} else {
 				// Should be 100% penalty
 				assert.bnEqual(await feePool.currentPenalty(owner), toUnit('1'));
