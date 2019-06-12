@@ -101,7 +101,7 @@ class Deployer {
 				.send(this.sendParameters('contract-deployment'));
 			console.log(green(` - Deployed ${name} to ${deployedContract.options.address}`));
 		} else if (existingAddress) {
-			deployedContract = new this.web3.eth.Contract(compiled.abi, existingAddress);
+			deployedContract = this.getContract({ abi: compiled.abi, address: existingAddress });
 			console.log(gray(` - Reusing instance of ${name} at ${existingAddress}`));
 		} else {
 			throw new Error(
@@ -112,6 +112,10 @@ class Deployer {
 		this.deployedContracts[name] = deployedContract;
 
 		return deployedContract;
+	}
+
+	getContract({ abi, address }) {
+		return new this.web3.eth.Contract(abi, address);
 	}
 }
 

@@ -45,6 +45,7 @@ import "./ISynthetixEscrow.sol";
 import "./ISynthetixState.sol";
 import "./Synth.sol";
 import "./FeePoolState.sol";
+import "./FeePoolEternalStorage.sol";
 import "./DelegateApprovals.sol";
 
 contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
@@ -55,6 +56,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     Synthetix public synthetix;
     ISynthetixState public synthetixState;
     ISynthetixEscrow public rewardEscrow;
+    FeePoolEternalStorage public feePoolEternalStorage;
 
     // A percentage fee charged on each transfer.
     uint public transferFeeRate;
@@ -108,20 +110,22 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     uint public constant MIN_FEE_PERIOD_DURATION = 1 days;
     uint public constant MAX_FEE_PERIOD_DURATION = 60 days;
 
-    // The last period a user has withdrawn their fees in, identified by the feePeriodId
-    mapping(address => uint) public lastFeeWithdrawal;
-
     // Users receive penalties if their collateralisation ratio drifts out of our desired brackets
     // We precompute the brackets and penalties to save gas.
     uint public PENALTY_THRESHOLD = (10 * SafeDecimalMath.unit()) / 100;
     uint constant ONE_HUNDRED_PERCENT = (100 * SafeDecimalMath.unit()) / 100;
 
 
+    /* ========== ETERNAL STORAGE CONSTANTS ========== */
+
+    bytes32 constant LAST_FEE_WITHDRAWAL = "last_fee_withdrawal";
+
     constructor(
         address _proxy,
         address _owner,
         Synthetix _synthetix,
         FeePoolState _feePoolState,
+        FeePoolEternalStorage _feePoolEternalStorage,
         ISynthetixState _synthetixState,
         ISynthetixEscrow _rewardEscrow,
         address _feeAuthority,
@@ -138,6 +142,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
         synthetix = _synthetix;
         feePoolState = _feePoolState;
+        feePoolEternalStorage = _feePoolEternalStorage;
         rewardEscrow = _rewardEscrow;
         synthetixState = _synthetixState;
         feeAuthority = _feeAuthority;
@@ -386,7 +391,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
         require(availableFees > 0 || availableRewards > 0, "No fees or rewards available for period, or fees already claimed");
 
-        lastFeeWithdrawal[claimingAddress] = recentFeePeriods[1].feePeriodId;
+        _setLastFeeWithdrawal(claimingAddress, recentFeePeriods[1].feePeriodId);
 
         if (availableFees > 0) {
             // Record the fee payment in our recentFeePeriods
@@ -812,7 +817,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
             // We can skip period if no debt minted during period
             if (nextPeriod.startingDebtIndex > 0 &&
-            lastFeeWithdrawal[account] < recentFeePeriods[i].feePeriodId) {
+            getLastFeeWithdrawal(account) < recentFeePeriods[i].feePeriodId) {
 
                 // We calculate a feePeriod's closingDebtIndex by looking at the next feePeriod's startingDebtIndex
                 // we can use the most recent issuanceData[0] for the current feePeriod
@@ -909,6 +914,32 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         // internal function will check closingDebtIndex has corresponding debtLedger entry
         return _effectiveDebtRatioForPeriod(closingDebtIndex, ownershipPercentage, debtEntryIndex);
     }
+
+    /**
+     * @notice Get the feePeriodID of the last claim this account made
+     * @param _claimingAddress account to check the last fee period ID claim for
+     * @return uint of the feePeriodID this account last claimed
+     */
+    function getLastFeeWithdrawal(address _claimingAddress)
+        public
+        view
+        returns (uint)
+    {
+        return feePoolEternalStorage.getUIntValue(keccak256(abi.encodePacked(LAST_FEE_WITHDRAWAL, _claimingAddress)));
+    }
+
+    /**
+     * @notice Set the feePeriodID of the last claim this account made
+     * @param _claimingAddress account to set the last feePeriodID claim for
+     * @param _feePeriodID the feePeriodID this account claimed fees for
+     */
+    function _setLastFeeWithdrawal(address _claimingAddress, uint _feePeriodID)
+        internal
+    {
+        feePoolEternalStorage.setUIntValue(keccak256(abi.encodePacked(LAST_FEE_WITHDRAWAL, _claimingAddress)), _feePeriodID);
+    }
+
+    /* ========== Modifiers ========== */
 
     modifier optionalProxy_onlyFeeAuthority
     {

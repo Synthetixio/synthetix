@@ -164,6 +164,21 @@ module.exports = program =>
 				const { account } = deployer;
 				console.log(gray(`Using account with public key ${account}`));
 
+				// get the current supply as it changes as we mint after each period
+				const oldSynthetix = deployer.getContract({
+					abi: deployment.sources['Synthetix'].abi,
+					address: deployment.targets['Synthetix'].address,
+				});
+
+				const currentSynthetixSupply = await oldSynthetix.methods.totalSupply().call();
+				console.log(
+					gray(
+						`Synthetix totalSupply is currently ${Math.round(
+							w3utils.fromWei(currentSynthetixSupply) / 1e6
+						)}m`
+					)
+				);
+
 				try {
 					await confirmAction(
 						cyan(
@@ -262,6 +277,16 @@ module.exports = program =>
 					args: [account],
 				});
 
+				const feePoolDelegateApprovals = await deployContract({
+					name: 'DelegateApprovals',
+					args: [account, ZERO_ADDRESS],
+				});
+
+				const feePoolEternalStorage = await deployContract({
+					name: 'FeePoolEternalStorage',
+					args: [account, ZERO_ADDRESS],
+				});
+
 				const feePool = await deployContract({
 					name: 'FeePool',
 					deps: ['ProxyFeePool'],
@@ -270,6 +295,7 @@ module.exports = program =>
 						account,
 						ZERO_ADDRESS, // Synthetix
 						ZERO_ADDRESS, // FeePoolState
+						feePoolEternalStorage ? feePoolEternalStorage.options.address : '',
 						synthetixState ? synthetixState.options.address : '',
 						rewardEscrow ? rewardEscrow.options.address : '',
 						feeAuth,
@@ -303,6 +329,79 @@ module.exports = program =>
 					}
 				}
 
+				if (feePoolEternalStorage && feePool) {
+					const associatedFPContract = await feePoolEternalStorage.methods
+						.associatedContract()
+						.call();
+
+					if (associatedFPContract !== feePoolAddress) {
+						const feePoolEternalStorageOwner = await feePoolEternalStorage.methods.owner().call();
+
+						if (feePoolEternalStorageOwner === account) {
+							console.log(
+								yellow('Invoking feePoolEternalStorage.setAssociatedContract(FeePool)...')
+							);
+
+							await feePoolEternalStorage.methods
+								.setAssociatedContract(feePoolAddress)
+								.send(deployer.sendParameters());
+						} else {
+							appendOwnerAction({
+								key: `FeePoolEternalStorage.setAssociatedContract(FeePool)`,
+								target: feePoolEternalStorage.options.address,
+								action: `setAssociatedContract(${feePoolAddress})`,
+							});
+						}
+					}
+				}
+
+				if (feePoolDelegateApprovals && feePool) {
+					const delegateApprovalsAddress = feePoolDelegateApprovals.options.address;
+					const feePoolOwner = await feePool.methods.owner().call();
+					const currentDelegateApprovals = await feePool.methods.delegates().call();
+
+					if (currentDelegateApprovals !== delegateApprovalsAddress) {
+						if (feePoolOwner === account) {
+							console.log(yellow('Invoking feePool.setDelegateApprovals(DelegateApproval)...'));
+							await feePool.methods
+								.setDelegateApprovals(delegateApprovalsAddress)
+								.send(deployer.sendParameters());
+						} else {
+							appendOwnerAction({
+								key: `FeePool.setDelegateApprovals(DelegateApprovals)`,
+								target: feePool.options.address,
+								action: `setDelegateApprovals(${delegateApprovalsAddress})`,
+							});
+						}
+					}
+
+					const associatedContract = await feePoolDelegateApprovals.methods
+						.associatedContract()
+						.call();
+
+					if (associatedContract !== feePoolAddress) {
+						const feePoolDelegateApprovalsOwner = await feePoolDelegateApprovals.methods
+							.owner()
+							.call();
+
+						if (feePoolDelegateApprovalsOwner === account) {
+							console.log(
+								yellow('Invoking feePoolDelegateApprovals.setAssociatedContract(FeePool)...')
+							);
+
+							await feePoolDelegateApprovals.methods
+								.setAssociatedContract(feePoolAddress)
+								.send(deployer.sendParameters());
+						} else {
+							appendOwnerAction({
+								key: `DelegateApprovals.setAssociatedContract(FeePool)`,
+								target: feePoolDelegateApprovals.options.address,
+								action: `setAssociatedContract(${feePoolAddress})`,
+							});
+						}
+					}
+				}
+
 				const feePoolState = await deployContract({
 					name: 'FeePoolState',
 					deps: ['FeePool'],
@@ -323,8 +422,26 @@ module.exports = program =>
 						} else {
 							appendOwnerAction({
 								key: 'FeePool.setFeePoolState(FeePoolState)',
-								target: feePoolAddress,
+								target: feePoolStateAddress,
 								action: `setFeePoolState(${feePoolStateAddress})`,
+							});
+						}
+					}
+					// Rewire feePoolState if there is a feePool upgrade
+					const configuredFeePoolAddress = await feePoolState.methods.feePool().call();
+					if (configuredFeePoolAddress !== feePool.options.address) {
+						const feePoolStateOwner = await feePoolState.methods.owner().call();
+						if (feePoolStateOwner === account) {
+							console.log(yellow('Invoking FeePoolState.setFeePool(FeePool)...'));
+
+							await feePoolState.methods
+								.setFeePool(feePool.options.address)
+								.send(deployer.sendParameters());
+						} else {
+							appendOwnerAction({
+								key: 'FeePoolState.setFeePool(FeePool)',
+								target: feePool.options.address,
+								action: `setFeePool(${feePool.options.address})`,
 							});
 						}
 					}
@@ -345,6 +462,7 @@ module.exports = program =>
 					source: 'TokenState',
 					args: [account, account],
 				});
+
 				const synthetix = await deployContract({
 					name: 'Synthetix',
 					deps: [
@@ -367,6 +485,7 @@ module.exports = program =>
 						supplySchedule ? supplySchedule.options.address : '',
 						rewardEscrow ? rewardEscrow.options.address : '',
 						synthetixEscrow ? synthetixEscrow.options.address : '',
+						currentSynthetixSupply,
 					],
 				});
 
@@ -457,52 +576,79 @@ module.exports = program =>
 				}
 
 				if (rewardEscrow && synthetix) {
-					// only the owner can do this
-					const rewardEscrowOwner = await rewardEscrow.methods.owner().call();
+					const rewardEscrowSynthetix = await rewardEscrow.methods.synthetix().call();
 
-					if (rewardEscrowOwner === account) {
-						console.log(yellow('Invoking RewardEscrow.setSynthetix()...'));
-						await rewardEscrow.methods
-							.setSynthetix(synthetixAddress)
-							.send(deployer.sendParameters());
-					} else {
-						console.log(cyan('Cannot call RewardEscrow.setSynthetix() as not owner.'));
+					if (rewardEscrowSynthetix !== synthetixAddress) {
+						// only the owner can do this
+						const rewardEscrowOwner = await rewardEscrow.methods.owner().call();
+
+						if (rewardEscrowOwner === account) {
+							console.log(yellow('Invoking RewardEscrow.setSynthetix()...'));
+							await rewardEscrow.methods
+								.setSynthetix(synthetixAddress)
+								.send(deployer.sendParameters());
+						} else {
+							appendOwnerAction({
+								key: `RewardEscrow.setSynthetix(Synthetix)`,
+								target: rewardEscrow.options.address,
+								action: `setSynthetix(${synthetixAddress})`,
+							});
+						}
 					}
+
+					console.log(cyan('Synthetix already set on rewardEscrow, skipping'));
 				}
 
 				if (rewardEscrow && feePool) {
-					const feePoolAddress = feePool ? feePool.options.address : '';
-					// only the owner can do this
-					const rewardEscrowOwner = await rewardEscrow.methods.owner().call();
+					const rewardEscrowFeePool = await rewardEscrow.methods.feePool().call();
 
-					if (rewardEscrowOwner === account) {
-						console.log(yellow('Invoking RewardEscrow.setFeePool()...'));
-						await rewardEscrow.methods.setFeePool(feePoolAddress).send(deployer.sendParameters());
-					} else {
-						console.log(cyan('Cannot call RewardEscrow.setFeePool() as not owner.'));
+					if (rewardEscrowFeePool !== feePoolAddress) {
+						// only the owner can do this
+						const rewardEscrowOwner = await rewardEscrow.methods.owner().call();
+
+						if (rewardEscrowOwner === account) {
+							console.log(yellow('Invoking RewardEscrow.setFeePool(FeePool)...'));
+							await rewardEscrow.methods.setFeePool(feePoolAddress).send(deployer.sendParameters());
+						} else {
+							appendOwnerAction({
+								key: `RewardEscrow.setFeePool(FeePool)`,
+								target: rewardEscrow.options.address,
+								action: `setFeePool(${feePoolAddress})`,
+							});
+						}
 					}
+
+					console.log(cyan('FeePool already set on rewardEscrow, skipping'));
 				}
 
 				// Skip setting unless redeploying either of these, as
 				if (config['Synthetix'].deploy || config['SynthetixEscrow'].deploy) {
 					// Note: currently on mainnet SynthetixEscrow.methods.synthetix() does NOT exist
 					// it is "havven" and the ABI we have here is not sufficient
-					const escrowSNXAddress = await synthetixEscrow.methods.synthetix().call();
-					if (escrowSNXAddress !== synthetixAddress) {
-						// only the owner can do this
-						const synthetixEscrowOwner = await synthetixEscrow.methods.owner().call();
+					if (network === 'mainnet') {
+						appendOwnerAction({
+							key: `SynthetixEscrow.setHavven(Synthetix)`,
+							target: synthetixEscrow.options.address,
+							action: `setHavven(${synthetixAddress})`,
+						});
+					} else {
+						const escrowSNXAddress = await synthetixEscrow.methods.synthetix().call();
+						if (escrowSNXAddress !== synthetixAddress) {
+							// only the owner can do this
+							const synthetixEscrowOwner = await synthetixEscrow.methods.owner().call();
 
-						if (synthetixEscrowOwner === account) {
-							console.log(yellow('Invoking SynthetixEscrow.setSynthetix(Synthetix)...'));
-							await synthetixEscrow.methods
-								.setSynthetix(synthetixAddress)
-								.send(deployer.sendParameters());
-						} else {
-							appendOwnerAction({
-								key: `SynthetixEscrow.setSynthetix(Synthetix)`,
-								target: synthetixEscrow.options.address,
-								action: `setSynthetix(${synthetixAddress})`,
-							});
+							if (synthetixEscrowOwner === account) {
+								console.log(yellow('Invoking SynthetixEscrow.setSynthetix(Synthetix)...'));
+								await synthetixEscrow.methods
+									.setSynthetix(synthetixAddress)
+									.send(deployer.sendParameters());
+							} else {
+								appendOwnerAction({
+									key: `SynthetixEscrow.setSynthetix(Synthetix)`,
+									target: synthetixEscrow.options.address,
+									action: `setSynthetix(${synthetixAddress})`,
+								});
+							}
 						}
 					}
 				}
@@ -525,20 +671,26 @@ module.exports = program =>
 				}
 
 				if (supplySchedule && synthetix) {
-					const supplyScheduleOwner = await supplySchedule.methods.owner().call();
-					// Only owner
-					if (supplyScheduleOwner === account) {
-						console.log(yellow('Invoking SupplySchedule.setSynthetix(Synthetix)'));
-						await supplySchedule.methods
-							.setSynthetix(synthetixAddress)
-							.send(deployer.sendParameters());
-					} else {
-						appendOwnerAction({
-							key: `SupplySchedule.setSynthetix(Synthetix)`,
-							target: supplySchedule.options.address,
-							action: `setSynthetix(${synthetixAddress})`,
-						});
+					const supplyScheduleSynthetix = await supplySchedule.methods.synthetix().call();
+
+					if (supplyScheduleSynthetix !== synthetixAddress) {
+						const supplyScheduleOwner = await supplySchedule.methods.owner().call();
+						// Only owner
+						if (supplyScheduleOwner === account) {
+							console.log(yellow('Invoking SupplySchedule.setSynthetix(Synthetix)'));
+							await supplySchedule.methods
+								.setSynthetix(synthetixAddress)
+								.send(deployer.sendParameters());
+						} else {
+							appendOwnerAction({
+								key: `SupplySchedule.setSynthetix(Synthetix)`,
+								target: supplySchedule.options.address,
+								action: `setSynthetix(${synthetixAddress})`,
+							});
+						}
 					}
+
+					console.log(cyan('Synthetix already set on supplySchedule, skipping'));
 				}
 
 				// ----------------
@@ -636,63 +788,90 @@ module.exports = program =>
 						}
 
 						const synthSNXAddress = await synth.methods.synthetix().call();
+						const synthOwner = await synth.methods.owner().call();
 
+						// ensure synth has correct Synthetix
 						if (synthSNXAddress !== synthetixAddress) {
-							// only synth owner can do this
-							const synthOwner = await synth.methods.owner().call();
-
 							if (synthOwner === account) {
 								console.log(yellow(`Invoking Synth${currencyKey}.setSynthetix(Synthetix)...`));
 								await synth.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
 							} else {
 								appendOwnerAction({
-									key: `Synth${currencyKey}.setSynthetix(Synth${currencyKey})`,
+									key: `Synth${currencyKey}.setSynthetix(Synthetix)`,
 									target: synthAddress,
 									action: `setSynthetix(${synthetixAddress})`,
 								});
 							}
 						}
 
-						// now configure inverse synths in exchange rates
-						if (inverted) {
-							const {
-								entryPoint: currentEP,
-								upperLimit: currentUL,
-								lowerLimit: currentLL,
-								frozen,
-							} = await exchangeRates.methods.inversePricing(toBytes4(currencyKey)).call();
+						// ensure synth has correct FeePool
+						if (synth && feePool) {
+							const synthFeePoolAddress = await synth.methods.feePool().call();
 
-							const { entryPoint, upperLimit, lowerLimit } = inverted;
-
-							// only do if not already set
-							if (
-								w3utils.fromWei(currentEP) !== entryPoint.toString() ||
-								w3utils.fromWei(currentUL) !== upperLimit.toString() ||
-								w3utils.fromWei(currentLL) !== lowerLimit.toString() ||
-								frozen
-							) {
-								const exchangeRatesOwner = await exchangeRates.methods.owner().call();
-								if (exchangeRatesOwner === account) {
-									console.log(
-										yellow(
-											`Invoking ExchangeRates.setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})...`
-										)
-									);
-									await exchangeRates.methods
-										.setInversePricing(
-											toBytes4(currencyKey),
-											w3utils.toWei(entryPoint.toString()),
-											w3utils.toWei(upperLimit.toString()),
-											w3utils.toWei(lowerLimit.toString())
-										)
-										.send(deployer.sendParameters());
+							if (synthFeePoolAddress !== feePoolAddress) {
+								if (synthOwner === account) {
+									console.log(yellow(`Invoking Synth${currencyKey}.setFeePool(FeePool)...`));
+									await synth.methods.setFeePool(feePoolAddress).send(deployer.sendParameters());
 								} else {
 									appendOwnerAction({
-										key: `ExchangeRates.setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})`,
-										target: exchangeRatesAddress,
-										action: `setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})`,
+										key: `Synth${currencyKey}.setFeePool(FeePool)`,
+										target: synthAddress,
+										action: `setFeePool(${feePoolAddress})`,
 									});
 								}
+							}
+						}
+
+						// now configure inverse synths in exchange rates
+						if (inverted) {
+							// check total supply
+							const totalSynthSupply = await synth.methods.totalSupply().call();
+							if (Number(totalSynthSupply) === 0) {
+								const {
+									entryPoint: currentEP,
+									upperLimit: currentUL,
+									lowerLimit: currentLL,
+								} = await exchangeRates.methods.inversePricing(toBytes4(currencyKey)).call();
+
+								const { entryPoint, upperLimit, lowerLimit } = inverted;
+
+								// only do if not already set
+								if (
+									w3utils.fromWei(currentEP) !== entryPoint.toString() ||
+									w3utils.fromWei(currentUL) !== upperLimit.toString() ||
+									w3utils.fromWei(currentLL) !== lowerLimit.toString()
+								) {
+									const exchangeRatesOwner = await exchangeRates.methods.owner().call();
+									if (exchangeRatesOwner === account) {
+										console.log(
+											yellow(
+												`Invoking ExchangeRates.setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})...`
+											)
+										);
+										await exchangeRates.methods
+											.setInversePricing(
+												toBytes4(currencyKey),
+												w3utils.toWei(entryPoint.toString()),
+												w3utils.toWei(upperLimit.toString()),
+												w3utils.toWei(lowerLimit.toString())
+											)
+											.send(deployer.sendParameters());
+									} else {
+										appendOwnerAction({
+											key: `ExchangeRates.setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})`,
+											target: exchangeRatesAddress,
+											action: `setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})`,
+										});
+									}
+								}
+							} else {
+								console.log(
+									gray(
+										`Not setting inverse pricing on ${currencyKey} as totalSupply is > 0 (${w3utils.fromWei(
+											totalSynthSupply
+										)})`
+									)
+								);
 							}
 						}
 					}

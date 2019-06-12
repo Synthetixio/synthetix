@@ -148,7 +148,6 @@ contract Synthetix is ExternStateToken {
     SynthetixState public synthetixState;
     SupplySchedule public supplySchedule;
 
-    uint constant SYNTHETIX_SUPPLY = 1e8 * SafeDecimalMath.unit();
     string constant TOKEN_NAME = "Synthetix Network Token";
     string constant TOKEN_SYMBOL = "SNX";
     uint8 constant DECIMALS = 18;
@@ -162,9 +161,9 @@ contract Synthetix is ExternStateToken {
      */
     constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
         address _owner, ExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule,
-        ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow
+        ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow, uint _totalSupply
     )
-        ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, SYNTHETIX_SUPPLY, DECIMALS, _owner)
+        ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, _totalSupply, DECIMALS, _owner)
         public
     {
         synthetixState = _synthetixState;
@@ -175,6 +174,20 @@ contract Synthetix is ExternStateToken {
         escrow = _escrow;
     }
     // ========== SETTERS ========== */
+
+    function setFeePool(IFeePool _feePool)
+        external
+        optionalProxy_onlyOwner
+    {
+        feePool = _feePool;
+    }
+
+    function setExchangeRates(ExchangeRates _exchangeRates)
+        external
+        optionalProxy_onlyOwner
+    {
+        exchangeRates = _exchangeRates;
+    }
 
     /**
      * @notice Add an associated Synth contract to the Synthetix system
@@ -190,8 +203,6 @@ contract Synthetix is ExternStateToken {
 
         availableSynths.push(synth);
         synths[currencyKey] = synth;
-
-        // emitSynthAdded(currencyKey, synth);
     }
 
     /**
@@ -733,7 +744,7 @@ contract Synthetix is ExternStateToken {
 
         // Are they exiting the system, or are they just decreasing their debt position?
         if (debtToRemove == existingDebt) {
-            synthetixState.clearIssuanceData(messageSender);
+            synthetixState.setCurrentIssuanceData(messageSender, 0);
             synthetixState.decrementTotalIssuerCount();
         } else {
             // What percentage of the debt will they be left with?

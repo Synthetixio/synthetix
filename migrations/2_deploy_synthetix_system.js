@@ -3,6 +3,7 @@ const { table } = require('table');
 const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
 const FeePoolState = artifacts.require('FeePoolState');
+const FeePoolEternalStorage = artifacts.require('FeePoolEternalStorage');
 const DelegateApprovals = artifacts.require('DelegateApprovals');
 const Synthetix = artifacts.require('Synthetix');
 const SynthetixEscrow = artifacts.require('SynthetixEscrow');
@@ -20,6 +21,7 @@ const SelfDestructible = artifacts.require('SelfDestructible');
 
 // Update values before deployment
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
+const SYNTHETIX_TOTAL_SUPPLY = web3.utils.toWei('100000000');
 
 module.exports = async function(deployer, network, accounts) {
 	const [deployerAccount, owner, oracle, feeAuthority, fundsWallet] = accounts;
@@ -103,6 +105,12 @@ module.exports = async function(deployer, network, accounts) {
 		from: deployerAccount,
 	});
 
+	console.log('Deploying FeePoolEternalStorage...');
+	deployer.link(SafeDecimalMath, FeePoolEternalStorage);
+	const feePoolEternalStorage = await deployer.deploy(FeePoolEternalStorage, owner, ZERO_ADDRESS, {
+		from: deployerAccount,
+	});
+
 	console.log('Deploying FeePool...');
 
 	deployer.link(SafeDecimalMath, FeePool);
@@ -112,6 +120,7 @@ module.exports = async function(deployer, network, accounts) {
 		owner,
 		ZERO_ADDRESS,
 		feePoolState.address,
+		feePoolEternalStorage.address,
 		synthetixState.address,
 		rewardEscrow.address,
 		feeAuthority,
@@ -127,9 +136,10 @@ module.exports = async function(deployer, network, accounts) {
 	await rewardEscrow.setFeePool(feePool.address, { from: owner });
 
 	// Set delegate approval on feePool
-	// Set feePool as associatedContract on delegateApprovals
+	// Set feePool as associatedContract on delegateApprovals & feePoolEternalStorage
 	await feePool.setDelegateApprovals(delegateApprovals.address, { from: owner });
 	await delegateApprovals.setAssociatedContract(feePool.address, { from: owner });
+	await feePoolEternalStorage.setAssociatedContract(feePool.address, { from: owner });
 
 	// ----------------
 	// Synthetix
@@ -167,6 +177,7 @@ module.exports = async function(deployer, network, accounts) {
 		supplySchedule.address,
 		rewardEscrow.address,
 		escrow.address,
+		SYNTHETIX_TOTAL_SUPPLY,
 		{
 			from: deployerAccount,
 			gas: 8000000,

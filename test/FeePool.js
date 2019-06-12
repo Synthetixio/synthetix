@@ -129,15 +129,17 @@ contract('FeePool', async accounts => {
 	it('should set constructor params on deployment', async () => {
 		const transferFeeRate = toUnit('0.0015');
 		const exchangeFeeRate = toUnit('0.0030');
+		const rewardEscrowAccount = deployerAccount;
 
-		// constructor(address _proxy, address _owner, Synthetix _synthetix, FeePoolState _feePoolState, ISynthetixState _synthetixState, ISynthetixEscrow _rewardEscrow,address _feeAuthority, uint _transferFeeRate, uint _exchangeFeeRate)
+		// constructor(address _proxy, address _owner, Synthetix _synthetix, FeePoolState _feePoolState, FeePoolEternalStorage _feePoolEternalStorage, ISynthetixState _synthetixState, ISynthetixEscrow _rewardEscrow,address _feeAuthority, uint _transferFeeRate, uint _exchangeFeeRate)
 		const instance = await FeePool.new(
-			account1,
-			account2,
-			account3,
-			account4,
-			account5,
-			account6,
+			account1, // proxy
+			account2, // owner
+			account3, // synthetix
+			account4, // feePoolState
+			account5, // feePoolEternalStorage
+			account6, // synthetixState
+			rewardEscrowAccount,
 			feeAuthority,
 			transferFeeRate,
 			exchangeFeeRate,
@@ -150,8 +152,8 @@ contract('FeePool', async accounts => {
 		assert.equal(await instance.owner(), account2);
 		assert.equal(await instance.synthetix(), account3);
 		assert.equal(await instance.feePoolState(), account4);
-		assert.equal(await instance.synthetixState(), account5);
-		assert.equal(await instance.rewardEscrow(), account6);
+		assert.equal(await instance.feePoolEternalStorage(), account5);
+		assert.equal(await instance.synthetixState(), account6);
 		assert.equal(await instance.feeAuthority(), feeAuthority);
 		assert.bnEqual(await instance.transferFeeRate(), transferFeeRate);
 		assert.bnEqual(await instance.exchangeFeeRate(), exchangeFeeRate);
