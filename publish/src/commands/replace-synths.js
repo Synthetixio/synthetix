@@ -27,16 +27,26 @@ const {
 	performTransactionalStep,
 } = require('../util');
 
+const snx = require('../../../index');
+
+const DEFAULTS = {
+	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
+	contractDeploymentGasLimit: 7e6,
+	methodCallGasLimit: 15e4,
+	gasPrice: '1',
+};
+
 const replaceSynths = async ({
 	network,
-	buildPath,
+	buildPath = DEFAULTS.buildPath,
 	deploymentPath,
-	gasPrice,
-	methodCallGasLimit,
-	contractDeploymentGasLimit,
+	gasPrice = DEFAULTS.gasPrice,
+	methodCallGasLimit = DEFAULTS.methodCallGasLimit,
+	contractDeploymentGasLimit = DEFAULTS.contractDeploymentGasLimit,
 	subclass,
 	synthsToReplace,
-	maxSupplyToPurgeInUsd,
+	privateKey,
+	yes,
 }) => {
 	ensureNetwork(network);
 	ensureDeploymentPath(deploymentPath);
@@ -83,7 +93,14 @@ const replaceSynths = async ({
 		}
 	}
 
-	const { providerUrl, privateKey, etherscanLinkPrefix } = loadConnections({ network });
+	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
+		network,
+	});
+
+	// allow local deployments to use the private key passed as a CLI option
+	if (network !== 'local' || !privateKey) {
+		privateKey = envPrivateKey;
+	}
 
 	console.log(gray('Loading the compiled contracts locally...'));
 	const { compiled } = loadCompiledFiles({ buildPath });
@@ -98,6 +115,13 @@ const replaceSynths = async ({
 		privateKey,
 		providerUrl,
 	});
+
+	// TODO - this should be fixed in Deployer
+	deployer.deployedContracts.SafeDecimalMath = {
+		options: {
+			address: snx.getTarget({ network, contract: 'SafeDecimalMath' }).address,
+		},
+	};
 
 	const { web3, account } = deployer;
 
@@ -159,19 +183,23 @@ const replaceSynths = async ({
 		process.exitCode = 1;
 		return;
 	}
-	try {
-		await confirmAction(
-			cyan(
-				`${yellow(
-					'⚠ WARNING'
-				)}: This action will replace the following synths into ${subclass} on ${network}:\n- ${synthsToReplace
-					.map(synth => synth + ' (totalSupply of: ' + w3utils.fromWei(totalSupplies[synth]) + ')')
-					.join('\n- ')}`
-			) + '\nDo you want to continue? (y/n) '
-		);
-	} catch (err) {
-		console.log(gray('Operation cancelled'));
-		return;
+	if (!yes) {
+		try {
+			await confirmAction(
+				cyan(
+					`${yellow(
+						'⚠ WARNING'
+					)}: This action will replace the following synths into ${subclass} on ${network}:\n- ${synthsToReplace
+						.map(
+							synth => synth + ' (totalSupply of: ' + w3utils.fromWei(totalSupplies[synth]) + ')'
+						)
+						.join('\n- ')}`
+				) + '\nDo you want to continue? (y/n) '
+			);
+		} catch (err) {
+			console.log(gray('Operation cancelled'));
+			return;
+		}
 	}
 
 	const { address: synthetixAddress, source } = deployment.targets['Synthetix'];
@@ -220,7 +248,7 @@ const replaceSynths = async ({
 
 		// // 3. use Deployer to deploy
 		const additionalConstructorArgsMap = {
-			PurgeableSynth: [exchangeRatesAddress, w3utils.toWei(maxSupplyToPurgeInUsd.toString())],
+			PurgeableSynth: [exchangeRatesAddress],
 			// future subclasses...
 		};
 		const replacementSynth = await deployer.deploy({
@@ -313,20 +341,25 @@ module.exports = {
 			.option(
 				'-b, --build-path [value]',
 				'Path to a folder hosting compiled files from the "build" step in this script',
-				path.join(__dirname, '..', '..', '..', BUILD_FOLDER)
+				DEFAULTS.buildPath
 			)
 			.option(
 				'-c, --contract-deployment-gas-limit <value>',
 				'Contract deployment gas limit',
 				parseInt,
-				7e6
+				DEFAULTS.contractDeploymentGasLimit
 			)
 			.option(
 				'-d, --deployment-path <value>',
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
-			.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
-			.option('-m, --method-call-gas-limit <value>', 'Method call gas limit', parseInt, 15e4)
+			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
+			.option(
+				'-m, --method-call-gas-limit <value>',
+				'Method call gas limit',
+				parseInt,
+				DEFAULTS.methodCallGasLimit
+			)
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 			.option(
 				'-s, --synths-to-replace <value>',
@@ -338,6 +371,11 @@ module.exports = {
 				[]
 			)
 			.option('-u, --subclass <value>', 'Subclass to switch into')
+			.option(
+				'-v, --private-key [value]',
+				'The private key to transact with (only works in local mode, otherwise set in .env).'
+			)
 			.option('-x, --max-supply-to-purge-in-usd [value]', 'For PurgeableSynth, max supply', 1000)
+			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.action(replaceSynths),
 };
