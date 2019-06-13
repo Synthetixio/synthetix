@@ -7,7 +7,7 @@ const w3utils = require('web3-utils');
 
 const { loadCompiledFiles } = require('../solidity');
 const Deployer = require('../Deployer');
-
+const snx = require('../../../');
 const {
 	CONFIG_FILENAME,
 	COMPILED_FOLDER,
@@ -36,7 +36,6 @@ const replaceSynths = async ({
 	contractDeploymentGasLimit,
 	subclass,
 	synthsToReplace,
-	maxSupplyToPurgeInUsd,
 }) => {
 	ensureNetwork(network);
 	ensureDeploymentPath(deploymentPath);
@@ -98,6 +97,13 @@ const replaceSynths = async ({
 		privateKey,
 		providerUrl,
 	});
+
+	// TODO - Deployer.js needs to be improved so this isn't necessary
+	deployer.deployedContracts.SafeDecimalMath = {
+		options: {
+			address: snx.getTarget({ network, contract: 'SafeDecimalMath' }).address,
+		},
+	};
 
 	const { web3, account } = deployer;
 
@@ -220,7 +226,7 @@ const replaceSynths = async ({
 
 		// // 3. use Deployer to deploy
 		const additionalConstructorArgsMap = {
-			PurgeableSynth: [exchangeRatesAddress, w3utils.toWei(maxSupplyToPurgeInUsd.toString())],
+			PurgeableSynth: [exchangeRatesAddress],
 			// future subclasses...
 		};
 		const replacementSynth = await deployer.deploy({
@@ -338,6 +344,5 @@ module.exports = {
 				[]
 			)
 			.option('-u, --subclass <value>', 'Subclass to switch into')
-			.option('-x, --max-supply-to-purge-in-usd [value]', 'For PurgeableSynth, max supply', 1000)
 			.action(replaceSynths),
 };
