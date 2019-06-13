@@ -762,7 +762,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         uint ratio = synthetix.collateralisationRatio(account);
         uint targetRatio = synthetix.synthetixState().issuanceRatio();
 
-        // no penalty debt ratio below target ratio
+        // no penalty if collateral ratio below target ratio
         if (ratio < targetRatio) {
             return 0;
         }

@@ -8,7 +8,13 @@ const ExchangeRates = artifacts.require('ExchangeRates');
 const { getWeb3 } = require('../utils/web3Helper');
 const { getContractInstance } = require('../utils/web3Helper');
 
-const { currentTime, fastForward, toUnit, toPreciseUnit } = require('../utils/testUtils');
+const {
+	currentTime,
+	fastForward,
+	toUnit,
+	toPreciseUnit,
+	multiplyDecimal,
+} = require('../utils/testUtils');
 const web3 = getWeb3();
 const getInstance = getContractInstance(web3);
 
@@ -84,7 +90,6 @@ contract('Rewards Integration Tests', async accounts => {
 	const threeQuarters = amount => amount.div(web3.utils.toBN('4')).mul(web3.utils.toBN('3'));
 	const oneFifth = amount => amount.div(web3.utils.toBN('5'));
 	const twoFifths = amount => amount.div(web3.utils.toBN('5')).mul(web3.utils.toBN('2'));
-	const tenth = amount => amount.div(web3.utils.toBN('10'));
 
 	// PERCENTAGES
 	const twentyPercent = toPreciseUnit('0.2');
@@ -785,123 +790,31 @@ contract('Rewards Integration Tests', async accounts => {
 			assert.bnEqual(rewardsAfter[1], third(periodOneMintableSupplyMinusMinterReward));
 		});
 
-		it('should apply a penalty of 25% when users claim rewards between 22%-30% collateralisation ratio', async () => {
-			// But if the price of SNX decreases a bit...
-			const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.01'));
+		it('should apply no penalty when users claim rewards above the penalty threshold ratio', async () => {
+			// Decrease SNX collateral price by 5%
+			const currentRate = await exchangeRates.rateForCurrency(SNX);
+			const newRate = currentRate.sub(multiplyDecimal(currentRate, toUnit('0.05')));
+
 			const timestamp = await currentTime();
 			await exchangeRates.updateRates([SNX], [newRate], timestamp, {
 				from: oracle,
 			});
 
-			// we will fall into the 22-30% bracket
+			// we will have no fee penalty
 			const feePenalty = await feePool.currentPenalty(account1);
-			assert.bnEqual(feePenalty, toUnit('0.25'));
+			assert.bnEqual(feePenalty, toUnit('0'));
 
-			// and lose 25% of those rewards.
-			const snxRewardsPenalized = await feePool.feesAvailable(account1, sUSD);
-			assert.bnClose(
-				snxRewardsPenalized[1],
-				threeQuarters(third(periodOneMintableSupplyMinusMinterReward))
-			);
+			const snxRewards = await feePool.feesAvailable(account1, sUSD);
+			assert.bnClose(snxRewards[1], third(periodOneMintableSupplyMinusMinterReward));
 
 			// And if we claim them
 			await feePool.claimFees(sUSD, { from: account1 });
 
 			// We should have our decreased rewards amount in escrow
 			const vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-			assert.bnClose(
-				vestingScheduleEntry[1],
-				threeQuarters(third(periodOneMintableSupplyMinusMinterReward)),
-				2
-			);
+			assert.bnClose(vestingScheduleEntry[1], third(periodOneMintableSupplyMinusMinterReward), 2);
 		});
-
-		it('should apply a penalty of 50% when users claim rewards between 30%-40% collateralisation ratio', async () => {
-			// But if the price of SNX decreases a bit...
-			const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.045'));
-			const timestamp = await currentTime();
-			await exchangeRates.updateRates([SNX], [newRate], timestamp, {
-				from: oracle,
-			});
-
-			// we will fall into the 30-40% bracket
-			const feePenalty = await feePool.currentPenalty(account1);
-			assert.bnEqual(feePenalty, toUnit('0.5'));
-
-			// and lose 50% of those rewards.
-			const snxRewardsPenalized = await feePool.feesAvailable(account1, sUSD);
-			assert.bnClose(snxRewardsPenalized[1], half(third(periodOneMintableSupplyMinusMinterReward)));
-
-			// And if we claim them
-			await feePool.claimFees(sUSD, { from: account1 });
-
-			// We should have our decreased rewards amount in escrow
-			const vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-			assert.bnClose(
-				vestingScheduleEntry[1],
-				half(third(periodOneMintableSupplyMinusMinterReward))
-			);
-		});
-
-		it('should apply a penalty of 75% when users claim rewards between 40%-50% collateralisation ratio', async () => {
-			// But if the price of SNX decreases a bit...
-			const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.06'));
-			const timestamp = await currentTime();
-			await exchangeRates.updateRates([SNX], [newRate], timestamp, {
-				from: oracle,
-			});
-
-			// we will fall into the 40-50%  bracket
-			const feePenalty = await feePool.currentPenalty(account1);
-			assert.bnEqual(feePenalty, toUnit('0.75'));
-
-			// and lose 75% of those rewards.
-			const snxRewardsPenalized = await feePool.feesAvailable(account1, sUSD);
-			assert.bnClose(
-				snxRewardsPenalized[1],
-				quarter(third(periodOneMintableSupplyMinusMinterReward))
-			);
-
-			// And if we claim them
-			await feePool.claimFees(sUSD, { from: account1 });
-
-			// We should have our decreased rewards amount in escrow
-			const vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-			assert.bnClose(
-				vestingScheduleEntry[1],
-				quarter(third(periodOneMintableSupplyMinusMinterReward))
-			);
-		});
-		it('should apply a penalty of 90% when users claim rewards between >50% collateralisation ratio', async () => {
-			// But if the price of SNX decreases quite a bit...
-			const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.08'));
-			const timestamp = await currentTime();
-			await exchangeRates.updateRates([SNX], [newRate], timestamp, {
-				from: oracle,
-			});
-
-			// we will fall into the >50% bracket
-			const feePenalty = await feePool.currentPenalty(account1);
-			assert.bnEqual(feePenalty, toUnit('0.9'));
-
-			// and lose 90% of those rewards.
-			const snxRewardsPenalized = await feePool.feesAvailable(account1, sUSD);
-			assert.bnClose(
-				snxRewardsPenalized[1],
-				tenth(third(periodOneMintableSupplyMinusMinterReward))
-			);
-
-			// And if we claim them
-			await feePool.claimFees(sUSD, { from: account1 });
-
-			// We should have our decreased rewards amount in escrow
-			const vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-			assert.bnClose(
-				vestingScheduleEntry[1],
-				tenth(third(periodOneMintableSupplyMinusMinterReward))
-			);
-		});
-		it('should apply a penalty of 100% when users claim rewards between >100% collateralisation ratio', async () => {
+		it('should apply a penalty of 100% when users claim rewards >10% threshold collateralisation ratio', async () => {
 			// But if the price of SNX decreases a lot...
 			const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.09'));
 			const timestamp = await currentTime();
