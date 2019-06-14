@@ -800,9 +800,8 @@ contract('Rewards Integration Tests', async accounts => {
 				from: oracle,
 			});
 
-			// we will have no fee penalty
-			const feePenalty = await feePool.currentPenalty(account1);
-			assert.bnEqual(feePenalty, toUnit('0'));
+			// we will be able to claim fees
+			assert.equal(await feePool.feesClaimable(account1), true);
 
 			const snxRewards = await feePool.feesAvailable(account1, sUSD);
 			assert.bnClose(snxRewards[1], third(periodOneMintableSupplyMinusMinterReward));
@@ -814,7 +813,7 @@ contract('Rewards Integration Tests', async accounts => {
 			const vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account1, 0);
 			assert.bnClose(vestingScheduleEntry[1], third(periodOneMintableSupplyMinusMinterReward), 2);
 		});
-		it('should apply a penalty of 100% when users claim rewards >10% threshold collateralisation ratio', async () => {
+		it('should block user from claiming fees and rewards when users claim rewards >10% threshold collateralisation ratio', async () => {
 			// But if the price of SNX decreases a lot...
 			const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.09'));
 			const timestamp = await currentTime();
@@ -823,12 +822,7 @@ contract('Rewards Integration Tests', async accounts => {
 			});
 
 			// we will fall into the >100% bracket
-			const feePenalty = await feePool.currentPenalty(account1);
-			assert.bnEqual(feePenalty, toUnit('1'));
-
-			// and lose 100% of those rewards.
-			const snxRewardsPenalized = await feePool.feesAvailable(account1, sUSD);
-			assert.bnClose(snxRewardsPenalized[1], toUnit('0'));
+			assert.equal(await feePool.feesClaimable(account1), false);
 
 			// And if we claim then it should revert as there is nothing to claim
 			await assert.revert(feePool.claimFees(sUSD, { from: account1 }));

@@ -1141,7 +1141,7 @@ contract('FeePool', async accounts => {
 				from: oracle,
 			});
 
-			assert.bnEqual(await feePool.currentPenalty(owner), 0);
+			assert.equal(await feePool.feesClaimable(owner), true);
 		});
 
 		it('should correctly calculate the 10% buffer for penalties at specific issuance ratios', async () => {
@@ -1167,11 +1167,11 @@ contract('FeePool', async accounts => {
 				const ratio = await synthetix.collateralisationRatio(owner);
 
 				if (ratio.lte(toUnit(threshold))) {
-					// Should be 0% penalty
-					assert.bnEqual(await feePool.currentPenalty(owner), 0);
+					// Should be claimable
+					assert.equal(await feePool.feesClaimable(owner), true);
 				} else {
-					// Should be 100% penalty
-					assert.bnEqual(await feePool.currentPenalty(owner), toUnit('1'));
+					// Should be not claimable penalty
+					assert.equal(await feePool.feesClaimable(owner), false);
 				}
 
 				// Bump the rate down.
@@ -1215,7 +1215,8 @@ contract('FeePool', async accounts => {
 				from: oracle,
 			});
 
-			assert.equal(await getFeesAvailable(account1, sUSD), 0);
+			// fees available is unaffected but not claimable
+			assert.bnClose(await getFeesAvailable(account1, sUSD), fee.div(web3.utils.toBN('2')));
 
 			// And revert if we claim them
 			await assert.revert(feePool.claimFees(sUSD, { from: account1 }));

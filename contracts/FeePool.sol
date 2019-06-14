@@ -113,8 +113,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     // Users receive penalties if their collateralisation ratio drifts out of our desired brackets
     // We precompute the brackets and penalties to save gas.
     uint public PENALTY_THRESHOLD = (10 * SafeDecimalMath.unit()) / 100;
-    uint constant ONE_HUNDRED_PERCENT = (100 * SafeDecimalMath.unit()) / 100;
-
 
     /* ========== ETERNAL STORAGE CONSTANTS ========== */
 
@@ -383,7 +381,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         internal
         returns (bool)
     {
-        require(currentPenalty(claimingAddress) == 0, "C-Ratio below penalty threshold");
+        require(feesClaimable(claimingAddress), "C-Ratio below penalty threshold");
 
         uint availableFees;
         uint availableRewards;
@@ -748,13 +746,13 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     }
 
     /**
-     * @notice The penalty a particular address would incur if its fees were withdrawn right now
-     * @param account The address you want to query the penalty for
+     * @notice Check if a particular address is able to claim fees right now
+     * @param account The address you want to query for
      */
-    function currentPenalty(address account)
+    function feesClaimable(address account)
         public
         view
-        returns (uint)
+        returns (bool)
     {
         // Penalty is calculated from ratio % above the target ratio (issuanceRatio).
         //  0  <  10%:   0% reduction in fees
@@ -764,7 +762,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
         // no penalty if collateral ratio below target ratio
         if (ratio < targetRatio) {
-            return 0;
+            return true;
         }
 
         // Calculate the threshold for collateral ratio before penalty applies
@@ -772,15 +770,15 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
         // Collateral ratio above threshold attracts max penalty
         if (ratio > ratio_threshold) {
-            return ONE_HUNDRED_PERCENT;
+            return false;
         }
 
-        return 0;
+        return true;
     }
 
     /**
      * @notice Calculates fees by period for an account, priced in XDRs
-     * @param account The address you want to query the fees by penalty for
+     * @param account The address you want to query the fees for
      */
     function feesByPeriod(address account)
         public
@@ -798,13 +796,11 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         // If there are no XDR synths, then they don't have any fees
         if (synthetix.totalIssuedSynths("XDR") == 0) return;
 
-        uint penalty = currentPenalty(account);
-
         // The [0] fee period is not yet ready to claim, but it is a fee period that they can have
         // fees owing for, so we need to report on it anyway.
         uint feesFromPeriod;
         uint rewardsFromPeriod;
-        (feesFromPeriod, rewardsFromPeriod) = _feesAndRewardsFromPeriod(0, userOwnershipPercentage, debtEntryIndex, penalty);
+        (feesFromPeriod, rewardsFromPeriod) = _feesAndRewardsFromPeriod(0, userOwnershipPercentage, debtEntryIndex);
 
         results[0][0] = feesFromPeriod;
         results[0][1] = rewardsFromPeriod;
@@ -829,7 +825,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
                 // return if userOwnershipPercentage = 0)
                 (userOwnershipPercentage, debtEntryIndex) = feePoolState.applicableIssuanceData(account, closingDebtIndex);
 
-                (feesFromPeriod, rewardsFromPeriod) = _feesAndRewardsFromPeriod(i, userOwnershipPercentage, debtEntryIndex, penalty);
+                (feesFromPeriod, rewardsFromPeriod) = _feesAndRewardsFromPeriod(i, userOwnershipPercentage, debtEntryIndex);
 
                 results[i][0] = feesFromPeriod;
                 results[i][1] = rewardsFromPeriod;
@@ -843,7 +839,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
      * for fees in the period. Precision factor is removed before results are
      * returned.
      */
-    function _feesAndRewardsFromPeriod(uint period, uint ownershipPercentage, uint debtEntryIndex, uint penalty)
+    function _feesAndRewardsFromPeriod(uint period, uint ownershipPercentage, uint debtEntryIndex)
         internal
         returns (uint, uint)
     {
@@ -860,16 +856,11 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
         // Calculate their percentage of the fees / rewards in this period
         // This is a high precision integer.
-        uint feesFromPeriodWithoutPenalty = recentFeePeriods[period].feesToDistribute
+        uint feesFromPeriod = recentFeePeriods[period].feesToDistribute
             .multiplyDecimal(debtOwnershipForPeriod);
 
-        uint rewardsFromPeriodWithoutPenalty = recentFeePeriods[period].rewardsToDistribute
+        uint rewardsFromPeriod = recentFeePeriods[period].rewardsToDistribute
             .multiplyDecimal(debtOwnershipForPeriod);
-
-        // Less their penalty if they have one.
-        uint feesFromPeriod = feesFromPeriodWithoutPenalty.sub(feesFromPeriodWithoutPenalty.multiplyDecimal(penalty));
-
-        uint rewardsFromPeriod = rewardsFromPeriodWithoutPenalty.sub(rewardsFromPeriodWithoutPenalty.multiplyDecimal(penalty));
 
         return (
             feesFromPeriod.preciseDecimalToDecimal(),
