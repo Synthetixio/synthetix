@@ -87,7 +87,7 @@ contract('Rewards Integration Tests', async accounts => {
 	// const twoThirds = amount => amount.div(web3.utils.toBN('3')).mul(web3.utils.toBN('2'));
 	const quarter = amount => amount.div(web3.utils.toBN('4'));
 	// const twoQuarters = amount => amount.div(web3.utils.toBN('4')).mul(web3.utils.toBN('2'));
-	const threeQuarters = amount => amount.div(web3.utils.toBN('4')).mul(web3.utils.toBN('3'));
+	// const threeQuarters = amount => amount.div(web3.utils.toBN('4')).mul(web3.utils.toBN('3'));
 	const oneFifth = amount => amount.div(web3.utils.toBN('5'));
 	const twoFifths = amount => amount.div(web3.utils.toBN('5')).mul(web3.utils.toBN('2'));
 
