@@ -134,20 +134,21 @@ const performTransactionalStep = async ({
 	ownerActions,
 	ownerActionsFile,
 }) => {
-	// check to see if action required
 	const action = `${contract}.${write}(${writeArg})`;
 
-	// web3 counts provided arguments - even undefined ones - and they must match the expected args, hence the below
-	const argumentsForReadFunction = readArg ? [readArg] : [];
-	const response = await target.methods[read](...argumentsForReadFunction).call();
+	// check to see if action required
+	if (read) {
+		// web3 counts provided arguments - even undefined ones - and they must match the expected args, hence the below
+		const argumentsForReadFunction = readArg ? [readArg] : [];
+		const response = await target.methods[read](...argumentsForReadFunction).call();
 
-	console.log(yellow(`Attempting action: ${action}`));
+		console.log(yellow(`Attempting action: ${action}`));
 
-	if (expected(response)) {
-		console.log(gray(`Nothing required for this action.`));
-		return;
+		if (expected(response)) {
+			console.log(gray(`Nothing required for this action.`));
+			return;
+		}
 	}
-
 	// otherwuse check the owner
 	const owner = await target.methods.owner().call();
 	if (owner === account) {

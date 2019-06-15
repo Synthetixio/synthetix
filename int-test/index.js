@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const { gray } = require('chalk');
+const { gray, green } = require('chalk');
 require('dotenv').config();
 
 const Web3 = require('web3');
@@ -11,6 +11,8 @@ const commands = {
 	build: require('../publish/src/commands/build').build,
 	deploy: require('../publish/src/commands/deploy').deploy,
 	replaceSynths: require('../publish/src/commands/replace-synths').replaceSynths,
+	purgeSynths: require('../publish/src/commands/purge-synths').purgeSynths,
+	removeSynths: require('../publish/src/commands/remove-synths').removeSynths,
 };
 
 const snx = require('../index');
@@ -60,14 +62,6 @@ const users = Object.entries(
 		sources['Synthetix'].abi,
 		targets['ProxySynthetix'].address
 	);
-
-	// transfer SNX to first account
-	console.log(gray('Transferring 100k SNX to user1'));
-	await Synthetix.methods.transfer(accounts.first.public, web3.utils.toWei('100000')).send({
-		from: accounts.deployer.public,
-		gas: gasLimit,
-		gasPrice,
-	});
 	const { timestamp } = await web3.eth.getBlock('latest');
 
 	const [SNX, sUSD, sBTC] = ['SNX', 'sUSD', 'sBTC'].map(web3.utils.asciiToHex);
@@ -89,6 +83,15 @@ const users = Object.entries(
 			gas: gasLimit,
 			gasPrice,
 		});
+
+	// transfer SNX to first account
+	console.log(gray('Transferring 100k SNX to user1'));
+	await Synthetix.methods.transfer(accounts.first.public, web3.utils.toWei('100000')).send({
+		from: accounts.deployer.public,
+		gas: gasLimit,
+		gasPrice,
+	});
+
 	// issue
 	console.log(gray('User1 issueMaxSynths'));
 	await Synthetix.methods.issueMaxSynths(sUSD).send({
@@ -128,6 +131,25 @@ const users = Object.entries(
 	});
 
 	// 5. purge
+	console.log(gray('Purge user1 of sBTC - exchange back into sUSD'));
+	await commands.purgeSynths({
+		network,
+		deploymentPath,
+		yes: true,
+		privateKey: accounts.deployer.private,
+		addresses: [accounts.first.public],
+		synthsToPurge: ['sBTC'],
+	});
 
 	// 6. remove
+	console.log(gray('Remove sBTC synth'));
+	await commands.removeSynths({
+		network,
+		deploymentPath,
+		yes: true,
+		privateKey: accounts.deployer.private,
+		synthsToRemove: ['sBTC'],
+	});
+
+	console.log(green('Integration test completed successfully.'));
 })();

@@ -17,7 +17,22 @@ const {
 	performTransactionalStep,
 } = require('../util');
 
-const purgeSynths = async ({ network, deploymentPath, gasPrice, gasLimit, synthsToPurge }) => {
+const DEFAULTS = {
+	network: 'kovan',
+	gasLimit: 3e6,
+	gasPrice: '1',
+};
+
+const purgeSynths = async ({
+	network = DEFAULTS.network,
+	deploymentPath,
+	gasPrice = DEFAULTS.gasPrice,
+	gasLimit = DEFAULTS.gasLimit,
+	synthsToPurge = [],
+	yes,
+	privateKey,
+	addresses = [],
+}) => {
 	ensureNetwork(network);
 	ensureDeploymentPath(deploymentPath);
 
@@ -44,7 +59,14 @@ const purgeSynths = async ({ network, deploymentPath, gasPrice, gasLimit, synths
 		}
 	}
 
-	const { providerUrl, privateKey, etherscanLinkPrefix } = loadConnections({ network });
+	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
+		network,
+	});
+
+	// allow local deployments to use the private key passed as a CLI option
+	if (network !== 'local' || !privateKey) {
+		privateKey = envPrivateKey;
+	}
 
 	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
 	web3.eth.accounts.wallet.add(privateKey);
@@ -52,19 +74,21 @@ const purgeSynths = async ({ network, deploymentPath, gasPrice, gasLimit, synths
 	console.log(gray(`Using account with public key ${account}`));
 	console.log(gray(`Using gas of ${gasPrice} GWEI with a max of ${gasLimit}`));
 
-	try {
-		await confirmAction(
-			cyan(
-				`${yellow(
-					'⚠ WARNING'
-				)}: This action will purge the following synths from the Synthetix contract on ${network}:\n- ${synthsToPurge.join(
-					'\n- '
-				)}`
-			) + '\nDo you want to continue? (y/n) '
-		);
-	} catch (err) {
-		console.log(gray('Operation cancelled'));
-		return;
+	if (!yes) {
+		try {
+			await confirmAction(
+				cyan(
+					`${yellow(
+						'⚠ WARNING'
+					)}: This action will purge the following synths from the Synthetix contract on ${network}:\n- ${synthsToPurge.join(
+						'\n- '
+					)}`
+				) + '\nDo you want to continue? (y/n) '
+			);
+		} catch (err) {
+			console.log(gray('Operation cancelled'));
+			return;
+		}
 	}
 
 	const { address: synthetixAddress, source } = deployment.targets['Synthetix'];
@@ -75,6 +99,9 @@ const purgeSynths = async ({ network, deploymentPath, gasPrice, gasLimit, synths
 		const { address: synthAddress, source: synthSource } = deployment.targets[
 			`Synth${currencyKey}`
 		];
+		console.log(
+			gray('For', currencyKey, 'using source of', synthSource, 'at address', synthAddress)
+		);
 		const { abi: synthABI } = deployment.sources[synthSource];
 		const Synth = new web3.eth.Contract(synthABI, synthAddress);
 		const { address: proxyAddress } = deployment.targets[`Proxy${currencyKey}`];
@@ -94,24 +121,36 @@ const purgeSynths = async ({ network, deploymentPath, gasPrice, gasLimit, synths
 		}
 
 		// step 1. fetch all holders via ethplorer api
-		const topTokenHoldersUrl = `http://api.ethplorer.io/getTopTokenHolders/${proxyAddress}`;
-		const response = await axios.get(topTokenHoldersUrl, {
-			params: {
-				apiKey: process.env.ETHPLORER_API_KEY || 'freekey',
-				limit: 1000,
-			},
-		});
+		if (network === 'mainnet' && addresses.length < 1) {
+			const topTokenHoldersUrl = `http://api.ethplorer.io/getTopTokenHolders/${proxyAddress}`;
+			const response = await axios.get(topTokenHoldersUrl, {
+				params: {
+					apiKey: process.env.ETHPLORER_API_KEY || 'freekey',
+					limit: 1000,
+				},
+			});
 
-		const topTokenHolders = response.data.map(({ address }) => address);
-		console.log(gray(`Found ${topTokenHolders.length} holders of ${currencyKey}`));
+			const topTokenHolders = response.data.map(({ address }) => address);
+			console.log(gray(`Found ${topTokenHolders.length} holders of ${currencyKey}`));
+			addresses = topTokenHolders;
+		}
+
+		const totalSupplyBefore = w3utils.fromWei(await Synth.methods.totalSupply().call());
+
+		if (Number(totalSupplyBefore) === 0) {
+			console.log(gray('Total supply is 0, exiting.'));
+			return;
+		} else {
+			console.log(gray('Total supply before purge is:', totalSupplyBefore));
+		}
 
 		// step 2. start the purge
-		performTransactionalStep({
+		await performTransactionalStep({
 			account,
 			contract: `Synth${currencyKey}`,
 			target: Synth,
 			write: 'purge',
-			writeArg: topTokenHolders,
+			writeArg: addresses,
 			gasLimit,
 			gasPrice,
 			etherscanLinkPrefix,
@@ -138,12 +177,30 @@ module.exports = {
 			.command('purge-synths')
 			.description('Purge a number of synths from the system')
 			.option(
+				'-a, --addresses <value>',
+				'The list of holder addresses (use in testnets when Ethplorer API does not return holders)',
+				(val, memo) => {
+					memo.push(val);
+					return memo;
+				},
+				[]
+			)
+			.option(
 				'-d, --deployment-path <value>',
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
-			.option('-g, --gas-price <value>', 'Gas price in GWEI', 1)
-			.option('-l, --gas-limit <value>', 'Gas limit', 15e4)
-			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
+			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
+			.option('-l, --gas-limit <value>', 'Gas limit', DEFAULTS.gasLimit)
+			.option(
+				'-n, --network <value>',
+				'The network to run off.',
+				x => x.toLowerCase(),
+				DEFAULTS.network
+			)
+			.option(
+				'-v, --private-key [value]',
+				'The private key to transact with (only works in local mode, otherwise set in .env).'
+			)
 			.option(
 				'-s, --synths-to-purge <value>',
 				'The list of synths to purge',
