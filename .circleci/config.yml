@@ -1,0 +1,51 @@
+version: 2
+jobs:
+  prepare:
+    docker:
+      - image: 'circleci/node:8.16'
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - 'v1.0-dependencies-{{ checksum "package.json" }}'
+            - v1.0-dependencies-
+      - run: npm install
+      - run: npm run lint
+      - save_cache:
+          paths:
+            - node_modules
+          key: 'v1.0-dependencies-{{ checksum "package.json" }}'
+      - persist_to_workspace:
+          root: .
+          paths:
+            - node_modules
+  unit:
+    docker:
+      - image: 'circleci/node:8.16'
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run test:gas
+  int:
+    docker:
+      - image: 'circleci/node:8.16'
+      - image: 'circleci/node:8.16'
+        command:
+          - npm install && npm run ganache:int
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: node int-test
+workflows:
+  version: 2
+  dev:
+    jobs:
+      - prepare
+      - unit:
+          requires:
+            - prepare
+      - int:
+          requires:
+            - unit
