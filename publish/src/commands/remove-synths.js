@@ -18,7 +18,21 @@ const {
 	stringify,
 } = require('../util');
 
-const removeSynths = async ({ network, deploymentPath, gasPrice, gasLimit, synthsToRemove }) => {
+const DEFAULTS = {
+	network: 'kovan',
+	gasLimit: 3e5,
+	gasPrice: '1',
+};
+
+const removeSynths = async ({
+	network = DEFAULTS.network,
+	deploymentPath,
+	gasPrice = DEFAULTS.gasPrice,
+	gasLimit = DEFAULTS.gasLimit,
+	synthsToRemove = [],
+	yes,
+	privateKey,
+}) => {
 	ensureNetwork(network);
 	ensureDeploymentPath(deploymentPath);
 
@@ -54,7 +68,14 @@ const removeSynths = async ({ network, deploymentPath, gasPrice, gasLimit, synth
 		}
 	}
 
-	const { providerUrl, privateKey, etherscanLinkPrefix } = loadConnections({ network });
+	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
+		network,
+	});
+
+	// allow local deployments to use the private key passed as a CLI option
+	if (network !== 'local' || !privateKey) {
+		privateKey = envPrivateKey;
+	}
 
 	const appendOwnerAction = appendOwnerActionGenerator({
 		ownerActions,
@@ -68,19 +89,21 @@ const removeSynths = async ({ network, deploymentPath, gasPrice, gasLimit, synth
 	console.log(gray(`Using account with public key ${account}`));
 	console.log(gray(`Using gas of ${gasPrice} GWEI with a max of ${gasLimit}`));
 
-	try {
-		await confirmAction(
-			cyan(
-				`${yellow(
-					'⚠ WARNING'
-				)}: This action will remove the following synths from the Synthetix contract on ${network}:\n- ${synthsToRemove.join(
-					'\n- '
-				)}`
-			) + '\nDo you want to continue? (y/n) '
-		);
-	} catch (err) {
-		console.log(gray('Operation cancelled'));
-		return;
+	if (!yes) {
+		try {
+			await confirmAction(
+				cyan(
+					`${yellow(
+						'⚠ WARNING'
+					)}: This action will remove the following synths from the Synthetix contract on ${network}:\n- ${synthsToRemove.join(
+						'\n- '
+					)}`
+				) + '\nDo you want to continue? (y/n) '
+			);
+		} catch (err) {
+			console.log(gray('Operation cancelled'));
+			return;
+		}
 	}
 
 	const { address: synthetixAddress, source } = deployment.targets['Synthetix'];
