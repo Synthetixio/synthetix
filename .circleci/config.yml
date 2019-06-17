@@ -30,14 +30,11 @@ jobs:
   int:
     docker:
       - image: 'circleci/node:8.16'
-      - image: 'circleci/node:8.16'
-        command:
-          - npm install && npm run ganache:int
     steps:
       - checkout
       - attach_workspace:
           at: .
-      - run: node int-test
+      - run: npm run test:int
 workflows:
   version: 2
   dev:
