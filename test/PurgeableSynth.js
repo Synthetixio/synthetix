@@ -8,7 +8,7 @@ const Proxy = artifacts.require('Proxy');
 
 const { currentTime, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 
-contract.only('PurgeableSynth', accounts => {
+contract('PurgeableSynth', accounts => {
 	const [sUSD, SNX, , sAUD, iETH] = ['sUSD', 'SNX', 'XDR', 'sAUD', 'iETH'].map(
 		web3.utils.asciiToHex
 	);
@@ -138,33 +138,6 @@ contract.only('PurgeableSynth', accounts => {
 						from: oracle,
 					}
 				);
-			});
-
-			it('then getMaxSupplyToPurge returns the value at the current exchange rate', async () => {
-				const getMaxSupplyToPurge = await this.synth.getMaxSupplyToPurge();
-
-				assert.bnEqual(
-					getMaxSupplyToPurge,
-					toUnit(10000 / 0.1),
-					'Max supply in purge currency must be converted via current exchange rate'
-				);
-			});
-			describe('when the price for the purgeable synth changes', () => {
-				beforeEach(async () => {
-					await exchangeRates.updateRates([iETH], ['0.25'].map(toUnit), timestamp, {
-						from: oracle,
-					});
-				});
-
-				it('then getMaxSupplyToPurge returns the value at the new exchange rate', async () => {
-					const getMaxSupplyToPurge = await this.synth.getMaxSupplyToPurge();
-
-					assert.bnEqual(
-						getMaxSupplyToPurge,
-						toUnit(10000 / 0.25),
-						'Max supply in purge currency must be converted via current exchange rate'
-					);
-				});
 			});
 
 			describe('and there exists a user with 2000 sUSD', () => {

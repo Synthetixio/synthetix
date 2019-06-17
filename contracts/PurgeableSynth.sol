@@ -62,7 +62,7 @@ contract PurgeableSynth is Synth {
         external
         optionalProxy_onlyOwner
     {
-        uint maxSupplyToPurge = getMaxSupplyToPurge();
+        uint maxSupplyToPurge = exchangeRates.effectiveValue("sUSD", maxSupplyToPurgeInUSD, currencyKey);
 
         // Only allow purge when total supply is lte the max or the rate is frozen in ExchangeRates
         require(
@@ -82,13 +82,6 @@ contract PurgeableSynth is Synth {
 
         }
 
-    }
-
-    /* ========== GETTERS ========== */
-
-    function getMaxSupplyToPurge() public view returns (uint) {
-        return maxSupplyToPurgeInUSD.multiplyDecimalRound(exchangeRates.rateForCurrency("sUSD"))
-            .divideDecimalRound(exchangeRates.rateForCurrency(currencyKey));
     }
 
     /* ========== SETTERS ========== */
