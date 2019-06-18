@@ -276,7 +276,7 @@ contract('FeePoolState', async accounts => {
 		});
 
 		it('should append account issuance record twice for each feePeriod, up to feePeriod length', async () => {
-			const FEE_PERIOD_LENGTH = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
+			const FEE_PERIOD_LENGTH = (await feePoolState.FEE_PERIOD_LENGTH()).toNumber();
 			const initialDebtRatio = toUnit('1');
 			const secondDebtRatio = toUnit('.5');
 			let entryIndexCounter = 0;

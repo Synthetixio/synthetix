@@ -97,7 +97,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     // These are stored and managed from [0], such that [0] is always
     // the most recent fee period, and [5] is always the oldest fee
     // period that users can claim for.
-    uint8 constant public FEE_PERIOD_LENGTH = 6;
+    uint8 constant public FEE_PERIOD_LENGTH = 3;
 
     FeePeriod[FEE_PERIOD_LENGTH] public recentFeePeriods;
 
