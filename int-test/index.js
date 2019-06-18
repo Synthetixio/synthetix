@@ -32,7 +32,7 @@ const users = Object.entries(
 		const network = 'local';
 
 		// 1. build
-		// await commands.build();
+		await commands.build();
 
 		const accounts = {
 			deployer: users[0],
