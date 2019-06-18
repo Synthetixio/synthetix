@@ -69,7 +69,7 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 };
 
 const loadConnections = ({ network }) => {
-	if (!process.env.INFURA_PROJECT_ID) {
+	if (network !== 'local' && !process.env.INFURA_PROJECT_ID) {
 		throw Error('Missing .env key of INFURA_PROJECT_ID. Please add and retry.');
 	}
 
