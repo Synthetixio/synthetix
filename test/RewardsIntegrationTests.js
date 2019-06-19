@@ -440,7 +440,7 @@ contract('Rewards Integration Tests', async accounts => {
 			// console.log('rewardsAmount calculated', rewardsAmount.toString());
 
 			// await logFeePeriods();
-			await new Promise(r => setTimeout(r, 1000)); // Test would fail without the logFeePeriods(). Race conditionnn on chain. Just nneed to delay a tad.
+			await new Promise(r => setTimeout(r, 1000)); // Test would fail without the logFeePeriods(). Race condition on chain. Just need to delay a tad.
 
 			// Check account2 has correct rewardsAvailable
 			const account2Rewards = await feePool.feesAvailable(account2, sUSD);
