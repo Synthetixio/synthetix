@@ -40,36 +40,36 @@ contract('Rewards Integration Tests', async accounts => {
 		await updateRatesWithDefaults();
 	};
 
-	const logFeePeriods = async () => {
-		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
+	// const logFeePeriods = async () => {
+	// 	const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 
-		console.log('------------------');
-		for (let i = 0; i < length; i++) {
-			console.log(`Fee Period [${i}]:`);
-			const period = await feePool.recentFeePeriods(i);
+	// 	console.log('------------------');
+	// 	for (let i = 0; i < length; i++) {
+	// 		console.log(`Fee Period [${i}]:`);
+	// 		const period = await feePool.recentFeePeriods(i);
 
-			for (const key of Object.keys(period)) {
-				if (isNaN(parseInt(key))) {
-					console.log(`  ${key}: ${period[key]}`);
-				}
-			}
+	// 		for (const key of Object.keys(period)) {
+	// 			if (isNaN(parseInt(key))) {
+	// 				console.log(`  ${key}: ${period[key]}`);
+	// 			}
+	// 		}
 
-			console.log();
-		}
-		console.log('------------------');
-	};
+	// 		console.log();
+	// 	}
+	// 	console.log('------------------');
+	// };
 
-	const logFeesByPeriod = async account => {
-		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
-		const feesByPeriod = await feePoolWeb3.methods.feesByPeriod(account).call();
+	// const logFeesByPeriod = async account => {
+	// 	const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
+	// 	const feesByPeriod = await feePoolWeb3.methods.feesByPeriod(account).call();
 
-		console.log('---------------------feesByPeriod----------------------');
-		console.log('Account', account);
-		for (let i = 0; i < length; i++) {
-			console.log(`Fee Period[${i}] Fees: ${feesByPeriod[i][0]} Rewards: ${feesByPeriod[i][1]}`);
-		}
-		console.log('--------------------------------------------------------');
-	};
+	// 	console.log('---------------------feesByPeriod----------------------');
+	// 	console.log('Account', account);
+	// 	for (let i = 0; i < length; i++) {
+	// 		console.log(`Fee Period[${i}] Fees: ${feesByPeriod[i][0]} Rewards: ${feesByPeriod[i][1]}`);
+	// 	}
+	// 	console.log('--------------------------------------------------------');
+	// };
 
 	// CURRENCIES
 	const [sUSD, sAUD, sEUR, sBTC, SNX, iBTC] = ['sUSD', 'sAUD', 'sEUR', 'sBTC', 'SNX', 'iBTC'].map(
