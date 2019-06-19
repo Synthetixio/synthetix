@@ -12,7 +12,7 @@ const { currentTime, fastForward, toUnit, toPreciseUnit } = require('../utils/te
 const web3 = getWeb3();
 const getInstance = getContractInstance(web3);
 
-contract.only('Rewards Integration Tests', async accounts => {
+contract('Rewards Integration Tests', async accounts => {
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
 		const timestamp = await currentTime();
@@ -439,7 +439,8 @@ contract.only('Rewards Integration Tests', async accounts => {
 			);
 			// console.log('rewardsAmount calculated', rewardsAmount.toString());
 
-			await logFeePeriods();
+			// await logFeePeriods();
+			await new Promise(r => setTimeout(r, 1000)); // Test would fail without the logFeePeriods(). Race conditionnn on chain. Just nneed to delay a tad.
 
 			// Check account2 has correct rewardsAvailable
 			const account2Rewards = await feePool.feesAvailable(account2, sUSD);
