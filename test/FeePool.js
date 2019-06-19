@@ -1458,7 +1458,9 @@ contract('FeePool', async accounts => {
 				await synthetix.issueSynths(sUSD, toUnit('1000'), { from: owner });
 				await synthetix.issueSynths(sUSD, toUnit('1000'), { from: account1 });
 
-				await sUSDContract.methods['transfer(address,uint256)'](account1, transfer1, { from: owner });
+				await sUSDContract.methods['transfer(address,uint256)'](account1, transfer1, {
+					from: owner,
+				});
 
 				totalFees = totalFees.add(
 					transfer1.sub(await feePool.amountReceivedFromTransfer(transfer1))
