@@ -4,7 +4,6 @@ const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
 const FeePoolState = artifacts.require('FeePoolState');
 const FeePoolEternalStorage = artifacts.require('FeePoolEternalStorage');
-const FeePoolHelpers = artifacts.require('FeePoolHelpers');
 const DelegateApprovals = artifacts.require('DelegateApprovals');
 const Synthetix = artifacts.require('Synthetix');
 const SynthetixEscrow = artifacts.require('SynthetixEscrow');
@@ -220,22 +219,6 @@ module.exports = async function(deployer, network, accounts) {
 	// Connect InflationarySupply
 	// ----------------------
 	await supplySchedule.setSynthetix(synthetix.address, { from: owner });
-
-	// ----------------------
-	// Deploy FeePoolHelpers
-	// ----------------------
-	console.log('Deploying FeePoolHelpers...');
-	deployer.link(SafeDecimalMath, FeePoolHelpers);
-
-	// constructor(FeePool _feePool, ISynthetix _synthetix)
-	// 	public
-	// {
-	// 	feePool = _feePool;
-	// 	synthetix = _synthetix;
-	// }
-	await deployer.deploy(FeePoolHelpers, feePool.address, synthetix.address, {
-		from: deployerAccount,
-	});
 
 	// ----------------
 	// Synths

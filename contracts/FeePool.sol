@@ -920,6 +920,21 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     }
 
     /**
+    * @notice Calculate the collateral ratio before penalty is applied.
+    */
+    function getPenaltyThresholdRatio()
+        public
+        view
+        returns (uint)
+    {
+        uint targetRatio = synthetix.synthetixState().issuanceRatio();
+
+        return targetRatio.multiplyDecimal(SafeDecimalMath.unit().add(PENALTY_THRESHOLD));
+    }
+
+    /* ========== Modifiers ========== */
+
+    /**
      * @notice Set the feePeriodID of the last claim this account made
      * @param _claimingAddress account to set the last feePeriodID claim for
      * @param _feePeriodID the feePeriodID this account claimed fees for
@@ -929,8 +944,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     {
         feePoolEternalStorage.setUIntValue(keccak256(abi.encodePacked(LAST_FEE_WITHDRAWAL, _claimingAddress)), _feePeriodID);
     }
-
-    /* ========== Modifiers ========== */
 
     modifier optionalProxy_onlyFeeAuthority
     {
