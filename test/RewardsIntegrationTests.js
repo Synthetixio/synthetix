@@ -12,7 +12,7 @@ const { currentTime, fastForward, toUnit, toPreciseUnit } = require('../utils/te
 const web3 = getWeb3();
 const getInstance = getContractInstance(web3);
 
-contract('Rewards Integration Tests', async accounts => {
+contract.only('Rewards Integration Tests', async accounts => {
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
 		const timestamp = await currentTime();
@@ -28,6 +28,7 @@ contract('Rewards Integration Tests', async accounts => {
 	};
 
 	const closeFeePeriodAndFastForward = async () => {
+		console.log('closeFeePeriodAndFastForward');
 		const feePeriodDuration = await feePool.feePeriodDuration();
 		await fastForward(feePeriodDuration);
 		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
@@ -39,36 +40,36 @@ contract('Rewards Integration Tests', async accounts => {
 		await updateRatesWithDefaults();
 	};
 
-	// const logFeePeriods = async () => {
-	// 	const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
+	const logFeePeriods = async () => {
+		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 
-	// 	console.log('------------------');
-	// 	for (let i = 0; i < length; i++) {
-	// 		console.log(`Fee Period [${i}]:`);
-	// 		const period = await feePool.recentFeePeriods(i);
+		console.log('------------------');
+		for (let i = 0; i < length; i++) {
+			console.log(`Fee Period [${i}]:`);
+			const period = await feePool.recentFeePeriods(i);
 
-	// 		for (const key of Object.keys(period)) {
-	// 			if (isNaN(parseInt(key))) {
-	// 				console.log(`  ${key}: ${period[key]}`);
-	// 			}
-	// 		}
+			for (const key of Object.keys(period)) {
+				if (isNaN(parseInt(key))) {
+					console.log(`  ${key}: ${period[key]}`);
+				}
+			}
 
-	// 		console.log();
-	// 	}
-	// 	console.log('------------------');
-	// };
+			console.log();
+		}
+		console.log('------------------');
+	};
 
-	// const logFeesByPeriod = async account => {
-	// 	const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
-	// 	const feesByPeriod = await feePoolWeb3.methods.feesByPeriod(account).call();
+	const logFeesByPeriod = async account => {
+		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
+		const feesByPeriod = await feePoolWeb3.methods.feesByPeriod(account).call();
 
-	// 	console.log('---------------------feesByPeriod----------------------');
-	// 	console.log('Account', account);
-	// 	for (let i = 0; i < length; i++) {
-	// 		console.log(`Fee Period[${i}] Fees: ${feesByPeriod[i][0]} Rewards: ${feesByPeriod[i][1]}`);
-	// 	}
-	// 	console.log('--------------------------------------------------------');
-	// };
+		console.log('---------------------feesByPeriod----------------------');
+		console.log('Account', account);
+		for (let i = 0; i < length; i++) {
+			console.log(`Fee Period[${i}] Fees: ${feesByPeriod[i][0]} Rewards: ${feesByPeriod[i][1]}`);
+		}
+		console.log('--------------------------------------------------------');
+	};
 
 	// CURRENCIES
 	const [sUSD, sAUD, sEUR, sBTC, SNX, iBTC] = ['sUSD', 'sAUD', 'sEUR', 'sBTC', 'SNX', 'iBTC'].map(
@@ -162,25 +163,32 @@ contract('Rewards Integration Tests', async accounts => {
 		await synthetix.transfer(account2, thirdOfSNX, { from: owner });
 		await synthetix.transfer(account3, thirdOfSNX, { from: owner });
 
-		// const balanceOfOwner = await synthetix.balanceOf(owner, { from: owner });
-		// console.log('balanceOfOwner', balanceOfOwner.toString());
+		const balanceOfOwner = await synthetix.balanceOf(owner, { from: owner });
+		console.log('balanceOfOwner', balanceOfOwner.toString());
 
 		// Get the SNX mintableSupply
 		periodOneMintableSupplyMinusMinterReward = (await supplySchedule.mintableSupply()).sub(
 			MINTER_SNX_REWARD
 		);
-		// console.log(
-		// 	'periodOneMintableSupplyMinusMinterReward',
-		// 	periodOneMintableSupplyMinusMinterReward.toString()
-		// );
+		console.log(
+			'periodOneMintableSupplyMinusMinterReward',
+			periodOneMintableSupplyMinusMinterReward.toString()
+		);
 
 		// Mint the staking rewards
-		// console.log('Mint the staking rewards');
+		console.log('Mint the staking rewards');
 		await synthetix.mint({ from: deployerAccount });
 	});
 
 	describe('3 accounts with 33.33% SNX all issue MAX and claim rewards', async () => {
+		let FEE_PERIOD_LENGTH;
+		let CLAIMABLE_PERIODS;
+
 		beforeEach(async () => {
+			FEE_PERIOD_LENGTH = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
+			CLAIMABLE_PERIODS = FEE_PERIOD_LENGTH - 1;
+			console.log('FEE_PERIOD_LENGTH', FEE_PERIOD_LENGTH);
+
 			await synthetix.issueMaxSynths(sUSD, { from: account1 });
 			await synthetix.issueMaxSynths(sUSD, { from: account2 });
 			await synthetix.issueMaxSynths(sUSD, { from: account3 });
@@ -188,7 +196,6 @@ contract('Rewards Integration Tests', async accounts => {
 
 		it('should allocate the 3 accounts a third of the rewards for 1 period', async () => {
 			// Close Fee Period
-			// console.log('Close Fee Period');
 			await closeFeePeriodAndFastForward();
 
 			// All 3 accounts claim rewards
@@ -207,12 +214,11 @@ contract('Rewards Integration Tests', async accounts => {
 			assert.bnEqual(accThreeEscrowed[1], third(periodOneMintableSupplyMinusMinterReward));
 		});
 
-		it('should mint SNX for the 5 claimable fee periods then all 3 accounts claim at the end of the 6 week claimable period', async () => {
+		it('should mint SNX for the all claimable fee periods then all 3 accounts claim at the end of the claimable period', async () => {
 			let mintedRewardsSupply;
-
-			// We are currently in the 2nd week so close the next 3 leaving 0 as open and no rolling fees
-			const FEE_PERIOD_LENGTH = 3;
-			for (let i = 0; i <= FEE_PERIOD_LENGTH; i++) {
+			// We are currently in the 2nd week, close it and the next
+			for (let i = 0; i <= CLAIMABLE_PERIODS - 1; i++) {
+				// console.log('Close Fee Period', i);
 				await closeFeePeriodAndFastForward();
 
 				// FastForward a little for minting
@@ -223,46 +229,48 @@ contract('Rewards Integration Tests', async accounts => {
 
 				// Mint the staking rewards
 				await synthetix.mint({ from: owner });
-			}
 
-			// Close Fee Period
-			await closeFeePeriodAndFastForward();
+				// await logFeePeriods();
+			}
 
 			// All 3 accounts claim rewards
 			await feePool.claimFees(sUSD, { from: account1 });
 			await feePool.claimFees(sUSD, { from: account2 });
 			await feePool.claimFees(sUSD, { from: account3 });
 
-			const fiveWeeksRewards = third(mintedRewardsSupply).mul(web3.utils.toBN('5'));
+			// await logFeePeriods();
+
+			const twoWeeksRewards = third(mintedRewardsSupply).mul(web3.utils.toBN(CLAIMABLE_PERIODS));
 
 			// All 3 accounts have 1/3 of the rewards
 			const accOneEscrowed = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-			assert.bnEqual(accOneEscrowed[1], fiveWeeksRewards, '1');
+			assert.bnEqual(accOneEscrowed[1], twoWeeksRewards, '1');
 
 			const accTwoEscrowed = await rewardEscrow.getVestingScheduleEntry(account2, 0);
-			assert.bnEqual(accTwoEscrowed[1], fiveWeeksRewards, '1');
+			assert.bnEqual(accTwoEscrowed[1], twoWeeksRewards, '1');
 
 			const accThreeEscrowed = await rewardEscrow.getVestingScheduleEntry(account3, 0);
-			assert.bnEqual(accThreeEscrowed[1], fiveWeeksRewards, '1');
+			assert.bnEqual(accThreeEscrowed[1], twoWeeksRewards, '1');
 		});
 
-		it('should rollover the unclaimed SNX rewards on week 7', async () => {
-			// First week is already closed
-			// Close only 5 periods
-			const FEE_PERIOD_LENGTH = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
-			for (let i = 0; i <= FEE_PERIOD_LENGTH - 2; i++) {
+		it('should rollover the unclaimed SNX rewards', async () => {
+			// Close all claimable periods
+			for (let i = 0; i <= CLAIMABLE_PERIODS; i++) {
+				// console.log('Close Fee Period', i);
 				await closeFeePeriodAndFastForward();
 				// FastForward a bit to be able to mint
 				await fastForwardAndUpdateRates(MINUTE);
 
 				// Mint the staking rewards
 				await synthetix.mint({ from: owner });
+
+				// await logFeePeriods();
 			}
-			// Get the Rewards to RollOver
-			const periodToRollOver = await feePool.recentFeePeriods(5);
+			// Get the Rewards to roll over from the last week
+			const periodToRollOver = await feePool.recentFeePeriods(CLAIMABLE_PERIODS);
 			const rollOverRewards = periodToRollOver.rewardsToDistribute;
 
-			// Close the 7th Week
+			// Close the extra week
 			await closeFeePeriodAndFastForward();
 			// FastForward a bit to be able to mint
 			await fastForwardAndUpdateRates(MINUTE);
@@ -270,7 +278,10 @@ contract('Rewards Integration Tests', async accounts => {
 			await synthetix.mint({ from: owner });
 
 			// Get last FeePeriod
-			const lastFeePeriod = await feePool.recentFeePeriods(5);
+			const lastFeePeriod = await feePool.recentFeePeriods(CLAIMABLE_PERIODS);
+
+			// await logFeePeriods();
+
 			// Assert rewards have rolled over
 			assert.bnEqual(
 				lastFeePeriod.rewardsToDistribute,
@@ -278,32 +289,32 @@ contract('Rewards Integration Tests', async accounts => {
 			);
 		});
 
-		it('should rollover the unclaimed SNX rewards on week 13', async () => {
-			// First week is already closed
-			// Close only 5 periods
-			const FEE_PERIOD_LENGTH = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
+		it('should rollover the unclaimed SNX rewards on week over 2 terms (FEE_PERIOD_LENGTH * 2)', async () => {
 			for (let i = 0; i <= FEE_PERIOD_LENGTH * 2; i++) {
 				await closeFeePeriodAndFastForward();
 				// FastForward a bit to be able to mint
 				await fastForwardAndUpdateRates(MINUTE);
-
 				// Mint the staking rewards
 				await synthetix.mint({ from: owner });
+
+				// await logFeePeriods();
 			}
 			// Get the Rewards to RollOver
-			const periodToRollOver = await feePool.recentFeePeriods(5);
+			const periodToRollOver = await feePool.recentFeePeriods(CLAIMABLE_PERIODS);
 			const rollOverRewards = periodToRollOver.rewardsToDistribute;
 
-			// Close the 13th Week
+			// Close for the roll over
 			await closeFeePeriodAndFastForward();
 			// FastForward a bit to be able to mint
 			await fastForwardAndUpdateRates(MINUTE);
 			// Mint the staking rewards
 			await synthetix.mint({ from: owner });
-
 			// Get last FeePeriod
-			const lastFeePeriod = await feePool.recentFeePeriods(5);
+			const lastFeePeriod = await feePool.recentFeePeriods(CLAIMABLE_PERIODS);
 			// Assert rewards have rolled over
+
+			// await logFeePeriods();
+
 			assert.bnEqual(
 				lastFeePeriod.rewardsToDistribute,
 				periodOneMintableSupplyMinusMinterReward.add(rollOverRewards)
@@ -311,9 +322,6 @@ contract('Rewards Integration Tests', async accounts => {
 		});
 
 		it('should rollover the partial unclaimed SNX rewards', async () => {
-			// First week is already closed
-			// Close 6 periods periods
-			const FEE_PERIOD_LENGTH = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 			for (let i = 0; i <= FEE_PERIOD_LENGTH; i++) {
 				await closeFeePeriodAndFastForward();
 				// FastForward a bit to be able to mint
@@ -324,72 +332,74 @@ contract('Rewards Integration Tests', async accounts => {
 
 				// Only 1 account claims rewards
 				feePool.claimFees(sUSD, { from: account1 });
+
+				// await logFeePeriods();
 			}
 
 			// Get last FeePeriod
-			const lastFeePeriod = await feePool.recentFeePeriods(5);
+			const lastFeePeriod = await feePool.recentFeePeriods(CLAIMABLE_PERIODS);
 			// Assert rewards have rolled over
 			assert.bnEqual(lastFeePeriod.rewardsClaimed, third(periodOneMintableSupplyMinusMinterReward));
 		});
 
-		it('should allow a user to leave the system and return and still claim rewards', async () => {
-			// First week is already closed
-			// Close 2 periods
-			for (let i = 0; i <= 2; i++) {
-				await closeFeePeriodAndFastForward();
-				await fastForwardAndUpdateRates(MINUTE);
-				await synthetix.mint({ from: owner });
-			}
+		it.only('should allow a user to leave the system and return and still claim rewards', async () => {
+			// await logFeePeriods();
 
-			// Account 1 leaves the system for week 4
+			// Close week 1
+			await closeFeePeriodAndFastForward();
+			// FastForward a bit to be able to mint
+			await fastForwardAndUpdateRates(MINUTE);
+			// Mint the staking rewards
+			await synthetix.mint({ from: owner });
+			await logFeePeriods();
+
+			// Account 1 leaves the system for week 2
 			const burnableTotal = await synthetix.debtBalanceOf(account1, sUSD);
 			await synthetix.burnSynths(sUSD, burnableTotal, { from: account1 });
+			await logFeesByPeriod(account1);
 
+			// Close week 2, ffwd & mint
 			await closeFeePeriodAndFastForward();
 			await fastForwardAndUpdateRates(MINUTE);
 			await synthetix.mint({ from: owner });
+			await logFeePeriods();
+			await logFeesByPeriod(account1);
 
 			// Account 1 comes back into the system
 			await synthetix.issueMaxSynths(sUSD, { from: account1 });
 
-			await closeFeePeriodAndFastForward();
-			await fastForwardAndUpdateRates(MINUTE);
-			await synthetix.mint({ from: owner });
+			// Close week 3, ffwd & mint
+			// await closeFeePeriodAndFastForward();
+			// await fastForwardAndUpdateRates(MINUTE);
+			// await synthetix.mint({ from: owner });
+			// await logFeesByPeriod(account1);
+			// await logFeePeriods();
 
 			// Only Account 1 claims rewards
 			const rewardsAmount = third(periodOneMintableSupplyMinusMinterReward);
 			const feesByPeriod = await feePoolWeb3.methods.feesByPeriod(account1).call();
 
-			// await logFeesByPeriod(account1);
+			await logFeesByPeriod(account1);
 			// [1] ---------------------feesByPeriod----------------------
 			// [1] Account 0xa4E5a88e601847Be0021582fC8fa4E760B342f4e
 			// [1] Fee Period[0] Fees: 0 Rewards: 480702564102564102564102
-			// [1] Fee Period[1] Fees: 0 Rewards: 480702564102564102564102
-			// [1] Fee Period[2] Fees: 0 Rewards: 0
-			// [1] Fee Period[3] Fees: 0 Rewards: 480702564102564102564102
-			// [1] Fee Period[4] Fees: 0 Rewards: 480702564102564102564102
-			// [1] Fee Period[5] Fees: 0 Rewards: 480702564102564102564102
+			// [1] Fee Period[1] Fees: 0 Rewards: 0
+			// [1] Fee Period[2] Fees: 0 Rewards: 480702564102564102564102
 			// [1] --------------------------------------------------------
 
 			assert.bnEqual(feesByPeriod[0][1], rewardsAmount);
-			assert.bnEqual(feesByPeriod[1][1], rewardsAmount);
-			assert.bnEqual(feesByPeriod[2][1], 0);
-			assert.bnEqual(feesByPeriod[3][1], rewardsAmount);
-			assert.bnEqual(feesByPeriod[4][1], rewardsAmount);
-			assert.bnEqual(feesByPeriod[5][1], rewardsAmount);
+			assert.bnEqual(feesByPeriod[1][1], 0);
+			assert.bnEqual(feesByPeriod[2][1], rewardsAmount);
 
 			// Only 1 account claims rewards
 			feePool.claimFees(sUSD, { from: account1 });
 
-			// await logFeesByPeriod(account1);
+			await logFeesByPeriod(account1);
 			// ] ---------------------feesByPeriod----------------------
 			// [1] Account 0xa4E5a88e601847Be0021582fC8fa4E760B342f4e
 			// [1] Fee Period[0] Fees: 0 Rewards: 480702564102564102564102
 			// [1] Fee Period[1] Fees: 0 Rewards: 0
 			// [1] Fee Period[2] Fees: 0 Rewards: 0
-			// [1] Fee Period[3] Fees: 0 Rewards: 0
-			// [1] Fee Period[4] Fees: 0 Rewards: 0
-			// [1] Fee Period[5] Fees: 0 Rewards: 0
 			// [1] --------------------------------------------------------
 
 			// Assert account 1 has all their rewards minus the week they left the system
