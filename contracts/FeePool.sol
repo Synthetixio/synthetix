@@ -110,9 +110,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     uint public constant MIN_FEE_PERIOD_DURATION = 1 days;
     uint public constant MAX_FEE_PERIOD_DURATION = 60 days;
 
-    // Users receive penalties if their collateralisation ratio drifts out of our desired brackets
-    // We precompute the brackets and penalties to save gas.
-    uint public PENALTY_THRESHOLD = (10 * SafeDecimalMath.unit()) / 100;
+    // Users are unable to claim fees if their collateralisation ratio drifts out of target treshold
+    uint public TARGET_THRESHOLD = (10 * SafeDecimalMath.unit()) / 100;
 
     /* ========== ETERNAL STORAGE CONSTANTS ========== */
 
@@ -265,12 +264,12 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         emitSynthetixUpdated(_synthetix);
     }
 
-    function setPenaltyThreshold(uint _percent)
+    function setTargetThreshold(uint _percent)
         external
         optionalProxy_onlyOwner
     {
         require(_percent >= 0, "Threshold should be positive");
-        PENALTY_THRESHOLD = (_percent * SafeDecimalMath.unit()) / 100;
+        TARGET_THRESHOLD = (_percent * SafeDecimalMath.unit()) / 100;
     }
 
     /**
@@ -766,7 +765,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         }
 
         // Calculate the threshold for collateral ratio before penalty applies
-        uint ratio_threshold = targetRatio.multiplyDecimal(SafeDecimalMath.unit().add(PENALTY_THRESHOLD));
+        uint ratio_threshold = targetRatio.multiplyDecimal(SafeDecimalMath.unit().add(TARGET_THRESHOLD));
 
         // Collateral ratio above threshold attracts max penalty
         if (ratio > ratio_threshold) {
@@ -929,7 +928,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     {
         uint targetRatio = synthetix.synthetixState().issuanceRatio();
 
-        return targetRatio.multiplyDecimal(SafeDecimalMath.unit().add(PENALTY_THRESHOLD));
+        return targetRatio.multiplyDecimal(SafeDecimalMath.unit().add(TARGET_THRESHOLD));
     }
 
     /* ========== Modifiers ========== */
