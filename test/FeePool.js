@@ -1436,4 +1436,51 @@ contract('FeePool', async accounts => {
 			await assert.revert(feePool.claimOnBehalf(account1, sUSD, { from: account2 }));
 		});
 	});
+
+	describe('reducing FEE_PERIOD_LENGTHS', async () => {
+		it('should be able to get fees available when feePoolState issuanceData is 6 blocks', async () => {
+			const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
+
+			await synthetix.methods['transfer(address,uint256)'](account1, toUnit('1000000'), {
+				from: owner,
+			});
+
+			// For each fee period (with one extra to test rollover), do two transfers, then close it off.
+			let totalFees = web3.utils.toBN('0');
+
+			// Iterate over the period lengths * 2 to fill up issuanceData in feePoolState
+			// feePoolState can hold up to 6 periods of minting issuanceData
+			// fee Periods can be less than the 6 periods
+			for (let i = 0; i <= length * 2; i++) {
+				const transfer1 = toUnit(((i + 1) * 10).toString());
+
+				// Mint debt each period to fill up feelPoolState issuanceData to [6]
+				await synthetix.issueSynths(sUSD, toUnit('1000'), { from: owner });
+				await synthetix.issueSynths(sUSD, toUnit('1000'), { from: account1 });
+
+				await sUSDContract.methods['transfer(address,uint256)'](account1, transfer1, {
+					from: owner,
+				});
+
+				totalFees = totalFees.add(
+					transfer1.sub(await feePool.amountReceivedFromTransfer(transfer1))
+				);
+
+				await closeFeePeriod();
+			}
+
+			// Assert that we have correct values in the fee pool
+			// Account1 should have all the fees as only account minted
+			const feesAvailable = await feePool.feesAvailable(account1, sUSD);
+			assert.bnClose(feesAvailable[0], totalFees.div(web3.utils.toBN('2')), '8');
+
+			const oldSynthBalance = await sUSDContract.balanceOf(account1);
+
+			// Now we should be able to claim them.
+			await feePool.claimFees(sUSD, { from: account1 });
+
+			// We should have our fees
+			assert.bnEqual(await sUSDContract.balanceOf(account1), oldSynthBalance.add(feesAvailable[0]));
+		});
+	});
 });
