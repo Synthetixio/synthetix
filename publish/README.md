@@ -133,7 +133,7 @@ node publish replace-synths # "--help" for options
 
 # When adding new synths
 
-1. In the environment folder you are deploying to, add the synth key to the `synths.json` file
+1. In the environment folder you are deploying to, add the synth key to the `synths.json` file. If you want the synth to be purgeable, add `subclass: "PurgeableSynth"` to the object.
 2. [Optional] Run `build` if you've changed any source files, if not you can skip this step.
 3. Run `deploy` as usual but add the `--add-new-synths` flag
 4. Run `verify` as usual.
