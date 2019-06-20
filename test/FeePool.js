@@ -251,9 +251,7 @@ contract('FeePool', async accounts => {
 	});
 
 	it('should allow the owner to set a fee authority', async () => {
-		const transaction = await feePool.setFeeAuthority(ZERO_ADDRESS, { from: owner });
-
-		assert.eventEqual(transaction, 'FeeAuthorityUpdated', { newFeeAuthority: ZERO_ADDRESS });
+		await feePool.setFeeAuthority(ZERO_ADDRESS, { from: owner });
 		assert.bnEqual(await feePool.feeAuthority(), ZERO_ADDRESS);
 	});
 
@@ -326,9 +324,7 @@ contract('FeePool', async accounts => {
 	});
 
 	it('should allow the owner to set the synthetix instance', async () => {
-		const transaction = await feePool.setSynthetix(account1, { from: owner });
-
-		assert.eventEqual(transaction, 'SynthetixUpdated', { newSynthetix: account1 });
+		await feePool.setSynthetix(account1, { from: owner });
 		assert.bnEqual(await feePool.synthetix(), account1);
 	});
 
@@ -616,8 +612,6 @@ contract('FeePool', async accounts => {
 		await synthetix.issueSynths(sUSD, toUnit('10000'), { from: account1 });
 
 		// For each fee period (with one extra to test rollover), do two transfers, then close it off.
-		let totalFees = web3.utils.toBN('0');
-
 		for (let i = 0; i <= length; i++) {
 			const transfer1 = toUnit(((i + 1) * 10).toString());
 			const transfer2 = toUnit(((i + 1) * 15).toString());
@@ -625,23 +619,23 @@ contract('FeePool', async accounts => {
 			await sUSDContract.methods['transfer(address,uint256)'](account1, transfer1, { from: owner });
 			await sUSDContract.methods['transfer(address,uint256)'](account1, transfer2, { from: owner });
 
-			totalFees = totalFees.add(transfer1.sub(await feePool.amountReceivedFromTransfer(transfer1)));
-			totalFees = totalFees.add(transfer2.sub(await feePool.amountReceivedFromTransfer(transfer2)));
-
 			await closeFeePeriod();
 		}
 
 		// Assert that we have correct values in the fee pool
-		const feesAvailable = await feePool.feesAvailable(owner, sUSD);
-		assert.bnClose(feesAvailable[0], totalFees.div(web3.utils.toBN('2')), '8');
-
-		const oldSynthBalance = await sUSDContract.balanceOf(owner);
+		const feesAvailable = await feePool.feesAvailable(owner, XDR);
+		const oldXDRBalance = await XDRContract.balanceOf(owner);
 
 		// Now we should be able to claim them.
-		await feePool.claimFees(sUSD, { from: owner });
+		const claimFeesTx = await feePool.claimFees(XDR, { from: owner });
+		assert.eventEqual(claimFeesTx, 'FeesClaimed', {
+			xdrAmount: feesAvailable[0],
+			snxRewards: feesAvailable[1],
+		});
 
+		const newXDRBalance = await XDRContract.balanceOf(owner);
 		// We should have our fees
-		assert.bnEqual(await sUSDContract.balanceOf(owner), oldSynthBalance.add(feesAvailable[0]));
+		assert.bnEqual(newXDRBalance, oldXDRBalance.add(feesAvailable[0]));
 	});
 
 	it('should allow a user to claim their fees if they minted debt during period', async () => {
