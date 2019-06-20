@@ -64,11 +64,6 @@ module.exports = program =>
 			const tableData = [];
 
 			for (const name of Object.keys(config)) {
-
-				if (name !== 'FeePool') {
-					continue;
-				}
-				
 				const { address } = deployment.targets[name];
 				// Check if this contract already has been verified.
 
