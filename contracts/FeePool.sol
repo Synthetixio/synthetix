@@ -753,21 +753,21 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         view
         returns (bool)
     {
-        // Penalty is calculated from ratio % above the target ratio (issuanceRatio).
-        //  0  <  10%:   0% reduction in fees
-        // 10% > above:  100% reduction in fees
+        // Threshold is calculated from ratio % above the target ratio (issuanceRatio).
+        //  0  <  10%:   Claimable
+        // 10% > above:  Unable to claim
         uint ratio = synthetix.collateralisationRatio(account);
         uint targetRatio = synthetix.synthetixState().issuanceRatio();
 
-        // no penalty if collateral ratio below target ratio
+        // Claimable if collateral ratio below target ratio
         if (ratio < targetRatio) {
             return true;
         }
 
-        // Calculate the threshold for collateral ratio before penalty applies
+        // Calculate the threshold for collateral ratio before fees can't be claimed.
         uint ratio_threshold = targetRatio.multiplyDecimal(SafeDecimalMath.unit().add(TARGET_THRESHOLD));
 
-        // Collateral ratio above threshold attracts max penalty
+        // Not claimable if collateral ratio above threshold
         if (ratio > ratio_threshold) {
             return false;
         }
@@ -919,7 +919,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     }
 
     /**
-    * @notice Calculate the collateral ratio before penalty is applied.
+    * @notice Calculate the collateral ratio before user is blocked from claiming.
     */
     function getPenaltyThresholdRatio()
         public
