@@ -105,11 +105,33 @@
 		"desc": "Binance Coin"
 	},
 	{
+		"name": "sMKR",
+		"asset": "MKR",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Maker"
+	},
+	{
+		"name": "sTRX",
+		"asset": "TRX",
+		"category": "crypto",
+		"sign": "",
+		"desc": "TRON"
+	},
+	{
+		"name": "sXTZ",
+		"asset": "XTZ",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Tezos"
+	},
+	{
 		"name": "iBTC",
 		"asset": "BTC",
 		"category": "crypto",
 		"sign": "₿",
 		"desc": "Inverted Bitcoin",
+		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 8400,
 			"upperLimit": 12600,
@@ -122,6 +144,7 @@
 		"category": "crypto",
 		"sign": "Ξ",
 		"desc": "Inverted Ether",
+		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 260,
 			"upperLimit": 390,
@@ -134,10 +157,50 @@
 		"category": "crypto",
 		"sign": "",
 		"desc": "Inverted Binance Coin",
+		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 25,
 			"upperLimit": 38,
 			"lowerLimit": 13
+		}
+	},
+	{
+		"name": "iMKR",
+		"asset": "BNB",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Inverted MAKER",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 0,
+			"upperLimit": 0,
+			"lowerLimit": 0
+		}
+	},
+	{
+		"name": "iTRX",
+		"asset": "TRX",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Inverted Tron",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 0,
+			"upperLimit": 0,
+			"lowerLimit": 0
+		}
+	},
+	{
+		"name": "iXTZ",
+		"asset": "XTZ",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Inverted Tezos",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 0,
+			"upperLimit": 0,
+			"lowerLimit": 0
 		}
 	}
 ]
