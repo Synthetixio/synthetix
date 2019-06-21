@@ -172,9 +172,9 @@
 		"desc": "Inverted MAKER",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 0,
-			"upperLimit": 0,
-			"lowerLimit": 0
+			"entryPoint": 720,
+			"upperLimit": 1080,
+			"lowerLimit": 360
 		}
 	},
 	{
@@ -185,9 +185,9 @@
 		"desc": "Inverted Tron",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 0,
-			"upperLimit": 0,
-			"lowerLimit": 0
+			"entryPoint": 0.033,
+			"upperLimit": 0.0495,
+			"lowerLimit": 0.0165
 		}
 	},
 	{
@@ -198,9 +198,9 @@
 		"desc": "Inverted Tezos",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 0,
-			"upperLimit": 0,
-			"lowerLimit": 0
+			"entryPoint": 1.15,
+			"upperLimit": 1.725,
+			"lowerLimit": 0.575
 		}
 	}
 ]
