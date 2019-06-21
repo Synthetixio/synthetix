@@ -1,10 +1,10 @@
 sudo: enabled
 language: node_js
 node_js:
-  - 8.15.0
+  - 8.16.0
 before_install:
-  - npm i
+  - npm ci
 script:
-  - npm run clean-install
   - npm run lint
-  - npm test
+  - npm run test:gas # run test and show gas used
+  - npm run test:int

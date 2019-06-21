@@ -17,5 +17,6 @@ module.exports = {
 		'prefer-arrow-callback': 'error',
 		'prefer-const': 'error',
 		'no-process-exit': 'off',
+		'standard/computed-property-even-spacing': 'off',
 	},
 };

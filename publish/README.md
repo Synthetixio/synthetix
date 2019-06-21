@@ -8,13 +8,8 @@ Will compile bytecode and ABIs for all `.sol` files found in `node_modules` and 
 
 ```bash
 # build (flatten and compile all .SOL sources)
-node publish build
+node publish build # "--help" for options
 ```
-
-### CLI Options
-
-- `-b, --build-path [value]` Path for built files to go. (default of `./build`). The folders `compiled` and `flattened` will be made under this path and the respective files will go in there.
-- `-w, --show-warnings` Include this option to see any warnings from compilation logged to screen.
 
 ## 2. Deploy
 
@@ -26,7 +21,7 @@ Will attempt to deploy (or reuse) all of the contracts listed in the given `cont
 
 ```bash
 # deploy (take compiled SOL files and deploy)
-node publish deploy
+node publish deploy # "--help" for options
 ```
 
 ### CLI Options
@@ -72,14 +67,8 @@ Will attempt to verify the contracts on Etherscan (by uploading the flattened so
 
 ```bash
 # verify (verify compiled sources by uploading flattened source to Etherscan via their API)
-node publish verify
+node publish verify # "--help" for options
 ```
-
-### CLI Options
-
-- `-b, --build-path [value]` Path for built files to come from. (default of `./build`). The folders `compiled` and `flattened` will be made under this path and the respective files will go in there.
-- `-d, --deployment-path <value>` Same as `deploy` step above.
-- `-n, --network <value>` The network to run off. One of mainnet, kovan, rinkeby, rospen. (default: "kovan")
 
 ### Examples
 
@@ -95,18 +84,10 @@ node publish verify -n kovan -d publish/deployed/kovan
 For all given contracts, will invoke `nominateNewOwner` for the given new owner;
 
 ```bash
-node publish nominate
+node publish nominate # "--help" for options
 ```
 
-### CLI Options
-
-- `-c, --contracts [value]` One or more contracts to invoke. Leave empty to nominate all contracts in the `config.json` file. Call multiple by invoking `-c First -c Second -c Third` for example.
-- `-d, --deployment-path <value>` Path to a folder that has your input configuration file (`config.json`), the synths list (`synths.json`) and where your `deployment.json` file will be written (and read from if it currently exists
-
-- `-g, --gas-price <value>` Gas price in GWEI (default: "1")
-- `-m, --method-call-gas-limit <value>` Method call gas limit (default: 150000)
-- `-n, --network <value>` The network to run off. One of mainnet, kovan, rinkeby, rospen. (default: -kovan")
-- `-o, --new-owner <value>` The address (with `0x` prefix included) of the new owner to nominate.
+### Example
 
 ```bash
 node publish nominate -n rinkeby -d publish/deployed/rinkeby -g 3 -c Synthetix -c ProxysUSD -o 0x0000000000000000000000000000000000000000
@@ -117,18 +98,7 @@ node publish nominate -n rinkeby -d publish/deployed/rinkeby -g 3 -c Synthetix -
 Helps the owner take ownership of nominated contracts and run any deployment tasks deferred to them.
 
 ```bash
-node publish owner
-```
-
-### CLI Options
-
-- `-d, --deployment-path <value>` Path to a folder that has your input configuration file (`config.json`), the synths list (`synths.json`) and where your `deployment.json` file will be written (and read from if it currently exists
-
-- `-n, --network <value>` The network to run off. One of mainnet, kovan, rinkeby, rospen. (default: "kovan")
-- `-o, --new-owner <value>` The address (with `0x` prefix included) of the new owner to nominate.
-
-```bash
-node publish owner -n rinkeby -d publish/deployed/rinkeby -o 0x0000000000000000000000000000000000000001
+node publish owner # "--help" for options
 ```
 
 ## 6. Remove Synths
@@ -136,24 +106,34 @@ node publish owner -n rinkeby -d publish/deployed/rinkeby -o 0x00000000000000000
 Will attempt to remove all given synths from the `Synthetix` contract (as long as they have `totalSupply` of `0`) and update the `config.json` and `synths.json` for the deployment folder.
 
 ```bash
-node publish remove-synths
+node publish remove-synths # "--help" for options
 ```
 
-### CLI Options
-
-- `-d, --deployment-path <value>` Path to a folder that has your input configuration file (`config.json`), the synths list (`synths.json`) and where your `deployment.json` file will be written (and read from if it currently exists
-- `-g, --gas-price <value>` Gas price in GWEI (default: "1")
-- `-l, --gas-limit <value>` Method call gas limit (default: 150000)
-- `-n, --network <value>` The network to run off. One of mainnet, kovan, rinkeby, rospen. (default: "kovan")
-- `-s, --synths-to-remove [value]...` One or more synth keys to remove. Call multiple by invoking `-s First -s Second -s Third` for example.
+### Example
 
 ```bash
 node publish remove-synths -n rinkeby -d publish/deployed/rinkeby -g 3 -s sRUB -s sETH
 ```
 
+## 7. Replace Synths
+
+Will attempt to replace all given synths with a new given `subclass`. It does this by disconnecting the existing TokenState for the Synth and attaching it to the new one.
+
+```bash
+node publish replace-synths # "--help" for options
+```
+
+## 7. Purge Synths
+
+Will attempt purge the given synth with all token holders it can find. Uses the list of holders from mainnet, and as such won't do anything for other networks.
+
+```bash
+node publish replace-synths # "--help" for options
+```
+
 # When adding new synths
 
-1. In the environment folder you are deploying to, add the synth key to the `synths.json` file
+1. In the environment folder you are deploying to, add the synth key to the `synths.json` file. If you want the synth to be purgeable, add `subclass: "PurgeableSynth"` to the object.
 2. [Optional] Run `build` if you've changed any source files, if not you can skip this step.
 3. Run `deploy` as usual but add the `--add-new-synths` flag
 4. Run `verify` as usual.
