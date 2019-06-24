@@ -54,30 +54,12 @@
 			"txn": "",
 			"network": "kovan"
 		},
-		"ProxysBRL": {
-			"name": "ProxysBRL",
-			"address": "0x9972F7bF1e260E978B957fe54881E4E8a6798350",
-			"source": "Proxy",
-			"link": "https://kovan.etherscan.io/address/0x9972F7bF1e260E978B957fe54881E4E8a6798350",
-			"timestamp": "2019-05-01T13:06:00.777Z",
-			"txn": "",
-			"network": "kovan"
-		},
 		"ProxysBTC": {
 			"name": "ProxysBTC",
 			"address": "0x9Db7ea2837cCb1340B92551feEFFbB1D9ae41BBC",
 			"source": "Proxy",
 			"link": "https://kovan.etherscan.io/address/0x9Db7ea2837cCb1340B92551feEFFbB1D9ae41BBC",
 			"timestamp": "2019-05-01T13:12:01.028Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"ProxysCAD": {
-			"name": "ProxysCAD",
-			"address": "0xB200f7b1391e336Fd334D1ae90Ab7bE32b7DeABb",
-			"source": "Proxy",
-			"link": "https://kovan.etherscan.io/address/0xB200f7b1391e336Fd334D1ae90Ab7bE32b7DeABb",
-			"timestamp": "2019-05-01T13:02:25.136Z",
 			"txn": "",
 			"network": "kovan"
 		},
@@ -141,42 +123,6 @@
 			"source": "Proxy",
 			"link": "https://kovan.etherscan.io/address/0xd7adF1b5E31D1C40E08F16a2095338ce3aA8f2Fc",
 			"timestamp": "2019-05-01T12:56:25.260Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"ProxysNZD": {
-			"name": "ProxysNZD",
-			"address": "0x4726a8d18Ba47568064ac8b7F2d58e5861Ac67DD",
-			"source": "Proxy",
-			"link": "https://kovan.etherscan.io/address/0x4726a8d18Ba47568064ac8b7F2d58e5861Ac67DD",
-			"timestamp": "2019-05-01T13:07:12.633Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"ProxysPLN": {
-			"name": "ProxysPLN",
-			"address": "0x634F6a7CAd7116c9880cf4c02E6f29Eca20c32CA",
-			"source": "Proxy",
-			"link": "https://kovan.etherscan.io/address/0x634F6a7CAd7116c9880cf4c02E6f29Eca20c32CA",
-			"timestamp": "2019-05-01T13:08:24.658Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"ProxysRUB": {
-			"name": "ProxysRUB",
-			"address": "0xA46b98474F9D0458E3adE89e3482c04D280AF06e",
-			"source": "Proxy",
-			"link": "https://kovan.etherscan.io/address/0xA46b98474F9D0458E3adE89e3482c04D280AF06e",
-			"timestamp": "2019-05-01T13:03:36.958Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"ProxysSGD": {
-			"name": "ProxysSGD",
-			"address": "0x148892d08C25C0AbF824C458Be9fc8C0D506Eb6b",
-			"source": "Proxy",
-			"link": "https://kovan.etherscan.io/address/0x148892d08C25C0AbF824C458Be9fc8C0D506Eb6b",
-			"timestamp": "2019-05-01T13:01:13.545Z",
 			"txn": "",
 			"network": "kovan"
 		},
@@ -270,15 +216,6 @@
 			"txn": "https://kovan.etherscan.io/tx/0xf4d5b38f4fd65f038ffe1b74a81197bcebef26610625f504372bb796fca921b1",
 			"network": "kovan"
 		},
-		"SynthsBRL": {
-			"name": "SynthsBRL",
-			"address": "0xd528D731dc0C3763A9064c9A5d56c6569bb65923",
-			"source": "Synth",
-			"link": "https://kovan.etherscan.io/address/0xd528D731dc0C3763A9064c9A5d56c6569bb65923",
-			"timestamp": "2019-05-01T13:06:17.687Z",
-			"txn": "",
-			"network": "kovan"
-		},
 		"SynthsBTC": {
 			"name": "SynthsBTC",
 			"address": "0x48D7f315feDcaD332F68aafa017c7C158BC54760",
@@ -286,15 +223,6 @@
 			"link": "https://kovan.etherscan.io/address/0x48D7f315feDcaD332F68aafa017c7C158BC54760",
 			"timestamp": "2019-05-01T13:12:16.000Z",
 			"txn": "https://kovan.etherscan.io/tx/0x8b4893e79a99123492cdabd8d1b5f2d03202fb32bf99258795312313fd2f28a0",
-			"network": "kovan"
-		},
-		"SynthsCAD": {
-			"name": "SynthsCAD",
-			"address": "0x0Df1B6d92feBCA3B2793AfA3649868991CC4901D",
-			"source": "Synth",
-			"link": "https://kovan.etherscan.io/address/0x0Df1B6d92feBCA3B2793AfA3649868991CC4901D",
-			"timestamp": "2019-05-01T13:02:41.037Z",
-			"txn": "",
 			"network": "kovan"
 		},
 		"SynthsCHF": {
@@ -360,42 +288,6 @@
 			"txn": "https://kovan.etherscan.io/tx/0xa1dcc5ad813bedf146347138a3335651ad225d6aff443d356ac4bf07ff3fa682",
 			"network": "kovan"
 		},
-		"SynthsNZD": {
-			"name": "SynthsNZD",
-			"address": "0x941ffA5A1D4DB8DD37adF6119bDDF0E7720963A7",
-			"source": "Synth",
-			"link": "https://kovan.etherscan.io/address/0x941ffA5A1D4DB8DD37adF6119bDDF0E7720963A7",
-			"timestamp": "2019-05-01T13:07:29.621Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"SynthsPLN": {
-			"name": "SynthsPLN",
-			"address": "0xBa0e5dc2D9e266802aBe62B29F88A218Ab854aaA",
-			"source": "Synth",
-			"link": "https://kovan.etherscan.io/address/0xBa0e5dc2D9e266802aBe62B29F88A218Ab854aaA",
-			"timestamp": "2019-05-01T13:08:41.289Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"SynthsRUB": {
-			"name": "SynthsRUB",
-			"address": "0x5fF1b87fBfDE943568C533f2a5f78F8d9C00539b",
-			"source": "Synth",
-			"link": "https://kovan.etherscan.io/address/0x5fF1b87fBfDE943568C533f2a5f78F8d9C00539b",
-			"timestamp": "2019-05-01T13:03:53.417Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"SynthsSGD": {
-			"name": "SynthsSGD",
-			"address": "0xC1701AbD559FC263829CA3917d03045F95b5224A",
-			"source": "Synth",
-			"link": "https://kovan.etherscan.io/address/0xC1701AbD559FC263829CA3917d03045F95b5224A",
-			"timestamp": "2019-05-01T13:01:29.571Z",
-			"txn": "",
-			"network": "kovan"
-		},
 		"SynthsUSD": {
 			"name": "SynthsUSD",
 			"address": "0xB0eeaf49E986D624439a01423066528127F97B36",
@@ -441,30 +333,12 @@
 			"txn": "",
 			"network": "kovan"
 		},
-		"TokenStatesBRL": {
-			"name": "TokenStatesBRL",
-			"address": "0xE403013d6ac402ef5A70A4dE524d5894d0188e25",
-			"source": "TokenState",
-			"link": "https://kovan.etherscan.io/address/0xE403013d6ac402ef5A70A4dE524d5894d0188e25",
-			"timestamp": "2019-05-01T13:05:57.279Z",
-			"txn": "",
-			"network": "kovan"
-		},
 		"TokenStatesBTC": {
 			"name": "TokenStatesBTC",
 			"address": "0x029E1687c7BB8ead5Ab02DB390eB82b87b2D54a2",
 			"source": "TokenState",
 			"link": "https://kovan.etherscan.io/address/0x029E1687c7BB8ead5Ab02DB390eB82b87b2D54a2",
 			"timestamp": "2019-05-01T13:11:57.658Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"TokenStatesCAD": {
-			"name": "TokenStatesCAD",
-			"address": "0xC29fb527c26C527942C0891DF589dC0dB141177A",
-			"source": "TokenState",
-			"link": "https://kovan.etherscan.io/address/0xC29fb527c26C527942C0891DF589dC0dB141177A",
-			"timestamp": "2019-05-01T13:02:21.399Z",
 			"txn": "",
 			"network": "kovan"
 		},
@@ -528,42 +402,6 @@
 			"source": "TokenState",
 			"link": "https://kovan.etherscan.io/address/0x4BdDFda0E086983CD1fB400a62063aDDEBF2111B",
 			"timestamp": "2019-05-01T12:56:21.454Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"TokenStatesNZD": {
-			"name": "TokenStatesNZD",
-			"address": "0x9524b9a0Bf1C14B54Ecb283a8CbC835bc4B9954e",
-			"source": "TokenState",
-			"link": "https://kovan.etherscan.io/address/0x9524b9a0Bf1C14B54Ecb283a8CbC835bc4B9954e",
-			"timestamp": "2019-05-01T13:07:09.086Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"TokenStatesPLN": {
-			"name": "TokenStatesPLN",
-			"address": "0x0d18E41bB76e5b6C72489CFA058E971AEE405906",
-			"source": "TokenState",
-			"link": "https://kovan.etherscan.io/address/0x0d18E41bB76e5b6C72489CFA058E971AEE405906",
-			"timestamp": "2019-05-01T13:08:21.876Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"TokenStatesRUB": {
-			"name": "TokenStatesRUB",
-			"address": "0x356C6e925157b86d20d7a05f61074C903569A7B7",
-			"source": "TokenState",
-			"link": "https://kovan.etherscan.io/address/0x356C6e925157b86d20d7a05f61074C903569A7B7",
-			"timestamp": "2019-05-01T13:03:33.203Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"TokenStatesSGD": {
-			"name": "TokenStatesSGD",
-			"address": "0xDa5eD43B9B6E36b4f27cc6D8c1974532cdBd55F9",
-			"source": "TokenState",
-			"link": "https://kovan.etherscan.io/address/0xDa5eD43B9B6E36b4f27cc6D8c1974532cdBd55F9",
-			"timestamp": "2019-05-01T13:01:09.526Z",
 			"txn": "",
 			"network": "kovan"
 		},

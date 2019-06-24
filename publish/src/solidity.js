@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const solidifier = require('solidifier');
 const solc = require('solc');
+const { COMPILED_FOLDER } = require('./constants');
 
 module.exports = {
 	// List all files in a directory in Node.js recursively in a synchronous fashion
@@ -70,5 +71,31 @@ module.exports = {
 		}
 
 		return { artifacts, errors, warnings };
+	},
+
+	loadCompiledFiles({ buildPath }) {
+		let earliestCompiledTimestamp = Infinity;
+
+		const compiledSourcePath = path.join(buildPath, COMPILED_FOLDER);
+		const compiled = fs
+			.readdirSync(compiledSourcePath)
+			.filter(name => /^.+\.json$/.test(name))
+			.reduce((memo, contractFilename) => {
+				const contract = contractFilename.replace(/\.json$/, '');
+				const sourceFile = path.join(compiledSourcePath, contractFilename);
+				earliestCompiledTimestamp = Math.min(
+					earliestCompiledTimestamp,
+					fs.statSync(sourceFile).mtimeMs
+				);
+				if (!fs.existsSync(sourceFile)) {
+					throw Error(
+						`Cannot find compiled contract code for: ${contract}. Did you run the "build" step first?`
+					);
+				}
+				memo[contract] = JSON.parse(fs.readFileSync(sourceFile));
+				return memo;
+			}, {});
+
+		return { compiled, earliestCompiledTimestamp };
 	},
 };
