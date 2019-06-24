@@ -182,6 +182,33 @@
 	"SynthsBNB": {
 		"deploy": false
 	},
+	"TokenStatesMKR": {
+		"deploy": true
+	},
+	"ProxysMKR": {
+		"deploy": true
+	},
+	"SynthsMKR": {
+		"deploy": true
+	},
+	"TokenStatesTRX": {
+		"deploy": true
+	},
+	"ProxysTRX": {
+		"deploy": true
+	},
+	"SynthsTRX": {
+		"deploy": true
+	},
+	"TokenStatesXTZ": {
+		"deploy": true
+	},
+	"ProxysXTZ": {
+		"deploy": true
+	},
+	"SynthsXTZ": {
+		"deploy": true
+	},
 	"TokenStateiBTC": {
 		"deploy": false
 	},
@@ -208,5 +235,32 @@
 	},
 	"SynthiBNB": {
 		"deploy": false
+	},
+	"TokenStateiMKR": {
+		"deploy": true
+	},
+	"ProxyiMKR": {
+		"deploy": true
+	},
+	"SynthiMKR": {
+		"deploy": true
+	},
+	"TokenStateiTRX": {
+		"deploy": true
+	},
+	"ProxyiTRX": {
+		"deploy": true
+	},
+	"SynthiTRX": {
+		"deploy": true
+	},
+	"TokenStateiXTZ": {
+		"deploy": true
+	},
+	"ProxyiXTZ": {
+		"deploy": true
+	},
+	"SynthiXTZ": {
+		"deploy": true
 	}
 }
