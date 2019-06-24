@@ -95,9 +95,9 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
     // The last 6 fee periods are all that you can claim from.
     // These are stored and managed from [0], such that [0] is always
-    // the most recent fee period, and [5] is always the oldest fee
+    // the most recent fee period, and [3] is always the oldest fee
     // period that users can claim for.
-    uint8 constant public FEE_PERIOD_LENGTH = 6;
+    uint8 constant public FEE_PERIOD_LENGTH = 3;
 
     FeePeriod[FEE_PERIOD_LENGTH] public recentFeePeriods;
 
@@ -110,17 +110,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     uint public constant MIN_FEE_PERIOD_DURATION = 1 days;
     uint public constant MAX_FEE_PERIOD_DURATION = 60 days;
 
-    // Users receive penalties if their collateralisation ratio drifts out of our desired brackets
-    // We precompute the brackets and penalties to save gas.
-    uint constant TWENTY_PERCENT = (20 * SafeDecimalMath.unit()) / 100;
-    uint constant TWENTY_TWO_PERCENT = (22 * SafeDecimalMath.unit()) / 100;
-    uint constant TWENTY_FIVE_PERCENT = (25 * SafeDecimalMath.unit()) / 100;
-    uint constant THIRTY_PERCENT = (30 * SafeDecimalMath.unit()) / 100;
-    uint constant FOURTY_PERCENT = (40 * SafeDecimalMath.unit()) / 100;
-    uint constant FIFTY_PERCENT = (50 * SafeDecimalMath.unit()) / 100;
-    uint constant SEVENTY_FIVE_PERCENT = (75 * SafeDecimalMath.unit()) / 100;
-    uint constant NINETY_PERCENT = (90 * SafeDecimalMath.unit()) / 100;
-    uint constant ONE_HUNDRED_PERCENT = (100 * SafeDecimalMath.unit()) / 100;
+    // Users are unable to claim fees if their collateralisation ratio drifts out of target treshold
+    uint public TARGET_THRESHOLD = (10 * SafeDecimalMath.unit()) / 100;
 
     /* ========== ETERNAL STORAGE CONSTANTS ========== */
 
@@ -216,8 +207,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         optionalProxy_onlyOwner
     {
         feeAuthority = _feeAuthority;
-
-        emitFeeAuthorityUpdated(_feeAuthority);
     }
 
     /**
@@ -228,8 +217,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         optionalProxy_onlyOwner
     {
         feePoolState = _feePoolState;
-
-        emitFeePoolStateUpdated(_feePoolState);
     }
 
     /**
@@ -240,8 +227,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         optionalProxy_onlyOwner
     {
         delegates = _delegates;
-
-        emitDelegateApprovalsUpdated(_delegates);
     }
 
     /**
@@ -269,8 +254,14 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         require(address(_synthetix) != address(0), "New Synthetix must be non-zero");
 
         synthetix = _synthetix;
+    }
 
-        emitSynthetixUpdated(_synthetix);
+    function setTargetThreshold(uint _percent)
+        external
+        optionalProxy_onlyOwner
+    {
+        require(_percent >= 0, "Threshold should be positive");
+        TARGET_THRESHOLD = (_percent * SafeDecimalMath.unit()) / 100;
     }
 
     /**
@@ -381,33 +372,40 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         internal
         returns (bool)
     {
+        uint rewardsPaid;
+        uint feesPaid;
         uint availableFees;
         uint availableRewards;
+
+        // Address wont be able to claim fees if it is to far below the target c-ratio.
+        // It will need to burn synths then try claiming again.
+        require(feesClaimable(claimingAddress), "C-Ratio below penalty threshold");
+
+        // Get the claimingAddress available fees and rewards
         (availableFees, availableRewards) = feesAvailable(claimingAddress, "XDR");
 
         require(availableFees > 0 || availableRewards > 0, "No fees or rewards available for period, or fees already claimed");
 
+        // Record the address has claimed for this period
         _setLastFeeWithdrawal(claimingAddress, recentFeePeriods[1].feePeriodId);
 
         if (availableFees > 0) {
             // Record the fee payment in our recentFeePeriods
-            uint feesPaid = _recordFeePayment(availableFees);
+            feesPaid = _recordFeePayment(availableFees);
 
             // Send them their fees
             _payFees(claimingAddress, feesPaid, currencyKey);
-
-            emitFeesClaimed(claimingAddress, feesPaid);
         }
 
         if (availableRewards > 0) {
             // Record the reward payment in our recentFeePeriods
-            uint rewardPaid = _recordRewardPayment(availableRewards);
+            rewardsPaid = _recordRewardPayment(availableRewards);
 
             // Send them their rewards
-            _payRewards(claimingAddress, rewardPaid);
-
-            emitRewardsClaimed(claimingAddress, rewardPaid);
+            _payRewards(claimingAddress, rewardsPaid);
         }
+
+        emitFeesClaimed(claimingAddress, feesPaid, rewardsPaid);
 
         return true;
     }
@@ -744,43 +742,39 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     }
 
     /**
-     * @notice The penalty a particular address would incur if its fees were withdrawn right now
-     * @param account The address you want to query the penalty for
+     * @notice Check if a particular address is able to claim fees right now
+     * @param account The address you want to query for
      */
-    function currentPenalty(address account)
+    function feesClaimable(address account)
         public
         view
-        returns (uint)
+        returns (bool)
     {
+        // Threshold is calculated from ratio % above the target ratio (issuanceRatio).
+        //  0  <  10%:   Claimable
+        // 10% > above:  Unable to claim
         uint ratio = synthetix.collateralisationRatio(account);
+        uint targetRatio = synthetix.synthetixState().issuanceRatio();
 
-        // Users receive a different amount of fees depending on how their collateralisation ratio looks right now.
-        //  0% < 20% (∞ - 500%):    Fee is calculated based on percentage of economy issued.
-        // 20% - 22% (500% - 454%):  0% reduction in fees
-        // 22% - 30% (454% - 333%): 25% reduction in fees
-        // 30% - 40% (333% - 250%): 50% reduction in fees
-        // 40% - 50% (250% - 200%): 75% reduction in fees
-        //     > 50% (200% - 100%): 90% reduction in fees
-        //     > 100%(100% -   0%):100% reduction in fees
-        if (ratio <= TWENTY_PERCENT) {
-            return 0;
-        } else if (ratio > TWENTY_PERCENT && ratio <= TWENTY_TWO_PERCENT) {
-            return 0;
-        } else if (ratio > TWENTY_TWO_PERCENT && ratio <= THIRTY_PERCENT) {
-            return TWENTY_FIVE_PERCENT;
-        } else if (ratio > THIRTY_PERCENT && ratio <= FOURTY_PERCENT) {
-            return FIFTY_PERCENT;
-        } else if (ratio > FOURTY_PERCENT && ratio <= FIFTY_PERCENT) {
-            return SEVENTY_FIVE_PERCENT;
-        } else if (ratio > FIFTY_PERCENT && ratio <= ONE_HUNDRED_PERCENT) {
-            return NINETY_PERCENT;
+        // Claimable if collateral ratio below target ratio
+        if (ratio < targetRatio) {
+            return true;
         }
-        return ONE_HUNDRED_PERCENT;
+
+        // Calculate the threshold for collateral ratio before fees can't be claimed.
+        uint ratio_threshold = targetRatio.multiplyDecimal(SafeDecimalMath.unit().add(TARGET_THRESHOLD));
+
+        // Not claimable if collateral ratio above threshold
+        if (ratio > ratio_threshold) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
      * @notice Calculates fees by period for an account, priced in XDRs
-     * @param account The address you want to query the fees by penalty for
+     * @param account The address you want to query the fees for
      */
     function feesByPeriod(address account)
         public
@@ -798,13 +792,11 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         // If there are no XDR synths, then they don't have any fees
         if (synthetix.totalIssuedSynths("XDR") == 0) return;
 
-        uint penalty = currentPenalty(account);
-
         // The [0] fee period is not yet ready to claim, but it is a fee period that they can have
         // fees owing for, so we need to report on it anyway.
         uint feesFromPeriod;
         uint rewardsFromPeriod;
-        (feesFromPeriod, rewardsFromPeriod) = _feesAndRewardsFromPeriod(0, userOwnershipPercentage, debtEntryIndex, penalty);
+        (feesFromPeriod, rewardsFromPeriod) = _feesAndRewardsFromPeriod(0, userOwnershipPercentage, debtEntryIndex);
 
         results[0][0] = feesFromPeriod;
         results[0][1] = rewardsFromPeriod;
@@ -829,7 +821,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
                 // return if userOwnershipPercentage = 0)
                 (userOwnershipPercentage, debtEntryIndex) = feePoolState.applicableIssuanceData(account, closingDebtIndex);
 
-                (feesFromPeriod, rewardsFromPeriod) = _feesAndRewardsFromPeriod(i, userOwnershipPercentage, debtEntryIndex, penalty);
+                (feesFromPeriod, rewardsFromPeriod) = _feesAndRewardsFromPeriod(i, userOwnershipPercentage, debtEntryIndex);
 
                 results[i][0] = feesFromPeriod;
                 results[i][1] = rewardsFromPeriod;
@@ -843,7 +835,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
      * for fees in the period. Precision factor is removed before results are
      * returned.
      */
-    function _feesAndRewardsFromPeriod(uint period, uint ownershipPercentage, uint debtEntryIndex, uint penalty)
+    function _feesAndRewardsFromPeriod(uint period, uint ownershipPercentage, uint debtEntryIndex)
         internal
         returns (uint, uint)
     {
@@ -860,16 +852,11 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
         // Calculate their percentage of the fees / rewards in this period
         // This is a high precision integer.
-        uint feesFromPeriodWithoutPenalty = recentFeePeriods[period].feesToDistribute
+        uint feesFromPeriod = recentFeePeriods[period].feesToDistribute
             .multiplyDecimal(debtOwnershipForPeriod);
 
-        uint rewardsFromPeriodWithoutPenalty = recentFeePeriods[period].rewardsToDistribute
+        uint rewardsFromPeriod = recentFeePeriods[period].rewardsToDistribute
             .multiplyDecimal(debtOwnershipForPeriod);
-
-        // Less their penalty if they have one.
-        uint feesFromPeriod = feesFromPeriodWithoutPenalty.sub(feesFromPeriodWithoutPenalty.multiplyDecimal(penalty));
-
-        uint rewardsFromPeriod = rewardsFromPeriodWithoutPenalty.sub(rewardsFromPeriodWithoutPenalty.multiplyDecimal(penalty));
 
         return (
             feesFromPeriod.preciseDecimalToDecimal(),
@@ -929,6 +916,21 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     }
 
     /**
+    * @notice Calculate the collateral ratio before user is blocked from claiming.
+    */
+    function getPenaltyThresholdRatio()
+        public
+        view
+        returns (uint)
+    {
+        uint targetRatio = synthetix.synthetixState().issuanceRatio();
+
+        return targetRatio.multiplyDecimal(SafeDecimalMath.unit().add(TARGET_THRESHOLD));
+    }
+
+    /* ========== Modifiers ========== */
+
+    /**
      * @notice Set the feePeriodID of the last claim this account made
      * @param _claimingAddress account to set the last feePeriodID claim for
      * @param _feePeriodID the feePeriodID this account claimed fees for
@@ -938,8 +940,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     {
         feePoolEternalStorage.setUIntValue(keccak256(abi.encodePacked(LAST_FEE_WITHDRAWAL, _claimingAddress)), _feePeriodID);
     }
-
-    /* ========== Modifiers ========== */
 
     modifier optionalProxy_onlyFeeAuthority
     {
@@ -961,7 +961,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         _;
     }
 
-    /* ========== Events ========== */
+    /* ========== Proxy Events ========== */
 
     event IssuanceDebtRatioEntry(address indexed account, uint debtRatio, uint debtEntryIndex, uint feePeriodStartingDebtIndex);
     bytes32 constant ISSUANCEDEBTRATIOENTRY_SIG = keccak256("IssuanceDebtRatioEntry(address,uint256,uint256,uint256)");
@@ -987,45 +987,15 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         proxy._emit(abi.encode(newFeePeriodDuration), 1, FEEPERIODDURATIONUPDATED_SIG, 0, 0, 0);
     }
 
-    event FeeAuthorityUpdated(address newFeeAuthority);
-    bytes32 constant FEEAUTHORITYUPDATED_SIG = keccak256("FeeAuthorityUpdated(address)");
-    function emitFeeAuthorityUpdated(address newFeeAuthority) internal {
-        proxy._emit(abi.encode(newFeeAuthority), 1, FEEAUTHORITYUPDATED_SIG, 0, 0, 0);
-    }
-
-    event FeePoolStateUpdated(address newFeePoolState);
-    bytes32 constant FEEPOOLSTATEUPDATED_SIG = keccak256("FeePoolStateUpdated(address)");
-    function emitFeePoolStateUpdated(address newFeePoolState) internal {
-        proxy._emit(abi.encode(newFeePoolState), 1, FEEPOOLSTATEUPDATED_SIG, 0, 0, 0);
-    }
-
-    event DelegateApprovalsUpdated(address newDelegateApprovals);
-    bytes32 constant DELEGATEAPPROVALSUPDATED_SIG = keccak256("DelegateApprovalsUpdated(address)");
-    function emitDelegateApprovalsUpdated(address newDelegateApprovals) internal {
-        proxy._emit(abi.encode(newDelegateApprovals), 1, DELEGATEAPPROVALSUPDATED_SIG, 0, 0, 0);
-    }
-
     event FeePeriodClosed(uint feePeriodId);
     bytes32 constant FEEPERIODCLOSED_SIG = keccak256("FeePeriodClosed(uint256)");
     function emitFeePeriodClosed(uint feePeriodId) internal {
         proxy._emit(abi.encode(feePeriodId), 1, FEEPERIODCLOSED_SIG, 0, 0, 0);
     }
 
-    event FeesClaimed(address account, uint xdrAmount);
-    bytes32 constant FEESCLAIMED_SIG = keccak256("FeesClaimed(address,uint256)");
-    function emitFeesClaimed(address account, uint xdrAmount) internal {
-        proxy._emit(abi.encode(account, xdrAmount), 1, FEESCLAIMED_SIG, 0, 0, 0);
-    }
-
-    event RewardsClaimed(address account, uint snxAmount);
-    bytes32 constant REWARDSCLAIMED_SIG = keccak256("RewardsClaimed(address,uint256)");
-    function emitRewardsClaimed(address account, uint snxAmount) internal {
-        proxy._emit(abi.encode(account, snxAmount), 1, REWARDSCLAIMED_SIG, 0, 0, 0);
-    }
-
-    event SynthetixUpdated(address newSynthetix);
-    bytes32 constant SYNTHETIXUPDATED_SIG = keccak256("SynthetixUpdated(address)");
-    function emitSynthetixUpdated(address newSynthetix) internal {
-        proxy._emit(abi.encode(newSynthetix), 1, SYNTHETIXUPDATED_SIG, 0, 0, 0);
+    event FeesClaimed(address account, uint xdrAmount, uint snxRewards);
+    bytes32 constant FEESCLAIMED_SIG = keccak256("FeesClaimed(address,uint256,uint256)");
+    function emitFeesClaimed(address account, uint xdrAmount, uint snxRewards) internal {
+        proxy._emit(abi.encode(account, xdrAmount, snxRewards), 1, FEESCLAIMED_SIG, 0, 0, 0);
     }
 }
