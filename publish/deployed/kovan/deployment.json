@@ -117,15 +117,6 @@
 			"txn": "",
 			"network": "kovan"
 		},
-		"ProxysKRW": {
-			"name": "ProxysKRW",
-			"address": "0xd7adF1b5E31D1C40E08F16a2095338ce3aA8f2Fc",
-			"source": "Proxy",
-			"link": "https://kovan.etherscan.io/address/0xd7adF1b5E31D1C40E08F16a2095338ce3aA8f2Fc",
-			"timestamp": "2019-05-01T12:56:25.260Z",
-			"txn": "",
-			"network": "kovan"
-		},
 		"ProxysUSD": {
 			"name": "ProxysUSD",
 			"address": "0x406555dbF02e9E4df9AdeAeC9DA76ABeED8C1BC3",
@@ -279,15 +270,6 @@
 			"txn": "https://kovan.etherscan.io/tx/0x0e28fec20cbe8995dd196364e3809b677a33bedc607a366e0572928a6d960222",
 			"network": "kovan"
 		},
-		"SynthsKRW": {
-			"name": "SynthsKRW",
-			"address": "0x466Fe3e03Cb951fdA6e91199632b8EC80D48616b",
-			"source": "Synth",
-			"link": "https://kovan.etherscan.io/address/0x466Fe3e03Cb951fdA6e91199632b8EC80D48616b",
-			"timestamp": "2019-05-01T12:56:40.000Z",
-			"txn": "https://kovan.etherscan.io/tx/0xa1dcc5ad813bedf146347138a3335651ad225d6aff443d356ac4bf07ff3fa682",
-			"network": "kovan"
-		},
 		"SynthsUSD": {
 			"name": "SynthsUSD",
 			"address": "0xB0eeaf49E986D624439a01423066528127F97B36",
@@ -393,15 +375,6 @@
 			"source": "TokenState",
 			"link": "https://kovan.etherscan.io/address/0x310705B7FecA92C2445D7471706e058653D9f989",
 			"timestamp": "2019-05-01T12:52:45.441Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"TokenStatesKRW": {
-			"name": "TokenStatesKRW",
-			"address": "0x4BdDFda0E086983CD1fB400a62063aDDEBF2111B",
-			"source": "TokenState",
-			"link": "https://kovan.etherscan.io/address/0x4BdDFda0E086983CD1fB400a62063aDDEBF2111B",
-			"timestamp": "2019-05-01T12:56:21.454Z",
 			"txn": "",
 			"network": "kovan"
 		},
@@ -653,8 +626,8 @@
 			"address": "0x78Dcc1fAa091e48F3c144016669b03D353D6C057",
 			"source": "Synth",
 			"link": "https://kovan.etherscan.io/address/0x78Dcc1fAa091e48F3c144016669b03D353D6C057",
-			"timestamp": "2019-06-24T06:19:50.189Z",
-			"txn": "",
+			"timestamp": "2019-06-24T06:19:48.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0x3c19d8ed308425e8f9f1e362cc842f1e0599344b7cb59482036ccb1da9f3311f",
 			"network": "kovan"
 		},
 		"TokenStatesTRX": {
@@ -680,8 +653,8 @@
 			"address": "0xBFEBd4DF606011d9421EdF1520188771c98aa8e2",
 			"source": "Synth",
 			"link": "https://kovan.etherscan.io/address/0xBFEBd4DF606011d9421EdF1520188771c98aa8e2",
-			"timestamp": "2019-06-24T06:20:21.299Z",
-			"txn": "",
+			"timestamp": "2019-06-24T06:20:20.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0x5ffb26c44cbed13321eb98506af25fae03bfa8e0366d701953cf3381b4318bf8",
 			"network": "kovan"
 		},
 		"TokenStatesXTZ": {
@@ -707,8 +680,8 @@
 			"address": "0x0C2dF26D2e09118398814b875531B37E0280626d",
 			"source": "Synth",
 			"link": "https://kovan.etherscan.io/address/0x0C2dF26D2e09118398814b875531B37E0280626d",
-			"timestamp": "2019-06-24T06:20:45.590Z",
-			"txn": "",
+			"timestamp": "2019-06-24T06:20:44.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0xfaadc16fb1d64e5b561a2debe6f6b9d30dac7cab0285d330862e1a77788fa2ea",
 			"network": "kovan"
 		},
 		"TokenStateiMKR": {
@@ -734,8 +707,8 @@
 			"address": "0x2F06097A7aB7e68F1363EC975c65163B7EC6d505",
 			"source": "PurgeableSynth",
 			"link": "https://kovan.etherscan.io/address/0x2F06097A7aB7e68F1363EC975c65163B7EC6d505",
-			"timestamp": "2019-06-24T06:21:29.327Z",
-			"txn": "",
+			"timestamp": "2019-06-24T06:21:28.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0xd8ca53292f04c41309ae57085ea950e9835a66b412bcc598d9d67fe9638fb2cc",
 			"network": "kovan"
 		},
 		"TokenStateiTRX": {
@@ -761,8 +734,8 @@
 			"address": "0x8E5c6cad78dc74803916556Ec623d59160A43258",
 			"source": "PurgeableSynth",
 			"link": "https://kovan.etherscan.io/address/0x8E5c6cad78dc74803916556Ec623d59160A43258",
-			"timestamp": "2019-06-24T06:21:57.507Z",
-			"txn": "",
+			"timestamp": "2019-06-24T06:21:56.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0x513890ce7441667c9679b41bdbb89276901dcf9cb34d41c0b79f221d678bc649",
 			"network": "kovan"
 		},
 		"TokenStateiXTZ": {
@@ -788,8 +761,8 @@
 			"address": "0xD32d48a9aD9aaC0c1A318742e642Ecf94b795f14",
 			"source": "PurgeableSynth",
 			"link": "https://kovan.etherscan.io/address/0xD32d48a9aD9aaC0c1A318742e642Ecf94b795f14",
-			"timestamp": "2019-06-24T06:22:25.487Z",
-			"txn": "",
+			"timestamp": "2019-06-24T06:22:24.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0x06292d4694d4e4ceac0b2fd8870665b95d4ce9feff1a8869b28afc912d97462a",
 			"network": "kovan"
 		}
 	},
