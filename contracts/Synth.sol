@@ -31,14 +31,14 @@ per fee period.
 pragma solidity 0.4.25;
 
 import "./ExternStateToken.sol";
-import "./FeePool.sol";
+import "./IFeePool.sol";
 import "./Synthetix.sol";
 
 contract Synth is ExternStateToken {
 
     /* ========== STATE VARIABLES ========== */
 
-    FeePool public feePool;
+    IFeePool public feePool;
     Synthetix public synthetix;
 
     // Currency key which identifies this Synth to the Synthetix system
@@ -48,7 +48,7 @@ contract Synth is ExternStateToken {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _proxy, TokenState _tokenState, Synthetix _synthetix, FeePool _feePool,
+    constructor(address _proxy, TokenState _tokenState, Synthetix _synthetix, IFeePool _feePool,
         string _tokenName, string _tokenSymbol, address _owner, bytes4 _currencyKey
     )
         ExternStateToken(_proxy, _tokenState, _tokenName, _tokenSymbol, 0, DECIMALS, _owner)
@@ -75,7 +75,7 @@ contract Synth is ExternStateToken {
         emitSynthetixUpdated(_synthetix);
     }
 
-    function setFeePool(FeePool _feePool)
+    function setFeePool(IFeePool _feePool)
         external
         optionalProxy_onlyOwner
     {
