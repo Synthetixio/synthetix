@@ -22,8 +22,8 @@ const createRandomKeysAndRates = quantity => {
 	const rates = [];
 	const currencyKeys = [];
 	for (const currency in uniqueCurrencyKeys) {
-		rates.push(currency.rates);
 		currencyKeys.push(currency);
+		rates.push(uniqueCurrencyKeys[currency].rates);
 	}
 	return { currencyKeys, rates };
 };
