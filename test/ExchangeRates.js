@@ -14,17 +14,16 @@ const createRandomKeysAndRates = quantity => {
 	for (let i = 0; i < quantity; i++) {
 		const rate = Math.random() * 100;
 		const key = web3.utils.asciiToHex(getRandomCurrencyKey());
-		uniqueCurrencyKeys[key] = {
-			rates: web3.utils.toWei(rate.toString(), 'ether'),
-		};
+		uniqueCurrencyKeys[key] = web3.utils.toWei(rate.toString(), 'ether');
 	}
 
 	const rates = [];
 	const currencyKeys = [];
-	for (const currency in uniqueCurrencyKeys) {
-		currencyKeys.push(currency);
-		rates.push(uniqueCurrencyKeys[currency].rates);
-	}
+	Object.entries(uniqueCurrencyKeys).forEach(([key, rate]) => {
+		currencyKeys.push(key);
+		rates.push(rate);
+	});
+
 	return { currencyKeys, rates };
 };
 
