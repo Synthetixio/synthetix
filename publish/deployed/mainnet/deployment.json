@@ -27,11 +27,11 @@
 		},
 		"FeePool": {
 			"name": "FeePool",
-			"address": "0x3D32f1404deacE2A43B08211E4662275045b495b",
+			"address": "0x503e91fc2b9ad7453700130d0825e661565e4c3b",
 			"source": "FeePool",
-			"link": "https://etherscan.io/address/0x3D32f1404deacE2A43B08211E4662275045b495b",
+			"link": "https://etherscan.io/address/0x503e91fc2b9ad7453700130d0825e661565e4c3b",
 			"timestamp": "2019-05-28T08:18:40.000Z",
-			"txn": "https://etherscan.io/tx/0x67d3bd022d9b4720a1d8453d8602a559017acac27b934cdbf652045b3cd3ab83",
+			"txn": "https://etherscan.io/tx/0x26ed4a59d7d2564ad5aa3e0c4379eeedf035e3b4c1f3731e24ed735d6075f06d",
 			"network": "mainnet"
 		},
 		"ProxyFeePool": {
