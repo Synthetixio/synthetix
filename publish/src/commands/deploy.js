@@ -141,7 +141,7 @@ const deploy = async ({
 	let currentExchangeFee;
 	if (network === 'local') {
 		currentSynthetixSupply = w3utils.toWei((100e6).toString());
-		currentExchangeFee = w3utils.toWei(('0.003').toString());
+		currentExchangeFee = w3utils.toWei('0.003'.toString());
 		oracleExrates = account;
 		oracleDepot = account;
 		feeAuth = account;
@@ -151,7 +151,7 @@ const deploy = async ({
 			const oldSynthetix = getExistingContract({ contract: 'Synthetix' });
 			currentSynthetixSupply = await oldSynthetix.methods.totalSupply().call();
 
-			const oldFeePool = getExistingContract({contract: 'FeePool'});
+			const oldFeePool = getExistingContract({ contract: 'FeePool' });
 			currentExchangeFee = await oldFeePool.methods.exchangeFeeRate().call();
 
 			if (!oracleExrates) {
