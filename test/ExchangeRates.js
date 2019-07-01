@@ -14,7 +14,9 @@ const createRandomKeysAndRates = quantity => {
 	for (let i = 0; i < quantity; i++) {
 		const rate = Math.random() * 100;
 		const key = web3.utils.asciiToHex(getRandomCurrencyKey());
-		uniqueCurrencyKeys[key].rates = web3.utils.toWei(rate.toString(), 'ether');
+		uniqueCurrencyKeys[key] = {
+			rates: web3.utils.toWei(rate.toString(), 'ether'),
+		};
 	}
 
 	const rates = [];
@@ -28,7 +30,7 @@ const createRandomKeysAndRates = quantity => {
 
 // Contract tests
 
-contract('Exchange Rates', async accounts => {
+contract.only('Exchange Rates', async accounts => {
 	const [deployerAccount, owner, oracle, accountOne, accountTwo] = accounts;
 
 	// Contract Creation
