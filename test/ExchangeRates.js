@@ -324,7 +324,7 @@ contract('Exchange Rates', async accounts => {
 		const updatedTime = await currentTime();
 		await instance.updateRates(currencyKeys, rates, updatedTime, { from: oracle });
 
-		for (let i = 0; i < numberOfCurrencies; i++) {
+		for (let i = 0; i < currencyKeys.length; i++) {
 			assert.equal(await instance.rates.call(currencyKeys[i]), rates[i]);
 			const lastUpdatedTime = await instance.lastRateUpdateTimes.call(currencyKeys[i]);
 			assert.equal(lastUpdatedTime.toNumber(), updatedTime);
