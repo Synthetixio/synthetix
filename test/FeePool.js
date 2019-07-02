@@ -180,11 +180,10 @@ contract('FeePool', async accounts => {
 		const exchangeFeeRate = await feePool.exchangeFeeRate();
 		const newFeeRate = exchangeFeeRate.add(toUnit('0.001'));
 
-		const transaction = await feePool.setExchangeFeeRate(newFeeRate, {
+		await feePool.setExchangeFeeRate(newFeeRate, {
 			from: owner,
 		});
 
-		assert.eventEqual(transaction, 'ExchangeFeeUpdated', { newFeeRate });
 		assert.bnEqual(await feePool.exchangeFeeRate(), newFeeRate);
 	});
 
@@ -196,34 +195,14 @@ contract('FeePool', async accounts => {
 		);
 	});
 
-	it('should disallow the owner from setting the exchange fee rate above maximum', async () => {
-		const max = await feePool.MAX_EXCHANGE_FEE_RATE();
-
-		// Should be able to set to the max
-		const transaction = await feePool.setExchangeFeeRate(max, {
-			from: owner,
-		});
-
-		assert.eventEqual(transaction, 'ExchangeFeeUpdated', { newFeeRate: max });
-		assert.bnEqual(await feePool.exchangeFeeRate(), max);
-
-		// But not 1 over max
-		await assert.revert(
-			feePool.setExchangeFeeRate(max.add(web3.utils.toBN('1')), {
-				from: owner,
-			})
-		);
-	});
-
 	it('should allow the owner to set the transfer fee rate', async () => {
 		const transferFeeRate = await feePool.transferFeeRate();
 		const newFeeRate = transferFeeRate.add(toUnit('0.001'));
 
-		const transaction = await feePool.setTransferFeeRate(newFeeRate, {
+		await feePool.setTransferFeeRate(newFeeRate, {
 			from: owner,
 		});
 
-		assert.eventEqual(transaction, 'TransferFeeUpdated', { newFeeRate });
 		assert.bnEqual(await feePool.transferFeeRate(), newFeeRate);
 	});
 
@@ -235,11 +214,10 @@ contract('FeePool', async accounts => {
 		const max = await feePool.MAX_TRANSFER_FEE_RATE();
 
 		// Should be able to set to the max
-		const transaction = await feePool.setTransferFeeRate(max, {
+		await feePool.setTransferFeeRate(max, {
 			from: owner,
 		});
 
-		assert.eventEqual(transaction, 'TransferFeeUpdated', { newFeeRate: max });
 		assert.bnEqual(await feePool.transferFeeRate(), max);
 
 		// But not 1 over max
