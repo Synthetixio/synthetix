@@ -533,6 +533,42 @@ const deploy = async ({
 		}
 	}
 
+	if (synthetix && feePool) {
+		const synthetixFeePool = await synthetix.methods.feePool().call();
+
+		if (synthetixFeePool !== feePoolAddress) {
+			if (synthetixOwner === account) {
+				console.log(yellow('Invoking Synthetix.setFeePool(FeePool)...'));
+				await synthetix.methods.setFeePool(feePoolAddress).send(deployer.sendParameters());
+			} else {
+				appendOwnerAction({
+					key: `Synthetix.setFeePool(FeePool)`,
+					target: synthetixAddress,
+					action: `setFeePool(${feePoolAddress})`,
+				});
+			}
+		}
+	}
+
+	if (synthetix && exchangeRates) {
+		const synthetixExRates = await synthetix.methods.exchangeRates().call();
+
+		if (synthetixExRates !== exchangeRatesAddress) {
+			if (synthetixOwner === account) {
+				console.log(yellow('Invoking Synthetix.setExchangeRates(ExchangeRates)...'));
+				await synthetix.methods
+					.setExchangeRates(exchangeRatesAddress)
+					.send(deployer.sendParameters());
+			} else {
+				appendOwnerAction({
+					key: `Synthetix.setExchangeRates(ExchangeRates)`,
+					target: synthetixAddress,
+					action: `setExchangeRates(${exchangeRatesAddress})`,
+				});
+			}
+		}
+	}
+
 	// only reset token state if redeploying
 	if (tokenStateSynthetix && config['TokenStateSynthetix'].deploy) {
 		const balance = await tokenStateSynthetix.methods.balanceOf(account).call();

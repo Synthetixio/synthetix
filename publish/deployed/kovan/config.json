@@ -50,9 +50,6 @@
 	"SynthsAUD": {
 		"deploy": false
 	},
-	"SynthsKRW": {
-		"deploy": false
-	},
 	"SynthsGBP": {
 		"deploy": false
 	},
@@ -95,9 +92,6 @@
 	"ProxysAUD": {
 		"deploy": false
 	},
-	"ProxysKRW": {
-		"deploy": false
-	},
 	"ProxysGBP": {
 		"deploy": false
 	},
@@ -138,9 +132,6 @@
 		"deploy": false
 	},
 	"TokenStatesAUD": {
-		"deploy": false
-	},
-	"TokenStatesKRW": {
 		"deploy": false
 	},
 	"TokenStatesGBP": {
