@@ -107,8 +107,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     // that they cannot roll over any quicker than this duration.
     uint public feePeriodDuration = 1 weeks;
     // The fee period must be between 1 day and 60 days.
-    // uint public constant MIN_FEE_PERIOD_DURATION = 1 days;
-    uint public constant MIN_FEE_PERIOD_DURATION = 60 seconds;
+    uint public constant MIN_FEE_PERIOD_DURATION = 1 days;
     uint public constant MAX_FEE_PERIOD_DURATION = 60 days;
 
     // Users are unable to claim fees if their collateralisation ratio drifts out of target treshold
