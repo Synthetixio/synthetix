@@ -50,9 +50,6 @@
 	"SynthsAUD": {
 		"deploy": false
 	},
-	"SynthsKRW": {
-		"deploy": false
-	},
 	"SynthsGBP": {
 		"deploy": false
 	},
@@ -93,9 +90,6 @@
 		"deploy": false
 	},
 	"ProxysAUD": {
-		"deploy": false
-	},
-	"ProxysKRW": {
 		"deploy": false
 	},
 	"ProxysGBP": {
@@ -140,9 +134,6 @@
 	"TokenStatesAUD": {
 		"deploy": false
 	},
-	"TokenStatesKRW": {
-		"deploy": false
-	},
 	"TokenStatesGBP": {
 		"deploy": false
 	},
@@ -182,6 +173,33 @@
 	"SynthsBNB": {
 		"deploy": false
 	},
+	"TokenStatesMKR": {
+		"deploy": false
+	},
+	"ProxysMKR": {
+		"deploy": false
+	},
+	"SynthsMKR": {
+		"deploy": false
+	},
+	"TokenStatesTRX": {
+		"deploy": false
+	},
+	"ProxysTRX": {
+		"deploy": false
+	},
+	"SynthsTRX": {
+		"deploy": false
+	},
+	"TokenStatesXTZ": {
+		"deploy": false
+	},
+	"ProxysXTZ": {
+		"deploy": false
+	},
+	"SynthsXTZ": {
+		"deploy": false
+	},
 	"TokenStateiBTC": {
 		"deploy": false
 	},
@@ -207,6 +225,33 @@
 		"deploy": false
 	},
 	"SynthiBNB": {
+		"deploy": false
+	},
+	"TokenStateiMKR": {
+		"deploy": false
+	},
+	"ProxyiMKR": {
+		"deploy": false
+	},
+	"SynthiMKR": {
+		"deploy": false
+	},
+	"TokenStateiTRX": {
+		"deploy": false
+	},
+	"ProxyiTRX": {
+		"deploy": false
+	},
+	"SynthiTRX": {
+		"deploy": false
+	},
+	"TokenStateiXTZ": {
+		"deploy": false
+	},
+	"ProxyiXTZ": {
+		"deploy": false
+	},
+	"SynthiXTZ": {
 		"deploy": false
 	}
 }

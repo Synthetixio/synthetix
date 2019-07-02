@@ -4,6 +4,7 @@ const FeePool = artifacts.require('FeePool');
 const FeePoolProxy = artifacts.require('FeePool');
 const FeePoolState = artifacts.require('FeePoolState');
 const Synthetix = artifacts.require('Synthetix');
+const SynthetixState = artifacts.require('SynthetixState');
 const Synth = artifacts.require('Synth');
 const { getWeb3, getContractInstance } = require('../utils/web3Helper');
 
@@ -14,6 +15,7 @@ const {
 	toPreciseUnit,
 	ZERO_ADDRESS,
 	fromUnit,
+	multiplyDecimal,
 } = require('../utils/testUtils');
 const web3 = getWeb3();
 const getInstance = getContractInstance(web3);
@@ -93,6 +95,7 @@ contract('FeePool', async accounts => {
 		feePoolWeb3,
 		FEE_ADDRESS,
 		synthetix,
+		synthetixState,
 		exchangeRates,
 		feePoolState,
 		delegates,
@@ -113,6 +116,8 @@ contract('FeePool', async accounts => {
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 
 		synthetix = await Synthetix.deployed();
+		synthetixState = await SynthetixState.at(await synthetix.synthetixState());
+
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
 		sAUDContract = await Synth.at(await synthetix.synths(sAUD));
 		XDRContract = await Synth.at(await synthetix.synths(XDR));
@@ -175,11 +180,10 @@ contract('FeePool', async accounts => {
 		const exchangeFeeRate = await feePool.exchangeFeeRate();
 		const newFeeRate = exchangeFeeRate.add(toUnit('0.001'));
 
-		const transaction = await feePool.setExchangeFeeRate(newFeeRate, {
+		await feePool.setExchangeFeeRate(newFeeRate, {
 			from: owner,
 		});
 
-		assert.eventEqual(transaction, 'ExchangeFeeUpdated', { newFeeRate });
 		assert.bnEqual(await feePool.exchangeFeeRate(), newFeeRate);
 	});
 
@@ -191,34 +195,14 @@ contract('FeePool', async accounts => {
 		);
 	});
 
-	it('should disallow the owner from setting the exchange fee rate above maximum', async () => {
-		const max = await feePool.MAX_EXCHANGE_FEE_RATE();
-
-		// Should be able to set to the max
-		const transaction = await feePool.setExchangeFeeRate(max, {
-			from: owner,
-		});
-
-		assert.eventEqual(transaction, 'ExchangeFeeUpdated', { newFeeRate: max });
-		assert.bnEqual(await feePool.exchangeFeeRate(), max);
-
-		// But not 1 over max
-		await assert.revert(
-			feePool.setExchangeFeeRate(max.add(web3.utils.toBN('1')), {
-				from: owner,
-			})
-		);
-	});
-
 	it('should allow the owner to set the transfer fee rate', async () => {
 		const transferFeeRate = await feePool.transferFeeRate();
 		const newFeeRate = transferFeeRate.add(toUnit('0.001'));
 
-		const transaction = await feePool.setTransferFeeRate(newFeeRate, {
+		await feePool.setTransferFeeRate(newFeeRate, {
 			from: owner,
 		});
 
-		assert.eventEqual(transaction, 'TransferFeeUpdated', { newFeeRate });
 		assert.bnEqual(await feePool.transferFeeRate(), newFeeRate);
 	});
 
@@ -230,11 +214,10 @@ contract('FeePool', async accounts => {
 		const max = await feePool.MAX_TRANSFER_FEE_RATE();
 
 		// Should be able to set to the max
-		const transaction = await feePool.setTransferFeeRate(max, {
+		await feePool.setTransferFeeRate(max, {
 			from: owner,
 		});
 
-		assert.eventEqual(transaction, 'TransferFeeUpdated', { newFeeRate: max });
 		assert.bnEqual(await feePool.transferFeeRate(), max);
 
 		// But not 1 over max
@@ -246,9 +229,7 @@ contract('FeePool', async accounts => {
 	});
 
 	it('should allow the owner to set a fee authority', async () => {
-		const transaction = await feePool.setFeeAuthority(ZERO_ADDRESS, { from: owner });
-
-		assert.eventEqual(transaction, 'FeeAuthorityUpdated', { newFeeAuthority: ZERO_ADDRESS });
+		await feePool.setFeeAuthority(ZERO_ADDRESS, { from: owner });
 		assert.bnEqual(await feePool.feeAuthority(), ZERO_ADDRESS);
 	});
 
@@ -321,9 +302,7 @@ contract('FeePool', async accounts => {
 	});
 
 	it('should allow the owner to set the synthetix instance', async () => {
-		const transaction = await feePool.setSynthetix(account1, { from: owner });
-
-		assert.eventEqual(transaction, 'SynthetixUpdated', { newSynthetix: account1 });
+		await feePool.setSynthetix(account1, { from: owner });
 		assert.bnEqual(await feePool.synthetix(), account1);
 	});
 
@@ -611,8 +590,6 @@ contract('FeePool', async accounts => {
 		await synthetix.issueSynths(sUSD, toUnit('10000'), { from: account1 });
 
 		// For each fee period (with one extra to test rollover), do two transfers, then close it off.
-		let totalFees = web3.utils.toBN('0');
-
 		for (let i = 0; i <= length; i++) {
 			const transfer1 = toUnit(((i + 1) * 10).toString());
 			const transfer2 = toUnit(((i + 1) * 15).toString());
@@ -620,23 +597,23 @@ contract('FeePool', async accounts => {
 			await sUSDContract.methods['transfer(address,uint256)'](account1, transfer1, { from: owner });
 			await sUSDContract.methods['transfer(address,uint256)'](account1, transfer2, { from: owner });
 
-			totalFees = totalFees.add(transfer1.sub(await feePool.amountReceivedFromTransfer(transfer1)));
-			totalFees = totalFees.add(transfer2.sub(await feePool.amountReceivedFromTransfer(transfer2)));
-
 			await closeFeePeriod();
 		}
 
 		// Assert that we have correct values in the fee pool
-		const feesAvailable = await feePool.feesAvailable(owner, sUSD);
-		assert.bnClose(feesAvailable[0], totalFees.div(web3.utils.toBN('2')), '8');
-
-		const oldSynthBalance = await sUSDContract.balanceOf(owner);
+		const feesAvailable = await feePool.feesAvailable(owner, XDR);
+		const oldXDRBalance = await XDRContract.balanceOf(owner);
 
 		// Now we should be able to claim them.
-		await feePool.claimFees(sUSD, { from: owner });
+		const claimFeesTx = await feePool.claimFees(XDR, { from: owner });
+		assert.eventEqual(claimFeesTx, 'FeesClaimed', {
+			xdrAmount: feesAvailable[0],
+			snxRewards: feesAvailable[1],
+		});
 
+		const newXDRBalance = await XDRContract.balanceOf(owner);
 		// We should have our fees
-		assert.bnEqual(await sUSDContract.balanceOf(owner), oldSynthBalance.add(feesAvailable[0]));
+		assert.bnEqual(newXDRBalance, oldXDRBalance.add(feesAvailable[0]));
 	});
 
 	it('should allow a user to claim their fees if they minted debt during period', async () => {
@@ -1125,183 +1102,157 @@ contract('FeePool', async accounts => {
 		assert.bnEqual(feesAvailable[0], 0);
 	});
 
-	it('should correctly calculate the penalties at specific issuance ratios', async () => {
-		const step = toUnit('0.005');
-		await synthetix.issueMaxSynths(sUSD, { from: owner });
+	describe('FeeClaimablePenaltyThreshold', async () => {
+		it('should allow the owner to set the Target threshold', async () => {
+			const thresholdPercent = 15;
 
-		// Increase the price so we start well and truly within our 20% ratio.
-		const newRate = (await exchangeRates.rateForCurrency(SNX)).add(step.mul(web3.utils.toBN('5')));
-		const timestamp = await currentTime();
-		await exchangeRates.updateRates([SNX], [newRate], timestamp, {
-			from: oracle,
+			await feePool.setTargetThreshold(thresholdPercent, { from: owner });
+
+			const penaltyThreshold = await feePool.TARGET_THRESHOLD();
+			assert.bnEqual(penaltyThreshold, toUnit(thresholdPercent / 100));
+		});
+		it('should revert when account1 set the Target threshold', async () => {
+			const thresholdPercent = 15;
+
+			await assert.revert(feePool.setTargetThreshold(thresholdPercent, { from: account1 }));
 		});
 
-		// Start from the current price of synthetix and slowly decrease the price until
-		// we hit almost zero. Assert the correct penalty at each point.
-		while ((await exchangeRates.rateForCurrency(SNX)).gt(step.mul(web3.utils.toBN('2')))) {
-			const ratio = await synthetix.collateralisationRatio(owner);
+		it('should be no penalty if issuance ratio is less than target ratio', async () => {
+			await synthetix.issueMaxSynths(sUSD, { from: owner });
 
-			if (ratio.lte(toUnit('0.22'))) {
-				// Should be 0% penalty
-				assert.bnEqual(await feePool.currentPenalty(owner), 0);
-			} else if (ratio.lte(toUnit('0.3'))) {
-				// Should be 25% penalty
-				assert.bnEqual(await feePool.currentPenalty(owner), toUnit('0.25'));
-			} else if (ratio.lte(toUnit('0.4'))) {
-				// Should be 50% penalty
-				assert.bnEqual(await feePool.currentPenalty(owner), toUnit('0.5'));
-			} else if (ratio.lte(toUnit('0.5'))) {
-				// Should be 75% penalty
-				assert.bnEqual(await feePool.currentPenalty(owner), toUnit('0.75'));
-			} else if (ratio.lte(toUnit('1'))) {
-				// Should be 90% penalty
-				assert.bnEqual(await feePool.currentPenalty(owner), toUnit('0.9'));
-			} else {
-				// Should be 100% penalty
-				assert.bnEqual(await feePool.currentPenalty(owner), toUnit('1'));
-			}
-
-			// Bump the rate down.
-			const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(step);
+			// Increase the price so we start well and truly within our 20% ratio.
+			const newRate = (await exchangeRates.rateForCurrency(SNX)).add(web3.utils.toBN('1'));
 			const timestamp = await currentTime();
 			await exchangeRates.updateRates([SNX], [newRate], timestamp, {
 				from: oracle,
 			});
-		}
-	});
 
-	it('should apply a collateralisation ratio penalty when users claim fees between 22%-30%', async () => {
-		const threeQuarters = amount => amount.div(web3.utils.toBN('4')).mul(web3.utils.toBN('3'));
-
-		// Issue 10,000 sUSD for two different accounts.
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('1000000'), {
-			from: owner,
+			assert.equal(await feePool.feesClaimable(owner), true);
 		});
 
-		await synthetix.issueMaxSynths(sUSD, { from: account1 });
-		const amount = await sUSDContract.balanceOf(account1);
-		await synthetix.issueSynths(sUSD, amount, { from: owner });
-		await closeFeePeriod();
+		it('should correctly calculate the 10% buffer for penalties at specific issuance ratios', async () => {
+			const step = toUnit('0.01');
+			await synthetix.issueMaxSynths(sUSD, { from: owner });
 
-		// Do a transfer to generate fees
-		await sUSDContract.methods['transfer(address,uint256)'](account2, amount, { from: account1 });
-		const fee = amount.sub(await feePool.amountReceivedFromTransfer(amount));
+			// Increase the price so we start well and truly within our 20% ratio.
+			const newRate = (await exchangeRates.rateForCurrency(SNX)).add(
+				step.mul(web3.utils.toBN('1'))
+			);
+			const timestamp = await currentTime();
+			await exchangeRates.updateRates([SNX], [newRate], timestamp, {
+				from: oracle,
+			});
 
-		// We should have zero fees available because the period is still open.
-		assert.bnEqual(await getFeesAvailable(account1, sUSD), 0);
+			const issuanceRatio = fromUnit(await synthetixState.issuanceRatio());
+			const penaltyThreshold = fromUnit(await feePool.TARGET_THRESHOLD());
 
-		// Once the fee period is closed we should have half the fee available because we have
-		// half the collateral backing up the system.
-		await closeFeePeriod();
-		assert.bnClose(await getFeesAvailable(account1, sUSD), fee.div(web3.utils.toBN('2')));
+			const threshold = Number(issuanceRatio) * (1 + Number(penaltyThreshold));
+			// Start from the current price of synthetix and slowly decrease the price until
+			// we hit almost zero. Assert the correct penalty at each point.
+			while ((await exchangeRates.rateForCurrency(SNX)).gt(step.mul(web3.utils.toBN('2')))) {
+				const ratio = await synthetix.collateralisationRatio(owner);
 
-		// But if the price of SNX decreases a bit, we will fall into the 22-30% bracket and lose
-		// 25% of those fees.
-		const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.01'));
+				if (ratio.lte(toUnit(threshold))) {
+					// Should be claimable
+					assert.equal(await feePool.feesClaimable(owner), true);
+				} else {
+					// Should be not claimable penalty
+					assert.equal(await feePool.feesClaimable(owner), false);
+				}
 
-		const timestamp = await currentTime();
-		await exchangeRates.updateRates([SNX], [newRate], timestamp, {
-			from: oracle,
+				// Bump the rate down.
+				const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(step);
+				const timestamp = await currentTime();
+				await exchangeRates.updateRates([SNX], [newRate], timestamp, {
+					from: oracle,
+				});
+			}
 		});
 
-		assert.bnClose(
-			await getFeesAvailable(account1, sUSD),
-			threeQuarters(fee.div(web3.utils.toBN('2')))
-		);
+		it('should revert when users try to claim fees with > 10% of threshold', async () => {
+			// Issue 10,000 sUSD for two different accounts.
+			await synthetix.methods['transfer(address,uint256)'](account1, toUnit('1000000'), {
+				from: owner,
+			});
 
-		// And if we claim them
-		await feePool.claimFees(sUSD, { from: account1 });
+			await synthetix.issueMaxSynths(sUSD, { from: account1 });
+			const amount = await sUSDContract.balanceOf(account1);
+			await synthetix.issueSynths(sUSD, amount, { from: owner });
+			await closeFeePeriod();
 
-		// We should have our decreased fee amount
-		assert.bnClose(
-			await sUSDContract.balanceOf(account1),
-			threeQuarters(fee.div(web3.utils.toBN('2')))
-		);
-	});
+			// Do a transfer to generate fees
+			await sUSDContract.methods['transfer(address,uint256)'](account2, amount, { from: account1 });
+			const fee = amount.sub(await feePool.amountReceivedFromTransfer(amount));
 
-	it('should apply a collateralisation ratio penalty when users claim fees between 30%-40%', async () => {
-		const half = amount => amount.div(web3.utils.toBN('2'));
+			// We should have zero fees available because the period is still open.
+			assert.bnEqual(await getFeesAvailable(account1, sUSD), 0);
 
-		// Issue 10,000 sUSD for two different accounts.
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('1000000'), {
-			from: owner,
+			// Once the fee period is closed we should have half the fee available because we have
+			// half the collateral backing up the system.
+			await closeFeePeriod();
+			assert.bnClose(await getFeesAvailable(account1, sUSD), fee.div(web3.utils.toBN('2')));
+
+			// But if the price of SNX decreases by 15%, we will lose all the fees.
+			const currentRate = await exchangeRates.rateForCurrency(SNX);
+			const newRate = currentRate.sub(multiplyDecimal(currentRate, toUnit('0.15')));
+
+			const timestamp = await currentTime();
+			await exchangeRates.updateRates([SNX], [newRate], timestamp, {
+				from: oracle,
+			});
+
+			// fees available is unaffected but not claimable
+			assert.bnClose(await getFeesAvailable(account1, sUSD), fee.div(web3.utils.toBN('2')));
+
+			// And revert if we claim them
+			await assert.revert(feePool.claimFees(sUSD, { from: account1 }));
 		});
 
-		await synthetix.issueMaxSynths(sUSD, { from: account1 });
-		const amount = await sUSDContract.balanceOf(account1);
-		await synthetix.issueSynths(sUSD, amount, { from: owner });
-		await closeFeePeriod();
+		it('should be able to set the Target threshold to 15% and claim fees', async () => {
+			// Issue 10,000 sUSD for two different accounts.
+			await synthetix.methods['transfer(address,uint256)'](account1, toUnit('1000000'), {
+				from: owner,
+			});
 
-		// Do a transfer to generate fees
-		await sUSDContract.methods['transfer(address,uint256)'](account2, amount, { from: account1 });
-		const fee = amount.sub(await feePool.amountReceivedFromTransfer(amount));
+			await synthetix.issueMaxSynths(sUSD, { from: account1 });
+			const amount = await sUSDContract.balanceOf(account1);
+			await synthetix.issueSynths(sUSD, amount, { from: owner });
+			await closeFeePeriod();
 
-		// We should have zero fees available because the period is still open.
-		assert.bnEqual(await getFeesAvailable(account1, sUSD), 0);
+			// Do a transfer to generate fees
+			await sUSDContract.methods['transfer(address,uint256)'](account2, amount, { from: account1 });
+			const fee = amount.sub(await feePool.amountReceivedFromTransfer(amount));
 
-		// Once the fee period is closed we should have half the fee available because we have
-		// half the collateral backing up the system.
-		await closeFeePeriod();
-		assert.bnClose(await getFeesAvailable(account1, sUSD), half(fee));
+			// We should have zero fees available because the period is still open.
+			assert.bnEqual(await getFeesAvailable(account1, sUSD), 0);
 
-		// But if the price of SNX decreases a bit, we will fall into the 30-40% bracket and lose
-		// 50% of those fees.
-		const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.045'));
-		const timestamp = await currentTime();
-		await exchangeRates.updateRates([SNX], [newRate], timestamp, {
-			from: oracle,
+			// Once the fee period is closed we should have half the fee available because we have
+			// half the collateral backing up the system.
+			await closeFeePeriod();
+			assert.bnClose(await getFeesAvailable(account1, sUSD), fee.div(web3.utils.toBN('2')));
+
+			// But if the price of SNX decreases by 15%, we will lose all the fees.
+			const currentRate = await exchangeRates.rateForCurrency(SNX);
+			const newRate = currentRate.sub(multiplyDecimal(currentRate, toUnit('0.15')));
+
+			const timestamp = await currentTime();
+			await exchangeRates.updateRates([SNX], [newRate], timestamp, {
+				from: oracle,
+			});
+
+			// fees available is unaffected but not claimable
+			assert.bnClose(await getFeesAvailable(account1, sUSD), fee.div(web3.utils.toBN('2')));
+
+			// And revert if we claim them
+			await assert.revert(feePool.claimFees(sUSD, { from: account1 }));
+
+			// Should be able to set the Target threshold to 16% and now claim
+			const newPercentage = 16;
+			await feePool.setTargetThreshold(newPercentage, { from: owner });
+			assert.bnEqual(await feePool.TARGET_THRESHOLD(), toUnit(newPercentage / 100));
+
+			assert.equal(await feePool.feesClaimable(owner), true);
 		});
-
-		assert.bnClose(await getFeesAvailable(account1, sUSD), half(half(fee)));
-
-		// And if we claim them
-		await feePool.claimFees(sUSD, { from: account1 });
-
-		// We should have our decreased fee amount
-		assert.bnClose(await sUSDContract.balanceOf(account1), half(half(fee)));
-	});
-
-	it('should apply a collateralisation ratio penalty when users claim fees >40%', async () => {
-		const half = amount => amount.div(web3.utils.toBN('2'));
-		const quarter = amount => amount.div(web3.utils.toBN('4'));
-
-		// Issue 10,000 sUSD for two different accounts.
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('1000000'), {
-			from: owner,
-		});
-
-		await synthetix.issueMaxSynths(sUSD, { from: account1 });
-		const amount = await sUSDContract.balanceOf(account1);
-		await synthetix.issueSynths(sUSD, amount, { from: owner });
-		await closeFeePeriod();
-
-		// Do a transfer to generate fees
-		await sUSDContract.methods['transfer(address,uint256)'](account2, amount, { from: account1 });
-		const fee = amount.sub(await feePool.amountReceivedFromTransfer(amount));
-
-		// We should have zero fees available because the period is still open.
-		assert.bnEqual(await getFeesAvailable(account1, sUSD), 0);
-
-		// Once the fee period is closed we should have half the fee available because we have
-		// half the collateral backing up the system.
-		await closeFeePeriod();
-		assert.bnClose(await getFeesAvailable(account1, sUSD), half(fee));
-
-		// But if the price of SNX decreases a lot, we will fall into the 40%+ bracket and lose
-		// 75% of those fees.
-		const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.06'));
-		const timestamp = await currentTime();
-		await exchangeRates.updateRates([SNX], [newRate], timestamp, {
-			from: oracle,
-		});
-
-		assert.bnClose(await getFeesAvailable(account1, sUSD), quarter(half(fee)));
-
-		// And if we claim them
-		await feePool.claimFees(sUSD, { from: account1 });
-
-		// We should have our decreased fee amount
-		assert.bnClose(await sUSDContract.balanceOf(account1), quarter(half(fee)));
 	});
 
 	describe('effectiveDebtRatioForPeriod', async () => {
@@ -1434,6 +1385,53 @@ contract('FeePool', async accounts => {
 
 			// Now we should be able to claim them on behalf of account1.
 			await assert.revert(feePool.claimOnBehalf(account1, sUSD, { from: account2 }));
+		});
+	});
+
+	describe('reducing FEE_PERIOD_LENGTHS', async () => {
+		it('should be able to get fees available when feePoolState issuanceData is 6 blocks', async () => {
+			const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
+
+			await synthetix.methods['transfer(address,uint256)'](account1, toUnit('1000000'), {
+				from: owner,
+			});
+
+			// For each fee period (with one extra to test rollover), do two transfers, then close it off.
+			let totalFees = web3.utils.toBN('0');
+
+			// Iterate over the period lengths * 2 to fill up issuanceData in feePoolState
+			// feePoolState can hold up to 6 periods of minting issuanceData
+			// fee Periods can be less than the 6 periods
+			for (let i = 0; i <= length * 2; i++) {
+				const transfer1 = toUnit(((i + 1) * 10).toString());
+
+				// Mint debt each period to fill up feelPoolState issuanceData to [6]
+				await synthetix.issueSynths(sUSD, toUnit('1000'), { from: owner });
+				await synthetix.issueSynths(sUSD, toUnit('1000'), { from: account1 });
+
+				await sUSDContract.methods['transfer(address,uint256)'](account1, transfer1, {
+					from: owner,
+				});
+
+				totalFees = totalFees.add(
+					transfer1.sub(await feePool.amountReceivedFromTransfer(transfer1))
+				);
+
+				await closeFeePeriod();
+			}
+
+			// Assert that we have correct values in the fee pool
+			// Account1 should have all the fees as only account minted
+			const feesAvailable = await feePool.feesAvailable(account1, sUSD);
+			assert.bnClose(feesAvailable[0], totalFees.div(web3.utils.toBN('2')), '8');
+
+			const oldSynthBalance = await sUSDContract.balanceOf(account1);
+
+			// Now we should be able to claim them.
+			await feePool.claimFees(sUSD, { from: account1 });
+
+			// We should have our fees
+			assert.bnEqual(await sUSDContract.balanceOf(account1), oldSynthBalance.add(feesAvailable[0]));
 		});
 	});
 });

@@ -2,6 +2,7 @@
 
 module.exports = {
 	BUILD_FOLDER: 'build',
+	CONTRACTS_FOLDER: 'contracts',
 	COMPILED_FOLDER: 'compiled',
 	FLATTENED_FOLDER: 'flattened',
 	CONFIG_FILENAME: 'config.json',
