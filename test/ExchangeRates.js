@@ -10,13 +10,20 @@ const getRandomCurrencyKey = () =>
 		.toUpperCase();
 
 const createRandomKeysAndRates = quantity => {
-	const rates = [];
-	const currencyKeys = [];
+	const uniqueCurrencyKeys = {};
 	for (let i = 0; i < quantity; i++) {
 		const rate = Math.random() * 100;
-		rates[i] = web3.utils.toWei(rate.toString(), 'ether');
-		currencyKeys[i] = web3.utils.asciiToHex(getRandomCurrencyKey());
+		const key = web3.utils.asciiToHex(getRandomCurrencyKey());
+		uniqueCurrencyKeys[key] = web3.utils.toWei(rate.toString(), 'ether');
 	}
+
+	const rates = [];
+	const currencyKeys = [];
+	Object.entries(uniqueCurrencyKeys).forEach(([key, rate]) => {
+		currencyKeys.push(key);
+		rates.push(rate);
+	});
+
 	return { currencyKeys, rates };
 };
 
@@ -158,7 +165,7 @@ contract('Exchange Rates', async accounts => {
 			from: deployerAccount,
 		});
 
-		for (let i = 0; i < numberOfCurrencies; i++) {
+		for (let i = 0; i < currencyKeys.length; i++) {
 			assert.bnEqual(await instance.rates.call(currencyKeys[i]), rates[i]);
 			const lastUpdatedTime = await instance.lastRateUpdateTimes.call(currencyKeys[i]);
 			assert.isAtLeast(lastUpdatedTime.toNumber(), creationTime);
@@ -316,7 +323,7 @@ contract('Exchange Rates', async accounts => {
 		const updatedTime = await currentTime();
 		await instance.updateRates(currencyKeys, rates, updatedTime, { from: oracle });
 
-		for (let i = 0; i < numberOfCurrencies; i++) {
+		for (let i = 0; i < currencyKeys.length; i++) {
 			assert.equal(await instance.rates.call(currencyKeys[i]), rates[i]);
 			const lastUpdatedTime = await instance.lastRateUpdateTimes.call(currencyKeys[i]);
 			assert.equal(lastUpdatedTime.toNumber(), updatedTime);

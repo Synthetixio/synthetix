@@ -138,8 +138,10 @@ const deploy = async ({
 		});
 
 	let currentSynthetixSupply;
+	let currentExchangeFee;
 	if (network === 'local') {
 		currentSynthetixSupply = w3utils.toWei((100e6).toString());
+		currentExchangeFee = w3utils.toWei('0.003'.toString());
 		oracleExrates = account;
 		oracleDepot = account;
 		feeAuth = account;
@@ -148,6 +150,9 @@ const deploy = async ({
 		try {
 			const oldSynthetix = getExistingContract({ contract: 'Synthetix' });
 			currentSynthetixSupply = await oldSynthetix.methods.totalSupply().call();
+
+			const oldFeePool = getExistingContract({ contract: 'FeePool' });
+			currentExchangeFee = await oldFeePool.methods.exchangeFeeRate().call();
 
 			if (!oracleExrates) {
 				const currentExrates = getExistingContract({ contract: 'ExchangeRates' });
@@ -199,6 +204,7 @@ const deploy = async ({
 		'Add any new synths found?': addNewSynths ? green('✅ YES') : yellow('⚠ NO'),
 		'Deployer account:': account,
 		'Synthetix totalSupply': `${Math.round(w3utils.fromWei(currentSynthetixSupply) / 1e6)}m`,
+		'FeePool exchangeFeeRate': `${w3utils.fromWei(currentExchangeFee)}`,
 		'ExchangeRates Oracle': oracleExrates,
 		'Depot Oracle': oracleDepot,
 	});
@@ -328,7 +334,7 @@ const deploy = async ({
 			rewardEscrow ? rewardEscrow.options.address : '',
 			feeAuth,
 			w3utils.toWei('0'), // transfer fee
-			w3utils.toWei('0.003'), // exchange fee
+			currentExchangeFee, // exchange fee
 		],
 	});
 
