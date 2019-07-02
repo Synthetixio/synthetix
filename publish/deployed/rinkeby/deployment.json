@@ -216,33 +216,6 @@
 			"txn": "",
 			"network": "rinkeby"
 		},
-		"TokenStatesKRW": {
-			"name": "TokenStatesKRW",
-			"address": "0x77765804D3eC5D0EdF2e8Fa1C1930bE7503C7AA6",
-			"source": "TokenState",
-			"link": "https://rinkeby.etherscan.io/address/0x77765804D3eC5D0EdF2e8Fa1C1930bE7503C7AA6",
-			"timestamp": "2019-03-06T23:15:44.005Z",
-			"txn": "",
-			"network": "rinkeby"
-		},
-		"ProxysKRW": {
-			"name": "ProxysKRW",
-			"address": "0x8E6734A7653175b3FDa62516A646709F547C8342",
-			"source": "Proxy",
-			"link": "https://rinkeby.etherscan.io/address/0x8E6734A7653175b3FDa62516A646709F547C8342",
-			"timestamp": "2019-03-06T23:16:13.461Z",
-			"txn": "",
-			"network": "rinkeby"
-		},
-		"SynthsKRW": {
-			"name": "SynthsKRW",
-			"address": "0x94B41091eB29b36003aC1C6f0E55a5225633c884",
-			"source": "Synth",
-			"link": "https://rinkeby.etherscan.io/address/0x94B41091eB29b36003aC1C6f0E55a5225633c884",
-			"timestamp": "2019-03-06T23:16:29.333Z",
-			"txn": "",
-			"network": "rinkeby"
-		},
 		"TokenStatesGBP": {
 			"name": "TokenStatesGBP",
 			"address": "0xE90B0f0425b86E61633134466a8C97966C7D687c",
