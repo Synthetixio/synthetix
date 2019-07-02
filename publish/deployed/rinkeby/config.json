@@ -6,10 +6,10 @@
 		"deploy": false
 	},
 	"ExchangeRates": {
-		"deploy": true
+		"deploy": false
 	},
 	"FeePool": {
-		"deploy": true
+		"deploy": false
 	},
 	"FeePoolState": {
 		"deploy": false
@@ -183,31 +183,31 @@
 		"deploy": false
 	},
 	"TokenStatesMKR": {
-		"deploy": true
+		"deploy": false
 	},
 	"ProxysMKR": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthsMKR": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStatesTRX": {
-		"deploy": true
+		"deploy": false
 	},
 	"ProxysTRX": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthsTRX": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStatesXTZ": {
-		"deploy": true
+		"deploy": false
 	},
 	"ProxysXTZ": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthsXTZ": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStateiBTC": {
 		"deploy": false
@@ -237,30 +237,30 @@
 		"deploy": false
 	},
 	"TokenStateiMKR": {
-		"deploy": true
+		"deploy": false
 	},
 	"ProxyiMKR": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthiMKR": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStateiTRX": {
-		"deploy": true
+		"deploy": false
 	},
 	"ProxyiTRX": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthiTRX": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStateiXTZ": {
-		"deploy": true
+		"deploy": false
 	},
 	"ProxyiXTZ": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthiXTZ": {
-		"deploy": true
+		"deploy": false
 	}
 }
