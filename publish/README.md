@@ -128,7 +128,7 @@ node publish replace-synths # "--help" for options
 Will attempt purge the given synth with all token holders it can find. Uses the list of holders from mainnet, and as such won't do anything for other networks.
 
 ```bash
-node publish replace-synths # "--help" for options
+node publish purge-synths # "--help" for options
 ```
 
 # When adding new synths

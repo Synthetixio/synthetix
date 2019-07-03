@@ -262,5 +262,32 @@
 	},
 	"SynthiBNB": {
 		"deploy": false
+	},
+	"TokenStatesMKR": {
+		"deploy": false
+	},
+	"ProxysMKR": {
+		"deploy": false
+	},
+	"SynthsMKR": {
+		"deploy": false
+	},
+	"TokenStatesTRX": {
+		"deploy": false
+	},
+	"ProxysTRX": {
+		"deploy": false
+	},
+	"SynthsTRX": {
+		"deploy": false
+	},
+	"TokenStatesXTZ": {
+		"deploy": false
+	},
+	"ProxysXTZ": {
+		"deploy": false
+	},
+	"SynthsXTZ": {
+		"deploy": false
 	}
 }
