@@ -2,31 +2,31 @@
 	"ProxyFeePool.setTarget(FeePool)": {
 		"target": "0xb440DD674e1243644791a4AdfE3A2AbB0A92d309",
 		"action": "setTarget(0x5e5F5542dAd3E06CC8E1cd2461E83f872835117B)",
-		"complete": false,
+		"complete": true,
 		"link": "https://etherscan.io/address/0xb440DD674e1243644791a4AdfE3A2AbB0A92d309#writeContract"
 	},
 	"SynthXDR.setFeePool(FeePool)": {
 		"target": "0x2972705AF18c66c14CDd27AD412961E01944A9C3",
 		"action": "setFeePool(0x5e5F5542dAd3E06CC8E1cd2461E83f872835117B)",
-		"complete": false,
+		"complete": true,
 		"link": "https://etherscan.io/address/0x2972705AF18c66c14CDd27AD412961E01944A9C3#writeContract"
 	},
 	"SynthsUSD.setFeePool(FeePool)": {
 		"target": "0x0cBE2dF57CA9191B64a7Af3baa3F946fa7Df2F25",
 		"action": "setFeePool(0x5e5F5542dAd3E06CC8E1cd2461E83f872835117B)",
-		"complete": false,
+		"complete": true,
 		"link": "https://etherscan.io/address/0x0cBE2dF57CA9191B64a7Af3baa3F946fa7Df2F25#writeContract"
 	},
 	"SynthsBTC.setFeePool(FeePool)": {
 		"target": "0xf8AD89091B2724bdb7528c50B282B565Db4635bb",
 		"action": "setFeePool(0x5e5F5542dAd3E06CC8E1cd2461E83f872835117B)",
-		"complete": false,
+		"complete": true,
 		"link": "https://etherscan.io/address/0xf8AD89091B2724bdb7528c50B282B565Db4635bb#writeContract"
 	},
 	"SynthsETH.setFeePool(FeePool)": {
 		"target": "0x42456D7084eacF4083f1140d3229471bbA2949A8",
 		"action": "setFeePool(0x5e5F5542dAd3E06CC8E1cd2461E83f872835117B)",
-		"complete": false,
+		"complete": true,
 		"link": "https://etherscan.io/address/0x42456D7084eacF4083f1140d3229471bbA2949A8#writeContract"
 	}
 }
