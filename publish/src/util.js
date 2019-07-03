@@ -185,9 +185,9 @@ const performTransactionalStep = async ({
 		try {
 			await confirmAction(
 				redBright(
-					`YOUR TASK: Invoke ${write}(${writeArg}) via ${etherscanLinkPrefix}/address/${
-						target.options.address
-					}#writeContract`
+					`YOUR TASK: Invoke ${write}(${writeArg}) via ${etherscanLinkPrefix}/address/` +
+						target.options.address +
+						'#writeContract'
 				) + '\nPlease enter Y when the transaction has been mined and not earlier. '
 			);
 
