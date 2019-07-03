@@ -201,9 +201,14 @@ module.exports = {
 				'-v, --private-key [value]',
 				'The private key to transact with (only works in local mode, otherwise set in .env).'
 			)
-			.option('-s, --synths-to-purge <value>', 'The list of synths to purge', (val, memo) => {
-				memo.push(val);
-				return memo;
-			})
+			.option(
+				'-s, --synths-to-purge <value>',
+				'The list of synths to purge',
+				(val, memo) => {
+					memo.push(val);
+					return memo;
+				},
+				[]
+			)
 			.action(purgeSynths),
 };
