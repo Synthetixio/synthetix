@@ -121,7 +121,7 @@ const purgeSynths = async ({
 		}
 
 		// step 1. fetch all holders via ethplorer api
-		if (network === 'mainnet' && addresses.length < 1) {
+		if (network === 'mainnet') {
 			const topTokenHoldersUrl = `http://api.ethplorer.io/getTopTokenHolders/${proxyAddress}`;
 			const response = await axios.get(topTokenHoldersUrl, {
 				params: {
@@ -130,7 +130,7 @@ const purgeSynths = async ({
 				},
 			});
 
-			const topTokenHolders = response.data.map(({ address }) => address);
+			const topTokenHolders = response.data.holders.map(({ address }) => address);
 			console.log(gray(`Found ${topTokenHolders.length} holders of ${currencyKey}`));
 			addresses = topTokenHolders;
 		}

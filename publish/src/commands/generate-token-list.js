@@ -9,7 +9,7 @@ const { stringify } = require('../util');
 const generateTokenList = async ({ deploymentPath }) => {
 	const deployment = JSON.parse(fs.readFileSync(path.join(deploymentPath, DEPLOYMENT_FILENAME)));
 
-	const output = Object.keys(deployment)
+	const output = Object.keys(deployment.targets)
 		.filter(key => /^Proxy(s[A-Z]{3,4}|Synthetix)$/.test(key))
 		.map(key => {
 			return {
