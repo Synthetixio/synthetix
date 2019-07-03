@@ -39,6 +39,27 @@
 	{ "name": "sETH", "asset": "ETH", "category": "crypto", "sign": "Ξ", "desc": "Ether" },
 	{ "name": "sBNB", "asset": "BNB", "category": "crypto", "sign": "", "desc": "Binance Coin" },
 	{
+		"name": "sMKR",
+		"asset": "MKR",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Maker"
+	},
+	{
+		"name": "sTRX",
+		"asset": "TRX",
+		"category": "crypto",
+		"sign": "",
+		"desc": "TRON"
+	},
+	{
+		"name": "sXTZ",
+		"asset": "XTZ",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Tezos"
+	},
+	{
 		"name": "iBTC",
 		"asset": "BTC",
 		"category": "crypto",
@@ -57,9 +78,9 @@
 		"sign": "Ξ",
 		"desc": "Inverted Ether",
 		"inverted": {
-			"entryPoint": 260,
-			"upperLimit": 390,
-			"lowerLimit": 130
+			"entryPoint": 295,
+			"upperLimit": 296,
+			"lowerLimit": 294
 		}
 	},
 	{
