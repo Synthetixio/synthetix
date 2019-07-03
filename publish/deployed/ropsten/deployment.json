@@ -45,30 +45,12 @@
 			"txn": "",
 			"network": "ropsten"
 		},
-		"ProxysBRL": {
-			"name": "ProxysBRL",
-			"address": "0x86cC20E50BeC265E43855389b5BC5B95CB065668",
-			"source": "Proxy",
-			"link": "https://ropsten.etherscan.io/address/0x86cC20E50BeC265E43855389b5BC5B95CB065668",
-			"timestamp": "2019-04-09T21:24:43.549Z",
-			"txn": "",
-			"network": "ropsten"
-		},
 		"ProxysBTC": {
 			"name": "ProxysBTC",
 			"address": "0x9ad54eC56442B6941e4ae405c0f35A014210c938",
 			"source": "Proxy",
 			"link": "https://ropsten.etherscan.io/address/0x9ad54eC56442B6941e4ae405c0f35A014210c938",
 			"timestamp": "2019-04-09T21:35:40.079Z",
-			"txn": "",
-			"network": "ropsten"
-		},
-		"ProxysCAD": {
-			"name": "ProxysCAD",
-			"address": "0xaE6Cc4C26c27462F8cb709e9A773806A425b8759",
-			"source": "Proxy",
-			"link": "https://ropsten.etherscan.io/address/0xaE6Cc4C26c27462F8cb709e9A773806A425b8759",
-			"timestamp": "2019-04-09T21:18:52.043Z",
 			"txn": "",
 			"network": "ropsten"
 		},
@@ -123,51 +105,6 @@
 			"source": "Proxy",
 			"link": "https://ropsten.etherscan.io/address/0x7a6f9eDDC03Db81927eA4131919343f93CA9b6a7",
 			"timestamp": "2019-04-09T21:01:44.476Z",
-			"txn": "",
-			"network": "ropsten"
-		},
-		"ProxysKRW": {
-			"name": "ProxysKRW",
-			"address": "0x257f747620BcEb56de16Bd96FB57601401326D1D",
-			"source": "Proxy",
-			"link": "https://ropsten.etherscan.io/address/0x257f747620BcEb56de16Bd96FB57601401326D1D",
-			"timestamp": "2019-04-09T21:10:51.822Z",
-			"txn": "",
-			"network": "ropsten"
-		},
-		"ProxysNZD": {
-			"name": "ProxysNZD",
-			"address": "0xDD130ed8644E42D7f961711543D6601c07a291B7",
-			"source": "Proxy",
-			"link": "https://ropsten.etherscan.io/address/0xDD130ed8644E42D7f961711543D6601c07a291B7",
-			"timestamp": "2019-04-09T21:27:38.004Z",
-			"txn": "",
-			"network": "ropsten"
-		},
-		"ProxysPLN": {
-			"name": "ProxysPLN",
-			"address": "0xc449ce6cd726c0bf7373ecf4888E5f6Ee6dB5aF4",
-			"source": "Proxy",
-			"link": "https://ropsten.etherscan.io/address/0xc449ce6cd726c0bf7373ecf4888E5f6Ee6dB5aF4",
-			"timestamp": "2019-04-09T21:29:37.182Z",
-			"txn": "",
-			"network": "ropsten"
-		},
-		"ProxysRUB": {
-			"name": "ProxysRUB",
-			"address": "0x5DF689ea1FB350bcB177Ff5e66ED8Dfe28C6045D",
-			"source": "Proxy",
-			"link": "https://ropsten.etherscan.io/address/0x5DF689ea1FB350bcB177Ff5e66ED8Dfe28C6045D",
-			"timestamp": "2019-04-09T21:21:32.389Z",
-			"txn": "",
-			"network": "ropsten"
-		},
-		"ProxysSGD": {
-			"name": "ProxysSGD",
-			"address": "0xb6128Fe9E0079505EA240Dd315C7F72B0d1df6b0",
-			"source": "Proxy",
-			"link": "https://ropsten.etherscan.io/address/0xb6128Fe9E0079505EA240Dd315C7F72B0d1df6b0",
-			"timestamp": "2019-04-09T21:17:11.847Z",
 			"txn": "",
 			"network": "ropsten"
 		},
@@ -261,30 +198,12 @@
 			"txn": "",
 			"network": "ropsten"
 		},
-		"SynthsBRL": {
-			"name": "SynthsBRL",
-			"address": "0x299A0df558B16B31d7E911651637f4C8109CCdb0",
-			"source": "Synth",
-			"link": "https://ropsten.etherscan.io/address/0x299A0df558B16B31d7E911651637f4C8109CCdb0",
-			"timestamp": "2019-04-09T21:25:54.057Z",
-			"txn": "",
-			"network": "ropsten"
-		},
 		"SynthsBTC": {
 			"name": "SynthsBTC",
 			"address": "0x77BA6B94B70e305343A9B76c7fEAaA2edc4498ff",
 			"source": "Synth",
 			"link": "https://ropsten.etherscan.io/address/0x77BA6B94B70e305343A9B76c7fEAaA2edc4498ff",
 			"timestamp": "2019-04-09T21:35:47.153Z",
-			"txn": "",
-			"network": "ropsten"
-		},
-		"SynthsCAD": {
-			"name": "SynthsCAD",
-			"address": "0xB99afD2b3f7eCD3d4fE8d8001dFCb563BD0E21F2",
-			"source": "Synth",
-			"link": "https://ropsten.etherscan.io/address/0xB99afD2b3f7eCD3d4fE8d8001dFCb563BD0E21F2",
-			"timestamp": "2019-04-09T21:20:07.573Z",
 			"txn": "",
 			"network": "ropsten"
 		},
@@ -342,51 +261,6 @@
 			"txn": "",
 			"network": "ropsten"
 		},
-		"SynthsKRW": {
-			"name": "SynthsKRW",
-			"address": "0x3Ef82E21c1796E1732CF64e9d9d11a295d9B220E",
-			"source": "PurgeableSynth",
-			"network": "ropsten",
-			"link": "https://ropsten.etherscan.io/address/0x3Ef82E21c1796E1732CF64e9d9d11a295d9B220E",
-			"timestamp": "2019-07-02T23:59:22.000Z",
-			"txn": "https://ropsten.etherscan.io/tx/0xcf950e68b28a8a9c76511a5545293e4d9b35d03e7309283b4e9cf06d6778bc9e"
-		},
-		"SynthsNZD": {
-			"name": "SynthsNZD",
-			"address": "0x921283b04A4e09bcE87B24DA868d82F901267648",
-			"source": "Synth",
-			"link": "https://ropsten.etherscan.io/address/0x921283b04A4e09bcE87B24DA868d82F901267648",
-			"timestamp": "2019-04-09T21:28:05.396Z",
-			"txn": "",
-			"network": "ropsten"
-		},
-		"SynthsPLN": {
-			"name": "SynthsPLN",
-			"address": "0x8f4713d83ddB112fc46Ec6f67c032c440937543b",
-			"source": "Synth",
-			"link": "https://ropsten.etherscan.io/address/0x8f4713d83ddB112fc46Ec6f67c032c440937543b",
-			"timestamp": "2019-04-09T21:30:25.585Z",
-			"txn": "",
-			"network": "ropsten"
-		},
-		"SynthsRUB": {
-			"name": "SynthsRUB",
-			"address": "0xCDe046E1c635d2D9F69E2081d46732d249c8465F",
-			"source": "Synth",
-			"link": "https://ropsten.etherscan.io/address/0xCDe046E1c635d2D9F69E2081d46732d249c8465F",
-			"timestamp": "2019-04-09T21:21:38.713Z",
-			"txn": "",
-			"network": "ropsten"
-		},
-		"SynthsSGD": {
-			"name": "SynthsSGD",
-			"address": "0x77e4837cc55a3CB32A33988Fb670c5bcF13bBD3f",
-			"source": "Synth",
-			"link": "https://ropsten.etherscan.io/address/0x77e4837cc55a3CB32A33988Fb670c5bcF13bBD3f",
-			"timestamp": "2019-04-09T21:17:22.248Z",
-			"txn": "",
-			"network": "ropsten"
-		},
 		"SynthsUSD": {
 			"name": "SynthsUSD",
 			"address": "0xB613d148E47525478bD8A91eF7Cf2F7F63d81858",
@@ -432,30 +306,12 @@
 			"txn": "",
 			"network": "ropsten"
 		},
-		"TokenStatesBRL": {
-			"name": "TokenStatesBRL",
-			"address": "0xc0c03aC23ee7E4aB81C4b8ccC32e5EA2e247709E",
-			"source": "TokenState",
-			"link": "https://ropsten.etherscan.io/address/0xc0c03aC23ee7E4aB81C4b8ccC32e5EA2e247709E",
-			"timestamp": "2019-04-09T21:24:22.218Z",
-			"txn": "",
-			"network": "ropsten"
-		},
 		"TokenStatesBTC": {
 			"name": "TokenStatesBTC",
 			"address": "0x159B105D8f9F1341C7aAAafF19aFb569c17297F3",
 			"source": "TokenState",
 			"link": "https://ropsten.etherscan.io/address/0x159B105D8f9F1341C7aAAafF19aFb569c17297F3",
 			"timestamp": "2019-04-09T21:35:26.533Z",
-			"txn": "",
-			"network": "ropsten"
-		},
-		"TokenStatesCAD": {
-			"name": "TokenStatesCAD",
-			"address": "0x91D2899CD8C976cec7d56059acb42744ed13c3b8",
-			"source": "TokenState",
-			"link": "https://ropsten.etherscan.io/address/0x91D2899CD8C976cec7d56059acb42744ed13c3b8",
-			"timestamp": "2019-04-09T21:18:42.756Z",
 			"txn": "",
 			"network": "ropsten"
 		},
@@ -510,51 +366,6 @@
 			"source": "TokenState",
 			"link": "https://ropsten.etherscan.io/address/0xb08b62e1cdfd37eCCd69A9ACe67322CCF801b3A6",
 			"timestamp": "2019-04-09T21:01:22.108Z",
-			"txn": "",
-			"network": "ropsten"
-		},
-		"TokenStatesKRW": {
-			"name": "TokenStatesKRW",
-			"address": "0xA50C668536616cde7d43D889F6Df29dD912Dc116",
-			"source": "TokenState",
-			"link": "https://ropsten.etherscan.io/address/0xA50C668536616cde7d43D889F6Df29dD912Dc116",
-			"timestamp": "2019-04-09T21:10:19.427Z",
-			"txn": "",
-			"network": "ropsten"
-		},
-		"TokenStatesNZD": {
-			"name": "TokenStatesNZD",
-			"address": "0x4160D670f33D6a45bFb4009C8E958004651dfCA6",
-			"source": "TokenState",
-			"link": "https://ropsten.etherscan.io/address/0x4160D670f33D6a45bFb4009C8E958004651dfCA6",
-			"timestamp": "2019-04-09T21:27:26.711Z",
-			"txn": "",
-			"network": "ropsten"
-		},
-		"TokenStatesPLN": {
-			"name": "TokenStatesPLN",
-			"address": "0x4093eB7D7DeF2dcaE3e53555fc99CE46C8E458B1",
-			"source": "TokenState",
-			"link": "https://ropsten.etherscan.io/address/0x4093eB7D7DeF2dcaE3e53555fc99CE46C8E458B1",
-			"timestamp": "2019-04-09T21:29:25.851Z",
-			"txn": "",
-			"network": "ropsten"
-		},
-		"TokenStatesRUB": {
-			"name": "TokenStatesRUB",
-			"address": "0x212dD0505eDECA3947b07b86e0b0d44ba8eE81c4",
-			"source": "TokenState",
-			"link": "https://ropsten.etherscan.io/address/0x212dD0505eDECA3947b07b86e0b0d44ba8eE81c4",
-			"timestamp": "2019-04-09T21:21:10.036Z",
-			"txn": "",
-			"network": "ropsten"
-		},
-		"TokenStatesSGD": {
-			"name": "TokenStatesSGD",
-			"address": "0x911c81ad1Cb9e3e4cE43e3A4CEed3A3D0dC61920",
-			"source": "TokenState",
-			"link": "https://ropsten.etherscan.io/address/0x911c81ad1Cb9e3e4cE43e3A4CEed3A3D0dC61920",
-			"timestamp": "2019-04-09T21:16:52.532Z",
 			"txn": "",
 			"network": "ropsten"
 		},

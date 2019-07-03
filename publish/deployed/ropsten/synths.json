@@ -35,14 +35,6 @@
 		"desc": "Australian Dollars"
 	},
 	{
-		"name": "sKRW",
-		"asset": "KRW",
-		"category": "forex",
-		"sign": "₩",
-		"desc": "South Korean Won",
-		"subclass": "PurgeableSynth"
-	},
-	{
 		"name": "sGBP",
 		"asset": "GBP",
 		"category": "forex",
@@ -64,53 +56,11 @@
 		"desc": "Chinese Yuan"
 	},
 	{
-		"name": "sSGD",
-		"asset": "SGD",
-		"category": "forex",
-		"sign": "$",
-		"desc": "Singapore Dollar"
-	},
-	{
-		"name": "sCAD",
-		"asset": "CAD",
-		"category": "forex",
-		"sign": "$",
-		"desc": "Canadian Dollar"
-	},
-	{
-		"name": "sRUB",
-		"asset": "RUB",
-		"category": "forex",
-		"sign": "₽",
-		"desc": "Russian Ruble"
-	},
-	{
 		"name": "sINR",
 		"asset": "INR",
 		"category": "forex",
 		"sign": "₹",
 		"desc": "Indian Rupee"
-	},
-	{
-		"name": "sBRL",
-		"asset": "BRL",
-		"category": "forex",
-		"sign": "R$",
-		"desc": "Brazilian Real"
-	},
-	{
-		"name": "sNZD",
-		"asset": "NZD",
-		"category": "forex",
-		"sign": "$",
-		"desc": "New Zealand Dollar"
-	},
-	{
-		"name": "sPLN",
-		"asset": "PLN",
-		"category": "forex",
-		"sign": "zł",
-		"desc": "Poland Złoty"
 	},
 	{
 		"name": "sXAU",
