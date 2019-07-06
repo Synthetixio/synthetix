@@ -46,7 +46,8 @@
 		"asset": "GBP",
 		"category": "forex",
 		"sign": "£",
-		"desc": "Pound Sterling"
+		"desc": "Pound Sterling",
+		"subclass": "PurgeableSynth"
 	},
 	{
 		"name": "sCHF",
