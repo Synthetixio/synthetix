@@ -147,7 +147,7 @@ module.exports = async function(deployer, network, accounts) {
 	// ExchangeGasPriceLimit
 	// ----------------
 	console.log('Deploying ExchangeGasPriceLimit...');
-	const GAS_LIMIT = web3.utils.toWei('10', 'gwei'); // Set testing gwei exchange limit to 10
+	const GAS_LIMIT = web3.utils.toWei('20', 'gwei'); // Set testing gwei exchange limit to 20
 
 	// constructor(address _owner, uint _gasPrice)
 	const GasPriceLimit = await deployer.deploy(ExchangeGasPriceLimit, owner, GAS_LIMIT, {
