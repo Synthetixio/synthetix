@@ -139,12 +139,14 @@ const deploy = async ({
 
 	let currentSynthetixSupply;
 	let currentExchangeFee;
+	let currentSynthetixPrice;
 	if (network === 'local') {
 		currentSynthetixSupply = w3utils.toWei((100e6).toString());
 		currentExchangeFee = w3utils.toWei('0.003'.toString());
 		oracleExrates = account;
 		oracleDepot = account;
 		feeAuth = account;
+		currentSynthetixPrice = w3utils.toWei('0.2');
 	} else {
 		// do requisite checks
 		try {
@@ -154,8 +156,10 @@ const deploy = async ({
 			const oldFeePool = getExistingContract({ contract: 'FeePool' });
 			currentExchangeFee = await oldFeePool.methods.exchangeFeeRate().call();
 
+			const currentExrates = getExistingContract({ contract: 'ExchangeRates' });
+			currentSynthetixPrice = await currentExrates.methods.rateForCurrency(toBytes4('SNX')).call();
+
 			if (!oracleExrates) {
-				const currentExrates = getExistingContract({ contract: 'ExchangeRates' });
 				oracleExrates = await currentExrates.methods.oracle().call();
 			}
 
@@ -286,7 +290,7 @@ const deploy = async ({
 
 	const exchangeRates = await deployContract({
 		name: 'ExchangeRates',
-		args: [account, oracleExrates, [toBytes4('SNX')], [w3utils.toWei('0.2')]],
+		args: [account, oracleExrates, [toBytes4('SNX')], [currentSynthetixPrice]],
 	});
 	const exchangeRatesAddress = exchangeRates ? exchangeRates.options.address : '';
 

@@ -1115,7 +1115,6 @@ contract('Synthetix', async accounts => {
 
 	it('should disallow an issuer without outstanding debt from burning synths', async () => {
 		// Send a price update to guarantee we're not depending on values from outside this test.
-
 		await exchangeRates.updateRates(
 			[sAUD, sEUR, SNX],
 			['0.5', '1.25', '0.1'].map(toUnit),
@@ -1830,7 +1829,7 @@ contract('Synthetix', async accounts => {
 	it("should include escrowed reward synthetix when calculating a user's collaterisation ratio", async () => {
 		const snx2usdRate = await exchangeRates.rateForCurrency(SNX);
 		const transferredSynthetixs = toUnit('60000');
-		await synthetix.transfer(account1, transferredSynthetixs, {
+		await synthetix.methods['transfer(address,uint256)'](account1, transferredSynthetixs, {
 			from: owner,
 		});
 
@@ -1839,7 +1838,9 @@ contract('Synthetix', async accounts => {
 		await rewardEscrow.setFeePool(feePoolAccount, { from: owner });
 
 		const escrowedSynthetixs = toUnit('30000');
-		await synthetix.transfer(rewardEscrow.address, escrowedSynthetixs, { from: owner });
+		await synthetix.methods['transfer(address,uint256)'](rewardEscrow.address, escrowedSynthetixs, {
+			from: owner,
+		});
 		await rewardEscrow.appendVestingEntry(account1, escrowedSynthetixs, { from: feePoolAccount });
 
 		// Issue
@@ -1963,11 +1964,13 @@ contract('Synthetix', async accounts => {
 	it("should include escrowed reward synthetix when checking a user's collateral", async () => {
 		const feePoolAccount = account6;
 		const escrowedAmount = toUnit('15000');
-		await synthetix.transfer(rewardEscrow.address, escrowedAmount, { from: owner });
+		await synthetix.methods['transfer(address,uint256)'](rewardEscrow.address, escrowedAmount, {
+			from: owner,
+		});
 		await rewardEscrow.setFeePool(feePoolAccount, { from: owner });
 		await rewardEscrow.appendVestingEntry(account1, escrowedAmount, { from: feePoolAccount });
 		const amount = toUnit('60000');
-		await synthetix.transfer(account1, amount, { from: owner });
+		await synthetix.methods['transfer(address,uint256)'](account1, amount, { from: owner });
 		const collateral = await synthetix.collateral(account1, { from: account2 });
 		assert.bnEqual(collateral, amount.add(escrowedAmount));
 	});
@@ -2284,6 +2287,102 @@ contract('Synthetix', async accounts => {
 		const txn = await synthetix.exchange(sUSD, amountIssued, sAUD, account1, {
 			from: account1,
 		});
+
+		const sAUDBalance = await sAUDContract.balanceOf(account1);
+
+		const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
+		assert.eventEqual(synthExchangeEvent, 'SynthExchange', {
+			account: account1,
+			fromCurrencyKey: sUSD,
+			fromAmount: amountIssued,
+			toCurrencyKey: sAUD,
+			toAmount: sAUDBalance,
+			toAddress: account1,
+		});
+	});
+
+	it('should disallow non owners to call exchangeEnabled', async () => {
+		await assert.revert(synthetix.setExchangeEnabled(false, { from: account1 }));
+		await assert.revert(synthetix.setExchangeEnabled(false, { from: account2 }));
+		await assert.revert(synthetix.setExchangeEnabled(false, { from: account3 }));
+		await assert.revert(synthetix.setExchangeEnabled(false, { from: account4 }));
+	});
+
+	it('should only allow Owner to call exchangeEnabled', async () => {
+		// Set false
+		await synthetix.setExchangeEnabled(false, { from: owner });
+		const exchangeEnabled = await synthetix.exchangeEnabled();
+		assert.equal(exchangeEnabled, false);
+
+		// Set true
+		await synthetix.setExchangeEnabled(true, { from: owner });
+		const exchangeEnabledTrue = await synthetix.exchangeEnabled();
+		assert.equal(exchangeEnabledTrue, true);
+	});
+
+	it('should not exchange when exchangeEnabled is false', async () => {
+		// Give some SNX to account1
+		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('300000'), {
+			from: owner,
+		});
+		// Issue
+		const amountIssued = toUnit('2000');
+		await synthetix.issueSynths(sUSD, amountIssued, { from: account1 });
+
+		// Disable exchange
+		await synthetix.setExchangeEnabled(false, { from: owner });
+
+		// Exchange sUSD to sAUD
+		await assert.revert(synthetix.exchange(sUSD, amountIssued, sAUD, account1, { from: account1 }));
+
+		// Enable exchange
+		await synthetix.setExchangeEnabled(true, { from: owner });
+
+		// Exchange sUSD to sAUD
+		const txn = await synthetix.exchange(sUSD, amountIssued, sAUD, account1, { from: account1 });
+
+		const sAUDBalance = await sAUDContract.balanceOf(account1);
+
+		const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
+		assert.eventEqual(synthExchangeEvent, 'SynthExchange', {
+			account: account1,
+			fromCurrencyKey: sUSD,
+			fromAmount: amountIssued,
+			toCurrencyKey: sAUD,
+			toAmount: sAUDBalance,
+			toAddress: account1,
+		});
+	});
+
+	it('should not exchange while exchangeRates.priceUpdateLock is true', async () => {
+		// Give some SNX to account1
+		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('300000'), {
+			from: owner,
+		});
+		// Issue
+		const amountIssued = toUnit('2000');
+		await synthetix.issueSynths(sUSD, amountIssued, { from: account1 });
+
+		// Disable exchange
+		await exchangeRates.setPriceUpdateLock(true, { from: oracle });
+
+		// Exchange sUSD to sAUD
+		await assert.revert(synthetix.exchange(sUSD, amountIssued, sAUD, account1, { from: account1 }));
+
+		// Enable exchange via priceupdate
+		const priceUpdateLock = await exchangeRates.priceUpdateLock();
+		assert.equal(priceUpdateLock, true);
+
+		// Send a price update
+		const timeSent = await currentTime();
+		const keysArray = ['sAUD', 'sEUR', 'sCHF', 'sGBP'].map(web3.utils.asciiToHex);
+		const rates = ['0.4', '1.2', '3.3', '1.95'].map(toUnit);
+		await exchangeRates.updateRates(keysArray, rates, timeSent, {
+			from: oracle,
+		});
+
+		// Exchange sUSD to sAUD
+		const txn = await synthetix.exchange(sUSD, amountIssued, sAUD, account1, { from: account1 });
 
 		const sAUDBalance = await sAUDContract.balanceOf(account1);
 
@@ -2647,6 +2746,60 @@ contract('Synthetix', async accounts => {
 					});
 				});
 			});
+		});
+	});
+
+	describe('Using the protection circuit', async () => {
+		const amount = toUnit('1000');
+		it('should burn the source amount during an exchange', async () => {
+			await synthetix.methods['transfer(address,uint256)'](account1, toUnit('1000000'), {
+				from: owner,
+			});
+			await synthetix.issueSynths(sUSD, toUnit('10000'), { from: account1 });
+
+			// Enable the protection circuit
+			await synthetix.setProtectionCircuit(true, { from: oracle });
+
+			const initialSUSDBalance = await sUSDContract.balanceOf(account1);
+
+			// Exchange sUSD to sAUD
+			await synthetix.exchange(sUSD, amount, sAUD, account1, { from: account1 });
+
+			// Assert the USD sent is gone
+			const sUSDBalance = await sUSDContract.balanceOf(account1);
+			assert.bnEqual(initialSUSDBalance.sub(amount), sUSDBalance);
+
+			// Assert we don't have AUD
+			const sAUDBalance = await sAUDContract.balanceOf(account1);
+			assert.bnEqual(0, sAUDBalance);
+		});
+
+		it('should do the exchange if protection circuit is disabled', async () => {
+			await synthetix.methods['transfer(address,uint256)'](account1, toUnit('1000000'), {
+				from: owner,
+			});
+			await synthetix.issueSynths(sUSD, toUnit('10000'), { from: account1 });
+
+			// Enable the protection circuit then disable it
+			await synthetix.setProtectionCircuit(true, { from: oracle });
+			await synthetix.setProtectionCircuit(false, { from: oracle });
+
+			// Exchange sUSD to sAUD
+			await synthetix.exchange(sUSD, amount, sAUD, account1, { from: account1 });
+
+			// how much sAUD the user is supposed to get
+			const effectiveValue = await synthetix.effectiveValue(sUSD, amount, sAUD);
+
+			// chargeFee = true so we need to minus the fees for this exchange
+			const effectiveValueMinusFees = await feePool.amountReceivedFromExchange(effectiveValue);
+
+			// Assert we have the correct AUD value - exchange fee
+			const sAUDBalance = await sAUDContract.balanceOf(account1);
+			assert.bnEqual(effectiveValueMinusFees, sAUDBalance);
+		});
+
+		it('should revert if account different than oracle tries to enable protection circuit', async () => {
+			await assert.revert(synthetix.setProtectionCircuit(true, { from: owner }));
 		});
 	});
 });

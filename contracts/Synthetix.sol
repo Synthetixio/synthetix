@@ -148,9 +148,13 @@ contract Synthetix is ExternStateToken {
     SynthetixState public synthetixState;
     SupplySchedule public supplySchedule;
 
+    bool private protectionCircuit = false;
+
     string constant TOKEN_NAME = "Synthetix Network Token";
     string constant TOKEN_SYMBOL = "SNX";
     uint8 constant DECIMALS = 18;
+    bool public exchangeEnabled = true;
+
     // ========== CONSTRUCTOR ==========
 
     /**
@@ -187,6 +191,20 @@ contract Synthetix is ExternStateToken {
         optionalProxy_onlyOwner
     {
         exchangeRates = _exchangeRates;
+    }
+
+    function setProtectionCircuit(bool _protectionCircuitIsActivated)
+        external
+        onlyOracle
+    {
+        protectionCircuit = _protectionCircuitIsActivated;
+    }
+
+    function setExchangeEnabled(bool _exchangeEnabled)
+        external
+        optionalProxy_onlyOwner
+    {
+        exchangeEnabled = _exchangeEnabled;
     }
 
     /**
@@ -256,16 +274,9 @@ contract Synthetix is ExternStateToken {
     function effectiveValue(bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey)
         public
         view
-        rateNotStale(sourceCurrencyKey)
-        rateNotStale(destinationCurrencyKey)
         returns (uint)
     {
-        // If there's no change in the currency, then just return the amount they gave us
-        if (sourceCurrencyKey == destinationCurrencyKey) return sourceAmount;
-
-        // Calculate the effective value by going from source -> USD -> destination
-        return sourceAmount.multiplyDecimalRound(exchangeRates.rateForCurrency(sourceCurrencyKey))
-            .divideDecimalRound(exchangeRates.rateForCurrency(destinationCurrencyKey));
+        return exchangeRates.effectiveValue(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
     }
 
     /**
@@ -301,7 +312,7 @@ contract Synthetix is ExternStateToken {
      * @notice Returns the currencyKeys of availableSynths for rate checking
      */
     function availableCurrencyKeys()
-        internal
+        public
         view
         returns (bytes4[])
     {
@@ -395,7 +406,7 @@ contract Synthetix is ExternStateToken {
      * @param sourceCurrencyKey The source currency you wish to exchange from
      * @param sourceAmount The amount, specified in UNIT of source currency you wish to exchange
      * @param destinationCurrencyKey The destination currency you wish to obtain.
-     * @param destinationAddress Where the result should go. If this is address(0) then it sends back to the message sender.
+     * @param destinationAddress Deprecated. Will always send to messageSender
      * @return Boolean that indicates whether the transfer succeeded or failed.
      */
     function exchange(bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey, address destinationAddress)
@@ -407,15 +418,24 @@ contract Synthetix is ExternStateToken {
         require(sourceCurrencyKey != destinationCurrencyKey, "Exchange must use different synths");
         require(sourceAmount > 0, "Zero amount");
 
-        // Pass it along, defaulting to the sender as the recipient.
-        return _internalExchange(
-            messageSender,
-            sourceCurrencyKey,
-            sourceAmount,
-            destinationCurrencyKey,
-            destinationAddress == address(0) ? messageSender : destinationAddress,
-            true // Charge fee on the exchange
-        );
+        //  If protectionCircuit is true then we burn the synths through _internalLiquidation()
+        if (protectionCircuit) {
+            return _internalLiquidation(
+                messageSender,
+                sourceCurrencyKey,
+                sourceAmount
+            );
+        } else {
+            // Pass it along, defaulting to the sender as the recipient.
+            return _internalExchange(
+                messageSender,
+                sourceCurrencyKey,
+                sourceAmount,
+                destinationCurrencyKey,
+                messageSender,
+                true // Charge fee on the exchange
+            );
+        }
     }
 
     /**
@@ -516,6 +536,8 @@ contract Synthetix is ExternStateToken {
         notFeeAddress(from)
         returns (bool)
     {
+        require(exchangeEnabled, "Exchanging is disabled");
+        require(!exchangeRates.priceUpdateLock(), "Price update lock");
         require(destinationAddress != address(0), "Zero destination");
         require(destinationAddress != address(this), "Synthetix is invalid destination");
         require(destinationAddress != address(proxy), "Proxy is invalid destination");
@@ -557,6 +579,26 @@ contract Synthetix is ExternStateToken {
         //Let the DApps know there was a Synth exchange
         emitSynthExchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, amountReceived, destinationAddress);
 
+        return true;
+    }
+
+    /**
+    * @notice Function that burns the amount sent during an exchange in case the protection circuit is activated
+    * @param from The address to move synth from
+    * @param sourceCurrencyKey source currency from.
+    * @param sourceAmount The amount, specified in UNIT of source currency.
+    * @return Boolean that indicates whether the transfer succeeded or failed.
+    */
+    function _internalLiquidation(
+        address from,
+        bytes4 sourceCurrencyKey,
+        uint sourceAmount
+    )
+        internal
+        returns (bool)
+    {
+        // Burn the source amount
+        synths[sourceCurrencyKey].burn(from, sourceAmount);
         return true;
     }
 
@@ -969,6 +1011,12 @@ contract Synthetix is ExternStateToken {
 
     modifier nonZeroAmount(uint _amount) {
         require(_amount > 0, "Amount needs to be larger than 0");
+        _;
+    }
+
+    modifier onlyOracle
+    {
+        require(msg.sender == exchangeRates.oracle(), "Only the oracle can perform this action");
         _;
     }
 
