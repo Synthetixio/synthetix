@@ -140,6 +140,7 @@ contract('Synthetix', async accounts => {
 			account7,
 			account8,
 			YEAR_2_SYNTHETIX_TOTAL_SUPPLY,
+			account8,
 			{
 				from: deployerAccount,
 			}
