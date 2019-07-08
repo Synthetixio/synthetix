@@ -473,7 +473,7 @@ const deploy = async ({
 		name: 'SupplySchedule',
 		args: [account],
 	});
-	
+
 	const exchangeGasPriceLimit = await deployContract({
 		name: 'ExchangeGasPriceLimit',
 		args: [account, w3utils.toWei('20', 'gwei')],
