@@ -256,16 +256,9 @@ contract Synthetix is ExternStateToken {
     function effectiveValue(bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey)
         public
         view
-        rateNotStale(sourceCurrencyKey)
-        rateNotStale(destinationCurrencyKey)
         returns (uint)
     {
-        // If there's no change in the currency, then just return the amount they gave us
-        if (sourceCurrencyKey == destinationCurrencyKey) return sourceAmount;
-
-        // Calculate the effective value by going from source -> USD -> destination
-        return sourceAmount.multiplyDecimalRound(exchangeRates.rateForCurrency(sourceCurrencyKey))
-            .divideDecimalRound(exchangeRates.rateForCurrency(destinationCurrencyKey));
+        return exchangeRates.effectiveValue(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
     }
 
     /**
