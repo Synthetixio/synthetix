@@ -6,7 +6,7 @@ FILE INFORMATION
 file:       ExchangeGasPriceLimit.sol
 version:    1.0
 author:     Jackson Chan
-checked:    Clinton Ennis
+            Clinton Ennis
 date:       2019-07-01
 
 -----------------------------------------------------------------

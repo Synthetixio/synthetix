@@ -67,7 +67,9 @@ contract('RewardEscrow', async accounts => {
 		describe('Vesting Schedule Writes', async () => {
 			it('should not create a vesting entry with a zero amount', async () => {
 				// Transfer of SNX to the escrow must occur before creating an entry
-				await synthetix.transfer(RewardEscrow.address, toUnit('1'), { from: owner });
+				await synthetix.methods['transfer(address,uint256)'](RewardEscrow.address, toUnit('1'), {
+					from: owner,
+				});
 
 				await assert.revert(
 					rewardEscrow.appendVestingEntry(account1, toUnit('0'), { from: feePoolAccount })
@@ -76,7 +78,9 @@ contract('RewardEscrow', async accounts => {
 
 			it('should not create a vesting entry if there is not enough SNX in the contracts balance', async () => {
 				// Transfer of SNX to the escrow must occur before creating an entry
-				await synthetix.transfer(RewardEscrow.address, toUnit('1'), { from: owner });
+				await synthetix.methods['transfer(address,uint256)'](RewardEscrow.address, toUnit('1'), {
+					from: owner,
+				});
 				await assert.revert(
 					rewardEscrow.appendVestingEntry(account1, toUnit('10'), { from: feePoolAccount })
 				);
@@ -86,7 +90,9 @@ contract('RewardEscrow', async accounts => {
 		describe('Vesting Schedule Reads ', async () => {
 			beforeEach(async () => {
 				// Transfer of SNX to the escrow must occur before creating a vestinng entry
-				await synthetix.transfer(RewardEscrow.address, toUnit('6000'), { from: owner });
+				await synthetix.methods['transfer(address,uint256)'](RewardEscrow.address, toUnit('6000'), {
+					from: owner,
+				});
 
 				// Add a few vesting entries as the feepool address
 				await rewardEscrow.appendVestingEntry(account1, toUnit('1000'), { from: feePoolAccount });
@@ -140,7 +146,9 @@ contract('RewardEscrow', async accounts => {
 		describe('Partial Vesting', async () => {
 			beforeEach(async () => {
 				// Transfer of SNX to the escrow must occur before creating a vestinng entry
-				await synthetix.transfer(RewardEscrow.address, toUnit('6000'), { from: owner });
+				await synthetix.methods['transfer(address,uint256)'](RewardEscrow.address, toUnit('6000'), {
+					from: owner,
+				});
 
 				// Add a few vesting entries as the feepool address
 				await rewardEscrow.appendVestingEntry(account1, toUnit('1000'), { from: feePoolAccount });
@@ -184,7 +192,9 @@ contract('RewardEscrow', async accounts => {
 		describe('Vesting', async () => {
 			beforeEach(async () => {
 				// Transfer of SNX to the escrow must occur before creating a vestinng entry
-				await synthetix.transfer(RewardEscrow.address, toUnit('6000'), { from: owner });
+				await synthetix.methods['transfer(address,uint256)'](RewardEscrow.address, toUnit('6000'), {
+					from: owner,
+				});
 
 				// Add a few vesting entries as the feepool address
 				await rewardEscrow.appendVestingEntry(account1, toUnit('1000'), { from: feePoolAccount });
@@ -261,7 +271,9 @@ contract('RewardEscrow', async accounts => {
 				const MAX_VESTING_ENTRIES = 260; // await rewardEscrow.MAX_VESTING_ENTRIES();
 
 				// Transfer of SNX to the escrow must occur before creating an entry
-				await synthetix.transfer(RewardEscrow.address, toUnit('260'), { from: owner });
+				await synthetix.methods['transfer(address,uint256)'](RewardEscrow.address, toUnit('260'), {
+					from: owner,
+				});
 
 				// append the MAX_VESTING_ENTRIES to the schedule
 				for (let i = 0; i < MAX_VESTING_ENTRIES; i++) {
@@ -276,7 +288,9 @@ contract('RewardEscrow', async accounts => {
 
 			it('should be able to vest 52 week * 5 years vesting entries', async () => {
 				// Transfer of SNX to the escrow must occur before creating an entry
-				await synthetix.transfer(RewardEscrow.address, toUnit('260'), { from: owner });
+				await synthetix.methods['transfer(address,uint256)'](RewardEscrow.address, toUnit('260'), {
+					from: owner,
+				});
 
 				const MAX_VESTING_ENTRIES = 260; // await rewardEscrow.MAX_VESTING_ENTRIES();
 
@@ -312,7 +326,9 @@ contract('RewardEscrow', async accounts => {
 
 			it('should be able to read an accounts schedule of 5 vesting entries', async () => {
 				// Transfer of SNX to the escrow must occur before creating an entry
-				await synthetix.transfer(RewardEscrow.address, toUnit('5'), { from: owner });
+				await synthetix.methods['transfer(address,uint256)'](RewardEscrow.address, toUnit('5'), {
+					from: owner,
+				});
 
 				const VESTING_ENTRIES = 5;
 
@@ -336,7 +352,9 @@ contract('RewardEscrow', async accounts => {
 
 			it('should be able to read the full account schedule 52 week * 5 years vesting entries', async () => {
 				// Transfer of SNX to the escrow must occur before creating an entry
-				await synthetix.transfer(RewardEscrow.address, toUnit('260'), { from: owner });
+				await synthetix.methods['transfer(address,uint256)'](RewardEscrow.address, toUnit('260'), {
+					from: owner,
+				});
 
 				const MAX_VESTING_ENTRIES = 260; // await rewardEscrow.MAX_VESTING_ENTRIES();
 
@@ -359,7 +377,11 @@ contract('RewardEscrow', async accounts => {
 		describe('Transfering', async () => {
 			it('should not allow transfer of synthetix in escrow', async () => {
 				// Ensure the transfer fails as all the synthetix are in escrow
-				await assert.revert(synthetix.transfer(account2, toUnit('1000'), { from: account1 }));
+				await assert.revert(
+					synthetix.methods['transfer(address,uint256)'](account2, toUnit('1000'), {
+						from: account1,
+					})
+				);
 			});
 		});
 	});

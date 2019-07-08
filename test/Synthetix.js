@@ -1835,7 +1835,7 @@ contract('Synthetix', async accounts => {
 	it("should include escrowed reward synthetix when calculating a user's collaterisation ratio", async () => {
 		const snx2usdRate = await exchangeRates.rateForCurrency(SNX);
 		const transferredSynthetixs = toUnit('60000');
-		await synthetix.transfer(account1, transferredSynthetixs, {
+		await synthetix.methods['transfer(address,uint256)'](account1, transferredSynthetixs, {
 			from: owner,
 		});
 
@@ -1844,7 +1844,9 @@ contract('Synthetix', async accounts => {
 		await rewardEscrow.setFeePool(feePoolAccount, { from: owner });
 
 		const escrowedSynthetixs = toUnit('30000');
-		await synthetix.transfer(rewardEscrow.address, escrowedSynthetixs, { from: owner });
+		await synthetix.methods['transfer(address,uint256)'](rewardEscrow.address, escrowedSynthetixs, {
+			from: owner,
+		});
 		await rewardEscrow.appendVestingEntry(account1, escrowedSynthetixs, { from: feePoolAccount });
 
 		// Issue
@@ -1968,11 +1970,13 @@ contract('Synthetix', async accounts => {
 	it("should include escrowed reward synthetix when checking a user's collateral", async () => {
 		const feePoolAccount = account6;
 		const escrowedAmount = toUnit('15000');
-		await synthetix.transfer(rewardEscrow.address, escrowedAmount, { from: owner });
+		await synthetix.methods['transfer(address,uint256)'](rewardEscrow.address, escrowedAmount, {
+			from: owner,
+		});
 		await rewardEscrow.setFeePool(feePoolAccount, { from: owner });
 		await rewardEscrow.appendVestingEntry(account1, escrowedAmount, { from: feePoolAccount });
 		const amount = toUnit('60000');
-		await synthetix.transfer(account1, amount, { from: owner });
+		await synthetix.methods['transfer(address,uint256)'](account1, amount, { from: owner });
 		const collateral = await synthetix.collateral(account1, { from: account2 });
 		assert.bnEqual(collateral, amount.add(escrowedAmount));
 	});
