@@ -473,6 +473,11 @@ const deploy = async ({
 		name: 'SupplySchedule',
 		args: [account],
 	});
+	
+	const exchangeGasPriceLimit = await deployContract({
+		name: 'ExchangeGasPriceLimit',
+		args: [account, w3utils.toWei('20', 'gwei')],
+	});
 
 	const proxySynthetix = await deployContract({
 		name: 'ProxySynthetix',
@@ -496,6 +501,7 @@ const deploy = async ({
 			'SupplySchedule',
 			'RewardEscrow',
 			'SynthetixEscrow',
+			'ExchangeGasPriceLimit',
 		],
 		args: [
 			proxySynthetix ? proxySynthetix.options.address : '',
@@ -508,6 +514,7 @@ const deploy = async ({
 			rewardEscrow ? rewardEscrow.options.address : '',
 			synthetixEscrow ? synthetixEscrow.options.address : '',
 			currentSynthetixSupply,
+			exchangeGasPriceLimit ? exchangeGasPriceLimit.options.address : '',
 		],
 	});
 
