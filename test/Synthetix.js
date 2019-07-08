@@ -2508,23 +2508,56 @@ contract('Synthetix', async accounts => {
 	});
 
 	describe('exchange gas price limit', () => {
+		const amountIssued = toUnit('2000');
+
 		beforeEach(async () => {
 			// Give some SNX to account1
 			await synthetix.methods['transfer(address,uint256)'](account1, toUnit('300000'), {
 				from: owner,
 			});
 			// Issue
-			const amountIssued = toUnit('2000');
 			await synthetix.issueSynths(sUSD, amountIssued, { from: account1 });
 		});
 
 		it('should revert a user if they try to send more gwei than gasLimit', async () => {
 			// Get the exchange fee in USD
-			const gasPriceLimit = await gasPriceLimit.
+			const exchangeGasPriceLimit = await gasPriceLimit.gasPrice();
+
+			// Exchange sUSD to sAUD should revert if gasPrice is above limit
+			await assert.revert(
+				synthetix.exchange(sUSD, amountIssued, sAUD, account1, {
+					from: account1,
+					gasPrice: exchangeGasPriceLimit.add(web3.utils.toBN(100)),
+				})
+			);
+		});
+		it('should allow a user to exchange if they set the gasPrice to match limit', async () => {
+			// Get the exchange fee in USD
+			const exchangeGasPriceLimit = await gasPriceLimit.gasPrice();
+
+			// Get the exchange fee in USD
 			const exchangeFeeUSD = await feePool.exchangeFeeIncurred(amountIssued);
 			const exchangeFeeXDR = await synthetix.effectiveValue(sUSD, exchangeFeeUSD, XDR);
 
+			// Exchange sUSD to sAUD
+			await synthetix.exchange(sUSD, amountIssued, sAUD, account1, {
+				from: account1,
+				gasPrice: exchangeGasPriceLimit,
+			});
 
+			// how much sAUD the user is supposed to get
+			const effectiveValue = await synthetix.effectiveValue(sUSD, amountIssued, sAUD);
+
+			// chargeFee = true so we need to minus the fees for this exchange
+			const effectiveValueMinusFees = await feePool.amountReceivedFromExchange(effectiveValue);
+
+			// Assert we have the correct AUD value - exchange fee
+			const sAUDBalance = await sAUDContract.balanceOf(account1);
+			assert.bnEqual(effectiveValueMinusFees, sAUDBalance);
+
+			// Assert we have the exchange fee to distribute
+			const feePeriodZero = await feePool.recentFeePeriods(0);
+			assert.bnEqual(exchangeFeeXDR, feePeriodZero.feesToDistribute);
 		});
 	});
 
