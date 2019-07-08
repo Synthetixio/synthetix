@@ -6,6 +6,7 @@ const SupplySchedule = artifacts.require('SupplySchedule');
 const Synthetix = artifacts.require('Synthetix');
 const SynthetixState = artifacts.require('SynthetixState');
 const Synth = artifacts.require('Synth');
+const GasPriceLimit = artifacts.require('ExchangeGasPriceLimit');
 
 const {
 	currentTime,
@@ -47,6 +48,7 @@ contract('Synthetix', async accounts => {
 		exchangeRates,
 		feePool,
 		supplySchedule,
+		gasPriceLimit,
 		sUSDContract,
 		sAUDContract,
 		escrow,
@@ -64,6 +66,7 @@ contract('Synthetix', async accounts => {
 		supplySchedule = await SupplySchedule.deployed();
 		escrow = await Escrow.deployed();
 		rewardEscrow = await RewardEscrow.deployed();
+		gasPriceLimit = await GasPriceLimit.deployed();
 
 		synthetix = await Synthetix.deployed();
 		synthetixState = await SynthetixState.at(await synthetix.synthetixState());
@@ -102,6 +105,7 @@ contract('Synthetix', async accounts => {
 			account7,
 			account8,
 			SYNTHETIX_TOTAL_SUPPLY,
+			account8,
 			{
 				from: deployerAccount,
 			}
@@ -2504,7 +2508,24 @@ contract('Synthetix', async accounts => {
 	});
 
 	describe('exchange gas price limit', () => {
+		beforeEach(async () => {
+			// Give some SNX to account1
+			await synthetix.methods['transfer(address,uint256)'](account1, toUnit('300000'), {
+				from: owner,
+			});
+			// Issue
+			const amountIssued = toUnit('2000');
+			await synthetix.issueSynths(sUSD, amountIssued, { from: account1 });
+		});
 
+		it('should revert a user if they try to send more gwei than gasLimit', async () => {
+			// Get the exchange fee in USD
+			const gasPriceLimit = await gasPriceLimit.
+			const exchangeFeeUSD = await feePool.exchangeFeeIncurred(amountIssued);
+			const exchangeFeeXDR = await synthetix.effectiveValue(sUSD, exchangeFeeUSD, XDR);
+
+
+		});
 	});
 
 	describe('when dealing with inverted synths', () => {

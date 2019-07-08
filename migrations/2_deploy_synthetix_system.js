@@ -175,10 +175,10 @@ module.exports = async function(deployer, network, accounts) {
 	});
 
 	console.log('Deploying Synthetix...');
-    // constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
-    //  address _owner, ExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule,
-    //  ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow, uint _totalSupply, IExchangeGasPriceLimit _gasPriceLimit
-    // )
+	// constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
+	//  address _owner, ExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule,
+	//  ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow, uint _totalSupply, IExchangeGasPriceLimit _gasPriceLimit
+	// )
 	deployer.link(SafeDecimalMath, Synthetix);
 	const synthetix = await deployer.deploy(
 		Synthetix,
