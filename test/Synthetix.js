@@ -2503,6 +2503,10 @@ contract('Synthetix', async accounts => {
 		});
 	});
 
+	describe('exchange gas price limit', () => {
+
+	});
+
 	describe('when dealing with inverted synths', () => {
 		let iBTCContract;
 		beforeEach(async () => {

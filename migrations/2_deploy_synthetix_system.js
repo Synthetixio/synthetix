@@ -19,6 +19,7 @@ const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 const TokenState = artifacts.require('TokenState');
 const Depot = artifacts.require('Depot');
 const SelfDestructible = artifacts.require('SelfDestructible');
+const ExchangeGasPriceLimit = artifacts.require('ExchangeGasPriceLimit');
 
 // Update values before deployment
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
@@ -143,6 +144,17 @@ module.exports = async function(deployer, network, accounts) {
 	await feePoolEternalStorage.setAssociatedContract(feePool.address, { from: owner });
 
 	// ----------------
+	// ExchangeGasPriceLimit
+	// ----------------
+	console.log('Deploying ExchangeGasPriceLimit...');
+	const GAS_LIMIT = web3.utils.toWei('10', 'gwei'); // Set testing gwei exchange limit to 10
+
+	// constructor(address _owner, uint _gasPrice)
+	const GasPriceLimit = await deployer.deploy(ExchangeGasPriceLimit, owner, GAS_LIMIT, {
+		from: deployerAccount,
+	});
+
+	// ----------------
 	// Synthetix
 	// ----------------
 	console.log('Deploying SupplySchedule...');
@@ -163,9 +175,10 @@ module.exports = async function(deployer, network, accounts) {
 	});
 
 	console.log('Deploying Synthetix...');
-	// constructor(address _proxy, TokenState _tokenState, Synthetix _synthetixState,
-	//     address _owner, ExchangeRates _exchangeRates, FeePool _feePool
-	// )
+    // constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
+    //  address _owner, ExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule,
+    //  ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow, uint _totalSupply, IExchangeGasPriceLimit _gasPriceLimit
+    // )
 	deployer.link(SafeDecimalMath, Synthetix);
 	const synthetix = await deployer.deploy(
 		Synthetix,
@@ -179,6 +192,7 @@ module.exports = async function(deployer, network, accounts) {
 		rewardEscrow.address,
 		escrow.address,
 		SYNTHETIX_TOTAL_SUPPLY,
+		GasPriceLimit.address,
 		{
 			from: deployerAccount,
 			gas: 8000000,
