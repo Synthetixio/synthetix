@@ -31,9 +31,9 @@ contract ExchangeGasPriceLimit is IExchangeGasPriceLimit, Owned {
      * @param _owner The address which controls this contract.
      */
     constructor(address _owner, uint _gasPrice)
-    public
-    Owned(_owner)
-    greaterThanZero(_gasPrice)
+        public
+        Owned(_owner)
+        greaterThanZero(_gasPrice)
     {
         gasPrice = _gasPrice;
     }
@@ -43,23 +43,23 @@ contract ExchangeGasPriceLimit is IExchangeGasPriceLimit, Owned {
         @param _gasPrice new gas price limit
     */
     function setGasPrice(uint _gasPrice)
-    public
-    onlyOwner
-    greaterThanZero(_gasPrice)
+        public
+        onlyOwner
+        greaterThanZero(_gasPrice)
     {
         gasPrice = _gasPrice;
     }
 
     /*
-        @dev validate that the given gas price is equal to the gas price limit
+        @dev validate that the given gas price is less than or equal to the gas price limit
         @param _gasPrice tested gas price
     */
-    function validateGasPrice(uint _gasPrice)
-    public
-    view
-    greaterThanZero(_gasPrice)
+    function validateGasPrice(uint _givenGasPrice)
+        public
+        view
+    greaterThanZero(_givenGasPrice)
     {
-        require(_gasPrice <= gasPrice, "Gas price above limit");
+        require(_givenGasPrice <= gasPrice, "Gas price above limit");
     }
 
     // verifies that an amount is greater than zero
