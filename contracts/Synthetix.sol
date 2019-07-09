@@ -312,7 +312,7 @@ contract Synthetix is ExternStateToken {
      * @notice Returns the currencyKeys of availableSynths for rate checking
      */
     function availableCurrencyKeys()
-        internal
+        public
         view
         returns (bytes4[])
     {
