@@ -151,6 +151,8 @@ contract Synthetix is ExternStateToken {
     string constant TOKEN_NAME = "Synthetix Network Token";
     string constant TOKEN_SYMBOL = "SNX";
     uint8 constant DECIMALS = 18;
+    bool public exchangeEnabled = true;
+
     // ========== CONSTRUCTOR ==========
 
     /**
@@ -187,6 +189,13 @@ contract Synthetix is ExternStateToken {
         optionalProxy_onlyOwner
     {
         exchangeRates = _exchangeRates;
+    }
+
+    function setExchangeEnabled(bool _exchangeEnabled)
+        external
+        optionalProxy_onlyOwner
+    {
+        exchangeEnabled = _exchangeEnabled;
     }
 
     /**
@@ -388,7 +397,7 @@ contract Synthetix is ExternStateToken {
      * @param sourceCurrencyKey The source currency you wish to exchange from
      * @param sourceAmount The amount, specified in UNIT of source currency you wish to exchange
      * @param destinationCurrencyKey The destination currency you wish to obtain.
-     * @param destinationAddress Where the result should go. If this is address(0) then it sends back to the message sender.
+     * @param destinationAddress Deprecated. Will always send to messageSender
      * @return Boolean that indicates whether the transfer succeeded or failed.
      */
     function exchange(bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey, address destinationAddress)
@@ -406,7 +415,7 @@ contract Synthetix is ExternStateToken {
             sourceCurrencyKey,
             sourceAmount,
             destinationCurrencyKey,
-            destinationAddress == address(0) ? messageSender : destinationAddress,
+            messageSender,
             true // Charge fee on the exchange
         );
     }
@@ -509,6 +518,8 @@ contract Synthetix is ExternStateToken {
         notFeeAddress(from)
         returns (bool)
     {
+        require(exchangeEnabled, "Exchanging is disabled");
+        require(!exchangeRates.priceUpdateLock(), "Price update lock");
         require(destinationAddress != address(0), "Zero destination");
         require(destinationAddress != address(this), "Synthetix is invalid destination");
         require(destinationAddress != address(proxy), "Proxy is invalid destination");
