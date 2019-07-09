@@ -40,7 +40,7 @@ module.exports = {
 		return flattenedContracts;
 	},
 
-	compile({ sources }) {
+	compile({ sources, runs = 200 }) {
 		const artifacts = [];
 		const output = JSON.parse(
 			solc.compileStandardWrapper(
@@ -49,6 +49,7 @@ module.exports = {
 					settings: {
 						optimizer: {
 							enabled: true,
+							runs: runs,
 						},
 						outputSelection: {
 							'*': {

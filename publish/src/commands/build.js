@@ -52,8 +52,17 @@ const build = async ({ buildPath = DEFAULTS.buildPath, showWarnings } = {}) => {
 
 	// Ok, now we need to compile all the files.
 	console.log(gray('Compiling contracts...'));
-	const { artifacts, errors, warnings } = compile({ sources });
+	const exchangeRatesSource = sources['ExchangeRates.sol'];
+	delete sources['ExchangeRates.sol'];
+	const { exchangeArtifact, exErrors, exWarnings } = compile({ exchangeRatesSource, runs: 500 });
+	let { artifacts, errors, warnings } = compile({ sources });
+
 	const compiledPath = path.join(buildPath, COMPILED_FOLDER);
+
+	artifacts = artifacts.concat(exchangeArtifact);
+	errors = errors.concat(exErrors);
+	warnings = warnings.concat(exWarnings);
+
 	Object.entries(artifacts).forEach(([key, value]) => {
 		const toWrite = path.join(compiledPath, key);
 		try {
