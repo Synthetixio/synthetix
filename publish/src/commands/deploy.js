@@ -157,7 +157,7 @@ const deploy = async ({
 			currentExchangeFee = await oldFeePool.methods.exchangeFeeRate().call();
 
 			const currentExrates = getExistingContract({ contract: 'ExchangeRates' });
-			currentSynthetixPrice = await currentExrates.methods.rateForCurrency(toBytes4('SNX'));
+			currentSynthetixPrice = await currentExrates.methods.rateForCurrency(toBytes4('SNX')).call();
 
 			if (!oracleExrates) {
 				oracleExrates = await currentExrates.methods.oracle().call();
