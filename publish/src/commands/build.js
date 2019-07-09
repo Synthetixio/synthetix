@@ -54,6 +54,7 @@ const build = async ({ buildPath = DEFAULTS.buildPath, showWarnings } = {}) => {
 	console.log(gray('Compiling contracts...'));
 	const exchangeRatesSource = sources['ExchangeRates.sol'];
 	delete sources['ExchangeRates.sol'];
+
 	const { exchangeArtifact, exErrors, exWarnings } = compile({ exchangeRatesSource, runs: 500 });
 	let { artifacts, errors, warnings } = compile({ sources });
 
