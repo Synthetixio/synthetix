@@ -2748,4 +2748,58 @@ contract('Synthetix', async accounts => {
 			});
 		});
 	});
+
+	describe('Using the protection circuit', async () => {
+		const amount = toUnit('1000');
+		it('should burn the source amount during an exchange', async () => {
+			await synthetix.methods['transfer(address,uint256)'](account1, toUnit('1000000'), {
+				from: owner,
+			});
+			await synthetix.issueSynths(sUSD, toUnit('10000'), { from: account1 });
+
+			// Enable the protection circuit
+			await synthetix.setProtectionCircuit(true, { from: oracle });
+
+			const initialSUSDBalance = await sUSDContract.balanceOf(account1);
+
+			// Exchange sUSD to sAUD
+			await synthetix.exchange(sUSD, amount, sAUD, account1, { from: account1 });
+
+			// Assert the USD sent is gone
+			const sUSDBalance = await sUSDContract.balanceOf(account1);
+			assert.bnEqual(initialSUSDBalance.sub(amount), sUSDBalance);
+
+			// Assert we don't have AUD
+			const sAUDBalance = await sAUDContract.balanceOf(account1);
+			assert.bnEqual(0, sAUDBalance);
+		});
+
+		it('should do the exchange if protection circuit is disabled', async () => {
+			await synthetix.methods['transfer(address,uint256)'](account1, toUnit('1000000'), {
+				from: owner,
+			});
+			await synthetix.issueSynths(sUSD, toUnit('10000'), { from: account1 });
+
+			// Enable the protection circuit then disable it
+			await synthetix.setProtectionCircuit(true, { from: oracle });
+			await synthetix.setProtectionCircuit(false, { from: oracle });
+
+			// Exchange sUSD to sAUD
+			await synthetix.exchange(sUSD, amount, sAUD, account1, { from: account1 });
+
+			// how much sAUD the user is supposed to get
+			const effectiveValue = await synthetix.effectiveValue(sUSD, amount, sAUD);
+
+			// chargeFee = true so we need to minus the fees for this exchange
+			const effectiveValueMinusFees = await feePool.amountReceivedFromExchange(effectiveValue);
+
+			// Assert we have the correct AUD value - exchange fee
+			const sAUDBalance = await sAUDContract.balanceOf(account1);
+			assert.bnEqual(effectiveValueMinusFees, sAUDBalance);
+		});
+
+		it('should revert if account different than oracle tries to enable protection circuit', async () => {
+			await assert.revert(synthetix.setProtectionCircuit(true, { from: owner }));
+		});
+	});
 });

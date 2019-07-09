@@ -14,7 +14,7 @@ const createRandomKeysAndRates = quantity => {
 	for (let i = 0; i < quantity; i++) {
 		const rate = Math.random() * 100;
 		const key = web3.utils.asciiToHex(getRandomCurrencyKey());
-		uniqueCurrencyKeys[key] = web3.utils.toWei(rate.toString(), 'ether');
+		uniqueCurrencyKeys[key] = web3.utils.toWei(rate.toFixed(18), 'ether');
 	}
 
 	const rates = [];
