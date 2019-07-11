@@ -37,6 +37,7 @@ import "chainlink/solidity/contracts/Chainlinked.sol"; // technically this is al
  */
 contract ExchangeRates is Chainlinked, SelfDestructible {
 
+
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -72,6 +73,15 @@ contract ExchangeRates is Chainlinked, SelfDestructible {
     mapping(bytes32 => Request) private requests;
     uint256 constant ORACLE_PRECISION = 1000000000000000000;
     // ------------------
+    // For inverted prices, keep a mapping of their entry, limits and frozen status
+    struct InversePricing {
+        uint entryPoint;
+        uint upperLimit;
+        uint lowerLimit;
+        bool frozen;
+    }
+    mapping(bytes4 => InversePricing) public inversePricing;
+    bytes4[] public invertedKeys;
 
     //
     // ========== CONSTRUCTOR ==========
@@ -174,11 +184,15 @@ contract ExchangeRates is Chainlinked, SelfDestructible {
             require(currencyKeys[i] != "sUSD", "Rate of sUSD cannot be updated, it's always UNIT.");
 
             // We should only update the rate if it's at least the same age as the last rate we've got.
-            if (timeSent >= lastRateUpdateTimes[currencyKeys[i]]) {
-                // Ok, go ahead with the update.
-                rates[currencyKeys[i]] = newRates[i];
-                lastRateUpdateTimes[currencyKeys[i]] = timeSent;
+            if (timeSent < lastRateUpdateTimes[currencyKeys[i]]) {
+                continue;
             }
+
+            newRates[i] = rateOrInverted(currencyKeys[i], newRates[i]);
+
+            // Ok, go ahead with the update.
+            rates[currencyKeys[i]] = newRates[i];
+            lastRateUpdateTimes[currencyKeys[i]] = timeSent;
         }
 
         emit RatesUpdated(currencyKeys, newRates);
@@ -187,6 +201,50 @@ contract ExchangeRates is Chainlinked, SelfDestructible {
         updateXDRRate(timeSent);
 
         return true;
+    }
+
+    /**
+     * @notice Internal function to get the inverted rate, if any, and mark an inverted
+     *  key as frozen if either limits are reached.
+     * @param currencyKey The price key to lookup
+     * @param rate The rate for the given price key
+     */
+    function rateOrInverted(bytes4 currencyKey, uint rate) internal returns (uint) {
+        // if an inverse mapping exists, adjust the price accordingly
+        InversePricing storage inverse = inversePricing[currencyKey];
+        if (inverse.entryPoint <= 0) {
+            return rate;
+        }
+
+        // set the rate to the current rate initially (if it's frozen, this is what will be returned)
+        uint newInverseRate = rates[currencyKey];
+
+        // get the new inverted rate if not frozen
+        if (!inverse.frozen) {
+            uint doubleEntryPoint = inverse.entryPoint.mul(2);
+            if (doubleEntryPoint <= rate) {
+                // avoid negative numbers for unsigned ints, so set this to 0
+                // which by the requirement that lowerLimit be > 0 will
+                // cause this to freeze the price to the lowerLimit
+                newInverseRate = 0;
+            } else {
+                newInverseRate = doubleEntryPoint.sub(rate);
+            }
+
+            // now if new rate hits our limits, set it to the limit and freeze
+            if (newInverseRate >= inverse.upperLimit) {
+                newInverseRate = inverse.upperLimit;
+            } else if (newInverseRate <= inverse.lowerLimit) {
+                newInverseRate = inverse.lowerLimit;
+            }
+
+            if (newInverseRate == inverse.upperLimit || newInverseRate == inverse.lowerLimit) {
+                inverse.frozen = true;
+                emit InversePriceFrozen(currencyKey);
+            }
+        }
+
+        return newInverseRate;
     }
 
     /**
@@ -258,7 +316,85 @@ contract ExchangeRates is Chainlinked, SelfDestructible {
         emit RateStalePeriodUpdated(rateStalePeriod);
     }
 
+    /**
+     * @notice Set an inverse price up for the currency key
+     * @param currencyKey The currency to update
+     * @param entryPoint The entry price point of the inverted price
+     * @param upperLimit The upper limit, at or above which the price will be frozen
+     * @param lowerLimit The lower limit, at or below which the price will be frozen
+     */
+    function setInversePricing(bytes4 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit)
+        external onlyOwner
+    {
+        require(entryPoint > 0, "entryPoint must be above 0");
+        require(lowerLimit > 0, "lowerLimit must be above 0");
+        require(upperLimit > entryPoint, "upperLimit must be above the entryPoint");
+        require(upperLimit < entryPoint.mul(2), "upperLimit must be less than double entryPoint");
+        require(lowerLimit < entryPoint, "lowerLimit must be below the entryPoint");
+
+        if (inversePricing[currencyKey].entryPoint <= 0) {
+            // then we are adding a new inverse pricing, so add this
+            invertedKeys.push(currencyKey);
+        }
+        inversePricing[currencyKey].entryPoint = entryPoint;
+        inversePricing[currencyKey].upperLimit = upperLimit;
+        inversePricing[currencyKey].lowerLimit = lowerLimit;
+        inversePricing[currencyKey].frozen = false;
+
+        emit InversePriceConfigured(currencyKey, entryPoint, upperLimit, lowerLimit);
+    }
+
+    /**
+     * @notice Remove an inverse price for the currency key
+     * @param currencyKey The currency to remove inverse pricing for
+     */
+    function removeInversePricing(bytes4 currencyKey) external onlyOwner {
+        inversePricing[currencyKey].entryPoint = 0;
+        inversePricing[currencyKey].upperLimit = 0;
+        inversePricing[currencyKey].lowerLimit = 0;
+        inversePricing[currencyKey].frozen = false;
+
+        // now remove inverted key from array
+        for (uint8 i = 0; i < invertedKeys.length; i++) {
+            if (invertedKeys[i] == currencyKey) {
+                delete invertedKeys[i];
+
+                // Copy the last key into the place of the one we just deleted
+                // If there's only one key, this is array[0] = array[0].
+                // If we're deleting the last one, it's also a NOOP in the same way.
+                invertedKeys[i] = invertedKeys[invertedKeys.length - 1];
+
+                // Decrease the size of the array by one.
+                invertedKeys.length--;
+
+                break;
+            }
+        }
+
+        emit InversePriceConfigured(currencyKey, 0, 0, 0);
+    }
     /* ========== VIEWS ========== */
+
+    /**
+     * @notice A function that lets you easily convert an amount in a source currency to an amount in the destination currency
+     * @param sourceCurrencyKey The currency the amount is specified in
+     * @param sourceAmount The source amount, specified in UNIT base
+     * @param destinationCurrencyKey The destination currency
+     */
+    function effectiveValue(bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey)
+        public
+        view
+        rateNotStale(sourceCurrencyKey)
+        rateNotStale(destinationCurrencyKey)
+        returns (uint)
+    {
+        // If there's no change in the currency, then just return the amount they gave us
+        if (sourceCurrencyKey == destinationCurrencyKey) return sourceAmount;
+
+        // Calculate the effective value by going from source -> USD -> destination
+        return sourceAmount.multiplyDecimalRound(rateForCurrency(sourceCurrencyKey))
+            .divideDecimalRound(rateForCurrency(destinationCurrencyKey));
+    }
 
     /**
      * @notice Retrieve the rate for a specific currency
@@ -320,7 +456,7 @@ contract ExchangeRates is Chainlinked, SelfDestructible {
      * @notice Check if a specific currency's rate hasn't been updated for longer than the stale period.
      */
     function rateIsStale(bytes4 currencyKey)
-        external
+        public
         view
         returns (bool)
     {
@@ -329,6 +465,18 @@ contract ExchangeRates is Chainlinked, SelfDestructible {
 
         return lastRateUpdateTimes[currencyKey].add(rateStalePeriod) < now;
     }
+
+    /**
+     * @notice Check if any rate is frozen (cannot be exchanged into)
+     */
+    function rateIsFrozen(bytes4 currencyKey)
+        external
+        view
+        returns (bool)
+    {
+        return inversePricing[currencyKey].frozen;
+    }
+
 
     /**
      * @notice Check if any of the currency rates passed in haven't been updated for longer than the stale period.
@@ -411,6 +559,10 @@ contract ExchangeRates is Chainlinked, SelfDestructible {
     ////////////
 
     /* ========== MODIFIERS ========== */
+    modifier rateNotStale(bytes4 currencyKey) {
+        require(!rateIsStale(currencyKey), "Rate stale or nonexistant currency");
+        _;
+    }
 
     modifier onlySNXOracle
     {
@@ -424,4 +576,6 @@ contract ExchangeRates is Chainlinked, SelfDestructible {
     event RateStalePeriodUpdated(uint rateStalePeriod);
     event RatesUpdated(bytes4[] currencyKeys, uint[] newRates);
     event RateDeleted(bytes4 currencyKey);
+    event InversePriceConfigured(bytes4 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit);
+    event InversePriceFrozen(bytes4 currencyKey);
 }

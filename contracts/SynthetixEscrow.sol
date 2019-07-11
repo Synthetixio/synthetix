@@ -36,8 +36,7 @@ pragma solidity 0.4.25;
 
 import "./SafeDecimalMath.sol";
 import "./Owned.sol";
-import "./Synthetix.sol";
-import "./Synth.sol";
+import "./ISynthetix.sol";
 import "./LimitedSetup.sol";
 
 /**
@@ -48,7 +47,7 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks) {
     using SafeMath for uint;
 
     /* The corresponding Synthetix contract. */
-    Synthetix public synthetix;
+    ISynthetix public synthetix;
 
     /* Lists of (timestamp, quantity) pairs per account, sorted in ascending time order.
      * These are the times at which each given quantity of SNX vests. */
@@ -69,7 +68,7 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks) {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, Synthetix _synthetix)
+    constructor(address _owner, ISynthetix _synthetix)
         Owned(_owner)
         public
     {
@@ -79,7 +78,7 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks) {
 
     /* ========== SETTERS ========== */
 
-    function setSynthetix(Synthetix _synthetix)
+    function setSynthetix(ISynthetix _synthetix)
         external
         onlyOwner
     {

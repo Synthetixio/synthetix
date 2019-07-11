@@ -33,9 +33,9 @@ pragma solidity 0.4.25;
 import "./SelfDestructible.sol";
 import "./Pausable.sol";
 import "./SafeDecimalMath.sol";
-import "./Synthetix.sol";
-import "./Synth.sol";
-import "./FeePool.sol";
+import "./ISynthetix.sol";
+import "./ISynth.sol";
+import "./IFeePool.sol";
 
 /**
  * @title Depot Contract.
@@ -45,9 +45,9 @@ contract Depot is SelfDestructible, Pausable {
     using SafeDecimalMath for uint;
 
     /* ========== STATE VARIABLES ========== */
-    Synthetix public synthetix;
-    Synth public synth;
-    FeePool public feePool;
+    ISynthetix public synthetix;
+    ISynth public synth;
+    IFeePool public feePool;
 
     // Address where the ether and Synths raised for selling SNX is transfered to
     // Any ether raised for selling Synths gets sent back to whoever deposited the Synths,
@@ -129,9 +129,9 @@ contract Depot is SelfDestructible, Pausable {
         address _fundsWallet,
 
         // Other contracts needed
-        Synthetix _synthetix,
-        Synth _synth,
-		FeePool _feePool,
+        ISynthetix _synthetix,
+        ISynth _synth,
+		IFeePool _feePool,
 
         // Oracle values - Allows for price updates
         address _oracle,
@@ -183,7 +183,7 @@ contract Depot is SelfDestructible, Pausable {
      * @notice Set the Synth contract that the issuance controller uses to issue Synths.
      * @param _synth The new synth contract target
      */
-    function setSynth(Synth _synth)
+    function setSynth(ISynth _synth)
         external
         onlyOwner
     {
@@ -195,7 +195,7 @@ contract Depot is SelfDestructible, Pausable {
      * @notice Set the Synthetix contract that the issuance controller uses to issue SNX.
      * @param _synthetix The new synthetix contract target
      */
-    function setSynthetix(Synthetix _synthetix)
+    function setSynthetix(ISynthetix _synthetix)
         external
         onlyOwner
     {
@@ -298,7 +298,7 @@ contract Depot is SelfDestructible, Pausable {
                     // Subtract the amount from our deposit and total.
                     uint newAmount = deposit.amount.sub(remainingToFulfill);
                     deposits[i] = synthDeposit({ user: deposit.user, amount: newAmount});
-                    
+
                     totalSellableDeposits = totalSellableDeposits.sub(remainingToFulfill);
 
                     // Transfer the ETH to the depositor. Send is used instead of transfer
@@ -683,8 +683,8 @@ contract Depot is SelfDestructible, Pausable {
 
     event FundsWalletUpdated(address newFundsWallet);
     event OracleUpdated(address newOracle);
-    event SynthUpdated(Synth newSynthContract);
-    event SynthetixUpdated(Synthetix newSynthetixContract);
+    event SynthUpdated(ISynth newSynthContract);
+    event SynthetixUpdated(ISynthetix newSynthetixContract);
     event PriceStalePeriodUpdated(uint priceStalePeriod);
     event PricesUpdated(uint newEthPrice, uint newSynthetixPrice, uint timeSent);
     event Exchange(string fromCurrency, uint fromAmount, string toCurrency, uint toAmount);

@@ -48,8 +48,8 @@ class Deployer {
 		};
 	}
 
-	async deploy({ name, args = [], deps = [] }) {
-		if (!this.config[name]) {
+	async deploy({ name, source, args = [], deps = [], force = false }) {
+		if (!this.config[name] && !force) {
 			console.log(yellow(`Skipping ${name} as it is NOT in contract flags file for deployment.`));
 			return;
 		}
@@ -57,18 +57,29 @@ class Deployer {
 		if (missingDeps.length) {
 			throw Error(`Cannot deploy ${name} as it is missing dependencies: ${missingDeps.join(',')}`);
 		}
-		const { deploy, contract } = this.config[name];
-		const compiled = this.compiled[name];
-		const existingAddress = this.deployment[name] ? this.deployment[name].address : '';
+		// by default, we deploy if force tells us to
+		let deploy = force;
+		// though use what's in the config if it exists
+		if (this.config[name]) {
+			deploy = this.config[name].deploy;
+		}
+		const compiled = this.compiled[source];
+		const existingAddress = this.deployment.targets[name]
+			? this.deployment.targets[name].address
+			: '';
 
-		if (!compiled) throw new Error(`No compiled source for: ${name}`);
+		if (!compiled) {
+			throw new Error(
+				`No compiled source for: ${name}. The source file is set to ${source}.sol - is that correct?`
+			);
+		}
 
 		// Any contract after SafeDecimalMath can automatically get linked.
 		// Doing this with bytecode that doesn't require the library is a no-op.
 		let bytecode = compiled.evm.bytecode.object;
 		if (this.deployedContracts.SafeDecimalMath) {
 			bytecode = linker.linkBytecode(bytecode, {
-				[contract + '.sol']: {
+				[source + '.sol']: {
 					SafeDecimalMath: this.deployedContracts.SafeDecimalMath.options.address,
 				},
 			});
@@ -88,10 +99,9 @@ class Deployer {
 					arguments: args,
 				})
 				.send(this.sendParameters('contract-deployment'));
-
 			console.log(green(` - Deployed ${name} to ${deployedContract.options.address}`));
 		} else if (existingAddress) {
-			deployedContract = new this.web3.eth.Contract(compiled.abi, existingAddress);
+			deployedContract = this.getContract({ abi: compiled.abi, address: existingAddress });
 			console.log(gray(` - Reusing instance of ${name} at ${existingAddress}`));
 		} else {
 			throw new Error(
@@ -102,6 +112,10 @@ class Deployer {
 		this.deployedContracts[name] = deployedContract;
 
 		return deployedContract;
+	}
+
+	getContract({ abi, address }) {
+		return new this.web3.eth.Contract(abi, address);
 	}
 }
 

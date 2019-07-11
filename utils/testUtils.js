@@ -29,7 +29,6 @@ const mineBlock = () => send({ method: 'evm_mine' });
  */
 const currentTime = async () => {
 	const { timestamp } = await web3.eth.getBlock('latest');
-
 	return timestamp;
 };
 
@@ -63,7 +62,8 @@ const fastForward = async seconds => {
 const fastForwardTo = async time => {
 	if (typeof time === 'string') time = parseInt(time);
 
-	const now = new Date();
+	const timestamp = await currentTime();
+	const now = new Date(timestamp * 1000);
 	if (time < now)
 		throw new Error(
 			`Time parameter (${time}) is less than now ${now}. You can only fast forward to times in the future.`
@@ -79,7 +79,6 @@ const fastForwardTo = async time => {
  */
 const takeSnapshot = async () => {
 	const { result } = await send({ method: 'evm_snapshot' });
-
 	await mineBlock();
 
 	return result;
@@ -94,7 +93,6 @@ const restoreSnapshot = async id => {
 		method: 'evm_revert',
 		params: [id],
 	});
-
 	await mineBlock();
 };
 
@@ -104,7 +102,7 @@ const restoreSnapshot = async id => {
  *  we should be able to update the conversion factor here.
  *  @param amount The amount you want to re-base to UNIT
  */
-const toUnit = amount => web3.utils.toBN(web3.utils.toWei(amount, 'ether'));
+const toUnit = amount => web3.utils.toBN(web3.utils.toWei(amount.toString(), 'ether'));
 const fromUnit = amount => web3.utils.fromWei(amount, 'ether');
 
 /**
@@ -119,7 +117,7 @@ const PRECISE_UNIT = web3.utils.toBN(PRECISE_UNIT_STRING);
 const toPreciseUnit = amount => {
 	// Code is largely lifted from the guts of web3 toWei here:
 	// https://github.com/ethjs/ethjs-unit/blob/master/src/index.js
-	let amountString = amount.toString();
+	const amountString = amount.toString();
 
 	// Is it negative?
 	var negative = amountString.substring(0, 1) === '-';
@@ -132,6 +130,7 @@ const toPreciseUnit = amount => {
 	}
 
 	// Split it into a whole and fractional part
+	// eslint-disable-next-line prefer-const
 	let [whole, fraction, ...rest] = amount.split('.');
 	if (rest.length > 0) {
 		throw new Error(`Error converting number ${amount} to precise unit, too many decimal points`);
@@ -180,7 +179,7 @@ const fromPreciseUnit = amount => {
 	// Chop zeros off the end if there are extras.
 	fraction = fraction.replace(/0+$/, '');
 
-	let whole = amount.div(PRECISE_UNIT).toString();
+	const whole = amount.div(PRECISE_UNIT).toString();
 	let value = `${whole}${fraction === '' ? '' : `.${fraction}`}`;
 
 	if (negative) {
