@@ -46,7 +46,8 @@
 		"asset": "GBP",
 		"category": "forex",
 		"sign": "£",
-		"desc": "Pound Sterling"
+		"desc": "Pound Sterling",
+		"subclass": "PurgeableSynth"
 	},
 	{
 		"name": "sCHF",
@@ -132,8 +133,8 @@
 		"sign": "₿",
 		"desc": "Inverted Bitcoin",
 		"inverted": {
-			"entryPoint": 8400,
-			"upperLimit": 12600,
+			"entryPoint": 4201,
+			"upperLimit": 4202,
 			"lowerLimit": 4200
 		}
 	},
@@ -156,8 +157,8 @@
 		"sign": "",
 		"desc": "Inverted Binance Coin",
 		"inverted": {
-			"entryPoint": 25,
-			"upperLimit": 38,
+			"entryPoint": 14,
+			"upperLimit": 15,
 			"lowerLimit": 13
 		}
 	}

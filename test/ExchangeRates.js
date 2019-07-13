@@ -14,7 +14,7 @@ const createRandomKeysAndRates = quantity => {
 	for (let i = 0; i < quantity; i++) {
 		const rate = Math.random() * 100;
 		const key = web3.utils.asciiToHex(getRandomCurrencyKey());
-		uniqueCurrencyKeys[key] = web3.utils.toWei(rate.toString(), 'ether');
+		uniqueCurrencyKeys[key] = web3.utils.toWei(rate.toFixed(18), 'ether');
 	}
 
 	const rates = [];
@@ -1022,6 +1022,45 @@ contract('Exchange Rates', async accounts => {
 			ratesTotal = ratesTotal.add(rate);
 		}
 		assert.bnEqual(lastUpdatedCurrencyXDR, ratesTotal);
+	});
+
+	it('oracle can set the priceUpdateLock flag to true', async () => {
+		const instance = await ExchangeRates.deployed();
+
+		await instance.setPriceUpdateLock(true, { from: oracle });
+
+		const priceUpdateLock = await instance.priceUpdateLock();
+		assert.equal(priceUpdateLock, true);
+	});
+
+	it('oracle can set the priceUpdateLock flag to false', async () => {
+		const instance = await ExchangeRates.deployed();
+
+		await instance.setPriceUpdateLock(false, { from: oracle });
+
+		const priceUpdateLock = await instance.priceUpdateLock();
+		assert.equal(priceUpdateLock, false);
+	});
+
+	it('oracle can set the priceUpdateLock flag to true and a priceUpdate will set it to false', async () => {
+		const instance = await ExchangeRates.deployed();
+
+		await instance.setPriceUpdateLock(true, { from: oracle });
+
+		const priceUpdateLock = await instance.priceUpdateLock();
+		assert.equal(priceUpdateLock, true);
+
+		// Send a price update
+		const timeSent = await currentTime();
+		const keysArray = ['sAUD', 'sEUR', 'sCHF', 'sGBP'].map(web3.utils.asciiToHex);
+		const rates = ['0.4', '1.2', '3.3', '1.95'].map(toUnit);
+		await instance.updateRates(keysArray, rates, timeSent, {
+			from: oracle,
+		});
+
+		// priceUpdateLock is now false
+		const priceUpdateLockAfter = await instance.priceUpdateLock();
+		assert.equal(priceUpdateLockAfter, false);
 	});
 
 	describe('inverted prices', () => {

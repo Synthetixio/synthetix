@@ -164,9 +164,9 @@ contract('Rewards Integration Tests', async accounts => {
 		const thirdOfSNX = third(snxTotalSupply);
 		// console.log('thirdOfSNX', thirdOfSNX.toString());
 
-		await synthetix.transfer(account1, thirdOfSNX, { from: owner });
-		await synthetix.transfer(account2, thirdOfSNX, { from: owner });
-		await synthetix.transfer(account3, thirdOfSNX, { from: owner });
+		await synthetix.methods['transfer(address,uint256)'](account1, thirdOfSNX, { from: owner });
+		await synthetix.methods['transfer(address,uint256)'](account2, thirdOfSNX, { from: owner });
+		await synthetix.methods['transfer(address,uint256)'](account3, thirdOfSNX, { from: owner });
 
 		// const balanceOfOwner = await synthetix.balanceOf(owner, { from: owner });
 		// console.log('balanceOfOwner', balanceOfOwner.toString());
