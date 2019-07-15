@@ -208,10 +208,10 @@
 			"name": "SynthsGBP",
 			"address": "0x0a24864596C54D79C825e64b281645249C14590C",
 			"source": "PurgeableSynth",
+			"network": "mainnet",
 			"link": "https://etherscan.io/address/0x0a24864596C54D79C825e64b281645249C14590C",
 			"timestamp": "2019-07-06T02:55:49.515Z",
-			"txn": "",
-			"network": "mainnet"
+			"txn": ""
 		},
 		"SynthsINR": {
 			"name": "SynthsINR",
