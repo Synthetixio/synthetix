@@ -70,7 +70,6 @@
 		"seedrandom": "^2.4.4",
 		"solidifier": "^2.0.0",
 		"solidity-coverage": "^0.5.11",
-		"solidity-parser-antlr": "0.4.2",
 		"solium": "1.1.8",
 		"table": "^5.0.2",
 		"truffle": "5.0.27",
