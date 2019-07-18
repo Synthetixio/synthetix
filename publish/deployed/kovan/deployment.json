@@ -23,8 +23,8 @@
 			"address": "0x309f082d89Bd68c31dD879622E4B13aF4CAF584c",
 			"source": "ExchangeRates",
 			"link": "https://kovan.etherscan.io/address/0x309f082d89Bd68c31dD879622E4B13aF4CAF584c",
-			"timestamp": "2019-07-09T15:00:03.953Z",
-			"txn": "",
+			"timestamp": "2019-07-09T15:00:04.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0x396497b72d22fca4f33497cee3843b25d2da6951ed945fb42599c066c40aa00c",
 			"network": "kovan"
 		},
 		"FeePool": {
@@ -176,8 +176,8 @@
 			"address": "0x057057e481c783CAd5829481A58d165fC1Df0c02",
 			"source": "Synthetix",
 			"link": "https://kovan.etherscan.io/address/0x057057e481c783CAd5829481A58d165fC1Df0c02",
-			"timestamp": "2019-07-09T15:00:07.505Z",
-			"txn": "",
+			"timestamp": "2019-07-09T15:00:08.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0x98c82b115a252b1b35a79eacb216a4504547d2c63602cbd7a9c9bf1a29f07c61",
 			"network": "kovan"
 		},
 		"SynthetixEscrow": {

@@ -14,8 +14,8 @@
 			"address": "0xe3508987cd41aF80e00478f386Cad1ECcdD1CE8b",
 			"source": "ExchangeRates",
 			"link": "https://ropsten.etherscan.io/address/0xe3508987cd41aF80e00478f386Cad1ECcdD1CE8b",
-			"timestamp": "2019-07-09T15:12:18.056Z",
-			"txn": "",
+			"timestamp": "2019-07-09T15:12:16.000Z",
+			"txn": "https://ropsten.etherscan.io/tx/0x1f801f2901159a9dec3377b1ad6dab575fb8c1ca5ac582e946ba10b647768bb1",
 			"network": "ropsten"
 		},
 		"FeePool": {
@@ -167,8 +167,8 @@
 			"address": "0x8159126F9eb1e0F98563a9683271B3F8699d0c70",
 			"source": "Synthetix",
 			"link": "https://ropsten.etherscan.io/address/0x8159126F9eb1e0F98563a9683271B3F8699d0c70",
-			"timestamp": "2019-07-09T15:12:44.441Z",
-			"txn": "",
+			"timestamp": "2019-07-09T15:12:38.000Z",
+			"txn": "https://ropsten.etherscan.io/tx/0xcf48e6425c46e1899971a78b851270db491dea2592846a45b21439efd8eabd6a",
 			"network": "ropsten"
 		},
 		"SynthetixEscrow": {
