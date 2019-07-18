@@ -15,6 +15,8 @@ const commands = {
 	removeSynths: require('../publish/src/commands/remove-synths').removeSynths,
 };
 
+const { SYNTHS_FILENAME, CONFIG_FILENAME } = require('../publish/src/constants');
+
 const snx = require('../index');
 
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
@@ -41,6 +43,12 @@ const users = Object.entries(
 		};
 
 		const deploymentPath = path.join(__dirname, '..', 'publish', 'deployed', 'local');
+
+		// track these files to revert them later on
+		const synthsJSONPath = path.join(deploymentPath, SYNTHS_FILENAME);
+		const synthsJSON = fs.readFileSync(synthsJSONPath);
+		const configJSONPath = path.join(deploymentPath, CONFIG_FILENAME);
+		const configJSON = fs.readFileSync(configJSONPath);
 
 		// 2. deploy
 		await commands.deploy({
@@ -153,6 +161,10 @@ const users = Object.entries(
 			privateKey: accounts.deployer.private,
 			synthsToRemove: ['sBTC'],
 		});
+
+		// restore the synths and config files for this env (cause removal updated it)
+		fs.writeFileSync(synthsJSONPath, synthsJSON);
+		fs.writeFileSync(configJSONPath, configJSON);
 
 		console.log(green('Integration test completed successfully.'));
 	} catch (err) {
