@@ -49,20 +49,6 @@
 		"desc": "Swiss Franc"
 	},
 	{
-		"name": "sCNY",
-		"asset": "CNY",
-		"category": "forex",
-		"sign": "¥",
-		"desc": "Chinese Yuan"
-	},
-	{
-		"name": "sINR",
-		"asset": "INR",
-		"category": "forex",
-		"sign": "₹",
-		"desc": "Indian Rupee"
-	},
-	{
 		"name": "sXAU",
 		"asset": "XAU",
 		"category": "commodity",
@@ -125,10 +111,11 @@
 		"sign": "₿",
 		"desc": "Inverted Bitcoin",
 		"inverted": {
-			"entryPoint": 8400,
-			"upperLimit": 12600,
-			"lowerLimit": 4200
-		}
+			"entryPoint": 10600,
+			"upperLimit": 15900,
+			"lowerLimit": 5300
+		},
+		"subclass": "PurgeableSynth"
 	},
 	{
 		"name": "iETH",
@@ -137,10 +124,11 @@
 		"sign": "Ξ",
 		"desc": "Inverted Ether",
 		"inverted": {
-			"entryPoint": 260,
-			"upperLimit": 390,
-			"lowerLimit": 130
-		}
+			"entryPoint": 220,
+			"upperLimit": 330,
+			"lowerLimit": 110
+		},
+		"subclass": "PurgeableSynth"
 	},
 	{
 		"name": "iBNB",
@@ -149,10 +137,11 @@
 		"sign": "",
 		"desc": "Inverted Binance Coin",
 		"inverted": {
-			"entryPoint": 25,
-			"upperLimit": 38,
-			"lowerLimit": 13
-		}
+			"entryPoint": 29,
+			"upperLimit": 44,
+			"lowerLimit": 14.5
+		},
+		"subclass": "PurgeableSynth"
 	},
 	{
 		"name": "iMKR",
@@ -162,9 +151,9 @@
 		"desc": "Inverted MAKER",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 720,
-			"upperLimit": 1080,
-			"lowerLimit": 360
+			"entryPoint": 550,
+			"upperLimit": 825,
+			"lowerLimit": 275
 		}
 	},
 	{
@@ -175,9 +164,9 @@
 		"desc": "Inverted Tron",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 0.033,
-			"upperLimit": 0.0495,
-			"lowerLimit": 0.0165
+			"entryPoint": 0.025,
+			"upperLimit": 0.0375,
+			"lowerLimit": 0.0125
 		}
 	},
 	{
@@ -188,9 +177,9 @@
 		"desc": "Inverted Tezos",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 1.15,
-			"upperLimit": 1.725,
-			"lowerLimit": 0.575
+			"entryPoint": 0.98,
+			"upperLimit": 1.47,
+			"lowerLimit": 0.49
 		}
 	}
 ]
