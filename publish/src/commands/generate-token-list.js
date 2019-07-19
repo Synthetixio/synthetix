@@ -10,7 +10,7 @@ const generateTokenList = async ({ deploymentPath }) => {
 	const deployment = JSON.parse(fs.readFileSync(path.join(deploymentPath, DEPLOYMENT_FILENAME)));
 
 	const output = Object.keys(deployment.targets)
-		.filter(key => /^Proxy(s[A-Z]{3,4}|Synthetix)$/.test(key))
+		.filter(key => /^Proxy((s|i)[A-Z]{3,4}|Synthetix)$/.test(key))
 		.map(key => {
 			return {
 				symbol: /Synthetix$/.test(key) ? 'SNX' : key.replace(/^Proxy/, ''),
