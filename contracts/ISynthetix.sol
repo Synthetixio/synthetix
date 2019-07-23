@@ -33,6 +33,11 @@ contract ISynthetix {
         uint sourceAmount,
         bytes4 destinationCurrencyKey,
         address destinationAddress) external returns (bool);
+    function exchange(
+        bytes4 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes4 destinationCurrencyKey,
+        address destinationAddress) external returns (bool);
     function collateralisationRatio(address issuer) public view returns (uint);
     function totalIssuedSynths(bytes4 currencyKey)
         public

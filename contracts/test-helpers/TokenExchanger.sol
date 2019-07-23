@@ -1,22 +1,25 @@
+/* TokenExchanger.sol: Used for testing contract to contract calls on chain 
+ * with Synthetix for testing ERC20 compatability
+ */
 pragma solidity 0.4.25;
 
 import "../Owned.sol";
-import "../Synthetix.sol";
-import "../FeePool.sol";
+import "../ISynthetix.sol";
+import "../IFeePool.sol";
 import "../IERC20.sol";
 
 contract TokenExchanger is Owned {
 
-    Synthetix public synthetix;
+    ISynthetix public synthetix;
 
-    constructor(address _owner, Synthetix _synthetix)
+    constructor(address _owner, ISynthetix _synthetix)
         Owned(_owner)
         public
     {
         synthetix = _synthetix;
     }
 
-    function setSynthetix(Synthetix _synthetix)
+    function setSynthetix(ISynthetix _synthetix)
         external
         onlyOwner
     {
@@ -25,6 +28,7 @@ contract TokenExchanger is Owned {
 
     function checkBalance(address account)
         public
+        view
         synthetixIsSet
         returns (uint)
     {
@@ -33,12 +37,11 @@ contract TokenExchanger is Owned {
 
     function amountReceivedFromExchange(uint amount)
         public
+        view
         synthetixIsSet
         returns (uint)
     {
-        // Get FeePool address
-        FeePool feePool = FeePool(synthetix.feePool());
-        return feePool.amountReceivedFromExchange(amount);
+        return IFeePool(synthetix.feePool()).amountReceivedFromExchange(amount);
     }
 
     function exchange(bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey)
@@ -49,17 +52,16 @@ contract TokenExchanger is Owned {
         // Get my balance
         uint mybalance = IERC20(synthetix).balanceOf(msg.sender);
 
-        // Get FeePool address
-        FeePool feePool = FeePool(synthetix.feePool());
+        // Get FeePool
+        IFeePool feePool = IFeePool(synthetix.feePool());
 
         // Get exchangeFeeRate
-        uint exchangeFeeRate = feePool.exchangeFeeRate();
+        uint exchangeFeeRate = IFeePool(feePool).exchangeFeeRate();
         uint maxRate = 5000000000000000;
         require(exchangeFeeRate < maxRate, "Not paying more than that");
 
         // Check my amount Received From Exchange
-        uint amountReceivedFromExchange = feePool.amountReceivedFromExchange(mybalance);
-        require(amountReceivedFromExchange > 0, "No sipping");
+        require(amountReceivedFromExchange(mybalance) > 0, "No sipping");
 
         // Do the exchange
         return synthetix.exchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey, msg.sender);
