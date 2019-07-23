@@ -24,10 +24,11 @@ pragma solidity 0.4.25;
 
 import "./Owned.sol";
 import "./Proxyable.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
+import "./Proxy.sol";
+import "./IERC20.sol";
 
 
-contract IntegrationProxy is IERC20, Owned {
+contract IntegrationProxy is Proxy, IERC20 {
 
     Proxyable public target;
 
@@ -36,21 +37,13 @@ contract IntegrationProxy is IERC20, Owned {
         public
     {}
 
-    function setTarget(Proxyable _target)
-        external
-        onlyOwner
-    {
-        target = _target;
-        emit TargetUpdated(_target);
-    }
-
     // ------------- ERC20 Interface ------------- //
 
     /**
     * @dev Total number of tokens in existence
     */
     function totalSupply() public view returns (uint256) {
-        return target.totalSupply();
+        return IERC20(target).totalSupply();
     }
 
     /**
@@ -59,7 +52,7 @@ contract IntegrationProxy is IERC20, Owned {
     * @return An uint256 representing the amount owned by the passed address.
     */
     function balanceOf(address owner) public view returns (uint256) {
-        return target.balanceOf(owner);
+        return IERC20(target).balanceOf(owner);
     }
 
     /**
@@ -76,7 +69,7 @@ contract IntegrationProxy is IERC20, Owned {
         view
         returns (uint256)
     {
-        return target.allowance(owner, spender);
+        return IERC20(target).allowance(owner, spender);
     }
 
     /**
@@ -86,8 +79,8 @@ contract IntegrationProxy is IERC20, Owned {
     */
     function transfer(address to, uint256 value) public returns (bool) {
         target.setMessageSender(msg.sender);
-        target.transfer(to, value);
-        emit Transfer(from, to, value);
+        IERC20(target).transfer(to, value);
+        emit Transfer(msg.sender, to, value);
         return true;
     }
 
@@ -104,7 +97,7 @@ contract IntegrationProxy is IERC20, Owned {
         require(spender != address(0), "Can't be 0 address");
 
         target.setMessageSender(msg.sender);
-        target.approve(spender, value);
+        IERC20(target).approve(spender, value);
         emit Approval(msg.sender, spender, value);
         return true;
     }
@@ -124,35 +117,8 @@ contract IntegrationProxy is IERC20, Owned {
         returns (bool)
     {
         target.setMessageSender(msg.sender);
-        target.transferFrom(from, to, value);
+        IERC20(target).transferFrom(from, to, value);
+        emit Transfer(from, to, value);
         return true;
     }
-
-    // Catch all for any non ERC20 functions
-    function()
-        external
-        payable
-    {
-        target.setMessageSender(msg.sender);
-        assembly {
-            let free_ptr := mload(0x40)
-            calldatacopy(free_ptr, 0, calldatasize)
-
-            /* We must explicitly forward ether to the underlying contract as well. */
-            let result := call(gas, sload(target_slot), callvalue, free_ptr, calldatasize, 0, 0)
-            returndatacopy(free_ptr, 0, returndatasize)
-
-            if iszero(result) { revert(free_ptr, returndatasize) }
-            return(free_ptr, returndatasize)
-        }
-    }
-
-
-
-    modifier onlyTarget {
-        require(Proxyable(msg.sender) == target, "Must be proxy target");
-        _;
-    }
-
-    event TargetUpdated(Proxyable newTarget);
 }
