@@ -12,13 +12,16 @@ contract.only('IntegrationProxy', async accounts => {
 	const [sUSD, sAUD] = ['sUSD', 'sAUD'].map(web3.utils.asciiToHex);
 
 	beforeEach(async () => {
-		// Save ourselves from having to await deployed() in every single test.
-		// We do this in a beforeEach instead of before to ensure we isolate
-		// contract interfaces to prevent test bleed.
-		integrationProxy = await IntegrationProxy.deployed();
+		console.log('Deploying IntegrationProxy...');
+		integrationProxy = await IntegrationProxy.new(owner, { from: deployerAccount });
+		console.log('IntegrationProxy Deployed:', integrationProxy.address);
 		synthetix = await Synthetix.deployed();
-		await integrationProxy.setTarget(synthetix.address, { from: owner });
-		await synthetix.setIntegrationProxy(synthetix.address, { from: owner });
+		console.log('synthetix.setIntegrationProxy to', integrationProxy.address);
+		await synthetix.setIntegrationProxy(integrationProxy.address, { from: owner });
+		console.log('integrationProxy.setTarget to', synthetix.address);
+
+		const txn = await integrationProxy.setTarget(synthetix.address, { from: owner });
+		console.log(txn.receipt.status);
 
 		// Deploy an on chain exchanger
 		tokenExchanger = await TokenExchanger.new(owner, integrationProxy.address, {
@@ -34,19 +37,27 @@ contract.only('IntegrationProxy', async accounts => {
 		await synthetix.issueSynths(sUSD, toUnit('10'), { from: account2 });
 	});
 
-	it.only('should setintegrationProxy on synthetix on deployment', async () => {
+	it('should setIntegrationProxy on synthetix on deployment', async () => {
 		const _integrationProxyAddress = await synthetix.integrationProxy();
 		assert.equal(integrationProxy.address, _integrationProxyAddress);
 	});
 
-	it.only('should setTarget on setintegrationProxy to synthetix on deployment', async () => {
-		const _synthetixAddress = await integrationProxy.target();
-		assert.equal(synthetix.address, _synthetixAddress);
+	it('should setTarget on IntegrationProxy to synthetix on deployment', async () => {
+		const integrationProxyTarget = await integrationProxy.target();
+		console.log('integrationProxy.target is ', integrationProxyTarget);
+		assert.equal(synthetix.address, integrationProxyTarget);
+	});
+
+	it('should tokenExchanger has integrationProxy set on deployment', async () => {
+		const _integrationProxyAddress = await tokenExchanger.integrationProxy();
+		assert.equal(integrationProxy.address, _integrationProxyAddress);
 	});
 
 	describe('third party contracts', async () => {
-		it('should be able to query ERC20 balanceOf', async () => {
+		it.only('should be able to query ERC20 balanceOf', async () => {
+			console.log('Call tokenExchanger.checkBalance()');
 			const mybalance = await tokenExchanger.checkBalance(account1);
+			console.log('mybalance = ', mybalance.toString());
 			const alsoMyBalance = await synthetix.balanceOf(account1);
 			assert.equal(mybalance, alsoMyBalance);
 		});

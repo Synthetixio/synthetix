@@ -33,7 +33,7 @@ contract IntegrationProxy is Proxy, IERC20 {
     Proxyable public target;
 
     constructor(address _owner)
-        Owned(_owner)
+        Proxy(_owner)
         public
     {}
 

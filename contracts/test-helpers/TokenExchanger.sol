@@ -10,20 +10,20 @@ import "../IERC20.sol";
 
 contract TokenExchanger is Owned {
 
-    ISynthetix public synthetix;
+    address public integrationProxy;
 
-    constructor(address _owner, ISynthetix _synthetix)
+    constructor(address _owner, address _integrationProxy)
         Owned(_owner)
         public
     {
-        synthetix = _synthetix;
+        integrationProxy = _integrationProxy;
     }
 
-    function setSynthetix(ISynthetix _synthetix)
+    function setSynthetixProxy(address _integrationProxy)
         external
         onlyOwner
     {
-        synthetix = _synthetix;
+        integrationProxy = _integrationProxy;
     }
 
     function checkBalance(address account)
@@ -32,7 +32,7 @@ contract TokenExchanger is Owned {
         synthetixIsSet
         returns (uint)
     {
-        return IERC20(synthetix).balanceOf(account);
+        return IERC20(integrationProxy).balanceOf(account);
     }
 
     function amountReceivedFromExchange(uint amount)
@@ -41,7 +41,7 @@ contract TokenExchanger is Owned {
         synthetixIsSet
         returns (uint)
     {
-        return IFeePool(synthetix.feePool()).amountReceivedFromExchange(amount);
+        return IFeePool(ISynthetix(integrationProxy).feePool()).amountReceivedFromExchange(amount);
     }
 
     function exchange(bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey)
@@ -50,10 +50,10 @@ contract TokenExchanger is Owned {
         returns (bool)
     {
         // Get my balance
-        uint mybalance = IERC20(synthetix).balanceOf(msg.sender);
+        uint mybalance = IERC20(integrationProxy).balanceOf(msg.sender);
 
         // Get FeePool
-        IFeePool feePool = IFeePool(synthetix.feePool());
+        IFeePool feePool = IFeePool(ISynthetix(integrationProxy).feePool());
 
         // Get exchangeFeeRate
         uint exchangeFeeRate = IFeePool(feePool).exchangeFeeRate();
@@ -64,11 +64,14 @@ contract TokenExchanger is Owned {
         require(amountReceivedFromExchange(mybalance) > 0, "No sipping");
 
         // Do the exchange
-        return synthetix.exchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey, msg.sender);
+        return ISynthetix(integrationProxy).exchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey, msg.sender);
     }
 
     modifier synthetixIsSet {
-        require(synthetix != address(0), "synthetix contract address not set");
+        require(integrationProxy != address(0), "Synthetix Integration proxy address not set");
         _;
     }
+
+    event LogString(string name, string value);
+    event LogInt(string name, uint value);
 }
