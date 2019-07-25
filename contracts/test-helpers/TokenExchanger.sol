@@ -11,6 +11,7 @@ import "../IERC20.sol";
 contract TokenExchanger is Owned {
 
     address public integrationProxy;
+    address public synthetix;
 
     constructor(address _owner, address _integrationProxy)
         Owned(_owner)
@@ -26,52 +27,46 @@ contract TokenExchanger is Owned {
         integrationProxy = _integrationProxy;
     }
 
+    function setSynthetix(address _synthetix)
+        external
+        onlyOwner
+    {
+        synthetix = _synthetix;
+    }
+
     function checkBalance(address account)
         public
         view
-        synthetixIsSet
+        synthetixProxyIsSet
         returns (uint)
     {
         return IERC20(integrationProxy).balanceOf(account);
     }
 
-    function amountReceivedFromExchange(uint amount)
+    function checkBalanceSNX(address account)
         public
         view
-        synthetixIsSet
+        synthetixProxyIsSet
         returns (uint)
     {
-        return IFeePool(ISynthetix(integrationProxy).feePool()).amountReceivedFromExchange(amount);
+        return IERC20(synthetix).balanceOf(account);
     }
 
-    function exchange(bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey)
+    function doTokenSpend(address fromAccount, address toAccount, uint amount)
         public
-        synthetixIsSet
+        synthetixProxyIsSet
         returns (bool)
     {
-        // Get my balance
-        uint mybalance = IERC20(integrationProxy).balanceOf(msg.sender);
-
-        // Get FeePool
-        IFeePool feePool = IFeePool(ISynthetix(integrationProxy).feePool());
-
-        // Get exchangeFeeRate
-        uint exchangeFeeRate = IFeePool(feePool).exchangeFeeRate();
-        uint maxRate = 5000000000000000;
-        require(exchangeFeeRate < maxRate, "Not paying more than that");
-
-        // Check my amount Received From Exchange
-        require(amountReceivedFromExchange(mybalance) > 0, "No sipping");
-
-        // Do the exchange
-        return ISynthetix(integrationProxy).exchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey, msg.sender);
+        return IERC20(integrationProxy).transferFrom(fromAccount, toAccount, amount);
     }
 
-    modifier synthetixIsSet {
+    modifier synthetixProxyIsSet {
         require(integrationProxy != address(0), "Synthetix Integration proxy address not set");
         _;
     }
 
     event LogString(string name, string value);
     event LogInt(string name, uint value);
+    event LogAddress(string name, address value);
+    event LogBytes(string name, bytes4 value);
 }

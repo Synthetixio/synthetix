@@ -27,10 +27,7 @@ import "./Proxyable.sol";
 import "./Proxy.sol";
 import "./IERC20.sol";
 
-
 contract IntegrationProxy is Proxy, IERC20 {
-
-    Proxyable public target;
 
     constructor(address _owner)
         Proxy(_owner)
@@ -95,7 +92,6 @@ contract IntegrationProxy is Proxy, IERC20 {
     */
     function approve(address spender, uint256 value) public returns (bool) {
         require(spender != address(0), "Can't be 0 address");
-
         target.setMessageSender(msg.sender);
         IERC20(target).approve(spender, value);
         emit Approval(msg.sender, spender, value);
