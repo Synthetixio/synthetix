@@ -896,7 +896,11 @@ const deploy = async ({
 						appendOwnerAction({
 							key: `ExchangeRates.setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})`,
 							target: exchangeRatesAddress,
-							action: `setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})`,
+							action: `setInversePricing(${currencyKey}, ${w3utils.toWei(
+								entryPoint.toString()
+							)}, ${w3utils.toWei(upperLimit.toString())}, ${w3utils.toWei(
+								lowerLimit.toString()
+							)})`,
 						});
 					}
 				} else {

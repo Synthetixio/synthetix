@@ -62,13 +62,6 @@
 			"link": "https://etherscan.io/address/0x28AF5a2f0cC12F2f19dd946608c945456b52b3F6",
 			"network": "mainnet"
 		},
-		"ProxysCNY": {
-			"name": "ProxysCNY",
-			"address": "0x60feeeD05004476518281D43185fB7F52d9722c0",
-			"source": "Proxy",
-			"link": "https://etherscan.io/address/0x60feeeD05004476518281D43185fB7F52d9722c0",
-			"network": "mainnet"
-		},
 		"ProxysEUR": {
 			"name": "ProxysEUR",
 			"address": "0x3EB064766109D150e4362222df80638BcE00e037",
@@ -81,13 +74,6 @@
 			"address": "0x0C8A7D55ef593A2cAd34894c1523162eE2ffB9aC",
 			"source": "Proxy",
 			"link": "https://etherscan.io/address/0x0C8A7D55ef593A2cAd34894c1523162eE2ffB9aC",
-			"network": "mainnet"
-		},
-		"ProxysINR": {
-			"name": "ProxysINR",
-			"address": "0x74C80bB51Da1EAc2d40074c647CbD0ab6920063f",
-			"source": "Proxy",
-			"link": "https://etherscan.io/address/0x74C80bB51Da1EAc2d40074c647CbD0ab6920063f",
 			"network": "mainnet"
 		},
 		"ProxysJPY": {
@@ -190,13 +176,6 @@
 			"link": "https://etherscan.io/address/0x9270D9970D6ACA773e2FA01633CDc091a46714c9",
 			"network": "mainnet"
 		},
-		"SynthsCNY": {
-			"name": "SynthsCNY",
-			"address": "0x60C34eB93AFCd1B701fF8C036B128441C68A8A70",
-			"source": "Synth",
-			"link": "https://etherscan.io/address/0x60C34eB93AFCd1B701fF8C036B128441C68A8A70",
-			"network": "mainnet"
-		},
 		"SynthsEUR": {
 			"name": "SynthsEUR",
 			"address": "0xC2bb52457D81FBD223CC92b44cd372d36b338A10",
@@ -211,13 +190,6 @@
 			"link": "https://etherscan.io/address/0x0a24864596C54D79C825e64b281645249C14590C",
 			"timestamp": "2019-07-06T02:55:49.515Z",
 			"txn": "",
-			"network": "mainnet"
-		},
-		"SynthsINR": {
-			"name": "SynthsINR",
-			"address": "0x51671B7556EbEB4c43180e983F5569973e15cAc9",
-			"source": "Synth",
-			"link": "https://etherscan.io/address/0x51671B7556EbEB4c43180e983F5569973e15cAc9",
 			"network": "mainnet"
 		},
 		"SynthsJPY": {
@@ -283,13 +255,6 @@
 			"link": "https://etherscan.io/address/0x52496fE8a4feaEFe14d9433E00D48E6929c13deC",
 			"network": "mainnet"
 		},
-		"TokenStatesCNY": {
-			"name": "TokenStatesCNY",
-			"address": "0x5cCA1f0c514C0624d3BA7585d56fD2d72CbeFd80",
-			"source": "TokenState",
-			"link": "https://etherscan.io/address/0x5cCA1f0c514C0624d3BA7585d56fD2d72CbeFd80",
-			"network": "mainnet"
-		},
 		"TokenStatesEUR": {
 			"name": "TokenStatesEUR",
 			"address": "0x6568D9e750fC44AF00f857885Dfb8281c00529c4",
@@ -302,13 +267,6 @@
 			"address": "0x7e88D19A79b291cfE5696d496055f7e57F537A75",
 			"source": "TokenState",
 			"link": "https://etherscan.io/address/0x7e88D19A79b291cfE5696d496055f7e57F537A75",
-			"network": "mainnet"
-		},
-		"TokenStatesINR": {
-			"name": "TokenStatesINR",
-			"address": "0xf8F2f8001fca737eFA2bC26217Fc20C1F8267fbA",
-			"source": "TokenState",
-			"link": "https://etherscan.io/address/0xf8F2f8001fca737eFA2bC26217Fc20C1F8267fbA",
 			"network": "mainnet"
 		},
 		"TokenStatesJPY": {
@@ -434,12 +392,12 @@
 		},
 		"SynthiBTC": {
 			"name": "SynthiBTC",
-			"address": "0xd8f6B6b6782632275B2B51230654f687f5b12Cde",
-			"source": "Synth",
-			"link": "https://etherscan.io/address/0xd8f6B6b6782632275B2B51230654f687f5b12Cde",
-			"timestamp": "2019-04-23T22:54:24.000Z",
-			"txn": "https://etherscan.io/tx/0xd727e4aee782c991e0bc46e2322b173ebe64ee9673fe5eb1f9a64a6ca4f799ea",
-			"network": "mainnet"
+			"address": "0xccC395f0eBFAA26dCC2D3BACc23d55614002236b",
+			"source": "PurgeableSynth",
+			"network": "mainnet",
+			"link": "https://etherscan.io/address/0xccC395f0eBFAA26dCC2D3BACc23d55614002236b",
+			"timestamp": "2019-07-19T00:09:20.465Z",
+			"txn": ""
 		},
 		"TokenStateiETH": {
 			"name": "TokenStateiETH",
@@ -461,12 +419,12 @@
 		},
 		"SynthiETH": {
 			"name": "SynthiETH",
-			"address": "0x51Fe40e6292dbC44623b298a4086ffA6f5976ba1",
-			"source": "Synth",
-			"link": "https://etherscan.io/address/0x51Fe40e6292dbC44623b298a4086ffA6f5976ba1",
-			"timestamp": "2019-04-23T22:58:31.000Z",
-			"txn": "https://etherscan.io/tx/0xf2717aa69f2b955b87e809e9f421953fe6ccc2530821625cc87367f5c0585688",
-			"network": "mainnet"
+			"address": "0x9b461df6fc38E1baEC08c06EB9e916093af8d11C",
+			"source": "PurgeableSynth",
+			"network": "mainnet",
+			"link": "https://etherscan.io/address/0x9b461df6fc38E1baEC08c06EB9e916093af8d11C",
+			"timestamp": "2019-07-19T00:02:31.805Z",
+			"txn": ""
 		},
 		"TokenStateiBNB": {
 			"name": "TokenStateiBNB",
@@ -488,12 +446,12 @@
 		},
 		"SynthiBNB": {
 			"name": "SynthiBNB",
-			"address": "0x56751D5Ac7D2B614C79d22e6b52D3285cFA8a293",
-			"source": "Synth",
-			"link": "https://etherscan.io/address/0x56751D5Ac7D2B614C79d22e6b52D3285cFA8a293",
-			"timestamp": "2019-04-23T23:01:32.000Z",
-			"txn": "https://etherscan.io/tx/0x72f0f75dc1a9f7532ebfb2700c55df86cf7d41161203ee62270202c3703bf4cd",
-			"network": "mainnet"
+			"address": "0xED4A3Adffa428fFD126AeD8ba5b8B58bb12c11ca",
+			"source": "PurgeableSynth",
+			"network": "mainnet",
+			"link": "https://etherscan.io/address/0xED4A3Adffa428fFD126AeD8ba5b8B58bb12c11ca",
+			"timestamp": "2019-07-19T00:20:17.439Z",
+			"txn": ""
 		},
 		"RewardEscrow": {
 			"name": "RewardEscrow",
@@ -619,6 +577,87 @@
 			"link": "https://etherscan.io/address/0x6E5Bc3e877CFaa06eF97dfA12e63EfbB8FCbb03e",
 			"timestamp": "2019-07-03T02:20:12.000Z",
 			"txn": "https://etherscan.io/tx/0x7dd35dc9423c07cfa6484e87caea5f5f4176c7d22d71bcde9ce4da0330a3f2f5",
+			"network": "mainnet"
+		},
+		"TokenStateiMKR": {
+			"name": "TokenStateiMKR",
+			"address": "0xa0c19218271F056bc10b1cDd7a5FaB48F757BC86",
+			"source": "TokenState",
+			"link": "https://etherscan.io/address/0xa0c19218271F056bc10b1cDd7a5FaB48F757BC86",
+			"timestamp": "2019-07-18T23:19:38.505Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"ProxyiMKR": {
+			"name": "ProxyiMKR",
+			"address": "0xEAf60dA0199bE2f62005225248705De774582328",
+			"source": "Proxy",
+			"link": "https://etherscan.io/address/0xEAf60dA0199bE2f62005225248705De774582328",
+			"timestamp": "2019-07-18T23:19:45.929Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"SynthiMKR": {
+			"name": "SynthiMKR",
+			"address": "0x99bcc501d04F400Ba3F78b5375D00B56acE6Ee0D",
+			"source": "PurgeableSynth",
+			"link": "https://etherscan.io/address/0x99bcc501d04F400Ba3F78b5375D00B56acE6Ee0D",
+			"timestamp": "2019-07-18T23:19:52.000Z",
+			"txn": "https://etherscan.io/tx/0x93a2d0b15c6aa92b9906d003304ef25a94fd41c900e2b0dbe330cc12e05f83f6",
+			"network": "mainnet"
+		},
+		"TokenStateiTRX": {
+			"name": "TokenStateiTRX",
+			"address": "0xd69EabdF940174cA571A6D71dde9B9A4dbCdBb0f",
+			"source": "TokenState",
+			"link": "https://etherscan.io/address/0xd69EabdF940174cA571A6D71dde9B9A4dbCdBb0f",
+			"timestamp": "2019-07-18T23:21:42.484Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"ProxyiTRX": {
+			"name": "ProxyiTRX",
+			"address": "0xCd8D927f2CB03d2eFB7f96CeB66Ec4976843E012",
+			"source": "Proxy",
+			"link": "https://etherscan.io/address/0xCd8D927f2CB03d2eFB7f96CeB66Ec4976843E012",
+			"timestamp": "2019-07-18T23:21:49.821Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"SynthiTRX": {
+			"name": "SynthiTRX",
+			"address": "0x87ea2450EaB99A74e55E2B446290011765393AC1",
+			"source": "PurgeableSynth",
+			"link": "https://etherscan.io/address/0x87ea2450EaB99A74e55E2B446290011765393AC1",
+			"timestamp": "2019-07-18T23:22:52.469Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"TokenStateiXTZ": {
+			"name": "TokenStateiXTZ",
+			"address": "0xca0d3004f5E771A129fB94619f8867A23e8A23de",
+			"source": "TokenState",
+			"link": "https://etherscan.io/address/0xca0d3004f5E771A129fB94619f8867A23e8A23de",
+			"timestamp": "2019-07-18T23:25:26.814Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"ProxyiXTZ": {
+			"name": "ProxyiXTZ",
+			"address": "0xc2992b2C22238F296c2f429ee2f7AfB462Ed1750",
+			"source": "Proxy",
+			"link": "https://etherscan.io/address/0xc2992b2C22238F296c2f429ee2f7AfB462Ed1750",
+			"timestamp": "2019-07-18T23:25:59.305Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"SynthiXTZ": {
+			"name": "SynthiXTZ",
+			"address": "0xFE6Cd6dE459db214818492f532Ec02Ba87319437",
+			"source": "PurgeableSynth",
+			"link": "https://etherscan.io/address/0xFE6Cd6dE459db214818492f532Ec02Ba87319437",
+			"timestamp": "2019-07-18T23:26:40.913Z",
+			"txn": "",
 			"network": "mainnet"
 		}
 	},
@@ -4896,8 +4935,7 @@
 					],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "constructor",
-					"signature": "constructor"
+					"type": "constructor"
 				},
 				{
 					"anonymous": false,
@@ -11043,7 +11081,8 @@
 					],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "constructor"
+					"type": "constructor",
+					"signature": "constructor"
 				},
 				{
 					"anonymous": false,
