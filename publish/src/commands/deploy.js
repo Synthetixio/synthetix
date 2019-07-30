@@ -872,43 +872,32 @@ const deploy = async ({
 			if (inverted) {
 				// check total supply
 				const totalSynthSupply = await synth.methods.totalSupply().call();
-				if (Number(totalSynthSupply) === 0) {
-					const {
-						entryPoint: currentEP,
-						upperLimit: currentUL,
-						lowerLimit: currentLL,
-					} = await exchangeRates.methods.inversePricing(toBytes4(currencyKey)).call();
 
-					const { entryPoint, upperLimit, lowerLimit } = inverted;
+				const { entryPoint, upperLimit, lowerLimit } = inverted;
 
-					// only do if not already set
-					if (
-						w3utils.fromWei(currentEP) !== entryPoint.toString() ||
-						w3utils.fromWei(currentUL) !== upperLimit.toString() ||
-						w3utils.fromWei(currentLL) !== lowerLimit.toString()
-					) {
-						const exchangeRatesOwner = await exchangeRates.methods.owner().call();
-						if (exchangeRatesOwner === account) {
-							console.log(
-								yellow(
-									`Invoking ExchangeRates.setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})...`
-								)
-							);
-							await exchangeRates.methods
-								.setInversePricing(
-									toBytes4(currencyKey),
-									w3utils.toWei(entryPoint.toString()),
-									w3utils.toWei(upperLimit.toString()),
-									w3utils.toWei(lowerLimit.toString())
-								)
-								.send(deployer.sendParameters());
-						} else {
-							appendOwnerAction({
-								key: `ExchangeRates.setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})`,
-								target: exchangeRatesAddress,
-								action: `setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})`,
-							});
-						}
+				// only call setInversePricing if either there's no supply or if on a testnet
+				if (Number(totalSynthSupply) === 0 || network !== 'mainnet') {
+					const exchangeRatesOwner = await exchangeRates.methods.owner().call();
+					if (exchangeRatesOwner === account) {
+						console.log(
+							yellow(
+								`Invoking ExchangeRates.setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})...`
+							)
+						);
+						await exchangeRates.methods
+							.setInversePricing(
+								toBytes4(currencyKey),
+								w3utils.toWei(entryPoint.toString()),
+								w3utils.toWei(upperLimit.toString()),
+								w3utils.toWei(lowerLimit.toString())
+							)
+							.send(deployer.sendParameters());
+					} else {
+						appendOwnerAction({
+							key: `ExchangeRates.setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})`,
+							target: exchangeRatesAddress,
+							action: `setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})`,
+						});
 					}
 				} else {
 					console.log(
