@@ -197,7 +197,8 @@ contract.only('IntegrationProxy', async accounts => {
 			const account2BalanceBefore = await synthetix.balanceOf(account2);
 
 			// tokenExchanger to transfer Account1's SNX to Account2
-			const transferTX = await tokenExchanger.doTokenSpend(account1, account2, amountToTransfer);
+			await tokenExchanger.doTokenSpend(account1, account2, amountToTransfer);
+			// const transferTX = await tokenExchanger.doTokenSpend(account1, account2, amountToTransfer);
 
 			// TODO: NO TRANSFER EVENT GENERATED FROM doTokenSpend. Check logs
 			// const events = transferTX.logs.filter(log => log.event === 'Transfer');
