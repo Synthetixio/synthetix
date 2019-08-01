@@ -193,27 +193,27 @@ contract Synthetix is ExternStateToken {
     //     exchangeRates = _exchangeRates;
     // }
 
-    // function setAddresses(ExchangeRates _exchangeRates, IFeePool _feePool)
-    //     external
-    //     optionalProxy_onlyOwner
-    // {
-    //     exchangeRates = _exchangeRates;
-    //     feePool = _feePool;
-    // }
+    function setAddresses(ExchangeRates _exchangeRates, IFeePool _feePool)
+        external
+        optionalProxy_onlyOwner
+    {
+        exchangeRates = _exchangeRates;
+        feePool = _feePool;
+    }
 
-    // function setProtectionCircuit(bool _protectionCircuitIsActivated)
-    //     external
-    //     onlyOracle
-    // {
-    //     protectionCircuit = _protectionCircuitIsActivated;
-    // }
+    function setProtectionCircuit(bool _protectionCircuitIsActivated)
+        external
+        onlyOracle
+    {
+        protectionCircuit = _protectionCircuitIsActivated;
+    }
 
-    // function setExchangeEnabled(bool _exchangeEnabled)
-    //     external
-    //     optionalProxy_onlyOwner
-    // {
-    //     exchangeEnabled = _exchangeEnabled;
-    // }
+    function setExchangeEnabled(bool _exchangeEnabled)
+        external
+        optionalProxy_onlyOwner
+    {
+        exchangeEnabled = _exchangeEnabled;
+    }
 
     /**
      * @notice Add an associated Synth contract to the Synthetix system
