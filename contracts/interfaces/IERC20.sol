@@ -17,10 +17,10 @@ contract IERC20 {
 
     function transferFrom(address from, address to, uint value) public returns (bool);
 
-    // ERC20 Details
+    // ERC20 Optional
     function name() public view returns (string);
     function symbol() public view returns (string);
-    function decimals() public view returns (string);
+    function decimals() public view returns (uint8);
 
     event Transfer(
       address indexed from,

@@ -950,41 +950,41 @@ const deploy = async ({
 		}
 	}
 
-	const integrationProxy = await deployContract({
-		name: 'IntegrationProxy',
+	const proxyERC20 = await deployContract({
+		name: 'ProxyERC20',
 		deps: ['Synthetix'],
 		args: [account],
 	});
 
-	if (synthetix && integrationProxy) {
-		const proxySynthetixAddress = await integrationProxy.methods.target().call();
+	if (synthetix && proxyERC20) {
+		const proxySynthetixAddress = await proxyERC20.methods.target().call();
 		if (proxySynthetixAddress !== synthetixAddress) {
-			const iProxyOwner = await integrationProxy.methods.owner().call();
+			const iProxyOwner = await proxyERC20.methods.owner().call();
 			if (iProxyOwner === account) {
-				console.log(yellow(`Invoking IntegrationProxy.setTarget()...`));
-				await integrationProxy.methods.setTarget(synthetixAddress).send(deployer.sendParameters());
+				console.log(yellow(`Invoking ProxyERC20.setTarget()...`));
+				await proxyERC20.methods.setTarget(synthetixAddress).send(deployer.sendParameters());
 			} else {
 				appendOwnerAction({
-					key: `IntegrationProxy.setTarget(Synthetix)`,
-					target: integrationProxy.options.address,
+					key: `ProxyERC20.setTarget(Synthetix)`,
+					target: proxyERC20.options.address,
 					action: `setTarget(${synthetixAddress})`,
 				});
 			}
 		}
 
 		const synthetixProxyAddress = await synthetix.methods.integrationProxy().call();
-		if (integrationProxy.options.address !== synthetixProxyAddress) {
+		if (proxyERC20.options.address !== synthetixProxyAddress) {
 			const synthetixOwner = await synthetix.methods.owner().call();
 			if (synthetixOwner === account) {
 				console.log(yellow(`Invoking Synthetix.setIntegrationProxy()...`));
 				await synthetix.methods
-					.setIntegrationProxy(integrationProxy.options.address)
+					.setIntegrationProxy(proxyERC20.options.address)
 					.send(deployer.sendParameters());
 			} else {
 				appendOwnerAction({
 					key: `Synthetix.setIntegrationProxy(IntegrationProxy)`,
 					target: synthetix.options.address,
-					action: `setIntegrationProxy(${integrationProxy.options.address})`,
+					action: `setIntegrationProxy(${proxyERC20.options.address})`,
 				});
 			}
 		}
