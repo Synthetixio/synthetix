@@ -957,8 +957,8 @@ const deploy = async ({
 	});
 
 	if (synthetix && integrationProxy) {
-		const iProxySNXAddress = await integrationProxy.methods.target().call();
-		if (iProxySNXAddress !== synthetixAddress) {
+		const proxySynthetixAddress = await integrationProxy.methods.target().call();
+		if (proxySynthetixAddress !== synthetixAddress) {
 			const iProxyOwner = await integrationProxy.methods.owner().call();
 			if (iProxyOwner === account) {
 				console.log(yellow(`Invoking IntegrationProxy.setTarget()...`));
@@ -972,8 +972,8 @@ const deploy = async ({
 			}
 		}
 
-		const synthetixIProxyAddress = await synthetix.methods.integrationProxy().call();
-		if (iProxySNXAddress !== synthetixIProxyAddress) {
+		const synthetixProxyAddress = await synthetix.methods.integrationProxy().call();
+		if (integrationProxy.options.address !== synthetixProxyAddress) {
 			const synthetixOwner = await synthetix.methods.owner().call();
 			if (synthetixOwner === account) {
 				console.log(yellow(`Invoking Synthetix.setIntegrationProxy()...`));
@@ -989,14 +989,6 @@ const deploy = async ({
 			}
 		}
 	}
-
-	// TEMP---------------
-	await deployContract({
-		name: 'TokenExchanger',
-		deps: ['IntegrationProxy'],
-		args: [account, integrationProxy.options.address],
-	});
-	// TEMP---------------
 
 	console.log(green('\nSuccessfully deployed all contracts!\n'));
 
