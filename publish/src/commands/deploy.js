@@ -950,6 +950,54 @@ const deploy = async ({
 		}
 	}
 
+	const integrationProxy = await deployContract({
+		name: 'IntegrationProxy',
+		deps: ['Synthetix'],
+		args: [account],
+	});
+
+	if (synthetix && integrationProxy) {
+		const iProxySNXAddress = await integrationProxy.methods.target().call();
+		if (iProxySNXAddress !== synthetixAddress) {
+			const iProxyOwner = await integrationProxy.methods.owner().call();
+			if (iProxyOwner === account) {
+				console.log(yellow(`Invoking IntegrationProxy.setTarget()...`));
+				await integrationProxy.methods.setTarget(synthetixAddress).send(deployer.sendParameters());
+			} else {
+				appendOwnerAction({
+					key: `IntegrationProxy.setTarget(Synthetix)`,
+					target: integrationProxy.options.address,
+					action: `setTarget(${synthetixAddress})`,
+				});
+			}
+		}
+
+		const synthetixIProxyAddress = await synthetix.methods.integrationProxy().call();
+		if (iProxySNXAddress !== synthetixIProxyAddress) {
+			const synthetixOwner = await synthetix.methods.owner().call();
+			if (synthetixOwner === account) {
+				console.log(yellow(`Invoking Synthetix.setIntegrationProxy()...`));
+				await synthetix.methods
+					.setIntegrationProxy(integrationProxy.options.address)
+					.send(deployer.sendParameters());
+			} else {
+				appendOwnerAction({
+					key: `Synthetix.setIntegrationProxy(IntegrationProxy)`,
+					target: synthetix.options.address,
+					action: `setIntegrationProxy(${integrationProxy.options.address})`,
+				});
+			}
+		}
+	}
+
+	// TEMP---------------
+	await deployContract({
+		name: 'TokenExchanger',
+		deps: ['IntegrationProxy'],
+		args: [account, integrationProxy.options.address],
+	});
+	// TEMP---------------
+
 	console.log(green('\nSuccessfully deployed all contracts!\n'));
 
 	const tableData = Object.keys(deployer.deployedContracts).map(key => [
