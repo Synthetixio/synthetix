@@ -150,8 +150,8 @@ contract Synthetix is ExternStateToken {
 
     bool private protectionCircuit = false;
 
-    bytes32 constant TOKEN_NAME = "Synthetix Network Token";
-    bytes32 constant TOKEN_SYMBOL = "SNX";
+    string constant TOKEN_NAME = "Synthetix Network Token";
+    string constant TOKEN_SYMBOL = "SNX";
     uint8 constant DECIMALS = 18;
     bool public exchangeEnabled = true;
 

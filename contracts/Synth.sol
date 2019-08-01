@@ -49,7 +49,7 @@ contract Synth is ExternStateToken {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _proxy, TokenState _tokenState, Synthetix _synthetix, IFeePool _feePool,
-        bytes32 _tokenName, bytes32 _tokenSymbol, address _owner, bytes32 _currencyKey
+        string _tokenName, string _tokenSymbol, address _owner, bytes32 _currencyKey
     )
         ExternStateToken(_proxy, _tokenState, _tokenName, _tokenSymbol, 0, DECIMALS, _owner)
         public
