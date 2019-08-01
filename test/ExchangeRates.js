@@ -29,7 +29,7 @@ const createRandomKeysAndRates = quantity => {
 
 // Contract tests
 
-contract('Exchange Rates', async accounts => {
+contract.only('Exchange Rates', async accounts => {
 	const [deployerAccount, owner, oracle, accountOne, accountTwo] = accounts;
 
 	// Contract Creation
@@ -71,8 +71,8 @@ contract('Exchange Rates', async accounts => {
 		);
 		assert.isAtLeast(lastUpdatedTimeSNX.toNumber(), creationTime);
 
-		const expectedXdrParticipants = ['sUSD', 'sAUD', 'sCHF', 'sEUR', 'sGBP'].map(
-			web3.utils.asciiToHex
+		const expectedXdrParticipants = ['sUSD', 'sAUD', 'sCHF', 'sEUR', 'sGBP'].map(key =>
+			web3.utils.asciiToHex(key, 32)
 		);
 		const xdrParticipants = [];
 		for (let i = 0; i < 5; i++) {

@@ -44,7 +44,7 @@ contract PurgeableSynth is Synth {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _proxy, TokenState _tokenState, Synthetix _synthetix, IFeePool _feePool,
-        string _tokenName, string _tokenSymbol, address _owner, bytes4 _currencyKey, ExchangeRates _exchangeRates
+        bytes32 _tokenName, bytes32 _tokenSymbol, address _owner, bytes32 _currencyKey, ExchangeRates _exchangeRates
     )
         Synth(_proxy, _tokenState, _synthetix, _feePool, _tokenName, _tokenSymbol, _owner, _currencyKey)
         public
