@@ -201,12 +201,12 @@ contract Synthetix is ExternStateToken {
         feePool = _feePool;
     }
 
-    function setProtectionCircuit(bool _protectionCircuitIsActivated)
-        external
-        onlyOracle
-    {
-        protectionCircuit = _protectionCircuitIsActivated;
-    }
+    // function setProtectionCircuit(bool _protectionCircuitIsActivated)
+    //     external
+    //     onlyOracle
+    // {
+    //     protectionCircuit = _protectionCircuitIsActivated;
+    // }
 
     function setExchangeEnabled(bool _exchangeEnabled)
         external
