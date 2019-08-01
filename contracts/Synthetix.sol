@@ -125,8 +125,8 @@ import "./SupplySchedule.sol";
 import "./ExchangeRates.sol";
 import "./SynthetixState.sol";
 import "./Synth.sol";
-import "./ISynthetixEscrow.sol";
-import "./IFeePool.sol";
+import "./interfaces/ISynthetixEscrow.sol";
+import "./interfaces/IFeePool.sol";
 
 /**
  * @title Synthetix ERC20 contract.
@@ -179,33 +179,41 @@ contract Synthetix is ExternStateToken {
     }
     // ========== SETTERS ========== */
 
-    function setFeePool(IFeePool _feePool)
-        external
-        optionalProxy_onlyOwner
-    {
-        feePool = _feePool;
-    }
+    // function setFeePool(IFeePool _feePool)
+    //     external
+    //     optionalProxy_onlyOwner
+    // {
+    //     feePool = _feePool;
+    // }
 
-    function setExchangeRates(ExchangeRates _exchangeRates)
-        external
-        optionalProxy_onlyOwner
-    {
-        exchangeRates = _exchangeRates;
-    }
+    // function setExchangeRates(ExchangeRates _exchangeRates)
+    //     external
+    //     optionalProxy_onlyOwner
+    // {
+    //     exchangeRates = _exchangeRates;
+    // }
 
-    function setProtectionCircuit(bool _protectionCircuitIsActivated)
-        external
-        onlyOracle
-    {
-        protectionCircuit = _protectionCircuitIsActivated;
-    }
+    // function setAddresses(ExchangeRates _exchangeRates, IFeePool _feePool)
+    //     external
+    //     optionalProxy_onlyOwner
+    // {
+    //     exchangeRates = _exchangeRates;
+    //     feePool = _feePool;
+    // }
 
-    function setExchangeEnabled(bool _exchangeEnabled)
-        external
-        optionalProxy_onlyOwner
-    {
-        exchangeEnabled = _exchangeEnabled;
-    }
+    // function setProtectionCircuit(bool _protectionCircuitIsActivated)
+    //     external
+    //     onlyOracle
+    // {
+    //     protectionCircuit = _protectionCircuitIsActivated;
+    // }
+
+    // function setExchangeEnabled(bool _exchangeEnabled)
+    //     external
+    //     optionalProxy_onlyOwner
+    // {
+    //     exchangeEnabled = _exchangeEnabled;
+    // }
 
     /**
      * @notice Add an associated Synth contract to the Synthetix system

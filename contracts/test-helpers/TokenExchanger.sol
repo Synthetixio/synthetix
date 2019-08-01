@@ -4,9 +4,9 @@
 pragma solidity 0.4.25;
 
 import "../Owned.sol";
-import "../ISynthetix.sol";
-import "../IFeePool.sol";
-import "../IERC20.sol";
+import "../interfaces/ISynthetix.sol";
+import "../interfaces/IFeePool.sol";
+import "../interfaces/IERC20.sol";
 
 contract TokenExchanger is Owned {
 

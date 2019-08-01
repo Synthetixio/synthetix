@@ -4,11 +4,11 @@ pragma solidity 0.4.25;
  * @title Synthetix interface contract
  * @dev pseudo interface, actually declared as contract to hold the public getters 
  */
-import "./ISynthetixState.sol";
-import "./ISynth.sol";
-import "./ISynthetixEscrow.sol";
-import "./IFeePool.sol";
-import "./IExchangeRates.sol";
+import "../interfaces/ISynthetixState.sol";
+import "../interfaces/ISynth.sol";
+import "../interfaces/ISynthetixEscrow.sol";
+import "../interfaces/IFeePool.sol";
+import "../interfaces/IExchangeRates.sol";
 
 contract ISynthetix {
 

@@ -3,7 +3,7 @@
 FILE INFORMATION
 -----------------------------------------------------------------
 
-file:       IntegrationProxy.sol
+file:       ERC20Proxy.sol
 version:    1.0
 author:     Jackson Chan, Clinton Ennis
 
@@ -25,14 +25,31 @@ pragma solidity 0.4.25;
 import "./Owned.sol";
 import "./Proxyable.sol";
 import "./Proxy.sol";
-import "./IERC20.sol";
+import "./interfaces/IERC20.sol";
 
-contract IntegrationProxy is Proxy, IERC20 {
+contract ERC20Proxy is Proxy, IERC20 {
 
     constructor(address _owner)
         Proxy(_owner)
         public
     {}
+
+    // ------------- ERC20 Details ------------- //
+
+    function name() public view returns (string){
+        // Immutable static call from target contract
+        return IERC20(target).name();
+    }
+
+    function symbol() public view returns (string){
+         // Immutable static call from target contract
+        return IERC20(target).symbol();
+    }
+
+    function decimals() public view returns (string){
+         // Immutable static call from target contract
+        return IERC20(target).decimals();
+    }
 
     // ------------- ERC20 Interface ------------- //
 
@@ -40,6 +57,7 @@ contract IntegrationProxy is Proxy, IERC20 {
     * @dev Total number of tokens in existence
     */
     function totalSupply() public view returns (uint256) {
+        // Immutable static call from target contract
         return IERC20(target).totalSupply();
     }
 
@@ -49,6 +67,7 @@ contract IntegrationProxy is Proxy, IERC20 {
     * @return An uint256 representing the amount owned by the passed address.
     */
     function balanceOf(address owner) public view returns (uint256) {
+        // Immutable static call from target contract
         return IERC20(target).balanceOf(owner);
     }
 
@@ -66,6 +85,7 @@ contract IntegrationProxy is Proxy, IERC20 {
         view
         returns (uint256)
     {
+        // Immutable static call from target contract
         return IERC20(target).allowance(owner, spender);
     }
 
@@ -75,8 +95,13 @@ contract IntegrationProxy is Proxy, IERC20 {
     * @param value The amount to be transferred.
     */
     function transfer(address to, uint256 value) public returns (bool) {
+        // Mutable state call requires the proxy to tell the target who the mmsg.sender is.
         target.setMessageSender(msg.sender);
+
+        // Forward the ERC20 call to the target contract
         IERC20(target).transfer(to, value);
+
+        // Emit event from this address
         emit Transfer(msg.sender, to, value);
         return true;
     }
@@ -91,9 +116,13 @@ contract IntegrationProxy is Proxy, IERC20 {
     * @param value The amount of tokens to be spent.
     */
     function approve(address spender, uint256 value) public returns (bool) {
-        require(spender != address(0), "Can't be 0 address");
+        // Mutable state call requires the proxy to tell the target who the mmsg.sender is.
         target.setMessageSender(msg.sender);
+
+        // Forward the ERC20 call to the target contract
         IERC20(target).approve(spender, value);
+
+        // Emit event from this address
         emit Approval(msg.sender, spender, value);
         return true;
     }
@@ -112,8 +141,13 @@ contract IntegrationProxy is Proxy, IERC20 {
         public
         returns (bool)
     {
+        // Mutable state call requires the proxy to tell the target who the mmsg.sender is.
         target.setMessageSender(msg.sender);
+
+        // Forward the ERC20 call to the target contract
         IERC20(target).transferFrom(from, to, value);
+
+        // Emit event from this address
         emit Transfer(from, to, value);
         return true;
     }
