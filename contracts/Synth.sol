@@ -256,6 +256,7 @@ contract Synth is ExternStateToken {
         internal
         returns (bool)
     {
+        // Synthetix synthetix = synthetixProxy.target();
         bytes4 preferredCurrencyKey = synthetix.synthetixState().preferredCurrency(to);
 
         // Do they have a preferred currency that's not us? If so we need to exchange
@@ -310,8 +311,8 @@ contract Synth is ExternStateToken {
     /* ========== MODIFIERS ========== */
 
     modifier onlySynthetixOrFeePool() {
-        bool isSynthetix = msg.sender == address(synthetix);
-        bool isFeePool = msg.sender == address(feePool);
+        bool isSynthetix = msg.sender == address(synthetixProxy.target());
+        bool isFeePool = msg.sender == address(feePoolProxy.target());
 
         require(isSynthetix || isFeePool, "Only the Synthetix or FeePool contracts can perform this action");
         _;
