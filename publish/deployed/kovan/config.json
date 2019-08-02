@@ -1,4 +1,7 @@
 {
+	"ProxyERC20": {
+		"deploy": false
+	},
 	"Depot": {
 		"deploy": false
 	},
