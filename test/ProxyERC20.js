@@ -4,7 +4,7 @@ const TokenExchanger = artifacts.require('TokenExchanger');
 
 const { toUnit } = require('../utils/testUtils');
 
-contract.only('ProxyERC20', async accounts => {
+contract('ProxyERC20', async accounts => {
 	const [deployerAccount, owner, account1, account2, account3] = accounts;
 
 	let synthetix, proxyERC20, tokenExchanger;
@@ -12,22 +12,15 @@ contract.only('ProxyERC20', async accounts => {
 	const [sUSD] = ['sUSD'].map(web3.utils.asciiToHex);
 
 	beforeEach(async () => {
-		// console.log('Deploying ProxyERC20...');
 		proxyERC20 = await ProxyERC20.new(owner, { from: deployerAccount });
-		// console.log('ProxyERC20 Deployed:', proxyERC20.address);
 		synthetix = await Synthetix.deployed();
-		// console.log('synthetix.setIntegrationProxy to', proxyERC20.address);
 		await synthetix.setIntegrationProxy(proxyERC20.address, { from: owner });
-		// console.log('proxyERC20.setTarget to', synthetix.address);
-
 		await proxyERC20.setTarget(synthetix.address, { from: owner });
 
 		// Deploy an on chain exchanger
-		// console.log('Deploy an on chain exchanger...');
 		tokenExchanger = await TokenExchanger.new(owner, proxyERC20.address, {
 			from: deployerAccount,
 		});
-		// console.log('tokenExchanger', tokenExchanger.address);
 
 		// Give some SNX to account1 and account2
 		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('10000'), {
