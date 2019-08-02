@@ -36,7 +36,7 @@ pragma solidity 0.4.25;
 
 import "./SafeDecimalMath.sol";
 import "./Owned.sol";
-import "./ISynthetix.sol";
+import "./interfaces/ISynthetix.sol";
 import "./LimitedSetup.sol";
 
 /**
