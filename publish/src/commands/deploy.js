@@ -872,43 +872,36 @@ const deploy = async ({
 			if (inverted) {
 				// check total supply
 				const totalSynthSupply = await synth.methods.totalSupply().call();
-				if (Number(totalSynthSupply) === 0) {
-					const {
-						entryPoint: currentEP,
-						upperLimit: currentUL,
-						lowerLimit: currentLL,
-					} = await exchangeRates.methods.inversePricing(toBytes4(currencyKey)).call();
 
-					const { entryPoint, upperLimit, lowerLimit } = inverted;
+				const { entryPoint, upperLimit, lowerLimit } = inverted;
 
-					// only do if not already set
-					if (
-						w3utils.fromWei(currentEP) !== entryPoint.toString() ||
-						w3utils.fromWei(currentUL) !== upperLimit.toString() ||
-						w3utils.fromWei(currentLL) !== lowerLimit.toString()
-					) {
-						const exchangeRatesOwner = await exchangeRates.methods.owner().call();
-						if (exchangeRatesOwner === account) {
-							console.log(
-								yellow(
-									`Invoking ExchangeRates.setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})...`
-								)
-							);
-							await exchangeRates.methods
-								.setInversePricing(
-									toBytes4(currencyKey),
-									w3utils.toWei(entryPoint.toString()),
-									w3utils.toWei(upperLimit.toString()),
-									w3utils.toWei(lowerLimit.toString())
-								)
-								.send(deployer.sendParameters());
-						} else {
-							appendOwnerAction({
-								key: `ExchangeRates.setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})`,
-								target: exchangeRatesAddress,
-								action: `setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})`,
-							});
-						}
+				// only call setInversePricing if either there's no supply or if on a testnet
+				if (Number(totalSynthSupply) === 0 || network !== 'mainnet') {
+					const exchangeRatesOwner = await exchangeRates.methods.owner().call();
+					if (exchangeRatesOwner === account) {
+						console.log(
+							yellow(
+								`Invoking ExchangeRates.setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})...`
+							)
+						);
+						await exchangeRates.methods
+							.setInversePricing(
+								toBytes4(currencyKey),
+								w3utils.toWei(entryPoint.toString()),
+								w3utils.toWei(upperLimit.toString()),
+								w3utils.toWei(lowerLimit.toString())
+							)
+							.send(deployer.sendParameters());
+					} else {
+						appendOwnerAction({
+							key: `ExchangeRates.setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})`,
+							target: exchangeRatesAddress,
+							action: `setInversePricing(${currencyKey}, ${w3utils.toWei(
+								entryPoint.toString()
+							)}, ${w3utils.toWei(upperLimit.toString())}, ${w3utils.toWei(
+								lowerLimit.toString()
+							)})`,
+						});
 					}
 				} else {
 					console.log(
@@ -952,6 +945,46 @@ const deploy = async ({
 					key: `Depot.setSynthetix(Synthetix)`,
 					target: depot.options.address,
 					action: `setSynthetix(${synthetixAddress})`,
+				});
+			}
+		}
+	}
+
+	const proxyERC20 = await deployContract({
+		name: 'ProxyERC20',
+		deps: ['Synthetix'],
+		args: [account],
+	});
+
+	if (synthetix && proxyERC20) {
+		const proxySynthetixAddress = await proxyERC20.methods.target().call();
+		if (proxySynthetixAddress !== synthetixAddress) {
+			const iProxyOwner = await proxyERC20.methods.owner().call();
+			if (iProxyOwner === account) {
+				console.log(yellow(`Invoking ProxyERC20.setTarget()...`));
+				await proxyERC20.methods.setTarget(synthetixAddress).send(deployer.sendParameters());
+			} else {
+				appendOwnerAction({
+					key: `ProxyERC20.setTarget(Synthetix)`,
+					target: proxyERC20.options.address,
+					action: `setTarget(${synthetixAddress})`,
+				});
+			}
+		}
+
+		const synthetixProxyAddress = await synthetix.methods.integrationProxy().call();
+		if (proxyERC20.options.address !== synthetixProxyAddress) {
+			const synthetixOwner = await synthetix.methods.owner().call();
+			if (synthetixOwner === account) {
+				console.log(yellow(`Invoking Synthetix.setIntegrationProxy()...`));
+				await synthetix.methods
+					.setIntegrationProxy(proxyERC20.options.address)
+					.send(deployer.sendParameters());
+			} else {
+				appendOwnerAction({
+					key: `Synthetix.setIntegrationProxy(ProxyERC20)`,
+					target: synthetix.options.address,
+					action: `setIntegrationProxy(${proxyERC20.options.address})`,
 				});
 			}
 		}

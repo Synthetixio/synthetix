@@ -27,6 +27,7 @@ jobs:
       - attach_workspace:
           at: .
       - run: npm run test:gas
+      - run: npx codechecks
   int:
     docker:
       - image: 'circleci/node:8.16'
