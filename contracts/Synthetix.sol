@@ -193,14 +193,6 @@ contract Synthetix is ExternStateToken {
         exchangeRates = _exchangeRates;
     }
 
-    // function setAddresses(ExchangeRates _exchangeRates, IFeePool _feePool)
-    //     external
-    //     optionalProxy_onlyOwner
-    // {
-    //     exchangeRates = _exchangeRates;
-    //     feePool = _feePool;
-    // }
-
     function setProtectionCircuit(bool _protectionCircuitIsActivated)
         external
         onlyOracle
@@ -1003,21 +995,11 @@ contract Synthetix is ExternStateToken {
         _;
     }
 
-    // modifier onlySynth() {
-    //     bool isSynth = false;
-
-    //     // No need to repeatedly call this function either
-    //     for (uint8 i = 0; i < availableSynths.length; i++) {
-    //         if (availableSynths[i] == msg.sender) {
-    //             isSynth = true;
-    //             break;
-    //         }
-    //     }
-
-    //     require(isSynth, "Only synth allowed");
-    //     _;
-    // }
-
+    /**
+     * @notice Only a synth can call this function
+     * @dev This used to be a modifier but instead of duplicating the bytecode into
+     * The functions implementing it they now call this internal function to save bytecode space
+     */
     function _onlySynth() internal view {
         bool isSynth = false;
 
