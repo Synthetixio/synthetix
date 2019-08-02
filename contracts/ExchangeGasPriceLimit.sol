@@ -13,8 +13,18 @@ date:       2019-07-01
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
+Exchange Gas Price limit contract allows a gas price oracle to set
+the upper limit on the gwei a user can pay for a synthetix exchange
+transaction. This ensures that exchange transactions cannot front
+run the updateRates transaction which reveals the next set of synth
+prices.
 
+The synthetix contract will validate each exchange transaction using
+the validateGasPrice function to ensure that they are less than the
+cap otherwise reverting the transaction.
 
+The exchange rates oracle can use this limit and ensure it pushes
+updateRates above the gwei limit.
 -----------------------------------------------------------------
 */
 pragma solidity 0.4.25;
