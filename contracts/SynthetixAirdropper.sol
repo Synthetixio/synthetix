@@ -72,4 +72,12 @@ contract SynthetixAirdropper is Owned {
             i += 1;
         }
     }
+
+    // fallback function for ether sent accidentally to contract
+    function ()
+        external
+        payable
+    {
+        owner.transfer(msg.value);
+    }
 }
