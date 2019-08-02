@@ -181,7 +181,7 @@ contract('ProxyERC20', async accounts => {
 
 			// should be able to query ERC20 allowance
 			const allowance = await proxyERC20.allowance(account1, tokenExchanger.address);
-			// console.log('tokenExchanger.allowance', allowance.toString());
+			console.log('tokenExchanger.allowance', allowance.toString());
 			// Assert we have the allowance
 			assert.bnEqual(allowance, amountToTransfer);
 
