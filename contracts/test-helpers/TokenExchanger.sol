@@ -43,13 +43,21 @@ contract TokenExchanger is Owned {
         return IERC20(integrationProxy).balanceOf(account);
     }
 
-    function checkBalanceSNX(address account)
+    function checkBalanceSNXDirect(address account)
         public
         view
         synthetixProxyIsSet
         returns (uint)
     {
         return IERC20(synthetix).balanceOf(account);
+    }
+
+    function getDecimals(address tokenAddress)
+        public
+        view
+        returns (uint)
+    {
+        return IERC20(tokenAddress).decimals();
     }
 
     function doTokenSpend(address fromAccount, address toAccount, uint amount)

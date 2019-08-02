@@ -982,7 +982,7 @@ const deploy = async ({
 					.send(deployer.sendParameters());
 			} else {
 				appendOwnerAction({
-					key: `Synthetix.setIntegrationProxy(IntegrationProxy)`,
+					key: `Synthetix.setIntegrationProxy(ProxyERC20)`,
 					target: synthetix.options.address,
 					action: `setIntegrationProxy(${proxyERC20.options.address})`,
 				});
