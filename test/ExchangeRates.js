@@ -86,7 +86,7 @@ contract.only('Exchange Rates', async accounts => {
 		assert.bnEqual(sUSDRate, toUnit('1'));
 	});
 
-	it('two of the same currencies in same array should mean that the second one overrides', async () => {
+	it('two different currencies in same array should mean that the second one overrides', async () => {
 		const creationTime = await currentTime();
 		const firstAmount = '4.33';
 		const secondAmount = firstAmount + 10;
@@ -100,10 +100,10 @@ contract.only('Exchange Rates', async accounts => {
 			}
 		);
 
-		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('CART')), secondAmount);
-		assert.etherNotEqual(await instance.rates.call(web3.utils.asciiToHex('CART')), firstAmount);
+		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('CARTER')), firstAmount);
+		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('CARTOON')), secondAmount);
 
-		const lastUpdatedTime = await instance.lastRateUpdateTimes.call(web3.utils.asciiToHex('CART'));
+		const lastUpdatedTime = await instance.lastRateUpdateTimes.call(web3.utils.asciiToHex('CARTER'));
 		assert.isAtLeast(lastUpdatedTime.toNumber(), creationTime);
 	});
 
@@ -121,24 +121,23 @@ contract.only('Exchange Rates', async accounts => {
 		);
 	});
 
-	it('should truncate to 4 bytes if currency key > 4 bytes on create', async () => {
+	it('should limit to 32 bytes if currency key > 32 bytes on create', async () => {
 		const creationTime = await currentTime();
 		const amount = '4.33';
 		const instance = await ExchangeRates.new(
 			owner,
 			oracle,
-			[web3.utils.asciiToHex('CATHERINE')],
+			[web3.utils.asciiToHex('ABCDEFGHIJKLMNOPQRSTUVXYZ1234567')],
 			[web3.utils.toWei(amount, 'ether')],
 			{
 				from: deployerAccount,
 			}
 		);
 
-		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('CATHERINE')), amount);
-		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('CATH')), amount);
-		assert.etherNotEqual(await instance.rates.call(web3.utils.asciiToHex('CAT')), amount);
+		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('ABCDEFGHIJKLMNOPQRSTUVXYZ1234567')), amount);
+		assert.etherNotEqual(await instance.rates.call(web3.utils.asciiToHex('ABCDEFGHIJKLMNOPQRSTUVXYZ123456')), amount);
 
-		const lastUpdatedTime = await instance.lastRateUpdateTimes.call(web3.utils.asciiToHex('CATH'));
+		const lastUpdatedTime = await instance.lastRateUpdateTimes.call(web3.utils.asciiToHex('ABCDEFGHIJKLMNOPQRSTUVXYZ1234567'));
 		assert.isAtLeast(lastUpdatedTime.toNumber(), creationTime);
 	});
 
@@ -291,7 +290,7 @@ contract.only('Exchange Rates', async accounts => {
 		);
 	});
 
-	it('should emit RatesUpdated event when rate updated', async () => {
+	it.only('should emit RatesUpdated event when rate updated', async () => {
 		const instance = await ExchangeRates.deployed();
 
 		const rates = [
@@ -310,7 +309,7 @@ contract.only('Exchange Rates', async accounts => {
 		});
 
 		assert.eventEqual(txn, 'RatesUpdated', {
-			currencyKeys,
+			currencyKeys: currencyKeys,
 			newRates: rates,
 		});
 	});
