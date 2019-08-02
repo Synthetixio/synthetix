@@ -23,8 +23,8 @@
 			"address": "0x309f082d89Bd68c31dD879622E4B13aF4CAF584c",
 			"source": "ExchangeRates",
 			"link": "https://kovan.etherscan.io/address/0x309f082d89Bd68c31dD879622E4B13aF4CAF584c",
-			"timestamp": "2019-07-09T15:00:03.953Z",
-			"txn": "",
+			"timestamp": "2019-07-09T15:00:04.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0x396497b72d22fca4f33497cee3843b25d2da6951ed945fb42599c066c40aa00c",
 			"network": "kovan"
 		},
 		"FeePool": {
@@ -72,15 +72,6 @@
 			"txn": "",
 			"network": "kovan"
 		},
-		"ProxysCNY": {
-			"name": "ProxysCNY",
-			"address": "0xec98BB42C8F03485bf659378da694512a16f3482",
-			"source": "Proxy",
-			"link": "https://kovan.etherscan.io/address/0xec98BB42C8F03485bf659378da694512a16f3482",
-			"timestamp": "2019-05-01T13:00:00.651Z",
-			"txn": "",
-			"network": "kovan"
-		},
 		"ProxysEUR": {
 			"name": "ProxysEUR",
 			"address": "0xF4B702488cC0610BD602422Bb6f4cce79304E7c8",
@@ -96,15 +87,6 @@
 			"source": "Proxy",
 			"link": "https://kovan.etherscan.io/address/0x4aa10c5F36f500322A424E99c3B0cac370765718",
 			"timestamp": "2019-05-01T12:57:37.503Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"ProxysINR": {
-			"name": "ProxysINR",
-			"address": "0xE5A2286Fd6dAd65d74CC10910f967415B1A0E2bE",
-			"source": "Proxy",
-			"link": "https://kovan.etherscan.io/address/0xE5A2286Fd6dAd65d74CC10910f967415B1A0E2bE",
-			"timestamp": "2019-05-01T13:04:48.886Z",
 			"txn": "",
 			"network": "kovan"
 		},
@@ -176,8 +158,8 @@
 			"address": "0x057057e481c783CAd5829481A58d165fC1Df0c02",
 			"source": "Synthetix",
 			"link": "https://kovan.etherscan.io/address/0x057057e481c783CAd5829481A58d165fC1Df0c02",
-			"timestamp": "2019-07-09T15:00:07.505Z",
-			"txn": "",
+			"timestamp": "2019-07-09T15:00:08.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0x98c82b115a252b1b35a79eacb216a4504547d2c63602cbd7a9c9bf1a29f07c61",
 			"network": "kovan"
 		},
 		"SynthetixEscrow": {
@@ -225,15 +207,6 @@
 			"txn": "https://kovan.etherscan.io/tx/0xc0efd7bf70a578d779f1294881e7e3770fd49afc30662e66d75b0715da24298d",
 			"network": "kovan"
 		},
-		"SynthsCNY": {
-			"name": "SynthsCNY",
-			"address": "0xF37EbCDCBd5eD96fc66027069b570db9f9Dd185d",
-			"source": "Synth",
-			"link": "https://kovan.etherscan.io/address/0xF37EbCDCBd5eD96fc66027069b570db9f9Dd185d",
-			"timestamp": "2019-05-01T13:00:16.000Z",
-			"txn": "https://kovan.etherscan.io/tx/0xacfe4910fb012225d87efe5cfa308ad631a25a9f4764920196cf89813f44e74b",
-			"network": "kovan"
-		},
 		"SynthsEUR": {
 			"name": "SynthsEUR",
 			"address": "0x27861E4776D162743ccD78379aDe6A876caf2203",
@@ -250,15 +223,6 @@
 			"link": "https://kovan.etherscan.io/address/0x9bD2c9677492558c0eF2F30BB7c7aC694F8F62dC",
 			"timestamp": "2019-05-01T12:57:52.000Z",
 			"txn": "https://kovan.etherscan.io/tx/0x1335ea5b2540d1a1af338a02cc504a75becfd9dba88392681cc8e66b31939ade",
-			"network": "kovan"
-		},
-		"SynthsINR": {
-			"name": "SynthsINR",
-			"address": "0x93516bE2862946798ee6a8a3a95350D3280B7B03",
-			"source": "Synth",
-			"link": "https://kovan.etherscan.io/address/0x93516bE2862946798ee6a8a3a95350D3280B7B03",
-			"timestamp": "2019-05-01T13:05:04.000Z",
-			"txn": "https://kovan.etherscan.io/tx/0x4be2dc97764ee8094a862d50f5ccda79f8fb85ee11b04a1df31216ce2047232a",
 			"network": "kovan"
 		},
 		"SynthsJPY": {
@@ -333,15 +297,6 @@
 			"txn": "",
 			"network": "kovan"
 		},
-		"TokenStatesCNY": {
-			"name": "TokenStatesCNY",
-			"address": "0x11F8bF3229Cf6144F1B4bCB289EfdE89f74aFB31",
-			"source": "TokenState",
-			"link": "https://kovan.etherscan.io/address/0x11F8bF3229Cf6144F1B4bCB289EfdE89f74aFB31",
-			"timestamp": "2019-05-01T12:59:56.853Z",
-			"txn": "",
-			"network": "kovan"
-		},
 		"TokenStatesEUR": {
 			"name": "TokenStatesEUR",
 			"address": "0x4f719F0346636B9Dc23B092F637de2A66A254420",
@@ -357,15 +312,6 @@
 			"source": "TokenState",
 			"link": "https://kovan.etherscan.io/address/0x3DdF5dAd59F8F8e8f957709B044eE84e87B42e25",
 			"timestamp": "2019-05-01T12:57:32.688Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"TokenStatesINR": {
-			"name": "TokenStatesINR",
-			"address": "0xC643789734f6b89f9114B7EB692E71EAF787B32a",
-			"source": "TokenState",
-			"link": "https://kovan.etherscan.io/address/0xC643789734f6b89f9114B7EB692E71EAF787B32a",
-			"timestamp": "2019-05-01T13:04:44.981Z",
 			"txn": "",
 			"network": "kovan"
 		},
@@ -1501,8 +1447,7 @@
 					],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "constructor",
-					"signature": "constructor"
+					"type": "constructor"
 				},
 				{
 					"anonymous": false,
@@ -5041,8 +4986,7 @@
 					],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "constructor",
-					"signature": "constructor"
+					"type": "constructor"
 				},
 				{
 					"anonymous": false,

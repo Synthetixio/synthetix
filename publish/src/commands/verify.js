@@ -121,7 +121,7 @@ const verify = async ({ buildPath, network, deploymentPath }) => {
 					// note: spelling mistake is on etherscan's side
 					constructorArguements: constructorArguments,
 					compilerversion: 'v' + solc.version().replace('.Emscripten.clang', ''), // The version reported by solc-js is too verbose and needs a v at the front
-					optimizationUsed: 0,
+					optimizationUsed: 1,
 					runs: 200,
 					libraryname1: 'SafeDecimalMath',
 					libraryaddress1: deployment.targets['SafeDecimalMath'].address,

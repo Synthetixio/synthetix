@@ -56,12 +56,6 @@
 	"SynthsCHF": {
 		"deploy": false
 	},
-	"SynthsCNY": {
-		"deploy": false
-	},
-	"SynthsINR": {
-		"deploy": false
-	},
 	"SynthsXAU": {
 		"deploy": false
 	},
@@ -98,12 +92,6 @@
 	"ProxysCHF": {
 		"deploy": false
 	},
-	"ProxysCNY": {
-		"deploy": false
-	},
-	"ProxysINR": {
-		"deploy": false
-	},
 	"ProxysXAU": {
 		"deploy": false
 	},
@@ -138,12 +126,6 @@
 		"deploy": false
 	},
 	"TokenStatesCHF": {
-		"deploy": false
-	},
-	"TokenStatesCNY": {
-		"deploy": false
-	},
-	"TokenStatesINR": {
 		"deploy": false
 	},
 	"TokenStatesXAU": {
@@ -225,6 +207,33 @@
 		"deploy": false
 	},
 	"SynthsXTZ": {
+		"deploy": false
+	},
+	"TokenStateiMKR": {
+		"deploy": false
+	},
+	"ProxyiMKR": {
+		"deploy": false
+	},
+	"SynthiMKR": {
+		"deploy": false
+	},
+	"TokenStateiTRX": {
+		"deploy": false
+	},
+	"ProxyiTRX": {
+		"deploy": false
+	},
+	"SynthiTRX": {
+		"deploy": false
+	},
+	"TokenStateiXTZ": {
+		"deploy": false
+	},
+	"ProxyiXTZ": {
+		"deploy": false
+	},
+	"SynthiXTZ": {
 		"deploy": false
 	}
 }
