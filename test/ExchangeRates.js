@@ -103,7 +103,9 @@ contract.only('Exchange Rates', async accounts => {
 		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('CARTER')), firstAmount);
 		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('CARTOON')), secondAmount);
 
-		const lastUpdatedTime = await instance.lastRateUpdateTimes.call(web3.utils.asciiToHex('CARTER'));
+		const lastUpdatedTime = await instance.lastRateUpdateTimes.call(
+			web3.utils.asciiToHex('CARTER')
+		);
 		assert.isAtLeast(lastUpdatedTime.toNumber(), creationTime);
 	});
 
@@ -134,10 +136,18 @@ contract.only('Exchange Rates', async accounts => {
 			}
 		);
 
-		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('ABCDEFGHIJKLMNOPQRSTUVXYZ1234567')), amount);
-		assert.etherNotEqual(await instance.rates.call(web3.utils.asciiToHex('ABCDEFGHIJKLMNOPQRSTUVXYZ123456')), amount);
+		assert.etherEqual(
+			await instance.rates.call(web3.utils.asciiToHex('ABCDEFGHIJKLMNOPQRSTUVXYZ1234567')),
+			amount
+		);
+		assert.etherNotEqual(
+			await instance.rates.call(web3.utils.asciiToHex('ABCDEFGHIJKLMNOPQRSTUVXYZ123456')),
+			amount
+		);
 
-		const lastUpdatedTime = await instance.lastRateUpdateTimes.call(web3.utils.asciiToHex('ABCDEFGHIJKLMNOPQRSTUVXYZ1234567'));
+		const lastUpdatedTime = await instance.lastRateUpdateTimes.call(
+			web3.utils.asciiToHex('ABCDEFGHIJKLMNOPQRSTUVXYZ1234567')
+		);
 		assert.isAtLeast(lastUpdatedTime.toNumber(), creationTime);
 	});
 

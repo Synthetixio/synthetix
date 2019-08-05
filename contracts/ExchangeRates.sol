@@ -112,11 +112,11 @@ contract ExchangeRates is SelfDestructible {
         //  - The expectation is if this logic needs to be updated, we'll simply deploy a new version of this contract
         //    then point the system at the new version.
         xdrParticipants = [
-            bytes4("sUSD"),
-            bytes4("sAUD"),
-            bytes4("sCHF"),
-            bytes4("sEUR"),
-            bytes4("sGBP")
+            bytes32("sUSD"),
+            bytes32("sAUD"),
+            bytes32("sCHF"),
+            bytes32("sEUR"),
+            bytes32("sGBP")
         ];
 
         internalUpdateRates(_currencyKeys, _newRates, now);
