@@ -446,8 +446,8 @@
 			"address": "0x8B5c7bA225658d514e970723B774E78834323229",
 			"source": "PurgeableSynth",
 			"link": "https://rinkeby.etherscan.io/address/0x8B5c7bA225658d514e970723B774E78834323229",
-			"timestamp": "2019-07-18T21:21:44.759Z",
-			"txn": "",
+			"timestamp": "2019-07-18T21:20:59.000Z",
+			"txn": "https://rinkeby.etherscan.io/tx/0x784b156f861f3d8a66e171c09a57331656c8543b74e31324d66b820bae43d836",
 			"network": "rinkeby"
 		},
 		"TokenStateiETH": {
@@ -473,8 +473,8 @@
 			"address": "0x5D2532a4e37Aafb401779b8f4E7587c2B205B4Cc",
 			"source": "PurgeableSynth",
 			"link": "https://rinkeby.etherscan.io/address/0x5D2532a4e37Aafb401779b8f4E7587c2B205B4Cc",
-			"timestamp": "2019-07-18T21:20:29.908Z",
-			"txn": "",
+			"timestamp": "2019-07-18T21:19:44.000Z",
+			"txn": "https://rinkeby.etherscan.io/tx/0xdd5800efcfb022b5e0e38770b26f414761d47565d8f14f17f41bbaeca4f5a82e",
 			"network": "rinkeby"
 		},
 		"TokenStateiBNB": {
@@ -500,8 +500,8 @@
 			"address": "0x55F2Ec337059E6Ff2165C6037231dE44db1B2E9c",
 			"source": "PurgeableSynth",
 			"link": "https://rinkeby.etherscan.io/address/0x55F2Ec337059E6Ff2165C6037231dE44db1B2E9c",
-			"timestamp": "2019-07-18T21:22:59.889Z",
-			"txn": "",
+			"timestamp": "2019-07-18T21:22:14.000Z",
+			"txn": "https://rinkeby.etherscan.io/tx/0x4432abf1339999feaa588bc41f952193a957c08de9c4ab8bd883a2f9e01f4e69",
 			"network": "rinkeby"
 		},
 		"RewardEscrow": {
