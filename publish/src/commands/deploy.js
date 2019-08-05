@@ -896,7 +896,11 @@ const deploy = async ({
 						appendOwnerAction({
 							key: `ExchangeRates.setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})`,
 							target: exchangeRatesAddress,
-							action: `setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})`,
+							action: `setInversePricing(${currencyKey}, ${w3utils.toWei(
+								entryPoint.toString()
+							)}, ${w3utils.toWei(upperLimit.toString())}, ${w3utils.toWei(
+								lowerLimit.toString()
+							)})`,
 						});
 					}
 				} else {
@@ -941,6 +945,46 @@ const deploy = async ({
 					key: `Depot.setSynthetix(Synthetix)`,
 					target: depot.options.address,
 					action: `setSynthetix(${synthetixAddress})`,
+				});
+			}
+		}
+	}
+
+	const proxyERC20 = await deployContract({
+		name: 'ProxyERC20',
+		deps: ['Synthetix'],
+		args: [account],
+	});
+
+	if (synthetix && proxyERC20) {
+		const proxySynthetixAddress = await proxyERC20.methods.target().call();
+		if (proxySynthetixAddress !== synthetixAddress) {
+			const iProxyOwner = await proxyERC20.methods.owner().call();
+			if (iProxyOwner === account) {
+				console.log(yellow(`Invoking ProxyERC20.setTarget()...`));
+				await proxyERC20.methods.setTarget(synthetixAddress).send(deployer.sendParameters());
+			} else {
+				appendOwnerAction({
+					key: `ProxyERC20.setTarget(Synthetix)`,
+					target: proxyERC20.options.address,
+					action: `setTarget(${synthetixAddress})`,
+				});
+			}
+		}
+
+		const synthetixProxyAddress = await synthetix.methods.integrationProxy().call();
+		if (proxyERC20.options.address !== synthetixProxyAddress) {
+			const synthetixOwner = await synthetix.methods.owner().call();
+			if (synthetixOwner === account) {
+				console.log(yellow(`Invoking Synthetix.setIntegrationProxy()...`));
+				await synthetix.methods
+					.setIntegrationProxy(proxyERC20.options.address)
+					.send(deployer.sendParameters());
+			} else {
+				appendOwnerAction({
+					key: `Synthetix.setIntegrationProxy(ProxyERC20)`,
+					target: synthetix.options.address,
+					action: `setIntegrationProxy(${proxyERC20.options.address})`,
 				});
 			}
 		}
