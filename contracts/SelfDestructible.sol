@@ -45,7 +45,7 @@ contract SelfDestructible is Owned {
         Owned(_owner)
         public
     {
-        require(_owner != address(0), "Owner must not be the zero address");
+        require(_owner != address(0), "Owner must not be zero");
         selfDestructBeneficiary = _owner;
         emit SelfDestructBeneficiaryUpdated(_owner);
     }
@@ -59,7 +59,7 @@ contract SelfDestructible is Owned {
         external
         onlyOwner
     {
-        require(_beneficiary != address(0), "Beneficiary must not be the zero address");
+        require(_beneficiary != address(0), "Beneficiary must not be zero");
         selfDestructBeneficiary = _beneficiary;
         emit SelfDestructBeneficiaryUpdated(_beneficiary);
     }
@@ -100,8 +100,8 @@ contract SelfDestructible is Owned {
         external
         onlyOwner
     {
-        require(selfDestructInitiated, "Self destruct has not yet been initiated");
-        require(initiationTime + SELFDESTRUCT_DELAY < now, "Self destruct delay has not yet elapsed");
+        require(selfDestructInitiated, "Self Destruct not yet initiated");
+        require(initiationTime + SELFDESTRUCT_DELAY < now, "Self destruct delay not met");
         address beneficiary = selfDestructBeneficiary;
         emit SelfDestructed(beneficiary);
         selfdestruct(beneficiary);

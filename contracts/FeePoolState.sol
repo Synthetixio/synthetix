@@ -27,7 +27,7 @@ pragma solidity 0.4.25;
 import "./SelfDestructible.sol";
 import "./SafeDecimalMath.sol";
 import "./LimitedSetup.sol";
-import "./IFeePool.sol";
+import "./interfaces/IFeePool.sol";
 
 contract FeePoolState is SelfDestructible, LimitedSetup {
     using SafeMath for uint;

@@ -31,7 +31,7 @@ per fee period.
 pragma solidity 0.4.25;
 
 import "./ExternStateToken.sol";
-import "./IFeePool.sol";
+import "./interfaces/IFeePool.sol";
 import "./Synthetix.sol";
 
 contract Synth is ExternStateToken {
