@@ -72,7 +72,7 @@ const build = async ({ buildPath = DEFAULTS.buildPath, showWarnings } = {}) => {
 	const allWarnings = warnings.concat(exWarnings);
 
 	Object.entries(allArtifacts).forEach(([key, value]) => {
-		const toWrite = path.join(compiledPath, key);\
+		const toWrite = path.join(compiledPath, key);
 		try {
 			// try make path for sub-folders (note: recursive flag only from nodejs 10.12.0)
 			fs.mkdirSync(path.dirname(toWrite), { recursive: true });
