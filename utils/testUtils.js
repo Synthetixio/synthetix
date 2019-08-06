@@ -247,7 +247,7 @@ const assertBytes32EventEqual = (
 	actualEventOrTransaction,
 	expectedEvent,
 	expectedArgs,
-	keyToConvert
+	keysToConvert
 ) => {
 	// If they pass in a whole transaction we need to extract the first log, otherwise we already have what we need
 	const event = Array.isArray(actualEventOrTransaction.logs)
@@ -261,13 +261,19 @@ const assertBytes32EventEqual = (
 	// Assert the names are the same.
 	assert.equal(event.event, expectedEvent);
 
-	// convert event args to ascii and replace null chars from result
-	const convertedArgs = Array.isArray(event.args[keyToConvert])
-		? event.args[keyToConvert].map(bytesToString)
-		: bytesToString(event.args[keyToConvert]);
-	event.args[keyToConvert] = convertedArgs;
+	// Ensure keysToConvert input is array
+	const fieldsToConvert = Array.isArray(keysToConvert) ? keysToConvert : keysToConvert.split(',');
+	// Convert event args in list to ascii and replace null chars from result
+	const convertedArgs = fieldsToConvert.reduce((result, key) => {
+		result[key] = Array.isArray(event.args[key])
+			? event.args[key].map(bytesToString)
+			: bytesToString(event.args[key]);
+		return result;
+	}, {});
 
-	assertDeepEqual(event.args, expectedArgs);
+	const eventArgs = Object.assign(event.args, convertedArgs);
+
+	assertDeepEqual(eventArgs, expectedArgs);
 	// Note: this means that if you don't assert args they'll pass regardless.
 	// Ensure you pass in all the args you need to assert on.
 };

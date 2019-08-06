@@ -320,7 +320,7 @@ contract('Exchange Rates', async accounts => {
 				currencyKeys: keys,
 				newRates: rates,
 			},
-			'currencyKeys'
+			['currencyKeys']
 		);
 	});
 
@@ -552,7 +552,7 @@ contract('Exchange Rates', async accounts => {
 		});
 
 		const txn = await instance.deleteRate(encodedRate, { from: oracle });
-		assert.bytes32EventEqual(txn, 'RateDeleted', { currencyKey: rate }, 'currencyKey');
+		assert.bytes32EventEqual(txn, 'RateDeleted', { currencyKey: rate }, ['currencyKey']);
 	});
 
 	// Getting rates
@@ -1048,7 +1048,7 @@ contract('Exchange Rates', async accounts => {
 	});
 
 	describe('inverted prices', () => {
-		const currencyKeyEvent = 'currencyKey';
+		const currencyKeyEvent = ['currencyKey'];
 		const inverseRates = ['iBTC', 'iETH', 'sEUR', 'sBTC'];
 		const [iBTC, iETH, sEUR, sBTC] = inverseRates.map(web3.utils.asciiToHex);
 		let instance;
@@ -1124,22 +1124,20 @@ contract('Exchange Rates', async accounts => {
 					const rates = await instance.ratesForCurrencies(currencyKeys);
 					expectedRates.forEach((rate, i) => assert.bnEqual(rates[i], rate));
 
+					const possibleFrozenEvents = frozen.reduce((memo, currencyKey) => {
+						return memo.concat('InversePriceFrozen', { currencyKey: bytesToString(currencyKey) }, [
+							'currencyKey',
+						]);
+					}, []);
+
 					const ratesUpdatedEvent = [
 						'RatesUpdated',
 						{
 							currencyKeys: currencyKeys.map(bytesToString),
 							newRates: expectedRates,
 						},
-						'currencyKeys',
+						['currencyKeys'],
 					];
-
-					const possibleFrozenEvents = frozen.reduce((memo, currencyKey) => {
-						return memo.concat(
-							'InversePriceFrozen',
-							{ currencyKey: bytesToString(currencyKey) },
-							'currencyKey'
-						);
-					}, []);
 
 					// ensure transaction emitted a RatesUpdated event and a list of possible frozen events
 					const allEvents = possibleFrozenEvents.concat(ratesUpdatedEvent);
@@ -1303,7 +1301,7 @@ contract('Exchange Rates', async accounts => {
 									upperLimit: toUnit(8900),
 									lowerLimit: toUnit(3000),
 								},
-								'currencyKey'
+								['currencyKey']
 							);
 						});
 						it('and the list of invertedKeys still lists them both', async () => {
@@ -1436,7 +1434,7 @@ contract('Exchange Rates', async accounts => {
 									upperLimit: 0,
 									lowerLimit: 0,
 								},
-								'currencyKey'
+								['currencyKey']
 							);
 						});
 						it('and the list of invertedKeys contains only iETH', async () => {
