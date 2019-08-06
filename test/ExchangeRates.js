@@ -29,7 +29,7 @@ const createRandomKeysAndRates = quantity => {
 
 // Contract tests
 
-contract.only('Exchange Rates', async accounts => {
+contract('Exchange Rates', async accounts => {
 	const [deployerAccount, owner, oracle, accountOne, accountTwo] = accounts;
 
 	// Contract Creation
