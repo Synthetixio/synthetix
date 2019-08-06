@@ -52,20 +52,27 @@ const build = async ({ buildPath = DEFAULTS.buildPath, showWarnings } = {}) => {
 
 	// Ok, now we need to compile all the files.
 	console.log(gray('Compiling contracts...'));
-	const exchangeRatesSource = sources['ExchangeRates.sol'];
+
+	const exchangeRatesSource = {
+		'ExchangeRates.sol': sources['ExchangeRates.sol'],
+	};
+
+	const { artifacts: exchangeArtifact, errors: exErrors, warnings: exWarnings } = compile({
+		sources: exchangeRatesSource,
+		runs: 1000,
+	});
 	delete sources['ExchangeRates.sol'];
 
-	const { exchangeArtifact, exErrors, exWarnings } = compile({ exchangeRatesSource, runs: 500 });
 	let { artifacts, errors, warnings } = compile({ sources });
 
 	const compiledPath = path.join(buildPath, COMPILED_FOLDER);
 
-	artifacts = artifacts.concat(exchangeArtifact);
-	errors = errors.concat(exErrors);
-	warnings = warnings.concat(exWarnings);
+	const allArtifacts = Object.assign(artifacts, exchangeArtifact);
+	const allErrors = errors.concat(exErrors);
+	const allWarnings = warnings.concat(exWarnings);
 
-	Object.entries(artifacts).forEach(([key, value]) => {
-		const toWrite = path.join(compiledPath, key);
+	Object.entries(allArtifacts).forEach(([key, value]) => {
+		const toWrite = path.join(compiledPath, key);\
 		try {
 			// try make path for sub-folders (note: recursive flag only from nodejs 10.12.0)
 			fs.mkdirSync(path.dirname(toWrite), { recursive: true });
@@ -73,15 +80,17 @@ const build = async ({ buildPath = DEFAULTS.buildPath, showWarnings } = {}) => {
 		fs.writeFileSync(`${toWrite}.json`, stringify(value));
 	});
 
-	console.log(yellow(`Compiled with ${warnings.length} warnings and ${errors.length} errors`));
-	if (errors.length > 0) {
+	console.log(
+		yellow(`Compiled with ${allWarnings.length} warnings and ${allErrors.length} errors`)
+	);
+	if (allErrors.length > 0) {
 		console.error(red(errors.map(({ formattedMessage }) => formattedMessage)));
 		console.error();
 		console.error(gray('Exiting because of compile errors.'));
 		process.exit(1);
 	}
 
-	if (warnings.length && showWarnings) {
+	if (allWarnings.length && showWarnings) {
 		console.log(gray(warnings.map(({ formattedMessage }) => formattedMessage).join('\n')));
 	}
 
