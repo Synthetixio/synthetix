@@ -16,10 +16,8 @@ Purgeable synths are a subclass of Synth that allows the owner
 to exchange all holders of the Synth back into sUSD.
 
 In order to reduce gas load on the system, and to repurpose older synths
-no longer used, purge allows the owner to
+no longer used, purge allows the owner to purge all holders balances into sUSD
 
-These are used only for frozen or deprecated synths, and the total supply is
-hard-coded to
 -----------------------------------------------------------------
 */
 

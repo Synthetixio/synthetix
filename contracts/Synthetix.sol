@@ -125,8 +125,8 @@ import "./SupplySchedule.sol";
 import "./ExchangeRates.sol";
 import "./SynthetixState.sol";
 import "./Synth.sol";
-import "./ISynthetixEscrow.sol";
-import "./IFeePool.sol";
+import "./interfaces/ISynthetixEscrow.sol";
+import "./interfaces/IFeePool.sol";
 
 /**
  * @title Synthetix ERC20 contract.
@@ -415,7 +415,7 @@ contract Synthetix is ExternStateToken {
         // Note: We don't need to insist on non-stale rates because effectiveValue will do it for us.
         returns (bool)
     {
-        require(sourceCurrencyKey != destinationCurrencyKey, "Exchange must use different synths");
+        require(sourceCurrencyKey != destinationCurrencyKey, "Must use different synths");
         require(sourceAmount > 0, "Zero amount");
 
         //  If protectionCircuit is true then we burn the synths through _internalLiquidation()
@@ -456,9 +456,9 @@ contract Synthetix is ExternStateToken {
         address destinationAddress
     )
         external
-        onlySynth
         returns (bool)
     {
+        _onlySynth();
         require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
         require(sourceAmount > 0, "Zero amount");
 
@@ -487,9 +487,10 @@ contract Synthetix is ExternStateToken {
         uint sourceAmount
     )
         external
-        onlySynth
         returns (bool)
     {
+        _onlySynth();
+
         // Allow fee to be 0 and skip minting XDRs to feePool
         if (sourceAmount == 0) {
             return true;
@@ -958,7 +959,7 @@ contract Synthetix is ExternStateToken {
         external
         returns (bool)
     {
-        require(rewardEscrow != address(0), "Reward Escrow destination missing");
+        require(rewardEscrow != address(0), "Reward Escrow not set");
 
         uint supplyToMint = supplySchedule.mintableSupply();
         require(supplyToMint > 0, "No supply is mintable");
@@ -985,7 +986,7 @@ contract Synthetix is ExternStateToken {
     // ========== MODIFIERS ==========
 
     modifier rateNotStale(bytes4 currencyKey) {
-        require(!exchangeRates.rateIsStale(currencyKey), "Rate stale or nonexistant currency");
+        require(!exchangeRates.rateIsStale(currencyKey), "Rate stale or not a synth");
         _;
     }
 
@@ -994,7 +995,12 @@ contract Synthetix is ExternStateToken {
         _;
     }
 
-    modifier onlySynth() {
+    /**
+     * @notice Only a synth can call this function
+     * @dev This used to be a modifier but instead of duplicating the bytecode into
+     * The functions implementing it they now call this internal function to save bytecode space
+     */
+    function _onlySynth() internal view {
         bool isSynth = false;
 
         // No need to repeatedly call this function either
@@ -1006,17 +1012,11 @@ contract Synthetix is ExternStateToken {
         }
 
         require(isSynth, "Only synth allowed");
-        _;
-    }
-
-    modifier nonZeroAmount(uint _amount) {
-        require(_amount > 0, "Amount needs to be larger than 0");
-        _;
     }
 
     modifier onlyOracle
     {
-        require(msg.sender == exchangeRates.oracle(), "Only the oracle can perform this action");
+        require(msg.sender == exchangeRates.oracle(), "Only oracle allowed");
         _;
     }
 

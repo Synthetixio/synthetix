@@ -123,8 +123,8 @@ contract ExternStateToken is SelfDestructible, Proxyable, TokenFallbackCaller {
     { 
         /* Disallow transfers to irretrievable-addresses. */
         require(to != address(0), "Cannot transfer to the 0 address");
-        require(to != address(this), "Cannot transfer to the underlying contract");
-        require(to != address(proxy), "Cannot transfer to the proxy contract");
+        require(to != address(this), "Cannot transfer to the contract");
+        require(to != address(proxy), "Cannot transfer to the proxy");
 
         // Insufficient balance will be handled by the safe subtraction.
         tokenState.setBalanceOf(from, tokenState.balanceOf(from).sub(value));
