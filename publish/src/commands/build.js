@@ -63,7 +63,7 @@ const build = async ({ buildPath = DEFAULTS.buildPath, showWarnings } = {}) => {
 	});
 	delete sources['ExchangeRates.sol'];
 
-	let { artifacts, errors, warnings } = compile({ sources });
+	const { artifacts, errors, warnings } = compile({ sources });
 
 	const compiledPath = path.join(buildPath, COMPILED_FOLDER);
 
