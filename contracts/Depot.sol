@@ -33,9 +33,9 @@ pragma solidity 0.4.25;
 import "./SelfDestructible.sol";
 import "./Pausable.sol";
 import "./SafeDecimalMath.sol";
-import "./ISynthetix.sol";
-import "./ISynth.sol";
-import "./IFeePool.sol";
+import "./interfaces/ISynthetix.sol";
+import "./interfaces/ISynth.sol";
+import "./interfaces/IFeePool.sol";
 
 /**
  * @title Depot Contract.
