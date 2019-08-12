@@ -15,7 +15,7 @@ The following contracts compose the main body of the Synthetix system.
 * [ ] [FeePool](contracts/FeePool.md)
 * [ ] [FeePoolEternalStorage](contracts/FeePoolEternalStorage.md)
 * [ ] [FeePoolState](contracts/FeePoolState.md)
-* [ ] [LimitedSetup](contracts/LimitedSetup.md)
+* [x] [LimitedSetup](contracts/LimitedSetup.md)
 * [ ] Migrations
 * [x] [Owned](contracts/Owned.md)
 * [ ] Pausable
