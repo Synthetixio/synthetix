@@ -37,7 +37,7 @@
 
 ## A Note on Conversion Fee Evasion
 
-The synthetix system has both a conversion and a transfer fee. Although they should be distinct,
+The Synthetix system has both a conversion and a transfer fee. Although they should be distinct,
 the preferred currency auto conversion on transfer only charges the transfer fee, and not the conversion fee.
 As a result, it is possible to convert Synths more cheaply whenever the transfer fee is less than the conversion fee.
 Given that the transfer fee is currently 0, it is possible by this means to perform free conversions. First, this potentially
