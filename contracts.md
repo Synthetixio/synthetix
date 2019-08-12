@@ -26,7 +26,7 @@ The following contracts compose the main body of the Synthetix system.
 * [ ] ReentrancyPreventer
 * [ ] RewardEscrow
 * [ ] SafeDecimalMath
-* [ ] SelfDestructible
+* [x] [SelfDestructible](contracts/SelfDestructible.md)
 * [x] [State](contracts/State.md)
 * [ ] SupplySchedule
 * [ ] Synth

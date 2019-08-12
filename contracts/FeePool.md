@@ -5,8 +5,8 @@ A contract for managing and claiming fees.
 ## Inherited Contracts
 
 * Proxyable
-* SelfDestructible
-* LimitedSetup
+* [SelfDestructible](SelfDestructible.md)
+* [LimitedSetup](LimitedSetup.md)
 
 ## Referenced Contracts
 
