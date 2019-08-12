@@ -14,6 +14,9 @@
 
 ### Transitive
 
+* Owned
+* ReentrancyPreventer
+
 ## Related Contracts
 
 ### Referenced
@@ -23,7 +26,5 @@
 ## Variables
 
 ## Functions
-
-## Modifiers
 
 ## Events
