@@ -20,6 +20,4 @@
 
 ## Functions
 
-## Modifiers
-
 ## Events

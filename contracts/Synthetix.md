@@ -9,9 +9,21 @@
 
 ## Inherited Contracts
 
+### Direct
+
 * ExternStateToken
 
-## Referenced Contracts
+### Transitive
+
+* SelfDestructible
+* Proxyable
+* TokenFallbackCaller
+* Owned
+* ReentrancyPreventer
+
+## Related Contracts
+
+### Referenced
 
 * Synth
 * FeePool
@@ -20,6 +32,8 @@
 * ExchangeRates
 * SynthetixState
 * SupplySchedule
+
+### Referencing
 
 ## Variables
 
@@ -116,3 +130,11 @@ $$
 * `collateral(address account)`: Returns the total SNX owned by the given account, locked and unlocked, escrowed and unescrowed. That is, it is computed as `balance(account) + escrowedBalance(account) + rewardBalance(account)`. That is, an account may issue Synths against both its active balance and its unclaimed escrowed funds.
 * `transferableSynthetix(address account)`: The quantity of SNX this account can transfer. Returns `max(0, balance(account) - debtBalanceOf(account) / issuanceRatio)`. NOTE: The dev note is misleading. It suggests that escrowed SNX are locked first when issuing, but that this is not relevant in the current function, because escrowed SNX are not transferable. But "locked" is just a property of whether SNX can be transferred, and is *only* relevant within the `transferableSynthetix` function. Compare with the previous logic in the [1.0.1 Havven contract](https://github.com/Synthetixio/synthetix/blob/b30191ef7bae6821a1308acaa9d0728f69204da5/contracts/Havven.sol#L717). The functionality has been simplified; the docstring should indicate now that unescrowed SNX are locked first. OPTIMISATION: This function checks that the SNX price is not stale, but this is unnecessary, since it is checked inside the call to `totalIssuedSynths` within `debtBalanceOf`.
 * `mint()`: TODO
+
+## Events
+
+### SynthExchange
+
+`SynthExchange(address indexed account, bytes4 fromCurrencyKey, uint256 fromAmount, bytes4 toCurrencyKey,  uint256 toAmount, address toAddress)`
+
+Indicates that an exchange between two currencies has occurred, along with the source and destination addresses, currencies, and quantities.

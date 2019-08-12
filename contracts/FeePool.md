@@ -1,4 +1,4 @@
-# FeePool.sol
+# FeePool
 
 A contract for managing and claiming fees.
 

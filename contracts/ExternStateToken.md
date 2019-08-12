@@ -1,4 +1,4 @@
-# ExternStateToken 
+# ExternStateToken
 
 [Go Back](../contracts.md)
 
@@ -7,6 +7,10 @@
 ## Inherited Contracts
 
 ### Direct
+
+* SelfDestructible
+* Proxyable
+* TokenFallbackCaller
 
 ### Transitive
 

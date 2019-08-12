@@ -23,7 +23,7 @@
   * [ ] Litepaper
   * [ ] Readme
 
-# Areas of potential vulnerability to investigate
+## Areas of potential vulnerability to investigate
 
 * Oracle front-running.
 * C-ratio manipulation.
@@ -35,7 +35,7 @@
 * Do debt ledger entries lose too much precision given that they are a product of small quantities?
 * What happens if I issue very small quantities of synths? Can I lose the debt due to rounding? Thus, can I increase the supply without the system locking any of my snx?
 
-# A Note on Conversion Fee Evasion
+## A Note on Conversion Fee Evasion
 
 The synthetix system has both a conversion and a transfer fee. Although they should be distinct,
 the preferred currency auto conversion on transfer only charges the transfer fee, and not the conversion fee.
