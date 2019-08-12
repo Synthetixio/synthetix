@@ -90,8 +90,7 @@ struct FeePeriod {
   Note: XDRs existing seems to be necessary for a user to have nonzero ownership percentages, so the second
   guard in this function looks redundant, or should be checked earlier. It's likely to be an exceedingly rare case anyway.
 * `_feesAndRewardsFromPeriod(uint period, uint ownershipPercentage, uint debtEntryIndex)`: TODO: FINISH ME
-* `_effectiveDebtRatioForPeriod(uint closingDebtIndex, uint ownershipPercentage, uint debtEntryIndex)`: 
-Logic seems screwy here?... TODO: CHECK ME. NOTE: Off-by-one error in the guard. The condition should be `closingDebtIndex >= synthetixState.debtLedgerLength()`.
+* `_effectiveDebtRatioForPeriod(uint closingDebtIndex, uint ownershipPercentage, uint debtEntryIndex)`: Logic seems screwy here?... TODO: CHECK ME. NOTE: Off-by-one error in the guard. The condition should be `closingDebtIndex >= synthetixState.debtLedgerLength()`.
 * `effectiveDebtRatioForPeriod(address account, uint period)`: TODO
 * `getLastFeeWithdrawal(address _claimingAddress)`: TODO
 * `getPenaltyThresholdRatio()`: TODO

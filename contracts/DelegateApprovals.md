@@ -6,9 +6,7 @@
 
 Each approver may authorise a number of delegates to perform an action (withdrawing fees) on their behalf.
 
-NOTE: the file docstring is inaccurate. It says "Withdrawing approval sets the delegate as false instead of 
-removing from the approvals list for auditability.", but the contract actually uses a nested mapping. That is to say, there no explicit approvals list exists and the audit trail is by event emission. So setting
-false and deletion are equivalent operations (the contract actually deletes).
+NOTE: the file docstring is inaccurate. It says "Withdrawing approval sets the delegate as false instead of removing from the approvals list for auditability.", but the contract actually uses a nested mapping. That is to say, there no explicit approvals list exists and the audit trail is by event emission. So setting false and deletion are equivalent operations.
 
 ## Inherited Contracts
 
