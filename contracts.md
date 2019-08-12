@@ -17,7 +17,7 @@ The following contracts compose the main body of the Synthetix system.
 * [ ] [FeePoolState](contracts/FeePoolState.md)
 * [ ] [LimitedSetup](contracts/LimitedSetup.md)
 * [ ] Migrations
-* [ ] Owned
+* [x] [Owned](contracts/Owned.md)
 * [ ] Pausable
 * [ ] Proxy
 * [ ] ProxyERC20

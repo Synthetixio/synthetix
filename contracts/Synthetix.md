@@ -133,8 +133,4 @@ $$
 
 ## Events
 
-### SynthExchange
-
-`SynthExchange(address indexed account, bytes4 fromCurrencyKey, uint256 fromAmount, bytes4 toCurrencyKey,  uint256 toAmount, address toAddress)`
-
-Indicates that an exchange between two currencies has occurred, along with the source and destination addresses, currencies, and quantities.
+* `SynthExchange(address indexed account, bytes4 fromCurrencyKey, uint256 fromAmount, bytes4 toCurrencyKey,  uint256 toAmount, address toAddress)`: Indicates that an exchange between two currencies has occurred, along with the source and destination addresses, currencies, and quantities.
