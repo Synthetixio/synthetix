@@ -2,7 +2,7 @@
 
 [Go Back](../contracts.md)
 
-## Summary
+## Notes
 
 ## Inherited Contracts
 
