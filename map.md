@@ -1,22 +1,53 @@
 # Map
 
 * Contracts
-  * Functions
   * Check consistency with dev docs
   * PurgeableSynth.sol - Module description is broken.
+  * Contracts:
+    * [ ] DelegateApprovals.sol
+    * [ ] Depot.sol
+    * [ ] EscrowChecker.sol
+    * [ ] EternalStorage.sol
+    * [ ] ExchangeRates.sol
+    * [ ] ExternStateToken.sol
+    * [ ] FeePool.sol
+    * [ ] FeePoolEternalStorage.sol
+    * [ ] FeePoolState.sol
+    * [ ] LimitedSetup.sol
+    * [ ] Migrations.sol
+    * [ ] Owned.sol
+    * [ ] Pausable.sol
+    * [ ] Proxy.sol
+    * [ ] ProxyERC20.sol
+    * [ ] Proxyable.sol
+    * [ ] PurgeableSynth.sol
+    * [ ] ReentrancyPreventer.sol
+    * [ ] RewardEscrow.sol
+    * [ ] SafeDecimalMath.sol
+    * [ ] SelfDestructible.sol
+    * [ ] State.sol
+    * [ ] SupplySchedule.sol
+    * [ ] Synth.sol
+    * [ ] Synthetix.sol
+    * [ ] SynthetixEscrow.sol
+    * [ ] SynthetixState.sol
+    * [ ] TokenFallbackCaller.sol
+    * [ ] TokenState.sol
 * Processes
-  * Tokens
-  * Minting
-  * Conversion
-  * Connection between collateral pool value and token value
-  * Stabilisation
-  * Fee pool rewards
-  * Inflationary rewards
-  * Collat ratio targeting
-  * SIPs
-  * SCCPs
+  * [ ] Tokens/Synths
+  * [ ] Minting
+  * [ ] Conversion
+  * [ ] Escrow
+  * [ ] Connection between collateral pool value and token value
+  * [ ] Stabilisation
+  * [ ] Fee pool rewards
+  * [ ] Inflationary rewards
+  * [ ] Collat ratio targeting
+  * [ ] SIPs
+  * [ ] SCCPs
 * Integrated platforms
   * Unipay
+  * That graphs thing?
 * Assets
   * Classify assets
   * risk profiles
@@ -49,6 +80,26 @@
 * TODO
 
 # Contracts
+
+## LimitedSetup.sol
+
+Allows certain contract functions to only operate during a setup period.
+
+---
+
+## State.sol
+
+Allows a contract to have an external state whose values only it can modify.
+
+---
+
+## ExternStateToken.sol
+
+TODO: Finish me
+
+## Inherited Contracts
+
+---
 
 ## Synthetix.sol
 
@@ -130,7 +181,11 @@ dl[0] = 1 \\
 dl[n] = dl[n-1] \times \delta_n \\
 \text{with } \ \delta_n = \frac{tdi_n}{xv_n + tdi_n}
 \text{ } \\
-\Rightarrow
+$$
+
+hence
+
+$$
 \text{ } \\
 dl[n] = \prod_{k=1}^{n}\delta_k
 \text{ } \\
@@ -146,9 +201,9 @@ So a given debt ledger entry is the product of the debt deltas, and the division
 * `burnSynths(bytes4 currencyKey, uint amount)`: TODO
 * `_appendAccountIssuanceRecord()`: TODO
 * `_removeFromDebtRegister(uint amount)`: TODO
-* `maxIssuableSynths(address issuer, bytes4 currencyKey)`: TODO
-* `collateralisationRatio(address, issuer)`: TODO
-* `debtBalanceOf(address issuer, bytes4 currencyKey)`: Reports the quantity of a given Synth required to free up all of this user's SNX. This is computed as their fraction of total system ownership at the time they issued, multiplied by the ratio between the most recent debt ledger entry and the entry at the time they issued, multiplied by the current total system value. i.e. it works adjusts their fraction depending on how the price and supply have moved since they issued. They owe a larger fraction of the total if the number of synths goes down. TODO: What about price? Investigate this in the context of a single currency.
+* `maxIssuableSynths(address issuer, bytes4 currencyKey)`: The maximum number of a given synth that is issuable against the issuer's collateral. Ignores whatever they have already issued. This is simply `collateral(issuer) * issuanceRatio`, priced in the given currency.
+* `collateralisationRatio(address issuer)`: Just `debtBalanceOf(issuer) / collateral(issuer)`, valued in terms of SNX. That is, it is the ratio of the value of Synths they have issued to the value of all the SNX they own. Under ideal conditions this should equal the global issuance ratio, and issuers are incentivised to keep their collateralisation ratios close to the issuance ratio by the fees they are able to claim.
+* `debtBalanceOf(address issuer, bytes4 currencyKey)`: Reports the quantity of a given Synth/Currency (actually anything that the oracle has a price for) required to free up all of this user's SNX. This is computed as their fraction of total system ownership at the time they issued, multiplied by the ratio between the most recent debt ledger entry and the entry at the time they issued, multiplied by the current total system value. i.e. it works adjusts their fraction depending on how the price and supply have moved since they issued. They owe a larger fraction of the total if the number of synths goes down. TODO: What about price? Investigate this in the context of a single currency.
 
 $$
 dl \text{: debtLedger - the series of aggregated debt movements in the system. A ratio of two entries is the movement between those times.}
@@ -159,22 +214,10 @@ tsv \text{: totalSystemValue - the sum of price times supply over all Synth flav
 \text{Then the result is just } cdo \times tsv
 $$
 
-* `remainingIssuableSynths(address issuer, bytes4 currencyKey)`: TODO
-* `collateral(address account)`: TODO
-* `transferableSynthetix(address account)`: TODO
+* `remainingIssuableSynths(address issuer, bytes4 currencyKey)`: The remaining synths this account can issue (of a given flavour). This is `max(0, maxIssuableSynths(issuer, currencyKey) - debtBalanceOf(issuer, currencyKey))`. not that the debt may exceed the max issuable synths, but the result is clamped.
+* `collateral(address account)`: Returns the total SNX owned by the given account, locked and unlocked, escrowed and unescrowed. That is, it is computed as `balance(account) + escrowedBalance(account) + rewardBalance(account)`. That is, an account may issue Synths against both its active balance and its unclaimed escrowed funds.
+* `transferableSynthetix(address account)`: The quantity of SNX this account can transfer. Returns `max(0, balance(account) - debtBalanceOf(account) / issuanceRatio)`. NOTE: The dev note is misleading. It suggests that escrowed SNX are locked first when issuing, but that this is not relevant in the current function, because escrowed SNX are not transferable. But "locked" is just a property of whether SNX can be transferred, and is *only* relevant within the `transferableSynthetix` function. Compare with the previous logic in the [1.0.1 Havven contract](https://github.com/Synthetixio/synthetix/blob/b30191ef7bae6821a1308acaa9d0728f69204da5/contracts/Havven.sol#L717). The functionality has been simplified; the docstring should indicate now that unescrowed SNX are locked first. OPTIMISATION: This function checks that the SNX price is not stale, but this is unnecessary, since it is checked inside the call to `totalIssuedSynths` within `debtBalanceOf`.
 * `mint()`: TODO
-
----
-
-## LimitedSetup.sol
-
-Allows certain contract functions to only operate during a setup period.
-
----
-
-## State.sol
-
-Allows a contract to have an external state whose values only it can modify.
 
 ---
 
@@ -232,6 +275,35 @@ This is used to compute user's exit price and collateralisation ratio.
 
 ---
 
+## EternalStorage.sol
+
+A key:value store for various data types, each data type has a mapping from bytes32 to entries of that type. Intended to be used by keccak256-hashing a key value to retrieve its corresponding value.
+
+### Inherited Contracts
+
+State.sol
+
+---
+
+## FeePoolEternalStorage.sol
+
+This is just wrapper around the EternalStorage contract with a limited setup period and a setup function that sets each account's last fee withdrawal times.
+
+### Inherited Contracts
+
+* EternalStorage
+* LimitedSetup
+
+### Variables
+
+* `LAST_FEE_WITHDRAWAL`: Just a const string with the value "last_fee_withdrawal".
+
+### Functions
+
+* `importFeeWIthdrawalData(address[] accounts, uint[] feePeriodIDs)`: Callable only by the owner, and only during the six-week setup period.
+
+---
+
 ## FeePool.sol
 
 A contract for managing and claiming fees.
@@ -250,6 +322,8 @@ A contract for managing and claiming fees.
 * FeePoolEternalStorage
 * FeePoolState
 * DelegateApprovals
+* SafeMath
+* SafeDecimalMath
 
 ### Structs
 
@@ -267,14 +341,20 @@ struct FeePeriod {
 
 ### Variables
 
+* `synthetix`: The main Synthetix contract.
+* `synthetixState`: The underlying SynthetixState contract.
+* `rewardEscrow`: The SynthetixEscrow instance which holds the issuance rewards.
+* `feePoolEternalStorage`: A key:value store to allow values to be stored without upgrading anything.
 * `transferFeeRate`: Fee charged on each transfer (cannot exceed MAX_TRANSFER_FEE_RATE, which is 10%)
 * `exchangeFeeRate`: Fee charged on a currency exchange (cannot exceed MAX_EXCHANGE_FEE_RATE, which is 10%)
 * `feeAuthority`: Address which can distribute fees.
-* `FEE_PERIOD_LENGTH`: 3. Three weeks. The comment is wrong, since it says 6.
+* `feePoolState`: The FeePoolState contract associated with this fee pool.
+* `FEE_ADDRESS`: The address where fees are pooled.
+* `FEE_PERIOD_LENGTH`: 3. Three weeks. NOTE: The comment is wrong, since it says 6.
 * `recentFeePeriods`: A list of three FeePeriod objects for the 3 most recent periods. Goes from newest to oldest.
 * `feePeriodDuration`: 1 week - between MIN_FEE_PERIOD_DURATION and MAX_FEE_PERIOD_DURATION (1 to 60 days)
-* `TARGET_THRESHOLD`: Users are unable to claim fees if their collateralisation ratio drifts out of target threshold (typo here). Set to 10%. Note that this is in CONSTANT_CASE even though it is not a constant and has a setter.
-* `LAST_FEE_WITHDRAWAL`: "last_fee_withdrawal"
+* `TARGET_THRESHOLD`: Users are unable to claim fees if their collateralisation ratio drifts out of target threshold (NOTE: typo here, 'treshold'). Set to 10%. Note that this is in CONSTANT_CASE even though it is not a constant and has a setter.
+* `LAST_FEE_WITHDRAWAL`: "last_fee_withdrawal", used as a key for accessing the eternal storage contract.
 
 ### Functions
 
@@ -286,20 +366,28 @@ struct FeePeriod {
 * `setDelegateApprovals(DelegateApprovals _delegates)`: as per the name.
 * `setFeePeriodDuration(uint _feePeriodDuration)`: as per the name. Checks that the argument is in the proper range.
 * `setSynthetix(Synthetix _synthetix)`: Arg must be nonzero.
-* `setTargetThreshold(uint _percent)`: pointlessly checks that a uint is non-negative. Would be better to pass in an actual fixed point number rather than a percentage point integer, so that granularity can be finer than whole percentage points.
-* `feePaid(bytes4 currencyKey, uint amount)`: converts amount to XDRs and then adds the XDR value to the fee pool to be distributed.
-  Note that this could be more efficient by pre-computing the XDR value before passing it to the FeePool contract,
-  which throws away currencyKey, only using it for calling back to Synthetix to find the equivalent XDR value at current
-  exchange rates.
-* `rewardsMinted(uint amount)`: Adds a quantity of SNX rewards to the current fee period reward distribution total.
-* `closeCurrentFeePeriod()`: Close the current fee period, and open the next one. The previously-recorded fee periods are shifted
-  along and the last one is overwritten, though its unclaimed fees are merged into the penultimate fee period it was overwritten by.
-  Note that the comment, "Take a snapshot of the total value of the system." at the end of this function is inaccurate.
+* `setTargetThreshold(uint _percent)`: NOTE: pointlessly checks that a uint is non-negative. In my view it would likely be better to pass in an actual fixed point number rather than a percentage point integer, so that granularity can be finer than whole percentage points.
+* `feePaid(bytes4 currencyKey, uint amount)`: converts amount to XDRs and then adds the XDR value to the fee pool to be distributed. As an aside, this could be more efficient by pre-computing the XDR value before passing it to the FeePool contract, which throws away currencyKey, only using it for calling back to Synthetix to find the equivalent XDR value at current exchange rates. Poor name: reads like a predicate, but is actually an effectful function.
+* `rewardsMinted(uint amount)`: Adds a quantity of SNX rewards to the current fee period reward distribution total. Poor name: reads like a predicate, but is actually an effectful function.
+* `closeCurrentFeePeriod()`: Close the current fee period, and open the next one. The previously-recorded fee periods are shifted along and the last one is overwritten, though its unclaimed fees are merged into the penultimate fee period it was overwritten by. Note that the comment, "Take a snapshot of the total value of the system." at the end of this function is inaccurate.
 * `claimFees(bytes4 currencyKey)`: The message sender claims their fees in the currency specified.
 * `claimFeesOnBehalf(address claimingForAddress, bytes4 currencyKey)`: Claim fees for a specified address. They are awarded to that address, and not to the message sender.
-* `_claimFees(address claimingAddress, bytes4 currencyKey)`: Claim fees at the specified address in the specified currency. C-ratio must be 
-  within the bounds specified by the `feesClaimable` function. TODO: FINISH ME
-
+* `_claimFees(address claimingAddress, bytes4 currencyKey)`: Claim fees at the specified address in the specified currency. C-ratio must be within the bounds specified by the `feesClaimable` function -- i.e. less than the issuance ratio. TODO: FINISH ME
+* `importFeePeriod(uint feePeriodIndex, uint feePeriodId, uint startingDebtIndex, uint startTime, uint feesToDistribute, uint feesClaimed, uint rewardsToDistribute, uint rewardsClaimed)`: Sets a particular fee period entry, but only during the setup period.
+* `approveClaimOnBehalf(address account)`: TODO
+* `removeClaimOnBehalf(address account)`: TODO
+* `_recordFeePayment(uint xdrAmount)`: TODO
+* `_recordRewardPayment(uint snxAmount)`: TODO
+* `_payFees(address account, uint xdrAmount, bytes4 destinationCurrencyKey)`: TODO
+* `_payRewards(address account, uint snxAmount)`: TODO
+* `transferFeeIncurred(uint value)`: TODO
+* `transferredAmountToReceive(uint value)`: TODO
+* `amountReceivedFromTransfer(uint value)`: TODO
+* `exchangeFeeIncurred(uint value)`: TODO
+* `exchangedAmountToReceive(uint value)`: TODO
+* `amountReceivedFromExchange(uint value)`: TODO
+* `totalFeesAvailable(bytes4 currencyKey)`: TODO
+* `totalRewardsAvailable()`: TODO
 * `feesAvailable(address account, bytes4 currencyKey)`: return the total of fees this user has accrued in previous fee periods. TODO: FINISH ME
 * `feesClaimable(address account)`: true iff the collateralisation ratio of this account is less than the target ratio plus 10% of the ratio
   or so. This function code could be made more concise. The logic allows fees to be withdrawable if a user's ratio is less than
@@ -309,8 +397,11 @@ struct FeePeriod {
   guard in this function looks redundant, or should be checked earlier. It's likely to be an exceedingly rare case anyway.
 * `_feesAndRewardsFromPeriod(uint period, uint ownershipPercentage, uint debtEntryIndex)`: TODO: FINISH ME
 * `_effectiveDebtRatioForPeriod(uint closingDebtIndex, uint ownershipPercentage, uint debtEntryIndex)`: 
-Logic seems screwy here?... TODO: CHECK ME.
-  Note: Off-by-one error in the guard. The condition should be `closingDebtIndex >= synthetixState.debtLedgerLength()`.
+Logic seems screwy here?... TODO: CHECK ME. NOTE: Off-by-one error in the guard. The condition should be `closingDebtIndex >= synthetixState.debtLedgerLength()`.
+* `effectiveDebtRatioForPeriod(address account, uint period)`: TODO
+* `getLastFeeWithdrawal(address _claimingAddress)`: TODO
+* `getPenaltyThresholdRatio()`: TODO
+* `_setLastFeeWithdrawal(address _claimingAddress, uint _feePeriodID)`: TODO NOTE: this is erroneously in the modifiers section.
 
 ---
 
@@ -372,7 +463,7 @@ false and deletion are equivalent operations (the contract actually deletes).
 
 ## TokenFallbackCaller.sol
 
-Allows ERC223ish contracts 
+TODO Allows ERC223ish contracts 
 
 ### Inherited 
 * 
@@ -388,6 +479,7 @@ Allows ERC223ish contracts
 * Fee period length contradiction between FeePool and FeePoolState
 * Do calls to debtBalanceOf outside of totalIssuedSynths allow stale rates?
 * Do debt ledger entries lose too much precision given that they are a product of small quantities?
+* What happens if I issue very small quantities of synths? Can I lose the debt due to rounding? Thus, can I increase the supply without the system locking any of my snx?
 
 # A Note on Conversion Fee Evasion
 
