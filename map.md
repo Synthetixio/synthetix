@@ -12,6 +12,8 @@
   * [ ] Fee pool rewards
   * [ ] Inflationary rewards
   * [ ] Collat ratio targeting
+  * [ ] Oracle
+  * [ ] The debt ledger
 * Integrated Platforms
   * [ ] Unipay
   * [ ] That graphs thing?

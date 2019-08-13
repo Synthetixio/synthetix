@@ -8,7 +8,7 @@ The following contracts compose the main body of the Synthetix system.
 
 * [ ] [DelegateApprovals](contracts/DelegateApprovals.md)
 * [ ] Depot
-* [ ] EscrowChecker
+* [x] [EscrowChecker](contracts/EscrowChecker.md)
 * [x] [EternalStorage](contracts/EternalStorage.md)
 * [ ] ExchangeRates
 * [ ] [ExternStateToken](contracts/ExternStateToken.md)
