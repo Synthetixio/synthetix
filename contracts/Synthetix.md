@@ -13,7 +13,7 @@
 
 * ExternStateToken
 
-### Transitive
+### Indirect
 
 * SelfDestructible
 * Proxyable

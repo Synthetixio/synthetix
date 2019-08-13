@@ -14,7 +14,7 @@ NOTE: the file docstring is inaccurate. It says "Withdrawing approval sets the d
 
 * [State](State.md)
 
-### Transitive
+### Indirect
 
 * [Owned](Owned.md)
 

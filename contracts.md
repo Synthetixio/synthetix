@@ -9,7 +9,7 @@ The following contracts compose the main body of the Synthetix system.
 * [ ] [DelegateApprovals](contracts/DelegateApprovals.md)
 * [ ] Depot
 * [ ] EscrowChecker
-* [ ] [EternalStorage](contracts/EternalStorage.md)
+* [x] [EternalStorage](contracts/EternalStorage.md)
 * [ ] ExchangeRates
 * [ ] [ExternStateToken](contracts/ExternStateToken.md)
 * [ ] [FeePool](contracts/FeePool.md)
@@ -25,7 +25,7 @@ The following contracts compose the main body of the Synthetix system.
 * [ ] PurgeableSynth
 * [ ] ReentrancyPreventer
 * [ ] RewardEscrow
-* [ ] SafeDecimalMath
+* [x] [SafeDecimalMath](contacts/SafeDecimalMath.md)
 * [x] [SelfDestructible](contracts/SelfDestructible.md)
 * [x] [State](contracts/State.md)
 * [ ] SupplySchedule

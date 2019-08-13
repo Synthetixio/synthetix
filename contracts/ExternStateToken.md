@@ -12,7 +12,7 @@
 * Proxyable
 * TokenFallbackCaller
 
-### Transitive
+### Indirect
 
 * Owned
 * ReentrancyPreventer
