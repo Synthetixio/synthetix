@@ -8,7 +8,7 @@
 
 ### Direct
 
-### Transitive
+### Indirect
 
 ## Related Contracts
 
