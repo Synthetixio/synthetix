@@ -127,7 +127,7 @@ import "./SynthetixState.sol";
 import "./Synth.sol";
 import "./interfaces/ISynthetixEscrow.sol";
 import "./interfaces/IFeePool.sol";
-
+import "./interfaces/IExchangeGasPriceLimit.sol";
 /**
  * @title Synthetix ERC20 contract.
  * @notice The Synthetix contracts not only facilitates transfers, exchanges, and tracks balances,
@@ -147,6 +147,7 @@ contract Synthetix is ExternStateToken {
     ExchangeRates public exchangeRates;
     SynthetixState public synthetixState;
     SupplySchedule public supplySchedule;
+    IExchangeGasPriceLimit public gasPriceLimit;
 
     bool private protectionCircuit = false;
 
@@ -165,7 +166,7 @@ contract Synthetix is ExternStateToken {
      */
     constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
         address _owner, ExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule,
-        ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow, uint _totalSupply
+        ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow, uint _totalSupply, IExchangeGasPriceLimit _gasPriceLimit
     )
         ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, _totalSupply, DECIMALS, _owner)
         public
@@ -176,6 +177,7 @@ contract Synthetix is ExternStateToken {
         supplySchedule = _supplySchedule;
         rewardEscrow = _rewardEscrow;
         escrow = _escrow;
+        gasPriceLimit = _gasPriceLimit;
     }
     // ========== SETTERS ========== */
 
@@ -184,6 +186,13 @@ contract Synthetix is ExternStateToken {
         optionalProxy_onlyOwner
     {
         feePool = _feePool;
+    }
+
+    function setGasPriceLimit(IExchangeGasPriceLimit _gasPriceLimit)
+        external
+        optionalProxy_onlyOwner
+    {
+        gasPriceLimit = _gasPriceLimit;
     }
 
     function setExchangeRates(ExchangeRates _exchangeRates)
@@ -417,6 +426,9 @@ contract Synthetix is ExternStateToken {
     {
         require(sourceCurrencyKey != destinationCurrencyKey, "Must use different synths");
         require(sourceAmount > 0, "Zero amount");
+
+        // verify gas price limit
+        gasPriceLimit.validateGasPrice(tx.gasprice);
 
         //  If protectionCircuit is true then we burn the synths through _internalLiquidation()
         if (protectionCircuit) {
