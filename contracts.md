@@ -4,7 +4,7 @@
 
 ## Listing
 
-The following contracts compose the main body of the Synthetix system.
+The following contracts compose the core of the Synthetix system.
 
 * [ ] [DelegateApprovals](contracts/DelegateApprovals.md)
 * [ ] Depot
@@ -18,7 +18,7 @@ The following contracts compose the main body of the Synthetix system.
 * [x] [LimitedSetup](contracts/LimitedSetup.md)
 * [ ] Migrations
 * [x] [Owned](contracts/Owned.md)
-* [ ] Pausable
+* [x] [Pausable](contracts/Pausable.md)
 * [ ] Proxy
 * [ ] ProxyERC20
 * [ ] Proxyable
