@@ -24,14 +24,14 @@ The following contracts compose the main body of the Synthetix system.
 * [ ] Proxyable
 * [ ] PurgeableSynth
 * [ ] ReentrancyPreventer
-* [ ] RewardEscrow
-* [x] [SafeDecimalMath](contacts/SafeDecimalMath.md)
+* [x] [RewardEscrow](contracts/RewardEscrow.md)
+* [x] [SafeDecimalMath](contracts/SafeDecimalMath.md)
 * [x] [SelfDestructible](contracts/SelfDestructible.md)
 * [x] [State](contracts/State.md)
 * [ ] SupplySchedule
 * [ ] Synth
 * [ ] [Synthetix](contracts/Synthetix.md)
-* [ ] SynthetixEscrow
+* [x] [SynthetixEscrow](contracts/SynthetixEscrow.md)
 * [ ] [SynthetixState](contracts/SynthetixState.md)
 * [ ] [TokenFallbackCaller](contracts/TokenFallbackCaller.md)
 * [ ] TokenState
