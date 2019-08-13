@@ -29,8 +29,6 @@ NOTE: Typo in the module description "c-rationn", "SNW".
 
 ## Variables
 
-## Variables
-
 * `synthetix: Synthetix`: The main Synthetix contract.
 * `feePool: FeePool`: The main FeePool contract.
 * `vestingSchedules: mapping(address => uint[2][])`: For each account, a list of `(vesting timestamp, quantity)` pairs in ascending time order.

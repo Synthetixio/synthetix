@@ -39,6 +39,6 @@ The following contracts compose the main body of the Synthetix system.
 ## TODO
 
 * Audit above contracts
-* Check consistency with dev docs
+* Check consistency with dev docs and docstrings
 * PurgeableSynth.sol - Module description is broken.
 * Check the legality of the licence headers
