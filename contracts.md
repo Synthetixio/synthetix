@@ -28,7 +28,7 @@ The following contracts compose the core of the Synthetix system.
 * [x] [SafeDecimalMath](contracts/SafeDecimalMath.md)
 * [x] [SelfDestructible](contracts/SelfDestructible.md)
 * [x] [State](contracts/State.md)
-* [ ] SupplySchedule
+* [x] [SupplySchedule](contracts/SupplySchedule.md)
 * [ ] Synth
 * [ ] [Synthetix](contracts/Synthetix.md)
 * [x] [SynthetixEscrow](contracts/SynthetixEscrow.md)
