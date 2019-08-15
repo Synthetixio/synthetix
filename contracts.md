@@ -19,9 +19,9 @@ The following contracts compose the core of the Synthetix system.
 * [ ] Migrations
 * [x] [Owned](contracts/Owned.md)
 * [x] [Pausable](contracts/Pausable.md)
-* [ ] Proxy
-* [ ] ProxyERC20
-* [ ] Proxyable
+* [x] [Proxy](contracts/Proxy.md)
+* [x] [ProxyERC20](contracts/ProxyERC20.md)
+* [x] [Proxyable](contracts/Proxyable.md)
 * [ ] PurgeableSynth
 * [ ] ReentrancyPreventer
 * [x] [RewardEscrow](contracts/RewardEscrow.md)
@@ -39,6 +39,7 @@ The following contracts compose the core of the Synthetix system.
 ## TODO
 
 * Audit above contracts
+* Make a system diagram of what points to what.
 * Check consistency with dev docs and docstrings
 * PurgeableSynth.sol - Module description is broken.
 * Check the legality of the licence headers

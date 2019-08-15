@@ -24,6 +24,7 @@
 * Documents
   * [ ] Litepaper
   * [ ] Readme
+  * [ ] Dev Docs
 
 ## Areas per email discussions
 
