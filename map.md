@@ -25,6 +25,23 @@
   * [ ] Litepaper
   * [ ] Readme
 
+## Areas per email discussions
+
+1. System Characterisation
+    1. Detailed and thorough documentation of existing funcitonality.
+    2. Blog post-level summaries of key system components.
+2. Technical/Incentive Analysis
+    1. Outline of available incentive levers, their consequences and limitations.
+    2. Specific areas of particular interest:
+        1. Debt holder optimal strategies (e.g. in the present of asset correlation)
+        2. Oracle front-running mitigation strategies
+        3. Issues with the fee redemption implementation
+        4. New incentives to reward those who provide liquidity at the right price rather than dumping into UniSwap
+3. Synthetix Position Specification
+    1. Formulation of strategies that encourage the book to be neutrally biased.
+    2. Characterisation of the maximum exposure of the parties under various conditions.
+    3. Identification and attempted resolution of possible exploits.
+
 ## Areas of potential vulnerability to investigate
 
 * Oracle front-running.
