@@ -34,7 +34,7 @@ The following contracts compose the core of the Synthetix system.
 * [x] [SynthetixEscrow](contracts/SynthetixEscrow.md)
 * [ ] [SynthetixState](contracts/SynthetixState.md)
 * [ ] [TokenFallbackCaller](contracts/TokenFallbackCaller.md)
-* [ ] TokenState
+* [x] [TokenState](TokenState.md)
 
 ## TODO
 
