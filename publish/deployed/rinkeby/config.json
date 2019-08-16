@@ -65,6 +65,9 @@
 	"SynthsBTC": {
 		"deploy": false
 	},
+	"ProxyERC20": {
+		"deploy": false
+	},
 	"ProxyFeePool": {
 		"deploy": false
 	},
