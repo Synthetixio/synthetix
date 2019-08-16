@@ -110,7 +110,7 @@
 		"category": "index",
 		"sign": "",
 		"desc": "Index CEX",
-		"subclass": "IndexSynth"
+		"subclass": "PurgeableSynth"
 	},
 	{
 		"name": "iBTC",
