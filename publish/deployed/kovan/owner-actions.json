@@ -1,1 +1,44 @@
-{}
+{
+	"Synthetix.addSynth(SynthsCEX)": {
+		"target": "0x64903DDaEC496b4dd4d7F0E4C07Cad5658bDA915",
+		"action": "addSynth(0xf39f983F7a0b92b93041D8413F4d16384c51B19d)",
+		"complete": false,
+		"link": "https://kovan.etherscan.io/address/0x64903DDaEC496b4dd4d7F0E4C07Cad5658bDA915#writeContract"
+	},
+	"ExchangeRates.setInversePricing(iBTC, 10600, 15900, 5300)": {
+		"target": "0x309f082d89Bd68c31dD879622E4B13aF4CAF584c",
+		"action": "setInversePricing(iBTC, 10600000000000000000000, 15900000000000000000000, 5300000000000000000000)",
+		"complete": false,
+		"link": "https://kovan.etherscan.io/address/0x309f082d89Bd68c31dD879622E4B13aF4CAF584c#writeContract"
+	},
+	"ExchangeRates.setInversePricing(iETH, 220, 330, 110)": {
+		"target": "0x309f082d89Bd68c31dD879622E4B13aF4CAF584c",
+		"action": "setInversePricing(iETH, 220000000000000000000, 330000000000000000000, 110000000000000000000)",
+		"complete": false,
+		"link": "https://kovan.etherscan.io/address/0x309f082d89Bd68c31dD879622E4B13aF4CAF584c#writeContract"
+	},
+	"ExchangeRates.setInversePricing(iBNB, 29, 44, 14.5)": {
+		"target": "0x309f082d89Bd68c31dD879622E4B13aF4CAF584c",
+		"action": "setInversePricing(iBNB, 29000000000000000000, 44000000000000000000, 14500000000000000000)",
+		"complete": false,
+		"link": "https://kovan.etherscan.io/address/0x309f082d89Bd68c31dD879622E4B13aF4CAF584c#writeContract"
+	},
+	"ExchangeRates.setInversePricing(iMKR, 550, 825, 275)": {
+		"target": "0x309f082d89Bd68c31dD879622E4B13aF4CAF584c",
+		"action": "setInversePricing(iMKR, 550000000000000000000, 825000000000000000000, 275000000000000000000)",
+		"complete": false,
+		"link": "https://kovan.etherscan.io/address/0x309f082d89Bd68c31dD879622E4B13aF4CAF584c#writeContract"
+	},
+	"ExchangeRates.setInversePricing(iTRX, 0.025, 0.0375, 0.0125)": {
+		"target": "0x309f082d89Bd68c31dD879622E4B13aF4CAF584c",
+		"action": "setInversePricing(iTRX, 25000000000000000, 37500000000000000, 12500000000000000)",
+		"complete": false,
+		"link": "https://kovan.etherscan.io/address/0x309f082d89Bd68c31dD879622E4B13aF4CAF584c#writeContract"
+	},
+	"ExchangeRates.setInversePricing(iXTZ, 0.98, 1.47, 0.49)": {
+		"target": "0x309f082d89Bd68c31dD879622E4B13aF4CAF584c",
+		"action": "setInversePricing(iXTZ, 980000000000000000, 1470000000000000000, 490000000000000000)",
+		"complete": false,
+		"link": "https://kovan.etherscan.io/address/0x309f082d89Bd68c31dD879622E4B13aF4CAF584c#writeContract"
+	}
+}

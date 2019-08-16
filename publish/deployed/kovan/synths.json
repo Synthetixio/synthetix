@@ -105,6 +105,14 @@
 		"desc": "Tezos"
 	},
 	{
+		"name": "sCEX",
+		"asset": "CEX",
+		"category": "index",
+		"sign": "",
+		"desc": "Index CEX",
+		"subclass": "PurgeableSynth"
+	},
+	{
 		"name": "iBTC",
 		"asset": "BTC",
 		"category": "crypto",
