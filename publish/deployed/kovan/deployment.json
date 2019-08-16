@@ -719,6 +719,33 @@
 			"timestamp": "2019-08-09T04:25:20.828Z",
 			"txn": "",
 			"network": "kovan"
+		},
+		"TokenStatesCEX": {
+			"name": "TokenStatesCEX",
+			"address": "0x8F70d2d9a593e28c86Ae0f1B03600310B3491C43",
+			"source": "TokenState",
+			"link": "https://kovan.etherscan.io/address/0x8F70d2d9a593e28c86Ae0f1B03600310B3491C43",
+			"timestamp": "2019-08-16T06:44:50.032Z",
+			"txn": "",
+			"network": "kovan"
+		},
+		"ProxysCEX": {
+			"name": "ProxysCEX",
+			"address": "0x985643f348F95DfFDbA710bFbfD2c6dc108Beab4",
+			"source": "Proxy",
+			"link": "https://kovan.etherscan.io/address/0x985643f348F95DfFDbA710bFbfD2c6dc108Beab4",
+			"timestamp": "2019-08-16T06:44:52.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0x67234c7bbd6440b105891539ea1919c1898ef6548cecd68529819c39441fa0c2",
+			"network": "kovan"
+		},
+		"SynthsCEX": {
+			"name": "SynthsCEX",
+			"address": "0xf39f983F7a0b92b93041D8413F4d16384c51B19d",
+			"source": "PurgeableSynth",
+			"link": "https://kovan.etherscan.io/address/0xf39f983F7a0b92b93041D8413F4d16384c51B19d",
+			"timestamp": "2019-08-16T07:11:36.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0x0ee1fd5e1e89bf1dcf8c98e342a15477f6b92c9cc0a061807bafd7d6561b9803",
+			"network": "kovan"
 		}
 	},
 	"sources": {
