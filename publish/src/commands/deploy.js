@@ -757,6 +757,7 @@ const deploy = async ({
 		});
 		const additionalConstructorArgsMap = {
 			PurgeableSynth: [exchangeRatesAddress],
+			IndexSynth: [exchangeRatesAddress],
 			// future subclasses...
 		};
 		const synth = await deployContract({
