@@ -39,6 +39,7 @@ The following contracts compose the core of the Synthetix system.
 ## TODO
 
 * Audit above contracts
+* List dapp integrations
 * Make a system diagram of what points to what.
 * Check consistency with dev docs and docstrings
 * PurgeableSynth.sol - Module description is broken.

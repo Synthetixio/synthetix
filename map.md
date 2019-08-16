@@ -15,8 +15,9 @@
   * [ ] Oracle
   * [ ] The debt ledger
 * Integrated Platforms
-  * [ ] Unipay
+  * [ ] Uniswap
   * [ ] That graphs thing?
+  * [ ] Dapps
 * Assets and Analysis
   * [ ] Classify assets
   * [ ] risk profiles
