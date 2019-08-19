@@ -108,6 +108,13 @@
 		"name": "sCEX",
 		"asset": "CEX",
 		"category": "index",
+		"index": [
+			{"symbol": "BNB", "name": "Binance Coin", "units": 16.57},
+			{"symbol": "LEO", "name": "UNUS SED LEO", "units": 153.85},
+			{"symbol": "HT", "name": "Huobi Token", "units": 19.67},
+			{"symbol": "OKB", "name": "OKB", "units": 32.56},
+			{"symbol": "KCS", "name": "KuCoin Shares", "units": 57.64}
+		],
 		"sign": "",
 		"desc": "Index CEX",
 		"subclass": "PurgeableSynth"
