@@ -746,6 +746,33 @@
 			"timestamp": "2019-08-16T07:11:36.000Z",
 			"txn": "https://kovan.etherscan.io/tx/0x0ee1fd5e1e89bf1dcf8c98e342a15477f6b92c9cc0a061807bafd7d6561b9803",
 			"network": "kovan"
+		},
+		"TokenStateiCEX": {
+			"name": "TokenStateiCEX",
+			"address": "0xF1B4c2A03cd37d5B9c7B908f1BE66D2f098880Ca",
+			"source": "TokenState",
+			"link": "https://kovan.etherscan.io/address/0xF1B4c2A03cd37d5B9c7B908f1BE66D2f098880Ca",
+			"timestamp": "2019-08-19T05:53:33.894Z",
+			"txn": "",
+			"network": "kovan"
+		},
+		"ProxyiCEX": {
+			"name": "ProxyiCEX",
+			"address": "0xB27C283AD83835bD783E3E0183c5f2A46489d6Dc",
+			"source": "Proxy",
+			"link": "https://kovan.etherscan.io/address/0xB27C283AD83835bD783E3E0183c5f2A46489d6Dc",
+			"timestamp": "2019-08-19T05:53:37.203Z",
+			"txn": "",
+			"network": "kovan"
+		},
+		"SynthiCEX": {
+			"name": "SynthiCEX",
+			"address": "0x189Dc0B0B3CE656777B18d2d17b7F5b4B413BA59",
+			"source": "PurgeableSynth",
+			"link": "https://kovan.etherscan.io/address/0x189Dc0B0B3CE656777B18d2d17b7F5b4B413BA59",
+			"timestamp": "2019-08-19T05:53:42.221Z",
+			"txn": "",
+			"network": "kovan"
 		}
 	},
 	"sources": {
@@ -1824,7 +1851,8 @@
 					],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "constructor"
+					"type": "constructor",
+					"signature": "constructor"
 				},
 				{
 					"payable": true,
@@ -3872,7 +3900,8 @@
 					],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "constructor"
+					"type": "constructor",
+					"signature": "constructor"
 				},
 				{
 					"anonymous": false,
@@ -11288,7 +11317,8 @@
 					],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "constructor"
+					"type": "constructor",
+					"signature": "constructor"
 				},
 				{
 					"anonymous": false,
@@ -11863,8 +11893,7 @@
 					],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "constructor",
-					"signature": "constructor"
+					"type": "constructor"
 				},
 				{
 					"payable": true,
