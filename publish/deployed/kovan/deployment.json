@@ -740,12 +740,12 @@
 		},
 		"SynthsCEX": {
 			"name": "SynthsCEX",
-			"address": "0x8423A960C19991D5c6d3c9aC6147224bAcb8bF56",
-			"source": "Synth",
+			"address": "0xc6b84783a79F5B921b4c86fF702AA6695004DFf7",
+			"source": "PurgeableSynth",
 			"network": "kovan",
-			"link": "https://kovan.etherscan.io/address/0x8423A960C19991D5c6d3c9aC6147224bAcb8bF56",
-			"timestamp": "2019-08-19T14:52:39.000Z",
-			"txn": "https://kovan.etherscan.io/tx/0x8b3f1e190307184319388b54e45907a278ae886acb48f98fa0abfd32feadf55e"
+			"link": "https://kovan.etherscan.io/address/0xc6b84783a79F5B921b4c86fF702AA6695004DFf7",
+			"timestamp": "2019-08-19T17:14:05.448Z",
+			"txn": ""
 		},
 		"TokenStateiCEX": {
 			"name": "TokenStateiCEX",

@@ -740,12 +740,12 @@
 		},
 		"SynthsCEX": {
 			"name": "SynthsCEX",
-			"address": "0xe9698B47613151590a42F1E8dad10F6Ed097954f",
-			"source": "Synth",
-			"link": "https://ropsten.etherscan.io/address/0xe9698B47613151590a42F1E8dad10F6Ed097954f",
-			"timestamp": "2019-08-19T16:41:09.000Z",
-			"txn": "https://ropsten.etherscan.io/tx/0x74f4525a89b88fa3fd1e7182554c9c1e16ebaa741da7be957824db65ae0b5dd0",
-			"network": "ropsten"
+			"address": "0xf473EEB7a3B140eeBbadfbc2C754D21D69EeD632",
+			"source": "PurgeableSynth",
+			"network": "ropsten",
+			"link": "https://ropsten.etherscan.io/address/0xf473EEB7a3B140eeBbadfbc2C754D21D69EeD632",
+			"timestamp": "2019-08-19T17:20:04.344Z",
+			"txn": ""
 		},
 		"TokenStateiCEX": {
 			"name": "TokenStateiCEX",

@@ -740,12 +740,12 @@
 		},
 		"SynthsCEX": {
 			"name": "SynthsCEX",
-			"address": "0xee5cC6E5d4D1916df0A8Dc9A1863776eeFcD6D00",
-			"source": "Synth",
-			"link": "https://rinkeby.etherscan.io/address/0xee5cC6E5d4D1916df0A8Dc9A1863776eeFcD6D00",
-			"timestamp": "2019-08-19T15:13:54.000Z",
-			"txn": "https://rinkeby.etherscan.io/tx/0x891a53e6ee98fd21d44b71130b42ccf20215186f9a80fe3142297446b4b9a165",
-			"network": "rinkeby"
+			"address": "0x9D377791B8139E790E9BceE3B9fEf3F041B85Ae5",
+			"source": "PurgeableSynth",
+			"network": "rinkeby",
+			"link": "https://rinkeby.etherscan.io/address/0x9D377791B8139E790E9BceE3B9fEf3F041B85Ae5",
+			"timestamp": "2019-08-19T17:16:10.295Z",
+			"txn": ""
 		},
 		"TokenStateiCEX": {
 			"name": "TokenStateiCEX",
@@ -11315,7 +11315,8 @@
 					],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "constructor"
+					"type": "constructor",
+					"signature": "constructor"
 				},
 				{
 					"anonymous": false,
