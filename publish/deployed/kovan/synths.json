@@ -136,8 +136,7 @@
 			}
 		],
 		"sign": "",
-		"desc": "Index CEX",
-		"subclass": "Synth"
+		"desc": "Index CEX"
 	},
 	{
 		"name": "iBTC",
