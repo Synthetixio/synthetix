@@ -238,5 +238,23 @@
 	},
 	"SynthiXTZ": {
 		"deploy": false
+	},
+	"TokenStatesCEX": {
+		"deploy": false
+	},
+	"ProxysCEX": {
+		"deploy": false
+	},
+	"SynthsCEX": {
+		"deploy": false
+	},
+	"TokenStateiCEX": {
+		"deploy": false
+	},
+	"ProxyiCEX": {
+		"deploy": false
+	},
+	"SynthiCEX": {
+		"deploy": false
 	}
 }
