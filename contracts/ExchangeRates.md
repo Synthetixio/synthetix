@@ -71,7 +71,7 @@ Note that if $rate >= 2 \times entryPoint$, then the rate will always be frozen.
 * `lastRateUpdateTimeForCurrency(bytes4 currencyKey) returns (uint)`: Alias to `lastRateUpdateTime[currencyKey]`.
 * `lastRateUpdateTimesForCurrencies(bytes4[] currencyKeys) returns (uint[])`: Maps `lastRateUpdateTimeForCurrency` over an array of keys.
 * `rateIsStale(bytes4 currencyKey) returns (bool)`: `sUSD` is never stale. Otherwise, checks if the last updated time was more than `rateStalePeriod` seconds in the past.
-* `rateIsFrozen(bytes4 currencyKey) returns (bool)`: Simply an alias to `inversePricing[currencyKey].frozen`. Currencies without an inverse price will naturally return false. NOTE: Caution should be exercised in [PurgeableSynth](PurgeableSynth.md): non-inverse synths are always immediately purgeable.
+* `rateIsFrozen(bytes4 currencyKey) returns (bool)`: Simply an alias to `inversePricing[currencyKey].frozen`. Currencies without an inverse price will naturally return false.
 * `anyRateIsStale(bytes4[] currencyKeys) returns (bool)`: Loop over all currencies except sUSD and return true if any of them is stale.
 
 ## Events
