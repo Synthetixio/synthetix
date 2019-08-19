@@ -7,7 +7,7 @@
 The following contracts compose the core of the Synthetix system.
 
 * [x] [DelegateApprovals](contracts/DelegateApprovals.md)
-* [ ] Depot
+* [x] [Depot](contracts/Depot.md)
 * [x] [EscrowChecker](contracts/EscrowChecker.md)
 * [x] [EternalStorage](contracts/EternalStorage.md)
 * [ ] ExchangeRates
