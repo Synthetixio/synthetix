@@ -8,11 +8,13 @@ const DelegateApprovals = artifacts.require('DelegateApprovals');
 const Synthetix = artifacts.require('Synthetix');
 const SynthetixEscrow = artifacts.require('SynthetixEscrow');
 const RewardEscrow = artifacts.require('RewardEscrow');
+const RewardsDistribution = artifacts.require('RewardsDistribution');
 const SynthetixState = artifacts.require('SynthetixState');
 const SupplySchedule = artifacts.require('SupplySchedule');
 const Synth = artifacts.require('Synth');
 const Owned = artifacts.require('Owned');
 const Proxy = artifacts.require('Proxy');
+// const ProxyERC20 = artifacts.require('ProxyERC20');
 const PublicSafeDecimalMath = artifacts.require('PublicSafeDecimalMath');
 const PurgeableSynth = artifacts.require('PurgeableSynth');
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
@@ -142,6 +144,22 @@ module.exports = async function(deployer, network, accounts) {
 	await delegateApprovals.setAssociatedContract(feePool.address, { from: owner });
 	await feePoolEternalStorage.setAssociatedContract(feePool.address, { from: owner });
 
+	// ----------------------
+	// Deploy RewardDistribution
+	// ----------------------
+	console.log('Deploying RewardsDistribution...');
+	const rewardsDistribution = await deployer.deploy(
+		RewardsDistribution,
+		owner,
+		ZERO_ADDRESS, // Authority = Synthetix Underlying
+		rewardEscrow.address,
+		ZERO_ADDRESS, // Synthetix ProxyERC20
+		feePoolProxy.address, // FeePoolProxy
+		{
+			from: deployerAccount,
+		}
+	);
+
 	// ----------------
 	// Synthetix
 	// ----------------
@@ -178,6 +196,7 @@ module.exports = async function(deployer, network, accounts) {
 		supplySchedule.address,
 		rewardEscrow.address,
 		escrow.address,
+		rewardsDistribution.address,
 		SYNTHETIX_TOTAL_SUPPLY,
 		{
 			from: deployerAccount,
@@ -220,6 +239,12 @@ module.exports = async function(deployer, network, accounts) {
 	// Connect InflationarySupply
 	// ----------------------
 	await supplySchedule.setSynthetix(synthetix.address, { from: owner });
+
+	// ----------------------
+	// Connect RewardsDistribution
+	// ----------------------
+	await rewardsDistribution.setAuthority(synthetix.address, { from: owner });
+	await rewardsDistribution.setSynthetixProxy(synthetixProxy.address, { from: owner });
 
 	// ----------------
 	// Synths
