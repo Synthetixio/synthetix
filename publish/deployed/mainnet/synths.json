@@ -185,9 +185,9 @@
 		"desc": "Inverted Tezos",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 0.98,
-			"upperLimit": 1.47,
-			"lowerLimit": 0.49
+			"entryPoint": 1.4,
+			"upperLimit": 2.1,
+			"lowerLimit": 0.7
 		}
 	}
 ]
