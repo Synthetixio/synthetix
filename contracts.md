@@ -14,7 +14,7 @@ The following contracts compose the core of the Synthetix system.
 * [ ] [ExternStateToken](contracts/ExternStateToken.md)
 * [ ] [FeePool](contracts/FeePool.md)
 * [x] [FeePoolEternalStorage](contracts/FeePoolEternalStorage.md)
-* [ ] [FeePoolState](contracts/FeePoolState.md)
+* [x] [FeePoolState](contracts/FeePoolState.md)
 * [x] [LimitedSetup](contracts/LimitedSetup.md)
 * [x] [Migrations](contracts/Migrations.md)
 * [x] [Owned](contracts/Owned.md)
@@ -47,3 +47,6 @@ The following contracts compose the core of the Synthetix system.
 * PurgeableSynth.sol - Module description is broken.
 * Check the legality of the licence headers
 * Examine oracle addresses and actual update frequencies
+* Entry for SafeMath
+* Ensure function and variable types are correct
+* Modifiers
