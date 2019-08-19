@@ -10,7 +10,7 @@ The following contracts compose the core of the Synthetix system.
 * [x] [Depot](contracts/Depot.md)
 * [x] [EscrowChecker](contracts/EscrowChecker.md)
 * [x] [EternalStorage](contracts/EternalStorage.md)
-* [ ] ExchangeRates
+* [x] [ExchangeRates](contracts/ExchangeRates.md)
 * [ ] [ExternStateToken](contracts/ExternStateToken.md)
 * [ ] [FeePool](contracts/FeePool.md)
 * [ ] [FeePoolEternalStorage](contracts/FeePoolEternalStorage.md)
@@ -39,8 +39,11 @@ The following contracts compose the core of the Synthetix system.
 ## TODO
 
 * Audit above contracts
+* Add links to repositories for each one.
+* Fix inheritance hierarchy and references.
 * List dapp integrations
 * Make a system diagram of what points to what.
 * Check consistency with dev docs and docstrings
 * PurgeableSynth.sol - Module description is broken.
 * Check the legality of the licence headers
+* Examine oracle addresses and actual update frequencies
