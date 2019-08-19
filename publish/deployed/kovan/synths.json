@@ -109,11 +109,31 @@
 		"asset": "CEX",
 		"category": "index",
 		"index": [
-			{"symbol": "BNB", "name": "Binance Coin", "units": 17.88},
-			{"symbol": "LEO", "name": "UNUS SED LEO", "units": 153.85},
-			{"symbol": "HT", "name": "Huobi Token", "units": 20.51},
-			{"symbol": "OKB", "name": "OKB", "units": 32.52},
-			{"symbol": "KCS", "name": "KuCoin Shares", "units": 59.82}
+			{
+				"symbol": "BNB",
+				"name": "Binance Coin",
+				"units": 17.88
+			},
+			{
+				"symbol": "LEO",
+				"name": "UNUS SED LEO",
+				"units": 153.85
+			},
+			{
+				"symbol": "HT",
+				"name": "Huobi Token",
+				"units": 20.51
+			},
+			{
+				"symbol": "OKB",
+				"name": "OKB",
+				"units": 32.52
+			},
+			{
+				"symbol": "KCS",
+				"name": "KuCoin Shares",
+				"units": 59.82
+			}
 		],
 		"sign": "",
 		"desc": "Index CEX",
@@ -202,11 +222,31 @@
 		"asset": "CEX",
 		"category": "index",
 		"index": [
-			{"symbol": "BNB", "name": "Binance Coin", "units": 17.88},
-			{"symbol": "LEO", "name": "UNUS SED LEO", "units": 153.85},
-			{"symbol": "HT", "name": "Huobi Token", "units": 20.51},
-			{"symbol": "OKB", "name": "OKB", "units": 32.52},
-			{"symbol": "KCS", "name": "KuCoin Shares", "units": 59.82}
+			{
+				"symbol": "BNB",
+				"name": "Binance Coin",
+				"units": 17.88
+			},
+			{
+				"symbol": "LEO",
+				"name": "UNUS SED LEO",
+				"units": 153.85
+			},
+			{
+				"symbol": "HT",
+				"name": "Huobi Token",
+				"units": 20.51
+			},
+			{
+				"symbol": "OKB",
+				"name": "OKB",
+				"units": 32.52
+			},
+			{
+				"symbol": "KCS",
+				"name": "KuCoin Shares",
+				"units": 59.82
+			}
 		],
 		"sign": "",
 		"desc": "Inverted CEX",
