@@ -136,7 +136,8 @@
 			}
 		],
 		"sign": "",
-		"desc": "Index CEX"
+		"desc": "Index CEX",
+		"subclass": "PurgeableSynth"
 	},
 	{
 		"name": "iBTC",
