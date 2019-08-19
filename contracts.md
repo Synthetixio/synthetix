@@ -13,7 +13,7 @@ The following contracts compose the core of the Synthetix system.
 * [x] [ExchangeRates](contracts/ExchangeRates.md)
 * [ ] [ExternStateToken](contracts/ExternStateToken.md)
 * [ ] [FeePool](contracts/FeePool.md)
-* [ ] [FeePoolEternalStorage](contracts/FeePoolEternalStorage.md)
+* [x] [FeePoolEternalStorage](contracts/FeePoolEternalStorage.md)
 * [ ] [FeePoolState](contracts/FeePoolState.md)
 * [x] [LimitedSetup](contracts/LimitedSetup.md)
 * [x] [Migrations](contracts/Migrations.md)

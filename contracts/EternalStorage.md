@@ -8,13 +8,8 @@ A key:value store for various data types, each data type has a mapping from byte
 
 ## Inherited Contracts
 
-### Direct
-
 * [State](State.md)
-
-### Indirect
-
-* [Owned](Owned.md)
+* ^[Owned](Owned.md)
 
 ## Variables
 

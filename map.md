@@ -26,7 +26,9 @@
 * Documents
   * [ ] Litepaper
   * [ ] Readme
-  * [ ] Dev Docs
+  * [ ] [Dev Docs](https://developer.synthetix.io/api/docs/home.html)
+  * [ ] [SynthetixJs](https://synthetixjs.synthetix.io/)
+  * [ ] [API](https://developer.synthetix.io/api/docs/synthetix)
 
 ## Areas per email discussions
 
