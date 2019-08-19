@@ -247,6 +247,7 @@ const replaceSynths = async ({
 		// // 3. use Deployer to deploy
 		const additionalConstructorArgsMap = {
 			PurgeableSynth: [exchangeRatesAddress],
+			Synth: [],
 			// future subclasses...
 		};
 		const replacementSynth = await deployer.deploy({
