@@ -4,6 +4,8 @@
 
 ## SIPs (Synthetix Improvement Proposals)
 
+TODO: Examine the new SIP website.
+
 * SIP-1: SIP specification.
 * SIP-2: Eliminates fee penalty tiers and replaces them with a flat 100% penalty if above a target ratio.
 * SIP-3: Purgeable Synths -- Allow the ability to destroy synths, refunding the balances in sUSD to holders. This allows removing unused synths, which otherwise cause unnecessary gas costs.

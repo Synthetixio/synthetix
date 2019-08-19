@@ -18,6 +18,7 @@
   * [ ] Uniswap
   * [ ] That graphs thing?
   * [ ] Dapps
+  * [ ] Examine bounties
 * Assets and Analysis
   * [ ] Classify assets
   * [ ] risk profiles

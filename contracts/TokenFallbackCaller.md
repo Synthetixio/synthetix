@@ -17,4 +17,4 @@ NOTE: File docstring still refers to "Fee Token", which no longer exists.
 
 ## Functions
 
-* `callTokenFallbackIfNeeded(address recipient, uint amount, bytes data) internal`: Checks if the target address has code, and attempt to call its ERC223 fall back function. If this call fails, fail silently. Reentrant calls are disallowed.
+* `callTokenFallbackIfNeeded(address recipient, uint amount, bytes data) internal`: Checks if the target address has code, and attempt to call its ERC223 fall back function. If this call fails, fail silently. Reentrant calls are disallowed. TODO: examine in what cases reentrancy is actually a risk.
