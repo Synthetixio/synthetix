@@ -59,7 +59,7 @@ const build = async ({ buildPath = DEFAULTS.buildPath, showWarnings } = {}) => {
 	let allErrors = [];
 	let allWarnings = [];
 	Object.entries(CONTRACT_OVERRIDES).forEach(([key, value]) => {
-		console.log(gray(`${key} with optimisation runs: ${value.runs}`));
+		console.log(green(`${key} with optimisation runs: ${value.runs}`));
 		const source = {
 			[key]: sources[key],
 		};
