@@ -43,6 +43,15 @@ contract TokenExchanger is Owned {
         return IERC20(integrationProxy).balanceOf(account);
     }
 
+    function checkAllowance(address tokenOwner, address spender)
+        public
+        view
+        synthetixProxyIsSet
+        returns (uint)
+    {
+        return IERC20(integrationProxy).allowance(tokenOwner, spender);
+    }
+
     function checkBalanceSNXDirect(address account)
         public
         view
@@ -65,6 +74,13 @@ contract TokenExchanger is Owned {
         synthetixProxyIsSet
         returns (bool)
     {
+        // Call Immutable static call #1
+        require(checkBalance(fromAccount) >= amount, "fromAccount does not have the required balance to spend");
+
+        // Call Immutable static call #2
+        require(checkAllowance(fromAccount, address(this)) >= amount, "I TokenExchanger, do not have approval to spend this guys tokens");
+
+        // Call Mutable call
         return IERC20(integrationProxy).transferFrom(fromAccount, toAccount, amount);
     }
 
