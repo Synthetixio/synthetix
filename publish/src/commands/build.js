@@ -17,6 +17,8 @@ const { stringify } = require('../util');
 const DEFAULTS = {
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
 };
+const CONTRACT_OVERRIDES = require('../contract-overrides');
+
 const build = async ({ buildPath = DEFAULTS.buildPath, showWarnings } = {}) => {
 	console.log(gray('Starting build...'));
 
@@ -53,23 +55,34 @@ const build = async ({ buildPath = DEFAULTS.buildPath, showWarnings } = {}) => {
 	// Ok, now we need to compile all the files.
 	console.log(gray('Compiling contracts...'));
 
-	const exchangeRatesSource = {
-		'ExchangeRates.sol': sources['ExchangeRates.sol'],
-	};
+	let contractsWithOverride = {};
+	let allErrors = [];
+	let allWarnings = [];
+	Object.entries(CONTRACT_OVERRIDES).forEach(([key, value]) => {
+		console.log(gray(`${key} with optimisation runs: ${value.runs}`));
+		const source = {
+			[key]: sources[key],
+		};
+		const { artifacts, errors, warnings } = compile({
+			sources: source,
+			runs: value.runs,
+		});
 
-	const { artifacts: exchangeArtifact, errors: exErrors, warnings: exWarnings } = compile({
-		sources: exchangeRatesSource,
-		runs: 1000,
+		contractsWithOverride = Object.assign(contractsWithOverride, artifacts);
+		allErrors = allErrors.concat(errors);
+		allWarnings = allWarnings.concat(warnings);
+
+		delete sources[key];
 	});
-	delete sources['ExchangeRates.sol'];
 
+	console.log(gray('Compiling remaining contracts...'));
 	const { artifacts, errors, warnings } = compile({ sources });
 
 	const compiledPath = path.join(buildPath, COMPILED_FOLDER);
 
-	const allArtifacts = Object.assign(artifacts, exchangeArtifact);
-	const allErrors = errors.concat(exErrors);
-	const allWarnings = warnings.concat(exWarnings);
+	const allArtifacts = Object.assign(artifacts, contractsWithOverride);
+	allErrors = allErrors.concat(errors);
+	allWarnings = allWarnings.concat(warnings);
 
 	Object.entries(allArtifacts).forEach(([key, value]) => {
 		const toWrite = path.join(compiledPath, key);

@@ -49,7 +49,7 @@ module.exports = {
 					settings: {
 						optimizer: {
 							enabled: true,
-							runs: runs,
+							runs,
 						},
 						outputSelection: {
 							'*': {
