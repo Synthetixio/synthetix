@@ -143,8 +143,11 @@ contract RewardsDistribution is Owned {
     {
         require(destination != address(0), "Cant add a zero address");
         require(amount != 0, "Cant add a zero amount");
+
         DistributionData memory rewardsDistribution = DistributionData(destination, amount);
         distributions.push(rewardsDistribution);
+
+        emit RewardDistributionAdded(distributions.length - 1, destination, amount);
         return true;
     }
 
@@ -157,6 +160,8 @@ contract RewardsDistribution is Owned {
         external
         onlyOwner
     {
+        require(index <= distributions.length - 1, "index out of bounds");
+        
         delete distributions[index];
     }
 
@@ -169,11 +174,14 @@ contract RewardsDistribution is Owned {
     function editRewardDistribution(uint index, address destination, uint amount)
         external
         onlyOwner
+        returns (bool)
     {
-        require(index < distributions.length - 1, "index out of bounds");
+        require(index <= distributions.length - 1, "index out of bounds");
 
         distributions[index].destination = destination;
         distributions[index].amount = amount;
+
+        return true;
     }
 
     /**
@@ -181,6 +189,7 @@ contract RewardsDistribution is Owned {
      * tokens to the specified address. The remainder is then sent to the RewardEscrow Contract
      * and applied to the FeePools staking rewards.
      * @param amount The total number of tokens being distributed
+
      */
     function distributeRewards(uint amount)
         external
@@ -193,9 +202,12 @@ contract RewardsDistribution is Owned {
         uint remainder = amount;
 
         // Iterate the array of distributions sending the configured amounts
-        for (uint i = 0; i < distributions.length; i++) {
-            if (distributions[i].destination != address(0) && distributions[i].amount != 0) {
+        for (uint i = 0; i < distributions.length-1; i++) {
+            emit LogInt("distributing index", i);
+            if (distributions[i].destination != address(0) || distributions[i].amount != 0) {
                 remainder = remainder.sub(distributions[i].amount);
+                emit LogAddress("distributing to ", distributions[i].destination);
+                emit LogInt("distributing amount", distributions[i].amount);
                 IERC20(synthetixProxy).transfer(distributions[i].destination, distributions[i].amount);
             }
         }
@@ -205,6 +217,17 @@ contract RewardsDistribution is Owned {
         // Tell the FeePool how much it has to distribute to the stakers
         IFeePool(feePoolProxy).rewardsMinted(remainder);
 
+        emit RewardsDistributed(amount);
+
         return true;
     }
+
+    /* ========== Events ========== */
+
+    event RewardDistributionAdded(uint index, address destination, uint amount);
+    event RewardsDistributed(uint amount);
+
+    event LogString(string name, string value);
+    event LogAddress(string name, address value);
+    event LogInt(string name, uint value);
 }
