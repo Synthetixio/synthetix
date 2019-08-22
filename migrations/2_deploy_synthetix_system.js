@@ -127,6 +127,7 @@ module.exports = async function(deployer, network, accounts) {
 		synthetixState.address,
 		rewardEscrow.address,
 		feeAuthority,
+		ZERO_ADDRESS,
 		web3.utils.toWei('0.0015', 'ether'), // TODO must change this to 0 to match MAINNET after tests are updated
 		web3.utils.toWei('0.0030', 'ether'),
 		{ from: deployerAccount }
@@ -159,6 +160,8 @@ module.exports = async function(deployer, network, accounts) {
 			from: deployerAccount,
 		}
 	);
+
+	await feePool.setRewardsAuthority(rewardsDistribution.address, { from: owner });
 
 	// ----------------
 	// Synthetix
@@ -349,12 +352,15 @@ module.exports = async function(deployer, network, accounts) {
 		['Exchange Rates', ExchangeRates.address],
 		['Fee Pool', FeePool.address],
 		['Fee Pool Proxy', feePoolProxy.address],
+		['Fee Pool State', feePoolState.address],
+		['Fee Pool Eternal Storage', feePoolEternalStorage.address],
 		['Synthetix State', synthetixState.address],
 		['Synthetix Token State', synthetixTokenState.address],
 		['Synthetix Proxy', synthetixProxy.address],
 		['Synthetix', Synthetix.address],
 		['Synthetix Escrow', SynthetixEscrow.address],
 		['Reward Escrow', RewardEscrow.address],
+		['Rewards Distribution', RewardsDistribution.address],
 		['Depot', Depot.address],
 		['Owned', Owned.address],
 		['SafeDecimalMath', SafeDecimalMath.address],

@@ -1,13 +1,23 @@
 const RewardsDistribution = artifacts.require('RewardsDistribution');
 const Synthetix = artifacts.require('Synthetix');
-const RewardEscrow = artifacts.require('RewardEscrow');
+const FeePool = artifacts.require('FeePool');
 
 const { toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 
 contract.only('RewardsDistribution', async accounts => {
-	const [deployerAccount, owner, account1, account2, account3, account4, account5] = accounts;
+	const [
+		deployerAccount,
+		owner,
+		authorityAddress,
+		rewardEscrowAddress,
+		account1,
+		account2,
+		account3,
+		account4,
+		account5,
+	] = accounts;
 
-	let rewardsDistribution, synthetix, rewardEscrow;
+	let rewardsDistribution, synthetix, feePool;
 
 	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
@@ -15,7 +25,7 @@ contract.only('RewardsDistribution', async accounts => {
 		// contract interfaces to prevent test bleed.
 		rewardsDistribution = await RewardsDistribution.deployed();
 		synthetix = await Synthetix.deployed();
-		rewardEscrow = await RewardEscrow.deployed();
+		feePool = await FeePool.deployed();
 	});
 
 	it('should set constructor params on deployment', async () => {
@@ -178,7 +188,33 @@ contract.only('RewardsDistribution', async accounts => {
 			const distributionAddress = account1;
 			const amountToDistribute = toUnit('5000');
 
+			// Add 1 distribution
 			await rewardsDistribution.addRewardDistribution(distributionAddress, amountToDistribute, {
+				from: owner,
+			});
+
+			// Set the authority to call distribute
+			await rewardsDistribution.setAuthority(authorityAddress, {
+				from: owner,
+			});
+
+			// Set the RewardEscrow Address
+			await rewardsDistribution.setRewardEscrow(rewardEscrowAddress, {
+				from: owner,
+			});
+
+			// Set the SNX Token Transfer Address
+			await rewardsDistribution.synthetixProxy(synthetix.address, {
+				from: owner,
+			});
+
+			// Set the FeePool Address
+			await rewardsDistribution.setFeePoolProxy(feePool.address, {
+				from: owner,
+			});
+
+			// Set the RewardsAuthority on the FeePool contract
+			await feePool.setRewardsAuthority(rewardsDistribution.address, {
 				from: owner,
 			});
 		});
@@ -192,29 +228,30 @@ contract.only('RewardsDistribution', async accounts => {
 		it('should revert when amount to distribute is zero', async () => {
 			await assert.revert(
 				rewardsDistribution.distributeRewards(toUnit('0'), {
-					from: owner,
+					from: authorityAddress,
 				})
 			);
 		});
 		it('should revert when contract does not have the token balance to distribute', async () => {
 			await assert.revert(
 				rewardsDistribution.distributeRewards(toUnit('5000'), {
-					from: owner,
+					from: authorityAddress,
 				})
 			);
 		});
 		it.only('should send the correct amount of tokens to the listed addresses', async () => {
 			const totalToDistribute = toUnit('35000');
+			// Account 1 should get 5000
 			// Account 2 should get 10000
 			await rewardsDistribution.addRewardDistribution(account2, toUnit('10000'), {
 				from: owner,
 			});
 			// RewardEscrow should get 20000
-			await rewardsDistribution.addRewardDistribution(rewardEscrow.address, toUnit('20000'), {
-				from: owner,
-			});
 
-			console.log('rewardsDistribution.address', rewardsDistribution.address);
+			// Ensure Authority to call is set
+			const authorityAddress = await rewardsDistribution.authority();
+			assert.equal(authorityAddress, authorityAddress);
+
 			// Transfer SNX to the RewardsDistribution contract address
 			await synthetix.methods['transfer(address,uint256)'](
 				rewardsDistribution.address,
@@ -226,13 +263,11 @@ contract.only('RewardsDistribution', async accounts => {
 			const balanceOfRewardsContract = await synthetix.balanceOf(rewardsDistribution.address);
 			assert.bnEqual(balanceOfRewardsContract, totalToDistribute);
 
-			console.log('distributeRewards');
 			// Distribute Rewards called from Synthetix contract as the authority to distribute
 			const transaction = await rewardsDistribution.distributeRewards(totalToDistribute, {
-				from: synthetix.address,
+				from: authorityAddress,
 			});
 
-			console.log('check event');
 			// Check event
 			assert.eventEqual(transaction, 'RewardsDistributed', { amount: totalToDistribute });
 
@@ -245,9 +280,12 @@ contract.only('RewardsDistribution', async accounts => {
 			assert.bnEqual(balanceOfAccount2, toUnit('10000'));
 
 			// Check Reward Escrow balance
-			const balanceOfRewardEscrow = await synthetix.balanceOf(rewardEscrow.address);
+			const balanceOfRewardEscrow = await synthetix.balanceOf(rewardEscrowAddress);
 			assert.bnEqual(balanceOfRewardEscrow, toUnit('20000'));
+
+			// Check FeePool has rewards to distribute
+			const recentPeriod = await feePool.recentFeePeriods(0);
+			assert.bnEqual(recentPeriod.rewardsToDistribute, toUnit('20000'));
 		});
-		it('should send the correct amount of remaining tokens to the RewardEscrow');
 	});
 });

@@ -196,29 +196,29 @@ contract RewardsDistribution is Owned {
         returns (bool)
     {
         require(msg.sender == authority, "Caller is not authorised");
+        require(rewardEscrow != address(0), "RewardEscrow is not set");
+        require(synthetixProxy != address(0), "SynthetixProxy is not set");
+        require(feePoolProxy != address(0), "FeePoolProxy is not set");
         require(amount > 0, "Nothing to distribute");
         require(IERC20(synthetixProxy).balanceOf(this) >= amount, "RewardsDistribution contract does not have enough tokens to distribute");
-
+        
         uint remainder = amount;
 
         // Iterate the array of distributions sending the configured amounts
-        for (uint i = 0; i < distributions.length-1; i++) {
-            emit LogInt("distributing index", i);
+        for (uint i = 0; i < distributions.length; i++) {
             if (distributions[i].destination != address(0) || distributions[i].amount != 0) {
                 remainder = remainder.sub(distributions[i].amount);
-                emit LogAddress("distributing to ", distributions[i].destination);
-                emit LogInt("distributing amount", distributions[i].amount);
                 IERC20(synthetixProxy).transfer(distributions[i].destination, distributions[i].amount);
             }
         }
+
         // After all ditributions have been sent, send the remainder to the RewardsEscrow contract
         IERC20(synthetixProxy).transfer(rewardEscrow, remainder);
 
         // Tell the FeePool how much it has to distribute to the stakers
-        IFeePool(feePoolProxy).rewardsMinted(remainder);
+        IFeePool(feePoolProxy).rewardsToDistribute(remainder);
 
         emit RewardsDistributed(amount);
-
         return true;
     }
 
@@ -226,8 +226,4 @@ contract RewardsDistribution is Owned {
 
     event RewardDistributionAdded(uint index, address destination, uint amount);
     event RewardsDistributed(uint amount);
-
-    event LogString(string name, string value);
-    event LogAddress(string name, address value);
-    event LogInt(string name, uint value);
 }

@@ -73,6 +73,9 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     // The address with the authority to distribute fees.
     address public feeAuthority;
 
+    // The address with the authority to distribute rewards.
+    address public rewardsAuthority;
+
     // The address to the FeePoolState Contract.
     FeePoolState public feePoolState;
 
@@ -126,6 +129,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         ISynthetixState _synthetixState,
         ISynthetixEscrow _rewardEscrow,
         address _feeAuthority,
+        address _rewardsAuthority,
         uint _transferFeeRate,
         uint _exchangeFeeRate)
         SelfDestructible(_owner)
@@ -143,6 +147,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         rewardEscrow = _rewardEscrow;
         synthetixState = _synthetixState;
         feeAuthority = _feeAuthority;
+        rewardsAuthority = _rewardsAuthority;
         transferFeeRate = _transferFeeRate;
         exchangeFeeRate = _exchangeFeeRate;
 
@@ -201,6 +206,16 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         optionalProxy_onlyOwner
     {
         feeAuthority = _feeAuthority;
+    }
+
+    /**
+     * @notice Set the address of the contract responsible for distributing rewards
+     */
+    function setRewardsAuthority(address _rewardsAuthority)
+        external
+        optionalProxy_onlyOwner
+    {
+        rewardsAuthority = _rewardsAuthority;
     }
 
     /**
@@ -280,11 +295,11 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     /**
      * @notice The Synthetix contract informs us when SNX Rewards are minted to RewardEscrow to be claimed.
      */
-    function rewardsMinted(uint amount)
+    function rewardsToDistribute(uint amount)
         external
-        onlySynthetix
     {
-        // Add the newly minted SNX rewards on top of the rolling unclaimed amount
+        require(msg.sender == rewardsAuthority, "Caller is not rewardsAuthority");
+        // Add the amount of SNX rewards to distribute on top of any rolling unclaimed amount
         recentFeePeriods[0].rewardsToDistribute = recentFeePeriods[0].rewardsToDistribute.add(amount);
     }
 
