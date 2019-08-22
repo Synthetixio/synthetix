@@ -28,7 +28,7 @@ const decimalsToDisplay = 2;
 
 let tableData = [['Contract', 'Size', 'Percent of Limit']];
 
-glob('./build/contracts/*.json', (err, files) => {
+glob('./build/compiled/*.json', (err, files) => {
 	if (err) {
 		console.log(err);
 		process.exit(1);
@@ -37,8 +37,8 @@ glob('./build/contracts/*.json', (err, files) => {
 	const contracts = [];
 
 	for (const file of files) {
-		const { bytecode } = require(file);
-		const { length } = hexToBytes(bytecode);
+		const { evm } = require(file);
+		const { length } = hexToBytes(evm.bytecode.object);
 
 		contracts.push({ file, length });
 	}

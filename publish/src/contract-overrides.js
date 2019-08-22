@@ -2,6 +2,9 @@
 
 module.exports = {
 	'ExchangeRates.sol': {
-		runs: 5000,
+		runs: 10000,
+	},
+	'FeePool.sol': {
+		runs: 2000,
 	},
 };
