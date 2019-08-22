@@ -17,6 +17,8 @@ const { stringify } = require('../util');
 const DEFAULTS = {
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
 };
+const CONTRACT_OVERRIDES = require('../contract-overrides');
+
 const build = async ({ buildPath = DEFAULTS.buildPath, showWarnings } = {}) => {
 	console.log(gray('Starting build...'));
 
@@ -52,9 +54,37 @@ const build = async ({ buildPath = DEFAULTS.buildPath, showWarnings } = {}) => {
 
 	// Ok, now we need to compile all the files.
 	console.log(gray('Compiling contracts...'));
+
+	let contractsWithOverride = {};
+	let allErrors = [];
+	let allWarnings = [];
+	Object.entries(CONTRACT_OVERRIDES).forEach(([key, value]) => {
+		console.log(green(`${key} with optimisation runs: ${value.runs}`));
+		const source = {
+			[key]: sources[key],
+		};
+		const { artifacts, errors, warnings } = compile({
+			sources: source,
+			runs: value.runs,
+		});
+
+		contractsWithOverride = Object.assign(contractsWithOverride, artifacts);
+		allErrors = allErrors.concat(errors);
+		allWarnings = allWarnings.concat(warnings);
+
+		delete sources[key];
+	});
+
+	console.log(gray('Compiling remaining contracts...'));
 	const { artifacts, errors, warnings } = compile({ sources });
+
 	const compiledPath = path.join(buildPath, COMPILED_FOLDER);
-	Object.entries(artifacts).forEach(([key, value]) => {
+
+	const allArtifacts = Object.assign(artifacts, contractsWithOverride);
+	allErrors = allErrors.concat(errors);
+	allWarnings = allWarnings.concat(warnings);
+
+	Object.entries(allArtifacts).forEach(([key, value]) => {
 		const toWrite = path.join(compiledPath, key);
 		try {
 			// try make path for sub-folders (note: recursive flag only from nodejs 10.12.0)
@@ -63,15 +93,17 @@ const build = async ({ buildPath = DEFAULTS.buildPath, showWarnings } = {}) => {
 		fs.writeFileSync(`${toWrite}.json`, stringify(value));
 	});
 
-	console.log(yellow(`Compiled with ${warnings.length} warnings and ${errors.length} errors`));
-	if (errors.length > 0) {
+	console.log(
+		yellow(`Compiled with ${allWarnings.length} warnings and ${allErrors.length} errors`)
+	);
+	if (allErrors.length > 0) {
 		console.error(red(errors.map(({ formattedMessage }) => formattedMessage)));
 		console.error();
 		console.error(gray('Exiting because of compile errors.'));
 		process.exit(1);
 	}
 
-	if (warnings.length && showWarnings) {
+	if (allWarnings.length && showWarnings) {
 		console.log(gray(warnings.map(({ formattedMessage }) => formattedMessage).join('\n')));
 	}
 
