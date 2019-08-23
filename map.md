@@ -58,6 +58,7 @@
 * Do calls to debtBalanceOf outside of totalIssuedSynths allow stale rates?
 * Do debt ledger entries lose too much precision given that they are a product of small quantities?
 * What happens if I issue very small quantities of synths? Can I lose the debt due to rounding? Thus, can I increase the supply without the system locking any of my snx?
+* Can the slashed quantity from the fee pool when rewards are paid out if a person exhausts the pool ever be non-trivial? Comments imply it will just be due to rounding errors, but is this true?
 
 ## A Note on Conversion Fee Evasion
 
@@ -91,3 +92,8 @@ Q^\tau_B - Q^\kappa_B = Q_A\frac{\pi_A}{\pi_B}(\phi_\kappa - \phi_\tau)
 $$
 
 That is, the percentage profit is simply $(\phi_\kappa - \phi_\tau)$. With no transfer fee, the profit is $\phi_\kappa$, as expected.
+
+## TODO
+
+* Turn into a web page.
+* Extract internal and dev notes into separate document and prepare to make this public-facing.

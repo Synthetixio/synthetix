@@ -40,6 +40,7 @@ The following contracts compose the core of the Synthetix system.
 
 * Audit above contracts
 * Add links to repositories for each one.
+* Links to etherscan and addresses.
 * Fix inheritance hierarchy and references.
 * List dapp integrations
 * Make a system diagram of what points to what.
@@ -50,3 +51,9 @@ The following contracts compose the core of the Synthetix system.
 * Entry for SafeMath
 * Ensure function and variable types are correct
 * Modifiers
+* Full inheritance hierarchy
+* Libraries into own sections
+* Related contracts from inheritance
+* Related contract variables.
+* Ensure all contract texts in this document link to the relevant page
+* Contract mapper: scan through ABI of contract at a particular address, look at nullary functions returning addresses. For each address extracted thereby, check if it is a contract. Fetch ABI of the contract at that address if it is, then recurse until done. Enhancement: also look for calls out to other contracts in function bodies.

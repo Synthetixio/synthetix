@@ -6,15 +6,11 @@
 
 ## Inherited Contracts
 
-### Direct
-
-### Indirect
+## Libraries
 
 ## Related Contracts
 
-### Referenced
-
-### Referencing
+## Structs
 
 ## Variables
 
