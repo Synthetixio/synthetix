@@ -4,7 +4,7 @@ const FeePool = artifacts.require('FeePool');
 
 const { toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 
-contract.only('RewardsDistribution', async accounts => {
+contract('RewardsDistribution', async accounts => {
 	const [
 		deployerAccount,
 		owner,
@@ -239,7 +239,7 @@ contract.only('RewardsDistribution', async accounts => {
 				})
 			);
 		});
-		it.only('should send the correct amount of tokens to the listed addresses', async () => {
+		it('should send the correct amount of tokens to the listed addresses', async () => {
 			const totalToDistribute = toUnit('35000');
 			// Account 1 should get 5000
 			// Account 2 should get 10000
