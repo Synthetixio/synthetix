@@ -105,17 +105,52 @@
 		"desc": "Tezos"
 	},
 	{
+		"name": "sCEX",
+		"asset": "CEX",
+		"category": "index",
+		"index": [
+			{
+				"symbol": "BNB",
+				"name": "Binance Coin",
+				"units": 17.88
+			},
+			{
+				"symbol": "LEO",
+				"name": "UNUS SED LEO",
+				"units": 153.85
+			},
+			{
+				"symbol": "HT",
+				"name": "Huobi Token",
+				"units": 20.51
+			},
+			{
+				"symbol": "OKB",
+				"name": "OKB",
+				"units": 32.52
+			},
+			{
+				"symbol": "KCS",
+				"name": "KuCoin Shares",
+				"units": 59.82
+			}
+		],
+		"sign": "",
+		"desc": "Index CEX",
+		"subclass": "PurgeableSynth"
+	},
+	{
 		"name": "iBTC",
 		"asset": "BTC",
 		"category": "crypto",
 		"sign": "₿",
 		"desc": "Inverted Bitcoin",
+		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 10600,
 			"upperLimit": 15900,
 			"lowerLimit": 5300
-		},
-		"subclass": "PurgeableSynth"
+		}
 	},
 	{
 		"name": "iETH",
@@ -123,12 +158,12 @@
 		"category": "crypto",
 		"sign": "Ξ",
 		"desc": "Inverted Ether",
+		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 220,
 			"upperLimit": 330,
 			"lowerLimit": 110
-		},
-		"subclass": "PurgeableSynth"
+		}
 	},
 	{
 		"name": "iBNB",
@@ -136,12 +171,12 @@
 		"category": "crypto",
 		"sign": "",
 		"desc": "Inverted Binance Coin",
+		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 29,
 			"upperLimit": 44,
 			"lowerLimit": 14.5
-		},
-		"subclass": "PurgeableSynth"
+		}
 	},
 	{
 		"name": "iMKR",
@@ -180,6 +215,46 @@
 			"entryPoint": 0.98,
 			"upperLimit": 1.47,
 			"lowerLimit": 0.49
+		}
+	},
+	{
+		"name": "iCEX",
+		"asset": "CEX",
+		"category": "index",
+		"index": [
+			{
+				"symbol": "BNB",
+				"name": "Binance Coin",
+				"units": 17.88
+			},
+			{
+				"symbol": "LEO",
+				"name": "UNUS SED LEO",
+				"units": 153.85
+			},
+			{
+				"symbol": "HT",
+				"name": "Huobi Token",
+				"units": 20.51
+			},
+			{
+				"symbol": "OKB",
+				"name": "OKB",
+				"units": 32.52
+			},
+			{
+				"symbol": "KCS",
+				"name": "KuCoin Shares",
+				"units": 59.82
+			}
+		],
+		"sign": "",
+		"desc": "Inverted CEX",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 1000,
+			"upperLimit": 1500,
+			"lowerLimit": 500
 		}
 	}
 ]

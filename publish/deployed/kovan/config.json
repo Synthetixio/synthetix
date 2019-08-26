@@ -1,7 +1,4 @@
 {
-	"ProxyERC20": {
-		"deploy": false
-	},
 	"Depot": {
 		"deploy": false
 	},
@@ -12,7 +9,7 @@
 		"deploy": false
 	},
 	"FeePool": {
-		"deploy": false
+		"deploy": true
 	},
 	"FeePoolState": {
 		"deploy": false
@@ -27,13 +24,16 @@
 		"deploy": false
 	},
 	"Synthetix": {
-		"deploy": false
+		"deploy": true
 	},
 	"SynthetixEscrow": {
 		"deploy": false
 	},
 	"RewardEscrow": {
 		"deploy": false
+	},
+	"RewardsDistribution": {
+		"deploy": true
 	},
 	"SynthetixState": {
 		"deploy": false
@@ -66,6 +66,9 @@
 		"deploy": false
 	},
 	"SynthsBTC": {
+		"deploy": false
+	},
+	"ProxyERC20": {
 		"deploy": false
 	},
 	"ProxyFeePool": {
@@ -237,6 +240,24 @@
 		"deploy": false
 	},
 	"SynthiXTZ": {
+		"deploy": false
+	},
+	"TokenStatesCEX": {
+		"deploy": false
+	},
+	"ProxysCEX": {
+		"deploy": false
+	},
+	"SynthsCEX": {
+		"deploy": false
+	},
+	"TokenStateiCEX": {
+		"deploy": false
+	},
+	"ProxyiCEX": {
+		"deploy": false
+	},
+	"SynthiCEX": {
 		"deploy": false
 	}
 }
