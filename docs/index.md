@@ -40,32 +40,37 @@
     * [ ] [API](https://developer.synthetix.io/api/docs/synthetix)
 
 ??? "Formatting"
-    * [mkdoc PyMdown extensions](https://facelessuser.github.io/pymdown-extensions/) ([MagicLink](https://facelessuser.github.io/pymdown-extensions/extensions/magiclink/) is still remaining, and also [Metadata](https://squidfunk.github.io/mkdocs-material/extensions/metadata/), and [Permalinks](https://squidfunk.github.io/mkdocs-material/extensions/permalinks/))
-    * Diagrams
-    * Fix maths
-    * Fix favicon
-    * [Split contracts and high level descriptions into top level tabs](https://squidfunk.github.io/mkdocs-material/getting-started/#tabs)
-    * Add the synthetix repository as the [source repo](https://squidfunk.github.io/mkdocs-material/getting-started/#adding-a-source-repository), and integrate it with MagicLink above.
-    * Add [social links](https://squidfunk.github.io/mkdocs-material/getting-started/#adding-social-links)
-    * Ask them if they need [google analytics integration](https://squidfunk.github.io/mkdocs-material/getting-started/#google-analytics).
-    * Activate inlinehilite
-    * Activate [minifier plugin](https://squidfunk.github.io/mkdocs-material/getting-started/#plugins) (don't forget to explicitly activate the search plugin when doing so)
-    * Add a copyright directive in the yml config.
-    * See if there's a way to reorder the sidebar headings.
-    * Document the mkdocs.yml file
-    * All code style comments within the documentation broken out into admonitions instead of inline notes.
+    * [ ] [mkdoc PyMdown extensions](https://facelessuser.github.io/pymdown-extensions/)
+        * [ ] [MagicLink](https://facelessuser.github.io/pymdown-extensions/extensions/magiclink/)
+        * [ ] [Metadata](https://squidfunk.github.io/mkdocs-material/extensions/metadata/); [Further Notes](https://www.mkdocs.org/user-guide/writing-your-docs/#meta-data)
+        * [ ] [Permalinks](https://squidfunk.github.io/mkdocs-material/extensions/permalinks/)
+    * [ ] Diagrams
+    * [ ] Fix maths
+    * [ ] Fix favicon
+    * [ ] [Split contracts and high level descriptions into top level tabs](https://squidfunk.github.io/mkdocs-material/getting-started/#tabs)
+    * [ ] Add the synthetix repository as the [source repo](https://squidfunk.github.io/mkdocs-material/getting-started/#adding-a-source-repository), and integrate it with MagicLink above.
+    * [ ] Add [social links](https://squidfunk.github.io/mkdocs-material/getting-started/#adding-social-links)
+    * [ ] Ask them if they need [google analytics integration](https://squidfunk.github.io/mkdocs-material/getting-started/#google-analytics).
+    * [ ] Activate inlinehilite
+    * [ ] Activate [minifier plugin](https://squidfunk.github.io/mkdocs-material/getting-started/#plugins) (don't forget to explicitly activate the search plugin when doing so)
+    * [ ] Add a copyright directive in the yml config.
+    * [ ] See if there's a way to reorder the sidebar headings.
+    * [ ] Document the mkdocs.yml file
+    * [ ] All code style comments within the documentation broken out into admonitions instead of inline notes.
+    * [ ] Finish [Project Configuration](https://www.mkdocs.org/user-guide/configuration/)
+    * [ ] Look at [this `mkdocs.yml`](https://github.com/squidfunk/mkdocs-material/blob/master/mkdocs.yml) to see if we can do anything similar.
 
 ??? "Potential Vulnerabilities To Investigate"
-    * Oracle front-running.
-    * C-ratio manipulation.
-    * Other levers such as marketing, botting?
-    * Intervention when deployments occur?
-    * Correlation study of the XDR. What's in this basket?
-    * Fee period length contradiction between FeePool and FeePoolState
-    * Do calls to debtBalanceOf outside of totalIssuedSynths allow stale rates?
-    * Do debt ledger entries lose too much precision given that they are a product of small quantities?
-    * What happens if I issue very small quantities of synths? Can I lose the debt due to rounding? Thus, can I increase the supply without the system locking any of my snx?
-    * Can the slashed quantity from the fee pool when rewards are paid out if a person exhausts the pool ever be non-trivial? Comments imply it will just be due to rounding errors, but is this true?
+    * [ ] Oracle front-running.
+    * [ ] C-ratio manipulation.
+    * [ ] Other levers such as marketing, botting?
+    * [ ] Intervention when deployments occur?
+    * [ ] Correlation study of the XDR. What's in this basket?
+    * [ ] Fee period length contradiction between FeePool and FeePoolState
+    * [ ] Do calls to debtBalanceOf outside of totalIssuedSynths allow stale rates?
+    * [ ] Do debt ledger entries lose too much precision given that they are a product of small quantities?
+    * [ ] What happens if I issue very small quantities of synths? Can I lose the debt due to rounding? Thus, can I increase the supply without the system locking any of my snx?
+    * [ ] Can the slashed quantity from the fee pool when rewards are paid out if a person exhausts the pool ever be non-trivial? Comments imply it will just be due to rounding errors, but is this true?
 
 ## Areas as per Email Discussions
 
