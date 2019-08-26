@@ -1,6 +1,7 @@
 # Map
 
 ??? "TODO"
+    * Complete TODOs in [`contracts/index.md`](contracts/index.md).
     * Extract internal and dev notes into separate document and prepare to make this public-facing.
 
 ## Areas of Interest
