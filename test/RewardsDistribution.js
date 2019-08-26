@@ -156,7 +156,7 @@ contract('RewardsDistribution', async accounts => {
 		});
 	});
 
-	describe.only('deleting Reward Distributions', async () => {
+	describe('deleting Reward Distributions', async () => {
 		const distributionAddress = account1;
 		const distributionAddressTwo = account2;
 		const distributionAddressThree = account3;
