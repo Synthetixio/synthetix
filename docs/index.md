@@ -51,6 +51,8 @@
     * Activate [minifier plugin](https://squidfunk.github.io/mkdocs-material/getting-started/#plugins) (don't forget to explicitly activate the search plugin when doing so)
     * Add a copyright directive in the yml config.
     * See if there's a way to reorder the sidebar headings.
+    * Document the mkdocs.yml file
+    * All code style comments within the documentation broken out into admonitions instead of inline notes.
 
 ??? "Potential Vulnerabilities To Investigate"
     * Oracle front-running.
