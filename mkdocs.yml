@@ -1,12 +1,27 @@
 site_name: Synthetix System Documentation
 theme:
   name: 'material'
+  language: 'en'
+  palette:
+    primary: 'black'
+    accent: 'indigo'
+  logo: 'img/synthetix_logo.svg'
+  favicon: 'img/favicon.ico'
 markdown_extensions:
+  - toc:
+      permalink: True
   - admonition
   - pymdownx.arithmatex
-  - pymdownx.tasklist
+  - pymdownx.tasklist:
+      clickable_checkbox: True
+      custom_checkbox: True
   - pymdownx.highlight
-  - pymdownx.extra
+  - pymdownx.extra:
+      pymdownx.betterem:
+        smart_enable: 'all'
   - pymdownx.details
+  - pymdownx.escapeall
+  - pymdownx.caret
+  - pymdownx.tilde
 extra_javascript:
-  - 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML'    
+  - 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML'

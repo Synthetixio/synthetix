@@ -35,9 +35,17 @@
     * [ ] [SynthetixJs](https://synthetixjs.synthetix.io/)
     * [ ] [API](https://developer.synthetix.io/api/docs/synthetix)
 ??? "Formatting"
-    * [mkdoc PyMdown extensions](https://facelessuser.github.io/pymdown-extensions/) (especially to fix the maths)
+    * [mkdoc PyMdown extensions](https://facelessuser.github.io/pymdown-extensions/) ([MagicLink](https://facelessuser.github.io/pymdown-extensions/extensions/magiclink/) is still remaining, and also [Metadata](https://squidfunk.github.io/mkdocs-material/extensions/metadata/), and [Permalinks](https://squidfunk.github.io/mkdocs-material/extensions/permalinks/))
     * Diagrams
     * Fix maths
+    * Fix favicon
+    * [Split contracts and high level descriptions into top level tabs](https://squidfunk.github.io/mkdocs-material/getting-started/#tabs)
+    * Add the synthetix repository as the [source repo](https://squidfunk.github.io/mkdocs-material/getting-started/#adding-a-source-repository), and integrate it with MagicLink above.
+    * Add [social links](https://squidfunk.github.io/mkdocs-material/getting-started/#adding-social-links)
+    * Ask them if they need [google analytics integration](https://squidfunk.github.io/mkdocs-material/getting-started/#google-analytics).
+    * Activate inlinehilite
+    * Activate [minifier plugin](https://squidfunk.github.io/mkdocs-material/getting-started/#plugins) (don't forget to explicitly activate the search plugin when doing so)
+    * Add a copyright directive in the yml config.
 ??? "Potential Vulnerabilities To Investigate"
     * Oracle front-running.
     * C-ratio manipulation.

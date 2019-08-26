@@ -1,5 +1,8 @@
 # Welcome to MkDocs
 
+Also uses https://github.com/facelessuser/pymdown-extensions/
+and https://github.com/squidfunk/mkdocs-material
+
 For full documentation visit [mkdocs.org](https://mkdocs.org).
 
 ## Commands

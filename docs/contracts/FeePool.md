@@ -13,6 +13,16 @@ A contract for managing and claiming fees. Note that most logic related to of th
 * [LimitedSetup](LimitedSetup.md)
 * ^[Owned](Owned.md)
 
+```flow
+o=>operation: Owned
+l=>operation: LimitedSetup
+sd=>operation: SelfDestructible
+p=>operation: Proxyable
+
+p->sd->o
+p->l->o
+```
+
 ## Libraries
 
 * [SafeMath](SafeMath.md) for uint
