@@ -1,6 +1,6 @@
 # Smart Contracts
 
-[Go Back](map.md)
+[Go Back](index.md)
 
 ## Listing
 

@@ -1,6 +1,6 @@
 # Governance
 
-[Go Back](map.md)
+[Go Back](index.md)
 
 ## SIPs (Synthetix Improvement Proposals)
 
