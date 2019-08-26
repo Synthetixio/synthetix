@@ -243,7 +243,7 @@ contract('RewardsDistribution', async accounts => {
 			});
 
 			// Set the SNX Token Transfer Address
-			await rewardsDistribution.synthetixProxy(synthetix.address, {
+			await rewardsDistribution.setSynthetixProxy(synthetix.address, {
 				from: owner,
 			});
 
