@@ -82,12 +82,12 @@ contract('FeePool', async accounts => {
 		owner,
 		oracle,
 		feeAuthority,
+		rewardsAuthority,
 		account1,
 		account2,
 		account3,
 		account4,
 		account5,
-		account6,
 	] = accounts;
 
 	let feePool,
@@ -138,9 +138,10 @@ contract('FeePool', async accounts => {
 			account3, // synthetix
 			account4, // feePoolState
 			account5, // feePoolEternalStorage
-			account6, // synthetixState
+			synthetixState.address, // synthetixState
 			rewardEscrowAccount,
 			feeAuthority,
+			rewardsAuthority,
 			transferFeeRate,
 			exchangeFeeRate,
 			{
@@ -153,8 +154,9 @@ contract('FeePool', async accounts => {
 		assert.equal(await instance.synthetix(), account3);
 		assert.equal(await instance.feePoolState(), account4);
 		assert.equal(await instance.feePoolEternalStorage(), account5);
-		assert.equal(await instance.synthetixState(), account6);
+		assert.equal(await instance.synthetixState(), synthetixState.address);
 		assert.equal(await instance.feeAuthority(), feeAuthority);
+		assert.equal(await instance.rewardsAuthority(), rewardsAuthority);
 		assert.bnEqual(await instance.transferFeeRate(), transferFeeRate);
 		assert.bnEqual(await instance.exchangeFeeRate(), exchangeFeeRate);
 

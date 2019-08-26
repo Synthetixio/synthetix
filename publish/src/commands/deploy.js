@@ -337,6 +337,7 @@ const deploy = async ({
 			synthetixState ? synthetixState.options.address : '',
 			rewardEscrow ? rewardEscrow.options.address : '',
 			feeAuth,
+			ZERO_ADDRESS,
 			w3utils.toWei('0'), // transfer fee
 			currentExchangeFee, // exchange fee
 		],
@@ -473,6 +474,36 @@ const deploy = async ({
 		}
 	}
 
+	const rewardsDistribution = await deployContract({
+		name: 'RewardsDistribution',
+		deps: ['RewardEscrow', 'ProxyFeePool'],
+		args: [
+			account, // owner
+			ZERO_ADDRESS, // authority (synthetix)
+			ZERO_ADDRESS, // Synthetix Proxy
+			rewardEscrow ? rewardEscrow.options.address : '',
+			proxyFeePool ? proxyFeePool.options.address : '',
+		],
+	});
+
+	if (rewardsDistribution && feePool) {
+		const rewardsAuthorityAddress = await feePool.methods.rewardsAuthority().call();
+		if (rewardsAuthorityAddress !== rewardsDistribution.options.address) {
+			if (feePoolOwner === account) {
+				console.log(yellow('Invoking feePool.setRewardsAuthority(RewardsDistribution)...'));
+				await feePool.methods
+					.setRewardsAuthority(rewardsDistribution.options.address)
+					.send(deployer.sendParameters());
+			} else {
+				appendOwnerAction({
+					key: `FeePool.setRewardsAuthority(RewardsDistribution)`,
+					target: feePool.options.address,
+					action: `setRewardsAuthority(${rewardsDistribution.options.address})`,
+				});
+			}
+		}
+	}
+
 	const supplySchedule = await deployContract({
 		name: 'SupplySchedule',
 		args: [account],
@@ -483,6 +514,7 @@ const deploy = async ({
 		source: 'Proxy',
 		args: [account],
 	});
+
 	const tokenStateSynthetix = await deployContract({
 		name: 'TokenStateSynthetix',
 		source: 'TokenState',
@@ -500,6 +532,7 @@ const deploy = async ({
 			'SupplySchedule',
 			'RewardEscrow',
 			'SynthetixEscrow',
+			'RewardsDistribution',
 		],
 		args: [
 			proxySynthetix ? proxySynthetix.options.address : '',
@@ -511,6 +544,7 @@ const deploy = async ({
 			supplySchedule ? supplySchedule.options.address : '',
 			rewardEscrow ? rewardEscrow.options.address : '',
 			synthetixEscrow ? synthetixEscrow.options.address : '',
+			rewardsDistribution ? rewardsDistribution.options.address : '',
 			currentSynthetixSupply,
 		],
 	});
@@ -986,6 +1020,44 @@ const deploy = async ({
 					target: synthetix.options.address,
 					action: `setIntegrationProxy(${proxyERC20.options.address})`,
 				});
+			}
+		}
+
+		if (synthetix && rewardsDistribution) {
+			const synthetixAddress = synthetix ? synthetix.options.address : '';
+			const synthetixProxyAddress = proxyERC20 ? proxyERC20.options.address : '';
+			const rewardsDistributionOwner = await rewardsDistribution.methods.owner().call();
+			const rewardsDistributionAuthorityAddress = await rewardsDistribution.methods
+				.authority()
+				.call();
+			const rewardsDistSNXProxyAddress = await rewardsDistribution.methods.synthetixProxy().call();
+			if (synthetixAddress !== rewardsDistributionAuthorityAddress) {
+				if (rewardsDistributionOwner === account) {
+					console.log(yellow('Invoking RewardsDistribution.setAuthority(Synthetix)...'));
+					await rewardsDistribution.methods
+						.setAuthority(synthetixAddress)
+						.send(deployer.sendParameters());
+				} else {
+					appendOwnerAction({
+						key: `RewardsDistribution.setAuthority(Synthetix)`,
+						target: rewardsDistribution.options.address,
+						action: `setAuthority(${synthetixAddress})`,
+					});
+				}
+			}
+			if (synthetixAddress !== rewardsDistSNXProxyAddress) {
+				if (rewardsDistributionOwner === account) {
+					console.log(yellow('Invoking RewardsDistribution.setSynthetixProxy(SynthetixProxy)...'));
+					await rewardsDistribution.methods
+						.setSynthetixProxy(synthetixProxyAddress)
+						.send(deployer.sendParameters());
+				} else {
+					appendOwnerAction({
+						key: `RewardsDistribution.setSynthetixProxy(SynthetixProxy)`,
+						target: rewardsDistribution.options.address,
+						action: `setSynthetixProxy(${synthetixProxyAddress})`,
+					});
+				}
 			}
 		}
 	}
