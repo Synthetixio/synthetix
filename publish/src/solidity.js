@@ -40,7 +40,7 @@ module.exports = {
 		return flattenedContracts;
 	},
 
-	compile({ sources }) {
+	compile({ sources, runs = 200 }) {
 		const artifacts = [];
 		const output = JSON.parse(
 			solc.compileStandardWrapper(
@@ -49,6 +49,7 @@ module.exports = {
 					settings: {
 						optimizer: {
 							enabled: true,
+							runs,
 						},
 						outputSelection: {
 							'*': {
@@ -61,8 +62,8 @@ module.exports = {
 			)
 		);
 
-		const warnings = output.errors.filter(e => e.severity === 'warning');
-		const errors = output.errors.filter(e => e.severity === 'error');
+		const warnings = output.errors ? output.errors.filter(e => e.severity === 'warning') : [];
+		const errors = output.errors ? output.errors.filter(e => e.severity === 'error') : [];
 
 		// Ok, now pull the contract we care about out of each file's output.
 		for (const contract of Object.keys(output.contracts || {})) {

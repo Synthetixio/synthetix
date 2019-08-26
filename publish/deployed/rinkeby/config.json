@@ -65,6 +65,9 @@
 	"SynthsBTC": {
 		"deploy": false
 	},
+	"ProxyERC20": {
+		"deploy": false
+	},
 	"ProxyFeePool": {
 		"deploy": false
 	},
@@ -234,6 +237,24 @@
 		"deploy": false
 	},
 	"SynthiXTZ": {
+		"deploy": false
+	},
+	"TokenStatesCEX": {
+		"deploy": false
+	},
+	"ProxysCEX": {
+		"deploy": false
+	},
+	"SynthsCEX": {
+		"deploy": false
+	},
+	"TokenStateiCEX": {
+		"deploy": false
+	},
+	"ProxyiCEX": {
+		"deploy": false
+	},
+	"SynthiCEX": {
 		"deploy": false
 	}
 }

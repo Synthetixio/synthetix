@@ -27,6 +27,15 @@
 		{
 			"type": "node",
 			"request": "launch",
+			"name": "Debug Build Script",
+			"args": [
+				"build",
+			],
+			"program": "${workspaceFolder}/publish/index.js"
+		},
+		{
+			"type": "node",
+			"request": "launch",
 			"name": "truffle test (debuggable)",
 			"cwd": "${workspaceFolder}",
 			"program": "${workspaceFolder}/node_modules/truffle-core/cli.js",
