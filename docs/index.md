@@ -21,19 +21,21 @@
   * [ ] Examine bounties
 * Assets and Analysis
   * [ ] Classify assets
-  * [ ] risk profiles
-  * [ ] correlation study
+  * [ ] Risk profiles
+  * [ ] Correlation study
 * Documents
   * [ ] Litepaper
   * [ ] Readme
   * [ ] [Dev Docs](https://developer.synthetix.io/api/docs/home.html)
   * [ ] [SynthetixJs](https://synthetixjs.synthetix.io/)
   * [ ] [API](https://developer.synthetix.io/api/docs/synthetix)
+* Formatting
+  * [mkdoc PyMdown extensions](https://facelessuser.github.io/pymdown-extensions/) (especially to fix the maths)
 
 ## Areas per email discussions
 
 1. System Characterisation
-    1. Detailed and thorough documentation of existing funcitonality.
+    1. Detailed and thorough documentation of existing functionality.
     2. Blog post-level summaries of key system components.
 2. Technical/Incentive Analysis
     1. Outline of available incentive levers, their consequences and limitations.

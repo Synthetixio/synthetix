@@ -25,6 +25,7 @@ The following contracts compose the core of the Synthetix system.
 * [x] [PurgeableSynth](contracts/PurgeableSynth.md)
 * [x] [ReentrancyPreventer](ReentrancyPreventer.md)
 * [x] [RewardEscrow](contracts/RewardEscrow.md)
+* [ ] SafeMath
 * [x] [SafeDecimalMath](contracts/SafeDecimalMath.md)
 * [x] [SelfDestructible](contracts/SelfDestructible.md)
 * [x] [State](contracts/State.md)

@@ -1,0 +1,4 @@
+site_name: Synthetix System Documentation
+theme: readthedocs
+markdown_extensions:
+    - admonition
