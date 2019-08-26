@@ -153,14 +153,15 @@ module.exports = async function(deployer, network, accounts) {
 		RewardsDistribution,
 		owner,
 		ZERO_ADDRESS, // Authority = Synthetix Underlying
-		rewardEscrow.address,
 		ZERO_ADDRESS, // Synthetix ProxyERC20
+		rewardEscrow.address,
 		feePoolProxy.address, // FeePoolProxy
 		{
 			from: deployerAccount,
 		}
 	);
 
+	// Configure FeePool with the RewardsDistribution contract
 	await feePool.setRewardsAuthority(rewardsDistribution.address, { from: owner });
 
 	// ----------------
