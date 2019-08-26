@@ -156,23 +156,62 @@ contract('RewardsDistribution', async accounts => {
 		});
 	});
 
-	describe('deleting Reward Distributions', async () => {
-		beforeEach(async () => {
-			const distributionAddress = account1;
-			const amountToDistribute = toUnit('5000');
+	describe.only('deleting Reward Distributions', async () => {
+		const distributionAddress = account1;
+		const distributionAddressTwo = account2;
+		const distributionAddressThree = account3;
+		const amountToDistribute = toUnit('5000');
+		const amountToDistributeTwo = toUnit('1000');
+		const amountToDistributeThree = toUnit('8000');
 
+		beforeEach(async () => {
 			await rewardsDistribution.addRewardDistribution(distributionAddress, amountToDistribute, {
 				from: owner,
 			});
+			await rewardsDistribution.addRewardDistribution(
+				distributionAddressTwo,
+				amountToDistributeTwo,
+				{
+					from: owner,
+				}
+			);
 		});
 		it('should update distributions array when owner deletes a RewardDistribution', async () => {
 			await rewardsDistribution.removeRewardDistribution(0, {
 				from: owner,
 			});
 
+			// distribution address should be account2
+			// amountToDistributeTwo should be in place of amountToDistribute
 			const distributionData = await rewardsDistribution.distributions(0);
-			assert.equal(distributionData[0], ZERO_ADDRESS);
-			assert.bnEqual(distributionData[1], toUnit('0'));
+			assert.equal(distributionData[0], distributionAddressTwo);
+			assert.bnEqual(distributionData[1], amountToDistributeTwo);
+		});
+		it('should update distributions array when owner deletes a RewardDistribution at index 1', async () => {
+			// add extra distribution to array
+			await rewardsDistribution.addRewardDistribution(
+				distributionAddressThree,
+				amountToDistributeThree,
+				{
+					from: owner,
+				}
+			);
+
+			await rewardsDistribution.removeRewardDistribution(1, {
+				from: owner,
+			});
+
+			// distribution[1].address should now be account3
+			// distribution[1].amount should be amountToDistributeThree
+			let distributionData = await rewardsDistribution.distributions(1);
+			assert.equal(distributionData[0], distributionAddressThree);
+			assert.bnEqual(distributionData[1], amountToDistributeThree);
+
+			// distribution[0].address should now be account1
+			// distribution[0].amount should be amountToDistribute
+			distributionData = await rewardsDistribution.distributions(0);
+			assert.equal(distributionData[0], distributionAddress);
+			assert.bnEqual(distributionData[1], amountToDistribute);
 		});
 		it('should revert when non owner attempts to delete a RewardDistribution', async () => {
 			await assert.revert(

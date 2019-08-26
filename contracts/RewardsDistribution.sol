@@ -161,8 +161,12 @@ contract RewardsDistribution is Owned {
         onlyOwner
     {
         require(index <= distributions.length - 1, "index out of bounds");
-        
-        delete distributions[index];
+
+        // shift distributions indexes across
+        for (uint i = index; i < distributions.length - 1; i++) {
+            distributions[i] = distributions[i+1];
+        }
+        distributions.length--;
     }
 
      /**
