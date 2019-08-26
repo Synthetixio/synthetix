@@ -216,7 +216,7 @@ contract RewardsDistribution is Owned {
         IERC20(synthetixProxy).transfer(rewardEscrow, remainder);
 
         // Tell the FeePool how much it has to distribute to the stakers
-        IFeePool(feePoolProxy).rewardsToDistribute(remainder);
+        IFeePool(feePoolProxy).setRewardsToDistribute(remainder);
 
         emit RewardsDistributed(amount);
         return true;

@@ -293,12 +293,12 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     }
 
     /**
-     * @notice The Synthetix contract informs us when SNX Rewards are minted to RewardEscrow to be claimed.
+     * @notice The RewardsDistribution contract informs us how many SNX rewards are sent to RewardEscrow to be claimed.
      */
-    function rewardsToDistribute(uint amount)
+    function setRewardsToDistribute(uint amount)
         external
     {
-        require(msg.sender == rewardsAuthority, "Caller is not rewardsAuthority");
+        require(messageSender == rewardsAuthority || msg.sender == rewardsAuthority, "Caller is not rewardsAuthority");
         // Add the amount of SNX rewards to distribute on top of any rolling unclaimed amount
         recentFeePeriods[0].rewardsToDistribute = recentFeePeriods[0].rewardsToDistribute.add(amount);
     }
