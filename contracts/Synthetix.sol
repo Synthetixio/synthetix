@@ -968,7 +968,7 @@ contract Synthetix is ExternStateToken {
         external
         returns (bool)
     {
-        require(rewardEscrow != address(0), "Reward Escrow not set");
+        require(rewardsDistribution != address(0), "RewardsDistribution not set");
 
         uint supplyToMint = supplySchedule.mintableSupply();
         require(supplyToMint > 0, "No supply is mintable");
@@ -984,19 +984,17 @@ contract Synthetix is ExternStateToken {
         // Set the token balance to the RewardsDistribution contract
         tokenState.setBalanceOf(rewardsDistribution, tokenState.balanceOf(rewardsDistribution).add(amountToDistribute));
         emitTransfer(this, rewardsDistribution, amountToDistribute);
-        
+
         // Kick off the distribution of rewards
         rewardsDistribution.distributeRewards(amountToDistribute);
-
-        // ERC223
-        // bytes memory empty;
-        // transfer(rewardsDistribution, amountToDistribute, empty);
 
         // Assign the minters reward.
         tokenState.setBalanceOf(msg.sender, tokenState.balanceOf(msg.sender).add(minterReward));
         emitTransfer(this, msg.sender, minterReward);
 
         totalSupply = totalSupply.add(supplyToMint);
+
+        return true;
     }
 
     // ========== MODIFIERS ==========

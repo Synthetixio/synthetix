@@ -201,7 +201,7 @@ contract RewardsDistribution is Owned {
         require(feePoolProxy != address(0), "FeePoolProxy is not set");
         require(amount > 0, "Nothing to distribute");
         require(IERC20(synthetixProxy).balanceOf(this) >= amount, "RewardsDistribution contract does not have enough tokens to distribute");
-        
+                
         uint remainder = amount;
 
         // Iterate the array of distributions sending the configured amounts

@@ -1,6 +1,7 @@
 const ExchangeRates = artifacts.require('ExchangeRates');
 const Escrow = artifacts.require('SynthetixEscrow');
 const RewardEscrow = artifacts.require('RewardEscrow');
+const RewardsDistribution = artifacts.require('RewardsDistribution');
 const FeePool = artifacts.require('FeePool');
 const SupplySchedule = artifacts.require('SupplySchedule');
 const Synthetix = artifacts.require('Synthetix');
@@ -51,9 +52,24 @@ contract('Synthetix', async accounts => {
 		sAUDContract,
 		escrow,
 		rewardEscrow,
+		rewardsDistribution,
 		sEURContract,
 		oracle,
 		timestamp;
+
+	// Updates rates with defaults so they're not stale.
+	const updateRatesWithDefaults = async () => {
+		const timestamp = await currentTime();
+
+		await exchangeRates.updateRates(
+			[sAUD, sEUR, SNX, sBTC, iBTC],
+			['0.5', '1.25', '0.1', '5000', '4000'].map(toUnit),
+			timestamp,
+			{
+				from: oracle,
+			}
+		);
+	};
 
 	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
@@ -64,6 +80,7 @@ contract('Synthetix', async accounts => {
 		supplySchedule = await SupplySchedule.deployed();
 		escrow = await Escrow.deployed();
 		rewardEscrow = await RewardEscrow.deployed();
+		rewardsDistribution = await RewardsDistribution.deployed();
 
 		synthetix = await Synthetix.deployed();
 		synthetixState = await SynthetixState.at(await synthetix.synthetixState());
@@ -88,7 +105,7 @@ contract('Synthetix', async accounts => {
 	it('should set constructor params on deployment', async () => {
 		// constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
 		// 	address _owner, IExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule,
-		// 	ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow, uint _totalSupply
+		// 	ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow, IRewardsDistribution _rewardsDistribution, uint _totalSupply
 		// )
 		const SYNTHETIX_TOTAL_SUPPLY = web3.utils.toWei('100000000');
 		const instance = await Synthetix.new(
@@ -101,6 +118,7 @@ contract('Synthetix', async accounts => {
 			account6,
 			account7,
 			account8,
+			rewardsDistribution.address,
 			SYNTHETIX_TOTAL_SUPPLY,
 			{
 				from: deployerAccount,
@@ -116,6 +134,7 @@ contract('Synthetix', async accounts => {
 		assert.equal(await instance.supplySchedule(), account6);
 		assert.equal(await instance.rewardEscrow(), account7);
 		assert.equal(await instance.escrow(), account8);
+		assert.equal(await instance.rewardsDistribution(), rewardsDistribution.address);
 		assert.equal(await instance.totalSupply(), SYNTHETIX_TOTAL_SUPPLY);
 	});
 
@@ -135,6 +154,7 @@ contract('Synthetix', async accounts => {
 			account6,
 			account7,
 			account8,
+			rewardsDistribution.address,
 			YEAR_2_SYNTHETIX_TOTAL_SUPPLY,
 			{
 				from: deployerAccount,
@@ -150,6 +170,7 @@ contract('Synthetix', async accounts => {
 		assert.equal(await instance.supplySchedule(), account6);
 		assert.equal(await instance.rewardEscrow(), account7);
 		assert.equal(await instance.escrow(), account8);
+		assert.equal(await instance.rewardsDistribution(), rewardsDistribution.address);
 		assert.equal(await instance.totalSupply(), YEAR_2_SYNTHETIX_TOTAL_SUPPLY);
 	});
 
@@ -2416,6 +2437,33 @@ contract('Synthetix', async accounts => {
 
 		const YEAR_TWO_START = 1551830400;
 
+		beforeEach(async () => {
+			// Set the authority to call distribute
+			await rewardsDistribution.setAuthority(Synthetix.address, {
+				from: owner,
+			});
+
+			// Set the RewardEscrow Address
+			await rewardsDistribution.setRewardEscrow(RewardEscrow.address, {
+				from: owner,
+			});
+
+			// Set the SNX Token Transfer Address
+			await rewardsDistribution.synthetixProxy(Synthetix.address, {
+				from: owner,
+			});
+
+			// Set the FeePool Address
+			await rewardsDistribution.setFeePoolProxy(FeePool.address, {
+				from: owner,
+			});
+
+			// Set the RewardsAuthority on the FeePool contract
+			await feePool.setRewardsAuthority(RewardsDistribution.address, {
+				from: owner,
+			});
+		});
+
 		it('should allow synthetix contract to mint new supply based on inflationary schedule', async () => {
 			// Issue
 			const weeklyIssuance = divideDecimal(secondYearSupply, 52);
@@ -2424,11 +2472,12 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to Week 2 in Year 2 schedule starting at UNIX 1553040000+
 			const weekTwo = YEAR_TWO_START + 1 * WEEK + 1 * DAY;
 			await fastForwardTo(new Date(weekTwo * 1000));
+			updateRatesWithDefaults();
 
 			const existingSupply = await synthetix.totalSupply();
 			const currentRewardEscrowBalance = await synthetix.balanceOf(RewardEscrow.address);
 
-			// call mint on Synthetix
+			// Call mint on Synthetix
 			await synthetix.mint();
 
 			const newTotalSupply = await synthetix.totalSupply();
@@ -2452,6 +2501,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to Week 3 in Year 2 schedule starting at UNIX 1553040000+
 			const weekThree = YEAR_TWO_START + 2 * WEEK + 1 * DAY;
 			await fastForwardTo(new Date(weekThree * 1000));
+			updateRatesWithDefaults();
 
 			const existingSupply = await synthetix.totalSupply();
 			const currentRewardEscrowBalance = await synthetix.balanceOf(RewardEscrow.address);
@@ -2482,6 +2532,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to Week 2 in Year 3 schedule starting at UNIX 1583971200+
 			const weekTwoYearThree = YEAR_TWO_START + YEAR + WEEK + DAY;
 			await fastForwardTo(new Date(weekTwoYearThree * 1000));
+			updateRatesWithDefaults();
 
 			const existingSupply = await synthetix.totalSupply();
 			const currentRewardEscrowBalance = await synthetix.balanceOf(RewardEscrow.address);
@@ -2512,6 +2563,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to Week 3 in Year 2 schedule starting at UNIX 1553040000+
 			const weekThree = YEAR_TWO_START + 2 * WEEK + 1 * DAY;
 			await fastForwardTo(new Date(weekThree * 1000));
+			updateRatesWithDefaults();
 
 			let existingSupply, currentRewardEscrowBalance;
 			existingSupply = await synthetix.totalSupply();
@@ -2538,6 +2590,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to Week 4 in Year 2 schedule starting at UNIX 1553644800+
 			const weekFour = weekThree + 1 * WEEK + 1 * DAY;
 			await fastForwardTo(new Date(weekFour * 1000));
+			updateRatesWithDefaults();
 
 			existingSupply = await synthetix.totalSupply();
 			currentRewardEscrowBalance = await synthetix.balanceOf(RewardEscrow.address);
@@ -2567,6 +2620,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to Week 3 in Year 2 schedule starting at UNIX 1553040000+
 			const weekThree = YEAR_TWO_START + 2 * WEEK + 1 * DAY;
 			await fastForwardTo(new Date(weekThree * 1000));
+			updateRatesWithDefaults();
 
 			const existingSupply = await synthetix.totalSupply();
 			const currentRewardEscrowBalance = await synthetix.balanceOf(RewardEscrow.address);
