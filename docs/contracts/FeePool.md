@@ -101,8 +101,8 @@ struct FeePeriod {
 In pseudo-code:
 
 ```python
-remaining = xdrAmount // The quantity to pay out
-paid = 0 // The quantity actually paid
+remaining = xdrAmount # The quantity to pay out
+paid = 0 # The quantity actually paid
 
 for period in reversed(recentFeePeriods):
     unclaimed = period.feesToDistribute - period.feesClaimed
