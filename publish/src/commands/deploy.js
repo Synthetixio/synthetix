@@ -213,25 +213,25 @@ const deploy = async ({
 		'Depot Oracle': oracleDepot,
 	});
 
-	if (!yes) {
-		try {
-			await confirmAction(
-				yellow(
-					`⚠⚠⚠ WARNING: This action will deploy the following contracts to ${network}:\n${Object.entries(
-						config
-					)
-						.filter(([, { deploy }]) => deploy)
-						.map(([contract]) => contract)
-						.join(', ')}` + `\nIt will also set proxy targets and add synths to Synthetix.\n`
-				) +
-					gray('-'.repeat(50)) +
-					'\nDo you want to continue? (y/n) '
-			);
-		} catch (err) {
-			console.log(gray('Operation cancelled'));
-			return;
-		}
-	}
+	// if (!yes) {
+	// 	try {
+	// 		await confirmAction(
+	// 			yellow(
+	// 				`⚠⚠⚠ WARNING: This action will deploy the following contracts to ${network}:\n${Object.entries(
+	// 					config
+	// 				)
+	// 					.filter(([, { deploy }]) => deploy)
+	// 					.map(([contract]) => contract)
+	// 					.join(', ')}` + `\nIt will also set proxy targets and add synths to Synthetix.\n`
+	// 			) +
+	// 				gray('-'.repeat(50)) +
+	// 				'\nDo you want to continue? (y/n) '
+	// 		);
+	// 	} catch (err) {
+	// 		console.log(gray('Operation cancelled'));
+	// 		return;
+	// 	}
+	// }
 
 	console.log(gray(`Starting deployment to ${network.toUpperCase()} via Infura...`));
 	// force flag indicates to deploy even when no config for the entry (useful for new synths)
@@ -337,6 +337,7 @@ const deploy = async ({
 			synthetixState ? synthetixState.options.address : '',
 			rewardEscrow ? rewardEscrow.options.address : '',
 			feeAuth,
+			ZERO_ADDRESS,
 			w3utils.toWei('0'), // transfer fee
 			currentExchangeFee, // exchange fee
 		],
@@ -1033,7 +1034,9 @@ const deploy = async ({
 			if (synthetixAddress !== rewardsDistributionAuthorityAddress) {
 				if (rewardsDistributionOwner === account) {
 					console.log(yellow('Invoking RewardsDistribution.setAuthority(Synthetix)...'));
-					await synthetix.methods.setAuthority(synthetixAddress).send(deployer.sendParameters());
+					await rewardsDistribution.methods
+						.setAuthority(synthetixAddress)
+						.send(deployer.sendParameters());
 				} else {
 					appendOwnerAction({
 						key: `RewardsDistribution.setAuthority(Synthetix)`,
@@ -1045,7 +1048,7 @@ const deploy = async ({
 			if (synthetixAddress !== rewardsDistSNXProxyAddress) {
 				if (rewardsDistributionOwner === account) {
 					console.log(yellow('Invoking RewardsDistribution.setSynthetixProxy(SynthetixProxy)...'));
-					await synthetix.methods
+					await rewardsDistribution.methods
 						.setSynthetixProxy(synthetixProxyAddress)
 						.send(deployer.sendParameters());
 				} else {

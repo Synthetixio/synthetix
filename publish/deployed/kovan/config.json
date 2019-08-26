@@ -9,7 +9,7 @@
 		"deploy": false
 	},
 	"FeePool": {
-		"deploy": true
+		"deploy": false
 	},
 	"FeePoolState": {
 		"deploy": false
@@ -24,7 +24,7 @@
 		"deploy": false
 	},
 	"Synthetix": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthetixEscrow": {
 		"deploy": false
@@ -33,7 +33,7 @@
 		"deploy": false
 	},
 	"RewardsDistribution": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthetixState": {
 		"deploy": false
