@@ -1,7 +1,5 @@
 # Depot
 
-[Go Back](../contracts.md)
-
 ## Notes
 
 Assumes that the Synth price is worth US\$1. So: a) this will only work with `sUSD`. b) there's a profit opportunity if the `sUSD` is off its peg.

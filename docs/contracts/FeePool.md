@@ -90,7 +90,7 @@ struct FeePeriod {
 
 In pseudo-code:
 
-```solidity
+```python
 remaining = xdrAmount // The quantity to pay out
 paid = 0 // The quantity actually paid
 

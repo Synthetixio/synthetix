@@ -1,4 +1,12 @@
 site_name: Synthetix System Documentation
-theme: readthedocs
+theme:
+  name: 'material'
 markdown_extensions:
-    - admonition
+  - admonition
+  - pymdownx.arithmatex
+  - pymdownx.tasklist
+  - pymdownx.highlight
+  - pymdownx.extra
+  - pymdownx.details
+extra_javascript:
+  - 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML'    

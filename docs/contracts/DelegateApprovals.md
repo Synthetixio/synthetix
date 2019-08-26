@@ -1,7 +1,5 @@
 # DelegateApprovals
 
-[Go Back](../contracts.md)
-
 ## Notes
 
 Each approver may authorise a number of delegates to perform an action (withdrawing fees) on their behalf.

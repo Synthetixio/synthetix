@@ -1,7 +1,5 @@
 # Smart Contracts
 
-[Go Back](index.md)
-
 ## Listing
 
 The following contracts compose the core of the Synthetix system.

@@ -1,7 +1,5 @@
 # ExchangeRates
 
-[Go Back](../contracts.md)
-
 ## Notes
 
 The price of `sUSD` is always 1, and is never stale; its price cannot be updated.

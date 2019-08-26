@@ -1,6 +1,4 @@
-# Template
-
-[Go Back](../contracts.md)
+# Owned
 
 ## Notes
 
