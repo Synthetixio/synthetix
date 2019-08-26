@@ -2437,33 +2437,6 @@ contract('Synthetix', async accounts => {
 
 		const YEAR_TWO_START = 1551830400;
 
-		beforeEach(async () => {
-			// Set the authority to call distribute
-			await rewardsDistribution.setAuthority(Synthetix.address, {
-				from: owner,
-			});
-
-			// Set the RewardEscrow Address
-			await rewardsDistribution.setRewardEscrow(RewardEscrow.address, {
-				from: owner,
-			});
-
-			// Set the SNX Token Transfer Address
-			await rewardsDistribution.synthetixProxy(Synthetix.address, {
-				from: owner,
-			});
-
-			// Set the FeePool Address
-			await rewardsDistribution.setFeePoolProxy(FeePool.address, {
-				from: owner,
-			});
-
-			// Set the RewardsAuthority on the FeePool contract
-			await feePool.setRewardsAuthority(RewardsDistribution.address, {
-				from: owner,
-			});
-		});
-
 		it('should allow synthetix contract to mint new supply based on inflationary schedule', async () => {
 			// Issue
 			const weeklyIssuance = divideDecimal(secondYearSupply, 52);
