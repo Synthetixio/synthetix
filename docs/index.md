@@ -19,21 +19,25 @@
     * [ ] Collat ratio targeting
     * [ ] Oracle
     * [ ] The debt ledger
+
 ??? "Integrated Platforms"
     * [ ] Uniswap
     * [ ] That graphs thing?
     * [ ] Dapps
     * [ ] Examine bounties
+
 ??? "Assets and Analysis"
     * [ ] Classify assets
     * [ ] Risk profiles
     * [ ] Correlation study
+
 ??? "Documents"
     * [ ] Litepaper
     * [ ] Readme
     * [ ] [Dev Docs](https://developer.synthetix.io/api/docs/home.html)
     * [ ] [SynthetixJs](https://synthetixjs.synthetix.io/)
     * [ ] [API](https://developer.synthetix.io/api/docs/synthetix)
+
 ??? "Formatting"
     * [mkdoc PyMdown extensions](https://facelessuser.github.io/pymdown-extensions/) ([MagicLink](https://facelessuser.github.io/pymdown-extensions/extensions/magiclink/) is still remaining, and also [Metadata](https://squidfunk.github.io/mkdocs-material/extensions/metadata/), and [Permalinks](https://squidfunk.github.io/mkdocs-material/extensions/permalinks/))
     * Diagrams
@@ -46,6 +50,8 @@
     * Activate inlinehilite
     * Activate [minifier plugin](https://squidfunk.github.io/mkdocs-material/getting-started/#plugins) (don't forget to explicitly activate the search plugin when doing so)
     * Add a copyright directive in the yml config.
+    * See if there's a way to reorder the sidebar headings.
+
 ??? "Potential Vulnerabilities To Investigate"
     * Oracle front-running.
     * C-ratio manipulation.
