@@ -1,7 +1,5 @@
 # PurgeableSynth
 
-[Go Back](../contracts.md)
-
 ## Notes
 
 This is a Synth where all the holders can be liquidated back to sUSD at current rates, so that the contract can be repurposed, removed from the system, or self destructed.

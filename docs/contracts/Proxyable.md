@@ -1,7 +1,5 @@
 # Proxyable
 
-[Go Back](../contracts.md)
-
 ## Notes
 
 Every contract using the `CALL`-style proxy must inherit this contract.

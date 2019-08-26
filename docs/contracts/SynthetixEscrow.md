@@ -1,7 +1,5 @@
 # SynthetixEscrow
 
-[Go Back](../contracts.md)
-
 ## Notes
 
 This contract holds the SNX which were escrowed at the time of the token sale, releasing them on a defined schedule.

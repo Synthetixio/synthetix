@@ -1,7 +1,5 @@
 # FeePoolEternalStorage
 
-[Go Back](../contracts.md)
-
 ## Notes
 
 This is just wrapper around the EternalStorage contract with a limited setup period and a setup function that sets each account's last fee withdrawal times.

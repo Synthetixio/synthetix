@@ -1,7 +1,5 @@
 # ReentrancyPreventer
 
-[Go Back](../contracts.md)
-
 ## Notes
 
 This contract provides a modifier which prevents a function from being called again in the same invocation.

@@ -1,7 +1,5 @@
 # Template
 
-[Go Back](../contracts.md)
-
 ## Notes
 
 ## Inherited Contracts

@@ -1,7 +1,5 @@
 # TokenState
 
-[Go Back](../contracts.md)
-
 ## Notes
 
 An external state contract to hold ERC20 balances and allowances.

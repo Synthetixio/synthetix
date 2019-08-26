@@ -1,7 +1,5 @@
 # FeePool
 
-[Go Back](../contracts.md)
-
 ## Notes
 
 A contract for managing and claiming fees. Note that most logic related to of the transfer fee related logic is superfluous, as the transfer fee rate is 0.

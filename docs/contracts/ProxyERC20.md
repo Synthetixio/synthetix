@@ -1,7 +1,5 @@
 # ProxyERC20
 
-[Go Back](../contracts.md)
-
 ## Notes
 
 This proxy contract explicitly implements ERC20 functions because it's designed to sit in front of ERC20 tokens.

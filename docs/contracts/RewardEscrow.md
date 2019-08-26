@@ -1,7 +1,5 @@
 # RewardEscrow
 
-[Go Back](../contracts.md)
-
 ## Notes
 
 This is the mechanism for awarding SNX rewards from the inflationary supply.

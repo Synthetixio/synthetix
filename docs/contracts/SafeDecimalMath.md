@@ -1,7 +1,5 @@
 # SafeDecimalMath
 
-[Go Back](../contracts.md)
-
 ## Notes
 
 A library contract that handles safe arithmetic with fixed-point decimals at two precision levels. Uses OpenZeppelin SafeMath to protect from arithmetic overflows etc.

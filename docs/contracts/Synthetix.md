@@ -1,7 +1,5 @@
 # Synthetix
 
-[Go Back](../contracts.md)
-
 ## Notes
 
 * Licence headers are illegal.

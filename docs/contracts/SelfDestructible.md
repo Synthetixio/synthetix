@@ -1,7 +1,5 @@
 # SelfDestructible
 
-[Go Back](../contracts.md)
-
 ## Notes
 
 A contract inheriting this can be self-destructed by its owner, after a delay.
