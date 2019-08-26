@@ -1,6 +1,6 @@
 {
 	"ProxyERC20": {
-		"deploy": false
+		"deploy": true
 	},
 	"Depot": {
 		"deploy": false
@@ -12,7 +12,7 @@
 		"deploy": false
 	},
 	"FeePool": {
-		"deploy": false
+		"deploy": true
 	},
 	"FeePoolState": {
 		"deploy": false
@@ -27,13 +27,16 @@
 		"deploy": false
 	},
 	"Synthetix": {
-		"deploy": false
+		"deploy": true
 	},
 	"SynthetixEscrow": {
 		"deploy": false
 	},
 	"RewardEscrow": {
 		"deploy": false
+	},
+	"RewardsDistribution": {
+		"deploy": true
 	},
 	"SynthetixState": {
 		"deploy": false
