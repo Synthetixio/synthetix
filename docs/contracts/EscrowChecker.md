@@ -1,7 +1,5 @@
 # EscrowChecker
 
-## Notes
-
 A small contract that augments the escrow contract to allow extracting a user's schedule as an array, rather than the individual entries.
 
 ## Related Contracts

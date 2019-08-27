@@ -1,7 +1,5 @@
 # LimitedSetup
 
-## Notes
-
 Allows certain contract functions to only operate during a setup period.
 
 ## Variables

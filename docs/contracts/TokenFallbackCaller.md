@@ -1,7 +1,4 @@
-
 # TokenFallbackCaller
-
-## Notes
 
 Allows inheriting contracts to call an ERC223 token fallback function of an external contract upon token transfers, if such a function exists.
 

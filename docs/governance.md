@@ -1,7 +1,5 @@
 # Governance
 
-[Go Back](index.md)
-
 ## SIPs (Synthetix Improvement Proposals)
 
 TODO: Examine the new SIP website.

@@ -1,4 +1,34 @@
-site_name: Synthetix System Documentation
+# Basic project details.
+site_name: 'Synthetix Documentation'
+site_description: 'Decentralised synthetic Assets'
+site_author: 'Anton Jurisevic'
+site_url: 'https://synthetix.io'
+
+# Links to the core Synthetix smart contract repository.
+repo_name: 'synthetixio/synthetix'
+repo_url: 'https://github.com/synthetixio/synthetix'
+
+# Setting `edit_uri` to an empty string disables the edit button, which points to the wrong page.
+# If at some point this documentation is moved into the core synthetix repository, then this can be
+# removed.
+edit_uri: '' 
+
+# This copyright notice will be rendered in the footer.
+copyright: '<a href=https://github.com/Synthetixio/synthetix/blob/master/LICENSE>Copyright &copy Synthetix 2018 - 2019</a>'
+
+# These social links will be rendered as icons in the footer, as long as the type corresponds to FontAwesome glyph.
+extra:
+  social:
+    - type: 'github'
+      link: 'https://github.com/synthetixio'
+    - type: 'twitter'
+      link: 'https://twitter.com/synthetix_io'
+    - type: 'linkedin'
+      link: 'https://www.linkedin.com/company/synthetix/'
+    - type: 'medium'
+      link: 'https://blog.synthetix.io'
+
+# This set of documentation uses the MkDocs Material theme by squidfunk: https://github.com/squidfunk/mkdocs-material
 theme:
   name: 'material'
   language: 'en'
@@ -7,21 +37,23 @@ theme:
     accent: 'indigo'
   logo: 'img/synthetix_logo.svg'
   favicon: 'img/favicon.ico'
+
+# Extension settings.
+# In addition to the standard extensions, this also requires the PyMdown Extensions by facelessuser: https://github.com/facelessuser/pymdown-extensions 
 markdown_extensions:
   - toc:
-      permalink: True
-  - admonition
-  - pymdownx.arithmatex
-  - pymdownx.tasklist:
-      clickable_checkbox: True
-      custom_checkbox: True
-  - pymdownx.highlight
-  - pymdownx.extra:
+      permalink: True # Generates permanent links for each page section.
+  - admonition # Small descriptive elements for notes, warnings, etc.
+  - pymdownx.arithmatex # Math rendering.
+  - pymdownx.tasklist: # Allows nested and better checkboxes.
+      custom_checkbox: True # Without this setting, checkboxes look rubbish in the material theme.
+  - pymdownx.highlight # Code syntax highlighting.
+  - pymdownx.extra: # Better fenced code blocks, emphasis, footnotes, lists, tables, abbreviations, and raw HTML.
       pymdownx.betterem:
-        smart_enable: 'all'
-  - pymdownx.details
-  - pymdownx.escapeall
-  - pymdownx.caret
-  - pymdownx.tilde
+        smart_enable: 'all' # Smarter line breaks when emphasising lines.
+  - pymdownx.details # Collapsible admonition-style blocks containing further information.
+  - pymdownx.escapeall # Backslashes escape everything.
+  - pymdownx.caret # Superscripts and insert text.
+  - pymdownx.tilde # Strikethrough and underlines.
 extra_javascript:
   - 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML'

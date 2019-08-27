@@ -1,7 +1,5 @@
 # FeePoolState
 
-## Notes
-
 Stores the issuance percentage for each address for up to six fee periods. Note that this contract limits to 6 periods, while the FeePool contract limits it to only 3.
 
 NOTE: Typo in the file docstring: "caclulate".

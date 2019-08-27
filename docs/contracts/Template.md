@@ -1,7 +1,5 @@
 # Template
 
-## Notes
-
 ## Inherited Contracts
 
 ## Libraries

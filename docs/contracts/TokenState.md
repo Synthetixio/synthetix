@@ -1,7 +1,5 @@
 # TokenState
 
-## Notes
-
 An external state contract to hold ERC20 balances and allowances.
 
 ## Inherited Contracts

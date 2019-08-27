@@ -1,7 +1,5 @@
 # Proxy
 
-## Notes
-
 This proxy sits in front of an underlying contract, forwarding calls to the proxy contract so that it operates as if it was the underlying contract which was executed. This is designed to allow contract functionality to be upgraded without altering the contract's address. Synthetix, Synth, and the FeePool contracts all exist behind proxies, which has allowed their functionality to be radically altered over time.
 
 This proxy provides two different operation modes:

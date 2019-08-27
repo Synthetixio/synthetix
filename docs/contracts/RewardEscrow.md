@@ -1,7 +1,5 @@
 # RewardEscrow
 
-## Notes
-
 This is the mechanism for awarding SNX rewards from the inflationary supply.
 Heavily derived from the [SynthetixEscrow](SynthetixEscrow.md) contract. However, the vesting schedule length is up to 260 entries long. This means that it might get a bit inefficient for active accounts to keep on using this function. Probably would have been better if the schedules get this long to store the index of the next entry or similar. In any case this is worth testing if it hasn't already been. These vesting schedules can be appended to by the fee pool contract, and since these actions can now happen at any time, an event is emitted whenever they occur, which they did not in the original contract, which only permitted such actions during the 8 week setup period.
 NOTE: Typo in the module description "c-rationn", "SNW".

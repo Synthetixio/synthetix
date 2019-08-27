@@ -1,7 +1,5 @@
 # Synthetix
 
-## Notes
-
 * Licence headers are illegal.
 * TODO: Check whether the file header is still accurate.
 

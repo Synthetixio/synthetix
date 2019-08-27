@@ -1,7 +1,5 @@
 # ExternStateToken
 
-## Notes
-
 ## Inherited Contracts
 
 ### Direct

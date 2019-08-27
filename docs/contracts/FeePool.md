@@ -1,25 +1,10 @@
 # FeePool
 
-## Notes
-
 A contract for managing and claiming fees. Note that most logic related to of the transfer fee related logic is superfluous, as the transfer fee rate is 0.
 
-## Inherited Contracts
+## Inheritance Graph
 
-* [Proxyable](Proxyable.md)
-* [SelfDestructible](SelfDestructible.md)
-* [LimitedSetup](LimitedSetup.md)
-* ^[Owned](Owned.md)
-
-```flow
-o=>operation: Owned
-l=>operation: LimitedSetup
-sd=>operation: SelfDestructible
-p=>operation: Proxyable
-
-p->sd->o
-p->l->o
-```
+![graph](../graphs/FeePool.svg)
 
 ## Libraries
 
@@ -37,6 +22,12 @@ p->l->o
 * \<\>[Synthetix](Synthetix.md)
 * \>[SynthetixState](SynthetixState.md)
 * \<[Depot](Depot.md)
+
+## Deployed Instances
+
+Network | Address
+------- | -------
+Mainnet | [0x5e5F5542dAd3E06CC8E1cd2461E83f872835117B](https://etherscan.io/address/0x5e5F5542dAd3E06CC8E1cd2461E83f872835117B)
 
 ## Structs
 

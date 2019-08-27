@@ -1,7 +1,5 @@
 # Pausable
 
-## Notes
-
 Allows an inheriting contract to be paused and resumed, providing a modifier that will allow modifier functions to operate only if the contract is not paused.
 
 ## Inherited Contracts

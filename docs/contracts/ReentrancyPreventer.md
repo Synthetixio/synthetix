@@ -1,7 +1,5 @@
 # ReentrancyPreventer
 
-## Notes
-
 This contract provides a modifier which prevents a function from being called again in the same invocation.
 If multiple functions have this modifier, only one of them will be callable within a particular execution.
 

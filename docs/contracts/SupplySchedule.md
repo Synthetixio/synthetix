@@ -1,25 +1,22 @@
 # SupplySchedule
 
-## Notes
-
 Defines the Synthetix inflationary supply schedule. To the initial 100 million, this adds 75 million tokens in the first year, half that in the second, half again in the third and so on. So the total supply of SNX by the end of the nth year is $100,000,000 \times (1 + \frac{3}{4}\sum_{i=1}^{n}{\frac{1}{2}^{n-1}})$. This goes for 5 years,
-yielding a final total supply of 245,312,500 SNX.
+yielding a final total supply of 245,312,500 SNX. 
+
+!!! TODO
+    Work out a formula for the total supply at a given week.
 
 As per the documentation, the schedule is:
 
-```text
-+------+-------------+--------------+----------+
-| Year |  Increase   | Total Supply | Increase |
-+------+-------------+--------------+----------+
-|    0 |           0 |  100,000,000 |          |
-|    1 |  75,000,000 |  175,000,000 | 75%      |
-|    2 |  37,500,000 |  212,500,000 | 21%      |
-|    3 |  18,750,000 |  231,250,000 | 9%       |
-|    4 |   9,375,000 |  240,625,000 | 4%       |
-|    5 |   4,687,500 |  245,312,500 | 2%       |
-|    6 |           0 |  245,312,500 | 0%       |
-+------+-------------+--------------+----------+
-```
+Year |  Increase   | Total Supply | Increase
+-----|-------------|--------------|---------
+   0 |           0 |  100,000,000 |
+   1 |  75,000,000 |  175,000,000 | 75%
+   2 |  37,500,000 |  212,500,000 | 21%
+   3 |  18,750,000 |  231,250,000 | 9%
+   4 |   9,375,000 |  240,625,000 | 4%
+   5 |   4,687,500 |  245,312,500 | 2%
+   6 |           0 |  245,312,500 | 0%
 
 The last year in this schedule is to allow any remaining tokens from the penultimate year to be minted. No minting is possible after the end of this schedule.
 

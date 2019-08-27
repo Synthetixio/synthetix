@@ -1,4 +1,4 @@
-# Map
+# System Overview
 
 ??? "TODO"
     * Complete TODOs in [`contracts/index.md`](contracts/index.md).
@@ -41,23 +41,16 @@
 
 ??? "Formatting"
     * [ ] [mkdoc PyMdown extensions](https://facelessuser.github.io/pymdown-extensions/)
-        * [ ] [MagicLink](https://facelessuser.github.io/pymdown-extensions/extensions/magiclink/)
+        * [ ] [MagicLink](https://facelessuser.github.io/pymdown-extensions/extensions/magiclink/), and integrate it with the source repo.
         * [ ] [Metadata](https://squidfunk.github.io/mkdocs-material/extensions/metadata/); [Further Notes](https://www.mkdocs.org/user-guide/writing-your-docs/#meta-data)
-        * [ ] [Permalinks](https://squidfunk.github.io/mkdocs-material/extensions/permalinks/)
     * [ ] Diagrams
-    * [ ] Fix maths
-    * [ ] Fix favicon
     * [ ] [Split contracts and high level descriptions into top level tabs](https://squidfunk.github.io/mkdocs-material/getting-started/#tabs)
-    * [ ] Add the synthetix repository as the [source repo](https://squidfunk.github.io/mkdocs-material/getting-started/#adding-a-source-repository), and integrate it with MagicLink above.
-    * [ ] Add [social links](https://squidfunk.github.io/mkdocs-material/getting-started/#adding-social-links)
     * [ ] Ask them if they need [google analytics integration](https://squidfunk.github.io/mkdocs-material/getting-started/#google-analytics).
     * [ ] Activate inlinehilite
     * [ ] Activate [minifier plugin](https://squidfunk.github.io/mkdocs-material/getting-started/#plugins) (don't forget to explicitly activate the search plugin when doing so)
-    * [ ] Add a copyright directive in the yml config.
     * [ ] See if there's a way to reorder the sidebar headings.
-    * [ ] Document the mkdocs.yml file
     * [ ] All code style comments within the documentation broken out into admonitions instead of inline notes.
-    * [ ] Finish [Project Configuration](https://www.mkdocs.org/user-guide/configuration/)
+    * [ ] Finish [Project Configuration](https://www.mkdocs.org/user-guide/configuration/). In particular the [nav layout](https://www.mkdocs.org/user-guide/configuration/#documentation-layout).
     * [ ] Look at [this `mkdocs.yml`](https://github.com/squidfunk/mkdocs-material/blob/master/mkdocs.yml) to see if we can do anything similar.
 
 ??? "Potential Vulnerabilities To Investigate"
