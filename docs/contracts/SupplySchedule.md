@@ -1,7 +1,6 @@
 # SupplySchedule
 
-Defines the Synthetix inflationary supply schedule. To the initial 100 million, this adds 75 million tokens in the first year, half that in the second, half again in the third and so on. So the total supply of SNX by the end of the nth year is $100,000,000 \times (1 + \frac{3}{4}\sum_{i=1}^{n}{\frac{1}{2}^{n-1}})$. This goes for 5 years,
-yielding a final total supply of 245,312,500 SNX. 
+Defines the Synthetix inflationary supply schedule. To the initial 100 million, this adds 75 million tokens in the first year, half that in the second, half again in the third and so on. So the total supply of SNX by the end of the nth year is $100,000,000 \times (1 + \frac{3}{4}\sum_{i=1}^{n}{\frac{1}{2}^{n-1}})$. This goes for 5 years, yielding a final total supply of 245,312,500 SNX.
 
 !!! TODO
     Work out a formula for the total supply at a given week.
