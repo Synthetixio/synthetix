@@ -140,7 +140,7 @@ contract('FeePool', async accounts => {
 			account4, // feePoolState
 			account5, // feePoolEternalStorage
 			synthetixState.address, // synthetixState
-			rewardEscrowAccount,
+			rewardEscrow.address,
 			rewardsAuthority,
 			transferFeeRate,
 			exchangeFeeRate,
@@ -158,6 +158,7 @@ contract('FeePool', async accounts => {
 		assert.equal(await instance.rewardsAuthority(), rewardsAuthority);
 		assert.bnEqual(await instance.transferFeeRate(), transferFeeRate);
 		assert.bnEqual(await instance.exchangeFeeRate(), exchangeFeeRate);
+		assert.equal(await instance.rewardEscrow(), rewardEscrow.address);
 
 		// Assert that our first period is open.
 		assert.deepEqual(await instance.recentFeePeriods(0), {
