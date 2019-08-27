@@ -4,8 +4,10 @@ FILE INFORMATION
 -----------------------------------------------------------------
 
 file:       FeePool.sol
-version:    1.0
-author:     Kevin Brown
+version:    2.8.0
+authors:    Kevin Brown
+            Jackson Chan
+            Clinton Ennis
 date:       2018-10-15
 
 -----------------------------------------------------------------
@@ -24,9 +26,9 @@ https://www.imf.org/en/About/Factsheets/Sheets/2016/08/01/14/51/Special-Drawing-
 
 Users are entitled to withdraw fees from periods that they participated
 in fully, e.g. they have to stake before the period starts. They
-can withdraw fees for the last 6 periods as a single lump sum.
+can withdraw fees for the last 2 periods as a single lump sum.
 Currently fee periods are 7 days long, meaning it's assumed
-users will withdraw their fees approximately once a month. Fees
+users will withdraw their fees approximately once a fortnight. Fees
 which are not withdrawn are redistributed to the whole pool,
 enabling these non-claimed fees to go back to the rest of the commmunity.
 
@@ -96,10 +98,12 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         uint rewardsClaimed;
     }
 
-    // The last 6 fee periods are all that you can claim from.
+    // The last 2 fee periods are all that you can claim from.
     // These are stored and managed from [0], such that [0] is always
-    // the most recent fee period, and [3] is always the oldest fee
-    // period that users can claim for.
+    // the current avtive fee period which is not claimable until the
+    // public function closeCurrentFeePeriod() is called closing the
+    // current weeks collected fees. [1] is last weeks feeperiod and
+    // [2] is the oldest fee period that users can claim for.
     uint8 constant public FEE_PERIOD_LENGTH = 3;
 
     FeePeriod[FEE_PERIOD_LENGTH] public recentFeePeriods;
@@ -138,8 +142,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         public
     {
         // Constructed fee rates should respect the maximum fee rates.
-        require(_transferFeeRate <= MAX_TRANSFER_FEE_RATE, "Constructed transfer fee rate should respect the maximum fee rate");
-        require(_exchangeFeeRate <= MAX_EXCHANGE_FEE_RATE, "Constructed exchange fee rate should respect the maximum fee rate");
+        require(_transferFeeRate <= MAX_TRANSFER_FEE_RATE, "Transfer fee rate max exceeded");
+        require(_exchangeFeeRate <= MAX_EXCHANGE_FEE_RATE, "Exchange fee rate max exceeded");
 
         synthetix = _synthetix;
         feePoolState = _feePoolState;
@@ -192,7 +196,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         external
         optionalProxy_onlyOwner
     {
-        require(_transferFeeRate <= MAX_TRANSFER_FEE_RATE, "Transfer fee rate must be below MAX_TRANSFER_FEE_RATE");
+        require(_transferFeeRate <= MAX_TRANSFER_FEE_RATE, "Transfer fee rate max exceeded");
 
         transferFeeRate = _transferFeeRate;
     }
@@ -245,8 +249,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         external
         optionalProxy_onlyOwner
     {
-        require(_feePeriodDuration >= MIN_FEE_PERIOD_DURATION, "New fee period cannot be less than minimum fee period duration");
-        require(_feePeriodDuration <= MAX_FEE_PERIOD_DURATION, "New fee period cannot be greater than maximum fee period duration");
+        require(_feePeriodDuration >= MIN_FEE_PERIOD_DURATION, "value < MIN_FEE_PERIOD_DURATION");
+        require(_feePeriodDuration <= MAX_FEE_PERIOD_DURATION, "value > MAX_FEE_PERIOD_DURATION");
 
         feePeriodDuration = _feePeriodDuration;
 
@@ -309,7 +313,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     function closeCurrentFeePeriod()
         external
     {
-        require(recentFeePeriods[0].startTime <= (now - feePeriodDuration), "It is too early to close the current fee period");
+        require(recentFeePeriods[0].startTime <= (now - feePeriodDuration), "Too early to close fee period");
 
         FeePeriod memory secondLastFeePeriod = recentFeePeriods[FEE_PERIOD_LENGTH - 2];
         FeePeriod memory lastFeePeriod = recentFeePeriods[FEE_PERIOD_LENGTH - 1];
@@ -371,7 +375,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         optionalProxy
         returns (bool)
     {
-        require(delegates.approval(claimingForAddress, messageSender), "Not approved to claim on behalf this address");
+        require(delegates.approval(claimingForAddress, messageSender), "Not approved to claim on behalf");
 
         return _claimFees(claimingForAddress, currencyKey);
     }
@@ -434,11 +438,27 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         recentFeePeriods[feePeriodIndex].rewardsClaimed = rewardsClaimed;
     }
 
+    /**
+    * @notice Owner can escrow SNX. Owner to send the tokens to the RewardEscrow
+    * @param account Address to escrow tokens for
+    * @param quantity Amount of tokens to escrow
+    */
+    function appendVestingEntry(address account, uint quantity)
+        public
+        optionalProxy_onlyOwner
+    {
+        // Transfer SNX from messageSender to the Reward Escrow
+        synthetix.transferFrom(messageSender, rewardEscrow, quantity);
+
+        // Create Vesting Entry
+        rewardEscrow.appendVestingEntry(account, quantity);
+    }
+
     function approveClaimOnBehalf(address account)
         public
         optionalProxy
     {
-        require(delegates != address(0), "Delegates Approval destination missing");
+        require(delegates != address(0), "Delegates Contract missing");
         require(account != address(0), "Can't delegate to address(0)");
         delegates.setApproval(messageSender, account);
     }
@@ -447,7 +467,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         public
         optionalProxy
     {
-        require(delegates != address(0), "Delegates Approval destination missing");
+        require(delegates != address(0), "Delegates Contract missing");
         delegates.withdrawApproval(messageSender, account);
     }
 
@@ -894,8 +914,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         view
         returns (uint)
     {
-        require(period != 0, "Current period has not closed yet");
-        require(period < FEE_PERIOD_LENGTH, "Period exceeds the FEE_PERIOD_LENGTH");
+        require(period != 0, "Current period is not closed yet");
+        require(period < FEE_PERIOD_LENGTH, "Exceeds the FEE_PERIOD_LENGTH");
 
         // No debt minted during period as next period starts at 0
         if (recentFeePeriods[period - 1].startingDebtIndex == 0) return;
@@ -951,7 +971,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
     modifier onlySynthetix
     {
-        require(msg.sender == address(synthetix), "Only the synthetix contract can perform this action");
+        require(msg.sender == address(synthetix), "Only Synthetix Authorised");
         _;
     }
 

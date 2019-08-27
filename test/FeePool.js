@@ -6,6 +6,7 @@ const FeePoolState = artifacts.require('FeePoolState');
 const Synthetix = artifacts.require('Synthetix');
 const SynthetixState = artifacts.require('SynthetixState');
 const Synth = artifacts.require('Synth');
+const RewardEscrow = artifacts.require('RewardEscrow');
 const { getWeb3, getContractInstance } = require('../utils/web3Helper');
 
 const {
@@ -99,6 +100,7 @@ contract('FeePool', async accounts => {
 		exchangeRates,
 		feePoolState,
 		delegates,
+		rewardEscrow,
 		sUSDContract,
 		sAUDContract,
 		XDRContract;
@@ -112,6 +114,7 @@ contract('FeePool', async accounts => {
 		feePool = await FeePool.deployed();
 		feePoolProxy = await FeePoolProxy.deployed();
 		delegates = await DelegateApprovals.deployed();
+		rewardEscrow = await RewardEscrow.deployed();
 		feePoolWeb3 = getInstance(FeePool);
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 
@@ -129,7 +132,6 @@ contract('FeePool', async accounts => {
 	it('should set constructor params on deployment', async () => {
 		const transferFeeRate = toUnit('0.0015');
 		const exchangeFeeRate = toUnit('0.0030');
-		const rewardEscrowAccount = deployerAccount;
 
 		// constructor(address _proxy, address _owner, Synthetix _synthetix, FeePoolState _feePoolState, FeePoolEternalStorage _feePoolEternalStorage, ISynthetixState _synthetixState, ISynthetixEscrow _rewardEscrow,address _feeAuthority, uint _transferFeeRate, uint _exchangeFeeRate)
 		const instance = await FeePool.new(
@@ -139,7 +141,7 @@ contract('FeePool', async accounts => {
 			account4, // feePoolState
 			account5, // feePoolEternalStorage
 			synthetixState.address, // synthetixState
-			rewardEscrowAccount,
+			rewardEscrow.address,
 			feeAuthority,
 			rewardsAuthority,
 			transferFeeRate,
@@ -155,6 +157,7 @@ contract('FeePool', async accounts => {
 		assert.equal(await instance.feePoolState(), account4);
 		assert.equal(await instance.feePoolEternalStorage(), account5);
 		assert.equal(await instance.synthetixState(), synthetixState.address);
+		assert.equal(await instance.rewardEscrow(), rewardEscrow.address);
 		assert.equal(await instance.feeAuthority(), feeAuthority);
 		assert.equal(await instance.rewardsAuthority(), rewardsAuthority);
 		assert.bnEqual(await instance.transferFeeRate(), transferFeeRate);
@@ -1335,6 +1338,7 @@ contract('FeePool', async accounts => {
 
 			assert.isNotTrue(resultAfter);
 		});
+
 		it('should approve a claim on behalf for account1 by account2 and have fees in wallet', async () => {
 			const authoriser = account1;
 			const delegate = account2;
@@ -1422,6 +1426,29 @@ contract('FeePool', async accounts => {
 
 			// We should have our fees
 			assert.bnEqual(await sUSDContract.balanceOf(account1), oldSynthBalance.add(feesAvailable[0]));
+		});
+	});
+
+	describe('Escrowing Tokens', async () => {
+		const escrowAmount = toUnit('100000');
+
+		it('should revert if non owner calls', async () => {
+			await assert.revert(feePool.appendVestingEntry(account3, escrowAmount, { from: account3 }));
+		});
+
+		it('should revert if no tokens', async () => {
+			await assert.revert(feePool.appendVestingEntry(account3, escrowAmount, { from: owner }));
+		});
+
+		it('should escrow tokens on an address when called by owner', async () => {
+			// Approve FeePool to spend my fund to escrow
+			await synthetix.approve(feePool.address, escrowAmount, {
+				from: owner,
+			});
+			await feePool.appendVestingEntry(account3, escrowAmount, { from: owner });
+
+			const vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account3, 0);
+			assert.bnEqual(vestingScheduleEntry[1], escrowAmount);
 		});
 	});
 });
