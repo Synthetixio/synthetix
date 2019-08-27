@@ -308,7 +308,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
      */
     function closeCurrentFeePeriod()
         external
-        optionalProxy_onlyFeeAuthority
     {
         require(recentFeePeriods[0].startTime <= (now - feePeriodDuration), "It is too early to close the current fee period");
 
@@ -948,15 +947,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         internal
     {
         feePoolEternalStorage.setUIntValue(keccak256(abi.encodePacked(LAST_FEE_WITHDRAWAL, _claimingAddress)), _feePeriodID);
-    }
-
-    modifier optionalProxy_onlyFeeAuthority
-    {
-        if (Proxy(msg.sender) != proxy) {
-            messageSender = msg.sender;
-        }
-        require(msg.sender == feeAuthority, "Only the fee authority can perform this action");
-        _;
     }
 
     modifier onlySynthetix
