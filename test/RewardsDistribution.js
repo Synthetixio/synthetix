@@ -131,6 +131,9 @@ contract('RewardsDistribution', async accounts => {
 			await rewardsDistribution.addRewardDistribution(distributionAddress, amountToDistribute, {
 				from: owner,
 			});
+
+			const distributionsLength = await rewardsDistribution.distributionsLength();
+			assert.equal(distributionsLength, 1);
 		});
 		it('should modify onchain struct when editing a valid RewardDistribution index', async () => {
 			const distributionAddress = account2;
@@ -285,6 +288,10 @@ contract('RewardsDistribution', async accounts => {
 			await rewardsDistribution.addRewardDistribution(account2, toUnit('10000'), {
 				from: owner,
 			});
+
+			const distributionsLength = await rewardsDistribution.distributionsLength();
+			assert.equal(distributionsLength, 2);
+
 			// RewardEscrow should get 20000
 
 			// Ensure Authority to call is set

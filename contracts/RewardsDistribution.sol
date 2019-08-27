@@ -226,6 +226,19 @@ contract RewardsDistribution is Owned {
         return true;
     }
 
+    /* ========== VIEWS ========== */
+
+    /**
+     * @notice Retrieve the length of the distributions array
+     */
+    function distributionsLength()
+        external
+        view
+        returns (uint)
+    {
+        return distributions.length;
+    }
+
     /* ========== Events ========== */
 
     event RewardDistributionAdded(uint index, address destination, uint amount);
