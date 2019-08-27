@@ -82,7 +82,6 @@ contract('FeePool', async accounts => {
 		deployerAccount,
 		owner,
 		oracle,
-		feeAuthority,
 		rewardsAuthority,
 		account1,
 		account2,
@@ -133,7 +132,7 @@ contract('FeePool', async accounts => {
 		const transferFeeRate = toUnit('0.0015');
 		const exchangeFeeRate = toUnit('0.0030');
 
-		// constructor(address _proxy, address _owner, Synthetix _synthetix, FeePoolState _feePoolState, FeePoolEternalStorage _feePoolEternalStorage, ISynthetixState _synthetixState, ISynthetixEscrow _rewardEscrow,address _feeAuthority, uint _transferFeeRate, uint _exchangeFeeRate)
+		// constructor(address _proxy, address _owner, Synthetix _synthetix, FeePoolState _feePoolState, FeePoolEternalStorage _feePoolEternalStorage, ISynthetixState _synthetixState, ISynthetixEscrow _rewardEscrow, uint _transferFeeRate, uint _exchangeFeeRate)
 		const instance = await FeePool.new(
 			account1, // proxy
 			account2, // owner
@@ -142,7 +141,6 @@ contract('FeePool', async accounts => {
 			account5, // feePoolEternalStorage
 			synthetixState.address, // synthetixState
 			rewardEscrow.address,
-			feeAuthority,
 			rewardsAuthority,
 			transferFeeRate,
 			exchangeFeeRate,
@@ -157,11 +155,10 @@ contract('FeePool', async accounts => {
 		assert.equal(await instance.feePoolState(), account4);
 		assert.equal(await instance.feePoolEternalStorage(), account5);
 		assert.equal(await instance.synthetixState(), synthetixState.address);
-		assert.equal(await instance.rewardEscrow(), rewardEscrow.address);
-		assert.equal(await instance.feeAuthority(), feeAuthority);
 		assert.equal(await instance.rewardsAuthority(), rewardsAuthority);
 		assert.bnEqual(await instance.transferFeeRate(), transferFeeRate);
 		assert.bnEqual(await instance.exchangeFeeRate(), exchangeFeeRate);
+		assert.equal(await instance.rewardEscrow(), rewardEscrow.address);
 
 		// Assert that our first period is open.
 		assert.deepEqual(await instance.recentFeePeriods(0), {
@@ -231,15 +228,6 @@ contract('FeePool', async accounts => {
 				from: owner,
 			})
 		);
-	});
-
-	it('should allow the owner to set a fee authority', async () => {
-		await feePool.setFeeAuthority(ZERO_ADDRESS, { from: owner });
-		assert.bnEqual(await feePool.feeAuthority(), ZERO_ADDRESS);
-	});
-
-	it('should disallow a non-owner from setting the fee authority', async () => {
-		await assert.revert(feePool.setFeeAuthority(ZERO_ADDRESS, { from: account1 }));
 	});
 
 	it('should allow the owner to set the fee period duration', async () => {
