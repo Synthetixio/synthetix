@@ -70,9 +70,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     // Exchange fee may not exceed 10%.
     uint constant public MAX_EXCHANGE_FEE_RATE = SafeDecimalMath.unit() / 10;
 
-    // The address with the authority to distribute fees.
-    address public feeAuthority;
-
     // The address with the authority to distribute rewards.
     address public rewardsAuthority;
 
@@ -128,7 +125,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         FeePoolEternalStorage _feePoolEternalStorage,
         ISynthetixState _synthetixState,
         ISynthetixEscrow _rewardEscrow,
-        address _feeAuthority,
         address _rewardsAuthority,
         uint _transferFeeRate,
         uint _exchangeFeeRate)
@@ -146,7 +142,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         feePoolEternalStorage = _feePoolEternalStorage;
         rewardEscrow = _rewardEscrow;
         synthetixState = _synthetixState;
-        feeAuthority = _feeAuthority;
         rewardsAuthority = _rewardsAuthority;
         transferFeeRate = _transferFeeRate;
         exchangeFeeRate = _exchangeFeeRate;
@@ -195,17 +190,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         require(_transferFeeRate <= MAX_TRANSFER_FEE_RATE, "Transfer fee rate must be below MAX_TRANSFER_FEE_RATE");
 
         transferFeeRate = _transferFeeRate;
-    }
-
-    /**
-     * @notice Set the address of the user/contract responsible for collecting or
-     * distributing fees.
-     */
-    function setFeeAuthority(address _feeAuthority)
-        external
-        optionalProxy_onlyOwner
-    {
-        feeAuthority = _feeAuthority;
     }
 
     /**

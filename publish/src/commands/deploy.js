@@ -58,7 +58,6 @@ const deploy = async ({
 	deploymentPath,
 	oracleExrates,
 	oracleDepot,
-	feeAuth,
 	privateKey,
 	yes,
 } = {}) => {
@@ -145,7 +144,6 @@ const deploy = async ({
 		currentExchangeFee = w3utils.toWei('0.003'.toString());
 		oracleExrates = account;
 		oracleDepot = account;
-		feeAuth = account;
 		currentSynthetixPrice = w3utils.toWei('0.2');
 	} else {
 		// do requisite checks
@@ -167,11 +165,6 @@ const deploy = async ({
 				const currentDepot = getExistingContract({ contract: 'Depot' });
 				oracleDepot = await currentDepot.methods.oracle().call();
 			}
-
-			if (!feeAuth) {
-				const currentFeePool = getExistingContract({ contract: 'FeePool' });
-				feeAuth = await currentFeePool.methods.feeAuthority().call();
-			}
 		} catch (err) {
 			console.error(
 				red(
@@ -183,7 +176,7 @@ const deploy = async ({
 		}
 	}
 
-	for (const address of [account, oracleExrates, oracleDepot, feeAuth]) {
+	for (const address of [account, oracleExrates, oracleDepot]) {
 		if (!w3utils.isAddress(address)) {
 			console.error(red('Invalid address detected (please check your inputs):', address));
 			process.exitCode = 1;
@@ -336,7 +329,6 @@ const deploy = async ({
 			feePoolEternalStorage ? feePoolEternalStorage.options.address : '',
 			synthetixState ? synthetixState.options.address : '',
 			rewardEscrow ? rewardEscrow.options.address : '',
-			feeAuth,
 			ZERO_ADDRESS,
 			w3utils.toWei('0'), // transfer fee
 			currentExchangeFee, // exchange fee
