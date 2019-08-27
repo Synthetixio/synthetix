@@ -14,7 +14,8 @@
 		"test": "concurrently --kill-others --success first \"npm run ganache > /dev/null\" \"truffle compile && wait-port 8545 && truffle test\"",
 		"test:gas": "npm test; EXIT_CODE=$?; cat test-gas-used.log; printf \"\\n\"; exit $EXIT_CODE;",
 		"test:int": "concurrently --kill-others --success first \"npm run ganache:int > /dev/null\" \"wait-port 8545 && node int-test\"",
-		"truffle": "truffle"
+		"truffle": "truffle",
+		"verify": "truffle run verify"
 	},
 	"repository": {
 		"type": "git",
@@ -85,6 +86,7 @@
 		"commander": "^2.19.0",
 		"openzeppelin-solidity": "2.0.0",
 		"pretty-error": "^2.1.1",
-		"solc": "0.4.25"
+		"solc": "0.4.25",
+		"truffle-security": "^1.5.5"
 	}
 }

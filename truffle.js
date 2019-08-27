@@ -1,4 +1,6 @@
 module.exports = {
+	plugins: ['truffle-security'],
+
 	networks: {
 		development: {
 			host: '127.0.0.1',
