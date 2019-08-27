@@ -38,7 +38,7 @@ contract('FeePool', async accounts => {
 	const closeFeePeriod = async () => {
 		const feePeriodDuration = await feePool.feePeriodDuration();
 		await fastForward(feePeriodDuration);
-		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+		await feePool.closeCurrentFeePeriod({ from: account1 });
 		await updateRatesWithDefaults();
 	};
 
@@ -312,10 +312,10 @@ contract('FeePool', async accounts => {
 		await assert.revert(feePool.setSynthetix(account2, { from: account1 }));
 	});
 
-	it('should allow the fee authority to close the current fee period', async () => {
+	it('should allow account1 to close the current fee period', async () => {
 		await fastForward(await feePool.feePeriodDuration());
 
-		const transaction = await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+		const transaction = await feePool.closeCurrentFeePeriod({ from: account1 });
 		assert.eventEqual(transaction, 'FeePeriodClosed', { feePeriodId: 1 });
 
 		// Assert that our first period is new.
@@ -337,7 +337,7 @@ contract('FeePool', async accounts => {
 		// fast forward and close another fee Period
 		await fastForward(await feePool.feePeriodDuration());
 
-		const secondPeriodClose = await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+		const secondPeriodClose = await feePool.closeCurrentFeePeriod({ from: account1 });
 		assert.eventEqual(secondPeriodClose, 'FeePeriodClosed', { feePeriodId: 2 });
 	});
 	it('should import feePeriods and close the current fee period correctly', async () => {
@@ -384,7 +384,7 @@ contract('FeePool', async accounts => {
 
 		await fastForward(await feePool.feePeriodDuration());
 
-		const transaction = await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+		const transaction = await feePool.closeCurrentFeePeriod({ from: account1 });
 		assert.eventEqual(transaction, 'FeePeriodClosed', { feePeriodId: 22 });
 
 		// Assert that our first period is new.
@@ -421,7 +421,7 @@ contract('FeePool', async accounts => {
 	it('should allow the feePoolProxy to close feePeriod', async () => {
 		await fastForward(await feePool.feePeriodDuration());
 
-		const transaction = await feePoolProxy.closeCurrentFeePeriod({ from: feeAuthority });
+		const transaction = await feePoolProxy.closeCurrentFeePeriod({ from: account1 });
 		assert.eventEqual(transaction, 'FeePeriodClosed', { feePeriodId: 1 });
 
 		// Assert that our first period is new.
@@ -548,7 +548,7 @@ contract('FeePool', async accounts => {
 		}
 	});
 
-	it('should disallow the fee authority from closing the current fee period too early', async () => {
+	it('should disallow closing the current fee period too early', async () => {
 		const feePeriodDuration = await feePool.feePeriodDuration();
 
 		// Close the current one so we know exactly what we're dealing with
@@ -556,28 +556,16 @@ contract('FeePool', async accounts => {
 
 		// Try to close the new fee period 5 seconds early
 		await fastForward(feePeriodDuration.sub(web3.utils.toBN('5')));
-		await assert.revert(feePool.closeCurrentFeePeriod({ from: feeAuthority }));
+		await assert.revert(feePool.closeCurrentFeePeriod({ from: account1 }));
 	});
 
-	it('should allow the fee authority to close the current fee period very late', async () => {
+	it('should allow closing the current fee period very late', async () => {
 		// Close it 500 times later than prescribed by feePeriodDuration
 		// which should still succeed.
 		const feePeriodDuration = await feePool.feePeriodDuration();
 		await fastForward(feePeriodDuration.mul(web3.utils.toBN('500')));
 		await updateRatesWithDefaults();
-		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
-	});
-
-	it('should disallow a non-fee-authority from closing the current fee period', async () => {
-		const feePeriodDuration = await feePool.feePeriodDuration();
-		await fastForward(feePeriodDuration);
-		await updateRatesWithDefaults();
-
-		// Owner shouldn't be able to close it.
-		await assert.revert(feePool.closeCurrentFeePeriod({ from: owner }));
-
-		// But the feeAuthority still should be able to
-		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+		await feePool.closeCurrentFeePeriod({ from: account1 });
 	});
 
 	it('should allow a user to claim their fees in sUSD', async () => {
