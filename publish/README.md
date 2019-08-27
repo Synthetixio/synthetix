@@ -57,6 +57,7 @@ node publish deploy # "--help" for options
 node publish deploy -n ropsten -d publish/deployed/ropsten -g 20
 node publish deploy -n rinkeby -d publish/deployed/rinkeby -g 20
 node publish deploy -n kovan -d publish/deployed/kovan -g 8
+node publish deploy -n local -d publish/deployed/local -g 8
 ```
 
 ## 3. Verify

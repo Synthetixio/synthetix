@@ -127,6 +127,7 @@ import "./SynthetixState.sol";
 import "./Synth.sol";
 import "./interfaces/ISynthetixEscrow.sol";
 import "./interfaces/IFeePool.sol";
+import "./interfaces/IRewardsDistribution.sol";
 
 /**
  * @title Synthetix ERC20 contract.
@@ -147,6 +148,7 @@ contract Synthetix is ExternStateToken {
     ExchangeRates public exchangeRates;
     SynthetixState public synthetixState;
     SupplySchedule public supplySchedule;
+    IRewardsDistribution public rewardsDistribution;
 
     bool private protectionCircuit = false;
 
@@ -165,7 +167,7 @@ contract Synthetix is ExternStateToken {
      */
     constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
         address _owner, ExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule,
-        ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow, uint _totalSupply
+        ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow, IRewardsDistribution _rewardsDistribution, uint _totalSupply
     )
         ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, _totalSupply, DECIMALS, _owner)
         public
@@ -176,6 +178,7 @@ contract Synthetix is ExternStateToken {
         supplySchedule = _supplySchedule;
         rewardEscrow = _rewardEscrow;
         escrow = _escrow;
+        rewardsDistribution = _rewardsDistribution;
     }
     // ========== SETTERS ========== */
 
@@ -955,11 +958,17 @@ contract Synthetix is ExternStateToken {
         }
     }
 
+    /**
+     * @notice Mints the inflationary SNX supply. The inflation shedule is
+     * defined in the SupplySchedule contract.
+     * The mint() function is publicly callable by anyone. The caller will
+     receive a minter reward as specified in supplySchedule.minterReward().
+     */
     function mint()
         external
         returns (bool)
     {
-        require(rewardEscrow != address(0), "Reward Escrow not set");
+        require(rewardsDistribution != address(0), "RewardsDistribution not set");
 
         uint supplyToMint = supplySchedule.mintableSupply();
         require(supplyToMint > 0, "No supply is mintable");
@@ -969,18 +978,23 @@ contract Synthetix is ExternStateToken {
         // Set minted SNX balance to RewardEscrow's balance
         // Minus the minterReward and set balance of minter to add reward
         uint minterReward = supplySchedule.minterReward();
+        // Get the remainder
+        uint amountToDistribute = supplyToMint.sub(minterReward);
 
-        tokenState.setBalanceOf(rewardEscrow, tokenState.balanceOf(rewardEscrow).add(supplyToMint.sub(minterReward)));
-        emitTransfer(this, rewardEscrow, supplyToMint.sub(minterReward));
+        // Set the token balance to the RewardsDistribution contract
+        tokenState.setBalanceOf(rewardsDistribution, tokenState.balanceOf(rewardsDistribution).add(amountToDistribute));
+        emitTransfer(this, rewardsDistribution, amountToDistribute);
 
-        // Tell the FeePool how much it has to distribute
-        feePool.rewardsMinted(supplyToMint.sub(minterReward));
+        // Kick off the distribution of rewards
+        rewardsDistribution.distributeRewards(amountToDistribute);
 
         // Assign the minters reward.
         tokenState.setBalanceOf(msg.sender, tokenState.balanceOf(msg.sender).add(minterReward));
         emitTransfer(this, msg.sender, minterReward);
 
         totalSupply = totalSupply.add(supplyToMint);
+
+        return true;
     }
 
     // ========== MODIFIERS ==========

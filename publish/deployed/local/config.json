@@ -32,6 +32,9 @@
 	"RewardEscrow": {
 		"deploy": true
 	},
+	"RewardsDistribution": {
+		"deploy": true
+	},
 	"SynthetixState": {
 		"deploy": true
 	},
