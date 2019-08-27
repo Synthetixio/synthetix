@@ -1441,7 +1441,7 @@ contract('FeePool', async accounts => {
 		});
 	});
 
-	describe.only('Escrowing Tokens', async () => {
+	describe('Escrowing Tokens', async () => {
 		const escrowAmount = toUnit('100000');
 
 		it('should revert if non owner calls', async () => {
