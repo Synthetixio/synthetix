@@ -27,7 +27,7 @@ const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 const SYNTHETIX_TOTAL_SUPPLY = web3.utils.toWei('100000000');
 
 module.exports = async function(deployer, network, accounts) {
-	const [deployerAccount, owner, oracle, feeAuthority, fundsWallet] = accounts;
+	const [deployerAccount, owner, oracle, fundsWallet] = accounts;
 
 	// Note: This deployment script is not used on mainnet, it's only for testing deployments.
 
@@ -126,7 +126,6 @@ module.exports = async function(deployer, network, accounts) {
 		feePoolEternalStorage.address,
 		synthetixState.address,
 		rewardEscrow.address,
-		feeAuthority,
 		ZERO_ADDRESS,
 		web3.utils.toWei('0.0015', 'ether'), // TODO must change this to 0 to match MAINNET after tests are updated
 		web3.utils.toWei('0.0030', 'ether'),
