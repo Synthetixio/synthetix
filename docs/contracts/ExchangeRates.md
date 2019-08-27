@@ -39,10 +39,13 @@ struct InversePricing {
 * `oracle: address public`: The address which is permitted to push rate updates to the contract.
 * `ORACLE_FUTURE_LIMIT: uint constant`: The maximum time in the future that rates are allowed to be set at. Initialised to 10 minutes.
 * `rateStalePeriod: uint public`: The duration after which a rate will be considered out of date.
-* `priceUpdateLock: bool public`: A mutex so that exchanges can't be made while prices are being updated. This does not turn off any functionality in the exchange rate contract, but is used in the [Synthetix](Synthetix.md) contract to disable currency exchanges while prices are being updated. This is only settable by the oracle, which presumably sets it to true before price updates are submitted (TODO: Investigate this). It is set to false whenever the rates have completed their updates, inside the `internalUpdateRates` function.
+* `priceUpdateLock: bool public`: A mutex so that exchanges can't be made while prices are being updated. This does not turn off any functionality in the exchange rate contract, but is used in the [Synthetix](Synthetix.md) contract to disable currency exchanges while prices are being updated. This is only settable by the oracle, which presumably sets it to true before price updates are submitted. It is set to false whenever the rates have completed their updates, inside the `internalUpdateRates` function.
 * `xdrParticipants: bytes4[5] public`: The codes of each currency in the XDR basket. Hard-coded to `[sUSD, sAUD, sCHF, sEUR, sGBP]`. They are equally-weighted. No crypto assets here!
 * `inversePricing: mapping(bytes4 => InversePricing) public`: For each currency with an inverse index, keep the necessary information to maintain the index.
 * `invertedKeys: bytes4[] public`: A list of the currencies with an inverted index.
+
+!!! TODO
+    Investigate how/when the oracle sets the price update lock to true before price updates are actually submitted.
 
 ## Functions
 

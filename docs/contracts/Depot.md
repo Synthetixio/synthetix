@@ -2,7 +2,8 @@
 
 Assumes that the Synth price is worth US\$1. So: a) this will only work with `sUSD`. b) there's a profit opportunity if the `sUSD` is off its peg.
 
-NOTE: Some of this code is lifted verbatim from the old EtherNomin code, but this isn't indicated in the licence header.
+!!! note
+    Some of this code is lifted verbatim from the old `EtherNomin` code, but this isn't indicated in the licence header.
 
 ## Inherited Contracts
 
