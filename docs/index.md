@@ -1,85 +1,61 @@
-# System Overview
+# Introduction
 
-??? "TODO"
-    * Complete TODOs in [`contracts/index.md`](contracts/index.md).
-    * Extract internal and dev notes into separate document and prepare to make this public-facing.
+## Get In Touch
 
-## Areas of Interest
+* Discord
+* reddit
+* Blog
+* 
 
-??? "System Processes"
-    * [ ] [Contracts](contracts/index.md)
-    * [ ] [Governance](governance.md)
-    * [ ] Tokens/Synths
-    * [ ] Minting
-    * [ ] Conversion
-    * [ ] Escrow
-    * [ ] Connection between collateral pool value and token value
-    * [ ] Stabilisation mechanism
-    * [ ] Fee pool rewards
-    * [ ] Inflationary rewards
-    * [ ] Collat ratio targeting
-    * [ ] Oracle
-    * [ ] The debt ledger
+### old stuff
 
-??? "Integrated Platforms"
-    * [ ] Uniswap
-    * [ ] That graphs thing?
-    * [ ] Dapps
-    * [ ] Examine bounties
+If you’re looking for somewhere to chat with the Synthetix team or with other developers about Synthetix, please visit our dApp Development channel on Discord or our Subreddit.
 
-??? "Assets and Analysis"
-    * [ ] Classify assets
-    * [ ] Risk profiles
-    * [ ] Correlation study
+## Developer Resources
 
-??? "Documents"
-    * [ ] Litepaper
-    * [ ] Readme
-    * [ ] [Dev Docs](https://developer.synthetix.io/api/docs/home.html)
-    * [ ] [SynthetixJs](https://synthetixjs.synthetix.io/)
-    * [ ] [API](https://developer.synthetix.io/api/docs/synthetix)
+### Repositories
+### Contract API
+### SynthetixJs
 
-??? "Formatting"
-    * [ ] [mkdoc PyMdown extensions](https://facelessuser.github.io/pymdown-extensions/)
-        * [ ] [MagicLink](https://facelessuser.github.io/pymdown-extensions/extensions/magiclink/), and integrate it with the source repo.
-        * [ ] [Metadata](https://squidfunk.github.io/mkdocs-material/extensions/metadata/); [Further Notes](https://www.mkdocs.org/user-guide/writing-your-docs/#meta-data)
-    * [ ] Diagrams
-    * [ ] [Split contracts and high level descriptions into top level tabs](https://squidfunk.github.io/mkdocs-material/getting-started/#tabs)
-    * [ ] Ask them if they need [google analytics integration](https://squidfunk.github.io/mkdocs-material/getting-started/#google-analytics).
-    * [ ] Activate inlinehilite
-    * [ ] Activate [minifier plugin](https://squidfunk.github.io/mkdocs-material/getting-started/#plugins) (don't forget to explicitly activate the search plugin when doing so)
-    * [ ] See if there's a way to reorder the sidebar headings.
-    * [ ] All code style comments within the documentation broken out into admonitions instead of inline notes.
-    * [ ] Finish [Project Configuration](https://www.mkdocs.org/user-guide/configuration/). In particular the [nav layout](https://www.mkdocs.org/user-guide/configuration/#documentation-layout).
-    * [ ] Look at [this `mkdocs.yml`](https://github.com/squidfunk/mkdocs-material/blob/master/mkdocs.yml) to see if we can do anything similar.
 
-??? "Potential Vulnerabilities To Investigate"
-    * [ ] Oracle front-running.
-    * [ ] C-ratio manipulation.
-    * [ ] Other levers such as marketing, botting?
-    * [ ] Intervention when deployments occur?
-    * [ ] Correlation study of the XDR. What's in this basket?
-    * [ ] Fee period length contradiction between FeePool and FeePoolState
-    * [ ] Do calls to debtBalanceOf outside of totalIssuedSynths allow stale rates?
-    * [ ] Do debt ledger entries lose too much precision given that they are a product of small quantities?
-    * [ ] What happens if I issue very small quantities of synths? Can I lose the debt due to rounding? Thus, can I increase the supply without the system locking any of my snx?
-    * [ ] Can the slashed quantity from the fee pool when rewards are paid out if a person exhausts the pool ever be non-trivial? Comments imply it will just be due to rounding errors, but is this true?
+## Projects Using Synthetix
 
-## Areas as per Email Discussions
+Synthetix supports a variety of use cases, including payments, remittance, eCommerce, trading, loans, wagers, and token sales. Here are some projects that are already using the Synthetix payment engine for stable crypto payments:
 
-??? "System Characterisation"
-    1. Detailed and thorough documentation of existing functionality.
-    2. Blog post-level summaries of key system components.
+* [intimate.io](https://intimate.io/)
+* [Deconet](https://payout.team/)
+* [Groundhog](https://groundhog.network/)
+* [MARKET Protocol](https://marketprotocol.io/)
+* [Elysian](https://elycoin.io/)
+* [LocalCoinSwap](https://localcoinswap.com/)
+* [Media Protocol](https://medium.com/@mediaprotocolsm)
+* [ARAW](https://arawtoken.io/)
 
-??? "Technical Incentive Analysis"
-    1. Outline of available incentive levers, their consequences and limitations.
-    2. Specific areas of particular interest:
-        1. Debt holder optimal strategies (e.g. in the present of asset correlation)
-        2. Oracle front-running mitigation strategies
-        3. Issues with the fee redemption implementation
-        4. New incentives to reward those who provide liquidity at the right price rather than dumping into UniSwap
+!!! caution "?"
+    Media Protocol looks dead. Should this be removed?
 
-??? "Synthetix Position Specification"
-    1. Formulation of strategies that encourage the book to be neutrally biased.
-    2. Characterisation of the maximum exposure of the parties under various conditions.
-    3. Identification and attempted resolution of possible exploits.
+!!! todo
+    Add logos for each of these projects and change to a grid layout with cards.
+
+## Integrations and Dapps
+
+### Dashboard
+
+https://dashboard.synthetix.io
+
+### Synthetix.exchange
+
+https://synthetix.exchange
+
+### Mintr
+
+https://mintr.synthetix.io/
+
+### Swappr
+
+https://swappr.io/
+
+
+## Old shit
+
+Synthetix enables stable payments on the blockchain. This portal is an information hub for software developers to build powerful products on top of the Synthetix payment network.

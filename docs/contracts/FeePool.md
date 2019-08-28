@@ -2,6 +2,13 @@
 
 A contract for managing and claiming fees. Note that most logic related to of the transfer fee related logic is superfluous, as the transfer fee rate is 0.
 
+* SIP-2: Eliminates fee penalty tiers and replaces them with a flat 100% penalty if above a target ratio.
+
+This contract was updated as a part of [SIP-4](https://github.com/Synthetixio/SIPs/blob/master/SIPS/sip-4.md). As the contract requires fees to roll over through the entire fee window before incentive changes are actually felt, the system is a little unresponsive. To combat this, the fee window was reduced from six weeks to three weeks, which reduced the lag time between user action and the rewards actually being withdrawable.
+
+!!! note
+    The SIP says that the fee window was reduced to two weeks, but the actual contract code sets it to three.
+
 ## Inheritance Graph
 
 ![graph](../graphs/FeePool.svg)
@@ -31,7 +38,7 @@ Mainnet | [0x5e5F5542dAd3E06CC8E1cd2461E83f872835117B](https://etherscan.io/addr
 
 ## Structs
 
-```solidity
+```javascript
 struct FeePeriod {
     uint feePeriodId; // A serial id for fee periods: incrementing for each new fee period.
     uint startingDebtIndex; // The length of synthetixState.debtLedger at the time this fee period began.
@@ -106,7 +113,10 @@ for period in reversed(recentFeePeriods):
 return paid
 ```
 
-For efficiency, the actual code returns immediately once `remaining` is 0, for efficiency. NOTE: the final lines of the loop body, `if (i == 0 && remainingToAllocate > 0) { remainingToAllocate = 0; }` is redundant and does nothing. We're already at the last loop iteration and the variable is not used subsequently. There might be another minor efficiency divided to be had by not fetching `feesClaimed` from the state twice.
+For efficiency, the actual code returns immediately once `remaining` is 0, for efficiency.
+
+!!! note
+    The final lines of the loop body, `if (i == 0 && remainingToAllocate > 0) { remainingToAllocate = 0; }` are redundant and do nothing. We're already at the last loop iteration and the variable is not used subsequently. There might be another minor efficiency dividend to be had by not fetching `feesClaimed` from the state twice.
 
 * `_recordRewardPayment(uint snxAmount) returns (uint)`: Called in `_claimFees`. Logic is identical to `_recordFeePayment`, but the relevant quantities are in `SNX` and not `XDR`. The same efficiency notes apply.
 * `_payFees(address account, uint xdrAmount, bytes4 destinationCurrencyKey)`: Pays a quantity of fees to a claiming address, converting it to a particular currency. The destination address cannot be 0, the fee pool itself, the fee pool's proxy, the Synthetix contract, or the fee address. Behaviour: fetch the `XDR` and destination currency Synth addresses from the Synthetix contract; burn the specified quantity of `XDR`s from the fee pool (safe subtraction so no overflowing here); convert the `XDR`s to an equivalent value of the destination currency and issue them into the destination account's wallet; trigger the ERC223 token fallback on the recipient address if it implements one.
@@ -133,6 +143,9 @@ For efficiency, the actual code returns immediately once `remaining` is 0, for e
 
 * `getLastFeeWithdrawal(address _claimingAddress)`: Returns from [FeePoolEternalStorage](FeePoolEternalStorage.md) the id of the fee period during which the given address last withdrew fees.
 * `getPenaltyThresholdRatio()`: Computes the target issuance ratio plus a bit of slop. Is equivalent to `synthetixState.issuanceRatio * (1 + TARGET_THRESHOLD)`. NOTE: the address of synthetixState is computed with the indirection `synthetix.synthetixState()`, but the fee pool contract already has a copy of the address in its own `synthetixState` variable.
-* `_setLastFeeWithdrawal(address _claimingAddress, uint _feePeriodID)`: Stores into [FeePoolEternalStorage](FeePoolEternalStorage.md) the id of the fee period during which this address last withdrew fees. NOTE: this is erroneously in the modifiers section, should probably be next to `getLastFeeWithdrawal`.
+* `_setLastFeeWithdrawal(address _claimingAddress, uint _feePeriodID)`: Stores into [FeePoolEternalStorage](FeePoolEternalStorage.md) the id of the fee period during which this address last withdrew fees.
+
+!!! note
+     `_setLastFeeWithdrawal` is erroneously in the modifiers section, should probably be next to `getLastFeeWithdrawal`.
 
 ## Events

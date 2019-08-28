@@ -35,7 +35,7 @@ theme:
   palette:
     primary: 'black'
     accent: 'indigo'
-  logo: 'img/synthetix_logo.svg'
+  logo: 'img/logos/synthetix_logo.svg'
   favicon: 'img/favicon.ico'
 
 # Extension settings.

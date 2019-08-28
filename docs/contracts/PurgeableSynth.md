@@ -1,6 +1,8 @@
 # PurgeableSynth
 
-This is a Synth where all the holders can be liquidated back to sUSD at current rates, so that the contract can be repurposed, removed from the system, or self destructed.
+This is a [Synth](Synth.md) where all the holders can be liquidated back to sUSD at current rates, so that the contract can be removed from the system. A Synth must either be frozen (if it is an inverse synth) or have its total outstanding supply worth less than 10,000 USD in order for it to be liquidated. Hence it is mainly useful for eliminating Synths which are unused or at the end of their useful life. The value of the token is read from the system's central [ExchangeRates](ExchangeRates.md) contract.
+
+Purgeable synths were introduced by [SIP-3](https://github.com/Synthetixio/SIPs/blob/master/SIPS/sip-3.md) in response to increasing gas costs associated with minting, and to allow the faster reconfiguration of inverse synths.
 
 ## Inherited Contracts
 

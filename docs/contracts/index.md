@@ -54,3 +54,29 @@ The following contracts compose the core of the Synthetix system.
 * Related contract variables.
 * Ensure all contract texts in this document link to the relevant page
 * Contract mapper: scan through ABI of contract at a particular address, look at nullary functions returning addresses. For each address extracted thereby, check if it is a contract. Fetch ABI of the contract at that address if it is, then recurse until done. Enhancement: also look for calls out to other contracts in function bodies.
+
+
+## From the main repo
+
+
+    ExchangeRates.sol: A key value store (bytes4 -> uint) of currency exchange rates, all priced in USD. Understands the concept of whether a rate is stale (as in hasn't been updated frequently enough), and only allows a single annointed oracle address to do price updates.
+    ExternStateToken.sol: The concept of an ERC20/ERC223(ish) token which stores its allowances and balances outside of the contract for upgradability.
+    FeePool.sol: Understands fee information for Synthetix. As users transact, their fees are kept in 0xfeefeefee... and stored in XDRs. Allows users to claim fees they're entitled to.
+    Synthetix.sol: Has a list of Synths and understands issuance data for users to be able to mint and burn Synths.
+    SynthetixEscrow.sol: During the crowdsale, users were asked to escrow their Havvens to insulate against price shocks on the token. Users are able to unlock their SNX on a vesting schedule.
+    Depot.sol: Allows users to exchange ETH for sUSD and SNX (has not yet been updated for multicurrency).
+    LimitedSetup.sol: Some contracts have actions that should only be able to be performed during a specific limited setup period. After this period elapses, any functions using the onlyDuringSetup modifier should no longer be callable.
+    Migrations.sol: Truffle's migrations contract.
+    Synth.sol: Synth token contract which remits fees on transfers, and directs the Synthetix contract to do exchanges when appropriate.
+    SynthAirdropper.sol: Used to optimise gas during our initial airdrop of Synth.
+    Owned.sol: Allows us to leverage the concept of a contract owner that is specially priviledged and can perform certain actions.
+    Pausable.sol: Implements the concept of a pause button on a contract. Methods that should be paused use a particular modifier.
+    Proxy.sol: Our proxy contracts which forward all calls they receive to their target. Events are always emitted at the proxy, not within the target, even if you call the target directly.
+    Proxyable.sol: Implemented on a contract so it can be the target of a proxy contract.
+    ReentryancyPreventer.sol: Specific logic to try to prevent reentrancy when calling the ERC223 tokenFallback() function.
+    SafeDecimalMath.sol: Safe math + decimal math. Using _dec on an operation makes it operate "on decimals" by either dividing out the extra UNIT after a multiplication, or multiplying it in before a division.
+    SelfDestructible.sol: Allows an owner of a contract to set a self destruct timer on it, then once the timer has expired, to kill the contract with selfdestruct.
+    State.sol: Implements the concept of an associated contract which can be changed by the owner.
+    TokenFallbackCaller.sol: Implements a reusable function which can be pulled into the token contracts to trigger an optional call to tokenFallback if the destination address is a contract.
+    TokenState.sol: Holds approval and balance information for tokens.
+

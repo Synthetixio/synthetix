@@ -47,3 +47,15 @@ struct IssuanceData {
 ## Events
 
 * `IssuanceDebtRatioEntry(address indexed account, uint debtRatio, uint feePeriodCloseIndex)`
+
+
+## From The Repo
+
+Fetched from [Design_Decisions.md](https://github.com/Synthetixio/synthetix/blob/master/Design_Decisions.md).
+FeePoolState was required to store each accounts issuance data per fee period. Seperating the store of per account debt ratio data from the upgradable FeePool logic contract. FeePoolState is not deisnged to be upgraded. If an upgrade is required, all issuerdata must be collected from the event logs and reconstructed and imported into a new instance of the contract. Upgrade requirements might include;
+
+* change in the IssuanceData struct
+* change in the length of fee periods FEE_PERIOD_LENGTH
+
+!! todo
+    Delete the old useless design decisions document.
