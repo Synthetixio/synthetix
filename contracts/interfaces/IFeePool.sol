@@ -7,6 +7,6 @@ contract IFeePool {
     function amountReceivedFromTransfer(uint value) external view returns (uint);
     function feePaid(bytes4 currencyKey, uint amount) external;
     function appendAccountIssuanceRecord(address account, uint lockedAmount, uint debtEntryIndex) external;
-    function rewardsMinted(uint amount) external;
+    function setRewardsToDistribute(uint amount) external;
     function transferFeeIncurred(uint value) public view returns (uint);
 }
