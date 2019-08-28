@@ -48,7 +48,6 @@ struct IssuanceData {
 
 * `IssuanceDebtRatioEntry(address indexed account, uint debtRatio, uint feePeriodCloseIndex)`
 
-
 ## From The Repo
 
 Fetched from [Design_Decisions.md](https://github.com/Synthetixio/synthetix/blob/master/Design_Decisions.md).

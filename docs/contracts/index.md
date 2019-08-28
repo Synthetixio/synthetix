@@ -55,9 +55,7 @@ The following contracts compose the core of the Synthetix system.
 * Ensure all contract texts in this document link to the relevant page
 * Contract mapper: scan through ABI of contract at a particular address, look at nullary functions returning addresses. For each address extracted thereby, check if it is a contract. Fetch ABI of the contract at that address if it is, then recurse until done. Enhancement: also look for calls out to other contracts in function bodies.
 
-
 ## From the main repo
-
 
     ExchangeRates.sol: A key value store (bytes4 -> uint) of currency exchange rates, all priced in USD. Understands the concept of whether a rate is stale (as in hasn't been updated frequently enough), and only allows a single annointed oracle address to do price updates.
     ExternStateToken.sol: The concept of an ERC20/ERC223(ish) token which stores its allowances and balances outside of the contract for upgradability.
@@ -79,4 +77,3 @@ The following contracts compose the core of the Synthetix system.
     State.sol: Implements the concept of an associated contract which can be changed by the owner.
     TokenFallbackCaller.sol: Implements a reusable function which can be pulled into the token contracts to trigger an optional call to tokenFallback if the destination address is a contract.
     TokenState.sol: Holds approval and balance information for tokens.
-

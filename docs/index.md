@@ -5,7 +5,6 @@
 * Discord
 * reddit
 * Blog
-* 
 
 ### old stuff
 
@@ -14,9 +13,10 @@ If you’re looking for somewhere to chat with the Synthetix team or with other 
 ## Developer Resources
 
 ### Repositories
-### Contract API
-### SynthetixJs
 
+### Contract API
+
+### SynthetixJs
 
 ## Projects Using Synthetix
 
@@ -54,7 +54,6 @@ https://mintr.synthetix.io/
 ### Swappr
 
 https://swappr.io/
-
 
 ## Old shit
 
