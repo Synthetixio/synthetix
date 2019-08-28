@@ -27,7 +27,6 @@ contract('Depot', async accounts => {
 		deployerAccount,
 		owner,
 		oracle,
-		,
 		fundsWallet,
 		address1,
 		address2,

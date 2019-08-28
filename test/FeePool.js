@@ -6,6 +6,7 @@ const FeePoolState = artifacts.require('FeePoolState');
 const Synthetix = artifacts.require('Synthetix');
 const SynthetixState = artifacts.require('SynthetixState');
 const Synth = artifacts.require('Synth');
+const RewardEscrow = artifacts.require('RewardEscrow');
 const { getWeb3, getContractInstance } = require('../utils/web3Helper');
 
 const {
@@ -38,7 +39,7 @@ contract('FeePool', async accounts => {
 	const closeFeePeriod = async () => {
 		const feePeriodDuration = await feePool.feePeriodDuration();
 		await fastForward(feePeriodDuration);
-		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+		await feePool.closeCurrentFeePeriod({ from: account1 });
 		await updateRatesWithDefaults();
 	};
 
@@ -81,13 +82,12 @@ contract('FeePool', async accounts => {
 		deployerAccount,
 		owner,
 		oracle,
-		feeAuthority,
+		rewardsAuthority,
 		account1,
 		account2,
 		account3,
 		account4,
 		account5,
-		account6,
 	] = accounts;
 
 	let feePool,
@@ -99,6 +99,7 @@ contract('FeePool', async accounts => {
 		exchangeRates,
 		feePoolState,
 		delegates,
+		rewardEscrow,
 		sUSDContract,
 		sAUDContract,
 		XDRContract;
@@ -112,6 +113,7 @@ contract('FeePool', async accounts => {
 		feePool = await FeePool.deployed();
 		feePoolProxy = await FeePoolProxy.deployed();
 		delegates = await DelegateApprovals.deployed();
+		rewardEscrow = await RewardEscrow.deployed();
 		feePoolWeb3 = getInstance(FeePool);
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 
@@ -129,18 +131,17 @@ contract('FeePool', async accounts => {
 	it('should set constructor params on deployment', async () => {
 		const transferFeeRate = toUnit('0.0015');
 		const exchangeFeeRate = toUnit('0.0030');
-		const rewardEscrowAccount = deployerAccount;
 
-		// constructor(address _proxy, address _owner, Synthetix _synthetix, FeePoolState _feePoolState, FeePoolEternalStorage _feePoolEternalStorage, ISynthetixState _synthetixState, ISynthetixEscrow _rewardEscrow,address _feeAuthority, uint _transferFeeRate, uint _exchangeFeeRate)
+		// constructor(address _proxy, address _owner, Synthetix _synthetix, FeePoolState _feePoolState, FeePoolEternalStorage _feePoolEternalStorage, ISynthetixState _synthetixState, ISynthetixEscrow _rewardEscrow, uint _transferFeeRate, uint _exchangeFeeRate)
 		const instance = await FeePool.new(
 			account1, // proxy
 			account2, // owner
 			account3, // synthetix
 			account4, // feePoolState
 			account5, // feePoolEternalStorage
-			account6, // synthetixState
-			rewardEscrowAccount,
-			feeAuthority,
+			synthetixState.address, // synthetixState
+			rewardEscrow.address,
+			rewardsAuthority,
 			transferFeeRate,
 			exchangeFeeRate,
 			{
@@ -153,10 +154,11 @@ contract('FeePool', async accounts => {
 		assert.equal(await instance.synthetix(), account3);
 		assert.equal(await instance.feePoolState(), account4);
 		assert.equal(await instance.feePoolEternalStorage(), account5);
-		assert.equal(await instance.synthetixState(), account6);
-		assert.equal(await instance.feeAuthority(), feeAuthority);
+		assert.equal(await instance.synthetixState(), synthetixState.address);
+		assert.equal(await instance.rewardsAuthority(), rewardsAuthority);
 		assert.bnEqual(await instance.transferFeeRate(), transferFeeRate);
 		assert.bnEqual(await instance.exchangeFeeRate(), exchangeFeeRate);
+		assert.equal(await instance.rewardEscrow(), rewardEscrow.address);
 
 		// Assert that our first period is open.
 		assert.deepEqual(await instance.recentFeePeriods(0), {
@@ -226,15 +228,6 @@ contract('FeePool', async accounts => {
 				from: owner,
 			})
 		);
-	});
-
-	it('should allow the owner to set a fee authority', async () => {
-		await feePool.setFeeAuthority(ZERO_ADDRESS, { from: owner });
-		assert.bnEqual(await feePool.feeAuthority(), ZERO_ADDRESS);
-	});
-
-	it('should disallow a non-owner from setting the fee authority', async () => {
-		await assert.revert(feePool.setFeeAuthority(ZERO_ADDRESS, { from: account1 }));
 	});
 
 	it('should allow the owner to set the fee period duration', async () => {
@@ -310,10 +303,10 @@ contract('FeePool', async accounts => {
 		await assert.revert(feePool.setSynthetix(account2, { from: account1 }));
 	});
 
-	it('should allow the fee authority to close the current fee period', async () => {
+	it('should allow account1 to close the current fee period', async () => {
 		await fastForward(await feePool.feePeriodDuration());
 
-		const transaction = await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+		const transaction = await feePool.closeCurrentFeePeriod({ from: account1 });
 		assert.eventEqual(transaction, 'FeePeriodClosed', { feePeriodId: 1 });
 
 		// Assert that our first period is new.
@@ -335,7 +328,7 @@ contract('FeePool', async accounts => {
 		// fast forward and close another fee Period
 		await fastForward(await feePool.feePeriodDuration());
 
-		const secondPeriodClose = await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+		const secondPeriodClose = await feePool.closeCurrentFeePeriod({ from: account1 });
 		assert.eventEqual(secondPeriodClose, 'FeePeriodClosed', { feePeriodId: 2 });
 	});
 	it('should import feePeriods and close the current fee period correctly', async () => {
@@ -382,7 +375,7 @@ contract('FeePool', async accounts => {
 
 		await fastForward(await feePool.feePeriodDuration());
 
-		const transaction = await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+		const transaction = await feePool.closeCurrentFeePeriod({ from: account1 });
 		assert.eventEqual(transaction, 'FeePeriodClosed', { feePeriodId: 22 });
 
 		// Assert that our first period is new.
@@ -419,7 +412,7 @@ contract('FeePool', async accounts => {
 	it('should allow the feePoolProxy to close feePeriod', async () => {
 		await fastForward(await feePool.feePeriodDuration());
 
-		const transaction = await feePoolProxy.closeCurrentFeePeriod({ from: feeAuthority });
+		const transaction = await feePoolProxy.closeCurrentFeePeriod({ from: account1 });
 		assert.eventEqual(transaction, 'FeePeriodClosed', { feePeriodId: 1 });
 
 		// Assert that our first period is new.
@@ -546,7 +539,7 @@ contract('FeePool', async accounts => {
 		}
 	});
 
-	it('should disallow the fee authority from closing the current fee period too early', async () => {
+	it('should disallow closing the current fee period too early', async () => {
 		const feePeriodDuration = await feePool.feePeriodDuration();
 
 		// Close the current one so we know exactly what we're dealing with
@@ -554,28 +547,16 @@ contract('FeePool', async accounts => {
 
 		// Try to close the new fee period 5 seconds early
 		await fastForward(feePeriodDuration.sub(web3.utils.toBN('5')));
-		await assert.revert(feePool.closeCurrentFeePeriod({ from: feeAuthority }));
+		await assert.revert(feePool.closeCurrentFeePeriod({ from: account1 }));
 	});
 
-	it('should allow the fee authority to close the current fee period very late', async () => {
+	it('should allow closing the current fee period very late', async () => {
 		// Close it 500 times later than prescribed by feePeriodDuration
 		// which should still succeed.
 		const feePeriodDuration = await feePool.feePeriodDuration();
 		await fastForward(feePeriodDuration.mul(web3.utils.toBN('500')));
 		await updateRatesWithDefaults();
-		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
-	});
-
-	it('should disallow a non-fee-authority from closing the current fee period', async () => {
-		const feePeriodDuration = await feePool.feePeriodDuration();
-		await fastForward(feePeriodDuration);
-		await updateRatesWithDefaults();
-
-		// Owner shouldn't be able to close it.
-		await assert.revert(feePool.closeCurrentFeePeriod({ from: owner }));
-
-		// But the feeAuthority still should be able to
-		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+		await feePool.closeCurrentFeePeriod({ from: account1 });
 	});
 
 	it('should allow a user to claim their fees in sUSD', async () => {
@@ -1345,6 +1326,7 @@ contract('FeePool', async accounts => {
 
 			assert.isNotTrue(resultAfter);
 		});
+
 		it('should approve a claim on behalf for account1 by account2 and have fees in wallet', async () => {
 			const authoriser = account1;
 			const delegate = account2;
@@ -1432,6 +1414,29 @@ contract('FeePool', async accounts => {
 
 			// We should have our fees
 			assert.bnEqual(await sUSDContract.balanceOf(account1), oldSynthBalance.add(feesAvailable[0]));
+		});
+	});
+
+	describe('Escrowing Tokens', async () => {
+		const escrowAmount = toUnit('100000');
+
+		it('should revert if non owner calls', async () => {
+			await assert.revert(feePool.appendVestingEntry(account3, escrowAmount, { from: account3 }));
+		});
+
+		it('should revert if no tokens', async () => {
+			await assert.revert(feePool.appendVestingEntry(account3, escrowAmount, { from: owner }));
+		});
+
+		it('should escrow tokens on an address when called by owner', async () => {
+			// Approve FeePool to spend my fund to escrow
+			await synthetix.approve(feePool.address, escrowAmount, {
+				from: owner,
+			});
+			await feePool.appendVestingEntry(account3, escrowAmount, { from: owner });
+
+			const vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account3, 0);
+			assert.bnEqual(vestingScheduleEntry[1], escrowAmount);
 		});
 	});
 });
