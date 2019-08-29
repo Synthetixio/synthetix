@@ -20,6 +20,7 @@ jobs:
           paths:
             - node_modules
   unit:
+    resource_class: large
     docker:
       - image: 'circleci/node:8.16'
     steps:
