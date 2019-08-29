@@ -32,6 +32,9 @@
 	"RewardEscrow": {
 		"deploy": false
 	},
+	"RewardsDistribution": {
+		"deploy": false
+	},
 	"SynthetixState": {
 		"deploy": false
 	},
@@ -48,9 +51,6 @@
 		"deploy": false
 	},
 	"SynthsAUD": {
-		"deploy": false
-	},
-	"SynthsKRW": {
 		"deploy": false
 	},
 	"SynthsGBP": {
@@ -92,9 +92,6 @@
 	"ProxysAUD": {
 		"deploy": false
 	},
-	"ProxysKRW": {
-		"deploy": false
-	},
 	"ProxysGBP": {
 		"deploy": false
 	},
@@ -129,9 +126,6 @@
 		"deploy": false
 	},
 	"TokenStatesAUD": {
-		"deploy": false
-	},
-	"TokenStatesKRW": {
 		"deploy": false
 	},
 	"TokenStatesGBP": {
