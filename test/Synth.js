@@ -49,7 +49,7 @@ contract('Synth', async accounts => {
 
 	it('should set constructor params on deployment', async () => {
 		// constructor(address _proxy, TokenState _tokenState, Synthetix _synthetix, FeePool _feePool,
-		// 	string _tokenName, string _tokenSymbol, address _owner, bytes4 _currencyKey
+		// 	string _tokenName, string _tokenSymbol, address _owner, bytes32 _currencyKey
 		// )
 		const synth = await Synth.new(
 			account1,

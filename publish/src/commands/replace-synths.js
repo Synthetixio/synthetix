@@ -17,7 +17,6 @@ const {
 } = require('../constants');
 
 const {
-	toBytes4,
 	ensureNetwork,
 	ensureDeploymentPath,
 	loadAndCheckRequiredSources,
@@ -219,7 +218,7 @@ const replaceSynths = async ({
 		});
 
 	for (const { currencyKey, Synth, Proxy, TokenState } of deployedSynths) {
-		const currencyKeyInBytes = toBytes4(currencyKey);
+		const currencyKeyInBytes = w3utils.asciiToHex(currencyKey);
 		const synthContractName = `Synth${currencyKey}`;
 
 		// STEPS
