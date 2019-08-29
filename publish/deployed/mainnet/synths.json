@@ -35,13 +35,6 @@
 		"desc": "Australian Dollars"
 	},
 	{
-		"name": "sKRW",
-		"asset": "KRW",
-		"category": "forex",
-		"sign": "₩",
-		"desc": "South Korean Won"
-	},
-	{
 		"name": "sGBP",
 		"asset": "GBP",
 		"category": "forex",
