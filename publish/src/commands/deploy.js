@@ -459,7 +459,7 @@ const deploy = async ({
 			} else {
 				appendOwnerAction({
 					key: 'FeePoolState.setFeePool(FeePool)',
-					target: feePool.options.address,
+					target: feePoolState.options.address,
 					action: `setFeePool(${feePool.options.address})`,
 				});
 			}
