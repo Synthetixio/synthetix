@@ -1054,6 +1054,19 @@ const deploy = async ({
 		}
 	}
 
+	const arbRewarder = await deployContract({
+		name: 'ArbRewarder',
+		deps: ['Synthetix', 'ExchangeRates', 'ProxyERC20'],
+		args: [account],
+	});
+
+	if (arbRewarder && exchangeRates) {
+		// TODO: Set exchangeRates on arbRewarder
+	}
+	if (arbRewarder && proxyERC20) {
+		// TODO: Set synthetix on arbRewarder with proxyERC20
+	}
+
 	console.log(green('\nSuccessfully deployed all contracts!\n'));
 
 	const tableData = Object.keys(deployer.deployedContracts).map(key => [
