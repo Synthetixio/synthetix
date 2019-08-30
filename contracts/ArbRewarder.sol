@@ -57,7 +57,7 @@ contract ArbRewarder is SelfDestructible, Pausable {
     address public seth_exchange_addr = 0x4740C758859D4651061CC9CDEFdBa92BDc3a845d;
     address public snx_erc20_addr = 0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F;
 
-    IExchangeRates public synthetix_rates = IExchangeRates(0x457eec906f9Dcb609b9F2c7dC0f58E182F24C350);
+    IExchangeRates public synthetix_rates = IExchangeRates(0x70C629875daDBE702489a5E1E3bAaE60e38924fa);
     IUniswapExchange public seth_uniswap_exchange = IUniswapExchange(seth_exchange_addr);
 
     IERC20 public seth_erc20 = IERC20(0xAb16cE44e6FA10F3d5d0eC69EB439c6815f37a24);
