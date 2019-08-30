@@ -3,10 +3,10 @@ const FeePool = artifacts.require('FeePool');
 const Synthetix = artifacts.require('Synthetix');
 const Synth = artifacts.require('Synth');
 
-const { currentTime, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
+const { currentTime, toUnit, ZERO_ADDRESS, bytesToString } = require('../utils/testUtils');
 
 contract('Synth', async accounts => {
-	const [sUSD, sAUD, sEUR, SNX, XDR, sXYZ] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'XDR', 'sXYZ'].map(
+	const [sUSD, sAUD, sEUR, SNX, XDR] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'XDR'].map(
 		web3.utils.asciiToHex
 	);
 
@@ -49,7 +49,7 @@ contract('Synth', async accounts => {
 
 	it('should set constructor params on deployment', async () => {
 		// constructor(address _proxy, TokenState _tokenState, Synthetix _synthetix, FeePool _feePool,
-		// 	string _tokenName, string _tokenSymbol, address _owner, bytes4 _currencyKey
+		// 	string _tokenName, string _tokenSymbol, address _owner, bytes32 _currencyKey
 		// )
 		const synth = await Synth.new(
 			account1,
@@ -71,7 +71,7 @@ contract('Synth', async accounts => {
 		assert.equal(await synth.symbol(), 'sXYZ');
 		assert.bnEqual(await synth.decimals(), 18);
 		assert.equal(await synth.owner(), owner);
-		assert.equal(await synth.currencyKey(), sXYZ);
+		assert.equal(bytesToString(await synth.currencyKey()), 'sXYZ');
 	});
 
 	it('should allow the owner to set the Synthetix contract', async () => {

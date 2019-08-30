@@ -283,7 +283,7 @@ const deploy = async ({
 
 	const exchangeRates = await deployContract({
 		name: 'ExchangeRates',
-		args: [account, oracleExrates, [toBytes4('SNX')], [currentSynthetixPrice]],
+		args: [account, oracleExrates, [w3utils.asciiToHex('SNX')], [currentSynthetixPrice]],
 	});
 	const exchangeRatesAddress = exchangeRates ? exchangeRates.options.address : '';
 
@@ -459,7 +459,7 @@ const deploy = async ({
 			} else {
 				appendOwnerAction({
 					key: 'FeePoolState.setFeePool(FeePool)',
-					target: feePool.options.address,
+					target: feePoolState.options.address,
 					action: `setFeePool(${feePool.options.address})`,
 				});
 			}
@@ -797,7 +797,7 @@ const deploy = async ({
 				`Synth ${currencyKey}`,
 				currencyKey,
 				account,
-				toBytes4(currencyKey),
+				w3utils.asciiToHex(currencyKey),
 			].concat(additionalConstructorArgsMap[subclass] || []),
 			force: addNewSynths,
 		});
@@ -912,7 +912,7 @@ const deploy = async ({
 						);
 						await exchangeRates.methods
 							.setInversePricing(
-								toBytes4(currencyKey),
+								w3utils.asciiToHex(currencyKey),
 								w3utils.toWei(entryPoint.toString()),
 								w3utils.toWei(upperLimit.toString()),
 								w3utils.toWei(lowerLimit.toString())

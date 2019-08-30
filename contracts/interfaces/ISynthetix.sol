@@ -24,25 +24,25 @@ contract ISynthetix {
 
     function balanceOf(address account) public view returns (uint);
     function transfer(address to, uint value) public returns (bool);
-    function effectiveValue(bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey) public view returns (uint);
+    function effectiveValue(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey) public view returns (uint);
 
-    function synthInitiatedFeePayment(address from, bytes4 sourceCurrencyKey, uint sourceAmount) external returns (bool);
+    function synthInitiatedFeePayment(address from, bytes32 sourceCurrencyKey, uint sourceAmount) external returns (bool);
     function synthInitiatedExchange(
         address from,
-        bytes4 sourceCurrencyKey,
+        bytes32 sourceCurrencyKey,
         uint sourceAmount,
-        bytes4 destinationCurrencyKey,
+        bytes32 destinationCurrencyKey,
         address destinationAddress) external returns (bool);
     function exchange(
-        bytes4 sourceCurrencyKey,
+        bytes32 sourceCurrencyKey,
         uint sourceAmount,
-        bytes4 destinationCurrencyKey,
+        bytes32 destinationCurrencyKey,
         address destinationAddress) external returns (bool);
     function collateralisationRatio(address issuer) public view returns (uint);
-    function totalIssuedSynths(bytes4 currencyKey)
+    function totalIssuedSynths(bytes32 currencyKey)
         public
         view
         returns (uint);
-    function getSynth(bytes4 currencyKey) public view returns (ISynth);
-    function debtBalanceOf(address issuer, bytes4 currencyKey) public view returns (uint);
+    function getSynth(bytes32 currencyKey) public view returns (ISynth);
+    function debtBalanceOf(address issuer, bytes32 currencyKey) public view returns (uint);
 }

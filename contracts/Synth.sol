@@ -42,14 +42,14 @@ contract Synth is ExternStateToken {
     Synthetix public synthetix;
 
     // Currency key which identifies this Synth to the Synthetix system
-    bytes4 public currencyKey;
+    bytes32 public currencyKey;
 
     uint8 constant DECIMALS = 18;
 
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _proxy, TokenState _tokenState, Synthetix _synthetix, IFeePool _feePool,
-        string _tokenName, string _tokenSymbol, address _owner, bytes4 _currencyKey
+        string _tokenName, string _tokenSymbol, address _owner, bytes32 _currencyKey
     )
         ExternStateToken(_proxy, _tokenState, _tokenName, _tokenSymbol, 0, DECIMALS, _owner)
         public
@@ -256,7 +256,7 @@ contract Synth is ExternStateToken {
         internal
         returns (bool)
     {
-        bytes4 preferredCurrencyKey = synthetix.synthetixState().preferredCurrency(to);
+        bytes32 preferredCurrencyKey = synthetix.synthetixState().preferredCurrency(to);
 
         // Do they have a preferred currency that's not us? If so we need to exchange
         if (preferredCurrencyKey != 0 && preferredCurrencyKey != currencyKey) {
