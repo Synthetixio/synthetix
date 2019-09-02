@@ -16,10 +16,8 @@ Purgeable synths are a subclass of Synth that allows the owner
 to exchange all holders of the Synth back into sUSD.
 
 In order to reduce gas load on the system, and to repurpose older synths
-no longer used, purge allows the owner to
+no longer used, purge allows the owner to purge all holders balances into sUSD
 
-These are used only for frozen or deprecated synths, and the total supply is
-hard-coded to
 -----------------------------------------------------------------
 */
 
@@ -36,7 +34,7 @@ contract PurgeableSynth is Synth {
     using SafeDecimalMath for uint;
 
     // The maximum allowed amount of tokenSupply in equivalent sUSD value for this synth to permit purging
-    uint public maxSupplyToPurgeInUSD = 10000 * SafeDecimalMath.unit(); // 10,000
+    uint public maxSupplyToPurgeInUSD = 100000 * SafeDecimalMath.unit(); // 100,000
 
     // Track exchange rates so we can determine if supply in USD is below threshpld at purge time
     ExchangeRates public exchangeRates;
@@ -44,7 +42,7 @@ contract PurgeableSynth is Synth {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _proxy, TokenState _tokenState, Synthetix _synthetix, IFeePool _feePool,
-        string _tokenName, string _tokenSymbol, address _owner, bytes4 _currencyKey, ExchangeRates _exchangeRates
+        string _tokenName, string _tokenSymbol, address _owner, bytes32 _currencyKey, ExchangeRates _exchangeRates
     )
         Synth(_proxy, _tokenState, _synthetix, _feePool, _tokenName, _tokenSymbol, _owner, _currencyKey)
         public

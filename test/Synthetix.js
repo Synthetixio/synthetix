@@ -1,6 +1,7 @@
 const ExchangeRates = artifacts.require('ExchangeRates');
 const Escrow = artifacts.require('SynthetixEscrow');
 const RewardEscrow = artifacts.require('RewardEscrow');
+const RewardsDistribution = artifacts.require('RewardsDistribution');
 const FeePool = artifacts.require('FeePool');
 const SupplySchedule = artifacts.require('SupplySchedule');
 const Synthetix = artifacts.require('Synthetix');
@@ -15,16 +16,17 @@ const {
 	divideDecimal,
 	toUnit,
 	ZERO_ADDRESS,
+	bytesToString,
 } = require('../utils/testUtils');
 
 contract('Synthetix', async accounts => {
-	const [sUSD, sAUD, sEUR, SNX, XDR, sXYZ, sBTC, iBTC] = [
+	const [sUSD, sAUD, sEUR, SNX, XDR, sXYZ123, sBTC, iBTC] = [
 		'sUSD',
 		'sAUD',
 		'sEUR',
 		'SNX',
 		'XDR',
-		'sXYZ',
+		'sXYZ123',
 		'sBTC',
 		'iBTC',
 	].map(web3.utils.asciiToHex);
@@ -51,9 +53,24 @@ contract('Synthetix', async accounts => {
 		sAUDContract,
 		escrow,
 		rewardEscrow,
+		rewardsDistribution,
 		sEURContract,
 		oracle,
 		timestamp;
+
+	// Updates rates with defaults so they're not stale.
+	const updateRatesWithDefaults = async () => {
+		const timestamp = await currentTime();
+
+		await exchangeRates.updateRates(
+			[sAUD, sEUR, SNX, sBTC, iBTC],
+			['0.5', '1.25', '0.1', '5000', '4000'].map(toUnit),
+			timestamp,
+			{
+				from: oracle,
+			}
+		);
+	};
 
 	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
@@ -64,6 +81,7 @@ contract('Synthetix', async accounts => {
 		supplySchedule = await SupplySchedule.deployed();
 		escrow = await Escrow.deployed();
 		rewardEscrow = await RewardEscrow.deployed();
+		rewardsDistribution = await RewardsDistribution.deployed();
 
 		synthetix = await Synthetix.deployed();
 		synthetixState = await SynthetixState.at(await synthetix.synthetixState());
@@ -88,7 +106,7 @@ contract('Synthetix', async accounts => {
 	it('should set constructor params on deployment', async () => {
 		// constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
 		// 	address _owner, IExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule,
-		// 	ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow, uint _totalSupply
+		// 	ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow, IRewardsDistribution _rewardsDistribution, uint _totalSupply
 		// )
 		const SYNTHETIX_TOTAL_SUPPLY = web3.utils.toWei('100000000');
 		const instance = await Synthetix.new(
@@ -101,6 +119,7 @@ contract('Synthetix', async accounts => {
 			account6,
 			account7,
 			account8,
+			rewardsDistribution.address,
 			SYNTHETIX_TOTAL_SUPPLY,
 			{
 				from: deployerAccount,
@@ -116,6 +135,7 @@ contract('Synthetix', async accounts => {
 		assert.equal(await instance.supplySchedule(), account6);
 		assert.equal(await instance.rewardEscrow(), account7);
 		assert.equal(await instance.escrow(), account8);
+		assert.equal(await instance.rewardsDistribution(), rewardsDistribution.address);
 		assert.equal(await instance.totalSupply(), SYNTHETIX_TOTAL_SUPPLY);
 	});
 
@@ -135,6 +155,7 @@ contract('Synthetix', async accounts => {
 			account6,
 			account7,
 			account8,
+			rewardsDistribution.address,
 			YEAR_2_SYNTHETIX_TOTAL_SUPPLY,
 			{
 				from: deployerAccount,
@@ -150,6 +171,7 @@ contract('Synthetix', async accounts => {
 		assert.equal(await instance.supplySchedule(), account6);
 		assert.equal(await instance.rewardEscrow(), account7);
 		assert.equal(await instance.escrow(), account8);
+		assert.equal(await instance.rewardsDistribution(), rewardsDistribution.address);
 		assert.equal(await instance.totalSupply(), YEAR_2_SYNTHETIX_TOTAL_SUPPLY);
 	});
 
@@ -161,10 +183,10 @@ contract('Synthetix', async accounts => {
 			account2,
 			Synthetix.address,
 			FeePool.address,
-			'Synth XYZ',
-			'sXYZ',
+			'Synth XYZ123',
+			'sXYZ123',
 			owner,
-			web3.utils.asciiToHex('sXYZ'),
+			web3.utils.asciiToHex('sXYZ123'),
 			{ from: deployerAccount }
 		);
 
@@ -178,7 +200,7 @@ contract('Synthetix', async accounts => {
 		// Assert that it's at the end of the array
 		assert.equal(await synthetix.availableSynths(previousSynthCount), synth.address);
 		// Assert that it's retrievable by its currencyKey
-		assert.equal(await synthetix.synths(web3.utils.asciiToHex('sXYZ')), synth.address);
+		assert.equal(await synthetix.synths(web3.utils.asciiToHex('sXYZ123')), synth.address);
 	});
 
 	it('should disallow adding a Synth contract when the user is not the owner', async () => {
@@ -187,10 +209,10 @@ contract('Synthetix', async accounts => {
 			account2,
 			Synthetix.address,
 			FeePool.address,
-			'Synth XYZ',
-			'sXYZ',
+			'Synth XYZ123',
+			'sXYZ123',
 			owner,
-			web3.utils.asciiToHex('sXYZ'),
+			web3.utils.asciiToHex('sXYZ123'),
 			{ from: deployerAccount }
 		);
 
@@ -203,10 +225,10 @@ contract('Synthetix', async accounts => {
 			account2,
 			Synthetix.address,
 			FeePool.address,
-			'Synth XYZ',
-			'sXYZ',
+			'Synth XYZ123',
+			'sXYZ123',
 			owner,
-			web3.utils.asciiToHex('sXYZ'),
+			web3.utils.asciiToHex('sXYZ123'),
 			{ from: deployerAccount }
 		);
 
@@ -220,10 +242,10 @@ contract('Synthetix', async accounts => {
 			account2,
 			Synthetix.address,
 			FeePool.address,
-			'Synth XYZ',
-			'sXYZ',
+			'Synth XYZ123',
+			'sXYZ123',
 			owner,
-			web3.utils.asciiToHex('sXYZ'),
+			web3.utils.asciiToHex('sXYZ123'),
 			{ from: deployerAccount }
 		);
 
@@ -232,10 +254,10 @@ contract('Synthetix', async accounts => {
 			account2,
 			Synthetix.address,
 			FeePool.address,
-			'Synth XYZ',
-			'sXYZ',
+			'Synth XYZ123',
+			'sXYZ123',
 			owner,
-			web3.utils.asciiToHex('sXYZ'),
+			web3.utils.asciiToHex('sXYZ123'),
 			{ from: deployerAccount }
 		);
 
@@ -1052,8 +1074,8 @@ contract('Synthetix', async accounts => {
 		// They should now be able to issue sUSD
 		await synthetix.issueSynths(sUSD, toUnit('10'), { from: account1 });
 
-		// But should not be able to issue sXYZ because it doesn't exist
-		await assert.revert(synthetix.issueSynths(sXYZ, toUnit('10')));
+		// But should not be able to issue sXYZ123 because it doesn't exist
+		await assert.revert(synthetix.issueSynths(sXYZ123, toUnit('10')));
 	});
 
 	it('should disallow an issuer from issuing synths beyond their remainingIssuableSynths', async () => {
@@ -2291,14 +2313,19 @@ contract('Synthetix', async accounts => {
 		const sAUDBalance = await sAUDContract.balanceOf(account1);
 
 		const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
-		assert.eventEqual(synthExchangeEvent, 'SynthExchange', {
-			account: account1,
-			fromCurrencyKey: sUSD,
-			fromAmount: amountIssued,
-			toCurrencyKey: sAUD,
-			toAmount: sAUDBalance,
-			toAddress: account1,
-		});
+		assert.bytes32EventEqual(
+			synthExchangeEvent,
+			'SynthExchange',
+			{
+				account: account1,
+				fromCurrencyKey: 'sUSD',
+				fromAmount: amountIssued,
+				toCurrencyKey: 'sAUD',
+				toAmount: sAUDBalance,
+				toAddress: account1,
+			},
+			['fromCurrencyKey', 'toCurrencyKey']
+		);
 	});
 
 	it('should disallow non owners to call exchangeEnabled', async () => {
@@ -2344,14 +2371,19 @@ contract('Synthetix', async accounts => {
 		const sAUDBalance = await sAUDContract.balanceOf(account1);
 
 		const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
-		assert.eventEqual(synthExchangeEvent, 'SynthExchange', {
-			account: account1,
-			fromCurrencyKey: sUSD,
-			fromAmount: amountIssued,
-			toCurrencyKey: sAUD,
-			toAmount: sAUDBalance,
-			toAddress: account1,
-		});
+		assert.bytes32EventEqual(
+			synthExchangeEvent,
+			'SynthExchange',
+			{
+				account: account1,
+				fromCurrencyKey: 'sUSD',
+				fromAmount: amountIssued,
+				toCurrencyKey: 'sAUD',
+				toAmount: sAUDBalance,
+				toAddress: account1,
+			},
+			['fromCurrencyKey', 'toCurrencyKey']
+		);
 	});
 
 	it('should not exchange while exchangeRates.priceUpdateLock is true', async () => {
@@ -2387,14 +2419,19 @@ contract('Synthetix', async accounts => {
 		const sAUDBalance = await sAUDContract.balanceOf(account1);
 
 		const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
-		assert.eventEqual(synthExchangeEvent, 'SynthExchange', {
-			account: account1,
-			fromCurrencyKey: sUSD,
-			fromAmount: amountIssued,
-			toCurrencyKey: sAUD,
-			toAmount: sAUDBalance,
-			toAddress: account1,
-		});
+		assert.bytes32EventEqual(
+			synthExchangeEvent,
+			'SynthExchange',
+			{
+				account: account1,
+				fromCurrencyKey: 'sUSD',
+				fromAmount: amountIssued,
+				toCurrencyKey: 'sAUD',
+				toAmount: sAUDBalance,
+				toAddress: account1,
+			},
+			['fromCurrencyKey', 'toCurrencyKey']
+		);
 	});
 
 	// TODO: Changes in exchange rates tests
@@ -2424,11 +2461,12 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to Week 2 in Year 2 schedule starting at UNIX 1553040000+
 			const weekTwo = YEAR_TWO_START + 1 * WEEK + 1 * DAY;
 			await fastForwardTo(new Date(weekTwo * 1000));
+			updateRatesWithDefaults();
 
 			const existingSupply = await synthetix.totalSupply();
 			const currentRewardEscrowBalance = await synthetix.balanceOf(RewardEscrow.address);
 
-			// call mint on Synthetix
+			// Call mint on Synthetix
 			await synthetix.mint();
 
 			const newTotalSupply = await synthetix.totalSupply();
@@ -2452,6 +2490,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to Week 3 in Year 2 schedule starting at UNIX 1553040000+
 			const weekThree = YEAR_TWO_START + 2 * WEEK + 1 * DAY;
 			await fastForwardTo(new Date(weekThree * 1000));
+			updateRatesWithDefaults();
 
 			const existingSupply = await synthetix.totalSupply();
 			const currentRewardEscrowBalance = await synthetix.balanceOf(RewardEscrow.address);
@@ -2482,6 +2521,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to Week 2 in Year 3 schedule starting at UNIX 1583971200+
 			const weekTwoYearThree = YEAR_TWO_START + YEAR + WEEK + DAY;
 			await fastForwardTo(new Date(weekTwoYearThree * 1000));
+			updateRatesWithDefaults();
 
 			const existingSupply = await synthetix.totalSupply();
 			const currentRewardEscrowBalance = await synthetix.balanceOf(RewardEscrow.address);
@@ -2512,6 +2552,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to Week 3 in Year 2 schedule starting at UNIX 1553040000+
 			const weekThree = YEAR_TWO_START + 2 * WEEK + 1 * DAY;
 			await fastForwardTo(new Date(weekThree * 1000));
+			updateRatesWithDefaults();
 
 			let existingSupply, currentRewardEscrowBalance;
 			existingSupply = await synthetix.totalSupply();
@@ -2538,6 +2579,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to Week 4 in Year 2 schedule starting at UNIX 1553644800+
 			const weekFour = weekThree + 1 * WEEK + 1 * DAY;
 			await fastForwardTo(new Date(weekFour * 1000));
+			updateRatesWithDefaults();
 
 			existingSupply = await synthetix.totalSupply();
 			currentRewardEscrowBalance = await synthetix.balanceOf(RewardEscrow.address);
@@ -2567,6 +2609,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to Week 3 in Year 2 schedule starting at UNIX 1553040000+
 			const weekThree = YEAR_TWO_START + 2 * WEEK + 1 * DAY;
 			await fastForwardTo(new Date(weekThree * 1000));
+			updateRatesWithDefaults();
 
 			const existingSupply = await synthetix.totalSupply();
 			const currentRewardEscrowBalance = await synthetix.balanceOf(RewardEscrow.address);
@@ -2655,13 +2698,18 @@ contract('Synthetix', async accounts => {
 								// check logs
 								const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
 
-								assert.eventEqual(synthExchangeEvent, 'SynthExchange', {
-									fromCurrencyKey: from,
-									fromAmount: amountExchanged,
-									toCurrencyKey: to,
-									toAmount: balance,
-									toAddress: account1,
-								});
+								assert.bytes32EventEqual(
+									synthExchangeEvent,
+									'SynthExchange',
+									{
+										fromCurrencyKey: bytesToString(from),
+										fromAmount: amountExchanged,
+										toCurrencyKey: bytesToString(to),
+										toAmount: balance,
+										toAddress: account1,
+									},
+									['toCurrencyKey', 'fromCurrencyKey']
+								);
 							};
 							let exchangeTxns;
 							const amountExchanged = toUnit(1e2);

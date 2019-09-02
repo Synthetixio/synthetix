@@ -26,8 +26,8 @@ pragma solidity 0.4.25;
 
 import "./SafeDecimalMath.sol";
 import "./Owned.sol";
-import "./IFeePool.sol";
-import "./ISynthetix.sol";
+import "./interfaces/IFeePool.sol";
+import "./interfaces/ISynthetix.sol";
 
 /**
  * @title A contract to hold escrowed SNX and free them at given schedules.

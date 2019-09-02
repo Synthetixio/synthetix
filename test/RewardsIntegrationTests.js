@@ -154,31 +154,20 @@ contract('Rewards Integration Tests', async accounts => {
 		rewardEscrow = await RewardEscrow.deployed();
 
 		// Fastforward a year into the staking rewards supply
-		// console.log('Fastforward a year into the staking rewards supply');
 		await fastForwardAndUpdateRates(YEAR + MINUTE);
 
 		// Assign 1/3 of total SNX to 3 accounts
-		// console.log('Assign 1/3 of total SNX to 3 accounts');
 		const snxTotalSupply = await synthetix.totalSupply();
-		// console.log('snxTotalSupply', snxTotalSupply.toString());
 		const thirdOfSNX = third(snxTotalSupply);
-		// console.log('thirdOfSNX', thirdOfSNX.toString());
 
 		await synthetix.methods['transfer(address,uint256)'](account1, thirdOfSNX, { from: owner });
 		await synthetix.methods['transfer(address,uint256)'](account2, thirdOfSNX, { from: owner });
 		await synthetix.methods['transfer(address,uint256)'](account3, thirdOfSNX, { from: owner });
 
-		// const balanceOfOwner = await synthetix.balanceOf(owner, { from: owner });
-		// console.log('balanceOfOwner', balanceOfOwner.toString());
-
 		// Get the SNX mintableSupply
 		periodOneMintableSupplyMinusMinterReward = (await supplySchedule.mintableSupply()).sub(
 			MINTER_SNX_REWARD
 		);
-		// console.log(
-		// 	'periodOneMintableSupplyMinusMinterReward',
-		// 	periodOneMintableSupplyMinusMinterReward.toString()
-		// );
 
 		// Mint the staking rewards
 		await synthetix.mint({ from: deployerAccount });
