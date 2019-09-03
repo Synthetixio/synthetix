@@ -7,7 +7,7 @@ const Synth = artifacts.require('Synth');
 
 const { currentTime, toUnit, ZERO_ADDRESS, bytesToString } = require('../utils/testUtils');
 
-contract.only('Synth', async accounts => {
+contract('Synth', async accounts => {
 	const [sUSD, sAUD, sEUR, SNX, XDR] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'XDR'].map(
 		web3.utils.asciiToHex
 	);
@@ -59,9 +59,8 @@ contract.only('Synth', async accounts => {
 	});
 
 	it('should set constructor params on deployment', async () => {
-		// constructor(address _proxy, TokenState _tokenState, Synthetix _synthetix, FeePool _feePool,
-		// 	string _tokenName, string _tokenSymbol, address _owner, bytes32 _currencyKey
-		// )
+		// address _proxy, TokenState _tokenState, address _synthetixProxy, address _feePoolProxy,
+		// string _tokenName, string _tokenSymbol, address _owner, bytes32 _currencyKey)
 		const synth = await Synth.new(
 			account1,
 			account2,
@@ -752,6 +751,7 @@ contract.only('Synth', async accounts => {
 	it('should issue successfully when called by Synthetix', async () => {
 		// Set it to us so we can call it easily
 		await synthetixProxy.setTarget(owner, { from: owner });
+		await XDRContract.setSynthetixProxy(synthetixProxy.address, { from: owner });
 
 		const transaction = await XDRContract.issue(account1, toUnit('10000'), { from: owner });
 		assert.eventsEqual(
@@ -783,6 +783,7 @@ contract.only('Synth', async accounts => {
 
 		// Set the Synthetix target of the SynthetixProxy to owner
 		await synthetixProxy.setTarget(owner, { from: owner });
+		await XDRContract.setSynthetixProxy(synthetixProxy.address, { from: owner });
 
 		const transaction = await XDRContract.burn(owner, toUnit('10000'), { from: owner });
 
@@ -801,6 +802,7 @@ contract.only('Synth', async accounts => {
 
 		// Set the Synthetix target of the SynthetixProxy to owner
 		await synthetixProxy.setTarget(account1, { from: owner });
+		await XDRContract.setSynthetixProxy(synthetixProxy.address, { from: owner });
 
 		// Burning should fail.
 		await assert.revert(XDRContract.burn(owner, toUnit('10000'), { from: owner }));
@@ -822,6 +824,8 @@ contract.only('Synth', async accounts => {
 	it('should triggerTokenFallback successfully when called by Synthetix', async () => {
 		// Set the Synthetix target of the SynthetixProxy to owner
 		await synthetixProxy.setTarget(owner, { from: owner });
+		await XDRContract.setSynthetixProxy(synthetixProxy.address, { from: owner });
+
 		await XDRContract.triggerTokenFallbackIfNeeded(ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1'), {
 			from: owner,
 		});
@@ -830,6 +834,8 @@ contract.only('Synth', async accounts => {
 	it('should triggerTokenFallback successfully when called by FeePool', async () => {
 		// Set the FeePool target on FeePoolProxy to owner
 		await feePoolProxy.setTarget(owner, { from: owner });
+		await XDRContract.setFeePoolProxy(feePoolProxy.address, { from: owner });
+
 		await XDRContract.triggerTokenFallbackIfNeeded(ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1'), {
 			from: owner,
 		});

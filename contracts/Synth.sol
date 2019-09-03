@@ -34,7 +34,6 @@ import "./ExternStateToken.sol";
 import "./Synthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetix.sol";
-import "./Synthetix.sol";
 import "./Proxy.sol";
 
 contract Synth is ExternStateToken {

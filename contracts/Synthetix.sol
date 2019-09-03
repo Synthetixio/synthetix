@@ -1014,7 +1014,10 @@ contract Synthetix is ExternStateToken {
      * @dev This used to be a modifier but instead of duplicating the bytecode into
      * The functions implementing it they now call this internal function to save bytecode space
      */
-    function _onlySynth() internal view {
+    function _onlySynth()
+        internal
+        view
+    {
         bool isSynth = false;
 
         // No need to repeatedly call this function either

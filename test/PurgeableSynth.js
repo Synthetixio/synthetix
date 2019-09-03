@@ -1,6 +1,8 @@
 const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
+const FeePoolProxy = artifacts.require('Proxy');
 const Synthetix = artifacts.require('Synthetix');
+const SynthetixProxy = artifacts.require('Proxy');
 const Synth = artifacts.require('Synth');
 const PurgeableSynth = artifacts.require('PurgeableSynth');
 const TokenState = artifacts.require('TokenState');
@@ -8,7 +10,7 @@ const Proxy = artifacts.require('Proxy');
 
 const { currentTime, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 
-contract('PurgeableSynth', accounts => {
+contract.only('PurgeableSynth', accounts => {
 	const [sUSD, SNX, , sAUD, iETH] = ['sUSD', 'SNX', 'XDR', 'sAUD', 'iETH'].map(
 		web3.utils.asciiToHex
 	);
@@ -23,8 +25,10 @@ contract('PurgeableSynth', accounts => {
 	] = accounts;
 
 	let feePool,
+		feePoolProxy,
 		// FEE_ADDRESS,
 		synthetix,
+		synthetixProxy,
 		exchangeRates,
 		sUSDContract,
 		sAUDContract,
@@ -38,9 +42,12 @@ contract('PurgeableSynth', accounts => {
 		// contract interfaces to prevent test bleed.
 		exchangeRates = await ExchangeRates.deployed();
 		feePool = await FeePool.deployed();
+		feePoolProxy = await FeePoolProxy.deployed();
 		// FEE_ADDRESS = await feePool.FEE_ADDRESS();
 
 		synthetix = await Synthetix.deployed();
+		synthetixProxy = await SynthetixProxy.deployed();
+
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
 		sAUDContract = await Synth.at(await synthetix.synths(sAUD));
 		// XDRContract = await Synth.at(await synthetix.synths(XDR));
@@ -65,7 +72,7 @@ contract('PurgeableSynth', accounts => {
 			proxy.address,
 			tokenState.address,
 			synthetix.address,
-			feePool.address,
+			feePoolProxy.address,
 			`Synth ${currencyKey}`,
 			currencyKey,
 			owner,
