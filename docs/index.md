@@ -62,6 +62,14 @@ https://swappr.io/
 
 ### Uniswap
 
+## History
+
+* Havven
+    * eUSD
+    * nUSD
+* Synthetix
+    * Multicurrency
+    * synthetix.exchange
 
 ## Old shit
 
