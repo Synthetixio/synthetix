@@ -19,6 +19,11 @@ SCCPs live in the same repository and website as SIPs do, but have a [slightly d
 !!! note
     SIPs (and SCCPs) can be rejected, but the rejected status is not provided in the status enumeration in SIP-1 or SCCP-1.
 
+## Community Governance Calls
+
+!!! TODO
+    Describe what these are, when they occur, and if there's a log of them.
+
 ## Development Bounties
 
 The code that runs Synthetix is mostly [MIT licenced](https://github.com/Synthetixio/synthetix/blob/master/LICENSE) and open source, and in principle anyone can contribute. To encourage this, the Synthetix foundation has offered bounties for development and bug reports by parties outside of the core engineering team. Development bounties are managed on [Gitcoin](https://gitcoin.co/profile/Synthetixio) and discussion takes place in corresponding [GitHub issues](https://github.com/Synthetixio/synthetix/issues). Bug bounties are described in [this blog post](https://blog.synthetix.io/synthetix-bug-bounties/).

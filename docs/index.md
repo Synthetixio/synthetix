@@ -18,6 +18,11 @@ If you’re looking for somewhere to chat with the Synthetix team or with other 
 
 ### SynthetixJs
 
+### Subgraph
+
+https://github.com/Synthetixio/synthetix-subgraph
+https://thegraph.com/explorer/subgraph/synthetixio-team/synthetix
+
 ## Projects Using Synthetix
 
 Synthetix supports a variety of use cases, including payments, remittance, eCommerce, trading, loans, wagers, and token sales. Here are some projects that are already using the Synthetix payment engine for stable crypto payments:
@@ -54,6 +59,9 @@ https://mintr.synthetix.io/
 ### Swappr
 
 https://swappr.io/
+
+### Uniswap
+
 
 ## Old shit
 

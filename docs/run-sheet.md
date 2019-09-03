@@ -27,7 +27,6 @@
 
 ??? "Integrated Platforms"
     * [ ] Uniswap
-    * [ ] That graphs thing?
     * [ ] Dapps
     * [ ] Examine bounties
 
@@ -37,11 +36,11 @@
     * [ ] Correlation study
 
 ??? "Documents"
-    * [ ] Litepaper
-    * [ ] Readme
+    * [ ] [Litepaper](https://www.synthetix.io/uploads/synthetix_litepaper.pdf)
     * [ ] [Dev Docs](https://developer.synthetix.io/api/docs/home.html)
     * [ ] [SynthetixJs](https://synthetixjs.synthetix.io/)
     * [ ] [API](https://developer.synthetix.io/api/docs/synthetix)
+    * [ ] Make sure the block analysis points are addressed: see the [original article](https://www.theblockcrypto.com/2019/06/12/synthetix-synthetic-asset-issuance-protocol/), and [its response](https://blog.synthetix.io/response-to-the-block-analysis/).
 
 ??? "Formatting"
     * [ ] [mkdoc PyMdown extensions](https://facelessuser.github.io/pymdown-extensions/)
