@@ -37,6 +37,8 @@ theme:
     accent: 'indigo'
   logo: 'img/logos/synthetix_logo.svg'
   favicon: 'img/favicon.ico'
+  feature:
+    tabs: true
 
 # Extension settings.
 # In addition to the standard extensions, this also requires the PyMdown Extensions by facelessuser: https://github.com/facelessuser/pymdown-extensions 

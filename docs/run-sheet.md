@@ -47,7 +47,6 @@
         * [ ] [MagicLink](https://facelessuser.github.io/pymdown-extensions/extensions/magiclink/), and integrate it with the source repo.
         * [ ] [Metadata](https://squidfunk.github.io/mkdocs-material/extensions/metadata/); [Further Notes](https://www.mkdocs.org/user-guide/writing-your-docs/#meta-data)
     * [ ] Diagrams
-    * [ ] [Split contracts and high level descriptions into top level tabs](https://squidfunk.github.io/mkdocs-material/getting-started/#tabs)
     * [ ] Ask them if they need [google analytics integration](https://squidfunk.github.io/mkdocs-material/getting-started/#google-analytics).
     * [ ] Activate inlinehilite
     * [ ] Activate [minifier plugin](https://squidfunk.github.io/mkdocs-material/getting-started/#plugins) (don't forget to explicitly activate the search plugin when doing so)
