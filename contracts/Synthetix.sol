@@ -1010,7 +1010,7 @@ contract Synthetix is ExternStateToken {
     }
 
     /**
-     * @notice Only a synth can call this function
+     * @notice Only a synth can call this function, optionally via synthetixProxy
      * @dev This used to be a modifier but instead of duplicating the bytecode into
      * The functions implementing it they now call this internal function to save bytecode space
      */
@@ -1019,7 +1019,7 @@ contract Synthetix is ExternStateToken {
 
         // No need to repeatedly call this function either
         for (uint8 i = 0; i < availableSynths.length; i++) {
-            if (availableSynths[i] == msg.sender) {
+            if (availableSynths[i] == messageSender) {
                 isSynth = true;
                 break;
             }

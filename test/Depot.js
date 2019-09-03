@@ -365,7 +365,7 @@ contract('Depot', async accounts => {
 		let fundsWalletFromContract;
 		let fundsWalletEthBalanceBefore;
 		let synthsBalance;
-		let feePoolBalanceBefore;
+		let feePoolProxy;
 		let depotSynthBalanceBefore;
 
 		beforeEach(async () => {
@@ -378,7 +378,7 @@ contract('Depot', async accounts => {
 			await synth.methods['transfer(address,uint256)'](depot.address, synthsBalance.toString(), {
 				from: owner,
 			});
-			feePoolBalanceBefore = await synth.feePool();
+			feePoolProxy = await synth.feePoolProxy();
 			depotSynthBalanceBefore = await synth.balanceOf(depot.address);
 		});
 
@@ -396,7 +396,7 @@ contract('Depot', async accounts => {
 			const depotSynthBalanceCurrent = await synth.balanceOf(depot.address);
 			assert.bnEqual(depotSynthBalanceCurrent, depotSynthBalanceBefore);
 			assert.bnEqual(await synth.balanceOf(address1), 0);
-			assert.bnEqual(await synth.feePool(), feePoolBalanceBefore);
+			assert.bnEqual(await synth.feePoolProxy(), feePoolProxy);
 			assert.equal(fundsWalletFromContract, fundsWallet);
 			assert.bnEqual(await getEthBalance(fundsWallet), fundsWalletEthBalanceBefore);
 		});
@@ -416,7 +416,6 @@ contract('Depot', async accounts => {
 			const depotSynthBalanceCurrent = await synth.balanceOf(depot.address);
 			assert.bnEqual(depotSynthBalanceCurrent, depotSynthBalanceBefore);
 			assert.bnEqual(await synth.balanceOf(address1), 0);
-			assert.equal(await synth.feePool(), feePoolBalanceBefore.toString());
 			assert.equal(fundsWalletFromContract, fundsWallet);
 			assert.bnEqual(await getEthBalance(fundsWallet), fundsWalletEthBalanceBefore.toString());
 		});

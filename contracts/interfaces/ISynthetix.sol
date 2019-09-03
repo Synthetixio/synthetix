@@ -9,6 +9,7 @@ import "../interfaces/ISynth.sol";
 import "../interfaces/ISynthetixEscrow.sol";
 import "../interfaces/IFeePool.sol";
 import "../interfaces/IExchangeRates.sol";
+import "../Synth.sol";
 
 contract ISynthetix {
 
@@ -19,6 +20,8 @@ contract ISynthetix {
     ISynthetixEscrow public rewardEscrow;
     ISynthetixState public synthetixState;
     IExchangeRates public exchangeRates;
+
+    mapping(bytes32 => Synth) public synths;
 
     // ========== PUBLIC FUNCTIONS ==========
 
