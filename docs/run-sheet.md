@@ -55,6 +55,7 @@
     * [ ] Finish [Project Configuration](https://www.mkdocs.org/user-guide/configuration/). In particular the [nav layout](https://www.mkdocs.org/user-guide/configuration/#documentation-layout).
     * [ ] Look at [this `mkdocs.yml`](https://github.com/squidfunk/mkdocs-material/blob/master/mkdocs.yml) to see if we can do anything similar.
     * [ ] Add a "key links" section to all pages which need it.
+    * [ ] Links to be black with an underline, which disappears on hover.
 
 ??? "Potential Vulnerabilities To Investigate"
     * [ ] Oracle front-running.
