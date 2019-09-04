@@ -59,5 +59,13 @@ markdown_extensions:
   - pymdownx.escapeall # Backslashes escape everything.
   - pymdownx.caret # Superscripts and insert text.
   - pymdownx.tilde # Strikethrough and underlines.
+  - pymdownx.magiclink: # Better links and github references.
+      provider: 'github'
+      repo_url_shortener: true
+      repo_url_shorthand: true
+      social_url_shorthand: true
+      user: 'synthetixio'
+      repo: 'synthetix'
+
 extra_javascript:
   - 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML'
