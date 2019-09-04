@@ -1,5 +1,7 @@
 # Smart Contract Listing
 
+## Deployed Contracts
+
 The following contracts compose the core of the Synthetix system.
 
 * [ ] [ArbRewarder](ArbRewarder.md)

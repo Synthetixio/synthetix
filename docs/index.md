@@ -1,36 +1,38 @@
 # Introduction
 
-Synthetix is a decentralised [Ethereum](https://www.ethereum.org/)-based network of *synthetix assets*. Each of these assets, called [Synths](synths.md), is an [ERC20 token](https://theethereum.wiki/w/index.php/ERC20_Token_Standard) whose price is the same as that of another asset, for example each [sUSD](https://etherscan.io/token/0x57ab1e02fee23774580c119740129eac7081e9d3) is worth US$1. A wide variety of synthetic assets exist within Synthetix, including fiat currencies, cryptocurrencies and commodities, and [inverse indexes](synths.md#inverse-syths). In principle the system can support any asset with a price.
-The Synthetix system is otherwise composed of [a token](synthetix-network-token.md), [infrastructure](infrastructure.md), and [a set of incentives](incentives.md) which allow these prices to be maintained.
+Synthetix is a decentralised [Ethereum](https://www.ethereum.org/)-based network of *synthetix assets*. Each of these assets, called [Synths](synths.md), is an [ERC20 token](https://theethereum.wiki/w/index.php/ERC20_Token_Standard) whose price is the same as that of another asset, for example each [sUSD](https://etherscan.io/token/0x57ab1e02fee23774580c119740129eac7081e9d3) is worth US$1. A wide variety of synthetic assets exist within Synthetix, including fiat currencies, cryptocurrencies and commodities, and [inverse indexes](synths.md#inverse-syths). In principle the system can support any asset with a price, and can provide on-chain exposure to an unlimited range of real-world assets.
+Synthetix is otherwise composed of [infrastructure](infrastructure.md) and [a set of incentives](incentives.md) which allow these prices to be maintained, and is underpinned by the value of [Synthetix Network Token](synthetix-network-token.md), whose stakers are rewarded for supporting the system.
 
-Synthetix supports instant, near-frictionless conversion between different flavours of Synths. The resulting network of tokens supports a variety of use cases including payments, remittance, eCommerce, trading, loans, wagers, token sales, and many more.
-This set of documentation contains a description of how Synthetix operates, to allow software developers to build powerful products on top of the Synthetix system.
+Synthetix supports instant, near-frictionless conversion between different flavours of Synths with infinite liquidity and no slippage. The resulting network of tokens supports a an extensive set of use cases including payments, remittance, eCommerce, trading, loans, wagers, token sales, and many more.
+
+This documentation portal contains a description of how Synthetix operates, to allow developers to build powerful products on top of it.
 
 ## Get In Touch
 
-If you’re looking for somewhere to chat with the Synthetix team or with other developers about Synthetix, please visit our [Discord](https://discordapp.com/invite/AEdUHzt) or [Subreddit](https://reddit.com/r/synthetix_io).
-For updates and announcements, check out our [Blog](https://blog.synthetix.io/), [Twitter](https://twitter.com/synthetix_io), or [Telegram](https://t.me/havven_news) channel. Otherwise you can [Contact Us](https://www.synthetix.io/contact-us) by email.
+* **Chat:** If you’re looking for somewhere to talk with the Synthetix team or with other developers about Synthetix, please visit our [Discord](https://discordapp.com/invite/AEdUHzt) or [/r/synthetix_io](https://reddit.com/r/synthetix_io) on reddit.
+* **Read:** For updates, announcements, and information, check out our [Blog](https://blog.synthetix.io/), @twitter:synthetix_io on Twitter, or our [Telegram](https://t.me/havven_news) channel.
+* **Email:** Otherwise you can [Contact Us](https://www.synthetix.io/contact-us) by email.
 
 ## Developer Resources
 
-### Repositories
+* **Code:** Open source repositories are available @synthetixio; the main synthetix repo is @synthetixio/synthetix.
+* **Contract API:** Descriptions of all Synthetix smart contracts and their APIs can be found in [this documentation](contracts). A listing of deployed smart contracts is available [here](contracts/#deployed-contracts).
+* **SynthetixJS:** Synthetix offers a Javascript library which provides a simple interface to communicate with Synthetix contracts. Under the hood this library uses [ethers.js](https://github.com/ethers-io/ethers.js). The source is available @synthetixio/synthetix-js or just `npm i synthetix-js`.
+* **GraphQL API:** The system can also be queried through a GraphQL endpoint via [thegraph](https://thegraph.com/explorer/subgraph/synthetixio-team/synthetix); source code @synthetixio/synthetix-subgraph.
 
-https://github.com/Synthetixio
+## Integrations and Dapps
 
-### Contract API
+* **Synthetix Dashboard:** Provides an overview of the status of the Synthetix system including price, token supply, exchange volume, fee pool size, open interest, and current collateralisation levels. The dashboard also provides listings of exchanges where [SNX](https://dashboard.synthetix.io/buy-snx) and [sUSD](https://dashboard.synthetix.io/buy-susd) are traded. The dashboard is available at [https://dashboard.synthetix.io](https://dashboard.synthetix.io).
+* **Synthetix.exchange:** The [Synthetix Exchange](https://synthetix.exchange) allows users to trade synths, and to buy sUSD with ether. The synthetix exchange has also played host to [trading competitions](https://blog.synthetix.io/synthetix-exchange-trading-competition-v3/) offering SNX prizes to the most successful participants.
+* **Mintr:** [Mintr](https://mintr.synthetix.io/) is a dApp for SNX holders to participate in the Synthetix Network. Using Mintr, users can mint and burn Synths, monitor their collateralisation levels, buy and sell sUSD through the [Depot](contracts/Depot.md), claim their staking rewards, and vest any SNX they have accrued from the token sale or by staking.
+* **UniSwap:** Synthetix uses [UniSwap](https://uniswap.exchange/swap/0x42456D7084eacF4083f1140d3229471bbA2949A8) to provide liquidity to the Synthetix ecosystem, and acts as an on-ramp/off-ramp for the Synth market. Users who provide ETH/sETH are provided with [staking rewards] as [part of the Synthetix protocol](https://sips.synthetix.io/sips/sip-8). This is discussed further in [this blog post](https://blog.synthetix.io/uniswap-seth-pool-incentives/).
 
-A listing of all existing smart contracts and their APIs can be found in [this documentation](contracts).
-
-### SynthetixJs
-
-### Subgraph
-
-https://github.com/Synthetixio/synthetix-subgraph
-https://thegraph.com/explorer/subgraph/synthetixio-team/synthetix
+!!! bug
+    The Depot description text on Mintr still links to swappr.io, but should link to synthetix.exchange
 
 ## Projects Using Synthetix
 
-Synthetix supports a variety of use cases, including payments, remittance, eCommerce, trading, loans, wagers, and token sales. Here are some projects that are already using the Synthetix payment engine for stable crypto payments:
+Apart from Synthetix's own platforms, there are already a number of projects using the Synthetix payment engine for stable crypto payments and other use cases:
 
 * [intimate.io](https://intimate.io/)
 * [Deconet](https://payout.team/)
@@ -41,33 +43,18 @@ Synthetix supports a variety of use cases, including payments, remittance, eComm
 * [Media Protocol](https://medium.com/@mediaprotocolsm)
 * [ARAW](https://arawtoken.io/)
 
+As the [DeFi network](https://defi.network/) gains more traction we only expect this set of projects to expand.
+
 !!! caution "?"
     Media Protocol looks dead. Should this be removed?
 
 !!! todo
     Add logos for each of these projects and change to a grid layout with cards.
 
-## Integrations and Dapps
-
-### Dashboard
-
-https://dashboard.synthetix.io
-
-### Synthetix.exchange
-
-https://synthetix.exchange
-
-### Mintr
-
-https://mintr.synthetix.io/
-
-### Swappr
-
-https://swappr.io/
-
-### Uniswap
-
 ## History
+
+!!! TODO
+    Flesh this out.
 
 * Havven
     * eUSD
@@ -75,4 +62,5 @@ https://swappr.io/
 * Synthetix
     * Multicurrency
     * Inflationary Monetary Policy
+    * [swappr](https://swapper.io/)
     * synthetix.exchange
