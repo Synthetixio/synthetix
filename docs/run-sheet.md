@@ -25,11 +25,6 @@
     * [ ] [Contract publication](https://github.com/Synthetixio/synthetix/tree/master/publish)
     * [ ] [Contract verification](https://github.com/Synthetixio/synthetix/blob/master/verifyContracts.md) (This probably needs to be deleted)
 
-??? "Integrated Platforms"
-    * [ ] Uniswap
-    * [ ] Dapps
-    * [ ] Examine bounties
-
 ??? "Assets and Analysis"
     * [ ] Classify assets
     * [ ] Risk profiles
@@ -44,7 +39,6 @@
 
 ??? "Formatting"
     * [ ] [mkdoc PyMdown extensions](https://facelessuser.github.io/pymdown-extensions/)
-        * [ ] [MagicLink](https://facelessuser.github.io/pymdown-extensions/extensions/magiclink/), and integrate it with the source repo.
         * [ ] [Metadata](https://squidfunk.github.io/mkdocs-material/extensions/metadata/); [Further Notes](https://www.mkdocs.org/user-guide/writing-your-docs/#meta-data)
     * [ ] Diagrams
     * [ ] Ask them if they need [google analytics integration](https://squidfunk.github.io/mkdocs-material/getting-started/#google-analytics).
