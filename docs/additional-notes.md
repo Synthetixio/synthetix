@@ -3,8 +3,9 @@
 ## Cryptoeconomics Blog posts
 
 ??? Posts
+    * [Response to The Block's analysis](https://blog.synthetix.io/response-to-the-block-analysis/): 14 Jun 2019
     * [Cross-Chain Infrastructure Revisited](https://blog.synthetix.io/cross-chain-infrastructure-revisited/)
-    * [Synthetix Overview](https://blog.havven.io/synthetix-overview-f4a5a6c41210)
+    * [Synthetix Overview](https://blog.havven.io/synthetix-overview-f4a5a6c41210): 27 Aug 2019
     * [Devcon IV: A Welcome Dose of Humanity](https://blog.havven.io/https-medium-com-justinjmoses-devcon-iv-a-welcome-dose-of-humanity-5d7b6093a590): Nov 7 2018
     * [How to minimise risk with stablecoins](https://blog.havven.io/how-to-minimize-risk-with-stablecoins-fb320494455): Nov 1 2018
     * [Cryptoasset Collateral Concerns](https://blog.havven.io/cryptoasset-collateral-concerns-25e2c2d74f30): Oct 19 2018
