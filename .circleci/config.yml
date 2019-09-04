@@ -7,14 +7,14 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - 'v1.1-dependencies-{{ checksum "package-lock.json" }}'
-            - v1.1-dependencies-
+            - 'v1.2-dependencies-{{ checksum "package-lock.json" }}'
+            - v1.2-dependencies-
       - run: npm install
       - run: npm run lint
       - save_cache:
           paths:
             - node_modules
-          key: 'v1.1-dependencies-{{ checksum "package-lock.json" }}'
+          key: 'v1.2-dependencies-{{ checksum "package-lock.json" }}'
       - persist_to_workspace:
           root: .
           paths:
