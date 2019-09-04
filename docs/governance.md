@@ -21,8 +21,7 @@ SCCPs live in the same repository and website as SIPs do, but have a [slightly d
 
 ## Community Governance Calls
 
-!!! TODO
-    Describe what these are, when they occur, and if there's a log of them.
+Community governance calls are a venue for the Synthetix team to consult with the community. These calls occur on a semi-regular basis and typically have a pre-set agenda of issues to be discussed and resolved. This complements Discord as a central component of the team's commitment to transparency and community engagement on the path to full decentralisation. Upcoming community governance calls are announced on the [Synthetix blog](https://blog.synthetix.io/); [here](https://blog.synthetix.io/summary-community-governance/) are the minutes from the first governance call.
 
 ## Development Bounties
 
