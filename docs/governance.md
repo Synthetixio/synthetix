@@ -16,7 +16,7 @@ SCCPs are similar to SIPs, but concern modifications to system configuration val
 
 SCCPs live in the same repository and website as SIPs do, but have a [slightly different specification](https://github.com/Synthetixio/SIPs/blob/master/SCCP/sccp-1.md).
 
-!!! note
+!!! bug
     SIPs (and SCCPs) can be rejected, but the rejected status is not provided in the status enumeration in SIP-1 or SCCP-1.
 
 ## Community Governance Calls
