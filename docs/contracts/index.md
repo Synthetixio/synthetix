@@ -2,6 +2,7 @@
 
 The following contracts compose the core of the Synthetix system.
 
+* [ ] [ArbRewarder](ArbRewarder.md)
 * [x] [DelegateApprovals](DelegateApprovals.md)
 * [x] [Depot](Depot.md)
 * [x] [EscrowChecker](EscrowChecker.md)
@@ -45,7 +46,6 @@ The following contracts compose the core of the Synthetix system.
 * PurgeableSynth.sol - Module description is broken.
 * Check the legality of the licence headers
 * Examine oracle addresses and actual update frequencies
-* Entry for SafeMath
 * Ensure function and variable types are correct
 * Modifiers
 * Full inheritance hierarchy
@@ -53,7 +53,7 @@ The following contracts compose the core of the Synthetix system.
 * Related contracts from inheritance
 * Related contract variables.
 * Ensure all contract texts in this document link to the relevant page
-* Contract mapper: scan through ABI of contract at a particular address, look at nullary functions returning addresses. For each address extracted thereby, check if it is a contract. Fetch ABI of the contract at that address if it is, then recurse until done. Enhancement: also look for calls out to other contracts in function bodies.
+* Enhance Contract Mapper: Command line args etc. Look for calls out to other contracts in function bodies.
 
 ## From the main repo
 
