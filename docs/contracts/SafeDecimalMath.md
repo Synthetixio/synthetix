@@ -1,12 +1,13 @@
 # SafeDecimalMath
 
-A library contract that handles safe arithmetic with fixed-point decimals at two precision levels. Uses OpenZeppelin SafeMath to protect from arithmetic overflows etc.
+A library contract that handles safe arithmetic with fixed-point decimals at two precision levels. This contract uses OpenZeppelin's [SafeMath](SafeMath.md) library to protect from arithmetic overflows.
 
-## Related Contracts
+!!! bug
+    Licence header does not acknowledge the original authors.
 
-### Referenced
+## Libraries
 
-* SafeMath for uint.
+* [SafeMath](SafeMath.md) for uint.
 
 ## Variables
 
