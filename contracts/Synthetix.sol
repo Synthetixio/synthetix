@@ -1010,7 +1010,7 @@ contract Synthetix is ExternStateToken {
     }
 
     /**
-     * @notice Only a synth can call this function, optionally via synthetixProxy
+     * @notice Only a synth can call this function, optionally via synthetixProxy or directly
      * @dev This used to be a modifier but instead of duplicating the bytecode into
      * The functions implementing it they now call this internal function to save bytecode space
      */
