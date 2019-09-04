@@ -6,7 +6,7 @@ Synthetix is otherwise composed of [infrastructure](infrastructure.md) and [a se
 
 Synthetix supports instantaneous, near-frictionless conversion between different flavours of Synths with infinite liquidity and no slippage. The resulting network of tokens supports an extensive set of use cases including payments, remittance, eCommerce, trading, loans, wagers, token sales, and many more.
 
-This documentation portal contains a description of how Synthetix operates, to allow developers to build powerful applications on top of it.
+This documentation portal contains a description of how Synthetix operates, to allow developers to build powerful applications on top of it. A briefer introduction is available in the [Synthetix Litepaper](https://www.synthetix.io/uploads/synthetix_litepaper.pdf).
 
 ## Get In Touch
 
@@ -24,9 +24,10 @@ This documentation portal contains a description of how Synthetix operates, to a
 ## Integrations and Dapps
 
 * **Synthetix Dashboard:** Provides an overview of the status of the Synthetix system including price, token supply, exchange volume, fee pool size, open interest, and current collateralisation levels. The dashboard also provides listings of exchanges where [SNX](https://dashboard.synthetix.io/buy-snx) and [sUSD](https://dashboard.synthetix.io/buy-susd) are traded. The dashboard is available at [https://dashboard.synthetix.io](https://dashboard.synthetix.io).
-* **Synthetix.exchange:** The [Synthetix Exchange](https://synthetix.exchange) allows users to trade synths, and to buy sUSD with ether. The synthetix exchange has also played host to [trading competitions](https://blog.synthetix.io/synthetix-exchange-trading-competition-v3/) offering SNX prizes to the most successful participants. The source code for the Synthetix Exchange can be found at @synthetixio/synthetix-exchange.
+* **Synthetix.exchange:** The [Synthetix Exchange](https://synthetix.exchange) allows users to trade synths, and to buy sUSD with ether. The synthetix exchange has also played host to [trading competitions](https://blog.synthetix.io/synthetix-exchange-trading-competition-v3/) offering SNX prizes to the most successful participants. The source code for the Synthetix Exchange can be found at @synthetixio/synthetix-exchange. A twitter bot that reports statistics for the exchange posts daily at @twitter:SynthXBot.
 * **Mintr:** [Mintr](https://mintr.synthetix.io/) is a dApp for SNX holders to participate in the Synthetix Network. Using Mintr, users can mint and burn Synths, monitor their collateralisation levels, buy and sell sUSD through the [Depot](contracts/Depot.md), claim their staking rewards, and vest any SNX they have accrued from the token sale or by staking.
 * **UniSwap:** Synthetix integrates with [UniSwap](https://uniswap.io/) to provide liquidity to the Synthetix ecosystem, and acts as an on-ramp/off-ramp for the Synth market. Users who provide liquidity to the [ETH/sETH pool](https://uniswap.exchange/swap/0x42456D7084eacF4083f1140d3229471bbA2949A8) are provided with staking rewards as [part of the Synthetix protocol](https://sips.synthetix.io/sips/sip-8). This is discussed further [here](https://blog.synthetix.io/uniswap-seth-pool-incentives/) and [here](https://blog.synthetix.io/snx-arbitrage-pool/).
+* **KyberSwap:** Liquidity is further deepened by the integration of SNX with [KyberSwap](https://kyberswap.com/swap/eth-snx), which is built on the [Kyber Network Protocol](https://kyber.network/). An example use case is described [here](https://blog.synthetix.io/snx-liquidity-has-been-added-to-kyberswap/).
 
 !!! bug
     The Depot description text on Mintr still links to swappr.io, but should link to synthetix.exchange
