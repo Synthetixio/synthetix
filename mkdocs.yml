@@ -29,6 +29,8 @@ extra:
       link: 'https://blog.synthetix.io'
     - type: 'telegram'
       link: 'https://t.me/havven_news'
+    - type: 'facebook'
+      link: 'https://www.facebook.com/synthetix.io/'
 
 # This set of documentation uses the MkDocs Material theme by squidfunk: https://github.com/squidfunk/mkdocs-material
 theme:
