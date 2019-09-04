@@ -1017,6 +1017,7 @@ contract Synthetix is ExternStateToken {
     function _onlySynth()
         internal
         view
+        optionalProxy
     {
         bool isSynth = false;
 
