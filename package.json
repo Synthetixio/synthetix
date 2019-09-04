@@ -26,7 +26,7 @@
 		"Truffle"
 	],
 	"engines": {
-		"node": ">=10.16.0"
+		"node": ">=8.10.0"
 	},
 	"files": [
 		"./index.js",
