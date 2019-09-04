@@ -6,7 +6,7 @@ Synthetix is otherwise composed of [infrastructure](infrastructure.md) and [a se
 
 Synthetix supports instantaneous, near-frictionless conversion between different flavours of Synths with infinite liquidity and no slippage. The resulting network of tokens supports an extensive set of use cases including payments, remittance, eCommerce, trading, loans, wagers, token sales, and many more.
 
-This documentation portal contains a description of how Synthetix operates, to allow developers to build powerful applications on top of it. A briefer introduction is available in the [Synthetix Litepaper](https://www.synthetix.io/uploads/synthetix_litepaper.pdf).
+This documentation portal contains a description of how Synthetix operates, to allow developers to build powerful applications on top of it. A briefer overview is available in the [Synthetix Litepaper](https://www.synthetix.io/uploads/synthetix_litepaper.pdf).
 
 ## Get In Touch
 
