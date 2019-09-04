@@ -27,6 +27,8 @@ extra:
       link: 'https://www.linkedin.com/company/synthetix/'
     - type: 'medium'
       link: 'https://blog.synthetix.io'
+    - type: 'telegram'
+      link: 'https://t.me/havven_news'
 
 # This set of documentation uses the MkDocs Material theme by squidfunk: https://github.com/squidfunk/mkdocs-material
 theme:
