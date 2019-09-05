@@ -31,7 +31,6 @@ per fee period.
 pragma solidity 0.4.25;
 
 import "./ExternStateToken.sol";
-import "./Synthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetix.sol";
 import "./Proxy.sol";
