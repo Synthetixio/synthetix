@@ -5,16 +5,19 @@ jobs:
       - image: 'circleci/node:10.16.3'
     steps:
       - checkout
+      - run:
+          name: update-npm
+          command: 'sudo npm install -g npm@latest'
       - restore_cache:
           keys:
-            - 'v1.1-dependencies-{{ checksum "package-lock.json" }}'
-            - v1.1-dependencies-
+            - 'v1.4-dependencies-{{ checksum "package-lock.json" }}'
+            - v1.4-dependencies-
       - run: npm install
       - run: npm run lint
       - save_cache:
           paths:
             - node_modules
-          key: 'v1.1-dependencies-{{ checksum "package-lock.json" }}'
+          key: 'v1.4-dependencies-{{ checksum "package-lock.json" }}'
       - persist_to_workspace:
           root: .
           paths:
