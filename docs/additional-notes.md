@@ -3,25 +3,37 @@
 ## Cryptoeconomics Blog posts
 
 ??? Posts
-    * 14 Jun 2019 - [Response to The Block's analysis](https://blog.synthetix.io/response-to-the-block-analysis/)
     * 27 Aug 2019 - [Cross-Chain Infrastructure Revisited](https://blog.synthetix.io/cross-chain-infrastructure-revisited/)
-    * 6 Dec 2018 - [Synthetix Overview](https://blog.havven.io/synthetix-overview-f4a5a6c41210)
-    * Nov 7 2018 - [Devcon IV: A Welcome Dose of Humanity](https://blog.havven.io/https-medium-com-justinjmoses-devcon-iv-a-welcome-dose-of-humanity-5d7b6093a590)
-    * Nov 1 2018 - [How to minimise risk with stablecoins](https://blog.havven.io/how-to-minimize-risk-with-stablecoins-fb320494455)
-    * Oct 19 2018 - [Cryptoasset Collateral Concerns](https://blog.havven.io/cryptoasset-collateral-concerns-25e2c2d74f30)
-    * Sep 18 2018 - [Introduction to Havven's Multicurrency System](https://blog.havven.io/introduction-to-havvens-multicurrency-system-36cca138c91e)
-    * Aug 7 2018 - [Tether is a crypto abomination](https://blog.havven.io/tether-is-a-crypto-abomination-bb7250582382)
-    * Aug 2 2018 - [Cross-chain infrastructure](https://blog.havven.io/cross-chain-infrastructure-eebe7ad7d7a2)
-    * Jun 27 2018 - [Defining Decentralisation](https://blog.havven.io/defining-decentralisation-60afa00efa2a)
-    * Apr 22 2018 - [Simultaneous Invention](https://blog.havven.io/simultaneous-invention-bf65290cbb23)
-    * Mar 11 2018 - [Fee Aversion](https://blog.havven.io/fee-aversion-5f8e37302144)
-    * Jan 19 2018 - [MakerDAO and the Dai](https://blog.havven.io/makerdao-and-the-dai-f21a4d5571a1)
-    * Jan 5 2018 - [Basecoin: An Algorithmic Central Bank](https://blog.havven.io/basecoin-an-algorithmic-central-bank-2fffd164f8c4)
-    * Jan 2 2018 - [A Decentralised Cryptocurrency Payment Gateway](https://blog.havven.io/a-decentralised-cryptocurrency-payment-gateway-92e33d64e53e)
-    * Dec 10 2017 - [Catalan Independence and the Blockchain](https://blog.havven.io/catalan-independence-and-the-blockchain-6bc77fab851c)
-    * Dec 8 2017 - [Protocol Funding & Tokenomics](https://blog.havven.io/protocol-funding-tokenomics-55a9b266c8ed)
-    * Sep 25 2017 - [We Need a Decentralised Stablecoin](https://blog.havven.io/we-need-a-decentralised-stablecoin-b3e13346c74f)
-    * Sep 7 2017 - [Havven Overview](https://blog.havven.io/havven-overview-2d4bb98a3be9)
+    * 14 Jun 2019 - [Response to The Block's analysis](https://blog.synthetix.io/response-to-the-block-analysis/)
+    * 15 Feb 2019 - [Synthetix Monetary Policy Changes](https://blog.synthetix.io/synthetix-monetary-policy-changes/)
+    * 6 Dec 2018 - [Synthetix Overview](https://blog.synthetix.io/synthetix-overview/)
+    * 7 Nov 2018 - [Devcon IV: A Welcome Dose of Humanity](https://blog.synthetix.io/devcon-iv-a-welcome-dose-of-humanity/)
+    * 1 Nov 2018 - [How to minimise risk with stablecoins](https://blog.synthetix.io/untitled/)
+    * 19 Oct 2018 - [Cryptoasset Collateral Concerns](https://blog.synthetix.io/cryptoasset-collateral-concerns/)
+    * 18 Sep 2018 - [Introduction to Havven's Multicurrency System](https://blog.synthetix.io/introduction-to-havvens-multicurrency-system/)
+    * 7 Aug 2018 - [Tether is a crypto abomination](https://blog.synthetix.io/tether-is-a-crypto-abomination/)
+    * 2 Aug 2018 - [Cross-chain infrastructure](https://blog.synthetix.io/cross-chain-infrastructure/)
+    * 27 Jun 2018 - [Defining Decentralisation](https://blog.synthetix.io/defining-decentralisation/)
+    * 22 Apr 2018 - [Simultaneous Invention](https://blog.synthetix.io/simultaneous-invention/)
+    * 11 Mar 2018 - [Fee Aversion](https://blog.synthetix.io/fee-aversion/)
+    * 19 Jan 2018 - [MakerDAO and the Dai](https://blog.synthetix.io/makerdao-and-the-dai/)
+    * 5 Jan 2018 - [Basecoin: An Algorithmic Central Bank](https://blog.synthetix.io/basecoin-an-algorithmic-central-bank/)
+    * 2 Jan 2018 - [A Decentralised Cryptocurrency Payment Gateway](https://blog.synthetix.io/a-decentralised-cryptocurrency-payment-gateway/)
+    * 10 Dec 2017 - [Catalan Independence and the Blockchain](https://blog.havven.io/catalan-independence-and-the-blockchain-6bc77fab851c)
+    * 8 Dec 2017 - [Protocol Funding & Tokenomics](https://blog.havven.io/protocol-funding-tokenomics-55a9b266c8ed)
+    * 25 Sep 2017 - [We Need a Decentralised Stablecoin](https://blog.havven.io/we-need-a-decentralised-stablecoin-b3e13346c74f)
+    * 7 Sep 2017 - [Havven Overview](https://blog.havven.io/havven-overview-2d4bb98a3be9)
+
+## Audit History
+
+Auditor                               | Subject                                                                                                                                                            | Date
+--------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------
+[iosiro](https://www.iosiro.com/)     | [Synthetix Multicurrency](https://www.iosiro.com/audits/synthetix-smart-contract-audit)                                                                            | February 2019
+[Sigma Prime](https://sigmaprime.io/) | [Synthetix Multicurrency](https://www.synthetix.io/uploads/sigma-prime-synthetix-audit-report_2_0.pdf)                                                             | January 2019
+[Sigma Prime](https://sigmaprime.io/) | [Havven IssuanceController](https://github.com/sigp/public-audits/blob/master/havven-2018-06-18/review.pdf)                                                        | June 2018
+[Cryptecon](https://cryptecon.org/)   | [Havven nUSD economics](https://old.havven.io/uploads/havven_cryptecon_report_may_2018.pdf) ([blog post](https://blog.synthetix.io/havven-validated-by-cryptecon-analysis/)) | June 2018
+[Sigma Prime](https://sigmaprime.io/) | [Havven nUSD](https://github.com/sigp/public-audits/blob/master/havven-2018-06-06/havven-review.pdf)                                                               | June 2018
+[Sigma Prime](https://sigmaprime.io/) | [Havven eUSD](https://github.com/sigp/public-audits/tree/master/havven-2018-04-05/README.md)                                                                       | April 2018
 
 ## A Note on Conversion Fee Evasion
 
