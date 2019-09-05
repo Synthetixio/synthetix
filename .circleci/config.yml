@@ -5,6 +5,9 @@ jobs:
       - image: 'circleci/node:10.16.3'
     steps:
       - checkout
+      - run:
+          name: update-npm
+          command: 'sudo npm install -g npm@latest'
       - restore_cache:
           keys:
             - 'v1.3-dependencies-{{ checksum "package-lock.json" }}'
