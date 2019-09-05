@@ -38,6 +38,8 @@ The following contracts compose the core of the Synthetix system.
 
 ## TODO
 
+* Solidity syntax highlighting.
+* Enhance SafeMath function descriptions.
 * Audit above contracts
 * Add links to repositories for each one.
 * Links to etherscan and addresses.
