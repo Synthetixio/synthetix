@@ -1,21 +1,109 @@
 # Owned
 
-Provides facilities for a contract to have an owner, and functions that only the owner can call with the
-`onlyOwner` function modifier.
-The owner can be changed by a nomination process, where the nominated owner must accept ownership before
-it is switched.
+## Description
+
+Allows inheriting contracts to have an owner and provides the [`onlyOwner`](#onlyowner) modifier, which restricts function access to the owner.
+The owner can be changed by a nomination process, where the nominated owner must accept ownership before it is switched.
+
+---
+
+<aster>⁂</aster>
 
 ## Variables
 
-* `owner: address public`: The contract owner.
-* `nominatedOwner: address public`: The newly-nominated owner.
+---
+
+### `owner`
+
+The contract owner.
+
+**Type:** `address public`
+
+---
+
+### `nominatedOwner`
+
+The currently-nominated owner.
+
+**Type:** `address public`
+
+---
+
+<aster>⁂</aster>
 
 ## Functions
 
-* `nominatedOwner(address _owner)`: only callable by the owner.
-* `acceptOwnership()`: if called by `nominatedOwner`, transfers ownership to that address.
+---
+
+### `constructor`
+
+Initialises the owner of this contract.
+
+**Signature:** `constructor(address _owner) public`
+
+**Preconditions:** The initial owner cannot be the zero address.
+
+**Emits:** [`OwnerChanged(address(0), _owner)`](#ownerchanged)
+
+---
+
+### `nominateNewOwner`
+
+Nominates a new owner of this contract, who may then call [`acceptOwnership`](#acceptownership) to become the owner.
+
+**Signature:** `nominateNewOwner(address _owner) external`
+
+**Modifiers:** [`onlyOwner`](#onlyowner)
+
+**Emits:** [`OwnerNominated(_owner)`](#ownernominated)
+
+---
+
+### `acceptOwnership`
+
+If called by [`nominatedOwner`](#nominatedowner), ownership is transferred to that address.
+The nominated owner is reset to the zero address.
+
+**Signature:** `acceptOwnership() external`
+
+**Preconditions:** The caller must be [`nominatedOwner`](#nominatedowner).
+
+**Emits:** [`OwnerChanged(owner, nominatedOwner)`](#ownerchanged)
+
+---
+
+<aster>⁂</aster>
+
+## Modifiers
+
+---
+
+### onlyOwner
+
+Reverts the transaction if the message sender is not the [`owner`](#owner).
+
+---
+
+<aster>⁂</aster>
 
 ## Events
 
-* `OwnerNominated(address newOwner)`
-* `OwnerChanged(address oldOwner, address newOwner)`
+---
+
+### OwnerNominated
+
+`newOwner` has been set as the [`nominatedOwner`](#nominatedowner).
+
+**Signature:** `OwnerNominated(address newOwner)`
+
+---
+
+### OwnerChanged
+
+Ownership has been handed over from `oldOwner` to `newOwner`, which is the new value of [`owner`](#owner).
+
+**Signature:** `OwnerChanged(address oldOwner, address newOwner)`
+
+---
+
+<aster>⁂</aster>
