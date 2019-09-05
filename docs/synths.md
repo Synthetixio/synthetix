@@ -10,4 +10,4 @@
 
 ## Deployed Flavours
 
-https://www.synthetix.io/tokens
+[Token Listing](https://www.synthetix.io/tokens)
