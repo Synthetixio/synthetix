@@ -23,13 +23,21 @@ external entry points to the contract with the modifier only.
 pragma solidity 0.4.25;
 
 contract ReentrancyPreventer {
+
+    uint256 private _isInFunctionBody = 1;
+
+    /* ========== VIEWS ========== */
+
+    function isInFunctionBody() internal view returns(bool) {
+        return _isInFunctionBody == 2;
+    }
+
     /* ========== MODIFIERS ========== */
-    bool isInFunctionBody = false;
 
     modifier preventReentrancy {
-        require(!isInFunctionBody, "Reverted to prevent reentrancy");
-        isInFunctionBody = true;
+        require(_isInFunctionBody == 1, "Reverted to prevent reentrancy");
+        _isInFunctionBody = 2;
         _;
-        isInFunctionBody = false;
+        _isInFunctionBody = 1;
     }
 }
