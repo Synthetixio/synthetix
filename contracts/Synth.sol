@@ -140,9 +140,12 @@ contract Synth is ExternStateToken {
         uint amountReceived = feePool.amountReceivedFromTransfer(value);
         uint fee = value.sub(amountReceived);
 
-        // Reduce the allowance by the amount we're transferring.
-        // The safeSub call will handle an insufficient allowance.
-        tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
+        // Skip allowance update in case of infinite allowance 
+        if (tokenState.allowance(from, messageSender) != uint(-1)) {
+            // Reduce the allowance by the amount we're transferring.
+            // The safeSub call will handle an insufficient allowance.
+            tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
+        }
 
         // Send the fee off to the fee pool.
         synthetix.synthInitiatedFeePayment(from, currencyKey, fee);
@@ -165,9 +168,12 @@ contract Synth is ExternStateToken {
         uint amountReceived = feePool.amountReceivedFromTransfer(value);
         uint fee = value.sub(amountReceived);
 
-        // Reduce the allowance by the amount we're transferring.
-        // The safeSub call will handle an insufficient allowance.
-        tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
+        // Skip allowance update in case of infinite allowance 
+        if (tokenState.allowance(from, messageSender) != uint(-1)) {
+            // Reduce the allowance by the amount we're transferring.
+            // The safeSub call will handle an insufficient allowance.
+            tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
+        }
 
         // Send the fee off to the fee pool, which we don't want to charge an additional fee on
         synthetix.synthInitiatedFeePayment(from, currencyKey, fee);
@@ -220,9 +226,12 @@ contract Synth is ExternStateToken {
     {
         uint fee = feePool.transferFeeIncurred(value);
 
-        // Reduce the allowance by the amount we're transferring.
-        // The safeSub call will handle an insufficient allowance.
-        tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value.add(fee)));
+        // Skip allowance update in case of infinite allowance 
+        if (tokenState.allowance(from, messageSender) != uint(-1)) {
+            // Reduce the allowance by the amount we're transferring.
+            // The safeSub call will handle an insufficient allowance.
+            tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value.add(fee)));
+        }
 
         // Send the fee off to the fee pool, which we don't want to charge an additional fee on
         synthetix.synthInitiatedFeePayment(from, currencyKey, fee);
@@ -241,9 +250,12 @@ contract Synth is ExternStateToken {
     {
         uint fee = feePool.transferFeeIncurred(value);
 
-        // Reduce the allowance by the amount we're transferring.
-        // The safeSub call will handle an insufficient allowance.
-        tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value.add(fee)));
+        // Skip allowance update in case of infinite allowance 
+        if (tokenState.allowance(from, messageSender) != uint(-1)) {
+            // Reduce the allowance by the amount we're transferring.
+            // The safeSub call will handle an insufficient allowance.
+            tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value.add(fee)));
+        }
 
         // Send the fee off to the fee pool, which we don't want to charge an additional fee on
         synthetix.synthInitiatedFeePayment(from, currencyKey, fee);
