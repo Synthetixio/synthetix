@@ -29,13 +29,13 @@ contract ReentrancyPreventer {
     /* ========== VIEWS ========== */
 
     function isInFunctionBody() internal view returns(bool) {
-        return isInFunctionBody == 2;
+        return _isInFunctionBody == 2;
     }
 
     /* ========== MODIFIERS ========== */
 
     modifier preventReentrancy {
-        require(!_isInFunctionBody, "Reverted to prevent reentrancy");
+        require(_isInFunctionBody == 1, "Reverted to prevent reentrancy");
         _isInFunctionBody = 2;
         _;
         _isInFunctionBody = 1;
