@@ -343,7 +343,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
             .add(secondLastFeePeriod.rewardsToDistribute);
 
         // Shift the previous fee periods across to make room for the new one.
-        _currentFeePeriod = (_currentFeePeriod - 1 + FEE_PERIOD_LENGTH) % FEE_PERIOD_LENGTH;
+        _currentFeePeriod = _currentFeePeriod.add(FEE_PERIOD_LENGTH).sub(1).mod(FEE_PERIOD_LENGTH);
 
         // Clear the first element of the array to make sure we don't have any stale values.
         delete _recentFeePeriods[_currentFeePeriod];
@@ -428,7 +428,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         optionalProxy_onlyOwner
         onlyDuringSetup
     {
-        _recentFeePeriods[(_currentFeePeriod + feePeriodIndex) % FEE_PERIOD_LENGTH] = FeePeriod({
+        _recentFeePeriods[_currentFeePeriod.add(feePeriodIndex).mod(FEE_PERIOD_LENGTH)] = FeePeriod({
             feePeriodId: uint64(feePeriodId),
             startingDebtIndex: uint64(startingDebtIndex),
             startTime: uint64(startTime),
