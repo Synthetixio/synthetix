@@ -141,7 +141,7 @@ contract Synth is ExternStateToken {
         uint fee = value.sub(amountReceived);
 
         // Skip allowance update in case of infinite allowance 
-        if (tokenState.allowance[from][messageSender] != uint(-1)) {
+        if (tokenState.allowance(from, messageSender) != uint(-1)) {
             // Reduce the allowance by the amount we're transferring.
             // The safeSub call will handle an insufficient allowance.
             tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
@@ -169,7 +169,7 @@ contract Synth is ExternStateToken {
         uint fee = value.sub(amountReceived);
 
         // Skip allowance update in case of infinite allowance 
-        if (tokenState.allowance[from][messageSender] != uint(-1)) {
+        if (tokenState.allowance(from, messageSender) != uint(-1)) {
             // Reduce the allowance by the amount we're transferring.
             // The safeSub call will handle an insufficient allowance.
             tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
@@ -227,7 +227,7 @@ contract Synth is ExternStateToken {
         uint fee = feePool.transferFeeIncurred(value);
 
         // Skip allowance update in case of infinite allowance 
-        if (tokenState.allowance[from][messageSender] != uint(-1)) {
+        if (tokenState.allowance(from, messageSender) != uint(-1)) {
             // Reduce the allowance by the amount we're transferring.
             // The safeSub call will handle an insufficient allowance.
             tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value.add(fee)));
@@ -251,7 +251,7 @@ contract Synth is ExternStateToken {
         uint fee = feePool.transferFeeIncurred(value);
 
         // Skip allowance update in case of infinite allowance 
-        if (tokenState.allowance[from][messageSender] != uint(-1)) {
+        if (tokenState.allowance(from, messageSender) != uint(-1)) {
             // Reduce the allowance by the amount we're transferring.
             // The safeSub call will handle an insufficient allowance.
             tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value.add(fee)));
