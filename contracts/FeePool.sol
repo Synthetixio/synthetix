@@ -86,9 +86,9 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
     // This struct represents the issuance activity that's happened in a fee period.
     struct FeePeriod {
-        uint feePeriodId;
-        uint startingDebtIndex;
-        uint startTime;
+        uint64 feePeriodId;
+        uint64 startingDebtIndex;
+        uint64 startTime;
         uint feesToDistribute;
         uint feesClaimed;
         uint rewardsToDistribute;
@@ -152,7 +152,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
         // Set our initial fee period
         recentFeePeriods[0].feePeriodId = 1;
-        recentFeePeriods[0].startTime = now;
+        recentFeePeriods[0].startTime = uint64(now);
     }
 
     /**
@@ -335,9 +335,9 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
         // Open up the new fee period. Take a snapshot of the total value of the system.
         // Increment periodId from the recent closed period feePeriodId
-        recentFeePeriods[0].feePeriodId = recentFeePeriods[1].feePeriodId.add(1);
-        recentFeePeriods[0].startingDebtIndex = synthetixState.debtLedgerLength();
-        recentFeePeriods[0].startTime = now;
+        recentFeePeriods[0].feePeriodId = uint64(uint256(recentFeePeriods[1].feePeriodId).add(1));
+        recentFeePeriods[0].startingDebtIndex = uint64(synthetixState.debtLedgerLength());
+        recentFeePeriods[0].startTime = uint64(now);
 
         emitFeePeriodClosed(recentFeePeriods[1].feePeriodId);
     }
@@ -413,9 +413,9 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         optionalProxy_onlyOwner
         onlyDuringSetup
     {
-        recentFeePeriods[feePeriodIndex].feePeriodId = feePeriodId;
-        recentFeePeriods[feePeriodIndex].startingDebtIndex = startingDebtIndex;
-        recentFeePeriods[feePeriodIndex].startTime = startTime;
+        recentFeePeriods[feePeriodIndex].feePeriodId = uint64(feePeriodId);
+        recentFeePeriods[feePeriodIndex].startingDebtIndex = uint64(startingDebtIndex);
+        recentFeePeriods[feePeriodIndex].startTime = uint64(startTime);
         recentFeePeriods[feePeriodIndex].feesToDistribute = feesToDistribute;
         recentFeePeriods[feePeriodIndex].feesClaimed = feesClaimed;
         recentFeePeriods[feePeriodIndex].rewardsToDistribute = rewardsToDistribute;
@@ -826,7 +826,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
                 // We calculate a feePeriod's closingDebtIndex by looking at the next feePeriod's startingDebtIndex
                 // we can use the most recent issuanceData[0] for the current feePeriod
                 // else find the applicableIssuanceData for the feePeriod based on the StartingDebtIndex of the period
-                uint closingDebtIndex = nextPeriod.startingDebtIndex.sub(1);
+                uint closingDebtIndex = uint256(nextPeriod.startingDebtIndex).sub(1);
 
                 // Gas optimisation - to reuse debtEntryIndex if found new applicable one
                 // if applicable is 0,0 (none found) we keep most recent one from issuanceData[0]
@@ -858,7 +858,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
         // If period has closed we want to calculate debtPercentage for the period
         if (period > 0) {
-            uint closingDebtIndex = recentFeePeriods[period - 1].startingDebtIndex.sub(1);
+            uint closingDebtIndex = uint256(recentFeePeriods[period - 1].startingDebtIndex).sub(1);
             debtOwnershipForPeriod = _effectiveDebtRatioForPeriod(closingDebtIndex, ownershipPercentage, debtEntryIndex);
         }
 
@@ -904,7 +904,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         // No debt minted during period as next period starts at 0
         if (recentFeePeriods[period - 1].startingDebtIndex == 0) return;
 
-        uint closingDebtIndex = recentFeePeriods[period - 1].startingDebtIndex.sub(1);
+        uint closingDebtIndex = uint256(recentFeePeriods[period - 1].startingDebtIndex).sub(1);
 
         uint ownershipPercentage;
         uint debtEntryIndex;
