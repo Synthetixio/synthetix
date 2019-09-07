@@ -321,13 +321,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         // for overflow after subtracting one from zero.
         for (uint i = FEE_PERIOD_LENGTH - 2; i < FEE_PERIOD_LENGTH; i--) {
             uint next = i + 1;
-            recentFeePeriods[next].feePeriodId = recentFeePeriods[i].feePeriodId;
-            recentFeePeriods[next].startingDebtIndex = recentFeePeriods[i].startingDebtIndex;
-            recentFeePeriods[next].startTime = recentFeePeriods[i].startTime;
-            recentFeePeriods[next].feesToDistribute = recentFeePeriods[i].feesToDistribute;
-            recentFeePeriods[next].feesClaimed = recentFeePeriods[i].feesClaimed;
-            recentFeePeriods[next].rewardsToDistribute = recentFeePeriods[i].rewardsToDistribute;
-            recentFeePeriods[next].rewardsClaimed = recentFeePeriods[i].rewardsClaimed;
+            recentFeePeriods[next] = recentFeePeriods[i];
         }
 
         // Clear the first element of the array to make sure we don't have any stale values.
