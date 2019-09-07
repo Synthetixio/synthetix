@@ -41,12 +41,13 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
 
     // The IssuanceData activity that's happened in a fee period.
     struct IssuanceData {
-        uint debtPercentage;
-        uint debtEntryIndex;
+        uint224 debtPercentage;
+        uint32 debtEntryIndex;
     }
 
     // The IssuanceData activity that's happened in a fee period.
-    mapping(address => IssuanceData[FEE_PERIOD_LENGTH]) public accountIssuanceLedger;
+    mapping(address => IssuanceData[FEE_PERIOD_LENGTH]) private _accountIssuanceLedger;
+    mapping(address => uint256) private _currentAccountPeriod;
 
     /**
      * @dev Constructor.
@@ -58,6 +59,16 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
         public
     {
         feePool = _feePool;
+    }
+
+    function _accountIssuanceLedgerStorage(address account, uint256 index) internal view returns(IssuanceData storage) {
+        uint256 shiftedIndex = _currentAccountPeriod[account].add(index).mod(FEE_PERIOD_LENGTH);
+        return _accountIssuanceLedger[account][shiftedIndex];
+    }
+
+    function _setAccountIssuanceLedgerStorage(address account, uint256 index, IssuanceData memory data) internal {
+        uint256 shiftedIndex = _currentAccountPeriod[account].add(index).mod(FEE_PERIOD_LENGTH);
+        _accountIssuanceLedger[account][shiftedIndex] = data;
     }
 
     /* ========== SETTERS ========== */
@@ -88,8 +99,11 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
     {
         require(index < FEE_PERIOD_LENGTH, "index exceeds the FEE_PERIOD_LENGTH");
 
-        debtPercentage = accountIssuanceLedger[account][index].debtPercentage;
-        debtEntryIndex = accountIssuanceLedger[account][index].debtEntryIndex;
+        IssuanceData storage data = _accountIssuanceLedgerStorage(account, index);
+        return (
+            data.debtPercentage,
+            data.debtEntryIndex
+        );
     }
 
     /**
@@ -102,13 +116,15 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
         view
         returns (uint, uint)
     {
-        IssuanceData[FEE_PERIOD_LENGTH] memory issuanceData = accountIssuanceLedger[account];
+        IssuanceData[FEE_PERIOD_LENGTH] storage issuanceData = _accountIssuanceLedger[account];
+        uint start = _currentAccountPeriod[account];
         
         // We want to use the user's debtEntryIndex at when the period closed
         // Find the oldest debtEntryIndex for the corresponding closingDebtIndex
         for (uint i = 0; i < FEE_PERIOD_LENGTH; i++) {
-            if (closingDebtIndex >= issuanceData[i].debtEntryIndex) {
-                return (issuanceData[i].debtPercentage, issuanceData[i].debtEntryIndex);
+            uint index = start.add(i).mod(FEE_PERIOD_LENGTH);
+            if (closingDebtIndex >= issuanceData[index].debtEntryIndex) {
+                return (issuanceData[index].debtPercentage, issuanceData[index].debtEntryIndex);
             }
         }
     }
@@ -131,14 +147,20 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
         onlyFeePool
     {
         // Is the current debtEntryIndex within this fee period
-        if (accountIssuanceLedger[account][0].debtEntryIndex < currentPeriodStartDebtIndex) {
+        if (_accountIssuanceLedgerStorage(account, 0).debtEntryIndex < currentPeriodStartDebtIndex) {
              // If its older then shift the previous IssuanceData entries periods down to make room for the new one.
             issuanceDataIndexOrder(account);
         }
         
         // Always store the latest IssuanceData entry at [0]
-        accountIssuanceLedger[account][0].debtPercentage = debtRatio;
-        accountIssuanceLedger[account][0].debtEntryIndex = debtEntryIndex;
+        _setAccountIssuanceLedgerStorage(
+            account,
+            0,
+            IssuanceData({
+                debtPercentage: uint224(debtRatio),
+                debtEntryIndex: uint32(debtEntryIndex)
+            })
+        );
     }
 
     /**
@@ -147,11 +169,8 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
     function issuanceDataIndexOrder(address account)
         private
     {
-        for (uint i = FEE_PERIOD_LENGTH - 2; i < FEE_PERIOD_LENGTH; i--) {
-            uint next = i + 1;
-            accountIssuanceLedger[account][next].debtPercentage = accountIssuanceLedger[account][i].debtPercentage;
-            accountIssuanceLedger[account][next].debtEntryIndex = accountIssuanceLedger[account][i].debtEntryIndex;
-        }
+        uint256 start = _currentAccountPeriod[account];
+        _currentAccountPeriod[account] = start.add(FEE_PERIOD_LENGTH).sub(1).mod(FEE_PERIOD_LENGTH);
     }
 
     /**
@@ -173,8 +192,14 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
         require(accounts.length == ratios.length, "Length mismatch");
 
         for (uint8 i = 0; i < accounts.length; i++) {
-            accountIssuanceLedger[accounts[i]][periodToInsert].debtPercentage = ratios[i];
-            accountIssuanceLedger[accounts[i]][periodToInsert].debtEntryIndex = feePeriodCloseIndex;
+            _setAccountIssuanceLedgerStorage(
+                accounts[i],
+                periodToInsert,
+                IssuanceData({
+                    debtPercentage: uint224(ratios[i]),
+                    debtEntryIndex: uint32(feePeriodCloseIndex)
+                })
+            );
             emit IssuanceDebtRatioEntry(accounts[i], ratios[i], feePeriodCloseIndex);
         }
     }
