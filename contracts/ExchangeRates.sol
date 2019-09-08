@@ -40,11 +40,13 @@ contract ExchangeRates is SelfDestructible {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    // Exchange rates stored by currency code, e.g. 'SNX', or 'sUSD'
-    mapping(bytes32 => uint) public rates;
+    struct RateAndUpdatedTime {
+        uint216 rate;
+        uint40 time;
+    }
 
-    // Update times stored by currency code, e.g. 'SNX', or 'sUSD'
-    mapping(bytes32 => uint) public lastRateUpdateTimes;
+    // Exchange rates and update times stored by currency code, e.g. 'SNX', or 'sUSD'
+    mapping(bytes32 => RateAndUpdatedTime) private _rates;
 
     // The address of the oracle which pushes rate updates to this contract
     address public oracle;
@@ -101,8 +103,7 @@ contract ExchangeRates is SelfDestructible {
         oracle = _oracle;
 
         // The sUSD rate is always 1 and is never stale.
-        rates["sUSD"] = SafeDecimalMath.unit();
-        lastRateUpdateTimes["sUSD"] = now;
+        _setRates("sUSD", SafeDecimalMath.unit(), now);
 
         // These are the currencies that make up the XDR basket.
         // These are hard coded because:
@@ -120,6 +121,21 @@ contract ExchangeRates is SelfDestructible {
         ];
 
         internalUpdateRates(_currencyKeys, _newRates, now);
+    }
+
+    function rates(bytes32 code) public view returns(uint256) {
+        return uint256(_rates[code].rate);
+    }
+
+    function lastRateUpdateTimes(bytes32 code) public view returns(uint256) {
+        return uint256(_rates[code].time);
+    }
+
+    function _setRates(bytes32 code, uint256 rate, uint256 time) internal {
+        _rates[code] = RateAndUpdatedTime({
+            rate: uint216(rate),
+            time: uint40(time)
+        });
     }
 
     /* ========== SETTERS ========== */
@@ -164,15 +180,14 @@ contract ExchangeRates is SelfDestructible {
             require(currencyKeys[i] != "sUSD", "Rate of sUSD cannot be updated, it's always UNIT.");
 
             // We should only update the rate if it's at least the same age as the last rate we've got.
-            if (timeSent < lastRateUpdateTimes[currencyKeys[i]]) {
+            if (timeSent < lastRateUpdateTimes(currencyKeys[i])) {
                 continue;
             }
 
             newRates[i] = rateOrInverted(currencyKeys[i], newRates[i]);
 
             // Ok, go ahead with the update.
-            rates[currencyKeys[i]] = newRates[i];
-            lastRateUpdateTimes[currencyKeys[i]] = timeSent;
+            _setRates(currencyKeys[i], newRates[i], timeSent);
         }
 
         emit RatesUpdated(currencyKeys, newRates);
@@ -202,7 +217,7 @@ contract ExchangeRates is SelfDestructible {
         }
 
         // set the rate to the current rate initially (if it's frozen, this is what will be returned)
-        uint newInverseRate = rates[currencyKey];
+        uint newInverseRate = rates(currencyKey);
 
         // get the new inverted rate if not frozen
         if (!inverse.frozen) {
@@ -241,14 +256,11 @@ contract ExchangeRates is SelfDestructible {
         uint total = 0;
 
         for (uint i = 0; i < xdrParticipants.length; i++) {
-            total = rates[xdrParticipants[i]].add(total);
+            total = rates(xdrParticipants[i]).add(total);
         }
 
-        // Set the rate
-        rates["XDR"] = total;
-
-        // Record that we updated the XDR rate.
-        lastRateUpdateTimes["XDR"] = timeSent;
+        // Set the rate and update time
+        _setRates("XDR", total, timeSent);
 
         // Emit our updated event separate to the others to save
         // moving data around between arrays.
@@ -256,7 +268,7 @@ contract ExchangeRates is SelfDestructible {
         eventCurrencyCode[0] = "XDR";
 
         uint[] memory eventRate = new uint[](1);
-        eventRate[0] = rates["XDR"];
+        eventRate[0] = rates("XDR");
 
         emit RatesUpdated(eventCurrencyCode, eventRate);
     }
@@ -269,10 +281,9 @@ contract ExchangeRates is SelfDestructible {
         external
         onlyOracle
     {
-        require(rates[currencyKey] > 0, "Rate is zero");
+        require(rates(currencyKey) > 0, "Rate is zero");
 
-        delete rates[currencyKey];
-        delete lastRateUpdateTimes[currencyKey];
+        delete _rates[currencyKey];
 
         emit RateDeleted(currencyKey);
     }
@@ -400,7 +411,7 @@ contract ExchangeRates is SelfDestructible {
         view
         returns (uint)
     {
-        return rates[currencyKey];
+        return rates(currencyKey);
     }
 
     /**
@@ -411,13 +422,13 @@ contract ExchangeRates is SelfDestructible {
         view
         returns (uint[])
     {
-        uint[] memory _rates = new uint[](currencyKeys.length);
+        uint[] memory _localRates = new uint[](currencyKeys.length);
 
         for (uint8 i = 0; i < currencyKeys.length; i++) {
-            _rates[i] = rates[currencyKeys[i]];
+            _localRates[i] = rates(currencyKeys[i]);
         }
 
-        return _rates;
+        return _localRates;
     }
 
     /**
@@ -428,7 +439,7 @@ contract ExchangeRates is SelfDestructible {
         view
         returns (uint)
     {
-        return lastRateUpdateTimes[currencyKey];
+        return lastRateUpdateTimes(currencyKey);
     }
 
     /**
@@ -442,7 +453,7 @@ contract ExchangeRates is SelfDestructible {
         uint[] memory lastUpdateTimes = new uint[](currencyKeys.length);
 
         for (uint8 i = 0; i < currencyKeys.length; i++) {
-            lastUpdateTimes[i] = lastRateUpdateTimes[currencyKeys[i]];
+            lastUpdateTimes[i] = lastRateUpdateTimes(currencyKeys[i]);
         }
 
         return lastUpdateTimes;
@@ -459,7 +470,7 @@ contract ExchangeRates is SelfDestructible {
         // sUSD is a special case and is never stale.
         if (currencyKey == "sUSD") return false;
 
-        return lastRateUpdateTimes[currencyKey].add(rateStalePeriod) < now;
+        return lastRateUpdateTimes(currencyKey).add(rateStalePeriod) < now;
     }
 
     /**
@@ -487,7 +498,7 @@ contract ExchangeRates is SelfDestructible {
 
         while (i < currencyKeys.length) {
             // sUSD is a special case and is never false
-            if (currencyKeys[i] != "sUSD" && lastRateUpdateTimes[currencyKeys[i]].add(rateStalePeriod) < now) {
+            if (currencyKeys[i] != "sUSD" && lastRateUpdateTimes(currencyKeys[i]).add(rateStalePeriod) < now) {
                 return true;
             }
             i += 1;
