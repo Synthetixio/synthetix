@@ -52,6 +52,13 @@
 			"runtimeExecutable": "${env:HOME}/.nvm/versions/node/v10.16.3/bin/node"
 		},
 		{
+			"type": "node",
+			"request": "launch",
+			"name": "Debug Int test",
+			"program": "${workspaceFolder}/int-test/index.js",
+			"runtimeExecutable": "${env:HOME}/.nvm/versions/node/v10.16.3/bin/node"
+		},
+		{
 			"name": "Launch via npm (debuggable)",
 			"type": "node",
 			"request": "launch",

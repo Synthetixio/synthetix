@@ -765,217 +765,7 @@ const deploy = async ({
 		}
 	}
 
-	// ----------------
-	// Synths
-	// ----------------
-	for (const { name: currencyKey, inverted, subclass } of synths) {
-		const tokenStateForSynth = await deployContract({
-			name: `TokenState${currencyKey}`,
-			source: 'TokenState',
-			args: [account, ZERO_ADDRESS],
-			force: addNewSynths,
-		});
-		const proxyForSynth = await deployContract({
-			name: `Proxy${currencyKey}`,
-			source: 'Proxy',
-			args: [account],
-			force: addNewSynths,
-		});
-		const additionalConstructorArgsMap = {
-			PurgeableSynth: [exchangeRatesAddress],
-			// future subclasses...
-		};
-		const synth = await deployContract({
-			name: `Synth${currencyKey}`,
-			source: subclass || 'Synth',
-			deps: [`TokenState${currencyKey}`, `Proxy${currencyKey}`, 'Synthetix', 'FeePool'],
-			args: [
-				proxyForSynth ? proxyForSynth.options.address : '',
-				tokenStateForSynth ? tokenStateForSynth.options.address : '',
-				synthetix ? synthetixAddress : '',
-				feePool ? feePool.options.address : '',
-				`Synth ${currencyKey}`,
-				currencyKey,
-				account,
-				w3utils.asciiToHex(currencyKey),
-			].concat(additionalConstructorArgsMap[subclass] || []),
-			force: addNewSynths,
-		});
-		const synthAddress = synth ? synth.options.address : '';
-		if (synth && tokenStateForSynth) {
-			const tsAssociatedContract = await tokenStateForSynth.methods.associatedContract().call();
-			if (tsAssociatedContract !== synthAddress) {
-				const tsOwner = await tokenStateForSynth.methods.owner().call();
-
-				if (tsOwner === account) {
-					console.log(
-						yellow(`Invoking TokenState${currencyKey}.setAssociatedContract(Synth${currencyKey})`)
-					);
-
-					await tokenStateForSynth.methods
-						.setAssociatedContract(synthAddress)
-						.send(deployer.sendParameters());
-				} else {
-					appendOwnerAction({
-						key: `TokenState${currencyKey}.setAssociatedContract(Synth${currencyKey})`,
-						target: tokenStateForSynth.options.address,
-						action: `setAssociatedContract(${synthAddress})`,
-					});
-				}
-			}
-		}
-		if (proxyForSynth && synth) {
-			const target = await proxyForSynth.methods.target().call();
-			if (target !== synthAddress) {
-				const proxyForSynthOwner = await proxyForSynth.methods.owner().call();
-
-				if (proxyForSynthOwner === account) {
-					console.log(yellow(`Invoking Proxy${currencyKey}.setTarget(Synth${currencyKey})`));
-
-					await proxyForSynth.methods.setTarget(synthAddress).send(deployer.sendParameters());
-				} else {
-					appendOwnerAction({
-						key: `Proxy${currencyKey}.setTarget(Synth${currencyKey})`,
-						target: proxyForSynth.options.address,
-						action: `setTarget(${synthAddress})`,
-					});
-				}
-			}
-		}
-
-		if (synth && synthetix) {
-			const currentSynthInSNX = await synthetix.methods.synths(toBytes4(currencyKey)).call();
-			if (currentSynthInSNX !== synthAddress) {
-				// only owner of Synthetix can do this
-				if (synthetixOwner === account) {
-					console.log(yellow(`Invoking Synthetix.addSynth(Synth${currencyKey})...`));
-					await synthetix.methods.addSynth(synthAddress).send(deployer.sendParameters());
-				} else {
-					appendOwnerAction({
-						key: `Synthetix.addSynth(Synth${currencyKey})`,
-						target: synthetixAddress,
-						action: `addSynth(${synthAddress})`,
-					});
-				}
-			}
-
-			const synthSNXAddress = await synth.methods.synthetix().call();
-			const synthOwner = await synth.methods.owner().call();
-
-			// ensure synth has correct Synthetix
-			if (synthSNXAddress !== synthetixAddress) {
-				if (synthOwner === account) {
-					console.log(yellow(`Invoking Synth${currencyKey}.setSynthetix(Synthetix)...`));
-					await synth.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
-				} else {
-					appendOwnerAction({
-						key: `Synth${currencyKey}.setSynthetix(Synthetix)`,
-						target: synthAddress,
-						action: `setSynthetix(${synthetixAddress})`,
-					});
-				}
-			}
-
-			// ensure synth has correct FeePool
-			if (synth && feePool) {
-				const synthFeePoolAddress = await synth.methods.feePool().call();
-
-				if (synthFeePoolAddress !== feePoolAddress) {
-					if (synthOwner === account) {
-						console.log(yellow(`Invoking Synth${currencyKey}.setFeePool(FeePool)...`));
-						await synth.methods.setFeePool(feePoolAddress).send(deployer.sendParameters());
-					} else {
-						appendOwnerAction({
-							key: `Synth${currencyKey}.setFeePool(FeePool)`,
-							target: synthAddress,
-							action: `setFeePool(${feePoolAddress})`,
-						});
-					}
-				}
-			}
-
-			// now configure inverse synths in exchange rates
-			if (inverted) {
-				// check total supply
-				const totalSynthSupply = await synth.methods.totalSupply().call();
-
-				const { entryPoint, upperLimit, lowerLimit } = inverted;
-
-				// only call setInversePricing if either there's no supply or if on a testnet
-				if (Number(totalSynthSupply) === 0 || network !== 'mainnet') {
-					const exchangeRatesOwner = await exchangeRates.methods.owner().call();
-					if (exchangeRatesOwner === account) {
-						console.log(
-							yellow(
-								`Invoking ExchangeRates.setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})...`
-							)
-						);
-						await exchangeRates.methods
-							.setInversePricing(
-								w3utils.asciiToHex(currencyKey),
-								w3utils.toWei(entryPoint.toString()),
-								w3utils.toWei(upperLimit.toString()),
-								w3utils.toWei(lowerLimit.toString())
-							)
-							.send(deployer.sendParameters());
-					} else {
-						appendOwnerAction({
-							key: `ExchangeRates.setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})`,
-							target: exchangeRatesAddress,
-							action: `setInversePricing(${currencyKey}, ${w3utils.toWei(
-								entryPoint.toString()
-							)}, ${w3utils.toWei(upperLimit.toString())}, ${w3utils.toWei(
-								lowerLimit.toString()
-							)})`,
-						});
-					}
-				} else {
-					console.log(
-						gray(
-							`Not setting inverse pricing on ${currencyKey} as totalSupply is > 0 (${w3utils.fromWei(
-								totalSynthSupply
-							)})`
-						)
-					);
-				}
-			}
-		}
-	}
-
-	const depot = await deployContract({
-		name: 'Depot',
-		deps: ['Synthetix', 'SynthsUSD', 'FeePool'],
-		args: [
-			account,
-			account,
-			synthetix ? synthetixAddress : '',
-			deployer.deployedContracts['SynthsUSD']
-				? deployer.deployedContracts['SynthsUSD'].options.address
-				: '',
-			feePool ? feePool.options.address : '',
-			oracleDepot,
-			w3utils.toWei('500'),
-			w3utils.toWei('.10'),
-		],
-	});
-
-	if (synthetix && depot) {
-		const depotSNXAddress = await depot.methods.synthetix().call();
-		if (depotSNXAddress !== synthetixAddress) {
-			const depotOwner = await depot.methods.owner().call();
-			if (depotOwner === account) {
-				console.log(yellow(`Invoking Depot.setSynthetix()...`));
-				await depot.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
-			} else {
-				appendOwnerAction({
-					key: `Depot.setSynthetix(Synthetix)`,
-					target: depot.options.address,
-					action: `setSynthetix(${synthetixAddress})`,
-				});
-			}
-		}
-	}
-
+	// Setup Synthetix and deploy proxyERC20 for use in Synths
 	const proxyERC20 = await deployContract({
 		name: 'ProxyERC20',
 		deps: ['Synthetix'],
@@ -1050,6 +840,325 @@ const deploy = async ({
 						action: `setSynthetixProxy(${synthetixProxyAddress})`,
 					});
 				}
+			}
+		}
+	}
+
+	// ----------------
+	// Synths
+	// ----------------
+	const synthetixProxyAddress = await synthetix.methods.proxy().call();
+	for (const { name: currencyKey, inverted, subclass } of synths) {
+		const tokenStateForSynth = await deployContract({
+			name: `TokenState${currencyKey}`,
+			source: 'TokenState',
+			args: [account, ZERO_ADDRESS],
+			force: addNewSynths,
+		});
+		const proxyForSynth = await deployContract({
+			name: `Proxy${currencyKey}`,
+			source: 'Proxy',
+			args: [account],
+			force: addNewSynths,
+		});
+		const additionalConstructorArgsMap = {
+			PurgeableSynth: [exchangeRatesAddress],
+			// future subclasses...
+		};
+		const proxyERC20ForSynth = await deployContract({
+			name: `ProxyERC20${currencyKey}`,
+			source: `ProxyERC20`,
+			args: [account],
+			force: addNewSynths,
+		});
+		const synth = await deployContract({
+			name: `Synth${currencyKey}`,
+			source: subclass || 'Synth',
+			deps: [`TokenState${currencyKey}`, `Proxy${currencyKey}`, 'Synthetix', 'FeePool'],
+			args: [
+				proxyForSynth ? proxyForSynth.options.address : '',
+				tokenStateForSynth ? tokenStateForSynth.options.address : '',
+				synthetixProxyAddress,
+				proxyFeePool ? proxyFeePool.options.address : '',
+				`Synth ${currencyKey}`,
+				currencyKey,
+				account,
+				w3utils.asciiToHex(currencyKey),
+			].concat(additionalConstructorArgsMap[subclass] || []),
+			force: addNewSynths,
+		});
+		const synthAddress = synth ? synth.options.address : '';
+		if (synth && tokenStateForSynth) {
+			const tsAssociatedContract = await tokenStateForSynth.methods.associatedContract().call();
+			if (tsAssociatedContract !== synthAddress) {
+				const tsOwner = await tokenStateForSynth.methods.owner().call();
+
+				if (tsOwner === account) {
+					console.log(
+						yellow(`Invoking TokenState${currencyKey}.setAssociatedContract(Synth${currencyKey})`)
+					);
+
+					await tokenStateForSynth.methods
+						.setAssociatedContract(synthAddress)
+						.send(deployer.sendParameters());
+				} else {
+					appendOwnerAction({
+						key: `TokenState${currencyKey}.setAssociatedContract(Synth${currencyKey})`,
+						target: tokenStateForSynth.options.address,
+						action: `setAssociatedContract(${synthAddress})`,
+					});
+				}
+			}
+		}
+		if (proxyForSynth && synth) {
+			const target = await proxyForSynth.methods.target().call();
+			if (target !== synthAddress) {
+				const proxyForSynthOwner = await proxyForSynth.methods.owner().call();
+
+				if (proxyForSynthOwner === account) {
+					console.log(yellow(`Invoking Proxy${currencyKey}.setTarget(Synth${currencyKey})`));
+
+					await proxyForSynth.methods.setTarget(synthAddress).send(deployer.sendParameters());
+				} else {
+					appendOwnerAction({
+						key: `Proxy${currencyKey}.setTarget(Synth${currencyKey})`,
+						target: proxyForSynth.options.address,
+						action: `setTarget(${synthAddress})`,
+					});
+				}
+			}
+		}
+
+		// Setup proxyERC20 for Synth
+		if (proxyERC20ForSynth && synth) {
+			const target = await proxyERC20ForSynth.methods.target().call();
+			const synthIntegrationProxy = await synth.methods.integrationProxy().call();
+
+			if (proxyERC20ForSynth.options.address !== synthIntegrationProxy) {
+				const synthOwner = await synth.methods.owner().call();
+				if (synthOwner === account) {
+					console.log(
+						yellow(`Invoking Synth${currencyKey}.setIntegrationProxy(proxyERC20${currencyKey})`)
+					);
+					await synth.methods
+						.setIntegrationProxy(proxyERC20ForSynth.options.address)
+						.send(deployer.sendParameters());
+				} else {
+					appendOwnerAction({
+						key: `Synth${currencyKey}.setIntegrationProxy(proxyERC20${currencyKey})`,
+						target: synth.options.address,
+						action: `setIntegrationProxy(${proxyERC20ForSynth.options.address})`,
+					});
+				}
+			}
+
+			if (target !== synthAddress) {
+				const proxyOwner = await proxyERC20ForSynth.methods.owner().call();
+				if (proxyOwner === account) {
+					console.log(yellow(`Invoking ProxyERC20${currencyKey}.setTarget(Synth${currencyKey})`));
+					await proxyERC20ForSynth.methods.setTarget(synthAddress).send(deployer.sendParameters());
+				} else {
+					appendOwnerAction({
+						key: `ProxyERC20${currencyKey}.setTarget(Synth${currencyKey})`,
+						target: proxyERC20ForSynth.options.address,
+						action: `setTarget(${synthAddress})`,
+					});
+				}
+			}
+		}
+
+		// Old Synth.sol and Bytes4 (sETH)
+		if (currencyKey === 'sETH' && network !== 'local') {
+			if (synth && synthetix) {
+				const currentSynthInSNX = await synthetix.methods.synths(toBytes4(currencyKey)).call();
+				if (currentSynthInSNX !== synthAddress) {
+					// only owner of Synthetix can do this
+					if (synthetixOwner === account) {
+						console.log(yellow(`Invoking Synthetix.addSynth(Synth${currencyKey})...`));
+						await synthetix.methods.addSynth(synthAddress).send(deployer.sendParameters());
+					} else {
+						appendOwnerAction({
+							key: `Synthetix.addSynth(Synth${currencyKey})`,
+							target: synthetixAddress,
+							action: `addSynth(${synthAddress})`,
+						});
+					}
+				}
+
+				const synthSNXAddress = await synth.methods.synthetix().call();
+				const synthOwner = await synth.methods.owner().call();
+
+				// ensure synth has correct Synthetix
+				if (synthSNXAddress !== synthetixAddress) {
+					if (synthOwner === account) {
+						console.log(yellow(`Invoking Synth${currencyKey}.setSynthetix(Synthetix)...`));
+						await synth.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
+					} else {
+						appendOwnerAction({
+							key: `Synth${currencyKey}.setSynthetix(Synthetix)`,
+							target: synthAddress,
+							action: `setSynthetix(${synthetixAddress})`,
+						});
+					}
+				}
+
+				// ensure synth has correct FeePool
+				if (synth && feePool) {
+					const synthFeePoolAddress = await synth.methods.feePool().call();
+
+					if (synthFeePoolAddress !== feePoolAddress) {
+						if (synthOwner === account) {
+							console.log(yellow(`Invoking Synth${currencyKey}.setFeePool(FeePool)...`));
+							await synth.methods.setFeePool(feePoolAddress).send(deployer.sendParameters());
+						} else {
+							appendOwnerAction({
+								key: `Synth${currencyKey}.setFeePool(FeePool)`,
+								target: synthAddress,
+								action: `setFeePool(${feePoolAddress})`,
+							});
+						}
+					}
+				}
+			}
+		} else {
+			//  New Synth.sol and Bytes32
+			if (synth && synthetix) {
+				const currentSynthInSNX = await synthetix.methods
+					.synths(w3utils.asciiToHex(currencyKey))
+					.call();
+				if (currentSynthInSNX !== synthAddress) {
+					// only owner of Synthetix can do this
+					if (synthetixOwner === account) {
+						console.log(yellow(`Invoking Synthetix.addSynth(Synth${currencyKey})...`));
+						await synthetix.methods.addSynth(synthAddress).send(deployer.sendParameters());
+					} else {
+						appendOwnerAction({
+							key: `Synthetix.addSynth(Synth${currencyKey})`,
+							target: synthetixAddress,
+							action: `addSynth(${synthAddress})`,
+						});
+					}
+				}
+
+				const synthSNXProxyAddress = await synth.methods.synthetixProxy().call();
+				const synthOwner = await synth.methods.owner().call();
+
+				// ensure synth has correct Synthetix proxy
+				if (synthSNXProxyAddress !== synthetixProxyAddress) {
+					if (synthOwner === account) {
+						console.log(
+							yellow(`Invoking Synth${currencyKey}.setSynthetixProxy(synthetixProxyERC20)...`)
+						);
+						await synth.methods
+							.setSynthetixProxy(synthetixProxyAddress)
+							.send(deployer.sendParameters());
+					} else {
+						appendOwnerAction({
+							key: `Synth${currencyKey}.setSynthetixProxy(synthetixProxyERC20)`,
+							target: synthAddress,
+							action: `setSynthetixProxy(${synthetixProxyAddress})`,
+						});
+					}
+				}
+			}
+
+			// ensure synth has correct FeePoolProxy
+			if (synth && feePool) {
+				const synthFeePoolProxyAddress = await synth.methods.feePoolProxy().call();
+				const synthOwner = await synth.methods.owner().call();
+
+				if (synthFeePoolProxyAddress !== proxyFeePool.options.address) {
+					if (synthOwner === account) {
+						console.log(yellow(`Invoking Synth${currencyKey}.setFeePoolProxy(proxyFeePool)...`));
+						await synth.methods
+							.setFeePoolProxy(proxyFeePool.options.address)
+							.send(deployer.sendParameters());
+					} else {
+						appendOwnerAction({
+							key: `Synth${currencyKey}.setFeePoolProxy(proxyFeePool)`,
+							target: synthAddress,
+							action: `setFeePoolProxy(${proxyFeePool.options.address})`,
+						});
+					}
+				}
+			}
+		}
+
+		// now configure inverse synths in exchange rates
+		if (inverted) {
+			// check total supply
+			const totalSynthSupply = await synth.methods.totalSupply().call();
+
+			const { entryPoint, upperLimit, lowerLimit } = inverted;
+
+			// only call setInversePricing if either there's no supply or if on a testnet
+			if (Number(totalSynthSupply) === 0 || network !== 'mainnet') {
+				const exchangeRatesOwner = await exchangeRates.methods.owner().call();
+				if (exchangeRatesOwner === account) {
+					console.log(
+						yellow(
+							`Invoking ExchangeRates.setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})...`
+						)
+					);
+					await exchangeRates.methods
+						.setInversePricing(
+							w3utils.asciiToHex(currencyKey),
+							w3utils.toWei(entryPoint.toString()),
+							w3utils.toWei(upperLimit.toString()),
+							w3utils.toWei(lowerLimit.toString())
+						)
+						.send(deployer.sendParameters());
+				} else {
+					appendOwnerAction({
+						key: `ExchangeRates.setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})`,
+						target: exchangeRatesAddress,
+						action: `setInversePricing(${currencyKey}, ${w3utils.toWei(
+							entryPoint.toString()
+						)}, ${w3utils.toWei(upperLimit.toString())}, ${w3utils.toWei(lowerLimit.toString())})`,
+					});
+				}
+			} else {
+				console.log(
+					gray(
+						`Not setting inverse pricing on ${currencyKey} as totalSupply is > 0 (${w3utils.fromWei(
+							totalSynthSupply
+						)})`
+					)
+				);
+			}
+		}
+	}
+
+	const depot = await deployContract({
+		name: 'Depot',
+		deps: ['Synthetix', 'SynthsUSD', 'FeePool'],
+		args: [
+			account,
+			account,
+			synthetix ? synthetixAddress : '',
+			deployer.deployedContracts['SynthsUSD']
+				? deployer.deployedContracts['SynthsUSD'].options.address
+				: '',
+			feePool ? feePool.options.address : '',
+			oracleDepot,
+			w3utils.toWei('500'),
+			w3utils.toWei('.10'),
+		],
+	});
+
+	if (synthetix && depot) {
+		const depotSNXAddress = await depot.methods.synthetix().call();
+		if (depotSNXAddress !== synthetixAddress) {
+			const depotOwner = await depot.methods.owner().call();
+			if (depotOwner === account) {
+				console.log(yellow(`Invoking Depot.setSynthetix()...`));
+				await depot.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
+			} else {
+				appendOwnerAction({
+					key: `Depot.setSynthetix(Synthetix)`,
+					target: depot.options.address,
+					action: `setSynthetix(${synthetixAddress})`,
+				});
 			}
 		}
 	}
