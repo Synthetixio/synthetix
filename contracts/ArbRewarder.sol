@@ -144,6 +144,15 @@ contract ArbRewarder is SelfDestructible, Pausable {
         reward_tokens = rewardCaller(tokens_bought, unspent_input);
     }
 
+    function isArbable()
+        public
+        returns (bool)
+    {
+        uint seth_in_uniswap = seth_erc20.balanceOf(seth_exchange_addr);
+        uint eth_in_uniswap = seth_exchange_addr.balance;
+        return eth_in_uniswap.divideDecimal(seth_in_uniswap) < uint(divisor-off_peg_min).divideDecimal(divisor);
+    }
+
     /* ========== PRIVATE FUNCTIONS ========== */
 
     function rewardCaller(uint bought, uint unspent_input)
