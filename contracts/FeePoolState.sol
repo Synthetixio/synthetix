@@ -99,7 +99,7 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
     {
         require(index < FEE_PERIOD_LENGTH, "index exceeds the FEE_PERIOD_LENGTH");
 
-        IssuanceData storage data = _accountIssuanceLedgerStorage(account, index);
+        IssuanceData memory data = _accountIssuanceLedgerStorage(account, index);
         return (
             data.debtPercentage,
             data.debtEntryIndex
@@ -116,7 +116,7 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
         view
         returns (uint, uint)
     {
-        IssuanceData[FEE_PERIOD_LENGTH] storage issuanceData = _accountIssuanceLedger[account];
+        IssuanceData[FEE_PERIOD_LENGTH] memory issuanceData = _accountIssuanceLedger[account];
         uint start = _currentAccountPeriod[account];
         
         // We want to use the user's debtEntryIndex at when the period closed

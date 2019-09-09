@@ -167,7 +167,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
             uint rewardsClaimed
         )
     {
-        FeePeriod storage feePeriod = _recentFeePeriodsStorage(index);
+        FeePeriod memory feePeriod = _recentFeePeriodsStorage(index);
         return (
             feePeriod.feePeriodId,
             feePeriod.startingDebtIndex,
@@ -834,16 +834,16 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         // Condition checks for periods > 0
         for (uint i = FEE_PERIOD_LENGTH - 1; i > 0; i--) {
             uint next = i - 1;
-            FeePeriod storage nextPeriod = _recentFeePeriodsStorage(next);
+            uint nextPeriodStartingDebtIndex = _recentFeePeriodsStorage(next).startingDebtIndex;
 
             // We can skip period if no debt minted during period
-            if (nextPeriod.startingDebtIndex > 0 &&
+            if (nextPeriodStartingDebtIndex > 0 &&
             getLastFeeWithdrawal(account) < _recentFeePeriodsStorage(i).feePeriodId) {
 
                 // We calculate a feePeriod's closingDebtIndex by looking at the next feePeriod's startingDebtIndex
                 // we can use the most recent issuanceData[0] for the current feePeriod
                 // else find the applicableIssuanceData for the feePeriod based on the StartingDebtIndex of the period
-                uint closingDebtIndex = uint256(nextPeriod.startingDebtIndex).sub(1);
+                uint closingDebtIndex = uint256(nextPeriodStartingDebtIndex).sub(1);
 
                 // Gas optimisation - to reuse debtEntryIndex if found new applicable one
                 // if applicable is 0,0 (none found) we keep most recent one from issuanceData[0]
