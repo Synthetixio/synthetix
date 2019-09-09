@@ -83,10 +83,13 @@
 	"ProxySynthetix": {
 		"deploy": true
 	},
-	"ProxyXDR": {
+	"ProxysUSD": {
 		"deploy": true
 	},
-	"ProxysUSD": {
+	"ProxyERC20sUSD": {
+		"deploy": true
+	},
+	"ProxyXDR": {
 		"deploy": true
 	},
 	"ProxysEUR": {
@@ -120,45 +123,6 @@
 		"deploy": true
 	},
 	"ProxysBTC": {
-		"deploy": true
-	},
-	"ProxyERC20XDR": {
-		"deploy": true
-	},
-	"ProxyERC20sUSD": {
-		"deploy": true
-	},
-	"ProxyERC20sEUR": {
-		"deploy": true
-	},
-	"ProxyERC20sJPY": {
-		"deploy": true
-	},
-	"ProxyERC20sAUD": {
-		"deploy": true
-	},
-	"ProxyERC20sKRW": {
-		"deploy": true
-	},
-	"ProxyERC20sGBP": {
-		"deploy": true
-	},
-	"ProxyERC20sCHF": {
-		"deploy": true
-	},
-	"ProxyERC20sCNY": {
-		"deploy": true
-	},
-	"ProxyERC20sINR": {
-		"deploy": true
-	},
-	"ProxyERC20sXAU": {
-		"deploy": true
-	},
-	"ProxyERC20sXAG": {
-		"deploy": true
-	},
-	"ProxyERC20sBTC": {
 		"deploy": true
 	},
 	"SafeDecimalMath": {
@@ -212,6 +176,9 @@
 	"ProxysETH": {
 		"deploy": true
 	},
+	"ProxyERC20sETH": {
+		"deploy": true
+	},
 	"SynthsETH": {
 		"deploy": true
 	},
@@ -219,9 +186,6 @@
 		"deploy": true
 	},
 	"ProxysBNB": {
-		"deploy": true
-	},
-	"ProxyERC20sBNB": {
 		"deploy": true
 	},
 	"SynthsBNB": {
@@ -233,9 +197,6 @@
 	"ProxyiBTC": {
 		"deploy": true
 	},
-	"ProxyERC20iBTC": {
-		"deploy": true
-	},
 	"SynthiBTC": {
 		"deploy": true
 	},
@@ -245,9 +206,6 @@
 	"ProxyiETH": {
 		"deploy": true
 	},
-	"ProxyERC20iETH": {
-		"deploy": true
-	},
 	"SynthiETH": {
 		"deploy": true
 	},
@@ -255,9 +213,6 @@
 		"deploy": true
 	},
 	"ProxyiBNB": {
-		"deploy": true
-	},
-	"ProxyERC20iBNB": {
 		"deploy": true
 	},
 	"SynthiBNB": {

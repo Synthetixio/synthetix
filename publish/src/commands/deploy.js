@@ -855,38 +855,73 @@ const deploy = async ({
 			args: [account, ZERO_ADDRESS],
 			force: addNewSynths,
 		});
-		const proxyForSynth = await deployContract({
-			name: `Proxy${currencyKey}`,
-			source: 'Proxy',
-			args: [account],
-			force: addNewSynths,
-		});
+
+		let proxyForSynth, proxyERC20ForSynth;
+		if (currencyKey === 'sUSD' || currencyKey === 'sETH') {
+			proxyForSynth = await deployContract({
+				name: `Proxy${currencyKey}`,
+				source: 'Proxy',
+				args: [account],
+				force: addNewSynths,
+			});
+
+			proxyERC20ForSynth = await deployContract({
+				name: `ProxyERC20${currencyKey}`,
+				source: `ProxyERC20`,
+				args: [account],
+				force: addNewSynths,
+			});
+		} else {
+			proxyForSynth = await deployContract({
+				name: `Proxy${currencyKey}`,
+				source: 'ProxyERC20',
+				args: [account],
+				force: addNewSynths,
+			});
+		}
+
 		const additionalConstructorArgsMap = {
 			PurgeableSynth: [exchangeRatesAddress],
 			// future subclasses...
 		};
-		const proxyERC20ForSynth = await deployContract({
-			name: `ProxyERC20${currencyKey}`,
-			source: `ProxyERC20`,
-			args: [account],
-			force: addNewSynths,
-		});
-		const synth = await deployContract({
-			name: `Synth${currencyKey}`,
-			source: subclass || 'Synth',
-			deps: [`TokenState${currencyKey}`, `Proxy${currencyKey}`, 'Synthetix', 'FeePool'],
-			args: [
-				proxyForSynth ? proxyForSynth.options.address : '',
-				tokenStateForSynth ? tokenStateForSynth.options.address : '',
-				synthetixProxyAddress,
-				proxyFeePool ? proxyFeePool.options.address : '',
-				`Synth ${currencyKey}`,
-				currencyKey,
-				account,
-				w3utils.asciiToHex(currencyKey),
-			].concat(additionalConstructorArgsMap[subclass] || []),
-			force: addNewSynths,
-		});
+
+		let synth;
+		if (currencyKey === 'sETH' && network !== 'local') {
+			synth = await deployContract({
+				name: `Synth${currencyKey}`,
+				source: subclass || 'Synth',
+				deps: [`TokenState${currencyKey}`, `Proxy${currencyKey}`, 'Synthetix', 'FeePool'],
+				args: [
+					proxyForSynth ? proxyForSynth.options.address : '',
+					tokenStateForSynth ? tokenStateForSynth.options.address : '',
+					synthetix ? synthetixAddress : '',
+					feePool ? feePool.options.address : '',
+					`Synth ${currencyKey}`,
+					currencyKey,
+					account,
+					toBytes4(currencyKey),
+				].concat(additionalConstructorArgsMap[subclass] || []),
+				force: addNewSynths,
+			});
+		} else {
+			synth = await deployContract({
+				name: `Synth${currencyKey}`,
+				source: subclass || 'Synth',
+				deps: [`TokenState${currencyKey}`, `Proxy${currencyKey}`, 'Synthetix', 'FeePool'],
+				args: [
+					proxyForSynth ? proxyForSynth.options.address : '',
+					tokenStateForSynth ? tokenStateForSynth.options.address : '',
+					synthetixProxyAddress,
+					proxyFeePool ? proxyFeePool.options.address : '',
+					`Synth ${currencyKey}`,
+					currencyKey,
+					account,
+					w3utils.asciiToHex(currencyKey),
+				].concat(additionalConstructorArgsMap[subclass] || []),
+				force: addNewSynths,
+			});
+		}
+
 		const synthAddress = synth ? synth.options.address : '';
 		if (synth && tokenStateForSynth) {
 			const tsAssociatedContract = await tokenStateForSynth.methods.associatedContract().call();
@@ -910,6 +945,8 @@ const deploy = async ({
 				}
 			}
 		}
+
+		// Setup proxy
 		if (proxyForSynth && synth) {
 			const target = await proxyForSynth.methods.target().call();
 			if (target !== synthAddress) {
@@ -929,7 +966,7 @@ const deploy = async ({
 			}
 		}
 
-		// Setup proxyERC20 for Synth
+		// Setup proxyERC20 for Synth - should be set as integration proxy
 		if (proxyERC20ForSynth && synth) {
 			const target = await proxyERC20ForSynth.methods.target().call();
 			const synthIntegrationProxy = await synth.methods.integrationProxy().call();
@@ -967,7 +1004,7 @@ const deploy = async ({
 			}
 		}
 
-		// Old Synth.sol and Bytes4 (sETH)
+		// Old Synth.sol and currencyKey bytes4 (sETH currently on kovan / mainnet)
 		if (currencyKey === 'sETH' && network !== 'local') {
 			if (synth && synthetix) {
 				const currentSynthInSNX = await synthetix.methods.synths(toBytes4(currencyKey)).call();
@@ -1021,7 +1058,7 @@ const deploy = async ({
 				}
 			}
 		} else {
-			//  New Synth.sol and Bytes32
+			//  New Synth.sol with currencyKey - bytes32, with feePoolProxy and synthetixProxy
 			if (synth && synthetix) {
 				const currentSynthInSNX = await synthetix.methods
 					.synths(w3utils.asciiToHex(currencyKey))
@@ -1062,7 +1099,7 @@ const deploy = async ({
 				}
 			}
 
-			// ensure synth has correct FeePoolProxy
+			// ensure synth has correct FeePool Proxy
 			if (synth && feePool) {
 				const synthFeePoolProxyAddress = await synth.methods.feePoolProxy().call();
 				const synthOwner = await synth.methods.owner().call();
