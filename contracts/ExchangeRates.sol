@@ -432,6 +432,28 @@ contract ExchangeRates is SelfDestructible {
     }
 
     /**
+     * @notice Retrieve the rates and isAnyStale for a list of currencies
+     */
+    function ratesAndStaleForCurrencies(bytes32[] currencyKeys)
+        public
+        view
+        returns (uint[], bool)
+    {
+        uint[] memory _localRates = new uint[](currencyKeys.length);
+
+        bool anyRateStale = false;
+        for (uint8 i = 0; i < currencyKeys.length; i++) {
+            RateAndUpdatedTime memory rt = _rates[currencyKeys[i]];
+            _localRates[i] = uint256(rt.rate);
+            if (!anyRateStale) {
+                anyRateStale = (currencyKeys[i] != "sUSD" && uint256(rt.time).add(rateStalePeriod) < now);
+            }
+        }
+
+        return (_localRates, anyRateStale);
+    }
+
+    /**
      * @notice Retrieve a list of last update times for specific currencies
      */
     function lastRateUpdateTimeForCurrency(bytes32 currencyKey)

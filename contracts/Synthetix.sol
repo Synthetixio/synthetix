@@ -295,7 +295,8 @@ contract Synthetix is ExternStateToken {
         uint total = 0;
         uint currencyRate = exchangeRates.rateForCurrency(currencyKey);
 
-        require(!exchangeRates.anyRateIsStale(availableCurrencyKeys()), "Rates are stale");
+        (uint[] memory rates, bool anyRateStale) = exchangeRates.ratesAndStaleForCurrencies(availableCurrencyKeys());
+        require(!anyRateStale, "Rates are stale");
 
         for (uint8 i = 0; i < availableSynths.length; i++) {
             // What's the total issued value of that synth in the destination currency?
@@ -303,7 +304,7 @@ contract Synthetix is ExternStateToken {
             //       rate for the destination currency and check if it's stale repeatedly on every
             //       iteration of the loop
             uint synthValue = availableSynths[i].totalSupply()
-                .multiplyDecimalRound(exchangeRates.rateForCurrency(availableSynths[i].currencyKey()))
+                .multiplyDecimalRound(rates[i])
                 .divideDecimalRound(currencyRate);
             total = total.add(synthValue);
         }
