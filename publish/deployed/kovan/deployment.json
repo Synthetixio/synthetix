@@ -11,11 +11,11 @@
 		},
 		"Depot": {
 			"name": "Depot",
-			"address": "0xb1988eA4EBDC846f44B7C36E5c8558fF459398AE",
+			"address": "0x73a61f7D7401096ccB4AC883ebeb7bE7605c3955",
 			"source": "Depot",
-			"link": "https://kovan.etherscan.io/address/0xb1988eA4EBDC846f44B7C36E5c8558fF459398AE",
-			"timestamp": "2019-05-01T13:19:44.000Z",
-			"txn": "https://kovan.etherscan.io/tx/0x1a1aeb9ef08572ed6b153921929c09479b00f01680ecb5fabdc317108bb76c15",
+			"link": "https://kovan.etherscan.io/address/0x73a61f7D7401096ccB4AC883ebeb7bE7605c3955",
+			"timestamp": "2019-09-09T00:16:44.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0xdafa2d664946ed01ed921bd9464066b7a15d681586bc0aabb98ff9ef648ec463",
 			"network": "kovan"
 		},
 		"ExchangeRates": {
@@ -1519,8 +1519,7 @@
 					],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "constructor",
-					"signature": "constructor"
+					"type": "constructor"
 				},
 				{
 					"anonymous": false,
@@ -3101,8 +3100,7 @@
 					],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "constructor",
-					"signature": "constructor"
+					"type": "constructor"
 				},
 				{
 					"anonymous": false,
@@ -5158,8 +5156,7 @@
 					],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "constructor",
-					"signature": "constructor"
+					"type": "constructor"
 				},
 				{
 					"anonymous": false,
@@ -6671,8 +6668,7 @@
 					],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "constructor",
-					"signature": "constructor"
+					"type": "constructor"
 				},
 				{
 					"anonymous": false,
@@ -7760,7 +7756,8 @@
 					],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "constructor"
+					"type": "constructor",
+					"signature": "constructor"
 				},
 				{
 					"payable": true,
@@ -11366,8 +11363,7 @@
 					],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "constructor",
-					"signature": "constructor"
+					"type": "constructor"
 				},
 				{
 					"anonymous": false,
