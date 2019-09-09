@@ -264,7 +264,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     /**
      * @notice The Synthetix contract informs us when fees are paid.
      */
-    function feePaid(bytes4 currencyKey, uint amount)
+    function feePaid(bytes32 currencyKey, uint amount)
         external
         onlySynthetix
     {
@@ -346,7 +346,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     * @notice Claim fees for last period when available or not already withdrawn.
     * @param currencyKey Synth currency you wish to receive the fees in.
     */
-    function claimFees(bytes4 currencyKey)
+    function claimFees(bytes32 currencyKey)
         external
         optionalProxy
         returns (bool)
@@ -354,7 +354,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         return _claimFees(messageSender, currencyKey);
     }
 
-    function claimOnBehalf(address claimingForAddress, bytes4 currencyKey)
+    function claimOnBehalf(address claimingForAddress, bytes32 currencyKey)
         external
         optionalProxy
         returns (bool)
@@ -364,7 +364,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         return _claimFees(claimingForAddress, currencyKey);
     }
 
-    function _claimFees(address claimingAddress, bytes4 currencyKey)
+    function _claimFees(address claimingAddress, bytes32 currencyKey)
         internal
         returns (bool)
     {
@@ -542,7 +542,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     * @param xdrAmount The amount of fees priced in XDRs.
     * @param destinationCurrencyKey The synth currency the user wishes to receive their fees in (convert to this currency).
     */
-    function _payFees(address account, uint xdrAmount, bytes4 destinationCurrencyKey)
+    function _payFees(address account, uint xdrAmount, bytes32 destinationCurrencyKey)
         internal
         notFeeAddress(account)
     {
@@ -688,7 +688,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
      * @notice The total fees available in the system to be withdrawn, priced in currencyKey currency
      * @param currencyKey The currency you want to price the fees in
      */
-    function totalFeesAvailable(bytes4 currencyKey)
+    function totalFeesAvailable(bytes32 currencyKey)
         external
         view
         returns (uint)
@@ -728,7 +728,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
      * @dev Returns two amounts, one for fees and one for SNX rewards
      * @param currencyKey The currency you want to price the fees in
      */
-    function feesAvailable(address account, bytes4 currencyKey)
+    function feesAvailable(address account, bytes32 currencyKey)
         public
         view
         returns (uint, uint)
