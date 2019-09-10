@@ -1,5 +1,7 @@
 # FeePool
 
+## Description
+
 A contract for managing and claiming fees. Note that most logic related to of the transfer fee related logic is superfluous, as the transfer fee rate is 0.
 
 * SIP-2: Eliminates fee penalty tiers and replaces them with a flat 100% penalty if above a target ratio.
@@ -9,9 +11,15 @@ This contract was updated as a part of [SIP-4](https://github.com/Synthetixio/SI
 !!! note
     The SIP says that the fee window was reduced to two weeks, but the actual contract code sets it to three.
 
+---
+
 ## Inheritance Graph
 
-![graph](../graphs/FeePool.svg)
+<inheritance-graph>
+    ![graph](../img/graphs/FeePool.svg)
+</inheritance-graph>
+
+---
 
 ## Libraries
 

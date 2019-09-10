@@ -4,3 +4,8 @@ section-sep {
     margin-top: 60px;
     cursor: default;
 }
+
+inheritance-graph {
+    display: block;
+    text-align: center;
+}
