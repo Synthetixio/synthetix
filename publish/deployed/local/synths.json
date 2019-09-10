@@ -88,8 +88,7 @@
 		"asset": "BTC",
 		"category": "crypto",
 		"sign": "₿",
-		"desc": "Bitcoin",
-		"subclass": "PurgeableSynth"
+		"desc": "Bitcoin"
 	},
 	{
 		"name": "sETH",
