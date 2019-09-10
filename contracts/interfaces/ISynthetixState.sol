@@ -1,5 +1,9 @@
 pragma solidity 0.4.25;
 
+/**
+ * @title SynthetixState interface contract
+ * @notice Abstract contract to hold public getters
+ */
 contract ISynthetixState {
     // A struct for handing values associated with an individual user's debt position
     struct IssuanceData {
@@ -18,7 +22,6 @@ contract ISynthetixState {
     uint[] public debtLedger;
     uint public issuanceRatio;
     mapping(address => IssuanceData) public issuanceData;
-    mapping(address => bytes4) public preferredCurrency;
 
     function debtLedgerLength() external view returns (uint);
     function hasIssued(address account) external view returns (bool);
