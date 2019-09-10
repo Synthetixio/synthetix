@@ -7,7 +7,7 @@ The owner can be changed by a nomination process, where the nominated owner must
 
 ---
 
-<aster>⁂</aster>
+<section-sep>⁂</section-sep>
 
 ## Variables
 
@@ -29,7 +29,7 @@ The currently-nominated owner.
 
 ---
 
-<aster>⁂</aster>
+<section-sep>⁂</section-sep>
 
 ## Functions
 
@@ -72,7 +72,7 @@ The nominated owner is reset to the zero address.
 
 ---
 
-<aster>⁂</aster>
+<section-sep>⁂</section-sep>
 
 ## Modifiers
 
@@ -84,7 +84,7 @@ Reverts the transaction if the message sender is not the [`owner`](#owner).
 
 ---
 
-<aster>⁂</aster>
+<section-sep>⁂</section-sep>
 
 ## Events
 
@@ -106,4 +106,4 @@ Ownership has been handed over from `oldOwner` to `newOwner`, which is the new v
 
 ---
 
-<aster>⁂</aster>
+<section-sep>⁂</section-sep>
