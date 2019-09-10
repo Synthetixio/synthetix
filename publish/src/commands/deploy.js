@@ -330,7 +330,6 @@ const deploy = async ({
 			synthetixState ? synthetixState.options.address : '',
 			rewardEscrow ? rewardEscrow.options.address : '',
 			ZERO_ADDRESS,
-			w3utils.toWei('0'), // transfer fee
 			currentExchangeFee, // exchange fee
 		],
 	});
