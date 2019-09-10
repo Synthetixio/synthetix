@@ -52,7 +52,7 @@
     * [ ] Add a "key links" section to all pages which need it.
     * [ ] Links to be black with an underline, which disappears on hover.
     * [ ] Replace asterism section separators with synthetix logo.
-    * [ ] Inheritance graph and related contracts in tabbed details panel.
+    * [ ] Inheritance graph and related contracts in tabbed details panel. https://github.com/squidfunk/mkdocs-material/issues/955
 
 ??? "Potential Vulnerabilities To Investigate"
     * [ ] Oracle front-running.
