@@ -5,9 +5,7 @@
 Allows inheriting contracts to have an owner and provides the [`onlyOwner`](#onlyowner) modifier, which restricts function access to the owner.
 The owner can be changed by a nomination process, where the nominated owner must accept ownership before it is switched.
 
----
-
-<section-sep>⁂</section-sep>
+<section-sep />
 
 ## Variables
 
@@ -29,7 +27,7 @@ The currently-nominated owner.
 
 ---
 
-<section-sep>⁂</section-sep>
+<section-sep />
 
 ## Functions
 
@@ -39,11 +37,18 @@ The currently-nominated owner.
 
 Initialises the owner of this contract.
 
-**Signature:** `constructor(address _owner) public`
+??? example "Details"
+    **Signature**
 
-**Preconditions:** The initial owner cannot be the zero address.
+    `constructor(address _owner) public`
 
-**Emits:** [`OwnerChanged(address(0), _owner)`](#ownerchanged)
+    **Preconditions**
+
+    * The initial owner cannot be the zero address.
+
+    **Emits**
+
+    * [`OwnerChanged(address(0), _owner)`](#ownerchanged)
 
 ---
 
@@ -51,11 +56,18 @@ Initialises the owner of this contract.
 
 Nominates a new owner of this contract, who may then call [`acceptOwnership`](#acceptownership) to become the owner.
 
-**Signature:** `nominateNewOwner(address _owner) external`
+??? example "Details"
+    **Signature**
 
-**Modifiers:** [`onlyOwner`](#onlyowner)
+    `nominateNewOwner(address _owner) external`
 
-**Emits:** [`OwnerNominated(_owner)`](#ownernominated)
+    **Modifiers**
+
+    * [`onlyOwner`](#onlyowner)
+
+    **Emits**
+
+    * [`OwnerNominated(_owner)`](#ownernominated)
 
 ---
 
@@ -64,33 +76,41 @@ Nominates a new owner of this contract, who may then call [`acceptOwnership`](#a
 If called by [`nominatedOwner`](#nominatedowner), ownership is transferred to that address.
 The nominated owner is reset to the zero address.
 
-**Signature:** `acceptOwnership() external`
+??? example "Details"
 
-**Preconditions:** The caller must be [`nominatedOwner`](#nominatedowner).
+    **Signature**
+    
+    `acceptOwnership() external`
 
-**Emits:** [`OwnerChanged(owner, nominatedOwner)`](#ownerchanged)
+    **Preconditions**
+    
+    * The caller must be [`nominatedOwner`](#nominatedowner).
+
+    **Emits**
+
+    * [`OwnerChanged(owner, nominatedOwner)`](#ownerchanged)
 
 ---
 
-<section-sep>⁂</section-sep>
+<section-sep />
 
 ## Modifiers
 
 ---
 
-### onlyOwner
+### `onlyOwner`
 
 Reverts the transaction if the message sender is not the [`owner`](#owner).
 
 ---
 
-<section-sep>⁂</section-sep>
+<section-sep />
 
 ## Events
 
 ---
 
-### OwnerNominated
+### `OwnerNominated`
 
 `newOwner` has been set as the [`nominatedOwner`](#nominatedowner).
 
@@ -98,7 +118,7 @@ Reverts the transaction if the message sender is not the [`owner`](#owner).
 
 ---
 
-### OwnerChanged
+### `OwnerChanged`
 
 Ownership has been handed over from `oldOwner` to `newOwner`, which is the new value of [`owner`](#owner).
 
@@ -106,4 +126,4 @@ Ownership has been handed over from `oldOwner` to `newOwner`, which is the new v
 
 ---
 
-<section-sep>⁂</section-sep>
+<section-sep />
