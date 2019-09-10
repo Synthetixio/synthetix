@@ -2,7 +2,7 @@ pragma solidity 0.4.25;
 
 /**
  * @title FeePool Interface
- * @dev Abstract contract
+ * @notice Abstract contract to hold public getters
  */
 contract IFeePool {
     address public FEE_ADDRESS;

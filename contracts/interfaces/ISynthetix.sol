@@ -2,7 +2,7 @@ pragma solidity 0.4.25;
 
 /**
  * @title Synthetix interface contract
- * @notice Abstract contract
+ * @notice Abstract contract to hold public getters
  * @dev pseudo interface, actually declared as contract to hold the public getters 
  */
 import "../interfaces/ISynthetixState.sol";
