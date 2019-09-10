@@ -1,5 +1,9 @@
 pragma solidity 0.4.25;
 
+/**
+ * @title FeePool Interface
+ * @dev Abstract contract
+ */
 contract IFeePool {
     address public FEE_ADDRESS;
     uint public exchangeFeeRate;

@@ -115,46 +115,24 @@ contract('Synth', async accounts => {
 		const amount = toUnit('10000');
 		await synthetix.issueSynths(sUSD, amount, { from: owner });
 
-		const received = await feePool.amountReceivedFromTransfer(amount);
-		const fee = amount.sub(received);
-		const xdrFee = await synthetix.effectiveValue(sUSD, fee, XDR);
-
 		// Do a single transfer of all our sUSD.
 		const transaction = await sUSDContract.methods['transfer(address,uint256)'](account1, amount, {
 			from: owner,
 		});
 
 		// Events should be a fee exchange and a transfer to account1
-		assert.eventsEqual(
+		assert.eventEqual(
 			transaction,
-
-			// Fees get burned and exchanged to XDRs
+			// The original synth transfer
 			'Transfer',
-			{ from: owner, to: ZERO_ADDRESS, value: fee },
-			'Burned',
-			{ account: owner, value: fee },
-			'Transfer',
-			{
-				from: ZERO_ADDRESS,
-				to: FEE_ADDRESS,
-				value: xdrFee,
-			},
-			'Issued',
-			{ account: FEE_ADDRESS, value: xdrFee },
-
-			// And finally the original synth transfer
-			'Transfer',
-			{ from: owner, to: account1, value: received }
+			{ from: owner, to: account1, value: amount }
 		);
 
 		// Sender should have nothing
 		assert.bnEqual(await sUSDContract.balanceOf(owner), 0);
 
 		// The recipient should have the correct amount
-		assert.bnEqual(await sUSDContract.balanceOf(account1), received);
-
-		// The fee pool should also have the correct amount
-		assert.bnEqual(await XDRContract.balanceOf(FEE_ADDRESS), xdrFee);
+		assert.bnEqual(await sUSDContract.balanceOf(account1), amount);
 	});
 
 	//
@@ -236,10 +214,6 @@ contract('Synth', async accounts => {
 		const amount = toUnit('10000');
 		await synthetix.issueSynths(sUSD, amount, { from: owner });
 
-		const received = await feePool.amountReceivedFromTransfer(amount);
-		const fee = amount.sub(received);
-		const xdrFee = await synthetix.effectiveValue(sUSD, fee, XDR);
-
 		// Do a single transfer of all our sUSD.
 		const transaction = await sUSDContract.methods['transfer(address,uint256,bytes)'](
 			account1,
@@ -249,36 +223,19 @@ contract('Synth', async accounts => {
 		);
 
 		// Events should be a fee exchange and a transfer to account1
-		assert.eventsEqual(
+		assert.eventEqual(
 			transaction,
 
-			// Fees get burned and exchanged to XDRs
+			// the original synth transfer
 			'Transfer',
-			{ from: owner, to: ZERO_ADDRESS, value: fee },
-			'Burned',
-			{ account: owner, value: fee },
-			'Transfer',
-			{
-				from: ZERO_ADDRESS,
-				to: FEE_ADDRESS,
-				value: xdrFee,
-			},
-			'Issued',
-			{ account: FEE_ADDRESS, value: xdrFee },
-
-			// And finally the original synth transfer
-			'Transfer',
-			{ from: owner, to: account1, value: received }
+			{ from: owner, to: account1, value: amount }
 		);
 
 		// Sender should have nothing
 		assert.bnEqual(await sUSDContract.balanceOf(owner), 0);
 
 		// The recipient should have the correct amount
-		assert.bnEqual(await sUSDContract.balanceOf(account1), received);
-
-		// The fee pool should also have the correct amount
-		assert.bnEqual(await XDRContract.balanceOf(FEE_ADDRESS), xdrFee);
+		assert.bnEqual(await sUSDContract.balanceOf(account1), amount);
 	});
 
 	it('should revert when transferring (ERC223) with insufficient balance', async () => {
@@ -302,10 +259,6 @@ contract('Synth', async accounts => {
 		const amount = toUnit('10000');
 		await synthetix.issueSynths(sUSD, amount, { from: owner });
 
-		const received = await feePool.amountReceivedFromTransfer(amount);
-		const fee = amount.sub(received);
-		const xdrFee = await synthetix.effectiveValue(sUSD, fee, XDR);
-
 		// Give account1 permission to act on our behalf
 		await sUSDContract.approve(account1, amount, { from: owner });
 
@@ -319,37 +272,19 @@ contract('Synth', async accounts => {
 			}
 		);
 
-		// Events should be a fee exchange and a transfer to account1
-		assert.eventsEqual(
+		// Events should be a transfer to account1
+		assert.eventEqual(
 			transaction,
-
-			// Fees get burned and exchanged to XDRs
+			// The original synth transfer
 			'Transfer',
-			{ from: owner, to: ZERO_ADDRESS, value: fee },
-			'Burned',
-			{ account: owner, value: fee },
-			'Transfer',
-			{
-				from: ZERO_ADDRESS,
-				to: FEE_ADDRESS,
-				value: xdrFee,
-			},
-			'Issued',
-			{ account: FEE_ADDRESS, value: xdrFee },
-
-			// And finally the original synth transfer
-			'Transfer',
-			{ from: owner, to: account1, value: received }
+			{ from: owner, to: account1, value: amount }
 		);
 
 		// Sender should have nothing
 		assert.bnEqual(await sUSDContract.balanceOf(owner), 0);
 
 		// The recipient should have the correct amount
-		assert.bnEqual(await sUSDContract.balanceOf(account1), received);
-
-		// The fee pool should also have the correct amount
-		assert.bnEqual(await XDRContract.balanceOf(FEE_ADDRESS), xdrFee);
+		assert.bnEqual(await sUSDContract.balanceOf(account1), amount);
 
 		// And allowance should be exhausted
 		assert.bnEqual(await sUSDContract.allowance(owner, account1), 0);
@@ -392,10 +327,6 @@ contract('Synth', async accounts => {
 		const amount = toUnit('10000');
 		await synthetix.issueSynths(sUSD, amount, { from: owner });
 
-		const received = await feePool.amountReceivedFromTransfer(amount);
-		const fee = amount.sub(received);
-		const xdrFee = await synthetix.effectiveValue(sUSD, fee, XDR);
-
 		// Give account1 permission to act on our behalf
 		await sUSDContract.approve(account1, amount, { from: owner });
 
@@ -411,36 +342,19 @@ contract('Synth', async accounts => {
 		);
 
 		// Events should be a fee exchange and a transfer to account1
-		assert.eventsEqual(
+		assert.eventEqual(
 			transaction,
 
-			// Fees get burned and exchanged to XDRs
+			// The original synth transfer
 			'Transfer',
-			{ from: owner, to: ZERO_ADDRESS, value: fee },
-			'Burned',
-			{ account: owner, value: fee },
-			'Transfer',
-			{
-				from: ZERO_ADDRESS,
-				to: FEE_ADDRESS,
-				value: xdrFee,
-			},
-			'Issued',
-			{ account: FEE_ADDRESS, value: xdrFee },
-
-			// And finally the original synth transfer
-			'Transfer',
-			{ from: owner, to: account1, value: received }
+			{ from: owner, to: account1, value: amount }
 		);
 
 		// Sender should have nothing
 		assert.bnEqual(await sUSDContract.balanceOf(owner), 0);
 
 		// The recipient should have the correct amount
-		assert.bnEqual(await sUSDContract.balanceOf(account1), received);
-
-		// The fee pool should also have the correct amount
-		assert.bnEqual(await XDRContract.balanceOf(FEE_ADDRESS), xdrFee);
+		assert.bnEqual(await sUSDContract.balanceOf(account1), amount);
 
 		// And allowance should be exhausted
 		assert.bnEqual(await sUSDContract.allowance(owner, account1), 0);
@@ -488,264 +402,6 @@ contract('Synth', async accounts => {
 				}
 			)
 		);
-	});
-
-	it('should transferSenderPaysFee without error', async () => {
-		// Issue 10,000 sUSD.
-		const startingBalance = toUnit('12000');
-		const amount = toUnit('10000');
-		await synthetix.issueSynths(sUSD, startingBalance, { from: owner });
-
-		const fee = await feePool.transferFeeIncurred(amount);
-		const xdrFee = await synthetix.effectiveValue(sUSD, fee, XDR);
-
-		// Do a single transfer of all our sUSD.
-		const transaction = await sUSDContract.methods['transferSenderPaysFee(address,uint256)'](
-			account1,
-			amount,
-			{ from: owner }
-		);
-
-		// Events should be a fee exchange and a transfer to account1
-		assert.eventsEqual(
-			transaction,
-
-			// Fees get burned and exchanged to XDRs
-			'Transfer',
-			{ from: owner, to: ZERO_ADDRESS, value: fee },
-			'Burned',
-			{ account: owner, value: fee },
-			'Transfer',
-			{
-				from: ZERO_ADDRESS,
-				to: FEE_ADDRESS,
-				value: xdrFee,
-			},
-			'Issued',
-			{ account: FEE_ADDRESS, value: xdrFee },
-
-			// And finally the original synth transfer
-			'Transfer',
-			{ from: owner, to: account1, value: amount }
-		);
-
-		// Sender should have remainder
-		assert.bnEqual(await sUSDContract.balanceOf(owner), startingBalance.sub(amount).sub(fee));
-
-		// The recipient should have the correct amount
-		assert.bnEqual(await sUSDContract.balanceOf(account1), amount);
-
-		// The fee pool should also have the correct amount
-		assert.bnEqual(await XDRContract.balanceOf(FEE_ADDRESS), xdrFee);
-	});
-
-	it('should revert when calling transferSenderPaysFee with insufficient balance', async () => {
-		// Issue 10,000 sUSD.
-		const amount = toUnit('10000');
-		await synthetix.issueSynths(sUSD, amount, { from: owner });
-
-		// Try to send 1 more wei than we can.
-		const amountToSend = (await feePool.transferredAmountToReceive(amount)).add(
-			web3.utils.toBN('1')
-		);
-
-		// Try to transfer, which we don't have the balance for.
-		await assert.revert(
-			sUSDContract.methods['transferSenderPaysFee(address,uint256)'](account1, amountToSend, {
-				from: owner,
-			})
-		);
-	});
-
-	it('should transferSenderPaysFee with data without error', async () => {
-		const startingBalance = toUnit('12000');
-		const amount = toUnit('10000');
-		await synthetix.issueSynths(sUSD, startingBalance, { from: owner });
-
-		const fee = await feePool.transferFeeIncurred(amount);
-		const xdrFee = await synthetix.effectiveValue(sUSD, fee, XDR);
-
-		// Do a single transfer of all our sUSD.
-		const transaction = await sUSDContract.methods['transferSenderPaysFee(address,uint256,bytes)'](
-			account1,
-			amount,
-			web3.utils.asciiToHex('This is a test'),
-			{ from: owner }
-		);
-
-		// Events should be a fee exchange and a transfer to account1
-		assert.eventsEqual(
-			transaction,
-
-			// Fees get burned and exchanged to XDRs
-			'Transfer',
-			{ from: owner, to: ZERO_ADDRESS, value: fee },
-			'Burned',
-			{ account: owner, value: fee },
-			'Transfer',
-			{
-				from: ZERO_ADDRESS,
-				to: FEE_ADDRESS,
-				value: xdrFee,
-			},
-			'Issued',
-			{ account: FEE_ADDRESS, value: xdrFee },
-
-			// And finally the original synth transfer
-			'Transfer',
-			{ from: owner, to: account1, value: amount }
-		);
-
-		// Sender should have remainder
-		assert.bnEqual(await sUSDContract.balanceOf(owner), startingBalance.sub(amount).sub(fee));
-
-		// The recipient should have the correct amount
-		assert.bnEqual(await sUSDContract.balanceOf(account1), amount);
-
-		// The fee pool should also have the correct amount
-		assert.bnEqual(await XDRContract.balanceOf(FEE_ADDRESS), xdrFee);
-	});
-
-	it('should transferFromSenderPaysFee without error', async () => {
-		const startingBalance = toUnit('12000');
-		const amount = toUnit('10000');
-		await synthetix.issueSynths(sUSD, startingBalance, { from: owner });
-
-		const fee = await feePool.transferFeeIncurred(amount);
-		const xdrFee = await synthetix.effectiveValue(sUSD, fee, XDR);
-
-		await sUSDContract.approve(account1, startingBalance, { from: owner });
-
-		// Do a single transfer of all our sUSD.
-		// eslint-disable-next-line standard/computed-property-even-spacing
-		const transaction = await sUSDContract.methods[
-			'transferFromSenderPaysFee(address,address,uint256)'
-		](owner, account1, amount, {
-			from: account1,
-		});
-
-		// Events should be a fee exchange and a transfer to account1
-		assert.eventsEqual(
-			transaction,
-
-			// Fees get burned and exchanged to XDRs
-			'Transfer',
-			{ from: owner, to: ZERO_ADDRESS, value: fee },
-			'Burned',
-			{ account: owner, value: fee },
-			'Transfer',
-			{
-				from: ZERO_ADDRESS,
-				to: FEE_ADDRESS,
-				value: xdrFee,
-			},
-			'Issued',
-			{ account: FEE_ADDRESS, value: xdrFee },
-
-			// And finally the original synth transfer
-			'Transfer',
-			{ from: owner, to: account1, value: amount }
-		);
-
-		// Sender should have remainder
-		assert.bnEqual(await sUSDContract.balanceOf(owner), startingBalance.sub(amount).sub(fee));
-
-		// The recipient should have the correct amount
-		assert.bnEqual(await sUSDContract.balanceOf(account1), amount);
-
-		// The fee pool should also have the correct amount
-		assert.bnEqual(await XDRContract.balanceOf(FEE_ADDRESS), xdrFee);
-	});
-
-	it('should revert when calling transferFromSenderPaysFee with an insufficent allowance', async () => {
-		const startingBalance = toUnit('12000');
-		const amount = toUnit('10000');
-		await synthetix.issueSynths(sUSD, startingBalance, { from: owner });
-
-		await sUSDContract.approve(account1, amount, { from: owner });
-
-		// Trying to transfer will exceed our allowance.
-		await assert.revert(
-			sUSDContract.methods['transferFromSenderPaysFee(address,address,uint256)'](
-				owner,
-				account1,
-				amount,
-				{
-					from: account1,
-				}
-			)
-		);
-	});
-
-	it('should revert when calling transferFromSenderPaysFee with an insufficent balance', async () => {
-		const approvalAmount = toUnit('12000');
-		const startingBalance = toUnit('10000');
-		await synthetix.issueSynths(sUSD, startingBalance, { from: owner });
-
-		await sUSDContract.approve(account1, approvalAmount, { from: owner });
-
-		// Trying to transfer will exceed our balance.
-		await assert.revert(
-			sUSDContract.methods['transferFromSenderPaysFee(address,address,uint256)'](
-				owner,
-				account1,
-				startingBalance,
-				{
-					from: account1,
-				}
-			)
-		);
-	});
-
-	it('should transferFromSenderPaysFee with data without error', async () => {
-		const startingBalance = toUnit('12000');
-		const amount = toUnit('10000');
-		await synthetix.issueSynths(sUSD, startingBalance, { from: owner });
-
-		const fee = await feePool.transferFeeIncurred(amount);
-		const xdrFee = await synthetix.effectiveValue(sUSD, fee, XDR);
-
-		await sUSDContract.approve(account1, startingBalance, { from: owner });
-
-		// Do a single transfer of all our sUSD.
-		// eslint-disable-next-line standard/computed-property-even-spacing
-		const transaction = await sUSDContract.methods[
-			'transferFromSenderPaysFee(address,address,uint256,bytes)'
-		](owner, account1, amount, web3.utils.asciiToHex('This is a test'), {
-			from: account1,
-		});
-
-		// Events should be a fee exchange and a transfer to account1
-		assert.eventsEqual(
-			transaction,
-
-			// Fees get burned and exchanged to XDRs
-			'Transfer',
-			{ from: owner, to: ZERO_ADDRESS, value: fee },
-			'Burned',
-			{ account: owner, value: fee },
-			'Transfer',
-			{
-				from: ZERO_ADDRESS,
-				to: FEE_ADDRESS,
-				value: xdrFee,
-			},
-			'Issued',
-			{ account: FEE_ADDRESS, value: xdrFee },
-
-			// And finally the original synth transfer
-			'Transfer',
-			{ from: owner, to: account1, value: amount }
-		);
-
-		// Sender should have remainder
-		assert.bnEqual(await sUSDContract.balanceOf(owner), startingBalance.sub(amount).sub(fee));
-
-		// The recipient should have the correct amount
-		assert.bnEqual(await sUSDContract.balanceOf(account1), amount);
-
-		// The fee pool should also have the correct amount
-		assert.bnEqual(await XDRContract.balanceOf(FEE_ADDRESS), xdrFee);
 	});
 
 	it('should issue successfully when called by Synthetix', async () => {
@@ -855,12 +511,6 @@ contract('Synth', async accounts => {
 
 		await synthetix.issueSynths(sUSD, amount, { from: owner });
 
-		// set transferFee on feepool to 0
-		await feePool.setTransferFeeRate(0, { from: owner });
-
-		const received = await feePool.amountReceivedFromTransfer(amount);
-		const fee = amount.sub(received);
-
 		// Do a single transfer of all our sUSD.
 		const transaction = await sUSDContract.methods['transfer(address,uint256)'](account1, amount, {
 			from: owner,
@@ -872,16 +522,14 @@ contract('Synth', async accounts => {
 
 			// The original synth transfer
 			'Transfer',
-			{ from: owner, to: account1, value: received }
+			{ from: owner, to: account1, value: amount }
 		);
 
-		// Sender should have nothing
-		assert.bnEqual(fee, 0);
 		// Sender should have nothing
 		assert.bnEqual(await sUSDContract.balanceOf(owner), 0);
 
 		// The recipient should have the correct amount
-		assert.bnEqual(await sUSDContract.balanceOf(account1), received);
+		assert.bnEqual(await sUSDContract.balanceOf(account1), amount);
 
 		// The fee pool should have zero balance
 		assert.bnEqual(await XDRContract.balanceOf(FEE_ADDRESS), 0);
