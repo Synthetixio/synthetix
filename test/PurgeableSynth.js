@@ -60,9 +60,6 @@ contract('PurgeableSynth', accounts => {
 
 		oracle = await exchangeRates.oracle();
 		timestamp = await currentTime();
-
-		// mimic mainnet - transfer fees are 0
-		await feePool.setTransferFeeRate('0', { from: owner });
 	});
 
 	const deploySynth = async ({ currencyKey, proxy, tokenState }) => {
