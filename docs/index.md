@@ -22,7 +22,7 @@ This documentation portal contains a description of how Synthetix operates, to h
 ## Developer Resources
 
 * **Code:** Open source repositories are available @synthetixio; the main synthetix repo is @synthetixio/synthetix.
-* **Contract API:** Descriptions of all Synthetix smart contracts, their APIs, and a listing of deployed instances can be found in [here](contracts).
+* **Smart Contract API:** Descriptions of all Synthetix smart contracts, their APIs, and a listing of deployed instances can be found in [here](contracts).
 * **SynthetixJS:** Synthetix offers a Javascript library which provides a simple interface to communicate with Synthetix contracts. Under the hood this library uses [ethers.js](https://github.com/ethers-io/ethers.js). The source is available @synthetixio/synthetix-js or just `npm i synthetix-js`.
 * **GraphQL API:** The system can also be queried through a GraphQL endpoint via [The Graph](https://thegraph.com/explorer/subgraph/synthetixio-team/synthetix); source code available at @synthetixio/synthetix-subgraph.
 
