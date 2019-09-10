@@ -54,6 +54,8 @@
     * [ ] Replace asterism section separators with synthetix logo.
     * [ ] Inheritance graph and related contracts in tabbed details panel. https://github.com/squidfunk/mkdocs-material/issues/955
     * [ ] Merge into core SNX repository and enable edit buttons. Add a note to the Intro page that the docs can be edited by anyone with a PR.
+    * [ ] Better colour for details sections
+    * [ ] Syntax highlighting for Solidity. https://squidfunk.github.io/mkdocs-material/extensions/codehilite/ https://github.com/maurelian/best-practices-docs/blob/master/mkdocs.yml
 
 ??? "Potential Vulnerabilities To Investigate"
     * [ ] Oracle front-running.
