@@ -74,7 +74,7 @@ Pauses or unpauses the contract. Sets [`lastPauseTime`](#lastPauseTime) to the c
 
 ### `notPaused`
 
-Provided for use by inheriting contracts. Reverts the transaction the contract is [`paused`](#paused).
+Reverts the transaction the contract is [`paused`](#paused). Provided for use by inheriting contracts.
 
 ---
 
