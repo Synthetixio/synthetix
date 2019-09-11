@@ -83,6 +83,9 @@
 	"ProxySynthetix": {
 		"deploy": true
 	},
+	"ProxyERC20": {
+		"deploy": true
+	},
 	"ProxysUSD": {
 		"deploy": true
 	},
