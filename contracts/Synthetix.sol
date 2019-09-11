@@ -289,7 +289,6 @@ contract Synthetix is ExternStateToken {
     function totalIssuedSynths(bytes32 currencyKey)
         public
         view
-        rateNotStale(currencyKey)
         returns (uint)
     {
         uint total = 0;
