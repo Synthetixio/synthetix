@@ -974,14 +974,14 @@ const deploy = async ({
 				const synthOwner = await synth.methods.owner().call();
 				if (synthOwner === account) {
 					console.log(
-						yellow(`Invoking Synth${currencyKey}.setIntegrationProxy(proxyERC20${currencyKey})`)
+						yellow(`Invoking Synth${currencyKey}.setIntegrationProxy(ProxyERC20${currencyKey})`)
 					);
 					await synth.methods
 						.setIntegrationProxy(proxyERC20ForSynth.options.address)
 						.send(deployer.sendParameters());
 				} else {
 					appendOwnerAction({
-						key: `Synth${currencyKey}.setIntegrationProxy(proxyERC20${currencyKey})`,
+						key: `Synth${currencyKey}.setIntegrationProxy(ProxyERC20${currencyKey})`,
 						target: synth.options.address,
 						action: `setIntegrationProxy(${proxyERC20ForSynth.options.address})`,
 					});
