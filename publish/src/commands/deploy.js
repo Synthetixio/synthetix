@@ -489,8 +489,6 @@ const deploy = async ({
 	});
 
 	const synthetixAddress = synthetix ? synthetix.options.address : '';
-	// get the owner (might not be us if we didn't just do a deploy)
-	const synthetixOwner = await synthetix.methods.owner().call();
 
 	if (proxySynthetix && synthetix) {
 		await runStep({
