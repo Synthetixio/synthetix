@@ -151,7 +151,7 @@ const purgeSynths = async ({
 			contract: `Synth${currencyKey}`,
 			target: Synth,
 			write: 'purge',
-			writeArg: addresses,
+			writeArg: [addresses], // explicitly pass array of args so array not splat as params
 			gasLimit,
 			gasPrice,
 			etherscanLinkPrefix,
