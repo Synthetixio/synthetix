@@ -129,14 +129,10 @@ import "./interfaces/ISynthetixEscrow.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IRewardsDistribution.sol";
 
-/**
- * @title Synthetix ERC20 contract.
- * @notice The Synthetix contracts not only facilitates transfers, exchanges, and tracks balances,
- * but it also computes the quantity of fees each synthetix holder is entitled to.
- */
-contract Synthetix is ExternStateToken {
+contract SynthetixBase {
 
-    // ========== STATE VARIABLES ==========
+    using SafeMath for uint;
+    using SafeDecimalMath for uint;
 
     // Available Synths which can be used with the system
     Synth[] public availableSynths;
@@ -144,9 +140,84 @@ contract Synthetix is ExternStateToken {
     mapping(address => bytes32) public reverseSynths;
 
     IFeePool public feePool;
+    ExchangeRates public exchangeRates;
+
+    mapping(bytes32 => uint256) private _cache_totalSupplies;
+
+    function issueByPool(address to, bytes32 currencyKey, uint amount)
+        public
+    {
+        require(msg.sender == address(feePool));
+        _issue(to, currencyKey, amount);
+    }
+
+    function burnByPool(address from, bytes32 currencyKey, uint amount)
+        public
+    {
+        require(msg.sender == address(feePool));
+        _burn(from, currencyKey, amount);
+    }
+
+    function nofityTotalSupplyChanged(Synth synth)
+        public
+    {
+        bytes32 currencyKey = reverseSynths[address(synth)];
+        require(currencyKey != bytes32(0));
+        _cache_totalSupplies[currencyKey] = synth.totalSupply();
+    }
+
+    function _totalSupplyOf(bytes32 currencyKey)
+        internal
+        view
+        returns(uint256)
+    {
+        return _cache_totalSupplies[currencyKey];
+    }
+
+    function _issue(address to, bytes32 currencyKey, uint amount)
+        internal
+    {
+        synths[currencyKey].issue(to, amount);
+        _increaseTotalSupply(currencyKey, amount);
+    }
+
+    function _burn(address from, bytes32 currencyKey, uint amount)
+        internal
+    {
+        synths[currencyKey].burn(from, amount);
+        _decreaseTotalSupply(currencyKey, amount);
+    }
+
+    function _updateTotalSupply(bytes32 currencyKey, uint amount)
+        internal
+    {
+        _cache_totalSupplies[currencyKey] = amount;
+    }
+
+    function _increaseTotalSupply(bytes32 currencyKey, uint amount)
+        internal
+    {
+        _updateTotalSupply(currencyKey, _cache_totalSupplies[currencyKey].add(amount));
+    }
+
+    function _decreaseTotalSupply(bytes32 currencyKey, uint amount)
+        internal
+    {
+        _updateTotalSupply(currencyKey, _cache_totalSupplies[currencyKey].sub(amount));
+    }
+}
+
+/**
+ * @title Synthetix ERC20 contract.
+ * @notice The Synthetix contracts not only facilitates transfers, exchanges, and tracks balances,
+ * but it also computes the quantity of fees each synthetix holder is entitled to.
+ */
+contract Synthetix is SynthetixBase, ExternStateToken {
+
+    // ========== STATE VARIABLES ==========
+
     ISynthetixEscrow public escrow;
     ISynthetixEscrow public rewardEscrow;
-    ExchangeRates public exchangeRates;
     SynthetixState public synthetixState;
     SupplySchedule public supplySchedule;
     IRewardsDistribution public rewardsDistribution;
@@ -227,6 +298,7 @@ contract Synthetix is ExternStateToken {
         availableSynths.push(synth);
         synths[currencyKey] = synth;
         reverseSynths[synth] = currencyKey;
+        _updateTotalSupply(currencyKey, synth.totalSupply());
     }
 
     /**
@@ -243,9 +315,10 @@ contract Synthetix is ExternStateToken {
 
         // Save the address we're removing for emitting the event at the end.
         address synthToRemove = synths[currencyKey];
+        _updateTotalSupply(currencyKey, 0);
 
         // Remove the synth from the availableSynths array.
-        for (uint8 i = 0; i < availableSynths.length; i++) {
+        for (uint i = 0; i < availableSynths.length; i++) {
             if (availableSynths[i] == synthToRemove) {
                 delete availableSynths[i];
 
@@ -295,41 +368,22 @@ contract Synthetix is ExternStateToken {
         view
         returns (uint)
     {
-        uint total = 0;
-        uint currencyRate = exchangeRates.rateForCurrency(currencyKey);
+        bytes32[] memory currencyKeys = new bytes32[](availableSynths.length);
+        for (uint i = 0; i < availableSynths.length; i++) {
+            currencyKeys[i] = reverseSynths[availableSynths[i]];
+        }
 
-        (uint[] memory rates, bool anyRateStale) = exchangeRates.ratesAndStaleForCurrencies(availableCurrencyKeys());
+        (uint[] memory rates, bool anyRateStale) = exchangeRates.ratesAndStaleForCurrencies(currencyKeys);
         require(!anyRateStale, "Rates are stale");
 
-        for (uint8 i = 0; i < availableSynths.length; i++) {
-            // What's the total issued value of that synth in the destination currency?
-            // Note: We're not using our effectiveValue function because we don't want to go get the
-            //       rate for the destination currency and check if it's stale repeatedly on every
-            //       iteration of the loop
-            uint synthValue = availableSynths[i].totalSupply()
-                .multiplyDecimalRound(rates[i])
-                .divideDecimalRound(currencyRate);
-            total = total.add(synthValue);
+        uint256 total = 0;
+        for (i = 0; i < availableSynths.length; i++) {
+            total = total.add(_totalSupplyOf(currencyKeys[i]).multiplyDecimalRound(rates[i]));
         }
 
-        return total;
-    }
-
-    /**
-     * @notice Returns the currencyKeys of availableSynths for rate checking
-     */
-    function availableCurrencyKeys()
-        public
-        view
-        returns (bytes32[])
-    {
-        bytes32[] memory availableCurrencyKeys = new bytes32[](availableSynths.length);
-
-        for (uint8 i = 0; i < availableSynths.length; i++) {
-            availableCurrencyKeys[i] = reverseSynths[availableSynths[i]];
-        }
-
-        return availableCurrencyKeys;
+        return total.divideDecimalRound(
+            exchangeRates.rateForCurrency(currencyKey)
+        );
     }
 
     /**
@@ -425,13 +479,14 @@ contract Synthetix is ExternStateToken {
         require(sourceCurrencyKey != destinationCurrencyKey, "Must use different synths");
         require(sourceAmount > 0, "Zero amount");
 
-        //  If protectionCircuit is true then we burn the synths through _internalLiquidation()
+        //  If protectionCircuit is true then we burn the synths through _burn()
         if (protectionCircuit) {
-            return _internalLiquidation(
+            _burn(
                 messageSender,
                 sourceCurrencyKey,
                 sourceAmount
             );
+            return true;
         } else {
             // Pass it along, defaulting to the sender as the recipient.
             return _internalExchange(
@@ -553,8 +608,8 @@ contract Synthetix is ExternStateToken {
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
 
         // Burn the source amount
-        synths[sourceCurrencyKey].burn(from, sourceAmount);
-
+        _burn(from, sourceCurrencyKey, sourceAmount);
+        
         // How much should they get in the destination currency?
         uint destinationAmount = effectiveValue(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
 
@@ -568,12 +623,12 @@ contract Synthetix is ExternStateToken {
         }
 
         // Issue their new synths
-        synths[destinationCurrencyKey].issue(destinationAddress, amountReceived);
+        _issue(destinationAddress, destinationCurrencyKey, amountReceived);
 
         // Remit the fee in XDRs
         if (fee > 0) {
             uint xdrFeeAmount = effectiveValue(destinationCurrencyKey, fee, "XDR");
-            synths["XDR"].issue(feePool.FEE_ADDRESS(), xdrFeeAmount);
+            _issue(feePool.FEE_ADDRESS(), "XDR", xdrFeeAmount);
             // Tell the fee pool about this.
             feePool.feePaid("XDR", xdrFeeAmount);
         }
@@ -586,26 +641,6 @@ contract Synthetix is ExternStateToken {
         //Let the DApps know there was a Synth exchange
         emitSynthExchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, amountReceived, destinationAddress);
 
-        return true;
-    }
-
-    /**
-    * @notice Function that burns the amount sent during an exchange in case the protection circuit is activated
-    * @param from The address to move synth from
-    * @param sourceCurrencyKey source currency from.
-    * @param sourceAmount The amount, specified in UNIT of source currency.
-    * @return Boolean that indicates whether the transfer succeeded or failed.
-    */
-    function _internalLiquidation(
-        address from,
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount
-    )
-        internal
-        returns (bool)
-    {
-        // Burn the source amount
-        synths[sourceCurrencyKey].burn(from, sourceAmount);
         return true;
     }
 
@@ -681,7 +716,7 @@ contract Synthetix is ExternStateToken {
         _addToDebtRegister(currencyKey, amount);
 
         // Create their synths
-        synths[currencyKey].issue(messageSender, amount);
+        _issue(messageSender, currencyKey, amount);
 
         // Store their locked SNX amount to determine their fee % for the period
         _appendAccountIssuanceRecord();
@@ -731,7 +766,7 @@ contract Synthetix is ExternStateToken {
         uint amountToBurn = debtInCurrencyKey < amount ? debtInCurrencyKey : amount;
 
         // synth.burn does a safe subtraction on balance (so it will revert if there are not enough synths).
-        synths[currencyKey].burn(messageSender, amountToBurn);
+        _burn(messageSender, currencyKey, amountToBurn);
 
         // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
         _appendAccountIssuanceRecord();
@@ -996,6 +1031,7 @@ contract Synthetix is ExternStateToken {
         emitTransfer(this, msg.sender, minterReward);
 
         totalSupply = totalSupply.add(supplyToMint);
+        _increaseTotalSupply("SNX", supplyToMint);
 
         return true;
     }

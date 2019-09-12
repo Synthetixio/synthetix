@@ -551,14 +551,13 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         require(account != address(proxy), "Can't send fees to proxy");
         require(account != address(synthetix), "Can't send fees to synthetix");
 
-        Synth xdrSynth = synthetix.synths("XDR");
         Synth destinationSynth = synthetix.synths(destinationCurrencyKey);
 
         // Note: We don't need to check the fee pool balance as the burn() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if the balance is not sufficient.
 
         // Burn the source amount
-        xdrSynth.burn(FEE_ADDRESS, xdrAmount);
+        synthetix.burnByPool(FEE_ADDRESS, "XDR", xdrAmount);
 
         // How much should they get in the destination currency?
         uint destinationAmount = synthetix.effectiveValue("XDR", xdrAmount, destinationCurrencyKey);
@@ -566,7 +565,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         // There's no fee on withdrawing fees, as that'd be way too meta.
 
         // Mint their new synths
-        destinationSynth.issue(account, destinationAmount);
+        synthetix.issueByPool(account, destinationCurrencyKey, destinationAmount);
 
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
 

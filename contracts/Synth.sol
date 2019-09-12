@@ -295,6 +295,7 @@ contract Synth is ExternStateToken {
         optionalProxy_onlyOwner
     {
         totalSupply = amount;
+        synthetix.nofityTotalSupplyChanged(this);
     }
 
     // Allow synthetix to trigger a token fallback call from our synths so users get notified on
