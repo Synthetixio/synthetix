@@ -700,17 +700,6 @@ const deploy = async ({
 			args: [account],
 			force: addNewSynths,
 		});
-		let proxyERC20ForSynth;
-
-		if (synthIsLegacy) {
-			// additionally deploy an ERC20 proxy for the synth if it's legacy (sETH and not on local)
-			proxyERC20ForSynth = await deployContract({
-				name: `ProxyERC20${currencyKey}`,
-				source: `ProxyERC20`,
-				args: [account],
-				force: addNewSynths,
-			});
-		}
 
 		// As sETH is used for Uniswap liquidity, we cannot switch out its proxy,
 		// thus we have these values we switch on to ensure sETH remains fixed to the
@@ -770,27 +759,6 @@ const deploy = async ({
 			await runStep({
 				contract: `Proxy${currencyKey}`,
 				target: proxyForSynth,
-				read: 'target',
-				expected: input => input === synthAddress,
-				write: 'setTarget',
-				writeArg: synthAddress,
-			});
-		}
-
-		// Setup integration proxy (ProxyERC20) for Synth
-		if (proxyERC20ForSynth && synth) {
-			await runStep({
-				contract: `Synth${currencyKey}`,
-				target: synth,
-				read: 'integrationProxy',
-				expected: input => input === proxyERC20ForSynth.options.address,
-				write: 'setIntegrationProxy',
-				writeArg: proxyERC20ForSynth.options.address,
-			});
-
-			await runStep({
-				contract: `ProxyERC20${currencyKey}`,
-				target: proxyERC20ForSynth,
 				read: 'target',
 				expected: input => input === synthAddress,
 				write: 'setTarget',
