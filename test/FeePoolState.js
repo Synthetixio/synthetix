@@ -73,7 +73,7 @@ contract('FeePoolState', async accounts => {
 			expectedEntryIndex,
 			expectedDebtPercentage
 		) {
-			const accountLedger = await feePoolState.getAccountsDebtEntry(address, issuanceLedgerIndex); // accountIssuanceLedger[address][index]
+			const accountLedger = await feePoolState.accountIssuanceLedger(address, issuanceLedgerIndex); // accountIssuanceLedger[address][index]
 			// console.log(
 			// 	'debtEntryIndex, debtPercentage',
 			// 	issuanceLedgerIndex,
@@ -220,7 +220,7 @@ contract('FeePoolState', async accounts => {
 			// Iterate the accounts
 			for (let i = 0; i < accounts.length; i++) {
 				// accountIssuanceLedger[address][index]
-				const accountLedger = await feePoolState.getAccountsDebtEntry(
+				const accountLedger = await feePoolState.accountIssuanceLedger(
 					accounts[i],
 					issuanceLedgerIndex
 				);
@@ -410,7 +410,7 @@ contract('FeePoolState', async accounts => {
 
 	// 	// And feePool.accountIssuanceLedger[account1] should record debt minted
 	// 	const issuanceDataFromState = await synthetixState.issuanceData(account1);
-	// 	const feePoolLedger = await feePool.getAccountsDebtEntry(account1, 0);
+	// 	const feePoolLedger = await feePool.accountIssuanceLedger(account1, 0);
 
 	// 	assert.bnEqual(feePoolLedger.debtEntryIndex, 0);
 	// 	assert.bnEqual(feePoolLedger.debtEntryIndex, issuanceDataFromState.debtEntryIndex);
@@ -445,7 +445,7 @@ contract('FeePoolState', async accounts => {
 	// 	// And feePool.accountIssuanceLedger[account1] should record debt minted
 	// 	let issuanceDataFromState, feePoolLedger;
 	// 	issuanceDataFromState = await synthetixState.issuanceData(account1);
-	// 	feePoolLedger = await feePool.getAccountsDebtEntry(account1, 0);
+	// 	feePoolLedger = await feePool.accountIssuanceLedger(account1, 0);
 
 	// 	assert.bnEqual(feePoolLedger.debtEntryIndex, 0);
 	// 	assert.bnEqual(feePoolLedger.debtEntryIndex, issuanceDataFromState.debtEntryIndex);
@@ -459,7 +459,7 @@ contract('FeePoolState', async accounts => {
 	// 	assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('400'));
 
 	// 	issuanceDataFromState = await synthetixState.issuanceData(account1);
-	// 	feePoolLedger = await feePool.getAccountsDebtEntry(account1, 0);
+	// 	feePoolLedger = await feePool.accountIssuanceLedger(account1, 0);
 
 	// 	// debtEntryIndex is updated to 1 and still own whole system
 	// 	assert.bnEqual(feePoolLedger.debtEntryIndex, 1);
