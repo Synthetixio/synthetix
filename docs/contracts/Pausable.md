@@ -42,11 +42,15 @@ True iff the contract is currently paused.
 
 The owner this constructor initialises has the exclusive right to pause the contract. The contract begins unpaused.
 
-**Signature:** `constructor(address _owner) public`
+??? example "Details"
 
-**Superconstructors**
+    **Signature**
+    
+    `constructor(address _owner) public`
 
-* [`Owned(_owner)`](Owned.md#constructor)
+    **Superconstructors**
+
+    * [`Owned(_owner)`](Owned.md#constructor)
 
 ---
 
@@ -56,7 +60,9 @@ Pauses or unpauses the contract. Sets [`lastPauseTime`](#lastPauseTime) to the c
 
 ??? example "Details"
 
-    **Signature:** `setPaused(bool _paused)`
+    **Signature**
+    
+    `setPaused(bool _paused)`
 
     **Emits**
 
@@ -80,10 +86,14 @@ Reverts the transaction the contract is [`paused`](#paused). Provided for use by
 
 ## Events
 
+---
+
 ### `PauseChanged`
 
 The contract has gone from paused to unpaused or vice versa. This event reports the new state.
 
 **Signature:** `PauseChanged(bool isPaused)`
+
+---
 
 <section-sep />

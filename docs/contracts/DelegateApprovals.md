@@ -1,31 +1,109 @@
 # DelegateApprovals
 
-Each approver may authorise a number of delegates to perform an action (withdrawing fees) on their behalf.
+## Description
 
-!!! note
+This contract is used to allow users to allow other addresses to withdraw fees for them. In principle it is generic, as approver just marks a number of delegates as authorised to perform some action on their behalf, with no reference to what that action is.
+
+!!! caution
     The file docstring is inaccurate. It says `Withdrawing approval sets the delegate as false instead of removing from the approvals list for auditability.`, but the contract actually uses a nested mapping. That is to say, there no explicit approvals list exists and the audit trail is by event emission. So setting `false` and deletion are equivalent operations.
 
-## Inherited Contracts
+<section-sep />
 
-* [State](State.md)
-* ^[Owned](Owned.md)
+## Inheritance Graph
 
-## Related Contracts
+<inheritance-graph>
+    ![graph](../img/graphs/DelegateApprovals.svg)
+</inheritance-graph>
 
-### Referencing
-
-* [FeePool.delegates](FeePool.md) (and also is the value of `this.associatedContract`)
+<section-sep />
 
 ## Variables
 
-* `approval: mapping(address => mapping(address => bool)) public`. The double mapping allows each authoriser to have multiple delegates.
+### `approval`
+
+Stores who has approved whom to perform actions. The double mapping allows each authoriser to have multiple delegates, ordered as `approval[authoriser][delegate]`.
+
+**Type:** `mapping(address => mapping(address => bool)) public`
+
+---
+
+<section-sep />
 
 ## Functions
 
-* `setApproval(address authoriser, address delegate)`: only callable by the associated contract. Emits an Approval event.
-* `withdrawApproval(address authoriser, address delegate)`: only callable by the associated contract. Emits a WithdrawApproval event.
+### `constructor`
+
+Initialises the inherited [`State`](State.md) instance.
+
+??? example "Details"
+
+    **Signature**
+    
+    `constructor(address _owner, address _associatedContract) public`
+
+    **Superconstructors**
+
+    * [`State(_owner, _associatedContract)`](State.md#constructor)
+
+---
+
+### `setApproval`
+
+Grants approval for a delegate to act on behalf of a given authoriser.
+
+??? example "Details"
+    **Signature**
+
+    `setApproval(address authoriser, address delegate) external`
+
+    **Modifiers**
+
+    * [`onlyAssociatedContract`](State.md#onlyassociatedcontract)
+
+    **Emits**
+
+    * [`Approval(authoriser, delegate)`](DelegateApprovals.md#setapproval)
+
+---
+
+### `withdrawApproval`
+
+Revokes the approval of a delegate to act on behalf of a given authoriser.
+
+??? example "Details"
+
+    ***Signature**
+    
+    `withdrawApproval(address authoriser, address delegate) external`
+    
+    **Modifiers**
+
+    * [`onlyAssociatedContract`](State.md#onlyassociatedcontract)
+
+    **Emits**
+
+    * [`WithdrawApproval(authoriser, delegate)`](DelegateApprovals.md#setapproval)
+
+---
+
+<section-sep />
 
 ## Events
 
-* `event Approval(address indexed authoriser, address delegate)`
-* `event WithdrawApproval(address indexed authoriser, address delegate)`
+---
+
+### `Approval`
+
+The delegate was approved to act on the authoriser's behalf.
+
+**Signature:** `Approval(address indexed authoriser, address delegate)`
+
+---
+
+### `WithdrawApproval`
+
+The delegate was disapproved to act on the authoriser's behalf.
+
+**Signature:** `WithdrawApproval(address indexed authoriser, address delegate)`
+
+<section-sep />

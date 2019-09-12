@@ -86,6 +86,8 @@ Reverts the transaction if the `msg.sender` is not the [associated contract](Sta
 
 ## Events
 
+---
+
 ### `AssociatedContractUpdated`
 
 The associated contract was updated by the owner. This event reports the new associated contract.
