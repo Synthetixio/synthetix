@@ -32,7 +32,7 @@ The timestamp at which functions which have the [`onlyDuringSetup`](#onlydurings
 
 ---
 
-### `constructor
+### `constructor`
 
 Sets [`setupExpiryTime`](#setupexpirytime) to the current timestamp plus `setupDuration` seconds.
 
