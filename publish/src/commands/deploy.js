@@ -25,6 +25,7 @@ const {
 	loadConnections,
 	confirmAction,
 	appendOwnerActionGenerator,
+	performTransactionalStep,
 	stringify,
 } = require('../util');
 
@@ -277,6 +278,17 @@ const deploy = async ({
 		etherscanLinkPrefix,
 	});
 
+	const runStep = async opts =>
+		performTransactionalStep({
+			...opts,
+			account,
+			gasLimit: methodCallGasLimit,
+			gasPrice,
+			etherscanLinkPrefix,
+			ownerActions,
+			ownerActionsFile,
+		});
+
 	await deployContract({
 		name: 'SafeDecimalMath',
 	});
@@ -335,91 +347,48 @@ const deploy = async ({
 	});
 
 	const feePoolAddress = feePool ? feePool.options.address : '';
-	const feePoolOwner = feePool ? await feePool.methods.owner().call() : '';
 
 	if (proxyFeePool && feePool) {
-		const target = await proxyFeePool.methods.target().call();
-
-		if (target !== feePool.options.address) {
-			const proxyFeePoolOwner = await proxyFeePool.methods.owner().call();
-
-			if (proxyFeePoolOwner === account) {
-				console.log(yellow('Invoking ProxyFeePool.setTarget(FeePool)...'));
-
-				await proxyFeePool.methods
-					.setTarget(feePool.options.address)
-					.send(deployer.sendParameters());
-			} else {
-				appendOwnerAction({
-					key: `ProxyFeePool.setTarget(FeePool)`,
-					target: proxyFeePool.options.address,
-					action: `setTarget(${feePool.options.address})`,
-				});
-			}
-		}
+		await runStep({
+			contract: 'ProxyFeePool',
+			target: proxyFeePool,
+			read: 'target',
+			expected: input => input === feePoolAddress,
+			write: 'setTarget',
+			writeArg: feePoolAddress,
+		});
 	}
 
 	if (feePoolEternalStorage && feePool) {
-		const associatedFPContract = await feePoolEternalStorage.methods.associatedContract().call();
-
-		if (associatedFPContract !== feePoolAddress) {
-			const feePoolEternalStorageOwner = await feePoolEternalStorage.methods.owner().call();
-
-			if (feePoolEternalStorageOwner === account) {
-				console.log(yellow('Invoking feePoolEternalStorage.setAssociatedContract(FeePool)...'));
-
-				await feePoolEternalStorage.methods
-					.setAssociatedContract(feePoolAddress)
-					.send(deployer.sendParameters());
-			} else {
-				appendOwnerAction({
-					key: `FeePoolEternalStorage.setAssociatedContract(FeePool)`,
-					target: feePoolEternalStorage.options.address,
-					action: `setAssociatedContract(${feePoolAddress})`,
-				});
-			}
-		}
+		await runStep({
+			contract: 'FeePoolEternalStorage',
+			target: feePoolEternalStorage,
+			read: 'associatedContract',
+			expected: input => input === feePoolAddress,
+			write: 'setAssociatedContract',
+			writeArg: feePoolAddress,
+		});
 	}
 
 	if (feePoolDelegateApprovals && feePool) {
 		const delegateApprovalsAddress = feePoolDelegateApprovals.options.address;
-		const feePoolOwner = await feePool.methods.owner().call();
-		const currentDelegateApprovals = await feePool.methods.delegates().call();
+		await runStep({
+			contract: 'FeePool',
+			target: feePool,
+			read: 'delegates',
+			expected: input => input === delegateApprovalsAddress,
+			write: 'setDelegateApprovals',
+			writeArg: delegateApprovalsAddress,
+		});
 
-		if (currentDelegateApprovals !== delegateApprovalsAddress) {
-			if (feePoolOwner === account) {
-				console.log(yellow('Invoking feePool.setDelegateApprovals(DelegateApproval)...'));
-				await feePool.methods
-					.setDelegateApprovals(delegateApprovalsAddress)
-					.send(deployer.sendParameters());
-			} else {
-				appendOwnerAction({
-					key: `FeePool.setDelegateApprovals(DelegateApprovals)`,
-					target: feePool.options.address,
-					action: `setDelegateApprovals(${delegateApprovalsAddress})`,
-				});
-			}
-		}
-
-		const associatedContract = await feePoolDelegateApprovals.methods.associatedContract().call();
-
-		if (associatedContract !== feePoolAddress) {
-			const feePoolDelegateApprovalsOwner = await feePoolDelegateApprovals.methods.owner().call();
-
-			if (feePoolDelegateApprovalsOwner === account) {
-				console.log(yellow('Invoking feePoolDelegateApprovals.setAssociatedContract(FeePool)...'));
-
-				await feePoolDelegateApprovals.methods
-					.setAssociatedContract(feePoolAddress)
-					.send(deployer.sendParameters());
-			} else {
-				appendOwnerAction({
-					key: `DelegateApprovals.setAssociatedContract(FeePool)`,
-					target: feePoolDelegateApprovals.options.address,
-					action: `setAssociatedContract(${feePoolAddress})`,
-				});
-			}
-		}
+		await runStep({
+			contract: 'DelegateApprovals',
+			target: feePoolDelegateApprovals,
+			read: 'associatedContract',
+			expected: input => input === feePoolAddress,
+			write: 'setAssociatedContract',
+			writeArg: feePoolAddress,
+		});
 	}
 
 	const feePoolState = await deployContract({
@@ -429,40 +398,25 @@ const deploy = async ({
 	});
 
 	if (feePool && feePoolState) {
-		const deployedFeePoolState = await feePool.methods.feePoolState().call();
 		const feePoolStateAddress = feePoolState.options.address;
+		await runStep({
+			contract: 'FeePool',
+			target: feePool,
+			read: 'feePoolState',
+			expected: input => input === feePoolStateAddress,
+			write: 'setFeePoolState',
+			writeArg: feePoolStateAddress,
+		});
 
-		if (deployedFeePoolState !== feePoolStateAddress) {
-			if (feePoolOwner === account) {
-				console.log(yellow('Invoking FeePool.setFeePoolState(FeePoolState)...'));
-
-				await feePool.methods.setFeePoolState(feePoolStateAddress).send(deployer.sendParameters());
-			} else {
-				appendOwnerAction({
-					key: 'FeePool.setFeePoolState(FeePoolState)',
-					target: feePoolStateAddress,
-					action: `setFeePoolState(${feePoolStateAddress})`,
-				});
-			}
-		}
 		// Rewire feePoolState if there is a feePool upgrade
-		const configuredFeePoolAddress = await feePoolState.methods.feePool().call();
-		if (configuredFeePoolAddress !== feePool.options.address) {
-			const feePoolStateOwner = await feePoolState.methods.owner().call();
-			if (feePoolStateOwner === account) {
-				console.log(yellow('Invoking FeePoolState.setFeePool(FeePool)...'));
-
-				await feePoolState.methods
-					.setFeePool(feePool.options.address)
-					.send(deployer.sendParameters());
-			} else {
-				appendOwnerAction({
-					key: 'FeePoolState.setFeePool(FeePool)',
-					target: feePoolState.options.address,
-					action: `setFeePool(${feePool.options.address})`,
-				});
-			}
-		}
+		await runStep({
+			contract: 'FeePoolState',
+			target: feePoolState,
+			read: 'feePool',
+			expected: input => input === feePoolAddress,
+			write: 'setFeePool',
+			writeArg: feePoolAddress,
+		});
 	}
 
 	const rewardsDistribution = await deployContract({
@@ -478,21 +432,15 @@ const deploy = async ({
 	});
 
 	if (rewardsDistribution && feePool) {
-		const rewardsAuthorityAddress = await feePool.methods.rewardsAuthority().call();
-		if (rewardsAuthorityAddress !== rewardsDistribution.options.address) {
-			if (feePoolOwner === account) {
-				console.log(yellow('Invoking feePool.setRewardsAuthority(RewardsDistribution)...'));
-				await feePool.methods
-					.setRewardsAuthority(rewardsDistribution.options.address)
-					.send(deployer.sendParameters());
-			} else {
-				appendOwnerAction({
-					key: `FeePool.setRewardsAuthority(RewardsDistribution)`,
-					target: feePool.options.address,
-					action: `setRewardsAuthority(${rewardsDistribution.options.address})`,
-				});
-			}
-		}
+		const rewardsDistributionAddress = rewardsDistribution.options.address;
+		await runStep({
+			contract: 'FeePool',
+			target: feePool,
+			read: 'rewardsAuthority',
+			expected: input => input === rewardsDistributionAddress,
+			write: 'setRewardsAuthority',
+			writeArg: rewardsDistributionAddress,
+		});
 	}
 
 	const supplySchedule = await deployContract({
@@ -541,111 +489,83 @@ const deploy = async ({
 	});
 
 	const synthetixAddress = synthetix ? synthetix.options.address : '';
-	// get the owner (might not be us if we didn't just do a deploy)
-	const synthetixOwner = await synthetix.methods.owner().call();
 
 	if (proxySynthetix && synthetix) {
-		const target = await proxySynthetix.methods.target().call();
-		if (target !== synthetixAddress) {
-			const proxyOwner = await proxySynthetix.methods.owner().call();
-
-			if (proxyOwner === account) {
-				console.log(yellow('Invoking ProxySynthetix.setTarget(Synthetix)...'));
-				await proxySynthetix.methods.setTarget(synthetixAddress).send(deployer.sendParameters());
-			} else {
-				appendOwnerAction({
-					key: `ProxySynthetix.setTarget(Synthetix)`,
-					target: proxySynthetix.options.address,
-					action: `setTarget(${synthetixAddress})`,
-				});
-			}
-		}
+		await runStep({
+			contract: 'ProxySynthetix',
+			target: proxySynthetix,
+			read: 'target',
+			expected: input => input === synthetixAddress,
+			write: 'setTarget',
+			writeArg: synthetixAddress,
+		});
 	}
 
 	if (synthetix && feePool) {
-		const synthetixFeePool = await synthetix.methods.feePool().call();
+		await runStep({
+			contract: 'Synthetix',
+			target: synthetix,
+			read: 'feePool',
+			expected: input => input === feePoolAddress,
+			write: 'setFeePool',
+			writeArg: feePoolAddress,
+		});
 
-		if (synthetixFeePool !== feePoolAddress) {
-			if (synthetixOwner === account) {
-				console.log(yellow('Invoking Synthetix.setFeePool(FeePool)...'));
-				await synthetix.methods.setFeePool(feePoolAddress).send(deployer.sendParameters());
-			} else {
-				appendOwnerAction({
-					key: `Synthetix.setFeePool(FeePool)`,
-					target: synthetixAddress,
-					action: `setFeePool(${feePoolAddress})`,
-				});
-			}
-		}
+		await runStep({
+			contract: 'FeePool',
+			target: feePool,
+			read: 'synthetix',
+			expected: input => input === synthetixAddress,
+			write: 'setSynthetix',
+			writeArg: synthetixAddress,
+		});
 	}
 
 	if (synthetix && exchangeRates) {
-		const synthetixExRates = await synthetix.methods.exchangeRates().call();
-
-		if (synthetixExRates !== exchangeRatesAddress) {
-			if (synthetixOwner === account) {
-				console.log(yellow('Invoking Synthetix.setExchangeRates(ExchangeRates)...'));
-				await synthetix.methods
-					.setExchangeRates(exchangeRatesAddress)
-					.send(deployer.sendParameters());
-			} else {
-				appendOwnerAction({
-					key: `Synthetix.setExchangeRates(ExchangeRates)`,
-					target: synthetixAddress,
-					action: `setExchangeRates(${exchangeRatesAddress})`,
-				});
-			}
-		}
+		await runStep({
+			contract: 'Synthetix',
+			target: synthetix,
+			read: 'exchangeRates',
+			expected: input => input === exchangeRatesAddress,
+			write: 'setExchangeRates',
+			writeArg: exchangeRatesAddress,
+		});
 	}
 
 	// only reset token state if redeploying
 	if (tokenStateSynthetix && config['TokenStateSynthetix'].deploy) {
-		const balance = await tokenStateSynthetix.methods.balanceOf(account).call();
-
 		const initialIssuance = w3utils.toWei('100000000');
-		if (balance !== initialIssuance) {
-			console.log(yellow('Invoking TokenStateSynthetix.setBalanceOf(100M)...'));
-			await tokenStateSynthetix.methods
-				.setBalanceOf(account, initialIssuance)
-				.send(deployer.sendParameters());
-		}
+		await runStep({
+			contract: 'TokenStateSynthetix',
+			target: tokenStateSynthetix,
+			read: 'balanceOf',
+			readArg: account,
+			expected: input => input === initialIssuance,
+			write: 'setBalanceOf',
+			writeArg: [account, initialIssuance],
+		});
 	}
 
 	if (tokenStateSynthetix && synthetix) {
-		const associatedTSContract = await tokenStateSynthetix.methods.associatedContract().call();
-		if (associatedTSContract !== synthetixAddress) {
-			const tokenStateSynthetixOwner = await tokenStateSynthetix.methods.owner().call();
+		await runStep({
+			contract: 'TokenStateSynthetix',
+			target: tokenStateSynthetix,
+			read: 'associatedContract',
+			expected: input => input === synthetixAddress,
+			write: 'setAssociatedContract',
+			writeArg: synthetixAddress,
+		});
+	}
 
-			if (tokenStateSynthetixOwner === account) {
-				console.log(yellow('Invoking TokenStateSynthetix.setAssociatedContract(Synthetix)...'));
-				await tokenStateSynthetix.methods
-					.setAssociatedContract(synthetixAddress)
-					.send(deployer.sendParameters());
-			} else {
-				appendOwnerAction({
-					key: `TokenStateSynthetix.setAssociatedContract(Synthetix)`,
-					target: tokenStateSynthetix.options.address,
-					action: `setAssociatedContract(${synthetixAddress})`,
-				});
-			}
-		}
-		const associatedSSContract = await synthetixState.methods.associatedContract().call();
-		if (associatedSSContract !== synthetixAddress) {
-			const synthetixStateOwner = await synthetixState.methods.owner().call();
-
-			if (synthetixStateOwner === account) {
-				console.log(yellow('Invoking SynthetixState.setAssociatedContract(Synthetix)...'));
-				await synthetixState.methods
-					.setAssociatedContract(synthetixAddress)
-					.send(deployer.sendParameters());
-			} else {
-				appendOwnerAction({
-					key: `SynthetixState.setAssociatedContract(Synthetix)`,
-					target: synthetixState.options.address,
-					action: `setAssociatedContract(${synthetixAddress})`,
-				});
-			}
-		}
+	if (synthetixState && synthetix) {
+		await runStep({
+			contract: 'SynthetixState',
+			target: synthetixState,
+			read: 'associatedContract',
+			expected: input => input === synthetixAddress,
+			write: 'setAssociatedContract',
+			writeArg: synthetixAddress,
+		});
 	}
 
 	if (synthetixEscrow) {
@@ -657,46 +577,28 @@ const deploy = async ({
 	}
 
 	if (rewardEscrow && synthetix) {
-		const rewardEscrowSynthetix = await rewardEscrow.methods.synthetix().call();
-
-		if (rewardEscrowSynthetix !== synthetixAddress) {
-			// only the owner can do this
-			const rewardEscrowOwner = await rewardEscrow.methods.owner().call();
-
-			if (rewardEscrowOwner === account) {
-				console.log(yellow('Invoking RewardEscrow.setSynthetix()...'));
-				await rewardEscrow.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
-			} else {
-				appendOwnerAction({
-					key: `RewardEscrow.setSynthetix(Synthetix)`,
-					target: rewardEscrow.options.address,
-					action: `setSynthetix(${synthetixAddress})`,
-				});
-			}
-		}
+		await runStep({
+			contract: 'RewardEscrow',
+			target: rewardEscrow,
+			read: 'synthetix',
+			expected: input => input === synthetixAddress,
+			write: 'setSynthetix',
+			writeArg: synthetixAddress,
+		});
 	}
 
 	if (rewardEscrow && feePool) {
-		const rewardEscrowFeePool = await rewardEscrow.methods.feePool().call();
-
-		if (rewardEscrowFeePool !== feePoolAddress) {
-			// only the owner can do this
-			const rewardEscrowOwner = await rewardEscrow.methods.owner().call();
-
-			if (rewardEscrowOwner === account) {
-				console.log(yellow('Invoking RewardEscrow.setFeePool(FeePool)...'));
-				await rewardEscrow.methods.setFeePool(feePoolAddress).send(deployer.sendParameters());
-			} else {
-				appendOwnerAction({
-					key: `RewardEscrow.setFeePool(FeePool)`,
-					target: rewardEscrow.options.address,
-					action: `setFeePool(${feePoolAddress})`,
-				});
-			}
-		}
+		await runStep({
+			contract: 'RewardEscrow',
+			target: rewardEscrow,
+			read: 'feePool',
+			expected: input => input === feePoolAddress,
+			write: 'setFeePool',
+			writeArg: feePoolAddress,
+		});
 	}
 
-	// Skip setting unless redeploying either of these, as
+	// Skip setting unless redeploying either of these,
 	if (config['Synthetix'].deploy || config['SynthetixEscrow'].deploy) {
 		// Note: currently on mainnet SynthetixEscrow.methods.synthetix() does NOT exist
 		// it is "havven" and the ABI we have here is not sufficient
@@ -707,140 +609,74 @@ const deploy = async ({
 				action: `setHavven(${synthetixAddress})`,
 			});
 		} else {
-			const escrowSNXAddress = await synthetixEscrow.methods.synthetix().call();
-			if (escrowSNXAddress !== synthetixAddress) {
-				// only the owner can do this
-				const synthetixEscrowOwner = await synthetixEscrow.methods.owner().call();
-
-				if (synthetixEscrowOwner === account) {
-					console.log(yellow('Invoking SynthetixEscrow.setSynthetix(Synthetix)...'));
-					await synthetixEscrow.methods
-						.setSynthetix(synthetixAddress)
-						.send(deployer.sendParameters());
-				} else {
-					appendOwnerAction({
-						key: `SynthetixEscrow.setSynthetix(Synthetix)`,
-						target: synthetixEscrow.options.address,
-						action: `setSynthetix(${synthetixAddress})`,
-					});
-				}
-			}
-		}
-	}
-
-	if (feePool && synthetix) {
-		const fpSNXAddress = await feePool.methods.synthetix().call();
-		if (fpSNXAddress !== synthetixAddress) {
-			// only the owner can do this
-			if (feePoolOwner === account) {
-				console.log(yellow('Invoking FeePool.setSynthetix(Synthetix)...'));
-				await feePool.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
-			} else {
-				appendOwnerAction({
-					key: `FeePool.setSynthetix(Synthetix)`,
-					target: feePool.options.address,
-					action: `setSynthetix(${synthetixAddress})`,
-				});
-			}
+			await runStep({
+				contract: 'SynthetixEscrow',
+				target: synthetixEscrow,
+				read: 'synthetix',
+				expected: input => input === synthetixAddress,
+				write: 'setSynthetix',
+				writeArg: synthetixAddress,
+			});
 		}
 	}
 
 	if (supplySchedule && synthetix) {
-		const supplyScheduleSynthetix = await supplySchedule.methods.synthetix().call();
-
-		if (supplyScheduleSynthetix !== synthetixAddress) {
-			const supplyScheduleOwner = await supplySchedule.methods.owner().call();
-			// Only owner
-			if (supplyScheduleOwner === account) {
-				console.log(yellow('Invoking SupplySchedule.setSynthetix(Synthetix)'));
-				await supplySchedule.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
-			} else {
-				appendOwnerAction({
-					key: `SupplySchedule.setSynthetix(Synthetix)`,
-					target: supplySchedule.options.address,
-					action: `setSynthetix(${synthetixAddress})`,
-				});
-			}
-		}
+		await runStep({
+			contract: 'SupplySchedule',
+			target: supplySchedule,
+			read: 'synthetix',
+			expected: input => input === synthetixAddress,
+			write: 'setSynthetix',
+			writeArg: synthetixAddress,
+		});
 	}
 
 	// Setup Synthetix and deploy proxyERC20 for use in Synths
-	const proxyERC20 = await deployContract({
+	const proxyERC20Synthetix = await deployContract({
 		name: 'ProxyERC20',
 		deps: ['Synthetix'],
 		args: [account],
 	});
+	const proxyERC20SynthetixAddress = proxyERC20Synthetix ? proxyERC20Synthetix.options.address : '';
 
-	if (synthetix && proxyERC20) {
-		const proxySynthetixAddress = await proxyERC20.methods.target().call();
-		if (proxySynthetixAddress !== synthetixAddress) {
-			const iProxyOwner = await proxyERC20.methods.owner().call();
-			if (iProxyOwner === account) {
-				console.log(yellow(`Invoking ProxyERC20.setTarget()...`));
-				await proxyERC20.methods.setTarget(synthetixAddress).send(deployer.sendParameters());
-			} else {
-				appendOwnerAction({
-					key: `ProxyERC20.setTarget(Synthetix)`,
-					target: proxyERC20.options.address,
-					action: `setTarget(${synthetixAddress})`,
-				});
-			}
-		}
+	if (synthetix && proxyERC20Synthetix) {
+		await runStep({
+			contract: 'ProxyERC20',
+			target: proxyERC20Synthetix,
+			read: 'target',
+			expected: input => input === synthetixAddress,
+			write: 'setTarget',
+			writeArg: synthetixAddress,
+		});
 
-		const synthetixProxyAddress = await synthetix.methods.integrationProxy().call();
-		if (proxyERC20.options.address !== synthetixProxyAddress) {
-			const synthetixOwner = await synthetix.methods.owner().call();
-			if (synthetixOwner === account) {
-				console.log(yellow(`Invoking Synthetix.setIntegrationProxy()...`));
-				await synthetix.methods
-					.setIntegrationProxy(proxyERC20.options.address)
-					.send(deployer.sendParameters());
-			} else {
-				appendOwnerAction({
-					key: `Synthetix.setIntegrationProxy(ProxyERC20)`,
-					target: synthetix.options.address,
-					action: `setIntegrationProxy(${proxyERC20.options.address})`,
-				});
-			}
-		}
+		await runStep({
+			contract: 'Synthetix',
+			target: synthetix,
+			read: 'integrationProxy',
+			expected: input => input === proxyERC20SynthetixAddress,
+			write: 'setIntegrationProxy',
+			writeArg: proxyERC20SynthetixAddress,
+		});
+	}
 
-		if (synthetix && rewardsDistribution) {
-			const synthetixAddress = synthetix ? synthetix.options.address : '';
-			const synthetixProxyAddress = proxyERC20 ? proxyERC20.options.address : '';
-			const rewardsDistributionOwner = await rewardsDistribution.methods.owner().call();
-			const rewardsDistributionAuthorityAddress = await rewardsDistribution.methods
-				.authority()
-				.call();
-			const rewardsDistSNXProxyAddress = await rewardsDistribution.methods.synthetixProxy().call();
-			if (synthetixAddress !== rewardsDistributionAuthorityAddress) {
-				if (rewardsDistributionOwner === account) {
-					console.log(yellow('Invoking RewardsDistribution.setAuthority(Synthetix)...'));
-					await rewardsDistribution.methods
-						.setAuthority(synthetixAddress)
-						.send(deployer.sendParameters());
-				} else {
-					appendOwnerAction({
-						key: `RewardsDistribution.setAuthority(Synthetix)`,
-						target: rewardsDistribution.options.address,
-						action: `setAuthority(${synthetixAddress})`,
-					});
-				}
-			}
-			if (synthetixAddress !== rewardsDistSNXProxyAddress) {
-				if (rewardsDistributionOwner === account) {
-					console.log(yellow('Invoking RewardsDistribution.setSynthetixProxy(SynthetixProxy)...'));
-					await rewardsDistribution.methods
-						.setSynthetixProxy(synthetixProxyAddress)
-						.send(deployer.sendParameters());
-				} else {
-					appendOwnerAction({
-						key: `RewardsDistribution.setSynthetixProxy(SynthetixProxy)`,
-						target: rewardsDistribution.options.address,
-						action: `setSynthetixProxy(${synthetixProxyAddress})`,
-					});
-				}
-			}
-		}
+	if (synthetix && rewardsDistribution) {
+		await runStep({
+			contract: 'RewardsDistribution',
+			target: rewardsDistribution,
+			read: 'authority',
+			expected: input => input === synthetixAddress,
+			write: 'setAuthority',
+			writeArg: synthetixAddress,
+		});
+
+		await runStep({
+			contract: 'RewardsDistribution',
+			target: rewardsDistribution,
+			read: 'synthetixProxy',
+			expected: input => input === proxyERC20SynthetixAddress,
+			write: 'setSynthetixProxy',
+			writeArg: proxyERC20SynthetixAddress,
+		});
 	}
 
 	// ----------------
@@ -855,28 +691,43 @@ const deploy = async ({
 			force: addNewSynths,
 		});
 
-		let proxyForSynth, proxyERC20ForSynth;
-		if (currencyKey === 'sUSD' || currencyKey === 'sETH') {
-			proxyForSynth = await deployContract({
-				name: `Proxy${currencyKey}`,
-				source: 'Proxy',
-				args: [account],
-				force: addNewSynths,
-			});
+		// sETH and sUSD are used in Uniswap and thus cannot be easily changed.
+		// For now, they still require the old proxy (v2.9.x), hence we need to track these here.
+		const synthIsLegacy = currencyKey === 'sETH' && network !== 'local';
+		const proxyForSynth = await deployContract({
+			name: `Proxy${currencyKey}`,
+			source: synthIsLegacy ? 'Proxy' : 'ProxyERC20',
+			args: [account],
+			force: addNewSynths,
+		});
+		let proxyERC20ForSynth;
 
+		if (synthIsLegacy) {
+			// additionally deploy an ERC20 proxy for the synth if it's legacy (sETH and not on local)
 			proxyERC20ForSynth = await deployContract({
 				name: `ProxyERC20${currencyKey}`,
 				source: `ProxyERC20`,
 				args: [account],
 				force: addNewSynths,
 			});
+		}
+
+		// As sETH is used for Uniswap liquidity, we cannot switch out its proxy,
+		// thus we have these values we switch on to ensure sETH remains fixed to the
+		// v2.9.x version of Synth.sol and Proxy.sol - JJ
+		let currencyKeyInBytes;
+		let synthetixAddressForSynth;
+		let feePoolAddressForSynth;
+		if (synthIsLegacy) {
+			// requirements for v2.9.x and below Synths
+			currencyKeyInBytes = toBytes4(currencyKey);
+			synthetixAddressForSynth = synthetixAddress || '';
+			feePoolAddressForSynth = feePool.options.address || '';
 		} else {
-			proxyForSynth = await deployContract({
-				name: `Proxy${currencyKey}`,
-				source: 'ProxyERC20',
-				args: [account],
-				force: addNewSynths,
-			});
+			// requirements for v2.10.x+ Synths
+			currencyKeyInBytes = w3utils.asciiToHex(currencyKey);
+			synthetixAddressForSynth = synthetixProxyAddress || '';
+			feePoolAddressForSynth = proxyFeePool.options.address || '';
 		}
 
 		const additionalConstructorArgsMap = {
@@ -884,238 +735,124 @@ const deploy = async ({
 			// future subclasses...
 		};
 
-		let synth;
-		if (currencyKey === 'sETH' && network !== 'local') {
-			synth = await deployContract({
-				name: `Synth${currencyKey}`,
-				source: subclass || 'Synth',
-				deps: [`TokenState${currencyKey}`, `Proxy${currencyKey}`, 'Synthetix', 'FeePool'],
-				args: [
-					proxyForSynth ? proxyForSynth.options.address : '',
-					tokenStateForSynth ? tokenStateForSynth.options.address : '',
-					synthetix ? synthetixAddress : '',
-					feePool ? feePool.options.address : '',
-					`Synth ${currencyKey}`,
-					currencyKey,
-					account,
-					toBytes4(currencyKey),
-				].concat(additionalConstructorArgsMap[subclass] || []),
-				force: addNewSynths,
-			});
-		} else {
-			synth = await deployContract({
-				name: `Synth${currencyKey}`,
-				source: subclass || 'Synth',
-				deps: [`TokenState${currencyKey}`, `Proxy${currencyKey}`, 'Synthetix', 'FeePool'],
-				args: [
-					proxyForSynth ? proxyForSynth.options.address : '',
-					tokenStateForSynth ? tokenStateForSynth.options.address : '',
-					synthetixProxyAddress,
-					proxyFeePool ? proxyFeePool.options.address : '',
-					`Synth ${currencyKey}`,
-					currencyKey,
-					account,
-					w3utils.asciiToHex(currencyKey),
-				].concat(additionalConstructorArgsMap[subclass] || []),
-				force: addNewSynths,
-			});
-		}
+		const synth = await deployContract({
+			name: `Synth${currencyKey}`,
+			source: subclass || 'Synth',
+			deps: [`TokenState${currencyKey}`, `Proxy${currencyKey}`, 'Synthetix', 'FeePool'],
+			args: [
+				proxyForSynth ? proxyForSynth.options.address : '',
+				tokenStateForSynth ? tokenStateForSynth.options.address : '',
+				synthetixAddressForSynth,
+				feePoolAddressForSynth,
+				`Synth ${currencyKey}`,
+				currencyKey,
+				account,
+				currencyKeyInBytes,
+			].concat(additionalConstructorArgsMap[subclass] || []),
+			force: addNewSynths,
+		});
 
 		const synthAddress = synth ? synth.options.address : '';
-		if (synth && tokenStateForSynth) {
-			const tsAssociatedContract = await tokenStateForSynth.methods.associatedContract().call();
-			if (tsAssociatedContract !== synthAddress) {
-				const tsOwner = await tokenStateForSynth.methods.owner().call();
 
-				if (tsOwner === account) {
-					console.log(
-						yellow(`Invoking TokenState${currencyKey}.setAssociatedContract(Synth${currencyKey})`)
-					);
-
-					await tokenStateForSynth.methods
-						.setAssociatedContract(synthAddress)
-						.send(deployer.sendParameters());
-				} else {
-					appendOwnerAction({
-						key: `TokenState${currencyKey}.setAssociatedContract(Synth${currencyKey})`,
-						target: tokenStateForSynth.options.address,
-						action: `setAssociatedContract(${synthAddress})`,
-					});
-				}
-			}
+		if (tokenStateForSynth && synth) {
+			await runStep({
+				contract: `TokenState${currencyKey}`,
+				target: tokenStateForSynth,
+				read: 'associatedContract',
+				expected: input => input === synthAddress,
+				write: 'setAssociatedContract',
+				writeArg: synthAddress,
+			});
 		}
 
-		// Setup proxy
+		// Setup proxy for synth (either ProxyERC20 or legacy Proxy for sETH)
 		if (proxyForSynth && synth) {
-			const target = await proxyForSynth.methods.target().call();
-			if (target !== synthAddress) {
-				const proxyForSynthOwner = await proxyForSynth.methods.owner().call();
-
-				if (proxyForSynthOwner === account) {
-					console.log(yellow(`Invoking Proxy${currencyKey}.setTarget(Synth${currencyKey})`));
-
-					await proxyForSynth.methods.setTarget(synthAddress).send(deployer.sendParameters());
-				} else {
-					appendOwnerAction({
-						key: `Proxy${currencyKey}.setTarget(Synth${currencyKey})`,
-						target: proxyForSynth.options.address,
-						action: `setTarget(${synthAddress})`,
-					});
-				}
-			}
+			await runStep({
+				contract: `Proxy${currencyKey}`,
+				target: proxyForSynth,
+				read: 'target',
+				expected: input => input === synthAddress,
+				write: 'setTarget',
+				writeArg: synthAddress,
+			});
 		}
 
-		// Setup proxyERC20 for Synth - should be set as integration proxy
+		// Setup integration proxy (ProxyERC20) for Synth
 		if (proxyERC20ForSynth && synth) {
-			const target = await proxyERC20ForSynth.methods.target().call();
-			const synthIntegrationProxy = await synth.methods.integrationProxy().call();
+			await runStep({
+				contract: `Synth${currencyKey}`,
+				target: synth,
+				read: 'integrationProxy',
+				expected: input => input === proxyERC20ForSynth.options.address,
+				write: 'setIntegrationProxy',
+				writeArg: proxyERC20ForSynth.options.address,
+			});
 
-			if (proxyERC20ForSynth.options.address !== synthIntegrationProxy) {
-				const synthOwner = await synth.methods.owner().call();
-				if (synthOwner === account) {
-					console.log(
-						yellow(`Invoking Synth${currencyKey}.setIntegrationProxy(ProxyERC20${currencyKey})`)
-					);
-					await synth.methods
-						.setIntegrationProxy(proxyERC20ForSynth.options.address)
-						.send(deployer.sendParameters());
-				} else {
-					appendOwnerAction({
-						key: `Synth${currencyKey}.setIntegrationProxy(ProxyERC20${currencyKey})`,
-						target: synth.options.address,
-						action: `setIntegrationProxy(${proxyERC20ForSynth.options.address})`,
-					});
-				}
-			}
-
-			if (target !== synthAddress) {
-				const proxyOwner = await proxyERC20ForSynth.methods.owner().call();
-				if (proxyOwner === account) {
-					console.log(yellow(`Invoking ProxyERC20${currencyKey}.setTarget(Synth${currencyKey})`));
-					await proxyERC20ForSynth.methods.setTarget(synthAddress).send(deployer.sendParameters());
-				} else {
-					appendOwnerAction({
-						key: `ProxyERC20${currencyKey}.setTarget(Synth${currencyKey})`,
-						target: proxyERC20ForSynth.options.address,
-						action: `setTarget(${synthAddress})`,
-					});
-				}
-			}
+			await runStep({
+				contract: `ProxyERC20${currencyKey}`,
+				target: proxyERC20ForSynth,
+				read: 'target',
+				expected: input => input === synthAddress,
+				write: 'setTarget',
+				writeArg: synthAddress,
+			});
 		}
 
-		// Old Synth.sol and currencyKey bytes4 (sETH currently on kovan / mainnet)
-		if (currencyKey === 'sETH' && network !== 'local') {
-			if (synth && synthetix) {
-				const currentSynthInSNX = await synthetix.methods.synths(toBytes4(currencyKey)).call();
-				if (currentSynthInSNX !== synthAddress) {
-					// only owner of Synthetix can do this
-					if (synthetixOwner === account) {
-						console.log(yellow(`Invoking Synthetix.addSynth(Synth${currencyKey})...`));
-						await synthetix.methods.addSynth(synthAddress).send(deployer.sendParameters());
-					} else {
-						appendOwnerAction({
-							key: `Synthetix.addSynth(Synth${currencyKey})`,
-							target: synthetixAddress,
-							action: `addSynth(${synthAddress})`,
-						});
-					}
+		// Now setup connection to the Synth with Synthetix
+		if (synth && synthetix) {
+			await runStep({
+				contract: 'Synthetix',
+				target: synthetix,
+				read: 'synths',
+				readArg: currencyKeyInBytes,
+				expected: input => input === synthAddress,
+				write: 'addSynth',
+				writeArg: synthAddress,
+			});
+
+			if (synthIsLegacy) {
+				// For legacy synths (v2.9.x) we need to use Synth.setSynthetix
+				await runStep({
+					contract: `Synth${currencyKey}`,
+					target: synth,
+					read: 'synthetix',
+					expected: input => input === synthetixAddress,
+					write: 'setSynthetix',
+					writeArg: synthetixAddress,
+				});
+
+				// For legacy synths (v2.9.x) we need to use Synth.setFeePool
+				if (feePool) {
+					await runStep({
+						contract: `Synth${currencyKey}`,
+						target: synth,
+						read: 'feePool',
+						expected: input => input === feePoolAddress,
+						write: 'setFeePool',
+						writeArg: feePoolAddress,
+					});
 				}
+			} else {
+				// For latest synths (v2.10.x) we need to use Synth.setSynthetixProxy
+				await runStep({
+					contract: `Synth${currencyKey}`,
+					target: synth,
+					read: 'synthetixProxy',
+					expected: input => input === synthetixProxyAddress,
+					write: 'setSynthetixProxy',
+					writeArg: synthetixProxyAddress,
+				});
 
-				const synthSNXAddress = await synth.methods.synthetix().call();
-				const synthOwner = await synth.methods.owner().call();
-
-				// ensure synth has correct Synthetix
-				if (synthSNXAddress !== synthetixAddress) {
-					if (synthOwner === account) {
-						console.log(yellow(`Invoking Synth${currencyKey}.setSynthetix(Synthetix)...`));
-						await synth.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
-					} else {
-						appendOwnerAction({
-							key: `Synth${currencyKey}.setSynthetix(Synthetix)`,
-							target: synthAddress,
-							action: `setSynthetix(${synthetixAddress})`,
-						});
-					}
-				}
-
-				// ensure synth has correct FeePool
-				if (synth && feePool) {
-					const synthFeePoolAddress = await synth.methods.feePool().call();
-
-					if (synthFeePoolAddress !== feePoolAddress) {
-						if (synthOwner === account) {
-							console.log(yellow(`Invoking Synth${currencyKey}.setFeePool(FeePool)...`));
-							await synth.methods.setFeePool(feePoolAddress).send(deployer.sendParameters());
-						} else {
-							appendOwnerAction({
-								key: `Synth${currencyKey}.setFeePool(FeePool)`,
-								target: synthAddress,
-								action: `setFeePool(${feePoolAddress})`,
-							});
-						}
-					}
-				}
-			}
-		} else {
-			//  New Synth.sol with currencyKey - bytes32, with feePoolProxy and synthetixProxy
-			if (synth && synthetix) {
-				const currentSynthInSNX = await synthetix.methods
-					.synths(w3utils.asciiToHex(currencyKey))
-					.call();
-				if (currentSynthInSNX !== synthAddress) {
-					// only owner of Synthetix can do this
-					if (synthetixOwner === account) {
-						console.log(yellow(`Invoking Synthetix.addSynth(Synth${currencyKey})...`));
-						await synthetix.methods.addSynth(synthAddress).send(deployer.sendParameters());
-					} else {
-						appendOwnerAction({
-							key: `Synthetix.addSynth(Synth${currencyKey})`,
-							target: synthetixAddress,
-							action: `addSynth(${synthAddress})`,
-						});
-					}
-				}
-
-				const synthSNXProxyAddress = await synth.methods.synthetixProxy().call();
-				const synthOwner = await synth.methods.owner().call();
-
-				// ensure synth has correct Synthetix proxy
-				if (synthSNXProxyAddress !== synthetixProxyAddress) {
-					if (synthOwner === account) {
-						console.log(
-							yellow(`Invoking Synth${currencyKey}.setSynthetixProxy(synthetixProxyERC20)...`)
-						);
-						await synth.methods
-							.setSynthetixProxy(synthetixProxyAddress)
-							.send(deployer.sendParameters());
-					} else {
-						appendOwnerAction({
-							key: `Synth${currencyKey}.setSynthetixProxy(synthetixProxyERC20)`,
-							target: synthAddress,
-							action: `setSynthetixProxy(${synthetixProxyAddress})`,
-						});
-					}
-				}
-			}
-
-			// ensure synth has correct FeePool Proxy
-			if (synth && feePool) {
-				const synthFeePoolProxyAddress = await synth.methods.feePoolProxy().call();
-				const synthOwner = await synth.methods.owner().call();
-
-				if (synthFeePoolProxyAddress !== proxyFeePool.options.address) {
-					if (synthOwner === account) {
-						console.log(yellow(`Invoking Synth${currencyKey}.setFeePoolProxy(proxyFeePool)...`));
-						await synth.methods
-							.setFeePoolProxy(proxyFeePool.options.address)
-							.send(deployer.sendParameters());
-					} else {
-						appendOwnerAction({
-							key: `Synth${currencyKey}.setFeePoolProxy(proxyFeePool)`,
-							target: synthAddress,
-							action: `setFeePoolProxy(${proxyFeePool.options.address})`,
-						});
-					}
+				// For latest synths (v2.10.x) we need to use Synth.setFeePoolProxy
+				if (proxyFeePool) {
+					await runStep({
+						contract: `Synth${currencyKey}`,
+						target: synth,
+						read: 'feePoolProxy',
+						expected: input => input === proxyFeePool.options.address,
+						write: 'setFeePoolProxy',
+						writeArg: proxyFeePool.options.address,
+					});
 				}
 			}
 		}
@@ -1183,20 +920,14 @@ const deploy = async ({
 	});
 
 	if (synthetix && depot) {
-		const depotSNXAddress = await depot.methods.synthetix().call();
-		if (depotSNXAddress !== synthetixAddress) {
-			const depotOwner = await depot.methods.owner().call();
-			if (depotOwner === account) {
-				console.log(yellow(`Invoking Depot.setSynthetix()...`));
-				await depot.methods.setSynthetix(synthetixAddress).send(deployer.sendParameters());
-			} else {
-				appendOwnerAction({
-					key: `Depot.setSynthetix(Synthetix)`,
-					target: depot.options.address,
-					action: `setSynthetix(${synthetixAddress})`,
-				});
-			}
-		}
+		await runStep({
+			contract: 'Depot',
+			target: depot,
+			read: 'synthetix',
+			expected: input => input === synthetixAddress,
+			write: 'setSynthetix',
+			writeArg: synthetixAddress,
+		});
 	}
 
 	console.log(green('\nSuccessfully deployed all contracts!\n'));
