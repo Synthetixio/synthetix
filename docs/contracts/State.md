@@ -4,6 +4,8 @@
 
 Allows a contract to have an external state whose values only it can modify.
 
+<section-sep />
+
 ## Inheritance Graph
 
 <inheritance-graph>
@@ -18,7 +20,7 @@ Allows a contract to have an external state whose values only it can modify.
 
 ### `associatedContract`
 
-The address (presumably a contract) which is permitted to use functions on this contract which have the [`onlyAssociatedContract`](State.md#onlyassociatedcontract) modifier.
+The address (presumably a contract) which is permitted to use functions on this contract which have the [`onlyAssociatedContract`](#onlyassociatedcontract) modifier.
 
 **Type:** `address public`
 
@@ -46,13 +48,13 @@ Initialises the associated contract and the owner, who has the exclusive right t
 
     **Emits**
 
-    * [`AssociatedContractUpdated(_associatedContract)`](State.md#associatedcontractupdated)
+    * [`AssociatedContractUpdated(_associatedContract)`](#associatedcontractupdated)
 
 ---
 
 ### `setAssociatedContract`
 
-Allows the contract's owner to update the [associated contract](State.md#associatedContract).
+Allows the contract's owner to update the [associated contract](#associatedContract).
 
 ??? example "Details"
 
@@ -66,7 +68,7 @@ Allows the contract's owner to update the [associated contract](State.md#associa
 
     **Emits**
 
-    * [`AssociatedContractUpdated(_associatedContract)`](State.md#associatedcontractupdated)
+    * [`AssociatedContractUpdated(_associatedContract)`](#associatedcontractupdated)
 
 ---
 
@@ -78,7 +80,7 @@ Allows the contract's owner to update the [associated contract](State.md#associa
 
 ### `onlyAssociatedContract`
 
-Reverts the transaction if the `msg.sender` is not the [associated contract](State.md#associatedcontract). Provided for use by inheriting contracts.
+Reverts the transaction if the `msg.sender` is not the [associated contract](#associatedcontract). Provided for use by inheriting contracts.
 
 ---
 

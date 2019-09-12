@@ -1,22 +1,77 @@
 # FeePoolEternalStorage
 
-This is just wrapper around the EternalStorage contract with a limited setup period and a setup function that sets each account's last fee withdrawal times.
+## Description
 
-## Inherited Contracts
+FeePoolEternalStorage is currently used only to store the last fee withdrawal timestamp for each address.
 
-* [EternalStorage](EternalStorage.md)
-* [LimitedSetup](LimitedSetup.md)
-* ^[State](State.md)
-* ^^[Owned](Owned.md)
+This contract is just wrapper around [EternalStorage](EternalStorage.md) with a limited setup period and a setup function that sets each account's last fee withdrawal times.
 
-## Related Contracts
+<section-sep />
 
-* <[FeePool](FeePool.md)
+## Inheritance Graph
+
+<inheritance-graph>
+    ![graph](../img/graphs/FeePoolEternalStorage.svg)
+</inheritance-graph>
+
+<section-sep />
 
 ## Variables
 
-* `LAST_FEE_WITHDRAWAL`: Just a const string with the value "last_fee_withdrawal".
+---
+
+### `LAST_FEE_WITHDRAWAL`
+
+This is a const string with the value "last_fee_withdrawal", to be used to access the correct slot in the eternal storage map.
+
+This is hashed together with an address to obtain the key for that address's last withdrawal time (a `uint`). See [`FeePool.getLastFeeWithdrawal`](FeePool.md#getlastfeewithdrawal) and [`FeePool.setLastFeeWithdrawal`](FeePool.md#setlastfeewithdrawal) for applications.
+
+**Type:** `bytes32 const`
+
+---
+
+<section-sep />
 
 ## Functions
 
-* `importFeeWithdrawalData(address[] accounts, uint[] feePeriodIDs)`: Callable only by the owner, and only during the six-week setup period. This is a helper to import fee withdrawal information from a previous version of the system.
+---
+
+### `constructor`
+
+Initialises the inherited [`EternalStorage`](EternalStorage.md) instance, and sets a [limited setup period](LimitedSetup.md) of six weeks.
+
+??? example "Details"
+
+    **Signature**
+
+    `constructor(address _owner, address _feePool) public`
+
+    **Superconstructors**
+
+    * [`EternalStorage(_owner, _feePool)`](EternalStorage.md#constructor)
+    * [`LimitedSetup(6 weeks)`](LimitedSetup.md#constructor)
+
+---
+
+### `importFeeWithdrawalData`
+
+This is a helper to import fee withdrawal information from a previous version of the system during the setup period.
+
+??? example "Details"
+
+    **Signature**
+
+    `importFeeWithdrawalData(address[] accounts, uint[] feePeriodIDs) external`
+
+    **Modifiers**
+
+    * [`Owned.onlyOwner`](Owned.md#onlyowner)
+    * [`LimitedSetup.onlyDuringSetup`](LimitedSetup.md#onlyduringsetup)
+
+    **Preconditions**
+
+    * The length of the accounts and feePeriodIDs arrays must be equal, otherwise the transaction reverts.
+
+---
+
+<section-sep />

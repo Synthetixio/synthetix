@@ -64,6 +64,10 @@ Pauses or unpauses the contract. Sets [`lastPauseTime`](#lastPauseTime) to the c
     
     `setPaused(bool _paused)`
 
+    **Modifiers**
+
+    * [`Owned.onlyOwner`](Owned.md#onlyowner)
+
     **Emits**
 
     * [`PauseChanged(paused)`](#pausechanged)

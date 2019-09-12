@@ -82,7 +82,7 @@ Sets the value associated with a particular key in the [`𝕋Storage`](EternalSt
 
     **Modifiers**
 
-    * [`onlyAssociatedContract`](State.md#onlyassociatedcontract)
+    * [`State.onlyAssociatedContract`](State.md#onlyassociatedcontract)
 
 ---
 
@@ -97,7 +97,7 @@ Deletes the value associated with a particular key in the [`𝕋Storage`](Eterna
 
     **Modifiers**
 
-    * [`onlyAssociatedContract`](State.md#onlyassociatedcontract)
+    * [`State.onlyAssociatedContract`](State.md#onlyassociatedcontract)
 
 ---
 

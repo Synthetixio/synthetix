@@ -56,5 +56,5 @@ FeePoolState was required to store each accounts issuance data per fee period. S
 * change in the IssuanceData struct
 * change in the length of fee periods FEE_PERIOD_LENGTH
 
-!! todo
+!!! todo
     Delete the old useless design decisions document.

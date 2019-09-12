@@ -7,6 +7,14 @@ The owner can be changed by a nomination process, where the nominated owner must
 
 <section-sep />
 
+## Inheritance Graph
+
+<inheritance-graph>
+    ![graph](../img/graphs/Owned.svg)
+</inheritance-graph>
+
+<section-sep />
+
 ## Variables
 
 ---

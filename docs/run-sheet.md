@@ -59,6 +59,7 @@
     * [ ] Syntax highlighting for Solidity. https://squidfunk.github.io/mkdocs-material/extensions/codehilite/ https://github.com/maurelian/best-practices-docs/blob/master/mkdocs.yml
     * [ ] More detailed function signature breakdown including argument descriptions etc.
     * [ ] Expand all/Collapse all button for details panels.
+    * [ ] See if ambiguous anchor links such as those in DelegateApprovals can be disambiguated.
 
 ??? "Potential Vulnerabilities To Investigate"
     * [ ] Oracle front-running.

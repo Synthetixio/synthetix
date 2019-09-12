@@ -19,6 +19,8 @@ This contract is used to allow users to allow other addresses to withdraw fees f
 
 ## Variables
 
+---
+
 ### `approval`
 
 Stores who has approved whom to perform actions. The double mapping allows each authoriser to have multiple delegates, ordered as `approval[authoriser][delegate]`.
@@ -60,11 +62,11 @@ Grants approval for a delegate to act on behalf of a given authoriser.
 
     **Modifiers**
 
-    * [`onlyAssociatedContract`](State.md#onlyassociatedcontract)
+    * [`State.onlyAssociatedContract`](State.md#onlyassociatedcontract)
 
     **Emits**
 
-    * [`Approval(authoriser, delegate)`](DelegateApprovals.md#setapproval)
+    * [`Approval(authoriser, delegate)`](#approval)
 
 ---
 
@@ -80,11 +82,11 @@ Revokes the approval of a delegate to act on behalf of a given authoriser.
     
     **Modifiers**
 
-    * [`onlyAssociatedContract`](State.md#onlyassociatedcontract)
+    * [`State.onlyAssociatedContract`](State.md#onlyassociatedcontract)
 
     **Emits**
 
-    * [`WithdrawApproval(authoriser, delegate)`](DelegateApprovals.md#setapproval)
+    * [`WithdrawApproval(authoriser, delegate)`](#withdrawapproval)
 
 ---
 
