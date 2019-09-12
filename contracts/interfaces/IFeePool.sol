@@ -12,4 +12,5 @@ contract IFeePool {
     function feePaid(bytes32 currencyKey, uint amount) external;
     function appendAccountIssuanceRecord(address account, uint lockedAmount, uint debtEntryIndex) external;
     function setRewardsToDistribute(uint amount) external;
+    function transferFeeIncurred(uint value) public view returns (uint);
 }
