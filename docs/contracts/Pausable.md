@@ -4,19 +4,13 @@
 
 Allows an inheriting contract to be paused and resumed, providing a modifier that will allow modified functions to operate only if the contract is not paused.
 
----
-
 ## Inheritance Graph
-
----
 
 <inheritance-graph>
     ![graph](../img/graphs/Pausable.svg)
 </inheritance-graph>
 
----
-
-<section-sep>⁂</section-sep>
+<section-sep />
 
 ## Variables
 
@@ -38,7 +32,7 @@ True iff the contract is currently paused.
 
 ---
 
-<section-sep>⁂</section-sep>
+<section-sep />
 
 ## Functions
 
@@ -50,7 +44,7 @@ The owner this constructor initialises has the exclusive right to pause the cont
 
 **Signature:** `constructor(address _owner) public`
 
-**Superconstructors:**
+**Superconstructors**
 
 * [`Owned(_owner)`](Owned.md#constructor)
 
@@ -58,15 +52,19 @@ The owner this constructor initialises has the exclusive right to pause the cont
 
 ### `setPaused`
 
-Pauses or unpauses the contract. Sets [`lastPauseTime`](#lastPauseTime) to the current time if the contract is newly paused.
+Pauses or unpauses the contract. Sets [`lastPauseTime`](#lastPauseTime) to the current timestamp if the contract is newly paused.
 
-**Signature:** `setPaused(bool _paused)`
+??? example "Details"
 
-**Emits:** [`PauseChanged(paused)`](#pausechanged)
+    **Signature:** `setPaused(bool _paused)`
+
+    **Emits**
+
+    * [`PauseChanged(paused)`](#pausechanged)
 
 ---
 
-<section-sep>⁂</section-sep>
+<section-sep />
 
 ## Modifiers
 
@@ -78,7 +76,7 @@ Reverts the transaction the contract is [`paused`](#paused). Provided for use by
 
 ---
 
-<section-sep>⁂</section-sep>
+<section-sep />
 
 ## Events
 
@@ -87,3 +85,5 @@ Reverts the transaction the contract is [`paused`](#paused). Provided for use by
 The contract has gone from paused to unpaused or vice versa. This event reports the new state.
 
 **Signature:** `PauseChanged(bool isPaused)`
+
+<section-sep />

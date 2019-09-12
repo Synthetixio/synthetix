@@ -56,6 +56,7 @@
     * [ ] Merge into core SNX repository and enable edit buttons. Add a note to the Intro page that the docs can be edited by anyone with a PR.
     * [ ] Better colour for details sections
     * [ ] Syntax highlighting for Solidity. https://squidfunk.github.io/mkdocs-material/extensions/codehilite/ https://github.com/maurelian/best-practices-docs/blob/master/mkdocs.yml
+    * [ ] More detailed function signature breakdown including argument descriptions etc.
 
 ??? "Potential Vulnerabilities To Investigate"
     * [ ] Oracle front-running.

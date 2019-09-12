@@ -1,21 +1,97 @@
 # State
 
+## Description
+
 Allows a contract to have an external state whose values only it can modify.
 
-## Inherited Contracts
+## Inheritance Graph
 
-### Direct
+<inheritance-graph>
+    ![graph](../img/graphs/State.svg)
+</inheritance-graph>
 
-* [Owned](Owned.md)
+<section-sep />
 
 ## Variables
 
-* `associatedContract: address public`: The contract (presumably) which is permitted to use functions on this contract which have the `onlyAssociatedContract` modifier.
+---
+
+### `associatedContract`
+
+The address (presumably a contract) which is permitted to use functions on this contract which have the [`onlyAssociatedContract`](State.md#onlyassociatedcontract) modifier.
+
+**Type:** `address public`
+
+---
+
+<section-sep />
 
 ## Functions
 
-* `setAssociatedContract(address _associatedContract)`: Only callable by the owner of this contract.
+---
+
+### `constructor`
+
+Initialises the associated contract and the owner, who has the exclusive right to switch the associated contract.
+
+??? example "Details"
+
+    **Signature**
+
+    `constructor(address _owner, address _associatedContract)`
+
+    **Superconstructors**
+
+    * [`Owned(_owner)`](Owned.md#constructor)
+
+    **Emits**
+
+    * [`AssociatedContractUpdated(_associatedContract)`](State.md#associatedcontractupdated)
+
+---
+
+### `setAssociatedContract`
+
+Allows the contract's owner to update the [associated contract](State.md#associatedContract).
+
+??? example "Details"
+
+    **Signature**
+
+    `setAssociatedContract(address _associatedContract) external`
+
+    **Modifiers**
+
+    * [`Owned.onlyOwner`](Owned.md#onlyowner)
+
+    **Emits**
+
+    * [`AssociatedContractUpdated(_associatedContract)`](State.md#associatedcontractupdated)
+
+---
+
+<section-sep />
+
+## Modifiers
+
+---
+
+### `onlyAssociatedContract`
+
+Reverts the transaction if the `msg.sender` is not the [associated contract](State.md#associatedcontract). Provided for use by inheriting contracts.
+
+---
+
+<section-sep />
 
 ## Events
 
-* `AssociatedContractUpdated(address associatedContract)`
+### `AssociatedContractUpdated`
+
+The associated contract was updated by the owner. This event reports the new associated contract.
+
+**Signature:** `AssociatedContractUpdated(address associatedContract)`
+
+---
+
+<section-sep />
