@@ -26,7 +26,9 @@ Each type of variable has its own mapping, along with getters and setters. As th
 
 ### `𝕋Storage`
 
-`𝕋Storage: mapping(bytes32 => 𝕋)`: A mapping from keys to values of type 𝕋.
+A mapping from keys to values of type 𝕋.
+
+**Type:** `mapping(bytes32 => 𝕋)`
 
 ---
 
