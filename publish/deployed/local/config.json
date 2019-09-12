@@ -89,9 +89,6 @@
 	"ProxysUSD": {
 		"deploy": true
 	},
-	"ProxyERC20sUSD": {
-		"deploy": true
-	},
 	"ProxyXDR": {
 		"deploy": true
 	},
