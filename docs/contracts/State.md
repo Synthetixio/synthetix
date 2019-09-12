@@ -9,7 +9,7 @@ Allows a contract to have an external state whose values only it can modify.
 ## Inheritance Graph
 
 <inheritance-graph>
-    ![graph](../img/graphs/State.svg)
+    ![State inheritance graph](../img/graphs/State.svg)
 </inheritance-graph>
 
 <section-sep />

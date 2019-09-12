@@ -7,7 +7,7 @@ Allows an inheriting contract to be paused and resumed, providing a modifier tha
 ## Inheritance Graph
 
 <inheritance-graph>
-    ![graph](../img/graphs/Pausable.svg)
+    ![Pausable inheritance graph](../img/graphs/Pausable.svg)
 </inheritance-graph>
 
 <section-sep />

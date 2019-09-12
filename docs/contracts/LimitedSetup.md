@@ -9,7 +9,7 @@ This contract allows certain functions within inheriting contracts to only opera
 ## Inheritance Graph
 
 <inheritance-graph>
-    ![graph](../img/graphs/LimitedSetup.svg)
+    ![LimitedSetup inheritance graph](../img/graphs/LimitedSetup.svg)
 </inheritance-graph>
 
 <section-sep />

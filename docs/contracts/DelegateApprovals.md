@@ -12,7 +12,7 @@ This contract is used to allow users to allow other addresses to withdraw fees f
 ## Inheritance Graph
 
 <inheritance-graph>
-    ![graph](../img/graphs/DelegateApprovals.svg)
+    ![DelegateApprovals inheritance graph](../img/graphs/DelegateApprovals.svg)
 </inheritance-graph>
 
 <section-sep />
