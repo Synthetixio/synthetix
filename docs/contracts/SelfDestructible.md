@@ -1,30 +1,207 @@
 # SelfDestructible
 
-A contract inheriting this can be self-destructed by its owner, after a delay.
+## Description
 
-## Inherited Contracts
+`SelfDestructible` allows an inheriting contract to be destroyed by its owner, who must announce an intention to destroy it, and then wait for a four week cooling-off period before being able to destroy it. Any ether remaining in the contract at this time is forwarded to a nominated beneficiary.
 
-### Direct
+<section-sep />
 
-* [State](State.md)
+## Inheritance Graph
+
+<inheritance-graph>
+    ![SelfDestructible inheritance graph](../img/graphs/SelfDestructible.svg)
+</inheritance-graph>
+
+<section-sep />
 
 ## Variables
 
-* `initiationTime: uint public`
-* `selfDestructInitiated: bool public`
-* `selfDestructBeneficiary: address public`: The address where any lingering eth in this contract will be sent.
-* `SELFDESTRUCT_DELAY: uint public constant`: The duration that must be waited between self destruct initiation and actual destruction. 4 weeks by default.
+---
+
+### `initiationTime`
+
+The timestamp at which the self destruction was begun.
+
+**Type:** `uint public`
+
+---
+
+### `selfDestructInitiated`
+
+True iff the contract is currently undergoing self destruction.
+
+**Type:** `bool public`
+
+---
+
+### `selfDestructBeneficiary`
+
+The address where any lingering eth in this contract will be sent.
+
+**Type:** `address public`
+
+---
+
+### `SELFDESTRUCT_DELAY`
+
+The duration (four weeks) that must be waited between self destruct initiation and actual destruction. That is the contract can only be destroyed after the timestamp `initiationTime + 4 weeks`.
+
+**Type:** `uint public constant`
+
+---
+
+<section-sep />
 
 ## Functions
 
-* `setSelfDestructBeneficiary(address _beneficiary)`
-* `initiateSelfDestruct()`: Begin the self destruct countdown.
-* `terminateSelfDestruct()`: Reset the timer and disable self destruction.
-* `selfDestruct()`: If self destruction is active and the timer has elapsed, destroy this contract and forward its ether to `selfDestructBeneficiary`.
+---
+
+### `constructor`
+
+Initialises the inherited [`Owned`](Owned.md) instance and nominates that owner as the initial [self destruct beneficiary](#selfdestructbeneficiary).
+
+??? example "Details"
+
+    **Signature**
+
+    `constructor(address _owner) public`
+
+    **Superconstructors**
+
+    * [`Owned(_owner)`](Owned.md#constructor)
+
+    **Preconditions**
+
+    * The transaction reverts if the provided owner is the zero address.
+
+    **Emits**
+
+    * [`SelfDestructBeneficiaryUpdated(_owner)`](#selfdestructbeneficiaryupdated)
+
+---
+
+### `setSelfDestructBeneficiary`
+
+Changes the [self destruct beneficiary](#selfdestructbeneficiary).
+
+??? example "Details"
+
+    **Signature**
+    
+    `setSelfDestructBeneficiary(address _beneficiary) external`
+
+    **Modifiers**
+
+    * [Owned.onlyOwner](Owned.md#onlyowner)
+
+    **Preconditions**
+
+    * The transaction reverts if the provided beneficiary is the zero address.
+
+    **Emits**
+
+    * [`SelfDestructBeneficiaryUpdated(_beneficiary)`](#selfdestructbeneficiaryupdated)
+
+---
+
+### `initiateSelfDestruct`
+
+Begins the self destruct countdown, updating [`initiationTime`](#initiationtime) and [`selfDestructInitiated`](#selfdestructinitiated). Only once the delay has elapsed can the contract be destroyed.
+
+??? example "Details"
+    **Signature**
+
+    `initiateSelfDestruct() external`
+
+    **Modifiers**
+
+    * [Owned.onlyOwner](Owned.md#onlyowner)
+
+    **Emits**
+
+    * [`SelfDestructInitiated(`](#selfdestructinitiated)[`SELFDESTRUCT_DELAY`](#selfdestruct_delay)[`)`](#selfdestructinitiated)
+
+---
+
+### `terminateSelfDestruct`
+
+Resets the timer and disables self destruction.
+
+??? example "Details"
+
+    **Signature**
+
+    `terminateSelfDestruct() external`
+
+    **Modifiers**
+
+    * [Owned.onlyOwner](Owned.md#onlyowner)
+
+    **Emits**
+
+    * [`SelfDestructTerminated()`](#selfdestructterminated)
+
+---
+
+### `selfDestruct`
+
+If self destruction is active and the timer has elapsed, destroy this contract and forward its ether to [`selfDestructBeneficiary`](#selfdestructbeneficiary).
+
+??? example "Details"
+
+    **Signature**
+
+    `selfDestruct() external`
+
+    **Modifiers**
+
+    * [Owned.onlyOwner](Owned.md#onlyowner)
+
+    **Preconditions**
+
+    * The transaction reverts if [self destruction has not been initiated](#selfdestructinitiated).
+    * The transaction reverts if the [self destruct delay has not elapsed](#selfdestruct_delay).
+
+    **Emits**
+
+    * [`SelfDestructed()`](#selfdestructed)
+
+<section-sep />
 
 ## Events
 
-* `SelfDestructTerminated()`
-* `SelfDestructed(address beneficiary)`
-* `SelfDestructInitiated(uint selfDestructDelay)`
-* `SelfDestructBeneficiaryUpdated(address newBeneficiary)`
+---
+
+### `SelfDestructTerminated`
+
+Self destruction was terminated by the contract owner.
+
+**Signature:** `SelfDestructTerminated()`
+
+---
+
+### `SelfDestructed`
+
+The contract was destroyed, forwarding the ether on to the [beneficiary](#selfdestructbeneficiary).
+
+**Signature:** `SelfDestructed(address beneficiary)`
+
+---
+
+### `SelfDestructInitiated`
+
+Self destruction was initiated with the indicated delay time.
+
+**Signature:** `SelfDestructInitiated(uint selfDestructDelay)`
+
+---
+
+### `SelfDestructBeneficiaryUpdated`
+
+The self destruct beneficiary was changed to the indicated new address.
+
+**Signature:** `SelfDestructBeneficiaryUpdated(address newBeneficiary)`
+
+---
+
+<section-sep />
