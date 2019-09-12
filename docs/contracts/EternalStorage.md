@@ -4,9 +4,9 @@
 
 This is an implementation of the well-known eternal storage smart contract pattern, described in more detail [here](https://fravoll.github.io/solidity-patterns/eternal_storage.html) and [here](https://medium.com/rocket-pool/upgradable-solidity-contract-design-54789205276d).
 
-In short, it is a key:value store for variables which are retrieved by a byte string, typically a hash of their name.
+In short, it is a key:value store for variables which are retrieved by a byte string, typically a hash of their name and an index.
 
-The contract is architected this way so that the access pattern is uniform and the memory layout is not dependent on implementation or compilation details. In this way, smart contracts can retain state between updates with a minimum of difficulty.
+The contract is architected this way so that the access pattern is uniform and the memory layout is not dependent on implementation or compilation details. In this way, smart contracts can retain state between updates while minimising the difficulty and expense of migrating this information.
 
 Each type of variable has its own mapping, along with getters and setters. As this entails some replication, this document will express functions and variables generically with the type variable 𝕋, where 𝕋 $\in$ {`uint`, `string`, `address`, `bytes`, `bytes32`, `bool`, `int`}. This notation is used slightly abusively, standing in for both names and types; in the former case, substitution is in camelCase.
 
@@ -15,7 +15,7 @@ Each type of variable has its own mapping, along with getters and setters. As th
 ## Inheritance Graph
 
 <inheritance-graph>
-    ![graph](../img/graphs/EternalStorage.svg)
+    ![EternalStorage inheritance graph](../img/graphs/EternalStorage.svg)
 </inheritance-graph>
 
 <section-sep />

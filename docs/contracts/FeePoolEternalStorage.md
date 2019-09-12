@@ -2,7 +2,7 @@
 
 ## Description
 
-FeePoolEternalStorage is currently used only to store the last fee withdrawal timestamp for each address.
+FeePoolEternalStorage is currently used only to store the last fee withdrawal timestamp for each address. See [`FeePool._claimFees`](FeePool.md#_claimFees) and [`FeePool.feesByPeriod`](FeePool.md#feesbyperiod) for details of what this information is used for.
 
 This contract is just wrapper around [EternalStorage](EternalStorage.md) with a limited setup period and a setup function that sets each account's last fee withdrawal times.
 
@@ -11,7 +11,7 @@ This contract is just wrapper around [EternalStorage](EternalStorage.md) with a 
 ## Inheritance Graph
 
 <inheritance-graph>
-    ![graph](../img/graphs/FeePoolEternalStorage.svg)
+    ![FeePoolEternalStorage inheritance graph](../img/graphs/FeePoolEternalStorage.svg)
 </inheritance-graph>
 
 <section-sep />
