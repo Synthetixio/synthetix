@@ -31,6 +31,8 @@ Stores who has approved whom to perform actions. The double mapping allows each 
 
 ## Functions
 
+---
+
 ### `constructor`
 
 Initialises the inherited [`State`](State.md) instance.

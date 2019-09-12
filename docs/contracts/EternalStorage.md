@@ -1,18 +1,102 @@
 # EternalStorage
 
-A key:value store for various data types, each data type has a mapping from bytes32 to entries of that type. Intended to be used by keccak256-hashing a key value to retrieve its corresponding value. The contract is architected this way so that the access pattern is uniform across all clients: thus they can retain state across updates. This contract is used in particular for storing fee pool last withdrawal time information.
+## Description
 
-## Inherited Contracts
+This is an implementation of the well-known eternal storage smart contract pattern, described in more detail [here](https://fravoll.github.io/solidity-patterns/eternal_storage.html) and [here](https://medium.com/rocket-pool/upgradable-solidity-contract-design-54789205276d).
 
-* [State](State.md)
-* ^[Owned](Owned.md)
+In short, it is a key:value store for variables which are retrieved by a byte string, typically a hash of their name.
+
+The contract is architected this way so that the access pattern is uniform and the memory layout is not dependent on implementation or compilation details. In this way, smart contracts can retain state between updates with a minimum of difficulty.
+
+Each type of variable has its own mapping, along with getters and setters. As this entails some replication, this document will express functions and variables generically with the type variable 𝕋, where 𝕋 $\in$ {`uint`, `string`, `address`, `bytes`, `bytes32`, `bool`, `int`}. This notation is used slightly abusively, standing in for both names and types; in the former case, substitution is in camelCase.
+
+<section-sep />
+
+## Inheritance Graph
+
+<inheritance-graph>
+    ![graph](../img/graphs/EternalStorage.svg)
+</inheritance-graph>
+
+<section-sep />
 
 ## Variables
 
-* `XStorage: mapping(bytes32 => X)`: a generically expressed mapping from keys to values of type X.
+---
+
+### `𝕋Storage`
+
+`𝕋Storage: mapping(bytes32 => 𝕋)`: A mapping from keys to values of type 𝕋.
+
+---
+
+<section-sep />
 
 ## Functions
 
-* `getXValue(bytes32 record) returns (X)`: simply accesses the `XStorage` mapping. In theory, could have made the mapping itself public.
-* `setXValue(bytes32 record, X value)`: Sets the value associated with a given record. Only callable by the associated contract.
-* `deleteXValue(bytes32 record)`: Deletes the given record.
+---
+
+### `constructor`
+
+Initialises the inherited [`State`](State.md) instance.
+
+??? example "Details"
+
+    **Signature**
+    
+    `constructor(address _owner, address _associatedContract) public`
+
+    **Superconstructors**
+
+    * [`State(_owner, _associatedContract)`](State.md#constructor)
+
+---
+
+### `get𝕋Value`
+
+Return the value associated with a particular key in the [`𝕋Storage`](EternalStorage.md#storage) mapping.
+
+In theory this function could be eliminated by making the storage mapping public, but providing it makes accessor naming more consistent.
+
+??? example "Details"
+
+    **Signature**
+
+    `get𝕋Value(bytes32 record) external view returns (𝕋)`
+
+    !!! note
+        If 𝕋 is `string` or `bytes`, the result is returned in memory rather than storage.
+
+---
+
+### `set𝕋Value`
+
+Sets the value associated with a particular key in the [`𝕋Storage`](EternalStorage.md#storage) mapping.
+
+??? example "Details"
+    **Signature**
+
+    `set𝕋Value(bytes32 record, 𝕋 value) external`
+
+    **Modifiers**
+
+    * [`onlyAssociatedContract`](State.md#onlyassociatedcontract)
+
+---
+
+### `delete𝕋Value`
+
+Deletes the value associated with a particular key in the [`𝕋Storage`](EternalStorage.md#storage) mapping.
+
+??? example "Details"
+    **Signature**
+
+    `delete𝕋Value(bytes32 record) external`
+
+    **Modifiers**
+
+    * [`onlyAssociatedContract`](State.md#onlyassociatedcontract)
+
+---
+
+<section-sep />
