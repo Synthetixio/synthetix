@@ -49,7 +49,14 @@
 			"cwd": "${workspaceFolder}",
 			"program": "${workspaceFolder}/node_modules/truffle-core/cli.js",
 			"args": ["test"],
-			"runtimeExecutable": "${env:HOME}/.nvm/versions/node/v8.15.0/bin/node"
+			"runtimeExecutable": "${env:HOME}/.nvm/versions/node/v10.16.3/bin/node"
+		},
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "Debug Int test",
+			"program": "${workspaceFolder}/int-test/index.js",
+			"runtimeExecutable": "${env:HOME}/.nvm/versions/node/v10.16.3/bin/node"
 		},
 		{
 			"name": "Launch via npm (debuggable)",
@@ -57,7 +64,7 @@
 			"request": "launch",
 			"cwd": "${workspaceFolder}",
 			"runtimeArgs": ["run-script", "test"],
-			"runtimeExecutable": "${env:HOME}/.nvm/versions/node/v8.15.0/bin/npm/"
+			"runtimeExecutable": "${env:HOME}/.nvm/versions/node/v10.16.3/bin/npm/"
 		}
 	]
 }

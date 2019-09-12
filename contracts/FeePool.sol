@@ -60,12 +60,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     ISynthetixEscrow public rewardEscrow;
     FeePoolEternalStorage public feePoolEternalStorage;
 
-    // A percentage fee charged on each transfer.
-    uint public transferFeeRate;
-
-    // Transfer fee may not exceed 10%.
-    uint constant public MAX_TRANSFER_FEE_RATE = SafeDecimalMath.unit() / 10;
-
     // A percentage fee charged on each exchange between currencies.
     uint public exchangeFeeRate;
 
@@ -130,7 +124,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         ISynthetixState _synthetixState,
         ISynthetixEscrow _rewardEscrow,
         address _rewardsAuthority,
-        uint _transferFeeRate,
         uint _exchangeFeeRate)
         SelfDestructible(_owner)
         Proxyable(_proxy, _owner)
@@ -138,7 +131,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         public
     {
         // Constructed fee rates should respect the maximum fee rates.
-        require(_transferFeeRate <= MAX_TRANSFER_FEE_RATE, "Transfer fee rate max exceeded");
         require(_exchangeFeeRate <= MAX_EXCHANGE_FEE_RATE, "Exchange fee rate max exceeded");
 
         synthetix = _synthetix;
@@ -147,7 +139,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         rewardEscrow = _rewardEscrow;
         synthetixState = _synthetixState;
         rewardsAuthority = _rewardsAuthority;
-        transferFeeRate = _transferFeeRate;
         exchangeFeeRate = _exchangeFeeRate;
 
         // Set our initial fee period
@@ -181,19 +172,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         optionalProxy_onlyOwner
     {
         exchangeFeeRate = _exchangeFeeRate;
-    }
-
-    /**
-     * @notice Set the transfer fee, anywhere within the range 0-10%.
-     * @dev The fee rate is in decimal format, with UNIT being the value of 100%.
-     */
-    function setTransferFeeRate(uint _transferFeeRate)
-        external
-        optionalProxy_onlyOwner
-    {
-        require(_transferFeeRate <= MAX_TRANSFER_FEE_RATE, "Transfer fee rate max exceeded");
-
-        transferFeeRate = _transferFeeRate;
     }
 
     /**
@@ -594,40 +572,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     }
 
     /**
-     * @notice Calculate the Fee charged on top of a value being sent
-     * @return Return the fee charged
-     */
-    function transferFeeIncurred(uint value)
-        public
-        view
-        returns (uint)
-    {
-        return value.multiplyDecimal(transferFeeRate);
-
-        // Transfers less than the reciprocal of transferFeeRate should be completely eaten up by fees.
-        // This is on the basis that transfers less than this value will result in a nil fee.
-        // Probably too insignificant to worry about, but the following code will achieve it.
-        //      if (fee == 0 && transferFeeRate != 0) {
-        //          return _value;
-        //      }
-        //      return fee;
-    }
-
-    /**
-     * @notice The value that you would need to send so that the recipient receives
-     * a specified value.
-     * @param value The value you want the recipient to receive
-     */
-    function transferredAmountToReceive(uint value)
-        external
-        view
-        returns (uint)
-    {
-        return value.add(transferFeeIncurred(value));
-    }
-
-    /**
      * @notice The amount the recipient will receive if you send a certain number of tokens.
+     * function used by Depot and stub will return value amount inputted.
      * @param value The amount of tokens you intend to send.
      */
     function amountReceivedFromTransfer(uint value)
@@ -635,7 +581,20 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         view
         returns (uint)
     {
-        return value.divideDecimal(transferFeeRate.add(SafeDecimalMath.unit()));
+        return value;
+    }
+
+    /**
+     * @notice Calculate the Fee charged on top of a value being sent
+     * stub function for legacy sETH synth
+     * @return Return 0 fee.
+     */
+    function transferFeeIncurred(uint value)
+        public
+        view
+        returns (uint)
+    {
+        return 0;
     }
 
     /**
@@ -970,12 +929,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     bytes32 constant ISSUANCEDEBTRATIOENTRY_SIG = keccak256("IssuanceDebtRatioEntry(address,uint256,uint256,uint256)");
     function emitIssuanceDebtRatioEntry(address account, uint debtRatio, uint debtEntryIndex, uint feePeriodStartingDebtIndex) internal {
         proxy._emit(abi.encode(debtRatio, debtEntryIndex, feePeriodStartingDebtIndex), 2, ISSUANCEDEBTRATIOENTRY_SIG, bytes32(account), 0, 0);
-    }
-
-    event TransferFeeUpdated(uint newFeeRate);
-    bytes32 constant TRANSFERFEEUPDATED_SIG = keccak256("TransferFeeUpdated(uint256)");
-    function emitTransferFeeUpdated(uint newFeeRate) internal {
-        proxy._emit(abi.encode(newFeeRate), 1, TRANSFERFEEUPDATED_SIG, 0, 0, 0);
     }
 
     event ExchangeFeeUpdated(uint newFeeRate);

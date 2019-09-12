@@ -2,6 +2,7 @@ pragma solidity 0.4.25;
 
 /**
  * @title Synthetix interface contract
+ * @notice Abstract contract to hold public getters
  * @dev pseudo interface, actually declared as contract to hold the public getters 
  */
 import "../interfaces/ISynthetixState.sol";
@@ -9,6 +10,7 @@ import "../interfaces/ISynth.sol";
 import "../interfaces/ISynthetixEscrow.sol";
 import "../interfaces/IFeePool.sol";
 import "../interfaces/IExchangeRates.sol";
+import "../Synth.sol";
 
 contract ISynthetix {
 
@@ -20,13 +22,15 @@ contract ISynthetix {
     ISynthetixState public synthetixState;
     IExchangeRates public exchangeRates;
 
+    mapping(bytes32 => Synth) public synths;
+
     // ========== PUBLIC FUNCTIONS ==========
 
     function balanceOf(address account) public view returns (uint);
     function transfer(address to, uint value) public returns (bool);
     function effectiveValue(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey) public view returns (uint);
 
-    function synthInitiatedFeePayment(address from, bytes32 sourceCurrencyKey, uint sourceAmount) external returns (bool);
+    function synthInitiatedFeePayment(address from, bytes4 sourceCurrencyKey, uint sourceAmount) external returns (bool);
     function synthInitiatedExchange(
         address from,
         bytes32 sourceCurrencyKey,

@@ -32,14 +32,17 @@ pragma solidity 0.4.25;
 
 import "./ExternStateToken.sol";
 import "./interfaces/IFeePool.sol";
-import "./Synthetix.sol";
+import "./interfaces/ISynthetix.sol";
+import "./Proxy.sol";
 
 contract Synth is ExternStateToken {
 
     /* ========== STATE VARIABLES ========== */
 
-    IFeePool public feePool;
-    Synthetix public synthetix;
+    // Address of the FeePoolProxy
+    address public feePoolProxy;
+    // Address of the SynthetixProxy
+    address public synthetixProxy;
 
     // Currency key which identifies this Synth to the Synthetix system
     bytes32 public currencyKey;
@@ -48,223 +51,100 @@ contract Synth is ExternStateToken {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _proxy, TokenState _tokenState, Synthetix _synthetix, IFeePool _feePool,
+    constructor(address _proxy, TokenState _tokenState, address _synthetixProxy, address _feePoolProxy,
         string _tokenName, string _tokenSymbol, address _owner, bytes32 _currencyKey
     )
         ExternStateToken(_proxy, _tokenState, _tokenName, _tokenSymbol, 0, DECIMALS, _owner)
         public
     {
-        require(_proxy != 0, "_proxy cannot be 0");
-        require(address(_synthetix) != 0, "_synthetix cannot be 0");
-        require(address(_feePool) != 0, "_feePool cannot be 0");
+        require(_proxy != address(0), "_proxy cannot be 0");
+        require(_synthetixProxy != address(0), "_synthetixProxy cannot be 0");
+        require(_feePoolProxy != address(0), "_feePoolProxy cannot be 0");
         require(_owner != 0, "_owner cannot be 0");
-        require(_synthetix.synths(_currencyKey) == Synth(0), "Currency key is already in use");
+        require(ISynthetix(_synthetixProxy).synths(_currencyKey) == Synth(0), "Currency key is already in use");
 
-        feePool = _feePool;
-        synthetix = _synthetix;
+        feePoolProxy = _feePoolProxy;
+        synthetixProxy = _synthetixProxy;
         currencyKey = _currencyKey;
     }
 
     /* ========== SETTERS ========== */
 
-    function setSynthetix(Synthetix _synthetix)
+    function setSynthetixProxy(ISynthetix _synthetixProxy)
         external
         optionalProxy_onlyOwner
     {
-        synthetix = _synthetix;
-        emitSynthetixUpdated(_synthetix);
+        synthetixProxy = _synthetixProxy;
+        emitSynthetixUpdated(_synthetixProxy);
     }
 
-    function setFeePool(IFeePool _feePool)
+    function setFeePoolProxy(address _feePoolProxy)
         external
         optionalProxy_onlyOwner
     {
-        feePool = _feePool;
-        emitFeePoolUpdated(_feePool);
+        feePoolProxy = _feePoolProxy;
+        emitFeePoolUpdated(_feePoolProxy);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
-     * @notice Override ERC20 transfer function in order to
-     * subtract the transaction fee and send it to the fee pool
-     * for SNX holders to claim. */
+     * @notice ERC20 transfer function
+     * forward call on to _internalTransfer */
     function transfer(address to, uint value)
         public
         optionalProxy
-        notFeeAddress(messageSender)
         returns (bool)
     {
-        uint amountReceived = feePool.amountReceivedFromTransfer(value);
-        uint fee = value.sub(amountReceived);
-
-        // Send the fee off to the fee pool.
-        synthetix.synthInitiatedFeePayment(messageSender, currencyKey, fee);
-
-        // And send their result off to the destination address
+        _notFeeAddress(messageSender);
         bytes memory empty;
-        return _internalTransfer(messageSender, to, amountReceived, empty);
+        return super._internalTransfer(messageSender, to, value, empty);
     }
 
     /**
-     * @notice Override ERC223 transfer function in order to
-     * subtract the transaction fee and send it to the fee pool
-     * for SNX holders to claim. */
+     * @notice ERC223 transfer function
+     */
     function transfer(address to, uint value, bytes data)
         public
         optionalProxy
-        notFeeAddress(messageSender)
         returns (bool)
     {
-        uint amountReceived = feePool.amountReceivedFromTransfer(value);
-        uint fee = value.sub(amountReceived);
-
-        // Send the fee off to the fee pool, which we don't want to charge an additional fee on
-        synthetix.synthInitiatedFeePayment(messageSender, currencyKey, fee);
-
+        _notFeeAddress(messageSender);
         // And send their result off to the destination address
-        return _internalTransfer(messageSender, to, amountReceived, data);
+        return super._internalTransfer(messageSender, to, value, data);
     }
 
     /**
-     * @notice Override ERC20 transferFrom function in order to
-     * subtract the transaction fee and send it to the fee pool
-     * for SNX holders to claim. */
+     * @notice ERC20 transferFrom function
+     */
     function transferFrom(address from, address to, uint value)
         public
         optionalProxy
-        notFeeAddress(from)
         returns (bool)
     {
-        // The fee is deducted from the amount sent.
-        uint amountReceived = feePool.amountReceivedFromTransfer(value);
-        uint fee = value.sub(amountReceived);
-
+        _notFeeAddress(from);
         // Reduce the allowance by the amount we're transferring.
         // The safeSub call will handle an insufficient allowance.
         tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
 
-        // Send the fee off to the fee pool.
-        synthetix.synthInitiatedFeePayment(from, currencyKey, fee);
-
         bytes memory empty;
-        return _internalTransfer(from, to, amountReceived, empty);
+        return super._internalTransfer(from, to, value, empty);
     }
 
     /**
-     * @notice Override ERC223 transferFrom function in order to
-     * subtract the transaction fee and send it to the fee pool
-     * for SNX holders to claim. */
+     * @notice ERC223 transferFrom function
+     */
     function transferFrom(address from, address to, uint value, bytes data)
         public
         optionalProxy
-        notFeeAddress(from)
         returns (bool)
     {
-        // The fee is deducted from the amount sent.
-        uint amountReceived = feePool.amountReceivedFromTransfer(value);
-        uint fee = value.sub(amountReceived);
-
+        _notFeeAddress(from);
         // Reduce the allowance by the amount we're transferring.
         // The safeSub call will handle an insufficient allowance.
         tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
 
-        // Send the fee off to the fee pool, which we don't want to charge an additional fee on
-        synthetix.synthInitiatedFeePayment(from, currencyKey, fee);
-
-        return _internalTransfer(from, to, amountReceived, data);
-    }
-
-    /* Subtract the transfer fee from the senders account so the
-     * receiver gets the exact amount specified to send. */
-    function transferSenderPaysFee(address to, uint value)
-        public
-        optionalProxy
-        notFeeAddress(messageSender)
-        returns (bool)
-    {
-        uint fee = feePool.transferFeeIncurred(value);
-
-        // Send the fee off to the fee pool, which we don't want to charge an additional fee on
-        synthetix.synthInitiatedFeePayment(messageSender, currencyKey, fee);
-
-        // And send their transfer amount off to the destination address
-        bytes memory empty;
-        return _internalTransfer(messageSender, to, value, empty);
-    }
-
-    /* Subtract the transfer fee from the senders account so the
-     * receiver gets the exact amount specified to send. */
-    function transferSenderPaysFee(address to, uint value, bytes data)
-        public
-        optionalProxy
-        notFeeAddress(messageSender)
-        returns (bool)
-    {
-        uint fee = feePool.transferFeeIncurred(value);
-
-        // Send the fee off to the fee pool, which we don't want to charge an additional fee on
-        synthetix.synthInitiatedFeePayment(messageSender, currencyKey, fee);
-
-        // And send their transfer amount off to the destination address
-        return _internalTransfer(messageSender, to, value, data);
-    }
-
-    /* Subtract the transfer fee from the senders account so the
-     * to address receives the exact amount specified to send. */
-    function transferFromSenderPaysFee(address from, address to, uint value)
-        public
-        optionalProxy
-        notFeeAddress(from)
-        returns (bool)
-    {
-        uint fee = feePool.transferFeeIncurred(value);
-
-        // Reduce the allowance by the amount we're transferring.
-        // The safeSub call will handle an insufficient allowance.
-        tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value.add(fee)));
-
-        // Send the fee off to the fee pool, which we don't want to charge an additional fee on
-        synthetix.synthInitiatedFeePayment(from, currencyKey, fee);
-
-        bytes memory empty;
-        return _internalTransfer(from, to, value, empty);
-    }
-
-    /* Subtract the transfer fee from the senders account so the
-     * to address receives the exact amount specified to send. */
-    function transferFromSenderPaysFee(address from, address to, uint value, bytes data)
-        public
-        optionalProxy
-        notFeeAddress(from)
-        returns (bool)
-    {
-        uint fee = feePool.transferFeeIncurred(value);
-
-        // Reduce the allowance by the amount we're transferring.
-        // The safeSub call will handle an insufficient allowance.
-        tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value.add(fee)));
-
-        // Send the fee off to the fee pool, which we don't want to charge an additional fee on
-        synthetix.synthInitiatedFeePayment(from, currencyKey, fee);
-
-        return _internalTransfer(from, to, value, data);
-    }
-
-    // Override our internal transfer to inject preferred currency support
-    function _internalTransfer(address from, address to, uint value, bytes data)
-        internal
-        returns (bool)
-    {
-        bytes32 preferredCurrencyKey = synthetix.synthetixState().preferredCurrency(to);
-
-        // Do they have a preferred currency that's not us? If so we need to exchange
-        if (preferredCurrencyKey != 0 && preferredCurrencyKey != currencyKey) {
-            return synthetix.synthInitiatedExchange(from, currencyKey, value, preferredCurrencyKey, to);
-        } else {
-            // Otherwise we just transfer
-            return super._internalTransfer(from, to, value, data);
-        }
+        return super._internalTransfer(from, to, value, data);
     }
 
     // Allow synthetix to issue a certain number of synths from an account.
@@ -307,18 +187,21 @@ contract Synth is ExternStateToken {
         callTokenFallbackIfNeeded(sender, recipient, amount, empty);
     }
 
+
+    function _notFeeAddress(address account) 
+        internal 
+        view 
+    {
+        require(account != IFeePool(feePoolProxy).FEE_ADDRESS(), "The fee address is not allowed");
+    }
+
     /* ========== MODIFIERS ========== */
 
     modifier onlySynthetixOrFeePool() {
-        bool isSynthetix = msg.sender == address(synthetix);
-        bool isFeePool = msg.sender == address(feePool);
+        bool isSynthetix = msg.sender == address(Proxy(synthetixProxy).target());
+        bool isFeePool = msg.sender == address(Proxy(feePoolProxy).target());
 
-        require(isSynthetix || isFeePool, "Only the Synthetix or FeePool contracts can perform this action");
-        _;
-    }
-
-    modifier notFeeAddress(address account) {
-        require(account != feePool.FEE_ADDRESS(), "Cannot perform this action with the fee address");
+        require(isSynthetix || isFeePool, "Only Synthetix, FeePool allowed");
         _;
     }
 

@@ -478,6 +478,7 @@ contract Synthetix is ExternStateToken {
 
     /**
      * @notice Function that allows synth contract to delegate sending fee to the fee Pool.
+     * stub function for legacy sETH - to be removed once sETH upgraded.
      * @dev Only the synth contract can call this function.
      * @param from The address fee is coming from.
      * @param sourceCurrencyKey source currency fee from.
@@ -486,35 +487,13 @@ contract Synthetix is ExternStateToken {
      */
     function synthInitiatedFeePayment(
         address from,
-        bytes32 sourceCurrencyKey,
+        bytes4 sourceCurrencyKey,
         uint sourceAmount
     )
         external
         returns (bool)
     {
-        _onlySynth();
-
-        // Allow fee to be 0 and skip minting XDRs to feePool
-        if (sourceAmount == 0) {
-            return true;
-        }
-
-        require(sourceAmount > 0, "Source can't be 0");
-
-        // Pass it along, defaulting to the sender as the recipient.
-        bool result = _internalExchange(
-            from,
-            sourceCurrencyKey,
-            sourceAmount,
-            "XDR",
-            feePool.FEE_ADDRESS(),
-            false // Don't charge a fee on the exchange because this is already a fee
-        );
-
-        // Tell the fee pool about this.
-        feePool.feePaid(sourceCurrencyKey, sourceAmount);
-
-        return result;
+        return true;
     }
 
     /**
@@ -1010,16 +989,20 @@ contract Synthetix is ExternStateToken {
     }
 
     /**
-     * @notice Only a synth can call this function
+     * @notice Only a synth can call this function, optionally via synthetixProxy or directly
      * @dev This used to be a modifier but instead of duplicating the bytecode into
      * The functions implementing it they now call this internal function to save bytecode space
      */
-    function _onlySynth() internal view {
+    function _onlySynth()
+        internal
+        view
+        optionalProxy
+    {
         bool isSynth = false;
 
         // No need to repeatedly call this function either
         for (uint8 i = 0; i < availableSynths.length; i++) {
-            if (availableSynths[i] == msg.sender) {
+            if (availableSynths[i] == messageSender) {
                 isSynth = true;
                 break;
             }
