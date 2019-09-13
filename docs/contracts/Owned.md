@@ -108,7 +108,7 @@ The nominated owner is reset to the zero address.
 
 ### `onlyOwner`
 
-Reverts the transaction if the message sender is not the [`owner`](#owner).
+Reverts the transaction if `msg.sender` is not the [`owner`](#owner).
 
 ---
 

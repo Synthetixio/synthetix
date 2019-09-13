@@ -14,8 +14,11 @@ This is a state contract, controlled by the main Synthetix contract.
 
 ## Structs
 
+### IssuanceData
+
 Holds the issuance state and preferred currency of users in the Synthetix system.
 Individual wallets have an issuance data object associated with their address:
+This struct is replicated in the [`FeePoolState`](FeePoolState.md#issuancedata) contract.
 
 ```solidity
 struct IssuanceData {
