@@ -738,7 +738,7 @@ const deploy = async ({
 			});
 		}
 
-		// Setup proxy for synth (either ProxyERC20 or legacy Proxy for sETH)
+		// Setup proxy for synth
 		if (proxyForSynth && synth) {
 			await runStep({
 				contract: `Proxy${currencyKey}`,
@@ -784,7 +784,6 @@ const deploy = async ({
 				writeArg: proxyFeePool.options.address,
 			});
 		}
-	}
 
 		// now configure inverse synths in exchange rates
 		if (inverted) {
