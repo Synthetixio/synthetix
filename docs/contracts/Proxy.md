@@ -3,7 +3,7 @@
 ## Description
 
 !!! info
-    The smart contact Proxy pattern is discussed in further depth [here](https://blog.openzeppelin.com/proxy-patterns/) and [here](https://fravoll.github.io/solidity-patterns/proxy_delegate.html). This implementation has its own architecture, however, and is not identical to most other Proxies.
+    The typical smart contact Proxy pattern is discussed in depth [here](https://blog.openzeppelin.com/proxy-patterns/) and [here](https://fravoll.github.io/solidity-patterns/proxy_delegate.html). This implementation has its own architecture, however, and is not identical to most other proxy contracts.
 
 This proxy sits in front of a target underlying contract. Any calls made to the proxy [are forwarded](#fallback-function) to that target contract, so that the proxy appears to operate as if it was the target which was executed. This is designed to allow a contract to be upgraded without altering its address. The [`Synthetix`](Synthetix.md), [`Synth`](Synth.md), and [`FeePool`](FeePool.md) contracts all exist behind proxies, which has allowed their behaviour to be substantially altered over time.
 
