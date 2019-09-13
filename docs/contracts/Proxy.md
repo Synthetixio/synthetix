@@ -30,6 +30,8 @@ There are some tradeoffs of this style. There is potentially a little more commu
 At the code level, a `CALL` proxy is not entirely transparent. Target contracts must inherit [`Proxyable`](Proxyable.md) so that they can read the message sender which would otherwise be the proxy itself rather than the proxy's caller.
 Additionally, event emission a little different; events must be encoded within the underlying contract and then passed back to the proxy to be emitted. The nuts and bolts of of event emission are discussed in the [`_emit`](#_emit) section's details.
 
+Finally, if the target contract needs to transfer ether around, then it will be remitted from the target address rather than the proxy address, though this is a quirk which it would be straightforward to remedy.
+
 <section-sep />
 
 ## Inheritance Graph
