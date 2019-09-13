@@ -5,26 +5,30 @@
 !!! info
     The smart contact Proxy pattern is discussed in further depth [here](https://blog.openzeppelin.com/proxy-patterns/) and [here](https://fravoll.github.io/solidity-patterns/proxy_delegate.html). This implementation has its own architecture, however, and is not identical to most other Proxies.
 
-This proxy sits in front of an underlying contract. Any calls made to the proxy are forwarded to the underlying contract, so that the proxy appears to operate as if it was the underlying contract which was executed. This is designed to allow contract functionality to be upgraded without altering the contract's visible address. The [`Synthetix`](Synthetix.md), [`Synth`](Synth.md), and [`FeePool`](FeePool.md) contracts all exist behind proxies, which has allowed their behaviour to be substantially altered over time.
+This proxy sits in front of a target underlying contract. Any calls made to the proxy [are forwarded](#fallback-function) to that target contract, so that the proxy appears to operate as if it was the target which was executed. This is designed to allow a contract to be upgraded without altering its address. The [`Synthetix`](Synthetix.md), [`Synth`](Synth.md), and [`FeePool`](FeePool.md) contracts all exist behind proxies, which has allowed their behaviour to be substantially altered over time.
 
 This proxy provides two different operation modes, which can be switched between at any point.[^1]
 
 [^1]: Specific descriptions of the behaviour of the `CALL` and `DELEGATECALL` EVM instructions can be found in the [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf).
 
-* `DELEGATECALL`: Execution of the underlying contract's code occurs in the proxy's context, which preserves the message sender and writes state updates to the storage of the proxy itself. This is the standard proxy style used across Ethereum projects.
-* `CALL`: Execution occurs in the underlying contract's context, so state is never updated on the proxy.
+* `DELEGATECALL`: Execution of the target's code occurs in the proxy's context, which preserves the message sender and writes state updates to the storage of the proxy itself. This is the standard proxy style used across Ethereum projects.
+* `CALL`: Execution occurs in the target's context, so the state of the proxy itself is never touched.
 
-The motivation for the `CALL` style was to allow complete decoupling of the storage structure from the proxy, except for proxy functionality itself. This means there's no necessity to know the storage architecture in advance, and we can avoid using unstructured storage solutions for state variables.
+The motivation for the `CALL` style was to allow complete decoupling of the storage structure from the proxy, except what's required for the proxy's own functionality. This means there's no necessity for the proxy to be concerned in advance with the storage architecture of the target contract, and we can avoid using elaborate unstructured storage solutions for state variables.
 
-Instead the proxy forwards calls to an underlying contract defining the business logic, which then returns data to the proxy to be returned to the user, and encoded event information to be emitted from the proxy. The logic contract stores its data in persistent state contracts, which allows it to be largely disposable. This structure looks something like the following:
+Instead the proxy forwards calls to the target contract that defines the application logic, which then in turn relays data back to the proxy to be returned to the original caller, or to be emitted from the proxy as events. Some data can be kept on the underlying contract, if it is small and easy to migrate during contract upgrades. More elaborate data is kept in separate state contracts that persist across multiple versions. This allows the proxy's target contract to be largely disposable. This structure looks something like the following:
 
 <inheritance-graph style='padding: 40px 0 60px 0'>
     ![Proxy architecture graph](../img/graphs/Proxy-architecture.svg)
 </inheritance-graph>
 
 In this way the main contract defining the logic can be swapped out without replacing the proxy or state contracts. The user only ever communicates with the proxy and need not know any implementation details.
+This architecture also allows [multiple proxies](Proxyable.md#integrationproxy) with differing interfaces to be used simultaneously for a single underlying contract, though events will be emitted only at one address. This feature is currently used by [`ProxyERC20`](ProxyERC20.md), which operates atop the [`Synthetix`](Synthetix.md) contract.
 
-There are some tradeoffs of this style, however. The underlying contract must inherit [`Proxyable`](Proxyable.md) so that it can read the message sender which would otherwise be the proxy itself rather than the proxy's caller. Additionally, event emission is a little different; events must be encoded within the underlying contract and then passed to the proxy to be emitted using the [`_emit`](#_emit) function.
+There are some tradeoffs of this style. There is potentially a little more communication overhead for event emission, though there may be some savings available elsewhere depending on system and storage architecture and the particular application.
+
+At the code level, a `CALL` proxy is not entirely transparent. Target contracts must inherit [`Proxyable`](Proxyable.md) so that they can read the message sender which would otherwise be the proxy itself rather than the proxy's caller.
+Additionally, event emission a little different; events must be encoded within the underlying contract and then passed back to the proxy to be emitted. The nuts and bolts of of event emission are discussed in the [`_emit`](#_emit) section's details.
 
 <section-sep />
 
@@ -163,7 +167,7 @@ When operating in the `CALL` style, this function allows the proxy's underlying 
 If none of the above functions is hit, then the function call data and gas is forwarded to the [target contract](#target). The result of that invocation is returned to the message sender.
 
 If the proxy is in `DELEGATECALL` style, it operates like most other proxies.
-If it is in `CALL` mode, then it first calls [`target.setMessageSender(msg.sender)`](Proxyable.md#setmessagesender) to set up the [`messageSender`](Proxyable.md#messagesender) variable in the underlying [`Proxyable`](Proxyable.md) instance. In addition it forwards any ether included in the transaction to its target.
+If it is in `CALL` mode, then it first calls [`target.setMessageSender(msg.sender)`](Proxyable.md#setmessagesender) to initialise the [`messageSender`](Proxyable.md#messagesender) variable in the underlying [`Proxyable`](Proxyable.md) instance. In addition it forwards any ether included in the transaction to its target.
 
 ??? example "Details"
 
