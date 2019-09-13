@@ -3,6 +3,8 @@
 ??? "TODO"
     * Complete TODOs in [`contracts/index.md`](contracts/index.md).
     * Extract internal and dev notes into separate document and prepare to make this public-facing.
+    * Work out which licence headers are incorrect.
+    * Links back to source repository for each contract.
 
 ## Areas of Interest
 
@@ -52,7 +54,6 @@
     * [ ] Look at [this `mkdocs.yml`](https://github.com/squidfunk/mkdocs-material/blob/master/mkdocs.yml) to see if we can do anything similar.
     * [ ] Add a "key links" section to all pages which need it.
     * [ ] Links to be black with an underline, which disappears on hover.
-    * [ ] Replace asterism section separators with synthetix logo.
     * [ ] Inheritance graph and related contracts in tabbed details panel. https://github.com/squidfunk/mkdocs-material/issues/955
     * [ ] Merge into core SNX repository and enable edit buttons. Add a note to the Intro page that the docs can be edited by anyone with a PR.
     * [ ] Better colour for details sections

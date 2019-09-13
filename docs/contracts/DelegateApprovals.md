@@ -76,7 +76,7 @@ Revokes the approval of a delegate to act on behalf of a given authoriser.
 
 ??? example "Details"
 
-    ***Signature**
+    **Signature**
     
     `withdrawApproval(address authoriser, address delegate) external`
     
@@ -109,5 +109,7 @@ The delegate was approved to act on the authoriser's behalf.
 The delegate was disapproved to act on the authoriser's behalf.
 
 **Signature:** `WithdrawApproval(address indexed authoriser, address delegate)`
+
+---
 
 <section-sep />

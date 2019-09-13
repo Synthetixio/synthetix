@@ -1,56 +1,199 @@
 # Proxy
 
-This proxy sits in front of an underlying contract, forwarding calls to the proxy contract so that it operates as if it was the underlying contract which was executed. This is designed to allow contract functionality to be upgraded without altering the contract's address. Synthetix, Synth, and the FeePool contracts all exist behind proxies, which has allowed their functionality to be radically altered over time.
+## Description
 
-This proxy provides two different operation modes:
+!!! info
+    The smart contact Proxy pattern is discussed in further depth [here](https://blog.openzeppelin.com/proxy-patterns/) and [here](https://fravoll.github.io/solidity-patterns/proxy_delegate.html). This implementation has its own architecture, however, and is not identical to most other Proxies.
 
-* `DELEGATECALL`: Execution occurs in the proxy's context, which preserves the message sender and writes state updates to the storage of the proxy itself.
-* `CALL`: Execution occurs in the underlying contract's context, which must implement the `Proxyable` interface in order to properly be able to read the message sender (which from the perspective of the underlying contract would otherwise be the proxy itself) and emit events.
+This proxy sits in front of an underlying contract. Any calls made to the proxy are forwarded to the underlying contract, so that the proxy appears to operate as if it was the underlying contract which was executed. This is designed to allow contract functionality to be upgraded without altering the contract's visible address. The [`Synthetix`](Synthetix.md), [`Synth`](Synth.md), and [`FeePool`](FeePool.md) contracts all exist behind proxies, which has allowed their behaviour to be substantially altered over time.
 
-The `DELEGATECALL` style is much more common; the motivation for the `CALL` style was to allow complete decoupling of the storage structure from the proxy, except for proxy functionality itself. This means there's no necessity to know the storage architecture in advance, and we can avoid using untidy eternal storage solutions for state variables. Instead the proxy forwards calls to a main underlying contract defining the functionality, which itself has state contracts. So the structure will look something like:
+This proxy provides two different operation modes, which can be switched between at any point.[^1]
 
-```text
-Proxy                P
-                     ^
-                     |
-                     v
-Main Contract        C
-                     ^
-                   /   \
-                  v     v
-State Contracts  S1 ... Sn
-```
+[^1]: Specific descriptions of the behaviour of the `CALL` and `DELEGATECALL` EVM instructions can be found in the [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf).
 
-In this way the main contract can be swapped out without touching the proxy or state contracts.
+* `DELEGATECALL`: Execution of the underlying contract's code occurs in the proxy's context, which preserves the message sender and writes state updates to the storage of the proxy itself. This is the standard proxy style used across Ethereum projects.
+* `CALL`: Execution occurs in the underlying contract's context, so state is never updated on the proxy.
 
-## Inherited Contracts
+The motivation for the `CALL` style was to allow complete decoupling of the storage structure from the proxy, except for proxy functionality itself. This means there's no necessity to know the storage architecture in advance, and we can avoid using unstructured storage solutions for state variables.
 
-### Direct
+Instead the proxy forwards calls to an underlying contract defining the business logic, which then returns data to the proxy to be returned to the user, and encoded event information to be emitted from the proxy. The logic contract stores its data in persistent state contracts, which allows it to be largely disposable. This structure looks something like the following:
 
-* [Owned](Owned.md)
+<inheritance-graph style='padding: 40px 0 60px 0'>
+    ![Proxy architecture graph](../img/graphs/Proxy-architecture.svg)
+</inheritance-graph>
 
-## Related Contracts
+In this way the main contract defining the logic can be swapped out without replacing the proxy or state contracts. The user only ever communicates with the proxy and need not know any implementation details.
 
-### Referenced
+There are some tradeoffs of this style, however. The underlying contract must inherit [`Proxyable`](Proxyable.md) so that it can read the message sender which would otherwise be the proxy itself rather than the proxy's caller. Additionally, event emission is a little different; events must be encoded within the underlying contract and then passed to the proxy to be emitted using the [`_emit`](#_emit) function.
+
+<section-sep />
+
+## Inheritance Graph
+
+<inheritance-graph>
+    ![Proxy inheritance graph](../img/graphs/Proxy.svg)
+</inheritance-graph>
+
+### Related Contracts
 
 * [Proxyable](Proxyable.md)
 
-### Referencing
-
-* [Proxyable](Proxyable.md)
+<section-sep />
 
 ## Variables
 
-* `target: Proxable public`: The contract this proxy is standing in front of.
-* `useDELEGATECALL: bool public`: This toggle indicates whether the proxy is in CALL or DELEGATECALL mode.
+---
+
+### `target`
+
+The underlying contract this proxy is standing in front of.
+
+**Type:** `Proxyable public`
+
+---
+
+### `useDELEGATECALL`
+
+This toggle controls whether the proxy is in `CALL` or `DELEGATECALL` mode. The contract is in `DELEGATECALL` mode iff `useDELEGATECALL` is true.
+
+**Type:** `bool public`
+
+---
+
+<section-sep />
 
 ## Functions
 
-* `setTarget(Proxyable _target)`: Only callable by the proxy's owner.
-* `setUseDELEGATECALL(bool value)`: Only callable by the proxy's owner.
-* `_emit(bytes callData, uint numTopics, bytes32 topic1, bytes32 topic2, bytes32 topic3, bytes32 topic4)`: Allows underlying contracts in the CALL style to emit events from the proxy's address. Invocation in an underlying contract would look something like `proxy._emit(abi.encode(data), 2, keccak256('MyEvent(type1,type2)'), bytes32(indexedArg), 0, 0);`, which would typically be wrapped in a function like `emitMyEvent(type1 x, type2 y)`. Only callable by the target contract.
-* `()` (fallback function): if none of the above functions is hit, then the call data and any ether will be forwarded to the underlying contract and the result of that invocation returned.
+---
+
+### `constructor`
+
+Initialises the inherited [`Owned`](Owned.md) instance.
+
+??? example "Details"
+
+    **Signature**
+
+    `constructor(address _owner) public`
+
+    **Superconstructors**
+
+    * [`Owned(_owner)`](Owned.md#constructor)
+
+---
+
+### `setTarget`
+
+Sets the address this proxy forwards its calls to.
+
+??? example "Details"
+
+    **Signature**
+    
+    `setTarget(Proxyable _target) external`
+
+    **Modifiers**
+
+    * [`Owned.onlyOwner`](Owned.md#onlyOwner)
+
+    **Emits**
+
+    * [`TargetUpdated(_target)](#targetupdated)
+
+---
+
+### `setUseDELEGATECALL`
+
+Selects which call style to use by setting [`useDELEGATECALL`](#usedelegatecall).
+
+??? example "Details"
+
+    **Signature**
+    
+    * `setUseDELEGATECALL(bool value) external`
+
+    **Modifiers**
+
+    * [`Owned.onlyOwner`](Owned.md#onlyOwner)
+
+---
+
+### `_emit`
+
+When operating in the `CALL` style, this function allows the proxy's underlying contract (and only that contract) to emit events from the proxy's address.
+
+??? example "Details"
+
+    **Signature**
+    
+    `_emit(bytes callData, uint numTopics, bytes32 topic1, bytes32 topic2, bytes32 topic3, bytes32 topic4) external`
+
+    **Modifiers**
+
+    * [`onlyTarget`](#onlytarget)
+
+    **Emits**
+
+    Any possible event.
+
+    **Usage**
+
+    Assuming our event signature is `MyEvent(A indexed indexedArg, B data1, C data2)`, invocation in an underlying contract looks something like the following:
+
+    `proxy._emit(abi.encode(data1, data2), 2, keccak256('MyEvent(A,B,C)'), bytes32(indexedArg), 0, 0);`
+
+    In the implementation, such expressions are typically wrapped in convenience functions like `emitMyEvent(A indexedArg, B data1, C data2)`.
+
+    In Solidity, `indexed` arguments are published as log topics, while non-`indexed` ones are abi-encoded together in order and included as data.
+    The keccak-256 hash of the Solidity event signature is always included as the first topic. The format of this signature is `EventName(type1,type2,...,typeN)`, with no spaces between the argument types, omitting the `indexed` keyword and the argument name. For more information, see the official Solidity documentation [here](https://solidity.readthedocs.io/en/v0.5.11/contracts.html#events) and [here](https://solidity.readthedocs.io/en/v0.5.11/abi-spec.html#abi-events).
+
+    This function takes 4 arguments for log topics. How many of these are consumed is determined by the `numTopics` argument, which can take the values from 0 to 4, corresponding to the EVM `LOG0` to `LOG4` instructions.
+    In the case that an event has fewer than 3 indexed arguments, the remaining slots can be provided with 0. Any excess topics are simply ignored.
+    Note that 0 is a valid argument for `numTopics` producing `LOG0`, which only has data and no event signature.
+
+    !!! caution
+        If this proxy contract were to be rewritten with Solidity v0.5.0 or above, it would be necessary to slightly simplify the calls to `abi.encode` with `abi.encodeWithSignature`.
+        
+        See [the official Solidity documentation](https://solidity.readthedocs.io/en/v0.5.11/050-breaking-changes.html#semantic-and-syntactic-changes) for more discussion. The exact behaviour of the abi encoding functions is defined [here](https://github.com/ethereum/solidity/blob/7dcc47ed57f5a6ea3761e54da5a4d7bbe055b5a7/libsolidity/codegen/ExpressionCompiler.cpp#L973).
+
+---
+
+### `() (fallback function)`
+
+If none of the above functions is hit, then the function call data and gas is forwarded to the [target contract](#target). The result of that invocation is returned to the message sender.
+
+If the proxy is in `DELEGATECALL` style, it operates like most other proxies.
+If it is in `CALL` mode, then it first calls [`target.setMessageSender(msg.sender)`](Proxyable.md#setmessagesender) to set up the [`messageSender`](Proxyable.md#messagesender) variable in the underlying [`Proxyable`](Proxyable.md) instance. In addition it forwards any ether included in the transaction to its target.
+
+??? example "Details"
+
+    **Signature**
+
+    `() external payable`
+
+---
+
+<section-sep />
+
+## Modifiers
+
+---
+
+### `onlyTarget`
+
+Reverts the transaction if `msg.sender` is not the [`target`](#target) contract.
+
+---
+
+<section-sep />
 
 ## Events
 
-* `TargetUpdated(Proxyable newTarget)`
+---
+
+### `TargetUpdated`
+
+The proxy's target contract was changed.
+
+**Signature:** `TargetUpdated(Proxyable newTarget)`
+
