@@ -16,7 +16,7 @@ This proxy provides two different operation modes, which can be switched between
 
 The motivation for the `CALL` style was to allow complete decoupling of the storage structure from the proxy, except what's required for the proxy's own functionality. This means there's no necessity for the proxy to be concerned in advance with the storage architecture of the target contract, and we can avoid using elaborate unstructured storage solutions for state variables.
 
-Instead the proxy forwards calls to the target contract that defines the application logic, which then in turn relays data back to the proxy to be returned to the original caller, or to be emitted from the proxy as events. Some data can be kept on the underlying contract, if it is small and easy to migrate during contract upgrades. More elaborate data is kept in separate state contracts that persist across multiple versions. This allows the proxy's target contract to be largely disposable. This structure looks something like the following:
+Instead the proxy forwards calls and ether to the target contract that defines the application logic, which then in turn relays data back to the proxy to be returned to the original caller, or to be emitted from the proxy as events. Some data can be kept on the underlying contract, if it is small and easy to migrate during contract upgrades. More elaborate data is kept in separate state contracts that persist across multiple versions. This allows the proxy's target contract to be largely disposable. This structure looks something like the following:
 
 <inheritance-graph style='padding: 40px 0 60px 0'>
     ![Proxy architecture graph](../img/graphs/Proxy-architecture.svg)
