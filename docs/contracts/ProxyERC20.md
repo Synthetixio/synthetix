@@ -1,27 +1,22 @@
 # ProxyERC20
 
-This proxy contract explicitly implements ERC20 functions because it's designed to sit in front of ERC20 tokens.
-In this way the proxy itself can verifiably support this interface and include ERC20 functions in its ABI. Apart from this explicit representation of these functions in its ABI, the proxy otherwise operates identically to the [proxy contract](Proxy.md) it inherits. In the Synthetix system, this ERC20 proxy operates in front of the main SNX token contract, alongside the pre-existing standard proxy. Thus users can choose to use either of these two proxies to interact with the system, but one may have a more convenient interface.
+This proxy contract explicitly implements the [ERC20 token standard](https://docs.openzeppelin.com/contracts/2.x/api/token/erc20#ERC20Detailed).
 
-NOTE: Typo in the file docstring: 'compatable'
+As a result this proxy can verifiably support token functionality in its ABI if it sits in front of an ERC20-compliant smart contract. Apart from these functions, ProxyERC20 operates identically to the [contract it inherits](Proxy.md).
 
-## Inherited Contracts
+In the Synthetix system, this ERC20 proxy operates in front of the main [SNX token contract](Synthetix.md), alongside the pre-existing standard proxy. Thus clients can choose to use either of these two proxies to interact with the system.
 
-### Direct
+## Inheritance Graph
 
-* [Proxy](Proxy.md)
-
-### Indirect
-
-* [Owned](Owned.md)
+<inheritance-graph>
+    ![ProxyERC20 inheritance graph](../img/graphs/ProxyERC20.svg)
+</inheritance-graph>
 
 ## Functions
 
-This contract defines all ERC20 functions, and they simply call down to the underlying token contract.
+This contract defines all ERC20 functions, along with `name()`, `symbol()`, and `decimals()`. These functions simply call down to the underlying token contract.
 
-NOTE: Although these functions properly set up the message sender, they do not forward ether to the target contract, so these funds could get stuck in the proxy, and the underlying functionality will not work properly if it expects ether.
+!!! caution
+    Although the `transfer()`, `approve()`, and `transferFrom()` functions properly set up the message sender, they do not forward ether to the target contract. Hence these funds could get stuck in the proxy, and the underlying functionality will not work properly if it expects ether. Such funds can be recovered by operating in `DELEGATECALL` mode and transferring the ether out with an appropriate underlying contract.
 
-## Events
-
-* `Transfer(address indexed from, address indexed to, uint value)`
-* `Approval(address indexed owner, address indexed spender, uint value)`
+    It is conceivable that a future version of this proxy could potentially allow the underlying contract to transfer funds held in the proxy, which would eliminate this issue.
