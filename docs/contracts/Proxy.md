@@ -5,18 +5,20 @@
 !!! info
     The typical smart contact Proxy pattern is discussed in depth [here](https://blog.openzeppelin.com/proxy-patterns/) and [here](https://fravoll.github.io/solidity-patterns/proxy_delegate.html). This implementation has its own architecture, however, and is not identical to most other proxy contracts.
 
-This proxy sits in front of a target underlying contract. Any calls made to the proxy [are forwarded](#fallback-function) to that target contract, so that the proxy appears to operate as if it was the target which was executed. This is designed to allow a contract to be upgraded without altering its address. The [`Synthetix`](Synthetix.md), [`Synth`](Synth.md), and [`FeePool`](FeePool.md) contracts all exist behind proxies, which has allowed their behaviour to be substantially altered over time.
+This proxy sits in front of a target underlying contract. Any calls made to the proxy [are forwarded](#fallback-function) to that target contract, so that the proxy appears to operate as if it was the target which was executed. This is designed to allow a contract to be upgraded without altering its address. In Synthetix, this proxy typically operates in tandem with a [`Proxyable`](Proxyable.md) instance as its target.
+
+The [`Synthetix`](Synthetix.md), [`Synth`](Synth.md), and [`FeePool`](FeePool.md) contracts all exist behind proxies, which has allowed their behaviour to be substantially altered over time.
 
 This proxy provides two different operation modes, which can be switched between at any point.[^1]
 
 [^1]: Specific descriptions of the behaviour of the `CALL` and `DELEGATECALL` EVM instructions can be found in the [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf).
 
 * `DELEGATECALL`: Execution of the target's code occurs in the proxy's context, which preserves the message sender and writes state updates to the storage of the proxy itself. This is the standard proxy style used across Ethereum projects.
-* `CALL`: Execution occurs in the target's context, so the state of the proxy itself is never touched.
+* `CALL`: Execution occurs in the target's context, so the storage of the proxy is never touched.
 
-The motivation for the `CALL` style was to allow complete decoupling of the storage structure from the proxy, except what's required for the proxy's own functionality. This means there's no necessity for the proxy to be concerned in advance with the storage architecture of the target contract, and we can avoid using elaborate unstructured storage solutions for state variables.
+The motivation for the `CALL` style was to allow complete decoupling of the storage structure from the proxy, except what's required for the proxy's own functionality. This means there's no necessity for the proxy to be concerned in advance with the storage architecture of the target contract. We can avoid using elaborate or unstructured storage solutions for state variables, and there are no constraints on the use of (possibly nested) mapping or reference types.
 
-Instead the proxy forwards calls and ether to the target contract that defines the application logic, which then in turn relays data back to the proxy to be returned to the original caller, or to be emitted from the proxy as events. Some data can be kept on the underlying contract, if it is small and easy to migrate during contract upgrades. More elaborate data is kept in separate state contracts that persist across multiple versions. This allows the proxy's target contract to be largely disposable. This structure looks something like the following:
+Instead of executing the target code in its own context, the `CALL`-style proxy forwards function call data and ether to the target contract that defines the application logic, which then in turn relays information back to the proxy to be returned to the original caller, or to be emitted from the proxy as events. Some state can be kept on the underlying contract if it can be discarded or it is easy to migrate during contract upgrades. More elaborate data is kept in separate storage contracts that persist across multiple versions. This allows the proxy's target contract to be largely disposable. This structure looks something like the following:
 
 <inheritance-graph style='padding: 40px 0 60px 0'>
     ![Proxy architecture graph](../img/graphs/Proxy-architecture.svg)
@@ -28,7 +30,7 @@ This architecture also allows [multiple proxies](Proxyable.md#integrationproxy) 
 There are some tradeoffs of this style. There is potentially a little more communication overhead for event emission, though there may be some savings available elsewhere depending on system and storage architecture and the particular application.
 
 At the code level, a `CALL` proxy is not entirely transparent. Target contracts must inherit [`Proxyable`](Proxyable.md) so that they can read the message sender which would otherwise be the proxy itself rather than the proxy's caller.
-Additionally, event emission a little different; events must be encoded within the underlying contract and then passed back to the proxy to be emitted. The nuts and bolts of of event emission are discussed in the [`_emit`](#_emit) section's details.
+Additionally, events are a bit different; they must be encoded within the underlying contract and then passed back to the proxy to be emitted. The nuts and bolts of of event emission are discussed in the [`_emit`](#_emit) section's details.
 
 Finally, if the target contract needs to transfer ether around, then it will be remitted from the target address rather than the proxy address, though this is a quirk which it would be straightforward to remedy.
 
@@ -155,7 +157,7 @@ When operating in the `CALL` style, this function allows the proxy's underlying 
 
     This function takes 4 arguments for log topics. How many of these are consumed is determined by the `numTopics` argument, which can take the values from 0 to 4, corresponding to the EVM `LOG0` to `LOG4` instructions.
     In the case that an event has fewer than 3 indexed arguments, the remaining slots can be provided with 0. Any excess topics are simply ignored.
-    Note that 0 is a valid argument for `numTopics` producing `LOG0`, which only has data and no event signature.
+    Note that 0 is a valid argument for `numTopics`, which produces `LOG0` a log that only has data and no event signature.
 
     !!! caution
         If this proxy contract were to be rewritten with Solidity v0.5.0 or above, it would be necessary to slightly simplify the calls to `abi.encode` with `abi.encodeWithSignature`.

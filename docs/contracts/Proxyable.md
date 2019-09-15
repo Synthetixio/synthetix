@@ -1,41 +1,176 @@
 # Proxyable
 
-Every contract using the `CALL`-style proxy must inherit this contract.
+## Description
 
-## Inherited Contracts
+This contract is designed to operate in tandem with [`Proxy`](#Proxy.md).
+In fact, in order to function properly, every contract operating behind a `CALL`-style proxy must inherit `Proxyable` to ensure that the [message sender](#messageSender) is set and that events are correctly emitted.
 
-### Direct
+This contract can support two proxies simultaneously. Events can be emitted independently from each proxy, but it is sensible to restrict event emission to a single proxy in most cases.
 
-* [Owned](Owned.md)
+<section-sep />
 
-## Related Contracts
+## Inheritance Graph
 
-### Referenced
+<inheritance-graph>
+    ![Proxyable inheritance graph](../img/graphs/Proxyable.svg)
+</inheritance-graph>
 
-* [Proxy](Proxy.md)
-
-### Referencing
-
-* [Proxy](Proxy.md)
+<section-sep />
 
 ## Variables
 
-* `proxy: Proxy public`: The address of the main proxy that this contract operates underneath.
-* `integrationProxy: Proxy public`: The address of an additional proxy, which will not emit events, but which can still be used to forward contract calls. In Synthetix, this integrationProxy is an instance of the [ERC20 proxy](ProxyERC20.md).
-* `messageSender: address`: The caller of the proxy, which is set by the proxy before every call by that `Proxy` to this `Proxyable`. Then this variable can be used in place of `msg.sender`. Note that all functions which make use of the message sender must have one of the modifiers provided by the `Proxyable` interface, otherwise users who call the contract directly and not through the proxy will be executing with the previously-set value of `messageSender`.
+---
+
+### `proxy`
+
+The address of the main [proxy](Proxy.md) that this contract operates underneath. It is this address that events should be emitted from using [`Proxy._emit`](Proxy.md#_emit).
+
+**Type:** `Proxy public`
+
+---
+
+### `integrationProxy`
+
+The address of an additional proxy which can be used to forward contract calls to this contract.
+Generally speaking, events should not be passed to the integrationProxy.
+
+In Synthetix, this integrationProxy is an instance of the [ERC20 proxy](ProxyERC20.md).
+
+**Type:** `Proxy public`
+
+---
+
+### `messageSender`
+
+The caller of the proxy in the current invocation. This variable is set to the value of `msg.sender` visible to the proxy before every function call by that `Proxy` to this `Proxyable`. Once set, `messageSender` should be used in place of `msg.sender` wherever it is used in contracts inheriting `Proxyable`.
+
+All functions which make use of `messageSender` should have one of the modifiers provided by the `Proxyable` interface, otherwise users who call the contract directly rather than through the proxy will be executing with stale values of `messageSender`.
+
+Functions which do not require `messageSender` need not apply any of the proxy modifiers, but care must be taken when applying other function modifiers within a proxyable contract. For example, see [`optionalProxy_onlyOwner`](#optionalproxy_onlyowner).
+
+**Type:** `address`
+
+---
+
+<section-sep />
 
 ## Functions
 
-* `setProxy(address _proxy)`: only callable by the contract owner (and only directly).
-* `setIntegrationProxy(address _integrationProxy)`: only callable by the contract owner (and only directly).
-* `setMessageSender(address sender)`: Used by the proxy to set `messageSender` before forwarding the function call. Only callable by the proxy.
+---
+
+### `constructor`
+
+Initialises this contract's [proxy](#proxy) and the inherited [`Owned`](Owned.md) instance.
+
+??? example "Details"
+
+    **Signature**
+
+    `constructor(address _proxy, address _owner) public`
+
+    **Superconstructors**
+
+    * [`Owned(_owner)`](Owned.md#constructor)
+
+    **Emits**
+
+    * [`ProxyUpdated(_proxy)`](#proxyupdated)
+
+---
+
+### `setProxy`
+
+Sets this contract's primary proxy. `setProxy` cannot be called through a proxy.
+
+??? example "Details"
+
+    **Signature**
+
+    `setProxy(address _proxy) external`
+
+    **Modifiers**
+
+    * [`Owned.onlyOwner`](Owned.md#onlyowner)
+
+    **Emits**
+
+    * [`ProxyUpdated(_proxy)`](#proxyupdated)
+
+---
+
+### `setIntegrationProxy`
+
+Sets this contract's secondary proxy. `setIntegrationProxy` cannot be called through a proxy.
+
+??? example "Details"
+
+    **Signature**
+
+    `setIntegrationProxy(address _IntegrationProxy) external`
+
+    **Modifiers**
+
+    * [`Owned.onlyOwner`](Owned.md#onlyowner)
+
+    !!! caution
+        Be aware that there is no `IntegrationProxyUpdated` event corresponding to [`ProxyUpdated`](#proxyupdated).
+
+---
+
+### `setMessageSender`
+
+This is used by proxies to set [`messageSender`](#messageSender) before forwarding a function call. This is only callable by the [`proxy`](#proxy) or [`integrationProxy`](#integrationProxy).
+
+??? example "Details"
+
+    **Signature**
+    
+    `setMessageSender(address sender) external`
+
+    **Modifiers**
+
+    * [`onlyProxy`](#onlyproxy)
+
+---
+
+<section-sep />
 
 ## Modifiers
 
-* `onlyProxy`: The actual message sender must be the proxy or the integration proxy, otherwise throw an exception.
-* `optionalProxy`: If the caller is not the proxy, then overwrite `messageSender` with the actual message sender. This allows functions with this modifier to be called from the proxy, or to be called directly for a small gas savings.
-* `optionalProxy_onlyOwner`: The same as `optionalProxy`, but disallow callers who are not the contract owner.
+---
+
+### `onlyProxy`
+
+Reverts the transaction if the actual `msg.sender` (not [`messageSender`](#messagesender)) is not the proxy or the integration proxy.
+
+---
+
+### `optionalProxy`
+
+This modifier allows a function to be called through the proxies, or alternatively to be called directly for a small gas savings.
+
+It operates simply: if the caller is not either the proxy or the integration proxy, then overwrite `messageSender` with `msg.sender`, otherwise use whatever it was set to by the proxy.
+
+---
+
+### `optionalProxy_onlyOwner`
+
+This modifier is largely the same as `optionalProxy`, but it disallow callers who are not the contract owner. This function exists because [`Owned.onlyOwner`](Owned.md#onlyowner) checks `msg.sender`, and not `messageSender`.
+
+---
+
+<section-sep />
 
 ## Events
 
-* `ProxyUpdated(address proxyAddress)`
+---
+
+### `ProxyUpdated`
+
+`proxyAddress` has been set as the new [`proxy`](#proxy).
+
+**Signature:** `ProxyUpdated(address proxyAddress)`
+
+---
+
+<section-sep />
