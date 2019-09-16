@@ -804,21 +804,6 @@ contract('FeePool', async accounts => {
 		assert.bnEqual(await feePool.exchangeFeeIncurred(amount), originalFee.mul(factor));
 	});
 
-	it('should calculate exchangedAmountToReceive using the exchangeFeeRate', async () => {
-		const amount = toUnit('1000');
-		const originalFeeRate = await feePool.exchangeFeeRate();
-		const originalFee = (await feePool.exchangedAmountToReceive(amount)).sub(amount);
-
-		// Tripling the transfer fee rate should triple the fee.
-		const factor = web3.utils.toBN('3');
-		await feePool.setExchangeFeeRate(originalFeeRate.mul(factor), { from: owner });
-
-		assert.bnEqual(
-			await feePool.exchangedAmountToReceive(amount),
-			amount.add(originalFee.mul(factor))
-		);
-	});
-
 	it('should calculate the amountReceivedFromExchange using the exchangeFeeRate', async () => {
 		const amount = toUnit('1000');
 		const originalFeeRate = await feePool.exchangeFeeRate();
