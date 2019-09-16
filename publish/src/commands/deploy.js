@@ -691,12 +691,9 @@ const deploy = async ({
 			force: addNewSynths,
 		});
 
-		// sETH and sUSD are used in Uniswap and thus cannot be easily changed.
-		// For now, they still require the old proxy (v2.9.x), hence we need to track these here.
-		const synthIsLegacy = currencyKey === 'sETH' && network !== 'local';
 		const proxyForSynth = await deployContract({
 			name: `Proxy${currencyKey}`,
-			source: synthIsLegacy ? 'Proxy' : 'ProxyERC20',
+			source: 'ProxyERC20',
 			args: [account],
 			force: addNewSynths,
 		});
@@ -704,20 +701,7 @@ const deploy = async ({
 		// As sETH is used for Uniswap liquidity, we cannot switch out its proxy,
 		// thus we have these values we switch on to ensure sETH remains fixed to the
 		// v2.9.x version of Synth.sol and Proxy.sol - JJ
-		let currencyKeyInBytes;
-		let synthetixAddressForSynth;
-		let feePoolAddressForSynth;
-		if (synthIsLegacy) {
-			// requirements for v2.9.x and below Synths
-			currencyKeyInBytes = toBytes4(currencyKey);
-			synthetixAddressForSynth = synthetixAddress || '';
-			feePoolAddressForSynth = feePool.options.address || '';
-		} else {
-			// requirements for v2.10.x+ Synths
-			currencyKeyInBytes = w3utils.asciiToHex(currencyKey);
-			synthetixAddressForSynth = synthetixProxyAddress || '';
-			feePoolAddressForSynth = proxyFeePool.options.address || '';
-		}
+		const currencyKeyInBytes = w3utils.asciiToHex(currencyKey);
 
 		const additionalConstructorArgsMap = {
 			PurgeableSynth: [exchangeRatesAddress],
@@ -731,8 +715,8 @@ const deploy = async ({
 			args: [
 				proxyForSynth ? proxyForSynth.options.address : '',
 				tokenStateForSynth ? tokenStateForSynth.options.address : '',
-				synthetixAddressForSynth,
-				feePoolAddressForSynth,
+				synthetixProxyAddress,
+				proxyFeePool ? proxyFeePool.options.address : '',
 				`Synth ${currencyKey}`,
 				currencyKey,
 				account,
@@ -754,7 +738,7 @@ const deploy = async ({
 			});
 		}
 
-		// Setup proxy for synth (either ProxyERC20 or legacy Proxy for sETH)
+		// Setup proxy for synth
 		if (proxyForSynth && synth) {
 			await runStep({
 				contract: `Proxy${currencyKey}`,
@@ -778,51 +762,27 @@ const deploy = async ({
 				writeArg: synthAddress,
 			});
 
-			if (synthIsLegacy) {
-				// For legacy synths (v2.9.x) we need to use Synth.setSynthetix
-				await runStep({
-					contract: `Synth${currencyKey}`,
-					target: synth,
-					read: 'synthetix',
-					expected: input => input === synthetixAddress,
-					write: 'setSynthetix',
-					writeArg: synthetixAddress,
-				});
+			// For latest synths (v2.10.x) we need to use Synth.setSynthetixProxy
+			await runStep({
+				contract: `Synth${currencyKey}`,
+				target: synth,
+				read: 'synthetixProxy',
+				expected: input => input === synthetixProxyAddress,
+				write: 'setSynthetixProxy',
+				writeArg: synthetixProxyAddress,
+			});
+		}
 
-				// For legacy synths (v2.9.x) we need to use Synth.setFeePool
-				if (feePool) {
-					await runStep({
-						contract: `Synth${currencyKey}`,
-						target: synth,
-						read: 'feePool',
-						expected: input => input === feePoolAddress,
-						write: 'setFeePool',
-						writeArg: feePoolAddress,
-					});
-				}
-			} else {
-				// For latest synths (v2.10.x) we need to use Synth.setSynthetixProxy
-				await runStep({
-					contract: `Synth${currencyKey}`,
-					target: synth,
-					read: 'synthetixProxy',
-					expected: input => input === synthetixProxyAddress,
-					write: 'setSynthetixProxy',
-					writeArg: synthetixProxyAddress,
-				});
-
-				// For latest synths (v2.10.x) we need to use Synth.setFeePoolProxy
-				if (proxyFeePool) {
-					await runStep({
-						contract: `Synth${currencyKey}`,
-						target: synth,
-						read: 'feePoolProxy',
-						expected: input => input === proxyFeePool.options.address,
-						write: 'setFeePoolProxy',
-						writeArg: proxyFeePool.options.address,
-					});
-				}
-			}
+		// For latest synths (v2.10.x) we need to use Synth.setFeePoolProxy
+		if (proxyFeePool) {
+			await runStep({
+				contract: `Synth${currencyKey}`,
+				target: synth,
+				read: 'feePoolProxy',
+				expected: input => input === proxyFeePool.options.address,
+				write: 'setFeePoolProxy',
+				writeArg: proxyFeePool.options.address,
+			});
 		}
 
 		// now configure inverse synths in exchange rates
