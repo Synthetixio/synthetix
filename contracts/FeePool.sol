@@ -618,19 +618,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     }
 
     /**
-     * @notice The value that you would need to get after currency exchange so that the recipient receives
-     * a specified value.
-     * @param value The value you want the recipient to receive
-     */
-    function exchangedAmountToReceive(uint value)
-        external
-        view
-        returns (uint)
-    {
-        return value.add(exchangeFeeIncurred(value));
-    }
-
-    /**
      * @notice The amount the recipient will receive if you are performing an exchange and the
      * destination currency will be worth a certain number of tokens.
      * @param value The amount of destination currency tokens they received after the exchange.
