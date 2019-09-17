@@ -1,20 +1,58 @@
 # EscrowChecker
 
-A small contract that augments the escrow contract to allow extracting a user's schedule as an array, rather than the individual entries.
+## Description
+
+A small utility contract that augments the SNX escrow contract to allow extracting a user's schedule as an array rather than as individual entries.
 
 **Source:** [EscrowChecker.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/EscrowChecker.sol)
 
+## Inheritance Graph
+
+<inheritance-graph>
+    ![EscrowChecker inheritance graph](../img/graphs/EscrowChecker.svg)
+</inheritance-graph>
+
 ## Related Contracts
 
-### Referenced
-
 * [SynthetixEscrow](SynthetixEscrow.md)
-* [RewardEscrow](RewardEscrow.md)
 
 ## Variables
 
-* `synthetix_escrow: SynthetixEscrow public`
+---
+
+### `synthetix_escrow`
+
+The [SNX escrow contract](SynthetixEscrow.md).
+
+**Type:** `SynthetixEscrow public`
+
+---
+
+<section-sep />
+
 
 ## Functions
 
-* `checkAccountSchedule(address account)`: Returns 8 entries of the given address's vesting schedule as an alternating list of 16 `(timestamp, quantity)` pairs.
+---
+
+### `constructor`
+
+Initialises the [synthetix escrow address](#synthetix_escrow).
+
+???+ example "Details"
+    **Signature**
+
+    `constructor(SynthetixEscrow _esc) public`
+
+---
+
+### `checkAccountSchedule`
+
+Returns the given address's vesting schedule as up to 16 `uints`, composed of an alternating sequence of up to 8 `(timestamp, quantity)` pairs, as per [`SynthetixEscrow.getVestingScheduleEntry`](SynthetixEscrow.md#getVestingScheduleEntry).
+
+Vested entries are not skipped, and appear as a leading sequence of zeroes.
+
+???+ example "Details"
+    **Signature**
+
+    `checkAccountSchedule(address account) public view returns (uint[16])`
