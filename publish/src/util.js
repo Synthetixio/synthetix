@@ -124,10 +124,10 @@ const performTransactionalStep = async ({
 	contract,
 	target,
 	read,
-	readArg,
+	readArg, // none, 1 or an array of args, array will be spread into params
 	expected,
 	write,
-	writeArg,
+	writeArg, // none, 1 or an array of args, array will be spread into params
 	gasLimit,
 	gasPrice,
 	etherscanLinkPrefix,
@@ -139,7 +139,7 @@ const performTransactionalStep = async ({
 	// check to see if action required
 	if (read) {
 		// web3 counts provided arguments - even undefined ones - and they must match the expected args, hence the below
-		const argumentsForReadFunction = readArg ? [readArg] : [];
+		const argumentsForReadFunction = [].concat(readArg).filter(entry => entry !== undefined); // reduce to array of args
 		const response = await target.methods[read](...argumentsForReadFunction).call();
 
 		console.log(yellow(`Attempting action: ${action}`));
@@ -153,7 +153,7 @@ const performTransactionalStep = async ({
 	const owner = await target.methods.owner().call();
 	if (owner === account) {
 		// perform action
-		const argumentsForWriteFunction = writeArg ? [writeArg] : [];
+		const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
 		const txn = await target.methods[write](...argumentsForWriteFunction).send({
 			from: account,
 			gas: Number(gasLimit),
