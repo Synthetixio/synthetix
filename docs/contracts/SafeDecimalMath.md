@@ -1,35 +1,234 @@
 # SafeDecimalMath
 
-A library contract that handles safe arithmetic with fixed-point decimals at two precision levels. This contract uses OpenZeppelin's [SafeMath](SafeMath.md) library to protect from arithmetic overflows.
+## Description
+
+This is a library contract that handles safe arithmetic with unsigned [fixed-point decimals](https://en.wikipedia.org/wiki/Fixed-point_arithmetic) at two precision levels. Standard precision operations act on numbers with 18 decimal places, such as ordinary token balances. High precision numbers possess 27 decimal places, and have their own corresponding set of functions.
+
+Also included are several functions for converting between precision levels, and operations which round to the nearest increment to remove truncation bias. The library only implements multiplication and division operations as additive operations on fixed point numbers behave correctly.
+
+In Synthetix the high precision numbers are used for dealing with the [debt ledger](SynthetixState.md#debtledger), which is constructed as an extended product of many fractional numbers. As this is a financially-sensitive component of the system, representational precision matters in order to minimise errors resulting from rounding or truncation.
+
+`SafeDecimalMath` uses OpenZeppelin's [SafeMath](SafeMath.md) library for most of its basic arithmetic operations in order to protect from arithmetic overflows.
 
 !!! bug
     Licence header does not acknowledge the original authors.
 
 **Source:** [SafeDecimalMath.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/SafeDecimalMath.sol)
 
+<section-sep />
+
+## Inheritance Graph
+
+<inheritance-graph>
+    ![SafeDecimalMath inheritance graph](../img/graphs/SafeDecimalMath.svg)
+</inheritance-graph>
+
 ## Libraries
 
-* [SafeMath](SafeMath.md) for uint.
+* [SafeMath](SafeMath.md) for `uint`
+
+<section-sep />
 
 ## Variables
 
-* `decimals: uint8 public constant`: 18
-* `highPrecisionDecimals: uint8 public constant`: 27
-* `UNIT: uint public constant`: 10^18
-* `PRECISE_UNIT: uint public constant`: 10^27
-* `UNIT_TO_HIGH_PRECISION_CONVERSION_FACTOR: uint private constant`: 10^9 (i.e. PRECISE_UNIT / UNIT)
+---
+
+### `decimals`
+
+The number of decimals in the standard precision fixed point representation. ($18$)
+
+**Type:** `uint8 public constant`
+
+---
+
+### `highPrecisionDecimals`
+
+The number of decimals in the high precision fixed point representation. ($27$)
+
+**Type:** `uint8 public constant`
+
+---
+
+### `UNIT`
+
+The standard precision number that represents $1.0$. ($10^{18}$)
+
+**Type:** `uint public constant`
+
+---
+
+### `PRECISE_UNIT`
+
+The high precision number that represents $1.0$. ($10^{27}$)
+
+**Type:** `uint public constant`
+
+---
+
+### `UNIT_TO_HIGH_PRECISION_CONVERSION_FACTOR`
+
+The factor to convert between precision levels. Equivalent to `PRECISE_UNIT / UNIT`. ($10^9$)
+
+**Type:** `uint private constant`
+
+---
+
+<section-sep />
 
 ## Functions
 
-* `unit() returns (uint)`: alias to `UNIT`.
-* `preciseUnit() returns (uint)`: alias to `PRECISE_UNIT`.
-* `multiplyDecimal(uint x, uint y) returns (uint)`: Low-precision multiplication.
-* `_multiplyDecimalRound(uint x, uint y, uint precisionUnit) returns (uint)`: Internal function to multiply numbers at a given level of precision. Rounds to the nearest unit.
-* `multiplyDecimalRoundPrecise(uint x, uint y) returns (uint)`: Equivalent to `_multiplyDecimalRound(x, y, PRECISE_UNIT)`.
-* `multiplyDecimalRound(uint x, uint y) returns (uint)`: Equivalent to `_multiplyDecimalRound(x, y, UNIT)`
-* `divideDecimal(uint x, uint y) returns (uint)`: Low-precision division.
-* `_divideDecimalRound(uint x, uint y, uint precisionUnit) returns (uint)`: Internal function to divide numbers at a given level of precision. Rounds to the nearest unit.
-* `divideDecimalRound(uint x, uint y) returns (uint)`: Equivalent to `_divideDecimalRound(x, y, UNIT)`.
-* `divideDecimalRoundPrecise(uint x, uint y) returns (uint)`: Equivalent to `_divideDecimalRound(x, y, PRECISE_UNIT)`.
-* `decimalToPreciseDecimal(uint i) returns (uint)`: returns i multiplied by the conversion factor.
-* `preciseDecimalToDecimal(uint i) returns (uint)`: returns i divided by the conversion factor, rounded to the closest unit.
+---
+
+### `unit`
+
+Pure alias to [`UNIT`](#unit).
+
+???+ example "Details"
+
+    **Signature**
+
+    `unit() external pure returns (uint)`
+
+---
+
+### `preciseUnit`
+
+Pure alias to [`PRECISE_UNIT`](#precise_unit).
+
+???+ example "Details"
+
+    **Signature**
+
+    `preciseUnit() external pure returns (uint)`
+
+---
+
+### `multiplyDecimal`
+
+Returns the product of two standard precision fixed point numbers, handling precision loss by truncation.
+
+???+ example "Details"
+
+    **Signature**
+    
+    `multiplyDecimal(uint x, uint y) internal pure returns (uint)`
+
+---
+
+### `_multiplyDecimalRound`
+
+Returns the product of two fixed point numbers, handling precision loss by rounding. This function is private, and takes the fixed-point precision as a parameter, only being used to implement [`multiplyDecimalRound`](#multiplydecimalround) and [`multiplyDecimalRoundPrecise`](#multiplydecimalroundprecise).
+
+???+ example "Details"
+
+    **Signature**
+    
+    `_multiplyDecimalRound(uint x, uint y, uint precisionUnit) private pure returns (uint)`
+
+---
+
+### `multiplyDecimalRoundPrecise`
+
+Returns the product of two high precision fixed point numbers, handling precision loss by rounding.
+
+Equivalent to [`_multiplyDecimalRound(x, y, PRECISE_UNIT)`](#_multiplydecimalround).
+
+???+ example "Details"
+
+    **Signature**
+    
+    `multiplyDecimalRoundPrecise(uint x, uint y) internal pure returns (uint)`
+
+---
+
+### `multiplyDecimalRound`
+
+Returns the product of two standard precision fixed point numbers, handling precision loss by rounding.
+
+Equivalent to [`_multiplyDecimalRound(x, y, UNIT)`](#_multiplydecimalround).
+
+???+ example "Details"
+
+    **Signature**
+    
+    `multiplyDecimalRound(uint x, uint y) internal pure returns (uint)`
+
+---
+
+### `divideDecimal`
+
+Returns the quotient of two standard precision fixed point numbers, handling precision loss by truncation.
+
+???+ example "Details"
+
+    **Signature**
+    
+    `divideDecimal(uint x, uint y) internal pure returns (uint)`
+
+---
+
+### `_divideDecimalRound`
+
+Returns the quotient of two fixed point numbers, handling precision loss by rounding. This function is private, and takes the fixed-point precision as a parameter, only being used to implement [`divideDecimalRound`](#dividedecimalround) and [`divideDecimalRoundPrecise`](#dividedecimalroundprecise).
+
+???+ example "Details"
+
+    **Signature**
+    
+    `_divideDecimalRound(uint x, uint y, uint precisionUnit) private pure returns (uint)`
+
+---
+
+### `divideDecimalRound`
+
+Returns the quotient of two standard precision fixed point numbers, handling precision loss by rounding.
+
+Equivalent to [`_divideDecimalRound(x, y, UNIT)`](#_dividedecimalround).
+
+???+ example "Details"
+
+    **Signature**
+    
+    `divideDecimalRound(uint x, uint y) internal pure returns (uint)`
+
+---
+
+### `divideDecimalRoundPrecise`
+
+Returns the quotient of two high precision fixed point numbers, handling precision loss by rounding.
+
+Equivalent to [`_divideDecimalRound(x, y, PRECISE_UNIT)`](#_dividedecimalround).
+
+???+ example "Details"
+
+    **Signature**
+    
+    `divideDecimalRoundPrecise(uint x, uint y) internal pure returns (uint)`
+
+---
+
+### `decimalToPreciseDecimal`
+
+Converts from standard precision to high precision numbers. This is just multiplication by $10^9$.
+
+???+ example "Details"
+
+    **Signature**
+
+    `decimalToPreciseDecimal(uint i) internal pure returns (uint)`
+
+---
+
+### `preciseDecimalToDecimal`
+
+Converts from high precision to standard precision numbers. This is division by $10^9$, where precision loss is handled by rounding.
+
+???+ example "Details"
+
+    **Signature**
+
+    `preciseDecimalToDecimal(uint i) internal pure returns (uint)`
+
+---
+
+<section-sep />
