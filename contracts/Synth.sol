@@ -70,6 +70,11 @@ contract Synth is ExternStateToken {
 
     /* ========== SETTERS ========== */
 
+    /**
+     * @notice Set the SynthetixProxy should it ever change.
+     * The Synth requires Synthetix address as it has the authority
+     * to mint and burn synths
+     * */
     function setSynthetixProxy(ISynthetix _synthetixProxy)
         external
         optionalProxy_onlyOwner
@@ -78,6 +83,11 @@ contract Synth is ExternStateToken {
         emitSynthetixUpdated(_synthetixProxy);
     }
 
+    /**
+     * @notice Set the FeePoolProxy should it ever change.
+     * The Synth requires FeePool address as it has the authority
+     * to mint and burn for FeePool.claimFees()
+     * */
     function setFeePoolProxy(address _feePoolProxy)
         external
         optionalProxy_onlyOwner
@@ -188,9 +198,9 @@ contract Synth is ExternStateToken {
     }
 
 
-    function _notFeeAddress(address account) 
-        internal 
-        view 
+    function _notFeeAddress(address account)
+        internal
+        view
     {
         require(account != IFeePool(feePoolProxy).FEE_ADDRESS(), "The fee address is not allowed");
     }

@@ -332,6 +332,13 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         return _claimFees(messageSender, currencyKey);
     }
 
+    /**
+    * @notice Delegated claimFees(). Call from the deletegated address
+    * and the fees will be sent to the claimingForAddress.
+    * approveClaimOnBehalf() must be called first to approve the deletage address
+    * @param claimingForAddress The account you are claiming fees for
+    * @param currencyKey Synth currency you wish to receive the fees in
+    */
     function claimOnBehalf(address claimingForAddress, bytes32 currencyKey)
         external
         optionalProxy
@@ -384,6 +391,9 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         return true;
     }
 
+    /**
+    * @notice Admin function to import the FeePeriod data from the previous contract
+    */
     function importFeePeriod(
         uint feePeriodIndex, uint feePeriodId, uint startingDebtIndex, uint startTime,
         uint feesToDistribute, uint feesClaimed, uint rewardsToDistribute, uint rewardsClaimed)
@@ -416,6 +426,12 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         rewardEscrow.appendVestingEntry(account, quantity);
     }
 
+    /**
+    * @notice Approve an address to be able to claim your fees to your account on your behalf.
+    * This is intended to be able to delegate a mobile wallet to call the function to claim fees to
+    * your cold storage wallet
+    * @param account The hot/mobile/contract address that will call claimFees your accounts behalf
+    */
     function approveClaimOnBehalf(address account)
         public
         optionalProxy
@@ -425,6 +441,10 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         delegates.setApproval(messageSender, account);
     }
 
+    /**
+    * @notice Remove the permission to call claimFees your accounts behalf
+    * @param account The hot/mobile/contract address to remove permission
+    */
     function removeClaimOnBehalf(address account)
         public
         optionalProxy
@@ -873,8 +893,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         return targetRatio.multiplyDecimal(SafeDecimalMath.unit().add(TARGET_THRESHOLD));
     }
 
-    /* ========== Modifiers ========== */
-
     /**
      * @notice Set the feePeriodID of the last claim this account made
      * @param _claimingAddress account to set the last feePeriodID claim for
@@ -885,6 +903,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     {
         feePoolEternalStorage.setUIntValue(keccak256(abi.encodePacked(LAST_FEE_WITHDRAWAL, _claimingAddress)), _feePeriodID);
     }
+
+    /* ========== Modifiers ========== */
 
     modifier onlySynthetix
     {
