@@ -62,7 +62,7 @@ The duration (four weeks) that must be waited between self destruct initiation a
 
 Initialises the inherited [`Owned`](Owned.md) instance and nominates that owner as the initial [self destruct beneficiary](#selfdestructbeneficiary).
 
-??? example "Details"
+???+ example "Details"
 
     **Signature**
 
@@ -86,7 +86,7 @@ Initialises the inherited [`Owned`](Owned.md) instance and nominates that owner 
 
 Changes the [self destruct beneficiary](#selfdestructbeneficiary).
 
-??? example "Details"
+???+ example "Details"
 
     **Signature**
     
@@ -110,7 +110,7 @@ Changes the [self destruct beneficiary](#selfdestructbeneficiary).
 
 Begins the self destruct countdown, updating [`initiationTime`](#initiationtime) and [`selfDestructInitiated`](#selfdestructinitiated). Only once the delay has elapsed can the contract be destroyed.
 
-??? example "Details"
+???+ example "Details"
     **Signature**
 
     `initiateSelfDestruct() external`
@@ -129,7 +129,7 @@ Begins the self destruct countdown, updating [`initiationTime`](#initiationtime)
 
 Resets the timer and disables self destruction.
 
-??? example "Details"
+???+ example "Details"
 
     **Signature**
 
@@ -149,7 +149,7 @@ Resets the timer and disables self destruction.
 
 If self destruction is active and the timer has elapsed, destroy this contract and forward its ether to [`selfDestructBeneficiary`](#selfdestructbeneficiary).
 
-??? example "Details"
+???+ example "Details"
 
     **Signature**
 
