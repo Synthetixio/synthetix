@@ -585,19 +585,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     }
 
     /**
-     * @notice Calculate the Fee charged on top of a value being sent
-     * stub function for legacy sETH synth
-     * @return Return 0 fee.
-     */
-    function transferFeeIncurred(uint value)
-        public
-        view
-        returns (uint)
-    {
-        return 0;
-    }
-
-    /**
      * @notice Calculate the fee charged on top of a value being sent via an exchange
      * @return Return the fee charged
      */

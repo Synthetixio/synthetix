@@ -30,7 +30,6 @@ contract ISynthetix {
     function transfer(address to, uint value) public returns (bool);
     function effectiveValue(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey) public view returns (uint);
 
-    function synthInitiatedFeePayment(address from, bytes4 sourceCurrencyKey, uint sourceAmount) external returns (bool);
     function synthInitiatedExchange(
         address from,
         bytes32 sourceCurrencyKey,
