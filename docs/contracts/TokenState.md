@@ -2,6 +2,8 @@
 
 An external state contract to hold ERC20 balances and allowances.
 
+**Source:** [TokenState.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/TokenState.sol)
+
 ## Inherited Contracts
 
 ### Direct

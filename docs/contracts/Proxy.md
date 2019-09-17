@@ -34,6 +34,8 @@ Additionally, events are a bit different; they must be encoded within the underl
 
 Finally, if the target contract needs to transfer ether around, then it will be remitted from the target address rather than the proxy address, though this is a quirk which it would be straightforward to remedy.
 
+**Source:** [Proxy.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/Proxy.sol)
+
 <section-sep />
 
 ## Inheritance Graph

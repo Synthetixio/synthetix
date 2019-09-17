@@ -3,6 +3,8 @@
 The price of `sUSD` is always 1, and is never stale; its price cannot be updated.
 The `XDR` price is just $\sum_{c \in \text{basket}}{c_{price}}$, the sum of the prices of the currencies in the basket (`sUSD`, `sAUD`, `sCHF`, `sEUR`, `sGBP`), and not the average.
 
+**Source:** [ExchangeRates.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/ExchangeRates.sol)
+
 ## Inherited Contracts
 
 * [SelfDestructible](SelfDestructible.md)

@@ -5,6 +5,8 @@ A library contract that handles safe arithmetic with fixed-point decimals at two
 !!! bug
     Licence header does not acknowledge the original authors.
 
+**Source:** [SafeDecimalMath.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/SafeDecimalMath.sol)
+
 ## Libraries
 
 * [SafeMath](SafeMath.md) for uint.

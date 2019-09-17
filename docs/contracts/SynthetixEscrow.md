@@ -2,6 +2,8 @@
 
 This contract holds the SNX which were escrowed at the time of the token sale, releasing them on a defined schedule.
 
+**Source:** [SynthetixEscrow.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/SynthetixEscrow.sol)
+
 ## Inherited Contracts
 
 ### Direct

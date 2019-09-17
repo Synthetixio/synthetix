@@ -13,6 +13,8 @@ See [`FeePool.feesByPeriod`](FeePool.md#feesbyperiod) and [`FeePool.effectiveDeb
 
     See also: [Design_Decisions.md](https://github.com/Synthetixio/synthetix/blob/master/Design_Decisions.md#feepoolstate).
 
+**Source:** [FeePoolState.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/FeePoolState.sol)
+
 <section-sep />
 
 ## Inheritance Graph

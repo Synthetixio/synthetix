@@ -7,6 +7,8 @@
 * Licence headers are illegal.
 * TODO: Check whether the file header is still accurate.
 
+**Source:** [Synthetix.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/Synthetix.sol)
+
 ## Inherited Contracts
 
 ### Direct

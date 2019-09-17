@@ -1,5 +1,7 @@
 # RewardsDistribution
 
+**Source:** [RewardsDistribution.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/RewardsDistribution.sol)
+
 ## Inherited Contracts
 
 * [Owned](Owned.md)

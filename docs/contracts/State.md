@@ -4,6 +4,8 @@
 
 Allows a contract to have an external state whose values only it can modify.
 
+**Source:** [State.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/State.sol)
+
 <section-sep />
 
 ## Inheritance Graph

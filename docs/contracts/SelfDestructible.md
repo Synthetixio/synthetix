@@ -4,6 +4,8 @@
 
 SelfDestructible allows an inheriting contract to be destroyed by its owner, who must announce an intention to destroy it, and then wait for a four week cooling-off period before being able to destroy it. Any ether remaining in the contract at this time is forwarded to a nominated beneficiary.
 
+**Source:** [SelfDestructible.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/SelfDestructible.sol)
+
 <section-sep />
 
 ## Inheritance Graph

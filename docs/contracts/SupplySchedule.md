@@ -23,6 +23,9 @@ Minting is performed in increments of a week. So if in a given year $x$ tokens c
 
 NOTE: This contract is missing docstrings.
 
+**Source:** [SupplySchedule.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/SupplySchedule.sol)
+
+
 ## Inherited Contracts
 
 ### Direct

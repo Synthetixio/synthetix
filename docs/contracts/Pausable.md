@@ -4,6 +4,10 @@
 
 Allows an inheriting contract to be paused and resumed, providing a modifier that will allow modified functions to operate only if the contract is not paused.
 
+**Source:** [Pausable.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/Pausable.sol)
+
+<section-sep />
+
 ## Inheritance Graph
 
 <inheritance-graph>

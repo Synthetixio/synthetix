@@ -11,6 +11,8 @@ This contract was updated as a part of [SIP-4](https://github.com/Synthetixio/SI
 !!! note
     The SIP says that the fee window was reduced to two weeks, but the actual contract code sets it to three.
 
+**Source:** [FeePool.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/FeePool.sol)
+
 ---
 
 ## Inheritance Graph

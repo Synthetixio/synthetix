@@ -2,6 +2,8 @@
 
 This is a state contract, controlled by the main Synthetix contract.
 
+**Source:** [SynthetixState.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/SynthetixState.sol)
+
 ## Inherited Contracts
 
 * State

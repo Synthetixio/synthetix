@@ -4,3 +4,5 @@ The original flavours of synth were \<insert synths here\>, and [SIP-5](https://
 
 !!! todo
     Fill in the bounds of the inverse synths on SIP-5.
+
+**Source:** [Synth.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/Synth.sol)

@@ -4,6 +4,8 @@ This is a [Synth](Synth.md) where all the holders can be liquidated back to sUSD
 
 Purgeable synths were introduced by [SIP-3](https://github.com/Synthetixio/SIPs/blob/master/SIPS/sip-3.md) in response to increasing gas costs associated with minting, and to allow the faster reconfiguration of inverse synths.
 
+**Source:** [PurgeableSynth.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/PurgeableSynth.sol)
+
 ## Inherited Contracts
 
 * [Synth](Synth.md)

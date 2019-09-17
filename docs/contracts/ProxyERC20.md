@@ -6,6 +6,8 @@ As a result this proxy can verifiably support token functionality in its ABI if 
 
 In the Synthetix system, an ERC20 proxy operates in front of the main [SNX token contract](Synthetix.md), alongside the pre-existing standard proxy. Thus clients can choose to use either of these two proxies to interact with the system.
 
+**Source:** [ProxyERC20.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/ProxyERC20.sol)
+
 <section-sep />
 
 ## Inheritance Graph

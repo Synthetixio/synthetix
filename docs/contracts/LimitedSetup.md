@@ -4,6 +4,8 @@
 
 This contract allows certain functions within inheriting contracts to only operate during a specified setup period.
 
+**Source:** [LimitedSetup.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/LimitedSetup.sol)
+
 <section-sep />
 
 ## Inheritance Graph

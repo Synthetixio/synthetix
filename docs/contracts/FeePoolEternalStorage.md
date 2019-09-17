@@ -6,6 +6,8 @@ FeePoolEternalStorage is currently used only to store the last fee withdrawal ti
 
 This contract is just wrapper around [EternalStorage](EternalStorage.md) with a limited setup period and a setup function that sets each account's last fee withdrawal times.
 
+**Source:** [FeePoolEternalStorage.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/FeePoolEternalStorage.sol)
+
 <section-sep />
 
 ## Inheritance Graph

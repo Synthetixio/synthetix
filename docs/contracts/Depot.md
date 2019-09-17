@@ -5,6 +5,8 @@ Assumes that the Synth price is worth US\$1. So: a) this will only work with `sU
 !!! note
     Some of this code is lifted verbatim from the old `EtherNomin` code, but this isn't indicated in the licence header.
 
+**Source:**(https://github.com/Synthetixio/synthetix/blob/master/contracts/Depot.sol)
+
 ## Inherited Contracts
 
 * [SelfDestructible](SelfDestructible.md)
