@@ -40,7 +40,7 @@ This is hashed together with an address to obtain the key for that address's las
 
 Initialises the inherited [`EternalStorage`](EternalStorage.md) instance, and sets a [limited setup period](LimitedSetup.md) of six weeks.
 
-??? example "Details"
+???+ example "Details"
 
     **Signature**
 
@@ -57,7 +57,7 @@ Initialises the inherited [`EternalStorage`](EternalStorage.md) instance, and se
 
 This is a helper to import fee withdrawal information from a previous version of the system during the setup period.
 
-??? example "Details"
+???+ example "Details"
 
     **Signature**
 

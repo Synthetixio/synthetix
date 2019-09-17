@@ -8,7 +8,7 @@ NOTE: File docstring still refers to "Fee Token", which no longer exists.
 
 ### Direct
 
-* [ReentrancyPreventer](ReentrancyPreventer.sol)
+* [ReentrancyPreventer](ReentrancyPreventer.md)
 
 ## Functions
 

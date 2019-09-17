@@ -39,7 +39,7 @@ Stores who has approved whom to perform actions. The double mapping allows each 
 
 Initialises the inherited [`State`](State.md) instance.
 
-??? example "Details"
+???+ example "Details"
 
     **Signature**
     
@@ -55,7 +55,7 @@ Initialises the inherited [`State`](State.md) instance.
 
 Grants approval for a delegate to act on behalf of a given authoriser.
 
-??? example "Details"
+???+ example "Details"
     **Signature**
 
     `setApproval(address authoriser, address delegate) external`
@@ -74,7 +74,7 @@ Grants approval for a delegate to act on behalf of a given authoriser.
 
 Revokes the approval of a delegate to act on behalf of a given authoriser.
 
-??? example "Details"
+???+ example "Details"
 
     **Signature**
     

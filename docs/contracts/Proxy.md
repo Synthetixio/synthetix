@@ -78,7 +78,7 @@ This toggle controls whether the proxy is in `CALL` or `DELEGATECALL` mode. The 
 
 Initialises the inherited [`Owned`](Owned.md) instance.
 
-??? example "Details"
+???+ example "Details"
 
     **Signature**
 
@@ -94,7 +94,7 @@ Initialises the inherited [`Owned`](Owned.md) instance.
 
 Sets the address this proxy forwards its calls to.
 
-??? example "Details"
+???+ example "Details"
 
     **Signature**
     
@@ -114,7 +114,7 @@ Sets the address this proxy forwards its calls to.
 
 Selects which call style to use by setting [`useDELEGATECALL`](#usedelegatecall).
 
-??? example "Details"
+???+ example "Details"
 
     **Signature**
     
@@ -130,7 +130,7 @@ Selects which call style to use by setting [`useDELEGATECALL`](#usedelegatecall)
 
 When operating in the `CALL` style, this function allows the proxy's underlying contract (and only that contract) to emit events from the proxy's address.
 
-??? example "Details"
+???+ example "Details"
 
     **Signature**
     
@@ -173,7 +173,7 @@ If none of the above functions is hit, then the function call data and gas is fo
 If the proxy is in `DELEGATECALL` style, it operates like most other proxies.
 If it is in `CALL` mode, then it first calls [`target.setMessageSender(msg.sender)`](Proxyable.md#setmessagesender) to initialise the [`messageSender`](Proxyable.md#messagesender) variable in the underlying [`Proxyable`](Proxyable.md) instance. In addition it forwards any ether included in the transaction to its target.
 
-??? example "Details"
+???+ example "Details"
 
     **Signature**
 

@@ -47,7 +47,7 @@ See [`FeePool.feesByPeriod`](FeePool.md#feesbyperiod) and [`FeePool.effectiveDeb
 
 Holds the issuance state and index of users interacting with the [`FeePool`](FeePool.md) for the last [several fee periods](#fee_period_length).
 
-??? example "Details"
+???+ example "Details"
 
     **Fields**
 
@@ -105,7 +105,7 @@ A list of up to 6 issuance data entries for each address, for the most recent ch
 
 Initialises the fee pool address, as well as the inherited [`SelfDestructible`](SelfDestructible.md) and [`LimitedSetup`](LimitedSetup.md) instances. The setup period is initialised to six weeks.
 
-??? example "Details"
+???+ example "Details"
 
     **Signature**
     
@@ -122,7 +122,7 @@ Initialises the fee pool address, as well as the inherited [`SelfDestructible`](
 
 Changes the [fee pool address](#feepool).
 
-??? example "Details"
+???+ example "Details"
 
     **Signature**
     
@@ -138,7 +138,7 @@ Changes the [fee pool address](#feepool).
 
 Accesses [`accountIssuanceLedger`](#accountissuanceledger).
 
-??? example "Details"
+???+ example "Details"
     **Signature**
 
     `getAccountsDebtEntry(address account, uint index) public view returns (uint debtPercentage, uint debtEntryIndex)`
@@ -155,7 +155,7 @@ From a given account's issuance data, retrieve the most recent entry which close
 
 This function is used in [`FeePool.feesByPeriod`](FeePool.md#feesbyperiod) and [`FeePool.effectiveDebtRatioForPeriod`](FeePool.md#effectivedebtratioforperiod) to compute the fees owed to a user for specific past periods.
 
-??? example "Details"
+???+ example "Details"
     **Signature**
 
     `applicableIssuanceData(address account, uint closingDebtIndex) external view returns (uint, uint)`
@@ -168,7 +168,7 @@ Allows the [`Synthetix`](Synthetix.md) contract, through the [fee pool](FeePool.
 
 If the latest entry in this account's issuance ledger was from the current fee period, it is overwritten. Otherwise, the existing entries are shifted down one spot, dropping the last one (using a call to [`issuanceDataIndexOrder`](#issuancedataindexorder)), and a new entry is added at the head of the list.
   
-??? example "Details"
+???+ example "Details"
 
     **Signature**
     
@@ -188,7 +188,7 @@ If the latest entry in this account's issuance ledger was from the current fee p
 
 Shifts this account's array of issuance ledger entries down one place, overwriting the last entry. This is only used in [`appendAccountIssuanceRecord`](#appendaccountissuancerecord).
 
-??? example "Details"
+???+ example "Details"
 
     **Signature**
     
@@ -200,7 +200,7 @@ Shifts this account's array of issuance ledger entries down one place, overwriti
 
 This function was used during the initial six week setup period to initialise the issuance ledger from the previous Synthetix version.
 
-??? example "Details"
+???+ example "Details"
 
     **Signature**
     
@@ -220,7 +220,7 @@ This function was used during the initial six week setup period to initialise th
 
     **Emits**
 
-    * [IssuanceDebtRatioEntry(accounts[i], ratios[i], feePeriodCloseIndex)](#issuancedebtratioentry) for each `i` in the input arrays.
+    * [IssuanceDebtRatioEntry(accounts[i], ratios[i], feePeriodCloseIndex)](#issuancedebtratioentry) for each `i` up to the length of the input arrays.
 
 ---
 

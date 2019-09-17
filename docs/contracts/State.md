@@ -36,7 +36,7 @@ The address (presumably a contract) which is permitted to use functions on this 
 
 Initialises the associated contract and the owner, who has the exclusive right to switch the associated contract.
 
-??? example "Details"
+???+ example "Details"
 
     **Signature**
 
@@ -56,7 +56,7 @@ Initialises the associated contract and the owner, who has the exclusive right t
 
 Allows the contract's owner to update the [associated contract](#associatedContract).
 
-??? example "Details"
+???+ example "Details"
 
     **Signature**
 
