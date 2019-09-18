@@ -4,6 +4,8 @@ This contract holds the SNX which were escrowed at the time of the original toke
 
 The contract was subject to an eight week setup period during which the vesting schedules were set up.
 
+This contract is augmented by the [`EscrowChecker`](EscrowChecker.md) contract, which is able to return vesting schedules as an array rather than one at a time.
+
 **Source:** [SynthetixEscrow.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/SynthetixEscrow.sol)
 
 <section-sep />
@@ -42,9 +44,7 @@ Stores the vesting schedule for each for each account. Each schedule is a list o
 
 ### `totalVestedAccountBalance`
 
-The quantity of remaining tokens for a given account.
-
-This is used for determining fee entitlements; it saves the recomputation involved in summing over [`vestingSchedules`](#vestingschedules) entries.
+The quantity of remaining tokens for a given account; it saves the recomputation involved in summing over [`vestingSchedules`](#vestingschedules) entries.
 
 **Type:** `mapping(address => uint) public`
 
@@ -95,7 +95,7 @@ Initialises the [`Synthetix`](Synthetix.md) contract address, and the inherited 
 ???+ example "Details"
     **Signature**
 
-    `constructor(address _owner, ISynthetix _synthetix) public`
+    `constructor(address _owner, Synthetix _synthetix) public`
 
     **Superconstructors**
 
@@ -194,7 +194,7 @@ The function iterates until it finds the first nonzero vesting entry timestamp, 
 
 ### `getNextVestingEntry`
 
-Returns the next vesting entry in the same manner as `getNextVestingIndex`. Returns `[0,0]` if there is no next vesting entry.
+Returns the next vesting entry in the same manner as [`getNextVestingIndex`](#getnextvestingindex). Returns `[0,0]` if there is no next vesting entry.
 
 ???+ example "Details"
     **Signature**
