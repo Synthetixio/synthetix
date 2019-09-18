@@ -6,6 +6,8 @@ Subject | Date
 --------|-----
 [Addressing Claims of Deleted Balances](https://blog.synthetix.io/addressing-claims-of-deleted-balances/) | 16 Sep 2019
 [Cross-Chain Infrastructure Revisited](https://blog.synthetix.io/cross-chain-infrastructure-revisited/) | 27 Aug 2019
+[SNX Arbitrage Pool](https://blog.synthetix.io/snx-arbitrage-pool/) | 22 Jul 2019
+[Uniswap sETH Pool Liquidity Incentives](https://blog.synthetix.io/uniswap-seth-pool-incentives/) | 12 Jul 2019
 [Response to The Block's analysis](https://blog.synthetix.io/response-to-the-block-analysis/) | 14 Jun 2019
 [Synthetix Monetary Policy Changes](https://blog.synthetix.io/synthetix-monetary-policy-changes/) | 15 Feb 2019
 [Synthetix Overview](https://blog.synthetix.io/synthetix-overview/) | 6 Dec 2018
