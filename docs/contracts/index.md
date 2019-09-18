@@ -4,6 +4,7 @@
 
 The following contracts compose the core of the Synthetix system.
 
+* [ ] [ArbRewarder](ArbRewarder.md)
 * [x] [DelegateApprovals](DelegateApprovals.md)
 * [x] [Depot](Depot.md)
 * [x] [EscrowChecker](EscrowChecker.md)
@@ -31,6 +32,7 @@ The following contracts compose the core of the Synthetix system.
 * [x] [SupplySchedule](SupplySchedule.md)
 * [ ] [Synth](Synth.md)
 * [ ] [Synthetix](Synthetix.md)
+* [ ] [SynthetixAirdropper](SynthetixAirdropper.md)
 * [x] [SynthetixEscrow](SynthetixEscrow.md)
 * [ ] [SynthetixState](SynthetixState.md)
 * [x] [TokenFallbackCaller](TokenFallbackCaller.md)
