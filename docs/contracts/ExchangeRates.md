@@ -1,5 +1,7 @@
 # ExchangeRates
 
+**Old:** ExchangeRates.sol: A key value store (bytes4 -> uint) of currency exchange rates, all priced in USD. Understands the concept of whether a rate is stale (as in hasn't been updated frequently enough), and only allows a single annointed oracle address to do price updates.
+
 The price of `sUSD` is always 1, and is never stale; its price cannot be updated.
 The `XDR` price is just $\sum_{c \in \text{basket}}{c_{price}}$, the sum of the prices of the currencies in the basket (`sUSD`, `sAUD`, `sCHF`, `sEUR`, `sGBP`), and not the average.
 

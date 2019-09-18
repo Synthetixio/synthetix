@@ -2,7 +2,7 @@
 
 ## Description
 
-This contract allows certain functions within inheriting contracts to only operate during a specified setup period.
+This contract allows certain functions within inheriting contracts to only operate during a specific limited setup period. After this period elapses, any functions with the [`onlyDuringSetup`](#onlyduringsetup) modifier no longer operate.
 
 **Source:** [LimitedSetup.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/LimitedSetup.sol)
 

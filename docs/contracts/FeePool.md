@@ -2,6 +2,8 @@
 
 ## Description
 
+**Old:** FeePool.sol: Understands fee information for Synthetix. As users transact, their fees are kept in 0xfeefeefee... and stored in XDRs. Allows users to claim fees they're entitled to.
+
 A contract for managing and claiming fees. Note that most logic related to of the transfer fee related logic is superfluous, as the transfer fee rate is 0.
 
 * SIP-2: Eliminates fee penalty tiers and replaces them with a flat 100% penalty if above a target ratio.

@@ -2,7 +2,9 @@
 
 ## Description
 
-Allows a contract to have an external state whose values only it can modify.
+An external state contract whose functions can only be called by an [associated controller](#associatedcontract) if modified with [`onlyAssociatedContract`](#onlyassociatedcontract).
+
+This is designed to allow behaviour to be decoupled from storage so that upgrades can be made without losing data.
 
 **Source:** [State.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/State.sol)
 

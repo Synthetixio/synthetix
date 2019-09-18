@@ -2,9 +2,12 @@
 
 ## Description
 
-This is a library contract that handles safe arithmetic with unsigned [fixed-point decimals](https://en.wikipedia.org/wiki/Fixed-point_arithmetic) at two precision levels. Standard precision operations act on numbers with 18 decimal places, such as ordinary token balances. High precision numbers possess 27 decimal places, and have their own corresponding set of functions.
+This is a library contract that handles safe arithmetic with unsigned [fixed-point decimals](https://en.wikipedia.org/wiki/Fixed-point_arithmetic).
+
+The provided decimals can operate at either of two different precision levels. Standard precision operations act on numbers with 18 decimal places, such as ordinary token balances. High precision numbers possess 27 decimal places, and have their own corresponding set of functions.
 
 Also included are several functions for converting between precision levels, and operations which round to the nearest increment to remove truncation bias. The library only implements multiplication and division operations as additive operations on fixed point numbers behave correctly.
+These operate by either dividing out the extra fixed point unit after a multiplication, or multiplying it in before a division.
 
 In Synthetix the high precision numbers are used for dealing with the [debt ledger](SynthetixState.md#debtledger), which is constructed as an extended product of many fractional numbers. As this is a financially-sensitive component of the system, representational precision matters in order to minimise errors resulting from rounding or truncation.
 

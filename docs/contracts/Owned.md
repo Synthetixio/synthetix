@@ -2,7 +2,7 @@
 
 ## Description
 
-Allows inheriting contracts to have an owner and provides the [`onlyOwner`](#onlyowner) modifier, which restricts function access to the owner.
+Allows inheriting contracts to have an owner and provides the [`onlyOwner`](#onlyowner) modifier, which restricts function access to that owner.
 The owner can be changed by a nomination process, where the nominated owner must accept ownership before it is switched.
 
 **Source:** [Owned.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/Owned.sol)
