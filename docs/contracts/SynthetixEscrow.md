@@ -1,5 +1,7 @@
 # SynthetixEscrow
 
+## Description
+
 This contract holds the SNX which were escrowed at the time of the original token sale, releasing them according to a defined schedule.
 
 The contract was subject to an eight week setup period during which the vesting schedules were set up.
