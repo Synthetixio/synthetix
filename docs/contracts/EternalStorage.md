@@ -4,7 +4,7 @@
 
 This is an implementation of the well-known eternal storage smart contract pattern, described in more detail [here](https://fravoll.github.io/solidity-patterns/eternal_storage.html) and [here](https://medium.com/rocket-pool/upgradable-solidity-contract-design-54789205276d).
 
-In short, it is a key:value store for variables which are retrieved by a byte string, typically a hash of their name and an index.
+In short, it is a key-value store for variables which are retrieved by a byte string, typically a hash of their name and an index.
 
 The contract is architected this way so that the access pattern is uniform and the memory layout is not dependent on implementation or compilation details. In this way, smart contracts can retain state between updates while minimising the difficulty and expense of migrating this information.
 
