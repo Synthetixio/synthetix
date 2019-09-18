@@ -6,7 +6,7 @@ This contract distributes the inflationary supply rewards after they have been m
 
 The actual quantity of tokens to inject into the supply each week is passed into [`distributeRewards`](#distributerewards) by [`Synthetix.mint`](Synthetix.md#mint); how much the quantity is on any given week is determined by the [`SupplySchedule`](SupplySchedule.md) contract.
 
-At present, the only non-staker recipient is the [`SynthetixAirdropper`](SynthetixAirdropper.md) instance incentivising the [sETH/ETH UniSwap Liquidity Pool](https://etherscan.io/address/0xe9cf7887b93150d4f2da7dfc6d502b216438f244/#tokentxns). This pool is assigned 5% of the inflationary supply, currently $72,000$ SNX per week. For further details, see the discussion on [liquidity provider incentives](../incentives.md#liquidity-providers).
+At present, the only non-staker recipient is the [`SynthetixAirdropper`](SynthetixAirdropper.md) instance incentivising depth in the [sETH/ETH UniSwap Liquidity Pool](https://etherscan.io/address/0xe9cf7887b93150d4f2da7dfc6d502b216438f244/#tokentxns), which assists entry and exit to [synthetix.exchange](https://synthetix.exchange). This pool is assigned 5% of the inflationary supply, currently $72,000$ SNX per week. For further details, see the discussion on [liquidity provider incentives](../incentives.md#liquidity-providers).
 
 Incentivising activities other than staking was first trialed with UniSwap, which was then formalised into [SIP-8](https://sips.synthetix.io/sips/sip-8), resulting in this contract. See the Airdropper and SIP-8 for detailed mechanics.
 
