@@ -293,12 +293,14 @@ During the setup period, allows the contract owner to add an entire vesting sche
     `addVestingSchedule(address account, uint[] times, uint[] quantities) external`
 
     **Modifiers**
-        * [`Owned.onlyOwner`](Owned.md#onlyowner)
-        * [`LimitedSetup.onlyDuringSetup`](LimitedSetup.md#onlyduringsetup)
+
+    * [`Owned.onlyOwner`](Owned.md#onlyowner)
+    * [`LimitedSetup.onlyDuringSetup`](LimitedSetup.md#onlyduringsetup)
 
     **Preconditions**
-        * `times` must be a strictly increasing sequence.
-        * Each entry in `quantities` must be nonzero.
+
+    * `times` must be a strictly increasing sequence.
+    * Each entry in `quantities` must be nonzero.
 
     !!! caution
         Beware that no checking is done that the lengths of the `times` and `quantities` input arrays are equal. If `times` is shorter than `quantities`, the extra quantities are ignored; if it is longer, the transaction reverts since past-the-end quantities will be 0 (but don't rely on this).

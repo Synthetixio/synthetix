@@ -11,7 +11,7 @@ The logic of RewardEscrow is derived from the [SynthetixEscrow](SynthetixEscrow.
 ## Inheritance Graph
 
 <inheritance-graph>
-    ![State inheritance graph](../img/graphs/State.svg)
+    ![RewardEscrow inheritance graph](../img/graphs/RewardEscrow.svg)
 </inheritance-graph>
 
 <section-sep />
@@ -300,7 +300,7 @@ This function allows the [`FeePool`](FeePool.md) contract to add a new entry to 
     * The balance of SNX in the escrow contract must be sufficient to supply the new vesting entry.
     * The given account's existing schedule length must be less than [`MAX_VESTING_ENTRIES`](#max_vesting_entries).
 
-    ??? A minor efficiency note
+    ??? note "A minor note on efficiency"
         Note that this function also checks that the new vesting timestamp (`now + 52 weeks`) is after the last vesting entry's timestamp, if one exists. In most cases this requirement can't be violated, since `now` increases monotonically. In the worst case where multiple calls are made for a given account in a single block, they go through with the same timestamp, so only the first one will be accepted. But in this case, a user's last fee withdrawal will have been set, and `quantity` will be zero, which fails an earlier precondition.
 
         The function also needlessly recomputes `numVestingEntries`, which is already stored in the `scheduleLength` local.
