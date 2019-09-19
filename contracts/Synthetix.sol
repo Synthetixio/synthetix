@@ -478,26 +478,6 @@ contract Synthetix is ExternStateToken {
 
     /**
      * @notice Function that allows synth contract to delegate sending fee to the fee Pool.
-     * stub function for legacy sETH - to be removed once sETH upgraded.
-     * @dev Only the synth contract can call this function.
-     * @param from The address fee is coming from.
-     * @param sourceCurrencyKey source currency fee from.
-     * @param sourceAmount The amount, specified in UNIT of source currency.
-     * @return Boolean that indicates whether the transfer succeeded or failed.
-     */
-    function synthInitiatedFeePayment(
-        address from,
-        bytes4 sourceCurrencyKey,
-        uint sourceAmount
-    )
-        external
-        returns (bool)
-    {
-        return true;
-    }
-
-    /**
-     * @notice Function that allows synth contract to delegate sending fee to the fee Pool.
      * @dev fee pool contract address is not allowed to call function
      * @param from The address to move synth from
      * @param sourceCurrencyKey source currency from.
