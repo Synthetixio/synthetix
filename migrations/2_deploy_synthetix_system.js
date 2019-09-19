@@ -127,7 +127,6 @@ module.exports = async function(deployer, network, accounts) {
 		synthetixState.address,
 		rewardEscrow.address,
 		ZERO_ADDRESS,
-		web3.utils.toWei('0.0015', 'ether'), // TODO must change this to 0 to match MAINNET after tests are updated
 		web3.utils.toWei('0.0030', 'ether'),
 		{ from: deployerAccount }
 	);
@@ -275,8 +274,8 @@ module.exports = async function(deployer, network, accounts) {
 			Synth,
 			proxy.address,
 			tokenState.address,
-			synthetix.address,
-			feePool.address,
+			synthetixProxy.address,
+			feePoolProxy.address,
 			`Synth ${currencyKey}`,
 			currencyKey,
 			owner,
