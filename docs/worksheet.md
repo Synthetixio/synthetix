@@ -43,7 +43,6 @@
 ??? "Formatting"
     * [ ] [mkdoc PyMdown extensions](https://facelessuser.github.io/pymdown-extensions/)
         * [ ] [Metadata](https://squidfunk.github.io/mkdocs-material/extensions/metadata/); [Further Notes](https://www.mkdocs.org/user-guide/writing-your-docs/#meta-data)
-    * [ ] Diagrams
     * [ ] Ask them if they need [google analytics integration](https://squidfunk.github.io/mkdocs-material/getting-started/#google-analytics).
     * [ ] Activate inlinehilite
     * [ ] Activate [minifier plugin](https://squidfunk.github.io/mkdocs-material/getting-started/#plugins) (don't forget to explicitly activate the search plugin when doing so)
