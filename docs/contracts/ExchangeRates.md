@@ -1,87 +1,550 @@
 # ExchangeRates
 
-**Old:** ExchangeRates.sol: A key value store (bytes4 -> uint) of currency exchange rates, all priced in USD. Understands the concept of whether a rate is stale (as in hasn't been updated frequently enough), and only allows a single annointed oracle address to do price updates.
+!!! note old
+    A key value store (bytes4 -> uint) of currency exchange rates, all priced in sUSD. Understands the concept of whether a rate is stale (as in hasn't been updated frequently enough), and only allows a single annointed oracle address to do price updates.
+
+    A contract that any other contract in the Synthetix system can query
+    for the current market value of various assets, including
+    crypto assets as well as various fiat assets.
+    This contract assumes that rate updates will completely update
+    all rates to their current values. If a rate shock happens
+    on a single asset, the oracle will still push updated rates
+    for all other assets.
+
+The oracle frequently updates this contract with the rates that have moved sufficiently, and the price of the `XDR` is recomputed.
+Before each price update, the oracle calls [`setPriceUpdateLock`](#setpriceupdatelock).
+This does not turn off any functionality in the exchange rate contract, but is used in the [`Synthetix`](Synthetix.md) contract to disable [currency exchanges](Synthetix.md#_internalexchange) while prices are being updated to protect against oracle front running. The lock is released when [rate updates have completed][internalUpdateRates`](#internalupdaterates).
 
 The price of `sUSD` is always 1, and is never stale; its price cannot be updated.
 The `XDR` price is just $\sum_{c \in \text{basket}}{c_{price}}$, the sum of the prices of the currencies in the basket (`sUSD`, `sAUD`, `sCHF`, `sEUR`, `sGBP`), and not the average.
 
+Used in PurgeableSynth to determine if the total token value is below the purge threshold.
+Used in Synthetix for computing the value of tokens in order to facilitate exchange between them, to compute the `XDR` value of minted tokens to update the [debt ledger](SynthetixState.md#debtledger), and to ensure exchanges cannot occur while price updates and being made or if a particular exchange rate is stale.
+Used in ArbRewarder to compute the current SNX/ETH price so that arbitrage can be accurate.
+
+<inheritance-graph>
+    ![ExchangeRates architecture graph](../img/graphs/ExchangeRates-architecture.svg)
+</inheritance-graph>
+
 **Source:** [ExchangeRates.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/ExchangeRates.sol)
 
-## Inherited Contracts
+<section-sep />
 
-* [SelfDestructible](SelfDestructible.md)
-* ^[State](State.md)
-* ^^[Owned](Owned.md)
+## Inheritance Graph
+
+<inheritance-graph>
+    ![ExchangeRates inheritance graph](../img/graphs/ExchangeRates.svg)
+</inheritance-graph>
+
+## Libraries
+
+* [`SafeMath`](SafeMath.md) for `uint`
+* [`SafeDecimalMath`](SafeDecimalMathmd) for `uint`
 
 ## Related Contracts
 
-### Referenced
+* <[`ArbRewarder`](ArbRewarder.md)
+* <[`PurgeableSynth`](PurgeableSynth.md)
+* <[`Synthetix`](Synthetix.md)
 
-* SafeMath
-* [SafeDecimalMath](SafeDecimalMathmd)
-
-### Referencing
-
-* [PurgeableSynth](PurgeableSynth.md)
-* [Synthetix](Synthetix.md)
+<section-sep />
 
 ## Structs
 
-```solidity
-struct InversePricing {
-    uint entryPoint; // The price at the time this inverse index was set up.
-    uint upperLimit; // The upper limit of the *inverse* price (not the underlying rate).
-    uint lowerLimit; // The lower limit of the *inverse* price (not the underlying rate).
-    bool frozen; // Used in dapps, presumably, but also in PurgeableSynth (frozen synths can be purged)
-}
-```
+---
+
+### `InversePricing`
+
+Holds necessary information for computing the price of [inverse Synths](../synths.md#inverse-synths).
+
+Field | Type | Description
+------|------|------------
+entryPoint | `uint` ([18 dp](SafeDecimalMath.md)) | The underlying asset's price at the time the inverse index was set up. Must be strictly greater than $0$.
+upperLimit | `uint` ([18 dp](SafeDecimalMath.md)) | The upper limit of the *inverse* price. Must lie strictly between entryPoint and twice entryPoint.
+lowerLimit | `uint` ([18 dp](SafeDecimalMath.md)) | The lower limit of the *inverse* price. Must lie strictly between $0$ and entryPoint.
+frozen | `bool` | True if an inverse Synth has breached one of its limits.
+
+---
+
+<section-sep />
 
 ## Variables
 
-* `rates: mapping(bytes4 => uint) public`: Stores the exchange rate for each given currency code (`sUSD`, `SNX` , et cetera).
-* `lastRateUpdateTimes: mapping(bytes4 => uint) public`: Stores the time each rate was last updated.
-* `oracle: address public`: The address which is permitted to push rate updates to the contract.
-* `ORACLE_FUTURE_LIMIT: uint constant`: The maximum time in the future that rates are allowed to be set at. Initialised to 10 minutes.
-* `rateStalePeriod: uint public`: The duration after which a rate will be considered out of date.
-* `priceUpdateLock: bool public`: A mutex so that exchanges can't be made while prices are being updated. This does not turn off any functionality in the exchange rate contract, but is used in the [Synthetix](Synthetix.md) contract to disable currency exchanges while prices are being updated. This is only settable by the oracle, which presumably sets it to true before price updates are submitted. It is set to false whenever the rates have completed their updates, inside the `internalUpdateRates` function.
-* `xdrParticipants: bytes4[5] public`: The codes of each currency in the XDR basket. Hard-coded to `[sUSD, sAUD, sCHF, sEUR, sGBP]`. They are equally-weighted. No crypto assets here!
-* `inversePricing: mapping(bytes4 => InversePricing) public`: For each currency with an inverse index, keep the necessary information to maintain the index.
-* `invertedKeys: bytes4[] public`: A list of the currencies with an inverted index.
+---
 
-!!! TODO
-    Investigate how/when the oracle sets the price update lock to true before price updates are actually submitted.
+### `rates`
+
+Stores the exchange rate (`sUSD` per unit) for each given currency key (`sUSD`, `SNX`, et cetera). These prices are stored as [18 decimal place fixed point numbers](SafeDecimalMath.md).
+
+**Type:** `mapping(bytes4 => uint) public`
+
+---
+
+### `lastRateUpdateTimes`
+
+Stores the timestamp each rate was last updated. accessed by the same keys as [`rates`](#rates) is.
+
+**Type:** `mapping(bytes4 => uint) public`
+
+---
+
+### `oracle`
+
+The address which is permitted to push rate updates to the contract.
+
+**Type:** `address public`
+
+---
+
+### `ORACLE_FUTURE_LIMIT`
+
+The maximum time in the future ($10$ minutes) that rates are allowed to be set for.
+
+**Type:** `uint constant`
+
+---
+
+### `rateStalePeriod`
+
+The duration after which a rate will be considered out of date. Synth exchange and other price-sensitive transactions in the [`Synthetix`](Synthetix.md) contract will not operate if a relevant rate is stale.
+Initialised to $3$ hours.
+
+**Type:** `uint public`
+
+---
+
+### `priceUpdateLock`
+
+An oracle front running protection mutex, set by [`setPriceUpdateLock`](#setpriceupdatelock) and unset by [`internalUpdateRates`](#internalupdaterates).
+
+**Type:** `bool public`
+
+---
+
+### `xdrParticipants`
+
+The codes of each currency in the XDR basket. Hard-coded to `[sUSD, sAUD, sCHF, sEUR, sGBP]`. They are equally-weighted. For stability, there are no crypto assets listed here.
+
+**Type:** `bytes4[5] public`
+
+---
+
+### `inversePricing`
+
+For each currency with an inverse index, keep the necessary [`InversePricing`](#inversepricing) information to maintain the index.
+
+**Type:** `mapping(bytes4 => InversePricing) public`
+
+---
+
+### `invertedKeys`
+
+A list of the keys of currencies with an inverted index.
+
+**Type:** `bytes4[] public`
+
+---
+
+<section-sep />
 
 ## Functions
 
-* `updateRates(bytes4[] currencyKeys, uint[] newRates, uint timeSent) returns (bool)`: Only callable by the oracle; otherwise just an alias to `internalUpdateRates`.
-* `internalUpdateRates(bytes4[] currencyKeys, uint[] newRates, uint timeSent) returns (bool)`: Will not allow `timeSent` to be more than `ORACLE_FUTURE_LIMIT` seconds into the future. Throws an exception if the currencyKeys include `sUSD`, or if any rate is 0. Then, for each rate, set the rate and timestamp, handling any inverse indexes with `rateOrInverted`. Any particular element is skipped if the contract's last update time is after the new update time. NOTE: this means that if a price update is resent at the same timestamp, it can overwrite. Then update the `XDR` price with the `updateXDRRate` function, and disable the price update lock if it was set.
-* `rateOrInverted(bytes4 currencyKey, uint rate) returns (uint)`: If no inverted rate exists for this currency key (i.e. if `inversePricing[currencyKey].entryPoint = 0`), then simply return rate. Otherwise:
-If the rate is currently frozen, then just return the previously stored rate (`rates[currencyKey]`). So, frozen prices can never be updated.
-If not, then return $2 \times entryPoint - rate$, or $0$
-if this quantity is negative. Then, if the quantity either exceeds the upper limit, or is less than the lower limit, the rate is set to the limit which was reached, and `frozen` is set to true.
-This can be expressed as $newRate \leftarrow max(lowerLimit, \ min(max(0, \ 2 \times entryPoint - rate), \ upperLimit))$. and $frozen \leftarrow newRate \in \{lowerLimit, \ upperLimit\}$.
-Note that if $rate >= 2 \times entryPoint$, then the rate will always be frozen. The upshot of this system is that if the entry price of the asset underlying an inverted index is $entryPoint$, then if the price of the asset moves to $entryPoint + \delta$, then the rate of the inverted index moves to $entryPoint - \delta$, and the price freezes if $-\delta \le upperlimit - entryPoint$ or $\delta \ge entryPoint - lowerLimit$. The upper and lower limits are thus computed in terms of the inverse index, not of the underlying asset.
-* `updateXDRRate(uint timeSent)`: Updates the `XDR` price based on the current prices of `xdrParticipants`. The `XDR` price is just the sum of those currencies. NOTE: this price is still updated even if the underlying prices are stale, and its timestamp will not reflect the timestamps of the underlying currencies.
-* `deleteRate(bytes4 currencyKey)`: Only callable by the oracle. Will not delete an already-deleted rate.
-* `setOracle(address _oracle)`: Only callable by the contract owner.
-* `setRateStalePeriod(uint _time)`: Only callable by the contract owner.
-* `setPriceUpdateLock(uint _priceUpdateLock)`: Only callable by the oracle.
-* `setInversePricing(bytes4 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit)`: Only callable by the contract owner. $entryPoint, upperLimit, lowerLimit$ must be strictly greater than 0, noting that an entryPoint of 0 is taken to mean that no inverse index exists. $upperLimit$ must be greater than $entryPoint$, and less than $2 \times entryPoint$. $lowerLimit$ must be less than $entryPoint$. Push the currency key to the list of inverted keys if it is not already known. Inverse indices start unfrozen.
-* `removeInversePricing(bytes4 currencyKey)`: Delete the corresponding entry in the `inversePricing` map, and delete the entry in the `invertedKeys` array, replacing it with the last element in the array. NOTE: This emits an `InversePriceConfigured` event for the currency key, with all arguments 0; this will still be emitted even if the currency had no inverse index.
-* `effectiveValue(bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey) returns (uint)`: Neither the source nor destination currency rates can be stale. If the prices are fresh, then just return $sourceAmount \times \frac{rates[sourceCurrencyKey]}{rates[destinationCurrencyKey]}$.
-* `rateForCurrency(bytes4 currencyKey) returns (uint)`: Simply an alias to `rates[currencyKey]`.
-* `ratesForCurrencies(bytes4[] currencyKeys) returns (uint[])`: Maps `rateForCurrency` over an array of keys.
-* `lastRateUpdateTimeForCurrency(bytes4 currencyKey) returns (uint)`: Alias to `lastRateUpdateTime[currencyKey]`.
-* `lastRateUpdateTimesForCurrencies(bytes4[] currencyKeys) returns (uint[])`: Maps `lastRateUpdateTimeForCurrency` over an array of keys.
-* `rateIsStale(bytes4 currencyKey) returns (bool)`: `sUSD` is never stale. Otherwise, checks if the last updated time was more than `rateStalePeriod` seconds in the past.
-* `rateIsFrozen(bytes4 currencyKey) returns (bool)`: Simply an alias to `inversePricing[currencyKey].frozen`. Currencies without an inverse price will naturally return false.
-* `anyRateIsStale(bytes4[] currencyKeys) returns (bool)`: Loop over all currencies except sUSD and return true if any of them is stale.
+---
+
+### `constructor`
+
+Initialises the oracle address and initial currency prices, the `XDR` basket, along with the inherited [`SelfDestructible`](SelfDestructible.md) instance.
+
+???+ example "Details"
+    **Signature**
+
+    `constructor(address _owner, address _oracle, bytes4[] _currencyKeys, uint[] _newRates) public`
+
+    **Superconstructors**
+
+    * [`SelfDestructible(_owner)`](SelfDestructible.md#constructor)
+
+    **Preconditions**
+
+    * `_currencyKeys` and `_newRates` must be the same length.
+    * `"sUSD"` must not appear in `_currencyKeys`.
+    * $0$ must not appear in `_newRates`.
+
+---
+
+### `updateRates`
+
+Allows the oracle to update exchange rates in the contract. Otherwise this is just an alias to [`internalUpdateRates`](#internalupdaterates).
+
+???+ example "Details"
+    **Signature**
+
+    `updateRates(bytes4[] currencyKeys, uint[] newRates, uint timeSent) external returns (bool)`
+
+    **Modifiers**
+
+    * [`onlyOracle`](#onlyoracle)
+
+---
+
+### `internalUpdateRates`
+
+Record the set of provided rates and the timestamp, handling any inverse indexes with [`rateOrInverted`](#rateorinverted). At this stage inverse indexes which escaped their bounds are frozen. Any rate with a more recent update time is skipped.
+Once all rates have been updated the `XDR` price is recomputed by [`updateXDRRate`](#updatexdrrate).
+
+Finally, the [price update lock](#priceupdatelock) is reset, reenabling Synth exchange functionality.
+
+The `timeSent` argument is useful for maintaining the exact age of the data points even as transactions can take a variable amount of time to confirm. Without this, earlier updates could possibly overwrite later ones.
+
+Returns true if no exception was thrown.
+
+???+ example "Details"
+    **Signature**
+
+    `internalUpdateRates(bytes4[] currencyKeys, uint[] newRates, uint timeSent) internal returns (bool)`
+
+    **Preconditions**
+
+    * `currencyKeys` and `newRates` must be the same length.
+    * `timeSent` must be less than [`ORACLE_FUTURE_LIMIT`](#oracle_future_limit) seconds in the future.
+    * `"sUSD"` must not appear in `currencyKeys`.
+    * $0$ must not appear in `newRates`.
+
+    **Emits**
+
+    * [`InversePriceFrozen(currencyKey)`](#inversepricefrozen) if `currencyKey`'s price has gone out of range.
+    * [`RatesUpdated(currencyKeys, newRates)`](#ratesupdated)
+    * [`RatesUpdated("XDR", computedXDRRate)`](#ratesupdated)
+
+---
+
+### `rateOrInverted`
+
+Returns the current price for a specified currency key.
+
+If a currency is not an inverted index, then just return the rate that was passed in.
+If the currency is an inverted index, return the inverted rate. If the inverted price reaches one of its limits, freeze its rate at the limit it breached. Future calls to a frozen inverted index will return the last recorded rate. That is, frozen rates can no longer be updated.
+
+An inverted rate moves exactly inverse to the underlying price; if the underlying price moves up a dollar, the inverted price moves down a dollar.
+The price $\bar{p}$ of an [inverse index](#inversepricing) $c$ with base price $p$, entry point $e$, and upper and lower limits $u$ and $l$ respectively, is computed as:
+
+$$
+    \bar{p} = \text{clamp(}2e - p, \ l, \ u\text{)}
+$$
+
+With $0 \lt l \lt e \lt u \lt 2e$ enforced by [`setInversePricing`](#setinversepricing).[^1]
+
+[^1]: The [clamp function](https://en.cppreference.com/w/cpp/algorithm/clamp) can be defined thus: `clamp(v, l, u) = min(max(v, l), u)`.
+
+So if $p$ moves from $e$ to $e + \delta$, then $\bar{p}$ moves to $e - \delta$, if it would not be frozen.
+$\bar{p}$ is frozen whenever $\bar{p} \in \{l,u\}$; that is, when $2e - l \le p$ or $p \le 2e - u$. This implies that $p$ can never exceed twice its entry point without $\bar{p}$ being frozen, but in principle it could reach almost to zero.
+
+???+ example "Details"
+    **Signature**
+
+    `rateOrInverted(bytes4 currencyKey, uint rate) internal returns (uint)`
+
+    **Emits**
+
+    * [`InversePriceFrozen(currencyKey)`](#inversepricefrozen) if `currencyKey`'s price has gone out of range.
+
+---
+
+### `updateXDRRate`
+
+Updates the `XDR` price, which is set to the sum of the current prices of the currencies in  [`xdrParticipants`](#xdrparticipants) basket (`sUSD`, `sAUD`, `sCHF`, `sEUR`, `sGBP`).
+
+!!! caution
+    The `XDR` price is still recomputed even if the underlying prices are stale, or if the oracle is not updating any of the `XDR` participants. Due to this, `XDR`'s update timestamp does not necessarily reflect the timestamps of the underlying currencies. Unless every other price is stale, the price of the `XDR` cannot be stale.
+
+???+ example "Details"
+    **Signature**
+
+    `updateXDRRate(uint timeSent) internal`
+
+    **Emits**
+
+    * [`RatesUpdated("XDR", computedXDRRate)`](#ratesupdated)
+
+---
+
+### `deleteRate`
+
+Deletes a currency's price and its update time from the ExchangeRates contract.
+
+???+ example "Details"
+    **Signature**
+
+    `deleteRate(bytes4 currencyKey) external`
+    
+    **Modifiers**
+
+    * [`onlyOracle`](#onlyoracle)
+
+    **Preconditions**
+
+    * The specified currency must not already have been deleted.
+
+    **Emits**
+
+    * [`RateDeleted(currencyKey)`](#ratedeleted)
+
+---
+
+### `setOracle`
+
+Allows the owner to set the address which is permitted to send prices to this contract.
+
+???+ example "Details"
+    **Signature**
+
+    `setOracle(address _oracle) external`
+
+    **Modifiers**
+
+    * [`Owned.onlyOwner`](Owned.md#onlyowner)
+
+    **Emits**
+
+    * [`OracleUpdated(_oracle)`](#oracleupdated)
+
+---
+
+### `setRateStalePeriod`
+
+Allows the owner to set the time after which rates will be considered stale.
+
+???+ example "Details"
+    **Signature**
+
+    `setRateStalePeriod(uint _time) external`
+
+    **Modifiers**
+
+    * [`Owned.onlyOwner`](Owned.md#onlyowner)
+
+    **Emits**
+
+    * [`RateStalePeriodUpdated(_time)`](#ratestaleperiodupdated)
+
+---
+
+### `setPriceUpdateLock`
+
+Allows the oracle to disable Synth exchange functionality before it updates its prices.
+
+???+ example "Details"
+    **Signature**
+
+    `setPriceUpdateLock(uint _priceUpdateLock) external`
+
+    **Modifiers**
+
+    * [`onlyOracle`](#onlyoracle)
+
+---
+
+### `setInversePricing`
+
+Allows the owner to set up an inverse index for a particular currency. See [`rateOrInverted`](#rateorinverted) for computation details. New inverse indexes begin unfrozen.
+
+???+ example "Details"
+    **Signature**
+
+    `setInversePricing(bytes4 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit) external`
+
+    **Modifiers**
+
+    * [`Owned.onlyOwner`](Owned.md#onlyowner)
+
+    **Preconditions**
+
+    * `entryPoint` must be greater than zero.
+    * `lowerLimit` must be greater than zero.
+    * `entryPoint` must be less than `upperLimit`.
+    * `upperLimit` must be less than twice `entryPoint`.
+    * `lowerLimit` must be less than `entryPoint`.
+
+    !!! note
+        Together these entail that $0 \lt \text{lowerLimit} \lt \text{entryPoint} \lt \text{upperLimit} \lt 2 \times \text{entryPoint}$.
+
+        Observe that the first precondition here is redundant, as two of the others imply it.
+
+    **Emits**
+
+    * [`InversePriceConfigured(currencyKey, entryPoint, upperLimit, lowerLimit)`](#inversepriceconfigured)
+
+---
+
+### `removeInversePricing`
+
+Allows the owner to remove an inverse index for a particular currency.
+
+???+ example "Details"
+    **Signature**
+
+    `removeInversePricing(bytes4 currencyKey) external`
+
+    **Modifiers**
+
+    * [`Owned.onlyOwner`](Owned.md#onlyowner)
+
+    **Emits**
+
+    * [`InversePriceConfigured(currencyKey, 0, 0, 0)`](#inversepriceconfigured)
+
+    !!! caution
+        The [`InversePriceConfigured`](#inversepriceconfigured) event is still emitted even if the currency had no inverse index to delete.
+
+---
+
+### `effectiveValue`
+
+Given a quantity of a source currency, returns a quantity of a destination currency that is of equivalent value at current exchange rates, if those rates are fresh.
+
+The effective value is computed as a simple ratio of the prices of the currencies concerned. That is, to convert a quantity $Q_A$ of currency $A$ to currency $B$ at prices $\pi_A$ and $\pi_B$, the quantity $Q_B$ received is:
+
+$$
+    Q_B = Q_A \frac{\pi_A}{\pi_B}
+$$
+
+???+ example "Details"
+    **Signature**
+
+    `effectiveValue(bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey) public view returns (uint)`
+
+    **Modifiers**
+
+    * [`rateNotStale(sourceCurrencyKey)`](#ratenotstale)
+    * [`rateNotStale(destinationCurrencyKey)`](#ratenotstale))
+
+---
+
+### `rateForCurrency`
+
+Returns the last recorded rate for the given currency. This is just an alias to the public mapping `rates`, so it could probably be eliminated.
+
+???+ example "Details"
+    **Signature**
+
+    `rateForCurrency(bytes4 currencyKey) public view returns (uint)`
+
+---
+
+### `ratesForCurrencies`
+
+Maps `rateForCurrency` over an array of keys.
+
+???+ example "Details"
+    **Signature**
+
+    `ratesForCurrencies(bytes4[] currencyKeys) public view returns (uint[])`
+
+---
+
+Returns the last recorded rate update time for the given currency. This is just an alias to the public mapping `lastRateUpdateTime`, so it could probably be eliminated.
+
+???+ example "Details"
+    **Signature**
+
+    `lastRateUpdateTimeForCurrency(bytes4 currencyKey) public view returns (uint)`
+
+---
+
+### `lastRateUpdateTimeForCurrencies`
+
+Maps `lastRateUpdateTimeForCurrency` over an array of keys.
+
+???+ example "Details"
+    **Signature**
+
+    `lastRateUpdateTimesForCurrencies(bytes4[] currencyKeys) public view returns (uint[])`
+
+---
+
+### `rateIsStale`
+
+The rate for a given currency is stale if its last update occurred more than [`rateStalePeriod`](#ratestaleperiod) seconds ago.
+
+`sUSD` is a special case; since its rate is fixed at $1.0$, it is never stale. The rates of nonexistent currencies are always stale.
+
+???+ example "Details"
+    **Signature**
+
+    `rateIsStale(bytes4 currencyKey) public view returns (bool)`
+
+---
+
+### `rateIsFrozen`
+
+Returns true if the inverse price for the given currency is frozen. This is simply an alias to `inversePricing[currencyKey].frozen`. Currencies without an inverse price will naturally return false.
+
+???+ example "Details
+    **Signature**
+
+    `rateIsFrozen(bytes4 currencyKey) external view returns (bool)`
+
+---
+
+### `anyRateIsStale`
+
+Loop over the given array of currencies and return true if any of them is stale. `sUSD`'s rate is never stale. Rates for nonexistent currencies are always stale.
+
+???+ example "Details"
+    **Signature**
+
+    `anyRateIsStale(bytes4[] currencyKeys) external view returns (bool)`
+
+---
+
+<section-sep />
+
+## Modifiers
+
+---
+
+### `rateNotStale`
+
+Reverts the transaction if the given currency's rate is stale.
+
+**Signature:** `rateNotStale(bytes4 currencyKey)`
+
+---
+
+### `onlyOracle`
+
+Reverts the transaction if `msg.sender` is not the [`oracle`](#oracle).
+
+---
+
+<section-sep />
 
 ## Events
 
+---
+
 * `OracleUpdated(address newOracle)`
+
+---
+
 * `RateStalePeriodUpdated(uint rateStalePeriod)`
+
+---
+
 * `RatesUpdated(bytes4[] currencyKeys, uint[] newRates)`
+
+---
+
 * `RateDeleted(bytes4 currencyKey)`
+
+---
+
 * `InversePriceConfigured(bytes4 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit)`
+
+---
+
 * `InversePriceFrozen(bytes4 currencyKey)`
+
+---
+
+<section-sep />
