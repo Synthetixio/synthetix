@@ -830,6 +830,13 @@ const deploy = async ({
 		}
 	}
 
+	// ----------------
+	// Depot setup
+	// ----------------
+	const sUSDAddress = deployer.deployedContracts['SynthsUSD']
+		? deployer.deployedContracts['SynthsUSD'].options.address
+		: '';
+
 	const depot = await deployContract({
 		name: 'Depot',
 		deps: ['Synthetix', 'SynthsUSD', 'FeePool'],
@@ -837,9 +844,7 @@ const deploy = async ({
 			account,
 			account,
 			synthetix ? synthetixAddress : '',
-			deployer.deployedContracts['SynthsUSD']
-				? deployer.deployedContracts['SynthsUSD'].options.address
-				: '',
+			sUSDAddress,
 			feePool ? feePool.options.address : '',
 			oracleDepot,
 			w3utils.toWei('500'),
@@ -857,6 +862,16 @@ const deploy = async ({
 			writeArg: synthetixAddress,
 		});
 	}
+
+	// ensure Depot has sUSD synth address setup correctly
+	await runStep({
+		contract: 'Depot',
+		target: depot,
+		read: 'synth',
+		expected: input => input === sUSDAddress,
+		write: 'setSynth',
+		writeArg: sUSDAddress,
+	});
 
 	console.log(green('\nSuccessfully deployed all contracts!\n'));
 
