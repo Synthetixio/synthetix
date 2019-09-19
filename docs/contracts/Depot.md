@@ -1,5 +1,9 @@
 # Depot
 
+!!! todo
+
+    Finish this
+
 **Old:** Depot.sol: Allows users to exchange ETH for sUSD and SNX (has not yet been updated for multicurrency).
 
 Assumes that the Synth price is worth US\$1. So: a) this will only work with `sUSD`. b) there's a profit opportunity if the `sUSD` is off its peg.
@@ -9,24 +13,22 @@ Assumes that the Synth price is worth US\$1. So: a) this will only work with `sU
 
 **Source:**(https://github.com/Synthetixio/synthetix/blob/master/contracts/Depot.sol)
 
-## Inherited Contracts
+## Inheritance Graph
 
-* [SelfDestructible](SelfDestructible.md)
-* [Pausable](Pausable.md)
-* ^[State](State.md)
-* ^[Owned](Owned.md)
+<inheritance-graph>
+    ![Depot inheritance graph](../img/graphs/Depot.svg)
+</inheritance-graph>
+
+## Libraries
+
+* [`SafeMath`](SafeMath.md) for `uint`
+* [`SafeDecimalMath`](SafeDecimalMath.md) for `uint`
 
 ## Related Contracts
-
-### Referenced
 
 * [Synthetix](Synthetix.md)
 * [Synth](Synth.md)
 * [FeePool](FeePool.md)
-* [SafeDecimalMath](SafeDecimalMath.md)
-* SafeMath
-
-### Referencing
 
 ## Structs
 
@@ -39,6 +41,9 @@ struct synthDeposit {
 
 ## Variables
 
+* `synthetix: Synthetix public`
+* `synth: Synth public`
+* `feePool: FeePool public`
 * `fundsWallet: address public`: The address where ether and synths raised by selling SNX are sent.
 * `oracle: address public`: The USD price oracle for SNX and ether.
 * `ORACLE_FUTURE_LIMIT: uint public constant`: 10 minutes. The oracle can submit prices no further in the future than this.
@@ -62,8 +67,8 @@ struct synthDeposit {
 * `setPriceStalePeriod(uint _time)`: Only callable by the contract owner.
 * `setMinimumDepositAmount(uint _amount)`: Only callable by the contract owner. `_amount` must be greater than `UNIT`.
 * `updatePrices(uint newEthPrice, uint newSynthetixPrice, uint timeSent)`: Only callable by the oracle. The new prices must be the most recent, but no more than 10 minutes into the future.
-* `exchangeEtherForSynths() returns (uint)`: Requires that the contract is not paused, and that the prices are not stale. Returns the number of sUSD exchanged. Converts any ether sent to the contract to a quantity of synths at current prices. Fulfils this quantity by iterating through the deposit queue until the entire quantity is found. If a given deposit is insufficient to cover the entire requested amount, it is exhausted and removed from the queue. For each deposit found, the proper quantity of ether is sent to the depositor. If the quantity could not be sent because the target is a non-payable contract, then it is remitted to `fundsWallet`. Then send the Synths to the recipient. If the whole quantity could not be fulfilled, then the remaining ether is refunded to the purchaser.
 * `()` (fallback function): Calls `exchangeEtherForSynths`.
+* `exchangeEtherForSynths() returns (uint)`: Requires that the contract is not paused, and that the prices are not stale. Returns the number of sUSD exchanged. Converts any ether sent to the contract to a quantity of synths at current prices. Fulfils this quantity by iterating through the deposit queue until the entire quantity is found. If a given deposit is insufficient to cover the entire requested amount, it is exhausted and removed from the queue. For each deposit found, the proper quantity of ether is sent to the depositor. If the quantity could not be sent because the target is a non-payable contract, then it is remitted to `fundsWallet`. Then send the Synths to the recipient. If the whole quantity could not be fulfilled, then the remaining ether is refunded to the purchaser.
 * `exchangeEtherForSynthsAtRate(uint guaranteedRate) returns (uint)`: Allows the caller to specify the current price, and then calls to `exchangeEtherForSynths`. Reverts if the current price does not match the price provided as an argument. This is intended as a protection against front-running by the contract owner, or otherwise a case where a price update is in flight at the invocation time.
 * `exchangeEtherForSynthetix() returns (uint)`: Requires that the contract is not paused, and that the prices are not stale. Converts the received ether to a quantity of SNX with `synthetixReceivedForEther`. Sends the ether to `fundsWallet`, sends the converted quantity of SNX to the message sender from the contract's own reserves. Returns the SNX quantity sent. If the contract has insufficient SNX, then the transfer will fail and the transaction will revert.
 * `exchangeEtherForSynthetixAtRate(uint guaranteedEtherRate, uint guaranteedSynthetixRate) returns (uint)`: As `exchangeEtherForSynthsAtRate` is to `exchangeEtherForSynths`, this is to `exchangeEtherForSynthetix`.
@@ -78,12 +83,18 @@ struct synthDeposit {
 * `synthetixReceivedForEther(uint amount) returns (uint)`: Multiplies `amount` by the `usdToEthPrice`, then calls to `synthetixReceivedForSynths` to deduct the transfer fee and to divide by `usdToSnxPrice`. Assumes that `sUSD` are worth exactly US\$1 each.
 * `synthsReceivedForEther(uint amount) returns (uint)`: Multiply by `usdToEthPrice` and deduct the transfer fee. Assumes that `sUSD` are worth exactly US\$1 each.
 
+## Modifiers
+
+* `onlyOracle`
+* `onlySynth`
+* `pricesNotStale`
+
 ## Events
 
 * `FundsWalletUpdated(address newFundsWallet)`
 * `OracleUpdated(address newOracle)`
-* `SynthUpdated(ISynth newSynthContract)`
-* `SynthetixUpdated(ISynthetix newSynthetixContract)`
+* `SynthUpdated(Synth newSynthContract)`
+* `SynthetixUpdated(Synthetix newSynthetixContract)`
 * `PriceStalePeriodUpdated(uint priceStalePeriod)`
 * `PricesUpdated(uint newEthPrice, uint newSynthetixPrice, uint timeSent)`
 * `Exchange(string fromCurrency, uint fromAmount, string toCurrency, uint toAmount)`
