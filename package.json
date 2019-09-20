@@ -14,6 +14,7 @@
 		"test": "concurrently --kill-others --success first \"npm run ganache > /dev/null\" \"truffle compile && wait-port 8545 && truffle test\"",
 		"test:gas": "npm test; EXIT_CODE=$?; cat test-gas-used.log; printf \"\\n\"; exit $EXIT_CODE;",
 		"test:int": "concurrently --kill-others --success first \"npm run ganache:int > /dev/null\" \"wait-port 8545 && node int-test\"",
+		"test:kovan": "node test-testnet --network kovan",
 		"truffle": "truffle"
 	},
 	"repository": {
