@@ -1,30 +1,14 @@
 # ExchangeRates
 
-!!! note old
-    A key value store (bytes4 -> uint) of currency exchange rates, all priced in sUSD. Understands the concept of whether a rate is stale (as in hasn't been updated frequently enough), and only allows a single annointed oracle address to do price updates.
+This contract stores the latest Synth exchange rates. These rates are set by an oracle, which frequently updates this contract with any prices that have moved sufficiently. Once set, these prices are available for any contract in the Synthetix system to query.
+Prices which have not been updated recently enough are considered stale; Synthetix functionality using stale prices does not operate.
 
-    A contract that any other contract in the Synthetix system can query
-    for the current market value of various assets, including
-    crypto assets as well as various fiat assets.
-    This contract assumes that rate updates will completely update
-    all rates to their current values. If a rate shock happens
-    on a single asset, the oracle will still push updated rates
-    for all other assets.
+All rates are denominated in terms of `sUSD`, so the price of `sUSD` is always $1.0$, and is never stale.
+ExchangeRates is also responsible for the price of the `XDR`, which is recomputed after each price update. The `XDR` price is the sum of the prices of the currencies in a basket (`sUSD`, `sAUD`, `sCHF`, `sEUR`, `sGBP`), as opposed to [special drawing rights](https://en.wikipedia.org/wiki/Special_drawing_rights) which use a weighted average.
 
-The oracle frequently updates this contract with the rates that have moved sufficiently, and the price of the `XDR` is recomputed.
-Before each price update, the oracle calls [`setPriceUpdateLock`](#setpriceupdatelock).
-This does not turn off any functionality in the exchange rate contract, but is used in the [`Synthetix`](Synthetix.md) contract to disable [currency exchanges](Synthetix.md#_internalexchange) while prices are being updated to protect against oracle front running. The lock is released when [rate updates have completed][internalUpdateRates`](#internalupdaterates).
-
-The price of `sUSD` is always 1, and is never stale; its price cannot be updated.
-The `XDR` price is just $\sum_{c \in \text{basket}}{c_{price}}$, the sum of the prices of the currencies in the basket (`sUSD`, `sAUD`, `sCHF`, `sEUR`, `sGBP`), and not the average.
-
-Used in PurgeableSynth to determine if the total token value is below the purge threshold.
-Used in Synthetix for computing the value of tokens in order to facilitate exchange between them, to compute the `XDR` value of minted tokens to update the [debt ledger](SynthetixState.md#debtledger), and to ensure exchanges cannot occur while price updates and being made or if a particular exchange rate is stale.
-Used in ArbRewarder to compute the current SNX/ETH price so that arbitrage can be accurate.
-
-<inheritance-graph>
-    ![ExchangeRates architecture graph](../img/graphs/ExchangeRates-architecture.svg)
-</inheritance-graph>
+The ExchangeRates contract interacts with the oracle's frontrunning protection, which is partially described in [SIP-6](https://sips.synthetix.io/sips/sip-6) and [SIP-7](https://sips.synthetix.io/sips/sip-7).
+In particular, before each price update, the oracle calls [`setPriceUpdateLock`](#setpriceupdatelock).
+This does not turn off any functionality in the exchange rate contract, but is used by [`Synthetix`](Synthetix.md) to disable [currency exchanges](Synthetix.md#_internalexchange) while prices are being updated to protect against oracle front running. The lock is released when [rate updates have completed](#internalupdaterates).
 
 **Source:** [ExchangeRates.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/ExchangeRates.sol)
 
@@ -36,16 +20,24 @@ Used in ArbRewarder to compute the current SNX/ETH price so that arbitrage can b
     ![ExchangeRates inheritance graph](../img/graphs/ExchangeRates.svg)
 </inheritance-graph>
 
+<section-sep />
+
+## Related Contracts
+
+<inheritance-graph>
+    ![ExchangeRates architecture graph](../img/graphs/ExchangeRates-architecture.svg)
+</inheritance-graph>
+
+* [`PurgeableSynth`](PurgeableSynth.md): exchange rates are used to determine if the total token value is below the purge threshold.
+* [`Synthetix`](Synthetix.md): the value of tokens is used to in order to facilitate exchange between them, to compute the `XDR` value of minted tokens for the [debt ledger](SynthetixState.md#debtledger), and to ensure exchanges cannot occur while price updates and being made or if a particular exchange rate is stale.
+* [`Arbrewarder`](Arbrewarder.md): The ArbRewarder must know the current SNX/ETH price so that arbitrage is accurate.
+
+<section-sep />
+
 ## Libraries
 
 * [`SafeMath`](SafeMath.md) for `uint`
 * [`SafeDecimalMath`](SafeDecimalMathmd) for `uint`
-
-## Related Contracts
-
-* <[`ArbRewarder`](ArbRewarder.md)
-* <[`PurgeableSynth`](PurgeableSynth.md)
-* <[`Synthetix`](Synthetix.md)
 
 <section-sep />
 
@@ -479,7 +471,7 @@ The rate for a given currency is stale if its last update occurred more than [`r
 
 Returns true if the inverse price for the given currency is frozen. This is simply an alias to `inversePricing[currencyKey].frozen`. Currencies without an inverse price will naturally return false.
 
-???+ example "Details
+???+ example "Details"
     **Signature**
 
     `rateIsFrozen(bytes4 currencyKey) external view returns (bool)`
@@ -523,27 +515,51 @@ Reverts the transaction if `msg.sender` is not the [`oracle`](#oracle).
 
 ---
 
-* `OracleUpdated(address newOracle)`
+### `OracleUpdated`
+
+Records that the anointed oracle was updated.
+
+**Signature:** `OracleUpdated(address newOracle)`
 
 ---
 
-* `RateStalePeriodUpdated(uint rateStalePeriod)`
+### `RateStalePeriodUpdated`
+
+Records that the stale period was altered.
+
+**Signature:** `RateStalePeriodUpdated(uint rateStalePeriod)`
 
 ---
 
-* `RatesUpdated(bytes4[] currencyKeys, uint[] newRates)`
+### `RatesUpdated`
+
+Records that a set of currency prices were updated.
+
+**Signature:** `RatesUpdated(bytes4[] currencyKeys, uint[] newRates)`
 
 ---
 
-* `RateDeleted(bytes4 currencyKey)`
+### `RatesDeleted`
+
+Records that the price for a particular currency was deleted.
+
+**Signature:** `RateDeleted(bytes4 currencyKey)`
 
 ---
 
-* `InversePriceConfigured(bytes4 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit)`
+### `InversePriceConfigured`
+
+Records that a new inverse price index was set up.
+
+**Signature:** `InversePriceConfigured(bytes4 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit)`
 
 ---
 
-* `InversePriceFrozen(bytes4 currencyKey)`
+### `InversePriceFrozen`
+
+Records that an inverse price breached a limit and was frozen.
+
+**Signature:** `InversePriceFrozen(bytes4 currencyKey)`
 
 ---
 
