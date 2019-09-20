@@ -40,6 +40,8 @@ The following contracts compose the core of the Synthetix system.
 
 ## TODO
 
+* Inheriting descendents as well as ancestors
+* Categorise contracts in nav
 * Solidity syntax highlighting.
 * Audit above contracts
 * Links to etherscan and addresses.
