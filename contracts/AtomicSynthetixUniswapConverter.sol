@@ -1,7 +1,25 @@
-pragma solidity ^0.5.7;
+pragma solidity ^0.4.25;
 
 import "./Owned.sol";
 import "./SafeDecimalMath.sol";
+
+interface ISynthetix {
+	function exchange(bytes32 srcKey, uint srcAmt, bytes32 dstKey, address dstAddr) external returns (bool);
+	function synths(bytes32) external view returns (address);
+}
+
+interface IExchangeRates{
+	function effectiveValue(bytes32 srcKey, uint srcAmt, bytes32 dstKey) external view returns (uint);
+	function rateForCurrency(bytes32) external view returns (uint);
+}
+
+interface IFeePool{
+	function amountReceivedFromTransfer(uint) external view returns (uint);
+	function transferredAmountToReceive(uint) external view returns (uint);
+	function amountReceivedFromExchange(uint) external view returns (uint);
+	function exchangedAmountToReceive(uint) external view returns (uint);
+	function exchangeFeeRate() external view returns (uint);
+}
 
 interface UniswapExchangeInterface {
 	function getEthToTokenInputPrice(uint) external view returns (uint);
@@ -17,29 +35,11 @@ interface UniswapExchangeInterface {
 	function addLiquidity(uint, uint,uint) external payable returns(uint);
 }
 
-interface SynthetixInterface {
-	function exchange(bytes32 srcKey, uint srcAmt, bytes32 dstKey, address dstAddr) external returns (bool);
-	function synths(bytes32) external view returns (address);
-}
-
-interface SynthetixRatesInterface{
-	function effectiveValue(bytes32 srcKey, uint srcAmt, bytes32 dstKey) external view returns (uint);
-	function rateForCurrency(bytes32) external view returns (uint);
-}
-
 interface TokenInterface {
 	function transfer(address, uint) external returns (bool);
 	function approve(address, uint) external;
 	function transferFrom(address, address, uint) external returns (bool);
 	function balanceOf(address) external view returns (uint);
-}
-
-interface SynthetixFeePool{
-	function amountReceivedFromTransfer(uint) external view returns (uint);
-	function transferredAmountToReceive(uint) external view returns (uint);
-	function amountReceivedFromExchange(uint) external view returns (uint);
-	function exchangedAmountToReceive(uint) external view returns (uint);
-	function exchangeFeeRate() external view returns (uint);
 }
 
 contract AtomicSynthetixUniswapConverter is Owned {
@@ -90,8 +90,9 @@ contract AtomicSynthetixUniswapConverter is Owned {
 	
 	function inputPrice(bytes32 src, uint srcAmt, bytes32 dst) external view returns (uint) {
 		UniswapExchangeInterface uniswapExchange = UniswapExchangeInterface(uniswapSethExchange);
+		uint sEthAmt;
 		if (src == 'ETH') {
-			uint sEthAmt = uniswapExchange.getEthToTokenInputPrice(srcAmt);
+			sEthAmt = uniswapExchange.getEthToTokenInputPrice(srcAmt);
 			if (dst == 'sETH') {
 				return sEthAmt;
 			}else {
@@ -105,7 +106,7 @@ contract AtomicSynthetixUniswapConverter is Owned {
 			}
 		}else {
 			if (dst == 'ETH'){
-				uint sEthAmt = _sTokenAmtRecvFromExchangeByToken(srcAmt, src, sEthCurrencyKey);
+				sEthAmt = _sTokenAmtRecvFromExchangeByToken(srcAmt, src, sEthCurrencyKey);
 				return uniswapExchange.getTokenToEthInputPrice(sEthAmt);
 			}else{
 				return _sTokenAmtRecvFromExchangeByToken(srcAmt, src, dst);
@@ -115,11 +116,12 @@ contract AtomicSynthetixUniswapConverter is Owned {
 
 	function outputPrice(bytes32 src, bytes32 dst, uint dstAmt) external view returns (uint) {
 		UniswapExchangeInterface uniswapExchange = UniswapExchangeInterface(uniswapSethExchange);
+		uint sEthAmt;
 		if (src == 'ETH') {
 			if (dst == 'sETH') {
 				return uniswapExchange.getEthToTokenOutputPrice(dstAmt);
 			}else {
-				uint sEthAmt = _sTokenEchangedAmtToRecvByToken(dstAmt, dst, sEthCurrencyKey);
+				sEthAmt = _sTokenEchangedAmtToRecvByToken(dstAmt, dst, sEthCurrencyKey);
 				return uniswapExchange.getEthToTokenOutputPrice(sEthAmt);
 			}
 		}else if (src == 'sETH'){
@@ -130,7 +132,7 @@ contract AtomicSynthetixUniswapConverter is Owned {
 			}
 		}else {
 			if (dst == 'ETH'){
-				uint sEthAmt = uniswapExchange.getTokenToEthOutputPrice(dstAmt);
+				sEthAmt = uniswapExchange.getTokenToEthOutputPrice(dstAmt);
 				return _sTokenEchangedAmtToRecvByToken(sEthAmt, sEthCurrencyKey, src);
 			}else{
 				return _sTokenEchangedAmtToRecvByToken(dstAmt, dst, src);
@@ -164,7 +166,7 @@ contract AtomicSynthetixUniswapConverter is Owned {
 		require (deadline >= block.timestamp);
 
 		UniswapExchangeInterface useContract = UniswapExchangeInterface(uniswapSethExchange);
-		SynthetixInterface synContract = SynthetixInterface(synthetix);
+		ISynthetix synContract = ISynthetix(synthetix);
 
 		uint minsEth = _sTokenEchangedAmtToRecvByToken(minToken, boughtCurrencyKey, sEthCurrencyKey);
 		uint sEthAmt = useContract.ethToTokenSwapInput.value(msg.value)(minsEth, deadline);
@@ -181,7 +183,7 @@ contract AtomicSynthetixUniswapConverter is Owned {
 		require (deadline >= block.timestamp);
 
 		UniswapExchangeInterface useContract = UniswapExchangeInterface(uniswapSethExchange);
-		SynthetixInterface synContract = SynthetixInterface(synthetix);
+		ISynthetix synContract = ISynthetix(synthetix);
 
 		uint sEthAmt = _sTokenEchangedAmtToRecvByToken(tokenBought, boughtCurrencyKey, sEthCurrencyKey);
 		uint ethAmt = useContract.ethToTokenSwapOutput.value(msg.value)(sEthAmt, deadline);
@@ -201,7 +203,7 @@ contract AtomicSynthetixUniswapConverter is Owned {
 		require (deadline >= block.timestamp);
 
 		UniswapExchangeInterface useContract = UniswapExchangeInterface(uniswapSethExchange);
-		SynthetixInterface synContract = SynthetixInterface(synthetix);
+		ISynthetix synContract = ISynthetix(synthetix);
 		uint sEthAmtReceived = _sTokenAmtRecvFromExchangeByToken(srcAmt, srcKey,sEthCurrencyKey);
 		require(TokenInterface(_synthsAddress(srcKey)).transferFrom (msg.sender, address(this), srcAmt));
 		TokenInterface(_synthsAddress(srcKey)).approve(synthetix, srcAmt);
@@ -218,7 +220,7 @@ contract AtomicSynthetixUniswapConverter is Owned {
 		require (deadline >= block.timestamp);
 
 		UniswapExchangeInterface useContract = UniswapExchangeInterface(uniswapSethExchange);
-		SynthetixInterface synContract = SynthetixInterface(synthetix);
+		ISynthetix synContract = ISynthetix(synthetix);
 
 		uint sEthAmt = useContract.getTokenToEthOutputPrice(ethBought);
 		uint srcAmt = _sTokenEchangedAmtToRecvByToken(sEthAmt, sEthCurrencyKey, srcKey);
@@ -265,7 +267,7 @@ contract AtomicSynthetixUniswapConverter is Owned {
 	function sTokenToStokenInput (bytes32 srcKey, uint srcAmt, bytes32 dstKey, uint minDstAmt, uint deadline, address recipient) external returns (uint) {
 		require (deadline >= block.timestamp);
 
-		SynthetixInterface synContract = SynthetixInterface(synthetix);
+		ISynthetix synContract = ISynthetix(synthetix);
 		uint dstAmt = _sTokenAmtRecvFromExchangeByToken(srcAmt, srcKey, dstKey);
 		require (dstAmt >= minDstAmt);
 		require(TokenInterface(_synthsAddress(srcKey)).transferFrom (msg.sender, address(this), srcAmt));
@@ -279,7 +281,7 @@ contract AtomicSynthetixUniswapConverter is Owned {
 	function sTokenToStokenOutput (bytes32 srcKey, uint maxSrcAmt, bytes32 dstKey, uint boughtDstAmt, uint deadline, address recipient) external returns (uint) {
 		require (deadline >= block.timestamp);
 
-		SynthetixInterface synContract = SynthetixInterface(synthetix);
+		ISynthetix synContract = ISynthetix(synthetix);
 		uint srcAmt = _sTokenEchangedAmtToRecvByToken(boughtDstAmt, dstKey, srcKey);
 		require (srcAmt <= maxSrcAmt);
 
@@ -302,7 +304,7 @@ contract AtomicSynthetixUniswapConverter is Owned {
 	}
 	
 	function _synthsAddress(bytes32 key) internal view returns (address) {
-		SynthetixInterface synContract = SynthetixInterface(synthetix);
+		ISynthetix synContract = ISynthetix(synthetix);
 		return synContract.synths(key);
 	}
 
@@ -318,8 +320,8 @@ contract AtomicSynthetixUniswapConverter is Owned {
 	}
 
 	function _sTokenAmtRecvFromExchangeByToken (uint srcAmt, bytes32 srcKey, bytes32 dstKey) internal view returns (uint){
-		SynthetixFeePool feePool = SynthetixFeePool(synFeePool);
-		SynthetixRatesInterface synRatesContract = SynthetixRatesInterface(synRates);
+		IFeePool feePool = IFeePool(synFeePool);
+		IExchangeRates synRatesContract = IExchangeRates(synRates);
 		uint dstAmt = synRatesContract.effectiveValue(srcKey, srcAmt, dstKey);
 		uint feeRate = feePool.exchangeFeeRate();
 		return  dstAmt.multiplyDecimal(SafeDecimalMath.unit().sub(feeRate));
@@ -327,8 +329,8 @@ contract AtomicSynthetixUniswapConverter is Owned {
 	
 	
 	function _sTokenEchangedAmtToRecvByToken (uint receivedAmt, bytes32 receivedKey, bytes32 srcKey) internal view returns (uint) {
-		SynthetixFeePool feePool = SynthetixFeePool(synFeePool);
-		SynthetixRatesInterface synRatesContract = SynthetixRatesInterface(synRates);
+		IFeePool feePool = IFeePool(synFeePool);
+		IExchangeRates synRatesContract = IExchangeRates(synRates);
 		uint srcRate = synRatesContract.rateForCurrency(srcKey); 
 		uint dstRate = synRatesContract.rateForCurrency(receivedKey);
 		uint feeRate = feePool.exchangeFeeRate();
