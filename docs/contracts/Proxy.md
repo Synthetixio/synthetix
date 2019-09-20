@@ -31,7 +31,7 @@ This architecture also allows [multiple proxies](Proxyable.md#integrationproxy) 
 There are some tradeoffs to this approach. There is potentially a little more communication overhead for event emission, though there may be some savings available elsewhere depending on system and storage architecture and the particular application.
 
 At the code level, a `CALL` proxy is not entirely transparent. Target contracts must inherit [`Proxyable`](Proxyable.md) so that they can read the message sender which would otherwise be the proxy itself rather than the proxy's caller.
-Additionally, events are a bit different; they must be encoded within the underlying contract and then passed back to the proxy to be emitted. The nuts and bolts of of event emission are discussed in the [`_emit`](#_emit) section's details.
+Additionally, events are a bit different; they must be encoded within the underlying contract and then passed back to the proxy to be emitted. The nuts and bolts of event emission are discussed in the [`_emit`](#_emit) section's details.
 
 Finally, if the target contract needs to transfer ether around, then it will be remitted from the target address rather than the proxy address, though this is a quirk which it would be straightforward to remedy.
 
@@ -160,7 +160,7 @@ When operating in the `CALL` style, this function allows the proxy's underlying 
 
     This function takes 4 arguments for log topics. How many of these are consumed is determined by the `numTopics` argument, which can take the values from 0 to 4, corresponding to the EVM `LOG0` to `LOG4` instructions.
     In the case that an event has fewer than 3 indexed arguments, the remaining slots can be provided with 0. Any excess topics are simply ignored.
-    Note that 0 is a valid argument for `numTopics`, which produces `LOG0` a log that only has data and no event signature.
+    Note that 0 is a valid argument for `numTopics`, which produces `LOG0`, which only has data and no event signature.
 
     !!! caution
         If this proxy contract were to be rewritten with Solidity v0.5.0 or above, it would be necessary to slightly simplify the calls to `abi.encode` with `abi.encodeWithSignature`.
