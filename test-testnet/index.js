@@ -44,6 +44,7 @@ program
 				path.join(__dirname, 'test_keys.txt'),
 				`${new Date().toString()}\t\t${network}\t\t${user1.address}\t\t${user1.privateKey}\n`
 			);
+			console.log(`Test privkeys: ${user1.privateKey}`);
 
 			// #1 - Send the account some test ether
 			console.log(green(`Transferring 0.1 test ETH to ${user1.address}`));
