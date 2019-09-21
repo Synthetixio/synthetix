@@ -140,6 +140,15 @@ contract AtomicSynthetixUniswapConverter is Owned {
 		}
 	}
 
+    /**
+     * @notice Convert sEth to ETH.
+	 * @dev User specifies exact sEth input and minimum ETH output.
+     * @param sEthSold Amount of sEth sold.
+     * @param minEth Minimum ETH purchased.
+     * @param deadline Time after which this transaction can no longer be executed.
+	 * @param recipient Address to get purchased ETH, if ZERO, to msg.sender
+     * @return ethAmt Amount of ETH bought.
+     */
 	function sEthToEthInput (uint sEthSold, uint minEth, uint deadline, address recipient) external returns (uint ethAmt) {
 		require (deadline >= block.timestamp);
 		require(TokenInterface(_synthsAddress(sEthCurrencyKey)).transferFrom (msg.sender, address(this), sEthSold));
@@ -150,6 +159,15 @@ contract AtomicSynthetixUniswapConverter is Owned {
 		_checkBalance1(sEthCurrencyKey);
 	}
 
+    /**
+     * @notice Convert sEth to ETH.
+	 * @dev User specifies maximum sEth input and exact ETH output.
+	 * @param ethBought Amount of ETH purchased.
+     * @param maxSethSold Maximum sEth sold.
+     * @param deadline Time after which this transaction can no longer be executed.
+	 * @param recipient Address to get purchased ETH, if ZERO, to msg.sender
+     * @return sEthAmt Amount of sEth sold.
+     */
 	function sEthToEthOutput (uint ethBought, uint maxSethSold, uint deadline, address recipient) external returns (uint sEthAmt) {
 		require (deadline >= block.timestamp);
 		UniswapExchangeInterface useContract = UniswapExchangeInterface(uniswapSethExchange);
@@ -161,6 +179,7 @@ contract AtomicSynthetixUniswapConverter is Owned {
 
 		_checkBalance1(sEthCurrencyKey);
 	}
+
 
 	function ethToOtherTokenInput (uint minToken, bytes32 boughtCurrencyKey, uint deadline, address recipient) external payable returns (uint) {
 		require (deadline >= block.timestamp);
@@ -242,17 +261,31 @@ contract AtomicSynthetixUniswapConverter is Owned {
 		return srcAmt;
 	}
 
-	function ethToSethInput (uint minSeth, uint deadline, address recipient) external payable returns (uint) {
+    /**
+     * @notice Convert ETH to sEth.
+	 * @dev User specifies exact ETH input (msg.value) and minimum sEth output.
+     * @param minSeth Minimum sEth purchased.
+     * @param deadline Time after which this transaction can no longer be executed.
+	 * @param recipient Address to get purchased sEth, if ZERO, to msg.sender
+     * @return sEthAmt Amount of sEth bought.
+     */
+	function ethToSethInput (uint minSeth, uint deadline, address recipient) external payable returns (uint sEthAmt) {
 		require (deadline >= block.timestamp);
 
 		UniswapExchangeInterface useContract = UniswapExchangeInterface(uniswapSethExchange);
 
-		uint sEthAmt = useContract.ethToTokenTransferInput.value(msg.value)(minSeth, deadline, _targetAddress(recipient));
+		sEthAmt = useContract.ethToTokenTransferInput.value(msg.value)(minSeth, deadline, _targetAddress(recipient));
 		_checkBalance1(sEthCurrencyKey);
-
-		return sEthAmt;
 	}
    
+    /**
+     * @notice Convert sEth to ETH.
+	 * @dev User specifies exact sEth output and maximum ETH input (msg.value).
+	 * @param sethBought Amount of sEth purchased.
+     * @param deadline Time after which this transaction can no longer be executed.
+	 * @param recipient Address to get purchased sEth, if ZERO, to msg.sender
+     * @return ethAmt Amount of ETH sold.
+     */
    	function ethToSethOutput (uint sethBought, uint deadline, address recipient) external payable returns (uint ethAmt) {
 		require (deadline >= block.timestamp);
 
