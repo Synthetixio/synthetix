@@ -61,7 +61,7 @@ contract AtomicSynthetixUniswapConverter is Owned {
     }
     //to recieve refund from uniswap
     function() external payable { 
-        require(msg.sender == uniswapSethExchange);
+        require(msg.sender == uniswapSethExchange, "Only get refund from uniswap sEth exchange");
     }
 
     function setSynthetix(address _synthetix) external 
@@ -150,8 +150,8 @@ contract AtomicSynthetixUniswapConverter is Owned {
      * @return ethAmt Amount of ETH bought.
      */
     function sEthToEthInput (uint sEthSold, uint minEth, uint deadline, address recipient) external returns (uint ethAmt) {
-        require (deadline >= block.timestamp);
-        require(TokenInterface(_synthsAddress(sEthCurrencyKey)).transferFrom (msg.sender, address(this), sEthSold));
+        require (deadline >= block.timestamp, "exceed deadline");
+        require(TokenInterface(_synthsAddress(sEthCurrencyKey)).transferFrom (msg.sender, address(this), sEthSold), "token transfer failure");
         TokenInterface(_synthsAddress(sEthCurrencyKey)).approve(uniswapSethExchange, sEthSold);
         UniswapExchangeInterface useContract = UniswapExchangeInterface(uniswapSethExchange);
         ethAmt = useContract.tokenToEthTransferInput(sEthSold, minEth, deadline, _targetAddress(recipient));
@@ -169,11 +169,11 @@ contract AtomicSynthetixUniswapConverter is Owned {
      * @return sEthAmt Amount of sEth sold.
      */
     function sEthToEthOutput (uint ethBought, uint maxSethSold, uint deadline, address recipient) external returns (uint sEthAmt) {
-        require (deadline >= block.timestamp);
+        require (deadline >= block.timestamp, "exceed deadline");
         UniswapExchangeInterface useContract = UniswapExchangeInterface(uniswapSethExchange);
         uint needSeth = useContract.getTokenToEthOutputPrice(ethBought);
-        require (maxSethSold >= needSeth);
-        require(TokenInterface(_synthsAddress(sEthCurrencyKey)).transferFrom (msg.sender, address(this), needSeth));
+        require (maxSethSold >= needSeth, "need more sEth");
+        require(TokenInterface(_synthsAddress(sEthCurrencyKey)).transferFrom (msg.sender, address(this), needSeth), "token transfer failure");
         TokenInterface(_synthsAddress(sEthCurrencyKey)).approve(uniswapSethExchange, needSeth);
         sEthAmt = useContract.tokenToEthTransferOutput(ethBought, needSeth, deadline, _targetAddress(recipient));
 
@@ -189,19 +189,24 @@ contract AtomicSynthetixUniswapConverter is Owned {
      * @param recipient Address to get purchased Synths token, if ZERO, to msg.sender
      * @return receivedAmt Amount of Synths token bought.
      */
-    function ethToOtherTokenInput (uint minToken, bytes32 boughtCurrencyKey, uint deadline, address recipient) external payable returns (uint receivedAmt) {
-        require (deadline >= block.timestamp);
+    function ethToOtherTokenInput (
+        uint minToken, 
+        bytes32 boughtCurrencyKey, 
+        uint deadline, 
+        address recipient
+    ) external payable returns (uint receivedAmt) {
+        require (deadline >= block.timestamp, "exceed deadline");
 
         UniswapExchangeInterface useContract = UniswapExchangeInterface(uniswapSethExchange);
         ISynthetix synContract = ISynthetix(synthetix);
 
-        require (boughtCurrencyKey != sEthCurrencyKey);
+        require (boughtCurrencyKey != sEthCurrencyKey, "should use ethToSethInnput");
         uint minsEth = _sTokenEchangedAmtToRecvByToken(minToken, boughtCurrencyKey, sEthCurrencyKey);
         uint sEthAmt = useContract.ethToTokenSwapInput.value(msg.value)(minsEth, deadline);
         receivedAmt = _sTokenAmtRecvFromExchangeByToken(sEthAmt, sEthCurrencyKey, boughtCurrencyKey);
-        require (receivedAmt >= minToken);
-        require (synContract.exchange (sEthCurrencyKey, sEthAmt, boughtCurrencyKey, address(this)));
-        require (TokenInterface(_synthsAddress(boughtCurrencyKey)).transfer(_targetAddress(recipient), receivedAmt));
+        require (receivedAmt >= minToken, "need more ETH");
+        require (synContract.exchange (sEthCurrencyKey, sEthAmt, boughtCurrencyKey, address(this)), "Synths token exchange failure");
+        require (TokenInterface(_synthsAddress(boughtCurrencyKey)).transfer(_targetAddress(recipient), receivedAmt), "token tansfer failure");
 
         _checkBalance2(sEthCurrencyKey, boughtCurrencyKey);
     }
@@ -215,22 +220,27 @@ contract AtomicSynthetixUniswapConverter is Owned {
      * @param recipient Address to get purchased Synths token, if ZERO, to msg.sender
      * @return ethAmt Amount of ETH sold.
      */
-    function ethToOtherTokenOutput (uint tokenBought, bytes32 boughtCurrencyKey, uint deadline, address recipient) external payable returns (uint ethAmt) {
-        require (deadline >= block.timestamp);
+    function ethToOtherTokenOutput (
+        uint tokenBought, 
+        bytes32 boughtCurrencyKey, 
+        uint deadline, 
+        address recipient
+    ) external payable returns (uint ethAmt) {
+        require (deadline >= block.timestamp, "exceed deadline");
 
         UniswapExchangeInterface useContract = UniswapExchangeInterface(uniswapSethExchange);
         ISynthetix synContract = ISynthetix(synthetix);
         
-        require (boughtCurrencyKey != sEthCurrencyKey);
+        require (boughtCurrencyKey != sEthCurrencyKey, "should use ethToSethOutput");
         uint sEthAmt = _sTokenEchangedAmtToRecvByToken(tokenBought, boughtCurrencyKey, sEthCurrencyKey);
         ethAmt = useContract.ethToTokenSwapOutput.value(msg.value)(sEthAmt, deadline);
         if (msg.value > ethAmt){
             msg.sender.transfer(msg.value - ethAmt);
         } 
         TokenInterface(_synthsAddress("sETH")).approve(synthetix, sEthAmt);
-        require (synContract.exchange(sEthCurrencyKey, sEthAmt, boughtCurrencyKey, address(this)));
+        require (synContract.exchange(sEthCurrencyKey, sEthAmt, boughtCurrencyKey, address(this)), "Synths token exchange failure");
         uint finallyGot = _sTokenAmtRecvFromExchangeByToken(sEthAmt, sEthCurrencyKey, boughtCurrencyKey);
-        require (TokenInterface(_synthsAddress(boughtCurrencyKey)).transfer(_targetAddress(recipient), finallyGot));
+        require (TokenInterface(_synthsAddress(boughtCurrencyKey)).transfer(_targetAddress(recipient), finallyGot), "token transer failure");
 
         _checkBalance2(sEthCurrencyKey, boughtCurrencyKey);
     }
@@ -245,17 +255,23 @@ contract AtomicSynthetixUniswapConverter is Owned {
      * @param recipient Address to get purchased ETH, if ZERO, to msg.sender
      * @return ethAmt Amount of ETH bought.
      */
-    function otherTokenToEthInput (bytes32 srcKey, uint srcAmt, uint minEth, uint deadline, address recipient) external returns (uint ethAmt) {
-        require (deadline >= block.timestamp);
+    function otherTokenToEthInput (
+        bytes32 srcKey, 
+        uint srcAmt, 
+        uint minEth, 
+        uint deadline, 
+        address recipient
+    ) external returns (uint ethAmt) {
+        require (deadline >= block.timestamp, "exceed deadline");
 
         UniswapExchangeInterface useContract = UniswapExchangeInterface(uniswapSethExchange);
         ISynthetix synContract = ISynthetix(synthetix);
 
-        require (srcKey != sEthCurrencyKey);
+        require (srcKey != sEthCurrencyKey, "should use sEthToEthInput");
         uint sEthAmtReceived = _sTokenAmtRecvFromExchangeByToken(srcAmt, srcKey, sEthCurrencyKey);
-        require(TokenInterface(_synthsAddress(srcKey)).transferFrom (msg.sender, address(this), srcAmt));
+        require(TokenInterface(_synthsAddress(srcKey)).transferFrom (msg.sender, address(this), srcAmt), "token transer failure");
         TokenInterface(_synthsAddress(srcKey)).approve(synthetix, srcAmt);
-        require (synContract.exchange (srcKey, srcAmt, sEthCurrencyKey, address(this)));
+        require (synContract.exchange (srcKey, srcAmt, sEthCurrencyKey, address(this)), "Synths token exchange failure");
         
         TokenInterface(_synthsAddress(sEthCurrencyKey)).approve(uniswapSethExchange, sEthAmtReceived);
         ethAmt = useContract.tokenToEthTransferInput(sEthAmtReceived, minEth, deadline, _targetAddress(recipient));
@@ -273,21 +289,27 @@ contract AtomicSynthetixUniswapConverter is Owned {
      * @param recipient Address to get purchased ETH, if ZERO, to msg.sender
      * @return srcAmt Amount of Synths token sold.
      */
-    function otherTokenToEthOutput (uint ethBought, bytes32 srcKey, uint maxSrcAmt, uint deadline, address recipient) external returns (uint srcAmt) {
-        require (deadline >= block.timestamp);
+    function otherTokenToEthOutput (
+        uint ethBought, 
+        bytes32 srcKey, 
+        uint maxSrcAmt, 
+        uint deadline, 
+        address recipient
+    ) external returns (uint srcAmt) {
+        require (deadline >= block.timestamp, "exceed deadline");
 
         UniswapExchangeInterface useContract = UniswapExchangeInterface(uniswapSethExchange);
         ISynthetix synContract = ISynthetix(synthetix);
 
-        require (srcKey != sEthCurrencyKey);
+        require (srcKey != sEthCurrencyKey, "should use sEthToEthOutput");
         uint sEthAmt = useContract.getTokenToEthOutputPrice(ethBought);
         srcAmt = _sTokenEchangedAmtToRecvByToken(sEthAmt, sEthCurrencyKey, srcKey);
 
-        require (srcAmt <= maxSrcAmt);
+        require (srcAmt <= maxSrcAmt, "needed more token");
 
-        require(TokenInterface(_synthsAddress(srcKey)).transferFrom(msg.sender, address(this), srcAmt));
+        require(TokenInterface(_synthsAddress(srcKey)).transferFrom(msg.sender, address(this), srcAmt), "token tranfer failure");
         TokenInterface(_synthsAddress(srcKey)).approve(synthetix, srcAmt);
-        require (synContract.exchange(srcKey, srcAmt, sEthCurrencyKey, address(this)));
+        require (synContract.exchange(srcKey, srcAmt, sEthCurrencyKey, address(this)), "Synths token exchange failure");
         uint finallyGot = TokenInterface(_synthsAddress("sETH")).balanceOf(address(this));
         TokenInterface(_synthsAddress("sETH")).approve(uniswapSethExchange, finallyGot);
         require (finallyGot >= sEthAmt, "Bought sETH less than needed sETH");
@@ -307,7 +329,7 @@ contract AtomicSynthetixUniswapConverter is Owned {
      * @return sEthAmt Amount of sEth bought.
      */
     function ethToSethInput (uint minSeth, uint deadline, address recipient) external payable returns (uint sEthAmt) {
-        require (deadline >= block.timestamp);
+        require (deadline >= block.timestamp, "exceed deadline");
 
         UniswapExchangeInterface useContract = UniswapExchangeInterface(uniswapSethExchange);
 
@@ -324,7 +346,7 @@ contract AtomicSynthetixUniswapConverter is Owned {
      * @return ethAmt Amount of ETH sold.
      */
     function ethToSethOutput (uint sethBought, uint deadline, address recipient) external payable returns (uint ethAmt) {
-        require (deadline >= block.timestamp);
+        require (deadline >= block.timestamp, "exceed deadline");
 
         UniswapExchangeInterface useContract = UniswapExchangeInterface(uniswapSethExchange);
 
@@ -345,17 +367,24 @@ contract AtomicSynthetixUniswapConverter is Owned {
      * @param recipient Address to get purchased Synths token, if ZERO, to msg.sender
      * @return dstAmt Amount of Synths token purchased.
      */
-    function sTokenToStokenInput (bytes32 srcKey, uint srcAmt, bytes32 dstKey, uint minDstAmt, uint deadline, address recipient) external returns (uint dstAmt) {
-        require (deadline >= block.timestamp);
+    function sTokenToStokenInput (
+        bytes32 srcKey, 
+        uint srcAmt, 
+        bytes32 dstKey, 
+        uint minDstAmt, 
+        uint deadline, 
+        address recipient
+    ) external returns (uint dstAmt) {
+        require (deadline >= block.timestamp, "exceed deadline");
 
         ISynthetix synContract = ISynthetix(synthetix);
-        require (dstKey != dstKey);
+        require (srcKey != dstKey, "cannot exchange between same tokens");
         dstAmt = _sTokenAmtRecvFromExchangeByToken(srcAmt, srcKey, dstKey);
-        require (dstAmt >= minDstAmt);
-        require(TokenInterface(_synthsAddress(srcKey)).transferFrom (msg.sender, address(this), srcAmt));
+        require (dstAmt >= minDstAmt, "bought token less than minimum token");
+        require(TokenInterface(_synthsAddress(srcKey)).transferFrom (msg.sender, address(this), srcAmt), "token transfer failure");
         TokenInterface(_synthsAddress(srcKey)).approve(synthetix, srcAmt);
-        require (synContract.exchange(srcKey, srcAmt, dstKey, address(this)));
-        require (TokenInterface(_synthsAddress(dstKey)).transfer(_targetAddress(recipient), dstAmt));
+        require (synContract.exchange(srcKey, srcAmt, dstKey, address(this)), "Synths token exchange failure");
+        require (TokenInterface(_synthsAddress(dstKey)).transfer(_targetAddress(recipient), dstAmt), "token transfer failure");
         _checkBalance2(srcKey, dstKey);
     }
 
@@ -370,20 +399,27 @@ contract AtomicSynthetixUniswapConverter is Owned {
      * @param recipient Address to get purchased Synths token, if ZERO, to msg.sender
      * @return srcAmt Amount of Synths token sold.
      */
-    function sTokenToStokenOutput (bytes32 srcKey, uint maxSrcAmt, bytes32 dstKey, uint boughtDstAmt, uint deadline, address recipient) external returns (uint srcAmt) {
-        require (deadline >= block.timestamp);
+    function sTokenToStokenOutput (
+        bytes32 srcKey, 
+        uint maxSrcAmt, 
+        bytes32 dstKey, 
+        uint boughtDstAmt, 
+        uint deadline, 
+        address recipient
+    ) external returns (uint srcAmt) {
+        require (deadline >= block.timestamp, "exceed deadline");
 
         ISynthetix synContract = ISynthetix(synthetix);
-        require (dstKey != dstKey);
+        require (srcKey != dstKey, "cannot exchange between same tokens");
         srcAmt = _sTokenEchangedAmtToRecvByToken(boughtDstAmt, dstKey, srcKey);
-        require (srcAmt <= maxSrcAmt);
+        require (srcAmt <= maxSrcAmt, "needed more token");
 
-        require(TokenInterface(_synthsAddress(srcKey)).transferFrom (msg.sender, address(this), srcAmt));
+        require(TokenInterface(_synthsAddress(srcKey)).transferFrom (msg.sender, address(this), srcAmt), "token transfer failure");
         TokenInterface(_synthsAddress(srcKey)).approve(synthetix, srcAmt);
-        require (synContract.exchange(srcKey, srcAmt, dstKey, address(this)));
+        require (synContract.exchange(srcKey, srcAmt, dstKey, address(this)), "Synths token exchange failure");
         uint finallyGot = _sTokenAmtRecvFromExchangeByToken(srcAmt, srcKey, dstKey);
 
-        require (TokenInterface(_synthsAddress(dstKey)).transfer(_targetAddress(recipient), finallyGot));
+        require (TokenInterface(_synthsAddress(dstKey)).transfer(_targetAddress(recipient), finallyGot), "token tranfer failure");
         _checkBalance2(srcKey, dstKey);
     }
 
@@ -401,14 +437,14 @@ contract AtomicSynthetixUniswapConverter is Owned {
     }
 
     function _checkBalance1(bytes32 synToken) internal view {
-        require(address(this).balance == 0);
-        require (TokenInterface(_synthsAddress(synToken)).balanceOf(address(this)) == 0);
+        require(address(this).balance == 0, "ETH balance should be 0");
+        require (TokenInterface(_synthsAddress(synToken)).balanceOf(address(this)) == 0, "Synths token balance should be 0");
     }
     
     function _checkBalance2(bytes32 synToken1, bytes32 synToken2) internal view {
-        require(address(this).balance == 0);
-        require (TokenInterface(_synthsAddress(synToken1)).balanceOf(address(this)) == 0);
-        require (TokenInterface(_synthsAddress(synToken2)).balanceOf(address(this)) == 0);
+        require(address(this).balance == 0, "ETH balance should be 0");
+        require (TokenInterface(_synthsAddress(synToken1)).balanceOf(address(this)) == 0, "Synths token balance should be 0");
+        require (TokenInterface(_synthsAddress(synToken2)).balanceOf(address(this)) == 0, "Synths token balance should be 0");
     }
 
     function _sTokenAmtRecvFromExchangeByToken (uint srcAmt, bytes32 srcKey, bytes32 dstKey) internal view returns (uint){
