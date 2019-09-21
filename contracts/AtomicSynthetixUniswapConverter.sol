@@ -88,6 +88,14 @@ contract AtomicSynthetixUniswapConverter is Owned {
         uniswapSethExchange = _uniswapSethExchange;
     }
     
+    /**
+     * @notice Get input price
+     * @dev User specifies exact iuput amount and query output amount.
+     * @param src Currency key of token to sell. key of ETH is "ETH"
+     * @param srcAmt  Amount of token to sell.
+     * @param dst Currency key of token to buy.
+     * @return Amount of token bought.
+     */
     function inputPrice(bytes32 src, uint srcAmt, bytes32 dst) external view returns (uint) {
         UniswapExchangeInterface uniswapExchange = UniswapExchangeInterface(uniswapSethExchange);
         uint sEthAmt;
@@ -114,6 +122,14 @@ contract AtomicSynthetixUniswapConverter is Owned {
         }
     }
 
+    /**
+     * @notice Get ouput price
+     * @dev User specifies exact output amount and query input amount.
+     * @param src Currency key of token to sell. key of ETH is "ETH"
+     * @param dst Currency key of token to buy.
+     * @param dstAmt Amount of token to buy.
+     * @return  Amount of token to sell.
+     */
     function outputPrice(bytes32 src, bytes32 dst, uint dstAmt) external view returns (uint) {
         UniswapExchangeInterface uniswapExchange = UniswapExchangeInterface(uniswapSethExchange);
         uint sEthAmt;
@@ -201,10 +217,14 @@ contract AtomicSynthetixUniswapConverter is Owned {
         ISynthetix synContract = ISynthetix(synthetix);
 
         require (boughtCurrencyKey != sEthCurrencyKey, "should use ethToSethInnput");
+
+        // check provided eth is enough to buy minimum token and buy sEth from uniswap sEth exchange
         uint minsEth = _sTokenEchangedAmtToRecvByToken(minToken, boughtCurrencyKey, sEthCurrencyKey);
         uint sEthAmt = useContract.ethToTokenSwapInput.value(msg.value)(minsEth, deadline);
         receivedAmt = _sTokenAmtRecvFromExchangeByToken(sEthAmt, sEthCurrencyKey, boughtCurrencyKey);
         require (receivedAmt >= minToken, "need more ETH");
+
+        // buy token from Synthetix exchange and make transfer
         require (synContract.exchange (sEthCurrencyKey, sEthAmt, boughtCurrencyKey, address(this)), "Synths token exchange failure");
         require (TokenInterface(_synthsAddress(boughtCurrencyKey)).transfer(_targetAddress(recipient), receivedAmt), "token tansfer failure");
 
@@ -232,11 +252,15 @@ contract AtomicSynthetixUniswapConverter is Owned {
         ISynthetix synContract = ISynthetix(synthetix);
         
         require (boughtCurrencyKey != sEthCurrencyKey, "should use ethToSethOutput");
+
+        //buy needed sEth from uniswap sEth exchange and refund extra ETH
         uint sEthAmt = _sTokenEchangedAmtToRecvByToken(tokenBought, boughtCurrencyKey, sEthCurrencyKey);
         ethAmt = useContract.ethToTokenSwapOutput.value(msg.value)(sEthAmt, deadline);
         if (msg.value > ethAmt){
             msg.sender.transfer(msg.value - ethAmt);
-        } 
+        }
+        
+        //buy token from Synthetix exchange and make tranfer
         TokenInterface(_synthsAddress("sETH")).approve(synthetix, sEthAmt);
         require (synContract.exchange(sEthCurrencyKey, sEthAmt, boughtCurrencyKey, address(this)), "Synths token exchange failure");
         uint finallyGot = _sTokenAmtRecvFromExchangeByToken(sEthAmt, sEthCurrencyKey, boughtCurrencyKey);
@@ -268,11 +292,14 @@ contract AtomicSynthetixUniswapConverter is Owned {
         ISynthetix synContract = ISynthetix(synthetix);
 
         require (srcKey != sEthCurrencyKey, "should use sEthToEthInput");
+        
+        //check provided token can buy minimum ETH and buy sEth from Synthetix exchange
         uint sEthAmtReceived = _sTokenAmtRecvFromExchangeByToken(srcAmt, srcKey, sEthCurrencyKey);
         require(TokenInterface(_synthsAddress(srcKey)).transferFrom (msg.sender, address(this), srcAmt), "token transer failure");
         TokenInterface(_synthsAddress(srcKey)).approve(synthetix, srcAmt);
         require (synContract.exchange (srcKey, srcAmt, sEthCurrencyKey, address(this)), "Synths token exchange failure");
         
+        //buy ETH from uniswap sETH exchange and make tranfer
         TokenInterface(_synthsAddress(sEthCurrencyKey)).approve(uniswapSethExchange, sEthAmtReceived);
         ethAmt = useContract.tokenToEthTransferInput(sEthAmtReceived, minEth, deadline, _targetAddress(recipient));
 
@@ -302,17 +329,19 @@ contract AtomicSynthetixUniswapConverter is Owned {
         ISynthetix synContract = ISynthetix(synthetix);
 
         require (srcKey != sEthCurrencyKey, "should use sEthToEthOutput");
+
+        // check provided token is enough to buy exact ETH and buy sEth from Uniswap sEth exchange
         uint sEthAmt = useContract.getTokenToEthOutputPrice(ethBought);
         srcAmt = _sTokenEchangedAmtToRecvByToken(sEthAmt, sEthCurrencyKey, srcKey);
-
         require (srcAmt <= maxSrcAmt, "needed more token");
-
         require(TokenInterface(_synthsAddress(srcKey)).transferFrom(msg.sender, address(this), srcAmt), "token tranfer failure");
         TokenInterface(_synthsAddress(srcKey)).approve(synthetix, srcAmt);
         require (synContract.exchange(srcKey, srcAmt, sEthCurrencyKey, address(this)), "Synths token exchange failure");
         uint finallyGot = TokenInterface(_synthsAddress("sETH")).balanceOf(address(this));
-        TokenInterface(_synthsAddress("sETH")).approve(uniswapSethExchange, finallyGot);
         require (finallyGot >= sEthAmt, "Bought sETH less than needed sETH");
+
+        // buy ETH from Uniswap sEth exchange
+        TokenInterface(_synthsAddress("sETH")).approve(uniswapSethExchange, finallyGot);
         uint tokenSold = useContract.tokenToEthTransferOutput(ethBought, finallyGot, deadline, _targetAddress(recipient));
         if (finallyGot > tokenSold){
             TokenInterface(_synthsAddress("sETH")).transfer(msg.sender, finallyGot - tokenSold);
@@ -379,6 +408,7 @@ contract AtomicSynthetixUniswapConverter is Owned {
 
         ISynthetix synContract = ISynthetix(synthetix);
         require (srcKey != dstKey, "cannot exchange between same tokens");
+
         dstAmt = _sTokenAmtRecvFromExchangeByToken(srcAmt, srcKey, dstKey);
         require (dstAmt >= minDstAmt, "bought token less than minimum token");
         require(TokenInterface(_synthsAddress(srcKey)).transferFrom (msg.sender, address(this), srcAmt), "token transfer failure");
@@ -411,14 +441,13 @@ contract AtomicSynthetixUniswapConverter is Owned {
 
         ISynthetix synContract = ISynthetix(synthetix);
         require (srcKey != dstKey, "cannot exchange between same tokens");
+
         srcAmt = _sTokenEchangedAmtToRecvByToken(boughtDstAmt, dstKey, srcKey);
         require (srcAmt <= maxSrcAmt, "needed more token");
-
         require(TokenInterface(_synthsAddress(srcKey)).transferFrom (msg.sender, address(this), srcAmt), "token transfer failure");
         TokenInterface(_synthsAddress(srcKey)).approve(synthetix, srcAmt);
         require (synContract.exchange(srcKey, srcAmt, dstKey, address(this)), "Synths token exchange failure");
         uint finallyGot = _sTokenAmtRecvFromExchangeByToken(srcAmt, srcKey, dstKey);
-
         require (TokenInterface(_synthsAddress(dstKey)).transfer(_targetAddress(recipient), finallyGot), "token tranfer failure");
         _checkBalance2(srcKey, dstKey);
     }
@@ -467,10 +496,11 @@ contract AtomicSynthetixUniswapConverter is Owned {
         step = SafeMath.mul(step, SafeDecimalMath.unit());
         uint step2 = SafeMath.mul(SafeDecimalMath.unit().sub(feeRate), srcRate);
         uint result = SafeMath.div(step, step2);
-
+        
+        // two times of round of Synthetix contract exchange function need this compensation
         if (dstRate > srcRate){
-            uint roundCompensation = SafeMath.div(dstRate, srcRate) + 1;
-            return roundCompensation.divideDecimal(SafeDecimalMath.unit().sub(feeRate)) + result;
+            uint roundCompensationForOneDst = SafeMath.div(dstRate, srcRate) + 1;
+            return roundCompensationForOneDst.divideDecimal(SafeDecimalMath.unit().sub(feeRate)) + result;
         }
         return result + 1 ;
 
