@@ -261,7 +261,6 @@ contract AtomicSynthetixUniswapConverter is Owned {
         }
         
         //buy token from Synthetix exchange and make tranfer
-        TokenInterface(_synthsAddress("sETH")).approve(synthetix, sEthAmt);
         require (synContract.exchange(sEthCurrencyKey, sEthAmt, boughtCurrencyKey, address(this)), "Synths token exchange failure");
         uint finallyGot = _sTokenAmtRecvFromExchangeByToken(sEthAmt, sEthCurrencyKey, boughtCurrencyKey);
         require (TokenInterface(_synthsAddress(boughtCurrencyKey)).transfer(_targetAddress(recipient), finallyGot), "token transer failure");
@@ -296,7 +295,6 @@ contract AtomicSynthetixUniswapConverter is Owned {
         //check provided token can buy minimum ETH and buy sEth from Synthetix exchange
         uint sEthAmtReceived = _sTokenAmtRecvFromExchangeByToken(srcAmt, srcKey, sEthCurrencyKey);
         require(TokenInterface(_synthsAddress(srcKey)).transferFrom (msg.sender, address(this), srcAmt), "token transer failure");
-        TokenInterface(_synthsAddress(srcKey)).approve(synthetix, srcAmt);
         require (synContract.exchange (srcKey, srcAmt, sEthCurrencyKey, address(this)), "Synths token exchange failure");
         
         //buy ETH from uniswap sETH exchange and make tranfer
@@ -335,7 +333,6 @@ contract AtomicSynthetixUniswapConverter is Owned {
         srcAmt = _sTokenEchangedAmtToRecvByToken(sEthAmt, sEthCurrencyKey, srcKey);
         require (srcAmt <= maxSrcAmt, "needed more token");
         require(TokenInterface(_synthsAddress(srcKey)).transferFrom(msg.sender, address(this), srcAmt), "token tranfer failure");
-        TokenInterface(_synthsAddress(srcKey)).approve(synthetix, srcAmt);
         require (synContract.exchange(srcKey, srcAmt, sEthCurrencyKey, address(this)), "Synths token exchange failure");
         uint finallyGot = TokenInterface(_synthsAddress("sETH")).balanceOf(address(this));
         require (finallyGot >= sEthAmt, "Bought sETH less than needed sETH");
@@ -412,7 +409,6 @@ contract AtomicSynthetixUniswapConverter is Owned {
         dstAmt = _sTokenAmtRecvFromExchangeByToken(srcAmt, srcKey, dstKey);
         require (dstAmt >= minDstAmt, "bought token less than minimum token");
         require(TokenInterface(_synthsAddress(srcKey)).transferFrom (msg.sender, address(this), srcAmt), "token transfer failure");
-        TokenInterface(_synthsAddress(srcKey)).approve(synthetix, srcAmt);
         require (synContract.exchange(srcKey, srcAmt, dstKey, address(this)), "Synths token exchange failure");
         require (TokenInterface(_synthsAddress(dstKey)).transfer(_targetAddress(recipient), dstAmt), "token transfer failure");
         _checkBalance2(srcKey, dstKey);
@@ -445,7 +441,6 @@ contract AtomicSynthetixUniswapConverter is Owned {
         srcAmt = _sTokenEchangedAmtToRecvByToken(boughtDstAmt, dstKey, srcKey);
         require (srcAmt <= maxSrcAmt, "needed more token");
         require(TokenInterface(_synthsAddress(srcKey)).transferFrom (msg.sender, address(this), srcAmt), "token transfer failure");
-        TokenInterface(_synthsAddress(srcKey)).approve(synthetix, srcAmt);
         require (synContract.exchange(srcKey, srcAmt, dstKey, address(this)), "Synths token exchange failure");
         uint finallyGot = _sTokenAmtRecvFromExchangeByToken(srcAmt, srcKey, dstKey);
         require (TokenInterface(_synthsAddress(dstKey)).transfer(_targetAddress(recipient), finallyGot), "token tranfer failure");
