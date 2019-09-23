@@ -61,6 +61,7 @@
 
 ??? "Potential Vulnerabilities To Investigate"
     * [ ] Oracle front-running.
+    * [ ] Issuance ratio non-specificity. It adjusts the aggregated ratio, but Synths could depeg independently. This particularly affects flavours with relatively smaller market caps.
     * [ ] C-ratio manipulation.
     * [ ] Other levers such as marketing, botting?
     * [ ] Intervention when deployments occur?

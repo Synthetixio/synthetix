@@ -1,56 +1,394 @@
 # SynthetixState
 
-This is a state contract, controlled by the main Synthetix contract.
+This is a state contract associated with the main [`Synthetix`](Synthetix.md) contract, which is the only address permitted to invoke most of its functionality.
+
+This contract is responsible for recording issuance and debt information for the system and users within it, as well as the global [issuance ratio](#issuanceratio).
+
+Upon system updates, this contract will continue to exist, while the Synthetix logic itself is swapped out.
+
+This contract also contains functionality enabling automatic [preferred currency](#preferredcurrency) conversion on Synth transfers, but this is currently disabled.
+
+??? note "A Note on Conversion Fees"
+
+    Since transfer conversion is not operating, the following is recorded only to be kept in mind in case it is ever reactivated. At present there is no way for users to set a preferred currency.
+
+    The Synthetix system has both a conversion and a transfer fee. Although they should be distinct, the preferred currency auto conversion on transfer only charges the transfer fee, and not the conversion fee.
+    As a result, it is possible to convert Synths more cheaply whenever the transfer fee is less than the conversion fee.
+
+    Given that the transfer fee is currently nil, if a user was able to set a preferred currency for themselves, it would be possible by this means to perform free Synth conversions. This would 
+    undercut fee revenue for the system to incentivise participants with. If markets had priced in the conversion fee, but were unaware of the exploit, then there would be a profit cycle available for someone exploiting this.
+
+    In particular:
+
+    Let $\phi_\kappa, \ \phi_\tau \in [0,1]$ be the conversion and transfer fee rates, respectively.
+    Let $\pi_A, \ \pi_B$ be the prices of synths $A$ and $B$ in terms of some implicit common currency.
+    $Q_A$ will be the starting quantity of synth $A$.
+
+    Then to convert from $A$ to $B$, quantities
+
+    $$
+    Q^\kappa_B = Q_A\frac{\pi_A}{\pi_B}(1 - \phi_\kappa) \\
+    Q^\tau_B = Q_A\frac{\pi_A}{\pi_B}(1 - \phi_\tau)
+    $$
+
+    are received if the user performs a standard conversion or a transfer conversion, respectively.
+    The profit of performing a transfer conversion relative to a standard one is then:
+
+    $$
+    Q^\tau_B - Q^\kappa_B = Q_A\frac{\pi_A}{\pi_B}(\phi_\kappa - \phi_\tau)
+    $$
+
+    That is, the relative profit is simply $(\phi_\kappa - \phi_\tau)$. With no transfer fee, the profit is $\phi_\kappa$, as expected.
 
 **Source:** [SynthetixState.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/SynthetixState.sol)
 
-## Inherited Contracts
+<section-sep />
 
-* State
-* LimitedSetup
+## Inheritance Graph
+
+<inheritance-graph>
+    ![SynthetixState inheritance graph](../img/graphs/SynthetixState.svg)
+</inheritance-graph>
+
+<section-sep />
 
 ## Referenced Contracts
 
 * Synthetix as this contract's `State.associatedContract`
-* `SafeMath` and `SafeDecimalMath` for `uint`.
+
+<section-sep />
+
+## Libraries
+
+* [`SafeDecimalMath`](SafeDecimalMath.md) for `uint`
+* [`SafeMath`](SafeMath.md) for `uint`
+
+<section-sep />
 
 ## Structs
 
+---
+
 ### IssuanceData
 
-Holds the issuance state and preferred currency of users in the Synthetix system.
-Individual wallets have an issuance data object associated with their address:
+Individual wallets have an issuance data object associated with their address.
+This holds the issuance state and preferred currency of users in the Synthetix system, which is used to compute user's exit price and collateralisation ratio.
+
+Field | Type | Description
+------|------|------------
+initialDebtOwnership | `uint` | The percentage of the total system debt owned by the address associated with this entry at the time of issuance.
+debtEntryIndex | `uint` | The [debt ledger](SynthetixState.md#debtledger) index when this user last issued or destroyed tokens. That is, the length of the ledger at the time of issuance.
+
 This struct is replicated in the [`FeePoolState`](FeePoolState.md#issuancedata) contract.
 
-```solidity
-struct IssuanceData {
-    uint initialDebtOwnership; // Percentage of the total debt owned by this address at the time of issuance.
-    uint debtEntryIndex; // The relative index of when this user issued tokens (entered the debt pool).
-}
-```
+---
 
-This is used to compute user's exit price and collateralisation ratio.
+<section-sep />
 
 ## Variables
 
-* `issuanceData`: mapping from addresses to their issuance data struct.
-* `totalIssuerCount`: number of people with outstanding synths.
-* `debtLedger`: a list of factors indicating for each debt-modifying event, what effect it had on the percentage of debt of all other holders.
-* `importedXDRAmount`: The number of XDRs outstanding from before the multicurrency transition.
-* `issuanceRatio`: The current issuance ratio: set to 0.2 to begin with.
-* `MAX_ISSUANCE_RATIO`: No more than 1 synth may be issued per dollar of backing.
-* `preferredCurrency`: If users nominate a preferred currency, all synths they receive will be converted to this currency.
+---
+
+### `issuanceData`
+
+The most recent issuance data for each address.
+
+**Type:** `mapping(address => IssuanceData) public`
+
+---
+
+### `totalIssuerCount`
+
+The number of people with outstanding synths.
+
+**Type:** `uint public`
+
+---
+
+### `debtLedger`
+
+A list of factors indicating for each debt-modifying event, what effect it had on the percentage of debt of all other holders. Later debt ledger entries correspond to more recent issuance events.
+
+**Type:** `uint[] public`
+
+---
+
+### `importedXDRAmount`
+
+The XDR-equivalent debt of `sUSD` imported which was outstanding immediately before the multicurrency transition.
+
+**Type:** `uint public`
+
+---
+
+### `issuanceRatio`
+
+The current global issuance ratio, which determines the maximum ratio between the total value of Synths and SNX in the system.
+
+The issuance ratio fraction is the maximum value of Synths issuable against a certain value of SNX. It is also the target ratio for SNX stakers. As per the logic in [`FeePool.feesClaimable`](FeePool.md#feesclaimable), stakers can only claim any fee rewards if they are within ten percent of the issuance ratio.
+
+Therefore altering it will also alter the maximum total supply of Synths, as suppliers of Synths are strongly incentivised to track the issuance ratio closely.
+
+**Type:** `uint public`
+
+!!! info "The Issuance Ratio as a Macro-Economic Lever"
+    Tweaking the issuance ratio is an effective means of altering the total sUSD supply, and therefore its price.
+
+    In cases where Synths are oversupplied, there is downward price pressure and decreased stability. Decreasing the issuance ratio is an effective method of both constraining the total supply of Synths circulating in the system, and transiently increasing aggregate demand for Synths as every staker must rebuy a quantity of Synths and burn them.
+    
+    For precisely these reasons the issuance ratio was altered by [SCCP-2](https://sips.synthetix.io/sccp/sccp-2) from its initial value of \frac{1}{5} to \frac{1}{7.5}.
+
+    The related case of increasing the issuance ratio is similar.
+
+---
+
+### `MAX_ISSUANCE_RATIO`
+
+This is set to $1.0$. Constraining the value of [`issuanceRatio`](#issuanceratio) to be less than $1.0$ ensures that Synthetix does not become a fractional reserve system.
+
+**Type:** `uint constant`
+
+---
+
+### `preferredCurrency`
+
+!!! danger "Unused"
+    This feature is currently dormant. It can still operate, but the [`Synthetix`](Synthetix.md) contract does not expose any means for an account's preferred currency to actually be set, so it never operates.
+
+If users nominate a preferred currency, all synths they receive will be converted to this currency. This mapping stores the nominated preferred currency for each account, if any. A null preferred currency means no conversion will be performed.
+
+This is used within [`Synth._internalTransfer`](Synth.md#_internaltransfer).
+
+**Type:** `mapping(address => bytes4) public`
+
+---
+
+<section-sep />
 
 ## Functions
 
-* `setCurrentIssuanceData(address account, uint initialDebtOwnership)`: updates the debtOwnership of account, and sets their debt entry index to the current length of the debt ledger, without appending anything to that ledger.
-* `clearIssuanceData(address account)`: Delete the issuance data associated with this account.
-* `increment/decrementTotalIssuerCount()`: totalIssuerCount++/--
-* `appendDebtLedgerValue(uint value)`: debtLedger.push(value)
-* `setPreferredCurrency(address account, bytes4 currencyKey)`: preferredCurrency[account] = currencyKey. I guess you set this to 0 to unset the value?
-* `setIssuanceRatio(uint _issuanceRatio)`: Sets the ratio for synth issuance. The new ratio cannot exceed MAX_ISSUANCE_RATIO.
-* `importIssuerData(address[] accounts, uint[] sUSDAmounts)`: adds a certain amount of sUSD debt for a given set of accounts, but only during the setup period.
-* `_addToDebtRegister(address account, uint amount)`: Called in a loop by importIssuerData. Duplicates the code from the `Synthetix` except that the total debt is given during initialisation (`importedXDRAmount`).
-* `debtLedgerLength()`: View function.
-* `lastDebtLedgerEntry()`: View function.
-* `hasIssued(address account)`: True when the account has outstanding debt -- i.e. when `issuanceData[account].initialDebtOwnership > 0`
+---
+
+### `constructor`
+
+Initialises the inherited [`State`](State.md) and [`LimitedSetup`](LimitedSetup.md) instances.
+
+???+ example "Details"
+    **Signature**
+
+    `constructor(address _owner, address _associatedContract) public`
+
+    **Superconstructors**
+
+    * [`State(_owner, _associatedContract)`](State.md#constructor)
+    * [`LimitedSetup(1 weeks)`](LimitedSetup.md#constructor)
+
+---
+
+### `setCurrentIssuanceData`
+
+Allows the [`Synthetix`](Synthetix.md) contract to update the debt ownership entry for this account and sets their debt entry index to the current length of the [`debtLedger`](#debtledger).
+The debt ledger itself is not modified.
+
+???+ example "Details"
+    **Signature**
+
+    `setCurrentIssuanceData(address account, uint initialDebtOwnership) external`
+
+    **Modifiers**
+
+    * [`State.onlyAssociatedContract`](State.md#onlyassociatedcontract)
+
+---
+
+### `clearIssuanceData`
+
+Deletes the issuance data associated with a given account.
+
+???+ example "Details"
+    **Signature**
+
+    `clearIssuanceData(address account) external`
+
+    **Modifiers**
+
+    * [`State.onlyAssociatedContract`](State.md#onlyassociatedcontract)
+
+---
+
+### `incrementTotalIssuerCount`
+
+Increases [`totalIssuerCount`](#totalissuercount) by one. This is called within [`Synthetix._addToDebtRegister`](Synthetix.md#_addtodebtregister) whenever an account with no outstanding issuance debt mints new Synths.
+
+???+ example "Details"
+    **Signature**
+
+    `incrementTotalIssuerCount() external`
+
+    **Modifiers**
+
+    * [`State.onlyAssociatedContract`](State.md#onlyassociatedcontract)
+
+---
+
+### `decrementTotalIssuerCount`
+
+Reduces [`totalIssuerCount`](#totalissuercount) by one. This is called within [`Synthetix._removeFromDebtRegister`](Synthetix.md#_removefromdebtregister) whenever an issuer burns enough Synths to pay down their entire outstanding debt.
+
+???+ example "Details"
+    **Signature**
+
+    `decrementTotalIssuerCount() external`
+
+    **Modifiers**
+
+    * [`State.onlyAssociatedContract`](State.md#onlyassociatedcontract)
+
+---
+
+### `appendDebtLedgerValue`
+
+Pushes a new value to the end of the [`debtLedger`](#debtledger).
+
+This is used in the [`Synthetix`](Synthetix.md) contract whenever Synths are issued or burnt, which modifies the total outstanding system debt.
+
+???+ example "Details"
+    **Signature**
+
+    `appendDebtLedgerValue(uint value) external`
+
+    **Modifiers**
+
+    * [`State.onlyAssociatedContract`](State.md#onlyassociatedcontract)
+
+---
+
+### `setPreferredCurrency`
+
+!!! danger "Unused"
+    This function is not used anywhere within the [`Synthetix`](Synthetix.md) contract, which is the only address with the privileges to call it. As a result the preferred currency feature is not operational.
+
+Sets the preferred currency for a particular account. Pass in null to unset this value.
+
+???+ example "Details"
+    **Signature**
+
+    `setPreferredCurrency(address account, bytes4 currencyKey) external`
+
+    **Modifiers**
+
+    * [`State.onlyAssociatedContract`](State.md#onlyassociatedcontract)
+
+---
+
+### `setIssuanceRatio`
+
+Allows the owner to set the Synth [issuance ratio](#issuanceratio).
+
+???+ example "Details"
+    **Signature**
+
+    setIssuanceRatio(uint _issuanceRatio) external`
+    
+    **Modifiers**
+
+    * [`Owned.onlyOwner`](Owned.md#onlyowner)
+
+    **Preconditions*
+    
+    * `_issuanceRatio` cannot exceed [`MAX_ISSUANCE_RATIO`](#max_issuance_ratio), which is set to `1.0`. This prevents more than one dollar worth of Synths being issued against each dollar of SNX backing them.
+
+    **Emits**
+
+    * [`IssuanceRatioUpdated(_issuanceRatio)`](#issuanceratioupdated)
+
+---
+
+### `importIssuerData`
+
+!!! danger "Disabled"
+    This function only operated during the one week [setup period](LimitedSetup.md).
+
+This function allowed the owner to migrate sUSD issuance data during the launch of multiple Synth flavours. It simply calls [`_addToDebtRegister`](#_addtodebtregister) in a loop.
+
+???+ example "Details"
+    **Signature**
+
+    `importIssuerData(address[] accounts, uint[] sUSDAmounts) external`
+    
+    **Modifiers**
+
+    * [`Owned.onlyOwner`](Owned.md#onlyowner)
+    * [`LimitedSetup.onlyDuringSetup`](LimitedSetup.md#onlyduringsetup)
+
+---
+
+### `_addToDebtRegister(address account, uint amount)`
+
+!!! danger "Disabled"
+    This function is only called from [`importIssuerData`](#importissuerdata), which only operated during the one week [setup period](LimitedSetup.md).
+
+This utility function allows adds a new entry to the debt register to set up staker debt holdings when migrating from the previous Synthetix version.
+It duplicates the logic of [`Synthetix._addToDebtRegister`](Synthetix.md#_addtodebtregister) with some minor modifications to keep track of how much [debt has been imported](#importedxdramount).
+
+???+ example "Details"
+    **Signature**
+
+    `_addToDebtRegister(address account, uint amount) internal`
+
+---
+
+### `debtLedgerLength`
+
+Returns the number of entries currently in [`debtLedger`](#debtledger).
+
+Primarily used in [`FeePool`](FeePool.md) for fee period computations.
+
+???+ example "Details"
+    **Signature**
+
+    `debtLedgerLength() external view returns (uint)`
+
+---
+
+### `lastDebtLedgerEntry`
+
+Returns the most recent [`debtLedger`](#debtledger) entry.
+
+Primarily used in the [`Synthetix`](Synthetix.md) for debt computations.
+
+???+ example "Details"
+    **Signature**
+
+    `lastDebtLedgerEntry() external view returns (uint)`
+
+---
+
+### `hasIssued`
+
+Returns true if a given account has any outstanding issuance debt resulting from Synth minting.
+
+Used in [`Synthetix._addToDebtRegister`] to determine whether an minting event requires incrementing the total issuer count.
+
+???+ example "Details"
+    **Signature**
+
+    `hasIssued(address account) external view returns (uint)`
+
+---
+
+<section-sep />
+
+## Events
+
+---
+
+### `IssuanceRatioUpdated`
+
+Records that the [issuance ratio](#issuanceratio) was modified.
+
+**Signature:** IssuanceRatioUpdated(uint newRatio)`
+
+---
+
+<section-sep />
