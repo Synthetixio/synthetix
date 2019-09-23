@@ -107,7 +107,7 @@ The number of people with outstanding synths.
 
 ### `debtLedger`
 
-A list of factors indicating for each debt-modifying event, what effect it had on the percentage of debt of all other holders. Later debt ledger entries correspond to more recent issuance events.
+A list of factors indicating, for each [debt-modifying event](#appenddebtledgervalue), what effect it had on the percentage of debt of all other holders. Later debt ledger entries correspond to more recent issuance events.
 
 **Type:** `uint[] public`
 
@@ -136,7 +136,7 @@ Therefore altering it will also alter the maximum total supply of Synths, as sup
 
     In cases where Synths are oversupplied, there is downward price pressure and decreased stability. Decreasing the issuance ratio is an effective method of both constraining the total supply of Synths circulating in the system, and transiently increasing aggregate demand for Synths as every staker must rebuy a quantity of Synths and burn them.
     
-    For precisely these reasons the issuance ratio was altered by [SCCP-2](https://sips.synthetix.io/sccp/sccp-2) from its initial value of \frac{1}{5} to \frac{1}{7.5}.
+    For precisely these reasons the issuance ratio was altered by [SCCP-2](https://sips.synthetix.io/sccp/sccp-2) from its initial value of $\frac{1}{5}$ to $\frac{2}{15}$.
 
     The related case of increasing the issuance ratio is similar.
 
@@ -250,7 +250,7 @@ Reduces [`totalIssuerCount`](#totalissuercount) by one. This is called within [`
 
 Pushes a new value to the end of the [`debtLedger`](#debtledger).
 
-This is used in the [`Synthetix`](Synthetix.md) contract whenever Synths are issued or burnt, which modifies the total outstanding system debt.
+This is used by [`Synthetix._addToDebtRegister`](Synthetix.md#addtodebtregister) contract whenever Synths are issued or burnt, which modifies the total outstanding system debt.
 
 ???+ example "Details"
     **Signature**
