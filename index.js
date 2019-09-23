@@ -3,8 +3,9 @@
 
 const fs = require('fs');
 const path = require('path');
-const program = require('commander');
-require('pretty-error').start();
+
+const commander = require('commander');
+const program = new commander.Command();
 
 const loadDeploymentFile = ({ network }) => {
 	const pathToDeployment = path.join(__dirname, 'publish', 'deployed', network, 'deployment.json');
@@ -78,5 +79,7 @@ program
 
 // perform as CLI tool if args given
 if (require.main === module) {
+	require('pretty-error').start();
+
 	program.parse(process.argv);
 }

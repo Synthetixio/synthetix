@@ -30,6 +30,14 @@ const users = Object.entries(
 }));
 
 (async () => {
+	const deploymentPath = path.join(__dirname, '..', 'publish', 'deployed', 'local');
+
+	// track these files to revert them later on
+	const synthsJSONPath = path.join(deploymentPath, SYNTHS_FILENAME);
+	const synthsJSON = fs.readFileSync(synthsJSONPath);
+	const configJSONPath = path.join(deploymentPath, CONFIG_FILENAME);
+	const configJSON = fs.readFileSync(configJSONPath);
+
 	try {
 		const network = 'local';
 
@@ -41,14 +49,6 @@ const users = Object.entries(
 			first: users[1],
 			second: users[2],
 		};
-
-		const deploymentPath = path.join(__dirname, '..', 'publish', 'deployed', 'local');
-
-		// track these files to revert them later on
-		const synthsJSONPath = path.join(deploymentPath, SYNTHS_FILENAME);
-		const synthsJSON = fs.readFileSync(synthsJSONPath);
-		const configJSONPath = path.join(deploymentPath, CONFIG_FILENAME);
-		const configJSON = fs.readFileSync(configJSONPath);
 
 		// 2. deploy
 		await commands.deploy({
@@ -162,13 +162,13 @@ const users = Object.entries(
 			synthsToRemove: ['sBTC'],
 		});
 
-		// restore the synths and config files for this env (cause removal updated it)
-		fs.writeFileSync(synthsJSONPath, synthsJSON);
-		fs.writeFileSync(configJSONPath, configJSON);
-
 		console.log(green('Integration test completed successfully.'));
 	} catch (err) {
 		console.error(err);
 		process.exitCode = 1;
 	}
+
+	// restore the synths and config files for this env (cause removal updated it)
+	fs.writeFileSync(synthsJSONPath, synthsJSON);
+	fs.writeFileSync(configJSONPath, configJSON);
 })();
