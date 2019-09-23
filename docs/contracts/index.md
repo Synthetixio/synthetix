@@ -91,7 +91,7 @@ Contract | Description
 [`ProxyERC20`](ProxyERC20.md) | A proxy contract which explicitly supports the ERC20 interface.
 [`Proxyable`](Proxyable.md) | An abstract contract designed to work with the [Synthetix proxy](Proxy.md).
 [`ExchangeRates`](ExchangeRates.md) | The Synthetix exchange rates contract which supplies token prices to all contracts that need them.
-[`Depot`](Depot.md) | A vendor contract that allows users to exchange their ETH for sUSD or SNX, or their sUSD for SNX. It also allows users to deposit SNX to be sold in exchange for sUSD.
+[`Depot`](Depot.md) | A vendor contract that allows users to exchange their ETH for sUSD or SNX, or their sUSD for SNX. It also allows users to deposit Synths to be sold in exchange for ETH.
 [ArbRewarder](ArbRewarder.md) | A contract which automates the process of arbitraging the ETH/sETH price on UniSwap through Synthetix conversion functions.
 
 ### Utility

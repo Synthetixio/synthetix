@@ -391,7 +391,7 @@ Used in [`Synthetix._addToDebtRegister`] to determine whether an minting event r
 
 Records that the [issuance ratio](#issuanceratio) was modified.
 
-**Signature:** IssuanceRatioUpdated(uint newRatio)`
+**Signature:** `IssuanceRatioUpdated(uint newRatio)`
 
 ---
 
