@@ -132,3 +132,4 @@ Contract | Description
     * Related contract variables.
     * Ensure all contract texts in this document link to the relevant page
     * Enhance Contract Mapper: Command line args etc. Look for calls out to other contracts in function bodies.
+    * Mark all `uint`s that are fixed point numbers with their precision level.
