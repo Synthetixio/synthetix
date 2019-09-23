@@ -3,12 +3,13 @@
 ## Description
 
 A partial ERC20 token contract, designed to operate with a proxy.
-To produce a complete ERC20 token, transfer and transferFrom
-tokens must be implemented, using the provided _byProxy internal
-functions.
-This contract utilises an external state for upgradeability.
+To produce a complete ERC20 token, `transfer` and `transferFrom`
+tokens must be implemented, using the provided _byProxy internal functions.
+ExternStateToken almost implements the ERC223 standard; transfers will call the target contract's token fallback function, but if such a function does not exist, the transaction does not revert.
 
-**Old:** ExternStateToken.sol: The concept of an ERC20/ERC223(ish) token which stores its allowances and balances outside of the contract for upgradability.
+For upgradeability, this contract utilises an [external state contract](TokenState.md) to store its balances and allowances.
+
+In Synthetix, all [`Synths`](Synth.md), and the main [`Synthetix`](Synthetix.md) contract are ExternStateTokens.
 
 **Source:** [ExternStateToken.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/ExternStateToken.sol)
 
@@ -24,7 +25,7 @@ This contract utilises an external state for upgradeability.
 
 ## Related Contracts
 
-TokenState
+* [`TokenState`](TokenState.md)
 
 <section-sep />
 
@@ -149,9 +150,9 @@ Unhooking the token state will pause the contract by causing all transactions to
 
 Internal ERC20 transfer function used to implement [`_transfer_byProxy`](#_transfer_byproxy) and [`_transferFrom_byProxy`](#_transferfrom_byproxy).
 
-In addition to the ordinary ERC20 transfer behaviour, `_internalTransfer` also takes an ERC223 `data` parameter, and will call tokenFallback functions.
+In addition to the ordinary ERC20 transfer behaviour, `_internalTransfer` also takes an ERC223 `data` parameter, and will call tokenFallback functions via the inherited [`TokenFallbackCaller.callTokenFallbackIfNeeded`](TokenFallbackCaller.md#calltokenfallbackifneeded) function.
 
-This function always returns true if the transaction does not revert.
+`_internalTransfer` always returns true if the transaction does not revert.
 
 ???+ example "Details"
     **Signature**
