@@ -15,7 +15,7 @@ This proxy provides two different operation modes, which can be switched between
 [^1]: Specific descriptions of the behaviour of the `CALL` and `DELEGATECALL` EVM instructions can be found in the [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf).
 
 * `DELEGATECALL`: Execution of the target's code occurs in the proxy's context, which preserves the message sender and writes state updates to the storage of the proxy itself. This is the standard proxy style used across Ethereum projects.
-* `CALL`: Execution occurs in the target's context, so the storage of the proxy is never touched. This is the style mainly used in Synthetix.
+* `CALL`: Execution occurs in the target's context, so the storage of the proxy is never touched, but function call and event data, as well as the message sender, must be explicitly passed between the proxy and target contracts. This is the style mainly used in Synthetix.
 
 The motivation for the `CALL` style was to allow complete decoupling of the storage structure from the proxy, except what's required for the proxy's own functionality. This means there's no necessity for the proxy to be concerned in advance with the storage architecture of the target contract. We can avoid using elaborate or unstructured storage solutions for state variables, and there are no constraints on the use of (possibly nested) mapping or reference types.
 
@@ -26,7 +26,7 @@ Instead of executing the target code in its own context, the `CALL`-style proxy 
 </inheritance-graph>
 
 In this way the main contract defining the logic can be swapped out without replacing the proxy or state contracts. The user only ever communicates with the proxy and need not know any implementation details.
-This architecture also allows [multiple proxies](Proxyable.md#integrationproxy) with differing interfaces to be used simultaneously for a single underlying contract, though events will be emitted only at one address. This feature is currently used by [`ProxyERC20`](ProxyERC20.md), which operates atop the [`Synthetix`](Synthetix.md) contract.
+This architecture also allows [multiple proxies](Proxyable.md#integrationproxy) with differing interfaces to be used simultaneously for a single underlying contract, though events will usually be emitted only from one of them. This feature is currently used by [`ProxyERC20`](ProxyERC20.md), which operates atop the [`Synthetix`](Synthetix.md) contract.
 
 There are some tradeoffs to this approach. There is potentially a little more communication overhead for event emission, though there may be some savings available elsewhere depending on system and storage architecture and the particular application.
 
@@ -156,11 +156,11 @@ When operating in the `CALL` style, this function allows the proxy's underlying 
     In the implementation, such expressions are typically wrapped in convenience functions like `emitMyEvent(A indexedArg, B data1, C data2)`.
 
     In Solidity, `indexed` arguments are published as log topics, while non-`indexed` ones are abi-encoded together in order and included as data.
-    The keccak-256 hash of the Solidity event signature is always included as the first topic. The format of this signature is `EventName(type1,type2,...,typeN)`, with no spaces between the argument types, omitting the `indexed` keyword and the argument name. For more information, see the official Solidity documentation [here](https://solidity.readthedocs.io/en/v0.5.11/contracts.html#events) and [here](https://solidity.readthedocs.io/en/v0.5.11/abi-spec.html#abi-events).
+    The keccak-256 hash of the Solidity event signature is always included as the first topic. The format of this signature is `EventName(type1,...,typeN)`, with no spaces between the argument types, omitting the `indexed` keyword and the argument name. For more information, see the official Solidity documentation [here](https://solidity.readthedocs.io/en/v0.5.11/contracts.html#events) and [here](https://solidity.readthedocs.io/en/v0.5.11/abi-spec.html#abi-events).
 
     This function takes 4 arguments for log topics. How many of these are consumed is determined by the `numTopics` argument, which can take the values from 0 to 4, corresponding to the EVM `LOG0` to `LOG4` instructions.
     In the case that an event has fewer than 3 indexed arguments, the remaining slots can be provided with 0. Any excess topics are simply ignored.
-    Note that 0 is a valid argument for `numTopics`, which produces `LOG0`, which only has data and no event signature.
+    Note that 0 is a valid argument for `numTopics`, which produces `LOG0`, an "event" that only has data and no signature.
 
     !!! caution
         If this proxy contract were to be rewritten with Solidity v0.5.0 or above, it would be necessary to slightly simplify the calls to `abi.encode` with `abi.encodeWithSignature`.
