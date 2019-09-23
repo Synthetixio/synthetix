@@ -14,7 +14,7 @@ This proxy provides two different operation modes, which can be switched between
 
 [^1]: Specific descriptions of the behaviour of the `CALL` and `DELEGATECALL` EVM instructions can be found in the [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf).
 
-* `DELEGATECALL`: Execution of the target's code occurs in the proxy's context, which preserves the message sender and writes state updates to the storage of the proxy itself. This is the standard proxy style used across Ethereum projects.
+* `DELEGATECALL`: Execution of the target's code occurs in the proxy's context, which preserves the message sender and writes state updates to the storage of the proxy itself. This is the standard proxy style used across most Ethereum projects.
 * `CALL`: Execution occurs in the target's context, so the storage of the proxy is never touched, but function call and event data, as well as the message sender, must be explicitly passed between the proxy and target contracts. This is the style mainly used in Synthetix.
 
 The motivation for the `CALL` style was to allow complete decoupling of the storage structure from the proxy, except what's required for the proxy's own functionality. This means there's no necessity for the proxy to be concerned in advance with the storage architecture of the target contract. We can avoid using elaborate or unstructured storage solutions for state variables, and there are no constraints on the use of (possibly nested) mapping or reference types.
