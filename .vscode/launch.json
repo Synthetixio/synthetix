@@ -14,8 +14,9 @@
 			"type": "node",
 			"request": "launch",
 			"name": "Debug Verify Script",
-			"args": ["verify", "-n", "kovan", "-d", "publish/deployed/kovan"],
-			"program": "${workspaceFolder}/publish/index.js"
+			"args": ["verify", "-n", "rinkeby", "-d", "publish/deployed/rinkeby"],
+			"program": "${workspaceFolder}/publish/index.js",
+			"runtimeExecutable": "${env:HOME}/.nvm/versions/node/v10.16.3/bin/node"
 		},
 		{
 			"type": "node",
