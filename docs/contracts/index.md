@@ -124,3 +124,4 @@ Contract | Description
     * Related contracts
     * Enhance Contract Mapper: Command line args etc. Look for calls out to other contracts in function bodies.
     * Mark all `uint`s that are fixed point numbers with their precision level.
+    * Remove specific entries for event emission functions and fold them into the event descriptions themselves.
