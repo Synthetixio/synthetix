@@ -321,6 +321,10 @@ This function allowed the owner to migrate sUSD issuance data during the launch 
     * [`Owned.onlyOwner`](Owned.md#onlyowner)
     * [`LimitedSetup.onlyDuringSetup`](LimitedSetup.md#onlyduringsetup)
 
+    **Preconditions**
+
+    * The `XDR` price [must not be stale](ExchangeRates.md#rateisstale).
+
 ---
 
 ### `_addToDebtRegister(address account, uint amount)`

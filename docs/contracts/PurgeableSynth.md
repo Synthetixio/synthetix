@@ -1,38 +1,141 @@
 # PurgeableSynth
 
-This is a [Synth](Synth.md) where all the holders can be liquidated back to sUSD at current rates, so that the contract can be removed from the system. A Synth must either be frozen (if it is an inverse synth) or have its total outstanding supply worth less than 10,000 USD in order for it to be liquidated. Hence it is mainly useful for eliminating Synths which are unused or at the end of their useful life. The value of the token is read from the system's central [ExchangeRates](ExchangeRates.md) contract.
+## Description
 
-Purgeable synths were introduced by [SIP-3](https://github.com/Synthetixio/SIPs/blob/master/SIPS/sip-3.md) in response to increasing gas costs associated with minting, and to allow the faster reconfiguration of inverse synths.
+This is a [Synth](Synth.md) where all the holders can be liquidated back to sUSD at current rates, so that the contract can be removed from the system. A Synth must either be frozen (if it is an inverse synth) or have its total outstanding supply worth less than $100\,000$ USD in order to be liquidated. Hence it is mainly useful for eliminating Synths which are unused or at the end of their useful life. The value of the token is read from the system's central [ExchangeRates](ExchangeRates.md) contract.
+
+Purgeable synths were introduced by [SIP-3](https://github.com/Synthetixio/SIPs/blob/master/SIPS/sip-3.md) in response to increasing gas costs associated with minting, and to allow faster reconfiguration of inverse synths.
 
 **Source:** [PurgeableSynth.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/PurgeableSynth.sol)
 
-## Inherited Contracts
+<section-sep />
 
-* [Synth](Synth.md)
-* ^[ExternStateToken](ExternStateToken.md)
-* ^^[SelfDestructible](SelfDestructible.md)
-* ^^[Proxyable](Proxyable.md)
-* ^^[TokenFallbackCaller](TokenFallbackCaller.md)
-* ^^^[Owned](Owned.md)
-* ^^^[ReentrancyPreventer](ReentrancyPreventer.md)
+## Inheritance Graph
+
+<inheritance-graph>
+    ![PurgeableSynth inheritance graph](../img/graphs/PurgeableSynth.svg)
+</inheritance-graph>
+
+<section-sep />
 
 ## Related Contracts
 
-### Referenced
+* [`ExchangeRates`](ExchangeRates.md)
 
-* [ExchangeRates](ExchangeRates.md)
-* [SafeDecimalMath](SafeDecimalMath.md)
+<section-sep />
+
+## Libraries
+
+* [`SafeDecimalMath`](SafeDecimalMath.md) for `uint`
+
+<section-sep />
 
 ## Variables
 
-* `maxSupplyToPurgeInUSD: uint public`: Disallow purging the synth if the value of its supply greater than this. Initialised to \$10000.
-* `exchangeRates: ExchangeRates public`: The contract to obtain price information from. NOTE: Typo in the docstring: `threshpld`.
+---
+
+### `maxSupplyToPurgeInUSD`
+
+Purging this Synth is disallowed unless the value of its supply is less this. Initialised to $\$100\,000$.
+
+**Type:** `uint public`
+
+---
+
+### `exchangeRates`
+
+The contract address to obtain price information from.
+
+It is necessary to know the current price of this Synth to work out whether it is below the purging threshold.
+
+**Type:** `ExchangeRates public`
+
+---
+
+<section-sep />
 
 ## Functions
 
-* `purge(address[] addresses)`: Only callable by the owner. Allows purging only if the total token supply is worth less than `maxSupplyToPurge` US dollars at current prices, or if the token's price is frozen on the `ExchangeRates` contract (only possible if it is an inverse synth). If so, iterate through the provided address list, convert each balance to sUSD, and send this quantity to them.
-* `setExchangeRates(ExchangeRates _exchangeRates)`: Only callable by the contract owner.
+---
+
+### `contructor`
+
+Initialises the [`exchangeRates`](#exchangerates) address, and the inherited [`Synth`](Synth.md) instance.
+
+???+ example "Details"
+    **Signature**
+
+    `constructor(address _proxy, TokenState _tokenState, Synthetix _synthetix, IFeePool _feePool, string _tokenName, string _tokenSymbol, address _owner, bytes4 _currencyKey, ExchangeRates _exchangeRates) public`
+
+    **Superconstructors**
+
+    * [`Synth(_proxy, _tokenState, _synthetix, _feePool, _tokenName, _tokenSymbol, _owner, _currencyKey)`](Synth.md#constructor)
+
+---
+
+### `purge`
+
+Allows the owner to liquidate all holders of this token back to `sUSD` if the total value of this Synth is worth less than [`maxSupplyToPurgeInUSD`](#maxsupplytopurgeinusd) US dollars at current prices, or if the token is an inverse synth whose price is frozen.
+
+???+ example "Details"
+    **Signature**
+
+    `purge(address[] addresses) external`
+
+    **Modifiers**
+
+    * [`Proxyable.optionalProxy_onlyOwner`](Proxyable.md#optionalproxy_onlyowner)
+
+    **Preconditions**
+
+    * Either:
+        * This Synth's total is less than the value of [`maxSupplyToPurgeInUSD`](#maxsupplytopurgeinusd) [priced in terms of this currency](ExchangeRates.md#effectivevalue); OR
+        * This currency's price is [frozen](ExchangeRates.md#rateisfrozen).
+    * This currency's price [must not be stale](ExchangeRates.md#rateisstale).
+
+    **Emits**
+
+    * [`Purged(holder, amountHeld)`](#purged) for each `holder` in `addresses`. The `amountHeld` is the `holder`'s balance of this currency at the time of liquidation.
+
+---
+
+### `setExchangeRates`
+
+Allows the owner to set the address of the [exchange rates contract](ExchangeRates.md).
+
+???+ example "Details"
+    **Signature**
+
+    `setExchangeRates(ExchangeRates _exchangeRates)`
+
+    **Modifiers**
+
+    * [`Proxyable.optionalProxy_onlyOwner`](Proxyable.md#optionalproxy_onlyowner)
+
+    **Preconditions**
+
+    * The caller must be the owner of this contract.
+
+---
+
+### `emitPurged`
+
+Emits a [`Purged`](#purged) event.
+
+Encodes the event signature and parameters, then forwards them to the proxy to be [emitted](Proxy.md#_emit).
+
+<section-sep />
 
 ## Events
 
-* `Purged(address indexed account, uint value)`
+---
+
+### `Purged`
+
+Records that a balance of this currency was liquidated back to `sUSD` for a particular account.
+
+**Signature:** `Purged(address indexed account, uint value)`
+
+---
+
+<section-sep />

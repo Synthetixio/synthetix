@@ -410,6 +410,10 @@ $$
     * [`rateNotStale(sourceCurrencyKey)`](#ratenotstale)
     * [`rateNotStale(destinationCurrencyKey)`](#ratenotstale))
 
+    **Preconditions**
+
+    * Neither the source nor destination currency prices may be stale.
+
 ---
 
 ### `rateForCurrency`
