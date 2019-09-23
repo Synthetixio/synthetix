@@ -16,7 +16,7 @@ Year |  New Supply | Total Supply | Increase
 
 The last year in this schedule is to allow any remaining tokens from the penultimate year to be minted. No minting is possible after the end of this schedule.
 
-Minting is performed in increments of a week whenever [`updateMintValues`](#updatemintvalues) is called from [`Synthetix.mint`](Synthetix.md#mint). If in a given year $T$ tokens can be minted, about $\frac{T}{52}$ tokens are made available each week in that year. These accrue so that no tokens are lost even if minting is not performed for several periods; the accrued total is minted at the next invocation. These computations are covered in more detail in the [`mintableSupply`](#mintablesupply) notes.
+Minting is performed in increments of a week whenever [`updateMintValues`](#updatemintvalues) is called from [`Synthetix.mint`](Synthetix.md#mint). If in a given year $T$ tokens can be minted, about $\frac{T}{52}$ tokens are made available each week in that year. These accrue so that no tokens are lost even if minting is not performed for several periods; the accrued total is minted at the next invocation. These computations are covered in more detail in the [`mintableSupply`](#mintablesupply) description.
 
 **Source:** [SupplySchedule.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/SupplySchedule.sol)
 
@@ -145,7 +145,7 @@ An array holding the SNX minting schedule. This is initialised according to the 
 
 ### `minterReward`
 
-Used as the quantity of SNX to reward the caller of [`Synthetix.mint`](Synthetix.md#mint), which ensures that the inflationary supply continues to be minted over time. Initialised to $200$ SNX.
+Used as the quantity of SNX to reward the caller of [`Synthetix.mint`](Synthetix.md#mint), which ensures that the inflationary supply continues to be minted over time. Initialised to 200 SNX.
 
 **Type:** `uint public`
 
@@ -229,7 +229,7 @@ $$
 
     **Unminted Leftovers**
     
-    Note that $\Big\lfloor\frac{\text{year}_\text{end} - \text{year}_\text{start}}{\text{1 week}}\Big\rfloor$ is $52$, and there is a remainder of one day. The the first mint event in each year will include an extra day's worth of leftover tokens from the previous year. See [`_remainingSupplyFromPreviousYear`](#_remainingsupplyfrompreviousyear).
+    Note that $\Big\lfloor\frac{\text{year}_\text{end} - \text{year}_\text{start}}{\text{1 week}}\Big\rfloor$ is $52$, and there is a remainder of one day. Consequently the first mint event in each year will include an extra day's worth of leftover tokens from the previous year. See [`_remainingSupplyFromPreviousYear`](#_remainingsupplyfrompreviousyear).
 
     Also note that if no tokens are minted for a year, any leftovers from the previous year cannot be recovered.
 
@@ -289,7 +289,7 @@ Computes the quantity of unminted tokens from the previous year, which assists i
 This returns $0$ if some tokens have already been minted this year, or if it is currently the first year. Otherwise, it is simply `lastYear.totalSupply - lastYear.totalSupplyMinted`.
 
 ???+ note "A Minor Inefficiency"
-    In the function the result is actually computed as `max(0, lastYear.totalSupply - lastYear.totalSupplyMinted)`, which is redundant. The inputs are `uint`s, so even if the minted supply could exceed the allocated supply, the result would overflow and the safe subtraction would revert the transaction.
+    In the function the result is actually computed as `max(0, lastYear.totalSupply - lastYear.totalSupplyMinted)`, which is redundant since the arguments are unsigned. Even if the minted supply could exceed the allocated supply, the result would overflow and the safe subtraction would revert the transaction.
 
 ???+ example "Details"
     **Signature**
@@ -302,10 +302,10 @@ This returns $0$ if some tokens have already been minted this year, or if it is 
 
 This is called within [`Synthetix.mint`](Synthetix.md#mint) to declare that the outstanding inflationary supply of tokens has been minted before they are actually distributed.
 
-When called, this function adds [`mintableSupply()`](#mintablesupply) to the current [`schedule.totalSupplyMinted`](#schedule) entry, and updates the [`lastMintEvent`](#lastmintevent) time.
+When called, this function adds a quantity of [`mintableSupply()`](#mintablesupply) tokens to the current [`schedule.totalSupplyMinted`](#schedule) entry, and updates the [`lastMintEvent`](#lastmintevent) timestamp.
 It is also responsible for updating this information if there were any unminted tokens left over from the previous year, which in effect sets `lastYear.totalSupplyMinted = lastYear.totalSupply`.
 
-Although this function has no check that any tokens actually are mintable, the Synthetix contract requires this, so double calls should not occur. Similarly, the function does not itself enforce that the actual token supply has been increased by Synthetix in a manner consistent with the defined schedule and must simply trust that this contract is observed.
+Although this function has no check that any tokens actually are mintable when it is called, the Synthetix contract requires it, so double calls should not occur. Similarly, the function does not itself enforce that the actual token supply has been increased by Synthetix in a manner consistent with the defined schedule and must simply trust that this contract is observed.
 
 The function always returns `true` if the transaction was not reverted.
 
