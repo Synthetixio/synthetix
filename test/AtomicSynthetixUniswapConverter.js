@@ -1,13 +1,8 @@
 const BN = require('bn.js');
 const { getWeb3 } = require('../utils/web3Helper');
 const ExchangeRates = artifacts.require('ExchangeRates');
-const Escrow = artifacts.require('SynthetixEscrow');
-const RewardEscrow = artifacts.require('RewardEscrow');
-const RewardsDistribution = artifacts.require('RewardsDistribution');
 const FeePool = artifacts.require('FeePool');
-const SupplySchedule = artifacts.require('SupplySchedule');
 const Synthetix = artifacts.require('Synthetix');
-const SynthetixState = artifacts.require('SynthetixState');
 const Synth = artifacts.require('Synth');
 const AtomicSynthetixUniswapConverter = artifacts.require('AtomicSynthetixUniswapConverter');
 const MockUniswapExchange = artifacts.require('MockUniswapExchange');
@@ -17,16 +12,9 @@ const { currentTime, toUnit, ZERO_ADDRESS, getEthBalance } = require('../utils/t
 const bigDeadline = web3.utils.toBN('999999999999999999999999999999999');
 
 contract('AtomicSynthetixUniswapConverter', async accounts => {
-	const [sUSD, sAUD, sEUR, SNX, XDR, sBTC, iBTC, sETH] = [
-		'sUSD',
-		'sAUD',
-		'sEUR',
-		'SNX',
-		'XDR',
-		'sBTC',
-		'iBTC',
-		'sETH',
-	].map(web3.utils.asciiToHex);
+	const [sAUD, sEUR, SNX, sBTC, iBTC, sETH] = ['sAUD', 'sEUR', 'SNX', 'sBTC', 'iBTC', 'sETH'].map(
+		web3.utils.asciiToHex
+	);
 
 	const [deployerAccount, owner, account1, account2, account3, account4] = accounts;
 
@@ -35,26 +23,9 @@ contract('AtomicSynthetixUniswapConverter', async accounts => {
 		mockUniswapExchange,
 		exchangeRates,
 		feePool,
-		sUSDContract,
-		sAUDContract,
-		sEURContract,
 		sEthContract,
 		oracle,
 		timestamp;
-
-	// Updates rates with defaults so they're not stale.
-	const updateRatesWithDefaults = async () => {
-		const timestamp = await currentTime();
-
-		await exchangeRates.updateRates(
-			[sAUD, sEUR, SNX, sBTC, iBTC, sETH],
-			['0.5', '1.25', '0.1', '5000', '4000', '200'].map(toUnit),
-			timestamp,
-			{
-				from: oracle,
-			}
-		);
-	};
 
 	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
@@ -64,16 +35,8 @@ contract('AtomicSynthetixUniswapConverter', async accounts => {
 		mockUniswapExchange = await MockUniswapExchange.deployed();
 		exchangeRates = await ExchangeRates.deployed();
 		feePool = await FeePool.deployed();
-		//	supplySchedule = await SupplySchedule.deployed();
-		//	escrow = await Escrow.deployed();
-		//	rewardEscrow = await RewardEscrow.deployed();
-		//	rewardsDistribution = await RewardsDistribution.deployed();
 
 		synthetix = await Synthetix.deployed();
-		//	synthetixState = await SynthetixState.at(await synthetix.synthetixState());
-		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
-		sAUDContract = await Synth.at(await synthetix.synths(sAUD));
-		sEURContract = await Synth.at(await synthetix.synths(sEUR));
 		sEthContract = await Synth.at(await synthetix.synths(sETH));
 
 		// Send a price update to guarantee we're not stale.
@@ -192,7 +155,7 @@ contract('AtomicSynthetixUniswapConverter', async accounts => {
 				value: toUnit('1'),
 			}
 		);
-		await assert.bnEqual(await sEthContract.balanceOf(account2), toUnit('1'));
+		assert.bnEqual(await sEthContract.balanceOf(account2), toUnit('1'));
 	});
 
 	it('ethToSethInput to get two much sEth should fail', async () => {
@@ -207,7 +170,7 @@ contract('AtomicSynthetixUniswapConverter', async accounts => {
 				}
 			)
 		);
-		await assert.bnEqual(await sEthContract.balanceOf(account1), toUnit('0'));
+		assert.bnEqual(await sEthContract.balanceOf(account1), toUnit('0'));
 	});
 
 	it('ethToSethInput to exceed deadline should fail', async () => {
@@ -223,7 +186,7 @@ contract('AtomicSynthetixUniswapConverter', async accounts => {
 				}
 			)
 		);
-		await assert.bnEqual(await sEthContract.balanceOf(account1), toUnit('0'));
+		assert.bnEqual(await sEthContract.balanceOf(account1), toUnit('0'));
 	});
 
 	it('sEthToEthInput  to self should work', async () => {
@@ -233,7 +196,7 @@ contract('AtomicSynthetixUniswapConverter', async accounts => {
 		// Issue
 		const amountIssued = toUnit('1');
 		await synthetix.issueSynths(sETH, amountIssued, { from: account1 });
-		await assert.bnEqual(await sEthContract.balanceOf(account1), toUnit('1'));
+		assert.bnEqual(await sEthContract.balanceOf(account1), toUnit('1'));
 		await sEthContract.approve(atomicSynthetixUniswapConverter.address, toUnit('1'), {
 			from: account1,
 		});
@@ -247,7 +210,7 @@ contract('AtomicSynthetixUniswapConverter', async accounts => {
 			}
 		);
 
-		await assert.bnEqual(await sEthContract.balanceOf(account1), toUnit('0'));
+		assert.bnEqual(await sEthContract.balanceOf(account1), toUnit('0'));
 	});
 
 	it('sEthToEthInput  to other should work', async () => {
@@ -257,7 +220,7 @@ contract('AtomicSynthetixUniswapConverter', async accounts => {
 		// Issue
 		const amountIssued = toUnit('1');
 		await synthetix.issueSynths(sETH, amountIssued, { from: account1 });
-		await assert.bnEqual(await sEthContract.balanceOf(account1), toUnit('1'));
+		assert.bnEqual(await sEthContract.balanceOf(account1), toUnit('1'));
 		const account2Balance = await getEthBalance(account2);
 
 		await sEthContract.approve(atomicSynthetixUniswapConverter.address, toUnit('1'), {
@@ -273,9 +236,9 @@ contract('AtomicSynthetixUniswapConverter', async accounts => {
 			}
 		);
 
-		await assert.bnEqual(await sEthContract.balanceOf(account1), toUnit('0'));
+		assert.bnEqual(await sEthContract.balanceOf(account1), toUnit('0'));
 		const newBalance = new BN(await getEthBalance(account2));
-		await assert.bnEqual(newBalance, toUnit('1').add(new BN(account2Balance)));
+		assert.bnEqual(newBalance, toUnit('1').add(new BN(account2Balance)));
 	});
 
 	it('sEthToEthInput to get too much ETH should fail', async () => {
@@ -285,7 +248,7 @@ contract('AtomicSynthetixUniswapConverter', async accounts => {
 		// Issue
 		const amountIssued = toUnit('1');
 		await synthetix.issueSynths(sETH, amountIssued, { from: account1 });
-		await assert.bnEqual(await sEthContract.balanceOf(account1), toUnit('1'));
+		assert.bnEqual(await sEthContract.balanceOf(account1), toUnit('1'));
 		await sEthContract.approve(atomicSynthetixUniswapConverter.address, toUnit('1'), {
 			from: account1,
 		});
@@ -313,7 +276,7 @@ contract('AtomicSynthetixUniswapConverter', async accounts => {
 				value: toUnit('1'),
 			}
 		);
-		await assert.bnEqual(await sEthContract.balanceOf(account3), toUnit('1'));
+		assert.bnEqual(await sEthContract.balanceOf(account3), toUnit('1'));
 	});
 
 	it('ethToSethOutput less ETH should fail', async () => {
