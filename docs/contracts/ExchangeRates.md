@@ -247,7 +247,7 @@ $\bar{p}$ is frozen whenever $\bar{p} \in \{l,u\}$; that is, when $2e - l \le p$
 Updates the `XDR` price, which is set to the sum of the current prices of the currencies in  [`xdrParticipants`](#xdrparticipants) basket (`sUSD`, `sAUD`, `sCHF`, `sEUR`, `sGBP`).
 
 !!! caution
-    The `XDR` price is still recomputed even if the underlying prices are stale, or if the oracle is not updating any of the `XDR` participants. Due to this, `XDR`'s update timestamp does not necessarily reflect the timestamps of the underlying currencies. Unless every other price is stale, the price of the `XDR` cannot be stale.
+    The `XDR` price is still recomputed even if the underlying prices are stale, or if the oracle is not updating any of the `XDR` participants. Due to this, `XDR`'s update timestamp does not necessarily reflect the timestamps of the underlying currencies. Unless every other price is stale, the price of the `XDR` cannot be stale, even if its constituent prices are.
 
 ???+ example "Details"
     **Signature**
@@ -399,6 +399,8 @@ The effective value is computed as a simple ratio of the prices of the currencie
 $$
     Q_B = Q_A \frac{\pi_A}{\pi_B}
 $$
+
+This computation is simple because all fractional quantities in the Synthetix system except for the [debt ledger](SynthetixState.md#debtledger) are [18 decimal fixed point numbers](SafeDecimalMath.md).
 
 ???+ example "Details"
     **Signature**
