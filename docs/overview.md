@@ -1,14 +1,8 @@
 # System Overview
 
-## Purpose
+!!! todo "Work in Progress"
 
-## Economics
-
-## Technologies
-
-## Smart Contract Architecture
-
-## From old repo
+## Old Overview
 
 Traditionally gold was used as a reserve store of value by various governments around the world to prove that there was value to back their currency. The Synthetix system replicates this setup, but completely on-chain, and with multiple flavours of stablecoin (Synths), and a store of value backing them up (SNX - Synthetix Network Token).
 
@@ -23,3 +17,12 @@ Now that we have an exchange() mechanism that allows users to switch between Syn
 Also it's worth noting that there's a decimal library being used for "floating point" math with 10^18 as the base. Also many of the contracts are provided behind a proxy contract for easy upgradability.
 
 We have also implemented what I'm going to call almost-ERC223 since the last audit. This allows you as a contract to implement a tokenFallback function which gets called by our contracts whenever transfers or exchanges happen. Unlike ERC223, it is not a requirement that contracts implement this function, as we're already listed on a number of DEXes that do not implement this functionality, and we need to preserve full backwards compatibility for them. Users can also pass a bytes[] memo when they transfer, but we implement the standard ERC20 transfer event, again for backwards compatibility with tooling such as Etherscan.
+
+??? Sections
+    ## Purpose
+
+    ## Economics
+
+    ## Technologies
+
+    ## Smart Contract Architecture

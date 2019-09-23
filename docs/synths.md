@@ -1,18 +1,13 @@
 # Synths
 
-!!! TODO
-    Fill me in.
+!!! todo "Work in Progress"
+    For now, see the [`Synth` contract documentation](../contracts/Synth).
 
-## Inverse Syths
+??? todo "Sections"
+    ## Inverse Syths
 
-!!! TODO
-    Fill me in.
+    ## Deployed Flavours
 
-## Deployed Flavours
+    [Token Listing](https://www.synthetix.io/tokens)
 
-[Token Listing](https://www.synthetix.io/tokens)
-
-## XDRs
-
-!!! TODO
-    Fill me in.
+    ## XDRs
