@@ -30,7 +30,7 @@ This does not turn off any functionality in the exchange rate contract, but is u
 
 * [`PurgeableSynth`](PurgeableSynth.md): exchange rates are used to determine if the total token value is below the purge threshold.
 * [`Synthetix`](Synthetix.md): the value of tokens is used to in order to facilitate exchange between them, to compute the `XDR` value of minted tokens for the [debt ledger](SynthetixState.md#debtledger), and to ensure exchanges cannot occur while price updates and being made or if a particular exchange rate is stale.
-* [`Arbrewarder`](Arbrewarder.md): The ArbRewarder must know the current SNX/ETH price so that arbitrage is accurate.
+* [`Arbrewarder`](ArbRewarder.md): The ArbRewarder must know the current SNX/ETH price so that arbitrage is accurate.
 
 <section-sep />
 

@@ -71,7 +71,7 @@ The number of decimal places this token uses. Fixed at $18$.
 
 Initialises the [`feePool`](#feepool) and [`synthetix`](#synthetix) addresses, this Synth's [`currencyKey`](#currencyKey), and the inherited [`ExternStateToken`](ExternStateToken.md) instance.
 
-The precision in every Synth's fixed point representation is fixed at 18 so they are all conveniently [interconvertible](ExchangeRates.md#effectivevalue). The total supply of all new Synths is also initialised at 0 since they must be created by the [`Synthetix`](Synthetix.md) contract when [issuing](Synthetix.md#issuesynths) or [converting between](Synthetix.md#exchange) Synths, or by the [`FeePool`](FeePool.md) when users [claim fees](FeePool.mdclaimfees).
+The precision in every Synth's fixed point representation is fixed at 18 so they are all conveniently [interconvertible](ExchangeRates.md#effectivevalue). The total supply of all new Synths is also initialised at 0 since they must be created by the [`Synthetix`](Synthetix.md) contract when [issuing](Synthetix.md#issuesynths) or [converting between](Synthetix.md#exchange) Synths, or by the [`FeePool`](FeePool.md) when users [claim fees](FeePool.md#claimfees).
 
 ???+ example "Details"
     **Signature**
@@ -308,7 +308,7 @@ For example, just such a migration is performed by [this script](https://github.
 
 ### `triggerTokenFallbackIfNeeded`
 
-Used during [Synth exchanges](Synthetix.sol#_internalexchange) and [fee payments](FeePool.md#_payfees) to trigger the ERC223 fallback function of the recipient addresses on these operations as well as transfers. Other than restricting calls to only those contracts, this is just a wrapper around [`TokenFallbackCaller.callTokenFallbackIfNeeded`](TokenFallbackCaller.md#calltokenfallbackifneeded), invoked with a null `data` argument.
+Used during [Synth exchanges](Synthetix.md#_internalexchange) and [fee payments](FeePool.md#_payfees) to trigger the ERC223 fallback function of the recipient addresses on these operations as well as transfers. Other than restricting calls to only those contracts, this is just a wrapper around [`TokenFallbackCaller.callTokenFallbackIfNeeded`](TokenFallbackCaller.md#calltokenfallbackifneeded), invoked with a null `data` argument.
 
 ???+ example "Details"
     **Signature**

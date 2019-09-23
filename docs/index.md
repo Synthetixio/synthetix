@@ -2,6 +2,11 @@
 
 # System Documentation
 
+!!! caution "Work in Progress"
+    These notes are incomplete and rapidly changing. The main place to look at the moment is the [Smart Contract API](contracts), which should already be useful for development purposes.
+
+    Various overview documents in this main section have been omitted for now because they weren't up to standard.
+
 ## Introduction
 
 Synthetix is a decentralised [Ethereum](https://www.ethereum.org/)-based network of synthetic assets called [*Synths*](synths.md). Each Synth is an [ERC20 token](https://theethereum.wiki/w/index.php/ERC20_Token_Standard) whose price follows some other asset; for example each [sUSD](https://etherscan.io/token/0x57ab1e02fee23774580c119740129eac7081e9d3) is worth US$1. A wide variety of Synths exists within Synthetix, including fiat currencies, cryptocurrencies, commodities, and [inverse indexes](synths.md#inverse-syths).
