@@ -1,6 +1,44 @@
-# Smart Contract Overview
+# Overview
 
-## API
+## Deployed Contract Instances
+
+---
+
+In addition to its mainnet deployment, Synthetix has test environments running on several test networks.
+
+A complete listing is currently available [here](https://developer.synthetix.io/api/docs/deployed-contracts.html).
+
+### Mainnet
+
+This is the main Ethereum chain, where the canonical SNX token, Synths, and operational infrastructure are deployed.
+
+??? example "Mainnet Synthetix Contracts"
+    All the addresses need to be migrated to here.
+
+### Ropsten
+
+This needs a description of the purpose of the Ropsten deployment.
+
+??? example "Ropsten Synthetix Contracts"
+    All the addresses need to be migrated to here.
+
+### Rinkeby
+
+This needs a description of the purpose of the Rinkeby deployment.
+
+??? example "Rinkeby Synthetix Contracts"
+    All the addresses need to be migrated to here.
+
+### Kovan
+
+This needs a description of the purpose of the Kovan deployment.
+
+??? example "Kovan Synthetix Contracts"
+    All the addresses need to be migrated to here.
+
+<section-sep />
+
+## Smart Contract API
 
 ---
 
@@ -58,44 +96,6 @@ Contract | Description
 [`Migrations`](Migrations.md) | Truffle migrations contract.
 [`SafeMath`](SafeMath.md) | OpenZeppelin guarded arithmentic library.
 [`SafeDecimalMath`](SafeDecimalMath.md) | A library for performing fixed point arithmetic at two different precision levels.
-
-<section-sep />
-
-## Deployed Instances
-
----
-
-In addition to its mainnet deployment, Synthetix has test environments running on several test networks.
-
-A complete listing is currently available [here](https://developer.synthetix.io/api/docs/deployed-contracts.html).
-
-### Mainnet
-
-This is the main Ethereum chain, where the canonical SNX token, Synths, and operational infrastructure are deployed.
-
-!!! todo
-    All the addresses need to be migrated to here.
-
-### Ropsten
-
-!!! todo
-    This needs a description of the purpose of the Ropsten deployment.
-
-    All the addresses need to be migrated to here.
-
-### Rinkeby
-
-!!! todo
-    This needs a description of the purpose of the Rinkeby deployment.
-
-    All the addresses need to be migrated to here.
-
-### Kovan
-
-!!! todo
-    This needs a description of the purpose of the Kovan deployment.
-
-    All the addresses need to be migrated to here.
 
 <section-sep />
 
