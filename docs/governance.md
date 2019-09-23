@@ -1,6 +1,6 @@
 # Governance
 
-Ownership of tokens within the Synthetix ecosystem is determined by a public network of Ethereum smart contracts. However the basic protocol design, incentive parameter settings, and system development are presently governed by the Synthetix foundation. The foundation is committed to further decentralising these processes. Therefore, steps in this direction are being taken by the development of community-driven governance and development methodologies.
+Ownership of tokens within the Synthetix ecosystem is determined by a public network of Ethereum smart contracts. However the basic protocol design, incentive parameter settings, and system development are presently governed by the Synthetix foundation. Although the foundation initially made this tradeoff between centralisation and speed of development, it is committed to further decentralising key decision-making processes in the system. Steps in this direction are being taken by the development of community-driven governance and development methodologies.
 
 ## Synthetix Improvement Proposals (SIPs)
 
@@ -27,5 +27,5 @@ Community governance calls are a venue for the Synthetix team to consult with th
 
 The code that runs Synthetix is mostly [MIT licenced](https://github.com/Synthetixio/synthetix/blob/master/LICENSE) and open source, and in principle anyone can contribute. To encourage this, the Synthetix foundation has offered bounties for development and bug reports by parties outside of the core engineering team. Development bounties are managed on [Gitcoin](https://gitcoin.co/profile/Synthetixio) and discussion takes place in corresponding [GitHub issues](https://github.com/Synthetixio/synthetix/issues). Bug bounties are described in [this blog post](https://blog.synthetix.io/synthetix-bug-bounties/).
 
-!!! note
+!!! bug
     The main Synthetix licence is dated 2018. This should be updated.

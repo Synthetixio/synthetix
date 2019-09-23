@@ -1,35 +1,48 @@
 # Overview
 
-## Deployed Contract Instances
+## Smart Contract API
+
+Here you will find descriptions of the smart contract interfaces of every smart contract in the Synthetix system. These documents go a bit further than just the code does, as they include additional descriptions of architecture, functionality, and the reasoning behind them.
+
+Where possible, the interactions between different system components has been emphasised. Also included where relevant, in order to place these contracts in the broader context of the ideas they implement, are discussions of the technical aspects of the Synthetix incentive mechanisms and links back to related governance processes.
+
+Developers wishing to understand Synthetix code and the tradeoffs within it will be well-advised to read these documents alongside the Solidity itself.
+
+<section-sep />
+
+## Deployments
 
 ---
 
+!!! danger "Work in Progress"
+    All the contract addresses need to be migrated from the current listing to this document.
+
 In addition to its mainnet deployment, Synthetix has test environments running on several test networks.
 
-A complete listing is currently available [here](https://developer.synthetix.io/api/docs/deployed-contracts.html).
+The current listing is available [here](https://developer.synthetix.io/api/docs/deployed-contracts.html).
 
-### Mainnet
+#### Mainnet
 
 This is the main Ethereum chain, where the canonical SNX token, Synths, and operational infrastructure are deployed.
 
 ??? example "Mainnet Synthetix Contracts"
     All the addresses need to be migrated to here.
 
-### Ropsten
+#### Ropsten
 
 This needs a description of the purpose of the Ropsten deployment.
 
 ??? example "Ropsten Synthetix Contracts"
     All the addresses need to be migrated to here.
 
-### Rinkeby
+#### Rinkeby
 
 This needs a description of the purpose of the Rinkeby deployment.
 
 ??? example "Rinkeby Synthetix Contracts"
     All the addresses need to be migrated to here.
 
-### Kovan
+#### Kovan
 
 This needs a description of the purpose of the Kovan deployment.
 
@@ -38,11 +51,11 @@ This needs a description of the purpose of the Kovan deployment.
 
 <section-sep />
 
-## Smart Contract API
+## Contract Listing
 
 ---
 
-The following contracts compose the core of the Synthetix system.
+The following contracts compose the core of the Synthetix system. These underlie the various [integrations and dapps](../#integrations-and-dapps) created by Synthetix and others.
 
 ### Tokens
 
@@ -81,7 +94,7 @@ Contract | Description
 [`Depot`](Depot.md) | A vendor contract that allows users to exchange their ETH for sUSD or SNX, or their sUSD for SNX. It also allows users to deposit SNX to be sold in exchange for sUSD.
 [ArbRewarder](ArbRewarder.md) | A contract which automates the process of arbitraging the ETH/sETH price on UniSwap through Synthetix conversion functions.
 
-### Utilities
+### Utility
 
 Contract | Description
 ---------|------------
