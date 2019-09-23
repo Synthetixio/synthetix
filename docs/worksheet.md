@@ -1,10 +1,24 @@
-# Worksheet
+# Work Sheet
 
-## Areas of Interest
+??? "Formatting"
+    * [mkdoc PyMdown extensions](https://facelessuser.github.io/pymdown-extensions/)
+        * [Metadata](https://squidfunk.github.io/mkdocs-material/extensions/metadata/); [Further Notes](https://www.mkdocs.org/user-guide/writing-your-docs/#meta-data)
+    * Ask them if they need [google analytics integration](https://squidfunk.github.io/mkdocs-material/getting-started/#google-analytics).
+    * Activate inlinehilite
+    * Activate [minifier plugin](https://squidfunk.github.io/mkdocs-material/getting-started/#plugins) (don't forget to explicitly activate the search plugin when doing so)
+    * All code style comments within the documentation broken out into admonitions instead of inline notes.
+    * Reorder the sidebar headings.
+    * Finish [Project Configuration](https://www.mkdocs.org/user-guide/configuration/). In particular the [nav layout](https://www.mkdocs.org/user-guide/configuration/#documentation-layout).
+    * Look at [this `mkdocs.yml`](https://github.com/squidfunk/mkdocs-material/blob/master/mkdocs.yml) to see if we can do anything similar.
+    * Merge into core SNX repository and enable edit buttons. Add a note to the Intro page that the docs can be edited by anyone with a PR.
+    * Better colour for details sections
+    * Syntax highlighting for Solidity. https://squidfunk.github.io/mkdocs-material/extensions/codehilite/ https://github.com/maurelian/best-practices-docs/blob/master/mkdocs.yml
+    * More detailed function signature breakdown including argument descriptions etc.
+    * Expand all/Collapse all button for details panels.
+    * See if ambiguous anchor links such as those in DelegateApprovals and SelfDestructible can be disambiguated.
+    * Inheritance graph, contract interaction diagram, and libraries in tabbed details panel. https://github.com/squidfunk/mkdocs-material/issues/955
 
 ??? "System Processes"
-    * [Contracts](contracts/index.md)
-    * [Governance](governance.md)
     * Tokens/Synths
     * Minting
     * Conversion
@@ -20,39 +34,14 @@
     * Smart contract architecture
     * [Contract publication](https://github.com/Synthetixio/synthetix/tree/master/publish)
     * [Contract verification](https://github.com/Synthetixio/synthetix/blob/master/verifyContracts.md) (This probably needs to be deleted)
-    * Contract interaction diagrams (with tabs - Inheritance, relations, libraries)
 
-??? "Assets and Analysis"
-    * Classify assets
-    * Risk profiles
-    * Correlation study
-
-??? "Documents"
+??? "Existing Documents"
     * [Litepaper](https://www.synthetix.io/uploads/synthetix_litepaper.pdf)
     * [Dev Docs](https://developer.synthetix.io/api/docs/home.html)
     * [SynthetixJs](https://synthetixjs.synthetix.io/)
     * [API](https://developer.synthetix.io/api/docs/synthetix)
     * Make sure the block analysis points are addressed: see the [original article](https://www.theblockcrypto.com/2019/06/12/synthetix-synthetic-asset-issuance-protocol/), and [its response](https://blog.synthetix.io/response-to-the-block-analysis/).
     * Examine the [token tuesdays post on Synthetix](https://tokentuesdays.substack.com/p/synthetix).
-
-??? "Formatting"
-    * [mkdoc PyMdown extensions](https://facelessuser.github.io/pymdown-extensions/)
-        * [Metadata](https://squidfunk.github.io/mkdocs-material/extensions/metadata/); [Further Notes](https://www.mkdocs.org/user-guide/writing-your-docs/#meta-data)
-    * Ask them if they need [google analytics integration](https://squidfunk.github.io/mkdocs-material/getting-started/#google-analytics).
-    * Activate inlinehilite
-    * Activate [minifier plugin](https://squidfunk.github.io/mkdocs-material/getting-started/#plugins) (don't forget to explicitly activate the search plugin when doing so)
-    * See if there's a way to reorder the sidebar headings.
-    * All code style comments within the documentation broken out into admonitions instead of inline notes.
-    * Finish [Project Configuration](https://www.mkdocs.org/user-guide/configuration/). In particular the [nav layout](https://www.mkdocs.org/user-guide/configuration/#documentation-layout).
-    * Look at [this `mkdocs.yml`](https://github.com/squidfunk/mkdocs-material/blob/master/mkdocs.yml) to see if we can do anything similar.
-    * Add a "key links" section to all pages which need it.
-    * Inheritance graph and related contracts in tabbed details panel. https://github.com/squidfunk/mkdocs-material/issues/955
-    * Merge into core SNX repository and enable edit buttons. Add a note to the Intro page that the docs can be edited by anyone with a PR.
-    * Better colour for details sections
-    * Syntax highlighting for Solidity. https://squidfunk.github.io/mkdocs-material/extensions/codehilite/ https://github.com/maurelian/best-practices-docs/blob/master/mkdocs.yml
-    * More detailed function signature breakdown including argument descriptions etc.
-    * Expand all/Collapse all button for details panels.
-    * See if ambiguous anchor links such as those in DelegateApprovals and SelfDestructible can be disambiguated.
 
 ??? "Potential Vulnerabilities To Investigate"
     * Oracle front-running.
@@ -67,7 +56,10 @@
     * What happens if I issue very small quantities of synths? Can I lose the debt due to rounding? Thus, can I increase the supply without the system locking any of my snx?
     * Can the slashed quantity from the fee pool when rewards are paid out if a person exhausts the pool ever be non-trivial? Comments imply it will just be due to rounding errors, but is this true?
 
-## Areas as per Email Discussions
+??? "Assets and Analysis"
+    * Classify assets
+    * Risk profiles
+    * Correlation study
 
 ??? "System Characterisation"
     1. Detailed and thorough documentation of existing functionality.
