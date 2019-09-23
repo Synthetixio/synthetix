@@ -717,6 +717,8 @@ const deploy = async ({
 			originalTotalSupply = await oldSynth.methods.totalSupply().call();
 		}
 
+		console.log(yellow(`Original TotalSupply on Synth${currencyKey} is ${originalTotalSupply}`));
+
 		const synth = await deployContract({
 			name: `Synth${currencyKey}`,
 			source: subclass || 'Synth',
@@ -730,20 +732,10 @@ const deploy = async ({
 				currencyKey,
 				account,
 				currencyKeyInBytes,
+				originalTotalSupply,
 			].concat(additionalConstructorArgsMap[subclass] || []),
 			force: addNewSynths,
 		});
-
-		if (synth && originalTotalSupply > 0) {
-			await runStep({
-				contract: `Synth${currencyKey}`,
-				target: synth,
-				read: 'totalSupply',
-				expected: input => input === originalTotalSupply,
-				write: 'setTotalSupply',
-				writeArg: originalTotalSupply,
-			});
-		}
 
 		const synthAddress = synth ? synth.options.address : '';
 
