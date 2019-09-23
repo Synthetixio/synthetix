@@ -1,7 +1,7 @@
 # ArbRewarder
 
-!!! todo
-    Finish this
+!!! todo "Work in Progress"
+    Haven't had a proper chance to examine this contract. More work required. 
 
 ## Description
 

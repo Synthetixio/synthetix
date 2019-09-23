@@ -1,13 +1,16 @@
 # Synthetix
 
+!!! info "Work In Progress"
+    This still needs to be cleaned up and the rest of my notes migrated in.
+
 **Old:** Synthetix.sol: Has a list of Synths and understands issuance data for users to be able to mint and burn Synths.
 
 [SIP-6](https://github.com/Synthetixio/SIPs/blob/master/SIPS/sip-6.md): Front-running protection: the oracle monitors activity for front-running. If it detects this, then the exchange fee rate is jacked up to 99% so that the front-runner's transaction is sucked up. Additionally, a user will be able to specify a fee rate above which their transaction will fail so that they don't get caught by the front running protection. Note: doesn't this protect the front-runners as well? UPDATED: the setProtectionCircuit function allows the oracle to target only particular transactions to be rejected.
 
 [SIP-7](https://github.com/Synthetixio/SIPs/blob/master/SIPS/sip-7.md): More front-running protection: exchange pausing; preventing changes while oracle updates are in progress; remove the destination param in an exchange so that they only go to the message sender.
 
-* Licence headers are illegal.
-* TODO: Check whether the file header is still accurate.
+* Licence headers seem incorrect.
+* Check whether the file header is still accurate.
 
 **Source:** [Synthetix.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/Synthetix.sol)
 
@@ -113,11 +116,11 @@ $$
 
 So a given debt ledger entry is the product of the debt deltas, and the division of one debt ledger entry by another is the cumulative debt delta movement between those two debt ledger entries.
 
-* `issueSynths(bytes4 currencyKey, uint amount)`: TODO
-* `issueMaxSynths(bytes4 currencyKey)`: TODO
-* `burnSynths(bytes4 currencyKey, uint amount)`: TODO
-* `_appendAccountIssuanceRecord()`: TODO
-* `_removeFromDebtRegister(uint amount)`: TODO
+* `issueSynths(bytes4 currencyKey, uint amount)`: MIGRATE
+* `issueMaxSynths(bytes4 currencyKey)`: MIGRATE
+* `burnSynths(bytes4 currencyKey, uint amount)`: MIGRATE
+* `_appendAccountIssuanceRecord()`: MIGRATE
+* `_removeFromDebtRegister(uint amount)`: MIGRATE
 * `maxIssuableSynths(address issuer, bytes4 currencyKey)`: The maximum number of a given synth that is issuable against the issuer's collateral. Ignores whatever they have already issued. This is simply `collateral(issuer) * issuanceRatio`, priced in the given currency.
 * `collateralisationRatio(address issuer)`: Just `debtBalanceOf(issuer) / collateral(issuer)`, valued in terms of SNX. That is, it is the ratio of the value of Synths they have issued to the value of all the SNX they own. Under ideal conditions this should equal the global issuance ratio, and issuers are incentivised to keep their collateralisation ratios close to the issuance ratio by the fees they are able to claim.
 * `debtBalanceOf(address issuer, bytes4 currencyKey)`: Reports the quantity of a given Synth/Currency (actually anything that the oracle has a price for) required to free up all of this user's SNX. This is computed as their fraction of total system ownership at the time they issued, multiplied by the ratio between the most recent debt ledger entry and the entry at the time they issued, multiplied by the current total system value. i.e. it works adjusts their fraction depending on how the price and supply have moved since they issued. They owe a larger fraction of the total if the number of synths goes down. TODO: What about price? Investigate this in the context of a single currency.
@@ -134,7 +137,7 @@ $$
 * `remainingIssuableSynths(address issuer, bytes4 currencyKey)`: The remaining synths this account can issue (of a given flavour). This is `max(0, maxIssuableSynths(issuer, currencyKey) - debtBalanceOf(issuer, currencyKey))`. not that the debt may exceed the max issuable synths, but the result is clamped.
 * `collateral(address account)`: Returns the total SNX owned by the given account, locked and unlocked, escrowed and unescrowed. That is, it is computed as `balance(account) + escrowedBalance(account) + rewardBalance(account)`. That is, an account may issue Synths against both its active balance and its unclaimed escrowed funds.
 * `transferableSynthetix(address account)`: The quantity of SNX this account can transfer. Returns `max(0, balance(account) - debtBalanceOf(account) / issuanceRatio)`. NOTE: The dev note is misleading. It suggests that escrowed SNX are locked first when issuing, but that this is not relevant in the current function, because escrowed SNX are not transferable. But "locked" is just a property of whether SNX can be transferred, and is *only* relevant within the `transferableSynthetix` function. Compare with the previous logic in the [1.0.1 Havven contract](https://github.com/Synthetixio/synthetix/blob/b30191ef7bae6821a1308acaa9d0728f69204da5/contracts/Havven.sol#L717). The functionality has been simplified; the docstring should indicate now that unescrowed SNX are locked first. OPTIMISATION: This function checks that the SNX price is not stale, but this is unnecessary, since it is checked inside the call to `totalIssuedSynths` within `debtBalanceOf`.
-* `mint()`: TODO
+* `mint()`: MIGRATE
 
 ## Events
 

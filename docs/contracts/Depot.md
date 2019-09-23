@@ -1,8 +1,7 @@
 # Depot
 
-!!! todo
-
-    Finish this
+!!! todo "Work in Progress"
+    This needs to be properly cleaned up.
 
 **Old:** Depot.sol: Allows users to exchange ETH for sUSD and SNX (has not yet been updated for multicurrency).
 

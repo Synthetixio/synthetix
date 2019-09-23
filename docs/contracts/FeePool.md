@@ -1,5 +1,8 @@
 # FeePool
 
+!!! info "Work In Progress"
+    This still needs to be cleaned up and the rest of my notes migrated in.
+
 ## Description
 
 **Old:** FeePool.sol: Understands fee information for Synthetix. As users transact, their fees are kept in 0xfeefeefee... and stored in XDRs. Allows users to claim fees they're entitled to.
@@ -99,7 +102,7 @@ struct FeePeriod {
 * `claimFees(bytes4 currencyKey)`: The message sender claims their fees in the currency specified.
 * `claimFeesOnBehalf(address claimingForAddress, bytes4 currencyKey)`: Claim fees for a specified address. They are awarded to that address, and not to the message sender. Uses the [DelegateApprovals](DelegateApprovals.md) contract to store the fee claim approval info.
 
-* `_claimFees(address claimingAddress, bytes4 currencyKey)`: Claim fees at the specified address in the specified currency. C-ratio must be within the bounds specified by the `feesClaimable` function -- i.e. less than the issuance ratio. TODO: FINISH ME
+* `_claimFees(address claimingAddress, bytes4 currencyKey)`: Claim fees at the specified address in the specified currency. C-ratio must be within the bounds specified by the `feesClaimable` function -- i.e. less than the issuance ratio. MIGRATE
 
 * `importFeePeriod(uint feePeriodIndex, uint feePeriodId, uint startingDebtIndex, uint startTime, uint feesToDistribute, uint feesClaimed, uint rewardsToDistribute, uint rewardsClaimed)`: Sets a particular fee period entry, but only during the three week setup period.
 * `approveClaimOnBehalf(address account)`: Calls out to the [DelegateApprovals](DelegateApprovals.md) contract to set `account` as an approved claimant. Does not function if its argument is 0 (not much point to this), or if the `DelegateApprovals` contract address is 0 (not much point to this either).
@@ -142,16 +145,16 @@ For efficiency, the actual code returns immediately once `remaining` is 0, for e
 * `totalFeesAvailable(bytes4 currencyKey)`: Computes the total fees available in the system to be withdrawn, valued in terms of `currencyKey`. Simply sums the unclaimed fees over the recorded fee periods, except the first period, because these fees cannot be claimed yet.
 * `totalRewardsAvailable()`: Similar logic as `totalFeesAvailable`.
 
-* `feesAvailable(address account, bytes4 currencyKey)`: return the total of fees this user has accrued in previous fee periods. TODO: FINISH ME
+* `feesAvailable(address account, bytes4 currencyKey)`: return the total of fees this user has accrued in previous fee periods. MIGRATE 
 
 * `feesClaimable(address account)`: true iff the collateralisation ratio of this account is less than the target ratio plus 10% of the ratio or so. This function code could be made more concise. The logic allows fees to be withdrawable if a user's ratio is less than Synthetix.issuanceRatio * (1 + TARGET_THRESHOLD). The same result could in theory be met by just adjusting the issuance ratio, except that this system also allows the collateralisation ratio to be set to any value. NOTE: Name sounds like it could be returning a quantity of fees claimable, which is actually `feesAvailable`. It's actually a predicate, so the naming of these functions is a bit ambiguous.
 
-* `feesByPeriod(address account)`: TODO: FINISH ME
+* `feesByPeriod(address account)`: MIGRATE
   Note: XDRs existing seems to be necessary for a user to have nonzero ownership percentages, so the second
   guard in this function looks redundant, or should be checked earlier. It's likely to be an exceedingly rare case anyway.
-* `_feesAndRewardsFromPeriod(uint period, uint ownershipPercentage, uint debtEntryIndex)`: TODO: FINISH ME
+* `_feesAndRewardsFromPeriod(uint period, uint ownershipPercentage, uint debtEntryIndex)`: MIGRATE
 * `_effectiveDebtRatioForPeriod(uint closingDebtIndex, uint ownershipPercentage, uint debtEntryIndex)`: Logic seems screwy here?... TODO: CHECK ME. NOTE: Off-by-one error in the guard. The condition should be `closingDebtIndex >= synthetixState.debtLedgerLength()`.
-* `effectiveDebtRatioForPeriod(address account, uint period)`: TODO NOTE: missing docstring.
+* `effectiveDebtRatioForPeriod(address account, uint period)`: MIGRATE NOTE: missing docstring.
 
 * `getLastFeeWithdrawal(address _claimingAddress)`: Returns from [FeePoolEternalStorage](FeePoolEternalStorage.md) the id of the fee period during which the given address last withdrew fees.
 * `getPenaltyThresholdRatio()`: Computes the target issuance ratio plus a bit of slop. Is equivalent to `synthetixState.issuanceRatio * (1 + TARGET_THRESHOLD)`. NOTE: the address of synthetixState is computed with the indirection `synthetix.synthetixState()`, but the fee pool contract already has a copy of the address in its own `synthetixState` variable.
