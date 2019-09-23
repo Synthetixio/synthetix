@@ -4,7 +4,7 @@ This contract stores the latest Synth exchange rates. These rates are set by an 
 Prices which have not been updated recently enough are considered stale; Synthetix functionality using stale prices does not operate.
 
 All rates are denominated in terms of `sUSD`, so the price of `sUSD` is always $1.0$, and is never stale.
-ExchangeRates is also responsible for the price of the `XDR`, which is recomputed after each price update. The `XDR` price is the sum of the prices of the currencies in a basket (`sUSD`, `sAUD`, `sCHF`, `sEUR`, `sGBP`), as opposed to [special drawing rights](https://en.wikipedia.org/wiki/Special_drawing_rights) which use a weighted average.
+ExchangeRates is also responsible for the price of the `XDR`, which is recomputed after each price update. The `XDR` price is the sum of the prices of the currencies in a basket (`sUSD`, `sAUD`, `sCHF`, `sEUR`, `sGBP`), as opposed to the [IMF's special drawing rights](https://en.wikipedia.org/wiki/Special_drawing_rights) which use a weighted average.
 
 The ExchangeRates contract interacts with the oracle's frontrunning protection, which is partially described in [SIP-6](https://sips.synthetix.io/sips/sip-6) and [SIP-7](https://sips.synthetix.io/sips/sip-7).
 In particular, before each price update, the oracle calls [`setPriceUpdateLock`](#setpriceupdatelock).
@@ -429,7 +429,7 @@ Returns the last recorded rate for the given currency. This is just an alias to 
 
 ### `ratesForCurrencies`
 
-Maps `rateForCurrency` over an array of keys.
+Maps [`rateForCurrency`](#rateforcurrency) over an array of keys.
 
 ???+ example "Details"
     **Signature**
@@ -438,7 +438,9 @@ Maps `rateForCurrency` over an array of keys.
 
 ---
 
-Returns the last recorded rate update time for the given currency. This is just an alias to the public mapping `lastRateUpdateTime`, so it could probably be eliminated.
+### `lastRateUpdateTimeForCurrency`
+
+Returns the last recorded rate update time for the given currency. This is just an alias to the public mapping [`lastRateUpdateTime`](#lastrateupdatetime), so it could probably be eliminated.
 
 ???+ example "Details"
     **Signature**
@@ -449,7 +451,7 @@ Returns the last recorded rate update time for the given currency. This is just 
 
 ### `lastRateUpdateTimeForCurrencies`
 
-Maps `lastRateUpdateTimeForCurrency` over an array of keys.
+Maps [`lastRateUpdateTimeForCurrency`](#lastrateupdatetimeforcurrency) over an array of keys.
 
 ???+ example "Details"
     **Signature**
@@ -473,7 +475,7 @@ The rate for a given currency is stale if its last update occurred more than [`r
 
 ### `rateIsFrozen`
 
-Returns true if the inverse price for the given currency is frozen. This is simply an alias to `inversePricing[currencyKey].frozen`. Currencies without an inverse price will naturally return false.
+Returns true if the inverse price for the given currency is frozen. This is simply an alias to [`inversePricing[currencyKey].frozen`](#inversepricing). Currencies without an inverse price will naturally return false.
 
 ???+ example "Details"
     **Signature**
@@ -484,7 +486,7 @@ Returns true if the inverse price for the given currency is frozen. This is simp
 
 ### `anyRateIsStale`
 
-Loop over the given array of currencies and return true if any of them is stale. `sUSD`'s rate is never stale. Rates for nonexistent currencies are always stale.
+Loop over the given array of currencies and return true if any of them [is stale](#rateisstale). `sUSD`'s rate is never stale. Rates for nonexistent currencies are always stale.
 
 ???+ example "Details"
     **Signature**
@@ -553,7 +555,7 @@ Records that the price for a particular currency was deleted.
 
 ### `InversePriceConfigured`
 
-Records that a new inverse price index was set up.
+Records that an inverse price index was set up or deleted. As there is no distinct event for deletion, this is signaled by providing zero values to all arguments barring `currencyKey`.
 
 **Signature:** `InversePriceConfigured(bytes4 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit)`
 
