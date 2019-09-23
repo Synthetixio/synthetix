@@ -1,3 +1,4 @@
+const BN = require('bn.js');
 const { getWeb3 } = require('../utils/web3Helper');
 const ExchangeRates = artifacts.require('ExchangeRates');
 const Escrow = artifacts.require('SynthetixEscrow');
@@ -11,12 +12,7 @@ const Synth = artifacts.require('Synth');
 const AtomicSynthetixUniswapConverter = artifacts.require('AtomicSynthetixUniswapConverter');
 const MockUniswapExchange = artifacts.require('MockUniswapExchange');
 const web3 = getWeb3();
-const {
-	currentTime,
-	toUnit,
-	ZERO_ADDRESS,
-	getEthBalance,
-} = require('../utils/testUtils');
+const { currentTime, toUnit, ZERO_ADDRESS, getEthBalance } = require('../utils/testUtils');
 
 const bigDeadline = web3.utils.toBN('999999999999999999999999999999999');
 
@@ -68,13 +64,13 @@ contract('AtomicSynthetixUniswapConverter', async accounts => {
 		mockUniswapExchange = await MockUniswapExchange.deployed();
 		exchangeRates = await ExchangeRates.deployed();
 		feePool = await FeePool.deployed();
-	//	supplySchedule = await SupplySchedule.deployed();
-	//	escrow = await Escrow.deployed();
-	//	rewardEscrow = await RewardEscrow.deployed();
-	//	rewardsDistribution = await RewardsDistribution.deployed();
+		//	supplySchedule = await SupplySchedule.deployed();
+		//	escrow = await Escrow.deployed();
+		//	rewardEscrow = await RewardEscrow.deployed();
+		//	rewardsDistribution = await RewardsDistribution.deployed();
 
 		synthetix = await Synthetix.deployed();
-	//	synthetixState = await SynthetixState.at(await synthetix.synthetixState());
+		//	synthetixState = await SynthetixState.at(await synthetix.synthetixState());
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
 		sAUDContract = await Synth.at(await synthetix.synths(sAUD));
 		sEURContract = await Synth.at(await synthetix.synths(sEUR));
@@ -200,7 +196,6 @@ contract('AtomicSynthetixUniswapConverter', async accounts => {
 	});
 
 	it('ethToSethInput to get two much sEth should not work', async () => {
-		
 		await assert.revert(
 			atomicSynthetixUniswapConverter.methods['ethToSethInput(uint256,uint256,address)'](
 				toUnit('2'),
@@ -239,15 +234,47 @@ contract('AtomicSynthetixUniswapConverter', async accounts => {
 		const amountIssued = toUnit('1');
 		await synthetix.issueSynths(sETH, amountIssued, { from: account1 });
 		await assert.bnEqual(await sEthContract.balanceOf(account1), toUnit('1'));
-		const originBalance = await  getEthBalance(account1);
 		await sEthContract.approve(atomicSynthetixUniswapConverter.address, toUnit('1'), {
 			from: account1,
 		});
-		await atomicSynthetixUniswapConverter.sEthToEthInput(toUnit('1'), toUnit('1'), bigDeadline, ZERO_ADDRESS, {
+		await atomicSynthetixUniswapConverter.sEthToEthInput(
+			toUnit('1'),
+			toUnit('1'),
+			bigDeadline,
+			ZERO_ADDRESS,
+			{
+				from: account1,
+			}
+		);
+
+		await assert.bnEqual(await sEthContract.balanceOf(account1), toUnit('0'));
+	});
+
+	it('sEthToEthInput  to other should work', async () => {
+		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('100000'), {
+			from: owner,
+		});
+		// Issue
+		const amountIssued = toUnit('1');
+		await synthetix.issueSynths(sETH, amountIssued, { from: account1 });
+		await assert.bnEqual(await sEthContract.balanceOf(account1), toUnit('1'));
+		const account2Balance = await getEthBalance(account2);
+
+		await sEthContract.approve(atomicSynthetixUniswapConverter.address, toUnit('1'), {
 			from: account1,
 		});
-		
+		await atomicSynthetixUniswapConverter.sEthToEthInput(
+			toUnit('1'),
+			toUnit('1'),
+			bigDeadline,
+			account2,
+			{
+				from: account1,
+			}
+		);
+
 		await assert.bnEqual(await sEthContract.balanceOf(account1), toUnit('0'));
-		await assert.bnEqual(await getEthBalance(account1), originBalance.add(toUnit('1')));
+		const newBalance = new BN(await getEthBalance(account2));
+		await assert.bnEqual(newBalance, toUnit('1').add(new BN(account2Balance)));
 	});
 });
