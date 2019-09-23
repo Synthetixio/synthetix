@@ -7,12 +7,6 @@
 		{
 			"type": "node",
 			"request": "launch",
-			"name": "Debug Deploy Script",
-			"program": "${workspaceFolder}/deploy.js"
-		},
-		{
-			"type": "node",
-			"request": "launch",
 			"name": "Debug Verify Script",
 			"args": ["verify", "-n", "rinkeby", "-d", "publish/deployed/rinkeby"],
 			"program": "${workspaceFolder}/publish/index.js",
@@ -23,15 +17,6 @@
 			"request": "launch",
 			"name": "Debug Deployment Script",
 			"args": ["deploy", "-n", "kovan", "-d", "publish/deployed/kovan", "-g", "15"],
-			"program": "${workspaceFolder}/publish/index.js"
-		},
-		{
-			"type": "node",
-			"request": "launch",
-			"name": "Debug Build Script",
-			"args": [
-				"build",
-			],
 			"program": "${workspaceFolder}/publish/index.js"
 		},
 		{
