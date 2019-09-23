@@ -36,7 +36,7 @@ Purgeable synths were introduced by [SIP-3](https://github.com/Synthetixio/SIPs/
 
 ### `maxSupplyToPurgeInUSD`
 
-Purging this Synth is disallowed unless the value of its supply is less than this. Initialised to $\$100\,000$.
+Purging this Synth is disallowed unless the value of its supply is less than this. Initialised to $100\,000$.
 
 **Type:** `uint public`
 
