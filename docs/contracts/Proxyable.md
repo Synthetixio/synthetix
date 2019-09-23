@@ -36,7 +36,7 @@ The address of the main [proxy](Proxy.md) that this contract operates underneath
 The address of an additional proxy which can be used to forward contract calls to this contract.
 Generally speaking, events should not be passed to the integrationProxy.
 
-In Synthetix, this integrationProxy is an instance of the [ERC20 proxy](ProxyERC20.md).
+In the case of the [`Synthetix`](Synthetix.md) contract, this integrationProxy is an instance of the [ERC20 proxy](ProxyERC20.md).
 
 **Type:** `Proxy public`
 
@@ -157,7 +157,7 @@ It operates simply: if the caller is not either the proxy or the integration pro
 
 ### `optionalProxy_onlyOwner`
 
-This modifier is largely the same as `optionalProxy`, but it disallow callers who are not the contract owner. This function exists because [`Owned.onlyOwner`](Owned.md#onlyowner) checks `msg.sender`, and not `messageSender`.
+This modifier is largely the same as `optionalProxy`, but it disallow callers who are not the contract owner. This modifier exists because [`Owned.onlyOwner`](Owned.md#onlyowner) checks `msg.sender`, and not `messageSender`.
 
 ---
 
