@@ -1346,4 +1346,46 @@ contract('FeePool', async accounts => {
 			assert.bnEqual(vestingScheduleEntry[1], escrowAmount);
 		});
 	});
+
+	describe('Recover sUSD at 0xFEE address', async () => {
+		beforeEach(async () => {
+			// Issue 10,000 sUSD.
+			await synthetix.issueSynths(sUSD, toUnit('10000'), { from: owner });
+		});
+		it('should revert if non owner calls', async () => {
+			await assert.revert(feePool.recoverTransferFees({ from: account3 }));
+		});
+
+		it('should revert if no tokens', async () => {
+			await assert.revert(feePool.recoverTransferFees({ from: owner }));
+		});
+
+		it('should recover sUSD at 0xFEEFEE address when called by owner', async () => {
+			const sUSDAmount = toUnit('2900');
+
+			// send FEE_ADDRESS some sUSD
+			await sUSDContract.methods['transfer(address,uint256)'](FEE_ADDRESS, sUSDAmount, {
+				from: owner,
+			});
+
+			const feesUSDBalanceBefore = await sUSDContract.balanceOf(FEE_ADDRESS);
+			// console.log('feesUSDBalanceBefore', feesUSDBalanceBefore.toString());
+			assert.bnEqual(feesUSDBalanceBefore, sUSDAmount);
+
+			await feePool.recoverTransferFees({ from: owner });
+
+			// Assert FEE_ADDRESS balance is 0
+			const feesUSDBalance = await sUSDContract.balanceOf(FEE_ADDRESS);
+			assert.bnEqual(feesUSDBalance, 0);
+
+			// Assert Fees recorded
+			const xdrAmount = await synthetix.effectiveValue(sUSD, sUSDAmount, XDR);
+			assert.deepEqual(await feePool.recentFeePeriods(0), {
+				feePeriodId: 1,
+				startingDebtIndex: 0,
+				feesToDistribute: xdrAmount,
+				feesClaimed: 0,
+			});
+		});
+	});
 });
