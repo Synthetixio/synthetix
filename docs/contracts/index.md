@@ -118,18 +118,9 @@ Contract | Description
     * Inheriting descendents as well as ancestors.
     * Categorise contracts in nav
     * Solidity syntax highlighting.
-    * Audit above contracts
     * Links to etherscan and addresses.
     * Fix inheritance hierarchy and references.
-    * List dapp integrations
-    * Make a system diagram of what points to what.
     * Check consistency with dev docs and docstrings
-    * PurgeableSynth.sol - Module description is broken.
-    * Check the legality of the licence headers
-    * Modifiers
-    * Full inheritance hierarchy
-    * Related contracts from inheritance
-    * Related contract variables.
-    * Ensure all contract texts in this document link to the relevant page
+    * Related contracts
     * Enhance Contract Mapper: Command line args etc. Look for calls out to other contracts in function bodies.
     * Mark all `uint`s that are fixed point numbers with their precision level.
