@@ -9,7 +9,7 @@ The provided decimals can operate at either of two different precision levels. S
 Also included are several functions for converting between precision levels, and operations which round to the nearest increment to remove truncation bias. The library only implements multiplication and division operations as additive operations on fixed point numbers already behave correctly.
 These operate by either dividing out the extra fixed point unit after a multiplication, or multiplying it in before a division.
 
-In Synthetix the high precision numbers are used for dealing with the [debt ledger](SynthetixState.md#debtledger), which [is constructed](Synthetix.md#_addtodebtregister) as an extended product of many fractional numbers. As this is a financially-sensitive component of the system, representational precision matters in order to minimise errors resulting from rounding or truncation.
+In Synthetix the high precision numbers are used for dealing with the [debt ledger](SynthetixState.md#debtledger), which [is constructed](Synthetix.md#_addtodebtregister) as an extended product of many fractional numbers. As this is a financially-sensitive component of the system, representational precision matters in order to minimise errors resulting from rounding or truncation. All other fractional numbers operate at the standard precision.
 
 `SafeDecimalMath` uses OpenZeppelin's [SafeMath](SafeMath.md) library for most of its basic arithmetic operations in order to protect from arithmetic overflows and zero divisions.
 
