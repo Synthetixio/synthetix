@@ -28,7 +28,7 @@ contract('AtomicSynthetixUniswapConverter', async accounts => {
 		'sETH',
 	].map(web3.utils.asciiToHex);
 
-	const [deployerAccount, owner, account1, account2] = accounts;
+	const [deployerAccount, owner, account1, account2, account3, account4] = accounts;
 
 	let synthetix,
 		atomicSynthetixUniswapConverter,
@@ -195,7 +195,7 @@ contract('AtomicSynthetixUniswapConverter', async accounts => {
 		await assert.bnEqual(await sEthContract.balanceOf(account2), toUnit('1'));
 	});
 
-	it('ethToSethInput to get two much sEth should not work', async () => {
+	it('ethToSethInput to get two much sEth should fail', async () => {
 		await assert.revert(
 			atomicSynthetixUniswapConverter.methods['ethToSethInput(uint256,uint256,address)'](
 				toUnit('2'),
@@ -210,7 +210,7 @@ contract('AtomicSynthetixUniswapConverter', async accounts => {
 		await assert.bnEqual(await sEthContract.balanceOf(account1), toUnit('0'));
 	});
 
-	it('ethToSethInput to exceed deadline should not work', async () => {
+	it('ethToSethInput to exceed deadline should fail', async () => {
 		const zeroDeadline = web3.utils.toBN('0');
 		await assert.revert(
 			atomicSynthetixUniswapConverter.methods['ethToSethInput(uint256,uint256,address)'](
@@ -276,5 +276,57 @@ contract('AtomicSynthetixUniswapConverter', async accounts => {
 		await assert.bnEqual(await sEthContract.balanceOf(account1), toUnit('0'));
 		const newBalance = new BN(await getEthBalance(account2));
 		await assert.bnEqual(newBalance, toUnit('1').add(new BN(account2Balance)));
+	});
+
+	it('sEthToEthInput to get too much ETH should fail', async () => {
+		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('100000'), {
+			from: owner,
+		});
+		// Issue
+		const amountIssued = toUnit('1');
+		await synthetix.issueSynths(sETH, amountIssued, { from: account1 });
+		await assert.bnEqual(await sEthContract.balanceOf(account1), toUnit('1'));
+		await sEthContract.approve(atomicSynthetixUniswapConverter.address, toUnit('1'), {
+			from: account1,
+		});
+		await assert.revert(
+			atomicSynthetixUniswapConverter.sEthToEthInput(
+				toUnit('1'),
+				toUnit('2'),
+				bigDeadline,
+				ZERO_ADDRESS,
+				{
+					from: account1,
+				}
+			)
+		);
+		assert.bnEqual(await sEthContract.balanceOf(account1), toUnit('1'));
+	});
+
+	it('ethToSethOutput should work', async () => {
+		await atomicSynthetixUniswapConverter.methods['ethToSethOutput(uint256,uint256,address)'](
+			toUnit('1'),
+			bigDeadline,
+			ZERO_ADDRESS,
+			{
+				from: account3,
+				value: toUnit('1'),
+			}
+		);
+		await assert.bnEqual(await sEthContract.balanceOf(account3), toUnit('1'));
+	});
+
+	it('ethToSethOutput less ETH should fail', async () => {
+		await assert.revert(
+			atomicSynthetixUniswapConverter.methods['ethToSethOutput(uint256,uint256,address)'](
+				toUnit('1'),
+				bigDeadline,
+				ZERO_ADDRESS,
+				{
+					from: account4,
+					value: toUnit('0.99'),
+				}
+			)
+		);
 	});
 });
