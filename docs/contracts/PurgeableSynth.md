@@ -2,7 +2,7 @@
 
 ## Description
 
-This is a [Synth](Synth.md) where all the holders can be liquidated back to sUSD at current rates, so that the contract can be removed from the system. A Synth must either be frozen (if it is an inverse synth) or have its total outstanding supply worth less than $100\,000$ USD in order to be liquidated. Hence it is mainly useful for eliminating Synths which are unused or at the end of their useful life. The value of the token is read from the system's central [ExchangeRates](ExchangeRates.md) contract.
+This is a [Synth](Synth.md) where all the holders can be liquidated back to sUSD at current rates, so that the contract can be removed from the system. In order to be liquidated, a Synth must either be frozen (if it is an inverse synth) or have its total outstanding supply worth less than $100\,000$ USD. Hence it is mainly useful for eliminating Synths which are unused or at the end of their useful life. The value of the token is read from the system's central [ExchangeRates](ExchangeRates.md) contract.
 
 Purgeable synths were introduced by [SIP-3](https://github.com/Synthetixio/SIPs/blob/master/SIPS/sip-3.md) in response to increasing gas costs associated with minting, and to allow faster reconfiguration of inverse synths.
 
@@ -36,7 +36,7 @@ Purgeable synths were introduced by [SIP-3](https://github.com/Synthetixio/SIPs/
 
 ### `maxSupplyToPurgeInUSD`
 
-Purging this Synth is disallowed unless the value of its supply is less this. Initialised to $\$100\,000$.
+Purging this Synth is disallowed unless the value of its supply is less than this. Initialised to $\$100\,000$.
 
 **Type:** `uint public`
 
@@ -77,6 +77,8 @@ Initialises the [`exchangeRates`](#exchangerates) address, and the inherited [`S
 
 Allows the owner to liquidate all holders of this token back to `sUSD` if the total value of this Synth is worth less than [`maxSupplyToPurgeInUSD`](#maxsupplytopurgeinusd) US dollars at current prices, or if the token is an inverse synth whose price is frozen.
 
+If this is successfully invoked, balances in the provided list of addresses will be deleted, and an equivalent value of sUSD credited to their account.
+
 ???+ example "Details"
     **Signature**
 
@@ -89,7 +91,7 @@ Allows the owner to liquidate all holders of this token back to `sUSD` if the to
     **Preconditions**
 
     * Either:
-        * This Synth's total is less than the value of [`maxSupplyToPurgeInUSD`](#maxsupplytopurgeinusd) [priced in terms of this currency](ExchangeRates.md#effectivevalue); OR
+        * This Synth's total is less than the value of [`maxSupplyToPurgeInUSD`](#maxsupplytopurgeinusd) [priced in terms of this currency](ExchangeRates.md#effectivevalue); or
         * This currency's price is [frozen](ExchangeRates.md#rateisfrozen).
     * This currency's price [must not be stale](ExchangeRates.md#rateisstale).
 
