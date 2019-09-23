@@ -9,7 +9,7 @@ ExternStateToken almost implements the ERC223 standard; transfers will call the 
 
 For upgradeability, this contract utilises an [external state contract](TokenState.md) to store its balances and allowances.
 
-In Synthetix, all [`Synths`](Synth.md), and the main [`Synthetix`](Synthetix.md) contract are ExternStateTokens.
+The main [`Synthetix`](Synthetix.md) contract and all [`Synths`](Synth.md) are ExternStateTokens.
 
 **Source:** [ExternStateToken.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/ExternStateToken.sol)
 
