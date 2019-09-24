@@ -1,3 +1,6 @@
+/* By using Uniswap sETH exchange as a bridge, this contract enable direct and atomic exchange between ETH and Synths assets issued in Synthetix system 
+*/
+
 pragma solidity ^0.4.25;
 
 import "./Owned.sol";
