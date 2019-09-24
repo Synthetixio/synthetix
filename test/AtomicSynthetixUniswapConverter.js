@@ -64,11 +64,11 @@ contract('AtomicSynthetixUniswapConverter', async accounts => {
 		await mockUniswapExchange.setSethAddress(sEthContract.address);
 
 		// Give some sETH and Ethers to Mock Uniswap Exchange
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('200000'), {
+		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('1000000'), {
 			from: owner,
 		});
 		// Issue
-		const amountIssued = toUnit('10');
+		const amountIssued = toUnit('50');
 		await synthetix.issueSynths(sETH, amountIssued, { from: account1 });
 		await sEthContract.methods['transfer(address,uint256)'](
 			mockUniswapExchange.address,
@@ -80,7 +80,7 @@ contract('AtomicSynthetixUniswapConverter', async accounts => {
 		web3.eth.sendTransaction({
 			from: owner,
 			to: mockUniswapExchange.address,
-			value: toUnit('10'),
+			value: toUnit('50'),
 		});
 	});
 
@@ -151,7 +151,6 @@ contract('AtomicSynthetixUniswapConverter', async accounts => {
 		});
 		const effectiveValue = await synthetix.effectiveValue(sAUD, amountIssued, sETH);
 		const effectiveValueMinusFees = await feePool.amountReceivedFromExchange(effectiveValue);
-		// console.log("effectiveValueMinusFees:"+effectiveValueMinusFees);
 		await atomicSynthetixUniswapConverter.otherTokenToEthInput(
 			sAUD,
 			toUnit('200'),
@@ -195,8 +194,62 @@ contract('AtomicSynthetixUniswapConverter', async accounts => {
 		);
 	});
 
+	it('otherTokenToEthOutput should work', async () => {
+		await synthetix.methods['transfer(address,uint256)'](account5, toUnit('100000'), {
+			from: owner,
+		});
+		// Issue
+		const amountIssued = toUnit('200');
+		await synthetix.issueSynths(sAUD, amountIssued, { from: account5 });
+		assert.bnEqual(await sAUDContract.balanceOf(account5), amountIssued);
+		const account2Balance = await getEthBalance(account2);
+
+		await sAUDContract.approve(atomicSynthetixUniswapConverter.address, amountIssued, {
+			from: account5,
+		});
+
+		await atomicSynthetixUniswapConverter.otherTokenToEthOutput(
+			toUnit('0.05'),
+			sAUD,
+			toUnit('200'),
+			bigDeadline,
+			account2,
+			{
+				from: account5,
+			}
+		);
+		// We cannot get exact ouput due to two decimal math round of exchange function in Synthetix.sol, we will get  exact output required by user plus some extra amount(in wei, which depend on the currency rates)
+		assert(new BN(await getEthBalance(account2)).gte(new BN(account2Balance).add(toUnit('0.05'))));
+	});
+
+	it('otherTokenToEthOutput less token provided should fail', async () => {
+		await synthetix.methods['transfer(address,uint256)'](account5, toUnit('100000'), {
+			from: owner,
+		});
+		// Issue
+		const amountIssued = toUnit('200');
+		await synthetix.issueSynths(sAUD, amountIssued, { from: account5 });
+		assert.bnEqual(await sAUDContract.balanceOf(account5), amountIssued);
+
+		await sAUDContract.approve(atomicSynthetixUniswapConverter.address, amountIssued, {
+			from: account5,
+		});
+
+		await assert.revert(
+			atomicSynthetixUniswapConverter.otherTokenToEthOutput(
+				toUnit('1'),
+				sAUD,
+				toUnit('200'),
+				bigDeadline,
+				account2,
+				{
+					from: account5,
+				}
+			)
+		);
+	});
+
 	it('ethToSethInput to self should work', async () => {
-		const bigDeadline = web3.utils.toBN('999999999999999999999999999999999');
 		await atomicSynthetixUniswapConverter.methods['ethToSethInput(uint256,uint256,address)'](
 			toUnit('1'),
 			bigDeadline,
@@ -210,7 +263,6 @@ contract('AtomicSynthetixUniswapConverter', async accounts => {
 	});
 
 	it('ethToSethInput to other should work', async () => {
-		const bigDeadline = web3.utils.toBN('999999999999999999999999999999999');
 		await atomicSynthetixUniswapConverter.methods['ethToSethInput(uint256,uint256,address)'](
 			toUnit('1'),
 			bigDeadline,
@@ -407,6 +459,60 @@ contract('AtomicSynthetixUniswapConverter', async accounts => {
 		);
 	});
 
+	it('sTokenToStokenOutput should work', async () => {
+		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('100000'), {
+			from: owner,
+		});
+		// Issue
+		const amountIssued = toUnit('100');
+		await synthetix.issueSynths(sEUR, amountIssued, { from: account1 });
+		assert.bnEqual(await sEURContract.balanceOf(account1), toUnit('100'));
+		await sEURContract.approve(atomicSynthetixUniswapConverter.address, toUnit('100'), {
+			from: account1,
+		});
+
+		await atomicSynthetixUniswapConverter.sTokenToStokenOutput(
+			sEUR,
+			toUnit('100'),
+			sBTC,
+			toUnit('0.005'),
+			bigDeadline,
+			ZERO_ADDRESS,
+			{
+				from: account1,
+			}
+		);
+		// We cannot get exact ouput due to two decimal math round of exchange function in Synthetix.sol, we will get  exact output required by user plus some extra amount(in wei, which depend on the currency rates)
+		assert(new BN(await sBTCContract.balanceOf(account1)).gte(toUnit('0.005')));
+	});
+
+	it('sTokenToStokenOutput less provided token should fail', async () => {
+		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('100000'), {
+			from: owner,
+		});
+		// Issue
+		const amountIssued = toUnit('100');
+		await synthetix.issueSynths(sEUR, amountIssued, { from: account1 });
+		assert.bnEqual(await sEURContract.balanceOf(account1), toUnit('100'));
+		await sEURContract.approve(atomicSynthetixUniswapConverter.address, toUnit('100'), {
+			from: account1,
+		});
+
+		await assert.revert(
+			atomicSynthetixUniswapConverter.sTokenToStokenOutput(
+				sEUR,
+				toUnit('100'),
+				sBTC,
+				toUnit('0.5'),
+				bigDeadline,
+				ZERO_ADDRESS,
+				{
+					from: account1,
+				}
+			)
+		);
+	});
+
 	it('ethToOtherTokenInput should work', async () => {
 		await atomicSynthetixUniswapConverter.ethToOtherTokenInput(
 			toUnit('100'),
@@ -434,6 +540,36 @@ contract('AtomicSynthetixUniswapConverter', async accounts => {
 				{
 					from: account1,
 					value: toUnit('1'),
+				}
+			)
+		);
+	});
+
+	it('ethToOtherTokenOutput should work', async () => {
+		await atomicSynthetixUniswapConverter.ethToOtherTokenOutput(
+			toUnit('10'),
+			sEUR,
+			bigDeadline,
+			ZERO_ADDRESS,
+			{
+				from: account5,
+				value: toUnit('1'),
+			}
+		);
+		// We cannot get exact ouput due to two decimal math round of exchange function in Synthetix.sol, we will get  exact output required by user plus some extra amount(in wei, which depend on the currency rates)
+		assert(new BN(await sEURContract.balanceOf(account5)).gte(toUnit('10')));
+	});
+
+	it('ethToOtherTokenOutput less provided ETH should fail', async () => {
+		await assert.revert(
+			atomicSynthetixUniswapConverter.ethToOtherTokenOutput(
+				toUnit('100'),
+				sEUR,
+				bigDeadline,
+				ZERO_ADDRESS,
+				{
+					from: account5,
+					value: toUnit('0.1'),
 				}
 			)
 		);

@@ -27,12 +27,14 @@ contract MockUniswapExchange {
     function ethToTokenTransferOutput(uint toBought, uint deadline, address target) external payable returns (uint)   {
         require (toBought <= msg.value);
         IERC20(sEthAddress).transfer(target, toBought);
+        msg.sender.transfer(msg.value - toBought);
         return (toBought);
     }
 
     function ethToTokenSwapOutput(uint toBought, uint deadline) external payable returns (uint){
         require (toBought <= msg.value);
         IERC20(sEthAddress).transfer(msg.sender, toBought);
+        msg.sender.transfer(msg.value - toBought);
         return (toBought);
     }
     

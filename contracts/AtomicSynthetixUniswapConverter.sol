@@ -33,8 +33,8 @@ contract AtomicSynthetixUniswapConverter is Owned {
     bytes32 sEthCurrencyKey = "sETH";
     
     constructor (
-		address _owner
-	)
+        address _owner
+    )
         Owned(_owner)
         public
     {}
@@ -356,7 +356,9 @@ contract AtomicSynthetixUniswapConverter is Owned {
         UniswapExchangeInterface useContract = UniswapExchangeInterface(uniswapSethExchange);
 
         ethAmt = useContract.ethToTokenTransferOutput.value(msg.value)(sethBought, deadline, _targetAddress(recipient));
-        msg.sender.transfer(msg.value - ethAmt);
+        if (msg.value > ethAmt){
+            msg.sender.transfer(msg.value - ethAmt);
+        }
 
         _checkBalance1(sEthCurrencyKey);
     }
