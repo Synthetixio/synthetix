@@ -200,6 +200,9 @@ Shifts this account's array of issuance ledger entries down one place, overwriti
 
 This function was used during the initial six week setup period to initialise the issuance ledger from the previous Synthetix version.
 
+!!! caution
+        Because the internal loop index is a `uint8`, if the `accounts` argument is longer than 256 entries this function will loop indefinitely, consuming all gas.
+
 ???+ example "Details"
 
     **Signature**
@@ -214,9 +217,6 @@ This function was used during the initial six week setup period to initialise th
     **Preconditions**
 
     * The transaction reverts if the length of `accounts` and `ratios` differ.
-
-    !!! caution
-        Because the loop index is a `uint8`, this function will loop indefinitely if the length of the accounts array is longer than 256 entries.
 
     **Emits**
 
