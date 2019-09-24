@@ -60,7 +60,7 @@ contract('Synth', async accounts => {
 
 	it('should set constructor params on deployment', async () => {
 		// address _proxy, TokenState _tokenState, address _synthetixProxy, address _feePoolProxy,
-		// string _tokenName, string _tokenSymbol, address _owner, bytes32 _currencyKey)
+		// string _tokenName, string _tokenSymbol, address _owner, bytes32 _currencyKey, uint _totalSupply)
 		const synth = await Synth.new(
 			account1,
 			account2,
@@ -70,6 +70,7 @@ contract('Synth', async accounts => {
 			'sXYZ',
 			owner,
 			web3.utils.asciiToHex('sXYZ'),
+			web3.utils.toWei('100'),
 			{ from: deployerAccount }
 		);
 
@@ -82,6 +83,7 @@ contract('Synth', async accounts => {
 		assert.bnEqual(await synth.decimals(), 18);
 		assert.equal(await synth.owner(), owner);
 		assert.equal(bytesToString(await synth.currencyKey()), 'sXYZ');
+		assert.bnEqual(await synth.totalSupply(), toUnit('100'));
 	});
 
 	it('should allow the owner to set the Synthetix contract', async () => {

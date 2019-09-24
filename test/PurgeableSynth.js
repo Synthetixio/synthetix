@@ -81,6 +81,7 @@ contract('PurgeableSynth', accounts => {
 			owner,
 			web3.utils.asciiToHex(currencyKey),
 			exchangeRates.address,
+			web3.utils.toWei('0'),
 			{
 				from: deployerAccount,
 			}
