@@ -24,6 +24,9 @@ contract('AtomicSynthetixUniswapConverter', async accounts => {
 		exchangeRates,
 		feePool,
 		sEthContract,
+		sAUDContract,
+		sEURContract,
+		sBTCContract,
 		oracle,
 		timestamp;
 
@@ -38,6 +41,9 @@ contract('AtomicSynthetixUniswapConverter', async accounts => {
 
 		synthetix = await Synthetix.deployed();
 		sEthContract = await Synth.at(await synthetix.synths(sETH));
+		sAUDContract = await Synth.at(await synthetix.synths(sAUD));
+		sEURContract = await Synth.at(await synthetix.synths(sEUR));
+		sBTCContract = await Synth.at(await synthetix.synths(sBTC));
 
 		// Send a price update to guarantee we're not stale.
 		oracle = await exchangeRates.oracle();
@@ -288,6 +294,87 @@ contract('AtomicSynthetixUniswapConverter', async accounts => {
 				{
 					from: account4,
 					value: toUnit('0.99'),
+				}
+			)
+		);
+	});
+
+	it('sTokenToStokenInput should work', async () => {
+		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('100000'), {
+			from: owner,
+		});
+		// Issue
+		const amountIssued = toUnit('100');
+		await synthetix.issueSynths(sAUD, amountIssued, { from: account1 });
+		assert.bnEqual(await sAUDContract.balanceOf(account1), toUnit('100'));
+		await sAUDContract.approve(atomicSynthetixUniswapConverter.address, toUnit('100'), {
+			from: account1,
+		});
+
+		const effectiveValue = await synthetix.effectiveValue(sAUD, amountIssued, sBTC);
+		const effectiveValueMinusFees = await feePool.amountReceivedFromExchange(effectiveValue);
+		await atomicSynthetixUniswapConverter.sTokenToStokenInput(
+			sAUD,
+			toUnit('100'),
+			sBTC,
+			toUnit('0.009'),
+			bigDeadline,
+			ZERO_ADDRESS,
+			{
+				from: account1,
+			}
+		);
+		assert.bnEqual(await sBTCContract.balanceOf(account1), effectiveValueMinusFees);
+		assert.bnEqual(await sAUDContract.balanceOf(account1), toUnit('0'));
+	});
+
+	it('sTokenToStokenInput to get too much output should fail', async () => {
+		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('100000'), {
+			from: owner,
+		});
+		// Issue
+		const amountIssued = toUnit('100');
+		await synthetix.issueSynths(sAUD, amountIssued, { from: account1 });
+		assert.bnEqual(await sAUDContract.balanceOf(account1), toUnit('100'));
+		await sAUDContract.approve(atomicSynthetixUniswapConverter.address, toUnit('100'), {
+			from: account1,
+		});
+		await assert.revert(
+			atomicSynthetixUniswapConverter.methods[
+				'sTokenToStokenInput(bytes32,uint256,bytes32,uint256,uint256,address)'
+			](sAUD, toUnit('100'), sBTC, toUnit('0.1'), bigDeadline, ZERO_ADDRESS, {
+				from: account1,
+			})
+		);
+	});
+
+	it('ethToOtherTokenInput should work', async () => {
+		await atomicSynthetixUniswapConverter.ethToOtherTokenInput(
+			toUnit('100'),
+			sEUR,
+			bigDeadline,
+			ZERO_ADDRESS,
+			{
+				from: account1,
+				value: toUnit('1'),
+			}
+		);
+		const effectiveValue = await synthetix.effectiveValue(sETH, toUnit('1'), sEUR);
+		const effectiveValueMinusFees = await feePool.amountReceivedFromExchange(effectiveValue);
+
+		assert.bnEqual(await sEURContract.balanceOf(account1), effectiveValueMinusFees);
+	});
+
+	it('ethToOtherTokenInput to get too much output should work', async () => {
+		await assert.revert(
+			atomicSynthetixUniswapConverter.ethToOtherTokenInput(
+				toUnit('1000'),
+				sEUR,
+				bigDeadline,
+				ZERO_ADDRESS,
+				{
+					from: account1,
+					value: toUnit('1'),
 				}
 			)
 		);
