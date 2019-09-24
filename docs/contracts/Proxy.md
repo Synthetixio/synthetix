@@ -2,7 +2,7 @@
 
 ## Description
 
-!!! info
+!!! info "The Synthetix Proxy is Not Other Proxies"
     The typical smart contact Proxy pattern is discussed in depth [here](https://blog.openzeppelin.com/proxy-patterns/) and [here](https://fravoll.github.io/solidity-patterns/proxy_delegate.html). This implementation has its own architecture, however, and is not identical to most other proxy contracts.
 
 The Synthetix proxy sits in front of an underlying target contract. Any calls made to the proxy [are forwarded](#fallback-function) to that target contract, so it appears as if the target was called. This is designed to allow a contract to be upgraded without altering its address.
@@ -31,7 +31,7 @@ This architecture also allows [multiple proxies](Proxyable.md#integrationproxy) 
 There are some tradeoffs to this approach. There is potentially a little more communication overhead for event emission, though there may be some savings available elsewhere depending on system and storage architecture and the particular application.
 
 At the code level, a `CALL` proxy is not entirely transparent. Target contracts must inherit [`Proxyable`](Proxyable.md) so that they can read the message sender which would otherwise be the proxy itself rather than the proxy's caller.
-Additionally, events are a bit different; they must be encoded within the underlying contract and then passed back to the proxy to be emitted. The nuts and bolts of event emission are discussed in the [`_emit`](#_emit) section's details.
+Additionally, events are a bit different; they must be encoded within the underlying contract and then passed back to the proxy to be emitted. The nuts and bolts of event emission are discussed in the [`_emit`](#_emit) section.
 
 Finally, if the target contract needs to transfer ether around, then it will be remitted from the target address rather than the proxy address, though this is a quirk which it would be straightforward to remedy.
 
@@ -109,7 +109,7 @@ Sets the address this proxy forwards its calls to.
 
     **Emits**
 
-    * [`TargetUpdated(_target)](#targetupdated)
+    * [`TargetUpdated(_target)`](#targetupdated)
 
 ---
 
@@ -133,6 +133,26 @@ Selects which call style to use by setting [`useDELEGATECALL`](#usedelegatecall)
 
 When operating in the `CALL` style, this function allows the proxy's underlying contract (and only that contract) to emit events from the proxy's address.
 
+**Usage**
+
+Assuming our event signature is `MyEvent(A indexed indexedArg, B data1, C data2)`, invocation in an underlying contract looks something like the following:
+
+`proxy._emit(abi.encode(data1, data2), 2, keccak256('MyEvent(A,B,C)'), bytes32(indexedArg), 0, 0);`
+
+In the implementation, such expressions are typically wrapped in convenience functions like `emitMyEvent(A indexedArg, B data1, C data2)`.
+
+In Solidity, `indexed` arguments are published as log topics, while non-`indexed` ones are abi-encoded together in order and included as data.
+The keccak-256 hash of the Solidity event signature is always included as the first topic. The format of this signature is `EventName(type1,...,typeN)`, with no spaces between the argument types, omitting the `indexed` keyword and the argument name. For more information, see the official Solidity documentation [here](https://solidity.readthedocs.io/en/v0.5.11/contracts.html#events) and [here](https://solidity.readthedocs.io/en/v0.5.11/abi-spec.html#abi-events).
+
+This function takes 4 arguments for log topics. How many of these are consumed is determined by the `numTopics` argument, which can take the values from 0 to 4, corresponding to the EVM `LOG0` to `LOG4` instructions.
+In the case that an event has fewer than 3 indexed arguments, the remaining slots can be provided with 0. Any excess topics are simply ignored.
+Note that 0 is a valid argument for `numTopics`, which produces `LOG0`, an "event" that only has data and no signature.
+
+!!! caution
+    If this proxy contract were to be rewritten with Solidity v0.5.0 or above, it would be necessary to slightly simplify the calls to `abi.encode` with `abi.encodeWithSignature`.
+
+    See [the official Solidity documentation](https://solidity.readthedocs.io/en/v0.5.11/050-breaking-changes.html#semantic-and-syntactic-changes) for more discussion. The exact behaviour of the abi encoding functions is defined [here](https://github.com/ethereum/solidity/blob/7dcc47ed57f5a6ea3761e54da5a4d7bbe055b5a7/libsolidity/codegen/ExpressionCompiler.cpp#L973).
+
 ???+ example "Details"
 
     **Signature**
@@ -146,26 +166,6 @@ When operating in the `CALL` style, this function allows the proxy's underlying 
     **Emits**
 
     Any possible event.
-
-    **Usage**
-
-    Assuming our event signature is `MyEvent(A indexed indexedArg, B data1, C data2)`, invocation in an underlying contract looks something like the following:
-
-    `proxy._emit(abi.encode(data1, data2), 2, keccak256('MyEvent(A,B,C)'), bytes32(indexedArg), 0, 0);`
-
-    In the implementation, such expressions are typically wrapped in convenience functions like `emitMyEvent(A indexedArg, B data1, C data2)`.
-
-    In Solidity, `indexed` arguments are published as log topics, while non-`indexed` ones are abi-encoded together in order and included as data.
-    The keccak-256 hash of the Solidity event signature is always included as the first topic. The format of this signature is `EventName(type1,...,typeN)`, with no spaces between the argument types, omitting the `indexed` keyword and the argument name. For more information, see the official Solidity documentation [here](https://solidity.readthedocs.io/en/v0.5.11/contracts.html#events) and [here](https://solidity.readthedocs.io/en/v0.5.11/abi-spec.html#abi-events).
-
-    This function takes 4 arguments for log topics. How many of these are consumed is determined by the `numTopics` argument, which can take the values from 0 to 4, corresponding to the EVM `LOG0` to `LOG4` instructions.
-    In the case that an event has fewer than 3 indexed arguments, the remaining slots can be provided with 0. Any excess topics are simply ignored.
-    Note that 0 is a valid argument for `numTopics`, which produces `LOG0`, an "event" that only has data and no signature.
-
-    !!! caution
-        If this proxy contract were to be rewritten with Solidity v0.5.0 or above, it would be necessary to slightly simplify the calls to `abi.encode` with `abi.encodeWithSignature`.
-        
-        See [the official Solidity documentation](https://solidity.readthedocs.io/en/v0.5.11/050-breaking-changes.html#semantic-and-syntactic-changes) for more discussion. The exact behaviour of the abi encoding functions is defined [here](https://github.com/ethereum/solidity/blob/7dcc47ed57f5a6ea3761e54da5a4d7bbe055b5a7/libsolidity/codegen/ExpressionCompiler.cpp#L973).
 
 ---
 

@@ -74,7 +74,7 @@ Initialises the inherited [`Owned`](Owned.md) instance and nominates that owner 
 
     **Preconditions**
 
-    * The transaction reverts if the provided owner is the zero address.
+    * The provided owner must not be the zero address.
 
     **Emits**
 
@@ -98,7 +98,7 @@ Changes the [self destruct beneficiary](#selfdestructbeneficiary).
 
     **Preconditions**
 
-    * The transaction reverts if the provided beneficiary is the zero address.
+    * The provided beneficiary must not be the zero address.
 
     **Emits**
 
@@ -161,8 +161,8 @@ If self destruction is active and the timer has elapsed, destroy this contract a
 
     **Preconditions**
 
-    * The transaction reverts if [self destruction has not been initiated](#selfdestructinitiated).
-    * The transaction reverts if the [self destruct delay has not elapsed](#selfdestruct_delay).
+    * Self destruction [must have been initiated](#selfdestructinitiated).
+    * The [self destruct delay](#selfdestruct_delay) must have elapsed.
 
     **Emits**
 

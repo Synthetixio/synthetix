@@ -284,7 +284,7 @@ Allows the [`Synthetix`](Synthetix.md) contract to burn existing Synths of this 
 
     **Emits**
 
-    * [`Transfer(address(0), account, amount)`](ExternStateToken.md#transfer)
+    * [`Transfer(account, address(0), amount)`](ExternStateToken.md#transfer)
     * [`Burned(account, amount)`](#burned)
 
 ---
@@ -298,7 +298,7 @@ For example, just such a migration is performed by [this script](https://github.
 ???+ example "Details"
     **Signature**
 
-    `setTotalSupply(uint amount) external)
+    `setTotalSupply(uint amount) external`
 
     **Modifiers**
 

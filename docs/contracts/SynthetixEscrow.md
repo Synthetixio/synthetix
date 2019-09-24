@@ -289,6 +289,9 @@ Allows new entry to be added to the given account's vesting schedule by the owne
 
 During the setup period, allows the contract owner to add an entire vesting schedule to the given account by calling [`appendVestingEntry`](#appendvestingentry) in a loop. If a schedule already exists, the new one is concatenated to the old one.
 
+!!! caution
+    Beware that no checking is done that the lengths of the `times` and `quantities` input arrays are equal. If `times` is shorter than `quantities`, the extra quantities are ignored; if it is longer, the transaction reverts since past-the-end quantities will be 0 (but don't rely on this).
+
 ???+ example "Details"
     **Signature**
 
@@ -303,9 +306,6 @@ During the setup period, allows the contract owner to add an entire vesting sche
 
     * `times` must be a strictly increasing sequence.
     * Each entry in `quantities` must be nonzero.
-
-    !!! caution
-        Beware that no checking is done that the lengths of the `times` and `quantities` input arrays are equal. If `times` is shorter than `quantities`, the extra quantities are ignored; if it is longer, the transaction reverts since past-the-end quantities will be 0 (but don't rely on this).
 
 ---
 

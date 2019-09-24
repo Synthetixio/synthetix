@@ -83,25 +83,31 @@ A record of the total remaining vested balance in this contract, which should be
 
 ### `TIME_INDEX`
 
-Equal to $0$; the vesting timestamp is the first entry in vesting schedule entry pairs.
+The vesting timestamp is the first entry in vesting schedule entry pairs.
 
 **Type:** `uint constant`
+
+**Value:** `0`
 
 ---
 
 ### `QUANTITY_INDEX`
 
-Equal to $1$; the vesting quantity is the second entry in vesting schedule entry pairs.
+The vesting quantity is the second entry in vesting schedule entry pairs.
 
-**Type:** `uint constant`.
+**Type:** `uint constant`
+
+**Value:** `1`
 
 ---
 
 ### `MAX_VESTING_ENTRIES`
 
-Equal to $52*5$; this constant limits the length of vesting schedule entries so that iteration is bounded. This allows up to five years of vesting entries to be handled, if one is generated per weekly fee period.
+This constant limits the length of vesting schedules to be less than 260 so that iteration is bounded. This allows up to five years of vesting entries to be handled, if one is generated per weekly fee period.
 
-**Type:** `uint constant`.
+**Type:** `uint constant`
+
+**Value:** `52 * 5`
 
 ---
 
@@ -225,7 +231,7 @@ Returns the quantity of SNX a given schedule entry will yield.
 
 Returns the index of the next vesting entry that will vest for a given account. Returns one past the end if there are none remaining.
 
-The function iterates until it finds the first nonzero vesting entry timestamp, so the gas cost increases slightly as more entries vest. A full schedule of 260 entries would cost a little over $50,000$ gas to iterate over.
+The function iterates until it finds the first nonzero vesting entry timestamp, so the gas cost increases slightly as more entries vest. A full schedule of 260 entries would cost a little over $50\,000$ gas to iterate over.
 
 ???+ example "Details"
     **Signature**
@@ -271,19 +277,25 @@ Returns the SNX quantity of the next vesting entry. Returns `0` if there is no s
 
 Returns the full vesting schedule for a given account.
 
+!!! todo "TODO: Investigate Efficiency"
+    Hopefully this is probably not too inefficient as the array will mostly be trailing zeroes. Not sure if the RLP encoding represents such arrays more efficiently or not. Largely won't matter if it's just a view function being used by dapps, however.
+
+
 ???+ example "Details"
     **Signature**
 
     `checkAccountSchedule(address account) public view returns (uint[520])`
-
-    ??? todo Investigate Efficiency
-        Hopefully this is probably not too inefficient as the array will mostly be trailing zeroes. Not sure if the RLP encoding represents such arrays more efficiently or not. Largely won't matter if it's just a view function being used by dapps, however.
 
 ---
 
 ### `appendVestingEntry`
 
 This function allows the [`FeePool`](FeePool.md) contract to add a new entry to a given account's vesting schedule when it claims its fees. All new entries are set to vest after one year.
+
+???+ note "A Minor Note on Efficiency"
+    Note that this function checks that the new vesting timestamp (`now + 52 weeks`) is after the last vesting entry's timestamp, if one exists. In most cases this requirement can't be violated, since `now` increases monotonically. In the worst case where multiple calls are made for a given account in a single block, they go through with the same timestamp, so only the first one will be accepted. But in this case, a user's last fee withdrawal will have been set, and `quantity` will be zero, which fails an earlier precondition.
+
+    The function also needlessly recomputes `numVestingEntries`, which is already stored in the `scheduleLength` local.
 
 ???+ example "Details"
     **Signature**
@@ -299,11 +311,6 @@ This function allows the [`FeePool`](FeePool.md) contract to add a new entry to 
     * `quantity` must be nonzero.
     * The balance of SNX in the escrow contract must be sufficient to supply the new vesting entry.
     * The given account's existing schedule length must be less than [`MAX_VESTING_ENTRIES`](#max_vesting_entries).
-
-    ??? note "A minor note on efficiency"
-        Note that this function also checks that the new vesting timestamp (`now + 52 weeks`) is after the last vesting entry's timestamp, if one exists. In most cases this requirement can't be violated, since `now` increases monotonically. In the worst case where multiple calls are made for a given account in a single block, they go through with the same timestamp, so only the first one will be accepted. But in this case, a user's last fee withdrawal will have been set, and `quantity` will be zero, which fails an earlier precondition.
-
-        The function also needlessly recomputes `numVestingEntries`, which is already stored in the `scheduleLength` local.
 
     **Emits**
     

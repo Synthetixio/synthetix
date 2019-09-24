@@ -38,41 +38,51 @@ In Synthetix the high precision numbers are used for dealing with the [debt ledg
 
 ### `decimals`
 
-The number of decimals in the standard precision fixed point representation. ($18$)
+The number of decimals ($18$) in the standard precision fixed point representation.
 
 **Type:** `uint8 public constant`
+
+**Value:** `18`
 
 ---
 
 ### `highPrecisionDecimals`
 
-The number of decimals in the high precision fixed point representation. ($27$)
+The number of decimals ($27$) in the high precision fixed point representation.
 
 **Type:** `uint8 public constant`
+
+**Value:** `27`
 
 ---
 
 ### `UNIT`
 
-The standard precision number that represents $1.0$. ($10^{18}$)
+The standard precision number ($10^{18}$) that represents $1.0$.
 
 **Type:** `uint public constant`
+
+**Value:** `1e18`
 
 ---
 
 ### `PRECISE_UNIT`
 
-The high precision number that represents $1.0$. ($10^{27}$)
+The high precision number ($10^{27}$) that represents $1.0$.
 
 **Type:** `uint public constant`
+
+**Value:** `1e27`
 
 ---
 
 ### `UNIT_TO_HIGH_PRECISION_CONVERSION_FACTOR`
 
-The factor to convert between precision levels. Equivalent to `PRECISE_UNIT / UNIT`. ($10^9$)
+The factor ($10^9$) to convert between precision levels. Equivalent to `PRECISE_UNIT / UNIT`.
 
 **Type:** `uint private constant`
+
+**Value:** `1e9`
 
 ---
 

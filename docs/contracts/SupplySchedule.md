@@ -202,11 +202,6 @@ $$
 \text{mintableSupply} \ = \ \text{year}_\text{totalSupply} \times \frac{\text{now} - \text{lastMintTime}}{\text{1 year}}
 $$
 
-???+ example "Details"
-    **Signature**
-
-    `mintableSupply() public view returns (uint)`
-
 ???+ info "Mathematical Minutiae"
 
     The following re-expresses the logic from the smart contract.
@@ -232,6 +227,11 @@ $$
     Note that $\Big\lfloor\frac{\text{year}_\text{end} - \text{year}_\text{start}}{\text{1 week}}\Big\rfloor$ is $52$, and there is a remainder of one day. Consequently the first mint event in each year will include an extra day's worth of leftover tokens from the previous year. See [`_remainingSupplyFromPreviousYear`](#_remainingsupplyfrompreviousyear).
 
     Also note that if no tokens are minted for a year, any leftovers from the previous year cannot be recovered.
+
+???+ example "Details"
+    **Signature**
+
+    `mintableSupply() public view returns (uint)`
 
 ---
 

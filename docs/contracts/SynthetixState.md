@@ -129,9 +129,7 @@ The issuance ratio fraction is the maximum value of Synths issuable against a ce
 
 Therefore altering it will also alter the maximum total supply of Synths, as suppliers of Synths are strongly incentivised to track the issuance ratio closely.
 
-**Type:** `uint public`
-
-!!! info "The Issuance Ratio as a Macro-Economic Lever"
+???+ info "The Issuance Ratio as a Macro-Economic Lever"
     Tweaking the issuance ratio is an effective means of altering the total sUSD supply, and therefore its price.
 
     In cases where Synths are oversupplied, there is downward price pressure and decreased stability. Decreasing the issuance ratio is an effective method of both constraining the total supply of Synths circulating in the system, and transiently increasing aggregate demand for Synths as every staker must rebuy a quantity of Synths and burn them.
@@ -140,13 +138,17 @@ Therefore altering it will also alter the maximum total supply of Synths, as sup
 
     The related case of increasing the issuance ratio is similar.
 
+**Type:** `uint public`
+
 ---
 
 ### `MAX_ISSUANCE_RATIO`
 
-This is set to $1.0$. Constraining the value of [`issuanceRatio`](#issuanceratio) to be less than $1.0$ ensures that Synthetix does not become a fractional reserve system.
+Constraining the value of [`issuanceRatio`](#issuanceratio) to be less than $1.0$ ensures that Synthetix does not become a fractional reserve system.
 
 **Type:** `uint constant`
+
+**Value:** `UNIT`
 
 ---
 
@@ -283,7 +285,7 @@ Sets the preferred currency for a particular account. Pass in null to unset this
 
 ### `setIssuanceRatio`
 
-Allows the owner to set the Synth [issuance ratio](#issuanceratio).
+Allows the owner to set the Synth [issuance ratio](#issuanceratio), but disallows setting it higher than $1.0$, which prevents more than one dollar worth of Synths being issued against each dollar of SNX backing them.
 
 ???+ example "Details"
     **Signature**
@@ -294,9 +296,9 @@ Allows the owner to set the Synth [issuance ratio](#issuanceratio).
 
     * [`Owned.onlyOwner`](Owned.md#onlyowner)
 
-    **Preconditions*
+    **Preconditions**
     
-    * `_issuanceRatio` cannot exceed [`MAX_ISSUANCE_RATIO`](#max_issuance_ratio), which is set to `1.0`. This prevents more than one dollar worth of Synths being issued against each dollar of SNX backing them.
+    * `_issuanceRatio` cannot exceed [`MAX_ISSUANCE_RATIO`](#max_issuance_ratio), which is set to `1.0`.
 
     **Emits**
 
