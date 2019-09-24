@@ -44,7 +44,7 @@ const parameterNotice = props => {
 const DEFAULTS = {
 	gasPrice: '1',
 	methodCallGasLimit: 15e4,
-	contractDeploymentGasLimit: 6.5e6,
+	contractDeploymentGasLimit: 7e6,
 	network: 'kovan',
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
 };
@@ -720,10 +720,10 @@ const deploy = async ({
 		};
 
 		console.log(yellow(`Original TotalSupply on Synth${currencyKey} is ${originalTotalSupply}`));
-
+		const sourceContract = subclass || 'Synth';
 		const synth = await deployContract({
 			name: `Synth${currencyKey}`,
-			source: subclass || 'Synth',
+			source: sourceContract,
 			deps: [`TokenState${currencyKey}`, `Proxy${currencyKey}`, 'Synthetix', 'FeePool'],
 			args: [
 				proxyForSynth ? proxyForSynth.options.address : '',
@@ -734,7 +734,7 @@ const deploy = async ({
 				currencyKey,
 				account,
 				currencyKeyInBytes,
-			].concat(additionalConstructorArgsMap[subclass] || []),
+			].concat(additionalConstructorArgsMap[sourceContract] || []),
 			force: addNewSynths,
 		});
 
