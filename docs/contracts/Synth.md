@@ -1,7 +1,7 @@
 # Synth
 
-This contract composes the basic functionality of all Synths flavours.
-It exposes sufficient functionality for the [`Synthetix`](Synthetix.md) and [`FeePool`](FeePool.md) contracts to manage its supply. Otherwise Synths are fairly vanilla ERC20 tokens; the [`PurgeableSynth`](PurgeableSynth.md) contract extends the basic functionality to allow the owner to liquidate a Synth if its total value is low enough.
+This contract composes the basic functionality of all Synth flavours.
+It exposes sufficient functionality for the [`Synthetix`](Synthetix.md) and [`FeePool`](FeePool.md) contracts to manage its supply. Otherwise Synths are fairly vanilla ERC20 tokens; the [`PurgeableSynth`](PurgeableSynth.md) contract extends this basic functionality to allow the owner to liquidate a Synth if its total value is low enough.
 
 See the [main synth notes](../../synths) for more information about how Synths function in practice.
 
@@ -10,6 +10,40 @@ See the [main synth notes](../../synths) for more information about how Synths f
 
 !!! danger "Preferred Currency Conversion Disabled"
     This contract still retains logic dedicated to allowing recipients to receive all Synth transfers in a specific flavour of their choice. However this does not operate if a user's [`preferredCurrency`](SynthetixState.md#preferredcurrency) is not set, and [`Synthetix`](Synthetix.md) does not presently expose any means of setting it.
+
+???+ note "A Note on Conversion Fees"
+
+    Since transfer conversion is not operating, the following is recorded only to be kept in mind in case it is ever reactivated. At present there is no way for users to set a preferred currency.
+
+    The Synthetix system has implements both [exchange](FeePool.md#exchangefeerate) and [transfer](FeePool.md#transferfeerate) fees on Synths. Although they should be distinct, the preferred currency auto conversion on transfer only charges the transfer fee, and not the exchange fee.
+    As a result, it is possible to convert Synths more cheaply whenever the transfer fee is less than the conversion fee.
+
+    Given that the transfer fee is currently nil, if a user was able to set a preferred currency for themselves, it would be possible by this means to perform free Synth conversions. This would 
+    undercut fee revenue for the system to incentivise participants with. If markets had priced in the conversion fee, but were unaware of the exploit, then there would be a profit cycle available for someone exploiting this.
+
+    In particular:
+
+    Let $\phi_\kappa, \ \phi_\tau \in [0,1]$ be the conversion and transfer fee rates, respectively.
+    Let $\pi_A, \ \pi_B$ be the prices of synths $A$ and $B$ in terms of some implicit common currency.
+    $Q_A$ will be the starting quantity of synth $A$.
+
+    Then to convert from $A$ to $B$, quantities
+
+    $$
+    Q^\kappa_B = Q_A\frac{\pi_A}{\pi_B}(1 - \phi_\kappa) \\
+    Q^\tau_B = Q_A\frac{\pi_A}{\pi_B}(1 - \phi_\tau)
+    $$
+
+    are received if the user performs a standard conversion or a transfer conversion, respectively.
+    The profit of performing a transfer conversion relative to a standard one is then:
+
+    $$
+    Q^\tau_B - Q^\kappa_B = Q_A\frac{\pi_A}{\pi_B}(\phi_\kappa - \phi_\tau)
+    $$
+
+    That is, the relative profit is simply $(\phi_\kappa - \phi_\tau)$. With no transfer fee, the profit is $\phi_\kappa$, as expected.
+
+
 
 **Source:** [Synth.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/Synth.sol)
 
@@ -73,7 +107,7 @@ Initialises the [`feePool`](#feepool) and [`synthetix`](#synthetix) addresses, t
 
 The precision in every Synth's fixed point representation is fixed at 18 so they are all conveniently [interconvertible](ExchangeRates.md#effectivevalue). The total supply of all new Synths is also initialised at 0 since they must be created by the [`Synthetix`](Synthetix.md) contract when [issuing](Synthetix.md#issuesynths) or [converting between](Synthetix.md#exchange) Synths, or by the [`FeePool`](FeePool.md) when users [claim fees](FeePool.md#claimfees).
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `constructor(address _proxy, TokenState _tokenState, Synthetix _synthetix, IFeePool _feePool, string _tokenName, string _tokenSymbol, address _owner, bytes4 _currencyKey) public`
@@ -93,7 +127,7 @@ The precision in every Synth's fixed point representation is fixed at 18 so they
 
 Allows the owner to set the address of the [`synthetix`](Synthetix.md) contract.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `setSynthetix(Synthetix _synthetix) external`
@@ -112,7 +146,7 @@ Allows the owner to set the address of the [`synthetix`](Synthetix.md) contract.
 
 Allows the owner to set the address of the [`feePool`](FeePool.md) contract.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `setFeePool(FeePool _feePool) external`
@@ -134,7 +168,7 @@ This is a pair of ERC20/ERC223 transfer functions. Their functionality is almost
 !!! danger "Disabled Fee Functionality"
     If [`FeePool.transferFeeRate`](FeePool.md#transferfeerate) is non-zero, the recipient receives [`FeePool.amountReceivedFromTransfer(value)`](FeePool.md#amountreceivedfromtransfer) tokens and the rest is remitted to the [`FeePool`](FeePool.md) via [`Synthetix.synthInitiatedFeePayment`](Synthetix.md#synthinitiatedfeepayment).
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `transfer(address to, uint value) public returns (bool)`
@@ -159,7 +193,7 @@ This is a pair of ERC20/ERC223 transferFrom functions. Their functionality is al
 !!! danger "Disabled Fee Functionality"
     If [`FeePool.transferFeeRate`](FeePool.md#transferfeerate) is non-zero, the recipient receives [`FeePool.amountReceivedFromTransfer(value)`](FeePool.md#amountreceivedfromtransfer) tokens and the rest is remitted to the [`FeePool`](FeePool.md) via [`Synthetix.synthInitiatedFeePayment`](Synthetix.md#synthinitiatedfeepayment).
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `transferFrom(address from, address to, uint value) public returns (bool)`
@@ -186,7 +220,7 @@ This is a pair of ERC20/ERC223 functions closely similar to [`transfer`](#transf
 
     If [`FeePool.transferFeeRate`](FeePool.md#transferfeerate) is non-zero, [`FeePool.transferFeeIncurred(value)`](FeePool.md#transferfeeincurred) tokens are first remitted to the [`FeePool`](FeePool.md) via [`Synthetix.synthInitiatedFeePayment`](Synthetix.md#synthinitiatedfeepayment), then the the recipient receives `value` in the standard way. This means that the recipient is charged the fee on top of the value they are sending, but the recipient will certainly receive the specified amount of tokens.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `transferSenderPaysFee(address to, uint value) public returns (bool)`
@@ -213,7 +247,7 @@ This is a pair of ERC20/ERC223 functions closely similar to [`transferFrom`](#tr
 
     If the transfer fee rate is non-zero, [`FeePool.transferFeeIncurred(value)`](FeePool.md#transferfeeincurred) tokens are first remitted to the [`FeePool`](FeePool.md) via [`Synthetix.synthInitiatedFeePayment`](Synthetix.md#synthinitiatedfeepayment), then the the recipient receives `value` in the standard way. This means that the recipient is charged the fee on top of the value they are sending, but the recipient will certainly receive the specified amount of tokens.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `transferFromSenderPaysFee(address to, uint value) public returns (bool)`
@@ -238,7 +272,7 @@ This function implements all of the other ERC20 transfer functions supported by 
 !!! danger "Dormant Preferred Currency Conversion"
     If [`SynthetixState.preferredCurrency(to)`](SynthetixState.md#preferredcurrency) is nonzero, this function automatically performs an exchange into the preferred Synth flavour using [`Synthetix.synthInitiatedExchange`](Synthetix.md#synthinitiatedexchange). However, there is currently no way for accounts to set their preferred currency, so this feature has effectively been deactivated.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `_internalTransfer(address from, address to, uint value, bytes data) internal returns (bool)`
@@ -253,7 +287,7 @@ This function implements all of the other ERC20 transfer functions supported by 
 
 Allows the [`Synthetix`](Synthetix.md) contract to issue new Synths of this flavour. This is used whenever Synths are [exchanged](Synthetix.md#_internalexchange) or [issued directly](Synthetix.md#issuesynths). This is also used by the [`FeePool`](FeePool.md) to [pay fees out](FeePool.md#_payfees).
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `issue(address account, uint amount) external`
@@ -273,7 +307,7 @@ Allows the [`Synthetix`](Synthetix.md) contract to issue new Synths of this flav
 
 Allows the [`Synthetix`](Synthetix.md) contract to burn existing Synths of this flavour. This is used whenever Synths are [exchanged](Synthetix.md#_internalexchange) or [burnt directly](Synthetix.md#burnSynths). This is also used to burn Synths involved in oracle frontrunning as part of the [protection circuit](Synthetix.md#protectioncircuit). This is also used by the [`FeePool`](FeePool.md) to [burn XDRs when fees are paid out](FeePool.md#_payfees).
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `burn(address account, uint amount) external`
@@ -295,7 +329,7 @@ This allows the owner to set the total supply directly for upgrades, where the [
 
 For example, just such a migration is performed by [this script](https://github.com/Synthetixio/synthetix/blob/master/publish/src/commands/replace-synths.js).
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `setTotalSupply(uint amount) external`
@@ -310,7 +344,7 @@ For example, just such a migration is performed by [this script](https://github.
 
 Used during [Synth exchanges](Synthetix.md#_internalexchange) and [fee payments](FeePool.md#_payfees) to trigger the ERC223 fallback function of the recipient addresses on these operations as well as transfers. Other than restricting calls to only those contracts, this is just a wrapper around [`TokenFallbackCaller.callTokenFallbackIfNeeded`](TokenFallbackCaller.md#calltokenfallbackifneeded), invoked with a null `data` argument.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `triggerTokenFallbackIfNeeded(address sender, address recipient, uint amount) external`

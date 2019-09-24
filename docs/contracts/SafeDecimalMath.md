@@ -96,7 +96,7 @@ The factor ($10^9$) to convert between precision levels. Equivalent to `PRECISE_
 
 Pure alias to [`UNIT`](#unit).
 
-???+ example "Details"
+??? example "Details"
 
     **Signature**
 
@@ -108,7 +108,7 @@ Pure alias to [`UNIT`](#unit).
 
 Pure alias to [`PRECISE_UNIT`](#precise_unit).
 
-???+ example "Details"
+??? example "Details"
 
     **Signature**
 
@@ -120,7 +120,7 @@ Pure alias to [`PRECISE_UNIT`](#precise_unit).
 
 Returns the product of two standard precision fixed point numbers, handling precision loss by truncation.
 
-???+ example "Details"
+??? example "Details"
 
     **Signature**
     
@@ -132,7 +132,7 @@ Returns the product of two standard precision fixed point numbers, handling prec
 
 Returns the product of two fixed point numbers, handling precision loss by rounding. This function is private, and takes the fixed-point precision as a parameter, only being used to implement [`multiplyDecimalRound`](#multiplydecimalround) and [`multiplyDecimalRoundPrecise`](#multiplydecimalroundprecise).
 
-???+ example "Details"
+??? example "Details"
 
     **Signature**
     
@@ -146,7 +146,7 @@ Returns the product of two high precision fixed point numbers, handling precisio
 
 Equivalent to [`_multiplyDecimalRound(x, y, PRECISE_UNIT)`](#_multiplydecimalround).
 
-???+ example "Details"
+??? example "Details"
 
     **Signature**
     
@@ -160,7 +160,7 @@ Returns the product of two standard precision fixed point numbers, handling prec
 
 Equivalent to [`_multiplyDecimalRound(x, y, UNIT)`](#_multiplydecimalround).
 
-???+ example "Details"
+??? example "Details"
 
     **Signature**
     
@@ -172,7 +172,7 @@ Equivalent to [`_multiplyDecimalRound(x, y, UNIT)`](#_multiplydecimalround).
 
 Returns the quotient of two standard precision fixed point numbers, handling precision loss by truncation.
 
-???+ example "Details"
+??? example "Details"
 
     **Signature**
     
@@ -184,7 +184,7 @@ Returns the quotient of two standard precision fixed point numbers, handling pre
 
 Returns the quotient of two fixed point numbers, handling precision loss by rounding. This function is private, and takes the fixed-point precision as a parameter, only being used to implement [`divideDecimalRound`](#dividedecimalround) and [`divideDecimalRoundPrecise`](#dividedecimalroundprecise).
 
-???+ example "Details"
+??? example "Details"
 
     **Signature**
     
@@ -198,7 +198,7 @@ Returns the quotient of two standard precision fixed point numbers, handling pre
 
 Equivalent to [`_divideDecimalRound(x, y, UNIT)`](#_dividedecimalround).
 
-???+ example "Details"
+??? example "Details"
 
     **Signature**
     
@@ -212,7 +212,7 @@ Returns the quotient of two high precision fixed point numbers, handling precisi
 
 Equivalent to [`_divideDecimalRound(x, y, PRECISE_UNIT)`](#_dividedecimalround).
 
-???+ example "Details"
+??? example "Details"
 
     **Signature**
     
@@ -224,7 +224,7 @@ Equivalent to [`_divideDecimalRound(x, y, PRECISE_UNIT)`](#_dividedecimalround).
 
 Converts from standard precision to high precision numbers. This is just multiplication by $10^9$.
 
-???+ example "Details"
+??? example "Details"
 
     **Signature**
 
@@ -236,7 +236,7 @@ Converts from standard precision to high precision numbers. This is just multipl
 
 Converts from high precision to standard precision numbers. This is division by $10^9$, where precision loss is handled by rounding.
 
-???+ example "Details"
+??? example "Details"
 
     **Signature**
 

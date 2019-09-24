@@ -161,7 +161,7 @@ Used as the quantity of SNX to reward the caller of [`Synthetix.mint`](Synthetix
 
 Sets up the minting schedule and the inherited [`Owned`](Owned.md) instance. Note that `schedule[0].totalSupply = schedule[0].totalSupplyMinted = 1e8`, so the initial supply of SNX from the token sale is recorded as already having been minted from initialisation.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `constructor(address _owner) public`
@@ -176,7 +176,7 @@ Sets up the minting schedule and the inherited [`Owned`](Owned.md) instance. Not
 
 Allows the owner to set the [`synthetix`](#synthetix) address.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `setSynthetix(Synthetix _synthetix) external`
@@ -228,7 +228,7 @@ $$
 
     Also note that if no tokens are minted for a year, any leftovers from the previous year cannot be recovered.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `mintableSupply() public view returns (uint)`
@@ -239,7 +239,7 @@ $$
 
 This just returns its argument floor divided by [`mintPeriodDuration`](#mintperiodduration). Since this is only used in `mintableSupply()` it seems as if a variable would have done better than a public function.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `_numWeeksRoundedDown(uint _timeDiff) public view returns (uint)`
@@ -257,7 +257,7 @@ Minting is only allowed when neither:
 
 This means that tokens are only mintable once a week, and no more tokens can be minted once the full schedule has elapsed even if there are some outstanding. However, the final year of the schedule mints no new tokens; during this time any remaining tokens can be minted.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `isMintable() public view returns (bool)`
@@ -271,7 +271,7 @@ Returns the index of the current minting year in the [`schedule`](#schedule). Th
 !!! note "An Inefficiency"
     This computes the current year by bounds-checking each year in a loop, but it could be done more simply with integer division.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `getCurrentSchedule() public view returns (uint)`
@@ -291,7 +291,7 @@ This returns $0$ if some tokens have already been minted this year, or if it is 
 ???+ note "A Minor Inefficiency"
     In the function the result is actually computed as `max(0, lastYear.totalSupply - lastYear.totalSupplyMinted)`, which is redundant since the arguments are unsigned. Even if the minted supply could exceed the allocated supply, the result would overflow and the safe subtraction would revert the transaction.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `_remainingSupplyFromPreviousYear(uint currentSchedule) internal view returns (uint)`
@@ -305,14 +305,14 @@ This is called within [`Synthetix.mint`](Synthetix.md#mint) to declare that the 
 When called, this function adds a quantity of [`mintableSupply()`](#mintablesupply) tokens to the current [`schedule.totalSupplyMinted`](#schedule) entry, and updates the [`lastMintEvent`](#lastmintevent) timestamp.
 It is also responsible for updating this information if there were any unminted tokens left over from the previous year, which in effect sets `lastYear.totalSupplyMinted = lastYear.totalSupply`.
 
-Although this function has no check that any tokens actually are mintable when it is called, the Synthetix contract requires it, so double calls should not occur. Similarly, the function does not itself enforce that the actual token supply has been increased by Synthetix in a manner consistent with the defined schedule and must simply trust that this contract is observed.
+Although this function has no check that any tokens actually are mintable when it is called, the Synthetix contract requires it to be the case, so double calls should not occur. Similarly, the function does not itself enforce that the actual token supply has been increased by Synthetix in a manner consistent with the defined schedule and must simply trust that this contract is observed.
 
 The function always returns `true` if the transaction was not reverted.
 
 !!! Note "Unmintable Tokens"
     Some tokens could fail to be minted if no minting occurs for a year. That is, minting in the `n`th year cannot recover any unminted tokens from the `n-2`th year or earlier.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `updateMintValues() external returns (bool)`
@@ -335,7 +335,7 @@ The function always returns `true` if the transaction was not reverted.
 
 Allows the owner to set the current [minter reward](#minterreward).
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `setMinterReward(uint _amount) external`

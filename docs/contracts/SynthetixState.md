@@ -6,39 +6,8 @@ This contract is responsible for recording issuance and debt information for the
 
 Upon system updates, this contract will continue to exist, while the Synthetix logic itself is swapped out.
 
-This contract also contains functionality enabling automatic [preferred currency](#preferredcurrency) conversion on Synth transfers, but this is currently disabled.
-
-??? note "A Note on Conversion Fees"
-
-    Since transfer conversion is not operating, the following is recorded only to be kept in mind in case it is ever reactivated. At present there is no way for users to set a preferred currency.
-
-    The Synthetix system has both a conversion and a transfer fee. Although they should be distinct, the preferred currency auto conversion on transfer only charges the transfer fee, and not the conversion fee.
-    As a result, it is possible to convert Synths more cheaply whenever the transfer fee is less than the conversion fee.
-
-    Given that the transfer fee is currently nil, if a user was able to set a preferred currency for themselves, it would be possible by this means to perform free Synth conversions. This would 
-    undercut fee revenue for the system to incentivise participants with. If markets had priced in the conversion fee, but were unaware of the exploit, then there would be a profit cycle available for someone exploiting this.
-
-    In particular:
-
-    Let $\phi_\kappa, \ \phi_\tau \in [0,1]$ be the conversion and transfer fee rates, respectively.
-    Let $\pi_A, \ \pi_B$ be the prices of synths $A$ and $B$ in terms of some implicit common currency.
-    $Q_A$ will be the starting quantity of synth $A$.
-
-    Then to convert from $A$ to $B$, quantities
-
-    $$
-    Q^\kappa_B = Q_A\frac{\pi_A}{\pi_B}(1 - \phi_\kappa) \\
-    Q^\tau_B = Q_A\frac{\pi_A}{\pi_B}(1 - \phi_\tau)
-    $$
-
-    are received if the user performs a standard conversion or a transfer conversion, respectively.
-    The profit of performing a transfer conversion relative to a standard one is then:
-
-    $$
-    Q^\tau_B - Q^\kappa_B = Q_A\frac{\pi_A}{\pi_B}(\phi_\kappa - \phi_\tau)
-    $$
-
-    That is, the relative profit is simply $(\phi_\kappa - \phi_\tau)$. With no transfer fee, the profit is $\phi_\kappa$, as expected.
+!!! danger "Disabled: Preferred Currency Transfer Conversion"
+    This contract also contains functionality enabling automatic [preferred currency](#preferredcurrency) conversion on Synth transfers, but it is currently disabled.
 
 **Source:** [SynthetixState.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/SynthetixState.sol)
 
@@ -154,7 +123,7 @@ Constraining the value of [`issuanceRatio`](#issuanceratio) to be less than $1.0
 
 ### `preferredCurrency`
 
-!!! danger "Unused"
+!!! danger "Disabled"
     This feature is currently dormant. It can still operate, but the [`Synthetix`](Synthetix.md) contract does not expose any means for an account's preferred currency to actually be set, so it never operates.
 
 If users nominate a preferred currency, all synths they receive will be converted to this currency. This mapping stores the nominated preferred currency for each account, if any. A null preferred currency means no conversion will be performed.
@@ -175,7 +144,7 @@ This is used within [`Synth._internalTransfer`](Synth.md#_internaltransfer).
 
 Initialises the inherited [`State`](State.md) and [`LimitedSetup`](LimitedSetup.md) instances.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `constructor(address _owner, address _associatedContract) public`
@@ -192,7 +161,7 @@ Initialises the inherited [`State`](State.md) and [`LimitedSetup`](LimitedSetup.
 Allows the [`Synthetix`](Synthetix.md) contract to update the debt ownership entry for this account and sets their debt entry index to the current length of the [`debtLedger`](#debtledger).
 The debt ledger itself is not modified.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `setCurrentIssuanceData(address account, uint initialDebtOwnership) external`
@@ -207,7 +176,7 @@ The debt ledger itself is not modified.
 
 Deletes the issuance data associated with a given account.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `clearIssuanceData(address account) external`
@@ -222,7 +191,7 @@ Deletes the issuance data associated with a given account.
 
 Increases [`totalIssuerCount`](#totalissuercount) by one. This is called within [`Synthetix._addToDebtRegister`](Synthetix.md#_addtodebtregister) whenever an account with no outstanding issuance debt mints new Synths.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `incrementTotalIssuerCount() external`
@@ -237,7 +206,7 @@ Increases [`totalIssuerCount`](#totalissuercount) by one. This is called within 
 
 Reduces [`totalIssuerCount`](#totalissuercount) by one. This is called within [`Synthetix._removeFromDebtRegister`](Synthetix.md#_removefromdebtregister) whenever an issuer burns enough Synths to pay down their entire outstanding debt.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `decrementTotalIssuerCount() external`
@@ -254,7 +223,7 @@ Pushes a new value to the end of the [`debtLedger`](#debtledger).
 
 This is used by [`Synthetix._addToDebtRegister`](Synthetix.md#addtodebtregister) contract whenever Synths are issued or burnt, which modifies the total outstanding system debt.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `appendDebtLedgerValue(uint value) external`
@@ -267,12 +236,12 @@ This is used by [`Synthetix._addToDebtRegister`](Synthetix.md#addtodebtregister)
 
 ### `setPreferredCurrency`
 
-!!! danger "Unused"
+!!! danger "Disabled"
     This function is not used anywhere within the [`Synthetix`](Synthetix.md) contract, which is the only address with the privileges to call it. As a result the preferred currency feature is not operational.
 
 Sets the preferred currency for a particular account. Pass in null to unset this value.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `setPreferredCurrency(address account, bytes4 currencyKey) external`
@@ -287,7 +256,7 @@ Sets the preferred currency for a particular account. Pass in null to unset this
 
 Allows the owner to set the Synth [issuance ratio](#issuanceratio), but disallows setting it higher than $1.0$, which prevents more than one dollar worth of Synths being issued against each dollar of SNX backing them.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     setIssuanceRatio(uint _issuanceRatio) external`
@@ -313,7 +282,7 @@ Allows the owner to set the Synth [issuance ratio](#issuanceratio), but disallow
 
 This function allowed the owner to migrate sUSD issuance data during the launch of multiple Synth flavours. It simply calls [`_addToDebtRegister`](#_addtodebtregister) in a loop.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `importIssuerData(address[] accounts, uint[] sUSDAmounts) external`
@@ -337,7 +306,7 @@ This function allowed the owner to migrate sUSD issuance data during the launch 
 This utility function allows adds a new entry to the debt register to set up staker debt holdings when migrating from the previous Synthetix version.
 It duplicates the logic of [`Synthetix._addToDebtRegister`](Synthetix.md#_addtodebtregister) with some minor modifications to keep track of how much [debt has been imported](#importedxdramount).
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `_addToDebtRegister(address account, uint amount) internal`
@@ -350,7 +319,7 @@ Returns the number of entries currently in [`debtLedger`](#debtledger).
 
 Primarily used in [`FeePool`](FeePool.md) for fee period computations.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `debtLedgerLength() external view returns (uint)`
@@ -363,7 +332,7 @@ Returns the most recent [`debtLedger`](#debtledger) entry.
 
 Primarily used in the [`Synthetix`](Synthetix.md) for debt computations.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `lastDebtLedgerEntry() external view returns (uint)`
@@ -374,9 +343,9 @@ Primarily used in the [`Synthetix`](Synthetix.md) for debt computations.
 
 Returns true if a given account has any outstanding issuance debt resulting from Synth minting.
 
-Used in [`Synthetix._addToDebtRegister`] to determine whether an minting event requires incrementing the total issuer count.
+Used in [`Synthetix._addToDebtRegister`](Synthetix.md#_addtodebtregister) to determine whether an minting event requires incrementing the total issuer count.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `hasIssued(address account) external view returns (uint)`

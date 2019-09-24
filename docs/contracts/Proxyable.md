@@ -64,7 +64,7 @@ Functions which do not require `messageSender` need not apply any of the proxy m
 
 Initialises this contract's [proxy](#proxy) and the inherited [`Owned`](Owned.md) instance.
 
-???+ example "Details"
+??? example "Details"
 
     **Signature**
 
@@ -84,7 +84,7 @@ Initialises this contract's [proxy](#proxy) and the inherited [`Owned`](Owned.md
 
 Sets this contract's primary proxy. `setProxy` cannot be called through a proxy.
 
-???+ example "Details"
+??? example "Details"
 
     **Signature**
 
@@ -104,7 +104,7 @@ Sets this contract's primary proxy. `setProxy` cannot be called through a proxy.
 
 Sets this contract's secondary proxy. `setIntegrationProxy` cannot be called through a proxy.
 
-???+ example "Details"
+??? example "Details"
 
     **Signature**
 
@@ -123,7 +123,7 @@ Sets this contract's secondary proxy. `setIntegrationProxy` cannot be called thr
 
 This is used by proxies to set [`messageSender`](#messageSender) before forwarding a function call. This is only callable by the [`proxy`](#proxy) or [`integrationProxy`](#integrationProxy).
 
-???+ example "Details"
+??? example "Details"
 
     **Signature**
     

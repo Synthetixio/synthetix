@@ -2,7 +2,7 @@
 
 ## Description
 
-This is a [Synth](Synth.md) where all the holders can be force-exchanged back to `sUSD` at current rates so that the contract can be removed from the system or otherwise repurposed. In order to be liquidated, a Synth must either be frozen (if it is an inverse synth) or have its total outstanding supply worth less than $100\,000$ USD. Hence it is mainly useful for eliminating Synths which are unused or at the end of their useful life. The value of the token is read from the system's central [ExchangeRates](ExchangeRates.md) contract.
+This is a [Synth](Synth.md) where all the holders can be force-[exchanged](Synthetix.md#exchange) back to `sUSD` at current rates so that the contract can be removed from the system or otherwise repurposed. In order to be liquidated, a Synth must either be frozen (if it is an inverse synth) or have its total outstanding supply worth less than $100\,000$ USD. Hence it is mainly useful for eliminating Synths which are unused or at the end of their useful life. The value of the token is read from the system's central [ExchangeRates](ExchangeRates.md) contract.
 
 Purgeable synths were introduced by [SIP-3](https://github.com/Synthetixio/SIPs/blob/master/SIPS/sip-3.md) in response to increasing gas costs associated with minting, and to allow faster reconfiguration of inverse synths.
 
@@ -62,7 +62,7 @@ It is necessary to know the current price of this Synth to work out whether it i
 
 Initialises the [`exchangeRates`](#exchangerates) address, and the inherited [`Synth`](Synth.md) instance.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `constructor(address _proxy, TokenState _tokenState, Synthetix _synthetix, IFeePool _feePool, string _tokenName, string _tokenSymbol, address _owner, bytes4 _currencyKey, ExchangeRates _exchangeRates) public`
@@ -79,7 +79,7 @@ Allows the owner to liquidate all holders of this token back to `sUSD` if the to
 
 If this is successfully invoked, balances in the provided list of addresses will be deleted, and an equivalent value of sUSD credited to their account.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `purge(address[] addresses) external`
@@ -105,7 +105,7 @@ If this is successfully invoked, balances in the provided list of addresses will
 
 Allows the owner to set the address of the [exchange rates contract](ExchangeRates.md).
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `setExchangeRates(ExchangeRates _exchangeRates)`

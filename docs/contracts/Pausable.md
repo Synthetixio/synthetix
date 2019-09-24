@@ -46,7 +46,7 @@ True iff the contract is currently paused.
 
 The owner this constructor initialises has the exclusive right to pause the contract. The contract begins unpaused.
 
-???+ example "Details"
+??? example "Details"
 
     **Signature**
     
@@ -62,7 +62,7 @@ The owner this constructor initialises has the exclusive right to pause the cont
 
 Pauses or unpauses the contract. Sets [`lastPauseTime`](#lastPauseTime) to the current timestamp if the contract is newly paused.
 
-???+ example "Details"
+??? example "Details"
 
     **Signature**
     

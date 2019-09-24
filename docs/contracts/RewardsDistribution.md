@@ -104,7 +104,7 @@ An array of distribution recipients and the amount of SNX each will receive from
 
 Initialises the addresses of various related contracts, as well as the inherited [`Owned`](Owned.md) instance.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `constructor(address _owner, address _authority, address _synthetixProxy, address _rewardEscrow, address _feePoolProxy) public`
@@ -119,7 +119,7 @@ Initialises the addresses of various related contracts, as well as the inherited
 
 Allows the owner to set the address of the [Synthetix ProxyERC20](#synthetixproxy).
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `setSynthetixProxy(address _synthetixProxy) external`
@@ -134,7 +134,7 @@ Allows the owner to set the address of the [Synthetix ProxyERC20](#synthetixprox
 
 Allows the owner to set the address of the [RewardEscrow](#rewardescrow) contract.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `setRewardEscrow(address _rewardEscrow) external`
@@ -149,7 +149,7 @@ Allows the owner to set the address of the [RewardEscrow](#rewardescrow) contrac
 
 Allows the owner to set the address of the [FeePool Proxy](#feepoolproxy).
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `setFeePoolProxy(address _feePoolProxy) external`
@@ -164,7 +164,7 @@ Allows the owner to set the address of the [FeePool Proxy](#feepoolproxy).
 
 Allows the owner to set the address of the [fee authority](#feeauthority).
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `setAuthority(address _authority) external`
@@ -181,7 +181,7 @@ Allows the owner to add new reward distribution recipients.
 
 This function always returns true if it does not revert.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `addRewardDistribution(address destination, uint amount) external returns (bool)`
@@ -208,7 +208,7 @@ Removes a distribution recipient from the [`distributions`](#distributions) list
 !!! note "A Point on Gas Consumption"
     Since this function must shift all later entries down to fill the gap from the one it removed, it could in principle consume an unbounded amount of gas. However, the number of entries will always be very low.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `removeRewardDistribution(uint index) external`
@@ -229,7 +229,7 @@ Modifies a distribution recipient or the quantity to be released to them in the 
 
 This function always returns true if it does not revert.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `editRewardDistribution(uint index, address destination, uint amount) external returns (bool)`
@@ -255,8 +255,7 @@ This function always returns true if it does not revert.
 !!! note "SNX Balance"
     There will always be sufficient SNX in the RewardsDistribution contract to support this operation, since its SNX balance is directly credited the correct number of tokens by [`Synthetix.mint`](Synthetix.md#mint) immediately before the only call to this function. Only the Synthetix contract is authorised to execute rewards distribution, and this is the only place new SNX finds its way into the system.
 
-
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `distributeRewards(uint amount) external returns (bool)`
@@ -278,7 +277,7 @@ This function always returns true if it does not revert.
 
 The number of recipients receiving distributions. This is an alias for `distributions.length`.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `distributionsLength() external view returns (uint)`

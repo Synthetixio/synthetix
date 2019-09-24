@@ -1,6 +1,6 @@
 # ExchangeRates
 
-This contract stores the latest Synth exchange rates. These rates are set by an oracle, which frequently updates this contract with any prices that have moved sufficiently. Once set, these prices are available for any contract in the Synthetix system to query.
+This contract stores the latest Synth exchange rates. These rates are set by an oracle, which updates this contract every three minutes with any prices that have moved sufficiently. Once set, these prices are available for any contract in the Synthetix system to query.
 Prices which have not been updated recently enough are considered stale; Synthetix functionality using stale prices does not operate.
 
 All rates are denominated in terms of `sUSD`, so the price of `sUSD` is always $1.0$, and is never stale.
@@ -94,6 +94,8 @@ The maximum time in the future ($10$ minutes) that rates are allowed to be set f
 
 **Type:** `uint constant`
 
+**Value:** `10 minutes`
+
 ---
 
 ### `rateStalePeriod`
@@ -118,6 +120,7 @@ An oracle front running protection mutex, set by [`setPriceUpdateLock`](#setpric
 The codes of each currency in the XDR basket. Hard-coded to `[sUSD, sAUD, sCHF, sEUR, sGBP]`. They are equally-weighted. For stability, there are no crypto assets listed here.
 
 **Type:** `bytes4[5] public`
+
 
 ---
 
@@ -147,7 +150,7 @@ A list of the keys of currencies with an inverted index.
 
 Initialises the oracle address and initial currency prices, the `XDR` basket, along with the inherited [`SelfDestructible`](SelfDestructible.md) instance.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `constructor(address _owner, address _oracle, bytes4[] _currencyKeys, uint[] _newRates) public`
@@ -168,7 +171,7 @@ Initialises the oracle address and initial currency prices, the `XDR` basket, al
 
 Allows the oracle to update exchange rates in the contract. Otherwise this is just an alias to [`internalUpdateRates`](#internalupdaterates).
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `updateRates(bytes4[] currencyKeys, uint[] newRates, uint timeSent) external returns (bool)`
@@ -190,7 +193,7 @@ The `timeSent` argument is useful for maintaining the exact age of the data poin
 
 Returns true if no exception was thrown.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `internalUpdateRates(bytes4[] currencyKeys, uint[] newRates, uint timeSent) internal returns (bool)`
@@ -231,7 +234,7 @@ With $0 \lt l \lt e \lt u \lt 2e$ enforced by [`setInversePricing`](#setinversep
 So if $p$ moves from $e$ to $e + \delta$, then $\bar{p}$ moves to $e - \delta$, if it would not be frozen.
 $\bar{p}$ is frozen whenever $\bar{p} \in \{l,u\}$; that is, when $2e - l \le p$ or $p \le 2e - u$. This implies that $p$ can never exceed twice its entry point without $\bar{p}$ being frozen, but in principle it could reach almost to zero.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `rateOrInverted(bytes4 currencyKey, uint rate) internal returns (uint)`
@@ -249,7 +252,7 @@ Updates the `XDR` price, which is set to the sum of the current prices of the cu
 !!! caution
     The `XDR` price is still recomputed even if the underlying prices are stale, or if the oracle is not updating any of the `XDR` participants. Due to this, `XDR`'s update timestamp does not necessarily reflect the timestamps of the underlying currencies. Unless every other price is stale, the price of the `XDR` cannot be stale, even if its constituent prices are.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `updateXDRRate(uint timeSent) internal`
@@ -264,7 +267,7 @@ Updates the `XDR` price, which is set to the sum of the current prices of the cu
 
 Deletes a currency's price and its update time from the ExchangeRates contract.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `deleteRate(bytes4 currencyKey) external`
@@ -287,7 +290,7 @@ Deletes a currency's price and its update time from the ExchangeRates contract.
 
 Allows the owner to set the address which is permitted to send prices to this contract.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `setOracle(address _oracle) external`
@@ -306,7 +309,7 @@ Allows the owner to set the address which is permitted to send prices to this co
 
 Allows the owner to set the time after which rates will be considered stale.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `setRateStalePeriod(uint _time) external`
@@ -325,7 +328,7 @@ Allows the owner to set the time after which rates will be considered stale.
 
 Allows the oracle to disable Synth exchange functionality before it updates its prices.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `setPriceUpdateLock(uint _priceUpdateLock) external`
@@ -340,7 +343,7 @@ Allows the oracle to disable Synth exchange functionality before it updates its 
 
 Allows the owner to set up an inverse index for a particular currency. See [`rateOrInverted`](#rateorinverted) for computation details. New inverse indexes begin unfrozen.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `setInversePricing(bytes4 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit) external`
@@ -372,7 +375,7 @@ Allows the owner to set up an inverse index for a particular currency. See [`rat
 
 Allows the owner to remove an inverse index for a particular currency.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `removeInversePricing(bytes4 currencyKey) external`
@@ -402,7 +405,7 @@ $$
 
 This computation is simple because all fractional quantities in the Synthetix system except for the [debt ledger](SynthetixState.md#debtledger) are [18 decimal fixed point numbers](SafeDecimalMath.md).
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `effectiveValue(bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey) public view returns (uint)`
@@ -422,7 +425,7 @@ This computation is simple because all fractional quantities in the Synthetix sy
 
 Returns the last recorded rate for the given currency. This is just an alias to the public mapping `rates`, so it could probably be eliminated.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `rateForCurrency(bytes4 currencyKey) public view returns (uint)`
@@ -433,7 +436,7 @@ Returns the last recorded rate for the given currency. This is just an alias to 
 
 Maps [`rateForCurrency`](#rateforcurrency) over an array of keys.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `ratesForCurrencies(bytes4[] currencyKeys) public view returns (uint[])`
@@ -444,7 +447,7 @@ Maps [`rateForCurrency`](#rateforcurrency) over an array of keys.
 
 Returns the last recorded rate update time for the given currency. This is just an alias to the public mapping [`lastRateUpdateTime`](#lastrateupdatetime), so it could probably be eliminated.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `lastRateUpdateTimeForCurrency(bytes4 currencyKey) public view returns (uint)`
@@ -455,7 +458,7 @@ Returns the last recorded rate update time for the given currency. This is just 
 
 Maps [`lastRateUpdateTimeForCurrency`](#lastrateupdatetimeforcurrency) over an array of keys.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `lastRateUpdateTimesForCurrencies(bytes4[] currencyKeys) public view returns (uint[])`
@@ -468,7 +471,7 @@ The rate for a given currency is stale if its last update occurred more than [`r
 
 `sUSD` is a special case; since its rate is fixed at $1.0$, it is never stale. The rates of nonexistent currencies are always stale.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `rateIsStale(bytes4 currencyKey) public view returns (bool)`
@@ -479,7 +482,7 @@ The rate for a given currency is stale if its last update occurred more than [`r
 
 Returns true if the inverse price for the given currency is frozen. This is simply an alias to [`inversePricing[currencyKey].frozen`](#inversepricing). Currencies without an inverse price will naturally return false.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `rateIsFrozen(bytes4 currencyKey) external view returns (bool)`
@@ -490,7 +493,7 @@ Returns true if the inverse price for the given currency is frozen. This is simp
 
 Loop over the given array of currencies and return true if any of them [is stale](#rateisstale). `sUSD`'s rate is never stale. Rates for nonexistent currencies are always stale.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `anyRateIsStale(bytes4[] currencyKeys) external view returns (bool)`

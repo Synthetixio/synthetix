@@ -81,7 +81,7 @@ This toggle controls whether the proxy is in `CALL` or `DELEGATECALL` mode. The 
 
 Initialises the inherited [`Owned`](Owned.md) instance.
 
-???+ example "Details"
+??? example "Details"
 
     **Signature**
 
@@ -97,7 +97,7 @@ Initialises the inherited [`Owned`](Owned.md) instance.
 
 Sets the address this proxy forwards its calls to.
 
-???+ example "Details"
+??? example "Details"
 
     **Signature**
     
@@ -117,7 +117,7 @@ Sets the address this proxy forwards its calls to.
 
 Selects which call style to use by setting [`useDELEGATECALL`](#usedelegatecall).
 
-???+ example "Details"
+??? example "Details"
 
     **Signature**
     
@@ -153,7 +153,7 @@ Note that 0 is a valid argument for `numTopics`, which produces `LOG0`, an "even
 
     See [the official Solidity documentation](https://solidity.readthedocs.io/en/v0.5.11/050-breaking-changes.html#semantic-and-syntactic-changes) for more discussion. The exact behaviour of the abi encoding functions is defined [here](https://github.com/ethereum/solidity/blob/7dcc47ed57f5a6ea3761e54da5a4d7bbe055b5a7/libsolidity/codegen/ExpressionCompiler.cpp#L973).
 
-???+ example "Details"
+??? example "Details"
 
     **Signature**
     
@@ -176,7 +176,7 @@ If none of the above functions is hit, then the function call data and gas is fo
 If the proxy is in `DELEGATECALL` style, it operates like most other proxies.
 If it is in `CALL` mode, then it first calls [`target.setMessageSender(msg.sender)`](Proxyable.md#setmessagesender) to initialise the [`messageSender`](Proxyable.md#messagesender) variable in the underlying [`Proxyable`](Proxyable.md) instance. In addition it forwards any ether included in the transaction to its target.
 
-???+ example "Details"
+??? example "Details"
 
     **Signature**
 

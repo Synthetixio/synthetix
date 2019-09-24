@@ -90,7 +90,7 @@ The ERC20 decimal precision of this token. This is usually set to 18 in Syntheti
 
 Initialises this token's ERC20 fields, its proxy, token state, and its inherited [`SelfDestructible`](SelfDestructible.md) and [`Proxyable`](Proxyable.md) instances.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `constructor(address _proxy, TokenState _tokenState, string _name, string _symbol, uint _totalSupply, uint8 _decimals, address _owner) public`
@@ -107,7 +107,7 @@ Initialises this token's ERC20 fields, its proxy, token state, and its inherited
 Returns the ERC20 allowance of one party to spend on behalf of another.
 This information is retrieved from the [`tokenState`](TokenState.md) contract.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `allowance(address owner, address spender) public view returns (uint)`
@@ -119,7 +119,7 @@ This information is retrieved from the [`tokenState`](TokenState.md) contract.
 Returns the ERC20 token balance of the given address.
 This information is retrieved from the [`tokenState`](TokenState.md) contract.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `balanceOf(address account) public view returns (uint)`
@@ -131,7 +131,7 @@ This information is retrieved from the [`tokenState`](TokenState.md) contract.
 Allows the owner to set the address of the `tokenState`(TokenState.md) contract.
 Unhooking the token state will pause the contract by causing all transactions to revert.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `setTokenState(TokenState _tokenState) external`
@@ -154,7 +154,7 @@ In addition to the ordinary ERC20 transfer behaviour, `_internalTransfer` also t
 
 `_internalTransfer` always returns true if the transaction does not revert.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `_internalTransfer(address from, address to, uint value, bytes data) internal returns (bool)`
@@ -178,7 +178,7 @@ Designed to be used in a transfer function posessing the [`onlyProxy`](Proxyable
 
 Implemented as [`_internalTransfer(from, to, value, data)`](#_internaltransfer).
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `_transfer_byProxy(address from, address to, uint value, bytes data) internal returns (bool)`
@@ -193,7 +193,7 @@ Designed to be used in a transferFrom function posessing the [`onlyProxy`](Proxy
 
 After allowance has been deducted, Implemented by [`_internalTransfer(from, to, value, data)`](#_internaltransfer).
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `_transferFrom_byProxy(address sender, address from, address to, uint value, bytes data) internal returns (bool)`
@@ -210,7 +210,7 @@ After allowance has been deducted, Implemented by [`_internalTransfer(from, to, 
 
 ERC20 approve function.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `approve(address spender, uint value) public returns (bool)`
@@ -231,7 +231,7 @@ Emits an ERC20 [`Transfer`](#transfer) event.
 
 Encodes the transfer signature and parameters, then forwards them to the proxy to be [emitted](Proxy.md#_emit).
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `emitTransfer(address from, address to, uint value) internal`
@@ -244,7 +244,7 @@ Emits an ERC20 [`Approval`](#approval) event.
 
 Encodes the event signature and parameters, then forwards them to the proxy to be [emitted](Proxy.md#_emit).
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `emitApproval(address owner, address spender, uint value) internal`
@@ -257,7 +257,7 @@ Emits a [`TokenStateUpdated`](#tokenstateupdated) event.
 
 Encodes the event signature and parameters, then forwards them to the proxy to be [emitted](Proxy.md#_emit).
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `emitTokenStateUpdated(address newTokenState) internal`

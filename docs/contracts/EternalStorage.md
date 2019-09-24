@@ -44,7 +44,7 @@ A mapping from keys to values of type 𝕋.
 
 Initialises the inherited [`State`](State.md) instance.
 
-???+ example "Details"
+??? example "Details"
 
     **Signature**
     
@@ -62,7 +62,7 @@ Return the value associated with a particular key in the [`𝕋Storage`](Eternal
 
 In theory this function could be eliminated by making the storage mapping public, but providing it makes accessor naming more consistent.
 
-???+ example "Details"
+??? example "Details"
 
     **Signature**
 
@@ -77,7 +77,7 @@ In theory this function could be eliminated by making the storage mapping public
 
 Sets the value associated with a particular key in the [`𝕋Storage`](EternalStorage.md#storage) mapping.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `set𝕋Value(bytes32 record, 𝕋 value) external`
@@ -92,7 +92,7 @@ Sets the value associated with a particular key in the [`𝕋Storage`](EternalSt
 
 Deletes the value associated with a particular key in the [`𝕋Storage`](EternalStorage.md#storage) mapping.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `delete𝕋Value(bytes32 record) external`

@@ -24,11 +24,13 @@ This contract is just wrapper around [EternalStorage](EternalStorage.md) with a 
 
 ### `LAST_FEE_WITHDRAWAL`
 
-This is a const string with the value "last_fee_withdrawal", to be used to access the correct slot in the eternal storage map.
+This constant is an arbitrary string to be used to access the correct slot in the eternal storage [`uint` map](EternalStorage.md#storage) where an account's last withdrawal time is kept.
 
-This is hashed together with an address to obtain the key for that address's last withdrawal time. See [`FeePool.getLastFeeWithdrawal`](FeePool.md#getlastfeewithdrawal) and [`FeePool.setLastFeeWithdrawal`](FeePool.md#setlastfeewithdrawal) for applications.
+This is hashed together with the address to obtain the correct key. See [`FeePool.getLastFeeWithdrawal`](FeePool.md#getlastfeewithdrawal) and [`FeePool.setLastFeeWithdrawal`](FeePool.md#setlastfeewithdrawal) for applications.
 
 **Type:** `bytes32 const`
+
+**Value:** `"last_fee_withdrawal"`
 
 ---
 
@@ -42,7 +44,7 @@ This is hashed together with an address to obtain the key for that address's las
 
 Initialises the inherited [`EternalStorage`](EternalStorage.md) instance, and sets a [limited setup period](LimitedSetup.md) of six weeks.
 
-???+ example "Details"
+??? example "Details"
 
     **Signature**
 
@@ -59,7 +61,7 @@ Initialises the inherited [`EternalStorage`](EternalStorage.md) instance, and se
 
 This is a helper to import fee withdrawal information from a previous version of the system during the setup period.
 
-???+ example "Details"
+??? example "Details"
 
     **Signature**
 

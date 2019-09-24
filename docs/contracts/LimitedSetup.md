@@ -38,7 +38,7 @@ The timestamp at which functions which have the [`onlyDuringSetup`](#onlydurings
 
 Sets [`setupExpiryTime`](#setupexpirytime) to the current timestamp plus `setupDuration` seconds.
 
-???+ example "Details"
+??? example "Details"
 
     **Signature**
     

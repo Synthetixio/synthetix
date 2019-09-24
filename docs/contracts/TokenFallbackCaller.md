@@ -27,7 +27,7 @@ Allows inheriting contracts to call an ERC223 token fallback function of an exte
 
 Checks if the target address is a smart contract, and attempts to call its ERC223 fallback function if it is. If this call fails, then it fails silently, which allows targets that are not ERC223-compliant to still be valid recipients.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `callTokenFallbackIfNeeded(address recipient, uint amount, bytes data) internal`

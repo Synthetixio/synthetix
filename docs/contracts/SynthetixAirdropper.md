@@ -31,7 +31,7 @@ Each fee period, the [`RewardsDistribution`](RewardsDistribution.md) contract se
 
 Initialises the inherited [`Owned`](Owned.md) instance.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `constructor(address _owner) public`
@@ -46,7 +46,7 @@ Initialises the inherited [`Owned`](Owned.md) instance.
 
 Performs batches of ERC20 token transfers to save gas.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `multisend(address _tokenAddress, address[] _destinations, uint256[] _values) external`
@@ -65,7 +65,7 @@ Performs batches of ERC20 token transfers to save gas.
 
 This fallback function immediately transfers any ether sent to the contract to the contract owner.
 
-???+ example "Details"
+??? example "Details"
     **Signature**
 
     `() external payable`
