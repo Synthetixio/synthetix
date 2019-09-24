@@ -16,7 +16,7 @@ contract('AtomicSynthetixUniswapConverter', async accounts => {
 		web3.utils.asciiToHex
 	);
 
-	const [deployerAccount, owner, account1, account2, account3, account4] = accounts;
+	const [deployerAccount, owner, account1, account2, account3, account4, account5] = accounts;
 
 	let synthetix,
 		atomicSynthetixUniswapConverter,
@@ -134,6 +134,65 @@ contract('AtomicSynthetixUniswapConverter', async accounts => {
 			from: deployerAccount,
 		});
 		await assert.revert(instance.setSynthsFeePool(feePool.address, { from: account1 }));
+	});
+
+	it('otherTokenToEthInput should work', async () => {
+		await synthetix.methods['transfer(address,uint256)'](account5, toUnit('100000'), {
+			from: owner,
+		});
+		// Issue
+		const amountIssued = toUnit('200');
+		await synthetix.issueSynths(sAUD, amountIssued, { from: account5 });
+		assert.bnEqual(await sAUDContract.balanceOf(account5), amountIssued);
+		const account2Balance = await getEthBalance(account2);
+
+		await sAUDContract.approve(atomicSynthetixUniswapConverter.address, amountIssued, {
+			from: account5,
+		});
+		const effectiveValue = await synthetix.effectiveValue(sAUD, amountIssued, sETH);
+		const effectiveValueMinusFees = await feePool.amountReceivedFromExchange(effectiveValue);
+		// console.log("effectiveValueMinusFees:"+effectiveValueMinusFees);
+		await atomicSynthetixUniswapConverter.otherTokenToEthInput(
+			sAUD,
+			toUnit('200'),
+			toUnit('0.09'),
+			bigDeadline,
+			account2,
+			{
+				from: account5,
+			}
+		);
+		assert.bnEqual(
+			new BN(await getEthBalance(account2)),
+			new BN(account2Balance).add(new BN(effectiveValueMinusFees))
+		);
+		assert.bnEqual(new BN(await sAUDContract.balanceOf(account5)), toUnit('0'));
+	});
+
+	it('otherTokenToEthInput to get too much output should fail', async () => {
+		await synthetix.methods['transfer(address,uint256)'](account5, toUnit('100000'), {
+			from: owner,
+		});
+		// Issue
+		const amountIssued = toUnit('20');
+		await synthetix.issueSynths(sAUD, amountIssued, { from: account5 });
+		assert.bnEqual(await sAUDContract.balanceOf(account5), amountIssued);
+
+		await sAUDContract.approve(atomicSynthetixUniswapConverter.address, amountIssued, {
+			from: account5,
+		});
+		await assert.revert(
+			atomicSynthetixUniswapConverter.otherTokenToEthInput(
+				sAUD,
+				toUnit('20'),
+				toUnit('1'),
+				bigDeadline,
+				account2,
+				{
+					from: account5,
+				}
+			)
+		);
 	});
 
 	it('ethToSethInput to self should work', async () => {
