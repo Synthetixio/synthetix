@@ -223,7 +223,7 @@ const replaceSynths = async ({
 		const synthContractName = `Synth${currencyKey}`;
 
 		// STEPS
-		// 1. set old TokenState.setTotalSupply(0) // owner
+		// 1. set old ExternTokenState.setTotalSupply(0) // owner
 		await runStep({
 			contract: synthContractName,
 			target: Synth,
@@ -246,10 +246,12 @@ const replaceSynths = async ({
 
 		// // 3. use Deployer to deploy
 		const additionalConstructorArgsMap = {
-			PurgeableSynth: [exchangeRatesAddress],
-			Synth: [],
+			PurgeableSynth: [exchangeRatesAddress, totalSupplies[currencyKey]],
+			Synth: [totalSupplies[currencyKey]],
 			// future subclasses...
 		};
+
+		// ensure new Synth gets totalSupply set from old Synth
 		const replacementSynth = await deployer.deploy({
 			name: `Synth${currencyKey}`,
 			source: subclass,
@@ -295,16 +297,6 @@ const replaceSynths = async ({
 			expected: input => input === replacementSynth.options.address,
 			write: 'setTarget',
 			writeArg: replacementSynth.options.address,
-		});
-
-		// 7. newone.setTotalSupply(totalSupplyList[...])
-		await runStep({
-			contract: synthContractName,
-			target: replacementSynth,
-			read: 'totalSupply',
-			expected: input => input === totalSupplies[currencyKey],
-			write: 'setTotalSupply',
-			writeArg: totalSupplies[currencyKey],
 		});
 
 		// update the deployment.json file for new Synth target
