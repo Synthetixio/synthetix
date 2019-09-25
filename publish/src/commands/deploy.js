@@ -704,11 +704,6 @@ const deploy = async ({
 
 		const currencyKeyInBytes = w3utils.asciiToHex(currencyKey);
 
-		const additionalConstructorArgsMap = {
-			PurgeableSynth: [exchangeRatesAddress],
-			// future subclasses...
-		};
-
 		// track the original supply if we're deploying a new synth contract for an existing synth
 		let originalTotalSupply = 0;
 		// cannot check local network as deploy is true for everything
@@ -717,9 +712,36 @@ const deploy = async ({
 			originalTotalSupply = await oldSynth.methods.totalSupply().call();
 		}
 
+		// PurgeableSynth needs additionalConstructorArgs to be ordered
+		const additionalConstructorArgsMap = {
+			Synth: [originalTotalSupply],
+			PurgeableSynth: [exchangeRatesAddress, originalTotalSupply],
+			// future subclasses...
+		};
+
+		console.log(yellow(`Original TotalSupply on Synth${currencyKey} is ${originalTotalSupply}`));
+
+		// user confirm totalSupply is correct for oldSynth before deploy new synth
+		if (!yes) {
+			try {
+				await confirmAction(
+					yellow(
+						`⚠⚠⚠ WARNING: Please confirm - ${network}:\n` +
+							`Synth${currencyKey} totalSupply is ${originalTotalSupply} \n`
+					) +
+						gray('-'.repeat(50)) +
+						'\nDo you want to continue? (y/n) '
+				);
+			} catch (err) {
+				console.log(gray('Operation cancelled'));
+				return;
+			}
+		}
+
+		const sourceContract = subclass || 'Synth';
 		const synth = await deployContract({
 			name: `Synth${currencyKey}`,
-			source: subclass || 'Synth',
+			source: sourceContract,
 			deps: [`TokenState${currencyKey}`, `Proxy${currencyKey}`, 'Synthetix', 'FeePool'],
 			args: [
 				proxyForSynth ? proxyForSynth.options.address : '',
@@ -730,20 +752,9 @@ const deploy = async ({
 				currencyKey,
 				account,
 				currencyKeyInBytes,
-			].concat(additionalConstructorArgsMap[subclass] || []),
+			].concat(additionalConstructorArgsMap[sourceContract] || []),
 			force: addNewSynths,
 		});
-
-		if (synth && originalTotalSupply > 0) {
-			await runStep({
-				contract: `Synth${currencyKey}`,
-				target: synth,
-				read: 'totalSupply',
-				expected: input => input === originalTotalSupply,
-				write: 'setTotalSupply',
-				writeArg: originalTotalSupply,
-			});
-		}
 
 		const synthAddress = synth ? synth.options.address : '';
 
