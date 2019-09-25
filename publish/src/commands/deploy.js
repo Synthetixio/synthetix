@@ -719,7 +719,23 @@ const deploy = async ({
 			// future subclasses...
 		};
 
-		console.log(yellow(`Original TotalSupply on Synth${currencyKey} is ${originalTotalSupply}`));
+		// user confirm totalSupply is correct for oldSynth before deploy new synth
+		if (!yes) {
+			try {
+				await confirmAction(
+					yellow(
+						`⚠⚠⚠ WARNING: Please confirm - ${network}:\n` +
+							`Synth${currencyKey} totalSupply is ${originalTotalSupply} \n`
+					) +
+						gray('-'.repeat(50)) +
+						'\nDo you want to continue? (y/n) '
+				);
+			} catch (err) {
+				console.log(gray('Operation cancelled'));
+				return;
+			}
+		}
+
 		const sourceContract = subclass || 'Synth';
 		const synth = await deployContract({
 			name: `Synth${currencyKey}`,
