@@ -38,11 +38,11 @@
 		},
 		"SynthetixState": {
 			"name": "SynthetixState",
-			"address": "0x3E73f9152B02B398F87780D7a4F9058Ae122a0aC",
+			"address": "0x244eD0655838f2f645fa4D80DBD0d445C7b06EB0",
 			"source": "SynthetixState",
-			"link": "https://rinkeby.etherscan.io/address/0x3E73f9152B02B398F87780D7a4F9058Ae122a0aC",
-			"timestamp": "2019-03-06T23:05:13.000Z",
-			"txn": "https://rinkeby.etherscan.io/tx/0x9f15a8853722c4218186cf3831c71c041f5d8ce949776dd2589b92d4536f3325",
+			"link": "https://rinkeby.etherscan.io/address/0x244eD0655838f2f645fa4D80DBD0d445C7b06EB0",
+			"timestamp": "2019-09-25T10:32:14.000Z",
+			"txn": "https://rinkeby.etherscan.io/tx/0xdbc541f9bd1e1afbf7c67a03ad84c7ea369ae2be15d774d56c4bf56d9bb66da1",
 			"network": "rinkeby"
 		},
 		"ProxySynthetix": {
@@ -65,11 +65,11 @@
 		},
 		"Synthetix": {
 			"name": "Synthetix",
-			"address": "0x62818b992B88796D36bD049B2e641FBeAF526d70",
+			"address": "0x73B47906C4A87305816c77F8713a06696E6fE8c8",
 			"source": "Synthetix",
-			"link": "https://rinkeby.etherscan.io/address/0x62818b992B88796D36bD049B2e641FBeAF526d70",
-			"timestamp": "2019-09-25T09:09:44.000Z",
-			"txn": "https://rinkeby.etherscan.io/tx/0xfad437d35513afed2f69e68f392715e35b862a029c1f0d335d38a6641d9fc247",
+			"link": "https://rinkeby.etherscan.io/address/0x73B47906C4A87305816c77F8713a06696E6fE8c8",
+			"timestamp": "2019-09-25T10:43:45.853Z",
+			"txn": "",
 			"network": "rinkeby"
 		},
 		"SynthetixEscrow": {
@@ -5052,7 +5052,8 @@
 					],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "constructor"
+					"type": "constructor",
+					"signature": "constructor"
 				},
 				{
 					"anonymous": false,
@@ -6456,8 +6457,7 @@
 					],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "constructor",
-					"signature": "constructor"
+					"type": "constructor"
 				},
 				{
 					"anonymous": false,
@@ -11043,8 +11043,7 @@
 					],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "constructor",
-					"signature": "constructor"
+					"type": "constructor"
 				},
 				{
 					"anonymous": false,
