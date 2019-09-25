@@ -46,6 +46,13 @@ program
 			);
 			console.log(`Test privkeys: ${user1.privateKey}`);
 
+			/** TODO: Add check System's debt matches reported totalIssuedSynths on synthetix.
+			 * 	If SynthetixState.debtLedgerLenght() > 0, then Synthetix.totalIssuedSynths(XDR)
+			 * 	must be > 0 as there should be debt in form of synths registered.
+			 * 	Terminate testnet test immediately if false.
+			 * 	Whole synthetixState debt system will be broken by any burning / issuing actions.
+			 **/
+
 			// #1 - Send the account some test ether
 			console.log(green(`Transferring 0.1 test ETH to ${user1.address}`));
 			const { transactionHash: txn0Hash } = await web3.eth.sendTransaction({
