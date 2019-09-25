@@ -187,6 +187,7 @@ contract('Synthetix', async accounts => {
 			'sXYZ123',
 			owner,
 			web3.utils.asciiToHex('sXYZ123'),
+			web3.utils.toWei('0'), // _totalSupply
 			{ from: deployerAccount }
 		);
 
@@ -213,6 +214,7 @@ contract('Synthetix', async accounts => {
 			'sXYZ123',
 			owner,
 			web3.utils.asciiToHex('sXYZ123'),
+			web3.utils.toWei('0'),
 			{ from: deployerAccount }
 		);
 
@@ -229,6 +231,7 @@ contract('Synthetix', async accounts => {
 			'sXYZ123',
 			owner,
 			web3.utils.asciiToHex('sXYZ123'),
+			web3.utils.toWei('0'),
 			{ from: deployerAccount }
 		);
 
@@ -246,6 +249,7 @@ contract('Synthetix', async accounts => {
 			'sXYZ123',
 			owner,
 			web3.utils.asciiToHex('sXYZ123'),
+			web3.utils.toWei('0'),
 			{ from: deployerAccount }
 		);
 
@@ -258,6 +262,7 @@ contract('Synthetix', async accounts => {
 			'sXYZ123',
 			owner,
 			web3.utils.asciiToHex('sXYZ123'),
+			web3.utils.toWei('0'),
 			{ from: deployerAccount }
 		);
 
