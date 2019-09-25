@@ -719,6 +719,8 @@ const deploy = async ({
 			// future subclasses...
 		};
 
+		console.log(yellow(`Original TotalSupply on Synth${currencyKey} is ${originalTotalSupply}`));
+
 		// user confirm totalSupply is correct for oldSynth before deploy new synth
 		if (!yes) {
 			try {
