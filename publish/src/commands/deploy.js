@@ -695,12 +695,27 @@ const deploy = async ({
 			force: addNewSynths,
 		});
 
+		// sUSD proxy is used by Kucoin and Bittrex thus requires proxy / integration proxy to be set
+		const synthProxyIsLegacy = currencyKey === 'sUSD' && network !== 'local';
+
 		const proxyForSynth = await deployContract({
 			name: `Proxy${currencyKey}`,
-			source: 'ProxyERC20',
+			source: synthProxyIsLegacy ? 'Proxy' : 'ProxyERC20',
 			args: [account],
 			force: addNewSynths,
 		});
+
+		let proxyERC20ForSynth;
+
+		if (synthProxyIsLegacy) {
+			// additionally deploy an ERC20 proxy for the synth if it's legacy (sUSD and not on local)
+			proxyERC20ForSynth = await deployContract({
+				name: `ProxyERC20${currencyKey}`,
+				source: `ProxyERC20`,
+				args: [account],
+				force: addNewSynths,
+			});
+		}
 
 		const currencyKeyInBytes = w3utils.asciiToHex(currencyKey);
 
@@ -721,8 +736,8 @@ const deploy = async ({
 
 		console.log(yellow(`Original TotalSupply on Synth${currencyKey} is ${originalTotalSupply}`));
 
-		// user confirm totalSupply is correct for oldSynth before deploy new synth
-		if (!yes) {
+		// user confirm totalSupply is correct for oldSynth before deploy new Synth
+		if (config[`Synth${currencyKey}`].deploy && !yes) {
 			try {
 				await confirmAction(
 					yellow(
@@ -774,6 +789,27 @@ const deploy = async ({
 			await runStep({
 				contract: `Proxy${currencyKey}`,
 				target: proxyForSynth,
+				read: 'target',
+				expected: input => input === synthAddress,
+				write: 'setTarget',
+				writeArg: synthAddress,
+			});
+		}
+
+		// Setup integration proxy (ProxyERC20) for Synth (Remove when sUSD Proxy cuts over)
+		if (proxyERC20ForSynth && synth) {
+			await runStep({
+				contract: `Synth${currencyKey}`,
+				target: synth,
+				read: 'integrationProxy',
+				expected: input => input === proxyERC20ForSynth.options.address,
+				write: 'setIntegrationProxy',
+				writeArg: proxyERC20ForSynth.options.address,
+			});
+
+			await runStep({
+				contract: `ProxyERC20${currencyKey}`,
+				target: proxyERC20ForSynth,
 				read: 'target',
 				expected: input => input === synthAddress,
 				write: 'setTarget',
