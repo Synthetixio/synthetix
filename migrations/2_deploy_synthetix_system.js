@@ -280,6 +280,7 @@ module.exports = async function(deployer, network, accounts) {
 			currencyKey,
 			owner,
 			web3.utils.asciiToHex(currencyKey),
+			web3.utils.toWei('0'),
 			{ from: deployerAccount }
 		);
 
