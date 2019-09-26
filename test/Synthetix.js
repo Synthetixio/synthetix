@@ -16,16 +16,17 @@ const {
 	divideDecimal,
 	toUnit,
 	ZERO_ADDRESS,
+	bytesToString,
 } = require('../utils/testUtils');
 
 contract('Synthetix', async accounts => {
-	const [sUSD, sAUD, sEUR, SNX, XDR, sXYZ, sBTC, iBTC] = [
+	const [sUSD, sAUD, sEUR, SNX, XDR, sXYZ123, sBTC, iBTC] = [
 		'sUSD',
 		'sAUD',
 		'sEUR',
 		'SNX',
 		'XDR',
-		'sXYZ',
+		'sXYZ123',
 		'sBTC',
 		'iBTC',
 	].map(web3.utils.asciiToHex);
@@ -182,10 +183,11 @@ contract('Synthetix', async accounts => {
 			account2,
 			Synthetix.address,
 			FeePool.address,
-			'Synth XYZ',
-			'sXYZ',
+			'Synth XYZ123',
+			'sXYZ123',
 			owner,
-			web3.utils.asciiToHex('sXYZ'),
+			web3.utils.asciiToHex('sXYZ123'),
+			web3.utils.toWei('0'), // _totalSupply
 			{ from: deployerAccount }
 		);
 
@@ -199,7 +201,7 @@ contract('Synthetix', async accounts => {
 		// Assert that it's at the end of the array
 		assert.equal(await synthetix.availableSynths(previousSynthCount), synth.address);
 		// Assert that it's retrievable by its currencyKey
-		assert.equal(await synthetix.synths(web3.utils.asciiToHex('sXYZ')), synth.address);
+		assert.equal(await synthetix.synths(web3.utils.asciiToHex('sXYZ123')), synth.address);
 	});
 
 	it('should disallow adding a Synth contract when the user is not the owner', async () => {
@@ -208,10 +210,11 @@ contract('Synthetix', async accounts => {
 			account2,
 			Synthetix.address,
 			FeePool.address,
-			'Synth XYZ',
-			'sXYZ',
+			'Synth XYZ123',
+			'sXYZ123',
 			owner,
-			web3.utils.asciiToHex('sXYZ'),
+			web3.utils.asciiToHex('sXYZ123'),
+			web3.utils.toWei('0'),
 			{ from: deployerAccount }
 		);
 
@@ -224,10 +227,11 @@ contract('Synthetix', async accounts => {
 			account2,
 			Synthetix.address,
 			FeePool.address,
-			'Synth XYZ',
-			'sXYZ',
+			'Synth XYZ123',
+			'sXYZ123',
 			owner,
-			web3.utils.asciiToHex('sXYZ'),
+			web3.utils.asciiToHex('sXYZ123'),
+			web3.utils.toWei('0'),
 			{ from: deployerAccount }
 		);
 
@@ -241,10 +245,11 @@ contract('Synthetix', async accounts => {
 			account2,
 			Synthetix.address,
 			FeePool.address,
-			'Synth XYZ',
-			'sXYZ',
+			'Synth XYZ123',
+			'sXYZ123',
 			owner,
-			web3.utils.asciiToHex('sXYZ'),
+			web3.utils.asciiToHex('sXYZ123'),
+			web3.utils.toWei('0'),
 			{ from: deployerAccount }
 		);
 
@@ -253,10 +258,11 @@ contract('Synthetix', async accounts => {
 			account2,
 			Synthetix.address,
 			FeePool.address,
-			'Synth XYZ',
-			'sXYZ',
+			'Synth XYZ123',
+			'sXYZ123',
 			owner,
-			web3.utils.asciiToHex('sXYZ'),
+			web3.utils.asciiToHex('sXYZ123'),
+			web3.utils.toWei('0'),
 			{ from: deployerAccount }
 		);
 
@@ -1073,8 +1079,8 @@ contract('Synthetix', async accounts => {
 		// They should now be able to issue sUSD
 		await synthetix.issueSynths(sUSD, toUnit('10'), { from: account1 });
 
-		// But should not be able to issue sXYZ because it doesn't exist
-		await assert.revert(synthetix.issueSynths(sXYZ, toUnit('10')));
+		// But should not be able to issue sXYZ123 because it doesn't exist
+		await assert.revert(synthetix.issueSynths(sXYZ123, toUnit('10')));
 	});
 
 	it('should disallow an issuer from issuing synths beyond their remainingIssuableSynths', async () => {
@@ -2312,14 +2318,19 @@ contract('Synthetix', async accounts => {
 		const sAUDBalance = await sAUDContract.balanceOf(account1);
 
 		const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
-		assert.eventEqual(synthExchangeEvent, 'SynthExchange', {
-			account: account1,
-			fromCurrencyKey: sUSD,
-			fromAmount: amountIssued,
-			toCurrencyKey: sAUD,
-			toAmount: sAUDBalance,
-			toAddress: account1,
-		});
+		assert.bytes32EventEqual(
+			synthExchangeEvent,
+			'SynthExchange',
+			{
+				account: account1,
+				fromCurrencyKey: 'sUSD',
+				fromAmount: amountIssued,
+				toCurrencyKey: 'sAUD',
+				toAmount: sAUDBalance,
+				toAddress: account1,
+			},
+			['fromCurrencyKey', 'toCurrencyKey']
+		);
 	});
 
 	it('should disallow non owners to call exchangeEnabled', async () => {
@@ -2365,14 +2376,19 @@ contract('Synthetix', async accounts => {
 		const sAUDBalance = await sAUDContract.balanceOf(account1);
 
 		const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
-		assert.eventEqual(synthExchangeEvent, 'SynthExchange', {
-			account: account1,
-			fromCurrencyKey: sUSD,
-			fromAmount: amountIssued,
-			toCurrencyKey: sAUD,
-			toAmount: sAUDBalance,
-			toAddress: account1,
-		});
+		assert.bytes32EventEqual(
+			synthExchangeEvent,
+			'SynthExchange',
+			{
+				account: account1,
+				fromCurrencyKey: 'sUSD',
+				fromAmount: amountIssued,
+				toCurrencyKey: 'sAUD',
+				toAmount: sAUDBalance,
+				toAddress: account1,
+			},
+			['fromCurrencyKey', 'toCurrencyKey']
+		);
 	});
 
 	it('should not exchange while exchangeRates.priceUpdateLock is true', async () => {
@@ -2408,14 +2424,19 @@ contract('Synthetix', async accounts => {
 		const sAUDBalance = await sAUDContract.balanceOf(account1);
 
 		const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
-		assert.eventEqual(synthExchangeEvent, 'SynthExchange', {
-			account: account1,
-			fromCurrencyKey: sUSD,
-			fromAmount: amountIssued,
-			toCurrencyKey: sAUD,
-			toAmount: sAUDBalance,
-			toAddress: account1,
-		});
+		assert.bytes32EventEqual(
+			synthExchangeEvent,
+			'SynthExchange',
+			{
+				account: account1,
+				fromCurrencyKey: 'sUSD',
+				fromAmount: amountIssued,
+				toCurrencyKey: 'sAUD',
+				toAmount: sAUDBalance,
+				toAddress: account1,
+			},
+			['fromCurrencyKey', 'toCurrencyKey']
+		);
 	});
 
 	// TODO: Changes in exchange rates tests
@@ -2682,13 +2703,18 @@ contract('Synthetix', async accounts => {
 								// check logs
 								const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
 
-								assert.eventEqual(synthExchangeEvent, 'SynthExchange', {
-									fromCurrencyKey: from,
-									fromAmount: amountExchanged,
-									toCurrencyKey: to,
-									toAmount: balance,
-									toAddress: account1,
-								});
+								assert.bytes32EventEqual(
+									synthExchangeEvent,
+									'SynthExchange',
+									{
+										fromCurrencyKey: bytesToString(from),
+										fromAmount: amountExchanged,
+										toCurrencyKey: bytesToString(to),
+										toAmount: balance,
+										toAddress: account1,
+									},
+									['toCurrencyKey', 'fromCurrencyKey']
+								);
 							};
 							let exchangeTxns;
 							const amountExchanged = toUnit(1e2);

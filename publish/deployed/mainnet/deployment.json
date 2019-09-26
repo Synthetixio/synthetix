@@ -308,10 +308,10 @@
 		},
 		"ProxysETH": {
 			"name": "ProxysETH",
-			"address": "0xaCf5C0101cbBe8476E87c652E0bEF33684Cc94D6",
-			"source": "Proxy",
-			"link": "https://etherscan.io/address/0xaCf5C0101cbBe8476E87c652E0bEF33684Cc94D6",
-			"timestamp": "2019-04-23T22:47:44.346Z",
+			"address": "0x5e74c9036fb86bd7ecdcb084a0673efc32ea31cb",
+			"source": "ProxyERC20",
+			"link": "https://etherscan.io/address/0x5e74c9036fb86bd7ecdcb084a0673efc32ea31cb",
+			"timestamp": "2019-09-12T22:47:44.346Z",
 			"txn": "",
 			"network": "mainnet"
 		},

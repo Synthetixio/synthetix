@@ -1,6 +1,7 @@
 const {
 	assertEventEqual,
 	assertEventsEqual,
+	assertBytes32EventEqual,
 	assertBNEqual,
 	assertBNNotEqual,
 	assertBNClose,
@@ -18,6 +19,7 @@ const {
 // we'll just tag them onto the assert object for easy access.
 assert.eventEqual = assertEventEqual;
 assert.eventsEqual = assertEventsEqual;
+assert.bytes32EventEqual = assertBytes32EventEqual;
 assert.bnEqual = assertBNEqual;
 assert.bnNotEqual = assertBNNotEqual;
 assert.bnClose = assertBNClose;

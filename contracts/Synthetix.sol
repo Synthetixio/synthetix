@@ -140,7 +140,7 @@ contract Synthetix is ExternStateToken {
 
     // Available Synths which can be used with the system
     Synth[] public availableSynths;
-    mapping(bytes4 => Synth) public synths;
+    mapping(bytes32 => Synth) public synths;
 
     IFeePool public feePool;
     ISynthetixEscrow public escrow;
@@ -218,7 +218,7 @@ contract Synthetix is ExternStateToken {
         external
         optionalProxy_onlyOwner
     {
-        bytes4 currencyKey = synth.currencyKey();
+        bytes32 currencyKey = synth.currencyKey();
 
         require(synths[currencyKey] == Synth(0), "Synth already exists");
 
@@ -230,7 +230,7 @@ contract Synthetix is ExternStateToken {
      * @notice Remove an associated Synth contract from the Synthetix system
      * @dev Only the contract owner may call this.
      */
-    function removeSynth(bytes4 currencyKey)
+    function removeSynth(bytes32 currencyKey)
         external
         optionalProxy_onlyOwner
     {
@@ -274,7 +274,7 @@ contract Synthetix is ExternStateToken {
      * @param sourceAmount The source amount, specified in UNIT base
      * @param destinationCurrencyKey The destination currency
      */
-    function effectiveValue(bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey)
+    function effectiveValue(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)
         public
         view
         returns (uint)
@@ -286,7 +286,7 @@ contract Synthetix is ExternStateToken {
      * @notice Total amount of synths issued by the system, priced in currencyKey
      * @param currencyKey The currency to value the synths in
      */
-    function totalIssuedSynths(bytes4 currencyKey)
+    function totalIssuedSynths(bytes32 currencyKey)
         public
         view
         rateNotStale(currencyKey)
@@ -317,9 +317,9 @@ contract Synthetix is ExternStateToken {
     function availableCurrencyKeys()
         public
         view
-        returns (bytes4[])
+        returns (bytes32[])
     {
-        bytes4[] memory availableCurrencyKeys = new bytes4[](availableSynths.length);
+        bytes32[] memory availableCurrencyKeys = new bytes32[](availableSynths.length);
 
         for (uint8 i = 0; i < availableSynths.length; i++) {
             availableCurrencyKeys[i] = availableSynths[i].currencyKey();
@@ -412,7 +412,7 @@ contract Synthetix is ExternStateToken {
      * @param destinationAddress Deprecated. Will always send to messageSender
      * @return Boolean that indicates whether the transfer succeeded or failed.
      */
-    function exchange(bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey, address destinationAddress)
+    function exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey, address destinationAddress)
         external
         optionalProxy
         // Note: We don't need to insist on non-stale rates because effectiveValue will do it for us.
@@ -453,9 +453,9 @@ contract Synthetix is ExternStateToken {
      */
     function synthInitiatedExchange(
         address from,
-        bytes4 sourceCurrencyKey,
+        bytes32 sourceCurrencyKey,
         uint sourceAmount,
-        bytes4 destinationCurrencyKey,
+        bytes32 destinationCurrencyKey,
         address destinationAddress
     )
         external
@@ -478,47 +478,6 @@ contract Synthetix is ExternStateToken {
 
     /**
      * @notice Function that allows synth contract to delegate sending fee to the fee Pool.
-     * @dev Only the synth contract can call this function.
-     * @param from The address fee is coming from.
-     * @param sourceCurrencyKey source currency fee from.
-     * @param sourceAmount The amount, specified in UNIT of source currency.
-     * @return Boolean that indicates whether the transfer succeeded or failed.
-     */
-    function synthInitiatedFeePayment(
-        address from,
-        bytes4 sourceCurrencyKey,
-        uint sourceAmount
-    )
-        external
-        returns (bool)
-    {
-        _onlySynth();
-
-        // Allow fee to be 0 and skip minting XDRs to feePool
-        if (sourceAmount == 0) {
-            return true;
-        }
-
-        require(sourceAmount > 0, "Source can't be 0");
-
-        // Pass it along, defaulting to the sender as the recipient.
-        bool result = _internalExchange(
-            from,
-            sourceCurrencyKey,
-            sourceAmount,
-            "XDR",
-            feePool.FEE_ADDRESS(),
-            false // Don't charge a fee on the exchange because this is already a fee
-        );
-
-        // Tell the fee pool about this.
-        feePool.feePaid(sourceCurrencyKey, sourceAmount);
-
-        return result;
-    }
-
-    /**
-     * @notice Function that allows synth contract to delegate sending fee to the fee Pool.
      * @dev fee pool contract address is not allowed to call function
      * @param from The address to move synth from
      * @param sourceCurrencyKey source currency from.
@@ -530,9 +489,9 @@ contract Synthetix is ExternStateToken {
      */
     function _internalExchange(
         address from,
-        bytes4 sourceCurrencyKey,
+        bytes32 sourceCurrencyKey,
         uint sourceAmount,
-        bytes4 destinationCurrencyKey,
+        bytes32 destinationCurrencyKey,
         address destinationAddress,
         bool chargeFee
     )
@@ -595,7 +554,7 @@ contract Synthetix is ExternStateToken {
     */
     function _internalLiquidation(
         address from,
-        bytes4 sourceCurrencyKey,
+        bytes32 sourceCurrencyKey,
         uint sourceAmount
     )
         internal
@@ -612,7 +571,7 @@ contract Synthetix is ExternStateToken {
      * @param currencyKey The currency to register synths in, for example sUSD or sAUD
      * @param amount The amount of synths to register with a base of UNIT
      */
-    function _addToDebtRegister(bytes4 currencyKey, uint amount)
+    function _addToDebtRegister(bytes32 currencyKey, uint amount)
         internal
         optionalProxy
     {
@@ -667,7 +626,7 @@ contract Synthetix is ExternStateToken {
      * @param currencyKey The currency you wish to issue synths in, for example sUSD or sAUD
      * @param amount The amount of synths you wish to issue with a base of UNIT
      */
-    function issueSynths(bytes4 currencyKey, uint amount)
+    function issueSynths(bytes32 currencyKey, uint amount)
         public
         optionalProxy
         // No need to check if price is stale, as it is checked in issuableSynths.
@@ -689,7 +648,7 @@ contract Synthetix is ExternStateToken {
      * @dev Issuance is only allowed if the synthetix price isn't stale.
      * @param currencyKey The currency you wish to issue synths in, for example sUSD or sAUD
      */
-    function issueMaxSynths(bytes4 currencyKey)
+    function issueMaxSynths(bytes32 currencyKey)
         external
         optionalProxy
     {
@@ -706,7 +665,7 @@ contract Synthetix is ExternStateToken {
      * @param amount The amount (in UNIT base) you wish to burn
      * @dev The amount to burn is debased to XDR's
      */
-    function burnSynths(bytes4 currencyKey, uint amount)
+    function burnSynths(bytes32 currencyKey, uint amount)
         external
         optionalProxy
         // No need to check for stale rates as effectiveValue checks rates
@@ -813,7 +772,7 @@ contract Synthetix is ExternStateToken {
      * @notice The maximum synths an issuer can issue against their total synthetix quantity, priced in XDRs.
      * This ignores any already issued synths, and is purely giving you the maximimum amount the user can issue.
      */
-    function maxIssuableSynths(address issuer, bytes4 currencyKey)
+    function maxIssuableSynths(address issuer, bytes32 currencyKey)
         public
         view
         // We don't need to check stale rates here as effectiveValue will do it for us.
@@ -852,7 +811,7 @@ contract Synthetix is ExternStateToken {
      * debt position. This is priced in whichever synth is passed in as a currency key, e.g. you can price
      * the debt in sUSD, XDR, or any other synth you wish.
      */
-    function debtBalanceOf(address issuer, bytes4 currencyKey)
+    function debtBalanceOf(address issuer, bytes32 currencyKey)
         public
         view
         // Don't need to check for stale rates here because totalIssuedSynths will do it for us
@@ -887,7 +846,7 @@ contract Synthetix is ExternStateToken {
      * @param issuer The account that intends to issue
      * @param currencyKey The currency to price issuable value in
      */
-    function remainingIssuableSynths(address issuer, bytes4 currencyKey)
+    function remainingIssuableSynths(address issuer, bytes32 currencyKey)
         public
         view
         // Don't need to check for synth existing or stale rates because maxIssuableSynths will do it for us.
@@ -999,7 +958,7 @@ contract Synthetix is ExternStateToken {
 
     // ========== MODIFIERS ==========
 
-    modifier rateNotStale(bytes4 currencyKey) {
+    modifier rateNotStale(bytes32 currencyKey) {
         require(!exchangeRates.rateIsStale(currencyKey), "Rate stale or not a synth");
         _;
     }
@@ -1010,16 +969,20 @@ contract Synthetix is ExternStateToken {
     }
 
     /**
-     * @notice Only a synth can call this function
+     * @notice Only a synth can call this function, optionally via synthetixProxy or directly
      * @dev This used to be a modifier but instead of duplicating the bytecode into
      * The functions implementing it they now call this internal function to save bytecode space
      */
-    function _onlySynth() internal view {
+    function _onlySynth()
+        internal
+        view
+        optionalProxy
+    {
         bool isSynth = false;
 
         // No need to repeatedly call this function either
         for (uint8 i = 0; i < availableSynths.length; i++) {
-            if (availableSynths[i] == msg.sender) {
+            if (availableSynths[i] == messageSender) {
                 isSynth = true;
                 break;
             }
@@ -1036,9 +999,9 @@ contract Synthetix is ExternStateToken {
 
     // ========== EVENTS ==========
     /* solium-disable */
-    event SynthExchange(address indexed account, bytes4 fromCurrencyKey, uint256 fromAmount, bytes4 toCurrencyKey,  uint256 toAmount, address toAddress);
-    bytes32 constant SYNTHEXCHANGE_SIG = keccak256("SynthExchange(address,bytes4,uint256,bytes4,uint256,address)");
-    function emitSynthExchange(address account, bytes4 fromCurrencyKey, uint256 fromAmount, bytes4 toCurrencyKey, uint256 toAmount, address toAddress) internal {
+    event SynthExchange(address indexed account, bytes32 fromCurrencyKey, uint256 fromAmount, bytes32 toCurrencyKey,  uint256 toAmount, address toAddress);
+    bytes32 constant SYNTHEXCHANGE_SIG = keccak256("SynthExchange(address,bytes32,uint256,bytes32,uint256,address)");
+    function emitSynthExchange(address account, bytes32 fromCurrencyKey, uint256 fromAmount, bytes32 toCurrencyKey, uint256 toAmount, address toAddress) internal {
         proxy._emit(abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, toAddress), 2, SYNTHEXCHANGE_SIG, bytes32(account), 0, 0);
     }
     /* solium-enable */

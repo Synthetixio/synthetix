@@ -8,7 +8,6 @@ const axios = require('axios');
 const { CONFIG_FILENAME, DEPLOYMENT_FILENAME } = require('../constants');
 
 const {
-	toBytes4,
 	ensureNetwork,
 	ensureDeploymentPath,
 	loadAndCheckRequiredSources,
@@ -106,7 +105,9 @@ const purgeSynths = async ({
 		const Synth = new web3.eth.Contract(synthABI, synthAddress);
 		const { address: proxyAddress } = deployment.targets[`Proxy${currencyKey}`];
 
-		const currentSynthInSNX = await Synthetix.methods.synths(toBytes4(currencyKey)).call();
+		const currentSynthInSNX = await Synthetix.methods
+			.synths(w3utils.asciiToHex(currencyKey))
+			.call();
 
 		if (synthAddress !== currentSynthInSNX) {
 			console.error(
@@ -150,7 +151,7 @@ const purgeSynths = async ({
 			contract: `Synth${currencyKey}`,
 			target: Synth,
 			write: 'purge',
-			writeArg: addresses,
+			writeArg: [addresses], // explicitly pass array of args so array not splat as params
 			gasLimit,
 			gasPrice,
 			etherscanLinkPrefix,
