@@ -85,6 +85,14 @@
 		},
 		"ProxysUSD": {
 			"name": "ProxysUSD",
+			"address": "0x57Ab1E02fEE23774580C119740129eAC7081e9D3",
+			"source": "Proxy",
+			"link": "https://etherscan.io/address/0x57Ab1E02fEE23774580C119740129eAC7081e9D3",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"ProxyERC20sUSD": {
+			"name": "ProxyERC20sUSD",
 			"address": "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51",
 			"source": "ProxyERC20",
 			"link": "https://etherscan.io/address/0x57Ab1ec28D129707052df4dF418D58a2D46d5f51",
