@@ -134,7 +134,7 @@ Initialises the [`Synthetix`](Synthetix.md) and [`FeePool`](FeePool.md) contract
 
 ### `setSynthetix`
 
-Sets the address of the [`Synthetix`](Synthetix.md) contract, so that escrowed SNX can be transferred.
+Sets the address of the [`Synthetix`](Synthetix.md) contract, so that escrowed SNX can be transferred to accounts claiming them.
 
 ??? example "Details"
     **Signature**
@@ -151,7 +151,7 @@ Sets the address of the [`Synthetix`](Synthetix.md) contract, so that escrowed S
 
 ---
 
-### `setSynthetix`
+### `setFeePool`
 
 Sets the address of the [`FeePool`](FeePool.md) contract, so that new vesting entries can be generated.
 

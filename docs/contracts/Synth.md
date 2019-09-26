@@ -1,6 +1,6 @@
 # Synth
 
-This contract composes the basic functionality of all Synth flavours.
+This contract is the basis of all Synth flavours.
 It exposes sufficient functionality for the [`Synthetix`](Synthetix.md) and [`FeePool`](FeePool.md) contracts to manage its supply. Otherwise Synths are fairly vanilla ERC20 tokens; the [`PurgeableSynth`](PurgeableSynth.md) contract extends this basic functionality to allow the owner to liquidate a Synth if its total value is low enough.
 
 See the [main synth notes](../../synths) for more information about how Synths function in practice.
@@ -41,7 +41,7 @@ See the [main synth notes](../../synths) for more information about how Synths f
     Q^\tau_B - Q^\kappa_B = Q_A\frac{\pi_A}{\pi_B}(\phi_\kappa - \phi_\tau)
     $$
 
-    That is, the relative profit is simply $(\phi_\kappa - \phi_\tau)$. With no transfer fee, the profit is $\phi_\kappa$, as expected.
+    That is, the relative profit is simply $(\phi_\kappa - \phi_\tau)$. With no transfer fee, this is $\phi_\kappa$, as expected.
 
 
 
@@ -79,7 +79,7 @@ The address of the [`Synthetix`](Synthetix.md) contract.
 
 ### `currencyKey`
 
-The [identifier](Synthetix.md#synths) of this Synth within the Synthetix ecosystem. The currency key could in principle be distinct from this token's ERC20 symbol.
+The [identifier](Synthetix.md#synths) of this Synth within the Synthetix ecosystem. The currency key could in principle be distinct from this token's [ERC20 symbol](ExternStateToken.md#symbol).
 
 **Type:** `bytes4`
 
@@ -105,7 +105,7 @@ The number of decimal places this token uses. Fixed at $18$.
 
 Initialises the [`feePool`](#feepool) and [`synthetix`](#synthetix) addresses, this Synth's [`currencyKey`](#currencyKey), and the inherited [`ExternStateToken`](ExternStateToken.md) instance.
 
-The precision in every Synth's fixed point representation is fixed at 18 so they are all conveniently [interconvertible](ExchangeRates.md#effectivevalue). The total supply of all new Synths is also initialised at 0 since they must be created by the [`Synthetix`](Synthetix.md) contract when [issuing](Synthetix.md#issuesynths) or [converting between](Synthetix.md#exchange) Synths, or by the [`FeePool`](FeePool.md) when users [claim fees](FeePool.md#claimfees).
+The precision in every Synth's fixed point representation is fixed at 18 so they are all conveniently [interconvertible](ExchangeRates.md#effectivevalue). The total supply of all new Synths is initialised to 0 since they must be created by the [`Synthetix`](Synthetix.md) contract when [issuing](Synthetix.md#issuesynths) or [converting between](Synthetix.md#exchange) Synths, or by the [`FeePool`](FeePool.md) when users [claim fees](FeePool.md#claimfees).
 
 ??? example "Details"
     **Signature**
@@ -166,7 +166,7 @@ Allows the owner to set the address of the [`feePool`](FeePool.md) contract.
 This is a pair of ERC20/ERC223 transfer functions. Their functionality is almost identical: providing both behaves as if the ERC223 `data` parameter is optional. If no `data` is provided then an empty buffer is passed internally.
 
 !!! danger "Disabled Fee Functionality"
-    If [`FeePool.transferFeeRate`](FeePool.md#transferfeerate) is non-zero, the recipient receives [`FeePool.amountReceivedFromTransfer(value)`](FeePool.md#amountreceivedfromtransfer) tokens and the rest is remitted to the [`FeePool`](FeePool.md) via [`Synthetix.synthInitiatedFeePayment`](Synthetix.md#synthinitiatedfeepayment).
+    If [`FeePool.transferFeeRate`](FeePool.md#transferfeerate) is non-zero, the recipient pays the fee, which is remitted to the [`FeePool`](FeePool.md) via [`Synthetix.synthInitiatedFeePayment`](Synthetix.md#synthinitiatedfeepayment), and receives the remaining [`FeePool.amountReceivedFromTransfer(value)`](FeePool.md#amountreceivedfromtransfer) tokens.
 
 ??? example "Details"
     **Signature**
@@ -191,7 +191,7 @@ This is a pair of ERC20/ERC223 transfer functions. Their functionality is almost
 This is a pair of ERC20/ERC223 transferFrom functions. Their functionality is almost identical: providing both behaves as if the ERC223 `data` parameter is optional. If no `data` is provided then an empty buffer is passed internally.
 
 !!! danger "Disabled Fee Functionality"
-    If [`FeePool.transferFeeRate`](FeePool.md#transferfeerate) is non-zero, the recipient receives [`FeePool.amountReceivedFromTransfer(value)`](FeePool.md#amountreceivedfromtransfer) tokens and the rest is remitted to the [`FeePool`](FeePool.md) via [`Synthetix.synthInitiatedFeePayment`](Synthetix.md#synthinitiatedfeepayment).
+    If [`FeePool.transferFeeRate`](FeePool.md#transferfeerate) is non-zero, the recipient pays the fee, which is remitted to the [`FeePool`](FeePool.md) via [`Synthetix.synthInitiatedFeePayment`](Synthetix.md#synthinitiatedfeepayment), and receives the remaining [`FeePool.amountReceivedFromTransfer(value)`](FeePool.md#amountreceivedfromtransfer) tokens.
 
 ??? example "Details"
     **Signature**
@@ -218,7 +218,7 @@ This is a pair of ERC20/ERC223 functions closely similar to [`transfer`](#transf
 !!! danger "Disabled Fee Functionality"
     With a zero [`FeePool.transferFeeRate`](FeePool.md#transferfeerate), this function is equivalent to [`transfer`](#transfer).
 
-    If [`FeePool.transferFeeRate`](FeePool.md#transferfeerate) is non-zero, [`FeePool.transferFeeIncurred(value)`](FeePool.md#transferfeeincurred) tokens are first remitted to the [`FeePool`](FeePool.md) via [`Synthetix.synthInitiatedFeePayment`](Synthetix.md#synthinitiatedfeepayment), then the the recipient receives `value` in the standard way. This means that the recipient is charged the fee on top of the value they are sending, but the recipient will certainly receive the specified amount of tokens.
+    If [`FeePool.transferFeeRate`](FeePool.md#transferfeerate) is non-zero, [`FeePool.transferFeeIncurred(value)`](FeePool.md#transferfeeincurred) tokens are first remitted to the [`FeePool`](FeePool.md) via [`Synthetix.synthInitiatedFeePayment`](Synthetix.md#synthinitiatedfeepayment), then the the recipient receives `value` in the standard way. This means that the sender is charged the fee on top of the value they are sending, but the recipient will certainly receive the specified amount of tokens.
 
 ??? example "Details"
     **Signature**
@@ -245,7 +245,7 @@ This is a pair of ERC20/ERC223 functions closely similar to [`transferFrom`](#tr
 !!! danger "Disabled Fee Functionality"
     With a zero [`FeePool.transferFeeRate`](FeePool.md#transferfeerate), this function is equivalent to [`transferFrom`](#transferFrom).
 
-    If the transfer fee rate is non-zero, [`FeePool.transferFeeIncurred(value)`](FeePool.md#transferfeeincurred) tokens are first remitted to the [`FeePool`](FeePool.md) via [`Synthetix.synthInitiatedFeePayment`](Synthetix.md#synthinitiatedfeepayment), then the the recipient receives `value` in the standard way. This means that the recipient is charged the fee on top of the value they are sending, but the recipient will certainly receive the specified amount of tokens.
+    If the transfer fee rate is non-zero, [`FeePool.transferFeeIncurred(value)`](FeePool.md#transferfeeincurred) tokens are first remitted to the [`FeePool`](FeePool.md) via [`Synthetix.synthInitiatedFeePayment`](Synthetix.md#synthinitiatedfeepayment), then the the recipient receives `value` in the standard way. This means that the sender is charged the fee on top of the value they are sending, but the recipient will certainly receive the specified amount of tokens.
 
 ??? example "Details"
     **Signature**

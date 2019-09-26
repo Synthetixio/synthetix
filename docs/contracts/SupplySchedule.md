@@ -305,7 +305,7 @@ This is called within [`Synthetix.mint`](Synthetix.md#mint) to declare that the 
 When called, this function adds a quantity of [`mintableSupply()`](#mintablesupply) tokens to the current [`schedule.totalSupplyMinted`](#schedule) entry, and updates the [`lastMintEvent`](#lastmintevent) timestamp.
 It is also responsible for updating this information if there were any unminted tokens left over from the previous year, which in effect sets `lastYear.totalSupplyMinted = lastYear.totalSupply`.
 
-Although this function has no check that any tokens actually are mintable when it is called, the Synthetix contract requires it to be the case, so double calls should not occur. Similarly, the function does not itself enforce that the actual token supply has been increased by Synthetix in a manner consistent with the defined schedule and must simply trust that this contract is observed.
+Although this function has no check that any tokens actually are mintable when it is called, the [`Synthetix`](Synthetix.md) contract requires it to be the case, so double calls should not occur. Similarly, the function does not itself enforce that the actual token supply has been increased by [`Synthetix`](Synthetix.md) in a manner consistent with the defined schedule and must simply trust that this compact is observed.
 
 The function always returns `true` if the transaction was not reverted.
 

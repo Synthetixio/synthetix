@@ -113,7 +113,7 @@ Initialises the [`Synthetix`](Synthetix.md) contract address, and the inherited 
 
 ### `setSynthetix`
 
-Sets the address of the [`Synthetix`](Synthetix.md) contract, so that escrowed SNX can be transferred.
+Sets the address of the [`Synthetix`](Synthetix.md) contract, so that escrowed SNX can be transferred to people claiming their tokens.
 
 ??? example "Details"
     **Signature**
