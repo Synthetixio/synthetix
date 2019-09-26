@@ -52,9 +52,9 @@ contract Synth is ExternStateToken {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _proxy, TokenState _tokenState, address _synthetixProxy, address _feePoolProxy,
-        string _tokenName, string _tokenSymbol, address _owner, bytes32 _currencyKey
+        string _tokenName, string _tokenSymbol, address _owner, bytes32 _currencyKey, uint _totalSupply
     )
-        ExternStateToken(_proxy, _tokenState, _tokenName, _tokenSymbol, 0, DECIMALS, _owner)
+        ExternStateToken(_proxy, _tokenState, _tokenName, _tokenSymbol, _totalSupply, DECIMALS, _owner)
         public
     {
         require(_proxy != address(0), "_proxy cannot be 0");
