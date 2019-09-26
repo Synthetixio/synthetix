@@ -17,7 +17,6 @@ const {
 } = require('../constants');
 
 const {
-	toBytes4,
 	ensureNetwork,
 	ensureDeploymentPath,
 	loadAndCheckRequiredSources,
@@ -203,7 +202,8 @@ const replaceSynths = async ({
 	const { address: synthetixAddress, source } = deployment.targets['Synthetix'];
 	const { abi: synthetixABI } = deployment.sources[source];
 	const Synthetix = new web3.eth.Contract(synthetixABI, synthetixAddress);
-	const feePoolAddress = deployment.targets['FeePool'].address;
+	const synthetixProxy = await Synthetix.methods.proxy().call();
+	const feePoolProxy = deployment.targets['ProxyFeePool'].address;
 	const exchangeRatesAddress = deployment.targets['ExchangeRates'].address;
 
 	const updatedDeployment = JSON.parse(JSON.stringify(deployment));
@@ -219,11 +219,11 @@ const replaceSynths = async ({
 		});
 
 	for (const { currencyKey, Synth, Proxy, TokenState } of deployedSynths) {
-		const currencyKeyInBytes = toBytes4(currencyKey);
+		const currencyKeyInBytes = w3utils.asciiToHex(currencyKey);
 		const synthContractName = `Synth${currencyKey}`;
 
 		// STEPS
-		// 1. set old TokenState.setTotalSupply(0) // owner
+		// 1. set old ExternTokenState.setTotalSupply(0) // owner
 		await runStep({
 			contract: synthContractName,
 			target: Synth,
@@ -246,10 +246,12 @@ const replaceSynths = async ({
 
 		// // 3. use Deployer to deploy
 		const additionalConstructorArgsMap = {
-			PurgeableSynth: [exchangeRatesAddress],
-			Synth: [],
+			PurgeableSynth: [exchangeRatesAddress, totalSupplies[currencyKey]],
+			Synth: [totalSupplies[currencyKey]],
 			// future subclasses...
 		};
+
+		// ensure new Synth gets totalSupply set from old Synth
 		const replacementSynth = await deployer.deploy({
 			name: `Synth${currencyKey}`,
 			source: subclass,
@@ -257,8 +259,8 @@ const replaceSynths = async ({
 			args: [
 				Proxy.options.address,
 				TokenState.options.address,
-				Synthetix.options.address,
-				feePoolAddress,
+				synthetixProxy,
+				feePoolProxy,
 				`Synth ${currencyKey}`,
 				currencyKey,
 				account,
@@ -295,16 +297,6 @@ const replaceSynths = async ({
 			expected: input => input === replacementSynth.options.address,
 			write: 'setTarget',
 			writeArg: replacementSynth.options.address,
-		});
-
-		// 7. newone.setTotalSupply(totalSupplyList[...])
-		await runStep({
-			contract: synthContractName,
-			target: replacementSynth,
-			read: 'totalSupply',
-			expected: input => input === totalSupplies[currencyKey],
-			write: 'setTotalSupply',
-			writeArg: totalSupplies[currencyKey],
 		});
 
 		// update the deployment.json file for new Synth target

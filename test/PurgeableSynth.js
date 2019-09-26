@@ -23,8 +23,10 @@ contract('PurgeableSynth', accounts => {
 	] = accounts;
 
 	let feePool,
+		feePoolProxy,
 		// FEE_ADDRESS,
 		synthetix,
+		synthetixProxy,
 		exchangeRates,
 		sUSDContract,
 		sAUDContract,
@@ -38,18 +40,26 @@ contract('PurgeableSynth', accounts => {
 		// contract interfaces to prevent test bleed.
 		exchangeRates = await ExchangeRates.deployed();
 		feePool = await FeePool.deployed();
-		// FEE_ADDRESS = await feePool.FEE_ADDRESS();
+		// Deploy new proxy for feePool
+		feePoolProxy = await Proxy.new(owner, { from: deployerAccount });
 
 		synthetix = await Synthetix.deployed();
+		// Deploy new proxy for Synthetix
+		synthetixProxy = await Proxy.new(owner, { from: deployerAccount });
+
+		// ensure synthetixProxy has target set to synthetix
+		await feePool.setProxy(feePoolProxy.address, { from: owner });
+		await synthetix.setProxy(synthetixProxy.address, { from: owner });
+		// set new proxies on Synthetix and FeePool
+		await synthetixProxy.setTarget(synthetix.address, { from: owner });
+		await feePoolProxy.setTarget(feePool.address, { from: owner });
+
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
 		sAUDContract = await Synth.at(await synthetix.synths(sAUD));
 		// XDRContract = await Synth.at(await synthetix.synths(XDR));
 
 		oracle = await exchangeRates.oracle();
 		timestamp = await currentTime();
-
-		// mimic mainnet - transfer fees are 0
-		await feePool.setTransferFeeRate('0', { from: owner });
 	});
 
 	const deploySynth = async ({ currencyKey, proxy, tokenState }) => {
@@ -64,13 +74,14 @@ contract('PurgeableSynth', accounts => {
 		const synth = await PurgeableSynth.new(
 			proxy.address,
 			tokenState.address,
-			synthetix.address,
-			feePool.address,
+			synthetixProxy.address,
+			feePoolProxy.address,
 			`Synth ${currencyKey}`,
 			currencyKey,
 			owner,
 			web3.utils.asciiToHex(currencyKey),
 			exchangeRates.address,
+			web3.utils.toWei('0'),
 			{
 				from: deployerAccount,
 			}

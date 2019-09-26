@@ -92,6 +92,7 @@ node publish nominate # "--help" for options
 
 ```bash
 node publish nominate -n rinkeby -d publish/deployed/rinkeby -g 3 -c Synthetix -c ProxysUSD -o 0x0000000000000000000000000000000000000000
+node publish nominate -o 0xB64fF7a4a33Acdf48d97dab0D764afD0F6176882 -n kovan -c ProxysUSD -d publish/deployed/kovan -g 20
 ```
 
 ## 5. Owner Actions
