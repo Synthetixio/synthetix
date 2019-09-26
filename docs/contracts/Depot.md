@@ -3,14 +3,18 @@
 !!! todo "Work in Progress"
     This needs to be properly cleaned up.
 
+## Description
+
 **Old:** Depot.sol: Allows users to exchange ETH for sUSD and SNX (has not yet been updated for multicurrency).
 
-Assumes that the Synth price is worth US\$1. So: a) this will only work with `sUSD`. b) there's a profit opportunity if the `sUSD` is off its peg.
+Throughout, the contract assumes that sUSD is always worth exactly US\$1. So: a) this will only work with `sUSD`. b) there's a profit opportunity if the `sUSD` is off its peg.
 
 !!! note
     Some of this code is lifted verbatim from the old `EtherNomin` code, but this isn't indicated in the licence header.
 
 **Source:** [Depot.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/Depot.sol)
+
+<section-sep />
 
 ## Inheritance Graph
 
@@ -18,89 +22,449 @@ Assumes that the Synth price is worth US\$1. So: a) this will only work with `sU
     ![Depot inheritance graph](../img/graphs/Depot.svg)
 </inheritance-graph>
 
-## Libraries
-
-* [`SafeMath`](SafeMath.md) for `uint`
-* [`SafeDecimalMath`](SafeDecimalMath.md) for `uint`
-
 ## Related Contracts
 
 * [Synthetix](Synthetix.md)
 * [Synth](Synth.md)
 * [FeePool](FeePool.md)
 
+## Libraries
+
+* [`SafeMath`](SafeMath.md) for `uint`
+* [`SafeDecimalMath`](SafeDecimalMath.md) for `uint`
+
+<section-sep />
+
 ## Structs
 
-```solidity
-struct synthDeposit {
-    address user; // depositor
-    uint amount; // synth deposit size
-}
-```
+---
+
+### `synthDeposit`
+
+Stores an individual Synth deposit on sale.
+
+Field | Type | Description
+------|------|------------
+user | `address` | The depositor.
+amount | `uint` | The quantity of sUSD deposited.
+
+---
+
+<section-sep />
 
 ## Variables
 
-* `synthetix: Synthetix public`
-* `synth: Synth public`
-* `feePool: FeePool public`
-* `fundsWallet: address public`: The address where ether and synths raised by selling SNX are sent.
-* `oracle: address public`: The USD price oracle for SNX and ether.
-* `ORACLE_FUTURE_LIMIT: uint public constant`: 10 minutes. The oracle can submit prices no further in the future than this.
-* `priceStalePeriod: uint public`: It is assumed the known price is out of date if older than this. Initialised to 3 hours.
-* `lastPriceUpdateTime: uint public`: The last time prices were updated.
-* `usdToSnxPrice: uint public`: Fixed point decimal, the unit is equivalent to 10^18.
-* `usdToEthPrice: uint public`: As `usdToSnxPrice`.
-* `deposits: mapping(uint => synthDeposit) public`: a mapping from indices to deposits: stores a contiguous sequence of deposits, which are processed in queue order.
-* `depositStartIndex: uint public`: the index of the next deposit to be processed in the queue.
-* `depositEndIndex: uint public`: the index one past the last deposit in the queue.
-* `totalSellableDeposits: uint public`: The total quantity of synths currently in the queue.
-* `minimumDepositAmount: uint public`: The minimum sUSD quantity required for a deposit to added to the queue. Initialised to 50 * `UNIT`.
-* `smallDeposits: mapping(address => uint) public`: Keeps track of deposits less than `minimumDepositAmount` and allows the depositor to withdraw them.
+---
+
+### `synthetix`
+
+The address of the main [`Synthetix`](Synthetix.md) contract.
+
+**Type:** `Synthetix public`
+
+---
+
+### `synth`
+
+The address of the Synth (`sUSD`) held in the depot.
+
+**Type:** `Synth public`
+
+---
+
+### `feePool`
+
+The address of the [`FeePool`](FeePool.md) contract.
+
+**Type:** `FeePool public`
+
+---
+
+### `fundsWallet`
+
+The address where ether and synths raised by selling SNX are sent.
+
+It is also where ether is sent if the proceeds of a sale of synths could not be transferred because the recipient is a non-payable contract.
+
+**Type:** `address public`
+
+---
+
+### `oracle`
+
+The address which provides the usd prices of SNX and ether. This is not the same oracle address as in [`ExchangeRates`](ExchangeRates.md).
+
+**Type:** `address public`
+
+---
+
+### `ORACLE_FUTURE_LIMIT`
+
+The oracle can submit prices no further in the future than this.
+
+**Type:** `uint public constant`
+
+**Value:** `10 minutes`
+
+---
+
+### `priceStalePeriod`
+
+It is assumed the known price is out of date if older than this. Initialised to 3 hours.
+
+**Type:** `uint public`
+
+---
+
+### `lastPriceUpdateTime`
+
+The last time [`usdToSnxPrice`](#usdtosnxprice) and [`usdToEthPrice`](#usdtoethprice) were updated by the [`oracle`](#oracle calling [`updatePrices`](#updateprices).
+
+**Type:** `uint public`
+
+---
+
+### `usdToSnxPrice`
+
+The price of SNX in USD.
+
+**Type:** `uint public` ([18 decimals](SafeDecimalMath.md))
+
+---
+
+### `usdToEthPrice`
+
+The price of Eth in USD.
+
+**Type:** `uint public` ([18 decimals](SafeDecimalMath.md))
+
+---
+
+### `deposits`
+
+Users can deposit `sUSD` to be sold on the depot. This variable holds the queue of open deposits, which are sold in the order they were deposited.
+
+This queue is stored as an "array" within a mapping: the keys are array indices. Deposits are stored by a contiguous block of keys between [`depositStartIndex`](#depositstartindex) (inclusive) and [`depositEndIndex`](#depositendindex) (exclusive).
+
+A mapping is used instead of an array in order to avoid having to copy entries around when deposits are deleted, which saves on gas. When a deposit is made it is added to the end of the list, and when a deposit is filled, it is removed from the start of the list. Thus over time the list of deposits slides down the set of array indexes, but the address space of the mapping is large enough that it will never be filled.
+
+**Type:** `mapping(uint => synthDeposit) public`
+
+---
+
+### `depositStartIndex`
+
+The index of the next deposit to be processed in the [`deposits`](#deposits) queue.
+
+**Type:** `uint public`
+
+---
+
+### `depositEndIndex`
+
+The index one past the last deposit in the [`deposits`](#deposits) queue.
+
+**Type:** `uint public`
+
+---
+
+### `totalSellableDeposits`
+
+The total quantity of `sUSD` currently in the [`deposits`](#deposits) queue to be purchased.
+
+**Type:** `uint public` ([18 decimals](SafeDecimalMath.md))
+
+---
+
+### `minimumDepositAmount`
+
+The minimum `sUSD` quantity required for a deposit to be added to the queue. Initialised to 50 * [`UNIT`](SafeDecimalMath.md#unit).
+
+**Type:** `uint public` ([18 decimals](SafeDecimalMath.md))
+
+---
+
+### `smallDeposits`
+
+Deposits of less than [`minimumDepositAmount`](#minimumdepositamount) `sUSD` are not placed on the [`deposits`](#deposits) queue. Instead, they are kept here so that the depositor can withdraw them.
+
+**Type:** `mapping(address => uint) public` ([18 decimals](SafeDecimalMath.md))
+
+---
+
+<section-sep />
 
 ## Functions
 
+---
+
+### `constructor`
+
+Initialises the funds wallet, synthetix, sUSD, fee pool, and oracle addresses, along with the initial prices and the inherited [`SelfDestructible`](SelfDestructible.md) and [`Pausable`](Pausable.md) instances.
+
+??? example "Details"
+    **Signature**
+
+    `constructor(address _owner, address _fundsWallet, Synthetix _synthetix, Synth _synth, FeePool _feePool, address _oracle, uint _usdToEthPrice, uint _usdToSnxPrice) public`
+
+    **Superconstructors**
+
+    * [`SelfDestructible(_owner)`](SelfDestructible.md)
+    * [`Pausable(_owner)`](Pausable.md)
+
+---
+
+### `setFundsWallet`
+
 * `setFundsWallet(address _fundsWallet)`: Only callable by the contract owner.
+
+---
+
+### `setOracle`
+
 * `setOracle(address _oracle)`: Only callable by the contract owner.
+
+---
+
+### `setSynth`
+
 * `setSynth(Synth _synth)`: Only callable by the contract owner.
+
+---
+
+### `setSynthetix`
+
 * `setSynthetix(Synthetix _synthetix)`: Only callable by the contract owner.
+
+---
+
+### `setPriceStalePeriod`
+
 * `setPriceStalePeriod(uint _time)`: Only callable by the contract owner.
+
+---
+
+### `setMinimumDepositAmount`
+
 * `setMinimumDepositAmount(uint _amount)`: Only callable by the contract owner. `_amount` must be greater than `UNIT`.
+
+---
+
+### `updatePrices`
+
 * `updatePrices(uint newEthPrice, uint newSynthetixPrice, uint timeSent)`: Only callable by the oracle. The new prices must be the most recent, but no more than 10 minutes into the future.
+
+---
+
+### `() (fallback function)`
+
 * `()` (fallback function): Calls `exchangeEtherForSynths`.
+
+---
+
+### `exchangeEtherForSynths`
+
 * `exchangeEtherForSynths() returns (uint)`: Requires that the contract is not paused, and that the prices are not stale. Returns the number of sUSD exchanged. Converts any ether sent to the contract to a quantity of synths at current prices. Fulfils this quantity by iterating through the deposit queue until the entire quantity is found. If a given deposit is insufficient to cover the entire requested amount, it is exhausted and removed from the queue. For each deposit found, the proper quantity of ether is sent to the depositor. If the quantity could not be sent because the target is a non-payable contract, then it is remitted to `fundsWallet`. Then send the Synths to the recipient. If the whole quantity could not be fulfilled, then the remaining ether is refunded to the purchaser.
+
+---
+
+### `exchangeEtherForSynthsAtRate`
+
 * `exchangeEtherForSynthsAtRate(uint guaranteedRate) returns (uint)`: Allows the caller to specify the current price, and then calls to `exchangeEtherForSynths`. Reverts if the current price does not match the price provided as an argument. This is intended as a protection against front-running by the contract owner, or otherwise a case where a price update is in flight at the invocation time.
+
+---
+
+### `exchangeEtherForSynthetix`
+
 * `exchangeEtherForSynthetix() returns (uint)`: Requires that the contract is not paused, and that the prices are not stale. Converts the received ether to a quantity of SNX with `synthetixReceivedForEther`. Sends the ether to `fundsWallet`, sends the converted quantity of SNX to the message sender from the contract's own reserves. Returns the SNX quantity sent. If the contract has insufficient SNX, then the transfer will fail and the transaction will revert.
+
+---
+
+### `exchangeEtherForSynthetixAtRate`
+
 * `exchangeEtherForSynthetixAtRate(uint guaranteedEtherRate, uint guaranteedSynthetixRate) returns (uint)`: As `exchangeEtherForSynthsAtRate` is to `exchangeEtherForSynths`, this is to `exchangeEtherForSynthetix`.
+
+---
+
+### `exchangeSynthsForSynthetix`
+
 * `exchangeSynthsForSynthetix(uint synthAmount) returns (uint)`: Identical to `exchangeEtherForSynthetix`, but perform the price conversion with `synthetixReceivedForSynths`. The amount of synths to send is provided as a function argument, and then transferred to `fundsWallet` with `transferFrom`, so this function requires the caller to have approved the depot contract to make such a withdrawal. Note that this assumes that sUSD is worth exactly one dollar.
+
+---
+
+### `exchangeSynthsForSynthetixAtRate`
+
 * `exchangeSynthsForSynthetixAtRate(uint synthAmount, uint guaranteedRate) returns (uint)`: As per `exchangeEtherForSynthetixAtRate`.
+
+---
+
+### `withdrawSynthetix`
+
 * `withdrawSynthetix(uint amount)`: Only callable by the contract owner. Allows the owner to transfer SNX out of the Depot to themselves.
+
+---
+
+### `withdrawMyDepositedSynths`
+
 * `withdrawMyDepositedSynths()`: Withdraws all Synths deposited by the message sender. Iterates through the entire deposit queue; if for a given entry the message sender is the depositor, delete that deposit and and add the deposited quantity of tokens to the pile to be remitted. Then transfer this quantity back to the message sender, along with any tokens in `smallDeposits`.
+
+---
+
+### `depositSynths`
+
 * `depositSynths(uint amount)`: Just an alias to `synth.transferFrom(msg.sender, this, amount)`, which relies on the ERC223 token fallback path. This requires the sender to have approved the deposit.
+
+---
+
+### `tokenFallback`
+
 * `tokenFallback(address from, uint amount, bytes data) returns (bool)`: Only callable by the `synth` contract. Handles the actual deposit flow whenever synths are sent to this contract. If the transferred quantity is smaller than the minimum deposit amount, add it to the sender's small deposit balance. Otherwise, "append" the deposit to the deposit queue/mapping and update total sellable deposit quantity.
-* `pricesAreStale() returns (bool)`: True if `lastPriceUpdateTime` is more than `priceStalePeriod` seconds in the past.
-* `synthetixReceivedForSynths(uint amount) returns (uint)`: Divides `amount` minus the transfer fee by the `usdToSnxPrice`. Assumes that `sUSD` are worth exactly US\$1 each.
-* `synthetixReceivedForEther(uint amount) returns (uint)`: Multiplies `amount` by the `usdToEthPrice`, then calls to `synthetixReceivedForSynths` to deduct the transfer fee and to divide by `usdToSnxPrice`. Assumes that `sUSD` are worth exactly US\$1 each.
-* `synthsReceivedForEther(uint amount) returns (uint)`: Multiply by `usdToEthPrice` and deduct the transfer fee. Assumes that `sUSD` are worth exactly US\$1 each.
+
+---
+
+### `pricesAreStale`
+
+True if [`usdToSnxPrice`](#usdtosnxprice) and [`usdToEthPrice`](#usdtoethprice) are too old to be considered usably up to date. 
+
+That is, they are considered stale if [`lastPriceUpdateTime`](#lastpriceupdatetime) is more than [`priceStalePeriod`](#pricestaleperiod) seconds in the past.
+
+If the prices known on chain do not reflect the true state of the world, avenues are opened up for users to profitably exploit the contract.
+
+??? example "Details"
+    **Signature**
+
+    `pricesAreStale() public view returns (bool)`
+
+---
+
+### `synthetixReceivedForSynths`
+
+* `synthetixReceivedForSynths(uint amount) returns (uint)`: Divides `amount` minus the transfer fee by the `usdToSnxPrice`.
+
+---
+
+### `synthetixReceivedForEther`
+
+* `synthetixReceivedForEther(uint amount) returns (uint)`: Multiplies `amount` by the `usdToEthPrice`, then calls to `synthetixReceivedForSynths` to deduct the transfer fee and to divide by `usdToSnxPrice`.
+
+---
+
+### `synthsReceivedForEther`
+
+* `synthsReceivedForEther(uint amount) returns (uint)`: Multiply by `usdToEthPrice` and deduct the transfer fee.
+
+---
+
+<section-sep />
 
 ## Modifiers
 
-* `onlyOracle`
-* `onlySynth`
-* `pricesNotStale`
+---
+
+### `onlyOracle`
+
+Reverts the transaction if `msg.sender` is not the [`oracle`](#oracle) address.
+
+---
+
+### `onlySynth`
+
+Reverts the transaction if `msg.sender` is not the [`synth`](#synth) address.
+
+---
+
+### `pricesNotStale`
+
+Reverts the transaction if [`pricesAreStale`](#pricesarestale) returns false, because the contract's known prices are too old to safely use.
+
+---
+
+<section-sep />
 
 ## Events
 
+---
+
+### `FundsWalletUpdated`
+
 * `FundsWalletUpdated(address newFundsWallet)`
+
+---
+
+### `OracleUpdated`
+
 * `OracleUpdated(address newOracle)`
+
+---
+
+### `SynthUpdated`
+
 * `SynthUpdated(Synth newSynthContract)`
+
+---
+
+### `SynthetixUpdated`
+
 * `SynthetixUpdated(Synthetix newSynthetixContract)`
+
+---
+
+### `PriceStalePeriodUpdated`
+
 * `PriceStalePeriodUpdated(uint priceStalePeriod)`
+
+---
+
+### `PricesUpdated`
+
 * `PricesUpdated(uint newEthPrice, uint newSynthetixPrice, uint timeSent)`
+
+---
+
+### `Exchange`
+
 * `Exchange(string fromCurrency, uint fromAmount, string toCurrency, uint toAmount)`
+
+---
+
+### `SynthWithdrawal`
+
 * `SynthWithdrawal(address user, uint amount)`
+
+---
+
+### `SynthDeposit`
+
 * `SynthDeposit(address indexed user, uint amount, uint indexed depositIndex)`
+
+---
+
+### `SynthDepositRemoved`
+
 * `SynthDepositRemoved(address indexed user, uint amount, uint indexed depositIndex)`
+
+---
+
+### `SynthDepositNotAccepted`
+
 * `SynthDepositNotAccepted(address user, uint amount, uint minimum)`
+
+---
+
+### `SynthDepositAmountUpdated`
+
 * `MinimumDepositAmountUpdated(uint amount)`
+
+---
+
+### `NonPayableContract`
+
 * `NonPayableContract(address indexed receiver, uint amount)`
+
+---
+
+### `ClearedDeposit`
+
 * `ClearedDeposit(address indexed fromAddress, address indexed toAddress, uint fromETHAmount, uint toAmount, uint indexed depositIndex)`
+
+---
