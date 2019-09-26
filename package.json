@@ -1,91 +1,91 @@
 {
-	"name": "synthetix",
-	"version": "2.10.4-alpha",
-	"license": "MIT",
-	"author": "Synthetix",
-	"description": "The smart contracts which make up the Synthetix system. (synthetix.io)",
-	"scripts": {
-		"clean-install": "rm -rf build && rm ./package-lock.json && rm -rf node_modules/* && npm install",
-		"coverage": "solidity-coverage",
-		"ganache": "ganache-cli -e 1000000000000 -l 0x7a1200 -t 2018-03-13T00:00:00",
-		"ganache:int": "npm run ganache -- --acctKeys keys.json",
-		"lint": "eslint \"**/*.js\" && solium -d contracts/",
-		"lint:fix": "eslint --fix \"**/*.js\" && solium --fix -d contracts/",
-		"test": "concurrently --kill-others --success first \"npm run ganache > /dev/null\" \"truffle compile && wait-port 8545 && truffle test\"",
-		"test:gas": "npm test; EXIT_CODE=$?; cat test-gas-used.log; printf \"\\n\"; exit $EXIT_CODE;",
-		"test:int": "concurrently --kill-others --success first \"npm run ganache:int > /dev/null\" \"wait-port 8545 && node int-test\"",
-		"test:kovan": "node test-testnet --network kovan",
-		"truffle": "truffle"
-	},
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/Synthetixio/synthetix.git"
-	},
-	"keywords": [
-		"Synthetix",
-		"Solidity",
-		"Truffle"
-	],
-	"engines": {
-		"node": ">=8.10.0"
-	},
-	"files": [
-		"./index.js",
-		"publish/deployed/*/synths.json",
-		"publish/deployed/*/deployment.json"
-	],
-	"bin": {
-		"snx": "index.js"
-	},
-	"main": "index.js",
-	"bugs": {
-		"url": "https://github.com/Synthetixio/synthetix/issues"
-	},
-	"homepage": "https://synthetix.io",
-	"directories": {
-		"test": "test"
-	},
-	"devDependencies": {
-		"@codechecks/client": "0.1.5",
-		"axios": "^0.18.0",
-		"bip39": "^2.5.0",
-		"bn.js": "4.11.8",
-		"chalk": "^2.4.2",
-		"concurrently": "4.1.0",
-		"dotenv": "^6.1.0",
-		"eslint": "^5.5.0",
-		"eslint-config-prettier": "^3.0.1",
-		"eslint-config-standard": "^12.0.0",
-		"eslint-plugin-havven": "^1.0.0",
-		"eslint-plugin-import": "^2.14.0",
-		"eslint-plugin-node": "^7.0.1",
-		"eslint-plugin-prettier": "^2.6.2",
-		"eslint-plugin-promise": "^4.0.1",
-		"eslint-plugin-standard": "^4.0.0",
-		"eth-gas-reporter": "0.2.6",
-		"ganache-cli": "6.4.1",
-		"glob": "^7.1.3",
-		"mkdirp": "^0.5.1",
-		"prettier": "^1.14.2",
-		"rimraf": "^2.6.2",
-		"seedrandom": "^2.4.4",
-		"solidifier": "^2.0.0",
-		"solidity-coverage": "^0.5.11",
-		"solium": "1.1.8",
-		"table": "^5.0.2",
-		"truffle": "5.0.27",
-		"truffle-core": "5.0.27",
-		"truffle-environment": "0.1.3",
-		"truffle-legacy-system": "1.0.7",
-		"typedarray-to-buffer": "^3.1.5",
-		"wait-port": "^0.2.2",
-		"web3": "1.2.1",
-		"web3-utils": "1.2.1"
-	},
-	"dependencies": {
-		"commander": "^2.19.0",
-		"openzeppelin-solidity": "2.0.0",
-		"pretty-error": "^2.1.1",
-		"solc": "0.4.25"
-	}
+  "name": "synthetix",
+  "version": "2.10.4-alpha",
+  "license": "MIT",
+  "author": "Synthetix",
+  "description": "The smart contracts which make up the Synthetix system. (synthetix.io)",
+  "scripts": {
+    "clean-install": "rm -rf build && rm ./package-lock.json && rm -rf node_modules/* && npm install",
+    "coverage": "solidity-coverage",
+    "ganache": "ganache-cli -e 1000000000000 -l 0x7a1200 -t 2018-03-13T00:00:00",
+    "ganache:int": "npm run ganache -- --acctKeys keys.json",
+    "lint": "eslint \"**/*.js\" && solium -d contracts/",
+    "lint:fix": "eslint --fix \"**/*.js\" && solium --fix -d contracts/",
+    "test": "concurrently --kill-others --success first \"npm run ganache > /dev/null\" \"truffle compile && wait-port 8545 && truffle test\"",
+    "test:gas": "npm test; EXIT_CODE=$?; cat test-gas-used.log; printf \"\\n\"; exit $EXIT_CODE;",
+    "test:int": "concurrently --kill-others --success first \"npm run ganache:int > /dev/null\" \"wait-port 8545 && node int-test\"",
+    "test:kovan": "node test-testnet --network kovan",
+    "truffle": "truffle"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Synthetixio/synthetix.git"
+  },
+  "keywords": [
+    "Synthetix",
+    "Solidity",
+    "Truffle"
+  ],
+  "engines": {
+    "node": ">=8.10.0"
+  },
+  "files": [
+    "./index.js",
+    "publish/deployed/*/synths.json",
+    "publish/deployed/*/deployment.json"
+  ],
+  "bin": {
+    "snx": "index.js"
+  },
+  "main": "index.js",
+  "bugs": {
+    "url": "https://github.com/Synthetixio/synthetix/issues"
+  },
+  "homepage": "https://synthetix.io",
+  "directories": {
+    "test": "test"
+  },
+  "devDependencies": {
+    "@codechecks/client": "0.1.5",
+    "axios": "^0.18.0",
+    "bip39": "^2.5.0",
+    "bn.js": "4.11.8",
+    "chalk": "^2.4.2",
+    "concurrently": "4.1.0",
+    "dotenv": "^6.1.0",
+    "eslint": "^5.5.0",
+    "eslint-config-prettier": "^3.0.1",
+    "eslint-config-standard": "^12.0.0",
+    "eslint-plugin-havven": "^1.0.0",
+    "eslint-plugin-import": "^2.14.0",
+    "eslint-plugin-node": "^7.0.1",
+    "eslint-plugin-prettier": "^2.6.2",
+    "eslint-plugin-promise": "^4.0.1",
+    "eslint-plugin-standard": "^4.0.0",
+    "eth-gas-reporter": "0.2.6",
+    "ganache-cli": "6.4.1",
+    "glob": "^7.1.3",
+    "mkdirp": "^0.5.1",
+    "prettier": "^1.14.2",
+    "rimraf": "^2.6.2",
+    "seedrandom": "^2.4.4",
+    "solidifier": "^2.0.0",
+    "solidity-coverage": "^0.5.11",
+    "solium": "1.1.8",
+    "table": "^5.0.2",
+    "truffle": "5.0.27",
+    "truffle-core": "5.0.27",
+    "truffle-environment": "0.1.3",
+    "truffle-legacy-system": "1.0.7",
+    "typedarray-to-buffer": "^3.1.5",
+    "wait-port": "^0.2.2",
+    "web3": "1.2.1",
+    "web3-utils": "1.2.1"
+  },
+  "dependencies": {
+    "commander": "^2.19.0",
+    "openzeppelin-solidity": "2.0.0",
+    "pretty-error": "^2.1.1",
+    "solc": "0.4.25"
+  }
 }
