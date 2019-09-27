@@ -794,6 +794,16 @@ const deploy = async ({
 				write: 'setTarget',
 				writeArg: synthAddress,
 			});
+
+			// ensure proxy on synth set
+			await runStep({
+				contract: `Synth${currencyKey}`,
+				target: synth,
+				read: 'proxy',
+				expected: input => input === proxyForSynth.options.address,
+				write: 'setProxy',
+				writeArg: proxyForSynth.options.address,
+			});
 		}
 
 		// Setup integration proxy (ProxyERC20) for Synth (Remove when sUSD Proxy cuts over)
