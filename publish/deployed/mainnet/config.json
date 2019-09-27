@@ -86,6 +86,9 @@
 	"ProxysUSD": {
 		"deploy": false
 	},
+	"ProxyERC20sUSD": {
+		"deploy": false
+	},
 	"ProxysEUR": {
 		"deploy": false
 	},
