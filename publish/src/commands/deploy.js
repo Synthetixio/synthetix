@@ -948,6 +948,33 @@ const deploy = async ({
 		writeArg: sUSDAddress,
 	});
 
+	// ArbRewarder contract for sETH uniswap
+	const arbRewarder = await deployContract({
+		name: 'ArbRewarder',
+		deps: ['Synthetix', 'ExchangeRates'],
+		args: [account],
+	});
+
+	// ensure exchangeRates on arbRewarder set
+	await runStep({
+		contract: 'ArbRewarder',
+		target: arbRewarder,
+		read: 'synthetix_rates',
+		expected: input => input === exchangeRates.options.address,
+		write: 'setExchangeRates',
+		writeArg: exchangeRates.options.address,
+	});
+
+	// Ensure synthetix ProxyERC20 on arbRewarder set
+	await runStep({
+		contract: 'ArbRewarder',
+		target: arbRewarder,
+		read: 'snx_erc20_addr',
+		expected: input => input === proxyERC20SynthetixAddress,
+		write: 'setSynthetix',
+		writeArg: proxyERC20SynthetixAddress,
+	});
+
 	console.log(green('\nSuccessfully deployed all contracts!\n'));
 
 	const tableData = Object.keys(deployer.deployedContracts).map(key => [
