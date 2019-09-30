@@ -1,6 +1,6 @@
 {
 	"ArbRewarder": {
-		"deploy": true
+		"deploy": false
 	},
 	"Depot": {
 		"deploy": false
