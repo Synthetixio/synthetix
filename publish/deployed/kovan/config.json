@@ -1,7 +1,4 @@
 {
-	"ArbRewarder": {
-		"deploy": false
-	},
 	"Depot": {
 		"deploy": false
 	},
