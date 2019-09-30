@@ -91,11 +91,14 @@ contract ArbRewarder is SelfDestructible, Pausable {
         snx_erc20 = IERC20(snx_erc20_addr);
     }
 
-    function setSynthETHAddress(address _seth_erc20_addr, address _seth_exchange_addr) external onlyOwner {
+    function setSynthEthAddress(address _seth_erc20_addr) external onlyOwner {
+        seth_erc20 = IERC20(_seth_erc20_addr);
+        seth_erc20.approve(seth_exchange_addr, uint(-1));
+    }
+
+    function setSynthEthUniswapExchange(address _seth_exchange_addr) external onlyOwner {
         seth_exchange_addr = _seth_exchange_addr;
         seth_uniswap_exchange = IUniswapExchange(seth_exchange_addr);
-
-        seth_erc20 = IERC20(_seth_erc20_addr);
         seth_erc20.approve(seth_exchange_addr, uint(-1));
     }
 
@@ -219,7 +222,7 @@ contract ArbRewarder is SelfDestructible, Pausable {
 
     /* ========== MODIFIERS ========== */
 
-    modifier rateNotStale(bytes4 currencyKey) {
+    modifier rateNotStale(bytes32 currencyKey) {
         require(!synthetix_rates.rateIsStale(currencyKey), "Rate stale or not a synth");
         _;
     }
