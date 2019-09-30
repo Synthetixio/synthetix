@@ -2,6 +2,9 @@
 
 ## Smart Contract API
 
+!!! todo Current Version
+    Insert here a release or a commit hash as of which this documentation is current.
+
 Here you will find descriptions of the smart contract interfaces of every smart contract in the Synthetix system. These documents go a bit further than just the code does, as they include additional descriptions of architecture, functionality, and the reasoning behind them.
 
 Where possible, the interactions between different system components has been emphasised. Also included where relevant, in order to place these contracts in the broader context of the ideas they implement, are discussions of the technical aspects of the Synthetix incentive mechanisms and links back to related governance processes.
