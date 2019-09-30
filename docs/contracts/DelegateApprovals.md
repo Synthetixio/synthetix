@@ -25,7 +25,7 @@ This contract is used by the [`FeePool`](FeePool.md) to enable users to permit o
 
 ### `approval`
 
-Stores who has approved whom to perform actions. The double mapping allows each authoriser to have multiple delegates, ordered as `approval[authoriser][delegate]`.
+Stores who has approved whom to perform actions. The double mapping allows each authoriser to have multiple delegates. A given delegate is authorised by an authoriser when `approval[authoriser][delegate]` is true.
 
 **Type:** `mapping(address => mapping(address => bool)) public`
 
