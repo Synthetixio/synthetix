@@ -54,13 +54,13 @@ contract ArbRewarder is SelfDestructible, Pausable {
     uint constant divisor = 10000;
 
     /* Contract Addresses */
-    address public seth_exchange_addr = 0xe9cf7887b93150d4f2da7dfc6d502b216438f244;
+    address public seth_exchange_addr = 0xe9Cf7887b93150D4F2Da7dFc6D502B216438F244;
     address public snx_erc20_addr = 0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F;
 
     IExchangeRates public synthetix_rates = IExchangeRates(0x70C629875daDBE702489a5E1E3bAaE60e38924fa);
     IUniswapExchange public seth_uniswap_exchange = IUniswapExchange(seth_exchange_addr);
 
-    IERC20 public seth_erc20 = IERC20(0x5e74c9036fb86bd7ecdcb084a0673efc32ea31cb);
+    IERC20 public seth_erc20 = IERC20(0x5e74C9036fb86BD7eCdcb084a0673EFc32eA31cb);
     IERC20 public snx_erc20 = IERC20(snx_erc20_addr);
 
     
@@ -93,7 +93,6 @@ contract ArbRewarder is SelfDestructible, Pausable {
 
     function setSynthEthAddress(address _seth_erc20_addr) external onlyOwner {
         seth_erc20 = IERC20(_seth_erc20_addr);
-        seth_erc20.approve(seth_exchange_addr, uint(-1));
     }
 
     function setSynthEthUniswapExchange(address _seth_exchange_addr) external onlyOwner {

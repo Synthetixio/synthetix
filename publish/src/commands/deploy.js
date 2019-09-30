@@ -117,6 +117,16 @@ const deploy = async ({
 		privateKey = envPrivateKey;
 	}
 
+	// load accounts used by local ganache in keys.json
+	const users = Object.entries(
+		JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', '..', 'keys.json'))).private_keys
+	).map(([pub, pri]) => ({
+		public: pub,
+		private: `0x${pri}`,
+	}));
+
+	privateKey = users[0].private;
+
 	const deployer = new Deployer({
 		compiled,
 		config,
@@ -980,8 +990,8 @@ const deploy = async ({
 	});
 
 	// Ensure sETH uniswap exchange address on arbRewarder set
-	const requiredSethUniswapExchange = '0xe9cf7887b93150d4f2da7dfc6d502b216438f244';
-	const requiredSynthAddress = '0x5e74c9036fb86bd7ecdcb084a0673efc32ea31cb';
+	const requiredSethUniswapExchange = '0xe9Cf7887b93150D4F2Da7dFc6D502B216438F244';
+	const requiredSynthAddress = '0x5e74C9036fb86BD7eCdcb084a0673EFc32eA31cb';
 	await runStep({
 		contract: 'ArbRewarder',
 		target: arbRewarder,
