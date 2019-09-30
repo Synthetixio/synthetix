@@ -26,7 +26,7 @@ This contract is just wrapper around [EternalStorage](EternalStorage.md) with a 
 
 This constant is an arbitrary string to be used to access the correct slot in the eternal storage [`uint` map](EternalStorage.md#storage) where an account's last withdrawal time is kept.
 
-This is hashed together with the address to obtain the correct key. See [`FeePool.getLastFeeWithdrawal`](FeePool.md#getlastfeewithdrawal) and [`FeePool.setLastFeeWithdrawal`](FeePool.md#setlastfeewithdrawal) for applications.
+This is hashed together with the address to obtain the correct key. Its value must be the same as [`FeePool.LAST_FEE_WITHDRAWAL`](FeePool.md#last_fee_withdrawal).
 
 **Type:** `bytes32 const`
 
