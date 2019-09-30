@@ -980,34 +980,26 @@ const deploy = async ({
 	});
 
 	// Ensure sETH uniswap exchange address on arbRewarder set
-	const arbRewarderUniswapExchange = await arbRewarder.methods.seth_exchange_addr().call();
-	const arbRewarderSynth = await arbRewarder.methods.seth_erc20().call();
 	const requiredSethUniswapExchange = '0xe9cf7887b93150d4f2da7dfc6d502b216438f244';
 	const requiredSynthAddress = '0x5e74c9036fb86bd7ecdcb084a0673efc32ea31cb';
+	await runStep({
+		contract: 'ArbRewarder',
+		target: arbRewarder,
+		read: 'seth_exchange_addr',
+		expected: input => input === requiredSethUniswapExchange,
+		write: 'setSynthEthUniswapExchange',
+		writeArg: requiredSethUniswapExchange,
+	});
 
-	if (
-		(arbRewarderUniswapExchange !== requiredSethUniswapExchange ||
-			arbRewarderSynth !== requiredSynthAddress) &&
-		network === 'mainnet'
-	) {
-		const arbRewardsOwner = await arbRewarder.methods.owner().call();
-		if (arbRewardsOwner === account) {
-			console.log(
-				yellow(
-					`Invoking ArbRewarder.setSynthETHAddress(${requiredSynthAddress}, ${requiredSethUniswapExchange})...`
-				)
-			);
-			await arbRewarder.methods
-				.setSynthETHAddress(requiredSynthAddress, requiredSethUniswapExchange)
-				.send(deployer.sendParameters());
-		} else {
-			appendOwnerAction({
-				key: `ArbRewarder.setSynthETHAddress(${requiredSynthAddress}, ${requiredSethUniswapExchange})`,
-				target: arbRewarder.options.address,
-				action: `setSynthETHAddress(${requiredSynthAddress}, ${requiredSethUniswapExchange})`,
-			});
-		}
-	}
+	// Ensure sETH proxy address on arbRewarder set
+	await runStep({
+		contract: 'ArbRewarder',
+		target: arbRewarder,
+		read: 'seth_erc20',
+		expected: input => input === requiredSynthAddress,
+		write: 'setSynthEthAddress',
+		writeArg: requiredSynthAddress,
+	});
 
 	console.log(green('\nSuccessfully deployed all contracts!\n'));
 
