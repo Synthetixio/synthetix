@@ -13,7 +13,7 @@ MODULE DESCRIPTION
 -----------------------------------------------------------------
 The Synthetix ArbRewarder Contract for fixing the sETH/ETH peg
 
-Allows a user to send ETH to the contract via addEth()
+Allows a user to send ETH to the contract via arbSynthRate()
 - If the sETH/ETH ratio is below 99/100 & there is sufficient SNX
 remaining in the contract at the current exchange rate.
 - Convert the ETH to sETH via Uniswap up to the 99/100 ratio or the ETH is exhausted
@@ -54,14 +54,14 @@ contract ArbRewarder is SelfDestructible, Pausable {
     uint constant divisor = 10000;
 
     /* Contract Addresses */
-    address public seth_exchange_addr = 0xe9Cf7887b93150D4F2Da7dFc6D502B216438F244;
-    address public snx_erc20_addr = 0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F;
+    address public uniswapAddress = 0xe9Cf7887b93150D4F2Da7dFc6D502B216438F244;
+    address public synthetixProxy = 0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F;
 
-    IExchangeRates public synthetix_rates = IExchangeRates(0x70C629875daDBE702489a5E1E3bAaE60e38924fa);
-    IUniswapExchange public seth_uniswap_exchange = IUniswapExchange(seth_exchange_addr);
+    IExchangeRates public exchangeRates = IExchangeRates(0x70C629875daDBE702489a5E1E3bAaE60e38924fa);
+    IUniswapExchange public uniswapExchange = IUniswapExchange(uniswapAddress);
 
-    IERC20 public seth_erc20 = IERC20(0x5e74C9036fb86BD7eCdcb084a0673EFc32eA31cb);
-    IERC20 public snx_erc20 = IERC20(snx_erc20_addr);
+    IERC20 public synth = IERC20(0x5e74C9036fb86BD7eCdcb084a0673EFc32eA31cb);
+    IERC20 public synthetix = IERC20(synthetixProxy);
 
     
     /* ========== CONSTRUCTOR ========== */
@@ -87,23 +87,23 @@ contract ArbRewarder is SelfDestructible, Pausable {
     }
 
     function setSynthetix(address _address) external onlyOwner {
-        snx_erc20_addr = _address;
-        snx_erc20 = IERC20(snx_erc20_addr);
+        synthetixProxy = _address;
+        synthetix = IERC20(synthetixProxy);
     }
 
-    function setSynthEthAddress(address _seth_erc20_addr) external onlyOwner {
-        seth_erc20 = IERC20(_seth_erc20_addr);
-        seth_erc20.approve(seth_exchange_addr, uint(-1));
+    function setSynthAddress(address _synthAddress) external onlyOwner {
+        synth = IERC20(_synthAddress);
+        synth.approve(uniswapAddress, uint(-1));
     }
 
-    function setSynthEthUniswapExchange(address _seth_exchange_addr) external onlyOwner {
-        seth_exchange_addr = _seth_exchange_addr;
-        seth_uniswap_exchange = IUniswapExchange(seth_exchange_addr);
-        seth_erc20.approve(seth_exchange_addr, uint(-1));
+    function setUniswapExchange(address _uniswapAddress) external onlyOwner {
+        uniswapAddress = _uniswapAddress;
+        uniswapExchange = IUniswapExchange(uniswapAddress);
+        synth.approve(uniswapAddress, uint(-1));
     }
 
-    function setExchangeRates(address _synxthetix_rates_addr) external onlyOwner {
-        synthetix_rates = IExchangeRates(_synxthetix_rates_addr);
+    function setExchangeRates(address _exchangeRatesAddress) external onlyOwner {
+        exchangeRates = IExchangeRates(_exchangeRatesAddress);
     }
 
     /* ========== OWNER ONLY ========== */
@@ -123,15 +123,15 @@ contract ArbRewarder is SelfDestructible, Pausable {
      * Here the caller gives us some ETH. We convert the ETH->sETH  and reward the caller with SNX worth
      * the value of the sETH received from the earlier swap.
      */
-    function addEth() public payable
+    function arbSynthRate() public payable
         rateNotStale("ETH")
         rateNotStale("SNX")
         notPaused
         returns (uint reward_tokens)
     {
         /* Ensure there is enough more sETH than ETH in the Uniswap pool */
-        uint seth_in_uniswap = seth_erc20.balanceOf(seth_exchange_addr);
-        uint eth_in_uniswap = seth_exchange_addr.balance;
+        uint seth_in_uniswap = synth.balanceOf(uniswapAddress);
+        uint eth_in_uniswap = uniswapAddress.balance;
         require(eth_in_uniswap.divideDecimal(seth_in_uniswap) < uint(divisor-off_peg_min).divideDecimal(divisor), "sETH/ETH ratio is too high");
 
         /* Get maximum ETH we'll convert for caller */
@@ -140,8 +140,8 @@ contract ArbRewarder is SelfDestructible, Pausable {
         uint unspent_input = msg.value - eth_to_convert;
 
         /* Actually swap ETH for sETH */
-        uint min_seth_bought = expectedOutput(seth_uniswap_exchange, eth_to_convert);
-        uint tokens_bought = seth_uniswap_exchange.ethToTokenSwapInput.value(eth_to_convert)(min_seth_bought, now + max_delay);
+        uint min_seth_bought = expectedOutput(uniswapExchange, eth_to_convert);
+        uint tokens_bought = uniswapExchange.ethToTokenSwapInput.value(eth_to_convert)(min_seth_bought, now + max_delay);
 
         /* Reward caller */
         reward_tokens = rewardCaller(tokens_bought, unspent_input);
@@ -151,8 +151,8 @@ contract ArbRewarder is SelfDestructible, Pausable {
         public
         returns (bool)
     {
-        uint seth_in_uniswap = seth_erc20.balanceOf(seth_exchange_addr);
-        uint eth_in_uniswap = seth_exchange_addr.balance;
+        uint seth_in_uniswap = synth.balanceOf(uniswapAddress);
+        uint eth_in_uniswap = uniswapAddress.balance;
         return eth_in_uniswap.divideDecimal(seth_in_uniswap) < uint(divisor-off_peg_min).divideDecimal(divisor);
     }
 
@@ -163,11 +163,11 @@ contract ArbRewarder is SelfDestructible, Pausable {
         returns
         (uint reward_tokens)
     {
-        uint snx_rate = synthetix_rates.rateForCurrency("SNX");
-        uint eth_rate = synthetix_rates.rateForCurrency("ETH");
+        uint snx_rate = exchangeRates.rateForCurrency("SNX");
+        uint eth_rate = exchangeRates.rateForCurrency("ETH");
 
         reward_tokens = eth_rate.multiplyDecimal(bought).divideDecimal(snx_rate);
-        snx_erc20.transfer(msg.sender, reward_tokens);
+        synthetix.transfer(msg.sender, reward_tokens);
 
         if(unspent_input > 0) {
             msg.sender.transfer(unspent_input);
@@ -223,7 +223,7 @@ contract ArbRewarder is SelfDestructible, Pausable {
     /* ========== MODIFIERS ========== */
 
     modifier rateNotStale(bytes32 currencyKey) {
-        require(!synthetix_rates.rateIsStale(currencyKey), "Rate stale or not a synth");
+        require(!exchangeRates.rateIsStale(currencyKey), "Rate stale or not a synth");
         _;
     }
 }

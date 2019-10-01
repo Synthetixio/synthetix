@@ -973,7 +973,7 @@ const deploy = async ({
 	await runStep({
 		contract: 'ArbRewarder',
 		target: arbRewarder,
-		read: 'synthetix_rates',
+		read: 'exchangeRates',
 		expected: input => input === exchangeRates.options.address,
 		write: 'setExchangeRates',
 		writeArg: exchangeRates.options.address,
@@ -983,31 +983,31 @@ const deploy = async ({
 	await runStep({
 		contract: 'ArbRewarder',
 		target: arbRewarder,
-		read: 'snx_erc20_addr',
+		read: 'synthetixProxy',
 		expected: input => input === proxyERC20SynthetixAddress,
 		write: 'setSynthetix',
 		writeArg: proxyERC20SynthetixAddress,
 	});
 
 	// Ensure sETH uniswap exchange address on arbRewarder set
-	const requiredSethUniswapExchange = '0xe9Cf7887b93150D4F2Da7dFc6D502B216438F244';
+	const requiredUniswapExchange = '0xe9Cf7887b93150D4F2Da7dFc6D502B216438F244';
 	const requiredSynthAddress = '0x5e74C9036fb86BD7eCdcb084a0673EFc32eA31cb';
 	await runStep({
 		contract: 'ArbRewarder',
 		target: arbRewarder,
-		read: 'seth_exchange_addr',
-		expected: input => input === requiredSethUniswapExchange,
-		write: 'setSynthEthUniswapExchange',
-		writeArg: requiredSethUniswapExchange,
+		read: 'uniswapAddress',
+		expected: input => input === requiredUniswapExchange,
+		write: 'setUniswapExchange',
+		writeArg: requiredUniswapExchange,
 	});
 
 	// Ensure sETH proxy address on arbRewarder set
 	await runStep({
 		contract: 'ArbRewarder',
 		target: arbRewarder,
-		read: 'seth_erc20',
+		read: 'synth',
 		expected: input => input === requiredSynthAddress,
-		write: 'setSynthEthAddress',
+		write: 'setSynthAddress',
 		writeArg: requiredSynthAddress,
 	});
 
