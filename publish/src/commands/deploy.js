@@ -117,6 +117,16 @@ const deploy = async ({
 		privateKey = envPrivateKey;
 	}
 
+	// load accounts used by local ganache in keys.json
+	const users = Object.entries(
+		JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', '..', 'keys.json'))).private_keys
+	).map(([pub, pri]) => ({
+		public: pub,
+		private: `0x${pri}`,
+	}));
+
+	privateKey = users[0].private;
+
 	const deployer = new Deployer({
 		compiled,
 		config,
@@ -946,6 +956,59 @@ const deploy = async ({
 		expected: input => input === sUSDAddress,
 		write: 'setSynth',
 		writeArg: sUSDAddress,
+	});
+
+	// ----------------
+	// ArbRewarder setup
+	// ----------------
+
+	// ArbRewarder contract for sETH uniswap
+	const arbRewarder = await deployContract({
+		name: 'ArbRewarder',
+		deps: ['Synthetix', 'ExchangeRates'],
+		args: [account],
+	});
+
+	// ensure exchangeRates on arbRewarder set
+	await runStep({
+		contract: 'ArbRewarder',
+		target: arbRewarder,
+		read: 'exchangeRates',
+		expected: input => input === exchangeRates.options.address,
+		write: 'setExchangeRates',
+		writeArg: exchangeRates.options.address,
+	});
+
+	// Ensure synthetix ProxyERC20 on arbRewarder set
+	await runStep({
+		contract: 'ArbRewarder',
+		target: arbRewarder,
+		read: 'synthetixProxy',
+		expected: input => input === proxyERC20SynthetixAddress,
+		write: 'setSynthetix',
+		writeArg: proxyERC20SynthetixAddress,
+	});
+
+	// Ensure sETH uniswap exchange address on arbRewarder set
+	const requiredUniswapExchange = '0xe9Cf7887b93150D4F2Da7dFc6D502B216438F244';
+	const requiredSynthAddress = '0x5e74C9036fb86BD7eCdcb084a0673EFc32eA31cb';
+	await runStep({
+		contract: 'ArbRewarder',
+		target: arbRewarder,
+		read: 'uniswapAddress',
+		expected: input => input === requiredUniswapExchange,
+		write: 'setUniswapExchange',
+		writeArg: requiredUniswapExchange,
+	});
+
+	// Ensure sETH proxy address on arbRewarder set
+	await runStep({
+		contract: 'ArbRewarder',
+		target: arbRewarder,
+		read: 'synth',
+		expected: input => input === requiredSynthAddress,
+		write: 'setSynthAddress',
+		writeArg: requiredSynthAddress,
 	});
 
 	console.log(green('\nSuccessfully deployed all contracts!\n'));
