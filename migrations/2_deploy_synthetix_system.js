@@ -21,7 +21,7 @@ const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 const TokenState = artifacts.require('TokenState');
 const Depot = artifacts.require('Depot');
 const SelfDestructible = artifacts.require('SelfDestructible');
-const ExchangeGasPriceLimit = artifacts.require('ExchangeGasPriceLimit');
+const GasPriceOracle = artifacts.require('GasPriceOracleStub');
 
 // Update values before deployment
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
@@ -145,13 +145,14 @@ module.exports = async function(deployer, network, accounts) {
 	await feePoolEternalStorage.setAssociatedContract(feePool.address, { from: owner });
 
 	// ----------------
-	// ExchangeGasPriceLimit
+	// GasPriceOracle
 	// ----------------
-	console.log('Deploying ExchangeGasPriceLimit...');
-	const GAS_LIMIT = web3.utils.toWei('20', 'gwei'); // Set testing gwei exchange limit to 20
+	console.log('Deploying GasPriceOracle...');
+	const FAST_GAS = web3.utils.toWei('20', 'gwei'); // Set testing gwei exchange limit to 20
+	const FASTEST_GAS = web3.utils.toWei('25', 'gwei'); // Set testing gwei fastest
 
-	// constructor(address _owner, uint _gasPrice)
-	const GasPriceLimit = await deployer.deploy(ExchangeGasPriceLimit, owner, GAS_LIMIT, {
+	// constructor(uint _fast, uint _fastest)
+	const gasPriceOracle = await deployer.deploy(GasPriceOracle, FAST_GAS, FASTEST_GAS, {
 		from: deployerAccount,
 	});
 
@@ -213,7 +214,6 @@ module.exports = async function(deployer, network, accounts) {
 		escrow.address,
 		rewardsDistribution.address,
 		SYNTHETIX_TOTAL_SUPPLY,
-		GasPriceLimit.address,
 		{
 			from: deployerAccount,
 			gas: 8000000,
@@ -261,6 +261,11 @@ module.exports = async function(deployer, network, accounts) {
 	// ----------------------
 	await rewardsDistribution.setAuthority(synthetix.address, { from: owner });
 	await rewardsDistribution.setSynthetixProxy(synthetixProxy.address, { from: owner });
+
+	// ----------------------
+	// Connect GasPriceOracle
+	// ----------------------
+	await synthetix.setGasPriceOracle(gasPriceOracle.address, { from: owner });
 
 	// ----------------
 	// Synths

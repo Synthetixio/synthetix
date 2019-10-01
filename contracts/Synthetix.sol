@@ -127,7 +127,7 @@ import "./SynthetixState.sol";
 import "./Synth.sol";
 import "./interfaces/ISynthetixEscrow.sol";
 import "./interfaces/IFeePool.sol";
-import "./interfaces/IExchangeGasPriceLimit.sol";
+import "./interfaces/IGasPriceOracle.sol";
 import "./interfaces/IRewardsDistribution.sol";
 
 /**
@@ -150,7 +150,7 @@ contract Synthetix is ExternStateToken {
     SynthetixState public synthetixState;
     SupplySchedule public supplySchedule;
     IRewardsDistribution public rewardsDistribution;
-    IExchangeGasPriceLimit public gasPriceLimit;
+    IGasPriceOracle public gasPriceOracle;
 
     bool private protectionCircuit = false;
 
@@ -169,7 +169,7 @@ contract Synthetix is ExternStateToken {
      */
     constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
         address _owner, ExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule,
-        ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow, IRewardsDistribution _rewardsDistribution, uint _totalSupply, IExchangeGasPriceLimit _gasPriceLimit
+        ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow, IRewardsDistribution _rewardsDistribution, uint _totalSupply
     )
         ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, _totalSupply, DECIMALS, _owner)
         public
@@ -181,7 +181,6 @@ contract Synthetix is ExternStateToken {
         rewardEscrow = _rewardEscrow;
         escrow = _escrow;
         rewardsDistribution = _rewardsDistribution;
-        gasPriceLimit = _gasPriceLimit;
     }
     // ========== SETTERS ========== */
 
@@ -192,11 +191,11 @@ contract Synthetix is ExternStateToken {
         feePool = _feePool;
     }
 
-    function setGasPriceLimit(IExchangeGasPriceLimit _gasPriceLimit)
+    function setGasPriceOracle(IGasPriceOracle _gasPriceOracle)
         external
         optionalProxy_onlyOwner
     {
-        gasPriceLimit = _gasPriceLimit;
+        gasPriceOracle = _gasPriceOracle;
     }
 
     function setExchangeRates(ExchangeRates _exchangeRates)
@@ -432,7 +431,7 @@ contract Synthetix is ExternStateToken {
         require(sourceAmount > 0, "Zero amount");
 
         // verify gas price limit
-        gasPriceLimit.validateGasPrice(tx.gasprice);
+        validateGasPrice(tx.gasprice);
 
         //  If protectionCircuit is true then we burn the synths through _internalLiquidation()
         if (protectionCircuit) {
@@ -452,6 +451,18 @@ contract Synthetix is ExternStateToken {
                 true // Charge fee on the exchange
             );
         }
+    }
+
+    /*
+        @dev validate that the given gas price is less than or equal to the gas price limit
+        @param _gasPrice tested gas price
+    */
+    function validateGasPrice(uint _givenGasPrice)
+        public
+        view
+        greaterThanZero(_givenGasPrice)
+    {
+        require(_givenGasPrice <= gasPriceOracle.fastGasPrice(), "Gas price above limit");
     }
 
     /**
@@ -1002,6 +1013,12 @@ contract Synthetix is ExternStateToken {
         }
 
         require(isSynth, "Only synth allowed");
+    }
+
+    // verifies that an amount is greater than zero
+    modifier greaterThanZero(uint _amount) {
+        require(_amount > 0, "Needs to be greater than 0");
+        _;
     }
 
     modifier onlyOracle
