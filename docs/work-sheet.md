@@ -19,15 +19,13 @@
     * Inheritance graph, contract interaction diagram, and libraries in tabbed details panel. https://github.com/squidfunk/mkdocs-material/issues/955
 
 ??? "System Processes"
-    * Tokens/Synths
-    * Minting
-    * Conversion
-    * Escrow
+    * Synths and exchange
+    * Issuance
+    * Escrow contracts
     * Connection between collateral pool value and token value
     * Stabilisation mechanism
-    * Fee pool rewards
-    * Inflationary rewards
-    * Collat ratio targeting
+    * The fee pool, and fees vs inflationary rewards
+    * Collat ratio targeting, and Collateralisation vs Issuance Ratios
     * Oracle
     * The debt ledger
     * System value flow
