@@ -148,7 +148,8 @@ Th `generate-token-list` command will generate an array of token proxy addresses
 
 ```bash
 # output a list of token addresses, decimals and symbol names for all the token proxy contracts
-node publish generate-token-file
+node publish generate-token-list -d publish/deployed/mainnet
+
 ```
 
 ### CLI Options
