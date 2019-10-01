@@ -2,7 +2,7 @@
 	"ArbRewarder": {
 		"deploy": true
 	},
-	"ExchangeGasPriceLimit": {
+	"GasPriceOracleStub": {
 		"deploy": true
 	},
 	"Depot": {

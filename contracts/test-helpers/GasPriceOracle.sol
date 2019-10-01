@@ -2,7 +2,7 @@ pragma solidity 0.4.25;
 
 import "../interfaces/IGasPriceOracle.sol";
 
-contract GasPriceOracleStub is IGasPriceOracle {
+contract GasPriceOracle is IGasPriceOracle {
     uint public fastGasPrice = 0 wei;
     uint public fastestGasPrice = 0 wei;
 

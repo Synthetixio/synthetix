@@ -7,7 +7,7 @@ const SupplySchedule = artifacts.require('SupplySchedule');
 const Synthetix = artifacts.require('Synthetix');
 const SynthetixState = artifacts.require('SynthetixState');
 const Synth = artifacts.require('Synth');
-const GasPriceLimit = artifacts.require('ExchangeGasPriceLimit');
+const GasPriceOracle = artifacts.require('GasPriceOracle');
 
 const {
 	currentTime,
@@ -50,7 +50,7 @@ contract('Synthetix', async accounts => {
 		exchangeRates,
 		feePool,
 		supplySchedule,
-		gasPriceLimit,
+		gasPriceOracle,
 		sUSDContract,
 		sAUDContract,
 		escrow,
@@ -84,7 +84,7 @@ contract('Synthetix', async accounts => {
 		escrow = await Escrow.deployed();
 		rewardEscrow = await RewardEscrow.deployed();
 		rewardsDistribution = await RewardsDistribution.deployed();
-		gasPriceLimit = await GasPriceLimit.deployed();
+		gasPriceOracle = await GasPriceOracle.deployed();
 
 		synthetix = await Synthetix.deployed();
 		synthetixState = await SynthetixState.at(await synthetix.synthetixState());
@@ -124,7 +124,6 @@ contract('Synthetix', async accounts => {
 			account8,
 			rewardsDistribution.address,
 			SYNTHETIX_TOTAL_SUPPLY,
-			account8,
 			{
 				from: deployerAccount,
 			}
@@ -161,7 +160,6 @@ contract('Synthetix', async accounts => {
 			account8,
 			rewardsDistribution.address,
 			YEAR_2_SYNTHETIX_TOTAL_SUPPLY,
-			account8,
 			{
 				from: deployerAccount,
 			}

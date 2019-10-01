@@ -21,7 +21,7 @@ const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 const TokenState = artifacts.require('TokenState');
 const Depot = artifacts.require('Depot');
 const SelfDestructible = artifacts.require('SelfDestructible');
-const GasPriceOracle = artifacts.require('GasPriceOracleStub');
+const GasPriceOracle = artifacts.require('GasPriceOracle');
 
 // Update values before deployment
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
