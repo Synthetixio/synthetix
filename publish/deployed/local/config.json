@@ -2,6 +2,9 @@
 	"ArbRewarder": {
 		"deploy": true
 	},
+	"ExchangeGasPriceLimit": {
+		"deploy": true
+	},
 	"Depot": {
 		"deploy": true
 	},
