@@ -27,6 +27,7 @@ pragma solidity 0.4.25;
 import "./SafeDecimalMath.sol";
 import "./ExchangeRates.sol";
 import "./Synth.sol";
+import "./interfaces/ISynthetix.sol";
 
 
 contract PurgeableSynth is Synth {
@@ -34,17 +35,17 @@ contract PurgeableSynth is Synth {
     using SafeDecimalMath for uint;
 
     // The maximum allowed amount of tokenSupply in equivalent sUSD value for this synth to permit purging
-    uint public maxSupplyToPurgeInUSD = 10000 * SafeDecimalMath.unit(); // 10,000
+    uint public maxSupplyToPurgeInUSD = 100000 * SafeDecimalMath.unit(); // 100,000
 
     // Track exchange rates so we can determine if supply in USD is below threshpld at purge time
     ExchangeRates public exchangeRates;
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _proxy, TokenState _tokenState, Synthetix _synthetix, IFeePool _feePool,
-        string _tokenName, string _tokenSymbol, address _owner, bytes4 _currencyKey, ExchangeRates _exchangeRates
+    constructor(address _proxy, TokenState _tokenState, address _synthetixProxy, IFeePool _feePool,
+        string _tokenName, string _tokenSymbol, address _owner, bytes32 _currencyKey, ExchangeRates _exchangeRates, uint _totalSupply
     )
-        Synth(_proxy, _tokenState, _synthetix, _feePool, _tokenName, _tokenSymbol, _owner, _currencyKey)
+        Synth(_proxy, _tokenState, _synthetixProxy, _feePool, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply)
         public
     {
         exchangeRates = _exchangeRates;
@@ -74,7 +75,7 @@ contract PurgeableSynth is Synth {
             uint amountHeld = balanceOf(holder);
 
             if (amountHeld > 0) {
-                synthetix.synthInitiatedExchange(holder, currencyKey, amountHeld, "sUSD", holder);
+                ISynthetix(synthetixProxy).synthInitiatedExchange(holder, currencyKey, amountHeld, "sUSD", holder);
                 emitPurged(holder, amountHeld);
             }
 

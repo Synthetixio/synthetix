@@ -1,4 +1,7 @@
 {
+	"ArbRewarder": {
+		"deploy": false
+	},
 	"Depot": {
 		"deploy": false
 	},
@@ -32,6 +35,9 @@
 	"RewardEscrow": {
 		"deploy": false
 	},
+	"RewardsDistribution": {
+		"deploy": false
+	},
 	"SynthetixState": {
 		"deploy": false
 	},
@@ -50,9 +56,6 @@
 	"SynthsAUD": {
 		"deploy": false
 	},
-	"SynthsKRW": {
-		"deploy": false
-	},
 	"SynthsGBP": {
 		"deploy": false
 	},
@@ -68,6 +71,9 @@
 	"SynthsBTC": {
 		"deploy": false
 	},
+	"ProxyERC20": {
+		"deploy": false
+	},
 	"ProxyFeePool": {
 		"deploy": false
 	},
@@ -80,6 +86,9 @@
 	"ProxysUSD": {
 		"deploy": false
 	},
+	"ProxyERC20sUSD": {
+		"deploy": false
+	},
 	"ProxysEUR": {
 		"deploy": false
 	},
@@ -87,9 +96,6 @@
 		"deploy": false
 	},
 	"ProxysAUD": {
-		"deploy": false
-	},
-	"ProxysKRW": {
 		"deploy": false
 	},
 	"ProxysGBP": {
@@ -126,9 +132,6 @@
 		"deploy": false
 	},
 	"TokenStatesAUD": {
-		"deploy": false
-	},
-	"TokenStatesKRW": {
 		"deploy": false
 	},
 	"TokenStatesGBP": {
@@ -243,6 +246,24 @@
 		"deploy": false
 	},
 	"SynthiXTZ": {
+		"deploy": false
+	},
+	"TokenStatesCEX": {
+		"deploy": false
+	},
+	"ProxysCEX": {
+		"deploy": false
+	},
+	"SynthsCEX": {
+		"deploy": false
+	},
+	"TokenStateiCEX": {
+		"deploy": false
+	},
+	"ProxyiCEX": {
+		"deploy": false
+	},
+	"SynthiCEX": {
 		"deploy": false
 	}
 }

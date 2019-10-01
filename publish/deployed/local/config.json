@@ -1,4 +1,7 @@
 {
+	"ArbRewarder": {
+		"deploy": true
+	},
 	"Depot": {
 		"deploy": true
 	},
@@ -30,6 +33,9 @@
 		"deploy": true
 	},
 	"RewardEscrow": {
+		"deploy": true
+	},
+	"RewardsDistribution": {
 		"deploy": true
 	},
 	"SynthetixState": {
@@ -80,10 +86,13 @@
 	"ProxySynthetix": {
 		"deploy": true
 	},
-	"ProxyXDR": {
+	"ProxyERC20": {
 		"deploy": true
 	},
 	"ProxysUSD": {
+		"deploy": true
+	},
+	"ProxyXDR": {
 		"deploy": true
 	},
 	"ProxysEUR": {
@@ -168,6 +177,9 @@
 		"deploy": true
 	},
 	"ProxysETH": {
+		"deploy": true
+	},
+	"ProxyERC20sETH": {
 		"deploy": true
 	},
 	"SynthsETH": {

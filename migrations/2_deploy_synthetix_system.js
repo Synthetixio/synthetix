@@ -8,11 +8,13 @@ const DelegateApprovals = artifacts.require('DelegateApprovals');
 const Synthetix = artifacts.require('Synthetix');
 const SynthetixEscrow = artifacts.require('SynthetixEscrow');
 const RewardEscrow = artifacts.require('RewardEscrow');
+const RewardsDistribution = artifacts.require('RewardsDistribution');
 const SynthetixState = artifacts.require('SynthetixState');
 const SupplySchedule = artifacts.require('SupplySchedule');
 const Synth = artifacts.require('Synth');
 const Owned = artifacts.require('Owned');
 const Proxy = artifacts.require('Proxy');
+// const ProxyERC20 = artifacts.require('ProxyERC20');
 const PublicSafeDecimalMath = artifacts.require('PublicSafeDecimalMath');
 const PurgeableSynth = artifacts.require('PurgeableSynth');
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
@@ -26,7 +28,7 @@ const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 const SYNTHETIX_TOTAL_SUPPLY = web3.utils.toWei('100000000');
 
 module.exports = async function(deployer, network, accounts) {
-	const [deployerAccount, owner, oracle, feeAuthority, fundsWallet] = accounts;
+	const [deployerAccount, owner, oracle, fundsWallet] = accounts;
 
 	// Note: This deployment script is not used on mainnet, it's only for testing deployments.
 
@@ -125,8 +127,7 @@ module.exports = async function(deployer, network, accounts) {
 		feePoolEternalStorage.address,
 		synthetixState.address,
 		rewardEscrow.address,
-		feeAuthority,
-		web3.utils.toWei('0.0015', 'ether'), // TODO must change this to 0 to match MAINNET after tests are updated
+		ZERO_ADDRESS,
 		web3.utils.toWei('0.0030', 'ether'),
 		{ from: deployerAccount }
 	);
@@ -153,6 +154,25 @@ module.exports = async function(deployer, network, accounts) {
 	const GasPriceLimit = await deployer.deploy(ExchangeGasPriceLimit, owner, GAS_LIMIT, {
 		from: deployerAccount,
 	});
+
+	// ----------------------
+	// Deploy RewardDistribution
+	// ----------------------
+	console.log('Deploying RewardsDistribution...');
+	const rewardsDistribution = await deployer.deploy(
+		RewardsDistribution,
+		owner,
+		ZERO_ADDRESS, // Authority = Synthetix Underlying
+		ZERO_ADDRESS, // Synthetix ProxyERC20
+		rewardEscrow.address,
+		feePoolProxy.address, // FeePoolProxy
+		{
+			from: deployerAccount,
+		}
+	);
+
+	// Configure FeePool with the RewardsDistribution contract
+	await feePool.setRewardsAuthority(rewardsDistribution.address, { from: owner });
 
 	// ----------------
 	// Synthetix
@@ -191,6 +211,7 @@ module.exports = async function(deployer, network, accounts) {
 		supplySchedule.address,
 		rewardEscrow.address,
 		escrow.address,
+		rewardsDistribution.address,
 		SYNTHETIX_TOTAL_SUPPLY,
 		GasPriceLimit.address,
 		{
@@ -235,6 +256,12 @@ module.exports = async function(deployer, network, accounts) {
 	// ----------------------
 	await supplySchedule.setSynthetix(synthetix.address, { from: owner });
 
+	// ----------------------
+	// Connect RewardsDistribution
+	// ----------------------
+	await rewardsDistribution.setAuthority(synthetix.address, { from: owner });
+	await rewardsDistribution.setSynthetixProxy(synthetixProxy.address, { from: owner });
+
 	// ----------------
 	// Synths
 	// ----------------
@@ -261,12 +288,13 @@ module.exports = async function(deployer, network, accounts) {
 			Synth,
 			proxy.address,
 			tokenState.address,
-			synthetix.address,
-			feePool.address,
+			synthetixProxy.address,
+			feePoolProxy.address,
 			`Synth ${currencyKey}`,
 			currencyKey,
 			owner,
 			web3.utils.asciiToHex(currencyKey),
+			web3.utils.toWei('0'),
 			{ from: deployerAccount }
 		);
 
@@ -339,6 +367,8 @@ module.exports = async function(deployer, network, accounts) {
 		['Fee Pool', FeePool.address],
 		['Fee Pool Proxy', feePoolProxy.address],
 		['ExchangeGasPriceLimit', GasPriceLimit.address],
+		['Fee Pool State', feePoolState.address],
+		['Fee Pool Eternal Storage', feePoolEternalStorage.address],
 		['Synthetix State', synthetixState.address],
 		['Synthetix Token State', synthetixTokenState.address],
 		['Synthetix Proxy', synthetixProxy.address],
@@ -346,6 +376,7 @@ module.exports = async function(deployer, network, accounts) {
 		['Synthetix Escrow', SynthetixEscrow.address],
 		['SupplySchedule', supplySchedule.address],
 		['Reward Escrow', RewardEscrow.address],
+		['Rewards Distribution', RewardsDistribution.address],
 		['Depot', Depot.address],
 		['Owned', Owned.address],
 		['SafeDecimalMath', SafeDecimalMath.address],

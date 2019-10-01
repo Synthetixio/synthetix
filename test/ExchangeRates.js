@@ -1,5 +1,5 @@
 const ExchangeRates = artifacts.require('ExchangeRates');
-const { currentTime, fastForward, toUnit } = require('../utils/testUtils');
+const { currentTime, fastForward, toUnit, bytesToString } = require('../utils/testUtils');
 
 // Helper functions
 
@@ -71,12 +71,10 @@ contract('Exchange Rates', async accounts => {
 		);
 		assert.isAtLeast(lastUpdatedTimeSNX.toNumber(), creationTime);
 
-		const expectedXdrParticipants = ['sUSD', 'sAUD', 'sCHF', 'sEUR', 'sGBP'].map(
-			web3.utils.asciiToHex
-		);
+		const expectedXdrParticipants = ['sUSD', 'sAUD', 'sCHF', 'sEUR', 'sGBP'];
 		const xdrParticipants = [];
 		for (let i = 0; i < 5; i++) {
-			xdrParticipants.push(await instance.xdrParticipants(i));
+			xdrParticipants.push(bytesToString(await instance.xdrParticipants(i)));
 		}
 		for (let i = 0; i < 5; i++) {
 			assert.equal(xdrParticipants[i], expectedXdrParticipants[i]);
@@ -86,7 +84,7 @@ contract('Exchange Rates', async accounts => {
 		assert.bnEqual(sUSDRate, toUnit('1'));
 	});
 
-	it('two of the same currencies in same array should mean that the second one overrides', async () => {
+	it('two different currencies in same array should mean that the second one overrides', async () => {
 		const creationTime = await currentTime();
 		const firstAmount = '4.33';
 		const secondAmount = firstAmount + 10;
@@ -100,10 +98,12 @@ contract('Exchange Rates', async accounts => {
 			}
 		);
 
-		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('CART')), secondAmount);
-		assert.etherNotEqual(await instance.rates.call(web3.utils.asciiToHex('CART')), firstAmount);
+		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('CARTER')), firstAmount);
+		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('CARTOON')), secondAmount);
 
-		const lastUpdatedTime = await instance.lastRateUpdateTimes.call(web3.utils.asciiToHex('CART'));
+		const lastUpdatedTime = await instance.lastRateUpdateTimes.call(
+			web3.utils.asciiToHex('CARTER')
+		);
 		assert.isAtLeast(lastUpdatedTime.toNumber(), creationTime);
 	});
 
@@ -121,24 +121,31 @@ contract('Exchange Rates', async accounts => {
 		);
 	});
 
-	it('should truncate to 4 bytes if currency key > 4 bytes on create', async () => {
+	it('should limit to 32 bytes if currency key > 32 bytes on create', async () => {
 		const creationTime = await currentTime();
 		const amount = '4.33';
 		const instance = await ExchangeRates.new(
 			owner,
 			oracle,
-			[web3.utils.asciiToHex('CATHERINE')],
+			[web3.utils.asciiToHex('ABCDEFGHIJKLMNOPQRSTUVXYZ1234567')],
 			[web3.utils.toWei(amount, 'ether')],
 			{
 				from: deployerAccount,
 			}
 		);
 
-		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('CATHERINE')), amount);
-		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('CATH')), amount);
-		assert.etherNotEqual(await instance.rates.call(web3.utils.asciiToHex('CAT')), amount);
+		assert.etherEqual(
+			await instance.rates.call(web3.utils.asciiToHex('ABCDEFGHIJKLMNOPQRSTUVXYZ1234567')),
+			amount
+		);
+		assert.etherNotEqual(
+			await instance.rates.call(web3.utils.asciiToHex('ABCDEFGHIJKLMNOPQRSTUVXYZ123456')),
+			amount
+		);
 
-		const lastUpdatedTime = await instance.lastRateUpdateTimes.call(web3.utils.asciiToHex('CATH'));
+		const lastUpdatedTime = await instance.lastRateUpdateTimes.call(
+			web3.utils.asciiToHex('ABCDEFGHIJKLMNOPQRSTUVXYZ1234567')
+		);
 		assert.isAtLeast(lastUpdatedTime.toNumber(), creationTime);
 	});
 
@@ -300,19 +307,21 @@ contract('Exchange Rates', async accounts => {
 			web3.utils.toWei('3.5', 'ether'),
 		];
 
-		const currencyKeys = [
-			web3.utils.asciiToHex('lABC'),
-			web3.utils.asciiToHex('lDEF'),
-			web3.utils.asciiToHex('lGHI'),
-		];
+		const keys = ['lABC', 'lDEF', 'lGHI'];
+		const currencyKeys = keys.map(web3.utils.asciiToHex);
 		const txn = await instance.updateRates(currencyKeys, rates, await currentTime(), {
 			from: oracle,
 		});
 
-		assert.eventEqual(txn, 'RatesUpdated', {
-			currencyKeys,
-			newRates: rates,
-		});
+		assert.bytes32EventEqual(
+			txn,
+			'RatesUpdated',
+			{
+				currencyKeys: keys,
+				newRates: rates,
+			},
+			['currencyKeys']
+		);
 	});
 
 	it('should be able to handle lots of currency updates', async () => {
@@ -328,32 +337,6 @@ contract('Exchange Rates', async accounts => {
 			const lastUpdatedTime = await instance.lastRateUpdateTimes.call(currencyKeys[i]);
 			assert.equal(lastUpdatedTime.toNumber(), updatedTime);
 		}
-	});
-
-	it('should truncate to 4 bytes if currency key > 4 bytes on update', async () => {
-		const instance = await ExchangeRates.deployed();
-		const rate = '4.33';
-		const timeSent = await currentTime();
-		const beforeUpdateTime = await instance.lastRateUpdateTimes.call(
-			web3.utils.asciiToHex('CATHERINE')
-		);
-
-		await instance.updateRates(
-			[web3.utils.asciiToHex('CATHERINE')],
-			[web3.utils.toWei(rate, 'ether')],
-			timeSent,
-			{ from: oracle }
-		);
-
-		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('CATHERINE')), rate);
-		assert.etherEqual(await instance.rates.call(web3.utils.asciiToHex('CATH')), rate);
-		assert.etherNotEqual(await instance.rates.call(web3.utils.asciiToHex('CAT')), rate);
-
-		const lastUpdatedTime = await instance.lastRateUpdateTimes.call(
-			web3.utils.asciiToHex('CATHERINE')
-		);
-		assert.equal(lastUpdatedTime.toNumber(), timeSent);
-		assert.notEqual(lastUpdatedTime.toNumber(), beforeUpdateTime);
 	});
 
 	it('should revert when currency keys length != new rates length on update', async () => {
@@ -562,13 +545,14 @@ contract('Exchange Rates', async accounts => {
 	it('should emit RateDeleted event when rate deleted', async () => {
 		const instance = await ExchangeRates.deployed();
 		const updatedTime = await currentTime();
-		const encodedRate = web3.utils.asciiToHex('GOLD');
+		const rate = 'GOLD';
+		const encodedRate = web3.utils.asciiToHex(rate);
 		await instance.updateRates([encodedRate], [web3.utils.toWei('10.123', 'ether')], updatedTime, {
 			from: oracle,
 		});
 
 		const txn = await instance.deleteRate(encodedRate, { from: oracle });
-		assert.eventEqual(txn, 'RateDeleted', { currencyKey: encodedRate });
+		assert.bytes32EventEqual(txn, 'RateDeleted', { currencyKey: rate }, ['currencyKey']);
 	});
 
 	// Getting rates
@@ -1064,7 +1048,9 @@ contract('Exchange Rates', async accounts => {
 	});
 
 	describe('inverted prices', () => {
-		const [iBTC, iETH, sEUR, sBTC] = ['iBTC', 'iETH', 'sEUR', 'sBTC'].map(web3.utils.asciiToHex);
+		const currencyKeyEvent = ['currencyKey'];
+		const inverseRates = ['iBTC', 'iETH', 'sEUR', 'sBTC'];
+		const [iBTC, iETH, sEUR, sBTC] = inverseRates.map(web3.utils.asciiToHex);
 		let instance;
 		describe('when instance ready', () => {
 			beforeEach(async () => {
@@ -1138,22 +1124,24 @@ contract('Exchange Rates', async accounts => {
 					const rates = await instance.ratesForCurrencies(currencyKeys);
 					expectedRates.forEach((rate, i) => assert.bnEqual(rates[i], rate));
 
+					const possibleFrozenEvents = frozen.reduce((memo, currencyKey) => {
+						return memo.concat('InversePriceFrozen', { currencyKey: bytesToString(currencyKey) }, [
+							'currencyKey',
+						]);
+					}, []);
+
 					const ratesUpdatedEvent = [
 						'RatesUpdated',
 						{
-							currencyKeys,
+							currencyKeys: currencyKeys.map(bytesToString),
 							newRates: expectedRates,
 						},
+						['currencyKeys'],
 					];
 
-					const possibleFrozenEvents = frozen.reduce((memo, currencyKey) => {
-						return memo.concat('InversePriceFrozen', { currencyKey });
-					}, []);
-
-					const allEvents = possibleFrozenEvents.concat(ratesUpdatedEvent);
-
 					// ensure transaction emitted a RatesUpdated event and a list of possible frozen events
-					assert.eventEqual(txn, ...allEvents);
+					const allEvents = possibleFrozenEvents.concat(ratesUpdatedEvent);
+					assert.bytes32EventEqual(txn, ...allEvents);
 				};
 				const setTxns = [];
 				beforeEach(async () => {
@@ -1169,22 +1157,32 @@ contract('Exchange Rates', async accounts => {
 					);
 				});
 				it('both emit InversePriceConfigured events', async () => {
-					assert.eventEqual(setTxns[0], 'InversePriceConfigured', {
-						currencyKey: iBTC,
-						entryPoint: toUnit(4000),
-						upperLimit: toUnit(6500),
-						lowerLimit: toUnit(2300),
-					});
-					assert.eventEqual(setTxns[1], 'InversePriceConfigured', {
-						currencyKey: iETH,
-						entryPoint: toUnit(200),
-						upperLimit: toUnit(350),
-						lowerLimit: toUnit(75),
-					});
+					assert.bytes32EventEqual(
+						setTxns[0],
+						'InversePriceConfigured',
+						{
+							currencyKey: 'iBTC',
+							entryPoint: toUnit(4000),
+							upperLimit: toUnit(6500),
+							lowerLimit: toUnit(2300),
+						},
+						currencyKeyEvent
+					);
+					assert.bytes32EventEqual(
+						setTxns[1],
+						'InversePriceConfigured',
+						{
+							currencyKey: 'iETH',
+							entryPoint: toUnit(200),
+							upperLimit: toUnit(350),
+							lowerLimit: toUnit(75),
+						},
+						currencyKeyEvent
+					);
 				});
 				it('and the list of invertedKeys lists them both', async () => {
-					assert.equal(iBTC, await instance.invertedKeys(0));
-					assert.equal(iETH, await instance.invertedKeys(1));
+					assert.equal('iBTC', bytesToString(await instance.invertedKeys(0)));
+					assert.equal('iETH', bytesToString(await instance.invertedKeys(1)));
 					await assert.invalidOpcode(instance.invertedKeys(2));
 				});
 				it('rateIsFrozen must be false for both', async () => {
@@ -1293,16 +1291,22 @@ contract('Exchange Rates', async accounts => {
 						});
 
 						it('it emits a InversePriceConfigured event', async () => {
-							assert.eventEqual(setTxn, 'InversePriceConfigured', {
-								currencyKey: iBTC,
-								entryPoint: toUnit(5000),
-								upperLimit: toUnit(8900),
-								lowerLimit: toUnit(3000),
-							});
+							const currencyKey = 'iBTC';
+							assert.bytes32EventEqual(
+								setTxn,
+								'InversePriceConfigured',
+								{
+									currencyKey: currencyKey,
+									entryPoint: toUnit(5000),
+									upperLimit: toUnit(8900),
+									lowerLimit: toUnit(3000),
+								},
+								['currencyKey']
+							);
 						});
 						it('and the list of invertedKeys still lists them both', async () => {
-							assert.equal(iBTC, await instance.invertedKeys(0));
-							assert.equal(iETH, await instance.invertedKeys(1));
+							assert.equal('iBTC', bytesToString(await instance.invertedKeys(0)));
+							assert.equal('iETH', bytesToString(await instance.invertedKeys(1)));
 							await assert.invalidOpcode(instance.invertedKeys(2));
 						});
 
@@ -1421,15 +1425,20 @@ contract('Exchange Rates', async accounts => {
 							});
 						});
 						it('it emits a InversePriceConfigured event', async () => {
-							assert.eventEqual(removeTxn, 'InversePriceConfigured', {
-								currencyKey: iBTC,
-								entryPoint: 0,
-								upperLimit: 0,
-								lowerLimit: 0,
-							});
+							assert.bytes32EventEqual(
+								removeTxn,
+								'InversePriceConfigured',
+								{
+									currencyKey: 'iBTC',
+									entryPoint: 0,
+									upperLimit: 0,
+									lowerLimit: 0,
+								},
+								['currencyKey']
+							);
 						});
 						it('and the list of invertedKeys contains only iETH', async () => {
-							assert.equal(iETH, await instance.invertedKeys(0));
+							assert.equal('iETH', bytesToString(await instance.invertedKeys(0)));
 							await assert.invalidOpcode(instance.invertedKeys(1));
 						});
 						it('rateIsFrozen must be false for iBTC but still true for iETH', async () => {

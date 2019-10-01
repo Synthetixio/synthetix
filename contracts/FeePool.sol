@@ -4,8 +4,10 @@ FILE INFORMATION
 -----------------------------------------------------------------
 
 file:       FeePool.sol
-version:    1.0
-author:     Kevin Brown
+version:    2.8.0
+authors:    Kevin Brown
+            Jackson Chan
+            Clinton Ennis
 date:       2018-10-15
 
 -----------------------------------------------------------------
@@ -24,9 +26,9 @@ https://www.imf.org/en/About/Factsheets/Sheets/2016/08/01/14/51/Special-Drawing-
 
 Users are entitled to withdraw fees from periods that they participated
 in fully, e.g. they have to stake before the period starts. They
-can withdraw fees for the last 6 periods as a single lump sum.
+can withdraw fees for the last 2 periods as a single lump sum.
 Currently fee periods are 7 days long, meaning it's assumed
-users will withdraw their fees approximately once a month. Fees
+users will withdraw their fees approximately once a fortnight. Fees
 which are not withdrawn are redistributed to the whole pool,
 enabling these non-claimed fees to go back to the rest of the commmunity.
 
@@ -58,20 +60,14 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     ISynthetixEscrow public rewardEscrow;
     FeePoolEternalStorage public feePoolEternalStorage;
 
-    // A percentage fee charged on each transfer.
-    uint public transferFeeRate;
-
-    // Transfer fee may not exceed 10%.
-    uint constant public MAX_TRANSFER_FEE_RATE = SafeDecimalMath.unit() / 10;
-
     // A percentage fee charged on each exchange between currencies.
     uint public exchangeFeeRate;
 
     // Exchange fee may not exceed 10%.
     uint constant public MAX_EXCHANGE_FEE_RATE = SafeDecimalMath.unit() / 10;
 
-    // The address with the authority to distribute fees.
-    address public feeAuthority;
+    // The address with the authority to distribute rewards.
+    address public rewardsAuthority;
 
     // The address to the FeePoolState Contract.
     FeePoolState public feePoolState;
@@ -93,10 +89,12 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         uint rewardsClaimed;
     }
 
-    // The last 6 fee periods are all that you can claim from.
+    // The last 2 fee periods are all that you can claim from.
     // These are stored and managed from [0], such that [0] is always
-    // the most recent fee period, and [3] is always the oldest fee
-    // period that users can claim for.
+    // the current avtive fee period which is not claimable until the
+    // public function closeCurrentFeePeriod() is called closing the
+    // current weeks collected fees. [1] is last weeks feeperiod and
+    // [2] is the oldest fee period that users can claim for.
     uint8 constant public FEE_PERIOD_LENGTH = 3;
 
     FeePeriod[FEE_PERIOD_LENGTH] public recentFeePeriods;
@@ -125,8 +123,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         FeePoolEternalStorage _feePoolEternalStorage,
         ISynthetixState _synthetixState,
         ISynthetixEscrow _rewardEscrow,
-        address _feeAuthority,
-        uint _transferFeeRate,
+        address _rewardsAuthority,
         uint _exchangeFeeRate)
         SelfDestructible(_owner)
         Proxyable(_proxy, _owner)
@@ -134,16 +131,14 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         public
     {
         // Constructed fee rates should respect the maximum fee rates.
-        require(_transferFeeRate <= MAX_TRANSFER_FEE_RATE, "Constructed transfer fee rate should respect the maximum fee rate");
-        require(_exchangeFeeRate <= MAX_EXCHANGE_FEE_RATE, "Constructed exchange fee rate should respect the maximum fee rate");
+        require(_exchangeFeeRate <= MAX_EXCHANGE_FEE_RATE, "Exchange fee rate max exceeded");
 
         synthetix = _synthetix;
         feePoolState = _feePoolState;
         feePoolEternalStorage = _feePoolEternalStorage;
         rewardEscrow = _rewardEscrow;
         synthetixState = _synthetixState;
-        feeAuthority = _feeAuthority;
-        transferFeeRate = _transferFeeRate;
+        rewardsAuthority = _rewardsAuthority;
         exchangeFeeRate = _exchangeFeeRate;
 
         // Set our initial fee period
@@ -180,27 +175,13 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     }
 
     /**
-     * @notice Set the transfer fee, anywhere within the range 0-10%.
-     * @dev The fee rate is in decimal format, with UNIT being the value of 100%.
+     * @notice Set the address of the contract responsible for distributing rewards
      */
-    function setTransferFeeRate(uint _transferFeeRate)
+    function setRewardsAuthority(address _rewardsAuthority)
         external
         optionalProxy_onlyOwner
     {
-        require(_transferFeeRate <= MAX_TRANSFER_FEE_RATE, "Transfer fee rate must be below MAX_TRANSFER_FEE_RATE");
-
-        transferFeeRate = _transferFeeRate;
-    }
-
-    /**
-     * @notice Set the address of the user/contract responsible for collecting or
-     * distributing fees.
-     */
-    function setFeeAuthority(address _feeAuthority)
-        external
-        optionalProxy_onlyOwner
-    {
-        feeAuthority = _feeAuthority;
+        rewardsAuthority = _rewardsAuthority;
     }
 
     /**
@@ -230,8 +211,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         external
         optionalProxy_onlyOwner
     {
-        require(_feePeriodDuration >= MIN_FEE_PERIOD_DURATION, "New fee period cannot be less than minimum fee period duration");
-        require(_feePeriodDuration <= MAX_FEE_PERIOD_DURATION, "New fee period cannot be greater than maximum fee period duration");
+        require(_feePeriodDuration >= MIN_FEE_PERIOD_DURATION, "value < MIN_FEE_PERIOD_DURATION");
+        require(_feePeriodDuration <= MAX_FEE_PERIOD_DURATION, "value > MAX_FEE_PERIOD_DURATION");
 
         feePeriodDuration = _feePeriodDuration;
 
@@ -261,7 +242,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     /**
      * @notice The Synthetix contract informs us when fees are paid.
      */
-    function feePaid(bytes4 currencyKey, uint amount)
+    function feePaid(bytes32 currencyKey, uint amount)
         external
         onlySynthetix
     {
@@ -278,24 +259,23 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     }
 
     /**
-     * @notice The Synthetix contract informs us when SNX Rewards are minted to RewardEscrow to be claimed.
+     * @notice The RewardsDistribution contract informs us how many SNX rewards are sent to RewardEscrow to be claimed.
      */
-    function rewardsMinted(uint amount)
+    function setRewardsToDistribute(uint amount)
         external
-        onlySynthetix
     {
-        // Add the newly minted SNX rewards on top of the rolling unclaimed amount
+        require(messageSender == rewardsAuthority || msg.sender == rewardsAuthority, "Caller is not rewardsAuthority");
+        // Add the amount of SNX rewards to distribute on top of any rolling unclaimed amount
         recentFeePeriods[0].rewardsToDistribute = recentFeePeriods[0].rewardsToDistribute.add(amount);
     }
 
     /**
-     * @notice Close the current fee period and start a new one. Only callable by the fee authority.
+     * @notice Close the current fee period and start a new one.
      */
     function closeCurrentFeePeriod()
         external
-        optionalProxy_onlyFeeAuthority
     {
-        require(recentFeePeriods[0].startTime <= (now - feePeriodDuration), "It is too early to close the current fee period");
+        require(recentFeePeriods[0].startTime <= (now - feePeriodDuration), "Too early to close fee period");
 
         FeePeriod memory secondLastFeePeriod = recentFeePeriods[FEE_PERIOD_LENGTH - 2];
         FeePeriod memory lastFeePeriod = recentFeePeriods[FEE_PERIOD_LENGTH - 1];
@@ -344,7 +324,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     * @notice Claim fees for last period when available or not already withdrawn.
     * @param currencyKey Synth currency you wish to receive the fees in.
     */
-    function claimFees(bytes4 currencyKey)
+    function claimFees(bytes32 currencyKey)
         external
         optionalProxy
         returns (bool)
@@ -352,17 +332,24 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         return _claimFees(messageSender, currencyKey);
     }
 
-    function claimOnBehalf(address claimingForAddress, bytes4 currencyKey)
+    /**
+    * @notice Delegated claimFees(). Call from the deletegated address
+    * and the fees will be sent to the claimingForAddress.
+    * approveClaimOnBehalf() must be called first to approve the deletage address
+    * @param claimingForAddress The account you are claiming fees for
+    * @param currencyKey Synth currency you wish to receive the fees in
+    */
+    function claimOnBehalf(address claimingForAddress, bytes32 currencyKey)
         external
         optionalProxy
         returns (bool)
     {
-        require(delegates.approval(claimingForAddress, messageSender), "Not approved to claim on behalf this address");
+        require(delegates.approval(claimingForAddress, messageSender), "Not approved to claim on behalf");
 
         return _claimFees(claimingForAddress, currencyKey);
     }
 
-    function _claimFees(address claimingAddress, bytes4 currencyKey)
+    function _claimFees(address claimingAddress, bytes32 currencyKey)
         internal
         returns (bool)
     {
@@ -403,7 +390,39 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
         return true;
     }
+    
+    /**
+    * @notice Admin function to recover the orphaned transfer Fees
+    * see https://sips.synthetix.io/sips/sip-18
+    * @dev remove on next release
+    */
+    function recoverTransferFees()
+        public
+        optionalProxy_onlyOwner
+        onlyDuringSetup
+    {
+        Synth sUSDSynth = synthetix.synths("sUSD");
+        Synth xdrSynth = synthetix.synths("XDR");
 
+        // It will burn the balance of sUSD at the 0xfeefee address
+        uint sUSDBalance = sUSDSynth.balanceOf(FEE_ADDRESS);
+        require(sUSDBalance > 0, "No sUSD to recover");
+        sUSDSynth.burn(FEE_ADDRESS, sUSDBalance);
+
+        // Then issue the effective value of XDRs at the 0xfeefee address. Essentially the reverse of the _payFees() function.
+        uint xdrAmount = synthetix.effectiveValue("sUSD", sUSDBalance, "XDR");
+        xdrSynth.issue(FEE_ADDRESS, xdrAmount);
+
+        // Keep track of in XDRs in our fee pool.
+        recentFeePeriods[0].feesToDistribute = recentFeePeriods[0].feesToDistribute.add(xdrAmount);
+    }
+
+    event LogInt(string name, uint value);
+    event LogAddress(string name, address value);
+
+    /**
+    * @notice Admin function to import the FeePeriod data from the previous contract
+    */
     function importFeePeriod(
         uint feePeriodIndex, uint feePeriodId, uint startingDebtIndex, uint startTime,
         uint feesToDistribute, uint feesClaimed, uint rewardsToDistribute, uint rewardsClaimed)
@@ -420,20 +439,46 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         recentFeePeriods[feePeriodIndex].rewardsClaimed = rewardsClaimed;
     }
 
+    /**
+    * @notice Owner can escrow SNX. Owner to send the tokens to the RewardEscrow
+    * @param account Address to escrow tokens for
+    * @param quantity Amount of tokens to escrow
+    */
+    function appendVestingEntry(address account, uint quantity)
+        public
+        optionalProxy_onlyOwner
+    {
+        // Transfer SNX from messageSender to the Reward Escrow
+        synthetix.transferFrom(messageSender, rewardEscrow, quantity);
+
+        // Create Vesting Entry
+        rewardEscrow.appendVestingEntry(account, quantity);
+    }
+
+    /**
+    * @notice Approve an address to be able to claim your fees to your account on your behalf.
+    * This is intended to be able to delegate a mobile wallet to call the function to claim fees to
+    * your cold storage wallet
+    * @param account The hot/mobile/contract address that will call claimFees your accounts behalf
+    */
     function approveClaimOnBehalf(address account)
         public
         optionalProxy
     {
-        require(delegates != address(0), "Delegates Approval destination missing");
+        require(delegates != address(0), "Delegates Contract missing");
         require(account != address(0), "Can't delegate to address(0)");
         delegates.setApproval(messageSender, account);
     }
 
+    /**
+    * @notice Remove the permission to call claimFees your accounts behalf
+    * @param account The hot/mobile/contract address to remove permission
+    */
     function removeClaimOnBehalf(address account)
         public
         optionalProxy
     {
-        require(delegates != address(0), "Delegates Approval destination missing");
+        require(delegates != address(0), "Delegates Contract missing");
         delegates.withdrawApproval(messageSender, account);
     }
 
@@ -524,7 +569,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     * @param xdrAmount The amount of fees priced in XDRs.
     * @param destinationCurrencyKey The synth currency the user wishes to receive their fees in (convert to this currency).
     */
-    function _payFees(address account, uint xdrAmount, bytes4 destinationCurrencyKey)
+    function _payFees(address account, uint xdrAmount, bytes32 destinationCurrencyKey)
         internal
         notFeeAddress(account)
     {
@@ -576,40 +621,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     }
 
     /**
-     * @notice Calculate the Fee charged on top of a value being sent
-     * @return Return the fee charged
-     */
-    function transferFeeIncurred(uint value)
-        public
-        view
-        returns (uint)
-    {
-        return value.multiplyDecimal(transferFeeRate);
-
-        // Transfers less than the reciprocal of transferFeeRate should be completely eaten up by fees.
-        // This is on the basis that transfers less than this value will result in a nil fee.
-        // Probably too insignificant to worry about, but the following code will achieve it.
-        //      if (fee == 0 && transferFeeRate != 0) {
-        //          return _value;
-        //      }
-        //      return fee;
-    }
-
-    /**
-     * @notice The value that you would need to send so that the recipient receives
-     * a specified value.
-     * @param value The value you want the recipient to receive
-     */
-    function transferredAmountToReceive(uint value)
-        external
-        view
-        returns (uint)
-    {
-        return value.add(transferFeeIncurred(value));
-    }
-
-    /**
      * @notice The amount the recipient will receive if you send a certain number of tokens.
+     * function used by Depot and stub will return value amount inputted.
      * @param value The amount of tokens you intend to send.
      */
     function amountReceivedFromTransfer(uint value)
@@ -617,7 +630,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         view
         returns (uint)
     {
-        return value.divideDecimal(transferFeeRate.add(SafeDecimalMath.unit()));
+        return value;
     }
 
     /**
@@ -641,19 +654,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     }
 
     /**
-     * @notice The value that you would need to get after currency exchange so that the recipient receives
-     * a specified value.
-     * @param value The value you want the recipient to receive
-     */
-    function exchangedAmountToReceive(uint value)
-        external
-        view
-        returns (uint)
-    {
-        return value.add(exchangeFeeIncurred(value));
-    }
-
-    /**
      * @notice The amount the recipient will receive if you are performing an exchange and the
      * destination currency will be worth a certain number of tokens.
      * @param value The amount of destination currency tokens they received after the exchange.
@@ -670,7 +670,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
      * @notice The total fees available in the system to be withdrawn, priced in currencyKey currency
      * @param currencyKey The currency you want to price the fees in
      */
-    function totalFeesAvailable(bytes4 currencyKey)
+    function totalFeesAvailable(bytes32 currencyKey)
         external
         view
         returns (uint)
@@ -710,7 +710,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
      * @dev Returns two amounts, one for fees and one for SNX rewards
      * @param currencyKey The currency you want to price the fees in
      */
-    function feesAvailable(address account, bytes4 currencyKey)
+    function feesAvailable(address account, bytes32 currencyKey)
         public
         view
         returns (uint, uint)
@@ -880,8 +880,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         view
         returns (uint)
     {
-        require(period != 0, "Current period has not closed yet");
-        require(period < FEE_PERIOD_LENGTH, "Period exceeds the FEE_PERIOD_LENGTH");
+        require(period != 0, "Current period is not closed yet");
+        require(period < FEE_PERIOD_LENGTH, "Exceeds the FEE_PERIOD_LENGTH");
 
         // No debt minted during period as next period starts at 0
         if (recentFeePeriods[period - 1].startingDebtIndex == 0) return;
@@ -922,8 +922,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         return targetRatio.multiplyDecimal(SafeDecimalMath.unit().add(TARGET_THRESHOLD));
     }
 
-    /* ========== Modifiers ========== */
-
     /**
      * @notice Set the feePeriodID of the last claim this account made
      * @param _claimingAddress account to set the last feePeriodID claim for
@@ -935,18 +933,11 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         feePoolEternalStorage.setUIntValue(keccak256(abi.encodePacked(LAST_FEE_WITHDRAWAL, _claimingAddress)), _feePeriodID);
     }
 
-    modifier optionalProxy_onlyFeeAuthority
-    {
-        if (Proxy(msg.sender) != proxy) {
-            messageSender = msg.sender;
-        }
-        require(msg.sender == feeAuthority, "Only the fee authority can perform this action");
-        _;
-    }
+    /* ========== Modifiers ========== */
 
     modifier onlySynthetix
     {
-        require(msg.sender == address(synthetix), "Only the synthetix contract can perform this action");
+        require(msg.sender == address(synthetix), "Only Synthetix Authorised");
         _;
     }
 
@@ -961,12 +952,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     bytes32 constant ISSUANCEDEBTRATIOENTRY_SIG = keccak256("IssuanceDebtRatioEntry(address,uint256,uint256,uint256)");
     function emitIssuanceDebtRatioEntry(address account, uint debtRatio, uint debtEntryIndex, uint feePeriodStartingDebtIndex) internal {
         proxy._emit(abi.encode(debtRatio, debtEntryIndex, feePeriodStartingDebtIndex), 2, ISSUANCEDEBTRATIOENTRY_SIG, bytes32(account), 0, 0);
-    }
-
-    event TransferFeeUpdated(uint newFeeRate);
-    bytes32 constant TRANSFERFEEUPDATED_SIG = keccak256("TransferFeeUpdated(uint256)");
-    function emitTransferFeeUpdated(uint newFeeRate) internal {
-        proxy._emit(abi.encode(newFeeRate), 1, TRANSFERFEEUPDATED_SIG, 0, 0, 0);
     }
 
     event ExchangeFeeUpdated(uint newFeeRate);

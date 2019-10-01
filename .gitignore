@@ -20,3 +20,6 @@ test-gas-used.log
 
 # For integration testing
 keys.json
+
+# vscode
+.vscode/launch.json

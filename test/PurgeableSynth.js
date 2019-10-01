@@ -23,8 +23,10 @@ contract('PurgeableSynth', accounts => {
 	] = accounts;
 
 	let feePool,
+		feePoolProxy,
 		// FEE_ADDRESS,
 		synthetix,
+		synthetixProxy,
 		exchangeRates,
 		sUSDContract,
 		sAUDContract,
@@ -38,18 +40,26 @@ contract('PurgeableSynth', accounts => {
 		// contract interfaces to prevent test bleed.
 		exchangeRates = await ExchangeRates.deployed();
 		feePool = await FeePool.deployed();
-		// FEE_ADDRESS = await feePool.FEE_ADDRESS();
+		// Deploy new proxy for feePool
+		feePoolProxy = await Proxy.new(owner, { from: deployerAccount });
 
 		synthetix = await Synthetix.deployed();
+		// Deploy new proxy for Synthetix
+		synthetixProxy = await Proxy.new(owner, { from: deployerAccount });
+
+		// ensure synthetixProxy has target set to synthetix
+		await feePool.setProxy(feePoolProxy.address, { from: owner });
+		await synthetix.setProxy(synthetixProxy.address, { from: owner });
+		// set new proxies on Synthetix and FeePool
+		await synthetixProxy.setTarget(synthetix.address, { from: owner });
+		await feePoolProxy.setTarget(feePool.address, { from: owner });
+
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
 		sAUDContract = await Synth.at(await synthetix.synths(sAUD));
 		// XDRContract = await Synth.at(await synthetix.synths(XDR));
 
 		oracle = await exchangeRates.oracle();
 		timestamp = await currentTime();
-
-		// mimic mainnet - transfer fees are 0
-		await feePool.setTransferFeeRate('0', { from: owner });
 	});
 
 	const deploySynth = async ({ currencyKey, proxy, tokenState }) => {
@@ -64,13 +74,14 @@ contract('PurgeableSynth', accounts => {
 		const synth = await PurgeableSynth.new(
 			proxy.address,
 			tokenState.address,
-			synthetix.address,
-			feePool.address,
+			synthetixProxy.address,
+			feePoolProxy.address,
 			`Synth ${currencyKey}`,
 			currencyKey,
 			owner,
 			web3.utils.asciiToHex(currencyKey),
 			exchangeRates.address,
+			web3.utils.toWei('0'),
 			{
 				from: deployerAccount,
 			}
@@ -140,19 +151,19 @@ contract('PurgeableSynth', accounts => {
 				);
 			});
 
-			describe('and there exists a user with 2000 sUSD', () => {
+			describe('and there exists a user with max sUSD (~133k via synthetixState.issuanceRatio) issued against 1M SNX (at $1)', () => {
 				// let userInitialsUSDBalance;
 				beforeEach(async () => {
-					// give the user 100,000 SNX from which they'll issue as much as possible
-					await issueSynths({ account: account1, amount: 1e5 });
+					// give the user 1M SNX from which they'll issue as much as possible
+					await issueSynths({ account: account1, amount: 1e6 });
 					// userInitialsUSDBalance = await sUSDContract.balanceOf(account1);
 				});
-				describe('when the user exchanges 10,000 of their sUSD into the purgeable synth', () => {
+				describe('when the user exchanges 100,000 of their sUSD into the purgeable synth', () => {
 					let amountToExchange;
 					let usersEffectiveBalanceInUSD;
 					let balanceBeforePurge;
 					beforeEach(async () => {
-						amountToExchange = toUnit(1e4);
+						amountToExchange = toUnit(1e5);
 						await synthetix.exchange(sUSD, amountToExchange, iETH, ZERO_ADDRESS, {
 							from: account1,
 						});
@@ -247,25 +258,27 @@ contract('PurgeableSynth', accounts => {
 						});
 					});
 
-					describe('and there exists another user with 2000 sUSD ', () => {
+					describe('and there exists another user with max synths (~13k) against 100k SNX (at $1)', () => {
 						let balanceBeforePurgeUser2;
 						beforeEach(async () => {
-							await issueSynths({ account: account2, amount: 10000 });
+							await issueSynths({ account: account2, amount: 1e5 });
 						});
-						describe('when the user exchanges 20 of their sUSD into the purgeable synth', () => {
+						describe('when the user exchanges 5000 of their sUSD into the purgeable synth', () => {
 							beforeEach(async () => {
-								await synthetix.exchange(sUSD, toUnit(200), iETH, ZERO_ADDRESS, {
+								// Note: 5000 is chosen to be large enough to accommodate exchange fees which
+								// ultimately limit the total supply of that synth
+								await synthetix.exchange(sUSD, toUnit(5000), iETH, ZERO_ADDRESS, {
 									from: account2,
 								});
 								balanceBeforePurgeUser2 = await this.synth.balanceOf(account2);
 							});
 							describe('when purge is invoked with both accounts', () => {
-								it('then it reverts as the totalSupply exceeds the 10,000USD max', async () => {
+								it('then it reverts as the totalSupply exceeds the 100,000USD max', async () => {
 									await assert.revert(this.synth.purge([account1, account2], { from: owner }));
 								});
 							});
 							describe('when purge is invoked with just one account', () => {
-								it('then it reverts as the totalSupply exceeds the 10,000USD max', async () => {
+								it('then it reverts as the totalSupply exceeds the 100,000USD max', async () => {
 									await assert.revert(this.synth.purge([account2], { from: owner }));
 								});
 							});
@@ -362,7 +375,7 @@ contract('PurgeableSynth', accounts => {
 				let userBalanceOfOldSynth;
 				let usersEffectiveBalanceInUSD;
 				beforeEach(async () => {
-					await issueSynths({ account: account1, amount: 100000 });
+					await issueSynths({ account: account1, amount: 1e5 });
 					const amountToExchange = toUnit('100');
 					await synthetix.exchange(sUSD, amountToExchange, sAUD, ZERO_ADDRESS, {
 						from: account1,

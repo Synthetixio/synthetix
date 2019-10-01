@@ -41,10 +41,10 @@ contract ExchangeRates is SelfDestructible {
     using SafeDecimalMath for uint;
 
     // Exchange rates stored by currency code, e.g. 'SNX', or 'sUSD'
-    mapping(bytes4 => uint) public rates;
+    mapping(bytes32 => uint) public rates;
 
     // Update times stored by currency code, e.g. 'SNX', or 'sUSD'
-    mapping(bytes4 => uint) public lastRateUpdateTimes;
+    mapping(bytes32 => uint) public lastRateUpdateTimes;
 
     // The address of the oracle which pushes rate updates to this contract
     address public oracle;
@@ -61,7 +61,7 @@ contract ExchangeRates is SelfDestructible {
     // Each participating currency in the XDR basket is represented as a currency key with
     // equal weighting.
     // There are 5 participating currencies, so we'll declare that clearly.
-    bytes4[5] public xdrParticipants;
+    bytes32[5] public xdrParticipants;
 
     // For inverted prices, keep a mapping of their entry, limits and frozen status
     struct InversePricing {
@@ -70,8 +70,8 @@ contract ExchangeRates is SelfDestructible {
         uint lowerLimit;
         bool frozen;
     }
-    mapping(bytes4 => InversePricing) public inversePricing;
-    bytes4[] public invertedKeys;
+    mapping(bytes32 => InversePricing) public inversePricing;
+    bytes32[] public invertedKeys;
 
     //
     // ========== CONSTRUCTOR ==========
@@ -89,7 +89,7 @@ contract ExchangeRates is SelfDestructible {
 
         // Oracle values - Allows for rate updates
         address _oracle,
-        bytes4[] _currencyKeys,
+        bytes32[] _currencyKeys,
         uint[] _newRates
     )
         /* Owned is initialised in SelfDestructible */
@@ -112,11 +112,11 @@ contract ExchangeRates is SelfDestructible {
         //  - The expectation is if this logic needs to be updated, we'll simply deploy a new version of this contract
         //    then point the system at the new version.
         xdrParticipants = [
-            bytes4("sUSD"),
-            bytes4("sAUD"),
-            bytes4("sCHF"),
-            bytes4("sEUR"),
-            bytes4("sGBP")
+            bytes32("sUSD"),
+            bytes32("sAUD"),
+            bytes32("sCHF"),
+            bytes32("sEUR"),
+            bytes32("sGBP")
         ];
 
         internalUpdateRates(_currencyKeys, _newRates, now);
@@ -132,7 +132,7 @@ contract ExchangeRates is SelfDestructible {
      *                 This is useful because transactions can take a while to confirm, so this way we know how old the oracle's datapoint was exactly even
      *                 if it takes a long time for the transaction to confirm.
      */
-    function updateRates(bytes4[] currencyKeys, uint[] newRates, uint timeSent)
+    function updateRates(bytes32[] currencyKeys, uint[] newRates, uint timeSent)
         external
         onlyOracle
         returns(bool)
@@ -148,7 +148,7 @@ contract ExchangeRates is SelfDestructible {
      *                 This is useful because transactions can take a while to confirm, so this way we know how old the oracle's datapoint was exactly even
      *                 if it takes a long time for the transaction to confirm.
      */
-    function internalUpdateRates(bytes4[] currencyKeys, uint[] newRates, uint timeSent)
+    function internalUpdateRates(bytes32[] currencyKeys, uint[] newRates, uint timeSent)
         internal
         returns(bool)
     {
@@ -194,7 +194,7 @@ contract ExchangeRates is SelfDestructible {
      * @param currencyKey The price key to lookup
      * @param rate The rate for the given price key
      */
-    function rateOrInverted(bytes4 currencyKey, uint rate) internal returns (uint) {
+    function rateOrInverted(bytes32 currencyKey, uint rate) internal returns (uint) {
         // if an inverse mapping exists, adjust the price accordingly
         InversePricing storage inverse = inversePricing[currencyKey];
         if (inverse.entryPoint <= 0) {
@@ -252,7 +252,7 @@ contract ExchangeRates is SelfDestructible {
 
         // Emit our updated event separate to the others to save
         // moving data around between arrays.
-        bytes4[] memory eventCurrencyCode = new bytes4[](1);
+        bytes32[] memory eventCurrencyCode = new bytes32[](1);
         eventCurrencyCode[0] = "XDR";
 
         uint[] memory eventRate = new uint[](1);
@@ -265,7 +265,7 @@ contract ExchangeRates is SelfDestructible {
      * @notice Delete a rate stored in the contract
      * @param currencyKey The currency key you wish to delete the rate for
      */
-    function deleteRate(bytes4 currencyKey)
+    function deleteRate(bytes32 currencyKey)
         external
         onlyOracle
     {
@@ -319,7 +319,7 @@ contract ExchangeRates is SelfDestructible {
      * @param upperLimit The upper limit, at or above which the price will be frozen
      * @param lowerLimit The lower limit, at or below which the price will be frozen
      */
-    function setInversePricing(bytes4 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit)
+    function setInversePricing(bytes32 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit)
         external onlyOwner
     {
         require(entryPoint > 0, "entryPoint must be above 0");
@@ -344,7 +344,7 @@ contract ExchangeRates is SelfDestructible {
      * @notice Remove an inverse price for the currency key
      * @param currencyKey The currency to remove inverse pricing for
      */
-    function removeInversePricing(bytes4 currencyKey) external onlyOwner {
+    function removeInversePricing(bytes32 currencyKey) external onlyOwner {
         inversePricing[currencyKey].entryPoint = 0;
         inversePricing[currencyKey].upperLimit = 0;
         inversePricing[currencyKey].lowerLimit = 0;
@@ -377,7 +377,7 @@ contract ExchangeRates is SelfDestructible {
      * @param sourceAmount The source amount, specified in UNIT base
      * @param destinationCurrencyKey The destination currency
      */
-    function effectiveValue(bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey)
+    function effectiveValue(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)
         public
         view
         rateNotStale(sourceCurrencyKey)
@@ -395,7 +395,7 @@ contract ExchangeRates is SelfDestructible {
     /**
      * @notice Retrieve the rate for a specific currency
      */
-    function rateForCurrency(bytes4 currencyKey)
+    function rateForCurrency(bytes32 currencyKey)
         public
         view
         returns (uint)
@@ -406,7 +406,7 @@ contract ExchangeRates is SelfDestructible {
     /**
      * @notice Retrieve the rates for a list of currencies
      */
-    function ratesForCurrencies(bytes4[] currencyKeys)
+    function ratesForCurrencies(bytes32[] currencyKeys)
         public
         view
         returns (uint[])
@@ -423,7 +423,7 @@ contract ExchangeRates is SelfDestructible {
     /**
      * @notice Retrieve a list of last update times for specific currencies
      */
-    function lastRateUpdateTimeForCurrency(bytes4 currencyKey)
+    function lastRateUpdateTimeForCurrency(bytes32 currencyKey)
         public
         view
         returns (uint)
@@ -434,7 +434,7 @@ contract ExchangeRates is SelfDestructible {
     /**
      * @notice Retrieve the last update time for a specific currency
      */
-    function lastRateUpdateTimesForCurrencies(bytes4[] currencyKeys)
+    function lastRateUpdateTimesForCurrencies(bytes32[] currencyKeys)
         public
         view
         returns (uint[])
@@ -451,7 +451,7 @@ contract ExchangeRates is SelfDestructible {
     /**
      * @notice Check if a specific currency's rate hasn't been updated for longer than the stale period.
      */
-    function rateIsStale(bytes4 currencyKey)
+    function rateIsStale(bytes32 currencyKey)
         public
         view
         returns (bool)
@@ -465,7 +465,7 @@ contract ExchangeRates is SelfDestructible {
     /**
      * @notice Check if any rate is frozen (cannot be exchanged into)
      */
-    function rateIsFrozen(bytes4 currencyKey)
+    function rateIsFrozen(bytes32 currencyKey)
         external
         view
         returns (bool)
@@ -477,7 +477,7 @@ contract ExchangeRates is SelfDestructible {
     /**
      * @notice Check if any of the currency rates passed in haven't been updated for longer than the stale period.
      */
-    function anyRateIsStale(bytes4[] currencyKeys)
+    function anyRateIsStale(bytes32[] currencyKeys)
         external
         view
         returns (bool)
@@ -498,7 +498,7 @@ contract ExchangeRates is SelfDestructible {
 
     /* ========== MODIFIERS ========== */
 
-    modifier rateNotStale(bytes4 currencyKey) {
+    modifier rateNotStale(bytes32 currencyKey) {
         require(!rateIsStale(currencyKey), "Rate stale or nonexistant currency");
         _;
     }
@@ -513,8 +513,8 @@ contract ExchangeRates is SelfDestructible {
 
     event OracleUpdated(address newOracle);
     event RateStalePeriodUpdated(uint rateStalePeriod);
-    event RatesUpdated(bytes4[] currencyKeys, uint[] newRates);
-    event RateDeleted(bytes4 currencyKey);
-    event InversePriceConfigured(bytes4 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit);
-    event InversePriceFrozen(bytes4 currencyKey);
+    event RatesUpdated(bytes32[] currencyKeys, uint[] newRates);
+    event RateDeleted(bytes32 currencyKey);
+    event InversePriceConfigured(bytes32 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit);
+    event InversePriceFrozen(bytes32 currencyKey);
 }
