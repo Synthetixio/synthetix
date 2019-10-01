@@ -93,6 +93,7 @@ contract ArbRewarder is SelfDestructible, Pausable {
 
     function setSynthEthAddress(address _seth_erc20_addr) external onlyOwner {
         seth_erc20 = IERC20(_seth_erc20_addr);
+        seth_erc20.approve(seth_exchange_addr, uint(-1));
     }
 
     function setSynthEthUniswapExchange(address _seth_exchange_addr) external onlyOwner {
