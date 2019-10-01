@@ -29,11 +29,12 @@ contract AtomicSynthetixUniswapConverter is Owned {
     using SafeDecimalMath for uint;
 
     //following are Rinkeby addresses
-    address public uniswapSethExchange = 0x01e165a24B6C7DC2183d42891e529cc298D704Af; // Uniswap sEth Exchange
+    address public uniswapSethExchange = 0xfbd460766fa29e215bfa07b776463c3fe6985698; // Uniswap sEth Exchange
     address public synRates = 0x30A46E656CdcA6B401Ff043e1aBb151490a07ab0; //Synthetix Rates
-    address public synthetix = 0xf258F97481fC1023feDFD098d3dF457987925435; //Synthetix
-    address public synFeePool = 0x424C0AeFc4212379836f5aecab2A6962a28725DD;   //Synthetix FeePool
+    address public synthetix = 0x73B47906C4A87305816c77F8713a06696E6fE8c8; //Synthetix
+    address public synFeePool = 0x0d18E41bB76e5b6C72489CFA058E971AEE405906;   //Synthetix FeePool
     bytes32 sEthCurrencyKey = "sETH";
+    bytes32 ethCurrencyKey = "ETH";
     
     constructor (
         address _owner
@@ -81,21 +82,21 @@ contract AtomicSynthetixUniswapConverter is Owned {
     function inputPrice(bytes32 src, uint srcAmt, bytes32 dst) external view returns (uint) {
         UniswapExchangeInterface uniswapExchange = UniswapExchangeInterface(uniswapSethExchange);
         uint sEthAmt;
-        if (src == "ETH") {
+        if (src == ethCurrencyKey) {
             sEthAmt = uniswapExchange.getEthToTokenInputPrice(srcAmt);
-            if (dst == "sETH") {
+            if (dst == sEthCurrencyKey) {
                 return sEthAmt;
             }else {
                 return _sTokenAmtRecvFromExchangeByToken(sEthAmt, sEthCurrencyKey, dst);
             }
-        }else if (src == "sETH"){
-            if  (dst == "ETH") {
+        }else if (src == sEthCurrencyKey){
+            if  (dst == ethCurrencyKey) {
                 return uniswapExchange.getTokenToEthInputPrice(srcAmt);
             } else {
                 return _sTokenAmtRecvFromExchangeByToken(srcAmt, sEthCurrencyKey, dst);
             }
         }else {
-            if (dst == "ETH"){
+            if (dst == ethCurrencyKey){
                 sEthAmt = _sTokenAmtRecvFromExchangeByToken(srcAmt, src, sEthCurrencyKey);
                 return uniswapExchange.getTokenToEthInputPrice(sEthAmt);
             }else{
@@ -115,21 +116,21 @@ contract AtomicSynthetixUniswapConverter is Owned {
     function outputPrice(bytes32 src, bytes32 dst, uint dstAmt) external view returns (uint) {
         UniswapExchangeInterface uniswapExchange = UniswapExchangeInterface(uniswapSethExchange);
         uint sEthAmt;
-        if (src == "ETH") {
-            if (dst == "sETH") {
+        if (src == ethCurrencyKey) {
+            if (dst == sEthCurrencyKey) {
                 return uniswapExchange.getEthToTokenOutputPrice(dstAmt);
             }else {
                 sEthAmt = _sTokenEchangedAmtToRecvByToken(dstAmt, dst, sEthCurrencyKey);
                 return uniswapExchange.getEthToTokenOutputPrice(sEthAmt);
             }
-        }else if (src == "sETH"){
-            if  (dst == "ETH") {
+        }else if (src == sEthCurrencyKey){
+            if  (dst == ethCurrencyKey) {
                 return uniswapExchange.getTokenToEthOutputPrice(dstAmt);
             } else {
                 return _sTokenEchangedAmtToRecvByToken(dstAmt, dst, sEthCurrencyKey);
             }
         }else {
-            if (dst == "ETH"){
+            if (dst == ethCurrencyKey){
                 sEthAmt = uniswapExchange.getTokenToEthOutputPrice(dstAmt);
                 return _sTokenEchangedAmtToRecvByToken(sEthAmt, sEthCurrencyKey, src);
             }else{
