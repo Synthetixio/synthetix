@@ -116,6 +116,7 @@ Contract | Description
 <section-sep />
 
 ??? TODO
+    * Go back through function docstrings and ensure everything matches up.
     * Extract internal and dev notes into separate document and prepare to make this public-facing.
     * Work out which licence headers are incorrect.
     * Inheriting descendents as well as ancestors.
@@ -129,3 +130,4 @@ Contract | Description
     * Mark all `uint`s that are fixed point numbers with their precision level.
     * Remove specific entries for event emission functions and fold them into the event descriptions themselves.
     * Add links to the new explainers on synthetix.io
+    * Expand function signatures out with descriptions of parameters and return values.

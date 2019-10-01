@@ -166,9 +166,12 @@ This function is used in [`FeePool.feesByPeriod`](FeePool.md#feesbyperiod) and [
 
 ### `appendAccountIssuanceRecord`
 
-Allows the [`Synthetix`](Synthetix.md) contract, through the [fee pool](FeePool.md#appendaccountissuancerecord), to record the latest issuance information for a given account in the issuance ledger. This is used when synths are issued or burnt.
+Allows the [`Synthetix`](Synthetix.md#_appendaccountissuancerecord) contract, through [`FeePool.appendAccountIssuanceRecord`](FeePool.md#appendaccountissuancerecord), to record the latest issuance information for a given account in the issuance ledger. This is used when synths are issued or burnt.
 
 If the latest entry in this account's issuance ledger was from the current fee period, it is overwritten. Otherwise, the existing entries are shifted down one spot, dropping the last one (using a call to [`issuanceDataIndexOrder`](#issuancedataindexorder)), and a new entry is added at the head of the list.
+
+!!! caution "Incorrect Docstring"
+    `accountIssuanceLedger[account][1-3]` should be `[1-2]`.
   
 ??? example "Details"
 
