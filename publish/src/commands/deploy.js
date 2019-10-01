@@ -117,6 +117,16 @@ const deploy = async ({
 		privateKey = envPrivateKey;
 	}
 
+	// load accounts used by local ganache in keys.json
+	const users = Object.entries(
+		JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', '..', 'keys.json'))).private_keys
+	).map(([pub, pri]) => ({
+		public: pub,
+		private: `0x${pri}`,
+	}));
+
+	privateKey = users[0].private;
+
 	const deployer = new Deployer({
 		compiled,
 		config,
