@@ -536,6 +536,20 @@ const deploy = async ({
 		});
 	}
 
+	// setup exchange gasPriceLimit on Synthetix
+	const gasPriceLimit = w3utils.toWei('35');
+	if (network !== 'mainnet') {
+		await runStep({
+			contract: 'Synthetix',
+			target: synthetix,
+			account: oracleExrates,
+			read: 'gasPriceLimit',
+			expected: input => input === gasPriceLimit,
+			write: 'setGasPriceLimit',
+			writeArg: gasPriceLimit,
+		});
+	}
+
 	// only reset token state if redeploying
 	if (tokenStateSynthetix && config['TokenStateSynthetix'].deploy) {
 		const initialIssuance = w3utils.toWei('100000000');
