@@ -105,7 +105,7 @@ The [`RewardEscrow`](RewardEscrow.md) instance which holds inflationary rewards.
 
 ### `feePoolEternalStorage`
 
-A key-value store ([FeePoolEternalStorage](FeePoolEternalStorage.md)) to allow values to be stored without upgrading anything.
+The [`FeePoolEternalStorage`](FeePoolEternalStorage.md) key-value store that holds account last withdrawal times.
 
 **Type:** `FeePoolEternalStorage public`
 
@@ -286,6 +286,8 @@ This constructor also begins the first fee period, as it initialises the first f
 Records that an account issued or burnt synths in the fee pool state.
 
 This function merely emits an event and passes through to [`FeePoolState.appendAccountIssuanceRecord`](FeePoolState.md#appendAccountIssuanceRecord) and is itself only invoked by [`Synthetix._appendAccountIssuanceRecord`](Synthetix.md#_appendaccountissuancerecord).
+
+The `debtRatio` argument is a [27-decimal fixed point number](SafeDecimalMath.md).
 
 ??? example "Details"
     **Signature**
@@ -476,10 +478,27 @@ Adds a quantity of SNX to the current fee period's total of rewards to be distri
 
 ### `closeCurrentFeePeriod`
 
-!!! todo
-    Finish this.
+If the current fee period has been open for longer than [`feePeriodDuration`](#feeperiodduration), then anyone may call this function to close it and open a new one.
 
-* `closeCurrentFeePeriod()`: Only callable by the fee authority. Close the current fee period, and open the next one. The new `feePeriodId` is the previous one incremented by 1. The previously-recorded fee periods are shifted along and the last one is overwritten, though its unclaimed fees are merged into the penultimate fee period it was overwritten by. Note that the comment, "Take a snapshot of the total value of the system." at the end of this function is inaccurate. The new fee period `startingDebtIndex` is the length of [SynthetixState](SynthetixState.md)'s `debtLedger` at the time the fee period rolls over. Note that before a new minting event occurs this index will be one past the end of the ledger.
+The new fee period is added to the beginning of the [`recentFeePeriods`](#recentfeeperiods) list, and the last one is discarded. Any unclaimed fees from the last fee period roll over into the penultimate fee period.
+
+The new fee period's [`feePeriodId`](#feeperiod) is the previous id incremented by 1, and its [`startingDebtIndex`](#feeperiod) is the length of [`SynthetixState.debtLedger`](SynthetixState.md#debtledger) at the time the fee period rolls over. Note that before a new minting event occurs this index will be one past the end of the ledger.
+
+!!! caution "Erroneous Comment"
+    A comment at the end of this function says `Take a snapshot of the total value of the system.`, but no such snapshot is explicitly taken. Rather, the relative movements of the system's valuation is recorded at every minting event in the system [debt ledger](SynthetixState.md#debtledger).
+
+??? example "Details"
+    **Signature**
+
+    `closeCurrentFeePeriod() external`
+
+    **Preconditions**
+
+    * the start time of the current fee period must have been at least [`feePeriodDuration`](#feeperiodduration) seconds in the past.
+
+    **Emits**
+
+    * [`FeePeriodClosed(closedFeePeriodId)`](#feeperiodclosed)
 
 ---
 
@@ -532,39 +551,113 @@ This function first checks with the [`DelegateApprovals`](DelegateApprovals.md) 
 
 ### `recoverTransferFees`
 
-!!! todo
-    Finish this.
+This function allowed the contract owner to recover leftover transfer fees from a previous version, which were otherwise unrecoverable. It simply converts any sUSD at the [fee address](#fee_address) into XDRs.
+
+See [SIP-18](https://sips.synthetix.io/sips/sip-18) for details.
+
+??? example "Details"
+    **Signature**
+
+    `recoverTransferFees() public`
+
+    **Modifiers**
+
+    * [`Proxyable.optionalProxy_onlyOwner`](Proxyable.md#optionalproxy_onlyowner)
+    * [`LimitedSetup.onlyDuringSetup`](LimitedSetup.md#onlyduringsetup)
+
+    **Preconditions**
+
+    * There must be a positive quantity of sUSD at the [fee address](#fee_address).
 
 ---
 
 ### `importFeePeriod`
 
-* `importFeePeriod(uint feePeriodIndex, uint feePeriodId, uint startingDebtIndex, uint startTime, uint feesToDistribute, uint feesClaimed, uint rewardsToDistribute, uint rewardsClaimed)`: Sets a particular fee period entry, but only during the three week setup period.
+During the setup period, allowed the contract owner to set a particular fee period entry in [`recentFeePeriods`](#recentfeeperiods) in order to migrate from a previous contract version.
+
+??? example "Details"
+    **Signature**
+
+    `importFeePeriod(uint feePeriodIndex, uint feePeriodId, uint startingDebtIndex, uint startTime, uint feesToDistribute, uint feesClaimed, uint rewardsToDistribute, uint rewardsClaimed) public`
+
+    **Modifiers**
+
+    * [`Proxyable.optionalProxy_onlyOwner`](Proxyable.md#optionalproxy_onlyowner)
+    * [`LimitedSetup.onlyDuringSetup`](LimitedSetup.md#onlyduringsetup)
 
 ---
 
 ### `appendVestingEntry`
 
-!!! todo
-    Finish this.
+Allows the contract owner to escrow SNX rewards for particular accounts. The rewards are escrowed for one year.
+
+The SNX is deposited into the [`RewardEscrow`](RewardEscrow.md) contract from the sender using the ERC20 transferFrom function. The tokens are then escrowed on behalf of the targeted account with [`RewardEscrow.appendVestingEntry`](RewardEscrow.md#appendvestingentry).
+
+??? example "Details"
+    **Signature**
+
+    `appendVestingEntry(address account, uint quantity) public`
+
+    **Modifiers**
+
+    * [`Proxyable.optionalProxy_onlyOwner`](Proxyable.md#optionalproxy_onlyowner)
 
 ---
 
 ### `approveClaimOnBehalf`
 
-* `approveClaimOnBehalf(address account)`: Calls out to the [DelegateApprovals](DelegateApprovals.md) contract to set `account` as an approved claimant. Does not function if its argument is 0 (not much point to this), or if the `DelegateApprovals` contract address is 0 (not much point to this either).
+Approves an account as a fee claimant for the sender in the [`DelegateApprovals`](DelegateApprovals.md#setapproval) contract.
+
+??? example "Details"
+    **Signature**
+
+    `approveClaimOnBehalf(address account) public`
+
+    **Modifiers**
+
+    * [`Proxyable.optionalProxy`](Proxyable.md#optionalproxy)
+
+    **Preconditions**
+
+    * The [`delegates`](#delegates) address must not be zero.
+    * `account` must not be zero.
+
+    !!! info "Redundant Conditions"
+        Neither of the preconditions is actually necessary.
 
 ---
 
 ### `removeClaimOnBehalf`
 
-* `removeClaimOnBehalf(address account)`: Calls out to the [DelegateApprovals](DelegateApprovals.md) contract to remove `account` as an approved claimant. Does not function if the `DelegateApprovals address is 0 (not too much point here).
+Disapproves an account as a fee claimant for the sender in the [`DelegateApprovals`](DelegateApprovals.md#withdrawapproval) contract.
+
+??? example "Details"
+    **Signature**
+
+    `removeClaimOnBehalf(address account) public`
+
+    **Modifiers**
+
+    * [`Proxyable.optionalProxy`](Proxyable.md#optionalproxy)
+
+    **Preconditions**
+
+    * The [`delegates`](#delegates) address must not be zero.
+
+    !!! info "Redundant Precondition"
+        The precondition is unnecessary.
 
 ---
 
 ### `_recordFeePayment`
 
-* `_recordFeePayment(uint xdrAmount) returns (uint)`: Called in `_claimFees`. Computes and returns the quantity of fees paid out (which pay be less than `xdrAmount` if there aren't enough fees in the pool), and updates the `feesClaimed` item for fee periods that the payment is withdrawn from. These withdrawals are preferentially performed from from the oldest to the newest fee period. For each period, starting at the oldest one: If there are unclaimed fees for this period, deduct the fees (up to the entire unclaimed quantity) from this quantity; if the fee period has been exhausted, proceed to the next period. Continue this until either the entire amount has been paid out, or there are no fees left. If at the end, the quantity withdrawn is less than `xdrAmount`, then the difference (which will just be rounding errors) is simply not paid out (slashed). That is, it pays not to be the last person to withdraw.
+Claims a quantity of fees from the [recent fee periods](#recentfeeperiods).
+
+Fees are deducted from each [period's unclaimed fees](#feeperiod) in turn from the oldest to the most recent closed period as each is exhausted until either the entire quantity has been met, or the current fee period is reached.
+
+As fees are not paid out from the current period, if there is any quantity left to be paid after all closed periods have been exhausted, it is simply ignored. Hence any losses due to rounding errors come out of the claim of the last person to claim. The function returns the quantity of fees actually claimed, which may be less than `xdrAmount` in this case.
+
+This is only called in `_claimFees`.
 
 In pseudo-code:
 
@@ -573,77 +666,161 @@ remaining = xdrAmount # The quantity to pay out.
 paid = 0 # The quantity actually paid.
 
 # Pay out fees from recent periods, from oldest to newest as they are exhausted.
-for period in reversed(recentFeePeriods):
+# Don't traverse the current fee period.
+for each closed period in reversed(recentFeePeriods):
+    unclaimedFees = period.feesClaimed - period.feesToDistribute
     # Skip to the next period if this one is exhausted.
-    if period.unclaimedFees == 0:
+    if unclaimedFees == 0:
         continue
 
     # Don't pay out too much.
     payable = min(period.unclaimedFees, remaining)
 
     paid += payable
-    period.unclaimedFees -= payable
+    period.feesClaimed += payable
     remaining -= payable
 
 return paid
 ```
 
-For efficiency, the actual code returns immediately once `remaining` is 0, for efficiency.
+The actual code returns immediately once `remaining` is 0, for efficiency.
 
 !!! note
-    The final lines of the loop body, `if (i == 0 && remainingToAllocate > 0) { remainingToAllocate = 0; }` are redundant and do nothing. We're already at the last loop iteration and the variable is not used subsequently. There might be another minor efficiency dividend to be had by not fetching `feesClaimed` from the state twice.
+    The final lines of the loop body, `if (i == 0 && remainingToAllocate > 0) { remainingToAllocate = 0; }` are redundant. One could just iterate once less. There might be another minor efficiency dividend to be had by not fetching `feesClaimed` from the state twice.
+
+??? example "Details"
+    **Signature**
+
+    `_recordFeePayment(uint xdrAmount) internal returns (uint)`:
 
 ---
 
 ### `_recordRewardPayment`
 
-* `_recordRewardPayment(uint snxAmount) returns (uint)`: Called in `_claimFees`. Logic is identical to `_recordFeePayment`, but the relevant quantities are in `SNX` and not `XDR`. The same efficiency notes apply.
+Claims a quantity of SNX rewards from the [recent fee periods](#recentfeeperiods). This is only called in `_claimFees`.
+
+Its logic is identical to [`_recordFeePayment`](#_recordfeepayment), except that the relevant quantities are in `SNX`, and are claimed from [`rewardsClaimed`](#feeperiod).
+
+??? example "Details"
+    **Signature**
+
+    `_recordRewardPayment(uint snxAmount) internal returns (uint)`:
 
 ---
 
 ### `_payFees`
 
-* `_payFees(address account, uint xdrAmount, bytes32 destinationCurrencyKey)`: Pays a quantity of fees to a claiming address, converting it to a particular currency. The destination address cannot be 0, the fee pool itself, the fee pool's proxy, the Synthetix contract, or the fee address. Behaviour: fetch the `XDR` and destination currency Synth addresses from the Synthetix contract; burn the specified quantity of `XDR`s from the fee pool (safe subtraction so no overflowing here); convert the `XDR`s to an equivalent value of the destination currency and issue them into the destination account's wallet; trigger the ERC223 token fallback on the recipient address if it implements one.
+Pays a quantity of fees in a desired Synth flavour to a claiming address.
+
+The quantity is specified in XDRs, which is burnt from the fee pool, and an [equivalent value](Synthetix.md#effectivevalue) in the desired flavour is issued into the destination address.
+
+The ERC223 token fallback is triggered on the recipient address if it implements one.
+
+!!! note "A Minor Infficiency"
+    Some gas could be saved by keeping the address of the XDR synth as a variable rather than retrieving it with [`Synthetix.synths("XDR")`](Synthetix.md#synths) each invocation.
+
+??? example "Details"
+    **Signature**
+
+    `_payFees(address account, uint xdrAmount, bytes32 destinationCurrencyKey) internal`
+
+    **Modifiers**
+
+    * [`notFeeAddress(account)`](#notfeeaddress)
+
+    **Preconditions**
+
+    * `account` can't be the fee address.
+    * `account` can't be 0.
+    * `account` can't be the FeePool contract itself.
+    * `account` can't be the fee pool's proxy.
+    * `account` can't be the Synthetix contract.
 
 ---
 
 ### `_payRewards`
 
-* `_payRewards(address account, uint snxAmount)`: Pays a quantity of rewards to a specified address. The address can't be the fee address, 0, the fee pool itself, the fee pool's proxy, or the synthetix contract. Calls out to [RewardEscrow](RewardEscrow.md)'s `appendVestingEntry` function, so the reward is escrowed for one year.
+Pays a quantity of rewards to a specified address, escrowing it for one year with [`RewardEscrow.appendVestingEntry`](RewardEscrow.md#appendvestingentry).
+
+??? example "Details"
+    **Signature**
+
+    `_payRewards(address account, uint snxAmount) internal`
+
+    **Modifiers**
+
+    * [`notFeeAddress(account)`](#notfeeaddress)
+
+    **Preconditions**
+
+    * `account` can't be the fee address.
+    * `account` can't be 0.
+    * `account` can't be the FeePool contract itself.
+    * `account` can't be the fee pool's proxy.
+    * `account` can't be the Synthetix contract.
 
 ---
 
 ### `amountReceivedFromTransfer`
 
-* `amountReceivedFromTransfer(uint value)`: Computes the number of tokens received by the recipient if `value` tokens are sent. Equivalent to `value / (1 + transferFeeRate)`.
+Computes the number of Synths received by the recipient if a certain quantity is sent.
+
+As of [SIP-19](https://sips.synthetix.io/sips/sip-19), this is just the identity function, since there are no longer any transfer fees. It is only used by the [`Depot`](Depot.md) contract.
+
+??? example "Details"
+    **Signature**
+
+    `amountReceivedFromTransfer(uint value) external view returns (uint)`
 
 ---
 
 ### `exchangeFeeIncurred`
 
-* `exchangeFeeIncurred(uint value)`: The same as `transferFeeIncurred`, but `value * exchangeFeeRate`.
+Returns the fee charged on an exchange of a certain quantity of Synths into another flavour. This is simply the input multiplied by [`exchangeFeeRate`](#exchangeFeeRate).
+
+??? example "Details"
+    **Signature**
+
+    `exchangeFeeIncurred(uint value) public view returns (uint)`
 
 ---
 
 ### `amountReceivedFromExchange`
 
-* `amountReceivedFromExchange(uint value)`: Computes the quantity received if `value` tokens are exchanged. Note that this is not the same as `amountReceivedFromTransfer`. The computation is `value * (1 - exchangeFeeRate)`, because the fee is deducted from the quantity rather than added on top.
+Computes the quantity received if a quantity of Synths is exchanged into another flavour. The amount received is the quantity sent minus the [exchange fee](#exchangefeeincurred), as per the logic in [`Synthetix._internalExchange`](Synthetix.md#_internalexchange).
+
+??? example "Details"
+    **Signature**
+
+    `amountReceivedFromExchange(uint value) external view returns (uint)`
 
 ---
 
 ### `totalFeesAvailable`
 
-* `totalFeesAvailable(bytes32 currencyKey)`: Computes the total fees available in the system to be withdrawn, valued in terms of `currencyKey`. Simply sums the unclaimed fees over the recorded fee periods, except the first period, because these fees cannot be claimed yet.
+Computes the total fees available to be withdrawn, valued in terms of `currencyKey`. This simply sums the unclaimed fees over [`recentFeePeriods`](#recentfeeperiods) except those from the current period, because they cannot yet be claimed.
+
+??? example "Details"
+    **Signature**
+
+    `totalFeesAvailable(bytes32 currencyKey) external view returns (uint)`
 
 ---
 
 ### `totalRewardsAvailable`
 
-* `totalRewardsAvailable()`: Similar logic as `totalFeesAvailable`.
+Computes the total SNX rewards available to be withdrawn. This simply sums the unclaimed rewards over [`recentFeePeriods`](#recentfeeperiods) except those from the current period, because they cannot yet be claimed.
+
+??? example "Details"
+    **Signature**
+
+    `totalRewardsAvailable() external view returns (uint)`
 
 ---
 
 ### `feesAvailable`
+
+The sum over [`feesByPeriod`](#feesbyperiod) for an account.
 
 * `feesAvailable(address account, bytes32 currencyKey)`: return the total of fees this user has accrued in previous fee periods. MIGRATE 
 
@@ -651,11 +828,31 @@ For efficiency, the actual code returns immediately once `remaining` is 0, for e
 
 ### `feesClaimable`
 
-* `feesClaimable(address account)`: true iff the collateralisation ratio of this account is less than the target ratio plus 10% of the ratio or so. This function code could be made more concise. The logic allows fees to be withdrawable if a user's ratio is less than Synthetix.issuanceRatio * (1 + TARGET_THRESHOLD). The same result could in theory be met by just adjusting the issuance ratio, except that this system also allows the collateralisation ratio to be set to any value. NOTE: Name sounds like it could be returning a quantity of fees claimable, which is actually `feesAvailable`. It's actually a predicate, so the naming of these functions is a bit ambiguous.
+This is a predicate, returning true iff a particular account is permitted to claim any fees it has accrued.
+
+A account is able to claim fees if its [collateralisation ratio](Synthetix.md#collateralisationratio) is less than 110% of the [global issuance ratio](SynthetixState.md#issuanceratio).
+
+!!! danger "Potential System Undercollateralisation"
+    The logic allows fees to be withdrawn if an account's ratio is less than [`SynthetixState.issuanceRatio *`](SynthetixState.md#issuanceRatio) [`(1 + TARGET_THRESHOLD)`](#target_threshold).
+
+    The same result could be met by just adjusting the issuance ratio, except that the target threshold in this version of the system does not have any of the bounds checking that exists on the issuance ratio's value. This allows the issuance ratio to be set to any value.
+
+!!! caution "Potentially Ambiguous Naming"
+    This function is a predicate, although its name sounds like it could be returning a quantity of fees claimable, which is actually the [`feesAvailable`](#feesavailable) function.
+
+??? example "Details"
+    **Signature**
+
+    `feesClaimable(address account) public view returns (bool)`
 
 ---
 
 ### `feesByPeriod`
+
+!!! todo
+    Finish this.
+
+Computes the fees owed (in XDRs) to an account for each recent fee period, including the current one.
 
 * `feesByPeriod(address account)`: MIGRATE
   Note: XDRs existing seems to be necessary for a user to have nonzero ownership percentages, so the second
@@ -665,40 +862,119 @@ For efficiency, the actual code returns immediately once `remaining` is 0, for e
 
 ### `_feesAndRewardsFromPeriod`
 
-* `_feesAndRewardsFromPeriod(uint period, uint ownershipPercentage, uint debtEntryIndex)`: MIGRATE
+Computes the fees (in XDRs) and rewards (in SNX) owed at the end of a recent fee period given an entry index and the percentage of total system debt owned.
+
+* `period` is an index into the [`recentFeePeriods`](#recentfeeperiods) array, thus 0 corresponds with the current period.
+* `debtEntryIndex` should be an index into the debt ledger which was added before the close of the specified fee period.
+* `ownershipPercentage` should be the percentage of the account's debt ownership at that `debtEntryIndex`. This is a [27-decimal fixed point number](SafeDecimalMath.md).
+
+!!! bug "Current Period Ownership Percentage Movement"
+    This uses [`_effectiveDebtRatioForPeriod`](#_effectivedebtratioforperiod) to account for ownership movements, unless we are considering the current period. This means that the reported fees owing for the current period is inaccurate until the fee period closes. In case of the current period, this should perhaps use the latest entry in the debt ledger to compute the adjustment given that there is no closing index.
+
+??? example "Details"
+    **Signature**
+
+    `_feesAndRewardsFromPeriod(uint period, uint ownershipPercentage, uint debtEntryIndex) internal returns (uint, uint)`
 
 ---
 
 ### `_effectiveDebtRatioForPeriod`
 
-* `_effectiveDebtRatioForPeriod(uint closingDebtIndex, uint ownershipPercentage, uint debtEntryIndex)`: Logic seems screwy here?... TODO: CHECK ME. NOTE: Off-by-one error in the guard. The condition should be `closingDebtIndex >= synthetixState.debtLedgerLength()`.
+Given entry and exit indices into the debt ledger, and a percentage of total debt ownership at the entry index, this function computes the adjusted ownership percentage at the exit index. This percentage changes due to fluctuations in Synth prices and total supply.
+
+If $\Delta_i$ is the value of the $i^{th}$ entry in the [debt ledger](SynthetixState.md#debtledger) and $\omega$ is the provided debt ownership percentage, then the result of this function is:
+
+$$
+\omega \frac{\Delta_{\text{exit}}}{\Delta_{\text{entry}}}
+$$
+
+See [`Synthetix._addToDebtRegister`](Synthetix.md#_addToDebtRegister) for details.
+
+!!! caution "Superfluous Check"
+    This returns 0 if `closingDebtIndex` is strictly greater than the [length of the debt ledger](SynthetixState.md#debtledgerlength).
+
+    This condition can never be satisfied except in case of a bug, but even if it could be satisfied, the corresponding entry would still return 0 anyway, since the debt ledger grows monotonically.
+
+!!! bug "Edge Case: Array Index Out of Bounds"
+    The length guard includes an off-by-one error, as the condition should be `closingDebtIndex >= synthetixState.debtLedgerLength()`.
+
+    If `closingDebtIndex` equals [`SynthetixState.debtLedgerLength()`](SynthetixState.md#debtledgerlength), then this function will fetch the [`SynthetixState.debtLedger`](SynthetixState.md#debtledger) element one past the end, which will produce 0. Consequently the function will return 0 even if it should not.
+
+    It is unlikely this case can be evinced in practice given the above note on the superfluity of the check.
+
+??? example "Details"
+    **Signature**
+
+    `_effectiveDebtRatioForPeriod(uint closingDebtIndex, uint ownershipPercentage, uint debtEntryIndex) internal view returns (uint)`
 
 ---
 
 ### `effectiveDebtRatioForPeriod`
 
-* `effectiveDebtRatioForPeriod(address account, uint period)`: MIGRATE NOTE: missing docstring.
+Given an account and an index into [`recentFeePeriods`](#recentfeeperiods), this function computes the percentage of total debt ownership of the account at the end of that period.
+
+This uses [`_effectiveDebtRatioForPeriod`](#_effectiveDebtRatioForPeriod), where the start index and ownership percentage are computed with [`FeePoolState.applicableIssuanceData`](FeePoolState.md#applicableissuancedata), and the end index is one before the beginnging of the next period. Hence this function disallows querying the debt for the current period.
+
+In principle a future version could support the current fee period by using the last debt ledger entry as the end index.
+
+!!! todo "Todo: Investigate the consequences of an old start index"
+    If the start index occurs earlier than the beginning of several fee periods, then can the debt ratio computations not correspond to overlapping periods?
+
+!!! caution "Potentially Misleading Comment"
+    The following lines could be read to imply that each period's debt index begins at zero.
+
+    ```
+    // No debt minted during period as next period starts at 0
+    if (recentFeePeriods[period - 1].startingDebtIndex == 0) return;
+    ```
+
+    In fact, this check can only be triggered if no debt has been minted at all, as it implies (in combination with the preconditions on the period number) that the fee period is uninitialised. This is only an issue before enough fee periods have completed to fill up [`recentFeePeriods`](#recentfeeperiods).
+
+??? example "Details"
+    **Signature**
+
+    `effectiveDebtRatioForPeriod(address account, uint period) external view returns (uint)`
+
+    **Preconditions**
+
+    * `period` must not be 0, as the current fee period has not closed.
+    * `period` must not exceed [`FEE_PERIOD_LENGTH`](#fee_period_length).
 
 ---
 
 ### `getLastFeeWithdrawal`
 
-* `getLastFeeWithdrawal(address _claimingAddress)`: Returns from [FeePoolEternalStorage](FeePoolEternalStorage.md) the id of the fee period during which the given address last withdrew fees.
+Returns from [`FeePoolEternalStorage`](FeePoolEternalStorage.md) the id of the fee period during which the given address last withdrew fees.
+
+??? example "Details"
+    **Signature**
+
+    `getLastFeeWithdrawal(address _claimingAddress) public view returns (uint)`
 
 ---
 
 ### `getPenaltyThresholdRatio`
 
-* `getPenaltyThresholdRatio()`: Computes the target issuance ratio plus a bit of slop. Is equivalent to `synthetixState.issuanceRatio * (1 + TARGET_THRESHOLD)`. NOTE: the address of synthetixState is computed with the indirection `synthetix.synthetixState()`, but the fee pool contract already has a copy of the address in its own `synthetixState` variable.
+Returns the collateralisation level a user can reach before they cannot claim fees. This is simply [`SynthetixState.issuanceRatio *`](SynthetixState.md#issuanceratio) [`(1 + TARGET_THRESHOLD)`](#target_threshold). The result is returned as a [18-decimal fixed point number](SafeDecimalMath.md).
+
+!!! caution "A Minor Inefficiency"
+    The address of [`SynthetixState`](SynthetixState.md) is computed with the indirection [`Synthetix.synthetixState`](Synthetix.md#synthetixstate), but the fee pool contract already has a copy of the address in its own [`synthetixState`](#synthetixstate) variable.
+
+??? example "Details"
+    **Signature**
+
+    `getPenaltyThresholdRatio() public view returns (uint)`
 
 ---
 
 ### `_setLastFeeWithdrawal`
 
-* `_setLastFeeWithdrawal(address _claimingAddress, uint _feePeriodID)`: Stores into [FeePoolEternalStorage](FeePoolEternalStorage.md) the id of the fee period during which this address last withdrew fees.
+Stores into [FeePoolEternalStorage](FeePoolEternalStorage.md) the id of the fee period during which this address last withdrew fees.
 
-!!! note
-     `_setLastFeeWithdrawal` is erroneously in the modifiers section, should probably be next to `getLastFeeWithdrawal`.
+??? example "Details"
+    **Signature**
+
+    `_setLastFeeWithdrawal(address _claimingAddress, uint _feePeriodID) internal`
 
 ---
 
@@ -716,7 +992,9 @@ Reverts the transaction if `msg.sender` is not the [`synthetix`](#synthetix) add
 
 ### `notFeeAddress`
 
-Reverts the transaction if `msg.sender` is not the [fee address](#fee_address).
+Reverts the transaction if `account` is the [fee address](#fee_address).
+
+**Signature:** `notFeeAddress(address account)`
 
 ---
 

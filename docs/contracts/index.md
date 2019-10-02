@@ -131,3 +131,4 @@ Contract | Description
     * Remove specific entries for event emission functions and fold them into the event descriptions themselves.
     * Add links to the new explainers on synthetix.io
     * Expand function signatures out with descriptions of parameters and return values.
+    * Sequence diagrams for all functions.

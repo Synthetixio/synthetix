@@ -53,7 +53,7 @@ Holds the issuance state and index of users interacting with the [`FeePool`](Fee
 
 Field | Type | Description
 ------|------|------------
-debtPercentage | `uint` | The percentage of the total system debt owned by the address associated with this entry at the time of issuance.
+debtPercentage | `uint` | The percentage of the total system debt owned by the address associated with this entry at the time of issuance. These are [27-decimal fixed point numbers](SafeDecimalMath.md), closely related to the values in [`SynthetixState.debtLedger`](SynthetixState.md#debtledger).
 debtEntryIndex | `uint` | The [debt ledger](SynthetixState.md#debtledger) index when this user issued or destroyed tokens. That is, the length of the ledger at the time of issuance.
 
 For more information on these fields and their meaning, see the main [`Synthetix`](Synthetix.md) contract functions [`_addToDebtRegister`](Synthetix.md#_addtodebtregister) and [`_removeFromDebtRegister`](Synthetix.md#_removefromdebtregister), along with the corresponding struct in [`SynthetixState`](SynthetixState.md#issuancedata).
@@ -91,7 +91,9 @@ The address of the main [`FeePool`](FeePool.md) contract.
 
 ### `accountIssuanceLedger`
 
-A list of up to 6 issuance data entries for each address, for the most recent changes to their issuance level. The fee periods do not have to be consecutive, but they are ordered from newest to oldest (decreasing debt ledger indexes).
+A list of up to 6 [issuance data](#issuancedata) entries for each address, for the most recent changes to their issuance level. The fee periods do not have to be consecutive, but they are ordered from newest to oldest (decreasing debt ledger indexes).
+
+Note that the entry `accountIssuanceLedger[account][0]` only corresponds to the current fee period if [`appendAccountIssuanceRecord(account, *, *, *)`](#appendaccountissuancerecord) has been called during the current fee period. That is, if the account has issued or burnt synths this period.
 
 **Type:** `mapping(address => IssuanceData[FEE_PERIOD_LENGTH]) public`
 
@@ -140,6 +142,8 @@ Changes the [fee pool address](#feepool).
 
 Accesses [`accountIssuanceLedger`](#accountissuanceledger).
 
+The first return value is a [27-decimal fixed point number](SafeDecimalMath.md).
+
 ??? example "Details"
     **Signature**
 
@@ -157,6 +161,8 @@ From a given account's issuance data, retrieve the most recent entry which close
 
 This function is used in [`FeePool.feesByPeriod`](FeePool.md#feesbyperiod) and [`FeePool.effectiveDebtRatioForPeriod`](FeePool.md#effectivedebtratioforperiod) to compute the fees owed to a user for specific past periods.
 
+The returned values are as per [`getAccountsDebtEntry`](#getaccountsdebtentry), hence the first return value is a [27-decimal fixed point number](SafeDecimalMath.md).
+
 ??? example "Details"
     **Signature**
 
@@ -166,9 +172,11 @@ This function is used in [`FeePool.feesByPeriod`](FeePool.md#feesbyperiod) and [
 
 ### `appendAccountIssuanceRecord`
 
-Allows the [`Synthetix`](Synthetix.md#_appendaccountissuancerecord) contract, through [`FeePool.appendAccountIssuanceRecord`](FeePool.md#appendaccountissuancerecord), to record the latest issuance information for a given account in the issuance ledger. This is used when synths are issued or burnt.
+Allows the [`Synthetix`](Synthetix.md#_appendaccountissuancerecord) contract, through [`FeePool.appendAccountIssuanceRecord`](FeePool.md#appendaccountissuancerecord), to record current fee period issuance information for a given account in the issuance ledger. This is used when synths are issued or burnt.
 
 If the latest entry in this account's issuance ledger was from the current fee period, it is overwritten. Otherwise, the existing entries are shifted down one spot, dropping the last one (using a call to [`issuanceDataIndexOrder`](#issuancedataindexorder)), and a new entry is added at the head of the list.
+
+The `debtRatio` argument is a [27-decimal fixed point number](SafeDecimalMath.md).
 
 !!! caution "Incorrect Docstring"
     `accountIssuanceLedger[account][1-3]` should be `[1-2]`.
