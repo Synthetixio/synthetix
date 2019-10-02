@@ -39,7 +39,7 @@ contract StakingPool {
     }
 
     modifier onlyManager() {
-        require(msg.sender == manager);
+        require(msg.sender == manager, "Sender is not manager");
         _;
     }
 
