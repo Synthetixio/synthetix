@@ -221,7 +221,7 @@ If a currency is not an inverted index, then just return the rate that was passe
 If the currency is an inverted index, return the inverted rate. If the inverted price reaches one of its limits, freeze its rate at the limit it breached. Future calls to a frozen inverted index will return the last recorded rate. That is, frozen rates can no longer be updated.
 
 An inverted rate moves exactly inverse to the underlying price; if the underlying price moves up a dollar, the inverted price moves down a dollar.
-The price $\bar{p}$ of an [inverse index](#inversepricing) $c$ with base price $p$, entry point $e$, and upper and lower limits $u$ and $l$ respectively, is computed as:
+The price $\bar{p}$ of an [inverse index](#inversepricing) $c$ with base price $p$, entry point $e$, and lower and upper limits $l$ and $u$ respectively, is computed as:
 
 $$
     \bar{p} = \text{clamp(}2e - p, \ l, \ u\text{)}
