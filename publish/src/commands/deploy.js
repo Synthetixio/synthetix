@@ -536,6 +536,20 @@ const deploy = async ({
 		});
 	}
 
+	// setup exchange gasPriceLimit on Synthetix
+	const gasPriceLimit = w3utils.toWei('35');
+	if (network === 'local') {
+		await runStep({
+			contract: 'Synthetix',
+			target: synthetix,
+			account: oracleExrates,
+			read: 'gasPriceLimit',
+			expected: input => input === gasPriceLimit,
+			write: 'setGasPriceLimit',
+			writeArg: gasPriceLimit,
+		});
+	}
+
 	// only reset token state if redeploying
 	if (tokenStateSynthetix && config['TokenStateSynthetix'].deploy) {
 		const initialIssuance = w3utils.toWei('100000000');
@@ -959,47 +973,49 @@ const deploy = async ({
 		args: [account],
 	});
 
-	// ensure exchangeRates on arbRewarder set
-	await runStep({
-		contract: 'ArbRewarder',
-		target: arbRewarder,
-		read: 'exchangeRates',
-		expected: input => input === exchangeRates.options.address,
-		write: 'setExchangeRates',
-		writeArg: exchangeRates.options.address,
-	});
+	if (arbRewarder) {
+		// ensure exchangeRates on arbRewarder set
+		await runStep({
+			contract: 'ArbRewarder',
+			target: arbRewarder,
+			read: 'exchangeRates',
+			expected: input => input === exchangeRates.options.address,
+			write: 'setExchangeRates',
+			writeArg: exchangeRates.options.address,
+		});
 
-	// Ensure synthetix ProxyERC20 on arbRewarder set
-	await runStep({
-		contract: 'ArbRewarder',
-		target: arbRewarder,
-		read: 'synthetixProxy',
-		expected: input => input === proxyERC20SynthetixAddress,
-		write: 'setSynthetix',
-		writeArg: proxyERC20SynthetixAddress,
-	});
+		// Ensure synthetix ProxyERC20 on arbRewarder set
+		await runStep({
+			contract: 'ArbRewarder',
+			target: arbRewarder,
+			read: 'synthetixProxy',
+			expected: input => input === proxyERC20SynthetixAddress,
+			write: 'setSynthetix',
+			writeArg: proxyERC20SynthetixAddress,
+		});
 
-	// Ensure sETH uniswap exchange address on arbRewarder set
-	const requiredUniswapExchange = '0xe9Cf7887b93150D4F2Da7dFc6D502B216438F244';
-	const requiredSynthAddress = '0x5e74C9036fb86BD7eCdcb084a0673EFc32eA31cb';
-	await runStep({
-		contract: 'ArbRewarder',
-		target: arbRewarder,
-		read: 'uniswapAddress',
-		expected: input => input === requiredUniswapExchange,
-		write: 'setUniswapExchange',
-		writeArg: requiredUniswapExchange,
-	});
+		// Ensure sETH uniswap exchange address on arbRewarder set
+		const requiredUniswapExchange = '0xe9Cf7887b93150D4F2Da7dFc6D502B216438F244';
+		const requiredSynthAddress = '0x5e74C9036fb86BD7eCdcb084a0673EFc32eA31cb';
+		await runStep({
+			contract: 'ArbRewarder',
+			target: arbRewarder,
+			read: 'uniswapAddress',
+			expected: input => input === requiredUniswapExchange,
+			write: 'setUniswapExchange',
+			writeArg: requiredUniswapExchange,
+		});
 
-	// Ensure sETH proxy address on arbRewarder set
-	await runStep({
-		contract: 'ArbRewarder',
-		target: arbRewarder,
-		read: 'synth',
-		expected: input => input === requiredSynthAddress,
-		write: 'setSynthAddress',
-		writeArg: requiredSynthAddress,
-	});
+		// Ensure sETH proxy address on arbRewarder set
+		await runStep({
+			contract: 'ArbRewarder',
+			target: arbRewarder,
+			read: 'synth',
+			expected: input => input === requiredSynthAddress,
+			write: 'setSynthAddress',
+			writeArg: requiredSynthAddress,
+		});
+	}
 
 	console.log(green('\nSuccessfully deployed all contracts!\n'));
 

@@ -156,6 +156,7 @@ contract Synthetix is ExternStateToken {
     string constant TOKEN_SYMBOL = "SNX";
     uint8 constant DECIMALS = 18;
     bool public exchangeEnabled = true;
+    uint public gasPriceLimit;
 
     // ========== CONSTRUCTOR ==========
 
@@ -208,6 +209,14 @@ contract Synthetix is ExternStateToken {
         optionalProxy_onlyOwner
     {
         exchangeEnabled = _exchangeEnabled;
+    }
+
+    function setGasPriceLimit(uint _gasPriceLimit)
+        external
+        onlyOracle
+    {
+        require(_gasPriceLimit > 0, "Needs to be greater than 0");
+        gasPriceLimit = _gasPriceLimit;
     }
 
     /**
@@ -421,6 +430,9 @@ contract Synthetix is ExternStateToken {
         require(sourceCurrencyKey != destinationCurrencyKey, "Must use different synths");
         require(sourceAmount > 0, "Zero amount");
 
+        // verify gas price limit
+        validateGasPrice(tx.gasprice);
+
         //  If protectionCircuit is true then we burn the synths through _internalLiquidation()
         if (protectionCircuit) {
             return _internalLiquidation(
@@ -439,6 +451,17 @@ contract Synthetix is ExternStateToken {
                 true // Charge fee on the exchange
             );
         }
+    }
+
+    /*
+        @dev validate that the given gas price is less than or equal to the gas price limit
+        @param _gasPrice tested gas price
+    */
+    function validateGasPrice(uint _givenGasPrice)
+        public
+        view
+    {
+        require(_givenGasPrice <= gasPriceLimit, "Gas price above limit");
     }
 
     /**
