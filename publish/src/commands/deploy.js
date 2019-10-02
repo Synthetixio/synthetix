@@ -537,7 +537,7 @@ const deploy = async ({
 	}
 
 	// setup exchange gasPriceLimit on Synthetix
-	const gasPriceLimit = w3utils.toWei('35');
+	const gasPriceLimit = w3utils.toWei('35', 'gwei');
 	if (network === 'local') {
 		await runStep({
 			contract: 'Synthetix',
