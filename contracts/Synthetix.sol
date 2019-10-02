@@ -461,7 +461,6 @@ contract Synthetix is ExternStateToken {
         public
         view
     {
-        require(_givenGasPrice > 0, "Needs to be greater than 0");
         require(_givenGasPrice <= gasPriceLimit, "Gas price above limit");
     }
 
