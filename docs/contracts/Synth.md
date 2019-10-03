@@ -386,7 +386,9 @@ Reverts the transaction if its argument is not the [fee address](FeePool.md#fee_
 
 ### `SynthetixUpdated`
 
-Records that the [`synthetix`](#synthetix) address was updated.
+Records that the [`synthetix`](#synthetix) address was [updated](#setsynthetix).
+
+This event is emitted from the Synths's [proxy](Proxy.md#_emit) with the `emitSynthetixUpdated` function.
 
 **Signature:** `SynthetixUpdated(address newSynthetix)`
 
@@ -394,7 +396,9 @@ Records that the [`synthetix`](#synthetix) address was updated.
 
 ### `FeePoolUpdated`
 
-Records that the [`feePool`](#feepool) address was updated.
+Records that the [`feePool`](#feepool) address was [updated](#setfeepool).
+
+This event is emitted from the Synths's [proxy](Proxy.md#_emit) with the `emitFeePoolUpdated` function.
 
 **Signature:** `FeePoolUpdated(address newFeePool)`
 
@@ -402,7 +406,9 @@ Records that the [`feePool`](#feepool) address was updated.
 
 ### `Issued`
 
-Records that a quantity of this Synth was newly issued.
+Records that a quantity of this Synth was newly [issued](#issue).
+
+This event is emitted from the Synths's [proxy](Proxy.md#_emit) with the `emitIssued` function.
 
 **Signature:** `Issued(address indexed account, uint value)`
 
@@ -410,7 +416,9 @@ Records that a quantity of this Synth was newly issued.
 
 ### `Burned`
 
-Records that a quantity of this Synth was burned.
+Records that a quantity of this Synth was [burned](#burn).
+
+This event is emitted from the Synths's [proxy](Proxy.md#_emit) with the `emitBurned` function.
 
 **Signature:** `Burned(address indexed account, uint value)`
 

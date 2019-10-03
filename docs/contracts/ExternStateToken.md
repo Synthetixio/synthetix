@@ -225,45 +225,6 @@ ERC20 approve function.
 
 ---
 
-### `emitTransfer`
-
-Emits an ERC20 [`Transfer`](#transfer) event.
-
-Encodes the transfer signature and parameters, then forwards them to the proxy to be [emitted](Proxy.md#_emit).
-
-??? example "Details"
-    **Signature**
-
-    `emitTransfer(address from, address to, uint value) internal`
-
----
-
-### `emitApproval`
-
-Emits an ERC20 [`Approval`](#approval) event.
-
-Encodes the event signature and parameters, then forwards them to the proxy to be [emitted](Proxy.md#_emit).
-
-??? example "Details"
-    **Signature**
-
-    `emitApproval(address owner, address spender, uint value) internal`
-
----
-
-### `emitTokenStateUpdated`
-
-Emits a [`TokenStateUpdated`](#tokenstateupdated) event.
-
-Encodes the event signature and parameters, then forwards them to the proxy to be [emitted](Proxy.md#_emit).
-
-??? example "Details"
-    **Signature**
-
-    `emitTokenStateUpdated(address newTokenState) internal`
-
----
-
 <section-sep />
 
 ## Events
@@ -274,6 +235,8 @@ Encodes the event signature and parameters, then forwards them to the proxy to b
 
 Records that an ERC20 transfer occurred.
 
+This event is emitted from the token's [proxy](Proxy.md#_emit) with the `emitTransfer`.
+
 **Signature:** `Transfer(address indexed from, address indexed to, uint value)`
 
 ---
@@ -282,6 +245,8 @@ Records that an ERC20 transfer occurred.
 
 Records that an ERC20 approval occurred.
 
+This event is emitted from the token's [proxy](Proxy.md#_emit) with the `emitApproval`.
+
 **Signature:** `Approval(address indexed owner, address indexed spender, uint value)`
 
 ---
@@ -289,6 +254,8 @@ Records that an ERC20 approval occurred.
 ### `TokenStateUpdated`
 
 Records that the [token state address](#tokenstate) was updated.
+
+This event is emitted from the token's [proxy](Proxy.md#_emit) with the `emitTokenStateUpdated`.
 
 **Signature:** `TokenStateUpdated(address newTokenState)`
 

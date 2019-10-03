@@ -1075,7 +1075,7 @@ Reverts the transaction if `account` is the [fee address](#fee_address).
 
 Records that a new account issuance record was [appended](#appendaccountissuancerecord) to the account's issuance ledger in [`FeePoolState`](FeePoolState.md#appendaccountissuancerecord).
 
-This event is emitted from the FeePool's [proxy](Proxy.md#_emit) with the `emitIssuanceDebtRatioEntry` function using the precomputed `ISSUANCEDEBTRATIOENTRY_SIG` hash.
+This event is emitted from the FeePool's [proxy](Proxy.md#_emit) with the `emitIssuanceDebtRatioEntry` function.
 
 **Signature:** `IssuanceDebtRatioEntry(address indexed account, uint debtRatio, uint debtEntryIndex, uint feePeriodStartingDebtIndex)`
 
@@ -1085,7 +1085,7 @@ This event is emitted from the FeePool's [proxy](Proxy.md#_emit) with the `emitI
 
 Records that the fee for exchanging between Synths was [updated](#setexchangefee).
 
-This event is emitted from the FeePool's [proxy](Proxy.md#_emit) with the `emitExchangeFeeUpdated` function using the precomputed `EXCHANGEFEEUPDATED_SIG` hash.
+This event is emitted from the FeePool's [proxy](Proxy.md#_emit) with the `emitExchangeFeeUpdated` function.
 
 **Signature:** `ExchangeFeeUpdated(uint newFeeRate)`
 
@@ -1095,7 +1095,7 @@ This event is emitted from the FeePool's [proxy](Proxy.md#_emit) with the `emitE
 
 Records that the duration of a single fee period was [updated](#setfeeperiodduration).
 
-This event is emitted from the FeePool's [proxy](Proxy.md#_emit) with the `emitFeePeriodDurationUpdated` function using the precomputed `FEEPERIODDURATIONUPDATED_SIG` hash.
+This event is emitted from the FeePool's [proxy](Proxy.md#_emit) with the `emitFeePeriodDurationUpdated` function.
 
 **Signature:** `FeePeriodDurationUpdated(uint newFeePeriodDuration)`
 
@@ -1105,7 +1105,7 @@ This event is emitted from the FeePool's [proxy](Proxy.md#_emit) with the `emitF
 
 Records that a fee period was [closed](#closecurrentfeeperiod), with the id of the closed period.
 
-This event is emitted from the FeePool's [proxy](Proxy.md#_emit) with the `emitFeePeriodClosed` function using the precomputed `FEEPERIODCLOSED_SIG` hash.
+This event is emitted from the FeePool's [proxy](Proxy.md#_emit) with the `emitFeePeriodClosed` function.
 
 **Signature:** `FeePeriodClosed(uint feePeriodId)`
 
@@ -1115,7 +1115,7 @@ This event is emitted from the FeePool's [proxy](Proxy.md#_emit) with the `emitF
 
 Records that an account [claimed](#_claimFees) the fees and rewards owed to them.
 
-This event is emitted from the FeePool's [proxy](Proxy.md#_emit) with the `emitFeesClaimed` function using the precomputed `FEESCLAIMED_SIG` hash.
+This event is emitted from the FeePool's [proxy](Proxy.md#_emit) with the `emitFeesClaimed` function.
 
 **Signature:** `FeesClaimed(address account, uint xdrAmount, uint snxRewards)`
 

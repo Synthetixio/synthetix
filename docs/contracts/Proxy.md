@@ -139,7 +139,7 @@ Assuming our event signature is `MyEvent(A indexed indexedArg, B data1, C data2)
 
 `proxy._emit(abi.encode(data1, data2), 2, keccak256('MyEvent(A,B,C)'), bytes32(indexedArg), 0, 0);`
 
-In the implementation, such expressions are typically wrapped in convenience functions like `emitMyEvent(A indexedArg, B data1, C data2)`.
+In the implementation, such expressions are typically wrapped in convenience functions like `emitMyEvent(A indexedArg, B data1, C data2) internal` whose signature mirrors that of the event itself.
 
 In Solidity, `indexed` arguments are published as log topics, while non-`indexed` ones are abi-encoded together in order and included as data.
 The keccak-256 hash of the Solidity event signature is always included as the first topic. The format of this signature is `EventName(type1,...,typeN)`, with no spaces between the argument types, omitting the `indexed` keyword and the argument name. For more information, see the official Solidity documentation [here](https://solidity.readthedocs.io/en/v0.5.11/contracts.html#events) and [here](https://solidity.readthedocs.io/en/v0.5.11/abi-spec.html#abi-events).
