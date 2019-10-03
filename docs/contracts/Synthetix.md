@@ -1,7 +1,12 @@
 # Synthetix
 
+## Description
+
 !!! info "Work In Progress"
     This still needs to be cleaned up and the rest of my notes migrated in.
+
+!!! danger "Contract Header Out Of Date"
+    The average SNX balance computations described in the file docstring of this contract was correct for the sUSD-only system. The multicurrency version of Synthetix has made this obsolete and much of it should be deleted or rewritten.
 
 **Old:** Synthetix.sol: Has a list of Synths and understands issuance data for users to be able to mint and burn Synths.
 
@@ -14,19 +19,11 @@
 
 **Source:** [Synthetix.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/Synthetix.sol)
 
-## Inherited Contracts
+## Inheritance Graph
 
-### Direct
-
-* ExternStateToken
-
-### Indirect
-
-* SelfDestructible
-* Proxyable
-* TokenFallbackCaller
-* Owned
-* ReentrancyPreventer
+<centered-image>
+    ![Synthetix inheritance graph](../img/graphs/Synthetix.svg)
+</centered-image>
 
 ## Related Contracts
 
