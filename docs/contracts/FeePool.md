@@ -566,7 +566,7 @@ The return value is always true if the transaction was not reverted.
 
     **Emits**
 
-    * [`FeesClaimed(claimingAddress, feesPaid, rewardsPaid)`](#feesclaimed)
+    * [`FeesClaimed(claimingAddress, feesPaid, rewardsPaid)`](#feesclaimed) (`feesPaid` is denominated in XDRs, `rewardsPaid` in SNX)
 
 ---
 
@@ -955,7 +955,7 @@ $$
 \omega \frac{\Delta_{\text{exit}}}{\Delta_{\text{entry}}}
 $$
 
-See [`Synthetix._addToDebtRegister`](Synthetix.md#_addToDebtRegister) for details.
+See [`Synthetix._addToDebtRegister`](Synthetix.md#_addToDebtRegister) for details of the debt ownership percentage adjustment.
 
 !!! caution "Superfluous Check"
     This returns 0 if `closingDebtIndex` is strictly greater than the [length of the debt ledger](SynthetixState.md#debtledgerlength).
@@ -1073,25 +1073,51 @@ Reverts the transaction if `account` is the [fee address](#fee_address).
 
 ### `IssuanceDebtRatioEntry`
 
----
+Records that a new account issuance record was [appended](#appendaccountissuancerecord) to the account's issuance ledger in [`FeePoolState`](FeePoolState.md#appendaccountissuancerecord).
 
-### `TransferFeeUpdated`
+This event is emitted from the FeePool's [proxy](Proxy.md#_emit) with the `emitIssuanceDebtRatioEntry` function using the precomputed `ISSUANCEDEBTRATIOENTRY_SIG` hash.
+
+**Signature:** `IssuanceDebtRatioEntry(address indexed account, uint debtRatio, uint debtEntryIndex, uint feePeriodStartingDebtIndex)`
 
 ---
 
 ### `ExchangeFeeUpdated`
 
+Records that the fee for exchanging between Synths was [updated](#setexchangefee).
+
+This event is emitted from the FeePool's [proxy](Proxy.md#_emit) with the `emitExchangeFeeUpdated` function using the precomputed `EXCHANGEFEEUPDATED_SIG` hash.
+
+**Signature:** `ExchangeFeeUpdated(uint newFeeRate)`
+
 ---
 
 ### `FeePeriodDurationUpdated`
+
+Records that the duration of a single fee period was [updated](#setfeeperiodduration).
+
+This event is emitted from the FeePool's [proxy](Proxy.md#_emit) with the `emitFeePeriodDurationUpdated` function using the precomputed `FEEPERIODDURATIONUPDATED_SIG` hash.
+
+**Signature:** `FeePeriodDurationUpdated(uint newFeePeriodDuration)`
 
 ---
 
 ### `FeePeriodClosed`
 
+Records that a fee period was [closed](#closecurrentfeeperiod), with the id of the closed period.
+
+This event is emitted from the FeePool's [proxy](Proxy.md#_emit) with the `emitFeePeriodClosed` function using the precomputed `FEEPERIODCLOSED_SIG` hash.
+
+**Signature:** `FeePeriodClosed(uint feePeriodId)`
+
 ---
 
 ### `FeesClaimed`
+
+Records that an account [claimed](#_claimFees) the fees and rewards owed to them.
+
+This event is emitted from the FeePool's [proxy](Proxy.md#_emit) with the `emitFeesClaimed` function using the precomputed `FEESCLAIMED_SIG` hash.
+
+**Signature:** `FeesClaimed(address account, uint xdrAmount, uint snxRewards)`
 
 ---
 
