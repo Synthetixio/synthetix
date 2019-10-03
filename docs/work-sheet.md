@@ -53,6 +53,7 @@
     * Do debt ledger entries lose too much precision given that they are a product of small quantities?
     * What happens if I issue very small quantities of synths? Can I lose the debt due to rounding? Thus, can I increase the supply without the system locking any of my snx?
     * Can the slashed quantity from the fee pool when rewards are paid out if a person exhausts the pool ever be non-trivial? Comments imply it will just be due to rounding errors, but is this true?
+    * Can a user derive more fees by simply waiting until they withdrew before the recently tracked fee periods? 
 
 ??? "Assets and Analysis"
     * Classify assets

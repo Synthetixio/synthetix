@@ -542,10 +542,31 @@ This function first checks with the [`DelegateApprovals`](DelegateApprovals.md) 
 
 ### `_claimFees`
 
-!!! todo
-    Finish this.
+Claims fees and rewards owed to the specified address.
 
-* `_claimFees(address claimingAddress, bytes32 currencyKey)`: Claim fees at the specified address in the specified currency. C-ratio must be within the bounds specified by the `feesClaimable` function -- i.e. less than the issuance ratio. MIGRATE
+The account's collateralisation ratio must be less than the [issuance ratio](SynthetixState.md#issuanceratio), plus the [target threshold](#target_threshold), as specified by the [`feesClaimable`](#feesclaimable) function. The quantity of fees and owed is computed by [`feesAvailable`](#feesavailable).
+
+Upon invocation, this function updates the account's [last fee withdrawal time](#_setlastfeewithdrawal), and removes the claimed [fees](#_recordFeePayment) and [rewards](#_recordRewardPayment) from the pool.
+Fees are paid into the claiming address [in the specified currency](#_payFees), while the rewards are [escrowed](#_payRewards) on behalf of the claiming address in the [`RewardEscrow`](#rewardescrow) contract for one year.
+
+The return value is always true if the transaction was not reverted.
+
+!!! bug "Potential Overclaiming"
+    If a user last issued SNX earlier than the last recent fee period, they may be paid out too many fees/rewards. See [`feesAvailable`](#feesavailable) and [`feesByPeriod`](#feesbyperiod) for details.
+
+??? example "Details"
+    **Signature**
+
+    `_claimFees(address claimingAddress, bytes32 currencyKey) internal returns (bool)`
+
+    **Preconditions**
+
+    * The user's [collateralisation ratio](Synthetix.md#collateralisationratio) must be below the threshold, as per [`feesClaimable`](#feesclaimable).
+    * The user must have a positive value of fees or rewards available to claim.
+
+    **Emits**
+
+    * [`FeesClaimed(claimingAddress, feesPaid, rewardsPaid)`](#feesclaimed)
 
 ---
 
@@ -674,7 +695,7 @@ for each closed period in reversed(recentFeePeriods):
         continue
 
     # Don't pay out too much.
-    payable = min(period.unclaimedFees, remaining)
+    payable = min(unclaimedFees, remaining)
 
     paid += payable
     period.feesClaimed += payable
@@ -682,8 +703,6 @@ for each closed period in reversed(recentFeePeriods):
 
 return paid
 ```
-
-The actual code returns immediately once `remaining` is 0, for efficiency.
 
 !!! note
     The final lines of the loop body, `if (i == 0 && remainingToAllocate > 0) { remainingToAllocate = 0; }` are redundant. One could just iterate once less. There might be another minor efficiency dividend to be had by not fetching `feesClaimed` from the state twice.
@@ -820,9 +839,20 @@ Computes the total SNX rewards available to be withdrawn. This simply sums the u
 
 ### `feesAvailable`
 
-The sum over [`feesByPeriod`](#feesbyperiod) for an account.
+Return the total of fees and rewards available to be withdrawn by this account. The result is reported as a `[fees, rewards]` pair denominated in the requested Synth flavour and SNX, respectively.
 
-* `feesAvailable(address account, bytes32 currencyKey)`: return the total of fees this user has accrued in previous fee periods. MIGRATE 
+This is the total of fees accrued in completed periods, so is simply the the sum over an account's [`feesByPeriod`](#feesbyperiod) not including the current period.
+
+!!! bug "Overlapping Applicable Issuance Events Could Overreport Fees"
+    This is just a naive sum over the result reported by [`feesByPeriod`](#feesbyperiod). If the last time a user issued occurred before the beginning of the last-tracked fee period, a user could claim more fees that they are actually owed. Check the `feesByPeriod` notes for details.
+
+!!! caution "Ambiguous Naming"
+    Don't confuse this funciton with [`feesClaimable`](#feesclaimable).
+
+??? example "Details"
+    **Signature**
+
+    `feesAvailable(address account, bytes32 currencyKey) public view returns (uint, uint)` 
 
 ---
 
@@ -849,14 +879,51 @@ A account is able to claim fees if its [collateralisation ratio](Synthetix.md#co
 
 ### `feesByPeriod`
 
-!!! todo
-    Finish this.
+Returns an array of [`FEE_PERIOD_LENGTH`](#fee_period_length) `[fees, rewards]` pairs owed to an account for each [recent fee period](#recentfeeperiods) (including the current one). Fees are denominated in XDRs and rewards in SNX.
 
-Computes the fees owed (in XDRs) to an account for each recent fee period, including the current one.
+To compute this, for each period from oldest to newest, find the [latest issuance event this account performed before the close of this period](FeePoolState.md#applicableissuancedata), and use it to derive the owed [fees and rewards](#_feesandrewardsfromperiod) for that period.
 
-* `feesByPeriod(address account)`: MIGRATE
-  Note: XDRs existing seems to be necessary for a user to have nonzero ownership percentages, so the second
-  guard in this function looks redundant, or should be checked earlier. It's likely to be an exceedingly rare case anyway.
+Periods where the user has already withdrawn since that period closed are skipped, producing `[0,0]` entries.
+
+!!! bug "Zero Fees Remaining Check"
+    The guard `if (synthetix.totalIssuedSynths("XDR") == 0) return;` is a bit strange.
+
+    XDRs existing seems to be a necessary condition for a user to have nonzero ownership percentages, so this check looks redundant.
+
+    Not sure if the fee pool ever actually empties out, but in any case it doesn't account for the case where there is a positive but too-low quantity of fees remaining. In any case, it will report zero for all periods if there are no fees in the pool, but if there is a sudden infusion of fees then their fees owed increases. It's probably more informative for the user if they can see what their potential fee claim is even if there are no fees to be claimed, so that they can tell if they should wait for the pot to fill up or not.
+
+    Additionally, it only checks for fees and not for rewards, which means that cases where there are rewards left but no fees will be incorrectly skipped.
+
+    So one of two options could be appropriate. Either: remove the check; or clamp the fees owed to the quantity left in the pot, accounting for rewards as well as fees, which subsumes the existing behaviour in a more-consistent structure.
+
+!!! bug "Overlapping Applicable Issuance Data"
+    The fee pool stores information about the last three fee periods, 0, 1, 2. If a user's last issuance event occurred in period 3, for example, then it is applicable for all three known recent fee periods. This means that the fees and rewards owed will be duplicated in all following periods. That is, although they should only be owed fees in period 2, it will report that they are owed fees in each of periods 0 and 1 as well.
+
+    Additionally, resolving this probably means not handling the current fee period as a separate case. The code is probably clearer if the latest fee period is just treated the same as everything else anyway.
+
+!!! danger "Closing Debt Index Comments"
+    The latter two thirds of the comment on the `closingDebtIndex` declaration seems to be out of date? `issuanceData[0]` is never explicitly fetched within the loop, only `feePoolState.applicableIssuanceData` is actually used.
+
+    The gas optimisation comments should be removed and/or implemented, though keeping the most recent entry doesn't make a lot of sense if no applicable issuance event was found.
+
+!!! caution "Initialisation Check Comment"
+    In most circumstances, the guard `nextPeriod.startingDebtIndex > 0` cannot fail to be true unless the current period is 0, but this is disallowed by the loop condition.
+
+    This matters during the initial deployed period before the [`recentFeePeriods`](#recentfeeperiods) array has been populated. It might be worth leaving a comment clarifying this.
+
+!!! info "Optimisation: Broaden Debt Entry Initialisation Check"
+    The check `if (debtEntryIndex == 0 && userOwnershipPercentage == 0) return;` only checks if this user has no debt entries at all. First, `debtEntryIndex == 0` implies `userOwnershipPercentage == 0`. Second, they may have a zero debt ownership percentage, but still have a nonzero debt entry index if at some point they burnt all Synths. In this case the function body can still be skipped. So it is sufficient to check for `userOwnershipPercentage == 0`.
+
+!!! info "Optimisation: Move Initialisation Check Inside Conditional"
+    The check that `nextPeriod.startingDebtIndex > 0` can be skipped if the last fee withdrawal time was already too recent by moving it into its own nested conditional.
+
+!!! info "Optimisation: Hoist Function Call"
+    The return value of `getLastFeeWithdrawal(account)` does not change between iterations, thus this call can be hoisted out of the loop, saving some inter-contract call overhead.
+
+??? example "Details"
+    **Signature**
+
+    `feesByPeriod(address account) public view returns (uint[2][FEE_PERIOD_LENGTH] memory results)`
 
 ---
 
@@ -917,7 +984,7 @@ This uses [`_effectiveDebtRatioForPeriod`](#_effectiveDebtRatioForPeriod), where
 
 In principle a future version could support the current fee period by using the last debt ledger entry as the end index.
 
-!!! todo "Todo: Investigate the consequences of an old start index"
+!!! Bug "Todo: Investigate the consequences of an old start index"
     If the start index occurs earlier than the beginning of several fee periods, then can the debt ratio computations not correspond to overlapping periods?
 
 !!! caution "Potentially Misleading Comment"
