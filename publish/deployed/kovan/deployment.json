@@ -29,11 +29,11 @@
 		},
 		"FeePool": {
 			"name": "FeePool",
-			"address": "0x6FfB1BdF1bD515e5724b115E2b0C96a152E44853",
+			"address": "0x76661E0441eCEfD0494DB501e013A82722bdDA6d",
 			"source": "FeePool",
-			"link": "https://kovan.etherscan.io/address/0x6FfB1BdF1bD515e5724b115E2b0C96a152E44853",
-			"timestamp": "2019-09-17T06:31:12.000Z",
-			"txn": "https://kovan.etherscan.io/tx/0xfd8b5e75b88af358bf25b7e39cd635f98f61731ce1a8bff219f162c4f57a7d7a",
+			"link": "https://kovan.etherscan.io/address/0x76661E0441eCEfD0494DB501e013A82722bdDA6d",
+			"timestamp": "2019-09-24T02:12:08.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0xe0ed963063048d6c5447f1302e6c7cb77ee3e1732c504c9ce62c4745e0706ce2",
 			"network": "kovan"
 		},
 		"ProxyFeePool": {
@@ -155,11 +155,11 @@
 		},
 		"Synthetix": {
 			"name": "Synthetix",
-			"address": "0xA4b58428E7Dc1B203a9f9Fc98eE651Ad9174EC26",
+			"address": "0x4dc8AffB9DbfA8A171878d2F63B4205a9Bd96A70",
 			"source": "Synthetix",
-			"link": "https://kovan.etherscan.io/address/0xA4b58428E7Dc1B203a9f9Fc98eE651Ad9174EC26",
-			"timestamp": "2019-09-18T05:28:28.000Z",
-			"txn": "https://kovan.etherscan.io/tx/0x38c88d8fb5ca54c38e8b562c402fa6c7aed3d4d70d4e3c6d4bc10e3c8e5041f8",
+			"link": "https://kovan.etherscan.io/address/0x4dc8AffB9DbfA8A171878d2F63B4205a9Bd96A70",
+			"timestamp": "2019-09-24T22:09:24.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0x336932b0ad6d6922dafd867d536b711b026d7d9a24cd820661ff0eef975fbb32",
 			"network": "kovan"
 		},
 		"SynthetixEscrow": {
@@ -182,92 +182,92 @@
 		},
 		"SynthsAUD": {
 			"name": "SynthsAUD",
-			"address": "0xf162D8c9B299B675a7B5c47F3dF4142dAaE27b28",
+			"address": "0x2f449B8e7178368cf5Ea44Ff792dB4a39ee95e9B",
 			"source": "Synth",
-			"link": "https://kovan.etherscan.io/address/0xf162D8c9B299B675a7B5c47F3dF4142dAaE27b28",
-			"timestamp": "2019-09-17T05:22:17.675Z",
+			"link": "https://kovan.etherscan.io/address/0x2f449B8e7178368cf5Ea44Ff792dB4a39ee95e9B",
+			"timestamp": "2019-09-24T22:11:13.769Z",
 			"txn": "",
 			"network": "kovan"
 		},
 		"SynthsBTC": {
 			"name": "SynthsBTC",
-			"address": "0x18a2B55b07324d9A07Df1136B2b325477926085A",
+			"address": "0xc4d3b7c7D7f0D9Fd43B92121fB5a3DA06912986A",
 			"source": "Synth",
-			"link": "https://kovan.etherscan.io/address/0x18a2B55b07324d9A07Df1136B2b325477926085A",
-			"timestamp": "2019-09-17T05:24:01.319Z",
+			"link": "https://kovan.etherscan.io/address/0xc4d3b7c7D7f0D9Fd43B92121fB5a3DA06912986A",
+			"timestamp": "2019-09-24T22:12:50.053Z",
 			"txn": "",
 			"network": "kovan"
 		},
 		"SynthsCHF": {
 			"name": "SynthsCHF",
-			"address": "0x7Fd8B2497600efD6290eeB0D58BE0915C6aad3Cb",
+			"address": "0x8cb11490DB6000b9D1ac385775572974164918a1",
 			"source": "Synth",
-			"link": "https://kovan.etherscan.io/address/0x7Fd8B2497600efD6290eeB0D58BE0915C6aad3Cb",
-			"timestamp": "2019-09-17T05:22:57.346Z",
+			"link": "https://kovan.etherscan.io/address/0x8cb11490DB6000b9D1ac385775572974164918a1",
+			"timestamp": "2019-09-24T22:11:53.488Z",
 			"txn": "",
 			"network": "kovan"
 		},
 		"SynthsEUR": {
 			"name": "SynthsEUR",
-			"address": "0x5C51548027110c6aa134C567B48B0746ac8E75b8",
+			"address": "0x42512805C2870C341EaCe8C09fBDf17D7DbB3e80",
 			"source": "Synth",
-			"link": "https://kovan.etherscan.io/address/0x5C51548027110c6aa134C567B48B0746ac8E75b8",
-			"timestamp": "2019-09-17T05:21:17.618Z",
+			"link": "https://kovan.etherscan.io/address/0x42512805C2870C341EaCe8C09fBDf17D7DbB3e80",
+			"timestamp": "2019-09-24T22:10:25.169Z",
 			"txn": "",
 			"network": "kovan"
 		},
 		"SynthsGBP": {
 			"name": "SynthsGBP",
-			"address": "0x42D67dF1d4a2487bfD9F5b001d345c50eCCFC590",
+			"address": "0x6F4c097CB5BCCe6789A031cda69F39B044a0f6b4",
 			"source": "Synth",
-			"link": "https://kovan.etherscan.io/address/0x42D67dF1d4a2487bfD9F5b001d345c50eCCFC590",
-			"timestamp": "2019-09-17T05:22:37.356Z",
+			"link": "https://kovan.etherscan.io/address/0x6F4c097CB5BCCe6789A031cda69F39B044a0f6b4",
+			"timestamp": "2019-09-24T22:11:33.919Z",
 			"txn": "",
 			"network": "kovan"
 		},
 		"SynthsJPY": {
 			"name": "SynthsJPY",
-			"address": "0x7920415894847ac46F3c33cC60683f955E503015",
+			"address": "0x4bD32D64b013cf7FA3c228569796c3f31Fac58Ca",
 			"source": "Synth",
-			"link": "https://kovan.etherscan.io/address/0x7920415894847ac46F3c33cC60683f955E503015",
-			"timestamp": "2019-09-17T05:21:37.033Z",
+			"link": "https://kovan.etherscan.io/address/0x4bD32D64b013cf7FA3c228569796c3f31Fac58Ca",
+			"timestamp": "2019-09-24T22:10:41.468Z",
 			"txn": "",
 			"network": "kovan"
 		},
 		"SynthsUSD": {
 			"name": "SynthsUSD",
-			"address": "0x079004837762F9b37C6A18b024C32031654Aa684",
+			"address": "0x1Df8A113eE40b687c69f0f42CF03ee2CDECc39c0",
 			"source": "Synth",
-			"link": "https://kovan.etherscan.io/address/0x079004837762F9b37C6A18b024C32031654Aa684",
-			"timestamp": "2019-09-17T05:21:57.223Z",
+			"link": "https://kovan.etherscan.io/address/0x1Df8A113eE40b687c69f0f42CF03ee2CDECc39c0",
+			"timestamp": "2019-09-24T22:10:57.566Z",
 			"txn": "",
 			"network": "kovan"
 		},
 		"SynthsXAG": {
 			"name": "SynthsXAG",
-			"address": "0x5Ecd1Ba96C90892c81569BdaBB85d131B50C602D",
+			"address": "0x6d0F744eE02a991157B17284Dcd119aa06529D46",
 			"source": "Synth",
-			"link": "https://kovan.etherscan.io/address/0x5Ecd1Ba96C90892c81569BdaBB85d131B50C602D",
-			"timestamp": "2019-09-17T05:23:37.351Z",
+			"link": "https://kovan.etherscan.io/address/0x6d0F744eE02a991157B17284Dcd119aa06529D46",
+			"timestamp": "2019-09-24T22:12:29.536Z",
 			"txn": "",
 			"network": "kovan"
 		},
 		"SynthsXAU": {
 			"name": "SynthsXAU",
-			"address": "0x3f08C3E318a74a4b2e8582cd89BC6C0b4d697926",
+			"address": "0x6F04eA783646541a41d63bDa1Dd54eAE50D50c68",
 			"source": "Synth",
-			"link": "https://kovan.etherscan.io/address/0x3f08C3E318a74a4b2e8582cd89BC6C0b4d697926",
-			"timestamp": "2019-09-17T05:23:17.639Z",
+			"link": "https://kovan.etherscan.io/address/0x6F04eA783646541a41d63bDa1Dd54eAE50D50c68",
+			"timestamp": "2019-09-24T22:12:12.949Z",
 			"txn": "",
 			"network": "kovan"
 		},
 		"SynthXDR": {
 			"name": "SynthXDR",
-			"address": "0xf43dc2A3176394cEf1d2D66808bEeD66C40C61B4",
+			"address": "0xf5094E5Cc5e29D54cb5bD217c7E72e53726d344F",
 			"source": "Synth",
-			"link": "https://kovan.etherscan.io/address/0xf43dc2A3176394cEf1d2D66808bEeD66C40C61B4",
-			"timestamp": "2019-09-17T05:20:56.000Z",
-			"txn": "https://kovan.etherscan.io/tx/0x332d7e5a1955281ff885e3661e5515ce087d1c087a5c7c5104ca416f850a3753",
+			"link": "https://kovan.etherscan.io/address/0xf5094E5Cc5e29D54cb5bD217c7E72e53726d344F",
+			"timestamp": "2019-09-24T22:10:08.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0x09b2c43b727c5bb2a99a68c77b960570a95e611b88b24d4905981ca36a70db5c",
 			"network": "kovan"
 		},
 		"TokenStatesAUD": {
@@ -389,10 +389,10 @@
 		},
 		"SynthsETH": {
 			"name": "SynthsETH",
-			"address": "0x13BD0311540422E4605e7C9A3Df208c5E453B495",
+			"address": "0x67F09952c797BC01407404E77953137f334fc7f7",
 			"source": "Synth",
-			"link": "https://kovan.etherscan.io/address/0x13BD0311540422E4605e7C9A3Df208c5E453B495",
-			"timestamp": "2019-09-17T05:24:21.483Z",
+			"link": "https://kovan.etherscan.io/address/0x67F09952c797BC01407404E77953137f334fc7f7",
+			"timestamp": "2019-09-24T22:13:05.482Z",
 			"txn": "",
 			"network": "kovan"
 		},
@@ -416,10 +416,10 @@
 		},
 		"SynthsBNB": {
 			"name": "SynthsBNB",
-			"address": "0x6dB7aa00976658d225F814439fC63778E0D3ba94",
+			"address": "0xb781ED02ad040D504560653D9B849fc41Efef1dE",
 			"source": "Synth",
-			"link": "https://kovan.etherscan.io/address/0x6dB7aa00976658d225F814439fC63778E0D3ba94",
-			"timestamp": "2019-09-17T05:24:42.010Z",
+			"link": "https://kovan.etherscan.io/address/0xb781ED02ad040D504560653D9B849fc41Efef1dE",
+			"timestamp": "2019-09-24T22:13:21.440Z",
 			"txn": "",
 			"network": "kovan"
 		},
@@ -443,11 +443,11 @@
 		},
 		"SynthiBTC": {
 			"name": "SynthiBTC",
-			"address": "0xf188D5B2cF34757d636167646FB5565770e07D65",
+			"address": "0xb18DEb66dEd91f37fAA18660980eD1F6620003a0",
 			"source": "PurgeableSynth",
-			"link": "https://kovan.etherscan.io/address/0xf188D5B2cF34757d636167646FB5565770e07D65",
-			"timestamp": "2019-09-17T05:26:20.000Z",
-			"txn": "https://kovan.etherscan.io/tx/0xcf0edd62b5427a4caa4478e5c77ec23cabc6b4743e09a36269af2fa2311bd02f",
+			"link": "https://kovan.etherscan.io/address/0xb18DEb66dEd91f37fAA18660980eD1F6620003a0",
+			"timestamp": "2019-09-24T22:14:48.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0xaa009ca8acf4f8fda22a880cd524a97ade95f6c0f9fb3da3c55de616a9c8f5da",
 			"network": "kovan"
 		},
 		"TokenStateiETH": {
@@ -470,10 +470,10 @@
 		},
 		"SynthiETH": {
 			"name": "SynthiETH",
-			"address": "0x961aa09147bB276DB04774A5BCDE70346975A4CA",
+			"address": "0xb237d46c41929454255718F72aA774daA19D8756",
 			"source": "PurgeableSynth",
-			"link": "https://kovan.etherscan.io/address/0x961aa09147bB276DB04774A5BCDE70346975A4CA",
-			"timestamp": "2019-09-17T05:26:45.963Z",
+			"link": "https://kovan.etherscan.io/address/0xb237d46c41929454255718F72aA774daA19D8756",
+			"timestamp": "2019-09-24T22:15:09.433Z",
 			"txn": "",
 			"network": "kovan"
 		},
@@ -497,10 +497,10 @@
 		},
 		"SynthiBNB": {
 			"name": "SynthiBNB",
-			"address": "0xb17A18b618348AC1055a7c3596927228a743ddc6",
+			"address": "0x2Ae24f9E009224B453DB82810504E3F6BF945184",
 			"source": "PurgeableSynth",
-			"link": "https://kovan.etherscan.io/address/0xb17A18b618348AC1055a7c3596927228a743ddc6",
-			"timestamp": "2019-09-17T05:27:13.912Z",
+			"link": "https://kovan.etherscan.io/address/0x2Ae24f9E009224B453DB82810504E3F6BF945184",
+			"timestamp": "2019-09-24T22:15:28.955Z",
 			"txn": "",
 			"network": "kovan"
 		},
@@ -569,10 +569,10 @@
 		},
 		"SynthsMKR": {
 			"name": "SynthsMKR",
-			"address": "0xD70DB809bA92529C3686Dc50e777871C1Afcc1F5",
+			"address": "0x9A5de3eedE10172DF5f34b185D4be1FDe044e685",
 			"source": "Synth",
-			"link": "https://kovan.etherscan.io/address/0xD70DB809bA92529C3686Dc50e777871C1Afcc1F5",
-			"timestamp": "2019-09-17T05:25:01.730Z",
+			"link": "https://kovan.etherscan.io/address/0x9A5de3eedE10172DF5f34b185D4be1FDe044e685",
+			"timestamp": "2019-09-24T22:13:37.399Z",
 			"txn": "",
 			"network": "kovan"
 		},
@@ -596,10 +596,10 @@
 		},
 		"SynthsTRX": {
 			"name": "SynthsTRX",
-			"address": "0x1c8D2bF5e9B0e96367d12d509ca2c34A765055be",
+			"address": "0x1C8A3c8a3C962f58491552D76867498Ae3dD1dC6",
 			"source": "Synth",
-			"link": "https://kovan.etherscan.io/address/0x1c8D2bF5e9B0e96367d12d509ca2c34A765055be",
-			"timestamp": "2019-09-17T05:25:21.843Z",
+			"link": "https://kovan.etherscan.io/address/0x1C8A3c8a3C962f58491552D76867498Ae3dD1dC6",
+			"timestamp": "2019-09-24T22:14:01.239Z",
 			"txn": "",
 			"network": "kovan"
 		},
@@ -623,10 +623,10 @@
 		},
 		"SynthsXTZ": {
 			"name": "SynthsXTZ",
-			"address": "0x3938Dc982c0eaa002619F97d82e70485cdb4df51",
+			"address": "0x7f6D5bdf1B7bA12BDc57d2d524Eee6Bb38AF2495",
 			"source": "Synth",
-			"link": "https://kovan.etherscan.io/address/0x3938Dc982c0eaa002619F97d82e70485cdb4df51",
-			"timestamp": "2019-09-17T05:25:41.976Z",
+			"link": "https://kovan.etherscan.io/address/0x7f6D5bdf1B7bA12BDc57d2d524Eee6Bb38AF2495",
+			"timestamp": "2019-09-24T22:14:17.883Z",
 			"txn": "",
 			"network": "kovan"
 		},
@@ -650,10 +650,10 @@
 		},
 		"SynthiMKR": {
 			"name": "SynthiMKR",
-			"address": "0x5D620aed548C7813a13Fe35eddda491Bf751b9db",
+			"address": "0x179E38bf56eB012dBa5ed58F02fA96fEF3EB962d",
 			"source": "PurgeableSynth",
-			"link": "https://kovan.etherscan.io/address/0x5D620aed548C7813a13Fe35eddda491Bf751b9db",
-			"timestamp": "2019-09-17T05:27:41.183Z",
+			"link": "https://kovan.etherscan.io/address/0x179E38bf56eB012dBa5ed58F02fA96fEF3EB962d",
+			"timestamp": "2019-09-24T22:15:52.797Z",
 			"txn": "",
 			"network": "kovan"
 		},
@@ -677,10 +677,10 @@
 		},
 		"SynthiTRX": {
 			"name": "SynthiTRX",
-			"address": "0xa913b09617D70dc50F857C6746a8c58E88891652",
+			"address": "0x7137698159b05B9bf600D4183DcDA28C98de54b0",
 			"source": "PurgeableSynth",
-			"link": "https://kovan.etherscan.io/address/0xa913b09617D70dc50F857C6746a8c58E88891652",
-			"timestamp": "2019-09-17T05:28:09.693Z",
+			"link": "https://kovan.etherscan.io/address/0x7137698159b05B9bf600D4183DcDA28C98de54b0",
+			"timestamp": "2019-09-24T22:16:17.110Z",
 			"txn": "",
 			"network": "kovan"
 		},
@@ -704,10 +704,10 @@
 		},
 		"SynthiXTZ": {
 			"name": "SynthiXTZ",
-			"address": "0x547f50C540ed5B8AB2F5B1e0100E9224642E2F2E",
+			"address": "0x09eb62C5945c6e72504eeEa48fbf7f380e69cCd9",
 			"source": "PurgeableSynth",
-			"link": "https://kovan.etherscan.io/address/0x547f50C540ed5B8AB2F5B1e0100E9224642E2F2E",
-			"timestamp": "2019-09-17T05:28:33.572Z",
+			"link": "https://kovan.etherscan.io/address/0x09eb62C5945c6e72504eeEa48fbf7f380e69cCd9",
+			"timestamp": "2019-09-24T22:16:37.484Z",
 			"txn": "",
 			"network": "kovan"
 		},
@@ -740,10 +740,10 @@
 		},
 		"SynthsCEX": {
 			"name": "SynthsCEX",
-			"address": "0xFfeD11A2A4c24f665c91A578d5cA7e1289c825C5",
+			"address": "0xb056B9498C89Df4a9D612BB2E1d5e69f458887DD",
 			"source": "PurgeableSynth",
-			"link": "https://kovan.etherscan.io/address/0xFfeD11A2A4c24f665c91A578d5cA7e1289c825C5",
-			"timestamp": "2019-09-17T05:26:01.059Z",
+			"link": "https://kovan.etherscan.io/address/0xb056B9498C89Df4a9D612BB2E1d5e69f458887DD",
+			"timestamp": "2019-09-24T22:14:33.136Z",
 			"txn": "",
 			"network": "kovan"
 		},
@@ -767,10 +767,10 @@
 		},
 		"SynthiCEX": {
 			"name": "SynthiCEX",
-			"address": "0xbb607Fbc2fA74953EFB561dbD8c857Dd8bD7d99B",
+			"address": "0xe449B042Bd75Ac3022B346BB5b3924f6759cC985",
 			"source": "PurgeableSynth",
-			"link": "https://kovan.etherscan.io/address/0xbb607Fbc2fA74953EFB561dbD8c857Dd8bD7d99B",
-			"timestamp": "2019-09-17T05:28:56.955Z",
+			"link": "https://kovan.etherscan.io/address/0xe449B042Bd75Ac3022B346BB5b3924f6759cC985",
+			"timestamp": "2019-09-24T22:17:01.219Z",
 			"txn": "",
 			"network": "kovan"
 		},

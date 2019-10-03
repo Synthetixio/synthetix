@@ -1,4 +1,7 @@
 {
+	"ArbRewarder": {
+		"deploy": false
+	},
 	"Depot": {
 		"deploy": false
 	},
@@ -81,6 +84,9 @@
 		"deploy": false
 	},
 	"ProxysUSD": {
+		"deploy": false
+	},
+	"ProxyERC20sUSD": {
 		"deploy": false
 	},
 	"ProxysEUR": {
