@@ -2650,7 +2650,7 @@ contract('Synthetix', async accounts => {
 		});
 	});
 
-	describe.only('exchange gas price limit', () => {
+	describe('exchange gas price limit', () => {
 		const amountIssued = toUnit('2000');
 		const gasPriceLimit = toUnit('25');
 
