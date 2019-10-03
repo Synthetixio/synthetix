@@ -124,6 +124,7 @@ Contract | Description
     * Solidity syntax highlighting.
     * Links to etherscan and addresses.
     * Fix inheritance hierarchy and references.
+    * List inherited fields and methods in a collapsible details panel in the inheritance section.
     * Check consistency with dev docs and docstrings
     * Related contracts
     * Enhance Contract Mapper: Command line args etc. Look for calls out to other contracts in function bodies.
@@ -131,4 +132,4 @@ Contract | Description
     * Remove specific entries for event emission functions and fold them into the event descriptions themselves.
     * Add links to the new explainers on synthetix.io
     * Expand function signatures out with descriptions of parameters and return values.
-    * Sequence diagrams for all functions.
+    * Sequence diagrams for complex inter-contract functions.
