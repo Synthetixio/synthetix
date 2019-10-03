@@ -15,24 +15,30 @@ The main [`Synthetix`](Synthetix.md) contract and all [`Synths`](Synth.md) are E
 
 <section-sep />
 
-## Inheritance Graph
+## Architecture
+
+---
+
+### Inheritance Graph
 
 <centered-image>
     ![ExternStateToken inheritance graph](../img/graphs/ExternStateToken.svg)
 </centered-image>
 
-<section-sep />
+---
 
 ## Related Contracts
 
 * [`TokenState`](TokenState.md)
 
-<section-sep />
+---
 
 ## Libraries
 
 * [`SafeMath`](SafeMath.md) for `uint`
 * [`SafeDecimalMath`](SafeDecimalMath.md) for `uint`
+
+---
 
 <section-sep />
 

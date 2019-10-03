@@ -133,4 +133,4 @@ Contract | Description
     * Add links to the new explainers on synthetix.io
     * Expand function signatures out with descriptions of parameters and return values.
     * Sequence diagrams for complex inter-contract functions.
-    * Collapse inheritance, related contracts, libraries into a dependencies section.
+    * Mention inverse rates in the ExchangeRates description.

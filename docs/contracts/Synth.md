@@ -43,17 +43,21 @@ See the [main synth notes](../../synths) for more information about how Synths f
 
     That is, the relative profit is simply $(\phi_\kappa - \phi_\tau)$. With no transfer fee, this is $\phi_\kappa$, as expected.
 
-
-
 **Source:** [Synth.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/Synth.sol)
 
 <section-sep />
 
-## Inheritance Graph
+## Architecture
+
+---
+
+### Inheritance Graph
 
 <centered-image>
     ![Synth inheritance graph](../img/graphs/Synth.svg)
 </centered-image>
+
+---
 
 <section-sep />
 

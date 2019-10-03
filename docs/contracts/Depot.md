@@ -16,22 +16,32 @@ Throughout, the contract assumes that sUSD is always worth exactly US\$1. So: a)
 
 <section-sep />
 
-## Inheritance Graph
+## Architecture
+
+---
+
+### Inheritance Graph
 
 <centered-image>
     ![Depot inheritance graph](../img/graphs/Depot.svg)
 </centered-image>
 
-## Related Contracts
+---
+
+### Related Contracts
 
 * [Synthetix](Synthetix.md)
 * [Synth](Synth.md)
 * [FeePool](FeePool.md)
 
-## Libraries
+---
+
+### Libraries
 
 * [`SafeMath`](SafeMath.md) for `uint`
 * [`SafeDecimalMath`](SafeDecimalMath.md) for `uint`
+
+---
 
 <section-sep />
 

@@ -13,24 +13,30 @@ Upon system updates, this contract will continue to exist, while the Synthetix l
 
 <section-sep />
 
-## Inheritance Graph
+## Architecture
+
+---
+
+### Inheritance Graph
 
 <centered-image>
     ![SynthetixState inheritance graph](../img/graphs/SynthetixState.svg)
 </centered-image>
 
-<section-sep />
+---
 
-## Referenced Contracts
+### Related Contracts
 
 * Synthetix as this contract's `State.associatedContract`
 
-<section-sep />
+---
 
-## Libraries
+### Libraries
 
 * [`SafeDecimalMath`](SafeDecimalMath.md) for `uint`
 * [`SafeMath`](SafeMath.md) for `uint`
+
+---
 
 <section-sep />
 

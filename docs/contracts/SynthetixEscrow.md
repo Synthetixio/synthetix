@@ -12,15 +12,23 @@ This contract is augmented by the [`EscrowChecker`](EscrowChecker.md) contract, 
 
 <section-sep />
 
-## Inheritance Graph
+## Architecture
+
+---
+
+### Inheritance Graph
 
 <centered-image>
     ![SynthetixEscrow inheritance graph](../img/graphs/SynthetixEscrow.svg)
 </centered-image>
 
-## Libraries
+---
+
+### Libraries
 
 * [`SafeMath`](SafeMath.md) for `uint`
+
+---
 
 <section-sep />
 

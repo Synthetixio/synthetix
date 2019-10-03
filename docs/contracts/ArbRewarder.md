@@ -18,16 +18,24 @@ Announcement Post: https://blog.synthetix.io/our-new-seth-snx-arb-contract-is-no
 
 <section-sep />
 
-## Inheritance Graph
+## Architecture
+
+---
+
+### Inheritance Graph
 
 <centered-image>
     ![ArbRewarder inheritance graph](../img/graphs/ArbRewarder.svg)
 </centered-image>
 
-## Libraries
+---
+
+### Libraries
 
 * [`SafeMath`](SafeMath.md) for `uint`
 * [`SafeDecimalMath`](SafeDecimalMath.md) for `uint`
+
+---
 
 <section-sep />
 

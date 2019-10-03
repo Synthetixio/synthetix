@@ -9,11 +9,17 @@ The owner can be changed by a nomination process, where the nominated owner must
 
 <section-sep />
 
-## Inheritance Graph
+## Architecture
+
+---
+
+### Inheritance Graph
 
 <centered-image>
     ![Owned inheritance graph](../img/graphs/Owned.svg)
 </centered-image>
+
+---
 
 <section-sep />
 

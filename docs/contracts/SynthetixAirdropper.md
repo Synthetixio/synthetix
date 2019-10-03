@@ -15,11 +15,17 @@ Each fee period, the [`RewardsDistribution`](RewardsDistribution.md) contract se
 
 <section-sep />
 
-## Inheritance Graph
+## Architecture
+
+---
+
+### Inheritance Graph
 
 <centered-image>
     ![SynthetixAirdropper inheritance graph](../img/graphs/SynthetixAirdropper.svg)
 </centered-image>
+
+---
 
 <section-sep />
 

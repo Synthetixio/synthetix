@@ -8,17 +8,23 @@ A small utility contract that augments the SNX escrow contract to allow extracti
 
 <section-sep />
 
-## Inheritance Graph
+## Architecture
+
+---
+
+### Inheritance Graph
 
 <centered-image>
     ![EscrowChecker inheritance graph](../img/graphs/EscrowChecker.svg)
 </centered-image>
 
-<section-sep />
+---
 
-## Related Contracts
+### Related Contracts
 
 * [SynthetixEscrow](SynthetixEscrow.md)
+
+---
 
 <section-sep />
 

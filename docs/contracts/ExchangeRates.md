@@ -14,15 +14,19 @@ This does not turn off any functionality in the exchange rate contract, but is u
 
 <section-sep />
 
-## Inheritance Graph
+## Architecture
+
+---
+
+### Inheritance Graph
 
 <centered-image>
     ![ExchangeRates inheritance graph](../img/graphs/ExchangeRates.svg)
 </centered-image>
 
-<section-sep />
+---
 
-## Related Contracts
+### Related Contracts
 
 <centered-image>
     ![ExchangeRates architecture graph](../img/graphs/ExchangeRates-architecture.svg)
@@ -32,12 +36,14 @@ This does not turn off any functionality in the exchange rate contract, but is u
 * [`Synthetix`](Synthetix.md): the value of tokens is used to in order to facilitate exchange between them, to compute the `XDR` value of minted tokens for the [debt ledger](SynthetixState.md#debtledger), and to ensure exchanges cannot occur while price updates and being made or if a particular exchange rate is stale.
 * [`Arbrewarder`](ArbRewarder.md): The ArbRewarder must know the current SNX/ETH price so that arbitrage is accurate.
 
-<section-sep />
+---
 
-## Libraries
+### Libraries
 
 * [`SafeMath`](SafeMath.md) for `uint`
 * [`SafeDecimalMath`](SafeDecimalMathmd) for `uint`
+
+---
 
 <section-sep />
 

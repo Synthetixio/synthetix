@@ -19,15 +19,23 @@
 
 **Source:** [Synthetix.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/Synthetix.sol)
 
-## Inheritance Graph
+<section-sep />
+
+## Architecture
+
+---
+
+### Inheritance Graph
 
 <centered-image>
     ![Synthetix inheritance graph](../img/graphs/Synthetix.svg)
 </centered-image>
 
-## Related Contracts
+---
 
-### Referenced
+### Related Contracts
+
+#### Referenced
 
 * Synth
 * FeePool
@@ -38,7 +46,11 @@
 * SynthetixState
 * SupplySchedule
 
-### Referencing
+#### Referencing
+
+---
+
+<section-sep />
 
 ## Variables
 

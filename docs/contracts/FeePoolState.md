@@ -17,7 +17,11 @@ See [`FeePool.feesByPeriod`](FeePool.md#feesbyperiod) and [`FeePool.effectiveDeb
 
 <section-sep />
 
-## Inheritance Graph
+## Architecture
+
+---
+
+### Inheritance Graph
 
 <centered-image>
     ![FeePoolState inheritance graph](../img/graphs/FeePoolState.svg)
@@ -26,18 +30,20 @@ See [`FeePool.feesByPeriod`](FeePool.md#feesbyperiod) and [`FeePool.effectiveDeb
 !!! note
     Although this contract is called FeePoolState, be aware that it does not inherit from the [`State`](State.md) contract.
 
-<section-sep />
+---
 
-## Libraries
+### Related Contracts
+
+* <>[FeePool](FeePool.md)
+
+---
+
+### Libraries
 
 * [`SafeDecimalMath`](SafeDecimalMath.md) for `uint`
 * [`SafeMath`](SafeMath.md) for `uint`
 
-<section-sep />
-
-## Related Contracts
-
-* <>[FeePool](FeePool.md)
+---
 
 <section-sep />
 

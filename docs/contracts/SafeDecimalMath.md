@@ -20,15 +20,23 @@ In Synthetix the high precision numbers are used for dealing with the [debt ledg
 
 <section-sep />
 
-## Inheritance Graph
+## Architecture
+
+---
+
+### Inheritance Graph
 
 <centered-image>
     ![SafeDecimalMath inheritance graph](../img/graphs/SafeDecimalMath.svg)
 </centered-image>
 
-## Libraries
+---
+
+### Libraries
 
 * [SafeMath](SafeMath.md) for `uint`
+
+---
 
 <section-sep />
 

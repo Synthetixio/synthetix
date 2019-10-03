@@ -8,11 +8,17 @@ An external state contract to hold ERC20 balances and allowances. This operates 
 
 <section-sep />
 
-## Inheritance Graph
+## Architecture
+
+---
+
+### Inheritance Graph
 
 <centered-image>
     ![TokenState inheritance graph](../img/graphs/TokenState.svg)
 </centered-image>
+
+---
 
 <section-sep />
 

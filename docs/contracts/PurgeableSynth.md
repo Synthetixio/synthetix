@@ -10,23 +10,29 @@ Purgeable synths were introduced by [SIP-3](https://github.com/Synthetixio/SIPs/
 
 <section-sep />
 
-## Inheritance Graph
+## Architecture
+
+---
+
+### Inheritance Graph
 
 <centered-image>
     ![PurgeableSynth inheritance graph](../img/graphs/PurgeableSynth.svg)
 </centered-image>
 
-<section-sep />
+---
 
-## Related Contracts
+### Related Contracts
 
 * [`ExchangeRates`](ExchangeRates.md)
 
-<section-sep />
+---
 
-## Libraries
+### Libraries
 
 * [`SafeDecimalMath`](SafeDecimalMath.md) for `uint`
+
+---
 
 <section-sep />
 

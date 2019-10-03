@@ -14,22 +14,32 @@ Incentivising activities other than staking was first trialed with UniSwap, whic
 
 <section-sep />
 
-## Inheritance Graph
+## Architecture
+
+---
+
+### Inheritance Graph
 
 <centered-image>
     ![RewardsDistribution inheritance graph](../img/graphs/RewardsDistribution.svg)
 </centered-image>
 
-## Libraries
+---
 
-* [SafeMath](SafeMath.md) for uint
-* [SafeDecimalMath](SafeDecimalMath.md) for uint
-
-## Related Contracts
+### Related Contracts
 
 * \>[FeePoolProxy](Proxy.md)
 * \>[RewardEscrow](RewardEscrow.md)
 * \>[SynthetixProxy](Proxy.md)
+
+---
+
+### Libraries
+
+* [SafeMath](SafeMath.md) for uint
+* [SafeDecimalMath](SafeDecimalMath.md) for uint
+
+---
 
 <section-sep />
 

@@ -8,11 +8,17 @@ This contract allows certain functions within inheriting contracts to only opera
 
 <section-sep />
 
-## Inheritance Graph
+## Architecture
+
+---
+
+### Inheritance Graph
 
 <centered-image>
     ![LimitedSetup inheritance graph](../img/graphs/LimitedSetup.svg)
 </centered-image>
+
+---
 
 <section-sep />
 

@@ -22,24 +22,30 @@ Minting is performed in increments of a week whenever [`updateMintValues`](#upda
 
 <section-sep />
 
-## Inheritance Graph
+## Architecture
+
+---
+
+### Inheritance Graph
 
 <centered-image>
     ![SupplySchedule inheritance graph](../img/graphs/SupplySchedule.svg)
 </centered-image>
 
-<section-sep />
+---
 
-## Related Contracts
+### Related Contracts
 
 * <>[Synthetix](Synthetix.md)
 
-<section-sep />
+---
 
-## Libraries
+### Libraries
 
 * [`SafeMath`](SafeMath.md) for `uint`
 * [`SafeDecimalMath`](SafeDecimalMath.md) for `uint`
+
+---
 
 <section-sep />
 

@@ -11,11 +11,17 @@ Allows inheriting contracts to call an ERC223 token fallback function of an exte
 
 <section-sep />
 
-## Inheritance Graph
+## Architecture
+
+---
+
+### Inheritance Graph
 
 <centered-image>
     ![TokenFallbackCaller inheritance graph](../img/graphs/TokenFallbackCaller.svg)
 </centered-image>
+
+---
 
 <section-sep />
 

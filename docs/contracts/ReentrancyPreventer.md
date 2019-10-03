@@ -10,11 +10,17 @@ The dangers of reentrant function calls and various solutions to are discussed f
 
 <section-sep />
 
-## Inheritance Graph
+## Architecture
+
+---
+
+### Inheritance Graph
 
 <centered-image>
     ![ReentrancyPreventer inheritance graph](../img/graphs/ReentrancyPreventer.svg)
 </centered-image>
+
+---
 
 <section-sep />
 

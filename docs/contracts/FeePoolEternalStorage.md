@@ -10,17 +10,21 @@ This contract is just wrapper around [EternalStorage](EternalStorage.md) with a 
 
 <section-sep />
 
-## Inheritance Graph
+## Architecture
+
+---
+
+### Inheritance Graph
 
 <centered-image>
     ![FeePoolEternalStorage inheritance graph](../img/graphs/FeePoolEternalStorage.svg)
 </centered-image>
 
+---
+
 <section-sep />
 
 ## Variables
-
----
 
 ### `LAST_FEE_WITHDRAWAL`
 

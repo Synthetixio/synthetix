@@ -11,11 +11,17 @@ This contract can support two proxies simultaneously. Events can be emitted inde
 
 <section-sep />
 
-## Inheritance Graph
+## Architecture
+
+---
+
+### Inheritance Graph
 
 <centered-image>
     ![Proxyable inheritance graph](../img/graphs/Proxyable.svg)
 </centered-image>
+
+---
 
 <section-sep />
 

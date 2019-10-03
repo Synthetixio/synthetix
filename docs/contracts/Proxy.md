@@ -43,15 +43,23 @@ Finally, if the target contract needs to transfer ether around, then it will be 
 
 <section-sep />
 
-## Inheritance Graph
+## Architecture
+
+---
+
+### Inheritance Graph
 
 <centered-image>
     ![Proxy inheritance graph](../img/graphs/Proxy.svg)
 </centered-image>
 
+---
+
 ### Related Contracts
 
 * [Proxyable](Proxyable.md)
+
+---
 
 <section-sep />
 

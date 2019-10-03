@@ -8,11 +8,17 @@ SelfDestructible allows an inheriting contract to be destroyed by its owner, who
 
 <section-sep />
 
-## Inheritance Graph
+## Architecture
+
+---
+
+### Inheritance Graph
 
 <centered-image>
     ![SelfDestructible inheritance graph](../img/graphs/SelfDestructible.svg)
 </centered-image>
+
+---
 
 <section-sep />
 

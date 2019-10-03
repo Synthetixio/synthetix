@@ -10,11 +10,17 @@ This is designed to allow behaviour to be decoupled from storage so that upgrade
 
 <section-sep />
 
-## Inheritance Graph
+## Architecture
+
+---
+
+### Inheritance Graph
 
 <centered-image>
     ![State inheritance graph](../img/graphs/State.svg)
 </centered-image>
+
+---
 
 <section-sep />
 

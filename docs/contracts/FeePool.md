@@ -54,7 +54,7 @@ This contract was updated as a part of [SIP-4](https://github.com/Synthetixio/SI
 
 ---
 
-### Inheritance
+### Inheritance Graph
 
 <centered-image>
     ![FeePool inheritance graph](../img/graphs/FeePool.svg)

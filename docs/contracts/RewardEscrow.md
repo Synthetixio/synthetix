@@ -8,24 +8,30 @@ The logic of RewardEscrow is derived from the [SynthetixEscrow](SynthetixEscrow.
 
 <section-sep />
 
-## Inheritance Graph
+## Architecture
+
+---
+
+### Inheritance Graph
 
 <centered-image>
     ![RewardEscrow inheritance graph](../img/graphs/RewardEscrow.svg)
 </centered-image>
 
-<section-sep />
+---
 
-## Libraries
-
-* [`SafeMath`](SafeMath.md) for `uint`
-
-<section-sep />
-
-## Related Contracts
+### Related Contracts
 
 * <>[Synthetix](Synthetix.md)
 * <>[FeePool](FeePool.md)
+
+---
+
+### Libraries
+
+* [`SafeMath`](SafeMath.md) for `uint`
+
+---
 
 <section-sep />
 

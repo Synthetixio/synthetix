@@ -14,11 +14,17 @@ Each type of variable has its own mapping, along with getters and setters. As th
 
 <section-sep />
 
-## Inheritance Graph
+## Architecture
+
+---
+
+### Inheritance Graph
 
 <centered-image>
     ![EternalStorage inheritance graph](../img/graphs/EternalStorage.svg)
 </centered-image>
+
+---
 
 <section-sep />
 

@@ -13,11 +13,17 @@ In principle it is generic, as the approver just marks a number of delegates as 
 
 <section-sep />
 
-## Inheritance Graph
+## Architecture
+
+---
+
+### Inheritance Graph
 
 <centered-image>
     ![DelegateApprovals inheritance graph](../img/graphs/DelegateApprovals.svg)
 </centered-image>
+
+---
 
 <section-sep />
 
