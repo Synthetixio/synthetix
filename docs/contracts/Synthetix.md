@@ -45,38 +45,206 @@
 
 ## Variables
 
+---
+
+### `availableSynths`
+
 * `availableSynths`: List of the Synths useable within the system. Used to compute the total synth supply.
+
+---
+
+### `synths`
+
 * `synths`: A mapping from currency keys (three letter descriptors) to synth token contract addresses.
+
+---
+
+### `feePool`
+
 * `feePool`: TODO
+
+---
+
+### `escrow`
+
 * `escrow`: TODO
+
+---
+
+### `rewardEscrow`
+
 * `rewardEscrow`: TODO
+
+---
+
+### `exchangeRates`
+
 * `exchangeRates`: TODO
+
+---
+
+### `synthetixState`
+
 * `synthetixState`: TODO
+
+---
+
+### `supplySchedule`
+
 * `supplySchedule`: TODO
+
+---
+
+### `rewardsDistribution`
+
+* `rewardsDistribution`: TODO
+
+---
+
+### `protectionCircuit`
+
 * `protectionCircuit`: TODO
+
+---
+
+### `TOKEN_NAME`
+
+TODO
+
+---
+
+### `TOKEN_SYMBOL`
+
+TODO
+
+---
+
+### `DECIMALS`
+
+TODO
+
+---
+
+### `exchangeEnabled`
+
 * `exchangeEnabled`: TODO
+
+---
+
+<section-sep />
 
 ## Functions
 
+---
+
+### `setFeePool`
+
 * `setFeePool(IfeePool _feePool)`: Callable only by the owner; allows the fee pool contract address to be set.
+
+---
+
+### `setExchangeRates`
+
 * `setExchangeRates(ExchangeRates _exchangeRates)`: Callable only by the owner; allows the exchange rate contract address to be set.
+
+---
+
+### `setProtectionCircuit`
+
 * `setProtectionCircuit(bool _activated)`: Callable only by the oracle address; allows the protection circuit to be [de]activated.
+
+---
+
+### `setExchangeEnabled`
+
 * `setExchangeEnabled(bool _exchangeEnabled)`: Callable only by the owner; allows exchanging between synth flavours to be disabled.
+
+---
+
+### `addSynth`
+
 * `addSynth(Synth synth)`: Callable only by the owner. Requires that the new synth's currency key is unique. Adds the new flavour to available synths.
+
+---
+
+### `removeSynth`
+
 * `removeSynth(bytes4 currencyKey)`: Callable only by the owner. Requires that the synth exists, and that it has no supply. The XDR synth is not removeable (TODO: Does the system need protection against, e.g. sUSD being removed?).
+
+---
+
+### `effectiveValue`
+
 * `effectiveValue(bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey)`: Just calls out to `ExchangeRates.effectiveValue`. Allows converting between currencies at current prices.
+
+---
+
+### `totalIssuedSynths`
+
 * `totalIssuedSynths(bytes4 currencyKey)`: Returns the total value of Synths in the system, priced in terms of the given currency. Requires no exchange rate to be stale. Computed as $\sum_c\frac{{price_c \times supply_c}}{price_{denom}}$. Optimisations: Checks that currencyKey is not stale in the function modifier, then later requires that no rate is stale in the function body; the modifier can be eliminated. Could hoist the division by `currencyRate` out of the loop. Two indexes into the array, `availableSynths[i]`.
+
+---
+
+### `availableCurrencyKeys`
+
 * `availableCurrencyKeys()`: Returns `s.currencyKey()` for each Synth `s`.
+
+---
+
+### `availableSynthCount`
+
 * `availableSynthCount()`: Simply `availableSynths.length`.
+
+---
+
+### `transfer`
+
 * `transfer(address to, uint value)`: ERC20 transfer, calls the ERC223 version below.
+
 * `transfer(address to, uint value, bytes data)`: ERC223 transfer. Requires the sending account to have sufficient unlocked balance. Calls the internal `_transfer_byProxy` function.
+
+---
+
+### `transferFrom`
+
 * `transferFrom(address from, address to, uint value)`: ERC20 transferFrom function. Calls the ERC223 version below.
+
 * `transferFrom(address from, address to, uint value, bytes data)`: Requires the sending account to have sufficient unlocked balance. Calls the internal `_transferFrom_byProxy` function.
+
+---
+
+### `exchange`
+
 * `exchange(bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey, address destinationAddress)`: Exhcanges one synth flavour for an equivalent value of another. Checks if `protectionCircuit` is true, then burns the synths with `_internalLiquidation` if so. Otherwise it uses the `_internalExchange` function (with a fee being charged). Requires the source and destination synths to be distinct, and a non-zero value to be converted.
+
+---
+
+### `synthInitiatedExchange`
+
 * `synthInitiatedExchange(address from, bytes4 sourceCurrencyKey, sourceAmount, bytes4 destinationCurrencyKey, address destinationAddress)`: Used to allow a synth recipient to receive a transfer in their preferred currency rather than in the source currency. Only callable by Synths. Uses `_internalExchange` internally, but without charging a fee. NOTE: if the transfer fee rate is 0, then this allows free conversions?... TODO: Check this.
+
+---
+
+### `synthInitiatedFeePayment`
+
 * `synthInitiatedFeePayment(address from, bytes4 sourceCurrencyKey, uint sourceAmount)`: Called by synths to send transfer fees to the fee pool. Only callable by synths. In practice, this is a NOOP because transfer fee rates are 0. Uses `_internalExchange` internally to convert the fee to XDRs.
+
+---
+
+### `_internalExchange`
+
 * `_internalExchange(address from, bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey, address destinationAddress, bool chargeFee)`: Internal function, and disallows exchanges out of the fee address. Deactivated if the `exchangeEnabled` is false. Deactivated if the ExchangeRates contract's price is updating. Disallows transfers to the zero address and to the synthetix contract or its proxy. First burns the source amount from the `from` balance (which also checks for sufficient balance). Then converts the quantities with the latest exchange rates by asking the ExchangeRates contract. Then computes a fee if `chargeFee` is true, by asking the FeePool contract the correct quantity. Then issues synths in the correct quantity, minus the fee, to the destination address. Then pays the fee into the fee pool in XDRs, performing another currency conversion here using `effectiveValue` and then issuing directly into the pool. Triggers ERC223 token fallback if necessary. Finally, emits an exchange event.
+
+---
+
+### `_internalLiquidation`
+
 * `_internalLiquidation(address from, bytes4 sourceCurrencyKey, uint sourceAmount)`: Only used once, just burns the given quantity of the specified token from the `from` address. I would probably inline this and eliminate the function.
+
+---
+
+### `_addToDebtRegister`
+
 * `_addToDebtRegister(bytes4 currencyKey, uint amount)`: Whenever synths are issued, computes the factor the issuance changes the overall supply by and appends it to the list of such deltas in synthetixState.
 
 $$
@@ -116,13 +284,52 @@ $$
 
 So a given debt ledger entry is the product of the debt deltas, and the division of one debt ledger entry by another is the cumulative debt delta movement between those two debt ledger entries.
 
+---
+
+### `issueSynths`
+
 * `issueSynths(bytes4 currencyKey, uint amount)`: MIGRATE
+
+---
+
+### `issueMaxSynths`
+
 * `issueMaxSynths(bytes4 currencyKey)`: MIGRATE
+
+---
+
+### `burnSynths`
+
 * `burnSynths(bytes4 currencyKey, uint amount)`: MIGRATE
+
+---
+
+### `_appendAccountIssuanceRecord`
+
 * `_appendAccountIssuanceRecord()`: MIGRATE
+
+---
+
+### `_removeFromDebtRegister`
+
 * `_removeFromDebtRegister(uint amount)`: MIGRATE
+
+---
+
+### `maxIssuableSynths`
+
 * `maxIssuableSynths(address issuer, bytes4 currencyKey)`: The maximum number of a given synth that is issuable against the issuer's collateral. Ignores whatever they have already issued. This is simply `collateral(issuer) * issuanceRatio`, priced in the given currency.
+
+---
+
+### `collateralisationRatio`
+
 * `collateralisationRatio(address issuer)`: Just `debtBalanceOf(issuer) / collateral(issuer)`, valued in terms of SNX. That is, it is the ratio of the value of Synths they have issued to the value of all the SNX they own. Under ideal conditions this should equal the global issuance ratio, and issuers are incentivised to keep their collateralisation ratios close to the issuance ratio by the fees they are able to claim.
+
+---
+
+### `debtBalanceOf`
+
 * `debtBalanceOf(address issuer, bytes4 currencyKey)`: Reports the quantity of a given Synth/Currency (actually anything that the oracle has a price for) required to free up all of this user's SNX. This is computed as their fraction of total system ownership at the time they issued, multiplied by the ratio between the most recent debt ledger entry and the entry at the time they issued, multiplied by the current total system value. i.e. it works adjusts their fraction depending on how the price and supply have moved since they issued. They owe a larger fraction of the total if the number of synths goes down. TODO: What about price? Investigate this in the context of a single currency.
 
 $$
@@ -134,11 +341,40 @@ tsv \text{: totalSystemValue - the sum of price times supply over all Synth flav
 \text{Then the result is just } cdo \times tsv
 $$
 
+---
+
+### `remainingIssuableSynths`
+
 * `remainingIssuableSynths(address issuer, bytes4 currencyKey)`: The remaining synths this account can issue (of a given flavour). This is `max(0, maxIssuableSynths(issuer, currencyKey) - debtBalanceOf(issuer, currencyKey))`. not that the debt may exceed the max issuable synths, but the result is clamped.
+
+---
+
+### `collateral`
+
 * `collateral(address account)`: Returns the total SNX owned by the given account, locked and unlocked, escrowed and unescrowed. That is, it is computed as `balance(account) + escrowedBalance(account) + rewardBalance(account)`. That is, an account may issue Synths against both its active balance and its unclaimed escrowed funds.
+
+---
+
+### `transferableSynthetix`
+
 * `transferableSynthetix(address account)`: The quantity of SNX this account can transfer. Returns `max(0, balance(account) - debtBalanceOf(account) / issuanceRatio)`. NOTE: The dev note is misleading. It suggests that escrowed SNX are locked first when issuing, but that this is not relevant in the current function, because escrowed SNX are not transferable. But "locked" is just a property of whether SNX can be transferred, and is *only* relevant within the `transferableSynthetix` function. Compare with the previous logic in the [1.0.1 Havven contract](https://github.com/Synthetixio/synthetix/blob/b30191ef7bae6821a1308acaa9d0728f69204da5/contracts/Havven.sol#L717). The functionality has been simplified; the docstring should indicate now that unescrowed SNX are locked first. OPTIMISATION: This function checks that the SNX price is not stale, but this is unnecessary, since it is checked inside the call to `totalIssuedSynths` within `debtBalanceOf`.
+
+---
+
+### `mint`
+
 * `mint()`: MIGRATE
+
+---
+
+<section-sep />
 
 ## Events
 
+---
+
+### `SynthExchange`
+
 * `SynthExchange(address indexed account, bytes4 fromCurrencyKey, uint256 fromAmount, bytes4 toCurrencyKey,  uint256 toAmount, address toAddress)`: Indicates that an exchange between two currencies has occurred, along with the source and destination addresses, currencies, and quantities.
+
+---
