@@ -5,24 +5,46 @@
 
 ## Description
 
+> Some kind of intro preamble here.
+
 **Old:** FeePool.sol: Understands fee information for Synthetix. As users transact, their fees are kept in 0xfeefeefee... and stored in XDRs. Allows users to claim fees they're entitled to.
 
 A contract for managing and claiming fees. Note that most logic related to of the transfer fee related logic is superfluous, as the transfer fee rate is 0.
 
+> Proxy and State Contracts
+
 Sits behind a proxy.
-
-* SIP-2: Eliminates fee penalty tiers and replaces them with a flat 100% penalty if above a target ratio.
-
-This contract was updated as a part of [SIP-4](https://github.com/Synthetixio/SIPs/blob/master/SIPS/sip-4.md). As the contract requires fees to roll over through the entire fee window before incentive changes are actually felt, the system is a little unresponsive. To combat this, the fee window was reduced from six weeks to three weeks, which reduced the lag time between user action and the rewards actually being withdrawable.
-
-!!! note
-    The SIP says that the fee window was reduced to two weeks, but the actual contract code sets it to three.
 
 !!! danger "Admin Function Events"
     Several admin functions should emit events, but they do not. Now that transfer fee logic has been removed, it may be possible to introduce these.
 
 !!! bug "Lingering Debug Events"
     `LogInt` and `LogAddress` events remain in the source code and should be removed as they are unused.
+
+### Exchange Fees
+
+> Exchange fees, the fee pool, and XDRs.
+
+### Inflationary Rewards
+
+> Rewards vs Fees, RewardsDistribution, and SupplySchedule
+
+### Fee Periods
+
+> Fee Periods, issuance and burning
+
+This contract was updated as a part of [SIP-4](https://github.com/Synthetixio/SIPs/blob/master/SIPS/sip-4.md). As the contract requires fees to roll over through the entire fee window before incentive changes are actually felt, the system is a little unresponsive. To combat this, the fee window was reduced from six weeks to three weeks, which reduced the lag time between user action and the rewards actually being withdrawable.
+
+!!! note
+    The SIP says that the fee window was reduced to two weeks, but the actual contract code sets it to three.
+
+### Claiming Fees
+
+> The process
+
+> Fee threshold and issuance vs collateralisation ratio.
+
+* SIP-2: Eliminates fee penalty tiers and replaces them with a flat 100% penalty if above a target ratio.
 
 **Source:** [FeePool.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/FeePool.sol)
 

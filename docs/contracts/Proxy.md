@@ -25,7 +25,7 @@ More elaborate data is kept in separate storage contracts that persist across mu
 
 This allows the proxy's target contract to be largely disposable. This structure looks something like the following:
 
-<inheritance-graph style='padding: 40px 0 60px 0'>
+<inheritance-graph>
     ![Proxy architecture graph](../img/graphs/Proxy-architecture.svg)
 </inheritance-graph>
 
