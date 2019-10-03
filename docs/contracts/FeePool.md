@@ -50,13 +50,19 @@ This contract was updated as a part of [SIP-4](https://github.com/Synthetixio/SI
 
 <section-sep />
 
-## Inheritance Graph
+## Architecture
+
+---
+
+### Inheritance
 
 <centered-image>
     ![FeePool inheritance graph](../img/graphs/FeePool.svg)
 </centered-image>
 
-## Related Contracts
+---
+
+### Related Contracts
 
 <centered-image>
     ![FeePool architecture graph](../img/graphs/FeePool-architecture.svg)
@@ -70,13 +76,17 @@ This contract was updated as a part of [SIP-4](https://github.com/Synthetixio/SI
 * [`FeePoolEternalStorage`](FeePoolEternalStorage): A storage contact that holds the last fee withdrawal time for each account.
 * [`DelegateApprovals`](DelegateApprovals): A storage contract containing addresses to which the right to withdraw fees has been delegated by another account, for example to allow hot wallets to withdraw fees.
 * [`RewardEscrow`](RewardEscrow.md): The contract into which inflationary SNX rewards are paid by the fee pool so that they can be escrowed for a year after being claimed.
-* [`RewardsDistribution`](RewardsDistribution.md): This contract distributes allocations from the inflationary supply to various recipients.
+* [`RewardsDistribution`](RewardsDistribution.md): This contract, in the guise of the [`rewardsAuthority`](#rewardsauthority), distributes allocations from the inflationary supply to various recipients.
 * [`Depot`](Depot.md): Allows users to exchange between Synths, SNX, and Ether. The Depot uses the fee pool to know what transfer fees were being incurred on its transfers, although the transfer fee is now nil.
 
-## Libraries
+---
+
+### Libraries
 
 * [SafeMath](SafeMath.md) for uint
 * [SafeDecimalMath](SafeDecimalMath.md) for uint
+
+---
 
 <section-sep />
 
