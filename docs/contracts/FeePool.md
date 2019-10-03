@@ -52,15 +52,15 @@ This contract was updated as a part of [SIP-4](https://github.com/Synthetixio/SI
 
 ## Inheritance Graph
 
-<inheritance-graph>
+<centered-image>
     ![FeePool inheritance graph](../img/graphs/FeePool.svg)
-</inheritance-graph>
+</centered-image>
 
 ## Related Contracts
 
-<inheritance-graph>
+<centered-image>
     ![FeePool architecture graph](../img/graphs/FeePool-architecture.svg)
-</inheritance-graph>
+</centered-image>
 
 * [`Proxy`](Proxy.md): The fee pool, being [`Proxyable`](Proxyable.md) sits behind a `CALL`-style proxy for upgradeability.
 * [`Synthetix`](Synthetix.md): The fee pool uses the main Synthetix contract to convert between flavours of synths when manipulating fees in XDRs or otherwise, and to retrieve account collateralisation ratios.

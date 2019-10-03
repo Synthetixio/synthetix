@@ -10,9 +10,9 @@ A small utility contract that augments the SNX escrow contract to allow extracti
 
 ## Inheritance Graph
 
-<inheritance-graph>
+<centered-image>
     ![EscrowChecker inheritance graph](../img/graphs/EscrowChecker.svg)
-</inheritance-graph>
+</centered-image>
 
 <section-sep />
 

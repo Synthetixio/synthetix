@@ -15,9 +15,9 @@ In principle it is generic, as the approver just marks a number of delegates as 
 
 ## Inheritance Graph
 
-<inheritance-graph>
+<centered-image>
     ![DelegateApprovals inheritance graph](../img/graphs/DelegateApprovals.svg)
-</inheritance-graph>
+</centered-image>
 
 <section-sep />
 

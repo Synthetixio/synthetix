@@ -22,9 +22,9 @@ In Synthetix the high precision numbers are used for dealing with the [debt ledg
 
 ## Inheritance Graph
 
-<inheritance-graph>
+<centered-image>
     ![SafeDecimalMath inheritance graph](../img/graphs/SafeDecimalMath.svg)
-</inheritance-graph>
+</centered-image>
 
 ## Libraries
 

@@ -10,9 +10,9 @@ The logic of RewardEscrow is derived from the [SynthetixEscrow](SynthetixEscrow.
 
 ## Inheritance Graph
 
-<inheritance-graph>
+<centered-image>
     ![RewardEscrow inheritance graph](../img/graphs/RewardEscrow.svg)
-</inheritance-graph>
+</centered-image>
 
 <section-sep />
 

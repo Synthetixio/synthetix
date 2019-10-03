@@ -17,9 +17,9 @@ The main [`Synthetix`](Synthetix.md) contract and all [`Synths`](Synth.md) are E
 
 ## Inheritance Graph
 
-<inheritance-graph>
+<centered-image>
     ![ExternStateToken inheritance graph](../img/graphs/ExternStateToken.svg)
-</inheritance-graph>
+</centered-image>
 
 <section-sep />
 

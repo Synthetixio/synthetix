@@ -51,9 +51,9 @@ See the [main synth notes](../../synths) for more information about how Synths f
 
 ## Inheritance Graph
 
-<inheritance-graph>
+<centered-image>
     ![Synth inheritance graph](../img/graphs/Synth.svg)
-</inheritance-graph>
+</centered-image>
 
 <section-sep />
 

@@ -24,9 +24,9 @@ Minting is performed in increments of a week whenever [`updateMintValues`](#upda
 
 ## Inheritance Graph
 
-<inheritance-graph>
+<centered-image>
     ![SupplySchedule inheritance graph](../img/graphs/SupplySchedule.svg)
-</inheritance-graph>
+</centered-image>
 
 <section-sep />
 

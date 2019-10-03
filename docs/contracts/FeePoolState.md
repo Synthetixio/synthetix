@@ -19,9 +19,9 @@ See [`FeePool.feesByPeriod`](FeePool.md#feesbyperiod) and [`FeePool.effectiveDeb
 
 ## Inheritance Graph
 
-<inheritance-graph>
+<centered-image>
     ![FeePoolState inheritance graph](../img/graphs/FeePoolState.svg)
-</inheritance-graph>
+</centered-image>
 
 !!! note
     Although this contract is called FeePoolState, be aware that it does not inherit from the [`State`](State.md) contract.

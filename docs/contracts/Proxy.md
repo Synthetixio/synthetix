@@ -25,9 +25,9 @@ More elaborate data is kept in separate storage contracts that persist across mu
 
 This allows the proxy's target contract to be largely disposable. This structure looks something like the following:
 
-<inheritance-graph>
+<centered-image>
     ![Proxy architecture graph](../img/graphs/Proxy-architecture.svg)
-</inheritance-graph>
+</centered-image>
 
 In this way the main contract defining the logic can be swapped out without replacing the proxy or state contracts. The user only ever communicates with the proxy and need not know any implementation details.
 This architecture also allows [multiple proxies](Proxyable.md#integrationproxy) with differing interfaces to be used simultaneously for a single underlying contract, though events will usually be emitted only from one of them. This feature is currently used by [`ProxyERC20`](ProxyERC20.md), which operates atop the [`Synthetix`](Synthetix.md) contract.
@@ -45,9 +45,9 @@ Finally, if the target contract needs to transfer ether around, then it will be 
 
 ## Inheritance Graph
 
-<inheritance-graph>
+<centered-image>
     ![Proxy inheritance graph](../img/graphs/Proxy.svg)
-</inheritance-graph>
+</centered-image>
 
 ### Related Contracts
 

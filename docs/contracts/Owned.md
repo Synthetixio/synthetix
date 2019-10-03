@@ -11,9 +11,9 @@ The owner can be changed by a nomination process, where the nominated owner must
 
 ## Inheritance Graph
 
-<inheritance-graph>
+<centered-image>
     ![Owned inheritance graph](../img/graphs/Owned.svg)
-</inheritance-graph>
+</centered-image>
 
 <section-sep />
 

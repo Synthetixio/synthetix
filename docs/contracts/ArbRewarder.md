@@ -20,9 +20,9 @@ Announcement Post: https://blog.synthetix.io/our-new-seth-snx-arb-contract-is-no
 
 ## Inheritance Graph
 
-<inheritance-graph>
+<centered-image>
     ![ArbRewarder inheritance graph](../img/graphs/ArbRewarder.svg)
-</inheritance-graph>
+</centered-image>
 
 ## Libraries
 

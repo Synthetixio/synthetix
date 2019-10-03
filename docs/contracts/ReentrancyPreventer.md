@@ -12,9 +12,9 @@ The dangers of reentrant function calls and various solutions to are discussed f
 
 ## Inheritance Graph
 
-<inheritance-graph>
+<centered-image>
     ![ReentrancyPreventer inheritance graph](../img/graphs/ReentrancyPreventer.svg)
-</inheritance-graph>
+</centered-image>
 
 <section-sep />
 

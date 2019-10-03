@@ -16,9 +16,9 @@ Each type of variable has its own mapping, along with getters and setters. As th
 
 ## Inheritance Graph
 
-<inheritance-graph>
+<centered-image>
     ![EternalStorage inheritance graph](../img/graphs/EternalStorage.svg)
-</inheritance-graph>
+</centered-image>
 
 <section-sep />
 

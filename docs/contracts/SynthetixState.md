@@ -15,9 +15,9 @@ Upon system updates, this contract will continue to exist, while the Synthetix l
 
 ## Inheritance Graph
 
-<inheritance-graph>
+<centered-image>
     ![SynthetixState inheritance graph](../img/graphs/SynthetixState.svg)
-</inheritance-graph>
+</centered-image>
 
 <section-sep />
 

@@ -16,9 +16,9 @@ Incentivising activities other than staking was first trialed with UniSwap, whic
 
 ## Inheritance Graph
 
-<inheritance-graph>
+<centered-image>
     ![RewardsDistribution inheritance graph](../img/graphs/RewardsDistribution.svg)
-</inheritance-graph>
+</centered-image>
 
 ## Libraries
 

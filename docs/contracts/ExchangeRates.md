@@ -16,17 +16,17 @@ This does not turn off any functionality in the exchange rate contract, but is u
 
 ## Inheritance Graph
 
-<inheritance-graph>
+<centered-image>
     ![ExchangeRates inheritance graph](../img/graphs/ExchangeRates.svg)
-</inheritance-graph>
+</centered-image>
 
 <section-sep />
 
 ## Related Contracts
 
-<inheritance-graph>
+<centered-image>
     ![ExchangeRates architecture graph](../img/graphs/ExchangeRates-architecture.svg)
-</inheritance-graph>
+</centered-image>
 
 * [`PurgeableSynth`](PurgeableSynth.md): exchange rates are used to determine if the total token value is below the purge threshold.
 * [`Synthetix`](Synthetix.md): the value of tokens is used to in order to facilitate exchange between them, to compute the `XDR` value of minted tokens for the [debt ledger](SynthetixState.md#debtledger), and to ensure exchanges cannot occur while price updates and being made or if a particular exchange rate is stale.

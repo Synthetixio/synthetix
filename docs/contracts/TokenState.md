@@ -10,9 +10,9 @@ An external state contract to hold ERC20 balances and allowances. This operates 
 
 ## Inheritance Graph
 
-<inheritance-graph>
+<centered-image>
     ![TokenState inheritance graph](../img/graphs/TokenState.svg)
-</inheritance-graph>
+</centered-image>
 
 <section-sep />
 
