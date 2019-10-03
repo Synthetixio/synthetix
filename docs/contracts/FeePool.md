@@ -31,20 +31,25 @@ This contract was updated as a part of [SIP-4](https://github.com/Synthetixio/SI
 ## Inheritance Graph
 
 <inheritance-graph>
-    ![graph](../img/graphs/FeePool.svg)
+    ![FeePool inheritance graph](../img/graphs/FeePool.svg)
 </inheritance-graph>
 
 ## Related Contracts
 
-* \<\>[Proxy](Proxy.md) (through `Proxyable`)
-* \<\>[RewardEscrow](RewardEscrow.md)
-* \<\>[FeePoolEternalStorage](FeePoolEternalStorage.md) (back link: `State.associatedContract`)
-* \<\>[FeePoolState](FeePoolState.md)
-* \<\>[DelegateApprovals](DelegateApprovals.md) (back link: `State.associatedContract`)
-* \<\>[Synth](Synth.md) (Note that the forward link only exists transiently in the `_payFees` function: a link to `XDR`s is always instantiated, in order to burn from the fee pool, and a link per destination currency to be minted)
-* \<\>[Synthetix](Synthetix.md)
-* \>[SynthetixState](SynthetixState.md)
-* \<[Depot](Depot.md)
+<inheritance-graph>
+    ![FeePool architecture graph](../img/graphs/FeePool-architecture.svg)
+</inheritance-graph>
+
+* [`Proxy`](Proxy.md): The fee pool, being [`Proxyable`](Proxyable.md) sits behind a `CALL`-style proxy for upgradeability.
+* [`Synthetix`](Synthetix.md): The fee pool uses the main Synthetix contract to convert between flavours of synths when manipulating fees in XDRs or otherwise, and to retrieve account collateralisation ratios.
+* [`SynthetixState`](SynthetixState.md): The fee pool retrieves the global issuance ratio, and queries the debt ledger directly from the Synthetix state contract.
+* [`Synth`](Synth.md): The fee pool, retrieving their addresses from the Synthetix contract, directly burns and issues synths when transferring fees and converting between flavours. The address of the XDR Synth contract is of particular importance, since fees are denominated in XDRs when they are sitting in the pool, but paid out in a flavour of the user's choice. Synths themselves do not know the fee pool address directly, but ask the fee pool's proxy for its target.
+* [`FeePoolState`](FeePoolState.md): The fee pool state contract holds the details of each user's most recent issuance events: when they issued and burnt synths, and their value.
+* [`FeePoolEternalStorage`](FeePoolEternalStorage): A storage contact that holds the last fee withdrawal time for each account.
+* [`DelegateApprovals`](DelegateApprovals): A storage contract containing addresses to which the right to withdraw fees has been delegated by another account, for example to allow hot wallets to withdraw fees.
+* [`RewardEscrow`](RewardEscrow.md): The contract into which inflationary SNX rewards are paid by the fee pool so that they can be escrowed for a year after being claimed.
+* [`RewardsDistribution`](RewardsDistribution.md): This contract distributes allocations from the inflationary supply to various recipients.
+* [`Depot`](Depot.md): Allows users to exchange between Synths, SNX, and Ether. The Depot uses the fee pool to know what transfer fees were being incurred on its transfers, although the transfer fee is now nil.
 
 ## Libraries
 

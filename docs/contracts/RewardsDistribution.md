@@ -80,7 +80,7 @@ The address of the [`RewardEscrow`](RewardEscrow.md), where all remaining tokens
 
 ### `feePoolProxy`
 
-The address of the [`FeePool`](FeePool.md) [`Proxy`](Proxy.md), which has to be informed how many fees it has left to distribute once distributions have been made.
+The address of the [`FeePool`](FeePool.md) [`Proxy`](Proxy.md), which has to be informed how many rewards it has left to distribute once distributions have been made.
 
 **Type:** `address public`
 
