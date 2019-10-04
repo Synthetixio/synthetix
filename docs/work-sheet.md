@@ -10,13 +10,14 @@
     * Reorder the sidebar headings.
     * Finish [Project Configuration](https://www.mkdocs.org/user-guide/configuration/). In particular the [nav layout](https://www.mkdocs.org/user-guide/configuration/#documentation-layout).
     * Look at [this `mkdocs.yml`](https://github.com/squidfunk/mkdocs-material/blob/master/mkdocs.yml) to see if we can do anything similar.
-    * Merge into core SNX repository and enable edit buttons. Add a note to the Intro page that the docs can be edited by anyone with a PR.
+    * Merge into core SNX repository and enable edit buttons. Add a note to the Intro page that the docs can be edited by anyone with a PR. Or perhaps a page on contributing to the docs with a guide and this list of possible things to do.
     * Better colour for details sections
     * Syntax highlighting for Solidity. https://squidfunk.github.io/mkdocs-material/extensions/codehilite/ https://github.com/maurelian/best-practices-docs/blob/master/mkdocs.yml
     * More detailed function signature breakdown including argument descriptions etc.
     * Expand all/Collapse all button for details panels.
     * See if ambiguous anchor links such as those in DelegateApprovals and SelfDestructible can be disambiguated.
     * Inheritance graph, contract interaction diagram, and libraries in tabbed details panel. https://github.com/squidfunk/mkdocs-material/issues/955
+    * Run aspell over everything.
 
 ??? "System Processes"
     * Synths and exchange
@@ -27,7 +28,7 @@
     * The fee pool, and fees vs inflationary rewards
     * Collat ratio targeting, and Collateralisation vs Issuance Ratios
     * Oracle
-    * The debt ledger
+    * The debt ledger: examine what occurs if relative movements in price/supply occur between currencies
     * System value flow
     * Smart contract architecture
     * [Contract publication](https://github.com/Synthetixio/synthetix/tree/master/publish)

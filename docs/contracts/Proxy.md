@@ -10,7 +10,7 @@ In Synthetix, this proxy typically operates in tandem with a [`Proxyable`](Proxy
 
 The [`Synthetix`](Synthetix.md), [`Synth`](Synth.md), and [`FeePool`](FeePool.md) contracts all exist behind proxies, which has allowed their behaviour to be substantially altered over time.
 
-This proxy provides two different operation modes, which can be switched between at any point.[^1]
+This proxy provides two different operation modes,[^1] which can be switched between at any point.
 
 [^1]: Specific descriptions of the behaviour of the `CALL` and `DELEGATECALL` EVM instructions can be found in the [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf).
 
@@ -177,7 +177,7 @@ Note that 0 is a valid argument for `numTopics`, which produces `LOG0`, an "even
 
     **Emits**
 
-    Any possible event.
+    This function can emit any possible event.
 
 ---
 

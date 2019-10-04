@@ -167,17 +167,18 @@ Allows the owner to set the address of the [`feePool`](FeePool.md) contract.
 
 ### `transfer`
 
-This is a pair of ERC20/ERC223 transfer functions. Their functionality is almost identical: providing both behaves as if the ERC223 `data` parameter is optional. If no `data` is provided then an empty buffer is passed internally.
+This is a pair of ERC20/ERC223 transfer functions. Their functionality is almost identical: providing both behaves almost like a single function with an optional ERC223 `data` parameter. If no `data` is provided then an empty buffer is passed internally.
+
+They are implemented based on [`ExternStateToken._transfer_byProxy`](ExternStateToken#_transfer_byproxy).
 
 !!! danger "Disabled Fee Functionality"
     If [`FeePool.transferFeeRate`](FeePool.md#transferfeerate) is non-zero, the recipient pays the fee, which is remitted to the [`FeePool`](FeePool.md) via [`Synthetix.synthInitiatedFeePayment`](Synthetix.md#synthinitiatedfeepayment), and receives the remaining [`FeePool.amountReceivedFromTransfer(value)`](FeePool.md#amountreceivedfromtransfer) tokens.
 
 ??? example "Details"
-    **Signature**
+    **Signatures**
 
-    `transfer(address to, uint value) public returns (bool)`
-
-    `transfer(address to, uint value, bytes data) public returns (bool)`
+    * `transfer(address to, uint value) public returns (bool)`
+    * `transfer(address to, uint value, bytes data) public returns (bool)`
 
     **Modifiers**
 
@@ -194,15 +195,16 @@ This is a pair of ERC20/ERC223 transfer functions. Their functionality is almost
 
 This is a pair of ERC20/ERC223 transferFrom functions. Their functionality is almost identical: providing both behaves as if the ERC223 `data` parameter is optional. If no `data` is provided then an empty buffer is passed internally.
 
+They are implemented based on [`ExternStateToken._transferFrom_byProxy`](ExternStateToken#_transferfrom_byproxy).
+
 !!! danger "Disabled Fee Functionality"
     If [`FeePool.transferFeeRate`](FeePool.md#transferfeerate) is non-zero, the recipient pays the fee, which is remitted to the [`FeePool`](FeePool.md) via [`Synthetix.synthInitiatedFeePayment`](Synthetix.md#synthinitiatedfeepayment), and receives the remaining [`FeePool.amountReceivedFromTransfer(value)`](FeePool.md#amountreceivedfromtransfer) tokens.
 
 ??? example "Details"
-    **Signature**
+    **Signatures**
 
-    `transferFrom(address from, address to, uint value) public returns (bool)`
-
-    `transfer(address from, address to, uint value, bytes data) public returns (bool)`
+    * `transferFrom(address from, address to, uint value) public returns (bool)`
+    * `transfer(address from, address to, uint value, bytes data) public returns (bool)`
 
     **Modifiers**
 

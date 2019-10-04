@@ -143,7 +143,7 @@ The number of years in the minting schedule.
 
 ### `schedules`
 
-An array holding the SNX minting schedule. This is initialised according to the schedule given in the [desription above](#description). `schedules[0]` is taken as the first year Synthetix operated, with the initial 100 million tokens already minted in this period, and `schedules[6]` being one past the end, with its `totalSupply` set to 0, which allows minting any left over supply from `schedules[5]`.
+An array holding the SNX minting schedule. This is initialised according to the schedule given in the [description above](#description). `schedules[0]` is taken as the first year Synthetix operated, with the initial 100 million tokens already minted in this period, and `schedules[6]` being one past the end, with its `totalSupply` set to 0, which allows minting any left over supply from `schedules[5]`.
 
 **Type:** `ScheduleData[INFLATION_SCHEDULES_LENGTH] public`
 
@@ -151,7 +151,7 @@ An array holding the SNX minting schedule. This is initialised according to the 
 
 ### `minterReward`
 
-Used as the quantity of SNX to reward the caller of [`Synthetix.mint`](Synthetix.md#mint), which ensures that the inflationary supply continues to be minted over time. Initialised to 200 SNX.
+Used as the quantity of SNX to reward the caller of [`Synthetix.mint`](Synthetix.md#mint), which incentivises users to continue minting the inflationary supply over time. Initialised to 200 SNX.
 
 **Type:** `uint public`
 

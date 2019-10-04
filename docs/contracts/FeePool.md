@@ -77,7 +77,7 @@ This contract was updated as a part of [SIP-4](https://github.com/Synthetixio/SI
 * [`DelegateApprovals`](DelegateApprovals): A storage contract containing addresses to which the right to withdraw fees has been delegated by another account, for example to allow hot wallets to withdraw fees.
 * [`RewardEscrow`](RewardEscrow.md): The contract into which inflationary SNX rewards are paid by the fee pool so that they can be escrowed for a year after being claimed.
 * [`RewardsDistribution`](RewardsDistribution.md): This contract, in the guise of the [`rewardsAuthority`](#rewardsauthority), distributes allocations from the inflationary supply to various recipients.
-* [`Depot`](Depot.md): Allows users to exchange between Synths, SNX, and Ether. The Depot uses the fee pool to know what transfer fees were being incurred on its transfers, although the transfer fee is now nil.
+* [`Depot`](Depot.md): Allows users to exchange between Synths, SNX, and Ether. The Depot uses the fee pool to know what transfer fees were being incurred on its transfers, although the transfer fee has been nil since before [SIP-19](https://sips.synthetix.io/sips/sip-19).
 
 ---
 
@@ -543,7 +543,7 @@ The new fee period's [`feePeriodId`](#feeperiod) is the previous id incremented 
 
 The message sender claims their fees in the currency specified.
 
-This is equivalent to [`_claimFees(messageSender, currencyKey)`](#_claimFees).
+This is equivalent to [`_claimFees(messageSender, currencyKey)`](#_claimfees).
 
 ??? example "Details"
     **Signature**
@@ -560,7 +560,7 @@ This is equivalent to [`_claimFees(messageSender, currencyKey)`](#_claimFees).
 
 The message sender claims fees in a given currency for a specified address; the funds are remitted to that address, and not to the sender.
 
-This function first checks with the [`DelegateApprovals`](DelegateApprovals.md) contract that the sender is approved to claim fees on behalf of the specified address, but is otherwise equivalent to [`_claimFees(claimingForAddress, currencyKey)`](#_claimFees).
+This function first checks with the [`DelegateApprovals`](DelegateApprovals.md) contract that the sender is approved to claim fees on behalf of the specified address, but is otherwise equivalent to [`_claimFees(claimingForAddress, currencyKey)`](#_claimfees).
 
 ??? example "Details"
     **Signature**
@@ -581,7 +581,7 @@ This function first checks with the [`DelegateApprovals`](DelegateApprovals.md) 
 
 Claims fees and rewards owed to the specified address.
 
-The account's collateralisation ratio must be less than the [issuance ratio](SynthetixState.md#issuanceratio), plus the [target threshold](#target_threshold), as specified by the [`feesClaimable`](#feesclaimable) function. The quantity of fees and owed is computed by [`feesAvailable`](#feesavailable).
+The account's collateralisation ratio must be less than the [issuance ratio](SynthetixState.md#issuanceratio), plus the [target threshold](#target_threshold), as specified by the [`feesClaimable`](#feesclaimable) function. The quantity of fees and rewards owed is computed by [`feesAvailable`](#feesavailable).
 
 Upon invocation, this function updates the account's [last fee withdrawal time](#_setlastfeewithdrawal), and removes the claimed [fees](#_recordFeePayment) and [rewards](#_recordRewardPayment) from the pool.
 Fees are paid into the claiming address [in the specified currency](#_payFees), while the rewards are [escrowed](#_payRewards) on behalf of the claiming address in the [`RewardEscrow`](#rewardescrow) contract for one year.
@@ -989,7 +989,7 @@ Given entry and exit indices into the debt ledger, and a percentage of total deb
 If $\Delta_i$ is the value of the $i^{th}$ entry in the [debt ledger](SynthetixState.md#debtledger) and $\omega$ is the provided debt ownership percentage, then the result of this function is:
 
 $$
-\omega \frac{\Delta_{\text{exit}}}{\Delta_{\text{entry}}}
+\omega \frac{\Delta_\text{exit}}{\Delta_\text{entry}}
 $$
 
 See [`Synthetix._addToDebtRegister`](Synthetix.md#_addToDebtRegister) for details of the debt ownership percentage adjustment.
@@ -1150,7 +1150,7 @@ This event is emitted from the FeePool's [proxy](Proxy.md#_emit) with the `emitF
 
 ### `FeesClaimed`
 
-Records that an account [claimed](#_claimFees) the fees and rewards owed to them.
+Records that an account [claimed](#_claimfees) the fees and rewards owed to them.
 
 This event is emitted from the FeePool's [proxy](Proxy.md#_emit) with the `emitFeesClaimed` function.
 
