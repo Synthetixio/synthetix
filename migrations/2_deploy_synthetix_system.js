@@ -248,6 +248,12 @@ module.exports = async function(deployer, network, accounts) {
 	await rewardsDistribution.setAuthority(synthetix.address, { from: owner });
 	await rewardsDistribution.setSynthetixProxy(synthetixProxy.address, { from: owner });
 
+	// ----------------------
+	// Setup Gas Price Limit
+	// ----------------------
+	const gasLimit = web3.utils.toWei('25', 'gwei');
+	await synthetix.setGasPriceLimit(gasLimit, { from: oracle });
+
 	// ----------------
 	// Synths
 	// ----------------
@@ -280,6 +286,7 @@ module.exports = async function(deployer, network, accounts) {
 			currencyKey,
 			owner,
 			web3.utils.asciiToHex(currencyKey),
+			web3.utils.toWei('0'),
 			{ from: deployerAccount }
 		);
 

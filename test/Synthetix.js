@@ -187,6 +187,7 @@ contract('Synthetix', async accounts => {
 			'sXYZ123',
 			owner,
 			web3.utils.asciiToHex('sXYZ123'),
+			web3.utils.toWei('0'), // _totalSupply
 			{ from: deployerAccount }
 		);
 
@@ -213,6 +214,7 @@ contract('Synthetix', async accounts => {
 			'sXYZ123',
 			owner,
 			web3.utils.asciiToHex('sXYZ123'),
+			web3.utils.toWei('0'),
 			{ from: deployerAccount }
 		);
 
@@ -229,6 +231,7 @@ contract('Synthetix', async accounts => {
 			'sXYZ123',
 			owner,
 			web3.utils.asciiToHex('sXYZ123'),
+			web3.utils.toWei('0'),
 			{ from: deployerAccount }
 		);
 
@@ -246,6 +249,7 @@ contract('Synthetix', async accounts => {
 			'sXYZ123',
 			owner,
 			web3.utils.asciiToHex('sXYZ123'),
+			web3.utils.toWei('0'),
 			{ from: deployerAccount }
 		);
 
@@ -258,6 +262,7 @@ contract('Synthetix', async accounts => {
 			'sXYZ123',
 			owner,
 			web3.utils.asciiToHex('sXYZ123'),
+			web3.utils.toWei('0'),
 			{ from: deployerAccount }
 		);
 
@@ -2642,6 +2647,65 @@ contract('Synthetix', async accounts => {
 
 			// should revert as the mintable amount is 0
 			await assert.revert(synthetix.mint());
+		});
+	});
+
+	describe.only('exchange gas price limit', () => {
+		const amountIssued = toUnit('2000');
+		const gasPriceLimit = toUnit('25');
+
+		beforeEach(async () => {
+			// Give some SNX to account1
+			await synthetix.methods['transfer(address,uint256)'](account1, toUnit('300000'), {
+				from: owner,
+			});
+			// Issue
+			await synthetix.issueSynths(sUSD, amountIssued, { from: account1 });
+
+			// set gas limit on synthetix
+			await synthetix.setGasPriceLimit(gasPriceLimit, { from: oracle });
+		});
+
+		it('should revert a user if they try to send more gwei than gasLimit', async () => {
+			// Exchange sUSD to sAUD should revert if gasPrice is above limit
+			await assert.revert(
+				synthetix.exchange(sUSD, amountIssued, sAUD, account1, {
+					from: account1,
+					gasPrice: gasPriceLimit.add(web3.utils.toBN(100)),
+				})
+			);
+		});
+		it('should revert if oracle tries to set gasLimit to 0', async () => {
+			await assert.revert(
+				synthetix.setGasPriceLimit(0, {
+					from: oracle,
+				})
+			);
+		});
+		it('should allow a user to exchange if they set the gasPrice to match limit', async () => {
+			// Get the exchange fee in USD
+			const exchangeFeeUSD = await feePool.exchangeFeeIncurred(amountIssued);
+			const exchangeFeeXDR = await synthetix.effectiveValue(sUSD, exchangeFeeUSD, XDR);
+
+			// Exchange sUSD to sAUD
+			await synthetix.exchange(sUSD, amountIssued, sAUD, account1, {
+				from: account1,
+				gasPrice: gasPriceLimit,
+			});
+
+			// how much sAUD the user is supposed to get
+			const effectiveValue = await synthetix.effectiveValue(sUSD, amountIssued, sAUD);
+
+			// chargeFee = true so we need to minus the fees for this exchange
+			const effectiveValueMinusFees = await feePool.amountReceivedFromExchange(effectiveValue);
+
+			// Assert we have the correct AUD value - exchange fee
+			const sAUDBalance = await sAUDContract.balanceOf(account1);
+			assert.bnEqual(effectiveValueMinusFees, sAUDBalance);
+
+			// Assert we have the exchange fee to distribute
+			const feePeriodZero = await feePool.recentFeePeriods(0);
+			assert.bnEqual(exchangeFeeXDR, feePeriodZero.feesToDistribute);
 		});
 	});
 

@@ -5,6 +5,6 @@ module.exports = {
 		runs: 20000,
 	},
 	'FeePool.sol': {
-		runs: 2000,
+		runs: 1500,
 	},
 };
