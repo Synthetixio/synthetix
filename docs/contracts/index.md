@@ -135,3 +135,4 @@ Contract | Description
     * Sequence diagrams for complex inter-contract functions.
     * Mention inverse rates in the ExchangeRates description.
     * Ensure bytes4 is bytes32 in ExchangeRates, FeePool, PurgeableSynth, Synth, Synthetix as per SIP-17
+    * Propagate preconditions, events due to function composition.

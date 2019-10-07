@@ -68,7 +68,7 @@ This contract was updated as a part of [SIP-4](https://github.com/Synthetixio/SI
     ![FeePool architecture graph](../img/graphs/FeePool-architecture.svg)
 </centered-image>
 
-* [`Proxy`](Proxy.md): The fee pool, being [`Proxyable`](Proxyable.md) sits behind a `CALL`-style proxy for upgradeability.
+* [`Proxy`](Proxy.md): The fee pool, being [`Proxyable`](Proxyable.md), sits behind a `CALL`-style proxy for upgradeability.
 * [`Synthetix`](Synthetix.md): The fee pool uses the main Synthetix contract to convert between flavours of synths when manipulating fees in XDRs or otherwise, and to retrieve account collateralisation ratios.
 * [`SynthetixState`](SynthetixState.md): The fee pool retrieves the global issuance ratio, and queries the debt ledger directly from the Synthetix state contract.
 * [`Synth`](Synth.md): The fee pool, retrieving their addresses from the Synthetix contract, directly burns and issues synths when transferring fees and converting between flavours. The address of the XDR Synth contract is of particular importance, since fees are denominated in XDRs when they are sitting in the pool, but paid out in a flavour of the user's choice. Synths themselves do not know the fee pool address directly, but ask the fee pool's proxy for its target.
@@ -104,9 +104,9 @@ feePeriodId | `uint` | A serial id for fee periods which is incremented for each
 startingDebtIndex | `uint` | The length of [`SynthetixState.debtLedger`](SynthetixState.md#debtledger) at the time this fee period began.
 startTime | `uint` | The current timestamp when this fee period began.
 feesToDistribute | `uint` ([18 decimals](SafeDecimalMath.md)) | The total of fees to be distributed in this period, in XDRs. This increases when fees are collected in the current period or when unclaimed fees roll over from the oldest period to the second oldest. See [`feePaid`](#feepaid) and [`closeCurrentPeriod`](#closecurrentperiod).
-feesClaimed | `uint` ([18 decimals](SafeDecimalMath.md) | The number of fees that have already been claimed during this period.
-rewardsToDistribute | `uint` ([18 decimals](SafeDecimalMath.md) | The total of inflationary rewards to be distributed in this period, in SNX. This increases when new rewards are minted by [`Synthetix.mint`](Synthetix.md#mint)/[`rewardsMinted`](#rewardsminted), or when unclaimed rewards roll over from the oldest period to the second oldest ([`closeCurrentPeriod`](#closecurrentperiod)).
-rewardsClaimed | `uint` ([18 decimals](SafeDecimalMath.md) | The quantity of inflationary rewards that have already been claimed during this period.
+feesClaimed | `uint` ([18 decimals](SafeDecimalMath.md)) | The number of fees that have already been claimed during this period.
+rewardsToDistribute | `uint` ([18 decimals](SafeDecimalMath.md)) | The total of inflationary rewards to be distributed in this period, in SNX. This increases when new rewards are minted by [`Synthetix.mint`](Synthetix.md#mint)/[`rewardsMinted`](#rewardsminted), or when unclaimed rewards roll over from the oldest period to the second oldest ([`closeCurrentPeriod`](#closecurrentperiod)).
+rewardsClaimed | `uint` ([18 decimals](SafeDecimalMath.md)) | The quantity of inflationary rewards that have already been claimed during this period.
 
 ---
 

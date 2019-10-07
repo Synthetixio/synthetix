@@ -2,20 +2,34 @@
 
 ## Description
 
-!!! info "Work In Progress"
-    This still needs to be cleaned up and the rest of my notes migrated in.
+> Preamble
 
-!!! danger "Contract Header Out Of Date"
-    The average SNX balance computations described in the file docstring of this contract was correct for the sUSD-only system. The multicurrency version of Synthetix has made this obsolete and much of it should be deleted or rewritten.
+### SNX
 
-**Old:** Synthetix.sol: Has a list of Synths and understands issuance data for users to be able to mint and burn Synths.
+### Issuance and Burning of Synths
+
+### The Debt Ledger and Issuance Records
+
+### The Collateralisation and Issuance Ratios
+
+> transferableSynthetix
+
+### Synth Exchanges
+
+### Inflationary Supply
+
+### Front-running Protection
 
 [SIP-6](https://github.com/Synthetixio/SIPs/blob/master/SIPS/sip-6.md): Front-running protection: the oracle monitors activity for front-running. If it detects this, then the exchange fee rate is jacked up to 99% so that the front-runner's transaction is sucked up. Additionally, a user will be able to specify a fee rate above which their transaction will fail so that they don't get caught by the front running protection. Note: doesn't this protect the front-runners as well? UPDATED: the setProtectionCircuit function allows the oracle to target only particular transactions to be rejected.
 
 [SIP-7](https://github.com/Synthetixio/SIPs/blob/master/SIPS/sip-7.md): More front-running protection: exchange pausing; preventing changes while oracle updates are in progress; remove the destination param in an exchange so that they only go to the message sender.
 
-* Licence headers seem incorrect.
-* Check whether the file header is still accurate.
+### State Contract
+
+!!! bug "Contract Header Out Of Date"
+    The average SNX balance computations described in the file docstring of this contract was correct for the sUSD-only system. The multicurrency version of Synthetix has made this obsolete and much of it should be deleted or rewritten.
+
+**Old:** Synthetix.sol: Has a list of Synths and understands issuance data for users to be able to mint and burn Synths.
 
 **Source:** [Synthetix.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/Synthetix.sol)
 
@@ -301,7 +315,11 @@ A Synth cannot be removed if it has outstanding issued tokens.
     * The XDR synth cannot be removed.
 
     !!! info "sUSD Removal"
-        Note that there is no requirement the sUSD synth cannot be removed, although its removal would cause the [`Depot`](Depot.md) to malfunction, and although sUSD is not used directly in the [`ExchangeRates`](ExchangeRates.md) contract, everything is implicitly denominated in terms of sUSD.
+        Note that there is no requirement the sUSD synth cannot be removed, although its removal would cause several contracts to malfunction.
+        
+        * The [`Depot`](Depot.md) only deals in sUSD.
+        * Everything in the [`ExchangeRates`](ExchangeRates.md) contract is denominated in sUSD, whose price there is fixed at 1.0 sUSD/sUSD.
+        * [`PurgeableSynth.purge`](PurgeableSynth.md#purge) liquidates everything back to sUSD.
 
 ---
 
@@ -320,13 +338,13 @@ Reports an equivalent value of a quantity of one synth in terms of another at cu
 
 Returns the total value of Synths in the system, priced in terms of a given currency.
 
-This value is computed as:
+This value is equivalent to:
 
 $$
-\sum_{s \in \text{synths}}{\sigma_s \frac{\pi_s}{\pi_d}}
+\frac{1}{\pi_d}\sum_{s \in \text{synths}}{\sigma_s \pi_s}
 $$
 
-Where $\sigma_s$ and $\pi_s$ are the total supply and price of synth $s$, and $d$ is the denominating synth flavour.
+Where $\sigma_s$ and $\pi_s$ are the total supply and price of synth $s$, and $\pi_d$ is the price of the denominating synth flavour.
 
 !!! info "Optimisation: Staleness Check"
     This function checks that currencyKey is not stale in the function modifier, then later requires that no rate is stale in the function body; the modifier can be eliminated.
@@ -426,107 +444,312 @@ They are implemented based on [`ExternStateToken._transferFrom_byProxy`](ExternS
 
 ### `exchange`
 
-* `exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey, address destinationAddress)`: Exhcanges one synth flavour for an equivalent value of another. Checks if `protectionCircuit` is true, then burns the synths with `_internalLiquidation` if so. Otherwise it uses the `_internalExchange` function (with a fee being charged). Requires the source and destination synths to be distinct, and a non-zero value to be converted.
+Exchanges one synth flavour for an equivalent value of another at current [exchange rates](ExchangeRates.md) and transfers the converted quantity to a destination address. An [exchange fee](FeePool.md#exchangefeerate) is charged on the way.
+See [`_internalExchange`](#_internalExchange) for further implementation details.
+
+If the [protection circuit](#protectioncircuit) is active, then the incoming synths are simply burnt ([`_internalLiquidation`](#_internalliquidation)).
+
+!!! info "Inconsistency With SIP-7"
+    [SIP-7](https://sips.synthetix.io/sips/sip-7) indicated that the `destinationAddress` parameter would be removed, but this has not been implemented. Should the SIP be updated?
+
+??? example "Details"
+    **Signature**
+
+    `exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey, address destinationAddress) external returns (bool)`
+
+    **Modifiers**
+
+    * [`Proxyable.optionalProxy`](Proxyable.md#optionalproxy)
+
+    **Preconditions**
+
+    * The source and destination currencies must be distinct.
+    * The exchanged quantity must be nonzero.
 
 ---
 
 ### `synthInitiatedExchange`
 
-* `synthInitiatedExchange(address from, bytes32 sourceCurrencyKey, sourceAmount, bytes32 destinationCurrencyKey, address destinationAddress)`: Used to allow a synth recipient to receive a transfer in their preferred currency rather than in the source currency. Only callable by Synths. Uses `_internalExchange` internally, but without charging a fee. NOTE: if the transfer fee rate is 0, then this allows free conversions?... TODO: Check this.
+Allows a synth to perform a free exchange into a different flavour.
+This is only used by [`PurgeableSynth.purge`](#PurgeableSynth.md#purge) in order to convert outstanding synths into sUSD. No exchange fee is charged on such liquidations.
 
----
+!!! bug "Outdated Comment"
+    `// Don't charge fee on the exchange, as they've already been charged a transfer fee in the synth contract`
 
-### `synthInitiatedFeePayment`
+    No transfer fee is charged anymore; this note can be removed.
 
-* `synthInitiatedFeePayment(address from, bytes32 sourceCurrencyKey, uint sourceAmount)`: Called by synths to send transfer fees to the fee pool. Only callable by synths. In practice, this is a NOOP because transfer fee rates are 0. Uses `_internalExchange` internally to convert the fee to XDRs.
+??? example "Details"
+    **Signature**
+
+    `synthInitiatedExchange(address from, bytes32 sourceCurrencyKey, sourceAmount, bytes32 destinationCurrencyKey, address destinationAddress) external returns (bool)`
+
+    **Modifiers**
+
+    * [`Proxyable.optionalProxy`](Proxyable.md#optionalproxy) through [`_onlySynth`](#_onlysynth)
+
+    **Preconditions**
+    
+    * The message sender must be a synth ([`_onlySynth`](#_onlysynth)).
+    * The source and destination currencies must be distinct.
+    * The exchanged quantity must be nonzero.
 
 ---
 
 ### `_internalExchange`
 
-* `_internalExchange(address from, bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey, address destinationAddress, bool chargeFee)`: Internal function, and disallows exchanges out of the fee address. Deactivated if the `exchangeEnabled` is false. Deactivated if the ExchangeRates contract's price is updating. Disallows transfers to the zero address and to the synthetix contract or its proxy. First burns the source amount from the `from` balance (which also checks for sufficient balance). Then converts the quantities with the latest exchange rates by asking the ExchangeRates contract. Then computes a fee if `chargeFee` is true, by asking the FeePool contract the correct quantity. Then issues synths in the correct quantity, minus the fee, to the destination address. Then pays the fee into the fee pool in XDRs, performing another currency conversion here using `effectiveValue` and then issuing directly into the pool. Triggers ERC223 token fallback if necessary. Finally, emits an exchange event.
+Implements synth exchanges for [`exchange`](#exchange) and [`synthInitiatedExchange`](#synthinitiatedexchange).
+
+Conversion is performed by burning the specified quantity of the source currency from the `from` address, and issuing an [equivalent value](#effectivevalue) of the destination currency into the destination address, minus a [fee](FeePool.md#amountreceivedfromexchange) if `chargeFee` is true. This fee is issued into the [fee address](FeePool.md#feeaddress) in XDRs, and the fee pool is [notified](FeePool.md#feepaid).
+
+If one exists, the ERC223 token fallback function is triggered to notify the destination address of the transfer.
+
+This function can be [disabled](#setexchangeenabled) by the owner, and it will not operate if the oracle is [currently updating synth exchange rates](ExchangeRates.md#priceupdatelock).
+
+??? example "Details"
+    **Signature**
+
+    `_internalExchange(address from, bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey, address destinationAddress, bool chargeFee) internal returns (bool)`
+
+    **Modifiers**
+
+    * [`notFeeAddress(from)`](#notfeeaddress)
+
+    **Preconditions**
+
+    * [`exchangeEnabled`](#exchangeenabled) must be true.
+    * The exchange rate [price update lock](ExchangeRates.md#priceupdatelock) must not be active.
+    * The destination address must not be the zero address.
+    * The destination address must not be the Synthetix contract itself.
+    * The destination address must not be the Synthetix proxy.
+    * The `from` address must have at least `sourceAmount` of the source currency.
 
 ---
 
 ### `_internalLiquidation`
 
-* `_internalLiquidation(address from, bytes32 sourceCurrencyKey, uint sourceAmount)`: Only used once, just burns the given quantity of the specified token from the `from` address. I would probably inline this and eliminate the function.
+This simply burns a quantity of the given synth from the specified account. This always returns true if the transaction was not reverted.
+
+!!! info "Inlining Candidate"
+    As this function is only used once, inside [`exchange`](#exchange), and it is very short, this could potentially be inlined.
 
 !!! TODO "Investigate Economics"
     Does this mean that there is a forever-locked quantity of SNX in the system now?
+
+??? example "Details"
+    **Signature**
+
+    `_internalLiquidation(address from, bytes32 sourceCurrencyKey, uint sourceAmount) internal returns (bool)`
 
 ---
 
 ### `_addToDebtRegister`
 
-* `_addToDebtRegister(bytes32 currencyKey, uint amount)`: Whenever synths are issued, computes the factor the issuance changes the overall supply by and appends it to the list of such deltas in synthetixState.
+Whenever synths are issued, this function is invoked to update the [debt ledger](SynthetixState.md#debtledger). It computes the factor the issuance changes the overall supply by and appends the resulting entry to the debt ledger. This entry is saved as a [27-decimal fixed point number](SafeDecimalMath.md).
 
-$$
-xv \text{: xdrValue - the value of the debt priced in XDRs} \\
-tdi \text{: totalDebtIssued - the XDR value of all issued synths. } \ \frac{1}{price_{XDR}}\sum_c{price_c \times supply_c} \\
-ntdi \text{: newTotalDebtIssued. } \ xv + tdi \\
-dp \text{: debtPercentage. The percentage of the new debt, relative to the new total. } \ \frac{xv}{ntdi} = \frac{xv}{xv + tdi} \\
-\delta \text{: The factor to multiply other debt holder's debt positions by to get their new fraction of the total. } \ 1 - dp = \frac{tdi}{xv + tdi} \\
-ed \text{: existingDebt - The value of XDRs required to completely pay down this user's existing debt. Computed by the debtBalanceOf; see that function for definitions of terms. } \\
-ed = \frac{last(dl)}{dl[dei]}ido \times \frac{1}{price_{XDR}}\sum_c{price_c \times supply_c} = \frac{last(dl)}{dl[dei]} \times ido \times tdi\\
-\text{Increment the total issuer count if this user has no debt yet; i.e. if } ido = 0 \\
-\text{Now save out new debt entry parameters for this user such that: } \ ido' = \frac{xv + ed}{ntdi} = dp + \frac{ed}{ntdi} = dp + \frac{\frac{last(dl)}{dl[dei]} \times ido}{\frac{xv}{tdi} + 1} \text{ and } dei' = length(dl) \\
-\text{Finally, perform } \ dl.push(last(dl) \times \delta) \ \text{ where } \ dl[0] = 1.
-$$
+In addition, the caller's [current issuance data](SynthetixState.md#setcurrentissuancedata) is updated and, if they haven't issued before, the [total issuer count is incremented](SynthetixState.md#incrementtotalissuercount).
 
-Note that the total system value is computed twice, once as $tdi$, and once within the call to `debtBalanceOf`. One of them could in principle be eliminated.
+This function performs the same operation as [`_removeFromDebtRegister`](#_removefromdebtregister), but a quantity of debt is added rather than removed from the total pool.
 
-Also note that we have for $dl$ the recurrence:
+???+ info "Debt Ledger and Issuance Data"
+    The following holds for both addition and [removal](#_removefromdebtregister) of debt; the logic of the latter is nearly identical to that of the former, but with a negative value of $\chi$.
 
-$$
-dl[0] = 1 \\
-dl[n] = dl[n-1] \times \delta_n \\
-\text{with } \ \delta_n = \frac{tdi_n}{xv_n + tdi_n}
-\text{ } \\
-$$
+    **Definitions**
 
-hence
+    Term | Definition | Description
+    -----|------------|------------
+    $\Delta$ | See the **Ledger Updates** section below. | The [debt ledger](SynthetixState.md#debtledger): an array of debt movement factors, indicating the size of the issued system debt over time. $\Delta_n$ is the $n^{th}$ entry in the ledger.
+    $X$ | $\frac{1}{\pi_\text{XDR}}\sum_{c}{\pi_c \sigma_c}$ | The XDR value of all issued synths ([`totalIssuedSynths`](#totalissuedsynths)) at current prices.
+    $\widehat{\chi}$ | $\omega \frac{\Delta_\text{last}}{\Delta_{entry}} X$ | The XDR value of the account's existing issuance debt at current prices ([`debtBalanceOf`](#debtbalanceof)). $\omega$ is the calling account's last recorded owership fraction of the total system debt. We will also refer to the adjusted current ownership fraction $\check{\omega} = \omega \frac{\Delta_\text{last}}{\Delta_{entry}}$.
+    $\chi$ | | The XDR value of the newly-issued synth debt; the new total debt will be $X + \chi$.
+    $\omega'$ | $\frac{\chi}{X + \chi}$ | The fraction of the new total debt accounted for by $\chi$.
+    $\delta$ | $1 - \omega' \ = \ \frac{X}{X + \chi}$ | The factor to multiply existing debt ownership positions by to obtain their new fraction of the total after adding in $\chi$; that is, the ratio of the old total debt to the new total debt.
 
-$$
-\text{ } \\
-dl[n] = \prod_{k=1}^{n}\delta_k
-\text{ } \\
-\Rightarrow
-\text{ } \\
-\frac{dl[n]}{dl[m]} = \frac{\prod_{k=1}^{n}\delta_k}{\prod_{k=1}^{m}\delta_k} = \prod_{k=m+1}^{n}\delta_k, \ m \lt n
-$$
+    **Ledger Updates**
 
-So a given debt ledger entry is the product of the debt deltas, and the division of one debt ledger entry by another is the cumulative debt delta movement between those two debt ledger entries.
+    After this function is invoked, the user's ownership fraction $\omega$ and their debt entry index $\text{entry}$ are updated to new values as follows:
+
+    $$
+    \begin{equation}
+    \begin{split}
+    \omega \ &\leftarrow \ \frac{\widehat{\chi} + \chi}{X + \chi} \ = \  \check{\omega} \delta + \omega' \\
+    entry \ &\leftarrow \ |\Delta|
+    \end{split}
+    \end{equation}
+    $$
+
+    That is, the updated ownership fraction includes both the old debt and the new debt, adjusted to current prices. The updated debt ledger entry index is the length of the debt ledger, because that will be the index of the new ledger entry that is about to be added.
+
+    The new entry is appended to the debt ledger, growing it by one element. The new last element of the ledger takes the value:
+
+    $$
+    \Delta_\text{last} \times \delta
+    $$
+    
+    Hence each element of the ledger incorporates the value of the previous entry, noting that $\Delta_0 = 1$.
+
+    This gives us a recurrence defining the $n^{th}$ debt ledger entry $\Delta_n$, corresponding to the $n^{th}$ issuance or burning event.
+
+    $$
+    \begin{equation}
+    \begin{split}
+    \Delta_n &= \left\{
+                \begin{array}{ll}
+                    1 & \text{if} \ n = 0 \\
+                    \Delta_{n-1} \ \delta_n & \text{otherwise} \\
+                \end{array}
+                \right. \\
+    \text{ with } \\
+    \delta_n &= \frac{X_n}{X_n + \chi_n} \\
+    \end{split}
+    \end{equation}
+    $$
+
+    As a result we can conclude that:
+
+    $$
+    \begin{equation}
+    \begin{split}
+    \Delta_n &= \prod_{k=1}^{n}\delta_k \\
+    \Rightarrow \frac{\Delta_n}{\Delta_m} &= \prod_{k=m+1}^{n}\delta_k, \ m \lt n \\
+    \end{split}
+    \end{equation}
+    $$
+
+    So a given debt ledger entry is the cumulative debt movement up to that point, and the division of one entry by another is the debt movement between them.
+
+    Note that, due to price movements in the tokens the system tracks, in general it is not the case that $X_n = X_{n-1} + \chi_{n-1}$. However, if it is assumed that this is the case, one obtains a telescoping series that yields $\Delta_n = \frac{X_1}{X_{n+1}}$. Consequently, the debt ledger measures the overall system growth, as the reciprocal of a particular debt ledger entry is the factor the total system debt had expanded by since the system's inception at the time it was generated.
+
+!!! info "Optimisation: System Value Recomputation"
+    The total system value is computed twice, once as $X$, and once within the call to `debtBalanceOf`. One of them could in principle be eliminated.
+
+!!! info "Optimisation: Use Already-Computed Results When Incrementing Issuer Count"
+    Currently this function increments the total issuer count if `!synthetixState.hasIssued(messageSender)`, but this can be substituted with `existingDebt == 0`, which doesn't need to call out to the state contract.
+
+!!! info "Optimisation: Remove Modifier"
+    This is only called inside [`issueSynths`](#issuesynths), which already has the [`Proxyable.optionalProxy`](Proxyable.md#optionalproxy) modifier, so it can be removed from this function. The function is also a candidate for inlining.
+
+??? example "Details"
+    **Signature**
+
+    `_addToDebtRegister(bytes32 currencyKey, uint amount) internal`
+
+    **Modifiers**
+
+    * [`Proxyable.optionalProxy`](Proxyable.md#optionalproxy)
 
 ---
 
 ### `issueSynths`
 
-* `issueSynths(bytes32 currencyKey, uint amount)`: MIGRATE
+[Issues](Synth.md#issue) a new quantity of the specified flavour of synths into the calling address. The new debt issuance is recorded with [`_addToDebtRegister`](#_addtodebtregister), and the account's issuance records are updated with [`_appendAccountIssuanceRecord`](#_appendaccountissuancerecord).
+
+??? example "Details"
+    **Signature**
+
+    `issueSynths(bytes32 currencyKey, uint amount) public`
+
+    **Modifiers**
+
+    * [`Proxyable.optionalProxy`](Proxyable.md#optionalproxy)
+
+    **Preconditions**
+
+    * The quantity of new synths to be minted must be no greater than the [remaining issuable](#remainingissuablesynths) for that account.
 
 ---
 
 ### `issueMaxSynths`
 
-* `issueMaxSynths(bytes32 currencyKey)`: MIGRATE
+Issues the [maximum quantity](#remainingissuablesynths) issuable by the caller of a particular synth flavour. Otherwise, this operates exactly as [`issueSynths`](#issuesynths) does.
+
+??? example "Details"
+    **Signature**
+
+    `issueMaxSynths(bytes32 currencyKey) external`
+
+    **Modifiers**
+
+    * [`Proxyable.optionalProxy`](Proxyable.md#optionalproxy)
 
 ---
 
 ### `burnSynths`
 
-* `burnSynths(bytes32 currencyKey, uint amount)`: MIGRATE
+[Burns](Synth.md#burn) a quantity of synths in the calling address, in order to free up its locked SNX supply.
+
+If the caller attempts to burn more synths than their SNX debt is worth, this function will only burn sufficiently many tokens to cover the debt and leave the rest untouched.
+
+The new debt position of the caller is recorded with [`_appendAccountIssuanceRecord`](#appendaccountissuancerecord), and the adjustment to global debt recorded with [`_removeFromDebtRegister`](#_removefromdebtregister).
+
+??? example "Details"
+    **Signature**
+
+    `burnSynths(bytes32 currencyKey, uint amount) external`
+
+    **Modifiers**
+
+    * [`Proxyable.optionalProxy`](Proxyable.md#optionalproxy)
+
+    **Preconditions**
+
+    * The [existing debt](#debtbalanceof) the caller must be nonzero.
 
 ---
 
 ### `_appendAccountIssuanceRecord`
 
-* `_appendAccountIssuanceRecord()`: MIGRATE
+Whenever synths are issued or burnt, the calling account's new [issuance data](FeePoolState.md#issuancedata) (debt ownership and ledger index) is appended to its [historical issuance ledger](FeePoolState.md#accountissuanceledger).
+
+This operates by calling [`FeePool.appendAccountIssuanceRecord`](FeePool.md#appendaccountissuancerecord) thence [`FeePoolState.appendAccountIssuanceRecord`](FeePoolState.md#appendaccountissuancerecord).
+
+!!! info "Optimisation: Save Intercontract Function Call"
+    This function is only called after calls to [`_addToDebtRegister`](#_addtodebtregister) and [`_removeFromDebtRegister`](#_removefromdebtregister). The latest issuance data is set inside these functions with a call to [`SynthetixState.setCurrentIssuanceData`](SynthetixState.md#setcurrentissuancedata), which is then immediately retrieved from [`SynthetixState.issuanceData`](SynthetixState.md#issuancedata). The extra call to the state contract could be removed by moving the calls to [`_appendAccountIssuanceRecord`](#appendaccountissuancerecord) into the debt register manipulation functions and passing in the parameters locally.
+
+    This might also make the code clearer by moving the code making modifications to the [current](SynthetixState.md#issuancedata) and [historical](FeePoolState.md#accountissuanceledger) issuance data closer together.
+
+??? example "Details"
+    **Signature**
+
+    `_appendAccountIssuanceRecord() internal`
 
 ---
 
 ### `_removeFromDebtRegister`
 
-* `_removeFromDebtRegister(uint amount)`: MIGRATE
+Whenever synths are burnt, this function is invoked to update the [debt ledger](SynthetixState.md#debtledger). It computes the factor the burning changes the overall supply by and appends the resulting entry to the debt ledger. This entry is saved as a [27-decimal fixed point number](SafeDecimalMath.md).
+
+In addition, the caller's [current issuance data](SynthetixState.md#setcurrentissuancedata) is updated and, if they are burning all their tokens, the [total issuer count is decremented](SynthetixState.md#decrementtotalissuercount).
+
+This function performs the same operation as [`_addToDebtRegister`](#_addtodebtregister), but a quantity of debt is removed rather than added to the total pool.
+
+???+ info "Relationship With [`_addToDebtRegister`](#_addtodebtregister)"
+    If debt removal is considered as the addition of a negative quantity of debt, then the functions perform a largely identical function (and could perhaps be merged). The only difference here is that the new total debt is expressed as $X - \chi$. In particular, we have, explicitly computed within this function:
+
+    $$
+    \begin{equation}
+    \begin{split}
+    \omega' \ &= \ \frac{\chi}{X - \chi} \\
+    \delta \ &= \ 1 + \omega' \ = \ \frac{X}{X - \chi} \\
+    \omega \ &\leftarrow \ \frac{\widehat{\chi} - \chi}{X - \chi} \ = \ \check{\omega} \delta - \omega'
+    \end{split}
+    \end{equation}
+    $$
+
+    Which are all the same as in [`_addToDebtRegister`](#_addtodebtregister) with $\chi$'s sign flipped. See that function's notes for further discussion and definitions.
+
+!!! info "Optimisation: Pass Existing Debt as Parameter"
+    `uint existingDebt = debtBalanceOf(messageSender, "XDR")`, but this has already been computed already in the immediately enclosing function, [`burnSynths`](#burnsynths).
+
+!!! info "Optimisation: Superfluous Variable Assignment"
+    If the check `newTotalDebtIssued > 0` fails, then 0 is assigned to `delta`, but the variable is already uninitialised, and so already has this value.
+
+!!! caution "Potentially-Misleading Name"
+    This function does not remove anything from the debt ledger; rather it appends a new entry to it indicating a decreased total debt.
+
+??? example "Details"
+    **Signature**
+
+    `_removeFromDebtRegister(uint amount) internal`
 
 ---
 
@@ -558,19 +781,19 @@ Ideally, issuers should maintain their collateralisation ratio at a level less t
 
 Reports the quantity of a given currency required to free up all SNX locked in given account.
 
-If $\mathrm{T}$ is the [total value of all issued synths](#totalissuedsynths), and $\xi$ is fraction of that value accounted for by this account's locked SNX, then the result is simply:
+If $\mathrm{X}$ is the [total value of all issued synths](#totalissuedsynths), and $\check{\omega}$ is fraction of that value currently accounted for by this account's locked SNX, then the result is simply:
 
 $$
-\xi \times \mathrm{T}
+\check{\omega} \ \mathrm{X}
 $$
 
-In order to account for fluctuations in synth prices and supply, the current ownership percentage is computed as the adjusted value:
+In order to account for fluctuations in synth prices and supply, the current ownership fraction is computed as the adjusted value:
 
 $$
-\xi = \omega \frac{\Delta_\text{last}}{\Delta_\text{entry}}
+\check{\omega} = \omega \frac{\Delta_\text{last}}{\Delta_\text{entry}}
 $$
 
-Where $\omega$ is the account's debt ownership percentage at the time it [last issued or burnt](SynthetixState.md#issuancedata) synths, which produced the $\Delta_\text{entry}$ item in the [debt ledger](SynthetixState.md#debtledger). $\Delta_\text{last}$ is the latest value on the ledger. This logic is much the same as that found in [`FeePool._effectiveDebtRatioForPeriod`](FeePool.md#_effectivedebtratioforperiod).
+Where $\omega$ is the account's debt ownership fraction at the time it [last issued or burnt](SynthetixState.md#issuancedata) synths, which produced the $\Delta_\text{entry}$ item in the [debt ledger](SynthetixState.md#debtledger). $\Delta_\text{last}$ is the latest value on the ledger. This logic is much the same as that found in [`FeePool._effectiveDebtRatioForPeriod`](FeePool.md#_effectivedebtratioforperiod). The actual value of $\omega$ is set in [`_addToDebtRegister`](#_addtodebtregister) and [`_removeFromDebtRegister`](#_removefromdebtregister).
 
 ??? example "Details"
     **Signature**
@@ -616,7 +839,7 @@ If $\text{balance}$ is [`balanceOf(account)`](TokenState.md#balanceof), and $\te
 ???+ info "A Note on Price Motion"
     The value of $\text{lockedSnx}$ depends on the current ($\pi$) and previous ($\pi'$) prices being reported by the oracle, and the issuance ratio ($\rho$).
 
-    If we consider a situation where the synth supply has not changed in the time period under consideration, then ownership percentages do not change even if prices do. Further assuming that there is only a single synth circulating, and so debt balances correspond to the same number of synths, but perhaps not the same value.
+    If we consider a situation where the synth supply has not changed in the time period under consideration, then ownership fractions do not change even if prices do. Further assuming that there is only a single synth circulating, debt balances correspond to the same number of synths, although perhaps not the same value.
 
     In such a situation, we can think of each user having issued a particular quantity of synths. This quantity depends on the prices of synths and SNX at the time of issuance.
 
@@ -664,7 +887,76 @@ If $\text{balance}$ is [`balanceOf(account)`](TokenState.md#balanceof), and $\te
 
 ### `mint`
 
-* `mint()`: MIGRATE
+This function is responsible for creating the inflationary SNX supply. It is a public function, so any address can ensure new tokens are released on schedule. When a new quantity is minted, the calling address is rewarded with a small incentive of SNX tokens, defined by [`SupplySchedule.minterReward`](SupplySchedule.md#minterreward).
+
+The supply is released according to the schedule defined in [`SupplySchedule.schedules`](SupplySchedule.md@schedules), being sent to the [`RewardsDistribution`](RewardsDistribution.md#distributerewards) contract for distribution and escrow. The total supply SNX supply is thus increased by the quantity specified by the schedule.
+
+This function always returns true if the transaction did not revert.
+
+??? example "Details"
+    **Signature**
+
+    `mint() external returns (bool)`
+
+    **Preconditions**
+
+    * The [`rewardsDistribution`](#rewardsdistribution) address must be initialised.
+    * The supply to mint retrieved from [`SupplySchedule.mintableSupply`](SupplySchedule.md#mintablesupply) must be nonzero.
+
+    **Emits**
+
+    * [`Transfer(synthetix, rewardDistribution, newSupply - minterReward)`](ExternStateToken.md#transfer)
+    * [`Transfer(synthetix, msg.sender, minterReward)`](ExternStateToken.md#transfer)
+
+---
+
+### `_onlySynth`
+
+This function is effectively a modifier. The transaction is reverted if the message sender is not a Synth address known to this contract.
+
+!!! info "Optimisation: Remove Loop"
+    Instead of iterating through [`availableSynths`](#availablesynths), just check if [`synths[messageSender]`](#synths) is initialised.
+
+    This function is a candidate for inlining since it is only used in [`synthInitiatedExchange`](#synthinitiatedexchange), and moving the [`optionalProxy`](#optionalproxy) modifier onto that function.
+
+??? example "Details"
+    **Signature**
+
+    `_onlySynth() internal view`
+
+    **Modifiers**
+
+    * [`Proxyable.optionalProxy`](Proxyable.md#optionalproxy)
+
+    **Preconditions**
+
+    * [`messageSender`](Proxyable.md#messagesender) must appear in [`availableSynths`](#availablesynths).
+
+---
+
+<section-sep />
+
+## Modifiers
+
+---
+
+### `rateNotStale`
+
+The transaction is reverted if the given currency's latest exchange rate [is stale](ExchangeRates.md#rateisstale). This will also revert if the currency key is unknown to the exchange rates contract.
+
+---
+
+### `notFeeAddress`
+
+The transaction is reverted if the given account is the [fee address](FeePool.md#fee_address).
+
+**Signature:** `notFeeAddress(address account)`
+
+---
+
+### `onlyOracle`
+
+The transaction is reverted if `msg.sender` is not the [exchange rates oracle](ExchangeRates.md#oracle).
 
 ---
 
@@ -676,6 +968,10 @@ If $\text{balance}$ is [`balanceOf(account)`](TokenState.md#balanceof), and $\te
 
 ### `SynthExchange`
 
-* `SynthExchange(address indexed account, bytes32 fromCurrencyKey, uint256 fromAmount, bytes32 toCurrencyKey,  uint256 toAmount, address toAddress)`: Indicates that an exchange between two currencies has occurred, along with the source and destination addresses, currencies, and quantities.
+Records that an [exchange](#exchange) between two flavours of synths occurred.
+
+This event is emitted from the Synthetix [proxy](Proxy.md#_emit) with the `emitSynthExchange` function.
+
+**Signature:** `SynthExchange(address indexed account, bytes32 fromCurrencyKey, uint256 fromAmount, bytes32 toCurrencyKey,  uint256 toAmount, address toAddress)`
 
 ---

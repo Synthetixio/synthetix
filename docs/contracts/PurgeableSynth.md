@@ -126,12 +126,6 @@ Allows the owner to set the address of the [exchange rates contract](ExchangeRat
 
 ---
 
-### `emitPurged`
-
-Emits a [`Purged`](#purged) event.
-
-Encodes the event signature and parameters, then forwards them to the proxy to be [emitted](Proxy.md#_emit).
-
 <section-sep />
 
 ## Events
@@ -141,6 +135,8 @@ Encodes the event signature and parameters, then forwards them to the proxy to b
 ### `Purged`
 
 Records that a balance of this currency was liquidated back to `sUSD` for a particular account.
+
+This event is emitted from the Synth's [proxy](Proxy.md#_emit) with the `emitPurged` function.
 
 **Signature:** `Purged(address indexed account, uint value)`
 
