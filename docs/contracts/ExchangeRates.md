@@ -1,12 +1,13 @@
 # ExchangeRates
 
 This contract stores the latest Synth exchange rates. These rates are set by an oracle, which updates this contract every three minutes with any prices that have moved sufficiently. Once set, these prices are available for any contract in the Synthetix system to query.
-Prices which have not been updated recently enough are considered stale; Synthetix functionality using stale prices does not operate.
+Prices which have not been updated recently enough are considered stale; Synthetix functionality using stale prices does not operate. All rates are denominated in terms of sUSD, so the price of sUSD is always $1.0$, and is never stale.
 
-All rates are denominated in terms of `sUSD`, so the price of `sUSD` is always $1.0$, and is never stale.
-ExchangeRates is also responsible for the price of the `XDR`, which is recomputed after each price update. The `XDR` price is the sum of the prices of the currencies in a basket (`sUSD`, `sAUD`, `sCHF`, `sEUR`, `sGBP`), as opposed to the [IMF's special drawing rights](https://en.wikipedia.org/wiki/Special_drawing_rights) which use a weighted average.
+The ExchangeRates contract is also responsible for computing the prices of various derived synths.
+In particular, the behaviour of [inverse synths](#rateorinverted) is defined here. These are derivative synths whose price varies inversely with the price of an underlying asset.
+In addition, the ExchangeRates contract determines the price of the XDR, which is recomputed after each new batch of prices is received from the oracle. The XDR price is the sum of the prices of the currencies in a basket (sUSD, sAUD, sCHF, sEUR, sGBP), as opposed to the [IMF's special drawing rights](https://en.wikipedia.org/wiki/Special_drawing_rights) which use a weighted average.
 
-The ExchangeRates contract interacts with the oracle's frontrunning protection, which is partially described in [SIP-6](https://sips.synthetix.io/sips/sip-6) and [SIP-7](https://sips.synthetix.io/sips/sip-7).
+This contract interacts with the oracle's frontrunning protection, which is partially described in [SIP-6](https://sips.synthetix.io/sips/sip-6) and [SIP-7](https://sips.synthetix.io/sips/sip-7).
 In particular, before each price update, the oracle calls [`setPriceUpdateLock`](#setpriceupdatelock).
 This does not turn off any functionality in the exchange rate contract, but is used by [`Synthetix`](Synthetix.md) to disable [currency exchanges](Synthetix.md#_internalexchange) while prices are being updated to protect against oracle front running. The lock is released when [rate updates have completed](#internalupdaterates).
 
@@ -32,9 +33,10 @@ This does not turn off any functionality in the exchange rate contract, but is u
     ![ExchangeRates architecture graph](../img/graphs/ExchangeRates-architecture.svg)
 </centered-image>
 
-* [`PurgeableSynth`](PurgeableSynth.md): exchange rates are used to determine if the total token value is below the purge threshold.
-* [`Synthetix`](Synthetix.md): the value of tokens is used to in order to facilitate exchange between them, to compute the `XDR` value of minted tokens for the [debt ledger](SynthetixState.md#debtledger), and to ensure exchanges cannot occur while price updates and being made or if a particular exchange rate is stale.
-* [`Arbrewarder`](ArbRewarder.md): The ArbRewarder must know the current SNX/ETH price so that arbitrage is accurate.
+??? example "Details"
+    * [`PurgeableSynth`](PurgeableSynth.md): exchange rates are used to determine if the total token value is below the purge threshold.
+    * [`Synthetix`](Synthetix.md): the value of tokens is used to in order to facilitate exchange between them, to compute the `XDR` value of minted tokens for the [debt ledger](SynthetixState.md#debtledger), and to ensure exchanges cannot occur while price updates and being made or if a particular exchange rate is stale.
+    * [`Arbrewarder`](ArbRewarder.md): The ArbRewarder must know the current SNX/ETH price so that arbitrage is accurate.
 
 ---
 
