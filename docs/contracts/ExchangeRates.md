@@ -74,7 +74,7 @@ frozen | `bool` | True if an inverse Synth has breached one of its limits.
 
 Stores the exchange rate (`sUSD` per unit) for each given currency key (`sUSD`, `SNX`, et cetera). These prices are stored as [18 decimal place fixed point numbers](SafeDecimalMath.md).
 
-**Type:** `mapping(bytes4 => uint) public`
+**Type:** `mapping(bytes32 => uint) public`
 
 ---
 
@@ -82,7 +82,7 @@ Stores the exchange rate (`sUSD` per unit) for each given currency key (`sUSD`, 
 
 Stores the timestamp each rate was last updated. accessed by the same keys as [`rates`](#rates) is.
 
-**Type:** `mapping(bytes4 => uint) public`
+**Type:** `mapping(bytes32 => uint) public`
 
 ---
 
@@ -125,7 +125,7 @@ An oracle front running protection mutex, set by [`setPriceUpdateLock`](#setpric
 
 The codes of each currency in the XDR basket. Hard-coded to `[sUSD, sAUD, sCHF, sEUR, sGBP]`. They are equally-weighted. For stability, there are no crypto assets listed here.
 
-**Type:** `bytes4[5] public`
+**Type:** `bytes32[5] public`
 
 
 ---
@@ -134,7 +134,7 @@ The codes of each currency in the XDR basket. Hard-coded to `[sUSD, sAUD, sCHF, 
 
 For each currency with an inverse index, keep the necessary [`InversePricing`](#inversepricing) information to maintain the index.
 
-**Type:** `mapping(bytes4 => InversePricing) public`
+**Type:** `mapping(bytes32 => InversePricing) public`
 
 ---
 
@@ -142,7 +142,7 @@ For each currency with an inverse index, keep the necessary [`InversePricing`](#
 
 A list of the keys of currencies with an inverted index.
 
-**Type:** `bytes4[] public`
+**Type:** `bytes32[] public`
 
 ---
 
@@ -159,7 +159,7 @@ Initialises the oracle address and initial currency prices, the `XDR` basket, al
 ??? example "Details"
     **Signature**
 
-    `constructor(address _owner, address _oracle, bytes4[] _currencyKeys, uint[] _newRates) public`
+    `constructor(address _owner, address _oracle, bytes32[] _currencyKeys, uint[] _newRates) public`
 
     **Superconstructors**
 
@@ -180,7 +180,7 @@ Allows the oracle to update exchange rates in the contract. Otherwise this is ju
 ??? example "Details"
     **Signature**
 
-    `updateRates(bytes4[] currencyKeys, uint[] newRates, uint timeSent) external returns (bool)`
+    `updateRates(bytes32[] currencyKeys, uint[] newRates, uint timeSent) external returns (bool)`
 
     **Modifiers**
 
@@ -202,7 +202,7 @@ Returns true if no exception was thrown.
 ??? example "Details"
     **Signature**
 
-    `internalUpdateRates(bytes4[] currencyKeys, uint[] newRates, uint timeSent) internal returns (bool)`
+    `internalUpdateRates(bytes32[] currencyKeys, uint[] newRates, uint timeSent) internal returns (bool)`
 
     **Preconditions**
 
@@ -243,7 +243,7 @@ $\bar{p}$ is frozen whenever $\bar{p} \in \{l,u\}$; that is, when $2e - l \le p$
 ??? example "Details"
     **Signature**
 
-    `rateOrInverted(bytes4 currencyKey, uint rate) internal returns (uint)`
+    `rateOrInverted(bytes32 currencyKey, uint rate) internal returns (uint)`
 
     **Emits**
 
@@ -276,7 +276,7 @@ Deletes a currency's price and its update time from the ExchangeRates contract.
 ??? example "Details"
     **Signature**
 
-    `deleteRate(bytes4 currencyKey) external`
+    `deleteRate(bytes32 currencyKey) external`
     
     **Modifiers**
 
@@ -352,7 +352,7 @@ Allows the owner to set up an inverse index for a particular currency. See [`rat
 ??? example "Details"
     **Signature**
 
-    `setInversePricing(bytes4 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit) external`
+    `setInversePricing(bytes32 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit) external`
 
     **Modifiers**
 
@@ -384,7 +384,7 @@ Allows the owner to remove an inverse index for a particular currency.
 ??? example "Details"
     **Signature**
 
-    `removeInversePricing(bytes4 currencyKey) external`
+    `removeInversePricing(bytes32 currencyKey) external`
 
     **Modifiers**
 
@@ -414,7 +414,7 @@ This computation is simple because all fractional quantities in the Synthetix sy
 ??? example "Details"
     **Signature**
 
-    `effectiveValue(bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey) public view returns (uint)`
+    `effectiveValue(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey) public view returns (uint)`
 
     **Modifiers**
 
@@ -434,7 +434,7 @@ Returns the last recorded rate for the given currency. This is just an alias to 
 ??? example "Details"
     **Signature**
 
-    `rateForCurrency(bytes4 currencyKey) public view returns (uint)`
+    `rateForCurrency(bytes32 currencyKey) public view returns (uint)`
 
 ---
 
@@ -445,7 +445,7 @@ Maps [`rateForCurrency`](#rateforcurrency) over an array of keys.
 ??? example "Details"
     **Signature**
 
-    `ratesForCurrencies(bytes4[] currencyKeys) public view returns (uint[])`
+    `ratesForCurrencies(bytes32[] currencyKeys) public view returns (uint[])`
 
 ---
 
@@ -456,7 +456,7 @@ Returns the last recorded rate update time for the given currency. This is just 
 ??? example "Details"
     **Signature**
 
-    `lastRateUpdateTimeForCurrency(bytes4 currencyKey) public view returns (uint)`
+    `lastRateUpdateTimeForCurrency(bytes32 currencyKey) public view returns (uint)`
 
 ---
 
@@ -467,7 +467,7 @@ Maps [`lastRateUpdateTimeForCurrency`](#lastrateupdatetimeforcurrency) over an a
 ??? example "Details"
     **Signature**
 
-    `lastRateUpdateTimesForCurrencies(bytes4[] currencyKeys) public view returns (uint[])`
+    `lastRateUpdateTimesForCurrencies(bytes32[] currencyKeys) public view returns (uint[])`
 
 ---
 
@@ -480,7 +480,7 @@ The rate for a given currency is stale if its last update occurred more than [`r
 ??? example "Details"
     **Signature**
 
-    `rateIsStale(bytes4 currencyKey) public view returns (bool)`
+    `rateIsStale(bytes32 currencyKey) public view returns (bool)`
 
 ---
 
@@ -491,7 +491,7 @@ Returns true if the inverse price for the given currency is frozen. This is simp
 ??? example "Details"
     **Signature**
 
-    `rateIsFrozen(bytes4 currencyKey) external view returns (bool)`
+    `rateIsFrozen(bytes32 currencyKey) external view returns (bool)`
 
 ---
 
@@ -502,7 +502,7 @@ Loop over the given array of currencies and return true if any of them [is stale
 ??? example "Details"
     **Signature**
 
-    `anyRateIsStale(bytes4[] currencyKeys) external view returns (bool)`
+    `anyRateIsStale(bytes32[] currencyKeys) external view returns (bool)`
 
 ---
 
@@ -516,7 +516,7 @@ Loop over the given array of currencies and return true if any of them [is stale
 
 Reverts the transaction if the given currency's rate is stale.
 
-**Signature:** `rateNotStale(bytes4 currencyKey)`
+**Signature:** `rateNotStale(bytes32 currencyKey)`
 
 ---
 
@@ -552,7 +552,7 @@ Records that the stale period was altered.
 
 Records that a set of currency prices were updated.
 
-**Signature:** `RatesUpdated(bytes4[] currencyKeys, uint[] newRates)`
+**Signature:** `RatesUpdated(bytes32[] currencyKeys, uint[] newRates)`
 
 ---
 
@@ -560,7 +560,7 @@ Records that a set of currency prices were updated.
 
 Records that the price for a particular currency was deleted.
 
-**Signature:** `RateDeleted(bytes4 currencyKey)`
+**Signature:** `RateDeleted(bytes32 currencyKey)`
 
 ---
 
@@ -568,7 +568,7 @@ Records that the price for a particular currency was deleted.
 
 Records that an inverse price index was set up or deleted. As there is no distinct event for deletion, this is signaled by providing zero values to all arguments barring `currencyKey`.
 
-**Signature:** `InversePriceConfigured(bytes4 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit)`
+**Signature:** `InversePriceConfigured(bytes32 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit)`
 
 ---
 
@@ -576,7 +576,7 @@ Records that an inverse price index was set up or deleted. As there is no distin
 
 Records that an inverse price breached a limit and was frozen.
 
-**Signature:** `InversePriceFrozen(bytes4 currencyKey)`
+**Signature:** `InversePriceFrozen(bytes32 currencyKey)`
 
 ---
 

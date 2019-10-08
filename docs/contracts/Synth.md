@@ -85,7 +85,7 @@ The address of the [`Synthetix`](Synthetix.md) contract.
 
 The [identifier](Synthetix.md#synths) of this Synth within the Synthetix ecosystem. The currency key could in principle be distinct from this token's [ERC20 symbol](ExternStateToken.md#symbol).
 
-**Type:** `bytes4`
+**Type:** `bytes32`
 
 ---
 
@@ -114,7 +114,7 @@ The precision in every Synth's fixed point representation is fixed at 18 so they
 ??? example "Details"
     **Signature**
 
-    `constructor(address _proxy, TokenState _tokenState, Synthetix _synthetix, IFeePool _feePool, string _tokenName, string _tokenSymbol, address _owner, bytes4 _currencyKey) public`
+    `constructor(address _proxy, TokenState _tokenState, Synthetix _synthetix, IFeePool _feePool, string _tokenName, string _tokenSymbol, address _owner, bytes32 _currencyKey) public`
 
     **Superconstructors**
 

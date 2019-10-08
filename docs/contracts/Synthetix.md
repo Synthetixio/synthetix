@@ -49,18 +49,22 @@
 
 ### Related Contracts
 
-#### Referenced
+<centered-image>
+    ![Synthetix architture graph](../img/graphs/Synthetix-architecture.svg)
+</centered-image>
 
-* Synth
-* FeePool
-* SynthetixEscrow
-* RewardEscrow
-* RewardsDistribution
-* ExchangeRates
-* SynthetixState
-* SupplySchedule
-
-#### Referencing
+??? example "Details"
+    * [`Proxy`](Proxy.md): The Synthetix contract, which is [`Proxyable`](Proxyable.md), exists behind a `CALL`-style proxy for upgradeability.
+    * [`Synth`](Synth.md): Synthetix manages the supply of synths. It keeps track of which ones exist, and they are all issued and burnt from the Synthetix contract. The Synthetix contract is also responsible for exchange between different synth flavours. 
+    * [`FeePool`](FeePool.md): The Synthetix contract remits exchange fees as XDRs to the fee pool, and also uses it to keep track of historical issuance records for each issuer.
+    * [`SynthetixEscrow`](SynthetixEscrow.md): The escrow contract keeps track of SNX owed to participants in the initial token sale, and releases them according to specified vesting schedules.
+    * [`RewardEscrow`](RewardEscrow.md): This is similar to the SynthetixEscrow contract, but it is where the SNX inflationary supply is kept before it is released to Synth issuers.
+    * [`RewardsDistribution`](RewardsDistribution): This contract works closely with RewardEscrow to release portions of the inflationary supply to different recipients.
+    * [`ExchangeRates`](ExchangeRates.md): The Synthetix contract fetches prices from the exchange rates contract to facilitate synth exchange and to determine the value of various quantities of synths.
+    * [`SynthetixState`](SynthetixState.md): This state contract stores the debt ledger and the current issuance information for synth issuers.
+    * [`SupplySchedule`](SupplySchedule.md): The supply schedule determines the rate at which SNX are released from the inflationary supply.
+    * [`Depot`](Depot.md): The depot trades SNX and therefore knows the Synthetix address.
+    * [`ArbRewarder`](ArbRewarder.md): The ArbRewarder knows the Synthetix address because it exchanges SNX.
 
 ---
 

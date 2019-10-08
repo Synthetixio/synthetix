@@ -71,7 +71,7 @@ Initialises the [`exchangeRates`](#exchangerates) address, and the inherited [`S
 ??? example "Details"
     **Signature**
 
-    `constructor(address _proxy, TokenState _tokenState, Synthetix _synthetix, IFeePool _feePool, string _tokenName, string _tokenSymbol, address _owner, bytes4 _currencyKey, ExchangeRates _exchangeRates) public`
+    `constructor(address _proxy, TokenState _tokenState, Synthetix _synthetix, IFeePool _feePool, string _tokenName, string _tokenSymbol, address _owner, bytes32 _currencyKey, ExchangeRates _exchangeRates) public`
 
     **Superconstructors**
 
