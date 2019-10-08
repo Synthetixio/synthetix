@@ -30,6 +30,20 @@ Announcement Post: https://blog.synthetix.io/our-new-seth-snx-arb-contract-is-no
 
 ---
 
+### Related Contracts
+
+<centered-image>
+    ![ArbRewarder Architecture Graph](../img/graphs/ArbRewarder-architecture.svg)
+</centered-image>
+
+??? example "Details"
+    * [Uniswap Exchange (sETH)](https://etherscan.io/address/0xe9Cf7887b93150D4F2Da7dFc6D502B216438F244): This is the market through which the arbitrage is performed.
+    * [`ExchangeRates`](ExchangeRates.md): The current SNX/ETH price is retrieved from the exchange rates contract.
+    * [`Synth (sETH)`](Synth.md): One half of the sETH/ETH pair.
+    * [`Synthetix (Proxy)`](Synthetix.md): The ArbRewarder rewards the caller with the arb profit as SNX.
+
+---
+
 ### Libraries
 
 * [`SafeMath`](SafeMath.md) for `uint`

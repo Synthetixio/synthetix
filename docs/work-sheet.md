@@ -33,6 +33,7 @@
     * Smart contract architecture
     * [Contract publication](https://github.com/Synthetixio/synthetix/tree/master/publish)
     * [Contract verification](https://github.com/Synthetixio/synthetix/blob/master/verifyContracts.md) (This probably needs to be deleted)
+    * Uniswap section
 
 ??? "Existing Documents"
     * [Litepaper](https://www.synthetix.io/uploads/synthetix_litepaper.pdf)
