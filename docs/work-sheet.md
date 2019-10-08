@@ -7,11 +7,10 @@
     * Activate inlinehilite
     * Activate [minifier plugin](https://squidfunk.github.io/mkdocs-material/getting-started/#plugins) (don't forget to explicitly activate the search plugin when doing so)
     * All code style comments within the documentation broken out into admonitions instead of inline notes.
-    * Reorder the sidebar headings.
-    * Finish [Project Configuration](https://www.mkdocs.org/user-guide/configuration/). In particular the [nav layout](https://www.mkdocs.org/user-guide/configuration/#documentation-layout).
+    * Finish [Project Configuration](https://www.mkdocs.org/user-guide/configuration/).
     * Look at [this `mkdocs.yml`](https://github.com/squidfunk/mkdocs-material/blob/master/mkdocs.yml) to see if we can do anything similar.
     * Merge into core SNX repository and enable edit buttons. Add a note to the Intro page that the docs can be edited by anyone with a PR. Or perhaps a page on contributing to the docs with a guide and this list of possible things to do.
-    * Better colour for details sections
+    * Better colour for details sections.
     * Syntax highlighting for Solidity. https://squidfunk.github.io/mkdocs-material/extensions/codehilite/ https://github.com/maurelian/best-practices-docs/blob/master/mkdocs.yml
     * More detailed function signature breakdown including argument descriptions etc.
     * Expand all/Collapse all button for details panels.

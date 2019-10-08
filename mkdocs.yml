@@ -16,6 +16,61 @@ edit_uri: ''
 # This copyright notice will be rendered in the footer.
 copyright: '<a href=https://github.com/Synthetixio/synthetix/blob/master/LICENSE>Copyright &copy Synthetix 2018 - 2019</a>'
 
+# Top level headings become tabs at the top due to `tabs: true` in the theme.
+nav:
+  - System Description:
+    - Home: index.md
+    - Overview: overview.md
+    - Architecture: architecture.md
+    - Smart Contracts: contracts/index.md
+    - SNX Token: synthetix-network-token.md
+    - Synths: synths.md
+    - Incentives: incentives.md
+    - Governance: governance.md
+    - Resources: resources.md
+    - Work Sheet: work-sheet.md
+  - Smart Contracts:
+    - Overview: contracts/index.md
+    - Tokens:
+      - Synthetix: contracts/Synthetix.md
+      - SynthetixState: contracts/SynthetixState.md
+      - Synth: contracts/Synth.md
+      - PurgeableSynth: contracts/PurgeableSynth.md
+      - ExternStateToken: contracts/ExternStateToken.md
+      - TokenState: contracts/TokenState.md
+    - Fee Pool:
+      - FeePool: contracts/FeePool.md
+      - FeePoolState: contracts/FeePoolState.md
+      - FeePoolEternalStorage: contracts/FeePoolEternalStorage.md
+      - DelegateApprovals: contracts/DelegateApprovals.md
+    - Incentives and Escrow:
+      - RewardEscrow: contracts/RewardEscrow.md
+      - RewardsDistribution: contracts/RewardsDistribution.md
+      - SynthetixAirdropper: contracts/SynthetixAirdropper.md
+      - SynthetixEscrow: contracts/SynthetixEscrow.md
+      - EscrowChecker: contracts/EscrowChecker.md
+    - Infrastructure:
+      - SupplySchedule: contracts/SupplySchedule.md
+      - ExchangeRates: contracts/ExchangeRates.md
+      - ArbRewarder: contracts/ArbRewarder.md
+      - Depot: contracts/Depot.md
+    - Proxy:
+      - Proxy: contracts/Proxy.md
+      - ProxyERC20: contracts/ProxyERC20.md
+      - Proxyable: contracts/Proxyable.md
+    - Utilities:
+      - EternalStorage: contracts/EternalStorage.md
+      - LimitedSetup: contracts/LimitedSetup.md
+      - Migrations: contracts/Migrations.md
+      - Owned: contracts/Owned.md
+      - Pausable: contracts/Pausable.md
+      - ReentrancyPreventer: contracts/ReentrancyPreventer.md
+      - SafeMath: contracts/SafeMath.md
+      - SafeDecimalMath: contracts/SafeDecimalMath.md
+      - SelfDestructible: contracts/SelfDestructible.md
+      - State: contracts/State.md
+      - TokenFallbackCaller: contracts/TokenFallbackCaller.md
+
 # These social links will be rendered as icons in the footer, as long as the type corresponds to FontAwesome glyph.
 extra:
   social:

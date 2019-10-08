@@ -116,20 +116,18 @@ Contract | Description
 <section-sep />
 
 ??? TODO
-    * Go back through function docstrings and ensure everything matches up.
+    * Go back through function docstrings and dev docs to ensure everything matches up.
     * Extract internal and dev notes into separate document and prepare to make this public-facing.
     * Work out which licence headers are incorrect.
     * Inheriting descendents as well as ancestors.
-    * Categorise contracts in nav
     * Solidity syntax highlighting.
     * Links to etherscan and addresses.
     * Fix inheritance hierarchy and references.
     * List inherited fields and methods in a collapsible details panel in the inheritance section.
-    * Check consistency with dev docs and docstrings
+    * Expand function signatures out with descriptions of parameters and return values.
     * Related contracts
     * Enhance Contract Mapper: Command line args etc. Look for calls out to other contracts in function bodies.
     * Mark all `uint`s that are fixed point numbers with their precision level.
-    * Expand function signatures out with descriptions of parameters and return values.
     * Add links to the new explainers on synthetix.io
     * Sequence diagrams for complex inter-contract functions.
     * Propagate preconditions, events due to function composition.
