@@ -25,6 +25,17 @@ In principle it is generic, as the approver just marks a number of delegates as 
 
 ---
 
+### Related Contracts
+
+<centered-image>
+    ![DelegateApprovals architecture graph](../img/graphs/DelegateApprovals-architecture.svg)
+</centered-image>
+
+??? example "Details"
+    * [`FeePool`](FeePool.md): This contract allows the fee pool to delegate fee withdrawal approvals.
+
+---
+
 <section-sep />
 
 ## Variables
