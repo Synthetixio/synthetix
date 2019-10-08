@@ -76,7 +76,7 @@
 
 ### `availableSynths`
 
-List of the active [`Synths`](Synths.md), including XDRs. Used to compute the total value of issued synths.
+List of the active [`Synths`](Synth.md), including XDRs. Used to compute the total value of issued synths.
 
 **Type:** `Synth[] public`
 
@@ -893,7 +893,7 @@ If $\text{balance}$ is [`balanceOf(account)`](TokenState.md#balanceof), and $\te
 
 This function is responsible for creating the inflationary SNX supply. It is a public function, so any address can ensure new tokens are released on schedule. When a new quantity is minted, the calling address is rewarded with a small incentive of SNX tokens, defined by [`SupplySchedule.minterReward`](SupplySchedule.md#minterreward).
 
-The supply is released according to the schedule defined in [`SupplySchedule.schedules`](SupplySchedule.md@schedules), being sent to the [`RewardsDistribution`](RewardsDistribution.md#distributerewards) contract for distribution and escrow. The total supply SNX supply is thus increased by the quantity specified by the schedule.
+The supply is released according to the schedule defined in [`SupplySchedule.schedules`](SupplySchedule.md#schedules), being sent to the [`RewardsDistribution`](RewardsDistribution.md#distributerewards) contract for distribution and escrow. The total supply SNX supply is thus increased by the quantity specified by the schedule.
 
 This function always returns true if the transaction did not revert.
 
