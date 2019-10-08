@@ -18,19 +18,20 @@ copyright: '<a href=https://github.com/Synthetixio/synthetix/blob/master/LICENSE
 
 # Top level headings become tabs at the top due to `tabs: true` in the theme.
 nav:
-  - System Description:
+  - System Documentation:
     - Home: index.md
     - Overview: overview.md
     - Architecture: architecture.md
-    - Smart Contracts: contracts/index.md
     - SNX Token: synthetix-network-token.md
     - Synths: synths.md
     - Incentives: incentives.md
     - Governance: governance.md
     - Resources: resources.md
+    - Smart Contracts: contracts/index.md
     - Work Sheet: work-sheet.md
   - Smart Contracts:
     - Overview: contracts/index.md
+    - Deployments: contracts/deployments.md
     - Tokens:
       - Synthetix: contracts/Synthetix.md
       - SynthetixState: contracts/SynthetixState.md
