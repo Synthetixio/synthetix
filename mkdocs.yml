@@ -21,9 +21,7 @@ nav:
   - System Documentation:
     - Home: index.md
     - Overview: overview.md
-    - Architecture: architecture.md
-    - SNX Token: synthetix-network-token.md
-    - Synths: synths.md
+    - Tokens: tokens.md
     - Incentives: incentives.md
     - Governance: governance.md
     - Resources: resources.md
@@ -31,6 +29,7 @@ nav:
     - Work Sheet: work-sheet.md
   - Smart Contracts:
     - Overview: contracts/index.md
+    - Architecture: contracts/architecture.md
     - Deployments: contracts/deployments.md
     - Tokens:
       - Synthetix: contracts/Synthetix.md
