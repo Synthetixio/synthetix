@@ -2,7 +2,13 @@
 
 ## Description
 
-Defines the Synthetix inflationary supply schedule. To the initial 100 million, this adds 75 million tokens in the first year, half that in the second, half again in the third and so on. This goes for 5 years, yielding a final total supply of 245,312,500 SNX.
+Defines the Synthetix inflationary supply schedule, according to which the synthetix inflationary supply is released.
+
+Minting is performed in increments of a week whenever [`updateMintValues`](#updatemintvalues) is called from [`Synthetix.mint`](Synthetix.md#mint). If in a given year $T$ tokens can be minted, about $\frac{T}{52}$ tokens are made available each week in that year. These accrue so that no tokens are lost even if minting is not performed for several periods; the accrued total is minted at the next invocation. These computations are covered in more detail in the [`mintableSupply`](#mintablesupply) description.
+
+### Schedule
+
+To the initial 100 million tokens, 75 million tokens are added in the first year, half that in the second, half again in the third and so on. This goes for 5 years, yielding a final total supply of 245,312,500 SNX.
 
 Year |  New Supply | Total Supply | Increase
 -----|-------------|--------------|---------
@@ -14,9 +20,7 @@ Year |  New Supply | Total Supply | Increase
    5 |   4,687,500 |  245,312,500 | 2%
    6 |           0 |  245,312,500 | 0%
 
-The last year in this schedule is to allow any remaining tokens from the penultimate year to be minted. No minting is possible after the end of this schedule.
-
-Minting is performed in increments of a week whenever [`updateMintValues`](#updatemintvalues) is called from [`Synthetix.mint`](Synthetix.md#mint). If in a given year $T$ tokens can be minted, about $\frac{T}{52}$ tokens are made available each week in that year. These accrue so that no tokens are lost even if minting is not performed for several periods; the accrued total is minted at the next invocation. These computations are covered in more detail in the [`mintableSupply`](#mintablesupply) description.
+The last year in this schedule generates no new tokens to allow any remaining from the previous year to be minted. No minting is possible after the end of this schedule.
 
 **Source:** [SupplySchedule.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/SupplySchedule.sol)
 
