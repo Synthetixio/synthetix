@@ -11,66 +11,90 @@ Where possible, the interactions between different system components has been em
 
 Developers wishing to understand Synthetix code and the tradeoffs within it will be well-advised to read these documents alongside the Solidity itself.
 
+The addresses of currently-deployed contract instances are available in the [Deployments](deployments.md) section.
+
 <section-sep />
 
 ## Contract Listing
 
----
-
 The following contracts compose the core of the Synthetix system. These underlie the various [integrations and dapps](../#integrations-and-dapps) created by Synthetix and others.
+
+---
 
 ### Tokens
 
 Contract | Description
 ---------|------------
-[`ExternStateToken`](ExternStateToken.md) | An ERC20/ERC223 token with an external state.
-[`TokenState`](TokenState.md) | A state contract to be used with [`ExternStateToken`](ExternStateToken.md)
-[`TokenFallbackCaller`](TokenFallbackCaller.md) | Adds an ERC223 token fallback calling function to inheriting contracts.
-[`Synthetix`](Synthetix.md) | The central contract in the Synthetix system, which manages Synth supplies, keeping track of rewards, and so on.
+[`Synthetix`](Synthetix.md) | The central contract in the Synthetix system, which manages Synth supplies, keeping track of rewards, the debt ledger, and so on.
 [`SynthetixState`](SynthetixState.md) | An auxiliary state contract to sit alongside [`Synthetix`](Synthetix.md) which stores Synth issuance and debt information.
 [Synth](Synth.md) | The basic contract underlying all Synths.
 [PurgeableSynth](PurgeableSynth.md) | A Synth that can be liquidated if it has reached the end of its life.
+[`ExternStateToken`](ExternStateToken.md) | A partial ERC20/ERC223 token contact with an external state, which all tokens in Synthetix are built upon.
+[`TokenState`](TokenState.md) | A state contract to be used with [`ExternStateToken`](ExternStateToken.md) to store balances.
 
-### Incentive-related
+---
+
+### Fee Pool
 
 Contract | Description
 ---------|------------
-[`FeePool`](FeePool.md) | Holds information related to fee entitlements, and exposes functions for computing them.
-[`FeePoolEternalStorage`](FeePoolEternalStorage.md) | Stores fee withdrawal times for each address on behalf of the [`FeePool`](FeePool.md).
+[`FeePool`](FeePool.md) | Holds accumulated fees, computes and stores fee entitlements and historic issuance data.
 [`FeePoolState`](FeePoolState.md) | Stores a limited history of issuance data per user on behalf of the [`FeePool`](FeePool.md).
+[`FeePoolEternalStorage`](FeePoolEternalStorage.md) | Stores fee withdrawal times for each address on behalf of the [`FeePool`](FeePool.md).
 [`DelegateApprovals`](DelegateApprovals.md) | Allows addresses to delegate another address to withdraw fees from the [`FeePool`](FeePool.md) on their behalf.
+
+---
+
+### Inflationary Incentives and Escrow
+
+Contract | Description
+---------|------------
 [`SupplySchedule`](SupplySchedule.md) | Determines the rate that inflationary SNX tokens are released.
-[`SynthetixEscrow`](SynthetixEscrow.md) | Holds the escrowed token sale balances of SNX.
-[`RewardEscrow`](RewardEscrow.md) | Receives inflationary SNX rewards and distributes them to those entitled to them after an escrow period.
-[`SynthetixAirdropper`](SynthetixAirdropper.md) | Distributes tokens from the inflationary supply to individual residents of the the UniSwap ETH/sETH liquidity pool.
+[`RewardEscrow`](RewardEscrow.md) | Receives inflationary SNX rewards to be distributed after a year escrow.
 [`RewardsDistribution`](RewardsDistribution.md) | Apportions designated quantities of inflationary rewards to the [`RewardEscrow`](RewardEscrow.md) and [`SynthetixAirdropper`](SynthetixAirdropper.md) contracts.
+[`SynthetixAirdropper`](SynthetixAirdropper.md) | Distributes tokens from the inflationary supply to individual residents of the the UniSwap ETH/sETH liquidity pool.
+[`SynthetixEscrow`](SynthetixEscrow.md) | Holds the escrowed balances of SNX from the original token sale.
+[`EscrowChecker`](EscrowChecker.md) | Augments the [`SynthetixEscrow`](SynthetixEscrow.md) contract with a function for dApps to conveniently query it.
+
+---
 
 ### Infrastructure
 
 Contract | Description
 ---------|------------
-[`Proxy`](Proxy.md) | The Synthetix proxy contract.
-[`ProxyERC20`](ProxyERC20.md) | A proxy contract which explicitly supports the ERC20 interface.
-[`Proxyable`](Proxyable.md) | An abstract contract designed to work with the [Synthetix proxy](Proxy.md).
-[`ExchangeRates`](ExchangeRates.md) | The Synthetix exchange rates contract which supplies token prices to all contracts that need them.
+[`ExchangeRates`](ExchangeRates.md) | The Synthetix exchange rates contract which receives token prices from the oracle, and supplies them to all contracts that need it.
 [`Depot`](Depot.md) | A vendor contract that allows users to exchange their ETH for sUSD or SNX, or their sUSD for SNX. It also allows users to deposit Synths to be sold in exchange for ETH.
 [ArbRewarder](ArbRewarder.md) | A contract which automates the process of arbitraging the ETH/sETH price on UniSwap through Synthetix conversion functions.
+
+---
+
+### Proxy
+
+Contract | Description
+---------|------------
+[`Proxy`](Proxy.md) | The Synthetix proxy contract.
+[`ProxyERC20`](ProxyERC20.md) | A proxy contract which explicitly supports the ERC20 interface.
+[`Proxyable`](Proxyable.md) | An abstract base contract designed to work with the [Synthetix proxy](Proxy.md).
+
+---
 
 ### Utility
 
 Contract | Description
 ---------|------------
-[`EscrowChecker`](EscrowChecker.md) | Augments the [`SynthetixEscrow`](SynthetixEscrow.md) contract with a function for dApps to conveniently query it.
-[`EternalStorage`](EternalStorage.md) | Persistent/unstructured smart contract storage pattern.
-[`LimitedSetup`](LimitedSetup.md) | A contract whose functions are disabled a set time after deployment.
-[`Owned`](Owned.md) | A contract with a distinct owner who has special privileges.
+[`SafeDecimalMath`](SafeDecimalMath.md) | A library for performing fixed point arithmetic at two different precision levels.
+[`SafeMath`](SafeMath.md) | OpenZeppelin guarded arithmentic library, used by [`SafeDecimalMath`](SafeDecimalMath.md) and others.
+[`Owned`](Owned.md) | A contract with a distinct owner who can have special privileges.
+[`LimitedSetup`](LimitedSetup.md) | A contract which can disable functions a set time after deployment.
+[`State`](State.md) | An external state contract which can restrict its fields to be modifiable only by a particular contract address.
+[`SelfDestructible`](SelfDestructible.md) | A contract that can be self destructed by its owner after a delay.
 [`Pausable`](Pausable.md) | A contract whose operations can be paused by its owner.
 [`ReentrancyPreventer`](ReentrancyPreventer.md) | Implements a mutex that prevents re-entrant function calls.
-[`SelfDestructible`](SelfDestructible.md) | A contract that can be self destructed after a delay.
-[`State`](State.md) | An external state contract whose fields can only be modified by a particular contract address.
+[`TokenFallbackCaller`](TokenFallbackCaller.md) | Adds an ERC223 token fallback calling function to inheriting contracts.
+[`EternalStorage`](EternalStorage.md) | A persistent/unstructured smart contract storage pattern.
 [`Migrations`](Migrations.md) | Truffle migrations contract.
-[`SafeMath`](SafeMath.md) | OpenZeppelin guarded arithmentic library.
-[`SafeDecimalMath`](SafeDecimalMath.md) | A library for performing fixed point arithmetic at two different precision levels.
+
+---
 
 <section-sep />
 
