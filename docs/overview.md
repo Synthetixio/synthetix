@@ -7,4 +7,4 @@ Synthetix is otherwise composed of [a smart contract infrastructure](contracts/a
 
 This mechanism allows Synthetix to support instantaneous, near-frictionless conversion between different flavours of Synths without the liquidity and slippage issues experienced by other decentralised exchanges. The resulting network of tokens supports an extensive set of use cases including payments, remittance, eCommerce, trading, loans, wagers, token sales, and many more.
 
-A briefer overview of the system than is contained in this documentation is available in the [Synthetix Litepaper](https://www.synthetix.io/uploads/synthetix_litepaper.pdf).
+A briefer overview of the system than is contained in this documentation is available in the [Synthetix Litepaper](https://www.synthetix.io/uploads/synthetix_litepaper.pdf), and the explainers on [staking rewards](https://www.synthetix.io/stakingrewards), [synthetix.exchange](https://www.synthetix.io/products/exchange), and [mintr](https://www.synthetix.io/products/mintr). A snapshot of the current system status is always live at [dashboard.synthetix.io](https://dashboard.synthetix.io/).
