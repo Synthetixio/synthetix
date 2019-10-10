@@ -23,11 +23,12 @@ The high-precision numbers are mainly used for dealing with the [debt ledger](Sy
 
 For a precision of $d$ deimal places, this fixed point library chooses a large integer $\dot{u} = 10^d$ to represent the number $1$ (e.g. [`UNIT`](#unit) = $10^{18}$) and all operations at this precision level happen relative to $\dot{u}$. That is, the fixed point representation of a number $q$ is defined to be the integer $\dot{q}$:
 
-$$
-\dot{q} := q \ \dot{u}
-$$
+!!! example ""
+    $$
+    \dot{q} \ := \ q \ \dot{u} \ = \ q \times 10^d
+    $$
 
-For example, at 27 decimal places, $\dot{25}$ is equivalent to $25 \times 10^{27}$.
+For example, at 27 decimal places, $\dot{25}$ is equivalent to $25 \times 10^{27}$. We will use square brackets to capture the fixed point representation of composite expressions.
 
 Note that this is only valid if $\dot{q}$ is an integer, so nothing is representable which has a positive value in the decimal places smaller than $\frac{1}{\dot{u}}$ (i.e. the integer 1).
 
@@ -43,16 +44,18 @@ We define the fixed point operations $\dot{+}$, $\dot{-}$, $\dot{\times}$, $\dot
 
 We define our additive fixed point operators to be the same as the standard ones:
 
-$$
-x \ \dot{+} \ y \ := \ x + y \\
-x \ \dot{-} \ y \ := \ x - y
-$$
+!!! example ""
+    $$
+    x \ \dot{+} \ y \ := \ x + y \\
+    x \ \dot{-} \ y \ := \ x - y
+    $$
 
 This is because:
 
-$$
-\dot{p} \pm \dot{q} \ := \ p \dot{u} \pm q \dot{u} \ = \ (p \pm q) \dot{u} \ =: \ \dot{[p \pm q]}
-$$
+!!! example ""
+    $$
+    \dot{p} \pm \dot{q} \ := \ p \dot{u} \pm q \dot{u} \ = \ (p \pm q) \dot{u} \ =: \ \dot{[p \pm q]}
+    $$
 
 <section-sep />
 
@@ -60,17 +63,19 @@ $$
 
 The multiplicative operations are defined as follows:
 
-$$
-x \ \dot{\times} \ y \ := \ (x \times y) \ / \ \dot{u} \\
-x \ \dot{/} \ y \ := \ (x \times \dot{u}) \ / \ y
-$$
+!!! example ""
+    $$
+    x \ \dot{\times} \ y \ := \ (x \times y) \ / \ \dot{u} \\
+    x \ \dot{/} \ y \ := \ (x \times \dot{u}) \ / \ y
+    $$
 
 Some care has to be taken for multiplication and division. We desire, for example, $\dot{p} \ \dot{\times} \ \dot{q} = \dot{[p \times q]}$. However, if the standard operations are performed naively, the following results are obtained:
 
-$$
-\dot{p} \times \dot{q} \ := \ p \dot{u} \times q \dot{u} \ = \ (p \times q) \dot{u}^2 \ =: \ \dot{[(p \pm q) \dot{u}]} \\
-\dot{p} \ / \ \dot{q} \ := \ p \dot{u} \ / \ q \dot{u} \ = \ p \ / \ q
-$$
+!!! example ""
+    $$
+    \dot{p} \times \dot{q} \ := \ p \dot{u} \times q \dot{u} \ = \ (p \times q) \dot{u}^2 \ =: \ \dot{[(p \pm q) \dot{u}]} \\
+    \dot{p} \ / \ \dot{q} \ := \ p \dot{u} \ / \ q \dot{u} \ = \ p \ / \ q
+    $$
 
 So multiplication produces an extra unwanted unit factor, and division divides one out; the fixed point operations need to account for this. Note that to ensure minimum precision loss, $\dot{u}$ is divided out last in the case of multiplication and multiplied in first in the case of division.
 
