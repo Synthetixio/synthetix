@@ -99,6 +99,7 @@ Contract | Description
 <section-sep />
 
 ??? TODO
+    * TokenState for each ExternStateToken on diagrams
     * Go back through function docstrings and dev docs to ensure everything matches up.
     * Extract internal and dev notes into separate document and prepare to make this public-facing.
     * Work out which licence headers are incorrect.

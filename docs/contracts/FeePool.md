@@ -532,7 +532,7 @@ The new fee period's [`feePeriodId`](#feeperiod) is the previous id incremented 
 
     **Preconditions**
 
-    * the start time of the current fee period must have been at least [`feePeriodDuration`](#feeperiodduration) seconds in the past.
+    * The start time of the current fee period must have been at least [`feePeriodDuration`](#feeperiodduration) seconds in the past.
 
     **Emits**
 

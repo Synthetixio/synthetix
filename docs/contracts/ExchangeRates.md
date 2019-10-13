@@ -56,7 +56,7 @@ This does not turn off any functionality in the exchange rate contract, but is u
 
 ### `InversePricing`
 
-Holds necessary information for computing the price of [inverse Synths](../synths.md#inverse-synths).
+Holds necessary information for computing the price of [inverse Synths](../tokens.md#inverse-synths).
 
 Field | Type | Description
 ------|------|------------

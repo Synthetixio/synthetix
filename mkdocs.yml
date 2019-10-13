@@ -43,7 +43,7 @@ nav:
       - FeePoolState: contracts/FeePoolState.md
       - FeePoolEternalStorage: contracts/FeePoolEternalStorage.md
       - DelegateApprovals: contracts/DelegateApprovals.md
-    - Inflationary Incentives and Escrow:
+    - Inflationary Supply:
       - SupplySchedule: contracts/SupplySchedule.md
       - RewardEscrow: contracts/RewardEscrow.md
       - RewardsDistribution: contracts/RewardsDistribution.md
