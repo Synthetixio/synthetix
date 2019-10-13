@@ -589,9 +589,6 @@ Fees are paid into the claiming address [in the specified currency](#_payFees), 
 
 The return value is always true if the transaction was not reverted.
 
-!!! bug "Potential Overclaiming"
-    If a user last issued SNX earlier than the last recent fee period, they may be paid out too many fees/rewards. See [`feesAvailable`](#feesavailable) and [`feesByPeriod`](#feesbyperiod) for details.
-
 ??? example "Details"
     **Signature**
 
@@ -727,7 +724,7 @@ paid = 0 # The quantity actually paid.
 # Pay out fees from recent periods, from oldest to newest as they are exhausted.
 # Don't traverse the current fee period.
 for each closed period in reversed(recentFeePeriods):
-    unclaimedFees = period.feesClaimed - period.feesToDistribute
+    unclaimedFees = period.feesToDistribute - period.feesClaimed
     # Skip to the next period if this one is exhausted.
     if unclaimedFees == 0:
         continue
@@ -742,7 +739,7 @@ for each closed period in reversed(recentFeePeriods):
 return paid
 ```
 
-!!! note
+!!! info "Optimisation: Rmove Redundant Code"
     The final lines of the loop body, `if (i == 0 && remainingToAllocate > 0) { remainingToAllocate = 0; }` are redundant. One could just iterate once less. There might be another minor efficiency dividend to be had by not fetching `feesClaimed` from the state twice.
 
 ??? example "Details"
@@ -881,9 +878,6 @@ Return the total of fees and rewards available to be withdrawn by this account. 
 
 This is the total of fees accrued in completed periods, so is simply the the sum over an account's [`feesByPeriod`](#feesbyperiod) not including the current period.
 
-!!! bug "Overlapping Applicable Issuance Events Could Overreport Fees"
-    This is just a naive sum over the result reported by [`feesByPeriod`](#feesbyperiod). If the last time a user issued occurred before the beginning of the last-tracked fee period, a user could claim more fees that they are actually owed. Check the `feesByPeriod` notes for details.
-
 !!! caution "Ambiguous Naming"
     Don't confuse this funciton with [`feesClaimable`](#feesclaimable).
 
@@ -921,6 +915,8 @@ Returns an array of [`FEE_PERIOD_LENGTH`](#fee_period_length) `[fees, rewards]` 
 
 To compute this, for each period from oldest to newest, find the [latest issuance event this account performed before the close of this period](FeePoolState.md#applicableissuancedata), and use it to derive the owed [fees and rewards](#_feesandrewardsfromperiod) for that period.
 
+Note that a single issuance event can result in fees accruing for several fee periods, if the issuer does not claim their fees in one or more periods.
+
 Periods where the user has already withdrawn since that period closed are skipped, producing `[0,0]` entries.
 
 !!! bug "Zero Fees Remaining Check"
@@ -933,11 +929,6 @@ Periods where the user has already withdrawn since that period closed are skippe
     Additionally, it only checks for fees and not for rewards, which means that cases where there are rewards left but no fees will be incorrectly skipped.
 
     So one of two options could be appropriate. Either: remove the check; or clamp the fees owed to the quantity left in the pot, accounting for rewards as well as fees, which subsumes the existing behaviour in a more-consistent structure.
-
-!!! bug "Overlapping Applicable Issuance Data"
-    The fee pool stores information about the last three fee periods, 0, 1, 2. If a user's last issuance event occurred in period 3, for example, then it is applicable for all three known recent fee periods. This means that the fees and rewards owed will be duplicated in all following periods. That is, although they should only be owed fees in period 2, it will report that they are owed fees in each of periods 0 and 1 as well.
-
-    Additionally, resolving this probably means not handling the current fee period as a separate case. The code is probably clearer if the latest fee period is just treated the same as everything else anyway.
 
 !!! danger "Closing Debt Index Comments"
     The latter two thirds of the comment on the `closingDebtIndex` declaration seems to be out of date? `issuanceData[0]` is never explicitly fetched within the loop, only `feePoolState.applicableIssuanceData` is actually used.
@@ -1021,9 +1012,6 @@ Given an account and an index into [`recentFeePeriods`](#recentfeeperiods), this
 This uses [`_effectiveDebtRatioForPeriod`](#_effectiveDebtRatioForPeriod), where the start index and ownership percentage are computed with [`FeePoolState.applicableIssuanceData`](FeePoolState.md#applicableissuancedata), and the end index is one before the beginnging of the next period. Hence this function disallows querying the debt for the current period.
 
 In principle a future version could support the current fee period by using the last debt ledger entry as the end index.
-
-!!! Bug "Todo: Investigate the consequences of an old start index"
-    If the start index occurs earlier than the beginning of several fee periods, then can the debt ratio computations not correspond to overlapping periods?
 
 !!! caution "Potentially Misleading Comment"
     The following lines could be read to imply that each period's debt index begins at zero.
