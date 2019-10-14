@@ -36,15 +36,15 @@ Note that this is only valid if $\dot{q}$ is an integer, so nothing is represent
 
 #### Operations
 
-We define the fixed point operations $\dot{+}$, $\dot{-}$, $\dot{\times}$, $\dot{/}$, corresponding to the ordinary arithmetic operations $+$, $-$, $\times$, $/$, where $/$ corresponds to integer division.
+We define the fixed point operations $\dot{+}$, $\dot{-}$, $\dot{\times}$, $\dot{/}$, corresponding to the ordinary arithmetic operations $+$, $-$, $\times$, $/$, where $/$ corresponds to integer division. These are implemented by [`SafeMath`](SafeMath.md) and protect from overflow.
 
-<section-sep />
+---
 
 ##### Additive Operations
 
 We define our additive fixed point operators to be the same as the standard ones:
 
-!!! example ""
+!!! info "Definition: Fixed Point Addition and Subtraction"
     $$
     x \ \dot{+} \ y \ := \ x + y \\
     x \ \dot{-} \ y \ := \ x - y
@@ -57,13 +57,13 @@ This is because:
     \dot{p} \pm \dot{q} \ := \ p \dot{u} \pm q \dot{u} \ = \ (p \pm q) \dot{u} \ =: \ \dot{[p \pm q]}
     $$
 
-<section-sep />
+---
 
 ##### Multiplicative Operations
 
 The multiplicative operations are defined as follows:
 
-!!! example ""
+!!! info "Definition: Fixed Point Multiplication and Division"
     $$
     x \ \dot{\times} \ y \ := \ (x \times y) \ / \ \dot{u} \\
     x \ \dot{/} \ y \ := \ (x \times \dot{u}) \ / \ y
@@ -83,13 +83,15 @@ So multiplication produces an extra unwanted unit factor, and division divides o
 
 Note that multiplication and division of fixed point numbers may involve some loss of precision in the lowest digit. Such inaccuracy can accumulate over many operations
 
-Synthetix provides versions of $\dot{\times}$ and $\dot{/}$ which perform the operation with one extra internal digit of precision, and then rounds up if the least significant digit is 5 or greater. Consequently, results exactly halfway between two increments round up.
+Synthetix provides versions of $\dot{\times}$ and $\dot{/}$ which perform the operation with one extra internal digit of precision, and then rounds up if the least significant digit is 5 or greater. Consequently, results exactly halfway between two increments are rounded up.
 
-<section-sep />
+---
 
 ##### Change of Precision
 
 The representation of a number $q$ at two different fixed point precision levels $\dot{q} = q \dot{u}$ and $\ddot{q} = q \ddot{u}$ is straightforward if $\dot{u}$ and $\ddot{u}$ divide evenly. If this is the case, and $\ddot{u}$ is the higher precision unit, then $\ddot{q} / \dot{q} = \ddot{u} / \dot{u}$. So converting between the high and low precision only involves multiplying or dividing by a factor of $\ddot{u} / \dot{u}$. Keep in mind that converting from a high precision to a low precision number involves some loss of information, and this operation is performed with rounding.
+
+---
 
 <section-sep />
 
