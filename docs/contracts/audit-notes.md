@@ -80,7 +80,7 @@ On a different point, I'm not sure what the policy is on authorship information 
     Currently this function increments the total issuer count if `!synthetixState.hasIssued(messageSender)`, but this can be substituted with `existingDebt == 0`, which doesn't need to call out to the state contract.
 
 !!! info "Optimisation: Remove Modifier"
-    This is only called inside [`issueSynths`](Synthetic.md#issuesynths), which already has the [`Proxyable.optionalProxy`](Proxyable.md#optionalproxy) modifier, so it can be removed from this function. The function is also a candidate for inlining.
+    This is only called inside [`issueSynths`](Synthetix.md#issuesynths), which already has the [`Proxyable.optionalProxy`](Proxyable.md#optionalproxy) modifier, so it can be removed from this function. The function is also a candidate for inlining.
 
 ---
 

@@ -116,7 +116,7 @@ Contract | Description
     * Holds the minted inflationary rewards in escrow for a year after they are claimed.
     * Holds and distributes the escrowed tokens from the original token sale.
 
-The inflationary supply complex is concerned with controlling the flow of new SNX tokens being injected into the market. In this capacity it communicates with the [`Synthetix`](Synthetix.md) contract. The actual fraction of the weekly SNX rewards that a particular account is entitled to claim is computed by the [fee pool](#fee-pool), which is able to direct the [`RewardEscrow`](RewardEscrow.md) and [`RewardsDistribution`](RewardsDistributino.md) contracts as to how they should distribute the new tokens.
+The inflationary supply complex is concerned with controlling the flow of new SNX tokens being injected into the market. In this capacity it communicates with the [`Synthetix`](Synthetix.md) contract. The actual fraction of the weekly SNX rewards that a particular account is entitled to claim is computed by the [fee pool](#fee-pool), which is able to direct the [`RewardEscrow`](RewardEscrow.md) and [`RewardsDistribution`](RewardsDistribution.md) contracts as to how they should distribute the new tokens.
 
 **Constituent Contracts**
 
