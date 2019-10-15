@@ -202,7 +202,7 @@ Contract | Description
 
 ---
 
-### Utility Contracs
+### Utility Contracts
 
 These contracts mostly are not deployed on their own, but provide functionality inherited by other contracts already listed.
 
