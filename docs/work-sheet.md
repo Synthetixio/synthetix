@@ -1,18 +1,16 @@
 # Work Sheet
 
-
 ??? "Contract-Level Tasks"
     * TokenState for each ExternStateToken on diagrams
     * Go back through function docstrings and dev docs to ensure everything matches up.
     * Extract internal and dev notes into separate document and prepare to make this public-facing.
-    * Work out which licence headers are incorrect.
     * Inheriting descendents as well as ancestors.
-    * Solidity syntax highlighting.
     * Links to etherscan and addresses.
     * Fix inheritance hierarchy and references.
     * List inherited fields and methods in a collapsible details panel in the inheritance section.
     * Expand function signatures out with descriptions of parameters and return values.
-    * Complete all related contract graphs
+    * Complete all related contract graphs, and graphs for the higher level components in the contract architecture section.
+    * A consistent design language to distinguish contracts from contract groupings, et cetera.
     * Enhance Contract Mapper: Command line args etc. Look for calls out to other contracts in function bodies.
     * Mark all `uint`s that are fixed point numbers with their precision level.
     * Sequence diagrams for complex inter-contract functions.
@@ -35,8 +33,9 @@
     * See if ambiguous anchor links such as those in DelegateApprovals and SelfDestructible can be disambiguated.
     * Inheritance graph, contract interaction diagram, and libraries in tabbed details panel. https://github.com/squidfunk/mkdocs-material/issues/955
     * Run aspell over everything.
+    * Add logos for each of the projects using Synthetix and change to a grid layout with cards.
 
-??? "System Processes"
+??? "System Processes and Topics to Write About"
     * Synths and exchange
     * Issuance
     * Escrow contracts
@@ -50,7 +49,8 @@
     * Smart contract architecture
     * [Contract publication](https://github.com/Synthetixio/synthetix/tree/master/publish)
     * [Contract verification](https://github.com/Synthetixio/synthetix/blob/master/verifyContracts.md) (This probably needs to be deleted)
-    * Uniswap section
+    * Uniswap
+    * Project History
 
 ??? "Existing Documents"
     * [Litepaper](https://www.synthetix.io/uploads/synthetix_litepaper.pdf)

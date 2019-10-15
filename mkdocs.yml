@@ -24,12 +24,10 @@ nav:
     - Tokens: tokens.md
     - Incentives: incentives.md
     - Governance: governance.md
-    - Resources: resources.md
     - Smart Contracts: contracts/index.md
-    - Work Sheet: work-sheet.md
+    - Resources: resources.md
   - Smart Contracts:
     - Architecture: contracts/index.md
-    - Deployments: contracts/deployments.md
     - Tokens:
       - Synthetix: contracts/Synthetix.md
       - SynthetixState: contracts/SynthetixState.md
@@ -69,7 +67,10 @@ nav:
       - TokenFallbackCaller: contracts/TokenFallbackCaller.md
       - EternalStorage: contracts/EternalStorage.md
       - Migrations: contracts/Migrations.md
+    - Deployments: contracts/deployments.md
+  - Internal Notes:
     - Audit Notes: contracts/audit-notes.md
+    - Work Sheet: work-sheet.md
 
 # These social links will be rendered as icons in the footer, as long as the type corresponds to FontAwesome glyph.
 extra:

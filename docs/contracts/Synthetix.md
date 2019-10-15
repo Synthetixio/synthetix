@@ -2,31 +2,31 @@
 
 ## Description
 
-> Preamble
+??? "Work In Progress"
+    > Preamble
+    **Old:** Synthetix.sol: Has a list of Synths and understands issuance data for users to be able to mint and burn Synths.
 
-### SNX
+    ### SNX
 
-### Issuance and Burning of Synths
+    ### Issuance and Burning of Synths
 
-### The Debt Ledger and Issuance Records
+    ### The Debt Ledger and Issuance Records
 
-### The Collateralisation and Issuance Ratios
+    ### The Collateralisation and Issuance Ratios
 
-> transferableSynthetix
+    > transferableSynthetix
 
-### Synth Exchanges
+    ### Synth Exchanges
 
-### Inflationary Supply
+    ### Inflationary Supply
 
-### Front-running Protection
+    ### Front-running Protection
 
-[SIP-6](https://github.com/Synthetixio/SIPs/blob/master/SIPS/sip-6.md): Front-running protection: the oracle monitors activity for front-running. If it detects this, then the exchange fee rate is jacked up to 99% so that the front-runner's transaction is sucked up. Additionally, a user will be able to specify a fee rate above which their transaction will fail so that they don't get caught by the front running protection. Note: doesn't this protect the front-runners as well? UPDATED: the setProtectionCircuit function allows the oracle to target only particular transactions to be rejected.
+    [SIP-6](https://github.com/Synthetixio/SIPs/blob/master/SIPS/sip-6.md): Front-running protection: the oracle monitors activity for front-running. If it detects this, then the exchange fee rate is jacked up to 99% so that the front-runner's transaction is sucked up. Additionally, a user will be able to specify a fee rate above which their transaction will fail so that they don't get caught by the front running protection. Note: doesn't this protect the front-runners as well? UPDATED: the setProtectionCircuit function allows the oracle to target only particular transactions to be rejected.
 
-[SIP-7](https://github.com/Synthetixio/SIPs/blob/master/SIPS/sip-7.md): More front-running protection: exchange pausing; preventing changes while oracle updates are in progress; remove the destination param in an exchange so that they only go to the message sender.
+    [SIP-7](https://github.com/Synthetixio/SIPs/blob/master/SIPS/sip-7.md): More front-running protection: exchange pausing; preventing changes while oracle updates are in progress; remove the destination param in an exchange so that they only go to the message sender.
 
-### State Contract
-
-**Old:** Synthetix.sol: Has a list of Synths and understands issuance data for users to be able to mint and burn Synths.
+    ### State Contract
 
 **Source:** [Synthetix.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/Synthetix.sol)
 

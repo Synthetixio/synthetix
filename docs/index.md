@@ -2,11 +2,6 @@
 
 # System Documentation
 
-!!! caution "Work in Progress"
-    These notes are incomplete and rapidly changing. The main place to look at the moment is the [Smart Contract API](contracts), which should already be useful for development purposes.
-
-    Various overview documents in this main section have been omitted for now because they weren't up to standard.
-
 ## Introduction
 
 Welcome to the Synthetix system documentation. These pages contain a description of how Synthetix operates; provided is are high-level discussions of the system mechanics, as well as thorough technical specifications of the smart contract architecture and API. We hope this assists users and developers to understand the system, and to build on top of it.
@@ -32,9 +27,6 @@ Welcome to the Synthetix system documentation. These pages contain a description
 * **UniSwap:** [Uniswap](https://uniswap.io/) is a decentralised exchange for exchanging ETH and ERC20 tokens. Synthetix integrates with it to deepen the Synthetix ecosystem's liquidity, and it acts as an on-ramp/off-ramp for the Synth market. Users who provide liquidity to the [ETH/sETH pool](https://uniswap.exchange/swap/0x42456D7084eacF4083f1140d3229471bbA2949A8) are provided with staking rewards as [part of the Synthetix protocol](https://sips.synthetix.io/sips/sip-8). This is discussed further [here](https://blog.synthetix.io/uniswap-seth-pool-incentives/) and [here](https://blog.synthetix.io/snx-arbitrage-pool/).
 * **KyberSwap:** Liquidity is further deepened by the integration of SNX with [KyberSwap](https://kyberswap.com/swap/eth-snx), which is built on the [Kyber Network Protocol](https://kyber.network/). An example use case is described [here](https://blog.synthetix.io/snx-liquidity-has-been-added-to-kyberswap/).
 
-!!! bug
-    The Depot description text on Mintr still links to swappr.io, but should link to synthetix.exchange
-
 ## Projects Using Synthetix
 
 Apart from Synthetix's own platforms, there are already a number of projects using the Synthetix payment engine for stable crypto payments and other use cases:
@@ -45,25 +37,6 @@ Apart from Synthetix's own platforms, there are already a number of projects usi
 * [MARKET Protocol](https://marketprotocol.io/)
 * [Elysian](https://elycoin.io/)
 * [LocalCoinSwap](https://localcoinswap.com/)
-* [Media Protocol](https://medium.com/@mediaprotocolsm)
 * [ARAW](https://arawtoken.io/)
 
 As the [DeFi network](https://defi.network/) gains more traction we only expect this set of projects to expand.
-
-!!! caution "Media Protocol"
-    Media Protocol looks dead. Should this be removed?
-
-!!! todo
-    Add logos for each of these projects and change to a grid layout with cards.
-
-## History
-
-??? TODO "Work in Progress"
-    * Havven
-        * eUSD
-        * nUSD
-    * Synthetix
-        * Multicurrency
-        * Inflationary Monetary Policy
-        * [swappr](https://swapper.io/)
-        * synthetix.exchange

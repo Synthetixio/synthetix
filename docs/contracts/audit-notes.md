@@ -2,7 +2,14 @@
 
 These notes have been extracted from the relevant function descriptions in the rest of this section. Some of them, which are clarifying notes, are probably worth reintroducing to their appropriate sections. Other notes which are recognised issues but which can't or won't be rectified should also be reintroduced to their appropriate sections.
 
-On a different point, I'm not sure what the policy is on authorship information in the file headers but it did stick out to me that the names of the original authors of several contracts were simply removed. Not a huge deal, but it does seem a bit odd to replace a name when there are still large sections of code and commentary created by them in the file unchanged. Relevant instances include Synthetix, Synth, RewardEscrow, and SafeDecimalMath contracts, to varying degrees.
+On a different point, I'm not sure what the policy is on authorship information in the file headers but it did stick out to me that the names of the original authors of several contracts were simply removed. Not a huge deal, but it does seem a bit odd to replace a name when there are still large sections of code and commentary created by them in the file unchanged. Relevant instances include Synthetix, Synth, RewardEscrow, Depot, and SafeDecimalMath contracts, to varying degrees.
+
+<section-sep />
+
+## `Mintr`
+
+!!! bug
+    The Depot description text on Mintr still links to swappr.io, but should link to synthetix.exchange
 
 <section-sep />
 

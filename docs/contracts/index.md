@@ -1,21 +1,19 @@
 # Smart Contract Architecture
 
-!!! info "Current Version"
-    TODO: Insert here a release or a commit hash as of which this documentation is current.
-
 Here you will find descriptions of the smart contract interfaces of every smart contract in the Synthetix system. These documents go a bit further than the code does. These documents try to emphasise the reasons behind the architecture, specifically highlighting interactions between system components. The technical aspects of the system are also discussed together with the details of the incentive mechanism, and with links back to governance processes.
 
 Developers wishing to understand Synthetix code and the tradeoffs within it will be well-advised to read these documents alongside the Solidity itself.
 
 The addresses of currently-deployed contract instances are available in the [Deployments](deployments.md) section.
 
+!!! info "Version"
+    This documentation is current as of commit TODO.
+
 <section-sep />
 
 ## Overview
 
-The Synthetix system is composed of a number of core contract complexes, and some auxiliary contracts that enhance token liquidity and general system functionality.
-
-A high-level view of the contracts and the relationships between them is described in the following diagram.
+The Synthetix system is composed of a number of core contract complexes, and several auxiliary contracts that enhance token liquidity and general system functionality. These on-chain entities and how they communicate is reflected in the following high-level diagram.
 
 <centered-image>
     ![Contract architecture graph](../img/graphs/contract-architecture.svg)
@@ -54,6 +52,8 @@ Contract | Description
 
 ---
 
+<section-sep />
+
 ### Synth
 
 !!! example "Responsibilities"
@@ -74,6 +74,8 @@ Contract | Description
 [`PurgeableSynth`](PurgeableSynth.md) | A synth contract that can be liquidated at the end of its life, if its supply is low enough or it is a frozen inverse synth.
 
 ---
+
+<section-sep />
 
 ### Fee Pool
 
@@ -103,6 +105,8 @@ Contract | Description
 
 ---
 
+<section-sep />
+
 ### Inflationary Supply
 
 !!! example "Responsibilities"
@@ -126,6 +130,8 @@ Contract | Description
 [`EscrowChecker`](EscrowChecker.md) | Augments the [`SynthetixEscrow`](SynthetixEscrow.md) contract with a function for dApps to conveniently query it.
 
 ---
+
+<section-sep />
 
 ### Oracle
 
@@ -202,6 +208,8 @@ Contract | Description
 
 ---
 
+<section-sep />
+
 ### Utilities
 
 These contracts mostly are not deployed on their own, but provide functionality inherited by other contracts already listed.
@@ -225,3 +233,5 @@ Contract | Description
 [`Migrations`](Migrations.md) | Truffle migrations contract.
 
 ---
+
+<section-sep />
