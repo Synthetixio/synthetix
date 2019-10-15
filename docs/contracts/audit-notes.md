@@ -2,12 +2,21 @@
 
 These notes have been extracted from the relevant function descriptions in the rest of this section. Some of them, which are clarifying notes, are probably worth reintroducing to their appropriate sections. Other notes which are recognised issues but which can't or won't be rectified should also be reintroduced to their appropriate sections.
 
+On a different point, I'm not sure what the policy is on authorship information in the file headers but it did stick out to me that the names of the original authors of several contracts were simply removed. Not a huge deal, but it does seem a bit odd to replace a name when there are still large sections of code and commentary created by them in the file unchanged. Relevant instances include Synthetix, Synth, RewardEscrow, and SafeDecimalMath contracts, to varying degrees.
+
 <section-sep />
 
 ## `Synthetix`
 
 !!! info "Contract Header Out Of Date"
     The average SNX balance computations described in the file docstring of this contract was correct for the sUSD-only system. The multicurrency version of Synthetix has made this obsolete and much of it should be deleted or rewritten.
+
+---
+
+### `constructor`
+
+!!! caution "Incorrect Constructor Docstring"
+    `If the provided address is 0x0, then a fresh one will be constructed with the contract owning all tokens.` This is no longer correct.
 
 ---
 
