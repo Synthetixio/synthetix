@@ -1,5 +1,23 @@
 # Work Sheet
 
+
+??? "Contract-Level Tasks"
+    * TokenState for each ExternStateToken on diagrams
+    * Go back through function docstrings and dev docs to ensure everything matches up.
+    * Extract internal and dev notes into separate document and prepare to make this public-facing.
+    * Work out which licence headers are incorrect.
+    * Inheriting descendents as well as ancestors.
+    * Solidity syntax highlighting.
+    * Links to etherscan and addresses.
+    * Fix inheritance hierarchy and references.
+    * List inherited fields and methods in a collapsible details panel in the inheritance section.
+    * Expand function signatures out with descriptions of parameters and return values.
+    * Complete all related contract graphs
+    * Enhance Contract Mapper: Command line args etc. Look for calls out to other contracts in function bodies.
+    * Mark all `uint`s that are fixed point numbers with their precision level.
+    * Sequence diagrams for complex inter-contract functions.
+    * Propagate preconditions, events due to function composition.
+
 ??? "Formatting"
     * [mkdoc PyMdown extensions](https://facelessuser.github.io/pymdown-extensions/)
         * [Metadata](https://squidfunk.github.io/mkdocs-material/extensions/metadata/); [Further Notes](https://www.mkdocs.org/user-guide/writing-your-docs/#meta-data)

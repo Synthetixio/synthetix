@@ -1,13 +1,9 @@
-# Overview
-
-## Smart Contract API
+# Smart Contract Architecture
 
 !!! todo Current Version
     Insert here a release or a commit hash as of which this documentation is current.
 
-Here you will find descriptions of the smart contract interfaces of every smart contract in the Synthetix system. These documents go a bit further than just the code does, as they include additional descriptions of architecture, functionality, and the reasoning behind them.
-
-Where possible, the interactions between different system components has been emphasised. Also included where relevant, in order to place these contracts in the broader context of the ideas they implement, are discussions of the technical aspects of the Synthetix incentive mechanisms and links back to related governance processes.
+Here you will find descriptions of the smart contract interfaces of every smart contract in the Synthetix system. These documents go a bit further than the code does. These documents try to emphasise the reasons behind the architecture, specifically highlighting interactions between system components. The technical aspects of the system are also discussed together with the details of the incentive mechanism, and with links back to governance processes.
 
 Developers wishing to understand Synthetix code and the tradeoffs within it will be well-advised to read these documents alongside the Solidity itself.
 
@@ -15,37 +11,109 @@ The addresses of currently-deployed contract instances are available in the [Dep
 
 <section-sep />
 
-## Contract Listing
+## Overview
 
-The following contracts compose the core of the Synthetix system. These underlie the various [integrations and dapps](../#integrations-and-dapps) created by Synthetix and others.
+The Synthetix system is composed of a number of core contract complexes, and some auxiliary contracts that enhance token liquidity and general system functionality.
+
+A high-level view of the contracts and the relationships between them is described in the following diagram.
+
+<centered-image>
+    ![Contract architecture graph](../img/graphs/contract-architecture.svg)
+</centered-image>
+
+The oracle, Synthetix, synths, inflationary supply management, and fee pool elements comprise the core of the system. The arbitrage and depot contracts are supporting components which, while they do not alter the fundamental behaviour of system tokens, ensure the economic health of the system. They do this by making sure that SNX and synths flow freely through markets like Uniswap and Mintr, improving liquidity and encouraging prices to be close to their theoretically correct values.
+
+Each of the elements in this graph may be a complex composed of several contracts, as described below. Some relatively unimportant links have been omitted, but more detailed descriptions are available at the documentation pages for each specific contract.
+
+<section-sep />
+
+## Core Components
 
 ---
 
-### Tokens
+### Synthetix
+
+!!! example "Responsibilities"
+    * Implements the SNX token.
+    * Tracks operational synths.
+    * Issues and burns synths.
+    * Exchanges between synth flavours.
+    * Mints the inflationary supply.
+    * Maintains the system debt ledger.
+
+Synthetix contract communicates with [synths](#synths) to manage their supply, as well as the [fee pool](#fee-pool) to remit fees when synth exchanges occur. In order to properly convert between synths, and to understand value of debt induced by minting tokens, the Synthetix contract retrieves current token prices from the [oracle](#oracle). This contract also communicates with the [inflationary supply](#inflationary-supply) complex to mint the correct quantity when expanding the supply of SNX, and to distribute the new tokens appropriately.
+
+Along with the debt ledger, which is a time series history of the overall value of the synthetix ecosystem, issuance data for the current fee period is updated whenever synths are issued or burnt. This complex is also responsible for pushing historical issuance information to the fee pool, so that as fee periods roll over, a record of what portion of the total system debt is owned by different issuers is known when computing their fee entitlements.
+
+**Constituent Contracts**
 
 Contract | Description
 ---------|------------
-[`Synthetix`](Synthetix.md) | The central contract in the Synthetix system, which manages Synth supplies, keeping track of rewards, the debt ledger, and so on.
-[`SynthetixState`](SynthetixState.md) | An auxiliary state contract to sit alongside [`Synthetix`](Synthetix.md) which stores Synth issuance and debt information.
-[Synth](Synth.md) | The basic contract underlying all Synths.
-[PurgeableSynth](PurgeableSynth.md) | A Synth that can be liquidated if it has reached the end of its life.
-[`ExternStateToken`](ExternStateToken.md) | A partial ERC20/ERC223 token contact with an external state, which all tokens in Synthetix are built upon.
-[`TokenState`](TokenState.md) | A state contract to be used with [`ExternStateToken`](ExternStateToken.md) to store balances.
+[`Synthetix`](Synthetix.md) | The main token contract.
+[`SynthetixState`](SynthetixState.md) | An auxiliary state contract that sits alongside Synthetix, which tracks current issuer data and the debt ledger.
+
+---
+
+### Synth
+
+!!! example "Responsibilities"
+    * Implements all synth tokens.
+    * Liquidates frozen inverse synths.
+
+Many instances of the Synth token contract are deployed, one for each flavour of synth, including inverse synths. Since they run the same logic, synths are largely interchangeable, being distinguished only by their names and prices.
+
+Synths implement their own issuance and burning logic, but only the [Synthetix](#synthetix) and [fee pool](#fee-pool) contracts may invoke them. The Synthetix contract uses these functions for issuance and burning by stakers, while the fee pool uses them to convert synths collected as fees to XDRs when they are deposited into the fee pool address.
+
+Purgeable Synths also retrieve prices from the [oracle](#oracle) at the time of their liquidation to check if the value of their circulating supply is low enough to liquidate.
+
+**Constituent Contracts**
+
+Contract | Description
+---------|------------
+[`Synth`](Synth.md) | The base ERC20 token contract comprising most of the behaviour of all synths.
+[`PurgeableSynth`](PurgeableSynth.md) | A synth contract that can be liquidated at the end of its life, if its supply is low enough or it is a frozen inverse synth.
 
 ---
 
 ### Fee Pool
 
+!!! example "Responsibilities"
+    * Defines the boundaries of recent fee periods, tracking the fees and rewards to be distributed in each one.
+    * Allows anyone to roll over to the next fee period once the current one has closed.
+    * Holds the current exchange fee rate and computations.
+    * Accumulates synth exchange fees, holding them as a pool of XDR synths.
+    * Directs the [`RewardEscrow`](RewardEscrow.md) to escrow inflationary SNX rewards for eligible issuers.
+    * Stores and manages the details of the last several mint/burn events for each account, in order to compute the quantity of fees and rewards they are owed for the past several fee periods.
+    * Allows issuers (or their delegated hot wallets) to claim any fees and rewards owed to them.
+
+Since the collection of exchange fees on synths is mediated through the [`Synthetix.exchange`](Synthetix.md#exchange) function, the fee pool interacts closely with both the [`Synthetix`](Synthetix.md) and [`Synth`](Synth.md) contracts.
+
+The [`Synthetix`](Synthetix.md) contract informs the fee pool when [fees are collected](FeePool.md#feepaid), and it is allowed to append historic issuance records to its own [account issuance ledger](FeePoolState.md#accountissuanceledger). The fee pool mostly interacts with other system components through [`Synthetix`](Synthetix.md). For example, it only interacts with the oracle through the Synthetix contract, in order to perform conversions into XDRs. It also retrieves other data from there, like debt ledger information, issuance and collateralisation ratios, and the addresses of synth contracts.
+
+As the fee pool is responsible for computing the quantity of both exchange fees and inflationary rewards that issuers are entitled to, it also communicates with the [inflationary supply complex](#inflationarysupply). In particular, the [`RewardsDistribution`](RewardsDistribution.md) contract is allowed to set the level of inflationary rewards to be distributed through the fee pool, which then disburses them by adding new vesting schedule entries in the [`RewardEscrow`](RewardEscrow.md) contract.
+
+**Constituent Contracts**
+
 Contract | Description
 ---------|------------
-[`FeePool`](FeePool.md) | Holds accumulated fees, computes and stores fee entitlements and historic issuance data.
-[`FeePoolState`](FeePoolState.md) | Stores a limited history of issuance data per user on behalf of the [`FeePool`](FeePool.md).
-[`FeePoolEternalStorage`](FeePoolEternalStorage.md) | Stores fee withdrawal times for each address on behalf of the [`FeePool`](FeePool.md).
-[`DelegateApprovals`](DelegateApprovals.md) | Allows addresses to delegate another address to withdraw fees from the [`FeePool`](FeePool.md) on their behalf.
+[`FeePool`](FeePool.md) | The main contract responsible for computing and storing the level of fees and rewards issuers are entitled to.
+[`FeePoolState`](FeePoolState.md) | Stores a limited history of issuance data per user.
+[`FeePoolEternalStorage`](FeePoolEternalStorage.md) | Stores fee withdrawal times for each address.
+[`DelegateApprovals`](DelegateApprovals.md) | Allows addresses to delegate to others the right to claim fees on their behalf.
 
 ---
 
-### Inflationary Incentives and Escrow
+### Inflationary Supply Management
+
+!!! todo "COMPLETE ME"
+    please
+
+!!! example "Responsibilities"
+    * What do I do?
+
+Description
+
+**Constituent Contracts**
 
 Contract | Description
 ---------|------------
@@ -58,17 +126,77 @@ Contract | Description
 
 ---
 
-### Infrastructure
+### Oracle
+
+!!! todo "COMPLETE ME"
+    please
+
+!!! example "Responsibilities"
+    * What do I do?
+
+Description
+
+**Constituent Contracts**
 
 Contract | Description
 ---------|------------
+Oracle | The oracle is responsible for collecting and updating all token prices known to the Synthetix system. Although it is not a contract, it controls a known Ethereum address from which price updates are sent to the [`ExchangeRates`](ExchangeRates.md) contract.
 [`ExchangeRates`](ExchangeRates.md) | The Synthetix exchange rates contract which receives token prices from the oracle, and supplies them to all contracts that need it.
+
+---
+
+<section-sep />
+
+## Token Circulation
+
+---
+
+### Depot
+
+!!! example "Responsibilities"
+    * What do I do?
+
+Description
+
+
+!!! todo "COMPLETE ME"
+    please
+
 [`Depot`](Depot.md) | A vendor contract that allows users to exchange their ETH for sUSD or SNX, or their sUSD for SNX. It also allows users to deposit Synths to be sold in exchange for ETH.
+
+---
+
+### Uniswap Arbitrage Contract
+
+!!! example "Responsibilities"
+    * What do I do?
+
+Description
+
+!!! todo "COMPLETE ME"
+    please
+
 [ArbRewarder](ArbRewarder.md) | A contract which automates the process of arbitraging the ETH/sETH price on UniSwap through Synthetix conversion functions.
 
 ---
 
+<section-sep />
+
+## Infrastructure
+
+---
+
 ### Proxy
+
+!!! example "Responsibilities"
+    * Provides static addresses for contracts where the underlying logic can be upgraded.
+    * Provides the interface that allows contracts to operate beneath a proxy.
+
+Each contract which uses a proxy must inherit from [`Proxyable`](Proxyable.md). Function calls are forwarded from the proxy to the proxyable base, while return data and event information travels the other way. Ultimately most contracts should communicate with one another by proxy. See [SIP-16](https://sips.synthetix.io/sips/sip-16) for more discussion.
+
+The [`Synthetix`](Synthetix.md), [`FeePool`](FeePool.md), and all [`Synth`](Synth.md) contracts exist behind their own individual proxies.
+
+**Constituent Contracts**
 
 Contract | Description
 ---------|------------
@@ -78,7 +206,11 @@ Contract | Description
 
 ---
 
-### Utility
+### Utility Contracs
+
+These contracts mostly are not deployed on their own, but provide functionality inherited by other contracts already listed.
+
+**Constituent Contracts**
 
 Contract | Description
 ---------|------------
@@ -92,25 +224,8 @@ Contract | Description
 [`ReentrancyPreventer`](ReentrancyPreventer.md) | Implements a mutex that prevents re-entrant function calls.
 [`TokenFallbackCaller`](TokenFallbackCaller.md) | Adds an ERC223 token fallback calling function to inheriting contracts.
 [`EternalStorage`](EternalStorage.md) | A persistent/unstructured smart contract storage pattern.
+[`ExternStateToken`](ExternStateToken.md) | A partial ERC20/ERC223 token contact with an external state, which all tokens in Synthetix are built upon.
+[`TokenState`](TokenState.md) | A state contract to be used with [`ExternStateToken`](ExternStateToken.md) to store balances.
 [`Migrations`](Migrations.md) | Truffle migrations contract.
 
 ---
-
-<section-sep />
-
-??? TODO
-    * TokenState for each ExternStateToken on diagrams
-    * Go back through function docstrings and dev docs to ensure everything matches up.
-    * Extract internal and dev notes into separate document and prepare to make this public-facing.
-    * Work out which licence headers are incorrect.
-    * Inheriting descendents as well as ancestors.
-    * Solidity syntax highlighting.
-    * Links to etherscan and addresses.
-    * Fix inheritance hierarchy and references.
-    * List inherited fields and methods in a collapsible details panel in the inheritance section.
-    * Expand function signatures out with descriptions of parameters and return values.
-    * Related contracts
-    * Enhance Contract Mapper: Command line args etc. Look for calls out to other contracts in function bodies.
-    * Mark all `uint`s that are fixed point numbers with their precision level.
-    * Sequence diagrams for complex inter-contract functions.
-    * Propagate preconditions, events due to function composition.

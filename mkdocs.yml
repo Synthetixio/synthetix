@@ -28,8 +28,7 @@ nav:
     - Smart Contracts: contracts/index.md
     - Work Sheet: work-sheet.md
   - Smart Contracts:
-    - Overview: contracts/index.md
-    - Architecture: contracts/architecture.md
+    - Architecture: contracts/index.md
     - Deployments: contracts/deployments.md
     - Tokens:
       - Synthetix: contracts/Synthetix.md
