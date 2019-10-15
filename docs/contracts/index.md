@@ -21,7 +21,7 @@ A high-level view of the contracts and the relationships between them is describ
     ![Contract architecture graph](../img/graphs/contract-architecture.svg)
 </centered-image>
 
-The oracle, Synthetix, synths, inflationary supply management, and fee pool elements comprise the core of the system. The arbitrage and depot contracts are supporting components which, while they do not alter the fundamental behaviour of system tokens, ensure the economic health of the system. They do this by making sure that SNX and synths flow freely through markets like Uniswap and Mintr, improving liquidity and encouraging prices to be close to their theoretically correct values.
+The oracle, Synthetix, synths, inflationary supply, and fee pool elements comprise the core of the system. The arbitrage and depot contracts are supporting components which, while they do not alter the fundamental behaviour of system tokens, ensure the economic health of the system. They do this by making sure that SNX and synths flow freely through markets like Uniswap and Mintr, improving liquidity and encouraging prices to be close to their theoretically correct values.
 
 Each of the elements in this graph may be a complex composed of several contracts, as described below. Some relatively unimportant links have been omitted, but more detailed descriptions are available at the documentation pages for each specific contract.
 
@@ -90,7 +90,7 @@ Since the collection of exchange fees on synths is mediated through the [`Synthe
 
 The [`Synthetix`](Synthetix.md) contract informs the fee pool when [fees are collected](FeePool.md#feepaid), and it is allowed to append historic issuance records to its own [account issuance ledger](FeePoolState.md#accountissuanceledger). The fee pool mostly interacts with other system components through [`Synthetix`](Synthetix.md). For example, it only interacts with the oracle through the Synthetix contract, in order to perform conversions into XDRs. It also retrieves other data from there, like debt ledger information, issuance and collateralisation ratios, and the addresses of synth contracts.
 
-As the fee pool is responsible for computing the quantity of both exchange fees and inflationary rewards that issuers are entitled to, it also communicates with the [inflationary supply complex](#inflationarysupply). In particular, the [`RewardsDistribution`](RewardsDistribution.md) contract is allowed to set the level of inflationary rewards to be distributed through the fee pool, which then disburses them by adding new vesting schedule entries in the [`RewardEscrow`](RewardEscrow.md) contract.
+As the fee pool is responsible for computing the quantity of both exchange fees and inflationary rewards that issuers are entitled to, it also communicates with the [inflationary supply complex](#inflationary-supply). In particular, the [`RewardsDistribution`](RewardsDistribution.md) contract is allowed to set the level of inflationary rewards to be distributed through the fee pool, which then disburses them by adding new vesting schedule entries in the [`RewardEscrow`](RewardEscrow.md) contract.
 
 **Constituent Contracts**
 
@@ -103,7 +103,7 @@ Contract | Description
 
 ---
 
-### Inflationary Supply Management
+### Inflationary Supply
 
 !!! example "Responsibilities"
     * Defines the schedule according to which SNX tokens are generated from the inflationary supply.
@@ -112,7 +112,7 @@ Contract | Description
     * Holds the minted inflationary rewards in escrow for a year after they are claimed.
     * Holds and distributes the escrowed tokens from the original token sale.
 
-The inflationary supply complex is concerned with controlling the flow of new SNX tokens being injected into the market. In this capacity it communicates with the [`Synthetix`](Synthetix.md) contract. The actual fraction of the weekly SNX rewards that a particular account is entitled to claim is computed by the [`FeePool`](FeePool.md), which is able to direct the [`RewardEscrow`](RewardEscrow.md) and [`RewardsDistribution`](RewardsDistributino.md) contracts as to how they should distribute the new tokens.
+The inflationary supply complex is concerned with controlling the flow of new SNX tokens being injected into the market. In this capacity it communicates with the [`Synthetix`](Synthetix.md) contract. The actual fraction of the weekly SNX rewards that a particular account is entitled to claim is computed by the [fee pool](#fee-pool), which is able to direct the [`RewardEscrow`](RewardEscrow.md) and [`RewardsDistribution`](RewardsDistributino.md) contracts as to how they should distribute the new tokens.
 
 **Constituent Contracts**
 
@@ -188,11 +188,11 @@ The [ArbRewarder](ArbRewarder.md) automates the process of arbitraging the ETH/s
     * Provides static addresses for contracts where the underlying logic can be upgraded.
     * Provides the interface that allows contracts to operate beneath a proxy.
 
-Each contract which uses a proxy must inherit from [`Proxyable`](Proxyable.md). Function calls are forwarded from the proxy to the proxyable base, while return data and event information travels the other way. Ultimately most contracts should communicate with one another by proxy. See [SIP-16](https://sips.synthetix.io/sips/sip-16) for more discussion.
+Each contract which uses a [proxy](Proxy.md) must inherit from [`Proxyable`](Proxyable.md). Function calls are forwarded from the proxy to the proxyable base, while return data and event information travels the other way. Ultimately most contracts should communicate with one another by proxy. See [SIP-16](https://sips.synthetix.io/sips/sip-16) for more discussion.
 
 The [`Synthetix`](Synthetix.md), [`FeePool`](FeePool.md), and all [`Synth`](Synth.md) contracts exist behind their own individual proxies.
 
-**Constituent Contracts**
+**Contracts**
 
 Contract | Description
 ---------|------------
@@ -202,11 +202,11 @@ Contract | Description
 
 ---
 
-### Utility Contracts
+### Utilities
 
 These contracts mostly are not deployed on their own, but provide functionality inherited by other contracts already listed.
 
-**Constituent Contracts**
+**Contracts**
 
 Contract | Description
 ---------|------------
