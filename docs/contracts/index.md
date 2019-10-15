@@ -1,7 +1,7 @@
 # Smart Contract Architecture
 
-!!! todo Current Version
-    Insert here a release or a commit hash as of which this documentation is current.
+!!! info "Current Version"
+    TODO: Insert here a release or a commit hash as of which this documentation is current.
 
 Here you will find descriptions of the smart contract interfaces of every smart contract in the Synthetix system. These documents go a bit further than the code does. These documents try to emphasise the reasons behind the architecture, specifically highlighting interactions between system components. The technical aspects of the system are also discussed together with the details of the incentive mechanism, and with links back to governance processes.
 
@@ -70,7 +70,7 @@ Purgeable Synths also retrieve prices from the [oracle](#oracle) at the time of 
 
 Contract | Description
 ---------|------------
-[`Synth`](Synth.md) | The base ERC20 token contract comprising most of the behaviour of all synths.
+[`Synth`](Synth.md) | The base ERC20 token contract comprising most of the behaviour of all synths. Each synth has an associated [proxy](Proxy.md) and [token state](TokenState.md) contract.
 [`PurgeableSynth`](PurgeableSynth.md) | A synth contract that can be liquidated at the end of its life, if its supply is low enough or it is a frozen inverse synth.
 
 ---
@@ -78,9 +78,9 @@ Contract | Description
 ### Fee Pool
 
 !!! example "Responsibilities"
+    * Computes fee entitlements based on the current exchange fee rate and incentive structure, to incentivise users to keep the system operating correctly.
     * Defines the boundaries of recent fee periods, tracking the fees and rewards to be distributed in each one.
     * Allows anyone to roll over to the next fee period once the current one has closed.
-    * Holds the current exchange fee rate and computations.
     * Accumulates synth exchange fees, holding them as a pool of XDR synths.
     * Directs the [`RewardEscrow`](RewardEscrow.md) to escrow inflationary SNX rewards for eligible issuers.
     * Stores and manages the details of the last several mint/burn events for each account, in order to compute the quantity of fees and rewards they are owed for the past several fee periods.
@@ -105,13 +105,14 @@ Contract | Description
 
 ### Inflationary Supply Management
 
-!!! todo "COMPLETE ME"
-    please
-
 !!! example "Responsibilities"
-    * What do I do?
+    * Defines the schedule according to which SNX tokens are generated from the inflationary supply.
+    * Tracks for each year how many inflationary tokens have been minted so far, and how many remain.
+    * Distributes inflationary rewards to different recipients in the proportions specified by the protocol; that is for staking versus providing Uniswap liquidity.
+    * Holds the minted inflationary rewards in escrow for a year after they are claimed.
+    * Holds and distributes the escrowed tokens from the original token sale.
 
-Description
+The inflationary supply complex is concerned with controlling the flow of new SNX tokens being injected into the market. In this capacity it communicates with the [`Synthetix`](Synthetix.md) contract. The actual fraction of the weekly SNX rewards that a particular account is entitled to claim is computed by the [`FeePool`](FeePool.md), which is able to direct the [`RewardEscrow`](RewardEscrow.md) and [`RewardsDistribution`](RewardsDistributino.md) contracts as to how they should distribute the new tokens.
 
 **Constituent Contracts**
 
@@ -128,13 +129,17 @@ Contract | Description
 
 ### Oracle
 
-!!! todo "COMPLETE ME"
-    please
-
 !!! example "Responsibilities"
-    * What do I do?
+    * Updates, stores, and distributes up-to-date token prices relevant to the system.
+    * Computes the prices of inverse synths.
+    * Disables exchange functionality if prices are not fresh.
+    * Detects and mitigates attempted front-running, for example by locking exchanges while prices are being updated, or activating the exchange [protection circuit](Synthetix.md#protectioncircuit).
+    * Provides functionality to perform exchange rate conversions between synth flavours.
+    * Computes the price of the XDR.
 
-Description
+The on-chain manifestation of the oracle is the [`ExchangeRates`](ExchangeRates.md) contract, whose stored prices it frequently updates. The primary user of these prices is the [`Synthetix`](Synthetix.md) contract, which needs them to calculate debt allocations when issuing and burning synths, and to determine the correct quantity of synths when performing an exchange of one flavour for another.
+
+It is also used by some other contracts, such as the [`ArbRewarder`](ArbRewarder.md) and [`PurgeableSynth`](PurgeableSynth.md) contracts.
 
 **Constituent Contracts**
 
@@ -154,29 +159,20 @@ Oracle | The oracle is responsible for collecting and updating all token prices 
 ### Depot
 
 !!! example "Responsibilities"
-    * What do I do?
+    * TODO (also flesh out the description here)
 
-Description
+The [`Depot`](Depot.md) is a vendor contract that allows users to exchange their ETH for sUSD or SNX, or their sUSD for SNX. It also allows users to deposit Synths to be sold in exchange for ETH.
 
-
-!!! todo "COMPLETE ME"
-    please
-
-[`Depot`](Depot.md) | A vendor contract that allows users to exchange their ETH for sUSD or SNX, or their sUSD for SNX. It also allows users to deposit Synths to be sold in exchange for ETH.
+The depot has its own dedicated oracle, and all exchanges are performed at the current market prices, assuming sUSD is priced at one dollar.
 
 ---
 
 ### Uniswap Arbitrage Contract
 
 !!! example "Responsibilities"
-    * What do I do?
+    * TODO (also flesh out the description here)
 
-Description
-
-!!! todo "COMPLETE ME"
-    please
-
-[ArbRewarder](ArbRewarder.md) | A contract which automates the process of arbitraging the ETH/sETH price on UniSwap through Synthetix conversion functions.
+The [ArbRewarder](ArbRewarder.md) automates the process of arbitraging the ETH/sETH price on UniSwap through Synthetix conversion functions.
 
 ---
 
