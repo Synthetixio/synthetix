@@ -64,20 +64,22 @@ Contract | Description
 
 ### Fee Pool
 
-!!! todo "COMPLETE ME"
-    please
-
 !!! example "Responsibilities"
     * Defines the boundaries of recent fee periods, tracking the fees and rewards to be distributed in each one.
     * Allows anyone to roll over to the next fee period once the current one has closed.
     * Holds the current exchange fee rate and computations.
     * Accumulates synth exchange fees, holding them as a pool of XDR synths.
-    * Manages the details of the last several mint/burn events for each account, in order to compute the quantity of fees and rewards they are owed.
-    * Allows issuers (or their delegated hot wallets) to claim any fees owed to them.
+    * Directs the [`RewardEscrow`](RewardEscrow.md) to escrow inflationary SNX rewards for eligible issuers.
+    * Stores and manages the details of the last several mint/burn events for each account, in order to compute the quantity of fees and rewards they are owed for the past several fee periods.
+    * Allows issuers (or their delegated hot wallets) to claim any fees and rewards owed to them.
 
-The fee pool holds the accumulated system fees, and determines the portion of fees and rewards that issuers are entitled to claim in exchange for their efforts in backing the system.
+Since the collection of exchange fees on synths is mediated through the [`Synthetix.exchange`](Synthetix.md#exchange) function, the fee pool interacts closely with both the [`Synthetix`](Synthetix.md) and [`Synth`](Synth.md) contracts.
 
-**Constituents**
+The [`Synthetix`](Synthetix.md) contract informs the fee pool when [fees are collected](FeePool.md#feepaid), and it is allowed to append historic issuance records to its own [account issuance ledger](FeePoolState.md#accountissuanceledger). The fee pool mostly interacts with other system components through [`Synthetix`](Synthetix.md). For example, it only interacts with the oracle through the Synthetix contract, in order to perform conversions into XDRs. It also retrieves other data from there, like debt ledger information, issuance and collateralisation ratios, and the addresses of synth contracts.
+
+As the fee pool is responsible for computing the quantity of both exchange fees and inflationary rewards that issuers are entitled to, it also communicates with the [inflationary supply complex](#inflationarysupply). In particular, the [`RewardsDistribution`](RewardsDistribution.md) contract is allowed to set the level of inflationary rewards to be distributed through the fee pool, which then disburses them by adding new vesting schedule entries in the [`RewardEscrow`](RewardEscrow.md) contract.
+
+**Constituent Contracts**
 
 Contract | Description
 ---------|------------
@@ -93,6 +95,22 @@ Contract | Description
 !!! todo "COMPLETE ME"
     please
 
+!!! example "Responsibilities"
+    * What do I do?
+
+Description
+
+**Constituent Contracts**
+
+Contract | Description
+---------|------------
+[`SupplySchedule`](SupplySchedule.md) | Determines the rate that inflationary SNX tokens are released.
+[`RewardEscrow`](RewardEscrow.md) | Receives inflationary SNX rewards to be distributed after a year escrow.
+[`RewardsDistribution`](RewardsDistribution.md) | Apportions designated quantities of inflationary rewards to the [`RewardEscrow`](RewardEscrow.md) and [`SynthetixAirdropper`](SynthetixAirdropper.md) contracts.
+[`SynthetixAirdropper`](SynthetixAirdropper.md) | Distributes tokens from the inflationary supply to individual residents of the the UniSwap ETH/sETH liquidity pool.
+[`SynthetixEscrow`](SynthetixEscrow.md) | Holds the escrowed balances of SNX from the original token sale.
+[`EscrowChecker`](EscrowChecker.md) | Augments the [`SynthetixEscrow`](SynthetixEscrow.md) contract with a function for dApps to conveniently query it.
+
 ---
 
 ### Oracle
@@ -100,10 +118,21 @@ Contract | Description
 !!! todo "COMPLETE ME"
     please
 
+!!! example "Responsibilities"
+    * What do I do?
+
+Description
+
+**Constituent Contracts**
+
+Contract | Description
+---------|------------
+Oracle | The oracle is responsible for collecting and updating all token prices known to the Synthetix system. Although it is not a contract, it controls a known Ethereum address from which price updates are sent to the [`ExchangeRates`](ExchangeRates.md) contract.
+[`ExchangeRates`](ExchangeRates.md) | The Synthetix exchange rates contract which receives token prices from the oracle, and supplies them to all contracts that need it.
+
 ---
 
 <section-sep />
-
 
 ## Token Circulation
 
@@ -111,15 +140,30 @@ Contract | Description
 
 ### Depot
 
+!!! example "Responsibilities"
+    * What do I do?
+
+Description
+
+
 !!! todo "COMPLETE ME"
     please
+
+[`Depot`](Depot.md) | A vendor contract that allows users to exchange their ETH for sUSD or SNX, or their sUSD for SNX. It also allows users to deposit Synths to be sold in exchange for ETH.
 
 ---
 
 ### Uniswap Arbitrage Contract
 
+!!! example "Responsibilities"
+    * What do I do?
+
+Description
+
 !!! todo "COMPLETE ME"
     please
+
+[ArbRewarder](ArbRewarder.md) | A contract which automates the process of arbitraging the ETH/sETH price on UniSwap through Synthetix conversion functions.
 
 ---
 
@@ -134,18 +178,45 @@ Contract | Description
 !!! todo "COMPLETE ME"
     please
 
+!!! example "Responsibilities"
+    * What do I do?
+
+Description
+
 Note that the [`Synthetix`](Synthetix.md), [`FeePool`](FeePool.md), and all [`Synth`](Synth.md) contracts exist behind their own individual [proxies](Proxy.md).
+
+**Constituent Contracts**
+
+Contract | Description
+---------|------------
+[`Proxy`](Proxy.md) | The Synthetix proxy contract.
+[`ProxyERC20`](ProxyERC20.md) | A proxy contract which explicitly supports the ERC20 interface.
+[`Proxyable`](Proxyable.md) | An abstract base contract designed to work with the [Synthetix proxy](Proxy.md).
 
 ---
 
-### Tokens
+### Utility Contracs
 
 !!! todo "COMPLETE ME"
     please
 
----
+**Constituent Contracts**
 
-### Utilities
+Contract | Description
+---------|------------
+[`SafeDecimalMath`](SafeDecimalMath.md) | A library for performing fixed point arithmetic at two different precision levels.
+[`SafeMath`](SafeMath.md) | OpenZeppelin guarded arithmentic library, used by [`SafeDecimalMath`](SafeDecimalMath.md) and others.
+[`Owned`](Owned.md) | A contract with a distinct owner who can have special privileges.
+[`LimitedSetup`](LimitedSetup.md) | A contract which can disable functions a set time after deployment.
+[`State`](State.md) | An external state contract which can restrict its fields to be modifiable only by a particular contract address.
+[`SelfDestructible`](SelfDestructible.md) | A contract that can be self destructed by its owner after a delay.
+[`Pausable`](Pausable.md) | A contract whose operations can be paused by its owner.
+[`ReentrancyPreventer`](ReentrancyPreventer.md) | Implements a mutex that prevents re-entrant function calls.
+[`TokenFallbackCaller`](TokenFallbackCaller.md) | Adds an ERC223 token fallback calling function to inheriting contracts.
+[`EternalStorage`](EternalStorage.md) | A persistent/unstructured smart contract storage pattern.
+[`ExternStateToken`](ExternStateToken.md) | A partial ERC20/ERC223 token contact with an external state, which all tokens in Synthetix are built upon.
+[`TokenState`](TokenState.md) | A state contract to be used with [`ExternStateToken`](ExternStateToken.md) to store balances.
+[`Migrations`](Migrations.md) | Truffle migrations contract.
 
 !!! todo "COMPLETE ME"
     please
