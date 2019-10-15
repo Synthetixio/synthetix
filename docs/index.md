@@ -4,7 +4,7 @@
 
 ## Introduction
 
-Welcome to the Synthetix system documentation. These pages contain a description of how Synthetix operates; provided is are high-level discussions of the system mechanics, as well as thorough technical specifications of the smart contract architecture and API. We hope this assists users and developers to understand the system, and to build on top of it.
+Welcome to the Synthetix system documentation. These pages contain a description of how Synthetix operates; provided are high-level discussions of the system mechanics, as well as thorough technical specifications of the smart contract architecture and API. We hope this assists users and developers to understand the system, and to build on top of it.
 
 ## Get In Touch
 
