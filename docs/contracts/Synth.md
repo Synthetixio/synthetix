@@ -5,6 +5,9 @@ It exposes sufficient functionality for the [`Synthetix`](Synthetix.md) and [`Fe
 
 See the [main synth notes](../../synths) for more information about how Synths function in practice.
 
+!!! todo "Remove Transfer Fee Notes"
+    Transfer fee logic has been removed, but these notes still need to be updated.
+
 !!! danger "Transfer Fees Disabled"
     The global transfer fee rate in Synthetix is set to 0%, effectively disabling transfer fees. All related documentation is retained for completeness, but it is largely irrelevant to current Synthetix operations.
 
