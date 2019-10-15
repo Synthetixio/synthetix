@@ -283,9 +283,6 @@ Returns the SNX quantity of the next vesting entry. Returns `0` if there is no s
 
 Returns the full vesting schedule for a given account.
 
-!!! todo "TODO: Investigate Efficiency"
-    Hopefully this is probably not too inefficient as the array will mostly be trailing zeroes. Not sure if the RLP encoding represents such arrays more efficiently or not. Largely won't matter if it's just a view function being used by dapps, however.
-
 ??? example "Details"
     **Signature**
 
@@ -296,11 +293,6 @@ Returns the full vesting schedule for a given account.
 ### `appendVestingEntry`
 
 This function allows the [`FeePool`](FeePool.md) contract to add a new entry to a given account's vesting schedule when it claims its fees. All new entries are set to vest after one year.
-
-???+ note "A Minor Note on Efficiency"
-    Note that this function checks that the new vesting timestamp (`now + 52 weeks`) is after the last vesting entry's timestamp, if one exists. In most cases this requirement can't be violated, since `now` increases monotonically. In the worst case where multiple calls are made for a given account in a single block, they go through with the same timestamp, so only the first one will be accepted. But in this case, a user's last fee withdrawal will have been set, and `quantity` will be zero, which fails an earlier precondition.
-
-    The function also needlessly recomputes `numVestingEntries`, which is already stored in the `scheduleLength` local.
 
 ??? example "Details"
     **Signature**

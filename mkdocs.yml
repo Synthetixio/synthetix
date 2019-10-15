@@ -69,6 +69,7 @@ nav:
       - TokenFallbackCaller: contracts/TokenFallbackCaller.md
       - EternalStorage: contracts/EternalStorage.md
       - Migrations: contracts/Migrations.md
+    - Audit Notes: contracts/audit-notes.md
 
 # These social links will be rendered as icons in the footer, as long as the type corresponds to FontAwesome glyph.
 extra:

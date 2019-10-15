@@ -68,9 +68,6 @@ totalSupplyMinted | `uint` | The total minted so far in this period, not includi
 
 `totalSupplyMinted` for the current year is incremented whenever [`updateMintValues`](#updatemintvalues) is called. The others fields are static.
 
-!!! bug "Incorrect Comment"
-    The comment on `totalSupplyMinted` is `// UTC Time - Total of supply minted`. The 'UTC Time - ' bit doesn't make sense; the variable is a quantity of tokens, not a timestamp.
-
 ---
 
 <section-sep />
@@ -195,9 +192,6 @@ Allows the owner to set the [`synthetix`](#synthetix) address.
 
     * [`Owned.onlyOwner`](Owned.md#onlyowner)
 
-    !!! caution
-        Although this function has a comment in the body `// emit event`, no event is actually emitted when the Synthetix address is updated.
-
 ---
 
 ### `mintableSupply`
@@ -278,9 +272,6 @@ This means that tokens are only mintable once a week, and no more tokens can be 
 
 Returns the index of the current minting year in the [`schedule`](#schedule). Throws an exception if the last minting schedule entry has elapsed.
 
-!!! note "An Inefficiency"
-    This computes the current year by bounds-checking each year in a loop, but it could be done more simply with integer division.
-
 ??? example "Details"
     **Signature**
 
@@ -297,9 +288,6 @@ Returns the index of the current minting year in the [`schedule`](#schedule). Th
 Computes the quantity of unminted tokens from the previous year, which assists in handling the transition between two years.
 
 This returns $0$ if some tokens have already been minted this year, or if it is currently the first year. Otherwise, it is simply `lastYear.totalSupply - lastYear.totalSupplyMinted`.
-
-???+ note "A Minor Inefficiency"
-    In the function the result is actually computed as `max(0, lastYear.totalSupply - lastYear.totalSupplyMinted)`, which is redundant since the arguments are unsigned. Even if the minted supply could exceed the allocated supply, the result would overflow and the safe subtraction would revert the transaction.
 
 ??? example "Details"
     **Signature**
@@ -319,7 +307,7 @@ Although this function has no check that any tokens actually are mintable when i
 
 The function always returns `true` if the transaction was not reverted.
 
-!!! Note "Unmintable Tokens"
+!!! info "Unmintable Tokens"
     Some tokens could fail to be minted if no minting occurs for a year. That is, minting in the `n`th year cannot recover any unminted tokens from the `n-2`th year or earlier.
 
 ??? example "Details"

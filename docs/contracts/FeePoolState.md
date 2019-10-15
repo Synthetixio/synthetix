@@ -27,7 +27,7 @@ See [`FeePool.feesByPeriod`](FeePool.md#feesbyperiod) and [`FeePool.effectiveDeb
     ![FeePoolState inheritance graph](../img/graphs/FeePoolState.svg)
 </centered-image>
 
-!!! note
+!!! caution "No Relation To The State Contract"
     Although this contract is called FeePoolState, be aware that it does not inherit from the [`State`](State.md) contract.
 
 ---
@@ -64,8 +64,8 @@ debtEntryIndex | `uint` | The [debt ledger](SynthetixState.md#debtledger) index 
 
 For more information on these fields and their meaning, see the main [`Synthetix`](Synthetix.md) contract functions [`_addToDebtRegister`](Synthetix.md#_addtodebtregister) and [`_removeFromDebtRegister`](Synthetix.md#_removefromdebtregister), along with the corresponding struct in [`SynthetixState`](SynthetixState.md#issuancedata).
 
-!!! note
-    This is the same struct as in [`SynthetixState`](SynthetixState.md#issuancedata), modulo naming, but in the case of SynthetixState, only one entry is kept, corresponding to only the most recent issuance event associated with an address.
+!!! info "Relationship with `SynthetixState`"
+    This is the same struct as [`SynthetixState.issuanceData`](SynthetixState.md#issuancedata), modulo naming, but in the case of SynthetixState, only one entry is kept, corresponding to only the most recent issuance event associated with an address.
 
     This induces a slightly awkward structure where the current and historical issuance information is stored over two separate contracts. In a future version this information could potentially be stored in a unified structure for dividends in efficiency and clarity.
 
@@ -184,18 +184,11 @@ If the latest entry in this account's issuance ledger was from the current fee p
 
 The `debtRatio` argument is a [27-decimal fixed point number](SafeDecimalMath.md).
 
-!!! caution "Incorrect Docstring"
-    `accountIssuanceLedger[account][1-3]` should be `[1-2]`.
-  
 ??? example "Details"
 
     **Signature**
     
     `appendAccountIssuanceRecord(address account, uint debtRatio, uint debtEntryIndex, uint currentPeriodStartDebtIndex) external`
-
-    !!! caution
-
-        Note that the `debtRatio` parameter name may be unclear; it's actually the debt of this account as a percentage of the global debt.
 
     **Modifiers**
 
@@ -218,9 +211,6 @@ Shifts this account's array of issuance ledger entries down one place, overwriti
 ### `importIssuerData`
 
 This function was used during the initial six week setup period to initialise the issuance ledger from the previous Synthetix version.
-
-!!! caution
-        Because the internal loop index is a `uint8`, if the `accounts` argument is longer than 256 entries this function will loop indefinitely, consuming all gas.
 
 ??? example "Details"
 

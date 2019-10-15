@@ -120,9 +120,6 @@ Sets this contract's secondary proxy. `setIntegrationProxy` cannot be called thr
 
     * [`Owned.onlyOwner`](Owned.md#onlyowner)
 
-    !!! caution
-        Be aware that there is no `IntegrationProxyUpdated` event corresponding to [`ProxyUpdated`](#proxyupdated).
-
 ---
 
 ### `setMessageSender`

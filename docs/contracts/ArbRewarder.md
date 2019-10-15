@@ -11,11 +11,6 @@ Announcement Post: https://blog.synthetix.io/our-new-seth-snx-arb-contract-is-no
 
 **Source:** [`ArbRewarder.sol`](https://github.com/Synthetixio/synthetix/blob/arb-rewarder/contracts/ArbRewarder.sol)
 
-!!! todo
-    Add the following link to the deployed contracts list
-
-    https://etherscan.io/address/0x9a4935749dbdfaf786a19df1c61a6d28b7a6cf94#code
-
 <section-sep />
 
 ## Architecture

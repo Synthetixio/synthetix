@@ -28,9 +28,4 @@ In the Synthetix system, an ERC20 proxy operates in front of the main [SNX token
 
 This contract defines all ERC20 functions, including `name()`, `symbol()`, and `decimals()`. These functions simply call down to the underlying token contract.
 
-!!! caution
-    Although the `transfer()`, `approve()`, and `transferFrom()` functions properly set up the message sender, they do not forward ether to the target contract. Hence these funds could get stuck in the proxy, and the underlying functionality will not work properly if it expects ether. Such funds can be recovered by operating in `DELEGATECALL` mode and transferring the ether out with an appropriate underlying contract.
-
-    It is conceivable that a future version of this proxy could potentially allow the underlying contract to transfer funds held in the proxy, which would eliminate this issue.
-
 <section-sep />

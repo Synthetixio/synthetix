@@ -215,9 +215,6 @@ This function always returns true if it does not revert.
 
 Removes a distribution recipient from the [`distributions`](#distributions) list at the specified index.
 
-!!! note "A Point on Gas Consumption"
-    Since this function must shift all later entries down to fill the gap from the one it removed, it could in principle consume an unbounded amount of gas. However, the number of entries will always be very low.
-
 ??? example "Details"
     **Signature**
 
@@ -262,7 +259,7 @@ First, for each element `d` in the [`distributions`](#distributions) list, `d.am
 
 This function always returns true if it does not revert.
 
-!!! note "SNX Balance"
+!!! info "Sufficient SNX Balance"
     There will always be sufficient SNX in the RewardsDistribution contract to support this operation, since its SNX balance is directly credited the correct number of tokens by [`Synthetix.mint`](Synthetix.md#mint) immediately before the only call to this function. Only the Synthetix contract is authorised to execute rewards distribution, and this is the only place new SNX finds its way into the system.
 
 ??? example "Details"

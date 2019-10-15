@@ -258,9 +258,6 @@ $\bar{p}$ is frozen whenever $\bar{p} \in \{l,u\}$; that is, when $2e - l \le p$
 
 Updates the `XDR` price, which is set to the sum of the current prices of the currencies in  [`xdrParticipants`](#xdrparticipants) basket (`sUSD`, `sAUD`, `sCHF`, `sEUR`, `sGBP`).
 
-!!! caution
-    The `XDR` price is still recomputed even if the underlying prices are stale, or if the oracle is not updating any of the `XDR` participants. Due to this, `XDR`'s update timestamp does not necessarily reflect the timestamps of the underlying currencies. Unless every other price is stale, the price of the `XDR` cannot be stale, even if its constituent prices are.
-
 ??? example "Details"
     **Signature**
 
@@ -369,7 +366,7 @@ Allows the owner to set up an inverse index for a particular currency. See [`rat
     * `upperLimit` must be less than twice `entryPoint`.
     * `lowerLimit` must be less than `entryPoint`.
 
-    !!! note
+    !!! info 
         Together these entail that $0 \lt \text{lowerLimit} \lt \text{entryPoint} \lt \text{upperLimit} \lt 2 \times \text{entryPoint}$.
 
         Observe that the first precondition here is redundant, as two of the others imply it.
@@ -396,9 +393,6 @@ Allows the owner to remove an inverse index for a particular currency.
     **Emits**
 
     * [`InversePriceConfigured(currencyKey, 0, 0, 0)`](#inversepriceconfigured)
-
-    !!! caution
-        The [`InversePriceConfigured`](#inversepriceconfigured) event is still emitted even if the currency had no inverse index to delete.
 
 ---
 

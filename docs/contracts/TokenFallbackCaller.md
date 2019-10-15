@@ -4,9 +4,6 @@
 
 Allows inheriting contracts to call an ERC223 token fallback function of an external contract upon token transfers, if such a function exists.
 
-!!! bug
-    The file docstring still refers to "Fee Token", which no longer exists.
-
 **Source:** [TokenFallbackCaller.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/TokenFallbackCaller.sol)
 
 <section-sep />

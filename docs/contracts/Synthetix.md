@@ -26,9 +26,6 @@
 
 ### State Contract
 
-!!! bug "Contract Header Out Of Date"
-    The average SNX balance computations described in the file docstring of this contract was correct for the sUSD-only system. The multicurrency version of Synthetix has made this obsolete and much of it should be deleted or rewritten.
-
 **Old:** Synthetix.sol: Has a list of Synths and understands issuance data for users to be able to mint and burn Synths.
 
 **Source:** [Synthetix.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/Synthetix.sol)
@@ -318,13 +315,6 @@ A Synth cannot be removed if it has outstanding issued tokens.
     * The synth's total supply must be zero.
     * The XDR synth cannot be removed.
 
-    !!! info "sUSD Removal"
-        Note that there is no requirement the sUSD synth cannot be removed, although its removal would cause several contracts to malfunction.
-        
-        * The [`Depot`](Depot.md) only deals in sUSD.
-        * Everything in the [`ExchangeRates`](ExchangeRates.md) contract is denominated in sUSD, whose price there is fixed at 1.0 sUSD/sUSD.
-        * [`PurgeableSynth.purge`](PurgeableSynth.md#purge) liquidates everything back to sUSD.
-
 ---
 
 ### `effectiveValue`
@@ -349,12 +339,6 @@ $$
 $$
 
 Where $\sigma_s$ and $\pi_s$ are the total supply and price of synth $s$, and $\pi_d$ is the price of the denominating synth flavour.
-
-!!! info "Optimisation: Staleness Check"
-    This function checks that currencyKey is not stale in the function modifier, then later requires that no rate is stale in the function body; the modifier can be eliminated.
-
-!!! info "Optimisation: Hoist Division"
-    Could hoist the division by `currencyRate` out of the loop and simply divide once at the end. Also `availableSynths[i]` can be assigned to a variable to avoid indexing into the array twice.
 
 ??? example "Details"
     **Signature**
@@ -453,9 +437,6 @@ See [`_internalExchange`](#_internalExchange) for further implementation details
 
 If the [protection circuit](#protectioncircuit) is active, then the incoming synths are simply burnt ([`_internalLiquidation`](#_internalliquidation)).
 
-!!! info "Inconsistency With SIP-7"
-    [SIP-7](https://sips.synthetix.io/sips/sip-7) indicated that the `destinationAddress` parameter would be removed, but this has not been implemented. Should the SIP be updated?
-
 ??? example "Details"
     **Signature**
 
@@ -476,11 +457,6 @@ If the [protection circuit](#protectioncircuit) is active, then the incoming syn
 
 Allows a synth to perform a free exchange into a different flavour.
 This is only used by [`PurgeableSynth.purge`](#PurgeableSynth.md#purge) in order to convert outstanding synths into sUSD. No exchange fee is charged on such liquidations.
-
-!!! bug "Outdated Comment"
-    `// Don't charge fee on the exchange, as they've already been charged a transfer fee in the synth contract`
-
-    No transfer fee is charged anymore; this note can be removed.
 
 ??? example "Details"
     **Signature**
@@ -532,12 +508,6 @@ This function can be [disabled](#setexchangeenabled) by the owner, and it will n
 ### `_internalLiquidation`
 
 This simply burns a quantity of the given synth from the specified account. This always returns true if the transaction was not reverted.
-
-!!! info "Inlining Candidate"
-    As this function is only used once, inside [`exchange`](#exchange), and it is very short, this could potentially be inlined.
-
-!!! TODO "Investigate Economics"
-    Does this mean that there is a forever-locked quantity of SNX in the system now?
 
 ??? example "Details"
     **Signature**
@@ -623,15 +593,6 @@ This function performs the same operation as [`_removeFromDebtRegister`](#_remov
 
     Note that, due to price movements in the tokens the system tracks, in general it is not the case that $X_n = X_{n-1} + \chi_{n-1}$. However, if it is assumed that this is the case, one obtains a telescoping series that yields $\Delta_n = \frac{X_1}{X_{n+1}}$. Consequently, the debt ledger measures the overall system growth, as the reciprocal of a particular debt ledger entry is the factor the total system debt had expanded by since the system's inception at the time it was generated.
 
-!!! info "Optimisation: System Value Recomputation"
-    The total system value is computed twice, once as $X$, and once within the call to `debtBalanceOf`. One of them could in principle be eliminated.
-
-!!! info "Optimisation: Use Already-Computed Results When Incrementing Issuer Count"
-    Currently this function increments the total issuer count if `!synthetixState.hasIssued(messageSender)`, but this can be substituted with `existingDebt == 0`, which doesn't need to call out to the state contract.
-
-!!! info "Optimisation: Remove Modifier"
-    This is only called inside [`issueSynths`](#issuesynths), which already has the [`Proxyable.optionalProxy`](Proxyable.md#optionalproxy) modifier, so it can be removed from this function. The function is also a candidate for inlining.
-
 ??? example "Details"
     **Signature**
 
@@ -706,11 +667,6 @@ Whenever synths are issued or burnt, the calling account's new [issuance data](F
 
 This operates by calling [`FeePool.appendAccountIssuanceRecord`](FeePool.md#appendaccountissuancerecord) thence [`FeePoolState.appendAccountIssuanceRecord`](FeePoolState.md#appendaccountissuancerecord).
 
-!!! info "Optimisation: Save Intercontract Function Call"
-    This function is only called after calls to [`_addToDebtRegister`](#_addtodebtregister) and [`_removeFromDebtRegister`](#_removefromdebtregister). The latest issuance data is set inside these functions with a call to [`SynthetixState.setCurrentIssuanceData`](SynthetixState.md#setcurrentissuancedata), which is then immediately retrieved from [`SynthetixState.issuanceData`](SynthetixState.md#issuancedata). The extra call to the state contract could be removed by moving the calls to [`_appendAccountIssuanceRecord`](#appendaccountissuancerecord) into the debt register manipulation functions and passing in the parameters locally.
-
-    This might also make the code clearer by moving the code making modifications to the [current](SynthetixState.md#issuancedata) and [historical](FeePoolState.md#accountissuanceledger) issuance data closer together.
-
 ??? example "Details"
     **Signature**
 
@@ -740,15 +696,6 @@ This function performs the same operation as [`_addToDebtRegister`](#_addtodebtr
     $$
 
     Which are all the same as in [`_addToDebtRegister`](#_addtodebtregister) with $\chi$'s sign flipped. See that function's notes for further discussion and definitions.
-
-!!! info "Optimisation: Pass Existing Debt as Parameter"
-    `uint existingDebt = debtBalanceOf(messageSender, "XDR")`, but this has already been computed already in the immediately enclosing function, [`burnSynths`](#burnsynths).
-
-!!! info "Optimisation: Superfluous Variable Assignment"
-    If the check `newTotalDebtIssued > 0` fails, then 0 is assigned to `delta`, but the variable is already uninitialised, and so already has this value.
-
-!!! caution "Potentially-Misleading Name"
-    This function does not remove anything from the debt ledger; rather it appends a new entry to it indicating a decreased total debt.
 
 ??? example "Details"
     **Signature**
@@ -868,16 +815,6 @@ If $\text{balance}$ is [`balanceOf(account)`](TokenState.md#balanceof), and $\te
     !!! todo "Extend this to the multicurrency case"
         Consider a two synth system, one primary synth and a secondary one which represents the price/supply of all other synths. Use the total issued value function to derive the behaviour for multiple currencies, and then examine a single currency as a special case.
 
-!!! info "Price Motion Redux: Multicurrency"
-    WIP
-
-!!! caution "Misleading Dev Note"
-    The note in the docstring suggests that escrowed SNX are locked first when issuing, but not locked first in this function.
-    However, "locked" just means not transferable, so this concept only has meaning within the current function. Escrowed SNX are not transferable in any case, and it is really the unescrowed tokens that are locked first by this function.
-
-!!! info "Optimisation: Stale Price Check"
-    This function checks that the SNX price is not stale, which is unnecessary since it is checked inside the call to `totalIssuedSynths` within `debtBalanceOf`.
-
 ??? example "Details"
     **Signature**
 
@@ -917,11 +854,6 @@ This function always returns true if the transaction did not revert.
 ### `_onlySynth`
 
 This function is effectively a modifier. The transaction is reverted if the message sender is not a Synth address known to this contract.
-
-!!! info "Optimisation: Remove Loop"
-    Instead of iterating through [`availableSynths`](#availablesynths), just check if [`synths[messageSender]`](#synths) is initialised.
-
-    This function is a candidate for inlining since it is only used in [`synthInitiatedExchange`](#synthinitiatedexchange), and moving the [`optionalProxy`](#optionalproxy) modifier onto that function.
 
 ??? example "Details"
     **Signature**

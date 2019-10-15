@@ -8,6 +8,19 @@ In addition to its mainnet deployment, Synthetix has test environments running o
 
 The current listing is available [here](https://developer.synthetix.io/api/docs/deployed-contracts.html).
 
+!!! todo
+    Add the following link to the deployed contracts list for the [`SynthetixAirdropper`](SynthetixAirdropper.md).
+
+    https://etherscan.io/address/0xa8bbb0155e7ea36d7dacb3c59d45c4fcd4a6d73e#code
+
+!!! todo
+    Add the following link to the deployed contracts list for the [`ArbRewarder`](ArbRewarder.md).
+
+    https://etherscan.io/address/0x9a4935749dbdfaf786a19df1c61a6d28b7a6cf94#code
+
+
+
+
 <section-sep />
 
 ## Mainnet
