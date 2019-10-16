@@ -316,12 +316,11 @@ contract Synthetix is ExternStateToken {
             //       rate for the destination currency and check if it's stale repeatedly on every
             //       iteration of the loop
             uint synthValue = availableSynths[i].totalSupply()
-                .multiplyDecimalRound(rates[i])
-                .divideDecimalRound(currencyRate);
+                .multiplyDecimalRound(rates[i]);
             total = total.add(synthValue);
         }
 
-        return total;
+        return total.divideDecimalRound(currencyRate);
     }
 
     /**
