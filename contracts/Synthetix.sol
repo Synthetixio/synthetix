@@ -622,7 +622,7 @@ contract Synthetix is ExternStateToken {
         uint delta = SafeDecimalMath.preciseUnit().sub(debtPercentage);
 
         // How much existing debt do they have?
-        uint existingDebt = debtBalanceOf(messageSender, "XDR");
+        uint existingDebt = _debtBalanceOf(messageSender, "XDR", totalDebtIssued);
 
         // And what does their debt ownership look like including this previous stake?
         if (existingDebt > 0) {
@@ -700,8 +700,14 @@ contract Synthetix is ExternStateToken {
     {
         // How much debt do they have?
         uint debtToRemove = effectiveValue(currencyKey, amount, "XDR");
-        uint debt = debtBalanceOf(messageSender, "XDR");
-        uint debtInCurrencyKey = debtBalanceOf(messageSender, currencyKey);
+
+        uint256 tisInCurrency = totalIssuedSynths(currencyKey);
+        uint256 tisInXDR = tisInCurrency
+            .multiplyDecimalRound(exchangeRates.rateForCurrency(currencyKey))
+            .divideDecimalRound(exchangeRates.rateForCurrency("XDR"));
+
+        uint debt = _debtBalanceOf(messageSender, "XDR", tisInXDR);
+        uint debtInCurrencyKey = _debtBalanceOf(messageSender, currencyKey, tisInCurrency);
 
         require(debt > 0, "No debt to forgive");
 
@@ -749,11 +755,11 @@ contract Synthetix is ExternStateToken {
     {
         uint debtToRemove = amount;
 
-        // How much debt do they have?
-        uint existingDebt = debtBalanceOf(messageSender, "XDR");
-
         // What is the value of all issued synths of the system (priced in XDRs)?
         uint totalDebtIssued = totalIssuedSynths("XDR");
+
+        // How much debt do they have?
+        uint existingDebt = _debtBalanceOf(messageSender, "XDR", totalDebtIssued);
 
         // What will the new total after taking out the withdrawn amount
         uint newTotalDebtIssued = totalDebtIssued.sub(debtToRemove);
@@ -845,6 +851,15 @@ contract Synthetix is ExternStateToken {
         // Don't need to check for stale rates here because totalIssuedSynths will do it for us
         returns (uint)
     {
+        return _debtBalanceOf(issuer, currencyKey, 0);
+    }
+
+    function _debtBalanceOf(address issuer, bytes32 currencyKey, uint256 totalSystemValue)
+        internal
+        view
+        // Don't need to check for stale rates here because totalIssuedSynths will do it for us
+        returns (uint)
+    {
         // What was their initial debt ownership?
         uint initialDebtOwnership;
         uint debtEntryIndex;
@@ -860,7 +875,9 @@ contract Synthetix is ExternStateToken {
             .multiplyDecimalRoundPrecise(initialDebtOwnership);
 
         // What's the total value of the system in their requested currency?
-        uint totalSystemValue = totalIssuedSynths(currencyKey);
+        if (totalSystemValue == 0) {
+            totalSystemValue = totalIssuedSynths(currencyKey);
+        }
 
         // Their debt balance is their portion of the total system value.
         uint highPrecisionBalance = totalSystemValue.decimalToPreciseDecimal()
