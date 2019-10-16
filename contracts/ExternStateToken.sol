@@ -130,14 +130,14 @@ contract ExternStateToken is SelfDestructible, Proxyable, TokenFallbackCaller {
         tokenState.setBalanceOf(from, tokenState.balanceOf(from).sub(value));
         tokenState.setBalanceOf(to, tokenState.balanceOf(to).add(value));
 
+        // Emit a standard ERC20 transfer event
+        emitTransfer(from, to, value);
+
         // If the recipient is a contract, we need to call tokenFallback on it so they can do ERC223
         // actions when receiving our tokens. Unlike the standard, however, we don't revert if the
         // recipient contract doesn't implement tokenFallback.
         callTokenFallbackIfNeeded(from, to, value, data);
         
-        // Emit a standard ERC20 transfer event
-        emitTransfer(from, to, value);
-
         return true;
     }
 
