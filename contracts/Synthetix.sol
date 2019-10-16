@@ -486,9 +486,10 @@ contract Synthetix is ExternStateToken {
         address destinationAddress
     )
         external
-        onlySynth
+        optionalProxy
         returns (bool)
     {
+        _onlySynth();
         require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
         require(sourceAmount > 0, "Zero amount");
 
@@ -995,12 +996,23 @@ contract Synthetix is ExternStateToken {
         _;
     }
 
-    /**
-     * @notice Only a synth can call this function
+    // /**
+    //  * @notice Only a synth can call this function
+    //  */
+    // modifier onlySynth {
+    //     require(reverseSynths[msg.sender] != bytes32(0), "Only synth allowed");
+    //     _;
+    // }
+       /**
+     * @notice Only a synth can call this function, optionally via synthetixProxy or directly
+     * @dev This used to be a modifier but instead of duplicating the bytecode into
+     * The functions implementing it they now call this internal function to save bytecode space
      */
-    modifier onlySynth {
-        require(reverseSynths[msg.sender] != bytes32(0), "Only synth allowed");
-        _;
+    function _onlySynth()
+        internal
+        view
+    {
+        require(reverseSynths[messageSender] != bytes32(0), "Only synth allowed");
     }
 
     modifier onlyOracle
