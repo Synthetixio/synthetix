@@ -603,11 +603,20 @@ contract Synthetix is ExternStateToken {
         internal
         optionalProxy
     {
+        return _addToDebtRegister(currencyKey, amount, uint(-1));
+    }
+
+    function _addToDebtRegister(bytes32 currencyKey, uint amount, uint totalDebtIssued)
+        internal
+        optionalProxy
+    {
         // What is the value of the requested debt in XDRs?
         uint xdrValue = effectiveValue(currencyKey, amount, "XDR");
 
-        // What is the value of all issued synths of the system (priced in XDRs)?
-        uint totalDebtIssued = totalIssuedSynths("XDR");
+        if (totalDebtIssued == uint(-1)) {
+            // What is the value of all issued synths of the system (priced in XDRs)?
+            totalDebtIssued = totalIssuedSynths("XDR");
+        }
 
         // What will the new total be including the new value?
         uint newTotalDebtIssued = xdrValue.add(totalDebtIssued);
@@ -659,10 +668,28 @@ contract Synthetix is ExternStateToken {
         optionalProxy
         // No need to check if price is stale, as it is checked in issuableSynths.
     {
-        require(amount <= remainingIssuableSynths(messageSender, currencyKey), "Amount too large");
+        return _issueSynths(currencyKey, amount, uint(-1));
+    }
+
+    function _issueSynths(bytes32 currencyKey, uint amount, uint tis)
+        internal
+        optionalProxy
+        // No need to check if price is stale, as it is checked in issuableSynths.
+    {
+        if (tis == uint(-1)) {
+            tis = totalIssuedSynths(currencyKey);
+        }
+
+        require(amount <= _remainingIssuableSynths(messageSender, currencyKey, tis), "Amount too large");
 
         // Keep track of the debt they're about to create
-        _addToDebtRegister(currencyKey, amount);
+        _addToDebtRegister(
+            currencyKey,
+            amount,
+            tis
+                .multiplyDecimalRound(exchangeRates.rateForCurrency(currencyKey))
+                .divideDecimalRound(exchangeRates.rateForCurrency("XDR"))
+        );
 
         // Create their synths
         synths[currencyKey].issue(messageSender, amount);
@@ -680,11 +707,13 @@ contract Synthetix is ExternStateToken {
         external
         optionalProxy
     {
+        uint tis = totalIssuedSynths(currencyKey);
+
         // Figure out the maximum we can issue in that currency
-        uint maxIssuable = remainingIssuableSynths(messageSender, currencyKey);
+        uint maxIssuable = _remainingIssuableSynths(messageSender, currencyKey, tis);
 
         // And issue them
-        issueSynths(currencyKey, maxIssuable);
+        _issueSynths(currencyKey, maxIssuable, tis);
     }
 
     /**
@@ -701,8 +730,8 @@ contract Synthetix is ExternStateToken {
         // How much debt do they have?
         uint debtToRemove = effectiveValue(currencyKey, amount, "XDR");
 
-        uint256 tisInCurrency = totalIssuedSynths(currencyKey);
-        uint256 tisInXDR = tisInCurrency
+        uint tisInCurrency = totalIssuedSynths(currencyKey);
+        uint tisInXDR = tisInCurrency
             .multiplyDecimalRound(exchangeRates.rateForCurrency(currencyKey))
             .divideDecimalRound(exchangeRates.rateForCurrency("XDR"));
 
@@ -848,10 +877,10 @@ contract Synthetix is ExternStateToken {
         // Don't need to check for stale rates here because totalIssuedSynths will do it for us
         returns (uint)
     {
-        return _debtBalanceOf(issuer, currencyKey, 0);
+        return _debtBalanceOf(issuer, currencyKey, uint(-1));
     }
 
-    function _debtBalanceOf(address issuer, bytes32 currencyKey, uint256 totalSystemValue)
+    function _debtBalanceOf(address issuer, bytes32 currencyKey, uint totalSystemValue)
         internal
         view
         // Don't need to check for stale rates here because totalIssuedSynths will do it for us
@@ -872,7 +901,7 @@ contract Synthetix is ExternStateToken {
             .multiplyDecimalRoundPrecise(initialDebtOwnership);
 
         // What's the total value of the system in their requested currency?
-        if (totalSystemValue == 0) {
+        if (totalSystemValue == uint(-1)) {
             totalSystemValue = totalIssuedSynths(currencyKey);
         }
 
@@ -894,7 +923,16 @@ contract Synthetix is ExternStateToken {
         // Don't need to check for synth existing or stale rates because maxIssuableSynths will do it for us.
         returns (uint)
     {
-        uint alreadyIssued = debtBalanceOf(issuer, currencyKey);
+        return _remainingIssuableSynths(issuer, currencyKey, uint(-1));
+    }
+
+    function _remainingIssuableSynths(address issuer, bytes32 currencyKey, uint tis)
+        internal
+        view
+        // Don't need to check for synth existing or stale rates because maxIssuableSynths will do it for us.
+        returns (uint)
+    {
+        uint alreadyIssued = _debtBalanceOf(issuer, currencyKey, tis);
         uint max = maxIssuableSynths(issuer, currencyKey);
 
         if (alreadyIssued >= max) {
