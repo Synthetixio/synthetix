@@ -28,6 +28,7 @@ pragma solidity 0.4.25;
 import "./ReentrancyPreventer.sol";
 
 contract TokenFallbackCaller is ReentrancyPreventer {
+    uint constant MAX_GAS_SUB_CALL = 200000;
     function callTokenFallbackIfNeeded(address sender, address recipient, uint amount, bytes data)
         internal
         preventReentrancy
@@ -52,11 +53,12 @@ contract TokenFallbackCaller is ReentrancyPreventer {
 
         // If there's code there, it's a contract
         if (length > 0) {
+            // Limit contract sub call to 200000 gas
+            uint gasLimit = gasleft() < MAX_GAS_SUB_CALL ? gasleft() : MAX_GAS_SUB_CALL;
             // Now we need to optionally call tokenFallback(address from, uint value).
             // We can't call it the normal way because that reverts when the recipient doesn't implement the function.
-
             // solium-disable-next-line security/no-low-level-calls
-            recipient.call(abi.encodeWithSignature("tokenFallback(address,uint256,bytes)", sender, amount, data));
+            recipient.call.gas(gasLimit)(abi.encodeWithSignature("tokenFallback(address,uint256,bytes)", sender, amount, data));
 
             // And yes, we specifically don't care if this call fails, so we're not checking the return value.
         }
