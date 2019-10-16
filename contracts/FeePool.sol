@@ -405,35 +405,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
         return true;
     }
-    
-    /**
-    * @notice Admin function to recover the orphaned transfer Fees
-    * see https://sips.synthetix.io/sips/sip-18
-    * @dev remove on next release
-    */
-    function recoverTransferFees()
-        public
-        optionalProxy_onlyOwner
-        onlyDuringSetup
-    {
-        Synth sUSDSynth = synthetix.synths("sUSD");
-        Synth xdrSynth = synthetix.synths("XDR");
-
-        // It will burn the balance of sUSD at the 0xfeefee address
-        uint sUSDBalance = sUSDSynth.balanceOf(FEE_ADDRESS);
-        require(sUSDBalance > 0, "No sUSD to recover");
-        sUSDSynth.burn(FEE_ADDRESS, sUSDBalance);
-
-        // Then issue the effective value of XDRs at the 0xfeefee address. Essentially the reverse of the _payFees() function.
-        uint xdrAmount = synthetix.effectiveValue("sUSD", sUSDBalance, "XDR");
-        xdrSynth.issue(FEE_ADDRESS, xdrAmount);
-
-        // Keep track of in XDRs in our fee pool.
-        recentFeePeriods[0].feesToDistribute = recentFeePeriods[0].feesToDistribute.add(xdrAmount);
-    }
-
-    event LogInt(string name, uint value);
-    event LogAddress(string name, address value);
 
     /**
     * @notice Admin function to import the FeePeriod data from the previous contract
