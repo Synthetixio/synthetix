@@ -442,11 +442,12 @@ contract ExchangeRates is SelfDestructible {
         uint[] memory _localRates = new uint[](currencyKeys.length);
 
         bool anyRateStale = false;
+        uint period = rateStalePeriod;
         for (uint8 i = 0; i < currencyKeys.length; i++) {
             RateAndUpdatedTime memory rt = _rates[currencyKeys[i]];
             _localRates[i] = uint256(rt.rate);
             if (!anyRateStale) {
-                anyRateStale = (currencyKeys[i] != "sUSD" && uint256(rt.time).add(rateStalePeriod) < now);
+                anyRateStale = (currencyKeys[i] != "sUSD" && uint256(rt.time).add(period) < now);
             }
         }
 
