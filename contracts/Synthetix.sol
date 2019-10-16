@@ -141,6 +141,7 @@ contract Synthetix is ExternStateToken {
     // Available Synths which can be used with the system
     Synth[] public availableSynths;
     mapping(bytes32 => Synth) public synths;
+    mapping(address => bytes32) public reverseSynths;
 
     IFeePool public feePool;
     ISynthetixEscrow public escrow;
@@ -230,9 +231,11 @@ contract Synthetix is ExternStateToken {
         bytes32 currencyKey = synth.currencyKey();
 
         require(synths[currencyKey] == Synth(0), "Synth already exists");
+        require(reverseSynths[synth] == bytes32(0), "Synth with same currencyKey already exists");
 
         availableSynths.push(synth);
         synths[currencyKey] = synth;
+        reverseSynths[synth] = currencyKey;
     }
 
     /**
@@ -268,6 +271,7 @@ contract Synthetix is ExternStateToken {
         }
 
         // And remove it from the synths mapping
+        delete reverseSynths[synths[currencyKey]];
         delete synths[currencyKey];
 
         // Note: No event here as our contract exceeds max contract size
@@ -298,13 +302,13 @@ contract Synthetix is ExternStateToken {
     function totalIssuedSynths(bytes32 currencyKey)
         public
         view
-        rateNotStale(currencyKey)
         returns (uint)
     {
         uint total = 0;
         uint currencyRate = exchangeRates.rateForCurrency(currencyKey);
 
-        require(!exchangeRates.anyRateIsStale(availableCurrencyKeys()), "Rates are stale");
+        (uint[] memory rates, bool anyRateStale) = exchangeRates.ratesAndStaleForCurrencies(availableCurrencyKeys());
+        require(!anyRateStale, "Rates are stale");
 
         for (uint8 i = 0; i < availableSynths.length; i++) {
             // What's the total issued value of that synth in the destination currency?
@@ -312,7 +316,7 @@ contract Synthetix is ExternStateToken {
             //       rate for the destination currency and check if it's stale repeatedly on every
             //       iteration of the loop
             uint synthValue = availableSynths[i].totalSupply()
-                .multiplyDecimalRound(exchangeRates.rateForCurrency(availableSynths[i].currencyKey()))
+                .multiplyDecimalRound(rates[i])
                 .divideDecimalRound(currencyRate);
             total = total.add(synthValue);
         }
@@ -331,7 +335,7 @@ contract Synthetix is ExternStateToken {
         bytes32[] memory availableCurrencyKeys = new bytes32[](availableSynths.length);
 
         for (uint8 i = 0; i < availableSynths.length; i++) {
-            availableCurrencyKeys[i] = availableSynths[i].currencyKey();
+            availableCurrencyKeys[i] = reverseSynths[availableSynths[i]];
         }
 
         return availableCurrencyKeys;
@@ -482,9 +486,9 @@ contract Synthetix is ExternStateToken {
         address destinationAddress
     )
         external
+        onlySynth
         returns (bool)
     {
-        _onlySynth();
         require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
         require(sourceAmount > 0, "Zero amount");
 
@@ -992,26 +996,11 @@ contract Synthetix is ExternStateToken {
     }
 
     /**
-     * @notice Only a synth can call this function, optionally via synthetixProxy or directly
-     * @dev This used to be a modifier but instead of duplicating the bytecode into
-     * The functions implementing it they now call this internal function to save bytecode space
+     * @notice Only a synth can call this function
      */
-    function _onlySynth()
-        internal
-        view
-        optionalProxy
-    {
-        bool isSynth = false;
-
-        // No need to repeatedly call this function either
-        for (uint8 i = 0; i < availableSynths.length; i++) {
-            if (availableSynths[i] == messageSender) {
-                isSynth = true;
-                break;
-            }
-        }
-
-        require(isSynth, "Only synth allowed");
+    modifier onlySynth {
+        require(reverseSynths[msg.sender] != bytes32(0), "Only synth allowed");
+        _;
     }
 
     modifier onlyOracle
