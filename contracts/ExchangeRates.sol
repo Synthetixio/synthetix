@@ -103,7 +103,7 @@ contract ExchangeRates is SelfDestructible {
         oracle = _oracle;
 
         // The sUSD rate is always 1 and is never stale.
-        _setRates("sUSD", SafeDecimalMath.unit(), now);
+        _setRate("sUSD", SafeDecimalMath.unit(), now);
 
         // These are the currencies that make up the XDR basket.
         // These are hard coded because:
@@ -131,7 +131,7 @@ contract ExchangeRates is SelfDestructible {
         return uint256(_rates[code].time);
     }
 
-    function _setRates(bytes32 code, uint256 rate, uint256 time) internal {
+    function _setRate(bytes32 code, uint256 rate, uint256 time) internal {
         _rates[code] = RateAndUpdatedTime({
             rate: uint216(rate),
             time: uint40(time)
@@ -187,7 +187,7 @@ contract ExchangeRates is SelfDestructible {
             newRates[i] = rateOrInverted(currencyKeys[i], newRates[i]);
 
             // Ok, go ahead with the update.
-            _setRates(currencyKeys[i], newRates[i], timeSent);
+            _setRate(currencyKeys[i], newRates[i], timeSent);
         }
 
         emit RatesUpdated(currencyKeys, newRates);
@@ -260,7 +260,7 @@ contract ExchangeRates is SelfDestructible {
         }
 
         // Set the rate and update time
-        _setRates("XDR", total, timeSent);
+        _setRate("XDR", total, timeSent);
 
         // Emit our updated event separate to the others to save
         // moving data around between arrays.
