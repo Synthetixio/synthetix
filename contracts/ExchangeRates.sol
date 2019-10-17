@@ -362,7 +362,7 @@ contract ExchangeRates is SelfDestructible {
         inversePricing[currencyKey].frozen = false;
 
         // now remove inverted key from array
-        for (uint8 i = 0; i < invertedKeys.length; i++) {
+        for (uint i = 0; i < invertedKeys.length; i++) {
             if (invertedKeys[i] == currencyKey) {
                 delete invertedKeys[i];
 
@@ -424,7 +424,7 @@ contract ExchangeRates is SelfDestructible {
     {
         uint[] memory _localRates = new uint[](currencyKeys.length);
 
-        for (uint8 i = 0; i < currencyKeys.length; i++) {
+        for (uint i = 0; i < currencyKeys.length; i++) {
             _localRates[i] = rates(currencyKeys[i]);
         }
 
@@ -443,7 +443,7 @@ contract ExchangeRates is SelfDestructible {
 
         bool anyRateStale = false;
         uint period = rateStalePeriod;
-        for (uint8 i = 0; i < currencyKeys.length; i++) {
+        for (uint i = 0; i < currencyKeys.length; i++) {
             RateAndUpdatedTime memory rt = _rates[currencyKeys[i]];
             _localRates[i] = uint256(rt.rate);
             if (!anyRateStale) {
@@ -475,7 +475,7 @@ contract ExchangeRates is SelfDestructible {
     {
         uint[] memory lastUpdateTimes = new uint[](currencyKeys.length);
 
-        for (uint8 i = 0; i < currencyKeys.length; i++) {
+        for (uint i = 0; i < currencyKeys.length; i++) {
             lastUpdateTimes[i] = lastRateUpdateTimes(currencyKeys[i]);
         }
 
