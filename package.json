@@ -47,7 +47,7 @@
 		"test": "test"
 	},
 	"devDependencies": {
-		"@codechecks/client": "0.1.5",
+		"@codechecks/client": "0.1.10",
 		"axios": "^0.18.0",
 		"bip39": "^2.5.0",
 		"bn.js": "4.11.8",
