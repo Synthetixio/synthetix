@@ -3,6 +3,9 @@ pragma solidity >=0.4.21 <0.6.0;
 import "./SafeDecimalMath.sol";
 import "./Synthetix.sol";
 import "./FeePool.sol";
+import "./RewardEscrow.sol";
+import "./Depot.sol";
+import "./Synth.sol";
 
 contract StakingPool {
     using SafeMath for uint;
@@ -18,11 +21,13 @@ contract StakingPool {
     address public manager;
     FeePool public feePool;
     Synthetix public snx;
+    RewardEscrow public rewardEscrow;
+    Depot public depot;
 
     mapping (address => uint256) public balances;
     mapping (address => mapping (address => uint256)) private _allowances;
     uint256 public totalSupply;
-
+    uint256 public claimedAmount;
     //This can be optimzed to occupy fewer storage slots
     uint256 fee;
     uint256 pendingFee;
@@ -32,10 +37,12 @@ contract StakingPool {
     uint8 pendingDelay;
 
 
-    constructor(address _manager, address _synthetix, address _feePool) public {
+    constructor(address _manager, address _synthetix, address _feePool, address _rEscrow, address _depot) public {
         manager = _manager;
         snx = Synthetix(_synthetix);
         feePool = FeePool(_feePool);
+        rewardEscrow = RewardEscrow(_rEscrow);
+        depot = Depot(_depot);
     }
 
     modifier onlyManager() {
@@ -95,7 +102,7 @@ contract StakingPool {
         //There're a lot of factors we need to onsider:
         // Does this count already vested amounts?
         (uint256 fees, uint256 rewards) = feePool.feesAvailable(address(this), "SNX");
-        uint256 total = snx.collateral(address(this)) + fees + rewards;        
+        uint256 total = snx.collateral(address(this)) + fees + rewards + claimedAmount;        
         return total;
         //return snx.balanceOf(this);
     }
@@ -116,8 +123,16 @@ contract StakingPool {
     function exchange(bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey, address destinationAddress) external onlyManager {
         snx.exchange(sourceCurrencyKey,sourceAmount,destinationCurrencyKey,destinationAddress);
     }
+
+    function vest() external onlyManager {
+        rewardEscrow.vest();
+    }
+
     function claimFees(bytes4 currencyKey) external onlyManager{
+        (uint256 fees, ) = feePool.feesAvailable(address(this), currencyKey);
         feePool.claimFees(currencyKey);
+        uint256 snxAmount = snx.effectiveValue(currencyKey, fees, "SNX");
+        claimedAmount += snxAmount;
     }
 
 

@@ -2,6 +2,7 @@ const ExchangeRates = artifacts.require('ExchangeRates');
 const RewardEscrow = artifacts.require('RewardEscrow');
 const RewardsDistribution = artifacts.require('RewardsDistribution');
 const FeePool = artifacts.require('FeePool');
+const Depot = artifacts.require('Depot');
 const SupplySchedule = artifacts.require('SupplySchedule');
 const Synthetix = artifacts.require('Synthetix');
 const StakingPool = artifacts.require('StakingPool');
@@ -19,26 +20,78 @@ const {
 	ZERO_ADDRESS,
 } = require('../utils/testUtils');
 const getInstance = getContractInstance(web3);
+const WEEK = 604800;
+const YEAR = 31556926;
 
 // const assertBNEqual = (actualBN, expectedBN, context) => {
 // 	assert.equal(actualBN.toString(), expectedBN.toString(), context);
 // };
 
-const distributeSNX = async (snx, accounts, owner) => {
-	accounts.forEach(async acc => {
-		let amount = toUnit(10000);
-		await snx.transfer(acc, amount, { from: owner });
-	});
-};
-
-const approveStakingPool = async (stakingPool, snx, accounts) => {
-	accounts.forEach(async acc => {
-		let amount = toUnit(10000);
-		await snx.approve(stakingPool.address, amount, { from: acc });
-	});
-};
-
 contract('StakingPool', async accounts => {
+	const distributeSNX = async (snx, accounts, owner) => {
+		accounts.forEach(async acc => {
+			let amount = toUnit(100000);
+			await snx.transfer(acc, amount, { from: owner });
+		});
+	};
+
+	const approveStakingPool = async (stakingPool, snx, accounts) => {
+		accounts.forEach(async acc => {
+			let amount = toUnit(100000);
+			await snx.approve(stakingPool.address, amount, { from: acc });
+		});
+	};
+
+	const generateTradignFees = async (synthetix, accounts, synth, synthContract, feePool) => {
+		for (let i = 0; i < accounts.length; i++) {
+			let amount = await synthetix.maxIssuableSynths.call(accounts[i], synth);
+
+			await synthetix.issueMaxSynths(synth, { from: accounts[i] });
+
+			await synthContract.methods['transfer(address,uint256)'](accounts[i], amount, {
+				from: accounts[i],
+			});
+
+			await closeFeePeriod();
+		}
+	};
+
+	const generateRewards = async (synthetix, rewardEscrow, owner, feePoolAccount, poolAddress) => {
+		await rewardEscrow.setFeePool(feePoolAccount, { from: owner });
+		await synthetix.methods['transfer(address,uint256)'](RewardEscrow.address, toUnit('6000'), {
+			from: owner,
+		});
+
+		// Add a few vesting entries as the feepool address
+		await rewardEscrow.appendVestingEntry(poolAddress, toUnit('1000'), { from: feePoolAccount });
+		await fastForward(WEEK);
+		await rewardEscrow.appendVestingEntry(poolAddress, toUnit('2000'), { from: feePoolAccount });
+		await fastForward(WEEK);
+		await rewardEscrow.appendVestingEntry(poolAddress, toUnit('3000'), { from: feePoolAccount });
+		await updateRatesWithDefaults();
+	};
+
+	const closeFeePeriod = async () => {
+		const feePeriodDuration = await feePool.feePeriodDuration();
+		await fastForward(feePeriodDuration);
+
+		await feePool.closeCurrentFeePeriod({ from: account1 });
+
+		await updateRatesWithDefaults();
+	};
+
+	const updateRatesWithDefaults = async () => {
+		const timestamp = await currentTime();
+		await exchangeRates.updateRates(
+			[sAUD, sEUR, SNX, sBTC, iBTC],
+			['0.5', '1.25', '0.1', 5000, 4000].map(toUnit),
+			timestamp,
+			{
+				from: oracle,
+			}
+		);
+	};
+
 	const [sUSD, sAUD, sEUR, SNX, XDR, sXYZ, sBTC, iBTC] = [
 		'sUSD',
 		'sAUD',
@@ -50,7 +103,17 @@ contract('StakingPool', async accounts => {
 		'iBTC',
 	].map(web3.utils.asciiToHex);
 
-	const [, owner, manager, account1, account2, account3, account4, account5] = accounts;
+	const [
+		,
+		owner,
+		manager,
+		account1,
+		account2,
+		account3,
+		account4,
+		account5,
+		feePoolAccount,
+	] = accounts;
 	let feePool,
 		oracle,
 		synthetix,
@@ -61,20 +124,8 @@ contract('StakingPool', async accounts => {
 		sEURContract,
 		XDRContract,
 		feePoolWeb3,
+		depot,
 		FEE_ADDRESS;
-
-	const updateRatesWithDefaults = async () => {
-		const timestamp = await currentTime();
-
-		await exchangeRates.updateRates(
-			[sAUD, sEUR, SNX, sBTC, iBTC],
-			['0.5', '1.25', '0.1', 5000, 4000].map(toUnit),
-			timestamp,
-			{
-				from: oracle,
-			}
-		);
-	};
 
 	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
@@ -84,6 +135,7 @@ contract('StakingPool', async accounts => {
 		rewardEscrow = await RewardEscrow.deployed();
 		exchangeRates = await ExchangeRates.deployed();
 		feePool = await FeePool.deployed();
+		depot = await Depot.deployed();
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
 		sAUDContract = await Synth.at(await synthetix.synths(sAUD));
 		sEURContract = await Synth.at(await synthetix.synths(sEUR));
@@ -95,7 +147,13 @@ contract('StakingPool', async accounts => {
 		oracle = await exchangeRates.oracle();
 		timestamp = await currentTime();
 
-		stakingPool = await StakingPool.new(manager, synthetix.address, feePool.address);
+		stakingPool = await StakingPool.new(
+			manager,
+			synthetix.address,
+			feePool.address,
+			rewardEscrow.address,
+			depot.address
+		);
 		await distributeSNX(synthetix, [account1, account2, account3, account4, account5], owner);
 		await approveStakingPool(stakingPool, synthetix, [
 			account1,
@@ -183,101 +241,106 @@ contract('StakingPool', async accounts => {
 		assert.isTrue(debt.eq(sUSDBalance));
 		assert.isTrue(debt.isZero());
 	});
-	const closeFeePeriod = async () => {
-		const feePeriodDuration = await feePool.feePeriodDuration();
 
-		await fastForward(feePeriodDuration);
-
-		await feePool.closeCurrentFeePeriod({ from: account1 });
-
-		await updateRatesWithDefaults();
-	};
-
-	const generateFees = async accs => {
-		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
-		await closeFeePeriod();
-		await synthetix.issueSynths(sAUD, toUnit('10000'), { from: owner });
+	it('The pool manager can collect fees', async () => {
+		const amount1 = toUnit(90);
+		await stakingPool.deposit(amount1, { from: account1 });
 		await stakingPool.issueSynths(sAUD, '10000', { from: manager });
-		// await synthetix.issueSynths(sAUD, toUnit('10000'), { from: accs[0] });
-		// await synthetix.issueSynths(sAUD, toUnit('10000'), { from: accs[1] });
 
-		// For each fee period (with one extra to test rollover), do two transfers, then close it off.
-		//for (let i = 0; i <= length; i++) {
-		const transfer1 = toUnit((1 * 10).toString());
-		const transfer2 = toUnit((1 * 15).toString());
-		await sAUDContract.methods['transfer(address,uint256)'](accs[0], transfer1, { from: owner });
-		await sAUDContract.methods['transfer(address,uint256)'](accs[1], transfer2, { from: owner });
+		await generateTradignFees(synthetix, [account4, account5], sUSD, sUSDContract, feePool);
+		let balance1 = await XDRContract.balanceOf(stakingPool.address);
+		let feesAvailable = await feePool.feesAvailable(stakingPool.address, XDR);
+		await stakingPool.claimFees(XDR, { from: manager });
+		let balance2 = await XDRContract.balanceOf(stakingPool.address);
 
-		let totalFees = await feePool.amountReceivedFromTransfer(transfer1);
-		console.log('total', totalFees.toString());
+		assertBNEqual(balance1.add(feesAvailable[0]), balance2);
+	});
 
-		let Ta = await feePool.totalFeesAvailable.call(XDR);
-		console.log(Ta.toString());
+	it('The pool manager can collect Rewards', async () => {
+		const amount1 = toUnit(90);
+		await stakingPool.deposit(amount1, { from: account1 });
+		await stakingPool.issueSynths(sAUD, '10000', { from: manager });
 
-		await closeFeePeriod();
-		//}
-	};
+		// await generateTradignFees(synthetix, [account4, account5], sUSD, sUSDContract, feePool);
+		// let balance1 = await XDRContract.balanceOf(stakingPool.address);
+		// let feesAvailable = await feePool.feesAvailable(stakingPool.address, XDR);
+		// await stakingPool.claimFees(XDR, { from: manager });
+		// let balance2 = await XDRContract.balanceOf(stakingPool.address);
 
-	// it('The pool manager can collect fees', async () => {
-	// 	const amount1 = toUnit(90);
+		// assertBNEqual(balance1.add(feesAvailable[0]), balance2);
+	});
+
+	// it('Pool manager can exchange between synths', async () => {
+	// 	const amount1 = toUnit('10000');
+	// 	const amountIssued = toUnit('200');
+
 	// 	await stakingPool.deposit(amount1, { from: account1 });
-	// 	await stakingPool.issueSynths(sAUD, '10000', { from: manager });
-	// 	await stakingPool.exchange(sAUD, '1000', sUSD, stakingPool.address, { from: manager });
-	// 	await closeFeePeriod();
 
-	// 	await stakingPool.exchange(sUSD, '50	', sAUD, stakingPool.address, { from: manager });
+	// 	await stakingPool.issueSynths(sUSD, amountIssued, { from: manager });
 
-	// 	const fee = await XDRContract.balanceOf(FEE_ADDRESS);
-	// 	console.log('fee: ', fee.toString());
+	// 	const exchangeFeeUSD = await feePool.exchangeFeeIncurred(amountIssued);
+	// 	const exchangeFeeXDR = await synthetix.effectiveValue(sUSD, exchangeFeeUSD, XDR);
 
+	// 	// Exchange sUSD to sAUD
+	// 	await stakingPool.exchange(sUSD, amountIssued, sAUD, stakingPool.address, { from: manager });
+
+	// 	// how much sAUD the user is supposed to get
+	// 	const effectiveValue = await synthetix.effectiveValue(sUSD, amountIssued, sAUD);
+
+	// 	// chargeFee = true so we need to minus the fees for this exchange
+	// 	const effectiveValueMinusFees = await feePool.amountReceivedFromExchange(effectiveValue);
+
+	// 	// Assert we have the correct AUD value - exchange fee
+	// 	const sAUDBalance = await sAUDContract.balanceOf(stakingPool.address);
 	// 	const feesAvailable = await feePool.feesAvailable(stakingPool.address, XDR);
-	// 	console.log('fee: ', feesAvailable.toString());
-	// 	const oldXDRBalance = await XDRContract.balanceOf(stakingPool.address);
-	// 	console.log(oldXDRBalance.toString());
+	// 	closeFeePeriod();
+	// 	const feesAvailable2 = await feePool.feesAvailable(stakingPool.address, XDR);
+	// 	assert.isTrue(effectiveValueMinusFees.eq(sAUDBalance));
 
-	// 	// Now we should be able to claim them.
-	// 	await closeFeePeriod();
-	// 	const claimFeesTx = await stakingPool.claimFees(XDR, { from: manager });
-	// 	console.log(claimFeesTx);
+	// 	// console.log(feesAvailable.toString());
+	// 	// console.log(feesAvailable2.toString());
 
-	// 	const feesByPeriod = await feePoolWeb3.methods.feesByPeriod(stakingPool.address).call();
-	// 	console.log('after closing, ', feesByPeriod);
-	// 	const newXDRBalance = await XDRContract.balanceOf(stakingPool.address);
-	// 	console.log('newXDRBalance', newXDRBalance.toString());
-
-	// 	// We should have our fees
-	// 	assertBNEqual(newXDRBalance, oldXDRBalance.add(feesAvailable[0]));
+	// 	// Assert we have the exchange fee to distribute
+	// 	const feePeriodZero = await feePool.recentFeePeriods(0);
+	// 	assert.isTrue(exchangeFeeXDR.eq(feePeriodZero.feesToDistribute));
 	// });
 
-	it('Pool manager can exchange between synths', async () => {
-		const amount1 = toUnit('10000');
-		const amountIssued = toUnit('200');
+	describe('Pool can correctly calculate overall value', async () => {
+		const depositedAmount = toUnit('10000');
+		const issuedAmount = toUnit('100');
 
-		await stakingPool.deposit(amount1, { from: account1 });
+		beforeEach(async () => {
+			await stakingPool.deposit(depositedAmount, { from: account1 });
+			await stakingPool.issueSynths(sAUD, issuedAmount, { from: manager });
+		});
+		// it('Can track value when there are fees to be claimed', async () => {
+		// 	let initialValue = await stakingPool.totalSNXValue();
+		// 	await generateTradignFees(synthetix, [account1, account2], sUSD, sUSDContract, feePool);
+		// 	const feesAvailable = await feePool.feesAvailable(stakingPool.address, SNX);
 
-		await stakingPool.issueSynths(sUSD, amountIssued, { from: manager });
+		// 	let intermediaryValue = await stakingPool.totalSNXValue();
+		// 	await stakingPool.claimFees(sUSD, { from: manager });
+		// 	let finalValue = await stakingPool.totalSNXValue();
 
-		const exchangeFeeUSD = await feePool.exchangeFeeIncurred(amountIssued);
-		const exchangeFeeXDR = await synthetix.effectiveValue(sUSD, exchangeFeeUSD, XDR);
+		// 	assertBNEqual(finalValue, intermediaryValue);
+		// 	assertBNEqual(initialValue.add(feesAvailable[0]), finalValue);
+		// });
 
-		// Exchange sUSD to sAUD
-		await stakingPool.exchange(sUSD, amountIssued, sAUD, stakingPool.address, { from: manager });
+		it('Can track value when there are rewards to be claimed', async () => {
+			let initialValue = await stakingPool.totalSNXValue();
+			await generateRewards(synthetix, rewardEscrow, owner, feePoolAccount, stakingPool.address);
+			const bal = await rewardEscrow.totalEscrowedAccountBalance(stakingPool.address);
 
-		// how much sAUD the user is supposed to get
-		const effectiveValue = await synthetix.effectiveValue(sUSD, amountIssued, sAUD);
+			await fastForward(YEAR + WEEK * 3);
+			await updateRatesWithDefaults();
 
-		// chargeFee = true so we need to minus the fees for this exchange
-		const effectiveValueMinusFees = await feePool.amountReceivedFromExchange(effectiveValue);
+			let intermediaryValue = await stakingPool.totalSNXValue();
 
-		// Assert we have the correct AUD value - exchange fee
-		const sAUDBalance = await sAUDContract.balanceOf(stakingPool.address);
-		const feesAvailable = await feePool.feesAvailable(stakingPool.address, XDR);
-		closeFeePeriod();
-		const feesAvailable2 = await feePool.feesAvailable(stakingPool.address, XDR);
-		assert.isTrue(effectiveValueMinusFees.eq(sAUDBalance));
+			await stakingPool.vest({ from: manager });
 
-		// Assert we have the exchange fee to distribute
-		const feePeriodZero = await feePool.recentFeePeriods(0);
-		assert.isTrue(exchangeFeeXDR.eq(feePeriodZero.feesToDistribute));
+			let finalValue = await stakingPool.totalSNXValue();
+			assertBNEqual(finalValue, intermediaryValue);
+			assertBNEqual(initialValue.add(bal), finalValue);
+		});
 	});
 });
