@@ -24,20 +24,14 @@ pragma solidity 0.4.25;
 
 contract ReentrancyPreventer {
 
-    uint256 private _isInFunctionBody = 1;
-
-    /* ========== VIEWS ========== */
-
-    function isInFunctionBody() internal view returns(bool) {
-        return _isInFunctionBody == 2;
-    }
+    uint256 private _guardCounter = 1;
 
     /* ========== MODIFIERS ========== */
 
     modifier preventReentrancy {
-        require(_isInFunctionBody == 1, "Reverted to prevent reentrancy");
-        _isInFunctionBody = 2;
+        _guardCounter += 1;
+        uint256 localCounter = _guardCounter;
         _;
-        _isInFunctionBody = 1;
+        require(localCounter == _guardCounter, "Reverted to prevent reentrancy");
     }
 }
