@@ -9,8 +9,8 @@
 		"coverage": "solidity-coverage",
 		"ganache": "ganache-cli -e 1000000000000 -l 0x7a1200 -t 2018-03-13T00:00:00",
 		"ganache:int": "npm run ganache -- --acctKeys keys.json",
-		"lint": "eslint \"**/*.js\" && solium -d contracts/",
-		"lint:fix": "eslint --fix \"**/*.js\" && solium --fix -d contracts/",
+		"lint": "solhint contracts/**/*.sol && eslint \"**/*.js\"",
+		"lint:fix": "eslint --fix \"**/*.js\"",
 		"test": "concurrently --kill-others --success first \"npm run ganache > /dev/null\" \"truffle compile && wait-port 8545 && truffle test\"",
 		"test:gas": "npm test; EXIT_CODE=$?; cat test-gas-used.log; printf \"\\n\"; exit $EXIT_CODE;",
 		"test:int": "concurrently --kill-others --success first \"npm run ganache:int > /dev/null\" \"wait-port 8545 && node int-test\"",
@@ -72,7 +72,6 @@
 		"seedrandom": "^2.4.4",
 		"solidifier": "^2.0.0",
 		"solidity-coverage": "^0.5.11",
-		"solium": "1.1.8",
 		"table": "^5.0.2",
 		"truffle": "5.0.27",
 		"truffle-core": "5.0.27",
@@ -87,6 +86,7 @@
 		"commander": "^2.19.0",
 		"openzeppelin-solidity": "2.0.0",
 		"pretty-error": "^2.1.1",
-		"solc": "0.4.25"
+		"solc": "0.4.25",
+		"solhint": "^2.3.0"
 	}
 }
