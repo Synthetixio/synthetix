@@ -254,7 +254,7 @@ contract Synthetix is ExternStateToken {
         address synthToRemove = synths[currencyKey];
 
         // Remove the synth from the availableSynths array.
-        for (uint8 i = 0; i < availableSynths.length; i++) {
+        for (uint i = 0; i < availableSynths.length; i++) {
             if (availableSynths[i] == synthToRemove) {
                 delete availableSynths[i];
 
@@ -310,18 +310,17 @@ contract Synthetix is ExternStateToken {
         (uint[] memory rates, bool anyRateStale) = exchangeRates.ratesAndStaleForCurrencies(availableCurrencyKeys());
         require(!anyRateStale, "Rates are stale");
 
-        for (uint8 i = 0; i < availableSynths.length; i++) {
+        for (uint i = 0; i < availableSynths.length; i++) {
             // What's the total issued value of that synth in the destination currency?
             // Note: We're not using our effectiveValue function because we don't want to go get the
             //       rate for the destination currency and check if it's stale repeatedly on every
             //       iteration of the loop
             uint synthValue = availableSynths[i].totalSupply()
-                .multiplyDecimalRound(rates[i])
-                .divideDecimalRound(currencyRate);
+                .multiplyDecimalRound(rates[i]);
             total = total.add(synthValue);
         }
 
-        return total;
+        return total.divideDecimalRound(currencyRate);
     }
 
     /**
@@ -334,7 +333,7 @@ contract Synthetix is ExternStateToken {
     {
         bytes32[] memory availableCurrencyKeys = new bytes32[](availableSynths.length);
 
-        for (uint8 i = 0; i < availableSynths.length; i++) {
+        for (uint i = 0; i < availableSynths.length; i++) {
             availableCurrencyKeys[i] = reverseSynths[availableSynths[i]];
         }
 
