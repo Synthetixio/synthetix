@@ -133,9 +133,13 @@ contract Synth is ExternStateToken {
         returns (bool)
     {
         _notFeeAddress(from);
-        // Reduce the allowance by the amount we're transferring.
-        // The safeSub call will handle an insufficient allowance.
-        tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
+
+        // Skip allowance update in case of infinite allowance
+        if (tokenState.allowance(from, messageSender) != uint(-1)) {
+            // Reduce the allowance by the amount we're transferring.
+            // The safeSub call will handle an insufficient allowance.
+            tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
+        }
 
         bytes memory empty;
         return super._internalTransfer(from, to, value, empty);
@@ -150,9 +154,13 @@ contract Synth is ExternStateToken {
         returns (bool)
     {
         _notFeeAddress(from);
-        // Reduce the allowance by the amount we're transferring.
-        // The safeSub call will handle an insufficient allowance.
-        tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
+         
+        // Skip allowance update in case of infinite allowance
+        if (tokenState.allowance(from, messageSender) != uint(-1)) {
+            // Reduce the allowance by the amount we're transferring.
+            // The safeSub call will handle an insufficient allowance.
+            tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
+        }
 
         return super._internalTransfer(from, to, value, data);
     }
