@@ -9,6 +9,8 @@ const StakingPool = artifacts.require('StakingPool');
 const Synth = artifacts.require('Synth');
 const { getWeb3, getContractInstance } = require('../utils/web3Helper');
 
+const BN = require('bn.js');
+
 const {
 	currentTime,
 	fastForward,
@@ -23,21 +25,17 @@ const getInstance = getContractInstance(web3);
 const WEEK = 604800;
 const YEAR = 31556926;
 
-// const assertBNEqual = (actualBN, expectedBN, context) => {
-// 	assert.equal(actualBN.toString(), expectedBN.toString(), context);
-// };
-
 contract('StakingPool', async accounts => {
 	const distributeSNX = async (snx, accounts, owner) => {
 		accounts.forEach(async acc => {
-			let amount = toUnit(100000);
+			let amount = toUnit(1000000);
 			await snx.transfer(acc, amount, { from: owner });
 		});
 	};
 
 	const approveStakingPool = async (stakingPool, snx, accounts) => {
 		accounts.forEach(async acc => {
-			let amount = toUnit(100000);
+			let amount = toUnit(1000000);
 			await snx.approve(stakingPool.address, amount, { from: acc });
 		});
 	};
@@ -164,146 +162,133 @@ contract('StakingPool', async accounts => {
 		]);
 	});
 
-	it('Deploys with correct state', async () => {
-		let snx = await stakingPool.snx();
-		let man = await stakingPool.manager();
-		let fp = await stakingPool.feePool();
+	describe('Depositing and Recieving liquidity tokens', async () => {
+		it('Deploys with correct state', async () => {
+			let snx = await stakingPool.snx();
+			let man = await stakingPool.manager();
+			let fp = await stakingPool.feePool();
 
-		assert.equal(snx, synthetix.address);
-		assert.equal(man, manager);
-		assert.equal(fp, feePool.address);
+			assert.equal(snx, synthetix.address);
+			assert.equal(man, manager);
+			assert.equal(fp, feePool.address);
+		});
+
+		it('Deposit into the pool correctly', async () => {
+			const amount = toUnit(100);
+			const bal = await synthetix.balanceOf(account1);
+			await stakingPool.deposit(amount, { from: account1 });
+			const bal2 = await synthetix.balanceOf(account1);
+			const tkBalance = await synthetix.balanceOf(stakingPool.address);
+			assert.isTrue(tkBalance.eq(amount));
+		});
+
+		it('Correctly distributes liquiditytokens', async () => {
+			const amount1 = toUnit(90);
+			const amount2 = toUnit(80);
+			const amount3 = toUnit(70);
+			await stakingPool.deposit(amount1, { from: account1 });
+			await stakingPool.deposit(amount2, { from: account2 });
+			await stakingPool.deposit(amount3, { from: account3 });
+			let totalValue = await stakingPool.totalSNXValue.call();
+			let totalLiquidity = await stakingPool.totalSupply.call();
+
+			let balance1 = await stakingPool.balanceOf(account1);
+			let balance2 = await stakingPool.balanceOf(account2);
+			let balance3 = await stakingPool.balanceOf(account3);
+			let sum = balance1.add(balance2).add(balance3);
+			assert.isTrue(amount1.eq(totalValue.mul(balance1).div(totalLiquidity)));
+			assert.isTrue(amount2.eq(totalValue.mul(balance2).div(totalLiquidity)));
+			assert.isTrue(amount3.eq(totalValue.mul(balance3).div(totalLiquidity)));
+		});
 	});
 
-	it('Deposit into the pool correctly', async () => {
-		const amount = toUnit(100);
-		const bal = await synthetix.balanceOf(account1);
-		await stakingPool.deposit(amount, { from: account1 });
-		const bal2 = await synthetix.balanceOf(account1);
-		const tkBalance = await synthetix.balanceOf(stakingPool.address);
-		assert.isTrue(tkBalance.eq(amount));
+	describe('Manager Functions', async () => {
+		beforeEach(async () => {
+			const amount1 = toUnit(900);
+			const amount2 = toUnit(800);
+			const amount3 = toUnit(700);
+			await stakingPool.deposit(amount1, { from: account1 });
+			await stakingPool.deposit(amount2, { from: account2 });
+			await stakingPool.deposit(amount3, { from: account3 });
+		});
+		it('The pool manager can correctly issue Synths', async () => {
+			await stakingPool.issueSynths(sUSD, '10', { from: manager });
+			let debt = await synthetix.debtBalanceOf(stakingPool.address, sUSD);
+			let sUSDBalance = await sUSDContract.balanceOf(stakingPool.address);
+
+			assert.isTrue(debt.eq(sUSDBalance));
+		});
+
+		it('The pool manager can correctly issue maxSynths', async () => {
+			await stakingPool.issueMaxSynths(sUSD, { from: manager });
+			let debt = await synthetix.debtBalanceOf(stakingPool.address, sUSD);
+			let sUSDBalance = await sUSDContract.balanceOf(stakingPool.address);
+
+			assert.equal(debt.divRound(sUSDBalance).toString(), '1');
+		});
+
+		it('The pool manager can correctly burn synths', async () => {
+			await stakingPool.issueSynths(sUSD, '10', { from: manager });
+			await stakingPool.burnSynths(sUSD, '10', { from: manager });
+
+			let debt = await synthetix.debtBalanceOf.call(stakingPool.address, sUSD);
+			let sUSDBalance = await sUSDContract.balanceOf(stakingPool.address);
+
+			assert.isTrue(debt.eq(sUSDBalance));
+			assert.isTrue(debt.isZero());
+		});
+
+		it('The pool manager can collect fees', async () => {
+			await stakingPool.issueSynths(sAUD, '10000', { from: manager });
+
+			await generateTradignFees(synthetix, [account4, account5], sUSD, sUSDContract, feePool);
+			let balance1 = await XDRContract.balanceOf(stakingPool.address);
+			let feesAvailable = await feePool.feesAvailable(stakingPool.address, XDR);
+			await stakingPool.claimFees(XDR, { from: manager });
+			let balance2 = await XDRContract.balanceOf(stakingPool.address);
+
+			assertBNEqual(balance1.add(feesAvailable[0]), balance2);
+		});
+
+		it('The pool manager can collect Rewards', async () => {
+			await stakingPool.issueSynths(sAUD, '100', { from: manager });
+			await generateRewards(synthetix, rewardEscrow, owner, feePoolAccount, stakingPool.address);
+			await fastForward(YEAR + WEEK * 3);
+			await updateRatesWithDefaults();
+			const bal = await rewardEscrow.balanceOf(stakingPool.address);
+
+			const snxBalance1 = await synthetix.balanceOf(stakingPool.address);
+			await stakingPool.vest({ from: manager });
+			const snxBalance2 = await synthetix.balanceOf(stakingPool.address);
+
+			assertBNEqual(snxBalance2, snxBalance1.add(bal));
+		});
+
+		it('Pool manager can exchange between synths', async () => {
+			let max = await synthetix.maxIssuableSynths(stakingPool.address, sUSD);
+			const amountIssued = max.div(new BN('2'));
+			await stakingPool.issueSynths(sUSD, amountIssued, { from: manager });
+
+			const exchangeFeeUSD = await feePool.exchangeFeeIncurred(amountIssued);
+			const exchangeFeeXDR = await synthetix.effectiveValue(sUSD, exchangeFeeUSD, XDR);
+
+			// Exchange sUSD to sAUD
+			await stakingPool.exchange(sUSD, amountIssued, sAUD, stakingPool.address, { from: manager });
+
+			// how much sAUD the user is supposed to get
+			const effectiveValue = await synthetix.effectiveValue(sUSD, amountIssued, sAUD);
+
+			// chargeFee = true so we need to minus the fees for this exchange
+			const effectiveValueMinusFees = await feePool.amountReceivedFromExchange(effectiveValue);
+
+			// Assert we have the correct AUD value - exchange fee
+			const sAUDBalance = await sAUDContract.balanceOf(stakingPool.address);
+			// const feesAvailable = await feePool.feesAvailable(stakingPool.address, XDR);
+			// closeFeePeriod();
+			// const feesAvailable2 = await feePool.feesAvailable(stakingPool.address, XDR);
+			assert.isTrue(effectiveValueMinusFees.eq(sAUDBalance));
+		});
 	});
-
-	it('Correctly distributes liquiditytokens', async () => {
-		const amount1 = toUnit(90);
-		const amount2 = toUnit(80);
-		const amount3 = toUnit(70);
-		await stakingPool.deposit(amount1, { from: account1 });
-		await stakingPool.deposit(amount2, { from: account2 });
-		await stakingPool.deposit(amount3, { from: account3 });
-		let totalValue = await stakingPool.totalSNXValue.call();
-		let totalLiquidity = await stakingPool.totalSupply.call();
-
-		let balance1 = await stakingPool.balanceOf(account1);
-		let balance2 = await stakingPool.balanceOf(account2);
-		let balance3 = await stakingPool.balanceOf(account3);
-		let sum = balance1.add(balance2).add(balance3);
-		assert.isTrue(amount1.eq(totalValue.mul(balance1).div(totalLiquidity)));
-		assert.isTrue(amount2.eq(totalValue.mul(balance2).div(totalLiquidity)));
-		assert.isTrue(amount3.eq(totalValue.mul(balance3).div(totalLiquidity)));
-	});
-
-	it('The pool manager can correctly issue Synths', async () => {
-		const amount1 = toUnit(90);
-		const amount2 = toUnit(80);
-		const amount3 = toUnit(70);
-		await stakingPool.deposit(amount1, { from: account1 });
-		await stakingPool.deposit(amount2, { from: account2 });
-		await stakingPool.deposit(amount3, { from: account3 });
-
-		await stakingPool.issueSynths(sUSD, '10', { from: manager });
-		let debt = await synthetix.debtBalanceOf(stakingPool.address, sUSD);
-		let sUSDBalance = await sUSDContract.balanceOf(stakingPool.address);
-
-		assert.isTrue(debt.eq(sUSDBalance));
-	});
-
-	it('The pool manager can correctly issue maxSynths', async () => {
-		const amount1 = toUnit(90);
-
-		await stakingPool.deposit(amount1, { from: account1 });
-
-		await stakingPool.issueMaxSynths(sUSD, { from: manager });
-		let debt = await synthetix.debtBalanceOf(stakingPool.address, sUSD);
-		let sUSDBalance = await sUSDContract.balanceOf(stakingPool.address);
-
-		assert.equal(debt.divRound(sUSDBalance).toString(), '1');
-	});
-
-	it('The pool manager can correctly burn synths', async () => {
-		const amount1 = toUnit(90);
-		await stakingPool.deposit(amount1, { from: account1 });
-		await stakingPool.issueSynths(sUSD, '10', { from: manager });
-		await stakingPool.burnSynths(sUSD, '10', { from: manager });
-
-		let debt = await synthetix.debtBalanceOf.call(stakingPool.address, sUSD);
-		let sUSDBalance = await sUSDContract.balanceOf(stakingPool.address);
-
-		assert.isTrue(debt.eq(sUSDBalance));
-		assert.isTrue(debt.isZero());
-	});
-
-	it('The pool manager can collect fees', async () => {
-		const amount1 = toUnit(90);
-		await stakingPool.deposit(amount1, { from: account1 });
-		await stakingPool.issueSynths(sAUD, '10000', { from: manager });
-
-		await generateTradignFees(synthetix, [account4, account5], sUSD, sUSDContract, feePool);
-		let balance1 = await XDRContract.balanceOf(stakingPool.address);
-		let feesAvailable = await feePool.feesAvailable(stakingPool.address, XDR);
-		await stakingPool.claimFees(XDR, { from: manager });
-		let balance2 = await XDRContract.balanceOf(stakingPool.address);
-
-		assertBNEqual(balance1.add(feesAvailable[0]), balance2);
-	});
-
-	it('The pool manager can collect Rewards', async () => {
-		const amount1 = toUnit(90);
-		await stakingPool.deposit(amount1, { from: account1 });
-		await stakingPool.issueSynths(sAUD, '10000', { from: manager });
-
-		// await generateTradignFees(synthetix, [account4, account5], sUSD, sUSDContract, feePool);
-		// let balance1 = await XDRContract.balanceOf(stakingPool.address);
-		// let feesAvailable = await feePool.feesAvailable(stakingPool.address, XDR);
-		// await stakingPool.claimFees(XDR, { from: manager });
-		// let balance2 = await XDRContract.balanceOf(stakingPool.address);
-
-		// assertBNEqual(balance1.add(feesAvailable[0]), balance2);
-	});
-
-	// it('Pool manager can exchange between synths', async () => {
-	// 	const amount1 = toUnit('10000');
-	// 	const amountIssued = toUnit('200');
-
-	// 	await stakingPool.deposit(amount1, { from: account1 });
-
-	// 	await stakingPool.issueSynths(sUSD, amountIssued, { from: manager });
-
-	// 	const exchangeFeeUSD = await feePool.exchangeFeeIncurred(amountIssued);
-	// 	const exchangeFeeXDR = await synthetix.effectiveValue(sUSD, exchangeFeeUSD, XDR);
-
-	// 	// Exchange sUSD to sAUD
-	// 	await stakingPool.exchange(sUSD, amountIssued, sAUD, stakingPool.address, { from: manager });
-
-	// 	// how much sAUD the user is supposed to get
-	// 	const effectiveValue = await synthetix.effectiveValue(sUSD, amountIssued, sAUD);
-
-	// 	// chargeFee = true so we need to minus the fees for this exchange
-	// 	const effectiveValueMinusFees = await feePool.amountReceivedFromExchange(effectiveValue);
-
-	// 	// Assert we have the correct AUD value - exchange fee
-	// 	const sAUDBalance = await sAUDContract.balanceOf(stakingPool.address);
-	// 	const feesAvailable = await feePool.feesAvailable(stakingPool.address, XDR);
-	// 	closeFeePeriod();
-	// 	const feesAvailable2 = await feePool.feesAvailable(stakingPool.address, XDR);
-	// 	assert.isTrue(effectiveValueMinusFees.eq(sAUDBalance));
-
-	// 	// console.log(feesAvailable.toString());
-	// 	// console.log(feesAvailable2.toString());
-
-	// 	// Assert we have the exchange fee to distribute
-	// 	const feePeriodZero = await feePool.recentFeePeriods(0);
-	// 	assert.isTrue(exchangeFeeXDR.eq(feePeriodZero.feesToDistribute));
-	// });
 
 	describe('Pool can correctly calculate overall value', async () => {
 		const depositedAmount = toUnit('10000');
@@ -313,18 +298,18 @@ contract('StakingPool', async accounts => {
 			await stakingPool.deposit(depositedAmount, { from: account1 });
 			await stakingPool.issueSynths(sAUD, issuedAmount, { from: manager });
 		});
-		// it('Can track value when there are fees to be claimed', async () => {
-		// 	let initialValue = await stakingPool.totalSNXValue();
-		// 	await generateTradignFees(synthetix, [account1, account2], sUSD, sUSDContract, feePool);
-		// 	const feesAvailable = await feePool.feesAvailable(stakingPool.address, SNX);
+		it('Can track value when there are fees to be claimed', async () => {
+			let initialValue = await stakingPool.totalSNXValue();
+			await generateTradignFees(synthetix, [account1, account2], sUSD, sUSDContract, feePool);
+			const feesAvailable = await feePool.feesAvailable(stakingPool.address, SNX);
 
-		// 	let intermediaryValue = await stakingPool.totalSNXValue();
-		// 	await stakingPool.claimFees(sUSD, { from: manager });
-		// 	let finalValue = await stakingPool.totalSNXValue();
+			let intermediaryValue = await stakingPool.totalSNXValue();
+			await stakingPool.claimFees(sUSD, { from: manager });
+			let finalValue = await stakingPool.totalSNXValue();
 
-		// 	assertBNEqual(finalValue, intermediaryValue);
-		// 	assertBNEqual(initialValue.add(feesAvailable[0]), finalValue);
-		// });
+			assertBNEqual(finalValue, intermediaryValue);
+			assertBNEqual(initialValue.add(feesAvailable[0]), finalValue);
+		});
 
 		it('Can track value when there are rewards to be claimed', async () => {
 			let initialValue = await stakingPool.totalSNXValue();
@@ -341,6 +326,95 @@ contract('StakingPool', async accounts => {
 			let finalValue = await stakingPool.totalSNXValue();
 			assertBNEqual(finalValue, intermediaryValue);
 			assertBNEqual(initialValue.add(bal), finalValue);
+		});
+	});
+
+	describe('Liquidity Tokens should adhere to ERC20 standard', async () => {
+		const amount1 = toUnit(90);
+		const amount2 = toUnit(80);
+		const amount3 = toUnit(70);
+		beforeEach(async () => {
+			await stakingPool.deposit(amount1, { from: account1 });
+			await stakingPool.deposit(amount2, { from: account2 });
+			await stakingPool.deposit(amount3, { from: account3 });
+		});
+		it('should be able to query ERC20 totalSupply', async () => {
+			const tSupply = await stakingPool.totalSupply();
+			assertBNEqual(tSupply, amount1.add(amount2).add(amount3));
+		});
+
+		it('should be able to query ERC20 balanceOf', async () => {
+			const balance = await stakingPool.balanceOf(account1);
+			assertBNEqual(balance, amount1);
+		});
+
+		it('should be able to call ERC20 approve', async () => {
+			const amountToTransfer = toUnit('50');
+
+			// Approve Account2 to spend 50
+			const approveTX = await stakingPool.approve(account2, amountToTransfer, {
+				from: account1,
+			});
+
+			// should be able to query ERC20 allowance
+			const allowance = await stakingPool.allowance(account1, account2);
+
+			// Assert we have the same
+			assertBNEqual(allowance, amountToTransfer);
+		});
+
+		it('should be able to call ERC20 transferFrom', async () => {
+			const amountToTransfer = toUnit('33');
+
+			// Approve Account2 to spend 50
+			await stakingPool.approve(account2, amountToTransfer, { from: account1 });
+
+			// Get Before Transfer Balances
+			const account1BalanceBefore = await stakingPool.balanceOf(account1);
+			const account3BalanceBefore = await stakingPool.balanceOf(account3);
+
+			// Transfer SNX
+			const transferTX = await stakingPool.methods['transferFrom(address,address,uint256)'](
+				account1,
+				account3,
+				amountToTransfer,
+				{
+					from: account2,
+				}
+			);
+
+			// Get After Transfer Balances
+			const account1BalanceAfter = await stakingPool.balanceOf(account1);
+			const account3BalanceAfter = await stakingPool.balanceOf(account3);
+
+			// Check Balances
+			assertBNEqual(account1BalanceBefore.sub(amountToTransfer), account1BalanceAfter);
+			assertBNEqual(account3BalanceBefore.add(amountToTransfer), account3BalanceAfter);
+		});
+
+		it('should be able to call ERC20 transfer', async () => {
+			const amountToTransfer = toUnit('44');
+
+			// Get Before Transfer Balances
+			const account1BalanceBefore = await stakingPool.balanceOf(account1);
+			const account2BalanceBefore = await stakingPool.balanceOf(account2);
+
+			// Transfer SNX
+			const transferTX = await stakingPool.methods['transfer(address,uint256)'](
+				account2,
+				amountToTransfer,
+				{
+					from: account1,
+				}
+			);
+
+			// Get After Transfer Balances
+			const account1BalanceAfter = await stakingPool.balanceOf(account1);
+			const account2BalanceAfter = await stakingPool.balanceOf(account2);
+
+			// Check Balances
+			assertBNEqual(account1BalanceBefore.sub(amountToTransfer), account1BalanceAfter);
+			assertBNEqual(account2BalanceBefore.add(amountToTransfer), account2BalanceAfter);
 		});
 	});
 });

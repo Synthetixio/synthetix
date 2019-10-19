@@ -69,6 +69,12 @@ contract StakingPool {
         emit Deposit(msg.sender, amount, liquidityAmount);
     }
 
+    // function withdrawFees(uint256 amount) external {
+    //     //Amount of fees to be withdrawn
+    //     uint256 amountToWithdraw = claimedAmount * amount / totalSupply;
+
+    // }
+
     //  TODO let manager set a order of preference of synths to burn
     function withdraw(uint256 amount) external {
         //check if there's liquid SNX available
