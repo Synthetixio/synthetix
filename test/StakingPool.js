@@ -18,7 +18,9 @@ const {
 	multiplyDecimal,
 	divideDecimal,
 	toUnit,
+	assertRevert,
 	assertBNEqual,
+	assertBNClose,
 	ZERO_ADDRESS,
 } = require('../utils/testUtils');
 const getInstance = getContractInstance(web3);
@@ -125,6 +127,7 @@ contract('StakingPool', async accounts => {
 		depot,
 		FEE_ADDRESS;
 
+	const fee = new BN('100'); // 1%
 	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
 		// We do this in a beforeEach instead of before to ensure we isolate
@@ -145,14 +148,19 @@ contract('StakingPool', async accounts => {
 		oracle = await exchangeRates.oracle();
 		timestamp = await currentTime();
 
+		await updateRatesWithDefaults();
 		stakingPool = await StakingPool.new(
 			manager,
 			synthetix.address,
 			feePool.address,
 			rewardEscrow.address,
-			depot.address
+			depot.address,
+			fee,
+			'3'
 		);
+
 		await distributeSNX(synthetix, [account1, account2, account3, account4, account5], owner);
+
 		await approveStakingPool(stakingPool, synthetix, [
 			account1,
 			account2,
@@ -160,11 +168,12 @@ contract('StakingPool', async accounts => {
 			account4,
 			account5,
 		]);
+		await updateRatesWithDefaults();
 	});
 
-	describe('Depositing and Recieving liquidity tokens', async () => {
+	describe('Deploying and Managing variables', async () => {
 		it('Deploys with correct state', async () => {
-			let snx = await stakingPool.snx();
+			let snx = await stakingPool.synthetix();
 			let man = await stakingPool.manager();
 			let fp = await stakingPool.feePool();
 
@@ -199,6 +208,38 @@ contract('StakingPool', async accounts => {
 			assert.isTrue(amount1.eq(totalValue.mul(balance1).div(totalLiquidity)));
 			assert.isTrue(amount2.eq(totalValue.mul(balance2).div(totalLiquidity)));
 			assert.isTrue(amount3.eq(totalValue.mul(balance3).div(totalLiquidity)));
+		});
+
+		it('Users can withdrawal their SNX', async () => {
+			const amount = toUnit(100);
+			const snxBalance = await synthetix.balanceOf(account1);
+			await stakingPool.deposit(amount, { from: account1 });
+			const bal1 = await stakingPool.balanceOf(account1);
+			await stakingPool.withdrawal(bal1, { from: account1 });
+			const bal2 = await stakingPool.balanceOf(account1);
+			const snxBalance2 = await synthetix.balanceOf(account1);
+			assertBNEqual(snxBalance, snxBalance2);
+			assertBNEqual(bal2, new BN('0'));
+		});
+
+		it('Users can withdrawal their SNX when there are sUSD fees', async () => {
+			const amount = toUnit(100);
+			const snxBalance = await synthetix.balanceOf(account1);
+			await stakingPool.deposit(amount, { from: account1 });
+			const bal1 = await sUSDContract.balanceOf(account1);
+
+			await stakingPool.issueSynths(sAUD, '10000', { from: manager });
+			await generateTradignFees(synthetix, [account4, account5], sUSD, sUSDContract, feePool);
+
+			await stakingPool.claimFees({ from: manager });
+
+			await stakingPool.withdrawal(amount, { from: account1 });
+			const bal2 = await sUSDContract.balanceOf(account1);
+			const snxBalance2 = await synthetix.balanceOf(account1);
+			//Not sure how to deal with variance in balances
+			console.log(bal1.toString());
+			console.log(bal2.toString());
+			//assert.fail();
 		});
 	});
 
@@ -242,12 +283,13 @@ contract('StakingPool', async accounts => {
 			await stakingPool.issueSynths(sAUD, '10000', { from: manager });
 
 			await generateTradignFees(synthetix, [account4, account5], sUSD, sUSDContract, feePool);
-			let balance1 = await XDRContract.balanceOf(stakingPool.address);
-			let feesAvailable = await feePool.feesAvailable(stakingPool.address, XDR);
-			await stakingPool.claimFees(XDR, { from: manager });
-			let balance2 = await XDRContract.balanceOf(stakingPool.address);
+			let balance1 = await sUSDContract.balanceOf(stakingPool.address);
+			let feesAvailable = await feePool.feesAvailable(stakingPool.address, sUSD);
+			await stakingPool.claimFees({ from: manager });
+			let balance2 = await sUSDContract.balanceOf(stakingPool.address);
+			let managerFees = feesAvailable[0].mul(fee).div(new BN('100000'));
 
-			assertBNEqual(balance1.add(feesAvailable[0]), balance2);
+			assertBNClose(balance1.add(feesAvailable[0].sub(managerFees)), balance2);
 		});
 
 		it('The pool manager can collect Rewards', async () => {
@@ -273,7 +315,7 @@ contract('StakingPool', async accounts => {
 			const exchangeFeeXDR = await synthetix.effectiveValue(sUSD, exchangeFeeUSD, XDR);
 
 			// Exchange sUSD to sAUD
-			await stakingPool.exchange(sUSD, amountIssued, sAUD, stakingPool.address, { from: manager });
+			await stakingPool.exchange(sUSD, amountIssued, sAUD, { from: manager });
 
 			// how much sAUD the user is supposed to get
 			const effectiveValue = await synthetix.effectiveValue(sUSD, amountIssued, sAUD);
@@ -295,8 +337,22 @@ contract('StakingPool', async accounts => {
 		const issuedAmount = toUnit('100');
 
 		beforeEach(async () => {
+			await updateRatesWithDefaults();
 			await stakingPool.deposit(depositedAmount, { from: account1 });
 			await stakingPool.issueSynths(sAUD, issuedAmount, { from: manager });
+		});
+
+		it('Depot', async () => {
+			const depotSNXAmount = toUnit('1000000');
+			await synthetix.issueSynths(sUSD, '90', { from: account5 });
+
+			await synthetix.methods['transfer(address,uint256)'](depot.address, depotSNXAmount, {
+				from: owner,
+			});
+			await sUSDContract.approve(depot.address, '90', { from: account5 });
+			const txn = await depot.exchangeSynthsForSynthetix('80', {
+				from: account5,
+			});
 		});
 		it('Can track value when there are fees to be claimed', async () => {
 			let initialValue = await stakingPool.totalSNXValue();
@@ -304,11 +360,12 @@ contract('StakingPool', async accounts => {
 			const feesAvailable = await feePool.feesAvailable(stakingPool.address, SNX);
 
 			let intermediaryValue = await stakingPool.totalSNXValue();
-			await stakingPool.claimFees(sUSD, { from: manager });
+			await stakingPool.claimFees({ from: manager });
 			let finalValue = await stakingPool.totalSNXValue();
 
-			assertBNEqual(finalValue, intermediaryValue);
-			assertBNEqual(initialValue.add(feesAvailable[0]), finalValue);
+			let managerFees = feesAvailable[0].mul(fee).div(new BN('100000'));
+			assertBNClose(finalValue, intermediaryValue);
+			assertBNClose(initialValue.add(feesAvailable[0].sub(managerFees)), finalValue);
 		});
 
 		it('Can track value when there are rewards to be claimed', async () => {
@@ -400,13 +457,9 @@ contract('StakingPool', async accounts => {
 			const account2BalanceBefore = await stakingPool.balanceOf(account2);
 
 			// Transfer SNX
-			const transferTX = await stakingPool.methods['transfer(address,uint256)'](
-				account2,
-				amountToTransfer,
-				{
-					from: account1,
-				}
-			);
+			await stakingPool.methods['transfer(address,uint256)'](account2, amountToTransfer, {
+				from: account1,
+			});
 
 			// Get After Transfer Balances
 			const account1BalanceAfter = await stakingPool.balanceOf(account1);
@@ -415,6 +468,56 @@ contract('StakingPool', async accounts => {
 			// Check Balances
 			assertBNEqual(account1BalanceBefore.sub(amountToTransfer), account1BalanceAfter);
 			assertBNEqual(account2BalanceBefore.add(amountToTransfer), account2BalanceAfter);
+		});
+	});
+
+	describe('Fees and Delays', async () => {
+		// beforeEach(async () => {
+		// 	await updateRatesWithDefaults();
+		// });
+		it("Fees can't finalize if they aren't set", async () => {
+			await assertRevert(stakingPool.finalizeFee());
+		});
+		it('Manager can set fee', async () => {
+			const newFee = '500'; //5%
+			await stakingPool.setFee(newFee, { from: manager });
+			await fastForward(WEEK);
+			await updateRatesWithDefaults();
+			//confirm new Fee
+			await stakingPool.finalizeFee();
+
+			let sp_fee = await stakingPool.fee();
+			assertBNEqual(sp_fee, newFee);
+		});
+
+		it('Fees cant have an effect prematurely', async () => {
+			let dddf = await stakingPool.delay();
+			const newFee = '500'; //5%
+			await stakingPool.setFee(newFee, { from: manager });
+			await assertRevert(stakingPool.finalizeFee());
+		});
+
+		it("Delays can't finalize if they aren't set", async () => {
+			await assertRevert(stakingPool.finalizeDelay());
+		});
+
+		it('Manager can set delay', async () => {
+			const newDelay = '5'; //5 days
+			await stakingPool.setDelay(newDelay, { from: manager });
+			await fastForward(WEEK);
+			await updateRatesWithDefaults();
+			//confirm new Fee
+			await stakingPool.finalizeDelay();
+
+			let sp_delay = await stakingPool.delay();
+			//secs * minutes * hours
+			assertBNEqual(sp_delay, newDelay * 60 * 60 * 24);
+		});
+
+		it('Delays cant have an effect prematurely', async () => {
+			const newDelay = '5'; //5 days
+			await stakingPool.setDelay(newDelay, { from: manager });
+			await assertRevert(stakingPool.finalizeDelay());
 		});
 	});
 });
