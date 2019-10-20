@@ -7,9 +7,11 @@ import "./RewardEscrow.sol";
 import "./Depot.sol";
 import "./Synth.sol";
 
-contract StakingPool {
-    using SafeMath for uint;
-    using SafeDecimalMath for uint;
+/**
+ * @title StakingPoolStorage.
+ * @notice A contract inherited ny both StakingPool and StakingPoolProxy to ensure that they both have the same layout structure.
+ */
+contract StakingPoolStorage {
 
     event Deposit(address indexed sender, uint256 SNXamount, uint256 liquidityAmount);
     event Withdrawl(address indexed sender, uint256 SNXamount, uint256 liquidityAmount);
@@ -22,7 +24,7 @@ contract StakingPool {
 
 
     mapping (address => uint256) public balances;
-    mapping (address => mapping (address => uint256)) private _allowances;
+    mapping (address => mapping (address => uint256)) internal _allowances;
     address public manager;
     FeePool public feePool;
     Synthetix public synthetix;
@@ -38,17 +40,15 @@ contract StakingPool {
     uint256 public delayTime;
     uint256 public delay;
     uint256 public pendingDelay;
+}
 
-
-    constructor(address _manager, address _synthetix, address _feePool, address _rEscrow, address _depot, uint256 _fee, uint256 _delay) public {
-        manager = _manager;
-        synthetix = Synthetix(_synthetix);
-        feePool = FeePool(_feePool);
-        rewardEscrow = RewardEscrow(_rEscrow);
-        depot = Depot(_depot);
-        fee = _fee;
-        delay = _delay * 1 days;
-    }
+/**
+ * @title StakingPool
+ * @notice The logic implementaion of the staking pool, a contract that allows a stakers to delegate SNX strategies to a manager.
+ */
+contract StakingPool is StakingPoolStorage{
+    using SafeMath for uint;
+    using SafeDecimalMath for uint;
 
     modifier onlyManager() {
         require(msg.sender == manager, "Sender is not manager");
@@ -61,32 +61,25 @@ contract StakingPool {
     ----------------------------------------------------------------------------
     **/
 
-    function deposit(uint256 amount) external {
-        uint256 liquidityAmount;
-        if(totalSupply > 0) {
-            liquidityAmount = amount.mul(totalSupply).div(totalSNXValue());
-        } else {
-            liquidityAmount = amount;
-        }
+    function deposit(uint256 snxAmount) external {
+        uint256 liquidityAmount = calculateLiquidityTokens(snxAmount);
         balances[msg.sender] = balances[msg.sender].add(liquidityAmount);
-        totalSupply = totalSupply.add(amount);
-        require(synthetix.transferFrom(msg.sender, address(this), amount), "Token transfer failed");
-        emit Deposit(msg.sender, amount, liquidityAmount);
+        totalSupply = totalSupply.add(snxAmount);
+        require(synthetix.transferFrom(msg.sender, address(this), snxAmount), "Token transfer failed");
+        emit Deposit(msg.sender, snxAmount, liquidityAmount);
+    }
+
+    function calculateLiquidityTokens(uint256 _snxAmount) internal returns(uint256 liquidityAmount){
+        if(totalSupply > 0) {
+            liquidityAmount = _snxAmount.mul(totalSupply).div(totalSNXValue());
+        } else {
+            liquidityAmount = _snxAmount;
+        }
     }
 
     function withdrawal(uint256 amount) external {
-        //This isn't strictly necessary, but it's a easier solution
-        _claimFeeInternal(sUSD);
-
         uint256 available = synthetix.balanceOf(address(this));
         uint256 amountToWithdraw = totalSNXValue().mul(amount).div(totalSupply);
-   
-        if(claimedAmountsUSD > 0){
-            uint256 feeWithdrawl = claimedAmountsUSD.mul(amount).div(totalSupply);
-            claimedAmountsUSD = claimedAmountsUSD.sub(feeWithdrawl);
-        }
-        uint256 snxFee = synthetix.effectiveValue(sUSD, feeWithdrawl, SNX);
-        amountToWithdraw = amountToWithdraw.sub(snxFee);
 
         if(available < amountToWithdraw){
             uint256 diff = amountToWithdraw.sub(available);
@@ -99,21 +92,27 @@ contract StakingPool {
 
         uint256 trasnferable = synthetix.transferableSynthetix(address(this));
         uint256 _amount = amountToWithdraw > trasnferable ? trasnferable : amountToWithdraw;
-        
-        require(synthetix.synths(sUSD).transfer(msg.sender, feeWithdrawl), "fees transfer failed");
+
+        //require(synthetix.synths(sUSD).transfer(msg.sender, feeWithdrawl), "fees transfer failed");
         require(synthetix.transfer(msg.sender, _amount), "Token transfer failed");
 
         emit Withdrawl(msg.sender, amountToWithdraw, amount);
     }
 
+    event DIN(uint256 aha);
     function totalSNXValue() public view returns(uint){
-        uint256  snxAmount = synthetix.effectiveValue(sUSD, claimedAmountsUSD, SNX);
         //We need to discount manager percent from non claimed fees
-        (uint256 fees, uint256 rewards) = feePool.feesAvailable(address(this), SNX);
-        uint256 managerFees = fees.mul(fee).div(HUNDRED_PERCENT);
-        uint256 total = synthetix.collateral(address(this)).add(fees).add(rewards).add(snxAmount).sub(managerFees);
+        (uint256 fees, uint256 rewards) = feePool.feesAvailable(address(this), sUSD);
+
+        uint256 effectiveFee = depot.synthetixReceivedForSynths(fees);
+        uint256 managerFee = effectiveFee.mul(fee).div(HUNDRED_PERCENT);
+
+
+        uint256 total = synthetix.collateral(address(this)).add(effectiveFee).add(rewards).sub(managerFee);
+        //uint256 total = synthetix.collateral(address(this));
         return total;
     }
+
     /**
     ----------------------------------------------------------------------------
                  MANAGER FUNCTIONS
@@ -130,11 +129,7 @@ contract StakingPool {
     }
 
     function exchange(bytes4 sourceCurrencyKey, uint sourceAmount, bytes4 destinationCurrencyKey) external onlyManager {
-        if(sourceCurrencyKey == sUSD){
-            uint256 maxAmount = (synthetix.synths(sUSD).balanceOf(address(this))).sub(claimedAmountsUSD.add(managerFundsUSD));
-        }
-        uint256 exAmount = maxAmount < sourceAmount ? maxAmount : sourceAmount;
-        synthetix.exchange(sourceCurrencyKey,exAmount,destinationCurrencyKey,address(this));
+        synthetix.exchange(sourceCurrencyKey,sourceAmount,destinationCurrencyKey,address(this));
     }
 
     function vest() external onlyManager {
@@ -175,14 +170,19 @@ contract StakingPool {
         pendingDelay = 0;
         delayTime = 0;
     }
-
+    
     function _claimFeeInternal(bytes4 currencykey) internal {
         (uint256 fees, ) = feePool.feesAvailable(address(this), currencykey);
         if(fees > 0){
+            uint256 snxRecieved = depot.synthetixReceivedForSynths(fees);
+            uint256 managerFee = snxRecieved.mul(fee).div(HUNDRED_PERCENT);
+            //mint fees for manager
+            balances[manager] = balances[manager].add(calculateLiquidityTokens(managerFee));
+            //totalSupply = totalSupply.add(managerFee);
+            //Trade Synths
             feePool.claimFees(currencykey);
-            uint256 managerFee = fees.mul(fee).div(HUNDRED_PERCENT);
-            managerFundsUSD = managerFundsUSD.add(managerFee);
-            claimedAmountsUSD = claimedAmountsUSD.add(fees).sub(managerFee);
+            synthetix.synths(currencykey).approve(address(depot), fees);
+            depot.exchangeSynthsForSynthetix(fees);
         }
     }
 
