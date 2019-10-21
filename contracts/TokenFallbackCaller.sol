@@ -25,13 +25,13 @@ on by both contracts.
 
 pragma solidity 0.4.25;
 
-import "./ReentrancyPreventer.sol";
+import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
 
-contract TokenFallbackCaller is ReentrancyPreventer {
+contract TokenFallbackCaller is ReentrancyGuard {
     uint constant MAX_GAS_SUB_CALL = 200000;
     function callTokenFallbackIfNeeded(address sender, address recipient, uint amount, bytes data)
         internal
-        preventReentrancy
+        nonReentrant
     {
         /*
             If we're transferring to a contract and it implements the tokenFallback function, call it.
