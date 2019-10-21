@@ -31,6 +31,8 @@ contract StakingPoolStorage {
     RewardEscrow public rewardEscrow;
     Depot public depot;
 
+
+    //This could be optimized to occupy fewer storage slots
     uint256 public totalSupply;
     uint256 public claimedAmountsUSD;
     uint256 public managerFundsUSD;
@@ -69,17 +71,16 @@ contract StakingPool is StakingPoolStorage{
         emit Deposit(msg.sender, snxAmount, liquidityAmount);
     }
 
-    function calculateLiquidityTokens(uint256 _snxAmount) internal returns(uint256 liquidityAmount){
-        if(totalSupply > 0) {
-            liquidityAmount = _snxAmount.mul(totalSupply).div(totalSNXValue());
-        } else {
-            liquidityAmount = _snxAmount;
-        }
-    }
 
     function withdrawal(uint256 amount) external {
         uint256 available = synthetix.balanceOf(address(this));
         uint256 amountToWithdraw = totalSNXValue().mul(amount).div(totalSupply);
+
+        //There could other steps to take when withdrawing to get more liquid SNX:
+        // 1. ClaimFees
+        // 2. Vest for any pending Reward
+        // 3. Burn issue Synths
+        //TODO: allow manager to set a order of preference of actions
 
         if(available < amountToWithdraw){
             uint256 diff = amountToWithdraw.sub(available);
@@ -93,23 +94,15 @@ contract StakingPool is StakingPoolStorage{
         uint256 trasnferable = synthetix.transferableSynthetix(address(this));
         uint256 _amount = amountToWithdraw > trasnferable ? trasnferable : amountToWithdraw;
 
-        //require(synthetix.synths(sUSD).transfer(msg.sender, feeWithdrawl), "fees transfer failed");
         require(synthetix.transfer(msg.sender, _amount), "Token transfer failed");
 
         emit Withdrawl(msg.sender, amountToWithdraw, amount);
     }
 
-    event DIN(uint256 aha);
     function totalSNXValue() public view returns(uint){
-        //We need to discount manager percent from non claimed fees
         (uint256 fees, uint256 rewards) = feePool.feesAvailable(address(this), sUSD);
-
         uint256 effectiveFee = depot.synthetixReceivedForSynths(fees);
-        uint256 managerFee = effectiveFee.mul(fee).div(HUNDRED_PERCENT);
-
-
-        uint256 total = synthetix.collateral(address(this)).add(effectiveFee).add(rewards);//.sub(managerFee);
-        //uint256 total = synthetix.collateral(address(this));
+        uint256 total = synthetix.collateral(address(this)).add(effectiveFee).add(rewards);
         return total;
     }
 
@@ -171,6 +164,12 @@ contract StakingPool is StakingPoolStorage{
         delayTime = 0;
     }
     
+    /**
+    ----------------------------------------------------------------------------
+                 INTERNAL FUNCTIONS
+    ----------------------------------------------------------------------------
+    **/
+
     function _claimFeeInternal(bytes4 currencykey) internal {
         (uint256 fees, ) = feePool.feesAvailable(address(this), currencykey);
         if(fees > 0){
@@ -180,12 +179,21 @@ contract StakingPool is StakingPoolStorage{
             totalSupply = totalSupply.add(managerFee);
             balances[manager] = balances[manager].add(calculateLiquidityTokens(managerFee));
         
-            //Trade Synths
+            //Trade Synths for SNX
             feePool.claimFees(currencykey);
             synthetix.synths(currencykey).approve(address(depot), fees);
             depot.exchangeSynthsForSynthetix(fees);
         }
     }
+
+    function calculateLiquidityTokens(uint256 _snxAmount) internal returns(uint256 liquidityAmount){
+        if(totalSupply > 0) {
+            liquidityAmount = _snxAmount.mul(totalSupply).div(totalSNXValue());
+        } else {
+            liquidityAmount = _snxAmount;
+        }
+    }
+
 
     /**
     ----------------------------------------------------------------------------
