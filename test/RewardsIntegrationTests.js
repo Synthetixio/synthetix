@@ -78,9 +78,15 @@ contract('Rewards Integration Tests', async accounts => {
 	// };
 
 	// CURRENCIES
-	const [sUSD, sAUD, sEUR, sBTC, SNX, iBTC, sETH] = ['sUSD', 'sAUD', 'sEUR', 'sBTC', 'SNX', 'iBTC', 'sETH'].map(
-		web3.utils.asciiToHex
-	);
+	const [sUSD, sAUD, sEUR, sBTC, SNX, iBTC, sETH] = [
+		'sUSD',
+		'sAUD',
+		'sEUR',
+		'sBTC',
+		'SNX',
+		'iBTC',
+		'sETH',
+	].map(web3.utils.asciiToHex);
 
 	// DIVISIONS
 	const half = amount => amount.div(web3.utils.toBN('2'));
