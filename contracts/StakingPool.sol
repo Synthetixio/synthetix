@@ -108,7 +108,7 @@ contract StakingPool is StakingPoolStorage{
         uint256 managerFee = effectiveFee.mul(fee).div(HUNDRED_PERCENT);
 
 
-        uint256 total = synthetix.collateral(address(this)).add(effectiveFee).add(rewards).sub(managerFee);
+        uint256 total = synthetix.collateral(address(this)).add(effectiveFee).add(rewards);//.sub(managerFee);
         //uint256 total = synthetix.collateral(address(this));
         return total;
     }
@@ -177,8 +177,9 @@ contract StakingPool is StakingPoolStorage{
             uint256 snxRecieved = depot.synthetixReceivedForSynths(fees);
             uint256 managerFee = snxRecieved.mul(fee).div(HUNDRED_PERCENT);
             //mint fees for manager
+            totalSupply = totalSupply.add(managerFee);
             balances[manager] = balances[manager].add(calculateLiquidityTokens(managerFee));
-            //totalSupply = totalSupply.add(managerFee);
+        
             //Trade Synths
             feePool.claimFees(currencykey);
             synthetix.synths(currencykey).approve(address(depot), fees);
