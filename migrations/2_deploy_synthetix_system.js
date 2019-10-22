@@ -21,7 +21,8 @@ const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 const TokenState = artifacts.require('TokenState');
 const Depot = artifacts.require('Depot');
 const SelfDestructible = artifacts.require('SelfDestructible');
-
+const AtomicSynthetixUniswapConverter = artifacts.require('AtomicSynthetixUniswapConverter');
+const MockUniswapExchange = artifacts.require('MockUniswapExchange');
 // Update values before deployment
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 const SYNTHETIX_TOTAL_SUPPLY = web3.utils.toWei('100000000');
@@ -206,6 +207,26 @@ module.exports = async function(deployer, network, accounts) {
 		}
 	);
 
+	console.log('Deploying AtomicSynthetixUniswapConverter...');
+	deployer.link(SafeDecimalMath, AtomicSynthetixUniswapConverter);
+	const atomicSynthetixUniswapConverter = await deployer.deploy(
+		AtomicSynthetixUniswapConverter,
+		owner,
+		{
+			from: deployerAccount,
+			gas: 8000000,
+		}
+	);
+	atomicSynthetixUniswapConverter.setSynthetix(synthetix.address, { from: owner });
+	atomicSynthetixUniswapConverter.setSynthsExchangeRates(exchangeRates.address, { from: owner });
+	atomicSynthetixUniswapConverter.setSynthsFeePool(feePool.address, { from: owner });
+	// The MockUniswapExchange contract is not used in a standalone way on mainnet, this is for testing
+	console.log('Deploying MockUniswapExchange...');
+
+	await deployer.deploy(MockUniswapExchange, {
+		from: deployerAccount,
+		gas: 8000000,
+	});
 	// ----------------------
 	// Connect Token State
 	// ----------------------
@@ -257,7 +278,7 @@ module.exports = async function(deployer, network, accounts) {
 	// ----------------
 	// Synths
 	// ----------------
-	const currencyKeys = ['XDR', 'sUSD', 'sAUD', 'sEUR', 'sBTC', 'iBTC'];
+	const currencyKeys = ['XDR', 'sUSD', 'sAUD', 'sEUR', 'sBTC', 'iBTC', 'sETH'];
 	const synths = [];
 
 	deployer.link(SafeDecimalMath, PurgeableSynth);
@@ -323,7 +344,9 @@ module.exports = async function(deployer, network, accounts) {
 			.filter(currency => currency !== 'sUSD')
 			.concat(['SNX'])
 			.map(web3.utils.asciiToHex),
-		['1', '0.5', '1.25', '0.1', '5000', '4000'].map(number => web3.utils.toWei(number, 'ether')),
+		['1', '0.5', '1.25', '0.1', '5000', '4000', '200'].map(number =>
+			web3.utils.toWei(number, 'ether')
+		),
 		timestamp,
 		{ from: oracle }
 	);

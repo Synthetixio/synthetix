@@ -24,8 +24,8 @@ contract('Rewards Integration Tests', async accounts => {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sAUD, sEUR, SNX, sBTC, iBTC],
-			['0.5', '1.25', '0.1', '5000', '4000'].map(toUnit),
+			[sAUD, sEUR, SNX, sBTC, iBTC, sETH],
+			['0.5', '1.25', '0.1', '5000', '4000', '200'].map(toUnit),
 			timestamp,
 			{
 				from: oracle,
@@ -78,9 +78,15 @@ contract('Rewards Integration Tests', async accounts => {
 	// };
 
 	// CURRENCIES
-	const [sUSD, sAUD, sEUR, sBTC, SNX, iBTC] = ['sUSD', 'sAUD', 'sEUR', 'sBTC', 'SNX', 'iBTC'].map(
-		web3.utils.asciiToHex
-	);
+	const [sUSD, sAUD, sEUR, sBTC, SNX, iBTC, sETH] = [
+		'sUSD',
+		'sAUD',
+		'sEUR',
+		'sBTC',
+		'SNX',
+		'iBTC',
+		'sETH',
+	].map(web3.utils.asciiToHex);
 
 	// DIVISIONS
 	const half = amount => amount.div(web3.utils.toBN('2'));
