@@ -194,6 +194,14 @@ contract('FeePool', async accounts => {
 		);
 	});
 
+	it('should disallow owner from setting the exchange fee rate larger than MAX_EXCHANGE_FEE_RATE', async () => {
+		await assert.revert(
+			feePool.setExchangeFeeRate(toUnit('11'), {
+				from: owner,
+			})
+		);
+	});
+
 	it('should allow the owner to set the fee period duration', async () => {
 		// Assert that we're starting with the state we expect
 		const oneWeek = web3.utils.toBN(7 * 24 * 60 * 60);

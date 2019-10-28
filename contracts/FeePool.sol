@@ -171,6 +171,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         external
         optionalProxy_onlyOwner
     {
+        require(_exchangeFeeRate < MAX_EXCHANGE_FEE_RATE, "rate < MAX_EXCHANGE_FEE_RATE");     
         exchangeFeeRate = _exchangeFeeRate;
     }
 
