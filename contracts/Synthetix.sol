@@ -182,33 +182,33 @@ contract Synthetix is ExternStateToken {
     }
     // ========== SETTERS ========== */
 
-    function setFeePool(IFeePool _feePool)
-        external
-        optionalProxy_onlyOwner
-    {
-        feePool = _feePool;
-    }
+    // function setFeePool(IFeePool _feePool)
+    //     external
+    //     optionalProxy_onlyOwner
+    // {
+    //     feePool = _feePool;
+    // }
 
-    function setExchangeRates(ExchangeRates _exchangeRates)
-        external
-        optionalProxy_onlyOwner
-    {
-        exchangeRates = _exchangeRates;
-    }
+    // function setExchangeRates(ExchangeRates _exchangeRates)
+    //     external
+    //     optionalProxy_onlyOwner
+    // {
+    //     exchangeRates = _exchangeRates;
+    // }
 
-    function setProtectionCircuit(bool _protectionCircuitIsActivated)
-        external
-        onlyOracle
-    {
-        protectionCircuit = _protectionCircuitIsActivated;
-    }
+    // function setProtectionCircuit(bool _protectionCircuitIsActivated)
+    //     external
+    //     onlyOracle
+    // {
+    //     protectionCircuit = _protectionCircuitIsActivated;
+    // }
 
-    function setExchangeEnabled(bool _exchangeEnabled)
-        external
-        optionalProxy_onlyOwner
-    {
-        exchangeEnabled = _exchangeEnabled;
-    }
+    // function setExchangeEnabled(bool _exchangeEnabled)
+    //     external
+    //     optionalProxy_onlyOwner
+    // {
+    //     exchangeEnabled = _exchangeEnabled;
+    // }
 
     /**
      * @notice Add an associated Synth contract to the Synthetix system
@@ -518,8 +518,19 @@ contract Synthetix is ExternStateToken {
         uint amountReceived = destinationAmount;
         uint fee = 0;
 
-        if (chargeFee) {
-            amountReceived = feePool.amountReceivedFromExchange(destinationAmount);
+        if (chargeFee) {    
+            // emit LogInt("swingTrade", int(_isSwingTrade(sourceCurrencyKey, destinationCurrencyKey)));      
+            if(_isSwingTrade(sourceCurrencyKey, destinationCurrencyKey)) {
+                // Double the exchange fee
+                uint doubleFeeRate = feePool.exchangeFeeRate().mul(2);
+                emit LogInt("doubleFeeRate", doubleFeeRate);
+                // Sub the fee from the amountReceived
+                amountReceived = amountReceived.multiplyDecimal(SafeDecimalMath.unit().sub(doubleFeeRate));
+                emit LogInt("amountReceived Double", amountReceived);
+                emit LogInt("amountReceived", feePool.amountReceivedFromExchange(destinationAmount));                      
+            } else {
+                amountReceived = feePool.amountReceivedFromExchange(destinationAmount);            
+            }
             fee = destinationAmount.sub(amountReceived);
         }
 
@@ -545,6 +556,8 @@ contract Synthetix is ExternStateToken {
         return true;
     }
 
+    event LogInt(string name, uint value);    
+
     /**
     * @notice Function that burns the amount sent during an exchange in case the protection circuit is activated
     * @param from The address to move synth from
@@ -562,6 +575,40 @@ contract Synthetix is ExternStateToken {
     {
         // Burn the source amount
         synths[sourceCurrencyKey].burn(from, sourceAmount);
+        return true;
+    }
+
+    function _isSwingTrade(
+        bytes32 sourceCurrencyKey,
+        bytes32 destinationCurrencyKey
+    )
+        internal
+        view
+        returns (bool)
+    {        
+        bytes memory short = keccak256("i");
+        bytes memory long = keccak256("s");
+        bytes memory a = bytes(sourceCurrencyKey);
+        bytes memory b = bytes(destinationCurrencyKey);
+
+        // Compare two strings quickly by length to try to avoid further checks
+        // if (a.length != b.length) {
+        //     return false;
+        // }
+
+        // Check is long <> short
+        if (a[0] != short && b[0] != long || a[0] != long  && b[0] != short ) {
+             emit LogInt("NOT short to long", 0);
+             return false;             
+        }
+
+        // Check is the same token with detailed loop comparison
+        // for (uint i = 1; i < a.length; i++) {
+        //     if (a[i] != b[i]) {
+        //         return false;
+        //     }
+        // }
+        emit LogInt("IS S to L", 0);
         return true;
     }
 
