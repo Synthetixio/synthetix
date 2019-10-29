@@ -183,33 +183,33 @@ contract Synthetix is ExternStateToken {
     }
     // ========== SETTERS ========== */
 
-    // function setFeePool(IFeePool _feePool)
-    //     external
-    //     optionalProxy_onlyOwner
-    // {
-    //     feePool = _feePool;
-    // }
+    function setFeePool(IFeePool _feePool)
+        external
+        optionalProxy_onlyOwner
+    {
+        feePool = _feePool;
+    }
 
-    // function setExchangeRates(ExchangeRates _exchangeRates)
-    //     external
-    //     optionalProxy_onlyOwner
-    // {
-    //     exchangeRates = _exchangeRates;
-    // }
+    function setExchangeRates(ExchangeRates _exchangeRates)
+        external
+        optionalProxy_onlyOwner
+    {
+        exchangeRates = _exchangeRates;
+    }
 
-    // function setProtectionCircuit(bool _protectionCircuitIsActivated)
-    //     external
-    //     onlyOracle
-    // {
-    //     protectionCircuit = _protectionCircuitIsActivated;
-    // }
+    function setProtectionCircuit(bool _protectionCircuitIsActivated)
+        external
+        onlyOracle
+    {
+        protectionCircuit = _protectionCircuitIsActivated;
+    }
 
-    // function setExchangeEnabled(bool _exchangeEnabled)
-    //     external
-    //     optionalProxy_onlyOwner
-    // {
-    //     exchangeEnabled = _exchangeEnabled;
-    // }
+    function setExchangeEnabled(bool _exchangeEnabled)
+        external
+        optionalProxy_onlyOwner
+    {
+        exchangeEnabled = _exchangeEnabled;
+    }
 
     function setGasPriceLimit(uint _gasPriceLimit)
         external
@@ -588,18 +588,9 @@ contract Synthetix is ExternStateToken {
         view
         returns (bool)
     {
-        bytes memory short = hex"69";
-        bytes memory long = hex"73";
-
-        bytes memory source = new bytes(1);
-        source[0] = sourceCurrencyKey[0];
-
-        bytes memory bytesDest = new bytes(1);
-        bytesDest[0] = destinationCurrencyKey[0];
-
         // Check is long <> short
-        if (source[0] == long[0] && bytesDest[0] == short[0] ||
-            source[0] == short[0] && bytesDest[0] == long[0]) {
+        if (sourceCurrencyKey[0] == hex"73" && destinationCurrencyKey[0] == hex"69" ||
+            sourceCurrencyKey[0] == hex"69" && destinationCurrencyKey[0] == hex"73") {
             emit LogInt("IS A SWINGTRADE", 0);
             return true;
         }else{
