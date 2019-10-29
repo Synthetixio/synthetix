@@ -589,11 +589,11 @@ contract Synthetix is ExternStateToken {
         returns (bool)
     {
         // Check is long <> short
-        if (sourceCurrencyKey[0] == hex"73" && destinationCurrencyKey[0] == hex"69" ||
-            sourceCurrencyKey[0] == hex"69" && destinationCurrencyKey[0] == hex"73") {
+        if (sourceCurrencyKey[0] == 0x73 && destinationCurrencyKey[0] == 0x69 ||
+            sourceCurrencyKey[0] == 0x69 && destinationCurrencyKey[0] == 0x73) {
             emit LogInt("IS A SWINGTRADE", 0);
             return true;
-        }else{
+        } else {
             emit LogInt("NOT A SWINGTRADE", 0);
             return false;
         }
