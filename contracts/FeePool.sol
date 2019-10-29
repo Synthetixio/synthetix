@@ -237,7 +237,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         optionalProxy_onlyOwner
     {
         require(_percent >= 0, "Threshold should be positive");
-        TARGET_THRESHOLD = (_percent * SafeDecimalMath.unit()) / 100;
+        require(_percent <= 50, "Threshold above limit");
+        TARGET_THRESHOLD = _percent.mul(SafeDecimalMath.unit()).div(100);
     }
 
     /**

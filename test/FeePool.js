@@ -1008,10 +1008,23 @@ contract('FeePool', async accounts => {
 			const penaltyThreshold = await feePool.TARGET_THRESHOLD();
 			assert.bnEqual(penaltyThreshold, toUnit(thresholdPercent / 100));
 		});
+
 		it('should revert when account1 set the Target threshold', async () => {
 			const thresholdPercent = 15;
 
 			await assert.revert(feePool.setTargetThreshold(thresholdPercent, { from: account1 }));
+		});
+
+		it('should revert when owner set the Target threshold to negative', async () => {
+			const thresholdPercent = -1;
+
+			await assert.revert(feePool.setTargetThreshold(thresholdPercent, { from: owner }));
+		});
+
+		it('should revert when owner set the Target threshold to above 50%', async () => {
+			const thresholdPercent = 51;
+
+			await assert.revert(feePool.setTargetThreshold(thresholdPercent, { from: owner }));
 		});
 
 		it('should be no penalty if issuance ratio is less than target ratio', async () => {
