@@ -171,6 +171,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         external
         optionalProxy_onlyOwner
     {
+        require(_exchangeFeeRate < MAX_EXCHANGE_FEE_RATE, "rate < MAX_EXCHANGE_FEE_RATE");     
         exchangeFeeRate = _exchangeFeeRate;
     }
 
@@ -236,7 +237,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         optionalProxy_onlyOwner
     {
         require(_percent >= 0, "Threshold should be positive");
-        TARGET_THRESHOLD = (_percent * SafeDecimalMath.unit()) / 100;
+        require(_percent <= 50, "Threshold above limit");
+        TARGET_THRESHOLD = _percent.mul(SafeDecimalMath.unit()).div(100);
     }
 
     /**
@@ -353,12 +355,12 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         internal
         returns (bool)
     {
-        uint rewardsPaid;
-        uint feesPaid;
+        uint rewardsPaid = 0;
+        uint feesPaid = 0;
         uint availableFees;
         uint availableRewards;
 
-        // Address wont be able to claim fees if it is to far below the target c-ratio.
+        // Address won't be able to claim fees if it is too far below the target c-ratio.
         // It will need to burn synths then try claiming again.
         require(feesClaimable(claimingAddress), "C-Ratio below penalty threshold");
 

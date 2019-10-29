@@ -536,6 +536,20 @@ const deploy = async ({
 		});
 	}
 
+	// setup exchange gasPriceLimit on Synthetix
+	const gasPriceLimit = w3utils.toWei('35', 'gwei');
+	if (network === 'local') {
+		await runStep({
+			contract: 'Synthetix',
+			target: synthetix,
+			account: oracleExrates,
+			read: 'gasPriceLimit',
+			expected: input => input === gasPriceLimit,
+			write: 'setGasPriceLimit',
+			writeArg: gasPriceLimit,
+		});
+	}
+
 	// only reset token state if redeploying
 	if (tokenStateSynthetix && config['TokenStateSynthetix'].deploy) {
 		const initialIssuance = w3utils.toWei('100000000');
@@ -695,19 +709,29 @@ const deploy = async ({
 			force: addNewSynths,
 		});
 
+		// sUSD proxy is used by Kucoin and Bittrex thus requires proxy / integration proxy to be set
+		const synthProxyIsLegacy = currencyKey === 'sUSD' && network !== 'local';
+
 		const proxyForSynth = await deployContract({
 			name: `Proxy${currencyKey}`,
-			source: 'ProxyERC20',
+			source: synthProxyIsLegacy ? 'Proxy' : 'ProxyERC20',
 			args: [account],
 			force: addNewSynths,
 		});
 
-		const currencyKeyInBytes = w3utils.asciiToHex(currencyKey);
+		let proxyERC20ForSynth;
 
-		const additionalConstructorArgsMap = {
-			PurgeableSynth: [exchangeRatesAddress],
-			// future subclasses...
-		};
+		if (synthProxyIsLegacy) {
+			// additionally deploy an ERC20 proxy for the synth if it's legacy (sUSD and not on local)
+			proxyERC20ForSynth = await deployContract({
+				name: `ProxyERC20${currencyKey}`,
+				source: `ProxyERC20`,
+				args: [account],
+				force: addNewSynths,
+			});
+		}
+
+		const currencyKeyInBytes = w3utils.asciiToHex(currencyKey);
 
 		// track the original supply if we're deploying a new synth contract for an existing synth
 		let originalTotalSupply = 0;
@@ -717,11 +741,36 @@ const deploy = async ({
 			originalTotalSupply = await oldSynth.methods.totalSupply().call();
 		}
 
+		// PurgeableSynth needs additionalConstructorArgs to be ordered
+		const additionalConstructorArgsMap = {
+			Synth: [originalTotalSupply],
+			PurgeableSynth: [exchangeRatesAddress, originalTotalSupply],
+			// future subclasses...
+		};
+
 		console.log(yellow(`Original TotalSupply on Synth${currencyKey} is ${originalTotalSupply}`));
 
+		// user confirm totalSupply is correct for oldSynth before deploy new Synth
+		if (config[`Synth${currencyKey}`].deploy && !yes) {
+			try {
+				await confirmAction(
+					yellow(
+						`⚠⚠⚠ WARNING: Please confirm - ${network}:\n` +
+							`Synth${currencyKey} totalSupply is ${originalTotalSupply} \n`
+					) +
+						gray('-'.repeat(50)) +
+						'\nDo you want to continue? (y/n) '
+				);
+			} catch (err) {
+				console.log(gray('Operation cancelled'));
+				return;
+			}
+		}
+
+		const sourceContract = subclass || 'Synth';
 		const synth = await deployContract({
 			name: `Synth${currencyKey}`,
-			source: subclass || 'Synth',
+			source: sourceContract,
 			deps: [`TokenState${currencyKey}`, `Proxy${currencyKey}`, 'Synthetix', 'FeePool'],
 			args: [
 				proxyForSynth ? proxyForSynth.options.address : '',
@@ -732,8 +781,7 @@ const deploy = async ({
 				currencyKey,
 				account,
 				currencyKeyInBytes,
-				originalTotalSupply,
-			].concat(additionalConstructorArgsMap[subclass] || []),
+			].concat(additionalConstructorArgsMap[sourceContract] || []),
 			force: addNewSynths,
 		});
 
@@ -755,6 +803,37 @@ const deploy = async ({
 			await runStep({
 				contract: `Proxy${currencyKey}`,
 				target: proxyForSynth,
+				read: 'target',
+				expected: input => input === synthAddress,
+				write: 'setTarget',
+				writeArg: synthAddress,
+			});
+
+			// ensure proxy on synth set
+			await runStep({
+				contract: `Synth${currencyKey}`,
+				target: synth,
+				read: 'proxy',
+				expected: input => input === proxyForSynth.options.address,
+				write: 'setProxy',
+				writeArg: proxyForSynth.options.address,
+			});
+		}
+
+		// Setup integration proxy (ProxyERC20) for Synth (Remove when sUSD Proxy cuts over)
+		if (proxyERC20ForSynth && synth) {
+			await runStep({
+				contract: `Synth${currencyKey}`,
+				target: synth,
+				read: 'integrationProxy',
+				expected: input => input === proxyERC20ForSynth.options.address,
+				write: 'setIntegrationProxy',
+				writeArg: proxyERC20ForSynth.options.address,
+			});
+
+			await runStep({
+				contract: `ProxyERC20${currencyKey}`,
+				target: proxyERC20ForSynth,
 				read: 'target',
 				expected: input => input === synthAddress,
 				write: 'setTarget',
@@ -882,6 +961,61 @@ const deploy = async ({
 		write: 'setSynth',
 		writeArg: sUSDAddress,
 	});
+
+	// ----------------
+	// ArbRewarder setup
+	// ----------------
+
+	// ArbRewarder contract for sETH uniswap
+	const arbRewarder = await deployContract({
+		name: 'ArbRewarder',
+		deps: ['Synthetix', 'ExchangeRates'],
+		args: [account],
+	});
+
+	if (arbRewarder) {
+		// ensure exchangeRates on arbRewarder set
+		await runStep({
+			contract: 'ArbRewarder',
+			target: arbRewarder,
+			read: 'exchangeRates',
+			expected: input => input === exchangeRates.options.address,
+			write: 'setExchangeRates',
+			writeArg: exchangeRates.options.address,
+		});
+
+		// Ensure synthetix ProxyERC20 on arbRewarder set
+		await runStep({
+			contract: 'ArbRewarder',
+			target: arbRewarder,
+			read: 'synthetixProxy',
+			expected: input => input === proxyERC20SynthetixAddress,
+			write: 'setSynthetix',
+			writeArg: proxyERC20SynthetixAddress,
+		});
+
+		// Ensure sETH uniswap exchange address on arbRewarder set
+		const requiredUniswapExchange = '0xe9Cf7887b93150D4F2Da7dFc6D502B216438F244';
+		const requiredSynthAddress = '0x5e74C9036fb86BD7eCdcb084a0673EFc32eA31cb';
+		await runStep({
+			contract: 'ArbRewarder',
+			target: arbRewarder,
+			read: 'uniswapAddress',
+			expected: input => input === requiredUniswapExchange,
+			write: 'setUniswapExchange',
+			writeArg: requiredUniswapExchange,
+		});
+
+		// Ensure sETH proxy address on arbRewarder set
+		await runStep({
+			contract: 'ArbRewarder',
+			target: arbRewarder,
+			read: 'synth',
+			expected: input => input === requiredSynthAddress,
+			write: 'setSynthAddress',
+			writeArg: requiredSynthAddress,
+		});
+	}
 
 	console.log(green('\nSuccessfully deployed all contracts!\n'));
 

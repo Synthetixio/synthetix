@@ -207,6 +207,76 @@ contract('Rewards Integration Tests', async accounts => {
 			assert.bnEqual(accThreeEscrowed[1], third(periodOneMintableSupplyMinusMinterReward));
 		});
 
+		it('should show the totalRewardsAvailable in the claimable period 1', async () => {
+			// Close Fee Period
+			await closeFeePeriodAndFastForward();
+
+			// Assert that we have correct values in the fee pool
+			const totalRewardsAvailable = await feePool.totalRewardsAvailable();
+
+			assert.bnEqual(totalRewardsAvailable, periodOneMintableSupplyMinusMinterReward);
+		});
+
+		it('should show the totalRewardsAvailable in the claimable periods 1 & 2', async () => {
+			let mintedRewardsSupply;
+			// We are currently in the 2nd week, close it and the next
+			for (let i = 0; i <= CLAIMABLE_PERIODS - 1; i++) {
+				// console.log('Close Fee Period', i);
+				await closeFeePeriodAndFastForward();
+
+				// FastForward a little for minting
+				await fastForwardAndUpdateRates(MINUTE);
+
+				// Get the SNX mintableSupply - the minter reward of 200 SNX
+				mintedRewardsSupply = (await supplySchedule.mintableSupply()).sub(MINTER_SNX_REWARD);
+				console.log('mintedRewardsSupply', mintedRewardsSupply.toString());
+				// Mint the staking rewards
+				await synthetix.mint({ from: owner });
+
+				// await logFeePeriods();
+			}
+
+			// Assert that we have correct values in the fee pool
+			const totalRewardsAvailable = await feePool.totalRewardsAvailable();
+
+			const twoWeeksRewards = mintedRewardsSupply.mul(web3.utils.toBN(CLAIMABLE_PERIODS));
+
+			assert.bnEqual(totalRewardsAvailable, twoWeeksRewards);
+		});
+
+		it('should show the totalRewardsAvailable in the claimable periods 1 & 2 after 2 accounts claims', async () => {
+			let mintedRewardsSupply;
+			// We are currently in the 2nd week, close it and the next
+			for (let i = 0; i <= CLAIMABLE_PERIODS - 1; i++) {
+				// console.log('Close Fee Period', i);
+				await closeFeePeriodAndFastForward();
+
+				// FastForward a little for minting
+				await fastForwardAndUpdateRates(MINUTE);
+
+				// Get the SNX mintableSupply - the minter reward of 200 SNX
+				mintedRewardsSupply = (await supplySchedule.mintableSupply()).sub(MINTER_SNX_REWARD);
+				console.log('mintedRewardsSupply', mintedRewardsSupply.toString());
+				// Mint the staking rewards
+				await synthetix.mint({ from: owner });
+
+				// await logFeePeriods();
+			}
+
+			await feePool.claimFees(sUSD, { from: account1 });
+			await feePool.claimFees(sUSD, { from: account2 });
+			// await logFeePeriods();
+
+			// Assert that we have correct values in the fee pool
+			const totalRewardsAvailable = await feePool.totalRewardsAvailable();
+
+			const twoWeeksRewards = mintedRewardsSupply.mul(web3.utils.toBN(CLAIMABLE_PERIODS));
+
+			const rewardsLessAccountClaims = third(twoWeeksRewards);
+
+			assert.bnClose(totalRewardsAvailable, rewardsLessAccountClaims, 10);
+		});
+
 		it('should mint SNX for the all claimable fee periods then all 3 accounts claim at the end of the claimable period', async () => {
 			let mintedRewardsSupply;
 			// We are currently in the 2nd week, close it and the next

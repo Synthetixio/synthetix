@@ -2850,8 +2850,8 @@ contract('Synthetix', async accounts => {
 									assert.bnEqual(exchangeFeeXDRDouble, exchangeFeeInFeePool);
 
 									// Assert account 1 has sBTC - exchangeFeeiBTCDouble
-									// const sBTCBalance = await sBTCContract.balanceOf(account1);
-									// console.log('account1 sBTCBalance', sBTCBalance.toString());
+									const sBTCBalance = await sBTCContract.balanceOf(account1);
+									console.log('account1 sBTCBalance', sBTCBalance.toString());
 
 									// // how much sBTC the user is supposed to get
 									// const effectiveValue = await synthetix.effectiveValue(

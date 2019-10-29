@@ -156,6 +156,7 @@ contract Synthetix is ExternStateToken {
     string constant TOKEN_SYMBOL = "SNX";
     uint8 constant DECIMALS = 18;
     bool public exchangeEnabled = true;
+    uint public gasPriceLimit;
 
     // ========== CONSTRUCTOR ==========
 
@@ -208,6 +209,14 @@ contract Synthetix is ExternStateToken {
         optionalProxy_onlyOwner
     {
         exchangeEnabled = _exchangeEnabled;
+    }
+
+    function setGasPriceLimit(uint _gasPriceLimit)
+        external
+        onlyOracle
+    {
+        require(_gasPriceLimit > 0, "Needs to be greater than 0");
+        gasPriceLimit = _gasPriceLimit;
     }
 
     /**
@@ -319,13 +328,13 @@ contract Synthetix is ExternStateToken {
         view
         returns (bytes32[])
     {
-        bytes32[] memory availableCurrencyKeys = new bytes32[](availableSynths.length);
+        bytes32[] memory currencyKeys = new bytes32[](availableSynths.length);
 
         for (uint8 i = 0; i < availableSynths.length; i++) {
-            availableCurrencyKeys[i] = availableSynths[i].currencyKey();
+            currencyKeys[i] = availableSynths[i].currencyKey();
         }
 
-        return availableCurrencyKeys;
+        return currencyKeys;
     }
 
     /**
@@ -421,6 +430,9 @@ contract Synthetix is ExternStateToken {
         require(sourceCurrencyKey != destinationCurrencyKey, "Must use different synths");
         require(sourceAmount > 0, "Zero amount");
 
+        // verify gas price limit
+        validateGasPrice(tx.gasprice);
+
         //  If protectionCircuit is true then we burn the synths through _internalLiquidation()
         if (protectionCircuit) {
             return _internalLiquidation(
@@ -439,6 +451,17 @@ contract Synthetix is ExternStateToken {
                 true // Charge fee on the exchange
             );
         }
+    }
+
+    /*
+        @dev validate that the given gas price is less than or equal to the gas price limit
+        @param _gasPrice tested gas price
+    */
+    function validateGasPrice(uint _givenGasPrice)
+        public
+        view
+    {
+        require(_givenGasPrice <= gasPriceLimit, "Gas price above limit");
     }
 
     /**
@@ -606,7 +629,7 @@ contract Synthetix is ExternStateToken {
     }
 
     /**
-     * @notice Function that registers new synth as they are isseud. Calculate delta to append to synthetixState.
+     * @notice Function that registers new synth as they are issued. Calculate delta to append to synthetixState.
      * @dev Only internal calls from synthetix address.
      * @param currencyKey The currency to register synths in, for example sUSD or sAUD
      * @param amount The amount of synths to register with a base of UNIT
@@ -827,9 +850,10 @@ contract Synthetix is ExternStateToken {
 
     /**
      * @notice The current collateralisation ratio for a user. Collateralisation ratio varies over time
-     * as the value of the underlying Synthetix asset changes, e.g. if a user issues their maximum available
+     * as the value of the underlying Synthetix asset changes,
+     * e.g. based on an issuance ratio of 20%. if a user issues their maximum available
      * synths when they hold $10 worth of Synthetix, they will have issued $2 worth of synths. If the value
-     * of Synthetix changes, the ratio returned by this function will adjust accordlingly. Users are
+     * of Synthetix changes, the ratio returned by this function will adjust accordingly. Users are
      * incentivised to maintain a collateralisation ratio as close to the issuance ratio as possible by
      * altering the amount of fees they're able to claim from the system.
      */
