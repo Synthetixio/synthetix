@@ -518,8 +518,7 @@ contract Synthetix is ExternStateToken {
         uint amountReceived = destinationAmount;
         uint fee = 0;
 
-        if (chargeFee) {    
-            // emit LogInt("swingTrade", int(_isSwingTrade(sourceCurrencyKey, destinationCurrencyKey)));      
+        if (chargeFee) {            
             if(_isSwingTrade(sourceCurrencyKey, destinationCurrencyKey)) {
                 // Double the exchange fee
                 uint doubleFeeRate = feePool.exchangeFeeRate().mul(2);
@@ -527,9 +526,9 @@ contract Synthetix is ExternStateToken {
                 // Sub the fee from the amountReceived
                 amountReceived = amountReceived.multiplyDecimal(SafeDecimalMath.unit().sub(doubleFeeRate));
                 emit LogInt("amountReceived Double", amountReceived);
-                emit LogInt("amountReceived", feePool.amountReceivedFromExchange(destinationAmount));                      
+                emit LogInt("amountReceived", feePool.amountReceivedFromExchange(destinationAmount));
             } else {
-                amountReceived = feePool.amountReceivedFromExchange(destinationAmount);            
+                amountReceived = feePool.amountReceivedFromExchange(destinationAmount);
             }
             fee = destinationAmount.sub(amountReceived);
         }
@@ -556,7 +555,35 @@ contract Synthetix is ExternStateToken {
         return true;
     }
 
-    event LogInt(string name, uint value);    
+    event LogInt(string name, uint value);
+
+    function _isSwingTrade(
+        bytes32 sourceCurrencyKey,
+        bytes32 destinationCurrencyKey
+    )
+        internal
+        view
+        returns (bool)
+    {
+        bytes memory shortByte = hex"69";
+        bytes memory longByte = hex"73";
+
+        bytes memory bytesSource = new bytes(1);
+        bytesSource[0] = sourceCurrencyKey[0];
+
+        bytes memory bytesDest = new bytes(1);
+        bytesDest[0] = destinationCurrencyKey[0];
+
+        // Check is long > short
+        if (bytesSource[0] == longByte[0] && bytesDest[0] == shortByte[0] ||
+            bytesSource[0] != longByte[0] && bytesDest[0] != shortByte[0]){
+            emit LogInt("IS A SWINGTRADE", 0);
+            return true;
+        }else{
+            emit LogInt("NOT A SWINGTRADE", 0);
+            return false;
+        }
+    }
 
     /**
     * @notice Function that burns the amount sent during an exchange in case the protection circuit is activated
@@ -575,40 +602,6 @@ contract Synthetix is ExternStateToken {
     {
         // Burn the source amount
         synths[sourceCurrencyKey].burn(from, sourceAmount);
-        return true;
-    }
-
-    function _isSwingTrade(
-        bytes32 sourceCurrencyKey,
-        bytes32 destinationCurrencyKey
-    )
-        internal
-        view
-        returns (bool)
-    {        
-        bytes memory short = keccak256("i");
-        bytes memory long = keccak256("s");
-        bytes memory a = bytes(sourceCurrencyKey);
-        bytes memory b = bytes(destinationCurrencyKey);
-
-        // Compare two strings quickly by length to try to avoid further checks
-        // if (a.length != b.length) {
-        //     return false;
-        // }
-
-        // Check is long <> short
-        if (a[0] != short && b[0] != long || a[0] != long  && b[0] != short ) {
-             emit LogInt("NOT short to long", 0);
-             return false;             
-        }
-
-        // Check is the same token with detailed loop comparison
-        // for (uint i = 1; i < a.length; i++) {
-        //     if (a[i] != b[i]) {
-        //         return false;
-        //     }
-        // }
-        emit LogInt("IS S to L", 0);
         return true;
     }
 

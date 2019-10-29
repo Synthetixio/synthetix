@@ -2797,7 +2797,7 @@ contract('Synthetix', async accounts => {
 									});
 								});
 							});
-							describe.only('when the user tries to exchange some iBTC into long sBTC', () => {
+							describe.only('when the user tries to exchange some short iBTC into long sBTC', () => {
 								const amountExchanged = toUnit(0.003); // current iBTC balance is a bit under 0.05
 
 								it('then the exchange fee doubles', async () => {
@@ -2814,17 +2814,18 @@ contract('Synthetix', async accounts => {
 
 									// Get the current rate
 									const exchangeFeeRateFP = await feePool.exchangeFeeRate();
-									console.log('exchangeFeeRate', exchangeFeeRateFP.toString());
+									console.log('normal exchangeFeeRate', exchangeFeeRateFP.toString());
 
 									// Double it
-									const exchangeFeeRateDouble = exchangeFeeRateFP.mul(2);
-									console.log('exchangeFeeRateDouble', exchangeFeeRateDouble.toString());
+									const exchangeFeeRateDouble = exchangeFeeRateFP.mul(web3.utils.toBN('2'));
+									console.log('exchangeFeeRate Doubled', exchangeFeeRateDouble.toString());
 
 									// Get the exchange Fee on the exchange amount
 									const exchangeFee = await feePool.exchangeFeeIncurred(amountExchanged);
+									console.log('exchangeFee', exchangeFee.toString());
 
 									// Double the exchangeFee
-									const exchangeFeeiBTCDouble = exchangeFee.mul(2);
+									const exchangeFeeiBTCDouble = exchangeFee.mul(web3.utils.toBN('2'));
 
 									// Convert to XDR (already doubled)
 									const exchangeFeeXDRDouble = await synthetix.effectiveValue(
