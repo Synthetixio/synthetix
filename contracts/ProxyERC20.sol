@@ -67,7 +67,7 @@ contract ProxyERC20 is Proxy, IERC20 {
 
     /**
     * @dev Gets the balance of the specified address.
-    * @param owner The address to query the balance of.
+    * @param account The address to query the balance of.
     * @return An uint256 representing the amount owned by the passed address.
     */
     function balanceOf(address account) public view returns (uint256) {
