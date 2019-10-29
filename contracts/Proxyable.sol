@@ -38,7 +38,7 @@ contract Proxyable is Owned {
     /* The caller of the proxy, passed through to this contract.
      * Note that every function using this member must apply the onlyProxy or
      * optionalProxy modifiers, otherwise their invocations can use stale values. */
-    address messageSender;
+    address public messageSender;
 
     constructor(address _proxy, address _owner)
         Owned(_owner)

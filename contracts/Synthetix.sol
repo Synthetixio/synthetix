@@ -328,13 +328,13 @@ contract Synthetix is ExternStateToken {
         view
         returns (bytes32[])
     {
-        bytes32[] memory availableCurrencyKeys = new bytes32[](availableSynths.length);
+        bytes32[] memory currencyKeys = new bytes32[](availableSynths.length);
 
         for (uint8 i = 0; i < availableSynths.length; i++) {
-            availableCurrencyKeys[i] = availableSynths[i].currencyKey();
+            currencyKeys[i] = availableSynths[i].currencyKey();
         }
 
-        return availableCurrencyKeys;
+        return currencyKeys;
     }
 
     /**
@@ -589,7 +589,7 @@ contract Synthetix is ExternStateToken {
     }
 
     /**
-     * @notice Function that registers new synth as they are isseud. Calculate delta to append to synthetixState.
+     * @notice Function that registers new synth as they are issued. Calculate delta to append to synthetixState.
      * @dev Only internal calls from synthetix address.
      * @param currencyKey The currency to register synths in, for example sUSD or sAUD
      * @param amount The amount of synths to register with a base of UNIT
@@ -810,9 +810,10 @@ contract Synthetix is ExternStateToken {
 
     /**
      * @notice The current collateralisation ratio for a user. Collateralisation ratio varies over time
-     * as the value of the underlying Synthetix asset changes, e.g. if a user issues their maximum available
+     * as the value of the underlying Synthetix asset changes,
+     * e.g. based on an issuance ratio of 20%. if a user issues their maximum available
      * synths when they hold $10 worth of Synthetix, they will have issued $2 worth of synths. If the value
-     * of Synthetix changes, the ratio returned by this function will adjust accordlingly. Users are
+     * of Synthetix changes, the ratio returned by this function will adjust accordingly. Users are
      * incentivised to maintain a collateralisation ratio as close to the issuance ratio as possible by
      * altering the amount of fees they're able to claim from the system.
      */
