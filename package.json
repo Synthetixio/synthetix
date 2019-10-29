@@ -7,7 +7,7 @@
 	"scripts": {
 		"clean-install": "rm -rf build && rm ./package-lock.json && rm -rf node_modules/* && npm install",
 		"coverage": "solidity-coverage",
-		"ganache": "ganache-cli -e 1000000000000 -l 9500000 -t 2018-03-13T00:00:00",
+		"ganache": "ganache-cli -e 1000000000000 -l 8000000 -t 2018-03-13T00:00:00",
 		"ganache:int": "npm run ganache -- --acctKeys keys.json",
 		"lint": "eslint \"**/*.js\" && solium -d contracts/",
 		"lint:fix": "eslint --fix \"**/*.js\" && solium --fix -d contracts/",
