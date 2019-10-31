@@ -2862,10 +2862,10 @@ contract('Synthetix', async accounts => {
 								it('then the exchange fee doubles', async () => {
 									// Get the fees Before
 									const feePeriodZeroBefore = await feePool.recentFeePeriods(0);
-									console.log(
-										'feesToDistribute BEFORE',
-										feePeriodZeroBefore.feesToDistribute.toString()
-									);
+									// console.log(
+									// 	'feesToDistribute BEFORE',
+									// 	feePeriodZeroBefore.feesToDistribute.toString()
+									// );
 
 									// exchange from inverse to long
 									exchangeTxns.push(
@@ -2876,15 +2876,15 @@ contract('Synthetix', async accounts => {
 
 									// Get the current rate
 									const exchangeFeeRateFP = await feePool.exchangeFeeRate();
-									console.log('normal exchangeFeeRate', exchangeFeeRateFP.toString());
+									// console.log('normal exchangeFeeRate', exchangeFeeRateFP.toString());
 
 									// Double it
 									const exchangeFeeRateDouble = exchangeFeeRateFP.mul(web3.utils.toBN('2'));
-									console.log('exchangeFeeRate Doubled', exchangeFeeRateDouble.toString());
+									// console.log('exchangeFeeRate Doubled', exchangeFeeRateDouble.toString());
 
 									// Get the exchange Fee on the exchange amount
 									const exchangeFee = await feePool.exchangeFeeIncurred(amountExchanged);
-									console.log('exchangeFee', exchangeFee.toString());
+									// console.log('exchangeFee', exchangeFee.toString());
 
 									// Double the exchangeFee
 									const exchangeFeeiBTCDouble = exchangeFee.mul(web3.utils.toBN('2'));
@@ -2898,10 +2898,10 @@ contract('Synthetix', async accounts => {
 
 									// Assert feesToDistribute now increased by exchangeFeeXDRDouble
 									const feePeriodZeroAfter = await feePool.recentFeePeriods(0);
-									console.log(
-										'feesToDistribute AFTER',
-										feePeriodZeroAfter.feesToDistribute.toString()
-									);
+									// console.log(
+									// 	'feesToDistribute AFTER',
+									// 	feePeriodZeroAfter.feesToDistribute.toString()
+									// );
 									const exchangeFeeInFeePool = feePeriodZeroAfter.feesToDistribute.sub(
 										feePeriodZeroBefore.feesToDistribute
 									);
@@ -2912,43 +2912,20 @@ contract('Synthetix', async accounts => {
 									const sBTCBalance = await sBTCContract.balanceOf(account1);
 									console.log('account1 sBTCBalance', sBTCBalance.toString());
 
-									// // how much sBTC the user is supposed to get
-									// const effectiveValue = await synthetix.effectiveValue(
-									// 	iBTC,
-									// 	amountExchanged,
-									// 	sBTC
-									// );
-									// const effectiveValueMinusFees = effectiveValue.sub(exchangeFeeiBTCDouble);
+									// how much sBTC the user is supposed to get
+									const effectiveValue = await synthetix.effectiveValue(
+										iBTC,
+										amountExchanged,
+										sBTC
+									);
+									console.log('iBTC to sBTCeffectiveValue', effectiveValue.toString());
+									const effectiveValueMinusFees = effectiveValue.sub(exchangeFeeiBTCDouble);
+									console.log(
+										'iBTC to sBTC effectiveValueMinusFees',
+										effectiveValueMinusFees.toString()
+									);
 
-									// assert.bnEqual(effectiveValueMinusFees, sBTCBalance);
-
-									// const feePeriodZeroAfter = await feePool.recentFeePeriods(0);
-									// console.log(
-									// 	'feesToDistribute AFTER',
-									// 	feePeriodZeroAfter.feesToDistribute.toString()
-									// );
-
-									// // how much sBTC the user is supposed to get
-									// const effectiveValue = await synthetix.effectiveValue(
-									// 	iBTC,
-									// 	newAmountExchanged,
-									// 	sBTC
-									// );
-
-									// // chargeFee = true so we need to minus the fees for this exchange
-									// const effectiveValueMinusFees = await feePool.amountReceivedFromExchange(
-									// 	effectiveValue
-									// );
-									// console.log('effectiveValueMinusFees', effectiveValueMinusFees.toString());
-
-									// // Assert we have the correct sBTC value - exchange fee * 2
-									// const sBTCBalance = await sBTCContract.balanceOf(account1);
-									// console.log('account1 sBTCBalance', sBTCBalance.toString());
-									// // assert.bnEqual(effectiveValueMinusFees, sBTCBalance);
-
-									// // Assert we have the exchange fee to distribute
-									// const feePeriodZero = await feePool.recentFeePeriods(0);
-									// // assert.bnEqual(exchangeFeeXDR, feePeriodZero.feesToDistribute);
+									assert.bnEqual(effectiveValueMinusFees, sBTCBalance);
 								});
 							});
 						});

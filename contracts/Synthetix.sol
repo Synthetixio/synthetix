@@ -15,96 +15,16 @@ MODULE DESCRIPTION
 
 Synthetix token contract. SNX is a transferable ERC20 token,
 and also give its holders the following privileges.
-An owner of SNX has the right to issue synths in all synth flavours.
-
-After a fee period terminates, the duration and fees collected for that
-period are computed, and the next period begins. Thus an account may only
-withdraw the fees owed to them for the previous period, and may only do
-so once per period. Any unclaimed fees roll over into the common pot for
-the next period.
-
-== Average Balance Calculations ==
-
-The fee entitlement of a synthetix holder is proportional to their average
-issued synth balance over the last fee period. This is computed by
-measuring the area under the graph of a user's issued synth balance over
-time, and then when a new fee period begins, dividing through by the
-duration of the fee period.
-
-We need only update values when the balances of an account is modified.
-This occurs when issuing or burning for issued synth balances,
-and when transferring for synthetix balances. This is for efficiency,
-and adds an implicit friction to interacting with SNX.
-A synthetix holder pays for his own recomputation whenever he wants to change
-his position, which saves the foundation having to maintain a pot dedicated
-to resourcing this.
-
-A hypothetical user's balance history over one fee period, pictorially:
-
-      s ____
-       |    |
-       |    |___ p
-       |____|___|___ __ _  _
-       f    t   n
-
-Here, the balance was s between times f and t, at which time a transfer
-occurred, updating the balance to p, until n, when the present transfer occurs.
-When a new transfer occurs at time n, the balance being p,
-we must:
-
-  - Add the area p * (n - t) to the total area recorded so far
-  - Update the last transfer time to n
-
-So if this graph represents the entire current fee period,
-the average SNX held so far is ((t-f)*s + (n-t)*p) / (n-f).
-The complementary computations must be performed for both sender and
-recipient.
-
-Note that a transfer keeps global supply of SNX invariant.
-The sum of all balances is constant, and unmodified by any transfer.
-So the sum of all balances multiplied by the duration of a fee period is also
-constant, and this is equivalent to the sum of the area of every user's
-time/balance graph. Dividing through by that duration yields back the total
-synthetix supply. So, at the end of a fee period, we really do yield a user's
-average share in the synthetix supply over that period.
-
-A slight wrinkle is introduced if we consider the time r when the fee period
-rolls over. Then the previous fee period k-1 is before r, and the current fee
-period k is afterwards. If the last transfer took place before r,
-but the latest transfer occurred afterwards:
-
-k-1       |        k
-      s __|_
-       |  | |
-       |  | |____ p
-       |__|_|____|___ __ _  _
-          |
-       f  | t    n
-          r
-
-In this situation the area (r-f)*s contributes to fee period k-1, while
-the area (t-r)*s contributes to fee period k. We will implicitly consider a
-zero-value transfer to have occurred at time r. Their fee entitlement for the
-previous period will be finalised at the time of their first transfer during the
-current fee period, or when they query or withdraw their fee entitlement.
-
-In the implementation, the duration of different fee periods may be slightly irregular,
-as the check that they have rolled over occurs only when state-changing synthetix
-operations are performed.
 
 == Issuance and Burning ==
 
-In this version of the synthetix contract, synths can only be issued by
-those that have been nominated by the synthetix foundation. Synths are assumed
-to be valued at $1, as they are a stable unit of account.
-
 All synths issued require a proportional value of SNX to be locked,
-where the proportion is governed by the current issuance ratio. This
+where the proportion is governed by the SynthetixState.issuanceRatio. This
 means for every $1 of SNX locked up, $(issuanceRatio) synths can be issued.
 i.e. to issue 100 synths, 100/issuanceRatio dollars of SNX need to be locked up.
 
 To determine the value of some amount of SNX(S), an oracle is used to push
-the price of SNX (P_S) in dollars to the contract. The value of S
+the price of SNX (P_S) in dollars to the ExchangeRates contract. The value of S
 would then be: S * P_S.
 
 Any SNX that are locked up by this issuance process cannot be transferred.
@@ -112,6 +32,11 @@ The amount that is locked floats based on the price of SNX. If the price
 of SNX moves up, less SNX are locked, so they can be issued against,
 or transferred freely. If the price of SNX moves down, more SNX are locked,
 even going above the initial wallet balance.
+
+Any synth can be burned to repay the SNX stakers debt. SNX holders can
+check their current debt via debtBalanceOf(address) to see the amount
+of synths in any value they need to burn to unlock their staked SNX.
+
 
 -----------------------------------------------------------------
 */
@@ -162,9 +87,17 @@ contract Synthetix is ExternStateToken {
 
     /**
      * @dev Constructor
-     * @param _tokenState A pre-populated contract containing token balances.
-     * If the provided address is 0x0, then a fresh one will be constructed with the contract owning all tokens.
+     * @param _proxy The main token address of the Proxy contract. This will be ProxyERC20.sol
+     * @param _tokenState Address of the external immutable contract containing token balances.
+     * @param _synthetixState External immutable contract containing the SNX minters debt ledger.
      * @param _owner The owner of this contract.
+     * @param _exchangeRates External immutable contract where the price oracle pushes prices onchain too.
+     * @param _feePool External upgradable contract handling SNX Fees and Rewards claiming
+     * @param _supplySchedule External immutable contract with the SNX inflationary supply schedule
+     * @param _rewardEscrow External immutable contract for SNX Rewards Escrow
+     * @param _escrow External immutable contract for SNX Token Sale Escrow
+     * @param _rewardsDistribution External immutable contract managing the Rewards Distribution of the SNX inflationary supply
+     * @param _totalSupply On upgrading set to reestablish the current total supply (This should be in SynthetixState if ever updated)
      */
     constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
         address _owner, ExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule,
@@ -246,6 +179,7 @@ contract Synthetix is ExternStateToken {
         require(synths[currencyKey] != address(0), "Synth does not exist");
         require(synths[currencyKey].totalSupply() == 0, "Synth supply exists");
         require(currencyKey != "XDR", "Cannot remove XDR synth");
+        require(currencyKey != "sUSD", "Cannot remove sUSD synth");
 
         // Save the address we're removing for emitting the event at the end.
         address synthToRemove = synths[currencyKey];
@@ -270,7 +204,7 @@ contract Synthetix is ExternStateToken {
         // And remove it from the synths mapping
         delete synths[currencyKey];
 
-        // Note: No event here as our contract exceeds max contract size
+        // Note: No event here as Synthetix contract exceeds max contract size
         // with these events, and it's unlikely people will need to
         // track these events specifically.
     }
@@ -298,7 +232,6 @@ contract Synthetix is ExternStateToken {
     function totalIssuedSynths(bytes32 currencyKey)
         public
         view
-        rateNotStale(currencyKey)
         returns (uint)
     {
         uint total = 0;
@@ -418,7 +351,7 @@ contract Synthetix is ExternStateToken {
      * @param sourceCurrencyKey The source currency you wish to exchange from
      * @param sourceAmount The amount, specified in UNIT of source currency you wish to exchange
      * @param destinationCurrencyKey The destination currency you wish to obtain.
-     * @param destinationAddress Deprecated. Will always send to messageSender
+     * @param destinationAddress Deprecated. Will always send to messageSender. API backwards compatability maintained.
      * @return Boolean that indicates whether the transfer succeeded or failed.
      */
     function exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey, address destinationAddress)
@@ -433,13 +366,10 @@ contract Synthetix is ExternStateToken {
         // verify gas price limit
         validateGasPrice(tx.gasprice);
 
-        //  If protectionCircuit is true then we burn the synths through _internalLiquidation()
+        //  If the oracle has set protectionCircuit to true then burn the synths
         if (protectionCircuit) {
-            return _internalLiquidation(
-                messageSender,
-                sourceCurrencyKey,
-                sourceAmount
-            );
+            synths[sourceCurrencyKey].burn(messageSender, sourceAmount);
+            return true;
         } else {
             // Pass it along, defaulting to the sender as the recipient.
             return _internalExchange(
@@ -495,7 +425,7 @@ contract Synthetix is ExternStateToken {
             sourceAmount,
             destinationCurrencyKey,
             destinationAddress,
-            false // Don't charge fee on the exchange, as they've already been charged a transfer fee in the synth contract
+            true
         );
     }
 
@@ -545,11 +475,8 @@ contract Synthetix is ExternStateToken {
             if(_isSwingTrade(sourceCurrencyKey, destinationCurrencyKey)) {
                 // Double the exchange fee
                 uint doubleFeeRate = feePool.exchangeFeeRate().mul(2);
-                emit LogInt("doubleFeeRate", doubleFeeRate);
                 // Sub the fee from the amountReceived
                 amountReceived = amountReceived.multiplyDecimal(SafeDecimalMath.unit().sub(doubleFeeRate));
-                emit LogInt("amountReceived Double", amountReceived);
-                emit LogInt("amountReceived", feePool.amountReceivedFromExchange(destinationAmount));
             } else {
                 amountReceived = feePool.amountReceivedFromExchange(destinationAmount);
             }
@@ -578,8 +505,12 @@ contract Synthetix is ExternStateToken {
         return true;
     }
 
-    event LogInt(string name, uint value);
-
+    /**
+    * @notice Determines if source and destination tokens are a swing trade from short to long or long to short.
+    * @param sourceCurrencyKey source currencyKy or exchange from token symbol.
+    * @param destinationCurrencyKey the destination token to exchange into
+    * @return Boolean that indicates whether the exchange is a swing trade or not.
+    */
     function _isSwingTrade(
         bytes32 sourceCurrencyKey,
         bytes32 destinationCurrencyKey
@@ -591,32 +522,10 @@ contract Synthetix is ExternStateToken {
         // Check is long <> short
         if (sourceCurrencyKey[0] == 0x73 && destinationCurrencyKey[0] == 0x69 ||
             sourceCurrencyKey[0] == 0x69 && destinationCurrencyKey[0] == 0x73) {
-            emit LogInt("IS A SWINGTRADE", 0);
             return true;
         } else {
-            emit LogInt("NOT A SWINGTRADE", 0);
             return false;
         }
-    }
-
-    /**
-    * @notice Function that burns the amount sent during an exchange in case the protection circuit is activated
-    * @param from The address to move synth from
-    * @param sourceCurrencyKey source currency from.
-    * @param sourceAmount The amount, specified in UNIT of source currency.
-    * @return Boolean that indicates whether the transfer succeeded or failed.
-    */
-    function _internalLiquidation(
-        address from,
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount
-    )
-        internal
-        returns (bool)
-    {
-        // Burn the source amount
-        synths[sourceCurrencyKey].burn(from, sourceAmount);
-        return true;
     }
 
     /**
@@ -627,7 +536,6 @@ contract Synthetix is ExternStateToken {
      */
     function _addToDebtRegister(bytes32 currencyKey, uint amount)
         internal
-        optionalProxy
     {
         // What is the value of the requested debt in XDRs?
         uint xdrValue = effectiveValue(currencyKey, amount, "XDR");
@@ -942,15 +850,13 @@ contract Synthetix is ExternStateToken {
     }
 
     /**
-     * @notice The number of SNX that are free to be transferred by an account.
-     * @dev When issuing, escrowed SNX are locked first, then non-escrowed
-     * SNX are locked last, but escrowed SNX are not transferable, so they are not included
+     * @notice The number of SNX that are free to be transferred for an account.
+     * @dev Escrowed SNX are not transferable, so they are not included
      * in this calculation.
      */
     function transferableSynthetix(address account)
         public
         view
-        rateNotStale("SNX")
         returns (uint)
     {
         // How many SNX do they have, excluding escrow?

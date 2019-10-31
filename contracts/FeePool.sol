@@ -313,9 +313,10 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         // Clear the first element of the array to make sure we don't have any stale values.
         delete recentFeePeriods[0];
 
-        // Open up the new fee period. Take a snapshot of the total value of the system.
+        // Open up the new fee period.
         // Increment periodId from the recent closed period feePeriodId
         recentFeePeriods[0].feePeriodId = recentFeePeriods[1].feePeriodId.add(1);
+        // Record the debt index of the value of the system at that time
         recentFeePeriods[0].startingDebtIndex = synthetixState.debtLedgerLength();
         recentFeePeriods[0].startTime = now;
 
@@ -467,8 +468,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         public
         optionalProxy
     {
-        require(delegates != address(0), "Delegates Contract missing");
-        require(account != address(0), "Can't delegate to address(0)");
         delegates.setApproval(messageSender, account);
     }
 
