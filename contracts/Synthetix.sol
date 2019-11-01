@@ -436,7 +436,7 @@ contract Synthetix is ExternStateToken {
      * @param sourceAmount The amount, specified in UNIT of source currency.
      * @param destinationCurrencyKey The destination currency to obtain.
      * @param destinationAddress Where the result should go.
-     * @param chargeFee Boolean to charge a fee for transaction.
+     * @param chargeFee Boolean to charge a fee for exchange.
      * @return Boolean that indicates whether the transfer succeeded or failed.
      */
     function _internalExchange(
@@ -453,9 +453,6 @@ contract Synthetix is ExternStateToken {
     {
         require(exchangeEnabled, "Exchanging is disabled");
         require(!exchangeRates.priceUpdateLock(), "Price update lock");
-        require(destinationAddress != address(0), "Zero destination");
-        require(destinationAddress != address(this), "Synthetix is invalid destination");
-        require(destinationAddress != address(proxy), "Proxy is invalid destination");
 
         // Note: We don't need to check their balance as the burn() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
@@ -471,13 +468,15 @@ contract Synthetix is ExternStateToken {
         uint fee = 0;
 
         if (chargeFee) {
-            if(_isSwingTrade(sourceCurrencyKey, destinationCurrencyKey)) {
-                // Double the exchange fee
-                uint doubleFeeRate = feePool.exchangeFeeRate().mul(2);
-                // Sub the fee from the amountReceived
-                amountReceived = amountReceived.multiplyDecimal(SafeDecimalMath.unit().sub(doubleFeeRate));
+            // Get the exchange fee rate
+            uint exchangeFeeRate = feePool.exchangeFeeRate();
+            // Is this a swing trade? long to short or sort to long.
+            if( sourceCurrencyKey[0] == 0x73 && destinationCurrencyKey[0] == 0x69 ||
+                sourceCurrencyKey[0] == 0x69 && destinationCurrencyKey[0] == 0x73){
+                // Double the exchange fee and sub the fee from the amountReceived
+                amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate.mul(2)));
             } else {
-                amountReceived = feePool.amountReceivedFromExchange(destinationAmount);
+                amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
             }
             fee = destinationAmount.sub(amountReceived);
         }
@@ -502,29 +501,6 @@ contract Synthetix is ExternStateToken {
         emitSynthExchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, amountReceived, destinationAddress);
 
         return true;
-    }
-
-    /**
-    * @notice Determines if source and destination tokens are a swing trade from short to long or long to short.
-    * @param sourceCurrencyKey source currencyKy or exchange from token symbol.
-    * @param destinationCurrencyKey the destination token to exchange into
-    * @return Boolean that indicates whether the exchange is a swing trade or not.
-    */
-    function _isSwingTrade(
-        bytes32 sourceCurrencyKey,
-        bytes32 destinationCurrencyKey
-    )
-        internal
-        view
-        returns (bool)
-    {
-        // Check is long <> short
-        if (sourceCurrencyKey[0] == 0x73 && destinationCurrencyKey[0] == 0x69 ||
-            sourceCurrencyKey[0] == 0x69 && destinationCurrencyKey[0] == 0x73) {
-            return true;
-        } else {
-            return false;
-        }
     }
 
     /**

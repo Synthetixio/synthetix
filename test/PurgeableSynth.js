@@ -8,7 +8,7 @@ const Proxy = artifacts.require('Proxy');
 
 const { currentTime, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 
-contract('PurgeableSynth', accounts => {
+contract.only('PurgeableSynth', accounts => {
 	const [sUSD, SNX, , sAUD, iETH] = ['sUSD', 'SNX', 'XDR', 'sAUD', 'iETH'].map(
 		web3.utils.asciiToHex
 	);
@@ -175,18 +175,22 @@ contract('PurgeableSynth', accounts => {
 						balanceBeforePurge = await this.synth.balanceOf(account1);
 						usersEffectiveBalanceInUSD = usersUSDBalance.add(amountExchangedInUSDLessFees);
 					});
-					it('then the exchange works as expected', async () => {
+					it.only('then the exchange works as expected', async () => {
 						const iETHBalance = await this.synth.balanceOf(account1);
 						const effectiveValue = await synthetix.effectiveValue(sUSD, amountToExchange, iETH);
 						const effectiveValueMinusFees = await feePool.amountReceivedFromExchange(
 							effectiveValue
 						);
-						assert.bnEqual(
-							iETHBalance,
-							effectiveValueMinusFees,
-							'Must receive correct amount from exchange'
-						);
+						console.log('iETHBalance', iETHBalance.toString());
+						console.log('effectiveValue', effectiveValue.toString());
+						console.log('effectiveValueMinusFees', effectiveValueMinusFees.toString());
+						// assert.bnEqual(
+						// 	iETHBalance,
+						// 	effectiveValueMinusFees,
+						// 	'Must receive correct amount from exchange'
+						// );
 						const iETHTotalSupply = await this.synth.totalSupply();
+						console.log('iETHTotalSupply', iETHTotalSupply.toString());
 
 						assert.bnEqual(
 							iETHTotalSupply,

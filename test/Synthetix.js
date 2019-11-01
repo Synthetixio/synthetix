@@ -2860,7 +2860,7 @@ contract('Synthetix', async accounts => {
 								const iBTCexchangeAmount = toUnit(0.003); // current iBTC balance is a bit under 0.05
 
 								it('then the exchange fee doubles', async () => {
-									const sBTCBalanceBefore = await sBTCContract.balanceOf(account1);
+									// const sBTCBalanceBefore = await sBTCContract.balanceOf(account1);
 									// console.log('account1 sBTCBalanceBefore', sBTCBalanceBefore.toString());
 
 									// Get the fees Before
@@ -2903,23 +2903,24 @@ contract('Synthetix', async accounts => {
 
 									// TODO
 									// // Assert account 1 has sBTC - exchangeFeeiBTCDouble
-									// const sBTCBalance = await sBTCContract.balanceOf(account1);
+									const sBTCBalance = await sBTCContract.balanceOf(account1);
 									// // console.log('account1 sBTCBalance', sBTCBalance.toString());
 
 									// // how much sBTC the user is supposed to get
-									// const sBTCEffectiveValue = await synthetix.effectiveValue(
-									// 	iBTC,
-									// 	amountExchanged,
-									// 	sBTC
-									// );
+									const sBTCEffectiveValue = await synthetix.effectiveValue(
+										iBTC,
+										amountExchanged,
+										sBTC
+									);
 									// console.log('iBTC to sBTC effectiveValue', sBTCEffectiveValue.toString());
 									// console.log('exchangeFeeXDRDouble', doubleXDRExchangeFee.toString());
 
-									// const effectiveValueMinusFees = sBTCEffectiveValue.sub(iBTCExchangeFeeDoubled);
-									// console.log(
-									// 	'iBTC to sBTC effectiveValueMinusFees',
-									// 	effectiveValueMinusFees.toString()
-									// );
+									const effectiveValueMinusFees = sBTCEffectiveValue.sub(iBTCExchangeFeeDoubled);
+									console.log(
+										'iBTC to sBTC effectiveValueMinusFees',
+										effectiveValueMinusFees.toString()
+									);
+									console.log('sBTCBalance', sBTCBalance.toString());
 
 									// assert.bnEqual(effectiveValueMinusFees, sBTCBalance);
 								});
