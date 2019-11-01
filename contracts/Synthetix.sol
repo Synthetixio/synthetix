@@ -178,8 +178,7 @@ contract Synthetix is ExternStateToken {
     {
         require(synths[currencyKey] != address(0), "Synth does not exist");
         require(synths[currencyKey].totalSupply() == 0, "Synth supply exists");
-        require(currencyKey != "XDR", "Cannot remove XDR synth");
-        require(currencyKey != "sUSD", "Cannot remove sUSD synth");
+        require(currencyKey != "XDR", "Cannot remove XDR synth");        
 
         // Save the address we're removing for emitting the event at the end.
         address synthToRemove = synths[currencyKey];
@@ -425,7 +424,7 @@ contract Synthetix is ExternStateToken {
             sourceAmount,
             destinationCurrencyKey,
             destinationAddress,
-            true
+            false
         );
     }
 
