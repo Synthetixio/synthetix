@@ -468,6 +468,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         public
         optionalProxy
     {
+        require(account != address(0), "Can't delegate to address(0)");
         delegates.setApproval(messageSender, account);
     }
 
@@ -479,7 +480,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         public
         optionalProxy
     {
-        require(delegates != address(0), "Delegates Contract missing");
         delegates.withdrawApproval(messageSender, account);
     }
 
