@@ -2753,10 +2753,12 @@ contract('Synthetix', async accounts => {
 							}) => {
 								// Note: this presumes balance was empty before the exchange - won't work when
 								// exchanging into sUSD as there is an existing sUSD balance from minting
+								const exchangeFeeRate = await feePool.exchangeFeeRate();
+								const doubleExchangeFeeRate = multiplyDecimal(exchangeFeeRate, toUnit(2));
 								const balance = await toContract.balanceOf(account1);
 								const effectiveValue = await synthetix.effectiveValue(from, amountExchanged, to);
-								const effectiveValueMinusFees = await feePool.amountReceivedFromExchange(
-									effectiveValue
+								const effectiveValueMinusFees = effectiveValue.sub(
+									multiplyDecimal(effectiveValue, doubleExchangeFeeRate)
 								);
 
 								assert.bnEqual(balance, effectiveValueMinusFees);

@@ -6,9 +6,9 @@ const PurgeableSynth = artifacts.require('PurgeableSynth');
 const TokenState = artifacts.require('TokenState');
 const Proxy = artifacts.require('Proxy');
 
-const { currentTime, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
+const { currentTime, toUnit, multiplyDecimal, ZERO_ADDRESS } = require('../utils/testUtils');
 
-contract.only('PurgeableSynth', accounts => {
+contract('PurgeableSynth', accounts => {
 	const [sUSD, SNX, , sAUD, iETH] = ['sUSD', 'SNX', 'XDR', 'sAUD', 'iETH'].map(
 		web3.utils.asciiToHex
 	);
@@ -162,35 +162,36 @@ contract.only('PurgeableSynth', accounts => {
 					let amountToExchange;
 					let usersEffectiveBalanceInUSD;
 					let balanceBeforePurge;
+					let exchangeFeeRate;
+					let doubleExchangeFeeRate;
 					beforeEach(async () => {
+						exchangeFeeRate = await feePool.exchangeFeeRate();
+						doubleExchangeFeeRate = multiplyDecimal(exchangeFeeRate, toUnit(2));
 						amountToExchange = toUnit(1e5);
 						await synthetix.exchange(sUSD, amountToExchange, iETH, ZERO_ADDRESS, {
 							from: account1,
 						});
 
 						const usersUSDBalance = await sUSDContract.balanceOf(account1);
-						const amountExchangedInUSDLessFees = await feePool.amountReceivedFromExchange(
-							amountToExchange
+						const amountExchangedInUSDLessFees = usersUSDBalance.sub(
+							multiplyDecimal(usersUSDBalance, doubleExchangeFeeRate)
 						);
 						balanceBeforePurge = await this.synth.balanceOf(account1);
 						usersEffectiveBalanceInUSD = usersUSDBalance.add(amountExchangedInUSDLessFees);
 					});
-					it.only('then the exchange works as expected', async () => {
+					it('then the exchange occurs with double the exchange fee', async () => {
 						const iETHBalance = await this.synth.balanceOf(account1);
 						const effectiveValue = await synthetix.effectiveValue(sUSD, amountToExchange, iETH);
-						const effectiveValueMinusFees = await feePool.amountReceivedFromExchange(
-							effectiveValue
+						const effectiveValueMinusFees = effectiveValue.sub(
+							multiplyDecimal(effectiveValue, doubleExchangeFeeRate)
 						);
-						console.log('iETHBalance', iETHBalance.toString());
-						console.log('effectiveValue', effectiveValue.toString());
-						console.log('effectiveValueMinusFees', effectiveValueMinusFees.toString());
-						// assert.bnEqual(
-						// 	iETHBalance,
-						// 	effectiveValueMinusFees,
-						// 	'Must receive correct amount from exchange'
-						// );
+
+						assert.bnEqual(
+							iETHBalance,
+							effectiveValueMinusFees,
+							'Must receive correct amount from exchange'
+						);
 						const iETHTotalSupply = await this.synth.totalSupply();
-						console.log('iETHTotalSupply', iETHTotalSupply.toString());
 
 						assert.bnEqual(
 							iETHTotalSupply,
@@ -211,7 +212,7 @@ contract.only('PurgeableSynth', accounts => {
 								'The user must no longer have a balance after the purge'
 							);
 						});
-						it('and they have the value added back to sUSD (with no fees taken out)', async () => {
+						it('and they have the value added back to sUSD (with fees taken out)', async () => {
 							const userBalance = await sUSDContract.balanceOf(account1);
 							assert.bnEqual(
 								userBalance,

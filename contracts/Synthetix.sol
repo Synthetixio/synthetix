@@ -832,6 +832,7 @@ contract Synthetix is ExternStateToken {
     function transferableSynthetix(address account)
         public
         view
+        rateNotStale("SNX")
         returns (uint)
     {
         // How many SNX do they have, excluding escrow?
