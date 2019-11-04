@@ -14,7 +14,7 @@ date:       2019-03-01
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 Escrows the SNX rewards from the inflationary supply awarded to
-users for staking their SNX and maintaining the c-ration target.
+users for staking their SNX and maintaining the c-ratio target.
 
 SNX rewards are escrowed for 1 year from the claim date and users
 can call vest in 12 months time.
