@@ -1,4 +1,4 @@
-# System Overview
+# System Synopsis
 
 Synthetix is a decentralised [Ethereum](https://www.ethereum.org/)-based network of synthetic assets called [*synths*](tokens.md#synths). Each synth is an [ERC20 token](https://theethereum.wiki/w/index.php/ERC20_Token_Standard) whose price tracks some other asset; for example each [sUSD](https://etherscan.io/token/0x57ab1e02fee23774580c119740129eac7081e9d3) token is worth US$1. A wide variety of Synths exists within Synthetix, including fiat currencies, cryptocurrencies, commodities, and [inverse indexes](tokens.md#inverse-syths).
 In principle the system can support any asset with a price, and provides on-chain exposure to an unlimited range of real-world assets.

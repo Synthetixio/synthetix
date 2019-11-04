@@ -18,9 +18,9 @@ copyright: '<a href=https://github.com/Synthetixio/synthetix/blob/master/LICENSE
 
 # Top level headings become tabs at the top due to `tabs: true` in the theme.
 nav:
-  - System Documentation:
+  - System Overview:
     - Home: index.md
-    - Overview: overview.md
+    - Synopsis: synopsis.md
     - Tokens: tokens.md
     - Incentives: incentives.md
     - Governance: governance.md
