@@ -67,10 +67,6 @@ nav:
       - EternalStorage: contracts/EternalStorage.md
       - Migrations: contracts/Migrations.md
     - Deployments: contracts/deployments.md
-  - Internal Notes:
-    - Audit Notes: contracts/audit-notes.md
-    - Work Sheet: work-sheet.md
-    - Resources: resources.md
 
 # These social links will be rendered as icons in the footer, as long as the type corresponds to FontAwesome glyph.
 extra:
