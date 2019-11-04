@@ -55,7 +55,7 @@ contract ExchangeRates is SelfDestructible {
     // How long will the contract assume the rate of any asset is correct
     uint public rateStalePeriod = 3 hours;
 
-    // Lock exchanges until price update complete
+    // Set by the oracle when its about to lock exchanges when it sends a price update
     bool public priceUpdateLock = false;
 
     // Each participating currency in the XDR basket is represented as a currency key with

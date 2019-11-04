@@ -6,6 +6,14 @@ module.exports = {
 			network_id: '*',
 			gas: 8000000,
 		},
+		coverage: {
+			// Note: coverage currently failing to deploy synthentix as gas limit won't suffice
+			host: 'localhost',
+			network_id: '*',
+			port: 8555,
+			gas: 0xfffffffffff,
+			gasPrice: 0x01,
+		},
 	},
 	mocha: {
 		useColors: true,
