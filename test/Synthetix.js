@@ -51,6 +51,7 @@ contract('Synthetix', async accounts => {
 		supplySchedule,
 		sUSDContract,
 		sAUDContract,
+		sBTCContract,
 		escrow,
 		rewardEscrow,
 		rewardsDistribution,
@@ -88,6 +89,7 @@ contract('Synthetix', async accounts => {
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
 		sAUDContract = await Synth.at(await synthetix.synths(sAUD));
 		sEURContract = await Synth.at(await synthetix.synths(sEUR));
+		sBTCContract = await Synth.at(await synthetix.synths(sBTC));
 
 		// Send a price update to guarantee we're not stale.
 		oracle = await exchangeRates.oracle();
@@ -2751,10 +2753,12 @@ contract('Synthetix', async accounts => {
 							}) => {
 								// Note: this presumes balance was empty before the exchange - won't work when
 								// exchanging into sUSD as there is an existing sUSD balance from minting
+								const exchangeFeeRate = await feePool.exchangeFeeRate();
+								const doubleExchangeFeeRate = multiplyDecimal(exchangeFeeRate, toUnit(2));
 								const balance = await toContract.balanceOf(account1);
 								const effectiveValue = await synthetix.effectiveValue(from, amountExchanged, to);
-								const effectiveValueMinusFees = await feePool.amountReceivedFromExchange(
-									effectiveValue
+								const effectiveValueMinusFees = effectiveValue.sub(
+									multiplyDecimal(effectiveValue, doubleExchangeFeeRate)
 								);
 
 								assert.bnEqual(balance, effectiveValueMinusFees);
@@ -2852,6 +2856,75 @@ contract('Synthetix', async accounts => {
 											});
 										});
 									});
+								});
+							});
+							describe('when the user tries to exchange some short iBTC into long sBTC', () => {
+								const iBTCexchangeAmount = toUnit(0.003); // current iBTC balance is a bit under 0.05
+
+								it('then the exchange fee doubles', async () => {
+									// const sBTCBalanceBefore = await sBTCContract.balanceOf(account1);
+									// console.log('account1 sBTCBalanceBefore', sBTCBalanceBefore.toString());
+
+									// Get the fees Before
+									const feePeriodZeroBefore = await feePool.recentFeePeriods(0);
+									// console.log(
+									// 	'feesToDistribute BEFORE',
+									// 	feePeriodZeroBefore.feesToDistribute.toString()
+									// );
+
+									// exchange from inverse to long
+									exchangeTxns.push(
+										await synthetix.exchange(iBTC, iBTCexchangeAmount, sBTC, ZERO_ADDRESS, {
+											from: account1,
+										})
+									);
+
+									// Get the exchange Fee on the exchange amount
+									const iBTCExchangeFee = await feePool.exchangeFeeIncurred(iBTCexchangeAmount);
+									// console.log('iBTCExchangeFee', iBTCExchangeFee.toString());
+
+									// Double the exchangeFee
+									const iBTCExchangeFeeDoubled = iBTCExchangeFee.mul(web3.utils.toBN('2'));
+									// console.log('iBTCExchangeFeeDoubled', iBTCExchangeFeeDoubled.toString());
+
+									// Convert fee to XDR (already doubled)
+									const doubleXDRExchangeFee = await synthetix.effectiveValue(
+										iBTC,
+										iBTCExchangeFeeDoubled,
+										XDR
+									);
+
+									// Assert feesToDistribute now increased by exchangeFeeXDRDouble
+									const feePeriodZeroAfter = await feePool.recentFeePeriods(0);
+
+									const exchangeFeeInFeePool = feePeriodZeroAfter.feesToDistribute.sub(
+										feePeriodZeroBefore.feesToDistribute
+									);
+
+									assert.bnEqual(doubleXDRExchangeFee, exchangeFeeInFeePool);
+
+									// TODO
+									// // Assert account 1 has sBTC - exchangeFeeiBTCDouble
+									const sBTCBalance = await sBTCContract.balanceOf(account1);
+									// // console.log('account1 sBTCBalance', sBTCBalance.toString());
+
+									// // how much sBTC the user is supposed to get
+									const sBTCEffectiveValue = await synthetix.effectiveValue(
+										iBTC,
+										amountExchanged,
+										sBTC
+									);
+									// console.log('iBTC to sBTC effectiveValue', sBTCEffectiveValue.toString());
+									// console.log('exchangeFeeXDRDouble', doubleXDRExchangeFee.toString());
+
+									const effectiveValueMinusFees = sBTCEffectiveValue.sub(iBTCExchangeFeeDoubled);
+									console.log(
+										'iBTC to sBTC effectiveValueMinusFees',
+										effectiveValueMinusFees.toString()
+									);
+									console.log('sBTCBalance', sBTCBalance.toString());
+
+									// assert.bnEqual(effectiveValueMinusFees, sBTCBalance);
 								});
 							});
 						});

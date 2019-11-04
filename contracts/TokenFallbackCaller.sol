@@ -12,13 +12,8 @@ date:       2018-08-10
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
-This contract provides the logic that's used to call tokenFallback()
-when transfers happen.
-
-It's pulled out into its own module because it's needed in two
-places, so instead of copy/pasting this logic and maininting it
-both in Fee Token and Extern State Token, it's here and depended
-on by both contracts.
+This contract provides the logic that's used to call ERC223
+tokenFallback() when SNX or Synth transfers happen.
 
 -----------------------------------------------------------------
 */

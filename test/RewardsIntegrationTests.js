@@ -229,7 +229,7 @@ contract('Rewards Integration Tests', async accounts => {
 
 				// Get the SNX mintableSupply - the minter reward of 200 SNX
 				mintedRewardsSupply = (await supplySchedule.mintableSupply()).sub(MINTER_SNX_REWARD);
-				console.log('mintedRewardsSupply', mintedRewardsSupply.toString());
+				// console.log('mintedRewardsSupply', mintedRewardsSupply.toString());
 				// Mint the staking rewards
 				await synthetix.mint({ from: owner });
 
@@ -256,7 +256,7 @@ contract('Rewards Integration Tests', async accounts => {
 
 				// Get the SNX mintableSupply - the minter reward of 200 SNX
 				mintedRewardsSupply = (await supplySchedule.mintableSupply()).sub(MINTER_SNX_REWARD);
-				console.log('mintedRewardsSupply', mintedRewardsSupply.toString());
+				// console.log('mintedRewardsSupply', mintedRewardsSupply.toString());
 				// Mint the staking rewards
 				await synthetix.mint({ from: owner });
 
