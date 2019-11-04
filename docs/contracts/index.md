@@ -235,3 +235,19 @@ Contract | Description
 ---
 
 <section-sep />
+
+## Audit History
+
+Security and correctness are paramount goals for any smart contract
+system. Therefore several different audit partners have been engaged
+over the history of the Synthetix project in a continuing process to
+validate the integrity of its smart contract system.
+
+Auditor | Subject | Date
+--------|---------|-----
+[iosiro](https://www.iosiro.com/) | [Synthetix Multicurrency](https://www.iosiro.com/audits/synthetix-smart-contract-audit) | February 2019
+[Sigma Prime](https://sigmaprime.io/) | [Synthetix Multicurrency](https://www.synthetix.io/uploads/sigma-prime-synthetix-audit-report_2_0.pdf) | January 2019
+[Sigma Prime](https://sigmaprime.io/) | [Havven IssuanceController](https://github.com/sigp/public-audits/blob/master/havven-2018-06-18/review.pdf) | June 2018
+[Cryptecon](https://cryptecon.org/) | [Havven nUSD economics](https://old.havven.io/uploads/havven_cryptecon_report_may_2018.pdf) ([blog post](https://blog.synthetix.io/havven-validated-by-cryptecon-analysis/)) | June 2018
+[Sigma Prime](https://sigmaprime.io/) | [Havven nUSD](https://github.com/sigp/public-audits/blob/master/havven-2018-06-06/havven-review.pdf) | June 2018
+[Sigma Prime](https://sigmaprime.io/) | [Havven eUSD](https://github.com/sigp/public-audits/tree/master/havven-2018-04-05/README.md) | April 2018
