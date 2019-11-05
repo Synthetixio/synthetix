@@ -136,7 +136,7 @@
 			}
 		],
 		"sign": "",
-		"desc": "Index CEX",
+		"desc": "Centralised Exchange Index",
 		"subclass": "PurgeableSynth"
 	},
 	{
@@ -249,7 +249,7 @@
 			}
 		],
 		"sign": "",
-		"desc": "Inverted CEX",
+		"desc": "Inverted Centralised Exchange Index",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 1000,
