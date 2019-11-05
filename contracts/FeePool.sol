@@ -109,7 +109,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     uint public constant MAX_FEE_PERIOD_DURATION = 60 days;
 
     // Users are unable to claim fees if their collateralisation ratio drifts out of target treshold
-    uint public TARGET_THRESHOLD = (10 * SafeDecimalMath.unit()) / 100;
+    uint public targetThreshold = (10 * SafeDecimalMath.unit()) / 100;
 
     /* ========== ETERNAL STORAGE CONSTANTS ========== */
 
@@ -171,7 +171,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         external
         optionalProxy_onlyOwner
     {
-        require(_exchangeFeeRate < MAX_EXCHANGE_FEE_RATE, "rate < MAX_EXCHANGE_FEE_RATE");     
+        require(_exchangeFeeRate < MAX_EXCHANGE_FEE_RATE, "rate < MAX_EXCHANGE_FEE_RATE");
         exchangeFeeRate = _exchangeFeeRate;
     }
 
@@ -238,7 +238,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     {
         require(_percent >= 0, "Threshold should be positive");
         require(_percent <= 50, "Threshold above limit");
-        TARGET_THRESHOLD = _percent.mul(SafeDecimalMath.unit()).div(100);
+        targetThreshold = _percent.mul(SafeDecimalMath.unit()).div(100);
     }
 
     /**
@@ -757,7 +757,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         }
 
         // Calculate the threshold for collateral ratio before fees can't be claimed.
-        uint ratio_threshold = targetRatio.multiplyDecimal(SafeDecimalMath.unit().add(TARGET_THRESHOLD));
+        uint ratio_threshold = targetRatio.multiplyDecimal(SafeDecimalMath.unit().add(targetThreshold));
 
         // Not claimable if collateral ratio above threshold
         if (ratio > ratio_threshold) {
