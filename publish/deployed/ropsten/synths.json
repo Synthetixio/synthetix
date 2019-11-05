@@ -196,7 +196,7 @@
 		"asset": "TRX",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Inverted Tron",
+		"desc": "Inverted TRON",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 0.025,
