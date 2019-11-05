@@ -8,8 +8,6 @@ Purgeable synths were introduced by [SIP-3](https://github.com/Synthetixio/SIPs/
 
 **Source:** [PurgeableSynth.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/PurgeableSynth.sol)
 
-<section-sep />
-
 ## Architecture
 
 ---
@@ -34,8 +32,6 @@ Purgeable synths were introduced by [SIP-3](https://github.com/Synthetixio/SIPs/
 
 ---
 
-<section-sep />
-
 ## Variables
 
 ---
@@ -57,8 +53,6 @@ It is necessary to know the current price of this Synth to work out whether it i
 **Type:** `ExchangeRates public`
 
 ---
-
-<section-sep />
 
 ## Functions
 
@@ -126,8 +120,6 @@ Allows the owner to set the address of the [exchange rates contract](ExchangeRat
 
 ---
 
-<section-sep />
-
 ## Events
 
 ---
@@ -141,5 +133,3 @@ This event is emitted from the Synth's [proxy](Proxy.md#_emit) with the `emitPur
 **Signature:** `Purged(address indexed account, uint value)`
 
 ---
-
-<section-sep />

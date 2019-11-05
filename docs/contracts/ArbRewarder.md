@@ -11,8 +11,6 @@ Announcement Post: https://blog.synthetix.io/our-new-seth-snx-arb-contract-is-no
 
 **Source:** [`ArbRewarder.sol`](https://github.com/Synthetixio/synthetix/blob/arb-rewarder/contracts/ArbRewarder.sol)
 
-<section-sep />
-
 ## Architecture
 
 ---
@@ -45,8 +43,6 @@ Announcement Post: https://blog.synthetix.io/our-new-seth-snx-arb-contract-is-no
 * [`SafeDecimalMath`](SafeDecimalMath.md) for `uint`
 
 ---
-
-<section-sep />
 
 ## Variables
 
@@ -91,8 +87,6 @@ Announcement Post: https://blog.synthetix.io/our-new-seth-snx-arb-contract-is-no
 ### `snx_erc20`
 
 ---
-
-<section-sep />
 
 ## Functions
 
@@ -158,11 +152,6 @@ Announcement Post: https://blog.synthetix.io/our-new-seth-snx-arb-contract-is-no
 
 ---
 
-
-<section-sep />
-
 ## Modifiers
 
 ### `rateNotStale`
-
-<section-sep />

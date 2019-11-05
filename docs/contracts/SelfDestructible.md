@@ -6,8 +6,6 @@ SelfDestructible allows an inheriting contract to be destroyed by its owner, who
 
 **Source:** [SelfDestructible.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/SelfDestructible.sol)
 
-<section-sep />
-
 ## Architecture
 
 ---
@@ -19,8 +17,6 @@ SelfDestructible allows an inheriting contract to be destroyed by its owner, who
 </centered-image>
 
 ---
-
-<section-sep />
 
 ## Variables
 
@@ -59,8 +55,6 @@ The duration (four weeks) that must be waited between self destruct initiation a
 **Value:** `4 weeks`
 
 ---
-
-<section-sep />
 
 ## Functions
 
@@ -176,8 +170,6 @@ If self destruction is active and the timer has elapsed, destroy this contract a
 
     * [`SelfDestructed()`](#selfdestructed)
 
-<section-sep />
-
 ## Events
 
 ---
@@ -213,5 +205,3 @@ The self destruct beneficiary was changed to the indicated new address.
 **Signature:** `SelfDestructBeneficiaryUpdated(address newBeneficiary)`
 
 ---
-
-<section-sep />

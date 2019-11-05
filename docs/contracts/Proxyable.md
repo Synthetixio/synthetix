@@ -9,8 +9,6 @@ This contract can support two proxies simultaneously. Events can be emitted inde
 
 **Source:** [Proxyable.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/Proxyable.sol)
 
-<section-sep />
-
 ## Architecture
 
 ---
@@ -22,8 +20,6 @@ This contract can support two proxies simultaneously. Events can be emitted inde
 </centered-image>
 
 ---
-
-<section-sep />
 
 ## Variables
 
@@ -59,8 +55,6 @@ Functions which do not require `messageSender` need not apply any of the proxy m
 **Type:** `address`
 
 ---
-
-<section-sep />
 
 ## Functions
 
@@ -138,8 +132,6 @@ This is used by proxies to set [`messageSender`](#messageSender) before forwardi
 
 ---
 
-<section-sep />
-
 ## Modifiers
 
 ---
@@ -164,8 +156,6 @@ This modifier is largely the same as `optionalProxy`, but it disallow callers wh
 
 ---
 
-<section-sep />
-
 ## Events
 
 ---
@@ -177,5 +167,3 @@ This modifier is largely the same as `optionalProxy`, but it disallow callers wh
 **Signature:** `ProxyUpdated(address proxyAddress)`
 
 ---
-
-<section-sep />

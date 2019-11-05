@@ -13,8 +13,6 @@ The main [`Synthetix`](Synthetix.md) contract and all [`Synths`](Synth.md) are E
 
 **Source:** [ExternStateToken.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/ExternStateToken.sol)
 
-<section-sep />
-
 ## Architecture
 
 ---
@@ -39,8 +37,6 @@ The main [`Synthetix`](Synthetix.md) contract and all [`Synths`](Synth.md) are E
 * [`SafeDecimalMath`](SafeDecimalMath.md) for `uint`
 
 ---
-
-<section-sep />
 
 ## Variables
 
@@ -85,8 +81,6 @@ The ERC20 decimal precision of this token. This is usually set to 18 in Syntheti
 **Type:** `uint8 public`
 
 ---
-
-<section-sep />
 
 ## Functions
 
@@ -231,8 +225,6 @@ ERC20 approve function.
 
 ---
 
-<section-sep />
-
 ## Events
 
 ---
@@ -266,5 +258,3 @@ This event is emitted from the token's [proxy](Proxy.md#_emit) with the `emitTok
 **Signature:** `TokenStateUpdated(address newTokenState)`
 
 ---
-
-<section-sep />

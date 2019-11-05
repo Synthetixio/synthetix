@@ -6,8 +6,6 @@ This contract allows certain functions within inheriting contracts to only opera
 
 **Source:** [LimitedSetup.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/LimitedSetup.sol)
 
-<section-sep />
-
 ## Architecture
 
 ---
@@ -20,8 +18,6 @@ This contract allows certain functions within inheriting contracts to only opera
 
 ---
 
-<section-sep />
-
 ## Variables
 
 ---
@@ -33,8 +29,6 @@ The timestamp at which functions which have the [`onlyDuringSetup`](#onlydurings
 **Type:** `uint`
 
 ---
-
-<section-sep />
 
 ## Functions
 
@@ -52,8 +46,6 @@ Sets [`setupExpiryTime`](#setupexpirytime) to the current timestamp plus `setupD
 
 ---
 
-<section-sep />
-
 ## Modifiers
 
 ---
@@ -63,5 +55,3 @@ Sets [`setupExpiryTime`](#setupexpirytime) to the current timestamp plus `setupD
 Reverts the transaction if the current timestamp is not before [`setupExpiryTime`](#setupexpirytime).
 
 ---
-
-<section-sep />

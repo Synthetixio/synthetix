@@ -7,8 +7,6 @@ The owner can be changed by a nomination process, where the nominated owner must
 
 **Source:** [Owned.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/Owned.sol)
 
-<section-sep />
-
 ## Architecture
 
 ---
@@ -20,8 +18,6 @@ The owner can be changed by a nomination process, where the nominated owner must
 </centered-image>
 
 ---
-
-<section-sep />
 
 ## Variables
 
@@ -42,8 +38,6 @@ The currently-nominated owner.
 **Type:** `address public`
 
 ---
-
-<section-sep />
 
 ## Functions
 
@@ -108,8 +102,6 @@ The nominated owner is reset to the zero address.
 
 ---
 
-<section-sep />
-
 ## Modifiers
 
 ---
@@ -119,8 +111,6 @@ The nominated owner is reset to the zero address.
 Reverts the transaction if `msg.sender` is not the [`owner`](#owner).
 
 ---
-
-<section-sep />
 
 ## Events
 
@@ -141,5 +131,3 @@ Ownership has been handed over from `oldOwner` to `newOwner`, which is the new v
 **Signature:** `OwnerChanged(address oldOwner, address newOwner)`
 
 ---
-
-<section-sep />

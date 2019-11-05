@@ -18,19 +18,12 @@ The current listing is available [here](https://developer.synthetix.io/api/docs/
 
     https://etherscan.io/address/0x9a4935749dbdfaf786a19df1c61a6d28b7a6cf94#code
 
-
-
-
-<section-sep />
-
 ## Mainnet
 
 This is the main Ethereum chain, where the canonical SNX token, Synths, and operational infrastructure are deployed.
 
 ??? example "Mainnet Synthetix Contracts"
     All the addresses need to be migrated to here.
-
-<section-sep />
 
 ## Ropsten
 
@@ -39,8 +32,6 @@ This needs a description of the purpose of the Ropsten deployment.
 ??? example "Ropsten Synthetix Contracts"
     All the addresses need to be migrated to here.
 
-<section-sep />
-
 ## Rinkeby
 
 This needs a description of the purpose of the Rinkeby deployment.
@@ -48,13 +39,9 @@ This needs a description of the purpose of the Rinkeby deployment.
 ??? example "Rinkeby Synthetix Contracts"
     All the addresses need to be migrated to here.
 
-<section-sep />
-
 ## Kovan
 
 This needs a description of the purpose of the Kovan deployment.
 
 ??? example "Kovan Synthetix Contracts"
     All the addresses need to be migrated to here.
-
-<section-sep />

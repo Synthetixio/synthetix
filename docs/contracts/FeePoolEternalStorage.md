@@ -8,8 +8,6 @@ This contract is just wrapper around [EternalStorage](EternalStorage.md) with a 
 
 **Source:** [FeePoolEternalStorage.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/FeePoolEternalStorage.sol)
 
-<section-sep />
-
 ## Architecture
 
 ---
@@ -21,8 +19,6 @@ This contract is just wrapper around [EternalStorage](EternalStorage.md) with a 
 </centered-image>
 
 ---
-
-<section-sep />
 
 ## Variables
 
@@ -37,8 +33,6 @@ This is hashed together with the address to obtain the correct key. Its value mu
 **Value:** `"last_fee_withdrawal"`
 
 ---
-
-<section-sep />
 
 ## Functions
 
@@ -81,5 +75,3 @@ This is a helper to import fee withdrawal information from a previous version of
     * The length of the accounts and feePeriodIDs arrays must be equal, otherwise the transaction reverts.
 
 ---
-
-<section-sep />

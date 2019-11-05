@@ -6,8 +6,6 @@ Allows an inheriting contract to be paused and resumed, providing a modifier tha
 
 **Source:** [Pausable.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/Pausable.sol)
 
-<section-sep />
-
 ## Architecture
 
 ---
@@ -19,8 +17,6 @@ Allows an inheriting contract to be paused and resumed, providing a modifier tha
 </centered-image>
 
 ---
-
-<section-sep />
 
 ## Variables
 
@@ -41,8 +37,6 @@ True iff the contract is currently paused.
 **Type:** `bool public`
 
 ---
-
-<section-sep />
 
 ## Functions
 
@@ -84,8 +78,6 @@ Pauses or unpauses the contract. Sets [`lastPauseTime`](#lastPauseTime) to the c
 
 ---
 
-<section-sep />
-
 ## Modifiers
 
 ---
@@ -95,8 +87,6 @@ Pauses or unpauses the contract. Sets [`lastPauseTime`](#lastPauseTime) to the c
 Reverts the transaction the contract is [`paused`](#paused). Provided for use by inheriting contracts.
 
 ---
-
-<section-sep />
 
 ## Events
 
@@ -109,5 +99,3 @@ The contract has gone from paused to unpaused or vice versa. This event reports 
 **Signature:** `PauseChanged(bool isPaused)`
 
 ---
-
-<section-sep />

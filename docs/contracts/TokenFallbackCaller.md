@@ -6,8 +6,6 @@ Allows inheriting contracts to call an ERC223 token fallback function of an exte
 
 **Source:** [TokenFallbackCaller.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/TokenFallbackCaller.sol)
 
-<section-sep />
-
 ## Architecture
 
 ---
@@ -19,8 +17,6 @@ Allows inheriting contracts to call an ERC223 token fallback function of an exte
 </centered-image>
 
 ---
-
-<section-sep />
 
 ## Functions
 
@@ -40,5 +36,3 @@ Checks if the target address is a smart contract, and attempts to call its ERC22
     * [`ReentrancyPreventer.preventReentrancy`](ReentrancyPreventer.md#preventreentrancy)
 
 ---
-
-<section-sep />

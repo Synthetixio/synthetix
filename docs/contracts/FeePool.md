@@ -41,8 +41,6 @@
 
 **Source:** [FeePool.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/FeePool.sol)
 
-<section-sep />
-
 ## Architecture
 
 ---
@@ -82,8 +80,6 @@
 
 ---
 
-<section-sep />
-
 ## Structs
 
 ---
@@ -103,8 +99,6 @@ rewardsToDistribute | `uint` ([18 decimals](SafeDecimalMath.md)) | The total of 
 rewardsClaimed | `uint` ([18 decimals](SafeDecimalMath.md)) | The quantity of inflationary rewards that have already been claimed during this period.
 
 ---
-
-<section-sep />
 
 ## Variables
 
@@ -269,8 +263,6 @@ This must have the same value as [`FeePoolEternalStorage.LAST_FEE_WITHDRAWAL`](F
 **Value:** `"last_fee_withdrawal"`
 
 ---
-
-<section-sep />
 
 ## Functions
 
@@ -947,8 +939,6 @@ Stores into [FeePoolEternalStorage](FeePoolEternalStorage.md) the id of the fee 
 
 ---
 
-<section-sep />
-
 ## Modifiers
 
 ---
@@ -966,8 +956,6 @@ Reverts the transaction if `account` is the [fee address](#fee_address).
 **Signature:** `notFeeAddress(address account)`
 
 ---
-
-<section-sep />
 
 ## Events
 
@@ -1022,5 +1010,3 @@ This event is emitted from the FeePool's [proxy](Proxy.md#_emit) with the `emitF
 **Signature:** `FeesClaimed(address account, uint xdrAmount, uint snxRewards)`
 
 ---
-
-<section-sep />

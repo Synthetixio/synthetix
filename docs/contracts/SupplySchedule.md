@@ -24,8 +24,6 @@ The last year in this schedule generates no new tokens to allow any remaining fr
 
 **Source:** [SupplySchedule.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/SupplySchedule.sol)
 
-<section-sep />
-
 ## Architecture
 
 ---
@@ -51,8 +49,6 @@ The last year in this schedule generates no new tokens to allow any remaining fr
 
 ---
 
-<section-sep />
-
 ## Structs
 
 ---
@@ -69,8 +65,6 @@ totalSupplyMinted | `uint` | The total minted so far in this period, not includi
 `totalSupplyMinted` for the current year is incremented whenever [`updateMintValues`](#updatemintvalues) is called. The others fields are static.
 
 ---
-
-<section-sep />
 
 ## Variables
 
@@ -157,8 +151,6 @@ Used as the quantity of SNX to reward the caller of [`Synthetix.mint`](Synthetix
 **Type:** `uint public`
 
 ---
-
-<section-sep />
 
 ## Functions
 
@@ -348,8 +340,6 @@ Allows the owner to set the current [minter reward](#minterreward).
 
 ---
 
-<section-sep />
-
 ## Modifiers
 
 ---
@@ -359,8 +349,6 @@ Allows the owner to set the current [minter reward](#minterreward).
 Reverts the transaction if `msg.sender` is not the [`synthetix`](#synthetix) address.
 
 ---
-
-<section-sep />
 
 ## Events
 
@@ -381,5 +369,3 @@ Records that the [minter reward was updated](#setminterreward).
 **Signature:** `MinterRewardUpdated(uint newRewardAmount)`
 
 ---
-
-<section-sep />

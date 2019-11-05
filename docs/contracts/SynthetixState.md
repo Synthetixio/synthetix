@@ -11,8 +11,6 @@ Upon system updates, this contract will continue to exist, while the Synthetix l
 
 **Source:** [SynthetixState.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/SynthetixState.sol)
 
-<section-sep />
-
 ## Architecture
 
 ---
@@ -38,8 +36,6 @@ Upon system updates, this contract will continue to exist, while the Synthetix l
 
 ---
 
-<section-sep />
-
 ## Structs
 
 ---
@@ -57,8 +53,6 @@ debtEntryIndex | `uint` | The [debt ledger](SynthetixState.md#debtledger) index 
 This struct is replicated in the [`FeePoolState`](FeePoolState.md#issuancedata) contract.
 
 ---
-
-<section-sep />
 
 ## Variables
 
@@ -160,8 +154,6 @@ This is used within [`Synth._internalTransfer`](Synth.md#_internaltransfer).
     Note that as of [SIP-17](https://sips.synthetix.io/sips/sip-17) currency keys in other contracts are of the `bytes32` type. This means that if this preferred currency component is ever reused, it will only be able to support short-named synths unless new storage is provided.
 
 ---
-
-<section-sep />
 
 ## Functions
 
@@ -379,8 +371,6 @@ Used in [`Synthetix._addToDebtRegister`](Synthetix.md#_addtodebtregister) to det
 
 ---
 
-<section-sep />
-
 ## Events
 
 ---
@@ -392,5 +382,3 @@ Records that the [issuance ratio](#issuanceratio) was modified.
 **Signature:** `IssuanceRatioUpdated(uint newRatio)`
 
 ---
-
-<section-sep />

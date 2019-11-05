@@ -6,8 +6,6 @@ An external state contract to hold ERC20 balances and allowances. This operates 
 
 **Source:** [TokenState.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/TokenState.sol)
 
-<section-sep />
-
 ## Architecture
 
 ---
@@ -19,8 +17,6 @@ An external state contract to hold ERC20 balances and allowances. This operates 
 </centered-image>
 
 ---
-
-<section-sep />
 
 ## Variables
 
@@ -41,8 +37,6 @@ ERC20 allowances. Also generates an ERC20 accessor in the same way as the `balan
 **Type:** `mapping(address => mapping(address => uint)) public`
 
 ---
-
-<section-sep />
 
 ## Functions
 
@@ -92,5 +86,3 @@ Sets the balance of the specified account.
     * [`State.onlyAssociatedContract`](State.md#onlyassociatedcontract)
 
 ---
-
-<section-sep />

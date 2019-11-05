@@ -6,8 +6,6 @@ A small utility contract that augments the SNX escrow contract to allow extracti
 
 **Source:** [EscrowChecker.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/EscrowChecker.sol)
 
-<section-sep />
-
 ## Architecture
 
 ---
@@ -26,8 +24,6 @@ A small utility contract that augments the SNX escrow contract to allow extracti
 
 ---
 
-<section-sep />
-
 ## Variables
 
 ---
@@ -39,8 +35,6 @@ The [SNX escrow contract](SynthetixEscrow.md).
 **Type:** `SynthetixEscrow public`
 
 ---
-
-<section-sep />
 
 ## Functions
 
@@ -67,5 +61,3 @@ Vested entries are not skipped, and appear as a leading sequence of zeroes.
     **Signature**
 
     `checkAccountSchedule(address account) public view returns (uint[16])`
-
-<section-sep />

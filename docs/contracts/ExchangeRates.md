@@ -13,8 +13,6 @@ This does not turn off any functionality in the exchange rate contract, but is u
 
 **Source:** [ExchangeRates.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/ExchangeRates.sol)
 
-<section-sep />
-
 ## Architecture
 
 ---
@@ -48,8 +46,6 @@ This does not turn off any functionality in the exchange rate contract, but is u
 
 ---
 
-<section-sep />
-
 ## Structs
 
 ---
@@ -66,8 +62,6 @@ lowerLimit | `uint` ([18 dp](SafeDecimalMath.md)) | The lower limit of the *inve
 frozen | `bool` | True if an inverse Synth has breached one of its limits.
 
 ---
-
-<section-sep />
 
 ## Variables
 
@@ -148,8 +142,6 @@ A list of the keys of currencies with an inverted index.
 **Type:** `bytes32[] public`
 
 ---
-
-<section-sep />
 
 ## Functions
 
@@ -503,8 +495,6 @@ Loop over the given array of currencies and return true if any of them [is stale
 
 ---
 
-<section-sep />
-
 ## Modifiers
 
 ---
@@ -522,8 +512,6 @@ Reverts the transaction if the given currency's rate is stale.
 Reverts the transaction if `msg.sender` is not the [`oracle`](#oracle).
 
 ---
-
-<section-sep />
 
 ## Events
 
@@ -576,5 +564,3 @@ Records that an inverse price breached a limit and was frozen.
 **Signature:** `InversePriceFrozen(bytes32 currencyKey)`
 
 ---
-
-<section-sep />

@@ -15,8 +15,6 @@ See [`FeePool.feesByPeriod`](FeePool.md#feesbyperiod) and [`FeePool.effectiveDeb
 
 **Source:** [FeePoolState.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/FeePoolState.sol)
 
-<section-sep />
-
 ## Architecture
 
 ---
@@ -45,8 +43,6 @@ See [`FeePool.feesByPeriod`](FeePool.md#feesbyperiod) and [`FeePool.effectiveDeb
 
 ---
 
-<section-sep />
-
 ## Structs
 
 ---
@@ -70,8 +66,6 @@ For more information on these fields and their meaning, see the main [`Synthetix
     This induces a slightly awkward structure where the current and historical issuance information is stored over two separate contracts. In a future version this information could potentially be stored in a unified structure for dividends in efficiency and clarity.
 
 ---
-
-<section-sep />
 
 ## Variables
 
@@ -104,8 +98,6 @@ Note that the entry `accountIssuanceLedger[account][0]` only corresponds to the 
 **Type:** `mapping(address => IssuanceData[FEE_PERIOD_LENGTH]) public`
 
 ---
-
-<section-sep />
 
 ## Functions
 
@@ -233,8 +225,6 @@ This function was used during the initial six week setup period to initialise th
 
 ---
 
-<section-sep />
-
 ## Modifiers
 
 ---
@@ -244,8 +234,6 @@ This function was used during the initial six week setup period to initialise th
 Reverts the transaction if `msg.sender` is not the [fee pool address](#feepool).
 
 ---
-
-<section-sep />
 
 ## Events
 
@@ -258,5 +246,3 @@ Record that an entry was updated in the [issuance ledger](#accountissuanceledger
 **Signature:** `IssuanceDebtRatioEntry(address indexed account, uint debtRatio, uint feePeriodCloseIndex)`
 
 ---
-
-<section-sep />

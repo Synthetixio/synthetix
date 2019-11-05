@@ -41,8 +41,6 @@ Finally, if the target contract needs to transfer ether around, then it will be 
 
 **Source:** [Proxy.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/Proxy.sol)
 
-<section-sep />
-
 ## Architecture
 
 ---
@@ -60,8 +58,6 @@ Finally, if the target contract needs to transfer ether around, then it will be 
 * [Proxyable](Proxyable.md)
 
 ---
-
-<section-sep />
 
 ## Variables
 
@@ -82,8 +78,6 @@ This toggle controls whether the proxy is in `CALL` or `DELEGATECALL` mode. The 
 **Type:** `bool public`
 
 ---
-
-<section-sep />
 
 ## Functions
 
@@ -196,8 +190,6 @@ If it is in `CALL` mode, then it first calls [`target.setMessageSender(msg.sende
 
 ---
 
-<section-sep />
-
 ## Modifiers
 
 ---
@@ -207,8 +199,6 @@ If it is in `CALL` mode, then it first calls [`target.setMessageSender(msg.sende
 Reverts the transaction if `msg.sender` is not the [`target`](#target) contract.
 
 ---
-
-<section-sep />
 
 ## Events
 

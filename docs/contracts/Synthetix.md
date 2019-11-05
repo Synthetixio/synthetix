@@ -30,8 +30,6 @@
 
 **Source:** [Synthetix.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/Synthetix.sol)
 
-<section-sep />
-
 ## Architecture
 
 ---
@@ -64,8 +62,6 @@
     * [`ArbRewarder`](ArbRewarder.md): The ArbRewarder knows the Synthetix address because it exchanges SNX.
 
 ---
-
-<section-sep />
 
 ## Variables
 
@@ -192,8 +188,6 @@ Allows the contract owner to disable synth exchanges, for example during system 
 **Type:** `bool public`
 
 ---
-
-<section-sep />
 
 ## Functions
 
@@ -870,8 +864,6 @@ This function is effectively a modifier. The transaction is reverted if the mess
 
 ---
 
-<section-sep />
-
 ## Modifiers
 
 ---
@@ -895,8 +887,6 @@ The transaction is reverted if the given account is the [fee address](FeePool.md
 The transaction is reverted if `msg.sender` is not the [exchange rates oracle](ExchangeRates.md#oracle).
 
 ---
-
-<section-sep />
 
 ## Events
 

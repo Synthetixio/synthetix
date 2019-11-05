@@ -6,8 +6,6 @@ The logic of RewardEscrow is derived from the [SynthetixEscrow](SynthetixEscrow.
 
 **Source:** [RewardEscrow.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/RewardEscrow.sol)
 
-<section-sep />
-
 ## Architecture
 
 ---
@@ -32,8 +30,6 @@ The logic of RewardEscrow is derived from the [SynthetixEscrow](SynthetixEscrow.
 * [`SafeMath`](SafeMath.md) for `uint`
 
 ---
-
-<section-sep />
 
 ## Variables
 
@@ -116,8 +112,6 @@ This constant limits vesting schedules to be shorter than 260 entries long so th
 **Value:** `52 * 5`
 
 ---
-
-<section-sep />
 
 ## Functions
 
@@ -330,15 +324,11 @@ Finds all vesting schedule entries that have come due for the caller and transfe
 
     Where `total` is the sum of the quantities of this user's schedule entries with timestamps no later than the current time. That is, if multiple vesting entries were claimed, only one `Vested` event is emitted. No event is emitted if `total` is $0$.
 
-<section-sep />
-
 ## Modifiers
 
 ### `onlyFeePool`
 
 Reverts the transaction if the `msg.sender` is not the [`FeePool`](FeePool.md).
-
-<section-sep />
 
 ## Events
 
@@ -375,5 +365,3 @@ Records that the fee pool created a vesting entry.
 **Signature:** `VestingEntryCreated(address indexed beneficiary, uint time, uint value)`
 
 ---
-
-<section-sep />

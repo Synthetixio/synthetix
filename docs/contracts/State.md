@@ -8,8 +8,6 @@ This is designed to allow behaviour to be decoupled from storage so that upgrade
 
 **Source:** [State.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/State.sol)
 
-<section-sep />
-
 ## Architecture
 
 ---
@@ -22,8 +20,6 @@ This is designed to allow behaviour to be decoupled from storage so that upgrade
 
 ---
 
-<section-sep />
-
 ## Variables
 
 ---
@@ -35,8 +31,6 @@ The address (presumably a contract) which is permitted to use functions on this 
 **Type:** `address public`
 
 ---
-
-<section-sep />
 
 ## Functions
 
@@ -82,8 +76,6 @@ Allows the contract's owner to update the [associated contract](#associatedContr
 
 ---
 
-<section-sep />
-
 ## Modifiers
 
 ---
@@ -93,8 +85,6 @@ Allows the contract's owner to update the [associated contract](#associatedContr
 Reverts the transaction if the `msg.sender` is not the [associated contract](#associatedcontract). Provided for use by inheriting contracts.
 
 ---
-
-<section-sep />
 
 ## Events
 
@@ -107,5 +97,3 @@ The associated contract was updated by the owner. This event reports the new ass
 **Signature:** `AssociatedContractUpdated(address associatedContract)`
 
 ---
-
-<section-sep />

@@ -8,8 +8,6 @@ Each fee period, the [`RewardsDistribution`](RewardsDistribution.md) contract se
 
 **Source:** [`SynthetixAirdropper.sol`](https://github.com/Synthetixio/synthetix/blob/SynthetixAirdropper/contracts/SynthetixAirdropper.sol)
 
-<section-sep />
-
 ## Architecture
 
 ---
@@ -21,8 +19,6 @@ Each fee period, the [`RewardsDistribution`](RewardsDistribution.md) contract se
 </centered-image>
 
 ---
-
-<section-sep />
 
 ## Functions
 
@@ -72,5 +68,3 @@ This fallback function immediately transfers any ether sent to the contract to t
     `() external payable`
 
 ---
-
-<section-sep />

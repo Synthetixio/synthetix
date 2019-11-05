@@ -12,8 +12,6 @@ Each type of variable has its own mapping, along with getters and setters. As th
 
 **Source:** [EternalStorage.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/EternalStorage.sol)
 
-<section-sep />
-
 ## Architecture
 
 ---
@@ -26,8 +24,6 @@ Each type of variable has its own mapping, along with getters and setters. As th
 
 ---
 
-<section-sep />
-
 ## Variables
 
 ---
@@ -39,8 +35,6 @@ A mapping from keys to values of type 𝕋.
 **Type:** `mapping(bytes32 => 𝕋)`
 
 ---
-
-<section-sep />
 
 ## Functions
 
@@ -108,5 +102,3 @@ Deletes the value associated with a particular key in the [`𝕋Storage`](Eterna
     * [`State.onlyAssociatedContract`](State.md#onlyassociatedcontract)
 
 ---
-
-<section-sep />

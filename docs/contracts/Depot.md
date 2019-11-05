@@ -17,8 +17,6 @@ Throughout, the contract assumes that sUSD is always worth exactly US\$1. So: a)
 
 **Source:** [Depot.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/Depot.sol)
 
-<section-sep />
-
 ## Architecture
 
 ---
@@ -46,8 +44,6 @@ Throughout, the contract assumes that sUSD is always worth exactly US\$1. So: a)
 
 ---
 
-<section-sep />
-
 ## Structs
 
 ---
@@ -62,8 +58,6 @@ user | `address` | The depositor.
 amount | `uint` | The quantity of sUSD deposited.
 
 ---
-
-<section-sep />
 
 ## Variables
 
@@ -204,8 +198,6 @@ Deposits of less than [`minimumDepositAmount`](#minimumdepositamount) sUSD are n
 **Type:** `mapping(address => uint) public` ([18 decimals](SafeDecimalMath.md))
 
 ---
-
-<section-sep />
 
 ## Functions
 
@@ -515,8 +507,6 @@ $$
 
 ---
 
-<section-sep />
-
 ## Modifiers
 
 ---
@@ -538,8 +528,6 @@ Reverts the transaction if `msg.sender` is not the [`synth`](#synth) address.
 Reverts the transaction if [`pricesAreStale`](#pricesarestale) returns false, because the contract's known prices are too old to safely use.
 
 ---
-
-<section-sep />
 
 ## Events
 

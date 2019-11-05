@@ -48,8 +48,6 @@ See the [main synth notes](../../synths) for more information about how Synths f
 
 **Source:** [Synth.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/Synth.sol)
 
-<section-sep />
-
 ## Architecture
 
 ---
@@ -61,8 +59,6 @@ See the [main synth notes](../../synths) for more information about how Synths f
 </centered-image>
 
 ---
-
-<section-sep />
 
 ## Variables
 
@@ -101,8 +97,6 @@ The number of decimal places this token uses. Fixed at $18$.
 **Value:** `18`
 
 ---
-
-<section-sep />
 
 ## Functions
 
@@ -364,8 +358,6 @@ Used during [Synth exchanges](Synthetix.md#_internalexchange) and [fee payments]
 
 ---
 
-<section-sep />
-
 ## Modifiers
 
 ---
@@ -386,8 +378,6 @@ Reverts the transaction if its argument is not the [fee address](FeePool.md#fee_
 **Signature:** `notFeeAddress(address account)`
 
 ---
-
-<section-sep />
 
 ## Events
 
@@ -432,5 +422,3 @@ This event is emitted from the Synths's [proxy](Proxy.md#_emit) with the `emitBu
 **Signature:** `Burned(address indexed account, uint value)`
 
 ---
-
-<section-sep />

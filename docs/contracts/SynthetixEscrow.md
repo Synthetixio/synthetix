@@ -10,8 +10,6 @@ This contract is augmented by the [`EscrowChecker`](EscrowChecker.md) contract, 
 
 **Source:** [SynthetixEscrow.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/SynthetixEscrow.sol)
 
-<section-sep />
-
 ## Architecture
 
 ---
@@ -29,8 +27,6 @@ This contract is augmented by the [`EscrowChecker`](EscrowChecker.md) contract, 
 * [`SafeMath`](SafeMath.md) for `uint`
 
 ---
-
-<section-sep />
 
 ## Variables
 
@@ -97,8 +93,6 @@ This constant limits vesting schedules to be shorter than twenty entries long so
 **Value:** `20`
 
 ---
-
-<section-sep />
 
 ## Functions
 
@@ -340,8 +334,6 @@ Finds all vesting schedule entries that have come due for the caller and transfe
 
 ---
 
-<section-sep />
-
 ## Events
 
 ---
@@ -361,5 +353,3 @@ Records that an account vested a quantity of tokens.
 **Signature:** `Vested(address indexed beneficiary, uint time, uint value)`
 
 ---
-
-<section-sep />

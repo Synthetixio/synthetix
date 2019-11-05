@@ -8,8 +8,6 @@ The dangers of reentrant function calls and various solutions to are discussed f
 
 **Source:** [ReentrancyPreventer.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/ReentrancyPreventer.sol)
 
-<section-sep />
-
 ## Architecture
 
 ---
@@ -21,8 +19,6 @@ The dangers of reentrant function calls and various solutions to are discussed f
 </centered-image>
 
 ---
-
-<section-sep />
 
 ## Variables
 
@@ -36,8 +32,6 @@ Indicates whether a lock has been acquired. That is, this is true when [`prevent
 
 ---
 
-<section-sep />
-
 ## Modifiers
 
 ---
@@ -48,5 +42,3 @@ Throws an exception if [`isInFunctionBody`](#isinfunctionbody) is true.
 Otherwise, it acquires the lock, runs the modified function, and releases the lock.
 
 ---
-
-<section-sep />

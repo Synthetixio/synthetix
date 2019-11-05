@@ -8,8 +8,6 @@ In principle it is generic, as the approver just marks a number of delegates as 
 
 **Source:** [DelegateApprovals.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/DelegateApprovals.sol)
 
-<section-sep />
-
 ## Architecture
 
 ---
@@ -33,8 +31,6 @@ In principle it is generic, as the approver just marks a number of delegates as 
 
 ---
 
-<section-sep />
-
 ## Variables
 
 ---
@@ -46,8 +42,6 @@ Stores who has approved whom to perform actions. The double mapping allows each 
 **Type:** `mapping(address => mapping(address => bool)) public`
 
 ---
-
-<section-sep />
 
 ## Functions
 
@@ -108,8 +102,6 @@ Revokes the approval of a delegate to act on behalf of a given authoriser.
 
 ---
 
-<section-sep />
-
 ## Events
 
 ---
@@ -129,5 +121,3 @@ The delegate was disapproved to act on the authoriser's behalf.
 **Signature:** `WithdrawApproval(address indexed authoriser, address delegate)`
 
 ---
-
-<section-sep />

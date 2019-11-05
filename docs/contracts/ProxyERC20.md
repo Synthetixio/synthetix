@@ -8,8 +8,6 @@ In the Synthetix system, an ERC20 proxy operates in front of the main [SNX token
 
 **Source:** [ProxyERC20.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/ProxyERC20.sol)
 
-<section-sep />
-
 ## Architecture
 
 ---
@@ -22,10 +20,6 @@ In the Synthetix system, an ERC20 proxy operates in front of the main [SNX token
 
 ---
 
-<section-sep />
-
 ## Functions
 
 This contract defines all ERC20 functions, including `name()`, `symbol()`, and `decimals()`. These functions simply call down to the underlying token contract.
-
-<section-sep />

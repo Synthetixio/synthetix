@@ -15,8 +15,6 @@ SafeDecimalMath uses OpenZeppelin's [SafeMath](SafeMath.md) library for most of 
 In Synthetix, the standard precision fixed point numbers are used to deal with most fractional quantities, such as token balances and prices.
 The high-precision numbers are mainly used for dealing with the [debt ledger](SynthetixState.md#debtledger), which [is constructed](Synthetix.md#_addtodebtregister) as an extended product of many fractional numbers very close to $1$. As this is a financially-sensitive component of the system, representational precision matters in order to minimise errors resulting from rounding or truncation.
 
-<section-sep />
-
 ### Fixed-Point Mechanics
 
 #### Representation
@@ -31,8 +29,6 @@ For a precision of $d$ deimal places, this fixed point library chooses a large i
 For example, at 27 decimal places, $\dot{25}$ is equivalent to $25 \times 10^{27}$. We will use square brackets to capture the fixed point representation of composite expressions.
 
 Note that this is only valid if $\dot{q}$ is an integer, so nothing is representable which has a positive value in the decimal places smaller than $\frac{1}{\dot{u}}$ (i.e. the integer 1).
-
-<section-sep />
 
 #### Operations
 
@@ -93,11 +89,7 @@ The representation of a number $q$ at two different fixed point precision levels
 
 ---
 
-<section-sep />
-
 **Source:** [SafeDecimalMath.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/SafeDecimalMath.sol)
-
-<section-sep />
 
 ## Architecture
 
@@ -116,8 +108,6 @@ The representation of a number $q$ at two different fixed point precision levels
 * [SafeMath](SafeMath.md) for `uint`
 
 ---
-
-<section-sep />
 
 ## Variables
 
@@ -172,8 +162,6 @@ The factor ($10^9$) to convert between precision levels. Equivalent to `PRECISE_
 **Value:** `1e9`
 
 ---
-
-<section-sep />
 
 ## Functions
 
@@ -330,5 +318,3 @@ Converts from high precision to standard precision numbers. This is division by 
     `preciseDecimalToDecimal(uint i) internal pure returns (uint)`
 
 ---
-
-<section-sep />

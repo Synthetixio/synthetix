@@ -12,8 +12,6 @@ Incentivising activities other than staking was first trialed with UniSwap, whic
 
 **Source:** [RewardsDistribution.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/RewardsDistribution.sol)
 
-<section-sep />
-
 ## Architecture
 
 ---
@@ -41,8 +39,6 @@ Incentivising activities other than staking was first trialed with UniSwap, whic
 
 ---
 
-<section-sep />
-
 ## Structs
 
 ---
@@ -57,8 +53,6 @@ Field | Type | Description
 ------|------|------------
 destination | `address` | The address to send a portion of the inflationary supply to.
 amount | `uint` | The quantity of tokens to send.
-
-<section-sep />
 
 ## Variables
 
@@ -103,8 +97,6 @@ An array of distribution recipients and the amount of SNX each will receive from
 **Type:** `DistributionData[] public`
 
 ---
-
-<section-sep />
 
 ## Functions
 
@@ -291,8 +283,6 @@ The number of recipients receiving distributions. This is an alias for `distribu
 
 ---
 
-<section-sep />
-
 ## Events
 
 ---
@@ -312,5 +302,3 @@ Records that a quantity of the inflationary rewards have been dispersed among th
 **Signature:** `RewardsDistributed(uint amount)`
 
 ---
-
-<section-sep />

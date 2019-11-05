@@ -9,8 +9,6 @@ The addresses of currently-deployed contract instances are available in the [Dep
 !!! info "Version"
     This documentation is current as of commit TODO.
 
-<section-sep />
-
 ## Overview
 
 The Synthetix system is composed of a number of core contract complexes, and several auxiliary contracts that enhance token liquidity and general system functionality. These on-chain entities and how they communicate is reflected in the following high-level diagram.
@@ -22,8 +20,6 @@ The Synthetix system is composed of a number of core contract complexes, and sev
 The oracle, Synthetix, synths, inflationary supply, and fee pool elements comprise the core of the system. The arbitrage and depot contracts are supporting components which, while they do not alter the fundamental behaviour of system tokens, ensure the economic health of the system. They do this by making sure that SNX and synths flow freely through markets like Uniswap and Mintr, improving liquidity and encouraging prices to be close to their theoretically correct values.
 
 Each of the elements in this graph may be a complex composed of several contracts, as described below. Some relatively unimportant links have been omitted, but more detailed descriptions are available at the documentation pages for each specific contract.
-
-<section-sep />
 
 ## Core Components
 
@@ -52,8 +48,6 @@ Contract | Description
 
 ---
 
-<section-sep />
-
 ### Synth
 
 !!! example "Responsibilities"
@@ -74,8 +68,6 @@ Contract | Description
 [`PurgeableSynth`](PurgeableSynth.md) | A synth contract that can be liquidated at the end of its life, if its supply is low enough or it is a frozen inverse synth.
 
 ---
-
-<section-sep />
 
 ### Fee Pool
 
@@ -105,8 +97,6 @@ Contract | Description
 
 ---
 
-<section-sep />
-
 ### Inflationary Supply
 
 !!! example "Responsibilities"
@@ -131,8 +121,6 @@ Contract | Description
 
 ---
 
-<section-sep />
-
 ### Oracle
 
 !!! example "Responsibilities"
@@ -155,8 +143,6 @@ Oracle | The oracle is responsible for collecting and updating all token prices 
 [`ExchangeRates`](ExchangeRates.md) | The Synthetix exchange rates contract which receives token prices from the oracle, and supplies them to all contracts that need it.
 
 ---
-
-<section-sep />
 
 ## Token Circulation
 
@@ -182,8 +168,6 @@ The [ArbRewarder](ArbRewarder.md) automates the process of arbitraging the ETH/s
 
 ---
 
-<section-sep />
-
 ## Infrastructure
 
 ---
@@ -207,8 +191,6 @@ Contract | Description
 [`Proxyable`](Proxyable.md) | An abstract base contract designed to work with the [Synthetix proxy](Proxy.md).
 
 ---
-
-<section-sep />
 
 ### Utilities
 
@@ -234,8 +216,6 @@ Contract | Description
 
 ---
 
-<section-sep />
-
 ## Audit History
 
 Security and correctness are paramount goals for any smart contract
@@ -251,3 +231,5 @@ Auditor | Subject | Date
 [Cryptecon](https://cryptecon.org/) | [Havven nUSD economics](https://old.havven.io/uploads/havven_cryptecon_report_may_2018.pdf) ([blog post](https://blog.synthetix.io/havven-validated-by-cryptecon-analysis/)) | June 2018
 [Sigma Prime](https://sigmaprime.io/) | [Havven nUSD](https://github.com/sigp/public-audits/blob/master/havven-2018-06-06/havven-review.pdf) | June 2018
 [Sigma Prime](https://sigmaprime.io/) | [Havven eUSD](https://github.com/sigp/public-audits/tree/master/havven-2018-04-05/README.md) | April 2018
+
+---
