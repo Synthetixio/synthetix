@@ -83,6 +83,7 @@ contract Synthetix is ExternStateToken {
     bool public exchangeEnabled = true;
     uint public gasPriceLimit;
 
+    address public gasLimitOracle;
     // ========== CONSTRUCTOR ==========
 
     /**
@@ -144,10 +145,17 @@ contract Synthetix is ExternStateToken {
         exchangeEnabled = _exchangeEnabled;
     }
 
+    function setGasLimitOracle(address _gasLimitOracle)
+        external
+        optionalProxy_onlyOwner
+    {
+        gasLimitOracle = _gasLimitOracle;
+    }
+
     function setGasPriceLimit(uint _gasPriceLimit)
         external
-        onlyOracle
     {
+        require(msg.sender == gasLimitOracle, "Only gas limit oracle allowed");
         require(_gasPriceLimit > 0, "Needs to be greater than 0");
         gasPriceLimit = _gasPriceLimit;
     }
@@ -452,7 +460,6 @@ contract Synthetix is ExternStateToken {
         returns (bool)
     {
         require(exchangeEnabled, "Exchanging is disabled");
-        require(!exchangeRates.priceUpdateLock(), "Price update lock");
 
         // Note: We don't need to check their balance as the burn() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if their balance is not sufficient.

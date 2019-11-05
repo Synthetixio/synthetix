@@ -57,6 +57,7 @@ contract('Synthetix', async accounts => {
 		rewardsDistribution,
 		sEURContract,
 		oracle,
+		gasLimitOracle,
 		timestamp;
 
 	// Updates rates with defaults so they're not stale.
@@ -103,6 +104,9 @@ contract('Synthetix', async accounts => {
 				from: oracle,
 			}
 		);
+
+		// Load the gasLimitOracle address
+		gasLimitOracle = await synthetix.gasLimitOracle();
 	});
 
 	it('should set constructor params on deployment', async () => {
@@ -2393,54 +2397,6 @@ contract('Synthetix', async accounts => {
 		);
 	});
 
-	it('should not exchange while exchangeRates.priceUpdateLock is true', async () => {
-		// Give some SNX to account1
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('300000'), {
-			from: owner,
-		});
-		// Issue
-		const amountIssued = toUnit('2000');
-		await synthetix.issueSynths(sUSD, amountIssued, { from: account1 });
-
-		// Disable exchange
-		await exchangeRates.setPriceUpdateLock(true, { from: oracle });
-
-		// Exchange sUSD to sAUD
-		await assert.revert(synthetix.exchange(sUSD, amountIssued, sAUD, account1, { from: account1 }));
-
-		// Enable exchange via priceupdate
-		const priceUpdateLock = await exchangeRates.priceUpdateLock();
-		assert.equal(priceUpdateLock, true);
-
-		// Send a price update
-		const timeSent = await currentTime();
-		const keysArray = ['sAUD', 'sEUR', 'sCHF', 'sGBP'].map(web3.utils.asciiToHex);
-		const rates = ['0.4', '1.2', '3.3', '1.95'].map(toUnit);
-		await exchangeRates.updateRates(keysArray, rates, timeSent, {
-			from: oracle,
-		});
-
-		// Exchange sUSD to sAUD
-		const txn = await synthetix.exchange(sUSD, amountIssued, sAUD, account1, { from: account1 });
-
-		const sAUDBalance = await sAUDContract.balanceOf(account1);
-
-		const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
-		assert.bytes32EventEqual(
-			synthExchangeEvent,
-			'SynthExchange',
-			{
-				account: account1,
-				fromCurrencyKey: 'sUSD',
-				fromAmount: amountIssued,
-				toCurrencyKey: 'sAUD',
-				toAmount: sAUDBalance,
-				toAddress: account1,
-			},
-			['fromCurrencyKey', 'toCurrencyKey']
-		);
-	});
-
 	// TODO: Changes in exchange rates tests
 	// TODO: Are we testing too much Synth functionality here in Synthetix
 
@@ -2654,7 +2610,7 @@ contract('Synthetix', async accounts => {
 
 	describe('exchange gas price limit', () => {
 		const amountIssued = toUnit('2000');
-		const gasPriceLimit = toUnit('25');
+		const gasPriceLimit = toUnit('2');
 
 		beforeEach(async () => {
 			// Give some SNX to account1
@@ -2665,7 +2621,7 @@ contract('Synthetix', async accounts => {
 			await synthetix.issueSynths(sUSD, amountIssued, { from: account1 });
 
 			// set gas limit on synthetix
-			await synthetix.setGasPriceLimit(gasPriceLimit, { from: oracle });
+			await synthetix.setGasPriceLimit(gasPriceLimit, { from: gasLimitOracle });
 		});
 
 		it('should revert a user if they try to send more gwei than gasLimit', async () => {
@@ -2680,7 +2636,7 @@ contract('Synthetix', async accounts => {
 		it('should revert if oracle tries to set gasLimit to 0', async () => {
 			await assert.revert(
 				synthetix.setGasPriceLimit(0, {
-					from: oracle,
+					from: gasLimitOracle,
 				})
 			);
 		});
