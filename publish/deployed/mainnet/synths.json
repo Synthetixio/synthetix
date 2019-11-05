@@ -184,7 +184,7 @@
 		"asset": "MKR",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Inverted MAKER",
+		"desc": "Inverted Maker",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 550,
