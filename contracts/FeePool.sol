@@ -920,7 +920,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     {
         uint targetRatio = synthetix.synthetixState().issuanceRatio();
 
-        return targetRatio.multiplyDecimal(SafeDecimalMath.unit().add(TARGET_THRESHOLD));
+        return targetRatio.multiplyDecimal(SafeDecimalMath.unit().add(targetThreshold));
     }
 
     /**
