@@ -324,11 +324,17 @@ Finds all vesting schedule entries that have come due for the caller and transfe
 
     Where `total` is the sum of the quantities of this user's schedule entries with timestamps no later than the current time. That is, if multiple vesting entries were claimed, only one `Vested` event is emitted. No event is emitted if `total` is $0$.
 
+---
+
 ## Modifiers
+
+---
 
 ### `onlyFeePool`
 
 Reverts the transaction if the `msg.sender` is not the [`FeePool`](FeePool.md).
+
+---
 
 ## Events
 
