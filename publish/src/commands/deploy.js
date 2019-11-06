@@ -58,6 +58,7 @@ const deploy = async ({
 	buildPath = DEFAULTS.buildPath,
 	deploymentPath,
 	oracleExrates,
+	oracleGasLimit,
 	oracleDepot,
 	privateKey,
 	yes,
@@ -148,6 +149,7 @@ const deploy = async ({
 		currentSynthetixSupply = w3utils.toWei((100e6).toString());
 		currentExchangeFee = w3utils.toWei('0.003'.toString());
 		oracleExrates = account;
+		oracleGasLimit = account;
 		oracleDepot = account;
 		currentSynthetixPrice = w3utils.toWei('0.2');
 	} else {
@@ -166,6 +168,10 @@ const deploy = async ({
 				oracleExrates = await currentExrates.methods.oracle().call();
 			}
 
+			if (!oracleGasLimit) {
+				oracleGasLimit = await oldSynthetix.methods.gasLimitOracle().call();
+			}
+
 			if (!oracleDepot) {
 				const currentDepot = getExistingContract({ contract: 'Depot' });
 				oracleDepot = await currentDepot.methods.oracle().call();
@@ -181,7 +187,7 @@ const deploy = async ({
 		}
 	}
 
-	for (const address of [account, oracleExrates, oracleDepot]) {
+	for (const address of [account, oracleExrates, oracleDepot, oracleGasLimit]) {
 		if (!w3utils.isAddress(address)) {
 			console.error(red('Invalid address detected (please check your inputs):', address));
 			process.exitCode = 1;
@@ -209,6 +215,7 @@ const deploy = async ({
 		'FeePool exchangeFeeRate': `${w3utils.fromWei(currentExchangeFee)}`,
 		'ExchangeRates Oracle': oracleExrates,
 		'Depot Oracle': oracleDepot,
+		'Gas Limit Oracle': oracleGasLimit,
 	});
 
 	if (!yes) {
@@ -536,13 +543,23 @@ const deploy = async ({
 		});
 	}
 
+	// setup gasLimitOracle on Synthetix
 	// setup exchange gasPriceLimit on Synthetix
 	const gasPriceLimit = w3utils.toWei('35', 'gwei');
 	if (network === 'local') {
 		await runStep({
 			contract: 'Synthetix',
 			target: synthetix,
-			account: oracleExrates,
+			read: 'gasLimitOracle',
+			expected: input => input === oracleGasLimit,
+			write: 'setGasLimitOracle',
+			writeArg: oracleGasLimit,
+		});
+
+		await runStep({
+			contract: 'Synthetix',
+			target: synthetix,
+			account: oracleGasLimit,
 			read: 'gasPriceLimit',
 			expected: input => input === gasPriceLimit,
 			write: 'setGasPriceLimit',
