@@ -1,11 +1,6 @@
 {
 	"solidity.compileUsingRemoteVersion": "soljson-v0.4.25+commit.59dbf8f1",
-	"solidity.soliumRules": {
-		"imports-on-top": 0,
-		"variable-declarations": 0,
-		"indentation": ["error", 4],
-		"quotes": ["error", "double"],
-		"security/no-block-members": ["error", ["blockhash"]],
-		"security/no-inline-assembly": "off"
-	}
+	"solidity.linter": "solhint",
+	"solidity.compilerOptimization": 200,
+	"solidity.packageDefaultDependenciesDirectory": "node_modules"
 }
