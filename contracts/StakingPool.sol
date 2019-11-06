@@ -71,32 +71,69 @@ contract StakingPool is StakingPoolStorage{
         emit Deposit(msg.sender, snxAmount, liquidityAmount);
     }
 
-
     function withdrawal(uint256 amount) external {
-        uint256 available = synthetix.balanceOf(address(this));
-        uint256 amountToWithdraw = totalSNXValue().mul(amount).div(totalSupply);
-
-        //There could other steps to take when withdrawing to get more liquid SNX:
-        // 1. ClaimFees
-        // 2. Vest for any pending Reward
-        // 3. Burn issue Synths
-        //TODO: allow manager to set a order of preference of actions
-
-        if(available < amountToWithdraw){
-            uint256 diff = amountToWithdraw.sub(available);
-            uint256 synthAmount = synthetix.effectiveValue(SNX, diff, sUSD);
-            synthetix.burnSynths(sUSD, synthAmount);
+        uint256 liquidityAmount = amount;
+        uint256 amountToWithdraw = totalSNXValue().mul(liquidityAmount).div(totalSupply);
+        bool enoughSNX = liquidateSNX(amountToWithdraw);
+        // Will only withdraw some amount of liquidity tokens and leave the rest in their balance
+        if(!enoughSNX) {
+            uint256 available = synthetix.transferableSynthetix(address(this));
+            uint256 newAmount = totalSNXValue().div(available).div(totalSupply);
+            liquidityAmount = newAmount;
+            amountToWithdraw = available;
         }
+        balances[msg.sender] = balances[msg.sender].sub(liquidityAmount);
+        totalSupply = totalSupply.sub(liquidityAmount);
 
-        balances[msg.sender] = balances[msg.sender].sub(amount);
-        totalSupply = totalSupply.sub(amount);
+        // uint256 trasnferable = synthetix.transferableSynthetix(address(this));
+        // uint256 _amount = amountToWithdraw > trasnferable ? trasnferable : amountToWithdraw;
 
-        uint256 trasnferable = synthetix.transferableSynthetix(address(this));
-        uint256 _amount = amountToWithdraw > trasnferable ? trasnferable : amountToWithdraw;
+        require(synthetix.transfer(msg.sender, amountToWithdraw), "Token transfer failed");
 
-        require(synthetix.transfer(msg.sender, _amount), "Token transfer failed");
+        emit Withdrawl(msg.sender, amountToWithdraw, liquidityAmount);
+        //require(!enoughSNX, "thaha");
+    }
 
-        emit Withdrawl(msg.sender, amountToWithdraw, amount);
+    function liquidateSNX(uint256 _snxTarget) internal returns(bool){
+        //TODO: optimize this function
+        uint256 available = synthetix.transferableSynthetix(address(this));
+        if(available >= _snxTarget) return true;
+        //If that wasn't enough, vest rewards
+        rewardEscrow.vest();
+        if(available >= _snxTarget) return true;
+
+         //If that wasn't enough, claim fees 
+        _claimFeeInternal(sUSD);
+        available = synthetix.transferableSynthetix(address(this));
+        if(available >= _snxTarget) return true;
+        //Burning synths is lthe last option because it's the most expensive gas-wise
+        uint256 diff = _snxTarget.sub(available);
+        burnAvailableSynths(diff);
+        available = synthetix.transferableSynthetix(address(this));
+        if(available >= _snxTarget) return true;
+        return false; // There isn't enough SNX to withdraw, maybe because it's escrowed. 
+    }
+
+    function burnAvailableSynths(uint256 _targetSNXAmount) internal {
+        bytes4[] memory _synths = synthetix.availableCurrencyKeys();
+        uint256 retrievedSNX = 0;
+        for(uint i = 0; i < _synths.length; i++){
+            //check our balance in this synth
+            uint256 balance = synthetix.synths(_synths[i]).balanceOf(address(this));
+            //get the effective SNX value
+            if(balance > 0){
+                uint256 needed = _targetSNXAmount - retrievedSNX;
+                uint256 _snxValue = synthetix.effectiveValue(_synths[i], balance, SNX);
+                if(needed < _snxValue){
+                    uint256 atw = _snxValue - needed;
+                    balance = synthetix.effectiveValue(SNX, atw, _synths[i]);
+                }
+                //burn that amount
+                synthetix.burnSynths(_synths[i], balance);
+                if (retrievedSNX + _snxValue >= _targetSNXAmount) break;
+                retrievedSNX += _snxValue;
+            }
+        }
     }
 
     function totalSNXValue() public view returns(uint){

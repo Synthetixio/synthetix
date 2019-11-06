@@ -6,6 +6,7 @@ const RewardEscrow = artifacts.require('RewardEscrow');
 const FeePool = artifacts.require('FeePool');
 const Depot = artifacts.require('Depot');
 const Synthetix = artifacts.require('Synthetix');
+const SynthetixState = artifacts.require('SynthetixState');
 const StakingPool = artifacts.require('StakingPool');
 const PoolFactory = artifacts.require('StakingPoolFacotry');
 const Synth = artifacts.require('Synth');
@@ -125,6 +126,7 @@ contract('StakingPool', async accounts => {
 		account3,
 		account4,
 		account5,
+		account6,
 		feePoolAccount,
 	] = accounts;
 	let feePool,
@@ -134,6 +136,7 @@ contract('StakingPool', async accounts => {
 		stakingPool,
 		poolFacotry,
 		sUSDContract,
+		synthetixState,
 		sAUDContract,
 		sEURContract,
 		//XDRContract,
@@ -148,6 +151,7 @@ contract('StakingPool', async accounts => {
 		exchangeRates = await ExchangeRates.deployed();
 		feePool = await FeePool.deployed();
 		depot = await Depot.deployed();
+		synthetixState = await SynthetixState.at(await synthetix.synthetixState());
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
 		sAUDContract = await Synth.at(await synthetix.synths(sAUD));
 		oracle = await exchangeRates.oracle();
@@ -255,26 +259,87 @@ contract('StakingPool', async accounts => {
 				assertBNEqual(snxBalance, snxBalance2);
 				assertBNEqual(bal2, new BN('0'));
 			});
-			it('Users can withdrawal their SNX when there are fees to be claimed', async () => {
-				const amount = toUnit(100);
-				const snxBalance = await synthetix.balanceOf(account1);
-				await stakingPool.deposit(amount, { from: account1 });
-				const bal1 = await sUSDContract.balanceOf(account1);
+		});
 
-				await stakingPool.issueSynths(sAUD, '10000', { from: manager });
+		describe('Complex withdraw mechanics', async () => {
+			const amount1 = toUnit(1000);
+			const amount2 = toUnit(1000);
+			const amount3 = toUnit(1000);
+
+			beforeEach(async () => {
+				await distributeSNX(
+					synthetix,
+					[account1, account2, account3, depot.address, account4, account6],
+					'1000',
+					owner
+				);
+
+				await approveStakingPool(stakingPool, synthetix, [account1, account2, account3]);
+				await stakingPool.deposit(amount1, { from: account1 });
+				await stakingPool.deposit(amount2, { from: account2 });
+				await stakingPool.deposit(amount3, { from: account3 });
+
+				await synthetix.issueMaxSynths(sAUD, { from: account6 });
+			});
+
+			it('Users can withdrawal their SNX when there are fees to be claimed', async () => {
+				const init_bal1 = await synthetix.balanceOf(account1);
+				const init_bal2 = await synthetix.balanceOf(account2);
+				const init_bal3 = await synthetix.balanceOf(account3);
+
+				await stakingPool.issueSynths(sAUD, '1000', { from: manager });
+
+				const bal1 = await stakingPool.balanceOf(account1);
+				const bal2 = await stakingPool.balanceOf(account2);
+				const bal3 = await stakingPool.balanceOf(account3);
 
 				await generateTradignFees(synthetix, [account4, account5], sUSD, sUSDContract, feePool);
 				await updateDepotRates(depot, oracle);
 
-				await stakingPool.claimFees({ from: manager });
-				let snxBalance2 = await stakingPool.balanceOf(account1);
-				let supply = await stakingPool.totalSupply();
-				let value = await stakingPool.totalSNXValue();
-				await stakingPool.withdrawal(amount, { from: account1 });
+				let debt = await synthetix.debtBalanceOf(stakingPool.address, SNX);
+				let feesAvailable = await feePool.feesAvailable(stakingPool.address, sUSD);
+				let snxValue = await depot.synthetixReceivedForSynths(feesAvailable[0]);
 
-				// console.log(snxBalance.toString());
-				// console.log(supply.toString());
-				// console.log(value.toString());
+				//Shortcut to get the amount o fee each pool member got
+				//Correct calculation would be: snxValue * balance / totalSupply
+				const feeEarned = snxValue.div(new BN('3'));
+
+				await stakingPool.withdrawal(bal1, { from: account1 });
+				await stakingPool.withdrawal(bal2, { from: account2 });
+				await stakingPool.withdrawal(bal3, { from: account3 });
+
+				const bal1_snx = await synthetix.balanceOf(account1);
+				const bal2_snx = await synthetix.balanceOf(account2);
+				const bal3_snx = await synthetix.balanceOf(account3);
+
+				assertBNEqual(bal1_snx, init_bal1.add(amount1).add(feeEarned));
+				assertBNEqual(bal2_snx, init_bal2.add(amount2).add(feeEarned));
+				assertBNEqual(bal3_snx, init_bal3.add(amount3).add(feeEarned));
+			});
+			it('Users can withdrawal when debt is maxed out', async () => {
+				await stakingPool.issueMaxSynths(sAUD, { from: manager });
+
+				const init_bal1 = await synthetix.balanceOf(account1);
+				const init_bal2 = await synthetix.balanceOf(account2);
+				const init_bal3 = await synthetix.balanceOf(account3);
+
+				const bal1 = await stakingPool.balanceOf(account1);
+				const bal2 = await stakingPool.balanceOf(account2);
+				const bal3 = await stakingPool.balanceOf(account3);
+
+				await updateDepotRates(depot, oracle);
+
+				await stakingPool.withdrawal(bal1, { from: account1 });
+				await stakingPool.withdrawal(bal2, { from: account2 });
+				await stakingPool.withdrawal(bal3, { from: account3 });
+
+				const bal1_snx = await synthetix.balanceOf(account1);
+				const bal2_snx = await synthetix.balanceOf(account2);
+				const bal3_snx = await synthetix.balanceOf(account3);
+
+				assertBNEqual(bal1_snx, init_bal1.add(amount1));
+				assertBNEqual(bal2_snx, init_bal2.add(amount2));
+				assertBNEqual(bal3_snx, init_bal3.add(amount3));
 			});
 		});
 
@@ -385,16 +450,28 @@ contract('StakingPool', async accounts => {
 			const issuedAmount = toUnit('5');
 
 			beforeEach(async () => {
-				await distributeSNX(synthetix, [account4, account5, depot.address], '1000', owner);
+				await distributeSNX(
+					synthetix,
+					[account6, account5, account3, depot.address],
+					'1000',
+					owner
+				);
 
-				await approveStakingPool(stakingPool, synthetix, [account4, account5]);
+				await approveStakingPool(stakingPool, synthetix, [account6, account5]);
 
-				const amount4 = toUnit(300);
+				const amount3 = toUnit(300);
 				const amount5 = toUnit(300);
+				let bal = await synthetix.transferableSynthetix(account6);
+				let bal5 = await synthetix.transferableSynthetix(account5);
+				let bal3 = await synthetix.transferableSynthetix(account3);
 
-				await stakingPool.deposit(amount4, { from: account4 });
+				console.log(bal.toString());
+				console.log(bal5.toString());
+				console.log(bal3.toString());
+
 				await stakingPool.deposit(amount5, { from: account5 });
-				await stakingPool.issueSynths(sAUD, issuedAmount, { from: manager });
+				await stakingPool.deposit(amount3, { from: account3 });
+				await stakingPool.issueMaxSynths(sAUD, issuedAmount, { from: manager });
 				await updateRatesWithDefaults();
 			});
 
