@@ -2778,6 +2778,7 @@ contract('Synthetix', async accounts => {
 										from: iBTC,
 										to: sAUD,
 										toContract: sAUDContract,
+										exchangeFeeRateMultiplier: 2,
 									});
 								});
 
@@ -2804,6 +2805,7 @@ contract('Synthetix', async accounts => {
 												from: iBTC,
 												to: sEUR,
 												toContract: sEURContract,
+												exchangeFeeRateMultiplier: 2,
 											});
 										});
 									});
@@ -2822,6 +2824,7 @@ contract('Synthetix', async accounts => {
 												from: iBTC,
 												to: sEUR,
 												toContract: sEURContract,
+												exchangeFeeRateMultiplier: 2,
 											});
 										});
 									});
