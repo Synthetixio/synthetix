@@ -183,7 +183,7 @@ const deploy = async ({
 		}
 	}
 
-	for (const address of [account, oracleExrates, oracleDepot, oracleGasLimit]) {
+	for (const address of [account, oracleExrates, oracleDepot]) {
 		if (!w3utils.isAddress(address)) {
 			console.error(red('Invalid address detected (please check your inputs):', address));
 			process.exitCode = 1;
