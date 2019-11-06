@@ -163,10 +163,8 @@ contract('PurgeableSynth', accounts => {
 					let usersEffectiveBalanceInUSD;
 					let balanceBeforePurge;
 					let exchangeFeeRate;
-					let doubleExchangeFeeRate;
 					beforeEach(async () => {
 						exchangeFeeRate = await feePool.exchangeFeeRate();
-						doubleExchangeFeeRate = multiplyDecimal(exchangeFeeRate, toUnit(2));
 						amountToExchange = toUnit(1e5);
 						await synthetix.exchange(sUSD, amountToExchange, iETH, ZERO_ADDRESS, {
 							from: account1,
@@ -174,16 +172,16 @@ contract('PurgeableSynth', accounts => {
 
 						const usersUSDBalance = await sUSDContract.balanceOf(account1);
 						const amountExchangedInUSDLessFees = usersUSDBalance.sub(
-							multiplyDecimal(usersUSDBalance, doubleExchangeFeeRate)
+							multiplyDecimal(usersUSDBalance, exchangeFeeRate)
 						);
 						balanceBeforePurge = await this.synth.balanceOf(account1);
 						usersEffectiveBalanceInUSD = usersUSDBalance.add(amountExchangedInUSDLessFees);
 					});
-					it('then the exchange occurs with double the exchange fee', async () => {
+					it('then the exchange occurs with exchange fee deducted', async () => {
 						const iETHBalance = await this.synth.balanceOf(account1);
 						const effectiveValue = await synthetix.effectiveValue(sUSD, amountToExchange, iETH);
 						const effectiveValueMinusFees = effectiveValue.sub(
-							multiplyDecimal(effectiveValue, doubleExchangeFeeRate)
+							multiplyDecimal(effectiveValue, exchangeFeeRate)
 						);
 
 						assert.bnEqual(
