@@ -23,7 +23,6 @@ The code here will be under continual audit and improvement as the project progr
 - https://mintr.synthetix.io
 - https://synthetix.exchange
 - https://dashboard.synthetix.io
-- https://swappr.io
 
 ## Branching
 
