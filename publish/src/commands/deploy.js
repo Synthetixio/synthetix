@@ -44,7 +44,7 @@ const parameterNotice = props => {
 const DEFAULTS = {
 	gasPrice: '1',
 	methodCallGasLimit: 15e4,
-	contractDeploymentGasLimit: 7e6,
+	contractDeploymentGasLimit: 7.5e6,
 	network: 'kovan',
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
 };
@@ -168,10 +168,6 @@ const deploy = async ({
 				oracleExrates = await currentExrates.methods.oracle().call();
 			}
 
-			if (!oracleGasLimit) {
-				oracleGasLimit = await oldSynthetix.methods.gasLimitOracle().call();
-			}
-
 			if (!oracleDepot) {
 				const currentDepot = getExistingContract({ contract: 'Depot' });
 				oracleDepot = await currentDepot.methods.oracle().call();
@@ -215,7 +211,6 @@ const deploy = async ({
 		'FeePool exchangeFeeRate': `${w3utils.fromWei(currentExchangeFee)}`,
 		'ExchangeRates Oracle': oracleExrates,
 		'Depot Oracle': oracleDepot,
-		'Gas Limit Oracle': oracleGasLimit,
 	});
 
 	if (!yes) {
