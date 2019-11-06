@@ -1005,7 +1005,7 @@ contract('FeePool', async accounts => {
 
 			await feePool.setTargetThreshold(thresholdPercent, { from: owner });
 
-			const penaltyThreshold = await feePool.TARGET_THRESHOLD();
+			const penaltyThreshold = await feePool.targetThreshold();
 			assert.bnEqual(penaltyThreshold, toUnit(thresholdPercent / 100));
 		});
 
@@ -1054,7 +1054,7 @@ contract('FeePool', async accounts => {
 			});
 
 			const issuanceRatio = fromUnit(await synthetixState.issuanceRatio());
-			const penaltyThreshold = fromUnit(await feePool.TARGET_THRESHOLD());
+			const penaltyThreshold = fromUnit(await feePool.targetThreshold());
 
 			const threshold = Number(issuanceRatio) * (1 + Number(penaltyThreshold));
 			// Start from the current price of synthetix and slowly decrease the price until
@@ -1159,7 +1159,7 @@ contract('FeePool', async accounts => {
 			// Should be able to set the Target threshold to 16% and now claim
 			const newPercentage = 16;
 			await feePool.setTargetThreshold(newPercentage, { from: owner });
-			assert.bnEqual(await feePool.TARGET_THRESHOLD(), toUnit(newPercentage / 100));
+			assert.bnEqual(await feePool.targetThreshold(), toUnit(newPercentage / 100));
 
 			assert.equal(await feePool.feesClaimable(owner), true);
 		});
