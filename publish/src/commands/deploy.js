@@ -539,18 +539,18 @@ const deploy = async ({
 	}
 
 	// setup gasLimitOracle on Synthetix
-	// setup exchange gasPriceLimit on Synthetix
-	const gasPriceLimit = w3utils.toWei('35', 'gwei');
-	if (network === 'local') {
-		await runStep({
-			contract: 'Synthetix',
-			target: synthetix,
-			read: 'gasLimitOracle',
-			expected: input => input === oracleGasLimit,
-			write: 'setGasLimitOracle',
-			writeArg: oracleGasLimit,
-		});
+	await runStep({
+		contract: 'Synthetix',
+		target: synthetix,
+		read: 'gasLimitOracle',
+		expected: input => input === oracleGasLimit,
+		write: 'setGasLimitOracle',
+		writeArg: oracleGasLimit,
+	});
 
+	// setup exchange gasPriceLimit on Synthetix for local only
+	if (network === 'local') {
+		const gasPriceLimit = w3utils.toWei('35', 'gwei');
 		await runStep({
 			contract: 'Synthetix',
 			target: synthetix,
@@ -1070,6 +1070,10 @@ module.exports = {
 				'The address of the fee authority for this network (default is to use existing)'
 			)
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
+			.option(
+				'-l, --oracle-gas-limit <value>',
+				'The address of the gas limit oracle for this network (default is use existing)'
+			)
 			.option(
 				'-m, --method-call-gas-limit <value>',
 				'Method call gas limit',

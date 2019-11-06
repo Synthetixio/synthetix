@@ -478,18 +478,18 @@ contract Synthetix is ExternStateToken {
             // Get the exchange fee rate
             uint exchangeFeeRate = feePool.exchangeFeeRate();
 
-            // Exchanges from sUSD or into sUSD should have same exchange fee
-            if (sourceCurrencyKey == "sUSD" || destinationCurrencyKey == "sUSD"){
-                amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
-            }
+            uint multiplier = 1;
+
             // Is this a swing trade? long to short or sort to long.
-            else if ( sourceCurrencyKey[0] == 0x73 && destinationCurrencyKey[0] == 0x69 ||
-                sourceCurrencyKey[0] == 0x69 && destinationCurrencyKey[0] == 0x73){
+            if (
+                (sourceCurrencyKey[0] == 0x73 && sourceCurrencyKey != "sUSD" && destinationCurrencyKey[0] == 0x69) ||
+                (sourceCurrencyKey[0] == 0x69 && destinationCurrencyKey != "sUSD" && destinationCurrencyKey[0] == 0x73)
+            ) {
                 // Double the exchange fee and sub the fee from the amountReceived
-                amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate.mul(2)));
-            } else {
-                amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
+                multiplier = 2;
             }
+
+            amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate.mul(multiplier)));
             fee = destinationAmount.sub(amountReceived);
         }
 
