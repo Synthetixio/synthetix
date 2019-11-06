@@ -136,7 +136,7 @@
 			}
 		],
 		"sign": "",
-		"desc": "Index CEX",
+		"desc": "Centralised Exchange Index",
 		"subclass": "PurgeableSynth"
 	},
 	{
@@ -183,7 +183,7 @@
 		"asset": "MKR",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Inverted MAKER",
+		"desc": "Inverted Maker",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 550,
@@ -196,7 +196,7 @@
 		"asset": "TRX",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Inverted Tron",
+		"desc": "Inverted TRON",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 0.025,
@@ -249,7 +249,7 @@
 			}
 		],
 		"sign": "",
-		"desc": "Inverted CEX",
+		"desc": "Inverted Centralised Exchange Index",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 1000,
