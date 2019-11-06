@@ -44,7 +44,7 @@ const parameterNotice = props => {
 const DEFAULTS = {
 	gasPrice: '1',
 	methodCallGasLimit: 15e4,
-	contractDeploymentGasLimit: 7e6,
+	contractDeploymentGasLimit: 7.5e6,
 	network: 'kovan',
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
 };
@@ -58,6 +58,7 @@ const deploy = async ({
 	buildPath = DEFAULTS.buildPath,
 	deploymentPath,
 	oracleExrates,
+	oracleGasLimit,
 	oracleDepot,
 	privateKey,
 	yes,
@@ -148,6 +149,7 @@ const deploy = async ({
 		currentSynthetixSupply = w3utils.toWei((100e6).toString());
 		currentExchangeFee = w3utils.toWei('0.003'.toString());
 		oracleExrates = account;
+		oracleGasLimit = account;
 		oracleDepot = account;
 		currentSynthetixPrice = w3utils.toWei('0.2');
 	} else {
@@ -536,13 +538,23 @@ const deploy = async ({
 		});
 	}
 
+	// setup gasLimitOracle on Synthetix
 	// setup exchange gasPriceLimit on Synthetix
 	const gasPriceLimit = w3utils.toWei('35', 'gwei');
 	if (network === 'local') {
 		await runStep({
 			contract: 'Synthetix',
 			target: synthetix,
-			account: oracleExrates,
+			read: 'gasLimitOracle',
+			expected: input => input === oracleGasLimit,
+			write: 'setGasLimitOracle',
+			writeArg: oracleGasLimit,
+		});
+
+		await runStep({
+			contract: 'Synthetix',
+			target: synthetix,
+			account: oracleGasLimit,
 			read: 'gasPriceLimit',
 			expected: input => input === gasPriceLimit,
 			write: 'setGasPriceLimit',
