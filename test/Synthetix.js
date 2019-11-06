@@ -2711,10 +2711,12 @@ contract('Synthetix', async accounts => {
 								// exchanging into sUSD as there is an existing sUSD balance from minting
 								const exchangeFeeRate = await feePool.exchangeFeeRate();
 								const doubleExchangeFeeRate = multiplyDecimal(exchangeFeeRate, toUnit(2));
+								const actualExchangeFee =
+									from === sUSD || to === sUSD ? exchangeFeeRate : doubleExchangeFeeRate;
 								const balance = await toContract.balanceOf(account1);
 								const effectiveValue = await synthetix.effectiveValue(from, amountExchanged, to);
 								const effectiveValueMinusFees = effectiveValue.sub(
-									multiplyDecimal(effectiveValue, doubleExchangeFeeRate)
+									multiplyDecimal(effectiveValue, actualExchangeFee)
 								);
 
 								assert.bnEqual(balance, effectiveValueMinusFees);
@@ -2746,7 +2748,12 @@ contract('Synthetix', async accounts => {
 								);
 							});
 							it('then it exchanges correctly into iBTC', async () => {
-								await assertExchangeSucceeded({ amountExchanged, txn: exchangeTxns[0] });
+								await assertExchangeSucceeded({
+									amountExchanged,
+									txn: exchangeTxns[0],
+									from: sUSD,
+									to: iBTC,
+								});
 							});
 							describe('when the user tries to exchange some iBTC into another synth', () => {
 								const newAmountExchanged = toUnit(0.003); // current iBTC balance is a bit under 0.05
@@ -2881,6 +2888,40 @@ contract('Synthetix', async accounts => {
 									console.log('sBTCBalance', sBTCBalance.toString());
 
 									// assert.bnEqual(effectiveValueMinusFees, sBTCBalance);
+								});
+							});
+							describe('when the user tries to exchange some short iBTC into sUSD', () => {
+								const iBTCexchangeAmount = toUnit(0.003); // current iBTC balance is a bit under 0.05
+
+								it('then the exchange fee equals flat ExchangeFee', async () => {
+									// Get the fees Before
+									const feePeriodZeroBefore = await feePool.recentFeePeriods(0);
+
+									// exchange from inverse to sUSD
+									exchangeTxns.push(
+										await synthetix.exchange(iBTC, iBTCexchangeAmount, sUSD, ZERO_ADDRESS, {
+											from: account1,
+										})
+									);
+
+									// Get the exchange Fee on the exchange amount
+									const iBTCExchangeFee = await feePool.exchangeFeeIncurred(iBTCexchangeAmount);
+
+									// Convert fee to XDR
+									const exchangeFeeInXDR = await synthetix.effectiveValue(
+										iBTC,
+										iBTCExchangeFee,
+										XDR
+									);
+
+									// Assert feesToDistribute now increased by exchangeFeeInXDR
+									const feePeriodZeroAfter = await feePool.recentFeePeriods(0);
+
+									const exchangeFeeInFeePool = feePeriodZeroAfter.feesToDistribute.sub(
+										feePeriodZeroBefore.feesToDistribute
+									);
+
+									assert.bnEqual(exchangeFeeInXDR, exchangeFeeInFeePool);
 								});
 							});
 						});
