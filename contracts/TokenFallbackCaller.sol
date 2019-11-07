@@ -23,7 +23,7 @@ pragma solidity 0.4.25;
 import "./ReentrancyPreventer.sol";
 
 contract TokenFallbackCaller is ReentrancyPreventer {
-    uint constant MAX_GAS_SUB_CALL = 200000;
+    uint constant MAX_GAS_SUB_CALL = 100000;
     function callTokenFallbackIfNeeded(address sender, address recipient, uint amount, bytes data)
         internal
         preventReentrancy
