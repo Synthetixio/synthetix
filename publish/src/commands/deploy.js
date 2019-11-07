@@ -44,7 +44,7 @@ const parameterNotice = props => {
 const DEFAULTS = {
 	gasPrice: '1',
 	methodCallGasLimit: 15e4,
-	contractDeploymentGasLimit: 7.5e6,
+	contractDeploymentGasLimit: 6.9e6,
 	network: 'kovan',
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
 };
