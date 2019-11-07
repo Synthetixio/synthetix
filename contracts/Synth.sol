@@ -130,7 +130,7 @@ contract Synth is ExternStateToken {
         optionalProxy
         returns (bool)
     {
-        require(account != 0xfeefeefeefeefeefeefeefeefeefeefeefeefeef, "The fee address is not allowed");
+        require(from != 0xfeefeefeefeefeefeefeefeefeefeefeefeefeef, "The fee address is not allowed");
         // Skip allowance update in case of infinite allowance
         if (tokenState.allowance(from, messageSender) != uint(-1)) {
             // Reduce the allowance by the amount we're transferring.
@@ -150,7 +150,7 @@ contract Synth is ExternStateToken {
         optionalProxy
         returns (bool)
     {
-        require(account != 0xfeefeefeefeefeefeefeefeefeefeefeefeefeef, "The fee address is not allowed");
+        require(from != 0xfeefeefeefeefeefeefeefeefeefeefeefeefeef, "The fee address is not allowed");
 
         // Skip allowance update in case of infinite allowance
         if (tokenState.allowance(from, messageSender) != uint(-1)) {
