@@ -146,10 +146,10 @@
 		},
 		"Synthetix": {
 			"name": "Synthetix",
-			"address": "0x1eeE8837F750d7427941F92c08CF48558f40c90C",
+			"address": "0x959b0E592dA6679b3E2a6690A9Ea2f2d3BD2f374",
 			"source": "Synthetix",
-			"link": "https://ropsten.etherscan.io/address/0x1eeE8837F750d7427941F92c08CF48558f40c90C",
-			"timestamp": "2019-11-07T20:46:37.253Z",
+			"link": "https://ropsten.etherscan.io/address/0x959b0E592dA6679b3E2a6690A9Ea2f2d3BD2f374",
+			"timestamp": "2019-11-07T23:30:33.806Z",
 			"txn": "",
 			"network": "ropsten"
 		},
@@ -5190,7 +5190,8 @@
 					],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "constructor"
+					"type": "constructor",
+					"signature": "constructor"
 				},
 				{
 					"anonymous": false,
@@ -9562,8 +9563,7 @@
 					],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "constructor",
-					"signature": "constructor"
+					"type": "constructor"
 				},
 				{
 					"anonymous": false,
