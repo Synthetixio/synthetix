@@ -2830,7 +2830,7 @@ contract('Synthetix', async accounts => {
 									});
 								});
 							});
-							describe.only('doubling of fees for swing trades', () => {
+							describe('doubling of fees for swing trades', () => {
 								const iBTCexchangeAmount = toUnit(0.002); // current iBTC balance is a bit under 0.05
 								let txn;
 								describe('when the user tries to exchange some short iBTC into long sBTC', () => {
