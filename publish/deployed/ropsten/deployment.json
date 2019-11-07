@@ -524,11 +524,11 @@
 		},
 		"SupplySchedule": {
 			"name": "SupplySchedule",
-			"address": "0xa2EC8e569e11Dbf6C8AdF254Df2e97AE3535d1A0",
+			"address": "0x7D2a476790b4c83fd726e0A70D60E78193091378",
 			"source": "SupplySchedule",
-			"link": "https://ropsten.etherscan.io/address/0xa2EC8e569e11Dbf6C8AdF254Df2e97AE3535d1A0",
-			"timestamp": "2019-05-01T08:35:04.000Z",
-			"txn": "https://ropsten.etherscan.io/tx/0x3323923a0c5760be0c5729c875752ff49515ee4fcef123824b04ffc310b0da52",
+			"link": "https://ropsten.etherscan.io/address/0x7D2a476790b4c83fd726e0A70D60E78193091378",
+			"timestamp": "2019-11-07T23:19:46.000Z",
+			"txn": "https://ropsten.etherscan.io/tx/0x04194610dc678b04c3417d09fce622fbf75463c7d2f7ddd6c1546aa56443a062",
 			"network": "ropsten"
 		},
 		"DelegateApprovals": {
@@ -9562,7 +9562,8 @@
 					],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "constructor"
+					"type": "constructor",
+					"signature": "constructor"
 				},
 				{
 					"anonymous": false,
