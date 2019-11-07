@@ -172,6 +172,10 @@ const deploy = async ({
 				const currentDepot = getExistingContract({ contract: 'Depot' });
 				oracleDepot = await currentDepot.methods.oracle().call();
 			}
+
+			if (!oracleGasLimit) {
+				oracleGasLimit = await oldSynthetix.methods.gasLimitOracle().call();
+			}
 		} catch (err) {
 			console.error(
 				red(
@@ -211,6 +215,7 @@ const deploy = async ({
 		'FeePool exchangeFeeRate': `${w3utils.fromWei(currentExchangeFee)}`,
 		'ExchangeRates Oracle': oracleExrates,
 		'Depot Oracle': oracleDepot,
+		'Gas Limit Oracle': oracleGasLimit,
 	});
 
 	if (!yes) {

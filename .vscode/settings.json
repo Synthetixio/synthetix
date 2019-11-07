@@ -3,5 +3,6 @@
 	"solidity.linter": "solhint",
 	"solidity.compilerOptimization": 200,
 	"solidity.packageDefaultDependenciesContractsDirectory": "",
-	"solidity.packageDefaultDependenciesDirectory": "node_modules"
+	"solidity.packageDefaultDependenciesDirectory": "node_modules",
+	"eslint.autoFixOnSave": true
 }
