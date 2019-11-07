@@ -149,8 +149,8 @@
 			"address": "0xDE40792d3620Bf90a42929Db02a795b4E3d48C69",
 			"source": "Synthetix",
 			"link": "https://ropsten.etherscan.io/address/0xDE40792d3620Bf90a42929Db02a795b4E3d48C69",
-			"timestamp": "2019-11-07T06:44:31.403Z",
-			"txn": "",
+			"timestamp": "2019-11-07T06:44:26.000Z",
+			"txn": "https://ropsten.etherscan.io/tx/0xa4e08d0d43f743a89a49fd08cd3f3c1e86adfc0f6e9d31dce249f3fb00242a75",
 			"network": "ropsten"
 		},
 		"SynthetixEscrow": {
@@ -230,8 +230,8 @@
 			"address": "0x18FF0A829a1EA410F51C9D8f6cCcc71d1329c6c1",
 			"source": "Synth",
 			"link": "https://ropsten.etherscan.io/address/0x18FF0A829a1EA410F51C9D8f6cCcc71d1329c6c1",
-			"timestamp": "2019-11-07T06:54:14.912Z",
-			"txn": "",
+			"timestamp": "2019-11-07T06:53:56.000Z",
+			"txn": "https://ropsten.etherscan.io/tx/0xd33eac6cf432e27cd51ec31c41626014718276a3e9f0eec015e2f7efff56c753",
 			"network": "ropsten"
 		},
 		"SynthsXAG": {
