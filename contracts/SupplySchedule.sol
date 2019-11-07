@@ -13,9 +13,10 @@ date:       2019-03-01
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
-Supply Schedule contract. SNX is a transferable ERC20 token.
+The SNX supply schedule contract determines the amount of SNX tokens
+mintable over 6 years of inflation.
 
-User's get staking rewards as part of the incentives of
+Inflation Schedule
 +------+-------------+--------------+----------+
 | Year |  Increase   | Total Supply | Increase |
 +------+-------------+--------------+----------+
@@ -27,6 +28,7 @@ User's get staking rewards as part of the incentives of
 |    6 |   4,687,500 |  245,312,500 | 2%       |
 +------+-------------+--------------+----------+
 
+Synthetix.mint() function is used to mint the inflationary supply.
 
 -----------------------------------------------------------------
 */
@@ -49,13 +51,13 @@ contract SupplySchedule is Owned {
         // Total supply issuable during period
         uint totalSupply;
 
-        // UTC Time - Start of the schedule
+        // Start of the schedule
         uint startPeriod;
 
-        // UTC Time - End of the schedule
+        // End of the schedule
         uint endPeriod;
 
-        // UTC Time - Total of supply minted
+        // Total of supply minted
         uint totalSupplyMinted;
     }
 

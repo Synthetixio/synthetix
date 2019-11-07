@@ -48,15 +48,17 @@ node publish deploy # "--help" for options
 - `-m, --method-call-gas-limit <value>` Method call gas limit (default: 150000)
 - `-n, --network <value>` The network to run off. One of mainnet, kovan, rinkeby, rospen. (default: "kovan")
 - `-o, --oracle <value>` The address of the oracle to use. (default: `0xac1e8b385230970319906c03a1d8567e3996d1d5` - used for all testnets)
-- `-f, --fee-auth <value>` The address of the fee Authority to use for feePool. (default: `0xfee056f4d9d63a63d6cf16707d49ffae7ff3ff01` - used for all testnets)
+- `-f, --fee-auth <value>` The address of the fee Authority to use for feePool. (default:
+  `0xfee056f4d9d63a63d6cf16707d49ffae7ff3ff01` - used for all testnets)
+  --oracle-gas-limit (no default: set to 0x5a556cc012642e9e38f5e764dccdda1f70808198)
 
 ### Examples
 
 ```bash
 # deploy to rinkeby with 8 gwei gas
-node publish deploy -n ropsten -d publish/deployed/ropsten -g 20
-node publish deploy -n rinkeby -d publish/deployed/rinkeby -g 20
-node publish deploy -n kovan -d publish/deployed/kovan -g 8
+node publish deploy -n ropsten -d publish/deployed/ropsten -g 20 --oracle-gas-limit 0x5a556cc012642e9e38f5e764dccdda1f70808198
+node publish deploy -n rinkeby -d publish/deployed/rinkeby -g 20 --oracle-gas-limit 0x5a556cc012642e9e38f5e764dccdda1f70808198
+node publish deploy -n kovan -d publish/deployed/kovan -g 8 --oracle-gas-limit 0x5a556cc012642e9e38f5e764dccdda1f70808198
 node publish deploy -n local -d publish/deployed/local -g 8
 ```
 
