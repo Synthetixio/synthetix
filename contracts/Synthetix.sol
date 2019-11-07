@@ -296,17 +296,18 @@ contract Synthetix is ExternStateToken {
         view
         returns (uint)
     {
-         // Get the exchange fee rate
+        // Get the base exchange fee rate
         uint exchangeFeeRate = feePool.exchangeFeeRate();
 
         uint multiplier = 1;
 
-        // Is this a swing trade? long to short or sort to long.
+        // Is this a swing trade? I.e. long to short or vice versa, excluding when going into or out of sUSD.
+        // Note: this assumes shorts begin with 'i' and longs with 's'.
         if (
             (sourceCurrencyKey[0] == 0x73 && sourceCurrencyKey != "sUSD" && destinationCurrencyKey[0] == 0x69) ||
             (sourceCurrencyKey[0] == 0x69 && destinationCurrencyKey != "sUSD" && destinationCurrencyKey[0] == 0x73)
         ) {
-            // Double the exchange fee and sub the fee from the amountReceived
+            // If so then double the exchange fee multipler
             multiplier = 2;
         }
 
