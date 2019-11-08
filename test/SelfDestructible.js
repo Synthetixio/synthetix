@@ -1,3 +1,5 @@
+require('.'); // common test setup
+
 const SelfDestructible = artifacts.require('SelfDestructible');
 
 const { fastForward } = require('../utils/testUtils');

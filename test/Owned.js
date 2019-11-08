@@ -1,3 +1,5 @@
+require('.'); // common test setup
+
 const Owned = artifacts.require('Owned');
 const { ZERO_ADDRESS } = require('../utils/testUtils');
 

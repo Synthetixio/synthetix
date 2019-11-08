@@ -1,3 +1,5 @@
+require('.'); // common test setup
+
 const {
 	currentTime,
 	fastForward,

@@ -1,3 +1,5 @@
+require('.'); // common test setup
+
 const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePoolProxy = artifacts.require('Proxy');
 const FeePool = artifacts.require('FeePool');

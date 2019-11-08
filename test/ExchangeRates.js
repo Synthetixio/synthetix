@@ -1,3 +1,5 @@
+require('.'); // common test setup
+
 const ExchangeRates = artifacts.require('ExchangeRates');
 const { currentTime, fastForward, toUnit, bytesToString } = require('../utils/testUtils');
 

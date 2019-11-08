@@ -1,3 +1,5 @@
+require('.'); // common test setup
+
 const RewardsDistribution = artifacts.require('RewardsDistribution');
 const Synthetix = artifacts.require('Synthetix');
 const FeePool = artifacts.require('FeePool');

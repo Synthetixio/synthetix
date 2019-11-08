@@ -1,3 +1,5 @@
+require('.'); // common test setup
+
 const DelegateApprovals = artifacts.require('DelegateApprovals');
 
 contract('DelegateApprovals', async accounts => {

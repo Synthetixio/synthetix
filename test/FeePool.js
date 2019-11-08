@@ -1,3 +1,5 @@
+require('.'); // common test setup
+
 const DelegateApprovals = artifacts.require('DelegateApprovals');
 const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');

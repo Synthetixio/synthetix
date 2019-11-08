@@ -8,6 +8,8 @@ const Synthetix = artifacts.require('Synthetix');
 const SynthetixState = artifacts.require('SynthetixState');
 const Synth = artifacts.require('Synth');
 
+require('.'); // common test setup
+
 const {
 	currentTime,
 	fastForward,

@@ -1,3 +1,7 @@
+/**
+ * Shared test setup file. Require this in every test file to be run in isolation.
+ * As it's a module, it's idempotent, so requiring it in multiple files is fine.
+ */
 const {
 	assertEventEqual,
 	assertEventsEqual,

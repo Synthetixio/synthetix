@@ -1,3 +1,5 @@
+require('.'); // common test setup
+
 const PublicSafeDecimalMath = artifacts.require('PublicSafeDecimalMath');
 
 const { toUnit, fromUnit, toPreciseUnit, fromPreciseUnit } = require('../utils/testUtils');

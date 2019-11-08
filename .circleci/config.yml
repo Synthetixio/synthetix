@@ -1,8 +1,27 @@
-version: 2
+# Below is the configuration of the CI build
+env_defaults: &env_defaults
+  working_directory: ~/repo
+  docker:
+    - image: circleci/node:10.16
+
+version: 2.1
+commands:
+  unit_test:
+    description: Run a suite of unit tests for a contract
+    parameters:
+      test:
+        type: string
+        default: ''
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: TRUFFLE_TEST=<< parameters.test >> npm run test:gas
+      - run: npx codechecks
+
 jobs:
   prepare:
-    docker:
-      - image: 'circleci/node:10.16.3'
+    <<: *env_defaults
     steps:
       - checkout
       - run:
@@ -22,31 +41,39 @@ jobs:
           root: .
           paths:
             - node_modules
-  unit:
-    docker:
-      - image: 'circleci/node:10.16.3'
+
+  unit_DelegateApprovals:
+    <<: *env_defaults
     steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run: npm run test:gas
-      - run: npx codechecks
+      - unit_test:
+        test: test/DelegateApprovals.js
+
+  unit_Depot:
+    <<: *env_defaults
+    steps:
+      - unit_test:
+        test: test/Depot.js
+
   int:
-    docker:
-      - image: 'circleci/node:10.16.3'
+    <<: *env_defaults
     steps:
       - checkout
       - attach_workspace:
           at: .
       - run: npm run test:int
+
 workflows:
   version: 2
   dev:
     jobs:
       - prepare
-      - unit:
+      # Here all the unit tests in JS are split out to parallelize for speed
+      - unit_DelegateApprovals:
+          requires:
+            - prepare
+      - unit_Depot:
           requires:
             - prepare
       - int:
           requires:
-            - unit
+            - prepare

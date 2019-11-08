@@ -1,3 +1,5 @@
+require('.'); // common test setup
+
 const SupplySchedule = artifacts.require('SupplySchedule');
 const { toUnit, currentTime, divideDecimal, fastForwardTo } = require('../utils/testUtils');
 const BN = require('bn.js');
