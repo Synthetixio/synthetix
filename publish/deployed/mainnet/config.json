@@ -45,7 +45,7 @@
 		"deploy": false
 	},
 	"SynthsUSD": {
-		"deploy": false
+		"deploy": true
 	},
 	"SynthsEUR": {
 		"deploy": false
@@ -156,7 +156,7 @@
 		"deploy": false
 	},
 	"SynthsETH": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStatesBNB": {
 		"deploy": false
