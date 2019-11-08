@@ -16,7 +16,7 @@ commands:
       - checkout
       - attach_workspace:
           at: .
-      - run: TRUFFLE_TEST=<< parameters.test >> npm run test:gas
+      - run: 'TRUFFLE_TEST=<< parameters.test >> npm run test:gas'
       - run: npx codechecks
 
 jobs:
@@ -32,6 +32,7 @@ jobs:
             - 'v1.5-dependencies-{{ checksum "package-lock.json" }}'
             - v1.5-dependencies-
       - run: npm install
+      - run: npm truffle compile
       - save_cache:
           paths:
             - node_modules
@@ -39,9 +40,11 @@ jobs:
       - persist_to_workspace:
           root: .
           paths:
+            - build # add compiled contracts to persisted workspace
             - node_modules
 
   lint:
+    <<: *env_defaults
     steps:
       - checkout
       - attach_workspace:
@@ -52,13 +55,13 @@ jobs:
     <<: *env_defaults
     steps:
       - unit_test:
-        test: test/DelegateApprovals.js
+          test: test/DelegateApprovals.js
 
   unit_Depot:
     <<: *env_defaults
     steps:
       - unit_test:
-        test: test/Depot.js
+          test: test/Depot.js
 
   int:
     <<: *env_defaults
