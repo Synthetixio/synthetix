@@ -32,7 +32,6 @@ jobs:
             - 'v1.5-dependencies-{{ checksum "package-lock.json" }}'
             - v1.5-dependencies-
       - run: npm install
-      - run: npm run lint
       - save_cache:
           paths:
             - node_modules
@@ -41,6 +40,13 @@ jobs:
           root: .
           paths:
             - node_modules
+
+  lint:
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run lint
 
   unit_DelegateApprovals:
     <<: *env_defaults
@@ -67,6 +73,9 @@ workflows:
   dev:
     jobs:
       - prepare
+      - lint:
+          requires:
+            - prepare
       # Here all the unit tests in JS are split out to parallelize for speed
       - unit_DelegateApprovals:
           requires:
