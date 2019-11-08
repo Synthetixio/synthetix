@@ -29,14 +29,14 @@ jobs:
           command: 'sudo npm install -g npm@latest'
       - restore_cache:
           keys:
-            - 'v1.5-dependencies-{{ checksum "package-lock.json" }}'
-            - v1.5-dependencies-
+            - 'v2-dependencies-{{ checksum "package-lock.json" }}'
+            - v2-dependencies-
       - run: npm install
-      - run: npm truffle compile
+      - run: npx truffle compile
       - save_cache:
           paths:
             - node_modules
-          key: 'v1.5-dependencies-{{ checksum "package-lock.json" }}'
+          key: 'v2-dependencies-{{ checksum "package-lock.json" }}'
       - persist_to_workspace:
           root: .
           paths:
