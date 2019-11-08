@@ -1,6 +1,6 @@
 # Below is the configuration of the CI build
 env_defaults: &env_defaults
-  working_directory: ~/repo
+  working_directory: ~
   docker:
     - image: circleci/node:10.16
 
@@ -62,6 +62,54 @@ jobs:
     steps:
       - unit_test:
           test: test/Depot.js
+
+  unit_ExchangeRates:
+    <<: *env_defaults
+    steps:
+      - unit_test:
+          test: test/ExchangeRates.js
+
+  unit_FeePool:
+    <<: *env_defaults
+    steps:
+      - unit_test:
+          test: test/FeePool.js
+
+  unit_FeePoolState:
+    <<: *env_defaults
+    steps:
+      - unit_test:
+          test: test/FeePoolState.js
+
+  unit_Owned:
+    <<: *env_defaults
+    steps:
+      - unit_test:
+          test: test/Owned.js
+
+  unit_ProxyERC20:
+    <<: *env_defaults
+    steps:
+      - unit_test:
+          test: test/ProxyERC20.js
+
+  unit_PurgeableSynth:
+    <<: *env_defaults
+    steps:
+      - unit_test:
+          test: test/PurgeableSynth.js
+
+  unit_RewardEscrow:
+    <<: *env_defaults
+    steps:
+      - unit_test:
+          test: test/RewardEscrow.js
+
+  unit_RewardsDistribution:
+    <<: *env_defaults
+    steps:
+      - unit_test:
+          test: test/RewardsDistribution.js
 
   int:
     <<: *env_defaults
