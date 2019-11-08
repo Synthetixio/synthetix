@@ -1,6 +1,6 @@
 # Below is the configuration of the CI build
 env_defaults: &env_defaults
-  working_directory: ~
+  working_directory: ~/repo
   docker:
     - image: circleci/node:10.16
 
@@ -49,6 +49,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
+      - run: ls -lat && ls -lat build/contracts
       - run: npm run lint
 
   unit_DelegateApprovals:
