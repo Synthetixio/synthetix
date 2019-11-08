@@ -49,7 +49,6 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: ls -lat && ls -lat build/contracts
       - run: npm run lint
 
   unit_DelegateApprovals:

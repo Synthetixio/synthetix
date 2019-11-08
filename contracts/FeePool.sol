@@ -393,7 +393,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
         return true;
     }
-    
+
     /**
     * @notice Admin function to recover the orphaned transfer Fees
     * see https://sips.synthetix.io/sips/sip-18
