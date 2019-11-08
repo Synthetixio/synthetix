@@ -172,6 +172,10 @@ const deploy = async ({
 				const currentDepot = getExistingContract({ contract: 'Depot' });
 				oracleDepot = await currentDepot.methods.oracle().call();
 			}
+
+			if (!oracleGasLimit) {
+				oracleGasLimit = await oldSynthetix.methods.gasLimitOracle().call();
+			}
 		} catch (err) {
 			console.error(
 				red(
@@ -211,6 +215,7 @@ const deploy = async ({
 		'FeePool exchangeFeeRate': `${w3utils.fromWei(currentExchangeFee)}`,
 		'ExchangeRates Oracle': oracleExrates,
 		'Depot Oracle': oracleDepot,
+		'Gas Limit Oracle': oracleGasLimit,
 	});
 
 	if (!yes) {
@@ -712,6 +717,7 @@ const deploy = async ({
 	// ----------------
 	// Synths
 	// ----------------
+	let proxysETHAddress;
 	const synthetixProxyAddress = await synthetix.methods.proxy().call();
 	for (const { name: currencyKey, inverted, subclass } of synths) {
 		const tokenStateForSynth = await deployContract({
@@ -730,6 +736,10 @@ const deploy = async ({
 			args: [account],
 			force: addNewSynths,
 		});
+
+		if (currencyKey === 'sETH') {
+			proxysETHAddress = proxyForSynth.options.address;
+		}
 
 		let proxyERC20ForSynth;
 
@@ -1008,7 +1018,7 @@ const deploy = async ({
 
 		// Ensure sETH uniswap exchange address on arbRewarder set
 		const requiredUniswapExchange = '0xe9Cf7887b93150D4F2Da7dFc6D502B216438F244';
-		const requiredSynthAddress = '0x5e74C9036fb86BD7eCdcb084a0673EFc32eA31cb';
+		const requiredSynthAddress = proxysETHAddress;
 		await runStep({
 			contract: 'ArbRewarder',
 			target: arbRewarder,
