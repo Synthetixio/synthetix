@@ -207,7 +207,7 @@ workflows:
       - unit_RewardsDistribution:
           requires:
             - prepare
-      - unit_RewardsIntegratinoTests:
+      - unit_RewardsIntegrationTests:
           requires:
             - prepare
       - unit_SafeDecimalMath:
