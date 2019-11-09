@@ -16,7 +16,6 @@ commands:
       - checkout
       - attach_workspace:
           at: .
-      - run: ls -lat build/contracts
       - run: 'TRUFFLE_TEST=<< parameters.test >> npm run test:gas'
       - run: npx codechecks
 
@@ -41,8 +40,11 @@ jobs:
       - persist_to_workspace:
           root: .
           paths:
-            - build # add compiled contracts to persisted workspace
             - node_modules
+            # add compiled contracts to persisted workspace
+            # (note not currentlyw orking due to:
+            # https://github.com/trufflesuite/truffle/issues/2239#issuecomment-552041859)
+            - build
 
   lint:
     <<: *env_defaults
@@ -112,6 +114,48 @@ jobs:
       - unit_test:
           test: test/RewardsDistribution.js
 
+  unit_RewardsIntegrationTests:
+    <<: *env_defaults
+    steps:
+      - unit_test:
+          test: test/RewardsIntegrationTests.js
+
+  unit_SafeDecimalMath:
+    <<: *env_defaults
+    steps:
+      - unit_test:
+          test: test/SafeDecimalMath.js
+
+  unit_SelfDestructible:
+    <<: *env_defaults
+    steps:
+      - unit_test:
+          test: test/SelfDestructible.js
+
+  unit_SupplySchedule:
+    <<: *env_defaults
+    steps:
+      - unit_test:
+          test: test/SupplySchedule.js
+
+  unit_Synth:
+    <<: *env_defaults
+    steps:
+      - unit_test:
+          test: test/Synth.js
+
+  unit_Synthetix:
+    <<: *env_defaults
+    steps:
+      - unit_test:
+          test: test/Synthetix.js
+
+  unit_SynthetixState:
+    <<: *env_defaults
+    steps:
+      - unit_test:
+          test: test/SynthetixState.js
+
   int:
     <<: *env_defaults
     steps:
@@ -128,6 +172,10 @@ workflows:
       - lint:
           requires:
             - prepare
+      - int:
+          requires:
+            - prepare
+
       # Here all the unit tests in JS are split out to parallelize for speed
       - unit_DelegateApprovals:
           requires:
@@ -135,6 +183,48 @@ workflows:
       - unit_Depot:
           requires:
             - prepare
-      - int:
+      - unit_ExchangeRates:
+          requires:
+            - prepare
+      - unit_FeePool:
+          requires:
+            - prepare
+      - unit_FeePoolState:
+          requires:
+            - prepare
+      - unit_Owned:
+          requires:
+            - prepare
+      - unit_ProxyERC20:
+          requires:
+            - prepare
+      - unit_PurgeableSynth:
+          requires:
+            - prepare
+      - unit_RewardEscrow:
+          requires:
+            - prepare
+      - unit_RewardsDistribution:
+          requires:
+            - prepare
+      - unit_RewardsIntegratinoTests:
+          requires:
+            - prepare
+      - unit_SafeDecimalMath:
+          requires:
+            - prepare
+      - unit_SelfDestructible:
+          requires:
+            - prepare
+      - unit_SupplySchedule:
+          requires:
+            - prepare
+      - unit_Synth:
+          requires:
+            - prepare
+      - unit_Synthetix:
+          requires:
+            - prepare
+      - unit_SynthetixState:
           requires:
             - prepare
