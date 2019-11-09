@@ -1,6 +1,6 @@
 # Below is the configuration of the CI build
 env_defaults: &env_defaults
-  working_directory: ~
+  working_directory: ~/repo
   docker:
     - image: circleci/node:10.16
 
