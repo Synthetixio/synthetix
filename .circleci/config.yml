@@ -1,6 +1,6 @@
 # Below is the configuration of the CI build
 env_defaults: &env_defaults
-  working_directory: ~/repo
+  working_directory: ~
   docker:
     - image: circleci/node:10.16
 
@@ -16,6 +16,7 @@ commands:
       - checkout
       - attach_workspace:
           at: .
+      - run: ls -lat build/contracts
       - run: 'TRUFFLE_TEST=<< parameters.test >> npm run test:gas'
       - run: npx codechecks
 
