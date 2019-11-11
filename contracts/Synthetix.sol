@@ -66,7 +66,7 @@ contract Synthetix is ExternStateToken {
     // Available Synths which can be used with the system
     Synth[] public availableSynths;
     mapping(bytes32 => Synth) public synths;
-    mapping(address => bytes32) public reverseSynths;
+    mapping(address => bytes32) public synthsByAddress;
 
     IFeePool public feePool;
     ISynthetixEscrow public escrow;
@@ -172,11 +172,11 @@ contract Synthetix is ExternStateToken {
         bytes32 currencyKey = synth.currencyKey();
 
         require(synths[currencyKey] == Synth(0), "Synth already exists");
-        require(reverseSynths[synth] == bytes32(0), "Synth with same currencyKey already exists");
+        require(synthsByAddress[synth] == bytes32(0), "Synth address already exists");
 
         availableSynths.push(synth);
         synths[currencyKey] = synth;
-        reverseSynths[synth] = currencyKey;
+        synthsByAddress[synth] = currencyKey;
     }
 
     /**
@@ -212,7 +212,7 @@ contract Synthetix is ExternStateToken {
         }
 
         // And remove it from the synths mapping
-        delete reverseSynths[synths[currencyKey]];
+        delete synthsByAddress[synths[currencyKey]];
         delete synths[currencyKey];
 
         // Note: No event here as Synthetix contract exceeds max contract size
@@ -275,7 +275,7 @@ contract Synthetix is ExternStateToken {
         bytes32[] memory currencyKeys = new bytes32[](availableSynths.length);
 
         for (uint i = 0; i < availableSynths.length; i++) {
-            currencyKeys[i] = reverseSynths[availableSynths[i]];
+            currencyKeys[i] = synthsByAddress[availableSynths[i]];
         }
 
         return currencyKeys;
@@ -941,7 +941,7 @@ contract Synthetix is ExternStateToken {
     //  * @notice Only a synth can call this function
     //  */
     // modifier onlySynth {
-    //     require(reverseSynths[msg.sender] != bytes32(0), "Only synth allowed");
+    //     require(synthsByAddress[msg.sender] != bytes32(0), "Only synth allowed");
     //     _;
     // }
        /**
@@ -953,7 +953,7 @@ contract Synthetix is ExternStateToken {
         internal
         view
     {
-        require(reverseSynths[messageSender] != bytes32(0), "Only synth allowed");
+        require(synthsByAddress[messageSender] != bytes32(0), "Only synth allowed");
     }
 
     modifier onlyOracle
