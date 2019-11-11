@@ -422,13 +422,13 @@ contract ExchangeRates is SelfDestructible {
         view
         returns (uint[])
     {
-        uint[] memory _rates = new uint[](currencyKeys.length);
+        uint[] memory _localRates = new uint[](currencyKeys.length);
 
         for (uint i = 0; i < currencyKeys.length; i++) {
-            _rates[i] = rates(currencyKeys[i]);
+            _localRates[i] = rates(currencyKeys[i]);
         }
 
-        return _rates;
+        return _localRates;
     }
 
     /**
@@ -439,19 +439,19 @@ contract ExchangeRates is SelfDestructible {
         view
         returns (uint[], bool)
     {
-        uint[] memory _rates = new uint[](currencyKeys.length);
+        uint[] memory _localRates = new uint[](currencyKeys.length);
 
         bool anyRateStale = false;
         uint period = rateStalePeriod;
         for (uint i = 0; i < currencyKeys.length; i++) {
             RateAndUpdatedTime memory rateAndUpdateTime = _rates[currencyKeys[i]];
-            _rates[i] = uint256(rateAndUpdateTime.rate);
+            _localRates[i] = uint256(rateAndUpdateTime.rate);
             if (!anyRateStale) {
                 anyRateStale = (currencyKeys[i] != "sUSD" && uint256(rateAndUpdateTime.time).add(period) < now);
             }
         }
 
-        return (_rates, anyRateStale);
+        return (_localRates, anyRateStale);
     }
 
     /**
