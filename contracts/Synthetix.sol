@@ -275,7 +275,7 @@ contract Synthetix is ExternStateToken {
         bytes32[] memory currencyKeys = new bytes32[](availableSynths.length);
 
         for (uint i = 0; i < availableSynths.length; i++) {
-            availableCurrencyKeys[i] = reverseSynths[availableSynths[i]];
+            currencyKeys[i] = reverseSynths[availableSynths[i]];
         }
 
         return currencyKeys;
