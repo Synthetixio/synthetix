@@ -624,8 +624,14 @@ contract Synthetix is ExternStateToken {
         // Figure out the maximum we can issue in that currency
         uint maxIssuable = remainingIssuableSynths(messageSender, currencyKey);
 
-        // And issue them
-        issueSynths(currencyKey, maxIssuable);
+        // Keep track of the debt they're about to create
+        _addToDebtRegister(currencyKey, maxIssuable);
+
+        // Create their synths
+        synths[currencyKey].issue(messageSender, maxIssuable);
+
+        // Store their locked SNX amount to determine their fee % for the period
+        _appendAccountIssuanceRecord();
     }
 
     /**
