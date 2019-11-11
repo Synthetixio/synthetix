@@ -51,11 +51,13 @@ contract('Synthetix', async accounts => {
 		supplySchedule,
 		sUSDContract,
 		sAUDContract,
+		sBTCContract,
 		escrow,
 		rewardEscrow,
 		rewardsDistribution,
 		sEURContract,
 		oracle,
+		gasLimitOracle,
 		timestamp;
 
 	// Updates rates with defaults so they're not stale.
@@ -88,6 +90,7 @@ contract('Synthetix', async accounts => {
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
 		sAUDContract = await Synth.at(await synthetix.synths(sAUD));
 		sEURContract = await Synth.at(await synthetix.synths(sEUR));
+		sBTCContract = await Synth.at(await synthetix.synths(sBTC));
 
 		// Send a price update to guarantee we're not stale.
 		oracle = await exchangeRates.oracle();
@@ -101,6 +104,9 @@ contract('Synthetix', async accounts => {
 				from: oracle,
 			}
 		);
+
+		// Load the gasLimitOracle address
+		gasLimitOracle = await synthetix.gasLimitOracle();
 	});
 
 	it('should set constructor params on deployment', async () => {
@@ -2391,54 +2397,6 @@ contract('Synthetix', async accounts => {
 		);
 	});
 
-	it('should not exchange while exchangeRates.priceUpdateLock is true', async () => {
-		// Give some SNX to account1
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('300000'), {
-			from: owner,
-		});
-		// Issue
-		const amountIssued = toUnit('2000');
-		await synthetix.issueSynths(sUSD, amountIssued, { from: account1 });
-
-		// Disable exchange
-		await exchangeRates.setPriceUpdateLock(true, { from: oracle });
-
-		// Exchange sUSD to sAUD
-		await assert.revert(synthetix.exchange(sUSD, amountIssued, sAUD, account1, { from: account1 }));
-
-		// Enable exchange via priceupdate
-		const priceUpdateLock = await exchangeRates.priceUpdateLock();
-		assert.equal(priceUpdateLock, true);
-
-		// Send a price update
-		const timeSent = await currentTime();
-		const keysArray = ['sAUD', 'sEUR', 'sCHF', 'sGBP'].map(web3.utils.asciiToHex);
-		const rates = ['0.4', '1.2', '3.3', '1.95'].map(toUnit);
-		await exchangeRates.updateRates(keysArray, rates, timeSent, {
-			from: oracle,
-		});
-
-		// Exchange sUSD to sAUD
-		const txn = await synthetix.exchange(sUSD, amountIssued, sAUD, account1, { from: account1 });
-
-		const sAUDBalance = await sAUDContract.balanceOf(account1);
-
-		const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
-		assert.bytes32EventEqual(
-			synthExchangeEvent,
-			'SynthExchange',
-			{
-				account: account1,
-				fromCurrencyKey: 'sUSD',
-				fromAmount: amountIssued,
-				toCurrencyKey: 'sAUD',
-				toAmount: sAUDBalance,
-				toAddress: account1,
-			},
-			['fromCurrencyKey', 'toCurrencyKey']
-		);
-	});
-
 	// TODO: Changes in exchange rates tests
 	// TODO: Are we testing too much Synth functionality here in Synthetix
 
@@ -2652,7 +2610,7 @@ contract('Synthetix', async accounts => {
 
 	describe('exchange gas price limit', () => {
 		const amountIssued = toUnit('2000');
-		const gasPriceLimit = toUnit('25');
+		const gasPriceLimit = toUnit('2');
 
 		beforeEach(async () => {
 			// Give some SNX to account1
@@ -2663,7 +2621,7 @@ contract('Synthetix', async accounts => {
 			await synthetix.issueSynths(sUSD, amountIssued, { from: account1 });
 
 			// set gas limit on synthetix
-			await synthetix.setGasPriceLimit(gasPriceLimit, { from: oracle });
+			await synthetix.setGasPriceLimit(gasPriceLimit, { from: gasLimitOracle });
 		});
 
 		it('should revert a user if they try to send more gwei than gasLimit', async () => {
@@ -2678,7 +2636,7 @@ contract('Synthetix', async accounts => {
 		it('should revert if oracle tries to set gasLimit to 0', async () => {
 			await assert.revert(
 				synthetix.setGasPriceLimit(0, {
-					from: oracle,
+					from: gasLimitOracle,
 				})
 			);
 		});
@@ -2735,7 +2693,7 @@ contract('Synthetix', async accounts => {
 							from: oracle,
 						});
 					});
-					describe('when the user tries to mints 1% of their SNX value', () => {
+					describe('when the user tries to mint 1% of their SNX value', () => {
 						const amountIssued = toUnit(1e3);
 						beforeEach(async () => {
 							// Issue
@@ -2745,19 +2703,28 @@ contract('Synthetix', async accounts => {
 							const assertExchangeSucceeded = async ({
 								amountExchanged,
 								txn,
+								exchangeFeeRateMultiplier = 1,
 								from = sUSD,
 								to = iBTC,
 								toContract = iBTCContract,
+								prevBalance,
 							}) => {
 								// Note: this presumes balance was empty before the exchange - won't work when
 								// exchanging into sUSD as there is an existing sUSD balance from minting
+								const exchangeFeeRate = await feePool.exchangeFeeRate();
+								const actualExchangeFee = multiplyDecimal(
+									exchangeFeeRate,
+									toUnit(exchangeFeeRateMultiplier)
+								);
 								const balance = await toContract.balanceOf(account1);
 								const effectiveValue = await synthetix.effectiveValue(from, amountExchanged, to);
-								const effectiveValueMinusFees = await feePool.amountReceivedFromExchange(
-									effectiveValue
+								const effectiveValueMinusFees = effectiveValue.sub(
+									multiplyDecimal(effectiveValue, actualExchangeFee)
 								);
 
-								assert.bnEqual(balance, effectiveValueMinusFees);
+								const balanceFromExchange = prevBalance ? balance.sub(prevBalance) : balance;
+
+								assert.bnEqual(balanceFromExchange, effectiveValueMinusFees);
 
 								// check logs
 								const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
@@ -2769,7 +2736,7 @@ contract('Synthetix', async accounts => {
 										fromCurrencyKey: bytesToString(from),
 										fromAmount: amountExchanged,
 										toCurrencyKey: bytesToString(to),
-										toAmount: balance,
+										toAmount: effectiveValueMinusFees,
 										toAddress: account1,
 									},
 									['toCurrencyKey', 'fromCurrencyKey']
@@ -2786,7 +2753,13 @@ contract('Synthetix', async accounts => {
 								);
 							});
 							it('then it exchanges correctly into iBTC', async () => {
-								await assertExchangeSucceeded({ amountExchanged, txn: exchangeTxns[0] });
+								await assertExchangeSucceeded({
+									amountExchanged,
+									txn: exchangeTxns[0],
+									from: sUSD,
+									to: iBTC,
+									toContract: iBTCContract,
+								});
 							});
 							describe('when the user tries to exchange some iBTC into another synth', () => {
 								const newAmountExchanged = toUnit(0.003); // current iBTC balance is a bit under 0.05
@@ -2805,6 +2778,7 @@ contract('Synthetix', async accounts => {
 										from: iBTC,
 										to: sAUD,
 										toContract: sAUDContract,
+										exchangeFeeRateMultiplier: 2,
 									});
 								});
 
@@ -2831,6 +2805,7 @@ contract('Synthetix', async accounts => {
 												from: iBTC,
 												to: sEUR,
 												toContract: sEURContract,
+												exchangeFeeRateMultiplier: 2,
 											});
 										});
 									});
@@ -2849,7 +2824,93 @@ contract('Synthetix', async accounts => {
 												from: iBTC,
 												to: sEUR,
 												toContract: sEURContract,
+												exchangeFeeRateMultiplier: 2,
 											});
+										});
+									});
+								});
+							});
+							describe('doubling of fees for swing trades', () => {
+								const iBTCexchangeAmount = toUnit(0.002); // current iBTC balance is a bit under 0.05
+								let txn;
+								describe('when the user tries to exchange some short iBTC into long sBTC', () => {
+									beforeEach(async () => {
+										txn = await synthetix.exchange(iBTC, iBTCexchangeAmount, sBTC, ZERO_ADDRESS, {
+											from: account1,
+										});
+									});
+									it('then it exchanges correctly from iBTC to sBTC, doubling the fee', async () => {
+										await assertExchangeSucceeded({
+											amountExchanged: iBTCexchangeAmount,
+											txn,
+											exchangeFeeRateMultiplier: 2,
+											from: iBTC,
+											to: sBTC,
+											toContract: sBTCContract,
+										});
+									});
+									describe('when the user tries to exchange some short iBTC into sEUR', () => {
+										beforeEach(async () => {
+											txn = await synthetix.exchange(iBTC, iBTCexchangeAmount, sEUR, ZERO_ADDRESS, {
+												from: account1,
+											});
+										});
+										it('then it exchanges correctly from iBTC to sEUR, doubling the fee', async () => {
+											await assertExchangeSucceeded({
+												amountExchanged: iBTCexchangeAmount,
+												txn,
+												exchangeFeeRateMultiplier: 2,
+												from: iBTC,
+												to: sEUR,
+												toContract: sEURContract,
+											});
+										});
+										describe('when the user tries to exchange some sEUR for iBTC', () => {
+											const sEURExchangeAmount = toUnit(0.001);
+											let prevBalance;
+											beforeEach(async () => {
+												prevBalance = await iBTCContract.balanceOf(account1);
+												txn = await synthetix.exchange(
+													sEUR,
+													sEURExchangeAmount,
+													iBTC,
+													ZERO_ADDRESS,
+													{
+														from: account1,
+													}
+												);
+											});
+											it('then it exchanges correctly from sEUR to iBTC, doubling the fee', async () => {
+												await assertExchangeSucceeded({
+													amountExchanged: sEURExchangeAmount,
+													txn,
+													exchangeFeeRateMultiplier: 2,
+													from: sEUR,
+													to: iBTC,
+													toContract: iBTCContract,
+													prevBalance,
+												});
+											});
+										});
+									});
+								});
+								describe('when the user tries to exchange some short iBTC for sUSD', () => {
+									let prevBalance;
+
+									beforeEach(async () => {
+										prevBalance = await sUSDContract.balanceOf(account1);
+										txn = await synthetix.exchange(iBTC, iBTCexchangeAmount, sUSD, ZERO_ADDRESS, {
+											from: account1,
+										});
+									});
+									it('then it exchanges correctly out of iBTC, with the regular fee', async () => {
+										await assertExchangeSucceeded({
+											amountExchanged: iBTCexchangeAmount,
+											txn,
+											from: iBTC,
+											to: sUSD,
+											toContract: sUSDContract,
+											prevBalance,
 										});
 									});
 								});
