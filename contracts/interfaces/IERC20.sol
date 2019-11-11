@@ -23,14 +23,14 @@ contract IERC20 {
     function decimals() public view returns (uint8);
 
     event Transfer(
-      address indexed from,
-      address indexed to,
-      uint value
+        address indexed from,
+        address indexed to,
+        uint value
     );
 
     event Approval(
-      address indexed owner,
-      address indexed spender,
-      uint value
+        address indexed owner,
+        address indexed spender,
+        uint value
     );
 }
