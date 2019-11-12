@@ -648,6 +648,7 @@ contract Synthetix is ExternStateToken {
         // How much debt do they have?
         uint debtToRemove = effectiveValue(currencyKey, amount, "XDR");
         uint existingDebt = debtBalanceOf(messageSender, "XDR");
+        
         uint debtInCurrencyKey = debtBalanceOf(messageSender, currencyKey);
 
         require(existingDebt > 0, "No debt to forgive");
@@ -690,6 +691,7 @@ contract Synthetix is ExternStateToken {
     /**
      * @notice Remove a debt position from the register
      * @param amount The amount (in UNIT base) being presented in XDRs
+     * @param existingDebt The existing debt (in UNIT base) of address presented in XDRs
      */
     function _removeFromDebtRegister(uint amount, uint existingDebt)
         internal
