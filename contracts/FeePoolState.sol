@@ -16,7 +16,7 @@ MODULE DESCRIPTION
 The FeePoolState simply stores the accounts issuance ratio for
 each fee period in the FeePool.
 
-This is use to caclulate the correct allocation of fees/rewards
+This is used to calculate the correct allocation of fees/rewards
 owed to minters of the stablecoin total supply
 
 -----------------------------------------------------------------

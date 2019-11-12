@@ -14,9 +14,9 @@ date:       2019-03-01
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 Escrows the SNX rewards from the inflationary supply awarded to
-users for staking their SNX and maintaining the c-rationn target.
+users for staking their SNX and maintaining the c-ratio target.
 
-SNW rewards are escrowed for 1 year from the claim date and users
+SNX rewards are escrowed for 1 year from the claim date and users
 can call vest in 12 months time.
 -----------------------------------------------------------------
 */
@@ -58,7 +58,7 @@ contract RewardEscrow is Owned {
     uint constant QUANTITY_INDEX = 1;
 
     /* Limit vesting entries to disallow unbounded iteration over vesting schedules.
-    * There are 5 years of the supply scedule */
+    * There are 5 years of the supply schedule */
     uint constant public MAX_VESTING_ENTRIES = 52*5;
 
 
@@ -234,7 +234,7 @@ contract RewardEscrow is Owned {
 
     /**
      * @notice Add a new vesting entry at a given time and quantity to an account's schedule.
-     * @dev A call to this should accompany a previous successfull call to synthetix.transfer(tewardEscrow, amount),
+     * @dev A call to this should accompany a previous successful call to synthetix.transfer(rewardEscrow, amount),
      * to ensure that when the funds are withdrawn, there is enough balance.
      * Note; although this function could technically be used to produce unbounded
      * arrays, it's only withinn the 4 year period of the weekly inflation schedule.

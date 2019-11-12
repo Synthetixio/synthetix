@@ -37,7 +37,7 @@ contract PurgeableSynth is Synth {
     // The maximum allowed amount of tokenSupply in equivalent sUSD value for this synth to permit purging
     uint public maxSupplyToPurgeInUSD = 100000 * SafeDecimalMath.unit(); // 100,000
 
-    // Track exchange rates so we can determine if supply in USD is below threshpld at purge time
+    // Track exchange rates so we can determine if supply in USD is below threshold at purge time
     ExchangeRates public exchangeRates;
 
     /* ========== CONSTRUCTOR ========== */

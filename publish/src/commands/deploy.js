@@ -44,7 +44,7 @@ const parameterNotice = props => {
 const DEFAULTS = {
 	gasPrice: '1',
 	methodCallGasLimit: 15e4,
-	contractDeploymentGasLimit: 7e6,
+	contractDeploymentGasLimit: 6.9e6,
 	network: 'kovan',
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
 };
@@ -58,6 +58,7 @@ const deploy = async ({
 	buildPath = DEFAULTS.buildPath,
 	deploymentPath,
 	oracleExrates,
+	oracleGasLimit,
 	oracleDepot,
 	privateKey,
 	yes,
@@ -148,6 +149,7 @@ const deploy = async ({
 		currentSynthetixSupply = w3utils.toWei((100e6).toString());
 		currentExchangeFee = w3utils.toWei('0.003'.toString());
 		oracleExrates = account;
+		oracleGasLimit = account;
 		oracleDepot = account;
 		currentSynthetixPrice = w3utils.toWei('0.2');
 	} else {
@@ -169,6 +171,10 @@ const deploy = async ({
 			if (!oracleDepot) {
 				const currentDepot = getExistingContract({ contract: 'Depot' });
 				oracleDepot = await currentDepot.methods.oracle().call();
+			}
+
+			if (!oracleGasLimit) {
+				oracleGasLimit = await oldSynthetix.methods.gasLimitOracle().call();
 			}
 		} catch (err) {
 			console.error(
@@ -209,6 +215,7 @@ const deploy = async ({
 		'FeePool exchangeFeeRate': `${w3utils.fromWei(currentExchangeFee)}`,
 		'ExchangeRates Oracle': oracleExrates,
 		'Depot Oracle': oracleDepot,
+		'Gas Limit Oracle': oracleGasLimit,
 	});
 
 	if (!yes) {
@@ -536,13 +543,23 @@ const deploy = async ({
 		});
 	}
 
-	// setup exchange gasPriceLimit on Synthetix
-	const gasPriceLimit = w3utils.toWei('35', 'gwei');
+	// setup gasLimitOracle on Synthetix
+	await runStep({
+		contract: 'Synthetix',
+		target: synthetix,
+		read: 'gasLimitOracle',
+		expected: input => input === oracleGasLimit,
+		write: 'setGasLimitOracle',
+		writeArg: oracleGasLimit,
+	});
+
+	// setup exchange gasPriceLimit on Synthetix for local only
 	if (network === 'local') {
+		const gasPriceLimit = w3utils.toWei('35', 'gwei');
 		await runStep({
 			contract: 'Synthetix',
 			target: synthetix,
-			account: oracleExrates,
+			account: oracleGasLimit,
 			read: 'gasPriceLimit',
 			expected: input => input === gasPriceLimit,
 			write: 'setGasPriceLimit',
@@ -700,6 +717,7 @@ const deploy = async ({
 	// ----------------
 	// Synths
 	// ----------------
+	let proxysETHAddress;
 	const synthetixProxyAddress = await synthetix.methods.proxy().call();
 	for (const { name: currencyKey, inverted, subclass } of synths) {
 		const tokenStateForSynth = await deployContract({
@@ -718,6 +736,10 @@ const deploy = async ({
 			args: [account],
 			force: addNewSynths,
 		});
+
+		if (currencyKey === 'sETH') {
+			proxysETHAddress = proxyForSynth.options.address;
+		}
 
 		let proxyERC20ForSynth;
 
@@ -996,7 +1018,7 @@ const deploy = async ({
 
 		// Ensure sETH uniswap exchange address on arbRewarder set
 		const requiredUniswapExchange = '0xe9Cf7887b93150D4F2Da7dFc6D502B216438F244';
-		const requiredSynthAddress = '0x5e74C9036fb86BD7eCdcb084a0673EFc32eA31cb';
+		const requiredSynthAddress = proxysETHAddress;
 		await runStep({
 			contract: 'ArbRewarder',
 			target: arbRewarder,
@@ -1058,6 +1080,10 @@ module.exports = {
 				'The address of the fee authority for this network (default is to use existing)'
 			)
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
+			.option(
+				'-l, --oracle-gas-limit <value>',
+				'The address of the gas limit oracle for this network (default is use existing)'
+			)
 			.option(
 				'-m, --method-call-gas-limit <value>',
 				'Method call gas limit',

@@ -195,6 +195,14 @@ contract('FeePool', async accounts => {
 		);
 	});
 
+	it('should disallow owner from setting the exchange fee rate larger than MAX_EXCHANGE_FEE_RATE', async () => {
+		await assert.revert(
+			feePool.setExchangeFeeRate(toUnit('11'), {
+				from: owner,
+			})
+		);
+	});
+
 	it('should allow the owner to set the fee period duration', async () => {
 		// Assert that we're starting with the state we expect
 		const oneWeek = web3.utils.toBN(7 * 24 * 60 * 60);
@@ -998,13 +1006,26 @@ contract('FeePool', async accounts => {
 
 			await feePool.setTargetThreshold(thresholdPercent, { from: owner });
 
-			const penaltyThreshold = await feePool.TARGET_THRESHOLD();
+			const penaltyThreshold = await feePool.targetThreshold();
 			assert.bnEqual(penaltyThreshold, toUnit(thresholdPercent / 100));
 		});
+
 		it('should revert when account1 set the Target threshold', async () => {
 			const thresholdPercent = 15;
 
 			await assert.revert(feePool.setTargetThreshold(thresholdPercent, { from: account1 }));
+		});
+
+		it('should revert when owner set the Target threshold to negative', async () => {
+			const thresholdPercent = -1;
+
+			await assert.revert(feePool.setTargetThreshold(thresholdPercent, { from: owner }));
+		});
+
+		it('should revert when owner set the Target threshold to above 50%', async () => {
+			const thresholdPercent = 51;
+
+			await assert.revert(feePool.setTargetThreshold(thresholdPercent, { from: owner }));
 		});
 
 		it('should be no penalty if issuance ratio is less than target ratio', async () => {
@@ -1034,7 +1055,7 @@ contract('FeePool', async accounts => {
 			});
 
 			const issuanceRatio = fromUnit(await synthetixState.issuanceRatio());
-			const penaltyThreshold = fromUnit(await feePool.TARGET_THRESHOLD());
+			const penaltyThreshold = fromUnit(await feePool.targetThreshold());
 
 			const threshold = Number(issuanceRatio) * (1 + Number(penaltyThreshold));
 			// Start from the current price of synthetix and slowly decrease the price until
@@ -1139,7 +1160,7 @@ contract('FeePool', async accounts => {
 			// Should be able to set the Target threshold to 16% and now claim
 			const newPercentage = 16;
 			await feePool.setTargetThreshold(newPercentage, { from: owner });
-			assert.bnEqual(await feePool.TARGET_THRESHOLD(), toUnit(newPercentage / 100));
+			assert.bnEqual(await feePool.targetThreshold(), toUnit(newPercentage / 100));
 
 			assert.equal(await feePool.feesClaimable(owner), true);
 		});

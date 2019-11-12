@@ -108,7 +108,7 @@ contract ExternStateToken is SelfDestructible, Proxyable, TokenFallbackCaller {
      * @notice Set the address of the TokenState contract.
      * @dev This can be used to "pause" transfer functionality, by pointing the tokenState at 0x000..
      * as balances would be unreachable.
-     */ 
+     */
     function setTokenState(TokenState _tokenState)
         external
         optionalProxy_onlyOwner
@@ -117,10 +117,10 @@ contract ExternStateToken is SelfDestructible, Proxyable, TokenFallbackCaller {
         emitTokenStateUpdated(_tokenState);
     }
 
-    function _internalTransfer(address from, address to, uint value, bytes data) 
+    function _internalTransfer(address from, address to, uint value, bytes data)
         internal
         returns (bool)
-    { 
+    {
         /* Disallow transfers to irretrievable-addresses. */
         require(to != address(0), "Cannot transfer to the 0 address");
         require(to != address(this), "Cannot transfer to the contract");
@@ -130,14 +130,14 @@ contract ExternStateToken is SelfDestructible, Proxyable, TokenFallbackCaller {
         tokenState.setBalanceOf(from, tokenState.balanceOf(from).sub(value));
         tokenState.setBalanceOf(to, tokenState.balanceOf(to).add(value));
 
+        // Emit a standard ERC20 transfer event
+        emitTransfer(from, to, value);
+
         // If the recipient is a contract, we need to call tokenFallback on it so they can do ERC223
         // actions when receiving our tokens. Unlike the standard, however, we don't revert if the
         // recipient contract doesn't implement tokenFallback.
         callTokenFallbackIfNeeded(from, to, value, data);
         
-        // Emit a standard ERC20 transfer event
-        emitTransfer(from, to, value);
-
         return true;
     }
 
