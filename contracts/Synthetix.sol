@@ -541,14 +541,14 @@ contract Synthetix is ExternStateToken {
      * @param currencyKey The currency to register synths in, for example sUSD or sAUD
      * @param amount The amount of synths to register with a base of UNIT
      */
-    function _addToDebtRegister(bytes32 currencyKey, uint amount)
+    function _addToDebtRegister(bytes32 currencyKey, uint amount, uint totalDebtIssued, uint existingDebt)
         internal
     {
         // What is the value of the requested debt in XDRs?
         uint xdrValue = effectiveValue(currencyKey, amount, "XDR");
 
         // What is the value of all issued synths of the system (priced in XDRs)?
-        uint totalDebtIssued = totalIssuedSynths("XDR");
+        // uint totalDebtIssued = totalIssuedSynths("XDR");
 
         // What will the new total be including the new value?
         uint newTotalDebtIssued = xdrValue.add(totalDebtIssued);
@@ -563,7 +563,7 @@ contract Synthetix is ExternStateToken {
         uint delta = SafeDecimalMath.preciseUnit().sub(debtPercentage);
 
         // How much existing debt do they have?
-        uint existingDebt = debtBalanceOf(messageSender, "XDR");
+        // uint existingDebt = debtBalanceOf(messageSender, "XDR");
 
         // And what does their debt ownership look like including this previous stake?
         if (existingDebt > 0) {
@@ -600,16 +600,13 @@ contract Synthetix is ExternStateToken {
         optionalProxy
         // No need to check if price is stale, as it is checked in issuableSynths.
     {
-        require(amount <= remainingIssuableSynths(messageSender, currencyKey), "Amount too large");
+        (uint maxIssuableXDR, uint alreadyIssuedXDR) = _remainingIssuableSynthsinXDR(messageSender);
+        // Figure out the maximum we can issue in that currency
+        uint maxIssuable = effectiveValue("XDR", maxIssuableXDR, currencyKey);
 
-        // Keep track of the debt they're about to create
-        _addToDebtRegister(currencyKey, amount);
+        require(amount <= maxIssuable, "Amount too large");
 
-        // Create their synths
-        synths[currencyKey].issue(messageSender, amount);
-
-        // Store their locked SNX amount to determine their fee % for the period
-        _appendAccountIssuanceRecord();
+        _internalIssueSynths(currencyKey, amount, alreadyIssuedXDR);
     }
 
     /**
@@ -621,14 +618,23 @@ contract Synthetix is ExternStateToken {
         external
         optionalProxy
     {
+        (uint maxIssuableXDR, uint alreadyIssuedXDR) = _remainingIssuableSynthsinXDR(messageSender);
         // Figure out the maximum we can issue in that currency
-        uint maxIssuable = remainingIssuableSynths(messageSender, currencyKey);
+        uint maxIssuable = effectiveValue("XDR", maxIssuableXDR, currencyKey);
+        
+        _internalIssueSynths(currencyKey, maxIssuable, alreadyIssuedXDR);
+    }
+
+    function _internalIssueSynths(bytes32 currencyKey, uint amount, uint existingDebt)
+        internal
+    {
+        uint totalDebtIssued = totalIssuedSynths("XDR");
 
         // Keep track of the debt they're about to create
-        _addToDebtRegister(currencyKey, maxIssuable);
+        _addToDebtRegister(currencyKey, amount, totalDebtIssued, existingDebt);
 
         // Create their synths
-        synths[currencyKey].issue(messageSender, maxIssuable);
+        synths[currencyKey].issue(messageSender, amount);
 
         // Store their locked SNX amount to determine their fee % for the period
         _appendAccountIssuanceRecord();
@@ -833,6 +839,25 @@ contract Synthetix is ExternStateToken {
         } else {
             return max.sub(alreadyIssued);
         }
+    }
+
+    function _remainingIssuableSynthsinXDR(address issuer)
+        internal
+        view
+        returns (uint, uint)
+    {
+        uint alreadyIssuedXDR = debtBalanceOf(issuer, "XDR");
+        uint maxIssuableXDR = maxIssuableSynths(issuer, "XDR");
+
+        if (alreadyIssuedXDR >= maxIssuableXDR) {
+            maxIssuableXDR = 0;
+        } else {
+            maxIssuableXDR = maxIssuableXDR.sub(alreadyIssuedXDR);
+        }
+        return(
+            maxIssuableXDR,
+            alreadyIssuedXDR
+        );
     }
 
     /**
