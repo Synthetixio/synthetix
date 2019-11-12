@@ -600,13 +600,11 @@ contract Synthetix is ExternStateToken {
         optionalProxy
         // No need to check if price is stale, as it is checked in issuableSynths.
     {
-        (uint maxIssuableXDR, uint alreadyIssuedXDR) = _remainingIssuableSynthsinXDR(messageSender);
-        // Figure out the maximum we can issue in that currency
-        uint maxIssuable = effectiveValue("XDR", maxIssuableXDR, currencyKey);
+        (uint maxIssuable, uint debtXDR) = _getMaxIssuableInCurrency(currencyKey);
 
         require(amount <= maxIssuable, "Amount too large");
 
-        _internalIssueSynths(currencyKey, amount, alreadyIssuedXDR);
+        _internalIssueSynths(currencyKey, amount, debtXDR);
     }
 
     /**
@@ -618,11 +616,24 @@ contract Synthetix is ExternStateToken {
         external
         optionalProxy
     {
-        (uint maxIssuableXDR, uint alreadyIssuedXDR) = _remainingIssuableSynthsinXDR(messageSender);
-        // Figure out the maximum we can issue in that currency
-        uint maxIssuable = effectiveValue("XDR", maxIssuableXDR, currencyKey);
+        (uint maxIssuable, uint debtXDR) = _getMaxIssuableInCurrency(currencyKey);
         
-        _internalIssueSynths(currencyKey, maxIssuable, alreadyIssuedXDR);
+        _internalIssueSynths(currencyKey, maxIssuable, debtXDR);
+    }
+
+    function _getMaxIssuableInCurrency(bytes32 currencyKey)
+        internal
+        view
+        returns (uint, uint)
+    {
+        (uint maxIssuableXDR, uint debtXDR) = remainingIssuableSynths(messageSender, "XDR");
+        // Figure out the maximum we can issue in that currency
+        uint synthsToIssue = exchangeRates.preciseEffectiveValue("XDR", maxIssuableXDR, currencyKey);
+        uint maxIssuable = synthsToIssue.preciseDecimalToDecimal();
+        return (
+            maxIssuable,
+            debtXDR
+        );
     }
 
     function _internalIssueSynths(bytes32 currencyKey, uint amount, uint existingDebt)
@@ -794,6 +805,17 @@ contract Synthetix is ExternStateToken {
         // Don't need to check for stale rates here because totalIssuedSynths will do it for us
         returns (uint)
     {
+        uint highPrecisionBalance = _debtBalanceOfPrecise(issuer, currencyKey);
+
+        return highPrecisionBalance.preciseDecimalToDecimal();
+    }
+
+    function _debtBalanceOfPrecise(address issuer, bytes32 currencyKey)
+        internal
+        view
+        // Don't need to check for stale rates here because totalIssuedSynths will do it for us
+        returns (uint)
+    {
         // What was their initial debt ownership?
         uint initialDebtOwnership;
         uint debtEntryIndex;
@@ -815,7 +837,7 @@ contract Synthetix is ExternStateToken {
         uint highPrecisionBalance = totalSystemValue.decimalToPreciseDecimal()
             .multiplyDecimalRoundPrecise(currentDebtOwnership);
 
-        return highPrecisionBalance.preciseDecimalToDecimal();
+        return highPrecisionBalance;
     }
 
     /**
@@ -827,34 +849,19 @@ contract Synthetix is ExternStateToken {
         public
         view
         // Don't need to check for synth existing or stale rates because maxIssuableSynths will do it for us.
-        returns (uint)
+        returns (uint, uint)
     {
         uint alreadyIssued = debtBalanceOf(issuer, currencyKey);
         uint max = maxIssuableSynths(issuer, currencyKey);
 
         if (alreadyIssued >= max) {
-            return 0;
+            max = 0;
         } else {
-            return max.sub(alreadyIssued);
-        }
-    }
-
-    function _remainingIssuableSynthsinXDR(address issuer)
-        internal
-        view
-        returns (uint, uint)
-    {
-        uint alreadyIssuedXDR = debtBalanceOf(issuer, "XDR");
-        uint maxIssuableXDR = maxIssuableSynths(issuer, "XDR");
-
-        if (alreadyIssuedXDR >= maxIssuableXDR) {
-            maxIssuableXDR = 0;
-        } else {
-            maxIssuableXDR = maxIssuableXDR.sub(alreadyIssuedXDR);
+            max = max.sub(alreadyIssued);
         }
         return(
-            maxIssuableXDR,
-            alreadyIssuedXDR
+            max,
+            alreadyIssued
         );
     }
 
