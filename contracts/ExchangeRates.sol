@@ -36,7 +36,6 @@ import "./SelfDestructible.sol";
 
 contract ExchangeRates is SelfDestructible {
 
-
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -401,6 +400,21 @@ contract ExchangeRates is SelfDestructible {
         // Calculate the effective value by going from source -> USD -> destination
         return sourceAmount.multiplyDecimalRound(rateForCurrency(sourceCurrencyKey))
             .divideDecimalRound(rateForCurrency(destinationCurrencyKey));
+    }
+
+    function preciseEffectiveValue(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)
+        public
+        view
+        rateNotStale(sourceCurrencyKey)
+        rateNotStale(destinationCurrencyKey)
+        returns (uint)
+    {
+        // If there's no change in the currency, then just return the amount they gave us
+        if (sourceCurrencyKey == destinationCurrencyKey) return sourceAmount;
+
+        // Calculate the effective value by going from source -> USD -> destination
+        return sourceAmount.multiplyDecimalRoundPrecise(rateForCurrency(sourceCurrencyKey))
+            .divideDecimalRoundPrecise(rateForCurrency(destinationCurrencyKey));
     }
 
     /**
