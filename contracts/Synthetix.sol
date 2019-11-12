@@ -541,14 +541,14 @@ contract Synthetix is ExternStateToken {
      * @param currencyKey The currency to register synths in, for example sUSD or sAUD
      * @param amount The amount of synths to register with a base of UNIT
      */
-    function _addToDebtRegister(bytes32 currencyKey, uint amount, uint totalDebtIssued, uint existingDebt)
+    function _addToDebtRegister(bytes32 currencyKey, uint amount, uint existingDebt)
         internal
     {
         // What is the value of the requested debt in XDRs?
         uint xdrValue = effectiveValue(currencyKey, amount, "XDR");
 
         // What is the value of all issued synths of the system (priced in XDRs)?
-        // uint totalDebtIssued = totalIssuedSynths("XDR");
+        uint totalDebtIssued = totalIssuedSynths("XDR");
 
         // What will the new total be including the new value?
         uint newTotalDebtIssued = xdrValue.add(totalDebtIssued);
@@ -628,10 +628,8 @@ contract Synthetix is ExternStateToken {
     function _internalIssueSynths(bytes32 currencyKey, uint amount, uint existingDebt)
         internal
     {
-        uint totalDebtIssued = totalIssuedSynths("XDR");
-
         // Keep track of the debt they're about to create
-        _addToDebtRegister(currencyKey, amount, totalDebtIssued, existingDebt);
+        _addToDebtRegister(currencyKey, amount, existingDebt);
 
         // Create their synths
         synths[currencyKey].issue(messageSender, amount);
