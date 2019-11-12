@@ -600,11 +600,11 @@ contract Synthetix is ExternStateToken {
         optionalProxy
         // No need to check if price is stale, as it is checked in issuableSynths.
     {
-        (uint maxIssuable, uint debtXDR) = _getMaxIssuableInCurrency(currencyKey);
+        (uint maxIssuable, uint existingDebtInXDR) = _getMaxIssuableInCurrency(currencyKey);
 
         require(amount <= maxIssuable, "Amount too large");
 
-        _internalIssueSynths(currencyKey, amount, debtXDR);
+        _internalIssueSynths(currencyKey, amount, existingDebtInXDR);
     }
 
     /**
@@ -616,9 +616,9 @@ contract Synthetix is ExternStateToken {
         external
         optionalProxy
     {
-        (uint maxIssuable, uint debtXDR) = _getMaxIssuableInCurrency(currencyKey);
+        (uint maxIssuable, uint existingDebtInXDR) = _getMaxIssuableInCurrency(currencyKey);
         
-        _internalIssueSynths(currencyKey, maxIssuable, debtXDR);
+        _internalIssueSynths(currencyKey, maxIssuable, existingDebtInXDR);
     }
 
     function _getMaxIssuableInCurrency(bytes32 currencyKey)
@@ -626,13 +626,13 @@ contract Synthetix is ExternStateToken {
         view
         returns (uint, uint)
     {
-        (uint maxIssuableXDR, uint debtXDR) = remainingIssuableSynths(messageSender, "XDR");
+        (uint maxIssuableXDR, uint existingDebtInXDR) = remainingIssuableSynths(messageSender, "XDR");
         // Figure out the maximum we can issue in that currency
         uint synthsToIssue = exchangeRates.preciseEffectiveValue("XDR", maxIssuableXDR, currencyKey);
         uint maxIssuable = synthsToIssue.preciseDecimalToDecimal();
         return (
             maxIssuable,
-            debtXDR
+            existingDebtInXDR
         );
     }
 
