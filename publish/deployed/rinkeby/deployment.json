@@ -791,6 +791,15 @@
 			"timestamp": "2019-11-07T21:05:50.000Z",
 			"txn": "https://rinkeby.etherscan.io/tx/0x2c76f02018ca7bcf2d72c8bbc053ddade39f275a465c7d0d1fcb3b96dc456012",
 			"network": "rinkeby"
+		},
+		"AtomicSynthetixUniswapConverter": {
+			"name": "AtomicSynthetixUniswapConverter",
+			"address": "0xCC094d890BC4DCC1e0C9e778F873D1Bb27698e93",
+			"source": "AtomicSynthetixUniswapConverter",
+			"link": "https://rinkeby.etherscan.io/address/0xcc094d890bc4dcc1e0c9e778f873d1bb27698e93",
+			"timestamp": "2019-11-13T10:18:22.000Z",
+			"txn": "https://rinkeby.etherscan.io/tx/0x8bc42b6d0897f2c600e96e59a53e0518d60f70601f5f8713c0426a08c5891053",
+			"network": "rinkeby"
 		}
 	},
 	"sources": {

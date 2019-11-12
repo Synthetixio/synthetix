@@ -29,9 +29,9 @@ contract AtomicSynthetixUniswapConverter is Owned {
     using SafeDecimalMath for uint;
 
     //following are Rinkeby addresses
-    address public uniswapSethExchange = 0x431295890a123c1542bc85f796fe3baf80dc0e25; // Uniswap sEth Exchange
+    address public uniswapSethExchange = 0x431295890a123c1542bc85F796fE3bAF80dc0E25; // Uniswap sEth Exchange
     address public synRates = 0x30A46E656CdcA6B401Ff043e1aBb151490a07ab0; //Synthetix Rates
-    address public synthetix = 0x322A3346bf24363f451164d96A5b5cd5A7F4c337; //Proxy Synthetix
+    address public synthetix = 0xcBBb17D9767bD57FBF4Bbf8842E916bCb3826ec1; //ProxyERC20 Synthetix
     address public synFeePool = 0x09797E9E75999b9Cf2619E3397795800ce5E3E25;   //Proxy Synthetix FeePool
     bytes32 sEthCurrencyKey = "sETH";
     bytes32 ethCurrencyKey = "ETH";
