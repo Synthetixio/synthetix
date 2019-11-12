@@ -109,7 +109,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     uint public constant MAX_FEE_PERIOD_DURATION = 60 days;
 
     // Users are unable to claim fees if their collateralisation ratio drifts out of target treshold
-    uint public TARGET_THRESHOLD = (10 * SafeDecimalMath.unit()) / 100;
+    uint public targetThreshold = (10 * SafeDecimalMath.unit()) / 100;
 
     /* ========== ETERNAL STORAGE CONSTANTS ========== */
 
@@ -171,6 +171,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         external
         optionalProxy_onlyOwner
     {
+        require(_exchangeFeeRate < MAX_EXCHANGE_FEE_RATE, "rate < MAX_EXCHANGE_FEE_RATE");
         exchangeFeeRate = _exchangeFeeRate;
     }
 
@@ -236,7 +237,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         optionalProxy_onlyOwner
     {
         require(_percent >= 0, "Threshold should be positive");
-        TARGET_THRESHOLD = (_percent * SafeDecimalMath.unit()) / 100;
+        require(_percent <= 50, "Threshold above limit");
+        targetThreshold = _percent.mul(SafeDecimalMath.unit()).div(100);
     }
 
     /**
@@ -311,9 +313,10 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         // Clear the first element of the array to make sure we don't have any stale values.
         delete recentFeePeriods[0];
 
-        // Open up the new fee period. Take a snapshot of the total value of the system.
+        // Open up the new fee period.
         // Increment periodId from the recent closed period feePeriodId
         recentFeePeriods[0].feePeriodId = recentFeePeriods[1].feePeriodId.add(1);
+        // Record the debt index of the value of the system at that time
         recentFeePeriods[0].startingDebtIndex = synthetixState.debtLedgerLength();
         recentFeePeriods[0].startTime = now;
 
@@ -353,12 +356,12 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         internal
         returns (bool)
     {
-        uint rewardsPaid;
-        uint feesPaid;
+        uint rewardsPaid = 0;
+        uint feesPaid = 0;
         uint availableFees;
         uint availableRewards;
 
-        // Address wont be able to claim fees if it is to far below the target c-ratio.
+        // Address won't be able to claim fees if it is too far below the target c-ratio.
         // It will need to burn synths then try claiming again.
         require(feesClaimable(claimingAddress), "C-Ratio below penalty threshold");
 
@@ -465,7 +468,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         public
         optionalProxy
     {
-        require(delegates != address(0), "Delegates Contract missing");
         require(account != address(0), "Can't delegate to address(0)");
         delegates.setApproval(messageSender, account);
     }
@@ -478,7 +480,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         public
         optionalProxy
     {
-        require(delegates != address(0), "Delegates Contract missing");
         delegates.withdrawApproval(messageSender, account);
     }
 
@@ -756,7 +757,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         }
 
         // Calculate the threshold for collateral ratio before fees can't be claimed.
-        uint ratio_threshold = targetRatio.multiplyDecimal(SafeDecimalMath.unit().add(TARGET_THRESHOLD));
+        uint ratio_threshold = targetRatio.multiplyDecimal(SafeDecimalMath.unit().add(targetThreshold));
 
         // Not claimable if collateral ratio above threshold
         if (ratio > ratio_threshold) {
@@ -919,7 +920,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     {
         uint targetRatio = synthetix.synthetixState().issuanceRatio();
 
-        return targetRatio.multiplyDecimal(SafeDecimalMath.unit().add(TARGET_THRESHOLD));
+        return targetRatio.multiplyDecimal(SafeDecimalMath.unit().add(targetThreshold));
     }
 
     /**
