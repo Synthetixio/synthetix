@@ -48,8 +48,6 @@ contract ExchangeRates is SelfDestructible {
     // How long will the contract assume the rate of any asset is correct
     uint public rateStalePeriod = 3 hours;
 
-    // Set by the oracle when its about to lock exchanges when it sends a price update
-    bool public priceUpdateLock = false;
 
     // Each participating currency in the XDR basket is represented as a currency key with
     // equal weighting.
@@ -186,11 +184,6 @@ contract ExchangeRates is SelfDestructible {
         // Now update our XDR rate.
         updateXDRRate(timeSent);
 
-        // If locked during a priceupdate then reset it
-        if (priceUpdateLock) {
-            priceUpdateLock = false;
-        }
-
         return true;
     }
 
@@ -320,17 +313,6 @@ contract ExchangeRates is SelfDestructible {
     {
         rateStalePeriod = _time;
         emit RateStalePeriodUpdated(rateStalePeriod);
-    }
-
-    /**
-     * @notice Set the the locked state for a priceUpdate call
-     * @param _priceUpdateLock lock boolean flag
-     */
-    function setPriceUpdateLock(bool _priceUpdateLock)
-        external
-        onlyOracle
-    {
-        priceUpdateLock = _priceUpdateLock;
     }
 
     /**
