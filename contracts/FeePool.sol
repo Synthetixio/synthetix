@@ -100,8 +100,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     FeePeriod[FEE_PERIOD_LENGTH] private _recentFeePeriods;
     uint256 private _currentFeePeriod;
 
-    // How long a fee period lasts at a minimum. It is required for the
-    // fee authority to roll over the periods, so they are not guaranteed
+    // How long a fee period lasts at a minimum. It is required for 
+    // anyone to roll over the periods, so they are not guaranteed
     // to roll over at exactly this duration, but the contract enforces
     // that they cannot roll over any quicker than this duration.
     uint public feePeriodDuration = 1 weeks;
@@ -265,7 +265,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         optionalProxy_onlyOwner
     {
         require(_percent >= 0, "Threshold should be positive");
-        require(_percent <= 50, "Threshold above limit");
+        require(_percent <= 50, "Threshold too high");
         targetThreshold = _percent.mul(SafeDecimalMath.unit()).div(100);
     }
 
