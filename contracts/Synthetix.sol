@@ -388,7 +388,6 @@ contract Synthetix is ExternStateToken {
      * @param sourceCurrencyKey The source currency you wish to exchange from
      * @param sourceAmount The amount, specified in UNIT of source currency you wish to exchange
      * @param destinationCurrencyKey The destination currency you wish to obtain.
-     * @param destinationAddress Deprecated. Will always send to messageSender. API backwards compatability maintained.
      * @return Boolean that indicates whether the transfer succeeded or failed.
      */
     function exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)
