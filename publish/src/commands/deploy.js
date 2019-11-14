@@ -145,6 +145,7 @@ const deploy = async ({
 	let currentSynthetixSupply;
 	let currentExchangeFee;
 	let currentSynthetixPrice;
+	let oldExrates;
 	if (network === 'local') {
 		// get the current supply as it changes as we mint after each period
 		currentSynthetixSupply = w3utils.toWei((100e6).toString());
@@ -162,11 +163,11 @@ const deploy = async ({
 			const oldFeePool = getExistingContract({ contract: 'FeePool' });
 			currentExchangeFee = await oldFeePool.methods.exchangeFeeRate().call();
 
-			const currentExrates = getExistingContract({ contract: 'ExchangeRates' });
-			currentSynthetixPrice = await currentExrates.methods.rateForCurrency(toBytes32('SNX')).call();
+			oldExrates = getExistingContract({ contract: 'ExchangeRates' });
+			currentSynthetixPrice = await oldExrates.methods.rateForCurrency(toBytes32('SNX')).call();
 
 			if (!oracleExrates) {
-				oracleExrates = await currentExrates.methods.oracle().call();
+				oracleExrates = await oldExrates.methods.oracle().call();
 			}
 
 			if (!oracleDepot) {
@@ -307,7 +308,7 @@ const deploy = async ({
 
 	const exchangeRates = await deployContract({
 		name: 'ExchangeRates',
-		args: [account, oracleExrates, [w3utils.asciiToHex('SNX')], [currentSynthetixPrice]],
+		args: [account, oracleExrates, [toBytes32('SNX')], [currentSynthetixPrice]],
 	});
 	const exchangeRatesAddress = exchangeRates ? exchangeRates.options.address : '';
 
@@ -754,7 +755,7 @@ const deploy = async ({
 			});
 		}
 
-		const currencyKeyInBytes = w3utils.asciiToHex(currencyKey);
+		const currencyKeyInBytes = toBytes32(currencyKey);
 
 		// track the original supply if we're deploying a new synth contract for an existing synth
 		let originalTotalSupply = 0;
@@ -899,45 +900,89 @@ const deploy = async ({
 
 		// now configure inverse synths in exchange rates
 		if (inverted) {
-			// check total supply
-			const totalSynthSupply = await synth.methods.totalSupply().call();
-
 			const { entryPoint, upperLimit, lowerLimit } = inverted;
 
-			// only call setInversePricing if either there's no supply or if on a testnet
-			if (Number(totalSynthSupply) === 0 || network !== 'mainnet') {
-				const exchangeRatesOwner = await exchangeRates.methods.owner().call();
-				if (exchangeRatesOwner === account) {
+			// helper function
+			const setInversePricing = ({ freeze, freezeAtUpperLimit }) => {
+				runStep({
+					contract: 'ExchangeRates',
+					target: exchangeRates,
+					write: 'setInversePricing',
+					writeArg: [
+						toBytes32(currencyKey),
+						w3utils.toWei(entryPoint.toString()),
+						w3utils.toWei(upperLimit.toString()),
+						w3utils.toWei(lowerLimit.toString()),
+						freeze,
+						freezeAtUpperLimit,
+					],
+				});
+			};
+
+			// whe an old exchange rates exists - either the existing ExchangeRates, or
+			// if just replaced, the previous one (i.e. not on the local network)
+			if (oldExrates) {
+				// get inverse synth's params from the old exrates, if any exist
+				const {
+					entryPoint: oldEntryPoint,
+					upperLimit: oldUpperLimit,
+					lowerLimit: oldLowerLimit,
+					frozen: currentRateIsFrozen,
+				} = await oldExrates.methods.inversePricing(currencyKey);
+
+				// and the last rate if any exists
+				const currentRateForCurrency = await oldExrates.methods.rateForCurrency(
+					toBytes32(currencyKey)
+				);
+
+				// and total supply, if any
+				const totalSynthSupply = await synth.methods.totalSupply().call();
+
+				// When there's an inverted synth with matching parameters
+				if (
+					entryPoint === oldEntryPoint &&
+					upperLimit === oldUpperLimit &&
+					lowerLimit === oldLowerLimit
+				) {
 					console.log(
-						yellow(
-							`Invoking ExchangeRates.setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})...`
+						gray(
+							`Detected an existing inverted synth for ${currencyKey}. ` +
+								`Persisting its frozen status and frozen rate.`
 						)
 					);
-					await exchangeRates.methods
-						.setInversePricing(
-							w3utils.asciiToHex(currencyKey),
-							w3utils.toWei(entryPoint.toString()),
-							w3utils.toWei(upperLimit.toString()),
-							w3utils.toWei(lowerLimit.toString())
-						)
-						.send(deployer.sendParameters());
-				} else {
-					appendOwnerAction({
-						key: `ExchangeRates.setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})`,
-						target: exchangeRatesAddress,
-						action: `setInversePricing(${currencyKey}, ${w3utils.toWei(
-							entryPoint.toString()
-						)}, ${w3utils.toWei(upperLimit.toString())}, ${w3utils.toWei(lowerLimit.toString())})`,
+					// then ensure it gets set to the same frozen status and frozen rate
+					// as the old exchange rates
+					await setInversePricing({
+						freeze: currentRateIsFrozen,
+						freezeAtUpperLimit: currentRateForCurrency === upperLimit,
 					});
+				} else if (Number(currentRateForCurrency) === 0) {
+					console.log(gray(`Detected a new inverted synth for ${currencyKey}. Proceeding to add.`));
+					// Then a new inverted synth is being added (as there's no previous rate for it)
+					await setInversePricing({ freeze: false, freezeAtUpperLimit: false });
+				} else if (Number(totalSynthSupply) === 0) {
+					console.log(
+						gray(
+							`Inverted synth at ${currencyKey} has 0 total supply and its inverted parameters have changed. ` +
+								`Proceeding to reconfigure its parameters as instructed, unfreezing it if currently frozen.`
+						)
+					);
+					// Then a new inverted synth is being added (as there's no previous rate for it)
+					await setInversePricing({ freeze: false, freezeAtUpperLimit: false });
+				} else {
+					// Then an existing synth's inverted parameters have changed.
+					// For safety sake, let's inform the user and skip this step
+					console.log(
+						yellow(
+							`The parameters for the inverted synth ${currencyKey} ` +
+								`have changed and it has non-zero totalSupply. This use-case is not supported by the deploy script. ` +
+								`This should be done as a purge() and setInversePricing() separately`
+						)
+					);
 				}
 			} else {
-				console.log(
-					gray(
-						`Not setting inverse pricing on ${currencyKey} as totalSupply is > 0 (${w3utils.fromWei(
-							totalSynthSupply
-						)})`
-					)
-				);
+				// When no exrates, then totally fresh deploy (local deployment)
+				await setInversePricing({ freeze: false, freezeAtUpperLimit: false });
 			}
 		}
 	}

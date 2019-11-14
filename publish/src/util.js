@@ -149,9 +149,9 @@ const performTransactionalStep = async ({
 	}
 	// otherwuse check the owner
 	const owner = await target.methods.owner().call();
+	const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
 	if (owner === account) {
 		// perform action
-		const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
 		const txn = await target.methods[write](...argumentsForWriteFunction).send({
 			from: account,
 			gas: Number(gasLimit),
@@ -175,7 +175,7 @@ const performTransactionalStep = async ({
 		appendOwnerAction({
 			key: action,
 			target: target.options.address,
-			action: `${write}(${writeArg})`,
+			action: `${write}(${argumentsForWriteFunction})`,
 		});
 		return true;
 	} else {
@@ -183,7 +183,7 @@ const performTransactionalStep = async ({
 		try {
 			await confirmAction(
 				redBright(
-					`YOUR TASK: Invoke ${write}(${writeArg}) via ${etherscanLinkPrefix}/address/` +
+					`YOUR TASK: Invoke ${write}(${argumentsForWriteFunction}) via ${etherscanLinkPrefix}/address/` +
 						target.options.address +
 						'#writeContract'
 				) + '\nPlease enter Y when the transaction has been mined and not earlier. '
