@@ -587,6 +587,13 @@ contract Synthetix is ExternStateToken {
         } else {
             synthetixState.appendDebtLedgerValue(SafeDecimalMath.preciseUnit());
         }
+
+        // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
+        feePool.appendAccountIssuanceRecord(
+            messageSender,
+            debtPercentage,
+            synthetixState.debtLedgerLength()
+        );
     }
 
     /**
@@ -607,9 +614,6 @@ contract Synthetix is ExternStateToken {
 
         // Create their synths
         synths[currencyKey].issue(messageSender, amount);
-
-        // Store their locked SNX amount to determine their fee % for the period
-        _appendAccountIssuanceRecord();
     }
 
     /**
@@ -629,9 +633,6 @@ contract Synthetix is ExternStateToken {
 
         // Create their synths
         synths[currencyKey].issue(messageSender, maxIssuable);
-
-        // Store their locked SNX amount to determine their fee % for the period
-        _appendAccountIssuanceRecord();
     }
 
     /**
@@ -665,27 +666,6 @@ contract Synthetix is ExternStateToken {
         // synth.burn does a safe subtraction on balance (so it will revert if there are not enough synths).
         synths[currencyKey].burn(messageSender, amountToBurn);
 
-        // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
-        _appendAccountIssuanceRecord();
-    }
-
-    /**
-     * @notice Store in the FeePool the users current debt value in the system in XDRs.
-     * @dev debtBalanceOf(messageSender, "XDR") to be used with totalIssuedSynths("XDR") to get
-     *  users % of the system within a feePeriod.
-     */
-    function _appendAccountIssuanceRecord()
-        internal
-    {
-        uint initialDebtOwnership;
-        uint debtEntryIndex;
-        (initialDebtOwnership, debtEntryIndex) = synthetixState.issuanceData(messageSender);
-
-        feePool.appendAccountIssuanceRecord(
-            messageSender,
-            initialDebtOwnership,
-            debtEntryIndex
-        );
     }
 
     /**
@@ -737,6 +717,13 @@ contract Synthetix is ExternStateToken {
         // Update our cumulative ledger. This is also a high precision integer.
         synthetixState.appendDebtLedgerValue(
             synthetixState.lastDebtLedgerEntry().multiplyDecimalRoundPrecise(delta)
+        );
+
+        // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
+        feePool.appendAccountIssuanceRecord(
+            messageSender,
+            newDebtPercentage,
+            synthetixState.debtLedgerLength()
         );
     }
 
