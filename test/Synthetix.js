@@ -2317,7 +2317,7 @@ contract('Synthetix', async accounts => {
 		await synthetix.issueSynths(sUSD, amountIssued, { from: account1 });
 
 		// Exchange sUSD to sAUD
-		const txn = await synthetix.exchange(sUSD, amountIssued, sAUD, account1, {
+		const txn = await synthetix.exchange(sUSD, amountIssued, sAUD, {
 			from: account1,
 		});
 
@@ -2371,13 +2371,13 @@ contract('Synthetix', async accounts => {
 		await synthetix.setExchangeEnabled(false, { from: owner });
 
 		// Exchange sUSD to sAUD
-		await assert.revert(synthetix.exchange(sUSD, amountIssued, sAUD, account1, { from: account1 }));
+		await assert.revert(synthetix.exchange(sUSD, amountIssued, sAUD, { from: account1 }));
 
 		// Enable exchange
 		await synthetix.setExchangeEnabled(true, { from: owner });
 
 		// Exchange sUSD to sAUD
-		const txn = await synthetix.exchange(sUSD, amountIssued, sAUD, account1, { from: account1 });
+		const txn = await synthetix.exchange(sUSD, amountIssued, sAUD, { from: account1 });
 
 		const sAUDBalance = await sAUDContract.balanceOf(account1);
 
@@ -2627,7 +2627,7 @@ contract('Synthetix', async accounts => {
 		it('should revert a user if they try to send more gwei than gasLimit', async () => {
 			// Exchange sUSD to sAUD should revert if gasPrice is above limit
 			await assert.revert(
-				synthetix.exchange(sUSD, amountIssued, sAUD, account1, {
+				synthetix.exchange(sUSD, amountIssued, sAUD, {
 					from: account1,
 					gasPrice: gasPriceLimit.add(web3.utils.toBN(100)),
 				})
@@ -2646,7 +2646,7 @@ contract('Synthetix', async accounts => {
 			const exchangeFeeXDR = await synthetix.effectiveValue(sUSD, exchangeFeeUSD, XDR);
 
 			// Exchange sUSD to sAUD
-			await synthetix.exchange(sUSD, amountIssued, sAUD, account1, {
+			await synthetix.exchange(sUSD, amountIssued, sAUD, {
 				from: account1,
 				gasPrice: gasPriceLimit,
 			});
@@ -2747,7 +2747,7 @@ contract('Synthetix', async accounts => {
 							beforeEach(async () => {
 								exchangeTxns = [];
 								exchangeTxns.push(
-									await synthetix.exchange(sUSD, amountExchanged, iBTC, ZERO_ADDRESS, {
+									await synthetix.exchange(sUSD, amountExchanged, iBTC, {
 										from: account1,
 									})
 								);
@@ -2766,7 +2766,7 @@ contract('Synthetix', async accounts => {
 
 								beforeEach(async () => {
 									exchangeTxns.push(
-										await synthetix.exchange(iBTC, newAmountExchanged, sAUD, ZERO_ADDRESS, {
+										await synthetix.exchange(iBTC, newAmountExchanged, sAUD, {
 											from: account1,
 										})
 									);
@@ -2793,7 +2793,7 @@ contract('Synthetix', async accounts => {
 									describe('when the user tries to exchange some iBTC again', () => {
 										beforeEach(async () => {
 											exchangeTxns.push(
-												await synthetix.exchange(iBTC, toUnit(0.001), sEUR, ZERO_ADDRESS, {
+												await synthetix.exchange(iBTC, toUnit(0.001), sEUR, {
 													from: account1,
 												})
 											);
@@ -2812,7 +2812,7 @@ contract('Synthetix', async accounts => {
 									describe('when the user tries to exchange iBTC into another synth', () => {
 										beforeEach(async () => {
 											exchangeTxns.push(
-												await synthetix.exchange(iBTC, newAmountExchanged, sEUR, ZERO_ADDRESS, {
+												await synthetix.exchange(iBTC, newAmountExchanged, sEUR, {
 													from: account1,
 												})
 											);
@@ -2835,7 +2835,7 @@ contract('Synthetix', async accounts => {
 								let txn;
 								describe('when the user tries to exchange some short iBTC into long sBTC', () => {
 									beforeEach(async () => {
-										txn = await synthetix.exchange(iBTC, iBTCexchangeAmount, sBTC, ZERO_ADDRESS, {
+										txn = await synthetix.exchange(iBTC, iBTCexchangeAmount, sBTC, {
 											from: account1,
 										});
 									});
@@ -2851,7 +2851,7 @@ contract('Synthetix', async accounts => {
 									});
 									describe('when the user tries to exchange some short iBTC into sEUR', () => {
 										beforeEach(async () => {
-											txn = await synthetix.exchange(iBTC, iBTCexchangeAmount, sEUR, ZERO_ADDRESS, {
+											txn = await synthetix.exchange(iBTC, iBTCexchangeAmount, sEUR, {
 												from: account1,
 											});
 										});
@@ -2870,15 +2870,9 @@ contract('Synthetix', async accounts => {
 											let prevBalance;
 											beforeEach(async () => {
 												prevBalance = await iBTCContract.balanceOf(account1);
-												txn = await synthetix.exchange(
-													sEUR,
-													sEURExchangeAmount,
-													iBTC,
-													ZERO_ADDRESS,
-													{
-														from: account1,
-													}
-												);
+												txn = await synthetix.exchange(sEUR, sEURExchangeAmount, iBTC, {
+													from: account1,
+												});
 											});
 											it('then it exchanges correctly from sEUR to iBTC, doubling the fee', async () => {
 												await assertExchangeSucceeded({
@@ -2899,7 +2893,7 @@ contract('Synthetix', async accounts => {
 
 									beforeEach(async () => {
 										prevBalance = await sUSDContract.balanceOf(account1);
-										txn = await synthetix.exchange(iBTC, iBTCexchangeAmount, sUSD, ZERO_ADDRESS, {
+										txn = await synthetix.exchange(iBTC, iBTCexchangeAmount, sUSD, {
 											from: account1,
 										});
 									});
@@ -2936,7 +2930,7 @@ contract('Synthetix', async accounts => {
 			const initialSUSDBalance = await sUSDContract.balanceOf(account1);
 
 			// Exchange sUSD to sAUD
-			await synthetix.exchange(sUSD, amount, sAUD, account1, { from: account1 });
+			await synthetix.exchange(sUSD, amount, sAUD, { from: account1 });
 
 			// Assert the USD sent is gone
 			const sUSDBalance = await sUSDContract.balanceOf(account1);
@@ -2958,7 +2952,7 @@ contract('Synthetix', async accounts => {
 			await synthetix.setProtectionCircuit(false, { from: oracle });
 
 			// Exchange sUSD to sAUD
-			await synthetix.exchange(sUSD, amount, sAUD, account1, { from: account1 });
+			await synthetix.exchange(sUSD, amount, sAUD, { from: account1 });
 
 			// how much sAUD the user is supposed to get
 			const effectiveValue = await synthetix.effectiveValue(sUSD, amount, sAUD);

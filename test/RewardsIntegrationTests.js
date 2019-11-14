@@ -594,8 +594,8 @@ contract('Rewards Integration Tests', async accounts => {
 			await synthetix.mint({ from: owner });
 
 			// Do some exchanging to generateFees
-			await synthetix.exchange(sBTC, sBTCAmount, sUSD, account1, { from: account1 });
-			await synthetix.exchange(sBTC, sBTCAmount, sUSD, account2, { from: account2 });
+			await synthetix.exchange(sBTC, sBTCAmount, sUSD, { from: account1 });
+			await synthetix.exchange(sBTC, sBTCAmount, sUSD, { from: account2 });
 
 			// Close so we can claim
 			await closeFeePeriodAndFastForward();

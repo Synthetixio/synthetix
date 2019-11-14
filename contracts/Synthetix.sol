@@ -388,7 +388,6 @@ contract Synthetix is ExternStateToken {
      * @param sourceCurrencyKey The source currency you wish to exchange from
      * @param sourceAmount The amount, specified in UNIT of source currency you wish to exchange
      * @param destinationCurrencyKey The destination currency you wish to obtain.
-     * @param destinationAddress Deprecated. Will always send to messageSender. API backwards compatability maintained.
      * @return Boolean that indicates whether the transfer succeeded or failed.
      */
     function exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)
@@ -452,7 +451,7 @@ contract Synthetix is ExternStateToken {
         optionalProxy
         returns (bool)
     {
-        _onlySynth();
+        require(synthsByAddress[messageSender] != bytes32(0), "Only synth allowed");
         require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
         require(sourceAmount > 0, "Zero amount");
 
@@ -926,25 +925,6 @@ contract Synthetix is ExternStateToken {
     modifier notFeeAddress(address account) {
         require(account != feePool.FEE_ADDRESS(), "Fee address not allowed");
         _;
-    }
-
-    // /**
-    //  * @notice Only a synth can call this function
-    //  */
-    // modifier onlySynth {
-    //     require(synthsByAddress[msg.sender] != bytes32(0), "Only synth allowed");
-    //     _;
-    // }
-       /**
-     * @notice Only a synth can call this function, optionally via synthetixProxy or directly
-     * @dev This used to be a modifier but instead of duplicating the bytecode into
-     * The functions implementing it they now call this internal function to save bytecode space
-     */
-    function _onlySynth()
-        internal
-        view
-    {
-        require(synthsByAddress[messageSender] != bytes32(0), "Only synth allowed");
     }
 
     modifier onlyOracle
