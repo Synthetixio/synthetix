@@ -1,14 +1,5 @@
 /*
 -----------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-
-file:       ExchangeRates.sol
-version:    1.0
-author:     Kevin Brown
-date:       2018-09-12
-
------------------------------------------------------------------
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
@@ -24,7 +15,7 @@ for all other assets.
 -----------------------------------------------------------------
 */
 
-pragma solidity 0.4.25;
+pragma solidity >= 0.4.25;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./SafeDecimalMath.sol";
@@ -329,8 +320,11 @@ contract ExchangeRates is SelfDestructible {
      * @param entryPoint The entry price point of the inverted price
      * @param upperLimit The upper limit, at or above which the price will be frozen
      * @param lowerLimit The lower limit, at or below which the price will be frozen
+     * @param freeze Whether or not to freeze this rate immediately. Note: no frozen event will be configured
+     * @param freezeAtUpperLimit When the freeze flag is true, this flag indicates whether the rate
+     * to freeze at is the upperLimit or lowerLimit..
      */
-    function setInversePricing(bytes32 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit)
+    function setInversePricing(bytes32 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit, bool freeze, bool freezeAtUpperLimit)
         external onlyOwner
     {
         require(entryPoint > 0, "entryPoint must be above 0");
@@ -346,9 +340,18 @@ contract ExchangeRates is SelfDestructible {
         inversePricing[currencyKey].entryPoint = entryPoint;
         inversePricing[currencyKey].upperLimit = upperLimit;
         inversePricing[currencyKey].lowerLimit = lowerLimit;
-        inversePricing[currencyKey].frozen = false;
+        inversePricing[currencyKey].frozen = freeze;
 
         emit InversePriceConfigured(currencyKey, entryPoint, upperLimit, lowerLimit);
+
+        // When indicating to freeze, we need to know the rate to freeze it at - either upper or lower
+        // this is useful in situations where ExchangeRates is updated and there are existing inverted
+        // rates already frozen in the current contract that need persisting across the upgrade
+        if (freeze) {
+            emit InversePriceFrozen(currencyKey);
+
+            _setRate(currencyKey, freezeAtUpperLimit ? upperLimit : lowerLimit, now);
+        }
     }
 
     /**

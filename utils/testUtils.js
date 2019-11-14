@@ -231,10 +231,18 @@ const assertEventEqual = (actualEventOrTransaction, expectedEvent, expectedArgs)
 	// Ensure you pass in all the args you need to assert on.
 };
 
+/**
+ * Converts a hex string of bytes into a UTF8 string with \0 characters (from padding) removed
+ */
 const bytesToString = bytes => {
 	const result = web3.utils.hexToAscii(bytes);
 	return result.replace(/\0/g, '');
 };
+
+/**
+ * Converts a string into a hex representation of bytes32, with right padding
+ */
+const asBytes32 = key => web3.utils.rightPad(web3.utils.asciiToHex(key), 64);
 
 /**
  *  Convenience method to assert that an event matches a bytes32 ascii param
@@ -450,4 +458,5 @@ module.exports = {
 
 	getEthBalance,
 	bytesToString,
+	asBytes32,
 };
