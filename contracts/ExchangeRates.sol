@@ -15,7 +15,7 @@ for all other assets.
 -----------------------------------------------------------------
 */
 
-pragma solidity >= 0.4.25;
+pragma solidity 0.4.25;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./SafeDecimalMath.sol";
@@ -315,7 +315,9 @@ contract ExchangeRates is SelfDestructible {
     }
 
     /**
-     * @notice Set an inverse price up for the currency key
+     * @notice Set an inverse price up for the currency key.
+     * An inverse price is one which has an entryPoint, an uppper and a lower limit. Once the price
+     * of the inverse exceeds or
      * @param currencyKey The currency to update
      * @param entryPoint The entry price point of the inverted price
      * @param upperLimit The upper limit, at or above which the price will be frozen

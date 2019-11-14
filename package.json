@@ -70,6 +70,7 @@
 		"prettier": "^1.14.2",
 		"rimraf": "^2.6.2",
 		"seedrandom": "^2.4.4",
+		"solc": "0.4.25",
 		"solhint": "^2.3.0",
 		"solidifier": "^2.0.0",
 		"solidity-coverage": "0.6.7",
@@ -78,13 +79,12 @@
 		"truffle": "5.0.43",
 		"typedarray-to-buffer": "^3.1.5",
 		"wait-port": "^0.2.2",
-		"web3": "1.2.2",
-		"web3-utils": "1.2.2"
+		"web3": "1.2.2"
 	},
 	"dependencies": {
 		"commander": "^2.19.0",
 		"openzeppelin-solidity": "2.0.0",
 		"pretty-error": "^2.1.1",
-		"solc": "0.4.25"
+		"web3-utils": "1.2.2"
 	}
 }

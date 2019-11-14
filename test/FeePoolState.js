@@ -2,11 +2,9 @@ const FeePool = artifacts.require('FeePool');
 const FeePoolState = artifacts.require('FeePoolState');
 const ExchangeRates = artifacts.require('ExchangeRates');
 
-const { getWeb3 } = require('../utils/web3Helper');
 const { toBytes32 } = require('../.');
 
 const { currentTime, toPreciseUnit, toUnit } = require('../utils/testUtils');
-const web3 = getWeb3();
 
 contract('FeePoolState', async accounts => {
 	const [
