@@ -271,19 +271,12 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
     /**
      * @notice The Synthetix contract informs us when fees are paid.
+     * @param xdrAmount xdr amount in fees being paid.
      */
-    function feePaid(bytes32 currencyKey, uint amount)
+    function recordFeePaid(uint xdrAmount)
         external
         onlySynthetix
     {
-        uint xdrAmount;
-
-        if (currencyKey != "XDR") {
-            xdrAmount = synthetix.effectiveValue(currencyKey, amount, "XDR");
-        } else {
-            xdrAmount = amount;
-        }
-
         // Keep track of in XDRs in our fee pool.
         _recentFeePeriodsStorage(0).feesToDistribute = _recentFeePeriodsStorage(0).feesToDistribute.add(xdrAmount);
     }
