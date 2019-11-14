@@ -571,7 +571,7 @@ contract Synthetix is ExternStateToken {
         }
 
         // Are they a new issuer? If so, record them.
-        if (!synthetixState.hasIssued(messageSender)) {
+        if (existingDebt == 0) {
             synthetixState.incrementTotalIssuerCount();
         }
 
