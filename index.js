@@ -2,6 +2,12 @@
 
 const fs = require('fs');
 const path = require('path');
+const w3utils = require('web3-utils');
+
+/**
+ * Converts a string into a hex representation of bytes32, with right padding
+ */
+const toBytes32 = key => w3utils.rightPad(w3utils.asciiToHex(key), 64);
 
 const loadDeploymentFile = ({ network }) => {
 	const pathToDeployment = path.join(__dirname, 'publish', 'deployed', network, 'deployment.json');
@@ -31,4 +37,4 @@ const getSynths = ({ network = 'mainnet' } = {}) => {
 	return JSON.parse(fs.readFileSync(pathToSynthList));
 };
 
-module.exports = { getTarget, getSource, getSynths };
+module.exports = { getTarget, getSource, getSynths, toBytes32 };

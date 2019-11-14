@@ -239,11 +239,6 @@ const bytesToString = bytes => {
 	return result.replace(/\0/g, '');
 };
 
-/**
- * Converts a string into a hex representation of bytes32, with right padding
- */
-const asBytes32 = key => web3.utils.rightPad(web3.utils.asciiToHex(key), 64);
-
 const assertEventsEqual = (transaction, ...expectedEventsAndArgs) => {
 	if (expectedEventsAndArgs.length % 2 > 0)
 		throw new Error('Please call assert.eventsEqual with names and args as pairs.');
@@ -415,5 +410,4 @@ module.exports = {
 
 	getEthBalance,
 	bytesToString,
-	asBytes32,
 };

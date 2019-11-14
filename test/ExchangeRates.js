@@ -1,11 +1,7 @@
 const ExchangeRates = artifacts.require('ExchangeRates');
-const {
-	currentTime,
-	fastForward,
-	toUnit,
-	bytesToString,
-	asBytes32,
-} = require('../utils/testUtils');
+const { currentTime, fastForward, toUnit, bytesToString } = require('../utils/testUtils');
+
+const { toBytes32 } = require('../.');
 
 // Helper functions
 
@@ -19,7 +15,7 @@ const createRandomKeysAndRates = quantity => {
 	const uniqueCurrencyKeys = {};
 	for (let i = 0; i < quantity; i++) {
 		const rate = Math.random() * 100;
-		const key = asBytes32(getRandomCurrencyKey());
+		const key = toBytes32(getRandomCurrencyKey());
 		uniqueCurrencyKeys[key] = web3.utils.toWei(rate.toFixed(18), 'ether');
 	}
 
@@ -45,7 +41,7 @@ contract('Exchange Rates', async accounts => {
 		const instance = await ExchangeRates.new(
 			owner,
 			oracle,
-			[asBytes32('SNX')],
+			[toBytes32('SNX')],
 			[web3.utils.toWei('0.2', 'ether')],
 			{
 				from: deployerAccount,
@@ -56,19 +52,19 @@ contract('Exchange Rates', async accounts => {
 		assert.equal(await instance.selfDestructBeneficiary(), owner);
 		assert.equal(await instance.oracle(), oracle);
 
-		assert.etherEqual(await instance.rates.call(asBytes32('sUSD')), '1');
-		assert.etherEqual(await instance.rates.call(asBytes32('SNX')), '0.2');
+		assert.etherEqual(await instance.rates.call(toBytes32('sUSD')), '1');
+		assert.etherEqual(await instance.rates.call(toBytes32('SNX')), '0.2');
 
 		// Ensure that when the rate isn't found, 0 is returned as the exchange rate.
-		assert.etherEqual(await instance.rates.call(asBytes32('OTHER')), '0');
+		assert.etherEqual(await instance.rates.call(toBytes32('OTHER')), '0');
 
-		const lastUpdatedTimeSUSD = await instance.lastRateUpdateTimes.call(asBytes32('sUSD'));
+		const lastUpdatedTimeSUSD = await instance.lastRateUpdateTimes.call(toBytes32('sUSD'));
 		assert.isAtLeast(lastUpdatedTimeSUSD.toNumber(), creationTime);
 
-		const lastUpdatedTimeOTHER = await instance.lastRateUpdateTimes.call(asBytes32('OTHER'));
+		const lastUpdatedTimeOTHER = await instance.lastRateUpdateTimes.call(toBytes32('OTHER'));
 		assert.equal(lastUpdatedTimeOTHER.toNumber(), 0);
 
-		const lastUpdatedTimeSNX = await instance.lastRateUpdateTimes.call(asBytes32('SNX'));
+		const lastUpdatedTimeSNX = await instance.lastRateUpdateTimes.call(toBytes32('SNX'));
 		assert.isAtLeast(lastUpdatedTimeSNX.toNumber(), creationTime);
 
 		const expectedXdrParticipants = ['sUSD', 'sAUD', 'sCHF', 'sEUR', 'sGBP'];
@@ -80,7 +76,7 @@ contract('Exchange Rates', async accounts => {
 			assert.equal(xdrParticipants[i], expectedXdrParticipants[i]);
 		}
 
-		const sUSDRate = await instance.rateForCurrency(asBytes32('sUSD'));
+		const sUSDRate = await instance.rateForCurrency(toBytes32('sUSD'));
 		assert.bnEqual(sUSDRate, toUnit('1'));
 	});
 
@@ -91,17 +87,17 @@ contract('Exchange Rates', async accounts => {
 		const instance = await ExchangeRates.new(
 			owner,
 			oracle,
-			[asBytes32('CARTER'), asBytes32('CARTOON')],
+			[toBytes32('CARTER'), toBytes32('CARTOON')],
 			[web3.utils.toWei(firstAmount, 'ether'), web3.utils.toWei(secondAmount, 'ether')],
 			{
 				from: deployerAccount,
 			}
 		);
 
-		assert.etherEqual(await instance.rates.call(asBytes32('CARTER')), firstAmount);
-		assert.etherEqual(await instance.rates.call(asBytes32('CARTOON')), secondAmount);
+		assert.etherEqual(await instance.rates.call(toBytes32('CARTER')), firstAmount);
+		assert.etherEqual(await instance.rates.call(toBytes32('CARTOON')), secondAmount);
 
-		const lastUpdatedTime = await instance.lastRateUpdateTimes.call(asBytes32('CARTER'));
+		const lastUpdatedTime = await instance.lastRateUpdateTimes.call(toBytes32('CARTER'));
 		assert.isAtLeast(lastUpdatedTime.toNumber(), creationTime);
 	});
 
@@ -110,7 +106,7 @@ contract('Exchange Rates', async accounts => {
 			ExchangeRates.new(
 				owner,
 				oracle,
-				[asBytes32('SNX'), asBytes32('GOLD')],
+				[toBytes32('SNX'), toBytes32('GOLD')],
 				[web3.utils.toWei('0.2', 'ether')],
 				{
 					from: deployerAccount,
@@ -125,7 +121,7 @@ contract('Exchange Rates', async accounts => {
 		const instance = await ExchangeRates.new(
 			owner,
 			oracle,
-			[asBytes32('ABCDEFGHIJKLMNOPQRSTUVXYZ1234567')],
+			[toBytes32('ABCDEFGHIJKLMNOPQRSTUVXYZ1234567')],
 			[web3.utils.toWei(amount, 'ether')],
 			{
 				from: deployerAccount,
@@ -133,23 +129,23 @@ contract('Exchange Rates', async accounts => {
 		);
 
 		assert.etherEqual(
-			await instance.rates.call(asBytes32('ABCDEFGHIJKLMNOPQRSTUVXYZ1234567')),
+			await instance.rates.call(toBytes32('ABCDEFGHIJKLMNOPQRSTUVXYZ1234567')),
 			amount
 		);
 		assert.etherNotEqual(
-			await instance.rates.call(asBytes32('ABCDEFGHIJKLMNOPQRSTUVXYZ123456')),
+			await instance.rates.call(toBytes32('ABCDEFGHIJKLMNOPQRSTUVXYZ123456')),
 			amount
 		);
 
 		const lastUpdatedTime = await instance.lastRateUpdateTimes.call(
-			asBytes32('ABCDEFGHIJKLMNOPQRSTUVXYZ1234567')
+			toBytes32('ABCDEFGHIJKLMNOPQRSTUVXYZ1234567')
 		);
 		assert.isAtLeast(lastUpdatedTime.toNumber(), creationTime);
 	});
 
 	it("shouldn't be able to set exchange rate to 0 on create", async () => {
 		await assert.revert(
-			ExchangeRates.new(owner, oracle, [asBytes32('SNX')], [web3.utils.toWei('0', 'ether')], {
+			ExchangeRates.new(owner, oracle, [toBytes32('SNX')], [web3.utils.toWei('0', 'ether')], {
 				from: deployerAccount,
 			})
 		);
@@ -180,7 +176,7 @@ contract('Exchange Rates', async accounts => {
 		await fastForward(1);
 
 		await instance.updateRates(
-			[asBytes32('lABC'), asBytes32('lDEF'), asBytes32('lGHI')],
+			[toBytes32('lABC'), toBytes32('lDEF'), toBytes32('lGHI')],
 			[
 				web3.utils.toWei('1.3', 'ether'),
 				web3.utils.toWei('2.4', 'ether'),
@@ -195,24 +191,24 @@ contract('Exchange Rates', async accounts => {
 
 		const updatedRate = '64.33';
 		await instance.updateRates(
-			[asBytes32('lABC')],
+			[toBytes32('lABC')],
 			[web3.utils.toWei(updatedRate, 'ether')],
 			updatedTime,
 			{ from: oracle }
 		);
 
-		const updatedTimelDEF = await instance.lastRateUpdateTimes.call(asBytes32('lDEF'));
-		const updatedTimelGHI = await instance.lastRateUpdateTimes.call(asBytes32('lGHI'));
+		const updatedTimelDEF = await instance.lastRateUpdateTimes.call(toBytes32('lDEF'));
+		const updatedTimelGHI = await instance.lastRateUpdateTimes.call(toBytes32('lGHI'));
 
-		assert.etherEqual(await instance.rates.call(asBytes32('lABC')), updatedRate);
-		assert.etherEqual(await instance.rates.call(asBytes32('lDEF')), '2.4');
-		assert.etherEqual(await instance.rates.call(asBytes32('lGHI')), '3.5');
+		assert.etherEqual(await instance.rates.call(toBytes32('lABC')), updatedRate);
+		assert.etherEqual(await instance.rates.call(toBytes32('lDEF')), '2.4');
+		assert.etherEqual(await instance.rates.call(toBytes32('lGHI')), '3.5');
 
-		const lastUpdatedTimeLABC = await instance.lastRateUpdateTimes.call(asBytes32('lABC'));
+		const lastUpdatedTimeLABC = await instance.lastRateUpdateTimes.call(toBytes32('lABC'));
 		assert.equal(lastUpdatedTimeLABC.toNumber(), updatedTime);
-		const lastUpdatedTimeLDEF = await instance.lastRateUpdateTimes.call(asBytes32('lDEF'));
+		const lastUpdatedTimeLDEF = await instance.lastRateUpdateTimes.call(toBytes32('lDEF'));
 		assert.equal(lastUpdatedTimeLDEF.toNumber(), updatedTimelDEF.toNumber());
-		const lastUpdatedTimeLGHI = await instance.lastRateUpdateTimes.call(asBytes32('lGHI'));
+		const lastUpdatedTimeLGHI = await instance.lastRateUpdateTimes.call(toBytes32('lGHI'));
 		assert.equal(lastUpdatedTimeLGHI.toNumber(), updatedTimelGHI.toNumber());
 	});
 
@@ -223,7 +219,7 @@ contract('Exchange Rates', async accounts => {
 		await fastForward(1);
 
 		await instance.updateRates(
-			[asBytes32('lABC'), asBytes32('lDEF'), asBytes32('lGHI')],
+			[toBytes32('lABC'), toBytes32('lDEF'), toBytes32('lGHI')],
 			[
 				web3.utils.toWei('1.3', 'ether'),
 				web3.utils.toWei('2.4', 'ether'),
@@ -240,7 +236,7 @@ contract('Exchange Rates', async accounts => {
 		const updatedRate2 = '2.54';
 		const updatedRate3 = '10.99';
 		await instance.updateRates(
-			[asBytes32('lABC'), asBytes32('lDEF'), asBytes32('lGHI')],
+			[toBytes32('lABC'), toBytes32('lDEF'), toBytes32('lGHI')],
 			[
 				web3.utils.toWei(updatedRate1, 'ether'),
 				web3.utils.toWei(updatedRate2, 'ether'),
@@ -250,15 +246,15 @@ contract('Exchange Rates', async accounts => {
 			{ from: oracle }
 		);
 
-		assert.etherEqual(await instance.rates.call(asBytes32('lABC')), updatedRate1);
-		assert.etherEqual(await instance.rates.call(asBytes32('lDEF')), updatedRate2);
-		assert.etherEqual(await instance.rates.call(asBytes32('lGHI')), updatedRate3);
+		assert.etherEqual(await instance.rates.call(toBytes32('lABC')), updatedRate1);
+		assert.etherEqual(await instance.rates.call(toBytes32('lDEF')), updatedRate2);
+		assert.etherEqual(await instance.rates.call(toBytes32('lGHI')), updatedRate3);
 
-		const lastUpdatedTimeLABC = await instance.lastRateUpdateTimes.call(asBytes32('lABC'));
+		const lastUpdatedTimeLABC = await instance.lastRateUpdateTimes.call(toBytes32('lABC'));
 		assert.equal(lastUpdatedTimeLABC.toNumber(), updatedTime);
-		const lastUpdatedTimeLDEF = await instance.lastRateUpdateTimes.call(asBytes32('lDEF'));
+		const lastUpdatedTimeLDEF = await instance.lastRateUpdateTimes.call(toBytes32('lDEF'));
 		assert.equal(lastUpdatedTimeLDEF.toNumber(), updatedTime);
-		const lastUpdatedTimeLGHI = await instance.lastRateUpdateTimes.call(asBytes32('lGHI'));
+		const lastUpdatedTimeLGHI = await instance.lastRateUpdateTimes.call(toBytes32('lGHI'));
 		assert.equal(lastUpdatedTimeLGHI.toNumber(), updatedTime);
 	});
 
@@ -269,7 +265,7 @@ contract('Exchange Rates', async accounts => {
 		await fastForward(1);
 
 		await assert.revert(
-			instance.updateRates([asBytes32('sUSD')], [web3.utils.toWei('1.0', 'ether')], timeSent, {
+			instance.updateRates([toBytes32('sUSD')], [web3.utils.toWei('1.0', 'ether')], timeSent, {
 				from: oracle,
 			})
 		);
@@ -285,7 +281,7 @@ contract('Exchange Rates', async accounts => {
 		];
 
 		const keys = ['lABC', 'lDEF', 'lGHI'];
-		const currencyKeys = keys.map(asBytes32);
+		const currencyKeys = keys.map(toBytes32);
 		const txn = await instance.updateRates(currencyKeys, rates, await currentTime(), {
 			from: oracle,
 		});
@@ -315,7 +311,7 @@ contract('Exchange Rates', async accounts => {
 		const instance = await ExchangeRates.deployed();
 		await assert.revert(
 			instance.updateRates(
-				[asBytes32('sUSD'), asBytes32('SNX'), asBytes32('GOLD')],
+				[toBytes32('sUSD'), toBytes32('SNX'), toBytes32('GOLD')],
 				[web3.utils.toWei('1', 'ether'), web3.utils.toWei('0.2', 'ether')],
 				await currentTime(),
 				{ from: oracle }
@@ -327,7 +323,7 @@ contract('Exchange Rates', async accounts => {
 		const instance = await ExchangeRates.deployed();
 		await assert.revert(
 			instance.updateRates(
-				[asBytes32('ZERO')],
+				[toBytes32('ZERO')],
 				[web3.utils.toWei('0', 'ether')],
 				await currentTime(),
 				{ from: oracle }
@@ -341,7 +337,7 @@ contract('Exchange Rates', async accounts => {
 		// Check not allowed from deployer
 		await assert.revert(
 			instance.updateRates(
-				[asBytes32('GOLD'), asBytes32('FOOL')],
+				[toBytes32('GOLD'), toBytes32('FOOL')],
 				[web3.utils.toWei('10', 'ether'), web3.utils.toWei('0.9', 'ether')],
 				await currentTime(),
 				{ from: deployerAccount }
@@ -350,7 +346,7 @@ contract('Exchange Rates', async accounts => {
 		// Check not allowed from owner
 		await assert.revert(
 			instance.updateRates(
-				[asBytes32('GOLD'), asBytes32('FOOL')],
+				[toBytes32('GOLD'), toBytes32('FOOL')],
 				[web3.utils.toWei('10', 'ether'), web3.utils.toWei('0.9', 'ether')],
 				await currentTime(),
 				{ from: owner }
@@ -359,30 +355,30 @@ contract('Exchange Rates', async accounts => {
 		// Check not allowed from a random account
 		await assert.revert(
 			instance.updateRates(
-				[asBytes32('GOLD'), asBytes32('FOOL')],
+				[toBytes32('GOLD'), toBytes32('FOOL')],
 				[web3.utils.toWei('10', 'ether'), web3.utils.toWei('0.9', 'ether')],
 				await currentTime(),
 				{ from: accountOne }
 			)
 		);
 
-		assert.etherNotEqual(await instance.rates.call(asBytes32('GOLD')), '10');
-		assert.etherNotEqual(await instance.rates.call(asBytes32('FOOL')), '0.9');
+		assert.etherNotEqual(await instance.rates.call(toBytes32('GOLD')), '10');
+		assert.etherNotEqual(await instance.rates.call(toBytes32('FOOL')), '0.9');
 
 		const updatedTime = await currentTime();
 
 		await instance.updateRates(
-			[asBytes32('GOLD'), asBytes32('FOOL')],
+			[toBytes32('GOLD'), toBytes32('FOOL')],
 			[web3.utils.toWei('10', 'ether'), web3.utils.toWei('0.9', 'ether')],
 			updatedTime,
 			{ from: oracle }
 		);
-		assert.etherEqual(await instance.rates.call(asBytes32('GOLD')), '10');
-		assert.etherEqual(await instance.rates.call(asBytes32('FOOL')), '0.9');
+		assert.etherEqual(await instance.rates.call(toBytes32('GOLD')), '10');
+		assert.etherEqual(await instance.rates.call(toBytes32('FOOL')), '0.9');
 
-		const lastUpdatedTimeGOLD = await instance.lastRateUpdateTimes.call(asBytes32('GOLD'));
+		const lastUpdatedTimeGOLD = await instance.lastRateUpdateTimes.call(toBytes32('GOLD'));
 		assert.equal(lastUpdatedTimeGOLD.toNumber(), updatedTime);
-		const lastUpdatedTimeFOOL = await instance.lastRateUpdateTimes.call(asBytes32('FOOL'));
+		const lastUpdatedTimeFOOL = await instance.lastRateUpdateTimes.call(toBytes32('FOOL'));
 		assert.equal(lastUpdatedTimeFOOL.toNumber(), updatedTime);
 	});
 
@@ -391,7 +387,7 @@ contract('Exchange Rates', async accounts => {
 		const timeTooFarInFuture = (await currentTime()) + 10 * 61;
 		await assert.revert(
 			instance.updateRates(
-				[asBytes32('GOLD')],
+				[toBytes32('GOLD')],
 				[web3.utils.toWei('1', 'ether')],
 				timeTooFarInFuture,
 				{ from: oracle }
@@ -447,10 +443,10 @@ contract('Exchange Rates', async accounts => {
 		const instance = await ExchangeRates.deployed();
 		const updatedTime = await currentTime();
 		const foolsRate = '0.002';
-		const encodedRateGOLD = asBytes32('GOLD');
+		const encodedRateGOLD = toBytes32('GOLD');
 
 		await instance.updateRates(
-			[encodedRateGOLD, asBytes32('FOOL')],
+			[encodedRateGOLD, toBytes32('FOOL')],
 			[web3.utils.toWei('10.123', 'ether'), web3.utils.toWei(foolsRate, 'ether')],
 			updatedTime,
 			{ from: oracle }
@@ -469,7 +465,7 @@ contract('Exchange Rates', async accounts => {
 		assert.equal(afterRateUpdatedTime, '0');
 
 		// Other rates are unaffected
-		assert.etherEqual(await instance.rates.call(asBytes32('FOOL')), foolsRate);
+		assert.etherEqual(await instance.rates.call(toBytes32('FOOL')), foolsRate);
 	});
 
 	it('only oracle can delete a rate', async () => {
@@ -478,13 +474,13 @@ contract('Exchange Rates', async accounts => {
 		// Assume that the contract is already set up with a valid oracle account called 'oracle'
 
 		await instance.updateRates(
-			[asBytes32('COOL')],
+			[toBytes32('COOL')],
 			[web3.utils.toWei('10.123', 'ether')],
 			await currentTime(),
 			{ from: oracle }
 		);
 
-		const encodedRateName = asBytes32('COOL');
+		const encodedRateName = toBytes32('COOL');
 		await assert.revert(instance.deleteRate(encodedRateName, { from: deployerAccount }));
 		await assert.revert(instance.deleteRate(encodedRateName, { from: accountOne }));
 		await assert.revert(instance.deleteRate(encodedRateName, { from: owner }));
@@ -495,7 +491,7 @@ contract('Exchange Rates', async accounts => {
 		const instance = await ExchangeRates.deployed();
 
 		// This key shouldn't exist but let's do the best we can to ensure that it doesn't
-		const encodedCurrencyKey = asBytes32('7NEQ');
+		const encodedCurrencyKey = toBytes32('7NEQ');
 		const currentRate = await instance.rates.call(encodedCurrencyKey);
 		if (currentRate > 0) {
 			await instance.deleteRate(encodedCurrencyKey, { from: oracle });
@@ -510,7 +506,7 @@ contract('Exchange Rates', async accounts => {
 		const instance = await ExchangeRates.deployed();
 		const updatedTime = await currentTime();
 		const rate = 'GOLD';
-		const encodedRate = asBytes32(rate);
+		const encodedRate = toBytes32(rate);
 		await instance.updateRates([encodedRate], [web3.utils.toWei('10.123', 'ether')], updatedTime, {
 			from: oracle,
 		});
@@ -524,7 +520,7 @@ contract('Exchange Rates', async accounts => {
 	it('should be able to get exchange rate with key', async () => {
 		const instance = await ExchangeRates.deployed();
 		const updatedTime = await currentTime();
-		const encodedRate = asBytes32('GOLD');
+		const encodedRate = toBytes32('GOLD');
 		const rateValueEncodedStr = web3.utils.toWei('10.123', 'ether');
 		await instance.updateRates([encodedRate], [rateValueEncodedStr], updatedTime, {
 			from: oracle,
@@ -537,7 +533,7 @@ contract('Exchange Rates', async accounts => {
 	it('all users should be able to get exchange rate with key', async () => {
 		const instance = await ExchangeRates.deployed();
 		const updatedTime = await currentTime();
-		const encodedRate = asBytes32('FETC');
+		const encodedRate = toBytes32('FETC');
 		const rateValueEncodedStr = web3.utils.toWei('910.6661293879', 'ether');
 		await instance.updateRates([encodedRate], [rateValueEncodedStr], updatedTime, {
 			from: oracle,
@@ -552,7 +548,7 @@ contract('Exchange Rates', async accounts => {
 
 	it('Fetching non-existent rate returns 0', async () => {
 		const instance = await ExchangeRates.deployed();
-		const encodedRateKey = asBytes32('GOLD');
+		const encodedRateKey = toBytes32('GOLD');
 		const currentRate = await instance.rates.call(encodedRateKey);
 		if (currentRate > 0) {
 			await instance.deleteRate(encodedRateKey, { from: oracle });
@@ -602,13 +598,13 @@ contract('Exchange Rates', async accounts => {
 	it('should never allow sUSD to go stale via rateIsStale', async () => {
 		const instance = await ExchangeRates.deployed();
 		await fastForward(await instance.rateStalePeriod());
-		const rateIsStale = await instance.rateIsStale(asBytes32('sUSD'));
+		const rateIsStale = await instance.rateIsStale(toBytes32('sUSD'));
 		assert.equal(rateIsStale, false);
 	});
 
 	it('should never allow sUSD to go stale via anyRateIsStale', async () => {
 		const instance = await ExchangeRates.deployed();
-		const keysArray = [asBytes32('SNX'), asBytes32('GOLD')];
+		const keysArray = [toBytes32('SNX'), toBytes32('GOLD')];
 
 		await instance.updateRates(
 			keysArray,
@@ -621,7 +617,7 @@ contract('Exchange Rates', async accounts => {
 		await fastForward(await instance.rateStalePeriod());
 
 		await instance.updateRates(
-			[asBytes32('SNX'), asBytes32('GOLD')],
+			[toBytes32('SNX'), toBytes32('GOLD')],
 			[web3.utils.toWei('0.1', 'ether'), web3.utils.toWei('0.2', 'ether')],
 			await currentTime(),
 			{ from: oracle }
@@ -638,12 +634,12 @@ contract('Exchange Rates', async accounts => {
 		// Set up rates for test
 		await instance.setRateStalePeriod(30, { from: owner });
 		const updatedTime = await currentTime();
-		await instance.updateRates([asBytes32('ABC')], [web3.utils.toWei('2', 'ether')], updatedTime, {
+		await instance.updateRates([toBytes32('ABC')], [web3.utils.toWei('2', 'ether')], updatedTime, {
 			from: oracle,
 		});
 		await fastForward(31);
 
-		const rateIsStale = await instance.rateIsStale(asBytes32('ABC'));
+		const rateIsStale = await instance.rateIsStale(toBytes32('ABC'));
 		assert.equal(rateIsStale, true);
 	});
 
@@ -653,12 +649,12 @@ contract('Exchange Rates', async accounts => {
 		// Set up rates for test
 		await instance.setRateStalePeriod(30, { from: owner });
 		const updatedTime = await currentTime();
-		await instance.updateRates([asBytes32('ABC')], [web3.utils.toWei('2', 'ether')], updatedTime, {
+		await instance.updateRates([toBytes32('ABC')], [web3.utils.toWei('2', 'ether')], updatedTime, {
 			from: oracle,
 		});
 		await fastForward(29);
 
-		const rateIsStale = await instance.rateIsStale(asBytes32('ABC'));
+		const rateIsStale = await instance.rateIsStale(toBytes32('ABC'));
 		assert.equal(rateIsStale, false);
 	});
 
@@ -667,7 +663,7 @@ contract('Exchange Rates', async accounts => {
 
 		// Set up rates for test
 		await instance.setRateStalePeriod(30, { from: owner });
-		const encodedRateKey = asBytes32('GOLD');
+		const encodedRateKey = toBytes32('GOLD');
 		const currentRate = await instance.rates.call(encodedRateKey);
 		if (currentRate > 0) {
 			await instance.deleteRate(encodedRateKey, { from: oracle });
@@ -679,7 +675,7 @@ contract('Exchange Rates', async accounts => {
 
 	it('make sure anyone can check if rate is stale', async () => {
 		const instance = await ExchangeRates.deployed();
-		const rateKey = asBytes32('ABC');
+		const rateKey = toBytes32('ABC');
 		await instance.rateIsStale(rateKey, { from: oracle });
 		await instance.rateIsStale(rateKey, { from: owner });
 		await instance.rateIsStale(rateKey, { from: deployerAccount });
@@ -695,18 +691,18 @@ contract('Exchange Rates', async accounts => {
 		// Set up rates for test
 		await instance.setRateStalePeriod(20, { from: owner });
 		const encodedRateKeys1 = [
-			asBytes32('ABC'),
-			asBytes32('DEF'),
-			asBytes32('GHI'),
-			asBytes32('LMN'),
+			toBytes32('ABC'),
+			toBytes32('DEF'),
+			toBytes32('GHI'),
+			toBytes32('LMN'),
 		];
 		const encodedRateKeys2 = [
-			asBytes32('OPQ'),
-			asBytes32('RST'),
-			asBytes32('UVW'),
-			asBytes32('XYZ'),
+			toBytes32('OPQ'),
+			toBytes32('RST'),
+			toBytes32('UVW'),
+			toBytes32('XYZ'),
 		];
-		const encodedRateKeys3 = [asBytes32('123'), asBytes32('456'), asBytes32('789')];
+		const encodedRateKeys3 = [toBytes32('123'), toBytes32('456'), toBytes32('789')];
 		const encodedRateValues1 = [
 			web3.utils.toWei('1', 'ether'),
 			web3.utils.toWei('2', 'ether'),
@@ -750,13 +746,13 @@ contract('Exchange Rates', async accounts => {
 		// Set up rates for test
 		await instance.setRateStalePeriod(40, { from: owner });
 		const encodedRateKeys1 = [
-			asBytes32('ABC'),
-			asBytes32('DEF'),
-			asBytes32('GHI'),
-			asBytes32('LMN'),
+			toBytes32('ABC'),
+			toBytes32('DEF'),
+			toBytes32('GHI'),
+			toBytes32('LMN'),
 		];
-		const encodedRateKeys2 = [asBytes32('OPQ')];
-		const encodedRateKeys3 = [asBytes32('RST'), asBytes32('UVW'), asBytes32('XYZ')];
+		const encodedRateKeys2 = [toBytes32('OPQ')];
+		const encodedRateKeys3 = [toBytes32('RST'), toBytes32('UVW'), toBytes32('XYZ')];
 		const encodedRateValues1 = [
 			web3.utils.toWei('1', 'ether'),
 			web3.utils.toWei('2', 'ether'),
@@ -797,18 +793,18 @@ contract('Exchange Rates', async accounts => {
 		// Set up rates for test
 		await instance.setRateStalePeriod(40, { from: owner });
 		const updatedTime = await currentTime();
-		await instance.updateRates([asBytes32('ABC')], [web3.utils.toWei('2', 'ether')], updatedTime, {
+		await instance.updateRates([toBytes32('ABC')], [web3.utils.toWei('2', 'ether')], updatedTime, {
 			from: oracle,
 		});
 		await fastForward(41);
 
-		const rateIsStale = await instance.anyRateIsStale([asBytes32('ABC')]);
+		const rateIsStale = await instance.anyRateIsStale([toBytes32('ABC')]);
 		assert.equal(rateIsStale, true);
 	});
 
 	it('make sure anyone can check if any rates are stale', async () => {
 		const instance = await ExchangeRates.deployed();
-		const rateKey = asBytes32('ABC');
+		const rateKey = toBytes32('ABC');
 		await instance.anyRateIsStale([rateKey], { from: oracle });
 		await instance.anyRateIsStale([rateKey], { from: owner });
 		await instance.anyRateIsStale([rateKey], { from: deployerAccount });
@@ -822,10 +818,10 @@ contract('Exchange Rates', async accounts => {
 		// Set up rates for test
 		await instance.setRateStalePeriod(40, { from: owner });
 		const encodedRateKeys1 = [
-			asBytes32('ABC'),
-			asBytes32('DEF'),
-			asBytes32('GHI'),
-			asBytes32('LMN'),
+			toBytes32('ABC'),
+			toBytes32('DEF'),
+			toBytes32('GHI'),
+			toBytes32('LMN'),
 		];
 		const encodedRateValues1 = [
 			web3.utils.toWei('1', 'ether'),
@@ -838,7 +834,7 @@ contract('Exchange Rates', async accounts => {
 		await instance.updateRates(encodedRateKeys1, encodedRateValues1, updatedTime1, {
 			from: oracle,
 		});
-		const rateIsStale = await instance.anyRateIsStale([...encodedRateKeys1, asBytes32('RST')]);
+		const rateIsStale = await instance.anyRateIsStale([...encodedRateKeys1, toBytes32('RST')]);
 		assert.equal(rateIsStale, true);
 	});
 
@@ -860,11 +856,11 @@ contract('Exchange Rates', async accounts => {
 	// Last rate update times
 
 	it('should return correct last rate update time for specific currencies', async () => {
-		const abc = asBytes32('lABC');
+		const abc = toBytes32('lABC');
 		const instance = await ExchangeRates.deployed();
 		const timeSent = await currentTime();
 		await instance.updateRates(
-			[abc, asBytes32('lDEF'), asBytes32('lGHI')],
+			[abc, toBytes32('lDEF'), toBytes32('lGHI')],
 			[
 				web3.utils.toWei('1.3', 'ether'),
 				web3.utils.toWei('2.4', 'ether'),
@@ -879,9 +875,9 @@ contract('Exchange Rates', async accounts => {
 	});
 
 	it('should return correct last rate update time for a specific currency', async () => {
-		const abc = asBytes32('lABC');
-		const def = asBytes32('lDEF');
-		const ghi = asBytes32('lGHI');
+		const abc = toBytes32('lABC');
+		const def = toBytes32('lDEF');
+		const ghi = toBytes32('lGHI');
 		const instance = await ExchangeRates.deployed();
 		const timeSent = await currentTime();
 		await instance.updateRates(
@@ -904,16 +900,16 @@ contract('Exchange Rates', async accounts => {
 	it('should update the XDR rate correctly with all exchange rates', async () => {
 		const instance = await ExchangeRates.deployed();
 		const timeSent = await currentTime();
-		const keysArray = ['sAUD', 'sEUR', 'sCHF', 'sGBP'].map(asBytes32);
+		const keysArray = ['sAUD', 'sEUR', 'sCHF', 'sGBP'].map(toBytes32);
 		const rates = ['0.4', '1.2', '3.3', '1.95'].map(toUnit);
 		await instance.updateRates(keysArray, rates, timeSent, {
 			from: oracle,
 		});
 
-		const lastUpdatedTimeXDR = await instance.lastRateUpdateTimes.call(asBytes32('XDR'));
+		const lastUpdatedTimeXDR = await instance.lastRateUpdateTimes.call(toBytes32('XDR'));
 		assert.equal(lastUpdatedTimeXDR, timeSent);
 
-		const lastUpdatedCurrencyXDR = await instance.rates.call(asBytes32('XDR'));
+		const lastUpdatedCurrencyXDR = await instance.rates.call(toBytes32('XDR'));
 		let ratesTotal = toUnit('1'); // sUSD is always UNIT
 		for (const rate of rates) {
 			ratesTotal = ratesTotal.add(rate);
@@ -922,7 +918,7 @@ contract('Exchange Rates', async accounts => {
 	});
 
 	it('should update the XDR rates correctly with a subset of exchange rates', async () => {
-		const keysArray = ['sCHF', 'sGBP'].map(asBytes32);
+		const keysArray = ['sCHF', 'sGBP'].map(toBytes32);
 		const rates = ['3.3', '1.95'].map(toUnit);
 		const instance = await ExchangeRates.new(owner, oracle, keysArray, rates, {
 			from: deployerAccount,
@@ -931,10 +927,10 @@ contract('Exchange Rates', async accounts => {
 		const { blockNumber } = await web3.eth.getTransaction(instance.transactionHash);
 		const { timestamp } = await web3.eth.getBlock(blockNumber);
 
-		const lastUpdatedTimeXDR = await instance.lastRateUpdateTimes.call(asBytes32('XDR'));
+		const lastUpdatedTimeXDR = await instance.lastRateUpdateTimes.call(toBytes32('XDR'));
 		assert.bnEqual(lastUpdatedTimeXDR, web3.utils.toBN(timestamp));
 
-		const lastUpdatedCurrencyXDR = await instance.rates.call(asBytes32('XDR'));
+		const lastUpdatedCurrencyXDR = await instance.rates.call(toBytes32('XDR'));
 		let ratesTotal = toUnit('1'); // sUSD is always UNIT
 		for (const rate of rates) {
 			ratesTotal = ratesTotal.add(rate);
@@ -970,7 +966,7 @@ contract('Exchange Rates', async accounts => {
 
 		// Send a price update
 		const timeSent = await currentTime();
-		const keysArray = ['sAUD', 'sEUR', 'sCHF', 'sGBP'].map(asBytes32);
+		const keysArray = ['sAUD', 'sEUR', 'sCHF', 'sGBP'].map(toBytes32);
 		const rates = ['0.4', '1.2', '3.3', '1.95'].map(toUnit);
 		await instance.updateRates(keysArray, rates, timeSent, {
 			from: oracle,
@@ -982,9 +978,8 @@ contract('Exchange Rates', async accounts => {
 	});
 
 	describe('inverted prices', () => {
-		const currencyKeyEvent = ['currencyKey'];
 		const inverseRates = ['iBTC', 'iETH', 'sEUR', 'sBTC'];
-		const [iBTC, iETH, sEUR, sBTC] = inverseRates.map(asBytes32);
+		const [iBTC, iETH, sEUR, sBTC] = inverseRates.map(toBytes32);
 		let instance;
 		describe('when instance ready', () => {
 			beforeEach(async () => {
@@ -1352,7 +1347,7 @@ contract('Exchange Rates', async accounts => {
 						it('it emits a InversePriceConfigured event', async () => {
 							const currencyKey = 'iBTC';
 							assert.eventEqual(setTxn, 'InversePriceConfigured', {
-								currencyKey: asBytes32(currencyKey),
+								currencyKey: toBytes32(currencyKey),
 								entryPoint: toUnit(5000),
 								upperLimit: toUnit(8900),
 								lowerLimit: toUnit(3000),

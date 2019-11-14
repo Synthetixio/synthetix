@@ -3,9 +3,10 @@ const SynthetixState = artifacts.require('SynthetixState');
 const Synth = artifacts.require('Synth');
 
 const { toUnit } = require('../utils/testUtils');
+const { toBytes32 } = require('../.');
 
 contract('SynthetixState', async accounts => {
-	const sUSD = web3.utils.asciiToHex('sUSD');
+	const sUSD = toBytes32('sUSD');
 
 	const [deployerAccount, owner, account1, account2] = accounts;
 

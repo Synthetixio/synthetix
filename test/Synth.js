@@ -6,11 +6,10 @@ const Synthetix = artifacts.require('Synthetix');
 const Synth = artifacts.require('Synth');
 
 const { currentTime, toUnit, ZERO_ADDRESS, bytesToString } = require('../utils/testUtils');
+const { toBytes32 } = require('../.');
 
 contract('Synth', async accounts => {
-	const [sUSD, sAUD, sEUR, SNX, XDR] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'XDR'].map(
-		web3.utils.asciiToHex
-	);
+	const [sUSD, sAUD, sEUR, SNX, XDR] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'XDR'].map(toBytes32);
 
 	const [
 		deployerAccount,
@@ -69,7 +68,7 @@ contract('Synth', async accounts => {
 			'Synth XYZ',
 			'sXYZ',
 			owner,
-			web3.utils.asciiToHex('sXYZ'),
+			toBytes32('sXYZ'),
 			web3.utils.toWei('100'),
 			{ from: deployerAccount }
 		);
@@ -220,7 +219,7 @@ contract('Synth', async accounts => {
 		const transaction = await sUSDContract.methods['transfer(address,uint256,bytes)'](
 			account1,
 			amount,
-			web3.utils.asciiToHex('This is a test'),
+			toBytes32('This is a test'),
 			{ from: owner }
 		);
 
@@ -250,7 +249,7 @@ contract('Synth', async accounts => {
 			sUSDContract.methods['transfer(address,uint256,bytes)'](
 				account1,
 				amount.add(web3.utils.toBN('1')),
-				web3.utils.asciiToHex('This is a test'),
+				toBytes32('This is a test'),
 				{ from: owner }
 			)
 		);
@@ -337,7 +336,7 @@ contract('Synth', async accounts => {
 			owner,
 			account1,
 			amount,
-			web3.utils.asciiToHex('This is a test'),
+			toBytes32('This is a test'),
 			{
 				from: account1,
 			}
@@ -376,7 +375,7 @@ contract('Synth', async accounts => {
 				owner,
 				account1,
 				amount,
-				web3.utils.asciiToHex('This is a test'),
+				toBytes32('This is a test'),
 				{
 					from: account1,
 				}
@@ -398,7 +397,7 @@ contract('Synth', async accounts => {
 				owner,
 				account1,
 				amount,
-				web3.utils.asciiToHex('This is a test'),
+				toBytes32('This is a test'),
 				{
 					from: account1,
 				}

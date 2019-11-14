@@ -13,8 +13,6 @@ const {
 	SYNTHS_FILENAME,
 } = require('./constants');
 
-const toBytes4 = str => w3utils.asciiToHex(str, 4);
-
 const stringify = input => JSON.stringify(input, null, '\t') + '\n';
 
 const ensureNetwork = network => {
@@ -199,7 +197,6 @@ const performTransactionalStep = async ({
 };
 
 module.exports = {
-	toBytes4,
 	ensureNetwork,
 	ensureDeploymentPath,
 	loadAndCheckRequiredSources,

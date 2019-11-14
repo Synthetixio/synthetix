@@ -7,6 +7,7 @@ const SupplySchedule = artifacts.require('SupplySchedule');
 const ExchangeRates = artifacts.require('ExchangeRates');
 const { getWeb3 } = require('../utils/web3Helper');
 const { getContractInstance } = require('../utils/web3Helper');
+const { toBytes32 } = require('../.');
 
 const {
 	currentTime,
@@ -79,7 +80,7 @@ contract('Rewards Integration Tests', async accounts => {
 
 	// CURRENCIES
 	const [sUSD, sAUD, sEUR, sBTC, SNX, iBTC] = ['sUSD', 'sAUD', 'sEUR', 'sBTC', 'SNX', 'iBTC'].map(
-		web3.utils.asciiToHex
+		toBytes32
 	);
 
 	// DIVISIONS

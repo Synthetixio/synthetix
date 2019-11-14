@@ -18,7 +18,6 @@ const {
 } = require('../constants');
 
 const {
-	toBytes4,
 	ensureNetwork,
 	ensureDeploymentPath,
 	loadAndCheckRequiredSources,
@@ -28,6 +27,8 @@ const {
 	performTransactionalStep,
 	stringify,
 } = require('../util');
+
+const { toBytes32 } = require('../../../.');
 
 const parameterNotice = props => {
 	console.log(gray('-'.repeat(50)));
@@ -162,7 +163,7 @@ const deploy = async ({
 			currentExchangeFee = await oldFeePool.methods.exchangeFeeRate().call();
 
 			const currentExrates = getExistingContract({ contract: 'ExchangeRates' });
-			currentSynthetixPrice = await currentExrates.methods.rateForCurrency(toBytes4('SNX')).call();
+			currentSynthetixPrice = await currentExrates.methods.rateForCurrency(toBytes32('SNX')).call();
 
 			if (!oracleExrates) {
 				oracleExrates = await currentExrates.methods.oracle().call();

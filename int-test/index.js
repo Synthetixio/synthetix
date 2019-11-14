@@ -17,7 +17,8 @@ const commands = {
 
 const { SYNTHS_FILENAME, CONFIG_FILENAME } = require('../publish/src/constants');
 
-const snx = require('../index');
+const snx = require('../.');
+const { toBytes32 } = snx;
 
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 
@@ -75,7 +76,7 @@ const users = Object.entries(
 		);
 		const { timestamp } = await web3.eth.getBlock('latest');
 
-		const [SNX, sUSD, sBTC] = ['SNX', 'sUSD', 'sBTC'].map(web3.utils.asciiToHex);
+		const [SNX, sUSD, sBTC] = ['SNX', 'sUSD', 'sBTC'].map(toBytes32);
 		// make sure exchange rates has a price
 		const ExchangeRates = new web3.eth.Contract(
 			sources['ExchangeRates'].abi,
@@ -85,7 +86,7 @@ const users = Object.entries(
 		console.log(gray('Updating rates'));
 		await ExchangeRates.methods
 			.updateRates(
-				[SNX].concat(synths.map(({ name }) => web3.utils.asciiToHex(name))),
+				[SNX].concat(synths.map(({ name }) => toBytes32(name))),
 				[web3.utils.toWei('0.3')].concat(synths.map(() => web3.utils.toWei('1'))),
 				timestamp
 			)
