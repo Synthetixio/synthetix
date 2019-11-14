@@ -190,6 +190,7 @@ contract Synthetix is ExternStateToken {
         require(synths[currencyKey] != address(0), "Synth does not exist");
         require(synths[currencyKey].totalSupply() == 0, "Synth supply exists");
         require(currencyKey != "XDR", "Cannot remove XDR synth");
+        require(currencyKey != "sUSD", "Cannot remove sUSD synth");
 
         // Save the address we're removing for emitting the event at the end.
         address synthToRemove = synths[currencyKey];
@@ -684,7 +685,7 @@ contract Synthetix is ExternStateToken {
         // What will the new total after taking out the withdrawn amount
         uint newTotalDebtIssued = totalDebtIssued.sub(debtToRemove);
 
-        uint delta;
+        uint delta = 0;
 
         // What will the debt delta be if there is any debt left?
         // Set delta to 0 if no more debt left in system after user
@@ -697,8 +698,6 @@ contract Synthetix is ExternStateToken {
             // The delta specifically needs to not take into account any existing debt as it's already
             // accounted for in the delta from when they issued previously.
             delta = SafeDecimalMath.preciseUnit().add(debtPercentage);
-        } else {
-            delta = 0;
         }
 
         // Are they exiting the system, or are they just decreasing their debt position?
@@ -852,11 +851,11 @@ contract Synthetix is ExternStateToken {
      * @notice The number of SNX that are free to be transferred for an account.
      * @dev Escrowed SNX are not transferable, so they are not included
      * in this calculation.
+     * @notice SNX rate not stale is checked within debtBalanceOf
      */
     function transferableSynthetix(address account)
         public
         view
-        rateNotStale("SNX")
         returns (uint)
     {
         // How many SNX do they have, excluding escrow?
