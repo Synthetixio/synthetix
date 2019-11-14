@@ -54,7 +54,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: npm run test:ints
+      - run: npm run test:int
 
 workflows:
   version: 2
