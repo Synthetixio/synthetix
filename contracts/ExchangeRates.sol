@@ -197,6 +197,25 @@ contract ExchangeRates is SelfDestructible {
     /**
      * @notice Internal function to get the inverted rate, if any, and mark an inverted
      *  key as frozen if either limits are reached.
+     *
+     * Inverted rates are ones that take a regular rate, perform a simple calculation (double entryPrice and
+     * subtract the rate) on them and if the result of the calculation is over or under predefined limits, it freezes the
+     * rate at that limit, preventing any future rate updates.
+     *
+     * For example, if we have an inverted rate iBTC with the following parameters set:
+     * - entryPrice of 200
+     * - upperLimit of 300
+     * - lower of 100
+     *
+     * if this function is invoked with params iETH and 184 (or rather 184e18),
+     * then the rate would be: 200 * 2 - 184 = 216. 100 < 216 < 200, so the rate would be 216,
+     * and remain unfrozen.
+     *
+     * If this function is then invoked with params iETH and 301 (or rather 301e18),
+     * then the rate would be: 200 * 2 - 301 = 99. 99 < 100, so the rate would be 100 and the
+     * rate would become frozen, no longer accepting future price updates until the synth is unfrozen
+     * by the owner function: setInversePricing().
+     *
      * @param currencyKey The price key to lookup
      * @param rate The rate for the given price key
      */
@@ -316,8 +335,12 @@ contract ExchangeRates is SelfDestructible {
 
     /**
      * @notice Set an inverse price up for the currency key.
-     * An inverse price is one which has an entryPoint, an uppper and a lower limit. Once the price
-     * of the inverse exceeds or
+     *
+     * An inverse price is one which has an entryPoint, an uppper and a lower limit. Each update, the
+     * rate is calculated as double the entryPrice minus the current rate. If this calculation is
+     * above or below the upper or lower limits respectively, then the rate is frozen, and no more
+     * rate updates will be accepted.
+     *
      * @param currencyKey The currency to update
      * @param entryPoint The entry price point of the inverted price
      * @param upperLimit The upper limit, at or above which the price will be frozen
