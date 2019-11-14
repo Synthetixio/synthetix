@@ -279,7 +279,7 @@ contract('Synthetix', async accounts => {
 	it('should allow removing a Synth contract when it has no issued balance', async () => {
 		// Note: This test depends on state in the migration script, that there are hooked up synths
 		// without balances and we just remove one.
-		const currencyKey = sUSD;
+		const currencyKey = sAUD;
 		const synthCount = await synthetix.availableSynthCount();
 
 		assert.notEqual(await synthetix.synths(currencyKey), ZERO_ADDRESS);
@@ -302,17 +302,17 @@ contract('Synthetix', async accounts => {
 	it('should disallow removing a Synth contract when it has an issued balance', async () => {
 		// Note: This test depends on state in the migration script, that there are hooked up synths
 		// without balances
-		const sUSDContractAddress = await synthetix.synths(sUSD);
+		const sAUDContractAddress = await synthetix.synths(sAUD);
 
 		// Assert that we can remove the synth and add it back in before we do anything.
-		await synthetix.removeSynth(sUSD, { from: owner });
-		await synthetix.addSynth(sUSDContractAddress, { from: owner });
+		await synthetix.removeSynth(sAUD, { from: owner });
+		await synthetix.addSynth(sAUDContractAddress, { from: owner });
 
-		// Issue one sUSD
-		await synthetix.issueSynths(sUSD, toUnit('1'), { from: owner });
+		// Issue one sAUD
+		await synthetix.issueSynths(sAUD, toUnit('1'), { from: owner });
 
 		// Assert that we can't remove the synth now
-		await assert.revert(synthetix.removeSynth(sUSD, { from: owner }));
+		await assert.revert(synthetix.removeSynth(sAUD, { from: owner }));
 	});
 
 	it('should disallow removing a Synth contract when requested by a non-owner', async () => {
