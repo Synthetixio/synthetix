@@ -144,19 +144,6 @@ contract('SynthetixState', async accounts => {
 		await assert.revert(synthetixState.appendDebtLedgerValue(toUnit('0.1'), { from: account2 }));
 	});
 
-	it('should allow the associated contract to setPreferredCurrency', async () => {
-		await synthetixState.setAssociatedContract(account1, { from: owner });
-
-		await synthetixState.setPreferredCurrency(account2, sUSD, { from: account1 });
-		assert.equal(await synthetixState.preferredCurrency(account2), sUSD);
-	});
-
-	it('should disallow another address from calling setPreferredCurrency', async () => {
-		await synthetixState.setAssociatedContract(account1, { from: owner });
-
-		await assert.revert(synthetixState.setPreferredCurrency(account2, sUSD, { from: account2 }));
-	});
-
 	it('should correctly report debtLedgerLength', async () => {
 		await synthetixState.setAssociatedContract(account1, { from: owner });
 

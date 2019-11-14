@@ -291,6 +291,8 @@ contract('PurgeableSynth', accounts => {
 										toUnit(100),
 										toUnit(150),
 										toUnit(50),
+										false,
+										false,
 										{ from: owner }
 									);
 									await exchangeRates.updateRates([iETH], ['160'].map(toUnit), timestamp, {

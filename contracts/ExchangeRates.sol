@@ -365,7 +365,8 @@ contract ExchangeRates is SelfDestructible {
      * @notice Remove an inverse price for the currency key
      * @param currencyKey The currency to remove inverse pricing for
      */
-    function removeInversePricing(bytes32 currencyKey) external onlyOwner {
+    function removeInversePricing(bytes32 currencyKey) external onlyOwner
+    {
         inversePricing[currencyKey].entryPoint = 0;
         inversePricing[currencyKey].upperLimit = 0;
         inversePricing[currencyKey].lowerLimit = 0;
@@ -384,11 +385,13 @@ contract ExchangeRates is SelfDestructible {
                 // Decrease the size of the array by one.
                 invertedKeys.length--;
 
-                break;
+                // Track the event
+                emit InversePriceConfigured(currencyKey, 0, 0, 0);
+
+                return;
             }
         }
-
-        emit InversePriceConfigured(currencyKey, 0, 0, 0);
+        require(false, "No inverse price found");
     }
     /* ========== VIEWS ========== */
 

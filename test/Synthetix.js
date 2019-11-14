@@ -2666,9 +2666,17 @@ contract('Synthetix', async accounts => {
 		describe('when the iBTC synth is set with inverse pricing', () => {
 			const iBTCEntryPoint = toUnit(4000);
 			beforeEach(async () => {
-				exchangeRates.setInversePricing(iBTC, iBTCEntryPoint, toUnit(6500), toUnit(1000), {
-					from: owner,
-				});
+				exchangeRates.setInversePricing(
+					iBTC,
+					iBTCEntryPoint,
+					toUnit(6500),
+					toUnit(1000),
+					false,
+					false,
+					{
+						from: owner,
+					}
+				);
 			});
 			describe('when a user holds holds 100,000 SNX', () => {
 				beforeEach(async () => {
