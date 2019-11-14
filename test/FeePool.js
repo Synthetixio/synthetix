@@ -1027,6 +1027,41 @@ contract('FeePool', async accounts => {
 			await assert.revert(feePool.setTargetThreshold(thresholdPercent, { from: owner }));
 		});
 
+		it('should set the targetThreshold and getPenaltyThresholdRatio returns the c-ratio user is blocked at', async () => {
+			const thresholdPercent = 10;
+
+			await feePool.setTargetThreshold(thresholdPercent, { from: owner });
+
+			const issuanceRatio = await synthetixState.issuanceRatio();
+			const penaltyThreshold = await feePool.targetThreshold();
+
+			assert.bnEqual(penaltyThreshold, toUnit(thresholdPercent / 100));
+
+			// add the 10% buffer to the issuanceRatio to calculate penalty threshold would be at
+			const expectedPenaltyThreshold = issuanceRatio.mul(toUnit('1').add(penaltyThreshold));
+
+			assert.bnEqual(fromUnit(expectedPenaltyThreshold), await feePool.getPenaltyThresholdRatio());
+		});
+
+		it('should set the targetThreshold buffer to 5%, at issuanceRatio 0.2 getPenaltyThresholdRatio returns 0.21', async () => {
+			const thresholdPercent = 5;
+
+			await feePool.setTargetThreshold(thresholdPercent, { from: owner });
+
+			const issuanceRatio = await synthetixState.issuanceRatio();
+
+			assert.bnEqual(issuanceRatio, toUnit('0.2'));
+
+			const penaltyThreshold = await feePool.targetThreshold();
+
+			assert.bnEqual(penaltyThreshold, toUnit(thresholdPercent / 100));
+
+			// add the 5% buffer to the issuanceRatio to calculate penalty threshold would be at
+			const expectedPenaltyThreshold = toUnit('0.21');
+
+			assert.bnEqual(expectedPenaltyThreshold, await feePool.getPenaltyThresholdRatio());
+		});
+
 		it('should be no penalty if issuance ratio is less than target ratio', async () => {
 			await synthetix.issueMaxSynths(sUSD, { from: owner });
 
