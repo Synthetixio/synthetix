@@ -868,6 +868,7 @@ contract Synthetix is ExternStateToken {
     function transferableSynthetix(address account)
         public
         view
+        rateNotStale("SNX") // SNX is not a synth so is not checked in totalIssuedSynths
         returns (uint)
     {
         // How many SNX do they have, excluding escrow?
