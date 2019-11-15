@@ -780,7 +780,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
             uint next = i - 1;
             uint nextPeriodStartingDebtIndex = _recentFeePeriodsStorage(next).startingDebtIndex;
 
-            // We can skip the period if no debt minted during period (next period's startingDebtIndex is 0)
+            // We can skip the period, as no debt minted during period (next period's startingDebtIndex is still 0)
             if (nextPeriodStartingDebtIndex > 0 &&
             getLastFeeWithdrawal(account) < _recentFeePeriodsStorage(i).feePeriodId) {
 
