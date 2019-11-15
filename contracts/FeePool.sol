@@ -479,13 +479,14 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         // until we've exhausted the amount.
         // The condition checks for overflow because we're going to 0 with an unsigned int.
         for (uint i = FEE_PERIOD_LENGTH - 1; i < FEE_PERIOD_LENGTH; i--) {
-            uint delta = _recentFeePeriodsStorage(i).feesToDistribute.sub(_recentFeePeriodsStorage(i).feesClaimed);
+            uint feesAlreadyClaimed = _recentFeePeriodsStorage(i).feesClaimed; 
+            uint delta = _recentFeePeriodsStorage(i).feesToDistribute.sub(feesAlreadyClaimed);
 
             if (delta > 0) {
                 // Take the smaller of the amount left to claim in the period and the amount we need to allocate
                 uint amountInPeriod = delta < remainingToAllocate ? delta : remainingToAllocate;
 
-                _recentFeePeriodsStorage(i).feesClaimed = _recentFeePeriodsStorage(i).feesClaimed.add(amountInPeriod);
+                _recentFeePeriodsStorage(i).feesClaimed = feesAlreadyClaimed.add(amountInPeriod);
                 remainingToAllocate = remainingToAllocate.sub(amountInPeriod);
                 feesPaid = feesPaid.add(amountInPeriod);
 
