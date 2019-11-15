@@ -47,6 +47,7 @@ jobs:
       - attach_workspace:
           at: .
       - run: npm run test:gas
+      - run: npx codechecks
 
   test-publish:
     <<: *env_defaults
@@ -55,6 +56,30 @@ jobs:
       - attach_workspace:
           at: .
       - run: npm run test:publish
+
+  test-kovan:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run test:testnet -- --network kovan
+
+  test-rinkeby:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run test:testnet -- --network rinkeby
+
+  test-ropsten:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run test:testnet -- --network ropsten
 
 workflows:
   version: 2
@@ -70,3 +95,21 @@ workflows:
       - test-publish:
           requires:
             - prepare
+      - test-kovan:
+          requires:
+            - prepare
+          filters:
+            branches:
+              only: alpha
+      - test-rinkeby:
+          requires:
+            - prepare
+          filters:
+            branches:
+              only: beta
+      - test-ropsten:
+          requires:
+            - prepare
+          filters:
+            branches:
+              only: release-candidate
