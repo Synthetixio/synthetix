@@ -765,9 +765,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         // If they don't have any debt ownership and they haven't minted, they don't have any fees
         if (debtEntryIndex == 0 && userOwnershipPercentage == 0) return;
 
-        // If there are no XDR synths, then they don't have any fees
-        if (synthetix.totalIssuedSynths("XDR") == 0) return;
-
         // The [0] fee period is not yet ready to claim, but it is a fee period that they can have
         // fees owing for, so we need to report on it anyway.
         uint feesFromPeriod;
