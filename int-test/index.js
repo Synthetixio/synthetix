@@ -117,7 +117,7 @@ const users = Object.entries(
 
 		// exchange
 		console.log(gray('User1 exchange 1000 sUSD for sBTC'));
-		await Synthetix.methods.exchange(sUSD, web3.utils.toWei('1000'), sBTC, ZERO_ADDRESS).send({
+		await Synthetix.methods.exchange(sUSD, web3.utils.toWei('1000'), sBTC).send({
 			from: accounts.first.public,
 			gas: gasLimit,
 			gasPrice,
