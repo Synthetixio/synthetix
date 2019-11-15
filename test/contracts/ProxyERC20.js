@@ -2,7 +2,7 @@ const ProxyERC20 = artifacts.require('ProxyERC20');
 const Synthetix = artifacts.require('Synthetix');
 const TokenExchanger = artifacts.require('TokenExchanger');
 
-const { toBytes32 } = require('../.');
+const { toBytes32 } = require('../../.');
 
 const { toUnit } = require('../utils/testUtils');
 

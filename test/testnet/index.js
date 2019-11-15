@@ -12,9 +12,9 @@ const program = new commander.Command();
 
 require('dotenv').config();
 
-const snx = require('../index');
+const snx = require('../..');
 
-const { loadConnections } = require('../publish/src/util');
+const { loadConnections } = require('../../publish/src/util');
 
 program
 	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
@@ -81,7 +81,7 @@ program
 
 			// finally, send back all test ETH to the owner
 			const testEthBalanceRemaining = await web3.eth.getBalance(user1.address);
-			const gasLimitForTransfer = 21000;
+			const gasLimitForTransfer = 21010; // a little over 21k to prevent occassional out of gas errors
 			const testETHBalanceMinusTxnCost = (
 				testEthBalanceRemaining -
 				gasLimitForTransfer * gasPrice

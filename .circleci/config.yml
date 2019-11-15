@@ -40,7 +40,7 @@ jobs:
           at: .
       - run: npm run lint
 
-  unit:
+  test-contracts:
     <<: *env_defaults
     steps:
       - checkout
@@ -48,13 +48,13 @@ jobs:
           at: .
       - run: npm run test:gas
 
-  int:
+  test-publish:
     <<: *env_defaults
     steps:
       - checkout
       - attach_workspace:
           at: .
-      - run: npm run test:int
+      - run: npm run test:publish
 
 workflows:
   version: 2
@@ -64,9 +64,9 @@ workflows:
       - lint:
           requires:
             - prepare
-      - unit:
+      - test-contracts:
           requires:
             - prepare
-      - int:
+      - test-publish:
           requires:
             - prepare

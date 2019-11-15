@@ -7,7 +7,7 @@ const SupplySchedule = artifacts.require('SupplySchedule');
 const ExchangeRates = artifacts.require('ExchangeRates');
 const { getWeb3 } = require('../utils/web3Helper');
 const { getContractInstance } = require('../utils/web3Helper');
-const { toBytes32 } = require('../.');
+const { toBytes32 } = require('../..');
 
 const {
 	currentTime,

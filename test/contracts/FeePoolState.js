@@ -2,7 +2,7 @@ const FeePool = artifacts.require('FeePool');
 const FeePoolState = artifacts.require('FeePoolState');
 const ExchangeRates = artifacts.require('ExchangeRates');
 
-const { toBytes32 } = require('../.');
+const { toBytes32 } = require('../../.');
 
 const { currentTime, toPreciseUnit, toUnit } = require('../utils/testUtils');
 

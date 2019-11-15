@@ -6,7 +6,7 @@ const Synthetix = artifacts.require('Synthetix');
 const Synth = artifacts.require('Synth');
 
 const { currentTime, toUnit, ZERO_ADDRESS, bytesToString } = require('../utils/testUtils');
-const { toBytes32 } = require('../.');
+const { toBytes32 } = require('../..');
 
 contract('Synth', async accounts => {
 	const [sUSD, sAUD, sEUR, SNX, XDR] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'XDR'].map(toBytes32);

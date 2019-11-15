@@ -4,7 +4,7 @@ const FeePool = artifacts.require('FeePool');
 const ExchangeRates = artifacts.require('ExchangeRates');
 
 const { currentTime, fastForward, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
-const { toBytes32 } = require('../.');
+const { toBytes32 } = require('../../.');
 
 contract('RewardEscrow', async accounts => {
 	const SECOND = 1000;

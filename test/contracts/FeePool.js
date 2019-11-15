@@ -21,7 +21,7 @@ const {
 const web3 = getWeb3();
 const getInstance = getContractInstance(web3);
 
-const { toBytes32 } = require('../.');
+const { toBytes32 } = require('../../.');
 
 contract('FeePool', async accounts => {
 	// Updates rates with defaults so they're not stale.

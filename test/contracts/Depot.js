@@ -7,7 +7,7 @@ const {
 	divideDecimal,
 } = require('../utils/testUtils');
 
-const { toBytes32 } = require('../.');
+const { toBytes32 } = require('../../.');
 
 const Synthetix = artifacts.require('Synthetix');
 const Depot = artifacts.require('Depot');

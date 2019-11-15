@@ -18,7 +18,7 @@ const {
 	ZERO_ADDRESS,
 } = require('../utils/testUtils');
 
-const { toBytes32 } = require('../.');
+const { toBytes32 } = require('../..');
 
 contract('Synthetix', async accounts => {
 	const [sUSD, sAUD, sEUR, SNX, XDR, sXYZ123, sBTC, iBTC] = [

@@ -1,7 +1,7 @@
 const ExchangeRates = artifacts.require('ExchangeRates');
 const { currentTime, fastForward, toUnit, bytesToString } = require('../utils/testUtils');
 
-const { toBytes32 } = require('../.');
+const { toBytes32 } = require('../../.');
 
 // Helper functions
 

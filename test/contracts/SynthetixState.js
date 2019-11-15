@@ -3,7 +3,7 @@ const SynthetixState = artifacts.require('SynthetixState');
 const Synth = artifacts.require('Synth');
 
 const { toUnit } = require('../utils/testUtils');
-const { toBytes32 } = require('../.');
+const { toBytes32 } = require('../..');
 
 contract('SynthetixState', async accounts => {
 	const sUSD = toBytes32('sUSD');

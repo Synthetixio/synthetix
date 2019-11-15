@@ -7,7 +7,7 @@ const TokenState = artifacts.require('TokenState');
 const Proxy = artifacts.require('Proxy');
 
 const { currentTime, toUnit, multiplyDecimal, ZERO_ADDRESS } = require('../utils/testUtils');
-const { toBytes32 } = require('../.');
+const { toBytes32 } = require('../../.');
 
 contract('PurgeableSynth', accounts => {
 	const [sUSD, SNX, , sAUD, iETH] = ['sUSD', 'SNX', 'XDR', 'sAUD', 'iETH'].map(toBytes32);

@@ -9,28 +9,32 @@ require('dotenv').config();
 
 const Web3 = require('web3');
 
-const { loadCompiledFiles, getLatestSolTimestamp } = require('../publish/src/solidity');
+const { loadCompiledFiles, getLatestSolTimestamp } = require('../../publish/src/solidity');
 
-const deployCmd = require('../publish/src/commands/deploy');
+const deployCmd = require('../../publish/src/commands/deploy');
 const { buildPath } = deployCmd.DEFAULTS;
 const commands = {
-	build: require('../publish/src/commands/build').build,
+	build: require('../../publish/src/commands/build').build,
 	deploy: deployCmd.deploy,
-	replaceSynths: require('../publish/src/commands/replace-synths').replaceSynths,
-	purgeSynths: require('../publish/src/commands/purge-synths').purgeSynths,
-	removeSynths: require('../publish/src/commands/remove-synths').removeSynths,
+	replaceSynths: require('../../publish/src/commands/replace-synths').replaceSynths,
+	purgeSynths: require('../../publish/src/commands/purge-synths').purgeSynths,
+	removeSynths: require('../../publish/src/commands/remove-synths').removeSynths,
 };
 
-const { SYNTHS_FILENAME, CONFIG_FILENAME, CONTRACTS_FOLDER } = require('../publish/src/constants');
+const {
+	SYNTHS_FILENAME,
+	CONFIG_FILENAME,
+	CONTRACTS_FOLDER,
+} = require('../../publish/src/constants');
 
-const snx = require('../.');
+const snx = require('../..');
 const { toBytes32 } = snx;
 
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 
 // load accounts used by local ganache in keys.json
 const users = Object.entries(
-	JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'keys.json'))).private_keys
+	JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'keys.json'))).private_keys
 ).map(([pub, pri]) => ({
 	public: pub,
 	private: `0x${pri}`,
@@ -38,7 +42,7 @@ const users = Object.entries(
 
 describe('publish scripts', function() {
 	this.timeout(5e3);
-	const deploymentPath = path.join(__dirname, '..', 'publish', 'deployed', 'local');
+	const deploymentPath = path.join(__dirname, '..', '..', 'publish', 'deployed', 'local');
 
 	// track these files to revert them later on
 	const synthsJSONPath = path.join(deploymentPath, SYNTHS_FILENAME);
