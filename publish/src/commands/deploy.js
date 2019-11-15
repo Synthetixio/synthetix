@@ -903,7 +903,7 @@ const deploy = async ({
 			const { entryPoint, upperLimit, lowerLimit } = inverted;
 
 			// helper function
-			const setInversePricing = ({ freeze, freezeAtUpperLimit }) => {
+			const setInversePricing = ({ freeze, freezeAtUpperLimit }) =>
 				runStep({
 					contract: 'ExchangeRates',
 					target: exchangeRates,
@@ -917,7 +917,6 @@ const deploy = async ({
 						freezeAtUpperLimit,
 					],
 				});
-			};
 
 			// whe an old exchange rates exists - either the existing ExchangeRates, or
 			// if just replaced, the previous one (i.e. not on the local network)
