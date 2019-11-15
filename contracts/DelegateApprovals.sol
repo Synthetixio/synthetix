@@ -22,8 +22,7 @@ The concept is similar to the ERC20 interface where a wallet can
 approve an authorised party to spend on the authorising party's
 behalf in the allowance interface.
 
-Withdrawing approval sets the delegate as false instead of
-removing from the approvals list for auditability.
+Withdrawing approval deletes the approval for the given delegate.
 
 This contract inherits state for upgradeability / associated
 contract.

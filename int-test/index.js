@@ -19,8 +19,6 @@ const { SYNTHS_FILENAME, CONFIG_FILENAME } = require('../publish/src/constants')
 
 const snx = require('../index');
 
-const ZERO_ADDRESS = '0x' + '0'.repeat(40);
-
 // load accounts used by local ganache in keys.json
 const users = Object.entries(
 	JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'keys.json'))).private_keys
