@@ -2290,7 +2290,7 @@ contract.only('Synthetix', async accounts => {
 		const exchangeFeeXDR = await synthetix.effectiveValue(sUSD, exchangeFeeUSD, XDR);
 
 		// Exchange sUSD to sAUD
-		await synthetix.exchange(sUSD, amountIssued, sAUD, account1, { from: account1 });
+		await synthetix.exchange(sUSD, amountIssued, sAUD, { from: account1 });
 
 		// how much sAUD the user is supposed to get
 		const effectiveValue = await synthetix.effectiveValue(sUSD, amountIssued, sAUD);
