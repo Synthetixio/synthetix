@@ -19,7 +19,7 @@ const {
 	bytesToString,
 } = require('../utils/testUtils');
 
-contract.only('Synthetix', async accounts => {
+contract('Synthetix', async accounts => {
 	const [sUSD, sAUD, sEUR, SNX, XDR, sXYZ123, sBTC, iBTC] = [
 		'sUSD',
 		'sAUD',
