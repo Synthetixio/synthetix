@@ -1072,7 +1072,7 @@ contract('FeePool', async accounts => {
 				from: oracle,
 			});
 
-			assert.equal(await feePool.feesClaimable(owner), true);
+			assert.equal(await feePool.isFeesClaimable(owner), true);
 		});
 
 		it('should correctly calculate the 10% buffer for penalties at specific issuance ratios', async () => {
@@ -1099,10 +1099,10 @@ contract('FeePool', async accounts => {
 
 				if (ratio.lte(toUnit(threshold))) {
 					// Should be claimable
-					assert.equal(await feePool.feesClaimable(owner), true);
+					assert.equal(await feePool.isFeesClaimable(owner), true);
 				} else {
 					// Should be not claimable penalty
-					assert.equal(await feePool.feesClaimable(owner), false);
+					assert.equal(await feePool.isFeesClaimable(owner), false);
 				}
 
 				// Bump the rate down.
@@ -1196,7 +1196,7 @@ contract('FeePool', async accounts => {
 			await feePool.setTargetThreshold(newPercentage, { from: owner });
 			assert.bnEqual(await feePool.targetThreshold(), toUnit(newPercentage / 100));
 
-			assert.equal(await feePool.feesClaimable(owner), true);
+			assert.equal(await feePool.isFeesClaimable(owner), true);
 		});
 	});
 

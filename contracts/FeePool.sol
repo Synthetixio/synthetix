@@ -370,7 +370,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
         // Address won't be able to claim fees if it is too far below the target c-ratio.
         // It will need to burn synths then try claiming again.
-        require(feesClaimable(claimingAddress), "C-Ratio below penalty threshold");
+        require(isFeesClaimable(claimingAddress), "C-Ratio below penalty threshold");
 
         // Get the claimingAddress available fees and rewards
         (availableFees, availableRewards) = feesAvailable(claimingAddress, "XDR");
@@ -410,7 +410,9 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         public
         optionalProxy_onlyOwner
         onlyDuringSetup
-    {
+    {        
+        require (startingDebtIndex < synthetixState.debtLedgerLength(), "Cannot import bad data");
+
         _recentFeePeriods[_currentFeePeriod.add(feePeriodIndex).mod(FEE_PERIOD_LENGTH)] = FeePeriod({
             feePeriodId: uint64(feePeriodId),
             startingDebtIndex: uint64(startingDebtIndex),
@@ -721,7 +723,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
      * @notice Check if a particular address is able to claim fees right now
      * @param account The address you want to query for
      */
-    function feesClaimable(address account)
+    function isFeesClaimable(address account)
         public
         view
         returns (bool)
@@ -812,8 +814,11 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
      * wallet's debtPercentage. Gives a precise amount of the feesToDistribute
      * for fees in the period. Precision factor is removed before results are
      * returned.
+     * @dev The reported fees owing for the current period [0] are just a 
+     * running balance until the fee period closes
      */
     function _feesAndRewardsFromPeriod(uint period, uint ownershipPercentage, uint debtEntryIndex)
+        view
         internal
         returns (uint, uint)
     {
@@ -846,10 +851,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         internal
         view
         returns (uint)
-    {
-        // Condition to check if debtLedger[] has value otherwise return 0
-        if (closingDebtIndex > synthetixState.debtLedgerLength()) return 0;
-
+    {        
         // Figure out their global debt percentage delta at end of fee Period.
         // This is a high precision integer.
         uint feePeriodDebtOwnership = synthetixState.debtLedger(closingDebtIndex)
