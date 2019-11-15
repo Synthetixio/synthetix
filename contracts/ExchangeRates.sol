@@ -65,6 +65,9 @@ contract ExchangeRates is SelfDestructible {
     // There are 5 participating currencies, so we'll declare that clearly.
     bytes32[5] public xdrParticipants;
 
+    // A conveience mapping for checking if a rate is a XDR participant    
+    mapping(bytes32 => bool) public isXDRParticipant;
+
     // For inverted prices, keep a mapping of their entry, limits and frozen status
     struct InversePricing {
         uint entryPoint;
@@ -118,7 +121,14 @@ contract ExchangeRates is SelfDestructible {
             bytes32("sCHF"),
             bytes32("sEUR"),
             bytes32("sGBP")
-        ];
+        ]; 
+
+        // Mapping the XDR participants is cheaper than looping the xdrParticipants array to check if they exist 
+        isXDRParticipant[bytes32("sUSD")] = true;
+        isXDRParticipant[bytes32("sAUD")] = true;
+        isXDRParticipant[bytes32("sCHF")] = true;
+        isXDRParticipant[bytes32("sEUR")] = true;
+        isXDRParticipant[bytes32("sGBP")] = true;
 
         internalUpdateRates(_currencyKeys, _newRates, now);
     }
@@ -171,29 +181,40 @@ contract ExchangeRates is SelfDestructible {
         require(currencyKeys.length == newRates.length, "Currency key array length must match rates array length.");
         require(timeSent < (now + ORACLE_FUTURE_LIMIT), "Time is too far into the future");
 
+        bool recomputeXDRRate = false;
+
         // Loop through each key and perform update.
         for (uint i = 0; i < currencyKeys.length; i++) {
+            bytes32 currencyKey = currencyKeys[i];
+
             // Should not set any rate to zero ever, as no asset will ever be
             // truely worthless and still valid. In this scenario, we should
             // delete the rate and remove it from the system.
             require(newRates[i] != 0, "Zero is not a valid rate, please call deleteRate instead.");
-            require(currencyKeys[i] != "sUSD", "Rate of sUSD cannot be updated, it's always UNIT.");
+            require(currencyKey != "sUSD", "Rate of sUSD cannot be updated, it's always UNIT.");
 
             // We should only update the rate if it's at least the same age as the last rate we've got.
-            if (timeSent < lastRateUpdateTimes(currencyKeys[i])) {
+            if (timeSent < lastRateUpdateTimes(currencyKey)) {
                 continue;
             }
 
-            newRates[i] = rateOrInverted(currencyKeys[i], newRates[i]);
+            newRates[i] = rateOrInverted(currencyKey, newRates[i]);
 
             // Ok, go ahead with the update.
-            _setRate(currencyKeys[i], newRates[i], timeSent);
+            _setRate(currencyKey, newRates[i], timeSent);
+
+            // Flag if XDR needs to be recomputed. Note: sUSD is not sent and assumed $1
+            if (!recomputeXDRRate && validateXDRParticipant(currencyKey)) {
+                recomputeXDRRate = true;
+            }
         }
 
         emit RatesUpdated(currencyKeys, newRates);
 
-        // Now update our XDR rate.
-        updateXDRRate(timeSent);
+        if (recomputeXDRRate) {
+            // Now update our XDR rate.
+            updateXDRRate(timeSent);
+        }
 
         // If locked during a priceupdate then reset it
         if (priceUpdateLock) {
@@ -245,6 +266,14 @@ contract ExchangeRates is SelfDestructible {
         }
 
         return newInverseRate;
+    }
+
+    function validateXDRParticipant(bytes32 currencyKey) 
+        internal
+        constant 
+        returns (bool) 
+    {
+        return isXDRParticipant[currencyKey];
     }
 
     /**
