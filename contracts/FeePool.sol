@@ -178,7 +178,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
      * @notice Logs an accounts issuance data per fee period
      * @param account Message.Senders account address
      * @param debtRatio Debt percentage this account has locked after minting or burning their synth
-     * @param debtEntryIndex The index in the global debt ledger. synthetix.synthetixState().issuanceData(account)
+     * @param debtEntryIndex The index in the global debt ledger. synthetixState.issuanceData(account)
      * @dev onlySynthetix to call me on synthetix.issue() & synthetix.burn() calls to store the locked SNX
      * per fee period so we know to allocate the correct proportions of fees and rewards per period
      */
@@ -732,7 +732,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         //  0  <  10%:   Claimable
         // 10% > above:  Unable to claim
         uint ratio = synthetix.collateralisationRatio(account);
-        uint targetRatio = synthetix.synthetixState().issuanceRatio();
+        uint targetRatio = synthetixState.issuanceRatio();
 
         // Claimable if collateral ratio below target ratio
         if (ratio < targetRatio) {
@@ -903,7 +903,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         view
         returns (uint)
     {
-        uint targetRatio = synthetix.synthetixState().issuanceRatio();
+        uint targetRatio = synthetixState.issuanceRatio();
 
         return targetRatio.multiplyDecimal(SafeDecimalMath.unit().add(targetThreshold));
     }
