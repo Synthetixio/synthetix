@@ -21,7 +21,7 @@ const {
 const web3 = getWeb3();
 const getInstance = getContractInstance(web3);
 
-contract.only('FeePool', async accounts => {
+contract('FeePool', async accounts => {
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
 		const timestamp = await currentTime();
