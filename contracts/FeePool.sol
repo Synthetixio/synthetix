@@ -762,7 +762,9 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         uint debtEntryIndex;
         (userOwnershipPercentage, debtEntryIndex) = feePoolState.getAccountsDebtEntry(account, 0);
 
-        // If they don't have any debt ownership and they haven't minted, they don't have any fees
+        // If they don't have any debt ownership and they never minted, they don't have any fees.
+        // User ownership can reduce to 0 if user burns all synths, 
+        // however they could have fees applicable for periods they had minted in before so we check debtEntryIndex.  
         if (debtEntryIndex == 0 && userOwnershipPercentage == 0) return;
 
         // The [0] fee period is not yet ready to claim, but it is a fee period that they can have
@@ -774,6 +776,9 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         results[0][0] = feesFromPeriod;
         results[0][1] = rewardsFromPeriod;
 
+        // Retrieve user's last fee claim by periodId
+        uint lastFeeWithdrawal = getLastFeeWithdrawal(account);
+        
         // Go through our fee periods from the oldest feePeriod[FEE_PERIOD_LENGTH - 1] and figure out what we owe them.
         // Condition checks for periods > 0
         for (uint i = FEE_PERIOD_LENGTH - 1; i > 0; i--) {
@@ -782,7 +787,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
             // We can skip the period, as no debt minted during period (next period's startingDebtIndex is still 0)
             if (nextPeriodStartingDebtIndex > 0 &&
-            getLastFeeWithdrawal(account) < _recentFeePeriodsStorage(i).feePeriodId) {
+            lastFeeWithdrawal < _recentFeePeriodsStorage(i).feePeriodId) {
 
                 // We calculate a feePeriod's closingDebtIndex by looking at the next feePeriod's startingDebtIndex
                 // we can use the most recent issuanceData[0] for the current feePeriod
