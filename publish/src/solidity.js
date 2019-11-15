@@ -13,7 +13,7 @@ module.exports = {
 
 		files.forEach(file => {
 			const fullPath = path.join(dir, file);
-			if (fs.statSync(fullPath).isDirectory()) {
+			if (fs.existsSync(fullPath) && fs.statSync(fullPath).isDirectory()) {
 				module.exports.findSolFiles(fullPath, path.join(relativePath, file), fileList);
 			} else if (path.extname(file) === '.sol') {
 				fileList[path.join(relativePath, file)] = {
