@@ -370,7 +370,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
         // Address won't be able to claim fees if it is too far below the target c-ratio.
         // It will need to burn synths then try claiming again.
-        require(feesClaimable(claimingAddress), "C-Ratio below penalty threshold");
+        require(isFeesClaimable(claimingAddress), "C-Ratio below penalty threshold");
 
         // Get the claimingAddress available fees and rewards
         (availableFees, availableRewards) = feesAvailable(claimingAddress, "XDR");
@@ -720,7 +720,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
      * @notice Check if a particular address is able to claim fees right now
      * @param account The address you want to query for
      */
-    function feesClaimable(address account)
+    function isFeesClaimable(address account)
         public
         view
         returns (bool)
