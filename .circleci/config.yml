@@ -46,7 +46,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: npm test
+      - run: npm run test:gas
 
   int:
     <<: *env_defaults

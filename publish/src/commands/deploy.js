@@ -6,12 +6,12 @@ const { gray, green, yellow, redBright, red } = require('chalk');
 const { table } = require('table');
 const w3utils = require('web3-utils');
 const Deployer = require('../Deployer');
-const { findSolFiles, loadCompiledFiles } = require('../solidity');
+const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
 
 const {
 	BUILD_FOLDER,
-	CONTRACTS_FOLDER,
 	CONFIG_FILENAME,
+	CONTRACTS_FOLDER,
 	SYNTHS_FILENAME,
 	DEPLOYMENT_FILENAME,
 	ZERO_ADDRESS,
@@ -100,11 +100,7 @@ const deploy = async ({
 	const { earliestCompiledTimestamp, compiled } = loadCompiledFiles({ buildPath });
 
 	// now get the latest time a Solidity file was edited
-	let latestSolTimestamp = 0;
-	Object.keys(findSolFiles(CONTRACTS_FOLDER)).forEach(file => {
-		const sourceFilePath = path.join(CONTRACTS_FOLDER, file);
-		latestSolTimestamp = Math.max(latestSolTimestamp, fs.statSync(sourceFilePath).mtimeMs);
-	});
+	const latestSolTimestamp = getLatestSolTimestamp(CONTRACTS_FOLDER);
 
 	// now clone these so we can update and write them after each deployment but keep the original
 	// flags available
@@ -1097,6 +1093,7 @@ const deploy = async ({
 
 module.exports = {
 	deploy,
+	DEFAULTS,
 	cmd: program =>
 		program
 			.command('deploy')

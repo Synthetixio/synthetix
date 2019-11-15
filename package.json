@@ -13,7 +13,7 @@
 		"lint:fix": "eslint --fix \"**/*.js\"",
 		"test": "concurrently --kill-others --success first \"npm run ganache > /dev/null\" \"wait-port 8545 && truffle test\"",
 		"test:gas": "npm test; EXIT_CODE=$?; cat test-gas-used.log; printf \"\\n\"; exit $EXIT_CODE;",
-		"test:int": "concurrently --kill-others --success first \"npm run ganache:int > /dev/null\" \"wait-port 8545 && node int-test\"",
+		"test:int": "concurrently --kill-others --success first \"npm run ganache:int > /dev/null\" \"wait-port 8545 && mocha int-test\"",
 		"test:kovan": "node test-testnet --network kovan",
 		"truffle": "truffle"
 	},
@@ -67,6 +67,7 @@
 		"ganache-cli": "6.7.0",
 		"glob": "^7.1.3",
 		"mkdirp": "^0.5.1",
+		"mocha": "6.2.2",
 		"prettier": "^1.14.2",
 		"rimraf": "^2.6.2",
 		"seedrandom": "^2.4.4",
