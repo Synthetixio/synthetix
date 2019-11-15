@@ -21,7 +21,7 @@ const {
 const web3 = getWeb3();
 const getInstance = getContractInstance(web3);
 
-contract('FeePool', async accounts => {
+contract.only('FeePool', async accounts => {
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
 		const timestamp = await currentTime();
@@ -310,7 +310,7 @@ contract('FeePool', async accounts => {
 				// recentPeriod 0
 				index: 0,
 				feePeriodId: 22,
-				startingDebtIndex: 2272,
+				startingDebtIndex: 0,
 				startTime: 1520859600,
 				feesToDistribute: '5800660797674490860',
 				feesClaimed: '0',
@@ -321,7 +321,7 @@ contract('FeePool', async accounts => {
 				// recentPeriod 1
 				index: 1,
 				feePeriodId: 21,
-				startingDebtIndex: 1969,
+				startingDebtIndex: 0,
 				startTime: 1520254800,
 				feesToDistribute: '934419341128642893704',
 				feesClaimed: '0',
@@ -361,7 +361,7 @@ contract('FeePool', async accounts => {
 		// And that the second was the old one
 		assert.deepEqual(await feePool.recentFeePeriods(1), {
 			feePeriodId: 22,
-			startingDebtIndex: 2272,
+			startingDebtIndex: 0,
 			startTime: 1520859600,
 			feesToDistribute: '5800660797674490860',
 			feesClaimed: '0',
@@ -372,7 +372,7 @@ contract('FeePool', async accounts => {
 		// And that the third was the oldest one imported
 		assert.deepEqual(await feePool.recentFeePeriods(2), {
 			feePeriodId: 21,
-			startingDebtIndex: 1969,
+			startingDebtIndex: 0,
 			startTime: 1520254800,
 			feesToDistribute: '934419341128642893704',
 			feesClaimed: '0',

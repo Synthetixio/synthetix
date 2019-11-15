@@ -411,7 +411,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         optionalProxy_onlyOwner
         onlyDuringSetup
     {        
-        require (startingDebtIndex < synthetixState.debtLedgerLength(), "Cannot import bad data");
+        require (startingDebtIndex <= synthetixState.debtLedgerLength(), "Cannot import bad data");
 
         _recentFeePeriods[_currentFeePeriod.add(feePeriodIndex).mod(FEE_PERIOD_LENGTH)] = FeePeriod({
             feePeriodId: uint64(feePeriodId),
