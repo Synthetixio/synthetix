@@ -105,7 +105,6 @@ describe('publish scripts', function() {
 			before(async function() {
 				this.timeout(60000);
 
-				// 2. deploy
 				await commands.deploy({
 					network,
 					deploymentPath,
@@ -138,7 +137,24 @@ describe('publish scripts', function() {
 					await ExchangeRates.methods
 						.updateRates(
 							[SNX].concat(synths.map(({ name }) => toBytes32(name))),
-							[web3.utils.toWei('0.3')].concat(synths.map(() => web3.utils.toWei('1'))),
+							[web3.utils.toWei('0.3')].concat(
+								synths.map(({ name, inverted }) => {
+									if (name === 'iETH') {
+										// ensure iETH is frozen at the lower limit, by setting the incoming rate for sTRX
+										// above the upper limit
+										return web3.utils.toWei(Math.round(inverted.upperLimit * 2).toString());
+									} else if (name === 'iBTC') {
+										// ensure iBTC is frozen at the upper limit, by setting the incoming rate for sTRX
+										// below the lower limit
+										return web3.utils.toWei(Math.round(inverted.lowerLimit * 0.75).toString());
+									} else if (name === 'iBNB') {
+										// ensure iBNB is not frozen
+										return web3.utils.toWei(inverted.entryPoint.toString());
+									} else {
+										return web3.utils.toWei('1');
+									}
+								})
+							),
 							timestamp
 						)
 						.send({
@@ -147,142 +163,243 @@ describe('publish scripts', function() {
 							gasPrice,
 						});
 				});
-				describe('when transferring 100k SNX to user1', () => {
-					before(async () => {
-						// transfer SNX to first account
-						console.log(gray('Transferring 100k SNX to user1'));
-						await Synthetix.methods
-							.transfer(accounts.first.public, web3.utils.toWei('100000'))
-							.send({
-								from: accounts.deployer.public,
-								gas: gasLimit,
-								gasPrice,
-							});
-					});
-					describe('when user1 issues all possible sUSD', () => {
+				describe('continue on integration test', () => {
+					describe('when transferring 100k SNX to user1', () => {
 						before(async () => {
-							console.log(gray('User1 issueMaxSynths'));
-
-							await Synthetix.methods.issueMaxSynths(sUSD).send({
-								from: accounts.first.public,
-								gas: gasLimit,
-								gasPrice,
-							});
-						});
-						it('then the sUSD balanced must be 100k * 0.3 * 0.2 (default SynthetixState.issuanceRatio) = 6000', async () => {
-							const balance = await sUSDContract.methods.balanceOf(accounts.first.public).call();
-							assert.strictEqual(web3.utils.fromWei(balance), '6000', 'Balance should match');
-						});
-						describe('when user1 exchange 1000 sUSD for sBTC', () => {
-							let sBTCBalanceAfterExchange;
-							before(async () => {
-								console.log(gray('User1 exchange 1000 sUSD for sBTC'));
-								await Synthetix.methods
-									.exchange(sUSD, web3.utils.toWei('1000'), sBTC, ZERO_ADDRESS)
-									.send({
-										from: accounts.first.public,
-										gas: gasLimit,
-										gasPrice,
-									});
-							});
-							it('then their sUSD balance is 5000', async () => {
-								const balance = await sUSDContract.methods.balanceOf(accounts.first.public).call();
-								assert.strictEqual(web3.utils.fromWei(balance), '5000', 'Balance should match');
-							});
-							it('and their sBTC balance is 1000 - the fee', async () => {
-								sBTCBalanceAfterExchange = await sBTCContract.methods
-									.balanceOf(accounts.first.public)
-									.call();
-								const expected = await FeePool.methods
-									.amountReceivedFromExchange(web3.utils.toWei('1000'))
-									.call();
-								assert.strictEqual(
-									web3.utils.fromWei(sBTCBalanceAfterExchange),
-									web3.utils.fromWei(expected),
-									'Balance should match'
-								);
-							});
-							describe('when user1 burns 10 sUSD', () => {
-								before(async () => {
-									// burn
-									console.log(gray('User1 burnSynths 10 sUSD'));
-									await Synthetix.methods.burnSynths(sUSD, web3.utils.toWei('10')).send({
-										from: accounts.first.public,
-										gas: gasLimit,
-										gasPrice,
-									});
+							// transfer SNX to first account
+							console.log(gray('Transferring 100k SNX to user1'));
+							await Synthetix.methods
+								.transfer(accounts.first.public, web3.utils.toWei('100000'))
+								.send({
+									from: accounts.deployer.public,
+									gas: gasLimit,
+									gasPrice,
 								});
-								it('then their sUSD balance is 4990', async () => {
+						});
+						describe('when user1 issues all possible sUSD', () => {
+							before(async () => {
+								console.log(gray('User1 issueMaxSynths'));
+
+								await Synthetix.methods.issueMaxSynths(sUSD).send({
+									from: accounts.first.public,
+									gas: gasLimit,
+									gasPrice,
+								});
+							});
+							it('then the sUSD balanced must be 100k * 0.3 * 0.2 (default SynthetixState.issuanceRatio) = 6000', async () => {
+								const balance = await sUSDContract.methods.balanceOf(accounts.first.public).call();
+								assert.strictEqual(web3.utils.fromWei(balance), '6000', 'Balance should match');
+							});
+							describe('when user1 exchange 1000 sUSD for sBTC', () => {
+								let sBTCBalanceAfterExchange;
+								before(async () => {
+									console.log(gray('User1 exchange 1000 sUSD for sBTC'));
+									await Synthetix.methods
+										.exchange(sUSD, web3.utils.toWei('1000'), sBTC, ZERO_ADDRESS)
+										.send({
+											from: accounts.first.public,
+											gas: gasLimit,
+											gasPrice,
+										});
+								});
+								it('then their sUSD balance is 5000', async () => {
 									const balance = await sUSDContract.methods
 										.balanceOf(accounts.first.public)
 										.call();
-									assert.strictEqual(web3.utils.fromWei(balance), '4990', 'Balance should match');
+									assert.strictEqual(web3.utils.fromWei(balance), '5000', 'Balance should match');
 								});
-
-								describe('when deployer replaces sBTC with PurgeableSynth', () => {
+								it('and their sBTC balance is 1000 - the fee', async () => {
+									sBTCBalanceAfterExchange = await sBTCContract.methods
+										.balanceOf(accounts.first.public)
+										.call();
+									const expected = await FeePool.methods
+										.amountReceivedFromExchange(web3.utils.toWei('1000'))
+										.call();
+									assert.strictEqual(
+										web3.utils.fromWei(sBTCBalanceAfterExchange),
+										web3.utils.fromWei(expected),
+										'Balance should match'
+									);
+								});
+								describe('when user1 burns 10 sUSD', () => {
 									before(async () => {
-										await commands.replaceSynths({
-											network,
-											deploymentPath,
-											yes: true,
-											privateKey: accounts.deployer.private,
-											subclass: 'PurgeableSynth',
-											synthsToReplace: ['sBTC'],
+										// burn
+										console.log(gray('User1 burnSynths 10 sUSD'));
+										await Synthetix.methods.burnSynths(sUSD, web3.utils.toWei('10')).send({
+											from: accounts.first.public,
+											gas: gasLimit,
+											gasPrice,
 										});
 									});
-									describe('and deployer invokes purge', () => {
+									it('then their sUSD balance is 4990', async () => {
+										const balance = await sUSDContract.methods
+											.balanceOf(accounts.first.public)
+											.call();
+										assert.strictEqual(web3.utils.fromWei(balance), '4990', 'Balance should match');
+									});
+
+									describe('when deployer replaces sBTC with PurgeableSynth', () => {
 										before(async () => {
-											await commands.purgeSynths({
+											await commands.replaceSynths({
 												network,
 												deploymentPath,
 												yes: true,
 												privateKey: accounts.deployer.private,
-												addresses: [accounts.first.public],
-												synthsToPurge: ['sBTC'],
+												subclass: 'PurgeableSynth',
+												synthsToReplace: ['sBTC'],
 											});
 										});
-										it('then their sUSD balance is 4990 + sBTCBalanceAfterExchange', async () => {
-											const balance = await sUSDContract.methods
-												.balanceOf(accounts.first.public)
-												.call();
-											assert.strictEqual(
-												web3.utils.fromWei(balance),
-												(4990 + +web3.utils.fromWei(sBTCBalanceAfterExchange)).toString(),
-												'Balance should match'
-											);
-										});
-										it('and their sBTC balance is 0', async () => {
-											const balance = await sBTCContract.methods
-												.balanceOf(accounts.first.public)
-												.call();
-											assert.strictEqual(web3.utils.fromWei(balance), '0', 'Balance should match');
-										});
-										describe('and deployer invokes remove of sBTC', () => {
+										describe('and deployer invokes purge', () => {
 											before(async () => {
-												await commands.removeSynths({
+												await commands.purgeSynths({
 													network,
 													deploymentPath,
 													yes: true,
 													privateKey: accounts.deployer.private,
-													synthsToRemove: ['sBTC'],
+													addresses: [accounts.first.public],
+													synthsToPurge: ['sBTC'],
 												});
 											});
-											describe('when user tries to exchange into sBTC', () => {
-												it('then it fails', done => {
-													Synthetix.methods
-														.exchange(sUSD, web3.utils.toWei('1000'), sBTC, ZERO_ADDRESS)
-														.send({
-															from: accounts.first.public,
-															gas: gasLimit,
-															gasPrice,
-														})
-														.then(() => done('Should not have complete'))
-														.catch(() => done());
+											it('then their sUSD balance is 4990 + sBTCBalanceAfterExchange', async () => {
+												const balance = await sUSDContract.methods
+													.balanceOf(accounts.first.public)
+													.call();
+												assert.strictEqual(
+													web3.utils.fromWei(balance),
+													(4990 + +web3.utils.fromWei(sBTCBalanceAfterExchange)).toString(),
+													'Balance should match'
+												);
+											});
+											it('and their sBTC balance is 0', async () => {
+												const balance = await sBTCContract.methods
+													.balanceOf(accounts.first.public)
+													.call();
+												assert.strictEqual(
+													web3.utils.fromWei(balance),
+													'0',
+													'Balance should match'
+												);
+											});
+											describe('and deployer invokes remove of sBTC', () => {
+												before(async () => {
+													await commands.removeSynths({
+														network,
+														deploymentPath,
+														yes: true,
+														privateKey: accounts.deployer.private,
+														synthsToRemove: ['sBTC'],
+													});
+												});
+
+												describe('when user tries to exchange into sBTC', () => {
+													it('then it fails', done => {
+														Synthetix.methods
+															.exchange(sUSD, web3.utils.toWei('1000'), sBTC, ZERO_ADDRESS)
+															.send({
+																from: accounts.first.public,
+																gas: gasLimit,
+																gasPrice,
+															})
+															.then(() => done('Should not have complete'))
+															.catch(() => done());
+													});
 												});
 											});
 										});
 									});
 								});
+							});
+						});
+					});
+				});
+
+				describe('handle updates to inverted rates', () => {
+					describe('when ExchangeRates alone is redeployed', () => {
+						let ExchangeRates;
+						before(async () => {
+							// read current config file version (if something has been removed,
+							// we don't want to include it here)
+							const currentConfigFile = JSON.parse(fs.readFileSync(configJSONPath));
+							// modify config to have all contracts set to deploy: false except for ExchangeRats
+							const configForExrates = Object.keys(currentConfigFile).reduce((memo, cur) => {
+								memo[cur] = { deploy: cur === 'ExchangeRates' };
+								return memo;
+							}, {});
+
+							fs.writeFileSync(configJSONPath, JSON.stringify(configForExrates));
+
+							await commands.deploy({
+								network,
+								deploymentPath,
+								yes: true,
+								privateKey: accounts.deployer.private,
+							});
+
+							ExchangeRates = new web3.eth.Contract(
+								sources['ExchangeRates'].abi,
+								snx.getTarget({ network, contract: 'ExchangeRates' }).address
+							);
+						});
+
+						const testInvertedSynth = async ({
+							currencyKey,
+							shouldBeFrozen,
+							expectedPropNameOfFrozenLimit,
+						}) => {
+							const {
+								entryPoint,
+								upperLimit,
+								lowerLimit,
+								frozen,
+							} = await ExchangeRates.methods.inversePricing(toBytes32(currencyKey)).call();
+							const rate = await ExchangeRates.methods
+								.rateForCurrency(toBytes32(currencyKey))
+								.call();
+							const expected = synths.find(({ name }) => name === currencyKey).inverted;
+							assert.strictEqual(
+								+web3.utils.fromWei(entryPoint),
+								expected.entryPoint,
+								'Entry points match'
+							);
+							assert.strictEqual(
+								+web3.utils.fromWei(upperLimit),
+								expected.upperLimit,
+								'Upper limits match'
+							);
+							assert.strictEqual(
+								+web3.utils.fromWei(lowerLimit),
+								expected.lowerLimit,
+								'Lower limits match'
+							);
+							assert.strictEqual(frozen, shouldBeFrozen, 'Frozen matches expectation');
+
+							if (expectedPropNameOfFrozenLimit) {
+								assert.strictEqual(
+									+web3.utils.fromWei(rate),
+									expected[expectedPropNameOfFrozenLimit],
+									'Frozen correctly at limit'
+								);
+							}
+						};
+
+						it('then iETH should be set as frozen at the lower limit', async () => {
+							await testInvertedSynth({
+								currencyKey: 'iETH',
+								shouldBeFrozen: true,
+								expectedPropNameOfFrozenLimit: 'lowerLimit',
+							});
+						});
+						it('then iBTC should be set as frozen at the upper limit', async () => {
+							await testInvertedSynth({
+								currencyKey: 'iBTC',
+								shouldBeFrozen: true,
+								expectedPropNameOfFrozenLimit: 'upperLimit',
+							});
+						});
+						it('then iBNB should not be frozen', async () => {
+							await testInvertedSynth({
+								currencyKey: 'iBNB',
+								shouldBeFrozen: false,
 							});
 						});
 					});

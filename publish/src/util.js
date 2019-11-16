@@ -135,12 +135,12 @@ const performTransactionalStep = async ({
 	const action = `${contract}.${write}(${writeArg})`;
 
 	// check to see if action required
+	console.log(yellow(`Attempting action: ${action}`));
+
 	if (read) {
 		// web3 counts provided arguments - even undefined ones - and they must match the expected args, hence the below
 		const argumentsForReadFunction = [].concat(readArg).filter(entry => entry !== undefined); // reduce to array of args
 		const response = await target.methods[read](...argumentsForReadFunction).call();
-
-		console.log(yellow(`Attempting action: ${action}`));
 
 		if (expected(response)) {
 			console.log(gray(`Nothing required for this action.`));

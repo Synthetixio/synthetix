@@ -56,19 +56,10 @@
 	"SynthsAUD": {
 		"deploy": true
 	},
-	"SynthsKRW": {
-		"deploy": true
-	},
 	"SynthsGBP": {
 		"deploy": true
 	},
 	"SynthsCHF": {
-		"deploy": true
-	},
-	"SynthsCNY": {
-		"deploy": true
-	},
-	"SynthsINR": {
 		"deploy": true
 	},
 	"SynthsXAU": {
@@ -80,19 +71,19 @@
 	"SynthsBTC": {
 		"deploy": true
 	},
+	"ProxyERC20": {
+		"deploy": true
+	},
 	"ProxyFeePool": {
 		"deploy": true
 	},
 	"ProxySynthetix": {
 		"deploy": true
 	},
-	"ProxyERC20": {
+	"ProxyXDR": {
 		"deploy": true
 	},
 	"ProxysUSD": {
-		"deploy": true
-	},
-	"ProxyXDR": {
 		"deploy": true
 	},
 	"ProxysEUR": {
@@ -104,19 +95,10 @@
 	"ProxysAUD": {
 		"deploy": true
 	},
-	"ProxysKRW": {
-		"deploy": true
-	},
 	"ProxysGBP": {
 		"deploy": true
 	},
 	"ProxysCHF": {
-		"deploy": true
-	},
-	"ProxysCNY": {
-		"deploy": true
-	},
-	"ProxysINR": {
 		"deploy": true
 	},
 	"ProxysXAU": {
@@ -149,19 +131,10 @@
 	"TokenStatesAUD": {
 		"deploy": true
 	},
-	"TokenStatesKRW": {
-		"deploy": true
-	},
 	"TokenStatesGBP": {
 		"deploy": true
 	},
 	"TokenStatesCHF": {
-		"deploy": true
-	},
-	"TokenStatesCNY": {
-		"deploy": true
-	},
-	"TokenStatesINR": {
 		"deploy": true
 	},
 	"TokenStatesXAU": {
@@ -179,9 +152,6 @@
 	"ProxysETH": {
 		"deploy": true
 	},
-	"ProxyERC20sETH": {
-		"deploy": true
-	},
 	"SynthsETH": {
 		"deploy": true
 	},
@@ -192,6 +162,33 @@
 		"deploy": true
 	},
 	"SynthsBNB": {
+		"deploy": true
+	},
+	"TokenStatesMKR": {
+		"deploy": true
+	},
+	"ProxysMKR": {
+		"deploy": true
+	},
+	"SynthsMKR": {
+		"deploy": true
+	},
+	"TokenStatesTRX": {
+		"deploy": true
+	},
+	"ProxysTRX": {
+		"deploy": true
+	},
+	"SynthsTRX": {
+		"deploy": true
+	},
+	"TokenStatesXTZ": {
+		"deploy": true
+	},
+	"ProxysXTZ": {
+		"deploy": true
+	},
+	"SynthsXTZ": {
 		"deploy": true
 	},
 	"TokenStateiBTC": {
@@ -219,6 +216,51 @@
 		"deploy": true
 	},
 	"SynthiBNB": {
+		"deploy": true
+	},
+	"TokenStateiMKR": {
+		"deploy": true
+	},
+	"ProxyiMKR": {
+		"deploy": true
+	},
+	"SynthiMKR": {
+		"deploy": true
+	},
+	"TokenStateiTRX": {
+		"deploy": true
+	},
+	"ProxyiTRX": {
+		"deploy": true
+	},
+	"SynthiTRX": {
+		"deploy": true
+	},
+	"TokenStateiXTZ": {
+		"deploy": true
+	},
+	"ProxyiXTZ": {
+		"deploy": true
+	},
+	"SynthiXTZ": {
+		"deploy": true
+	},
+	"TokenStatesCEX": {
+		"deploy": true
+	},
+	"ProxysCEX": {
+		"deploy": true
+	},
+	"SynthsCEX": {
+		"deploy": true
+	},
+	"TokenStateiCEX": {
+		"deploy": true
+	},
+	"ProxyiCEX": {
+		"deploy": true
+	},
+	"SynthiCEX": {
 		"deploy": true
 	}
 }
