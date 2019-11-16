@@ -4,9 +4,6 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 
-const { gray } = require('chalk');
-require('dotenv').config();
-
 const Web3 = require('web3');
 
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../../publish/src/solidity');
@@ -167,7 +164,6 @@ describe('publish scripts', function() {
 					describe('when transferring 100k SNX to user1', () => {
 						before(async () => {
 							// transfer SNX to first account
-							console.log(gray('Transferring 100k SNX to user1'));
 							await Synthetix.methods
 								.transfer(accounts.first.public, web3.utils.toWei('100000'))
 								.send({
@@ -178,8 +174,6 @@ describe('publish scripts', function() {
 						});
 						describe('when user1 issues all possible sUSD', () => {
 							before(async () => {
-								console.log(gray('User1 issueMaxSynths'));
-
 								await Synthetix.methods.issueMaxSynths(sUSD).send({
 									from: accounts.first.public,
 									gas: gasLimit,
@@ -193,7 +187,6 @@ describe('publish scripts', function() {
 							describe('when user1 exchange 1000 sUSD for sBTC', () => {
 								let sBTCBalanceAfterExchange;
 								before(async () => {
-									console.log(gray('User1 exchange 1000 sUSD for sBTC'));
 									await Synthetix.methods
 										.exchange(sUSD, web3.utils.toWei('1000'), sBTC, ZERO_ADDRESS)
 										.send({
@@ -224,7 +217,6 @@ describe('publish scripts', function() {
 								describe('when user1 burns 10 sUSD', () => {
 									before(async () => {
 										// burn
-										console.log(gray('User1 burnSynths 10 sUSD'));
 										await Synthetix.methods.burnSynths(sUSD, web3.utils.toWei('10')).send({
 											from: accounts.first.public,
 											gas: gasLimit,
