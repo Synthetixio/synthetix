@@ -204,7 +204,7 @@ contract ExchangeRates is SelfDestructible {
             _setRate(currencyKey, newRates[i], timeSent);
 
             // Flag if XDR needs to be recomputed. Note: sUSD is not sent and assumed $1
-            if (!recomputeXDRRate && validateXDRParticipant(currencyKey)) {
+            if (!recomputeXDRRate && isXDRParticipant[currencyKey]) {
                 recomputeXDRRate = true;
             }
         }
@@ -266,14 +266,6 @@ contract ExchangeRates is SelfDestructible {
         }
 
         return newInverseRate;
-    }
-
-    function validateXDRParticipant(bytes32 currencyKey) 
-        internal
-        constant 
-        returns (bool) 
-    {
-        return isXDRParticipant[currencyKey];
     }
 
     /**
