@@ -46,8 +46,8 @@ describe('publish scripts', function() {
 	const synthsJSON = fs.readFileSync(synthsJSONPath);
 	const configJSONPath = path.join(deploymentPath, CONFIG_FILENAME);
 	const configJSON = fs.readFileSync(configJSONPath);
+	const logfilePath = path.join(__dirname, 'test.log');
 	const network = 'local';
-
 	let gasLimit;
 	let gasPrice;
 	let accounts;
@@ -56,6 +56,8 @@ describe('publish scripts', function() {
 	let sBTC;
 	let web3;
 	before(async function() {
+		fs.writeFileSync(logfilePath, ''); // reset log file
+		console.log = (...input) => fs.appendFileSync(logfilePath, input.join(' ') + '\n');
 		accounts = {
 			deployer: users[0],
 			first: users[1],
