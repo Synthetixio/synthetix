@@ -33,7 +33,8 @@ const logExchangeRates = (currencyKeys, rates) => {
 
 program
 	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
-	.action(async ({ network }) => {
+	.option('-y, --yes', 'Dont prompt, just reply yes.')
+	.action(async ({ network, yes }) => {
 		if (!/^(kovan|rinkeby|ropsten)$/.test(network)) {
 			throw Error('Unsupported testnet', network);
 		}
@@ -114,9 +115,7 @@ program
 
 			console.log(
 				green(
-					`TotalIssuedSynths in sUSD: ${web3.utils.fromWei(
-						totalIssuedSynths
-					)} - debtLedgerLenght: ${debtLedgerLength}`
+					`TotalIssuedSynths in sUSD: ${totalIssuedSynths} - debtLedgerLenght: ${debtLedgerLength}`
 				)
 			);
 
@@ -124,27 +123,32 @@ program
 				throw Error('DebtLedger has debt but totalIssuedSynths is 0');
 			}
 
-			try {
-				await confirmAction(yellow(`Do you want to continue? (y/n) `));
-			} catch (err) {
-				console.log(gray(`Operation terminated`));
-				return;
+			if (!yes) {
+				try {
+					await confirmAction(yellow(`Do you want to continue? (y/n) `));
+				} catch (err) {
+					console.log(gray(`Operation terminated`));
+					return;
+				}
 			}
 
 			// #1 - Send the account some test ether
-			console.log(gray(`Transferring 0.1 test ETH to ${user1.address}`));
+			console.log(gray(`Transferring 0.05 test ETH to ${user1.address}`));
 			const { transactionHash: txn0Hash } = await web3.eth.sendTransaction({
 				from: owner.address,
 				to: user1.address,
-				value: web3.utils.toWei('0.1'), // 0.1 test ETH
+				value: web3.utils.toWei('0.05'),
 				gas,
 				gasPrice,
 			});
 			console.log(green(`Success. ${etherscanLinkPrefix}/tx/${txn0Hash}`));
 
+			// Note: we are using numbers in WEI not ether (i.e. not with 18 decimals),
+			// so that if a test fails we only lose minor amounts of SNX and sUSD (i.e. dust). - JJ
+
 			console.log(gray(`Transferring 2000 SNX to user1 (${user1.address})`));
 			const { transactionHash: txn1Hash } = await Synthetix.methods
-				.transfer(user1.address, web3.utils.toWei('2000'))
+				.transfer(user1.address, '2000')
 				.send({
 					from: owner.address,
 					gas,
@@ -154,7 +158,7 @@ program
 
 			// #2 - Mint some sUSD from test account
 			console.log(gray(`Issuing 100 sUSD from (${user1.address}`));
-			const amountToIssue = web3.utils.toWei('100');
+			const amountToIssue = '100';
 			const { transactionHash: txn2Hash } = await Synthetix.methods
 				.issueSynths(sUSD, amountToIssue)
 				.send({
@@ -170,11 +174,11 @@ program
 
 			// get balance
 			const balance = await SynthsUSD.methods.balanceOf(user1.address).call();
-			console.log(gray(`User1 has sUSD balanceOf - ${web3.utils.fromWei(balance)}`));
+			console.log(gray(`User1 has sUSD balanceOf - ${balance}`));
 
 			// deposit to Depot
 			console.log(gray(`Deposit 60 sUSD to depot from (${user1.address})`));
-			const amountToDeposit = web3.utils.toWei('60');
+			const amountToDeposit = '60';
 			const { transactionHash: txn3Hash } = await SynthsUSD.methods
 				.transfer(Depot.options.address, amountToDeposit)
 				.send({
@@ -195,11 +199,11 @@ program
 
 			// check balance
 			const balanceAfter = await SynthsUSD.methods.balanceOf(user1.address).call();
-			console.log(gray(`User1 has sUSD balanceOf - ${web3.utils.fromWei(balanceAfter)}`));
+			console.log(gray(`User1 has sUSD balanceOf - ${balanceAfter}`));
 
 			// #5 Exchange sUSD to sETH
 			console.log(gray(`Exchange sUSD --> sETH for user - (${user1.address})`));
-			const amountToExchange = web3.utils.toWei('100');
+			const amountToExchange = '100';
 			const { transactionHash: txn5Hash } = await Synthetix.methods
 				.exchange(sUSD, amountToExchange, sETH)
 				.send({
@@ -212,7 +216,7 @@ program
 			// check sETH balance after exchange
 			const SynthsETH = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysETH'].address);
 			const sETHBalance = await SynthsETH.methods.balanceOf(user1.address).call();
-			console.log(gray(`User1 has sETH balanceOf - ${web3.utils.fromWei(sETHBalance)}`));
+			console.log(gray(`User1 has sETH balanceOf - ${sETHBalance}`));
 
 			// #6 Exchange balance of sETH back to sUSD
 			console.log(gray(`Exchange sETH --> sUSD for user - (${user1.address})`));
@@ -239,11 +243,7 @@ program
 
 			// check transferable SNX after burning
 			const transferableSNX = await Synthetix.methods.transferableSynthetix(user1.address).call();
-			console.log(
-				gray(
-					`Transferable SNX of ${web3.utils.fromWei(transferableSNX)} for user (${user1.address}`
-				)
-			);
+			console.log(gray(`Transferable SNX of ${transferableSNX} for user (${user1.address}`));
 
 			// #8 Transfer SNX back to owner
 			console.log(gray(`Transferring SNX back to owner (${user1.address}`));

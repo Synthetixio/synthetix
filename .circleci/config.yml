@@ -64,7 +64,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: npm run test:testnet -- --network kovan
+      - run: npm run test:testnet --  --yes --network kovan
 
   test-rinkeby:
     <<: *env_defaults
@@ -72,7 +72,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: npm run test:testnet -- --network rinkeby
+      - run: npm run test:testnet --  --yes --network rinkeby
 
   test-ropsten:
     <<: *env_defaults
@@ -80,7 +80,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: npm run test:testnet -- --network ropsten
+      - run: npm run test:testnet --  --yes --network ropsten
 
 workflows:
   version: 2
