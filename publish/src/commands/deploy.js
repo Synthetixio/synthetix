@@ -1018,14 +1018,14 @@ const deploy = async ({
 								`Proceeding to reconfigure its parameters as instructed, unfreezing it if currently frozen.`
 						)
 					);
-					// Then a new inverted synth is being added (as there's no previous rate for it)
+					// Then a new inverted synth is being added (as there's no existing supply)
 					await setInversePricing({ freeze: false, freezeAtUpperLimit: false });
 				} else {
 					// Then an existing synth's inverted parameters have changed.
 					// For safety sake, let's inform the user and skip this step
 					console.log(
-						yellow(
-							`The parameters for the inverted synth ${currencyKey} ` +
+						redBright(
+							`⚠⚠⚠ WARNING: The parameters for the inverted synth ${currencyKey} ` +
 								`have changed and it has non-zero totalSupply. This use-case is not supported by the deploy script. ` +
 								`This should be done as a purge() and setInversePricing() separately`
 						)
