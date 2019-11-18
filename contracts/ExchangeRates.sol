@@ -54,7 +54,7 @@ contract ExchangeRates is SelfDestructible {
     // There are 5 participating currencies, so we'll declare that clearly.
     bytes32[5] public xdrParticipants;
 
-    // A conveience mapping for checking if a rate is a XDR participant    
+    // A conveience mapping for checking if a rate is a XDR participant
     mapping(bytes32 => bool) public isXDRParticipant;
 
     // For inverted prices, keep a mapping of their entry, limits and frozen status
@@ -110,9 +110,9 @@ contract ExchangeRates is SelfDestructible {
             bytes32("sCHF"),
             bytes32("sEUR"),
             bytes32("sGBP")
-        ]; 
+        ];
 
-        // Mapping the XDR participants is cheaper than looping the xdrParticipants array to check if they exist 
+        // Mapping the XDR participants is cheaper than looping the xdrParticipants array to check if they exist
         isXDRParticipant[bytes32("sUSD")] = true;
         isXDRParticipant[bytes32("sAUD")] = true;
         isXDRParticipant[bytes32("sCHF")] = true;
@@ -388,6 +388,8 @@ contract ExchangeRates is SelfDestructible {
      */
     function removeInversePricing(bytes32 currencyKey) external onlyOwner
     {
+        require(inversePricing[currencyKey].entryPoint > 0, "No inverted price exists");
+
         inversePricing[currencyKey].entryPoint = 0;
         inversePricing[currencyKey].upperLimit = 0;
         inversePricing[currencyKey].lowerLimit = 0;
@@ -412,7 +414,6 @@ contract ExchangeRates is SelfDestructible {
                 return;
             }
         }
-        require(false, "No inverse price found");
     }
     /* ========== VIEWS ========== */
 
