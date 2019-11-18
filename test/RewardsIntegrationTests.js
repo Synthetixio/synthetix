@@ -41,7 +41,7 @@ contract('Rewards Integration Tests', async accounts => {
 	const closeFeePeriodAndFastForward = async () => {
 		// console.log('closeFeePeriodAndFastForward');
 		const feePeriodDuration = await feePool.feePeriodDuration();
-		await fastForward(feePeriodDuration);
+		await fastForward(feePeriodDuration.toNumber() + 1000);
 		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
 		await updateRatesWithDefaults();
 	};
