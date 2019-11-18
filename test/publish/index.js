@@ -27,8 +27,6 @@ const {
 const snx = require('../..');
 const { toBytes32 } = snx;
 
-const ZERO_ADDRESS = '0x' + '0'.repeat(40);
-
 // load accounts used by local ganache in keys.json
 const users = Object.entries(
 	JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'keys.json'))).private_keys
@@ -202,13 +200,11 @@ describe('publish scripts', function() {
 							describe('when user1 exchange 1000 sUSD for sBTC', () => {
 								let sBTCBalanceAfterExchange;
 								before(async () => {
-									await Synthetix.methods
-										.exchange(sUSD, web3.utils.toWei('1000'), sBTC, ZERO_ADDRESS)
-										.send({
-											from: accounts.first.public,
-											gas: gasLimit,
-											gasPrice,
-										});
+									await Synthetix.methods.exchange(sUSD, web3.utils.toWei('1000'), sBTC).send({
+										from: accounts.first.public,
+										gas: gasLimit,
+										gasPrice,
+									});
 								});
 								it('then their sUSD balance is 5000', async () => {
 									const balance = await sUSDContract.methods
@@ -301,7 +297,7 @@ describe('publish scripts', function() {
 												describe('when user tries to exchange into sBTC', () => {
 													it('then it fails', done => {
 														Synthetix.methods
-															.exchange(sUSD, web3.utils.toWei('1000'), sBTC, ZERO_ADDRESS)
+															.exchange(sUSD, web3.utils.toWei('1000'), sBTC)
 															.send({
 																from: accounts.first.public,
 																gas: gasLimit,
