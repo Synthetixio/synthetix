@@ -62,6 +62,9 @@ describe('publish scripts', function() {
 		fs.writeFileSync(configJSONPath, configJSON);
 	};
 
+	// Note: as deployments take quite a bit of time, we use before here which
+	// runs once before all the subsequent tests. This means we need to be careful
+	// of anything bleeding over between tests - such as config, synth and deployment JSON files
 	before(async function() {
 		fs.writeFileSync(logfilePath, ''); // reset log file
 		console.log = (...input) => fs.appendFileSync(logfilePath, input.join(' ') + '\n');
@@ -316,7 +319,7 @@ describe('publish scripts', function() {
 						});
 					});
 
-					describe.only('handle updates to inverted rates', () => {
+					describe('handle updates to inverted rates', () => {
 						describe('when a new inverted synth iABC is added to the list', () => {
 							describe('and the inverted synth iMKR has its parameters shifted', () => {
 								describe('and the inverted synth iCEX has its parameters shifted as well', () => {
@@ -400,6 +403,7 @@ describe('publish scripts', function() {
 
 											after(resetConfigAndSynthFiles);
 
+											// Test the properties of an inverted synth
 											const testInvertedSynth = async ({
 												currencyKey,
 												shouldBeFrozen,
