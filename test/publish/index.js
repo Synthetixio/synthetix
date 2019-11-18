@@ -55,6 +55,13 @@ describe('publish scripts', function() {
 	let sUSD;
 	let sBTC;
 	let web3;
+
+	const resetConfigAndSynthFiles = () => {
+		// restore the synths and config files for this env (cause removal updated it)
+		fs.writeFileSync(synthsJSONPath, synthsJSON);
+		fs.writeFileSync(configJSONPath, configJSON);
+	};
+
 	before(async function() {
 		fs.writeFileSync(logfilePath, ''); // reset log file
 		console.log = (...input) => fs.appendFileSync(logfilePath, input.join(' ') + '\n');
@@ -85,11 +92,7 @@ describe('publish scripts', function() {
 		gasPrice = web3.utils.toWei('5', 'gwei');
 	});
 
-	after(() => {
-		// restore the synths and config files for this env (cause removal updated it)
-		fs.writeFileSync(synthsJSONPath, synthsJSON);
-		fs.writeFileSync(configJSONPath, configJSON);
-	});
+	after(resetConfigAndSynthFiles);
 
 	describe('integrated actions test', () => {
 		describe('when deployed', () => {
@@ -307,93 +310,134 @@ describe('publish scripts', function() {
 					});
 				});
 
-				describe('handle updates to inverted rates', () => {
-					describe('when ExchangeRates alone is redeployed', () => {
-						let ExchangeRates;
+				describe.only('handle updates to inverted rates', () => {
+					describe('when a new inverted synth is added to the list', () => {
 						before(async () => {
 							// read current config file version (if something has been removed,
 							// we don't want to include it here)
-							const currentConfigFile = JSON.parse(fs.readFileSync(configJSONPath));
-							// modify config to have all contracts set to deploy: false except for ExchangeRats
-							const configForExrates = Object.keys(currentConfigFile).reduce((memo, cur) => {
-								memo[cur] = { deploy: cur === 'ExchangeRates' };
-								return memo;
-							}, {});
+							const currentSynthsFile = JSON.parse(fs.readFileSync(synthsJSONPath));
 
-							fs.writeFileSync(configJSONPath, JSON.stringify(configForExrates));
-
-							await commands.deploy({
-								network,
-								deploymentPath,
-								yes: true,
-								privateKey: accounts.deployer.private,
+							currentSynthsFile.push({
+								name: 'iABC',
+								asset: 'ABC',
+								category: 'crypto',
+								sign: '',
+								desc: 'Inverted Alphabet',
+								subclass: 'PurgeableSynth',
+								inverted: {
+									entryPoint: 1,
+									upperLimit: 1.5,
+									lowerLimit: 0.5,
+								},
 							});
-
-							ExchangeRates = new web3.eth.Contract(
-								sources['ExchangeRates'].abi,
-								snx.getTarget({ network, contract: 'ExchangeRates' }).address
-							);
+							fs.writeFileSync(synthsJSONPath, JSON.stringify(currentSynthsFile));
 						});
+						describe('when ExchangeRates alone is redeployed', () => {
+							let ExchangeRates;
+							before(async () => {
+								// read current config file version (if something has been removed,
+								// we don't want to include it here)
+								const currentConfigFile = JSON.parse(fs.readFileSync(configJSONPath));
+								const configForExrates = Object.keys(currentConfigFile).reduce((memo, cur) => {
+									memo[cur] = { deploy: cur === 'ExchangeRates' };
+									return memo;
+								}, {});
 
-						const testInvertedSynth = async ({
-							currencyKey,
-							shouldBeFrozen,
-							expectedPropNameOfFrozenLimit,
-						}) => {
-							const {
-								entryPoint,
-								upperLimit,
-								lowerLimit,
-								frozen,
-							} = await ExchangeRates.methods.inversePricing(toBytes32(currencyKey)).call();
-							const rate = await ExchangeRates.methods
-								.rateForCurrency(toBytes32(currencyKey))
-								.call();
-							const expected = synths.find(({ name }) => name === currencyKey).inverted;
-							assert.strictEqual(
-								+web3.utils.fromWei(entryPoint),
-								expected.entryPoint,
-								'Entry points match'
-							);
-							assert.strictEqual(
-								+web3.utils.fromWei(upperLimit),
-								expected.upperLimit,
-								'Upper limits match'
-							);
-							assert.strictEqual(
-								+web3.utils.fromWei(lowerLimit),
-								expected.lowerLimit,
-								'Lower limits match'
-							);
-							assert.strictEqual(frozen, shouldBeFrozen, 'Frozen matches expectation');
+								fs.writeFileSync(configJSONPath, JSON.stringify(configForExrates));
 
-							if (expectedPropNameOfFrozenLimit) {
-								assert.strictEqual(
-									+web3.utils.fromWei(rate),
-									expected[expectedPropNameOfFrozenLimit],
-									'Frozen correctly at limit'
+								await commands.deploy({
+									addNewSynths: true,
+									network,
+									deploymentPath,
+									yes: true,
+									privateKey: accounts.deployer.private,
+								});
+
+								ExchangeRates = new web3.eth.Contract(
+									sources['ExchangeRates'].abi,
+									snx.getTarget({ network, contract: 'ExchangeRates' }).address
 								);
-							}
-						};
+							});
 
-						it('then iETH should be set as frozen at the lower limit', async () => {
-							await testInvertedSynth({
-								currencyKey: 'iETH',
-								shouldBeFrozen: true,
-								expectedPropNameOfFrozenLimit: 'lowerLimit',
+							after(resetConfigAndSynthFiles);
+
+							const testInvertedSynth = async ({
+								currencyKey,
+								shouldBeFrozen,
+								expectedPropNameOfFrozenLimit,
+							}) => {
+								const {
+									entryPoint,
+									upperLimit,
+									lowerLimit,
+									frozen,
+								} = await ExchangeRates.methods.inversePricing(toBytes32(currencyKey)).call();
+								const rate = await ExchangeRates.methods
+									.rateForCurrency(toBytes32(currencyKey))
+									.call();
+								const expected = synths.find(({ name }) => name === currencyKey).inverted;
+								assert.strictEqual(
+									+web3.utils.fromWei(entryPoint),
+									expected.entryPoint,
+									'Entry points match'
+								);
+								assert.strictEqual(
+									+web3.utils.fromWei(upperLimit),
+									expected.upperLimit,
+									'Upper limits match'
+								);
+								assert.strictEqual(
+									+web3.utils.fromWei(lowerLimit),
+									expected.lowerLimit,
+									'Lower limits match'
+								);
+								assert.strictEqual(frozen, shouldBeFrozen, 'Frozen matches expectation');
+
+								if (expectedPropNameOfFrozenLimit) {
+									assert.strictEqual(
+										+web3.utils.fromWei(rate),
+										expected[expectedPropNameOfFrozenLimit],
+										'Frozen correctly at limit'
+									);
+								}
+							};
+
+							it('then the new iABC synth should be configured correctly', async () => {
+								const iABC = toBytes32('iABC');
+								const {
+									entryPoint,
+									upperLimit,
+									lowerLimit,
+									frozen,
+								} = await ExchangeRates.methods.inversePricing(iABC).call();
+								const rate = await ExchangeRates.methods.rateForCurrency(iABC).call();
+
+								assert.strictEqual(+web3.utils.fromWei(entryPoint), 1, 'Entry point match');
+								assert.strictEqual(+web3.utils.fromWei(upperLimit), 1.5, 'Upper limit match');
+								assert.strictEqual(+web3.utils.fromWei(lowerLimit), 0.5, 'Lower limit match');
+								assert.strictEqual(frozen, false, 'Is not frozen');
+								assert.strictEqual(+web3.utils.fromWei(rate), 0, 'No rate for new inverted synth');
 							});
-						});
-						it('then iBTC should be set as frozen at the upper limit', async () => {
-							await testInvertedSynth({
-								currencyKey: 'iBTC',
-								shouldBeFrozen: true,
-								expectedPropNameOfFrozenLimit: 'upperLimit',
+
+							it('then iETH should be set as frozen at the lower limit', async () => {
+								await testInvertedSynth({
+									currencyKey: 'iETH',
+									shouldBeFrozen: true,
+									expectedPropNameOfFrozenLimit: 'lowerLimit',
+								});
 							});
-						});
-						it('then iBNB should not be frozen', async () => {
-							await testInvertedSynth({
-								currencyKey: 'iBNB',
-								shouldBeFrozen: false,
+							it('then iBTC should be set as frozen at the upper limit', async () => {
+								await testInvertedSynth({
+									currencyKey: 'iBTC',
+									shouldBeFrozen: true,
+									expectedPropNameOfFrozenLimit: 'upperLimit',
+								});
+							});
+							it('then iBNB should not be frozen', async () => {
+								await testInvertedSynth({
+									currencyKey: 'iBNB',
+									shouldBeFrozen: false,
+								});
 							});
 						});
 					});

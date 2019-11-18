@@ -274,6 +274,7 @@ const deploy = async ({
 	}
 
 	console.log(gray(`Starting deployment to ${network.toUpperCase()} via Infura...`));
+	const newContractsDeployed = [];
 	// force flag indicates to deploy even when no config for the entry (useful for new synths)
 	const deployContract = async ({ name, source = name, args, deps, force = false }) => {
 		const deployedContract = await deployer.deploy({ name, source, args, deps, force });
@@ -312,6 +313,14 @@ const deploy = async ({
 		if (network !== 'local') {
 			updatedConfig[name] = { deploy: false };
 			fs.writeFileSync(configFile, stringify(updatedConfig));
+		}
+
+		if (deployedContract.options.deployed) {
+			// add to the list of deployed contracts for later reporting
+			newContractsDeployed.push({
+				name,
+				address,
+			});
 		}
 
 		return deployedContract;
@@ -790,9 +799,11 @@ const deploy = async ({
 
 		const currencyKeyInBytes = toBytes32(currencyKey);
 
+		const synthConfig = config[`Synth${currencyKey}`] || {};
+
 		// track the original supply if we're deploying a new synth contract for an existing synth
 		let originalTotalSupply = 0;
-		if (config[`Synth${currencyKey}`].deploy) {
+		if (synthConfig.deploy) {
 			try {
 				const oldSynth = getExistingContract({ contract: `Synth${currencyKey}` });
 				originalTotalSupply = await oldSynth.methods.totalSupply().call();
@@ -815,7 +826,7 @@ const deploy = async ({
 		console.log(yellow(`Original TotalSupply on Synth${currencyKey} is ${originalTotalSupply}`));
 
 		// user confirm totalSupply is correct for oldSynth before deploy new Synth
-		if (config[`Synth${currencyKey}`].deploy && !yes) {
+		if (synthConfig.deploy && !yes) {
 			try {
 				await confirmAction(
 					yellow(
@@ -958,8 +969,8 @@ const deploy = async ({
 					],
 				});
 
-			// whe an old exchange rates exists - either the existing ExchangeRates, or
-			// if just replaced, the previous one (i.e. not on the local network)
+			// when the oldExrates exists - meaning there is a valid ExchangeRates in the existing deployment.json
+			// for this environment (true for all environments except the initial deploy in 'local' during those tests)
 			if (oldExrates) {
 				// get inverse synth's params from the old exrates, if any exist
 				const {
@@ -1125,11 +1136,9 @@ const deploy = async ({
 		});
 	}
 
-	console.log(green('\nSuccessfully deployed all contracts!\n'));
+	console.log(green(`\nSuccessfully deployed ${newContractsDeployed.length} contracts!\n`));
 
-	const tableData = Object.keys(config)
-		.filter(contractName => config[contractName].deploy)
-		.map(contractName => [contractName, deployer.deployedContracts[contractName].options.address]);
+	const tableData = newContractsDeployed.map(({ name, address }) => [name, address]);
 	console.log();
 	if (tableData.length) {
 		console.log(gray(`All contracts deployed on "${network}" network:`));
