@@ -34,10 +34,12 @@ contract('Rewards Integration Tests', async accounts => {
 		);
 	};
 
-	const closeFeePeriodAndFastForward = async () => {
-		// console.log('closeFeePeriodAndFastForward');
+	const fastForwardAndCloseFeePeriod = async () => {
 		const feePeriodDuration = await feePool.feePeriodDuration();
-		await fastForward(feePeriodDuration);
+		// Note: add on a small addition of 10 seconds - this seems to have
+		// alleviated an issues with the tests flaking in CircleCI
+		// test: "should assign accounts (1,2,3) to have (40%,40%,20%) of the debt/rewards"
+		await fastForward(feePeriodDuration.toNumber() + 10);
 		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
 		await updateRatesWithDefaults();
 	};
@@ -137,7 +139,7 @@ contract('Rewards Integration Tests', async accounts => {
 		periodOneMintableSupplyMinusMinterReward;
 
 	// CONSTANTS
-	const MINTER_SNX_REWARD = toUnit('200');
+	const MINTER_SNX_REWARD = toUnit('200'); // from SupplySchedule.minterReward
 
 	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
@@ -190,7 +192,7 @@ contract('Rewards Integration Tests', async accounts => {
 
 		it('should allocate the 3 accounts a third of the rewards for 1 period', async () => {
 			// Close Fee Period
-			await closeFeePeriodAndFastForward();
+			await fastForwardAndCloseFeePeriod();
 
 			// All 3 accounts claim rewards
 			await feePool.claimFees(sUSD, { from: account1 });
@@ -210,7 +212,7 @@ contract('Rewards Integration Tests', async accounts => {
 
 		it('should show the totalRewardsAvailable in the claimable period 1', async () => {
 			// Close Fee Period
-			await closeFeePeriodAndFastForward();
+			await fastForwardAndCloseFeePeriod();
 
 			// Assert that we have correct values in the fee pool
 			const totalRewardsAvailable = await feePool.totalRewardsAvailable();
@@ -223,7 +225,7 @@ contract('Rewards Integration Tests', async accounts => {
 			// We are currently in the 2nd week, close it and the next
 			for (let i = 0; i <= CLAIMABLE_PERIODS - 1; i++) {
 				// console.log('Close Fee Period', i);
-				await closeFeePeriodAndFastForward();
+				await fastForwardAndCloseFeePeriod();
 
 				// FastForward a little for minting
 				await fastForwardAndUpdateRates(MINUTE);
@@ -250,7 +252,7 @@ contract('Rewards Integration Tests', async accounts => {
 			// We are currently in the 2nd week, close it and the next
 			for (let i = 0; i <= CLAIMABLE_PERIODS - 1; i++) {
 				// console.log('Close Fee Period', i);
-				await closeFeePeriodAndFastForward();
+				await fastForwardAndCloseFeePeriod();
 
 				// FastForward a little for minting
 				await fastForwardAndUpdateRates(MINUTE);
@@ -283,7 +285,7 @@ contract('Rewards Integration Tests', async accounts => {
 			// We are currently in the 2nd week, close it and the next
 			for (let i = 0; i <= CLAIMABLE_PERIODS - 1; i++) {
 				// console.log('Close Fee Period', i);
-				await closeFeePeriodAndFastForward();
+				await fastForwardAndCloseFeePeriod();
 
 				// FastForward a little for minting
 				await fastForwardAndUpdateRates(MINUTE);
@@ -321,7 +323,7 @@ contract('Rewards Integration Tests', async accounts => {
 			// Close all claimable periods
 			for (let i = 0; i <= CLAIMABLE_PERIODS; i++) {
 				// console.log('Close Fee Period', i);
-				await closeFeePeriodAndFastForward();
+				await fastForwardAndCloseFeePeriod();
 				// FastForward a bit to be able to mint
 				await fastForwardAndUpdateRates(MINUTE);
 
@@ -335,7 +337,7 @@ contract('Rewards Integration Tests', async accounts => {
 			const rollOverRewards = periodToRollOver.rewardsToDistribute;
 
 			// Close the extra week
-			await closeFeePeriodAndFastForward();
+			await fastForwardAndCloseFeePeriod();
 			// FastForward a bit to be able to mint
 			await fastForwardAndUpdateRates(MINUTE);
 			// Mint the staking rewards
@@ -355,7 +357,7 @@ contract('Rewards Integration Tests', async accounts => {
 
 		it('should rollover the unclaimed SNX rewards on week over 2 terms (FEE_PERIOD_LENGTH * 2)', async () => {
 			for (let i = 0; i <= FEE_PERIOD_LENGTH * 2; i++) {
-				await closeFeePeriodAndFastForward();
+				await fastForwardAndCloseFeePeriod();
 				// FastForward a bit to be able to mint
 				await fastForwardAndUpdateRates(MINUTE);
 				// Mint the staking rewards
@@ -368,7 +370,7 @@ contract('Rewards Integration Tests', async accounts => {
 			const rollOverRewards = periodToRollOver.rewardsToDistribute;
 
 			// Close for the roll over
-			await closeFeePeriodAndFastForward();
+			await fastForwardAndCloseFeePeriod();
 			// FastForward a bit to be able to mint
 			await fastForwardAndUpdateRates(MINUTE);
 			// Mint the staking rewards
@@ -387,7 +389,7 @@ contract('Rewards Integration Tests', async accounts => {
 
 		it('should rollover the partial unclaimed SNX rewards', async () => {
 			for (let i = 0; i <= FEE_PERIOD_LENGTH; i++) {
-				await closeFeePeriodAndFastForward();
+				await fastForwardAndCloseFeePeriod();
 				// FastForward a bit to be able to mint
 				await fastForwardAndUpdateRates(MINUTE);
 
@@ -408,7 +410,7 @@ contract('Rewards Integration Tests', async accounts => {
 
 		it('should allow a user to leave the system and return and still claim rewards', async () => {
 			// Close week 1
-			await closeFeePeriodAndFastForward();
+			await fastForwardAndCloseFeePeriod();
 			// FastForward a bit to be able to mint
 			await fastForwardAndUpdateRates(MINUTE);
 			// Mint the staking rewards
@@ -421,7 +423,7 @@ contract('Rewards Integration Tests', async accounts => {
 			// await logFeesByPeriod(account1);
 
 			// Close week 2, ffwd & mint
-			await closeFeePeriodAndFastForward();
+			await fastForwardAndCloseFeePeriod();
 			await fastForwardAndUpdateRates(MINUTE);
 			await synthetix.mint({ from: owner });
 			// await logFeePeriods();
@@ -466,7 +468,7 @@ contract('Rewards Integration Tests', async accounts => {
 		it('should allocate correct SNX rewards as others leave the system', async () => {
 			// Close Fee Period
 			// console.log('Close Fee Period');
-			await closeFeePeriodAndFastForward();
+			await fastForwardAndCloseFeePeriod();
 
 			// Account1 claims but 2 & 3 dont
 			await feePool.claimFees(sUSD, { from: account1 });
@@ -491,7 +493,7 @@ contract('Rewards Integration Tests', async accounts => {
 			await synthetix.mint({ from: owner });
 
 			// Close the period after user leaves system
-			closeFeePeriodAndFastForward();
+			fastForwardAndCloseFeePeriod();
 
 			// Account1 Reenters in current unclosed period so no rewards yet
 			// await synthetix.issueMaxSynths(sUSD, { from: account1 });
@@ -545,7 +547,7 @@ contract('Rewards Integration Tests', async accounts => {
 			await synthetix.issueSynths(sBTC, sBTCAmount, { from: account1 });
 			await synthetix.issueSynths(sBTC, sBTCAmount, { from: account2 });
 
-			await closeFeePeriodAndFastForward();
+			await fastForwardAndCloseFeePeriod();
 			// //////////////////////////////////////////////
 			// 2nd Week
 			// //////////////////////////////////////////////
@@ -584,7 +586,7 @@ contract('Rewards Integration Tests', async accounts => {
 			);
 
 			// Account 3 (enters the system and) mints 10K sUSD and should have 20% of the debt not 33.33%
-			await synthetix.issueSynths(sUSD, toUnit('10000'), { from: account3 });
+			await synthetix.issueSynths(sUSD, tenK, { from: account3 });
 
 			// Get the SNX mintableSupply for week 2
 			const periodTwoMintableSupply = (await supplySchedule.mintableSupply()).sub(
@@ -599,7 +601,7 @@ contract('Rewards Integration Tests', async accounts => {
 			await synthetix.exchange(sBTC, sBTCAmount, sUSD, account2, { from: account2 });
 
 			// Close so we can claim
-			await closeFeePeriodAndFastForward();
+			await fastForwardAndCloseFeePeriod();
 			// //////////////////////////////////////////////
 			// 3rd Week
 			// //////////////////////////////////////////////
@@ -667,7 +669,7 @@ contract('Rewards Integration Tests', async accounts => {
 			await synthetix.mint({ from: owner });
 
 			// Close so we can claim
-			await closeFeePeriodAndFastForward();
+			await fastForwardAndCloseFeePeriod();
 			// //////////////////////////////////////////////
 			// 4th Week
 			// //////////////////////////////////////////////
@@ -712,7 +714,8 @@ contract('Rewards Integration Tests', async accounts => {
 			await synthetix.mint({ from: owner });
 
 			// Close so we can claim
-			await closeFeePeriodAndFastForward();
+			await fastForwardAndCloseFeePeriod();
+
 			// //////////////////////////////////////////////
 			// 5th Week
 			// //////////////////////////////////////////////
@@ -753,7 +756,7 @@ contract('Rewards Integration Tests', async accounts => {
 			await synthetix.issueSynths(sUSD, tenK, { from: account1 });
 
 			// Close week 2
-			await closeFeePeriodAndFastForward();
+			await fastForwardAndCloseFeePeriod();
 
 			// //////////////////////////////////////////////
 			// 3rd Week
@@ -799,7 +802,7 @@ contract('Rewards Integration Tests', async accounts => {
 			await synthetix.mint({ from: owner });
 
 			// Close week 3
-			await closeFeePeriodAndFastForward();
+			await fastForwardAndCloseFeePeriod();
 
 			// //////////////////////////////////////////////
 			// 3rd Week
@@ -845,7 +848,7 @@ contract('Rewards Integration Tests', async accounts => {
 
 			// Once the fee period is closed we should have 1/3 the rewards available because we have
 			// 1/3 the collateral backing up the system.
-			await closeFeePeriodAndFastForward();
+			await fastForwardAndCloseFeePeriod();
 			const rewardsAfter = await feePool.feesAvailable(account1, sUSD);
 			// console.log('rewardsAfter', rewardsAfter[1].toString());
 			assert.bnEqual(rewardsAfter[1], third(periodOneMintableSupplyMinusMinterReward));
