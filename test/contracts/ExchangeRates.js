@@ -1451,6 +1451,21 @@ contract('Exchange Rates', async accounts => {
 						});
 					});
 
+					describe('when a regular (non-inverse) synth is removed by the owner', () => {
+						it('then it reverts', async () => {
+							await assert.revert(
+								instance.removeInversePricing(sEUR, {
+									from: owner,
+								})
+							);
+							await assert.revert(
+								instance.removeInversePricing(sBTC, {
+									from: owner,
+								})
+							);
+						});
+					});
+
 					describe('when iBTC is removed by the owner', () => {
 						let removeTxn;
 						beforeEach(async () => {
