@@ -43,7 +43,7 @@ const fastForward = async seconds => {
 	if (BN.isBN(seconds)) seconds = seconds.toNumber();
 
 	// And same with strings.
-	if (typeof seconds === 'string') seconds = parseFloat(seconds);
+	if (typeof seconds === 'string') seconds = parseInt(seconds);
 
 	await send({
 		method: 'evm_increaseTime',

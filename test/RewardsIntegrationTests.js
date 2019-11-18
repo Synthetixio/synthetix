@@ -136,7 +136,7 @@ contract('Rewards Integration Tests', async accounts => {
 		periodOneMintableSupplyMinusMinterReward;
 
 	// CONSTANTS
-	const MINTER_SNX_REWARD = toUnit('200');
+	const MINTER_SNX_REWARD = toUnit('200'); // from SupplySchedule.minterReward
 
 	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
@@ -583,7 +583,7 @@ contract('Rewards Integration Tests', async accounts => {
 			);
 
 			// Account 3 (enters the system and) mints 10K sUSD and should have 20% of the debt not 33.33%
-			await synthetix.issueSynths(sUSD, toUnit('10000'), { from: account3 });
+			await synthetix.issueSynths(sUSD, tenK, { from: account3 });
 
 			// Get the SNX mintableSupply for week 2
 			const periodTwoMintableSupply = (await supplySchedule.mintableSupply()).sub(
