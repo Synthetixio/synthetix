@@ -111,6 +111,18 @@ contract Synth is ExternStateToken {
     }
 
     /**
+     * @notice ERC223 transfer function
+     */
+    function transfer(address to, uint value, bytes data)
+        public
+        optionalProxy
+        returns (bool)
+    {
+        // And send their result off to the destination address
+        return super._internalTransfer(messageSender, to, value, data);
+    }
+
+    /**
      * @notice ERC20 transferFrom function
      */
     function transferFrom(address from, address to, uint value)
@@ -118,7 +130,7 @@ contract Synth is ExternStateToken {
         optionalProxy
         returns (bool)
     {
-        require(from != 0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF, "The fee address is not allowed");
+        require(from != 0xfeefeefeefeefeefeefeefeefeefeefeefeefeef, "The fee address is not allowed");
         // Skip allowance update in case of infinite allowance
         if (tokenState.allowance(from, messageSender) != uint(-1)) {
             // Reduce the allowance by the amount we're transferring.
@@ -128,6 +140,26 @@ contract Synth is ExternStateToken {
 
         bytes memory empty;
         return super._internalTransfer(from, to, value, empty);
+    }
+
+    /**
+     * @notice ERC223 transferFrom function
+     */
+    function transferFrom(address from, address to, uint value, bytes data)
+        public
+        optionalProxy
+        returns (bool)
+    {
+        require(from != 0xfeefeefeefeefeefeefeefeefeefeefeefeefeef, "The fee address is not allowed");
+
+        // Skip allowance update in case of infinite allowance
+        if (tokenState.allowance(from, messageSender) != uint(-1)) {
+            // Reduce the allowance by the amount we're transferring.
+            // The safeSub call will handle an insufficient allowance.
+            tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
+        }
+
+        return super._internalTransfer(from, to, value, data);
     }
 
     // Allow synthetix to issue a certain number of synths from an account.
@@ -158,6 +190,16 @@ contract Synth is ExternStateToken {
         optionalProxy_onlyOwner
     {
         totalSupply = amount;
+    }
+
+    // Allow synthetix to trigger a token fallback call from our synths so users get notified on
+    // exchange as well as transfer
+    function triggerTokenFallbackIfNeeded(address sender, address recipient, uint amount)
+        external
+        onlySynthetixOrFeePool
+    {
+        bytes memory empty;
+        callTokenFallbackIfNeeded(sender, recipient, amount, empty);
     }
 
     /* ========== MODIFIERS ========== */

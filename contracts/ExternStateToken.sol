@@ -31,11 +31,12 @@ import "./SafeDecimalMath.sol";
 import "./SelfDestructible.sol";
 import "./TokenState.sol";
 import "./Proxyable.sol";
+import "./TokenFallbackCaller.sol";
 
 /**
  * @title ERC20 Token contract, with detached state and designed to operate behind a proxy.
  */
-contract ExternStateToken is SelfDestructible, Proxyable {
+contract ExternStateToken is SelfDestructible, Proxyable, TokenFallbackCaller {
 
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -82,12 +83,12 @@ contract ExternStateToken is SelfDestructible, Proxyable {
      * @param owner The party authorising spending of their funds.
      * @param spender The party spending tokenOwner's funds.
      */
-    function allowance(address account, address spender)
+    function allowance(address owner, address spender)
         public
         view
         returns (uint)
     {
-        return tokenState.allowance(account, spender);
+        return tokenState.allowance(owner, spender);
     }
 
     /**
@@ -116,7 +117,7 @@ contract ExternStateToken is SelfDestructible, Proxyable {
         emitTokenStateUpdated(_tokenState);
     }
 
-    function _internalTransfer(address from, address to, uint value)
+    function _internalTransfer(address from, address to, uint value, bytes data)
         internal
         returns (bool)
     {
@@ -131,6 +132,11 @@ contract ExternStateToken is SelfDestructible, Proxyable {
 
         // Emit a standard ERC20 transfer event
         emitTransfer(from, to, value);
+
+        // If the recipient is a contract, we need to call tokenFallback on it so they can do ERC223
+        // actions when receiving our tokens. Unlike the standard, however, we don't revert if the
+        // recipient contract doesn't implement tokenFallback.
+        callTokenFallbackIfNeeded(from, to, value, data);
         
         return true;
     }
@@ -139,24 +145,24 @@ contract ExternStateToken is SelfDestructible, Proxyable {
      * @dev Perform an ERC20 token transfer. Designed to be called by transfer functions possessing
      * the onlyProxy or optionalProxy modifiers.
      */
-    function _transfer_byProxy(address from, address to, uint value)
+    function _transfer_byProxy(address from, address to, uint value, bytes data)
         internal
         returns (bool)
     {
-        return _internalTransfer(from, to, value);
+        return _internalTransfer(from, to, value, data);
     }
 
     /**
      * @dev Perform an ERC20 token transferFrom. Designed to be called by transferFrom functions
      * possessing the optionalProxy or optionalProxy modifiers.
      */
-    function _transferFrom_byProxy(address sender, address from, address to, uint value)
+    function _transferFrom_byProxy(address sender, address from, address to, uint value, bytes data)
         internal
         returns (bool)
     {
         /* Insufficient allowance will be handled by the safe subtraction. */
         tokenState.setAllowance(from, sender, tokenState.allowance(from, sender).sub(value));
-        return _internalTransfer(from, to, value);
+        return _internalTransfer(from, to, value, data);
     }
 
     /**
@@ -182,10 +188,10 @@ contract ExternStateToken is SelfDestructible, Proxyable {
         proxy._emit(abi.encode(value), 3, TRANSFER_SIG, bytes32(from), bytes32(to), 0);
     }
 
-    event Approval(address indexed account, address indexed spender, uint value);
+    event Approval(address indexed owner, address indexed spender, uint value);
     bytes32 constant APPROVAL_SIG = keccak256("Approval(address,address,uint256)");
-    function emitApproval(address account, address spender, uint value) internal {
-        proxy._emit(abi.encode(value), 3, APPROVAL_SIG, bytes32(account), bytes32(spender), 0);
+    function emitApproval(address owner, address spender, uint value) internal {
+        proxy._emit(abi.encode(value), 3, APPROVAL_SIG, bytes32(owner), bytes32(spender), 0);
     }
 
     event TokenStateUpdated(address newTokenState);
