@@ -118,13 +118,13 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
     /**
      * @notice Logs an accounts issuance data in the current fee period which is then stored historically
      * @param account Message.Senders account address
-     * @param debtRatio Debt percentage this account has locked after minting or burning their synth
+     * @param debtRatio Debt of this account as a percentage of the global debt.
      * @param debtEntryIndex The index in the global debt ledger. synthetix.synthetixState().issuanceData(account)
      * @param currentPeriodStartDebtIndex The startingDebtIndex of the current fee period
      * @dev onlyFeePool to call me on synthetix.issue() & synthetix.burn() calls to store the locked SNX
      * per fee period so we know to allocate the correct proportions of fees and rewards per period
       accountIssuanceLedger[account][0] has the latest locked amount for the current period. This can be update as many time
-      accountIssuanceLedger[account][1-3] has the last locked amount for a previous period they minted or burned
+      accountIssuanceLedger[account][1-2] has the last locked amount for a previous period they minted or burned
      */
     function appendAccountIssuanceRecord(address account, uint debtRatio, uint debtEntryIndex, uint currentPeriodStartDebtIndex)
         external
@@ -172,7 +172,7 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
     {
         require(accounts.length == ratios.length, "Length mismatch");
 
-        for (uint8 i = 0; i < accounts.length; i++) {
+        for (uint i = 0; i < accounts.length; i++) {
             accountIssuanceLedger[accounts[i]][periodToInsert].debtPercentage = ratios[i];
             accountIssuanceLedger[accounts[i]][periodToInsert].debtEntryIndex = feePeriodCloseIndex;
             emit IssuanceDebtRatioEntry(accounts[i], ratios[i], feePeriodCloseIndex);

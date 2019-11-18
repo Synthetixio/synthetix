@@ -201,7 +201,7 @@ program
 			console.log(gray(`Exchange sUSD --> sETH for user - (${user1.address})`));
 			const amountToExchange = web3.utils.toWei('100');
 			const { transactionHash: txn5Hash } = await Synthetix.methods
-				.exchange(sUSD, amountToExchange, sETH, user1.address)
+				.exchange(sUSD, amountToExchange, sETH)
 				.send({
 					from: user1.address,
 					gas,
@@ -217,7 +217,7 @@ program
 			// #6 Exchange balance of sETH back to sUSD
 			console.log(gray(`Exchange sETH --> sUSD for user - (${user1.address})`));
 			const { transactionHash: txn6Hash } = await Synthetix.methods
-				.exchange(sETH, sETHBalance, sUSD, user1.address)
+				.exchange(sETH, sETHBalance, sUSD)
 				.send({
 					from: user1.address,
 					gas,

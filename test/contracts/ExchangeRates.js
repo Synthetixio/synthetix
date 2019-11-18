@@ -938,6 +938,22 @@ contract('Exchange Rates', async accounts => {
 		assert.bnEqual(lastUpdatedCurrencyXDR, ratesTotal);
 	});
 
+	it('should not update the XDR rate with no subset of XDR rates', async () => {
+		const keysArray = ['sBTC'].map(web3.utils.asciiToHex);
+		const rates = ['9000'].map(toUnit);
+		const instance = await ExchangeRates.new(owner, oracle, keysArray, rates, {
+			from: deployerAccount,
+		});
+
+		const lastUpdatedTimeXDR = await instance.lastRateUpdateTimes.call(
+			web3.utils.asciiToHex('XDR')
+		);
+		assert.bnEqual(lastUpdatedTimeXDR, web3.utils.toBN(0));
+
+		const lastUpdatedCurrencyXDR = await instance.rates.call(web3.utils.asciiToHex('XDR'));
+		assert.bnEqual(lastUpdatedCurrencyXDR, web3.utils.toBN(0));
+	});
+
 	describe('inverted prices', () => {
 		const inverseRates = ['iBTC', 'iETH', 'sEUR', 'sBTC'];
 		const [iBTC, iETH, sEUR, sBTC] = inverseRates.map(toBytes32);

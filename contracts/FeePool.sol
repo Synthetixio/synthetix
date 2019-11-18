@@ -100,8 +100,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     FeePeriod[FEE_PERIOD_LENGTH] private _recentFeePeriods;
     uint256 private _currentFeePeriod;
 
-    // How long a fee period lasts at a minimum. It is required for the
-    // fee authority to roll over the periods, so they are not guaranteed
+    // How long a fee period lasts at a minimum. It is required for 
+    // anyone to roll over the periods, so they are not guaranteed
     // to roll over at exactly this duration, but the contract enforces
     // that they cannot roll over any quicker than this duration.
     uint public feePeriodDuration = 1 weeks;
@@ -178,7 +178,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
      * @notice Logs an accounts issuance data per fee period
      * @param account Message.Senders account address
      * @param debtRatio Debt percentage this account has locked after minting or burning their synth
-     * @param debtEntryIndex The index in the global debt ledger. synthetix.synthetixState().issuanceData(account)
+     * @param debtEntryIndex The index in the global debt ledger. synthetixState.issuanceData(account)
      * @dev onlySynthetix to call me on synthetix.issue() & synthetix.burn() calls to store the locked SNX
      * per fee period so we know to allocate the correct proportions of fees and rewards per period
      */
@@ -265,25 +265,18 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         optionalProxy_onlyOwner
     {
         require(_percent >= 0, "Threshold should be positive");
-        require(_percent <= 50, "Threshold above limit");
+        require(_percent <= 50, "Threshold too high");
         targetThreshold = _percent.mul(SafeDecimalMath.unit()).div(100);
     }
 
     /**
      * @notice The Synthetix contract informs us when fees are paid.
+     * @param xdrAmount xdr amount in fees being paid.
      */
-    function feePaid(bytes32 currencyKey, uint amount)
+    function recordFeePaid(uint xdrAmount)
         external
         onlySynthetix
     {
-        uint xdrAmount;
-
-        if (currencyKey != "XDR") {
-            xdrAmount = synthetix.effectiveValue(currencyKey, amount, "XDR");
-        } else {
-            xdrAmount = amount;
-        }
-
         // Keep track of in XDRs in our fee pool.
         _recentFeePeriodsStorage(0).feesToDistribute = _recentFeePeriodsStorage(0).feesToDistribute.add(xdrAmount);
     }
@@ -377,7 +370,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
         // Address won't be able to claim fees if it is too far below the target c-ratio.
         // It will need to burn synths then try claiming again.
-        require(feesClaimable(claimingAddress), "C-Ratio below penalty threshold");
+        require(isFeesClaimable(claimingAddress), "C-Ratio below penalty threshold");
 
         // Get the claimingAddress available fees and rewards
         (availableFees, availableRewards) = feesAvailable(claimingAddress, "XDR");
@@ -417,7 +410,9 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         public
         optionalProxy_onlyOwner
         onlyDuringSetup
-    {
+    {        
+        require (startingDebtIndex <= synthetixState.debtLedgerLength(), "Cannot import bad data");
+
         _recentFeePeriods[_currentFeePeriod.add(feePeriodIndex).mod(FEE_PERIOD_LENGTH)] = FeePeriod({
             feePeriodId: uint64(feePeriodId),
             startingDebtIndex: uint64(startingDebtIndex),
@@ -486,13 +481,14 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         // until we've exhausted the amount.
         // The condition checks for overflow because we're going to 0 with an unsigned int.
         for (uint i = FEE_PERIOD_LENGTH - 1; i < FEE_PERIOD_LENGTH; i--) {
-            uint delta = _recentFeePeriodsStorage(i).feesToDistribute.sub(_recentFeePeriodsStorage(i).feesClaimed);
+            uint feesAlreadyClaimed = _recentFeePeriodsStorage(i).feesClaimed; 
+            uint delta = _recentFeePeriodsStorage(i).feesToDistribute.sub(feesAlreadyClaimed);
 
             if (delta > 0) {
                 // Take the smaller of the amount left to claim in the period and the amount we need to allocate
                 uint amountInPeriod = delta < remainingToAllocate ? delta : remainingToAllocate;
 
-                _recentFeePeriodsStorage(i).feesClaimed = _recentFeePeriodsStorage(i).feesClaimed.add(amountInPeriod);
+                _recentFeePeriodsStorage(i).feesClaimed = feesAlreadyClaimed.add(amountInPeriod);
                 remainingToAllocate = remainingToAllocate.sub(amountInPeriod);
                 feesPaid = feesPaid.add(amountInPeriod);
 
@@ -566,7 +562,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         require(account != address(proxy), "Can't send fees to proxy");
         require(account != address(synthetix), "Can't send fees to synthetix");
 
-        Synth xdrSynth = synthetix.synths("XDR");
+        Synth xdrSynth = synthetix.synths("XDR"); // This could be gas optimised by using a setter for XDR synth address
         Synth destinationSynth = synthetix.synths(destinationCurrencyKey);
 
         // Note: We don't need to check the fee pool balance as the burn() below will do a safe subtraction which requires
@@ -727,7 +723,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
      * @notice Check if a particular address is able to claim fees right now
      * @param account The address you want to query for
      */
-    function feesClaimable(address account)
+    function isFeesClaimable(address account)
         public
         view
         returns (bool)
@@ -736,7 +732,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         //  0  <  10%:   Claimable
         // 10% > above:  Unable to claim
         uint ratio = synthetix.collateralisationRatio(account);
-        uint targetRatio = synthetix.synthetixState().issuanceRatio();
+        uint targetRatio = synthetixState.issuanceRatio();
 
         // Claimable if collateral ratio below target ratio
         if (ratio < targetRatio) {
@@ -768,11 +764,10 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         uint debtEntryIndex;
         (userOwnershipPercentage, debtEntryIndex) = feePoolState.getAccountsDebtEntry(account, 0);
 
-        // If they don't have any debt ownership and they haven't minted, they don't have any fees
+        // If they don't have any debt ownership and they never minted, they don't have any fees.
+        // User ownership can reduce to 0 if user burns all synths, 
+        // however they could have fees applicable for periods they had minted in before so we check debtEntryIndex.  
         if (debtEntryIndex == 0 && userOwnershipPercentage == 0) return;
-
-        // If there are no XDR synths, then they don't have any fees
-        if (synthetix.totalIssuedSynths("XDR") == 0) return;
 
         // The [0] fee period is not yet ready to claim, but it is a fee period that they can have
         // fees owing for, so we need to report on it anyway.
@@ -783,15 +778,18 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         results[0][0] = feesFromPeriod;
         results[0][1] = rewardsFromPeriod;
 
+        // Retrieve user's last fee claim by periodId
+        uint lastFeeWithdrawal = getLastFeeWithdrawal(account);
+        
         // Go through our fee periods from the oldest feePeriod[FEE_PERIOD_LENGTH - 1] and figure out what we owe them.
         // Condition checks for periods > 0
         for (uint i = FEE_PERIOD_LENGTH - 1; i > 0; i--) {
             uint next = i - 1;
             uint nextPeriodStartingDebtIndex = _recentFeePeriodsStorage(next).startingDebtIndex;
 
-            // We can skip period if no debt minted during period
+            // We can skip the period, as no debt minted during period (next period's startingDebtIndex is still 0)
             if (nextPeriodStartingDebtIndex > 0 &&
-            getLastFeeWithdrawal(account) < _recentFeePeriodsStorage(i).feePeriodId) {
+            lastFeeWithdrawal < _recentFeePeriodsStorage(i).feePeriodId) {
 
                 // We calculate a feePeriod's closingDebtIndex by looking at the next feePeriod's startingDebtIndex
                 // we can use the most recent issuanceData[0] for the current feePeriod
@@ -816,8 +814,11 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
      * wallet's debtPercentage. Gives a precise amount of the feesToDistribute
      * for fees in the period. Precision factor is removed before results are
      * returned.
+     * @dev The reported fees owing for the current period [0] are just a 
+     * running balance until the fee period closes
      */
     function _feesAndRewardsFromPeriod(uint period, uint ownershipPercentage, uint debtEntryIndex)
+        view
         internal
         returns (uint, uint)
     {
@@ -850,10 +851,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         internal
         view
         returns (uint)
-    {
-        // Condition to check if debtLedger[] has value otherwise return 0
-        if (closingDebtIndex > synthetixState.debtLedgerLength()) return 0;
-
+    {        
         // Figure out their global debt percentage delta at end of fee Period.
         // This is a high precision integer.
         uint feePeriodDebtOwnership = synthetixState.debtLedger(closingDebtIndex)
@@ -871,8 +869,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         require(period != 0, "Current period is not closed yet");
         require(period < FEE_PERIOD_LENGTH, "Exceeds the FEE_PERIOD_LENGTH");
 
-        // No debt minted during period as next period starts at 0
-        if (_recentFeePeriodsStorage(period - 1).startingDebtIndex == 0) return;
+        // If the period being checked is uninitialised then return 0. This is only at the start of the system.  
+        if (_recentFeePeriodsStorage(period - 1).startingDebtIndex == 0) return 0;
 
         uint closingDebtIndex = uint256(_recentFeePeriodsStorage(period - 1).startingDebtIndex).sub(1);
 
@@ -905,7 +903,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         view
         returns (uint)
     {
-        uint targetRatio = synthetix.synthetixState().issuanceRatio();
+        uint targetRatio = synthetixState.issuanceRatio();
 
         return targetRatio.multiplyDecimal(SafeDecimalMath.unit().add(targetThreshold));
     }
