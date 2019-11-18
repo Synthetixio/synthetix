@@ -22,6 +22,8 @@ const getInstance = getContractInstance(web3);
 contract('Rewards Integration Tests', async accounts => {
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
+		await mineBlock();
+
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
