@@ -30,7 +30,7 @@ jobs:
       - attach_workspace:
           at: .
       - run: npm run test:gas
-      - run: npx codechecks
+      # - run: npx codechecks
   int:
     docker:
       - image: 'circleci/node:10.16.3'
@@ -47,6 +47,6 @@ workflows:
       - unit:
           requires:
             - prepare
-      - int:
-          requires:
-            - unit
+      # - int:
+      #     requires:
+      #       - unit

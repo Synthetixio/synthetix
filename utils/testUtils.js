@@ -45,6 +45,8 @@ const fastForward = async seconds => {
 	// And same with strings.
 	if (typeof seconds === 'string') seconds = parseInt(seconds);
 
+	await mineBlock();
+
 	await send({
 		method: 'evm_increaseTime',
 		params: [seconds],
