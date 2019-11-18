@@ -536,8 +536,8 @@ contract('Rewards Integration Tests', async accounts => {
 		it('ctd Acc2 & 3 should get the extra amount');
 	});
 
-	describe('Exchange Rate Shift tests', async () => {
-		it('should assign accounts (1,2,3) to have (40%,40%,20%) of the debt/rewards', async () => {
+	describe.only('Exchange Rate Shift tests', async () => {
+		const flakyTest = async () => {
 			// Account 1&2 issue 10K USD in sBTC each, holding 50% of the total debt.
 			const sBTCAmount = await synthetix.effectiveValue(sUSD, tenK, sBTC);
 			// console.log('sBTCAmount', sBTCAmount.toString());
@@ -732,9 +732,13 @@ contract('Rewards Integration Tests', async accounts => {
 			assert.bnClose(account1EscrowEntry4[1], twoFifths(periodFourMintableSupply));
 			assert.bnClose(account2EscrowEntry4[1], twoFifths(periodFourMintableSupply));
 			assert.bnClose(account3EscrowEntry3[1], oneFifth(periodFourMintableSupply), 16);
-		});
+		};
+		for (let i = 0; i < 25; i++) {
+			it(`test flaky test ${i + 1}`, flakyTest);
+		}
+		// it('should assign accounts (1,2,3) to have (40%,40%,20%) of the debt/rewards');
 
-		it('(Inverse) Issue sBTC then shift rate down 50% then calc rewards');
+		// it('(Inverse) Issue sBTC then shift rate down 50% then calc rewards');
 	});
 
 	describe('3 Accounts issue 10K sUSD each in week 1', async () => {
