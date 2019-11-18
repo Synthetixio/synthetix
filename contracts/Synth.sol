@@ -105,9 +105,8 @@ contract Synth is ExternStateToken {
         public
         optionalProxy
         returns (bool)
-    {
-        bytes memory empty;
-        return super._internalTransfer(messageSender, to, value, empty);
+    {        
+        return super._internalTransfer(messageSender, to, value);
     }
 
     /**
@@ -125,9 +124,8 @@ contract Synth is ExternStateToken {
             // The safeSub call will handle an insufficient allowance.
             tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
         }
-
-        bytes memory empty;
-        return super._internalTransfer(from, to, value, empty);
+        
+        return super._internalTransfer(from, to, value);
     }
 
     // Allow synthetix to issue a certain number of synths from an account.
