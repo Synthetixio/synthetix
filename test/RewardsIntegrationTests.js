@@ -14,7 +14,6 @@ const {
 	toUnit,
 	toPreciseUnit,
 	multiplyDecimal,
-	mineBlock,
 } = require('../utils/testUtils');
 const web3 = getWeb3();
 const getInstance = getContractInstance(web3);
@@ -22,8 +21,6 @@ const getInstance = getContractInstance(web3);
 contract('Rewards Integration Tests', async accounts => {
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
-		await mineBlock();
-
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
@@ -34,8 +31,6 @@ contract('Rewards Integration Tests', async accounts => {
 				from: oracle,
 			}
 		);
-
-		await mineBlock();
 	};
 
 	const closeFeePeriodAndFastForward = async () => {
@@ -587,8 +582,6 @@ contract('Rewards Integration Tests', async accounts => {
 				}
 			);
 
-			await mineBlock();
-
 			// Account 3 (enters the system and) mints 10K sUSD and should have 20% of the debt not 33.33%
 			await synthetix.issueSynths(sUSD, tenK, { from: account3 });
 
@@ -596,8 +589,6 @@ contract('Rewards Integration Tests', async accounts => {
 			const periodTwoMintableSupply = (await supplySchedule.mintableSupply()).sub(
 				MINTER_SNX_REWARD
 			);
-
-			await mineBlock();
 
 			// Mint the staking rewards
 			await synthetix.mint({ from: owner });
@@ -671,8 +662,6 @@ contract('Rewards Integration Tests', async accounts => {
 				MINTER_SNX_REWARD
 			);
 
-			await mineBlock();
-
 			// Mint the staking rewards
 			await synthetix.mint({ from: owner });
 
@@ -718,15 +707,11 @@ contract('Rewards Integration Tests', async accounts => {
 				MINTER_SNX_REWARD
 			);
 
-			await mineBlock();
-
 			// Mint the staking rewards
 			await synthetix.mint({ from: owner });
 
 			// Close so we can claim
 			await closeFeePeriodAndFastForward();
-
-			await mineBlock();
 
 			// //////////////////////////////////////////////
 			// 5th Week
