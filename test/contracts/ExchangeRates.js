@@ -955,19 +955,43 @@ contract('Exchange Rates', async accounts => {
 			describe('when attempting to add inverse synths', () => {
 				it('ensure only the owner can invoke', async () => {
 					await assert.revert(
-						instance.removeInversePricing(iBTC, {
-							from: deployerAccount,
-						})
+						instance.setInversePricing(
+							iBTC,
+							toUnit('1'),
+							toUnit('2'),
+							toUnit('0.5'),
+							false,
+							false,
+							{
+								from: deployerAccount,
+							}
+						)
 					);
 					await assert.revert(
-						instance.removeInversePricing(iBTC, {
-							from: oracle,
-						})
+						instance.setInversePricing(
+							iBTC,
+							toUnit('1'),
+							toUnit('2'),
+							toUnit('0.5'),
+							false,
+							false,
+							{
+								from: oracle,
+							}
+						)
 					);
 					await assert.revert(
-						instance.removeInversePricing(iBTC, {
-							from: accountOne,
-						})
+						instance.setInversePricing(
+							iBTC,
+							toUnit('1'),
+							toUnit('2'),
+							toUnit('0.5'),
+							false,
+							false,
+							{
+								from: accountOne,
+							}
+						)
 					);
 				});
 				it('ensure entryPoint be greater than 0', async () => {
