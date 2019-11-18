@@ -21,6 +21,8 @@ const {
 const web3 = getWeb3();
 const getInstance = getContractInstance(web3);
 
+const { toBytes32 } = require('../../.');
+
 contract('FeePool', async accounts => {
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
@@ -76,7 +78,7 @@ contract('FeePool', async accounts => {
 		'SNX',
 		'XDR',
 		'iBTC',
-	].map(web3.utils.asciiToHex);
+	].map(toBytes32);
 
 	const [
 		deployerAccount,

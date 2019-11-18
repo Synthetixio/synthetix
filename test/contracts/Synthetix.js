@@ -16,8 +16,9 @@ const {
 	divideDecimal,
 	toUnit,
 	ZERO_ADDRESS,
-	bytesToString,
 } = require('../utils/testUtils');
+
+const { toBytes32 } = require('../..');
 
 contract('Synthetix', async accounts => {
 	const [sUSD, sAUD, sEUR, SNX, XDR, sXYZ123, sBTC, iBTC] = [
@@ -29,7 +30,7 @@ contract('Synthetix', async accounts => {
 		'sXYZ123',
 		'sBTC',
 		'iBTC',
-	].map(web3.utils.asciiToHex);
+	].map(toBytes32);
 
 	const [
 		deployerAccount,
@@ -192,7 +193,7 @@ contract('Synthetix', async accounts => {
 			'Synth XYZ123',
 			'sXYZ123',
 			owner,
-			web3.utils.asciiToHex('sXYZ123'),
+			toBytes32('sXYZ123'),
 			web3.utils.toWei('0'), // _totalSupply
 			{ from: deployerAccount }
 		);
@@ -207,7 +208,7 @@ contract('Synthetix', async accounts => {
 		// Assert that it's at the end of the array
 		assert.equal(await synthetix.availableSynths(previousSynthCount), synth.address);
 		// Assert that it's retrievable by its currencyKey
-		assert.equal(await synthetix.synths(web3.utils.asciiToHex('sXYZ123')), synth.address);
+		assert.equal(await synthetix.synths(toBytes32('sXYZ123')), synth.address);
 	});
 
 	it('should disallow adding a Synth contract when the user is not the owner', async () => {
@@ -219,7 +220,7 @@ contract('Synthetix', async accounts => {
 			'Synth XYZ123',
 			'sXYZ123',
 			owner,
-			web3.utils.asciiToHex('sXYZ123'),
+			toBytes32('sXYZ123'),
 			web3.utils.toWei('0'),
 			{ from: deployerAccount }
 		);
@@ -236,7 +237,7 @@ contract('Synthetix', async accounts => {
 			'Synth XYZ123',
 			'sXYZ123',
 			owner,
-			web3.utils.asciiToHex('sXYZ123'),
+			toBytes32('sXYZ123'),
 			web3.utils.toWei('0'),
 			{ from: deployerAccount }
 		);
@@ -254,7 +255,7 @@ contract('Synthetix', async accounts => {
 			'Synth XYZ123',
 			'sXYZ123',
 			owner,
-			web3.utils.asciiToHex('sXYZ123'),
+			toBytes32('sXYZ123'),
 			web3.utils.toWei('0'),
 			{ from: deployerAccount }
 		);
@@ -267,7 +268,7 @@ contract('Synthetix', async accounts => {
 			'Synth XYZ123',
 			'sXYZ123',
 			owner,
-			web3.utils.asciiToHex('sXYZ123'),
+			toBytes32('sXYZ123'),
 			web3.utils.toWei('0'),
 			{ from: deployerAccount }
 		);
@@ -324,7 +325,7 @@ contract('Synthetix', async accounts => {
 	it('should revert when requesting to remove a non-existent synth', async () => {
 		// Note: This test depends on state in the migration script, that there are hooked up synths
 		// without balances
-		const currencyKey = web3.utils.asciiToHex('NOPE');
+		const currencyKey = toBytes32('NOPE');
 
 		// Assert that we can't remove the synth
 		await assert.revert(synthetix.removeSynth(currencyKey, { from: owner }));
@@ -394,7 +395,7 @@ contract('Synthetix', async accounts => {
 			{ from: oracle }
 		);
 
-		await assert.revert(synthetix.effectiveValue(SNX, toUnit('10'), web3.utils.asciiToHex('XYZ')));
+		await assert.revert(synthetix.effectiveValue(SNX, toUnit('10'), toBytes32('XYZ')));
 	});
 
 	// totalIssuedSynths
@@ -626,7 +627,7 @@ contract('Synthetix', async accounts => {
 		const transaction = await synthetix.methods['transfer(address,uint256,bytes)'](
 			account1,
 			toUnit('10'),
-			web3.utils.asciiToHex('This is a memo'),
+			toBytes32('This is a memo'),
 			{ from: owner }
 		);
 
@@ -654,7 +655,7 @@ contract('Synthetix', async accounts => {
 			synthetix.methods['transfer(address,uint256,bytes)'](
 				account1,
 				'1',
-				web3.utils.asciiToHex('This is a memo'),
+				toBytes32('This is a memo'),
 				{ from: owner }
 			)
 		);
@@ -672,7 +673,7 @@ contract('Synthetix', async accounts => {
 
 		// Ensure that we can do a successful transfer before rates go stale
 		await synthetix.methods['transfer(address,uint256)'](account2, value, { from: account1 });
-		const data = web3.utils.asciiToHex('This is a memo');
+		const data = toBytes32('This is a memo');
 		await synthetix.methods['transfer(address,uint256,bytes)'](account2, value, data, {
 			from: account1,
 		});
@@ -770,7 +771,7 @@ contract('Synthetix', async accounts => {
 			owner,
 			account2,
 			toUnit('10'),
-			web3.utils.asciiToHex('This is a memo'),
+			toBytes32('This is a memo'),
 			{ from: account1 }
 		);
 		assert.eventEqual(transaction, 'Transfer', {
@@ -822,7 +823,7 @@ contract('Synthetix', async accounts => {
 				owner,
 				account2,
 				'1',
-				web3.utils.asciiToHex('This is a memo'),
+				toBytes32('This is a memo'),
 				{
 					from: account1,
 				}
@@ -1301,7 +1302,7 @@ contract('Synthetix', async accounts => {
 		await synthetix.issueSynths(sUSD, toUnit('51'), { from: account2 });
 		await synthetix.burnSynths(sUSD, burntSynthsPt2, { from: account1 });
 
-		const debt = await synthetix.debtBalanceOf(account1, web3.utils.asciiToHex('sUSD'));
+		const debt = await synthetix.debtBalanceOf(account1, toBytes32('sUSD'));
 		const expectedDebt = issuedSynthsPt1
 			.add(issuedSynthsPt2)
 			.sub(burntSynthsPt1)
@@ -1533,7 +1534,7 @@ contract('Synthetix', async accounts => {
 	});
 
 	it("should correctly calculate a user's maximum issuable synths without prior issuance", async () => {
-		const rate = await exchangeRates.rateForCurrency(web3.utils.asciiToHex('SNX'));
+		const rate = await exchangeRates.rateForCurrency(toBytes32('SNX'));
 		const issuedSynthetixs = web3.utils.toBN('200000');
 		await synthetix.methods['transfer(address,uint256)'](account1, toUnit(issuedSynthetixs), {
 			from: owner,
@@ -1607,8 +1608,8 @@ contract('Synthetix', async accounts => {
 			from: owner,
 		});
 
-		const debt1 = await synthetix.debtBalanceOf(account1, web3.utils.asciiToHex('sUSD'));
-		const debt2 = await synthetix.debtBalanceOf(account2, web3.utils.asciiToHex('sUSD'));
+		const debt1 = await synthetix.debtBalanceOf(account1, toBytes32('sUSD'));
+		const debt2 = await synthetix.debtBalanceOf(account2, toBytes32('sUSD'));
 		assert.bnEqual(debt1, 0);
 		assert.bnEqual(debt2, 0);
 	});
@@ -1623,7 +1624,7 @@ contract('Synthetix', async accounts => {
 		const issuedSynths = toUnit('1001');
 		await synthetix.issueSynths(sUSD, issuedSynths, { from: account1 });
 
-		const debt = await synthetix.debtBalanceOf(account1, web3.utils.asciiToHex('sUSD'));
+		const debt = await synthetix.debtBalanceOf(account1, toBytes32('sUSD'));
 		assert.bnEqual(debt, issuedSynths);
 	});
 
@@ -2032,7 +2033,7 @@ contract('Synthetix', async accounts => {
 	});
 
 	it("should disallow retrieving a user's remaining issuable synths if that synth doesn't exist", async () => {
-		await assert.revert(synthetix.remainingIssuableSynths(account1, web3.utils.asciiToHex('BOG')));
+		await assert.revert(synthetix.remainingIssuableSynths(account1, toBytes32('BOG')));
 	});
 
 	it("should correctly calculate a user's max issuable synths with escrowed synthetix", async () => {
@@ -2324,19 +2325,14 @@ contract('Synthetix', async accounts => {
 		const sAUDBalance = await sAUDContract.balanceOf(account1);
 
 		const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
-		assert.bytes32EventEqual(
-			synthExchangeEvent,
-			'SynthExchange',
-			{
-				account: account1,
-				fromCurrencyKey: 'sUSD',
-				fromAmount: amountIssued,
-				toCurrencyKey: 'sAUD',
-				toAmount: sAUDBalance,
-				toAddress: account1,
-			},
-			['fromCurrencyKey', 'toCurrencyKey']
-		);
+		assert.eventEqual(synthExchangeEvent, 'SynthExchange', {
+			account: account1,
+			fromCurrencyKey: toBytes32('sUSD'),
+			fromAmount: amountIssued,
+			toCurrencyKey: toBytes32('sAUD'),
+			toAmount: sAUDBalance,
+			toAddress: account1,
+		});
 	});
 
 	it('should disallow non owners to call exchangeEnabled', async () => {
@@ -2382,19 +2378,14 @@ contract('Synthetix', async accounts => {
 		const sAUDBalance = await sAUDContract.balanceOf(account1);
 
 		const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
-		assert.bytes32EventEqual(
-			synthExchangeEvent,
-			'SynthExchange',
-			{
-				account: account1,
-				fromCurrencyKey: 'sUSD',
-				fromAmount: amountIssued,
-				toCurrencyKey: 'sAUD',
-				toAmount: sAUDBalance,
-				toAddress: account1,
-			},
-			['fromCurrencyKey', 'toCurrencyKey']
-		);
+		assert.eventEqual(synthExchangeEvent, 'SynthExchange', {
+			account: account1,
+			fromCurrencyKey: toBytes32('sUSD'),
+			fromAmount: amountIssued,
+			toCurrencyKey: toBytes32('sAUD'),
+			toAmount: sAUDBalance,
+			toAddress: account1,
+		});
 	});
 
 	// TODO: Changes in exchange rates tests
@@ -2675,9 +2666,17 @@ contract('Synthetix', async accounts => {
 		describe('when the iBTC synth is set with inverse pricing', () => {
 			const iBTCEntryPoint = toUnit(4000);
 			beforeEach(async () => {
-				exchangeRates.setInversePricing(iBTC, iBTCEntryPoint, toUnit(6500), toUnit(1000), {
-					from: owner,
-				});
+				exchangeRates.setInversePricing(
+					iBTC,
+					iBTCEntryPoint,
+					toUnit(6500),
+					toUnit(1000),
+					false,
+					false,
+					{
+						from: owner,
+					}
+				);
 			});
 			describe('when a user holds holds 100,000 SNX', () => {
 				beforeEach(async () => {
@@ -2729,18 +2728,13 @@ contract('Synthetix', async accounts => {
 								// check logs
 								const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
 
-								assert.bytes32EventEqual(
-									synthExchangeEvent,
-									'SynthExchange',
-									{
-										fromCurrencyKey: bytesToString(from),
-										fromAmount: amountExchanged,
-										toCurrencyKey: bytesToString(to),
-										toAmount: effectiveValueMinusFees,
-										toAddress: account1,
-									},
-									['toCurrencyKey', 'fromCurrencyKey']
-								);
+								assert.eventEqual(synthExchangeEvent, 'SynthExchange', {
+									fromCurrencyKey: from,
+									fromAmount: amountExchanged,
+									toCurrencyKey: to,
+									toAmount: effectiveValueMinusFees,
+									toAddress: account1,
+								});
 							};
 							let exchangeTxns;
 							const amountExchanged = toUnit(1e2);

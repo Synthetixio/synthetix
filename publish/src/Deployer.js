@@ -99,6 +99,7 @@ class Deployer {
 					arguments: args,
 				})
 				.send(this.sendParameters('contract-deployment'));
+			deployedContract.options.deployed = true; // indicate a fresh deployment occurred
 			console.log(green(` - Deployed ${name} to ${deployedContract.options.address}`));
 		} else if (existingAddress) {
 			deployedContract = this.getContract({ abi: compiled.abi, address: existingAddress });

@@ -1,14 +1,5 @@
 /*
 -----------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-
-file:       ExchangeRates.sol
-version:    1.0
-author:     Kevin Brown
-date:       2018-09-12
-
------------------------------------------------------------------
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
@@ -57,15 +48,13 @@ contract ExchangeRates is SelfDestructible {
     // How long will the contract assume the rate of any asset is correct
     uint public rateStalePeriod = 3 hours;
 
-    // Set by the oracle when its about to lock exchanges when it sends a price update
-    bool public priceUpdateLock = false;
 
     // Each participating currency in the XDR basket is represented as a currency key with
     // equal weighting.
     // There are 5 participating currencies, so we'll declare that clearly.
     bytes32[5] public xdrParticipants;
 
-    // A conveience mapping for checking if a rate is a XDR participant    
+    // A conveience mapping for checking if a rate is a XDR participant
     mapping(bytes32 => bool) public isXDRParticipant;
 
     // For inverted prices, keep a mapping of their entry, limits and frozen status
@@ -121,9 +110,9 @@ contract ExchangeRates is SelfDestructible {
             bytes32("sCHF"),
             bytes32("sEUR"),
             bytes32("sGBP")
-        ]; 
+        ];
 
-        // Mapping the XDR participants is cheaper than looping the xdrParticipants array to check if they exist 
+        // Mapping the XDR participants is cheaper than looping the xdrParticipants array to check if they exist
         isXDRParticipant[bytes32("sUSD")] = true;
         isXDRParticipant[bytes32("sAUD")] = true;
         isXDRParticipant[bytes32("sCHF")] = true;
@@ -216,17 +205,31 @@ contract ExchangeRates is SelfDestructible {
             updateXDRRate(timeSent);
         }
 
-        // If locked during a priceupdate then reset it
-        if (priceUpdateLock) {
-            priceUpdateLock = false;
-        }
-
         return true;
     }
 
     /**
      * @notice Internal function to get the inverted rate, if any, and mark an inverted
      *  key as frozen if either limits are reached.
+     *
+     * Inverted rates are ones that take a regular rate, perform a simple calculation (double entryPrice and
+     * subtract the rate) on them and if the result of the calculation is over or under predefined limits, it freezes the
+     * rate at that limit, preventing any future rate updates.
+     *
+     * For example, if we have an inverted rate iBTC with the following parameters set:
+     * - entryPrice of 200
+     * - upperLimit of 300
+     * - lower of 100
+     *
+     * if this function is invoked with params iETH and 184 (or rather 184e18),
+     * then the rate would be: 200 * 2 - 184 = 216. 100 < 216 < 200, so the rate would be 216,
+     * and remain unfrozen.
+     *
+     * If this function is then invoked with params iETH and 301 (or rather 301e18),
+     * then the rate would be: 200 * 2 - 301 = 99. 99 < 100, so the rate would be 100 and the
+     * rate would become frozen, no longer accepting future price updates until the synth is unfrozen
+     * by the owner function: setInversePricing().
+     *
      * @param currencyKey The price key to lookup
      * @param rate The rate for the given price key
      */
@@ -334,24 +337,22 @@ contract ExchangeRates is SelfDestructible {
     }
 
     /**
-     * @notice Set the the locked state for a priceUpdate call
-     * @param _priceUpdateLock lock boolean flag
-     */
-    function setPriceUpdateLock(bool _priceUpdateLock)
-        external
-        onlyOracle
-    {
-        priceUpdateLock = _priceUpdateLock;
-    }
-
-    /**
-     * @notice Set an inverse price up for the currency key
+     * @notice Set an inverse price up for the currency key.
+     *
+     * An inverse price is one which has an entryPoint, an uppper and a lower limit. Each update, the
+     * rate is calculated as double the entryPrice minus the current rate. If this calculation is
+     * above or below the upper or lower limits respectively, then the rate is frozen, and no more
+     * rate updates will be accepted.
+     *
      * @param currencyKey The currency to update
      * @param entryPoint The entry price point of the inverted price
      * @param upperLimit The upper limit, at or above which the price will be frozen
      * @param lowerLimit The lower limit, at or below which the price will be frozen
+     * @param freeze Whether or not to freeze this rate immediately. Note: no frozen event will be configured
+     * @param freezeAtUpperLimit When the freeze flag is true, this flag indicates whether the rate
+     * to freeze at is the upperLimit or lowerLimit..
      */
-    function setInversePricing(bytes32 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit)
+    function setInversePricing(bytes32 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit, bool freeze, bool freezeAtUpperLimit)
         external onlyOwner
     {
         require(entryPoint > 0, "entryPoint must be above 0");
@@ -367,16 +368,28 @@ contract ExchangeRates is SelfDestructible {
         inversePricing[currencyKey].entryPoint = entryPoint;
         inversePricing[currencyKey].upperLimit = upperLimit;
         inversePricing[currencyKey].lowerLimit = lowerLimit;
-        inversePricing[currencyKey].frozen = false;
+        inversePricing[currencyKey].frozen = freeze;
 
         emit InversePriceConfigured(currencyKey, entryPoint, upperLimit, lowerLimit);
+
+        // When indicating to freeze, we need to know the rate to freeze it at - either upper or lower
+        // this is useful in situations where ExchangeRates is updated and there are existing inverted
+        // rates already frozen in the current contract that need persisting across the upgrade
+        if (freeze) {
+            emit InversePriceFrozen(currencyKey);
+
+            _setRate(currencyKey, freezeAtUpperLimit ? upperLimit : lowerLimit, now);
+        }
     }
 
     /**
      * @notice Remove an inverse price for the currency key
      * @param currencyKey The currency to remove inverse pricing for
      */
-    function removeInversePricing(bytes32 currencyKey) external onlyOwner {
+    function removeInversePricing(bytes32 currencyKey) external onlyOwner
+    {
+        require(inversePricing[currencyKey].entryPoint > 0, "No inverted price exists");
+
         inversePricing[currencyKey].entryPoint = 0;
         inversePricing[currencyKey].upperLimit = 0;
         inversePricing[currencyKey].lowerLimit = 0;
@@ -395,11 +408,12 @@ contract ExchangeRates is SelfDestructible {
                 // Decrease the size of the array by one.
                 invertedKeys.length--;
 
-                break;
+                // Track the event
+                emit InversePriceConfigured(currencyKey, 0, 0, 0);
+
+                return;
             }
         }
-
-        emit InversePriceConfigured(currencyKey, 0, 0, 0);
     }
     /* ========== VIEWS ========== */
 
