@@ -587,6 +587,8 @@ contract('Rewards Integration Tests', async accounts => {
 				}
 			);
 
+			await mineBlock();
+
 			// Account 3 (enters the system and) mints 10K sUSD and should have 20% of the debt not 33.33%
 			await synthetix.issueSynths(sUSD, tenK, { from: account3 });
 
