@@ -496,6 +496,9 @@ contract Synthetix is ExternStateToken {
 
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
 
+        // Call the ERC223 transfer callback if needed
+        synths[destinationCurrencyKey].triggerTokenFallbackIfNeeded(from, destinationAddress, amountReceived);
+
         //Let the DApps know there was a Synth exchange
         emitSynthExchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, amountReceived, destinationAddress);
 

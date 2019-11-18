@@ -211,6 +211,51 @@ contract('Synth', async accounts => {
 		);
 	});
 
+	it('should transfer (ERC223) without error', async () => {
+		// Issue 10,000 sUSD.
+		const amount = toUnit('10000');
+		await synthetix.issueSynths(sUSD, amount, { from: owner });
+
+		// Do a single transfer of all our sUSD.
+		const transaction = await sUSDContract.methods['transfer(address,uint256,bytes)'](
+			account1,
+			amount,
+			web3.utils.asciiToHex('This is a test'),
+			{ from: owner }
+		);
+
+		// Events should be a fee exchange and a transfer to account1
+		assert.eventEqual(
+			transaction,
+
+			// the original synth transfer
+			'Transfer',
+			{ from: owner, to: account1, value: amount }
+		);
+
+		// Sender should have nothing
+		assert.bnEqual(await sUSDContract.balanceOf(owner), 0);
+
+		// The recipient should have the correct amount
+		assert.bnEqual(await sUSDContract.balanceOf(account1), amount);
+	});
+
+	it('should revert when transferring (ERC223) with insufficient balance', async () => {
+		// Issue 10,000 sUSD.
+		const amount = toUnit('10000');
+		await synthetix.issueSynths(sUSD, amount, { from: owner });
+
+		// Try to transfer 10,000 + 1 wei, which we don't have the balance for.
+		await assert.revert(
+			sUSDContract.methods['transfer(address,uint256,bytes)'](
+				account1,
+				amount.add(web3.utils.toBN('1')),
+				web3.utils.asciiToHex('This is a test'),
+				{ from: owner }
+			)
+		);
+	});
+
 	it('should transferFrom (ERC20) without error', async () => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
@@ -276,6 +321,88 @@ contract('Synth', async accounts => {
 			sUSDContract.methods['transferFrom(address,address,uint256)'](owner, account1, amount, {
 				from: account1,
 			})
+		);
+	});
+
+	it('should transferFrom (ERC223) without error', async () => {
+		// Issue 10,000 sUSD.
+		const amount = toUnit('10000');
+		await synthetix.issueSynths(sUSD, amount, { from: owner });
+
+		// Give account1 permission to act on our behalf
+		await sUSDContract.approve(account1, amount, { from: owner });
+
+		// Do a single transfer of all our sUSD.
+		const transaction = await sUSDContract.methods['transferFrom(address,address,uint256,bytes)'](
+			owner,
+			account1,
+			amount,
+			web3.utils.asciiToHex('This is a test'),
+			{
+				from: account1,
+			}
+		);
+
+		// Events should be a fee exchange and a transfer to account1
+		assert.eventEqual(
+			transaction,
+
+			// The original synth transfer
+			'Transfer',
+			{ from: owner, to: account1, value: amount }
+		);
+
+		// Sender should have nothing
+		assert.bnEqual(await sUSDContract.balanceOf(owner), 0);
+
+		// The recipient should have the correct amount
+		assert.bnEqual(await sUSDContract.balanceOf(account1), amount);
+
+		// And allowance should be exhausted
+		assert.bnEqual(await sUSDContract.allowance(owner, account1), 0);
+	});
+
+	it('should revert when calling transferFrom (ERC223) with insufficient allowance', async () => {
+		// Issue 10,000 sUSD.
+		const amount = toUnit('10000');
+		await synthetix.issueSynths(sUSD, amount, { from: owner });
+
+		// Approve for 1 wei less than amount
+		await sUSDContract.approve(account1, amount.sub(web3.utils.toBN('1')), { from: owner });
+
+		// Try to transfer 10,000, which we don't have the allowance for.
+		await assert.revert(
+			sUSDContract.methods['transferFrom(address,address,uint256,bytes)'](
+				owner,
+				account1,
+				amount,
+				web3.utils.asciiToHex('This is a test'),
+				{
+					from: account1,
+				}
+			)
+		);
+	});
+
+	it('should revert when calling transferFrom (ERC223) with insufficient balance', async () => {
+		// Issue 10,000 - 1 wei sUSD.
+		const amount = toUnit('10000');
+		await synthetix.issueSynths(sUSD, amount.sub(web3.utils.toBN('1')), { from: owner });
+
+		// Approve for full amount
+		await sUSDContract.approve(account1, amount, { from: owner });
+
+		// Try to transfer 10,000, which we don't have the balance for.
+		await assert.revert(
+			sUSDContract.methods['transferFrom(address,address,uint256,bytes)'](
+				owner,
+				account1,
+				amount,
+				web3.utils.asciiToHex('This is a test'),
+				{
+					from: account1,
+				}
+			)
 		);
 	});
 
@@ -349,6 +476,34 @@ contract('Synth', async accounts => {
 		// Burning 10000 + 1 wei should fail.
 		await assert.revert(
 			XDRContract.burn(owner, toUnit('10000').add(web3.utils.toBN('1')), { from: owner })
+		);
+	});
+
+	it('should triggerTokenFallback successfully when called by Synthetix', async () => {
+		// Set the Synthetix target of the SynthetixProxy to owner
+		await synthetixProxy.setTarget(owner, { from: owner });
+		await XDRContract.setSynthetixProxy(synthetixProxy.address, { from: owner });
+
+		await XDRContract.triggerTokenFallbackIfNeeded(ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1'), {
+			from: owner,
+		});
+	});
+
+	it('should triggerTokenFallback successfully when called by FeePool', async () => {
+		// Set the FeePool target on FeePoolProxy to owner
+		await feePoolProxy.setTarget(owner, { from: owner });
+		await XDRContract.setFeePoolProxy(feePoolProxy.address, { from: owner });
+
+		await XDRContract.triggerTokenFallbackIfNeeded(ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1'), {
+			from: owner,
+		});
+	});
+
+	it('should revert on triggerTokenFallback when called by non-Synthetix and non-FeePool address', async () => {
+		await assert.revert(
+			XDRContract.triggerTokenFallbackIfNeeded(ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1'), {
+				from: owner,
+			})
 		);
 	});
 

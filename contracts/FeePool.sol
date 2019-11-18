@@ -580,6 +580,9 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         destinationSynth.issue(account, destinationAmount);
 
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
+
+        // Call the ERC223 transfer callback if needed
+        destinationSynth.triggerTokenFallbackIfNeeded(FEE_ADDRESS, account, destinationAmount);
     }
 
     /**
