@@ -597,6 +597,8 @@ contract('Rewards Integration Tests', async accounts => {
 				MINTER_SNX_REWARD
 			);
 
+			await mineBlock();
+
 			// Mint the staking rewards
 			await synthetix.mint({ from: owner });
 
@@ -669,6 +671,8 @@ contract('Rewards Integration Tests', async accounts => {
 				MINTER_SNX_REWARD
 			);
 
+			await mineBlock();
+
 			// Mint the staking rewards
 			await synthetix.mint({ from: owner });
 
@@ -714,11 +718,16 @@ contract('Rewards Integration Tests', async accounts => {
 				MINTER_SNX_REWARD
 			);
 
+			await mineBlock();
+
 			// Mint the staking rewards
 			await synthetix.mint({ from: owner });
 
 			// Close so we can claim
 			await closeFeePeriodAndFastForward();
+
+			await mineBlock();
+
 			// //////////////////////////////////////////////
 			// 5th Week
 			// //////////////////////////////////////////////
