@@ -596,8 +596,8 @@ contract('Rewards Integration Tests', async accounts => {
 			await synthetix.mint({ from: owner });
 
 			// Do some exchanging to generateFees
-			await synthetix.exchange(sBTC, sBTCAmount, sUSD, account1, { from: account1 });
-			await synthetix.exchange(sBTC, sBTCAmount, sUSD, account2, { from: account2 });
+			await synthetix.exchange(sBTC, sBTCAmount, sUSD, { from: account1 });
+			await synthetix.exchange(sBTC, sBTCAmount, sUSD, { from: account2 });
 
 			// Close so we can claim
 			await fastForwardAndCloseFeePeriod();
@@ -864,7 +864,7 @@ contract('Rewards Integration Tests', async accounts => {
 			});
 
 			// we will be able to claim fees
-			assert.equal(await feePool.feesClaimable(account1), true);
+			assert.equal(await feePool.isFeesClaimable(account1), true);
 
 			const snxRewards = await feePool.feesAvailable(account1, sUSD);
 			assert.bnClose(snxRewards[1], third(periodOneMintableSupplyMinusMinterReward));
@@ -885,7 +885,7 @@ contract('Rewards Integration Tests', async accounts => {
 			});
 
 			// we will fall into the >100% bracket
-			assert.equal(await feePool.feesClaimable(account1), false);
+			assert.equal(await feePool.isFeesClaimable(account1), false);
 
 			// And if we claim then it should revert as there is nothing to claim
 			await assert.revert(feePool.claimFees(sUSD, { from: account1 }));

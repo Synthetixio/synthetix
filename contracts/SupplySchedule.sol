@@ -106,7 +106,6 @@ contract SupplySchedule is Owned {
         onlyOwner
     {
         synthetix = _synthetix;
-        // emit event
     }
 
     // ========== VIEWS ==========

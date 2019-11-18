@@ -190,6 +190,7 @@ contract Synthetix is ExternStateToken {
         require(synths[currencyKey] != address(0), "Synth does not exist");
         require(synths[currencyKey].totalSupply() == 0, "Synth supply exists");
         require(currencyKey != "XDR", "Cannot remove XDR synth");
+        require(currencyKey != "sUSD", "Cannot remove sUSD synth");
 
         // Save the address we're removing for emitting the event at the end.
         address synthToRemove = synths[currencyKey];
@@ -387,10 +388,9 @@ contract Synthetix is ExternStateToken {
      * @param sourceCurrencyKey The source currency you wish to exchange from
      * @param sourceAmount The amount, specified in UNIT of source currency you wish to exchange
      * @param destinationCurrencyKey The destination currency you wish to obtain.
-     * @param destinationAddress Deprecated. Will always send to messageSender. API backwards compatability maintained.
      * @return Boolean that indicates whether the transfer succeeded or failed.
      */
-    function exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey, address destinationAddress)
+    function exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)
         external
         optionalProxy
         // Note: We don't need to insist on non-stale rates because effectiveValue will do it for us.
@@ -451,7 +451,7 @@ contract Synthetix is ExternStateToken {
         optionalProxy
         returns (bool)
     {
-        _onlySynth();
+        require(synthsByAddress[messageSender] != bytes32(0), "Only synth allowed");
         require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
         require(sourceAmount > 0, "Zero amount");
 
@@ -521,7 +521,7 @@ contract Synthetix is ExternStateToken {
             uint xdrFeeAmount = effectiveValue(destinationCurrencyKey, fee, "XDR");
             synths["XDR"].issue(feePool.FEE_ADDRESS(), xdrFeeAmount);
             // Tell the fee pool about this.
-            feePool.feePaid("XDR", xdrFeeAmount);
+            feePool.recordFeePaid(xdrFeeAmount);
         }
 
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
@@ -571,7 +571,7 @@ contract Synthetix is ExternStateToken {
         }
 
         // Are they a new issuer? If so, record them.
-        if (!synthetixState.hasIssued(messageSender)) {
+        if (existingDebt == 0) {
             synthetixState.incrementTotalIssuerCount();
         }
 
@@ -704,7 +704,7 @@ contract Synthetix is ExternStateToken {
         // What will the new total after taking out the withdrawn amount
         uint newTotalDebtIssued = totalDebtIssued.sub(debtToRemove);
 
-        uint delta;
+        uint delta = 0;
 
         // What will the debt delta be if there is any debt left?
         // Set delta to 0 if no more debt left in system after user
@@ -717,8 +717,6 @@ contract Synthetix is ExternStateToken {
             // The delta specifically needs to not take into account any existing debt as it's already
             // accounted for in the delta from when they issued previously.
             delta = SafeDecimalMath.preciseUnit().add(debtPercentage);
-        } else {
-            delta = 0;
         }
 
         // Are they exiting the system, or are they just decreasing their debt position?
@@ -865,11 +863,12 @@ contract Synthetix is ExternStateToken {
      * @notice The number of SNX that are free to be transferred for an account.
      * @dev Escrowed SNX are not transferable, so they are not included
      * in this calculation.
+     * @notice SNX rate not stale is checked within debtBalanceOf
      */
     function transferableSynthetix(address account)
         public
         view
-        rateNotStale("SNX")
+        rateNotStale("SNX") // SNX is not a synth so is not checked in totalIssuedSynths
         returns (uint)
     {
         // How many SNX do they have, excluding escrow?
@@ -940,25 +939,6 @@ contract Synthetix is ExternStateToken {
     modifier notFeeAddress(address account) {
         require(account != feePool.FEE_ADDRESS(), "Fee address not allowed");
         _;
-    }
-
-    // /**
-    //  * @notice Only a synth can call this function
-    //  */
-    // modifier onlySynth {
-    //     require(synthsByAddress[msg.sender] != bytes32(0), "Only synth allowed");
-    //     _;
-    // }
-       /**
-     * @notice Only a synth can call this function, optionally via synthetixProxy or directly
-     * @dev This used to be a modifier but instead of duplicating the bytecode into
-     * The functions implementing it they now call this internal function to save bytecode space
-     */
-    function _onlySynth()
-        internal
-        view
-    {
-        require(synthsByAddress[messageSender] != bytes32(0), "Only synth allowed");
     }
 
     modifier onlyOracle

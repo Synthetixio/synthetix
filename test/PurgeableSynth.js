@@ -166,7 +166,7 @@ contract('PurgeableSynth', accounts => {
 					beforeEach(async () => {
 						exchangeFeeRate = await feePool.exchangeFeeRate();
 						amountToExchange = toUnit(1e5);
-						await synthetix.exchange(sUSD, amountToExchange, iETH, ZERO_ADDRESS, {
+						await synthetix.exchange(sUSD, amountToExchange, iETH, {
 							from: account1,
 						});
 
@@ -270,7 +270,7 @@ contract('PurgeableSynth', accounts => {
 							beforeEach(async () => {
 								// Note: 5000 is chosen to be large enough to accommodate exchange fees which
 								// ultimately limit the total supply of that synth
-								await synthetix.exchange(sUSD, toUnit(5000), iETH, ZERO_ADDRESS, {
+								await synthetix.exchange(sUSD, toUnit(5000), iETH, {
 									from: account2,
 								});
 								balanceBeforePurgeUser2 = await this.synth.balanceOf(account2);
@@ -380,7 +380,7 @@ contract('PurgeableSynth', accounts => {
 				beforeEach(async () => {
 					await issueSynths({ account: account1, amount: 1e5 });
 					const amountToExchange = toUnit('100');
-					await synthetix.exchange(sUSD, amountToExchange, sAUD, ZERO_ADDRESS, {
+					await synthetix.exchange(sUSD, amountToExchange, sAUD, {
 						from: account1,
 					});
 					const amountExchangedInUSDLessFees = await feePool.amountReceivedFromExchange(
