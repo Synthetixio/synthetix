@@ -36,7 +36,10 @@ contract('Rewards Integration Tests', async accounts => {
 	const closeFeePeriodAndFastForward = async () => {
 		// console.log('closeFeePeriodAndFastForward');
 		const feePeriodDuration = await feePool.feePeriodDuration();
-		await fastForward(feePeriodDuration.toNumber() + 1000);
+		// Note: add on a small addition of 10 seconds - this seems to have
+		// alleviated an issues with the tests flaking in CircleCI
+		// test: "should assign accounts (1,2,3) to have (40%,40%,20%) of the debt/rewards"
+		await fastForward(feePeriodDuration.toNumber() + 10);
 		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
 		await updateRatesWithDefaults();
 	};
