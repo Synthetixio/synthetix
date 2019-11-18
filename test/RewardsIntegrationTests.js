@@ -14,6 +14,7 @@ const {
 	toUnit,
 	toPreciseUnit,
 	multiplyDecimal,
+	mineBlock,
 } = require('../utils/testUtils');
 const web3 = getWeb3();
 const getInstance = getContractInstance(web3);
@@ -31,6 +32,8 @@ contract('Rewards Integration Tests', async accounts => {
 				from: oracle,
 			}
 		);
+
+		await mineBlock();
 	};
 
 	const closeFeePeriodAndFastForward = async () => {
