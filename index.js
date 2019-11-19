@@ -34,7 +34,19 @@ const getSynths = ({ network = 'mainnet' } = {}) => {
 	if (!fs.existsSync(pathToSynthList)) {
 		throw Error(`Cannot find synth list.`);
 	}
-	return JSON.parse(fs.readFileSync(pathToSynthList));
+	const synths = JSON.parse(fs.readFileSync(pathToSynthList));
+
+	// copy all necessary index parameters from the longs to the corresponding shorts
+	synths.map(synth => {
+		if (typeof synth.index === 'string' && synth.inverted) {
+			const { index } = synths.find(({ name }) => name === synth.index);
+			return Object.assign(synth, { index });
+		} else {
+			return synth;
+		}
+	});
+
+	return synths;
 };
 
 module.exports = { getTarget, getSource, getSynths, toBytes32 };
