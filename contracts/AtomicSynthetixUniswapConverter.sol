@@ -1,14 +1,14 @@
 /* By using Uniswap sETH exchange as a bridge, this contract enable direct and atomic exchange between ETH and Synths assets issued in Synthetix system 
 */
 
-pragma solidity ^0.4.25;
+pragma solidity 0.4.25;
 
-import "./Owned.sol";
-import "./SafeDecimalMath.sol";
-import "./interfaces/ISynthetix.sol";
-import "./interfaces/IExchangeRates.sol";
-import "./interfaces/IFeePool.sol";
-import "./interfaces/IERC20.sol";
+import "../Owned.sol";
+import "../SafeDecimalMath.sol";
+import "../interfaces/ISynthetix.sol";
+import "../interfaces/IExchangeRates.sol";
+import "../interfaces/IFeePool.sol";
+import "../interfaces/IERC20.sol";
 
 interface UniswapExchangeInterface {
     function getEthToTokenInputPrice(uint) external view returns (uint);
