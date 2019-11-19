@@ -38,26 +38,29 @@ program
 		if (!/^(kovan|rinkeby|ropsten)$/.test(network)) {
 			throw Error('Unsupported testnet', network);
 		}
-		console.log(`Running tests on ${network}`);
-
-		const sources = snx.getSource({ network });
-		const targets = snx.getTarget({ network });
-
-		const synths = snx.getSynths({ network });
-
-		const cryptoSynths = synths
-			.filter(({ asset }) => asset !== 'USD')
-			.filter(
-				({ category }) => category === 'crypto' || category === 'internal' || category === 'index'
-			);
-
-		const forexSynths = synths
-			.filter(({ asset }) => asset !== 'USD')
-			.filter(({ category }) => category === 'forex' || category === 'commodity');
-
-		const { providerUrl, privateKey, etherscanLinkPrefix } = loadConnections({ network });
-		const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
+		let esLinkPrefix;
 		try {
+			console.log(`Running tests on ${network}`);
+
+			const sources = snx.getSource({ network });
+			const targets = snx.getTarget({ network });
+
+			const synths = snx.getSynths({ network });
+
+			const cryptoSynths = synths
+				.filter(({ asset }) => asset !== 'USD')
+				.filter(
+					({ category }) => category === 'crypto' || category === 'internal' || category === 'index'
+				);
+
+			const forexSynths = synths
+				.filter(({ asset }) => asset !== 'USD')
+				.filter(({ category }) => category === 'forex' || category === 'commodity');
+
+			const { providerUrl, privateKey, etherscanLinkPrefix } = loadConnections({ network });
+			esLinkPrefix = etherscanLinkPrefix;
+
+			const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
 			const gas = 4e6; // 4M
 			const gasPrice = web3.utils.toWei('5', 'gwei');
 			const [sUSD, sETH] = ['sUSD', 'sETH'].map(toBytes32);
@@ -77,7 +80,7 @@ program
 			);
 			console.log(gray(`Test privkeys: ${user1.privateKey}`));
 
-			/**  VIEWS OF SYNTHETIX STATUS **/
+			/** VIEWS OF SYNTHETIX STATUS **/
 
 			const exchangeRates = new web3.eth.Contract(
 				sources['ExchangeRates'].abi,
@@ -287,7 +290,7 @@ program
 		} catch (err) {
 			if (/Transaction has been reverted/.test(err)) {
 				const txnHash = err.message.match(/(?:"transactionHash":\s")(\w+)(")/)[1];
-				console.error(red(`Failure: EVM reverted ${etherscanLinkPrefix}/tx/${txnHash}`));
+				console.error(red(`Failure: EVM reverted ${esLinkPrefix}/tx/${txnHash}`));
 			} else {
 				console.error(err);
 			}
