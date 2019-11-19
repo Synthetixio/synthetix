@@ -103,7 +103,7 @@
 		"category": "crypto",
 		"sign": "",
 		"desc": "Tezos"
-	},	
+	},
 	{
 		"name": "sXRP",
 		"asset": "XRP",
@@ -183,8 +183,8 @@
 			{
 				"symbol": "SNX",
 				"name": "Synthetix",
-				"units": 121.50
-			},			
+				"units": 121.5
+			},
 			{
 				"symbol": "REN",
 				"name": "Ren Protocol",
@@ -292,7 +292,7 @@
 			"upperLimit": 1.47,
 			"lowerLimit": 0.49
 		}
-	},	
+	},
 	{
 		"name": "iXRP",
 		"asset": "XRP",
@@ -305,7 +305,7 @@
 			"upperLimit": 0.3908,
 			"lowerLimit": 0.1303
 		}
-	},	
+	},
 	{
 		"name": "iLINK",
 		"asset": "LINK",
@@ -318,7 +318,7 @@
 			"upperLimit": 4.416923138,
 			"lowerLimit": 1.472307713
 		}
-	},	
+	},
 	{
 		"name": "iLTC",
 		"asset": "LTC",
@@ -327,42 +327,16 @@
 		"desc": "Inverted Litecoin",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 58.730000,
-			"upperLimit": 88.095000,
-			"lowerLimit": 29.365000
+			"entryPoint": 58.73,
+			"upperLimit": 88.095,
+			"lowerLimit": 29.365
 		}
 	},
 	{
 		"name": "iCEX",
 		"asset": "CEX",
 		"category": "index",
-		"index": [
-			{
-				"symbol": "BNB",
-				"name": "Binance Coin",
-				"units": 17.88
-			},
-			{
-				"symbol": "LEO",
-				"name": "UNUS SED LEO",
-				"units": 153.85
-			},
-			{
-				"symbol": "HT",
-				"name": "Huobi Token",
-				"units": 20.51
-			},
-			{
-				"symbol": "OKB",
-				"name": "OKB",
-				"units": 32.52
-			},
-			{
-				"symbol": "KCS",
-				"name": "KuCoin Shares",
-				"units": 59.82
-			}
-		],
+		"index": "sCEX",
 		"sign": "",
 		"desc": "Inverted Centralised Exchange Index",
 		"subclass": "PurgeableSynth",
@@ -376,53 +350,7 @@
 		"name": "iDEFI",
 		"asset": "DEFI",
 		"category": "index",
-		"index": [
-			{
-				"symbol": "LINK",
-				"name": "Chainlink",
-				"units": 88.03
-			},
-			{
-				"symbol": "MKR",
-				"name": "Maker",
-				"units": 0.37
-			},
-			{
-				"symbol": "ZRX",
-				"name": "0x",
-				"units": 488.72
-			},
-			{
-				"symbol": "SNX",
-				"name": "Synthetix",
-				"units": 121.50
-			},			
-			{
-				"symbol": "REN",
-				"name": "Ren Protocol",
-				"units": 1138.52
-			},
-			{
-				"symbol": "LRC",
-				"name": "Loopring",
-				"units": 2047.78
-			},
-			{
-				"symbol": "KNC",
-				"name": "Kyber Network",
-				"units": 350.88
-			},
-			{
-				"symbol": "BNT",
-				"name": "Bancor",
-				"units": 109.03
-			},
-			{
-				"symbol": "MLN",
-				"name": "Melon Protocol",
-				"units": 6.04
-			}
-		],
+		"index": "sDEFI",
 		"sign": "",
 		"desc": "Inverted DeFi Index",
 		"subclass": "PurgeableSynth",
@@ -431,5 +359,5 @@
 			"upperLimit": 1500,
 			"lowerLimit": 500
 		}
-	},
+	}
 ]

@@ -369,7 +369,7 @@ describe('publish scripts', function() {
 
 										describe('when ExchangeRates alone is redeployed', () => {
 											let ExchangeRates;
-											before(async () => {
+											before(async function() {
 												// read current config file version (if something has been removed,
 												// we don't want to include it here)
 												const currentConfigFile = JSON.parse(fs.readFileSync(configJSONPath));
@@ -382,6 +382,8 @@ describe('publish scripts', function() {
 												);
 
 												fs.writeFileSync(configJSONPath, JSON.stringify(configForExrates));
+
+												this.timeout(60000);
 
 												await commands.deploy({
 													addNewSynths: true,

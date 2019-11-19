@@ -938,7 +938,7 @@ const deploy = async ({
 			});
 		}
 
-		if (proxyFeePool) {
+		if (proxyFeePool && synth) {
 			await runStep({
 				contract: `Synth${currencyKey}`,
 				target: synth,
