@@ -168,42 +168,47 @@
 			{
 				"symbol": "LINK",
 				"name": "Chainlink",
-				"units": 17.88
+				"units": 88.03
 			},
 			{
 				"symbol": "MKR",
 				"name": "Maker",
-				"units": 153.85
+				"units": 0.37
 			},
 			{
 				"symbol": "ZRX",
 				"name": "0x",
-				"units": 20.51
+				"units": 488.72
 			},
 			{
 				"symbol": "SNX",
 				"name": "Synthetix",
-				"units": 32.52
+				"units": 121.50
+			},			
+			{
+				"symbol": "REN",
+				"name": "Ren Protocol",
+				"units": 1138.52
 			},
 			{
 				"symbol": "LRC",
 				"name": "Loopring",
-				"units": 59.82
+				"units": 2047.78
 			},
 			{
 				"symbol": "KNC",
 				"name": "Kyber Network",
-				"units": 59.82
+				"units": 350.88
 			},
 			{
 				"symbol": "BNT",
 				"name": "Bancor",
-				"units": 59.82
+				"units": 109.03
 			},
 			{
 				"symbol": "MLN",
 				"name": "Melon Protocol",
-				"units": 59.82
+				"units": 6.04
 			}
 		],
 		"sign": "",
@@ -375,42 +380,47 @@
 			{
 				"symbol": "LINK",
 				"name": "Chainlink",
-				"units": 17.88
+				"units": 88.03
 			},
 			{
 				"symbol": "MKR",
 				"name": "Maker",
-				"units": 153.85
+				"units": 0.37
 			},
 			{
 				"symbol": "ZRX",
 				"name": "0x",
-				"units": 20.51
+				"units": 488.72
 			},
 			{
 				"symbol": "SNX",
 				"name": "Synthetix",
-				"units": 32.52
+				"units": 121.50
+			},			
+			{
+				"symbol": "REN",
+				"name": "Ren Protocol",
+				"units": 1138.52
 			},
 			{
 				"symbol": "LRC",
 				"name": "Loopring",
-				"units": 59.82
+				"units": 2047.78
 			},
 			{
 				"symbol": "KNC",
 				"name": "Kyber Network",
-				"units": 59.82
+				"units": 350.88
 			},
 			{
 				"symbol": "BNT",
 				"name": "Bancor",
-				"units": 59.82
+				"units": 109.03
 			},
 			{
 				"symbol": "MLN",
 				"name": "Melon Protocol",
-				"units": 59.82
+				"units": 6.04
 			}
 		],
 		"sign": "",
