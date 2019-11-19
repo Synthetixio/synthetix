@@ -103,6 +103,27 @@
 		"category": "crypto",
 		"sign": "",
 		"desc": "Tezos"
+	},	
+	{
+		"name": "sXRP",
+		"asset": "XRP",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Ripple"
+	},
+	{
+		"name": "sLTC",
+		"asset": "LTC",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Litecoin"
+	},
+	{
+		"name": "sLINK",
+		"asset": "LINK",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Chainlink"
 	},
 	{
 		"name": "sCEX",
@@ -137,6 +158,61 @@
 		],
 		"sign": "",
 		"desc": "Centralised Exchange Index",
+		"subclass": "PurgeableSynth"
+	},
+	{
+		"name": "sDEFI",
+		"asset": "DEFI",
+		"category": "index",
+		"index": [
+			{
+				"symbol": "LINK",
+				"name": "Chainlink",
+				"units": 88.03
+			},
+			{
+				"symbol": "MKR",
+				"name": "Maker",
+				"units": 0.37
+			},
+			{
+				"symbol": "ZRX",
+				"name": "0x",
+				"units": 488.72
+			},
+			{
+				"symbol": "SNX",
+				"name": "Synthetix",
+				"units": 121.50
+			},			
+			{
+				"symbol": "REN",
+				"name": "Ren Protocol",
+				"units": 1138.52
+			},
+			{
+				"symbol": "LRC",
+				"name": "Loopring",
+				"units": 2047.78
+			},
+			{
+				"symbol": "KNC",
+				"name": "Kyber Network",
+				"units": 350.88
+			},
+			{
+				"symbol": "BNT",
+				"name": "Bancor",
+				"units": 109.03
+			},
+			{
+				"symbol": "MLN",
+				"name": "Melon Protocol",
+				"units": 6.04
+			}
+		],
+		"sign": "",
+		"desc": "DeFi Index",
 		"subclass": "PurgeableSynth"
 	},
 	{
@@ -199,9 +275,9 @@
 		"desc": "Inverted TRON",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 0.025,
-			"upperLimit": 0.0375,
-			"lowerLimit": 0.0125
+			"entryPoint": 0.0186888,
+			"upperLimit": 0.0280332,
+			"lowerLimit": 0.0093444
 		}
 	},
 	{
@@ -215,6 +291,45 @@
 			"entryPoint": 0.98,
 			"upperLimit": 1.47,
 			"lowerLimit": 0.49
+		}
+	},	
+	{
+		"name": "iXRP",
+		"asset": "XRP",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Inverted Ripple",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 0.2605,
+			"upperLimit": 0.3908,
+			"lowerLimit": 0.1303
+		}
+	},	
+	{
+		"name": "iLINK",
+		"asset": "LINK",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Inverted Chainlink",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 2.944615425,
+			"upperLimit": 4.416923138,
+			"lowerLimit": 1.472307713
+		}
+	},	
+	{
+		"name": "iLTC",
+		"asset": "LTC",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Inverted Litecoin",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 58.730000,
+			"upperLimit": 88.095000,
+			"lowerLimit": 29.365000
 		}
 	},
 	{
@@ -256,5 +371,65 @@
 			"upperLimit": 1500,
 			"lowerLimit": 500
 		}
-	}
+	},
+	{
+		"name": "iDEFI",
+		"asset": "DEFI",
+		"category": "index",
+		"index": [
+			{
+				"symbol": "LINK",
+				"name": "Chainlink",
+				"units": 88.03
+			},
+			{
+				"symbol": "MKR",
+				"name": "Maker",
+				"units": 0.37
+			},
+			{
+				"symbol": "ZRX",
+				"name": "0x",
+				"units": 488.72
+			},
+			{
+				"symbol": "SNX",
+				"name": "Synthetix",
+				"units": 121.50
+			},			
+			{
+				"symbol": "REN",
+				"name": "Ren Protocol",
+				"units": 1138.52
+			},
+			{
+				"symbol": "LRC",
+				"name": "Loopring",
+				"units": 2047.78
+			},
+			{
+				"symbol": "KNC",
+				"name": "Kyber Network",
+				"units": 350.88
+			},
+			{
+				"symbol": "BNT",
+				"name": "Bancor",
+				"units": 109.03
+			},
+			{
+				"symbol": "MLN",
+				"name": "Melon Protocol",
+				"units": 6.04
+			}
+		],
+		"sign": "",
+		"desc": "Inverted DeFi Index",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 1000,
+			"upperLimit": 1500,
+			"lowerLimit": 500
+		}
+	},
 ]
