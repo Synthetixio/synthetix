@@ -38,8 +38,13 @@ const getSynths = ({ network = 'mainnet' } = {}) => {
 
 	// copy all necessary index parameters from the longs to the corresponding shorts
 	synths.map(synth => {
-		if (typeof synth.index === 'string' && synth.inverted) {
-			const { index } = synths.find(({ name }) => name === synth.index);
+		if (typeof synth.index === 'string') {
+			const { index } = synths.find(({ name }) => name === synth.index) || {};
+			if (!index) {
+				throw Error(
+					`While processing ${synth.name}, it's index mapping "${synth.index}" cannot be found - this is an error in the deployment config and should be fixed`
+				);
+			}
 			return Object.assign(synth, { index });
 		} else {
 			return synth;
