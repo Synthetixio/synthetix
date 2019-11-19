@@ -37,7 +37,7 @@ const getSynths = ({ network = 'mainnet' } = {}) => {
 	const synths = JSON.parse(fs.readFileSync(pathToSynthList));
 
 	// copy all necessary index parameters from the longs to the corresponding shorts
-	synths.map(synth => {
+	return synths.map(synth => {
 		if (typeof synth.index === 'string') {
 			const { index } = synths.find(({ name }) => name === synth.index) || {};
 			if (!index) {
@@ -45,13 +45,11 @@ const getSynths = ({ network = 'mainnet' } = {}) => {
 					`While processing ${synth.name}, it's index mapping "${synth.index}" cannot be found - this is an error in the deployment config and should be fixed`
 				);
 			}
-			return Object.assign(synth, { index });
+			return Object.assign({}, synth, { index });
 		} else {
 			return synth;
 		}
 	});
-
-	return synths;
 };
 
 module.exports = { getTarget, getSource, getSynths, toBytes32 };
