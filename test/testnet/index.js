@@ -80,7 +80,7 @@ program
 			);
 			console.log(gray(`Test privkeys: ${user1.privateKey}`));
 
-			/**	VIEWS OF SYNTHETIX STATUS **/
+			/** VIEWS OF SYNTHETIX STATUS **/
 
 			const exchangeRates = new web3.eth.Contract(
 				sources['ExchangeRates'].abi,
