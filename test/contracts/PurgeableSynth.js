@@ -7,11 +7,10 @@ const TokenState = artifacts.require('TokenState');
 const Proxy = artifacts.require('Proxy');
 
 const { currentTime, toUnit, multiplyDecimal, ZERO_ADDRESS } = require('../utils/testUtils');
+const { toBytes32 } = require('../../.');
 
 contract('PurgeableSynth', accounts => {
-	const [sUSD, SNX, , sAUD, iETH] = ['sUSD', 'SNX', 'XDR', 'sAUD', 'iETH'].map(
-		web3.utils.asciiToHex
-	);
+	const [sUSD, SNX, , sAUD, iETH] = ['sUSD', 'SNX', 'XDR', 'sAUD', 'iETH'].map(toBytes32);
 
 	const [
 		deployerAccount,
@@ -79,7 +78,7 @@ contract('PurgeableSynth', accounts => {
 			`Synth ${currencyKey}`,
 			currencyKey,
 			owner,
-			web3.utils.asciiToHex(currencyKey),
+			toBytes32(currencyKey),
 			exchangeRates.address,
 			web3.utils.toWei('0'),
 			{
@@ -116,7 +115,7 @@ contract('PurgeableSynth', accounts => {
 				newExRates = await ExchangeRates.new(
 					owner,
 					oracle,
-					[web3.utils.asciiToHex('SNX')],
+					[toBytes32('SNX')],
 					[web3.utils.toWei('0.2', 'ether')],
 					{ from: deployerAccount }
 				);
@@ -166,7 +165,7 @@ contract('PurgeableSynth', accounts => {
 					beforeEach(async () => {
 						exchangeFeeRate = await feePool.exchangeFeeRate();
 						amountToExchange = toUnit(1e5);
-						await synthetix.exchange(sUSD, amountToExchange, iETH, ZERO_ADDRESS, {
+						await synthetix.exchange(sUSD, amountToExchange, iETH, {
 							from: account1,
 						});
 
@@ -270,7 +269,7 @@ contract('PurgeableSynth', accounts => {
 							beforeEach(async () => {
 								// Note: 5000 is chosen to be large enough to accommodate exchange fees which
 								// ultimately limit the total supply of that synth
-								await synthetix.exchange(sUSD, toUnit(5000), iETH, ZERO_ADDRESS, {
+								await synthetix.exchange(sUSD, toUnit(5000), iETH, {
 									from: account2,
 								});
 								balanceBeforePurgeUser2 = await this.synth.balanceOf(account2);
@@ -292,6 +291,8 @@ contract('PurgeableSynth', accounts => {
 										toUnit(100),
 										toUnit(150),
 										toUnit(50),
+										false,
+										false,
 										{ from: owner }
 									);
 									await exchangeRates.updateRates([iETH], ['160'].map(toUnit), timestamp, {
@@ -380,7 +381,7 @@ contract('PurgeableSynth', accounts => {
 				beforeEach(async () => {
 					await issueSynths({ account: account1, amount: 1e5 });
 					const amountToExchange = toUnit('100');
-					await synthetix.exchange(sUSD, amountToExchange, sAUD, ZERO_ADDRESS, {
+					await synthetix.exchange(sUSD, amountToExchange, sAUD, {
 						from: account1,
 					});
 					const amountExchangedInUSDLessFees = await feePool.amountReceivedFromExchange(

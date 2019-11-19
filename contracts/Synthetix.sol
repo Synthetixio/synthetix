@@ -66,6 +66,7 @@ contract Synthetix is ExternStateToken {
     // Available Synths which can be used with the system
     Synth[] public availableSynths;
     mapping(bytes32 => Synth) public synths;
+    mapping(address => bytes32) public synthsByAddress;
 
     IFeePool public feePool;
     ISynthetixEscrow public escrow;
@@ -171,9 +172,11 @@ contract Synthetix is ExternStateToken {
         bytes32 currencyKey = synth.currencyKey();
 
         require(synths[currencyKey] == Synth(0), "Synth already exists");
+        require(synthsByAddress[synth] == bytes32(0), "Synth address already exists");
 
         availableSynths.push(synth);
         synths[currencyKey] = synth;
+        synthsByAddress[synth] = currencyKey;
     }
 
     /**
@@ -187,12 +190,13 @@ contract Synthetix is ExternStateToken {
         require(synths[currencyKey] != address(0), "Synth does not exist");
         require(synths[currencyKey].totalSupply() == 0, "Synth supply exists");
         require(currencyKey != "XDR", "Cannot remove XDR synth");
+        require(currencyKey != "sUSD", "Cannot remove sUSD synth");
 
         // Save the address we're removing for emitting the event at the end.
         address synthToRemove = synths[currencyKey];
 
         // Remove the synth from the availableSynths array.
-        for (uint8 i = 0; i < availableSynths.length; i++) {
+        for (uint i = 0; i < availableSynths.length; i++) {
             if (availableSynths[i] == synthToRemove) {
                 delete availableSynths[i];
 
@@ -209,6 +213,7 @@ contract Synthetix is ExternStateToken {
         }
 
         // And remove it from the synths mapping
+        delete synthsByAddress[synths[currencyKey]];
         delete synths[currencyKey];
 
         // Note: No event here as Synthetix contract exceeds max contract size
@@ -244,20 +249,20 @@ contract Synthetix is ExternStateToken {
         uint total = 0;
         uint currencyRate = exchangeRates.rateForCurrency(currencyKey);
 
-        require(!exchangeRates.anyRateIsStale(availableCurrencyKeys()), "Rates are stale");
+        (uint[] memory rates, bool anyRateStale) = exchangeRates.ratesAndStaleForCurrencies(availableCurrencyKeys());
+        require(!anyRateStale, "Rates are stale");
 
-        for (uint8 i = 0; i < availableSynths.length; i++) {
+        for (uint i = 0; i < availableSynths.length; i++) {
             // What's the total issued value of that synth in the destination currency?
             // Note: We're not using our effectiveValue function because we don't want to go get the
             //       rate for the destination currency and check if it's stale repeatedly on every
             //       iteration of the loop
             uint synthValue = availableSynths[i].totalSupply()
-                .multiplyDecimalRound(exchangeRates.rateForCurrency(availableSynths[i].currencyKey()))
-                .divideDecimalRound(currencyRate);
+                .multiplyDecimalRound(rates[i]);
             total = total.add(synthValue);
         }
 
-        return total;
+        return total.divideDecimalRound(currencyRate);
     }
 
     /**
@@ -270,8 +275,8 @@ contract Synthetix is ExternStateToken {
     {
         bytes32[] memory currencyKeys = new bytes32[](availableSynths.length);
 
-        for (uint8 i = 0; i < availableSynths.length; i++) {
-            currencyKeys[i] = availableSynths[i].currencyKey();
+        for (uint i = 0; i < availableSynths.length; i++) {
+            currencyKeys[i] = synthsByAddress[availableSynths[i]];
         }
 
         return currencyKeys;
@@ -383,10 +388,9 @@ contract Synthetix is ExternStateToken {
      * @param sourceCurrencyKey The source currency you wish to exchange from
      * @param sourceAmount The amount, specified in UNIT of source currency you wish to exchange
      * @param destinationCurrencyKey The destination currency you wish to obtain.
-     * @param destinationAddress Deprecated. Will always send to messageSender. API backwards compatability maintained.
      * @return Boolean that indicates whether the transfer succeeded or failed.
      */
-    function exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey, address destinationAddress)
+    function exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)
         external
         optionalProxy
         // Note: We don't need to insist on non-stale rates because effectiveValue will do it for us.
@@ -444,9 +448,10 @@ contract Synthetix is ExternStateToken {
         address destinationAddress
     )
         external
+        optionalProxy
         returns (bool)
     {
-        _onlySynth();
+        require(synthsByAddress[messageSender] != bytes32(0), "Only synth allowed");
         require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
         require(sourceAmount > 0, "Zero amount");
 
@@ -516,7 +521,7 @@ contract Synthetix is ExternStateToken {
             uint xdrFeeAmount = effectiveValue(destinationCurrencyKey, fee, "XDR");
             synths["XDR"].issue(feePool.FEE_ADDRESS(), xdrFeeAmount);
             // Tell the fee pool about this.
-            feePool.feePaid("XDR", xdrFeeAmount);
+            feePool.recordFeePaid(xdrFeeAmount);
         }
 
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
@@ -566,7 +571,7 @@ contract Synthetix is ExternStateToken {
         }
 
         // Are they a new issuer? If so, record them.
-        if (!synthetixState.hasIssued(messageSender)) {
+        if (existingDebt == 0) {
             synthetixState.incrementTotalIssuerCount();
         }
 
@@ -619,8 +624,14 @@ contract Synthetix is ExternStateToken {
         // Figure out the maximum we can issue in that currency
         uint maxIssuable = remainingIssuableSynths(messageSender, currencyKey);
 
-        // And issue them
-        issueSynths(currencyKey, maxIssuable);
+        // Keep track of the debt they're about to create
+        _addToDebtRegister(currencyKey, maxIssuable);
+
+        // Create their synths
+        synths[currencyKey].issue(messageSender, maxIssuable);
+
+        // Store their locked SNX amount to determine their fee % for the period
+        _appendAccountIssuanceRecord();
     }
 
     /**
@@ -636,17 +647,18 @@ contract Synthetix is ExternStateToken {
     {
         // How much debt do they have?
         uint debtToRemove = effectiveValue(currencyKey, amount, "XDR");
-        uint debt = debtBalanceOf(messageSender, "XDR");
+        uint existingDebt = debtBalanceOf(messageSender, "XDR");
+        
         uint debtInCurrencyKey = debtBalanceOf(messageSender, currencyKey);
 
-        require(debt > 0, "No debt to forgive");
+        require(existingDebt > 0, "No debt to forgive");
 
         // If they're trying to burn more debt than they actually owe, rather than fail the transaction, let's just
         // clear their debt and leave them be.
-        uint amountToRemove = debt < debtToRemove ? debt : debtToRemove;
+        uint amountToRemove = existingDebt < debtToRemove ? existingDebt : debtToRemove;
 
         // Remove their debt from the ledger
-        _removeFromDebtRegister(amountToRemove);
+        _removeFromDebtRegister(amountToRemove, existingDebt);
 
         uint amountToBurn = debtInCurrencyKey < amount ? debtInCurrencyKey : amount;
 
@@ -679,14 +691,12 @@ contract Synthetix is ExternStateToken {
     /**
      * @notice Remove a debt position from the register
      * @param amount The amount (in UNIT base) being presented in XDRs
+     * @param existingDebt The existing debt (in UNIT base) of address presented in XDRs
      */
-    function _removeFromDebtRegister(uint amount)
+    function _removeFromDebtRegister(uint amount, uint existingDebt)
         internal
     {
         uint debtToRemove = amount;
-
-        // How much debt do they have?
-        uint existingDebt = debtBalanceOf(messageSender, "XDR");
 
         // What is the value of all issued synths of the system (priced in XDRs)?
         uint totalDebtIssued = totalIssuedSynths("XDR");
@@ -694,7 +704,7 @@ contract Synthetix is ExternStateToken {
         // What will the new total after taking out the withdrawn amount
         uint newTotalDebtIssued = totalDebtIssued.sub(debtToRemove);
 
-        uint delta;
+        uint delta = 0;
 
         // What will the debt delta be if there is any debt left?
         // Set delta to 0 if no more debt left in system after user
@@ -707,8 +717,6 @@ contract Synthetix is ExternStateToken {
             // The delta specifically needs to not take into account any existing debt as it's already
             // accounted for in the delta from when they issued previously.
             delta = SafeDecimalMath.preciseUnit().add(debtPercentage);
-        } else {
-            delta = 0;
         }
 
         // Are they exiting the system, or are they just decreasing their debt position?
@@ -855,11 +863,12 @@ contract Synthetix is ExternStateToken {
      * @notice The number of SNX that are free to be transferred for an account.
      * @dev Escrowed SNX are not transferable, so they are not included
      * in this calculation.
+     * @notice SNX rate not stale is checked within debtBalanceOf
      */
     function transferableSynthetix(address account)
         public
         view
-        rateNotStale("SNX")
+        rateNotStale("SNX") // SNX is not a synth so is not checked in totalIssuedSynths
         returns (uint)
     {
         // How many SNX do they have, excluding escrow?
@@ -930,29 +939,6 @@ contract Synthetix is ExternStateToken {
     modifier notFeeAddress(address account) {
         require(account != feePool.FEE_ADDRESS(), "Fee address not allowed");
         _;
-    }
-
-    /**
-     * @notice Only a synth can call this function, optionally via synthetixProxy or directly
-     * @dev This used to be a modifier but instead of duplicating the bytecode into
-     * The functions implementing it they now call this internal function to save bytecode space
-     */
-    function _onlySynth()
-        internal
-        view
-        optionalProxy
-    {
-        bool isSynth = false;
-
-        // No need to repeatedly call this function either
-        for (uint8 i = 0; i < availableSynths.length; i++) {
-            if (availableSynths[i] == messageSender) {
-                isSynth = true;
-                break;
-            }
-        }
-
-        require(isSynth, "Only synth allowed");
     }
 
     modifier onlyOracle

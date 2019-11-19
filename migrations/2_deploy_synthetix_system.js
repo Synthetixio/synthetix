@@ -1,5 +1,7 @@
 const { table } = require('table');
 
+const { toBytes32 } = require('../.');
+
 const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
 const FeePoolState = artifacts.require('FeePoolState');
@@ -59,7 +61,7 @@ module.exports = async function(deployer, network, accounts) {
 		ExchangeRates,
 		owner,
 		oracle,
-		[web3.utils.asciiToHex('SNX')],
+		[toBytes32('SNX')],
 		[web3.utils.toWei('0.2', 'ether')],
 		{ from: deployerAccount }
 	);
@@ -287,7 +289,7 @@ module.exports = async function(deployer, network, accounts) {
 			`Synth ${currencyKey}`,
 			currencyKey,
 			owner,
-			web3.utils.asciiToHex(currencyKey),
+			toBytes32(currencyKey),
 			web3.utils.toWei('0'),
 			{ from: deployerAccount }
 		);
@@ -324,7 +326,7 @@ module.exports = async function(deployer, network, accounts) {
 		currencyKeys
 			.filter(currency => currency !== 'sUSD')
 			.concat(['SNX'])
-			.map(web3.utils.asciiToHex),
+			.map(toBytes32),
 		['1', '0.5', '1.25', '0.1', '5000', '4000'].map(number => web3.utils.toWei(number, 'ether')),
 		timestamp,
 		{ from: oracle }
