@@ -69,7 +69,7 @@ contract PurgeableSynth is Synth {
             "Cannot purge as total supply is above threshold and rate is not frozen."
         );
 
-        for (uint8 i = 0; i < addresses.length; i++) {
+        for (uint i = 0; i < addresses.length; i++) {
             address holder = addresses[i];
 
             uint amountHeld = balanceOf(holder);

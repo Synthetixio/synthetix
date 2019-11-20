@@ -6,19 +6,18 @@ const { gray, green, yellow, redBright, red } = require('chalk');
 const { table } = require('table');
 const w3utils = require('web3-utils');
 const Deployer = require('../Deployer');
-const { findSolFiles, loadCompiledFiles } = require('../solidity');
+const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
 
 const {
 	BUILD_FOLDER,
-	CONTRACTS_FOLDER,
 	CONFIG_FILENAME,
+	CONTRACTS_FOLDER,
 	SYNTHS_FILENAME,
 	DEPLOYMENT_FILENAME,
 	ZERO_ADDRESS,
 } = require('../constants');
 
 const {
-	toBytes4,
 	ensureNetwork,
 	ensureDeploymentPath,
 	loadAndCheckRequiredSources,
@@ -28,6 +27,8 @@ const {
 	performTransactionalStep,
 	stringify,
 } = require('../util');
+
+const { toBytes32 } = require('../../../.');
 
 const parameterNotice = props => {
 	console.log(gray('-'.repeat(50)));
@@ -43,7 +44,7 @@ const parameterNotice = props => {
 
 const DEFAULTS = {
 	gasPrice: '1',
-	methodCallGasLimit: 15e4,
+	methodCallGasLimit: 250e3, // 250k
 	contractDeploymentGasLimit: 6.9e6,
 	network: 'kovan',
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
@@ -99,11 +100,7 @@ const deploy = async ({
 	const { earliestCompiledTimestamp, compiled } = loadCompiledFiles({ buildPath });
 
 	// now get the latest time a Solidity file was edited
-	let latestSolTimestamp = 0;
-	Object.keys(findSolFiles(CONTRACTS_FOLDER)).forEach(file => {
-		const sourceFilePath = path.join(CONTRACTS_FOLDER, file);
-		latestSolTimestamp = Math.max(latestSolTimestamp, fs.statSync(sourceFilePath).mtimeMs);
-	});
+	const latestSolTimestamp = getLatestSolTimestamp(CONTRACTS_FOLDER);
 
 	// now clone these so we can update and write them after each deployment but keep the original
 	// flags available
@@ -144,42 +141,80 @@ const deploy = async ({
 	let currentSynthetixSupply;
 	let currentExchangeFee;
 	let currentSynthetixPrice;
-	if (network === 'local') {
-		// get the current supply as it changes as we mint after each period
-		currentSynthetixSupply = w3utils.toWei((100e6).toString());
-		currentExchangeFee = w3utils.toWei('0.003'.toString());
-		oracleExrates = account;
-		oracleGasLimit = account;
-		oracleDepot = account;
-		currentSynthetixPrice = w3utils.toWei('0.2');
-	} else {
-		// do requisite checks
-		try {
-			const oldSynthetix = getExistingContract({ contract: 'Synthetix' });
-			currentSynthetixSupply = await oldSynthetix.methods.totalSupply().call();
+	let oldExrates;
 
-			const oldFeePool = getExistingContract({ contract: 'FeePool' });
-			currentExchangeFee = await oldFeePool.methods.exchangeFeeRate().call();
-
-			const currentExrates = getExistingContract({ contract: 'ExchangeRates' });
-			currentSynthetixPrice = await currentExrates.methods.rateForCurrency(toBytes4('SNX')).call();
-
-			if (!oracleExrates) {
-				oracleExrates = await currentExrates.methods.oracle().call();
-			}
-
-			if (!oracleDepot) {
-				const currentDepot = getExistingContract({ contract: 'Depot' });
-				oracleDepot = await currentDepot.methods.oracle().call();
-			}
-
-			if (!oracleGasLimit) {
-				oracleGasLimit = await oldSynthetix.methods.gasLimitOracle().call();
-			}
-		} catch (err) {
+	try {
+		const oldSynthetix = getExistingContract({ contract: 'Synthetix' });
+		currentSynthetixSupply = await oldSynthetix.methods.totalSupply().call();
+		if (!oracleGasLimit) {
+			oracleGasLimit = await oldSynthetix.methods.gasLimitOracle().call();
+		}
+	} catch (err) {
+		if (network === 'local') {
+			currentSynthetixSupply = w3utils.toWei((100e6).toString());
+			oracleGasLimit = account;
+		} else {
 			console.error(
 				red(
-					'Cannot connect to existing contracts. Please double check the deploymentPath is correct for the network allocated'
+					'Cannot connect to existing Synthetix contract. Please double check the deploymentPath is correct for the network allocated'
+				)
+			);
+			process.exitCode = 1;
+			return;
+		}
+	}
+
+	try {
+		const oldFeePool = getExistingContract({ contract: 'FeePool' });
+		currentExchangeFee = await oldFeePool.methods.exchangeFeeRate().call();
+	} catch (err) {
+		if (network === 'local') {
+			currentExchangeFee = w3utils.toWei('0.003'.toString());
+		} else {
+			console.error(
+				red(
+					'Cannot connect to existing FeePool contract. Please double check the deploymentPath is correct for the network allocated'
+				)
+			);
+			process.exitCode = 1;
+			return;
+		}
+	}
+
+	try {
+		oldExrates = getExistingContract({ contract: 'ExchangeRates' });
+		currentSynthetixPrice = await oldExrates.methods.rateForCurrency(toBytes32('SNX')).call();
+		if (!oracleExrates) {
+			oracleExrates = await oldExrates.methods.oracle().call();
+		}
+	} catch (err) {
+		if (network === 'local') {
+			currentSynthetixPrice = w3utils.toWei('0.2');
+			oracleExrates = account;
+			oldExrates = undefined; // unset to signify that a fresh one will be deployed
+		} else {
+			console.error(
+				red(
+					'Cannot connect to existing ExchangeRates contract. Please double check the deploymentPath is correct for the network allocated'
+				)
+			);
+			process.exitCode = 1;
+			return;
+		}
+	}
+
+	try {
+		if (!oracleDepot) {
+			const currentDepot = getExistingContract({ contract: 'Depot' });
+			oracleDepot = await currentDepot.methods.oracle().call();
+		}
+	} catch (err) {
+		if (network === 'local') {
+			oracleDepot = account;
+		} else {
+			console.error(
+				red(
+					'Cannot connect to existing Depot contract. Please double check the deploymentPath is correct for the network allocated'
 				)
 			);
 			process.exitCode = 1;
@@ -195,6 +230,10 @@ const deploy = async ({
 		}
 	}
 
+	const newSynthsToAdd = synths
+		.filter(({ name }) => !config[`Synth${name}`])
+		.map(({ name }) => name);
+
 	parameterNotice({
 		Network: network,
 		'Gas price to use': `${gasPrice} GWEI`,
@@ -209,7 +248,9 @@ const deploy = async ({
 			(latestSolTimestamp > earliestCompiledTimestamp
 				? yellow(' ⚠⚠⚠ this is later than the last build! Is this intentional?')
 				: green(' ✅')),
-		'Add any new synths found?': addNewSynths ? green('✅ YES') : yellow('⚠ NO'),
+		'Add any new synths found?': addNewSynths
+			? green('✅ YES\n\t\t\t\t') + newSynthsToAdd.join(', ')
+			: yellow('⚠ NO'),
 		'Deployer account:': account,
 		'Synthetix totalSupply': `${Math.round(w3utils.fromWei(currentSynthetixSupply) / 1e6)}m`,
 		'FeePool exchangeFeeRate': `${w3utils.fromWei(currentExchangeFee)}`,
@@ -239,6 +280,7 @@ const deploy = async ({
 	}
 
 	console.log(gray(`Starting deployment to ${network.toUpperCase()} via Infura...`));
+	const newContractsDeployed = [];
 	// force flag indicates to deploy even when no config for the entry (useful for new synths)
 	const deployContract = async ({ name, source = name, args, deps, force = false }) => {
 		const deployedContract = await deployer.deploy({ name, source, args, deps, force });
@@ -279,6 +321,14 @@ const deploy = async ({
 			fs.writeFileSync(configFile, stringify(updatedConfig));
 		}
 
+		if (deployedContract.options.deployed) {
+			// add to the list of deployed contracts for later reporting
+			newContractsDeployed.push({
+				name,
+				address,
+			});
+		}
+
 		return deployedContract;
 	};
 
@@ -306,7 +356,7 @@ const deploy = async ({
 
 	const exchangeRates = await deployContract({
 		name: 'ExchangeRates',
-		args: [account, oracleExrates, [w3utils.asciiToHex('SNX')], [currentSynthetixPrice]],
+		args: [account, oracleExrates, [toBytes32('SNX')], [currentSynthetixPrice]],
 	});
 	const exchangeRatesAddress = exchangeRates ? exchangeRates.options.address : '';
 
@@ -753,14 +803,23 @@ const deploy = async ({
 			});
 		}
 
-		const currencyKeyInBytes = w3utils.asciiToHex(currencyKey);
+		const currencyKeyInBytes = toBytes32(currencyKey);
+
+		const synthConfig = config[`Synth${currencyKey}`] || {};
 
 		// track the original supply if we're deploying a new synth contract for an existing synth
 		let originalTotalSupply = 0;
-		// cannot check local network as deploy is true for everything
-		if (config[`Synth${currencyKey}`].deploy && network !== 'local') {
-			const oldSynth = getExistingContract({ contract: `Synth${currencyKey}` });
-			originalTotalSupply = await oldSynth.methods.totalSupply().call();
+		if (synthConfig.deploy) {
+			try {
+				const oldSynth = getExistingContract({ contract: `Synth${currencyKey}` });
+				originalTotalSupply = await oldSynth.methods.totalSupply().call();
+			} catch (err) {
+				if (network !== 'local') {
+					// only throw if not local - allows local environments to handle both new
+					// and updating configurations
+					throw err;
+				}
+			}
 		}
 
 		// PurgeableSynth needs additionalConstructorArgs to be ordered
@@ -773,7 +832,7 @@ const deploy = async ({
 		console.log(yellow(`Original TotalSupply on Synth${currencyKey} is ${originalTotalSupply}`));
 
 		// user confirm totalSupply is correct for oldSynth before deploy new Synth
-		if (config[`Synth${currencyKey}`].deploy && !yes) {
+		if (synthConfig.deploy && !yes) {
 			try {
 				await confirmAction(
 					yellow(
@@ -885,7 +944,7 @@ const deploy = async ({
 			});
 		}
 
-		if (proxyFeePool) {
+		if (proxyFeePool && synth) {
 			await runStep({
 				contract: `Synth${currencyKey}`,
 				target: synth,
@@ -898,45 +957,91 @@ const deploy = async ({
 
 		// now configure inverse synths in exchange rates
 		if (inverted) {
-			// check total supply
-			const totalSynthSupply = await synth.methods.totalSupply().call();
-
 			const { entryPoint, upperLimit, lowerLimit } = inverted;
 
-			// only call setInversePricing if either there's no supply or if on a testnet
-			if (Number(totalSynthSupply) === 0 || network !== 'mainnet') {
-				const exchangeRatesOwner = await exchangeRates.methods.owner().call();
-				if (exchangeRatesOwner === account) {
+			// helper function
+			const setInversePricing = ({ freeze, freezeAtUpperLimit }) =>
+				runStep({
+					contract: 'ExchangeRates',
+					target: exchangeRates,
+					write: 'setInversePricing',
+					writeArg: [
+						toBytes32(currencyKey),
+						w3utils.toWei(entryPoint.toString()),
+						w3utils.toWei(upperLimit.toString()),
+						w3utils.toWei(lowerLimit.toString()),
+						freeze,
+						freezeAtUpperLimit,
+					],
+				});
+
+			// when the oldExrates exists - meaning there is a valid ExchangeRates in the existing deployment.json
+			// for this environment (true for all environments except the initial deploy in 'local' during those tests)
+			if (oldExrates) {
+				// get inverse synth's params from the old exrates, if any exist
+				const {
+					entryPoint: oldEntryPoint,
+					upperLimit: oldUpperLimit,
+					lowerLimit: oldLowerLimit,
+					frozen: currentRateIsFrozen,
+				} = await oldExrates.methods.inversePricing(toBytes32(currencyKey)).call();
+
+				// and the last rate if any exists
+				const currentRateForCurrency = await oldExrates.methods
+					.rateForCurrency(toBytes32(currencyKey))
+					.call();
+
+				// and total supply, if any
+				const totalSynthSupply = await synth.methods.totalSupply().call();
+
+				// When there's an inverted synth with matching parameters
+				if (
+					entryPoint === +w3utils.fromWei(oldEntryPoint) &&
+					upperLimit === +w3utils.fromWei(oldUpperLimit) &&
+					lowerLimit === +w3utils.fromWei(oldLowerLimit)
+				) {
+					const freezeAtUpperLimit = +w3utils.fromWei(currentRateForCurrency) === upperLimit;
+					if (currentRateIsFrozen) {
+						console.log(
+							gray(
+								`Detected an existing inverted synth for ${currencyKey} with identical parameters, yet frozen status does not match. ` +
+									`Persisting its frozen status (${currentRateIsFrozen}) and frozen rate at upper (${freezeAtUpperLimit}) or lower (${!freezeAtUpperLimit}).`
+							)
+						);
+						// then ensure it gets set to the same frozen status and frozen rate
+						// as the old exchange rates
+						await setInversePricing({
+							freeze: currentRateIsFrozen,
+							freezeAtUpperLimit,
+						});
+					}
+				} else if (Number(currentRateForCurrency) === 0) {
+					console.log(gray(`Detected a new inverted synth for ${currencyKey}. Proceeding to add.`));
+					// Then a new inverted synth is being added (as there's no previous rate for it)
+					await setInversePricing({ freeze: false, freezeAtUpperLimit: false });
+				} else if (Number(totalSynthSupply) === 0) {
 					console.log(
-						yellow(
-							`Invoking ExchangeRates.setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})...`
+						gray(
+							`Inverted synth at ${currencyKey} has 0 total supply and its inverted parameters have changed. ` +
+								`Proceeding to reconfigure its parameters as instructed, unfreezing it if currently frozen.`
 						)
 					);
-					await exchangeRates.methods
-						.setInversePricing(
-							w3utils.asciiToHex(currencyKey),
-							w3utils.toWei(entryPoint.toString()),
-							w3utils.toWei(upperLimit.toString()),
-							w3utils.toWei(lowerLimit.toString())
-						)
-						.send(deployer.sendParameters());
+					// Then a new inverted synth is being added (as there's no existing supply)
+					await setInversePricing({ freeze: false, freezeAtUpperLimit: false });
 				} else {
-					appendOwnerAction({
-						key: `ExchangeRates.setInversePricing(${currencyKey}, ${entryPoint}, ${upperLimit}, ${lowerLimit})`,
-						target: exchangeRatesAddress,
-						action: `setInversePricing(${currencyKey}, ${w3utils.toWei(
-							entryPoint.toString()
-						)}, ${w3utils.toWei(upperLimit.toString())}, ${w3utils.toWei(lowerLimit.toString())})`,
-					});
+					// Then an existing synth's inverted parameters have changed.
+					// For safety sake, let's inform the user and skip this step
+					console.log(
+						redBright(
+							`⚠⚠⚠ WARNING: The parameters for the inverted synth ${currencyKey} ` +
+								`have changed and it has non-zero totalSupply. This use-case is not supported by the deploy script. ` +
+								`This should be done as a purge() and setInversePricing() separately`
+						)
+					);
 				}
 			} else {
-				console.log(
-					gray(
-						`Not setting inverse pricing on ${currencyKey} as totalSupply is > 0 (${w3utils.fromWei(
-							totalSynthSupply
-						)})`
-					)
-				);
+				// When no exrates, then totally fresh deploy (local deployment)
+				await setInversePricing({ freeze: false, freezeAtUpperLimit: false });
 			}
 		}
 	}
@@ -1039,19 +1144,21 @@ const deploy = async ({
 		});
 	}
 
-	console.log(green('\nSuccessfully deployed all contracts!\n'));
+	console.log(green(`\nSuccessfully deployed ${newContractsDeployed.length} contracts!\n`));
 
-	const tableData = Object.keys(deployer.deployedContracts).map(key => [
-		key,
-		deployer.deployedContracts[key].options.address,
-	]);
+	const tableData = newContractsDeployed.map(({ name, address }) => [name, address]);
 	console.log();
-	console.log(gray(`Tabular data of all contracts on ${network}`));
-	console.log(table(tableData));
+	if (tableData.length) {
+		console.log(gray(`All contracts deployed on "${network}" network:`));
+		console.log(table(tableData));
+	} else {
+		console.log(gray('Note: No new contracts deployed.'));
+	}
 };
 
 module.exports = {
 	deploy,
+	DEFAULTS,
 	cmd: program =>
 		program
 			.command('deploy')

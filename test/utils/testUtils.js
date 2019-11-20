@@ -231,51 +231,12 @@ const assertEventEqual = (actualEventOrTransaction, expectedEvent, expectedArgs)
 	// Ensure you pass in all the args you need to assert on.
 };
 
+/**
+ * Converts a hex string of bytes into a UTF8 string with \0 characters (from padding) removed
+ */
 const bytesToString = bytes => {
 	const result = web3.utils.hexToAscii(bytes);
 	return result.replace(/\0/g, '');
-};
-
-/**
- *  Convenience method to assert that an event matches a bytes32 ascii param
- *  @param actualEventOrTransaction The transaction receipt, or event as returned in the event logs from web3
- *  @param expectedEvent The event name you expect
- *  @param expectedArgs The args you expect in object notation, e.g. { newOracle: '0x...', updatedAt: '...' }
- *  @param keyToConvert The args you need to convert to ASCII from HEX
- */
-const assertBytes32EventEqual = (
-	actualEventOrTransaction,
-	expectedEvent,
-	expectedArgs,
-	keysToConvert
-) => {
-	// If they pass in a whole transaction we need to extract the first log, otherwise we already have what we need
-	const event = Array.isArray(actualEventOrTransaction.logs)
-		? actualEventOrTransaction.logs[0]
-		: actualEventOrTransaction;
-
-	if (!event) {
-		assert.fail(new Error('No event was generated from this transaction'));
-	}
-
-	// Assert the names are the same.
-	assert.equal(event.event, expectedEvent);
-
-	// Ensure keysToConvert input is array
-	const fieldsToConvert = Array.isArray(keysToConvert) ? keysToConvert : keysToConvert.split(',');
-	// Convert event args in list to ascii and replace null chars from result
-	const convertedArgs = fieldsToConvert.reduce((result, key) => {
-		result[key] = Array.isArray(event.args[key])
-			? event.args[key].map(bytesToString)
-			: bytesToString(event.args[key]);
-		return result;
-	}, {});
-
-	const eventArgs = Object.assign(event.args, convertedArgs);
-
-	assertDeepEqual(eventArgs, expectedArgs);
-	// Note: this means that if you don't assert args they'll pass regardless.
-	// Ensure you pass in all the args you need to assert on.
 };
 
 const assertEventsEqual = (transaction, ...expectedEventsAndArgs) => {
@@ -438,7 +399,6 @@ module.exports = {
 
 	assertEventEqual,
 	assertEventsEqual,
-	assertBytes32EventEqual,
 	assertBNEqual,
 	assertBNNotEqual,
 	assertBNClose,

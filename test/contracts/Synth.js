@@ -6,11 +6,10 @@ const Synthetix = artifacts.require('Synthetix');
 const Synth = artifacts.require('Synth');
 
 const { currentTime, toUnit, ZERO_ADDRESS, bytesToString } = require('../utils/testUtils');
+const { toBytes32 } = require('../..');
 
 contract('Synth', async accounts => {
-	const [sUSD, sAUD, sEUR, SNX, XDR] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'XDR'].map(
-		web3.utils.asciiToHex
-	);
+	const [sUSD, sAUD, sEUR, SNX, XDR] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'XDR'].map(toBytes32);
 
 	const [
 		deployerAccount,
@@ -69,7 +68,7 @@ contract('Synth', async accounts => {
 			'Synth XYZ',
 			'sXYZ',
 			owner,
-			web3.utils.asciiToHex('sXYZ'),
+			toBytes32('sXYZ'),
 			web3.utils.toWei('100'),
 			{ from: deployerAccount }
 		);
@@ -137,65 +136,6 @@ contract('Synth', async accounts => {
 		assert.bnEqual(await sUSDContract.balanceOf(account1), amount);
 	});
 
-	//
-	// NOTICE: setPreferredCurrency has been deprecated from synthetix to reduce contract size
-	//
-	// it('should respect preferred currency when transferring', async function() {
-	// 	// Issue 10,000 sUSD.
-	// 	const amount = toUnit('10000');
-	// 	await synthetix.issueSynths(sUSD, amount, { from: owner });
-
-	// 	const sUSDReceived = await feePool.amountReceivedFromTransfer(amount);
-	// 	const fee = amount.sub(sUSDReceived);
-	// 	const xdrFee = await synthetix.effectiveValue(sUSD, fee, XDR);
-	// 	const sAUDReceived = await synthetix.effectiveValue(sUSD, sUSDReceived, sAUD);
-
-	// 	// Deprecated
-	// 	await synthetix.setPreferredCurrency(sAUD, { from: account1 });
-
-	// 	// Do a single transfer of all our sUSD.
-	// 	const transaction = await sUSDContract.transfer(account1, amount, { from: owner });
-
-	// 	// Events should be a fee exchange and a transfer to account1
-	// 	assert.eventsEqual(
-	// 		transaction,
-
-	// 		// Fees get burned and exchanged to XDRs
-	// 		'Transfer',
-	// 		{ from: owner, to: ZERO_ADDRESS, value: fee },
-	// 		'Burned',
-	// 		{ account: owner, value: fee },
-	// 		'Transfer',
-	// 		{
-	// 			from: ZERO_ADDRESS,
-	// 			to: FEE_ADDRESS,
-	// 			value: xdrFee,
-	// 		},
-	// 		'Issued',
-	// 		{ account: FEE_ADDRESS, value: xdrFee },
-
-	// 		// And finally the original synth exchange
-	// 		// from sUSD to sAUD
-	// 		'Transfer',
-	// 		{ from: owner, to: ZERO_ADDRESS, value: sUSDReceived },
-	// 		'Burned',
-	// 		{ account: owner, value: sUSDReceived },
-	// 		'Transfer',
-	// 		{ from: ZERO_ADDRESS, to: account1, value: sAUDReceived }
-	// 	);
-
-	// 	// Sender should have nothing
-	// 	assert.bnEqual(await sUSDContract.balanceOf(owner), 0);
-	// 	assert.bnEqual(await sAUDContract.balanceOf(owner), 0);
-
-	// 	// The recipient should have the correct amount
-	// 	assert.bnEqual(await sUSDContract.balanceOf(account1), 0);
-	// 	assert.bnEqual(await sAUDContract.balanceOf(account1), sAUDReceived);
-
-	// 	// The fee pool should also have the correct amount
-	// 	assert.bnEqual(await XDRContract.balanceOf(FEE_ADDRESS), xdrFee);
-	// });
-
 	it('should revert when transferring (ERC20) with insufficient balance', async () => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
@@ -220,7 +160,7 @@ contract('Synth', async accounts => {
 		const transaction = await sUSDContract.methods['transfer(address,uint256,bytes)'](
 			account1,
 			amount,
-			web3.utils.asciiToHex('This is a test'),
+			toBytes32('This is a test'),
 			{ from: owner }
 		);
 
@@ -250,7 +190,7 @@ contract('Synth', async accounts => {
 			sUSDContract.methods['transfer(address,uint256,bytes)'](
 				account1,
 				amount.add(web3.utils.toBN('1')),
-				web3.utils.asciiToHex('This is a test'),
+				toBytes32('This is a test'),
 				{ from: owner }
 			)
 		);
@@ -337,7 +277,7 @@ contract('Synth', async accounts => {
 			owner,
 			account1,
 			amount,
-			web3.utils.asciiToHex('This is a test'),
+			toBytes32('This is a test'),
 			{
 				from: account1,
 			}
@@ -376,7 +316,7 @@ contract('Synth', async accounts => {
 				owner,
 				account1,
 				amount,
-				web3.utils.asciiToHex('This is a test'),
+				toBytes32('This is a test'),
 				{
 					from: account1,
 				}
@@ -398,7 +338,7 @@ contract('Synth', async accounts => {
 				owner,
 				account1,
 				amount,
-				web3.utils.asciiToHex('This is a test'),
+				toBytes32('This is a test'),
 				{
 					from: account1,
 				}

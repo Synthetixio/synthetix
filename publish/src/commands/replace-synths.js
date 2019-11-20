@@ -26,6 +26,8 @@ const {
 	performTransactionalStep,
 } = require('../util');
 
+const { toBytes32 } = require('../../../.');
+
 const DEFAULTS = {
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
 	contractDeploymentGasLimit: 7e6,
@@ -219,7 +221,7 @@ const replaceSynths = async ({
 		});
 
 	for (const { currencyKey, Synth, Proxy, TokenState } of deployedSynths) {
-		const currencyKeyInBytes = w3utils.asciiToHex(currencyKey);
+		const currencyKeyInBytes = toBytes32(currencyKey);
 		const synthContractName = `Synth${currencyKey}`;
 
 		// STEPS

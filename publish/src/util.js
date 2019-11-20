@@ -13,8 +13,6 @@ const {
 	SYNTHS_FILENAME,
 } = require('./constants');
 
-const toBytes4 = str => w3utils.asciiToHex(str, 4);
-
 const stringify = input => JSON.stringify(input, null, '\t') + '\n';
 
 const ensureNetwork = network => {
@@ -137,12 +135,12 @@ const performTransactionalStep = async ({
 	const action = `${contract}.${write}(${writeArg})`;
 
 	// check to see if action required
+	console.log(yellow(`Attempting action: ${action}`));
+
 	if (read) {
 		// web3 counts provided arguments - even undefined ones - and they must match the expected args, hence the below
 		const argumentsForReadFunction = [].concat(readArg).filter(entry => entry !== undefined); // reduce to array of args
 		const response = await target.methods[read](...argumentsForReadFunction).call();
-
-		console.log(yellow(`Attempting action: ${action}`));
 
 		if (expected(response)) {
 			console.log(gray(`Nothing required for this action.`));
@@ -151,9 +149,9 @@ const performTransactionalStep = async ({
 	}
 	// otherwuse check the owner
 	const owner = await target.methods.owner().call();
+	const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
 	if (owner === account) {
 		// perform action
-		const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
 		const txn = await target.methods[write](...argumentsForWriteFunction).send({
 			from: account,
 			gas: Number(gasLimit),
@@ -177,7 +175,7 @@ const performTransactionalStep = async ({
 		appendOwnerAction({
 			key: action,
 			target: target.options.address,
-			action: `${write}(${writeArg})`,
+			action: `${write}(${argumentsForWriteFunction})`,
 		});
 		return true;
 	} else {
@@ -185,7 +183,7 @@ const performTransactionalStep = async ({
 		try {
 			await confirmAction(
 				redBright(
-					`YOUR TASK: Invoke ${write}(${writeArg}) via ${etherscanLinkPrefix}/address/` +
+					`YOUR TASK: Invoke ${write}(${argumentsForWriteFunction}) via ${etherscanLinkPrefix}/address/` +
 						target.options.address +
 						'#writeContract'
 				) + '\nPlease enter Y when the transaction has been mined and not earlier. '
@@ -199,7 +197,6 @@ const performTransactionalStep = async ({
 };
 
 module.exports = {
-	toBytes4,
 	ensureNetwork,
 	ensureDeploymentPath,
 	loadAndCheckRequiredSources,
