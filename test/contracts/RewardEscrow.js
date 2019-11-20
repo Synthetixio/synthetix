@@ -4,6 +4,7 @@ const FeePool = artifacts.require('FeePool');
 const ExchangeRates = artifacts.require('ExchangeRates');
 
 const { currentTime, fastForward, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
+const { toBytes32 } = require('../../.');
 
 contract('RewardEscrow', async accounts => {
 	const SECOND = 1000;
@@ -11,7 +12,7 @@ contract('RewardEscrow', async accounts => {
 	const WEEK = 604800;
 	const YEAR = 31556926;
 
-	const [SNX] = ['SNX'].map(web3.utils.asciiToHex);
+	const [SNX] = ['SNX'].map(toBytes32);
 
 	const [, owner, feePoolAccount, account1, account2] = accounts;
 	let rewardEscrow, synthetix, exchangeRates, oracle;

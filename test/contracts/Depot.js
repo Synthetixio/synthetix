@@ -7,6 +7,8 @@ const {
 	divideDecimal,
 } = require('../utils/testUtils');
 
+const { toBytes32 } = require('../../.');
+
 const Synthetix = artifacts.require('Synthetix');
 const Depot = artifacts.require('Depot');
 const Synth = artifacts.require('Synth');
@@ -14,7 +16,7 @@ const FeePool = artifacts.require('FeePool');
 
 contract('Depot', async accounts => {
 	let synthetix, synth, depot, feePool;
-	const sUsdHex = web3.utils.asciiToHex('sUSD');
+	const sUsdHex = toBytes32('sUSD');
 
 	beforeEach(async () => {
 		synthetix = await Synthetix.deployed();
