@@ -16,6 +16,7 @@ const commands = {
 	replaceSynths: require('../../publish/src/commands/replace-synths').replaceSynths,
 	purgeSynths: require('../../publish/src/commands/purge-synths').purgeSynths,
 	removeSynths: require('../../publish/src/commands/remove-synths').removeSynths,
+	importFeePeriods: require('../../publish/src/commands/import-fee-periods').importFeePeriods,
 };
 
 const {
@@ -60,10 +61,7 @@ describe('publish scripts', function() {
 		fs.writeFileSync(configJSONPath, configJSON);
 	};
 
-	// Note: as deployments take quite a bit of time, we use before here which
-	// runs once before all the subsequent tests. This means we need to be careful
-	// of anything bleeding over between tests - such as config, synth and deployment JSON files
-	before(async function() {
+	beforeEach(async function() {
 		fs.writeFileSync(logfilePath, ''); // reset log file
 		console.log = (...input) => fs.appendFileSync(logfilePath, input.join(' ') + '\n');
 		accounts = {
@@ -93,7 +91,7 @@ describe('publish scripts', function() {
 		gasPrice = web3.utils.toWei('5', 'gwei');
 	});
 
-	after(resetConfigAndSynthFiles);
+	afterEach(resetConfigAndSynthFiles);
 
 	describe('integrated actions test', () => {
 		describe('when deployed', () => {
@@ -105,7 +103,7 @@ describe('publish scripts', function() {
 			let sUSDContract;
 			let sBTCContract;
 			let FeePool;
-			before(async function() {
+			beforeEach(async function() {
 				this.timeout(60000);
 
 				await commands.deploy({
@@ -129,8 +127,213 @@ describe('publish scripts', function() {
 				timestamp = (await web3.eth.getBlock('latest')).timestamp;
 			});
 
+			describe('importFeePeriods script', () => {
+				let oldFeePoolAddress;
+				let feePeriodLength;
+
+				beforeEach(async () => {
+					oldFeePoolAddress = snx.getTarget({ network, contract: 'FeePool' }).address;
+					feePeriodLength = await FeePool.methods.FEE_PERIOD_LENGTH().call();
+				});
+
+				const daysAgo = days => Math.round(Date.now() / 1000 - 3600 * 24 * days);
+
+				const redeployFeePeriodOnly = async function() {
+					// read current config file version (if something has been removed,
+					// we don't want to include it here)
+					const currentConfigFile = JSON.parse(fs.readFileSync(configJSONPath));
+					const configForExrates = Object.keys(currentConfigFile).reduce((memo, cur) => {
+						memo[cur] = { deploy: cur === 'FeePool' };
+						return memo;
+					}, {});
+
+					fs.writeFileSync(configJSONPath, JSON.stringify(configForExrates));
+
+					this.timeout(60000);
+
+					await commands.deploy({
+						network,
+						deploymentPath,
+						yes: true,
+						privateKey: accounts.deployer.private,
+					});
+				};
+
+				describe('when import script is called with the same source fee pool as the currently deployed one', () => {
+					it('then it fails', done => {
+						commands
+							.importFeePeriods({
+								sourceContractAddress: oldFeePoolAddress,
+								deploymentPath,
+								network,
+								privateKey: accounts.deployer.private,
+								yes: true,
+							})
+							.then(() => done('Should not succeed.'))
+							.catch(() => done());
+					});
+				});
+				describe('when FeePool alone is redeployed', () => {
+					beforeEach(redeployFeePeriodOnly);
+
+					describe('when new fee periods are attempted to be imported', () => {
+						it('fails as there isnt more than a single period', done => {
+							commands
+								.importFeePeriods({
+									sourceContractAddress: oldFeePoolAddress,
+									deploymentPath,
+									network,
+									privateKey: accounts.deployer.private,
+									yes: true,
+								})
+								.then(() => done('Should not succeed.'))
+								.catch(() => done());
+						});
+					});
+				});
+
+				describe('when FeePool is given three true imported periods', () => {
+					let periodsAdded;
+					beforeEach(async () => {
+						periodsAdded = [];
+						const addPeriod = (feePeriodId, startTime) => {
+							periodsAdded.push({
+								feePeriodId,
+								startingDebtIndex: '0',
+								startTime,
+								feesToDistribute: '0',
+								feesClaimed: '0',
+								rewardsToDistribute: '0',
+								rewardsClaimed: '0',
+							});
+						};
+						for (let i = 0; i < feePeriodLength; i++) {
+							const startTime = daysAgo((i + 1) * 6);
+							addPeriod((i + 1).toString(), startTime.toString());
+							await FeePool.methods.importFeePeriod(i, i + 1, 0, startTime, 0, 0, 0, 0).send({
+								from: accounts.deployer.public,
+								gas: gasLimit,
+								gasPrice,
+							});
+						}
+					});
+					describe('when the new FeePool is invalid', () => {
+						describe('when FeePool alone is redeployed', () => {
+							beforeEach(redeployFeePeriodOnly);
+							describe('using the FeePoolNew', () => {
+								let FeePoolNew;
+								beforeEach(async () => {
+									FeePoolNew = new web3.eth.Contract(
+										sources['FeePool'].abi,
+										snx.getTarget({ network, contract: 'FeePool' }).address
+									);
+								});
+
+								describe('when the new FeePool is manually given fee periods', () => {
+									beforeEach(async () => {
+										for (let i = 0; i < feePeriodLength; i++) {
+											await FeePoolNew.methods
+												.importFeePeriod(i, i + 1, 0, daysAgo((i + 1) * 6), 0, 0, 0, 0)
+												.send({
+													from: accounts.deployer.public,
+													gas: gasLimit,
+													gasPrice,
+												});
+										}
+									});
+									describe('when new fee periods are attempted to be imported', () => {
+										it('fails as the target FeePool now has imported fee periods', done => {
+											commands
+												.importFeePeriods({
+													sourceContractAddress: oldFeePoolAddress,
+													deploymentPath,
+													network,
+													privateKey: accounts.deployer.private,
+													yes: true,
+												})
+												.then(() => done('Should not succeed.'))
+												.catch(() => done());
+										});
+									});
+								});
+							});
+						});
+					});
+					describe('when FeePool alone is redeployed', () => {
+						beforeEach(redeployFeePeriodOnly);
+						describe('using the FeePoolNew', () => {
+							let FeePoolNew;
+							beforeEach(async () => {
+								FeePoolNew = new web3.eth.Contract(
+									sources['FeePool'].abi,
+									snx.getTarget({ network, contract: 'FeePool' }).address
+								);
+							});
+
+							describe('when import is called', () => {
+								beforeEach(async () => {
+									await commands.importFeePeriods({
+										sourceContractAddress: oldFeePoolAddress,
+										deploymentPath,
+										network,
+										privateKey: accounts.deployer.private,
+										yes: true,
+									});
+								});
+								it('then the periods are added correctly', async () => {
+									const periods = await Promise.all(
+										[0, 1, 2].map(i => FeePoolNew.methods.recentFeePeriods(i).call())
+									);
+									// strip index props off the returned object
+									periods.forEach(period =>
+										Object.keys(period)
+											.filter(key => /^[0-9]+$/.test(key))
+											.forEach(key => delete period[key])
+									);
+
+									assert.strictEqual(JSON.stringify(periods[0]), JSON.stringify(periodsAdded[0]));
+									assert.strictEqual(JSON.stringify(periods[1]), JSON.stringify(periodsAdded[1]));
+									assert.strictEqual(JSON.stringify(periods[2]), JSON.stringify(periodsAdded[2]));
+								});
+							});
+						});
+					});
+					describe('when FeePool is given old import periods', () => {
+						beforeEach(async () => {
+							for (let i = 0; i < feePeriodLength; i++) {
+								await FeePool.methods
+									.importFeePeriod(i, i + 1, 0, daysAgo((i + 1) * 14), 0, 0, 0, 0)
+									.send({
+										from: accounts.deployer.public,
+										gas: gasLimit,
+										gasPrice,
+									});
+							}
+						});
+						describe('when FeePool alone is redeployed', () => {
+							beforeEach(redeployFeePeriodOnly);
+
+							describe('when new fee periods are attempted to be imported', () => {
+								it('fails as the most recent period is older than 1week', done => {
+									commands
+										.importFeePeriods({
+											sourceContractAddress: oldFeePoolAddress,
+											deploymentPath,
+											network,
+											privateKey: accounts.deployer.private,
+											yes: true,
+										})
+										.then(() => done('Should not succeed.'))
+										.catch(() => done());
+								});
+							});
+						});
+					});
+				});
+			});
+
 			describe('when ExchangeRates has prices SNX $0.30 and all synths $1', () => {
-				before(async () => {
+				beforeEach(async () => {
 					// make sure exchange rates has a price
 					const ExchangeRates = new web3.eth.Contract(
 						sources['ExchangeRates'].abi,
@@ -174,7 +377,7 @@ describe('publish scripts', function() {
 				});
 
 				describe('when transferring 100k SNX to user1', () => {
-					before(async () => {
+					beforeEach(async () => {
 						// transfer SNX to first account
 						await Synthetix.methods
 							.transfer(accounts.first.public, web3.utils.toWei('100000'))
@@ -184,130 +387,98 @@ describe('publish scripts', function() {
 								gasPrice,
 							});
 					});
-					describe('continue on integration test', () => {
-						describe('when user1 issues all possible sUSD', () => {
-							before(async () => {
-								await Synthetix.methods.issueMaxSynths(sUSD).send({
+
+					describe('when user1 issues all possible sUSD', () => {
+						beforeEach(async () => {
+							await Synthetix.methods.issueMaxSynths(sUSD).send({
+								from: accounts.first.public,
+								gas: gasLimit,
+								gasPrice,
+							});
+						});
+						it('then the sUSD balanced must be 100k * 0.3 * 0.2 (default SynthetixState.issuanceRatio) = 6000', async () => {
+							const balance = await sUSDContract.methods.balanceOf(accounts.first.public).call();
+							assert.strictEqual(web3.utils.fromWei(balance), '6000', 'Balance should match');
+						});
+						describe('when user1 exchange 1000 sUSD for sBTC', () => {
+							let sBTCBalanceAfterExchange;
+							beforeEach(async () => {
+								await Synthetix.methods.exchange(sUSD, web3.utils.toWei('1000'), sBTC).send({
 									from: accounts.first.public,
 									gas: gasLimit,
 									gasPrice,
 								});
 							});
-							it('then the sUSD balanced must be 100k * 0.3 * 0.2 (default SynthetixState.issuanceRatio) = 6000', async () => {
+							it('then their sUSD balance is 5000', async () => {
 								const balance = await sUSDContract.methods.balanceOf(accounts.first.public).call();
-								assert.strictEqual(web3.utils.fromWei(balance), '6000', 'Balance should match');
+								assert.strictEqual(web3.utils.fromWei(balance), '5000', 'Balance should match');
 							});
-							describe('when user1 exchange 1000 sUSD for sBTC', () => {
-								let sBTCBalanceAfterExchange;
-								before(async () => {
-									await Synthetix.methods.exchange(sUSD, web3.utils.toWei('1000'), sBTC).send({
+							it('and their sBTC balance is 1000 - the fee', async () => {
+								sBTCBalanceAfterExchange = await sBTCContract.methods
+									.balanceOf(accounts.first.public)
+									.call();
+								const expected = await FeePool.methods
+									.amountReceivedFromExchange(web3.utils.toWei('1000'))
+									.call();
+								assert.strictEqual(
+									web3.utils.fromWei(sBTCBalanceAfterExchange),
+									web3.utils.fromWei(expected),
+									'Balance should match'
+								);
+							});
+							describe('when user1 burns 10 sUSD', () => {
+								beforeEach(async () => {
+									// burn
+									await Synthetix.methods.burnSynths(sUSD, web3.utils.toWei('10')).send({
 										from: accounts.first.public,
 										gas: gasLimit,
 										gasPrice,
 									});
 								});
-								it('then their sUSD balance is 5000', async () => {
+								it('then their sUSD balance is 4990', async () => {
 									const balance = await sUSDContract.methods
 										.balanceOf(accounts.first.public)
 										.call();
-									assert.strictEqual(web3.utils.fromWei(balance), '5000', 'Balance should match');
+									assert.strictEqual(web3.utils.fromWei(balance), '4990', 'Balance should match');
 								});
-								it('and their sBTC balance is 1000 - the fee', async () => {
-									sBTCBalanceAfterExchange = await sBTCContract.methods
-										.balanceOf(accounts.first.public)
-										.call();
-									const expected = await FeePool.methods
-										.amountReceivedFromExchange(web3.utils.toWei('1000'))
-										.call();
-									assert.strictEqual(
-										web3.utils.fromWei(sBTCBalanceAfterExchange),
-										web3.utils.fromWei(expected),
-										'Balance should match'
-									);
-								});
-								describe('when user1 burns 10 sUSD', () => {
-									before(async () => {
-										// burn
-										await Synthetix.methods.burnSynths(sUSD, web3.utils.toWei('10')).send({
-											from: accounts.first.public,
-											gas: gasLimit,
-											gasPrice,
+
+								describe('when deployer replaces sBTC with PurgeableSynth', () => {
+									beforeEach(async () => {
+										await commands.replaceSynths({
+											network,
+											deploymentPath,
+											yes: true,
+											privateKey: accounts.deployer.private,
+											subclass: 'PurgeableSynth',
+											synthsToReplace: ['sBTC'],
 										});
 									});
-									it('then their sUSD balance is 4990', async () => {
-										const balance = await sUSDContract.methods
-											.balanceOf(accounts.first.public)
-											.call();
-										assert.strictEqual(web3.utils.fromWei(balance), '4990', 'Balance should match');
-									});
-
-									describe('when deployer replaces sBTC with PurgeableSynth', () => {
-										before(async () => {
-											await commands.replaceSynths({
+									describe('and deployer invokes purge', () => {
+										beforeEach(async () => {
+											await commands.purgeSynths({
 												network,
 												deploymentPath,
 												yes: true,
 												privateKey: accounts.deployer.private,
-												subclass: 'PurgeableSynth',
-												synthsToReplace: ['sBTC'],
+												addresses: [accounts.first.public],
+												synthsToPurge: ['sBTC'],
 											});
 										});
-										describe('and deployer invokes purge', () => {
-											before(async () => {
-												await commands.purgeSynths({
-													network,
-													deploymentPath,
-													yes: true,
-													privateKey: accounts.deployer.private,
-													addresses: [accounts.first.public],
-													synthsToPurge: ['sBTC'],
-												});
-											});
-											it('then their sUSD balance is 4990 + sBTCBalanceAfterExchange', async () => {
-												const balance = await sUSDContract.methods
-													.balanceOf(accounts.first.public)
-													.call();
-												assert.strictEqual(
-													web3.utils.fromWei(balance),
-													(4990 + +web3.utils.fromWei(sBTCBalanceAfterExchange)).toString(),
-													'Balance should match'
-												);
-											});
-											it('and their sBTC balance is 0', async () => {
-												const balance = await sBTCContract.methods
-													.balanceOf(accounts.first.public)
-													.call();
-												assert.strictEqual(
-													web3.utils.fromWei(balance),
-													'0',
-													'Balance should match'
-												);
-											});
-											describe('and deployer invokes remove of sBTC', () => {
-												before(async () => {
-													await commands.removeSynths({
-														network,
-														deploymentPath,
-														yes: true,
-														privateKey: accounts.deployer.private,
-														synthsToRemove: ['sBTC'],
-													});
-												});
-
-												describe('when user tries to exchange into sBTC', () => {
-													it('then it fails', done => {
-														Synthetix.methods
-															.exchange(sUSD, web3.utils.toWei('1000'), sBTC)
-															.send({
-																from: accounts.first.public,
-																gas: gasLimit,
-																gasPrice,
-															})
-															.then(() => done('Should not have complete'))
-															.catch(() => done());
-													});
-												});
-											});
+										it('then their sUSD balance is 4990 + sBTCBalanceAfterExchange', async () => {
+											const balance = await sUSDContract.methods
+												.balanceOf(accounts.first.public)
+												.call();
+											assert.strictEqual(
+												web3.utils.fromWei(balance),
+												(4990 + +web3.utils.fromWei(sBTCBalanceAfterExchange)).toString(),
+												'Balance should match'
+											);
+										});
+										it('and their sBTC balance is 0', async () => {
+											const balance = await sBTCContract.methods
+												.balanceOf(accounts.first.public)
+												.call();
+											assert.strictEqual(web3.utils.fromWei(balance), '0', 'Balance should match');
 										});
 									});
 								});
@@ -319,7 +490,7 @@ describe('publish scripts', function() {
 						describe('when a new inverted synth iABC is added to the list', () => {
 							describe('and the inverted synth iMKR has its parameters shifted', () => {
 								describe('and the inverted synth iCEX has its parameters shifted as well', () => {
-									before(async () => {
+									beforeEach(async () => {
 										// read current config file version (if something has been removed,
 										// we don't want to include it here)
 										const currentSynthsFile = JSON.parse(fs.readFileSync(synthsJSONPath));
@@ -359,7 +530,7 @@ describe('publish scripts', function() {
 									});
 
 									describe('when a user has issued into iCEX', () => {
-										before(async () => {
+										beforeEach(async () => {
 											await Synthetix.methods.issueMaxSynths(toBytes32('iCEX')).send({
 												from: accounts.first.public,
 												gas: gasLimit,
@@ -369,10 +540,11 @@ describe('publish scripts', function() {
 
 										describe('when ExchangeRates alone is redeployed', () => {
 											let ExchangeRates;
-											before(async function() {
+											let currentConfigFile;
+											beforeEach(async function() {
 												// read current config file version (if something has been removed,
 												// we don't want to include it here)
-												const currentConfigFile = JSON.parse(fs.readFileSync(configJSONPath));
+												currentConfigFile = JSON.parse(fs.readFileSync(configJSONPath));
 												const configForExrates = Object.keys(currentConfigFile).reduce(
 													(memo, cur) => {
 														memo[cur] = { deploy: cur === 'ExchangeRates' };
@@ -398,8 +570,6 @@ describe('publish scripts', function() {
 													snx.getTarget({ network, contract: 'ExchangeRates' }).address
 												);
 											});
-
-											after(resetConfigAndSynthFiles);
 
 											// Test the properties of an inverted synth
 											const testInvertedSynth = async ({
@@ -533,6 +703,39 @@ describe('publish scripts', function() {
 												await testInvertedSynth({
 													currencyKey: 'iBNB',
 													shouldBeFrozen: false,
+												});
+											});
+
+											// Note: this is destructive as it removes the sBTC contracts and thus future calls to deploy will fail
+											// Either have this at the end of the entire test script or manage configuration of deploys by passing in
+											// files to update rather than a file.
+											describe('when deployer invokes remove of iABC', () => {
+												beforeEach(async () => {
+													await commands.removeSynths({
+														network,
+														deploymentPath,
+														yes: true,
+														privateKey: accounts.deployer.private,
+														synthsToRemove: ['iABC'],
+													});
+												});
+
+												describe('when user tries to exchange into iABC', () => {
+													it('then it fails', done => {
+														Synthetix.methods
+															.exchange(
+																toBytes32('iCEX'),
+																web3.utils.toWei('1000'),
+																toBytes32('iABC')
+															)
+															.send({
+																from: accounts.first.public,
+																gas: gasLimit,
+																gasPrice,
+															})
+															.then(() => done('Should not have complete'))
+															.catch(() => done());
+													});
 												});
 											});
 										});
