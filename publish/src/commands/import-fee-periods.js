@@ -20,7 +20,6 @@ const {
 	loadAndCheckRequiredSources,
 	loadConnections,
 	confirmAction,
-	// performTransactionalStep,
 	stringify,
 } = require('../util');
 
@@ -41,6 +40,7 @@ const importFeePeriods = async ({
 	sourceContractAddress,
 	privateKey,
 	yes,
+	override,
 }) => {
 	ensureNetwork(network);
 	ensureDeploymentPath(deploymentPath);
@@ -113,20 +113,26 @@ const importFeePeriods = async ({
 	}
 
 	// Check target does not have existing periods
-	for (let i = 0; i <= feePeriodLength - 1; i++) {
-		const period = await targetContract.methods.recentFeePeriods(i).call();
-		// ignore any initial entry where feePeriodId is 1 as this is created by the FeePool constructor
-		if (period.feePeriodId !== '1' && period.startTime !== '0') {
-			throw Error(
-				`The new target FeePool already has imported fee periods (one or more entries has ` +
-					`startTime as 0. Please check to make sure you are using the latest FeePool ` +
-					`(this should be the most recently deployed). Given: ${etherscanLinkPrefix}/address/${targetContractAddress}`
-			);
+	if (!override) {
+		for (let i = 0; i <= feePeriodLength - 1; i++) {
+			const period = await targetContract.methods.recentFeePeriods(i).call();
+			// ignore any initial entry where feePeriodId is 1 as this is created by the FeePool constructor
+			if (period.feePeriodId !== '1' && period.startTime !== '0') {
+				throw Error(
+					`The new target FeePool already has imported fee periods (one or more entries has ` +
+						`startTime as 0. Please check to make sure you are using the latest FeePool ` +
+						`(this should be the most recently deployed). Given: ${etherscanLinkPrefix}/address/${targetContractAddress}`
+				);
+			}
 		}
+	} else {
+		console.log(
+			gray('Warning: Setting target to override - ignoring existing FeePool periods in target!')
+		);
 	}
 
-	console.log('The fee periods to import over are as follows:');
-	console.log(stringify(feePeriods));
+	console.log(gray('The fee periods to import over are as follows:'));
+	console.log(gray(stringify(feePeriods)));
 
 	console.log(gray(`Gas Price: ${gasPrice} gwei`));
 
@@ -149,26 +155,33 @@ const importFeePeriods = async ({
 				return;
 			}
 		}
-		const { hash } = await targetContract.methods
-			.importFeePeriod(
-				index,
-				feePeriod.feePeriodId,
-				feePeriod.startingDebtIndex,
-				feePeriod.startTime,
-				feePeriod.feesToDistribute,
-				feePeriod.feesClaimed,
-				feePeriod.rewardsToDistribute,
-				feePeriod.rewardsClaimed
-			)
-			.send({
-				from: account,
-				gasLimit: Number(gasLimit),
-				gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
-			});
+
+		const importArgs = [
+			index,
+			feePeriod.feePeriodId,
+			feePeriod.startingDebtIndex,
+			feePeriod.startTime,
+			feePeriod.feesToDistribute,
+			feePeriod.feesClaimed,
+			feePeriod.rewardsToDistribute,
+			feePeriod.rewardsClaimed,
+		];
+		console.log(yellow(`Attempting action FeePool.importFeePeriod(${importArgs})`));
+		const { transactionHash } = await targetContract.methods.importFeePeriod(...importArgs).send({
+			from: account,
+			gasLimit: Number(gasLimit),
+			gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
+		});
 		index++;
 
-		console.log(green(`Successfully emitted importFeePeriod with transaction: ${hash}`));
+		console.log(
+			green(
+				`Successfully emitted importFeePeriod with transaction: ${etherscanLinkPrefix}/tx/${transactionHash}`
+			)
+		);
 	}
+
+	console.log(gray('Action complete.'));
 };
 
 module.exports = {
@@ -194,6 +207,11 @@ module.exports = {
 				'-v, --private-key [value]',
 				'The private key to deploy with (only works in local mode, otherwise set in .env).'
 			)
+			.option(
+				'-o, --override',
+				'Override fee periods in target - use when resuming an import process that failed or was cancelled partway through'
+			)
+
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 
 			.action(async (...args) => {
