@@ -230,6 +230,10 @@ const deploy = async ({
 		}
 	}
 
+	const newSynthsToAdd = synths
+		.filter(({ name }) => !config[`Synth${name}`])
+		.map(({ name }) => name);
+
 	parameterNotice({
 		Network: network,
 		'Gas price to use': `${gasPrice} GWEI`,
@@ -244,7 +248,9 @@ const deploy = async ({
 			(latestSolTimestamp > earliestCompiledTimestamp
 				? yellow(' ⚠⚠⚠ this is later than the last build! Is this intentional?')
 				: green(' ✅')),
-		'Add any new synths found?': addNewSynths ? green('✅ YES') : yellow('⚠ NO'),
+		'Add any new synths found?': addNewSynths
+			? green('✅ YES\n\t\t\t\t') + newSynthsToAdd.join(', ')
+			: yellow('⚠ NO'),
 		'Deployer account:': account,
 		'Synthetix totalSupply': `${Math.round(w3utils.fromWei(currentSynthetixSupply) / 1e6)}m`,
 		'FeePool exchangeFeeRate': `${w3utils.fromWei(currentExchangeFee)}`,
