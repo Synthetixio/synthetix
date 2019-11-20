@@ -146,12 +146,12 @@ program
 			});
 			console.log(green(`Success. ${etherscanLinkPrefix}/tx/${txn0Hash}`));
 
-			// Note: we are using numbers in WEI not ether (i.e. not with 18 decimals),
+			// Note: we are using numbers in WEI to 1e-13 not ether (i.e. not with 18 decimals),
 			// so that if a test fails we only lose minor amounts of SNX and sUSD (i.e. dust). - JJ
 
-			console.log(gray(`Transferring 2000 SNX to user1 (${user1.address})`));
+			console.log(gray(`Transferring 0.000000000002 SNX to user1 (${user1.address})`));
 			const { transactionHash: txn1Hash } = await Synthetix.methods
-				.transfer(user1.address, '2000')
+				.transfer(user1.address, web3.utils.toWei('0.000000000002'))
 				.send({
 					from: owner.address,
 					gas,
@@ -160,8 +160,8 @@ program
 			console.log(green(`Success. ${etherscanLinkPrefix}/tx/${txn1Hash}`));
 
 			// #2 - Mint some sUSD from test account
-			console.log(gray(`Issuing 100 sUSD from (${user1.address}`));
-			const amountToIssue = '100';
+			console.log(gray(`Issuing 0.0000000000001 sUSD from (${user1.address}`));
+			const amountToIssue = web3.utils.toWei('0.0000000000001');
 			const { transactionHash: txn2Hash } = await Synthetix.methods
 				.issueSynths(sUSD, amountToIssue)
 				.send({
@@ -180,8 +180,8 @@ program
 			console.log(gray(`User1 has sUSD balanceOf - ${balance}`));
 
 			// deposit to Depot
-			console.log(gray(`Deposit 60 sUSD to depot from (${user1.address})`));
-			const amountToDeposit = '60';
+			console.log(gray(`Deposit 0.00000000000006 sUSD to depot from (${user1.address})`));
+			const amountToDeposit = web3.utils.toWei('0.00000000000006');
 			const { transactionHash: txn3Hash } = await SynthsUSD.methods
 				.transfer(Depot.options.address, amountToDeposit)
 				.send({
@@ -192,7 +192,7 @@ program
 			console.log(green(`Success. ${etherscanLinkPrefix}/tx/${txn3Hash}`));
 
 			// #4 withdraw deposited synths from Depot
-			console.log(gray(`Withdraw 60 sUSD from Depot for (${user1.address})`));
+			console.log(gray(`Withdraw 0.00000000000006 sUSD from Depot for (${user1.address})`));
 			const { transactionHash: txn4Hash } = await Depot.methods.withdrawMyDepositedSynths().send({
 				from: user1.address,
 				gas,
@@ -206,7 +206,7 @@ program
 
 			// #5 Exchange sUSD to sETH
 			console.log(gray(`Exchange sUSD --> sETH for user - (${user1.address})`));
-			const amountToExchange = '100';
+			const amountToExchange = web3.utils.toWei('0.0000000000001');
 			const { transactionHash: txn5Hash } = await Synthetix.methods
 				.exchange(sUSD, amountToExchange, sETH)
 				.send({
