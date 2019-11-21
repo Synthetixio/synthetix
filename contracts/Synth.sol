@@ -106,7 +106,6 @@ contract Synth is ExternStateToken {
         optionalProxy
         returns (bool)
     {
-        _notFeeAddress(messageSender);
         bytes memory empty;
         return super._internalTransfer(messageSender, to, value, empty);
     }
@@ -119,7 +118,6 @@ contract Synth is ExternStateToken {
         optionalProxy
         returns (bool)
     {
-        _notFeeAddress(messageSender);
         // And send their result off to the destination address
         return super._internalTransfer(messageSender, to, value, data);
     }
@@ -132,10 +130,13 @@ contract Synth is ExternStateToken {
         optionalProxy
         returns (bool)
     {
-        _notFeeAddress(from);
-        // Reduce the allowance by the amount we're transferring.
-        // The safeSub call will handle an insufficient allowance.
-        tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
+        require(from != 0xfeefeefeefeefeefeefeefeefeefeefeefeefeef, "The fee address is not allowed");
+        // Skip allowance update in case of infinite allowance
+        if (tokenState.allowance(from, messageSender) != uint(-1)) {
+            // Reduce the allowance by the amount we're transferring.
+            // The safeSub call will handle an insufficient allowance.
+            tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
+        }
 
         bytes memory empty;
         return super._internalTransfer(from, to, value, empty);
@@ -149,10 +150,14 @@ contract Synth is ExternStateToken {
         optionalProxy
         returns (bool)
     {
-        _notFeeAddress(from);
-        // Reduce the allowance by the amount we're transferring.
-        // The safeSub call will handle an insufficient allowance.
-        tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
+        require(from != 0xfeefeefeefeefeefeefeefeefeefeefeefeefeef, "The fee address is not allowed");
+
+        // Skip allowance update in case of infinite allowance
+        if (tokenState.allowance(from, messageSender) != uint(-1)) {
+            // Reduce the allowance by the amount we're transferring.
+            // The safeSub call will handle an insufficient allowance.
+            tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
+        }
 
         return super._internalTransfer(from, to, value, data);
     }
@@ -195,14 +200,6 @@ contract Synth is ExternStateToken {
     {
         bytes memory empty;
         callTokenFallbackIfNeeded(sender, recipient, amount, empty);
-    }
-
-
-    function _notFeeAddress(address account)
-        internal
-        view
-    {
-        require(account != IFeePool(feePoolProxy).FEE_ADDRESS(), "The fee address is not allowed");
     }
 
     /* ========== MODIFIERS ========== */

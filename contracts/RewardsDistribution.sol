@@ -167,6 +167,11 @@ contract RewardsDistribution is Owned {
             distributions[i] = distributions[i+1];
         }
         distributions.length--;
+
+        // Since this function must shift all later entries down to fill the 
+        // gap from the one it removed, it could in principle consume an 
+        // unbounded amount of gas. However, the number of entries will 
+        // presumably always be very low.
     }
 
      /**

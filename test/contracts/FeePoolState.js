@@ -2,10 +2,9 @@ const FeePool = artifacts.require('FeePool');
 const FeePoolState = artifacts.require('FeePoolState');
 const ExchangeRates = artifacts.require('ExchangeRates');
 
-const { getWeb3 } = require('../utils/web3Helper');
+const { toBytes32 } = require('../../.');
 
 const { currentTime, toPreciseUnit, toUnit } = require('../utils/testUtils');
-const web3 = getWeb3();
 
 contract('FeePoolState', async accounts => {
 	const [
@@ -21,7 +20,7 @@ contract('FeePoolState', async accounts => {
 		account6,
 	] = accounts;
 
-	const [sEUR, sAUD, sBTC, SNX] = ['sEUR', 'sAUD', 'sBTC', 'SNX'].map(web3.utils.asciiToHex);
+	const [sEUR, sAUD, sBTC, SNX] = ['sEUR', 'sAUD', 'sBTC', 'SNX'].map(toBytes32);
 
 	let feePool, feePoolState, exchangeRates;
 

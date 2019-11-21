@@ -113,6 +113,7 @@ const build = async ({ buildPath = DEFAULTS.buildPath, showWarnings } = {}) => {
 
 module.exports = {
 	build,
+	DEFAULTS,
 	cmd: program =>
 		program
 			.command('build')
