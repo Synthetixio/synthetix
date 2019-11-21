@@ -358,6 +358,20 @@ const deploy = async ({
 		name: 'ExchangeRates',
 		args: [account, oracleExrates, [toBytes32('SNX')], [currentSynthetixPrice]],
 	});
+
+	// Set exchangeRates.stalePeriod to 1 sec if mainnet
+	if (exchangeRates && config['ExchangeRates'].deploy && network === 'mainnet') {
+		const rateStalePeriod = 1;
+		await runStep({
+			contract: 'ExchangeRates',
+			target: exchangeRates,
+			read: 'rateStalePeriod',
+			expected: input => Number(input.toString()) === rateStalePeriod,
+			write: 'setRateStalePeriod',
+			writeArg: rateStalePeriod,
+		});
+	}
+
 	const exchangeRatesAddress = exchangeRates ? exchangeRates.options.address : '';
 
 	const rewardEscrow = await deployContract({
