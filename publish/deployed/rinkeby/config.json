@@ -262,5 +262,77 @@
 	},
 	"SynthiCEX": {
 		"deploy": false
+	},
+	"TokenStatesXRP": {
+		"deploy": false
+	},
+	"ProxysXRP": {
+		"deploy": false
+	},
+	"SynthsXRP": {
+		"deploy": false
+	},
+	"TokenStatesLTC": {
+		"deploy": false
+	},
+	"ProxysLTC": {
+		"deploy": false
+	},
+	"SynthsLTC": {
+		"deploy": false
+	},
+	"TokenStatesLINK": {
+		"deploy": false
+	},
+	"ProxysLINK": {
+		"deploy": false
+	},
+	"SynthsLINK": {
+		"deploy": false
+	},
+	"TokenStatesDEFI": {
+		"deploy": false
+	},
+	"ProxysDEFI": {
+		"deploy": false
+	},
+	"SynthsDEFI": {
+		"deploy": false
+	},
+	"TokenStateiXRP": {
+		"deploy": false
+	},
+	"ProxyiXRP": {
+		"deploy": false
+	},
+	"SynthiXRP": {
+		"deploy": false
+	},
+	"TokenStateiLINK": {
+		"deploy": false
+	},
+	"ProxyiLINK": {
+		"deploy": false
+	},
+	"SynthiLINK": {
+		"deploy": false
+	},
+	"TokenStateiLTC": {
+		"deploy": false
+	},
+	"ProxyiLTC": {
+		"deploy": false
+	},
+	"SynthiLTC": {
+		"deploy": false
+	},
+	"TokenStateiDEFI": {
+		"deploy": false
+	},
+	"ProxyiDEFI": {
+		"deploy": false
+	},
+	"SynthiDEFI": {
+		"deploy": false
 	}
 }

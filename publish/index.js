@@ -7,6 +7,7 @@ require('dotenv').config();
 
 require('./src/commands/build').cmd(program);
 require('./src/commands/deploy').cmd(program);
+require('./src/commands/import-fee-periods').cmd(program);
 require('./src/commands/generate-token-list').cmd(program);
 require('./src/commands/nominate').cmd(program);
 require('./src/commands/owner').cmd(program);
