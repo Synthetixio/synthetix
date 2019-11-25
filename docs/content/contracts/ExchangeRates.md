@@ -8,7 +8,7 @@ In particular, the behaviour of [inverse synths](#rateorinverted) is defined her
 In addition, the ExchangeRates contract determines the price of the XDR, which is recomputed after each new batch of prices is received from the oracle. The XDR price is the sum of the prices of the currencies in a basket (sUSD, sAUD, sCHF, sEUR, sGBP), as opposed to the [IMF's special drawing rights](https://en.wikipedia.org/wiki/Special_drawing_rights) which use a weighted average.
 
 This contract interacts with the oracle's frontrunning protection, which is partially described in [SIP-6](https://sips.synthetix.io/sips/sip-6) and [SIP-7](https://sips.synthetix.io/sips/sip-7).
-In particular, before each price update, the oracle calls [`setPriceUpdateLock`](#setpriceupdatelock).
+
 This does not turn off any functionality in the exchange rate contract, but is used by [`Synthetix`](Synthetix.md) to disable [currency exchanges](Synthetix.md#_internalexchange) while prices are being updated to protect against oracle front running. The lock is released when [rate updates have completed](#internalupdaterates).
 
 **Source:** [ExchangeRates.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/ExchangeRates.sol)
@@ -107,14 +107,6 @@ The duration after which a rate will be considered out of date. Synth exchange a
 Initialised to $3$ hours.
 
 **Type:** `uint public`
-
----
-
-### `priceUpdateLock`
-
-An oracle front running protection mutex, set by [`setPriceUpdateLock`](#setpriceupdatelock) and unset by [`internalUpdateRates`](#internalupdaterates).
-
-**Type:** `bool public`
 
 ---
 
@@ -269,7 +261,7 @@ Deletes a currency's price and its update time from the ExchangeRates contract.
     **Signature**
 
     `deleteRate(bytes32 currencyKey) external`
-    
+
     **Modifiers**
 
     * [`onlyOracle`](#onlyoracle)
@@ -322,21 +314,6 @@ Allows the owner to set the time after which rates will be considered stale.
 
 ---
 
-### `setPriceUpdateLock`
-
-Allows the oracle to disable Synth exchange functionality before it updates its prices.
-
-??? example "Details"
-    **Signature**
-
-    `setPriceUpdateLock(uint _priceUpdateLock) external`
-
-    **Modifiers**
-
-    * [`onlyOracle`](#onlyoracle)
-
----
-
 ### `setInversePricing`
 
 Allows the owner to set up an inverse index for a particular currency. See [`rateOrInverted`](#rateorinverted) for computation details. New inverse indexes begin unfrozen.
@@ -344,7 +321,7 @@ Allows the owner to set up an inverse index for a particular currency. See [`rat
 ??? example "Details"
     **Signature**
 
-    `setInversePricing(bytes32 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit) external`
+    `setInversePricing(bytes32 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit, bool freeze, bool freezeAtUpperLimit) external`
 
     **Modifiers**
 
@@ -358,7 +335,7 @@ Allows the owner to set up an inverse index for a particular currency. See [`rat
     * `upperLimit` must be less than twice `entryPoint`.
     * `lowerLimit` must be less than `entryPoint`.
 
-    !!! info 
+    !!! info
         Together these entail that $0 \lt \text{lowerLimit} \lt \text{entryPoint} \lt \text{upperLimit} \lt 2 \times \text{entryPoint}$.
 
         Observe that the first precondition here is redundant, as two of the others imply it.

@@ -50,7 +50,7 @@
 
 ??? example "Details"
     * [`Proxy`](Proxy.md): The Synthetix contract, which is [`Proxyable`](Proxyable.md), exists behind a `CALL`-style proxy for upgradeability.
-    * [`Synth`](Synth.md): Synthetix manages the supply of synths. It keeps track of which ones exist, and they are all issued and burnt from the Synthetix contract. The Synthetix contract is also responsible for exchange between different synth flavours. 
+    * [`Synth`](Synth.md): Synthetix manages the supply of synths. It keeps track of which ones exist, and they are all issued and burnt from the Synthetix contract. The Synthetix contract is also responsible for exchange between different synth flavours.
     * [`FeePool`](FeePool.md): The Synthetix contract remits exchange fees as XDRs to the fee pool, and also uses it to keep track of historical issuance records for each issuer.
     * [`SynthetixEscrow`](SynthetixEscrow.md): The escrow contract keeps track of SNX owed to participants in the initial token sale, and releases them according to specified vesting schedules.
     * [`RewardEscrow`](RewardEscrow.md): This is similar to the SynthetixEscrow contract, but it is where the SNX inflationary supply is kept before it is released to Synth issuers.
@@ -462,7 +462,7 @@ This is only used by [`PurgeableSynth.purge`](#PurgeableSynth.md#purge) in order
     * [`Proxyable.optionalProxy`](Proxyable.md#optionalproxy) through [`_onlySynth`](#_onlysynth)
 
     **Preconditions**
-    
+
     * The message sender must be a synth ([`_onlySynth`](#_onlysynth)).
     * The source and destination currencies must be distinct.
     * The exchanged quantity must be nonzero.
@@ -477,7 +477,7 @@ Conversion is performed by burning the specified quantity of the source currency
 
 If one exists, the ERC223 token fallback function is triggered to notify the destination address of the transfer.
 
-This function can be [disabled](#setexchangeenabled) by the owner, and it will not operate if the oracle is [currently updating synth exchange rates](ExchangeRates.md#priceupdatelock).
+This function can be [disabled](#setexchangeenabled) by the owner.
 
 ??? example "Details"
     **Signature**
@@ -491,7 +491,6 @@ This function can be [disabled](#setexchangeenabled) by the owner, and it will n
     **Preconditions**
 
     * [`exchangeEnabled`](#exchangeenabled) must be true.
-    * The exchange rate [price update lock](ExchangeRates.md#priceupdatelock) must not be active.
     * The destination address must not be the zero address.
     * The destination address must not be the Synthetix contract itself.
     * The destination address must not be the Synthetix proxy.
@@ -552,7 +551,7 @@ This function performs the same operation as [`_removeFromDebtRegister`](#_remov
     $$
     \Delta_\text{last} \times \delta
     $$
-    
+
     Hence each element of the ledger incorporates the value of the previous entry, noting that $\Delta_0 = 1$.
 
     This gives us a recurrence defining the $n^{th}$ debt ledger entry $\Delta_n$, corresponding to the $n^{th}$ issuance or burning event.
@@ -758,7 +757,7 @@ If prices fluctuate then the account's issued synth debt may exceed its current 
 ??? example "Details"
     **Signature**
 
-    `remainingIssuableSynths(address issuer, bytes32 currencyKey) public view returns (uint)` 
+    `remainingIssuableSynths(address issuer, bytes32 currencyKey) public view returns (uint)`
 
 ---
 

@@ -11,7 +11,9 @@ repo_url: 'https://github.com/synthetixio/synthetix'
 # Setting `edit_uri` to an empty string disables the edit button, which points to the wrong page.
 # If at some point this documentation is moved into the core synthetix repository, then this can be
 # removed.
-edit_uri: '' 
+edit_uri: ''
+
+docs_dir: 'content'
 
 # This copyright notice will be rendered in the footer.
 copyright: '<a href=https://github.com/Synthetixio/synthetix/blob/master/LICENSE>Copyright &copy Synthetix 2018 - 2019</a>'
@@ -97,7 +99,7 @@ theme:
     tabs: true
 
 # Extension settings.
-# In addition to the standard extensions, this also requires the PyMdown Extensions by facelessuser: https://github.com/facelessuser/pymdown-extensions 
+# In addition to the standard extensions, this also requires the PyMdown Extensions by facelessuser: https://github.com/facelessuser/pymdown-extensions
 markdown_extensions:
   - toc:
       permalink: True # Generates permanent links for each page section.

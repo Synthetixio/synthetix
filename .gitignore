@@ -24,6 +24,4 @@ keys.json
 # vscode
 .vscode/launch.json
 
-# Ignore MkDocs build directory
-site/
 
