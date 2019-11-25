@@ -1,14 +1,5 @@
 /*
 -----------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-
-file:       ExchangeRates.sol
-version:    1.0
-author:     Kevin Brown
-date:       2018-09-12
-
------------------------------------------------------------------
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
@@ -40,11 +31,13 @@ contract ExchangeRates is SelfDestructible {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    // Exchange rates stored by currency code, e.g. 'SNX', or 'sUSD'
-    mapping(bytes32 => uint) public rates;
+    struct RateAndUpdatedTime {
+        uint216 rate;
+        uint40 time;
+    }
 
-    // Update times stored by currency code, e.g. 'SNX', or 'sUSD'
-    mapping(bytes32 => uint) public lastRateUpdateTimes;
+    // Exchange rates and update times stored by currency code, e.g. 'SNX', or 'sUSD'
+    mapping(bytes32 => RateAndUpdatedTime) private _rates;
 
     // The address of the oracle which pushes rate updates to this contract
     address public oracle;
@@ -55,13 +48,14 @@ contract ExchangeRates is SelfDestructible {
     // How long will the contract assume the rate of any asset is correct
     uint public rateStalePeriod = 3 hours;
 
-    // Set by the oracle when its about to lock exchanges when it sends a price update
-    bool public priceUpdateLock = false;
 
     // Each participating currency in the XDR basket is represented as a currency key with
     // equal weighting.
     // There are 5 participating currencies, so we'll declare that clearly.
     bytes32[5] public xdrParticipants;
+
+    // A conveience mapping for checking if a rate is a XDR participant
+    mapping(bytes32 => bool) public isXDRParticipant;
 
     // For inverted prices, keep a mapping of their entry, limits and frozen status
     struct InversePricing {
@@ -101,8 +95,7 @@ contract ExchangeRates is SelfDestructible {
         oracle = _oracle;
 
         // The sUSD rate is always 1 and is never stale.
-        rates["sUSD"] = SafeDecimalMath.unit();
-        lastRateUpdateTimes["sUSD"] = now;
+        _setRate("sUSD", SafeDecimalMath.unit(), now);
 
         // These are the currencies that make up the XDR basket.
         // These are hard coded because:
@@ -119,7 +112,29 @@ contract ExchangeRates is SelfDestructible {
             bytes32("sGBP")
         ];
 
+        // Mapping the XDR participants is cheaper than looping the xdrParticipants array to check if they exist
+        isXDRParticipant[bytes32("sUSD")] = true;
+        isXDRParticipant[bytes32("sAUD")] = true;
+        isXDRParticipant[bytes32("sCHF")] = true;
+        isXDRParticipant[bytes32("sEUR")] = true;
+        isXDRParticipant[bytes32("sGBP")] = true;
+
         internalUpdateRates(_currencyKeys, _newRates, now);
+    }
+
+    function rates(bytes32 code) public view returns(uint256) {
+        return uint256(_rates[code].rate);
+    }
+
+    function lastRateUpdateTimes(bytes32 code) public view returns(uint256) {
+        return uint256(_rates[code].time);
+    }
+
+    function _setRate(bytes32 code, uint256 rate, uint256 time) internal {
+        _rates[code] = RateAndUpdatedTime({
+            rate: uint216(rate),
+            time: uint40(time)
+        });
     }
 
     /* ========== SETTERS ========== */
@@ -155,34 +170,39 @@ contract ExchangeRates is SelfDestructible {
         require(currencyKeys.length == newRates.length, "Currency key array length must match rates array length.");
         require(timeSent < (now + ORACLE_FUTURE_LIMIT), "Time is too far into the future");
 
+        bool recomputeXDRRate = false;
+
         // Loop through each key and perform update.
         for (uint i = 0; i < currencyKeys.length; i++) {
+            bytes32 currencyKey = currencyKeys[i];
+
             // Should not set any rate to zero ever, as no asset will ever be
             // truely worthless and still valid. In this scenario, we should
             // delete the rate and remove it from the system.
             require(newRates[i] != 0, "Zero is not a valid rate, please call deleteRate instead.");
-            require(currencyKeys[i] != "sUSD", "Rate of sUSD cannot be updated, it's always UNIT.");
+            require(currencyKey != "sUSD", "Rate of sUSD cannot be updated, it's always UNIT.");
 
             // We should only update the rate if it's at least the same age as the last rate we've got.
-            if (timeSent < lastRateUpdateTimes[currencyKeys[i]]) {
+            if (timeSent < lastRateUpdateTimes(currencyKey)) {
                 continue;
             }
 
-            newRates[i] = rateOrInverted(currencyKeys[i], newRates[i]);
+            newRates[i] = rateOrInverted(currencyKey, newRates[i]);
 
             // Ok, go ahead with the update.
-            rates[currencyKeys[i]] = newRates[i];
-            lastRateUpdateTimes[currencyKeys[i]] = timeSent;
+            _setRate(currencyKey, newRates[i], timeSent);
+
+            // Flag if XDR needs to be recomputed. Note: sUSD is not sent and assumed $1
+            if (!recomputeXDRRate && isXDRParticipant[currencyKey]) {
+                recomputeXDRRate = true;
+            }
         }
 
         emit RatesUpdated(currencyKeys, newRates);
 
-        // Now update our XDR rate.
-        updateXDRRate(timeSent);
-
-        // If locked during a priceupdate then reset it
-        if (priceUpdateLock) {
-            priceUpdateLock = false;
+        if (recomputeXDRRate) {
+            // Now update our XDR rate.
+            updateXDRRate(timeSent);
         }
 
         return true;
@@ -191,6 +211,25 @@ contract ExchangeRates is SelfDestructible {
     /**
      * @notice Internal function to get the inverted rate, if any, and mark an inverted
      *  key as frozen if either limits are reached.
+     *
+     * Inverted rates are ones that take a regular rate, perform a simple calculation (double entryPrice and
+     * subtract the rate) on them and if the result of the calculation is over or under predefined limits, it freezes the
+     * rate at that limit, preventing any future rate updates.
+     *
+     * For example, if we have an inverted rate iBTC with the following parameters set:
+     * - entryPrice of 200
+     * - upperLimit of 300
+     * - lower of 100
+     *
+     * if this function is invoked with params iETH and 184 (or rather 184e18),
+     * then the rate would be: 200 * 2 - 184 = 216. 100 < 216 < 200, so the rate would be 216,
+     * and remain unfrozen.
+     *
+     * If this function is then invoked with params iETH and 301 (or rather 301e18),
+     * then the rate would be: 200 * 2 - 301 = 99. 99 < 100, so the rate would be 100 and the
+     * rate would become frozen, no longer accepting future price updates until the synth is unfrozen
+     * by the owner function: setInversePricing().
+     *
      * @param currencyKey The price key to lookup
      * @param rate The rate for the given price key
      */
@@ -202,7 +241,7 @@ contract ExchangeRates is SelfDestructible {
         }
 
         // set the rate to the current rate initially (if it's frozen, this is what will be returned)
-        uint newInverseRate = rates[currencyKey];
+        uint newInverseRate = rates(currencyKey);
 
         // get the new inverted rate if not frozen
         if (!inverse.frozen) {
@@ -241,14 +280,11 @@ contract ExchangeRates is SelfDestructible {
         uint total = 0;
 
         for (uint i = 0; i < xdrParticipants.length; i++) {
-            total = rates[xdrParticipants[i]].add(total);
+            total = rates(xdrParticipants[i]).add(total);
         }
 
-        // Set the rate
-        rates["XDR"] = total;
-
-        // Record that we updated the XDR rate.
-        lastRateUpdateTimes["XDR"] = timeSent;
+        // Set the rate and update time
+        _setRate("XDR", total, timeSent);
 
         // Emit our updated event separate to the others to save
         // moving data around between arrays.
@@ -256,7 +292,7 @@ contract ExchangeRates is SelfDestructible {
         eventCurrencyCode[0] = "XDR";
 
         uint[] memory eventRate = new uint[](1);
-        eventRate[0] = rates["XDR"];
+        eventRate[0] = rates("XDR");
 
         emit RatesUpdated(eventCurrencyCode, eventRate);
     }
@@ -269,10 +305,9 @@ contract ExchangeRates is SelfDestructible {
         external
         onlyOracle
     {
-        require(rates[currencyKey] > 0, "Rate is zero");
+        require(rates(currencyKey) > 0, "Rate is zero");
 
-        delete rates[currencyKey];
-        delete lastRateUpdateTimes[currencyKey];
+        delete _rates[currencyKey];
 
         emit RateDeleted(currencyKey);
     }
@@ -302,24 +337,22 @@ contract ExchangeRates is SelfDestructible {
     }
 
     /**
-     * @notice Set the the locked state for a priceUpdate call
-     * @param _priceUpdateLock lock boolean flag
-     */
-    function setPriceUpdateLock(bool _priceUpdateLock)
-        external
-        onlyOracle
-    {
-        priceUpdateLock = _priceUpdateLock;
-    }
-
-    /**
-     * @notice Set an inverse price up for the currency key
+     * @notice Set an inverse price up for the currency key.
+     *
+     * An inverse price is one which has an entryPoint, an uppper and a lower limit. Each update, the
+     * rate is calculated as double the entryPrice minus the current rate. If this calculation is
+     * above or below the upper or lower limits respectively, then the rate is frozen, and no more
+     * rate updates will be accepted.
+     *
      * @param currencyKey The currency to update
      * @param entryPoint The entry price point of the inverted price
      * @param upperLimit The upper limit, at or above which the price will be frozen
      * @param lowerLimit The lower limit, at or below which the price will be frozen
+     * @param freeze Whether or not to freeze this rate immediately. Note: no frozen event will be configured
+     * @param freezeAtUpperLimit When the freeze flag is true, this flag indicates whether the rate
+     * to freeze at is the upperLimit or lowerLimit..
      */
-    function setInversePricing(bytes32 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit)
+    function setInversePricing(bytes32 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit, bool freeze, bool freezeAtUpperLimit)
         external onlyOwner
     {
         require(entryPoint > 0, "entryPoint must be above 0");
@@ -335,23 +368,35 @@ contract ExchangeRates is SelfDestructible {
         inversePricing[currencyKey].entryPoint = entryPoint;
         inversePricing[currencyKey].upperLimit = upperLimit;
         inversePricing[currencyKey].lowerLimit = lowerLimit;
-        inversePricing[currencyKey].frozen = false;
+        inversePricing[currencyKey].frozen = freeze;
 
         emit InversePriceConfigured(currencyKey, entryPoint, upperLimit, lowerLimit);
+
+        // When indicating to freeze, we need to know the rate to freeze it at - either upper or lower
+        // this is useful in situations where ExchangeRates is updated and there are existing inverted
+        // rates already frozen in the current contract that need persisting across the upgrade
+        if (freeze) {
+            emit InversePriceFrozen(currencyKey);
+
+            _setRate(currencyKey, freezeAtUpperLimit ? upperLimit : lowerLimit, now);
+        }
     }
 
     /**
      * @notice Remove an inverse price for the currency key
      * @param currencyKey The currency to remove inverse pricing for
      */
-    function removeInversePricing(bytes32 currencyKey) external onlyOwner {
+    function removeInversePricing(bytes32 currencyKey) external onlyOwner
+    {
+        require(inversePricing[currencyKey].entryPoint > 0, "No inverted price exists");
+
         inversePricing[currencyKey].entryPoint = 0;
         inversePricing[currencyKey].upperLimit = 0;
         inversePricing[currencyKey].lowerLimit = 0;
         inversePricing[currencyKey].frozen = false;
 
         // now remove inverted key from array
-        for (uint8 i = 0; i < invertedKeys.length; i++) {
+        for (uint i = 0; i < invertedKeys.length; i++) {
             if (invertedKeys[i] == currencyKey) {
                 delete invertedKeys[i];
 
@@ -363,11 +408,12 @@ contract ExchangeRates is SelfDestructible {
                 // Decrease the size of the array by one.
                 invertedKeys.length--;
 
-                break;
+                // Track the event
+                emit InversePriceConfigured(currencyKey, 0, 0, 0);
+
+                return;
             }
         }
-
-        emit InversePriceConfigured(currencyKey, 0, 0, 0);
     }
     /* ========== VIEWS ========== */
 
@@ -400,7 +446,7 @@ contract ExchangeRates is SelfDestructible {
         view
         returns (uint)
     {
-        return rates[currencyKey];
+        return rates(currencyKey);
     }
 
     /**
@@ -411,13 +457,36 @@ contract ExchangeRates is SelfDestructible {
         view
         returns (uint[])
     {
-        uint[] memory _rates = new uint[](currencyKeys.length);
+        uint[] memory _localRates = new uint[](currencyKeys.length);
 
-        for (uint8 i = 0; i < currencyKeys.length; i++) {
-            _rates[i] = rates[currencyKeys[i]];
+        for (uint i = 0; i < currencyKeys.length; i++) {
+            _localRates[i] = rates(currencyKeys[i]);
         }
 
-        return _rates;
+        return _localRates;
+    }
+
+    /**
+     * @notice Retrieve the rates and isAnyStale for a list of currencies
+     */
+    function ratesAndStaleForCurrencies(bytes32[] currencyKeys)
+        public
+        view
+        returns (uint[], bool)
+    {
+        uint[] memory _localRates = new uint[](currencyKeys.length);
+
+        bool anyRateStale = false;
+        uint period = rateStalePeriod;
+        for (uint i = 0; i < currencyKeys.length; i++) {
+            RateAndUpdatedTime memory rateAndUpdateTime = _rates[currencyKeys[i]];
+            _localRates[i] = uint256(rateAndUpdateTime.rate);
+            if (!anyRateStale) {
+                anyRateStale = (currencyKeys[i] != "sUSD" && uint256(rateAndUpdateTime.time).add(period) < now);
+            }
+        }
+
+        return (_localRates, anyRateStale);
     }
 
     /**
@@ -428,7 +497,7 @@ contract ExchangeRates is SelfDestructible {
         view
         returns (uint)
     {
-        return lastRateUpdateTimes[currencyKey];
+        return lastRateUpdateTimes(currencyKey);
     }
 
     /**
@@ -441,8 +510,8 @@ contract ExchangeRates is SelfDestructible {
     {
         uint[] memory lastUpdateTimes = new uint[](currencyKeys.length);
 
-        for (uint8 i = 0; i < currencyKeys.length; i++) {
-            lastUpdateTimes[i] = lastRateUpdateTimes[currencyKeys[i]];
+        for (uint i = 0; i < currencyKeys.length; i++) {
+            lastUpdateTimes[i] = lastRateUpdateTimes(currencyKeys[i]);
         }
 
         return lastUpdateTimes;
@@ -459,7 +528,7 @@ contract ExchangeRates is SelfDestructible {
         // sUSD is a special case and is never stale.
         if (currencyKey == "sUSD") return false;
 
-        return lastRateUpdateTimes[currencyKey].add(rateStalePeriod) < now;
+        return lastRateUpdateTimes(currencyKey).add(rateStalePeriod) < now;
     }
 
     /**
@@ -487,7 +556,7 @@ contract ExchangeRates is SelfDestructible {
 
         while (i < currencyKeys.length) {
             // sUSD is a special case and is never false
-            if (currencyKeys[i] != "sUSD" && lastRateUpdateTimes[currencyKeys[i]].add(rateStalePeriod) < now) {
+            if (currencyKeys[i] != "sUSD" && lastRateUpdateTimes(currencyKeys[i]).add(rateStalePeriod) < now) {
                 return true;
             }
             i += 1;

@@ -16,6 +16,8 @@ const {
 	performTransactionalStep,
 } = require('../util');
 
+const { toBytes32 } = require('../../../.');
+
 const DEFAULTS = {
 	network: 'kovan',
 	gasLimit: 3e6,
@@ -105,9 +107,7 @@ const purgeSynths = async ({
 		const Synth = new web3.eth.Contract(synthABI, synthAddress);
 		const { address: proxyAddress } = deployment.targets[`Proxy${currencyKey}`];
 
-		const currentSynthInSNX = await Synthetix.methods
-			.synths(w3utils.asciiToHex(currencyKey))
-			.call();
+		const currentSynthInSNX = await Synthetix.methods.synths(toBytes32(currencyKey)).call();
 
 		if (synthAddress !== currentSynthInSNX) {
 			console.error(
