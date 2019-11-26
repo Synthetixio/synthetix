@@ -7,11 +7,10 @@ const TokenState = artifacts.require('TokenState');
 const Proxy = artifacts.require('Proxy');
 
 const { currentTime, toUnit, multiplyDecimal, ZERO_ADDRESS } = require('../utils/testUtils');
+const { toBytes32 } = require('../../.');
 
 contract('PurgeableSynth', accounts => {
-	const [sUSD, SNX, , sAUD, iETH] = ['sUSD', 'SNX', 'XDR', 'sAUD', 'iETH'].map(
-		web3.utils.asciiToHex
-	);
+	const [sUSD, SNX, , sAUD, iETH] = ['sUSD', 'SNX', 'XDR', 'sAUD', 'iETH'].map(toBytes32);
 
 	const [
 		deployerAccount,
@@ -79,7 +78,7 @@ contract('PurgeableSynth', accounts => {
 			`Synth ${currencyKey}`,
 			currencyKey,
 			owner,
-			web3.utils.asciiToHex(currencyKey),
+			toBytes32(currencyKey),
 			exchangeRates.address,
 			web3.utils.toWei('0'),
 			{
@@ -116,7 +115,7 @@ contract('PurgeableSynth', accounts => {
 				newExRates = await ExchangeRates.new(
 					owner,
 					oracle,
-					[web3.utils.asciiToHex('SNX')],
+					[toBytes32('SNX')],
 					[web3.utils.toWei('0.2', 'ether')],
 					{ from: deployerAccount }
 				);
@@ -292,6 +291,8 @@ contract('PurgeableSynth', accounts => {
 										toUnit(100),
 										toUnit(150),
 										toUnit(50),
+										false,
+										false,
 										{ from: owner }
 									);
 									await exchangeRates.updateRates([iETH], ['160'].map(toUnit), timestamp, {

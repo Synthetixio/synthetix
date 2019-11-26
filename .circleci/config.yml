@@ -1,8 +1,13 @@
-version: 2
+# Below is the configuration of the CI build
+env_defaults: &env_defaults
+  working_directory: ~/repo
+  docker:
+    - image: circleci/node:10.16
+
+version: 2.1
 jobs:
   prepare:
-    docker:
-      - image: 'circleci/node:10.16.3'
+    <<: *env_defaults
     steps:
       - checkout
       - run:
@@ -10,43 +15,102 @@ jobs:
           command: 'sudo npm install -g npm@latest'
       - restore_cache:
           keys:
-            - 'v1.5-dependencies-{{ checksum "package-lock.json" }}'
-            - v1.5-dependencies-
+            - 'v2-dependencies-{{ checksum "package-lock.json" }}'
+            - v2-dependencies-
       - run: npm install
-      - run: npm run lint
+      - run: npx truffle compile
       - save_cache:
           paths:
             - node_modules
-          key: 'v1.5-dependencies-{{ checksum "package-lock.json" }}'
+          key: 'v2-dependencies-{{ checksum "package-lock.json" }}'
       - persist_to_workspace:
           root: .
           paths:
             - node_modules
-  unit:
-    docker:
-      - image: 'circleci/node:10.16.3'
+            # add compiled contracts to persisted workspace
+            # (note not currentlyw orking due to:
+            # https://github.com/trufflesuite/truffle/issues/2239#issuecomment-552041859)
+            - build
+
+  lint:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run lint
+
+  test-contracts:
+    <<: *env_defaults
     steps:
       - checkout
       - attach_workspace:
           at: .
       - run: npm run test:gas
       - run: npx codechecks
-  int:
-    docker:
-      - image: 'circleci/node:10.16.3'
+
+  test-publish:
+    <<: *env_defaults
     steps:
       - checkout
       - attach_workspace:
           at: .
-      - run: npm run test:int
+      - run: npm run test:publish
+      - run: cat test/publish/test.log
+
+  test-kovan:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run test:testnet --  --yes --network kovan
+
+  test-rinkeby:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run test:testnet --  --yes --network rinkeby
+
+  test-ropsten:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run test:testnet --  --yes --network ropsten
+
 workflows:
   version: 2
   dev:
     jobs:
       - prepare
-      - unit:
+      - lint:
           requires:
             - prepare
-      - int:
+      - test-contracts:
           requires:
-            - unit
+            - prepare
+      - test-publish:
+          requires:
+            - prepare
+      - test-kovan:
+          requires:
+            - prepare
+          filters:
+            branches:
+              only: alpha
+      - test-rinkeby:
+          requires:
+            - prepare
+          filters:
+            branches:
+              only: beta
+      - test-ropsten:
+          requires:
+            - prepare
+          filters:
+            branches:
+              only: release-candidate

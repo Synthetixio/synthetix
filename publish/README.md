@@ -42,7 +42,7 @@ node publish deploy # "--help" for options
   }
   ```
 
-  > Note: the advantage of supplying this folder over just using the network name is that you can have multiple deployments on the same network in different folders
+  > Note: the advantage of supplying this folder over just usi`ng the network name is that you can have multiple deployments on the same network in different folders
 
 - `-g, --gas-price <value>` Gas price in GWEI (default: "1")
 - `-m, --method-call-gas-limit <value>` Method call gas limit (default: 150000)
