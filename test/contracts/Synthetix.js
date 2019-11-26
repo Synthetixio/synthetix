@@ -1,3 +1,5 @@
+const BN = require('bn.js');
+
 const ExchangeRates = artifacts.require('ExchangeRates');
 const Escrow = artifacts.require('SynthetixEscrow');
 const RewardEscrow = artifacts.require('RewardEscrow');
@@ -448,13 +450,11 @@ contract('Synthetix', async accounts => {
 
 		await synthetix.exchange(sUSD, toUnit('20'), sAUD, { from: account2 });
 
-		// Assert that there's 20 sUSD of value in the system
-		assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('20'));
+		// Assert that there's 30 sUSD of value in the system
+		assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('30'));
 
-		const expectedAUDReceived = await feePool.amountReceivedFromExchange(toUnit('200'));
-
-		// And that there's 40 sAUD (minus fees) of value in the system
-		assert.bnEqual(await synthetix.totalIssuedSynths(sAUD), expectedAUDReceived);
+		// And that there's 60 sAUD (minus fees) of value in the system
+		assert.bnEqual(await synthetix.totalIssuedSynths(sAUD), toUnit('60'));
 	});
 
 	it('should return the correct value for the different quantity of total issued synths', async () => {
@@ -464,11 +464,8 @@ contract('Synthetix', async accounts => {
 
 		await exchangeRates.updateRates([sAUD, sEUR, SNX], rates, timestamp, { from: oracle });
 
-		// const snx2usdRate = await exchangeRates.rateForCurrency(SNX);
 		const aud2usdRate = await exchangeRates.rateForCurrency(sAUD);
-		const eur2usdRate = await exchangeRates.rateForCurrency(sEUR);
-		const eur2audRate = divideDecimal(eur2usdRate, aud2usdRate);
-		const usd2audRate = divideDecimal(toUnit('1'), aud2usdRate);
+		// const eur2usdRate = await exchangeRates.rateForCurrency(sEUR);
 
 		// Give some SNX to account1 and account2
 		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('100000'), {
@@ -493,18 +490,9 @@ contract('Synthetix', async accounts => {
 		await synthetix.exchange(sUSD, exchangeAmountToAUD, sAUD, { from: account1 });
 		await synthetix.exchange(sUSD, exchangeAmountToAUD, sAUD, { from: account2 });
 
-		const aud = multiplyDecimal(
-			await feePool.amountReceivedFromExchange(exchangeAmountToAUD.add(exchangeAmountToAUD)),
-			aud2usdRate
-		);
-		const eur = multiplyDecimal(
-			await feePool.amountReceivedFromExchange(exchangeAmountToEUR.add(exchangeAmountToEUR)),
-			eur2usdRate
-		);
-		const totalExpectedIssuedSAUD = aud.add(eur).add(usd);
 		const totalIssuedAUD = await synthetix.totalIssuedSynths(sAUD);
 
-		assert.bnEqual(totalExpectedIssuedSAUD, totalIssuedAUD);
+		assert.bnClose(totalIssuedAUD, divideDecimal(toUnit('200'), aud2usdRate));
 	});
 
 	it('should not allow checking total issued synths when a rate other than the priced currency is stale', async () => {
@@ -1422,28 +1410,28 @@ contract('Synthetix', async accounts => {
 
 	// ****************************************
 
-	it('should not change debt balance if exchange rates change', async () => {
+	it('should not change debt balance % if exchange rates change', async () => {
 		let newAUDRate = toUnit('0.5');
 		let timestamp = await currentTime();
 		await exchangeRates.updateRates([sAUD], [newAUDRate], timestamp, { from: oracle });
 
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('2000'), { from: owner });
-		await synthetix.methods['transfer(address,uint256)'](account2, toUnit('2000'), { from: owner });
+		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('20000'), {
+			from: owner,
+		});
+		await synthetix.methods['transfer(address,uint256)'](account2, toUnit('20000'), {
+			from: owner,
+		});
 
-		const amountIssued = toUnit('30');
-		await synthetix.issueSynths(amountIssued, { from: account1 });
-		await synthetix.issueSynths(amountIssued, { from: account2 });
-		await synthetix.exchnage(sUSD, amountIssued, sUSD, { from: account2 });
+		const amountIssuedAcc1 = toUnit('30');
+		const amountIssuedAcc2 = toUnit('50');
+		await synthetix.issueSynths(amountIssuedAcc1, { from: account1 });
+		await synthetix.issueSynths(amountIssuedAcc2, { from: account2 });
+		await synthetix.exchange(sUSD, amountIssuedAcc2, sAUD, { from: account2 });
 
 		const PRECISE_UNIT = web3.utils.toWei(web3.utils.toBN('1'), 'gether');
 		let totalIssuedSynthsUSD = await synthetix.totalIssuedSynths(sUSD);
-		const account1DebtRatio = divideDecimal(amountIssued, totalIssuedSynthsUSD, PRECISE_UNIT);
-		const audExchangeRate = await exchangeRates.rateForCurrency(sAUD);
-		const account2DebtRatio = divideDecimal(
-			multiplyDecimal(await feePool.amountReceivedFromExchange(amountIssued), audExchangeRate),
-			totalIssuedSynthsUSD,
-			PRECISE_UNIT
-		);
+		const account1DebtRatio = divideDecimal(amountIssuedAcc1, totalIssuedSynthsUSD, PRECISE_UNIT);
+		const account2DebtRatio = divideDecimal(amountIssuedAcc2, totalIssuedSynthsUSD, PRECISE_UNIT);
 
 		timestamp = await currentTime();
 		newAUDRate = toUnit('1.85');
@@ -1462,8 +1450,8 @@ contract('Synthetix', async accounts => {
 			PRECISE_UNIT
 		).div(conversionFactor);
 
-		assert.bnClose(expectedDebtAccount1, await synthetix.debtBalanceOf(account1, sUSD));
-		assert.bnClose(expectedDebtAccount2, await synthetix.debtBalanceOf(account2, sUSD));
+		assert.bnClose(await synthetix.debtBalanceOf(account1, sUSD), expectedDebtAccount1);
+		assert.bnClose(await synthetix.debtBalanceOf(account2, sUSD), expectedDebtAccount2);
 	});
 
 	it("should correctly calculate a user's maximum issuable synths without prior issuance", async () => {
@@ -1563,8 +1551,6 @@ contract('Synthetix', async accounts => {
 
 	it("should correctly calculate a user's remaining issuable synths with prior issuance", async () => {
 		const snx2usdRate = await exchangeRates.rateForCurrency(SNX);
-		const eur2usdRate = await exchangeRates.rateForCurrency(sEUR);
-		const snx2eurRate = divideDecimal(snx2usdRate, eur2usdRate);
 		const issuanceRatio = await synthetixState.issuanceRatio();
 
 		const issuedSynthetixs = web3.utils.toBN('200012');
@@ -1578,10 +1564,10 @@ contract('Synthetix', async accounts => {
 
 		const expectedIssuableSynths = multiplyDecimal(
 			toUnit(issuedSynthetixs),
-			multiplyDecimal(snx2eurRate, issuanceRatio)
+			multiplyDecimal(snx2usdRate, issuanceRatio)
 		).sub(amountIssued);
 
-		const remainingIssuable = await synthetix.remainingIssuableSynths(account1, sEUR);
+		const remainingIssuable = await synthetix.remainingIssuableSynths(account1, sUSD);
 		assert.bnEqual(remainingIssuable, expectedIssuableSynths);
 	});
 
@@ -1632,7 +1618,7 @@ contract('Synthetix', async accounts => {
 			from: owner,
 		});
 
-		const maxIssuableSynths = await synthetix.maxIssuableSynths(account1, sEUR);
+		const maxIssuableSynths = await synthetix.maxIssuableSynths(account1, sUSD);
 
 		// Issue
 		const synthsToNotIssueYet = web3.utils.toBN('2000');
@@ -1694,7 +1680,9 @@ contract('Synthetix', async accounts => {
 	it('should unlock synthetix when collaterisation ratio changes', async () => {
 		// Set sAUD for purposes of this test
 		const timestamp1 = await currentTime();
-		await exchangeRates.updateRates([sAUD], [toUnit('1.7655')], timestamp1, { from: oracle });
+		const aud2usdrate = toUnit('2');
+
+		await exchangeRates.updateRates([sAUD], [aud2usdrate], timestamp1, { from: oracle });
 
 		const issuedSynthetixs = web3.utils.toBN('200000');
 		await synthetix.methods['transfer(address,uint256)'](account1, toUnit(issuedSynthetixs), {
@@ -1707,20 +1695,19 @@ contract('Synthetix', async accounts => {
 		const remainingIssuable = await synthetix.remainingIssuableSynths(account1, sUSD);
 		assert.bnClose(remainingIssuable, '0');
 
-		// Exchnage into sAUD
+		const transferable1 = await synthetix.transferableSynthetix(account1);
+		assert.bnEqual(transferable1, '0');
+
+		// Exchange into sAUD
 		await synthetix.exchange(sUSD, issuedSynths, sAUD, { from: account1 });
 
 		// Increase the value of sAUD relative to synthetix
 		const timestamp2 = await currentTime();
-		const newAUDExchangeRate = toUnit('0.9988');
+		const newAUDExchangeRate = toUnit('1');
 		await exchangeRates.updateRates([sAUD], [newAUDExchangeRate], timestamp2, { from: oracle });
 
-		const maxIssuableSynths2 = await synthetix.maxIssuableSynths(account1, sAUD);
-		const remainingIssuable2 = await synthetix.remainingIssuableSynths(account1, sAUD);
-		const expectedRemaining = maxIssuableSynths2.sub(
-			await feePool.amountReceivedFromExchange(issuedSynths)
-		);
-		assert.bnClose(remainingIssuable2, expectedRemaining);
+		const transferable2 = await synthetix.transferableSynthetix(account1);
+		assert.equal(transferable2.gt(toUnit('1000')), true);
 	});
 
 	// Check user's collaterisation ratio
