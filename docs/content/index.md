@@ -22,21 +22,7 @@ Welcome to the Synthetix system documentation. These pages contain a description
 ## Integrations and Dapps
 
 * **Synthetix Dashboard:** Provides an overview of the status of the Synthetix system including price, token supply, exchange volume, fee pool size, open interest, and current collateralisation levels. The dashboard also provides listings of exchanges where [SNX](https://dashboard.synthetix.io/buy-snx) and [sUSD](https://dashboard.synthetix.io/buy-susd) are traded. The dashboard is available at [https://dashboard.synthetix.io](https://dashboard.synthetix.io).
-* **Synthetix.exchange:** The [Synthetix Exchange](https://www.synthetix.io/products/exchange) allows users to trade synths, and to buy sUSD with ether. The synthetix exchange has also played host to [trading competitions](https://blog.synthetix.io/synthetix-exchange-trading-competition-v3/) offering SNX prizes to the most successful participants. The source code for the Synthetix Exchange can be found at @synthetixio/synthetix-exchange. A twitter bot that reports statistics for the exchange posts daily at @twitter:SynthXBot.
+* **Synthetix.exchange:** The [Synthetix Exchange](https://www.synthetix.io/products/exchange) allows users to trade synths, and to buy sUSD with ether. Synthetix.Exchange has also played host to [trading competitions](https://blog.synthetix.io/synthetix-exchange-trading-competition-v3/) offering SNX prizes to the most successful participants. The source code for Synthetix.Exchange can be found at @synthetixio/synthetix-exchange. A twitter bot that reports statistics for the exchange posts daily at @twitter:SynthXBot.
 * **Mintr:** [Mintr](https://www.synthetix.io/products/mintr) is a dApp for SNX holders to participate in the Synthetix Network. Using Mintr, users can mint and burn Synths, monitor their collateralisation levels, buy and sell sUSD through the [Depot](contracts/Depot.md), claim their staking rewards, and vest any SNX they have accrued from the token sale or by staking.
 * **UniSwap:** [Uniswap](https://uniswap.io/) is a decentralised exchange for exchanging ETH and ERC20 tokens. Synthetix integrates with it to deepen the Synthetix ecosystem's liquidity, and it acts as an on-ramp/off-ramp for the Synth market. Users who provide liquidity to the [ETH/sETH pool](https://uniswap.exchange/swap/0x42456D7084eacF4083f1140d3229471bbA2949A8) are provided with staking rewards as [part of the Synthetix protocol](https://sips.synthetix.io/sips/sip-8). This is discussed further [here](https://blog.synthetix.io/uniswap-seth-pool-incentives/) and [here](https://blog.synthetix.io/snx-arbitrage-pool/).
-* **KyberSwap:** Liquidity is further deepened by the integration of SNX with [KyberSwap](https://kyberswap.com/swap/eth-snx), which is built on the [Kyber Network Protocol](https://kyber.network/). An example use case is described [here](https://blog.synthetix.io/snx-liquidity-has-been-added-to-kyberswap/).
-
-## Projects Using Synthetix
-
-Apart from Synthetix's own platforms, there are already a number of projects using the Synthetix payment engine for stable crypto payments and other use cases:
-
-* [intimate.io](https://intimate.io/)
-* [Deconet](https://payout.team/)
-* [Groundhog](https://groundhog.network/)
-* [MARKET Protocol](https://marketprotocol.io/)
-* [Elysian](https://elycoin.io/)
-* [LocalCoinSwap](https://localcoinswap.com/)
-* [ARAW](https://arawtoken.io/)
-
-As the [DeFi network](https://defi.network/) gains more traction we only expect this set of projects to expand.
+* **KyberSwap:** Liquidity is further deepened by the integration of SNX and sUSD with [KyberSwap](https://kyberswap.com/swap/eth-snx), which is built on the [Kyber Network Protocol](https://kyber.network/). An example use case is described [here](https://blog.synthetix.io/snx-liquidity-has-been-added-to-kyberswap/).
