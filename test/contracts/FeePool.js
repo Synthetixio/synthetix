@@ -630,13 +630,13 @@ contract('FeePool', async accounts => {
 	it('should allow a user to claim their fees in sAUD', async () => {
 		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 
-		// Issue 10,000 sAUD for two different accounts.
+		// Issue 10,000 sUSD for two different accounts.
 		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('1000000'), {
 			from: owner,
 		});
 
-		await synthetix.issueSynths(sAUD, toUnit('10000'), { from: owner });
-		await synthetix.issueSynths(sAUD, toUnit('10000'), { from: account1 });
+		await synthetix.issueSynths(toUnit('10000'), { from: owner });
+		await synthetix.issueSynths(toUnit('10000'), { from: account1 });
 
 		// For each fee period (with one extra to test rollover), do two transfers, then close it off.
 		let totalFees = web3.utils.toBN('0');
@@ -645,8 +645,8 @@ contract('FeePool', async accounts => {
 			const exchange1 = toUnit(((i + 1) * 10).toString());
 			const exchange2 = toUnit(((i + 1) * 15).toString());
 
-			await synthetix.exchange(sAUD, exchange1, sUSD, { from: owner });
-			await synthetix.exchange(sAUD, exchange2, sUSD, { from: account1 });
+			await synthetix.exchange(sUSD, exchange1, sAUD, { from: owner });
+			await synthetix.exchange(sUSD, exchange2, sAUD, { from: account1 });
 
 			totalFees = totalFees.add(exchange1.sub(await feePool.amountReceivedFromExchange(exchange1)));
 			totalFees = totalFees.add(exchange2.sub(await feePool.amountReceivedFromExchange(exchange2)));

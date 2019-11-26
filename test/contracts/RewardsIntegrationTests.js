@@ -541,11 +541,14 @@ contract('Rewards Integration Tests', async accounts => {
 
 	describe('Exchange Rate Shift tests', async () => {
 		it('should assign accounts (1,2,3) to have (40%,40%,20%) of the debt/rewards', async () => {
-			// Account 1&2 issue 10K USD in sBTC each, holding 50% of the total debt.
+			// Account 1&2 issue 10K USD and exchange in sBTC each, holding 50% of the total debt.
 			const sBTCAmount = await synthetix.effectiveValue(sUSD, tenK, sBTC);
 			// console.log('sBTCAmount', sBTCAmount.toString());
-			await synthetix.issueSynths(sBTC, sBTCAmount, { from: account1 });
-			await synthetix.issueSynths(sBTC, sBTCAmount, { from: account2 });
+			await synthetix.issueMaxSynths({ from: account1 });
+			await synthetix.issueMaxSynths({ from: account2 });
+
+			await synthetix.exchange(sUSD, tenK, sBTC, { from: account1 });
+			await synthetix.exchange(sUSD, tenK, sBTC, { from: account2 });
 
 			await fastForwardAndCloseFeePeriod();
 			// //////////////////////////////////////////////
