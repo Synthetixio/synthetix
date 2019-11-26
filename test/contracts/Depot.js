@@ -236,7 +236,7 @@ contract('Depot', async accounts => {
 
 		beforeEach(async () => {
 			// We need the owner to issue synths
-			await synthetix.issueMaxSynths(sUsdHex, { from: owner });
+			await synthetix.issueMaxSynths({ from: owner });
 			// Set up the depositor with an amount of synths to deposit.
 			await synth.methods['transfer(address,uint256)'](depositor, synthsBalance, {
 				from: owner,
@@ -296,7 +296,7 @@ contract('Depot', async accounts => {
 
 		beforeEach(async () => {
 			// We need the owner to issue synths
-			await synthetix.issueMaxSynths(sUsdHex, { from: owner });
+			await synthetix.issueMaxSynths({ from: owner });
 			// Set up the depositor with an amount of synths to deposit.
 			await synth.methods['transfer(address,uint256)'](depositor, synthsBalance, {
 				from: owner,
@@ -366,7 +366,7 @@ contract('Depot', async accounts => {
 			fundsWalletFromContract = await depot.fundsWallet();
 			fundsWalletEthBalanceBefore = await getEthBalance(fundsWallet);
 			// We need the owner to issue synths
-			await synthetix.issueMaxSynths(sUsdHex, { from: owner });
+			await synthetix.issueMaxSynths({ from: owner });
 			// Set up the depot so it contains some synths to convert Ether for
 			synthsBalance = await synth.balanceOf(owner, { from: owner });
 			await synth.methods['transfer(address,uint256)'](depot.address, synthsBalance.toString(), {
@@ -424,7 +424,7 @@ contract('Depot', async accounts => {
 
 		beforeEach(async () => {
 			// We need the owner to issue synths
-			await synthetix.issueMaxSynths(sUsdHex, { from: owner });
+			await synthetix.issueMaxSynths({ from: owner });
 
 			// Assert that there are no deposits already.
 			const depositStartIndex = await depot.depositStartIndex();
@@ -946,7 +946,7 @@ contract('Depot', async accounts => {
 			synth = await Synth.at(await synthetix.synths(sUsdHex));
 
 			// We need the owner to issue synths
-			await synthetix.issueSynths(sUsdHex, toUnit('50000'), { from: owner });
+			await synthetix.issueSynths(toUnit('50000'), { from: owner });
 			// Send the purchaser some synths
 			await synth.methods['transfer(address,uint256)'](purchaser, purchaserSynthAmount, {
 				from: owner,
