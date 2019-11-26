@@ -2,8 +2,8 @@ require('.'); // import common test scaffolding
 
 const {
 	currentTime,
-	fastForward,
-	getEthBalance,
+	// fastForward,
+	// getEthBalance,
 	toUnit,
 	multiplyDecimal,
 	divideDecimal,
