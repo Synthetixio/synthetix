@@ -54,11 +54,7 @@ contract ExchangeRates is SelfDestructible {
     // There are 5 participating currencies, so we'll declare that clearly.
     bytes32[5] public xdrParticipants;
 
-<<<<<<< HEAD
-    // A conveience mapping for checking if a rate is a XDR participant    
-=======
     // A conveience mapping for checking if a rate is a XDR participant
->>>>>>> master
     mapping(bytes32 => bool) public isXDRParticipant;
 
     // For inverted prices, keep a mapping of their entry, limits and frozen status
