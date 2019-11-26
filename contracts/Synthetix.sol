@@ -592,14 +592,15 @@ contract Synthetix is ExternStateToken {
     /**
      * @notice Issue synths against the sender's SNX.
      * @dev Issuance is only allowed if the synthetix price isn't stale. Amount should be larger than 0.
-     * @param currencyKey The currency you wish to issue synths in, for example sUSD or sAUD
      * @param amount The amount of synths you wish to issue with a base of UNIT
      */
-    function issueSynths(bytes32 currencyKey, uint amount)
+    function issueSynths(uint amount)
         public
         optionalProxy
         // No need to check if price is stale, as it is checked in issuableSynths.
     {
+        bytes32 currencyKey = "sUSD";
+
         require(amount <= remainingIssuableSynths(messageSender, currencyKey), "Amount too large");
 
         // Keep track of the debt they're about to create
@@ -615,12 +616,13 @@ contract Synthetix is ExternStateToken {
     /**
      * @notice Issue the maximum amount of Synths possible against the sender's SNX.
      * @dev Issuance is only allowed if the synthetix price isn't stale.
-     * @param currencyKey The currency you wish to issue synths in, for example sUSD or sAUD
      */
-    function issueMaxSynths(bytes32 currencyKey)
+    function issueMaxSynths()
         external
         optionalProxy
     {
+        bytes32 currencyKey = "sUSD";
+
         // Figure out the maximum we can issue in that currency
         uint maxIssuable = remainingIssuableSynths(messageSender, currencyKey);
 
@@ -636,19 +638,20 @@ contract Synthetix is ExternStateToken {
 
     /**
      * @notice Burn synths to clear issued synths/free SNX.
-     * @param currencyKey The currency you're specifying to burn
      * @param amount The amount (in UNIT base) you wish to burn
      * @dev The amount to burn is debased to XDR's
      */
-    function burnSynths(bytes32 currencyKey, uint amount)
+    function burnSynths(uint amount)
         external
         optionalProxy
         // No need to check for stale rates as effectiveValue checks rates
     {
+        bytes32 currencyKey = "sUSD";
+
         // How much debt do they have?
         uint debtToRemove = effectiveValue(currencyKey, amount, "XDR");
         uint existingDebt = debtBalanceOf(messageSender, "XDR");
-        
+
         uint debtInCurrencyKey = debtBalanceOf(messageSender, currencyKey);
 
         require(existingDebt > 0, "No debt to forgive");
