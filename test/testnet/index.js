@@ -236,7 +236,7 @@ program
 			const remainingSynthsUSD = await SynthsUSD.methods.balanceOf(user1.address).call();
 			console.log(gray(`Burn all remaining synths for user - (${user1.address})`));
 			const { transactionHash: txn7Hash } = await Synthetix.methods
-				.burnSynths(sUSD, remainingSynthsUSD)
+				.burnSynths(remainingSynthsUSD)
 				.send({
 					from: user1.address,
 					gas,

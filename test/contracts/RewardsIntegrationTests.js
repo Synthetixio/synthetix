@@ -419,7 +419,7 @@ contract('Rewards Integration Tests', async accounts => {
 
 			// Account 1 leaves the system for week 2
 			const burnableTotal = await synthetix.debtBalanceOf(account1, sUSD);
-			await synthetix.burnSynths(sUSD, burnableTotal, { from: account1 });
+			await synthetix.burnSynths(burnableTotal, { from: account1 });
 			// await logFeesByPeriod(account1);
 
 			// Close week 2, ffwd & mint
@@ -479,7 +479,7 @@ contract('Rewards Integration Tests', async accounts => {
 
 			// Account 1 leaves the system
 			const burnableTotal = await synthetix.debtBalanceOf(account1, sUSD);
-			await synthetix.burnSynths(sUSD, burnableTotal, { from: account1 });
+			await synthetix.burnSynths(burnableTotal, { from: account1 });
 
 			// FastForward into the second mintable week
 			await fastForwardAndUpdateRates(WEEK + MINUTE);
@@ -659,9 +659,17 @@ contract('Rewards Integration Tests', async accounts => {
 
 			// now in p3 Acc1 burns all and leaves (-40%) and Acc2 has 67% and Acc3 33% rewards allocated as such
 
-			// Account 1 Burns all sBTC
+			// Account 1 exchanges all sBTC back to sUSD
 			const acc1sBTCBalance = await sBTCContract.balanceOf(account1, { from: account1 });
-			await synthetix.burnSynths(sBTC, acc1sBTCBalance, { from: account1 });
+			await synthetix.exchange(sBTC, acc1sBTCBalance, sUSD, { from: account1 });
+			const amountAfterExchange = await feePool.amountReceivedFromExchange(acc1sBTCBalance);
+			const amountAfterExchangeInUSD = await Synthetix.effectiveValue(
+				sBTC,
+				amountAfterExchange,
+				sUSD
+			);
+
+			await synthetix.burnSynths(amountAfterExchangeInUSD, { from: account1 });
 
 			// Get the SNX mintableSupply for week 3
 			const periodThreeMintableSupply = (await supplySchedule.mintableSupply()).sub(
@@ -790,7 +798,7 @@ contract('Rewards Integration Tests', async accounts => {
 			assert.bnClose(account3Escrow[1], quarter(periodOneMintableSupplyMinusMinterReward), 24);
 
 			// Acc1 Burns all
-			await synthetix.burnSynths(sUSD, twentyK, { from: account1 });
+			await synthetix.burnSynths(twentyK, { from: account1 });
 			// Acc 1 Issues 10K sUSD
 			await synthetix.issueSynths(tenK, { from: account1 });
 			// Acc 1 Issues 10K sUSD again

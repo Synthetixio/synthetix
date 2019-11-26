@@ -1073,7 +1073,7 @@ contract('Synthetix', async accounts => {
 		assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('200'));
 
 		// Burn 100 sUSD
-		await synthetix.burnSynths(sUSD, toUnit('100'), { from: account1 });
+		await synthetix.burnSynths(toUnit('100'), { from: account1 });
 
 		// account1 should now have 100 sUSD of debt.
 		assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('100'));
@@ -1097,13 +1097,13 @@ contract('Synthetix', async accounts => {
 		await synthetix.issueMaxSynths({ from: account1 });
 
 		// account2 should not have anything and can't burn.
-		await assert.revert(synthetix.burnSynths(sUSD, toUnit('10'), { from: account2 }));
+		await assert.revert(synthetix.burnSynths(toUnit('10'), { from: account2 }));
 
 		// And even when we give account2 synths, it should not be able to burn.
 		await sUSDContract.methods['transfer(address,uint256)'](account2, toUnit('100'), {
 			from: account1,
 		});
-		await assert.revert(synthetix.burnSynths(sUSD, toUnit('10'), { from: account2 }));
+		await assert.revert(synthetix.burnSynths(toUnit('10'), { from: account2 }));
 	});
 
 	it('should fail when trying to burn synths that do not exist', async () => {
@@ -1130,7 +1130,7 @@ contract('Synthetix', async accounts => {
 		});
 
 		// Burning any amount of sUSD from account1 should fail
-		await assert.revert(synthetix.burnSynths(sUSD, '1', { from: account1 }));
+		await assert.revert(synthetix.burnSynths('1', { from: account1 }));
 	});
 
 	it("should only burn up to a user's actual debt level", async () => {
@@ -1170,7 +1170,7 @@ contract('Synthetix', async accounts => {
 		const balanceOfAccount1 = await sUSDContract.balanceOf(account1);
 
 		// Then try to burn them all. Only 10 synths (and fees) should be gone.
-		await synthetix.burnSynths(sUSD, balanceOfAccount1, { from: account1 });
+		await synthetix.burnSynths(balanceOfAccount1, { from: account1 });
 		const balanceOfAccount1AfterBurn = await sUSDContract.balanceOf(account1);
 
 		// console.log('##### txn', txn);
@@ -1227,12 +1227,12 @@ contract('Synthetix', async accounts => {
 		const burntSynthsPt2 = toUnit('500');
 
 		await synthetix.issueSynths(issuedSynthsPt1, { from: account1 });
-		await synthetix.burnSynths(sUSD, burntSynthsPt1, { from: account1 });
+		await synthetix.burnSynths(burntSynthsPt1, { from: account1 });
 		await synthetix.issueSynths(issuedSynthsPt2, { from: account1 });
 
 		await synthetix.issueSynths(toUnit('100'), { from: account2 });
 		await synthetix.issueSynths(toUnit('51'), { from: account2 });
-		await synthetix.burnSynths(sUSD, burntSynthsPt2, { from: account1 });
+		await synthetix.burnSynths(burntSynthsPt2, { from: account1 });
 
 		const debt = await synthetix.debtBalanceOf(account1, toBytes32('sUSD'));
 		const expectedDebt = issuedSynthsPt1
@@ -1264,7 +1264,7 @@ contract('Synthetix', async accounts => {
 		// Issue and burn from account 2 all debt
 		await synthetix.issueSynths(toUnit('43'), { from: account2 });
 		let debt = await synthetix.debtBalanceOf(account2, sUSD);
-		await synthetix.burnSynths(sUSD, toUnit('43'), { from: account2 });
+		await synthetix.burnSynths(toUnit('43'), { from: account2 });
 		debt = await synthetix.debtBalanceOf(account2, sUSD);
 
 		assert.bnEqual(debt, 0);
@@ -1312,7 +1312,7 @@ contract('Synthetix', async accounts => {
 			const amountToBurn = desiredAmountToBurn.lte(expectedDebtForAccount2)
 				? desiredAmountToBurn
 				: expectedDebtForAccount2;
-			await synthetix.burnSynths(sUSD, amountToBurn, { from: account2 });
+			await synthetix.burnSynths(amountToBurn, { from: account2 });
 			expectedDebtForAccount2 = expectedDebtForAccount2.sub(amountToBurn);
 
 			// Useful debug logging
@@ -1364,7 +1364,7 @@ contract('Synthetix', async accounts => {
 			const amountToBurn = desiredAmountToBurn.lte(expectedDebtForAccount2)
 				? desiredAmountToBurn
 				: expectedDebtForAccount2;
-			await synthetix.burnSynths(sUSD, amountToBurn, { from: account2 });
+			await synthetix.burnSynths(amountToBurn, { from: account2 });
 			expectedDebtForAccount2 = expectedDebtForAccount2.sub(amountToBurn);
 
 			// Useful debug logging
@@ -2034,7 +2034,7 @@ contract('Synthetix', async accounts => {
 		await synthetix.issueSynths(toUnit('199'), { from: account1 });
 
 		// Then try to burn them all. Only 10 synths (and fees) should be gone.
-		await synthetix.burnSynths(sUSD, await sUSDContract.balanceOf(account1), { from: account1 });
+		await synthetix.burnSynths(await sUSDContract.balanceOf(account1), { from: account1 });
 		assert.bnEqual(await sUSDContract.balanceOf(account1), web3.utils.toBN(0));
 	});
 
@@ -2092,7 +2092,7 @@ contract('Synthetix', async accounts => {
 		assert.bnEqual(amountReceived2.add(remainingAfterTransfer), amountExpectedToBeLeftInWallet);
 
 		// Now burn 1000 and check we end up with the right amount
-		await synthetix.burnSynths(sUSD, toUnit('1000'), { from: account1 });
+		await synthetix.burnSynths(toUnit('1000'), { from: account1 });
 		assert.bnEqual(
 			await sUSDContract.balanceOf(account1),
 			amountExpectedToBeLeftInWallet.sub(toUnit('1000'))
@@ -2123,9 +2123,9 @@ contract('Synthetix', async accounts => {
 		await synthetix.issueSynths(issuedSynths2, { from: account2 });
 		await synthetix.issueSynths(issuedSynths3, { from: account3 });
 
-		await synthetix.burnSynths(sUSD, burnAllSynths, { from: account1 });
-		await synthetix.burnSynths(sUSD, burnAllSynths, { from: account2 });
-		await synthetix.burnSynths(sUSD, burnAllSynths, { from: account3 });
+		await synthetix.burnSynths(burnAllSynths, { from: account1 });
+		await synthetix.burnSynths(burnAllSynths, { from: account2 });
+		await synthetix.burnSynths(burnAllSynths, { from: account3 });
 
 		const debtBalance1After = await synthetix.debtBalanceOf(account1, sUSD);
 		const debtBalance2After = await synthetix.debtBalanceOf(account2, sUSD);
@@ -2158,7 +2158,7 @@ contract('Synthetix', async accounts => {
 		await synthetix.issueSynths(issuedSynths3, { from: account3 });
 
 		const debtBalanceBefore = await synthetix.debtBalanceOf(account1, sUSD);
-		await synthetix.burnSynths(sUSD, debtBalanceBefore, { from: account1 });
+		await synthetix.burnSynths(debtBalanceBefore, { from: account1 });
 		const debtBalanceAfter = await synthetix.debtBalanceOf(account1, sUSD);
 
 		assert.bnEqual(debtBalanceAfter, '0');
@@ -2174,7 +2174,7 @@ contract('Synthetix', async accounts => {
 		const issuedSynths1 = toUnit('10');
 
 		await synthetix.issueSynths(issuedSynths1, { from: account1 });
-		await synthetix.burnSynths(sUSD, issuedSynths1.add(toUnit('9000')), {
+		await synthetix.burnSynths(issuedSynths1.add(toUnit('9000')), {
 			from: account1,
 		});
 		const debtBalanceAfter = await synthetix.debtBalanceOf(account1, sUSD);
@@ -2206,7 +2206,7 @@ contract('Synthetix', async accounts => {
 		assert.bnClose(debtBalance2After, toUnit('50000'));
 
 		// Account 1 burns 100,000
-		await synthetix.burnSynths(sUSD, toUnit('100000'), { from: account1 });
+		await synthetix.burnSynths(toUnit('100000'), { from: account1 });
 
 		debtBalance1After = await synthetix.debtBalanceOf(account1, sUSD);
 		debtBalance2After = await synthetix.debtBalanceOf(account2, sUSD);

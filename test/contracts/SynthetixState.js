@@ -169,7 +169,7 @@ contract('SynthetixState', async accounts => {
 
 		assert.equal(await synthetixState.hasIssued(owner), true);
 
-		await synthetix.burnSynths(sUSD, synthBalance, { from: owner });
+		await synthetix.burnSynths(synthBalance, { from: owner });
 
 		assert.equal(await synthetixState.hasIssued(owner), false);
 	});

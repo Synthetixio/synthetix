@@ -429,7 +429,7 @@ describe('publish scripts', function() {
 							describe('when user1 burns 10 sUSD', () => {
 								beforeEach(async () => {
 									// burn
-									await Synthetix.methods.burnSynths(sUSD, web3.utils.toWei('10')).send({
+									await Synthetix.methods.burnSynths(web3.utils.toWei('10')).send({
 										from: accounts.first.public,
 										gas: gasLimit,
 										gasPrice,
