@@ -67,7 +67,7 @@ contract('RewardEscrow', async accounts => {
 		describe('Vesting Schedule Writes', async () => {
 			it('should not create a vesting entry with a zero amount', async () => {
 				// Transfer of SNX to the escrow must occur before creating an entry
-				await synthetix.methods['transfer(address,uint256)'](RewardEscrow.address, toUnit('1'), {
+				await synthetix.transfer(RewardEscrow.address, toUnit('1'), {
 					from: owner,
 				});
 
@@ -78,7 +78,7 @@ contract('RewardEscrow', async accounts => {
 
 			it('should not create a vesting entry if there is not enough SNX in the contracts balance', async () => {
 				// Transfer of SNX to the escrow must occur before creating an entry
-				await synthetix.methods['transfer(address,uint256)'](RewardEscrow.address, toUnit('1'), {
+				await synthetix.transfer(RewardEscrow.address, toUnit('1'), {
 					from: owner,
 				});
 				await assert.revert(
@@ -90,7 +90,7 @@ contract('RewardEscrow', async accounts => {
 		describe('Vesting Schedule Reads ', async () => {
 			beforeEach(async () => {
 				// Transfer of SNX to the escrow must occur before creating a vestinng entry
-				await synthetix.methods['transfer(address,uint256)'](RewardEscrow.address, toUnit('6000'), {
+				await synthetix.transfer(RewardEscrow.address, toUnit('6000'), {
 					from: owner,
 				});
 
@@ -146,7 +146,7 @@ contract('RewardEscrow', async accounts => {
 		describe('Partial Vesting', async () => {
 			beforeEach(async () => {
 				// Transfer of SNX to the escrow must occur before creating a vestinng entry
-				await synthetix.methods['transfer(address,uint256)'](RewardEscrow.address, toUnit('6000'), {
+				await synthetix.transfer(RewardEscrow.address, toUnit('6000'), {
 					from: owner,
 				});
 
@@ -192,7 +192,7 @@ contract('RewardEscrow', async accounts => {
 		describe('Vesting', async () => {
 			beforeEach(async () => {
 				// Transfer of SNX to the escrow must occur before creating a vestinng entry
-				await synthetix.methods['transfer(address,uint256)'](RewardEscrow.address, toUnit('6000'), {
+				await synthetix.transfer(RewardEscrow.address, toUnit('6000'), {
 					from: owner,
 				});
 
@@ -271,7 +271,7 @@ contract('RewardEscrow', async accounts => {
 				const MAX_VESTING_ENTRIES = 260; // await rewardEscrow.MAX_VESTING_ENTRIES();
 
 				// Transfer of SNX to the escrow must occur before creating an entry
-				await synthetix.methods['transfer(address,uint256)'](RewardEscrow.address, toUnit('260'), {
+				await synthetix.transfer(RewardEscrow.address, toUnit('260'), {
 					from: owner,
 				});
 
@@ -288,7 +288,7 @@ contract('RewardEscrow', async accounts => {
 
 			it('should be able to vest 52 week * 5 years vesting entries', async () => {
 				// Transfer of SNX to the escrow must occur before creating an entry
-				await synthetix.methods['transfer(address,uint256)'](RewardEscrow.address, toUnit('260'), {
+				await synthetix.transfer(RewardEscrow.address, toUnit('260'), {
 					from: owner,
 				});
 
@@ -326,7 +326,7 @@ contract('RewardEscrow', async accounts => {
 
 			it('should be able to read an accounts schedule of 5 vesting entries', async () => {
 				// Transfer of SNX to the escrow must occur before creating an entry
-				await synthetix.methods['transfer(address,uint256)'](RewardEscrow.address, toUnit('5'), {
+				await synthetix.transfer(RewardEscrow.address, toUnit('5'), {
 					from: owner,
 				});
 
@@ -352,7 +352,7 @@ contract('RewardEscrow', async accounts => {
 
 			it('should be able to read the full account schedule 52 week * 5 years vesting entries', async () => {
 				// Transfer of SNX to the escrow must occur before creating an entry
-				await synthetix.methods['transfer(address,uint256)'](RewardEscrow.address, toUnit('260'), {
+				await synthetix.transfer(RewardEscrow.address, toUnit('260'), {
 					from: owner,
 				});
 
@@ -378,7 +378,7 @@ contract('RewardEscrow', async accounts => {
 			it('should not allow transfer of synthetix in escrow', async () => {
 				// Ensure the transfer fails as all the synthetix are in escrow
 				await assert.revert(
-					synthetix.methods['transfer(address,uint256)'](account2, toUnit('1000'), {
+					synthetix.transfer(account2, toUnit('1000'), {
 						from: account1,
 					})
 				);

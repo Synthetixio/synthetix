@@ -319,15 +319,16 @@ contract Synthetix is ExternStateToken {
         return exchangeFeeRate.mul(multiplier);
     }
     // ========== MUTATIVE FUNCTIONS ==========
-
+    
     /**
      * @notice ERC20 transfer function.
      */
     function transfer(address to, uint value)
         public
+        optionalProxy
         returns (bool)
     {
-        // Ensure they're not trying to exceed their locked amount
+        // Ensure they're not trying to exceed their staked SNX amount
         require(value <= transferableSynthetix(messageSender), "Insufficient balance");
 
         // Perform the transfer: if there is a problem an exception will be thrown in this call.
@@ -341,6 +342,7 @@ contract Synthetix is ExternStateToken {
      */
     function transferFrom(address from, address to, uint value)
         public
+        optionalProxy
         returns (bool)
     {
         // Ensure they're not trying to exceed their locked amount
