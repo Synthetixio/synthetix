@@ -114,7 +114,7 @@ contract('Synth', async accounts => {
 	it('should transfer (ERC20) without error', async () => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
-		await synthetix.issueSynths(sUSD, amount, { from: owner });
+		await synthetix.issueSynths(amount, { from: owner });
 
 		// Do a single transfer of all our sUSD.
 		const transaction = await sUSDContract.methods['transfer(address,uint256)'](account1, amount, {
@@ -139,7 +139,7 @@ contract('Synth', async accounts => {
 	it('should revert when transferring (ERC20) with insufficient balance', async () => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
-		await synthetix.issueSynths(sUSD, amount, { from: owner });
+		await synthetix.issueSynths(amount, { from: owner });
 
 		// Try to transfer 10,000 + 1 wei, which we don't have the balance for.
 		await assert.revert(
@@ -154,7 +154,7 @@ contract('Synth', async accounts => {
 	it('should transfer (ERC223) without error', async () => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
-		await synthetix.issueSynths(sUSD, amount, { from: owner });
+		await synthetix.issueSynths(amount, { from: owner });
 
 		// Do a single transfer of all our sUSD.
 		const transaction = await sUSDContract.methods['transfer(address,uint256,bytes)'](
@@ -183,7 +183,7 @@ contract('Synth', async accounts => {
 	it('should revert when transferring (ERC223) with insufficient balance', async () => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
-		await synthetix.issueSynths(sUSD, amount, { from: owner });
+		await synthetix.issueSynths(amount, { from: owner });
 
 		// Try to transfer 10,000 + 1 wei, which we don't have the balance for.
 		await assert.revert(
@@ -199,7 +199,7 @@ contract('Synth', async accounts => {
 	it('should transferFrom (ERC20) without error', async () => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
-		await synthetix.issueSynths(sUSD, amount, { from: owner });
+		await synthetix.issueSynths(amount, { from: owner });
 
 		// Give account1 permission to act on our behalf
 		await sUSDContract.approve(account1, amount, { from: owner });
@@ -235,7 +235,7 @@ contract('Synth', async accounts => {
 	it('should revert when calling transferFrom (ERC20) with insufficient allowance', async () => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
-		await synthetix.issueSynths(sUSD, amount, { from: owner });
+		await synthetix.issueSynths(amount, { from: owner });
 
 		// Approve for 1 wei less than amount
 		await sUSDContract.approve(account1, amount.sub(web3.utils.toBN('1')), { from: owner });
@@ -251,7 +251,7 @@ contract('Synth', async accounts => {
 	it('should revert when calling transferFrom (ERC20) with insufficient balance', async () => {
 		// Issue 10,000 - 1 wei sUSD.
 		const amount = toUnit('10000');
-		await synthetix.issueSynths(sUSD, amount.sub(web3.utils.toBN('1')), { from: owner });
+		await synthetix.issueSynths(amount.sub(web3.utils.toBN('1')), { from: owner });
 
 		// Approve for full amount
 		await sUSDContract.approve(account1, amount, { from: owner });
@@ -267,7 +267,7 @@ contract('Synth', async accounts => {
 	it('should transferFrom (ERC223) without error', async () => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
-		await synthetix.issueSynths(sUSD, amount, { from: owner });
+		await synthetix.issueSynths(amount, { from: owner });
 
 		// Give account1 permission to act on our behalf
 		await sUSDContract.approve(account1, amount, { from: owner });
@@ -305,7 +305,7 @@ contract('Synth', async accounts => {
 	it('should revert when calling transferFrom (ERC223) with insufficient allowance', async () => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
-		await synthetix.issueSynths(sUSD, amount, { from: owner });
+		await synthetix.issueSynths(amount, { from: owner });
 
 		// Approve for 1 wei less than amount
 		await sUSDContract.approve(account1, amount.sub(web3.utils.toBN('1')), { from: owner });
@@ -327,7 +327,7 @@ contract('Synth', async accounts => {
 	it('should revert when calling transferFrom (ERC223) with insufficient balance', async () => {
 		// Issue 10,000 - 1 wei sUSD.
 		const amount = toUnit('10000');
-		await synthetix.issueSynths(sUSD, amount.sub(web3.utils.toBN('1')), { from: owner });
+		await synthetix.issueSynths(amount.sub(web3.utils.toBN('1')), { from: owner });
 
 		// Approve for full amount
 		await sUSDContract.approve(account1, amount, { from: owner });
@@ -451,7 +451,7 @@ contract('Synth', async accounts => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
 
-		await synthetix.issueSynths(sUSD, amount, { from: owner });
+		await synthetix.issueSynths(amount, { from: owner });
 
 		// Do a single transfer of all our sUSD.
 		const transaction = await sUSDContract.methods['transfer(address,uint256)'](account1, amount, {

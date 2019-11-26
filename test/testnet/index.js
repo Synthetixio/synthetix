@@ -163,7 +163,7 @@ program
 			console.log(gray(`Issuing 0.0000000000001 sUSD from (${user1.address}`));
 			const amountToIssue = web3.utils.toWei('0.0000000000001');
 			const { transactionHash: txn2Hash } = await Synthetix.methods
-				.issueSynths(sUSD, amountToIssue)
+				.issueSynths(amountToIssue)
 				.send({
 					from: user1.address,
 					gas,

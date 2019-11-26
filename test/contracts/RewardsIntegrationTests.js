@@ -586,7 +586,7 @@ contract('Rewards Integration Tests', async accounts => {
 			);
 
 			// Account 3 (enters the system and) mints 10K sUSD and should have 20% of the debt not 33.33%
-			await synthetix.issueSynths(sUSD, tenK, { from: account3 });
+			await synthetix.issueSynths(tenK, { from: account3 });
 
 			// Get the SNX mintableSupply for week 2
 			const periodTwoMintableSupply = (await supplySchedule.mintableSupply()).sub(
@@ -703,7 +703,7 @@ contract('Rewards Integration Tests', async accounts => {
 			assert.bnClose(account3Escrow2[1], oneFifth(periodThreeMintableSupply), 15);
 
 			// Acc1 mints 20K (40%) close p (40,40,20)');
-			await synthetix.issueSynths(sUSD, twentyK, { from: account1 });
+			await synthetix.issueSynths(twentyK, { from: account1 });
 
 			// Get the SNX mintableSupply for week 4
 			const periodFourMintableSupply = (await supplySchedule.mintableSupply()).sub(
@@ -746,14 +746,14 @@ contract('Rewards Integration Tests', async accounts => {
 		const twentyK = toUnit('20000');
 
 		beforeEach(async () => {
-			await synthetix.issueSynths(sUSD, tenK, { from: account1 });
-			await synthetix.issueSynths(sUSD, tenK, { from: account2 });
-			await synthetix.issueSynths(sUSD, tenK, { from: account3 });
+			await synthetix.issueSynths(tenK, { from: account1 });
+			await synthetix.issueSynths(tenK, { from: account2 });
+			await synthetix.issueSynths(tenK, { from: account3 });
 		});
 
 		it('Acc1 issues and burns multiple times and should have accounts 1,2,3 rewards 50%,25%,25%', async () => {
 			// Acc 1 Issues 20K sUSD
-			await synthetix.issueSynths(sUSD, tenK, { from: account1 });
+			await synthetix.issueSynths(tenK, { from: account1 });
 
 			// Close week 2
 			await fastForwardAndCloseFeePeriod();
@@ -789,9 +789,9 @@ contract('Rewards Integration Tests', async accounts => {
 			// Acc1 Burns all
 			await synthetix.burnSynths(sUSD, twentyK, { from: account1 });
 			// Acc 1 Issues 10K sUSD
-			await synthetix.issueSynths(sUSD, tenK, { from: account1 });
+			await synthetix.issueSynths(tenK, { from: account1 });
 			// Acc 1 Issues 10K sUSD again
-			await synthetix.issueSynths(sUSD, tenK, { from: account1 });
+			await synthetix.issueSynths(tenK, { from: account1 });
 
 			// Get the SNX mintableSupply for week 2
 			const periodTwoMintableSupply = (await supplySchedule.mintableSupply()).sub(

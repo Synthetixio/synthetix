@@ -407,7 +407,7 @@ contract('FeePool', async accounts => {
 	});
 	it('should correctly roll over unclaimed fees when closing fee periods', async () => {
 		// Issue 10,000 sUSD.
-		await synthetix.issueSynths(sUSD, toUnit('10000'), { from: owner });
+		await synthetix.issueSynths(toUnit('10000'), { from: owner });
 
 		// Users are only entitled to fees when they've participated in a fee period in its
 		// entirety. Roll over the fee period so fees generated below count for owner.
@@ -428,7 +428,7 @@ contract('FeePool', async accounts => {
 		const length = await feePool.FEE_PERIOD_LENGTH();
 
 		// Issue 10,000 sUSD.
-		await synthetix.issueSynths(sUSD, toUnit('10000'), { from: owner });
+		await synthetix.issueSynths(toUnit('10000'), { from: owner });
 
 		// Users have to have minted before the close of period. Close that fee period
 		// so that there won't be any fees in period. future fees are available.
@@ -475,7 +475,7 @@ contract('FeePool', async accounts => {
 		}
 
 		// Now create the first fee
-		await synthetix.issueSynths(sUSD, toUnit('10000'), { from: owner });
+		await synthetix.issueSynths(toUnit('10000'), { from: owner });
 		await sUSDContract.methods['transfer(address,uint256)'](account1, toUnit('10000'), {
 			from: owner,
 		});
@@ -541,8 +541,8 @@ contract('FeePool', async accounts => {
 			from: owner,
 		});
 
-		await synthetix.issueSynths(sUSD, toUnit('10000'), { from: owner });
-		await synthetix.issueSynths(sUSD, toUnit('10000'), { from: account1 });
+		await synthetix.issueSynths(toUnit('10000'), { from: owner });
+		await synthetix.issueSynths(toUnit('10000'), { from: account1 });
 
 		// For each fee period (with one extra to test rollover), do two exchange transfers, then close it off.
 		for (let i = 0; i <= length; i++) {
@@ -577,7 +577,7 @@ contract('FeePool', async accounts => {
 			from: owner,
 		});
 
-		await synthetix.issueSynths(sUSD, toUnit('10000'), { from: owner });
+		await synthetix.issueSynths(toUnit('10000'), { from: owner });
 
 		// For first fee period, do two transfers, then close it off.
 		let totalFees = web3.utils.toBN('0');
@@ -605,7 +605,7 @@ contract('FeePool', async accounts => {
 
 		// FeePeriod 2 - account 1 joins and mints 50% of the debt
 		totalFees = web3.utils.toBN('0');
-		await synthetix.issueSynths(sUSD, toUnit('10000'), { from: account1 });
+		await synthetix.issueSynths(toUnit('10000'), { from: account1 });
 
 		// Generate fees
 		await synthetix.exchange(sUSD, exchange1, sAUD, { from: owner });
@@ -685,7 +685,7 @@ contract('FeePool', async accounts => {
 
 	it('should revert when a user tries to double claim their fees', async () => {
 		// Issue 10,000 sUSD.
-		await synthetix.issueSynths(sUSD, toUnit('10000'), { from: owner });
+		await synthetix.issueSynths(toUnit('10000'), { from: owner });
 
 		// Users are only allowed to claim fees in periods they had an issued balance
 		// for the entire period.
@@ -728,8 +728,8 @@ contract('FeePool', async accounts => {
 			from: owner,
 		});
 
-		await synthetix.issueSynths(sUSD, amount, { from: owner });
-		await synthetix.issueSynths(sUSD, amount, { from: account1 });
+		await synthetix.issueSynths(amount, { from: owner });
+		await synthetix.issueSynths(amount, { from: account1 });
 
 		await closeFeePeriod();
 
@@ -837,8 +837,8 @@ contract('FeePool', async accounts => {
 			from: owner,
 		});
 
-		await synthetix.issueSynths(sUSD, amount, { from: owner });
-		await synthetix.issueSynths(sUSD, amount.mul(web3.utils.toBN('2')), { from: account1 });
+		await synthetix.issueSynths(amount, { from: owner });
+		await synthetix.issueSynths(amount.mul(web3.utils.toBN('2')), { from: account1 });
 
 		// Generate a fee.
 		await synthetix.exchange(sUSD, amount, sAUD, { from: owner });
@@ -863,8 +863,8 @@ contract('FeePool', async accounts => {
 			from: owner,
 		});
 
-		await synthetix.issueSynths(sUSD, amount1, { from: owner });
-		await synthetix.issueSynths(sUSD, amount2, { from: account1 });
+		await synthetix.issueSynths(amount1, { from: owner });
+		await synthetix.issueSynths(amount2, { from: account1 });
 
 		// Generate a fee.
 		await synthetix.exchange(sUSD, amount1, sAUD, { from: owner });
@@ -903,8 +903,8 @@ contract('FeePool', async accounts => {
 			from: owner,
 		});
 
-		await synthetix.issueSynths(sUSD, amount, { from: owner });
-		await synthetix.issueSynths(sUSD, amount.mul(web3.utils.toBN('2')), { from: account1 });
+		await synthetix.issueSynths(amount, { from: owner });
+		await synthetix.issueSynths(amount.mul(web3.utils.toBN('2')), { from: account1 });
 
 		// Close out the period to allow both users to be part of the whole fee period.
 		await closeFeePeriod();
@@ -951,8 +951,8 @@ contract('FeePool', async accounts => {
 			from: owner,
 		});
 
-		await synthetix.issueSynths(sUSD, amount, { from: owner });
-		await synthetix.issueSynths(sUSD, amount.mul(web3.utils.toBN('2')), { from: account1 });
+		await synthetix.issueSynths(amount, { from: owner });
+		await synthetix.issueSynths(amount.mul(web3.utils.toBN('2')), { from: account1 });
 
 		// Close out the period to allow both users to be part of the whole fee period.
 		await closeFeePeriod();
@@ -1124,7 +1124,7 @@ contract('FeePool', async accounts => {
 
 			await synthetix.issueMaxSynths({ from: account1 });
 			const amount = await sUSDContract.balanceOf(account1);
-			await synthetix.issueSynths(sUSD, amount, { from: owner });
+			await synthetix.issueSynths(amount, { from: owner });
 			await closeFeePeriod();
 
 			// Do a transfer to generate fees
@@ -1163,7 +1163,7 @@ contract('FeePool', async accounts => {
 
 			await synthetix.issueMaxSynths({ from: account1 });
 			const amount = await sUSDContract.balanceOf(account1);
-			await synthetix.issueSynths(sUSD, amount, { from: owner });
+			await synthetix.issueSynths(amount, { from: owner });
 			await closeFeePeriod();
 
 			// Do a transfer to generate fees
@@ -1223,7 +1223,7 @@ contract('FeePool', async accounts => {
 				from: owner,
 			});
 
-			await synthetix.issueSynths(sUSD, toUnit('10000'), { from: account1 });
+			await synthetix.issueSynths(toUnit('10000'), { from: account1 });
 
 			// For first fee period, do one exchange.
 			const exchange1 = toUnit((10).toString());
@@ -1355,8 +1355,8 @@ contract('FeePool', async accounts => {
 				const exchange1 = toUnit(((i + 1) * 10).toString());
 
 				// Mint debt each period to fill up feelPoolState issuanceData to [6]
-				await synthetix.issueSynths(sUSD, toUnit('1000'), { from: owner });
-				await synthetix.issueSynths(sUSD, toUnit('1000'), { from: account1 });
+				await synthetix.issueSynths(toUnit('1000'), { from: owner });
+				await synthetix.issueSynths(toUnit('1000'), { from: account1 });
 
 				await synthetix.exchange(sUSD, exchange1, sAUD, { from: owner });
 

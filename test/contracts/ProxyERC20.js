@@ -33,8 +33,8 @@ contract('ProxyERC20', async accounts => {
 		});
 
 		// Issue 10 sUSD each
-		await synthetix.issueSynths(sUSD, toUnit('10'), { from: account1 });
-		await synthetix.issueSynths(sUSD, toUnit('10'), { from: account2 });
+		await synthetix.issueSynths(toUnit('10'), { from: account1 });
+		await synthetix.issueSynths(toUnit('10'), { from: account2 });
 	});
 
 	it('should setIntegrationProxy on synthetix on deployment', async () => {
