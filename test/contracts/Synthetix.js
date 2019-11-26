@@ -539,7 +539,7 @@ contract('Synthetix', async accounts => {
 		assert.bnEqual(await synthetix.totalSupply(), await synthetix.balanceOf(owner));
 
 		// Issue max synths.
-		await synthetix.issueMaxSynths(sUSD, { from: owner });
+		await synthetix.issueMaxSynths({ from: owner });
 
 		// Try to transfer 0.000000000000000001 SNX
 		await assert.revert(
@@ -609,7 +609,7 @@ contract('Synthetix', async accounts => {
 		});
 
 		// Issue max synths
-		await synthetix.issueMaxSynths(sUSD, { from: owner });
+		await synthetix.issueMaxSynths({ from: owner });
 
 		// Assert that transferFrom fails even for the smallest amount of SNX.
 		await assert.revert(
@@ -648,7 +648,7 @@ contract('Synthetix', async accounts => {
 		assert.bnEqual(await synthetix.totalSupply(), await synthetix.balanceOf(owner));
 
 		// Issue max synths.
-		await synthetix.issueMaxSynths(sUSD, { from: owner });
+		await synthetix.issueMaxSynths({ from: owner });
 
 		// Try to transfer 0.000000000000000001 SNX
 		await assert.revert(
@@ -815,7 +815,7 @@ contract('Synthetix', async accounts => {
 		});
 
 		// Issue max synths
-		await synthetix.issueMaxSynths(sUSD, { from: owner });
+		await synthetix.issueMaxSynths({ from: owner });
 
 		// Assert that transferFrom fails even for the smallest amount of SNX.
 		await assert.revert(
@@ -1031,7 +1031,7 @@ contract('Synthetix', async accounts => {
 		});
 
 		// Issue
-		await synthetix.issueMaxSynths(sUSD, { from: account1 });
+		await synthetix.issueMaxSynths({ from: account1 });
 
 		// There should be 200 sUSD of value in the system
 		assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('200'));
@@ -1135,7 +1135,7 @@ contract('Synthetix', async accounts => {
 		});
 
 		// Issue
-		await synthetix.issueMaxSynths(sUSD, { from: account1 });
+		await synthetix.issueMaxSynths({ from: account1 });
 
 		// account1 should now have 200 sUSD of debt.
 		assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('200'));
@@ -1162,7 +1162,7 @@ contract('Synthetix', async accounts => {
 		});
 
 		// Issue
-		await synthetix.issueMaxSynths(sUSD, { from: account1 });
+		await synthetix.issueMaxSynths({ from: account1 });
 
 		// account2 should not have anything and can't burn.
 		await assert.revert(synthetix.burnSynths(sUSD, toUnit('10'), { from: account2 }));
@@ -1190,7 +1190,7 @@ contract('Synthetix', async accounts => {
 		});
 
 		// Issue
-		await synthetix.issueMaxSynths(sUSD, { from: account1 });
+		await synthetix.issueMaxSynths({ from: account1 });
 
 		// Transfer all newly issued synths to account2
 		await sUSDContract.methods['transfer(address,uint256)'](account2, toUnit('200'), {
@@ -1325,7 +1325,7 @@ contract('Synthetix', async accounts => {
 
 		// Issue from account1
 		const account1AmountToIssue = await synthetix.maxIssuableSynths(account1, sUSD);
-		await synthetix.issueMaxSynths(sUSD, { from: account1 });
+		await synthetix.issueMaxSynths({ from: account1 });
 		const debtBalance1 = await synthetix.debtBalanceOf(account1, sUSD);
 		assert.bnClose(debtBalance1, account1AmountToIssue);
 
@@ -1364,7 +1364,7 @@ contract('Synthetix', async accounts => {
 		}); // Issue a small amount to account2
 
 		const account1AmountToIssue = await synthetix.maxIssuableSynths(account1, sUSD);
-		await synthetix.issueMaxSynths(sUSD, { from: account1 });
+		await synthetix.issueMaxSynths({ from: account1 });
 		const debtBalance1 = await synthetix.debtBalanceOf(account1, sUSD);
 		assert.bnClose(debtBalance1, account1AmountToIssue);
 
@@ -1416,7 +1416,7 @@ contract('Synthetix', async accounts => {
 		}); // Issue a small amount to account2
 
 		const account1AmountToIssue = await synthetix.maxIssuableSynths(account1, sUSD);
-		await synthetix.issueMaxSynths(sUSD, { from: account1 });
+		await synthetix.issueMaxSynths({ from: account1 });
 		const debtBalance1 = await synthetix.debtBalanceOf(account1, sUSD);
 		assert.bnClose(debtBalance1, account1AmountToIssue);
 
@@ -1468,7 +1468,7 @@ contract('Synthetix', async accounts => {
 		}); // Issue a small amount to account2
 
 		const account1AmountToIssue = await synthetix.maxIssuableSynths(account1, sUSD);
-		await synthetix.issueMaxSynths(sUSD, { from: account1 });
+		await synthetix.issueMaxSynths({ from: account1 });
 		const debtBalance1 = await synthetix.debtBalanceOf(account1, sUSD);
 		assert.bnEqual(debtBalance1, account1AmountToIssue);
 
@@ -1925,7 +1925,7 @@ contract('Synthetix', async accounts => {
 		assert.bnEqual(collateral, escrowedAmount);
 
 		// Issue max synths. (300 sUSD)
-		await synthetix.issueMaxSynths(sUSD, { from: account1 });
+		await synthetix.issueMaxSynths({ from: account1 });
 
 		// There should be 300 sUSD of value for account1
 		assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('300'));
@@ -1964,7 +1964,7 @@ contract('Synthetix', async accounts => {
 		assert.bnEqual(collateral, escrowedAmount);
 
 		// Issue max synths. (300 sUSD)
-		await synthetix.issueMaxSynths(sUSD, { from: account1 });
+		await synthetix.issueMaxSynths({ from: account1 });
 
 		// There should be 300 sUSD of value for account1
 		assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('300'));

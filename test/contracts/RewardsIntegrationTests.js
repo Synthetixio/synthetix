@@ -185,9 +185,9 @@ contract('Rewards Integration Tests', async accounts => {
 			CLAIMABLE_PERIODS = FEE_PERIOD_LENGTH - 1;
 			// console.log('FEE_PERIOD_LENGTH', FEE_PERIOD_LENGTH);
 
-			await synthetix.issueMaxSynths(sUSD, { from: account1 });
-			await synthetix.issueMaxSynths(sUSD, { from: account2 });
-			await synthetix.issueMaxSynths(sUSD, { from: account3 });
+			await synthetix.issueMaxSynths({ from: account1 });
+			await synthetix.issueMaxSynths({ from: account2 });
+			await synthetix.issueMaxSynths({ from: account3 });
 		});
 
 		it('should allocate the 3 accounts a third of the rewards for 1 period', async () => {
@@ -430,7 +430,7 @@ contract('Rewards Integration Tests', async accounts => {
 			// await logFeesByPeriod(account1);
 
 			// Account 1 comes back into the system
-			await synthetix.issueMaxSynths(sUSD, { from: account1 });
+			await synthetix.issueMaxSynths({ from: account1 });
 
 			// Only Account 1 claims rewards
 			const rewardsAmount = third(periodOneMintableSupplyMinusMinterReward);
@@ -496,7 +496,7 @@ contract('Rewards Integration Tests', async accounts => {
 			fastForwardAndCloseFeePeriod();
 
 			// Account1 Reenters in current unclosed period so no rewards yet
-			// await synthetix.issueMaxSynths(sUSD, { from: account1 });
+			// await synthetix.issueMaxSynths({ from: account1 });
 
 			// Accounts 2 & 3 now have 33% of period 1 and 50% of period 2
 			// console.log('33% of p1', third(periodOneMintableSupplyMinusMinterReward).toString());
@@ -838,9 +838,9 @@ contract('Rewards Integration Tests', async accounts => {
 	describe('Collateralisation Ratio Penalties', async () => {
 		beforeEach(async () => {
 			// console.log('3 accounts issueMaxSynths in p1');
-			await synthetix.issueMaxSynths(sUSD, { from: account1 });
-			await synthetix.issueMaxSynths(sUSD, { from: account2 });
-			await synthetix.issueMaxSynths(sUSD, { from: account3 });
+			await synthetix.issueMaxSynths({ from: account1 });
+			await synthetix.issueMaxSynths({ from: account2 });
+			await synthetix.issueMaxSynths({ from: account3 });
 
 			// We should have zero rewards available because the period is still open.
 			const rewardsBefore = await feePool.feesAvailable(account1, sUSD);

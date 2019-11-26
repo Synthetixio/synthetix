@@ -164,7 +164,7 @@ contract('SynthetixState', async accounts => {
 	it('should correctly report hasIssued for an address', async () => {
 		assert.equal(await synthetixState.hasIssued(owner), false);
 
-		await synthetix.issueMaxSynths(sUSD, { from: owner });
+		await synthetix.issueMaxSynths({ from: owner });
 		const synthBalance = await sUSDContract.balanceOf(owner);
 
 		assert.equal(await synthetixState.hasIssued(owner), true);

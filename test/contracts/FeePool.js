@@ -1065,7 +1065,7 @@ contract('FeePool', async accounts => {
 		});
 
 		it('should be no penalty if issuance ratio is less than target ratio', async () => {
-			await synthetix.issueMaxSynths(sUSD, { from: owner });
+			await synthetix.issueMaxSynths({ from: owner });
 
 			// Increase the price so we start well and truly within our 20% ratio.
 			const newRate = (await exchangeRates.rateForCurrency(SNX)).add(web3.utils.toBN('1'));
@@ -1079,7 +1079,7 @@ contract('FeePool', async accounts => {
 
 		it('should correctly calculate the 10% buffer for penalties at specific issuance ratios', async () => {
 			const step = toUnit('0.01');
-			await synthetix.issueMaxSynths(sUSD, { from: owner });
+			await synthetix.issueMaxSynths({ from: owner });
 
 			// Increase the price so we start well and truly within our 20% ratio.
 			const newRate = (await exchangeRates.rateForCurrency(SNX)).add(
@@ -1122,7 +1122,7 @@ contract('FeePool', async accounts => {
 				from: owner,
 			});
 
-			await synthetix.issueMaxSynths(sUSD, { from: account1 });
+			await synthetix.issueMaxSynths({ from: account1 });
 			const amount = await sUSDContract.balanceOf(account1);
 			await synthetix.issueSynths(sUSD, amount, { from: owner });
 			await closeFeePeriod();
@@ -1161,7 +1161,7 @@ contract('FeePool', async accounts => {
 				from: owner,
 			});
 
-			await synthetix.issueMaxSynths(sUSD, { from: account1 });
+			await synthetix.issueMaxSynths({ from: account1 });
 			const amount = await sUSDContract.balanceOf(account1);
 			await synthetix.issueSynths(sUSD, amount, { from: owner });
 			await closeFeePeriod();
