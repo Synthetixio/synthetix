@@ -611,7 +611,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
      */
     function amountReceivedFromTransfer(uint value)
         external
-        view
+        pure
         returns (uint)
     {
         return value;
