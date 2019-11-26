@@ -230,6 +230,10 @@ const deploy = async ({
 		}
 	}
 
+	const newSynthsToAdd = synths
+		.filter(({ name }) => !config[`Synth${name}`])
+		.map(({ name }) => name);
+
 	parameterNotice({
 		Network: network,
 		'Gas price to use': `${gasPrice} GWEI`,
@@ -244,7 +248,9 @@ const deploy = async ({
 			(latestSolTimestamp > earliestCompiledTimestamp
 				? yellow(' ⚠⚠⚠ this is later than the last build! Is this intentional?')
 				: green(' ✅')),
-		'Add any new synths found?': addNewSynths ? green('✅ YES') : yellow('⚠ NO'),
+		'Add any new synths found?': addNewSynths
+			? green('✅ YES\n\t\t\t\t') + newSynthsToAdd.join(', ')
+			: yellow('⚠ NO'),
 		'Deployer account:': account,
 		'Synthetix totalSupply': `${Math.round(w3utils.fromWei(currentSynthetixSupply) / 1e6)}m`,
 		'FeePool exchangeFeeRate': `${w3utils.fromWei(currentExchangeFee)}`,
@@ -352,6 +358,20 @@ const deploy = async ({
 		name: 'ExchangeRates',
 		args: [account, oracleExrates, [toBytes32('SNX')], [currentSynthetixPrice]],
 	});
+
+	// Set exchangeRates.stalePeriod to 1 sec if mainnet
+	if (exchangeRates && config['ExchangeRates'].deploy && network === 'mainnet') {
+		const rateStalePeriod = 1;
+		await runStep({
+			contract: 'ExchangeRates',
+			target: exchangeRates,
+			read: 'rateStalePeriod',
+			expected: input => Number(input.toString()) === rateStalePeriod,
+			write: 'setRateStalePeriod',
+			writeArg: rateStalePeriod,
+		});
+	}
+
 	const exchangeRatesAddress = exchangeRates ? exchangeRates.options.address : '';
 
 	const rewardEscrow = await deployContract({
@@ -995,18 +1015,20 @@ const deploy = async ({
 					lowerLimit === +w3utils.fromWei(oldLowerLimit)
 				) {
 					const freezeAtUpperLimit = +w3utils.fromWei(currentRateForCurrency) === upperLimit;
-					console.log(
-						gray(
-							`Detected an existing inverted synth for ${currencyKey} with identical parameters. ` +
-								`Persisting its frozen status (${currentRateIsFrozen}) and frozen rate at upper (${freezeAtUpperLimit}) or lower (${!freezeAtUpperLimit}).`
-						)
-					);
-					// then ensure it gets set to the same frozen status and frozen rate
-					// as the old exchange rates
-					await setInversePricing({
-						freeze: currentRateIsFrozen,
-						freezeAtUpperLimit,
-					});
+					if (currentRateIsFrozen) {
+						console.log(
+							gray(
+								`Detected an existing inverted synth for ${currencyKey} with identical parameters, yet frozen status does not match. ` +
+									`Persisting its frozen status (${currentRateIsFrozen}) and frozen rate at upper (${freezeAtUpperLimit}) or lower (${!freezeAtUpperLimit}).`
+							)
+						);
+						// then ensure it gets set to the same frozen status and frozen rate
+						// as the old exchange rates
+						await setInversePricing({
+							freeze: currentRateIsFrozen,
+							freezeAtUpperLimit,
+						});
+					}
 				} else if (Number(currentRateForCurrency) === 0) {
 					console.log(gray(`Detected a new inverted synth for ${currencyKey}. Proceeding to add.`));
 					// Then a new inverted synth is being added (as there's no previous rate for it)
