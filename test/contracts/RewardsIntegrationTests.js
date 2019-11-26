@@ -195,9 +195,9 @@ contract('Rewards Integration Tests', async accounts => {
 			await fastForwardAndCloseFeePeriod();
 
 			// All 3 accounts claim rewards
-			await feePool.claimFees(sUSD, { from: account1 });
-			await feePool.claimFees(sUSD, { from: account2 });
-			await feePool.claimFees(sUSD, { from: account3 });
+			await feePool.claimFees({ from: account1 });
+			await feePool.claimFees({ from: account2 });
+			await feePool.claimFees({ from: account3 });
 
 			// All 3 accounts have 1/3 of the rewards
 			const accOneEscrowed = await rewardEscrow.getVestingScheduleEntry(account1, 0);
@@ -266,8 +266,8 @@ contract('Rewards Integration Tests', async accounts => {
 				// await logFeePeriods();
 			}
 
-			await feePool.claimFees(sUSD, { from: account1 });
-			await feePool.claimFees(sUSD, { from: account2 });
+			await feePool.claimFees({ from: account1 });
+			await feePool.claimFees({ from: account2 });
 			// await logFeePeriods();
 
 			// Assert that we have correct values in the fee pool
@@ -300,9 +300,9 @@ contract('Rewards Integration Tests', async accounts => {
 			}
 
 			// All 3 accounts claim rewards
-			await feePool.claimFees(sUSD, { from: account1 });
-			await feePool.claimFees(sUSD, { from: account2 });
-			await feePool.claimFees(sUSD, { from: account3 });
+			await feePool.claimFees({ from: account1 });
+			await feePool.claimFees({ from: account2 });
+			await feePool.claimFees({ from: account3 });
 
 			// await logFeePeriods();
 
@@ -397,7 +397,7 @@ contract('Rewards Integration Tests', async accounts => {
 				await synthetix.mint({ from: owner });
 
 				// Only 1 account claims rewards
-				await feePool.claimFees(sUSD, { from: account1 });
+				await feePool.claimFees({ from: account1 });
 
 				// await logFeePeriods();
 			}
@@ -449,7 +449,7 @@ contract('Rewards Integration Tests', async accounts => {
 			assert.bnEqual(feesByPeriod[2][1], rewardsAmount);
 
 			// Only Account 1 claims rewards
-			await feePool.claimFees(sUSD, { from: account1 });
+			await feePool.claimFees({ from: account1 });
 
 			// await logFeesByPeriod(account1);
 			// ] ---------------------feesByPeriod----------------------
@@ -471,7 +471,7 @@ contract('Rewards Integration Tests', async accounts => {
 			await fastForwardAndCloseFeePeriod();
 
 			// Account1 claims but 2 & 3 dont
-			await feePool.claimFees(sUSD, { from: account1 });
+			await feePool.claimFees({ from: account1 });
 
 			// All Account 1 has 1/3 of the rewards escrowed
 			const account1Escrowed = await rewardEscrow.getVestingScheduleEntry(account1, 0);
@@ -520,9 +520,9 @@ contract('Rewards Integration Tests', async accounts => {
 			assert.bnClose(account3Rewards[1], rewardsAmount, '1');
 
 			// Accounts 2 & 3 claim
-			await feePool.claimFees(sUSD, { from: account2 });
+			await feePool.claimFees({ from: account2 });
 			// updateRatesWithDefaults();
-			await feePool.claimFees(sUSD, { from: account3 });
+			await feePool.claimFees({ from: account3 });
 
 			// Accounts 2 & 3 now have the rewards escrowed
 			const account2Escrowed = await rewardEscrow.getVestingScheduleEntry(account2, 0);
@@ -563,8 +563,8 @@ contract('Rewards Integration Tests', async accounts => {
 			assert.bnEqual(debtRatioAccount2, fiftyPercent);
 
 			// Accounts 1&2 claim rewards
-			await feePool.claimFees(sUSD, { from: account1 });
-			await feePool.claimFees(sUSD, { from: account2 });
+			await feePool.claimFees({ from: account1 });
+			await feePool.claimFees({ from: account2 });
 
 			// Assert Accounts 1&2 have 50% of the minted rewards in their initial escrow entry
 			const account1Escrow = await rewardEscrow.getVestingScheduleEntry(account1, 0);
@@ -627,9 +627,9 @@ contract('Rewards Integration Tests', async accounts => {
 			// await logFeesByPeriod(account3);
 
 			// All 3 accounts claim rewards
-			await feePool.claimFees(sUSD, { from: account1 });
-			await feePool.claimFees(sUSD, { from: account2 });
-			await feePool.claimFees(sUSD, { from: account3 });
+			await feePool.claimFees({ from: account1 });
+			await feePool.claimFees({ from: account2 });
+			await feePool.claimFees({ from: account3 });
 
 			// await logFeePeriods();
 
@@ -687,9 +687,9 @@ contract('Rewards Integration Tests', async accounts => {
 			// //////////////////////////////////////////////
 
 			// Accounts 2&3 claim rewards
-			await feePool.claimFees(sUSD, { from: account1 });
-			await feePool.claimFees(sUSD, { from: account2 });
-			await feePool.claimFees(sUSD, { from: account3 });
+			await feePool.claimFees({ from: account1 });
+			await feePool.claimFees({ from: account2 });
+			await feePool.claimFees({ from: account3 });
 
 			// await logFeesByPeriod(account1);
 			// await logFeesByPeriod(account2);
@@ -733,9 +733,9 @@ contract('Rewards Integration Tests', async accounts => {
 			// //////////////////////////////////////////////
 
 			// Accounts 1,2,3 claim rewards
-			await feePool.claimFees(sUSD, { from: account1 });
-			await feePool.claimFees(sUSD, { from: account2 });
-			await feePool.claimFees(sUSD, { from: account3 });
+			await feePool.claimFees({ from: account1 });
+			await feePool.claimFees({ from: account2 });
+			await feePool.claimFees({ from: account3 });
 
 			// Assert (1,2,3) have (40%,40%,20%) of the rewards in their 2nd escrow entry
 			const account1EscrowEntry4 = await rewardEscrow.getVestingScheduleEntry(account1, 1);
@@ -776,9 +776,9 @@ contract('Rewards Integration Tests', async accounts => {
 			// //////////////////////////////////////////////
 
 			// Accounts 1,2,3 claim rewards
-			await feePool.claimFees(sUSD, { from: account1 });
-			await feePool.claimFees(sUSD, { from: account2 });
-			await feePool.claimFees(sUSD, { from: account3 });
+			await feePool.claimFees({ from: account1 });
+			await feePool.claimFees({ from: account2 });
+			await feePool.claimFees({ from: account3 });
 
 			// Assert Accounts 1 has 50% & 2&3 have 25% of the minted rewards in their initial escrow entry
 			const account1Escrow = await rewardEscrow.getVestingScheduleEntry(account1, 0);
@@ -827,9 +827,9 @@ contract('Rewards Integration Tests', async accounts => {
 			// await logFeesByPeriod(account3);
 
 			// Accounts 1,2,3 claim rewards
-			await feePool.claimFees(sUSD, { from: account1 });
-			await feePool.claimFees(sUSD, { from: account2 });
-			await feePool.claimFees(sUSD, { from: account3 });
+			await feePool.claimFees({ from: account1 });
+			await feePool.claimFees({ from: account2 });
+			await feePool.claimFees({ from: account3 });
 
 			// Assert Accounts 2&3 have 25% of the minted rewards in their initial escrow entry
 			const account1Escrow2 = await rewardEscrow.getVestingScheduleEntry(account1, 1);
@@ -884,7 +884,7 @@ contract('Rewards Integration Tests', async accounts => {
 			assert.bnClose(snxRewards[1], third(periodOneMintableSupplyMinusMinterReward));
 
 			// And if we claim them
-			await feePool.claimFees(sUSD, { from: account1 });
+			await feePool.claimFees({ from: account1 });
 
 			// We should have our decreased rewards amount in escrow
 			const vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account1, 0);
@@ -902,7 +902,7 @@ contract('Rewards Integration Tests', async accounts => {
 			assert.equal(await feePool.isFeesClaimable(account1), false);
 
 			// And if we claim then it should revert as there is nothing to claim
-			await assert.revert(feePool.claimFees(sUSD, { from: account1 }));
+			await assert.revert(feePool.claimFees({ from: account1 }));
 		});
 	});
 });

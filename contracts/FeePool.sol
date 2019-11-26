@@ -1,42 +1,3 @@
-/*
------------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-
-file:       FeePool.sol
-version:    2.8.0
-authors:    Kevin Brown
-            Jackson Chan
-            Clinton Ennis
-date:       2018-10-15
-
------------------------------------------------------------------
-MODULE DESCRIPTION
------------------------------------------------------------------
-
-The FeePool is a place for users to interact with the fees that
-have been generated from the Synthetix system if they've helped
-to create the economy.
-
-Users stake Synthetix to create Synths. As Synth users transact,
-a small fee is deducted from exchange transactions, which collects
-in the fee pool. Fees are immediately converted to XDRs, a type
-of reserve currency similar to SDRs used by the IMF:
-https://www.imf.org/en/About/Factsheets/Sheets/2016/08/01/14/51/Special-Drawing-Right-SDR
-
-Users are entitled to withdraw fees from periods that they participated
-in fully, e.g. they have to stake before the period starts. They
-can withdraw fees for the last 2 periods as a single lump sum.
-Currently fee periods are 7 days long, meaning it's assumed
-users will withdraw their fees approximately once a fortnight. Fees
-which are not withdrawn are redistributed to the whole pool,
-enabling these non-claimed fees to go back to the rest of the commmunity.
-
-Fees can be withdrawn in any synth currency.
-
------------------------------------------------------------------
-*/
-
 pragma solidity 0.4.25;
 
 import "./Proxyable.sol";
@@ -100,7 +61,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     FeePeriod[FEE_PERIOD_LENGTH] private _recentFeePeriods;
     uint256 private _currentFeePeriod;
 
-    // How long a fee period lasts at a minimum. It is required for 
+    // How long a fee period lasts at a minimum. It is required for
     // anyone to roll over the periods, so they are not guaranteed
     // to roll over at exactly this duration, but the contract enforces
     // that they cannot roll over any quicker than this duration.
@@ -332,13 +293,14 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
     /**
     * @notice Claim fees for last period when available or not already withdrawn.
-    * @param currencyKey Synth currency you wish to receive the fees in.
     */
-    function claimFees(bytes32 currencyKey)
+    function claimFees()
         external
         optionalProxy
         returns (bool)
     {
+        bytes32 currencyKey = "sUSD";
+
         return _claimFees(messageSender, currencyKey);
     }
 
@@ -347,14 +309,15 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     * and the fees will be sent to the claimingForAddress.
     * approveClaimOnBehalf() must be called first to approve the deletage address
     * @param claimingForAddress The account you are claiming fees for
-    * @param currencyKey Synth currency you wish to receive the fees in
     */
-    function claimOnBehalf(address claimingForAddress, bytes32 currencyKey)
+    function claimOnBehalf(address claimingForAddress)
         external
         optionalProxy
         returns (bool)
     {
         require(delegates.approval(claimingForAddress, messageSender), "Not approved to claim on behalf");
+
+        bytes32 currencyKey = "sUSD";
 
         return _claimFees(claimingForAddress, currencyKey);
     }
@@ -410,7 +373,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         public
         optionalProxy_onlyOwner
         onlyDuringSetup
-    {        
+    {
         require (startingDebtIndex <= synthetixState.debtLedgerLength(), "Cannot import bad data");
 
         _recentFeePeriods[_currentFeePeriod.add(feePeriodIndex).mod(FEE_PERIOD_LENGTH)] = FeePeriod({
@@ -481,7 +444,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         // until we've exhausted the amount.
         // The condition checks for overflow because we're going to 0 with an unsigned int.
         for (uint i = FEE_PERIOD_LENGTH - 1; i < FEE_PERIOD_LENGTH; i--) {
-            uint feesAlreadyClaimed = _recentFeePeriodsStorage(i).feesClaimed; 
+            uint feesAlreadyClaimed = _recentFeePeriodsStorage(i).feesClaimed;
             uint delta = _recentFeePeriodsStorage(i).feesToDistribute.sub(feesAlreadyClaimed);
 
             if (delta > 0) {
@@ -765,8 +728,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         (userOwnershipPercentage, debtEntryIndex) = feePoolState.getAccountsDebtEntry(account, 0);
 
         // If they don't have any debt ownership and they never minted, they don't have any fees.
-        // User ownership can reduce to 0 if user burns all synths, 
-        // however they could have fees applicable for periods they had minted in before so we check debtEntryIndex.  
+        // User ownership can reduce to 0 if user burns all synths,
+        // however they could have fees applicable for periods they had minted in before so we check debtEntryIndex.
         if (debtEntryIndex == 0 && userOwnershipPercentage == 0) return;
 
         // The [0] fee period is not yet ready to claim, but it is a fee period that they can have
@@ -780,7 +743,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
         // Retrieve user's last fee claim by periodId
         uint lastFeeWithdrawal = getLastFeeWithdrawal(account);
-        
+
         // Go through our fee periods from the oldest feePeriod[FEE_PERIOD_LENGTH - 1] and figure out what we owe them.
         // Condition checks for periods > 0
         for (uint i = FEE_PERIOD_LENGTH - 1; i > 0; i--) {
@@ -814,7 +777,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
      * wallet's debtPercentage. Gives a precise amount of the feesToDistribute
      * for fees in the period. Precision factor is removed before results are
      * returned.
-     * @dev The reported fees owing for the current period [0] are just a 
+     * @dev The reported fees owing for the current period [0] are just a
      * running balance until the fee period closes
      */
     function _feesAndRewardsFromPeriod(uint period, uint ownershipPercentage, uint debtEntryIndex)
@@ -851,7 +814,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         internal
         view
         returns (uint)
-    {        
+    {
         // Figure out their global debt percentage delta at end of fee Period.
         // This is a high precision integer.
         uint feePeriodDebtOwnership = synthetixState.debtLedger(closingDebtIndex)
@@ -869,7 +832,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         require(period != 0, "Current period is not closed yet");
         require(period < FEE_PERIOD_LENGTH, "Exceeds the FEE_PERIOD_LENGTH");
 
-        // If the period being checked is uninitialised then return 0. This is only at the start of the system.  
+        // If the period being checked is uninitialised then return 0. This is only at the start of the system.
         if (_recentFeePeriodsStorage(period - 1).startingDebtIndex == 0) return 0;
 
         uint closingDebtIndex = uint256(_recentFeePeriodsStorage(period - 1).startingDebtIndex).sub(1);
