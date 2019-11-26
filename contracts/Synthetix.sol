@@ -276,30 +276,16 @@ contract Synthetix is ExternStateToken {
         return exchangeFeeRate.mul(multiplier);
     }
     // ========== MUTATIVE FUNCTIONS ==========
-
+    
     /**
      * @notice ERC20 transfer function.
      */
     function transfer(address to, uint value)
         public
-        returns (bool)
-    {
-        bytes memory empty;
-        return transfer(to, value, empty);
-    }
-
-    /**
-     * @notice ERC223 transfer function. Does not conform with the ERC223 spec, as:
-     *         - Transaction doesn't revert if the recipient doesn't implement tokenFallback()
-     *         - Emits a standard ERC20 event without the bytes data parameter so as not to confuse
-     *           tooling such as Etherscan.
-     */
-    function transfer(address to, uint value, bytes data)
-        public
         optionalProxy
         returns (bool)
     {
-        // Ensure they're not trying to exceed their locked amount
+        // Ensure they're not trying to exceed their staked SNX amount
         require(value <= transferableSynthetix(messageSender), "Insufficient balance");
 
         // Perform the transfer: if there is a problem an exception will be thrown in this call.
@@ -308,36 +294,20 @@ contract Synthetix is ExternStateToken {
         return true;
     }
 
-    /**
+     /**
      * @notice ERC20 transferFrom function.
      */
     function transferFrom(address from, address to, uint value)
-        public
-        returns (bool)
-    {
-        bytes memory empty;
-        return transferFrom(from, to, value, empty);
-    }
-
-    /**
-     * @notice ERC223 transferFrom function. Does not conform with the ERC223 spec, as:
-     *         - Transaction doesn't revert if the recipient doesn't implement tokenFallback()
-     *         - Emits a standard ERC20 event without the bytes data parameter so as not to confuse
-     *           tooling such as Etherscan.
-     */
-    function transferFrom(address from, address to, uint value, bytes data)
         public
         optionalProxy
         returns (bool)
     {
         // Ensure they're not trying to exceed their locked amount
-        require(value <= transferableSynthetix(from), "Insufficient balance");
+        require(value <= transferableSynthetix(from), "Cannot transfer staked or escrowed SNX");
 
         // Perform the transfer: if there is a problem,
         // an exception will be thrown in this call.
-        _transferFrom_byProxy(messageSender, from, to, value, data);
-
-        return true;
+        return _transferFrom_byProxy(messageSender, from, to, value);         
     }
 
     /**

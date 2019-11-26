@@ -736,7 +736,7 @@ contract('Synthetix', async accounts => {
 		const twelveWeeks = oneWeek * 12;
 		const now = await currentTime();
 		const escrowedSynthetixs = toUnit('30000');
-		await synthetix.methods['transfer(address,uint256)'](escrow.address, escrowedSynthetixs, {
+		await synthetix.transfer(escrow.address, escrowedSynthetixs, {
 			from: owner,
 		});
 		await escrow.appendVestingEntry(
@@ -749,9 +749,7 @@ contract('Synthetix', async accounts => {
 		);
 
 		// Ensure the transfer fails as all the synthetix are in escrow
-		await assert.revert(
-			synthetix.methods['transfer(address,uint256)'](account2, toUnit('100'), { from: account1 })
-		);
+		await assert.revert(synthetix.transfer(account2, toUnit('100'), { from: account1 }));
 	});
 
 	it('should transfer using the ERC223 transferFrom function', async () => {
