@@ -1,46 +1,3 @@
-/*
------------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-
-file:       Synthetix.sol
-version:    2.0
-author:     Kevin Brown
-            Gavin Conway
-date:       2018-09-14
-
------------------------------------------------------------------
-MODULE DESCRIPTION
------------------------------------------------------------------
-
-Synthetix token contract. SNX is a transferable ERC20 token,
-and also give its holders the following privileges.
-
-== Issuance and Burning ==
-
-All synths issued require a proportional value of SNX to be locked,
-where the proportion is governed by the SynthetixState.issuanceRatio. This
-means for every $1 of SNX locked up, $(issuanceRatio) synths can be issued.
-i.e. to issue 100 synths, 100/issuanceRatio dollars of SNX need to be locked up.
-
-To determine the value of some amount of SNX(S), an oracle is used to push
-the price of SNX (P_S) in dollars to the ExchangeRates contract. The value of S
-would then be: S * P_S.
-
-Any SNX that are locked up by this issuance process cannot be transferred.
-The amount that is locked floats based on the price of SNX. If the price
-of SNX moves up, less SNX are locked, so they can be issued against,
-or transferred freely. If the price of SNX moves down, more SNX are locked,
-even going above the initial wallet balance.
-
-Any synth can be burned to repay the SNX stakers debt. SNX holders can
-check their current debt via debtBalanceOf(address) to see the amount
-of synths in any value they need to burn to unlock their staked SNX.
-
-
------------------------------------------------------------------
-*/
-
 pragma solidity 0.4.25;
 
 
@@ -592,14 +549,15 @@ contract Synthetix is ExternStateToken {
     /**
      * @notice Issue synths against the sender's SNX.
      * @dev Issuance is only allowed if the synthetix price isn't stale. Amount should be larger than 0.
-     * @param currencyKey The currency you wish to issue synths in, for example sUSD or sAUD
      * @param amount The amount of synths you wish to issue with a base of UNIT
      */
-    function issueSynths(bytes32 currencyKey, uint amount)
+    function issueSynths(uint amount)
         public
         optionalProxy
         // No need to check if price is stale, as it is checked in issuableSynths.
     {
+        bytes32 currencyKey = "sUSD";
+
         require(amount <= remainingIssuableSynths(messageSender, currencyKey), "Amount too large");
 
         // Keep track of the debt they're about to create
@@ -615,12 +573,13 @@ contract Synthetix is ExternStateToken {
     /**
      * @notice Issue the maximum amount of Synths possible against the sender's SNX.
      * @dev Issuance is only allowed if the synthetix price isn't stale.
-     * @param currencyKey The currency you wish to issue synths in, for example sUSD or sAUD
      */
-    function issueMaxSynths(bytes32 currencyKey)
+    function issueMaxSynths()
         external
         optionalProxy
     {
+        bytes32 currencyKey = "sUSD";
+
         // Figure out the maximum we can issue in that currency
         uint maxIssuable = remainingIssuableSynths(messageSender, currencyKey);
 
@@ -636,19 +595,20 @@ contract Synthetix is ExternStateToken {
 
     /**
      * @notice Burn synths to clear issued synths/free SNX.
-     * @param currencyKey The currency you're specifying to burn
      * @param amount The amount (in UNIT base) you wish to burn
      * @dev The amount to burn is debased to XDR's
      */
-    function burnSynths(bytes32 currencyKey, uint amount)
+    function burnSynths(uint amount)
         external
         optionalProxy
         // No need to check for stale rates as effectiveValue checks rates
     {
+        bytes32 currencyKey = "sUSD";
+
         // How much debt do they have?
         uint debtToRemove = effectiveValue(currencyKey, amount, "XDR");
         uint existingDebt = debtBalanceOf(messageSender, "XDR");
-        
+
         uint debtInCurrencyKey = debtBalanceOf(messageSender, currencyKey);
 
         require(existingDebt > 0, "No debt to forgive");

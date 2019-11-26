@@ -81,7 +81,6 @@ const verify = async ({ buildPath, network, deploymentPath }) => {
 				},
 			});
 
-			console.log(`result from etherscan: ${result}`);
 			// Get the bytecode that was in that transaction.
 			const deployedBytecode = result.data.result[0].input;
 

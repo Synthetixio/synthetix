@@ -316,12 +316,12 @@ module.exports = async function(deployer, network, accounts) {
 
 	// Initial prices
 	const { timestamp } = await web3.eth.getBlock('latest');
-
+	// XDR: 1 USD
 	// sAUD: 0.5 USD
 	// sEUR: 1.25 USD
-	// SNX: 0.1 USD
-	// sBTC: 5000 USD
-	// iBTC: 4000 USD
+	// sBTC: 0.1
+	// iBTC: 5000 USD
+	// SNX: 4000 USD
 	await exchangeRates.updateRates(
 		currencyKeys
 			.filter(currency => currency !== 'sUSD')
