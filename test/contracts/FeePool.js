@@ -626,7 +626,7 @@ contract('FeePool', async accounts => {
 		assert.bnClose(feesAvailableAcc1[0], totalFees.div(web3.utils.toBN('2')), '8');
 	});
 
-	it('should allow a user to claim their fees in sAUD after some exchanging', async () => {
+	it('should allow a user to claim their fees in sUSD (as half of total) after some exchanging', async () => {
 		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 
 		// Issue 10,000 sUSD for two different accounts.
@@ -686,7 +686,7 @@ contract('FeePool', async accounts => {
 		assert.bnEqual(await sUSDContract.balanceOf(owner), oldSynthBalance.add(feesAvailable[0]));
 	});
 
-	it('should revert when a user tries to double claim th eir fees', async () => {
+	it('should revert when a user tries to double claim their fees', async () => {
 		// Issue 10,000 sUSD.
 		await synthetix.issueSynths(toUnit('10000'), { from: owner });
 
