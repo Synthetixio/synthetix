@@ -556,18 +556,13 @@ contract('Synthetix', async accounts => {
 		// Approve account1 to act on our behalf for 10 SNX.
 		let transaction = await synthetix.approve(account1, toUnit('10'), { from: owner });
 		assert.eventEqual(transaction, 'Approval', {
-			owner,
+			account: owner,
 			spender: account1,
 			value: toUnit('10'),
 		});
 
 		// Assert that transferFrom works.
-		transaction = await synthetix.methods['transferFrom(address,address,uint256)'](
-			owner,
-			account2,
-			toUnit('10'),
-			{ from: account1 }
-		);
+		transaction = await synthetix.transferFrom(owner, account2, toUnit('10'), { from: account1 });
 		assert.eventEqual(transaction, 'Transfer', {
 			from: owner,
 			to: account2,
@@ -580,7 +575,7 @@ contract('Synthetix', async accounts => {
 
 		// Assert that we can't transfer more even though there's a balance for owner.
 		await assert.revert(
-			synthetix.methods['transferFrom(address,address,uint256)'](owner, account2, '1', {
+			synthetix.transferFrom(owner, account2, '1', {
 				from: account1,
 			})
 		);
@@ -603,7 +598,7 @@ contract('Synthetix', async accounts => {
 		// Approve account1 to act on our behalf for 10 SNX.
 		const transaction = await synthetix.approve(account1, toUnit('10'), { from: owner });
 		assert.eventEqual(transaction, 'Approval', {
-			owner,
+			account: owner,
 			spender: account1,
 			value: toUnit('10'),
 		});
@@ -619,48 +614,6 @@ contract('Synthetix', async accounts => {
 		);
 	});
 
-	it('should transfer using the ERC223 transfer function', async () => {
-		// Ensure our environment is set up correctly for our assumptions
-		// e.g. owner owns all SNX.
-		assert.bnEqual(await synthetix.totalSupply(), await synthetix.balanceOf(owner));
-
-		const transaction = await synthetix.methods['transfer(address,uint256,bytes)'](
-			account1,
-			toUnit('10'),
-			toBytes32('This is a memo'),
-			{ from: owner }
-		);
-
-		// Note, this is an ERC20 event, not ERC223 to maintain backwards compatibility with
-		// tools that expect ERC20 events, since solidity does not support event overloading.
-		assert.eventEqual(transaction, 'Transfer', {
-			from: owner,
-			to: account1,
-			value: toUnit('10'),
-		});
-
-		assert.bnEqual(await synthetix.balanceOf(account1), toUnit('10'));
-	});
-
-	it('should revert when exceeding locked synthetix and calling the ERC223 transfer function', async () => {
-		// Ensure our environment is set up correctly for our assumptions
-		// e.g. owner owns all SNX.
-		assert.bnEqual(await synthetix.totalSupply(), await synthetix.balanceOf(owner));
-
-		// Issue max synths.
-		await synthetix.issueMaxSynths(sUSD, { from: owner });
-
-		// Try to transfer 0.000000000000000001 SNX
-		await assert.revert(
-			synthetix.methods['transfer(address,uint256,bytes)'](
-				account1,
-				'1',
-				toBytes32('This is a memo'),
-				{ from: owner }
-			)
-		);
-	});
-
 	it('should not allow transfer if the exchange rate for synthetix is stale', async () => {
 		// Give some SNX to account1 & account2
 		const value = toUnit('300');
@@ -673,23 +626,11 @@ contract('Synthetix', async accounts => {
 
 		// Ensure that we can do a successful transfer before rates go stale
 		await synthetix.methods['transfer(address,uint256)'](account2, value, { from: account1 });
-		const data = toBytes32('This is a memo');
-		await synthetix.methods['transfer(address,uint256,bytes)'](account2, value, data, {
-			from: account1,
-		});
 
 		await synthetix.approve(account3, value, { from: account2 });
 		await synthetix.methods['transferFrom(address,address,uint256)'](account2, account1, value, {
 			from: account3,
 		});
-		await synthetix.approve(account3, value, { from: account2 });
-		await synthetix.methods['transferFrom(address,address,uint256,bytes)'](
-			account2,
-			account1,
-			value,
-			data,
-			{ from: account3 }
-		);
 
 		// Now jump forward in time so the rates are stale
 		await fastForward((await exchangeRates.rateStalePeriod()) + 1);
@@ -704,27 +645,12 @@ contract('Synthetix', async accounts => {
 		await assert.revert(
 			synthetix.methods['transfer(address,uint256)'](account2, value, { from: account1 })
 		);
-		await assert.revert(
-			synthetix.methods['transfer(address,uint256,bytes)'](account2, value, data),
-			{
-				from: account1,
-			}
-		);
 
 		await synthetix.approve(account3, value, { from: account2 });
 		await assert.revert(
 			synthetix.methods['transferFrom(address,address,uint256)'](account2, account1, value, {
 				from: account3,
 			})
-		);
-		await assert.revert(
-			synthetix.methods['transferFrom(address,address,uint256,bytes)'](
-				account2,
-				account1,
-				value,
-				data,
-				{ from: account3 }
-			)
 		);
 	});
 
@@ -748,85 +674,6 @@ contract('Synthetix', async accounts => {
 
 		// Ensure the transfer fails as all the synthetix are in escrow
 		await assert.revert(synthetix.transfer(account2, toUnit('100'), { from: account1 }));
-	});
-
-	it('should transfer using the ERC223 transferFrom function', async () => {
-		// Ensure our environment is set up correctly for our assumptions
-		// e.g. owner owns all SNX.
-		const previousOwnerBalance = await synthetix.balanceOf(owner);
-		assert.bnEqual(await synthetix.totalSupply(), previousOwnerBalance);
-
-		// Approve account1 to act on our behalf for 10 SNX.
-		let transaction = await synthetix.approve(account1, toUnit('10'), { from: owner });
-		assert.eventEqual(transaction, 'Approval', {
-			owner,
-			spender: account1,
-			value: toUnit('10'),
-		});
-
-		// Assert that transferFrom works.
-		transaction = await synthetix.methods['transferFrom(address,address,uint256,bytes)'](
-			owner,
-			account2,
-			toUnit('10'),
-			toBytes32('This is a memo'),
-			{ from: account1 }
-		);
-		assert.eventEqual(transaction, 'Transfer', {
-			from: owner,
-			to: account2,
-			value: toUnit('10'),
-		});
-
-		// Assert that account2 has 10 SNX and owner has 10 less SNX
-		assert.bnEqual(await synthetix.balanceOf(account2), toUnit('10'));
-		assert.bnEqual(await synthetix.balanceOf(owner), previousOwnerBalance.sub(toUnit('10')));
-
-		// Assert that we can't transfer more even though there's a balance for owner.
-		await assert.revert(
-			synthetix.methods['transferFrom(address,address,uint256)'](owner, account2, '1', {
-				from: account1,
-			})
-		);
-	});
-
-	it('should revert when exceeding locked synthetix and calling the ERC223 transferFrom function', async () => {
-		// Ensure our environment is set up correctly for our assumptions
-		// e.g. owner owns all SNX.
-		assert.bnEqual(await synthetix.totalSupply(), await synthetix.balanceOf(owner));
-
-		// Send a price update to guarantee we're not depending on values from outside this test.
-
-		await exchangeRates.updateRates(
-			[sAUD, sEUR, SNX],
-			['0.5', '1.25', '0.1'].map(toUnit),
-			timestamp,
-			{ from: oracle }
-		);
-
-		// Approve account1 to act on our behalf for 10 SNX.
-		const transaction = await synthetix.approve(account1, toUnit('10'), { from: owner });
-		assert.eventEqual(transaction, 'Approval', {
-			owner,
-			spender: account1,
-			value: toUnit('10'),
-		});
-
-		// Issue max synths
-		await synthetix.issueMaxSynths(sUSD, { from: owner });
-
-		// Assert that transferFrom fails even for the smallest amount of SNX.
-		await assert.revert(
-			synthetix.methods['transferFrom(address,address,uint256,bytes)'](
-				owner,
-				account2,
-				'1',
-				toBytes32('This is a memo'),
-				{
-					from: account1,
-				}
-			)
-		);
 	});
 
 	// Issuance
