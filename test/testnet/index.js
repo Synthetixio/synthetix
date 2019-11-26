@@ -163,7 +163,7 @@ program
 			console.log(gray(`Issuing 0.0000000000001 sUSD from (${user1.address}`));
 			const amountToIssue = web3.utils.toWei('0.0000000000001');
 			const { transactionHash: txn2Hash } = await Synthetix.methods
-				.issueSynths(sUSD, amountToIssue)
+				.issueSynths(amountToIssue)
 				.send({
 					from: user1.address,
 					gas,
@@ -236,7 +236,7 @@ program
 			const remainingSynthsUSD = await SynthsUSD.methods.balanceOf(user1.address).call();
 			console.log(gray(`Burn all remaining synths for user - (${user1.address})`));
 			const { transactionHash: txn7Hash } = await Synthetix.methods
-				.burnSynths(sUSD, remainingSynthsUSD)
+				.burnSynths(remainingSynthsUSD)
 				.send({
 					from: user1.address,
 					gas,
