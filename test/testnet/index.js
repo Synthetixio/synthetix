@@ -126,6 +126,10 @@ program
 				throw Error('DebtLedger has debt but totalIssuedSynths is 0');
 			}
 
+			console.log(
+				gray(`Using gas price of ${web3.utils.fromWei(gasPrice.toString(), 'gwei')} gwei.`)
+			);
+
 			if (!yes) {
 				try {
 					await confirmAction(yellow(`Do you want to continue? (y/n) `));
@@ -207,6 +211,15 @@ program
 			// #5 Exchange sUSD to sETH
 			const gasPriceLimit = await Synthetix.methods.gasPriceLimit().call();
 			const gasForExchange = Math.min(gasPrice, gasPriceLimit);
+			console.log(
+				gray(
+					`On chain gas limit is ${web3.utils.fromWei(
+						gasPriceLimit.toString(),
+						'gwei'
+					)} gwei. Using ${web3.utils.fromWei(gasForExchange.toString(), 'gwei')} gwei to exchange.`
+				)
+			);
+
 			console.log(gray(`Exchange sUSD --> sETH for user - (${user1.address})`));
 			const amountToExchange = web3.utils.toWei('0.0000000000001');
 			const { transactionHash: txn5Hash } = await Synthetix.methods
