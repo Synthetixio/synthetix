@@ -32,8 +32,8 @@
 			"address": "0x32a9aa87f5BfF48b5b4de597Fd86f103dDFA2C21",
 			"source": "FeePool",
 			"link": "https://rinkeby.etherscan.io/address/0x32a9aa87f5BfF48b5b4de597Fd86f103dDFA2C21",
-			"timestamp": "2019-11-26T23:09:09.096Z",
-			"txn": "",
+			"timestamp": "2019-11-26T23:09:08.000Z",
+			"txn": "https://rinkeby.etherscan.io/tx/0x2b032d40f05aa8dbea7e3b613e2bb22249e9a06f374cb64d6de44cdc07173aef",
 			"network": "rinkeby"
 		},
 		"SynthetixState": {
@@ -68,8 +68,8 @@
 			"address": "0xA8C9a06d5619b3Ae4C43087E2Bd68fa2451b4603",
 			"source": "Synthetix",
 			"link": "https://rinkeby.etherscan.io/address/0xA8C9a06d5619b3Ae4C43087E2Bd68fa2451b4603",
-			"timestamp": "2019-11-26T23:11:09.150Z",
-			"txn": "",
+			"timestamp": "2019-11-26T23:11:08.000Z",
+			"txn": "https://rinkeby.etherscan.io/tx/0x6fb0aeae52857e8ee54707006cdedbdeb54d1ec5bbae87df284cf8fb29b48d55",
 			"network": "rinkeby"
 		},
 		"SynthetixEscrow": {
