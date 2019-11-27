@@ -126,6 +126,10 @@ program
 				throw Error('DebtLedger has debt but totalIssuedSynths is 0');
 			}
 
+			console.log(
+				gray(`Using gas price of ${web3.utils.fromWei(gasPrice.toString(), 'gwei')} gwei.`)
+			);
+
 			if (!yes) {
 				try {
 					await confirmAction(yellow(`Do you want to continue? (y/n) `));
@@ -163,7 +167,7 @@ program
 			console.log(gray(`Issuing 0.0000000000001 sUSD from (${user1.address}`));
 			const amountToIssue = web3.utils.toWei('0.0000000000001');
 			const { transactionHash: txn2Hash } = await Synthetix.methods
-				.issueSynths(sUSD, amountToIssue)
+				.issueSynths(amountToIssue)
 				.send({
 					from: user1.address,
 					gas,
@@ -205,6 +209,17 @@ program
 			console.log(gray(`User1 has sUSD balanceOf - ${balanceAfter}`));
 
 			// #5 Exchange sUSD to sETH
+			const gasPriceLimit = await Synthetix.methods.gasPriceLimit().call();
+			const gasForExchange = Math.min(gasPrice, gasPriceLimit);
+			console.log(
+				gray(
+					`On chain gas limit is ${web3.utils.fromWei(
+						gasPriceLimit.toString(),
+						'gwei'
+					)} gwei. Using ${web3.utils.fromWei(gasForExchange.toString(), 'gwei')} gwei to exchange.`
+				)
+			);
+
 			console.log(gray(`Exchange sUSD --> sETH for user - (${user1.address})`));
 			const amountToExchange = web3.utils.toWei('0.0000000000001');
 			const { transactionHash: txn5Hash } = await Synthetix.methods
@@ -212,7 +227,7 @@ program
 				.send({
 					from: user1.address,
 					gas,
-					gasPrice,
+					gasPrice: gasForExchange,
 				});
 			console.log(green(`Success. ${etherscanLinkPrefix}/tx/${txn5Hash}`));
 
@@ -228,7 +243,7 @@ program
 				.send({
 					from: user1.address,
 					gas,
-					gasPrice,
+					gasPrice: gasForExchange,
 				});
 			console.log(green(`Success. ${etherscanLinkPrefix}/tx/${txn6Hash}`));
 
@@ -236,7 +251,7 @@ program
 			const remainingSynthsUSD = await SynthsUSD.methods.balanceOf(user1.address).call();
 			console.log(gray(`Burn all remaining synths for user - (${user1.address})`));
 			const { transactionHash: txn7Hash } = await Synthetix.methods
-				.burnSynths(sUSD, remainingSynthsUSD)
+				.burnSynths(remainingSynthsUSD)
 				.send({
 					from: user1.address,
 					gas,

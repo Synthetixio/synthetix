@@ -390,7 +390,7 @@ describe('publish scripts', function() {
 
 					describe('when user1 issues all possible sUSD', () => {
 						beforeEach(async () => {
-							await Synthetix.methods.issueMaxSynths(sUSD).send({
+							await Synthetix.methods.issueMaxSynths().send({
 								from: accounts.first.public,
 								gas: gasLimit,
 								gasPrice,
@@ -429,7 +429,7 @@ describe('publish scripts', function() {
 							describe('when user1 burns 10 sUSD', () => {
 								beforeEach(async () => {
 									// burn
-									await Synthetix.methods.burnSynths(sUSD, web3.utils.toWei('10')).send({
+									await Synthetix.methods.burnSynths(web3.utils.toWei('10')).send({
 										from: accounts.first.public,
 										gas: gasLimit,
 										gasPrice,
@@ -529,13 +529,21 @@ describe('publish scripts', function() {
 										fs.writeFileSync(synthsJSONPath, JSON.stringify(currentSynthsFile));
 									});
 
-									describe('when a user has issued into iCEX', () => {
+									describe('when a user has issued and exchanged into iCEX', () => {
 										beforeEach(async () => {
-											await Synthetix.methods.issueMaxSynths(toBytes32('iCEX')).send({
+											await Synthetix.methods.issueMaxSynths().send({
 												from: accounts.first.public,
 												gas: gasLimit,
 												gasPrice,
 											});
+
+											await Synthetix.methods
+												.exchange(toBytes32('sUSD'), web3.utils.toWei('100'), toBytes32('iCEX'))
+												.send({
+													from: accounts.first.public,
+													gas: gasLimit,
+													gasPrice,
+												});
 										});
 
 										describe('when ExchangeRates alone is redeployed', () => {

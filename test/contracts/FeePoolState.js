@@ -399,7 +399,7 @@ contract('FeePoolState', async accounts => {
 	// 	const maxIssuable = await synthetix.maxIssuableSynths(account1, sUSD);
 
 	// 	// Issue
-	// 	await synthetix.issueSynths(sUSD, maxIssuable, { from: account1 });
+	// 	await synthetix.issueSynths(maxIssuable, { from: account1 });
 
 	// 	// There should be 200 sUSD of value in the system
 	// 	assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('200'));
@@ -433,7 +433,7 @@ contract('FeePoolState', async accounts => {
 	// 	await synthetix.transfer(account1, toUnit('20000'), { from: owner });
 
 	// 	// Issue
-	// 	await synthetix.issueSynths(sUSD, toUnit('200'), { from: account1 });
+	// 	await synthetix.issueSynths(toUnit('200'), { from: account1 });
 
 	// 	// There should be 200 sUSD of value in the system
 	// 	assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('200'));
@@ -452,7 +452,7 @@ contract('FeePoolState', async accounts => {
 	// 	assert.bnEqual(feePoolLedger.debtPercentage, issuanceDataFromState.initialDebtOwnership);
 
 	// 	// Issue
-	// 	await synthetix.issueSynths(sUSD, toUnit('200'), { from: account1 });
+	// 	await synthetix.issueSynths(toUnit('200'), { from: account1 });
 
 	// 	// And account1 should own all of it.
 	// 	assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('400'));
