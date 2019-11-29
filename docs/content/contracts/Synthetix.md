@@ -63,91 +63,7 @@
 
 ---
 
-## Variables
-
----
-
-### `availableSynths`
-
-List of the active [`Synths`](Synth.md), including XDRs. Used to compute the total value of issued synths.
-
-**Type:** `Synth[] public`
-
----
-
-### `synths`
-
-A mapping from currency keys (three letter descriptors) to [`Synth`](Synth.md) token contract addresses.
-
-**Type:** `mapping(bytes32 => Synth) public`
-
----
-
-### `feePool`
-
-The address of the [`FeePool`](FeePool.md) contract, where exchange fees are deposited, and user issuance information is stored.
-
-**Type:** `FeePool public`
-
----
-
-### `escrow`
-
-The [`SynthetixEscrow`](SynthetixEscrow.md) contract where Synths escrowed at the time of the original token sale are kept.
-
-**Type:** `SynthetixEscrow public`
-
----
-
-### `rewardEscrow`
-
-The [`RewardEscrow`](RewardEscrow.md) contract, where SNX inflationary rewards are held in escrow for a year after they are claimed.
-
-**Type:** `RewardEscrow public`
-
----
-
-### `exchangeRates`
-
-The [`ExchangeRates`](ExchangeRates.md) contract provides Synth (and inverse Synth) prices, for example to convert between Synths or to compute the total system value. [`ExchangeRates`](ExchangeRates.md) also possesses the capability to disable Synth exchanges while its prices are being updated by the [`oracle`](ExchangeRates.md#oracle).
-
-**Type:** `ExchangeRates public`
-
----
-
-### `synthetixState`
-
-The [`SynthetixState`](SynthetixState.md) contract holds a number of vital records including the [debt ledger](SynthetixState.md#debtledger), the [current issuance data for each account](SynthetixState.md#issuancedata), and the [global target issuance ratio](SynthetixState.md#issuanceratio).
-
-**Type:** `SynthetixState public`
-
----
-
-### `supplySchedule`
-
-The [`SupplySchedule`](SupplySchedule.md) governs the rate at which inflationary SNX rewards are released. Whenever [new tokens are minted](#mint), it ensures the total created so far comports with its annual schedule.
-
-**Type:** `SupplySchedule public`
-
----
-
-### `rewardsDistribution`
-
-The [`RewardsDistribution`](RewardsDistribution.md) contract works in concert with the [`RewardsEscrow`](#rewardsescrow) contract mentioned above to direct inflationary SNX rewards to various recipient pools the protocol specifies.
-
-**Type:** `RewardsDistribution public`
-
----
-
-### `protectionCircuit`
-
-When the protection circuit is activated, any [Synth exchanges](#exchange) will result in the input quantity to be [liquidated](#_internalliquidation).
-
-This mechanism, which can only be [activated](#setprotectioncircuit) by the [oracle](ExchangeRates.md#oracle), is designed to discourage profitable front-running of price updates. The oracle, when it detects front-running, targets the relevant transaction for liquidation by activating the protection circuit and deactivating it once triggered.
-
-See [SIP-6](https://sips.synthetix.io/sips/sip-6) and [SIP-7](https://sips.synthetix.io/sips/sip-7) for further details.
-
-**Type:** `bool private`
+## Constants
 
 ---
 
@@ -181,6 +97,27 @@ A constant used to initialise the ERC20 [`ExternStateToken.decimals`](ExternStat
 
 ---
 
+## Variables
+
+---
+
+### `availableSynths`
+
+List of the active [`Synths`](Synth.md), including XDRs. Used to compute the total value of issued synths.
+
+**Type:** `Synth[] public`
+
+---
+
+### `escrow`
+
+The [`SynthetixEscrow`](SynthetixEscrow.md) contract where Synths escrowed at the time of the original token sale are kept.
+
+**Type:** `SynthetixEscrow public`
+
+---
+
+
 ### `exchangeEnabled`
 
 Allows the contract owner to disable synth exchanges, for example during system upgrades.
@@ -189,11 +126,77 @@ Allows the contract owner to disable synth exchanges, for example during system 
 
 ---
 
-## Functions
+### `exchangeRates`
+
+The [`ExchangeRates`](ExchangeRates.md) contract provides Synth (and inverse Synth) prices, for example to convert between Synths or to compute the total system value. [`ExchangeRates`](ExchangeRates.md) also possesses the capability to disable Synth exchanges while its prices are being updated by the [`oracle`](ExchangeRates.md#oracle).
+
+**Type:** `ExchangeRates public`
 
 ---
 
-### `constructor`
+### `feePool`
+
+The address of the [`FeePool`](FeePool.md) contract, where exchange fees are deposited, and user issuance information is stored.
+
+**Type:** `FeePool public`
+
+---
+
+### `protectionCircuit`
+
+When the protection circuit is activated, any [Synth exchanges](#exchange) will result in the input quantity to be [liquidated](#_internalliquidation).
+
+This mechanism, which can only be [activated](#setprotectioncircuit) by the [oracle](ExchangeRates.md#oracle), is designed to discourage profitable front-running of price updates. The oracle, when it detects front-running, targets the relevant transaction for liquidation by activating the protection circuit and deactivating it once triggered.
+
+See [SIP-6](https://sips.synthetix.io/sips/sip-6) and [SIP-7](https://sips.synthetix.io/sips/sip-7) for further details.
+
+**Type:** `bool private`
+
+---
+
+### `rewardsDistribution`
+
+The [`RewardsDistribution`](RewardsDistribution.md) contract works in concert with the [`RewardsEscrow`](#rewardsescrow) contract mentioned above to direct inflationary SNX rewards to various recipient pools the protocol specifies.
+
+**Type:** `RewardsDistribution public`
+
+---
+
+### `rewardEscrow`
+
+The [`RewardEscrow`](RewardEscrow.md) contract, where SNX inflationary rewards are held in escrow for a year after they are claimed.
+
+**Type:** `RewardEscrow public`
+
+---
+
+### `synthetixState`
+
+The [`SynthetixState`](SynthetixState.md) contract holds a number of vital records including the [debt ledger](SynthetixState.md#debtledger), the [current issuance data for each account](SynthetixState.md#issuancedata), and the [global target issuance ratio](SynthetixState.md#issuanceratio).
+
+**Type:** `SynthetixState public`
+
+---
+
+### `synths`
+
+A mapping from currency keys (three letter descriptors) to [`Synth`](Synth.md) token contract addresses.
+
+**Type:** `mapping(bytes32 => Synth) public`
+
+---
+
+### `supplySchedule`
+
+The [`SupplySchedule`](SupplySchedule.md) governs the rate at which inflationary SNX rewards are released. Whenever [new tokens are minted](#mint), it ensures the total created so far comports with its annual schedule.
+
+**Type:** `SupplySchedule public`
+
+---
+
+## Constructor
+
+---
 
 The constructor initialises the various addresses that this contract knows about, as well as the inherited [`ExternStateToken`](ExternStateToken.md) instance.
 
@@ -205,6 +208,402 @@ The constructor initialises the various addresses that this contract knows about
     **Superconstructors**
 
     * [`ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, _totalSupply, DECIMALS, _owner)`](ExternStateToken.md#constructor)
+
+---
+
+## Views
+
+---
+
+### `availableCurrencyKeys`
+
+Returns the [currency key](Synth.md#currencykey) for each synth in [`availableSynths`](#availablesynths).
+
+??? example "Details"
+    **Signature**
+
+    `availableCurrencyKeys() public view returns (bytes32[])`
+
+---
+
+### `availableSynthCount`
+
+Returns the number of synths in the system, that is [`availableSynths.length`](#availablesynths).
+
+??? example "Details"
+    **Signature**
+
+    `availableSynthCount() public view returns (uint)`
+
+---
+
+### `collateral`
+
+Returns the total SNX owned by the given account, locked and unlocked, escrowed and unescrowed. This is the quantity of SNX synths can be issued against.
+
+This is computed as the sum of [`Synthetix.balanceOf(account)`](TokenState.md#balanceof),  [`SynthetixEscrow.balanceOf(account)`](SynthetixEscrow.md#balanceof), and [`RewardEscrow.balanceOf(account)`](RewardEscrow.md#balanceof); so an account may issue synths against both its active balance and its unclaimed escrow funds.
+
+??? example "Details"
+    **Signature**
+
+    `collateral(address account) public view returns (uint)`
+
+---
+
+### `collateralisationRatio`
+
+The ratio between value of synths that an account has issued and the value of the collateral they control. That is, this is just [`debtBalanceOf(issuer, "SNX") /`](#debtbalanceof) [`collateral(issuer)`](#collateral).
+
+Ideally, issuers should maintain their collateralisation ratio at a level less than the [global issuance ratio](SynthetixState.md#issuanceratio), and they are incentivised to do this by the [fees they can claim](FeePool.md#claim) if they do so.
+
+??? example "Details"
+    **Signature**
+
+    `collateralisationRatio(address issuer) public view returns (uint)`
+
+---
+
+### `debtBalanceOf`
+
+Reports the quantity of a given currency required to free up all SNX locked in given account.
+
+If $\mathrm{X}$ is the [total value of all issued synths](#totalissuedsynths), and $\check{\omega}$ is fraction of that value currently accounted for by this account's locked SNX, then the result is simply:
+
+$$
+\check{\omega} \ \mathrm{X}
+$$
+
+In order to account for fluctuations in synth prices and supply, the current ownership fraction is computed as the adjusted value:
+
+$$
+\check{\omega} = \omega \frac{\Delta_\text{last}}{\Delta_\text{entry}}
+$$
+
+Where $\omega$ is the account's debt ownership fraction at the time it [last issued or burnt](SynthetixState.md#issuancedata) synths, which produced the $\Delta_\text{entry}$ item in the [debt ledger](SynthetixState.md#debtledger). $\Delta_\text{last}$ is the latest value on the ledger. This logic is much the same as that found in [`FeePool._effectiveDebtRatioForPeriod`](FeePool.md#_effectivedebtratioforperiod). The actual value of $\omega$ is set in [`_addToDebtRegister`](#_addtodebtregister) and [`_removeFromDebtRegister`](#_removefromdebtregister).
+
+??? example "Details"
+    **Signature**
+
+    `debtBalanceOf(address issuer, bytes32 currencyKey) public view returns (uint)`
+
+---
+
+### `effectiveValue`
+
+Reports an equivalent value of a quantity of one synth in terms of another at current exchange rates. This is a simple wrapper for [`ExchangeRates.effectiveValue`](ExchangeRates.md#effectivevalue)
+
+??? example "Details"
+    **Signature**
+
+    `effectiveValue(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey) public view returns (uint)`
+
+---
+
+### `maxIssuableSynths`
+
+The maximum number of a given synth that is issuable against the issuer's collateral. This is simply [`issuanceRatio *`](SynthetixState.md#issuanceratio) [`collateral(issuer)`](#collateral), priced in the requested currency.
+
+??? example "Details"
+    **Signature**
+
+    `maxIssuableSynths(address issuer, bytes32 currencyKey) public view returns (uint)`
+
+---
+
+### `remainingIssuableSynths`
+
+The remaining synths of a given flavour this account can issue.
+
+If $\text{maxIssuable}$ is [`maxIssuableSynths(issuer, currencyKey)`](#maxissuablesynths) and $\text{debt}$ is [`debtBalanceOf(issuer, currencyKey)`](#debtbalanceof), then the result of this function is $max(0, \text{maxIssuable} - \text{debt})$.
+
+If prices fluctuate then the account's issued synth debt may exceed its current maximum issuable synths, in which case it may not issue any more synths until more collateral is added.
+
+??? example "Details"
+    **Signature**
+
+    `remainingIssuableSynths(address issuer, bytes32 currencyKey) public view returns (uint)`
+
+---
+
+### `totalIssuedSynths`
+
+Returns the total value of Synths in the system, priced in terms of a given currency.
+
+This value is equivalent to:
+
+$$
+\frac{1}{\pi_d}\sum_{s \in \text{synths}}{\sigma_s \pi_s}
+$$
+
+Where $\sigma_s$ and $\pi_s$ are the total supply and price of synth $s$, and $\pi_d$ is the price of the denominating synth flavour.
+
+??? example "Details"
+    **Signature**
+
+    `totalIssuedSynths(bytes32 currencyKey) public view returns (uint)`
+
+    **Modifiers**
+
+    * [`rateNotStale(currencyKey)`](#ratenotstale)
+
+    **Preconditions**
+
+    * No rate for any of the [currently available currencies](#availablesynths) [can be stale](ExchangeRates.md#anyrateisstale).
+
+---
+
+### `transferableSynthetix`
+
+The quantity of SNX this account can transfer given that a portion of it may be locked due to issuance.
+
+If $\text{balance}$ is [`balanceOf(account)`](TokenState.md#balanceof), and $\text{lockedSnx}$ is [`debtBalanceOf(account, "SNX") / SynthetixState.issuanceRatio`](#debtbalanceof), the function returns $max(0, \text{balance} - \text{lockedSnx})$. Escrowed tokens are not taken into account in this computation, so unescrowed tokens are locked immediately.
+
+???+ info "A Note on Price Motion"
+    The value of $\text{lockedSnx}$ depends on the current ($\pi$) and previous ($\pi'$) prices being reported by the oracle, and the issuance ratio ($\rho$).
+
+    If we consider a situation where the synth supply has not changed in the time period under consideration, then ownership fractions do not change even if prices do. Further assuming that there is only a single synth circulating, debt balances correspond to the same number of synths, although perhaps not the same value.
+
+    In such a situation, we can think of each user having issued a particular quantity of synths. This quantity depends on the prices of synths and SNX at the time of issuance.
+
+    $$
+    Q_s = \rho \ \frac{\pi'_c}{\pi'_s} \ Q_c
+    $$
+
+    Whose value at the present time priced [in terms of SNX](#effectivevalue), which is what [`debtBalanceOf(account, "SNX")`](#debtbalanceof) returns, is:
+
+    $$
+    {V_s}^{c} = \rho \ \frac{\pi'_c}{\pi'_s} \ \pi_c \ Q_c
+    $$
+
+    Note that this computation has a factor of $\rho$ in it, and this must be divided out in order to ascertain the quantity of SNX which are presently locked.
+
+    $$
+    \text{lockedSnx} = \frac{{V_s}^{c}}{\rho} = \frac{\pi'_c}{\pi'_s} \ \pi_c \ Q_c
+    $$
+
+    Which is to say that the quantity of SNX locked in this situation depends on the price.
+
+    !!! todo "Extend this to the multicurrency case"
+        Consider a two synth system, one primary synth and a secondary one which represents the price/supply of all other synths. Use the total issued value function to derive the behaviour for multiple currencies, and then examine a single currency as a special case.
+
+??? example "Details"
+    **Signature**
+
+    `transferableSynthetix(address account) public view returns (uint)`
+
+    **Modifiers**
+
+    * [`rateNotStale("SNX")`](#ratenotstale)
+
+---
+
+
+## Mutative Functions
+
+---
+
+### `burnSynths`
+
+[Burns](Synth.md#burn) a quantity of `sUSD` in the calling address, in order to free up its locked SNX supply.
+
+If the caller attempts to burn more synths than their SNX debt is worth, this function will only burn sufficiently many tokens to cover the debt and leave the rest untouched.
+
+The new debt position of the caller is recorded with [`_appendAccountIssuanceRecord`](#appendaccountissuancerecord), and the adjustment to global debt recorded with [`_removeFromDebtRegister`](#_removefromdebtregister).
+
+??? example "Details"
+    **Signature**
+
+    `burnSynths(uint amount) external`
+
+    **Modifiers**
+
+    * [`Proxyable.optionalProxy`](Proxyable.md#optionalproxy)
+
+    **Preconditions**
+
+    * The [existing debt](#debtbalanceof) the caller must be nonzero.
+
+---
+
+### `exchange`
+
+Exchanges one synth flavour for an equivalent value of another at current [exchange rates](ExchangeRates.md) and transfers the converted quantity to a destination address. An [exchange fee](FeePool.md#exchangefeerate) is charged on the way.
+See [`_internalExchange`](#_internalExchange) for further implementation details.
+
+If the [protection circuit](#protectioncircuit) is active, then the incoming synths are simply burnt ([`_internalLiquidation`](#_internalliquidation)).
+
+??? example "Details"
+    **Signature**
+
+    `exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey, address destinationAddress) external returns (bool)`
+
+    **Modifiers**
+
+    * [`Proxyable.optionalProxy`](Proxyable.md#optionalproxy)
+
+    **Preconditions**
+
+    * The source and destination currencies must be distinct.
+    * The exchanged quantity must be nonzero.
+
+---
+
+### `issueSynths`
+
+[Issues](Synth.md#issue) a new quantity of `sUSD` into the calling address. The new debt issuance is recorded with [`_addToDebtRegister`](#_addtodebtregister), and the account's issuance records are updated with [`_appendAccountIssuanceRecord`](#_appendaccountissuancerecord).
+
+??? example "Details"
+    **Signature**
+
+    `issueSynths(uint amount) public`
+
+    **Modifiers**
+
+    * [`Proxyable.optionalProxy`](Proxyable.md#optionalproxy)
+
+    **Preconditions**
+
+    * The quantity of new synths to be minted must be no greater than the [remaining issuable](#remainingissuablesynths) for that account.
+
+---
+
+### `issueMaxSynths`
+
+Issues the [maximum quantity](#remainingissuablesynths) `sUSD` issuable by the caller of a particular synth flavour. Otherwise, this operates exactly as [`issueSynths`](#issuesynths) does.
+
+??? example "Details"
+    **Signature**
+
+    `issueMaxSynths() external`
+
+    **Modifiers**
+
+    * [`Proxyable.optionalProxy`](Proxyable.md#optionalproxy)
+
+---
+
+### `mint`
+
+This function is responsible for creating the inflationary SNX supply. It is a public function, so any address can ensure new tokens are released on schedule. When a new quantity is minted, the calling address is rewarded with a small incentive of SNX tokens, defined by [`SupplySchedule.minterReward`](SupplySchedule.md#minterreward).
+
+The supply is released according to the schedule defined in [`SupplySchedule.schedules`](SupplySchedule.md#schedules), being sent to the [`RewardsDistribution`](RewardsDistribution.md#distributerewards) contract for distribution and escrow. The total supply SNX supply is thus increased by the quantity specified by the schedule.
+
+This function always returns true if the transaction did not revert.
+
+??? example "Details"
+    **Signature**
+
+    `mint() external returns (bool)`
+
+    **Preconditions**
+
+    * The [`rewardsDistribution`](#rewardsdistribution) address must be initialised.
+    * The supply to mint retrieved from [`SupplySchedule.mintableSupply`](SupplySchedule.md#mintablesupply) must be nonzero.
+
+    **Emits**
+
+    * [`Transfer(synthetix, rewardDistribution, newSupply - minterReward)`](ExternStateToken.md#transfer)
+    * [`Transfer(synthetix, msg.sender, minterReward)`](ExternStateToken.md#transfer)
+
+---
+
+### `transfer`
+
+This is a pair of ERC20/ERC223 transfer functions. Their functionality is almost identical: providing both behaves almost like a single function with an optional ERC223 `data` parameter. If no `data` is provided then an empty buffer is passed internally.
+
+A successful transfer requires the message sender to have sufficient balance, accounting for [locked SNX](#transferablesynthetix).
+
+They are implemented based on [`ExternStateToken._transfer_byProxy`](ExternStateToken#_transfer_byproxy).
+
+??? example "Details"
+    **Signatures**
+
+    * `transfer(address to, uint value) public returns (bool)`
+    * `transfer(address to, uint value, bytes data) public returns (bool)`
+
+    **Modifiers**
+
+    * [`Proxyable.optionalProxy`](Proxyable.md#optionalproxy)
+
+    **Preconditions and Events**
+
+    * `value` must not exceed [`transferableSynthetix(messageSender)`](#transferablesynthetix)
+
+    Otherwise, the these functions behave as per [`ExternStateToken._internalTransfer`](ExternStateToken.md#_internaltransfer).
+
+---
+
+### `transferFrom`
+
+This is a pair of ERC20/ERC223 transferFrom functions. Their functionality is almost identical: providing both behaves almost like a single function with an optional ERC223 `data` parameter. If no `data` is provided then an empty buffer is passed internally.
+
+A successful transfer requires the token owner to have sufficient balance, accounting for [locked SNX](#transferablesynthetix).
+
+They are implemented based on [`ExternStateToken._transferFrom_byProxy`](ExternStateToken#_transferfrom_byproxy).
+
+??? example "Details"
+    **Signatures**
+
+    * `transferFrom(address from, address to, uint value) public returns (bool)`
+    * `transfer(address from, address to, uint value, bytes data) public returns (bool)`
+
+    **Modifiers**
+
+    * [`Proxyable.optionalProxy`](Proxyable.md#optionalproxy)
+    * [`notFeeAddress(from)`](#notfeeaddress).
+
+    **Preconditions and Events**
+
+    * `value` must not exceed [`transferableSynthetix(from)`](#transferablesynthetix)
+
+    Otherwise, the these functions behave as per [`ExternStateToken._internalTransfer`](ExternStateToken.md#_internaltransfer).
+
+---
+
+## Owner Functions
+
+---
+
+### `addSynth`
+
+Allows the owner to add a new [`Synth`](Synth.md) to the system, inserting it into [`availableSynths`](#availablesynths) and [`synths`](#synths). The new synth's [currency key](Synth.md#currencykey) must be unique.
+
+??? example "Details"
+    **Signature**
+
+    `addSynth(Synth synth) external`
+
+    **Modifiers**
+
+    * [`Proxyable.optionalProxy_onlyOwner`](Proxyable.md#optionalproxy_onlyowner)
+
+    **Preconditions**
+
+    * The new synth's currency key must not be taken already in the [`synths`](#synths) address mapping.
+
+---
+
+### `removeSynth`
+
+Allows the owner to remove a [`Synth`](Synth.md) from the system.
+Upon removal it is also deleted from [`availableSynths`](#availablesynths) and [`synths`](#synths), which frees that currency key to be reused.
+
+A Synth cannot be removed if it has outstanding issued tokens.
+
+??? example "Details"
+    **Signature**
+
+    `removeSynth(bytes32 currencyKey) external`
+
+    **Modifiers**
+
+    * [`Proxyable.optionalProxy_onlyOwner`](Proxyable.md#optionalproxy_onlyowner)
+
+    **Preconditions**
+
+    * The synth's currency key must exist in the [`synths`](#synths) address mapping.
+    * The synth's total supply must be zero.
+    * The XDR synth cannot be removed.
 
 ---
 
@@ -266,184 +665,10 @@ Allows the owner to [disable synth exchanges](#exchangeenabled).
 
     * [`Proxyable.optionalProxy_onlyOwner`](Proxyable.md#optionalproxy_onlyowner)
 
----
-
-### `addSynth`
-
-Allows the owner to add a new [`Synth`](Synth.md) to the system, inserting it into [`availableSynths`](#availablesynths) and [`synths`](#synths). The new synth's [currency key](Synth.md#currencykey) must be unique.
-
-??? example "Details"
-    **Signature**
-
-    `addSynth(Synth synth) external`
-
-    **Modifiers**
-
-    * [`Proxyable.optionalProxy_onlyOwner`](Proxyable.md#optionalproxy_onlyowner)
-
-    **Preconditions**
-
-    * The new synth's currency key must not be taken already in the [`synths`](#synths) address mapping.
 
 ---
 
-### `removeSynth`
-
-Allows the owner to remove a [`Synth`](Synth.md) from the system.
-Upon removal it is also deleted from [`availableSynths`](#availablesynths) and [`synths`](#synths), which frees that currency key to be reused.
-
-A Synth cannot be removed if it has outstanding issued tokens.
-
-??? example "Details"
-    **Signature**
-
-    `removeSynth(bytes32 currencyKey) external`
-
-    **Modifiers**
-
-    * [`Proxyable.optionalProxy_onlyOwner`](Proxyable.md#optionalproxy_onlyowner)
-
-    **Preconditions**
-
-    * The synth's currency key must exist in the [`synths`](#synths) address mapping.
-    * The synth's total supply must be zero.
-    * The XDR synth cannot be removed.
-
----
-
-### `effectiveValue`
-
-Reports an equivalent value of a quantity of one synth in terms of another at current exchange rates. This is a simple wrapper for [`ExchangeRates.effectiveValue`](ExchangeRates.md#effectivevalue)
-
-??? example "Details"
-    **Signature**
-
-    `effectiveValue(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey) public view returns (uint)`
-
----
-
-### `totalIssuedSynths`
-
-Returns the total value of Synths in the system, priced in terms of a given currency.
-
-This value is equivalent to:
-
-$$
-\frac{1}{\pi_d}\sum_{s \in \text{synths}}{\sigma_s \pi_s}
-$$
-
-Where $\sigma_s$ and $\pi_s$ are the total supply and price of synth $s$, and $\pi_d$ is the price of the denominating synth flavour.
-
-??? example "Details"
-    **Signature**
-
-    `totalIssuedSynths(bytes32 currencyKey) public view returns (uint)`
-
-    **Modifiers**
-
-    * [`rateNotStale(currencyKey)`](#ratenotstale)
-
-    **Preconditions**
-
-    * No rate for any of the [currently available currencies](#availablesynths) [can be stale](ExchangeRates.md#anyrateisstale).
-
----
-
-### `availableCurrencyKeys`
-
-Returns the [currency key](Synth.md#currencykey) for each synth in [`availableSynths`](#availablesynths).
-
-??? example "Details"
-    **Signature**
-
-    `availableCurrencyKeys() public view returns (bytes32[])`
-
----
-
-### `availableSynthCount`
-
-Returns the number of synths in the system, that is [`availableSynths.length`](#availablesynths).
-
-??? example "Details"
-    **Signature**
-
-    `availableSynthCount() public view returns (uint)`
-
----
-
-### `transfer`
-
-This is a pair of ERC20/ERC223 transfer functions. Their functionality is almost identical: providing both behaves almost like a single function with an optional ERC223 `data` parameter. If no `data` is provided then an empty buffer is passed internally.
-
-A successful transfer requires the message sender to have sufficient balance, accounting for [locked SNX](#transferablesynthetix).
-
-They are implemented based on [`ExternStateToken._transfer_byProxy`](ExternStateToken#_transfer_byproxy).
-
-??? example "Details"
-    **Signatures**
-
-    * `transfer(address to, uint value) public returns (bool)`
-    * `transfer(address to, uint value, bytes data) public returns (bool)`
-
-    **Modifiers**
-
-    * [`Proxyable.optionalProxy`](Proxyable.md#optionalproxy)
-
-    **Preconditions and Events**
-
-    * `value` must not exceed [`transferableSynthetix(messageSender)`](#transferablesynthetix)
-
-    Otherwise, the these functions behave as per [`ExternStateToken._internalTransfer`](ExternStateToken.md#_internaltransfer).
-
----
-
-### `transferFrom`
-
-This is a pair of ERC20/ERC223 transferFrom functions. Their functionality is almost identical: providing both behaves almost like a single function with an optional ERC223 `data` parameter. If no `data` is provided then an empty buffer is passed internally.
-
-A successful transfer requires the token owner to have sufficient balance, accounting for [locked SNX](#transferablesynthetix).
-
-They are implemented based on [`ExternStateToken._transferFrom_byProxy`](ExternStateToken#_transferfrom_byproxy).
-
-??? example "Details"
-    **Signatures**
-
-    * `transferFrom(address from, address to, uint value) public returns (bool)`
-    * `transfer(address from, address to, uint value, bytes data) public returns (bool)`
-
-    **Modifiers**
-
-    * [`Proxyable.optionalProxy`](Proxyable.md#optionalproxy)
-    * [`notFeeAddress(from)`](#notfeeaddress).
-
-    **Preconditions and Events**
-
-    * `value` must not exceed [`transferableSynthetix(from)`](#transferablesynthetix)
-
-    Otherwise, the these functions behave as per [`ExternStateToken._internalTransfer`](ExternStateToken.md#_internaltransfer).
-
----
-
-### `exchange`
-
-Exchanges one synth flavour for an equivalent value of another at current [exchange rates](ExchangeRates.md) and transfers the converted quantity to a destination address. An [exchange fee](FeePool.md#exchangefeerate) is charged on the way.
-See [`_internalExchange`](#_internalExchange) for further implementation details.
-
-If the [protection circuit](#protectioncircuit) is active, then the incoming synths are simply burnt ([`_internalLiquidation`](#_internalliquidation)).
-
-??? example "Details"
-    **Signature**
-
-    `exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey, address destinationAddress) external returns (bool)`
-
-    **Modifiers**
-
-    * [`Proxyable.optionalProxy`](Proxyable.md#optionalproxy)
-
-    **Preconditions**
-
-    * The source and destination currencies must be distinct.
-    * The exchanged quantity must be nonzero.
+## Internal & Restricticed Functions
 
 ---
 
@@ -522,14 +747,14 @@ This function performs the same operation as [`_removeFromDebtRegister`](#_remov
 
     **Definitions**
 
-    Term | Definition | Description
-    -----|------------|------------
-    $\Delta$ | See the **Ledger Updates** section below. | The [debt ledger](SynthetixState.md#debtledger): an array of debt movement factors, indicating the size of the issued system debt over time. $\Delta_n$ is the $n^{th}$ entry in the ledger.
-    $X$ | $\frac{1}{\pi_\text{XDR}}\sum_{c}{\pi_c \sigma_c}$ | The XDR value of all issued synths ([`totalIssuedSynths`](#totalissuedsynths)) at current prices.
-    $\widehat{\chi}$ | $\omega \frac{\Delta_\text{last}}{\Delta_{entry}} X$ | The XDR value of the account's existing issuance debt at current prices ([`debtBalanceOf`](#debtbalanceof)). $\omega$ is the calling account's last recorded owership fraction of the total system debt. We will also refer to the adjusted current ownership fraction $\check{\omega} = \omega \frac{\Delta_\text{last}}{\Delta_{entry}}$.
-    $\chi$ | | The XDR value of the newly-issued synth debt; the new total debt will be $X + \chi$.
-    $\omega'$ | $\frac{\chi}{X + \chi}$ | The fraction of the new total debt accounted for by $\chi$.
-    $\delta$ | $1 - \omega' \ = \ \frac{X}{X + \chi}$ | The factor to multiply existing debt ownership positions by to obtain their new fraction of the total after adding in $\chi$; that is, the ratio of the old total debt to the new total debt.
+    | Term             | Definition                                           | Description                                                                                                                                                                                                                                                                                                                                 |
+    | ---------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+    | $\Delta$         | See the **Ledger Updates** section below.            | The [debt ledger](SynthetixState.md#debtledger): an array of debt movement factors, indicating the size of the issued system debt over time. $\Delta_n$ is the $n^{th}$ entry in the ledger.                                                                                                                                                |
+    | $X$              | $\frac{1}{\pi_\text{XDR}}\sum_{c}{\pi_c \sigma_c}$   | The XDR value of all issued synths ([`totalIssuedSynths`](#totalissuedsynths)) at current prices.                                                                                                                                                                                                                                           |
+    | $\widehat{\chi}$ | $\omega \frac{\Delta_\text{last}}{\Delta_{entry}} X$ | The XDR value of the account's existing issuance debt at current prices ([`debtBalanceOf`](#debtbalanceof)). $\omega$ is the calling account's last recorded owership fraction of the total system debt. We will also refer to the adjusted current ownership fraction $\check{\omega} = \omega \frac{\Delta_\text{last}}{\Delta_{entry}}$. |
+    | $\chi$           |                                                      | The XDR value of the newly-issued synth debt; the new total debt will be $X + \chi$.                                                                                                                                                                                                                                                        |
+    | $\omega'$        | $\frac{\chi}{X + \chi}$                              | The fraction of the new total debt accounted for by $\chi$.                                                                                                                                                                                                                                                                                 |
+    | $\delta$         | $1 - \omega' \ = \ \frac{X}{X + \chi}$               | The factor to multiply existing debt ownership positions by to obtain their new fraction of the total after adding in $\chi$; that is, the ratio of the old total debt to the new total debt.                                                                                                                                               |
 
     **Ledger Updates**
 
@@ -597,63 +822,6 @@ This function performs the same operation as [`_removeFromDebtRegister`](#_remov
 
 ---
 
-### `issueSynths`
-
-[Issues](Synth.md#issue) a new quantity of the specified flavour of synths into the calling address. The new debt issuance is recorded with [`_addToDebtRegister`](#_addtodebtregister), and the account's issuance records are updated with [`_appendAccountIssuanceRecord`](#_appendaccountissuancerecord).
-
-??? example "Details"
-    **Signature**
-
-    `issueSynths(bytes32 currencyKey, uint amount) public`
-
-    **Modifiers**
-
-    * [`Proxyable.optionalProxy`](Proxyable.md#optionalproxy)
-
-    **Preconditions**
-
-    * The quantity of new synths to be minted must be no greater than the [remaining issuable](#remainingissuablesynths) for that account.
-
----
-
-### `issueMaxSynths`
-
-Issues the [maximum quantity](#remainingissuablesynths) issuable by the caller of a particular synth flavour. Otherwise, this operates exactly as [`issueSynths`](#issuesynths) does.
-
-??? example "Details"
-    **Signature**
-
-    `issueMaxSynths(bytes32 currencyKey) external`
-
-    **Modifiers**
-
-    * [`Proxyable.optionalProxy`](Proxyable.md#optionalproxy)
-
----
-
-### `burnSynths`
-
-[Burns](Synth.md#burn) a quantity of synths in the calling address, in order to free up its locked SNX supply.
-
-If the caller attempts to burn more synths than their SNX debt is worth, this function will only burn sufficiently many tokens to cover the debt and leave the rest untouched.
-
-The new debt position of the caller is recorded with [`_appendAccountIssuanceRecord`](#appendaccountissuancerecord), and the adjustment to global debt recorded with [`_removeFromDebtRegister`](#_removefromdebtregister).
-
-??? example "Details"
-    **Signature**
-
-    `burnSynths(bytes32 currencyKey, uint amount) external`
-
-    **Modifiers**
-
-    * [`Proxyable.optionalProxy`](Proxyable.md#optionalproxy)
-
-    **Preconditions**
-
-    * The [existing debt](#debtbalanceof) the caller must be nonzero.
-
----
-
 ### `_appendAccountIssuanceRecord`
 
 Whenever synths are issued or burnt, the calling account's new [issuance data](FeePoolState.md#issuancedata) (debt ownership and ledger index) is appended to its [historical issuance ledger](FeePoolState.md#accountissuanceledger).
@@ -697,179 +865,7 @@ This function performs the same operation as [`_addToDebtRegister`](#_addtodebtr
 
 ---
 
-### `maxIssuableSynths`
-
-The maximum number of a given synth that is issuable against the issuer's collateral. This is simply [`issuanceRatio *`](SynthetixState.md#issuanceratio) [`collateral(issuer)`](#collateral), priced in the requested currency.
-
-??? example "Details"
-    **Signature**
-
-    `maxIssuableSynths(address issuer, bytes32 currencyKey) public view returns (uint)`
-
----
-
-### `collateralisationRatio`
-
-The ratio between value of synths that an account has issued and the value of the collateral they control. That is, this is just [`debtBalanceOf(issuer, "SNX") /`](#debtbalanceof) [`collateral(issuer)`](#collateral).
-
-Ideally, issuers should maintain their collateralisation ratio at a level less than the [global issuance ratio](SynthetixState.md#issuanceratio), and they are incentivised to do this by the [fees they can claim](FeePool.md#claim) if they do so.
-
-??? example "Details"
-    **Signature**
-
-    `collateralisationRatio(address issuer) public view returns (uint)`
-
----
-
-### `debtBalanceOf`
-
-Reports the quantity of a given currency required to free up all SNX locked in given account.
-
-If $\mathrm{X}$ is the [total value of all issued synths](#totalissuedsynths), and $\check{\omega}$ is fraction of that value currently accounted for by this account's locked SNX, then the result is simply:
-
-$$
-\check{\omega} \ \mathrm{X}
-$$
-
-In order to account for fluctuations in synth prices and supply, the current ownership fraction is computed as the adjusted value:
-
-$$
-\check{\omega} = \omega \frac{\Delta_\text{last}}{\Delta_\text{entry}}
-$$
-
-Where $\omega$ is the account's debt ownership fraction at the time it [last issued or burnt](SynthetixState.md#issuancedata) synths, which produced the $\Delta_\text{entry}$ item in the [debt ledger](SynthetixState.md#debtledger). $\Delta_\text{last}$ is the latest value on the ledger. This logic is much the same as that found in [`FeePool._effectiveDebtRatioForPeriod`](FeePool.md#_effectivedebtratioforperiod). The actual value of $\omega$ is set in [`_addToDebtRegister`](#_addtodebtregister) and [`_removeFromDebtRegister`](#_removefromdebtregister).
-
-??? example "Details"
-    **Signature**
-
-    `debtBalanceOf(address issuer, bytes32 currencyKey) public view returns (uint)`
-
----
-
-### `remainingIssuableSynths`
-
-The remaining synths of a given flavour this account can issue.
-
-If $\text{maxIssuable}$ is [`maxIssuableSynths(issuer, currencyKey)`](#maxissuablesynths) and $\text{debt}$ is [`debtBalanceOf(issuer, currencyKey)`](#debtbalanceof), then the result of this function is $max(0, \text{maxIssuable} - \text{debt})$.
-
-If prices fluctuate then the account's issued synth debt may exceed its current maximum issuable synths, in which case it may not issue any more synths until more collateral is added.
-
-??? example "Details"
-    **Signature**
-
-    `remainingIssuableSynths(address issuer, bytes32 currencyKey) public view returns (uint)`
-
----
-
-### `collateral`
-
-Returns the total SNX owned by the given account, locked and unlocked, escrowed and unescrowed. This is the quantity of SNX synths can be issued against.
-
-This is computed as the sum of [`Synthetix.balanceOf(account)`](TokenState.md#balanceof),  [`SynthetixEscrow.balanceOf(account)`](SynthetixEscrow.md#balanceof), and [`RewardEscrow.balanceOf(account)`](RewardEscrow.md#balanceof); so an account may issue synths against both its active balance and its unclaimed escrow funds.
-
-??? example "Details"
-    **Signature**
-
-    `collateral(address account) public view returns (uint)`
-
----
-
-### `transferableSynthetix`
-
-The quantity of SNX this account can transfer given that a portion of it may be locked due to issuance.
-
-If $\text{balance}$ is [`balanceOf(account)`](TokenState.md#balanceof), and $\text{lockedSnx}$ is [`debtBalanceOf(account, "SNX") / SynthetixState.issuanceRatio`](#debtbalanceof), the function returns $max(0, \text{balance} - \text{lockedSnx})$. Escrowed tokens are not taken into account in this computation, so unescrowed tokens are locked immediately.
-
-???+ info "A Note on Price Motion"
-    The value of $\text{lockedSnx}$ depends on the current ($\pi$) and previous ($\pi'$) prices being reported by the oracle, and the issuance ratio ($\rho$).
-
-    If we consider a situation where the synth supply has not changed in the time period under consideration, then ownership fractions do not change even if prices do. Further assuming that there is only a single synth circulating, debt balances correspond to the same number of synths, although perhaps not the same value.
-
-    In such a situation, we can think of each user having issued a particular quantity of synths. This quantity depends on the prices of synths and SNX at the time of issuance.
-
-    $$
-    Q_s = \rho \ \frac{\pi'_c}{\pi'_s} \ Q_c
-    $$
-
-    Whose value at the present time priced [in terms of SNX](#effectivevalue), which is what [`debtBalanceOf(account, "SNX")`](#debtbalanceof) returns, is:
-
-    $$
-    {V_s}^{c} = \rho \ \frac{\pi'_c}{\pi'_s} \ \pi_c \ Q_c
-    $$
-
-    Note that this computation has a factor of $\rho$ in it, and this must be divided out in order to ascertain the quantity of SNX which are presently locked.
-
-    $$
-    \text{lockedSnx} = \frac{{V_s}^{c}}{\rho} = \frac{\pi'_c}{\pi'_s} \ \pi_c \ Q_c
-    $$
-
-    Which is to say that the quantity of SNX locked in this situation depends on the price.
-
-    !!! todo "Extend this to the multicurrency case"
-        Consider a two synth system, one primary synth and a secondary one which represents the price/supply of all other synths. Use the total issued value function to derive the behaviour for multiple currencies, and then examine a single currency as a special case.
-
-??? example "Details"
-    **Signature**
-
-    `transferableSynthetix(address account) public view returns (uint)`
-
-    **Modifiers**
-
-    * [`rateNotStale("SNX")`](#ratenotstale)
-
----
-
-### `mint`
-
-This function is responsible for creating the inflationary SNX supply. It is a public function, so any address can ensure new tokens are released on schedule. When a new quantity is minted, the calling address is rewarded with a small incentive of SNX tokens, defined by [`SupplySchedule.minterReward`](SupplySchedule.md#minterreward).
-
-The supply is released according to the schedule defined in [`SupplySchedule.schedules`](SupplySchedule.md#schedules), being sent to the [`RewardsDistribution`](RewardsDistribution.md#distributerewards) contract for distribution and escrow. The total supply SNX supply is thus increased by the quantity specified by the schedule.
-
-This function always returns true if the transaction did not revert.
-
-??? example "Details"
-    **Signature**
-
-    `mint() external returns (bool)`
-
-    **Preconditions**
-
-    * The [`rewardsDistribution`](#rewardsdistribution) address must be initialised.
-    * The supply to mint retrieved from [`SupplySchedule.mintableSupply`](SupplySchedule.md#mintablesupply) must be nonzero.
-
-    **Emits**
-
-    * [`Transfer(synthetix, rewardDistribution, newSupply - minterReward)`](ExternStateToken.md#transfer)
-    * [`Transfer(synthetix, msg.sender, minterReward)`](ExternStateToken.md#transfer)
-
----
-
-### `_onlySynth`
-
-This function is effectively a modifier. The transaction is reverted if the message sender is not a Synth address known to this contract.
-
-??? example "Details"
-    **Signature**
-
-    `_onlySynth() internal view`
-
-    **Modifiers**
-
-    * [`Proxyable.optionalProxy`](Proxyable.md#optionalproxy)
-
-    **Preconditions**
-
-    * [`messageSender`](Proxyable.md#messagesender) must appear in [`availableSynths`](#availablesynths).
-
----
-
 ## Modifiers
-
----
-
-### `rateNotStale`
-
-The transaction is reverted if the given currency's latest exchange rate [is stale](ExchangeRates.md#rateisstale). This will also revert if the currency key is unknown to the exchange rates contract.
 
 ---
 
@@ -884,6 +880,12 @@ The transaction is reverted if the given account is the [fee address](FeePool.md
 ### `onlyOracle`
 
 The transaction is reverted if `msg.sender` is not the [exchange rates oracle](ExchangeRates.md#oracle).
+
+---
+
+### `rateNotStale`
+
+The transaction is reverted if the given currency's latest exchange rate [is stale](ExchangeRates.md#rateisstale). This will also revert if the currency key is unknown to the exchange rates contract.
 
 ---
 
