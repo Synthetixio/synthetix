@@ -139,12 +139,11 @@ contract SupplySchedule is Owned {
         view
         returns (uint)
     {   
-        // Inflationary supply is compounded weekly from initial SNX total supply
-        // return the extra supply minus original 
-        uint effectiveRate = (SafeDecimalMath.unit().add(terminalSupplyRate / 52)) ** numOfweeks;
+        // Terminal inflationary supply is compounded weekly from Synthetix total supply 
+        uint effectiveRate = (SafeDecimalMath.unit().add(terminalSupplyRate.divideDecimal(52))) ** numOfweeks;
         
-        return totalSupply.multiplyDecimal(SafeDecimalMath.unit().add(effectiveRate))
-            .sub(totalSupply);
+        // return compounded supply for period
+        return totalSupply.multiplyDecimal((effectiveRate).sub(SafeDecimalMath.unit()));
     }
 
     // Take timeDiff in seconds (Dividend) and mintPeriodDuration as (Divisor)
