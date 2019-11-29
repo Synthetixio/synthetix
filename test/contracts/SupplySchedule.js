@@ -16,7 +16,7 @@ contract('SupplySchedule', async accounts => {
 		// We do this in a beforeEach instead of before to ensure we isolate
 		// contract interfaces to prevent test bleed.
 		supplySchedule = await SupplySchedule.deployed();
-		await supplySchedule.setSynthetix(synthetix, { from: owner });
+		await supplySchedule.setSynthetixProxy(synthetix, { from: owner });
 	});
 
 	it('should set constructor params on deployment', async () => {
@@ -36,46 +36,6 @@ contract('SupplySchedule', async accounts => {
 	});
 
 	describe('functions and modifiers', async () => {
-		it('should calculate weeks to mint and round down to full week', async () => {
-			const expectedResult = web3.utils.toBN(0);
-			const secondsSinceLastWeek = 300; // 604,800 seconds in 7 day week
-
-			assert.bnEqual(
-				await supplySchedule._numWeeksRoundedDown(secondsSinceLastWeek),
-				expectedResult
-			);
-		});
-
-		it('should calculate 1 weeks to mint and round down to full week', async () => {
-			const expectedWeeks = web3.utils.toBN(1);
-			const secondsSinceLastWeek = WEEK * 1.5; // 604,800 seconds in 7 day week
-
-			assert.bnEqual(
-				await supplySchedule._numWeeksRoundedDown(secondsSinceLastWeek),
-				expectedWeeks
-			);
-		});
-
-		it('should calculate 1 weeks to mint and round down to full week given 678767', async () => {
-			const expectedWeeks = web3.utils.toBN(1);
-			const secondsSinceLastWeek = 678767; // 604,800 seconds in 7 day week
-
-			assert.bnEqual(
-				await supplySchedule._numWeeksRoundedDown(secondsSinceLastWeek),
-				expectedWeeks
-			);
-		});
-
-		it('should calculate 2 weeks to mint and round down to full week given 2.5 weeks', async () => {
-			const expectedWeeks = web3.utils.toBN(2);
-			const secondsSinceLastWeek = WEEK * 2.5;
-
-			assert.bnEqual(
-				await supplySchedule._numWeeksRoundedDown(secondsSinceLastWeek),
-				expectedWeeks
-			);
-		});
-
 		it('should allow owner to update the minter reward amount', async () => {
 			const existingReward = await supplySchedule.minterReward();
 			const newReward = existingReward.add(toUnit('100'));

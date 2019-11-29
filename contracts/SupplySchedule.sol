@@ -32,43 +32,37 @@ contract SupplySchedule is Owned {
     // time supply last minted
     uint public lastMintEvent;
 
-    // counter for number of weeks since
-    uint public decayCounter;
+    // counter for number of weeks since inflation supply
+    uint public weekCounter;
 
     uint public minterReward = 50 * SafeDecimalMath.unit();
 
+    uint public initialWeeklySupply;
+
     // Percentage growth of terminal supply per annum
-    uint public terminalSupplyRate = 2.5 * SafeDecimalMath.unit().div(100);
+    uint public terminalSupplyRate = 25000000000000000; // 2.5% pa
 
     // Address of the SynthetixProxy
     address public synthetixProxy;
-    
-    uint public constant SUPPLY_DECAY_START = 1576022400; // 2018-12-11T00:00:00+00:00
-    uint public constant INITIAL_WEEKLY_SUPPLY = 75e6 * SafeDecimalMath.unit().divideDecimal(52);
-    uint public constant DECAY_RATE = 1.25 * SafeDecimalMath.unit().div(100);
 
-    uint8 public constant WEEKS_OF_DECAY = 195; // Terminal supply starts after 195 weeks of inflation decay
+    uint public constant INFLATION_START_DATE = 1551830400; // 2019-03-06T00:00:00+00:00
+    uint8 public constant SUPPLY_DECAY_START = 40; // Week 40 (Wednesday, 11 December 2019 00:00:00)
+    uint8 public constant SUPPLY_DECAY_END = 234; //  Supply Decay stops after Week 234 (195 weeks of inflation decay)
     
-    constructor(address _owner, uint40 _lastMintEvent)
+    uint public constant DECAY_RATE = 12500000000000000; // 1.25% weekly
+    
+    constructor(
+        address _owner,
+        uint _lastMintEvent,
+        uint _currentWeek)
         Owned(_owner)
         public
     {
+        initialWeeklySupply = 75e6 * SafeDecimalMath.unit().divideDecimal(52); // initial weekly supply is 75m / 52  in Year 1
+
         lastMintEvent = _lastMintEvent;
+        weekCounter = _currentWeek;
     }
-
-    // ========== SETTERS ========== */
-    /**
-     * @notice Set the SynthetixProxy should it ever change.
-     * SupplySchedule requires Synthetix address as it has the authority
-     * to record mint event 
-     * */
-    function setSynthetixProxy(ISynthetix _synthetixProxy)
-        external
-        onlyOwner
-    {
-        synthetixProxy = _synthetixProxy;
-    }
-
 
     // ========== VIEWS ==========
     function mintableSupply()
@@ -76,35 +70,42 @@ contract SupplySchedule is Owned {
         view
         returns (uint)
     {
-        if (!isMintable()) {
-            return 0;
-        }
-        
         uint totalAmount;
 
-        // Check has supply decay started
+        if (!isMintable()) {
+            return totalAmount;
+        }
         
+        uint remainingWeeksToMint = weeksSinceLastIssuance();
           
-        // Calculate number of weeks since last mint
-        uint remainingWeeksToMint = _numWeeksRoundedDown(now.sub(lastMintEvent));
-
+        uint currentWeek = weekCounter;
+        
         // Calculate total mintable supply from exponential decay function
-        // Decay function stops after 195 weeks
+        // The decay function stops after week 234
         while (remainingWeeksToMint > 0) {
-            if (decayCounter < WEEKS_OF_DECAY) {
-                decayCounter = decayCounter + 1;
-
-                totalAmount = totalAmount.add(tokenSupplyForWeekNumber(decayCounter));
-
+            currentWeek++;            
+            
+            // If current week is before supply decay we add initial supply to mintableSupply
+            if (currentWeek < SUPPLY_DECAY_START) {
+                totalAmount = totalAmount.add(initialWeeklySupply);
                 remainingWeeksToMint--;
-            } else {
-                // calculate terminal inflation portion of supply
-                // apply compounding to remaining weeks to mint
-                uint currentTotalSupply = synthetix.totalSupply().add(totalAmount);
+            }
+            // if current week before supply decay ends we add the new supply for the week 
+            else if (currentWeek < SUPPLY_DECAY_END) {
+                
+                // number of decays is diff between current week and (Supply decay start week - 1)  
+                uint decayCount = currentWeek.sub(SUPPLY_DECAY_START -1);
+                
+                totalAmount = totalAmount.add(tokenDecaySupplyForWeek(decayCount));
+                remainingWeeksToMint--;
+            } 
+            // Terminal supply is calculated on the total supply of Synthetix including any new supply
+            // We can compound the remaining week's supply at the fixed terminal rate  
+            else {
+                uint totalSupply = ISynthetix(synthetixProxy).totalSupply();
+                uint currentTotalSupply = totalSupply.add(totalAmount);
 
                 totalAmount = totalAmount.add(terminalInflationSupply(currentTotalSupply, remainingWeeksToMint));
-                
-                // set remainingWeeksToMint to 0
                 remainingWeeksToMint = 0;
             }
         }
@@ -114,23 +115,24 @@ contract SupplySchedule is Owned {
 
     /**
     * @return A unit amount of 
-    * @dev
+    * @param counter Decay counter value to calculate the applicable exponential decay supply of the week
+    * @dev New token supply reduces by the decay rate each week calculated as supply = initialWeeklySupply * () 
     */
-    function tokenSupplyForWeekNumber(uint counter)
+    function tokenDecaySupplyForWeek(uint counter)
         public 
         view
         returns (uint)
     {   
         // Apply exponential decay function to number of weeks since
-        // start of inflation smoothing to calculate diminishing supply 
-        // for the week
+        // start of inflation smoothing to calculate diminishing supply for the week.
         uint decay_factor = (SafeDecimalMath.unit().sub(DECAY_RATE)) ** counter;
-        return INITIAL_WEEKLY_SUPPLY.multiplyDecimal(decay_factor);
+        
+        return initialWeeklySupply.multiplyDecimal(decay_factor);
     }    
     
     /**
-    * @return A unit amount of 
-    * @dev
+    * @return A unit amount of terminal inflation supply
+    * @dev Weekly compound rate based on number of weeks     
     */
     function terminalInflationSupply(uint totalSupply, uint numOfweeks)
         public 
@@ -140,18 +142,21 @@ contract SupplySchedule is Owned {
         // Inflationary supply is compounded weekly from initial SNX total supply
         // return the extra supply minus original 
         uint effectiveRate = (SafeDecimalMath.unit().add(terminalSupplyRate / 52)) ** numOfweeks;
+        
         return totalSupply.multiplyDecimal(SafeDecimalMath.unit().add(effectiveRate))
             .sub(totalSupply);
     }
 
     // Take timeDiff in seconds (Dividend) and mintPeriodDuration as (Divisor)
     // Calculate the numberOfWeeks since last mint rounded down to 1 week
-    function _numWeeksRoundedDown(uint _timeDiff)
-        internal
+    function weeksSinceLastIssuance()
+        public
         view
         returns (uint)
     {
-        return _timeDiff.div(mintPeriodDuration);
+        // get time since lastMintEvent, if lastMintEvent not set or 0, then start from inflation start date.
+        uint timeDiff = lastMintEvent > 0 ? now.sub(lastMintEvent) : now.sub(INFLATION_START_DATE);
+        return timeDiff.div(mintPeriodDuration);
     }
 
     function isMintable()
@@ -172,10 +177,15 @@ contract SupplySchedule is Owned {
         onlySynthetix
         returns (bool)
     {
+        uint numberOfWeeksIssued = weeksSinceLastIssuance();
+
+        // add number of weeks minted to weekCounter
+        weekCounter.add(numberOfWeeksIssued);
+
         // Update mint event to now
         lastMintEvent = now;
 
-        emit SupplyMinted(supplyMinted, now);
+        emit SupplyMinted(supplyMinted, numberOfWeeksIssued, now);
         return true;
     }
 
@@ -187,6 +197,20 @@ contract SupplySchedule is Owned {
         emit MinterRewardUpdated(_amount);
     }
 
+
+    // ========== SETTERS ========== */
+    /**
+     * @notice Set the SynthetixProxy should it ever change.
+     * SupplySchedule requires Synthetix address as it has the authority
+     * to record mint event 
+     * */
+    function setSynthetixProxy(ISynthetix _synthetixProxy)
+        external
+        onlyOwner
+    {
+        synthetixProxy = _synthetixProxy;
+    }
+
     // ========== MODIFIERS ==========
 
     modifier onlySynthetix() {
@@ -196,6 +220,6 @@ contract SupplySchedule is Owned {
 
     /* ========== EVENTS ========== */
 
-    event SupplyMinted(uint supplyMinted, uint timestamp);
+    event SupplyMinted(uint supplyMinted, uint numberOfWeeksIssued, uint timestamp);
     event MinterRewardUpdated(uint newRewardAmount);
 }

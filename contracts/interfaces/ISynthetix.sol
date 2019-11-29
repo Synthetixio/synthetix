@@ -22,6 +22,8 @@ contract ISynthetix {
     ISynthetixState public synthetixState;
     IExchangeRates public exchangeRates;
 
+    uint public totalSupply;
+        
     mapping(bytes32 => Synth) public synths;
 
     // ========== PUBLIC FUNCTIONS ==========

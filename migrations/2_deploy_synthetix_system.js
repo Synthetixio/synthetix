@@ -170,9 +170,18 @@ module.exports = async function(deployer, network, accounts) {
 	console.log('Deploying SupplySchedule...');
 	// constructor(address _owner)
 	deployer.link(SafeDecimalMath, SupplySchedule);
-	const supplySchedule = await deployer.deploy(SupplySchedule, owner, {
-		from: deployerAccount,
-	});
+
+	const lastMintEvent = 0; // No mint event, weeksSinceIssuance will use inflation start date
+	const inflationWeek = 0;
+	const supplySchedule = await deployer.deploy(
+		SupplySchedule,
+		owner,
+		lastMintEvent,
+		inflationWeek,
+		{
+			from: deployerAccount,
+		}
+	);
 
 	console.log('Deploying SynthetixProxy...');
 	// constructor(address _owner)
@@ -240,9 +249,9 @@ module.exports = async function(deployer, network, accounts) {
 	await feePool.setSynthetix(synthetix.address, { from: owner });
 
 	// ----------------------
-	// Connect InflationarySupply
+	// Connect SupplySchedule
 	// ----------------------
-	await supplySchedule.setSynthetix(synthetix.address, { from: owner });
+	await supplySchedule.setSynthetixProxy(synthetixProxy.address, { from: owner });
 
 	// ----------------------
 	// Connect RewardsDistribution
