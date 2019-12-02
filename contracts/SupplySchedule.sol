@@ -223,7 +223,7 @@ contract SupplySchedule is Owned {
      * function Synthetix.mint(). 
      * This incentivises anyone to mint the inflationary supply and the mintr 
      * Reward will be deducted from the inflationary supply and sent to the caller.
-     * @param _amount the amount of SNX to reward the minter.
+     * @param amount the amount of SNX to reward the minter.
      * */
     function setMinterReward(uint amount)
         external
