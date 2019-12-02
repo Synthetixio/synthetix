@@ -148,7 +148,9 @@ const importFeePeriods = async ({
 		if (!yes) {
 			try {
 				await confirmAction(
-					yellow(`Do you want to continue importing this fee period in index position ${index}?`)
+					yellow(
+						`Do you want to continue importing this fee period in index position ${index} (y/n) ?`
+					)
 				);
 			} catch (err) {
 				console.log(gray('Operation cancelled'));
