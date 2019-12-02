@@ -92,7 +92,7 @@ contract('PurgeableSynth', accounts => {
 		await synthetix.methods['transfer(address,uint256)'](account, toUnit(amount), {
 			from: owner,
 		});
-		await synthetix.issueMaxSynths(sUSD, { from: account });
+		await synthetix.issueMaxSynths({ from: account });
 	};
 
 	describe('when a Purgeable synth is added and connected to Synthetix', () => {
