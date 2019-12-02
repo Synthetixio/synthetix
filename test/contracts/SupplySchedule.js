@@ -6,6 +6,7 @@ const {
 	divideDecimal,
 	fastForwardTo,
 	multiplyDecimal,
+	fromUnit,
 } = require('../utils/testUtils');
 const BN = require('bn.js');
 
@@ -40,9 +41,11 @@ contract.only('SupplySchedule', async accounts => {
 			from: deployerAccount,
 		});
 
+		const weeklyIssuance = divideDecimal(75e6, 52);
 		assert.equal(await instance.owner(), account1);
 		assert.bnEqual(await instance.lastMintEvent(), 0);
 		assert.bnEqual(await instance.weekCounter(), 0);
+		assert.bnEqual(await instance.initialWeeklySupply(), weeklyIssuance);
 	});
 
 	describe('linking synthetix', async () => {
@@ -76,11 +79,11 @@ contract.only('SupplySchedule', async accounts => {
 			);
 		});
 
-		describe('exponential decay supply with initial weekly supply of 1.44m', async () => {
+		describe.only('exponential decay supply with initial weekly supply of 1.44m', async () => {
 			it('should calculate Week 1 Supply of inflation decay', async () => {
 				const decay = toUnit(1)
 					.sub(decayRate)
-					.pow(1);
+					.pow(new BN(1));
 				const expectedIssuance = multiplyDecimal(initialWeeklySupply, decay);
 
 				assert.bnEqual(await supplySchedule.tokenDecaySupplyForWeek(1), expectedIssuance);

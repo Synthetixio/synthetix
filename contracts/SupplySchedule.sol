@@ -70,7 +70,7 @@ contract SupplySchedule is Owned {
         public
     {
         // initial weekly inflation supply is 75m / 52  in Year 1
-        initialWeeklySupply = 75e6 * SafeDecimalMath.unit().divideDecimal(52);
+        initialWeeklySupply = 75e6 * SafeDecimalMath.unit() / 52;
 
         lastMintEvent = _lastMintEvent;
         weekCounter = _currentWeek;
@@ -131,7 +131,6 @@ contract SupplySchedule is Owned {
 
     /**
     * @return A unit amount of decaying inflationary supply from the initialWeeklySupply
-    * @param counter Decay counter value to calculate the applicable exponential decay supply of the week
     * @dev New token supply reduces by the decay rate each week calculated as supply = initialWeeklySupply * () 
     */
     function tokenDecaySupplyForWeek(uint counter)
