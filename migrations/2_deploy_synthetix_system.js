@@ -172,12 +172,12 @@ module.exports = async function(deployer, network, accounts) {
 	deployer.link(SafeDecimalMath, SupplySchedule);
 
 	const lastMintEvent = 0; // No mint event, weeksSinceIssuance will use inflation start date
-	const inflationWeek = 0;
+	const weeksOfRewardSupply = 0;
 	const supplySchedule = await deployer.deploy(
 		SupplySchedule,
 		owner,
 		lastMintEvent,
-		inflationWeek,
+		weeksOfRewardSupply,
 		{
 			from: deployerAccount,
 		}

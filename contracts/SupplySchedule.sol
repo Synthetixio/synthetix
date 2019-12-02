@@ -153,7 +153,8 @@ contract SupplySchedule is Owned {
         view
         returns (uint)
     {
-        // get time since lastMintEvent, if lastMintEvent not set or 0, then start from inflation start date.
+        // Get weeks since lastMintEvent
+        // If lastMintEvent not set or 0, then start from inflation start date.
         uint timeDiff = lastMintEvent > 0 ? now.sub(lastMintEvent) : now.sub(INFLATION_START_DATE);
         return timeDiff.div(mintPeriodDuration);
     }
