@@ -10,6 +10,14 @@ Exponential Decay Inflation Schedule
 
 Synthetix.mint() function is used to mint the inflationary supply.
 
+The mechanics for Inflation Smoothing and Terminal Inflation 
+have been defined in these sips
+https://sips.synthetix.io/sips/sip-23
+https://sips.synthetix.io/sips/sip-24
+
+The previous SNX Inflation Supply Schedule is at 
+https://etherscan.io/address/0xA3de830b5208851539De8e4FF158D635E8f36FCb#code
+
 -----------------------------------------------------------------
 */
 
@@ -26,30 +34,33 @@ contract SupplySchedule is Owned {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    // How long each mint period is
+    // How long each inflation period is before mint can be called
     uint public mintPeriodDuration = 1 weeks;
 
-    // time supply last minted
+    // Time of the last inflation supply mint event
     uint public lastMintEvent;
 
-    // counter for number of weeks since inflation supply
+    // Counter for number of weeks since the start of supply inflation
     uint public weekCounter;
 
+    // The number of SNX rewarded to the caller of Synthetix.mint()
     uint public minterReward = 50 * SafeDecimalMath.unit();
 
-    uint public initialWeeklySupply;
+    // Calculated in the constructor. The initial weekly inflationary supply is 75m / 52 until the start of the decay rate. 
+    uint public initialWeeklySupply;    
 
-    // Percentage growth of terminal supply per annum
-    uint public terminalSupplyRate = 25000000000000000; // 2.5% pa
-
-    // Address of the SynthetixProxy
+    // Address of the SynthetixProxy for the onlySynthetix modifier
     address public synthetixProxy;
 
     uint public constant INFLATION_START_DATE = 1551830400; // 2019-03-06T00:00:00+00:00
     uint8 public constant SUPPLY_DECAY_START = 40; // Week 40 (Wednesday, 11 December 2019 00:00:00)
     uint8 public constant SUPPLY_DECAY_END = 234; //  Supply Decay stops after Week 234 (195 weeks of inflation decay)
     
+    // Percentage decay of inflationary supply from the first 40 weeks of the 75% inflation rate
     uint public constant DECAY_RATE = 12500000000000000; // 1.25% weekly
+
+    // Percentage growth of terminal supply per annum
+    uint public terminalSupplyRate = 25000000000000000; // 2.5% pa
     
     constructor(
         address _owner,
@@ -58,13 +69,18 @@ contract SupplySchedule is Owned {
         Owned(_owner)
         public
     {
-        initialWeeklySupply = 75e6 * SafeDecimalMath.unit().divideDecimal(52); // initial weekly supply is 75m / 52  in Year 1
+        // initial weekly inflation supply is 75m / 52  in Year 1
+        initialWeeklySupply = 75e6 * SafeDecimalMath.unit().divideDecimal(52);
 
         lastMintEvent = _lastMintEvent;
         weekCounter = _currentWeek;
     }
 
-    // ========== VIEWS ==========
+    // ========== VIEWS ==========     
+    
+    /**    
+    * @return The amount of SNX mintable for the inflationary supply
+    */
     function mintableSupply()
         public
         view
@@ -114,7 +130,7 @@ contract SupplySchedule is Owned {
     }
 
     /**
-    * @return A unit amount of 
+    * @return A unit amount of decaying inflationary supply from the initialWeeklySupply
     * @param counter Decay counter value to calculate the applicable exponential decay supply of the week
     * @dev New token supply reduces by the decay rate each week calculated as supply = initialWeeklySupply * () 
     */
@@ -146,8 +162,10 @@ contract SupplySchedule is Owned {
         return totalSupply.multiplyDecimal((effectiveRate).sub(SafeDecimalMath.unit()));
     }
 
-    // Take timeDiff in seconds (Dividend) and mintPeriodDuration as (Divisor)
-    // Calculate the numberOfWeeks since last mint rounded down to 1 week
+    /**    
+    * @dev Take timeDiff in seconds (Dividend) and mintPeriodDuration as (Divisor)
+    * @return Calculate the numberOfWeeks since last mint rounded down to 1 week
+    */
     function weeksSinceLastIssuance()
         public
         view
@@ -158,6 +176,10 @@ contract SupplySchedule is Owned {
         return timeDiff.div(mintPeriodDuration);
     }
 
+    /**
+     * @return boolean whether the mintPeriodDuration (7 days)
+     * has passed since the lastMintEvent.
+     * */
     function isMintable()
         public
         view
@@ -171,6 +193,13 @@ contract SupplySchedule is Owned {
     }
 
     // ========== MUTATIVE FUNCTIONS ==========
+
+    /**
+     * @notice Record the mint event from Synthetix by incrementing the inflation 
+     * week counter for the number of weeks minted (probabaly always 1)
+     * and store the time of the event.
+     * @param supplyMinted the amount of SNX the total supply was inflated by.
+     * */
     function recordMintEvent(uint supplyMinted)
         external
         onlySynthetix
@@ -188,20 +217,27 @@ contract SupplySchedule is Owned {
         return true;
     }
 
-    function setMinterReward(uint _amount)
+    /**
+     * @notice Sets the reward amount of SNX for the caller of the public 
+     * function Synthetix.mint(). 
+     * This incentivises anyone to mint the inflationary supply and the mintr 
+     * Reward will be deducted from the inflationary supply and sent to the caller.
+     * @param _amount the amount of SNX to reward the minter.
+     * */
+    function setMinterReward(uint amount)
         external
         onlyOwner
     {
-        minterReward = _amount;
-        emit MinterRewardUpdated(_amount);
+        minterReward = amount;
+        emit MinterRewardUpdated(minterReward);
     }
 
-
     // ========== SETTERS ========== */
+
     /**
      * @notice Set the SynthetixProxy should it ever change.
      * SupplySchedule requires Synthetix address as it has the authority
-     * to record mint event 
+     * to record mint event.
      * */
     function setSynthetixProxy(ISynthetix _synthetixProxy)
         external
@@ -212,13 +248,22 @@ contract SupplySchedule is Owned {
 
     // ========== MODIFIERS ==========
 
+    /**
+     * @notice Only the Synthetix contract is authorised to call this function
+     * */
     modifier onlySynthetix() {
         require(msg.sender == address(Proxy(synthetixProxy).target()), "Only the synthetix contract can perform this action");
         _;
     }
 
     /* ========== EVENTS ========== */
-
+    /**
+     * @notice Emitted when the inflationary supply is minted
+     * */
     event SupplyMinted(uint supplyMinted, uint numberOfWeeksIssued, uint timestamp);
+
+    /**
+     * @notice Emitted when the SNX minter reward amount is updated
+     * */
     event MinterRewardUpdated(uint newRewardAmount);
 }
