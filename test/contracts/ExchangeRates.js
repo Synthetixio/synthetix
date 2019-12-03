@@ -1,7 +1,11 @@
 const ExchangeRates = artifacts.require('ExchangeRates');
+const MockAggregator = artifacts.require('MockAggregator');
+
 const { currentTime, fastForward, toUnit, bytesToString } = require('../utils/testUtils');
 
 const { toBytes32 } = require('../../.');
+
+require('.');
 
 // Helper functions
 
@@ -1504,6 +1508,86 @@ contract('Exchange Rates', async accounts => {
 						it('rateIsFrozen must be false for iBTC but still true for iETH', async () => {
 							assert.equal(false, await instance.rateIsFrozen(iBTC));
 							assert.equal(true, await instance.rateIsFrozen(iETH));
+						});
+					});
+				});
+			});
+		});
+	});
+
+	describe('pricing aggregators', () => {
+		const [sJPY] = ['sJPY'].map(toBytes32);
+		let instance;
+		let aggregator;
+		describe('when instance ready', () => {
+			beforeEach(async () => {
+				instance = await ExchangeRates.deployed();
+				aggregator = await MockAggregator.new({ from: owner });
+			});
+			const convertToAggregatorPrice = val => web3.utils.toBN(Math.round(val * 1e8));
+
+			describe('when sJPY added as an aggregator', () => {
+				beforeEach(async () => {
+					await instance.addAggregator(sJPY, aggregator.address, {
+						from: owner,
+					});
+				});
+				describe('when the price is fetched for sJPY', () => {
+					it('0 is returned', async () => {
+						const result = await instance.rateForCurrency(sJPY, {
+							from: accountOne,
+						});
+						assert.equal(result.toNumber(), 0);
+					});
+				});
+				describe('when a price already exists for sJPY', () => {
+					const oldPrice = 100;
+					beforeEach(async () => {
+						const timeSent = await currentTime();
+
+						await instance.updateRates([sJPY], [web3.utils.toWei(oldPrice.toString())], timeSent, {
+							from: oracle,
+						});
+					});
+					describe('when the price is fetched for sJPY', () => {
+						it('the existing price is returned', async () => {
+							const result = await instance.rateForCurrency(sJPY, {
+								from: accountOne,
+							});
+							assert.equal(result.toNumber(oldPrice), 0);
+						});
+						describe('when the aggregator price is set to set a specific number (with support for 8 decimal)', () => {
+							const newRate = 9.55;
+
+							beforeEach(async () => {
+								await aggregator.setLatestAnswer(convertToAggregatorPrice(newRate));
+							});
+
+							describe('when the price is fetched for sJPY', () => {
+								it('the new aggregator rate is returned instead of the old price', async () => {
+									const result = await instance.rateForCurrency(sJPY, {
+										from: accountOne,
+									});
+									assert.bnEqual(result, toUnit(newRate.toString()));
+								});
+							});
+						});
+					});
+				});
+				describe('when the aggregator price is set to set a specific number (with support for 8 decimal)', () => {
+					const newRate = 123.456;
+
+					beforeEach(async () => {
+						// Multiply by 1e8 to match Chainlink's price aggregation
+						await aggregator.setLatestAnswer(convertToAggregatorPrice(newRate));
+					});
+
+					describe('when the price is fetched for sJPY', () => {
+						it('the specific number is returned with 18 decimals', async () => {
+							const result = await instance.rateForCurrency(sJPY, {
+								from: accountOne,
+							});
+							assert.bnEqual(result, toUnit(newRate.toString()));
 						});
 					});
 				});

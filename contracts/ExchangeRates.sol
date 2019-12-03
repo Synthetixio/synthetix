@@ -21,6 +21,21 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./SafeDecimalMath.sol";
 import "./SelfDestructible.sol";
 
+// The below uses pragma 0.4.24 and as such failing our truffle compile setup
+// import "chainlink/contracts/interfaces/AggregatorInterface.sol";
+
+// from chainlink@0.7.10-beta1s
+interface AggregatorInterface {
+    function latestAnswer() external view returns (int256);
+    function latestTimestamp() external view returns (uint256);
+    function latestRound() external view returns (uint256);
+    function getAnswer(uint256 roundId) external view returns (int256);
+    function getTimestamp(uint256 roundId) external view returns (uint256);
+
+    event AnswerUpdated(int256 indexed current, uint256 indexed roundId, uint256 timestamp);
+    event NewRound(uint256 indexed roundId, address indexed startedBy);
+}
+
 /**
  * @title The repository for exchange rates
  */
@@ -41,6 +56,9 @@ contract ExchangeRates is SelfDestructible {
 
     // The address of the oracle which pushes rate updates to this contract
     address public oracle;
+
+    // Deceentralized oracle networks that feed into pricing aggregators
+    mapping(bytes32 => AggregatorInterface) pricingAggregators;
 
     // Do not allow the oracle to submit times any further forward into the future than this constant.
     uint constant ORACLE_FUTURE_LIMIT = 10 minutes;
@@ -123,11 +141,19 @@ contract ExchangeRates is SelfDestructible {
     }
 
     function rates(bytes32 code) public view returns(uint256) {
-        return uint256(_rates[code].rate);
+        if (pricingAggregators[code] != address(0)) {
+            return uint(pricingAggregators[code].latestAnswer() * 1e10);
+        } else {
+            return uint256(_rates[code].rate);
+        }
     }
 
     function lastRateUpdateTimes(bytes32 code) public view returns(uint256) {
-        return uint256(_rates[code].time);
+        if (pricingAggregators[code] != address(0)) {
+            return pricingAggregators[code].latestTimestamp();
+        } else {
+            return uint256(_rates[code].time);
+        }
     }
 
     function _setRate(bytes32 code, uint256 rate, uint256 time) internal {
@@ -415,6 +441,25 @@ contract ExchangeRates is SelfDestructible {
             }
         }
     }
+
+    /**
+     * @notice Add a pricing aggregator for the given key
+     * @param currencyKey THe currency key to add an aggregator for
+     */
+    function addAggregator(bytes32 currencyKey, address aggregator) external onlyOwner {
+        require(pricingAggregators[currencyKey] == address(0), "Aggregator exists for key");
+        pricingAggregators[currencyKey] = AggregatorInterface(aggregator);
+    }
+
+    /**
+     * @notice Remove a pricing aggregator for the given key
+     * @param currencyKey THe currency key to remove an aggregator for
+     */
+    function removeAggregator(bytes32 currencyKey) external onlyOwner {
+        require(pricingAggregators[currencyKey] != address(0), "No aggregator exists for key");
+        delete pricingAggregators[currencyKey];
+    }
+
     /* ========== VIEWS ========== */
 
     /**

@@ -11,7 +11,7 @@
 		"ganache:int": "npm run ganache -- --acctKeys keys.json",
 		"lint": "solhint \"contracts/**/*.sol\" && eslint \"**/*.js\"",
 		"lint:fix": "eslint --fix \"**/*.js\"",
-		"test": "concurrently --kill-others --success first \"npm run ganache > /dev/null\" \"wait-port 8545 && truffle test test/contracts/*\"",
+		"test": "concurrently --kill-others --success first \"npm run ganache > /dev/null\" \"wait-port 8545 && truffle test ${TRUFFLE_TEST:=test/contracts/*}\"",
 		"test:gas": "npm test; EXIT_CODE=$?; cat test-gas-used.log; printf \"\\n\"; exit $EXIT_CODE;",
 		"test:publish": "concurrently --kill-others --success first \"npm run ganache:int > /dev/null\" \"wait-port 8545 && mocha test/publish\"",
 		"test:testnet": "node test/testnet",
